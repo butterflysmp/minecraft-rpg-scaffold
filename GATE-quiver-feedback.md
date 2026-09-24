@@ -26,7 +26,13 @@ prediction, never over it, and a prediction is not edited once its row has been 
 | # | prediction | instrument | READING |
 |---|---|---|---|
 | **R0a** | the build line names this branch's tip | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | _(not run)_ |
-| **R0b** | **4** action-bar sends and **0** chat sends in the deployed notice class | `$j = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'` then a class scan — see below | _(not run)_ |
+| **R0b** | **6** action-bar sends and **0** chat sends across the **two** quiver notice classes — `QuiverNotice` **4**, `PlumeNotice` **2** | `$j = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'` then a class scan — see below | _(not run)_ |
+| **R0d** | `PlumeDraw` and `QuiverReloadCue` are both in the jar and both reference `settleMaturedReload` | the constant-pool scan below | _(not run)_ |
+
+> **R0b READ "4 … in the deployed notice class" UNTIL ITEM 4 LANDED, AND THE SINGULAR WAS THE DEFECT
+> IT NOW MEASURES.** There were always **two** notice classes; the row named one, so a `PlumeNotice`
+> still sending to chat satisfied it. The prediction is corrected rather than annotated because **this
+> row has not been read** — no reading has been written beside it, so nothing is being overwritten.
 | **R0c** | no boot error mentioning `use_cooldown`, `quiver_reload_` or `QuiverSweep` | `Select-String -Path run\logs\latest.log -Pattern 'use_cooldown\|quiver_reload_\|QuiverSweep'` | _(not run)_ |
 
 **R0b's class scan, since a jar is a ZIP and `Select-String` on it returns nothing for everything:**
@@ -42,6 +48,30 @@ $zip.Dispose()
 **A present `QuiverSweep.class` plus the expected build hash is the binding.** Neither alone is: the
 hash says which commit built the jar, the class says the symbol is in it, and a checkout of the wrong
 branch followed by a correct build satisfies neither.
+
+**R0d's constant-pool scan, and it needs one, because a CLASS being present says nothing about which
+VERSION of it is present.** `PlumeDraw.class` has been in every jar since #78; what R0d has to see is
+the *call added by this slice*. A deflated entry has to be inflated before any needle can match it —
+`Select-String` on the jar returns nothing for everything:
+
+```powershell
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'))
+foreach ($n in 'PlumeDraw','QuiverReloadCue') {
+  $e = $zip.GetEntry("io/github/butterflysmp/rpg/paper/weapon/$n.class")
+  if (-not $e) { "$n : ABSENT -- STOP"; continue }
+  $r = New-Object IO.StreamReader($e.Open())
+  $t = $r.ReadToEnd(); $r.Close()
+  if ($t -match 'settleMaturedReload') { "$n : settleMaturedReload PRESENT" }
+  else { "$n : settleMaturedReload ABSENT -- the fix is NOT in this jar. STOP." }
+}
+$zip.Dispose()
+```
+
+> **THE SCAN'S OWN POSITIVE CONTROL IS THE PAIR.** Both names must print PRESENT. **One PRESENT and
+> one ABSENT is the informative failure** — it means the jar predates one of the two halves, which is
+> exactly the state a partial rebuild produces. A scan that could only ever report on one class would
+> read as a pass with half the slice missing.
 
 ---
 
@@ -182,3 +212,117 @@ held item still carries the very deadline the task was made for.
 > that exact mutation left all 2164 tests green** before `QuiverCueTest` existed, and reddens exactly
 > one row now. **C2, C3 and C4 are the behavioural witnesses; `QuiverCueTest` is the guard.** Neither
 > substitutes for the other.
+
+> ### *** C1's SECOND SENTENCE WAS A PREDICTION THE CODE COULD NOT HAVE MET, AND IT IS LEFT EXACTLY AS WRITTEN ***
+>
+> *"The magazine reads full at the same moment."* Written with the cue, before any boot — and **on
+> `91b74c7` it was false.** The cue played a sound and settled nothing, so the counter moved on the
+> player's next action, which is precisely what Ben reported.
+>
+> **The prediction is not edited, because it was RIGHT and the code was WRONG.** Item 3's second half
+> (`QuiverReloadCue` now calls `Quivers.settleMaturedReload` behind the same deadline check) is what
+> makes it true. **A prediction that a boot would have falsified is the most valuable thing a gate
+> sheet can contain, and rewriting it to match the shipped behaviour would have destroyed the one
+> record that the sheet caught something.**
+
+---
+
+## THE ROWS — THE #147 DEFECT: A DECIDING READER ON A STALE MAGAZINE
+
+**Reported by Ben on #147's boot:** *"Arrows are taken, the sweep appears. When it finishes the quiver
+still says 0, the bow won't fire, until left-click, then it fires without a second reload."*
+
+**THE CAUSE, CONFIRMED BY READING EVERY LINK BEFORE ANY FIX WAS WRITTEN.** `PlumeDraw.cap` read
+`Quivers.stateOf(...).roundsRemaining()` — the LOADED count — and handed it to `DrawRelease.decide`.
+A matured-but-unsettled reload's rounds live in `quiver_reload_pending`, so the cap was `0`, the
+release was `Nothing(NO_ROUNDS)`, and `WeaponFire.attemptFan` was never reached — **so nothing settled
+the reload either.** The refusal is what kept it broken.
+
+**On master since `e9e657a` (#78, slice H1) — `git log -S "roundsRemaining()" -- PlumeDraw.java`
+returns that one commit, and `git merge-base --is-ancestor e9e657a master` confirms it. #147 did not
+introduce it.**
+
+| # | what to do | PREDICTION | READING |
+|---|---|---|---|
+| **P0** | **ON `91b74c7`, THE BUILD BEN BOOTED — the repro.** Reload the Plume with arrows in the inventory. Wait until the sweep has fully emptied. **Do NOT left-click.** Draw and release. | **The "held for nothing" refusal, EVERY TIME** — *"The draw was held for nothing -- your quiver is empty."* The quiver still reads `0/25`. Then left-click once: it reloads **instantly, with no second wait**, and now fires. | _(not run)_ |
+| **P1** | **ON THIS BRANCH'S TIP — the same gesture, exactly.** | **It fires.** The magazine reads its full rounds before the draw starts, the charge ticks climb past step 1, and the release fans its arrows. **No refusal, and no left-click needed.** | _(not run)_ |
+| **P2** | Reload, hold the weapon, and **watch the counter as the `loading_end` click plays**. | The counter reads **full ON the click**, not on the next action. This is C1's second sentence, now met. | _(not run)_ |
+| **P3** | Reload. **Start drawing BEFORE the reload matures** — S2 says the sweep blocks the draw, so begin the moment it clears — and hold through maturity if you can arrange the overlap. | **The draw is not interrupted.** No animation reset, no re-pull, and the charge ticks keep climbing. If the cap rises mid-draw, **the ticks resume up the ladder** rather than stopping. | _(not run)_ |
+| **P4** | Reload to full, then draw and **count the charge clicks**. | **Three clicks**, rising in pitch — the full ladder, because the cap is the settled magazine. Before the fix a matured-unsettled reload capped it at **zero clicks**. | _(not run)_ |
+
+> ### *** P0 IS ON THE OLD BUILD AND IT IS THE ONLY ROW HERE THAT CANNOT BE RUN AFTER MERGING ***
+>
+> It is written as a row rather than as a paragraph because **the cause was established by READING and
+> not by measurement**, and this sheet's standing rule is that a verdict must not stand in for a
+> reading. If P0 is skipped, say so — *"the fix was accepted on the trace alone"* — rather than
+> leaving a blank that reads like an oversight.
+>
+> **If P0 does NOT reproduce**, the diagnosis is wrong and P1 proves nothing: a green P1 on a defect
+> that never presented is the hollow-fixture shape with the *defect* as the missing condition.
+
+> ### *** P3 IS THE ROW FOR A HAZARD THE JAR ALREADY HALF-ANSWERED, AND ONLY THE CLIENT HALF IS OPEN ***
+>
+> Both new settle sites can fire **while the player is drawing a bow**, and settling REWRITES the main
+> hand. Read off `run/versions/26.1.2/paper-26.1.2.jar` with `javap -c`:
+>
+> ```
+> LivingEntity.updatingUsingItem()
+>    19:  ItemStack.isSameItem(getItemInHand(usedHand), useItem)
+>    22:  ifeq 48            <- NOT the same item -> 48
+>    34:  putfield useItem   <- same item: RE-POINT at the new stack
+>    49:  stopUsingItem()    <- 48: THE DRAW IS CANCELLED
+>
+> ItemStack.isSameItem(a, b)
+>     2:  b.getItem()
+>     5:  a.is(Object)       <- ITEM TYPE ONLY. No components, no NBT, no count.
+> ```
+>
+> **A bow replaced by a bow passes, so the SERVER does not cancel the draw.** The charge is untouched
+> too: `getTicksUsingItem` is `useItem.getUseDuration(this) - useItemRemaining`, and the re-point moves
+> neither term.
+>
+> **WHAT THE JAR CANNOT ANSWER IS WHAT THE CLIENT DOES WITH A RE-SENT HOTBAR SLOT MID-DRAW**, because
+> the pull animation is the client's own. **That is the whole content of P3**, and it is a COSMETIC
+> question — a flicker would be ugly and would not be a correctness failure. Said here so a flicker is
+> not read as the settle having broken something.
+>
+> **Had `isSameItem` compared components, every quiver write would have been a draw-cancel and this
+> whole shape would have been wrong.** The reading is load-bearing, which is why it is bytecode rather
+> than recollection.
+
+---
+
+## THE ROWS — ITEM 4, THE PLUME'S TWO NOTICES ON THE ACTION BAR
+
+**Ben's action-bar pick, 2026-09-23, reaching `PlumeNotice` on 2026-09-24.** `QuiverNotice`'s four
+moved in this branch's first commit; these two were left in chat, which is the split R0b's singular
+wording could not see.
+
+| # | what to do | PREDICTION | READING |
+|---|---|---|---|
+| **A6** | Empty the magazine, hold the draw past the floor, and release. | *"The draw was held for nothing -- your quiver is empty. Left-click to reload."* **on the action bar. Nothing in chat.** The dispenser-fail click still plays. | _(not run)_ |
+| **A7** | Remove every plain arrow from your inventory **and your off-hand**, then right-click the Plume. | *"This bow needs a plain Arrow in your off-hand to draw -- a reload cannot take it."* **on the action bar. Nothing in chat.** | _(not run)_ |
+| **A8** | Run the class javadoc's sequence in one breath: release on an empty magazine, left-click as told, then right-click to draw. | **Two different action-bar lines in sequence** — A6's, then A7's — with **neither swallowing the other**. They hold separate throttle keys, and this is the sequence those keys exist for. **Chat stays empty throughout.** | _(not run)_ |
+
+> **A8 IS THE ROW THE SEPARATE KEYS WERE WRITTEN FOR, AND MOVING TO THE ACTION BAR MAKES IT HARDER TO
+> READ RATHER THAN EASIER.** An action bar **overwrites**, so the first line is gone by the time the
+> second arrives — you are checking that the second line APPEARS, not that both are visible at once.
+> In chat both would have stacked and the row would have been trivial. **Read it as two events, not as
+> two lines on screen.**
+
+> ### *** WHAT NO ROW ABOVE CAN SEE, AND WHERE IT IS GUARDED INSTEAD ***
+>
+> **`MUT-DRAWSETTLE`** — delete `PlumeDraw.cap`'s `Quivers.settleMaturedReload` call; verified applied
+> by a line delta of **1 removed / 0 added** against a pristine copy, and a comment-stripped needle
+> going **1 → 0**. **It left ALL 2170 ROWS GREEN**, which is the measurement that says P0/P1 are the
+> only behavioural witnesses this defect ever had. It now reddens exactly
+> `QuiversSignatureTest.everyExternalReaderOfTheMagazineDeclaresWhetherItSettles`, and nothing else.
+>
+> **`MUT-PLUMECHAT`** — revert `PlumeNotice`'s two `sendActionBar` calls to `sendMessage`; **2 removed
+> / 2 added**, marker present **2**, original gone **0**. Reddens exactly
+> `NoticeSurfaceTest.theQuiverFamilySpeaksOnTheActionBarAndNeverInChat`.
+>
+> **THE SOURCE SCAN IS A PRESENCE CHECK AND NOT A BEHAVIOURAL WITNESS.** A settle call moved BELOW the
+> read, or guarded behind a condition that is never true, satisfies it exactly as correct code does.
+> **P1 is the row that can tell those apart, and nothing in the suite can.** Do not read a green suite
+> as proof the call is in the right place.

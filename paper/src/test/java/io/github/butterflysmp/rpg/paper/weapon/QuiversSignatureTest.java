@@ -358,8 +358,11 @@ class QuiversSignatureTest {
             try (var walk = Files.walk(root)) {
                 for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
                     scanned++;
-                    String code = Files.readString(file, StandardCharsets.UTF_8)
-                            .replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
+                    // stripComments, shared with everyExternalReaderOfTheMagazineDeclaresWhetherItSettles
+                    // rather than inlined here as it was until 2026-09-24. Two copies of one stripper is
+                    // two things to drift, and that row's positive control is a claim about THE stripper
+                    // -- which is only true if there is one.
+                    String code = stripComments(Files.readString(file, StandardCharsets.UTF_8));
                     // BOTH the accessor and the resolver, because scanning for capacityOf alone
                     // MISSED the defect this guard exists for -- measured, see the javadoc.
                     //
@@ -579,10 +582,25 @@ class QuiversSignatureTest {
     /**
      * TODAY'S PUBLIC SURFACE, named rather than counted.
      *
-     * <p>Three of these four WRITE ({@code resolveForShot}, {@code spendRounds}, {@code beginReload},
-     * {@code tryReloadHeldWeapon} -- all but {@code stateOf}), and every one is verb-named so it
-     * cannot be mistaken for a query. A new member added here is a deliberate edit to this list,
-     * which is the moment to ask whether its name says what it does.
+     * <p><b>EVERY MEMBER BUT {@code stateOf} WRITES</b> -- {@code beginReload},
+     * {@code resolveForShot}, {@code settleMaturedReload}, {@code spendRounds} and
+     * {@code tryReloadHeldWeapon} -- and every one is verb-named so it cannot be mistaken for a query.
+     * A new member added here is a deliberate edit to this list, which is the moment to ask whether its
+     * name says what it does.
+     *
+     * <blockquote><b>THAT SENTENCE READ "Three of these four WRITE" UNTIL 2026-09-24, AND IT DISAGREED
+     * WITH THE FOUR NAMES IN ITS OWN PARENTHESIS OVER A SET OF FIVE.</b> Two errors cancelling into one
+     * plausible clause -- and the corrected form <b>names the set instead of counting it</b>, which is
+     * this row's own stated rule applied to its own javadoc: <i>a count over an unnamed set cannot be
+     * checked by the reader</i>. The count was checkable and wrong; nobody added the parts up.</blockquote>
+     *
+     * <blockquote><b>5 -&gt; 6 on 2026-09-24, for {@code settleMaturedReload}, and THE ROW FIRED BEFORE
+     * THE LIST WAS EDITED.</b> The method was written first and this list left alone on purpose, to see
+     * what the guard said: <i>"expected: &lt;[beginReload, resolveForShot, spendRounds, stateOf,
+     * tryReloadHeldWeapon]&gt; but was: &lt;[beginReload, resolveForShot, settleMaturedReload,
+     * spendRounds, stateOf, tryReloadHeldWeapon]&gt;"</i>. <b>That red IS this row's positive control</b>
+     * -- editing both in one go produces the same green suite whether the row can see a new member or
+     * not, which is the mechanism {@code NoticeThrottleKeysTest}'s own {@code 7 -> 8} bump records.</blockquote>
      *
      * <p><b>AND A RENAME IS ONE TOO, WHICH IS THIS ROW EARNING ITS KEEP RATHER THAN OBSTRUCTING.</b>
      * {@code spendRound} became {@code spendRounds} in slice H2b, when the Dragon's Plume's release
@@ -603,7 +621,8 @@ class QuiversSignatureTest {
                 .toList();
 
         assertEquals(
-                List.of("beginReload", "resolveForShot", "spendRounds", "stateOf", "tryReloadHeldWeapon"),
+                List.of("beginReload", "resolveForShot", "settleMaturedReload", "spendRounds",
+                        "stateOf", "tryReloadHeldWeapon"),
                 publicMethods,
                 "Quivers' public surface changed. Every member but stateOf commits, so a new one "
                         + "needs a verb name that says so -- and a new PURE one belongs beside "
@@ -772,5 +791,179 @@ class QuiversSignatureTest {
                         + "is in -- a supply site that does not go through QuiverSize.resolve is a "
                         + "second source of truth, and a readout that does not is a number that will "
                         + "drift from the weapon.");
+    }
+
+    /**
+     * EVERY EXTERNAL READER OF THE MAGAZINE IS NAMED HERE WITH ITS ROLE -- <b>settles</b>, or
+     * <b>display only</b>.
+     *
+     * <h2>THE DEFECT, WHICH SHIPPED AND SURVIVED SEVEN WEEKS BECAUSE NOTHING NAMED THE RULE</h2>
+     *
+     * <p>{@link Quivers#stateOf} is PURE, and the class javadoc sells that as the safe property. For a
+     * RENDER it is. <b>For a DECISION it is the hazard</b>: what it returns is the LOADED count, and a
+     * matured-but-unsettled reload's rounds are in {@code quiver_reload_pending}, not in it.
+     *
+     * <p>{@code PlumeDraw.cap} read it and handed the number to {@code DrawRelease.decide}. Reload a
+     * Dragon's Plume, let it mature without firing, draw, release: cap 0, {@code Nothing(NO_ROUNDS)},
+     * <i>"your quiver is empty"</i> -- and <b>because the release refused, nothing reached
+     * {@code WeaponFire} and nothing settled the reload.</b> The weapon stayed dead until a left-click.
+     * On master since {@code e9e657a} (#78); reported by Ben on #147's boot.
+     *
+     * <p><b>A REFUSAL IS NOT A READ THAT SETTLES -- IT IS A READ THAT REMOVES THE REASON ANYTHING
+     * WOULD LOOK AGAIN.</b> That is why the lazy design's <i>"the next read settles it"</i> guarantee
+     * does not cover a deciding reader, and why the rule needs stating rather than deriving.
+     *
+     * <h2>WHAT THIS ROW CAN SEE, AND WHAT IT CANNOT -- BOTH MEASURED</h2>
+     *
+     * <p><b>It catches the two edits that would reproduce the defect</b>, and they are different edits:
+     *
+     * <pre>
+     * a SIXTH reader appears        the membership list goes red, and its author has to write down
+     *                              whether their site settles -- which is the question nobody put
+     *                              when cap() was written.
+     * the settle call is DELETED    the second assertion goes red. MEASURED: MUT-DRAWSETTLE (delete
+     *                              PlumeDraw's Quivers.settleMaturedReload call -- delta 1 removed,
+     *                              0 added against a pristine copy) left ALL 2170 ROWS GREEN before
+     *                              this row existed, and reddens exactly this one now.
+     * </pre>
+     *
+     * <p><b>IT CANNOT SEE MISPLACEMENT, AND THAT IS SAID RATHER THAN LEFT.</b> A settle call moved
+     * BELOW the {@code stateOf} read, or guarded behind a condition that is never true, satisfies this
+     * row exactly as the correct code does. <b>This is a presence check over source text, not a
+     * behavioural witness</b> -- the behavioural witnesses are {@code GATE-quiver-feedback.md}'s
+     * {@code P1} and {@code P2}, and neither substitutes for the other. Do not read a green suite here
+     * as proof the call is in the right place.
+     *
+     * <p><b>AND IT IS BLIND INSIDE {@code Quivers} ITSELF</b>, because the needle is QUALIFIED and that
+     * class calls its own method unqualified. Correct rather than a gap: {@code Quivers} owns both the
+     * pure read and the settle, and is where the rule is authored. A reader that is not {@code Quivers}
+     * is what this row is about.
+     *
+     * <h2>THE FULL WALK, INCLUDING THE SITES THIS NEEDLE DOES NOT REACH</h2>
+     *
+     * <p>The list this row asserts is <b>files that obtain a {@link QuiverState}</b>, which is narrower
+     * than <i>everything that touches the magazine</i>. Measured 2026-09-24 across both modules'
+     * main source, comments stripped, over
+     * {@code Quivers.stateOf|QuiverItems.loadedIn|capacityIn|roundsRemaining()|resolveForShot|settleMaturedReload}:
+     *
+     * <pre>
+     * ON THIS LIST
+     *   PlumeDraw.cap           SETTLES       decides the cap, and via DrawRelease.decide whether
+     *                                         the release fires at all. The #147 site.
+     *   QuiverSweep.reassert    DISPLAY ONLY  reloadTicksRemaining -> the hotbar overlay. Its own
+     *                                         javadoc already forbids resolveForShot here.
+     * NOT ON IT, AND WHY
+     *   WeaponFire.attempt      SETTLES       via resolveForShot. Obtains no QuiverState itself.
+     *   QuiverReloadCue.fire    SETTLES       calls settleMaturedReload and reads nothing. Added
+     *                                         2026-09-24 so the magazine is full as the cue sounds.
+     *   Quivers.*               owner         stateOf, spendRounds, finishReload -- unqualified.
+     *   WeaponItems.applyLore   DISPLAY ONLY  loadedInMeta/capacityInMeta -> the tooltip.
+     *   QuiverItems.carry*      TRANSPORT     copies the keys meta-to-meta at a re-mint.
+     * </pre>
+     *
+     * <p><b>A site that SETTLES without obtaining a state is correctly absent</b>, because it cannot
+     * commit the defect: there is no stale number for it to decide on. The list watches the readers.
+     */
+    @Test
+    void everyExternalReaderOfTheMagazineDeclaresWhetherItSettles() throws IOException {
+        // *** THE COMMENT STRIPPER'S POSITIVE CONTROL, FIRST, BECAUSE BOTH ASSERTIONS BELOW DEPEND ON
+        // IT. *** This repo's javadocs quote their own call sites constantly -- PlumeDraw mentions
+        // settleMaturedReload in a comment as well as calling it, measured 2 raw against 1 in code --
+        // so an unstripped needle would find the prose describing the call and pass with the call gone.
+        // That is the false-presence family, and the control is one line: strip a string that is ONLY a
+        // comment and require the needle to vanish.
+        String control = "/* settleMaturedReload */ // settleMaturedReload\nint x = 1;";
+        assertFalse(stripComments(control).contains("settleMaturedReload"),
+                "the comment stripper is not stripping. Every needle below then matches javadoc as "
+                        + "well as code, so this row would pass over a file whose CALL had been "
+                        + "deleted and whose comment about it survived.");
+        assertTrue(stripComments(control).contains("int x = 1;"),
+                "the comment stripper ate the CODE too, so every needle below is being run against "
+                        + "nothing and would report a clean absence forever.");
+
+        List<String> readers = new java.util.ArrayList<>();
+        int scanned = 0;
+        for (Path root : List.of(Path.of("src", "main", "java"),
+                                 Path.of("..", "core", "src", "main", "java"))) {
+            assertTrue(Files.isDirectory(root), "source root not found: " + root.toAbsolutePath());
+            try (var walk = Files.walk(root)) {
+                for (Path file : walk.filter(p -> p.toString().endsWith(".java")).toList()) {
+                    scanned++;
+                    String code = stripComments(Files.readString(file, StandardCharsets.UTF_8));
+                    // QUALIFIED, SO IT IS PAIRED WITH AN import-static BAN, exactly as
+                    // theCapacityIsResolvedOnlyWhereThisListSays pairs its last two needles. A file
+                    // doing `import static ...Quivers.stateOf;` then `stateOf(held, keys, weapon)`
+                    // would be an external reader this needle cannot see -- so a static import of
+                    // Quivers LANDS ON THIS LIST and fails the membership assertion, which puts its
+                    // author here beside the reason. Measured: paper/src/main uses import static today
+                    // (CraftingMenu 5, EnchantMenu 4), so the idiom is live in the module this walks.
+                    //
+                    // AnvilFace.stateOf and AnvilButton exist and are NOT quiver readers, which is why
+                    // the needle cannot be the bare method name.
+                    if (code.contains("Quivers.stateOf(")
+                            || code.contains("import static "
+                                    + "io.github.butterflysmp.rpg.paper.weapon.Quivers.")) {
+                        readers.add(file.getFileName().toString());
+                    }
+                }
+            }
+        }
+        assertTrue(scanned > 100, "only " + scanned + " files scanned across both modules");
+
+        java.util.Collections.sort(readers);
+        assertEquals(
+                List.of("PlumeDraw.java", "QuiverSweep.java"),
+                readers,
+                "the set of files that obtain a QuiverState from outside Quivers has changed. Each one "
+                        + "must declare, in its own comment, whether it SETTLES a matured reload or is "
+                        + "DISPLAY ONLY:\n"
+                        + "  PlumeDraw.cap    SETTLES -- it DECIDES (DrawRelease.decide refuses on it)\n"
+                        + "  QuiverSweep      DISPLAY ONLY -- it draws a progress bar and must not "
+                        + "commit a reload as a side effect of rendering\n"
+                        + "A reader that DECIDES and does not settle is the #147 defect again: a "
+                        + "refusal taken on a stale magazine, which then stops anything looking "
+                        + "again. Add your file here and write down which it is.");
+
+        // THE DELETION WITNESS, AND IT IS THE HALF THE MEMBERSHIP LIST CANNOT PROVIDE. The list above
+        // goes red when a SIXTH reader appears; it stays green when the settle call is removed from a
+        // reader already on it -- which is the exact mutation that reproduces the shipped bug.
+        String plume = stripComments(Files.readString(
+                Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg", "paper",
+                        "weapon", "PlumeDraw.java"),
+                StandardCharsets.UTF_8));
+        assertTrue(plume.contains("Quivers.settleMaturedReload("),
+                "PlumeDraw no longer CALLS Quivers.settleMaturedReload in code. Its cap() decides "
+                        + "whether a release fires, so reading the magazine without settling a matured "
+                        + "reload first restores the #147 defect exactly: the Plume refuses a release "
+                        + "as empty, the refusal is what stops anything settling the reload, and the "
+                        + "weapon stays dead until a left-click. If cap() was legitimately restructured, "
+                        + "point this assertion at whatever now settles before the read -- do not "
+                        + "delete it.");
+    }
+
+    /**
+     * Comments out, code in.
+     *
+     * <p><b>Used by {@link #everyExternalReaderOfTheMagazineDeclaresWhetherItSettles} and by
+     * {@link #theCapacityIsResolvedOnlyWhereThisListSays}</b> -- the second was inlined until
+     * 2026-09-24 and was pointed here so that the first row's positive control is a claim about the
+     * stripper those two rows actually run.
+     *
+     * <p><b>FOUR OTHER ROWS IN THIS FILE STILL STRIP INLINE, AND THEY ARE MEASURED RATHER THAN
+     * SWEPT.</b> Counted 2026-09-24 at four: {@code quiversNeverWritesTheCountWithoutRenderingIt},
+     * {@code theCountKeyIsTouchedInExactlyTwoFilesAcrossAllOfPaper},
+     * {@code theAuthoredReloadDurationIsReadOnlyWhereThisListSays} and
+     * {@code theAuthoredQuiverSizeIsReadOnlyWhereThisListSays}.
+     * <b>Not converted here, deliberately</b> -- this slice is a defect fix, and rewriting four
+     * unrelated scan rows is how a revision regresses what it was not revising.
+     *
+     * <p><b>So the positive control above covers the two rows named, and NOT those four.</b> Said
+     * because the alternative sentence -- <i>"this file strips comments in one place"</i> -- would be
+     * a false claim about the other four, and a reader trusting it would take their control for
+     * granted. Converting them is owed work with a checkable trigger: the count in this javadoc is
+     * wrong the moment anybody does it, which is the reason it is written as a list.
+     */
+    private static String stripComments(String source) {
+        return source.replaceAll("(?s)/\\*.*?\\*/", " ").replaceAll("//[^\\n]*", " ");
     }
 }

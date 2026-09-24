@@ -66,6 +66,31 @@ public final class PlumeNotice {
 
     private PlumeNotice() {}
 
+    // *** THE ACTION BAR, NOT CHAT, AND THE WORDS ARE UNCHANGED. *** Ben's action-bar pick,
+    // 2026-09-23, reaching these two on 2026-09-24. QuiverNotice moved in this branch's first commit
+    // and these were left behind -- a split the pick did not ask for, and the player-facing result was
+    // that a Plume put its refusals in two different places depending on which refusal it was.
+    //
+    // THE ARGUMENT IS QuiverNotice'S AND IT TRANSFERS WITHOUT CHANGE: a magazine state is transient,
+    // so it belongs where transient things go, and a permanent chat line about a condition that lasted
+    // two seconds is the wrong shape.
+    //
+    // AND IT IS STRONGER HERE, WHICH IS WHY THESE TWO ARE NOT MERELY CONSISTENT NOW. The class javadoc
+    // below traces a sequence a player hits in a few seconds -- release dry, reload, draw, no arrow --
+    // that produces noRounds and then noArrow. In chat that is two permanent lines about one fumble.
+    //
+    // THE THROTTLE IS STILL 40 TICKS AND STILL LOAD-BEARING, for QuiverNotice's reason: an action bar
+    // overwrites rather than accumulating, so the SPAM becomes invisible rather than absent. noArrow in
+    // particular fires from a SCHEDULED TICK, and a held right-click on a bow with no arrow re-enters
+    // onDrawStarted on every interact packet.
+    //
+    // *** NOT SWEPT, AND RECORDED AS UNRULED RATHER THAN EXCLUDED. *** Measured 2026-09-24: three
+    // notices still send to chat -- BrokenNotice, ShieldBrokenNotice and NexusCollisionNotice, one
+    // sendMessage each. Ben's pick was about the QUIVER's notices and nobody has put the question for
+    // those three, whose subjects are not transient in the same way (a broken item stays broken). The
+    // question is open, not answered; NoticeSurfaceTest scopes itself to the quiver family for exactly
+    // that reason and says so.
+
     /** Leading underscores so no content filename can collide -- {@code BrokenNotice}'s convention. */
     private static final String NO_ROUNDS_KEY = "__plume_no_rounds_notice";
 
@@ -97,7 +122,7 @@ public final class PlumeNotice {
      */
     public static void noRounds(Player player, CooldownTracker cooldowns) {
         if (!throttled(player, cooldowns, NO_ROUNDS_KEY)) return;
-        player.sendMessage(Component.text(
+        player.sendActionBar(Component.text(
                 "The draw was held for nothing -- your quiver is empty. Left-click to reload.",
                 NamedTextColor.GRAY));
         // Past the throttle check so message and sound are one notification and cannot drift apart,
@@ -142,7 +167,7 @@ public final class PlumeNotice {
      */
     public static void noArrow(Player player, CooldownTracker cooldowns) {
         if (!throttled(player, cooldowns, NO_ARROW_KEY)) return;
-        player.sendMessage(Component.text(
+        player.sendActionBar(Component.text(
                 "This bow needs a plain Arrow in your off-hand to draw -- a reload cannot take it.",
                 NamedTextColor.GRAY));
         player.playSound(player.getLocation(), REFUSAL_SOUND, SOUND_VOLUME, SOUND_PITCH);

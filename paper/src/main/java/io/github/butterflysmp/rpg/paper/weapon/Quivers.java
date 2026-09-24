@@ -29,13 +29,18 @@ import java.util.OptionalLong;
  * hand. Both call sites ({@code WeaponFire.attempt}, {@code WeaponSwingListener.onSwing} past its
  * Netty hop) already are.
  *
- * <h2>THE RELOAD IS EVALUATED ON READ. ONE TASK IS SCHEDULED, AND IT DECIDES NOTHING</h2>
+ * <h2>THE RELOAD IS EVALUATED ON READ. ONE TASK IS SCHEDULED, AND IT NOW SETTLES</h2>
  *
- * <p><b>THIS SECTION SAID "No task is queued when a reload starts" UNTIL 2026-09-24, AND THAT IS NO
- * LONGER TRUE.</b> The reload-complete cue (operator's ruling; {@link QuiverReloadCue}) books one
- * entity task per reload, because <b>nothing runs at maturity</b> and a cue's whole value is its
- * timing. The sentence is rewritten rather than deleted, because the argument under it survives intact
- * and is the reason the task is shaped the way it is.
+ * <p><b>THIS HEADING SAID "AND IT DECIDES NOTHING" UNTIL 2026-09-24, AND IT WAS TRUE FOR ONE
+ * COMMIT.</b> {@link QuiverReloadCue} landed as a sound and nothing else; it now calls
+ * {@link #settleMaturedReload} when its deadline check passes, so <b>the task WRITES.</b> The heading
+ * is corrected rather than left, because "decides nothing" is exactly the sentence a reader would
+ * rely on before adding a second task.
+ *
+ * <p>An earlier revision of this section said <i>"No task is queued when a reload starts"</i>, which
+ * the cue falsified first. The cue books one entity task per reload because <b>nothing runs at
+ * maturity</b> and a cue's whole value is its timing. The argument under both withdrawn sentences
+ * survives intact, and it is the reason the task is shaped the way it is.
  *
  * <p>{@link #resolveForShot} still asks the item whether its deadline has passed and completes it in
  * place if so. <b>That is still what makes the reload leak-proof</b>: a scheduled task needs an expiry
@@ -44,15 +49,41 @@ import java.util.OptionalLong;
  * <i>"a single missed event LEAKS."</i> There is nothing in the STATE to miss, because it is simply
  * read again from whatever item is in hand.
  *
- * <p><b>THE ITEM STAMP IS STILL THE AUTHORITY, AND THE TASK IS SUBORDINATE TO IT.</b> The cue holds no
- * state but the deadline it was created for, and at fire time it asks the item whether that deadline is
- * still the one in hand. So a missed or stale task costs <b>a sound</b> and can never cost a reload:
- * every other path -- the refill, the refusal, the remaining time, the sweep -- reads the item and
- * would behave identically if the task never ran at all.
+ * <p><b>THE ITEM STAMP IS STILL THE AUTHORITY, AND THE TASK IS STILL SUBORDINATE TO IT -- AND THAT
+ * PROPERTY IS WHAT MAKES IT SAFE FOR THE TASK TO WRITE.</b> The cue holds no state but the deadline it
+ * was created for, and at fire time it asks the item whether that deadline is still the one in hand.
+ * So a missed or stale task costs <b>the TIMING of a refill and a sound</b>, and can never cost the
+ * refill itself: every other path -- the shot, the refusal, the remaining time, the sweep, the draw --
+ * reads the item, and a reload the task never settled is settled by the next one of them that looks.
  *
  * <p>It also settles, for free, the case a per-player timer gets wrong: cooldowns are keyed per
  * player per {@code weaponId/input} and could not tell two identical quivers apart, so a swap
  * mid-reload would fill the wrong weapon. On the item, it cannot.
+ *
+ * <h2>*** AND HERE IS THE RULE THE LAZY DESIGN IMPOSES ON ITS CALLERS, WHICH WENT UNWRITTEN FOR
+ * SEVEN WEEKS AND COST A BUG REPORT ***</h2>
+ *
+ * <p><b>EVERY SITE THAT DECIDES FROM THE MAGAZINE MUST SETTLE A MATURED RELOAD FIRST.</b> A pure
+ * {@link #stateOf} read reports the LOADED count, and a matured-but-unsettled reload's rounds are not
+ * in it -- they are in {@code quiver_reload_pending}, and {@link #settleMaturedReload} is what moves
+ * them. So a decision taken off the pure read sees a magazine that is stale by up to forever.
+ *
+ * <p><b>The instance, so the rule is not abstract.</b> {@code PlumeDraw.cap} read
+ * {@code stateOf(...).roundsRemaining()} and handed it to {@code DrawRelease.decide}. On master since
+ * {@code e9e657a} (#78): reload a Dragon's Plume, let it mature without firing, then draw and release
+ * -- {@code cap} is 0, the release is {@code Nothing(NO_ROUNDS)}, the player is told their quiver is
+ * empty, and <b>because the shot never reached {@code WeaponFire}, nothing settled the reload either.</b>
+ * The weapon stayed dead until a left-click, which reached {@link #beginReload}'s own
+ * {@code RELOAD_MATURED} arm and fixed it -- and so presented as <i>"it fires after a left-click,
+ * without a second reload"</i>.
+ *
+ * <p><b>THE DEFECT IS SELF-SUSTAINING, WHICH IS WHY IT IS A RULE AND NOT A ONE-LINE FIX.</b> The
+ * lazy design's guarantee is <i>"the next read settles it"</i> -- and that guarantee is void for a
+ * reader that decides NOT to act on what it read. A refusal is not a read that settles; it is a read
+ * that removes the reason anything would look again.
+ *
+ * <p>Who settles and who does not is pinned by name in
+ * {@code QuiversSignatureTest.everyExternalReaderOfTheMagazineDeclaresWhetherItSettles}.
  */
 public final class Quivers {
 
@@ -155,6 +186,17 @@ public final class Quivers {
      * <p>The reload pair is taken together or not at all -- {@link QuiverState} refuses a half-reload
      * outright, so a partially-written item surfaces as a thrown exception here rather than as a
      * weapon that behaves oddly.
+     *
+     * <h2>*** IT IS THE RIGHT METHOD FOR A QUESTION AND THE WRONG ONE FOR A DECISION ***</h2>
+     *
+     * <p>"Pure" was sold above as the safe property, and for a RENDER it is. <b>For a DECISION it is
+     * the hazard</b>: what this returns is the LOADED count, and a matured-but-unsettled reload's
+     * rounds are not in it. A caller that refuses a shot on that number gets a weapon that stays dead,
+     * because a refusal is also the thing that stops anything looking again.
+     *
+     * <p><b>So: deciding callers call {@link #settleMaturedReload} first and then this, on a freshly
+     * read main hand.</b> That is the class javadoc's rule, {@code PlumeDraw.cap} is the site that
+     * broke it, and {@code QuiversSignatureTest} pins who is on which side.
      */
     public static QuiverState stateOf(ItemStack held, Keys keys, WeaponDefinition weapon) {
         OptionalInt loaded = QuiverItems.loadedIn(held, keys);
@@ -180,6 +222,78 @@ public final class Quivers {
         // nothing here can be unit-tested -- stateOf needs an ItemStack. The DECISION moved to core
         // and is covered; this ARGUMENT PASSING is boot-only, and GATE-quiver-a2 carries the row.
         return QuiverState.from(loaded, stamped, weapon.quiverSize(), from, to);
+    }
+
+    /**
+     * If the held weapon's reload has matured, finish it NOW. Otherwise do nothing.
+     *
+     * <p><b>This is the one step a deciding reader owes the lazy design</b>, and the class javadoc's
+     * rule -- <i>every site that decides from the magazine settles a matured reload first</i> -- is
+     * what it exists to make cheap. Call it, then read {@link #stateOf} off a FRESHLY read main hand.
+     *
+     * <h2>IT IS THE SAME STEP {@code resolveForShot} AND {@code beginReload} ALREADY TAKE. NOTHING
+     * HERE IS NEW</h2>
+     *
+     * <p>Both of those switch on a core verdict and reach {@code finishReload} on their
+     * {@code RELOAD_MATURED} arm. This is that arm, on its own, for callers that are not taking a shot
+     * and are not starting a reload -- <b>{@code PlumeDraw}'s draw cap and {@link QuiverReloadCue}'s
+     * task, which are respectively a DECISION and a moment in time.</b>
+     *
+     * <p>{@link QuiverState#fireVerdict} is the predicate rather than a new one, deliberately: a
+     * second expression of "has this reload matured" is a second home for it, and
+     * {@code QuiverStateTest} covers this one. The other four arms are no-ops here by construction --
+     * {@code FIRE}, {@code EMPTY} and {@code RELOADING} have nothing to settle, and {@code UNSTAMPED}
+     * is repaired on the FIRING path, which is the only place that should invent a count (see
+     * {@code resolveForShot}'s arm and {@code beginReload}'s refusal of the same case).
+     *
+     * <h2>IDEMPOTENT, WHICH IS WHAT MAKES IT SAFE TO CALL EVERY TICK</h2>
+     *
+     * <p>{@code finishReload} removes all three reload keys, so the second call finds no
+     * {@code reloadStartedAt} and returns {@code FIRE} or {@code EMPTY}. <b>At most one write per
+     * reload, however many times this is called</b> -- which matters because {@code PlumeDraw.tick}
+     * calls it once a tick for the whole length of a draw.
+     *
+     * <h2>*** WRITING THE MAIN HAND MID-DRAW CANNOT CANCEL THE DRAW, AND THAT WAS MEASURED ***</h2>
+     *
+     * <p>This method's two new callers can both fire while the player is holding a bow back, which is
+     * the one moment at which replacing the held stack looked dangerous. Read off
+     * {@code run/versions/26.1.2/paper-26.1.2.jar} with {@code javap -c}:
+     *
+     * <pre>
+     * LivingEntity.updatingUsingItem()
+     *    19:  ItemStack.isSameItem(getItemInHand(usedHand), useItem)
+     *    22:  ifeq 48          &lt;- NOT the same item -&gt; 48
+     *    34:  putfield useItem &lt;- same item: RE-POINT the field at the new stack
+     *    49:  stopUsingItem()  &lt;- 48: THE DRAW IS CANCELLED
+     *
+     * ItemStack.isSameItem(a, b)
+     *     2:  b.getItem()
+     *     5:  a.is(Object)     &lt;- ITEM TYPE ONLY. No components, no NBT, no count.
+     * </pre>
+     *
+     * <p><b>So a bow replaced by a bow passes, the field is re-pointed at the new stack, and the draw
+     * continues.</b> The charge is unharmed too: {@code getTicksUsingItem} is
+     * {@code useItem.getUseDuration(this) - useItemRemaining}, and neither term is touched by the
+     * re-point -- the remaining count is not reset, and a bow's use duration is a constant.
+     *
+     * <p><b>It is written here rather than in a plan because the next person to hesitate over this
+     * will be reading this method.</b> Had {@code isSameItem} compared components, every quiver write
+     * would have been a draw-cancel and the whole shape would have been wrong -- so the answer is
+     * load-bearing, and it is a bytecode reading rather than a recollection.
+     *
+     * <p>What the jar cannot answer is what the CLIENT does with a re-sent hotbar slot mid-draw: the
+     * server's draw state is unaffected, but the pull ANIMATION is the client's own. {@code GATE-quiver-feedback.md}
+     * row <b>P3</b> is the reading, and it is a cosmetic question rather than a correctness one.
+     *
+     * @param player MUST be the owner of this thread -- this reads and writes their main hand.
+     */
+    public static void settleMaturedReload(Player player, WeaponDefinition weapon,
+                                           AdapterContext adapters) {
+        ItemStack held = player.getInventory().getItemInMainHand();
+        QuiverState state = stateOf(held, adapters.keys(), weapon);
+        if (state.fireVerdict(Bukkit.getCurrentTick()) == QuiverState.Fire.RELOAD_MATURED) {
+            finishReload(player, held, weapon, adapters);
+        }
     }
 
     /**
