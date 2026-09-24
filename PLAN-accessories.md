@@ -14,6 +14,23 @@ in `Downloads\Claude outputs\`. It is deliberately not committed.
 
 ---
 
+## RULINGS — BEN, 2026-09-24: §7 Q1-Q7, EACH ACCEPTED AS RECOMMENDED
+
+Ben accepted all seven of §7's recommendations as written. **This section is the ruling; §7 keeps the
+question and its reasoning, marked RULED.**
+
+| Q | ruling |
+|---|---|
+| Q1 | **Slice 0 is option (c)**: Gauntlets are authored but cannot be worn in v1. Option (a), a melee kit, becomes its own slice once melee is designed. |
+| Q2 | **First roster:** 3 universals (defence, crit, regen), 1 Quiver (ranger), 1 Scroll (mage), and 1 Gauntlet (authored, cannot be worn). A player **may** equip two copies of one universal in v1. |
+| Q3 | **`class_damage` is included** on class accessories only. It is merged into `ClassDamageModifierItems`' grants before `matching`. |
+| Q4 | **Accessory stats show on the stats sheet** as their own source line. **The HUD shows nothing** in v1. |
+| Q5 | **The Equipment button has no level gate**, like Stats and Settings. |
+| Q6 | **A Ranger Quiver does not modify `quiver_size` or `reload_time` in v1.** The reason is the eligibility half of NAME THE QUANTITY. |
+| Q7 | **Max HP drawbacks are refused in v1.** The **4× bound** for other negatives (§3.3) is accepted as stated. |
+
+---
+
 ## 0. BEN'S RULINGS. DECIDED; NOT RE-DERIVED HERE
 
 | # | ruling |
@@ -613,22 +630,22 @@ Sets".** The §3.9 store is shaped so a set can reuse it. Nothing else is planne
 
 ## 7. OPEN QUESTIONS FOR BEN — each with a recommendation
 
-1. **Slice 0: which option?** → **(c) now** (Gauntlets authored, unwearable), **(a) as its own slice**
+1. **RULED 2026-09-24 — see *RULINGS*, Q1.** **Slice 0: which option?** → **(c) now** (Gauntlets authored, unwearable), **(a) as its own slice**
    when melee is designed.
-2. **First roster?** → **3 universals** (one each for defence, crit, regen), **one Quiver** (ranger) and
+2. **RULED 2026-09-24 — see *RULINGS*, Q2.** **First roster?** → **3 universals** (one each for defence, crit, regen), **one Quiver** (ranger) and
    **one Scroll** (mage), **one Gauntlet** authored for the unwearable path. May a player equip two copies
    of one universal? → **yes** in v1; revisit if it dominates.
-3. **`class_damage` on class accessories?** (amendment 1) → **include**, merged into
+3. **RULED 2026-09-24 — see *RULINGS*, Q3.** **`class_damage` on class accessories?** (amendment 1) → **include**, merged into
    `ClassDamageModifierItems`' grants before `matching`, class items only.
-4. **Do accessory stats show on the stats sheet?** → **yes**, as their own source line, so a drawback is
+4. **RULED 2026-09-24 — see *RULINGS*, Q4.** **Do accessory stats show on the stats sheet?** → **yes**, as their own source line, so a drawback is
    visible where the total is. **HUD?** → **nothing in v1.**
-5. **Equipment button level?** → **ungated**, like Stats and Settings.
-6. **May a Ranger Quiver modify `quiver_size` or `reload_time`?** → **not in v1.** The eligibility half of
+5. **RULED 2026-09-24 — see *RULINGS*, Q5.** **Equipment button level?** → **ungated**, like Stats and Settings.
+6. **RULED 2026-09-24 — see *RULINGS*, Q6.** **May a Ranger Quiver modify `quiver_size` or `reload_time`?** → **not in v1.** The eligibility half of
    NAME THE QUANTITY: A1 gates on the *profile* class, not the held weapon, so a Ranger holding
    `hunters_bow` — `class: ranger`, no `quiver_size` — would wear a *"+2 Quiver Arrows"* that does
    nothing. It is the fourth row of CLAUDE.md's table, arriving through a new door. It needs a
    held-weapon gate like `matching`'s before it can be honest.
-7. **Max HP drawbacks?** → **refused in v1**; a floor is its own change with death-edge questions. And
+7. **RULED 2026-09-24 — see *RULINGS*, Q7.** **Max HP drawbacks?** → **refused in v1**; a floor is its own change with death-edge questions. And
    **the 4× bound for other negatives** (§3.3) → accept as stated.
 
 ---
