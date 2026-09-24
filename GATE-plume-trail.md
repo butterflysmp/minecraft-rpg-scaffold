@@ -5,6 +5,25 @@ read. When a row is read, the reading goes **beside** its prediction, never over
 prediction is not edited afterwards.
 
 **Branch:** `feat/plume-trail`, off `3ae97ff`.
+
+> ### *** THE TIP MOVED BEFORE ANY ROW WAS READ, AND IT MOVED THE THING THIS GATE MEASURES ***
+>
+> **R14 (tap speeds 0.5 / 1.3 / 2.2) and R15 (proposed tap cooldown 8) landed on this branch on
+> 2026-09-24, after every prediction below was written and before any of them was read.** Nothing
+> here has a reading, so nothing is being overwritten — but **two rows and one question were written
+> against `speed: 2.5` on every binding, and that is no longer true of three of the four.**
+>
+> | row | written assuming | still true? |
+> |---|---|---|
+> | **R1** | band 1 at speed 2.5: *"starting about 2.5 blocks from your eye"*, *"one mote every 2.5 blocks"* | **NO.** Band 1 is now **0.5** — first mote **0.5 blocks** out, and **one mote every 0.5 blocks**, five times denser. |
+> | **R3** | nothing is drawn at the eye | **AT RISK, AND THIS IS THE ONE TO WATCH.** The guard is `elapsed > 0`, which is unchanged — but the first mote it *does* draw is now **0.5 blocks from the eye** instead of 2.5. If R3 fails on band 1 and passes on a charged shot, **the guard is fine and the distance is the cause**, which is a different finding entirely. |
+> | **R2**, **R5** | full charge at 2.5 | **YES.** `draw:` is untouched, so R11's ~300-block reach and the 595-mote figure stand. |
+> | **Q1a** | *"At speed 2.5 there is one mote every ~2.5 blocks"* | **NO for the taps.** And see the note under Q1a: lowering `speed` was listed there as a **balance** change and *"therefore not a trail decision at all"* — **R14 has now made that change for balance reasons, and it lands on the dotted question by accident.** A band-1 tap is the densest trail in the project. |
+>
+> **THE PREDICTIONS ARE NOT EDITED.** They are correct about the build they were written for, and
+> rewriting them to match a tip that moved underneath them would destroy the record that the tip
+> moved. **The T rows below are the same questions asked of the new speeds**, and R1/Q1a are read as
+> history against `dee262c`.
 **Declared game mode: CREATIVE.** See *GAME MODE* below — it is declared because a gate that does
 not say costs readings, and two of this file's rows would otherwise be unreadable.
 
@@ -95,6 +114,71 @@ authored from arithmetic precisely so this question could be asked of something 
 > **The cheap non-code answers, in the order they cost least**, so the ruling has options: raise
 > `size` (a bigger mote closes a gap visually without closing it physically), or lower the weapon's
 > `speed` — which is a **balance** change and is therefore not a trail decision at all.
+>
+> > **AND THAT LAST SENTENCE WAS OVERTAKEN BY EVENTS ON 2026-09-24, WHICH IS WHY IT IS LEFT
+> > STANDING.** R14 lowered the tap speeds **for balance**, exactly as this note said such a change
+> > would be — and it therefore changed the trail density on three of four bindings without any trail
+> > decision being taken. **The note was right that it is not a trail decision. It was wrong to imply
+> > that made it irrelevant to this gate.** Read Q1a on `draw:` and **T3** on the taps.
+
+---
+
+## THE ROWS — R14 / R15, THE TAP SPEED SPLIT AND THE PROPOSED COOLDOWN
+
+**Ben's ruling, 2026-09-24, recorded as his:** tap speeds follow vanilla's bow-power curve —
+`tap1 0.5`, `tap2 1.3`, `tap3 2.2` — and `draw:` stays `2.5`, so R11's ruled ~300-block reach is
+untouched. **The cooldown is a PROPOSAL, not a ruling**, and `Q-CD` is where Ben settles it.
+
+**Predictions computed, not estimated.** `ProjectileFlight` integrates `pos += v` then `v.y -= g`
+with **no drag**, so the time to fall an eye height is **9 ticks at every speed** and flat reach is
+exactly `speed × 9`. Controlled against the figure already in `ProjectileFlight`'s own javadoc —
+*"a flat stray lands about 22.5 blocks"* at speed 2.5 — which the same simulation reproduces.
+
+| # | what to do | PREDICTION | READING |
+|---|---|---|---|
+| **T1** | Stand on flat ground, aim level at the horizon, and fire one tap in **each** band, then a full charge. Pace out where each lands. | Four clearly different distances: **~4.5 / ~11.7 / ~19.8 / ~22.5 blocks.** Band 1 lands **almost at your feet**; band 3 lands close to the charged shot. | _(not run)_ |
+| **T2** | Fire a band-1 tap and a full charge at the same distant target and watch the arrows. | The tap is **visibly slower and visibly droopier** — 1/5 the speed, so it takes 5× as long to cover the same ground and falls the same amount in that time. The difference is obvious without measuring. | _(not run)_ |
+| **T3** | Fire one tap in each band and compare the trail **density** against a charged shot. | **Band 1's trail is the densest in the project** — 2.0 motes per block against the charged shot's 0.40, five times as many. Band 2 is 0.77, band 3 is 0.45. If Q1a answered *"reads as dots"* for the charged shot, **band 1 should read as a solid line.** | _(not run)_ |
+| **T4** | **THE R3 RE-READ AT THE NEW SPEED.** Fire a band-1 tap and watch the space directly in front of your face on the release frame. | **Still nothing drawn at the eye.** The `elapsed > 0` guard is unchanged, so the first mote is at 0.5 blocks rather than at the eye. **If a mote appears inside the camera here but not on a charged shot, the guard is intact and 0.5 blocks is simply too close** — that is a finding about the speed, not about the trail code. | _(not run)_ |
+| **T5** | Spam band-1 taps as fast as you can click. | **Roughly 2.5 shots a second, not more** — one per 8 ticks. Before R15 this was unbounded. | _(not run)_ |
+| **T6** | Alternate bands deliberately: a band-1 tap, then band-2, then band-3, as fast as you can. | **SLOWER than spamming band 1**, not faster. The three bands are on three separate cooldown buckets, so the timers do not gate each other — but cycling them costs at least `3 + 9 + 15 = 27` ticks of **holding**, against 8 ticks per shot for band-1 spam. The evasion exists and does not pay. | _(not run)_ |
+| **T7** | Hold the Plume and read its tooltip. | **Three new lines, `"Cooldown: 0.4s"` in dark grey, one under each of Tap1 / Tap2 / Tap3.** The tooltip now says the same thing three times. **This is MEASURED, not predicted**: `GoldenLoreTest` went red and the regenerated golden is exactly `+3 / -0`, all three that line. Before R15 a `0` rendered nothing at all — `cadenceLine` drops a free, instant trigger. | _(not run)_ |
+
+> ### *** T6 IS A ROW ABOUT A KNOWN HOLE, AND IT IS WRITTEN TO CONFIRM THE HOLE IS NOT WORTH USING ***
+>
+> `dragons_plume.yml` has carried this warning since the bands were built, while all three cooldowns
+> were `0` and the property was inert: *"the moment anyone authors a non-zero cooldown on a tap they
+> will be authoring one third of the gate they think they are."* **R15 is that moment.**
+>
+> **The prediction is that it does not matter AT THIS VALUE**, and that is a claim about `8`, not
+> about the design. It stops holding if the cooldown rises past roughly the band-cycle cost. **If
+> Ben rules a larger value, one shared bucket becomes the right shape — and that is a code change in
+> `PlumeDraw`, not a content one.**
+
+| # | the question | the options | ANSWER |
+|---|---|---|---|
+| **Q-CD** | **The tap cooldown: too slow, right, or still spammable?** `8` is proposed. It gates **band 1 only** — bands 2 and 3 cost more than 8 ticks just to hold, so the timer is spent before they can fire. | (a) **right** — leave 8. (b) **still spammable** — raise to 12 or 20, and read T6 again, because alternation starts to pay above ~27. (c) **too slow** — drop to 4, which is near-inert, or back to 0. | _(not run)_ |
+| **Q-TT** | **Three identical `"Cooldown: 0.4s"` lines on one tooltip — acceptable?** A consequence of the bands being three bindings, not of the value. | (a) **fine** — leave it. (b) **noisy** — the taps want one shared label, which is a tooltip change. (c) it is the reason to keep the cooldown at 0. | _(not run)_ |
+| **Q-SP** | **The tap speeds: does band 1 at 4.5 blocks still do its job?** R4''' exists so the weapon is *"never dead at close range"*. 4.5 blocks is barely past melee. | (a) **right** — a floor band that only works in your face. (b) **too short** — raise `tap1` speed. (c) the whole split is wrong. | _(not run)_ |
+
+> ### *** THE DERIVATION DOES NOT REPRODUCE TWO OF THE THREE RULED VALUES, AND THAT IS OPEN ***
+>
+> The stated basis is the curve at each band's midpoint × 2.5. Computed:
+>
+> | band | midpoint `t` | curve × 2.5 | BEN RULED | agrees? |
+> |---|---|---|---|---|
+> | 1 | 5.5 | **0.5214** | 0.5 | **yes** |
+> | 2 | 11.5 | **1.2339** | 1.3 | no |
+> | 3 | 17.0 | **2.0188** | 2.2 | no |
+>
+> Inverted, the ruled values sit at `t = 5.30`, `t = 12.00` and `t = 18.16`. Half-open midpoints
+> (`3..9, 9..15, 15..20` → `t = 6, 12, 17.5`) reproduce **tap2 exactly** and miss the other two.
+> **No single midpoint convention gives all three.**
+>
+> **THE VALUES SHIP AS RULED AND NOTHING IS BLOCKED.** What is open is the recorded REASON. It is
+> written down rather than resolved by quietly rounding `1.2339` up to `1.3`, because a derivation
+> that does not reproduce its own rows is the defect `CLAUDE.md` names. Full arithmetic, including
+> the curve at every tick a tap can occupy, is in `dragons_plume.yml`'s R14 block.
 
 ---
 
