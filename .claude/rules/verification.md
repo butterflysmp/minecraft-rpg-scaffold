@@ -1633,6 +1633,32 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > WHICH TREE the jar was built from**, because a worktree checkout makes *"the repo"* ambiguous
   > and that ambiguity is what cost the boot.
   >
+  > **AND R0's FIRST INSTRUMENT IS NOW THE STARTUP LINE, BECAUSE IT NEEDS NO UNPACKING AND CANNOT BE
+  > CONFUSED WITH A DIFFERENT JAR:**
+  >
+  > ```bash
+  > grep -m1 "\[Rpg\] Build:" run/logs/latest.log
+  > ```
+  >
+  > **It prints the commit the deployed jar was built from**, injected at build time by
+  > `dev-server.sh` through Maven's `build.commit` property. Three readings and what each means:
+  >
+  > | it says | means |
+  > |---|---|
+  > | the expected short hash | **bound.** Compare it to the branch tip you meant to boot. |
+  > | `<hash>-dirty` | the jar was built from a MODIFIED tree, so it is **not any commit** |
+  > | `unknown -- NOT built by dev-server.sh` | the jar came from a hand build, an IDE, or another tree. **Unbound.** |
+  >
+  > **THE CLASS-SCAN ROWS BELOW ARE STILL OWED**, because this line proves which commit BUILT the jar
+  > and the class scan proves which SYMBOLS are in it -- and a `git checkout` of the wrong branch
+  > followed by a correct build satisfies neither on its own.
+  >
+  > **2026-09-23 PAID FOR THIS.** A boot was credited to the wrong branch because nothing in a log
+  > could tell two jars apart: same version string, same content counts, and the one distinguishing
+  > symbol was a command that logs nothing. It took the archived `.gz` logs, `git reflog` and a jar
+  > probe to settle, **and the settling instrument had to be a jar that had already been
+  > overwritten.** One line at enable replaces all of that.
+  >
   > **If R0 fails, STOP. No other row in the file is readable.**
   >
   > > ### *** AND THE SAME INSTRUMENT FAILURE ARRIVES WITHOUT A JAR: A CHARACTER CLASS THE TOOL DOES NOT READ AS ONE ***
