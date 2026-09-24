@@ -130,7 +130,14 @@ so it is greppable** — and none of them is reproduced here, because two accoun
 
 | family | reach for it when |
 |---|---|
-| *(unheaded)* — **the ambient bullet list**: markers, the four false absences, the false presence, file-list reconciliation, figures and their anchors, pushes, integrity hashes, estimates, provenance | you are about to write down that something was verified |
+| **A CHECK THAT DID NOT RUN, AND A GUARD NOBODY WATCHED FAIL** | you are about to believe a check passed, or explain away a guard that fired |
+| **THE FOUR FALSE ABSENCES, THE FALSE PRESENCE, AND WHAT DISCOVERS** | a search came back empty, or a hit may be prose ABOUT the thing rather than the thing |
+| **ZERO TESTS RAN, AND WORK A REVERT DESTROYED** | a build says SUCCESS, or you are about to undo a mutation |
+| **A VERIFICATION REPORT: WHAT RAN, THE BYTE SHAPE, THE RECONCILED FILE LIST, THE FINAL SUITE** | you are about to write down that something was verified |
+| **PUSHES, READ FROM THE WIRE** | you are pushing, or about to say something was pushed |
+| **WHAT A FIGURE DOES NOT PROVE: INTEGRITY HASHES, CARRIED CONTROLS, EXIT STATUSES** | you are quoting a hash, a control or an exit status as proof |
+| **WHERE A NUMBER CAME FROM TRAVELS WITH IT: ESTIMATES, DESCENT, REVISIONS, TOLERANCES, RETIRED FIXTURES** | a number is going into the record: an estimate, a derived figure, a measurement for later, a tolerance you set |
+| **WHERE A FINDING IS RECORDED, AND HOW PROSE REACHES A COMMAND** | a finding is still only in the chat, or prose is about to reach a command |
 | **A PREDICTION THAT SEVERAL OUTCOMES SATISFY IS NOT A CONTROL, IT IS A RANGE** | you predicted a shape in words and are checking it against numbers |
 | **TWO RULES FROM ONE REVIEW, AT THE SEAM BETWEEN A FIGURE AND THE SENTENCE ABOUT IT** | a revision touched a line it was not revising, or a general form disagrees with its own worked rows |
 | **EVERY FILTER AND EVERY SCRIPTED EDIT NEEDS A POSITIVE CONTROL** | a `perl -i`, a grep filter, a needle or a count — anything whose silence you are about to read as success |
@@ -139,12 +146,6 @@ so it is greppable** — and none of them is reproduced here, because two accoun
 | **A HOLLOW FIXTURE** | a row may never present the condition it claims to test — in SPACE, TIME, KIND or OBSERVABILITY |
 | **THE CREATIVE-DIVERGENCE REGISTER — THE BENCH IS NOT THE GAME** | you are writing or reading a `GATE-*.md` at all: R0, the declared game mode, the standing debt |
 | **THREE THINGS THAT DO NOT ANNOUNCE THEIR OWN ABSENCE** | a planned guard silently failed to land, or a comment names a hazard and is being read as a guard against it |
-
-**THE FIRST ROW HAS NO HEADING IN THE ACCOUNT AND THEREFORE NO NAME** — 721 of that file's 1630
-lines, 44% of it, carrying most of the rules anyone quotes. *The ambient bullet list* is this
-index's invention, not a quotation, and it is the one row a grep will not find. Giving it a real
-heading is owed work, and it is deliberately not done here: this slice moves text and does not
-reword it.
 
 **MERGING, DELETING A BRANCH, OR WRITING A SQUASH BODY: `.claude/skills/merge-procedure`.**
 `git branch --merged` prints NOTHING for a fully merged branch here and two-dot `git diff` inverts

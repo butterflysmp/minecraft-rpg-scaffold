@@ -6,6 +6,8 @@ paths:
 
 ## VERIFICATION — a check that did not run looks exactly like a check that passed
 
+### A CHECK THAT DID NOT RUN, AND A GUARD NOBODY WATCHED FAIL
+
 **Verify a check ran before believing it passed.**
 
 **And when a guard fires and you have an explanation for why it does not count, the
@@ -129,6 +131,9 @@ So:
   > So, for any guard whose failure path has never been observed: **feed it the bad input on
   > purpose.** A `catch` around a library call especially — leniency is a library's default
   > far more often than anyone assumes, and it is never stated where you are looking.
+
+### THE FOUR FALSE ABSENCES, THE FALSE PRESENCE, AND WHAT DISCOVERS
+
 - **FOUR WAYS TO MANUFACTURE A FALSE ABSENCE, AND ALL FOUR END IN "IT ISN'T THERE".** A search that
   returns nothing, an instrument that is wrong, **a pattern that cannot match the text it is looking
   for**, and **a tool that normalises away the very thing being tested for** all produce the same
@@ -250,6 +255,9 @@ So:
   stream is zero bytes and whose `list()` is `null`: it does not throw, it silently
   finds nothing, and on a server whose data folder is already populated that is
   indistinguishable from working. Only a *fresh* data folder exposes it.
+
+### ZERO TESTS RAN, AND WORK A REVERT DESTROYED
+
 - `BUILD SUCCESS` with no `Tests run:` line means **zero tests ran**. Surefire's
   `-Dtest=` takes commas, not `+`; a bad pattern reports success having executed nothing.
 - Never `git checkout --` a file with uncommitted work to undo a mutation. Copy it to the
@@ -274,6 +282,9 @@ So:
   > **Practically: never `|| true` a restore, and prefer `cp` from the scratchpad for every mutated
   > file rather than only the tracked ones.** `cp` works on both, needs no knowledge of what git
   > knows, and is the instrument the rule already names.
+
+### A VERIFICATION REPORT: WHAT RAN, THE BYTE SHAPE, THE RECONCILED FILE LIST, THE FINAL SUITE
+
 - When you report something as verified, **say what you executed** and what it printed.
 - **ANY REPORT QUOTING A BYTE-SHAPE FIGURE CARRIES `./scripts/check-crlf.sh`'s READING**, the way a
   mutation pass carries its marker grep. **A step, not a tool that exists** — its line goes in the
@@ -407,6 +418,8 @@ So:
   > commit whose subject was fixing that line, and a `−1` in the denominator that survived because a
   > second error cancelled it. **Every one of those edits passed *add the parts up*.**
 
+### PUSHES, READ FROM THE WIRE
+
 - **A PUSH NAMES ITS BRANCH.** `git push -u origin <branch>`, always. A bare `git push` resolves
   against whatever the current branch tracks, so it can land unreviewed work on `master`; the
   explicit form fails loudly instead of guessing.
@@ -438,6 +451,8 @@ So:
   >
   > **Practically:** paste the `git ls-remote --heads origin` line for the ref, before and after.
   > One line in a report retires this class.
+
+### WHAT A FIGURE DOES NOT PROVE: INTEGRITY HASHES, CARRIED CONTROLS, EXIT STATUSES
 
 - **AN INTEGRITY FIGURE PROVES WHICH BYTES, NEVER THAT THEY ARE THE RIGHT ONES. READ THE DIFF.**
   The wire SHA, the tree SHA, the blob SHA and `--numstat` all answer *did what I think landed,
@@ -560,6 +575,8 @@ So:
   >
   > **The tell is that the failures are in files your change never went near, at import lines.** The
   > fix is `-am` (or a full-reactor `./mvnw test`), not an investigation.
+
+### WHERE A NUMBER CAME FROM TRAVELS WITH IT: ESTIMATES, DESCENT, REVISIONS, TOLERANCES, RETIRED FIXTURES
 
 - **AN ESTIMATE PLACED BESIDE MEASUREMENTS BECOMES ONE. PROXIMITY LAUNDERS IT.** A number you
   eyeballed, printed in a column of numbers you measured, is indistinguishable from them and inherits
@@ -702,6 +719,8 @@ So:
   > place, each carrying **the fixture it was taken on, the date, and the note that the fixture was
   > subsequently deleted.** The third field is the one that does the work; without it the first two
   > read as an oversight.
+
+### WHERE A FINDING IS RECORDED, AND HOW PROSE REACHES A COMMAND
 
 - **A FINDING THAT LIVES ONLY IN THE CONVERSATION IS NOT RECORDED.** A chat transcript is **not
   greppable by the person who will next touch the file**, does not survive the session, and **cannot
