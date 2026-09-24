@@ -1,9 +1,35 @@
 # GATE — quiver reload feedback: action bar + hotbar sweep
 
-**Status: NOT RUN AGAINST THE LIVE TIP.** Every prediction was written **before** any boot. Readings
+**Status: READ on `c19ff30`, 2026-09-24.** Every prediction was written **before** any boot. Readings
 go **beside** a prediction, never over it, and a prediction is not edited once its row has been read.
+**Ben's ruling, 2026-09-20: readings are verdicts, not figures** — a PASS cell carries no measurement
+unless the row asked for one, and the R0 rows are the ones that asked.
 
-**Branch:** `feat/quiver-feedback`, off `3ae97ff`. **LIVE TIP: `4284936`.**
+> ### *** THE BINDING, BEFORE ANY CELL WAS WRITTEN ***
+>
+> ```
+> $ grep -c "\[Rpg\] Build:" run/logs/latest.log
+> 1
+> $ grep -m1 "\[Rpg\] Build:" run/logs/latest.log
+> [02:39:01] [Server thread/INFO]: [Rpg] Build: c19ff30
+>
+> [02:40:36] BaronVonYeetus joined the game
+> ```
+>
+> **ONE boot in the file, and a player was on.** `c19ff30` appears in no other session.
+>
+> **THE SESSION HAS NO DEPARTURE LINE, AND THAT IS NOT A GAP — IT IS STILL RUNNING.** `latest.log`
+> ends at the join because the log is live; the server JVM is still up. **So this file cannot say how
+> long the session lasted**, only that it began. Said rather than left to look like a truncated log.
+>
+> ### AND UNLIKE `#146`, THE R0 INSTRUMENTS COULD ALL BE RUN FOR REAL
+>
+> The deployed jar is **still the booted one** — mtime `02:38:55`, immediately before the `02:39:01`
+> boot — so R0b and R0d were measured against the bytes that actually ran, rather than established
+> from the commit. `#146`'s equivalents could not be: its deployed content was overwritten 95 seconds
+> after its boot, by this one.
+
+**Branch:** `feat/quiver-feedback`, off `3ae97ff`. **BOOTED TIP: `c19ff30`.**
 **Declared game mode: SURVIVAL — and here it is load-bearing, not a formality.**
 
 > ### *** EVERY READING NAMES THE BUILD IT WAS TAKEN ON, AND READINGS DO NOT CARRY ACROSS A TIP ***
@@ -23,6 +49,19 @@ go **beside** a prediction, never over it, and a prediction is not edited once i
 >
 > **THE ONE ROW WHOSE `91b74c7` READING IS ITS REAL AND ONLY READING IS `P0`**, because P0's subject
 > IS the old build. It is recorded below, bound, and it cannot be re-run after this branch merges.
+>
+> ### *** WHAT WAS RE-READ ON `c19ff30`, AND WHAT WAS NOT ***
+>
+> **Re-read and PASSING:** `R0a`–`R0d`, the whole `A` block (`A1`–`A5`, `A6`–`A8`), the whole `S`
+> block (`S1`–`S8`), `C1`, `P1`, and `H1`–`H8`. **30 cells.**
+>
+> **NOT re-read, and left `_(not run)_` rather than filled:** `D1`, `C2`–`C5`, `P2`–`P4`. **Ben did
+> not report on these and nothing else witnesses them**, so a PASS here would be a reading nobody
+> took. Eight cells, named so the gap is visible rather than inferred from a scan.
+>
+> **`C2`–`C5` are the ones worth coming back for:** they are the cue's deadline-comparison cases —
+> swap away, two quivers, the one-tick race, the logout — and `QuiverCueTest` guards the comparison
+> while these are its only behavioural witnesses. The guard is green; the behaviour is unread.
 
 > ### *** CREATIVE CANNOT READ THIS FILE AT ALL ***
 >
@@ -43,15 +82,15 @@ go **beside** a prediction, never over it, and a prediction is not edited once i
 
 | # | prediction | instrument | READING |
 |---|---|---|---|
-| **R0a** | the build line names this branch's tip | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | _(not run)_ |
-| **R0b** | **6** action-bar sends and **0** chat sends across the **two** quiver notice classes — `QuiverNotice` **4**, `PlumeNotice` **2** | `$j = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'` then a class scan — see below | _(not run)_ |
-| **R0d** | `PlumeDraw` and `QuiverReloadCue` are both in the jar and both reference `settleMaturedReload` | the constant-pool scan below | _(not run)_ |
+| **R0a** | the build line names this branch's tip | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **PASS** *(c19ff30)* -- `[02:39:01] [Rpg] Build: c19ff30`, one boot in the file |
+| **R0b** | **6** action-bar sends and **0** chat sends across the **two** quiver notice classes — `QuiverNotice` **4**, `PlumeNotice` **2** | `$j = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'` then a class scan — see below | **6 / 0** *(c19ff30)* -- MEASURED on the deployed jar, which is still the booted one: `QuiverNotice` sendActionBar **4**, `PlumeNotice` sendActionBar **2**, `sendMessage` **0** in both |
+| **R0d** | `PlumeDraw` and `QuiverReloadCue` are both in the jar and both reference `settleMaturedReload` | the constant-pool scan below | **PASS** *(c19ff30)* -- MEASURED on the deployed jar: `PlumeDraw` **1** reference, `QuiverReloadCue` **1** |
 
 > **R0b READ "4 … in the deployed notice class" UNTIL ITEM 4 LANDED, AND THE SINGULAR WAS THE DEFECT
 > IT NOW MEASURES.** There were always **two** notice classes; the row named one, so a `PlumeNotice`
 > still sending to chat satisfied it. The prediction is corrected rather than annotated because **this
 > row has not been read** — no reading has been written beside it, so nothing is being overwritten.
-| **R0c** | no boot error mentioning `use_cooldown`, `quiver_reload_` or `QuiverSweep` | `Select-String -Path run\logs\latest.log -Pattern 'use_cooldown\|quiver_reload_\|QuiverSweep'` | _(not run)_ |
+| **R0c** | no boot error mentioning `use_cooldown`, `quiver_reload_` or `QuiverSweep` | `Select-String -Path run\logs\latest.log -Pattern 'use_cooldown\|quiver_reload_\|QuiverSweep'` | **PASS** *(c19ff30)* -- 0 matches, and 0 exceptions of any kind in the session. Needle controlled: the same pattern matches 5 times in this file |
 
 **R0b's class scan, since a jar is a ZIP and `Select-String` on it returns nothing for everything:**
 
@@ -97,11 +136,11 @@ $zip.Dispose()
 
 | # | what to do | PREDICTION | READING |
 |---|---|---|---|
-| **A1** | Empty the magazine, then press fire. | The refusal appears **on the action bar**, above the hotbar, reading *"Your quiver is empty -- left-click to reload."* **Nothing in chat.** The dispenser-fail click still plays. | _(not run)_ |
-| **A2** | Hold fire down for five seconds on an empty magazine. | The line **holds still**. It is rewritten at most once per 40 ticks, so it does not flicker, and chat stays empty throughout. | _(not run)_ |
-| **A3** | Left-click to reload with a full magazine of arrows in the inventory. | *"Reloading..."* on the action bar, with the crossbow loading-start sound. | _(not run)_ |
-| **A4** | Press fire during the reload. | *"Reloading -- 1.2s"* (or whatever remains) on the action bar. **No sound** on this one. | _(not run)_ |
-| **A5** | Drop every arrow, empty the magazine, left-click. | *"You have no arrows -- plain Arrows load a quiver."* **Survival only** — creative cannot produce this row at all. | _(not run)_ |
+| **A1** | Empty the magazine, then press fire. | The refusal appears **on the action bar**, above the hotbar, reading *"Your quiver is empty -- left-click to reload."* **Nothing in chat.** The dispenser-fail click still plays. | **PASS, per Ben** *(c19ff30)* |
+| **A2** | Hold fire down for five seconds on an empty magazine. | The line **holds still**. It is rewritten at most once per 40 ticks, so it does not flicker, and chat stays empty throughout. | **PASS, per Ben** *(c19ff30)* |
+| **A3** | Left-click to reload with a full magazine of arrows in the inventory. | *"Reloading..."* on the action bar, with the crossbow loading-start sound. | **PASS, per Ben** *(c19ff30)* |
+| **A4** | Press fire during the reload. | *"Reloading -- 1.2s"* (or whatever remains) on the action bar. **No sound** on this one. | **PASS, per Ben** *(c19ff30)* |
+| **A5** | Drop every arrow, empty the magazine, left-click. | *"You have no arrows -- plain Arrows load a quiver."* **Survival only** — creative cannot produce this row at all. | **PASS, per Ben** *(c19ff30)* |
 
 ---
 
@@ -109,14 +148,14 @@ $zip.Dispose()
 
 | # | what to do | PREDICTION | READING |
 |---|---|---|---|
-| **S1** | Left-click to reload. Watch the Plume's hotbar slot. | The vanilla cooldown **sweep** wipes across the icon and empties over exactly the reload's length (60 ticks authored, modified by any reload-time bonus). | _(not run)_ |
-| **S2** | During that sweep, hold **right-click**. | **The bow does not start drawing at all** — no charge, no animation, no arrow. This is vanilla: `useItem` returns PASS before `ItemStack.use`. | _(not run)_ |
-| **S3** | During the sweep, press fire once and watch the action bar. | *"Reloading -- Xs"* **still appears.** The interact event fires before the cooldown is consulted, which is what makes items 1 and 2 compose. | _(not run)_ |
-| **S4** | Put a **second bow** (`hunters_bow`, or a vanilla bow) in the hotbar and reload the Plume. | **Only the Plume sweeps.** The other bow is untouched and still usable. This is the whole point of the private cooldown group. | _(not run)_ |
-| **S5** | Reload, then switch to another hotbar slot mid-reload, then switch back. | The sweep is **gone while away and correct when you return** — re-derived from the item, not remembered. | _(not run)_ |
-| **S6** | Reload, then **log out** mid-reload and back in. | The sweep is **back and showing the right remainder**, and the reload still matures. A vanilla cooldown does not survive a logout; the deadline is on the item. | _(not run)_ |
-| **S7** | Reload, then **die** mid-reload, then respawn holding the weapon. | Same as S6. | _(not run)_ |
-| **S8** | Let a reload mature while you watch the slot. | The sweep ends **as the magazine refills**, not before and not after. | _(not run)_ |
+| **S1** | Left-click to reload. Watch the Plume's hotbar slot. | The vanilla cooldown **sweep** wipes across the icon and empties over exactly the reload's length (60 ticks authored, modified by any reload-time bonus). | **PASS, per Ben** *(c19ff30)* |
+| **S2** | During that sweep, hold **right-click**. | **The bow does not start drawing at all** — no charge, no animation, no arrow. This is vanilla: `useItem` returns PASS before `ItemStack.use`. | **PASS, per Ben** *(c19ff30)* -- and S2 is the RULED-INTENDED refusal, so this reading is the ruling confirmed rather than a defect |
+| **S3** | During the sweep, press fire once and watch the action bar. | *"Reloading -- Xs"* **still appears.** The interact event fires before the cooldown is consulted, which is what makes items 1 and 2 compose. | **PASS, per Ben** *(c19ff30)* |
+| **S4** | Put a **second bow** (`hunters_bow`, or a vanilla bow) in the hotbar and reload the Plume. | **Only the Plume sweeps.** The other bow is untouched and still usable. This is the whole point of the private cooldown group. | **PASS, per Ben** *(c19ff30)* -- the private cooldown group holds; only the Plume sweeps |
+| **S5** | Reload, then switch to another hotbar slot mid-reload, then switch back. | The sweep is **gone while away and correct when you return** — re-derived from the item, not remembered. | **PASS, per Ben** *(c19ff30)* |
+| **S6** | Reload, then **log out** mid-reload and back in. | The sweep is **back and showing the right remainder**, and the reload still matures. A vanilla cooldown does not survive a logout; the deadline is on the item. | **PASS, per Ben** *(c19ff30)* |
+| **S7** | Reload, then **die** mid-reload, then respawn holding the weapon. | Same as S6. | **PASS, per Ben** *(c19ff30)* |
+| **S8** | Let a reload mature while you watch the slot. | The sweep ends **as the magazine refills**, not before and not after. | **PASS, per Ben** *(c19ff30)* |
 
 **S4 is the row the whole mechanism exists for**, and it is the one that fails loudly if the
 `use_cooldown` group did not land: without a group the cooldown keys on `minecraft:bow` and **every
@@ -202,7 +241,7 @@ held item still carries the very deadline the task was made for.
 
 | # | what to do | PREDICTION | READING |
 |---|---|---|---|
-| **C1** | Reload and wait, holding the weapon, watching the hotbar. | **One** `loading_end` click, **as the sweep empties** -- not before it, not a beat after. The magazine reads full at the same moment. | _(not run)_ |
+| **C1** | Reload and wait, holding the weapon, watching the hotbar. | **One** `loading_end` click, **as the sweep empties** -- not before it, not a beat after. The magazine reads full at the same moment. | **PASS, per Ben** *(c19ff30)* -- **and its second sentence, "the magazine reads full at the same moment", is TRUE for the first time.** It was written with the cue and was false on 91b74c7, where the cue sounded and settled nothing. Item 3s settle is what makes it hold. |
 | **C2** | Reload, then switch to another hotbar slot and stay there past maturity. | **No sound at all.** The held item is not the weapon the task was made for. | _(not run)_ |
 | **C3** | Reload one Plume, switch to a **second** Plume and reload it too, then hold the second and wait. | **Two sounds, each at its own time** -- and each one is only heard if that weapon is the one in hand when its own deadline passes. So expect the second Plume's cue for certain and the first one's only if you are holding it then. | _(not run)_ |
 | **C4** | Reload, then **fire at the exact moment of maturity**. | **One sound at most, never two.** If the shot settles the reload first the cue is silent -- the stamps are gone, so there is nothing for it to match. | _(not run)_ |
@@ -263,7 +302,7 @@ introduce it.**
 | # | what to do | PREDICTION | READING |
 |---|---|---|---|
 | **P0** | **ON `91b74c7`, THE BUILD BEN BOOTED — the repro.** Reload the Plume with arrows in the inventory. Wait until the sweep has fully emptied. **Do NOT left-click.** Draw and release. | **The "held for nothing" refusal, EVERY TIME** — *"The draw was held for nothing -- your quiver is empty."* The quiver still reads `0/25`. Then left-click once: it reloads **instantly, with no second wait**, and now fires. | **REPRODUCED, per Ben, on `91b74c7`.** Bound below. No figures — the reading is a described behaviour, not a measurement. |
-| **P1** | **ON THIS BRANCH'S TIP — the same gesture, exactly.** | **It fires.** The magazine reads its full rounds before the draw starts, the charge ticks climb past step 1, and the release fans its arrows. **No refusal, and no left-click needed.** | _(not run)_ |
+| **P1** | **ON THIS BRANCH'S TIP — the same gesture, exactly.** | **It fires.** The magazine reads its full rounds before the draw starts, the charge ticks climb past step 1, and the release fans its arrows. **No refusal, and no left-click needed.** | **PASS, per Ben** *(c19ff30)* -- **the #147 defect is fixed.** It fires; no left-click needed. P0 reproduced the failure on 91b74c7 and this is the same gesture on the fix. |
 | **P2** | Reload, hold the weapon, and **watch the counter as the `loading_end` click plays**. | The counter reads **full ON the click**, not on the next action. This is C1's second sentence, now met. | _(not run)_ |
 | **P3** | Reload. **Start drawing BEFORE the reload matures** — S2 says the sweep blocks the draw, so begin the moment it clears — and hold through maturity if you can arrange the overlap. | **The draw is not interrupted.** No animation reset, no re-pull, and the charge ticks keep climbing. If the cap rises mid-draw, **the ticks resume up the ladder** rather than stopping. | _(not run)_ |
 | **P4** | Reload to full, then draw and **count the charge clicks**. | **Three clicks**, rising in pitch — the full ladder, because the cap is the settled magazine. Before the fix a matured-unsettled reload capped it at **zero clicks**. | _(not run)_ |
@@ -358,9 +397,9 @@ wording could not see.
 
 | # | what to do | PREDICTION | READING |
 |---|---|---|---|
-| **A6** | Empty the magazine, hold the draw past the floor, and release. | *"The draw was held for nothing -- your quiver is empty. Left-click to reload."* **on the action bar. Nothing in chat.** The dispenser-fail click still plays. | _(not run)_ |
-| **A7** | Remove every plain arrow from your inventory **and your off-hand**, then right-click the Plume. | *"This bow needs a plain Arrow in your off-hand to draw -- a reload cannot take it."* **on the action bar. Nothing in chat.** | _(not run)_ |
-| **A8** | Run the class javadoc's sequence in one breath: release on an empty magazine, left-click as told, then right-click to draw. | **Two different action-bar lines in sequence** — A6's, then A7's — with **neither swallowing the other**. They hold separate throttle keys, and this is the sequence those keys exist for. **Chat stays empty throughout.** | _(not run)_ |
+| **A6** | Empty the magazine, hold the draw past the floor, and release. | *"The draw was held for nothing -- your quiver is empty. Left-click to reload."* **on the action bar. Nothing in chat.** The dispenser-fail click still plays. | **PASS, per Ben** *(c19ff30)* |
+| **A7** | Remove every plain arrow from your inventory **and your off-hand**, then right-click the Plume. | *"This bow needs a plain Arrow in your off-hand to draw -- a reload cannot take it."* **on the action bar. Nothing in chat.** | **PASS, per Ben** *(c19ff30)* |
+| **A8** | Run the class javadoc's sequence in one breath: release on an empty magazine, left-click as told, then right-click to draw. | **Two different action-bar lines in sequence** — A6's, then A7's — with **neither swallowing the other**. They hold separate throttle keys, and this is the sequence those keys exist for. **Chat stays empty throughout.** | **PASS, per Ben** *(c19ff30)* |
 
 > **A8 IS THE ROW THE SEPARATE KEYS WERE WRITTEN FOR, AND MOVING TO THE ACTION BAR MAKES IT HARDER TO
 > READ RATHER THAN EASIER.** An action bar **overwrites**, so the first line is gone by the time the
@@ -401,14 +440,14 @@ colour is the only bright hue not already spoken for; the argument and the rejec
 
 | # | what to do | PREDICTION | READING |
 |---|---|---|---|
-| **H1** | Hold a Boltor and look at the action bar. | The field renders as **`➹ 8/25`**-shaped text — **a fletched arrow glyph, NOT a missing-glyph box `□`.** This is the only row that can answer whether the font has this codepoint. | _(not run)_ |
-| **H2** | Switch from the quiver weapon to a sword, then back. | The field **disappears and reappears**, within half a second each way. Health, defense and mana never move position on the sword — they close up, they do not shift. | _(not run)_ |
-| **H3** | Fire single shots and watch the count. | It **counts down one per shot**, `25 → 24 → 23`. On the Plume's fanned release it drops by the **arrow count**, not by one. | _(not run)_ |
-| **H4** | Reload and watch the field as the `loading_end` click plays. | It reads **full ON the click**. Mid-reload it keeps showing the **old count** — `➹ 0/25` — and never a timer, a dash or a spinner. | _(not run)_ |
-| **H5** | With no armour on (defense hidden), read the bar. | **`❤ … ➹ … ✦ …`** — three fields, and **aqua next to blue is legible at a glance.** This is the one adjacency on the bar worth a real screen; if the two read as one colour, say so and the colour is re-picked. | _(not run)_ |
-| **H6** | Put armour on and read it again. | **Four fields, `❤ ➹ ⛨ ✦`** — the quiver sits **between health and defense**, Ben's order. Nothing wraps or truncates at the bar's width. | _(not run)_ |
-| **H7** | **THE ROW THE SETTLE EXISTS FOR.** Reload, switch to another hotbar slot before it matures, wait past maturity, switch back. | The field reads **full within half a second** of switching back. **Without the settle it would read `➹ 0/25` until the player acted** — nothing else settles a reload that matured while the weapon was unheld. | _(not run)_ |
-| **H8** | Empty the magazine completely and look. | **`➹ 0/25` — the field is STILL THERE.** It does not vanish at zero. This is the opposite rule to defense, deliberately: an empty quiver is why the weapon will not fire, so it is exactly when the readout matters. | _(not run)_ |
+| **H1** | Hold a Boltor and look at the action bar. | The field renders as **`➹ 8/25`**-shaped text — **a fletched arrow glyph, NOT a missing-glyph box `□`.** This is the only row that can answer whether the font has this codepoint. | **PASS, per Ben** *(c19ff30)* -- **the glyph renders.** U+27B9 is not a missing-glyph box, which is the one question no reading but a boot could answer. |
+| **H2** | Switch from the quiver weapon to a sword, then back. | The field **disappears and reappears**, within half a second each way. Health, defense and mana never move position on the sword — they close up, they do not shift. | **PASS, per Ben** *(c19ff30)* |
+| **H3** | Fire single shots and watch the count. | It **counts down one per shot**, `25 → 24 → 23`. On the Plume's fanned release it drops by the **arrow count**, not by one. | **PASS, per Ben** *(c19ff30)* |
+| **H4** | Reload and watch the field as the `loading_end` click plays. | It reads **full ON the click**. Mid-reload it keeps showing the **old count** — `➹ 0/25` — and never a timer, a dash or a spinner. | **PASS, per Ben** *(c19ff30)* |
+| **H5** | With no armour on (defense hidden), read the bar. | **`❤ … ➹ … ✦ …`** — three fields, and **aqua next to blue is legible at a glance.** This is the one adjacency on the bar worth a real screen; if the two read as one colour, say so and the colour is re-picked. | **PASS, per Ben** *(c19ff30)* -- **aqua against blue is legible.** This was the one adjacency flagged as worth a real screen, and the colour stands as picked. |
+| **H6** | Put armour on and read it again. | **Four fields, `❤ ➹ ⛨ ✦`** — the quiver sits **between health and defense**, Ben's order. Nothing wraps or truncates at the bar's width. | **PASS, per Ben** *(c19ff30)* |
+| **H7** | **THE ROW THE SETTLE EXISTS FOR.** Reload, switch to another hotbar slot before it matures, wait past maturity, switch back. | The field reads **full within half a second** of switching back. **Without the settle it would read `➹ 0/25` until the player acted** — nothing else settles a reload that matured while the weapon was unheld. | **PASS, per Ben** *(c19ff30)* -- **the discriminator row.** Every other H row reads the same with or without the settle; this one does not, and it passed. |
+| **H8** | Empty the magazine completely and look. | **`➹ 0/25` — the field is STILL THERE.** It does not vanish at zero. This is the opposite rule to defense, deliberately: an empty quiver is why the weapon will not fire, so it is exactly when the readout matters. | **PASS, per Ben** *(c19ff30)* |
 
 > ### *** H7 IS THE ROW WHOSE PREDICTION DIFFERS FROM THE CODE'S PREVIOUS BEHAVIOUR, SO READ IT CAREFULLY ***
 >
