@@ -1,10 +1,28 @@
 # GATE — quiver reload feedback: action bar + hotbar sweep
 
-**Status: NOT RUN.** Every prediction was written **before** any boot. Readings go **beside** a
-prediction, never over it, and a prediction is not edited once its row has been read.
+**Status: NOT RUN AGAINST THE LIVE TIP.** Every prediction was written **before** any boot. Readings
+go **beside** a prediction, never over it, and a prediction is not edited once its row has been read.
 
-**Branch:** `feat/quiver-feedback`, off `3ae97ff`.
+**Branch:** `feat/quiver-feedback`, off `3ae97ff`. **LIVE TIP: `4284936`.**
 **Declared game mode: SURVIVAL — and here it is load-bearing, not a formality.**
+
+> ### *** EVERY READING NAMES THE BUILD IT WAS TAKEN ON, AND READINGS DO NOT CARRY ACROSS A TIP ***
+>
+> Ben booted **`91b74c7`** and read rows from the `A`, `S`, `C` and `D` blocks. **`4284936` then
+> changed what three of those blocks are about** — `PlumeNotice` moved to the action bar (the `A`
+> block's surface), `QuiverReloadCue` began settling (the `C` block's whole subject), and
+> `PlumeDraw.cap` began settling before it reads.
+>
+> **SO THOSE READINGS ARE HISTORY AGAINST `91b74c7`, NOT THE STATE OF THIS GATE.** A reading carried
+> forward unremarked is a reading bound to the wrong subject — the same failure as a row read off the
+> wrong jar, arriving through time instead of through a worktree. **The gate is re-read on `4284936`.**
+>
+> **Practically: a reading written into this file carries the build it was taken on, in the cell.**
+> `PASS (91b74c7)` and `PASS (4284936)` are different facts, and only the second is this gate passing.
+> A cell reading bare `PASS` is a cell nobody can bind, and it is not accepted here.
+>
+> **THE ONE ROW WHOSE `91b74c7` READING IS ITS REAL AND ONLY READING IS `P0`**, because P0's subject
+> IS the old build. It is recorded below, bound, and it cannot be re-run after this branch merges.
 
 > ### *** CREATIVE CANNOT READ THIS FILE AT ALL ***
 >
@@ -244,7 +262,7 @@ introduce it.**
 
 | # | what to do | PREDICTION | READING |
 |---|---|---|---|
-| **P0** | **ON `91b74c7`, THE BUILD BEN BOOTED — the repro.** Reload the Plume with arrows in the inventory. Wait until the sweep has fully emptied. **Do NOT left-click.** Draw and release. | **The "held for nothing" refusal, EVERY TIME** — *"The draw was held for nothing -- your quiver is empty."* The quiver still reads `0/25`. Then left-click once: it reloads **instantly, with no second wait**, and now fires. | _(not run)_ |
+| **P0** | **ON `91b74c7`, THE BUILD BEN BOOTED — the repro.** Reload the Plume with arrows in the inventory. Wait until the sweep has fully emptied. **Do NOT left-click.** Draw and release. | **The "held for nothing" refusal, EVERY TIME** — *"The draw was held for nothing -- your quiver is empty."* The quiver still reads `0/25`. Then left-click once: it reloads **instantly, with no second wait**, and now fires. | **REPRODUCED, per Ben, on `91b74c7`.** Bound below. No figures — the reading is a described behaviour, not a measurement. |
 | **P1** | **ON THIS BRANCH'S TIP — the same gesture, exactly.** | **It fires.** The magazine reads its full rounds before the draw starts, the charge ticks climb past step 1, and the release fans its arrows. **No refusal, and no left-click needed.** | _(not run)_ |
 | **P2** | Reload, hold the weapon, and **watch the counter as the `loading_end` click plays**. | The counter reads **full ON the click**, not on the next action. This is C1's second sentence, now met. | _(not run)_ |
 | **P3** | Reload. **Start drawing BEFORE the reload matures** — S2 says the sweep blocks the draw, so begin the moment it clears — and hold through maturity if you can arrange the overlap. | **The draw is not interrupted.** No animation reset, no re-pull, and the charge ticks keep climbing. If the cap rises mid-draw, **the ticks resume up the ladder** rather than stopping. | _(not run)_ |
@@ -254,11 +272,51 @@ introduce it.**
 >
 > It is written as a row rather than as a paragraph because **the cause was established by READING and
 > not by measurement**, and this sheet's standing rule is that a verdict must not stand in for a
-> reading. If P0 is skipped, say so — *"the fix was accepted on the trace alone"* — rather than
-> leaving a blank that reads like an oversight.
+> reading.
 >
-> **If P0 does NOT reproduce**, the diagnosis is wrong and P1 proves nothing: a green P1 on a defect
+> **If P0 did NOT reproduce**, the diagnosis is wrong and P1 proves nothing: a green P1 on a defect
 > that never presented is the hollow-fixture shape with the *defect* as the missing condition.
+>
+> ### *** P0'S READING IS BOUND TO A SESSION BEFORE IT IS RECORDED, BECAUSE A REPORT IS NOT A BINDING ***
+>
+> **The reading is Ben's, and Ben's report names a behaviour, not a build.** *"Arrows are taken, the
+> sweep appears. When it finishes the quiver still says 0, the bow won't fire, until left-click, then
+> it fires without a second reload."* That sentence is true of some boot; **which boot is a separate
+> fact, and it is the one R0 exists to establish.** Recording the report without it would be a true
+> reading bound to no subject — the failure R0's own account calls *"a true reading bound to the wrong
+> subject"*, which no amount of distrusting the answer catches.
+>
+> **THE BINDING, and the instrument is the build line `#145` added for exactly this:**
+>
+> ```
+> $ grep -c "\[Rpg\] Build:" run/logs/latest.log
+> 1
+> $ grep -m1 "\[Rpg\] Build:" run/logs/latest.log
+> [00:34:39] [Server thread/INFO]: [Rpg] Build: 91b74c7
+> [00:34:55] [User Authenticator #0/INFO]: UUID of player BaronVonYeetus is b6ae27e9-...
+> [00:34:56] [Server thread/INFO]: BaronVonYeetus joined the game
+> [00:42:00] ... left ... [00:42:01] ... rejoined ...
+> [00:48:31] [Server thread/INFO]: BaronVonYeetus left the game
+> ```
+>
+> **Four things make it a binding rather than a coincidence:**
+>
+> - **`91b74c7` is the tip P0 is written against**, and it is the branch tip the fix was built on.
+> - **ONE boot in that file**, so the build line and the play session cannot belong to different runs.
+>   A log with two `Build:` lines would bind nothing.
+> - **A player was on for ~14 minutes of it** — joined `00:34:56`, left `00:48:31`, with a relog in the
+>   middle. An empty session would carry the build and witness no behaviour.
+> - **`91b74c7` appears in NO OTHER SESSION.** Swept every `run/logs/*.log.gz`: only three archives
+>   carry a build line at all (`b487971`, `unknown -- NOT built by dev-server.sh`, `cf1f68e`), because
+>   the line itself only landed at `3ae97ff`. **So there is exactly one candidate session and no
+>   ambiguity to resolve.**
+>
+> **WHAT THE LOG DOES NOT DO, SAID PLAINLY: it does not witness the behaviour.** Drawing a bow and
+> reading an action bar are not logged, and nothing in that session's `[Rpg]` lines mentions the Plume
+> — the `[plume]` warnings are the two that fire only when something is wrong, and neither did. **The
+> log binds the SESSION to the BUILD. Ben binds the BEHAVIOUR to the SESSION.** Both halves are needed
+> and only one of them is mechanical; recording it as *"REPRODUCED, per Ben"* rather than
+> *"REPRODUCED"* is what keeps that visible.
 
 > ### *** P3 IS THE ROW FOR A HAZARD THE JAR ALREADY HALF-ANSWERED, AND ONLY THE CLIENT HALF IS OPEN ***
 >
