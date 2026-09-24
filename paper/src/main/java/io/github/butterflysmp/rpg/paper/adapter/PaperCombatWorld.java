@@ -920,10 +920,18 @@ public final class PaperCombatWorld implements CombatWorld {
      * beam and a burst cannot drift in how they read the same authored fields.
      *
      * <p>The 8-arg overload: offsets, then {@code extra}, then the DATA OBJECT. Moving here from
-     * the 7-arg one is provably a no-op for every visual that takes no data, rather than an argued
+     * the 7-arg one was provably a no-op for every visual that takes no data, rather than an argued
      * one -- in the pinned API the 7-arg default chain is literally
-     * {@code spawnParticle(..., extra, null)}, and {@code p.dust()} is null for all five particles
-     * in shipped content. See VisualSpec.Particles.
+     * {@code spawnParticle(..., extra, null)}. See VisualSpec.Particles.
+     *
+     * <p><b>AND {@code p.dust()} IS NO LONGER NULL FOR EVERYTHING SHIPPED, WHICH IS WHY THIS
+     * PARAGRAPH IS NOT THE ONE IT USED TO BE.</b> It read "{@code p.dust()} is null for all five
+     * particles in shipped content", which was true when the overload changed and is false now.
+     * Measured 2026-09-24, needle anchored to the YAML key so prose naming DUST is not counted as
+     * authoring it: <b>seven</b> DUST steps ship in {@code content/visuals/} -- five beams, and
+     * {@code emerald_impact} and {@code lapis_impact} on the POINT path, which is this method's
+     * other caller. So the data object reaching {@link #present} is load-bearing today, and a
+     * reader must not conclude from this javadoc that nothing exercises it.
      */
     private void particles(VisualSpec.Particles p, Location at) {
         world.spawnParticle(p.particle(), at, p.count(),

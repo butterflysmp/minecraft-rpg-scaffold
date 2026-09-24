@@ -294,13 +294,40 @@ triggers:
       # a set of exactly one. See AbilitySchema.parseBody, which is where the second body kind will
       # turn this into a switch.
       #
-      # WHAT MAKES IT INERT, AND IT IS ONE SWITCH RATHER THAN THE THREE THE API ADVERTISES:
-      # setNoPhysics(true) turns off block collision, entity collision, ProjectileHitEvent,
-      # in-ground sticking AND gravity together -- measured from the pinned jar, not assumed.
-      # setPickupStatus(DISALLOWED) is SEPARATE and load-bearing, because noPhysics OPENS a mid-air
-      # pickup path that no ordinary arrow has. Both are in PaperCombatWorld.spawnBoltMarker with
-      # the bytecode that says so.
+      # WHAT MAKES IT INERT -- AND setNoPhysics(true) IS NOT IT. THIS NOTE SAID IT WAS, UNTIL
+      # 2026-09-23, AND THAT ONE CALL WAS THE DEFECT RATHER THAN THE MECHANISM.
+      #
+      # #144 measured it: noPhysics also handed the arrow's motion to the CLIENT, which simulated it
+      # and drew it wrongly oriented for the first stretch of every shot. Spike modes B and E differ
+      # in that single line and nothing else; Ben read B as "still has the problem" and E as
+      # "perfect, exactly what we're looking for". The body now spawns with physics AND gravity ON
+      # and is driven every tick. PaperCombatWorld.spawnBoltMarker carries the standing
+      # "DO NOT ADD setNoPhysics(true) BACK. IT IS THE DEFECT, MEASURED."
+      #
+      # WHAT MAKES IT INERT INSTEAD IS A LIST, NOT A SWITCH: setDamage(0), setKnockbackStrength(0),
+      # setCritical(false), setShooter(null), setPersistent(false), an armed lifetime that retires a
+      # stuck body in one tick, and a cancelled ProjectileHitEvent for any PDC-tagged body.
+      # setPickupStatus(DISALLOWED) is SEPARATE and load-bearing on its own. All of them are in
+      # PaperCombatWorld.spawnBoltMarker with the bytecode that says so.
       body: arrow
+
+      # ================== THE TRAIL: BEN'S REQUEST, AND ITS NUMBERS ARE PROVISIONAL ==================
+      #
+      # A very slight dark-violet dust trail behind each arrow. ONE DUST mote per tick at a bolt's
+      # live position: the sparsest trail in the project PER BOLT -- and, because this weapon fires
+      # 1/3/5, the densest thing on master PER RELEASE at full charge. Both figures and the 595-mote
+      # shot total are in dragons_plume_trail.yml; this line is the pointer, that file is the account.
+      #
+      # THE NUMBERS ARE ARITHMETIC, NOT A BOOT: colour [60, 20, 90] and size 0.6, where 0.6 is below
+      # EVERY other authored size in content/visuals/. dragons_plume_trail.yml carries the density
+      # table, the colour-ownership check, and which value moves first if it reads wrong. The
+      # convention is flint_staff.yml's: the trail is authored first so the reading comes before the
+      # tuning.
+      #
+      # ALL FOUR CASTS NAME THE SAME FILE rather than one each. The four differ in damage and in
+      # homing, not in what the arrow looks like in the air -- and one id is what lets a tuning pass
+      # move all four at once.
+      trail: dragons_plume_trail
 
       # ================== THE HOMING FIGURES ARE INHERITED AND UNJUDGED ==================
       #
@@ -386,24 +413,175 @@ triggers:
   #
   # ================== WHAT EVERY BAND SHARES ==================
   #
-  # THE SAME FLIGHT AS THE CHARGED SHOT, AND THAT IS A DERIVATION RATHER THAN A RULING. R11 and R12
-  # rule the reach and the drop for THE WEAPON; nothing rules the taps separately. Same flight minus
-  # the seeking, labelled a derivation so nobody later cites it as a decision Ben made.
+  # THE FLIGHT IS NO LONGER THE SAME AS THE CHARGED SHOT. R14 SPLITS THE SPEEDS -- see below.
+  # R11 and R12 rule the reach and the drop for THE WEAPON, and `draw:` still carries both unchanged.
   #
-  # cooldown_ticks: 0 ON EACH -- R7, "fast shooting arrows is fine". THE TAP IS GATED BY BEING A
-  # WORSE SHOT, NOT BY A TIMER, and the 60-tick reload above is what prices spamming it.
+  # ================== R14: TAP SPEED FOLLOWS VANILLA'S BOW-POWER CURVE ==================
+  #
+  # *** BEN'S RULING, 2026-09-24, RECORDED AS HIS: tap1 0.5, tap2 1.3, tap3 2.2. `draw:` STAYS 2.5,
+  # so R11's ruled ~300-block reach is untouched. ***
+  #
+  # *** THE DERIVATION, CORRECTED 2026-09-24. IT IS THE CURVE AT t = 5 / 12 / 18. ***
+  #
+  #     f = t / 20            p = (f^2 + 2f) / 3            speed = 2.5 * p
+  #
+  #     t = 5   ->  0.468750  ->  0.5
+  #     t = 12  ->  1.300000  ->  1.3
+  #     t = 18  ->  2.175000  ->  2.2
+  #
+  #   All three, to one decimal place. Computed, not reasoned.
+  #
+  # *** THIS BLOCK FIRST SAID "AT EACH BAND'S MIDPOINT", AND THAT WAS THE REVIEW SEAT'S ERROR, NOT
+  # BEN'S. *** The seat's brief described the values as the curve at the band midpoints; they are
+  # not, because the seat guessed the band edges wrongly. Ben's values were right the whole time and
+  # only the stated reason was wrong. The correction is Ben's, 2026-09-24.
+  #
+  #   THE MEASURED MIDPOINT TABLE IS KEPT BESIDE IT, because it is what caught the error and because
+  #   a reader who reaches for "the midpoint" should meet the numbers that reading actually gives.
+  #   BANDS (DrawRelease.bandFor): band 1 = 3..8, band 2 = 9..14, band 3 = 15..19.
+  #
+  #   | band | midpoint t | curve x2.5 AT THE MIDPOINT | BEN RULED | midpoint reproduces it? |
+  #   |------|------------|----------------------------|-----------|-------------------------|
+  #   |  1   |    5.5     |           0.5214           |    0.5    |   yes, by rounding      |
+  #   |  2   |   11.5     |           1.2339           |    1.3    |   NO -- gives 1.2       |
+  #   |  3   |   17.0     |           2.0188           |    2.2    |   NO -- gives 2.0       |
+  #
+  #   So the midpoint reading reproduces ONE of three and the t = 5/12/18 reading reproduces ALL
+  #   THREE. That is what settles which derivation is the real one.
+  #
+  # The curve at every tick a tap can occupy, so both readings can be checked against one table:
+  #
+  #     t     3      4      5      6      7      8   |   9     10     11     12     13     14
+  #   2.5p  0.269  0.367  0.469  0.575  0.685  0.800 | 0.919  1.042  1.169  1.300  1.435  1.575
+  #
+  #     t    15     16     17     18     19   |  20
+  #   2.5p  1.719  1.867  2.019  2.175  2.335 | 2.500
+  #
+  #   *** THE VALUES NEVER MOVED AND WERE NEVER IN DOUBT. *** What changed is the sentence next to
+  #   them. Recorded this way rather than quietly rewritten, because "these are the midpoints" was
+  #   published in a squash body and in this file, and a derivation corrected without saying so reads
+  #   a month later like one nobody ever got wrong.
+  #
+  # ================== KNOWN CONSEQUENCES OF THE SPLIT -- STATED, NOT FIXED ==================
+  #
+  # *** 1. FLAT-FIRE REACH IS EXACTLY PROPORTIONAL TO SPEED, AND tap1 BARELY LEAVES THE PLAYER. ***
+  #
+  #   ProjectileFlight integrates `pos += v` then `v.y -= gravity`, with NO DRAG. So the time to
+  #   fall a fixed height does not depend on horizontal speed at all: drop after n ticks is
+  #   0.05 * n(n-1)/2, which reaches a 1.62-block eye height at n = 9 for EVERY band.
+  #
+  #     reach = speed * 9
+  #
+  #   | band | speed | flat reach (eye 1.62) | lifetime-bound reach (120t) |
+  #   |------|-------|-----------------------|-----------------------------|
+  #   | tap1 |  0.5  |      4.5 blocks       |          60 blocks          |
+  #   | tap2 |  1.3  |     11.7 blocks       |         156 blocks          |
+  #   | tap3 |  2.2  |     19.8 blocks       |         264 blocks          |
+  #   | draw |  2.5  |     22.5 blocks       |         300 blocks  (R11)   |
+  #
+  #   CONTROLLED: the 22.5 for speed 2.5 reproduces ProjectileFlight's own independently-recorded
+  #   figure -- "a flat stray lands about 22.5 blocks" -- so the simulation agrees with a
+  #   measurement already in the tree rather than only with itself.
+  #
+  #   *** tap1's 4.5 BLOCKS IS THE NUMBER TO LOOK AT. *** That is barely past melee range, on the
+  #   band whose whole purpose (R4''') is that the weapon is "never dead at close range". It may be
+  #   exactly right -- a floor band that only works in your face -- but it is a large behaviour
+  #   change from 22.5 and it is not something the ruling mentions. FLAGGED, NOT CHANGED.
+  #
+  # *** 2. THE TRAIL IS DENSER PER BLOCK AT LOWER SPEED, BY 1/speed. *** Every band authors
+  #   `trail: dragons_plume_trail`, emitted per tick, so emissions per block are 1/speed:
+  #
+  #     draw 2.5 -> 0.40/block     tap3 2.2 -> 0.45     tap2 1.3 -> 0.77     tap1 0.5 -> 2.00
+  #
+  #   *** tap1's TRAIL IS FIVE TIMES DENSER PER BLOCK THAN THE CHARGED SHOT'S. *** This branch is
+  #   the one that ADDED that trail and its rows are unread, so the trail is being tuned against a
+  #   density that this ruling changes by 5x on one band. Boot rows T1-T3 below.
+  #
+  # *** 3. WHAT ELSE READS THE TAP SPEEDS -- THE WALK, AND IT IS SHORT. ***
+  #
+  #   | reader | reads a tap speed? |
+  #   |--------|--------------------|
+  #   | CastExecutor.launch -- `aim.direction().scale(spec.speed())` | YES. The only one. |
+  #   | HOMING STEER (ProjectileFlight.steer / Seek)                 | NO -- and not because of the |
+  #   |   number, but because NO TAP AUTHORS A homing BLOCK AT ALL. R4''' is "one arrow, no homing", |
+  #   |   a null Seek returns the velocity untouched on steer's first line, and each band repeats    |
+  #   |   that absence in its own comment. So the speed split cannot reach the seeking code.         |
+  #   | The Dragon's Breath (#135)      | NO. It is not on this branch and authors no tap binding.   |
+  #   | ProjectileFlight's re-aim scale | reads `velocity.length()`, which is a CONSEQUENCE of speed |
+  #   |   rather than a second reader -- and it is inside steer, which taps never enter.             |
+  #   | max_lifetime_ticks / range      | unchanged at 120. Nothing scales it by speed, which is why |
+  #   |   the lifetime-bound column above moves while the AUTHORED lifetime does not.                |
+  #
+  #   Measured 2026-09-24: `grep -rn "speed()" core/src/main paper/src/main` returns four sites --
+  #   CastExecutor's dash impulse, CastExecutor's projectile launch, EffectApplier's launch lift,
+  #   and PaperCombatWorld's PARTICLE speed, which is an unrelated field on a particle spec.
+  #
+  # ================== R15 (PROPOSED, NOT RULED): A SHORT TAP COOLDOWN ==================
+  #
+  # *** cooldown_ticks: 8 ON EACH BAND. ONE VALUE, PROVISIONAL, FOR BEN TO RULE AT THE BOOT. ***
+  # Ben asked for a short cooldown; this is a proposal and the gate carries the question row.
+  #
+  # THE ARITHMETIC, AGAINST THE BAND LENGTHS:
+  #
+  #   band 1 = 3..8   (6 ticks wide, minimum hold 3)
+  #   band 2 = 9..14  (6 ticks wide, minimum hold 9)
+  #   band 3 = 15..19 (5 ticks wide, minimum hold 15)
+  #
+  #   The hold is itself a rate limit, and it is the whole reason 8 is proposed rather than 20:
+  #   a band-3 tap already costs at least 15 ticks of holding, so ANY cooldown at or below 15 is
+  #   INVISIBLE on band 3. The only band a short cooldown actually gates is band 1, whose 3-tick
+  #   minimum hold is the fastest shot this weapon has.
+  #
+  #     cooldown  binds on        band-1 rate         verdict
+  #        0      nothing         as fast as you click   today: unbounded
+  #        4      nothing much    ~4t = 5.0/s            below the input grid; near-inert
+  #        8      band 1 only     ~8t = 2.5/s            PROPOSED
+  #       12      bands 1 and 2   ~12t = 1.67/s          matches locust's 12; may feel sluggish
+  #       20      all three       ~20t = 1.0/s           prices the tap like a charged release
+  #
+  #   8 IS A MULTIPLE OF 4, which is `CLAUDE.md`'s standing rule -- a held right-click's inputs are
+  #   quantised onto a 4-tick grid, so an authored 5, 6 or 7 IS an authored 8 and the tooltip would
+  #   not say so. 12 and 20 are the neighbouring legal values; 4 is legal and near-inert.
+  #
+  # *** AND THE THREE-BUCKET PROPERTY IS NOW LIVE. THE COMMENT BELOW PREDICTED THIS EXACT MOMENT. ***
   #
   #   *** A 0 LEFT IMPLICIT IS EXACTLY WHAT SOMEBODY LATER "FIXES". *** PLAN-dragons-plume.md 7.2
   #   wrote the condition before the ruling existed: "if the draw is meant to be the only gate, the
-  #   answer is 0 and it should be authored as a RULING -- not left at 0 by omission." It renders
+  #   answer is 0 and it should be authored as a RULING -- not left at 0 by omission." A 0 renders
   #   nothing: cadenceLine drops a free, instant trigger.
   #
-  #   *** AND IT IS NOW THREE BUCKETS, NOT ONE. *** Ability ids are weaponId + "/" + input and
+  #   *** IT IS THREE BUCKETS, NOT ONE. *** Ability ids are weaponId + "/" + input and
   #   CooldownTracker keys on (player, abilityId), so the three bands are on three separate timers.
-  #   INERT TODAY because all three are 0 -- and the moment anyone authors a non-zero cooldown on a
-  #   tap they will be authoring one third of the gate they think they are. The symptom would be a
-  #   spammer beating the cooldown by ALTERNATING BANDS, which reads as the cooldown not working.
-  #   See PlumeDraw.TAP_INPUTS, which is where this property was created.
+  #   This was written while all three were 0 and INERT, with the sentence: "the moment anyone
+  #   authors a non-zero cooldown on a tap they will be authoring one third of the gate they think
+  #   they are." THAT MOMENT IS THIS ONE. See PlumeDraw.TAP_INPUTS, where the property was created.
+  #
+  #   *** BUT THE DAMAGE IS SMALLER THAN THE PREDICTION, AND THE REASON IS THE HOLD. *** To alternate
+  #   bands a player must alternate HOLD TIMES -- 3..8, then 9..14, then 15..19 ticks. Cycling all
+  #   three costs at least 3 + 9 + 15 = 27 ticks of holding alone, which is SLOWER than simply
+  #   spamming band 1 against an 8-tick cooldown (8 ticks per shot). So the evasion is available and
+  #   is not worth doing: the fastest attack the weapon has is band-1 spam, and band 1's own bucket
+  #   gates it fully.
+  #
+  #   *** SO THE THREE BUCKETS ARE A REAL PROPERTY AND A NON-ISSUE AT THIS VALUE, AND THAT IS A
+  #   CLAIM ABOUT THE VALUE RATHER THAN ABOUT THE DESIGN. *** It stops being true if the cooldown
+  #   goes above roughly the band-cycle cost. At 20 the alternation starts to pay. If Ben rules a
+  #   larger value, ONE SHARED BUCKET becomes the right shape and that is a code change in
+  #   PlumeDraw, not a content one.
+  #
+  # *** R15 IS VISIBLE ON THE TOOLTIP, AND THAT WAS MEASURED RATHER THAN PREDICTED. ***
+  #
+  #   The 0 above rendered NOTHING -- the comment says so in terms: "cadenceLine drops a free,
+  #   instant trigger." A non-zero value does not get dropped, so each band now renders a line.
+  #   `GoldenLoreTest` went red on exactly this and the regenerated golden is +3 / -0:
+  #
+  #       + "Cooldown: 0.4s" color=#555555     x3, one per tap band
+  #
+  #   8 ticks / 20 = 0.4s. THREE IDENTICAL LINES, one under each of Tap1 / Tap2 / Tap3 -- so the
+  #   tooltip grows by three lines and says the same thing three times. That is a consequence of the
+  #   bands being three separate bindings (the same shape that gives three cooldown buckets), and it
+  #   is FLAGGED rather than fixed: if it reads badly, the fix is a tooltip decision for Ben and not
+  #   a reason to change the cooldown. Gate row Q-CD carries the question.
   #
   # DAMAGE IS AUTHORED, NEVER COMPUTED. Three literals is the point of this shape: every number a
   # player experiences stays in the file Ben can rule on. DO NOT "improve" these into a multiplier
@@ -416,15 +594,26 @@ triggers:
 
   # --- BAND 1: held 3-8 ticks, the floor band ---------------------------------------------------
   tap1:
-    cooldown_ticks: 0
+    # R15 PROPOSED, NOT RULED -- Ben rules at the boot, gate row Q-CD. See the arithmetic above:
+    # this is the ONLY band an 8-tick cooldown actually gates, because the other two cost more than
+    # 8 ticks just to hold.
+    cooldown_ticks: 8
     cast:
       type: projectile
-      speed: 2.5
+      # R14, Ben's ruling 2026-09-24. The curve at t = 5 is 0.468750, which is 0.5 to one decimal.
+      # (This comment briefly said the derivation reproduced here and not on the other two bands;
+      # that was the review seat's mistaken midpoint reading. All three reproduce at t = 5/12/18.)
+      # FLAT REACH: 4.5 blocks -- speed * 9, and 9 is the ticks to fall an eye height
+      # under gravity 0.05 whatever the speed. That is barely past melee, on the band that exists
+      # so the weapon is "never dead at close range". Flagged above, not changed.
+      speed: 0.5
       gravity: 0.05
       max_lifetime_ticks: 120
       # See `draw:`'s body note above. A real arrow, oriented along travel, inert in every other
       # way -- and mutually exclusive with `item:`, which the loader refuses rather than resolves.
       body: arrow
+      # The same trail as `draw:`, and deliberately the same FILE: see its note there.
+      trail: dragons_plume_trail
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING RATHER THAN AN OMISSION. R4''' is "one arrow,
       # WITH NO HOMING". AbilitySchema maps a missing section to null and a null Seek makes
       # ProjectileFlight.steer return the velocity untouched on its first line.
@@ -436,15 +625,25 @@ triggers:
 
   # --- BAND 2: held 9-14 ticks ------------------------------------------------------------------
   tap2:
-    cooldown_ticks: 0
+    # R15 PROPOSED, NOT RULED. Band 2's minimum hold is 9 ticks, so an 8-tick cooldown is already
+    # spent by the time the draw is long enough to land here: INERT on this band by arithmetic, and
+    # authored anyway so the three bands say the same thing and a later raise is one edit per band
+    # rather than a discovery that two of them were left at 0.
+    cooldown_ticks: 8
     cast:
       type: projectile
-      speed: 2.5
+      # R14, Ben's ruling 2026-09-24. The curve at t = 12 is 1.300000 EXACTLY -- no rounding at all
+      # on this band. (This comment briefly claimed the derivation was band 2's midpoint and did not
+      # reproduce; the midpoint was the review seat's mistaken reading. See the block above.)
+      # FLAT REACH: 11.7 blocks.
+      speed: 1.3
       gravity: 0.05
       max_lifetime_ticks: 120
       # See `draw:`'s body note above. A real arrow, oriented along travel, inert in every other
       # way -- and mutually exclusive with `item:`, which the loader refuses rather than resolves.
       body: arrow
+      # The same trail as `draw:`, and deliberately the same FILE: see its note there.
+      trail: dragons_plume_trail
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING. Same as band 1 and for the same reason;
       # repeated at each binding rather than stated once, because an absence is invisible and a
       # reader checking THIS binding must not have to find the note on another one.
@@ -455,15 +654,24 @@ triggers:
 
   # --- BAND 3: held 15-19 ticks, one tick short of a charged release ----------------------------
   tap3:
-    cooldown_ticks: 0
+    # R15 PROPOSED, NOT RULED. Band 3's minimum hold is 15 ticks, so an 8-tick cooldown is INVISIBLE
+    # here -- the hold is nearly twice the timer. Authored for the same consistency reason as tap2.
+    cooldown_ticks: 8
     cast:
       type: projectile
-      speed: 2.5
+      # R14, Ben's ruling 2026-09-24. The curve at t = 18 is 2.175000, which is 2.2 to one decimal.
+      # (This comment briefly claimed the derivation was band 3's midpoint and did not reproduce; the
+      # midpoint was the review seat's mistaken reading. See the block above.)
+      # FLAT REACH: 19.8 blocks -- the closest of the three to the charged shot's 22.5, which is
+      # what a band one tick short of a full charge should look like.
+      speed: 2.2
       gravity: 0.05
       max_lifetime_ticks: 120
       # See `draw:`'s body note above. A real arrow, oriented along travel, inert in every other
       # way -- and mutually exclusive with `item:`, which the loader refuses rather than resolves.
       body: arrow
+      # The same trail as `draw:`, and deliberately the same FILE: see its note there.
+      trail: dragons_plume_trail
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING -- and it matters most HERE. At 19 ticks held
       # this is one tick from a charged release that DOES home, for 34 rather than 26. The two
       # shots are adjacent in the player's hand and different in every other way; the absent block

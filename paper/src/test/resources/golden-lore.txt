@@ -39,12 +39,15 @@
    "" color=- O=. B=. S=. U=. I=F
    "Dragon's Plume" color=#FFAA00 O=. B=. S=. U=. I=F ["  Tap1" color=#FFFF55 O=. B=. S=. U=. I=F ]
    "Void Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["9" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.4s" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Dragon's Plume" color=#FFAA00 O=. B=. S=. U=. I=F ["  Tap2" color=#FFFF55 O=. B=. S=. U=. I=F ]
    "Void Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["17" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.4s" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Dragon's Plume" color=#FFAA00 O=. B=. S=. U=. I=F ["  Tap3" color=#FFFF55 O=. B=. S=. U=. I=F ]
    "Void Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["26" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.4s" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Patience is the only string it answers to;" color=#AAAAAA O=. B=. S=. U=. I=T
    "what it cannot see, it lets pass." color=#AAAAAA O=. B=. S=. U=. I=T
