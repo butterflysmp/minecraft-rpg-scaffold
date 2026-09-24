@@ -269,11 +269,19 @@ public final class QuiverItems {
      * enchant blob would be a relog-to-unlock one -- and a re-mint happens on every join, every
      * {@code /rpg refresh} and every enchant-table click, so the exploit would be one F3+A away.
      *
-     * <p>The three keys move as a group but are not one value. The count is meaningful alone -- most
-     * quivers are not mid-reload -- while the two reload ticks are two halves of ONE fact and are
-     * carried together or not at all, which is the {@code classDamageBoost} discipline rather than
-     * the {@code enchantData} one. A half-carried reload would be a weapon with a deadline and no
-     * start, and the restart guard's bound is the start.
+     * <p>The keys move as a group but are not one value. The magazine count is meaningful alone --
+     * most quivers are not mid-reload -- while a RUNNING RELOAD is three values that are one fact:
+     * the start, the deadline and the rounds paid for. They are carried together or not at all,
+     * which is the {@code classDamageBoost} discipline rather than the {@code enchantData} one. A
+     * half-carried reload would be a weapon with a deadline and no start, and the restart guard's
+     * bound is the start.
+     *
+     * <p><b>THE RELOAD USED TO BE CARRIED WITHOUT ITS PAYLOAD, AND THAT IS WHY THE GROUPING IS NOW
+     * SPELLED OUT.</b> {@code quiverReloadPending} shipped in Slice E and was added to the WRITE site
+     * and not to this one, so a re-mint produced a reload that matured into an empty magazine with the
+     * arrows already spent. The rule that would have caught it: <b>a value stamped as part of a group
+     * is carried as part of that group</b>, and {@code QuiverReloadCarrySignatureTest} now fails the
+     * build if a fourth key joins the stamp and not this method.
      */
     public static void carry(ItemMeta from, ItemMeta to, Keys keys) {
         PersistentDataContainer source = from.getPersistentDataContainer();
@@ -291,9 +299,27 @@ public final class QuiverItems {
 
         Long startedAt = source.get(keys.quiverReloadStartedAt, PersistentDataType.LONG);
         Long completesAt = source.get(keys.quiverReloadCompletesAt, PersistentDataType.LONG);
+        // *** THE PENDING COUNT TRAVELS WITH THE DEADLINE. IT DID NOT UNTIL 2026-09-24, AND THE
+        // *** RELOAD MATURED INTO NOTHING.
+        //
+        // Slice E made reloads PARTIAL and added quiverReloadPending -- the rounds paid for at the
+        // start -- beside these two stamps in Quivers.beginReload. It was never added HERE, so a
+        // re-mint carried the deadline and dropped the payload. The arrows are taken at the START
+        // (RULING 3), so the sequence was: pay, re-mint, mature, receive NOTHING. pendingRounds()
+        // answers 0 for an absent key and Quiver.reload(loaded, 0, cap) is the magazine unchanged.
+        //
+        // AND A RE-MINT HAPPENS ON EVERY JOIN, so the way to hit it was to reload and relog -- the
+        // MIRROR of the relog-to-refill exploit this method's javadoc exists to prevent.
+        //
+        // All THREE move together, not two plus one: a deadline whose payload is gone is worse than
+        // no reload at all, because the arrows have already been spent.
+        Integer pending = source.get(keys.quiverReloadPending, PersistentDataType.INTEGER);
         if (startedAt != null && completesAt != null) {
             target.set(keys.quiverReloadStartedAt, PersistentDataType.LONG, startedAt);
             target.set(keys.quiverReloadCompletesAt, PersistentDataType.LONG, completesAt);
+            if (pending != null) {
+                target.set(keys.quiverReloadPending, PersistentDataType.INTEGER, pending);
+            }
         }
     }
 }

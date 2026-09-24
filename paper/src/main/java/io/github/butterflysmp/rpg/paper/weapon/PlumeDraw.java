@@ -318,8 +318,11 @@ public final class PlumeDraw {
             return;
         }
 
+        // cap() SETTLES a matured reload and then reads the hand itself, so `held` is deliberately not
+        // passed: it was read above and the settle would leave it stale. That is why the parameter is
+        // gone -- see cap()'s own note.
         int ready = DrawCharge.affordableStep(DrawCharge.stepsFor(player.getActiveItemUsedTime()),
-                cap(held, weapon.get(), player));
+                cap(weapon.get(), player));
 
         int alreadyTold = announced.getOrDefault(id, 0);
         // ONE SOUND PER STEP GAINED, not per tick, and the loop covers a tick that crosses two
@@ -338,10 +341,44 @@ public final class PlumeDraw {
      *
      * <p>A weapon with no quiver is capped only by {@link DrawCharge#MAX_ARROWS} -- there is no
      * magazine to run out, so nothing is being promised that cannot be paid.
+     *
+     * <h2>*** IT SETTLES A MATURED RELOAD BEFORE IT READS, AND THE MISSING CALL WAS A SHIPPED BUG ***</h2>
+     *
+     * <p><b>Reported by Ben on #147's boot:</b> <i>"Arrows are taken, the sweep appears. When it
+     * finishes the quiver still says 0, the bow won't fire, until left-click, then it fires without a
+     * second reload."</i>
+     *
+     * <p>The reload is settled LAZILY -- {@code Quivers}' whole design -- and the rounds sit in
+     * {@code quiver_reload_pending} until something reaches {@code finishReload}. This method read
+     * {@code Quivers.stateOf(...).roundsRemaining()}, which reports the LOADED count and nothing else,
+     * so a matured reload read as <b>0</b>. {@code DrawRelease.decide} then returned
+     * {@code Nothing(NO_ROUNDS)}, {@link PlumeNotice#noRounds} said the quiver was empty, and
+     * <b>{@code WeaponFire.attemptFan} was never reached -- so nothing settled the reload either.</b>
+     *
+     * <p><b>THE REFUSAL WAS THE THING THAT KEPT IT BROKEN.</b> The lazy design's promise is <i>"the
+     * next read settles it"</i>, and that promise is void for a reader whose answer is "no". The
+     * weapon stayed dead until a left-click reached {@code Quivers.beginReload}'s own
+     * {@code RELOAD_MATURED} arm -- which is exactly why it presented as firing after a left-click
+     * with no second reload.
+     *
+     * <p>On master since {@code e9e657a} (#78, slice H1): #147 did not introduce it, and the
+     * "sometimes" in the report is whether a shot happened to settle the reload first.
+     *
+     * <h2>AND THE STALE STACK IS NOW UNREPRESENTABLE RATHER THAN GUARDED</h2>
+     *
+     * <p><b>This took an {@code ItemStack} parameter and no longer does.</b> Settling REWRITES the main
+     * hand, so a caller that read the stack, settled, and passed the stack it was already holding would
+     * read the pre-settle copy and be back where it started -- <b>a fix that looks applied and is
+     * not.</b> Reading the hand here, after the settle, removes the parameter that could be stale.
+     * Same move as {@code QuiverState.reloadVerdict} taking no capacity: not forbidden, unexpressible.
      */
-    private int cap(ItemStack held, WeaponDefinition weapon, Player player) {
+    private int cap(WeaponDefinition weapon, Player player) {
         if (!weapon.hasQuiver()) return DrawCharge.MAX_ARROWS;
-        return Quivers.stateOf(held, adapters.keys(), weapon).roundsRemaining();
+        // BEFORE the read, and it is the whole fix. Idempotent, so the once-a-tick call from tick()
+        // costs one write per reload and not one per tick -- see Quivers.settleMaturedReload.
+        Quivers.settleMaturedReload(player, weapon, adapters);
+        return Quivers.stateOf(player.getInventory().getItemInMainHand(), adapters.keys(), weapon)
+                .roundsRemaining();
     }
 
     /**
@@ -430,8 +467,10 @@ public final class PlumeDraw {
         // and kept vanilla's path alive.
         player.clearActiveItem();
 
-        fire(player, weapon.get(), DrawRelease.decide(ticksHeldFor, cap(
-                player.getInventory().getItemInMainHand(), weapon.get(), player)));
+        // THE RELEASE'S CAP, AND THIS IS THE CALL THE BUG REPORT WAS ABOUT. cap() settles a matured
+        // reload before it reads, so a release that lands after the reload matured fires the rounds the
+        // player paid for instead of being refused as empty.
+        fire(player, weapon.get(), DrawRelease.decide(ticksHeldFor, cap(weapon.get(), player)));
     }
 
     /**

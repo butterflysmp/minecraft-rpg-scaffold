@@ -64,6 +64,7 @@ import io.github.butterflysmp.rpg.paper.weapon.PlumeDraw;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
 import io.github.butterflysmp.rpg.paper.weapon.BrokenNotice;
 import io.github.butterflysmp.rpg.paper.weapon.QuiverNotice;
+import io.github.butterflysmp.rpg.paper.weapon.QuiverSweep;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldBlock;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldDurability;
@@ -113,6 +114,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -579,6 +581,17 @@ public final class RpgListeners implements Listener {
         // covers both the stale emberblade you come back to and the live player logging in after
         // a content update. Already on the joining player's own thread; no scheduler hop needed.
         GearRefresher.refresh(event.getPlayer(), weapons, shields, armor, tools, adapters);
+        // AFTER the refresh and not before, because the refresh RE-MINTS every carried weapon --
+        // a fresh ItemStack each time -- and the sweep is read off the item that ends up in the hand.
+        //
+        // THE SWEEP IS RE-DERIVED, NOT RESTORED, and it has to be: a vanilla item cooldown is
+        // runtime-only state on the Player (neither addAdditionalSaveData nor readAdditionalSaveData
+        // touches ItemCooldowns -- measured from the pinned jar), while the reload deadline lives on
+        // the ITEM and survives everything. So a player who logs out mid-reload comes back with the
+        // reload still running and the overlay gone. See QuiverSweep.
+        QuiverSweep.reassert(event.getPlayer(), null,
+                event.getPlayer().getInventory().getItemInMainHand(),
+                weapons, adapters, Bukkit.getCurrentTick());
         // Returns immediately; the read happens on the storage I/O thread.
         profiles.onJoin(event.getPlayer().getUniqueId());
         // And their vault, the same way and on the same thread. A missing file becomes an EMPTY
@@ -1431,6 +1444,32 @@ public final class RpgListeners implements Listener {
      * Dropping the mana pool is also correct game behaviour, not just hygiene:
      * an absent pool reads as full, so a returning player starts charged.
      */
+    /**
+     * THE RELOAD SWEEP ALWAYS DESCRIBES THE WEAPON IN YOUR HAND.
+     *
+     * <p>A vanilla cooldown belongs to the PLAYER and is keyed by cooldown group; a reload belongs to
+     * the ITEM. So the two can diverge, and the divergence is not symmetric -- <b>a sweep that
+     * outlives its reload also BLOCKS USE</b> of any weapon in the same group
+     * ({@code ServerPlayerGameMode.useItem} returns PASS before it ever calls {@code ItemStack.use}).
+     * A second Plume would refuse to draw for a reload it is not running.
+     *
+     * <p>So each slot change clears the group of the weapon being put away and re-derives the sweep
+     * for the one being taken out, from that item's own deadline. <b>Nothing is remembered between
+     * the two.</b>
+     *
+     * <p>Not cancellable-guarded on purpose: this is a read plus two player writes, and a cancelled
+     * slot change leaves the player holding the ORIGINAL item, which is the {@code previous} argument
+     * -- so the worst case is that the correct sweep is re-derived for the slot they never left.
+     */
+    @EventHandler
+    public void onHeldItemChange(PlayerItemHeldEvent event) {
+        var inventory = event.getPlayer().getInventory();
+        QuiverSweep.reassert(event.getPlayer(),
+                inventory.getItem(event.getPreviousSlot()),
+                inventory.getItem(event.getNewSlot()),
+                weapons, adapters, Bukkit.getCurrentTick());
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         // FIRST, ahead of the clears: a menu holding this player's weapon must give it back while
@@ -1494,6 +1533,12 @@ public final class RpgListeners implements Listener {
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         healthSystem.onRespawn(event.getPlayer());     // reset to base 100, render, restart the reconcile loop
+        // The join note's mechanism, arriving through the other door: ServerPlayer.restoreFrom never
+        // mentions ItemCooldowns, so respawning also drops the overlay while the item's deadline runs
+        // on. Re-derived rather than remembered.
+        QuiverSweep.reassert(event.getPlayer(), null,
+                event.getPlayer().getInventory().getItemInMainHand(),
+                weapons, adapters, Bukkit.getCurrentTick());
         nameplates.onViewerJoin(event.getPlayer());    // restart the per-viewer nameplate LOS loop
         statsBar.onRespawn(event.getPlayer());         // restart the action-bar loop, dead since the death screen
         healthRegen.onRespawn(event.getPlayer());      // and the regeneration loop, dead for the same reason
