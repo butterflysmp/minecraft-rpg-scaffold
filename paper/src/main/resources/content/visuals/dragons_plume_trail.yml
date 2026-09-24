@@ -1,0 +1,109 @@
+# The Dragon's Plume's arrows in flight: ONE dark-violet dust mote per tick at each bolt's live
+# position. Id is the filename: dragons_plume_trail.
+#
+# ================== ITS OWN FILE, AND BY NOW THE RULE IS THREE FILES DEEP ==================
+#
+# NOT flint_trail and NOT ember_trail. flint_trail's own file states the rule -- "A SHARED VISUAL IS
+# A COUPLING AND THE COUPLING IS INVISIBLE AT BOTH ENDS" -- after ember_burst's count went 30 -> 10
+# for the Ability Stone and silently took the Flint Staff with it.
+#
+# This weapon has a second reason on top of that: it is the only trail in the project drawn in DUST,
+# so it is the only one whose COLOUR and SIZE can be tuned at all. Borrowing a FLAME trail would
+# mean giving up both of the fields this trail exists to set.
+#
+# ================== THE DENSITY, AND THE BOLT COUNT IS NOT ONE ==================
+#
+# *** THIS WEAPON FIRES 1, 3 OR 5 ARROWS PER RELEASE. *** DrawFan: "charge step 1, 2, 3 -> 1, 3, 5
+# arrows -- the only counts a full magazine gives." A tap band is always one. So every per-shot
+# figure below is a RANGE, and the first draft of this file recorded it as a single bolt, which is
+# true of the taps and wrong about the weapon.
+#
+#                        per bolt per tick     bolts     per RELEASE per tick     spacing
+#   flint_trail          3  (FLAME 2, SMOKE 1)   1                3               1.4 blocks
+#   ember_trail          1  (FLAME 1)            3                3               0.6 blocks
+#   THIS, tap            1  (DUST 1)             1                1               2.5 blocks
+#   THIS, charged        1  (DUST 1)          1 / 3 / 5        1 / 3 / 5          2.5 blocks
+#
+# *** PER BOLT THIS IS THE SPARSEST TRAIL IN THE PROJECT, TYING ember_trail AT ONE PARTICLE. PER
+# *** RELEASE AT FULL CHARGE IT IS THE DENSEST THING ON master. *** Both halves are stated because
+# either alone is misleading, and the second is the one a reader would not guess from "one mote".
+#
+# AND THE PER-BOLT TIE BECOMES THREE-WAY THE DAY #135 MERGES. dragons_breath_trail -- on
+# feat/14-scatter-shot, NOT on master as this is written -- is also 1 per bolt per tick, and its own
+# file claims "one flame per tick is the sparsest trail in the project", which was true when it was
+# written. TWO FILES EACH CLAIMING A BARE SUPERLATIVE IS HOW TWO ACCOUNTS DRIFT, so this one names
+# the axis it is sparsest on and the axis it is not.
+#
+# ================== THE SHOT TOTAL IS THE LARGEST IN THE PROJECT, BY FOUR TIMES ==================
+#
+# *** PER-TICK SPARSEST IS NOT PER-SHOT CHEAPEST, AND THIS WEAPON IS WHERE THE TWO COME APART. ***
+# max_lifetime_ticks is 120 -- three times flint_staff's 40 -- so a release that hits nothing draws
+# a mote per bolt on every tick of a SIX-SECOND flight:
+#
+#   ember_trail    29 puffs x 1 particle x 3 embers =  87 particles per throw
+#   flint_staff    39 puffs x 3 particles x 1 bolt  = 117 particles per shot
+#   THIS, tap     119 puffs x 1 particle  x 1 bolt  = 119 particles per shot
+#   THIS, charged 119 puffs x 1 particle  x 5 bolts = 595 particles per release
+#
+# NOBODY HAS WATCHED ANY OF THOSE NUMBERS. 595 is written down because the sparse-looking figure in
+# the first table is the one a reader carries away, and because a density judged at the muzzle is
+# judged on the first second of a six-second flight.
+#
+# ================== AND FIVE HOMING TRAILS CONVERGE, WHICH IS WHY count IS 1 ==================
+#
+# The charged release HOMES (lerp 0.65, activation 15 blocks). So five trails do not stay parallel
+# like a spread -- THEY CONVERGE ON ONE TARGET, and the five lines are closest together exactly where
+# the player is looking.
+#
+# dragons_breath_trail made the same argument for seven bolts three degrees apart and acted on it:
+# it dropped flint_trail's SMOKE step and tightened spread to 0.03, because "seven smoke streams
+# overlapping inside a 3-degree cone grey out the middle of the pattern". Converging homing bolts are
+# a harsher version of that case, not a milder one, so this file goes further: ONE step, ONE particle,
+# spread 0.0. There is nothing left to drop if five lines still read as one smear.
+#
+# ================== THE NUMBERS ARE PROVISIONAL: ARITHMETIC, NOT A BOOT ==================
+#
+# *** THEY COME FROM Ben's "very slight dark purple" AND FROM ARITHMETIC. NOBODY HAS SEEN THEM. ***
+# dragons_breath_trail.yml records the convention this follows -- the trail is authored first so the
+# reading comes before the tuning -- and on that convention "it may well read THIN" is the expected
+# outcome rather than a failure.
+#
+# colour [60, 20, 90] IS OWNED BY NOTHING ELSE, checked against all seven DUST steps in
+# content/visuals/: lapis [40, 90, 240], emerald [40, 220, 90] (x2), volley [230, 60, 230], boltor
+# [200, 215, 235], locust [45, 120, 55]. The nearest neighbour in hue is volley_beam's magenta and it
+# is not close in brightness: channel sums 170 against 520. This reads as VOID -- the weapon's
+# element -- rather than as a Mage's beam.
+#
+# *** size 0.6 IS OUTSIDE THE RANGE ANYBODY HAS EVER JUDGED. *** Every authored size in the project
+# is 1.0 or 1.2, and the schema's own default is 1.0; 0.6 is smaller than all of them by a factor of
+# 1.67. That is deliberate -- "very slight" is what was asked for -- but it means NO SHIPPED READING
+# SUPPORTS IT, and it is the first value to move if the trail reads invisible rather than faint.
+#
+# ================== WHAT IS ALREADY PROVEN, SO THE GATE DOES NOT SPEND A BOOT ON IT ==================
+#
+# A DUST STEP WITH A COLOUR AND A SIZE RENDERS ON THIS EXACT PORT, and that was measured rather than
+# assumed. A trail is drawn by CombatWorld.present -- the POINT path -- and two shipped visuals
+# already author DUST there: emerald_impact and lapis_impact, both reached via `visual_id:`. The
+# other five DUST steps are beams, on presentAlong. Both paths run through one method,
+# PaperCombatWorld.particles, written so "a beam and a burst cannot drift in how they read the same
+# authored fields". So the open question here is APPEARANCE, not whether the fields arrive.
+#
+# THE FIRST MOTE IS DRAWN ONE TICK AFTER LAUNCH, NEVER ON THE LAUNCH FRAME -- ProjectileFlight.step
+# guards it with `elapsed > 0`. On the launch frame the bolt's position IS the caster's eye, so
+# drawing there would put dust inside the shooter's own camera. At speed 2.5 the first mote sits 2.5
+# blocks downrange. ProjectileFlightTest pins that for an ARROW-BODIED projectile specifically,
+# which nothing in the suite did before this slice: the mutation suppressing a trail whenever a body
+# is present left all 1189 core tests green.
+#
+# `speed` is Bukkit's `extra`, authored EXPLICITLY as 0.0: the motes sit where they are put and each
+# arrow's own motion draws its line. The schema default is 1.0, which would spray them outward and
+# blur five converging lines into one cloud -- see VisualSpec.Particles.
+
+steps:
+  - type: particle
+    particle: DUST
+    color: [60, 20, 90]      # dark violet; owned by nothing else in content/visuals/
+    size: 0.6                # below every other authored size in the project -- see above
+    count: 1                 # ONE mote per tick per bolt; there is nothing left to drop below this
+    spread: 0.0              # count 1 + spread 0 puts one mote AT the arrow and nowhere else
+    speed: 0.0               # inert for DUST; authored so its absence is not read as a choice

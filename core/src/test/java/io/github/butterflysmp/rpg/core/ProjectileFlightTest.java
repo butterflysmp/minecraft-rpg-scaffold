@@ -630,10 +630,23 @@ class ProjectileFlightTest {
      * check silently meaning "item body" and the arrow arriving as an invisible {@code else}.
      *
      * <p><b>THE VELOCITY ASSERTION IS THE LOAD-BEARING HALF, and a body count cannot see it.</b>
-     * An arrow derives its rotation from its own {@code deltaMovement} inside its own tick, so a
-     * body created still has no direction on its first frame and visibly snaps into line one tick
-     * later. A three-argument sibling that accepted the velocity and threw it away would pass every
-     * count assertion in this file.
+     * A three-argument sibling that accepted the velocity and threw it away would pass every count
+     * assertion in this file.
+     *
+     * <p><b>THE REASON IT IS LOAD-BEARING CHANGED ON 2026-09-23, AND THE OLD ONE IS QUOTED BECAUSE
+     * IT IS STILL WHAT MOST READERS EXPECT.</b> This said the velocity mattered because "an arrow
+     * derives its rotation from its own deltaMovement inside its own tick, so a body created still
+     * has no direction on its first frame and visibly snaps into line one tick later". The
+     * mechanism half was right and <b>the outcome half was wrong twice over</b>: the easing in
+     * {@code AbstractArrow.tick} is UNCONDITIONAL {@code Mth.lerp(0.2f, ..)} with no first-tick
+     * snap branch, so a wrong heading took roughly TEN ticks to correct, not one -- and the body
+     * this port now spawns goes through {@code CraftWorld.spawnArrow}, whose {@code shoot()}
+     * <b>writes the rotation from the direction at construction</b>, so it has a heading on frame
+     * zero. See PaperCombatWorld.spawnBoltMarker, which carries the bytecode, and
+     * GATE-plume-vanilla-body.md.
+     *
+     * <p>So the velocity is load-bearing for a STRONGER reason than before: it is the only input
+     * that orients the body at all.
      *
      * <p>Staged at speed 1 down +X so the launch velocity is {@code (1,0,0)} and cannot be confused
      * with the origin {@code (0,0,0)} -- no two quantities this row reads are equal, so a
@@ -689,5 +702,71 @@ class ProjectileFlightTest {
 
         assertDoesNotThrow(() -> new ProjectileFlight.Look("trail", null, "arrow"),
                 "a TRAIL is orthogonal to both and must not be caught by the exclusion");
+    }
+
+    /** 1 block/tick, no gravity, an ARROW body AND a trail -- what all four Plume casts author. */
+    private static AbilityDefinition arrowBoltWithTrail(String trail, int lifetime) {
+        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+                0, ResourceCost.FREE,
+                new CastSpec.Projectile(1.0, 0, lifetime, trail, null, null, "arrow"),
+                List.of(new EffectSpec.Damage(12, "fire")));
+    }
+
+    /**
+     * A TRAIL BEHIND AN ARROW BODY: the launch-frame skip survives the body, and the puffs sit on
+     * the DRIVEN path rather than wherever the entity happens to be.
+     *
+     * <h2>THIS ROW EXISTS BECAUSE THE MUTATION THAT BREAKS IT SURVIVED THE WHOLE CORE SUITE</h2>
+     *
+     * <p>Measured at {@code 3ae97ff}, <b>before this row was written</b>: {@code MUTTRAILBODY} --
+     * adding {@code && look.body() == null} to the trail guard in {@code ProjectileFlight.step} --
+     * left <b>1189 of 1189 green</b>, with the marker confirmed present in the tree and the line
+     * delta against a pristine copy reading exactly 1. <b>A green first run is the finding.</b>
+     *
+     * <p>The gap is a combination rather than a behaviour: every existing trail row stages a trail
+     * with NO body or with an {@code item} body, and every existing arrow-body row stages an arrow
+     * with NO trail. So the one shape all four Dragon's Plume casts author -- {@code body: arrow}
+     * plus {@code trail:} -- was held by nothing, and a change suppressing one in the presence of
+     * the other would have shipped green.
+     *
+     * <p><b>Three quantities, deliberately unequal.</b> The step is 1 block and the eye sits at
+     * 1.62, so a puff at the eye, a puff at the coordinate origin and a puff one step downrange are
+     * three different numbers; a transposition between them has nowhere to hide.
+     *
+     * <p><b>The last two assertions are an equality AND an absolute value, on purpose.</b> The
+     * equality is the claim -- the puff is ON the body -- but two quantities that must be equal
+     * cannot detect a fault that moves both, so the absolute position is asserted beside it.
+     *
+     * <p>Mutations: add {@code && look.body() == null} to the trail guard -> the four-draw
+     * assertion reddens alone. Drop {@code elapsed > 0} -> the launch-frame assertion reddens.
+     * Present at the body's spawn point instead of the flight's position -> both position
+     * assertions redden and the count does not.
+     */
+    @Test
+    void anArrowBodiedProjectileStillDrawsItsTrailFromOneTickAfterLaunch() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, arrowBoltWithTrail("dragons_plume_trail", 5), EYE_FORWARD);
+
+        assertEquals(List.of(), world.presented,
+                "a body on the launch frame must not license a puff on it -- that point is the eye");
+        assertEquals(1, world.markersEverSpawned.size(), "and the arrow body IS there from frame 0");
+
+        world.advanceTicks(50);
+
+        assertEquals(List.of("dragons_plume_trail", "dragons_plume_trail", "dragons_plume_trail",
+                        "dragons_plume_trail"),
+                world.presented,
+                "five flight steps, four draws: the arrow body changes none of that");
+
+        UUID body = world.markersEverSpawned.get(0);
+        assertEquals(new Vec3(1, 1.62, 0), world.presentedAt.get(0),
+                "the first puff lands one tick of travel downrange, at the height it was fired from");
+
+        Vec3 lastPuff = world.presentedAt.get(world.presentedAt.size() - 1);
+        assertEquals(new Vec3(4, 1.62, 0), lastPuff, "and the last one four steps downrange");
+        assertEquals(world.markerRemovedAt.get(body), lastPuff,
+                "which is where the body went out -- ONE simulated path, two consumers reading it");
     }
 }

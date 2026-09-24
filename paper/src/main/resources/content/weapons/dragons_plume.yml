@@ -294,13 +294,40 @@ triggers:
       # a set of exactly one. See AbilitySchema.parseBody, which is where the second body kind will
       # turn this into a switch.
       #
-      # WHAT MAKES IT INERT, AND IT IS ONE SWITCH RATHER THAN THE THREE THE API ADVERTISES:
-      # setNoPhysics(true) turns off block collision, entity collision, ProjectileHitEvent,
-      # in-ground sticking AND gravity together -- measured from the pinned jar, not assumed.
-      # setPickupStatus(DISALLOWED) is SEPARATE and load-bearing, because noPhysics OPENS a mid-air
-      # pickup path that no ordinary arrow has. Both are in PaperCombatWorld.spawnBoltMarker with
-      # the bytecode that says so.
+      # WHAT MAKES IT INERT -- AND setNoPhysics(true) IS NOT IT. THIS NOTE SAID IT WAS, UNTIL
+      # 2026-09-23, AND THAT ONE CALL WAS THE DEFECT RATHER THAN THE MECHANISM.
+      #
+      # #144 measured it: noPhysics also handed the arrow's motion to the CLIENT, which simulated it
+      # and drew it wrongly oriented for the first stretch of every shot. Spike modes B and E differ
+      # in that single line and nothing else; Ben read B as "still has the problem" and E as
+      # "perfect, exactly what we're looking for". The body now spawns with physics AND gravity ON
+      # and is driven every tick. PaperCombatWorld.spawnBoltMarker carries the standing
+      # "DO NOT ADD setNoPhysics(true) BACK. IT IS THE DEFECT, MEASURED."
+      #
+      # WHAT MAKES IT INERT INSTEAD IS A LIST, NOT A SWITCH: setDamage(0), setKnockbackStrength(0),
+      # setCritical(false), setShooter(null), setPersistent(false), an armed lifetime that retires a
+      # stuck body in one tick, and a cancelled ProjectileHitEvent for any PDC-tagged body.
+      # setPickupStatus(DISALLOWED) is SEPARATE and load-bearing on its own. All of them are in
+      # PaperCombatWorld.spawnBoltMarker with the bytecode that says so.
       body: arrow
+
+      # ================== THE TRAIL: BEN'S REQUEST, AND ITS NUMBERS ARE PROVISIONAL ==================
+      #
+      # A very slight dark-violet dust trail behind each arrow. ONE DUST mote per tick at a bolt's
+      # live position: the sparsest trail in the project PER BOLT -- and, because this weapon fires
+      # 1/3/5, the densest thing on master PER RELEASE at full charge. Both figures and the 595-mote
+      # shot total are in dragons_plume_trail.yml; this line is the pointer, that file is the account.
+      #
+      # THE NUMBERS ARE ARITHMETIC, NOT A BOOT: colour [60, 20, 90] and size 0.6, where 0.6 is below
+      # EVERY other authored size in content/visuals/. dragons_plume_trail.yml carries the density
+      # table, the colour-ownership check, and which value moves first if it reads wrong. The
+      # convention is flint_staff.yml's: the trail is authored first so the reading comes before the
+      # tuning.
+      #
+      # ALL FOUR CASTS NAME THE SAME FILE rather than one each. The four differ in damage and in
+      # homing, not in what the arrow looks like in the air -- and one id is what lets a tuning pass
+      # move all four at once.
+      trail: dragons_plume_trail
 
       # ================== THE HOMING FIGURES ARE INHERITED AND UNJUDGED ==================
       #
@@ -425,6 +452,8 @@ triggers:
       # See `draw:`'s body note above. A real arrow, oriented along travel, inert in every other
       # way -- and mutually exclusive with `item:`, which the loader refuses rather than resolves.
       body: arrow
+      # The same trail as `draw:`, and deliberately the same FILE: see its note there.
+      trail: dragons_plume_trail
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING RATHER THAN AN OMISSION. R4''' is "one arrow,
       # WITH NO HOMING". AbilitySchema maps a missing section to null and a null Seek makes
       # ProjectileFlight.steer return the velocity untouched on its first line.
@@ -445,6 +474,8 @@ triggers:
       # See `draw:`'s body note above. A real arrow, oriented along travel, inert in every other
       # way -- and mutually exclusive with `item:`, which the loader refuses rather than resolves.
       body: arrow
+      # The same trail as `draw:`, and deliberately the same FILE: see its note there.
+      trail: dragons_plume_trail
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING. Same as band 1 and for the same reason;
       # repeated at each binding rather than stated once, because an absence is invisible and a
       # reader checking THIS binding must not have to find the note on another one.
@@ -464,6 +495,8 @@ triggers:
       # See `draw:`'s body note above. A real arrow, oriented along travel, inert in every other
       # way -- and mutually exclusive with `item:`, which the loader refuses rather than resolves.
       body: arrow
+      # The same trail as `draw:`, and deliberately the same FILE: see its note there.
+      trail: dragons_plume_trail
       # NO homing BLOCK, AND ITS ABSENCE IS THE RULING -- and it matters most HERE. At 19 ticks held
       # this is one tick from a charged release that DOES home, for 34 rather than 26. The two
       # shots are adjacent in the player's hand and different in every other way; the absent block
