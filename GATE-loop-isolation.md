@@ -1,6 +1,6 @@
 # GATE — repeating-loop isolation: a crashed loop stops cleanly instead of wedging
 
-**Status: NOT RUN.** Every prediction below was written **before** any boot. Readings go **beside** a
+**Status: R0 PASS (build 76d574d); L1-L9 NOT RUN, skipped by Ben's ruling 2026-09-24; L10 CANNOT BE RUN.** Every prediction below was written **before** any boot. Readings go **beside** a
 prediction, never over it, and a prediction is not edited once its row has been read. **Ben's ruling,
 2026-09-20: readings are verdicts, not figures** — a PASS cell carries no measurement unless the row
 asked for one.
@@ -35,8 +35,8 @@ reports faster.
 
 | # | prediction | instrument | READING |
 |---|---|---|---|
-| **R0a** | the build line names this branch's tip | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | _(not run)_ |
-| **R0b** | `RepeatingTask` in the deployed jar references `loopFailed` | the constant-pool scan below | _(not run)_ |
+| **R0a** | the build line names this branch's tip | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | PASS: [Rpg] Build: 76d574d |
+| **R0b** | `RepeatingTask` in the deployed jar references `loopFailed` | the constant-pool scan below | PASS: loopFailed: PRESENT (controls: isRunning PRESENT, impossible string ABSENT) |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -63,15 +63,15 @@ simply not running**, and a loop that does not run looks like a feature that was
 
 | # | what to do | PREDICTION | READING |
 |---|---|---|---|
-| **L1** | Join the server and look at the action bar. | The stats line is there and **updates** — health, quiver when held, defense, mana. `StatsBarSystem` is one of the two loops whose owner guards re-entry, so a wiring mistake here shows as a permanently absent bar. | _(not run)_ |
-| **L2** | Take damage, then stand still and watch health climb. | Passive regeneration still ticks. `HealthRegenSystem` is the other re-entry-guarded loop. | _(not run)_ |
-| **L3** | Equip and unequip a +HP armour piece and watch max health. | The reconcile loop still converges within a few ticks. `PlayerHealthSystem`'s loop stores no handle, so a failure here is silent rather than wedged — which is why it needs a row. | _(not run)_ |
-| **L4** | Look at a mob and watch its nameplate. | The nameplate still renders and tracks its health. | _(not run)_ |
-| **L5** | Root a mob (`/rpg apply rooted`), watch it freeze, and **let it expire**. | It stops dead, then **moves normally again** when the duration ends. The modifier release is now written in two places; a double-removal bug would show as a mob that never slows, and a missing one as a mob that never recovers. | _(not run)_ |
-| **L6** | Soak a mob, add a second stack, and let it expire. | It slows, slows further, then returns to **exactly** base speed. | _(not run)_ |
-| **L7** | Scorch a mob and let it burn out. | It burns on the normal period and stops; the mob can then be **scorched again**. | _(not run)_ |
-| **L8** | Kill a mob **while it is rooted**, and read the log. | It dies normally and **the log carries no `touched a removed entity`, no exception, and no `repeating loop` SEVERE line.** This is the row for the `isActive()` gate on the release — without it, cleanup reaches for the attribute of a mob that is gone. | _(not run)_ |
-| **L9** | Open the anvil and the grindstone, arm each, and close them. | Both arming animations still run and the menus still close cleanly. | _(not run)_ |
+| **L1** | Join the server and look at the action bar. | The stats line is there and **updates** — health, quiver when held, defense, mana. `StatsBarSystem` is one of the two loops whose owner guards re-entry, so a wiring mistake here shows as a permanently absent bar. | NOT RUN (skipped, Ben 2026-09-24) |
+| **L2** | Take damage, then stand still and watch health climb. | Passive regeneration still ticks. `HealthRegenSystem` is the other re-entry-guarded loop. | NOT RUN (skipped, Ben 2026-09-24) |
+| **L3** | Equip and unequip a +HP armour piece and watch max health. | The reconcile loop still converges within a few ticks. `PlayerHealthSystem`'s loop stores no handle, so a failure here is silent rather than wedged — which is why it needs a row. | NOT RUN (skipped, Ben 2026-09-24) |
+| **L4** | Look at a mob and watch its nameplate. | The nameplate still renders and tracks its health. | NOT RUN (skipped, Ben 2026-09-24) |
+| **L5** | Root a mob (`/rpg apply rooted`), watch it freeze, and **let it expire**. | It stops dead, then **moves normally again** when the duration ends. The modifier release is now written in two places; a double-removal bug would show as a mob that never slows, and a missing one as a mob that never recovers. | NOT RUN (skipped, Ben 2026-09-24) |
+| **L6** | Soak a mob, add a second stack, and let it expire. | It slows, slows further, then returns to **exactly** base speed. | NOT RUN (skipped, Ben 2026-09-24) |
+| **L7** | Scorch a mob and let it burn out. | It burns on the normal period and stops; the mob can then be **scorched again**. | NOT RUN (skipped, Ben 2026-09-24) |
+| **L8** | Kill a mob **while it is rooted**, and read the log. | It dies normally and **the log carries no `touched a removed entity`, no exception, and no `repeating loop` SEVERE line.** This is the row for the `isActive()` gate on the release — without it, cleanup reaches for the attribute of a mob that is gone. | NOT RUN (skipped, Ben 2026-09-24) |
+| **L9** | Open the anvil and the grindstone, arm each, and close them. | Both arming animations still run and the menus still close cleanly. | NOT RUN (skipped, Ben 2026-09-24) |
 
 > ### *** L8 IS THE ONLY ROW HERE THAT IS ABOUT A DEFECT THIS SLICE INTRODUCED ***
 >
