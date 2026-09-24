@@ -348,7 +348,15 @@ public final class Keys {
      */
     public final NamespacedKey nexus;
 
+    /**
+     * KEPT, and only for {@link #quiverReloadGroup}. Every other key in this class is a fixed name
+     * settled at construction; that one is parameterised by a weapon id, which is CONTENT and
+     * therefore unbounded, so it cannot be a field and has to be able to build a key on demand.
+     */
+    private final Plugin plugin;
+
     public Keys(Plugin plugin) {
+        this.plugin = plugin;
         this.markerEntity = new NamespacedKey(plugin, "marker_entity");
         this.weaponId = new NamespacedKey(plugin, "weapon_id");
         this.shieldId = new NamespacedKey(plugin, "shield_id");
@@ -398,5 +406,25 @@ public final class Keys {
      */
     public String namespace() {
         return weaponId.getNamespace();
+    }
+
+    /**
+     * The vanilla COOLDOWN GROUP a quiver weapon's reload sweep is drawn in -- one per weapon id.
+     *
+     * <p><b>A FACTORY AND NOT A FIELD, because the key names a piece of content.</b> Every other key
+     * here is one fixed string; this one is {@code quiver_reload_<weapon id>}, and weapons are YAML
+     * files that can be added without a recompile. A field per weapon would be the "hardcoding an
+     * ability in Java" that CLAUDE.md bans, one layer down.
+     *
+     * <p><b>ONE GROUP PER WEAPON ID, WHICH IS THE POINT.</b> A cooldown on a stack that declares no
+     * group falls back to the ITEM ID -- {@code minecraft:bow} -- so a reload on one bow would sweep
+     * and BLOCK every bow the player is carrying. A private group per weapon is what scopes it. The
+     * bytecode for that fallback, and the rest of the mechanism, is in {@code QuiverSweep}.
+     *
+     * <p>It is <i>per weapon id</i> and deliberately not per ITEM: two Plumes share this key, and
+     * {@code QuiverSweep} handles that by always describing the weapon in the player's hand.
+     */
+    public NamespacedKey quiverReloadGroup(String weaponId) {
+        return new NamespacedKey(plugin, "quiver_reload_" + weaponId);
     }
 }

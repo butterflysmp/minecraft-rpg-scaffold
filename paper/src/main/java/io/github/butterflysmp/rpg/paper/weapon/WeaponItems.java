@@ -113,6 +113,25 @@ public final class WeaponItems {
             // will ever read them. remint() calls mint(), so it inherits this.
             meta.setMaxStackSize(1);
 
+            // A QUIVER WEAPON CARRIES ITS OWN VANILLA COOLDOWN GROUP, FROM MINT.
+            //
+            // It is what scopes the reload sweep to THIS weapon: a cooldown on a stack that declares
+            // no group falls back to the ITEM ID, so one on a Plume would sweep -- and block the use
+            // of -- every bow in the hotbar. QuiverSweep carries the bytecode.
+            //
+            // HERE rather than only at reload time because remint() builds a FRESH item from mint()
+            // and copies only what carryInstanceData carries. A group stamped only when a reload
+            // starts would be dropped by the next join, and every join re-mints. The reload path
+            // stamps it too, which is what heals weapons minted before this existed.
+            //
+            // Gated on hasQuiver() and NOT on a comparison against the authored size. A sword has no
+            // magazine, can never own a reload, and must not carry a group it would never use -- but
+            // WeaponDefinition owns that predicate in exactly one place, and QuiversSignatureTest
+            // fails the build when a sixth file reads the authored number. IT CAUGHT THIS LINE.
+            if (weapon.hasQuiver()) {
+                QuiverSweep.ensureGroup(meta, weapon.id(), keys);
+            }
+
             if (vanillaDrivenMelee) {
                 // Let vanilla's attack RUN: it is what picks the victim now, and it only runs at all
                 // if attack damage is positive. The item pins NO attack speed -- that is reconciled

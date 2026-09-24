@@ -33,6 +33,22 @@ public final class QuiverNotice {
 
     private QuiverNotice() {}
 
+    // *** THE ACTION BAR, NOT CHAT, AND THE WORDS ARE UNCHANGED. *** Ben's pick, 2026-09-23. A
+    // magazine state is transient, so it belongs where transient things go; four of these in chat
+    // is four permanent lines about a condition that lasted two seconds.
+    //
+    // THE THROTTLE IS STILL 40 TICKS AND STILL LOAD-BEARING. An action bar overwrites rather than
+    // accumulating, so the SPAM is invisible here in a way it was not in chat -- which makes it
+    // tempting to drop the throttle. Do not: these fire from a right-click handler and from a swing
+    // path that sees roughly twenty arm-swing packets a second, and an action bar rewritten every
+    // tick is a flickering one. The throttle is what makes it hold still long enough to read.
+    //
+    // *** AND THERE IS DELIBERATELY NO LIVE PER-TICK COUNTDOWN. *** The hotbar cooldown sweep on the
+    // weapon itself is the progress indicator -- see QuiverSweep -- so a second, textual countdown
+    // would be a duplicate readout of one fact, with two chances to disagree. `reloading` below
+    // still names a remaining time because it answers a PRESS ("how long?"), not because anything
+    // polls; it fires only when the player asks and only once per 40 ticks.
+
     /** Leading underscores so no content filename can collide -- {@code BrokenNotice}'s convention. */
     private static final String EMPTY_KEY = "__quiver_empty_notice";
     private static final String RELOADING_KEY = "__quiver_reloading_notice";
@@ -65,7 +81,7 @@ public final class QuiverNotice {
     /** The magazine is spent. Says what to DO, because a refusal with no remedy reads as a bug. */
     public static void empty(Player player, CooldownTracker cooldowns) {
         if (!throttled(player, cooldowns, EMPTY_KEY)) return;
-        player.sendMessage(Component.text(
+        player.sendActionBar(Component.text(
                 "Your quiver is empty -- left-click to reload.", NamedTextColor.GRAY));
         // Past the throttle check so message and sound are one notification and cannot drift apart,
         // exactly as BrokenNotice pairs them. Player#playSound, not World#playSound: the holder
@@ -87,7 +103,7 @@ public final class QuiverNotice {
      */
     public static void noAmmo(Player player, CooldownTracker cooldowns) {
         if (!throttled(player, cooldowns, NO_AMMO_KEY)) return;
-        player.sendMessage(Component.text(
+        player.sendActionBar(Component.text(
                 "You have no arrows -- plain Arrows load a quiver.", NamedTextColor.GRAY));
         player.playSound(player.getLocation(), EMPTY_SOUND, SOUND_VOLUME, SOUND_PITCH);
     }
@@ -101,7 +117,7 @@ public final class QuiverNotice {
      */
     public static void reloadStarted(Player player, CooldownTracker cooldowns) {
         if (!throttled(player, cooldowns, RELOADING_KEY)) return;
-        player.sendMessage(Component.text("Reloading...", NamedTextColor.GRAY));
+        player.sendActionBar(Component.text("Reloading...", NamedTextColor.GRAY));
         player.playSound(player.getLocation(), RELOAD_SOUND, SOUND_VOLUME, SOUND_PITCH);
     }
 
@@ -114,7 +130,7 @@ public final class QuiverNotice {
      */
     public static void reloading(Player player, CooldownTracker cooldowns, long ticksRemaining) {
         if (!throttled(player, cooldowns, RELOADING_KEY)) return;
-        player.sendMessage(Component.text(
+        player.sendActionBar(Component.text(
                 "Reloading -- %.1fs".formatted(ticksRemaining / 20.0), NamedTextColor.GRAY));
     }
 

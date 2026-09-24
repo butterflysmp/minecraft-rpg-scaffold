@@ -308,9 +308,24 @@ public final class Quivers {
             // reload matures -- see Keys.quiverReloadPending for why re-deriving is wrong twice over.
             meta.getPersistentDataContainer().set(keys.quiverReloadPending,
                     PersistentDataType.INTEGER, supply.rounds());
+            // THE COOLDOWN GROUP, STAMPED IN THE SAME EDIT AS THE DEADLINE, and that pairing is the
+            // whole migration story: a weapon minted before the sweep existed carries no group, and
+            // the first reload it starts gives it one. Nothing has to walk the world's inventories.
+            //
+            // It is inside editMeta because it is an item write like the three above it; the sweep
+            // itself is a PLAYER write and therefore sits below, after the item is back in the hand.
+            QuiverSweep.ensureGroup(meta, weapon.id(), keys);
         });
         player.getInventory().setItemInMainHand(held);
         player.updateInventory();
+        // THE SWEEP, AFTER THE ITEM IS BACK IN THE HAND AND NOT BEFORE. The client renders the
+        // overlay against the stack it is holding, and the group it reads comes from that stack's
+        // component -- so a cooldown set while the old, group-less copy was still in the slot would
+        // be a cooldown in a group nothing in the hotbar belongs to.
+        //
+        // reloadTicks rather than a re-read of the deadline: this is the one moment the two cannot
+        // disagree, because the deadline was computed from this very number three lines ago.
+        QuiverSweep.show(player, weapon.id(), keys, reloadTicks);
         return true;
     }
 
@@ -392,6 +407,14 @@ public final class Quivers {
         });
         player.getInventory().setItemInMainHand(held);
         player.updateInventory();
+        // AND THE SWEEP GOES OUT WITH THE DEADLINE IT WAS DRAWING. This is the path a MATURED reload
+        // takes, and it is reached lazily -- from a shot, or from any read that finds the deadline
+        // passed -- so the sweep would otherwise sit at zero-width until something else cleared it.
+        //
+        // Clearing it here rather than trusting expiry is not belt-and-braces: a reload can mature
+        // EARLY on this path (finishReload is also called when a reload is settled at the start of
+        // another one), and an overlay that outlives its reload is the exact failure the brief named.
+        QuiverSweep.clear(player, weapon.id(), adapters.keys());
     }
 
     /** The rounds a running reload will deliver, or 0 if the item carries no pending count. */
