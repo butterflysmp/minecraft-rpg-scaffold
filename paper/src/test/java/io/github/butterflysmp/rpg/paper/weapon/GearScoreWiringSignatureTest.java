@@ -200,6 +200,15 @@ class GearScoreWiringSignatureTest {
                 "A TOOL IS NOT. Reading toolId here puts every pickaxe in the hand pool, where it can"
                         + " displace a real weapon from the top two and raise the level of every drop"
                         + " the player takes. Found in the body of candidateScore.");
+
+        // Ruling A4: an accessory is read here only to be REFUSED -- the line naming its key must
+        // return empty on the same line. A read that fed the allowlist instead would admit it.
+        String accessoryLine = lines.subList(declaration, Math.min(end + 1, lines.size())).stream()
+                .filter(l -> l.contains("keys.accessoryId")).findFirst()
+                .orElseThrow(() -> new AssertionError("candidateScore must refuse an accessory explicitly"));
+        assertTrue(accessoryLine.contains("return OptionalInt.empty()"),
+                "the accessoryId read must be a refusal: " + accessoryLine.trim());
+        // Mutation: delete the accessory arm, or move keys.accessoryId into the allowlist -> reddens.
     }
 
     // --- the once-per-item rule ---------------------------------------------------------------

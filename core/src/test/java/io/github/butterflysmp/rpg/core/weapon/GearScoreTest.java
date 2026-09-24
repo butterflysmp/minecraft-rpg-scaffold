@@ -194,9 +194,17 @@ class GearScoreTest {
         for (GearClass kind : GearClass.values()) {
             if (GearScore.scoreable(kind)) scoring++;
         }
-        assertEquals(GearClass.values().length - 1, scoring,
-                "exactly one kind -- TOOL -- is refused. A new GearClass arriving as a silent yes or"
-                        + " no is what the missing default arm exists to stop.");
+        assertEquals(GearClass.values().length - 2, scoring,
+                "exactly two kinds -- TOOL and ACCESSORY -- are refused. A new GearClass arriving as"
+                        + " a silent yes or no is what the missing default arm exists to stop.");
+    }
+
+    /** Ruling A4: v1 accessories take no part in gear score. */
+    @Test
+    void accessoriesDoNotScore() {
+        assertFalse(GearScore.scoreable(GearClass.ACCESSORY),
+                "A4 -- an accessory carries no gear score in v1");
+        // Mutation: ACCESSORY -> true in GearScore.scoreable -> reddens.
     }
 
     /**
@@ -240,7 +248,7 @@ class GearScoreTest {
             if (GearScore.carriesScore(kind, false)) scoringWhenNotDeclared++;
             if (GearScore.carriesScore(kind, true)) scoringWhenDeclared++;
         }
-        assertEquals(GearClass.values().length - 1, scoringWhenNotDeclared,
+        assertEquals(GearClass.values().length - 2, scoringWhenNotDeclared,
                 "undeclared, the composed door must agree with the kind-level one exactly -- if these"
                         + " diverge there are two rules about scoring and one of them will be forgotten");
         assertEquals(0, scoringWhenDeclared,

@@ -46,6 +46,10 @@ import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ToolDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
+import io.github.butterflysmp.rpg.core.weapon.AccessoryRegistry;
+import io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals;
+import io.github.butterflysmp.rpg.core.accessory.AccessorySlots;
+import io.github.butterflysmp.rpg.paper.accessory.AccessoryDevCommand;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
@@ -57,6 +61,7 @@ import io.github.butterflysmp.rpg.paper.health.HealthRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ManaRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.QuiverSizeModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ReloadTimeModifierItems;
+import io.github.butterflysmp.rpg.paper.hud.AccessorySheet;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
@@ -76,6 +81,7 @@ import io.github.butterflysmp.rpg.paper.weapon.WeaponDurability;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.ToolItems;
+import io.github.butterflysmp.rpg.paper.weapon.AccessoryItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearItems;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
@@ -243,6 +249,8 @@ public final class RpgCommand {
                                     shields.all().forEach(s -> builder.suggest(s.id()));
                                     armor.all().forEach(a -> builder.suggest(a.id()));
                                     tools.all().forEach(t -> builder.suggest(t.id()));
+                                    adapters.accessories().registry().all()
+                                            .forEach(a -> builder.suggest(a.id()));
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {
@@ -451,7 +459,7 @@ public final class RpgCommand {
                 // sum, across eight lines. A <player> argument needs a region hop first.
                 .then(Commands.literal("stats")
                         .requires(source -> source.getSender().hasPermission(Permissions.STATS))
-                        .executes(ctx -> stats(ctx, adapters, weapons, resources)))
+                        .executes(ctx -> stats(ctx, adapters, weapons, resources, profiles)))
                 // *** /rpg playerxp <add|set> <player> <amount> <levels|xp> -- OPERATOR TOOLING. ***
                 //
                 // Permissions.DEV, which is `default: op` in paper-plugin.yml. Ben ruled "op-gated,
@@ -534,6 +542,29 @@ public final class RpgCommand {
                                 .executes(VaultDevCommand::usage)
                                 .then(vaultCell((ctx, page, slot) ->
                                         VaultDevCommand.take(ctx, vaults, page, slot)))))
+                // *** /rpg accessory <show|equip|unequip> -- A DEV INSTRUMENT, SLICE A's ONLY WAY TO
+                // WEAR AN ACCESSORY. DEV: delete when GATE-accessories-b.md passes. ***
+                //
+                // Permissions.DEV, like the vault branch above and for its reason: equip moves an item
+                // out of the world into a file. The slot argument is bounded by AccessorySlots.COUNT
+                // rather than a literal, so Brigadier's refusal cannot drift from the store's shape.
+                .then(Commands.literal("accessory")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(AccessoryDevCommand::usage)
+                        .then(Commands.literal("show")
+                                .executes(ctx -> AccessoryDevCommand.show(ctx, adapters, profiles)))
+                        .then(Commands.literal("equip")
+                                .executes(AccessoryDevCommand::usage)
+                                .then(Commands.argument("slot",
+                                                IntegerArgumentType.integer(0, AccessorySlots.COUNT - 1))
+                                        .executes(ctx -> AccessoryDevCommand.equip(ctx, adapters, profiles,
+                                                IntegerArgumentType.getInteger(ctx, "slot")))))
+                        .then(Commands.literal("unequip")
+                                .executes(AccessoryDevCommand::usage)
+                                .then(Commands.argument("slot",
+                                                IntegerArgumentType.integer(0, AccessorySlots.COUNT - 1))
+                                        .executes(ctx -> AccessoryDevCommand.unequip(ctx, adapters,
+                                                IntegerArgumentType.getInteger(ctx, "slot"))))))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
                 // unit test. Hold it and a bare bar fills in ~50s instead of 100; drop it and the rate
@@ -948,7 +979,8 @@ public final class RpgCommand {
      */
     private static int stats(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
                              WeaponRegistry weapons,
-                             ResourcePool resources) {
+                             ResourcePool resources,
+                             ProfileService profiles) {
         if (!(ctx.getSource().getExecutor() instanceof Player player)) {
             ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
             return 0;
@@ -965,6 +997,10 @@ public final class RpgCommand {
         }
 
         StatsSheet.build(values.get()).forEach(player::sendMessage);
+        // Ruling Q4: the accessories' own lines, under the totals they feed.
+        AccessorySheet.lines(player.getUniqueId(), adapters.accessories(),
+                profiles.profile(player.getUniqueId()).map(PlayerProfile::archetypeId).orElse(null))
+                .forEach(player::sendMessage);
         return 1;
     }
 
@@ -1325,6 +1361,7 @@ public final class RpgCommand {
     private static int give(Player player, String id, WeaponRegistry weapons,
                             ShieldRegistry shields, ArmorRegistry armor, ToolRegistry tools,
                             AdapterContext adapters) {
+        AccessoryRegistry accessories = adapters.accessories().registry();
         // RESOLVED TO ONE GearDefinition, then minted through the sealed dispatch -- which is what
         // GearItems.mint and gearClassOf were extracted FOR. This used to be three per-kind arms
         // ending in a bare `else` that assumed armor, and gearClassOf's javadoc named "/rpg give's
@@ -1335,17 +1372,21 @@ public final class RpgCommand {
         // if/else: every arm names its own registry and none of them is the fall-through that gets
         // whatever is left over. A fifth kind is one more line here, visibly.
         //
-        // ORDER IS weapons, shields, armor, tools -- the same order the boot-time id-collision
-        // warning asserts, so a shared id shadows predictably and the warning names the right loser.
+        // ORDER IS weapons, shields, armor, tools, accessories -- the same order the boot-time
+        // id-collision checks assert, so a shared id shadows predictably and the warning names the
+        // right loser. An ACCESSORY that collides is refused at boot rather than warned about, so
+        // the last arm can never be shadowed by a live accessory.
         GearDefinition definition = weapons.find(id).orElse(null);
         if (definition == null) definition = shields.find(id).orElse(null);
         if (definition == null) definition = armor.find(id).orElse(null);
         if (definition == null) definition = tools.find(id).orElse(null);
+        if (definition == null) definition = accessories.find(id).orElse(null);
 
         if (definition == null) {
-            player.sendMessage(Component.text("Unknown weapon, shield, armor or tool: " + id,
+            player.sendMessage(Component.text("Unknown weapon, shield, armor, tool or accessory: " + id,
                     NamedTextColor.RED));
-            String available = Stream.of(weapons.all(), shields.all(), armor.all(), tools.all())
+            String available = Stream.of(weapons.all(), shields.all(), armor.all(), tools.all(),
+                            accessories.all())
                     .flatMap(Collection::stream)
                     .map(GearDefinition::id)
                     .collect(Collectors.joining(", "));
@@ -1474,6 +1515,12 @@ public final class RpgCommand {
             // -- so routing through it would newly REFUSE a dangling-id weapon that works today.
             // That would be a behaviour change on the weapon path, which this arm must not make.
             // The dispatch that matters is the one below, and there is none: the kernel is shared.
+            if (AccessoryItems.isAccessory(held, adapters.keys())) {
+                // An accessory is ours and has no durability at all; say that, rather than the
+                // "hold one of our weapons" below, which reads as if it were not ours.
+                player.sendMessage(Component.text(AccessoryRefusals.DURABILITY, NamedTextColor.RED));
+                return;
+            }
             if (WeaponItems.weaponId(held, adapters.keys()).isEmpty()
                     && ShieldItems.shieldId(held, adapters.keys()).isEmpty()) {
                 player.sendMessage(Component.text(
@@ -1867,6 +1914,13 @@ public final class RpgCommand {
     private static HeldGear resolveHeldGear(Player player, ItemStack held, WeaponRegistry weapons,
                                             ShieldRegistry shields, ArmorRegistry armor,
                                             ToolRegistry tools, AdapterContext adapters) {
+        // Ruling A4, EXPLICIT: an accessory is ours, so the fall-through below would call it "not
+        // one of our weapons..." -- false. Its only caller that can reach here is /rpg enchant;
+        // /rpg gearscore set refuses an accessory before it writes anything.
+        if (AccessoryItems.isAccessory(held, adapters.keys())) {
+            player.sendMessage(Component.text(AccessoryRefusals.ENCHANT, NamedTextColor.RED));
+            return null;
+        }
         String weaponId = WeaponItems.weaponId(held, adapters.keys()).orElse(null);
         if (weaponId != null) {
             WeaponDefinition definition = weapons.find(weaponId).orElse(null);

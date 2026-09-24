@@ -96,7 +96,10 @@ class GearClassTest {
         // anyone wrote a line. What the sweep found INSTEAD were three the old list did not name:
         // /rpg give's final else, GearRefresher's tag chain, and RpgPlugin's two all-kinds lists.
         // The lesson survives the fix: widening this enum is a checklist, not a build.
-        assertEquals(6, GearClass.values().length);
+        //
+        // ACCESSORY made it seven, and its checklist is PLAN-accessories.md §3.4 -- the compiler-
+        // forced arms and the hand-written chains are listed there separately for this reason.
+        assertEquals(7, GearClass.values().length);
     }
 
     @Test

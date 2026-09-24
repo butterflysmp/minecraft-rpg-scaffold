@@ -396,4 +396,18 @@ class EnchantRollTest {
         assertThrows(IllegalArgumentException.class, () -> new Rollable(null, GearClass.MELEE));
         assertThrows(IllegalArgumentException.class, () -> new Rollable("  ", GearClass.MELEE));
     }
+
+    /**
+     * Ruling A4: an accessory's pool is EMPTY -- not the universal enchants the null-gate rule would
+     * give any other kind. The roster carries UNBREAKING (universal) precisely so this row can see it.
+     */
+    @Test
+    void anAccessoryRollsNothing_notEvenAUniversalEnchant() {
+        assertTrue(EnchantRoll.poolFor(GearClass.TOOL, ROSTER).contains(UNBREAKING),
+                "control: the universal enchant IS in a non-accessory pool, so the row below can fail");
+        assertTrue(EnchantRoll.poolFor(GearClass.ACCESSORY, ROSTER).isEmpty(), "A4");
+        EnchantRoll.roll(GearClass.ACCESSORY, ROSTER, always(0.0)).slots()
+                .forEach(slot -> assertTrue(slot.candidates().isEmpty(), "no candidate on any slot"));
+        // Mutation: delete the ACCESSORY return in EnchantRoll.poolFor -> reddens.
+    }
 }

@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
+import io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -123,6 +124,14 @@ public final class EnchantLoader {
             throw new IllegalArgumentException("Unknown class '" + raw + "' in enchant '" + id
                     + "'; expected " + UNIVERSAL + " or one of "
                     + Arrays.toString(GearClass.values()));
+        }
+        // Ruling A4, EXPLICIT. GearClass.ACCESSORY exists so exhaustive switches must answer for
+        // accessories, and fromName therefore parses `class: accessory`. Every effect's gate in
+        // EnchantDefinition is an allowlist and would refuse it anyway -- in a gate's words, for a
+        // gate's reason. This says the true one: accessories take no part in enchanting.
+        // EnchantLoaderTest asserts THIS text, which is the only reading deleting this line reddens.
+        if (parsed == GearClass.ACCESSORY) {
+            throw new IllegalArgumentException("enchant '" + id + "': " + AccessoryRefusals.ENCHANT_CLASS);
         }
         return parsed;
     }

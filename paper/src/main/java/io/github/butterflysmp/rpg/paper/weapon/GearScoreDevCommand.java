@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import com.mojang.brigadier.context.CommandContext;
+import io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals;
 import io.github.butterflysmp.rpg.core.weapon.GearLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import io.github.butterflysmp.rpg.core.weapon.GearScoreBand;
@@ -156,6 +157,12 @@ public final class GearScoreDevCommand {
         if (held == null || held.getType().isAir()) {
             player.sendMessage(Component.text("Hold the item you want to score.",
                     NamedTextColor.YELLOW));
+            return 0;
+        }
+        // Ruling A4, EXPLICIT: this writes the score BEFORE the lookup resolves the item, so without
+        // this line an accessory would carry a gear_score key it is ruled out of.
+        if (AccessoryItems.isAccessory(held, adapters.keys())) {
+            player.sendMessage(Component.text(AccessoryRefusals.GEAR_SCORE, NamedTextColor.RED));
             return 0;
         }
 

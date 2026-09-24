@@ -1,0 +1,31 @@
+# The RANGER class accessory -- worn only in slot 0, only by a profile whose class is ranger.
+#
+# "Quiver" is the player-facing name (ruling A2), and the magazine keeps its name too: players will
+# see the word mean two things, which is accepted. No INTERNAL key, prefix or notice id for
+# accessories contains "quiver" -- this file's id and type token are content, not keys.
+#
+# It modifies NO quiver_size and NO reload_time (RULINGS Q6): the class slot is gated on the profile
+# class, not the held weapon, so on a ranger weapon with no magazine those would do nothing.
+#
+# Numbers RULED by Ben, 2026-09-24 (RULINGS Q2) -- not derived. class_damage is FLAT and applies only
+# while a ranger weapon is held (RULINGS Q3); the drawback passes the 4x bound (4 x 0.04 = 0.16 <
+# the 0.2/s health regen base).
+
+display_name: "Fletcher's Quiver"
+rarity: rare
+
+# shulker_shell: inert -- its only vanilla use is the shulker box recipe (refused for minted items),
+# and no villager buys it. NOT leather or rabbit_hide, which a villager would buy.
+material: shulker_shell
+
+slot: class
+class: ranger
+type: quiver
+
+modifiers:
+  class_damage: 3
+  crit_chance: 0.05
+  health_regen: -0.04
+
+flavor:
+  - "Fletched for the draw, not the march."

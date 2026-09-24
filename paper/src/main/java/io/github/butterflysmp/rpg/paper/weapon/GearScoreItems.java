@@ -286,6 +286,10 @@ public final class GearScoreItems {
      */
     static OptionalInt candidateScore(ItemStack item, Keys keys, WeaponRegistry weapons) {
         if (item == null || item.getType().isAir() || !item.hasItemMeta()) return OptionalInt.empty();
+        // Ruling A4, EXPLICIT: an accessory is ours and is not a candidate. The allowlist below would
+        // leave it out anyway, as it leaves out a tool -- this line makes that a decision here rather
+        // than an absence (GearScoreWiringSignatureTest pins that it refuses).
+        if (GearItems.idOf(item, keys.accessoryId).isPresent()) return OptionalInt.empty();
         boolean scoreable = GearItems.idOf(item, keys.weaponId).isPresent()
                 || GearItems.idOf(item, keys.shieldId).isPresent()
                 || GearItems.idOf(item, keys.armorId).isPresent();

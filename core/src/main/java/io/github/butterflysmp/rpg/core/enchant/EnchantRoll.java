@@ -83,6 +83,11 @@ public final class EnchantRoll {
     public static List<Rollable> poolFor(GearClass heldClass, List<Rollable> roster) {
         List<Rollable> pool = new ArrayList<>();
         if (roster == null) return pool;
+        // Ruling A4, EXPLICIT: accessories take no part in enchanting, so their pool is EMPTY -- not
+        // "every universal enchant", which is what the null-gate rule below would otherwise give them.
+        // EnchantRollItems.rollOnAcquire also refuses an accessory before it writes anything; this is
+        // the half a unit test can see.
+        if (heldClass == GearClass.ACCESSORY) return pool;
         for (Rollable rollable : roster) {
             if (rollable == null) continue;
             // null class == universal: no gate, valid on whatever it is offered for.

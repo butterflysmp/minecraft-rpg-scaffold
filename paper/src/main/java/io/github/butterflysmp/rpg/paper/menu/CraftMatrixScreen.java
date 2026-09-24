@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.weapon.AccessoryItems;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.ToolItems;
@@ -112,13 +113,17 @@ public final class CraftMatrixScreen {
      *
      * <p>Deliberately NOT rewritten as a loop over the keys: {@code Keys} holds far more than gear
      * tags, and a loop over all of them would let a future ability or status key silently start
-     * protecting items it has nothing to do with. Four named calls, one per gear kind.
+     * protecting items it has nothing to do with. One named call per gear kind.
      */
     public static boolean isGear(ItemStack item, Keys keys) {
         if (item == null) return false;
         return WeaponItems.weaponId(item, keys).isPresent()
                 || ShieldItems.shieldId(item, keys).isPresent()
                 || ArmorItems.armorId(item, keys).isPresent()
-                || ToolItems.toolId(item, keys).isPresent();
+                || ToolItems.toolId(item, keys).isPresent()
+            // The fifth kind. Without this arm a crafting grid would consume an accessory as an
+            // ingredient, and QuiverAmmo's planning pass (which asks this method) would not skip
+            // one -- the latter is also why no accessory may be minted on ARROW at all.
+            || AccessoryItems.accessoryId(item, keys).isPresent();
     }
 }

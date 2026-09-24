@@ -78,7 +78,26 @@ public enum GearClass {
      * three fighting classes explicitly and therefore refuses this one, which is the allowlist doing
      * its job rather than an oversight.
      */
-    TOOL;
+    TOOL,
+
+    /**
+     * An accessory -- worn in an accessory slot, never an equipment slot.
+     *
+     * <p><b>It exists so every exhaustive switch over this enum is a COMPILE ERROR until it says
+     * what an accessory does there</b>, and ruling A4 answers each the same way: v1 accessories take
+     * no part in enchanting, the anvil, the grindstone or gear score. So it scores nothing
+     * ({@code GearScore.scoreable}), trades with nothing ({@code TransferKey.of} throws), and rolls
+     * nothing ({@code EnchantRollItems.rollOnAcquire} refuses it).
+     *
+     * <p><b>It is also a token an enchant's {@code class:} could now name</b>, because
+     * {@link #fromName} walks every constant. {@code EnchantLoader} refuses {@code class: accessory}
+     * explicitly, A4 -- even though every effect's gate is an allowlist that would refuse it anyway,
+     * because a refusal that only happens by coincidence is not a refusal anyone decided.
+     *
+     * <p>Like {@link #SHIELD}, {@link #ARMOR} and {@link #TOOL}, {@link #of} can never produce this
+     * value -- an accessory has no {@link WeaponClass} of its own to fight with.
+     */
+    ACCESSORY;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

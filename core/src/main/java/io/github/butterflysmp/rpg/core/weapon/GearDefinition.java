@@ -59,9 +59,13 @@ import java.util.Optional;
  * rather than falling through some default arm.
  */
 public sealed interface GearDefinition
-        permits WeaponDefinition, ShieldDefinition, ArmorDefinition, ToolDefinition {
+        permits WeaponDefinition, ShieldDefinition, ArmorDefinition, ToolDefinition,
+                AccessoryDefinition {
 
-    /** The content id, unique across ALL FOUR registries -- the boot warns when it is not. */
+    /**
+     * The content id, unique across ALL FIVE registries. The boot warns when one of the first four
+     * collides, and REFUSES an accessory that does.
+     */
     String id();
 
     /** The authored name, before {@code WeaponItems.displayName} recolours it by rarity. */

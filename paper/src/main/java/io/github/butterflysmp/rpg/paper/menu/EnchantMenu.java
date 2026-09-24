@@ -21,6 +21,8 @@ import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantEffectLine;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearItems;
+import io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals;
+import io.github.butterflysmp.rpg.paper.weapon.AccessoryItems;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.weapon.ShieldItems;
 import io.github.butterflysmp.rpg.paper.weapon.ToolItems;
@@ -235,6 +237,14 @@ public final class EnchantMenu extends Menu {
     private PlacedGear resolveGear(ItemStack placed) {
         if (placed == null || placed.getType().isAir()) return null;
 
+        // Ruling A4, EXPLICIT: accessories take no part in enchanting. acceptsInput refuses one at
+        // the door as well; this arm is here so a placed accessory can never resolve to gear by any
+        // other route, and so the refusal is a decision rather than an absence from the chain below.
+        if (AccessoryItems.isAccessory(placed, adapters.keys())) {
+            say(AccessoryRefusals.ENCHANT, NamedTextColor.GRAY);
+            return null;
+        }
+
         String weaponId = WeaponItems.weaponId(placed, adapters.keys()).orElse(null);
         if (weaponId != null) {
             WeaponDefinition definition = weapons.find(weaponId).orElse(null);
@@ -288,6 +298,12 @@ public final class EnchantMenu extends Menu {
      */
     @Override
     protected boolean acceptsInput(ItemStack cursor) {
+        // Ruling A4, and FIRST: the check below would also refuse an accessory, in the words "not
+        // one of your weapons...", which is false -- it IS one of ours. Say the true reason.
+        if (AccessoryItems.isAccessory(cursor, adapters.keys())) {
+            say(AccessoryRefusals.ENCHANT, NamedTextColor.GRAY);
+            return false;
+        }
         if (WeaponItems.weaponId(cursor, adapters.keys()).isEmpty()
                 && ShieldItems.shieldId(cursor, adapters.keys()).isEmpty()
                 && ArmorItems.armorId(cursor, adapters.keys()).isEmpty()

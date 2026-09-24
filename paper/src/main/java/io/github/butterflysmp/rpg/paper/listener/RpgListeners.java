@@ -597,6 +597,9 @@ public final class RpgListeners implements Listener {
         // And their vault, the same way and on the same thread. A missing file becomes an EMPTY
         // vault; an unreadable one stays failed for the session so nothing writes over it.
         vaults.onJoin(event.getPlayer().getUniqueId());
+        // And their accessories, the same way. Until the read lands they contribute nothing, which
+        // the reconcile loop below picks up on its first pass after it does.
+        adapters.accessories().service().onJoin(event.getPlayer().getUniqueId());
         // Register custom health at base 100, render the heart bar, and start the equip reconcile loop.
         healthSystem.onJoin(event.getPlayer());
         // Start this viewer's per-viewer mob-nameplate LOS loop.
@@ -1490,6 +1493,10 @@ public final class RpgListeners implements Listener {
         // on disk, and a save here would mask a broken write-through by making an ordinary quit look
         // correct on a build whose per-mutation write did nothing. See VaultService.onQuit.
         vaults.onQuit(playerId);
+        // And the cached accessories, for the vault's reason: every equip and unequip was written
+        // through when it happened, so there is nothing to save here.
+        adapters.accessories().service().onQuit(playerId);
+        adapters.accessories().forget(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
         healthSystem.onQuit(playerId);
         // And drop the armor-bar override with it. API-added attribute modifiers persist in player

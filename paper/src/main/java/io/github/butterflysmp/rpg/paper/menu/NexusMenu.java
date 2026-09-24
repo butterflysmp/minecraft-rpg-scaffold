@@ -10,6 +10,7 @@ import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
+import io.github.butterflysmp.rpg.paper.hud.AccessorySheet;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
@@ -404,7 +405,10 @@ public final class NexusMenu extends Menu {
                         // learn to. Present rather than empty because the viewer is online and their
                         // inventory is readable by construction at this point; empty is reserved for a
                         // read that could not happen, which on this path cannot arise.
-                        OptionalInt.of(GearScoreItems.averageOf(viewer, adapters.keys(), adapters.weapons()))));
+                        OptionalInt.of(GearScoreItems.averageOf(viewer, adapters.keys(), adapters.weapons())),
+                        AccessorySheet.lines(viewer.getUniqueId(), adapters.accessories(),
+                                profiles.profile(viewer.getUniqueId())
+                                        .map(PlayerProfile::archetypeId).orElse(null))));
 
         // THE SKIN. Cheap HERE AND ONLY HERE: the viewer is online, so their profile is already
         // resolved and nothing fetches.

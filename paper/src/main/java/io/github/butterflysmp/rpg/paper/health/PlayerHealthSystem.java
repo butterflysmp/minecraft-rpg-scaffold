@@ -1,5 +1,7 @@
 package io.github.butterflysmp.rpg.paper.health;
 
+import io.github.butterflysmp.rpg.core.accessory.AccessoryContributions;
+import io.github.butterflysmp.rpg.core.accessory.AccessoryStat;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.ManaTransition;
@@ -7,8 +9,10 @@ import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
+import io.github.butterflysmp.rpg.paper.accessory.Accessories;
 import io.github.butterflysmp.rpg.paper.adapter.EntityTaskTarget;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTask;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
@@ -16,6 +20,7 @@ import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DamageEnchantItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponAttackItems;
+import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -50,6 +55,8 @@ public final class PlayerHealthSystem implements HealthListener {
     private final HeartBarRenderer renderer = new HeartBarRenderer();
     private CombatantStats stats;
     private ResourcePool resources;
+    private Accessories accessories;
+    private ProfileService profiles;
 
     public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons,
                               EnchantRegistry enchants, java.util.logging.Logger log) {
@@ -75,6 +82,33 @@ public final class PlayerHealthSystem implements HealthListener {
      */
     public void bindResources(ResourcePool resources) {
         this.resources = resources;
+    }
+
+    /**
+     * Wire the accessory store and the profile service, which the reconcile loop reads to merge each
+     * player's accessories into the stats (ruling A1: the class slot is gated on the PROFILE class).
+     *
+     * <p>A third bind, for the reason the other two give: both are built after this system. Until it
+     * is called the loop contributes nothing from accessories -- {@link #accessoryContributions}
+     * answers {@code NONE} -- which is the same answer an unloaded store gives.
+     */
+    public void bindAccessories(Accessories accessories, ProfileService profiles) {
+        this.accessories = accessories;
+        this.profiles = profiles;
+    }
+
+    /**
+     * What this player's worn accessories contribute this pass. Read ONCE per pass and handed to every
+     * merge below, so all stats see the same snapshot of the store and the profile.
+     *
+     * <p>Read from the ACCESSORY STORE, never from an equipment slot -- an accessory in the hand is an
+     * item like any other and contributes nothing (the item carries no stat key; see
+     * {@code AccessoryItems}). A null profile class and "none" both mean no class.
+     */
+    private AccessoryContributions accessoryContributions(UUID id) {
+        if (accessories == null || profiles == null) return AccessoryContributions.NONE;
+        String profileClass = profiles.profile(id).map(PlayerProfile::archetypeId).orElse(null);
+        return accessories.contributions(id, profileClass);
     }
 
     /** The store this owns, for the dev commands that damage/heal through the observable path. */
@@ -200,9 +234,15 @@ public final class PlayerHealthSystem implements HealthListener {
             // The Growth keys are namespaced ("growth:CHEST") because HealthModifierItems walks ALL
             // slots on bare slot names, so a fixture item and a Growth piece in the same slot would
             // otherwise collide on one key and Stat.putModifier would keep only one of them.
+            // THE ACCESSORIES, read once for the whole pass and merged into each stat they touch BEFORE
+            // that stat's one reconcile -- the rule the two paragraphs above state, applied to a third
+            // source. AccessoryContributions.merged is a named two-argument merge for the reason the
+            // quiver-size note below records: an inline putAll here was once deleted and nothing reddened.
+            AccessoryContributions fromAccessories = accessoryContributions(id);
             Map<String, Double> desiredMax = new HashMap<>(HealthModifierItems.desiredModifiers(player, keys));
             desiredMax.putAll(GrowthModifierItems.desiredModifiers(player, keys, enchants));
-            stats.reconcileMaxModifiers(id, desiredMax);
+            stats.reconcileMaxModifiers(id, AccessoryContributions.merged(desiredMax,
+                    fromAccessories.sources(AccessoryStat.MAX_HEALTH)));
             Map<String, Double> desiredAttack = WeaponAttackItems.desiredAttackModifiers(player, keys, weapons);
             stats.reconcileAttackModifiers(id, desiredAttack);
             Map<String, Double> desiredSpeed = AttackSpeedModifierItems.desiredModifiers(player, keys);
@@ -215,7 +255,8 @@ public final class PlayerHealthSystem implements HealthListener {
             AttackSpeedAttributeOverride.apply(player, keys,
                     WeaponAttackItems.heldMeleeSpeed(player, keys, weapons), stats.attackSpeedValue(id));
             Map<String, Double> desiredClass =
-                    ClassDamageModifierItems.desiredModifiers(player, keys, weapons);
+                    ClassDamageModifierItems.desiredModifiers(player, keys, weapons,
+                            fromAccessories.classGrants());
             stats.reconcileClassDamageModifiers(id, desiredClass);
             // The fifth reads only the MAIN HAND, unlike the four above: a damage enchant is not
             // worn elsewhere and pointed at your weapon, it is ON the weapon, so the gate compares
@@ -229,8 +270,12 @@ public final class PlayerHealthSystem implements HealthListener {
             // absent from the next scan and its source is dropped. They converge INDEPENDENTLY --
             // one item can raise how often you crit without touching how hard, which is the whole
             // reason crit is two stats rather than one.
-            stats.reconcileCritChanceModifiers(id, CritModifierItems.desiredChanceModifiers(player, keys));
-            stats.reconcileCritDamageModifiers(id, CritModifierItems.desiredDamageModifiers(player, keys));
+            stats.reconcileCritChanceModifiers(id, AccessoryContributions.merged(
+                    CritModifierItems.desiredChanceModifiers(player, keys),
+                    fromAccessories.sources(AccessoryStat.CRIT_CHANCE)));
+            stats.reconcileCritDamageModifiers(id, AccessoryContributions.merged(
+                    CritModifierItems.desiredDamageModifiers(player, keys),
+                    fromAccessories.sources(AccessoryStat.CRIT_DAMAGE)));
 
             // The sixth is the only one whose source is SHIPPED VANILLA CONTENT rather than a dev
             // fixture or an authored weapon: it reads the armor value off whatever armor the player
@@ -254,8 +299,10 @@ public final class PlayerHealthSystem implements HealthListener {
             // asOfTick four times a second, so elapsed never grows and mana stops regenerating
             // entirely, with a stat block that still reads correctly.
             ManaTransition.reconcile(stats, resources, id, ResourceCost.DEFAULT_RESOURCE,
-                    ManaBankModifierItems.desiredModifiers(player, keys, enchants),
-                    ManaRegenModifierItems.desiredModifiers(player, keys));
+                    AccessoryContributions.merged(ManaBankModifierItems.desiredModifiers(player, keys, enchants),
+                            fromAccessories.sources(AccessoryStat.MAX_MANA)),
+                    AccessoryContributions.merged(ManaRegenModifierItems.desiredModifiers(player, keys),
+                            fromAccessories.sources(AccessoryStat.MANA_REGEN)));
 
             // The TENTH, and the quietest: the passive regeneration RATE, in HP per second. No
             // event, no override, no pin.
@@ -266,7 +313,9 @@ public final class PlayerHealthSystem implements HealthListener {
             // ever accrued-but-unpaid for a rate change to re-price. Mana is LAZY-INTEGRATED
             // (amount + elapsed * rate, evaluated on read), so changing its rate re-prices ticks
             // that already passed. Eager versus lazy is the axis; having a current is not.
-            stats.reconcileHealthRegenModifiers(id, HealthRegenModifierItems.desiredModifiers(player, keys));
+            stats.reconcileHealthRegenModifiers(id, AccessoryContributions.merged(
+                    HealthRegenModifierItems.desiredModifiers(player, keys),
+                    fromAccessories.sources(AccessoryStat.HEALTH_REGEN)));
 
             // QUIVER SIZE: whole arrows added to the held weapon's authored magazine. SILENT and
             // VOID, like health regen -- but for a different reason, and the difference is worth
@@ -322,7 +371,10 @@ public final class PlayerHealthSystem implements HealthListener {
             stats.reconcileReloadTimeModifiers(id, ReloadTimeModifierItems.desiredModifiers(player, keys));
 
             DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
-            stats.reconcileDefenseModifiers(id, worn.defense());
+            // Accessory defense merged BEFORE the reconcile, so the bar override below draws a value that
+            // already includes it.
+            stats.reconcileDefenseModifiers(id, AccessoryContributions.merged(worn.defense(),
+                    fromAccessories.sources(AccessoryStat.DEFENSE)));
             ArmorBarOverride.apply(player, keys, stats.defenseValue(id), worn.nativeArmor());
             return true;
         }, () -> { });

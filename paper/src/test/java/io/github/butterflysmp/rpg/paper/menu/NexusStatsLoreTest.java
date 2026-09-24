@@ -253,4 +253,18 @@ class NexusStatsLoreTest {
         assertTrue(plain(noStats.get(3)).contains(StatsSheetLines.UNTRACKED),
                 "the untracked notice survives beneath them");
     }
+
+    /** Ruling Q4: the accessory block sits UNDER the stat totals it feeds, and nothing else moves. */
+    @Test
+    void theAccessoryBlockIsAppendedBelowTheStatLines() {
+        List<Component> block = List.of(
+                net.kyori.adventure.text.Component.text("Accessories"),
+                net.kyori.adventure.text.Component.text("  Ward Charm: +3 Defense"));
+        List<Component> without = NexusStatsLore.lore(Optional.of(bare()), OptionalLong.empty(), OptionalInt.empty());
+        List<Component> with = NexusStatsLore.lore(Optional.of(bare()), OptionalLong.empty(), OptionalInt.empty(), block);
+        assertEquals(without.size() + 2, with.size());
+        assertEquals(without, with.subList(0, without.size()), "everything above the block is unchanged");
+        assertEquals("Accessories", plain(with.get(without.size())));
+        assertEquals("  Ward Charm: +3 Defense", plain(with.get(with.size() - 1)));
+    }
 }

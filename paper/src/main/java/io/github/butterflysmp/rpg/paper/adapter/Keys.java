@@ -54,6 +54,20 @@ public final class Keys {
      */
     public final NamespacedKey toolId;
 
+    /**
+     * The id of an ACCESSORY this item was minted from -- the fifth gear kind, its own key for the
+     * reason {@link #toolId} gives.
+     *
+     * <p><b>It holds the id and NOTHING ELSE.</b> An accessory's stats are read from its definition
+     * by the accessory scanner, never from the item: the all-slot scanners read their keys off any
+     * equipped stack, main hand included, so a stat key on an accessory would grant it while merely
+     * HELD. {@code AccessoryItemsWritesOnlyItsIdTest} holds that line.
+     *
+     * <p>The name contains no {@code quiver} (ruling A2): the Ranger accessory is called "Quiver" to
+     * a player, and no internal identifier may collide with the magazine's {@code quiver_*} keys.
+     */
+    public final NamespacedKey accessoryId;
+
     public final NamespacedKey abilityId;
 
     /**
@@ -362,6 +376,7 @@ public final class Keys {
         this.shieldId = new NamespacedKey(plugin, "shield_id");
         this.armorId = new NamespacedKey(plugin, "armor_id");
         this.toolId = new NamespacedKey(plugin, "tool_id");
+        this.accessoryId = new NamespacedKey(plugin, "accessory_id");
         this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.gearScore = new NamespacedKey(plugin, "gear_score");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
