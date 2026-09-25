@@ -33,13 +33,14 @@ import java.util.logging.Logger;
  *
  * <h2>The difference from the vault: the item moves only after the write settles</h2>
  *
- * {@link #write}'s callback runs when the write has reached disk or failed, and the dev command
+ * {@link #write}'s callback runs when the write has reached disk or failed, and the Equipment screen
  * moves the item only then -- an unequip hands the item back only on SUCCESS, and an equip gives it
- * back only on FAILURE. So the item is never both in the file and in the inventory. The residual --
- * a write that reached disk but reported failure -- is the vault's accepted DECISION 2 residual.
+ * back only on FAILURE. So the item is never both in the file and in the inventory. The residuals --
+ * a write that reached disk but reported failure, and a success whose hand-back never runs because
+ * the player disconnected first -- are the vault's accepted DECISION 2 family.
  *
- * <p>Callbacks run on the storage I/O thread. Anything that touches Bukkit must hop first; the dev
- * command does.
+ * <p>Callbacks run on the storage I/O thread. Anything that touches Bukkit must hop first; the
+ * Equipment screen does.
  */
 public final class AccessoryService {
 

@@ -342,7 +342,7 @@ public final class RpgPlugin extends JavaPlugin {
         // Quiver, a Scroll, and the Gauntlet nobody can wear yet (ruling Q1).
         if (accessoryRegistry.size() == 0) {
             getLogger().warning("No accessories loaded from content/accessories -- /rpg give can mint"
-                    + " none, and /rpg accessory has nothing to equip. Expected 6.");
+                    + " none, and the Equipment screen has nothing to equip. Expected 6.");
         }
 
         // The tooltip number against vanilla's. This is the ONLY moment the two live in the same

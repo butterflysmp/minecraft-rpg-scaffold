@@ -160,6 +160,37 @@ public abstract class Menu implements InventoryHolder {
     }
 
     /**
+     * A shift-click from the PLAYER'S half that no input slot could take. Default: {@code false},
+     * which leaves the router's answer exactly what it was before this hook existed -- nothing moves.
+     *
+     * <p>Consulted at ONE place: {@code MenuRouting.shiftMove}'s from-player branch, where both the
+     * top-up search and the first-empty search found no input slot. It is never asked while an input
+     * slot is a candidate, and never for a shift-click in the menu's own half (that is
+     * {@link #shiftClickDispatches}). A menu with no input slots -- the Equipment screen -- therefore
+     * reaches it on every shift-in, which is what it is for.
+     *
+     * <p><b>THE CONTRACT, and each half is a duplication guard:</b>
+     * <ul>
+     *   <li><b>Clear first.</b> Call {@code setSource} with what is left in the clicked slot -- or
+     *       {@code null} -- BEFORE writing the destination. The house rule, for the reason
+     *       {@code shiftMove}'s own clear-first comments give: a destination written first and a
+     *       source clear that then fails leaves two copies.
+     *   <li><b>Return true only if something moved.</b> A refusal returns false and must have called
+     *       nothing. The router calls {@code updateInventory()} only on true.
+     * </ul>
+     *
+     * <p>The event is already cancelled and stays so; the menu performs the move itself, as the
+     * router does for its own routes. No {@link #onClick} is dispatched: the menu re-renders from
+     * inside this method, or schedules it.
+     *
+     * @param moving    a clone of the clicked stack
+     * @param setSource writes the clicked slot in the player's half
+     */
+    protected boolean shiftInElsewhere(ItemStack moving, java.util.function.Consumer<ItemStack> setSource) {
+        return false;
+    }
+
+    /**
      * A drag was PERMITTED and will land after {@link #handleDrag} returns. Default: nothing.
      *
      * <p>Exists because a permitted drag changes the menu's contents and dispatches nothing else. A

@@ -626,6 +626,8 @@ check; merge-after-reconcile instead of before (max HP); drop the `rollOnAcquire
 feature called "loadouts" would give one word two systems. **Proposed player-facing name: "Equipment
 Sets".** The §3.9 store is shaped so a set can reuse it. Nothing else is planned.
 
+**Screen space reserved (Ben, 2026-09-25):** the Equipment screen's columns 5-7 (0-indexed), rows 1-4 -- slots 14-16, 23-25, 32-34, 41-43 -- are held for Equipment Sets; until then they are plain filler (`EquipmentMenuLayout`).
+
 ---
 
 ## 7. OPEN QUESTIONS FOR BEN — each with a recommendation
