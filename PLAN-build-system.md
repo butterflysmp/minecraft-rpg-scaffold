@@ -807,10 +807,17 @@ side.
 - **`cooldown_ticks`**
   - *Arithmetic:* integer ticks, floored by `CastSpec.minimumCooldownTicks` (non-zero only for Volley)
     inside `AbilityService.resolve`. A resolved value below the floor would be clamped, and so inert.
-  - *The 4-tick grid* (`WeaponLoader`'s `cooldown_ticks` section) quantises **held** input. Ruling 15
-    makes stone input one cast per press, so it does not strictly apply. But CLAUDE.md's instruction is
-    *author multiples of 4*, and a stone ability can also reach a player through a weapon trigger's copy.
-    So the rule is kept uniform.
+  - *The 4-tick grid* (`WeaponLoader`'s `cooldown_ticks` section; the standing decision **NEW CONTENT
+    CITES THE BOLTOR**) applies to **held right-click**: inputs from a held right-click land on a 4-tick
+    grid. **The stone's Active 2 is a right-click input**, so whenever that input is held, a cooldown
+    that is not a multiple of 4 is silently rounded UP, and the tooltip would not say so.
+  - §2.5 recommends one cast per press, with the held repeat ignored until release. That removes the
+    exposure while the recommendation stands. The multiple-of-4 rule is **kept** anyway: it is the guard
+    that stays correct if the recommendation is overturned, and it costs an author nothing.
+  - *This bullet used to say "a stone ability can also reach a player through a weapon trigger's copy".
+    That is false by §1.1*: a weapon trigger copies an ability's body inline and cannot reference a
+    registered ability, so an aspect-modified ability never reaches a trigger. Corrected on the seat's
+    review of `7c2da6c`.
   - **The loader refuses** a resolved value that is:
     - not an integer;
     - not a multiple of 4;
@@ -936,6 +943,26 @@ This is cheap: a pool has a handful of aspects.
 | **Q, screen open** | `onNexusClick` refuses at LOWEST; the drop event never fires | **refuses, never casts** — a cast from inside a menu would fire at an unseen aim |
 | **offhand** | `onNexusSwapHand` (widened) refuses; the swing and right-click paths are main-hand only | never casts |
 | **creative** | Q uses `handleCreativeModeItemDrop` (§1.7); creative clicks are `ClickType.CREATIVE` | **declared a divergence** in the creative register; every stone row is SURVIVAL, and one row reads creative as a control |
+
+**HOLDING right-click on the stone — RECOMMENDATION: one cast per press, the same as ruling 15 for left
+click. The held repeat is ignored until release.**
+
+- **What the server sees:** a held right-click keeps delivering RIGHT_CLICK inputs (air or block), and
+  they land on the 4-tick grid (the standing decision; *not* a periodic stream, and the period is not
+  asserted here).
+- **What "release" is:** echo shard has no use animation, so there is no use-item hold for the server to
+  end. That the server receives **no** release signal is an inference; S2 checks it. **So release is
+  INFERRED from a gap:** an input more than `G` ticks after the previous one starts a new press, and one
+  within `G` ticks is a held repeat and is dropped. `G` is **measured by S2**, not guessed.
+- **The pure rule lives in core:** `C/build/PressDebounce.isNewPress(lastInputTick, nowTick, gap)`.
+  `StoneInput` asks it for the right-click arm, and the left-click arm uses the same function with its
+  own measured gap.
+- **Why not re-cast while held**, the Boltor's precedent for a held weapon: an Active has a long cooldown,
+  so auto-repeat is mostly "on cooldown" notices. It would also put Active 2's real cooldown on the
+  grid (§2.4.1), while Active 1 (left) and the Ultimate (Q) are not on it: three buttons with three
+  timing rules.
+- *Alternative, named:* re-cast whenever the cooldown allows. It needs no debounce, and it makes Active 2
+  the only held-repeat input on the stone.
 
 **Where the checks live.** Each press resolves the slot's ability id from `BuildService`, derives the
 aspects (§1.5), then calls the **existing** `AbilityService.cast(caster, id, aim, castable)` with
@@ -1074,7 +1101,7 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
 | spike | question | instrument | outcome that changes the design |
 |---|---|---|---|
 | **S1 — blocking** | Does a successful Q-drop make the client send an ANIMATION (swing) packet? And does a **cancelled** drop? | log every ANIMATION packet in `WeaponSwingListener` and every `PlayerDropItemEvent`, with the tick; press Q 10× on a droppable item, then 10× on the star (cancelled); survival | **If a swing follows Q:** the left-click branch suppresses a swing that lands within N ticks of a stone drop on the same player. N is **measured**, not guessed. **If not:** no guard, and a gate row pins the absence |
-| **S2 — blocking** | While holding left on a block in survival, how many ANIMATION packets arrive, at what spacing, and does cancelling `BlockDamageEvent` change the stream? | the same log; hold left 3 s on stone with a stone-like test item, once uncancelled and once with `BlockDamageEvent` cancelled | it decides whether a held left click is **one cast per press** (a debounce measured from the stream) or **re-casts whenever the cooldown allows** (the Boltor precedent for held input). **Ruling 15 chose one cast per press; S2 measures the stream the debounce is built from** |
+| **S2 — blocking** | **(a) LEFT:** while holding left on a block in survival, how many ANIMATION packets arrive, at what spacing, and does cancelling `BlockDamageEvent` change the stream? **(b) RIGHT (added on the seat's review of `7c2da6c`):** while holding right-click with an echo-shard test item, in air and on a block, how many RIGHT_CLICK `PlayerInteractEvent`s arrive, at what tick spacing, what is the largest gap between two held inputs, and does anything reach the server on release? | the same log, with `PlayerInteractEvent` added; (a) hold left 3 s on stone with a stone-like test item, once uncancelled and once with `BlockDamageEvent` cancelled; (b) hold right 3 s in air, then 3 s on stone, then five separate quick presses, recording each input's tick | it decides whether a held left click is **one cast per press** (a debounce measured from the stream) or **re-casts whenever the cooldown allows** (the Boltor precedent for held input). **Ruling 15 chose one cast per press; S2 measures the stream the debounce is built from.** For (b), the gap `G` must exceed the largest held-input gap AND be smaller than the gap between the quick separate presses. **If the two ranges overlap, a press cannot be told from a hold, and the recommendation goes back to Ben before slice 1 builds.** If something does arrive on release, it replaces the gap rule |
 | S3 — in slice 1 | Does right-clicking an entity also produce a RIGHT_CLICK_AIR `PlayerInteractEvent`? | log both events with the tick | whether the same-tick guard ever fires (the guard ships either way) |
 | S4 — in slice 1 | What do Q and a left click do in CREATIVE? | the same log | recorded in the creative register; no survival row depends on it |
 
@@ -1087,6 +1114,7 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
   - `C/build/StoneInput` — a pure map from (input, main hand, screen open, gamemode) to a
     `LoadoutSlot` or a refusal;
   - `C/build/LockedSlots` (the conflict rule);
+  - `C/build/PressDebounce` (the held-repeat rule, gap `G` from S2);
   - `AbilityService.castUnchecked` (ruling 10, §2.5.1).
 - **paper:**
   - `P/content/PoolLoader`;
@@ -1111,6 +1139,7 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
 
 - **core:**
   - `StoneInputTest`: the whole grid of input × hand × screen × gamemode.
+  - `PressDebounceTest`: an input exactly `G` ticks after the last is a held repeat, and `G + 1` is a new press. Both edges, for the right-click gap and the left-click gap.
   - `LockedSlotsTest`: the two items can never share a slot after any sequence of picks and toggles;
     stone picks outside 0-8 are refused.
   - `PoolRegistryTest`: composite key; duplicate refused.
@@ -1136,6 +1165,7 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
 | delete the `onPrePlayerAttack` cancel | ST4 |
 | `castUnchecked` calls `resolve` | `AbilityServiceTest` + ST14 |
 | `isStone` keys on `Material.ECHO_SHARD` | `StoneItemsTest` + ST16 |
+| `PressDebounce.isNewPress` always returns true (re-cast while held) | `PressDebounceTest` + ST17 |
 
 #### 3.1.3 Gate — `GATE-build-stone.md`. **Game mode: SURVIVAL, except ST12**
 
@@ -1157,6 +1187,7 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
 | ST11 | the stone in brewing stand / furnace fuel / smithing table: refused or not consumed; no villager trade | inertness |
 | ST12 | **CREATIVE control**: record Q and left (S4); no survival row rests on it | creative register |
 | ST13 | (S1-dependent) Q casts the Ultimate **only**: Active 1's visual does not appear | S1 |
+| ST17 | **HOLD right-click** in air for 3 s with an Active 2 whose cooldown is shorter than 3 s (a dev-set short-cooldown test pool; §4 placeholder): exactly **one** cast; release, press again after the cooldown: a second cast. Then five quick separate presses spaced wider than the cooldown: five casts. Held on a crafting table: one cast, and the table never opens | the held repeat, S2(b)'s `G` |
 | ST14 | **an operator** (`rpg.command.dev`): `/rpg cast void_slash` (in no pool) casts; mana unchanged (HUD); cast it again at once: it casts again; a stone press of an equipped ability right after a dev cast of it is **not** on cooldown | ruling 10 |
 | ST15 | **a non-op**: `/rpg cast void_slash` is refused as not in the loadout; `/rpg cast <Active 1>` casts, spends mana and starts the cooldown the stone then reports; tab completion lists only the loadout | ruling 10 |
 | ST16 | **echo-shard identity**: carry a Ward Charm and the stone. Left, right and Q with the **charm** held do nothing stone-like (no cast, and Q drops it). The charm equips into an accessory slot; the stone is refused there, and the stats sheet shows no accessory line for it. Settings toggle OFF removes the stone and **not** the charm. The stone cannot be moved into a crafting grid (the lock), so no recovery compass. The charm and stone never stack or merge on a cursor | §2.5.2 |
