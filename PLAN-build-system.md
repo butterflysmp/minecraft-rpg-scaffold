@@ -42,6 +42,25 @@ Recorded verbatim from the brief.
 8. **Nothing needs to be craftable yet: this is not a live project. After kits go, /rpg give is the
    only weapon source, and that is accepted for now. State it as a known gap, not a defect.**
 
+**Ben's rulings on §5, 2026-09-25, recorded verbatim. Each is removed from §5:**
+
+9. **Q1: aspects MAY also change their target's numbers.** The design is §2.4.1.
+10. **Q2: operators' /rpg cast can cast ANY ability, at any time, with NO cost and NO cooldown. It is a
+    dev tool; everyone else casts only their loadout.** The design is §2.5.1.
+11. **Q3: one of each fragment only; the same fragment cannot be slotted twice.**
+12. **Q4: the Ability Stone's material is ECHO_SHARD.** Its collisions are in §2.5.2.
+13. **Q5: the default is on, in hotbar slot 7, changeable via Settings (hotbar slots only).**
+14. **Q6-Q10: as recommended.** That makes five rulings, 14 to 18, each taking the §5 recommendation it
+    answered:
+    - **14 (Q6):** right-clicking a hijacked block with the stone held **casts**. Sneaking still opens
+      the block.
+    - **15 (Q7):** a held left click is **one cast per press**. S2 still runs, because it measures the
+      swing stream the debounce is built from.
+    - **16 (Q8):** the §3.3 Build-screen layout, and the Build button is **ungated**.
+    - **17 (Q9):** Ultimates use **shared mana plus a long cooldown** in v1.
+    - **18 (Q10):** the names are "Build", "Ability Stone", "Ultimate", "Active", "Aspect" and
+      "Fragment".
+
 The loadout, per player:
 
 - 1 Ultimate (a long cooldown);
@@ -57,12 +76,12 @@ screen is where the player picks their Class, their Element and their loadout.
 **And seven amendments the seat made when approving this plan's outline, 2026-09-25:**
 
 1. **Aspect numbers** are not in the OUT list. Whether an aspect may also change an ability's numbers is
-   §5 Q1.
+   §5 Q1, now ruling 9.
 2. **An aspect whose target is not equipped** is equipped but INACTIVE (§2.4). Slice 5 has a row for it.
 3. **The fragment negative bound spans both systems**: accessories (4) + fragments (4) (§2.3).
 4. **The star is regression-gated** in slice 1, row by row (§3.1).
 5. **The Q-drop and mining-swing spikes BLOCK slice 1's build** (§3.1.0).
-6. **`/rpg cast` for operators** is §5 Q2.
+6. **`/rpg cast` for operators** was §5 Q2, now ruling 10.
 7. The two element/weapon-source questions became Ben's rulings 7 and 8 above, and are **not** in §5.
 
 ---
@@ -590,6 +609,7 @@ modifiers:
 - **`class_damage` is REFUSED on fragments in v1.** It is a `ClassGrant` path that accessories reach only
   from the class slot. A fragment is already class-scoped by its pool, so it would be the same number
   arriving by a second door. Revisit if Ben wants it.
+- **One of each (ruling 11).** The Build screen never offers a fragment already slotted, and a loadout that names one twice (only a hand-edited file can) keeps the first, reads the rest as empty slots, and logs it. It is not refused: the other three fragments stay usable.
 - **The display is the Build screen and the stats sheet**, a source line "Fragments", as §7 Q4 of the
   accessories plan did for accessories.
 
@@ -665,7 +685,8 @@ authors do today.
 - **Passive, always-on effects** without a cast. There is no application loop for them; fragments are
   the always-on half.
 - **Removing** anything from the target.
-- **Changing the target's numbers is NOT decided here: it is §5 Q1** (amendment 1).
+- *Changing the target's numbers was on this list until ruling 9.* It is now IN v1, under the whitelist
+  in §2.4.1.
 
 **Three worked examples on the shipped fire abilities:**
 
@@ -720,6 +741,159 @@ Every visual, status and element named above exists at `bccef7d` (`content/visua
 **The numbers are PLACEHOLDERS for §4, not proposals.** NAME THE QUANTITY applies to them when Ben sets
 them: `searing_lance`'s radius is a real quantity on a ray, whose impact is a point.
 
+### 2.4.1 THE NUMBER-CHANGE HALF (ruling 9) — FOR THE SEAT'S REVIEW
+
+This is a new optional key, **`modify:`**, which sits beside `add_on_hit` and `add_on_cast`. It changes
+numbers the target **already has**. It never creates a number the target lacks: that is what `add_*` is
+for.
+
+```yaml
+modify:
+  - field: damage.amount     # a whitelisted field, below
+    percent: -25             # and/or  flat: <n>
+```
+
+**THE WHITELIST.** Anything not in this table is refused by `AspectLoader`, naming the field.
+
+| field | what it addresses in the target | type, unit | forms |
+|---|---|---|---|
+| `cooldown_ticks` | the ability's cooldown | **int**, ticks | flat, percent |
+| `cost` | `cost.amount` | double, mana | flat, percent |
+| `damage.amount` | **every** `Damage` effect in the target's `on_hit`, including those nested in `burst`, `area` and `throw_embers.burst` | double, HP | flat, percent |
+| `heal.amount` | every `Heal`, nested included | double, HP | flat, percent |
+| `knockback.strength` | every `Knockback`, nested included | double, the push scalar | flat, percent |
+| `burst.radius` | every `Burst`, including `throw_embers.burst` | double, blocks | flat, percent |
+| `area.radius` | every `Area` | double, blocks | flat, percent |
+| `area.duration_ticks` | every `Area` | **int**, ticks | flat, percent |
+| `status.duration_ticks` | every `Status` **except `scorch`** (below) | **int**, ticks | flat, percent |
+
+**Deliberately NOT on the list, each with its reason:**
+
+- `weapon_damage`: it has no amount. It deals the caster's frozen attack stat, so there is no base to
+  change.
+- `area.tick_interval`: it changes the pulse count and the pulse rate at once. That is two quantities
+  in one field, and the duration field already moves the count.
+- Every `cast:` field (range, speed, dash distance, volley shots): a changed cast shape is still OUT
+  (§2.4).
+- `throw_embers` angles, speed and fuse: these are the geometry of the throw, not magnitudes.
+- `status.amplifier`: nothing in shipped content authors one, so its quantity has not been named.
+
+**"Every X, nested included" is the only addressing in v1.** There is no per-index addressing: it breaks
+silently when the base ability's effect list is reordered, which is the line-number problem in another
+form.
+
+**THE ARITHMETIC — one formula, for every field and any number of aspects.** For one field of one
+target, over every ACTIVE aspect on it:
+
+    resolved = (base + Σ flat) × (1 + Σ percent / 100)
+
+- Flats **add** with flats. Percents **add** with percents (two +10% make +20%, not +21%). The one
+  multiplication happens after both sums.
+- **So the order of aspects does not matter**: both sums commute. Slot order still decides only the
+  order of *appended* effects (§2.4).
+- **`modify` applies to the TARGET'S OWN effects, never to effects an aspect appends.** The appended
+  effects are authored at their final numbers. Otherwise aspect A's `damage.amount −25%` would scale
+  aspect B's appended burst, and two aspects would no longer be independent. So `derive` runs
+  **modify first, append second.**
+- **Inactive aspects** (target not equipped) contribute to neither sum.
+
+**NAME THE QUANTITY, PER FIELD.** For each field: can the change take effect at the values it will meet,
+and what does the loader do when it cannot?
+
+**The policy is REFUSE, never round.** A rounded value is a number nobody authored, and the tooltip would
+then advertise it. A refusal names the field, the resolved value, and the nearest legal values either
+side.
+
+- **`cooldown_ticks`**
+  - *Arithmetic:* integer ticks, floored by `CastSpec.minimumCooldownTicks` (non-zero only for Volley)
+    inside `AbilityService.resolve`. A resolved value below the floor would be clamped, and so inert.
+  - *The 4-tick grid* (`WeaponLoader`'s `cooldown_ticks` section) quantises **held** input. Ruling 15
+    makes stone input one cast per press, so it does not strictly apply. But CLAUDE.md's instruction is
+    *author multiples of 4*, and a stone ability can also reach a player through a weapon trigger's copy.
+    So the rule is kept uniform.
+  - **The loader refuses** a resolved value that is:
+    - not an integer;
+    - not a multiple of 4;
+    - below the cast's floor;
+    - `≤ 0`.
+- **`cost`**
+  - *Arithmetic:* continuous mana, and `tryConsume` compares a double.
+  - **Refuse if resolved `< 0`.** `0` is allowed, and means free.
+- **`damage.amount`, `heal.amount`**
+  - *Arithmetic:* continuous HP.
+  - **Refuse if resolved `≤ 0`**: a zero-damage effect is the "−X that does nothing" case.
+  - *Stated, not guarded:* scorch accrual floors dealt damage into stacks (`Scorch.stacksFor`), so a
+    small damage change can leave the stack count unchanged. That is a side effect of damage, not the
+    field's quantity, and the tooltip names damage, not stacks.
+- **`knockback.strength`**
+  - *Arithmetic:* continuous.
+  - **Refuse `≤ 0`.**
+  - *Eligibility, which is the half that bites:* a ray does not push, because no vanilla knockback rides
+    the ability path (standing decision, *A TRAVELLING RANGED WEAPON AUTHORS KNOCKBACK*). This field
+    addresses the target's authored `Knockback` effects, so **a target with none makes the modification
+    address NOTHING**, and the loader **refuses a `modify` whose field matches zero effects in the
+    target.** The same refusal covers every "every X" field. It is the eligibility half, made
+    mechanical.
+- **`burst.radius`, `area.radius`**
+  - *Arithmetic:* continuous blocks. `EffectSpec` already refuses `≤ 0`, and the loader refuses the same.
+  - *Stated, not guarded:* who is caught is discrete (bodies are where they are), but the quantity itself
+    is continuous.
+- **`area.duration_ticks` — QUANTISED, and this is the trap in the list.**
+  - `EffectApplier.tickArea` pulses at `interval, 2·interval, ...` while `next ≤ duration`, so the pulse
+    count is `floor(duration / interval)`.
+  - A change that does not cross a multiple of `tick_interval` changes **nothing**. `solar_grenade`'s
+    area is 100/20, 5 pulses; +10% makes 110, still 5.
+  - **The loader refuses a resolved duration that is not a multiple of that `Area`'s `tick_interval`.**
+- **`status.duration_ticks`**
+  - Integer ticks. Refuse a non-integer or `≤ 0` result.
+  - **`scorch` is excluded outright.** Its burn count is `Scorch.damageTicksFor = ceil(duration / 20)`,
+    which is quantised to its period. Scorch durations are also no longer authored in content (that
+    method's javadoc), so there is no base to meet.
+  - *NOT TRACED, AND SAID SO:* whether `freeze`, `rooted`, `soaked` and `surge` (a `potion` kind) are
+    continuous in their duration. **Slice 5 traces each status kind's use of `durationTicks` before
+    this field ships.** Until then the loader refuses `status.duration_ticks` on any kind not yet traced.
+
+**The loader checks COMBINATIONS, not just single aspects.** A pool is finite, so `AspectLoader` (after
+the pools load) resolves every field for every target:
+
+- with each aspect alone;
+- with **every pair** of aspects in the same pool that target the same ability.
+
+Two slots means a pair is the worst case. Any illegal resolution refuses **both** files' pair, by name.
+This is cheap: a pool has a handful of aspects.
+
+**WHAT THE PLAYER SEES — the resolved number, never the base alone.**
+
+- The Build screen renders each equipped ability's icon lore **from the derived definition**, the same
+  `AspectApplication.derive` output the cast uses. So the tooltip and the cast **cannot disagree**: one
+  function feeds both.
+- A changed field reads `Damage: 9  (12)`: the resolved value, with the base in gray parentheses.
+- Cooldown is shown in seconds to one decimal.
+- An aspect's own icon lists its changes as authored (`−25% damage`) and its additions as lines.
+- The stone's lore names abilities only, not numbers.
+
+**The three examples, each with a `modify` added and resolved by hand:**
+
+- **`searing_lance`** adds `modify: [{field: damage.amount, percent: -25}]`. The lance trades its hit for
+  the blast.
+  - `solar_lance`'s one `Damage` resolves to `(12 + 0) × (1 − 0.25)` = **9**.
+  - The appended burst's `4` is untouched (modify first, append second).
+  - Legal: > 0.
+- **`cinder_wake`** adds `modify: [{field: cooldown_ticks, flat: 40}]`. The patch costs tempo.
+  - `ember_step` resolves to `(160 + 40) × 1` = **200**.
+  - Legal: an integer, a multiple of 4, > 0, and a dash has no floor.
+- **`banked_embers`** adds `modify: [{field: cost, flat: 10}, {field: cooldown_ticks, percent: 20}]`.
+  More embers cost more.
+  - Cost: `(35 + 10) × 1` = **45**.
+  - Cooldown: `(200 + 0) × 1.20` = **240**. Legal: 240 is a multiple of 4.
+  - **The control:** `percent: 15` would give 230, and the loader refuses it, naming 228 and 232.
+- **A pair, to show composition.** Suppose a second, hypothetical `solar_lance` aspect carries
+  `damage.amount +10%` and is equipped beside `searing_lance`. Then
+  `12 × (1 + (−25 + 10)/100)` = `12 × 0.85` = **10.2**.
+  - The percents are **summed**, so it is not `12 × 0.75 × 1.10 = 9.9`. The test asserts the value it
+    gets by EXECUTING that expression in Java, not a predicted decimal: 0.85 is not exact in binary,
+    and a floating-point result is never written down from reasoning.
+
 ### 2.5 The Ability Stone and cast input
 
 **The item.**
@@ -730,9 +904,11 @@ them: `searing_lance`'s radius is a real quantity on a ray, whose impact is a po
 - **No `weapon_id`**, so `WeaponFire`, the durability code and every gear scanner ignore it by
   construction.
 - **Display name "Ability Stone"** (ruling 2).
-- The material is §5 Q4. Whatever Ben picks passes the §3.7 inertness method from the accessories plan
-  (the villager-trade extraction from the jar, plus a gate row trying it in the brewing stand, the furnace
-  fuel slot and the smithing table), because a locked item a villager buys is a duplication route.
+- **The material is `ECHO_SHARD`** (ruling 12). The accessories plan's §3.7 already measured it against
+  the 26.1.2 villager trade table (wanted by no villager). Its only vanilla use is the recovery-compass
+  recipe. Slice 1's ST11 still tries the brewing stand, the furnace fuel slot and the smithing table.
+  **Echo shard is also the material of the three universal accessories and of `volley_stone`**, so
+  identity can never be material: §2.5.2.
 - Lore renders the **current** loadout (Left: X / Right: Y / Q: Z). It is refreshed on every Build-screen
   save and on join.
 
@@ -741,7 +917,8 @@ them: `searing_lance`'s radius is a real quantity on a ray, whose impact is a po
 - The `LockedItem` descriptor (§1.3) has an allowed set of **hotbar 0-8** (ruling 2).
 - The picker shows only row 9's nine cells: the same `NexusSlotPickerLayout` with the storage rows as
   filler.
-- **The default slot and the default ON/OFF state are §5 Q5.**
+- **The default is ON, in hotbar slot 7, and it can be changed in Settings to hotbar slots only**
+  (ruling 13). `PlayerProfile`'s boxed nulls resolve to exactly these values.
 - **A player with class or element `none` has no loadout.** The stone is still issued if enabled, and
   every press says *"Choose a build in the Nexus"*. This is one rule and one notice. *Rejected: not
   issuing it* — the toggle would then mean two things.
@@ -753,7 +930,7 @@ them: `searing_lance`'s radius is a real quantity on a ray, whose impact is a po
 | **left, air** | `WeaponSwingListener.onSwing` gains a stone branch **before** `Quivers.tryReloadHeldWeapon` | casts Active 1 |
 | **left, block (survival)** | swing packet (S2 decides cadence) + a new arm in the one listener: `BlockDamageEvent` → **cancel** when the stone is held | casts Active 1 once per press, subject to S2's measured swing stream; **the block is not mined** |
 | **left, entity** | swing packet casts; `onPrePlayerAttack` **cancels** the attack when the stone is held | one cast, no token hit, no vanilla hurt flash |
-| **right, air / block** | `onRightClick`: the stone branch goes **second**, after the star and **before** `openHijackedBlock`; it cancels the event | casts Active 2; a crafting table right-clicked with the stone casts rather than opens. This mirrors the star: the held locked item wins. *Alternative: the block wins* — named in §5 Q6 |
+| **right, air / block** | `onRightClick`: the stone branch goes **second**, after the star and **before** `openHijackedBlock`; it cancels the event | casts Active 2; a crafting table right-clicked with the stone casts rather than opens. This mirrors the star: the held locked item wins. *Alternative: the block wins* — refused by ruling 14 |
 | **right, entity** | `onNexusGiveToEntity` (widened) cancels **and casts**; a same-tick guard (the `CooldownTracker` notice-key pattern, 1 tick) suppresses a RIGHT_CLICK_AIR echo if S3 finds one | one cast |
 | **Q, no screen** | `onNexusDrop` (widened) cancels, `updateInventory`, and **casts the Ultimate** when the dropped stack is the stone | casts; the stone never leaves the slot |
 | **Q, screen open** | `onNexusClick` refuses at LOWEST; the drop event never fires | **refuses, never casts** — a cast from inside a menu would fire at an unseen aim |
@@ -780,6 +957,60 @@ aspects (§1.5), then calls the **existing** `AbilityService.cast(caster, id, ai
 - **Known collision, stated:** `StatsBarSystem` also writes the action bar periodically, and will
   overwrite the notice. `QuiverNotice` already lives with this. The gate row reads that the notice is
   **visible**, not how long it lasts.
+
+### 2.5.1 `/rpg cast` after kits (ruling 10)
+
+**Two paths, split on one permission: `Permissions.DEV` = `rpg.command.dev`** (`paper-plugin.yml`:
+`default: op`). That is the node the other dev instruments check. *`rpg.command.cast` stays as the gate on
+the command itself (`default: true`) and is not the split.*
+
+- **With `rpg.command.dev`: ANY registered ability, at any time, with NO cost and NO cooldown.**
+  - The existing `AbilityService.cast` cannot express this: `resolve` always checks and triggers the
+    cooldown and calls `tryConsume`.
+  - So core gains **`AbilityService.castUnchecked(caster, abilityId, aim)`**. It looks the id up, and
+    returns `UnknownAbility` or a `Success` **without** touching `CooldownTracker` or `ResourcePool`.
+    It is the `fireTrigger` shape without `resolve`.
+  - Aspects are **not** applied: a dev cast is of the registered ability as authored.
+  - **It must not start a cooldown**, so a dev cast never blocks that player's stone press of the same
+    ability.
+- **Without it: only the current cell's equipped abilities**, through the normal `cast` →
+  `resolve` path, with the cost, the cooldown and the aspects applied. This is the same castable set the
+  stone uses (§2.5).
+- Tab completion follows the split: every ability id for a dev player, and the equipped ids otherwise.
+
+*(Java refresher for Ben: `castUnchecked` returning a `Success` without calling `resolve` is what "no
+cost, no cooldown" means in code — the two checks live only in `resolve`.)*
+
+### 2.5.2 Echo shard: three kinds of item share one material, and identity must never be material
+
+At `bccef7d`, `ECHO_SHARD` is the material of:
+
+- the three universal accessories (`keen_charm`, `mending_charm`, `ward_charm`; `AccessoryDefinition.MATERIALS`);
+- the dev weapon `volley_stone`;
+- and after slice 1, the Ability Stone.
+
+**Every identity check in the codebase is a PDC key:**
+
+- `isNexus` → `nexus`;
+- `AccessoryItems.accessoryId` → `accessory_id`;
+- `WeaponItems.weaponId` → `weapon_id`;
+- the new `isStone` → `build_stone`.
+
+**Code paths that key on an item's MATERIAL**, from a grep for `getType()` comparisons and `Material.`
+constants in `paper/src/main`, each with its verdict for the stone and a Ward Charm:
+
+| path | what it keys on | verdict |
+|---|---|---|
+| `QuiverAmmo` (planning and `consume`) | `Material.ARROW` | neutral — not echo shard |
+| `DefenseModifierItems.vanillaArmorPoints` | the material's vanilla armour value | neutral — echo shard has none |
+| `RpgListeners.onRightClick`'s hijack lookup (`hijackedBlocks`) | the clicked **block**'s material | neutral — not an item |
+| `AccessoryItems` material resolution | falls back to `ECHO_SHARD` when minting an accessory | minting only; never identity |
+| `CraftingMenu`'s matrix signature, `RecipeProbe`, `IngredientLore` | ingredient **material** — this is how vanilla recipes match | **THE ONE REAL MATERIAL DOOR.** Echo shard is a recovery-compass ingredient. Accessories are closed by `CraftMatrixScreen.isGear` (`accessory_id` arm → `CONTAINS_GEAR`). **The stone is not gear, so `isGear` does not close it.** It is closed the way the star (a beacon ingredient) is: **the lock stops it leaving its slot**, so it can never reach a grid. ST16 tries |
+| `isSimilar` comparisons (`MenuRouting`, `MenuSafety`, `CraftingMenu`) | the whole meta, PDC included | **safe by construction** — a stone and a charm differ in PDC, so they never stack or merge |
+
+*Alternative, named:* add a `build_stone` arm to `isGear`. That is belt and braces, but it makes "gear"
+mean "anything we mint", which `isGear`'s callers (`QuiverAmmo`) do not expect. **Not recommended while
+the lock holds.** If ST16 fails, it becomes the fix.
 
 ### 2.6 Class/element change
 
@@ -843,7 +1074,7 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
 | spike | question | instrument | outcome that changes the design |
 |---|---|---|---|
 | **S1 — blocking** | Does a successful Q-drop make the client send an ANIMATION (swing) packet? And does a **cancelled** drop? | log every ANIMATION packet in `WeaponSwingListener` and every `PlayerDropItemEvent`, with the tick; press Q 10× on a droppable item, then 10× on the star (cancelled); survival | **If a swing follows Q:** the left-click branch suppresses a swing that lands within N ticks of a stone drop on the same player. N is **measured**, not guessed. **If not:** no guard, and a gate row pins the absence |
-| **S2 — blocking** | While holding left on a block in survival, how many ANIMATION packets arrive, at what spacing, and does cancelling `BlockDamageEvent` change the stream? | the same log; hold left 3 s on stone with a stone-like test item, once uncancelled and once with `BlockDamageEvent` cancelled | it decides whether a held left click is **one cast per press** (a debounce measured from the stream) or **re-casts whenever the cooldown allows** (the Boltor precedent for held input). **§5 Q7 asks Ben which he wants, and S2 says what each costs** |
+| **S2 — blocking** | While holding left on a block in survival, how many ANIMATION packets arrive, at what spacing, and does cancelling `BlockDamageEvent` change the stream? | the same log; hold left 3 s on stone with a stone-like test item, once uncancelled and once with `BlockDamageEvent` cancelled | it decides whether a held left click is **one cast per press** (a debounce measured from the stream) or **re-casts whenever the cooldown allows** (the Boltor precedent for held input). **Ruling 15 chose one cast per press; S2 measures the stream the debounce is built from** |
 | S3 — in slice 1 | Does right-clicking an entity also produce a RIGHT_CLICK_AIR `PlayerInteractEvent`? | log both events with the tick | whether the same-tick guard ever fires (the guard ships either way) |
 | S4 — in slice 1 | What do Q and a left click do in CREATIVE? | the same log | recorded in the creative register; no survival row depends on it |
 
@@ -855,7 +1086,8 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
   - `C/build/LoadoutSlot` (enum `ACTIVE_1`, `ACTIVE_2`, `ULTIMATE`);
   - `C/build/StoneInput` — a pure map from (input, main hand, screen open, gamemode) to a
     `LoadoutSlot` or a refusal;
-  - `C/build/LockedSlots` (the conflict rule).
+  - `C/build/LockedSlots` (the conflict rule);
+  - `AbilityService.castUnchecked` (ruling 10, §2.5.1).
 - **paper:**
   - `P/content/PoolLoader`;
   - `ContentValidator.validatePools`;
@@ -870,6 +1102,7 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
   - `SettingsMenu`, `SettingsMenuLayout` (two cells);
   - `NexusSlotPickerMenu` (hotbar-only mode, the reserved branch);
   - `S/PlayerProfile` + `ProfileMigrations` (the two boxed fields, v5);
+  - `RpgCommand.cast`: split on `Permissions.DEV`. A dev player uses `castUnchecked` over every id; everyone else is limited to the current cell's pool-default loadout (slice 2 swaps in the saved loadout);
   - `ProfileService.setStoneSlot` / `setStoneEnabled`.
 - **content:** `content/builds/ranger_fire.yml`, `content/builds/mage_fire.yml` (defaults only, §4).
 - **CLAUDE.md** + `.claude/rules/standing-decisions.md`: `ability_stone` leaves the deletion set (§1.4).
@@ -889,6 +1122,8 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
   - `NoticeThrottleKeysTest` gains the keys.
   - `SettingsMenuLayoutTest` gains the cells.
   - A test that no `Keys` field contains `ability`.
+  - **core** `AbilityServiceTest`: `castUnchecked` returns `Success` for any registered id, leaves `CooldownTracker.ticksRemaining` at 0 and the pool's mana unchanged, and a normal `cast` right after it is NOT `OnCooldown`.
+  - **paper** `StoneItemsTest`: a minted Ward Charm is not `isStone`; a minted stone has no `accessory_id` and `Accessories` decodes it as nothing; both are `ECHO_SHARD`, and they are not `isSimilar`.
 
 **Mutations owed:**
 
@@ -899,6 +1134,8 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
 | delete the Q-in-screen refusal | `StoneInputTest` + ST5 |
 | delete the `BlockDamageEvent` cancel | ST3 |
 | delete the `onPrePlayerAttack` cancel | ST4 |
+| `castUnchecked` calls `resolve` | `AbilityServiceTest` + ST14 |
+| `isStone` keys on `Material.ECHO_SHARD` | `StoneItemsTest` + ST16 |
 
 #### 3.1.3 Gate — `GATE-build-stone.md`. **Game mode: SURVIVAL, except ST12**
 
@@ -911,7 +1148,7 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
 | ST3 | hold left on stone (the block) for 3 s: **the block is not mined**; the cast count matches S2's prediction | S2, the block |
 | ST4 | left on a zombie: Active 1 casts once; the zombie takes **no** 0.01 token hit and shows no hurt flash | attack path |
 | ST5 | Q with no screen: the Ultimate casts and the stone stays; Q with the inventory open on the stone: **nothing casts**, the stone stays | Q both ways |
-| ST6 | right in air: Active 2; right on a crafting table: Active 2 casts and the table does **not** open (per §5 Q6's recommendation) | order vs hijacked blocks |
+| ST6 | right in air: Active 2; right on a crafting table: Active 2 casts and the table does **not** open (ruling 14) | order vs hijacked blocks |
 | ST6b | right on a villager: one cast (count visuals), no trade screen | entity + S3 echo |
 | ST7 | picker: storage slots are not offered; the star's slot shows "reserved"; choosing slot 2 moves the stone | hotbar-only, reserved |
 | ST8 | Settings toggle OFF removes the stone and frees its slot; ON refuses an occupied slot and names it | toggle |
@@ -920,6 +1157,9 @@ in `GATE-build-stone.md`'s spike section with the sha it ran on.
 | ST11 | the stone in brewing stand / furnace fuel / smithing table: refused or not consumed; no villager trade | inertness |
 | ST12 | **CREATIVE control**: record Q and left (S4); no survival row rests on it | creative register |
 | ST13 | (S1-dependent) Q casts the Ultimate **only**: Active 1's visual does not appear | S1 |
+| ST14 | **an operator** (`rpg.command.dev`): `/rpg cast void_slash` (in no pool) casts; mana unchanged (HUD); cast it again at once: it casts again; a stone press of an equipped ability right after a dev cast of it is **not** on cooldown | ruling 10 |
+| ST15 | **a non-op**: `/rpg cast void_slash` is refused as not in the loadout; `/rpg cast <Active 1>` casts, spends mana and starts the cooldown the stone then reports; tab completion lists only the loadout | ruling 10 |
+| ST16 | **echo-shard identity**: carry a Ward Charm and the stone. Left, right and Q with the **charm** held do nothing stone-like (no cast, and Q drops it). The charm equips into an accessory slot; the stone is refused there, and the stats sheet shows no accessory line for it. Settings toggle OFF removes the stone and **not** the charm. The stone cannot be moved into a crafting grid (the lock), so no recovery compass. The charm and stone never stack or merge on a cursor | §2.5.2 |
 
 **THE STAR IS REGRESSION-GATED AT THE SLICE TIP (amendment 4).** The `LockedItem` generalisation touches
 `NexusSlots`, `converge`, the six handlers, `SettingsMenu` and the picker. So every existing star row
@@ -978,7 +1218,7 @@ block, and the id in `WeaponLoreTest`. The 13 comment lines and the content comm
   - `P/build/BuildService`;
   - `PlayerProfile.withCell`, `ProfileService.setCell`;
   - `StoneCaster` reads `BuildService` (falling back to the pool default when no loadout is saved);
-  - `RpgCommand.cast`'s `castable` becomes the loadout (subject to §5 Q2);
+  - `RpgCommand.cast`'s non-dev path reads the saved loadout instead of slice 1's pool default (§2.5.1);
   - `AbilityLoader` ignores `archetype` with a warning;
   - `AbilityDefinition.archetypeId` deleted;
   - `WeaponLoader`'s `"none"` deleted.
@@ -987,7 +1227,7 @@ block, and the id in `WeaponLoreTest`. The 13 comment lines and the content comm
   like the old dev commands. They are marked `// DEV: delete when GATE-build-screen.md passes` — the
   accessories dev-command precedent, deleted in slice 3.
 - **Unit tests:**
-  - **storage:** `PlayerBuildTest` (per-cell map; wrong list lengths refused), `BuildMigrationsTest`,
+  - **storage:** `PlayerBuildTest` (per-cell map; wrong list lengths refused; a duplicate fragment keeps the first and blanks the rest, ruling 11), `BuildMigrationsTest`,
     `FileBuildRepositoryTest` (round trip, atomic write).
   - **core:** `LoadoutResolutionTest` (saved vs default; an id missing from the pool reads empty).
   - **paper:** the rewritten `ProfileServiceTest` / `PlayerProfileMigrationTest` cases.
@@ -1009,7 +1249,7 @@ block, and the id in `WeaponLoreTest`. The 13 comment lines and the content comm
   | BS3 | dev-set Active 1 to `solar_lance`: left casts the lance; restart; still the lance | persistence |
   | BS4 | cell → mage, cell → ranger: the ranger loadout is restored | per-cell |
   | BS5 | Ultimate on cooldown, switch cell and back: still on cooldown | cooldowns kept |
-  | BS6 | `/rpg cast` of an ability not in the loadout: refused (or permitted for ops, per Q2) | castable |
+  | BS6 | `/rpg cast` of an ability not in the loadout: refused for a non-op; a dev player casts it free and with no cooldown (ruling 10, already gated in slice 1 as ST14) | castable |
   | BS7 | hand-corrupt `builds/<uuid>.json`: the store is unavailable, SEVERE logged, the stone falls back to the default loadout and says so | structural fault |
   | BS8 | an old profile with `unlockedAbilities` and a kit class loads, and its cell is kept | migration |
 
@@ -1026,12 +1266,12 @@ block, and the id in `WeaponLoreTest`. The 13 comment lines and the content comm
   - core `BuildRules` (pure: which choices are legal given the pools; picking an ability already in the
     other Active slot **swaps** them).
   - **The dev command is deleted.**
-- **Layout (proposal; Ben rules the look, §5 Q8):** row 1 holds class and element; row 2 holds the Ultimate
+- **Layout (ruling 16):** row 1 holds class and element; row 2 holds the Ultimate
   and Actives 1 and 2, labelled "Q", "Left" and "Right"; row 3 holds the two aspect cells; row 4 holds the
   four fragment cells. Rows 3-4 render **"Coming in a later update"** barrier panes until slices 4 and 5.
   Every icon is a **rendered clone**: `inputSlots()` is empty and `returnedSlots()` is `Set.of()`, the
   picker's anti-dupe rule.
-- **Button:** slot 21, **ungated** like Equipment (§5 Q8 confirms).
+- **Button:** slot 21, **ungated** like Equipment (ruling 16).
 - **Unit tests:**
   - **core:** `BuildRulesTest` (only pool members offered; the swap; the class list = pools' classes;
     the element list = elements with a pool for the class, i.e. **FIRE only** at ship, ruling 7).
@@ -1098,7 +1338,7 @@ block, and the id in `WeaponLoreTest`. The 13 comment lines and the content comm
   | R0a / R0b | as usual |
   | BF1 | slot a +HP fragment: max HP rises within 5 ticks; the stats sheet shows a Fragments line |
   | BF2 | wear a +HP accessory too: **both** sources present after 20 ticks |
-  | BF3 | four copies of one fragment are refused (§5 Q3's recommendation) — or allowed, per the ruling |
+  | BF3 | a fragment already slotted is not offered for a second slot, and a hand-edited build file with a duplicate loads it ONCE and logs it (ruling 11) |
   | BF4 | switch to Mage: the Ranger fragments' stats are gone; back: they return |
   | BF5 | restart: the fragments and their stats are kept |
   | BF6 | the boot log shows every shipped accessory loaded (the bound did not refuse one) |
@@ -1108,23 +1348,56 @@ block, and the id in `WeaponLoreTest`. The 13 comment lines and the content comm
 ### 3.5 SLICE 5 — ASPECTS
 
 - **Files:**
-  - `C/build/AspectDefinition` (id, displayName, description, target, `addOnHit`, `addOnCast`);
-  - `C/build/AspectApplication.derive` (pure, memoised);
-  - `P/content/AspectLoader` (reuses `AbilitySchema.parseEffects` / `parseCastVisuals`);
+  - `C/build/AspectDefinition` (id, displayName, description, target, `addOnHit`, `addOnCast`,
+    `List<NumberChange> modify`);
+  - `C/build/AspectField` — the §2.4.1 whitelist as an enum. Each value carries its type (int or double),
+    its legality rule, and the effect variant it addresses;
+  - `C/build/NumberResolution` — the formula `(base + Σ flat) × (1 + Σ percent/100)` plus the per-field
+    legality check. It is pure, and it returns either the resolved value or a refusal naming the nearest
+    legal neighbours;
+  - `C/build/AspectApplication.derive` (pure, memoised): **modify first, append second**;
+  - `P/content/AspectLoader`. It reuses `AbilitySchema.parseEffects` / `parseCastVisuals` and, after
+    the pools load, runs the single-aspect and same-target PAIR resolution of §2.4.1;
   - `ContentValidator` (the target exists and is in the aspect's pool);
-  - `StoneCaster` swaps the derived definition into `Success` — `/rpg cast` does too;
-  - the Build screen's row 3, with the inactive rendering;
-  - `content/aspects/*.yml` (§4).
+  - `StoneCaster` swaps the derived definition into `Success`. So does the non-dev `/rpg cast`; the dev
+    `castUnchecked` does not (§2.5.1);
+  - the Build screen's row 3, with the inactive rendering, and ability-icon lore rendered **from
+    `derive`'s output** (resolved value, with the base in gray);
+  - `content/aspects/*.yml` (§4), with the §2.4.1 `modify` blocks.
+- **Traced before `status.duration_ticks` ships:** each status kind's use of `durationTicks` (`freeze`,
+  `rooted`, `soaked`, the `potion` kind). The findings are recorded in the gate file, and each kind that
+  traces continuous is added to the field's allowed set. Until then the loader refuses the field on it.
 - **Unit tests:**
-  - **core:** `AspectApplicationTest`:
+  - **core `AspectApplicationTest`:**
     - it appends and never prepends;
     - the id is kept;
-    - `headlineDamage` is unchanged;
+    - `headlineDamage` is unchanged by an append;
     - two aspects in slot order;
-    - an inactive aspect contributes nothing;
-    - the same inputs → the same (memoised) record.
-  - **paper:** `AspectLoaderTest` (a target outside the pool refused; a non-visual in `add_on_cast`
-    refused; the three §2.4 examples load).
+    - an inactive aspect contributes to neither the appends nor the sums;
+    - the same inputs → the same (memoised) record;
+    - **`modify` never touches an appended effect** (A's −25% leaves B's appended burst at its authored
+      number);
+    - `damage.amount` reaches nested `Damage` inside `burst`, `area` and `throw_embers.burst`.
+  - **core `NumberResolutionTest`, the whole grid:**
+    - flat only, percent only, both;
+    - two aspects (the sums commute: A+B = B+A);
+    - the §2.4.1 pair example **computed by executing the expression**, and asserting the result is not
+      the multiplicative 9.9;
+    - `cooldown_ticks`: 240 legal, 230 refused and naming 228 / 232, a value under a Volley floor
+      refused, 0 refused;
+    - `area.duration_ticks`: 110 on interval 20 refused, 120 legal;
+    - `cost`: −1 refused, 0 legal;
+    - `damage.amount`: 0 refused.
+  - **paper `AspectLoaderTest`:**
+    - a target outside the pool refused;
+    - a non-visual in `add_on_cast` refused;
+    - a field off the whitelist refused, naming it;
+    - **a `modify` matching zero effects in the target refused** (`knockback.strength` on `solar_lance`);
+    - `status.duration_ticks` on scorch refused;
+    - an illegal PAIR refused though each aspect alone is legal;
+    - the three §2.4 / §2.4.1 examples load.
+  - **paper `BuildLoreTest`:** an ability icon with `searing_lance` equipped reads `Damage: 9` and shows
+    the base `12`, rendered from the same `derive` call as the cast.
 - **Mutations owed:**
 
   | mutation | must redden |
@@ -1132,6 +1405,12 @@ block, and the id in `WeaponLoreTest`. The 13 comment lines and the content comm
   | prepend instead of append | `AspectApplicationTest`'s `headlineDamage` case |
   | drop the inactive check | `AspectApplicationTest` + BA4 |
   | derive into the global registry | BA5 (another player casts the base ability) |
+  | append first, modify second | `AspectApplicationTest`'s appended-effect case + BA7 |
+  | multiply the percents instead of summing | `NumberResolutionTest`'s pair case |
+  | round instead of refuse | `NumberResolutionTest`'s 230 case |
+  | drop the zero-match refusal | `AspectLoaderTest`'s `knockback.strength` case |
+  | drop the pair check | `AspectLoaderTest`'s pair case |
+  | render the lore from the base definition | `BuildLoreTest` + BA8 |
 
 - **Gate — `GATE-build-aspects.md`, SURVIVAL:**
 
@@ -1141,9 +1420,12 @@ block, and the id in `WeaponLoreTest`. The 13 comment lines and the content comm
   | BA1 | `searing_lance` equipped: the lance's hit shows a detonation and damages a second mob within 2.5 blocks |
   | BA2 | `cinder_wake`: a burning patch at the **start** of the dash, not the end |
   | BA3 | `banked_embers`: five embers, not three |
-  | BA4 | **the target unequipped (amendment 2):** `searing_lance` equipped, `solar_lance` swapped out of both Actives: the Build screen shows the aspect **Inactive — requires Solar Lance**; nothing changes on any cast; re-equip the lance: BA1 holds again with no other action |
-  | BA5 | a second player without the aspect casts `solar_lance`: **no** detonation (per player, not global) |
-  | BA6 | the cooldown and the mana cost are unchanged by any aspect |
+  | BA4 | **the target unequipped (amendment 2):** `searing_lance` equipped, `solar_lance` swapped out of both Actives: the Build screen shows the aspect **Inactive — requires Solar Lance**; nothing changes on any cast, **including the lance's own numbers when re-equipped in another slot while the aspect is inactive**; re-equip the lance: BA1 holds again with no other action |
+  | BA5 | a second player without the aspect casts `solar_lance`: **no** detonation, and its hit is the base 12 (per player, not global) |
+  | BA6 | `cinder_wake`: Ember Step's cooldown, read off the action-bar notice on an immediate re-press, is 10.0 s (200 ticks), not 8.0 s |
+  | BA7 | `searing_lance`: the lance's direct hit is **9**, and the appended burst still deals **4** (the damage popup, or the mob's HP change, per hit) |
+  | BA8 | the Build screen's Solar Lance icon reads `Damage: 9 (12)`; `banked_embers` equipped: Rekindle's icon reads cost `45 (35)` and cooldown `12.0 s (10.0 s)` |
+  | BA9 | an operator's `/rpg cast solar_lance` with `searing_lance` equipped: the base lance (12, no detonation), free, no cooldown (ruling 10) |
 
 - **Deletes:** row 3's "coming later" panes.
 
@@ -1171,69 +1453,18 @@ it here.
 
 ---
 
-## 5. OPEN QUESTIONS FOR BEN — EACH WITH A RECOMMENDATION
+## 5. OPEN QUESTIONS FOR BEN
 
-1. **May an aspect ALSO change its target's numbers** (cooldown, damage, radius, cost), beyond adding
-   behaviour? (amendment 1)
+**Q1-Q10 were ruled on 2026-09-25**: they are rulings 9-18 in the RULINGS section, and are not repeated
+here. One question is PARKED. It is unanswered, and nothing in slices 1-5 waits on it.
 
-   → **Not in v1; revisit after slice 5 plays.** The cost if yes:
-   - a `modify:` block with a per-field whitelist;
-   - a rule for how two aspects' changes combine (add? multiply? which first?);
-   - a NAME THE QUANTITY check for every field — `cooldown_ticks` sits on the same 4-tick grid for held
-     input, so a −10% can be inert;
-   - a tooltip that must show the modified number.
-
-   That is a second sub-language. Adding behaviour is expressible today with zero new parsing.
-
-2. **`/rpg cast` for operators:** unrestricted for testing, or gated on the loadout for everyone?
-
-   → **Ops unrestricted, everyone else loadout-gated.** Under `rpg.command.dev`, `castable` is every
-   registered ability. It is the only way to test an ability before it is pooled, and it replaces what
-   `unlockedAbilities` did for testing. A non-op casts only the loadout.
-
-3. **Duplicate fragments:** may a player slot the same fragment more than once?
-
-   → **No, one of each.** Four slots with four copies is a stat stack, not a build. The accessory "two
-   universal copies" ruling was about items a player owns; fragments are free picks (ruling 5), so
-   nothing limits the copies except this rule.
-
-4. **The stone's look:** its material and model.
-
-   → **Your call on feel.** Whatever you pick passes the villager and consumption inertness method
-   (§2.5) before slice 1's gate, and must not be `NETHER_STAR` (the star, `health_boost_TEMP`).
-
-5. **The stone's default slot and default state:** on or off for a new player, and which hotbar slot?
-
-   → **ON, hotbar slot 7**, beside the star's default 8. That keeps both locked items in one corner, and
-   leaves slot 0 for the first weapon.
-
-6. **Right-clicking a hijacked block** (crafting table, anvil, ender chest...) **with the stone held:**
-   cast or open?
-
-   → **Cast.** The held locked item wins, as the star does, and sneaking still opens (the existing rule
-   in `openHijackedBlock`). The alternative, the block wins, makes Active 2 unusable when standing at a
-   base.
-
-7. **A held left click (after S2):** one cast per press, or re-cast whenever the cooldown allows?
-
-   → **Decide after S2's figures.** Recommendation in advance: **one cast per press**. Actives have long
-   cooldowns, so auto-repeat mostly produces "on cooldown" noise.
-
-8. **The Build screen's look and the button's gate:** the row layout in §3.3, and whether Build is
-   level-gated.
-
-   → **The §3.3 layout; ungated** like Equipment. A new player must be able to pick a class at level 1.
-
-9. **Ultimate charge:** shared mana with a long cooldown, or a separate meter (the DESIGN doc's open
-   fork)?
-
-   → **Shared mana + a long cooldown in v1.** No new resource. A meter is its own slice if the
-   Ultimates feel cheap.
-
-10. **Names:** "Build" (the button), "Ability Stone" (ruled), "Ultimate / Active / Aspect / Fragment" as
-    the player-facing words?
-
-    → **Yes, as written.** Say so if any should differ before slice 3 renders them.
+1. **PARKED: should `arc_surge` (a NATURE ability) stay in the Fire Ranger pool?**
+   - Today it is the Fire Ranger kit's only ability, and §2.2's example pool carries it forward.
+   - **Recommendation: drop it.** `rekindle` and `solar_lance` fill both Active slots, and they are
+     slice 1's default loadout anyway. A nature ability in a fire cell makes "the cell's element" mean
+     nothing.
+   - Until ruled, `ranger_fire.yml` keeps it, as the kit does today (§2.2's example). It is in no
+     default loadout, so the default loadout does not depend on the answer, and dropping it is one line.
 
 ---
 
