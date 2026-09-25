@@ -26,6 +26,7 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -57,8 +58,8 @@ import java.util.function.Supplier;
  *
  * <h2>The accessory column goes through Slice A</h2>
  *
- * The same decision ({@link AccessorySlots#canEquip}) and the same store and ordering the dev command
- * used (PLAN-accessories.md §3.9): an equip takes the item off the cursor first and gives it back if
+ * The same decision ({@link AccessorySlots#canEquip}), the same store, and the ordering
+ * PLAN-accessories.md §3.9 rules: an equip takes the item off the cursor first and gives it back if
  * the write fails; an unequip writes first and hands the item over only when the write succeeds. A
  * slot holding an UNREADABLE entry refuses every gesture, so its kept bytes are never overwritten; a
  * store still loading, or unavailable, refuses every accessory gesture while the armour column works.
@@ -403,8 +404,13 @@ public final class EquipmentMenu extends Menu {
         }
         getInventory().setItem(EquipmentMenuLayout.CLOSE_SLOT, MenuIcons.close());
         getInventory().setItem(EquipmentMenuLayout.BACK_SLOT, MenuIcons.back(Material.ARROW, "the Nexus"));
-        getInventory().setItem(EquipmentMenuLayout.ARMOR_LABEL_SLOT, MenuIcons.icon(Material.IRON_CHESTPLATE,
-                MenuIcons.line("Armour", NamedTextColor.GRAY), List.of()));
+        ItemStack armourLabel = MenuIcons.icon(Material.IRON_CHESTPLATE,
+                MenuIcons.line("Armour", NamedTextColor.GRAY), List.of());
+        // Hide the chestplate's "+6 Armor" lines on a LABEL. The flag is display only -- the same one
+        // ArmorItems.mint uses -- and the modifiers are left alone: ArmorItems' javadoc says why
+        // stripping them instead is the banned pattern.
+        armourLabel.editMeta(meta -> meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES));
+        getInventory().setItem(EquipmentMenuLayout.ARMOR_LABEL_SLOT, armourLabel);
         getInventory().setItem(EquipmentMenuLayout.ACCESSORY_LABEL_SLOT, MenuIcons.icon(Material.ECHO_SHARD,
                 MenuIcons.line("Accessories", NamedTextColor.GRAY), List.of()));
 

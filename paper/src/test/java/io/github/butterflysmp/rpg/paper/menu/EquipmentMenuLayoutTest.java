@@ -23,13 +23,19 @@ class EquipmentMenuLayoutTest {
         assertEquals(48, EquipmentMenuLayout.BACK_SLOT, "the house back button");
         assertEquals(49, EquipmentMenuLayout.CLOSE_SLOT, "the house close button");
         assertEquals(2, EquipmentMenuLayout.ARMOR_LABEL_SLOT);
-        assertEquals(6, EquipmentMenuLayout.ACCESSORY_LABEL_SLOT);
+        assertEquals(1, EquipmentMenuLayout.ACCESSORY_LABEL_SLOT, "directly left of the Armour label (2)");
         assertEquals(11, EquipmentMenuLayout.HEAD_SLOT);
         assertEquals(20, EquipmentMenuLayout.CHEST_SLOT);
         assertEquals(29, EquipmentMenuLayout.LEGS_SLOT);
         assertEquals(38, EquipmentMenuLayout.FEET_SLOT);
-        assertEquals(List.of(15, 24, 33, 42), EquipmentMenuLayout.ACCESSORY_SLOTS,
-                "index 0 (the class slot) first, then the three universal slots");
+        assertEquals(List.of(10, 19, 28, 37), EquipmentMenuLayout.ACCESSORY_SLOTS,
+                "column 1, directly left of the armour column; index 0 (the class slot) first");
+        for (int i = 0; i < 4; i++) {
+            assertEquals(EquipmentMenuLayout.ACCESSORY_SLOTS.get(i) + 1,
+                    List.of(EquipmentMenuLayout.HEAD_SLOT, EquipmentMenuLayout.CHEST_SLOT,
+                            EquipmentMenuLayout.LEGS_SLOT, EquipmentMenuLayout.FEET_SLOT).get(i),
+                    "accessory slot " + i + " sits immediately left of its armour row");
+        }
     }
 
     @Test
@@ -43,6 +49,23 @@ class EquipmentMenuLayoutTest {
         assertEquals(12, EquipmentMenuLayout.PAINTED_SLOTS.size(),
                 "4 armour + 4 accessory + 2 labels + back + close");
         assertEquals(42, EquipmentMenuLayout.FILLER_SLOTS.size());
+    }
+
+    /**
+     * Columns 5-7 (0-indexed), rows 1-4 are RESERVED for Slice C (Equipment Sets). In this slice they
+     * are plain filler: nothing is built there, and nothing painted may land there by accident.
+     */
+    @Test
+    void theSliceCReservationIsPlainFiller() {
+        int[] reserved = {14, 15, 16, 23, 24, 25, 32, 33, 34, 41, 42, 43};
+        for (int slot : reserved) {
+            assertTrue(EquipmentMenuLayout.FILLER_SLOTS.contains(slot), "reserved slot " + slot + " is filler");
+            assertFalse(EquipmentMenuLayout.PAINTED_SLOTS.contains(slot), "reserved slot " + slot + " is not painted");
+            assertTrue(slot % 9 >= 5 && slot % 9 <= 7 && slot / 9 >= 1 && slot / 9 <= 4,
+                    "the literal list is columns 5-7, rows 1-4: " + slot);
+        }
+        assertEquals(12, reserved.length, "three columns by four rows");
+        // Mutation: paint anything into a reserved slot -> reddens.
     }
 
     @Test

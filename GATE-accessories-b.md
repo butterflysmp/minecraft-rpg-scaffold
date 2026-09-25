@@ -1,13 +1,13 @@
 # GATE — accessories, Slice B: the Equipment submenu
 
-**Status: READ on `0df975e`, 2026-09-25 -- every row reported good by Ben. Three requested figures were NOT GIVEN: B6's sound count, B16 (a), and B18's pasted list. Each row says which.** Every prediction below was written **before** any boot. Readings go **beside** a
+**Status: READ on `0df975e`, 2026-09-25 -- every row reported good by Ben. Three requested figures were NOT GIVEN: B6's sound count, B16 (a), and B18's pasted list. Each row says which.** **Rows R0a2, R0b2, B22, B14b, B17b and B21b were ADDED afterwards, for the layout change, and are NOT RUN.** Every prediction below was written **before** any boot. Readings go **beside** a
 prediction, never over it, and a prediction is not edited once its row has been read. Readings are
 verdicts, not figures, unless the row asks for a figure.
 
 ```
-ROWS     24   R0a R0b B0b B1 B2 B3 B4 B5 B6 B7 B8 B9 B10 B11 B12 B13 B14 B15 B16 B17 B18 B19 B20 B21
+ROWS     30   R0a R0b B0b B1 B2 B3 B4 B5 B6 B7 B8 B9 B10 B11 B12 B13 B14 B15 B16 B17 B18 B19 B20 B21 R0a2 R0b2 B22 B14b B17b B21b
          ──
-         24   = git grep -c '^### R\|^### B' <ref> -- GATE-accessories-b.md
+         30   = git grep -c '^### R\|^### B' <ref> -- GATE-accessories-b.md
 ```
 
 **Plan:** `PLAN-accessories.md` §4, with the seat's Slice B rulings (C1–C5 and the Phase 1 rulings of
@@ -201,6 +201,51 @@ the **Equipment** button at slot 22 clicked. `/rpg stats` reads the stats sheet.
 | prediction | READING |
 |---|---|
 | With slots 1–3 empty, shift-click a Ward Charm from the inventory: it goes to **slot 1**. Another: **slot 2**. A Fletcher's Quiver: **slot 0**. With every target full, a shift-click moves **nothing**. | **PASS** *(0df975e)* as reported |
+
+---
+
+## THE LAYOUT BOOT — rows added 2026-09-25, AFTER the readings above. NOT RUN.
+
+Ben's three layout tweaks: the Armour label hides its attribute lines; the accessory column moves to
+column 1, directly left of the armour column (label 1; slots 10, 19, 28, 37); columns 5-7, rows 1-4 are
+reserved for Slice C as plain filler. The rows above keep their `0df975e` readings. These rows are read
+at the LAYOUT commit's boot. **Game mode: SURVIVAL for every row here.**
+
+### R0a2 — the layout boot's build line
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <layout tip>` naming the layout commit's SHA — not `-dirty`, not `unknown`, not `0df975e` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | _(not run)_ |
+
+### R0b2 — the layout boot's jar
+
+| prediction | instrument | READING |
+|---|---|---|
+| the R0b scan above, re-run on this boot's jar: `EquipmentMenu.class` and `ArmorPlacement.class` PRESENT; `AccessoryDevCommand.class` ABSENT; the control ABSENT | the R0b scan | _(not run)_ |
+
+### B22 — the layout
+
+| prediction | READING |
+|---|---|
+| (a) The accessory column (its "Accessories" label on top, then the class slot and three universal slots) sits in **column 1, directly left of the armour column**, row for row. (b) The armour column has **not moved**: its label and head, chest, legs, feet are where they were. (c) Columns 5-7 (0-indexed) are **plain filler**, the same grey pane as the rest. (d) Hovering the **Armour label** shows **no attribute lines** (no "+6 Armor", no "When on body"). | _(not run)_ |
+
+### B14b — refused gestures, at the new accessory positions
+
+| prediction | READING |
+|---|---|
+| B14 re-read with the accessory column in column 1: over each accessory slot (10, 19, 28, 37) and each armour slot, the number key, F, a drag and a double-click do **nothing**, and no item moves. | _(not run)_ |
+
+### B17b — accessory moves, at the new accessory positions
+
+| prediction | READING |
+|---|---|
+| B17 re-read: a Ward Charm placed from the cursor into universal slot 1 (now the SECOND slot down the left column) leaves the cursor, and `accessories/<uuid>.json` gains a slot-1 entry. Clicked back out, it returns to the cursor and the entry is gone. One copy throughout. | _(not run)_ |
+
+### B21b — shift-in routing, at the new accessory positions
+
+| prediction | READING |
+|---|---|
+| B21 re-read: with slots 1-3 empty, shift-clicking a Ward Charm puts it in slot 1 (second down the left column), another in slot 2, and a Fletcher's Quiver in slot 0 (top of the left column). With every target full, nothing moves. | _(not run)_ |
 
 ---
 

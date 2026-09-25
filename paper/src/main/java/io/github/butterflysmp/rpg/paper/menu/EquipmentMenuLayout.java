@@ -15,13 +15,20 @@ import java.util.Set;
  *
  * <pre>
  *   col:   0  1  2  3  4  5  6  7  8
- *   row 0  .  .  A  .  .  .  C  .  .      A = "Armour" label (2)     C = "Accessories" label (6)
- *   row 1  .  .  H  .  .  .  0  .  .      H/B/L/F = head, chest, legs, feet (11, 20, 29, 38)
- *   row 2  .  .  B  .  .  .  1  .  .      0 = the CLASS accessory slot (15)
- *   row 3  .  .  L  .  .  .  2  .  .      1/2/3 = the universal accessory slots (24, 33, 42)
- *   row 4  .  .  F  .  .  .  3  .  .
+ *   row 0  .  C  A  .  .  .  .  .  .      C = "Accessories" label (1)  A = "Armour" label (2)
+ *   row 1  .  0  H  .  .  R  R  R  .      0 = the CLASS accessory slot (10)
+ *   row 2  .  1  B  .  .  R  R  R  .      1/2/3 = the universal accessory slots (19, 28, 37)
+ *   row 3  .  2  L  .  .  R  R  R  .      H/B/L/F = head, chest, legs, feet (11, 20, 29, 38)
+ *   row 4  .  3  F  .  .  R  R  R  .      R = RESERVED for Slice C (see below)
  *   row 5  .  .  .  .  .  .  .  .  .      back 48, close 49
  * </pre>
+ *
+ * <p>The accessory column sits directly LEFT of the armour column (Ben, 2026-09-25); the armour column
+ * did not move.
+ *
+ * <p><b>RESERVED for Slice C (Equipment Sets): columns 5-7 (0-indexed), rows 1-4 -- slots 14-16,
+ * 23-25, 32-34, 41-43.</b> In this slice they are ordinary filler and nothing is built there;
+ * {@code EquipmentMenuLayoutTest} asserts they stay filler until Slice C claims them.
  *
  * <p><b>None of these slots is an input slot</b>, and that is load-bearing: it is what makes the
  * number key, F, drag and double-click refuse by construction ({@code MenuRouting} only performs
@@ -34,7 +41,7 @@ final class EquipmentMenuLayout {
     static final int SIZE = 54;
 
     static final int ARMOR_LABEL_SLOT = 2;
-    static final int ACCESSORY_LABEL_SLOT = 6;
+    static final int ACCESSORY_LABEL_SLOT = 1;
 
     static final int HEAD_SLOT = 11;
     static final int CHEST_SLOT = 20;
@@ -42,7 +49,7 @@ final class EquipmentMenuLayout {
     static final int FEET_SLOT = 38;
 
     /** Accessory slot index i sits at ACCESSORY_SLOTS.get(i); index 0 is the class slot. */
-    static final List<Integer> ACCESSORY_SLOTS = List.of(15, 24, 33, 42);
+    static final List<Integer> ACCESSORY_SLOTS = List.of(10, 19, 28, 37);
 
     static final int BACK_SLOT = 48;
     static final int CLOSE_SLOT = 49;
