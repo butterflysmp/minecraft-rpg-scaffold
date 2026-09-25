@@ -20,6 +20,8 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.EntityTaskTarget;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTask;
 import io.github.butterflysmp.rpg.paper.scheduler.TaskHandle;
+import io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals;
+import io.github.butterflysmp.rpg.paper.weapon.AccessoryItems;
 import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
@@ -222,6 +224,13 @@ public final class AnvilMenu extends Menu {
     @Override
     protected boolean acceptsInput(ItemStack cursor) {
         if (cursor == null || cursor.getType().isAir()) return false;
+
+        // Ruling A4, EXPLICIT and FIRST: the check below would refuse an accessory too, as "not one of
+        // your weapons...", which is false -- it IS one of ours. Say the true reason.
+        if (AccessoryItems.isAccessory(cursor, adapters.keys())) {
+            say(AccessoryRefusals.ANVIL);
+            return false;
+        }
 
         if (resolve(cursor) == null) {
             say("That is not one of your weapons, shields, armor or tools.");
@@ -730,6 +739,10 @@ public final class AnvilMenu extends Menu {
         if (item == null || item.getType().isAir()) return null;
 
         var keys = adapters.keys();
+        // Ruling A4: an accessory is ours, and still not gear this station works on. An explicit
+        // null, so it is a decision here rather than an absence from the chain below.
+        if (AccessoryItems.isAccessory(item, keys)) return null;
+
         GearDefinition found = WeaponItems.weaponId(item, keys)
                 .<GearDefinition>flatMap(id -> weapons.find(id).map(d -> d)).orElse(null);
         if (found != null) return found;

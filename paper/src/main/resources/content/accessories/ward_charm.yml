@@ -1,0 +1,20 @@
+# A universal accessory: worn in any of slots 1-3, by any class.
+#
+# Roster and numbers RULED by Ben, 2026-09-24 (PLAN-accessories.md, RULINGS Q2) -- not derived.
+# Scale: Protection I is +3 defense.
+
+display_name: "Ward Charm"
+rarity: uncommon
+
+# echo_shard: inert -- not wearable, not ammunition, not food, not placeable, and no villager
+# buys it. Its only vanilla use is a crafting recipe, which the crafting surface refuses for
+# any minted item. See AccessoryDefinition.MATERIALS.
+material: echo_shard
+
+slot: universal
+
+modifiers:
+  defense: 3
+
+flavor:
+  - "A little of the blow goes elsewhere."

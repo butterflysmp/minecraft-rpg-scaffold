@@ -654,6 +654,43 @@ class EnchantLoaderTest {
         // Mutation: drop the isBlank() arm of the record's normalisation -> "" survives -> reddens.
     }
 
+    /**
+     * *** Ruling A4: {@code class: accessory} is refused EXPLICITLY -- and this row asserts the A4
+     * TEXT, because nothing else can tell the explicit refusal from the shadow. ***
+     *
+     * <p>{@code GearClass.ACCESSORY} exists, so {@code fromName} parses the token. Every effect's gate
+     * is an allowlist and would ALSO refuse it -- in a gate's words. So "the file is skipped" is true
+     * with the explicit arm deleted, and a row asserting only that would stay green under exactly the
+     * mutation it exists for. The message is the one reading the deletion changes. Every effect is
+     * tried, because each selects a different gate and so a different shadowing refusal.
+     */
+    @Test
+    void classAccessoryIsRefusedWithTheA4Message_forEveryEffect(@TempDir Path dir) throws IOException {
+        for (EnchantEffect effect : EnchantEffect.values()) {
+            Path enchants = Files.createDirectory(dir.resolve("enchants-" + effect.name()));
+            Files.writeString(enchants.resolve("acc.yml"), "display_name: \"Acc\"\nmax_level: 3\neffect: "
+                    + effect.name().toLowerCase() + "\nclass: accessory\nvalue_by_level: [1, 2, 3]\n");
+
+            Logger logger = quietLogger();
+            List<String> warnings = new java.util.ArrayList<>();
+            logger.setUseParentHandlers(false);
+            logger.addHandler(new java.util.logging.Handler() {
+                @Override public void publish(java.util.logging.LogRecord r) { warnings.add(r.getMessage()); }
+                @Override public void flush() { }
+                @Override public void close() { }
+            });
+
+            EnchantRegistry registry = new EnchantLoader(logger).loadAll(enchants.toFile());
+
+            assertTrue(registry.find("acc").isEmpty(), effect + ": refused");
+            assertTrue(warnings.stream().anyMatch(w -> w.contains(
+                            io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals.ENCHANT_CLASS)),
+                    effect + ": refused for the A4 REASON, not a gate's -- got " + warnings);
+        }
+        // Mutation: delete the `parsed == GearClass.ACCESSORY` arm in EnchantLoader.gearClass ->
+        // every file is still skipped (by its gate), but the A4 text is gone -> reddens.
+    }
+
     @Test
     void theSixArgConstructorStillBuildsAUsableEnchant() {
         // The delegating constructor is what kept this whole commit from touching EnchantLoreTest

@@ -31,6 +31,7 @@ public final class GearClassLabel {
             case SHIELD -> "Shield";
             case ARMOR  -> "Armor";
             case TOOL   -> "Tool";
+            case ACCESSORY -> "Accessory";
         };
     }
 
@@ -50,7 +51,10 @@ public final class GearClassLabel {
     public static String describeEnchant(GearClass gearClass) {
         return switch (gearClass) {
             case MELEE, RANGER, MAGE, SHIELD, TOOL -> "a " + of(gearClass) + " enchant";
-            case ARMOR                             -> "an " + of(gearClass) + " enchant";
+            // "an Accessory enchant" -- a phrase no shipped enchant can produce, because
+            // EnchantLoader refuses `class: accessory` (ruling A4). The arm exists so the switch
+            // stays exhaustive, and it is spelled right so it is never the defect if reached.
+            case ARMOR, ACCESSORY                  -> "an " + of(gearClass) + " enchant";
         };
     }
 
@@ -80,6 +84,8 @@ public final class GearClassLabel {
             // Which KIND of tool is ToolLoreLines.kindNoun's job, on the item's own footer -- this
             // sentence is about the gear an enchant is sitting on, and every tool sits the same way.
             case TOOL                -> "a tool";
+            // Lower case and unlabelled, as a shield and a tool are: the label is the noun.
+            case ACCESSORY           -> "an accessory";
         };
     }
 }

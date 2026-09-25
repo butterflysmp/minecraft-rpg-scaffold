@@ -74,6 +74,10 @@ public final class EnchantRollItems {
         if (item == null || definition == null) return;
         GearClass gearClass = GearItems.gearClassOf(definition);
         if (gearClass == null) return;
+        // Ruling A4, EXPLICIT: accessories take no part in enchanting. Without this line the roll
+        // below would draw an accessory's pool as "every universal enchant" -- Unbreaking -- and
+        // /rpg give would hand out an enchanted accessory.
+        if (gearClass == GearClass.ACCESSORY) return;
         if (EnchantItems.isRolled(item, adapters.keys())) return;
 
         EnchantState rolled = EnchantRoll.roll(gearClass, roster(adapters),

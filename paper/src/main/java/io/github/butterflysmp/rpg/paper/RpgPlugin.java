@@ -19,6 +19,7 @@ import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ToolDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
+import io.github.butterflysmp.rpg.core.weapon.AccessoryRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
@@ -44,6 +45,9 @@ import io.github.butterflysmp.rpg.paper.content.ArmorConsistency;
 import io.github.butterflysmp.rpg.paper.content.ArmorLoader;
 import io.github.butterflysmp.rpg.paper.content.ShieldLoader;
 import io.github.butterflysmp.rpg.paper.content.ToolLoader;
+import io.github.butterflysmp.rpg.paper.content.AccessoryLoader;
+import io.github.butterflysmp.rpg.paper.accessory.Accessories;
+import io.github.butterflysmp.rpg.paper.accessory.AccessoryService;
 import io.github.butterflysmp.rpg.paper.content.RecipeLoader;
 import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
@@ -66,6 +70,7 @@ import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 import io.github.butterflysmp.rpg.paper.vault.VaultService;
 import io.github.butterflysmp.rpg.storage.FilePlayerRepository;
 import io.github.butterflysmp.rpg.storage.FileVaultRepository;
+import io.github.butterflysmp.rpg.storage.FileAccessoryRepository;
 import io.github.butterflysmp.rpg.storage.VaultRepository;
 import io.github.butterflysmp.rpg.storage.PlayerRepository;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -155,6 +160,7 @@ public final class RpgPlugin extends JavaPlugin {
     private ShieldRegistry shields;
     private ArmorRegistry armor;
     private ToolRegistry tools;
+    private AccessoryRegistry accessoryRegistry;
     private MobRegistry mobs;
     private RecipeRegistry recipes;
     private CraftResultIndex craftResults;
@@ -175,6 +181,7 @@ public final class RpgPlugin extends JavaPlugin {
     private ProfileService profiles;
     private VaultRepository vaultRepository;
     private VaultService vaults;
+    private Accessories accessories;
 
     @Override
     public void onEnable() {
@@ -206,6 +213,12 @@ public final class RpgPlugin extends JavaPlugin {
         this.shields = new ShieldLoader(getLogger()).loadAll(new File(contentDir, "shields"));
         this.armor = new ArmorLoader(getLogger()).loadAll(new File(contentDir, "armor"));
         this.tools = new ToolLoader(getLogger()).loadAll(new File(contentDir, "tools"));
+        // AFTER the four other gear kinds, because it refuses an id any of them already holds -- a
+        // REFUSAL, not the warning the loops below give the other four. See AccessoryLoader.
+        this.accessoryRegistry = new AccessoryLoader(getLogger(), MAX_MANA).loadAll(
+                new File(contentDir, "accessories"),
+                id -> weapons.find(id).isPresent() || shields.find(id).isPresent()
+                        || armor.find(id).isPresent() || tools.find(id).isPresent());
         this.mobs = new MobLoader(getLogger()).loadAll(new File(contentDir, "mobs"));
         this.recipes = new RecipeLoader(getLogger()).loadAll(new File(contentDir, "recipes"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
@@ -213,7 +226,8 @@ public final class RpgPlugin extends JavaPlugin {
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
                 + kits.size() + " kits, " + weapons.size() + " weapons, "
                 + shields.size() + " shields, " + armor.size() + " armor, "
-                + tools.size() + " tools, " + mobs.size() + " mobs, "
+                + tools.size() + " tools, " + accessoryRegistry.size() + " accessories, "
+                + mobs.size() + " mobs, "
                 + recipes.size() + " recipes");
 
         // ZERO IS A DEFECT, NOT A QUIET NO-OP. A loader that discovers nothing reads exactly like
@@ -320,6 +334,15 @@ public final class RpgPlugin extends JavaPlugin {
                         + "/rpg give resolves armor first, so the tool cannot be minted by id. "
                         + "Rename one of the two content files.");
             }
+        }
+
+        // And again on content/accessories, which the accessories slice adds -- the newest directory,
+        // so the likeliest to arrive empty on an existing run/ folder (saveResource never
+        // overwrites; boot with --refresh-content). SIX is the expected count: three universals, a
+        // Quiver, a Scroll, and the Gauntlet nobody can wear yet (ruling Q1).
+        if (accessoryRegistry.size() == 0) {
+            getLogger().warning("No accessories loaded from content/accessories -- /rpg give can mint"
+                    + " none, and /rpg accessory has nothing to equip. Expected 6.");
         }
 
         // The tooltip number against vanilla's. This is the ONLY moment the two live in the same
@@ -439,9 +462,32 @@ public final class RpgPlugin extends JavaPlugin {
         this.healthSystem.bind(stats);
         this.nameplates.bind(stats);
 
+        // One thread: file writes for a single player must not race each other,
+        // and a serialised queue is plenty for milestone-1 storage. Not a daemon
+        // thread -- a pending write must finish even if the JVM is winding down.
+        //
+        // BUILT HERE, ABOVE THE AdapterContext, SINCE THE ACCESSORIES SLICE -- it used to sit with the
+        // profile repository below. The accessory store rides on the adapters (see AdapterContext)
+        // and needs this executor, so the executor has to exist first. Creating an executor starts
+        // no work; nothing is submitted to it until a player joins.
+        this.storageIo = Executors.newSingleThreadExecutor(task -> {
+            Thread thread = new Thread(task, "rpg-storage-io");
+            thread.setDaemon(false);
+            return thread;
+        });
+
+        // The accessory store rides the SAME storageIo as the profile and the vault, for the vault's
+        // reason: one serialised queue, and the existing shutdown drain already waits for it. Its own
+        // directory beside players/ and vaults/. Every change is written through when it is made, so
+        // it needs no flush of its own at shutdown.
+        this.accessories = new Accessories(accessoryRegistry,
+                new AccessoryService(new FileAccessoryRepository(
+                        new File(getDataFolder(), "accessories").toPath(), storageIo), getLogger()),
+                keys);
+
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
-        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift, craftResults, weapons);
+        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift, craftResults, weapons, accessories);
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
@@ -497,25 +543,23 @@ public final class RpgPlugin extends JavaPlugin {
 
         // The action-bar HUD reads the three stores; it owns no state beyond its per-player loops.
         // adapters is the fourth argument as of 2026-09-24, for the quiver field: keys() to read the
-        // held item's magazine and weapons() to resolve its definition. Built at line 444, well above
-        // this -- said because a reader checking whether that ordering holds should not have to look.
+        // held item's magazine and weapons() to resolve its definition. Built with the AdapterContext,
+        // well above this -- said because a reader checking whether that ordering holds should not
+        // have to look. (This named "line 444" until the accessories slice moved it; a section, not
+        // a line, is what survives an insertion above it.)
         this.statsBar = new StatsBarSystem(scheduler, stats, resources, adapters);
 
         // Passive health regeneration: its own per-player loop, on its own clock. See the class
         // javadoc for why it is not folded into the reconcile loop that already visits everyone.
         this.healthRegen = new HealthRegenSystem(scheduler, stats, getLogger());
 
-        // One thread: file writes for a single player must not race each other,
-        // and a serialised queue is plenty for milestone-1 storage. Not a daemon
-        // thread -- a pending write must finish even if the JVM is winding down.
-        this.storageIo = Executors.newSingleThreadExecutor(task -> {
-            Thread thread = new Thread(task, "rpg-storage-io");
-            thread.setDaemon(false);
-            return thread;
-        });
+        // storageIo is built above the AdapterContext -- see the note there.
         this.repository = new FilePlayerRepository(
                 new File(getDataFolder(), "players").toPath(), storageIo);
         this.profiles = new ProfileService(repository, getLogger(), System::currentTimeMillis);
+        // The reconcile loop reads each player's accessories and their PROFILE class (ruling A1), and
+        // both exist only from here -- the same late-bind the store and the pool already use.
+        this.healthSystem.bindAccessories(accessories, profiles);
 
         // The vault rides the SAME storageIo, and that is the design rather than reuse for its own
         // sake. One serialised queue means a player's profile write and their vault write cannot

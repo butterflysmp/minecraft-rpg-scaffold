@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
+import io.github.butterflysmp.rpg.paper.accessory.Accessories;
 import io.github.butterflysmp.rpg.core.weapon.CraftResultIndex;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
@@ -38,6 +39,11 @@ import java.util.logging.Logger;
  * but a player and this context -- so threading the three gear registries through the hijack table
  * to reach one lookup would be exactly the five-signature detour {@code elements} was admitted to
  * avoid. The index is built once at boot and is immutable afterwards, like every other registry here.
+ *
+ * <p>{@code accessories} is the fourth: the accessory registry and store, read by the reconcile
+ * loop, the stats sheet on {@code /rpg stats} and on the Nexus hub's stats head, and {@code /rpg give}.
+ * The hub is rebuilt from about ten call sites, each passing a fixed set of services; carrying this
+ * here rather than adding it to all ten is the same five-signature argument.
  */
 public record AdapterContext(Scheduler scheduler, Keys keys,
                              VisualRegistry visuals, StatusRegistry statuses,
@@ -46,16 +52,18 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              ImmobilizeStatus immobilize, SoakedStatus soaked,
                              ImmobilizeStatus freeze, ScorchStatus scorch,
                              CombatantStats stats, double anchorDrift,
-                             CraftResultIndex craftResults, WeaponRegistry weapons) {
+                             CraftResultIndex craftResults, WeaponRegistry weapons,
+                             Accessories accessories) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
                           EnchantRegistry enchants, Logger log,
                           CombatantStats stats, double anchorDrift,
-                          CraftResultIndex craftResults, WeaponRegistry weapons) {
+                          CraftResultIndex craftResults, WeaponRegistry weapons,
+                          Accessories accessories) {
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
                 new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), new ScorchStatus(),
-                stats, anchorDrift, craftResults, weapons);
+                stats, anchorDrift, craftResults, weapons, accessories);
     }
 
     /**

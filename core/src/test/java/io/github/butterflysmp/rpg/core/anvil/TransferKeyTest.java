@@ -173,9 +173,9 @@ class TransferKeyTest {
     void everyGEARCLASSAliveTodayResolvesOrThrows_noArmFallsThrough() {
         int checked = 0;
         for (GearClass kind : GearClass.values()) {
-            if (kind == GearClass.TOOL) {
+            if (kind == GearClass.TOOL || kind == GearClass.ACCESSORY) {
                 assertThrows(IllegalArgumentException.class, () -> TransferKey.of(kind, null),
-                        "TOOL is the one kind with no key");
+                        kind + " carries no gear score, so it has no key");
             } else if (kind == GearClass.ARMOR) {
                 assertEquals(TransferKey.ARMOR_HEAD, TransferKey.of(kind, ArmorSlot.HEAD));
             } else {
@@ -184,7 +184,7 @@ class TransferKeyTest {
             checked++;
         }
         assertEquals(GearClass.values().length, checked, "the sweep has to have actually run");
-        assertEquals(6, checked, "six gear classes today -- an ACCESSORY lands here AND at a "
+        assertEquals(7, checked, "seven gear classes today -- ACCESSORY landed here AND at a "
                 + "compile error in TransferKey.of, which is the guard that matters");
     }
 }

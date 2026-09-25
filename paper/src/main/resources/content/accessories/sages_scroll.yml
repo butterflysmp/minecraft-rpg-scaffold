@@ -1,0 +1,24 @@
+# The MAGE class accessory -- worn only in slot 0, only by a profile whose class is mage.
+#
+# Numbers RULED by Ben, 2026-09-24 (PLAN-accessories.md, RULINGS Q2) -- not derived. class_damage is
+# FLAT and applies only while a mage weapon is held (RULINGS Q3); the drawback passes the 4x bound
+# (4 x 0.03 = 0.12 < the 0.15 crit chance base).
+
+display_name: "Sage's Scroll"
+rarity: rare
+
+# prismarine_crystals: inert -- its only vanilla uses are crafting recipes (refused for minted
+# items), and no villager buys it. NOT paper, which a cartographer or librarian would buy.
+material: prismarine_crystals
+
+slot: class
+class: mage
+type: scroll
+
+modifiers:
+  class_damage: 3
+  max_mana: 20
+  crit_chance: -0.03
+
+flavor:
+  - "The margins are full of someone else's corrections."

@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.weapon.AccessoryDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
@@ -133,6 +134,7 @@ public final class GearItems {
             case ShieldDefinition shield -> ShieldItems.remint(item, shield, adapters);
             case ArmorDefinition armor -> ArmorItems.remint(item, armor, adapters);
             case ToolDefinition tool -> ToolItems.remint(item, tool, adapters);
+            case AccessoryDefinition accessory -> AccessoryItems.remint(item, accessory, adapters);
         };
     }
 
@@ -169,6 +171,7 @@ public final class GearItems {
             case ShieldDefinition shield -> ShieldItems.refreshLore(meta, shield, adapters);
             case ArmorDefinition armor -> ArmorItems.refreshLore(meta, armor, adapters);
             case ToolDefinition tool -> ToolItems.refreshLore(meta, tool, adapters);
+            case AccessoryDefinition accessory -> AccessoryItems.refreshLore(meta, accessory, adapters);
         }
     }
 
@@ -193,6 +196,7 @@ public final class GearItems {
             case ShieldDefinition shield -> ShieldItems.mint(shield, adapters);
             case ArmorDefinition armor -> ArmorItems.mint(armor, adapters);
             case ToolDefinition tool -> ToolItems.mint(tool, adapters);
+            case AccessoryDefinition accessory -> AccessoryItems.mint(accessory, adapters);
         };
     }
 
@@ -215,6 +219,7 @@ public final class GearItems {
             case ShieldDefinition shield -> GearClass.SHIELD;
             case ArmorDefinition armor -> GearClass.ARMOR;
             case ToolDefinition tool -> GearClass.TOOL;
+            case AccessoryDefinition accessory -> GearClass.ACCESSORY;
         };
     }
 

@@ -24,13 +24,13 @@ import io.github.butterflysmp.rpg.core.weapon.GearClass;
  * answers "what may this trade scores with". Merging any two of them would force one question's
  * answer through another question's switch.
  *
- * <h2>ACCESSORIES DO NOT EXIST YET, AND {@link #of} IS WHY THAT IS SAFE</h2>
+ * <h2>ACCESSORIES TRADE WITH NOTHING, AND {@link #of} IS WHERE THAT WAS DECIDED</h2>
  *
- * There is no {@code ACCESSORY} in {@code GearClass}. Ben's rule names one anyway, so the day it
- * lands somebody must say what it trades with. <b>{@link #of} is an exhaustive switch with NO
- * default arm</b>, so that day is a COMPILE ERROR here rather than a new kind quietly falling into
- * a catch-all and matching everything. Same discipline as {@code GearScore.scoreable} and
- * {@code GearClass.of}, and for the same reason.
+ * {@code GearClass.ACCESSORY} landed with the accessories slice. <b>{@link #of} is an exhaustive
+ * switch with NO default arm</b>, so its arrival was a COMPILE ERROR here rather than a new kind
+ * quietly falling into a catch-all and matching everything -- and the answer given is ruling A4: an
+ * accessory carries no gear score, so it has no key and {@link #of} throws for it, as for a tool.
+ * Same discipline as {@code GearScore.scoreable} and {@code GearClass.of}, and for the same reason.
  *
  * @see AnvilTransfer for the comparison itself
  */
@@ -128,6 +128,10 @@ public enum TransferKey {
             case TOOL -> throw new IllegalArgumentException(
                     "a tool carries no gear score, so GearScore.carriesScore refused it before a key"
                             + " was derived; reaching here means that ordering was violated");
+            case ACCESSORY -> throw new IllegalArgumentException(
+                    "an accessory carries no gear score (ruling A4), so GearScore.carriesScore"
+                            + " refused it before a key was derived; reaching here means that"
+                            + " ordering was violated");
         };
     }
 

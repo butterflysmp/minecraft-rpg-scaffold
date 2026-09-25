@@ -237,6 +237,8 @@ public final class GearScore {
             case SHIELD -> true;
             case ARMOR -> true;
             case TOOL -> false;
+            // Ruling A4: v1 accessories take no part in gear score.
+            case ACCESSORY -> false;
         };
     }
 

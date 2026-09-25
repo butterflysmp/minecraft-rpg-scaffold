@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
+import io.github.butterflysmp.rpg.core.accessory.AccessoryContributions;
 import io.github.butterflysmp.rpg.core.weapon.ClassDamageModifiers;
 import io.github.butterflysmp.rpg.core.weapon.ClassDamageModifiers.ClassGrant;
 import io.github.butterflysmp.rpg.core.weapon.WeaponClass;
@@ -77,13 +78,22 @@ public final class ClassDamageModifierItems {
      * An empty hand -- or a hand holding something that is not one of our weapons -- yields a null
      * held class, and {@link ClassDamageModifiers#matching} turns that into an empty map. That is
      * what keeps weapon-only melee intact: no weapon, no class, no bonus.
+     *
+     * <p><b>{@code accessoryGrants} are merged in BEFORE {@code matching}</b> (ruling Q3), so an
+     * accessory's class damage is gated on the held weapon exactly as a worn item's is: a Gauntlet's
+     * +Melee Damage applies to melee hits only. The accessory scanner has already applied the OTHER
+     * gate -- whether the profile's class may wear it at all (A1) -- so the two gates compose and
+     * neither replaces the other. A REQUIRED parameter rather than an overload, so no caller can
+     * reach this stat without saying what the accessories contribute.
      */
-    public static Map<String, Double> desiredModifiers(Player player, Keys keys, WeaponRegistry weapons) {
+    public static Map<String, Double> desiredModifiers(Player player, Keys keys, WeaponRegistry weapons,
+                                                       Map<String, ClassGrant> accessoryGrants) {
         WeaponClass held = WeaponItems.heldWeaponId(player, keys)
                 .flatMap(weapons::find)
                 .map(WeaponDefinition::weaponClass)
                 .orElse(null);
-        return ClassDamageModifiers.matching(held, equippedGrants(player, keys));
+        return ClassDamageModifiers.matching(held,
+                AccessoryContributions.mergedGrants(equippedGrants(player, keys), accessoryGrants));
     }
 
     /** Every class-damage grant the player is currently wearing or holding, keyed by slot. */

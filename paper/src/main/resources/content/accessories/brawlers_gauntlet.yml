@@ -1,0 +1,28 @@
+# The MELEE class accessory -- worn only in slot 0, only by a profile whose class is melee.
+#
+# NOBODY CAN WEAR THIS YET, and that is RULED rather than a gap (PLAN-accessories.md, RULINGS Q1):
+# no melee kit ships, so /rpg class melee is refused and no profile can be melee. It is authored
+# now so the class-slot rules have a melee subject, and a melee kit is its own later slice.
+#
+# Numbers RULED by Ben, 2026-09-24 (RULINGS Q2) -- not derived. Stronger than a universal, with a
+# drawback. class_damage is FLAT and applies only while a melee weapon is held (RULINGS Q3); the
+# drawback passes the 4x bound (4 x 10 = 40 < the 100 mana base).
+
+display_name: "Brawler's Gauntlet"
+rarity: rare
+
+# netherite_scrap: inert -- its only vanilla use is the ingot recipe (refused for minted items),
+# the smithing input is the ingot not the scrap, and no villager buys it.
+material: netherite_scrap
+
+slot: class
+class: melee
+type: gauntlet
+
+modifiers:
+  class_damage: 3
+  crit_damage: 0.25
+  max_mana: -10
+
+flavor:
+  - "Heavy on the hand, heavier on the mind."

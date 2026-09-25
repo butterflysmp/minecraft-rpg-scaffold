@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.menu;
 
+import io.github.butterflysmp.rpg.core.weapon.AccessoryDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ShieldDefinition;
@@ -45,6 +46,10 @@ public final class SuggestionTiers {
             case ShieldDefinition shield -> SuggestionTier.ACCESSORY;
             case ToolDefinition tool -> SuggestionTier.TOOL;
             case ArmorDefinition armor -> SuggestionTier.ARMOR;
+            // And the accessory kind has now joined it, as reserved. Unreachable today -- no recipe
+            // mints an accessory in v1 (ruling A3) -- but the switch has to say, and this is the
+            // position the tier was named for.
+            case AccessoryDefinition accessory -> SuggestionTier.ACCESSORY;
         };
     }
 

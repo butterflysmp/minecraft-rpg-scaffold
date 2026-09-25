@@ -98,14 +98,23 @@ final class NexusStatsLore {
      * becomes worth it. Recorded so that slice finds the answer instead of rediscovering the
      * question.
      */
+    /** The same lore with NO accessory block -- a player wearing none. */
     static List<Component> lore(Optional<StatsSheetValues> values, OptionalLong lifetimeXp,
                                 OptionalInt averageScore) {
+        return lore(values, lifetimeXp, averageScore, List.of());
+    }
+
+    static List<Component> lore(Optional<StatsSheetValues> values, OptionalLong lifetimeXp,
+                                OptionalInt averageScore, List<Component> accessoryLines) {
         List<Component> lines = new ArrayList<>(progressionLines(lifetimeXp));
         lines.addAll(gearScoreLines(averageScore));
         lines.addAll(values
                 .map(StatsSheet::statLines)
                 .orElseGet(() -> List.of(
                         MenuIcons.line(StatsSheetLines.UNTRACKED, NamedTextColor.RED))));
+        // Ruling Q4: the accessories' own lines, UNDER the totals they feed -- the same block
+        // /rpg stats prints, from the same AccessorySheet, so the two surfaces cannot disagree.
+        lines.addAll(accessoryLines);
         return List.copyOf(lines);
     }
 

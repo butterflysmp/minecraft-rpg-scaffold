@@ -67,6 +67,10 @@ public final class GearRefresher {
             if (rebuilt == null) rebuilt = rebuild(item, keys.shieldId, shields, adapters);
             if (rebuilt == null) rebuilt = rebuild(item, keys.armorId, armor, adapters);
             if (rebuilt == null) rebuilt = rebuild(item, keys.toolId, tools, adapters);
+            // The fifth kind, last as in /rpg give. This rebuilds accessories CARRIED in the
+            // inventory; one EQUIPPED lives in the accessory store as text and is not rebuilt here --
+            // its lore is display only, and its stats are read from the definition regardless.
+            if (rebuilt == null) rebuilt = rebuild(item, keys.accessoryId, adapters.accessories().registry(), adapters);
 
             if (rebuilt != null) {
                 inventory.setItem(slot, rebuilt);
