@@ -173,7 +173,16 @@ the **Equipment** button at slot 22 clicked. `/rpg stats` reads the stats sheet.
 
 | prediction | READING |
 |---|---|
-| `/rpg accessory` is an **unknown subcommand** at the tip. The `/rpg ` tab-complete list at the tip equals the list at `295d006` **minus `accessory`**. **Take both lists from running servers and paste them here**, in full. | _(not run)_ |
+| `/rpg accessory` is an **unknown subcommand** at the tip. The `/rpg ` tab-complete list at the tip, for an op, is **exactly these 30**, in any order: `abilities apply attackspeed cast class classdamage critchance critdamage damage durability element enchant firerate gearscore give heal healthboost healthregen mana manaregen mobdamage mobheal playerxp quiversize refresh reloadtime repair spawn stats vault`. The reading is the tip's list, **pasted in full**. | _(not run)_ |
+
+> **THE BASELINE IS FROM SOURCE, NOT A SECOND BOOT (seat ruling).** It is `295d006`'s 31 top-level
+> literals under `rpg` in `RpgCommand.build`, minus `accessory`. Two instruments, which agree in order:
+> (1) every `.then(Commands.literal("…"))` at exactly 16 spaces of indentation; (2) a parser that walks
+> the chain from `Commands.literal("rpg")` to its closing `;`, counts parentheses with strings and
+> comments skipped, and lists every depth-0 `.then(`. It found 31, and 0 depth-0 `.then` that is not a
+> plain literal. Controls: the indentation match finds `accessory` at `295d006` and not the nested
+> `refill`; the parser on `723aec4` finds 30, none of them `accessory`. **Tab-complete lists only what
+> the sender may run**, so the reading is taken as an op, the permission every branch here requires.
 
 ### B19 — a stale render cannot be acted on (new)
 
