@@ -294,6 +294,16 @@ public final class NexusMenu extends Menu {
                                     recipes, shields, armor, tools, vaults)).open());
             return;
         }
+        if (click.slot() == NexusMenuLayout.EQUIPMENT_SLOT) {
+            // Hop a tick, no explicit close: the hub holds no input slots (Menu.open's rule). The
+            // Equipment screen holds none either -- its slots are views of the player's equipment
+            // and accessory store -- so its own Back button needs no close-first.
+            adapters.scheduler().onEntity(viewer, () ->
+                    new EquipmentMenu(viewer, adapters, profiles,
+                            () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
+                                    recipes, shields, armor, tools, vaults)).open());
+            return;
+        }
         // Every filler pane is inert, and the stats head's click is still unbuilt -- slice 3's
         // decision, unchanged. Falling through rather than branching on STATS_SLOT deliberately: a
         // no-op branch would read as a wired button whose body someone forgot to write.
@@ -385,6 +395,12 @@ public final class NexusMenu extends Menu {
                 Material.REDSTONE_TORCH,
                 MenuIcons.line("Settings", NamedTextColor.GRAY),
                 List.of(MenuIcons.line("Choose where the Nexus sits.", NamedTextColor.DARK_GRAY))));
+
+        // THE EQUIPMENT SCREEN, row 3. Ungated, like Stats and Settings -- see EQUIPMENT_SLOT.
+        getInventory().setItem(NexusMenuLayout.EQUIPMENT_SLOT, MenuIcons.icon(
+                Material.ARMOR_STAND,
+                MenuIcons.line("Equipment", NamedTextColor.GRAY),
+                List.of(MenuIcons.line("Your armour and accessories.", NamedTextColor.DARK_GRAY))));
 
         // icon(), NOT placeholder() -- THE OTHER HALF OF THE PAIR THE TORCH ABOVE IS ONE OF, and
         // the class javadoc carries the argument. The lore below is REAL and WORKING; only the

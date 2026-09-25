@@ -553,7 +553,10 @@ final class MenuRouting {
         // Every input slot occupied and none of them able to take this. Refused silently: the
         // player can see the slots are full, and acceptsInput has not been asked, so nothing has
         // claimed the ITEM was the problem.
-        if (target == null) return null;
+        if (target == null) {
+            if (menu.shiftInElsewhere(moving, event::setCurrentItem)) player.updateInventory();
+            return null;
+        }
         if (!placeAllowed(menu, target, moving)) return null;
 
         ItemStack resting = menu.getInventory().getItem(target);

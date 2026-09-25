@@ -48,8 +48,6 @@ import io.github.butterflysmp.rpg.core.weapon.ToolDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
 import io.github.butterflysmp.rpg.core.weapon.AccessoryRegistry;
 import io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals;
-import io.github.butterflysmp.rpg.core.accessory.AccessorySlots;
-import io.github.butterflysmp.rpg.paper.accessory.AccessoryDevCommand;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
@@ -542,29 +540,6 @@ public final class RpgCommand {
                                 .executes(VaultDevCommand::usage)
                                 .then(vaultCell((ctx, page, slot) ->
                                         VaultDevCommand.take(ctx, vaults, page, slot)))))
-                // *** /rpg accessory <show|equip|unequip> -- A DEV INSTRUMENT, SLICE A's ONLY WAY TO
-                // WEAR AN ACCESSORY. DEV: delete when GATE-accessories-b.md passes. ***
-                //
-                // Permissions.DEV, like the vault branch above and for its reason: equip moves an item
-                // out of the world into a file. The slot argument is bounded by AccessorySlots.COUNT
-                // rather than a literal, so Brigadier's refusal cannot drift from the store's shape.
-                .then(Commands.literal("accessory")
-                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
-                        .executes(AccessoryDevCommand::usage)
-                        .then(Commands.literal("show")
-                                .executes(ctx -> AccessoryDevCommand.show(ctx, adapters, profiles)))
-                        .then(Commands.literal("equip")
-                                .executes(AccessoryDevCommand::usage)
-                                .then(Commands.argument("slot",
-                                                IntegerArgumentType.integer(0, AccessorySlots.COUNT - 1))
-                                        .executes(ctx -> AccessoryDevCommand.equip(ctx, adapters, profiles,
-                                                IntegerArgumentType.getInteger(ctx, "slot")))))
-                        .then(Commands.literal("unequip")
-                                .executes(AccessoryDevCommand::usage)
-                                .then(Commands.argument("slot",
-                                                IntegerArgumentType.integer(0, AccessorySlots.COUNT - 1))
-                                        .executes(ctx -> AccessoryDevCommand.unequip(ctx, adapters,
-                                                IntegerArgumentType.getInteger(ctx, "slot"))))))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
                 // unit test. Hold it and a bare bar fills in ~50s instead of 100; drop it and the rate

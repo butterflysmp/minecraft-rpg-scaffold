@@ -139,6 +139,14 @@ final class NexusMenuLayout {
     static final int GRINDSTONE_SLOT = 33;
 
     /**
+     * The Equipment screen (accessories Slice B): row 3, "other features" -- the first thing in that
+     * band. A feature, not a crafting-type menu, so row 3 and not row 4; and centred under the stats
+     * head (13) because it is the other half of "you": what you wear, under what it adds up to.
+     * Ungated: the screen shows armour a player can wear from level 1.
+     */
+    static final int EQUIPMENT_SLOT = 22;
+
+    /**
      * The vault. <b>Row 4, column 2 -- and it is 29, which the row above says was reserved for it.</b>
      *
      * <h2>THE ROW IS FIVE OF FIVE, AND THE GAP THIS JAVADOC WARNED ABOUT IS CLOSED</h2>
@@ -207,7 +215,8 @@ final class NexusMenuLayout {
      */
     static final Set<Integer> PAINTED_SLOTS = Set.of(
             CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT,
-            VAULT_SLOT, ANVIL_SLOT, CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT);
+            VAULT_SLOT, ANVIL_SLOT, CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT,
+            EQUIPMENT_SLOT);
 
     /**
      * *** THE SUBTRACTION READS {@link #PAINTED_SLOTS}. IT USED TO RESTATE IT BY HAND. ***
