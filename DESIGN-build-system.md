@@ -1,5 +1,7 @@
 # DESIGN — The Build System (Ultimates, Actives, Passives, Aspects & Fragments, UI)
 
+> **2026-09-25 — the near-term test below was run a while ago, and Ben has ruled that the whole build system is built now; the plan is `PLAN-build-system.md`.**
+
 Status: **design target, not scheduled work.** This captures a system large enough
 to be re-litigated three times if it isn't written down. Nothing here is built.
 The near-term move (last section) is deliberately much smaller than the whole.
