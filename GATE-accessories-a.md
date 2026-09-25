@@ -1,6 +1,6 @@
 # GATE — accessories, Slice A: the kind, the store and the stats (no menu)
 
-**Status: NOT RUN.** Every prediction below was written **before** any boot. Readings go **beside** a
+**Status: READ on `421d85a`, 2026-09-24 -- all 18 rows reported good by Ben. Three sub-readings were NOT given: A4 (d), A9's stations, and A14's figures (Ben: "skip the numbers"). Each row says which.** Every prediction below was written **before** any boot. Readings go **beside** a
 prediction, never over it, and a prediction is not edited once its row has been read. Readings are
 verdicts, not figures, unless the row asks for a figure.
 
@@ -33,13 +33,13 @@ folder must not be the thing that answers it.
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <tip>` naming the PR's tip SHA — not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | _(not run)_ |
+| `[Rpg] Build: <tip>` naming the PR's tip SHA — not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **PASS** *(421d85a)* -- `[18:16:41] [Server thread/INFO]: [Rpg] Build: 421d85a`, the only build line in the file |
 
 ### R0b — the loader found all six, and skipped none
 
 | prediction | instrument | READING |
 |---|---|---|
-| the Loaded line reads `..., 5 tools, 6 accessories, ...`, and **no** line reads `Skipping malformed accessory` | `Select-String -Path run\logs\latest.log -Pattern 'Loaded .* accessories\|malformed accessory\|No accessories loaded'` | _(not run)_ |
+| the Loaded line reads `..., 5 tools, 6 accessories, ...`, and **no** line reads `Skipping malformed accessory` | `Select-String -Path run\logs\latest.log -Pattern 'Loaded .* accessories\|malformed accessory\|No accessories loaded'` | **PASS** *(421d85a)* -- `[18:16:41] [Server thread/INFO]: [Rpg] Loaded 6 abilities, 28 visuals, 5 statuses, 7 elements, 10 enchants, 2 kits, 14 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`; no `Skipping malformed accessory` line |
 
 > **SIX IS RULED (Q2), SO A FIVE IS A SKIPPED FILE, NOT A SMALLER ROSTER.** The skip line names the
 > file and the reason; read it before anything else.
@@ -48,7 +48,7 @@ folder must not be the thing that answers it.
 
 | prediction | instrument | READING |
 |---|---|---|
-| `AccessoryDefinition.class` and `AccessoryService.class` PRESENT; **6** `content/accessories/*.yml` entries; the control class ABSENT | the scan below | _(not run)_ |
+| `AccessoryDefinition.class` and `AccessoryService.class` PRESENT; **6** `content/accessories/*.yml` entries; the control class ABSENT | the scan below | **PASS** *(421d85a)* -- `PRESENT` AccessoryDefinition.class; `PRESENT` AccessoryService.class; `ABSENT` NoSuchClassControl.class (the control); `accessory content entries: 6` |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -80,7 +80,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| `/rpg give fletchers_quiver` twice → **two separate items in two slots**, never one stack of 2. The name reads `Fletcher's Quiver` in the rare colour. The lore, top to bottom: `+5% Crit Chance` (green), `+3 Ranged Damage` (green), `-0.20/5s Health Regen` (**red**), `Ranger class accessory` (grey), a blank, the italic flavour line, a blank, `Rare Accessory`. **No enchant glint, and no Gear Score line.** | _(not run)_ |
+| `/rpg give fletchers_quiver` twice → **two separate items in two slots**, never one stack of 2. The name reads `Fletcher's Quiver` in the rare colour. The lore, top to bottom: `+5% Crit Chance` (green), `+3 Ranged Damage` (green), `-0.20/5s Health Regen` (**red**), `Ranger class accessory` (grey), a blank, the italic flavour line, a blank, `Rare Accessory`. **No enchant glint, and no Gear Score line.** | **PASS** *(421d85a)* |
 
 ### A2 — accessory Defense MERGES with armour Defense; neither wipes the other
 
@@ -88,7 +88,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| Wear a **plain vanilla iron chestplate**: `/rpg stats` Defense **6**. `/rpg accessory equip 1` holding a Ward Charm → Defense **9** within a second. Take the chestplate **off** → Defense **3** (the charm's source survives). Put it back → **9**. `/rpg accessory unequip 1` → **6**. At no step does Defense read 3 with the chestplate on, or 6 with only the charm — each of those is one source wiping the other. | _(not run)_ |
+| Wear a **plain vanilla iron chestplate**: `/rpg stats` Defense **6**. `/rpg accessory equip 1` holding a Ward Charm → Defense **9** within a second. Take the chestplate **off** → Defense **3** (the charm's source survives). Put it back → **9**. `/rpg accessory unequip 1` → **6**. At no step does Defense read 3 with the chestplate on, or 6 with only the charm — each of those is one source wiping the other. | **PASS** *(421d85a)* |
 
 ### A3 — the class slot contributes only for the profile's class, and goes INERT on a change
 
@@ -96,7 +96,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| As a **ranger**, `/rpg accessory equip 0` holding a Fletcher's Quiver → `/rpg stats`: Crit Chance **20%** (was 15%), Health Regen **0.80/5s** (was 1.00/5s). `/rpg class mage` → within a second Crit Chance **15%**, Health Regen **1.00/5s**, the quiver **still in slot 0** (`/rpg accessory show` marks it INACTIVE), and the stats sheet's block reads `Fletcher's Quiver: inactive (requires Ranger)`. `/rpg class ranger` → **20%** and **0.80/5s** again, with no other action. | _(not run)_ |
+| As a **ranger**, `/rpg accessory equip 0` holding a Fletcher's Quiver → `/rpg stats`: Crit Chance **20%** (was 15%), Health Regen **0.80/5s** (was 1.00/5s). `/rpg class mage` → within a second Crit Chance **15%**, Health Regen **1.00/5s**, the quiver **still in slot 0** (`/rpg accessory show` marks it INACTIVE), and the stats sheet's block reads `Fletcher's Quiver: inactive (requires Ranger)`. `/rpg class ranger` → **20%** and **0.80/5s** again, with no other action. | **PASS** *(421d85a)* |
 
 > The class change also mints the new kit's weapon — the **pre-existing** duplicate-kit-weapons
 > defect (`PLAN-accessories.md` §8.1). It is not this slice's, and not this row's reading.
@@ -107,7 +107,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| Ranger, quiver in slot 0. Holding a **Boltor**: `/rpg stats` Damage is **exactly 3.00 higher** than the same Boltor with the quiver unequipped. Holding a **mage staff** (or nothing): Damage is **unchanged** by equipping the quiver. | _(not run)_ |
+| Ranger, quiver in slot 0. Holding a **Boltor**: `/rpg stats` Damage is **exactly 3.00 higher** than the same Boltor with the quiver unequipped. Holding a **mage staff** (or nothing): Damage is **unchanged** by equipping the quiver. | **PASS** *(421d85a)* |
 
 ### A4 — the class slot refuses the wrong class, and is LOCKED with no class
 
@@ -115,7 +115,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| (a) As a ranger, `/rpg accessory equip 0` holding a **Sage's Scroll** → refused, `That accessory is for mage; your class is ranger.`, and the scroll **stays in the hand**. (b) Holding a **Brawler's Gauntlet** → refused the same way, naming `melee` — **no profile can wear it today (ruling Q1)**, and `/rpg class melee` is itself refused (`Unknown class: melee`). (c) Holding a Ward Charm, `equip 0` → refused, slot 0 takes a class accessory. (d) **On a profile with NO class** (a fresh account, or an alt that never ran `/rpg class`), `equip 0` with any accessory → `The class slot is locked: choose a class first`. | _(not run)_ |
+| (a) As a ranger, `/rpg accessory equip 0` holding a **Sage's Scroll** → refused, `That accessory is for mage; your class is ranger.`, and the scroll **stays in the hand**. (b) Holding a **Brawler's Gauntlet** → refused the same way, naming `melee` — **no profile can wear it today (ruling Q1)**, and `/rpg class melee` is itself refused (`Unknown class: melee`). (c) Holding a Ward Charm, `equip 0` → refused, slot 0 takes a class accessory. (d) **On a profile with NO class** (a fresh account, or an alt that never ran `/rpg class`), `equip 0` with any accessory → `The class slot is locked: choose a class first`. | **(a) PASS, (b) PASS, (c) PASS** *(421d85a)*. **(d) NOT SPECIFIED** -- Ben reported "gates are good" and did not say whether (d) was read on a class-less account (PASS) or NOT READ |
 
 > **(d) needs a class-less profile, and nothing can un-choose a class.** Read it on an account that
 > has never run `/rpg class`. If none is available, record (d) as NOT READ rather than improvising a
@@ -127,7 +127,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| With nothing equipped, hold a Ward Charm in the **main hand**, then the **off hand** → `/rpg stats` Defense **unchanged** both times. Same with a Keen Charm → Crit Chance unchanged. | _(not run)_ |
+| With nothing equipped, hold a Ward Charm in the **main hand**, then the **off hand** → `/rpg stats` Defense **unchanged** both times. Same with a Keen Charm → Crit Chance unchanged. | **PASS** *(421d85a)* |
 
 ### A6 — every station and command refuses an accessory EXPLICITLY, with the A4 words
 
@@ -135,7 +135,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| Nexus enchant screen: placing an accessory → `Accessories cannot be enchanted.` and it stays on the cursor. Anvil → `Accessories cannot be worked at the anvil.` Grindstone → `Accessories have nothing to grind off.` `/rpg enchant show` holding one → `Accessories cannot be enchanted.` `/rpg gearscore set 300` → `Accessories carry no gear score.` `/rpg durability damage 1` → `Accessories do not wear out.` **None** reads "not one of your weapons…". | _(not run)_ |
+| Nexus enchant screen: placing an accessory → `Accessories cannot be enchanted.` and it stays on the cursor. Anvil → `Accessories cannot be worked at the anvil.` Grindstone → `Accessories have nothing to grind off.` `/rpg enchant show` holding one → `Accessories cannot be enchanted.` `/rpg gearscore set 300` → `Accessories carry no gear score.` `/rpg durability damage 1` → `Accessories do not wear out.` **None** reads "not one of your weapons…". | **PASS** *(421d85a)* |
 
 > The enchant screen is level 10, the anvil 7, the grindstone 13 (`NexusStationGate`). Grant the
 > level with `/rpg playerxp` first; a station refusal for LEVEL is not this row's reading.
@@ -146,7 +146,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| Give each of the six, hold each: `/rpg gearscore show` → `Held: no stamp (reads 100)` for all six; **no** tooltip carries an enchant line or a glint. | _(not run)_ |
+| Give each of the six, hold each: `/rpg gearscore show` → `Held: no stamp (reads 100)` for all six; **no** tooltip carries an enchant line or a glint. | **PASS** *(421d85a)* |
 
 ### A8 — what is worn survives a restart
 
@@ -154,7 +154,7 @@ the reason they exist.
 
 | prediction | READING |
 |---|---|
-| Equip a quiver (slot 0) and a Ward Charm (slot 2). `run/plugins/Rpg/accessories/<uuid>.json` exists with **two** entries, slots **0** and **2**. Stop the server (normally), boot, rejoin: `/rpg accessory show` lists both in the same slots; `/rpg stats` shows their contributions without any action. | _(not run)_ |
+| Equip a quiver (slot 0) and a Ward Charm (slot 2). `run/plugins/Rpg/accessories/<uuid>.json` exists with **two** entries, slots **0** and **2**. Stop the server (normally), boot, rejoin: `/rpg accessory show` lists both in the same slots; `/rpg stats` shows their contributions without any action. | **PASS** *(421d85a)* |
 
 ### A9 — the four accessory materials are INERT in vanilla's hands
 
@@ -163,7 +163,7 @@ does not consume, so every "not consumed" reading would pass for free.
 
 | prediction | READING |
 |---|---|
-| For each of `echo_shard` (Ward Charm), `netherite_scrap` (Gauntlet), `shulker_shell` (Quiver), `prismarine_crystals` (Scroll): **brewing stand** — does not enter the ingredient slot, or sits there and brews nothing; **furnace** — not accepted as fuel; **smithing table** — produces no result in any slot; **crafting grid** (the 2x2 and a table) — no result that consumes it; **villager** — no trade whose price is the accessory; **right-click in air and on a block** — nothing is placed, eaten or used. **The accessory is still in the inventory afterwards, unchanged.** | _(not run)_ |
+| For each of `echo_shard` (Ward Charm), `netherite_scrap` (Gauntlet), `shulker_shell` (Quiver), `prismarine_crystals` (Scroll): **brewing stand** — does not enter the ingredient slot, or sits there and brews nothing; **furnace** — not accepted as fuel; **smithing table** — produces no result in any slot; **crafting grid** (the 2x2 and a table) — no result that consumes it; **villager** — no trade whose price is the accessory; **right-click in air and on a block** — nothing is placed, eaten or used. **The accessory is still in the inventory afterwards, unchanged.** | **PASS** *(421d85a)* Nothing was consumed. Stations that accepted an accessory into a slot: **not reported** |
 
 > A reading of "sits in the brewing ingredient slot" is **not** a failure by itself; a CONSUMED
 > accessory is. Record which station accepted it, even if nothing was lost.
@@ -174,7 +174,7 @@ does not consume, so every "not consumed" reading would pass for free.
 
 | prediction | READING |
 |---|---|
-| Wear a Ward Charm (slot 1) and a Keen Charm (slot 2). Stop the server. In `accessories/<uuid>.json`, replace slot 2's `item` text with `AAAA` (valid base64, not an item). Boot, rejoin: `/rpg accessory show` → slot 1 the Ward Charm, slot 2 `UNREADABLE -- kept verbatim`; `/rpg stats` Defense still carries the **+3**, Crit Chance **15%**; the sheet's block reads `Slot 2: unreadable (kept, contributes nothing)`. The file's slot-2 text is **still `AAAA`** after the session. | _(not run)_ |
+| Wear a Ward Charm (slot 1) and a Keen Charm (slot 2). Stop the server. In `accessories/<uuid>.json`, replace slot 2's `item` text with `AAAA` (valid base64, not an item). Boot, rejoin: `/rpg accessory show` → slot 1 the Ward Charm, slot 2 `UNREADABLE -- kept verbatim`; `/rpg stats` Defense still carries the **+3**, Crit Chance **15%**; the sheet's block reads `Slot 2: unreadable (kept, contributes nothing)`. The file's slot-2 text is **still `AAAA`** after the session. | **PASS** *(421d85a)* |
 
 > **And the structural half is a DIFFERENT outcome, by design:** a duplicate slot or bad JSON makes
 > the whole store UNAVAILABLE for the session (SEVERE in the log, the sheet says `unavailable`),
@@ -187,7 +187,7 @@ does not consume, so every "not consumed" reading would pass for free.
 
 | prediction | READING |
 |---|---|
-| Copy `ward_charm.yml` to `run/plugins/Rpg/content/accessories/arrow_probe.yml` with `material: arrow`. Boot **without** `--refresh-content`: the log reads `Skipping malformed accessory 'arrow_probe.yml': ... must be one of [echo_shard, netherite_scrap, prismarine_crystals, shulker_shell]`, and the Loaded line still reads **6 accessories**. Delete the probe afterwards. | _(not run)_ |
+| Copy `ward_charm.yml` to `run/plugins/Rpg/content/accessories/arrow_probe.yml` with `material: arrow`. Boot **without** `--refresh-content`: the log reads `Skipping malformed accessory 'arrow_probe.yml': ... must be one of [echo_shard, netherite_scrap, prismarine_crystals, shulker_shell]`, and the Loaded line still reads **6 accessories**. Delete the probe afterwards. | **PASS** *(421d85a)* (probe deleted afterwards) |
 
 ### A12 — equip and unequip move the item exactly once
 
@@ -195,7 +195,7 @@ does not consume, so every "not consumed" reading would pass for free.
 
 | prediction | READING |
 |---|---|
-| Equip a charm into slot 3 → it **leaves the hand**, `Equipped Ward Charm in slot 3.` Equip another into slot 3 → refused `occupied`, and it **stays in the hand**. `unequip 3` → the charm **returns to the inventory**; `unequip 3` again → `Slot 3 is empty.` With a **full inventory**, `unequip` → the charm **drops at your feet** with `Your inventory was full -- dropped at your feet.` At no point do two copies exist. | _(not run)_ |
+| Equip a charm into slot 3 → it **leaves the hand**, `Equipped Ward Charm in slot 3.` Equip another into slot 3 → refused `occupied`, and it **stays in the hand**. `unequip 3` → the charm **returns to the inventory**; `unequip 3` again → `Slot 3 is empty.` With a **full inventory**, `unequip` → the charm **drops at your feet** with `Your inventory was full -- dropped at your feet.` At no point do two copies exist. | **PASS** *(421d85a)* |
 
 ### A13 — the stats sheet carries the accessory block, on both surfaces (ruling Q4)
 
@@ -203,7 +203,7 @@ does not consume, so every "not consumed" reading would pass for free.
 
 | prediction | READING |
 |---|---|
-| Ranger, quiver in slot 0, Ward Charm in slot 1. `/rpg stats` ends with `Accessories`, then `  Fletcher's Quiver: +5% Crit Chance, +3 Ranged Damage, -0.20/5s Health Regen`, then `  Ward Charm: +3 Defense`. The **Nexus hub's stats head** tooltip ends with the **same three lines**. Unequip both → the block is **gone** from both, not a header over nothing. | _(not run)_ |
+| Ranger, quiver in slot 0, Ward Charm in slot 1. `/rpg stats` ends with `Accessories`, then `  Fletcher's Quiver: +5% Crit Chance, +3 Ranged Damage, -0.20/5s Health Regen`, then `  Ward Charm: +3 Defense`. The **Nexus hub's stats head** tooltip ends with the **same three lines**. Unequip both → the block is **gone** from both, not a header over nothing. | **PASS** *(421d85a)* |
 
 ### A14 — class damage lands PER HIT on a real volley: the Dragon's Breath, 9 then 12
 
@@ -220,7 +220,7 @@ rather than every arrow. Added at the seat's review of `c381545`; prediction wri
 
 | prediction | READING |
 |---|---|
-| Quiver **unequipped**: one volley → every **non-crit** arrow's popup reads **9** (after the fire glyph). `/rpg accessory equip 0` holding the Fletcher's Quiver, then one more volley → every **non-crit** arrow's popup reads **12**. **Flat +3 PER HIT, before crit** — not +3 per press, and not +3 spread across seven arrows. **Read non-crit arrows only**: a crit doubles the whole hit, class bonus included (18 without, 24 with), and at 15-20% chance some of the seven will crit. **And read the IMPACT popups only**, not the Scorch burn ticks that follow, which are smaller and are not this row's quantity. | _(not run)_ |
+| Quiver **unequipped**: one volley → every **non-crit** arrow's popup reads **9** (after the fire glyph). `/rpg accessory equip 0` holding the Fletcher's Quiver, then one more volley → every **non-crit** arrow's popup reads **12**. **Flat +3 PER HIT, before crit** — not +3 per press, and not +3 spread across seven arrows. **Read non-crit arrows only**: a crit doubles the whole hit, class bonus included (18 without, 24 with), and at 15-20% chance some of the seven will crit. **And read the IMPACT popups only**, not the Scorch burn ticks that follow, which are smaller and are not this row's quantity. | **PASS** *(421d85a)* -- **the per-arrow figures this row asks for were NOT recorded.** Ben, 2026-09-24: "skip the numbers. gates are good." The 9 / 12 prediction is therefore confirmed by Ben's verdict, not by a recorded figure |
 
 ---
 
