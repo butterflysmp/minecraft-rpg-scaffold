@@ -39,6 +39,19 @@ class PoolLoaderTest {
     private static final Predicate<String> BUNDLED_FRAGMENT =
             id -> PoolLoaderTest.class.getResource("/content/fragments/" + id + ".yml") != null;
 
+    /** An aspect id -> its target, read from the BUNDLED aspect file's own `target:` line (slice 5). */
+    private static final java.util.function.Function<String, java.util.Optional<String>> BUNDLED_ASPECT_TARGET = id -> {
+        try (var in = PoolLoaderTest.class.getResourceAsStream("/content/aspects/" + id + ".yml")) {
+            if (in == null) return java.util.Optional.empty();
+            for (String line : new String(in.readAllBytes(), StandardCharsets.UTF_8).split("\\R")) {
+                if (line.startsWith("target: ")) return java.util.Optional.of(line.substring("target: ".length()).strip());
+            }
+            return java.util.Optional.empty();
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    };
+
     @BeforeEach
     void setUp() {
         warnings = new ArrayList<>();
@@ -65,7 +78,8 @@ class PoolLoaderTest {
     }
 
     private PoolRegistry load(Predicate<String> abilityExists) {
-        return new PoolLoader(log).loadAll(new File(dir.toString()), abilityExists, BUNDLED_FRAGMENT);
+        return new PoolLoader(log).loadAll(new File(dir.toString()), abilityExists, BUNDLED_FRAGMENT,
+                BUNDLED_ASPECT_TARGET);
     }
 
     private String warningText() {
@@ -142,6 +156,60 @@ class PoolLoaderTest {
         assertEquals(0, registry.size());
         assertTrue(warningText().contains("fragment_nowhere"), "the refusal names the missing id: " + warningText());
         assertFalse(warningText().contains("fragment_vigor,"), "and only the missing one: " + warningText());
+    }
+
+    /** The aspect lookup can say NO, and reads a real target -- the control for the aspect rows below. */
+    @Test
+    void theBundledAspectLookupIsNotBlind() {
+        assertEquals(java.util.Optional.of("solar_lance"), BUNDLED_ASPECT_TARGET.apply("searing_lance"));
+        assertEquals(java.util.Optional.empty(), BUNDLED_ASPECT_TARGET.apply("no_such_aspect"));
+    }
+
+    /** Slice 5: each bundled pool lists two aspects, each on one of its own abilities. */
+    @Test
+    void eachBundledPoolOffersTwoAspectsOnItsOwnAbilities() throws IOException {
+        copyBundled("ranger_fire.yml");
+        copyBundled("mage_fire.yml");
+        PoolRegistry registry = load(BUNDLED_ABILITY);
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(List.of("searing_lance", "banked_embers"), registry.find("ranger", "fire").orElseThrow().aspects());
+        assertEquals(List.of("cinder_wake", "lingering_sun"), registry.find("mage", "fire").orElseThrow().aspects());
+    }
+
+    /** An aspect whose TARGET the pool does not offer is refused: it could never be active there. */
+    @Test
+    void anAspectOnAnAbilityThePoolDoesNotOfferIsRefused() throws IOException {
+        write("ranger_fire.yml", """
+                class: ranger
+                element: fire
+                ultimates: [ultimate_placeholder_ranger]
+                actives: [rekindle, solar_lance]
+                aspects: [searing_lance, cinder_wake]
+                default:
+                  ultimate: ultimate_placeholder_ranger
+                  actives: [rekindle, solar_lance]
+                """);
+        PoolRegistry registry = load(BUNDLED_ABILITY);
+        assertEquals(0, registry.size());
+        assertTrue(warningText().contains("cinder_wake") && warningText().contains("ember_step"),
+                "names the aspect and its target: " + warningText());
+        assertFalse(warningText().contains("searing_lance ("), "and not the legal one: " + warningText());
+    }
+
+    @Test
+    void aPoolNamingAnUnknownAspectIsRefused() throws IOException {
+        write("ranger_fire.yml", """
+                class: ranger
+                element: fire
+                ultimates: [ultimate_placeholder_ranger]
+                actives: [rekindle, solar_lance]
+                aspects: [aspect_nowhere]
+                default:
+                  ultimate: ultimate_placeholder_ranger
+                  actives: [rekindle, solar_lance]
+                """);
+        assertEquals(0, load(BUNDLED_ABILITY).size());
+        assertTrue(warningText().contains("aspect_nowhere"), warningText());
     }
 
     /** Ruling 7: FIRE only, because only fire has pools. A count, so a stray third file is noticed. */

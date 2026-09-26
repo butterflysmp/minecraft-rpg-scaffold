@@ -31,7 +31,11 @@ public final class PoolLoader {
         this.log = log;
     }
 
-    public PoolRegistry loadAll(File buildsDir, Predicate<String> abilityExists, Predicate<String> fragmentExists) {
+    /**
+     * @param aspectTarget the target ability of an aspect id, or empty if no aspect has that id (slice 5)
+     */
+    public PoolRegistry loadAll(File buildsDir, Predicate<String> abilityExists, Predicate<String> fragmentExists,
+                                java.util.function.Function<String, java.util.Optional<String>> aspectTarget) {
         PoolRegistry registry = new PoolRegistry();
         File[] files = buildsDir.listFiles((d, n) -> n.endsWith(".yml"));
         if (files == null) return registry;
@@ -39,7 +43,8 @@ public final class PoolLoader {
         int skipped = 0;
         for (File f : files) {
             try {
-                registry.register(parse(YamlConfiguration.loadConfiguration(f), abilityExists, fragmentExists));
+                registry.register(parse(YamlConfiguration.loadConfiguration(f), abilityExists, fragmentExists,
+                        aspectTarget));
             } catch (RuntimeException ex) {
                 skipped++;
                 log.warning("Skipping pool '" + f.getName() + "': " + ex.getMessage());
@@ -54,13 +59,16 @@ public final class PoolLoader {
 
     /** Package-private so the loader's rules are testable against a hand-built YAML section. */
     static PoolDefinition parse(ConfigurationSection s, Predicate<String> abilityExists,
-                                Predicate<String> fragmentExists) {
+                                Predicate<String> fragmentExists,
+                                java.util.function.Function<String, java.util.Optional<String>> aspectTarget) {
         CellKey cell = new CellKey(req(s, "class"), req(s, "element"));
         String displayName = s.getString("display_name", cell.classId() + " " + cell.elementId());
         List<String> ultimates = s.getStringList("ultimates");
         List<String> actives = s.getStringList("actives");
         // Slice 4: the fragments this cell offers. Optional -- a pool with none has four empty slots.
         List<String> fragments = s.getStringList("fragments");
+        // Slice 5: the aspects this cell offers. Optional, like the fragments.
+        List<String> aspects = s.getStringList("aspects");
 
         ConfigurationSection def = s.getConfigurationSection("default");
         if (def == null) throw new IllegalArgumentException("Missing required section: default");
@@ -87,7 +95,22 @@ public final class PoolLoader {
         if (!unknownFragments.isEmpty()) {
             throw new IllegalArgumentException("names fragments nothing defines: " + unknownFragments);
         }
-        return new PoolDefinition(cell, displayName, ultimates, actives, defaultLoadout, fragments);
+        // An aspect nothing defines is REFUSED, and so is one whose TARGET this pool does not offer (section 2.4:
+        // "must be in the same pool") -- an aspect on an ability the player cannot equip here could never be
+        // active, and the Build screen would offer a choice that does nothing.
+        List<String> badAspects = new ArrayList<>();
+        for (String id : aspects) {
+            java.util.Optional<String> target = aspectTarget.apply(id);
+            if (target.isEmpty()) {
+                badAspects.add(id + " (nothing defines it)");
+            } else if (!ultimates.contains(target.get()) && !actives.contains(target.get())) {
+                badAspects.add(id + " (targets " + target.get() + ", which this pool does not offer)");
+            }
+        }
+        if (!badAspects.isEmpty()) {
+            throw new IllegalArgumentException("names aspects it cannot offer: " + badAspects);
+        }
+        return new PoolDefinition(cell, displayName, ultimates, actives, defaultLoadout, fragments, aspects);
     }
 
     private static String req(ConfigurationSection s, String path) {

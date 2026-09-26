@@ -135,6 +135,18 @@ public final class AbilityService {
      *                 before any cooldown or resource is touched.
      */
     public CastResult cast(CombatantSnapshot caster, String abilityId, Aim aim, Set<String> castable) {
+        return cast(caster, abilityId, aim, castable, java.util.function.UnaryOperator.identity());
+    }
+
+    /**
+     * {@link #cast}, with the ability DERIVED for this caster first -- the build system's aspects (slice 5,
+     * {@code AspectApplication}). The derive runs after the lookup and the castable gate and BEFORE
+     * {@link #resolve}, so the cost checked and spent and the cooldown started are the DERIVED ones; the
+     * derived definition keeps the id, so the cooldown key is the ability's. The registry is never touched:
+     * another caster gets the base.
+     */
+    public CastResult cast(CombatantSnapshot caster, String abilityId, Aim aim, Set<String> castable,
+                           java.util.function.UnaryOperator<AbilityDefinition> derive) {
         AbilityDefinition def = registry.find(abilityId).orElse(null);
         if (def == null) return new CastResult.UnknownAbility(abilityId);
 
@@ -143,7 +155,7 @@ public final class AbilityService {
         // moved it after them is what AbilityServiceTest's order-pinning test guards.
         if (!castable.contains(abilityId)) return new CastResult.Locked(abilityId);
 
-        return resolve(caster, def, aim);
+        return resolve(caster, derive.apply(def), aim);
     }
 
     /**

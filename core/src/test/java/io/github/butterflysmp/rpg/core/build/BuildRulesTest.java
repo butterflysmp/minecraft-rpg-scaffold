@@ -207,4 +207,25 @@ class BuildRulesTest {
             }
         }
     }
+
+    // ------------------------------------------------------------------ aspects (slice 5)
+
+    private static final PoolDefinition ASPECTED = new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
+            List.of("r_ult"), List.of("r_a", "r_b"), new Loadout("r_ult", "r_a", "r_b"), List.of(),
+            List.of("asp_a", "asp_b", "asp_c"));
+
+    /** The same aspect twice is refused -- by never offering the one held in the other slot. */
+    @Test
+    void theAspectInTheOtherSlotIsNotOffered() {
+        assertEquals(List.of("asp_b", "asp_c"), BuildRules.aspectChoices(ASPECTED, slots("asp_a", null), 1));
+        assertEquals(Optional.empty(), BuildRules.pickAspect(ASPECTED, slots("asp_a", null), 1, "asp_a"));
+        assertEquals(Optional.of(slots("asp_a", "asp_c")), BuildRules.pickAspect(ASPECTED, slots("asp_a", null), 1, "asp_c"));
+    }
+
+    /** Ruling 23: an aspect slot can be emptied. */
+    @Test
+    void anAspectSlotCanBeEmptied() {
+        assertEquals(Optional.of(slots(null, "asp_b")), BuildRules.pickAspect(ASPECTED, slots("asp_a", "asp_b"), 0, null));
+        assertEquals(Optional.empty(), BuildRules.pickAspect(ASPECTED, slots("asp_a", "asp_b"), 2, null), "no third slot");
+    }
 }

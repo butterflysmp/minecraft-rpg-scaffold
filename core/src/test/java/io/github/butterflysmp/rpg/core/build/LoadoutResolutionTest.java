@@ -103,4 +103,18 @@ class LoadoutResolutionTest {
                 new Loadout("ult_a", "act_a", "act_b"), List.of("frag_a", "frag_a")));
         assertEquals(List.of(), POOL.fragments(), "the five-argument form is a pool with no fragments");
     }
+
+    // ------------------------------------------------------------------ aspects (slice 5)
+
+    @Test
+    void aspectsFollowTheFragmentRuleInTwoSlots() {
+        PoolDefinition pool = new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger", List.of("ult_a"),
+                List.of("act_a", "act_b"), new Loadout("ult_a", "act_a", "act_b"), List.of(), List.of("asp_a", "asp_b"));
+        assertEquals(java.util.Arrays.asList(null, null), LoadoutResolution.aspects(pool, null));
+        assertEquals(java.util.Arrays.asList("asp_b", null),
+                LoadoutResolution.aspects(pool, java.util.Arrays.asList("asp_b", "gone")), "an unoffered id reads empty");
+        assertEquals(java.util.Arrays.asList("asp_a", null),
+                LoadoutResolution.aspects(pool, java.util.Arrays.asList("asp_a", "asp_a")), "the same aspect twice: once");
+        assertEquals(List.of(), POOL.aspects(), "the five-argument form is a pool with no aspects");
+    }
 }

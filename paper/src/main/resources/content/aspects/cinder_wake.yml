@@ -1,0 +1,20 @@
+# PLACEHOLDER -- Ben designs. An aspect (PLAN-build-system.md sections 2.4 and 2.4.1). Section 2.4's worked
+# example with its section 2.4.1 modify; none of its numbers is a proposal.
+#
+# The ground you step off keeps burning, and the step costs tempo. ember_step is a DASH, so an Untargeted
+# area lands at the PRE-dash origin. Resolved: cooldown (160 + 40) x 1 = 200, a multiple of 4; a dash has no
+# cooldown floor.
+# The id of this aspect is its filename: cinder_wake.
+
+display_name: "<gold>Cinder Wake</gold>"
+description: ["Ember Step leaves a burning patch where you started."]
+target: ember_step
+add_on_hit:
+  - type: area
+    radius: 3.0
+    duration_ticks: 60
+    tick_interval: 20
+    effects:
+      - { type: damage, amount: 2, element: fire }
+modify:
+  - { field: cooldown_ticks, flat: 40 }

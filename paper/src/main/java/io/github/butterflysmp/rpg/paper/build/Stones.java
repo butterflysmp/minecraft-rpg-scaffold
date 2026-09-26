@@ -37,14 +37,20 @@ public final class Stones {
     private final AbilityRegistry abilities;
     private final BuildService builds;
     private final FragmentRegistry fragments;
+    private final io.github.butterflysmp.rpg.core.build.AspectRegistry aspects;
+
+    /** ONE derive for the server: memoised on (base, active aspects), shared by the cast and the lore. */
+    private final io.github.butterflysmp.rpg.core.build.AspectApplication application =
+            new io.github.butterflysmp.rpg.core.build.AspectApplication();
 
     public Stones(Keys keys, PoolRegistry pools, AbilityRegistry abilities, BuildService builds,
-                  FragmentRegistry fragments) {
+                  FragmentRegistry fragments, io.github.butterflysmp.rpg.core.build.AspectRegistry aspects) {
         this.keys = keys;
         this.pools = pools;
         this.abilities = abilities;
         this.builds = builds;
         this.fragments = fragments;
+        this.aspects = aspects;
     }
 
     public PoolRegistry pools() { return pools; }
@@ -54,6 +60,47 @@ public final class Stones {
     public BuildService builds() { return builds; }
 
     public FragmentRegistry fragments() { return fragments; }
+
+    public io.github.butterflysmp.rpg.core.build.AspectRegistry aspects() { return aspects; }
+
+    /**
+     * The CURRENT cell's two aspect slots, as equipped (slice 5; {@code LoadoutResolution.aspects}): a saved id
+     * the pool still offers, once each; nulls for empty. Two empties for no pool, and for a build still loading
+     * or unusable. An equipped aspect may still be INACTIVE -- see {@link #deriveFor}.
+     */
+    public List<String> equippedAspects(UUID playerId, Optional<PlayerProfile> profile) {
+        Optional<PoolDefinition> pool = profile.flatMap(p -> pools.find(p.archetypeId(), p.elementId()));
+        if (pool.isEmpty()) {
+            return java.util.Collections.unmodifiableList(
+                    java.util.Arrays.asList(new String[io.github.butterflysmp.rpg.core.build.AspectSlots.COUNT]));
+        }
+        PlayerProfile p = profile.get();
+        List<String> saved = builds.build(playerId)
+                .flatMap(build -> build.loadout(p.archetypeId(), p.elementId()))
+                .map(CellLoadout::aspects)
+                .orElse(null);
+        return io.github.butterflysmp.rpg.core.build.LoadoutResolution.aspects(pool.get(), saved);
+    }
+
+    /**
+     * THIS PLAYER'S DERIVE (slice 5): an ability as their ACTIVE aspects change it. An aspect is active when its
+     * target is one of the three abilities the cell has equipped (amendment 2); an inactive one contributes
+     * nothing. The stone's cast, a non-op's /rpg cast and the Build screen's lore all call this, so the tooltip
+     * and the cast cannot disagree. An operator's dev cast does NOT (ruling 10: the base ability). Never the
+     * registry: another player casting the same ability gets the base.
+     */
+    public java.util.function.UnaryOperator<io.github.butterflysmp.rpg.core.ability.AbilityDefinition> deriveFor(
+            UUID playerId, Optional<PlayerProfile> profile) {
+        java.util.Set<String> equipped = equippedFor(playerId, profile)
+                .map(e -> java.util.Set.copyOf(e.ids())).orElse(java.util.Set.of());
+        List<io.github.butterflysmp.rpg.core.build.AspectDefinition> slotted = equippedAspects(playerId, profile).stream()
+                .map(id -> id == null ? null : aspects.find(id).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        if (slotted.isEmpty()) return java.util.function.UnaryOperator.identity();
+        return def -> application.derive(def,
+                io.github.butterflysmp.rpg.core.build.AspectApplication.activeFor(def.id(), slotted, equipped));
+    }
 
     /**
      * The CURRENT cell's four fragment slots, as equipped (slice 4; {@code LoadoutResolution.fragments}):

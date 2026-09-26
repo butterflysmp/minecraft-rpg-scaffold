@@ -1,0 +1,20 @@
+# PLACEHOLDER -- Ben designs. An aspect (PLAN-build-system.md sections 2.4 and 2.4.1): it changes ONE
+# ability, its target, by adding behaviour and, under the whitelist, by changing numbers the target has.
+# This is section 2.4's worked example with its section 2.4.1 modify; none of its numbers is a proposal.
+#
+# The lance trades its hit for a blast where it lands. solar_lance is a RAY, so an appended effect lands at
+# the impact point. Resolved by section 2.4.1's formula: the lance's own Damage 12 -> (12 + 0) x (1 - 0.25) = 9;
+# the appended burst's 4 is untouched (modify first, append second).
+# The id of this aspect is its filename: searing_lance.
+
+display_name: "<gold>Searing Lance</gold>"
+description: ["Solar Lance detonates on impact, and hits a little softer."]
+target: solar_lance
+add_on_hit:
+  - type: burst
+    radius: 2.5
+    effects:
+      - { type: damage, amount: 4, element: fire }
+  - { type: visual, visual_id: solar_detonation }
+modify:
+  - { field: damage.amount, percent: -25 }

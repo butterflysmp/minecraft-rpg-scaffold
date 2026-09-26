@@ -2001,8 +2001,9 @@ public final class RpgCommand {
         // and mana here -- rather than inside the region hop below -- is what
         // stops a player spamming the command faster than the hop resolves.
         AbilityService.CastResult result = dev
-                ? abilityService.castUnchecked(caster, abilityId, aim)
-                : abilityService.cast(caster, abilityId, aim, castable);
+                ? abilityService.castUnchecked(caster, abilityId, aim)   // ruling 10: the BASE ability, no aspects
+                : abilityService.cast(caster, abilityId, aim, castable,
+                        adapters.stones().deriveFor(player.getUniqueId(), Optional.of(profile)));
 
         switch (result) {
             case AbilityService.CastResult.Success success -> {

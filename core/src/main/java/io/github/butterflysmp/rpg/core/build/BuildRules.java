@@ -101,7 +101,7 @@ public final class BuildRules {
      * @param equipped the four slots as equipped ({@code LoadoutResolution.fragments}), nulls for empty
      */
     public static List<String> fragmentChoices(PoolDefinition pool, List<String> equipped, int slot) {
-        return pool.fragments().stream().filter(id -> !heldElsewhere(equipped, slot, id)).toList();
+        return choicesFrom(pool.fragments(), equipped, slot);
     }
 
     /**
@@ -110,8 +110,31 @@ public final class BuildRules {
      * in another slot).
      */
     public static Optional<List<String>> pickFragment(PoolDefinition pool, List<String> equipped, int slot, String id) {
-        if (slot < 0 || slot >= FragmentSlots.COUNT || equipped.size() != FragmentSlots.COUNT) return Optional.empty();
-        if (id != null && !fragmentChoices(pool, equipped, slot).contains(id)) return Optional.empty();
+        return pickFrom(pool.fragments(), equipped, slot, id, FragmentSlots.COUNT);
+    }
+
+    /**
+     * The aspects offered for one aspect slot (slice 5): the pool's, minus the one held in the OTHER slot --
+     * "the same aspect twice is refused" (section 2.4), by never offering it. Whether an aspect's target is
+     * equipped does not matter here: an inactive aspect may still be slotted (amendment 2).
+     */
+    public static List<String> aspectChoices(PoolDefinition pool, List<String> equipped, int slot) {
+        return choicesFrom(pool.aspects(), equipped, slot);
+    }
+
+    /** The two aspect slots after putting {@code id} (or null: EMPTY it, ruling 23) in {@code slot}. */
+    public static Optional<List<String>> pickAspect(PoolDefinition pool, List<String> equipped, int slot, String id) {
+        return pickFrom(pool.aspects(), equipped, slot, id, AspectSlots.COUNT);
+    }
+
+    private static List<String> choicesFrom(List<String> offered, List<String> equipped, int slot) {
+        return offered.stream().filter(id -> !heldElsewhere(equipped, slot, id)).toList();
+    }
+
+    private static Optional<List<String>> pickFrom(List<String> offered, List<String> equipped, int slot, String id,
+                                                   int count) {
+        if (slot < 0 || slot >= count || equipped.size() != count) return Optional.empty();
+        if (id != null && !choicesFrom(offered, equipped, slot).contains(id)) return Optional.empty();
         List<String> next = new java.util.ArrayList<>(equipped);
         next.set(slot, id);
         return Optional.of(java.util.Collections.unmodifiableList(next));

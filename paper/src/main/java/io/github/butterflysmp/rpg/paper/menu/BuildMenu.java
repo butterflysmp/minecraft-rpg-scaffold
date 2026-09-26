@@ -30,7 +30,8 @@ import java.util.function.Supplier;
  * <p>Row 1 opens the class and element pickers; row 2 opens the Ultimate / Active 1 / Active 2 pickers,
  * each offering only what the cell's pool lists in that role ({@code BuildRules}). Rows 3 and 4 are the
  * aspect and fragment cells. The fragment row is LIVE since slice 4 (four slots, one of each, ruling
- * 11); the aspect row still renders "Coming in a later update" until slice 5.
+ * 11) and the aspect row since slice 5 (two slots; an aspect whose target is not equipped reads INACTIVE).
+ * Every slot has "Empty this slot" in its picker (ruling 23).
  *
  * <h2>EVERY ICON IS RENDERED HERE; NONE IS A REAL ITEM</h2>
  *
@@ -87,6 +88,15 @@ public final class BuildMenu extends Menu {
             openPicker(BuildPickerMenu.Kind.ELEMENT);
             return;
         }
+        java.util.OptionalInt aspectSlot = BuildMenuLayout.aspectIndexAt(slot);
+        if (aspectSlot.isPresent()) {
+            if (pool().isEmpty()) {
+                viewer.sendMessage(Component.text("Choose a class and an element first.", NamedTextColor.YELLOW));
+                return;
+            }
+            openPicker(BuildPickerMenu.Kind.ASPECT, aspectSlot.getAsInt());
+            return;
+        }
         java.util.OptionalInt fragmentSlot = BuildMenuLayout.fragmentIndexAt(slot);
         if (fragmentSlot.isPresent()) {
             if (pool().isEmpty()) {
@@ -97,7 +107,7 @@ public final class BuildMenu extends Menu {
             return;
         }
         Optional<LoadoutSlot> loadoutSlot = BuildMenuLayout.loadoutSlotAt(slot);
-        if (loadoutSlot.isEmpty()) return;   // filler, and the not-yet-built aspect cells
+        if (loadoutSlot.isEmpty()) return;   // filler
         if (pool().isEmpty()) {
             viewer.sendMessage(Component.text("Choose a class and an element first.", NamedTextColor.YELLOW));
             return;
@@ -146,8 +156,13 @@ public final class BuildMenu extends Menu {
             getInventory().setItem(BuildMenuLayout.slotOf(slot), loadoutIcon(slot, equipped, unusable));
         }
 
+        // THE ASPECT ROW, LIVE (slice 5): the current cell's two slots, as equipped. An aspect whose target is
+        // not equipped stays slotted and reads INACTIVE (amendment 2).
+        List<String> aspects = adapters.stones().equippedAspects(viewer.getUniqueId(), profile);
+        java.util.Set<String> equippedIds = equipped.map(e -> java.util.Set.copyOf(e.ids())).orElse(java.util.Set.of());
         for (int i = 0; i < BuildMenuLayout.ASPECT_SLOTS.size(); i++) {
-            getInventory().setItem(BuildMenuLayout.ASPECT_SLOTS.get(i), comingLater("Aspect " + (i + 1)));
+            getInventory().setItem(BuildMenuLayout.ASPECT_SLOTS.get(i),
+                    aspectIcon(i, pool().isPresent() ? aspects.get(i) : null, pool().isPresent(), unusable, equippedIds));
         }
         // THE FRAGMENT ROW, LIVE (slice 4): the current cell's four slots, as equipped.
         List<String> fragments = adapters.stones().equippedFragments(viewer.getUniqueId(), profile);
@@ -206,7 +221,14 @@ public final class BuildMenu extends Menu {
         List<Component> lore = new ArrayList<>();
         lore.add(MenuIcons.line(role + (equipped.get().fromDefault() ? " -- the default" : ""),
                 NamedTextColor.DARK_GRAY));
-        ability.ifPresent(def -> lore.addAll(abilityLore(def)));
+        // THE NUMBERS COME FROM THE DERIVED DEFINITION -- the same derive the cast uses (section 2.4.1), so the
+        // tooltip and the cast cannot disagree. A changed number shows its base in gray: "Damage: 9  (12)".
+        ability.ifPresent(def -> {
+            for (String line : def.description()) lore.add(MenuIcons.line(line, NamedTextColor.GRAY));
+            AbilityDefinition derived = adapters.stones()
+                    .deriveFor(viewer.getUniqueId(), profiles.profile(viewer.getUniqueId())).apply(def);
+            lore.addAll(numberLines(def, derived));
+        });
         lore.add(MenuIcons.blank());
         lore.add(unusable
                 ? MenuIcons.line("Build unavailable -- changes cannot be saved.", NamedTextColor.RED)
@@ -276,10 +298,107 @@ public final class BuildMenu extends Menu {
         return material == null ? Material.BARRIER : material;
     }
 
-    /** An aspect cell: not built until slice 5, and says so. */
-    private static ItemStack comingLater(String name) {
-        return MenuIcons.icon(Material.BARRIER, MenuIcons.line(name, NamedTextColor.DARK_GRAY),
-                List.of(MenuIcons.line("Coming in a later update", NamedTextColor.DARK_GRAY)));
+    /** "Damage: 9  (12)": the resolved value, and the base in gray where an aspect changed it. */
+    static List<Component> numberLines(AbilityDefinition base, AbilityDefinition derived) {
+        List<Component> lines = new ArrayList<>();
+        for (io.github.butterflysmp.rpg.core.build.AspectLore.Line line
+                : io.github.butterflysmp.rpg.core.build.AspectLore.lines(base, derived)) {
+            Component text = MenuIcons.line(line.label() + ": " + line.value(), NamedTextColor.GRAY);
+            if (line.base() != null) text = text.append(MenuIcons.line("  (" + line.base() + ")", NamedTextColor.DARK_GRAY));
+            lines.add(text);
+        }
+        return lines;
+    }
+
+    /**
+     * One aspect cell: the slotted aspect -- ACTIVE, or INACTIVE when its target is not equipped (amendment 2)
+     * -- an empty slot, or "choose a class and an element first". Rendered here; never an item.
+     */
+    private ItemStack aspectIcon(int index, String id, boolean pooled, boolean unusable, java.util.Set<String> equippedIds) {
+        String label = "Aspect " + (index + 1);
+        if (!pooled) {
+            return MenuIcons.icon(Material.GRAY_STAINED_GLASS_PANE, MenuIcons.line(label, NamedTextColor.DARK_GRAY),
+                    List.of(MenuIcons.line("Choose a class and an element first.", NamedTextColor.DARK_GRAY)));
+        }
+        Component footer = unusable
+                ? MenuIcons.line("Build unavailable -- changes cannot be saved.", NamedTextColor.RED)
+                : MenuIcons.line("Click to " + (id == null ? "choose." : "change."), NamedTextColor.DARK_GRAY);
+        Optional<io.github.butterflysmp.rpg.core.build.AspectDefinition> aspect =
+                id == null ? Optional.empty() : adapters.stones().aspects().find(id);
+        if (aspect.isEmpty()) {
+            return MenuIcons.icon(Material.LIGHT_GRAY_STAINED_GLASS_PANE,
+                    MenuIcons.line(label + ": (empty)", NamedTextColor.GRAY), List.of(footer));
+        }
+        boolean active = equippedIds.contains(aspect.get().target());
+        List<Component> lore = new ArrayList<>();
+        if (!active) {
+            lore.add(MenuIcons.line("Inactive -- requires " + plainAbilityName(aspect.get().target()) + " equipped",
+                    NamedTextColor.RED));
+        }
+        lore.addAll(aspectLore(aspect.get(), adapters.stones().abilities()));
+        lore.add(MenuIcons.blank());
+        lore.add(footer);
+        return MenuIcons.icon(Material.FIRE_CHARGE,
+                MenuIcons.line(label + ": ", NamedTextColor.GRAY).append(
+                        MiniMessage.miniMessage().deserialize(aspect.get().displayName())
+                                .decoration(TextDecoration.ITALIC, false)), lore);
+    }
+
+    /**
+     * An aspect's own lore: its target, its changes AS AUTHORED ("Damage -25%"), what it adds, and its
+     * description. Shared with the picker.
+     */
+    static List<Component> aspectLore(io.github.butterflysmp.rpg.core.build.AspectDefinition aspect,
+                                      io.github.butterflysmp.rpg.core.ability.AbilityRegistry abilities) {
+        List<Component> lore = new ArrayList<>();
+        String target = abilities.find(aspect.target())
+                .map(def -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(MiniMessage.miniMessage().deserialize(def.displayName())))
+                .orElse(aspect.target());
+        lore.add(MenuIcons.line("Changes " + target, NamedTextColor.GOLD));
+        for (io.github.butterflysmp.rpg.core.build.NumberChange change : aspect.modify()) {
+            lore.add(MenuIcons.line(changeText(change), NamedTextColor.BLUE));
+        }
+        if (!aspect.addOnHit().isEmpty()) {
+            lore.add(MenuIcons.line("Adds " + aspect.addOnHit().size() + " effect(s) on hit", NamedTextColor.BLUE));
+        }
+        if (!aspect.addOnCast().isEmpty()) {
+            lore.add(MenuIcons.line("Adds " + aspect.addOnCast().size() + " cast visual(s)", NamedTextColor.BLUE));
+        }
+        for (String line : aspect.description()) lore.add(MenuIcons.line(line, NamedTextColor.GRAY));
+        return lore;
+    }
+
+    /** A change as authored: "Damage -25%", "Cost +10", "Cooldown +40 ticks". */
+    static String changeText(io.github.butterflysmp.rpg.core.build.NumberChange change) {
+        String label = switch (change.field()) {
+            case COOLDOWN_TICKS -> "Cooldown";
+            case COST -> "Cost";
+            case DAMAGE_AMOUNT -> "Damage";
+            case HEAL_AMOUNT -> "Heal";
+            case KNOCKBACK_STRENGTH -> "Knockback";
+            case BURST_RADIUS -> "Burst radius";
+            case AREA_RADIUS -> "Area radius";
+            case AREA_DURATION_TICKS -> "Area duration";
+            case STATUS_DURATION_TICKS -> "Status duration";
+        };
+        String unit = change.field().integer() ? " ticks" : "";
+        StringBuilder text = new StringBuilder(label);
+        if (change.flat() != 0) text.append(' ').append(signed(change.flat())).append(unit);
+        if (change.percent() != 0) text.append(' ').append(signed(change.percent())).append('%');
+        return text.toString();
+    }
+
+    private static String signed(double value) {
+        String plain = io.github.butterflysmp.rpg.core.build.NumberResolution.plain(java.math.BigDecimal.valueOf(value));
+        return value > 0 ? "+" + plain : plain;
+    }
+
+    private String plainAbilityName(String id) {
+        return adapters.stones().abilities().find(id)
+                .map(def -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(MiniMessage.miniMessage().deserialize(def.displayName())))
+                .orElse(id);
     }
 
     private String profileUnavailableText() {

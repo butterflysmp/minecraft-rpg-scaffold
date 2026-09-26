@@ -1,0 +1,15 @@
+# PLACEHOLDER -- Ben designs. An aspect (PLAN-build-system.md sections 2.4 and 2.4.1): the fourth, Mage
+# placeholder the plan's section 4 asks for on solar_grenade. None of its numbers is a proposal.
+#
+# The grenade's field lingers and its root holds longer -- it exercises the two INTEGER effect fields:
+#   area.duration_ticks: (100 + 20) x 1 = 120, a multiple of the area's 20-tick interval (6 pulses, not 5);
+#   status.duration_ticks: the burst's `rooted` (kind rooted, traced CONTINUOUS: a per-tick countdown)
+#     (60 + 20) x 1 = 80.
+# The id of this aspect is its filename: lingering_sun.
+
+display_name: "<gold>Lingering Sun</gold>"
+description: ["Solar Grenade's fire lingers, and its root holds longer."]
+target: solar_grenade
+modify:
+  - { field: area.duration_ticks, flat: 20 }
+  - { field: status.duration_ticks, flat: 20 }

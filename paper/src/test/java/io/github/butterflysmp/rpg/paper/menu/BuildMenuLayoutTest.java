@@ -74,6 +74,18 @@ class BuildMenuLayoutTest {
         assertEquals(OptionalInt.empty(), BuildMenuLayout.fragmentIndexAt(BuildMenuLayout.ASPECT_SLOTS.get(0)));
     }
 
+    /** Slice 5: the aspect row maps screen slot to aspect slot 0-1, one per stored slot. */
+    @Test
+    void theAspectRowMapsToTheTwoStoredSlots() {
+        assertEquals(io.github.butterflysmp.rpg.core.build.AspectSlots.COUNT, BuildMenuLayout.ASPECT_SLOTS.size());
+        assertEquals(io.github.butterflysmp.rpg.storage.CellLoadout.ASPECTS,
+                io.github.butterflysmp.rpg.core.build.AspectSlots.COUNT, "the stored slots and the core slots are the same two");
+        for (int i = 0; i < BuildMenuLayout.ASPECT_SLOTS.size(); i++) {
+            assertEquals(OptionalInt.of(i), BuildMenuLayout.aspectIndexAt(BuildMenuLayout.ASPECT_SLOTS.get(i)));
+        }
+        assertEquals(OptionalInt.empty(), BuildMenuLayout.aspectIndexAt(BuildMenuLayout.FRAGMENT_SLOTS.get(0)));
+    }
+
     @Test
     void theBuildScreenIsPaintedOrFillerExactlyOnce() {
         for (int slot = 0; slot < BuildMenuLayout.SIZE; slot++) {

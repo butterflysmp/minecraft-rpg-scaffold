@@ -125,7 +125,9 @@ public final class StoneCaster {
         Location eye = player.getEyeLocation();
         Aim aim = ViewAim.of(eye);
         CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats());
-        CastResult result = abilityService.cast(caster, abilityId.get(), aim, castable);
+        // THE PLAYER'S DERIVE (slice 5): their active aspects' changes, applied before the cost and cooldown.
+        CastResult result = abilityService.cast(caster, abilityId.get(), aim, castable,
+                stones.deriveFor(player.getUniqueId(), profiles.profile(player.getUniqueId())));
 
         switch (result) {
             case CastResult.Success success -> {

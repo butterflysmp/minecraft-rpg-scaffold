@@ -28,6 +28,11 @@ fragments:
   - fragment_keen
   - fragment_mending
   - fragment_ward
+# PLACEHOLDER -- Ben designs. Slice 5's aspects (PLAN-build-system.md section 2.4): each targets one of
+# THIS pool's abilities (the loader refuses one that does not). Two slots; the same aspect twice is refused.
+aspects:
+  - searing_lance
+  - banked_embers
 
 default:
   ultimate: ultimate_placeholder_ranger
