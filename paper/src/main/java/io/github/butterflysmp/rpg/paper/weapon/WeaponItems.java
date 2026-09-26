@@ -103,7 +103,7 @@ public final class WeaponItems {
             meta.displayName(displayName(weapon.displayName(), weapon.rarity()));
             meta.getPersistentDataContainer().set(keys.weaponId, PersistentDataType.STRING, weapon.id());
             // A weapon is a SINGLE item, always. Two freshly minted staffs are byte-identical --
-            // ember_staff mints on a blaze_rod and ability_stone on an amethyst_shard, both
+            // ember_staff mints on a blaze_rod and the Flint Staff on a stick, both
             // stackable -- so without this, /rpg give ember_staff twice produces a stack of two
             // and every per-item thing we do becomes ambiguous: one enchant write would edit both,
             // and a re-mint (which returns a fresh stack of one) would silently collapse it.
@@ -141,7 +141,7 @@ public final class WeaponItems {
                         keys.meleeSuppressor, attackDamageModifier(weapon.attackDamage()),
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
             } else {
-                // No melee hit of ours to deliver (ember_staff, ability_stone, hunters_bow), so
+                // No melee hit of ours to deliver (ember_staff, hunters_bow), so
                 // vanilla's swing stays suppressed to a flat 0 and a staff still cannot melee.
                 meta.addAttributeModifier(attackDamage, new AttributeModifier(
                         keys.meleeSuppressor, VANILLA_MELEE_SUPPRESSION,

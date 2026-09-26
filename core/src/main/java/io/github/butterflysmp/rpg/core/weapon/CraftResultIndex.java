@@ -215,8 +215,8 @@ public final class CraftResultIndex {
      * <p><b>There is no durability gate on this axis, and that is the point.</b> The result axis
      * carries one because a material is a weak key and durability narrows it. A recipe key is a
      * strong key and needs no narrowing -- and a gate here would refuse every weapon whose material
-     * has no durability, which is the Flint Staff (a stick), the ember_staff (a blaze_rod) and the
-     * ability_stone (an amethyst_shard). It would index them cleanly and then never mint them,
+     * has no durability, which is the Flint Staff (a stick) and the ember_staff (a blaze_rod).
+     * It would index them cleanly and then never mint them,
      * silently, with no error anywhere.
      */
     public Optional<GearDefinition> forRecipe(String recipeId) {

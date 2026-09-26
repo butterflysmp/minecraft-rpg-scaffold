@@ -118,6 +118,15 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerAnimationEvent;
+import org.bukkit.event.block.BlockDamageEvent;
+import io.papermc.paper.event.player.PlayerArmSwingEvent;
+import org.bukkit.inventory.ItemStack;
+import java.util.Optional;
+import io.github.butterflysmp.rpg.core.build.LockedSlots;
+import io.github.butterflysmp.rpg.core.build.StoneInput;
+import io.github.butterflysmp.rpg.paper.build.StoneCaster;
+import io.github.butterflysmp.rpg.paper.build.StoneItems;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -263,6 +272,9 @@ public final class RpgListeners implements Listener {
      */
     private final Map<Material, BiFunction<Player, Block, Menu>> hijackedBlocks;
 
+    /** The Ability Stone's input side (PLAN-build-system.md section 2.5). */
+    private final StoneCaster stoneCaster;
+
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
                         WeaponRegistry weapons, ShieldRegistry shields, ArmorRegistry armor,
@@ -272,7 +284,8 @@ public final class RpgListeners implements Listener {
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar, HealthRegenSystem healthRegen,
                         Plugin plugin, RecipeRegistry recipes,
-                        VaultService vaults) {
+                        VaultService vaults, StoneCaster stoneCaster) {
+        this.stoneCaster = stoneCaster;
         this.plugin = plugin;
         this.vaults = vaults;
         this.recipes = recipes;
@@ -637,10 +650,28 @@ public final class RpgListeners implements Listener {
             // so without this guard the toggle would last exactly until the player's next join and
             // read as the setting not sticking. ABSENT PROFILE READS AS ON -- the shipped default,
             // and the direction that cannot strip a star from someone whose disk read failed.
-            if (!profile.map(PlayerProfile::starEnabled).orElse(true)) return;
-            NexusSlots.converge(joined, adapters.keys(),
-                    profile.map(PlayerProfile::nexusSlot).orElse(NexusLock.DEFAULT_LOCKED_SLOT));
+            //
+            // An if-block rather than the early return this was, because the Ability Stone converges
+            // after it and a switched-off star must not also skip the stone.
+            if (profile.map(PlayerProfile::starEnabled).orElse(true)) {
+                NexusSlots.converge(joined, adapters.keys(),
+                        profile.map(PlayerProfile::nexusSlot).orElse(NexusLock.DEFAULT_LOCKED_SLOT));
+            }
+            convergeStone(joined, profile);
         }));
+    }
+
+    /**
+     * The Ability Stone's half of join and respawn: re-render its lore for the current cell, then, if it
+     * is switched on, converge it to its slot. Called AFTER the star's converge, always -- the fixed order
+     * PLAN-build-system.md section 1.3 names -- and {@code LockedSlots} keeps the two targets distinct,
+     * so neither can displace the other. The same switched-off guard as the star, for the same reason.
+     */
+    private void convergeStone(Player player, Optional<PlayerProfile> profile) {
+        adapters.stones().refreshLore(player, profile);
+        if (!profile.map(PlayerProfile::stoneEnabled).orElse(true)) return;
+        NexusSlots.converge(player, adapters.stones().lockedItem(profile),
+                profile.map(NexusSlots::stoneSlotOf).orElse(LockedSlots.DEFAULT_STONE_SLOT));
     }
 
     /**
@@ -789,8 +820,19 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onRightClick(PlayerInteractEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND) return; // FIRST: main hand only, or one click double-spends
         Action action = event.getAction();
+        // THE OFF-HAND HALF OF A STONE RIGHT-CLICK IS CANCELLED, AND IT MUST BE ASKED BEFORE THE HAND
+        // GUARD BELOW, WHICH WOULD OTHERWISE RETURN AND LEAVE IT TO VANILLA. Measured (PLAN-build-system.md
+        // 3.1.0.1): a right-click on a block fires once per hand in the same tick. Only the main-hand
+        // event casts (StoneInput); this stops the off hand from also placing or using what it holds on
+        // the same press -- a torch placed every time Active 2 is cast.
+        if (event.getHand() == EquipmentSlot.OFF_HAND
+                && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)
+                && StoneItems.isStone(event.getPlayer().getInventory().getItemInMainHand(), adapters.keys())) {
+            event.setCancelled(true);
+            return;
+        }
+        if (event.getHand() != EquipmentSlot.HAND) return; // FIRST: main hand only, or one click double-spends
         if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
         // THE NEXUS STAR OPENS THE HUB, AND IT WINS OVER EVERYTHING BELOW.
@@ -846,6 +888,33 @@ public final class RpgListeners implements Listener {
 
             new NexusMenu(event.getPlayer(), adapters, profiles, weapons, resources,
                     recipeCatalogue, shields, armor, tools, vaults).open();
+            return;
+        }
+
+        // THE ABILITY STONE CASTS ACTIVE 2 -- SECOND, AFTER THE STAR AND BEFORE THE HIJACKED BLOCKS
+        // (PLAN-build-system.md section 2.5, ruling 14). The held locked item wins, as the star does:
+        // a crafting table right-clicked with the stone CASTS rather than opens. Cancelled
+        // unconditionally for the star's reason -- the world must not change behind the cast.
+        //
+        // SNEAKING OPENS THE BLOCK INSTEAD, which is ruling 14's second half -- and it is the INVERSE of
+        // the weapon rule in openHijackedBlock, where sneaking is the escape hatch that lets a weapon
+        // cast. The ruling's recommendation text called this "the existing rule"; it is not, it is the
+        // stone's own. So the opener is called here directly rather than through openHijackedBlock,
+        // which returns without opening when the player sneaks.
+        //
+        // Held right-click re-casts whenever the cooldown allows (ruling 19): every input lands here and
+        // simply tries; AbilityService's cooldown paces it.
+        if (StoneItems.isStone(event.getPlayer().getInventory().getItemInMainHand(), adapters.keys())) {
+            event.setCancelled(true);
+            Block clicked = event.getClickedBlock();
+            if (action == Action.RIGHT_CLICK_BLOCK && clicked != null && event.getPlayer().isSneaking()) {
+                BiFunction<Player, Block, Menu> opener = hijackedBlocks.get(clicked.getType());
+                if (opener != null) {
+                    opener.apply(event.getPlayer(), clicked).open();
+                    return;
+                }
+            }
+            stoneCaster.onInput(event.getPlayer(), StoneInput.Input.RIGHT, true, false);
             return;
         }
 
@@ -1143,6 +1212,16 @@ public final class RpgListeners implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         player.updateInventory();
 
+        // A REFUSED CLICK ON THE ABILITY STONE IS RECORDED AS A DROP ATTEMPT, for the Q-swing guard.
+        // Measured (PLAN-build-system.md 3.1.0.1): Q over the stone in an open inventory sends an arm
+        // swing FIRST and the drop click after it, in one tick -- so this record is what stops that swing
+        // casting Active 1 when its deferred decision runs next tick. Recording on ANY refused stone click,
+        // not only the DROP ones, is deliberate: an ordinary click sends no swing, so the extra record
+        // can suppress nothing real, and it also covers creative's in-screen Q, which arrives as
+        // ClickType.CREATIVE rather than DROP (measured). The refusal itself -- no cast from inside a
+        // screen -- is the lock's, above; the stone casts nothing here (the clarification under RULINGS).
+        if (NexusSlots.refusesStone(event, adapters.keys(), profiles)) stoneCaster.recordDropAttempt(player);
+
         // THE SIDE EFFECT ON AN ALREADY-REFUSED GESTURE. The refusal above is untouched -- the star
         // does not move, and there is no chat line, sound or title. What is added is that ONE of the
         // gestures this method already refuses now also opens the hub.
@@ -1194,12 +1273,26 @@ public final class RpgListeners implements Listener {
         if (event.getWhoClicked() instanceof Player player) player.updateInventory();
     }
 
-    /** Q and Ctrl-Q with no screen open. Not an inventory event; the lock above cannot see it. */
+    /**
+     * Q and Ctrl-Q with no screen open. Not an inventory event; the lock above cannot see it.
+     *
+     * <p><b>For the Ability Stone this is also its Ultimate.</b> The drop is cancelled exactly as the
+     * star's is -- the stone never leaves its slot -- and then Q casts (ruling 2). The drop tick is
+     * recorded FIRST, so the arm swing that arrives in the same tick (measured, every time) does not
+     * also cast Active 1. Creative's hotbar Q arrives here too, as the same event (measured).
+     */
     @EventHandler
     public void onNexusDrop(PlayerDropItemEvent event) {
-        if (!NexusItems.isNexus(event.getItemDrop().getItemStack(), adapters.keys())) return;
+        ItemStack dropped = event.getItemDrop().getItemStack();
+        boolean star = NexusItems.isNexus(dropped, adapters.keys());
+        boolean stone = StoneItems.isStone(dropped, adapters.keys());
+        if (!star && !stone) return;
         event.setCancelled(true);
         event.getPlayer().updateInventory();
+        if (stone) {
+            stoneCaster.recordDropAttempt(event.getPlayer());
+            stoneCaster.onInput(event.getPlayer(), StoneInput.Input.DROP, true, false);
+        }
     }
 
     /**
@@ -1212,10 +1305,14 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onNexusSwapHand(PlayerSwapHandItemsEvent event) {
-        if (!NexusItems.isNexus(event.getMainHandItem(), adapters.keys())
-                && !NexusItems.isNexus(event.getOffHandItem(), adapters.keys())) return;
+        if (!isLocked(event.getMainHandItem()) && !isLocked(event.getOffHandItem())) return;
         event.setCancelled(true);
         event.getPlayer().updateInventory();
+    }
+
+    /** Either locked item -- the Nexus star or the Ability Stone. By PDC key, never by material. */
+    private boolean isLocked(ItemStack item) {
+        return NexusItems.isNexus(item, adapters.keys()) || StoneItems.isStone(item, adapters.keys());
     }
 
     /**
@@ -1231,9 +1328,55 @@ public final class RpgListeners implements Listener {
     @EventHandler
     public void onNexusGiveToEntity(PlayerInteractEntityEvent event) {
         Player player = event.getPlayer();
-        if (!NexusItems.isNexus(player.getInventory().getItem(event.getHand()), adapters.keys())) return;
+        ItemStack held = player.getInventory().getItem(event.getHand());
+        if (!isLocked(held)) return;
         event.setCancelled(true);
         player.updateInventory();
+        // The stone's right-click on an ENTITY is still Active 2 (PLAN-build-system.md section 2.5), main
+        // hand only -- StoneInput refuses the off hand. Every input tries (ruling 19), so an echo of the
+        // same click through PlayerInteractEvent, if the client sends one, is paced by the cooldown.
+        if (StoneItems.isStone(held, adapters.keys())) {
+            stoneCaster.onInput(player, StoneInput.Input.RIGHT, event.getHand() == EquipmentSlot.HAND, false);
+        }
+    }
+
+    /**
+     * THE ABILITY STONE'S LEFT CLICK: a main-hand arm swing with the stone held casts Active 1
+     * (PLAN-build-system.md section 2.5).
+     *
+     * <p><b>{@code PlayerArmSwingEvent}, not the packet {@code WeaponSwingListener} reads</b>, because the
+     * Q-swing guard must be ordered against the DROP events, and those are Bukkit events on this thread.
+     * {@code ServerGamePacketListenerImpl.handleAnimate} fires it for every swing packet (quoted from the
+     * pinned jar, section 1.7) -- in air, on a block and on an entity -- and CLAUDE.md prefers the Bukkit
+     * API over packets. {@code WeaponSwingListener} is untouched; the stone has no {@code weapon_id}, so
+     * it ignores the stone by construction.
+     *
+     * <p>Registered on {@code PlayerAnimationEvent}, whose HandlerList {@code PlayerArmSwingEvent}
+     * inherits (it declares none of its own -- read from the pinned paper-api), and narrowed by
+     * {@code instanceof}.
+     *
+     * <p>The cast is decided ONE TICK LATER inside {@code StoneCaster.onSwing} -- see there, and
+     * {@code SwingGuard}, for why. A held left click on a block swings every tick (measured), so it
+     * re-casts whenever the cooldown allows (ruling 19); a held left click in AIR swings once.
+     */
+    @EventHandler
+    public void onStoneSwing(PlayerAnimationEvent event) {
+        if (!(event instanceof PlayerArmSwingEvent swing) || swing.getHand() != EquipmentSlot.HAND) return;
+        if (!StoneItems.isStone(event.getPlayer().getInventory().getItemInMainHand(), adapters.keys())) return;
+        stoneCaster.onSwing(event.getPlayer());
+    }
+
+    /**
+     * THE ABILITY STONE NEVER DAMAGES A BLOCK. A left click on a block with the stone is a cast
+     * (Active 1, from the swing above), not a dig -- so the damage is cancelled at its start, and the
+     * block shows no crack and cannot break. {@code ServerPlayerGameMode.handleBlockBreakAction} fires
+     * this after the {@code LEFT_CLICK_BLOCK} interact (quoted, section 1.7). Main hand only is implicit:
+     * digging always uses the main hand.
+     */
+    @EventHandler
+    public void onStoneBlockDamage(BlockDamageEvent event) {
+        if (!StoneItems.isStone(event.getPlayer().getInventory().getItemInMainHand(), adapters.keys())) return;
+        event.setCancelled(true);
     }
 
     /**
@@ -1249,7 +1392,7 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onNexusArmorStand(PlayerArmorStandManipulateEvent event) {
-        if (!NexusItems.isNexus(event.getPlayerItem(), adapters.keys())) return;
+        if (!isLocked(event.getPlayerItem())) return;
         event.setCancelled(true);
         event.getPlayer().updateInventory();
     }
@@ -1484,6 +1627,7 @@ public final class RpgListeners implements Listener {
 
         UUID playerId = event.getPlayer().getUniqueId();
         cooldowns.clear(playerId);
+        stoneCaster.forget(playerId);         // the Q-swing guard's per-player drop tick
         meleeHits.forgetAttacker(playerId);   // drop any swing that never landed
         damageWindow.forget(playerId);        // and their environmental window, or the map grows
         adapters.scorch().forget(playerId);   // and their burn
@@ -1570,9 +1714,12 @@ public final class RpgListeners implements Listener {
         // THE SAME SWITCHED-OFF GUARD AS onJoin, AND IT IS NEEDED SEPARATELY. Respawn is the other
         // path that mints, so guarding only the join would leave the star coming back on death --
         // which is a stranger bug report than it not sticking across a session.
-        if (!profiles.starEnabled(event.getPlayer().getUniqueId())) return;
-        NexusSlots.converge(event.getPlayer(), adapters.keys(),
-                NexusSlots.lockedSlotOf(event.getPlayer(), profiles));
+        if (profiles.starEnabled(event.getPlayer().getUniqueId())) {
+            NexusSlots.converge(event.getPlayer(), adapters.keys(),
+                    NexusSlots.lockedSlotOf(event.getPlayer(), profiles));
+        }
+        // The stone second, for onJoin's reasons; the profile is already in memory, as above.
+        convergeStone(event.getPlayer(), profiles.profile(event.getPlayer().getUniqueId()));
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is
@@ -1608,6 +1755,14 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onPrePlayerAttack(PrePlayerAttackEntityEvent event) {
+        // THE ABILITY STONE DOES NOT HIT. Its left click is Active 1, cast from the swing
+        // (onStoneSwing); the attack the same click raises is cancelled HERE, before any damage logic, so
+        // there is no 0.01 token hit, no hurt flash and no i-frames on the target. First, and for any
+        // victim -- a player included: the stone is not a weapon against anyone.
+        if (StoneItems.isStone(event.getPlayer().getInventory().getItemInMainHand(), adapters.keys())) {
+            event.setCancelled(true);
+            return;
+        }
         if (!(event.getAttacked() instanceof LivingEntity victim) || victim instanceof Player) return;
         meleeHits.record(event.getPlayer().getUniqueId(), victim.getUniqueId(),
                 event.getPlayer().getAttackCooldown());
@@ -1718,8 +1873,8 @@ public final class RpgListeners implements Listener {
         //
         // THE ELEMENT COMES FROM THE STASH, NOT FROM THE HELD WEAPON. Reading
         // WeaponDefinition.element() here would be a SECOND derivation of a fact the seam already
-        // reports, and the two can disagree in shipped content: ability_stone declares
-        // element: kinetic at the weapon level while its nested damage effect declares fire.
+        // reports, and the two CAN disagree: the old dev weapon ability_stone (since deleted) declared
+        // element: kinetic at the weapon level while its nested damage effect declared fire.
         BukkitCombatant.of(swept, adapters).handle().applyDamage(
                 SweepShare.of(primary.get().damage(), fraction), attacker.getUniqueId(),
                 CritState.NORMAL, DefenseRule.APPLIES, primary.get().element(),

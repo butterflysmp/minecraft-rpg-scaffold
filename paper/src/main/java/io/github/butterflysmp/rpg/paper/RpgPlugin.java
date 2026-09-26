@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.kit.KitRegistry;
+import io.github.butterflysmp.rpg.core.build.PoolRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.FireCadence;
 import io.github.butterflysmp.rpg.core.combat.ManaRegen;
@@ -31,6 +32,9 @@ import io.github.butterflysmp.rpg.paper.command.MenuCommand;
 import io.github.butterflysmp.rpg.paper.command.RpgCommand;
 import io.github.butterflysmp.rpg.paper.content.AbilityLoader;
 import io.github.butterflysmp.rpg.paper.content.KitLoader;
+import io.github.butterflysmp.rpg.paper.content.PoolLoader;
+import io.github.butterflysmp.rpg.paper.build.StoneCaster;
+import io.github.butterflysmp.rpg.paper.build.Stones;
 import io.github.butterflysmp.rpg.paper.content.MobLoader;
 import io.github.butterflysmp.rpg.paper.content.ContentValidator;
 import io.github.butterflysmp.rpg.paper.content.ElementLoader;
@@ -156,6 +160,7 @@ public final class RpgPlugin extends JavaPlugin {
     private ElementRegistry elements;
     private EnchantRegistry enchants;
     private KitRegistry kits;
+    private PoolRegistry pools;
     private WeaponRegistry weapons;
     private ShieldRegistry shields;
     private ArmorRegistry armor;
@@ -209,6 +214,10 @@ public final class RpgPlugin extends JavaPlugin {
         this.elements = new ElementLoader(getLogger()).loadAll(new File(contentDir, "elements"));
         this.enchants = new EnchantLoader(getLogger()).loadAll(new File(contentDir, "enchants"));
         this.kits = new KitLoader(getLogger()).loadAll(new File(contentDir, "kits"));
+        // AFTER the abilities, because a pool naming an ability nothing defines is REFUSED, not warned
+        // about -- see PoolLoader. One pool per (class, element) cell; the Ability Stone casts its default.
+        this.pools = new PoolLoader(getLogger()).loadAll(new File(contentDir, "builds"),
+                id -> abilities.find(id).isPresent());
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
         this.shields = new ShieldLoader(getLogger()).loadAll(new File(contentDir, "shields"));
         this.armor = new ArmorLoader(getLogger()).loadAll(new File(contentDir, "armor"));
@@ -224,7 +233,7 @@ public final class RpgPlugin extends JavaPlugin {
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
-                + kits.size() + " kits, " + weapons.size() + " weapons, "
+                + kits.size() + " kits, " + pools.size() + " pools, " + weapons.size() + " weapons, "
                 + shields.size() + " shields, " + armor.size() + " armor, "
                 + tools.size() + " tools, " + accessoryRegistry.size() + " accessories, "
                 + mobs.size() + " mobs, "
@@ -487,7 +496,8 @@ public final class RpgPlugin extends JavaPlugin {
 
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
-        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift, craftResults, weapons, accessories);
+        this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift, craftResults, weapons, accessories,
+                new Stones(keys, pools, abilities));
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
@@ -576,9 +586,12 @@ public final class RpgPlugin extends JavaPlugin {
         //
         // HELD IN A LOCAL SINCE SLICE 10, because /menu needs the SAME RecipeCatalogue this builds.
         // A second instance would be a second lifetime cache -- see recipeCatalogue()'s javadoc.
+        // The Ability Stone's input side. Built here, not beside Stones, because it needs the ability
+        // service and the profiles, which do not exist when AdapterContext is built.
+        StoneCaster stoneCaster = new StoneCaster(abilityService, adapters, profiles, cooldowns, adapters.stones());
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes, vaults);
+                this, recipes, vaults, stoneCaster);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in

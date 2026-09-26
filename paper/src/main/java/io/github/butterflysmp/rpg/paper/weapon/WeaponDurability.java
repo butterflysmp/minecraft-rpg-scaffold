@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p><b>Vanilla durability, not a custom stat.</b> The maximum is the material's own
  * ({@code iron_sword} 250, {@code bow} 384) and the damage value is the one the item already
  * carries, so the durability bar renders for free. A material with no durability
- * ({@code blaze_rod}, {@code amethyst_shard} -- the ember_staff and the ability_stone) is exempt by
+ * ({@code blaze_rod}, {@code stick} -- the ember_staff and the Flint Staff) is exempt by
  * construction: {@link #maxOf} is empty, and core's guards make every operation a no-op regardless.
  */
 public final class WeaponDurability {
@@ -92,7 +92,7 @@ public final class WeaponDurability {
      * good: Unbreaking arrived as two lines here and no change to either hook.
      *
      * <p><b>The exemptions, in order.</b> A non-Damageable material leaves with nothing done --
-     * ember_staff (blaze_rod) and ability_stone (amethyst_shard) are exactly the two weapons that
+     * ember_staff (blaze_rod) and the Flint Staff (stick) are weapons that
      * should never wear, and {@link #maxOf} being empty is what makes that structural rather than a
      * rule each caller remembers. An already-broken weapon leaves too: the Pass 1 gate in
      * {@code WeaponFire} returns Broken before a Success can exist, so this is unreachable in

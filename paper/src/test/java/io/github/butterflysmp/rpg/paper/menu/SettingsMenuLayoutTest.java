@@ -25,6 +25,8 @@ class SettingsMenuLayoutTest {
                 "Close is 49 -- the one button a player has learned, in the cell every screen uses");
         assertEquals(22, SettingsMenuLayout.SLOT_SETTING_SLOT, "open the slot picker");
         assertEquals(24, SettingsMenuLayout.TOGGLE_SETTING_SLOT, "the star on/off switch");
+        assertEquals(31, SettingsMenuLayout.STONE_SLOT_SETTING_SLOT, "the Ability Stone's slot picker");
+        assertEquals(33, SettingsMenuLayout.STONE_TOGGLE_SETTING_SLOT, "the Ability Stone on/off switch");
         assertEquals(54, SettingsMenuLayout.SIZE, "six rows");
     }
 
@@ -41,6 +43,15 @@ class SettingsMenuLayoutTest {
         // BOTH IN THE SAME ROW, so the gap reads as spacing rather than as two separate groups.
         assertEquals(SettingsMenuLayout.SLOT_SETTING_SLOT / 9,
                 SettingsMenuLayout.TOGGLE_SETTING_SLOT / 9, "same row");
+    }
+
+    /** The stone's two settings sit DIRECTLY BELOW the star's, so the pair reads as one table. */
+    @Test
+    void theStonesSettingsSitDirectlyBelowTheStars() {
+        assertEquals(SettingsMenuLayout.SLOT_SETTING_SLOT + 9, SettingsMenuLayout.STONE_SLOT_SETTING_SLOT);
+        assertEquals(SettingsMenuLayout.TOGGLE_SETTING_SLOT + 9, SettingsMenuLayout.STONE_TOGGLE_SETTING_SLOT);
+        assertFalse(SettingsMenuLayout.SETTING_SLOTS.contains(32), "and 32 is filler, like 23 above it");
+        assertEquals(4, SettingsMenuLayout.SETTING_SLOTS.size());
     }
 
     @Test
@@ -69,8 +80,8 @@ class SettingsMenuLayoutTest {
                     "filler must never cover the setting at slot " + setting);
         }
 
-        assertEquals(54 - 2 - 2, SettingsMenuLayout.FILLER_SLOTS.size(),
-                "every slot except the two settings and the two buttons -- 50");
+        assertEquals(54 - 4 - 2, SettingsMenuLayout.FILLER_SLOTS.size(),
+                "every slot except the four settings and the two buttons -- 48 (two settings until the Ability Stone)");
         for (int slot = 0; slot < SettingsMenuLayout.SIZE; slot++) {
             boolean live = slot == SettingsMenuLayout.CLOSE_SLOT
                     || slot == SettingsMenuLayout.BACK_SLOT

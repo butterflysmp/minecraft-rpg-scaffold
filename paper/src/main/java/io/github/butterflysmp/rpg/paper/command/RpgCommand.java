@@ -175,13 +175,18 @@ public final class RpgCommand {
                 .then(Commands.literal("cast")
                         .requires(source -> source.getSender().hasPermission(Permissions.CAST))
                         .then(Commands.argument("ability", StringArgumentType.word())
-                                // Suggest only what this caster can actually cast -- their
-                                // class's grants. A list that offers abilities that answer
-                                // "you have not unlocked that" is worse than no list.
+                                // Suggest only what this caster can actually cast. A list that offers
+                                // abilities that answer "not in your loadout" is worse than no list.
+                                // Ruling 10: a dev player can cast ANY ability, so they are offered all
+                                // of them; everyone else, their cell's loadout.
                                 .suggests((ctx, builder) -> {
                                     if (ctx.getSource().getExecutor() instanceof Player player) {
-                                        profiles.profile(player.getUniqueId()).ifPresent(profile ->
-                                                profile.unlockedAbilities().forEach(builder::suggest));
+                                        if (player.hasPermission(Permissions.DEV)) {
+                                            registry.all().forEach(a -> builder.suggest(a.id()));
+                                        } else {
+                                            adapters.stones().loadoutOf(profiles.profile(player.getUniqueId()))
+                                                    .ifPresent(loadout -> loadout.ids().forEach(builder::suggest));
+                                        }
                                     }
                                     return builder.buildFuture();
                                 })
@@ -1504,7 +1509,7 @@ public final class RpgCommand {
             }
 
             // A non-Damageable material reports rather than erroring: ember_staff (blaze_rod) and
-            // ability_stone (amethyst_shard) have no durability by design, and "no durability" is
+            // the Flint Staff (a stick) have no durability by design, and "no durability" is
             // the correct answer, not a failure.
             OptionalInt max = WeaponDurability.maxOf(held);
             if (max.isEmpty()) {
@@ -1993,15 +1998,26 @@ public final class RpgCommand {
     private static int cast(Player player, String abilityId, AbilityService abilityService,
                             AdapterContext adapters, ProfileService profiles) {
 
-        // The gate's input: the abilities this caster's class grants. If the profile is
-        // not loaded yet we cannot know it, so we refuse rather than guess -- casting is
-        // not urgent enough to risk letting an unloaded player through.
+        // RULING 10: A DEV PLAYER'S /rpg cast IS A DEV TOOL -- ANY ability, at any time, with NO cost and
+        // NO cooldown. The split is on rpg.command.dev (default: op), the node every other dev
+        // instrument checks; rpg.command.cast stays the gate on the command itself. castUnchecked skips
+        // AbilityService.resolve entirely, which is where the cooldown and the mana live, so a dev
+        // cast neither spends nor blocks anything -- a stone press right after it is not on cooldown.
+        // No profile needed: the dev path gates on nothing the profile holds.
+        boolean dev = player.hasPermission(Permissions.DEV);
+
+        // Everyone else: the gate's input is THE LOADOUT of their cell (PLAN-build-system.md section
+        // 2.5.1) -- the same castable set the Ability Stone uses. unlockedAbilities is no longer read
+        // (slice 2 retires it). If the profile is not loaded yet we cannot know the cell, so we refuse
+        // rather than guess -- casting is not urgent enough to risk letting an unloaded player through.
         PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
-        if (profile == null) {
+        if (profile == null && !dev) {
             player.sendMessage(profileUnavailable(profiles, player));
             return 0;
         }
-        Set<String> castable = Set.copyOf(profile.unlockedAbilities());
+        Set<String> castable = dev ? Set.of() : adapters.stones().loadoutOf(Optional.of(profile))
+                .map(loadout -> Set.copyOf(loadout.ids()))
+                .orElse(Set.of());
 
         Location eye = player.getEyeLocation();
         // ViewAim, so /rpg cast is a faithful test instrument for a spread too -- the same
@@ -2019,7 +2035,9 @@ public final class RpgCommand {
         // Decide INLINE. cast() reads no world state, and consuming the cooldown
         // and mana here -- rather than inside the region hop below -- is what
         // stops a player spamming the command faster than the hop resolves.
-        AbilityService.CastResult result = abilityService.cast(caster, abilityId, aim, castable);
+        AbilityService.CastResult result = dev
+                ? abilityService.castUnchecked(caster, abilityId, aim)
+                : abilityService.cast(caster, abilityId, aim, castable);
 
         switch (result) {
             case AbilityService.CastResult.Success success -> {
@@ -2065,7 +2083,7 @@ public final class RpgCommand {
                             NamedTextColor.YELLOW));
                 } else {
                     player.sendMessage(Component.text(
-                            "Your kit has not unlocked " + locked.id() + ".", NamedTextColor.YELLOW));
+                            locked.id() + " is not in your loadout.", NamedTextColor.YELLOW));
                 }
                 return 0;
             }
@@ -2175,6 +2193,11 @@ public final class RpgCommand {
             player.sendMessage(profileUnavailable(profiles, player));
             return 0;
         }
+        // The cell just changed, so the Ability Stone's loadout did too. Convergence keeps an existing
+        // stone rather than re-minting it, so its lore must be re-rendered here or it keeps naming the
+        // old cell's abilities until the next join. (Slice 2 deletes this command; slice 3's Build screen
+        // is where the refresh moves.)
+        adapters.stones().refreshLore(player, profiles.profile(player.getUniqueId()));
 
         if (!complete) {
             player.sendMessage(Component.text(

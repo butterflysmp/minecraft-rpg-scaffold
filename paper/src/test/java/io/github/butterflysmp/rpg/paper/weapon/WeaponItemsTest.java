@@ -85,7 +85,7 @@ class WeaponItemsTest {
 
     /**
      * The suppressor survives, scoped to weapons with no melee hit of ours to deliver -- ember_staff,
-     * ability_stone, hunters_bow. It must still REDUCE vanilla melee to zero, never add to it, so a
+     * hunters_bow. It must still REDUCE vanilla melee to zero, never add to it, so a
      * staff cannot be swung as a club.
      */
     @Test

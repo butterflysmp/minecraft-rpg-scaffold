@@ -68,8 +68,6 @@ public final class Keys {
      */
     public final NamespacedKey accessoryId;
 
-    public final NamespacedKey abilityId;
-
     /**
      * An item's gear score (an INTEGER): its power rating, {@code 100..500}, rolled once at
      * acquisition and carried forever after. Per ITEM, like {@link #enchantData} -- the score is on
@@ -363,6 +361,17 @@ public final class Keys {
     public final NamespacedKey nexus;
 
     /**
+     * Marks an item as THE Ability Stone (PLAN-build-system.md section 2.5), exactly as {@link #nexus}
+     * marks the star: the key is the identity, NEVER the material. The stone is an {@code ECHO_SHARD}, the
+     * same material as the three universal accessories and the dev weapon {@code volley_stone}, so a
+     * material test would make a Ward Charm cast (section 2.5.2).
+     *
+     * <p>Named for the ITEM's system, not {@code ability_*}: the deleted {@code ability_stone} weapon and the
+     * dead {@code ability_id} key this slice removed would both have invited the collision the plan forbids.
+     */
+    public final NamespacedKey buildStone;
+
+    /**
      * KEPT, and only for {@link #quiverReloadGroup}. Every other key in this class is a fixed name
      * settled at construction; that one is parameterised by a weapon id, which is CONTENT and
      * therefore unbounded, so it cannot be a field and has to be able to build a key on demand.
@@ -377,7 +386,6 @@ public final class Keys {
         this.armorId = new NamespacedKey(plugin, "armor_id");
         this.toolId = new NamespacedKey(plugin, "tool_id");
         this.accessoryId = new NamespacedKey(plugin, "accessory_id");
-        this.abilityId = new NamespacedKey(plugin, "ability_id");
         this.gearScore = new NamespacedKey(plugin, "gear_score");
         this.meleeSuppressor = new NamespacedKey(plugin, "vanilla_melee_suppressor");
         this.soaked = new NamespacedKey(plugin, "soaked_slow");
@@ -405,6 +413,7 @@ public final class Keys {
         this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");
         this.attackSpeedOverride = new NamespacedKey(plugin, "attack_speed_override");
         this.nexus = new NamespacedKey(plugin, "nexus");
+        this.buildStone = new NamespacedKey(plugin, "build_stone");
     }
 
     /**

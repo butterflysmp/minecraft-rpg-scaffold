@@ -152,7 +152,7 @@ class PlayerProfileMigrationTest {
 
         PlayerProfile migrated = ProfileMigrations.migrate(v3);
 
-        assertEquals(4, migrated.schemaVersion());
+        assertEquals(5, migrated.schemaVersion(), "the chain runs on: v3 -> v4 (this step) -> v5 (the stone step, also a bare stamp)");
         assertFalse(migrated.vaultMigrated(),
                 "the step sets no value -- absent already means NOT MIGRATED, which is correct");
         assertEquals(3, migrated.nexusSlot(),
@@ -177,8 +177,49 @@ class PlayerProfileMigrationTest {
 
         PlayerProfile after = ProfileMigrations.migrate(migratedAtV3);
 
-        assertEquals(4, after.schemaVersion());
+        assertEquals(5, after.schemaVersion(), "the chain runs on to v5");
         assertTrue(after.vaultMigrated(), "the flag is data, not something a stamp step rewrites");
+    }
+
+    /**
+     * v4 -> v5, the Ability Stone step: a bare stamp. Both new fields are boxed, so a v4 file arrives
+     * with them null, and null reads as ON with no chosen slot. The step must set NEITHER -- a step that
+     * wrote a default slot would pin every existing player to 7 even after the star moved there.
+     */
+    @Test
+    void versionFourIsStampedToFiveAndTheStoneFieldsStayAbsent() {
+        PlayerProfile v4 = new PlayerProfile(4, UUID.randomUUID(), "ranger", "fire", 7, 1234,
+                List.of("arc_surge"), 99L, 3, 56_780L, false, true);
+
+        PlayerProfile migrated = ProfileMigrations.migrate(v4);
+
+        assertEquals(5, migrated.schemaVersion());
+        assertNull(migrated.stoneSlotOrNull(), "the step sets no slot -- absent means never chosen");
+        assertNull(migrated.stoneEnabledOrNull(), "the step sets no toggle");
+        assertTrue(migrated.stoneEnabled(), "and absent reads as ON (ruling 13)");
+        // The v4 fields ride through untouched.
+        assertEquals(3, migrated.nexusSlot());
+        assertFalse(migrated.starEnabled());
+        assertTrue(migrated.vaultMigrated());
+    }
+
+    @Test
+    void theStoneSettersCarryEveryOtherField() {
+        PlayerProfile before = at(PlayerProfile.CURRENT_SCHEMA_VERSION).withStarEnabled(false).withNexusSlot(20);
+
+        PlayerProfile after = before.withStoneSlot(2).withStoneEnabled(false);
+
+        assertEquals(2, after.stoneSlotOrNull());
+        assertFalse(after.stoneEnabled());
+        assertEquals(20, after.nexusSlot());
+        assertFalse(after.starEnabled());
+        assertEquals(before.lifetimeXp(), after.lifetimeXp());
+        // And every OTHER setter carries the stone's fields, which is the half a copy-paste rebuild drops.
+        PlayerProfile carried = after.withNexusSlot(5).withLifetimeXp(9).withVaultMigrated(true)
+                .withStarEnabled(true).withLastSeen(1L).withSchemaVersion(5)
+                .withKit("mage", "fire", List.of());
+        assertEquals(2, carried.stoneSlotOrNull());
+        assertFalse(carried.stoneEnabled());
     }
 
     /** {@code withVaultMigrated} carries every other field, both ways. */

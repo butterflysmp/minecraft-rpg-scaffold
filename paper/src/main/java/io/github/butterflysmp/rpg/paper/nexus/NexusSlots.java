@@ -1,6 +1,9 @@
 package io.github.butterflysmp.rpg.paper.nexus;
 
+import io.github.butterflysmp.rpg.core.build.ConvergePlan;
+import io.github.butterflysmp.rpg.core.build.LockedSlots;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.build.StoneItems;
 import io.github.butterflysmp.rpg.paper.menu.MenuSafety;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
@@ -47,6 +50,9 @@ import java.util.function.IntPredicate;
  *   <li><b>{@link #converge} is the riskiest code in this slice</b> -- it is the only thing here
  *       that MOVES and DESTROYS items -- and it needs a real {@code PlayerInventory}.
  *       {@code new ItemStack(...)} throws without a running server and there is no MockBukkit.
+ *       <b>Its DECISION no longer lives here</b>: since the Ability Stone slice it is
+ *       {@code ConvergePlan.of} in core, with {@code ConvergePlanTest}. What remains here is the
+ *       execution of that plan, which still needs a real inventory.
  * </ul>
  *
  * <p><b>{@code GATE-nexus.md} rows 4 and 5 are the whole of this class's coverage.</b> Row 4 reads
@@ -135,7 +141,7 @@ public final class NexusSlots {
      * constant, which is what let "the star goes anywhere in the inventory" be a one-line change.
      * The armour slots and the offhand are not places this feature can mean.
      */
-    static int validSlotOr(int slot, int fallback) {
+    public static int validSlotOr(int slot, int fallback) {
         return slot >= 0 && slot <= MAX_SLOT ? slot : fallback;
     }
 
@@ -164,8 +170,16 @@ public final class NexusSlots {
      */
     static final int MAX_SLOT = 35;
 
-    /** Would this click move the Nexus star? Pure translation; it changes nothing. */
+    /**
+     * Would this click move EITHER locked item -- the Nexus star or the Ability Stone? Pure translation;
+     * it changes nothing. The same {@link NexusLock} decision, asked once per item and OR-ed.
+     */
     public static boolean refuses(InventoryClickEvent event, Keys keys, ProfileService profiles) {
+        return refusesStar(event, keys, profiles) || refusesStone(event, keys, profiles);
+    }
+
+    /** Would this click move the Nexus star? */
+    public static boolean refusesStar(InventoryClickEvent event, Keys keys, ProfileService profiles) {
         if (!(event.getWhoClicked() instanceof Player player)) return false;
         return NexusLock.refusesClick(
                 event.getClick(),
@@ -175,6 +189,46 @@ public final class NexusSlots {
                 NexusItems.isNexus(event.getCursor(), keys),
                 lockedSlotOf(player, profiles),
                 starAt(player, keys));
+    }
+
+    /** Would this click move the Ability Stone? {@link #refusesStar} with the stone's key and slot. */
+    public static boolean refusesStone(InventoryClickEvent event, Keys keys, ProfileService profiles) {
+        if (!(event.getWhoClicked() instanceof Player player)) return false;
+        return NexusLock.refusesClick(
+                event.getClick(),
+                event.getAction(),
+                touchedOf(event.getView(), event.getRawSlot()),
+                event.getHotbarButton(),
+                StoneItems.isStone(event.getCursor(), keys),
+                stoneLockedSlotOf(player, profiles),
+                itemAt(player, item -> StoneItems.isStone(item, keys)));
+    }
+
+    /**
+     * The stone's lock half: its effective slot while it is switched on, and {@link NexusLock#NO_LOCKED_SLOT}
+     * while it is off or the profile is not readable -- {@link #lockedSlotOf}'s shape exactly. With no
+     * locked slot the lock still follows the item itself, so a stone is never loose.
+     */
+    public static int stoneLockedSlotOf(Player player, ProfileService profiles) {
+        if (!profiles.stoneEnabled(player.getUniqueId())) return NexusLock.NO_LOCKED_SLOT;
+        return stoneChosenSlotOf(player, profiles);
+    }
+
+    /**
+     * The stone's EFFECTIVE slot, whatever the toggle says -- the picker and Settings read this.
+     * {@code LockedSlots.stoneSlot} decides it from the stored value and the star's slot, so it is on the
+     * hotbar and never the star's. {@link NexusLock#NO_LOCKED_SLOT} while the profile is unreadable.
+     */
+    public static int stoneChosenSlotOf(Player player, ProfileService profiles) {
+        return profiles.profile(player.getUniqueId())
+                .map(NexusSlots::stoneSlotOf)
+                .orElse(NexusLock.NO_LOCKED_SLOT);
+    }
+
+    /** The stone's effective slot for a loaded profile. The star's slot is its CHOSEN one, toggle or not. */
+    public static int stoneSlotOf(PlayerProfile profile) {
+        return LockedSlots.stoneSlot(profile.stoneSlotOrNull(),
+                validSlotOr(profile.nexusSlot(), NexusLock.DEFAULT_LOCKED_SLOT));
     }
 
     /**
@@ -192,7 +246,11 @@ public final class NexusSlots {
         return NexusLock.refusesDrag(dragged,
                 NexusItems.isNexus(event.getOldCursor(), keys),
                 lockedSlotOf(player, profiles),
-                starAt(player, keys));
+                starAt(player, keys))
+                || NexusLock.refusesDrag(dragged,
+                StoneItems.isStone(event.getOldCursor(), keys),
+                stoneLockedSlotOf(player, profiles),
+                itemAt(player, item -> StoneItems.isStone(item, keys)));
     }
 
     // ------------------------------------------------------------------ the conversion
@@ -265,9 +323,13 @@ public final class NexusSlots {
      * parameter would have made the natural implementation, on every click by every player.
      */
     public static IntPredicate starAt(Player player, Keys keys) {
+        return itemAt(player, item -> NexusItems.isNexus(item, keys));
+    }
+
+    /** {@link #starAt} for any locked item's identity. Lazy for the same reason. */
+    public static IntPredicate itemAt(Player player, java.util.function.Predicate<ItemStack> is) {
         PlayerInventory inventory = player.getInventory();
-        return index -> index >= 0 && index < inventory.getSize()
-                && NexusItems.isNexus(inventory.getItem(index), keys);
+        return index -> index >= 0 && index < inventory.getSize() && is.test(inventory.getItem(index));
     }
 
     // ------------------------------------------------------------------ convergence
@@ -282,38 +344,20 @@ public final class NexusSlots {
      * before the profile arrives places the star at the default and then has to move it, which the
      * player sees. {@code RpgListeners.onJoin} waits instead.
      *
-     * <p><b>NO UNIT TEST GUARDS THAT THIS METHOD USES {@code lockedSlot} AT ALL, AND THAT IS
-     * MEASURED.</b> {@code MUTWELDDEFAULT} -- replacing the target with
-     * {@link NexusLock#DEFAULT_LOCKED_SLOT} outright, so the argument is ignored and every player's
-     * star goes to 8 -- left the whole suite GREEN.
+     * <p><b>{@code MUTWELDDEFAULT} -- replacing the target with {@link NexusLock#DEFAULT_LOCKED_SLOT}
+     * outright, so the argument is ignored and every player's star goes to 8 -- USED to leave the whole
+     * suite GREEN.</b> That was measured, and it was the reason for the debt below.
      *
-     * <h2>NAMED DEBT: THE PLAN/EXECUTE SEAM, DEFERRED 2026-09-16 RATHER THAN ABSENT</h2>
+     * <h2>THE PLAN/EXECUTE SEAM -- A NAMED DEBT FROM 2026-09-16, PAID IN THE ABILITY STONE SLICE</h2>
      *
-     * <b>This javadoc first said "there is nothing to extract". That was wrong, and the operator
-     * refuted it with two precedents in this repo</b>:
-     *
-     * <pre>
-     *   CollectPlan.plan(sources, ...) -&gt; List&lt;Draw&gt;   and collectToCursor EXECUTES the plan
-     *   GridClickIntent.of(...)        -&gt; an intent    and MenuRouting PERFORMS it
-     * </pre>
-     *
-     * <p><b>This method has the same seam.</b> Given the star indices found, the target slot, and
-     * whether the target is occupied, the WRITES are a pure function -- which indices to clear,
-     * where the surviving star comes from or whether to mint, whether to displace. Only the
-     * execution needs a {@code PlayerInventory}. Splitting it would make {@code MUTWELDDEFAULT}
-     * killable and give <b>the only code in the Nexus that destroys items</b> its first unit
-     * coverage.
-     *
-     * <p><b>DEFERRED, NOT DECLINED.</b> Slice 4a already carried a schema bump, a join race, a
-     * signature change to the decision class and 108 compile errors of test rewriting; widening it
-     * further is the trade this project avoids. <b>The trigger is the next slice that opens this
-     * method for any other reason</b> -- at that point the split is nearly free, and this note is
-     * what says to take it rather than rediscovering the seam.
-     *
-     * <p><b>{@code GATE-nexus.md}'s slice 4a rows are the only thing standing between this method
-     * and silently ignoring the setting.</b> If those rows are deleted, this is unguarded --
-     * stated here rather than in the gate, because the person deleting a row is reading the row and
-     * the person breaking this is reading this.
+     * <b>This javadoc once said "there is nothing to extract". That was wrong</b>, and the operator refuted
+     * it with two precedents ({@code CollectPlan.plan} / {@code collectToCursor}, and
+     * {@code GridClickIntent.of} / {@code MenuRouting}). The debt was deferred with a trigger: "the next
+     * slice that opens this method for any other reason". The Ability Stone opened it (convergence now
+     * runs for two items), so it was paid: the writes are {@code ConvergePlan.of}, in core, and
+     * {@code ConvergePlanTest.theChosenSlotIsTheTargetNotTheDefault} is what kills {@code MUTWELDDEFAULT}
+     * now. The execution in {@link #converge(Player, LockedItem, int)} still needs a real inventory, so
+     * {@code GATE-nexus.md}'s slice 4a rows remain its in-play coverage.
      *
      * <h2>WHY THIS IS NOT "MINT IF ABSENT"</h2>
      *
@@ -359,56 +403,61 @@ public final class NexusSlots {
      * touched</b>, which is what separates this from a clear.
      */
     public static void removeStars(Player player, Keys keys) {
+        removeAll(player, LockedItem.star(keys));
+    }
+
+    /** {@link #removeStars} for any locked item: every copy, anywhere in the inventory, and nothing else. */
+    public static void removeAll(Player player, LockedItem item) {
         PlayerInventory inventory = player.getInventory();
         // THE WHOLE INVENTORY, not just the locked slot. A star can sit anywhere -- carried from a
         // previous slot choice, or duplicated by a path converge has not run since -- and leaving
         // one behind would let a player open the hub from an item the setting says is gone.
         for (int index = 0; index < inventory.getSize(); index++) {
-            if (NexusItems.isNexus(inventory.getItem(index), keys)) inventory.setItem(index, null);
+            if (item.is().test(inventory.getItem(index))) inventory.setItem(index, null);
         }
     }
 
     public static void converge(Player player, Keys keys, int lockedSlot) {
+        converge(player, LockedItem.star(keys), lockedSlot);
+    }
+
+    /**
+     * {@link #converge(Player, Keys, int)} for any locked item. <b>The decision is
+     * {@code ConvergePlan.of}, in core; this only executes it</b> -- the plan/execute split this
+     * javadoc used to name as debt, taken when the Ability Stone opened the method (PLAN-build-system.md
+     * section 1.3). The rules are the star's, unchanged: surplus deleted keeping the lowest index, a
+     * single copy at the target is a no-op, the survivor is lifted rather than re-minted, and the
+     * displaced occupant is handed back through {@code MenuSafety.give}.
+     *
+     * <p><b>TWO ITEMS, AND THEIR ORDER.</b> Callers converge the star FIRST, then the stone.
+     * {@code LockedSlots} keeps their targets distinct, so neither converge can displace the other.
+     */
+    public static void converge(Player player, LockedItem item, int lockedSlot) {
         PlayerInventory inventory = player.getInventory();
 
-        // READ ONCE INTO A LOCAL, AND THE TARGET IS NEVER RE-DERIVED BELOW. With a constant it did
-        // not matter; with a per-player value, resolving it twice could split the decision -- the
-        // "already correct" test comparing against one slot and the write landing in another, which
-        // would move the star every join and displace whatever it found.
-        int target = validSlotOr(lockedSlot, NexusLock.DEFAULT_LOCKED_SLOT);
-
-        List<Integer> stars = new ArrayList<>();
+        List<Integer> found = new ArrayList<>();
         for (int index = 0; index < inventory.getSize(); index++) {
-            if (NexusItems.isNexus(inventory.getItem(index), keys)) stars.add(index);
+            if (item.is().test(inventory.getItem(index))) found.add(index);
         }
+        ConvergePlan plan = ConvergePlan.of(found, lockedSlot, item.defaultSlot(), item.maxSlot());
 
-        // Surplus first, so the "already correct" test below cannot pass while a duplicate sits in
-        // the backpack. Keep the lowest index and delete the rest; which one survives is arbitrary
-        // because they are identical.
-        //
-        // STILL "LOWEST INDEX", NOT "THE ONE ALREADY IN THE TARGET", AND THAT IS UNCHANGED ON
-        // PURPOSE. The survivor is lifted into the target a few lines below whichever one it is, so
-        // preferring the target would change which identical item is kept and nothing else. The
-        // existing behaviour is documented in GATE-nexus.md and re-deciding it here would be a
-        // silent change riding along with this one.
-        for (int i = 1; i < stars.size(); i++) inventory.setItem(stars.get(i), null);
+        for (int index : plan.clear()) inventory.setItem(index, null);
+        if (plan.noop()) return;   // nothing to do
 
-        int held = stars.isEmpty() ? -1 : stars.get(0);
-        if (held == target && stars.size() == 1) return;   // nothing to do
-
-        // Take the existing star rather than minting a second, so a star that has been renamed,
+        // Take the existing copy rather than minting a second, so one that has been renamed,
         // re-tagged or otherwise touched is preserved as the one the player has.
-        ItemStack star;
-        if (held >= 0) {
-            star = inventory.getItem(held);
-            inventory.setItem(held, null);      // clear FIRST, so the slot counts as free below
+        ItemStack held;
+        if (plan.source() != ConvergePlan.MINT) {
+            held = inventory.getItem(plan.source());
+            inventory.setItem(plan.source(), null);   // clear FIRST, so the slot counts as free below
         } else {
-            star = NexusItems.mint(keys);
+            held = item.mint().get();
         }
 
         // Captured BEFORE the write, or it is gone.
+        int target = plan.target();
         ItemStack occupant = inventory.getItem(target);
-        inventory.setItem(target, star);
+        inventory.setItem(target, held);
 
         // MenuSafety.isEmpty is the canonical copy -- absent, AIR, and zero-count husks all mean
         // nothing here, and testing only one of them is how a slot ends up holding an invisible

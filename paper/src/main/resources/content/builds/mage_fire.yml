@@ -1,0 +1,20 @@
+# The Fire Mage's POOL (PLAN-build-system.md section 2.2). Replaces kits/mage_fire.yml in slice 2.
+#
+# The default loadout is a PLACEHOLDER (section 4), drawn from the three abilities the Mage kit granted.
+# solar_lance is also a Ranger Active; one ability in two pools is allowed, and its cooldown is shared
+# (keyed by ability id, section 2.6).
+
+class: mage
+element: fire
+display_name: "<gold>Fire Mage</gold>"
+
+ultimates:
+  - ultimate_placeholder_mage
+actives:
+  - ember_step
+  - solar_grenade
+  - solar_lance
+
+default:
+  ultimate: ultimate_placeholder_mage
+  actives: [ember_step, solar_grenade]    # left, right

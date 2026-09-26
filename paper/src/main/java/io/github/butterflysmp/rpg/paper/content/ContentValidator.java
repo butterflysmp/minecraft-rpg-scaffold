@@ -212,7 +212,7 @@ public final class ContentValidator {
      * than gated.
      *
      * <p><b>2. It must be DURABLE.</b> The index is opt-in, so a claim on a material with no
-     * durability -- {@code ability_stone} is {@code amethyst_shard} -- would index perfectly
+     * durability -- {@code ember_staff} is {@code blaze_rod} -- would index perfectly
      * cleanly and then be dropped by the mint's durability gate, every time, forever. No error, no
      * warning, no mint: the author sees nothing at all. Named here instead.
      *

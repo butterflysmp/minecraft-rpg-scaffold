@@ -8,10 +8,19 @@ paths:
 
 ## Standing decisions — the accounts. The pointers are in CLAUDE.md, under the heading of the same name
 
-- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade`, `quiver_stone` OR `ability_stone`.**
-  Those **four** are **in a deletion set**, parked on *enough shipped weapons to replace them* (see
+- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade` OR `quiver_stone`.**
+  Those **three** are **in a deletion set**, parked on *enough shipped weapons to replace them* (see
   `NEXT.md`). Every citation of one written between now and then is a comment that will point at a
   file that does not exist.
+
+  > **THE SET HAD FOUR MEMBERS UNTIL 2026-09-25, AND THE FOURTH LEFT BY BEING DELETED, NOT RELEASED.**
+  > `ability_stone` was deleted in the Ability Stone slice (PLAN-build-system.md section 1.4), in the
+  > same commit that shipped the new Ability Stone item, so the name never referred to two things. Its
+  > sweep was exactly the prose the measurement below predicted: at `041a054`,
+  > `git grep -h ability_stone -- '*/src/main/java/*'` returned **13** lines; after the sweep, at the
+  > slice's code commit `f92a163`, it returns **3**, and **all 3 are comments marked "since deleted"**
+  > (the same `grep -cE` and the same code-line control as below). The accounts below that name
+  > `ability_stone` are KEPT as the record of how it was ruled and measured.
 
   **THE SET WAS RULED IN TWO SITTINGS, AND THE DATES ARE KEPT SEPARATE BECAUSE THE MEASUREMENTS
   BELOW ARE.** `hunters_bow`, `ironblade` and `quiver_stone` — **2026-09-12**. `ability_stone` —

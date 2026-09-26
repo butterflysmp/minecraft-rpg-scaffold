@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.menu;
 
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.nexus.NexusSlots;
+import io.github.butterflysmp.rpg.paper.nexus.LockedItem;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import net.kyori.adventure.text.Component;
@@ -97,14 +98,67 @@ public final class SettingsMenu extends Menu {
             // It captures THIS screen's own hub supplier, so the chain stays three deep and the
             // picker never has to know what a Nexus hub needs.
             adapters.scheduler().onEntity(viewer, () -> new NexusSlotPickerMenu(
-                    viewer, adapters, profiles,
+                    viewer, adapters, profiles, NexusSlotPickerMenu.Target.STAR,
                     () -> new SettingsMenu(viewer, adapters, profiles, hub)).open());
             return;
         }
         if (click.slot() == SettingsMenuLayout.TOGGLE_SETTING_SLOT) {
             setStar(!starEnabled());
+            return;
+        }
+        if (click.slot() == SettingsMenuLayout.STONE_SLOT_SETTING_SLOT) {
+            adapters.scheduler().onEntity(viewer, () -> new NexusSlotPickerMenu(
+                    viewer, adapters, profiles, NexusSlotPickerMenu.Target.STONE,
+                    () -> new SettingsMenu(viewer, adapters, profiles, hub)).open());
+            return;
+        }
+        if (click.slot() == SettingsMenuLayout.STONE_TOGGLE_SETTING_SLOT) {
+            setStone(!profiles.stoneEnabled(viewer.getUniqueId()));
         }
         // Filler is inert and deliberately has no branch of its own.
+    }
+
+    /**
+     * The Ability Stone's toggle: {@link #setStar}'s shape and rules exactly (ruling 2: "the same way the
+     * Nexus star is"). Enabling refuses an occupied slot and names it; disabling removes every stone and
+     * frees the slot -- the profile write is what takes the lock off, and both happen together.
+     */
+    private void setStone(boolean enabled) {
+        int slot = NexusSlots.stoneChosenSlotOf(viewer, profiles);
+        if (slot == io.github.butterflysmp.rpg.paper.nexus.NexusLock.NO_LOCKED_SLOT) {
+            viewer.sendMessage(
+                    profiles.availability(viewer.getUniqueId()) == ProfileService.Availability.UNREADABLE
+                            ? Component.text(ProfileService.UNREADABLE_PROFILE, NamedTextColor.RED)
+                            : Component.text(ProfileService.STILL_LOADING, NamedTextColor.GRAY));
+            return;
+        }
+        if (enabled) {
+            ItemStack occupant = viewer.getInventory().getItem(slot);
+            if (!MenuSafety.isEmpty(occupant)) {
+                viewer.sendMessage(Component.text(
+                        NexusSlotPickerLayout.slotName(slot)
+                                + " is occupied. Clear it or use the Ability Stone slot picker first.",
+                        NamedTextColor.RED));
+                return;
+            }
+        }
+        if (!profiles.setStoneEnabled(viewer.getUniqueId(), enabled)) {
+            viewer.sendMessage(Component.text(ProfileService.STILL_LOADING, NamedTextColor.GRAY));
+            return;
+        }
+        LockedItem stone = adapters.stones().lockedItem(profiles.profile(viewer.getUniqueId()));
+        if (enabled) {
+            NexusSlots.converge(viewer, stone, slot);
+            viewer.sendMessage(Component.text(
+                    "The Ability Stone is back, in " + NexusSlotPickerLayout.slotName(slot) + ".",
+                    NamedTextColor.AQUA));
+        } else {
+            NexusSlots.removeAll(viewer, stone);
+            viewer.sendMessage(Component.text(
+                    "The Ability Stone is off. " + NexusSlotPickerLayout.slotName(slot) + " is yours to use.",
+                    NamedTextColor.AQUA));
+        }
+        render();
     }
 
     /** Is the star on? An unavailable profile reads as ON, which is the shipped default. */
@@ -219,5 +273,28 @@ public final class SettingsMenu extends Menu {
                                         NamedTextColor.DARK_GRAY),
                                 MenuIcons.line("/menu opens this hub either way.",
                                         NamedTextColor.DARK_GRAY))));
+
+        // THE ABILITY STONE'S ROW, directly below the star's (PLAN-build-system.md 2.5). Same two cells,
+        // same wording shape, so the pair reads as one table.
+        int stoneSlot = NexusSlots.stoneChosenSlotOf(viewer, profiles);
+        String stoneWhere = stoneSlot == io.github.butterflysmp.rpg.paper.nexus.NexusLock.NO_LOCKED_SLOT
+                ? "not known yet"
+                : NexusSlotPickerLayout.slotName(stoneSlot);
+        getInventory().setItem(SettingsMenuLayout.STONE_SLOT_SETTING_SLOT, MenuIcons.icon(
+                Material.ITEM_FRAME,
+                MenuIcons.line("Ability Stone Slot", NamedTextColor.GRAY),
+                List.of(MenuIcons.line("Currently: " + stoneWhere, NamedTextColor.DARK_GRAY),
+                        MenuIcons.line("Click to choose a different hotbar cell.",
+                                NamedTextColor.DARK_GRAY))));
+        boolean stoneEnabled = profiles.stoneEnabled(viewer.getUniqueId());
+        getInventory().setItem(SettingsMenuLayout.STONE_TOGGLE_SETTING_SLOT, MenuIcons.icon(
+                stoneEnabled ? Material.LIME_DYE : Material.GRAY_DYE,
+                MenuIcons.line(stoneEnabled ? "Ability Stone: ON" : "Ability Stone: OFF",
+                        stoneEnabled ? NamedTextColor.GREEN : NamedTextColor.GRAY),
+                stoneEnabled
+                        ? List.of(MenuIcons.line("Click to remove it and free the slot.",
+                                NamedTextColor.DARK_GRAY))
+                        : List.of(MenuIcons.line("Click to put it back in " + stoneWhere + ".",
+                                NamedTextColor.DARK_GRAY))));
     }
 }

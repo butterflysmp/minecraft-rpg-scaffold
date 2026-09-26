@@ -409,6 +409,47 @@ public final class ProfileService {
         return profile(playerId).map(PlayerProfile::starEnabled).orElse(true);
     }
 
+    /**
+     * Switch the Ability Stone on or off (PLAN-build-system.md section 2.5). {@link #setStarEnabled}'s
+     * contract exactly: refused (false) while the profile is loading, unreadable or untracked;
+     * otherwise the cached profile is replaced and written through.
+     */
+    public boolean setStoneEnabled(UUID playerId, boolean enabled) {
+        return update(playerId, current -> current.withStoneEnabled(enabled), "Ability Stone toggle");
+    }
+
+    /**
+     * Move the Ability Stone. Unvalidated here, for {@link #setNexusSlot}'s reason: the caller
+     * ({@code NexusSlotPickerMenu}) asks {@code LockedSlots} first, and the effective slot is
+     * re-derived through it on every read, so a hand-edited value cannot land the stone off the hotbar.
+     */
+    public boolean setStoneSlot(UUID playerId, int slot) {
+        return update(playerId, current -> current.withStoneSlot(slot), "Ability Stone slot change");
+    }
+
+    /** Is this player's Ability Stone switched on? Unknown reads as ON, {@link #starEnabled}'s rule and reason. */
+    public boolean stoneEnabled(UUID playerId) {
+        return profile(playerId).map(PlayerProfile::stoneEnabled).orElse(true);
+    }
+
+    /** The shared body of the two stone setters: the same shape as every setter above, written once. */
+    private boolean update(UUID playerId, java.util.function.UnaryOperator<PlayerProfile> change, String what) {
+        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
+        if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {
+            return false;
+        }
+        PlayerProfile current = loading.getNow(null);
+        if (current == null) return false;
+
+        PlayerProfile updated = change.apply(current);
+        profiles.put(playerId, CompletableFuture.completedFuture(updated));
+        repository.save(updated).exceptionally(error -> {
+            log.log(Level.SEVERE, "Failed to persist " + what + " for " + playerId, error);
+            return null;
+        });
+        return true;
+    }
+
     /** The profile, if it has finished loading and did not fail. */
     public Optional<PlayerProfile> profile(UUID playerId) {
         CompletableFuture<PlayerProfile> loading = profiles.get(playerId);

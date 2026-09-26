@@ -156,7 +156,18 @@ public final class ProfileMigrations {
             profile = profile.withSchemaVersion(4);
         }
 
-        // v4 -> v5: add the next step here.
+        // v4 -> v5: added the Ability Stone's stoneSlot and stoneEnabled (PLAN-build-system.md 2.1).
+        //
+        // A BARE STAMP, LIKE v3 -> v4, AND FOR THE SAME REASON. Both fields are boxed, so an absent key
+        // is null and null already reads correctly (the default slot; ON). The step exists only so the
+        // newer-server refusal above can fire: an older build would drop both keys and write the
+        // loss back, and a rollback would then cost the player their chosen stone slot and toggle.
+        // That is cheaper than v4's duplicate ender chest, and it is stamped anyway because the plan
+        // said so and a stamp costs nothing to roll FORWARD from.
+        if (profile.schemaVersion() < 5) {
+            profile = profile.withSchemaVersion(5);
+        }
+        // v5 -> v6: add the next step here.
 
         return profile;
     }

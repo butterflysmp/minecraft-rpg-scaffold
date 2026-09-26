@@ -76,6 +76,15 @@ final class SettingsMenuLayout {
     static final int TOGGLE_SETTING_SLOT = 24;
 
     /**
+     * Open the Ability Stone's slot picker (hotbar only, ruling 2). Row 4, DIRECTLY BELOW the star's
+     * picker, so the two items' settings read as two rows of one table (PLAN-build-system.md 2.5).
+     */
+    static final int STONE_SLOT_SETTING_SLOT = 31;
+
+    /** Switch the Ability Stone on or off. Row 4, directly below the star's toggle. */
+    static final int STONE_TOGGLE_SETTING_SLOT = 33;
+
+    /**
      * Every settings button, so the filler and the click handler read one list.
      *
      * <p><b>ONE LIST USED TWICE rather than two lists checked against each other</b> -- the
@@ -83,7 +92,8 @@ final class SettingsMenuLayout {
      * a cell was subtracted from the filler and painted by nothing; a single list makes that
      * unrepresentable rather than detectable.
      */
-    static final Set<Integer> SETTING_SLOTS = Set.of(SLOT_SETTING_SLOT, TOGGLE_SETTING_SLOT);
+    static final Set<Integer> SETTING_SLOTS = Set.of(SLOT_SETTING_SLOT, TOGGLE_SETTING_SLOT,
+            STONE_SLOT_SETTING_SLOT, STONE_TOGGLE_SETTING_SLOT);
 
     /**
      * Everything that is plain filler -- all of it except the settings and the two buttons.

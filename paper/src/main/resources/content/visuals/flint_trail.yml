@@ -4,7 +4,7 @@
 # NOT ember_trail. That file is authored for a thrown ember (count 1, spread 0, a clean unbroken
 # LINE) and its only consumers are throw_embers. Borrowing it would make this staff the second
 # weapon depending on numbers tuned for the first -- which is precisely the trap ember_burst
-# already sprang on this weapon: ember_burst's count went 30 -> 10 for the Ability Stone's
+# already sprang on this weapon: ember_burst's count went 30 -> 10 for the old ability_stone dev weapon (deleted when the Ability Stone item shipped)'s
 # three-ember throw, and the Flint Staff, which fires ONE bolt on a 24-tick cooldown, silently
 # inherited a fix made for a weapon it has nothing to do with. A SHARED VISUAL IS A COUPLING AND
 # THE COUPLING IS INVISIBLE AT BOTH ENDS.

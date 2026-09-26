@@ -114,14 +114,14 @@ class WeaponLoaderTest {
 
     /**
      * A trigger's cast is the shared AbilitySchema, so any cast type an ability supports works
-     * in a weapon trigger unchanged -- including `dash`, which the Ability Stone leans on. This
+     * in a weapon trigger unchanged -- including `dash`, which rekindle-style triggers lean on. This
      * pins that shared-grammar guarantee: if a weapon-specific cast path ever crept back in and
      * hardcoded a subset, `dash` in a trigger would break and this reddens.
      */
     @Test
     void loadsADashCastInATrigger() throws IOException {
-        write("ability_stone.yml", """
-                id: ability_stone
+        write("dash_fixture.yml", """
+                id: dash_fixture
                 element: kinetic
                 class: mage
                 triggers:
@@ -139,7 +139,7 @@ class WeaponLoaderTest {
 
         WeaponRegistry registry = load();
 
-        TriggerBinding binding = registry.find("ability_stone").orElseThrow().trigger("left_click").orElseThrow();
+        TriggerBinding binding = registry.find("dash_fixture").orElseThrow().trigger("left_click").orElseThrow();
         var dash = assertInstanceOf(CastSpec.Dash.class, binding.ability().cast());
         assertEquals(12, dash.distance(), 1e-9);
         assertEquals(0.4, dash.lift(), 1e-9);
@@ -701,35 +701,6 @@ class WeaponLoaderTest {
         // Mutation: revert the swing to `type: damage` / drop attack_damage -> reddens.
     }
 
-    /**
-     * The shipped Ability Stone -- the dev instrument the boot test fires. Its left-click
-     * mirrors Rekindle, so it carries the same throw_embers grammar; no test loaded it before,
-     * so a mistyped key would have failed silently at boot on the very weapon used to test.
-     * This pins the thrown-item shape on the real file.
-     */
-    @Test
-    void bundledAbilityStoneContentLoads() throws IOException {
-        try (var in = getClass().getResourceAsStream("/content/weapons/ability_stone.yml")) {
-            assertNotNull(in, "bundled ability_stone is missing from the classpath");
-            Files.write(dir.resolve("ability_stone.yml"), in.readAllBytes());
-        }
-
-        WeaponRegistry registry = load();
-
-        assertTrue(warnings.isEmpty(), warningText());
-        assertEquals(1, registry.size());
-        var stone = registry.find("ability_stone").orElseThrow();
-
-        var cast = stone.trigger("left_click").orElseThrow().ability();
-        assertInstanceOf(CastSpec.Dash.class, cast.cast());
-        var embers = cast.onHit().stream()
-                .filter(EffectSpec.ThrowEmbers.class::isInstance)
-                .map(EffectSpec.ThrowEmbers.class::cast)
-                .findFirst().orElseThrow(() -> new AssertionError("no throw_embers on the boot weapon"));
-        assertEquals("blaze_powder", embers.itemId());
-        assertTrue(embers.burst().radius() > 0, "the thrown ember bursts with a real radius");
-    }
-
     /** The shipped emberblade: a free left-click and a costed right-click on one weapon. */
     @Test
     void bundledEmberbladeContentLoads() throws IOException {
@@ -798,7 +769,7 @@ class WeaponLoaderTest {
         assertEquals(ResourceCost.FREE, shot.cost(), "the shot is free -- the bow carries the damage");
         assertInstanceOf(CastSpec.Projectile.class, shot.cast());
         // The fire rate (cooldown_ticks) is deliberately NOT asserted: it is pure balance, and no
-        // bound is defensible either, since ability_stone ships cooldown_ticks: 0. The three
+        // bound is defensible either, since the old ability_stone dev weapon (since deleted) shipped cooldown_ticks: 0. The three
         // properties this block is about -- on right_click, free, projectile -- are the three above.
 
         // The shot is a STAT-READING basic attack, not a literal: an attack_damage stat on the

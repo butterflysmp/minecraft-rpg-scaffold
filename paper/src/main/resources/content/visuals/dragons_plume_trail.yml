@@ -5,7 +5,7 @@
 #
 # NOT flint_trail and NOT ember_trail. flint_trail's own file states the rule -- "A SHARED VISUAL IS
 # A COUPLING AND THE COUPLING IS INVISIBLE AT BOTH ENDS" -- after ember_burst's count went 30 -> 10
-# for the Ability Stone and silently took the Flint Staff with it.
+# for the old ability_stone dev weapon (deleted when the Ability Stone item shipped) and silently took the Flint Staff with it.
 #
 # This weapon has a second reason on top of that: it is the only trail in the project drawn in DUST,
 # so it is the only one whose COLOUR and SIZE can be tuned at all. Borrowing a FLAME trail would

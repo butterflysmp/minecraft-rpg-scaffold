@@ -8,7 +8,7 @@
 # "A SHARED VISUAL IS A COUPLING AND THE COUPLING IS INVISIBLE AT BOTH ENDS." flint_trail's numbers
 # were tuned around ONE bolt on a 24-tick cooldown. Borrowing them would make this weapon the second
 # depending on numbers tuned for the first -- which is precisely the trap ember_burst sprang on the
-# Flint Staff, whose count went 30 -> 10 for the Ability Stone and silently took the staff with it.
+# Flint Staff, whose count went 30 -> 10 for the old ability_stone dev weapon (deleted when the Ability Stone item shipped) and silently took the staff with it.
 #
 # ================== THE DENSITY, AS A NUMBER, BOTH WAYS ==================
 #

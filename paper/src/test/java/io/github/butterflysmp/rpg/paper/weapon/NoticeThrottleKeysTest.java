@@ -63,7 +63,8 @@ class NoticeThrottleKeysTest {
                     // count below would still have read 7 -- passing, over a set that had silently
                     // stopped being complete. The class javadoc's "a list that must be edited is a
                     // list whose staleness is visible in a diff" is what caught this.
-                    io.github.butterflysmp.rpg.paper.nexus.NexusCollisionNotice.class);
+                    io.github.butterflysmp.rpg.paper.nexus.NexusCollisionNotice.class,
+                    io.github.butterflysmp.rpg.paper.build.StoneNotice.class);
 
     /**
      * The keys that exist today, counted. <b>This is the positive control</b>, and it is also the
@@ -84,7 +85,7 @@ class NoticeThrottleKeysTest {
      * DISTINCT. Editing both in one go would have produced the same green suite whether the scan
      * had found the key or not.</blockquote>
      */
-    private static final int KEYS_TODAY = 8;
+    private static final int KEYS_TODAY = 11;   // 8, plus StoneNotice's three (the Ability Stone slice)
 
     @Test
     void everyThrottleKeyInTheProjectIsItsOwn() {

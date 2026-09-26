@@ -508,7 +508,7 @@ class AbilityLoaderTest {
         // cooldown is spammable, and no shipped ability declares one.
         //
         // Note this is deliberately NOT symmetric with the bow's fire rate in WeaponLoaderTest,
-        // which asserts nothing at all: ability_stone ships `cooldown_ticks: 0` on purpose (a dev
+        // which asserts nothing at all: the old ability_stone dev weapon (since deleted) shipped `cooldown_ticks: 0` (a dev
         // instrument you spam while tuning), so "> 0" is a real invariant for an ABILITY and not one
         // for a WEAPON TRIGGER. If a cost-gated 0-cooldown ability is ever wanted, delete this line
         // then -- as a deliberate call, not as a tidy-up of an apparent inconsistency.

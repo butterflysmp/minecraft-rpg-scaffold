@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.paper.accessory.Accessories;
+import io.github.butterflysmp.rpg.paper.build.Stones;
 import io.github.butterflysmp.rpg.core.weapon.CraftResultIndex;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
@@ -44,6 +45,10 @@ import java.util.logging.Logger;
  * loop, the stats sheet on {@code /rpg stats} and on the Nexus hub's stats head, and {@code /rpg give}.
  * The hub is rebuilt from about ten call sites, each passing a fixed set of services; carrying this
  * here rather than adding it to all ten is the same five-signature argument.
+ *
+ * <p>{@code stones} is the fifth, for the same argument: the Ability Stone's key, pools and ability names,
+ * read by the Settings screen and the slot picker, which are built from those same call sites
+ * (PLAN-build-system.md section 2.5).
  */
 public record AdapterContext(Scheduler scheduler, Keys keys,
                              VisualRegistry visuals, StatusRegistry statuses,
@@ -53,17 +58,19 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              ImmobilizeStatus freeze, ScorchStatus scorch,
                              CombatantStats stats, double anchorDrift,
                              CraftResultIndex craftResults, WeaponRegistry weapons,
-                             Accessories accessories) {
+                             Accessories accessories,
+                             Stones stones) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
                           EnchantRegistry enchants, Logger log,
                           CombatantStats stats, double anchorDrift,
                           CraftResultIndex craftResults, WeaponRegistry weapons,
-                          Accessories accessories) {
+                          Accessories accessories,
+                          Stones stones) {
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
                 new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), new ScorchStatus(),
-                stats, anchorDrift, craftResults, weapons, accessories);
+                stats, anchorDrift, craftResults, weapons, accessories, stones);
     }
 
     /**

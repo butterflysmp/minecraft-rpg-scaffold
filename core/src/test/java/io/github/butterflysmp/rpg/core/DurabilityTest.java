@@ -24,7 +24,7 @@ class DurabilityTest {
     private static final int IRON_SWORD = 250;
     /** bow: the hunters_bow's material, and the only other damageable one shipped. */
     private static final int BOW = 384;
-    /** blaze_rod / amethyst_shard: ember_staff and ability_stone have NO vanilla durability. */
+    /** blaze_rod / amethyst_shard: materials with NO vanilla durability (ember_staff is a blaze_rod). */
     private static final int NOT_DAMAGEABLE = 0;
 
     @Test
@@ -82,7 +82,7 @@ class DurabilityTest {
     @Test
     void aNonDamageableMaterialClampsToZeroRatherThanMinusOne() {
         // The guard in clamp, on its own. Without it the expression is min(max(x, 0), 0 - 1) == -1,
-        // so every ember_staff and ability_stone would be written a NEGATIVE damage value. Asserted
+        // so every ember_staff would be written a NEGATIVE damage value. Asserted
         // directly rather than through isBroken, because this is a second, independent guard --
         // covering one does not cover the other.
         assertEquals(0, Durability.clamp(50, NOT_DAMAGEABLE));
