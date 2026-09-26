@@ -54,6 +54,10 @@ grep -rhoE '^\s+type:\s*(ray|melee|projectile|self)\s*$' \
 | `CastSpec.Melee` — *"unit-tested, never cast"* | **three** `type: melee` casts, `emberblade` among them |
 | `StatusDefinition.Potion` — *"no content uses it"* | **`statuses/surge.yml` authors `potion_type: speed`** |
 
+> **2026-09-26: `arc_surge` was DELETED (ruling 20, PLAN-build-system.md), so two rows above are false
+> again.** No shipped ability is `type: self`, so no shipped content walks `combatant(UUID)`; and
+> `statuses/surge.yml` still authors a potion status that nothing applies. Recorded, not fixed.
+
 > **SHIPPING CONTENT IS NOT A BOOT READING, AND THE TWO ARE SEPARATED HERE ON PURPOSE.** The table
 > says each path is now REACHABLE from content, which is precisely what the July list denied. **What
 > was actually observed on a server lives in the twenty `GATE-*.md` files**, per row, each with its

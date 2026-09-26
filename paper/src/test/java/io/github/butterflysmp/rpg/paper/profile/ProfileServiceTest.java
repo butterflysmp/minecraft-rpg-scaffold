@@ -305,7 +305,7 @@ class ProfileServiceTest {
     @Test
     void setNexusSlotCARRIESEverythingElseOnTheProfile() {
         repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player,
-                "ranger", "fire", 9, 500, List.of("arc_surge"), 1L, 8, 4_200L, null, false));
+                "ranger", "fire", 9, 500, List.of("old_kit_grant"), 1L, 8, 4_200L, null, false));
         service.onJoin(player);
 
         assertTrue(service.setNexusSlot(player, 0));
@@ -316,7 +316,7 @@ class ProfileServiceTest {
         assertEquals("fire", profile.elementId());
         assertEquals(9, profile.level());
         assertEquals(500, profile.experience());
-        assertEquals(List.of("arc_surge"), profile.unlockedAbilities());
+        assertEquals(List.of("old_kit_grant"), profile.unlockedAbilities());
     }
 
     @Test

@@ -8,8 +8,8 @@
 # only playable route was the old ability_stone weapon, deleted in the same slice, so it becomes an
 # Active here.
 #
-# arc_surge is element: nature, and whether it stays in a FIRE pool is PARKED, unanswered (section 5).
-# Until ruled it stays, as the removed kit carried it, and it is in no default loadout.
+# arc_surge -- since deleted -- was a nature placeholder in this pool; ruling 20 (2026-09-26) removed
+# it, closing section 5's parked question.
 
 class: ranger
 element: fire
@@ -20,7 +20,6 @@ ultimates:
 actives:
   - rekindle
   - solar_lance
-  - arc_surge
 
 default:
   ultimate: ultimate_placeholder_ranger

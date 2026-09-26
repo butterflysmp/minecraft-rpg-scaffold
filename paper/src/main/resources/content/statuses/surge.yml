@@ -1,4 +1,5 @@
-# What "surge" means. arc_surge decides for how long.
+# What "surge" means. Its only user, arc_surge -- since deleted (ruling 20) -- decided for how long;
+# no shipped content applies this status now.
 # The id of this status is its filename: surge.
 
 kind: potion

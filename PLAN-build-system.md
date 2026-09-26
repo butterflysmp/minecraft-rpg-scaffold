@@ -572,7 +572,7 @@ element: fire
 display_name: "<gold>Fire Ranger</gold>"
 # every id below that does not exist at bccef7d is an ILLUSTRATIVE name, not a proposal (§4)
 ultimates: [sunfall]                       # §4 — Ben designs
-actives:   [rekindle, solar_lance, arc_surge]
+actives:   [rekindle, solar_lance]             # arc_surge -- since deleted (ruling 20)
 aspects:   [banked_embers, searing_lance]
 fragments: [ember_heart, keen_ember, kindling, warm_blood]
 default:
@@ -1691,7 +1691,7 @@ them.
 |---|---|---|---|---|
 | 1 | pool files with a `default` | default: Active 1 `rekindle`, Active 2 `solar_lance`, Ultimate **placeholder** | default: Active 1 `ember_step`, Active 2 `solar_grenade`, Ultimate **placeholder** | defaults: **placeholder**, from shipped abilities |
 | 1 | **Ultimates** (none exist) | 1 | 1 | **Ben.** Slice 1 ships a placeholder Ultimate per cell, built only from existing `CastSpec`/`EffectSpec` with long cooldowns, so Q can be gated |
-| 2-3 | **Actives**, ≥ 2 per cell, more for a choice | have: `rekindle`, `solar_lance`, `arc_surge` (nature, today's kit grant) | have: `solar_grenade`, `solar_lance`, `ember_step` | **Ben** for any new one. Slice 3's BB4 needs the two pools to **differ**, and today they share `solar_lance` — that is fine, since BB4 reads a Mage-*only* ability |
+| 2-3 | **Actives**, ≥ 2 per cell, more for a choice | have: `rekindle`, `solar_lance`, `arc_surge` (since deleted, ruling 20) | have: `solar_grenade`, `solar_lance`, `ember_step` | **Ben** for any new one. Slice 3's BB4 needs the two pools to **differ**, and today they share `solar_lance` — that is fine, since BB4 reads a Mage-*only* ability |
 | 3 | a choice of Ultimates (≥ 2 per cell) | 2 | 2 | **Ben**. The screen ships with one each |
 | 4 | **Fragments** | 4+ | 4+ | numbers **Ben**; the slice can ship **placeholders** built on the four universal stats (max HP, crit chance, crit damage, health regen) |
 | 5 | **Aspects** | ≥ 2 | ≥ 2 | **Ben.** §2.4's three examples are placeholders the slice can ship (2 Ranger: `searing_lance`, `banked_embers`; 1 Mage: `cinder_wake` — plus one more Mage placeholder on `solar_grenade`) |
@@ -1729,7 +1729,7 @@ the record of what was asked.
 3. **`archetype:` is dead and contradicts the kits** for `solar_grenade` and `solar_lance` (`hunter`, in
    the Mage kit). It is retired in slice 2 (§2.2).
 4. **`arc_surge` is `element: nature`** in the fire Ranger kit. That is not a defect, but the brief's
-   "Fire abilities" list was wrong about it (§1.1).
+   "Fire abilities" list was wrong about it (§1.1). Moot since ruling 20: `arc_surge` is deleted.
 5. **Stale kit files survive in `run/`**: `saveResource(path, false)` never deletes, so they are inert
    after slice 2 (§1.2).
 6. **`QuiverAmmo`'s javadoc says it is "THE ONLY GameMode READ"**, and `EquipmentMenu` also reads it.
