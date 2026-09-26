@@ -19,7 +19,6 @@ public record AbilityDefinition(
         String id,
         String displayName,
         String element,
-        String archetypeId,
         int cooldownTicks,
         ResourceCost cost,
         CastSpec cast,
@@ -44,16 +43,16 @@ public record AbilityDefinition(
      * middle one was omitted. That is the whole reason the component is appended rather than
      * placed beside {@code onHit}, where it belongs by meaning.
      */
-    public AbilityDefinition(String id, String displayName, String element, String archetypeId,
+    public AbilityDefinition(String id, String displayName, String element,
                              int cooldownTicks, ResourceCost cost, CastSpec cast,
                              List<EffectSpec> onHit, List<String> description) {
-        this(id, displayName, element, archetypeId, cooldownTicks, cost, cast, onHit, description,
+        this(id, displayName, element, cooldownTicks, cost, cast, onHit, description,
                 List.of());
     }
 
     /** An ability with no authored description: standalone abilities and the older test/call sites. */
-    public AbilityDefinition(String id, String displayName, String element, String archetypeId,
+    public AbilityDefinition(String id, String displayName, String element,
                              int cooldownTicks, ResourceCost cost, CastSpec cast, List<EffectSpec> onHit) {
-        this(id, displayName, element, archetypeId, cooldownTicks, cost, cast, onHit, List.of());
+        this(id, displayName, element, cooldownTicks, cost, cast, onHit, List.of());
     }
 }

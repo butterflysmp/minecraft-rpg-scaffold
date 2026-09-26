@@ -68,7 +68,7 @@ class CastExecutorFanTest {
      * fixture failing to be observable.
      */
     private static AbilityDefinition bolt(String castVisual) {
-        return new AbilityDefinition("plume", "Plume", "void", "ranger",
+        return new AbilityDefinition("plume", "Plume", "void",
                 0, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 120, null, "arrow"),
                 List.of(new EffectSpec.WeaponDamage("void")), List.of(),
                 castVisual == null ? List.of() : List.of(new EffectSpec.Visual(castVisual)));

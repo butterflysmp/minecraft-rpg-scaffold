@@ -5,7 +5,6 @@
 id: ember_step
 display_name: "<gold>Ember Step</gold>"   # MiniMessage, not legacy color codes
 element: fire
-archetype: mage
 cooldown_ticks: 160          # tune on the --refresh-content loop, not in Java
 
 cost:

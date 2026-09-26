@@ -58,7 +58,7 @@ class WeaponServiceTest {
 
     /** A trigger's ability, ids synthesized as WeaponLoader will: weaponId/input. */
     private static AbilityDefinition ability(String id, ResourceCost cost, int cooldownTicks) {
-        return new AbilityDefinition(id, "Trigger", "kinetic", "none",
+        return new AbilityDefinition(id, "Trigger", "kinetic",
                 cooldownTicks, cost, new CastSpec.Melee(3.0, 120),
                 List.of(new EffectSpec.Damage(8, "kinetic")));
     }
@@ -238,7 +238,7 @@ class WeaponServiceTest {
         var bow = new WeaponDefinition("hunters_bow", "Bow", "fire", Rarity.UNCOMMON,
                 WeaponClass.RANGER, "bow", 6.0, 0.0, SweepShare.NONE,
                 List.of(new TriggerBinding("right_click",
-                        new AbilityDefinition("hunters_bow/right_click", "Shot", "fire", "none",
+                        new AbilityDefinition("hunters_bow/right_click", "Shot", "fire",
                                 15, ResourceCost.FREE,
                                 new CastSpec.Projectile(1.0, 0, 60),
                                 List.of(new EffectSpec.Visual("solar_detonation"),

@@ -36,7 +36,7 @@ class GearClassOfTest {
         return new WeaponDefinition("w", "W", "kinetic", Rarity.COMMON, weaponClass,
                 WeaponDefinition.DEFAULT_MATERIAL, 0.0, 0.0, 0.0,
                 List.of(new TriggerBinding("left_click",
-                        new AbilityDefinition("w/left_click", "W", "kinetic", "none", 0,
+                        new AbilityDefinition("w/left_click", "W", "kinetic", 0,
                                 null, null, List.of(), List.of()))),
                 List.of());
     }

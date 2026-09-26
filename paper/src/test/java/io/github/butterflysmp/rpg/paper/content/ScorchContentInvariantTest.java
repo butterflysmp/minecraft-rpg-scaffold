@@ -86,8 +86,8 @@ class ScorchContentInvariantTest {
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare
-     * `element: fire` at column 0 is the OWNER element of a weapon, ability or kit -- eight such
-     * lines exist -- and those are not damage sites. Counting them would inflate the guard with
+     * `element: fire` at column 0 is the OWNER element of a weapon, ability or pool -- 13 such
+     * lines at the build system's slice 2, counted `grep -rcE '^element: fire' content/` -- and those are not damage sites. Counting them would inflate the guard with
      * declarations that carry no cap.
      */
     private static final Pattern FIRE_DAMAGE =

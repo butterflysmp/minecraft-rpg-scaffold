@@ -1,7 +1,7 @@
 package io.github.butterflysmp.rpg.paper.build;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
-import io.github.butterflysmp.rpg.core.build.Loadout;
+import io.github.butterflysmp.rpg.core.build.LoadoutResolution.Equipped;
 import io.github.butterflysmp.rpg.core.build.LoadoutSlot;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import net.kyori.adventure.text.Component;
@@ -36,8 +36,12 @@ public final class StoneItems {
     /**
      * A fresh stone. Stack size 1 at the source (the standing decision: no custom item stacks above 1),
      * and its lore names the loadout it will cast -- or says there is none yet.
+     *
+     * @param storeUnavailable the build store failed this session, so the stone is casting the pool
+     *                         default; the lore says so (slice 2, gate row BS7)
      */
-    public static ItemStack mint(Keys keys, Optional<Loadout> loadout, AbilityRegistry abilities) {
+    public static ItemStack mint(Keys keys, Optional<Equipped> equipped, boolean storeUnavailable,
+                                 AbilityRegistry abilities) {
         ItemStack item = new ItemStack(MATERIAL);
         item.editMeta(meta -> {
             meta.displayName(MiniMessage.miniMessage()
@@ -45,7 +49,7 @@ public final class StoneItems {
                     .decoration(TextDecoration.ITALIC, false));
             meta.getPersistentDataContainer().set(keys.buildStone, PersistentDataType.BYTE, (byte) 1);
             meta.setMaxStackSize(1);
-            meta.lore(lore(loadout, abilities));
+            meta.lore(lore(equipped, storeUnavailable, abilities));
         });
         return item;
     }
@@ -57,28 +61,34 @@ public final class StoneItems {
     }
 
     /** Rewrite a stone's lore in place, for a loadout that changed under it. Not a stone: untouched. */
-    public static void refreshLore(ItemStack item, Keys keys, Optional<Loadout> loadout, AbilityRegistry abilities) {
+    public static void refreshLore(ItemStack item, Keys keys, Optional<Equipped> equipped, boolean storeUnavailable,
+                                   AbilityRegistry abilities) {
         if (!isStone(item, keys)) return;
-        item.editMeta(meta -> meta.lore(lore(loadout, abilities)));
+        item.editMeta(meta -> meta.lore(lore(equipped, storeUnavailable, abilities)));
     }
 
-    static List<Component> lore(Optional<Loadout> loadout, AbilityRegistry abilities) {
+    static List<Component> lore(Optional<Equipped> equipped, boolean storeUnavailable, AbilityRegistry abilities) {
         List<Component> lines = new ArrayList<>();
-        if (loadout.isEmpty()) {
+        if (equipped.isEmpty()) {
             lines.add(line("Choose a class and an element to use it.", NamedTextColor.GRAY));
             return lines;
         }
-        lines.add(binding("Left click", loadout.get(), LoadoutSlot.ACTIVE_1, abilities));
-        lines.add(binding("Right click", loadout.get(), LoadoutSlot.ACTIVE_2, abilities));
-        lines.add(binding("Q", loadout.get(), LoadoutSlot.ULTIMATE, abilities));
+        lines.add(binding("Left click", equipped.get(), LoadoutSlot.ACTIVE_1, abilities));
+        lines.add(binding("Right click", equipped.get(), LoadoutSlot.ACTIVE_2, abilities));
+        lines.add(binding("Q", equipped.get(), LoadoutSlot.ULTIMATE, abilities));
+        if (storeUnavailable) {
+            lines.add(line("Build unavailable -- casting the default.", NamedTextColor.RED));
+        }
         return lines;
     }
 
-    private static Component binding(String input, Loadout loadout, LoadoutSlot slot, AbilityRegistry abilities) {
-        String id = loadout.idFor(slot);
-        Component name = abilities.find(id)
-                .map(def -> MiniMessage.miniMessage().deserialize(def.displayName()))
-                .orElse(Component.text(id, NamedTextColor.RED));
+    private static Component binding(String input, Equipped equipped, LoadoutSlot slot, AbilityRegistry abilities) {
+        Optional<String> id = equipped.idFor(slot);
+        Component name = id.isEmpty()
+                ? Component.text("(empty)", NamedTextColor.DARK_GRAY)
+                : abilities.find(id.get())
+                        .map(def -> MiniMessage.miniMessage().deserialize(def.displayName()))
+                        .orElse(Component.text(id.get(), NamedTextColor.RED));
         return line(input + ": ", NamedTextColor.GRAY).append(name.decoration(TextDecoration.ITALIC, false));
     }
 

@@ -59,7 +59,7 @@ class CastExecutorVolleyTest {
 
     private static AbilityDefinition volleyOf(CastSpec inner, int windup, int shots, int interval,
                                               double damage, ResourceCost cost) {
-        return new AbilityDefinition("test", "Test", "kinetic", "none", 0, cost,
+        return new AbilityDefinition("test", "Test", "kinetic", 0, cost,
                 new CastSpec.Volley(windup, shots, interval, inner),
                 List.of(new EffectSpec.Damage(damage, "kinetic")));
     }
@@ -370,7 +370,7 @@ class CastExecutorVolleyTest {
         var caster = casterIn(world);
         victimAt(world, 5);
 
-        var def = new AbilityDefinition("test", "Test", "kinetic", "none", 0, ResourceCost.FREE,
+        var def = new AbilityDefinition("test", "Test", "kinetic", 0, ResourceCost.FREE,
                 new CastSpec.Volley(0, 3, 4, new CastSpec.Ray(10, "test_beam")),
                 List.of(new EffectSpec.Damage(10, "kinetic")));
         cast(world, caster, def);
@@ -423,7 +423,7 @@ class CastExecutorVolleyTest {
         var caster = casterIn(world);
         var origin = caster.position().add(new Vec3(0, EYE, 0));
 
-        var def = new AbilityDefinition("test", "Test", "kinetic", "none", 0, ResourceCost.FREE,
+        var def = new AbilityDefinition("test", "Test", "kinetic", 0, ResourceCost.FREE,
                 new CastSpec.Volley(0, 3, 4, new CastSpec.Ray(10, "test_beam")),
                 List.of(new EffectSpec.Damage(10, "kinetic")));
         cast(world, caster, def);

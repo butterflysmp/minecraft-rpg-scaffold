@@ -28,6 +28,7 @@ public final class StoneNotice {
     private static final String COOLDOWN_KEY = "__stone_cooldown_notice";
     private static final String MANA_KEY = "__stone_mana_notice";
     private static final String NO_LOADOUT_KEY = "__stone_no_loadout_notice";
+    private static final String EMPTY_SLOT_KEY = "__stone_empty_slot_notice";
 
     static final int THROTTLE_TICKS = 10;
 
@@ -54,6 +55,16 @@ public final class StoneNotice {
         if (!throttled(player, cooldowns, NO_LOADOUT_KEY)) return;
         player.sendActionBar(Component.text(
                 "Choose a class and an element first: /rpg class and /rpg element.", NamedTextColor.YELLOW));
+    }
+
+    /**
+     * The input's slot is empty: a SAVED loadout names an ability its pool no longer offers there
+     * ({@code LoadoutResolution}). Slice 2's dev command {@code /rpg build set} is how a slot is filled
+     * until the Build screen (slice 3).
+     */
+    public static void emptySlot(Player player, CooldownTracker cooldowns) {
+        if (!throttled(player, cooldowns, EMPTY_SLOT_KEY)) return;
+        player.sendActionBar(Component.text("Nothing is equipped in that slot.", NamedTextColor.GRAY));
     }
 
     private static boolean throttled(Player player, CooldownTracker cooldowns, String key) {

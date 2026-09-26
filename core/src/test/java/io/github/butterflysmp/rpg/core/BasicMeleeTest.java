@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BasicMeleeTest {
 
     private static AbilityDefinition trigger(CastSpec cast, List<EffectSpec> onHit) {
-        return new AbilityDefinition("t", "T", "kinetic", "none", 10, ResourceCost.FREE, cast, onHit);
+        return new AbilityDefinition("t", "T", "kinetic", 10, ResourceCost.FREE, cast, onHit);
     }
 
     private static final CastSpec.Melee MELEE = new CastSpec.Melee(3.5, 120);

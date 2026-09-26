@@ -13,7 +13,7 @@ import java.util.Locale;
  *
  * <h2>The class gate reads the PROFILE class (ruling A1), compared EXACTLY</h2>
  *
- * {@code /rpg class} accepts only a kit's class token and compares it case-sensitively
+ * {@code /rpg class} accepts only a pool's class token and compares it case-sensitively
  * ({@code RpgCommand.chooseClass}); nothing lowercases a profile's class. So this compares against
  * the same lowercase token, exactly -- a looser comparison here would let the two disagree about what
  * "ranger" means. A null class (a profile file missing the key survives load, see
@@ -46,7 +46,7 @@ public final class AccessorySlots {
         return requireSlot(slot) == CLASS_SLOT ? AccessorySlotKind.CLASS : AccessorySlotKind.UNIVERSAL;
     }
 
-    /** The profile token for a class: {@code ranger}, as a kit authors it. */
+    /** The profile token for a class: {@code ranger}, as a pool file authors it. */
     public static String classToken(WeaponClass weaponClass) {
         return weaponClass.name().toLowerCase(Locale.ROOT);
     }

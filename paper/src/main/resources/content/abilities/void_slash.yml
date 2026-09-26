@@ -8,7 +8,6 @@
 id: void_slash
 display_name: "<dark_purple>Void Slash</dark_purple>"
 element: void
-archetype: hunter
 cooldown_ticks: 40
 
 cost:

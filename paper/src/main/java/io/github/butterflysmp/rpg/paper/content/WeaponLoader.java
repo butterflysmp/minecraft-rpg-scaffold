@@ -374,7 +374,6 @@ public final class WeaponLoader {
                     id + "/" + input,
                     abilityName,
                     element,
-                    "none",
                     t.getInt("cooldown_ticks", 0),
                     AbilitySchema.parseCost(t.getConfigurationSection("cost")),
                     AbilitySchema.parseCast(t.getConfigurationSection("cast")),

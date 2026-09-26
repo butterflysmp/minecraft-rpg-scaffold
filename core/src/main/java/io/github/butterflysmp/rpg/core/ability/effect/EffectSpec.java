@@ -36,7 +36,7 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
      * flows into the wielder's ATTACK_DAMAGE stat (a MAIN_HAND modifier), which is captured onto
      * {@code CombatantSnapshot} on the caster's own thread and projected into {@code Caster}, so the
      * swing and the tooltip share one source of truth and a projectile cannot read the store from the
-     * target's region. element carries identity exactly like {@link Damage}'s (flavour + kit gating),
+     * target's region. element carries identity exactly like {@link Damage}'s (flavour + cell identity),
      * never a multiplier.
      *
      * The caster's class-damage bonus is added to this at application, and to a literal {@link Damage}

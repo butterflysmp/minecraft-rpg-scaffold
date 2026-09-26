@@ -11,7 +11,6 @@
 id: rekindle
 display_name: "<gold>Rekindle</gold>"   # MiniMessage, not legacy color codes
 element: fire
-archetype: ranger
 cooldown_ticks: 200          # tune on the --refresh-content loop, not in Java
 
 cost:

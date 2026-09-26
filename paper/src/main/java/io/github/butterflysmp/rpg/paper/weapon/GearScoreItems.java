@@ -154,7 +154,7 @@ public final class GearScoreItems {
      * global.
      *
      * <p><b>The band is centred on the player's average AS IT IS NOW</b>, read one line above the
-     * roll -- so an item acquired second in a kit grant bands against an average the first item has
+     * roll -- so an item acquired second in one grant bands against an average the first item has
      * already moved. That is Ben's ruling read literally ("banded on the player's CURRENT AVERAGE")
      * and it is the reason this takes a live {@code Player} rather than a precomputed figure.
      */

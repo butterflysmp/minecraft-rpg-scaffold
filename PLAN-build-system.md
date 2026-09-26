@@ -69,6 +69,11 @@ Recorded verbatim from the brief.
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
 way.
 
+**And one given while building slice 2 (2026-09-25):** `/rpg class` and `/rpg element` are **KEPT**,
+weapon-free, until slice 3's Build screen deletes them. They write the cell and grant nothing. This
+**replaces** §1.2's "DELETE the command" verdicts and §3.2's `/rpg build cell` dev instrument, which was not
+built. See §3.2.1.
+
 The loadout, per player:
 
 - 1 Ultimate (a long cooldown);
@@ -172,8 +177,8 @@ and opening chat releases movement. `ability_stone.yml`'s own header says so. **
 - `ranger_fire.yml`: `hunters_bow` (equip), and the abilities `[arc_surge]`.
 - `mage_fire.yml`: `ember_staff` (equip), and the abilities `[solar_grenade, solar_lance, ember_step]`.
 
-**Both are DELETED.** `boltor.yml`'s comment already records the ruling (*"KITS ARE BEING REMOVED ...
-KitRegistry, KitLoader and their tests go with the kit files, and mage_fire.yml goes at the same time"*),
+**Both are DELETED.** `boltor.yml`'s comment recorded the ruling when this plan was written (*"KITS ARE BEING REMOVED ...
+KitRegistry, KitLoader and their tests go with the kit files, and mage_fire.yml goes at the same time"*; slice 2 rewrote that comment to the present state),
 and `NEXT.md`'s *PARKED SLICE — THE DEV-WEAPON AND `/kit` DELETIONS* names "the build system" as the
 trigger. **That trigger is now met.** The NEXT.md row is closed in slice 2's PR, with the sha.
 
@@ -1412,6 +1417,48 @@ The gate file is `GATE-build-stone.md`, and its rows and mutation results are th
 
 - **Deletes:** everything in §1.2 marked DELETE; both kit files; `archetype:` from every ability file; the
   duplicate-weapons defect (with its code). `NEXT.md`'s parked `/kit` item is closed.
+
+#### 3.2.1 AS BUILT — where slice 2 differs from the lines above, each with its reason
+
+The gate file is `GATE-build-storage.md`.
+
+1. **`/rpg class` and `/rpg element` are KEPT, weapon-free** (the clarification under RULINGS). They call
+   `ProfileService.setCell` and grant nothing, and `grantWeapons` is deleted. So the only dev instrument
+   is `/rpg build set <ultimate|active1|active2> <id>`, marked `// DEV: delete when GATE-build-screen.md
+   passes`. `/rpg class` now accepts the POOLS' classes, where it used to accept the kits'. BS1 changes
+   to read "no weapon granted", not "unknown command".
+2. **`BuildMigrationsTest` is folded into `FileBuildRepositoryTest`.** A newer schema is refused and an
+   unstamped file is stamped to 1, both through the real load path. A separate class would re-test the
+   same two lines without the Gson round trip.
+3. **`ContentValidator.validateKits` became `validatePools`**, and it keeps only the element check. The
+   kit check's ability and "grants nothing" halves are now REFUSALS in `PoolLoader` and
+   `PoolDefinition` (slice 1), not boot warnings.
+4. **`LoadoutResolution`'s rule for a saved loadout is per slot: the saved id if the pool still offers it
+   in that ROLE, else EMPTY.** It never falls back slot by slot to the default. A player who saved a
+   build gets their build, with a visible hole. **Its first test run found a real crash:** the pool's
+   `List.copyOf` lists throw on `contains(null)`, and a saved empty slot is null. The check is now
+   null-safe, and `savedEmptySlotsStayEmpty` (mutation S3) holds it.
+5. **An empty slot has its own action-bar line** (`StoneNotice.emptySlot`, a 4th stone throttle key;
+   `NoticeThrottleKeysTest` 11 -> 12).
+6. **An unusable build store casts the pool default, and the stone's lore says so** ("Build unavailable
+   -- casting the default."). A still-loading build also reads as nothing-saved, for the join-time
+   window only. The lore is re-rendered when the load settles.
+7. **Stale `run/.../content/kits/*.yml` are named once at boot and NEVER deleted**
+   (`RpgPlugin.warnRetiredKitFiles`). Nothing reads that directory now, so they are inert. A plugin
+   deleting an operator's files on boot is the worse surprise, and `--refresh-content` clears them on a
+   dev server.
+8. **`archetype:` is ignored with ONE warning per load naming every file**, and never refused. An old
+   deployed copy must not lose an ability over a key that means nothing now.
+9. **The "leave castable = unlockedAbilities" mutation is not runnable as written.** `RpgCommand.cast`
+   stopped reading `unlockedAbilities` in slice 1 (ruling 10). What slice 2 adds is that the field is
+   written EMPTY on every cell change (`withCell`), and mutation S4 guards that. BS6 reads the castable
+   set in play.
+10. **A harness defect, recorded because it is the "check that did not run" shape.** The first mutation
+    run had a stray line that APPLIED each mutation before the pristine copy was taken. So all seven
+    were left in the tree, the "pristine" copies were mutated, and no test ran. It was caught by
+    `APPLY FAILED` on every row. The code was committed (`72c02e2`), so the diff was read (exactly the
+    seven marker lines) and the files were restored from the commit. The harness line was removed and
+    the run repeated. All seven were then killed, each restored with `cmp` identical and zero markers.
 
 ### 3.3 SLICE 3 — THE BUILD SCREEN: CLASS, ELEMENT, ULTIMATE AND ACTIVES
 

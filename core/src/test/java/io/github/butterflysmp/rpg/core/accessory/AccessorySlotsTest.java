@@ -79,7 +79,7 @@ class AccessorySlotsTest {
     }
 
     @Test
-    void theClassTokenIsTheKitSpelling() {
+    void theClassTokenIsThePoolSpelling() {
         assertEquals(List.of("melee", "ranger", "mage"), Arrays.stream(
                 io.github.butterflysmp.rpg.core.weapon.WeaponClass.values())
                 .map(AccessorySlots::classToken).toList());

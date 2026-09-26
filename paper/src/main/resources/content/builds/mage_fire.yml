@@ -1,6 +1,6 @@
-# The Fire Mage's POOL (PLAN-build-system.md section 2.2). Replaces kits/mage_fire.yml in slice 2.
+# The Fire Mage's POOL (PLAN-build-system.md section 2.2). Replaced kits/mage_fire.yml, which slice 2 removed.
 #
-# The default loadout is a PLACEHOLDER (section 4), drawn from the three abilities the Mage kit granted.
+# The default loadout is a PLACEHOLDER (section 4), drawn from the three abilities the removed Mage kit granted.
 # solar_lance is also a Ranger Active; one ability in two pools is allowed, and its cooldown is shared
 # (keyed by ability id, section 2.6).
 

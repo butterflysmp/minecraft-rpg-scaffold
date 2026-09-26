@@ -61,7 +61,7 @@ class WeaponLoreTest {
     /** A rare (BLUE) fire (RED) weapon: the two colour axes disagree, which is the whole point. */
     private static WeaponDefinition rareFireSword() {
         AbilityDefinition slash = new AbilityDefinition(
-                "emberblade/left_click", "Ember Slash", "fire", "none",
+                "emberblade/left_click", "Ember Slash", "fire",
                 10, ResourceCost.FREE, new CastSpec.Melee(3.5, 120),
                 List.of(new EffectSpec.WeaponDamage("fire")), List.of("A cut that smoulders."));
         return new WeaponDefinition("emberblade", "Emberblade", "fire", Rarity.RARE,
@@ -72,11 +72,11 @@ class WeaponLoreTest {
     /** A costed special alongside the basic attack: a literal payload, so an ABILITY block. */
     private static WeaponDefinition swordWithFireball() {
         AbilityDefinition slash = new AbilityDefinition(
-                "emberblade/left_click", "Ember Slash", "fire", "none",
+                "emberblade/left_click", "Ember Slash", "fire",
                 10, ResourceCost.FREE, new CastSpec.Melee(3.5, 120),
                 List.of(new EffectSpec.WeaponDamage("fire")), List.of("A cut that smoulders."));
         AbilityDefinition fireball = new AbilityDefinition(
-                "emberblade/right_click", "Fireball", "fire", "none",
+                "emberblade/right_click", "Fireball", "fire",
                 60, new ResourceCost("mana", 40), new CastSpec.Projectile(1.6, 0.03, 100),
                 List.of(new EffectSpec.Burst(3.0, List.of(new EffectSpec.Damage(12, "fire")))),
                 List.of("Hurl a bursting ember."));
@@ -90,7 +90,7 @@ class WeaponLoreTest {
     /** A bow shape: one literal-damage trigger, no weapon_damage anywhere -- so NO stat block. */
     private static WeaponDefinition bowWithNoBasicAttack() {
         AbilityDefinition shot = new AbilityDefinition(
-                "hunters_bow/right_click", "Quick Shot", "fire", "none",
+                "hunters_bow/right_click", "Quick Shot", "fire",
                 15, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 60),
                 List.of(new EffectSpec.Damage(6, "fire")), List.of("A swift arrow."));
         return new WeaponDefinition("hunters_bow", "Hunter's Bow", "fire", Rarity.UNCOMMON,
@@ -142,7 +142,7 @@ class WeaponLoreTest {
     /** The bow: a RANGED basic attack on right-click, behind a leading visual. */
     private static WeaponDefinition huntersBow() {
         AbilityDefinition shot = new AbilityDefinition(
-                "hunters_bow/right_click", "Hunter's Bow", "fire", "none",
+                "hunters_bow/right_click", "Hunter's Bow", "fire",
                 15, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 60),
                 List.of(new EffectSpec.Visual("solar_detonation"), new EffectSpec.WeaponDamage("fire")),
                 List.of());
@@ -408,7 +408,7 @@ class WeaponLoreTest {
     /** A ranger weapon with a magazine: authored capacity 9, so the stamp has something to differ from. */
     private static WeaponDefinition quiverWeapon() {
         AbilityDefinition shot = new AbilityDefinition(
-                "quiver_stone/right_click", "Loose", "kinetic", "none",
+                "quiver_stone/right_click", "Loose", "kinetic",
                 11, ResourceCost.FREE, new CastSpec.Ray(23),
                 List.of(new EffectSpec.Damage(13.0, "kinetic")), List.of());
         return new WeaponDefinition("quiver_stone", "Quiver Stone", "kinetic", Rarity.EXOTIC,
@@ -666,7 +666,7 @@ class WeaponLoreTest {
      */
     private static WeaponDefinition spreadWeapon(CastSpec.Spread spread) {
         AbilityDefinition shot = new AbilityDefinition(
-                "dragons_breath/right_click", "Dragon's Breath", "kinetic", "none",
+                "dragons_breath/right_click", "Dragon's Breath", "kinetic",
                 32, ResourceCost.FREE,
                 new CastSpec.Projectile(2.5, 0.05, 120, null, null, null, "arrow", spread),
                 List.of(new EffectSpec.Damage(9, "kinetic")), List.of("A hexagon of arrows."));
@@ -693,7 +693,7 @@ class WeaponLoreTest {
      */
     private static WeaponDefinition volleyStone(boolean unscored) {
         AbilityDefinition scatter = new AbilityDefinition(
-                "volley_stone/right_click", "Scatter", "kinetic", "none",
+                "volley_stone/right_click", "Scatter", "kinetic",
                 20, ResourceCost.FREE,
                 new CastSpec.Volley(10, 3, 5, new CastSpec.Ray(32.0, "beam")),
                 List.of(new EffectSpec.Damage(4, "kinetic")), List.of("Three bolts."));

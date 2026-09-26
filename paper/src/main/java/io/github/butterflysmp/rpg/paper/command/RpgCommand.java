@@ -28,9 +28,11 @@ import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
-import io.github.butterflysmp.rpg.core.kit.KitDefinition;
-import io.github.butterflysmp.rpg.core.kit.KitRegistry;
-import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
+import io.github.butterflysmp.rpg.core.build.PoolDefinition;
+import io.github.butterflysmp.rpg.core.build.Loadout;
+import io.github.butterflysmp.rpg.paper.build.BuildService;
+import io.github.butterflysmp.rpg.storage.CellLoadout;
+import io.github.butterflysmp.rpg.storage.PlayerBuild;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
@@ -145,7 +147,6 @@ public final class RpgCommand {
     public static LiteralCommandNode<CommandSourceStack> build(AbilityRegistry registry,
                                                                AbilityService abilityService,
                                                                AdapterContext adapters,
-                                                               KitRegistry kits,
                                                                ElementRegistry elements,
                                                                ProfileService profiles,
                                                                WeaponRegistry weapons,
@@ -184,7 +185,7 @@ public final class RpgCommand {
                                         if (player.hasPermission(Permissions.DEV)) {
                                             registry.all().forEach(a -> builder.suggest(a.id()));
                                         } else {
-                                            adapters.stones().loadoutOf(profiles.profile(player.getUniqueId()))
+                                            adapters.stones().equippedFor(player.getUniqueId(), profiles.profile(player.getUniqueId()))
                                                     .ifPresent(loadout -> loadout.ids().forEach(builder::suggest));
                                         }
                                     }
@@ -203,7 +204,7 @@ public final class RpgCommand {
                         .requires(source -> source.getSender().hasPermission(Permissions.CLASS))
                         .then(Commands.argument("class", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
-                                    kits.classes().forEach(builder::suggest);
+                                    poolClasses(adapters).forEach(builder::suggest);
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {
@@ -213,7 +214,7 @@ public final class RpgCommand {
                                                 Component.text("Players only.", NamedTextColor.RED));
                                         return 0;
                                     }
-                                    return chooseClass(player, id, kits, profiles, weapons, adapters);
+                                    return chooseClass(player, id, profiles, adapters);
                                 })))
                 .then(Commands.literal("element")
                         .requires(source -> source.getSender().hasPermission(Permissions.CLASS))
@@ -229,8 +230,40 @@ public final class RpgCommand {
                                                 Component.text("Players only.", NamedTextColor.RED));
                                         return 0;
                                     }
-                                    return chooseElement(player, id, kits, elements, profiles, weapons, adapters);
+                                    return chooseElement(player, id, elements, profiles, adapters);
                                 })))
+                // DEV: delete when GATE-build-screen.md passes. The build system's slice-2 instrument
+                // (PLAN-build-system.md section 3.2): save one slot of the caller's CURRENT cell's loadout,
+                // so storage can be gated before the Build screen exists. The accessories dev-command
+                // precedent, deleted the same way once its screen's gate passed.
+                .then(Commands.literal("build")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .then(Commands.literal("set")
+                                .then(Commands.argument("slot", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            BUILD_SLOTS.forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .then(Commands.argument("ability", StringArgumentType.word())
+                                                .suggests((ctx, builder) -> {
+                                                    if (ctx.getSource().getExecutor() instanceof Player player) {
+                                                        String slot = StringArgumentType.getString(ctx, "slot");
+                                                        buildChoices(player, slot, profiles, adapters)
+                                                                .forEach(builder::suggest);
+                                                    }
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(ctx -> {
+                                                    if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+                                                        ctx.getSource().getSender().sendMessage(
+                                                                Component.text("Players only.", NamedTextColor.RED));
+                                                        return 0;
+                                                    }
+                                                    return buildSet(player,
+                                                            StringArgumentType.getString(ctx, "slot"),
+                                                            StringArgumentType.getString(ctx, "ability"),
+                                                            profiles, adapters);
+                                                })))))
                 // Dev tooling, not a game mechanic: refill the caller's mana so testing a costed
                 // trigger does not mean waiting out the regen between casts. NOT a fixed 60 seconds
                 // since Stats Slice 2 -- both the ceiling and the rate are per player now, so the
@@ -2008,14 +2041,14 @@ public final class RpgCommand {
 
         // Everyone else: the gate's input is THE LOADOUT of their cell (PLAN-build-system.md section
         // 2.5.1) -- the same castable set the Ability Stone uses. unlockedAbilities is no longer read
-        // (slice 2 retires it). If the profile is not loaded yet we cannot know the cell, so we refuse
+        // (retired in slice 2). If the profile is not loaded yet we cannot know the cell, so we refuse
         // rather than guess -- casting is not urgent enough to risk letting an unloaded player through.
         PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
         if (profile == null && !dev) {
             player.sendMessage(profileUnavailable(profiles, player));
             return 0;
         }
-        Set<String> castable = dev ? Set.of() : adapters.stones().loadoutOf(Optional.of(profile))
+        Set<String> castable = dev ? Set.of() : adapters.stones().equippedFor(player.getUniqueId(), Optional.of(profile))
                 .map(loadout -> Set.copyOf(loadout.ids()))
                 .orElse(Set.of());
 
@@ -2139,27 +2172,34 @@ public final class RpgCommand {
                 : Component.text(ProfileService.STILL_LOADING, NamedTextColor.GRAY);
     }
 
-    /** Set the class axis; the element is carried unchanged, and the kit is re-resolved. */
-    private static int chooseClass(Player player, String classId, KitRegistry kits,
-                                   ProfileService profiles, WeaponRegistry weapons, AdapterContext adapters) {
+    /**
+     * The classes a player may choose: every class that has a POOL (ruling 7 -- only cells with a pool
+     * file). Sorted, so the tab list and the refusal read the same order every time.
+     */
+    private static List<String> poolClasses(AdapterContext adapters) {
+        return adapters.stones().pools().all().stream()
+                .map(pool -> pool.cell().classId()).distinct().sorted().toList();
+    }
+
+    /** Set the class axis; the element is carried unchanged. */
+    private static int chooseClass(Player player, String classId, ProfileService profiles, AdapterContext adapters) {
         PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
         if (profile == null) {
             player.sendMessage(profileUnavailable(profiles, player));
             return 0;
         }
-        if (!kits.classes().contains(classId)) {
+        List<String> classes = poolClasses(adapters);
+        if (!classes.contains(classId)) {
             player.sendMessage(Component.text("Unknown class: " + classId, NamedTextColor.RED));
-            player.sendMessage(Component.text("Available: " + String.join(", ", kits.classes()),
-                    NamedTextColor.GRAY));
+            player.sendMessage(Component.text("Available: " + String.join(", ", classes), NamedTextColor.GRAY));
             return 0;
         }
-        return applyKit(player, classId, profile.elementId(), kits, profiles, weapons, adapters);
+        return applyCell(player, classId, profile.elementId(), profiles, adapters);
     }
 
-    /** Set the element axis; the class is carried unchanged, and the kit is re-resolved. */
-    private static int chooseElement(Player player, String elementId, KitRegistry kits,
-                                     ElementRegistry elements, ProfileService profiles,
-                                     WeaponRegistry weapons, AdapterContext adapters) {
+    /** Set the element axis; the class is carried unchanged. */
+    private static int chooseElement(Player player, String elementId, ElementRegistry elements,
+                                     ProfileService profiles, AdapterContext adapters) {
         PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
         if (profile == null) {
             player.sendMessage(profileUnavailable(profiles, player));
@@ -2172,31 +2212,29 @@ public final class RpgCommand {
             player.sendMessage(Component.text("Available: " + available, NamedTextColor.GRAY));
             return 0;
         }
-        return applyKit(player, profile.archetypeId(), elementId, kits, profiles, weapons, adapters);
+        return applyCell(player, profile.archetypeId(), elementId, profiles, adapters);
     }
 
     /**
-     * Set (class, element) together and grant what the pair resolves to -- FAIL CLOSED, with the
-     * precedence: half-selected -> "pick both"; both set but no authored kit -> "not available
-     * yet"; a real kit -> unlock its abilities and mint its weapons. Abilities are always
-     * re-derived from the new pair (empty when incomplete or unauthored), so a stale class's
-     * grants cannot outlive a class change -- and the gate refuses casting either way.
+     * Set (class, element) together. <b>NOTHING IS GRANTED</b> (ruling 6): the kit that used to mint
+     * weapons and unlock abilities here is gone, and what the player casts is their cell's loadout
+     * (PLAN-build-system.md section 2.6). The duplicate-weapons defect (PLAN-accessories 8.1, and its two
+     * wider routes in PLAN-build-system 1.2) went with {@code grantWeapons}; it was deleted, not fixed.
+     *
+     * <p>The replies keep their old precedence: half-selected -> "pick both"; both set but no pool ->
+     * "not available yet"; a pool -> "You are now ...". <b>These two commands are temporary</b>: slice 3's
+     * Build screen replaces and deletes them.
      */
-    private static int applyKit(Player player, String classId, String elementId, KitRegistry kits,
-                                ProfileService profiles, WeaponRegistry weapons, AdapterContext adapters) {
+    private static int applyCell(Player player, String classId, String elementId,
+                                 ProfileService profiles, AdapterContext adapters) {
         boolean complete = chosen(classId) && chosen(elementId);
-        KitDefinition kit = complete ? kits.find(classId, elementId).orElse(null) : null;
-        List<String> abilities = kit == null ? List.of() : kit.abilityIds();
-
-        boolean set = profiles.setKit(player.getUniqueId(), classId, elementId, abilities);
-        if (!set) {
+        if (!profiles.setCell(player.getUniqueId(), classId, elementId)) {
             player.sendMessage(profileUnavailable(profiles, player));
             return 0;
         }
         // The cell just changed, so the Ability Stone's loadout did too. Convergence keeps an existing
         // stone rather than re-minting it, so its lore must be re-rendered here or it keeps naming the
-        // old cell's abilities until the next join. (Slice 2 deletes this command; slice 3's Build screen
-        // is where the refresh moves.)
+        // old cell's abilities until the next join. (Slice 3's Build screen is where the refresh moves.)
         adapters.stones().refreshLore(player, profiles.profile(player.getUniqueId()));
 
         if (!complete) {
@@ -2205,68 +2243,97 @@ public final class RpgCommand {
                     NamedTextColor.YELLOW));
             return 1;
         }
-        if (kit == null) {
+        Optional<PoolDefinition> pool = adapters.stones().pools().find(classId, elementId);
+        if (pool.isEmpty()) {
             player.sendMessage(Component.text(
                     "The " + classId + " / " + elementId + " combination isn't available yet.",
                     NamedTextColor.YELLOW));
             return 1;
         }
-
-        grantWeapons(player, kit, weapons, adapters);
         player.sendMessage(Component.text("You are now ", NamedTextColor.AQUA)
-                .append(MiniMessage.miniMessage().deserialize(kit.displayName())));
-        if (!kit.abilityIds().isEmpty()) {
-            player.sendMessage(Component.text("Unlocked: " + String.join(", ", kit.abilityIds()),
-                    NamedTextColor.GRAY));
-        }
+                .append(MiniMessage.miniMessage().deserialize(pool.get().displayName())));
         return 1;
     }
 
-    /**
-     * Mint a kit's weapons. The equip weapon goes into a free hotbar slot and is selected, so a
-     * fresh player has it in hand and the class is playable at once; the rest go to inventory. A
-     * dangling weapon (already warned at boot) is skipped rather than crashing the grant. Never
-     * overwrites a held item -- a full hotbar falls back to inventory, and a full inventory says so.
-     */
-    private static void grantWeapons(Player player, KitDefinition kit, WeaponRegistry weapons,
-                                     AdapterContext adapters) {
-        List<String> given = new ArrayList<>();
-        for (WeaponGrant grant : kit.weapons()) {
-            WeaponDefinition weapon = weapons.find(grant.weaponId()).orElse(null);
-            if (weapon == null) continue; // validated at boot; skip a dangling grant
-            ItemStack item = WeaponItems.mint(weapon, adapters);
-            // Inside the loop: each kit weapon is its own instance and rolls its own candidates.
-            EnchantRollItems.rollOnAcquire(item, weapon, adapters);
-            // And its score, banded on the average as it stands at THIS iteration -- so the second
-            // weapon in a kit bands against an average the first has already moved. Ben ruled the band
-            // is on the CURRENT average; a kit grant is where that reading first has consequences.
-            GearScoreItems.stampOnAcquire(item, weapon, player, adapters);
+    // ------------------------------------------------------------------ /rpg build set (DEV)
 
-            int hotbar = grant.equip() ? firstEmptyHotbarSlot(player) : -1;
-            if (hotbar >= 0) {
-                player.getInventory().setItem(hotbar, item);
-                player.getInventory().setHeldItemSlot(hotbar);
-            } else if (player.getInventory().firstEmpty() >= 0) {
-                player.getInventory().addItem(item);
-            } else {
-                player.sendMessage(Component.text(
-                        "Inventory full -- couldn't give you " + weapon.id() + ".", NamedTextColor.YELLOW));
-                continue;
-            }
-            given.add(weapon.id());
-        }
-        if (!given.isEmpty()) {
-            player.sendMessage(Component.text("Given: " + String.join(", ", given), NamedTextColor.GRAY));
-        }
+    // DEV: delete when GATE-build-screen.md passes -- this constant and the two methods below go with the
+    // command node that uses them.
+    /** The slot tokens {@code /rpg build set} accepts: the Ultimate (Q), Active 1 (left), Active 2 (right). */
+    private static final List<String> BUILD_SLOTS = List.of("ultimate", "active1", "active2");
+
+    /** The ids a slot may hold: the pool's Ultimates for "ultimate", its Actives otherwise. Empty if no pool. */
+    private static List<String> buildChoices(Player player, String slot, ProfileService profiles,
+                                             AdapterContext adapters) {
+        return profiles.profile(player.getUniqueId())
+                .flatMap(p -> adapters.stones().pools().find(p.archetypeId(), p.elementId()))
+                .map(pool -> "ultimate".equals(slot) ? pool.ultimates() : pool.actives())
+                .orElse(List.of());
     }
 
-    /** The first empty hotbar slot (0-8), or -1 if the hotbar is full. */
-    private static int firstEmptyHotbarSlot(Player player) {
-        for (int slot = 0; slot <= 8; slot++) {
-            ItemStack existing = player.getInventory().getItem(slot);
-            if (existing == null || existing.getType().isAir()) return slot;
+    /**
+     * Save one slot of the caller's CURRENT cell's loadout. A cell with nothing saved yet is seeded from
+     * its pool's default first, so setting one slot never empties the other two. Setting an Active to the
+     * ability the OTHER Active holds SWAPS them -- the rule slice 3's Build screen will use -- rather than
+     * leaving a duplicate for {@code CellLoadout} to blank.
+     */
+    private static int buildSet(Player player, String slot, String abilityId, ProfileService profiles,
+                                AdapterContext adapters) {
+        PlayerProfile profile = profiles.profile(player.getUniqueId()).orElse(null);
+        if (profile == null) {
+            player.sendMessage(profileUnavailable(profiles, player));
+            return 0;
         }
-        return -1;
+        Optional<PoolDefinition> pool = adapters.stones().pools().find(profile.archetypeId(), profile.elementId());
+        if (pool.isEmpty()) {
+            player.sendMessage(Component.text("Your cell (" + profile.archetypeId() + " / " + profile.elementId()
+                    + ") has no pool, so it has no loadout to set.", NamedTextColor.RED));
+            return 0;
+        }
+        if (!BUILD_SLOTS.contains(slot)) {
+            player.sendMessage(Component.text("Unknown slot: " + slot + ". Use one of " + BUILD_SLOTS + ".",
+                    NamedTextColor.RED));
+            return 0;
+        }
+        List<String> choices = buildChoices(player, slot, profiles, adapters);
+        if (!choices.contains(abilityId)) {
+            player.sendMessage(Component.text(abilityId + " is not offered as " + slot + " by this pool. Choices: "
+                    + choices, NamedTextColor.RED));
+            return 0;
+        }
+        BuildService builds = adapters.stones().builds();
+        Optional<PlayerBuild> build = builds.build(player.getUniqueId());
+        if (build.isEmpty()) {
+            player.sendMessage(Component.text(builds.unusable(player.getUniqueId())
+                    ? "Your build is unavailable this session (see the server log); nothing can be saved."
+                    : "Your build is still loading -- try again in a moment.", NamedTextColor.RED));
+            return 0;
+        }
+        Loadout seed = pool.get().defaultLoadout();
+        CellLoadout current = build.get().loadout(profile.archetypeId(), profile.elementId())
+                .orElseGet(() -> new CellLoadout(profile.archetypeId(), profile.elementId(), seed.ultimate(),
+                        List.of(seed.active1(), seed.active2()), null, null));
+        CellLoadout next = switch (slot) {
+            case "ultimate" -> current.withUltimate(abilityId);
+            case "active1" -> abilityId.equals(current.actives().get(1))
+                    ? current.withActive(1, current.actives().get(0)).withActive(0, abilityId)
+                    : current.withActive(0, abilityId);
+            default -> abilityId.equals(current.actives().get(0))
+                    ? current.withActive(0, current.actives().get(1)).withActive(1, abilityId)
+                    : current.withActive(1, abilityId);
+        };
+        builds.save(player.getUniqueId(), next, ok -> adapters.scheduler().onEntity(player, () -> {
+            if (!player.isOnline()) return;
+            if (ok) {
+                adapters.stones().refreshLore(player, profiles.profile(player.getUniqueId()));
+                player.sendMessage(Component.text("Saved: " + slot + " = " + abilityId + " for "
+                        + profile.archetypeId() + " / " + profile.elementId() + ".", NamedTextColor.AQUA));
+            } else {
+                player.sendMessage(Component.text("The build could not be written; see the server log.",
+                        NamedTextColor.RED));
+            }
+        }));
+        return 1;
     }
 
     // ------------------------------------------------------------------ /rpg vault

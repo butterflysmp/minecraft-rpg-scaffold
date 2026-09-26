@@ -35,7 +35,7 @@ class WeaponQuiverDefinitionTest {
     private static final CastSpec.Projectile PROJECTILE = new CastSpec.Projectile(2.5, 0.05, 60);
 
     private static AbilityDefinition ability(String id) {
-        return new AbilityDefinition(id, "T", "kinetic", "none",
+        return new AbilityDefinition(id, "T", "kinetic",
                 0, ResourceCost.FREE, PROJECTILE, List.of(new EffectSpec.Damage(4.0, "kinetic")));
     }
 

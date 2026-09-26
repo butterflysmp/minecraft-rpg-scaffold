@@ -6,8 +6,9 @@ import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.kit.KitDefinition;
-import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
+import io.github.butterflysmp.rpg.core.build.CellKey;
+import io.github.butterflysmp.rpg.core.build.Loadout;
+import io.github.butterflysmp.rpg.core.build.PoolDefinition;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -35,8 +36,7 @@ class ContentValidatorTest {
 
     private static AbilityRegistry abilitiesWith(List<EffectSpec> onHit) {
         var registry = new AbilityRegistry();
-        registry.register(new AbilityDefinition("solar_grenade", "Solar Grenade", "fire",
-                "hunter", 200, new ResourceCost("mana", 40),
+        registry.register(new AbilityDefinition("solar_grenade", "Solar Grenade", "fire", 200, new ResourceCost("mana", 40),
                 new CastSpec.Projectile(1.2, 0.03, 100), onHit));
         return registry;
     }
@@ -185,8 +185,7 @@ class ContentValidatorTest {
     @Test
     void aDanglingOnCastVisualIsReportedAndNamedAsOnCast() {
         var registry = new AbilityRegistry();
-        registry.register(new AbilityDefinition("flint_bolt", "Fire Bolt", "fire",
-                "none", 24, new ResourceCost("mana", 5),
+        registry.register(new AbilityDefinition("flint_bolt", "Fire Bolt", "fire", 24, new ResourceCost("mana", 5),
                 new CastSpec.Projectile(1.4, 0.05, 40, "flint_trail"),
                 List.of(new EffectSpec.Visual("flint_impact")), List.of(),
                 List.of(new EffectSpec.Visual("no_such_cast_visual"))));
@@ -322,64 +321,30 @@ class ContentValidatorTest {
                 "every visual_id the staff names must resolve");
     }
 
-    // --- kit -> ability/weapon/element cross-reference, behind the Predicate<String> seams ---
+    // --- pool -> element cross-reference (replaced the kit check when kits were removed) ---
 
     private static ContentValidator bareValidator() {
         return new ContentValidator(visualsWith(), statusesWith(), elementsWith(REAL_ELEMENTS), ALL_EXIST, ALL_EXIST);
     }
 
-    private static final Predicate<String> ANY_ID = id -> true;
+    private static PoolDefinition pool(String classId, String elementId) {
+        return new PoolDefinition(new CellKey(classId, elementId), classId + " " + elementId,
+                List.of("ult"), List.of("act_a", "act_b"), new Loadout("ult", "act_a", "act_b"));
+    }
 
     @Test
-    void kitWhoseGrantsAllExistProducesNoProblems() {
-        var kit = new KitDefinition("ranger", "fire", "Fire Ranger",
-                List.of(new WeaponGrant("hunters_bow", true)), List.of("arc_surge"));
-
-        var problems = bareValidator().validateKits(List.of(kit), ANY_ID, ANY_ID);
-
+    void aPoolFiledUnderARealElementProducesNoProblems() {
+        var problems = bareValidator().validatePools(List.of(pool("ranger", "fire")));
         assertTrue(problems.isEmpty(), problems.toString());
     }
 
+    /** An unknown element on a pool warns, the same checkElement seam as a damage effect. */
     @Test
-    void kitNamingAnUnknownAbilityOrWeaponIsReported() {
-        var kit = new KitDefinition("ranger", "fire", "Fire Ranger",
-                List.of(new WeaponGrant("real_bow", true), new WeaponGrant("typo_bow", false)),
-                List.of("arc_surge", "typo_surge"));
-
-        var problems = bareValidator().validateKits(List.of(kit),
-                id -> id.equals("arc_surge"), id -> id.equals("real_bow"));
-
-        assertEquals(2, problems.size(), problems.toString());
-        assertTrue(problems.stream().anyMatch(p -> p.contains("typo_surge") && p.contains("ability")), problems.toString());
-        assertTrue(problems.stream().anyMatch(p -> p.contains("typo_bow") && p.contains("weapon")), problems.toString());
-    }
-
-    /** An unknown element on a kit warns, the same checkElement seam as a damage effect. */
-    @Test
-    void kitNamingAnUnknownElementIsReported() {
-        var kit = new KitDefinition("ranger", "plasma", "Plasma Ranger",
-                List.of(), List.of("arc_surge"));
-
-        var problems = bareValidator().validateKits(List.of(kit), ANY_ID, ANY_ID);
-
-        assertTrue(problems.stream().anyMatch(p -> p.contains("plasma") && p.contains("element")), problems.toString());
-    }
-
-    /**
-     * The case a per-id check passes and still gets wrong: every grant dangles, so there is
-     * no "remaining id" to complain about -- but the cell is unplayable. Report the empty
-     * resolved set on top of the per-id problems.
-     */
-    @Test
-    void kitWithNoExistingGrantIsReportedAsUnplayable() {
-        var ghost = new KitDefinition("ghost", "fire", "Ghost",
-                List.of(new WeaponGrant("gone_bow", true)), List.of("gone_a"));
-
-        var problems = bareValidator().validateKits(List.of(ghost), id -> false, id -> false);
-
-        // one dangling ability + one dangling weapon + one "nobody can play this cell"
-        assertEquals(3, problems.size(), problems.toString());
-        assertTrue(problems.stream().anyMatch(p -> p.contains("nobody can play")), problems.toString());
+    void aPoolNamingAnUnknownElementIsReported() {
+        var problems = bareValidator().validatePools(List.of(pool("ranger", "plasma")));
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("plasma") && problems.get(0).contains("element"), problems.toString());
+        assertTrue(problems.get(0).contains("pool 'ranger/plasma'"), "the warning names the pool: " + problems);
     }
 
     // --- element -> definition validation (element is inert identity; a bad one warns) ---
@@ -387,7 +352,7 @@ class ContentValidatorTest {
     @Test
     void danglingElementOnAnAbilityIsReported() {
         var abilities = new AbilityRegistry();
-        abilities.register(new AbilityDefinition("x", "X", "plasma", "none",
+        abilities.register(new AbilityDefinition("x", "X", "plasma",
                 0, ResourceCost.FREE, new CastSpec.Self(), List.of()));
 
         var problems = validator(visualsWith(), statusesWith()).validate(abilities);
@@ -473,7 +438,7 @@ class ContentValidatorTest {
     /** An ability whose Ray names {@code beam} as its beam visual. */
     private static AbilityRegistry rayNaming(String beam) {
         var registry = new AbilityRegistry();
-        registry.register(new AbilityDefinition("lapis", "Lapis", "kinetic", "none",
+        registry.register(new AbilityDefinition("lapis", "Lapis", "kinetic",
                 20, new ResourceCost("mana", 10), new CastSpec.Ray(26, beam), List.of()));
         return registry;
     }
@@ -548,7 +513,7 @@ class ContentValidatorTest {
         // Without this the rule would read as "a visual may not mix particles and sound", which is
         // not the rule and would be wrong -- flint_impact does exactly that.
         var asImpact = new AbilityRegistry();
-        asImpact.register(new AbilityDefinition("lapis", "Lapis", "kinetic", "none",
+        asImpact.register(new AbilityDefinition("lapis", "Lapis", "kinetic",
                 20, ResourceCost.FREE, new CastSpec.Ray(26),
                 List.of(new EffectSpec.Visual("lapis_beam"))));
         assertTrue(validator(withSound, statusesWith()).validate(asImpact).isEmpty(),
@@ -559,7 +524,7 @@ class ContentValidatorTest {
     @Test
     void aRayNamingNoBeamIsNotAProblem() {
         var registry = new AbilityRegistry();
-        registry.register(new AbilityDefinition("solar_lance", "Solar Lance", "fire", "hunter",
+        registry.register(new AbilityDefinition("solar_lance", "Solar Lance", "fire",
                 100, ResourceCost.FREE, new CastSpec.Ray(30), List.of()));
 
         assertTrue(validator(visualsWith(), statusesWith()).validate(registry).isEmpty(),
@@ -785,7 +750,7 @@ class ContentValidatorTest {
 
     private static AbilityRegistry volleyOfRays(String beam, int authoredCooldown) {
         var registry = new AbilityRegistry();
-        registry.register(new AbilityDefinition("burst", "Burst", "kinetic", "none",
+        registry.register(new AbilityDefinition("burst", "Burst", "kinetic",
                 authoredCooldown, new ResourceCost("mana", 10),
                 new CastSpec.Volley(12, 5, 3, new CastSpec.Ray(64, beam)), List.of()));
         return registry;

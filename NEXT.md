@@ -9970,7 +9970,7 @@ together:
 | slice | what goes | blocked on |
 |---|---|---|
 | **DEV WEAPON DELETION** | `hunters_bow`, `ironblade`, `quiver_stone` | **enough shipped weapons to replace them. NOT A DATE** — a condition on content that does not yet exist. **AND ONE READING IS OWED FIRST — see below.** |
-| **`/kit` DELETION** | 2 kit files, `KitLoader`, `KitRegistry`, their tests | **the build system.** Days, per the operator |
+| **`/kit` DELETION** | 2 kit files, `KitLoader`, `KitRegistry`, their tests | ~~the build system. Days, per the operator~~ **DONE 2026-09-25**, in the build system's slice 2 (branch `feat/build-storage`; `PLAN-build-system.md` section 3.2). `/rpg class` and `/rpg element` were KEPT, weapon-free, until slice 3 by the seat's choice |
 
 ### OWED BEFORE THE DEV WEAPONS GO: ONE READING, AND IT CANNOT BE TAKEN AFTERWARDS
 
@@ -10032,6 +10032,12 @@ what tells whoever meets that failure why re-taking the reading is not optional.
 > described as removing a dev affordance, but the Mage loses its starting kit at the same moment. It
 > is written here because it is the part of that slice **nobody asked for and nobody refused** — the
 > kind of consequence that gets discovered during the deletion rather than before it.
+>
+> **RULED 2026-09-25, AND IT WAS NOT DISCOVERED DURING THE DELETION:** Ben's ruling 6 in
+> `PLAN-build-system.md` -- *"The kit system is removed. Being given weapons when selecting a class or
+> element is not part of the vision."* Both kit files went together in the build system's slice 2, and the
+> Mage losing its starting weapons is the ruled outcome. `/rpg give` is the weapon source meanwhile
+> (ruling 8: a known gap, not a defect).
 
 ### THE LOOP IN THE PLAN, AND THE PROPHYLACTIC IS FREE
 

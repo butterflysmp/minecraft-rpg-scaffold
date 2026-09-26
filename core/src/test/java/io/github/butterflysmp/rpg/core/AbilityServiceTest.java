@@ -23,7 +23,7 @@ class AbilityServiceTest {
 
     private static AbilityDefinition solarGrenade() {
         return new AbilityDefinition(
-                "solar_grenade", "Solar Grenade", "fire", "hunter",
+                "solar_grenade", "Solar Grenade", "fire",
                 200, new ResourceCost("mana", 40),
                 new CastSpec.Projectile(1.2, 0.03, 100),
                 List.of(
@@ -108,7 +108,7 @@ class AbilityServiceTest {
         world.entities.add(bystander);
 
         var grenade = new AbilityDefinition(
-                "solar_grenade", "Solar Grenade", "fire", "hunter",
+                "solar_grenade", "Solar Grenade", "fire",
                 200, new ResourceCost("mana", 40),
                 new CastSpec.Projectile(1.2, 0.03, 100),
                 List.of(
@@ -340,7 +340,7 @@ class AbilityServiceTest {
      */
     private static AbilityDefinition basicAttack() {
         return new AbilityDefinition(
-                "hunters_bow/right_click", "Hunter's Bow", "kinetic", "none",
+                "hunters_bow/right_click", "Hunter's Bow", "kinetic",
                 15, ResourceCost.FREE, new CastSpec.Projectile(2.5, 0.05, 60),
                 List.of(new EffectSpec.WeaponDamage("kinetic")));
     }
@@ -348,7 +348,7 @@ class AbilityServiceTest {
     /** A literal-damage trigger: the ability shape, 60 ticks -- emberblade's fireball. */
     private static AbilityDefinition costedAbility() {
         return new AbilityDefinition(
-                "emberblade/right_click", "Fireball", "fire", "none",
+                "emberblade/right_click", "Fireball", "fire",
                 60, ResourceCost.FREE, new CastSpec.Projectile(1.6, 0.03, 100),
                 List.of(new EffectSpec.Damage(12, "fire")));
     }
@@ -416,7 +416,7 @@ class AbilityServiceTest {
     /** A volley ability authoring the cooldown it is given, so the floor's effect is isolated. */
     private static AbilityDefinition volleyAbility(int authoredCooldown, int windup, int shots,
                                                    int interval) {
-        return new AbilityDefinition("burst", "Burst", "kinetic", "none",
+        return new AbilityDefinition("burst", "Burst", "kinetic",
                 authoredCooldown, ResourceCost.FREE,
                 new CastSpec.Volley(windup, shots, interval, new CastSpec.Ray(30)),
                 List.of(new EffectSpec.Damage(10, "kinetic")));
@@ -503,7 +503,7 @@ class AbilityServiceTest {
     @Test
     void aNONVolleyCastIsUNTOUCHEDByTheFloor() {
         var tick = new AtomicLong(0);
-        var def = new AbilityDefinition("bolt", "Bolt", "kinetic", "none",
+        var def = new AbilityDefinition("bolt", "Bolt", "kinetic",
                 5, ResourceCost.FREE, new CastSpec.Ray(30),
                 List.of(new EffectSpec.Damage(10, "kinetic")));
         var service = serviceWith(def, tick::get);

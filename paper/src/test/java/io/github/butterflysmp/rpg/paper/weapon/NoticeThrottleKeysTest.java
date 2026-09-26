@@ -85,7 +85,7 @@ class NoticeThrottleKeysTest {
      * DISTINCT. Editing both in one go would have produced the same green suite whether the scan
      * had found the key or not.</blockquote>
      */
-    private static final int KEYS_TODAY = 11;   // 8, plus StoneNotice's three (the Ability Stone slice)
+    private static final int KEYS_TODAY = 12;   // 8, plus StoneNotice's three (the Ability Stone slice), plus its empty-slot line (slice 2)
 
     @Test
     void everyThrottleKeyInTheProjectIsItsOwn() {

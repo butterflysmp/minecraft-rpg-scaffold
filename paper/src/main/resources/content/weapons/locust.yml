@@ -259,8 +259,8 @@ triggers:
 # finds, and its javadoc already names the already-hit-id set that pierce WOULD require. That set
 # stays unwritten, so damage is priced PER TARGET and 26 is what one body takes.
 #
-# NO RECIPE AND NO KIT. Reachable only through /rpg give and its rpg.command.give permission. Kits are
-# being removed (operator, 2026-09-12), so "no kit" is the normal state rather than a gap -- what is
+# NO RECIPE AND NO KIT. Reachable only through /rpg give and its rpg.command.give permission. Kits were
+# removed (ruled 2026-09-12, done in the build system's slice 2), so "no kit" is the normal state rather than a gap -- what is
 # owed to the content pass is A RECIPE, and only a recipe.
 #
 # NO DUAL-WIELD, AND THAT IS THE POINT OF THE WEAPON RATHER THAN AN OMISSION. WeaponFire reads

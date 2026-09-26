@@ -218,7 +218,7 @@ final class InventoryCraft {
      * rather than inspecting it would never have noticed.
      *
      * <p><b>The roll happens HERE, and only here.</b> Crafting is an acquisition path, so it rolls
-     * exactly as {@code /rpg give} and the kit grant do -- see
+     * exactly as {@code /rpg give} does (and the kit grant did, until kits were removed) -- see
      * {@link EnchantRollItems#rollOnAcquire}. The preview never enters this method, which is how it
      * mints without rolling: a structural guarantee rather than a rule someone has to remember.
      *

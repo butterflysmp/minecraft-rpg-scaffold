@@ -22,7 +22,7 @@ import java.util.logging.Logger;
  *
  * Every callback in here runs on the repository's I/O thread. NOTHING here may
  * touch the Bukkit API -- that is the same rule as the PacketEvents contract,
- * for the same reason. (setKit is the one method called FROM the command
+ * for the same reason. (setCell is the one method called FROM the command
  * thread instead; it still touches no Bukkit API, so the rule holds either way.)
  *
  * A player is keyed to the *future* of their profile, not the profile itself,
@@ -164,7 +164,7 @@ public final class ProfileService {
     /**
      * Why a read or write would be refused right now, without performing one.
      *
-     * <p>The three refusal arms are the same triple {@link #profile} and {@link #setKit} guard with;
+     * <p>The three refusal arms are the same triple {@link #profile} and {@link #setCell} guard with;
      * this returns WHICH rather than collapsing them.
      */
     public Availability availability(UUID playerId) {
@@ -180,7 +180,7 @@ public final class ProfileService {
      *
      * <h2>THE SECOND WRITER, AND IT IS THE FIRST ONE A MENU DRIVES</h2>
      *
-     * Modelled on {@link #setKit}, deliberately, down to the guard and the cache replacement: the
+     * Modelled on what is now {@link #setCell} (then {@code setKit}), deliberately, down to the guard and the cache replacement: the
      * cached future is swapped so the very next read -- which is {@code NexusSlots.lockedSlotOf},
      * a few lines later on the click -- sees the new slot rather than the old one.
      *
@@ -190,7 +190,7 @@ public final class ProfileService {
      *
      * <p>Touches no Bukkit API, per the class rule. <b>Re-placing the star is the caller's job</b>,
      * on the caller's thread, after this returns -- exactly as minting weapons is
-     * {@code applyKit}'s job after {@code setKit}.
+     * the command's job after {@code setCell} (it was {@code applyKit} minting weapons after {@code setKit}, before kits were removed).
      *
      * @return false if the profile is not loaded or could not be read. <b>The caller must say WHICH
      *         using {@link #availability}</b> -- "try again in a moment" is wrong for the
@@ -460,35 +460,18 @@ public final class ProfileService {
     }
 
     /**
-     * Pick a (class, element) cell: set both axes and the grant that the cell resolves to,
-     * then persist. Class, element, and abilities are set together because they are
-     * re-derived as one whenever either axis changes -- the caller passes the new pair and
-     * the abilities it resolves to (the kit's, or empty when half-selected or unauthored),
-     * so a stale class's abilities cannot outlive a class change.
+     * Pick a (class, element) cell and persist it. <b>Nothing is granted</b>: the kit's weapons and
+     * unlocked abilities are gone (PLAN-build-system.md section 2.1, ruling 6), and
+     * {@link PlayerProfile#withCell} writes the retired {@code unlockedAbilities} empty.
      *
      * Called on the command thread (not the I/O thread), so it reads the cached profile
-     * synchronously the way {@link #profile(UUID)} does. Touches no Bukkit API -- weapon
-     * minting is the command's job, on the command thread, after this returns.
+     * synchronously the way {@link #profile(UUID)} does. Touches no Bukkit API.
      *
      * @return false if the profile is not loaded yet or failed to load -- the caller
      *         should tell the player to try again rather than silently doing nothing.
      */
-    public boolean setKit(UUID playerId, String classId, String elementId, List<String> unlockedAbilities) {
-        CompletableFuture<PlayerProfile> loading = profiles.get(playerId);
-        if (loading == null || !loading.isDone() || loading.isCompletedExceptionally()) {
-            return false;
-        }
-        PlayerProfile current = loading.getNow(null);
-        if (current == null) return false;
-
-        PlayerProfile updated = current.withKit(classId, elementId, unlockedAbilities);
-        // Replace the cached future so the very next cast sees the new grant.
-        profiles.put(playerId, CompletableFuture.completedFuture(updated));
-        repository.save(updated).exceptionally(error -> {
-            log.log(Level.SEVERE, "Failed to persist kit change for " + playerId, error);
-            return null;
-        });
-        return true;
+    public boolean setCell(UUID playerId, String classId, String elementId) {
+        return update(playerId, current -> current.withCell(classId, elementId), "cell change");
     }
 
     public int trackedPlayers() {

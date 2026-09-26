@@ -20,14 +20,14 @@ class CastExecutorTest {
     private static final Aim FORWARD = new Aim(Vec3.ZERO, new Vec3(1, 0, 0));
 
     private static AbilityDefinition ability(CastSpec cast, EffectSpec... onHit) {
-        return new AbilityDefinition("test", "Test", "fire", "none",
+        return new AbilityDefinition("test", "Test", "fire",
                 0, ResourceCost.FREE, cast, List.of(onHit));
     }
 
     /** The same, plus a cast visual -- the on_cast hook, whose whole point is WHEN it fires. */
     private static AbilityDefinition withCastVisual(CastSpec cast, String castVisual,
                                                     EffectSpec... onHit) {
-        return new AbilityDefinition("test", "Test", "fire", "none",
+        return new AbilityDefinition("test", "Test", "fire",
                 0, ResourceCost.FREE, cast, List.of(onHit), List.of(),
                 List.of(new EffectSpec.Visual(castVisual)));
     }
