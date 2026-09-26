@@ -622,7 +622,7 @@ public final class RpgPlugin extends JavaPlugin {
         // banned-patterns table names; a second node inside this one is not.
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(
-                    RpgCommand.build(abilities, abilityService, adapters, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults),
+                    RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults),
                     "RPG commands");
             // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the
             // ONLY route to it once a player turns the Nexus star off, which is why it ships in

@@ -13,8 +13,8 @@ import java.util.Locale;
  *
  * <h2>The class gate reads the PROFILE class (ruling A1), compared EXACTLY</h2>
  *
- * {@code /rpg class} accepts only a pool's class token and compares it case-sensitively
- * ({@code RpgCommand.chooseClass}); nothing lowercases a profile's class. So this compares against
+ * The Build screen offers only a pool's class token and writes it unchanged
+ * ({@code BuildRules.classes}); nothing lowercases a profile's class. So this compares against
  * the same lowercase token, exactly -- a looser comparison here would let the two disagree about what
  * "ranger" means. A null class (a profile file missing the key survives load, see
  * {@code PlayerProfile}'s compact constructor) and {@code "none"} both mean no class.

@@ -147,6 +147,13 @@ final class NexusMenuLayout {
     static final int EQUIPMENT_SLOT = 22;
 
     /**
+     * The Build screen (PLAN-build-system.md section 3.3): row 3, "other features", <b>directly left of
+     * {@link #EQUIPMENT_SLOT}</b> -- the build system's ruled position. Class, element and loadout sit
+     * beside what you wear. Ungated like Equipment (ruling 16).
+     */
+    static final int BUILD_SLOT = 21;
+
+    /**
      * The vault. <b>Row 4, column 2 -- and it is 29, which the row above says was reserved for it.</b>
      *
      * <h2>THE ROW IS FIVE OF FIVE, AND THE GAP THIS JAVADOC WARNED ABOUT IS CLOSED</h2>
@@ -216,7 +223,7 @@ final class NexusMenuLayout {
     static final Set<Integer> PAINTED_SLOTS = Set.of(
             CLOSE_SLOT, SETTINGS_SLOT, STATS_SLOT,
             VAULT_SLOT, ANVIL_SLOT, CRAFTING_SLOT, ENCHANT_SLOT, GRINDSTONE_SLOT,
-            EQUIPMENT_SLOT);
+            EQUIPMENT_SLOT, BUILD_SLOT);
 
     /**
      * *** THE SUBTRACTION READS {@link #PAINTED_SLOTS}. IT USED TO RESTATE IT BY HAND. ***

@@ -68,7 +68,7 @@ class AccessorySlotsTest {
         // The class slot, with a class.
         assertEquals(OK, AccessorySlots.canEquip(0, quiver, "ranger"));
         assertEquals(WRONG_CLASS, AccessorySlots.canEquip(0, quiver, "mage"));
-        assertEquals(WRONG_CLASS, AccessorySlots.canEquip(0, quiver, "Ranger"), "case-sensitive, as /rpg class is");
+        assertEquals(WRONG_CLASS, AccessorySlots.canEquip(0, quiver, "Ranger"), "case-sensitive, as the Build screen's class token is");
         assertEquals(WRONG_SLOT_KIND, AccessorySlots.canEquip(0, ward, "ranger"));
         // The universal slots.
         for (int slot = 1; slot < 4; slot++) {
