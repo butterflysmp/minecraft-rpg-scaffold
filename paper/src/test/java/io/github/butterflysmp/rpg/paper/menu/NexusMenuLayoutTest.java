@@ -39,6 +39,10 @@ class NexusMenuLayoutTest {
         assertEquals(22, NexusMenuLayout.EQUIPMENT_SLOT,
                 "the Equipment screen is row 3, column 5 -- the \"other features\" band, centred "
                         + "under the stats head (accessories Slice B)");
+        assertEquals(21, NexusMenuLayout.BUILD_SLOT,
+                "the Build screen is row 3, column 4 -- directly left of Equipment (PLAN-build-system 3.3)");
+        assertEquals(NexusMenuLayout.EQUIPMENT_SLOT - 1, NexusMenuLayout.BUILD_SLOT,
+                "Build sits IMMEDIATELY left of Equipment, in the same row");
         assertEquals(13, NexusMenuLayout.STATS_SLOT,
                 "the stats head is slot 13 -- the CENTRE of row 2 (slots 9-17), Ben's ruling. It "
                         + "was 20 under a withdrawn rule that made it the start of a left-to-right "
@@ -241,8 +245,8 @@ class NexusMenuLayoutTest {
         //
         // The count and the noun move together or this comment lies, which is why the message says
         // neither. See the partition row for the paint list's own size.
-        assertEquals(NexusMenuLayout.SIZE - 9, NexusMenuLayout.FILLER_SLOTS.size(),
-                "every slot except the two buttons, the head, the stations and Equipment is filler");
+        assertEquals(NexusMenuLayout.SIZE - 10, NexusMenuLayout.FILLER_SLOTS.size(),
+                "every slot except the two buttons, the head, the stations, Equipment and Build is filler");
         for (int slot = 0; slot < NexusMenuLayout.SIZE; slot++) {
             boolean isButton = slot == NexusMenuLayout.CLOSE_SLOT
                     || slot == NexusMenuLayout.SETTINGS_SLOT
@@ -252,7 +256,8 @@ class NexusMenuLayoutTest {
                     || slot == NexusMenuLayout.CRAFTING_SLOT
                     || slot == NexusMenuLayout.ENCHANT_SLOT
                     || slot == NexusMenuLayout.GRINDSTONE_SLOT
-                    || slot == NexusMenuLayout.EQUIPMENT_SLOT;
+                    || slot == NexusMenuLayout.EQUIPMENT_SLOT
+                    || slot == NexusMenuLayout.BUILD_SLOT;
             assertEquals(!isButton, NexusMenuLayout.FILLER_SLOTS.contains(slot),
                     "slot " + slot + " filler membership");
         }
@@ -294,9 +299,9 @@ class NexusMenuLayoutTest {
 
         // AND THE PAINT LIST IS NOT EMPTY, without which the partition is satisfied by "everything
         // is filler" -- the blank-screen reading the cardinality row above also guards against.
-        assertEquals(9, NexusMenuLayout.PAINTED_SLOTS.size(),
+        assertEquals(10, NexusMenuLayout.PAINTED_SLOTS.size(),
                 "Close, Settings, the head, the five stations -- vault, anvil, crafting, "
-                        + "enchanting, grindstone -- and Equipment");
+                        + "enchanting, grindstone -- Equipment and Build");
         // Mutation: drop GRINDSTONE_SLOT from PAINTED_SLOTS -> slot 33 is neither -> reddens.
         // THAT MUTATION IS THE SHIPPED DEFECT, and nothing in this file reddened on it before.
     }

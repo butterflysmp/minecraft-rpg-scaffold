@@ -304,6 +304,14 @@ public final class NexusMenu extends Menu {
                                     recipes, shields, armor, tools, vaults)).open());
             return;
         }
+        if (click.slot() == NexusMenuLayout.BUILD_SLOT) {
+            // Hop a tick, no explicit close: neither the hub nor the Build screen holds input slots.
+            adapters.scheduler().onEntity(viewer, () ->
+                    new BuildMenu(viewer, adapters, profiles,
+                            () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
+                                    recipes, shields, armor, tools, vaults)).open());
+            return;
+        }
         // Every filler pane is inert, and the stats head's click is still unbuilt -- slice 3's
         // decision, unchanged. Falling through rather than branching on STATS_SLOT deliberately: a
         // no-op branch would read as a wired button whose body someone forgot to write.
@@ -401,6 +409,12 @@ public final class NexusMenu extends Menu {
                 Material.ARMOR_STAND,
                 MenuIcons.line("Equipment", NamedTextColor.GRAY),
                 List.of(MenuIcons.line("Your armour and accessories.", NamedTextColor.DARK_GRAY))));
+
+        // THE BUILD SCREEN, row 3, directly left of Equipment. Ungated, like Equipment (ruling 16).
+        getInventory().setItem(NexusMenuLayout.BUILD_SLOT, MenuIcons.icon(
+                Material.LECTERN,
+                MenuIcons.line("Build", NamedTextColor.GRAY),
+                List.of(MenuIcons.line("Your class, element and abilities.", NamedTextColor.DARK_GRAY))));
 
         // icon(), NOT placeholder() -- THE OTHER HALF OF THE PAIR THE TORCH ABOVE IS ONE OF, and
         // the class javadoc carries the argument. The lore below is REAL and WORKING; only the

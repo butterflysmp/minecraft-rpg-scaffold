@@ -72,8 +72,10 @@ class ShiftInHookTest {
         assertTrue(names.contains("AnvilMenu"), "control: the scan found a known subclass -- " + names);
         assertEquals(Set.of("AnvilMenu", "CraftingMenu", "EnchantMenu", "GrindstoneMenu", "NexusMenu",
                         "NexusSlotPickerMenu", "SettingsMenu", "RecipeBrowserMenu", "NexusVaultMenu",
-                        "EquipmentMenu"), names,
-                "the nine existing menus plus the Equipment screen -- a new menu must be added here with its verdict");
+                        "EquipmentMenu", "BuildMenu", "BuildPickerMenu"), names,
+                "the nine existing menus, the Equipment screen, and the Build screen and its picker (which keep"
+                        + " the default: they hold nothing, so a shift-in moves nothing) -- a new menu must be"
+                        + " added here with its verdict");
 
         for (Class<?> m : menus) {
             boolean expected = m == EquipmentMenu.class;

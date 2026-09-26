@@ -48,19 +48,19 @@ public final class StoneNotice {
     }
 
     /**
-     * No loadout: class or element is {@code none}, or the cell has no pool. Slice 1 names the commands,
-     * because the Build screen that replaces them is slice 3.
+     * No loadout: class or element is {@code none}, or the cell has no pool. It points at the Build screen,
+     * the only place a class and an element are chosen (slice 3).
      */
     public static void noLoadout(Player player, CooldownTracker cooldowns) {
         if (!throttled(player, cooldowns, NO_LOADOUT_KEY)) return;
         player.sendActionBar(Component.text(
-                "Choose a class and an element first: /rpg class and /rpg element.", NamedTextColor.YELLOW));
+                "Choose a class and an element first: open the Nexus, then Build.", NamedTextColor.YELLOW));
     }
 
     /**
      * The input's slot is empty: a SAVED loadout names an ability its pool no longer offers there
-     * ({@code LoadoutResolution}). Slice 2's dev command {@code /rpg build set} is how a slot is filled
-     * until the Build screen (slice 3).
+     * ({@code LoadoutResolution}). The Build screen is where a slot is filled
+     * (slice 3).
      */
     public static void emptySlot(Player player, CooldownTracker cooldowns) {
         if (!throttled(player, cooldowns, EMPTY_SLOT_KEY)) return;
