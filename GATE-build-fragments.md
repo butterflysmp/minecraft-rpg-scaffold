@@ -1,8 +1,17 @@
 # GATE — the build system, Slice 4: fragments (and ruling 20's arc_surge deletion)
 
-**Status: NOT RUN.** Every prediction below was written **before** any boot. **NO BOOT until the seat has
-diffed the PR from origin.** Readings go **beside** a prediction, never over it, and a prediction is not
-edited once its row has been read. Readings are verdicts, not figures, unless the row asks for a figure.
+**Status: READ at `4308622`, 2026-09-26. R0a, R0b and R0c PASS. EVERY BF ROW: reported good or skipped
+-- not itemised by Ben.** Ben ran the rows he intended to and reports them good; he did not say which, so no
+BF row is recorded as PASS on his report, and none is inferred from the server log.
+
+**AND THEREFORE THE CARRY-FORWARD IS NOT CLOSED BY AN ITEMISED READING.** BF1 -- a build file read ON DISK
+-- is among the unitemised rows. What IS on record is a fact about the folder, not a reading: before this
+boot, `builds\<uuid>.json` already held a ranger/fire entry written at 01:08 in the slice 3 session (see
+BF1's cell).
+
+The boot followed the seat's verification of `953a864` from origin; `4308622` is ruling 22 on top of it.
+Every prediction below was written **before** any boot. Readings go **beside** a prediction, never over
+it, and a prediction is not edited once its row has been read. Readings are verdicts, not figures, unless the row asks for a figure.
 
 **CARRIED FORWARD, AND IT IS ROW BF1:** slice 3's BB10 was never read, and slice 2 left `builds\` empty.
 Nothing has yet read a build file on disk. BF1 reads one.
@@ -37,13 +46,13 @@ max health, **Focus** +10 max mana, **Keen** +2% crit chance, **Mending** +0.05/
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <tip>` naming the PR's tip SHA -- not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | _(not run)_ |
+| `[Rpg] Build: <tip>` naming the PR's tip SHA -- not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **PASS** *(4308622, the `--refresh-content` boot, 05:50)*: `[Rpg] Build: 4308622` -- the tip, not `-dirty` |
 
 ### R0b — the jar carries the fragments, and NOT arc_surge
 
 | prediction | instrument | READING |
 |---|---|---|
-| `FragmentLoader`, core `StatSourceBound`, core `FragmentContributions`, `FragmentSheet` and `content/fragments/fragment_vigor.yml` PRESENT; `content/abilities/arc_surge.yml` ABSENT (ruling 20); `content/visuals/arc_surge.yml` and `content/statuses/surge.yml` ABSENT (ruling 22); the control ABSENT | the scan below | _(not run)_ |
+| `FragmentLoader`, core `StatSourceBound`, core `FragmentContributions`, `FragmentSheet` and `content/fragments/fragment_vigor.yml` PRESENT; `content/abilities/arc_surge.yml` ABSENT (ruling 20); `content/visuals/arc_surge.yml` and `content/statuses/surge.yml` ABSENT (ruling 22); the control ABSENT | the scan below | **PASS** *(same boot)*: PRESENT FragmentLoader, StatSourceBound, FragmentContributions, FragmentSheet and `content/fragments/fragment_vigor.yml`; ABSENT `content/abilities/arc_surge.yml`, `content/visuals/arc_surge.yml`, `content/statuses/surge.yml` and the control. No stale copy of any of the three in the data folder |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -70,7 +79,7 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| the `Loaded ...` line reads **`7 abilities, 27 visuals, 4 statuses`** (8, 28 and 5 before rulings 20 and 22), **`2 pools, 5 fragments`** and **`6 accessories`** -- every shipped accessory loads, `fletchers_quiver` and `sages_scroll` included (ruling 21 kept their drawbacks legal). **No** line says `Skipping fragment`, `Skipping pool` or `name DELETED` -- the retired-file warning of the ability, visual or status loader (`--refresh-content` removed the stale copies) | `Select-String run\logs\latest.log -Pattern 'Loaded ','Skipping','DELETED'` | _(not run)_ |
+| the `Loaded ...` line reads **`7 abilities, 27 visuals, 4 statuses`** (8, 28 and 5 before rulings 20 and 22), **`2 pools, 5 fragments`** and **`6 accessories`** -- every shipped accessory loads, `fletchers_quiver` and `sages_scroll` included (ruling 21 kept their drawbacks legal). **No** line says `Skipping fragment`, `Skipping pool` or `name DELETED` -- the retired-file warning of the ability, visual or status loader (`--refresh-content` removed the stale copies) | `Select-String run\logs\latest.log -Pattern 'Loaded ','Skipping','DELETED'` | **PASS** *(same boot)*: `Loaded 7 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 2 pools, 5 fragments, 13 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`; 0 lines with `Skipping` or `DELETED`; 0 SEVERE or ERROR |
 
 ---
 
@@ -83,43 +92,43 @@ has ever had.
 
 | prediction | READING |
 |---|---|
-| as the Fire Ranger with nothing saved, Build, **Fragment 1**, choose **Vigor**: chat reads *Saved: Fragment 1 = Vigor*. **Within a second**, open `builds\<uuid>.json`: it exists and holds a `"classId": "ranger", "elementId": "fire"` entry with `"fragments": ["fragment_vigor", null, null, null]`, and -- because the save seeds them (§3.4.1) -- `"ultimate": "ultimate_placeholder_ranger"` and `"actives": ["rekindle", "solar_lance"]`. `/stop`, start **without** `--refresh-content`, read the file again: **the same content**. Rejoin: Fragment 1 still shows Vigor | _(not run)_ |
+| as the Fire Ranger with nothing saved, Build, **Fragment 1**, choose **Vigor**: chat reads *Saved: Fragment 1 = Vigor*. **Within a second**, open `builds\<uuid>.json`: it exists and holds a `"classId": "ranger", "elementId": "fire"` entry with `"fragments": ["fragment_vigor", null, null, null]`, and -- because the save seeds them (§3.4.1) -- `"ultimate": "ultimate_placeholder_ranger"` and `"actives": ["rekindle", "solar_lance"]`. `/stop`, start **without** `--refresh-content`, read the file again: **the same content**. Rejoin: Fragment 1 still shows Vigor | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred. **PRECONDITION, recorded before the reading:** the ranger/fire entry already EXISTED in the build file, written 01:08 in the slice 3 session (default abilities, no fragments) -- so this row updated an existing entry rather than creating one; the predicted file content is the same either way |
 
 ### BF2 — a slotted fragment moves its stat within a quarter-second, and the sheet names it
 
 | prediction | READING |
 |---|---|
-| note your max health in `/rpg stats`. Slot **Vigor** (if BF1 did not): max health is **4 higher** on the next `/rpg stats` (the reconcile runs every 5 ticks). The sheet's last block reads **Fragments** then *Vigor: +4 Max Health*. The Nexus stats head's lore ends with the same block | _(not run)_ |
+| note your max health in `/rpg stats`. Slot **Vigor** (if BF1 did not): max health is **4 higher** on the next `/rpg stats` (the reconcile runs every 5 ticks). The sheet's last block reads **Fragments** then *Vigor: +4 Max Health*. The Nexus stats head's lore ends with the same block | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF3 — an accessory and a fragment on the same stat BOTH count (one reconcile, three sources)
 
 | prediction | READING |
 |---|---|
-| wear **Keen Charm** (+5% crit chance) in a universal accessory slot, and slot the **Keen** fragment (+2%). `/rpg stats` crit chance reads **22%** -- base 15 + 5 + 2 -- and stays 22% over several readings a few seconds apart (a second reconcile would flicker one source away every pass). Take the charm off: **17%**. Put it back, empty the fragment: **20%** | _(not run)_ |
+| wear **Keen Charm** (+5% crit chance) in a universal accessory slot, and slot the **Keen** fragment (+2%). `/rpg stats` crit chance reads **22%** -- base 15 + 5 + 2 -- and stays 22% over several readings a few seconds apart (a second reconcile would flicker one source away every pass). Take the charm off: **17%**. Put it back, empty the fragment: **20%** | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF4 — one of each: a slotted fragment is not offered again, and a hand-edited duplicate counts once
 
 | prediction | READING |
 |---|---|
-| with **Vigor** in Fragment 1, open **Fragment 2**: Vigor is **not** offered (Focus, Keen, Mending, Ward are). `/stop`, edit the build file so the ranger/fire `"fragments"` read `["fragment_vigor", "fragment_vigor", null, null]`, start and join: `/rpg stats` shows *Vigor: +4 Max Health* **once**, and max health is +4, **not +8**. **No log line** names the duplicate -- the plan asked for one and it is not built (§3.4.1) | _(not run)_ |
+| with **Vigor** in Fragment 1, open **Fragment 2**: Vigor is **not** offered (Focus, Keen, Mending, Ward are). `/stop`, edit the build file so the ranger/fire `"fragments"` read `["fragment_vigor", "fragment_vigor", null, null]`, start and join: `/rpg stats` shows *Vigor: +4 Max Health* **once**, and max health is +4, **not +8**. **No log line** names the duplicate -- the plan asked for one and it is not built (§3.4.1) | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF5 — the cell gate: another cell's fragments contribute nothing
 
 | prediction | READING |
 |---|---|
-| as the Fire Ranger with Vigor slotted, Build, Class **Mage**: `/rpg stats` has **no** Fragments block and max health is 4 lower. Class **Ranger**: the block and the +4 **return** (the Ranger's fragments stayed in the file). **This row is the only witness of the cell gate** -- no unit test can build the `Stones` it lives in | _(not run)_ |
+| as the Fire Ranger with Vigor slotted, Build, Class **Mage**: `/rpg stats` has **no** Fragments block and max health is 4 lower. Class **Ranger**: the block and the +4 **return** (the Ranger's fragments stayed in the file). **This row is the only witness of the cell gate** -- no unit test can build the `Stones` it lives in | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF6 — a restart keeps the fragments and their stats
 
 | prediction | READING |
 |---|---|
-| with Vigor and Keen slotted, `/stop`, start (no refresh), rejoin: Build shows both, and `/rpg stats` lists both with the +4 and the +2% in the totals | _(not run)_ |
+| with Vigor and Keen slotted, `/stop`, start (no refresh), rejoin: Build shows both, and `/rpg stats` lists both with the +4 and the +2% in the totals | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF7 — every shipped accessory still loads under the combined bound
 
 | prediction | READING |
 |---|---|
-| `/rpg give <you> fletchers_quiver` and `/rpg give <you> sages_scroll` both succeed (neither was refused at load); their tooltips still read *-0.20/5s Health Regen* and *-3% Crit Chance* -- ruling 21 kept Ben's numbers | _(not run)_ |
+| `/rpg give <you> fletchers_quiver` and `/rpg give <you> sages_scroll` both succeed (neither was refused at load); their tooltips still read *-0.20/5s Health Regen* and *-3% Crit Chance* -- ruling 21 kept Ben's numbers | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF8 — the FIRST fragment on a cell with nothing saved keeps the default abilities
 
@@ -127,37 +136,37 @@ has ever had.
 
 | prediction | READING |
 |---|---|
-| Class **Mage** (Fire), a cell with nothing saved: the stone's lore is the Mage default (Left: Ember Step, Right: Solar Grenade). Slot **Focus** in Fragment 1: the stone's lore is **still** the default -- not "(empty)" -- and left click casts Ember Step, right click Solar Grenade, Q the Mage Ultimate | _(not run)_ |
+| Class **Mage** (Fire), a cell with nothing saved: the stone's lore is the Mage default (Left: Ember Step, Right: Solar Grenade). Slot **Focus** in Fragment 1: the stone's lore is **still** the default -- not "(empty)" -- and left click casts Ember Step, right click Solar Grenade, Q the Mage Ultimate | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF9 — a slot can be emptied
 
 | prediction | READING |
 |---|---|
-| open a FILLED fragment slot: its picker's last option is a barrier, *Empty this slot*. Choose it: *Saved: Fragment N = (empty)*, the cell reads *Fragment N: (empty)*, and the stat drops back. An EMPTY slot's picker has no such option | _(not run)_ |
+| open a FILLED fragment slot: its picker's last option is a barrier, *Empty this slot*. Choose it: *Saved: Fragment N = (empty)*, the cell reads *Fragment N: (empty)*, and the stat drops back. An EMPTY slot's picker has no such option | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF10 — the aspect row is still "Coming in a later update"
 
 | prediction | READING |
 |---|---|
-| row 3 of the Build screen is still two barriers, *Aspect 1* and *Aspect 2*, *Coming in a later update*; clicking does nothing | _(not run)_ |
+| row 3 of the Build screen is still two barriers, *Aspect 1* and *Aspect 2*, *Coming in a later update*; clicking does nothing | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF11 — arc_surge is gone (ruling 20)
 
 | prediction | READING |
 |---|---|
-| as the Fire Ranger, the **Left** picker offers exactly **Rekindle** and **Solar Lance**. As an op, `/rpg cast arc_surge` replies *Unknown ability: arc_surge*, and tab completion after `/rpg cast ` does not list it | _(not run)_ |
+| as the Fire Ranger, the **Left** picker offers exactly **Rekindle** and **Solar Lance**. As an op, `/rpg cast arc_surge` replies *Unknown ability: arc_surge*, and tab completion after `/rpg cast ` does not list it | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF12 — a fragment's cell shows its own icon and its modifiers
 
 | prediction | READING |
 |---|---|
-| Vigor's cell is a **red dye** named *Fragment 1: Vigor*, lore *+4 Max Health* then *Placeholder fragment.* then *Click to change.*; the Fragment picker's options show each fragment's own icon (red dye, lapis, flint, glistering melon, iron nugget), and the current one glints | _(not run)_ |
+| Vigor's cell is a **red dye** named *Fragment 1: Vigor*, lore *+4 Max Health* then *Placeholder fragment.* then *Click to change.*; the Fragment picker's options show each fragment's own icon (red dye, lapis, flint, glistering melon, iron nugget), and the current one glints | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ### BF13 — nothing leaves the fragment picker
 
 | prediction | READING |
 |---|---|
-| on the Fragment 2 picker, with the off hand and hotbar 1 empty: shift-click an option, press **1** over one, press **F** over one. Nothing moves; the inventory, hotbar 1 and the off hand are unchanged | _(not run)_ |
+| on the Fragment 2 picker, with the off hand and hotbar 1 empty: shift-click an option, press **1** over one, press **F** over one. Nothing moves; the inventory, hotbar 1 and the off hand are unchanged | reported good or skipped -- not itemised by Ben *(4308622)*. Not PASS on its own, and nothing inferred |
 
 ---
 

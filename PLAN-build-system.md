@@ -81,6 +81,9 @@ Recorded verbatim from the brief.
     once, skipped, never deleted). Do NOT add a `Self` ability for coverage: the Self cast path keeps its
     unit tests, and real content will cover it when Ben designs it.** Carried out in slice 4 as its own
     commit, before the gate's boot.
+23. **Ben's ruling 23, 2026-09-26: fragments and aspects must each be UNEQUIPPABLE by the player.** For
+    fragments this is already satisfied by the picker's **"Empty this slot"** option (slice 4, BF9). **Slice
+    5 must give each aspect slot the same option, with its own gate row.**
 
 **And one clarification, given while building slice 1 (2026-09-25):** Q pressed over the stone with a
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
