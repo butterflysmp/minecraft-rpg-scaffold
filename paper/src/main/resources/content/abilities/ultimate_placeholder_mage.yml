@@ -1,0 +1,30 @@
+# PLACEHOLDER -- Ben designs. See ultimate_placeholder_ranger.yml: the same status, the same rule
+# (nothing may be derived from these numbers), and the same reason to exist -- Q needs something to
+# cast in slice 1's gate.
+#
+# The shape: a projectile with a wide burst, so the Mage's Q reads differently from its Actives
+# (ember_step's dash, solar_grenade's smaller burst).
+#
+# cooldown_ticks is a multiple of 4 (PLAN-build-system.md 2.4.1). 1200 ticks = 60 s.
+
+id: ultimate_placeholder_mage
+display_name: "<gold>Mage Ultimate (placeholder)</gold>"
+element: fire
+cooldown_ticks: 1200
+cost:
+  resource: mana
+  amount: 60
+cast:
+  type: projectile
+  speed: 1.2
+  gravity: 0.03
+  max_lifetime_ticks: 100
+on_hit:
+  - type: visual
+    visual_id: solar_detonation
+  - type: burst
+    radius: 6.0
+    effects:
+      - type: damage
+        amount: 20
+        element: fire

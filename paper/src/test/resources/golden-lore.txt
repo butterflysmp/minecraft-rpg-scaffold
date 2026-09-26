@@ -1,12 +1,4 @@
 === WEAPONS ===
--- ability_stone
-   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Test Cast" color=#FFAA00 O=. B=. S=. U=. I=F ["  Left-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "Casts the ability under test" color=#AAAAAA O=. B=. S=. U=. I=F
-   "while you move." color=#AAAAAA O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Exotic Magic Weapon" color=#55FFFF O=. B=. S=. U=. I=F
 -- boltor
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
@@ -560,4 +552,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 93 renderings ===
+=== 92 renderings ===

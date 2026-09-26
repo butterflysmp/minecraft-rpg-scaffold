@@ -520,4 +520,46 @@ class AbilityServiceTest {
         // by accident, and the whole change would read as working while lengthening every cooldown
         // in the game.
     }
+
+    // ---- castUnchecked: the operator's dev cast (PLAN-build-system.md ruling 10) -----------------
+
+    @Test
+    void aDevCastSpendsNoManaStartsNoCooldownAndNeedsNoGrant() {
+        var tick = new AtomicLong(0);
+        var resources = pool(tick::get);
+        var registry = new AbilityRegistry();
+        registry.register(solarGrenade());
+        var cooldowns = new CooldownTracker(tick::get);
+        var service = new AbilityService(registry, cooldowns, resources);
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var id = caster.snapshot().id();
+
+        // Twice in the same tick, with no castable set at all: both succeed.
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.castUnchecked(caster.snapshot(), "solar_grenade", FORWARD));
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.castUnchecked(caster.snapshot(), "solar_grenade", FORWARD));
+
+        assertEquals(0, cooldowns.ticksRemaining(id, "solar_grenade"), "no cooldown started");
+        assertEquals(100, resources.current(id, "mana"), 0.0, "no mana spent");
+    }
+
+    /** The row ST14 reads in play: a stone press of the ability right after a dev cast is NOT refused. */
+    @Test
+    void aNormalCastRightAfterADevCastIsNotOnCooldown() {
+        var service = serviceWith(solarGrenade(), () -> 0L);
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        service.castUnchecked(caster.snapshot(), "solar_grenade", FORWARD);
+        assertInstanceOf(AbilityService.CastResult.Success.class,
+                service.cast(caster.snapshot(), "solar_grenade", FORWARD, GRANTED));
+    }
+
+    @Test
+    void aDevCastOfAnUnknownIdIsUnknown() {
+        var service = serviceWith(solarGrenade(), () -> 0L);
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        assertInstanceOf(AbilityService.CastResult.UnknownAbility.class,
+                service.castUnchecked(caster.snapshot(), "no_such_ability", FORWARD));
+    }
 }

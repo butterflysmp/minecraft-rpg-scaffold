@@ -186,8 +186,8 @@ class FilePlayerRepositoryTest {
         // THIS FIELD -- which is the thing the row exists to pin. Renaming it to follow the schema
         // number would make it a row about the schema, and there is one of those in
         // PlayerProfileMigrationTest.
-        assertEquals(4, loaded.schemaVersion(),
-                "restamped to 4 by the vaultMigrated step. lifetimeXp itself still needs no "
+        assertEquals(5, loaded.schemaVersion(),
+                "restamped to 5 -- to 4 by the vaultMigrated step, then to 5 by the Ability Stone step (both bare stamps). lifetimeXp itself still needs no "
                         + "migration -- see the note at the end of ProfileMigrations.migrate, and "
                         + "the v3 -> v4 step directly beneath it");
 
@@ -250,8 +250,8 @@ class FilePlayerRepositoryTest {
         // on that bump, correctly -- it is the only row in the suite that loads a REAL v3 file --
         // and the honest fix is to say what the stamp is now and why, not to loosen it to
         // CURRENT_SCHEMA_VERSION, which would stop noticing the next one.
-        assertEquals(4, loaded.schemaVersion(),
-                "restamped to 4 by the vaultMigrated step, which sets no value and exists for the "
+        assertEquals(5, loaded.schemaVersion(),
+                "restamped to 5 -- to 4 by the vaultMigrated step, then to 5 by the Ability Stone step (both bare stamps), which sets no value and exists for the "
                         + "rollback refusal. starEnabled itself still needs no migration");
 
         // THE FIXTURE IS A POPULATED v3 FILE, not a parse failure yielding a blank profile --

@@ -145,7 +145,7 @@ class CastExecutorTriggerScoreTest {
      * *** THE {@code commit} SITE. Deleting its write leaves the suite GREEN without this row. ***
      *
      * <p>This is the path EVERY shipped trigger weapon except a volley takes -- the three staves,
-     * {@code ability_stone}, {@code quiver_stone}, and {@code emberblade}'s fireball.
+     * {@code quiver_stone}, and {@code emberblade}'s fireball.
      */
     @Test
     void aNonVolleyCastScalesItsLiteralDamageByTheScoreTheWORLDReports() {

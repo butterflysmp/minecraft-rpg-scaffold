@@ -11,7 +11,7 @@
 # would be the content slice arriving through the back door with none of its decisions made --
 # its damage, mana, cooldown and element would land in master before any had been ruled.
 #
-# PERMANENT, like ability_stone and /rpg apply -- NOT a _TEMP fixture. Ships in NO kit, has NO
+# PERMANENT, like /rpg apply -- NOT a _TEMP fixture. Ships in NO kit, has NO
 # recipe file, and so is uncraftable and unreachable by a normal player. Gated only by /rpg give
 # needing rpg.command.give.
 #
@@ -25,14 +25,14 @@ display_name: "Volley Stone"
 element: kinetic          # neutral: declares no applies_status, so nothing accrues and no glyph
                           # competes with the damage numbers a gate row has to count
 
-# Exotic for VISIBILITY, the same spend ability_stone.yml makes and for the same reason: the name's
+# Exotic for VISIBILITY, the same spend the old ability_stone.yml (since deleted) made, and for the same reason: the name's
 # colour is the rarity tier's, so a `common` dev tool mints plain white and reads as an Ironblade in
-# a crowded hotbar. TWO dev tools now share the tier -- ability_stone's note has been narrowed to
+# a crowded hotbar. TWO dev tools shared the tier then -- ability_stone's note was narrowed to
 # say so rather than left claiming it is alone there. Neither is in any kit or loot roll, so the
 # tier is not cheapened anywhere a player can reach.
 rarity: exotic
 class: mage               # a dev tool; class is required, mage is as good as any here
-material: echo_shard      # distinct from ability_stone's amethyst_shard so the two are not
+material: echo_shard      # was distinct from the old ability_stone's amethyst_shard so the two were not
                           # confusable in one hotbar. Verified present in the pinned 26.1.2 jar:
                           #   unzip -p run/versions/26.1.2/paper-26.1.2.jar \
                           #     net/minecraft/world/item/Items.class \

@@ -74,8 +74,15 @@ class ScorchContentInvariantTest {
      * <p>So this constant counts AUTHORED SITES and not accrual events, and the two have now
      * diverged. Said plainly because a future reader counting fire weapons to predict this number
      * will be right, and a future reader counting fire HITS will not.
+     *
+     * <p><b>13 -> 14 on 2026-09-25, the Ability Stone slice: -1 +2, measured AFTER {@code ./mvnw clean}.</b>
+     * Minus one: the dev weapon {@code ability_stone} was deleted, and its thrown ember's burst carried
+     * one {@code element: fire} damage site. Plus two: {@code ultimate_placeholder_ranger} (one
+     * {@code damage}) and {@code ultimate_placeholder_mage} (one {@code damage} inside its {@code burst}),
+     * both PLACEHOLDERS. The first run read 15 because Maven's resource copy had left the deleted file
+     * in {@code target/} -- {@code ContentFreshnessTest} named it on the same run.
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 13;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 14;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare

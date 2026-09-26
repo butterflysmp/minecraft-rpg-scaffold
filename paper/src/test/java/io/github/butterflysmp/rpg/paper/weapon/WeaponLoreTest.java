@@ -273,7 +273,7 @@ class WeaponLoreTest {
      */
     @Test
     void everyShippedWeaponRendersAgainstTheShippedElements(@TempDir Path dir) throws IOException {
-        String[] weaponIds = {"ironblade", "emberblade", "hunters_bow", "ember_staff", "ability_stone"};
+        String[] weaponIds = {"ironblade", "emberblade", "hunters_bow", "ember_staff"};
         String[] elementIds = {"fire", "water", "nature", "undead", "void", "wither", "kinetic"};
 
         Path weaponsDir = Files.createDirectory(dir.resolve("weapons"));

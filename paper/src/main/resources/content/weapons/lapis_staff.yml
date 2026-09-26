@@ -47,7 +47,7 @@ class: mage
 #    no longer a one-off, and the balance question it opened (indestructible gear reaching players
 #    through the economy rather than through /rpg give) now has two instances rather than one.
 #    Nobody may "fix" this by requiring gear to be durable: that would break an exemption
-#    ember_staff and ability_stone depend on. THE MATERIAL IS THE LEVER.
+#    ember_staff and flint_staff depend on. THE MATERIAL IS THE LEVER.
 #
 # 2. THE MINTED STAFF DOES NOT STACK, AND THE MATERIAL IS NOT WHY. A breeze rod stacks to 64; a
 #    minted staff does not, because WeaponItems.mint calls meta.setMaxStackSize(1) on every weapon

@@ -2,7 +2,7 @@
 # the reload and the two refusals have something to gate against, and it is owned by the mechanism
 # rather than by any content slice.
 #
-# PERMANENT, like ability_stone and volley_stone -- NOT a _TEMP fixture. Ships in NO kit, has NO
+# PERMANENT, like volley_stone -- NOT a _TEMP fixture. Ships in NO kit, has NO
 # recipe file, and so is uncraftable and unreachable by a normal player. Gated only by /rpg give
 # needing rpg.command.give. The argument is volley_stone's, unchanged: gating a mechanism REQUIRES
 # a content file that uses it, and a content file whose only purpose is to exercise a mechanism is
@@ -21,7 +21,7 @@
 # gave it.
 #
 # ITS NUMBERS ARE DELIBERATELY NOBODY ELSE'S, and the set they were checked against is named rather
-# than merely claimed. Swept: every file in content/weapons/ (ability_stone, cursed_emerald,
+# than merely claimed. Swept: every file in content/weapons/ (ability_stone -- since deleted -- cursed_emerald,
 # ember_staff, emberblade, flint_staff, hunters_bow, ironblade, lapis_staff, volley_stone) and
 # content/abilities/ (arc_surge, ember_step, rekindle, solar_grenade, solar_lance, void_slash).
 # Every numeric value authored across those fifteen files:
@@ -47,7 +47,7 @@ element: kinetic
 
 # Exotic for VISIBILITY -- the name's colour is the rarity tier's, so a `common` dev tool mints
 # plain white and reads as an Ironblade in a crowded hotbar. THREE dev tools now share the tier
-# (ability_stone, volley_stone, this); none is in any kit or loot roll, so the tier is not cheapened
+# (volley_stone and this; the old ability_stone was the third, since deleted); none is in any kit or loot roll, so the tier is not cheapened
 # anywhere a player can reach.
 rarity: exotic
 

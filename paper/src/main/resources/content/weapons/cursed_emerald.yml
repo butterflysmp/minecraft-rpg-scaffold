@@ -70,7 +70,7 @@ class: mage
 #    EXEMPTION. THIRD CRAFTABLE INDESTRUCTIBLE WEAPON, after flint_staff and lapis_staff. This is a
 #    REAL CHANGE from cfde822, where ItemRegistry.isBroken gated the cast and the weapon could
 #    break -- confirmed by the operator. Do not "fix" it by requiring durability: that would break
-#    an exemption ember_staff and ability_stone depend on. THE MATERIAL IS THE LEVER.
+#    an exemption ember_staff and flint_staff depend on. THE MATERIAL IS THE LEVER.
 #
 # 2. IT DOES NOT STACK, AND THE MATERIAL IS NOT WHY. A vanilla emerald stacks to 64; a minted
 #    Cursed Emerald does not, because WeaponItems.mint calls meta.setMaxStackSize(1) on everything

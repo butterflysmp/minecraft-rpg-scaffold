@@ -1,0 +1,32 @@
+# PLACEHOLDER -- Ben designs. (PLAN-build-system.md section 4: "Ultimates (none exist) ... Slice 1
+# ships a placeholder Ultimate per cell, built only from existing CastSpec/EffectSpec with long
+# cooldowns, so Q can be gated.")
+#
+# THIS IS NOT A DESIGN AND ITS NUMBERS ARE NOT A PROPOSAL. It exists so the Ability Stone's Q has
+# something to cast in slice 1's gate. Nothing may be derived from it -- the same rule the Boltor's
+# standing decision gives the dev weapons: parity with a placeholder is parity with nothing.
+#
+# The shape is the one thing chosen on purpose: a long ray, so the Ranger's Q is visibly a different
+# cast from its two Actives (rekindle's dash, solar_lance's shorter ray) in the gate.
+#
+# cooldown_ticks is a multiple of 4 (PLAN-build-system.md 2.4.1: a held input re-casts on the 4-tick
+# grid, ruling 19). 1200 ticks = 60 s.
+#
+# No `archetype:` -- that key is dead (read by nothing, section 1.5) and slice 2 retires it.
+
+id: ultimate_placeholder_ranger
+display_name: "<gold>Ranger Ultimate (placeholder)</gold>"
+element: fire
+cooldown_ticks: 1200
+cost:
+  resource: mana
+  amount: 60
+cast:
+  type: ray
+  range: 40
+on_hit:
+  - type: visual
+    visual_id: solar_lance
+  - type: damage
+    amount: 30
+    element: fire

@@ -28,7 +28,7 @@ class: mage
 #    never breaks.
 #
 #    IT IS NOT THE FIRST INDESTRUCTIBLE GEAR -- it is the first CRAFTABLE one. ember_staff
-#    (blaze_rod) and ability_stone (amethyst_shard) are already non-durable on master and already
+#    (blaze_rod) and the old ability_stone dev weapon (amethyst_shard, since deleted) were already non-durable and already
 #    never break; the exemption is named for them. What is new is that indestructible gear can now
 #    reach a player through the ECONOMY rather than only through /rpg give or a kit, which is the
 #    half that matters for balance. The OLD staff could break -- StaffListener checked
@@ -108,7 +108,7 @@ triggers:
       trail: flint_trail
       item: flint
     on_hit:
-      # Was ember_burst, which is tuned for the Ability Stone's three near-simultaneous ember
+      # Was ember_burst, which is tuned for the old ability_stone dev weapon (deleted when the Ability Stone item shipped)'s three near-simultaneous ember
       # detonations (count 30 -> 10, spread 1.0 -> 0.3, per its own comment) -- a fix made for
       # another weapon that this one silently inherited. flint_impact is cfde822's own burst.
       - type: visual

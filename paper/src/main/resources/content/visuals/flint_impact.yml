@@ -3,7 +3,7 @@
 #
 # WHY THIS IS NOT ember_burst, which the staff used to fire. ember_burst's own comment records
 # that its count went 30 -> 10 and its spread 1.0 -> 0.3, "kept tight so three near-simultaneous
-# detonations don't read as scattered clutter" -- a tuning for the Ability Stone's three-ember
+# detonations don't read as scattered clutter" -- a tuning for the old ability_stone dev weapon (deleted when the Ability Stone item shipped)'s three-ember
 # throw. The Flint Staff fires ONE bolt on a 24-tick cooldown and has the opposite need: it wants
 # to be seen. It was carrying another weapon's fix and nothing warned at either end.
 #

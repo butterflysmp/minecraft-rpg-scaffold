@@ -9,9 +9,9 @@ package io.github.butterflysmp.rpg.core.ability.effect;
  *
  * <p><b>THE TWO ARRIVE TOGETHER BECAUSE THEY MUST NOT BE SOURCED SEPARATELY.</b> The obvious
  * alternative -- keep the amount here and read the weapon's declared element at the sweep site --
- * is the second-derivation this seam exists to prevent, and it can already disagree with the truth:
- * {@code ability_stone.yml} declares {@code element: kinetic} at the weapon level while its nested
- * damage effect declares {@code element: fire}. A weapon's element and its damage effect's element
+ * is the second-derivation this seam exists to prevent, and it did disagree with the truth:
+ * the old dev weapon {@code ability_stone.yml} (since deleted) declared {@code element: kinetic} at the weapon level while its nested
+ * damage effect declared {@code element: fire}. A weapon's element and its damage effect's element
  * are different facts, and only one of them is what actually hit.
  *
  * <p><b>A transposed implementation is a COMPILE ERROR, not a test.</b> {@code double} and

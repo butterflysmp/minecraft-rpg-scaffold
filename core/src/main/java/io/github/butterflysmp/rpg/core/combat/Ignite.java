@@ -155,8 +155,8 @@ public final class Ignite {
      * Blast radius, in blocks.
      *
      * <p><b>ADOPTED 2026-09-10</b>, on the gate. Chosen to sit IN FAMILY with the blasts that already ship rather than to
-     * invent a feel: {@code solar_grenade}'s burst is 4.0, {@code rekindle}'s and
-     * {@code ability_stone}'s thrown embers are 4.0, {@code ember_staff} is 3.5 and
+     * invent a feel: {@code solar_grenade}'s burst is 4.0,
+     * {@code rekindle}'s thrown embers are 4.0, {@code ember_staff} is 3.5 and
      * {@code emberblade} is 3.0. Reusing the prevailing number means a player who has felt a grenade
      * has already felt this.
      */

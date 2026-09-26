@@ -3,7 +3,7 @@
 #
 # ITS OWN FILE, NOT SHARED WITH lapis_impact. Borrowing that one would make this weapon the second
 # consumer of numbers tuned for the first -- exactly the trap ember_burst sprang on the Flint Staff,
-# where a count retuned 30 -> 10 for the Ability Stone was silently inherited by a weapon that had
+# where a count retuned 30 -> 10 for the old ability_stone dev weapon (deleted when the Ability Stone item shipped) was silently inherited by a weapon that had
 # nothing to do with it. A SHARED VISUAL IS A COUPLING AND THE COUPLING IS INVISIBLE AT BOTH ENDS.
 # It matters more here than it did there: six plays per cast means any figure tuned for a
 # single-shot weapon arrives six times over.

@@ -161,6 +161,22 @@ public final class AbilityService {
     }
 
     /**
+     * THE OPERATOR'S DEV CAST (PLAN-build-system.md ruling 10): any registered ability, at any time,
+     * with NO cost and NO cooldown.
+     *
+     * <p>It skips {@link #resolve} entirely -- that is the whole of "no cost, no cooldown", because the
+     * cooldown check, {@code tryConsume} and {@code cooldowns.trigger} live only there. So a dev cast
+     * leaves the caster's mana and cooldowns exactly as they were, and a normal cast of the same
+     * ability right after it is not refused as on cooldown. No castable gate either: the caller has
+     * already decided this caster is an operator.
+     */
+    public CastResult castUnchecked(CombatantSnapshot caster, String abilityId, Aim aim) {
+        AbilityDefinition def = registry.find(abilityId).orElse(null);
+        if (def == null) return new CastResult.UnknownAbility(abilityId);
+        return new CastResult.Success(def, caster, aim);
+    }
+
+    /**
      * The shared tail of cast() and fireTrigger(): cooldown check -> mana spend ->
      * cooldown trigger -> Success, all before returning. One code path, so the
      * order-pinning mutation test guards both callers.

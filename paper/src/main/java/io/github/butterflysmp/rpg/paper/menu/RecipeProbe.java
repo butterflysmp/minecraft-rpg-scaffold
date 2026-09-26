@@ -360,7 +360,7 @@ public final class RecipeProbe {
      * <p>So the gate stays where it was and nowhere else. On the material arm it still narrows a
      * weak key, and it is still reachable from a caller that has not been through boot validation.
      * On the recipe arm it would refuse every weapon whose material has no durability -- the Flint
-     * Staff (a stick), the ember_staff (a blaze_rod), the ability_stone (an amethyst_shard) -- by
+     * Staff (a stick) and the ember_staff (a blaze_rod) -- by
      * indexing them cleanly and then never minting them, silently, with no error anywhere.
      *
      * <p>This is also a DIFFERENT test from the Crafter block's durability guard, which is a policy

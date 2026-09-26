@@ -68,16 +68,40 @@ public record PlayerProfile(
          * <p>So this field <b>does</b> bump the stamp, purely so the newer-server refusal at the top
          * of {@code ProfileMigrations} can fire. See the v3 -&gt; v4 step: it sets no value.
          */
-        boolean vaultMigrated
+        boolean vaultMigrated,
+        /**
+         * The Ability Stone's chosen hotbar slot, or {@code null} for "never chosen" (PLAN-build-system.md
+         * section 2.1). BOXED for the reason {@code starEnabledOrNull} is: absence is the steady state for
+         * every player who never opens the picker, and null carries that in the type. The effective slot
+         * -- default 7, and never the star's -- is {@code LockedSlots.stoneSlot}, not this field.
+         */
+        @com.google.gson.annotations.SerializedName("stoneSlot")
+        Integer stoneSlotOrNull,
+        /** Is the Ability Stone switched on? {@code null} means never touched, which reads as ON (ruling 13). */
+        @com.google.gson.annotations.SerializedName("stoneEnabled")
+        Boolean stoneEnabledOrNull
 ) {
     /**
      * Bump when the on-disk shape changes, and add a ProfileMigrations step.
      *
-     * <p><b>4 since the vault migration stamp.</b> The bump buys the newer-server refusal for
-     * {@code vaultMigrated}; it fixes up no field. That is the first time a step has existed for
-     * the refusal alone, and the step says so rather than looking forgotten.
+     * <p><b>5 since the Ability Stone's two fields.</b> Like 4, the bump fixes up no field -- both are
+     * boxed, so absence already reads correctly -- and buys only the newer-server refusal. See the
+     * v4 -&gt; v5 step for what that refusal is worth here.
      */
-    public static final int CURRENT_SCHEMA_VERSION = 4;
+    public static final int CURRENT_SCHEMA_VERSION = 5;
+
+    /**
+     * The pre-v5 shape: every field up to {@code vaultMigrated}, with the stone's two fields absent.
+     *
+     * <p>Kept so the many fixtures that build a profile field-by-field did not all have to change in the
+     * slice that added the stone. It is exactly what a v4 file deserialises to.
+     */
+    public PlayerProfile(int schemaVersion, UUID playerId, String archetypeId, String elementId, int level,
+                         long experience, List<String> unlockedAbilities, long lastSeenEpochMillis,
+                         int nexusSlot, long lifetimeXp, Boolean starEnabledOrNull, boolean vaultMigrated) {
+        this(schemaVersion, playerId, archetypeId, elementId, level, experience, unlockedAbilities,
+                lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated, null, null);
+    }
 
     /**
      * Where the Nexus star sits for a player who has never chosen: the rightmost hotbar slot.
@@ -246,12 +270,31 @@ public record PlayerProfile(
         return starEnabledOrNull == null || starEnabledOrNull;
     }
 
+    /** Is the Ability Stone switched on? Absent reads as ON (ruling 13), exactly as {@link #starEnabled} does. */
+    public boolean stoneEnabled() {
+        return stoneEnabledOrNull == null || stoneEnabledOrNull;
+    }
+
+    /** Switch the Ability Stone on or off. A primitive, for {@link #withStarEnabled}'s reason. */
+    public PlayerProfile withStoneEnabled(boolean enabled) {
+        return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                stoneSlotOrNull, enabled);
+    }
+
+    /** Move the Ability Stone. Unvalidated here, for {@link #withNexusSlot}'s reason: {@code LockedSlots} bounds it. */
+    public PlayerProfile withStoneSlot(int slot) {
+        return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                slot, stoneEnabledOrNull);
+    }
+
     public static PlayerProfile fresh(UUID id) {
         // null, NOT Boolean.TRUE. A fresh profile is written with serializeNulls off, so it gains
         // no key either -- which keeps a brand-new file byte-identical in shape to every existing
         // one, and keeps the absent-means-enabled path the ONE path rather than a fallback.
         return new PlayerProfile(CURRENT_SCHEMA_VERSION, id, NONE, NONE, 1, 0, List.of(),
-                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT, 0L, null, false);
+                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT, 0L, null, false, null, null);
     }
 
     /**
@@ -263,17 +306,20 @@ public record PlayerProfile(
      */
     public PlayerProfile withStarEnabled(boolean enabled) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, enabled, vaultMigrated);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, enabled, vaultMigrated,
+                stoneSlotOrNull, stoneEnabledOrNull);
     }
 
     public PlayerProfile withSchemaVersion(int version) {
         return new PlayerProfile(version, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                stoneSlotOrNull, stoneEnabledOrNull);
     }
 
     public PlayerProfile withLastSeen(long epochMillis) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, epochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated);
+                unlockedAbilities, epochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                stoneSlotOrNull, stoneEnabledOrNull);
     }
 
     /**
@@ -287,7 +333,8 @@ public record PlayerProfile(
      */
     public PlayerProfile withNexusSlot(int slot) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, slot, lifetimeXp, starEnabledOrNull, vaultMigrated);
+                unlockedAbilities, lastSeenEpochMillis, slot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                stoneSlotOrNull, stoneEnabledOrNull);
     }
 
     /**
@@ -303,7 +350,8 @@ public record PlayerProfile(
      */
     public PlayerProfile withLifetimeXp(long xp) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, xp, starEnabledOrNull, vaultMigrated);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, xp, starEnabledOrNull, vaultMigrated,
+                stoneSlotOrNull, stoneEnabledOrNull);
     }
 
     /**
@@ -324,7 +372,7 @@ public record PlayerProfile(
     public PlayerProfile withVaultMigrated(boolean migrated) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull,
-                migrated);
+                migrated, stoneSlotOrNull, stoneEnabledOrNull);
     }
 
     /**
@@ -336,6 +384,7 @@ public record PlayerProfile(
      */
     public PlayerProfile withKit(String classId, String elementId, List<String> unlockedAbilities) {
         return new PlayerProfile(schemaVersion, playerId, classId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated);
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                stoneSlotOrNull, stoneEnabledOrNull);
     }
 }
