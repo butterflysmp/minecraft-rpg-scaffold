@@ -1,0 +1,28 @@
+# PLACEHOLDER -- Ben designs. An aspect (PLAN-build-system.md sections 2.4 and 2.4.1). Section 2.4's worked
+# example with its section 2.4.1 modify; none of its numbers is a proposal.
+#
+# Two more embers, thrown wide, for more mana and a longer wait. rekindle is a DASH, so throw_embers is
+# launched from the pre-dash origin. Resolved: cost (35 + 10) x 1 = 45; cooldown (200 + 0) x 1.20 = 240, a
+# multiple of 4 (the held right-click grid). The control, recorded in the plan: percent 15 would give 230,
+# refused naming 228 and 232.
+# The id of this aspect is its filename: banked_embers.
+
+display_name: "<gold>Banked Embers</gold>"
+description: ["Rekindle throws two more embers, and costs more."]
+target: rekindle
+add_on_hit:
+  - type: throw_embers
+    angles_degrees: [70, -70]
+    speed: 0.6
+    launch_lift: 0.25
+    item: blaze_powder
+    fuse_ticks: 30
+    trail: ember_trail
+    visual: ember_burst
+    burst:
+      radius: 4.0
+      effects:
+        - { type: damage, amount: 8, element: fire }
+modify:
+  - { field: cost, flat: 10 }
+  - { field: cooldown_ticks, percent: 20 }

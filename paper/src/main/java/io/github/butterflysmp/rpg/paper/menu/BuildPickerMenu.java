@@ -45,8 +45,10 @@ public final class BuildPickerMenu extends Menu {
     /** Which choice this picker makes. */
     public enum Kind {
         CLASS, ELEMENT, ULTIMATE, ACTIVE_1, ACTIVE_2,
-        /** One of the four fragment slots (slice 4); which one is the picker's {@code fragmentSlot}. */
-        FRAGMENT;
+        /** One of the four fragment slots (slice 4); which one is the picker's {@code slotIndex}. */
+        FRAGMENT,
+        /** One of the two aspect slots (slice 5); which one is the picker's {@code slotIndex}. */
+        ASPECT;
 
         static Kind of(LoadoutSlot slot) {
             return switch (slot) {
@@ -59,7 +61,7 @@ public final class BuildPickerMenu extends Menu {
         /** The loadout slot this picks, or empty for the class and element pickers. */
         Optional<LoadoutSlot> loadoutSlot() {
             return switch (this) {
-                case CLASS, ELEMENT, FRAGMENT -> Optional.empty();
+                case CLASS, ELEMENT, FRAGMENT, ASPECT -> Optional.empty();
                 case ULTIMATE -> Optional.of(LoadoutSlot.ULTIMATE);
                 case ACTIVE_1 -> Optional.of(LoadoutSlot.ACTIVE_1);
                 case ACTIVE_2 -> Optional.of(LoadoutSlot.ACTIVE_2);
@@ -74,8 +76,8 @@ public final class BuildPickerMenu extends Menu {
     /** How to rebuild the Build screen, for Back and after a pick. */
     private final Supplier<Menu> build;
 
-    /** The 0-based fragment slot this picker fills, for {@link Kind#FRAGMENT}; -1 for every other kind. */
-    private final int fragmentSlot;
+    /** The 0-based slot this picker fills, for {@link Kind#FRAGMENT} and {@link Kind#ASPECT}; -1 otherwise. */
+    private final int slotIndex;
 
     /** The ids on offer, in option order. Read once per render; a click indexes into it. */
     private List<String> options = List.of();
@@ -89,19 +91,20 @@ public final class BuildPickerMenu extends Menu {
     }
 
     public BuildPickerMenu(Player viewer, AdapterContext adapters, ProfileService profiles, Kind kind,
-                           int fragmentSlot, Supplier<Menu> build) {
-        super(viewer, BuildMenuLayout.SIZE, MenuIcons.line(title(kind, fragmentSlot), NamedTextColor.DARK_GRAY));
+                           int slotIndex, Supplier<Menu> build) {
+        super(viewer, BuildMenuLayout.SIZE, MenuIcons.line(title(kind, slotIndex), NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.profiles = profiles;
         this.kind = kind;
-        this.fragmentSlot = fragmentSlot;
+        this.slotIndex = slotIndex;
         this.build = build;
         render();
     }
 
-    private static String title(Kind kind, int fragmentSlot) {
+    private static String title(Kind kind, int slotIndex) {
         return switch (kind) {
-            case FRAGMENT -> "Choose a Fragment (slot " + (fragmentSlot + 1) + ")";
+            case FRAGMENT -> "Choose a Fragment (slot " + (slotIndex + 1) + ")";
+            case ASPECT -> "Choose an Aspect (slot " + (slotIndex + 1) + ")";
             case CLASS -> "Choose a Class";
             case ELEMENT -> "Choose an Element";
             case ULTIMATE -> "Choose an Ultimate (Q)";
@@ -139,6 +142,7 @@ public final class BuildPickerMenu extends Menu {
             case ELEMENT -> chooseElement(id);
             case ULTIMATE, ACTIVE_1, ACTIVE_2 -> chooseAbility(kind.loadoutSlot().orElseThrow(), id);
             case FRAGMENT -> chooseFragment(EMPTY_THE_SLOT.equals(id) ? null : id);
+            case ASPECT -> chooseAspect(EMPTY_THE_SLOT.equals(id) ? null : id);
         };
         if (done) backToBuild();
     }
@@ -282,7 +286,7 @@ public final class BuildPickerMenu extends Menu {
             return false;
         }
         List<String> equipped = adapters.stones().equippedFragments(viewer.getUniqueId(), profile);
-        Optional<List<String>> picked = BuildRules.pickFragment(pool.get(), equipped, fragmentSlot, fragmentId);
+        Optional<List<String>> picked = BuildRules.pickFragment(pool.get(), equipped, slotIndex, fragmentId);
         if (picked.isEmpty()) {
             // Unreachable from the rendered options, which ARE BuildRules.fragmentChoices. Refused, not trusted.
             viewer.sendMessage(Component.text(fragmentId + " cannot go in that slot.", NamedTextColor.RED));
@@ -300,7 +304,7 @@ public final class BuildPickerMenu extends Menu {
                 adapters.scheduler().onEntity(viewer, () -> {
                     if (!viewer.isOnline()) return;
                     viewer.sendMessage(ok
-                            ? Component.text("Saved: Fragment " + (fragmentSlot + 1) + " = ", NamedTextColor.AQUA).append(what)
+                            ? Component.text("Saved: Fragment " + (slotIndex + 1) + " = ", NamedTextColor.AQUA).append(what)
                             : Component.text("The build could not be written; see the server log.", NamedTextColor.RED));
                 }));
         if (!accepted) {
@@ -309,6 +313,66 @@ public final class BuildPickerMenu extends Menu {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Put an aspect in this picker's slot, or EMPTY it (a null id, ruling 23). {@code BuildRules.pickAspect}
+     * decides: only the pool's aspects, never the one in the other slot. An aspect whose target is not
+     * equipped may still be slotted -- it is INACTIVE, not refused (amendment 2). The abilities are SEEDED
+     * from what is equipped and the fragments carried, for {@link #chooseFragment}'s reason.
+     */
+    private boolean chooseAspect(String aspectId) {
+        Optional<PlayerProfile> profile = profiles.profile(viewer.getUniqueId());
+        if (profile.isEmpty()) return profileUnavailable();
+        String classId = profile.get().archetypeId();
+        String elementId = profile.get().elementId();
+        Optional<PoolDefinition> pool = adapters.stones().pools().find(classId, elementId);
+        if (pool.isEmpty()) {
+            viewer.sendMessage(Component.text("Choose a class and an element first.", NamedTextColor.YELLOW));
+            return true;
+        }
+        BuildService builds = adapters.stones().builds();
+        Optional<PlayerBuild> stored = builds.build(viewer.getUniqueId());
+        if (stored.isEmpty()) {
+            viewer.sendMessage(Component.text(builds.unusable(viewer.getUniqueId())
+                    ? "Your build is unavailable this session (see the server log); nothing can be saved."
+                    : "Your build is still loading -- try again in a moment.", NamedTextColor.RED));
+            return false;
+        }
+        List<String> equipped = adapters.stones().equippedAspects(viewer.getUniqueId(), profile);
+        Optional<List<String>> picked = BuildRules.pickAspect(pool.get(), equipped, slotIndex, aspectId);
+        if (picked.isEmpty()) {
+            // Unreachable from the rendered options, which ARE BuildRules.aspectChoices. Refused, not trusted.
+            viewer.sendMessage(Component.text(aspectId + " cannot go in that slot.", NamedTextColor.RED));
+            return false;
+        }
+        Equipped abilities = adapters.stones().equippedFor(viewer.getUniqueId(), profile).orElseThrow();
+        CellLoadout existing = stored.get().loadout(classId, elementId)
+                .orElseGet(() -> CellLoadout.empty(classId, elementId));
+        CellLoadout next = new CellLoadout(classId, elementId, abilities.ultimate(),
+                Arrays.asList(abilities.active1(), abilities.active2()), picked.get(), existing.fragments());
+        Component what = aspectId == null
+                ? Component.text("(empty)", NamedTextColor.GRAY)
+                : aspectName(aspectId);
+        boolean accepted = builds.save(viewer.getUniqueId(), next, ok ->
+                adapters.scheduler().onEntity(viewer, () -> {
+                    if (!viewer.isOnline()) return;
+                    viewer.sendMessage(ok
+                            ? Component.text("Saved: Aspect " + (slotIndex + 1) + " = ", NamedTextColor.AQUA).append(what)
+                            : Component.text("The build could not be written; see the server log.", NamedTextColor.RED));
+                }));
+        if (!accepted) {
+            viewer.sendMessage(Component.text("Your build is still loading -- try again in a moment.",
+                    NamedTextColor.RED));
+            return false;
+        }
+        return true;
+    }
+
+    private Component aspectName(String id) {
+        return adapters.stones().aspects().find(id)
+                .map(a -> MiniMessage.miniMessage().deserialize(a.displayName()))
+                .orElse(Component.text(id, NamedTextColor.RED));
     }
 
     private Component fragmentName(String id) {
@@ -331,7 +395,7 @@ public final class BuildPickerMenu extends Menu {
         getInventory().setItem(BuildMenuLayout.CLOSE_SLOT, MenuIcons.close());
         getInventory().setItem(BuildMenuLayout.BACK_SLOT, MenuIcons.back(Material.ARROW, "Build"));
         getInventory().setItem(BuildMenuLayout.PICKER_TITLE_SLOT, MenuIcons.icon(material(),
-                MenuIcons.line(title(kind, fragmentSlot), NamedTextColor.GRAY), List.of()));
+                MenuIcons.line(title(kind, slotIndex), NamedTextColor.GRAY), List.of()));
 
         Optional<PlayerProfile> profile = profiles.profile(viewer.getUniqueId());
         Optional<Equipped> equipped = adapters.stones().equippedFor(viewer.getUniqueId(), profile);
@@ -361,13 +425,23 @@ public final class BuildPickerMenu extends Menu {
                     .flatMap(p -> pools.find(p.archetypeId(), p.elementId()))
                     .map(pool -> BuildRules.choices(pool, kind.loadoutSlot().orElseThrow()))
                     .orElse(List.of());
+            case ASPECT -> profile
+                    .flatMap(p -> pools.find(p.archetypeId(), p.elementId()))
+                    .map(pool -> {
+                        List<String> equipped = adapters.stones().equippedAspects(viewer.getUniqueId(), profile);
+                        List<String> choices = new ArrayList<>(BuildRules.aspectChoices(pool, equipped, slotIndex));
+                        // Ruling 23: a filled slot can be emptied; an empty one is not offered "empty".
+                        if (equipped.get(slotIndex) != null) choices.add(EMPTY_THE_SLOT);
+                        return List.copyOf(choices);
+                    })
+                    .orElse(List.of());
             case FRAGMENT -> profile
                     .flatMap(p -> pools.find(p.archetypeId(), p.elementId()))
                     .map(pool -> {
                         List<String> equipped = adapters.stones().equippedFragments(viewer.getUniqueId(), profile);
-                        List<String> choices = new ArrayList<>(BuildRules.fragmentChoices(pool, equipped, fragmentSlot));
+                        List<String> choices = new ArrayList<>(BuildRules.fragmentChoices(pool, equipped, slotIndex));
                         // A filled slot can be emptied; an empty one is not offered "empty".
-                        if (equipped.get(fragmentSlot) != null) choices.add(EMPTY_THE_SLOT);
+                        if (equipped.get(slotIndex) != null) choices.add(EMPTY_THE_SLOT);
                         return List.copyOf(choices);
                     })
                     .orElse(List.of());
@@ -380,7 +454,8 @@ public final class BuildPickerMenu extends Menu {
             case ELEMENT -> profile.map(PlayerProfile::elementId).orElse(null);
             case ULTIMATE, ACTIVE_1, ACTIVE_2 ->
                     equipped.flatMap(e -> e.idFor(kind.loadoutSlot().orElseThrow())).orElse(null);
-            case FRAGMENT -> adapters.stones().equippedFragments(viewer.getUniqueId(), profile).get(fragmentSlot);
+            case FRAGMENT -> adapters.stones().equippedFragments(viewer.getUniqueId(), profile).get(slotIndex);
+            case ASPECT -> adapters.stones().equippedAspects(viewer.getUniqueId(), profile).get(slotIndex);
         };
     }
 
@@ -400,6 +475,7 @@ public final class BuildPickerMenu extends Menu {
             case ULTIMATE -> Material.AMETHYST_CLUSTER;
             case ACTIVE_1, ACTIVE_2 -> Material.PRISMARINE_SHARD;
             case FRAGMENT -> Material.AMETHYST_SHARD;
+            case ASPECT -> Material.FIRE_CHARGE;
         };
     }
 
@@ -420,7 +496,12 @@ public final class BuildPickerMenu extends Menu {
                     .orElse(Component.text(id, NamedTextColor.WHITE));
             case ULTIMATE, ACTIVE_1, ACTIVE_2 -> abilityName(id);
             case FRAGMENT -> fragmentName(id);
+            case ASPECT -> aspectName(id);
         };
+        if (kind == Kind.ASPECT) {
+            adapters.stones().aspects().find(id)
+                    .map(a -> BuildMenu.aspectLore(a, adapters.stones().abilities())).ifPresent(lore::addAll);
+        }
         if (kind == Kind.FRAGMENT) {
             adapters.stones().fragments().find(id).map(BuildMenu::fragmentLore).ifPresent(lore::addAll);
         }

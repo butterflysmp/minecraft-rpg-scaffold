@@ -97,6 +97,16 @@ class ContentValidatorTest {
         assertTrue(problems.isEmpty(), problems.toString());
     }
 
+    /** Slice 5: an aspect's appended effects are checked as an ability's are -- a dangling visual is named. */
+    @Test
+    void anAspectsDanglingVisualIsReportedByAspect() {
+        var aspect = new io.github.butterflysmp.rpg.core.build.AspectDefinition("glow", "Glow", List.of(), "solar_lance",
+                List.of(new EffectSpec.Visual("nope")), List.of(new EffectSpec.Visual("solar_detonation")), List.of());
+        var problems = validator(visualsWith("solar_detonation"), statusesWith()).validateAspects(List.of(aspect));
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("aspect 'glow'") && problems.get(0).contains("nope"), problems.toString());
+    }
+
     @Test
     void danglingTopLevelVisualIdIsReported() {
         var abilities = abilitiesWith(List.of(new EffectSpec.Visual("nope")));

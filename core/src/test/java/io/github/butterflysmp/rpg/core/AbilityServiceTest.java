@@ -544,6 +544,47 @@ class AbilityServiceTest {
         assertEquals(100, resources.current(id, "mana"), 0.0, "no mana spent");
     }
 
+    /**
+     * THE BUILD SYSTEM'S SLICE 5: a cast through a DERIVE (a player's active aspects) spends the DERIVED cost and
+     * starts the DERIVED cooldown, under the ability's own id, and hands the derived definition on in Success
+     * -- while the registry keeps the base, so another player casting it gets the base (per player, not global).
+     */
+    @Test
+    void aDerivedCastSpendsTheDerivedCostAndCooldownAndLeavesTheRegistryAlone() {
+        var tick = new AtomicLong(0);
+        var resources = pool(tick::get);
+        var registry = new AbilityRegistry();
+        AbilityDefinition base = solarGrenade();
+        registry.register(base);
+        var cooldowns = new CooldownTracker(tick::get);
+        var service = new AbilityService(registry, cooldowns, resources);
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        var id = caster.snapshot().id();
+
+        java.util.function.UnaryOperator<AbilityDefinition> derive = def -> new AbilityDefinition(def.id(),
+                def.displayName(), def.element(), def.cooldownTicks() + 40,
+                new ResourceCost(def.cost().resourceId(), def.cost().amount() + 5), def.cast(), def.onHit(),
+                def.description(), def.onCast());
+
+        var result = service.cast(caster.snapshot(), "solar_grenade", FORWARD, GRANTED, derive);
+        var success = assertInstanceOf(AbilityService.CastResult.Success.class, result);
+        assertEquals(base.cooldownTicks() + 40, success.ability().cooldownTicks(), "Success carries the derived definition");
+        assertEquals(100 - (base.cost().amount() + 5), resources.current(id, "mana"), 1e-9, "the DERIVED cost is spent");
+        assertEquals(base.cooldownTicks() + 40, cooldowns.ticksRemaining(id, "solar_grenade"), "the DERIVED cooldown, same id");
+        assertSame(base, registry.find("solar_grenade").orElseThrow(), "the registry still holds the base");
+    }
+
+    /** A locked cast never reaches the derive: access before anything else, as before. */
+    @Test
+    void aLockedCastIsRefusedBeforeTheDerive() {
+        var service = serviceWith(solarGrenade(), () -> 0L);
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        java.util.concurrent.atomic.AtomicInteger derived = new java.util.concurrent.atomic.AtomicInteger();
+        assertInstanceOf(AbilityService.CastResult.Locked.class, service.cast(caster.snapshot(), "solar_grenade",
+                FORWARD, Set.of(), def -> { derived.incrementAndGet(); return def; }));
+        assertEquals(0, derived.get());
+    }
+
     /** The row ST14 reads in play: a stone press of the ability right after a dev cast is NOT refused. */
     @Test
     void aNormalCastRightAfterADevCastIsNotOnCooldown() {

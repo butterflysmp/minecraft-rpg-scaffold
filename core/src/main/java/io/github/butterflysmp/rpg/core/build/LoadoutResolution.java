@@ -64,11 +64,26 @@ public final class LoadoutResolution {
      * empty, in slot order.
      */
     public static List<String> fragments(PoolDefinition pool, List<String> saved) {
-        List<String> equipped = new ArrayList<>(Collections.nCopies(FragmentSlots.COUNT, (String) null));
+        return slots(pool.fragments(), saved, FragmentSlots.COUNT);
+    }
+
+    /**
+     * The two aspect slots as equipped (slice 5): the fragment rule exactly -- a saved id the pool still
+     * offers, once each (the same aspect twice is refused), anything else EMPTY; nothing saved is two empties.
+     * Whether an equipped aspect is ACTIVE (its target equipped) is {@code AspectApplication.activeFor}'s
+     * question, not this one: an inactive aspect stays slotted.
+     */
+    public static List<String> aspects(PoolDefinition pool, List<String> saved) {
+        return slots(pool.aspects(), saved, AspectSlots.COUNT);
+    }
+
+    /** The shared rule for fixed slots of pool-listed ids: offered ids, once each, in slot order; nulls for empty. */
+    private static List<String> slots(List<String> offered, List<String> saved, int count) {
+        List<String> equipped = new ArrayList<>(Collections.nCopies(count, (String) null));
         if (saved == null) return Collections.unmodifiableList(equipped);
         java.util.Set<String> seen = new java.util.HashSet<>();
-        for (int slot = 0; slot < FragmentSlots.COUNT && slot < saved.size(); slot++) {
-            String id = offers(pool.fragments(), saved.get(slot));
+        for (int slot = 0; slot < count && slot < saved.size(); slot++) {
+            String id = offers(offered, saved.get(slot));
             if (id != null && seen.add(id)) equipped.set(slot, id);
         }
         return Collections.unmodifiableList(equipped);

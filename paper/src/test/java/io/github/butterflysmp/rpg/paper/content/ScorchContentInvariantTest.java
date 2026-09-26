@@ -81,8 +81,14 @@ class ScorchContentInvariantTest {
      * {@code damage}) and {@code ultimate_placeholder_mage} (one {@code damage} inside its {@code burst}),
      * both PLACEHOLDERS. The first run read 15 because Maven's resource copy had left the deleted file
      * in {@code target/} -- {@code ContentFreshnessTest} named it on the same run.
+     *
+     * <p><b>14 -> 17 on 2026-09-26, the build system's slice 5: +3, one per aspect that APPENDS fire damage</b>
+     * -- {@code searing_lance}'s burst, {@code banked_embers}' ember burst and {@code cinder_wake}'s area, all
+     * PLACEHOLDERS in {@code content/aspects/}. Counted per file with this test's own pattern; {@code
+     * lingering_sun} only modifies numbers and adds none. An aspect's appended damage accrues scorch like any
+     * other fire damage: it reaches the same {@code EffectApplier}.
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 14;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 17;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare

@@ -9,11 +9,11 @@ import java.util.Set;
  * until they choose their own (PLAN-build-system.md section 2.2).
  *
  * <p>Ultimate-ness is a property of THIS LISTING, not of the ability file: the same ability could be an
- * Active here and absent from another cell. Fragments joined in slice 4 ({@link #fragments}, which may be
- * empty: a cell with none simply has four empty fragment slots); aspects join in slice 5.
+ * Active here and absent from another cell. Fragments joined in slice 4 ({@link #fragments}) and aspects in
+ * slice 5 ({@link #aspects}); either may be empty, which is simply empty slots.
  *
- * <p>The checks here are the ones that need no registry. Whether each id exists is the loader's
- * question, answered after the abilities and fragments load.
+ * <p>The checks here are the ones that need no registry. Whether each id exists, and whether each aspect's
+ * target is one of this pool's abilities, is the loader's question, answered after the content loads.
  */
 public record PoolDefinition(
         CellKey cell,
@@ -21,12 +21,19 @@ public record PoolDefinition(
         List<String> ultimates,
         List<String> actives,
         Loadout defaultLoadout,
-        List<String> fragments
+        List<String> fragments,
+        List<String> aspects
 ) {
-    /** A pool with no fragments -- every pool before slice 4, and most test fixtures. */
+    /** A pool with no fragments or aspects -- every pool before slice 4, and most test fixtures. */
     public PoolDefinition(CellKey cell, String displayName, List<String> ultimates, List<String> actives,
                           Loadout defaultLoadout) {
-        this(cell, displayName, ultimates, actives, defaultLoadout, List.of());
+        this(cell, displayName, ultimates, actives, defaultLoadout, List.of(), List.of());
+    }
+
+    /** A pool with fragments and no aspects -- slice 4's form. */
+    public PoolDefinition(CellKey cell, String displayName, List<String> ultimates, List<String> actives,
+                          Loadout defaultLoadout, List<String> fragments) {
+        this(cell, displayName, ultimates, actives, defaultLoadout, fragments, List.of());
     }
 
     public PoolDefinition {
@@ -36,6 +43,8 @@ public record PoolDefinition(
         actives = List.copyOf(actives);
         fragments = fragments == null ? List.of() : List.copyOf(fragments);
         requireNoDuplicates(cell, "fragments", fragments);
+        aspects = aspects == null ? List.of() : List.copyOf(aspects);
+        requireNoDuplicates(cell, "aspects", aspects);
         // At least enough to fill a loadout, or the Build screen and the stone have nothing to offer.
         if (ultimates.isEmpty()) throw new IllegalArgumentException(where(cell) + "needs at least 1 ultimate");
         if (actives.size() < 2) throw new IllegalArgumentException(where(cell) + "needs at least 2 actives");

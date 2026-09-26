@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.PacketEvents;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
+import io.github.butterflysmp.rpg.core.build.AspectRegistry;
 import io.github.butterflysmp.rpg.core.build.FragmentRegistry;
 import io.github.butterflysmp.rpg.core.build.PoolRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
@@ -162,6 +163,7 @@ public final class RpgPlugin extends JavaPlugin {
     private EnchantRegistry enchants;
     private PoolRegistry pools;
     private FragmentRegistry fragments;
+    private AspectRegistry aspects;
     private WeaponRegistry weapons;
     private ShieldRegistry shields;
     private ArmorRegistry armor;
@@ -224,8 +226,20 @@ public final class RpgPlugin extends JavaPlugin {
                     Material material = Material.matchMaterial(name);
                     return material != null && material.isItem();
                 }).loadAll(new File(contentDir, "fragments"));
+        // Aspects are PARSED before the pools (a pool naming an aspect nothing defines, or one whose target it
+        // does not offer, is refused) and CHECKED after them: every aspect a pool lists, alone and in every
+        // same-target pair, is resolved against its target (section 2.4.1), and a refused one leaves the registry.
+        var aspectLoader = new io.github.butterflysmp.rpg.paper.content.AspectLoader(getLogger());
+        AspectRegistry parsedAspects = aspectLoader.loadAll(new File(contentDir, "aspects"));
         this.pools = new PoolLoader(getLogger()).loadAll(new File(contentDir, "builds"),
-                id -> abilities.find(id).isPresent(), id -> fragments.find(id).isPresent());
+                id -> abilities.find(id).isPresent(), id -> fragments.find(id).isPresent(),
+                id -> parsedAspects.find(id).map(io.github.butterflysmp.rpg.core.build.AspectDefinition::target));
+        // status.duration_ticks is allowed only on a status kind TRACED continuous in its duration (slice 5):
+        // rooted/freeze (a per-tick countdown) and soaked (the same). Scorch is excluded by the plan; fire and
+        // potion hand the duration to vanilla, which was not re-read from the pinned jar, so they stay refused.
+        this.aspects = aspectLoader.checkAgainstPools(parsedAspects, pools, abilities::find,
+                id -> statuses.find(id).map(def -> def instanceof io.github.butterflysmp.rpg.paper.content.StatusDefinition.Immobilize
+                        || def instanceof io.github.butterflysmp.rpg.paper.content.StatusDefinition.Soaked).orElse(false));
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
         this.shields = new ShieldLoader(getLogger()).loadAll(new File(contentDir, "shields"));
         this.armor = new ArmorLoader(getLogger()).loadAll(new File(contentDir, "armor"));
@@ -241,7 +255,8 @@ public final class RpgPlugin extends JavaPlugin {
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
-                + pools.size() + " pools, " + fragments.size() + " fragments, " + weapons.size() + " weapons, "
+                + pools.size() + " pools, " + fragments.size() + " fragments, " + aspects.size() + " aspects, "
+                + weapons.size() + " weapons, "
                 + shields.size() + " shields, " + armor.size() + " armor, "
                 + tools.size() + " tools, " + accessoryRegistry.size() + " accessories, "
                 + mobs.size() + " mobs, "
@@ -511,7 +526,7 @@ public final class RpgPlugin extends JavaPlugin {
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
         this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift, craftResults, weapons, accessories,
-                new Stones(keys, pools, abilities, builds, fragments));
+                new Stones(keys, pools, abilities, builds, fragments, aspects));
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
@@ -784,6 +799,8 @@ OLD
         // A pool filed under an element nothing defines. Its dangling ABILITY ids never reach here:
         // PoolLoader refuses those files outright (the kit check this replaced only warned).
         problems.addAll(validator.validatePools(pools.all()));
+        // An aspect's appended effects dangle a visual or a status exactly as an ability's do.
+        problems.addAll(validator.validateAspects(aspects.all()));
         // A weapon trigger's on_hit can dangle a visual_id or status_id the same way an
         // ability's can, and is checked the same walk. Naming the file at boot beats a
         // silent no-visual the first time someone swings it.

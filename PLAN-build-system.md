@@ -1739,6 +1739,39 @@ deleted); everything below is the fragments.
 
 - **Deletes:** row 3's "coming later" panes.
 
+#### 3.5.1 AS BUILT — where slice 5 differs from the lines above, each with its reason
+
+The gate file is `GATE-build-aspects.md`.
+
+1. **The derive reaches `AbilityService`, not only `Success`.** Swapping a derived definition into `Success`
+   after `resolve` would be too late for `cost` and `cooldown_ticks`, which `resolve` checks and spends. So
+   `AbilityService.cast` gained an overload taking a `UnaryOperator<AbilityDefinition>`, applied after the
+   lookup and the castable gate and BEFORE `resolve`; the derived definition keeps the id, so the cooldown key
+   is the ability's. The stone and a non-op's `/rpg cast` pass `Stones.deriveFor`; the op's `castUnchecked`
+   passes nothing (ruling 10). The registry is never touched.
+2. **Exact decimal arithmetic.** `NumberResolution` resolves in `BigDecimal` from the authored decimals, so
+   `200 × 1.20` is 240 and "refuse, never round" cannot be tripped by `240.00000000000003`.
+3. **`status.duration_ticks` is allowed on `rooted`, `freeze` and `soaked` only.** Traced: both stores count
+   `remaining` down by a period-1 task, one tick per run. `scorch` is excluded (the plan). `fire` and
+   `potion` hand the duration to vanilla, which was NOT re-read from the pinned jar, so they stay refused.
+   The trace table is in the gate file.
+4. **A refused aspect is removed from the registry**, singly or as both of an illegal pair, by name. A pool
+   still listing it offers nothing for it (the picker only offers registered aspects).
+5. **The pool checks the aspect's TARGET**: `PoolLoader` refuses a pool naming an aspect whose target it does
+   not offer (section 2.4, "must be in the same pool"), since that aspect could never be active there.
+6. **The plan's paper `BuildLoreTest` is core `AspectLoreTest` plus a source pin.** The lore's numbers are
+   pure (`AspectLore.lines(base, derived)`); paper only colours them. Which definition paper hands it is
+   pinned by `AspectWiringSignatureTest`, which is what kills A9.
+7. **The fourth placeholder is `lingering_sun`** on `solar_grenade`, exercising the two integer effect
+   fields: area 100 -> 120 ticks (6 pulses) and the `rooted` root 60 -> 80.
+8. **An aspect save seeds the abilities and carries the fragments**, as a fragment save does (slice 4's BF8
+   hazard); the ruling-23 "Empty this slot" option is on each aspect slot.
+9. **`ScorchContentInvariantTest`'s site count went 14 -> 17**: three aspects append fire damage. It
+   reddened on the first suite run, as designed; counted per file with its own pattern.
+10. **BA4 is read on the Fire Mage**: the Ranger's pool offers exactly two Actives, so a Ranger aspect can
+    never go inactive.
+11. **The build-file-on-disk question is carried again (BA13)**: no itemised reading has closed it.
+
 ---
 
 ## 4. CONTENT NEEDED, PER SLICE
@@ -1760,6 +1793,12 @@ them.
 burst (the memory `temp-status-fixtures-owe-removal`). Pooling it makes a TEMP status part of a player
 build. **That removal is owed by the content pass, and slice 1's PR body names it** rather than fixing
 it here.
+
+**AND `lingering_sun` DEPENDS ON THAT FIXTURE -- REMOVE THEM TOGETHER** (§6 item 10). The aspect's
+`status.duration_ticks` change addresses the `rooted` status in `solar_grenade`'s burst, and it is the only
+`Status` there. Remove the fixture alone and that `modify` matches ZERO effects, so `AspectLoader` refuses
+the whole aspect at boot. The content pass must re-author or delete `lingering_sun`'s status change in the
+same change.
 
 ---
 
@@ -1800,3 +1839,8 @@ the record of what was asked.
 9. **Q on a held WEAPON also fires its `left_click` trigger.** Measured: every Q-drop comes with a
    same-tick arm swing (§3.1.0.1). `WeaponSwingListener` reads that swing as a left click. The stone is
    guarded (§2.5); weapons are not. Recorded while building slice 1, and not fixed there.
+10. **`lingering_sun`'s `status.duration_ticks` change depends on `solar_grenade`'s `rooted` TEMP fixture**,
+    which is owed removal (§4, the memory `temp-status-fixtures-owe-removal`). It is the only `Status` in
+    that target, so when the fixture goes the `modify` matches zero effects and `AspectLoader` refuses the
+    WHOLE aspect -- not just the one change. Recorded at the seat's review of `35e255d`, before slice 5's
+    boot; the fixture-removal item in §4 now names it, so the two are done together.

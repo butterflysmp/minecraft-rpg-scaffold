@@ -96,6 +96,21 @@ public final class ContentValidator {
      *
      * @return every problem found, each naming the pool at fault. Empty is good.
      */
+    /**
+     * Every aspect's appended effects (slice 5): a dangling visual or status id in {@code add_on_hit} or
+     * {@code add_on_cast} is named, the same check an ability's {@code on_hit} and {@code on_cast} get.
+     */
+    public List<String> validateAspects(Collection<io.github.butterflysmp.rpg.core.build.AspectDefinition> aspects) {
+        List<String> problems = new ArrayList<>();
+        for (var aspect : aspects) {
+            for (EffectSpec effect : aspect.addOnHit()) checkEffect(effect, "aspect '" + aspect.id() + "'", problems);
+            for (EffectSpec effect : aspect.addOnCast()) {
+                checkEffect(effect, "aspect '" + aspect.id() + "' add_on_cast", problems);
+            }
+        }
+        return problems;
+    }
+
     public List<String> validatePools(Collection<PoolDefinition> pools) {
         List<String> problems = new ArrayList<>();
         for (PoolDefinition pool : pools) {
