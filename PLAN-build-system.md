@@ -1505,6 +1505,48 @@ The gate file is `GATE-build-storage.md`.
 
 - **Deletes:** `/rpg build` (the dev command).
 
+#### 3.3.1 AS BUILT — where slice 3 differs from the lines above, each with its reason
+
+The gate file is `GATE-build-screen.md`.
+
+1. **`/rpg class` and `/rpg element` are DELETED here**, as the slice-2 clarification under RULINGS said,
+   with `/rpg build set`. `Permissions.CLASS` and its `paper-plugin.yml` node go with them; an unused
+   node would read as a live gate. `RpgCommand.build` lost its `ElementRegistry` parameter, whose only
+   reader was `/rpg element`'s suggester.
+2. **There was never a `BuildDevCommand` class.** The dev command lived inside `RpgCommand`. So R0b
+   proves the deletion through `RpgCommand.class`'s constant pool (three strings only the deleted code
+   carried, and `Players only.` as the control), and `BuildScreenWiringSignatureTest` proves it in
+   source.
+3. **ONE picker for all five choices** (`BuildPickerMenu` with a `Kind`), not five sub-pickers -- the
+   `NexusSlotPickerMenu` precedent of one picker for both locked items. The layout lives in
+   `BuildMenuLayout`: row 1 class 3 and element 5; row 2 Q 11, Left 13, Right 15 (the order the
+   stone's inputs are named); row 3 aspects 21 and 23; row 4 fragments 28, 30, 32 and 34; back 48 and
+   close 49. The picker's 28 option cells are rows 2-5, columns 1-7. Rows are 1-based, as the hub's are.
+4. **Materials are PRESENTATION and can be overruled in one word each:** the hub button is a lectern;
+   class a name tag; element glowstone dust; the Ultimate an amethyst cluster; an Active a prismarine
+   shard; a cell with no pool a gray pane; aspect and fragment cells barriers. None glints on its own,
+   so the picker's glint on the CURRENT choice is unambiguous.
+5. **Picking a class clears the element when the new class has no pool for it**
+   (`BuildRules.elementAfterClassPick`), so a profile never names a cell with no pool. It cannot fire
+   at ship (FIRE has a pool for both classes). **An unchosen class is offered every pooled element**, so
+   choosing the element first also works.
+6. **The "offer every registered ability" mutation is run at the core seam (B1: any role), because core
+   cannot see the registry.** The picker's USE of `BuildRules` has no unit guard: paper tests have no
+   server. BB4 is its only witness, and the gate says so.
+7. **"Render a real item instead of a clone" is guarded by a source scan (B3)**: neither screen may
+   declare an input slot, accept an item, mint an Ability Stone, read an item out of an inventory or
+   clone one. Paper tests cannot render; BB8's four per-gesture rows read it in play.
+8. **`BuildRules.Picked` has no duplicate-Active check.** `pick` cannot produce one (the swap), and
+   `CellLoadout` blanks a duplicate on write. A third guard could never fire, and it turned mutation
+   B2's assertion failure into an exception from somewhere else, so it was removed before the pass.
+9. **The no-loadout messages now point at the screen:** the stone's notice and a non-op's `/rpg cast`
+   both read *"... open the Nexus, then Build."* (ST10's wording changes; BB2 and BB13 read it.)
+10. **The seat's file row is BB10:** after a save, the file is read ON DISK within a second and again
+    after a restart. It closes slice 2's observation that `builds/` was empty after that session.
+11. **`ShiftInHookTest` lists both new screens with their verdict** (they keep the default: they hold
+    nothing, so a shift-in moves nothing). The test's own purpose is to make a new menu declare one,
+    and it reddened on the first suite run until they did.
+
 ### 3.4 SLICE 4 — FRAGMENTS
 
 - **Files:**
