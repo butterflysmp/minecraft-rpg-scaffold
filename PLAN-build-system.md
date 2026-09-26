@@ -1794,6 +1794,12 @@ burst (the memory `temp-status-fixtures-owe-removal`). Pooling it makes a TEMP s
 build. **That removal is owed by the content pass, and slice 1's PR body names it** rather than fixing
 it here.
 
+**AND `lingering_sun` DEPENDS ON THAT FIXTURE -- REMOVE THEM TOGETHER** (§6 item 10). The aspect's
+`status.duration_ticks` change addresses the `rooted` status in `solar_grenade`'s burst, and it is the only
+`Status` there. Remove the fixture alone and that `modify` matches ZERO effects, so `AspectLoader` refuses
+the whole aspect at boot. The content pass must re-author or delete `lingering_sun`'s status change in the
+same change.
+
 ---
 
 ## 5. OPEN QUESTIONS FOR BEN
@@ -1833,3 +1839,8 @@ the record of what was asked.
 9. **Q on a held WEAPON also fires its `left_click` trigger.** Measured: every Q-drop comes with a
    same-tick arm swing (§3.1.0.1). `WeaponSwingListener` reads that swing as a left click. The stone is
    guarded (§2.5); weapons are not. Recorded while building slice 1, and not fixed there.
+10. **`lingering_sun`'s `status.duration_ticks` change depends on `solar_grenade`'s `rooted` TEMP fixture**,
+    which is owed removal (§4, the memory `temp-status-fixtures-owe-removal`). It is the only `Status` in
+    that target, so when the fixture goes the `modify` matches zero effects and `AspectLoader` refuses the
+    WHOLE aspect -- not just the one change. Recorded at the seat's review of `35e255d`, before slice 5's
+    boot; the fixture-removal item in §4 now names it, so the two are done together.
