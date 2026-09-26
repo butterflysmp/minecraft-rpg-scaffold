@@ -9,23 +9,33 @@ import java.util.Set;
  * until they choose their own (PLAN-build-system.md section 2.2).
  *
  * <p>Ultimate-ness is a property of THIS LISTING, not of the ability file: the same ability could be an
- * Active here and absent from another cell. Aspects and fragments join in slices 4 and 5.
+ * Active here and absent from another cell. Fragments joined in slice 4 ({@link #fragments}, which may be
+ * empty: a cell with none simply has four empty fragment slots); aspects join in slice 5.
  *
  * <p>The checks here are the ones that need no registry. Whether each id exists is the loader's
- * question, answered after the abilities load.
+ * question, answered after the abilities and fragments load.
  */
 public record PoolDefinition(
         CellKey cell,
         String displayName,
         List<String> ultimates,
         List<String> actives,
-        Loadout defaultLoadout
+        Loadout defaultLoadout,
+        List<String> fragments
 ) {
+    /** A pool with no fragments -- every pool before slice 4, and most test fixtures. */
+    public PoolDefinition(CellKey cell, String displayName, List<String> ultimates, List<String> actives,
+                          Loadout defaultLoadout) {
+        this(cell, displayName, ultimates, actives, defaultLoadout, List.of());
+    }
+
     public PoolDefinition {
         if (cell == null) throw new IllegalArgumentException("pool cell required");
         if (defaultLoadout == null) throw new IllegalArgumentException(where(cell) + "default loadout required");
         ultimates = List.copyOf(ultimates);
         actives = List.copyOf(actives);
+        fragments = fragments == null ? List.of() : List.copyOf(fragments);
+        requireNoDuplicates(cell, "fragments", fragments);
         // At least enough to fill a loadout, or the Build screen and the stone have nothing to offer.
         if (ultimates.isEmpty()) throw new IllegalArgumentException(where(cell) + "needs at least 1 ultimate");
         if (actives.size() < 2) throw new IllegalArgumentException(where(cell) + "needs at least 2 actives");

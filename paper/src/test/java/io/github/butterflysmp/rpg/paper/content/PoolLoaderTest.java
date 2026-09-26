@@ -35,6 +35,10 @@ class PoolLoaderTest {
     private static final Predicate<String> BUNDLED_ABILITY =
             id -> PoolLoaderTest.class.getResource("/content/abilities/" + id + ".yml") != null;
 
+    /** Resolves an id against the BUNDLED fragments (slice 4): every shipped fragment's file is named for its id. */
+    private static final Predicate<String> BUNDLED_FRAGMENT =
+            id -> PoolLoaderTest.class.getResource("/content/fragments/" + id + ".yml") != null;
+
     @BeforeEach
     void setUp() {
         warnings = new ArrayList<>();
@@ -61,7 +65,7 @@ class PoolLoaderTest {
     }
 
     private PoolRegistry load(Predicate<String> abilityExists) {
-        return new PoolLoader(log).loadAll(new File(dir.toString()), abilityExists);
+        return new PoolLoader(log).loadAll(new File(dir.toString()), abilityExists, BUNDLED_FRAGMENT);
     }
 
     private String warningText() {
@@ -99,6 +103,45 @@ class PoolLoaderTest {
         assertEquals("ember_step", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_1));
         assertEquals("solar_grenade", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_2));
         assertEquals("ultimate_placeholder_mage", pool.defaultLoadout().idFor(LoadoutSlot.ULTIMATE));
+    }
+
+    /** The fragment predicate can say NO too -- the control for the fragment rows below. */
+    @Test
+    void theBundledFragmentPredicateIsNotBlind() {
+        assertTrue(BUNDLED_FRAGMENT.test("fragment_vigor"));
+        assertFalse(BUNDLED_FRAGMENT.test("no_such_fragment"));
+    }
+
+    /** Slice 4: each bundled pool offers at least four fragments, so all four slots can be filled. */
+    @Test
+    void eachBundledPoolOffersAtLeastFourFragments() throws IOException {
+        copyBundled("ranger_fire.yml");
+        copyBundled("mage_fire.yml");
+        PoolRegistry registry = load(BUNDLED_ABILITY);
+        assertTrue(warnings.isEmpty(), warningText());
+        for (PoolDefinition pool : registry.all()) {
+            assertTrue(pool.fragments().size() >= 4, pool.cell() + " offers " + pool.fragments());
+        }
+    }
+
+    @Test
+    void aPoolNamingAnUnknownFragmentIsRefusedByName() throws IOException {
+        write("ranger_fire.yml", """
+                class: ranger
+                element: fire
+                ultimates: [ultimate_placeholder_ranger]
+                actives: [rekindle, solar_lance]
+                fragments: [fragment_vigor, fragment_nowhere]
+                default:
+                  ultimate: ultimate_placeholder_ranger
+                  actives: [rekindle, solar_lance]
+                """);
+
+        PoolRegistry registry = load(BUNDLED_ABILITY);
+
+        assertEquals(0, registry.size());
+        assertTrue(warningText().contains("fragment_nowhere"), "the refusal names the missing id: " + warningText());
+        assertFalse(warningText().contains("fragment_vigor,"), "and only the missing one: " + warningText());
     }
 
     /** Ruling 7: FIRE only, because only fire has pools. A count, so a stray third file is noticed. */

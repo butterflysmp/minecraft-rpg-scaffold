@@ -94,6 +94,37 @@ public final class BuildRules {
     }
 
     /**
+     * The fragments offered for one slot (slice 4): the pool's, minus any held in ANOTHER slot -- one of each
+     * (ruling 11), so the screen never offers a duplicate rather than refusing one after the click. A slot
+     * IS offered what it already holds.
+     *
+     * @param equipped the four slots as equipped ({@code LoadoutResolution.fragments}), nulls for empty
+     */
+    public static List<String> fragmentChoices(PoolDefinition pool, List<String> equipped, int slot) {
+        return pool.fragments().stream().filter(id -> !heldElsewhere(equipped, slot, id)).toList();
+    }
+
+    /**
+     * The four slots after putting {@code id} in {@code slot}; a null {@code id} EMPTIES the slot. Empty if
+     * the slot does not exist, or the pool does not offer {@code id} there (outside the pool, or already held
+     * in another slot).
+     */
+    public static Optional<List<String>> pickFragment(PoolDefinition pool, List<String> equipped, int slot, String id) {
+        if (slot < 0 || slot >= FragmentSlots.COUNT || equipped.size() != FragmentSlots.COUNT) return Optional.empty();
+        if (id != null && !fragmentChoices(pool, equipped, slot).contains(id)) return Optional.empty();
+        List<String> next = new java.util.ArrayList<>(equipped);
+        next.set(slot, id);
+        return Optional.of(java.util.Collections.unmodifiableList(next));
+    }
+
+    private static boolean heldElsewhere(List<String> equipped, int slot, String id) {
+        for (int other = 0; other < equipped.size(); other++) {
+            if (other != slot && id.equals(equipped.get(other))) return true;
+        }
+        return false;
+    }
+
+    /**
      * A loadout the screen will save. Any slot may be null (empty). A record: an immutable value whose
      * equals compares every field, which is what the tests lean on.
      *

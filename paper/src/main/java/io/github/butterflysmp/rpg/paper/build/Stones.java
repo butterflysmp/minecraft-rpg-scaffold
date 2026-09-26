@@ -1,6 +1,9 @@
 package io.github.butterflysmp.rpg.paper.build;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
+import io.github.butterflysmp.rpg.core.build.FragmentContributions;
+import io.github.butterflysmp.rpg.core.build.FragmentDefinition;
+import io.github.butterflysmp.rpg.core.build.FragmentRegistry;
 import io.github.butterflysmp.rpg.core.build.LoadoutResolution;
 import io.github.butterflysmp.rpg.core.build.LoadoutResolution.Equipped;
 import io.github.butterflysmp.rpg.core.build.LockedSlots;
@@ -14,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,12 +36,15 @@ public final class Stones {
     private final PoolRegistry pools;
     private final AbilityRegistry abilities;
     private final BuildService builds;
+    private final FragmentRegistry fragments;
 
-    public Stones(Keys keys, PoolRegistry pools, AbilityRegistry abilities, BuildService builds) {
+    public Stones(Keys keys, PoolRegistry pools, AbilityRegistry abilities, BuildService builds,
+                  FragmentRegistry fragments) {
         this.keys = keys;
         this.pools = pools;
         this.abilities = abilities;
         this.builds = builds;
+        this.fragments = fragments;
     }
 
     public PoolRegistry pools() { return pools; }
@@ -45,6 +52,36 @@ public final class Stones {
     public AbilityRegistry abilities() { return abilities; }
 
     public BuildService builds() { return builds; }
+
+    public FragmentRegistry fragments() { return fragments; }
+
+    /**
+     * The CURRENT cell's four fragment slots, as equipped (slice 4; {@code LoadoutResolution.fragments}):
+     * a saved id its pool still offers, once each; nulls for empty. Four empties for no pool, and for a
+     * build still loading or unusable -- a fragment is a bonus, so the safe reading is "none".
+     *
+     * <p><b>THE CELL GATE (section 1.6):</b> only the current cell's fragments count. Another cell's
+     * saved fragments stay in the build file and contribute nothing until the player switches back.
+     */
+    public List<String> equippedFragments(UUID playerId, Optional<PlayerProfile> profile) {
+        Optional<PoolDefinition> pool = profile.flatMap(p -> pools.find(p.archetypeId(), p.elementId()));
+        if (pool.isEmpty()) return java.util.Collections.unmodifiableList(java.util.Arrays.asList(new String[io.github.butterflysmp.rpg.core.build.FragmentSlots.COUNT]));
+        PlayerProfile p = profile.get();
+        List<String> saved = builds.build(playerId)
+                .flatMap(build -> build.loadout(p.archetypeId(), p.elementId()))
+                .map(CellLoadout::fragments)
+                .orElse(null);
+        return LoadoutResolution.fragments(pool.get(), saved);
+    }
+
+    /** What the current cell's fragments add to the stats, for the reconcile loop. {@code NONE} if none. */
+    public FragmentContributions fragmentContributions(UUID playerId, Optional<PlayerProfile> profile) {
+        List<String> ids = equippedFragments(playerId, profile);
+        List<FragmentDefinition> slots = ids.stream()
+                .map(id -> id == null ? null : fragments.find(id).orElse(null))
+                .toList();
+        return FragmentContributions.of(slots);
+    }
 
     /**
      * What this player's cell has equipped: their SAVED loadout for the cell, or the pool's default when

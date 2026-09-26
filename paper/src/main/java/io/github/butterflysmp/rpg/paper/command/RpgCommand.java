@@ -943,6 +943,9 @@ public final class RpgCommand {
         AccessorySheet.lines(player.getUniqueId(), adapters.accessories(),
                 profiles.profile(player.getUniqueId()).map(PlayerProfile::archetypeId).orElse(null))
                 .forEach(player::sendMessage);
+        // And the current cell's fragments (slice 4), under the accessories.
+        io.github.butterflysmp.rpg.paper.hud.FragmentSheet.lines(player.getUniqueId(), adapters.stones(),
+                profiles.profile(player.getUniqueId())).forEach(player::sendMessage);
         return 1;
     }
 

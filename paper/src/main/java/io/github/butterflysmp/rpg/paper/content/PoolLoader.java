@@ -31,7 +31,7 @@ public final class PoolLoader {
         this.log = log;
     }
 
-    public PoolRegistry loadAll(File buildsDir, Predicate<String> abilityExists) {
+    public PoolRegistry loadAll(File buildsDir, Predicate<String> abilityExists, Predicate<String> fragmentExists) {
         PoolRegistry registry = new PoolRegistry();
         File[] files = buildsDir.listFiles((d, n) -> n.endsWith(".yml"));
         if (files == null) return registry;
@@ -39,7 +39,7 @@ public final class PoolLoader {
         int skipped = 0;
         for (File f : files) {
             try {
-                registry.register(parse(YamlConfiguration.loadConfiguration(f), abilityExists));
+                registry.register(parse(YamlConfiguration.loadConfiguration(f), abilityExists, fragmentExists));
             } catch (RuntimeException ex) {
                 skipped++;
                 log.warning("Skipping pool '" + f.getName() + "': " + ex.getMessage());
@@ -53,11 +53,14 @@ public final class PoolLoader {
     }
 
     /** Package-private so the loader's rules are testable against a hand-built YAML section. */
-    static PoolDefinition parse(ConfigurationSection s, Predicate<String> abilityExists) {
+    static PoolDefinition parse(ConfigurationSection s, Predicate<String> abilityExists,
+                                Predicate<String> fragmentExists) {
         CellKey cell = new CellKey(req(s, "class"), req(s, "element"));
         String displayName = s.getString("display_name", cell.classId() + " " + cell.elementId());
         List<String> ultimates = s.getStringList("ultimates");
         List<String> actives = s.getStringList("actives");
+        // Slice 4: the fragments this cell offers. Optional -- a pool with none has four empty slots.
+        List<String> fragments = s.getStringList("fragments");
 
         ConfigurationSection def = s.getConfigurationSection("default");
         if (def == null) throw new IllegalArgumentException("Missing required section: default");
@@ -76,7 +79,15 @@ public final class PoolLoader {
         }
         // The list rules (at least 1 ultimate and 2 actives, no id in both, default drawn from the
         // lists) are the record's, so a pool built any other way obeys them too.
-        return new PoolDefinition(cell, displayName, ultimates, actives, defaultLoadout);
+        // A fragment id nothing defines is REFUSED, the same rule as an ability: a pool offering a fragment
+        // the Build screen cannot render or apply is a pool that lies. Checked AFTER the abilities, so one
+        // refusal names one kind.
+        List<String> unknownFragments = new ArrayList<>();
+        for (String id : fragments) if (!fragmentExists.test(id)) unknownFragments.add(id);
+        if (!unknownFragments.isEmpty()) {
+            throw new IllegalArgumentException("names fragments nothing defines: " + unknownFragments);
+        }
+        return new PoolDefinition(cell, displayName, ultimates, actives, defaultLoadout, fragments);
     }
 
     private static String req(ConfigurationSection s, String path) {

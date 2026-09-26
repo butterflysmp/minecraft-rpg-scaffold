@@ -1,0 +1,12 @@
+# PLACEHOLDER -- Ben designs. A fragment (PLAN-build-system.md section 2.3): a small, FLAT bonus slotted into
+# one of a cell's four fragment slots. Its name, icon and number are placeholders so slice 4 has something to
+# gate; none is a proposal. POSITIVE-ONLY (ruling 21): a negative modifier is refused at load.
+#
+# defense is continuous (a double), and +1 is FLAT; ward_charm, an accessory, carries +3.
+# The id of this fragment is its filename: fragment_ward.
+
+display_name: "<gray>Ward</gray>"
+icon: iron_nugget
+description: ["Placeholder fragment."]
+modifiers:
+  defense: 1

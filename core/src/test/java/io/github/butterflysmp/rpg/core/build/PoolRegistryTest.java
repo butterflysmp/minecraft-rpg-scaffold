@@ -58,7 +58,7 @@ class PoolRegistryTest {
                 new Loadout("other_ultimate", "rekindle", "solar_lance")));
         assertThrows(IllegalArgumentException.class, () -> new PoolDefinition(cell, "x",
                 List.of("sunfall"), List.of("rekindle", "solar_lance"),
-                new Loadout("sunfall", "rekindle", "arc_surge")));
+                new Loadout("sunfall", "rekindle", "not_in_the_pool")));
     }
 
     @Test

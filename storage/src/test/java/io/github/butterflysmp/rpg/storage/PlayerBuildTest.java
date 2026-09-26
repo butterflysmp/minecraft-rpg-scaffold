@@ -36,10 +36,10 @@ class PlayerBuildTest {
     @Test
     void savingACellAgainReplacesOnlyThatCell() {
         PlayerBuild build = PlayerBuild.empty(PLAYER).with(ranger())
-                .with(ranger().withActive(0, "arc_surge"));
+                .with(ranger().withActive(0, "another_active"));
 
         assertEquals(1, build.cells().size());
-        assertEquals("arc_surge", build.loadout("ranger", "fire").orElseThrow().actives().get(0));
+        assertEquals("another_active", build.loadout("ranger", "fire").orElseThrow().actives().get(0));
     }
 
     /** Two entries for one cell is STRUCTURAL: refused, never silently halved. */

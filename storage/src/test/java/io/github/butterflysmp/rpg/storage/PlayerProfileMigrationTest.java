@@ -189,7 +189,7 @@ class PlayerProfileMigrationTest {
     @Test
     void versionFourIsStampedToFiveAndTheStoneFieldsStayAbsent() {
         PlayerProfile v4 = new PlayerProfile(4, UUID.randomUUID(), "ranger", "fire", 7, 1234,
-                List.of("arc_surge"), 99L, 3, 56_780L, false, true);
+                List.of("old_kit_grant"), 99L, 3, 56_780L, false, true);
 
         PlayerProfile migrated = ProfileMigrations.migrate(v4);
 
@@ -287,8 +287,8 @@ class PlayerProfileMigrationTest {
     void withCellSetsClassAndElementClearsTheRetiredGrantAndCarriesTheRest() {
         // A pre-slice-2 profile: a kit class, and the kit's grant still in unlockedAbilities.
         var oldKitRanger = new PlayerProfile(4, UUID.randomUUID(), "ranger", "fire", 7, 1234,
-                List.of("arc_surge"), 99L, 3, 56_780L, false, true);
-        assertEquals(List.of("arc_surge"), oldKitRanger.unlockedAbilities(), "the old grant loads as it was");
+                List.of("old_kit_grant"), 99L, 3, 56_780L, false, true);
+        assertEquals(List.of("old_kit_grant"), oldKitRanger.unlockedAbilities(), "the old grant loads as it was");
 
         var mage = oldKitRanger.withCell("mage", "fire");
 

@@ -43,7 +43,7 @@ class ElementAccrualTest {
         registry.register(new StatusDefinition.Scorch("scorch"));
         registry.register(new StatusDefinition.Immobilize("rooted", false));
         registry.register(new StatusDefinition.Soaked("soaked"));
-        registry.register(new StatusDefinition.Potion("surge", NamespacedKey.minecraft("speed")));
+        registry.register(new StatusDefinition.Potion("potion_fixture", NamespacedKey.minecraft("speed")));
         return registry;
     }
 
@@ -180,7 +180,7 @@ class ElementAccrualTest {
         // no stack count and no duration of its own, so there is nothing to apply.
         // ContentValidator.validateElements NAMES this at boot, which is why this returns empty
         // silently rather than warning per hit.
-        for (String id : new String[] {"rooted", "soaked", "surge"}) {
+        for (String id : new String[] {"rooted", "soaked", "potion_fixture"}) {
             assertTrue(ElementAccrual.forHit(elements("nature", id), statuses(), "nature",
                             AccrualRule.ACCRUES, new DamageOutcome(25.0, 75.0), 30.0).isEmpty(),
                     id + " cannot accrue");

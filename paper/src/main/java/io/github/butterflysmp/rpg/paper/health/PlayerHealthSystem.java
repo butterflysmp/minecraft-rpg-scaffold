@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.health;
 
 import io.github.butterflysmp.rpg.core.accessory.AccessoryContributions;
 import io.github.butterflysmp.rpg.core.accessory.AccessoryStat;
+import io.github.butterflysmp.rpg.core.build.FragmentContributions;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.ManaTransition;
@@ -10,6 +11,7 @@ import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.accessory.Accessories;
+import io.github.butterflysmp.rpg.paper.build.Stones;
 import io.github.butterflysmp.rpg.paper.adapter.EntityTaskTarget;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
@@ -57,6 +59,7 @@ public final class PlayerHealthSystem implements HealthListener {
     private ResourcePool resources;
     private Accessories accessories;
     private ProfileService profiles;
+    private Stones stones;
 
     public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons,
                               EnchantRegistry enchants, java.util.logging.Logger log) {
@@ -109,6 +112,24 @@ public final class PlayerHealthSystem implements HealthListener {
         if (accessories == null || profiles == null) return AccessoryContributions.NONE;
         String profileClass = profiles.profile(id).map(PlayerProfile::archetypeId).orElse(null);
         return accessories.contributions(id, profileClass);
+    }
+
+    /**
+     * Wire the build system's fragments (slice 4). A fourth bind, for the other three's reason: built
+     * after this system. Until it is called {@link #fragmentContributions} answers {@code NONE}.
+     */
+    public void bindFragments(Stones stones) {
+        this.stones = stones;
+    }
+
+    /**
+     * What the CURRENT cell's fragments contribute this pass (the cell gate, PLAN-build-system.md 1.6).
+     * Read once per pass, beside the accessories, and merged into the SAME desired map at every merge
+     * point below -- never a second reconcile call, which would remove the first call's keys.
+     */
+    private FragmentContributions fragmentContributions(UUID id) {
+        if (stones == null || profiles == null) return FragmentContributions.NONE;
+        return stones.fragmentContributions(id, profiles.profile(id));
     }
 
     /** The store this owns, for the dev commands that damage/heal through the observable path. */
@@ -239,10 +260,11 @@ public final class PlayerHealthSystem implements HealthListener {
             // source. AccessoryContributions.merged is a named two-argument merge for the reason the
             // quiver-size note below records: an inline putAll here was once deleted and nothing reddened.
             AccessoryContributions fromAccessories = accessoryContributions(id);
+            FragmentContributions fromFragments = fragmentContributions(id);
             Map<String, Double> desiredMax = new HashMap<>(HealthModifierItems.desiredModifiers(player, keys));
             desiredMax.putAll(GrowthModifierItems.desiredModifiers(player, keys, enchants));
             stats.reconcileMaxModifiers(id, AccessoryContributions.merged(desiredMax,
-                    fromAccessories.sources(AccessoryStat.MAX_HEALTH)));
+                    fromAccessories.sources(AccessoryStat.MAX_HEALTH), fromFragments.sources(AccessoryStat.MAX_HEALTH)));
             Map<String, Double> desiredAttack = WeaponAttackItems.desiredAttackModifiers(player, keys, weapons);
             stats.reconcileAttackModifiers(id, desiredAttack);
             Map<String, Double> desiredSpeed = AttackSpeedModifierItems.desiredModifiers(player, keys);
@@ -272,10 +294,10 @@ public final class PlayerHealthSystem implements HealthListener {
             // reason crit is two stats rather than one.
             stats.reconcileCritChanceModifiers(id, AccessoryContributions.merged(
                     CritModifierItems.desiredChanceModifiers(player, keys),
-                    fromAccessories.sources(AccessoryStat.CRIT_CHANCE)));
+                    fromAccessories.sources(AccessoryStat.CRIT_CHANCE), fromFragments.sources(AccessoryStat.CRIT_CHANCE)));
             stats.reconcileCritDamageModifiers(id, AccessoryContributions.merged(
                     CritModifierItems.desiredDamageModifiers(player, keys),
-                    fromAccessories.sources(AccessoryStat.CRIT_DAMAGE)));
+                    fromAccessories.sources(AccessoryStat.CRIT_DAMAGE), fromFragments.sources(AccessoryStat.CRIT_DAMAGE)));
 
             // The sixth is the only one whose source is SHIPPED VANILLA CONTENT rather than a dev
             // fixture or an authored weapon: it reads the armor value off whatever armor the player
@@ -300,9 +322,9 @@ public final class PlayerHealthSystem implements HealthListener {
             // entirely, with a stat block that still reads correctly.
             ManaTransition.reconcile(stats, resources, id, ResourceCost.DEFAULT_RESOURCE,
                     AccessoryContributions.merged(ManaBankModifierItems.desiredModifiers(player, keys, enchants),
-                            fromAccessories.sources(AccessoryStat.MAX_MANA)),
+                            fromAccessories.sources(AccessoryStat.MAX_MANA), fromFragments.sources(AccessoryStat.MAX_MANA)),
                     AccessoryContributions.merged(ManaRegenModifierItems.desiredModifiers(player, keys),
-                            fromAccessories.sources(AccessoryStat.MANA_REGEN)));
+                            fromAccessories.sources(AccessoryStat.MANA_REGEN), fromFragments.sources(AccessoryStat.MANA_REGEN)));
 
             // The TENTH, and the quietest: the passive regeneration RATE, in HP per second. No
             // event, no override, no pin.
@@ -315,7 +337,7 @@ public final class PlayerHealthSystem implements HealthListener {
             // that already passed. Eager versus lazy is the axis; having a current is not.
             stats.reconcileHealthRegenModifiers(id, AccessoryContributions.merged(
                     HealthRegenModifierItems.desiredModifiers(player, keys),
-                    fromAccessories.sources(AccessoryStat.HEALTH_REGEN)));
+                    fromAccessories.sources(AccessoryStat.HEALTH_REGEN), fromFragments.sources(AccessoryStat.HEALTH_REGEN)));
 
             // QUIVER SIZE: whole arrows added to the held weapon's authored magazine. SILENT and
             // VOID, like health regen -- but for a different reason, and the difference is worth
@@ -374,7 +396,7 @@ public final class PlayerHealthSystem implements HealthListener {
             // Accessory defense merged BEFORE the reconcile, so the bar override below draws a value that
             // already includes it.
             stats.reconcileDefenseModifiers(id, AccessoryContributions.merged(worn.defense(),
-                    fromAccessories.sources(AccessoryStat.DEFENSE)));
+                    fromAccessories.sources(AccessoryStat.DEFENSE), fromFragments.sources(AccessoryStat.DEFENSE)));
             ArmorBarOverride.apply(player, keys, stats.defenseValue(id), worn.nativeArmor());
             return true;
         }, () -> { });

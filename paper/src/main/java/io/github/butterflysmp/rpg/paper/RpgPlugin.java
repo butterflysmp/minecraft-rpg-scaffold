@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.PacketEvents;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
+import io.github.butterflysmp.rpg.core.build.FragmentRegistry;
 import io.github.butterflysmp.rpg.core.build.PoolRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.FireCadence;
@@ -160,6 +161,7 @@ public final class RpgPlugin extends JavaPlugin {
     private ElementRegistry elements;
     private EnchantRegistry enchants;
     private PoolRegistry pools;
+    private FragmentRegistry fragments;
     private WeaponRegistry weapons;
     private ShieldRegistry shields;
     private ArmorRegistry armor;
@@ -216,8 +218,14 @@ public final class RpgPlugin extends JavaPlugin {
         warnRetiredKitFiles(new File(contentDir, "kits"));
         // AFTER the abilities, because a pool naming an ability nothing defines is REFUSED, not warned
         // about -- see PoolLoader. One pool per (class, element) cell; the Ability Stone casts its default.
+        // Fragments BEFORE the pools, for the abilities' reason: a pool naming a fragment nothing defines
+        // is REFUSED (slice 4). Positive-only (ruling 21); the loader names every file it skips.
+        this.fragments = new io.github.butterflysmp.rpg.paper.content.FragmentLoader(getLogger(), name -> {
+                    Material material = Material.matchMaterial(name);
+                    return material != null && material.isItem();
+                }).loadAll(new File(contentDir, "fragments"));
         this.pools = new PoolLoader(getLogger()).loadAll(new File(contentDir, "builds"),
-                id -> abilities.find(id).isPresent());
+                id -> abilities.find(id).isPresent(), id -> fragments.find(id).isPresent());
         this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
         this.shields = new ShieldLoader(getLogger()).loadAll(new File(contentDir, "shields"));
         this.armor = new ArmorLoader(getLogger()).loadAll(new File(contentDir, "armor"));
@@ -233,7 +241,7 @@ public final class RpgPlugin extends JavaPlugin {
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
-                + pools.size() + " pools, " + weapons.size() + " weapons, "
+                + pools.size() + " pools, " + fragments.size() + " fragments, " + weapons.size() + " weapons, "
                 + shields.size() + " shields, " + armor.size() + " armor, "
                 + tools.size() + " tools, " + accessoryRegistry.size() + " accessories, "
                 + mobs.size() + " mobs, "
@@ -503,7 +511,7 @@ public final class RpgPlugin extends JavaPlugin {
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
         this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift, craftResults, weapons, accessories,
-                new Stones(keys, pools, abilities, builds));
+                new Stones(keys, pools, abilities, builds, fragments));
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
@@ -576,6 +584,8 @@ public final class RpgPlugin extends JavaPlugin {
         // The reconcile loop reads each player's accessories and their PROFILE class (ruling A1), and
         // both exist only from here -- the same late-bind the store and the pool already use.
         this.healthSystem.bindAccessories(accessories, profiles);
+        // And the current cell's fragments (slice 4), read through the same Stones the stone casts from.
+        this.healthSystem.bindFragments(adapters.stones());
 
         // The vault rides the SAME storageIo, and that is the design rather than reuse for its own
         // sake. One serialised queue means a player's profile write and their vault write cannot

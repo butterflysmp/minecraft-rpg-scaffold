@@ -43,7 +43,12 @@ public final class VisualLoader {
 
         Arrays.sort(files); // deterministic load order across filesystems
         int skipped = 0;
+        java.util.List<String> retired = new java.util.ArrayList<>();
         for (File f : files) {
+            if (RETIRED_FILES.contains(f.getName())) {
+                retired.add(f.getName());
+                continue;
+            }
             try {
                 YamlConfiguration yaml = YamlConfiguration.loadConfiguration(f);
                 registry.register(parse(idOf(f), yaml));
@@ -56,8 +61,22 @@ public final class VisualLoader {
             log.warning(skipped + " visual file(s) were skipped. The server is still running, "
                     + "but that content is not loaded.");
         }
+        if (!retired.isEmpty()) {
+            log.warning(retired.size() + " visual file(s) in " + visualsDir.getPath() + " " + retired
+                    + " name DELETED content and are NOT loaded. They are stale copies (saveResource never"
+                    + " deletes); they can be deleted, and --refresh-content clears them on a dev server.");
+        }
         return registry;
     }
+
+    /**
+     * Files DELETED by a ruling, skipped if a stale copy survives in a data folder -- AbilityLoader's
+     * RETIRED_FILES handling: named once at boot, never deleted, and not loaded.
+     *
+     * <p>{@code arc_surge.yml}: ruling 22 (2026-09-26), PLAN-build-system.md -- its only user was
+     * arc_surge, deleted by ruling 20.
+     */
+    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml");
 
     /** The id is the filename: solar_detonation.yml -> solar_detonation. */
     private static String idOf(File f) {

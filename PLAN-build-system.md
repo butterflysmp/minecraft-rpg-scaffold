@@ -68,6 +68,22 @@ Recorded verbatim from the brief.
     DELETION. It is removed from the Fire Ranger pool and its ability file is deleted, with every citation
     swept.** This closes §5's parked question. The deletion is not made in slice 3; it is the first commit
     of slice 4.
+21. **Ben's ruling 21, 2026-09-26, put during slice 4 when §2.3's combined bound was measured against the
+    shipped accessories: FRAGMENTS ARE POSITIVE-ONLY in v1. A fragment's negative modifier is refused.**
+    The measurement that forced the question: at `8 × |amount| < base`, `fletchers_quiver`'s
+    `health_regen -0.04` (0.32 against 0.2) and `sages_scroll`'s `crit_chance -0.03` (0.24 against 0.15)
+    would be refused, where today's `4×` passes both (0.16, 0.12). Only a negative can carry a stat to its
+    floor, so with fragments positive-only the worst case is still the four accessory slots: the ONE
+    combined bound is `4 accessories × |amount| + 4 fragments × 0 < base`, and no shipped number changes.
+    Fragments may gain drawbacks later, with the bound re-measured then.
+22. **Ben's ruling 22, 2026-09-26: DELETE the two orphans ruling 20 left, `visuals/arc_surge.yml` and
+    `statuses/surge.yml`, sweeping every citation; a stale `run/` copy is handled the arc_surge way (named
+    once, skipped, never deleted). Do NOT add a `Self` ability for coverage: the Self cast path keeps its
+    unit tests, and real content will cover it when Ben designs it.** Carried out in slice 4 as its own
+    commit, before the gate's boot.
+23. **Ben's ruling 23, 2026-09-26: fragments and aspects must each be UNEQUIPPABLE by the player.** For
+    fragments this is already satisfied by the picker's **"Empty this slot"** option (slice 4, BF9). **Slice
+    5 must give each aspect slot the same option, with its own gate row.**
 
 **And one clarification, given while building slice 1 (2026-09-25):** Q pressed over the stone with a
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
@@ -572,7 +588,7 @@ element: fire
 display_name: "<gold>Fire Ranger</gold>"
 # every id below that does not exist at bccef7d is an ILLUSTRATIVE name, not a proposal (§4)
 ultimates: [sunfall]                       # §4 — Ben designs
-actives:   [rekindle, solar_lance, arc_surge]
+actives:   [rekindle, solar_lance]             # arc_surge -- since deleted (ruling 20)
 aspects:   [banked_embers, searing_lance]
 fragments: [ember_heart, keen_ember, kindling, warm_blood]
 default:
@@ -874,7 +890,8 @@ side.
   - **`scorch` is excluded outright.** Its burn count is `Scorch.damageTicksFor = ceil(duration / 20)`,
     which is quantised to its period. Scorch durations are also no longer authored in content (that
     method's javadoc), so there is no base to meet.
-  - *NOT TRACED, AND SAID SO:* whether `freeze`, `rooted`, `soaked` and `surge` (a `potion` kind) are
+  - *NOT TRACED, AND SAID SO:* whether `freeze`, `rooted`, `soaked` and `surge` (a `potion` kind; `surge`
+    since deleted by ruling 22) are
     continuous in their duration. **Slice 5 traces each status kind's use of `durationTicks` before
     this field ships.** Until then the loader refuses `status.duration_ticks` on any kind not yet traced.
 
@@ -1595,6 +1612,49 @@ The gate file is `GATE-build-screen.md`.
 
 - **Deletes:** row 4's "coming later" panes.
 
+#### 3.4.1 AS BUILT — where slice 4 differs from the lines above, each with its reason
+
+The gate file is `GATE-build-fragments.md`. The branch's FIRST commit carries ruling 20 (arc_surge
+deleted); everything below is the fragments.
+
+1. **The combined bound is 4x, not 8x: ruling 21.** Measured before any code, the plan's `8 × |amount| <
+   base` refused two shipped accessories (`fletchers_quiver` 0.32 against 0.2, `sages_scroll` 0.24 against
+   0.15). The plan's stop condition fired and the choice went to Ben: **fragments are positive-only**, so
+   they add no NEGATIVE source and the ONE combined bound (`StatSourceBound.NEGATIVE_SOURCES` =
+   4 accessories + 4 fragments × 0) keeps every ruled number. `AccessoryNegatives` reads it.
+2. **The mutation "leave `AccessoryNegatives` at `COUNT`" is not runnable as written**: under ruling 21 both
+   are four. Its replacement is F2, counting fragments as negative sources, which reddens the shipped rows.
+3. **`FragmentSlots`, `FragmentDefinition`, `FragmentRegistry`, `FragmentContributions` and
+   `StatSourceBound` are in `core/build`**, and `AccessoryContributions.sourceValue` became public so a
+   fragment converts its value exactly as an accessory does. `FragmentContributions` is core, not paper: it
+   takes definitions, not items or the store, so it is pure.
+4. **`AccessoryContributions.merged` became n-way** (varargs); every existing two-argument call still
+   compiles. All seven universal stats' merge points pass the fragments beside the accessories in the SAME
+   call; `FragmentWiringSignatureTest` pins it (mutation F3).
+5. **`PoolDefinition` gained `fragments`**, with a five-argument constructor kept for a pool without them;
+   `PoolLoader` refuses a pool naming a fragment nothing defines, as it refuses an unknown ability.
+6. **THE FIRST FRAGMENT SAVE SEEDS THE ABILITIES.** A cell with nothing saved casts its pool default; saving a
+   fragment into an empty `CellLoadout` would have stored null abilities, and `LoadoutResolution` reads a
+   saved null as EMPTY. So `chooseFragment` writes the currently EQUIPPED Ultimate and Actives beside the
+   fragments. Found in design, not in play; BF8 reads it.
+7. **A hand-edited duplicate fragment counts once, and NOTHING LOGS IT.** Section 2.3 says it "logs it". The
+   duplicate is dropped in three places (`CellLoadout` on load, `LoadoutResolution.fragments`,
+   `FragmentContributions`), none of which has a logger. BF4 predicts no log line rather than claiming one.
+8. **The icon check is a predicate handed in by `RpgPlugin`**, as `ContentValidator`'s `materialExists` is:
+   resolving a `Material` initialises the server's registries, and a unit test has none (the first suite run
+   errored on exactly that). The shipped-fragments test stubs it and says so; R0c's fragment count is what
+   reads the shipped icons against the real registry.
+9. **Fragments render on the Build screen from their own icon**, and the picker adds an **Empty this slot**
+   option on a filled slot only. The stats sheet's **Fragments** block (`FragmentSheet`) follows the
+   Accessories block in `/rpg stats` and on the Nexus stats head.
+10. **The content is five placeholders**, one per universal stat except mana regen, each a FLAT positive value
+    on a continuous stat, each marked `# PLACEHOLDER -- Ben designs`, and both Fire pools offer all five.
+11. **Ruling 20 left two orphans, `visuals/arc_surge.yml` and `statuses/surge.yml`, and RULING 22 DELETED
+    THEM** (their only user was arc_surge), with the same stale-copy skip in `VisualLoader` and
+    `StatusLoader`. No shipped ability is `type: self` any more, and Ben ruled NOT to add one for coverage:
+    the Self cast keeps its unit tests. The gate's R0b and R0c predictions were amended for it BEFORE the
+    boot, so no reading was taken against the old ones.
+
 ### 3.5 SLICE 5 — ASPECTS
 
 - **Files:**
@@ -1691,7 +1751,7 @@ them.
 |---|---|---|---|---|
 | 1 | pool files with a `default` | default: Active 1 `rekindle`, Active 2 `solar_lance`, Ultimate **placeholder** | default: Active 1 `ember_step`, Active 2 `solar_grenade`, Ultimate **placeholder** | defaults: **placeholder**, from shipped abilities |
 | 1 | **Ultimates** (none exist) | 1 | 1 | **Ben.** Slice 1 ships a placeholder Ultimate per cell, built only from existing `CastSpec`/`EffectSpec` with long cooldowns, so Q can be gated |
-| 2-3 | **Actives**, ≥ 2 per cell, more for a choice | have: `rekindle`, `solar_lance`, `arc_surge` (nature, today's kit grant) | have: `solar_grenade`, `solar_lance`, `ember_step` | **Ben** for any new one. Slice 3's BB4 needs the two pools to **differ**, and today they share `solar_lance` — that is fine, since BB4 reads a Mage-*only* ability |
+| 2-3 | **Actives**, ≥ 2 per cell, more for a choice | have: `rekindle`, `solar_lance`, `arc_surge` (since deleted, ruling 20) | have: `solar_grenade`, `solar_lance`, `ember_step` | **Ben** for any new one. Slice 3's BB4 needs the two pools to **differ**, and today they share `solar_lance` — that is fine, since BB4 reads a Mage-*only* ability |
 | 3 | a choice of Ultimates (≥ 2 per cell) | 2 | 2 | **Ben**. The screen ships with one each |
 | 4 | **Fragments** | 4+ | 4+ | numbers **Ben**; the slice can ship **placeholders** built on the four universal stats (max HP, crit chance, crit damage, health regen) |
 | 5 | **Aspects** | ≥ 2 | ≥ 2 | **Ben.** §2.4's three examples are placeholders the slice can ship (2 Ranger: `searing_lance`, `banked_embers`; 1 Mage: `cinder_wake` — plus one more Mage placeholder on `solar_grenade`) |
@@ -1729,7 +1789,7 @@ the record of what was asked.
 3. **`archetype:` is dead and contradicts the kits** for `solar_grenade` and `solar_lance` (`hunter`, in
    the Mage kit). It is retired in slice 2 (§2.2).
 4. **`arc_surge` is `element: nature`** in the fire Ranger kit. That is not a defect, but the brief's
-   "Fire abilities" list was wrong about it (§1.1).
+   "Fire abilities" list was wrong about it (§1.1). Moot since ruling 20: `arc_surge` is deleted.
 5. **Stale kit files survive in `run/`**: `saveResource(path, false)` never deletes, so they are inert
    after slice 2 (§1.2).
 6. **`QuiverAmmo`'s javadoc says it is "THE ONLY GameMode READ"**, and `EquipmentMenu` also reads it.

@@ -61,6 +61,19 @@ class BuildMenuLayoutTest {
         assertEquals(Optional.empty(), BuildMenuLayout.loadoutSlotAt(BuildMenuLayout.ASPECT_SLOTS.get(0)));
     }
 
+    /** Slice 4: the fragment row maps screen slot to fragment slot 0-3, one per stored slot. */
+    @Test
+    void theFragmentRowMapsToTheFourStoredSlots() {
+        assertEquals(io.github.butterflysmp.rpg.core.build.FragmentSlots.COUNT, BuildMenuLayout.FRAGMENT_SLOTS.size());
+        assertEquals(io.github.butterflysmp.rpg.storage.CellLoadout.FRAGMENTS,
+                io.github.butterflysmp.rpg.core.build.FragmentSlots.COUNT,
+                "the stored slots and the core slots are the same four");
+        for (int i = 0; i < BuildMenuLayout.FRAGMENT_SLOTS.size(); i++) {
+            assertEquals(OptionalInt.of(i), BuildMenuLayout.fragmentIndexAt(BuildMenuLayout.FRAGMENT_SLOTS.get(i)));
+        }
+        assertEquals(OptionalInt.empty(), BuildMenuLayout.fragmentIndexAt(BuildMenuLayout.ASPECT_SLOTS.get(0)));
+    }
+
     @Test
     void theBuildScreenIsPaintedOrFillerExactlyOnce() {
         for (int slot = 0; slot < BuildMenuLayout.SIZE; slot++) {

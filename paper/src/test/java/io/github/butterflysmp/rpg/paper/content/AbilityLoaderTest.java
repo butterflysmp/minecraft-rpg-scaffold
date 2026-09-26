@@ -1014,4 +1014,23 @@ class AbilityLoaderTest {
         load();
         assertTrue(warnings.isEmpty(), warningText());
     }
+
+    /**
+     * A DELETED ability's file left in an old data folder (saveResource never deletes) is SKIPPED and named
+     * once -- never loaded, never deleted. arc_surge, ruling 20: the stale-kit-file precedent, plus the skip
+     * that precedent did not need (nothing read the kit directory; this loader reads every file here).
+     */
+    @Test
+    void aRetiredAbilityFileIsSkippedAndNamedOnce() throws IOException {
+        write("arc_surge.yml", "id: arc_surge\nelement: nature\ncooldown_ticks: 300\n");
+        write("clean.yml", "id: clean\nelement: fire\ncooldown_ticks: 20\n");
+
+        AbilityRegistry registry = load();
+
+        assertTrue(registry.find("arc_surge").isEmpty(), "a retired ability must not load from a stale copy");
+        assertTrue(registry.find("clean").isPresent(), "the control file still loads");
+        assertEquals(1, warnings.size(), "ONE warning: " + warningText());
+        assertTrue(warningText().contains("arc_surge.yml"), warningText());
+        assertFalse(warningText().contains("clean.yml"), "the control file is not named: " + warningText());
+    }
 }

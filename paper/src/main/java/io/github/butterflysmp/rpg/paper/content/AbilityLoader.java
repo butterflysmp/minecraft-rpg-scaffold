@@ -39,7 +39,12 @@ public final class AbilityLoader {
         Arrays.sort(files); // deterministic load order across filesystems
         int skipped = 0;
         List<String> declaringArchetype = new ArrayList<>();
+        List<String> retired = new ArrayList<>();
         for (File f : files) {
+            if (RETIRED_FILES.contains(f.getName())) {
+                retired.add(f.getName());
+                continue;
+            }
             try {
                 YamlConfiguration yaml = YamlConfiguration.loadConfiguration(f);
                 registry.register(parse(yaml));
@@ -62,8 +67,22 @@ public final class AbilityLoader {
                     + declaringArchetype + ". Delete the line; pools decide who may cast an ability "
                     + "(content/builds/). A deployed copy is refreshed by ./scripts/dev-server.sh --refresh-content.");
         }
+        if (!retired.isEmpty()) {
+            log.warning(retired.size() + " ability file(s) in " + abilitiesDir.getPath() + " " + retired
+                    + " name DELETED abilities and are NOT loaded. They are stale copies (saveResource never"
+                    + " deletes); they can be deleted, and --refresh-content clears them on a dev server.");
+        }
         return registry;
     }
+
+    /**
+     * Ability files DELETED by a ruling, skipped if a stale copy survives in a data folder. The stale-kit-file
+     * handling (named once, never deleted), plus a skip: this loader reads every file in the directory, so
+     * without it a stale copy would still register the deleted ability.
+     *
+     * <p>{@code arc_surge.yml}: ruling 20 (2026-09-26), PLAN-build-system.md.
+     */
+    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml");
 
     /**
      * {@code archetype:} -- RETIRED in the build system's slice 2 (PLAN-build-system.md section 2.2). It was
