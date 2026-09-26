@@ -76,6 +76,11 @@ Recorded verbatim from the brief.
     floor, so with fragments positive-only the worst case is still the four accessory slots: the ONE
     combined bound is `4 accessories × |amount| + 4 fragments × 0 < base`, and no shipped number changes.
     Fragments may gain drawbacks later, with the bound re-measured then.
+22. **Ben's ruling 22, 2026-09-26: DELETE the two orphans ruling 20 left, `visuals/arc_surge.yml` and
+    `statuses/surge.yml`, sweeping every citation; a stale `run/` copy is handled the arc_surge way (named
+    once, skipped, never deleted). Do NOT add a `Self` ability for coverage: the Self cast path keeps its
+    unit tests, and real content will cover it when Ben designs it.** Carried out in slice 4 as its own
+    commit, before the gate's boot.
 
 **And one clarification, given while building slice 1 (2026-09-25):** Q pressed over the stone with a
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
@@ -882,7 +887,8 @@ side.
   - **`scorch` is excluded outright.** Its burn count is `Scorch.damageTicksFor = ceil(duration / 20)`,
     which is quantised to its period. Scorch durations are also no longer authored in content (that
     method's javadoc), so there is no base to meet.
-  - *NOT TRACED, AND SAID SO:* whether `freeze`, `rooted`, `soaked` and `surge` (a `potion` kind) are
+  - *NOT TRACED, AND SAID SO:* whether `freeze`, `rooted`, `soaked` and `surge` (a `potion` kind; `surge`
+    since deleted by ruling 22) are
     continuous in their duration. **Slice 5 traces each status kind's use of `durationTicks` before
     this field ships.** Until then the loader refuses `status.duration_ticks` on any kind not yet traced.
 
@@ -1640,9 +1646,11 @@ deleted); everything below is the fragments.
    Accessories block in `/rpg stats` and on the Nexus stats head.
 10. **The content is five placeholders**, one per universal stat except mana regen, each a FLAT positive value
     on a continuous stat, each marked `# PLACEHOLDER -- Ben designs`, and both Fire pools offer all five.
-11. **Ruling 20 left two orphans, recorded and not deleted**: `visuals/arc_surge.yml` and
-    `statuses/surge.yml` had arc_surge as their only user. And no shipped ability is `type: self` any more,
-    so no content walks `PaperCombatWorld.combatant(UUID)`. Put to the seat and Ben.
+11. **Ruling 20 left two orphans, `visuals/arc_surge.yml` and `statuses/surge.yml`, and RULING 22 DELETED
+    THEM** (their only user was arc_surge), with the same stale-copy skip in `VisualLoader` and
+    `StatusLoader`. No shipped ability is `type: self` any more, and Ben ruled NOT to add one for coverage:
+    the Self cast keeps its unit tests. The gate's R0b and R0c predictions were amended for it BEFORE the
+    boot, so no reading was taken against the old ones.
 
 ### 3.5 SLICE 5 — ASPECTS
 

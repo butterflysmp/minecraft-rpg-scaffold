@@ -211,4 +211,17 @@ class StatusLoaderTest {
         assertInstanceOf(StatusDefinition.Fire.class, registry.find("emberglow").orElseThrow());
         // Mutation: map "fire" to StatusDefinition.Scorch -> reddens.
     }
+
+    /** Ruling 22: a stale surge.yml in an old data folder is SKIPPED and named once, never deleted. */
+    @Test
+    void aRetiredStatusFileIsSkippedAndNamedOnce() throws IOException {
+        write("surge.yml", "kind: fire\n");
+        write("clean.yml", "kind: fire\n");
+        StatusRegistry registry = load();
+        assertTrue(registry.find("surge").isEmpty(), "a retired status must not load from a stale copy");
+        assertTrue(registry.find("clean").isPresent(), "the control file still loads: " + warningText());
+        assertEquals(1, warnings.size(), "ONE warning: " + warningText());
+        assertTrue(warningText().contains("surge.yml"), warningText());
+        assertFalse(warningText().contains("clean.yml"), warningText());
+    }
 }

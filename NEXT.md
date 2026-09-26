@@ -57,6 +57,11 @@ grep -rhoE '^\s+type:\s*(ray|melee|projectile|self)\s*$' \
 > **2026-09-26: `arc_surge` was DELETED (ruling 20, PLAN-build-system.md), so two rows above are false
 > again.** No shipped ability is `type: self`, so no shipped content walks `combatant(UUID)`; and
 > `statuses/surge.yml` still authors a potion status that nothing applies. Recorded, not fixed.
+>
+> **AND RULING 22 (2026-09-26) DELETED `statuses/surge.yml` and `visuals/arc_surge.yml` too**, so the
+> `StatusDefinition.Potion` row is false again as well: no shipped content uses a potion status. Ben ruled
+> NOT to add a `Self` ability for coverage -- the Self cast keeps its unit tests, and real content will
+> cover it when he designs it.
 
 > **SHIPPING CONTENT IS NOT A BOOT READING, AND THE TWO ARE SEPARATED HERE ON PURPOSE.** The table
 > says each path is now REACHABLE from content, which is precisely what the July list denied. **What

@@ -43,7 +43,7 @@ max health, **Focus** +10 max mana, **Keen** +2% crit chance, **Mending** +0.05/
 
 | prediction | instrument | READING |
 |---|---|---|
-| `FragmentLoader`, core `StatSourceBound`, core `FragmentContributions`, `FragmentSheet` and `content/fragments/fragment_vigor.yml` PRESENT; `content/abilities/arc_surge.yml` ABSENT (ruling 20); the control ABSENT | the scan below | _(not run)_ |
+| `FragmentLoader`, core `StatSourceBound`, core `FragmentContributions`, `FragmentSheet` and `content/fragments/fragment_vigor.yml` PRESENT; `content/abilities/arc_surge.yml` ABSENT (ruling 20); `content/visuals/arc_surge.yml` and `content/statuses/surge.yml` ABSENT (ruling 22); the control ABSENT | the scan below | _(not run)_ |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -54,20 +54,23 @@ foreach ($c in 'io/github/butterflysmp/rpg/paper/content/FragmentLoader.class',
                'io/github/butterflysmp/rpg/paper/hud/FragmentSheet.class',
                'content/fragments/fragment_vigor.yml',
                'content/abilities/arc_surge.yml',
+               'content/visuals/arc_surge.yml',
+               'content/statuses/surge.yml',
                'io/github/butterflysmp/rpg/paper/menu/NoSuchClassControl.class') {
   if ($zip.GetEntry($c)) { "PRESENT $c" } else { "ABSENT  $c" }
 }
 $zip.Dispose()
 ```
 
-> **Two ABSENTs are expected and they mean different things.** The control never existed;
-> `arc_surge.yml` was deleted by ruling 20. A PRESENT on `arc_surge.yml` is a stale jar, and R0 stops.
+> **Four ABSENTs are expected and they mean different things.** The control never existed; the ability
+> `arc_surge.yml` was deleted by ruling 20, and the visual and the status by ruling 22. A PRESENT on any of
+> those three is a stale jar, and R0 stops.
 
 ### R0c — the boot log: five fragments, every accessory, one fewer ability, nothing skipped
 
 | prediction | instrument | READING |
 |---|---|---|
-| the `Loaded ...` line reads **`7 abilities`** (8 before ruling 20), **`2 pools, 5 fragments`** and **`6 accessories`** -- every shipped accessory loads, `fletchers_quiver` and `sages_scroll` included (ruling 21 kept their drawbacks legal). **No** line says `Skipping fragment`, `Skipping pool` or `name DELETED abilities` (`--refresh-content` removed the stale copy) | `Select-String run\logs\latest.log -Pattern 'Loaded ','Skipping','DELETED'` | _(not run)_ |
+| the `Loaded ...` line reads **`7 abilities, 27 visuals, 4 statuses`** (8, 28 and 5 before rulings 20 and 22), **`2 pools, 5 fragments`** and **`6 accessories`** -- every shipped accessory loads, `fletchers_quiver` and `sages_scroll` included (ruling 21 kept their drawbacks legal). **No** line says `Skipping fragment`, `Skipping pool` or `name DELETED` -- the retired-file warning of the ability, visual or status loader (`--refresh-content` removed the stale copies) | `Select-String run\logs\latest.log -Pattern 'Loaded ','Skipping','DELETED'` | _(not run)_ |
 
 ---
 
@@ -168,6 +171,8 @@ predictions were written into the harness before it ran.
 | mutation | predicted to redden | result |
 |---|---|---|
 | R20 the retired-file skip disabled (commit 1, ruling 20) | `AbilityLoaderTest` | **KILLED** by `aRetiredAbilityFileIsSkippedAndNamedOnce` alone |
+| G1 the visual loader's retired-file skip disabled (ruling 22) | `VisualLoaderTest` | **KILLED** by `aRetiredVisualFileIsSkippedAndNamedOnce` alone |
+| G2 the status loader's retired-file skip disabled (ruling 22) | `StatusLoaderTest` | **KILLED** by `aRetiredStatusFileIsSkippedAndNamedOnce` alone |
 | F1 a fragment may carry a negative (ruling 21 broken) | `FragmentDefinitionTest`, `StatSourceBoundTest`, `FragmentLoaderTest` | **KILLED** by all three |
 | F2 the bound counts every fragment slot as a negative source (the plan's 8x) | `StatSourceBoundTest`, `AccessoryNegativesTest` | **KILLED** by both (4 rows) |
 | F3 fragments reconciled in a SECOND call for one stat | `FragmentWiringSignatureTest` + BF3 | **KILLED** by `FragmentWiringSignatureTest` |

@@ -594,7 +594,7 @@ class ContentValidatorTest {
         registry.register(new StatusDefinition.Immobilize("rooted", false));
         registry.register(new StatusDefinition.Immobilize("freeze", true));
         registry.register(new StatusDefinition.Soaked("soaked"));
-        registry.register(new StatusDefinition.Potion("surge", NamespacedKey.minecraft("speed")));
+        registry.register(new StatusDefinition.Potion("potion_fixture", NamespacedKey.minecraft("speed")));
         return registry;
     }
 

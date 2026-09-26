@@ -118,7 +118,8 @@ class VisualLoaderTest {
      * 6-argument spawnParticle, whose default chain in the pinned Paper API ends at `dconst_1` --
      * so every visual in content/ was authored, by eye, against extra = 1.0, without anyone
      * choosing it. 0.0 is the reflexive default for a new numeric field and it would silently
-     * restyle ember_burst, ember_trail, solar_detonation, solar_lance, arc_surge and void_slash
+     * restyle ember_burst, ember_trail, solar_detonation, solar_lance, arc_surge (since deleted, ruling
+     * 22) and void_slash
      * at once, with no test failing and nothing in a diff to point at.
      *
      * Mutation: change the 1.0 in VisualLoader to 0.0 -> this reddens. Nothing else does.
@@ -432,5 +433,18 @@ class VisualLoaderTest {
         assertEquals(2, def.steps().size());
         assertInstanceOf(VisualSpec.Particles.class, def.steps().get(0));
         assertInstanceOf(VisualSpec.Sound.class, def.steps().get(1));
+    }
+
+    /** Ruling 22: a stale arc_surge.yml in an old data folder is SKIPPED and named once, never deleted. */
+    @Test
+    void aRetiredVisualFileIsSkippedAndNamedOnce() throws IOException {
+        write("arc_surge.yml", "steps:\n  - type: sound\n    key: block.beacon.activate\n    volume: 0.7\n    pitch: 1.4\n");
+        write("clean.yml", "steps:\n  - type: sound\n    key: block.beacon.activate\n    volume: 0.7\n    pitch: 1.4\n");
+        VisualRegistry registry = load();
+        assertTrue(registry.find("arc_surge").isEmpty(), "a retired visual must not load from a stale copy");
+        assertTrue(registry.find("clean").isPresent(), "the control file still loads: " + warningText());
+        assertEquals(1, warnings.size(), "ONE warning: " + warningText());
+        assertTrue(warningText().contains("arc_surge.yml"), warningText());
+        assertFalse(warningText().contains("clean.yml"), warningText());
     }
 }
