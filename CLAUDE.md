@@ -210,8 +210,9 @@ the opposite because the material suggests it.**
   > day it landed. It shipped in one PR and was copied into `lapis_staff.yml` in the next. Only a
   > gate row that physically stacked two staves caught it.
 
-- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade`, `quiver_stone` OR `ability_stone`.**
-  Those four are in a deletion set. If a dev weapon is truly the only precedent, cite it AND MARK the
+- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade` OR `quiver_stone`.**
+  Those three are in a deletion set (a fourth, `ability_stone`, was DELETED in the Ability Stone
+  slice). If a dev weapon is truly the only precedent, cite it AND MARK the
   citation as standing on the deletion set, so the sweep finds it by grep. **Never derive a new
   weapon's numbers from a dev weapon's.** The Boltor's numbers are RULED (`quiver_size 8`,
   `cooldown_ticks 16`, `range 96`, `reload_ticks 60`, `attack_damage 19`). Held right-click inputs

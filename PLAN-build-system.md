@@ -1333,6 +1333,41 @@ None of these reads a `NexusSlots`, `converge` or handler path.
 **Deletes:** `ability_stone.yml`, `Keys.abilityId`, `bundledAbilityStoneContentLoads`, the golden-lore
 block, and the id in `WeaponLoreTest`. The 13 comment lines and the content comments are **edited**.
 
+#### 3.1.4 AS BUILT — where slice 1 differs from the lines above, each with its reason
+
+The gate file is `GATE-build-stone.md`, and its rows and mutation results are the record. What moved:
+
+1. **`StoneItemsTest` became `StoneIdentityTest`.** A test that mints a stone and a Ward Charm is not
+   writable: `new ItemStack` throws without a server and there is no MockBukkit (`NexusSlots`' javadoc
+   records the same limit). The test pins the key by reflection and reads `isStone`'s body. The
+   item-level half is ST16, played. Mutation M6 (material instead of key) is killed by it.
+2. **`ConvergePlan` was added (core), and it was not in this plan.** `NexusSlots.converge`'s javadoc
+   carried a named debt, the plan/execute split, whose trigger was "the next slice that opens this method
+   for any other reason". This slice opened it. The split is what finally kills `MUTWELDDEFAULT` (M8),
+   which had left the whole suite green.
+3. **Mutation "swap the converge order" was predicted to redden `LockedSlotsTest`. It SURVIVED, and the
+   prediction was wrong, not the code.** The order is invisible to unit tests, and harmless while
+   `LockedSlots` keeps the two targets distinct, which is what `LockedSlotsTest` actually proves.
+4. **`StoneInput` takes no game mode.** The spike found creative's inputs arrive as the same events as
+   survival's (§3.1.0.1), and creative's in-screen Q is a screen input like survival's. A parameter no
+   rule reads would be a hollow row in the grid.
+5. **Ruling 14's "sneaking still opens" is implemented, but its recommendation's parenthetical was wrong.**
+   It called that "the existing rule in `openHijackedBlock`". In fact the existing rule is the INVERSE:
+   for a weapon, sneaking is the escape hatch that lets it CAST. The stone's branch therefore calls the
+   block's opener directly. ST6c reads it.
+6. **The off-hand half of a stone right-click is CANCELLED, not merely ignored.** Measured, a right-click on
+   a block fires once per hand. Ignoring the off-hand event would still let vanilla place an off-hand
+   torch on every cast. ST6 reads it.
+7. **The stone's left click uses `PlayerArmSwingEvent`, not `WeaponSwingListener`** (§2.5's Q-swing guard).
+   `WeaponSwingListener` is untouched.
+8. **The no-loadout notice names `/rpg class` and `/rpg element`,** not "the Build screen", because the
+   Build screen is slice 3.
+9. **`/rpg class` and `/rpg element` now also re-render the stone's lore.** Slice 2 deletes both commands,
+   and the refresh moves to the Build screen.
+10. **`ScorchContentInvariantTest`'s site count went 13 -> 14.** It is -1 for the deleted weapon's ember
+    burst and +2 for the placeholder Ultimates. The first run read 15 from a stale `target/`, which
+    `ContentFreshnessTest` named on the same run; `./mvnw clean` cleared it.
+
 ### 3.2 SLICE 2 — KIT REMOVAL AND BUILD STORAGE
 
 - **Files:**
