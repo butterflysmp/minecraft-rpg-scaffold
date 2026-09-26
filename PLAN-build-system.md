@@ -68,6 +68,14 @@ Recorded verbatim from the brief.
     DELETION. It is removed from the Fire Ranger pool and its ability file is deleted, with every citation
     swept.** This closes §5's parked question. The deletion is not made in slice 3; it is the first commit
     of slice 4.
+21. **Ben's ruling 21, 2026-09-26, put during slice 4 when §2.3's combined bound was measured against the
+    shipped accessories: FRAGMENTS ARE POSITIVE-ONLY in v1. A fragment's negative modifier is refused.**
+    The measurement that forced the question: at `8 × |amount| < base`, `fletchers_quiver`'s
+    `health_regen -0.04` (0.32 against 0.2) and `sages_scroll`'s `crit_chance -0.03` (0.24 against 0.15)
+    would be refused, where today's `4×` passes both (0.16, 0.12). Only a negative can carry a stat to its
+    floor, so with fragments positive-only the worst case is still the four accessory slots: the ONE
+    combined bound is `4 accessories × |amount| + 4 fragments × 0 < base`, and no shipped number changes.
+    Fragments may gain drawbacks later, with the bound re-measured then.
 
 **And one clarification, given while building slice 1 (2026-09-25):** Q pressed over the stone with a
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
@@ -1594,6 +1602,47 @@ The gate file is `GATE-build-screen.md`.
   | BF6 | the boot log shows every shipped accessory loaded (the bound did not refuse one) |
 
 - **Deletes:** row 4's "coming later" panes.
+
+#### 3.4.1 AS BUILT — where slice 4 differs from the lines above, each with its reason
+
+The gate file is `GATE-build-fragments.md`. The branch's FIRST commit carries ruling 20 (arc_surge
+deleted); everything below is the fragments.
+
+1. **The combined bound is 4x, not 8x: ruling 21.** Measured before any code, the plan's `8 × |amount| <
+   base` refused two shipped accessories (`fletchers_quiver` 0.32 against 0.2, `sages_scroll` 0.24 against
+   0.15). The plan's stop condition fired and the choice went to Ben: **fragments are positive-only**, so
+   they add no NEGATIVE source and the ONE combined bound (`StatSourceBound.NEGATIVE_SOURCES` =
+   4 accessories + 4 fragments × 0) keeps every ruled number. `AccessoryNegatives` reads it.
+2. **The mutation "leave `AccessoryNegatives` at `COUNT`" is not runnable as written**: under ruling 21 both
+   are four. Its replacement is F2, counting fragments as negative sources, which reddens the shipped rows.
+3. **`FragmentSlots`, `FragmentDefinition`, `FragmentRegistry`, `FragmentContributions` and
+   `StatSourceBound` are in `core/build`**, and `AccessoryContributions.sourceValue` became public so a
+   fragment converts its value exactly as an accessory does. `FragmentContributions` is core, not paper: it
+   takes definitions, not items or the store, so it is pure.
+4. **`AccessoryContributions.merged` became n-way** (varargs); every existing two-argument call still
+   compiles. All seven universal stats' merge points pass the fragments beside the accessories in the SAME
+   call; `FragmentWiringSignatureTest` pins it (mutation F3).
+5. **`PoolDefinition` gained `fragments`**, with a five-argument constructor kept for a pool without them;
+   `PoolLoader` refuses a pool naming a fragment nothing defines, as it refuses an unknown ability.
+6. **THE FIRST FRAGMENT SAVE SEEDS THE ABILITIES.** A cell with nothing saved casts its pool default; saving a
+   fragment into an empty `CellLoadout` would have stored null abilities, and `LoadoutResolution` reads a
+   saved null as EMPTY. So `chooseFragment` writes the currently EQUIPPED Ultimate and Actives beside the
+   fragments. Found in design, not in play; BF8 reads it.
+7. **A hand-edited duplicate fragment counts once, and NOTHING LOGS IT.** Section 2.3 says it "logs it". The
+   duplicate is dropped in three places (`CellLoadout` on load, `LoadoutResolution.fragments`,
+   `FragmentContributions`), none of which has a logger. BF4 predicts no log line rather than claiming one.
+8. **The icon check is a predicate handed in by `RpgPlugin`**, as `ContentValidator`'s `materialExists` is:
+   resolving a `Material` initialises the server's registries, and a unit test has none (the first suite run
+   errored on exactly that). The shipped-fragments test stubs it and says so; R0c's fragment count is what
+   reads the shipped icons against the real registry.
+9. **Fragments render on the Build screen from their own icon**, and the picker adds an **Empty this slot**
+   option on a filled slot only. The stats sheet's **Fragments** block (`FragmentSheet`) follows the
+   Accessories block in `/rpg stats` and on the Nexus stats head.
+10. **The content is five placeholders**, one per universal stat except mana regen, each a FLAT positive value
+    on a continuous stat, each marked `# PLACEHOLDER -- Ben designs`, and both Fire pools offer all five.
+11. **Ruling 20 left two orphans, recorded and not deleted**: `visuals/arc_surge.yml` and
+    `statuses/surge.yml` had arc_surge as their only user. And no shipped ability is `type: self` any more,
+    so no content walks `PaperCombatWorld.combatant(UUID)`. Put to the seat and Ben.
 
 ### 3.5 SLICE 5 — ASPECTS
 
