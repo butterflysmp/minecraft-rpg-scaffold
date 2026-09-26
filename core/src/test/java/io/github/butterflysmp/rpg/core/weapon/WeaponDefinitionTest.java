@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class WeaponDefinitionTest {
 
     private static AbilityDefinition trigger(CastSpec cast, EffectSpec payload) {
-        return new AbilityDefinition("w/left_click", "T", "kinetic", "none",
+        return new AbilityDefinition("w/left_click", "T", "kinetic",
                 0, ResourceCost.FREE, cast, List.of(payload));
     }
 

@@ -146,7 +146,7 @@ public final class SettingsMenu extends Menu {
             viewer.sendMessage(Component.text(ProfileService.STILL_LOADING, NamedTextColor.GRAY));
             return;
         }
-        LockedItem stone = adapters.stones().lockedItem(profiles.profile(viewer.getUniqueId()));
+        LockedItem stone = adapters.stones().lockedItem(viewer.getUniqueId(), profiles.profile(viewer.getUniqueId()));
         if (enabled) {
             NexusSlots.converge(viewer, stone, slot);
             viewer.sendMessage(Component.text(

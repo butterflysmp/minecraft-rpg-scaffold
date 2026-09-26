@@ -16,7 +16,7 @@ import java.util.logging.Logger;
 
 /**
  * Loads {@code content/builds/<class>_<element>.yml}, one pool per cell (PLAN-build-system.md section 2.2).
- * The {@code KitLoader} template: sorted, per-file, and a bad file is logged by name and skipped.
+ * The template of {@code KitLoader}, which this replaced: sorted, per-file, and a bad file is logged by name and skipped.
  *
  * <p><b>A pool naming an ability nothing defines is REFUSED, not warned about.</b> That differs from
  * {@code ContentValidator}, which only warns, and the difference is the point: a pool that loads with a

@@ -4,7 +4,6 @@ import com.github.retrooper.packetevents.PacketEvents;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
-import io.github.butterflysmp.rpg.core.kit.KitRegistry;
 import io.github.butterflysmp.rpg.core.build.PoolRegistry;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.FireCadence;
@@ -31,10 +30,11 @@ import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.command.MenuCommand;
 import io.github.butterflysmp.rpg.paper.command.RpgCommand;
 import io.github.butterflysmp.rpg.paper.content.AbilityLoader;
-import io.github.butterflysmp.rpg.paper.content.KitLoader;
 import io.github.butterflysmp.rpg.paper.content.PoolLoader;
 import io.github.butterflysmp.rpg.paper.build.StoneCaster;
 import io.github.butterflysmp.rpg.paper.build.Stones;
+import io.github.butterflysmp.rpg.paper.build.BuildService;
+import io.github.butterflysmp.rpg.storage.FileBuildRepository;
 import io.github.butterflysmp.rpg.paper.content.MobLoader;
 import io.github.butterflysmp.rpg.paper.content.ContentValidator;
 import io.github.butterflysmp.rpg.paper.content.ElementLoader;
@@ -159,7 +159,6 @@ public final class RpgPlugin extends JavaPlugin {
     private StatusRegistry statuses;
     private ElementRegistry elements;
     private EnchantRegistry enchants;
-    private KitRegistry kits;
     private PoolRegistry pools;
     private WeaponRegistry weapons;
     private ShieldRegistry shields;
@@ -213,7 +212,8 @@ public final class RpgPlugin extends JavaPlugin {
         this.statuses = new StatusLoader(getLogger()).loadAll(new File(contentDir, "statuses"));
         this.elements = new ElementLoader(getLogger()).loadAll(new File(contentDir, "elements"));
         this.enchants = new EnchantLoader(getLogger()).loadAll(new File(contentDir, "enchants"));
-        this.kits = new KitLoader(getLogger()).loadAll(new File(contentDir, "kits"));
+        // KITS WERE REMOVED (PLAN-build-system.md section 3.2): nothing loads content/kits/ now. See the method.
+        warnRetiredKitFiles(new File(contentDir, "kits"));
         // AFTER the abilities, because a pool naming an ability nothing defines is REFUSED, not warned
         // about -- see PoolLoader. One pool per (class, element) cell; the Ability Stone casts its default.
         this.pools = new PoolLoader(getLogger()).loadAll(new File(contentDir, "builds"),
@@ -233,7 +233,7 @@ public final class RpgPlugin extends JavaPlugin {
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
-                + kits.size() + " kits, " + pools.size() + " pools, " + weapons.size() + " weapons, "
+                + pools.size() + " pools, " + weapons.size() + " weapons, "
                 + shields.size() + " shields, " + armor.size() + " armor, "
                 + tools.size() + " tools, " + accessoryRegistry.size() + " accessories, "
                 + mobs.size() + " mobs, "
@@ -494,10 +494,16 @@ public final class RpgPlugin extends JavaPlugin {
                         new File(getDataFolder(), "accessories").toPath(), storageIo), getLogger()),
                 keys);
 
+        // The build store (PLAN-build-system.md section 2.1): one saved loadout per (class, element) cell,
+        // in builds/<uuid>.json. The SAME storageIo for the accessories' reason above, and write-through,
+        // so it needs no flush of its own at shutdown either.
+        BuildService builds = new BuildService(new FileBuildRepository(
+                new File(getDataFolder(), "builds").toPath(), storageIo), getLogger());
+
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
         this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift, craftResults, weapons, accessories,
-                new Stones(keys, pools, abilities));
+                new Stones(keys, pools, abilities, builds));
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);
@@ -616,7 +622,7 @@ public final class RpgPlugin extends JavaPlugin {
         // banned-patterns table names; a second node inside this one is not.
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(
-                    RpgCommand.build(abilities, abilityService, adapters, kits, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults),
+                    RpgCommand.build(abilities, abilityService, adapters, elements, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults),
                     "RPG commands");
             // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the
             // ONLY route to it once a player turns the Nexus star off, which is why it ships in
@@ -705,6 +711,29 @@ OLD
     }
 
     /**
+     * STALE KIT FILES: named once at boot, never deleted (PLAN-build-system.md section 3.2).
+     *
+     * <p>Kits were removed in the build system's slice 2, and the jar no longer ships
+     * {@code content/kits/}. But {@code saveResource(path, false)} never deletes, so a data folder that
+     * predates the removal still holds {@code content/kits/*.yml}. <b>Nothing reads that directory now</b>, so
+     * the files are INERT -- they grant nothing and load nothing. They are not deleted here: a plugin that
+     * removes an operator's files on boot is the worse surprise, and the dev loop's
+     * {@code ./scripts/dev-server.sh --refresh-content} already clears deployed content. This line only
+     * stops an operator wondering what the files still do.
+     */
+    private void warnRetiredKitFiles(File kitsDir) {
+        File[] stale = kitsDir.listFiles((d, n) -> n.endsWith(".yml"));
+        if (stale == null || stale.length == 0) return;
+        List<String> names = new ArrayList<>();
+        for (File f : stale) names.add(f.getName());
+        java.util.Collections.sort(names);
+        getLogger().warning(stale.length + " file(s) in " + kitsDir.getPath() + " " + names
+                + " are no longer read: kits were removed (a class and element now grant nothing; the"
+                + " Ability Stone casts the cell's loadout from content/builds/). They are inert and can be"
+                + " deleted; --refresh-content clears them on a dev server.");
+    }
+
+    /**
      * A content {@code base_entity} name -> Bukkit EntityType, or null if it names nothing. Uses the
      * Registry rather than {@code EntityType.valueOf}, matching how the plugin resolves attributes,
      * potion effects and sounds -- and unlike valueOf it returns null instead of throwing, which is
@@ -742,12 +771,9 @@ OLD
         // say what each problem IS. The summary's only job is HOW MANY and THAT BOOT SURVIVED.
         // Do not re-attach a class name to it.
         List<String> problems = validator.validate(abilities);
-        // A kit naming an ability or weapon nothing defines is the most invisible dangling
-        // reference of all: it reads as a deliberate gap, not a typo. Both registries are
-        // available here, so they arrive as the predicate seams.
-        problems.addAll(validator.validateKits(kits.all(),
-                id -> abilities.find(id).isPresent(),
-                id -> weapons.find(id).isPresent()));
+        // A pool filed under an element nothing defines. Its dangling ABILITY ids never reach here:
+        // PoolLoader refuses those files outright (the kit check this replaced only warned).
+        problems.addAll(validator.validatePools(pools.all()));
         // A weapon trigger's on_hit can dangle a visual_id or status_id the same way an
         // ability's can, and is checked the same walk. Naming the file at boot beats a
         // silent no-visual the first time someone swings it.
@@ -881,7 +907,6 @@ OLD
     public AbilityRegistry abilities() { return abilities; }
     public VisualRegistry visuals() { return visuals; }
     public StatusRegistry statuses() { return statuses; }
-    public KitRegistry kits() { return kits; }
     public WeaponRegistry weapons() { return weapons; }
 
     public ShieldRegistry shields() { return shields; }

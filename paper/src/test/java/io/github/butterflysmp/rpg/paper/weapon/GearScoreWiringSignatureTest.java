@@ -236,7 +236,11 @@ class GearScoreWiringSignatureTest {
         }
     }
 
-    /** All three acquisition paths stamp: {@code /rpg give}, the kit grant, and a craft. */
+    /**
+     * Both acquisition paths stamp: {@code /rpg give} and a craft. There were three until the build system's
+     * slice 2 deleted kits: the kit grant ({@code RpgCommand.grantWeapons}) was the third, and it went with
+     * them. Its absence is asserted, so the deletion cannot quietly come back as a fourth unstamped path.
+     */
     @Test
     void everyAcquisitionPathStampsAScore() throws IOException {
         List<String> command = read(COMMAND, 2000);
@@ -245,9 +249,8 @@ class GearScoreWiringSignatureTest {
         int give = indexOf(command, "GearScoreItems.stampOnAcquire(item, definition, player, adapters);");
         assertTrue(give > 0, "/rpg give must stamp -- it is the path every gate row uses");
 
-        int kit = indexOf(command, "GearScoreItems.stampOnAcquire(item, weapon, player, adapters);");
-        assertTrue(kit > 0, "the kit grant must stamp, or a kit weapon is permanently unscoreable"
-                + " -- gear is never scored retroactively");
+        assertTrue(indexOf(command, "grantWeapons(") < 0,
+                "the kit weapon grant was deleted with kits (build system slice 2); a class or element grants nothing");
 
         assertTrue(indexOf(craft, "GearScoreItems.stampOnAcquire(minted, definition, viewer, adapters);") > 0,
                 "a crafted item must stamp, for the same reason");

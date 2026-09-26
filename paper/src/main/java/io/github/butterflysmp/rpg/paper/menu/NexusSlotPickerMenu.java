@@ -180,7 +180,7 @@ public final class NexusSlotPickerMenu extends Menu {
             if (target == Target.STAR) {
                 NexusSlots.converge(viewer, adapters.keys(), inventorySlot);
             } else {
-                NexusSlots.converge(viewer, adapters.stones().lockedItem(profiles.profile(viewer.getUniqueId())),
+                NexusSlots.converge(viewer, adapters.stones().lockedItem(viewer.getUniqueId(), profiles.profile(viewer.getUniqueId())),
                         inventorySlot);
             }
         }

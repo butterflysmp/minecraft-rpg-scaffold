@@ -69,7 +69,7 @@ class CastExecutorSpreadTest {
      * @param spread null for the control -- a plain bolt, and the same fixture otherwise
      */
     private static AbilityDefinition bolt(CastSpec.Spread spread) {
-        return new AbilityDefinition("dragons_breath", "Dragon's Breath", "fire", "ranger",
+        return new AbilityDefinition("dragons_breath", "Dragon's Breath", "fire",
                 32, ResourceCost.FREE,
                 new CastSpec.Projectile(2.5, 0.05, 120, null, "arrow", null, null, spread),
                 List.of(new EffectSpec.Damage(9, "fire")), List.of(),

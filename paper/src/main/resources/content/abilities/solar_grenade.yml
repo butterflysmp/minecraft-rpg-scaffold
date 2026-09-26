@@ -4,7 +4,6 @@
 id: solar_grenade
 display_name: "<gold>Solar Grenade</gold>"   # MiniMessage, not legacy color codes
 element: fire
-archetype: hunter
 cooldown_ticks: 200
 
 cost:

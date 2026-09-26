@@ -4,9 +4,8 @@ import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
-import io.github.butterflysmp.rpg.core.kit.KitDefinition;
+import io.github.butterflysmp.rpg.core.build.PoolDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
-import io.github.butterflysmp.rpg.core.kit.WeaponGrant;
 import io.github.butterflysmp.rpg.core.weapon.CraftResultToken;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
@@ -86,50 +85,22 @@ public final class ContentValidator {
     }
 
     /**
-     * The kit -> ability/weapon/element cross-reference. A kit is a (class, element) cell that
-     * grants weapons and abilities; each grant fails most invisibly -- a dangling ability in a
-     * kit is a permission gap that looks like intended design, a dangling weapon is a class you
-     * pick and get nothing to swing.
+     * The pool -> element cross-reference. It REPLACES the kit check that stood here, because kits
+     * are gone (PLAN-build-system.md section 3.2).
      *
-     * Problems reported per kit:
-     *   - its element, if no element defines it (the same checkElement seam as damage);
-     *   - each ability id no ability declares, and each weapon id no weapon declares;
-     *   - a kit whose RESOLVED (existing-only) grants are zero -- a cell nobody can play. A
-     *     per-id check alone passes that: every remaining id is fine because none remain.
+     * <p>What it carries over is the ELEMENT half only. The kit check's other halves -- a dangling
+     * ability id, and a cell that grants nothing -- are {@code PoolLoader}'s now, and there they are
+     * REFUSALS rather than warnings: a pool naming an unknown ability is not loaded at all, and a pool
+     * too thin to fill a loadout is refused by {@code PoolDefinition}. What is left for a boot warning
+     * is the one reference the loader cannot see: whether the element a pool is filed under exists.
      *
-     * The existence checks arrive as predicates so the walk is unit-testable with no registries
-     * and no server, exactly as the archetype check it replaces did.
-     *
-     * @return every problem found, each naming the kit at fault. Empty is good.
+     * @return every problem found, each naming the pool at fault. Empty is good.
      */
-    public List<String> validateKits(Collection<KitDefinition> kits,
-                                     Predicate<String> abilityExists,
-                                     Predicate<String> weaponExists) {
+    public List<String> validatePools(Collection<PoolDefinition> pools) {
         List<String> problems = new ArrayList<>();
-        for (KitDefinition kit : kits) {
-            String label = "kit '" + kit.classId() + "/" + kit.elementId() + "'";
-            checkElement(kit.elementId(), label, problems);
-
-            int resolved = 0;
-            for (String abilityId : kit.abilityIds()) {
-                if (abilityExists.test(abilityId)) {
-                    resolved++;
-                } else {
-                    problems.add(label + " grants ability '" + abilityId
-                            + "', which no ability defines");
-                }
-            }
-            for (WeaponGrant grant : kit.weapons()) {
-                if (weaponExists.test(grant.weaponId())) {
-                    resolved++;
-                } else {
-                    problems.add(label + " grants weapon '" + grant.weaponId()
-                            + "', which no weapon defines");
-                }
-            }
-            if (resolved == 0) {
-                problems.add(label + " grants nothing that exists -- nobody can play this cell");
-            }
+        for (PoolDefinition pool : pools) {
+            checkElement(pool.cell().elementId(),
+                    "pool '" + pool.cell().classId() + "/" + pool.cell().elementId() + "'", problems);
         }
         return problems;
     }

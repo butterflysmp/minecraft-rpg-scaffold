@@ -985,4 +985,33 @@ class AbilityLoaderTest {
         assertTrue(warningText().contains("arow"),
                 "the warning must quote what was AUTHORED, not what was expected: " + warningText());
     }
+
+    /**
+     * {@code archetype:} is RETIRED (build system slice 2): a file still declaring it LOADS, and ONE warning
+     * names every such file. This CAUSES the condition -- no shipped ability declares the key any more, so
+     * production never reaches that warning, and this row is its only exercise.
+     */
+    @Test
+    void aRetiredArchetypeKeyStillLoadsAndOneWarningNamesEveryFile() throws IOException {
+        write("old_a.yml", "id: old_a\nelement: fire\narchetype: hunter\ncooldown_ticks: 20\n");
+        write("old_b.yml", "id: old_b\nelement: fire\narchetype: mage\ncooldown_ticks: 20\n");
+        write("clean.yml", "id: clean\nelement: fire\ncooldown_ticks: 20\n");
+
+        AbilityRegistry registry = load();
+
+        assertTrue(registry.find("old_a").isPresent() && registry.find("old_b").isPresent(),
+                "a retired key must not cost the file");
+        assertTrue(registry.find("clean").isPresent());
+        assertEquals(1, warnings.size(), "ONE warning per load, not one per file: " + warningText());
+        assertTrue(warningText().contains("old_a.yml") && warningText().contains("old_b.yml"), warningText());
+        assertFalse(warningText().contains("clean.yml"), "the control file is not named: " + warningText());
+    }
+
+    /** The control: no file declares the key, so nothing is said. */
+    @Test
+    void noArchetypeKeyNoWarning() throws IOException {
+        write("clean.yml", "id: clean\nelement: fire\ncooldown_ticks: 20\n");
+        load();
+        assertTrue(warnings.isEmpty(), warningText());
+    }
 }

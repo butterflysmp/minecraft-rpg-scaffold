@@ -1,8 +1,8 @@
 # The MELEE class accessory -- worn only in slot 0, only by a profile whose class is melee.
 #
 # NOBODY CAN WEAR THIS YET, and that is RULED rather than a gap (PLAN-accessories.md, RULINGS Q1):
-# no melee kit ships, so /rpg class melee is refused and no profile can be melee. It is authored
-# now so the class-slot rules have a melee subject, and a melee kit is its own later slice.
+# no melee pool ships, so /rpg class melee is refused and no profile can be melee. It is authored
+# now so the class-slot rules have a melee subject, and a melee pool is its own later slice.
 #
 # Numbers RULED by Ben, 2026-09-24 (RULINGS Q2) -- not derived. Stronger than a universal, with a
 # drawback. class_damage is FLAT and applies only while a melee weapon is held (RULINGS Q3); the

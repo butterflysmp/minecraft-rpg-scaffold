@@ -20,6 +20,7 @@ public record PlayerProfile(
         String elementId,
         int level,
         long experience,
+        /** RETIRED (build system slice 2): unread, and written empty by {@link #withCell}. Kept for schema stability. */
         List<String> unlockedAbilities,
         long lastSeenEpochMillis,
         int nexusSlot,
@@ -376,15 +377,18 @@ public record PlayerProfile(
     }
 
     /**
-     * Pick a (class, element) cell and its grant. Class, element, and unlocked abilities
-     * move together: they are re-derived as one whenever either axis changes, so a stale
-     * class's abilities can never outlive a class change. archetypeId carries the class id
-     * (the field name is kept for schema stability; its value is now a class, e.g. "ranger").
-     * The compact constructor copies the list, so a caller cannot alias it into the profile.
+     * Pick a (class, element) cell. archetypeId carries the class id (the field name is kept for
+     * schema stability; its value is a class, e.g. "ranger").
+     *
+     * <p><b>It writes {@code unlockedAbilities} EMPTY, and that is the field's retirement</b>
+     * (PLAN-build-system.md section 2.1). The field was the kit's grant; kits are gone, and what a player
+     * may cast is now their cell's loadout. The field is KEPT in the record -- removing it would be a schema
+     * change for nothing -- but nothing reads it any more, and every cell change clears it so an old kit
+     * grant cannot linger in a file as if it still meant something.
      */
-    public PlayerProfile withKit(String classId, String elementId, List<String> unlockedAbilities) {
+    public PlayerProfile withCell(String classId, String elementId) {
         return new PlayerProfile(schemaVersion, playerId, classId, elementId, level, experience,
-                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                List.of(), lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
                 stoneSlotOrNull, stoneEnabledOrNull);
     }
 }

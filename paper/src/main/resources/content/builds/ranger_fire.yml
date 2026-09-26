@@ -1,5 +1,5 @@
 # The Fire Ranger's POOL: everything this cell offers, and the loadout it casts until the player
-# chooses their own (PLAN-build-system.md section 2.2). Replaces kits/ranger_fire.yml in slice 2.
+# chooses their own (PLAN-build-system.md section 2.2). Replaced kits/ranger_fire.yml, which slice 2 removed.
 #
 # Ultimate vs Active is decided HERE, by the list an id sits in -- not by the ability file.
 #
@@ -9,7 +9,7 @@
 # Active here.
 #
 # arc_surge is element: nature, and whether it stays in a FIRE pool is PARKED, unanswered (section 5).
-# Until ruled it stays, as the kit carried it, and it is in no default loadout.
+# Until ruled it stays, as the removed kit carried it, and it is in no default loadout.
 
 class: ranger
 element: fire

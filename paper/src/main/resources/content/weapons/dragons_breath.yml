@@ -421,7 +421,7 @@ triggers:
 # ================ NOT AUTHORED BY THIS COMMIT, AND SAID SO RATHER THAN LEFT BLANK ================
 #
 # NO RECIPE. The Dragon's Breath is in neither content/recipes/ nor content/kits/, so it is
-# reachable only through /rpg give and its rpg.command.give permission. Kits are being removed by an
+# reachable only through /rpg give and its rpg.command.give permission. Kits were removed (the build system's slice 2) by an
 # operator ruling, so "no kit" is the normal state rather than a gap; a RECIPE is what acquisition
 # means once they are gone, and it is owed to the content pass.
 #

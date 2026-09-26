@@ -12,7 +12,7 @@
 # cooldown_ticks is a multiple of 4 (PLAN-build-system.md 2.4.1: a held input re-casts on the 4-tick
 # grid, ruling 19). 1200 ticks = 60 s.
 #
-# No `archetype:` -- that key is dead (read by nothing, section 1.5) and slice 2 retires it.
+# No `archetype:` -- that key was dead (read by nothing, section 1.5) and slice 2 retired it.
 
 id: ultimate_placeholder_ranger
 display_name: "<gold>Ranger Ultimate (placeholder)</gold>"

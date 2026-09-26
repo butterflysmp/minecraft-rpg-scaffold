@@ -84,7 +84,7 @@ class CastExecutorTriggerScoreTest {
      * staff, every projectile and every ray in shipped content actually is.
      */
     private static AbilityDefinition rayWithLiteralDamage() {
-        return new AbilityDefinition("test", "Test", "kinetic", "none", 0, ResourceCost.FREE,
+        return new AbilityDefinition("test", "Test", "kinetic", 0, ResourceCost.FREE,
                 new CastSpec.Ray(30),
                 List.of(new EffectSpec.Damage(AUTHORED, "kinetic")));
     }
@@ -104,7 +104,7 @@ class CastExecutorTriggerScoreTest {
      * which is the only way to test a guard whose triggering case no shipped content reaches.
      */
     private static AbilityDefinition meleeWithLiteralDamage() {
-        return new AbilityDefinition("melee", "Melee", "kinetic", "none", 0, ResourceCost.FREE,
+        return new AbilityDefinition("melee", "Melee", "kinetic", 0, ResourceCost.FREE,
                 new CastSpec.Melee(3.0, 90.0),
                 List.of(new EffectSpec.Damage(AUTHORED, "kinetic")));
     }
@@ -261,7 +261,7 @@ class CastExecutorTriggerScoreTest {
      * weapons actually declare. Contrast {@link #meleeWithLiteralDamage()}, which no weapon has.
      */
     private static AbilityDefinition meleeWithWeaponDamage() {
-        return new AbilityDefinition("swing", "Swing", "kinetic", "none", 0, ResourceCost.FREE,
+        return new AbilityDefinition("swing", "Swing", "kinetic", 0, ResourceCost.FREE,
                 new CastSpec.Melee(3.0, 90.0),
                 List.of(new EffectSpec.WeaponDamage("kinetic")));
     }

@@ -3,7 +3,7 @@ package io.github.butterflysmp.rpg.paper.build;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.CastExecutor;
-import io.github.butterflysmp.rpg.core.build.Loadout;
+import io.github.butterflysmp.rpg.core.build.LoadoutResolution.Equipped;
 import io.github.butterflysmp.rpg.core.build.LoadoutSlot;
 import io.github.butterflysmp.rpg.core.build.StoneInput;
 import io.github.butterflysmp.rpg.core.build.SwingGuard;
@@ -106,20 +106,26 @@ public final class StoneCaster {
     }
 
     private void cast(Player player, LoadoutSlot slot) {
-        Optional<Loadout> loadout = stones.loadoutOf(profiles.profile(player.getUniqueId()));
-        if (loadout.isEmpty()) {
+        Optional<Equipped> equipped = stones.equippedFor(player.getUniqueId(), profiles.profile(player.getUniqueId()));
+        if (equipped.isEmpty()) {
             StoneNotice.noLoadout(player, cooldowns);
             return;
         }
-        String abilityId = loadout.get().idFor(slot);
-        Set<String> castable = Set.copyOf(loadout.get().ids());
+        // A SAVED loadout may leave a slot empty (an id the pool no longer offers there -- LoadoutResolution).
+        // Nothing to cast is said on the action bar, like every other refusal here.
+        Optional<String> abilityId = equipped.get().idFor(slot);
+        if (abilityId.isEmpty()) {
+            StoneNotice.emptySlot(player, cooldowns);
+            return;
+        }
+        Set<String> castable = Set.copyOf(equipped.get().ids());
 
         // The /rpg cast shape exactly: aim and snapshot on the caster's own thread, decide inline so the
         // cooldown and mana are spent before any hop, then run the effects on the region that owns the aim.
         Location eye = player.getEyeLocation();
         Aim aim = ViewAim.of(eye);
         CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats());
-        CastResult result = abilityService.cast(caster, abilityId, aim, castable);
+        CastResult result = abilityService.cast(caster, abilityId.get(), aim, castable);
 
         switch (result) {
             case CastResult.Success success -> {
@@ -128,9 +134,9 @@ public final class StoneCaster {
                         new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters)).execute(toRun));
             }
             case CastResult.OnCooldown onCooldown ->
-                    StoneNotice.onCooldown(player, cooldowns, displayName(abilityId), onCooldown.ticksRemaining());
+                    StoneNotice.onCooldown(player, cooldowns, displayName(abilityId.get()), onCooldown.ticksRemaining());
             case CastResult.InsufficientResource lacking ->
-                    StoneNotice.notEnoughMana(player, cooldowns, displayName(abilityId),
+                    StoneNotice.notEnoughMana(player, cooldowns, displayName(abilityId.get()),
                             lacking.required(), lacking.available());
             // A pool naming an ability nothing defines is refused at load (PoolLoader), so this is a
             // registry that changed after the pools loaded -- nothing in this build does that.

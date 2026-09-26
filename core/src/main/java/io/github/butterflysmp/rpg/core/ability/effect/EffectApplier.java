@@ -124,7 +124,7 @@ public final class EffectApplier {
             // It was extracted because a stat sheet showing "what a swing hits for" would have been
             // the third COPY of the formula, not merely the third description of it.
             case EffectSpec.Damage d -> {
-                // Element is identity, not math -- it flavors the hit and gates kits, but never
+                // Element is identity, not math -- it flavors the hit and names a pool's cell, but never
                 // multiplies the number. It DOES now travel: the port downstream carries the amount,
                 // a culprit, the crit bit and the element. "Not math" was always the true claim;
                 // "goes no further" was a stronger one read into it, and accrual falsified it.

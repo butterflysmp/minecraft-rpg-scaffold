@@ -40,7 +40,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * re-mint there will ever be.
  *
  * <p>Called at the paths that create GEAR for a player: {@code /rpg give} -- both its weapon and
- * its shield arm since Slice 2 -- and the kit grant.
+ * its shield arm since Slice 2 -- and, until kits were removed in the build system's slice 2, the kit grant.
  *
  * <p><b>Gear already in an inventory is never rolled retroactively.</b> A shield minted before
  * Slice 2 carries no {@code enchant_rolled} flag and nothing comes back to give it one; re-acquire

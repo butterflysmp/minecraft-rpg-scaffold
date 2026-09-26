@@ -613,6 +613,16 @@ public final class RpgListeners implements Listener {
         // And their accessories, the same way. Until the read lands they contribute nothing, which
         // the reconcile loop below picks up on its first pass after it does.
         adapters.accessories().service().onJoin(event.getPlayer().getUniqueId());
+        // And their build (PLAN-build-system.md section 2.1), the same way. When it settles, the stone's
+        // lore is re-rendered: the stone may already be in the hand showing the pool default, and the
+        // saved loadout is only known now. The callback runs on the storage I/O thread, hence the hop.
+        Player joining = event.getPlayer();
+        adapters.stones().builds().onJoin(joining.getUniqueId()).thenRun(() ->
+                adapters.scheduler().onEntity(joining, () -> {
+                    if (joining.isOnline()) {
+                        adapters.stones().refreshLore(joining, profiles.profile(joining.getUniqueId()));
+                    }
+                }));
         // Register custom health at base 100, render the heart bar, and start the equip reconcile loop.
         healthSystem.onJoin(event.getPlayer());
         // Start this viewer's per-viewer mob-nameplate LOS loop.
@@ -670,7 +680,7 @@ public final class RpgListeners implements Listener {
     private void convergeStone(Player player, Optional<PlayerProfile> profile) {
         adapters.stones().refreshLore(player, profile);
         if (!profile.map(PlayerProfile::stoneEnabled).orElse(true)) return;
-        NexusSlots.converge(player, adapters.stones().lockedItem(profile),
+        NexusSlots.converge(player, adapters.stones().lockedItem(player.getUniqueId(), profile),
                 profile.map(NexusSlots::stoneSlotOf).orElse(LockedSlots.DEFAULT_STONE_SLOT));
     }
 
@@ -1640,6 +1650,8 @@ public final class RpgListeners implements Listener {
         // And the cached accessories, for the vault's reason: every equip and unequip was written
         // through when it happened, so there is nothing to save here.
         adapters.accessories().service().onQuit(playerId);
+        // And the cached build, for the same reason: every change was written through.
+        adapters.stones().builds().onQuit(playerId);
         adapters.accessories().forget(playerId);
         // Drop custom-health state so no modifier or entry leaks across sessions.
         healthSystem.onQuit(playerId);

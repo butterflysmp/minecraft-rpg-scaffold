@@ -22,7 +22,7 @@ class ProjectileFlightTest {
     /** speed 1 block/tick, no gravity unless asked, generous fuse. */
     private static AbilityDefinition grenade(double speed, double gravity, int lifetime,
                                              EffectSpec... onHit) {
-        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+        return new AbilityDefinition("grenade", "Grenade", "fire",
                 0, ResourceCost.FREE, new CastSpec.Projectile(speed, gravity, lifetime),
                 List.of(onHit));
     }
@@ -47,7 +47,7 @@ class ProjectileFlightTest {
 
     /** 1 block/tick, no gravity, a trail (or none), and a payload that presents nothing. */
     private static AbilityDefinition tracer(String trail, int lifetime) {
-        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+        return new AbilityDefinition("grenade", "Grenade", "fire",
                 0, ResourceCost.FREE, new CastSpec.Projectile(1.0, 0, lifetime, trail),
                 List.of(new EffectSpec.Damage(12, "fire")));
     }
@@ -97,7 +97,7 @@ class ProjectileFlightTest {
 
     /** 1 block/tick, no gravity, a rendered BODY, and a payload that presents nothing. */
     private static AbilityDefinition bolt(String trail, String item, int lifetime) {
-        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+        return new AbilityDefinition("grenade", "Grenade", "fire",
                 0, ResourceCost.FREE,
                 new CastSpec.Projectile(1.0, 0, lifetime, trail, item),
                 List.of(new EffectSpec.Damage(12, "fire")));
@@ -161,7 +161,7 @@ class ProjectileFlightTest {
         var caster = new FakeWorld.Dummy(Vec3.ZERO);
 
         // speed 1 forward, gravity 0.1 per tick, so successive steps differ by a known amount.
-        var arcing = new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+        var arcing = new AbilityDefinition("grenade", "Grenade", "fire",
                 0, ResourceCost.FREE, new CastSpec.Projectile(1.0, 0.1, 5, null, "flint"),
                 List.of(new EffectSpec.Damage(12, "fire")));
         cast(world, caster, arcing, EYE_FORWARD);
@@ -615,7 +615,7 @@ class ProjectileFlightTest {
 
     /** 1 block/tick, no gravity, an ARROW body, and a payload that presents nothing. */
     private static AbilityDefinition arrowBolt(int lifetime) {
-        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+        return new AbilityDefinition("grenade", "Grenade", "fire",
                 0, ResourceCost.FREE,
                 new CastSpec.Projectile(1.0, 0, lifetime, null, null, null, "arrow"),
                 List.of(new EffectSpec.Damage(12, "fire")));
@@ -706,7 +706,7 @@ class ProjectileFlightTest {
 
     /** 1 block/tick, no gravity, an ARROW body AND a trail -- what all four Plume casts author. */
     private static AbilityDefinition arrowBoltWithTrail(String trail, int lifetime) {
-        return new AbilityDefinition("grenade", "Grenade", "fire", "hunter",
+        return new AbilityDefinition("grenade", "Grenade", "fire",
                 0, ResourceCost.FREE,
                 new CastSpec.Projectile(1.0, 0, lifetime, trail, null, null, "arrow"),
                 List.of(new EffectSpec.Damage(12, "fire")));

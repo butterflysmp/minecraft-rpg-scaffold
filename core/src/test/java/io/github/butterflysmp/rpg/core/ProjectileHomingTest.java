@@ -91,7 +91,7 @@ class ProjectileHomingTest {
     private static final CastSpec.Homing HOMING = new CastSpec.Homing(LERP, ACTIVATION, RADIUS);
 
     private static AbilityDefinition bolt(CastSpec.Homing homing, String item) {
-        return new AbilityDefinition("plume", "Plume", "void", "ranger",
+        return new AbilityDefinition("plume", "Plume", "void",
                 0, ResourceCost.FREE,
                 new CastSpec.Projectile(SPEED, GRAVITY, LIFETIME, null, item, homing),
                 List.of(new EffectSpec.Damage(12, "void")));

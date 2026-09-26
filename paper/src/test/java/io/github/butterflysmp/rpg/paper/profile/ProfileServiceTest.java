@@ -332,7 +332,7 @@ class ProfileServiceTest {
     }
 
     /**
-     * THE ARM setKit HAS NEVER HAD A ROW FOR. Its guard includes isCompletedExceptionally(), and
+     * THE ARM setKit (now setCell) HAD NEVER HAD A ROW FOR. Its guard includes isCompletedExceptionally(), and
      * nothing asserted that branch; this writer's does, because it is the arm the settings screen
      * must word differently.
      */
@@ -374,48 +374,46 @@ class ProfileServiceTest {
         assertDoesNotThrow(() -> service.saveAllAndClear().join());
     }
 
-    // --- setKit: the (class, element) -> castable-set resolution core cannot defend ---
+    // --- setCell: the (class, element) choice, and the retired grant it clears ---
 
     /**
-     * The load-bearing paper-side test. core proves the gate works given a set; it is
-     * structurally blind to paper handing it the wrong one. This is where that is
-     * caught: a kit must grant EXACTLY the abilities it names, no more, no fewer, and
-     * both identity axes must land on the profile together.
+     * Both identity axes land on the profile together and are persisted at once -- and NOTHING is
+     * granted. Kits are gone (PLAN-build-system.md section 3.2): {@code unlockedAbilities} is retired, so a
+     * cell change writes it EMPTY, even over a profile that still carried an old kit grant.
      */
     @Test
-    void setKitGrantsExactlyTheNamedAbilitiesAndPersistsOnce() {
+    void setCellSetsBothAxesPersistsOnceAndClearsTheRetiredGrant() {
+        repo.saved.put(player, new PlayerProfile(PlayerProfile.CURRENT_SCHEMA_VERSION, player, "mage", "fire", 1, 0,
+                List.of("solar_grenade", "solar_lance"), 0L, 8, 0L, null, false));
         service.onJoin(player);
-        assertEquals("none", service.profile(player).orElseThrow().archetypeId());
-        assertEquals("none", service.profile(player).orElseThrow().elementId());
-        assertEquals(List.of(), service.profile(player).orElseThrow().unlockedAbilities());
+        assertEquals(List.of("solar_grenade", "solar_lance"),
+                service.profile(player).orElseThrow().unlockedAbilities(), "the old grant loads as it was");
 
-        boolean set = service.setKit(player, "ranger", "fire",
-                List.of("arc_surge", "solar_lance"));
+        boolean set = service.setCell(player, "ranger", "fire");
 
         assertTrue(set);
         var profile = service.profile(player).orElseThrow();
         assertEquals("ranger", profile.archetypeId());
         assertEquals("fire", profile.elementId());
-        assertEquals(List.of("arc_surge", "solar_lance"), profile.unlockedAbilities(),
-                "the granted set must be exactly what the kit names -- not a superset, not empty");
-        assertEquals(1, repo.saveCount.get(), "the kit change must be persisted immediately");
-        assertEquals(List.of("arc_surge", "solar_lance"),
-                repo.saved.get(player).unlockedAbilities());
+        assertEquals(List.of(), profile.unlockedAbilities(), "RETIRED: a cell change grants nothing");
+        assertEquals(1, repo.saveCount.get(), "the cell change must be persisted immediately");
+        assertEquals(List.of(), repo.saved.get(player).unlockedAbilities());
+        assertEquals("ranger", repo.saved.get(player).archetypeId());
     }
 
     @Test
-    void setKitIsRefusedWhileTheProfileIsStillLoading() {
+    void setCellIsRefusedWhileTheProfileIsStillLoading() {
         repo.pendingLoad = new CompletableFuture<>();
         service.onJoin(player);
 
-        assertFalse(service.setKit(player, "ranger", "fire", List.of("arc_surge")),
+        assertFalse(service.setCell(player, "ranger", "fire"),
                 "must not invent a profile out of an in-flight load");
         assertEquals(0, repo.saveCount.get());
     }
 
     @Test
-    void setKitIsRefusedForSomeoneWhoNeverJoined() {
-        assertFalse(service.setKit(player, "ranger", "fire", List.of("arc_surge")));
+    void setCellIsRefusedForSomeoneWhoNeverJoined() {
+        assertFalse(service.setCell(player, "ranger", "fire"));
         assertEquals(0, repo.saveCount.get());
     }
 
@@ -494,7 +492,7 @@ class ProfileServiceTest {
     @Test
     void xpIsDroppedWhileTheProfileIsStillLoading_andThatIsNotAnError() {
         // An orb picked up on the join tick, before the disk read settles. Refused the same way
-        // setNexusSlot and setKit are -- the alternative is inventing a profile over an in-flight
+        // setNexusSlot and setCell are -- the alternative is inventing a profile over an in-flight
         // load, which is the race onJoin's future-keying exists to prevent.
         repo.pendingLoad = new CompletableFuture<>();
         service.onJoin(player);

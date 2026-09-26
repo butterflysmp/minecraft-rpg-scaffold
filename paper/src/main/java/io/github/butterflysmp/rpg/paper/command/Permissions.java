@@ -24,7 +24,7 @@ public final class Permissions {
     public static final String GIVE = "rpg.command.give";
 
     /** Apply any status to a mob for testing. Operators only; it mutates the world, bypassing
-        the class/element/kit gate -- a dev instrument, not a game feature. */
+        the class/element gate -- a dev instrument, not a game feature. */
     public static final String DEV = "rpg.command.dev";
 
     /**

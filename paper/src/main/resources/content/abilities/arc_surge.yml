@@ -14,7 +14,6 @@
 id: arc_surge
 display_name: "<aqua>Arc Surge</aqua>"
 element: nature
-archetype: hunter
 cooldown_ticks: 300
 
 cost:

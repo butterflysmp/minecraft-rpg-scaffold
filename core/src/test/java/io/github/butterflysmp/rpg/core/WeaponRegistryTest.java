@@ -19,7 +19,7 @@ class WeaponRegistryTest {
 
     /** A trigger's ability, synthesized the way WeaponLoader will: id = weaponId/input. */
     static AbilityDefinition trigger(String weaponId, String input) {
-        return new AbilityDefinition(weaponId + "/" + input, "Test", "kinetic", "none",
+        return new AbilityDefinition(weaponId + "/" + input, "Test", "kinetic",
                 0, ResourceCost.FREE, new CastSpec.Melee(3.0, 90),
                 List.of(new EffectSpec.Damage(8, "kinetic")));
     }

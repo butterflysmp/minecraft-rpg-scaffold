@@ -380,7 +380,7 @@ triggers:
 #   "the /kit was a dev feature added before /rpg give was a command. same situation with the dev
 #    weapons, this is soon to be deleted."
 #
-# KITS ARE BEING REMOVED. So "no kit" stops being a GAP and becomes the NORMAL STATE: after the
+# KITS ARE BEING REMOVED -- AND WERE, in the build system's slice 2. So "no kit" stops being a GAP and becomes the NORMAL STATE: after the
 # deletion there are no kits for any weapon to be in, and /rpg give is the sole route to every weapon
 # in the project rather than a stopgap for this one. The sentence above reads as though the Boltor
 # were missing something its peers have. It will not be missing anything, because its peers will not

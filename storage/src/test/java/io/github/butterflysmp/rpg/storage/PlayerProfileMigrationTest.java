@@ -217,7 +217,7 @@ class PlayerProfileMigrationTest {
         // And every OTHER setter carries the stone's fields, which is the half a copy-paste rebuild drops.
         PlayerProfile carried = after.withNexusSlot(5).withLifetimeXp(9).withVaultMigrated(true)
                 .withStarEnabled(true).withLastSeen(1L).withSchemaVersion(5)
-                .withKit("mage", "fire", List.of());
+                .withCell("mage", "fire");
         assertEquals(2, carried.stoneSlotOrNull());
         assertFalse(carried.stoneEnabled());
     }
@@ -284,32 +284,27 @@ class PlayerProfileMigrationTest {
     }
 
     @Test
-    void withKitSetsClassElementAndGrantsAndCarriesTheRest() {
-        var unchosen = PlayerProfile.fresh(UUID.randomUUID());
-        assertEquals("none", unchosen.archetypeId());
-        assertEquals("none", unchosen.elementId());
-        assertEquals(List.of(), unchosen.unlockedAbilities());
+    void withCellSetsClassAndElementClearsTheRetiredGrantAndCarriesTheRest() {
+        // A pre-slice-2 profile: a kit class, and the kit's grant still in unlockedAbilities.
+        var oldKitRanger = new PlayerProfile(4, UUID.randomUUID(), "ranger", "fire", 7, 1234,
+                List.of("arc_surge"), 99L, 3, 56_780L, false, true);
+        assertEquals(List.of("arc_surge"), oldKitRanger.unlockedAbilities(), "the old grant loads as it was");
 
-        var ranger = unchosen.withKit("ranger", "fire", List.of("arc_surge"));
+        var mage = oldKitRanger.withCell("mage", "fire");
 
-        assertEquals("ranger", ranger.archetypeId());
-        assertEquals("fire", ranger.elementId());
-        assertEquals(List.of("arc_surge"), ranger.unlockedAbilities());
-        // Everything else is carried unchanged.
-        assertEquals(unchosen.playerId(), ranger.playerId());
-        assertEquals(unchosen.schemaVersion(), ranger.schemaVersion());
-        assertEquals(unchosen.level(), ranger.level());
-        assertEquals(unchosen.experience(), ranger.experience());
-        assertEquals(unchosen.lastSeenEpochMillis(), ranger.lastSeenEpochMillis());
-    }
-
-    @Test
-    void withKitDefensivelyCopiesTheGrantedList() {
-        var mutable = new java.util.ArrayList<>(List.of("arc_surge"));
-        var ranger = PlayerProfile.fresh(UUID.randomUUID()).withKit("ranger", "fire", mutable);
-
-        mutable.add("sneaked_in");
-
-        assertEquals(List.of("arc_surge"), ranger.unlockedAbilities());
+        assertEquals("mage", mage.archetypeId());
+        assertEquals("fire", mage.elementId());
+        assertEquals(List.of(), mage.unlockedAbilities(),
+                "RETIRED: a cell change writes the old kit grant away rather than carrying it");
+        // Everything else is carried unchanged -- including the Nexus and stone fields.
+        assertEquals(oldKitRanger.playerId(), mage.playerId());
+        assertEquals(oldKitRanger.schemaVersion(), mage.schemaVersion());
+        assertEquals(oldKitRanger.level(), mage.level());
+        assertEquals(oldKitRanger.experience(), mage.experience());
+        assertEquals(oldKitRanger.lastSeenEpochMillis(), mage.lastSeenEpochMillis());
+        assertEquals(3, mage.nexusSlot());
+        assertEquals(56_780L, mage.lifetimeXp());
+        assertFalse(mage.starEnabled());
+        assertTrue(mage.vaultMigrated());
     }
 }

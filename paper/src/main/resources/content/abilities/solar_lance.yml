@@ -12,7 +12,6 @@
 id: solar_lance
 display_name: "<gold>Solar Lance</gold>"
 element: fire
-archetype: hunter
 cooldown_ticks: 100
 
 cost:
