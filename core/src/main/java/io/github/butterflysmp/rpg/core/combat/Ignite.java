@@ -156,7 +156,8 @@ public final class Ignite {
      *
      * <p><b>ADOPTED 2026-09-10</b>, on the gate. Chosen to sit IN FAMILY with the blasts that already ship rather than to
      * invent a feel: {@code solar_grenade}'s burst is 4.0,
-     * {@code rekindle}'s thrown embers are 4.0, {@code ember_staff} is 3.5 and
+     * {@code rekindle}'s thrown embers are 4.0 (Rekindle, since renamed Recall; those embers are now
+     * {@code fragment_ember_cache}'s, still 4.0), {@code ember_staff} is 3.5 and
      * {@code emberblade} is 3.0. Reusing the prevailing number means a player who has felt a grenade
      * has already felt this.
      */

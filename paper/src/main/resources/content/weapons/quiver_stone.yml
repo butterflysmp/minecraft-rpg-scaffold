@@ -23,7 +23,7 @@
 # ITS NUMBERS ARE DELIBERATELY NOBODY ELSE'S, and the set they were checked against is named rather
 # than merely claimed. Swept: every file in content/weapons/ (ability_stone -- since deleted -- cursed_emerald,
 # ember_staff, emberblade, flint_staff, hunters_bow, ironblade, lapis_staff, volley_stone) and
-# content/abilities/ (arc_surge -- since deleted --, ember_step, rekindle, solar_grenade, solar_lance, void_slash).
+# content/abilities/ (arc_surge -- since deleted --, ember_step, rekindle -- since renamed recall --, solar_grenade, solar_lance, void_slash).
 # Every numeric value authored across those fifteen files:
 #
 #   0 0.03 0.05 0.3 0.5 0.6 1 1.2 1.4 1.6 2 2.3 2.5 3.0 3.5 4.0 5 6 7 8 10 12 15 16

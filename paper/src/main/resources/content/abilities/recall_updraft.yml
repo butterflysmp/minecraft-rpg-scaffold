@@ -1,0 +1,40 @@
+# The Updraft leap (PLAN-build-system.md sections 7.4-7.6, rulings 28-32). In NO pool: its only door is the
+# updraft aspect's recast of Recall, which casts it with no cost and no cooldown (ruling 30) -- so there is no
+# `cost:` key (castUnchecked never reads one) and cooldown_ticks is never read. The loader refuses a recast
+# whose follow-up any pool offers.
+#
+# THE LEAP is a reverse-facing dash with a small speed and a large lift: `speed` is purely the horizontal part and
+# `lift` purely the vertical part of the one impulse (section 7.5). No new dash direction.
+#
+# PLACEHOLDER numbers -- tuned at boot. The four marked below are ESTIMATES from a simulation of vanilla's per-tick
+# physics with constants recalled from memory, NOT read from the pinned jar (section 7.5): lift 0.85 ~ 4.4 up,
+# speed 0.2 ~ 1.9 back with no key held, embers 0.25 / 0.25 ~ 3.5 blocks out at first contact. The tuning boot
+# (section 7.8) settles them against ruling 28: 4-5 up, no more than 3-4 back, embers 3-4 out.
+
+id: recall_updraft
+display_name: "<gold>Updraft Leap</gold>"
+element: fire                # drives nothing (section 1.5); each ember's damage carries its own element
+cooldown_ticks: 0            # never read: a recast skips resolve (ruling 30)
+
+cast:
+  type: dash
+  direction: reverse_facing  # "a little back" -- facing reversed, flattened
+  distance: 2                # the hit sweep only; nothing Targeted rides the leap
+  speed: 0.2                 # PLACEHOLDER numbers -- tuned at boot
+  lift: 0.85                 # PLACEHOLDER numbers -- tuned at boot
+  safe_landing: true         # ruling 31: no fall damage from the landing right after the leap
+
+# Thrown at TAKE-OFF (a dash's untargeted effects fire once, at the pre-dash feet), in an even ring (ruling 31).
+on_hit:
+  - type: throw_embers
+    angles_degrees: [0, 72, 144, -144, -72]   # ruling 31: five, 72 degrees apart
+    speed: 0.25              # PLACEHOLDER numbers -- tuned at boot
+    launch_lift: 0.25        # PLACEHOLDER numbers -- tuned at boot
+    item: blaze_powder
+    fuse_ticks: 30
+    trail: ember_trail
+    visual: ember_burst
+    burst:
+      radius: 3.0            # ruling 32
+      effects:
+        - { type: damage, amount: 60, element: fire }   # ruling 32

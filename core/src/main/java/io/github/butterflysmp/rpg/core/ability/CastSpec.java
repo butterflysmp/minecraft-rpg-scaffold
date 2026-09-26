@@ -331,7 +331,10 @@ public sealed interface CastSpec {
     enum DashDirection {
         /** Ember Step: the way the player is moving (WASD), or facing when stationary. */
         MOVEMENT_ELSE_FORWARD,
-        /** Rekindle: the reverse of facing, ALWAYS -- a straight backpedal, ignoring WASD. */
+        /**
+         * Recall: the reverse of facing, ALWAYS -- a straight backpedal, ignoring WASD. Also {@code recall_updraft}'s
+         * leap (section 7.5): a small {@code speed} and a large {@code lift} make it "up, and a little back".
+         */
         REVERSE_FACING
     }
 
@@ -347,8 +350,18 @@ public sealed interface CastSpec {
      * first-tick ground friction and barely travels; a touch of up arcs the caster off the
      * floor so the horizontal velocity carries. It is a tuning number -- dialed in the yml
      * against {@code speed} until a flat-ground dash reads the intended distance.
+     *
+     * {@code safeLanding} (ruling 31, section 7.6): the caster takes no fall damage from the first landing after
+     * this dash. False for every dash before Recall's leap.
      */
-    record Dash(double distance, double speed, double lift, DashDirection direction) implements CastSpec {}
+    record Dash(double distance, double speed, double lift, DashDirection direction, boolean safeLanding)
+            implements CastSpec {
+
+        /** A dash that leaves fall damage alone -- every dash before section 7.5. */
+        public Dash(double distance, double speed, double lift, DashDirection direction) {
+            this(distance, speed, lift, direction, false);
+        }
+    }
 
     /**
      * A cast that runs ANOTHER cast {@code shots} times, {@code intervalTicks} apart, after a

@@ -103,9 +103,47 @@ class FragmentLoaderTest {
         // shipped icons against the real registry, and a refused icon names its file there.
         FragmentRegistry registry = new FragmentLoader(log, name -> true).loadAll(shipped);
         assertEquals(files.length, registry.size(), "every shipped fragment loads: " + warningText());
+        // Every stat fragment is a placeholder; fragment_ember_cache is RULED (ruling 27) and says so.
         for (File f : files) {
-            assertTrue(Files.readString(f.toPath()).contains("# PLACEHOLDER -- Ben designs"),
-                    f.getName() + " must carry the placeholder marker, so a grep finds it");
+            String text = Files.readString(f.toPath());
+            if (f.getName().equals("fragment_ember_cache.yml")) {
+                assertTrue(text.contains("ruling 27") && !text.contains("PLACEHOLDER"), f.getName());
+            } else {
+                assertTrue(text.contains("# PLACEHOLDER -- Ben designs"),
+                        f.getName() + " must carry the placeholder marker, so a grep finds it");
+            }
         }
+    }
+
+    // ------------------------------------------------------------------ section 7.3: behaviour fragments
+
+    /** Ember Cache as shipped: Rekindle's three embers exactly (ruling 27), a target, and no stats. */
+    @Test
+    void theShippedEmberCacheIsABehaviourFragmentWithRekindlesEmbers() {
+        FragmentRegistry registry = new FragmentLoader(log, name -> true).loadAll(new File("src/main/resources/content/fragments"));
+        var cache = registry.find("fragment_ember_cache").orElseThrow(() -> new AssertionError(warningText()));
+        assertTrue(cache.behavioural());
+        assertEquals("recall", cache.target());
+        assertTrue(cache.modifiers().isEmpty());
+        var embers = (io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.ThrowEmbers) cache.addOnHit().get(0);
+        assertEquals(List.of(0.0, 40.0, -40.0), embers.anglesDegrees(), "ruling 27");
+        assertEquals(4.0, embers.burst().radius(), 0.0, "ruling 27");
+        assertEquals(new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(8, "fire"),
+                embers.burst().effects().get(0), "ruling 27");
+    }
+
+    /** `modify:` and `add_on_cast:` are refused BY NAME on a fragment; the mix of stats and behaviour too. */
+    @Test
+    void aFragmentsRefusedBehaviourKeysAreNamed() throws IOException {
+        String behaviour = "icon: red_dye\ntarget: recall\nadd_on_hit:\n  - { type: visual, visual_id: ember_burst }\n";
+        write("with_modify.yml", behaviour + "modify:\n  - { field: cost, flat: 1 }\n");
+        write("with_cast.yml", behaviour + "add_on_cast:\n  - { type: visual, visual_id: ember_burst }\n");
+        write("mixed.yml", behaviour + "modifiers:\n  max_health: 4\n");
+        write("control.yml", behaviour);
+        FragmentRegistry registry = load();
+        assertEquals(1, registry.size(), "only the control loads: " + warningText());
+        assertTrue(warningText().contains("with_modify.yml") && warningText().contains("`modify:`"), warningText());
+        assertTrue(warningText().contains("with_cast.yml") && warningText().contains("`add_on_cast:`"), warningText());
+        assertTrue(warningText().contains("mixed.yml") && warningText().contains("stats OR behaviour"), warningText());
     }
 }

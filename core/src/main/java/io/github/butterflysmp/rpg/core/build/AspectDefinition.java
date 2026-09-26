@@ -15,13 +15,35 @@ import java.util.Set;
  *   <li>{@code addOnHit}: effects appended to the target's {@code on_hit} -- any effect an ability may carry;</li>
  *   <li>{@code addOnCast}: visuals appended to the target's {@code on_cast};</li>
  *   <li>{@code modify}: whitelisted number changes to the target's OWN effects ({@link AspectField}).</li>
+ *   <li>{@code recast}: a follow-up ability the target's input casts shortly after it (section 7.4).</li>
  * </ul>
  *
  * <p>A record: an immutable value whose fields are fixed at construction.
  */
 public record AspectDefinition(String id, String displayName, List<String> description, String target,
                                List<EffectSpec> addOnHit, List<EffectSpec.Visual> addOnCast,
-                               List<NumberChange> modify) {
+                               List<NumberChange> modify, Recast recast) {
+
+    /**
+     * RECAST (section 7.4, rulings 28-30): pressing the target's input again, from {@code fromTicks} to
+     * {@code windowTicks} after casting it, casts {@code ability} instead -- once, for free, with no cooldown of
+     * its own. The rule is {@link RecastRule}; the state, {@link RecastTracker}.
+     */
+    public record Recast(String ability, int fromTicks, int windowTicks) {
+        public Recast {
+            if (ability == null || ability.isBlank()) throw new IllegalArgumentException("recast needs an ability");
+            if (!(0 < fromTicks && fromTicks < windowTicks)) {
+                throw new IllegalArgumentException("recast needs 0 < from_ticks < window_ticks, got " + fromTicks
+                        + " and " + windowTicks);
+            }
+        }
+    }
+
+    /** An aspect with no recast -- every aspect before section 7.4. */
+    public AspectDefinition(String id, String displayName, List<String> description, String target,
+                            List<EffectSpec> addOnHit, List<EffectSpec.Visual> addOnCast, List<NumberChange> modify) {
+        this(id, displayName, description, target, addOnHit, addOnCast, modify, null);
+    }
 
     public AspectDefinition {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("aspect id required");
@@ -31,7 +53,7 @@ public record AspectDefinition(String id, String displayName, List<String> descr
         addOnHit = addOnHit == null ? List.of() : List.copyOf(addOnHit);
         addOnCast = addOnCast == null ? List.of() : List.copyOf(addOnCast);
         modify = modify == null ? List.of() : List.copyOf(modify);
-        if (addOnHit.isEmpty() && addOnCast.isEmpty() && modify.isEmpty()) {
+        if (addOnHit.isEmpty() && addOnCast.isEmpty() && modify.isEmpty() && recast == null) {
             throw new IllegalArgumentException("aspect " + id + " adds and changes nothing");
         }
         Set<AspectField> seen = new HashSet<>();

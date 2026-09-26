@@ -39,7 +39,8 @@ public final class FragmentSheet {
         for (String id : stones.equippedFragments(playerId, profile)) {
             if (id == null) continue;
             Optional<FragmentDefinition> fragment = stones.fragments().find(id);
-            if (fragment.isEmpty()) continue;
+            // A BEHAVIOUR fragment (section 7.3) moves no stat, so the stats sheet has nothing to say about it.
+            if (fragment.isEmpty() || fragment.get().behavioural()) continue;
             if (lines.isEmpty()) lines.add(GearLore.plain(HEADER, NamedTextColor.GOLD));
             lines.add(GearLore.plain("  " + plainName(fragment.get()) + ": " + modifierText(fragment.get()),
                     NamedTextColor.GRAY));

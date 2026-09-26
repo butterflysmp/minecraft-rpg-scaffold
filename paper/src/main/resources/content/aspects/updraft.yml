@@ -1,0 +1,15 @@
+# An aspect with a RECAST (PLAN-build-system.md section 7.4, rulings 28-30): press Recall's input again, from 10
+# to 50 ticks after casting it, and it casts recall_updraft -- the leap -- instead. Once per Recall, free, and with
+# no cooldown of its own.
+#
+# The window is ruling 29's 2.5 s. The floor of 10 ticks is the seat's: it lets Recall's own dash finish first. A
+# held click never fires it: the recast is accepted only from a hold that BEGAN after Recall (section 7.4).
+# The id of this aspect is its filename: updraft.
+
+display_name: "<gold>Updraft</gold>"
+description: ["Recast Recall within 2.5 s to leap upward, throwing a ring of embers."]
+target: recall
+recast:
+  ability: recall_updraft
+  from_ticks: 10             # the seat's floor (section 7.4)
+  window_ticks: 50           # ruling 29

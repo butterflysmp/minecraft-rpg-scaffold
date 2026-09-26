@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult;
 import io.github.butterflysmp.rpg.core.ability.CastExecutor;
 import io.github.butterflysmp.rpg.core.build.LoadoutResolution.Equipped;
 import io.github.butterflysmp.rpg.core.build.LoadoutSlot;
+import io.github.butterflysmp.rpg.core.build.RecastTracker;
 import io.github.butterflysmp.rpg.core.build.StoneInput;
 import io.github.butterflysmp.rpg.core.build.SwingGuard;
 import io.github.butterflysmp.rpg.core.combat.Aim;
@@ -56,6 +57,12 @@ public final class StoneCaster {
     /** Each player's most recent stone DROP ATTEMPT tick, for the Q-swing guard. */
     private final Map<UUID, Long> lastDropAttempt = new ConcurrentHashMap<>();
 
+    /**
+     * Each player's RECAST state (section 7.4): a hold per button and the open window. Fed EVERY input that
+     * names an ability, refused ones included -- a held click's refused inputs are what carry its hold.
+     */
+    private final Map<UUID, RecastTracker> recasts = new ConcurrentHashMap<>();
+
     public StoneCaster(AbilityService abilityService, AdapterContext adapters, ProfileService profiles,
                        CooldownTracker cooldowns, Stones stones) {
         this.abilityService = abilityService;
@@ -72,7 +79,12 @@ public final class StoneCaster {
      * @param screenOpen the input came through an open inventory screen
      */
     public void onInput(Player player, StoneInput.Input input, boolean mainHand, boolean screenOpen) {
-        StoneInput.slotFor(input, mainHand, screenOpen).ifPresent(slot -> cast(player, slot));
+        onInput(player, input, mainHand, screenOpen, Bukkit.getCurrentTick());
+    }
+
+    /** {@link #onInput}, for an input that ARRIVED at {@code inputTick} -- a swing decided a tick later. */
+    private void onInput(Player player, StoneInput.Input input, boolean mainHand, boolean screenOpen, long inputTick) {
+        StoneInput.slotFor(input, mainHand, screenOpen).ifPresent(slot -> cast(player, slot, inputTick));
     }
 
     /**
@@ -97,16 +109,26 @@ public final class StoneCaster {
             // Still holding the stone? A swing that was the last act before switching slots must not
             // cast from whatever is in the hand now.
             if (!StoneItems.isStone(player.getInventory().getItemInMainHand(), adapters.keys())) return;
-            onInput(player, StoneInput.Input.LEFT, true, false);
+            // The SWING's tick, not this deferred one: the recast window and the hold are measured in input ticks.
+            onInput(player, StoneInput.Input.LEFT, true, false, swingTick);
         }, 1);
     }
 
     public void forget(UUID playerId) {
         lastDropAttempt.remove(playerId);
+        recasts.remove(playerId);
     }
 
-    private void cast(Player player, LoadoutSlot slot) {
-        Optional<Equipped> equipped = stones.equippedFor(player.getUniqueId(), profiles.profile(player.getUniqueId()));
+    /** Death closes any recast window: the respawned player did not cast what it was opened for. */
+    public void onDeath(UUID playerId) {
+        RecastTracker tracker = recasts.get(playerId);
+        if (tracker != null) tracker.clear();
+    }
+
+    private void cast(Player player, LoadoutSlot slot, long inputTick) {
+        UUID playerId = player.getUniqueId();
+        Optional<io.github.butterflysmp.rpg.storage.PlayerProfile> profile = profiles.profile(playerId);
+        Optional<Equipped> equipped = stones.equippedFor(playerId, profile);
         if (equipped.isEmpty()) {
             StoneNotice.noLoadout(player, cooldowns);
             return;
@@ -120,20 +142,40 @@ public final class StoneCaster {
         }
         Set<String> castable = Set.copyOf(equipped.get().ids());
 
+        // THE RECAST (section 7.4), decided BEFORE the ordinary cast. Every input is recorded first, refused or not.
+        // An accepted recast casts the follow-up through castUnchecked -- no cost, no cooldown check, no cooldown
+        // of its own (ruling 30) -- and the ordinary cast is not attempted. A refused one (too early, too late,
+        // already used, or the hold that cast the target) falls through to it, and the player sees the target's
+        // own cooldown line.
+        RecastTracker tracker = recasts.computeIfAbsent(playerId, id -> new RecastTracker());
+        Optional<String> followUp = tracker.input(slot, inputTick, abilityId.get(),
+                stones.recastFor(playerId, profile, abilityId.get()).isPresent());
+
         // The /rpg cast shape exactly: aim and snapshot on the caster's own thread, decide inline so the
         // cooldown and mana are spent before any hop, then run the effects on the region that owns the aim.
         Location eye = player.getEyeLocation();
         Aim aim = ViewAim.of(eye);
         CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats());
-        // THE PLAYER'S DERIVE (slice 5): their active aspects' changes, applied before the cost and cooldown.
+        if (followUp.isPresent()) {
+            switch (abilityService.castUnchecked(caster, followUp.get(), aim)) {
+                case CastResult.Success success -> run(player, eye, success);
+                // The loader refuses a recast naming no loaded ability, so this is a registry that changed after.
+                case CastResult.UnknownAbility unknown ->
+                        adapters.warnOnce("Ability Stone: recast names unknown ability '" + unknown.id() + "'");
+                default -> { }
+            }
+            return;
+        }
+        // THE PLAYER'S DERIVE (slice 5): their active aspects' changes, applied before the cost and cooldown, and
+        // their behaviour fragments' appends (section 7.3).
         CastResult result = abilityService.cast(caster, abilityId.get(), aim, castable,
-                stones.deriveFor(player.getUniqueId(), profiles.profile(player.getUniqueId())));
+                stones.deriveFor(playerId, profile));
 
         switch (result) {
             case CastResult.Success success -> {
-                CastResult.Success toRun = DashAim.resolve(player, success);
-                adapters.scheduler().onRegion(eye, () ->
-                        new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters)).execute(toRun));
+                // A recast aspect active on this ability opens its window; a cast of it without one closes any.
+                tracker.castSucceeded(abilityId.get(), inputTick, stones.recastFor(playerId, profile, abilityId.get()));
+                run(player, eye, success);
             }
             case CastResult.OnCooldown onCooldown ->
                     StoneNotice.onCooldown(player, cooldowns, displayName(abilityId.get()), onCooldown.ticksRemaining());
@@ -151,6 +193,13 @@ public final class StoneCaster {
             case CastResult.Empty ignored -> { }
             case CastResult.Reloading ignored -> { }
         }
+    }
+
+    /** Aim-correct a dash, then run the effects on the region that owns the aim. */
+    private void run(Player player, Location eye, CastResult.Success success) {
+        CastResult.Success toRun = DashAim.resolve(player, success);
+        adapters.scheduler().onRegion(eye, () ->
+                new CastExecutor(new PaperCombatWorld(player.getWorld(), adapters)).execute(toRun));
     }
 
     private String displayName(String abilityId) {

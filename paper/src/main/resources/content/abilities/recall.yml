@@ -1,0 +1,29 @@
+# Recall -- the Ranger's retreat, and the deliberate opposite of Ember Step (ruling 24, 2026-09-27; it was
+# Rekindle, the Fire Ranger's). Ember Step is Mage-COMMIT (dash IN); Recall is Ranger-KITE: dash straight BACKWARD.
+#
+# KINETIC, and CLASS-WIDE: it is listed in content/builds/ranger.yml, not in a cell, so every Ranger cell offers
+# it whatever the element (PLAN-build-system.md section 7.1). Rekindle's embers are GONE from the cast (ruling 24);
+# the Fire Ranger gets them back through the fragment_ember_cache fragment, and a leap through the updraft aspect.
+#
+# The numbers are Rekindle's, kept by ruling 25: the 8-block reverse-facing dash (speed 2.3, lift 0.3), a 200-tick
+# cooldown and 35 mana.
+
+id: recall
+display_name: "<gold>Recall</gold>"   # MiniMessage, not legacy color codes
+element: kinetic
+cooldown_ticks: 200          # ruling 25; a multiple of 4 (the held right-click grid)
+
+cost:
+  resource: mana
+  amount: 35                 # ruling 25
+
+cast:
+  type: dash
+  direction: reverse_facing  # ALWAYS opposite facing -- a straight backpedal, ignoring WASD
+  distance: 8                # ruling 25
+  speed: 2.3                 # ruling 25
+  lift: 0.3                  # ruling 25
+
+# The cast visual rides on_hit: a dash's untargeted effects fire once, at the pre-dash feet.
+on_hit:
+  - { type: visual, visual_id: recall_cast }   # the whoosh, once at the caster on cast

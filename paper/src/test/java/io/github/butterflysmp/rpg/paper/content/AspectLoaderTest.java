@@ -65,8 +65,8 @@ class AspectLoaderTest {
     private static PoolRegistry rangerListing(String... aspects) {
         PoolRegistry pools = new PoolRegistry();
         pools.register(new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
-                List.of("ultimate_placeholder_ranger"), List.of("rekindle", "solar_lance"),
-                new Loadout("ultimate_placeholder_ranger", "rekindle", "solar_lance"), List.of(), List.of(aspects)));
+                List.of("ultimate_placeholder_ranger"), List.of("recall", "solar_lance"),
+                new Loadout("ultimate_placeholder_ranger", "recall", "solar_lance"), List.of(), List.of(aspects)));
         return pools;
     }
 
@@ -76,7 +76,7 @@ class AspectLoaderTest {
 
     @Test
     void theControlAbilitiesLoaded() {
-        assertTrue(ABILITIES.find("solar_lance").isPresent() && ABILITIES.find("rekindle").isPresent(),
+        assertTrue(ABILITIES.find("solar_lance").isPresent() && ABILITIES.find("recall").isPresent(),
                 "the real targets must load, or every check below would refuse for the wrong reason");
     }
 
@@ -112,7 +112,7 @@ class AspectLoaderTest {
 
     @Test
     void aStatusDurationOnScorchIsRefused() throws IOException {
-        // rekindle's embers burst carries no status, so the fixture target is a scorch-carrying ability:
+        // recall carries no status, so the fixture target is a scorch-carrying ability:
         // add one inline through a pool that lists an aspect on it. No shipped ability authors scorch as a
         // Status effect, so this row builds the case by hand on a registry of its own.
         AbilityRegistry abilities = new AbilityRegistry();
@@ -147,6 +147,73 @@ class AspectLoaderTest {
 
     // ------------------------------------------------------------------ the shipped aspects
 
+    // ------------------------------------------------------------------ section 7.4: the recast
+
+    private static final String UPDRAFT = """
+            target: recall
+            recast:
+              ability: recall_updraft
+              from_ticks: 10
+              window_ticks: 50
+            """;
+
+    @Test
+    void aRecastParsesAndIsAnAspectOnItsOwn() throws IOException {
+        write("updraft.yml", UPDRAFT);
+        AspectRegistry parsed = new AspectLoader(log).loadAll(dir.toFile());
+        var recast = parsed.find("updraft").orElseThrow().recast();
+        assertEquals(new io.github.butterflysmp.rpg.core.build.AspectDefinition.Recast("recall_updraft", 10, 50), recast);
+        assertEquals(1, checked(parsed, rangerListing("updraft")).size(), warningText());
+    }
+
+    @Test
+    void aRecastMissingAKeyOrWithItsTicksOutOfOrderIsRefused() throws IOException {
+        write("no_window.yml", "target: recall\nrecast:\n  ability: recall_updraft\n  from_ticks: 10\n");
+        write("backwards.yml", "target: recall\nrecast:\n  ability: recall_updraft\n  from_ticks: 50\n  window_ticks: 10\n");
+        assertEquals(0, new AspectLoader(log).loadAll(dir.toFile()).size());
+        assertTrue(warningText().contains("no_window.yml") && warningText().contains("window_ticks"), warningText());
+        assertTrue(warningText().contains("backwards.yml"), warningText());
+    }
+
+    @Test
+    void aRecastOfAnUnknownAbilityIsRefused() throws IOException {
+        write("updraft.yml", UPDRAFT.replace("recall_updraft", "leap_nowhere"));
+        assertEquals(0, checked(new AspectLoader(log).loadAll(dir.toFile()), rangerListing("updraft")).size());
+        assertTrue(warningText().contains("leap_nowhere"), warningText());
+    }
+
+    /** The follow-up's only door is the recast: a pool offering it as an Active is refused. */
+    @Test
+    void aRecastWhoseFollowUpAPoolOffersIsRefused() throws IOException {
+        write("updraft.yml", UPDRAFT);
+        PoolRegistry pools = new PoolRegistry();
+        pools.register(new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
+                List.of("ultimate_placeholder_ranger"), List.of("recall", "solar_lance", "recall_updraft"),
+                new Loadout("ultimate_placeholder_ranger", "recall", "solar_lance"), List.of(), List.of("updraft")));
+        assertEquals(0, checked(new AspectLoader(log).loadAll(dir.toFile()), pools).size());
+        assertTrue(warningText().contains("recall_updraft") && warningText().contains("NO pool"), warningText());
+    }
+
+    /** One follow-up per cast: two recast aspects on one target in one pool are refused as a pair, by name. */
+    @Test
+    void twoRecastsOnOneTargetAreRefusedAsAPair() throws IOException {
+        write("updraft.yml", UPDRAFT);
+        write("second_wind.yml", UPDRAFT);
+        AspectRegistry kept = checked(new AspectLoader(log).loadAll(dir.toFile()), rangerListing("updraft", "second_wind"));
+        assertEquals(0, kept.size());
+        assertTrue(warningText().contains("second_wind") && warningText().contains("ONE follow-up"), warningText());
+    }
+
+    /** Ruling 26's stale copy, the arc_surge way: named once, skipped, never deleted. */
+    @Test
+    void aStaleBankedEmbersCopyIsSkippedNotRefused() throws IOException {
+        write("banked_embers.yml", "target: rekindle\nadd_on_cast:\n  - { type: visual, visual_id: ember_burst }\n");
+        AspectRegistry parsed = new AspectLoader(log).loadAll(dir.toFile());
+        assertEquals(0, parsed.size());
+        assertTrue(warningText().contains("banked_embers.yml") && warningText().contains("DELETED"), warningText());
+        assertTrue(Files.exists(dir.resolve("banked_embers.yml")), "never deleted");
+    }
+
     /** The four shipped aspects parse, pass their own pools' checks, and are marked as placeholders. */
     @Test
     void theShippedAspectsLoadPassAndAreMarkedPlaceholders() throws IOException {
@@ -156,9 +223,9 @@ class AspectLoaderTest {
         AspectRegistry parsed = new AspectLoader(log).loadAll(shipped);
         PoolRegistry pools = new PoolRegistry();
         pools.register(new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
-                List.of("ultimate_placeholder_ranger"), List.of("rekindle", "solar_lance"),
-                new Loadout("ultimate_placeholder_ranger", "rekindle", "solar_lance"), List.of(),
-                List.of("searing_lance", "banked_embers")));
+                List.of("ultimate_placeholder_ranger"), List.of("recall", "solar_lance"),
+                new Loadout("ultimate_placeholder_ranger", "recall", "solar_lance"), List.of(),
+                List.of("searing_lance", "updraft")));
         pools.register(new PoolDefinition(new CellKey("mage", "fire"), "Fire Mage",
                 List.of("ultimate_placeholder_mage"), List.of("ember_step", "solar_grenade", "solar_lance"),
                 new Loadout("ultimate_placeholder_mage", "ember_step", "solar_grenade"), List.of(),
@@ -166,8 +233,14 @@ class AspectLoaderTest {
         AspectRegistry kept = checked(parsed, pools);
         assertEquals(4, kept.size(), "every shipped aspect passes: " + warningText());
         assertFalse(warningText().contains("Refusing"), warningText());
+        // Every shipped aspect is a placeholder EXCEPT updraft, which is RULED (rulings 28-30) and says so.
         for (File f : files) {
-            assertTrue(Files.readString(f.toPath()).contains("# PLACEHOLDER -- Ben designs"), f.getName());
+            String text = Files.readString(f.toPath());
+            if (f.getName().equals("updraft.yml")) {
+                assertTrue(text.contains("ruling 29") && !text.contains("PLACEHOLDER"), f.getName());
+            } else {
+                assertTrue(text.contains("# PLACEHOLDER -- Ben designs"), f.getName());
+            }
         }
     }
 }

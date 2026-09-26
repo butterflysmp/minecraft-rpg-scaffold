@@ -107,6 +107,18 @@ class ContentValidatorTest {
         assertTrue(problems.get(0).contains("aspect 'glow'") && problems.get(0).contains("nope"), problems.toString());
     }
 
+    /** Section 7.3: a behaviour fragment's appended effects are checked like an aspect's; a stat fragment passes. */
+    @Test
+    void aBehaviourFragmentsDanglingVisualIsReportedByFragment() {
+        var cache = new io.github.butterflysmp.rpg.core.build.FragmentDefinition("cache", "Cache", "blaze_powder",
+                List.of(), java.util.Map.of(), "recall", List.of(new EffectSpec.Visual("nope")));
+        var vigor = new io.github.butterflysmp.rpg.core.build.FragmentDefinition("vigor", "Vigor", "red_dye", List.of(),
+                java.util.Map.of(io.github.butterflysmp.rpg.core.accessory.AccessoryStat.MAX_HEALTH, 4.0));
+        var problems = validator(visualsWith("solar_detonation"), statusesWith()).validateFragments(List.of(cache, vigor));
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("fragment 'cache'") && problems.get(0).contains("nope"), problems.toString());
+    }
+
     @Test
     void danglingTopLevelVisualIdIsReported() {
         var abilities = abilitiesWith(List.of(new EffectSpec.Visual("nope")));

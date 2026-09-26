@@ -114,7 +114,7 @@ class WeaponLoaderTest {
 
     /**
      * A trigger's cast is the shared AbilitySchema, so any cast type an ability supports works
-     * in a weapon trigger unchanged -- including `dash`, which rekindle-style triggers lean on. This
+     * in a weapon trigger unchanged -- including `dash`, which dash triggers lean on. This
      * pins that shared-grammar guarantee: if a weapon-specific cast path ever crept back in and
      * hardcoded a subset, `dash` in a trigger would break and this reddens.
      */

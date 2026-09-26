@@ -85,6 +85,34 @@ Recorded verbatim from the brief.
     fragments this is already satisfied by the picker's **"Empty this slot"** option (slice 4, BF9). **Slice
     5 must give each aspect slot the same option, with its own gate row.**
 
+**Ben's rulings 24-31, 2026-09-27: RECALL. Recorded verbatim from `BRIEF-recall-rework.md` (not committed).
+The design is §7.**
+
+24. **Rekindle becomes Recall.** Its element is **kinetic**, and **any Ranger can pick it, whatever their
+    element**. Its embers on use are removed.
+25. Recall keeps Rekindle's numbers: the 8-block reverse-facing dash (speed 2.3, lift 0.3), a 200-tick
+    cooldown, and 35 mana.
+26. The placeholder aspect `banked_embers` is **deleted**.
+27. **A Fire Ranger fragment, "Ember Cache"**, makes Recall throw Rekindle's three embers exactly: angles
+    0/40/−40, and the same burst of 8 fire damage in a 4-block radius.
+    - Future, NOT now: ember damage will be balanced off the player's average gear score. Record it in
+      plan §6.
+28. **A Fire Ranger aspect, "Updraft"**, lets the player RECAST Recall shortly after casting it. The recast
+    is a leap:
+    - about **4–5 blocks up**;
+    - **no more than 3–4 blocks back**;
+    - it throws **5 embers**, landing about **3–4 blocks** from the player.
+29. **The recast window is 2.5 s (50 ticks).**
+30. **The recast is free:** no mana, and no cooldown of its own.
+31. **No fall damage from the landing right after the leap.** The embers are thrown at take-off, in an
+    even ring (72° apart) around the player.
+
+**Ben's ruling 32, 2026-09-27, given at the seat's approval of section 7 (PR #161). The seat's message carried the numbers as an
+unfilled template (`<8 damage in a 2.0-block radius / Ben's numbers>`). The numbers below were given in the session
+when asked, and they replace the template:**
+
+32. **The leap's embers each deal 60 damage in a 3-block radius.** This closes section 7.7's UNRULED note.
+
 **And one clarification, given while building slice 1 (2026-09-25):** Q pressed over the stone with a
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
 way.
@@ -769,6 +797,9 @@ add_on_hit:
       effects:
         - { type: damage, amount: 8, element: fire }
 ```
+
+*`banked_embers` was DELETED by ruling 26 (§7). This example, and its §2.4.1 resolution below, are kept as the
+worked case; the numbers are no longer shipped.*
 
 Every visual, status and element named above exists at `bccef7d` (`content/visuals/`, `content/elements/`).
 **The numbers are PLACEHOLDERS for §4, not proposals.** NAME THE QUANTITY applies to them when Ben sets
@@ -1844,3 +1875,619 @@ the record of what was asked.
     that target, so when the fixture goes the `modify` matches zero effects and `AspectLoader` refuses the
     WHOLE aspect -- not just the one change. Recorded at the seat's review of `35e255d`, before slice 5's
     boot; the fixture-removal item in §4 now names it, so the two are done together.
+11. **Ember damage will be balanced off the player's AVERAGE GEAR SCORE -- FUTURE, NOT NOW (ruling 27).**
+    Ember Cache ships at a flat 8 (Rekindle's number, ruled), and so does the leap's placeholder burst
+    (§7.7). When the balancing lands, NAME THE QUANTITY applies: the gear score is an average over
+    whatever the player wears, so its eligibility half (which gear has a score, and what an empty slot
+    counts as) is the question to answer before any curve. Recorded 2026-09-27 at the seat's direction; not
+    scoped here.
+
+---
+
+## 7. RECALL — THE REKINDLE REWORK, A BEHAVIOUR FRAGMENT, AND A RECAST ASPECT (rulings 24-31)
+
+**Plan only. No Java, no content, no boot.** Read against master **`35d2526`**
+(`35d2526971428e2117472d0745e0fcfc90646aa7`, quoted from `git ls-remote origin master`, #160). Branch
+`feat/recall`. Citations name methods and sections, never lines; the short paths are this plan's header's.
+**Line budget: predicted ~400 lines for this section and the rulings, stated before writing.** The actual
+count is in the PR body.
+
+**The names are the seat's choice, as Ben allowed:**
+
+| id | what it is | where it is listed |
+|---|---|---|
+| `recall` | the ability (was `rekindle`) | `content/builds/ranger.yml`, **class-wide** (§7.1) |
+| `fragment_ember_cache` | the fragment, "Ember Cache" | `content/builds/ranger_fire.yml` |
+| `updraft` | the aspect | `content/builds/ranger_fire.yml` |
+| `recall_updraft` | the follow-up ability, the leap | **no pool** — reachable only as a recast (§7.4) |
+
+### 7.1 Class-wide pool entries (ruling 24)
+
+**What is true today.** `PoolLoader.loadAll` lists `content/builds/*.yml` (not recursive) and hands every
+file to `PoolLoader.parse`, which **requires `class:` and `element:`** (`req`) and a `default:` section. So a
+file `builds/ranger.yml` holding only a class would today be **refused as a pool** ("Missing required field:
+element"), logged, and skipped. Nothing downstream reads a pool except through `PoolDefinition`'s lists:
+`BuildRules`, `LoadoutResolution`, `Stones.equippedFor` and the pickers all read `pool.actives()` /
+`pool.ultimates()`. **So a merge done AT LOAD reaches every consumer with no consumer changing.**
+
+**RECOMMENDATION: the seat's — a class pool file `content/builds/<class>.yml`, merged into each
+`<class>_<element>` pool at load.**
+
+    # content/builds/ranger.yml
+    class: ranger
+    actives: [recall]
+
+- **Telling the two kinds of file apart — the discriminator, and its guard.** A file with **no `element:`
+  key** is a class file. That alone is dangerous: a cell file that merely FORGOT its element would silently
+  become a class file. So **a class file's filename stem must equal its `class:`** (`ranger.yml` declares
+  `ranger`), and one that does not is refused, naming both. A `ranger_fire.yml` missing its element has
+  stem `ranger_fire` against class `ranger`, and is refused exactly as loudly as today.
+- **What a class file may carry: `class`, `actives`, `ultimates`. Nothing else.** `element`, `default`,
+  `fragments` and `aspects` are **refused by name** in a class file. Fragments and aspects are cell-specific
+  (§2.3, §2.4: the loadout of the CURRENT cell), and a default belongs to a cell. A key that is silently
+  ignored reads as a feature that works.
+- **Load order: two passes inside `loadAll`.** Pass 1 parses every class file into a core
+  `C/build/ClassPool(classId, ultimates, actives)`; each id is checked against the ability registry, the
+  same refusal `parse` makes for a cell. Pass 2 parses each cell file and merges its class's `ClassPool`
+  **before** the `PoolDefinition` is constructed. The merge is a pure core function,
+  `PoolDefinition.merged(ClassPool)` or a static in `ClassPool`, so its rules are unit-tested without YAML.
+- **The merge rule:** the cell's own ids first, in their order, then the class's ids, in theirs. The order
+  is the picker's display order and nothing else.
+- **Conflicts — each one REFUSES THE CELL FILE, naming the id and both files:**
+  - **The same id both class-wide and cell-listed, in the same role** (`recall` in `ranger.yml`'s actives
+    AND `ranger_fire.yml`'s). *Rejected: silently de-duplicate.* That gives one fact two homes. Removing
+    `recall` from the class file would then leave it offered to Fire Rangers only, and nothing would say
+    so. This repo's own rule: **two accounts drift**.
+  - **The same id in different roles** (class-wide active, cell-listed ultimate). This falls out of the
+    existing "is both an ultimate and an active" check in the `PoolDefinition` constructor, because it runs
+    on the MERGED lists.
+- **`PoolLoader`'s refusals all still hold, because they run on the merged record.** The `PoolDefinition`
+  constructor checks the merged lists: at least 1 ultimate and 2 actives, no duplicates, no id in both
+  roles, and a default drawn from the lists. `parse`'s registry checks cover both the class and the cell
+  ids. The aspect-target check (`badAspects`) now sees `recall`, so `updraft` is legal in `ranger_fire`.
+  The behaviour-fragment target check (§7.3) sees it the same way.
+- **A class file that is refused** is logged by name. Its cells then load WITHOUT its entries, and every
+  cell that depended on them is refused by the existing checks. `ranger_fire.yml`'s default names `recall`,
+  so it is refused, loudly. *Rejected: refusing every cell of the class outright.* The existing checks
+  already refuse exactly the cells that depended on the file, and no others.
+- **A class file with no cell** (`mage.yml` while no mage cell exists) offers nothing, and one boot warning
+  names it. Ruling 7 is untouched: the Build screen offers the cells that have a pool, and a class file is
+  not a cell.
+- **What ruling 24 needs from this today:** only `ranger_fire` exists, so "whatever their element" is
+  structurally true (every future `ranger_<element>.yml` inherits `recall`) and is read at ship only as
+  "Recall for a Ranger, not for a Mage" (RC7).
+
+### 7.2 The rename `rekindle` → `recall` — every reference, each with its verdict
+
+Swept with `git grep -n -i rekindle` at `35d2526`, excluding `*.md`. **Found beyond the brief's list:** the
+javadocs of `AbilityDefinition`, `CastSpec.DashDirection` and `DashAim.reverseFacing`; `banked_embers.yml`;
+and the storage tests.
+
+| reference | what it says | verdict |
+|---|---|---|
+| `content/abilities/rekindle.yml` | the ability | **RENAMED** `recall.yml`: `id: recall`, `element: kinetic`, the `throw_embers` block **removed** (ruling 24), and the numbers kept (ruling 25). Draft in §7.7 |
+| `content/visuals/rekindle_cast.yml` | the cast whoosh (`item.firecharge.use`) | **RENAMED** `recall_cast.yml`, and the sound is **KEPT**. *Stated:* it is a fire-charge sound on a now-kinetic ability. Changing it is presentation, and Ben's call |
+| `content/builds/ranger_fire.yml` | `actives: [rekindle, ...]`, the default, the header comment | `rekindle` leaves `actives` (it is class-wide now, and listing it too is refused, §7.1). The default becomes `[recall, solar_lance]`. `banked_embers` → `updraft`, and `fragment_ember_cache` is added. The comment is edited |
+| `content/aspects/banked_embers.yml` | the aspect on rekindle | **DELETED** (ruling 26) |
+| `content/abilities/ultimate_placeholder_ranger.yml` | "(rekindle's dash, solar_lance's shorter ray)" | **EDITED** to `recall's` |
+| `content/visuals/flint_cast.yml` | "rekindle.yml does" (a cast visual in `on_hit`) | **EDITED** to `recall.yml`. It still does, so the sentence stays true |
+| `content/weapons/quiver_stone.yml` | a swept file list at a past revision | **ANNOTATED** `rekindle -- since renamed recall --`, the `arc_surge -- since deleted --` precedent. Renaming it would falsify the set that was measured |
+| `C/ability/AbilityDefinition` javadoc | "`rekindle.yml` does" | **EDITED** to `recall.yml` (still true) |
+| `C/ability/CastSpec.DashDirection.REVERSE_FACING` javadoc | "Rekindle: the reverse of facing" | **EDITED** to Recall, and to `recall_updraft`'s leap (§7.5) |
+| `C/combat/Ignite` (blast-radius javadoc) | a DATED adoption record, 2026-09-10: "rekindle's thrown embers are 4.0" | **ANNOTATED, not rewritten**: `rekindle`'s (since renamed Recall; its embers are now `fragment_ember_cache`'s, still 4.0) |
+| `P/adapter/BukkitCombatant`, the custom-damage path javadoc | "(Ember Step, Rekindle)" | **EDITED** to "(Ember Step, Ember Cache's embers)". Recall alone deals no damage now |
+| `BukkitCombatant`, the aggro comment | "a mob caught in Rekindle's burst" | **EDITED** to "an ember's burst" |
+| `BukkitCombatant.applyHeal` javadoc | a historical account: "`rekindle.yml`'s heal" | **ANNOTATED** "(Rekindle, since renamed Recall)". It is history, and history is not renamed |
+| `P/weapon/DashAim.reverseFacing` javadoc | "casting Rekindle dashes back-and-flat" | **EDITED** to Recall |
+| core `CastExecutorTest` (a section comment), `DashAimTest` (a comment), `DamagePayloadTest` (the id `rekindle_cast`) | fixture strings and comments | **RENAMED**. None of them reads content |
+| core `PoolRegistryTest`, `AspectApplicationTest`, `AspectLoreTest`; storage `PlayerBuildTest`, `FileBuildRepositoryTest` | a hand-built `rekindle` fixture id | **RENAMED** `recall` — a mechanical string rename. **The `banked_embers` fixtures in `AspectApplicationTest` and `AspectLoreTest` are KEPT**, with their numbers, and each is marked *"hand-built; the content file was deleted by ruling 26"*. They pin §2.4.1's worked example (the 230 control, cost `45 (35)`) and read no content |
+| paper `AbilityLoaderTest.bundledRekindleContentLoads` | loads the shipped file | **BECOMES** `bundledRecallContentLoads`. It asserts `kinetic`, the four ruling-25 numbers, and **no `ThrowEmbers` anywhere in `onHit`** (ruling 24) |
+| paper `PoolLoaderTest`, `AspectLoaderTest` | shipped-pool assertions and inline YAML fixtures | **EDITED** to `recall` and `updraft`, and gain the §7.1 cases |
+| paper `WeaponLoaderTest` | "rekindle-style triggers" | **EDITED** to "dash triggers" |
+| paper `ScorchContentInvariantTest` | the fire-damage site count, and its javadoc naming `banked_embers` | **RE-COUNTED in phase 2, not predicted here.** Rekindle's burst goes and `banked_embers`' goes; Ember Cache's and `recall_updraft`'s arrive |
+| `*.md` (GATE files, `NEXT.md`, older PLANs, and §1-§4 of this plan) | dated records | **NOT edited.** They are the record as of their slice. One pointer line is added under §2.4's `banked_embers` example |
+
+**A saved build naming `rekindle` reads that slot as EMPTY** (`LoadoutResolution`: a saved id the pool no
+longer offers in that role). That is accepted on a dev world: the player re-picks on the Build screen, and
+**no alias is written.**
+
+**Stale `run/` copies, the arc_surge way** (ruling 22: named once, skipped, never deleted). Present today:
+`run/plugins/Rpg/content/abilities/rekindle.yml`, `aspects/banked_embers.yml` and
+`visuals/rekindle_cast.yml`.
+
+- `AbilityLoader.RETIRED_FILES` gains `rekindle.yml`.
+- `VisualLoader.RETIRED_FILES` gains `rekindle_cast.yml`.
+- **`AspectLoader` has no `RETIRED_FILES` today**, and gains one holding `banked_embers.yml`. Without it,
+  the stale aspect would be refused at boot as "target rekindle unknown". That is loud, but it reads as a
+  fault rather than a retirement.
+
+### 7.3 Behaviour fragments (ruling 27)
+
+**What is true today.** `FragmentDefinition` requires a non-empty `modifiers` map ("modifies nothing"), and
+`FragmentLoader.parse` reads only `icon`, `display_name`, `description` and `modifiers`. A fragment reaches
+play only through `Stones.fragmentContributions`, the stat path. **Nothing about a fragment reaches a cast.**
+
+**RECOMMENDATION: a fragment may carry `target:` + `add_on_hit:`, and nothing else behavioural.**
+
+- **Parsed by the aspect path, `AbilitySchema.parseEffects`**, so a fragment appends exactly what an aspect
+  can. No new effect type is introduced.
+- **`modify:` is REFUSED on a fragment, by name**, and so is `add_on_cast`, which the ruling does not need.
+  So a fragment never moves a number and needs no §2.4.1 resolution and no pair check.
+- **A fragment is EITHER stats OR behaviour, never both: the mix is refused.** *Why:* the inactive rule
+  below applies to the behaviour. A half-inactive fragment ("its stats still count, its embers do not")
+  would be a second rule nobody ruled. One kind per file keeps "inactive" meaning one thing.
+- **`FragmentDefinition`** gains `target` and `addOnHit`. Its "modifies nothing" refusal becomes "modifies
+  nothing and adds nothing". Positive-only is untouched. `FragmentContributions.of` already reads only
+  `modifiers`, so a behaviour fragment contributes no stat by construction.
+- **The pool check:** `PoolLoader` refuses a pool naming a behaviour fragment whose target it does not
+  offer. This is the aspects' `badAspects` rule, run against the MERGED lists (§7.1).
+
+**HOW IT COMPOSES WITH ASPECTS ON THE SAME ABILITY.** The one derive, `AspectApplication.deriveUncached`,
+gains a third input: the ACTIVE behaviour fragments, in fragment-slot order. The order is:
+
+1. **the aspects' `modify`**, on the target's own effects;
+2. **the aspects' appends**, in aspect-slot order;
+3. **the fragments' appends**, in fragment-slot order.
+
+**Modify first, append second, is kept.** No `modify` reaches a fragment's appended embers, for the §2.4.1
+reason: an appended effect is authored at its final number. The memo key in `AspectApplication.derive`
+gains the fragment list. `Stones.deriveFor` stops returning `identity()` when only a fragment is slotted.
+Whether the fragments append before or after the aspects decides only visual layering, because every
+effect resolves independently (§2.4).
+
+**INACTIVE WHEN ITS TARGET IS NOT EQUIPPED — the aspect rule, the SAME predicate.**
+`AspectApplication.activeFor`'s test (the target is in `equipped`) is applied to fragments. It is not
+copied, because two copies of one rule drift. The Build screen shows *"Inactive — requires Recall
+equipped"* on the fragment's icon.
+
+> **AND THE INACTIVE STATE IS UNREACHABLE IN PLAY TODAY, FOR THE SAME REASON AS BA10.** After the merge the
+> Ranger pool offers exactly two Actives, `solar_lance` and `recall`, so Recall is always equipped, and there
+> is no "Empty this slot" for an Active (ruling 23 covers fragments and aspects only). The rule is held by
+> a unit test and its mutation. Its gate row (RC3) reaches the state the one honest way there is: **a
+> hand-edited build file** that saves Active 1 empty (`LoadoutResolution` reads a saved null as EMPTY). That
+> row is also a reading of a build file ON DISK, which BA13 still owes.
+
+**RULING 21 (positive-only STATS) IS UNAFFECTED, AND WHY.** Ruling 21 exists for `StatSourceBound`: only a
+negative modifier can carry a stat to its floor, so fragments were made positive-only to add zero negative
+sources to the combined bound. A behaviour fragment has **no modifiers at all** (the mix is refused), so it
+adds zero sources, of either sign. What it adds are `EffectSpec`s, which are not stats and never reach
+`startReconcileLoop`. Their own constructors police their numbers (a radius `≤ 0` is refused by
+`EffectSpec`), and an append cannot remove anything from the target.
+
+### 7.4 The recast (rulings 28-30)
+
+**The aspect key:**
+
+    recast:
+      ability: recall_updraft   # the follow-up; must exist, and must be in NO pool
+      from_ticks: 10            # the seat's floor (below): content, not a Java constant
+      window_ticks: 50          # ruling 29
+
+- `AspectDefinition` gains an optional `Recast(ability, fromTicks, windowTicks)`. "Adds and changes nothing"
+  now counts it.
+- **`AspectLoader` refuses** any of these:
+  - a follow-up nothing defines;
+  - `0 < from_ticks < window_ticks` does not hold;
+  - **a follow-up that ANY pool offers**. Its only door is the recast, and the id table says "in NO pool".
+    This check runs in the post-pools pass, where the pair check already lives;
+  - **two recast-granting aspects in one pool on the same target** — the pair check's shape. One follow-up
+    per cast.
+
+**THE PURE CORE RULE.** A new `C/build/RecastRule` answers one question: is this input a recast?
+
+    accepts(recallTick, inputTick, fromTicks, windowTicks, used, inputHoldStart)
+      = !used
+        && fromTicks <= inputTick - recallTick <= windowTicks     # both edges inclusive
+        && inputHoldStart > recallTick                            # not the hold that cast Recall
+
+- **One recast per Recall cast.** The window is marked `used` on the recast. The next Recall cast opens a
+  new window. Recall's 200-tick cooldown is longer than the 50-tick window, so two windows cannot overlap.
+- **It bypasses Recall's cooldown check, costs nothing, and starts no cooldown of its own.** The recast
+  casts the follow-up through **`AbilityService.castUnchecked`**. That method already means exactly "a
+  `Success` without `resolve`" (§2.5.1): no cooldown check, no `tryConsume`, and no `cooldowns.trigger`.
+  Its javadoc widens from "the operator's dev cast" to name both callers.
+  - *Rejected: a second method with the same body.* That puts two homes on "no cost, no cooldown".
+  - *Rejected: authoring `cost 0` / `cooldown_ticks 0` and going through `resolve`.* A 0-tick cooldown
+    still WRITES a cooldown entry for `recall_updraft`, and "free" would then rest on content rather than
+    on the rule.
+
+**WHERE IT LIVES — in `StoneCaster.cast`, before `abilityService.cast`, and outside the derive:**
+
+1. The input's tick is recorded for the hold rule (below). **Every input records it, including those that
+   are refused**: a held click's refused inputs are what extend the hold.
+2. **If this player has an open window, and this slot's ability is the window's ability**, `RecastRule`
+   decides. When it accepts, three things happen: the follow-up is cast via `castUnchecked`, then
+   `DashAim.resolve`, then executed as usual; the window is marked `used`; and `cast` returns.
+   **When it refuses** (too early, too late, used, or the same hold), `cast` falls through to the normal
+   cast. Recall is on cooldown, so the player sees the ordinary cooldown line.
+3. **The normal cast, unchanged** — `abilityService.cast(..., stones.deriveFor(...))`.
+4. **On a `Success`**, a new `Stones.recastFor(player, profile, abilityId)` asks the SAME active-aspect set
+   `deriveFor` used (`activeFor`) for a `Recast`. If it finds one, a window opens: the ability, the
+   follow-up, the Recall input's tick, and that input's hold start.
+   - **At recast time the aspect must STILL be active.** A build change inside the window closes it.
+
+- **The state is per player, in memory, in `StoneCaster`**, beside `lastDropAttempt`. It is cleared by
+  `forget` (on quit) and on death. CLAUDE.md invariant 3 holds: this is not persistent player state.
+- **The derive is NOT applied to the follow-up.** Nothing targets `recall_updraft`, and `castUnchecked`
+  applies no derive. Only the stone opens a window: a non-op's `/rpg cast recall` casts Recall and opens
+  nothing, and an operator's dev cast derives nothing (ruling 10).
+
+**THE HELD-INPUT TRAP — can a hold be told apart, input by input? From the measured streams (§3.1.0.1):**
+
+| input | what a hold delivers | what arrives on release | can the hold be told apart? |
+|---|---|---|---|
+| left, air | **one** swing, never repeated | nothing | **Yes, trivially.** Every swing is a new press |
+| left, block | a swing **every tick** | `BlockDamageAbortEvent`, 1 tick after the last swing | **Yes, by the gap.** A hold is gapless |
+| right, air or block | an input **every 4 ticks, exactly** | **nothing** | **Not by a release signal. Yes, by the gap, in ONE direction** (below) |
+
+**RECOMMENDATION — a CLEAN rule exists, so this does not go back to Ben. A hold is a stream whose gaps
+never exceed `G = 8` ticks.**
+
+- **The core half, `C/build/InputHold`.** Per player and per button, it keeps the tick of the last input
+  and the tick its hold started. An input more than `G` ticks after the last one on that button **starts a
+  new hold**. One within `G` **continues** the current hold.
+- **The recast** is accepted only when its hold started AFTER Recall's cast (`inputHoldStart >
+  recallTick`), with the seat's floor of 10 ticks on top.
+- **Why this is clean where ruling 19's debounce was not.** Ruling 19 needed to tell EVERY press from a
+  hold, and it could not: separate presses come as close as 1 tick apart. This rule needs only one
+  direction: **never mistake a hold for a new press.** A hold's gaps are at most 4 ticks (right) or 1 tick
+  (left, block), so a hold can never produce a gap over 8. The error it does make runs the other way, and
+  it is only a DELAY. A player mashing faster than every 8 ticks is read as holding, and recasts on the
+  first press after a pause of 9 ticks or more.
+- **Why `G = 8`:** twice the measured held period. **The margin is for network jitter, and it is NOT
+  MEASURED**: the spike ran on localhost, where the gap was exactly 4. `G` must stay below `from_ticks`
+  (10). Otherwise a single tap on Recall followed by a clean press at tick 10 would be read as one hold,
+  and the recast could never fire at the window's earliest edge. `8 < 10`.
+- **What each floor buys.** With the hold rule, the 10-tick floor is no longer what stops the auto-fire,
+  and it is kept for a different reason: it lets Recall's dash (8 blocks at 2.3/tick ≈ 4 ticks) finish
+  before the leap can start.
+- **The one residual, stated rather than hidden.** A left-click hold that sweeps OFF a block into air for
+  more than 8 ticks, and back onto a block, restarts its swing stream. That reads as a new press. The
+  client really did stop sending, so the server cannot know the button stayed down. The gate records it
+  (RC5c); it does not auto-fire from a hold held still.
+
+### 7.5 The upward dash
+
+**What is true today.** `CastExecutor.dash` applies ONE impulse through `CombatantHandle.applyImpulse`
+(which REPLACES velocity): `aim.direction() × speed + (0, lift, 0)`. `DashAim.resolve` hands it a
+horizontal unit vector for both directions, so **`speed` is purely the horizontal part, and `lift` is purely
+the vertical part.**
+
+**RECOMMENDATION: NO new `DashDirection`. The leap is `direction: reverse_facing` with a small `speed` and a
+large `lift`.** The seat asked for a new direction. Here is why it is not needed:
+
+- A `LEAP` arm would resolve to exactly `REVERSE_FACING`'s vector.
+- `CastExecutor.dash`'s `facing` choice (the embers face forward) would have to treat it the same way.
+- So it would be a duplicate enum arm, with two switches that must be kept identical.
+
+The existing fields already carry both halves. *The alternative, if Ben wants the name visible in content:*
+a `LEAP` value that `DashAim` maps to `reverseFacing`, pinned by a test asserting that the two produce one
+vector.
+
+**The one field that IS added: `safe_landing: true` on a dash** (§7.6). `CastSpec.Dash` gains a fifth
+component. A four-argument constructor is kept, so every existing `Dash` still compiles.
+
+**`distance` on the leap** only sizes the hit sweep (`SweptLine`). No Targeted effect rides the leap, so it
+is authored small (2), and it is not a tuning number.
+
+**STARTING VALUES — ESTIMATES, from a simulation of vanilla's per-tick physics, NOT read from the pinned
+jar.** The constants are from memory, not quoted:
+
+- the player: gravity 0.08, vertical drag 0.98, airborne horizontal drag 0.91;
+- a dropped item: gravity 0.04, drag 0.98.
+
+They were run in `jshell` (JDK 26.0.1), moving first and then applying the drag, from a flat take-off with no
+movement key held.
+
+| `lift` (vertical) | apex, blocks | airborne, ticks | | `speed` (horizontal) | back at landing, blocks |
+|---|---|---|---|---|---|
+| 0.80 | 3.97 | 21 | | 0.15 | 1.48 (at lift 0.90) |
+| **0.85** | **4.43** | **22** | | **0.20** | **1.94** (at lift 0.85) |
+| 0.90 | 4.90 | 23 | | 0.25 | 2.46 (at lift 0.90) |
+
+- **Proposed: `lift 0.85`, `speed 0.2`** — 4.4 up and 1.9 back, both inside ruling 28.
+- **The caveat that matters: AIR CONTROL.** A player holding a movement key accelerates about 0.02 per tick
+  in the air. Over 22 ticks that is **up to ~2.9 blocks** (an estimate: `0.02/0.09` terminal, integrated).
+  With S held, "back" could reach ~4.8, outside "≤ 3–4". **The tuning boot measures both, no key and S
+  held**, and `speed` comes down if the S-held figure is out of range.
+
+**The ring of embers, ESTIMATED the same way.** It is launched from the take-off feet + 1.4
+(`PaperCombatWorld`'s `THROW_ORIGIN_LIFT`), and measured to its FIRST ground contact:
+
+| `speed` | `launch_lift` | first contact from take-off, blocks |
+|---|---|---|
+| 0.25 | 0.20 | 3.27 |
+| **0.25** | **0.25** | **3.45** |
+| 0.28 | 0.20 | 3.66 |
+| 0.30 | 0.20 | 3.92 |
+
+- **Proposed: `speed 0.25`, `launch_lift 0.25`.**
+- **Not modelled:** the bounce and the roll after contact. The logger records where each ember is at the
+  FUSE, which is where it actually bursts. That is the figure ruling 28 is about.
+- **Angles `[0, 72, 144, -144, -72]`** (ruling 31). `ThrowEmbers.fan` rotates the facing about Y by each
+  angle, so this is an even ring. Its rotation follows the facing.
+
+### 7.6 Fall-damage immunity (ruling 31)
+
+**What is true today.** Fall damage reaches a tracked player through `RpgListeners.onEnvironmentalDamage`
+(HIGH, `ignoreCancelled = true`). There `VanillaDamagePolicy.forCause(FALL)` reroutes it to custom HP.
+Nothing marks a player as immune to anything.
+
+**RECOMMENDATION:**
+
+- **Armed at the impulse, not at the stone.** `CastExecutor.dash` calls a new
+  `CombatantHandle.armSafeLanding()` when `dash.safeLanding()` is set. `BukkitCombatant` implements it on
+  the entity's scheduler, queued after `applyImpulse`, whose FIFO keeps the order. So every path that
+  leaps is covered (the stone's recast, an operator's `/rpg cast recall_updraft`), and no ability id
+  appears in Java.
+- **The state is a pure core machine, `C/build/SafeLanding`.** It is stepped once per tick, per player, by
+  an entity-scheduled task that re-schedules itself while the mark is live (`Scheduler.onEntityLater`, 1
+  tick). The states are `ARMED` → `AIRBORNE` → cleared.
+  - It becomes `AIRBORNE` on the first tick the player is off the ground.
+  - **It clears on the tick AFTER the first ground contact.** The one-tick grace exists because the landing
+    move's `FALL` event and our task's ground reading fall in an order this plan has not traced. It clears
+    immediately **if the player's fall distance returns to 0 after being above 0 while not on the ground**.
+    That is the water, ladder, cobweb and powder-snow case: vanilla absorbed the fall, so there was no
+    landing to protect.
+- **The hook: a first arm in `onEnvironmentalDamage`, before the scorch arm.** On a `FALL` event while the
+  mark is live, it **CANCELS the event** and clears the mark. It cancels rather than tokens because the
+  ruling is "no fall damage", and a token still plays the hurt flash and sound. Fall has no cadence to
+  preserve (the reason the handler tokens elsewhere).
+  - *Rejected: a separate LOW handler.* It would be one more registration beside the handler that already
+    owns this cause.
+- **Every way the mark is cleared:**
+  - the first landing, as above;
+  - the first `FALL` event, which it cancels;
+  - **death** (the respawned body did not leap);
+  - **quit** (`forget`);
+  - **a second leap RE-ARMS it**. It is one mark per player, replaced, never a counter, so two leaps protect
+    one landing each.
+- **If the player never lands.** In water, the fall-distance arm clears the mark with no damage to cancel.
+  Gliding or flying clears nothing until contact. **A hard backstop of 200 ticks** (10 s; about 11 times
+  the ~22-tick flat leap, **an estimate**) clears a mark nothing else cleared, so a stale mark cannot eat
+  a fall minutes later.
+- **Stated, because it follows from the ruling's words:** the immunity covers the whole first landing,
+  however far. **A leap off a cliff lands free.** "The landing right after the leap" is that landing.
+  Capping the height would be a rule Ben did not make. If he wants one, it is a single comparison against
+  the fall distance in the same arm.
+- **Trusted input, stated:** `isOnGround` for a player is client-reported. A client lying about it can at
+  worst keep its OWN mark alive until the 200-tick backstop.
+
+### 7.7 Content — draft YAML
+
+`banked_embers.yml` is **deleted** (ruling 26). Every other number below is ruled (25, 27, 32) unless it
+is marked.
+
+    # content/builds/ranger.yml -- CLASS-WIDE (section 7.1): merged into every ranger_<element>.yml at load
+    class: ranger
+    actives:
+      - recall
+
+    # content/builds/ranger_fire.yml -- the changed keys only
+    actives:
+      - solar_lance                  # recall is class-wide (ranger.yml); listing it here too is REFUSED
+    fragments: [fragment_vigor, fragment_focus, fragment_keen, fragment_mending, fragment_ward, fragment_ember_cache]
+    aspects:   [searing_lance, updraft]
+    default:
+      ultimate: ultimate_placeholder_ranger
+      actives: [recall, solar_lance] # left, right
+
+    # content/abilities/recall.yml -- Rekindle's numbers (ruling 25), its embers removed (ruling 24)
+    id: recall
+    display_name: "<gold>Recall</gold>"
+    element: kinetic
+    cooldown_ticks: 200
+    cost: { resource: mana, amount: 35 }
+    cast:
+      type: dash
+      direction: reverse_facing
+      distance: 8
+      speed: 2.3
+      lift: 0.3
+    on_hit:
+      - { type: visual, visual_id: recall_cast }
+
+    # content/fragments/fragment_ember_cache.yml -- a BEHAVIOUR fragment (section 7.3): Rekindle's embers exactly
+    display_name: "<gold>Ember Cache</gold>"
+    icon: blaze_powder
+    description: ["Recall throws three embers where you stood."]
+    target: recall
+    add_on_hit:
+      - type: throw_embers
+        angles_degrees: [0, 40, -40]
+        speed: 0.6
+        launch_lift: 0.25
+        item: blaze_powder
+        fuse_ticks: 30
+        trail: ember_trail
+        visual: ember_burst
+        burst:
+          radius: 4.0
+          effects:
+            - { type: damage, amount: 8, element: fire }   # future: balanced off average gear score (section 6)
+
+    # content/aspects/updraft.yml
+    display_name: "<gold>Updraft</gold>"
+    description: ["Recast Recall within 2.5 s to leap upward, throwing a ring of embers."]
+    target: recall
+    recast:
+      ability: recall_updraft
+      from_ticks: 10                 # the seat's floor (section 7.4)
+      window_ticks: 50               # ruling 29
+
+    # content/abilities/recall_updraft.yml -- in NO pool; reached only as Updraft's recast. No cost key:
+    # castUnchecked never reads one (ruling 30), and ResourceCost.FREE is the parse default.
+    id: recall_updraft
+    display_name: "<gold>Updraft</gold>"
+    element: fire                    # drives nothing (section 1.5); its embers carry their own element
+    cooldown_ticks: 0                # never read: a recast skips resolve (ruling 30)
+    cast:
+      type: dash
+      direction: reverse_facing      # section 7.5: no new direction
+      distance: 2                    # the hit sweep only; nothing Targeted rides the leap
+      speed: 0.2                     # PLACEHOLDER numbers -- tuned at boot
+      lift: 0.85                     # PLACEHOLDER numbers -- tuned at boot
+      safe_landing: true             # ruling 31 (section 7.6)
+    on_hit:
+      - type: throw_embers           # thrown at TAKE-OFF: a dash's untargeted effects fire at the pre-dash feet
+        angles_degrees: [0, 72, 144, -144, -72]   # ruling 31: an even ring
+        speed: 0.25                  # PLACEHOLDER numbers -- tuned at boot
+        launch_lift: 0.25            # PLACEHOLDER numbers -- tuned at boot
+        item: blaze_powder
+        fuse_ticks: 30
+        trail: ember_trail
+        visual: ember_burst
+        burst:
+          radius: 3.0                # ruling 32
+          effects:
+            - { type: damage, amount: 60, element: fire }  # ruling 32
+
+- **The leap's burst is RULED (ruling 32): 60 fire damage in a 3-block radius, per ember.** This replaces the UNRULED
+  placeholder (Ember Cache's 8 in 4.0) that was here until 2026-09-27. Radius 3 is below the 3-4 blocks the embers are
+  tuned to land at, so a mob standing at the take-off point is caught only by an ember that comes to rest within 3
+  blocks. How many of the five catch it is therefore set by the tuned distance (section 7.8), and it is not predicted here.
+- **`cooldown_ticks: 0`** — whether `ContentValidator` warns on a 0 cooldown is **read in phase 2, not
+  asserted**.
+
+### 7.8 The tuning boot
+
+**A throwaway logger, NEVER MERGED:** the stone spike's precedent (§3.1.0.1). It lives on
+`spike/recall-tuning`, branched from the phase-2 tip, and is deleted afterwards. It is one logging-only
+file, driven by an entity-scheduled per-tick task started when `recall_updraft` executes. **Per leap** it
+logs one line with `Bukkit.getCurrentTick()`:
+
+- the take-off position;
+- the **apex height** (the highest feet `y` minus the take-off `y`);
+- the **horizontal displacement at the first ground contact** — its magnitude, and its component along
+  reverse-facing;
+- whether a movement key was held (`getCurrentInput`), because §7.5's air-control caveat depends on it;
+- **each ember's horizontal distance from the take-off** at its FIRST ground contact, and again at its
+  FUSE, which is where it bursts.
+
+**The loop.** Ben casts Updraft about **5 times** with no key held, then about 5 with S held, on flat
+ground, in survival. CC reads `run/logs/latest.log` and adjusts the four PLACEHOLDER numbers over the
+`--refresh-content` loop (no recompile, CLAUDE.md invariant 2). This repeats until every leap logs:
+
+- **4–5 up**;
+- **≤ 3–4 back**, including with S held;
+- **embers 3–4 out** at the fuse.
+
+**The final figures are recorded HERE, with the sha they ran on and the sample count:**
+
+| figure | ruled range | first boot (estimates in) | final | sha, n |
+|---|---|---|---|---|
+| apex, no key | 4–5 | TO BE MEASURED | | |
+| back, no key | ≤ 3–4 | TO BE MEASURED | | |
+| back, S held | ≤ 3–4 | TO BE MEASURED | | |
+| ember distance at fuse (min–max of 5) | 3–4 | TO BE MEASURED | | |
+| final `lift`, `speed`, ember `speed`, `launch_lift` | — | 0.85, 0.2, 0.25, 0.25 | | |
+
+### 7.9 The slice's gate — `GATE-recall.md`, SURVIVAL (fall damage is survival-only)
+
+It opens with R0a (the `Build:` line names the tip, not `-dirty`) and R0b (a PowerShell jar scan):
+`RecastRule`, `InputHold`, `SafeLanding` and `ClassPool` must be PRESENT; `content/abilities/rekindle.yml`
+and `content/aspects/banked_embers.yml` must be ABSENT; and a control class must be absent.
+
+| row | prediction, written now | what it reads |
+|---|---|---|
+| RC1 | Recall with NO fragment and NO aspect: the dash and the whoosh; **no ember** leaves the caster | ruling 24 |
+| RC2 | Ember Cache slotted: exactly **3** embers, at 0/±40°; a zombie by one takes the burst (8, fire) | ruling 27 |
+| RC3 | **Ember Cache inactive**: server stopped; the build file for this cell hand-edited ON DISK (read and quoted) so Active 1 is empty; boot. The Build screen shows the fragment *Inactive — requires Recall equipped*; Solar Lance casts with no ember. Restore the file: RC2 holds again | §7.3 inactive; carries BA13 |
+| RC4a | Updraft: Recall, then a clean press **11-49 ticks** later: the leap, and **5** embers in a ring. No mana spent (HUD), and no cooldown line for the recast | rulings 28-30 |
+| RC4b | a press **before tick 10**, then nothing: no leap. The press shows Recall's cooldown line | the floor |
+| RC4c | a press **after tick 50**: Recall's cooldown line, no leap | window end |
+| RC4d | Recall, recast, then a third press inside 50: **no second leap** | one per cast |
+| RC5a | **hold left on a block** through the whole window: no leap | held input, left |
+| RC5b | **hold right in air** through the whole window (Recall in slot 2): no leap. Release, pause ≥ 9 ticks, press: the leap | held input, right |
+| RC5c | the §7.4 residual, RECORDED rather than predicted: a left hold swept off the block for 9+ ticks and back | the named edge |
+| RC6a | the leap from flat ground: **no fall damage**, with HP read before and after | ruling 31 |
+| RC6b | after RC6a, walk off a 6-block ledge: **normal fall damage** | cleared on landing |
+| RC6c | a leap into water, then a 6-block drop: normal damage on the drop | cleared without a landing |
+| RC7 | a Fire Ranger's Active picker offers Recall; a Fire Mage's does NOT | ruling 24, the class merge |
+| RC8 | Banked Embers is in no picker; the boot log names the stale `run/` `rekindle.yml`, `banked_embers.yml` and `rekindle_cast.yml` ONCE each, and deletes none | ruling 26, stale copies |
+| RC9 | the §7.8 final figures sit inside ruling 28's ranges | the tuning |
+| RC10 | a saved build naming `rekindle` shows that Active slot EMPTY, and nothing else changes | §7.2 |
+| BA13 | CARRIED: RC3 reads a build file on disk. If RC3's itemised reading quotes the file, BA13 closes there, and says so | the debt |
+
+**Mutations owed in phase 2, one per named rule**, run with `-Dmaven.test.failure.ignore=true` and read per
+module:
+
+| mutation | must redden |
+|---|---|
+| skip the class merge | the core `ClassPool` test; `PoolLoaderTest` (the shipped `ranger_fire` refused: its default names `recall`); RC7 |
+| de-duplicate a class-and-cell id instead of refusing it | the core `ClassPool` test |
+| a behaviour fragment ignores `activeFor` | `AspectApplicationTest`'s inactive-fragment case; RC3 |
+| `from_ticks` exclusive (tick 10 refused) | `RecastRuleTest`'s edge grid |
+| `window_ticks` exclusive (tick 50 refused), and `+ 1` (tick 51 accepted) | `RecastRuleTest`'s edge grid |
+| never mark `used` | `RecastRuleTest`; RC4d |
+| record the input tick only on a SUCCESSFUL cast | `InputHoldTest` (a held stream of refused inputs must stay one hold); RC5a/RC5b |
+| drop the hold check from `accepts` | `RecastRuleTest`; RC5a/RC5b |
+| never clear `SafeLanding` on ground contact | `SafeLandingTest`; RC6b |
+| the fall arm TOKENS instead of cancelling | RC6a (the hurt flash) |
+
+
+### 7.10 AS BUILT — where phase 2 differs from §7.1-7.9, each with its reason
+
+Built on `feat/recall` after the seat approved §7 and Ben gave ruling 32. **NO BOOT has been taken**: §7.8's figures
+and every §7.9 row are still owed. The gate file `GATE-recall.md` is written before the boot, not here.
+
+1. **The recast state is a core class, `C/build/RecastTracker`, and §7.4 did not name one.** §7.4 put the
+   per-player window and holds in `StoneCaster`. That would leave the mutation "record only the inputs that cast"
+   with no unit witness: §7.9 attributed it to `InputHoldTest`, which cannot see a paper-side mutation. So the
+   state moved to core. It holds one `InputHold` per button and at most one open window, and it is fed every input.
+   `StoneCaster` keeps one tracker per player and calls it. Mutation MUTRC8 is killed by `RecastTrackerTest`.
+2. **`from_ticks` is CONTENT, and it is required.** `updraft.yml` authors `from_ticks: 10` and `window_ticks: 50`.
+   `AspectDefinition.Recast` refuses unless `0 < from_ticks < window_ticks`, and `AspectLoader` refuses a
+   missing key by name.
+3. **A mark that never takes off is cleared.** This is `SafeLanding.TAKE_OFF_TICKS` = 4, and §7.6 did not have
+   it. A leap under a ceiling never leaves the ground, and without the rule its mark would sit until the
+   200-tick backstop and could eat an unrelated fall.
+4. **The FALL arm is the FIRST statement of `onEnvironmentalDamage`**, before the tracked gate as well as the
+   scorch arm. That is one step earlier than §7.6 said: a leaping player is always tracked, so the order changes
+   nothing, and "first" is the simpler thing to read.
+5. **`CombatantHandle.armSafeLanding` is ABSTRACT**, not a `default` no-op. So `FakeWorld.Dummy` and
+   `BukkitCombatant` each had to answer it, and a new implementation cannot compile without deciding.
+6. **`ContentValidator.validateFragments` was added**, beside `validateAspects`, and §7.3 did not name it. A
+   behaviour fragment's appended effects can name a visual or status that does not exist, exactly as an
+   aspect's can. Nothing checked them.
+7. **The Build screen:**
+   - A behaviour fragment's icon reads *"Inactive -- requires Recall equipped"*, with the aspect cell's rule
+     and wording, plus "Changes Recall" and "Adds 1 effect(s) on hit".
+   - An aspect with a recast adds the line *"Recast within 2.5s: Updraft Leap"*.
+   - The stats sheet's Fragments block (`FragmentSheet`) skips behaviour fragments, which move no stat.
+8. **`recall_updraft`'s display name is "Updraft Leap"**, so that the aspect's lore line does not read
+   "Updraft ... Updraft".
+9. **`cooldown_ticks: 0` draws no boot warning.** This was READ, as §7.7 said it would be:
+   `ContentValidator.validate` checks the element, the cast shape and the volley floor, and none of them fires
+   on a 0 cooldown.
+10. **`ScorchContentInvariantTest`'s count stays at 17.** Two sites went (Rekindle's burst and
+    `banked_embers`) and two arrived (Ember Cache's burst and the leap's ring). The count did not move while
+    four sites did; the test's javadoc records the change.
+11. **Tests that assumed every fragment and aspect is a placeholder were changed.** `fragment_ember_cache` and
+    `updraft` are RULED (27; 28-30), so each test now requires those two files to cite their ruling and to carry
+    no `PLACEHOLDER` marker. `PoolLoaderTest.exactlyTheTwoFirePoolsShip` now reads the shipped `builds/`
+    directory: two cells and one class file.
+12. **Mutations.** Each was run with a pristine copy in the scratchpad and both halves of the marker grep, plus
+    a line delta against that copy. Each file was restored with `cp` and checked `cmp`-identical with 0 markers
+    left. Each module's surefire XML was read by a parser, which was first controlled on a fake report and found
+    exactly its one failed case.
+
+    | mutation | reddened |
+    |---|---|
+    | MUTRC1 an id in both class and cell is de-duplicated, not refused | `ClassPoolTest.anIdBothClassWideAndCellListedIsRefusedNamingIt` |
+    | MUTRC2 `ClassPool` merges nothing | `ClassPoolTest` ×2 |
+    | MUTRC2B `PoolLoader` skips the merge | `PoolLoaderTest` ×7 (6 failures, 1 error) |
+    | MUTRC3 a behaviour fragment ignores the equipped set | `AspectApplicationTest.aFragmentWhoseTargetIsNotEquippedIsInactive` |
+    | MUTRC4 `from_ticks` exclusive | `RecastRuleTest.theWindowIsTenToFiftyInclusive` |
+    | MUTRC5 `window_ticks` exclusive | the same row |
+    | MUTRC6 `window_ticks + 1` | the same row |
+    | MUTRC7 a window is never marked used | `RecastTrackerTest.onlyOneRecastPerCast` |
+    | MUTRC8 inputs inside an open window are not recorded | `RecastTrackerTest`'s two held-stream rows |
+    | MUTRC9 the hold check dropped from `accepts` | `RecastRuleTest` ×1, `RecastTrackerTest` ×2 |
+    | MUTRC10 a landed mark never clears | `SafeLandingTest` ×2 |
+
+    - **MUTRC1 and MUTRC6 read "original gone: 1".** Each replacement CONTAINS its original text, so that half of
+      the grep counts surviving text and cannot be interpreted (row eight of the mutation-lies table). The line
+      delta against the pristine copy read 1 for each, and that delta is the witness.
+    - **Not run as a unit mutation: "the fall arm tokens instead of cancelling".** No unit test can see an
+      event's hurt flash. RC6a is its only witness, and the gate says so.
