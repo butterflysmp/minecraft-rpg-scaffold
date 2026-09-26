@@ -58,7 +58,7 @@ public final class DashAim {
      * DROPPED), then negated. WASD is ignored entirely -- a retreat that went sideways
      * because you happened to be strafing would defeat the purpose. Reuses the same yaw-only
      * flatten as the stationary fallback, so the "no vertical dash" guarantee holds here too:
-     * looking up and casting Rekindle dashes back-and-flat, not down-and-back.
+     * looking up and casting Recall dashes back-and-flat, not down-and-back.
      *
      * Player-free and package-visible on purpose, like {@link #directionFromInput}: the
      * horizontal-and-opposite guarantee is unit-tested, not left to a boot.

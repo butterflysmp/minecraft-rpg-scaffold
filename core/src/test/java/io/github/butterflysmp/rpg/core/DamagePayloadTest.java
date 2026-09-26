@@ -31,7 +31,7 @@ class DamagePayloadTest {
     @Test
     void aCosmeticOnlyPayloadIsNot() {
         // No damage at all -- a cosmetic-only payload. Not a basic attack, and must not throw.
-        assertFalse(DamagePayload.isBasicAttack(List.of(new EffectSpec.Visual("rekindle_cast"))));
+        assertFalse(DamagePayload.isBasicAttack(List.of(new EffectSpec.Visual("recall_cast"))));
         assertFalse(DamagePayload.isBasicAttack(List.of()));
     }
 

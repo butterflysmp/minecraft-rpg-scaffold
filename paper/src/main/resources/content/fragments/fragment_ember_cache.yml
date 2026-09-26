@@ -1,0 +1,28 @@
+# A BEHAVIOUR fragment (PLAN-build-system.md section 7.3, ruling 27): Recall throws Rekindle's three embers
+# EXACTLY -- the same fan, the same flight, the same burst of 8 fire damage in a 4-block radius. Every number
+# below is Rekindle's, ruled by ruling 27; none is new.
+#
+# It is INACTIVE while Recall is not equipped (the aspects' rule), and it carries no stats: a fragment is stats
+# OR behaviour, never both. Recall is a DASH, so the embers launch from the pre-dash feet and fly along facing
+# (forward) while the dash carries the caster backward.
+#
+# Future, NOT now (ruling 27): ember damage will be balanced off the player's average gear score (plan section 6).
+# The id of this fragment is its filename: fragment_ember_cache.
+
+display_name: "<gold>Ember Cache</gold>"
+icon: blaze_powder
+description: ["Recall throws three embers where you stood."]
+target: recall
+add_on_hit:
+  - type: throw_embers
+    angles_degrees: [0, 40, -40]   # ruling 27
+    speed: 0.6
+    launch_lift: 0.25
+    item: blaze_powder
+    fuse_ticks: 30
+    trail: ember_trail
+    visual: ember_burst
+    burst:
+      radius: 4.0                  # ruling 27
+      effects:
+        - { type: damage, amount: 8, element: fire }   # ruling 27

@@ -320,6 +320,8 @@ public final class CastExecutor {
         if (self != null) {
             Vec3 impulse = aim.direction().scale(dash.speed()).add(new Vec3(0, dash.lift(), 0));
             self.handle().applyImpulse(impulse);
+            // Ruling 31: queued AFTER the impulse on the same handle, so the mark exists before the take-off.
+            if (dash.safeLanding()) self.handle().armSafeLanding();
         }
 
         Vec3 drive = aim.direction();

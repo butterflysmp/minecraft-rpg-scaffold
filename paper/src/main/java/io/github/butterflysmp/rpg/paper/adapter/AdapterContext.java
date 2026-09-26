@@ -49,6 +49,9 @@ import java.util.logging.Logger;
  * <p>{@code stones} is the fifth, for the same argument: the Ability Stone's key, pools and ability names,
  * read by the Settings screen and the slot picker, which are built from those same call sites
  * (PLAN-build-system.md section 2.5).
+ *
+ * <p>{@code safeLandings} is a status store like {@code scorch}: a leap's fall-damage mark (section 7.6), armed by
+ * the dash's handle and read by the FALL arm of {@code RpgListeners.onEnvironmentalDamage}.
  */
 public record AdapterContext(Scheduler scheduler, Keys keys,
                              VisualRegistry visuals, StatusRegistry statuses,
@@ -59,7 +62,7 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              CombatantStats stats, double anchorDrift,
                              CraftResultIndex craftResults, WeaponRegistry weapons,
                              Accessories accessories,
-                             Stones stones) {
+                             Stones stones, SafeLandings safeLandings) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
@@ -70,7 +73,7 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                           Stones stones) {
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
                 new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), new ScorchStatus(),
-                stats, anchorDrift, craftResults, weapons, accessories, stones);
+                stats, anchorDrift, craftResults, weapons, accessories, stones, new SafeLandings());
     }
 
     /**

@@ -83,7 +83,9 @@ final class AbilitySchema {
                     parseSpread(s.getConfigurationSection("spread")));
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
-                    parseDashDirection(s.getString("direction", "movement_else_forward")));
+                    parseDashDirection(s.getString("direction", "movement_else_forward")),
+                    // Ruling 31 (PLAN-build-system.md section 7.6): no fall damage from the first landing after it.
+                    s.getBoolean("safe_landing", false));
             // A cast that REPEATS another cast on a clock. `of` is required and is a whitelist:
             // see innerCast below. windup_ticks 0 means the first shot fires on the cast frame.
             case "volley"     -> new CastSpec.Volley(

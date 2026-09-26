@@ -33,7 +33,14 @@ public final class AspectApplication {
 
     /** {@link #deriveUncached}, memoised on (base, aspects in slot order). */
     public AbilityDefinition derive(AbilityDefinition base, List<AspectDefinition> active) {
-        return memo.computeIfAbsent(List.of(base, List.copyOf(active)), key -> deriveUncached(base, active));
+        return derive(base, active, List.of());
+    }
+
+    /** {@link #deriveUncached}, memoised on (base, aspects in slot order, behaviour fragments in slot order). */
+    public AbilityDefinition derive(AbilityDefinition base, List<AspectDefinition> active,
+                                    List<FragmentDefinition> fragments) {
+        return memo.computeIfAbsent(List.of(base, List.copyOf(active), List.copyOf(fragments)),
+                key -> deriveUncached(base, active, fragments));
     }
 
     /**
@@ -42,8 +49,23 @@ public final class AspectApplication {
      * nothing -- to neither the appends nor the sums.
      */
     public static List<AspectDefinition> activeFor(String abilityId, List<AspectDefinition> slotted, Set<String> equipped) {
+        return active(abilityId, slotted, AspectDefinition::target, equipped);
+    }
+
+    /**
+     * The BEHAVIOUR fragments, in slot order, that are active on {@code abilityId} (section 7.3): the SAME
+     * predicate as {@link #activeFor}, not a copy of it. A stat fragment has no target and is never here.
+     */
+    public static List<FragmentDefinition> activeFragmentsFor(String abilityId, List<FragmentDefinition> slotted,
+                                                              Set<String> equipped) {
+        return active(abilityId, slotted, FragmentDefinition::target, equipped);
+    }
+
+    /** The one inactive rule (amendment 2): targets {@code abilityId}, and {@code abilityId} is equipped. */
+    private static <T> List<T> active(String abilityId, List<T> slotted, java.util.function.Function<T, String> target,
+                                      Set<String> equipped) {
         if (!equipped.contains(abilityId)) return List.of();
-        return slotted.stream().filter(a -> a != null && a.target().equals(abilityId)).toList();
+        return slotted.stream().filter(x -> x != null && abilityId.equals(target.apply(x))).toList();
     }
 
     /**
@@ -52,8 +74,20 @@ public final class AspectApplication {
      * whole number throws rather than being rounded.
      */
     public static AbilityDefinition deriveUncached(AbilityDefinition base, List<AspectDefinition> aspects) {
+        return deriveUncached(base, aspects, List.of());
+    }
+
+    /**
+     * The derived ability with behaviour fragments too (section 7.3). ORDER: the aspects' modify, then the
+     * aspects' appends in aspect-slot order, then the fragments' appends in fragment-slot order. No modify
+     * reaches a fragment's appended effect, for the reason no modify reaches an aspect's.
+     */
+    public static AbilityDefinition deriveUncached(AbilityDefinition base, List<AspectDefinition> aspects,
+                                                   List<FragmentDefinition> fragments) {
         List<AspectDefinition> mine = aspects.stream().filter(a -> a.target().equals(base.id())).toList();
-        if (mine.isEmpty()) return base;
+        List<FragmentDefinition> myFragments = fragments.stream()
+                .filter(f -> f != null && base.id().equals(f.target())).toList();
+        if (mine.isEmpty() && myFragments.isEmpty()) return base;
         Rewriter rewriter = new Rewriter(changesByField(mine), f -> true, base);
 
         // 1. MODIFY the target's own numbers.
@@ -76,6 +110,8 @@ public final class AspectApplication {
             onHit.addAll(aspect.addOnHit());
             onCast.addAll(aspect.addOnCast());
         }
+        // 3. The behaviour fragments' appends, LAST, in fragment-slot order (section 7.3).
+        for (FragmentDefinition fragment : myFragments) onHit.addAll(fragment.addOnHit());
         return new AbilityDefinition(base.id(), base.displayName(), base.element(), cooldown, cost, base.cast(),
                 onHit, base.description(), onCast);
     }

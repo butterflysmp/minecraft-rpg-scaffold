@@ -545,16 +545,15 @@ class AbilityLoaderTest {
     }
 
     /**
-     * The shipped Rekindle, parsed by the loader we actually run. No unit test loaded this
-     * file before, so a mistyped key in the throw_embers grammar would have surfaced only at
-     * a server boot (where the loader's fail-soft would quietly skip it). This pins the new
-     * thrown-item shape -- item + fuse_ticks + burst -- on the real content.
+     * The shipped Recall (was Rekindle, ruling 24), parsed by the loader we actually run. Rekindle's numbers,
+     * kept by ruling 25, and KINETIC. Its embers are GONE (ruling 24): they are Ember Cache's now, so an ember
+     * fan surviving here would be the rename that forgot its ruling.
      */
     @Test
-    void bundledRekindleContentLoads() throws IOException {
-        try (var in = getClass().getResourceAsStream("/content/abilities/rekindle.yml")) {
+    void bundledRecallContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/abilities/recall.yml")) {
             assertNotNull(in, "bundled content is missing from the classpath");
-            Files.write(dir.resolve("rekindle.yml"), in.readAllBytes());
+            Files.write(dir.resolve("recall.yml"), in.readAllBytes());
         }
 
         AbilityRegistry registry = load();
@@ -562,24 +561,57 @@ class AbilityLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(1, registry.size());
 
-        AbilityDefinition def = registry.find("rekindle").orElseThrow();
-        assertInstanceOf(CastSpec.Dash.class, def.cast());
+        AbilityDefinition def = registry.find("recall").orElseThrow();
+        assertEquals("kinetic", def.element());
+        assertEquals(200, def.cooldownTicks());
+        assertEquals(35.0, def.cost().amount(), 0.0);
+        var dash = assertInstanceOf(CastSpec.Dash.class, def.cast());
+        assertEquals(new CastSpec.Dash(8, 2.3, 0.3, CastSpec.DashDirection.REVERSE_FACING), dash,
+                "ruling 25: the 8-block reverse-facing dash, speed 2.3, lift 0.3 -- and no safe landing");
+        assertTrue(def.onHit().stream().noneMatch(EffectSpec.ThrowEmbers.class::isInstance),
+                "ruling 24: Recall's embers on use are removed");
+    }
+
+    /**
+     * The shipped leap (section 7.7): a safe-landing dash that throws a RING of five embers, each 60 fire damage
+     * in a 3-block radius (ruling 32). The dash and ember launch numbers are PLACEHOLDERS tuned at boot, so only
+     * their shape is pinned here -- up is larger than back, and the angles are an even ring.
+     */
+    @Test
+    void bundledRecallUpdraftContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/abilities/recall_updraft.yml")) {
+            assertNotNull(in, "bundled content is missing from the classpath");
+            Files.write(dir.resolve("recall_updraft.yml"), in.readAllBytes());
+        }
+
+        AbilityRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        AbilityDefinition def = registry.find("recall_updraft").orElseThrow();
+        var dash = assertInstanceOf(CastSpec.Dash.class, def.cast());
+        assertTrue(dash.safeLanding(), "ruling 31: no fall damage from the landing");
+        assertEquals(CastSpec.DashDirection.REVERSE_FACING, dash.direction());
+        assertTrue(dash.lift() > dash.speed(), "a leap: up (lift) larger than back (speed)");
+        assertEquals(0.0, def.cost().amount(), 0.0, "no cost key: castUnchecked never reads one anyway");
 
         var embers = def.onHit().stream()
                 .filter(EffectSpec.ThrowEmbers.class::isInstance)
                 .map(EffectSpec.ThrowEmbers.class::cast)
-                .findFirst().orElseThrow(() -> new AssertionError("no throw_embers: the ember fan is gone"));
-        // A three-prong fan. The SPREAD is tuned by feel (the YAML says so), so only the prong
-        // count is pinned -- dropping to one ember is a design change, widening to 50 degrees is not.
-        assertEquals(3, embers.anglesDegrees().size(), "a three-prong ember fan");
-        assertEquals("blaze_powder", embers.itemId());
-        assertTrue(embers.fuseTicks() >= 1, "fuse must be a positive number of ticks");
-        assertEquals("ember_burst", embers.visual());
-        // The detonation carries the mob-only burn: fire damage, which accrues scorch by itself.
-        assertTrue(embers.burst().radius() > 0, "the detonation bursts with a real radius");
-        assertInstanceOf(EffectSpec.Damage.class, embers.burst().effects().get(0));
-        assertEquals(1, embers.burst().effects().size(),
-                "damage alone -- the explicit scorch is gone, the element accrues it");
+                .findFirst().orElseThrow(() -> new AssertionError("no throw_embers: the ring is gone"));
+        assertEquals(List.of(0.0, 72.0, 144.0, -144.0, -72.0), embers.anglesDegrees(), "ruling 31: an even ring");
+        assertEquals(3.0, embers.burst().radius(), 0.0, "ruling 32");
+        assertEquals(new EffectSpec.Damage(60, "fire"), embers.burst().effects().get(0), "ruling 32");
+        assertEquals(1, embers.burst().effects().size());
+    }
+
+    /** Ruling 24's stale copy, the arc_surge way: named once, skipped, never deleted. */
+    @Test
+    void aStaleRekindleCopyIsSkippedNotLoaded() throws IOException {
+        Files.writeString(dir.resolve("rekindle.yml"), "id: rekindle\nelement: fire\ncast: { type: self }\n");
+        AbilityRegistry registry = load();
+        assertTrue(registry.find("rekindle").isEmpty());
+        assertTrue(warningText().contains("rekindle.yml"), warningText());
+        assertTrue(Files.exists(dir.resolve("rekindle.yml")), "never deleted");
     }
 
     // --- The volley cast, and its whitelist ---

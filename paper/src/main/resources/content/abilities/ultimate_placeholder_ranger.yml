@@ -7,7 +7,7 @@
 # standing decision gives the dev weapons: parity with a placeholder is parity with nothing.
 #
 # The shape is the one thing chosen on purpose: a long ray, so the Ranger's Q is visibly a different
-# cast from its two Actives (rekindle's dash, solar_lance's shorter ray) in the gate.
+# cast from its two Actives (recall's dash, solar_lance's shorter ray) in the gate.
 #
 # cooldown_ticks is a multiple of 4 (PLAN-build-system.md 2.4.1: a held input re-casts on the 4-tick
 # grid, ruling 19). 1200 ticks = 60 s.

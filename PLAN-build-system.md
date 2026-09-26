@@ -2425,3 +2425,69 @@ module:
 | never clear `SafeLanding` on ground contact | `SafeLandingTest`; RC6b |
 | the fall arm TOKENS instead of cancelling | RC6a (the hurt flash) |
 
+
+### 7.10 AS BUILT — where phase 2 differs from §7.1-7.9, each with its reason
+
+Built on `feat/recall` after the seat approved §7 and Ben gave ruling 32. **NO BOOT has been taken**: §7.8's figures
+and every §7.9 row are still owed. The gate file `GATE-recall.md` is written before the boot, not here.
+
+1. **The recast state is a core class, `C/build/RecastTracker`, and §7.4 did not name one.** §7.4 put the
+   per-player window and holds in `StoneCaster`. That would leave the mutation "record only the inputs that cast"
+   with no unit witness: §7.9 attributed it to `InputHoldTest`, which cannot see a paper-side mutation. So the
+   state moved to core. It holds one `InputHold` per button and at most one open window, and it is fed every input.
+   `StoneCaster` keeps one tracker per player and calls it. Mutation MUTRC8 is killed by `RecastTrackerTest`.
+2. **`from_ticks` is CONTENT, and it is required.** `updraft.yml` authors `from_ticks: 10` and `window_ticks: 50`.
+   `AspectDefinition.Recast` refuses unless `0 < from_ticks < window_ticks`, and `AspectLoader` refuses a
+   missing key by name.
+3. **A mark that never takes off is cleared.** This is `SafeLanding.TAKE_OFF_TICKS` = 4, and §7.6 did not have
+   it. A leap under a ceiling never leaves the ground, and without the rule its mark would sit until the
+   200-tick backstop and could eat an unrelated fall.
+4. **The FALL arm is the FIRST statement of `onEnvironmentalDamage`**, before the tracked gate as well as the
+   scorch arm. That is one step earlier than §7.6 said: a leaping player is always tracked, so the order changes
+   nothing, and "first" is the simpler thing to read.
+5. **`CombatantHandle.armSafeLanding` is ABSTRACT**, not a `default` no-op. So `FakeWorld.Dummy` and
+   `BukkitCombatant` each had to answer it, and a new implementation cannot compile without deciding.
+6. **`ContentValidator.validateFragments` was added**, beside `validateAspects`, and §7.3 did not name it. A
+   behaviour fragment's appended effects can name a visual or status that does not exist, exactly as an
+   aspect's can. Nothing checked them.
+7. **The Build screen:**
+   - A behaviour fragment's icon reads *"Inactive -- requires Recall equipped"*, with the aspect cell's rule
+     and wording, plus "Changes Recall" and "Adds 1 effect(s) on hit".
+   - An aspect with a recast adds the line *"Recast within 2.5s: Updraft Leap"*.
+   - The stats sheet's Fragments block (`FragmentSheet`) skips behaviour fragments, which move no stat.
+8. **`recall_updraft`'s display name is "Updraft Leap"**, so that the aspect's lore line does not read
+   "Updraft ... Updraft".
+9. **`cooldown_ticks: 0` draws no boot warning.** This was READ, as §7.7 said it would be:
+   `ContentValidator.validate` checks the element, the cast shape and the volley floor, and none of them fires
+   on a 0 cooldown.
+10. **`ScorchContentInvariantTest`'s count stays at 17.** Two sites went (Rekindle's burst and
+    `banked_embers`) and two arrived (Ember Cache's burst and the leap's ring). The count did not move while
+    four sites did; the test's javadoc records the change.
+11. **Tests that assumed every fragment and aspect is a placeholder were changed.** `fragment_ember_cache` and
+    `updraft` are RULED (27; 28-30), so each test now requires those two files to cite their ruling and to carry
+    no `PLACEHOLDER` marker. `PoolLoaderTest.exactlyTheTwoFirePoolsShip` now reads the shipped `builds/`
+    directory: two cells and one class file.
+12. **Mutations.** Each was run with a pristine copy in the scratchpad and both halves of the marker grep, plus
+    a line delta against that copy. Each file was restored with `cp` and checked `cmp`-identical with 0 markers
+    left. Each module's surefire XML was read by a parser, which was first controlled on a fake report and found
+    exactly its one failed case.
+
+    | mutation | reddened |
+    |---|---|
+    | MUTRC1 an id in both class and cell is de-duplicated, not refused | `ClassPoolTest.anIdBothClassWideAndCellListedIsRefusedNamingIt` |
+    | MUTRC2 `ClassPool` merges nothing | `ClassPoolTest` ×2 |
+    | MUTRC2B `PoolLoader` skips the merge | `PoolLoaderTest` ×7 (6 failures, 1 error) |
+    | MUTRC3 a behaviour fragment ignores the equipped set | `AspectApplicationTest.aFragmentWhoseTargetIsNotEquippedIsInactive` |
+    | MUTRC4 `from_ticks` exclusive | `RecastRuleTest.theWindowIsTenToFiftyInclusive` |
+    | MUTRC5 `window_ticks` exclusive | the same row |
+    | MUTRC6 `window_ticks + 1` | the same row |
+    | MUTRC7 a window is never marked used | `RecastTrackerTest.onlyOneRecastPerCast` |
+    | MUTRC8 inputs inside an open window are not recorded | `RecastTrackerTest`'s two held-stream rows |
+    | MUTRC9 the hold check dropped from `accepts` | `RecastRuleTest` ×1, `RecastTrackerTest` ×2 |
+    | MUTRC10 a landed mark never clears | `SafeLandingTest` ×2 |
+
+    - **MUTRC1 and MUTRC6 read "original gone: 1".** Each replacement CONTAINS its original text, so that half of
+      the grep counts surviving text and cannot be interpreted (row eight of the mutation-lies table). The line
+      delta against the pristine copy read 1 for each, and that delta is the witness.
+    - **Not run as a unit mutation: "the fall arm tokens instead of cancelling".** No unit test can see an
+      event's hurt flash. RC6a is its only witness, and the gate says so.

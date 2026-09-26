@@ -169,6 +169,13 @@ public interface CombatantHandle {
      */
     void applyImpulse(Vec3 velocity);
 
+    /**
+     * NO FALL DAMAGE FROM THE NEXT LANDING (ruling 31; PLAN-build-system.md section 7.6). Called by a dash with
+     * {@code safeLanding}, straight after {@link #applyImpulse}. One mark per combatant: a second call re-arms it.
+     * Abstract on purpose -- a new implementation must decide, rather than inherit a silent no-op.
+     */
+    void armSafeLanding();
+
     default void applyStatus(String statusId, int durationTicks, int amplifier) {
         applyStatus(statusId, durationTicks, amplifier, null, 0.0);
     }

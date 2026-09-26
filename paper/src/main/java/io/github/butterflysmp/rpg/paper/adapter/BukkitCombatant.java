@@ -145,7 +145,7 @@ public final class BukkitCombatant {
 
         /**
          * The one custom-damage path -- BOTH basic attacks (weapon swings) and ability payloads
-         * (Ember Step, Rekindle) land here (via EffectApplier). It drains CUSTOM HP, the source of
+         * (Ember Step, Ember Cache's embers) land here (via EffectApplier). It drains CUSTOM HP, the source of
          * truth, and fires the {@code HealthChange} seam that drives the nameplate / hearts / (later)
          * the popup and death. It does NOT deal vanilla damage: vanilla health is a puppet, not truth.
          *
@@ -292,7 +292,7 @@ public final class BukkitCombatant {
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
                 // Ability damage flashes without a vanilla hit, so it would otherwise provoke
-                // nothing (mobs wander off while you whittle them); a mob caught in Rekindle's burst
+                // nothing (mobs wander off while you whittle them); a mob caught in an ember's burst
                 // must turn on the caster, who has already dashed away -- correct for a kite tool.
                 // Melee already aggros via its tokened vanilla event, so re-targeting the same player
                 // here is harmless. Unresolvable/cross-region sources (null) simply don't aggro.
@@ -323,7 +323,8 @@ public final class BukkitCombatant {
          * {@code heal:} effect a silent no-op.</b> It called {@code entity.setHealth} against the
          * vanilla MAX_HEALTH attribute -- but for a player that attribute is a DISPLAY, written by
          * {@code HeartBarRenderer} from the custom numbers on the next HealthChange or the next
-         * reconcile tick. So {@code rekindle.yml}'s heal moved the bar for a fraction of a second
+         * reconcile tick. So {@code rekindle.yml}'s heal (Rekindle, since renamed Recall) moved the bar
+         * for a fraction of a second
          * and was then overwritten back, healing exactly zero of the health that combat actually
          * uses. Nothing errored; the effect simply did nothing, which is why it survived.
          *
@@ -366,6 +367,14 @@ public final class BukkitCombatant {
         @Override public void applyImpulse(Vec3 velocity) {
             ctx.scheduler().onEntity(entity, () ->
                     entity.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z())));
+        }
+
+        /**
+         * Ruling 31 (section 7.6): no fall damage from this entity's next landing. Queued on the entity's scheduler
+         * AFTER the impulse's own task, so the mark exists before the take-off.
+         */
+        @Override public void armSafeLanding() {
+            ctx.scheduler().onEntity(entity, () -> ctx.safeLandings().arm(entity, ctx.scheduler()));
         }
 
         /**
