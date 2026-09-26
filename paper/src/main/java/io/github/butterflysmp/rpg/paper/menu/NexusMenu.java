@@ -436,9 +436,12 @@ public final class NexusMenu extends Menu {
                         // inventory is readable by construction at this point; empty is reserved for a
                         // read that could not happen, which on this path cannot arise.
                         OptionalInt.of(GearScoreItems.averageOf(viewer, adapters.keys(), adapters.weapons())),
-                        AccessorySheet.lines(viewer.getUniqueId(), adapters.accessories(),
-                                profiles.profile(viewer.getUniqueId())
-                                        .map(PlayerProfile::archetypeId).orElse(null))));
+                        // The accessories' block, then the current cell's fragments (slice 4).
+                        io.github.butterflysmp.rpg.paper.hud.FragmentSheet.appendedTo(
+                                AccessorySheet.lines(viewer.getUniqueId(), adapters.accessories(),
+                                        profiles.profile(viewer.getUniqueId())
+                                                .map(PlayerProfile::archetypeId).orElse(null)),
+                                viewer.getUniqueId(), adapters.stones(), profiles.profile(viewer.getUniqueId()))));
 
         // THE SKIN. Cheap HERE AND ONLY HERE: the viewer is online, so their profile is already
         // resolved and nothing fetches.

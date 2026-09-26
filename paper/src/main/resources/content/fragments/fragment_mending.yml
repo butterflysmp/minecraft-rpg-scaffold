@@ -1,0 +1,12 @@
+# PLACEHOLDER -- Ben designs. A fragment (PLAN-build-system.md section 2.3): a small, FLAT bonus slotted into
+# one of a cell's four fragment slots. Its name, icon and number are placeholders so slice 4 has something to
+# gate; none is a proposal. POSITIVE-ONLY (ruling 21): a negative modifier is refused at load.
+#
+# health_regen is continuous (a FLAT +0.05/s on a base of 0.2/s).
+# The id of this fragment is its filename: fragment_mending.
+
+display_name: "<green>Mending</green>"
+icon: glistering_melon_slice
+description: ["Placeholder fragment."]
+modifiers:
+  health_regen: 0.05

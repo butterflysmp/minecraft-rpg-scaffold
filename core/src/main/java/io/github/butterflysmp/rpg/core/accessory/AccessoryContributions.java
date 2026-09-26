@@ -112,7 +112,7 @@ public record AccessoryContributions(Map<AccessoryStat, Map<String, Double>> byS
      * claim is about a MANA BANK bonus -- an enchant -- and an accessory's max mana is not one. Max
      * health likewise has no stat-level seam ({@code Growth.contribution} is the Growth enchant's).
      */
-    static double sourceValue(AccessoryStat stat, double amount) {
+    public static double sourceValue(AccessoryStat stat, double amount) {
         return switch (stat) {
             case MANA_REGEN -> ManaRegen.contribution(amount);
             case HEALTH_REGEN -> HealthRegen.contribution(amount);
@@ -126,12 +126,14 @@ public record AccessoryContributions(Map<AccessoryStat, Map<String, Double>> byS
     }
 
     /**
-     * An existing scanner's desired map merged with the accessories' map for the same stat, ready
-     * for the ONE reconcile call that stat gets. See the class note on why this is named.
+     * An existing scanner's desired map merged with every other source for the same stat -- the
+     * accessories' map and the fragments' (the build system's slice 4) -- ready for the ONE reconcile call that
+     * stat gets. N-way, because a second reconcile call for one stat wipes the first. See the class note.
      */
-    public static Map<String, Double> merged(Map<String, Double> gear, Map<String, Double> accessories) {
+    @SafeVarargs
+    public static Map<String, Double> merged(Map<String, Double> gear, Map<String, Double>... others) {
         Map<String, Double> merged = new HashMap<>(gear);
-        merged.putAll(accessories);
+        for (Map<String, Double> other : others) merged.putAll(other);
         return merged;
     }
 

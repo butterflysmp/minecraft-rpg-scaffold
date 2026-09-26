@@ -152,4 +152,59 @@ class BuildRulesTest {
         assertEquals(Optional.of(new Picked("u2", "r_a", "r_b")),
                 BuildRules.pick(twoUlts, current, LoadoutSlot.ULTIMATE, "u2"));
     }
+
+    // ------------------------------------------------------------------ fragments (slice 4, ruling 11)
+
+    private static final PoolDefinition FRAGMENTED = new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
+            List.of("r_ult"), List.of("r_a", "r_b"), new Loadout("r_ult", "r_a", "r_b"),
+            List.of("f_a", "f_b", "f_c", "f_d", "f_e"));
+
+    private static List<String> slots(String... ids) {
+        return java.util.Arrays.asList(ids);
+    }
+
+    /** THE ROW THE "offer a fragment already slotted elsewhere" MUTATION REDDENS. */
+    @Test
+    void aFragmentSlottedElsewhereIsNotOffered() {
+        List<String> equipped = slots("f_a", null, "f_c", null);
+        assertEquals(List.of("f_b", "f_d", "f_e"), BuildRules.fragmentChoices(FRAGMENTED, equipped, 1),
+                "slot 1 is not offered f_a (slot 0) or f_c (slot 2)");
+        assertEquals(List.of("f_a", "f_b", "f_d", "f_e"), BuildRules.fragmentChoices(FRAGMENTED, equipped, 0),
+                "a slot IS offered what it already holds");
+    }
+
+    @Test
+    void pickingAFragmentChangesOnlyThatSlot() {
+        assertEquals(Optional.of(slots("f_a", "f_d", "f_c", null)),
+                BuildRules.pickFragment(FRAGMENTED, slots("f_a", null, "f_c", null), 1, "f_d"));
+    }
+
+    @Test
+    void pickingNullEmptiesTheSlot() {
+        assertEquals(Optional.of(slots("f_a", null, null, null)),
+                BuildRules.pickFragment(FRAGMENTED, slots("f_a", null, "f_c", null), 2, null));
+    }
+
+    @Test
+    void aFragmentOutsideThePoolOrAlreadySlottedIsRefused() {
+        List<String> equipped = slots("f_a", null, null, null);
+        assertEquals(Optional.empty(), BuildRules.pickFragment(FRAGMENTED, equipped, 1, "not_pooled"));
+        assertEquals(Optional.empty(), BuildRules.pickFragment(FRAGMENTED, equipped, 1, "f_a"),
+                "ruling 11: one of each -- f_a already sits in slot 0");
+        assertEquals(Optional.empty(), BuildRules.pickFragment(FRAGMENTED, equipped, 4, "f_b"), "no fifth slot");
+    }
+
+    /** No sequence of legal picks can slot one fragment twice: every slot, every pooled id, from a full start. */
+    @Test
+    void noFragmentPickEverLeavesADuplicate() {
+        List<String> start = slots("f_a", "f_b", "f_c", "f_d");
+        for (int slot = 0; slot < FragmentSlots.COUNT; slot++) {
+            for (String id : FRAGMENTED.fragments()) {
+                Optional<List<String>> after = BuildRules.pickFragment(FRAGMENTED, start, slot, id);
+                if (after.isEmpty()) continue;
+                List<String> held = after.get().stream().filter(java.util.Objects::nonNull).toList();
+                assertEquals(held.size(), new java.util.HashSet<>(held).size(), "slot " + slot + " <- " + id + ": " + held);
+            }
+        }
+    }
 }

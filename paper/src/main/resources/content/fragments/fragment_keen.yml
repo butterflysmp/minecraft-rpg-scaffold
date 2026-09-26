@@ -1,0 +1,12 @@
+# PLACEHOLDER -- Ben designs. A fragment (PLAN-build-system.md section 2.3): a small, FLAT bonus slotted into
+# one of a cell's four fragment slots. Its name, icon and number are placeholders so slice 4 has something to
+# gate; none is a proposal. POSITIVE-ONLY (ruling 21): a negative modifier is refused at load.
+#
+# crit_chance is continuous (a FLAT +0.02 on a base of 0.15).
+# The id of this fragment is its filename: fragment_keen.
+
+display_name: "<yellow>Keen</yellow>"
+icon: flint
+description: ["Placeholder fragment."]
+modifiers:
+  crit_chance: 0.02

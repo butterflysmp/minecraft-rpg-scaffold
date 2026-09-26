@@ -70,4 +70,37 @@ class LoadoutResolutionTest {
         assertEquals(Optional.of("act_c"), e.idFor(LoadoutSlot.ACTIVE_1));
         assertEquals(Optional.empty(), e.idFor(LoadoutSlot.ACTIVE_2));
     }
+
+    // ------------------------------------------------------------------ fragments (slice 4)
+
+    private static final PoolDefinition WITH_FRAGMENTS = new PoolDefinition(new CellKey("ranger", "fire"),
+            "Fire Ranger", List.of("ult_a"), List.of("act_a", "act_b"), new Loadout("ult_a", "act_a", "act_b"),
+            List.of("frag_a", "frag_b", "frag_c"));
+
+    @Test
+    void nothingSavedIsFourEmptyFragmentSlots() {
+        assertEquals(java.util.Arrays.asList(null, null, null, null), LoadoutResolution.fragments(WITH_FRAGMENTS, null));
+    }
+
+    /** A saved fragment the pool still offers is equipped in its own slot; one it no longer offers reads empty. */
+    @Test
+    void aSavedFragmentIsEquippedOnlyIfThePoolStillOffersIt() {
+        assertEquals(java.util.Arrays.asList("frag_c", null, "frag_a", null),
+                LoadoutResolution.fragments(WITH_FRAGMENTS, java.util.Arrays.asList("frag_c", "gone", "frag_a", null)));
+    }
+
+    /** Ruling 11: one of each. A hand-edited duplicate keeps its FIRST slot; the rest read empty. */
+    @Test
+    void aDuplicateFragmentKeepsItsFirstSlot() {
+        assertEquals(java.util.Arrays.asList(null, "frag_b", null, null),
+                LoadoutResolution.fragments(WITH_FRAGMENTS, java.util.Arrays.asList(null, "frag_b", "frag_b", "frag_b")));
+    }
+
+    @Test
+    void aPoolListingAFragmentTwiceIsRefused() {
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> new PoolDefinition(
+                new CellKey("ranger", "fire"), "x", List.of("ult_a"), List.of("act_a", "act_b"),
+                new Loadout("ult_a", "act_a", "act_b"), List.of("frag_a", "frag_a")));
+        assertEquals(List.of(), POOL.fragments(), "the five-argument form is a pool with no fragments");
+    }
 }

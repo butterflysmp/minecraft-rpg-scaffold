@@ -44,7 +44,9 @@ public final class BuildPickerMenu extends Menu {
 
     /** Which choice this picker makes. */
     public enum Kind {
-        CLASS, ELEMENT, ULTIMATE, ACTIVE_1, ACTIVE_2;
+        CLASS, ELEMENT, ULTIMATE, ACTIVE_1, ACTIVE_2,
+        /** One of the four fragment slots (slice 4); which one is the picker's {@code fragmentSlot}. */
+        FRAGMENT;
 
         static Kind of(LoadoutSlot slot) {
             return switch (slot) {
@@ -57,7 +59,7 @@ public final class BuildPickerMenu extends Menu {
         /** The loadout slot this picks, or empty for the class and element pickers. */
         Optional<LoadoutSlot> loadoutSlot() {
             return switch (this) {
-                case CLASS, ELEMENT -> Optional.empty();
+                case CLASS, ELEMENT, FRAGMENT -> Optional.empty();
                 case ULTIMATE -> Optional.of(LoadoutSlot.ULTIMATE);
                 case ACTIVE_1 -> Optional.of(LoadoutSlot.ACTIVE_1);
                 case ACTIVE_2 -> Optional.of(LoadoutSlot.ACTIVE_2);
@@ -72,21 +74,34 @@ public final class BuildPickerMenu extends Menu {
     /** How to rebuild the Build screen, for Back and after a pick. */
     private final Supplier<Menu> build;
 
+    /** The 0-based fragment slot this picker fills, for {@link Kind#FRAGMENT}; -1 for every other kind. */
+    private final int fragmentSlot;
+
     /** The ids on offer, in option order. Read once per render; a click indexes into it. */
     private List<String> options = List.of();
 
+    /** The option that EMPTIES a fragment slot. Not an id: no fragment file can be named with no characters. */
+    static final String EMPTY_THE_SLOT = "";
+
     public BuildPickerMenu(Player viewer, AdapterContext adapters, ProfileService profiles, Kind kind,
                            Supplier<Menu> build) {
-        super(viewer, BuildMenuLayout.SIZE, MenuIcons.line(title(kind), NamedTextColor.DARK_GRAY));
+        this(viewer, adapters, profiles, kind, -1, build);
+    }
+
+    public BuildPickerMenu(Player viewer, AdapterContext adapters, ProfileService profiles, Kind kind,
+                           int fragmentSlot, Supplier<Menu> build) {
+        super(viewer, BuildMenuLayout.SIZE, MenuIcons.line(title(kind, fragmentSlot), NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.profiles = profiles;
         this.kind = kind;
+        this.fragmentSlot = fragmentSlot;
         this.build = build;
         render();
     }
 
-    private static String title(Kind kind) {
+    private static String title(Kind kind, int fragmentSlot) {
         return switch (kind) {
+            case FRAGMENT -> "Choose a Fragment (slot " + (fragmentSlot + 1) + ")";
             case CLASS -> "Choose a Class";
             case ELEMENT -> "Choose an Element";
             case ULTIMATE -> "Choose an Ultimate (Q)";
@@ -123,6 +138,7 @@ public final class BuildPickerMenu extends Menu {
             case CLASS -> chooseClass(id);
             case ELEMENT -> chooseElement(id);
             case ULTIMATE, ACTIVE_1, ACTIVE_2 -> chooseAbility(kind.loadoutSlot().orElseThrow(), id);
+            case FRAGMENT -> chooseFragment(EMPTY_THE_SLOT.equals(id) ? null : id);
         };
         if (done) backToBuild();
     }
@@ -238,6 +254,69 @@ public final class BuildPickerMenu extends Menu {
         return true;
     }
 
+    /**
+     * Put a fragment in this picker's slot, or EMPTY it (a null id). {@code BuildRules.pickFragment} decides:
+     * only the pool's fragments, and never one already held in another slot (ruling 11).
+     *
+     * <p><b>THE ABILITIES ARE SEEDED FROM WHAT IS EQUIPPED, NOT FROM THE SAVED ENTRY.</b> A cell with nothing
+     * saved casts its pool default; saving only a fragment into an empty {@code CellLoadout} would store null
+     * abilities, and a saved null reads as EMPTY (never the default, {@code LoadoutResolution}) -- the first
+     * fragment a player chose would blank their Q, Left and Right. Gate row BF8 reads it.
+     */
+    private boolean chooseFragment(String fragmentId) {
+        Optional<PlayerProfile> profile = profiles.profile(viewer.getUniqueId());
+        if (profile.isEmpty()) return profileUnavailable();
+        String classId = profile.get().archetypeId();
+        String elementId = profile.get().elementId();
+        Optional<PoolDefinition> pool = adapters.stones().pools().find(classId, elementId);
+        if (pool.isEmpty()) {
+            viewer.sendMessage(Component.text("Choose a class and an element first.", NamedTextColor.YELLOW));
+            return true;
+        }
+        BuildService builds = adapters.stones().builds();
+        Optional<PlayerBuild> stored = builds.build(viewer.getUniqueId());
+        if (stored.isEmpty()) {
+            viewer.sendMessage(Component.text(builds.unusable(viewer.getUniqueId())
+                    ? "Your build is unavailable this session (see the server log); nothing can be saved."
+                    : "Your build is still loading -- try again in a moment.", NamedTextColor.RED));
+            return false;
+        }
+        List<String> equipped = adapters.stones().equippedFragments(viewer.getUniqueId(), profile);
+        Optional<List<String>> picked = BuildRules.pickFragment(pool.get(), equipped, fragmentSlot, fragmentId);
+        if (picked.isEmpty()) {
+            // Unreachable from the rendered options, which ARE BuildRules.fragmentChoices. Refused, not trusted.
+            viewer.sendMessage(Component.text(fragmentId + " cannot go in that slot.", NamedTextColor.RED));
+            return false;
+        }
+        Equipped abilities = adapters.stones().equippedFor(viewer.getUniqueId(), profile).orElseThrow();
+        CellLoadout existing = stored.get().loadout(classId, elementId)
+                .orElseGet(() -> CellLoadout.empty(classId, elementId));
+        CellLoadout next = new CellLoadout(classId, elementId, abilities.ultimate(),
+                Arrays.asList(abilities.active1(), abilities.active2()), existing.aspects(), picked.get());
+        Component what = fragmentId == null
+                ? Component.text("(empty)", NamedTextColor.GRAY)
+                : fragmentName(fragmentId);
+        boolean accepted = builds.save(viewer.getUniqueId(), next, ok ->
+                adapters.scheduler().onEntity(viewer, () -> {
+                    if (!viewer.isOnline()) return;
+                    viewer.sendMessage(ok
+                            ? Component.text("Saved: Fragment " + (fragmentSlot + 1) + " = ", NamedTextColor.AQUA).append(what)
+                            : Component.text("The build could not be written; see the server log.", NamedTextColor.RED));
+                }));
+        if (!accepted) {
+            viewer.sendMessage(Component.text("Your build is still loading -- try again in a moment.",
+                    NamedTextColor.RED));
+            return false;
+        }
+        return true;
+    }
+
+    private Component fragmentName(String id) {
+        return adapters.stones().fragments().find(id)
+                .map(f -> MiniMessage.miniMessage().deserialize(f.displayName()))
+                .orElse(Component.text(id, NamedTextColor.RED));
+    }
+
     private boolean profileUnavailable() {
         viewer.sendMessage(profiles.availability(viewer.getUniqueId()) == ProfileService.Availability.UNREADABLE
                 ? Component.text(ProfileService.UNREADABLE_PROFILE, NamedTextColor.RED)
@@ -252,7 +331,7 @@ public final class BuildPickerMenu extends Menu {
         getInventory().setItem(BuildMenuLayout.CLOSE_SLOT, MenuIcons.close());
         getInventory().setItem(BuildMenuLayout.BACK_SLOT, MenuIcons.back(Material.ARROW, "Build"));
         getInventory().setItem(BuildMenuLayout.PICKER_TITLE_SLOT, MenuIcons.icon(material(),
-                MenuIcons.line(title(kind), NamedTextColor.GRAY), List.of()));
+                MenuIcons.line(title(kind, fragmentSlot), NamedTextColor.GRAY), List.of()));
 
         Optional<PlayerProfile> profile = profiles.profile(viewer.getUniqueId());
         Optional<Equipped> equipped = adapters.stones().equippedFor(viewer.getUniqueId(), profile);
@@ -282,6 +361,16 @@ public final class BuildPickerMenu extends Menu {
                     .flatMap(p -> pools.find(p.archetypeId(), p.elementId()))
                     .map(pool -> BuildRules.choices(pool, kind.loadoutSlot().orElseThrow()))
                     .orElse(List.of());
+            case FRAGMENT -> profile
+                    .flatMap(p -> pools.find(p.archetypeId(), p.elementId()))
+                    .map(pool -> {
+                        List<String> equipped = adapters.stones().equippedFragments(viewer.getUniqueId(), profile);
+                        List<String> choices = new ArrayList<>(BuildRules.fragmentChoices(pool, equipped, fragmentSlot));
+                        // A filled slot can be emptied; an empty one is not offered "empty".
+                        if (equipped.get(fragmentSlot) != null) choices.add(EMPTY_THE_SLOT);
+                        return List.copyOf(choices);
+                    })
+                    .orElse(List.of());
         };
     }
 
@@ -291,6 +380,7 @@ public final class BuildPickerMenu extends Menu {
             case ELEMENT -> profile.map(PlayerProfile::elementId).orElse(null);
             case ULTIMATE, ACTIVE_1, ACTIVE_2 ->
                     equipped.flatMap(e -> e.idFor(kind.loadoutSlot().orElseThrow())).orElse(null);
+            case FRAGMENT -> adapters.stones().equippedFragments(viewer.getUniqueId(), profile).get(fragmentSlot);
         };
     }
 
@@ -309,6 +399,7 @@ public final class BuildPickerMenu extends Menu {
             case ELEMENT -> Material.GLOWSTONE_DUST;
             case ULTIMATE -> Material.AMETHYST_CLUSTER;
             case ACTIVE_1, ACTIVE_2 -> Material.PRISMARINE_SHARD;
+            case FRAGMENT -> Material.AMETHYST_SHARD;
         };
     }
 
@@ -317,6 +408,10 @@ public final class BuildPickerMenu extends Menu {
      * glints, because none of these materials does on its own.
      */
     private ItemStack optionIcon(String id, boolean current, boolean inOtherActive) {
+        if (EMPTY_THE_SLOT.equals(id)) {
+            return MenuIcons.icon(Material.BARRIER, MenuIcons.line("Empty this slot", NamedTextColor.GRAY),
+                    List.of(MenuIcons.line("Click to remove the fragment here.", NamedTextColor.DARK_GRAY)));
+        }
         List<Component> lore = new ArrayList<>();
         Component name = switch (kind) {
             case CLASS -> Component.text(BuildMenu.capitalised(id), NamedTextColor.WHITE);
@@ -324,7 +419,11 @@ public final class BuildPickerMenu extends Menu {
                     .map(def -> MiniMessage.miniMessage().deserialize(def.displayName()))
                     .orElse(Component.text(id, NamedTextColor.WHITE));
             case ULTIMATE, ACTIVE_1, ACTIVE_2 -> abilityName(id);
+            case FRAGMENT -> fragmentName(id);
         };
+        if (kind == Kind.FRAGMENT) {
+            adapters.stones().fragments().find(id).map(BuildMenu::fragmentLore).ifPresent(lore::addAll);
+        }
         if (kind.loadoutSlot().isPresent()) {
             adapters.stones().abilities().find(id).map(BuildMenu::abilityLore).ifPresent(lore::addAll);
         }
@@ -335,7 +434,10 @@ public final class BuildPickerMenu extends Menu {
         lore.add(current
                 ? MenuIcons.line("Current", NamedTextColor.GREEN)
                 : MenuIcons.line("Click to choose.", NamedTextColor.DARK_GRAY));
-        ItemStack icon = MenuIcons.icon(material(),
+        Material optionMaterial = kind == Kind.FRAGMENT
+                ? adapters.stones().fragments().find(id).map(BuildMenu::fragmentMaterial).orElse(Material.BARRIER)
+                : material();
+        ItemStack icon = MenuIcons.icon(optionMaterial,
                 name.decoration(TextDecoration.ITALIC, false).colorIfAbsent(current ? NamedTextColor.GREEN : NamedTextColor.WHITE),
                 lore);
         if (current) icon.editMeta(meta -> meta.setEnchantmentGlintOverride(true));

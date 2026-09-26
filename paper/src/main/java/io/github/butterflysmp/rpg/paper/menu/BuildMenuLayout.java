@@ -17,7 +17,7 @@ import java.util.Set;
  *   row 1  .  .  .  C  .  E  .  .  .      C = class (3)       E = element (5)
  *   row 2  .  .  Q  .  L  .  R  .  .      Q = the Ultimate (11), L = Active 1 (13), R = Active 2 (15)
  *   row 3  .  .  .  a  .  a  .  .  .      a = the two aspect cells (21, 23), "Coming in a later update"
- *   row 4  .  f  .  f  .  f  .  f  .      f = the four fragment cells (28, 30, 32, 34), the same
+ *   row 4  .  f  .  f  .  f  .  f  .      f = the four fragment cells (28, 30, 32, 34), LIVE since slice 4
  *   row 5  .  .  .  .  .  .  .  .  .
  *   row 6  .  .  .  .  .  .  .  .  .      back 48, close 49
  * </pre>
@@ -46,7 +46,7 @@ final class BuildMenuLayout {
     /** Aspect cell i sits at ASPECT_SLOTS.get(i). Not built until slice 5. */
     static final List<Integer> ASPECT_SLOTS = List.of(21, 23);
 
-    /** Fragment cell i sits at FRAGMENT_SLOTS.get(i). Not built until slice 4. */
+    /** Fragment cell i sits at FRAGMENT_SLOTS.get(i). Live since slice 4; the stored slot i, 0-based. */
     static final List<Integer> FRAGMENT_SLOTS = List.of(28, 30, 32, 34);
 
     static final int BACK_SLOT = 48;
@@ -85,6 +85,12 @@ final class BuildMenuLayout {
             case ACTIVE_1 -> ACTIVE_1_SLOT;
             case ACTIVE_2 -> ACTIVE_2_SLOT;
         };
+    }
+
+    /** The fragment slot (0-based) a screen slot shows, if it is one (slice 4). */
+    static OptionalInt fragmentIndexAt(int slot) {
+        int index = FRAGMENT_SLOTS.indexOf(slot);
+        return index < 0 ? OptionalInt.empty() : OptionalInt.of(index);
     }
 
     /** The input a loadout slot is cast with, as the screen labels it. */

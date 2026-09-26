@@ -14,6 +14,14 @@ actives:
   - ember_step
   - solar_grenade
   - solar_lance
+# PLACEHOLDER -- Ben designs. Slice 4's fragments (PLAN-build-system.md section 2.3): the same five
+# placeholders in both cells, so each cell can fill its four slots. One of each (ruling 11).
+fragments:
+  - fragment_vigor
+  - fragment_focus
+  - fragment_keen
+  - fragment_mending
+  - fragment_ward
 
 default:
   ultimate: ultimate_placeholder_mage

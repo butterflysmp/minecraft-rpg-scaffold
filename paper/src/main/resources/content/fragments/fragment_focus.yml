@@ -1,0 +1,12 @@
+# PLACEHOLDER -- Ben designs. A fragment (PLAN-build-system.md section 2.3): a small, FLAT bonus slotted into
+# one of a cell's four fragment slots. Its name, icon and number are placeholders so slice 4 has something to
+# gate; none is a proposal. POSITIVE-ONLY (ruling 21): a negative modifier is refused at load.
+#
+# max_mana is continuous (a FLAT +10 on a base of 100).
+# The id of this fragment is its filename: fragment_focus.
+
+display_name: "<aqua>Focus</aqua>"
+icon: lapis_lazuli
+description: ["Placeholder fragment."]
+modifiers:
+  max_mana: 10

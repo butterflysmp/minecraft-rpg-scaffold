@@ -57,6 +57,23 @@ public final class LoadoutResolution {
     }
 
     /** The saved ids for one cell, any of them null. */
+    /**
+     * The four fragment slots as equipped (slice 4): a saved id the pool still offers, once each (ruling 11
+     * -- a hand-edited duplicate keeps its first slot); anything else reads EMPTY, never a default. Nothing
+     * saved is four empties: a pool's default loadout carries no fragments. Always four entries, nulls for
+     * empty, in slot order.
+     */
+    public static List<String> fragments(PoolDefinition pool, List<String> saved) {
+        List<String> equipped = new ArrayList<>(Collections.nCopies(FragmentSlots.COUNT, (String) null));
+        if (saved == null) return Collections.unmodifiableList(equipped);
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (int slot = 0; slot < FragmentSlots.COUNT && slot < saved.size(); slot++) {
+            String id = offers(pool.fragments(), saved.get(slot));
+            if (id != null && seen.add(id)) equipped.set(slot, id);
+        }
+        return Collections.unmodifiableList(equipped);
+    }
+
     public record Saved(String ultimate, String active1, String active2) {}
 
     /**

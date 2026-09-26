@@ -29,7 +29,8 @@ import java.util.function.Supplier;
  *
  * <p>Row 1 opens the class and element pickers; row 2 opens the Ultimate / Active 1 / Active 2 pickers,
  * each offering only what the cell's pool lists in that role ({@code BuildRules}). Rows 3 and 4 are the
- * aspect and fragment cells, which render "Coming in a later update" until slices 5 and 4.
+ * aspect and fragment cells. The fragment row is LIVE since slice 4 (four slots, one of each, ruling
+ * 11); the aspect row still renders "Coming in a later update" until slice 5.
  *
  * <h2>EVERY ICON IS RENDERED HERE; NONE IS A REAL ITEM</h2>
  *
@@ -86,8 +87,17 @@ public final class BuildMenu extends Menu {
             openPicker(BuildPickerMenu.Kind.ELEMENT);
             return;
         }
+        java.util.OptionalInt fragmentSlot = BuildMenuLayout.fragmentIndexAt(slot);
+        if (fragmentSlot.isPresent()) {
+            if (pool().isEmpty()) {
+                viewer.sendMessage(Component.text("Choose a class and an element first.", NamedTextColor.YELLOW));
+                return;
+            }
+            openPicker(BuildPickerMenu.Kind.FRAGMENT, fragmentSlot.getAsInt());
+            return;
+        }
         Optional<LoadoutSlot> loadoutSlot = BuildMenuLayout.loadoutSlotAt(slot);
-        if (loadoutSlot.isEmpty()) return;   // filler, and the not-yet-built aspect and fragment cells
+        if (loadoutSlot.isEmpty()) return;   // filler, and the not-yet-built aspect cells
         if (pool().isEmpty()) {
             viewer.sendMessage(Component.text("Choose a class and an element first.", NamedTextColor.YELLOW));
             return;
@@ -96,9 +106,14 @@ public final class BuildMenu extends Menu {
     }
 
     private void openPicker(BuildPickerMenu.Kind kind) {
+        openPicker(kind, -1);
+    }
+
+    /** {@code fragmentSlot} is the 0-based fragment slot for {@code Kind.FRAGMENT}, and -1 otherwise. */
+    private void openPicker(BuildPickerMenu.Kind kind, int fragmentSlot) {
         Supplier<Menu> back = () -> new BuildMenu(viewer, adapters, profiles, hub);
         adapters.scheduler().onEntity(viewer, () ->
-                new BuildPickerMenu(viewer, adapters, profiles, kind, back).open());
+                new BuildPickerMenu(viewer, adapters, profiles, kind, fragmentSlot, back).open());
     }
 
     @Override
@@ -134,8 +149,12 @@ public final class BuildMenu extends Menu {
         for (int i = 0; i < BuildMenuLayout.ASPECT_SLOTS.size(); i++) {
             getInventory().setItem(BuildMenuLayout.ASPECT_SLOTS.get(i), comingLater("Aspect " + (i + 1)));
         }
+        // THE FRAGMENT ROW, LIVE (slice 4): the current cell's four slots, as equipped.
+        List<String> fragments = adapters.stones().equippedFragments(viewer.getUniqueId(), profile);
+        boolean pooled = pool().isPresent();
         for (int i = 0; i < BuildMenuLayout.FRAGMENT_SLOTS.size(); i++) {
-            getInventory().setItem(BuildMenuLayout.FRAGMENT_SLOTS.get(i), comingLater("Fragment " + (i + 1)));
+            getInventory().setItem(BuildMenuLayout.FRAGMENT_SLOTS.get(i),
+                    fragmentIcon(i, pooled ? fragments.get(i) : null, pooled, unusable));
         }
     }
 
@@ -212,7 +231,52 @@ public final class BuildMenu extends Menu {
         return (seconds == Math.floor(seconds) ? String.valueOf((int) seconds) : String.valueOf(seconds)) + "s";
     }
 
-    /** An aspect or fragment cell: not built until its slice, and says so. */
+    /**
+     * One fragment cell: the slotted fragment (its own icon, name and modifiers), an empty slot, or "choose a
+     * class and an element first". Rendered here as an icon -- never a minted item.
+     */
+    private ItemStack fragmentIcon(int index, String id, boolean pooled, boolean unusable) {
+        String label = "Fragment " + (index + 1);
+        if (!pooled) {
+            return MenuIcons.icon(Material.GRAY_STAINED_GLASS_PANE, MenuIcons.line(label, NamedTextColor.DARK_GRAY),
+                    List.of(MenuIcons.line("Choose a class and an element first.", NamedTextColor.DARK_GRAY)));
+        }
+        Component footer = unusable
+                ? MenuIcons.line("Build unavailable -- changes cannot be saved.", NamedTextColor.RED)
+                : MenuIcons.line("Click to " + (id == null ? "choose." : "change."), NamedTextColor.DARK_GRAY);
+        Optional<io.github.butterflysmp.rpg.core.build.FragmentDefinition> fragment =
+                id == null ? Optional.empty() : adapters.stones().fragments().find(id);
+        if (fragment.isEmpty()) {
+            return MenuIcons.icon(Material.LIGHT_GRAY_STAINED_GLASS_PANE,
+                    MenuIcons.line(label + ": (empty)", NamedTextColor.GRAY), List.of(footer));
+        }
+        List<Component> lore = new ArrayList<>(fragmentLore(fragment.get()));
+        lore.add(MenuIcons.blank());
+        lore.add(footer);
+        return MenuIcons.icon(fragmentMaterial(fragment.get()),
+                MenuIcons.line(label + ": ", NamedTextColor.GRAY).append(
+                        MiniMessage.miniMessage().deserialize(fragment.get().displayName())
+                                .decoration(TextDecoration.ITALIC, false)), lore);
+    }
+
+    /** A fragment's modifiers and description, shared with the picker. */
+    static List<Component> fragmentLore(io.github.butterflysmp.rpg.core.build.FragmentDefinition fragment) {
+        List<Component> lore = new ArrayList<>();
+        for (var m : fragment.modifiers().entrySet()) {
+            lore.add(MenuIcons.line(io.github.butterflysmp.rpg.core.accessory.AccessoryLoreLines.modifier(
+                    m.getKey(), m.getValue(), null), NamedTextColor.BLUE));
+        }
+        for (String line : fragment.description()) lore.add(MenuIcons.line(line, NamedTextColor.GRAY));
+        return lore;
+    }
+
+    /** The fragment's authored icon; the loader refused any icon that names no item, so this cannot miss. */
+    static Material fragmentMaterial(io.github.butterflysmp.rpg.core.build.FragmentDefinition fragment) {
+        Material material = Material.matchMaterial(fragment.icon().toUpperCase(java.util.Locale.ROOT));
+        return material == null ? Material.BARRIER : material;
+    }
+
+    /** An aspect cell: not built until slice 5, and says so. */
     private static ItemStack comingLater(String name) {
         return MenuIcons.icon(Material.BARRIER, MenuIcons.line(name, NamedTextColor.DARK_GRAY),
                 List.of(MenuIcons.line("Coming in a later update", NamedTextColor.DARK_GRAY)));

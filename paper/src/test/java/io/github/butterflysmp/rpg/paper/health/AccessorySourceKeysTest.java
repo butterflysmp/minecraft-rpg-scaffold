@@ -65,6 +65,27 @@ class AccessorySourceKeysTest {
         // Mutation: set AccessoryContributions.SOURCE_PREFIX to "growth:" -> reddens.
     }
 
+    /**
+     * The fragment keys (the build system's slice 4) are disjoint from every other scanner's AND from the
+     * accessories': the three maps merge into ONE desired map per stat, and a shared key would let one source
+     * silently replace another.
+     */
+    @Test
+    void everyFragmentKeyIsDisjointFromTheAccessoriesAndEveryOtherScanner() {
+        List<String> others = new ArrayList<>(otherScannersKeysAndPrefixes());
+        for (int slot = 0; slot < AccessorySlots.COUNT; slot++) others.add(AccessoryContributions.sourceKey(slot));
+        assertTrue(others.contains("accessory:0") && others.contains("growth:"),
+                "control: the accessory keys and a scanner prefix are in the list");
+        for (int slot = 0; slot < io.github.butterflysmp.rpg.core.build.FragmentSlots.COUNT; slot++) {
+            String key = io.github.butterflysmp.rpg.core.build.FragmentSlots.sourceKey(slot);
+            for (String other : others) {
+                assertFalse(key.equals(other) || key.startsWith(other) || other.startsWith(key)
+                                || other.startsWith(io.github.butterflysmp.rpg.core.build.FragmentSlots.SOURCE_PREFIX),
+                        "fragment key '" + key + "' collides with '" + other + "'");
+            }
+        }
+    }
+
     @Test
     void noAccessoryKeyContainsQuiver_rulingA2() {
         for (int slot = 0; slot < AccessorySlots.COUNT; slot++) {

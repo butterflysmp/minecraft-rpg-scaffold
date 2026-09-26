@@ -61,9 +61,9 @@ public final class AccessoryNegatives {
                             + " real reduction";
             case BOUNDED -> {
                 double base = base(stat, maxManaBase);
-                yield AccessorySlots.COUNT * -amount < base ? null
+                yield io.github.butterflysmp.rpg.core.build.StatSourceBound.withinBound(amount, base) ? null
                         : "a negative " + stat.token() + " of " + amount + " is too large: "
-                                + AccessorySlots.COUNT + " slots of it must stay below the player"
+                                + io.github.butterflysmp.rpg.core.build.StatSourceBound.NEGATIVE_SOURCES + " sources of it (every accessory slot; fragments carry no negative) must stay below the player"
                                 + " base " + base + ", or the drawback meets the stat's clamp";
             }
         };
