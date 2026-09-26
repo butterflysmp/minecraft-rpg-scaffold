@@ -107,6 +107,12 @@ The design is §7.**
 31. **No fall damage from the landing right after the leap.** The embers are thrown at take-off, in an
     even ring (72° apart) around the player.
 
+**Ben's ruling 32, 2026-09-27, given at the seat's approval of section 7 (PR #161). The seat's message carried the numbers as an
+unfilled template (`<8 damage in a 2.0-block radius / Ben's numbers>`). The numbers below were given in the session
+when asked, and they replace the template:**
+
+32. **The leap's embers each deal 60 damage in a 3-block radius.** This closes section 7.7's UNRULED note.
+
 **And one clarification, given while building slice 1 (2026-09-25):** Q pressed over the stone with a
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
 way.
@@ -2249,8 +2255,8 @@ Nothing marks a player as immune to anything.
 
 ### 7.7 Content — draft YAML
 
-`banked_embers.yml` is **deleted** (ruling 26). Every other number below is ruled (25, 27) unless it is
-marked.
+`banked_embers.yml` is **deleted** (ruling 26). Every other number below is ruled (25, 27, 32) unless it
+is marked.
 
     # content/builds/ranger.yml -- CLASS-WIDE (section 7.1): merged into every ranger_<element>.yml at load
     class: ranger
@@ -2332,16 +2338,14 @@ marked.
         trail: ember_trail
         visual: ember_burst
         burst:
-          radius: 4.0                # PLACEHOLDER -- UNRULED (below)
+          radius: 3.0                # ruling 32
           effects:
-            - { type: damage, amount: 8, element: fire }   # PLACEHOLDER -- UNRULED (below)
+            - { type: damage, amount: 60, element: fire }  # ruling 32
 
-- **UNRULED, not excluded: the leap's ember DAMAGE and RADIUS.** Ruling 28 names the count and the landing
-  distance, not the burst. The draft carries Ember Cache's `8` in `4.0` so the leap is visible at the gate.
-  **Stated because it is the number that bites:** five bursts of radius 4 whose centres sit ~3.5 blocks
-  from the take-off OVERLAP at the centre. A mob standing under the leap is inside all five, which is
-  **40 damage**, against 8 per ember from Ember Cache's fan. That is Ben's call, and it is put to him with
-  the tuning figures.
+- **The leap's burst is RULED (ruling 32): 60 fire damage in a 3-block radius, per ember.** This replaces the UNRULED
+  placeholder (Ember Cache's 8 in 4.0) that was here until 2026-09-27. Radius 3 is below the 3-4 blocks the embers are
+  tuned to land at, so a mob standing at the take-off point is caught only by an ember that comes to rest within 3
+  blocks. How many of the five catch it is therefore set by the tuned distance (section 7.8), and it is not predicted here.
 - **`cooldown_ticks: 0`** — whether `ContentValidator` warns on a 0 cooldown is **read in phase 2, not
   asserted**.
 
