@@ -64,6 +64,10 @@ Recorded verbatim from the brief.
     whenever the cooldown allows, for BOTH left and right click (option b). This replaces ruling 15's
     "one cast per press". The spike showed separate right-clicks as close as 1 tick apart, below the
     held repeat of exactly 4, so no gap rule can tell them apart.**
+20. **Ben's ruling 20, 2026-09-26: `arc_surge` is a placeholder from the project's start and is SLATED FOR
+    DELETION. It is removed from the Fire Ranger pool and its ability file is deleted, with every citation
+    swept.** This closes §5's parked question. The deletion is not made in slice 3; it is the first commit
+    of slice 4.
 
 **And one clarification, given while building slice 1 (2026-09-25):** Q pressed over the stone with a
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
@@ -1702,9 +1706,11 @@ it here.
 ## 5. OPEN QUESTIONS FOR BEN
 
 **Q1-Q10 were ruled on 2026-09-25**: they are rulings 9-18 in the RULINGS section, and are not repeated
-here. One question is PARKED. It is unanswered, and nothing in slices 1-5 waits on it.
+here. The one question that was PARKED is now CLOSED by ruling 20 (2026-09-26); it is kept below as
+the record of what was asked.
 
-1. **PARKED: should `arc_surge` (a NATURE ability) stay in the Fire Ranger pool?**
+1. **CLOSED by ruling 20 -- `arc_surge` is deleted, from the pool and as a file. Was: PARKED: should
+   `arc_surge` (a NATURE ability) stay in the Fire Ranger pool?**
    - Today it is the Fire Ranger kit's only ability, and §2.2's example pool carries it forward.
    - **Recommendation: drop it.** `rekindle` and `solar_lance` fill both Active slots, and they are
      slice 1's default loadout anyway. A nature ability in a fire cell makes "the cell's element" mean
