@@ -177,8 +177,8 @@ and opening chat releases movement. `ability_stone.yml`'s own header says so. **
 - `ranger_fire.yml`: `hunters_bow` (equip), and the abilities `[arc_surge]`.
 - `mage_fire.yml`: `ember_staff` (equip), and the abilities `[solar_grenade, solar_lance, ember_step]`.
 
-**Both are DELETED.** `boltor.yml`'s comment already records the ruling (*"KITS ARE BEING REMOVED ...
-KitRegistry, KitLoader and their tests go with the kit files, and mage_fire.yml goes at the same time"*),
+**Both are DELETED.** `boltor.yml`'s comment recorded the ruling when this plan was written (*"KITS ARE BEING REMOVED ...
+KitRegistry, KitLoader and their tests go with the kit files, and mage_fire.yml goes at the same time"*; slice 2 rewrote that comment to the present state),
 and `NEXT.md`'s *PARKED SLICE — THE DEV-WEAPON AND `/kit` DELETIONS* names "the build system" as the
 trigger. **That trigger is now met.** The NEXT.md row is closed in slice 2's PR, with the sha.
 

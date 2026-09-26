@@ -254,6 +254,10 @@ placeholders" turned out to be "stop having placeholders".
 `ranger_fire.yml` — **the Mage loses its starting kit too, which nobody has ruled.** The measured
 impact is recorded in `NEXT.md` rather than acted on.
 
+> **ANSWERED 2026-09-25:** Ben's ruling 6 in `PLAN-build-system.md` removed the kit system, and both kit
+> files went together in the build system's slice 2 (#157). No class starts with a weapon; `/rpg give`
+> is the only weapon source (ruling 8: a known gap, not a defect).
+
 **`range` is unvalidated — `CastSpec.Ray` has no compact constructor and `ContentValidator` checks
 only `beam`.** Negative, zero and NaN are all representable. Worth a guard, but it is **not** this
 slice's job to add one silently; it is named as owed, in `boltor.yml` at the key.

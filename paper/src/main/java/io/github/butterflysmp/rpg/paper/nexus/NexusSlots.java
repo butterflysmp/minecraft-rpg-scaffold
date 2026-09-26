@@ -379,8 +379,7 @@ public final class NexusSlots {
      * player's property -- it is ours, plugin-minted, worth nothing, and re-minted free on the next
      * join. The DISPLACED OCCUPANT of the locked slot is the player's, and it goes through
      * {@code MenuSafety.give}, which finds a free slot, and failing that drops it at their feet
-     * <i>and tells them so</i>. Mirrors {@code RpgCommand.grantWeapons} -- "never overwrites a held
-     * item".
+     * <i>and tells them so</i>.
      *
      * <p>Called on join AND on respawn. Respawn because {@code onQuit} does not run on death and a
      * keepInventory failure, a cursor drop at death, or any future death path that loses the star
