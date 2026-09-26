@@ -116,6 +116,7 @@ $zip.Dispose()
 | prediction | READING |
 |---|---|
 | right click a villager: Solar Lance casts; **no trade screen** opens | _(not run)_ |
+| **(added on the seat's review of `46fb8b8`)** with Solar Lance READY, right click the villager ONCE: it casts **exactly once** (one ray, mana down 25, not 50), and **no "Solar Lance -- ready in ..." line flashes on the action bar in the same moment**. `PlayerInteractEntityEvent` may arrive with a second right-click input in the same tick (S3, never measured). That second input would be refused by the cooldown the first just started, and would show as that flash. **A flash is recorded as a FINDING** (the duplicate exists, and the cooldown absorbed it), not as a pass | _(not run)_ |
 
 ### ST6c — SNEAK right click on a hijacked block opens it (ruling 14)
 
