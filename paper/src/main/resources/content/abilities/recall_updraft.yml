@@ -20,15 +20,15 @@ cast:
   type: dash
   direction: reverse_facing  # "a little back" -- facing reversed, flattened
   distance: 2                # the hit sweep only; nothing Targeted rides the leap
-  speed: 0.2                 # PLACEHOLDER numbers -- tuned at boot
-  lift: 0.85                 # PLACEHOLDER numbers -- tuned at boot
+  speed: 0.04                 # TUNED at boot (section 7.8; option A): ~0.25 back standing, at most 3-4 with S held
+  lift: 1.05                 # TUNED at boot (section 7.8): apex 6.46 = baseline 4.43 + 2 (ruling 35)
   safe_landing: true         # ruling 31: no fall damage from the landing right after the leap
 
 # Thrown at TAKE-OFF (a dash's untargeted effects fire once, at the pre-dash feet), in an even ring (ruling 31).
 on_hit:
   - type: throw_embers
-    angles_degrees: [0, 120, -120]   # ruling 33 (was ruling 31's five at 72): three, an even ring 120 degrees apart
-    speed: 0.25              # PLACEHOLDER numbers -- tuned at boot
+    angles_degrees: [0, 40, -40]   # ruling 37 (replaces 33 and 31): Rekindle's front fan, three IN FRONT
+    speed: 0.6              # PLACEHOLDER numbers -- tuned at boot
     launch_lift: 0.25        # PLACEHOLDER numbers -- tuned at boot
     item: blaze_powder
     fuse_ticks: 30

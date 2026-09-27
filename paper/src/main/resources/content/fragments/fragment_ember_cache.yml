@@ -15,8 +15,8 @@ description: ["Recall throws five embers where you stood."]
 target: recall
 add_on_hit:
   - type: throw_embers
-    angles_degrees: [0, 30, -30, 60, -60]   # ruling 33 (was ruling 27's 0/40/-40): five embers
-    speed: 0.6
+    angles_degrees: [0, 72, 144, -144, -72]   # ruling 37 (replaces 33 and 27): an even ring around the player
+    speed: 0.25   # ruling 37: the old leap ring's throw, TUNED at boot to 3-4 out
     launch_lift: 0.25
     item: blaze_powder
     fuse_ticks: 30

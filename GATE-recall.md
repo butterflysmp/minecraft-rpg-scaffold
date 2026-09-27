@@ -1,7 +1,10 @@
 # GATE — Recall: the Rekindle rework, Ember Cache, and the Updraft recast
 
 **Status: NOT RUN.** Every prediction below was written **before** any boot. It already reflects Ben's rulings
-33-36 (2026-09-27), and each prediction they touched is marked **"edited before any reading (rulings 33-36)"**:
+33-36 (2026-09-27), and each prediction they touched is marked **"edited before any reading (rulings 33-36)"**.
+Ruling 37 (the shapes swap too) arrived during the TUNING boot, before any gate row was read; each prediction
+it touched is marked **"edited before any reading (ruling 37)"** and lands in the tuning commit; so does ruling 39
+(Recall's grounded/mid-jump distance), marked **"edited before any reading (ruling 39)"**. For 33-36,
 this file is written for the first time here, so "edited" means *changed from the §7.9 text it was derived
 from*, not changed after a reading. Readings go **beside** a prediction, never over it, and a prediction is not
 edited once its row has been read.
@@ -32,10 +35,10 @@ Recall in **Active 1** (left) and Solar Lance in Active 2 (right), flat open gro
 
 | thing | value | ruling |
 |---|---|---|
-| Recall | kinetic, 35 mana, **360-tick (18.0 s) cooldown**, a reverse-facing dash of **~5 blocks** on flat ground | 24, 25, **34, 36** |
-| Ember Cache (fragment) | Recall throws **5 embers at 0/±30/±60**, each **8 fire in r4** | 27, **33** |
+| Recall | kinetic, 35 mana, **360-tick (18.0 s) cooldown**, a reverse-facing dash: **grounded ~5 blocks, mid-jump ~2x**, movement keys about ±1 | 24, 25, **34, 36, 39** |
+| Ember Cache (fragment) | Recall throws **5 embers in an even RING around the player (0/±72/±144)**, landing **3-4 blocks** from the pre-dash position, each **8 fire in r4** | 27, 33, **37** |
 | Updraft (aspect) | recast Recall at ticks **10-50** for **Updraft Leap**: free, no cooldown of its own | 28-30 |
-| Updraft Leap | a leap **baseline + 2 up** (RC9), **3-4 back**, **3 embers in a ring (0/±120)**, each **60 fire in r3**; no fall damage on the landing | 28, 31, 32, **33, 35** |
+| Updraft Leap | a leap **baseline + 2 up** (RC9), **3-4 back** at most, **3 embers IN FRONT (Rekindle's fan, 0/±40)**, each **60 fire in r3**; no fall damage on the landing | 28, 31, 32, 33, 35, **37** |
 
 ---
 
@@ -92,7 +95,7 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| **edited before any reading (rulings 33-36)**: Ember Cache slotted. Recall throws exactly **5** embers, at **0/±30/±60** (a fan behind the take-off, the centre one straight along the dash's reverse). A zombie beside one takes the burst: **8, fire** | |
+| **edited before any reading (rulings 33-36)**, **and edited before any reading (ruling 37)**: Ember Cache slotted. Recall throws exactly **5** embers in an **even ring around the pre-dash position** (0/±72/±144), each coming to rest roughly **3-4 blocks** from it. A zombie beside one takes the burst: **8, fire** | |
 
 ### RC3 — Ember Cache inactive (§7.3; carries BA13)
 
@@ -104,7 +107,7 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| **edited before any reading (rulings 33-36)**: Updraft slotted. Recall, then a clean press **11-49 ticks** later: the leap, and **3** embers in an even ring (**0/±120**). **No mana spent** (HUD), and no cooldown line for the recast | |
+| **edited before any reading (rulings 33-36)**, **and edited before any reading (ruling 37)**: Updraft slotted. Recall, then a clean press **11-49 ticks** later: the leap, and **3** embers thrown **in front** of the player in Rekindle's fan (**0/±40**). **No mana spent** (HUD), and no cooldown line for the recast | |
 
 ### RC4b — a press before tick 10: no leap (the floor)
 
@@ -172,11 +175,11 @@ $zip.Dispose()
 |---|---|
 | **THE `run/` FOLDER HAS NO STALE COPY TO NAME**: measured before this file was written, `run/plugins/Rpg/content/abilities/` and `aspects/` hold only this branch's files (the 22:57 `8dc9674` boot refreshed them). So the row **stages** them: with the server stopped, write `rekindle.yml` (ability), `banked_embers.yml` (aspect) and `rekindle_cast.yml` (visual) into their `run/plugins/Rpg/content/` folders from `git show 35d2526:paper/src/main/resources/content/<dir>/<file>`, then boot **WITHOUT** `--refresh-content`. The boot log names each of the three **ONCE**, and all three files are still on disk afterwards. Banked Embers is in **no** picker | |
 
-### RC9 — the tuned figures (rulings 28, 33, 35)
+### RC9 — the tuned figures (rulings 28, 33, 35, 37)
 
 | prediction | READING |
 |---|---|
-| **edited before any reading (rulings 33-36)**. From §7.8's final table, at the tuned sha: **median leap apex = BASELINE + 2**, where **BASELINE = `____` blocks** *(filled from the tuning boot's first measurement, before any row is read)*; **pushback 3-4 blocks**, standing AND with S held; the leap's **3 embers 3-4 blocks out** at the fuse. And by eye in this boot: the leap visibly clears roughly that height | |
+| **edited before any reading (rulings 33-36)**, **and edited before any reading (ruling 37)**. From §7.8's final table, at the tuned sha: **median leap apex = BASELINE + 2**, where **BASELINE = 4.43 blocks** *(filled from the tuning boot's first measurements, before any row is read: the first four leaps at `lift 0.85`, `632af16`, each logged `apex=4.43`, so the median is 4.43 and n = 4)*, so the target is **6.43**; **pushback at most 3-4 blocks** (ruling 28's "no more than"), standing AND with S held; **Ember Cache's ring 3-4 blocks out** at the fuse; the leap's **front fan's** distance **reported, not ranged** (ruling 37 gives it Rekindle's throw as a starting point only). And by eye in this boot: the leap visibly clears roughly that height | |
 
 ### RC10 — a saved `rekindle` loadout (§7.2)
 
@@ -184,11 +187,11 @@ $zip.Dispose()
 |---|---|
 | a saved build naming `rekindle` shows that Active slot **EMPTY**, and nothing else changes | |
 
-### RC11 — Recall travels about 5 blocks (ruling 34)
+### RC11 — Recall: grounded ~5 blocks, mid-jump ~2x (rulings 34, 39)
 
 | prediction | READING |
 |---|---|
-| **edited before any reading (rulings 33-36)**: from flat ground, no key held, facing along an axis: Recall moves the player **about 5 blocks** back, read as the change in the F3 feet coordinate between the take-off and the point where the player comes to rest | |
+| **edited before any reading (rulings 33-36)**, **and edited before any reading (ruling 39)**: flat ground, facing along an axis, no movement key held, read as the change in the F3 feet coordinate between the take-off and the point where the player comes to rest. (a) **Cast while standing on the ground: about 5 blocks back** (the tuning boot read 5.25 at rest, three times). (b) **Cast mid-jump: about twice that** (the tuning boot read 10.68), a deliberate movement trick. The difference is ground friction on the dash's first tick, accepted by ruling 39 | |
 
 ### RC12 — Recall's cooldown is 18 s (ruling 36)
 

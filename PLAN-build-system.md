@@ -134,6 +134,37 @@ when asked, and they replace the template:**
 > cooldown" are now **5 blocks** (34) and **360 ticks** (36); ruling 28's "about 4–5 blocks up" is now
 > **the measured baseline + 2** (35). The older rulings are left verbatim, as rulings are.
 
+**Ben's ruling 37, 2026-09-27, given during the tuning boot (relayed by the seat). Recorded verbatim. It REPLACES
+the seat's reading of ruling 33, which swapped the counts only: Ben meant the SHAPES swap too.**
+
+37. - **Ember Cache (on Recall): 5 embers in an EVEN RING around the player**, angles [0, 72, 144, -144, -72],
+      landing about 3-4 blocks from the pre-dash position. Damage unchanged: 8 in r4.
+    - **The Updraft leap: 3 embers IN FRONT**, Rekindle's original fan, angles [0, 40, -40]. Damage unchanged:
+      60 in r3 (ruling 32).
+    - **Throw parameters:** the RING uses the old leap ring's throw (speed 0.25, launch_lift 0.25, to be tuned
+      to 3-4 out). The FRONT FAN uses Rekindle's (speed 0.6, launch_lift 0.25), as a starting point. Report
+      both landing distances.
+    - If Ben says the damage should swap as well, he will say so.
+
+> **Read ruling 33 through 37:** the counts AND the shapes swap, and each keeps its own damage and radius.
+> Ruling 33's angle lists (0/±30/±60 and 0/±120) were the seat's reading and are withdrawn; nothing shipped
+> with them past the tuning boot.
+
+**Ben's rulings 38 and 39, 2026-09-27, given during the tuning boot (relayed by the seat).**
+
+38. **LOCKED, while Recall's distance was being understood:** the leap at `lift 1.05` / `speed 0.04` (option A:
+    Ben's choice, ~0.25 back standing, at most 3-4 with S held), apex 6.46, and the ember distances. Nothing was
+    committed until Recall's distance was understood.
+39. **ACCEPT the ground/air difference.** *"It's the exact feel I was going for."*
+    - a **grounded** Recall travels **~5 blocks** (ruling 34, met at `speed 1.1`: 4.64 first landing / 5.25 at
+      rest, flat ground, no keys);
+    - a **mid-jump** Recall travels **~2x** (9.40 / 10.68), deliberately, as a movement trick;
+    - **movement keys** shift it by about **±1 block** (air control), accepted;
+    - **no code change to the dash.**
+
+    **Recall is LOCKED at `speed 1.1`**, with everything else as ruling 38 locked it. The cast table and the
+    mechanism (ground friction on the first tick halves a grounded dash) are in §7.8.
+
 **And one clarification, given while building slice 1 (2026-09-25):** Q pressed over the stone with a
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
 way.
@@ -2402,6 +2433,71 @@ ground, in survival. CC reads `run/logs/latest.log` and adjusts the four PLACEHO
 | back, S held | ≤ 3–4 | TO BE MEASURED | | |
 | ember distance at fuse (min–max of 5) | 3–4 | TO BE MEASURED | | |
 | final `lift`, `speed`, ember `speed`, `launch_lift` | — | 0.85, 0.2, 0.25, 0.25 | | |
+
+> **THE TABLE ABOVE IS THE PRE-BOOT FORM, KEPT. Rulings 33-37 changed what is tuned (the leap's height became
+> baseline + 2; Recall gained a travel figure; the ember shapes swapped), so the figures are recorded in the
+> table BELOW rather than written into rows that no longer ask the right question.**
+
+**The tuning boot, 2026-09-26/27.** Jar `632af16` for the tuning (`feat/recall` `0c9ee92` plus the spike logger
+`8d60691` and `632af16`), then `3f05313` for the Recall cast table (the same plus a cast-tick state log). None of
+the spike was ever pushed. Numbers were changed in the DEPLOYED content between restarts, never recompiled. Every figure below was read from `[TUNING]` log lines by the logger described above, including
+the added `DASH` line for Recall's travel. **Flat ground** means the take-off and landing `y` are equal. The
+**baseline** is the first four leaps at `lift 0.85`, before any number moved.
+
+| figure | ruled | final | at | n |
+|---|---|---|---|---|
+| **leap apex, BASELINE** | measure it (35) | **4.43** (every one of the four) | `lift 0.85`, `speed 0.2` | 4 |
+| **leap apex, final** | baseline + 2 = **6.43** (35) | **6.46** (median; 9 of 10 read 6.46, one 5.34 landed on a block 0.93 up) | `lift 1.05` | 10 |
+| leap back, no key, flat | at most 3-4 (28); **option A**, Ben 2026-09-27 | **0.25**, 0.25 | `speed 0.04` | 2 |
+| leap back, S held, flat | at most 3-4 (28) | **2.17**, **3.36** | `speed 0.04` | 2 |
+| leap back, S held, landing 1-2.8 lower | (the same rule, over a drop) | 2.49, 3.51, 3.90, **4.20** | `speed 0.04` | 4 |
+| **Recall travel, GROUNDED, no keys, flat** | about **5** (34); ruling 39 | **4.64 first landing / 5.25 at rest**, identical all three times | Recall `speed 1.1`, jar `3f05313` | 3 |
+| Recall travel, **mid-jump** | ~2x, accepted (39) | 9.40 / 10.68; and 8.87 first landing (a recast followed, so no rest) | `speed 1.1` | 2 |
+| Recall first landings in the tuning rounds (casts not controlled; most followed by a recast) | — | 2.73, 4.58, 4.64, 5.21, 5.54, 5.62, 5.62, 8.75, 8.86 | `speed 1.1` | 9 |
+| Recall travel before calibration | — | 9.69, 9.69, 9.69 (first landing) | Recall `speed 2.3` | 3 |
+| **Ember Cache's RING** (37), at the fuse | 3-4 out (37) | **3.16-4.23**, median **3.71** (first contact 2.89-3.98) | ember `speed 0.25`, `launch_lift 0.25` | 55 embers |
+| **the leap's FRONT FAN** (37), at the fuse | reported, not ranged (37) | **7.60-12.03**, median **9.75** (first contact 6.93-10.37) | ember `speed 0.6`, `launch_lift 0.25` | 30 embers |
+
+- **Option A, and why there was a choice.** A 6.4-block leap is airborne ~26 ticks, and holding S adds about
+  3 blocks of air control on top of the impulse. So no `speed` puts BOTH the standing and the S-held pushback
+  inside 3-4. **Ben chose A (2026-09-27)**: ~0.25 back standing, at most 3-4 with S held. The rejected option B
+  (`speed` ~0.3) read ~3 standing and ~6+ with S held.
+- **Over a drop, S-held reaches 4.20.** The drop adds airtime. Holding the cap over drops would mean
+  `speed 0.0`, which was offered and not taken.
+- **WHY RECALL'S TRAVEL SPREAD FROM 3 TO 10 BLOCKS: the cast table, jar `3f05313`, 2026-09-27.** Ben cast
+  Recall deliberately varied, with Updraft unslotted. The logger captured the cast-tick state before the impulse:
+
+  | cast | on ground | keys at the cast | pitch | first landing | rest |
+  |---|---|---|---|---|---|
+  | standing, looking level | yes | none | −2.6 | **4.64** | **5.25** |
+  | standing, looking level (repeat) | yes | none | −1.7 | **4.64** | **5.25** |
+  | standing, looking up | yes | none | −28.3 | **4.64** | **5.25** |
+  | standing, looking slightly up | yes | the sprint key, not sprinting | −10.7 | 4.64 | (walked back afterwards) |
+  | walking backward | yes | S | +3.5 | 5.62 | 7.16 |
+  | sprinting forward | yes | W + sprint | −3.3 | 3.42 | 3.77 |
+  | **mid-jump** (rising, +0.16) | **no** | S + jump + sprint | −3.1 | **9.40** | **10.68** |
+
+  - **Pitch does nothing.** The three no-key grounded casts are identical at pitches from −1.7 to −28.3.
+  - **THE VARIABLE THAT EXPLAINS THE SPREAD IS ON-GROUND AT THE CAST: GROUND FRICTION ON THE FIRST TICK HALVES A
+    GROUNDED DASH.** The impulse REPLACES velocity (`BukkitCombatant.applyImpulse`), and a grounded caster's first
+    tick after it is still a ground tick, so ground friction takes nearly half the horizontal speed before take-off.
+    A mid-air caster skips that tick: 9.40 against 4.64.
+  - **Movement keys are the second variable, about ±1 block (air control):** S +1.0, W −1.2 at first landing.
+  - **It is NOT carried momentum.** The pre-cast horizontal velocity read 0.00 on every cast, even sprinting. That
+    field cannot show walking momentum, because a player's movement is simulated client-side and the server's
+    velocity does not carry it. The impulse replaces velocity anyway. So "make the dash ignore pre-cast velocity"
+    would change nothing, and it was not proposed.
+  - **Ruling 39 accepted all of it** (*"the exact feel I was going for"*): grounded ~5, mid-jump ~2x as a movement
+    trick, keys ±1, and no code change. The tuning rounds' spread (2.73 to 8.86) is these two variables in
+    uncontrolled casts; the 2.3-speed round's 9.69s were grounded, and its 2.17 was probably W held.
+- **The simulation in section 7.5 was exact for the leap** (predicted 4.43 / 1.94; measured 4.43 / 1.95) **and
+  wrong for Recall** (predicted a 14.6 first landing at 2.3; measured 9.69). Recall's impulse is far outside what
+  the model was checked against, so it was calibrated empirically instead.
+
+**Final numbers (in content), LOCKED by rulings 38 and 39:** leap `lift 1.05`, `speed 0.04`; Recall `speed 1.1`
+(distance 5, lift 0.3);
+Ember Cache's ring ember `speed 0.25`, `launch_lift 0.25`; the leap's front fan ember `speed 0.6`,
+`launch_lift 0.25`.
 
 ### 7.9 The slice's gate — `GATE-recall.md`, SURVIVAL (fall damage is survival-only)
 

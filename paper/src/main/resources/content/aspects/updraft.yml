@@ -7,7 +7,7 @@
 # The id of this aspect is its filename: updraft.
 
 display_name: "<gold>Updraft</gold>"
-description: ["Recast Recall within 2.5 s to leap upward, throwing a ring of embers."]
+description: ["Recast Recall within 2.5 s to leap upward, throwing three embers ahead."]
 target: recall
 recast:
   ability: recall_updraft
