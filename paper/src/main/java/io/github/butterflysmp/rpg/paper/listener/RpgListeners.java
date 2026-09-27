@@ -1637,7 +1637,8 @@ public final class RpgListeners implements Listener {
 
         UUID playerId = event.getPlayer().getUniqueId();
         cooldowns.clear(playerId);
-        stoneCaster.forget(playerId);         // the Q-swing guard's per-player drop tick
+        stoneCaster.forget(playerId);         // the Q-swing guard's drop tick, and the recast state
+        adapters.safeLandings().forget(playerId);   // a leap's fall-damage mark (section 7.6)
         meleeHits.forgetAttacker(playerId);   // drop any swing that never landed
         damageWindow.forget(playerId);        // and their environmental window, or the map grows
         adapters.scorch().forget(playerId);   // and their burn
@@ -1685,6 +1686,11 @@ public final class RpgListeners implements Listener {
         event.getDrops().clear();
         event.setKeepLevel(true);
         event.setDroppedExp(0);
+
+        // Section 7.4 and 7.6: the respawned body did not cast the Recall a window was opened for, nor take the
+        // leap a safe landing was armed for.
+        stoneCaster.onDeath(event.getPlayer().getUniqueId());
+        adapters.safeLandings().forget(event.getPlayer().getUniqueId());
     }
 
     /**
@@ -2143,6 +2149,15 @@ public final class RpgListeners implements Listener {
     public void onEnvironmentalDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof LivingEntity target)) return;
         UUID id = target.getUniqueId();
+
+        // RULING 31 (PLAN-build-system.md section 7.6): the landing right after a leap deals no fall damage. FIRST,
+        // before the tracked gate and the scorch arm, and CANCELLED rather than tokened: the ruling is "no fall
+        // damage", and a token still plays the hurt flash and sound. A fall has no cadence to preserve (the reason
+        // this handler tokens everything else). The mark is spent: one landing per leap.
+        if (event.getCause() == EntityDamageEvent.DamageCause.FALL && adapters.safeLandings().consumeFall(id)) {
+            event.setCancelled(true);
+            return;
+        }
         if (!adapters.stats().tracks(id)) return;
         if (VanillaDamagePolicy.forCause(event.getCause()) == VanillaDamagePolicy.Action.PASS) return;
 

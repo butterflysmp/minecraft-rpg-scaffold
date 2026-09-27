@@ -9,6 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -23,6 +24,10 @@ import java.util.logging.Logger;
  *   description: ["A little more of you burns."]
  *   modifiers:
  *     max_health: 4                                 AccessoryStat's tokens, REUSED; positive-only (ruling 21)
+ *
+ *   -- OR, a BEHAVIOUR fragment (section 7.3), never both:
+ *   target: recall                                  one ability; the pools that list this fragment must offer it
+ *   add_on_hit: [ ... ]                             appended to the target's on_hit (AbilitySchema's parser)
  * </pre>
  *
  * <p>A bad file is SKIPPED BY NAME and the rest load, as every loader here does. What is refused, and
@@ -87,6 +92,18 @@ public final class FragmentLoader {
                 modifiers.put(stat, section.getDouble(key));
             }
         }
-        return new FragmentDefinition(id, s.getString("display_name"), icon, s.getStringList("description"), modifiers);
+        // Section 7.3: a BEHAVIOUR fragment appends to one ability, through the aspects' parser. It never moves a
+        // number and carries no on_cast, so both keys are refused by name rather than silently ignored.
+        for (String refused : List.of("modify", "add_on_cast")) {
+            if (s.contains(refused)) {
+                throw new IllegalArgumentException("`" + refused + ":` is refused on a fragment -- a behaviour fragment"
+                        + " may carry only `target:` and `add_on_hit:` (PLAN-build-system.md section 7.3)");
+            }
+        }
+        String target = s.getString("target");
+        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> addOnHit =
+                AbilitySchema.parseEffects(s.getMapList("add_on_hit"));
+        return new FragmentDefinition(id, s.getString("display_name"), icon, s.getStringList("description"), modifiers,
+                target, addOnHit);
     }
 }

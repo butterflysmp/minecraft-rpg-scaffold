@@ -57,6 +57,45 @@ class FragmentDefinitionTest {
                 () -> new FragmentDefinition(" ", "x", "red_dye", List.of(), Map.of(AccessoryStat.DEFENSE, 1.0)));
     }
 
+    // --- Behaviour fragments (section 7.3): a target and effects to append, and no stats. ---
+
+    private static final List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> EMBERS = List.of(
+            new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Visual("ember_burst"));
+
+    @Test
+    void aBehaviourFragmentCarriesATargetAndEffects() {
+        FragmentDefinition f = new FragmentDefinition("fragment_ember_cache", "Ember Cache", "blaze_powder",
+                List.of(), Map.of(), "recall", EMBERS);
+        assertTrue(f.behavioural());
+        assertEquals("recall", f.target());
+        assertEquals(EMBERS, f.addOnHit());
+        assertTrue(f.modifiers().isEmpty());
+    }
+
+    @Test
+    void aStatFragmentIsNotBehavioural() {
+        FragmentDefinition f = fragment(Map.of(AccessoryStat.DEFENSE, 1.0));
+        assertTrue(!f.behavioural());
+        assertEquals(null, f.target());
+        assertTrue(f.addOnHit().isEmpty());
+    }
+
+    /** EITHER stats OR behaviour: "inactive" must mean one thing for one fragment. */
+    @Test
+    void theMixIsRefused() {
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> new FragmentDefinition(
+                "mixed", "x", "red_dye", List.of(), Map.of(AccessoryStat.DEFENSE, 1.0), "recall", EMBERS));
+        assertTrue(e.getMessage().contains("stats OR behaviour"), e.getMessage());
+    }
+
+    @Test
+    void aTargetNeedsEffectsAndEffectsNeedATarget() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new FragmentDefinition("t", "x", "red_dye", List.of(), Map.of(), "recall", List.of()));
+        assertThrows(IllegalArgumentException.class,
+                () -> new FragmentDefinition("t", "x", "red_dye", List.of(), Map.of(), " ", EMBERS));
+    }
+
     @Test
     void theRegistryRefusesADuplicateId() {
         FragmentRegistry registry = new FragmentRegistry();

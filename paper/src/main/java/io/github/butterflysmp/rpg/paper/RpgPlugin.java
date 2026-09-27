@@ -233,7 +233,9 @@ public final class RpgPlugin extends JavaPlugin {
         AspectRegistry parsedAspects = aspectLoader.loadAll(new File(contentDir, "aspects"));
         this.pools = new PoolLoader(getLogger()).loadAll(new File(contentDir, "builds"),
                 id -> abilities.find(id).isPresent(), id -> fragments.find(id).isPresent(),
-                id -> parsedAspects.find(id).map(io.github.butterflysmp.rpg.core.build.AspectDefinition::target));
+                id -> parsedAspects.find(id).map(io.github.butterflysmp.rpg.core.build.AspectDefinition::target),
+                // Section 7.3: a BEHAVIOUR fragment's target, so a pool offering one on an ability it lacks is refused.
+                id -> fragments.find(id).map(io.github.butterflysmp.rpg.core.build.FragmentDefinition::target));
         // status.duration_ticks is allowed only on a status kind TRACED continuous in its duration (slice 5):
         // rooted/freeze (a per-tick countdown) and soaked (the same). Scorch is excluded by the plan; fire and
         // potion hand the duration to vanilla, which was not re-read from the pinned jar, so they stay refused.
@@ -801,6 +803,7 @@ OLD
         problems.addAll(validator.validatePools(pools.all()));
         // An aspect's appended effects dangle a visual or a status exactly as an ability's do.
         problems.addAll(validator.validateAspects(aspects.all()));
+        problems.addAll(validator.validateFragments(fragments.all()));
         // A weapon trigger's on_hit can dangle a visual_id or status_id the same way an
         // ability's can, and is checked the same walk. Naming the file at boot beats a
         // silent no-visual the first time someone swings it.

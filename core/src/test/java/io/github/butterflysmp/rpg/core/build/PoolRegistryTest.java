@@ -12,8 +12,8 @@ class PoolRegistryTest {
 
     private static PoolDefinition pool(String classId, String elementId) {
         return new PoolDefinition(new CellKey(classId, elementId), classId,
-                List.of("sunfall"), List.of("rekindle", "solar_lance"),
-                new Loadout("sunfall", "rekindle", "solar_lance"));
+                List.of("sunfall"), List.of("recall", "solar_lance"),
+                new Loadout("sunfall", "recall", "solar_lance"));
     }
 
     @Test
@@ -54,47 +54,47 @@ class PoolRegistryTest {
     void theDefaultMustBeDrawnFromTheLists() {
         var cell = new CellKey("ranger", "fire");
         assertThrows(IllegalArgumentException.class, () -> new PoolDefinition(cell, "x",
-                List.of("sunfall"), List.of("rekindle", "solar_lance"),
-                new Loadout("other_ultimate", "rekindle", "solar_lance")));
+                List.of("sunfall"), List.of("recall", "solar_lance"),
+                new Loadout("other_ultimate", "recall", "solar_lance")));
         assertThrows(IllegalArgumentException.class, () -> new PoolDefinition(cell, "x",
-                List.of("sunfall"), List.of("rekindle", "solar_lance"),
-                new Loadout("sunfall", "rekindle", "not_in_the_pool")));
+                List.of("sunfall"), List.of("recall", "solar_lance"),
+                new Loadout("sunfall", "recall", "not_in_the_pool")));
     }
 
     @Test
     void anAbilityCannotBeBothAnUltimateAndAnActive() {
         assertThrows(IllegalArgumentException.class, () -> new PoolDefinition(new CellKey("ranger", "fire"), "x",
-                List.of("rekindle"), List.of("rekindle", "solar_lance"),
-                new Loadout("rekindle", "rekindle", "solar_lance")));
+                List.of("recall"), List.of("recall", "solar_lance"),
+                new Loadout("recall", "recall", "solar_lance")));
     }
 
     @Test
     void aPoolMustBeAbleToFillALoadout() {
         var cell = new CellKey("ranger", "fire");
         assertThrows(IllegalArgumentException.class, () -> new PoolDefinition(cell, "x",
-                List.of(), List.of("rekindle", "solar_lance"), new Loadout("sunfall", "rekindle", "solar_lance")));
+                List.of(), List.of("recall", "solar_lance"), new Loadout("sunfall", "recall", "solar_lance")));
         assertThrows(IllegalArgumentException.class, () -> new PoolDefinition(cell, "x",
-                List.of("sunfall"), List.of("rekindle"), new Loadout("sunfall", "rekindle", "solar_lance")));
+                List.of("sunfall"), List.of("recall"), new Loadout("sunfall", "recall", "solar_lance")));
     }
 
     @Test
     void aListedTwiceIdIsRefused() {
         assertThrows(IllegalArgumentException.class, () -> new PoolDefinition(new CellKey("ranger", "fire"), "x",
-                List.of("sunfall"), List.of("rekindle", "rekindle", "solar_lance"),
-                new Loadout("sunfall", "rekindle", "solar_lance")));
+                List.of("sunfall"), List.of("recall", "recall", "solar_lance"),
+                new Loadout("sunfall", "recall", "solar_lance")));
     }
 
     @Test
     void theTwoDefaultActivesMustDiffer() {
-        assertThrows(IllegalArgumentException.class, () -> new Loadout("sunfall", "rekindle", "rekindle"));
+        assertThrows(IllegalArgumentException.class, () -> new Loadout("sunfall", "recall", "recall"));
     }
 
     @Test
     void aLoadoutMapsEachSlotToItsAbility() {
-        var loadout = new Loadout("sunfall", "rekindle", "solar_lance");
-        assertEquals("rekindle", loadout.idFor(LoadoutSlot.ACTIVE_1));
+        var loadout = new Loadout("sunfall", "recall", "solar_lance");
+        assertEquals("recall", loadout.idFor(LoadoutSlot.ACTIVE_1));
         assertEquals("solar_lance", loadout.idFor(LoadoutSlot.ACTIVE_2));
         assertEquals("sunfall", loadout.idFor(LoadoutSlot.ULTIMATE));
-        assertEquals(List.of("sunfall", "rekindle", "solar_lance"), loadout.ids());
+        assertEquals(List.of("sunfall", "recall", "solar_lance"), loadout.ids());
     }
 }

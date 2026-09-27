@@ -1,0 +1,10 @@
+# CLASS-WIDE: what EVERY Ranger cell offers (PLAN-build-system.md section 7.1, ruling 24). At load these ids are
+# merged into each ranger_<element>.yml -- after the cell's own ids -- before any pool rule runs.
+#
+# A class file has NO `element:`, and its name must be its class. It may carry only `class`, `actives` and
+# `ultimates`: fragments, aspects and a default belong to a cell. An id listed here AND in a cell, in the same
+# role, is REFUSED (one fact, one home).
+
+class: ranger
+actives:
+  - recall

@@ -94,13 +94,14 @@ class AspectApplicationTest {
         assertEquals(new Damage(4.0, "fire"), ((EffectSpec.ThrowEmbers) onHit.get(2)).burst().effects().get(0));
     }
 
+    /** banked_embers is HAND-BUILT here: its content file was deleted by ruling 26. It pins section 2.4.1's example. */
     @Test
     void cooldownAndCostAreModified() {
-        AbilityDefinition rekindle = new AbilityDefinition("rekindle", "Rekindle", "fire", 200,
+        AbilityDefinition recall = new AbilityDefinition("recall", "Recall", "fire", 200,
                 new ResourceCost("mana", 35), new CastSpec.Self(), List.of(new Damage(8, "fire")));
-        AspectDefinition banked = aspect("banked_embers", "rekindle", List.of(),
+        AspectDefinition banked = aspect("banked_embers", "recall", List.of(),
                 List.of(new NumberChange(AspectField.COST, 10, 0), new NumberChange(AspectField.COOLDOWN_TICKS, 0, 20)));
-        AbilityDefinition derived = AspectApplication.deriveUncached(rekindle, List.of(banked));
+        AbilityDefinition derived = AspectApplication.deriveUncached(recall, List.of(banked));
         assertEquals(45.0, derived.cost().amount(), 1e-12);
         assertEquals(240, derived.cooldownTicks());
     }
@@ -109,11 +110,11 @@ class AspectApplicationTest {
     @Test
     void anInactiveAspectContributesNothing() {
         List<AspectDefinition> slotted = List.of(SEARING);
-        assertEquals(List.of(), AspectApplication.activeFor("solar_lance", slotted, Set.of("rekindle", "ember_step")),
+        assertEquals(List.of(), AspectApplication.activeFor("solar_lance", slotted, Set.of("recall", "ember_step")),
                 "solar_lance is not equipped: the aspect is inactive");
         assertEquals(List.of(SEARING), AspectApplication.activeFor("solar_lance", slotted, Set.of("solar_lance")));
         AbilityDefinition derived = AspectApplication.deriveUncached(LANCE,
-                AspectApplication.activeFor("solar_lance", slotted, Set.of("rekindle")));
+                AspectApplication.activeFor("solar_lance", slotted, Set.of("recall")));
         assertSame(LANCE, derived, "inactive: the base, untouched");
     }
 
@@ -132,6 +133,67 @@ class AspectApplicationTest {
         assertEquals(AspectApplication.deriveUncached(LANCE, List.of(SEARING)), first);
     }
 
+    // ------------------------------------------------------------------ behaviour fragments (section 7.3)
+
+    private static FragmentDefinition behaviour(String id, String target, EffectSpec... addOnHit) {
+        return new FragmentDefinition(id, id, "blaze_powder", List.of(), java.util.Map.of(), target, List.of(addOnHit));
+    }
+
+    /** Aspects' appends first, in aspect-slot order; then the fragments', in fragment-slot order. */
+    @Test
+    void fragmentAppendsFollowTheAspectsInSlotOrder() {
+        AspectDefinition a = aspect("a", "solar_lance", List.of(new EffectSpec.Visual("aspect")), List.of());
+        FragmentDefinition f1 = behaviour("f1", "solar_lance", new EffectSpec.Visual("fragment1"));
+        FragmentDefinition f2 = behaviour("f2", "solar_lance", new EffectSpec.Visual("fragment2"));
+        List<EffectSpec> onHit = AspectApplication.deriveUncached(LANCE, List.of(a), List.of(f1, f2)).onHit();
+        assertEquals(List.of(new EffectSpec.Visual("aspect"), new EffectSpec.Visual("fragment1"),
+                new EffectSpec.Visual("fragment2")), onHit.subList(2, 5));
+    }
+
+    /** No aspect's modify reaches a fragment's appended effect: its 4 stays 4 under searing_lance's -25%. */
+    @Test
+    void modifyNeverTouchesAFragmentsAppend() {
+        FragmentDefinition f = behaviour("f", "solar_lance", new Damage(4, "fire"));
+        AbilityDefinition derived = AspectApplication.deriveUncached(LANCE, List.of(SEARING), List.of(f));
+        assertEquals(new Damage(9.0, "fire"), derived.onHit().get(1));
+        assertEquals(new Damage(4, "fire"), derived.onHit().get(3));
+    }
+
+    /** A fragment alone derives too (no aspect slotted), and keeps the id. */
+    @Test
+    void aFragmentAloneAppends() {
+        FragmentDefinition f = behaviour("f", "solar_lance", new EffectSpec.Visual("v"));
+        AbilityDefinition derived = AspectApplication.deriveUncached(LANCE, List.of(), List.of(f));
+        assertEquals("solar_lance", derived.id());
+        assertEquals(new EffectSpec.Visual("v"), derived.onHit().get(2));
+    }
+
+    /**
+     * THE INACTIVE-FRAGMENT ROW: Ember Cache while Recall is not equipped is inactive -- the aspects' own rule.
+     * A stat fragment has no target and is never active on anything.
+     */
+    @Test
+    void aFragmentWhoseTargetIsNotEquippedIsInactive() {
+        FragmentDefinition cache = behaviour("fragment_ember_cache", "recall", new EffectSpec.Visual("v"));
+        FragmentDefinition vigor = new FragmentDefinition("vigor", "Vigor", "red_dye", List.of(),
+                java.util.Map.of(io.github.butterflysmp.rpg.core.accessory.AccessoryStat.MAX_HEALTH, 4.0));
+        java.util.List<FragmentDefinition> slotted = java.util.Arrays.asList(vigor, null, cache, null);
+        assertEquals(List.of(), AspectApplication.activeFragmentsFor("recall", slotted, Set.of("solar_lance")),
+                "recall is not equipped: Ember Cache is inactive");
+        assertEquals(List.of(cache), AspectApplication.activeFragmentsFor("recall", slotted, Set.of("recall", "solar_lance")));
+        assertEquals(List.of(), AspectApplication.activeFragmentsFor("solar_lance", slotted, Set.of("recall", "solar_lance")));
+    }
+
+    @Test
+    void theFragmentsAreInTheMemoKey() {
+        AspectApplication application = new AspectApplication();
+        FragmentDefinition f = behaviour("f", "solar_lance", new EffectSpec.Visual("v"));
+        AbilityDefinition with = application.derive(LANCE, List.of(), List.of(f));
+        assertEquals(3, with.onHit().size());
+        assertSame(LANCE, application.derive(LANCE, List.of(), List.of()), "no fragment: the base, not the memo's");
+        assertSame(with, application.derive(LANCE, List.of(), List.of(f)));
+    }
+
     // ------------------------------------------------------------------ the loader's checks
 
     /** A modify matching ZERO effects in its target is refused: knockback.strength on a ray that pushes nothing. */
@@ -145,14 +207,14 @@ class AspectApplicationTest {
         assertEquals(List.of(), AspectApplication.refusals(LANCE, List.of(SEARING), id -> true));
     }
 
-    /** banked_embers' control (section 2.4.1): +15% on 200 is 230, refused naming 228 and 232. */
+    /** banked_embers' control (section 2.4.1; the aspect's content file was deleted by ruling 26, the arithmetic stands): +15% on 200 is 230, refused naming 228 and 232. */
     @Test
     void anIllegalResolutionIsRefusedNamingTheNeighbours() {
-        AbilityDefinition rekindle = new AbilityDefinition("rekindle", "Rekindle", "fire", 200,
+        AbilityDefinition recall = new AbilityDefinition("recall", "Recall", "fire", 200,
                 new ResourceCost("mana", 35), new CastSpec.Self(), List.of(new Damage(8, "fire")));
-        AspectDefinition fifteen = aspect("fifteen", "rekindle", List.of(),
+        AspectDefinition fifteen = aspect("fifteen", "recall", List.of(),
                 List.of(new NumberChange(AspectField.COOLDOWN_TICKS, 0, 15)));
-        List<String> refusals = AspectApplication.refusals(rekindle, List.of(fifteen), id -> true);
+        List<String> refusals = AspectApplication.refusals(recall, List.of(fifteen), id -> true);
         assertTrue(refusals.size() == 1 && refusals.get(0).contains("228") && refusals.get(0).contains("232"),
                 refusals.toString());
     }

@@ -21,7 +21,7 @@ class AspectLoreTest {
     private static final AbilityDefinition LANCE = new AbilityDefinition("solar_lance", "Solar Lance", "fire", 100,
             new ResourceCost("mana", 25), new CastSpec.Ray(30, null),
             List.of(new EffectSpec.Visual("solar_lance"), new EffectSpec.Damage(12, "fire")));
-    private static final AbilityDefinition REKINDLE = new AbilityDefinition("rekindle", "Rekindle", "fire", 200,
+    private static final AbilityDefinition RECALL = new AbilityDefinition("recall", "Recall", "fire", 200,
             new ResourceCost("mana", 35), new CastSpec.Self(), List.of(new EffectSpec.Damage(8, "fire")));
 
     /** THE ROW THE "render the lore from the base definition" MUTATION REDDENS: 9, with the base 12. */
@@ -35,15 +35,15 @@ class AspectLoreTest {
                 AspectLore.lines(LANCE, derived));
     }
 
-    /** banked_embers: cost 45 (35), cooldown 12.0 s (10.0 s). */
+    /** banked_embers, HAND-BUILT (its content file was deleted by ruling 26): cost 45 (35), cooldown 12.0 s (10.0 s). */
     @Test
     void bankedEmbersReadsCostAndCooldownWithTheirBases() {
-        AspectDefinition banked = new AspectDefinition("banked_embers", "Banked Embers", List.of(), "rekindle",
+        AspectDefinition banked = new AspectDefinition("banked_embers", "Banked Embers", List.of(), "recall",
                 List.of(), List.of(), List.of(new NumberChange(AspectField.COST, 10, 0),
                 new NumberChange(AspectField.COOLDOWN_TICKS, 0, 20)));
-        AbilityDefinition derived = AspectApplication.deriveUncached(REKINDLE, List.of(banked));
+        AbilityDefinition derived = AspectApplication.deriveUncached(RECALL, List.of(banked));
         assertEquals(List.of(new Line("Damage", "8", null), new Line("Cost", "45", "35"),
-                new Line("Cooldown", "12.0 s", "10.0 s")), AspectLore.lines(REKINDLE, derived));
+                new Line("Cooldown", "12.0 s", "10.0 s")), AspectLore.lines(RECALL, derived));
     }
 
     @Test

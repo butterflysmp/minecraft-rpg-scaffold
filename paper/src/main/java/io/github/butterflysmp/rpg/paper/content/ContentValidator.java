@@ -111,6 +111,20 @@ public final class ContentValidator {
         return problems;
     }
 
+    /**
+     * Every BEHAVIOUR fragment's appended effects (section 7.3): the aspects' check, for the second door into a
+     * cast. A stat fragment appends nothing and passes by construction.
+     */
+    public List<String> validateFragments(Collection<io.github.butterflysmp.rpg.core.build.FragmentDefinition> fragments) {
+        List<String> problems = new ArrayList<>();
+        for (var fragment : fragments) {
+            for (EffectSpec effect : fragment.addOnHit()) {
+                checkEffect(effect, "fragment '" + fragment.id() + "'", problems);
+            }
+        }
+        return problems;
+    }
+
     public List<String> validatePools(Collection<PoolDefinition> pools) {
         List<String> problems = new ArrayList<>();
         for (PoolDefinition pool : pools) {

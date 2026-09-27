@@ -160,7 +160,23 @@ class CastExecutorTest {
         assertEquals(0.0, caster.lastImpulse.z(), 1e-9);
     }
 
-    // --- Rekindle: the reverse-facing dash that throws a forward fan of embers. ---
+    /** Ruling 31: a safe_landing dash arms the caster's mark once; an ordinary dash never does. */
+    @Test
+    void onlyASafeLandingDashArmsTheMark() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(caster);
+        cast(world, caster, ability(new CastSpec.Dash(2, 0.2, 0.85, CastSpec.DashDirection.REVERSE_FACING, true)));
+        assertEquals(1, caster.safeLandingArms);
+        assertEquals(0.85, caster.lastImpulse.y(), 1e-9, "the leap's vertical part is lift");
+
+        var plain = new FakeWorld.Dummy(Vec3.ZERO);
+        world.entities.add(plain);
+        cast(world, plain, ability(new CastSpec.Dash(12, 1.6, 0.4, CastSpec.DashDirection.MOVEMENT_ELSE_FORWARD)));
+        assertEquals(0, plain.safeLandingArms);
+    }
+
+    // --- The ember fan (Recall with Ember Cache): a reverse-facing dash that throws a forward fan. ---
 
     private static EffectSpec.ThrowEmbers embers(List<Double> angles) {
         return new EffectSpec.ThrowEmbers(angles, 1.2, 0.25, "blaze_powder", 20,

@@ -1,0 +1,40 @@
+# The Updraft leap (PLAN-build-system.md sections 7.4-7.6, rulings 28-32). In NO pool: its only door is the
+# updraft aspect's recast of Recall, which casts it with no cost and no cooldown (ruling 30) -- so there is no
+# `cost:` key (castUnchecked never reads one) and cooldown_ticks is never read. The loader refuses a recast
+# whose follow-up any pool offers.
+#
+# THE LEAP is a reverse-facing dash with a small speed and a large lift: `speed` is purely the horizontal part and
+# `lift` purely the vertical part of the one impulse (section 7.5). No new dash direction.
+#
+# TUNED at the tuning boot (section 7.8), except the front fan. The dash: lift 1.05, speed 0.04, LOCKED (rulings 35, 38).
+# The embers are Rekindle's front fan (ruling 37) on Rekindle's throw, and are UNTUNED: they land ~9-12 out,
+# not ruling 28's 3-4. That is OPEN, not ruled (PLAN-build-system.md section 6). The pre-boot estimates were
+# lift 0.85 ~ 4.4 up and speed 0.2 ~ 1.9 back; measured 4.43 / 1.95.
+
+id: recall_updraft
+display_name: "<gold>Updraft Leap</gold>"
+element: fire                # drives nothing (section 1.5); each ember's damage carries its own element
+cooldown_ticks: 0            # never read: a recast skips resolve (ruling 30)
+
+cast:
+  type: dash
+  direction: reverse_facing  # "a little back" -- facing reversed, flattened
+  distance: 2                # the hit sweep only; nothing Targeted rides the leap
+  speed: 0.04                 # TUNED at boot (section 7.8; option A): ~0.25 back standing, at most 3-4 with S held
+  lift: 1.05                 # TUNED at boot (section 7.8): apex 6.46 = baseline 4.43 + 2 (ruling 35)
+  safe_landing: true         # ruling 31: no fall damage from the landing right after the leap
+
+# Thrown at TAKE-OFF (a dash's untargeted effects fire once, at the pre-dash feet), in an even ring (ruling 31).
+on_hit:
+  - type: throw_embers
+    angles_degrees: [0, 40, -40]   # ruling 37 (replaces 33 and 31): Rekindle's front fan, three IN FRONT
+    speed: 0.6              # UNTUNED -- lands ~9-12 out; open, see PLAN-build-system.md section 6
+    launch_lift: 0.25        # UNTUNED -- the front fan, open (section 6)
+    item: blaze_powder
+    fuse_ticks: 30
+    trail: ember_trail
+    visual: ember_burst
+    burst:
+      radius: 3.0            # ruling 32
+      effects:
+        - { type: damage, amount: 60, element: fire }   # ruling 32

@@ -17,7 +17,7 @@ class PlayerBuildTest {
 
     private static CellLoadout ranger() {
         return new CellLoadout("ranger", "fire", "ultimate_placeholder_ranger",
-                List.of("rekindle", "solar_lance"), null, null);
+                List.of("recall", "solar_lance"), null, null);
     }
 
     /** THE PER-CELL KEY, which the "one loadout per player" mutation drops: saving Mage leaves Ranger. */
@@ -28,7 +28,7 @@ class PlayerBuildTest {
 
         PlayerBuild build = PlayerBuild.empty(PLAYER).with(ranger()).with(mage);
 
-        assertEquals("rekindle", build.loadout("ranger", "fire").orElseThrow().actives().get(0));
+        assertEquals("recall", build.loadout("ranger", "fire").orElseThrow().actives().get(0));
         assertEquals("ember_step", build.loadout("mage", "fire").orElseThrow().actives().get(0));
         assertTrue(build.loadout("mage", "void").isEmpty(), "a cell never saved has no loadout");
     }
@@ -59,7 +59,7 @@ class PlayerBuildTest {
     @Test
     void wrongListLengthsAreRefused() {
         assertThrows(IllegalArgumentException.class,
-                () -> new CellLoadout("ranger", "fire", null, List.of("rekindle"), null, null));
+                () -> new CellLoadout("ranger", "fire", null, List.of("recall"), null, null));
         assertThrows(IllegalArgumentException.class,
                 () -> new CellLoadout("ranger", "fire", null, null, List.of("a", "b", "c"), null));
         assertThrows(IllegalArgumentException.class,
@@ -85,13 +85,13 @@ class PlayerBuildTest {
 
     @Test
     void theSameAbilityInBothActivesKeepsTheFirst() {
-        CellLoadout loadout = new CellLoadout("ranger", "fire", null, List.of("rekindle", "rekindle"), null, null);
-        assertEquals(Arrays.asList("rekindle", null), loadout.actives());
+        CellLoadout loadout = new CellLoadout("ranger", "fire", null, List.of("recall", "recall"), null, null);
+        assertEquals(Arrays.asList("recall", null), loadout.actives());
     }
 
     @Test
     void aBlankIdReadsAsEmpty() {
-        CellLoadout loadout = new CellLoadout("ranger", "fire", null, List.of(" ", "rekindle"), null, null);
-        assertEquals(Arrays.asList(null, "rekindle"), loadout.actives());
+        CellLoadout loadout = new CellLoadout("ranger", "fire", null, List.of(" ", "recall"), null, null);
+        assertEquals(Arrays.asList(null, "recall"), loadout.actives());
     }
 }

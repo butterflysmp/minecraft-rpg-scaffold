@@ -97,9 +97,35 @@ public final class Stones {
                 .map(id -> id == null ? null : aspects.find(id).orElse(null))
                 .filter(java.util.Objects::nonNull)
                 .toList();
-        if (slotted.isEmpty()) return java.util.function.UnaryOperator.identity();
+        // Section 7.3: the current cell's BEHAVIOUR fragments append too, by the aspects' inactive rule.
+        List<FragmentDefinition> behaviours = equippedFragments(playerId, profile).stream()
+                .map(id -> id == null ? null : fragments.find(id).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .filter(FragmentDefinition::behavioural)
+                .toList();
+        if (slotted.isEmpty() && behaviours.isEmpty()) return java.util.function.UnaryOperator.identity();
         return def -> application.derive(def,
-                io.github.butterflysmp.rpg.core.build.AspectApplication.activeFor(def.id(), slotted, equipped));
+                io.github.butterflysmp.rpg.core.build.AspectApplication.activeFor(def.id(), slotted, equipped),
+                io.github.butterflysmp.rpg.core.build.AspectApplication.activeFragmentsFor(def.id(), behaviours, equipped));
+    }
+
+    /**
+     * The RECAST an ACTIVE aspect grants on {@code abilityId} (section 7.4), or empty. The same active-aspect set
+     * {@link #deriveFor} uses, so an inactive aspect grants nothing here either. The loader refuses two recast
+     * aspects on one target in one pool, so there is at most one.
+     */
+    public Optional<io.github.butterflysmp.rpg.core.build.AspectDefinition.Recast> recastFor(
+            UUID playerId, Optional<PlayerProfile> profile, String abilityId) {
+        java.util.Set<String> equipped = equippedFor(playerId, profile)
+                .map(e -> java.util.Set.copyOf(e.ids())).orElse(java.util.Set.of());
+        List<io.github.butterflysmp.rpg.core.build.AspectDefinition> slotted = equippedAspects(playerId, profile).stream()
+                .map(id -> id == null ? null : aspects.find(id).orElse(null))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        return io.github.butterflysmp.rpg.core.build.AspectApplication.activeFor(abilityId, slotted, equipped).stream()
+                .map(io.github.butterflysmp.rpg.core.build.AspectDefinition::recast)
+                .filter(java.util.Objects::nonNull)
+                .findFirst();
     }
 
     /**

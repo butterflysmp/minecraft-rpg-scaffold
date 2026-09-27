@@ -74,9 +74,10 @@ public final class VisualLoader {
      * RETIRED_FILES handling: named once at boot, never deleted, and not loaded.
      *
      * <p>{@code arc_surge.yml}: ruling 22 (2026-09-26), PLAN-build-system.md -- its only user was
-     * arc_surge, deleted by ruling 20.
+     * arc_surge, deleted by ruling 20. {@code rekindle_cast.yml}: ruling 24 (2026-09-27) -- RENAMED
+     * {@code recall_cast.yml} with its ability.
      */
-    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml");
+    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml", "rekindle_cast.yml");
 
     /** The id is the filename: solar_detonation.yml -> solar_detonation. */
     private static String idOf(File f) {

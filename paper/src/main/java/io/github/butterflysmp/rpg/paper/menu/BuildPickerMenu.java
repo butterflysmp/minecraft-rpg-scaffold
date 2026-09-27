@@ -503,7 +503,8 @@ public final class BuildPickerMenu extends Menu {
                     .map(a -> BuildMenu.aspectLore(a, adapters.stones().abilities())).ifPresent(lore::addAll);
         }
         if (kind == Kind.FRAGMENT) {
-            adapters.stones().fragments().find(id).map(BuildMenu::fragmentLore).ifPresent(lore::addAll);
+            adapters.stones().fragments().find(id)
+                    .map(f -> BuildMenu.fragmentLore(f, adapters.stones().abilities())).ifPresent(lore::addAll);
         }
         if (kind.loadoutSlot().isPresent()) {
             adapters.stones().abilities().find(id).map(BuildMenu::abilityLore).ifPresent(lore::addAll);

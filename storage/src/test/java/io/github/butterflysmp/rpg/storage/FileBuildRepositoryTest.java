@@ -78,7 +78,7 @@ class FileBuildRepositoryTest {
     void aWrongListLengthRefusesTheWholeFile() throws IOException {
         write("""
                 {"schemaVersion": 1, "playerId": "%s", "cells": [
-                  {"classId": "ranger", "elementId": "fire", "actives": ["rekindle"]}
+                  {"classId": "ranger", "elementId": "fire", "actives": ["recall"]}
                 ]}""".formatted(PLAYER));
         assertThrows(CompletionException.class, () -> repo().load(PLAYER).join());
     }

@@ -80,9 +80,10 @@ public final class AbilityLoader {
      * handling (named once, never deleted), plus a skip: this loader reads every file in the directory, so
      * without it a stale copy would still register the deleted ability.
      *
-     * <p>{@code arc_surge.yml}: ruling 20 (2026-09-26), PLAN-build-system.md.
+     * <p>{@code arc_surge.yml}: ruling 20 (2026-09-26), PLAN-build-system.md. {@code rekindle.yml}: ruling 24
+     * (2026-09-27) -- RENAMED {@code recall.yml}; a stale copy would register an ability no pool offers.
      */
-    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml");
+    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml", "rekindle.yml");
 
     /**
      * {@code archetype:} -- RETIRED in the build system's slice 2 (PLAN-build-system.md section 2.2). It was

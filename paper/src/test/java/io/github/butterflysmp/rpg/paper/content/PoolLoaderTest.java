@@ -52,6 +52,19 @@ class PoolLoaderTest {
         }
     };
 
+    /** A BEHAVIOUR fragment id -> its target, read from the bundled fragment file's own `target:` line (section 7.3). */
+    private static final java.util.function.Function<String, java.util.Optional<String>> BUNDLED_FRAGMENT_TARGET = id -> {
+        try (var in = PoolLoaderTest.class.getResourceAsStream("/content/fragments/" + id + ".yml")) {
+            if (in == null) return java.util.Optional.empty();
+            for (String line : new String(in.readAllBytes(), StandardCharsets.UTF_8).split("\\R")) {
+                if (line.startsWith("target: ")) return java.util.Optional.of(line.substring("target: ".length()).strip());
+            }
+            return java.util.Optional.empty();
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    };
+
     @BeforeEach
     void setUp() {
         warnings = new ArrayList<>();
@@ -79,7 +92,7 @@ class PoolLoaderTest {
 
     private PoolRegistry load(Predicate<String> abilityExists) {
         return new PoolLoader(log).loadAll(new File(dir.toString()), abilityExists, BUNDLED_FRAGMENT,
-                BUNDLED_ASPECT_TARGET);
+                BUNDLED_ASPECT_TARGET, BUNDLED_FRAGMENT_TARGET);
     }
 
     private String warningText() {
@@ -95,15 +108,18 @@ class PoolLoaderTest {
 
     @Test
     void theBundledFireRangerPoolLoads() throws IOException {
+        copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
 
         PoolRegistry registry = load(BUNDLED_ABILITY);
 
         assertTrue(warnings.isEmpty(), warningText());
         PoolDefinition pool = registry.find("ranger", "fire").orElseThrow();
-        assertEquals("rekindle", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_1));
+        assertEquals("recall", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_1));
         assertEquals("solar_lance", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_2));
         assertEquals("ultimate_placeholder_ranger", pool.defaultLoadout().idFor(LoadoutSlot.ULTIMATE));
+        assertEquals(List.of("solar_lance", "recall"), pool.actives(), "the cell's own, then the class-wide recall");
+        assertTrue(pool.fragments().contains("fragment_ember_cache"));
     }
 
     @Test
@@ -129,6 +145,7 @@ class PoolLoaderTest {
     /** Slice 4: each bundled pool offers at least four fragments, so all four slots can be filled. */
     @Test
     void eachBundledPoolOffersAtLeastFourFragments() throws IOException {
+        copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         copyBundled("mage_fire.yml");
         PoolRegistry registry = load(BUNDLED_ABILITY);
@@ -144,11 +161,11 @@ class PoolLoaderTest {
                 class: ranger
                 element: fire
                 ultimates: [ultimate_placeholder_ranger]
-                actives: [rekindle, solar_lance]
+                actives: [recall, solar_lance]
                 fragments: [fragment_vigor, fragment_nowhere]
                 default:
                   ultimate: ultimate_placeholder_ranger
-                  actives: [rekindle, solar_lance]
+                  actives: [recall, solar_lance]
                 """);
 
         PoolRegistry registry = load(BUNDLED_ABILITY);
@@ -168,11 +185,12 @@ class PoolLoaderTest {
     /** Slice 5: each bundled pool lists two aspects, each on one of its own abilities. */
     @Test
     void eachBundledPoolOffersTwoAspectsOnItsOwnAbilities() throws IOException {
+        copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         copyBundled("mage_fire.yml");
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertTrue(warnings.isEmpty(), warningText());
-        assertEquals(List.of("searing_lance", "banked_embers"), registry.find("ranger", "fire").orElseThrow().aspects());
+        assertEquals(List.of("searing_lance", "updraft"), registry.find("ranger", "fire").orElseThrow().aspects());
         assertEquals(List.of("cinder_wake", "lingering_sun"), registry.find("mage", "fire").orElseThrow().aspects());
     }
 
@@ -183,11 +201,11 @@ class PoolLoaderTest {
                 class: ranger
                 element: fire
                 ultimates: [ultimate_placeholder_ranger]
-                actives: [rekindle, solar_lance]
+                actives: [recall, solar_lance]
                 aspects: [searing_lance, cinder_wake]
                 default:
                   ultimate: ultimate_placeholder_ranger
-                  actives: [rekindle, solar_lance]
+                  actives: [recall, solar_lance]
                 """);
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertEquals(0, registry.size());
@@ -202,22 +220,134 @@ class PoolLoaderTest {
                 class: ranger
                 element: fire
                 ultimates: [ultimate_placeholder_ranger]
-                actives: [rekindle, solar_lance]
+                actives: [recall, solar_lance]
                 aspects: [aspect_nowhere]
                 default:
                   ultimate: ultimate_placeholder_ranger
-                  actives: [rekindle, solar_lance]
+                  actives: [recall, solar_lance]
                 """);
         assertEquals(0, load(BUNDLED_ABILITY).size());
         assertTrue(warningText().contains("aspect_nowhere"), warningText());
     }
 
-    /** Ruling 7: FIRE only, because only fire has pools. A count, so a stray third file is noticed. */
+    /**
+     * Ruling 7: FIRE only, because only fire has pools. Read from the SHIPPED directory, so a stray file is
+     * noticed: two cells and one class file (section 7.1), which is not a cell.
+     */
     @Test
     void exactlyTheTwoFirePoolsShip() throws IOException {
+        File shipped = new File("src/main/resources/content/builds");
+        String[] names = shipped.list((d, n) -> n.endsWith(".yml"));
+        assertNotNull(names, "the shipped builds directory must be readable");
+        java.util.Arrays.sort(names);
+        assertEquals(List.of("mage_fire.yml", "ranger.yml", "ranger_fire.yml"), List.of(names));
+        for (String name : names) copyBundled(name);
+        PoolRegistry registry = load(BUNDLED_ABILITY);
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(2, registry.size());
+    }
+
+    // ------------------------------------------------------------------ section 7.1: the class file
+
+    /**
+     * THE CLASS MERGE's row, on the SHIPPED files: without ranger.yml the Fire Ranger pool offers no recall, and
+     * its default names it -- so the pool is refused, not quietly short an Active.
+     */
+    @Test
+    void theShippedFireRangerPoolNeedsItsClassFile() throws IOException {
+        copyBundled("ranger_fire.yml");
+        assertEquals(0, load(BUNDLED_ABILITY).size());
+        assertTrue(warningText().contains("recall"), warningText());
+    }
+
+    /** Ruling 24: the Mage is offered no Ranger class-wide ability. */
+    @Test
+    void aClassFileReachesOnlyItsOwnClass() throws IOException {
+        copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         copyBundled("mage_fire.yml");
-        assertEquals(2, load(BUNDLED_ABILITY).size());
+        PoolRegistry registry = load(BUNDLED_ABILITY);
+        assertTrue(registry.find("ranger", "fire").orElseThrow().actives().contains("recall"));
+        assertFalse(registry.find("mage", "fire").orElseThrow().actives().contains("recall"));
+    }
+
+    /** One fact, one home: an id both class-wide and cell-listed is refused, naming it -- not de-duplicated. */
+    @Test
+    void anIdBothClassWideAndCellListedRefusesTheCell() throws IOException {
+        copyBundled("ranger.yml");
+        write("ranger_fire.yml", """
+                class: ranger
+                element: fire
+                ultimates: [ultimate_placeholder_ranger]
+                actives: [recall, solar_lance]
+                default:
+                  ultimate: ultimate_placeholder_ranger
+                  actives: [recall, solar_lance]
+                """);
+        assertEquals(0, load(BUNDLED_ABILITY).size());
+        assertTrue(warningText().contains("ranger_fire.yml") && warningText().contains("class-wide"), warningText());
+    }
+
+    /** The discriminator's guard: a cell file that forgot `element:` is refused, never read as a class file. */
+    @Test
+    void aCellFileMissingItsElementIsRefusedNotReadAsAClassFile() throws IOException {
+        write("ranger_fire.yml", """
+                class: ranger
+                actives: [recall]
+                """);
+        assertEquals(0, load(BUNDLED_ABILITY).size());
+        assertTrue(warningText().contains("ranger_fire") && warningText().contains("element"), warningText());
+    }
+
+    @Test
+    void aClassFileCarryingACellKeyIsRefusedByName() throws IOException {
+        write("ranger.yml", """
+                class: ranger
+                actives: [recall]
+                fragments: [fragment_vigor]
+                """);
+        load(BUNDLED_ABILITY);
+        assertTrue(warningText().contains("ranger.yml") && warningText().contains("fragments"), warningText());
+    }
+
+    @Test
+    void aClassFileNamingAnUnknownAbilityIsRefused() throws IOException {
+        write("ranger.yml", "class: ranger\nactives: [recall_nowhere]\n");
+        load(BUNDLED_ABILITY);
+        assertTrue(warningText().contains("recall_nowhere"), warningText());
+    }
+
+    @Test
+    void aClassFileWithNoCellIsNamed() throws IOException {
+        write("ranger.yml", "class: ranger\nactives: [recall]\n");
+        assertEquals(0, load(BUNDLED_ABILITY).size());
+        assertTrue(warningText().contains("no cell"), warningText());
+    }
+
+    // ------------------------------------------------------------------ section 7.3: behaviour fragments
+
+    @Test
+    void theBundledFragmentTargetLookupIsNotBlind() {
+        assertEquals(java.util.Optional.of("recall"), BUNDLED_FRAGMENT_TARGET.apply("fragment_ember_cache"));
+        assertEquals(java.util.Optional.empty(), BUNDLED_FRAGMENT_TARGET.apply("fragment_vigor"), "a stat fragment");
+    }
+
+    /** A behaviour fragment on an ability the pool does not offer is refused: it could never be active there. */
+    @Test
+    void aBehaviourFragmentOnAnAbilityThePoolDoesNotOfferIsRefused() throws IOException {
+        write("mage_fire.yml", """
+                class: mage
+                element: fire
+                ultimates: [ultimate_placeholder_mage]
+                actives: [ember_step, solar_grenade]
+                fragments: [fragment_vigor, fragment_ember_cache]
+                default:
+                  ultimate: ultimate_placeholder_mage
+                  actives: [ember_step, solar_grenade]
+                """);
+        assertEquals(0, load(BUNDLED_ABILITY).size());
+        assertTrue(warningText().contains("fragment_ember_cache") && warningText().contains("recall"), warningText());
+        assertFalse(warningText().contains("fragment_vigor ("), "and not the stat fragment: " + warningText());
     }
 
     @Test
@@ -226,10 +356,10 @@ class PoolLoaderTest {
                 class: ranger
                 element: fire
                 ultimates: [sunfall]
-                actives: [rekindle, solar_lance]
+                actives: [recall, solar_lance]
                 default:
                   ultimate: sunfall
-                  actives: [rekindle, solar_lance]
+                  actives: [recall, solar_lance]
                 """);
 
         PoolRegistry registry = load(BUNDLED_ABILITY);
@@ -287,6 +417,7 @@ class PoolLoaderTest {
     /** Fail-soft: one bad file costs one cell, not the others. */
     @Test
     void aBadFileSkipsOnlyItself() throws IOException {
+        copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         write("mage_fire.yml", "class: mage\nelement: fire\n");
         PoolRegistry registry = load(BUNDLED_ABILITY);

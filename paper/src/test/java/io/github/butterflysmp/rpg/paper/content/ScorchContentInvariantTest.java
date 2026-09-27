@@ -87,6 +87,12 @@ class ScorchContentInvariantTest {
      * PLACEHOLDERS in {@code content/aspects/}. Counted per file with this test's own pattern; {@code
      * lingering_sun} only modifies numbers and adds none. An aspect's appended damage accrues scorch like any
      * other fire damage: it reaches the same {@code EffectApplier}.
+     *
+     * <p><b>17 -> 17 on 2026-09-27, Recall (PLAN-build-system.md section 7): -2 +2, a count that did not move
+     * while four sites did.</b> Minus two: {@code rekindle.yml}'s ember burst (Recall throws no embers,
+     * ruling 24) and {@code banked_embers.yml} (deleted, ruling 26). Plus two: {@code fragment_ember_cache}'s burst
+     * (Rekindle's, moved, ruling 27) and {@code recall_updraft}'s ring burst (ruling 32). Counted per file with
+     * this test's own pattern; the unchanged total is not evidence that nothing changed.
      */
     private static final int KNOWN_FIRE_DAMAGE_SITES = 17;
 

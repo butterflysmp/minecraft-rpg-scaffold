@@ -1,0 +1,11 @@
+# The whoosh when Recall is cast -- a clean sweep as the Ranger retreats. Renamed from rekindle_cast with its
+# ability (ruling 24). Sound only. Id is the filename: recall_cast.
+#
+# STATED, NOT CHANGED: a fire-charge sound on a now-KINETIC ability. Changing it is presentation, and Ben's call
+# (PLAN-build-system.md section 7.2).
+
+steps:
+  - type: sound
+    key: item.firecharge.use   # an airy, fiery fwoosh -- not a sword swing
+    volume: 1.0
+    pitch: 1.0

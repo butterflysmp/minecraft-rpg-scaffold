@@ -52,7 +52,7 @@ class DashAimTest {
         assertEquals(0.0, DashAim.directionFromInput(37, true, false, true, false).y(), 1e-9);
     }
 
-    // --- Rekindle's reverse-facing dash: horizontal, and the exact opposite of facing. ---
+    // --- Recall's reverse-facing dash (and the Updraft leap's): horizontal, and the exact opposite of facing. ---
 
     @Test
     void reverseFacingIsHorizontalNeverVertical() {

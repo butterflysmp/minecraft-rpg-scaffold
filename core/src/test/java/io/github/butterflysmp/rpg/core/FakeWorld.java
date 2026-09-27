@@ -555,6 +555,9 @@ public final class FakeWorld implements CombatWorld {
         /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
         public Vec3 lastImpulse;
 
+        /** How many times a safe-landing dash armed this dummy (section 7.6). */
+        public int safeLandingArms;
+
         /** Who last damaged this dummy. Null means the damage was unattributed. */
         public UUID lastDamageSource;
 
@@ -635,6 +638,7 @@ public final class FakeWorld implements CombatWorld {
             knockbackCalls++;
         }
         @Override public void applyImpulse(Vec3 velocity) { this.lastImpulse = velocity; }
+        @Override public void armSafeLanding() { safeLandingArms++; }
         @Override public void applyStatus(String id, int dur, int amp, UUID applierId, double srcDmg) {
             statuses.add(id);
             lastStatusApplier = applierId;

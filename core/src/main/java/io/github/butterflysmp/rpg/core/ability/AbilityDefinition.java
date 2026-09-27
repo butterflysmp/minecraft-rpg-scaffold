@@ -10,7 +10,7 @@ import java.util.List;
  * <p>{@code onCast} is what fires the MOMENT the cast is committed, at the aim's origin, as
  * against {@code onHit} which fires where the cast RESOLVES. For a self, melee or dash cast the
  * two are near enough the same instant that the repo has always faked a cast visual by putting an
- * untargeted one in {@code onHit} -- {@code rekindle.yml} does,
+ * untargeted one in {@code onHit} -- {@code recall.yml} does,
  * and it works because a Dash's untargeted effects fire once at the origin whether or not it
  * catches anyone. A PROJECTILE is where that idiom breaks: its {@code onHit} fires at the impact
  * point, after flight, so there was nowhere to hang "you hear the staff fire". This is that place.

@@ -169,7 +169,7 @@ public final class BuildMenu extends Menu {
         boolean pooled = pool().isPresent();
         for (int i = 0; i < BuildMenuLayout.FRAGMENT_SLOTS.size(); i++) {
             getInventory().setItem(BuildMenuLayout.FRAGMENT_SLOTS.get(i),
-                    fragmentIcon(i, pooled ? fragments.get(i) : null, pooled, unusable));
+                    fragmentIcon(i, pooled ? fragments.get(i) : null, pooled, unusable, equippedIds));
         }
     }
 
@@ -257,7 +257,8 @@ public final class BuildMenu extends Menu {
      * One fragment cell: the slotted fragment (its own icon, name and modifiers), an empty slot, or "choose a
      * class and an element first". Rendered here as an icon -- never a minted item.
      */
-    private ItemStack fragmentIcon(int index, String id, boolean pooled, boolean unusable) {
+    private ItemStack fragmentIcon(int index, String id, boolean pooled, boolean unusable,
+                                   java.util.Set<String> equippedIds) {
         String label = "Fragment " + (index + 1);
         if (!pooled) {
             return MenuIcons.icon(Material.GRAY_STAINED_GLASS_PANE, MenuIcons.line(label, NamedTextColor.DARK_GRAY),
@@ -272,7 +273,14 @@ public final class BuildMenu extends Menu {
             return MenuIcons.icon(Material.LIGHT_GRAY_STAINED_GLASS_PANE,
                     MenuIcons.line(label + ": (empty)", NamedTextColor.GRAY), List.of(footer));
         }
-        List<Component> lore = new ArrayList<>(fragmentLore(fragment.get()));
+        List<Component> lore = new ArrayList<>();
+        // Section 7.3: a BEHAVIOUR fragment whose target is not equipped stays slotted and reads INACTIVE -- the
+        // aspect cell's rule, and the same line.
+        if (fragment.get().behavioural() && !equippedIds.contains(fragment.get().target())) {
+            lore.add(MenuIcons.line("Inactive -- requires " + plainAbilityName(fragment.get().target()) + " equipped",
+                    NamedTextColor.RED));
+        }
+        lore.addAll(fragmentLore(fragment.get(), adapters.stones().abilities()));
         lore.add(MenuIcons.blank());
         lore.add(footer);
         return MenuIcons.icon(fragmentMaterial(fragment.get()),
@@ -281,9 +289,14 @@ public final class BuildMenu extends Menu {
                                 .decoration(TextDecoration.ITALIC, false)), lore);
     }
 
-    /** A fragment's modifiers and description, shared with the picker. */
-    static List<Component> fragmentLore(io.github.butterflysmp.rpg.core.build.FragmentDefinition fragment) {
+    /** A fragment's modifiers -- or, for a behaviour fragment, what it adds to which ability -- and description. */
+    static List<Component> fragmentLore(io.github.butterflysmp.rpg.core.build.FragmentDefinition fragment,
+                                        io.github.butterflysmp.rpg.core.ability.AbilityRegistry abilities) {
         List<Component> lore = new ArrayList<>();
+        if (fragment.behavioural()) {
+            lore.add(MenuIcons.line("Changes " + plainName(abilities, fragment.target()), NamedTextColor.GOLD));
+            lore.add(MenuIcons.line("Adds " + fragment.addOnHit().size() + " effect(s) on hit", NamedTextColor.BLUE));
+        }
         for (var m : fragment.modifiers().entrySet()) {
             lore.add(MenuIcons.line(io.github.butterflysmp.rpg.core.accessory.AccessoryLoreLines.modifier(
                     m.getKey(), m.getValue(), null), NamedTextColor.BLUE));
@@ -365,6 +378,10 @@ public final class BuildMenu extends Menu {
         if (!aspect.addOnCast().isEmpty()) {
             lore.add(MenuIcons.line("Adds " + aspect.addOnCast().size() + " cast visual(s)", NamedTextColor.BLUE));
         }
+        if (aspect.recast() != null) {
+            lore.add(MenuIcons.line("Recast within " + formatSeconds(aspect.recast().windowTicks()) + ": "
+                    + plainName(abilities, aspect.recast().ability()), NamedTextColor.BLUE));
+        }
         for (String line : aspect.description()) lore.add(MenuIcons.line(line, NamedTextColor.GRAY));
         return lore;
     }
@@ -392,6 +409,14 @@ public final class BuildMenu extends Menu {
     private static String signed(double value) {
         String plain = io.github.butterflysmp.rpg.core.build.NumberResolution.plain(java.math.BigDecimal.valueOf(value));
         return value > 0 ? "+" + plain : plain;
+    }
+
+    /** An ability's display name as plain text, or its id if nothing defines it. */
+    private static String plainName(io.github.butterflysmp.rpg.core.ability.AbilityRegistry abilities, String id) {
+        return abilities.find(id)
+                .map(def -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                        .serialize(MiniMessage.miniMessage().deserialize(def.displayName())))
+                .orElse(id);
     }
 
     private String plainAbilityName(String id) {

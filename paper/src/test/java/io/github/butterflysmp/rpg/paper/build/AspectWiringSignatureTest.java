@@ -35,8 +35,24 @@ class AspectWiringSignatureTest {
         String caster = code(CASTER, 100);
         assertTrue(caster.contains("abilityService.cast(caster, abilityId.get(), aim, castable,"),
                 "CONTROL: the stone's cast call is found");
-        assertTrue(caster.contains("stones.deriveFor(player.getUniqueId(), profiles.profile(player.getUniqueId())));"),
+        assertTrue(caster.contains("stones.deriveFor(playerId, profile));"),
                 "the stone casts through the player's derive");
+    }
+
+    /**
+     * Section 7.4: the recast is decided BEFORE the ordinary cast, from EVERY input, and it casts the follow-up
+     * through castUnchecked -- never through cast/resolve, which would check Recall's cooldown and charge mana.
+     */
+    @Test
+    void theRecastIsDecidedFirstAndCastsUnchecked() throws IOException {
+        String caster = code(CASTER, 100);
+        int input = caster.indexOf("tracker.input(slot, inputTick, abilityId.get(),");
+        int unchecked = caster.indexOf("abilityService.castUnchecked(caster, followUp.get(), aim)");
+        int ordinary = caster.indexOf("abilityService.cast(caster, abilityId.get(), aim, castable,");
+        assertTrue(input > 0 && unchecked > input && ordinary > unchecked,
+                "the tracker hears the input, then the recast, then the ordinary cast: " + input + " " + unchecked + " " + ordinary);
+        assertTrue(caster.contains("tracker.castSucceeded(abilityId.get(), inputTick,"),
+                "an ordinary Success opens (or closes) the window");
     }
 
     @Test
