@@ -177,6 +177,16 @@ public final class Keys {
      */
     public final NamespacedKey mobId;
 
+    /**
+     * A HOSTILE mob's gear score (an INTEGER), stored once at its first seed and read back at every
+     * later one, so it survives chunk unloads, restarts and portals and is never re-rolled (M5).
+     *
+     * <p><b>Not {@link #gearScore}</b>, which is the ITEM stamp. They are different quantities with
+     * different sources; sharing the key would make a grep for one find both. Also written onto a
+     * converted mob by the transform handler, so a zombie villager keeps its zombie's score.
+     */
+    public final NamespacedKey mobGearScore;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -402,6 +412,7 @@ public final class Keys {
         this.classDamageBoost = new NamespacedKey(plugin, "class_damage_boost_temp");
         this.classDamageBoostClass = new NamespacedKey(plugin, "class_damage_boost_temp_class");
         this.mobId = new NamespacedKey(plugin, "mob_id");
+        this.mobGearScore = new NamespacedKey(plugin, "mob_gear_score");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");

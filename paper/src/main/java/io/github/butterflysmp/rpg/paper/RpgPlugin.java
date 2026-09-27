@@ -84,7 +84,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
+import org.bukkit.World;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -626,6 +628,19 @@ public final class RpgPlugin extends JavaPlugin {
                 healthSystem, nameplates, statsBar, healthRegen,
                 this, recipes, vaults, stoneCaster);
         getServer().getPluginManager().registerEvents(listeners, this);
+
+        // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md
+        // §6 F7). The seed rides EntityAddToWorldEvent, so a mob that was added before registerEvents
+        // never saw one: no plate, no stored gear score, and environmental damage passed to vanilla
+        // until something happened to hit it. Whether this build loads any entity that early is
+        // unmeasured; the sweep is idempotent (register-if-absent, stored score wins), so it is free
+        // when nothing is there. Each seed runs on its own entity's thread, like the add event's.
+        for (World world : getServer().getWorlds()) {
+            for (LivingEntity mob : world.getLivingEntities()) {
+                if (mob instanceof Player) continue;
+                scheduler.onEntity(mob, () -> nameplates.onMobAppear(mob));
+            }
+        }
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
         // paper-plugin.yml. We do NOT call PacketEvents.setAPI() or .load()

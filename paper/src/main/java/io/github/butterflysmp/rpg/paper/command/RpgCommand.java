@@ -28,8 +28,12 @@ import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
+import io.github.butterflysmp.rpg.core.mob.GearScoreSource;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
+import io.github.butterflysmp.rpg.core.mob.MobDimension;
+import io.github.butterflysmp.rpg.core.mob.MobGearScore;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
+import io.github.butterflysmp.rpg.core.mob.MobSeeding;
 import io.github.butterflysmp.rpg.core.weapon.Durability;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
@@ -59,7 +63,9 @@ import io.github.butterflysmp.rpg.paper.hud.AccessorySheet;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheet;
 import io.github.butterflysmp.rpg.paper.hud.StatsSheetProjection;
 import io.github.butterflysmp.rpg.paper.health.HealthModifierItems;
+import io.github.butterflysmp.rpg.paper.health.MobClassifier;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
+import io.github.butterflysmp.rpg.paper.health.MobOrigin;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.vault.VaultDevCommand;
 import io.github.butterflysmp.rpg.paper.vault.VaultService;
@@ -96,6 +102,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
+import org.bukkit.entity.Enemy;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.persistence.PersistentDataType;
@@ -356,24 +363,45 @@ public final class RpgCommand {
                         .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
                                 .executes(ctx -> healthBoost(ctx, adapters,
                                         IntegerArgumentType.getInteger(ctx, "amount")))))
-                // Spawn a custom mob: the mob analogue of /rpg give <weapon>. Dev-gated, because
-                // spawning a 360-HP boss on demand is a test instrument, not a player verb.
+                // Spawn a custom OR vanilla mob, optionally at a chosen gear score: the mob analogue of
+                // /rpg give <weapon>. Dev-gated, because spawning a 12,500-HP Warden on demand is a test
+                // instrument, not a player verb. Custom ids resolve first; a custom id that shadows a
+                // vanilla name wins. [gs] is 1..500 (M20) and is refused for a passive mob (M7).
                 .then(Commands.literal("spawn")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .then(Commands.argument("mob", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     mobs.all().forEach(m -> builder.suggest(m.id()));
+                                    for (EntityType type : EntityType.values()) {
+                                        if (type.isAlive() && type != EntityType.PLAYER && type.isSpawnable()) {
+                                            builder.suggest(type.getKey().getKey());
+                                        }
+                                    }
                                     return builder.buildFuture();
                                 })
-                                .executes(ctx -> {
-                                    String id = StringArgumentType.getString(ctx, "mob");
-                                    if (!(ctx.getSource().getExecutor() instanceof Player player)) {
-                                        ctx.getSource().getSender().sendMessage(
-                                                Component.text("Players only.", NamedTextColor.RED));
-                                        return 0;
-                                    }
-                                    return spawnMob(player, id, mobs, adapters);
-                                })))
+                                .executes(ctx -> spawnFromCommand(ctx, mobs, adapters, null))
+                                .then(Commands.argument("gs",
+                                                IntegerArgumentType.integer(MobGearScore.MIN, MobGearScore.CAP))
+                                        .executes(ctx -> spawnFromCommand(ctx, mobs, adapters,
+                                                IntegerArgumentType.getInteger(ctx, "gs"))))))
+                // Read the looked-at mob: its hostility, stored gear score, the score its position
+                // WOULD roll, its custom HP, and its VANILLA attributes. The last line is what lets a gate
+                // check "x5" against a printed number rather than a remembered one, and check M9 (the
+                // vanilla MAX_HEALTH attribute still reads vanilla).
+                .then(Commands.literal("mobinfo")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> mobInfo(ctx, adapters, mobs)))
+                // Toggle the MOBSEED / MOBREMOVE log lines -- the witness that a gear score survived a
+                // REAL unload (gate row G12), not a mob that never left.
+                .then(Commands.literal("mobtrace")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(ctx -> {
+                            boolean on = nameplates.toggleTrace();
+                            ctx.getSource().getSender().sendMessage(Component.text(
+                                    "Mob seed trace " + (on ? "ON" : "OFF") + " (MOBSEED / MOBREMOVE in the log).",
+                                    NamedTextColor.GREEN));
+                            return 1;
+                        }))
                 // Mint an attack_speed_boost_TEMP. The attack-speed stat bases at 1.0 and no content
                 // grants a bonus yet, so without this the feature is invisible at boot: hold it and a
                 // basic attack's cooldown scales (10 ticks -> 5 at +1.0), drop it and the cadence
@@ -639,16 +667,18 @@ public final class RpgCommand {
                 return;
             }
             UUID id = target.getUniqueId();
-            var maxAttr = target.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
-            double vanillaMax = maxAttr != null ? maxAttr.getValue() : target.getHealth();
-            var atkAttr = target.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE);
-            double vanillaAttack = atkAttr != null ? atkAttr.getValue() : 0.0;
             CombatantStats stats = adapters.stats();
             // Track AND nameplate the target (idempotent) so the seam fire actually reaches the plate.
-            // Seed attack too for signature consistency with the melee path -- this dev command only
-            // damages/heals HP, so it does not read the attack value, but the store shape is uniform.
-            stats.bootstrapIfAbsent(id, vanillaMax, vanillaAttack, false);
+            // THROUGH THE ONE SEED, never a bootstrap of its own: this used to call bootstrapIfAbsent
+            // with the raw vanilla attributes, a second seed path that bypassed MobSeeding -- harmless
+            // only while the add event always seeded first, and under mob scaling it would have seeded
+            // an UNSCALED mob whenever it did not (PLAN-mob-scaling.md §6 F2). onMobAppear seeds
+            // opt-out-agnostically, so an opted-out mob is still tracked here.
             nameplates.onMobAppear(target);
+            if (!stats.tracks(id)) {
+                player.sendMessage(Component.text("That mob is not tracked.", NamedTextColor.RED));
+                return;
+            }
             double displayCurrent;
             if (heal) {
                 stats.heal(id, amount, player.getUniqueId(), true);   // seam directly, to CREDIT the player
@@ -730,17 +760,39 @@ public final class RpgCommand {
      * override (see PacketNameplateSender). CustomNameVisible is false so vanilla does not float the
      * bare name alongside our nameplate -- death messages and /data read "Knell" either way.
      */
-    private static int spawnMob(Player player, String mobId, MobRegistry mobs, AdapterContext adapters) {
-        MobDefinition def = mobs.find(mobId).orElse(null);
-        if (def == null) {
-            player.sendMessage(Component.text("Unknown mob: " + mobId, NamedTextColor.RED));
-            String available = String.join(", ", mobs.all().stream().map(MobDefinition::id).toList());
-            player.sendMessage(Component.text("Available: " + available, NamedTextColor.GRAY));
+    private static int spawnFromCommand(CommandContext<CommandSourceStack> ctx, MobRegistry mobs,
+                                        AdapterContext adapters, Integer gearScore) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
             return 0;
         }
+        return spawnMob(player, StringArgumentType.getString(ctx, "mob"), mobs, adapters, gearScore);
+    }
+
+    /**
+     * Spawn a custom mob, or a vanilla one by its entity key ({@code zombie}, {@code warden}), at
+     * {@code gearScore} when one is given and otherwise at whatever its position rolls.
+     *
+     * <p>{@code [gs]} is written in the SAME pre-spawn consumer as {@code mob_id}, for the same reason:
+     * the seed is register-if-absent and a stored score wins, so a score written after the add event
+     * would arrive to find the mob already seeded and scored from its position. It is refused, not
+     * dropped, for a passive mob: M7 gives a passive mob no score, and a silently ignored argument
+     * reads as a spawn that worked.
+     */
+    private static int spawnMob(Player player, String mobId, MobRegistry mobs, AdapterContext adapters,
+                                Integer gearScore) {
+        MobDefinition def = mobs.find(mobId).orElse(null);
+        String baseEntity = def != null ? def.baseEntity() : mobId;
 
         EntityType type = Registry.ENTITY_TYPE.get(
-                NamespacedKey.minecraft(def.baseEntity().toLowerCase(Locale.ROOT)));
+                NamespacedKey.minecraft(baseEntity.toLowerCase(Locale.ROOT)));
+        if (def == null && (type == null || !type.isAlive() || type == EntityType.PLAYER)) {
+            player.sendMessage(Component.text("Unknown mob: " + mobId, NamedTextColor.RED));
+            String available = String.join(", ", mobs.all().stream().map(MobDefinition::id).toList());
+            player.sendMessage(Component.text("Custom: " + available + ", or any vanilla mob (zombie, warden, ...)",
+                    NamedTextColor.GRAY));
+            return 0;
+        }
         // Both already warned at boot by ContentValidator; refuse here rather than throw, so a bad
         // content file is a red chat line and not a stack trace in the command dispatcher.
         if (type == null || !type.isAlive()) {
@@ -751,23 +803,92 @@ public final class RpgCommand {
         }
 
         Class<? extends LivingEntity> entityClass = type.getEntityClass().asSubclass(LivingEntity.class);
-        Component name = MiniMessage.miniMessage().deserialize(def.displayName());
+        // The same line MobClassifier draws on a live entity (M21), asked of the class before one exists.
+        if (gearScore != null && !Enemy.class.isAssignableFrom(entityClass)) {
+            player.sendMessage(Component.text("'" + mobId + "' is a passive mob and takes no gear score (M7)."
+                    + " Spawn it without [gs].", NamedTextColor.RED));
+            return 0;
+        }
+        Component name = def == null ? null : MiniMessage.miniMessage().deserialize(def.displayName());
 
         LivingEntity spawned = player.getWorld().spawn(
                 player.getLocation(), entityClass, CreatureSpawnEvent.SpawnReason.CUSTOM, false,
                 entity -> {
                     // BEFORE the add event -- see the javadoc above. Order is the whole trick.
-                    entity.getPersistentDataContainer()
-                            .set(adapters.keys().mobId, PersistentDataType.STRING, def.id());
-                    entity.customName(name);
-                    entity.setCustomNameVisible(false);
+                    if (def != null) {
+                        entity.getPersistentDataContainer()
+                                .set(adapters.keys().mobId, PersistentDataType.STRING, def.id());
+                        entity.customName(name);
+                        entity.setCustomNameVisible(false);
+                    }
+                    if (gearScore != null) {
+                        entity.getPersistentDataContainer()
+                                .set(adapters.keys().mobGearScore, PersistentDataType.INTEGER, gearScore);
+                    }
                 });
 
+        // The add event has already seeded it, inside spawn(), so the store holds the real numbers.
+        UUID id = spawned.getUniqueId();
+        Integer stored = spawned.getPersistentDataContainer()
+                .get(adapters.keys().mobGearScore, PersistentDataType.INTEGER);
+        String hp = adapters.stats().tracks(id) ? Math.round(adapters.stats().max(id)) + " HP" : "untracked";
         player.sendMessage(Component.text("Spawned ", NamedTextColor.AQUA)
-                .append(name)
-                .append(Component.text(" (" + def.baseEntity() + ", "
-                        + Math.round(def.maxHealth()) + " HP)", NamedTextColor.GRAY)));
-        return spawned != null ? 1 : 0;
+                .append(name != null ? name : Component.text(type.getKey().getKey()))
+                .append(Component.text(" (" + baseEntity + ", " + hp
+                        + (stored != null ? ", GS " + stored + (gearScore != null ? " given" : " rolled") : ", passive")
+                        + ")", NamedTextColor.GRAY)));
+        return 1;
+    }
+
+    /** {@code /rpg mobinfo}: everything about the looked-at mob that a mob-scaling gate row reads. */
+    private static int mobInfo(CommandContext<CommandSourceStack> ctx, AdapterContext adapters, MobRegistry mobs) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        Location eye = player.getEyeLocation();
+        adapters.scheduler().onRegion(eye, () -> {
+            RayTraceResult hit = player.getWorld().rayTraceEntities(
+                    eye, eye.getDirection(), TARGET_RANGE, TARGET_LENIENCE,
+                    e -> e instanceof LivingEntity living && !(living instanceof Player));
+            if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
+                player.sendMessage(Component.text("Look at a mob.", NamedTextColor.RED));
+                return;
+            }
+            var pdc = target.getPersistentDataContainer();
+            String mobId = pdc.get(adapters.keys().mobId, PersistentDataType.STRING);
+            boolean hostile = MobClassifier.isHostile(target);
+            Integer stored = pdc.has(adapters.keys().mobGearScore, PersistentDataType.INTEGER)
+                    ? pdc.get(adapters.keys().mobGearScore, PersistentDataType.INTEGER) : null;
+
+            MobDimension dimension = MobOrigin.dimensionOf(target.getWorld());
+            double distance = MobOrigin.horizontalDistance(target.getLocation());
+            Location spawn = target.getWorld().getSpawnLocation();
+            String origin = dimension == MobDimension.END
+                    ? "(0, 0)"
+                    : "spawn (" + spawn.getBlockX() + ", " + spawn.getBlockZ() + ")";
+
+            var maxAttr = target.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+            var atkAttr = target.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE);
+            UUID id = target.getUniqueId();
+            CombatantStats stats = adapters.stats();
+
+            List<String> lines = List.of(
+                    target.getType().getKey().getKey() + "  mob_id=" + (mobId == null ? "-" : mobId)
+                            + (MobSeeding.isCustom(mobs, mobId) ? " (custom)" : "")
+                            + "  " + (hostile ? "HOSTILE" : "PASSIVE"),
+                    "GS stored=" + (stored == null ? "none" : stored)
+                            + "  would roll=" + GearScoreSource.DISTANCE.gearScoreFor(dimension, distance)
+                            + "  (" + dimension + ", " + Math.round(distance) + " blocks from " + origin + ")",
+                    stats.tracks(id)
+                            ? "custom HP " + Math.round(stats.current(id)) + "/" + Math.round(stats.max(id))
+                                    + "  custom attack " + stats.attackValue(id)
+                            : "custom HP: untracked",
+                    "vanilla MAX_HEALTH=" + (maxAttr == null ? "none" : maxAttr.getValue())
+                            + "  ATTACK_DAMAGE=" + (atkAttr == null ? "none" : atkAttr.getValue()));
+            lines.forEach(line -> player.sendMessage(Component.text(line, NamedTextColor.GREEN)));
+        });
+        return 1;
     }
 
 
