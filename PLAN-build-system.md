@@ -1933,6 +1933,13 @@ the record of what was asked.
     whatever the player wears, so its eligibility half (which gear has a score, and what an empty slot
     counts as) is the question to answer before any curve. Recorded 2026-09-27 at the seat's direction; not
     scoped here.
+12. **OPEN, NOT A RULING: the Updraft leap's FRONT FAN lands ~9-12 blocks out, where ruling 28 asked for about
+    3-4.** Ruling 37 moved the leap to Rekindle's fan and gave it Rekindle's throw (ember `speed 0.6`,
+    `launch_lift 0.25`) **as a starting point**, and asked only that its landing be reported. The tuning boot
+    measured **7.60-12.03 at the fuse, median 9.75, 30 embers** (§7.8). Ben has played it and **has not ruled on
+    it**. So the number is **unchanged**, and `recall_updraft.yml` marks it *"UNTUNED -- lands ~9-12 out; open, see
+    §6"*. Recorded 2026-09-27 at the seat's direction. **The question for Ben: keep the far fan, or tune it
+    toward ruling 28's 3-4** (at `launch_lift 0.25`, the old ring's 0.25 throw landed 3.16-4.23)?
 
 ---
 

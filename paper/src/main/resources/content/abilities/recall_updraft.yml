@@ -6,10 +6,10 @@
 # THE LEAP is a reverse-facing dash with a small speed and a large lift: `speed` is purely the horizontal part and
 # `lift` purely the vertical part of the one impulse (section 7.5). No new dash direction.
 #
-# PLACEHOLDER numbers -- tuned at boot. The four marked below are ESTIMATES from a simulation of vanilla's per-tick
-# physics with constants recalled from memory, NOT read from the pinned jar (section 7.5): lift 0.85 ~ 4.4 up,
-# speed 0.2 ~ 1.9 back with no key held, embers 0.25 / 0.25 ~ 3.5 blocks out at first contact. The tuning boot
-# (section 7.8) settles them against ruling 28: 4-5 up, no more than 3-4 back, embers 3-4 out.
+# TUNED at the tuning boot (section 7.8), except the front fan. The dash: lift 1.05, speed 0.04, LOCKED (rulings 35, 38).
+# The embers are Rekindle's front fan (ruling 37) on Rekindle's throw, and are UNTUNED: they land ~9-12 out,
+# not ruling 28's 3-4. That is OPEN, not ruled (PLAN-build-system.md section 6). The pre-boot estimates were
+# lift 0.85 ~ 4.4 up and speed 0.2 ~ 1.9 back; measured 4.43 / 1.95.
 
 id: recall_updraft
 display_name: "<gold>Updraft Leap</gold>"
@@ -28,8 +28,8 @@ cast:
 on_hit:
   - type: throw_embers
     angles_degrees: [0, 40, -40]   # ruling 37 (replaces 33 and 31): Rekindle's front fan, three IN FRONT
-    speed: 0.6              # PLACEHOLDER numbers -- tuned at boot
-    launch_lift: 0.25        # PLACEHOLDER numbers -- tuned at boot
+    speed: 0.6              # UNTUNED -- lands ~9-12 out; open, see PLAN-build-system.md section 6
+    launch_lift: 0.25        # UNTUNED -- the front fan, open (section 6)
     item: blaze_powder
     fuse_ticks: 30
     trail: ember_trail
