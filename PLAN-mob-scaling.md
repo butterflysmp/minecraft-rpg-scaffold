@@ -1,0 +1,757 @@
+# PLAN — Mob scaling: 5× vanilla, gear score by distance, and the nameplate
+
+**Status: PLAN ONLY. No code, no boot. §5 is fully answered (M13–M23, 2026-09-27) and §2–§4 are
+updated to match.** Branched from `origin/master` at `35d2526` (read with
+`git ls-remote origin master`, 2026-09-26). #161 (Recall) is untouched and independent: nothing below
+edits a file Recall's branch changes.
+
+Every citation names a **method or section**, never a line (CLAUDE.md, *the pointer names a SECTION*).
+
+---
+
+## §0 THE RULINGS — Ben, 2026-09-27, verbatim. Do not re-derive them.
+
+- **M1.** Players are 5x vanilla health, so every mob is 5x easier. To keep the vanilla feel, EVERY
+  vanilla mob gets 5x its vanilla HEALTH and 5x its vanilla DAMAGE.
+- **M2.** Hostile mobs have a GEAR SCORE, and it scales their stats: multiplier = GS / 100, applied to
+  HEALTH and DAMAGE only.
+  - A GS 500 zombie: 20 x 5 x 5.00 = 500 HP.
+  - A GS 500 Warden: 500 x 5 x 5.00 = 12,500 HP.
+- **M3.** The blanket rule is distance from spawn: every 2,500 blocks is +100 GS. Exceptions come
+  later, for boss mobs and activity mobs. Leave a seam for them and build none now.
+- **M4.** Custom authored mobs (content/mobs/, e.g. the Knell at 360) do NOT get the vanilla 5x. They
+  get only the gear-score multiplier.
+- **M5.** A mob's gear score is STORED ON THE MOB. It survives chunk unloads and restarts, and is never
+  re-rolled.
+- **M6.** The nameplate reads "[GS] Name cur/max ❤", e.g. "[500] Zombie 500/500 ❤". The red heart
+  stays.
+- **M7.** PASSIVE mobs (cows, villagers, horses, etc.) get the 5x health, but NO gear score and no GS
+  on the nameplate.
+- **M8.** Environmental damage and healing ON mobs (fall, fire, lava, drowning, regeneration, potions)
+  are scaled x5, to keep their vanilla proportion. There is no GS on top.
+- **M9.** The Warden's 2,500 (12,500 at GS 500) exceeds vanilla's max-health attribute cap. The seat
+  found the answer already in the code: mob HP lives in the plugin's own health store, seeded once
+  from vanilla (MobSeeding, MobNameplateManager.seedCombatStats, and NameplateText, "cap-free").
+  Scale at the seed. NEVER write the scaled value into the vanilla attribute.
+- **M10.** Balancing player weapons and abilities is out of scope (Ben: "we'll do that later"). Loot
+  and XP scaling are out of scope too.
+- **M11.** THE NETHER starts at GS 200, and grows 8x faster than the overworld.
+- **M12.** THE END starts at GS 300, and grows at the normal rate.
+
+> **M8 IS SUPERSEDED BY M13 AND M15** (below). It stays above, verbatim, because it was ruled;
+> nothing in this plan implements it.
+
+**The curves.** Distance is horizontal (X/Z). The overworld and the Nether measure from that world's
+spawn point; **the End measures from (0, 0) (M23)**. **Every curve clamps at 500 (M20):**
+
+| world | GS | at 2,500 blocks | reaches the 500 cap at |
+|---|---|---|---|
+| Overworld | `min(500, 100 + distance / 25)` | 200 | 10,000 blocks |
+| Nether | `min(500, 200 + distance * 8 / 25)` | **500 (capped; the uncapped curve gives 1,000)** | 937.5 blocks |
+| End | `min(500, 300 + distance / 25)` | 400 | 5,000 blocks |
+
+**The seat's defaults — NOT ruled by Ben; each is overrulable:**
+- the curves are continuous, not stepped;
+- ~~there is no cap~~ — **OVERRULED by M20: capped at 500**;
+- the overworld starting value is 100;
+- a mob's GS is rounded to a whole number for storage and display.
+
+### Ben's rulings on §5, 2026-09-27, verbatim — M13–M23
+
+- **M13.** Environmental damage ON mobs is PROPORTIONAL: vanilla amount / vanilla max HP x the mob's
+  max HP. A fall that kills a vanilla zombie kills any zombie, at any GS. This REPLACES M8's flat x5.
+- **M14.** The same proportional rule for CUSTOM mobs (the Knell included). No special case.
+- **M15.** HEALING on mobs (regeneration, End crystals, potions) is proportional in the same way, so
+  the crystals stay as strong as in vanilla.
+- **M16.** Mob arrows, blasts and magic hit FLAT: vanilla x 5 x GS/100, the same as melee. This
+  REPLACES DamageScale's share-of-player-max-HP pricing for mob-dealt damage. Slice 2 replaces that
+  pricing; it does not multiply on top of it.
+- **M17.** The Knell's damage: PARKED. It is not worried about now. It keeps its current behaviour;
+  note it in §6 as open.
+- **M18.** Custom mobs use the distance GS until the M3 boss exceptions exist.
+- **M19.** Distance is a CIRCLE: horizontal Euclidean distance.
+- **M20.** Mob GS is CAPPED AT 500, in every dimension. The curves clamp at 500 (overworld ~10,000
+  blocks, End ~5,000, Nether ~940).
+- **M21.** The hostile/passive line is as §1.4 recommends, the Enemy interface plus the listed edge
+  cases. Record the full list in §0.
+- **M22.** The [GS] on the nameplate is LIGHT BLUE (NamedTextColor.AQUA); the rest of the nameplate
+  is unchanged.
+- **M23.** The End is measured from (0, 0), always. Not its spawn point.
+
+**M21's full list, as ruled.** HOSTILE (gets a GS) is `mob instanceof org.bukkit.entity.Enemy`, whose
+closure in the pinned `paper-api-26.1.2.build.74-stable.jar` is: AbstractSkeleton, Blaze, Bogged,
+Breeze, CaveSpider, Creaking, Creeper, Drowned, ElderGuardian, EnderDragon, Enderman, Endermite,
+Evoker, Ghast, Giant, Guardian, Hoglin, Husk, Illager, Illusioner, MagmaCube, Parched, Phantom,
+PigZombie, Piglin, PiglinAbstract, PiglinBrute, Pillager, Raider, Ravager, Shulker, Silverfish,
+Skeleton, Slime, Spellcaster, Spider, Stray, Vex, Vindicator, Warden, Witch, Wither, WitherSkeleton,
+Zoglin, Zombie, ZombieVillager. Every other living non-player is PASSIVE (×5 health, ×5 damage, no
+GS). The edge cases:
+
+| case | members | ruled |
+|---|---|---|
+| neutral, inside `Enemy` | Enderman, Spider, Cave spider, Piglin, Zombified piglin (`PigZombie`) | **HOSTILE: GS** |
+| neutral, outside `Enemy` | Wolf, Bee, Iron golem, Llama, Trader llama, Polar bear, Goat, Dolphin, Panda, Fox | **PASSIVE: ×5 health, ×5 damage, no GS** |
+| slimes and magma cubes | Slime, MagmaCube, and their split children | **HOSTILE; children INHERIT the parent's GS** |
+| tamed mobs | tamed wolf, cat, parrot, horse, and the rest | **PASSIVE**, the same as untamed |
+| undead mounts | Zombie horse, Skeleton horse, Zombie nautilus | **PASSIVE**; their riders are hostile |
+| hostile `Animals` | Hoglin | **HOSTILE** — `Enemy` decides, `Animals` does not |
+| the friendly ghast | HappyGhast | **PASSIVE** |
+| the killer bunny | Rabbit | **PASSIVE** |
+| bosses | Wither, EnderDragon, Warden, ElderGuardian | **HOSTILE, distance GS** until the M3 exceptions exist |
+| custom mob on a passive base | none shipped | **×1 and no GS** (M4 + M7) |
+| players and armor stands | — | never seeded |
+
+---
+
+## §1 FINDINGS — each confirmed or corrected from source
+
+### 1.1 Mob health: where the seed runs, what re-seeding does, and what survives
+
+**Confirmed.** The seed is `MobNameplateManager.seedCombatStats`:
+it reads the `mob_id` PDC tag, asks `MobSeeding.maxHealth(registry, mobId, vanillaMax)` for the max
+(the definition's `max_health` when tagged and known, else the vanilla `MAX_HEALTH` attribute), reads
+`ATTACK_DAMAGE` through `attackDamageOf`, and calls `CombatantStats.bootstrapIfAbsent` —
+**register-if-absent**, so a second call is a no-op.
+
+**Where it runs.** Three callers, all on the entity's own thread:
+
+| caller | trigger |
+|---|---|
+| `RpgListeners.onEntityAdd` → `onMobAppear` → `seedCombatStats` | `EntityAddToWorldEvent` — spawn **and** chunk load both arrive here |
+| `RpgListeners.onMobMeleeAttack` | belt-and-braces re-seed before reading the attack stat |
+| `RpgCommand.mobMutate` (`/rpg mobdamage`, `/rpg mobheal`) | **CORRECTED — it does NOT call `seedCombatStats`.** It calls `bootstrapIfAbsent` itself with the raw vanilla attribute values, then `onMobAppear`. That is a **second seed path that bypasses `MobSeeding`**. Today it is harmless only because the add event always seeds first. Under scaling it would seed an unscaled mob if it ever ran first. Slice 1 routes it through `seedCombatStats`. |
+
+**The vanilla attribute is never written for a mob.** The only `MAX_HEALTH` `setBaseValue` in
+`paper/src/main` is `EntityHeartBar`, which is the player bar. So M9 is already true, and slice 1 must
+keep it true. The store is uncapped (`HealthState`'s class javadoc), and so is the nameplate
+(`NameplateText.of` does `Math.round` on doubles).
+
+**What survives unload and restart: nothing in the store.** `onEntityRemove` → `onMobRemove` calls
+`CombatantStats.clear` on **death, despawn and chunk unload alike**. On reload the add event re-seeds a
+**fresh `HealthState` at full**. So today a mob's max survives an unload only because it is
+recomputed from the same inputs. Its **current HP does not survive**: a damaged mob heals to full
+across an unload, a restart or a portal. This is pre-existing, and is recorded in §6 F1.
+
+**Consequence for M5.** The GS must live in the entity's PDC. The store cannot hold it, because it
+forgets every mob that leaves a loaded chunk. The seed must read the stored GS before it rolls one.
+
+### 1.2 Mob damage on a player: every path, and what the plugin sees today
+
+There are **two pricing routes**, and they already disagree. **That disagreement is the most important
+finding in this plan.**
+
+- **Route A — `onMobMeleeAttack`**, gated to `DamageCause.ENTITY_ATTACK`. The amount is
+  `stats().attackValue(attacker)`: the mob's seeded `ATTACK_DAMAGE` attribute, **×1**. Vanilla's
+  `event.getDamage()` is tokened and discarded.
+- **Route B — `onEnvironmentalDamage`**, for every cause that `VanillaDamagePolicy.forCause` REROUTEs
+  on a tracked victim. This includes PROJECTILE, ENTITY_EXPLOSION, SONIC_BOOM, MAGIC, POISON, WITHER
+  and THORNS. The amount is `DamageScale.toCustom(event.getDamage(), customMax, …, barIsPuppeted)`.
+  For a player the bar is puppeted, so **k = playerMax / 20**, which is 5 for a base player.
+
+> **ROUTE B IS ALREADY ×5 FOR A BASE PLAYER.** A skeleton's arrow, a creeper's blast and a warden's
+> boom land today at five times their vanilla number on a 100-HP player. Only Route A (melee) is at
+> ×1. So M1's "×5 damage" is **already true for every non-melee path**, but through a
+> **percentage-of-max** conversion, not a flat ×5. At player max 400 it is ×20. **A slice that
+> multiplies Route B by 5 again lands every arrow at ×25.** Slice 2's pricing must REPLACE Route B's
+> conversion for mob-sourced damage, not stack on it. **M16 rules the replacement FLAT:
+> `vanilla × 5 × GS/100`, the same as melee.**
+
+| path | cause (see note ‡) | route today | amount today | where ×5 × GS/100 applies |
+|---|---|---|---|---|
+| melee: zombie, vindicator, piglin, spider, enderman, vex, bee sting's hit, warden melee, ravager, hoglin, dragon melee, iron golem | ENTITY_ATTACK | A | seeded `ATTACK_DAMAGE` ×1 | **at the seed**: seed attack = attribute × 5 × GS/100 (MobScaling). `onMobMeleeAttack` is unchanged. |
+| arrows: skeleton, stray, bogged, parched, pillager crossbow | PROJECTILE | B | `getDamage()` × playerMax/20 | the mob-sourced branch of Route B; GS read off the **projectile** (stamped at launch) |
+| trident (drowned) | PROJECTILE | B | same | same |
+| blaze small fireball, ghast fireball impact | PROJECTILE ‡ | B | same | same; ghast blast below |
+| ghast fireball blast, wither skull blast | ENTITY_EXPLOSION ‡ | B | same | same; GS from the direct entity (the fireball or skull) |
+| wither skull hit | PROJECTILE ‡ | B | same | same |
+| llama spit | PROJECTILE | B | same | same. A llama is **passive** (§1.4), so ×5 with no GS. |
+| shulker bullet | PROJECTILE ‡ | B | same | same (hit damage only; the levitation is an effect, not damage) |
+| creeper explosion | ENTITY_EXPLOSION | B | same | the mob-sourced branch; GS off the creeper itself (the direct entity) |
+| witch splash harming | MAGIC | B | same | the mob-sourced branch; GS off the thrown potion, stamped at launch |
+| witch poison, wither-skeleton wither, cave-spider and bee poison, the wither's wither effect | POISON / WITHER | B | `getDamage()` × playerMax/20 | **CANNOT BE SCALED BY GS TODAY.** A damage-over-time tick names no causing entity, so no GS is reachable. It stays ×5 by Route B, with no GS. §6 F5. |
+| warden sonic boom | SONIC_BOOM | B | same | the mob-sourced branch; GS off the warden |
+| evoker fangs | MAGIC ‡ | B | same | the mob-sourced branch; GS off the **causing** evoker (fangs are not a projectile and are not stamped) |
+| guardian / elder guardian beam | MAGIC ‡ | B | same | the mob-sourced branch; GS off the guardian |
+| dragon's breath cloud | MAGIC or DRAGON_BREATH ‡ | B | same | GS off the causing dragon, if the cloud names it (‡) |
+| vex | ENTITY_ATTACK | A | ×1 | at the seed |
+| pufferfish contact | ENTITY_ATTACK ‡ | A | **0 if it has no `ATTACK_DAMAGE` attribute** (`attackDamageOf` returns 0.0) | at the seed, and it stays 0. §6 F4. |
+
+> ‡ **UNMEASURED.** Which vanilla `DamageType` maps to which Bukkit `DamageCause`, and which entity
+> each event names as *direct* and *causing*, was **not read** for this plan. The route column holds
+> whatever the cause is, because Route B catches every REROUTE cause. What changes is only *where the
+> GS is read from*. Slice 2's first commit is a probe logger (cause, direct type, causing type,
+> vanilla amount, applied amount), run once against each row, **before** the pricing is written.
+> Settle ambiguous rows with `javap` against the `run/versions` server jar (memory:
+> *javap is the jar instrument*).
+
+**Paths the plugin cannot scale today, as findings:**
+- **F-DoT.** POISON and WITHER ticks carry no source, so no GS reaches them (§6 F5).
+- **F-melee-attribute.** Route A prices every mob melee hit from the **seed-time** `ATTACK_DAMAGE`.
+  It ignores vanilla's own amount, so it ignores:
+  - a weapon or enchant the mob picks up after it was seeded;
+  - vanilla's random ranges (the iron golem's);
+  - difficulty;
+  - any mob whose contact damage is not that attribute.
+
+  Pre-existing, and recorded in §6 F4. Scaling multiplies it faithfully, flaws included.
+- **F-difficulty (UNMEASURED).** Route A reads an attribute, which does not change with difficulty.
+  Route B reads `getDamage()`. Whether vanilla applies its difficulty adjustment to a player victim
+  **before** the Bukkit event is built was **not read**. If it does, Route A and Route B also disagree
+  by difficulty. It is settled by `javap` on the player's `hurtServer` in slice 2, and neither route
+  is changed on a guess.
+
+### 1.3 Environmental damage and healing on mobs
+
+**Damage — confirmed, and IT IS ALREADY M13 AND M14, WORD FOR WORD.** `onEnvironmentalDamage` gates
+on `stats().tracks(id)` (every seeded mob), then REROUTEs the cause through `damageWindow.claim` and
+the shield resolution. The amount is
+`DamageScale.toCustom(amount, customMax, vanillaMaxAttribute, barIsPuppeted=false)`. For a mob that is
+**vanilla amount / its real `MAX_HEALTH` attribute × its custom max** — M13's formula exactly, and
+the same arithmetic for a custom mob (M14):
+
+| mob | today | after slice 1 seeds scaled HP (the vanilla attribute unchanged, per M9) |
+|---|---|---|
+| zombie | 20 / 20 → **×1** | GS 100: 100/20 → ×5. GS 500: 500/20 → **×25** |
+| Knell (custom) | 360 / 20 → **×18** | GS 100: ×18. GS 200: ×36 |
+
+So **the environmental damage half of M13/M14 needs no code change**: slice 1 raises the custom max
+and the proportion follows. A fall that kills a vanilla zombie (`amount ≥ 20`) deals at least the
+zombie's whole custom max, at any GS.
+
+> **THIS IS A SECOND REASON FOR M9, AND IT IS SILENT.** The proportion is only right because the
+> denominator is the **vanilla** attribute. Anything that ever writes the scaled max into
+> `MAX_HEALTH` turns every environmental hit on a mob into ×1 — with no error, and with the nameplate
+> still reading correctly. Slice 1's M9 gate row (G3) guards this too, and slice 3 pins it with
+> `DamageScaleTest` rows at GS ≠ 100.
+
+**Healing — CORRECTED: no vanilla heal reaches a mob's store at all.** `onRegainHealth` returns on its
+first line for any non-`Player`. Its javadoc says so ("*Scope: tracked players only. A mob's health is
+its own store's business and no vanilla heal is currently rewriting it*"). So these all move only the
+mob's vanilla health, which nothing reads:
+- a witch drinking healing;
+- a regeneration effect on a mob;
+- the wither's regen;
+- ender crystals healing the dragon;
+- a horse eating.
+
+On the store they are no-ops. M15's heal half is **new wiring, not a rescale**: slice 3 adds a mob arm
+with its own exhaustive policy, priced by the same proportion as the damage (vanilla amount /
+vanilla max × the mob's custom max), so an End crystal is exactly as strong as in vanilla.
+
+**Instant health and harming on undead** arrive as damage (MAGIC), not heals. They ride Route B like
+any MAGIC.
+
+### 1.4 Hostile vs passive — how to tell them apart, and the edge cases
+
+**Measured from the pinned `paper-api-26.1.2.build.74-stable.jar` (javap over every
+`org.bukkit.entity` interface, the `extends` closure computed from the output).** `org.bukkit.entity.Enemy`
+is implemented directly by `Monster`, `Slime`, `Ghast`, `Phantom`, `Shulker`, `Hoglin` and `EnderDragon`.
+Its closure is:
+
+> AbstractSkeleton, Blaze, Bogged, Breeze, CaveSpider, Creaking, Creeper, Drowned, ElderGuardian,
+> EnderDragon, Enderman, Endermite, Evoker, Ghast, Giant, Guardian, Hoglin, Husk, Illager, Illusioner,
+> MagmaCube, Parched, Phantom, PigZombie, Piglin, PiglinAbstract, PiglinBrute, Pillager, Raider,
+> Ravager, Shulker, Silverfish, Skeleton, Slime, Spellcaster, Spider, Stray, Vex, Vindicator, Warden,
+> Witch, Wither, WitherSkeleton, Zoglin, Zombie, ZombieVillager
+
+**RULED as M21: `mob instanceof Enemy` is the hostile test, plus the edge cases.** The full list and
+the edge-case table are in §0, under M21 — **that is the account; this is the pointer**, so the two
+cannot drift. Why `Enemy` rather than the alternatives: it is one interface, maintained by Paper, so
+it does not go stale at the next mob drop the way a list of our own would; and `Monster` alone is too
+narrow (it misses Slime, Ghast, Phantom, Shulker, Hoglin and the dragon).
+
+Two notes the table does not carry. A tamed mob is `Tameable`, which extends `Animals`, so taming
+changes nothing. A split slime child's HP comes from its own smaller vanilla max × 5 × the inherited
+GS.
+
+### 1.5 Custom mobs
+
+**Confirmed.**
+- `MobDefinition(id, baseEntity, displayName, maxHealth)`. There is **no `attack_damage` field**, so a
+  custom mob's melee is seeded from its base entity's vanilla `ATTACK_DAMAGE` (`attackDamageOf`).
+- `MobRegistry` is immutable-after-load, keyed by the `mob_id` tag (`Keys.mobId`, PDC STRING
+  `mob_id`).
+- `/rpg spawn <mob>` (`RpgCommand.spawnMob`) tags `mob_id`, sets the real `CustomName` and
+  `CustomNameVisible=false` **inside the pre-spawn consumer**. That ordering is load-bearing: the add
+  event seeds register-if-absent, so a tag written afterwards is ignored. **A GS written by
+  `/rpg spawn … [gs]` has exactly the same constraint.**
+- The only shipped custom mob is `knell.yml` (`wither_skeleton`, `max_health: 360`).
+
+**Consequence of M4: the Knell's damage is not scaled at all at GS 100.** With no `attack_damage` of
+its own, it hits with a vanilla wither skeleton's attribute at ×1. (Slice 2 applies M4's GS/100 to
+that base, which changes nothing at GS 100; whether M17's "keeps its current behaviour" means the GS
+factor too is flagged in §6 F15 for the seat's diff.) After slice 2, an **ordinary** wither skeleton hits ×5. **So the named boss hits one fifth as
+hard as the common mob it is built on. PARKED by M17**: it keeps its current behaviour, and it is
+open in §6 F15. Slice 2 adds no `attack_damage` field.
+
+**M18: a custom mob takes the distance GS** like any hostile mob, until the M3 boss exceptions exist.
+A Knell spawned 2,500 blocks out is GS 200, 720 HP.
+
+### 1.6 The nameplate
+
+**Confirmed.**
+- `NameplateText.of(baseName, cur, max)` builds `<name> <cur>/<max> ❤` with the heart in
+  `NamedTextColor.RED`, and the numbers `Math.round`ed.
+- `MobNameplateManager` caches one `Nameplate` per mob: a fixed `baseName` plus an atomic
+  (text, version).
+- `onChange` rebuilds the text from `nameplate.baseName()` on every `HealthChange`.
+- `tickViewer` runs a per-viewer 4-tick LOS loop and sends through `PacketNameplateSender`, which
+  writes a per-viewer override of metadata index 2 (custom name). **The mob's real name is never
+  written.**
+
+**Where the GS goes.** The GS never changes (M5), so it belongs in the **fixed** half. Slice 1 bakes the
+`[GS] ` prefix into the `baseName` handed to `registerIfAbsent`. `onChange` then carries it for free,
+and no second field or version path is needed. A passive mob gets no prefix (M7).
+
+**An opted-out mob** (`Keys.nameplateOptOut` present) is seeded and never plated. `onMobAppear` returns
+after `seedCombatStats`. So it **still gets scaled stats and a stored GS**; it only shows no plate.
+That is correct: its damage must not depend on its display. (Nothing in `paper/src/main` writes that
+key; see §6 F8.)
+
+### 1.7 What counts as "on spawn": when the GS is assigned, and from where
+
+**One rule covers every row: the GS is assigned at the FIRST seed that finds no stored GS, from the
+mob's position at that moment, and written to its PDC. Every later seed reads it back.** The first
+seed is `EntityAddToWorldEvent`, and every row below except the startup case goes through it.
+
+| arrival | assigned when | from which position | note |
+|---|---|---|---|
+| natural spawn | add event | spawn position | |
+| spawner | add event | spawn position | |
+| spawn egg / dispenser | add event | spawn position | |
+| breeding | add event | birth position | only passive mobs breed, so nothing is assigned (M7). Hoglins breed and are `Enemy`: a piglet hoglin gets distance GS at birth. |
+| raid wave, patrol, zombie reinforcements, jockeys | add event | spawn position | |
+| `/summon` | add event | spawn position | **`/summon … {BukkitValues:{"rpg:mob_gear_score":N}}` presets the GS**, because the seed reads before it rolls. A free dev instrument, and also the reason the stored value must be bounds-checked on read (see §2.4). |
+| `/rpg spawn <mob> [gs]` | pre-spawn consumer | n/a: the argument | written before the add event, exactly like `mob_id` |
+| conversions: villager→zombie villager, zombie→drowned, husk→zombie, piglin/hoglin→zombified, skeleton→stray, zombie villager→villager | `EntityTransformEvent` | n/a: **INHERITED** from the source when the source had one; else the add-event roll at the new position | A villager has no GS, so its zombie gets distance GS at the conversion point. A cured zombie villager becomes passive and its stored GS is simply ignored (M7). |
+| slime / magma cube split | `EntityTransformEvent` (reason SPLIT) | **INHERITED** from the parent | |
+| already alive in loaded chunks when the plugin enables | **NOTHING seeds them today** | n/a | `RpgPlugin` has no sweep of existing entities. Whether any are loaded before our listeners register on this build (no `load:` key in `paper-plugin.yml`) is **unmeasured**. Slice 1 adds an idempotent enable-time sweep: every living non-player in every loaded world, `onMobAppear` on each entity's own scheduler. §6 F7. |
+| **walks or is carried through a Nether or End portal** | the arrival add event **re-seeds**, reads the stored GS, and **KEEPS IT** | n/a | **M5: a mob that changes dimension keeps its stored GS.** A GS 140 zombie that walks into the Nether stays [140], even though the Nether curve at its arrival point would say something else. Its **current HP resets to full** on arrival (§1.1, §6 F1). |
+
+> **The transform ordering is UNMEASURED and is a slice-1 probe, not an assumption.** If
+> `EntityTransformEvent` fires **before** the new entity's add event, inheriting is one PDC write. If
+> it fires **after**, the child has already been seeded from distance, and the handler must also
+> re-seed it. Inheritance needs `computeIfAbsent` to be bypassable for exactly this case, which is a
+> real design change. The probe logs both events' order on one zombie-villager conversion and one
+> slime split before either handler is written.
+
+---
+
+## §2 ARCHITECTURE — one recommendation each, with the alternative named
+
+### 2.1 `core/mob/MobScaling` — pure
+
+```
+maxHealth(double base, boolean isCustom, boolean isHostile, int gs) -> double       (slice 1)
+attackDamage(double base, boolean isCustom, boolean isHostile, int gs) -> double    (slice 2)
+```
+
+**There is no environmental factor, by ruling.** M13–M15 make environmental damage and healing on a
+mob **proportional** (vanilla amount / vanilla max × the mob's custom max), and that arithmetic
+already exists as `DamageScale.toCustom` with `barIsPuppeted = false` (§1.3). A second copy of it in
+`MobScaling` would be two accounts of one rule. The draft of this plan had an
+`environmentalFactor(isCustom)` returning ×5; M13 withdrew it.
+
+- `base` is `MobSeeding`'s answer for health (authored or vanilla) and the vanilla attribute for
+  attack.
+- Vanilla factor: **5** unless `isCustom` (M4).
+- GS factor: **gs / 100** only when `isHostile` (M7).
+- **The divisor is its own constant, `MobScaling.GS_BASELINE = 100`. It does NOT reuse
+  `GearScore.BASELINE`.** They are different quantities that agree today. `GearScore`'s class javadoc
+  already warns that three 100s in that class cannot be told apart by any test, and importing its
+  divisor into mob arithmetic would couple item tuning to mob tuning invisibly.
+
+**Recommended: two named methods, each landing in the slice that consumes it.**
+*Alternative: one record-returning function `(maxHealth, attackDamage)`.* It is rejected because its
+attack half would ship unconsumed for a whole slice. **An output nothing reads is a claim nothing
+tests.**
+
+`MobSeeding` keeps its one job (**which base**), and `MobScaling` does **how much**. Folding the
+multiplier into `MobSeeding.maxHealth` was the alternative. It is rejected because `MobSeedingTest`'s
+separation property (an untagged mob gets vanilla unchanged) is about the **base**, and it should
+stay testable apart from the multiplier.
+
+### 2.2 `core/mob/DistanceGearScore` — pure
+
+```
+of(MobDimension dimension, double horizontalDistance) -> int
+```
+
+- `MobDimension` is a new core enum `{OVERWORLD, NETHER, END}`, because core has no Bukkit.
+- Paper maps `World.Environment` onto it. `NORMAL` and **`CUSTOM`** both map to `OVERWORLD`: a custom
+  world has no ruling, and the overworld curve is the least surprising.
+- Each curve is `start + distance * rateNumerator / 25`. **Multiply before dividing, as written in
+  the ruling.** Nether is `200 + distance * 8 / 25`, **not** `distance * 0.32`.
+- **Then clamped: `min(CAP, …)` with `DistanceGearScore.CAP = 500` (M20), in every dimension.** The
+  order of the clamp and the rounding cannot change the result, because 500 is a whole number; the
+  code does compute, round, clamp, and says so.
+- **`CAP` is its own constant, not `GearScore.HARD_CAP`.** Both are 500 today and they are different
+  quantities (a mob's ceiling, an item's ceiling); §2.1's divisor argument applies unchanged. A
+  mutation that swaps one for the other is invisible to every test while they are equal, so the
+  naming is the only protection — the same position `GearScore`'s own javadoc takes on its three
+  100s.
+- The result is `Math.round`ed (a seat default).
+- **The whole grid is asserted from executed values, never predicted** (memory: *never predict
+  floating point*).
+
+**The distance is `hypot(dx, dz)` (M19: a circle), measured from an ORIGIN that paper chooses per
+dimension and passes in:**
+- overworld and Nether: `World#getSpawnLocation()`;
+- **the End: (0, 0), always (M23)** — never the End's spawn point.
+
+`DistanceGearScore` itself only ever sees the distance. The origin choice is one small paper function,
+`MobOrigin.of(World)`, and it is the thing G7 exercises.
+
+*Alternative: stepped tiers (`+100` per full 2,500).* It is rejected per the seat's
+continuous-curve default, and it would be a one-function change if Ben overrules.
+
+### 2.3 The M3 seam: `core/mob/GearScoreSource`
+
+```
+interface GearScoreSource { int gearScoreFor(MobDimension dimension, double horizontalDistance); }
+```
+
+**One implementation, `DistanceGearScoreSource`, delegating to `DistanceGearScore`. The seed holds one
+field typed as the interface.** That field is the whole seam. There is no chooser, no list, and no
+per-mob-type dispatch: M3 says to build none, and a chooser with one arm is an arm nothing exercises.
+
+**The stored GS always wins over every source (M5).** The source is consulted only when the PDC has
+none. So a later boss source can never re-roll a mob that already has a score.
+
+*Alternative: a `switch` on entity type inside the seed.* It is rejected because it is the chooser
+that M3 defers, built early.
+
+### 2.4 GS storage: the PDC key `mob_gear_score`
+
+- **`Keys.mobGearScore = new NamespacedKey(plugin, "mob_gear_score")`, type `INTEGER`**, on the
+  entity. It is written **once**, at the first seed, and only for a hostile mob. A passive mob carries
+  no key. Absence means "not hostile, or not yet seeded", and the hostility test is re-run at every
+  seed.
+- **Not `gear_score`.** That key is the item stamp (`GearScoreItems`, hard-capped at 500 by
+  `GearScore.HARD_CAP`). A mob's GS is also capped at 500 (M20), but it is a different quantity with
+  a different source. **Sharing the key means any grep for one finds both.**
+- **Read-side guard.** `/summon … BukkitValues` can write any integer. A stored value **outside
+  1..500** is treated as absent and re-rolled from position, and the roll is logged at WARN. That is
+  not a re-roll in M5's sense: nothing of ours ever stored it.
+- **Proof that it survives**: gate rows **G12** (unload) and **G13** (restart). Each is witnessed by
+  a `source=stored` seed log line for that UUID, **after** a removal line. Without that, a re-roll at
+  the same position would print the same number and pass (see §4).
+
+**The GS must also be readable off-thread**, for slice 2. A creeper's blast is priced on the
+**victim's** thread, and on Folia the creeper may be owned by another region. So the seed also records
+the GS in a `MobGearScores` map (a concurrent `UUID → int`) in paper/, forgotten in `onEntityRemove`
+beside `meleeHits.forget`. **Projectiles are stamped with the shooter's GS at `ProjectileLaunchEvent`
+(the same key)**, because an arrow can outlive its shooter and usually shares the victim's region.
+
+### 2.5 Dev commands: `/rpg spawn <mob> [gs]` and `/rpg mobinfo`
+
+**`/rpg spawn <mob> [gs]`**, extending the existing literal.
+- `<mob>` resolves against `MobRegistry` first, then as a vanilla `EntityType` key (`zombie`,
+  `minecraft:warden`). A custom id that shadows a vanilla name wins, and `ContentValidator` warns at
+  boot.
+- `[gs]` is an `IntegerArgumentType.integer(1, 500)` (M20), written **inside the pre-spawn consumer**
+  next to `mob_id`. Without `[gs]`, the mob rolls from its position like any other spawn.
+- Given a passive type, `[gs]` is refused with a red line, not silently dropped.
+
+*Alternative: a separate `/rpg spawnvanilla`.* It is rejected because one verb with one resolution
+order is less to remember, and the pre-spawn-consumer rule then lives in one method.
+
+**`/rpg mobinfo`** reads the looked-at mob, using the same aim ray as `mobMutate`. It prints:
+- type, and `mob_id` or `-`;
+- hostile or passive;
+- the stored GS, or `none`, and **the GS its current position would roll**;
+- custom cur/max and custom attack;
+- **the vanilla `MAX_HEALTH` and `ATTACK_DAMAGE` attributes**.
+
+The last line is what lets the gate check "×5" against a printed number rather than a remembered one,
+and check M9 (the attribute still reads vanilla).
+
+*Alternative: put the GS in `/rpg mobdamage`'s output.* It is rejected because a read should not
+cost the mob HP.
+
+### 2.6 `/rpg mobdamage` and `/rpg mobheal` under scaling
+
+**The semantics are unchanged: the amounts are CUSTOM HP, typed by the operator, never scaled.** They
+are instruments, and an instrument that multiplied by the target's GS would make every reading a
+calculation. The one change is F2's: `mobMutate` seeds through `seedCombatStats` instead of its own
+raw `bootstrapIfAbsent`, so a mob first touched by the command is scaled like any other.
+
+---
+
+## §3 SLICES — core tests first, then wiring; mutations and gate rows per slice
+
+The seat's three-way cut holds. **One addition to it: GS assignment and storage ride in slice 1**,
+because the nameplate cannot show a GS that nothing assigns. Slices 1 and 2 must both merge before
+anyone plays. After slice 1 alone, mobs have ×5 HP and ×1 melee.
+
+**Environmental damage on mobs is FINAL after slice 1, not interim.** It is already proportional
+(§1.3), so raising the custom max is all M13 and M14 need. That is why slice 1 carries G11 and G18,
+and why slice 3 shrinks to heals plus the core pins on the damage proportion. Folding slice 3 into
+slice 1 was considered and not taken: heals are a new handler arm with a new exhaustive policy, and
+slice 1 is already the largest.
+
+### Slice 1 — health, GS assignment and storage, the nameplate, the dev commands
+
+**Core, tests first:**
+- `MobScaling.maxHealth` in `MobScalingTest`: the full grid over {vanilla, custom} × {hostile,
+  passive} × GS {100, 200, 300, 500}. It includes the M2 examples (zombie 20 → 500 at GS 500, Warden
+  500 → 12,500) and the Knell (360 → 360 at GS 100).
+- `DistanceGearScore` in `DistanceGearScoreTest`:
+  - each world at 0 and 2,500 blocks, plus `CUSTOM`→overworld;
+  - **the cap (M20), on both sides of it, in every world**: overworld 9,975 / 10,000 / 12,000
+    (→ 499 / 500 / **500, not 580**); End 4,975 / 5,000 / 6,000 (→ 499 / 500 / **500, not 540**); Nether 900 / 937.5 / 2,500
+    (→ 488 / 500 / **500, not 1,000**). The expected values come from running the function, per the
+    memory, and the "not" figures are what a missing clamp returns;
+  - **a rounding row at a half** (overworld d = 12.5 → 100.5);
+  - a Nether row at a distance where `d*8/25` and `d*0.32` round differently, if one exists. Find it
+    by executing, not by hand. If none is found in the range, say so in the PR rather than invent a
+    row.
+- `MobSeedingTest` is unchanged. It must still pass untouched, and that is its point.
+
+**Paper wiring:**
+- `Keys.mobGearScore`.
+- `MobClassifier.isHostile(LivingEntity)`, which is `instanceof Enemy`.
+- `MobNameplateManager.seedCombatStats`: read the stored GS, else roll from the source and write it
+  (hostile only); scale the base through `MobScaling.maxHealth`; record the GS in `MobGearScores`.
+  **The attack stays ×1 in this slice.**
+- `MobOrigin.of(World)`: the world's spawn location, **except the End, which is (0, 0) (M23)**.
+- `onMobAppear` passes the `[GS] `-prefixed base name.
+- `NameplateText` gets `of(OptionalInt gs, baseName, cur, max)` and `NameplateTextTest` rows. **The
+  `[GS] ` prefix is `NamedTextColor.AQUA` (M22); the name, the numbers and the red heart are
+  unchanged.** The test asserts the prefix's colour, the heart's colour, and that the name and
+  numbers carry no colour of their own — so a colour that leaks from the prefix onto the name
+  reddens.
+- `RpgListeners`: an `EntityTransformEvent` inheritance handler, **after the ordering probe**.
+- `RpgPlugin`: the enable-time sweep (F7).
+- `RpgCommand`: `spawn … [gs]` with vanilla types, `mobinfo`, and `mobMutate` via `seedCombatStats`.
+- The stale javadocs listed in §6 F9 and F10 are corrected in the same commit as the code they
+  describe.
+
+**Mutations** (each must redden a named test; revert and re-run green; follow `verification.md`,
+*THE EIGHT WAYS A MUTATION LIES*):
+- the vanilla factor 5 → 1;
+- `isCustom` ignored (the Knell reads 1,800);
+- `isHostile` ignored (a cow reads a GS);
+- `/ GS_BASELINE` → `/ 50`;
+- the Nether rate 8 → 1;
+- the End start 300 → 100;
+- round → floor (reddened only by the half row);
+- the clamp removed (reddened by the 12,000 and Nether 2,500 rows);
+- `CAP` 500 → 400;
+- the prefix colour AQUA → none.
+
+**The End origin is paper-side and has no unit test**, so G7 is its only witness: an End mob near
+(0, 0) must read [300]. Place it **away from the End's spawn point** too, or the row cannot tell
+(0, 0) from the spawn point.
+
+**The unreachable-arm warning** (*AND THE ARM THAT MOST EARNS ITS KEEP…*): the out-of-range stored GS
+guard is reachable **only** through `/summon BukkitValues`. Its gate rows (G15, G15b) use exactly
+that, or it is not witnessed.
+
+**Gates:** R0, then G1–G7, G11, G12–G16, G18, G19.
+
+### Slice 2 — damage, every path from §1.2
+
+**First commit: the probe logger** (cause, direct entity, causing entity, vanilla amount, applied
+amount, resolved GS). It is run against each §1.2 row, and **not merged**, the same way Recall's
+tuning logger was a spike. Its output fills the ‡ cells in this plan's §1.2 table, in the PR.
+
+**Core, tests first:**
+- `MobScaling.attackDamage`, the same grid as `maxHealth`.
+- `MobDamagePricing.fromEvent(vanillaAmount, gsOrAbsent)` = **`vanilla × 5 × gs/100`, FLAT (M16)**.
+  It takes **no player max at all** — the parameter's absence is the rule. **Its paper-side gate
+  must use a player max ≠ 100**, because at max 100 the flat price and the old share-of-max price are
+  the same number (§4 G9's note).
+- **Every mob-to-player hit is priced by M16**: melee through the seeded attack (`attackDamage`),
+  everything else through `fromEvent`. Both are `vanilla × 5 × GS/100`. The only exceptions are the
+  DoT ticks that carry no source (§6 F5).
+
+**Paper wiring:**
+- `seedCombatStats` seeds the attack through `MobScaling.attackDamage`, so melee is done at the seed.
+- `onEnvironmentalDamage`: when the victim is a **player** and the damage is **mob-sourced** (a
+  non-player `LivingEntity` resolves as causing, or the direct entity carries `mob_gear_score`), price
+  through `MobDamagePricing` **INSTEAD OF** `DamageScale`, never after it.
+- **`DamageScale.toCustom` keeps its "one call site" property**: the branch chooses one of the two
+  prices, and does not chain them.
+- GS resolution order:
+  1. the direct entity's PDC (projectile, potion or fireball, stamped at launch);
+  2. `MobGearScores` for the causing UUID;
+  3. **absent: ×5 with no GS, and a WARN line.** An unresolved GS must be visible, never ×1 in
+     silence.
+- `ProjectileLaunchEvent` stamps the projectile.
+- **No content change.** The Knell's damage is parked (M17, §6 F15); no `attack_damage` field.
+
+**Mutations:**
+- `attackDamage`'s vanilla factor → 1;
+- the mob-sourced branch also applies `DamageScale` (it must redden: ×25);
+- the resolution order reversed (a projectile whose shooter was re-rolled; a unit row on the resolver);
+- the absent-GS arm returning 0.
+
+**Gates:** R0, G8–G10, plus a probe table covering every §1.2 row that can be produced in-game.
+
+### Slice 3 — proportional healing on mobs (M15), and the core pins on proportional damage (M13, M14)
+
+**Core, tests first:**
+- **`DamageScaleTest` rows pinning M13/M14 for scaled mobs** (the arithmetic already exists and has
+  no row above GS 100 today): a GS 300 zombie (custom 300, attribute 20) → ×15; a GS 500 zombie →
+  ×25, and a lethal-for-vanilla amount (20) → exactly its whole custom max (500); a Knell at GS 100
+  (360 / 20) → ×18 and at GS 200 (720 / 20) → ×36.
+- A new `MobHealPolicy`: an **exhaustive switch over `RegainReason` with no default arm**, matching
+  `VanillaHealPolicy`'s house style. **REROUTE every reason** on a tracked mob, because nothing
+  replaces a mob's regeneration the way `HealthRegenSystem` replaces a player's. That covers
+  `ENDER_CRYSTAL`, `WITHER`, `WITHER_SPAWN`, `REGEN`, `MAGIC`, `MAGIC_REGEN`, `EATING` and `SATIATED`.
+  `CUSTOM` is a **decided** REROUTE, following the damage side's *"rerouting honours it"*.
+
+**Paper wiring:**
+- `onRegainHealth` gains a tracked-mob arm: cancel, then
+  `stats().heal(id, DamageScale.toCustom(amount, max, vanillaMaxAttribute, false), id, true)`.
+  **Proportional (M15), with the same arithmetic as the damage side, so an End crystal heals the
+  dragon the same fraction of its bar as in vanilla.** Custom mobs take the same path (M14's "no
+  special case" applies to heals as well).
+- **`DamageScale` gains its second call site, and its javadoc's "one call site by construction" must
+  be rewritten in the same commit.** The rule it protects is *no vanilla-denominated DAMAGE is
+  converted twice* (k²). A heal is a different direction and cannot be converted twice with a damage.
+  *Alternative: a separately named heal function with the same body.* Rejected, because two copies of
+  one proportion are two accounts of one rule.
+- The environmental damage branch is **unchanged** (§1.3).
+- Mob-sourced damage on a **mob** victim (a skeleton's arrow in a zombie) stays in the proportional
+  bucket. See §6 F12.
+
+**Mutations:**
+- the heal arm prices ×1 (the raw vanilla amount);
+- the heal arm prices ×5 flat (M8's withdrawn rule; the GS 300 heal row reddens: ×5 vs ×15);
+- `REGEN` or `ENDER_CRYSTAL` moved to PASS;
+- `DamageScale`'s mob denominator replaced by the custom max (every row reads ×1).
+
+**Gates:** R0, G11 and G18 re-read as regressions, then G17, G20.
+
+---
+
+## §4 GATE ROWS
+
+**Game mode is declared per row** (verification.md, *THE CREATIVE-DIVERGENCE REGISTER*). **Creative
+removes the cost that every damage row measures**: a creative player takes no damage and is not
+targeted. **Every row that reads damage TO A PLAYER is SURVIVAL.** Read-only nameplate rows may be
+CREATIVE.
+
+**R0 (every slice): the deployed build carries this slice.** The startup line names the head sha. If
+R0 fails, STOP.
+
+| row | slice | mode | setup | expected | what keeps it from being hollow |
+|---|---|---|---|---|---|
+| **G1** | 1 | creative | a natural or egg zombie within ~10 blocks of overworld spawn | `[100] Zombie 100/100 ❤`, **the `[100]` in AQUA (light blue); "Zombie" and the numbers in their usual colour; the heart still red** (M22) | the colour is read on the client, not in the log; a colour leaking from the prefix onto the name fails the row. **A zombie's displayed GS equals its displayed max at every GS** (20 × 5 × GS/100 = GS), so on its own this row cannot tell "max from GS" from "max printed as GS". G1b breaks that. |
+| **G1b** | 1 | creative | a spider at spawn, and one placed 2,500 out | `[100] Spider 80/80 ❤`, then `[200] Spider 160/160 ❤` | spider base 16 ≠ 20; `/rpg mobinfo` shows the vanilla attribute as the witness for ×5 |
+| **G2** | 1 | creative | a zombie **placed** (egg or `/summon`) at x=2500, z=0 | `[200] Zombie 200/200 ❤` | `mobinfo`'s "would roll" line also reads 200, and the stored line reads `source=rolled` |
+| **G3** | 1 | creative | `/summon warden` at spawn | `[100] Warden 2500/2500 ❤`; **`mobinfo` shows vanilla `MAX_HEALTH` = the vanilla value, not 2500**, and there is no error in the log | "no attribute error" is satisfied for free (nothing writes the attribute); **the attribute READ is the witness for M9** |
+| **G4** | 1 | creative | `/rpg spawn knell` at spawn | `[100] Knell 360/360 ❤`, not 1800 | the mutation "isCustom ignored" produces 1800 |
+| **G5** | 1 | creative | a cow at spawn | `Cow 50/50 ❤`, no `[..]`; `mobinfo` stored GS = none | a cow at 2,500 out also reads 50/50 (it rules out "GS 100 happened to be ×1") |
+| **G6** | 1 | creative | a mob at the Nether spawn; one placed 500 out; one placed 2,500 out | `[200]`, then `[360]`, then **`[500]` — capped (M20); uncapped it would read [1000]** | read the Nether `getSpawnLocation()` first (`mobinfo` prints it) and place relative to it. The 500-block mob proves the 8× rate below the cap, which the capped 2,500 row cannot |
+| **G7** | 1 | creative | an End mob (an enderman) placed within a few blocks of **(0, 0)**, and a second one placed at the End's spawn point (`mobinfo` prints it) | the first reads **[300]** (M23). The second reads `300 + its distance from (0, 0) / 25`, as `mobinfo`'s "would roll" line computes it — **not [300] unless the spawn point happens to be (0, 0)** | if the End's spawn point IS (0, 0) the two mobs cannot tell the origins apart; then place the second 250 blocks out on the main island instead and expect [310] |
+| **G8** | 2 | **survival** | an unarmoured player at 100/100; one zombie hit at GS 100 | the player loses **5 × `mobinfo`'s vanilla `ATTACK_DAMAGE`** | the expected number is printed by the server, not predicted |
+| **G8b** | 2 | survival | the same, from `/rpg spawn zombie 300` | 15 × the attribute | GS ≠ 100: the multiplier is really exercised |
+| **G9** | 2 | survival | a creeper blast and a skeleton arrow, from `/rpg spawn creeper 300` / `skeleton 300`; **the player at max 100, then at max 400** (`health_boost_TEMP`) | the probe log's `applied / vanilla` = **15 at both maxes** (M16, flat). The old share-of-max pricing would read 15, then 60; the stacking bug reads 75 | **At GS 100 and max 100, master already prints ×5 for both**, so the row must use GS ≠ 100 **and** max ≠ 100 or it passes on master. |
+| **G10** | 2 | survival | a GS-300 skeleton shoots, then is `/kill`ed while the arrow flies | the arrow still prices at GS 300 (the stamp) | the "shooter gone" arm of the resolution order |
+| **G11** | 1 (re-read in 3) | creative | a zombie at GS 300 falls, and the probe logs the FALL; then a GS 500 zombie dropped from a height that kills a vanilla zombie (vanilla amount ≥ 20 in the log) | `applied / vanilla` = **15** (M13: 300 / 20); **the GS 500 zombie dies from the fall** | at GS 100 proportional and M8's withdrawn flat ×5 are the same number, so GS 300 is required; the lethal drop is M13's own sentence as a row |
+| **G12** | 1 | creative | a GS-200 zombie; walk out until its chunk unloads; return | still `[200]`; the log shows `REMOVE <uuid>` then `SEED <uuid> source=stored gs=200` | **without the log pair the row is hollow in TIME**: a mob that never unloaded, or re-rolled at the same spot, prints the same [200] |
+| **G13** | 1 | creative | a `/rpg spawn zombie 437` zombie near spawn; stop and restart the server | still `[437]`, with `source=stored` | 437 is under the cap and **no position near spawn can roll it**, so a re-roll cannot fake it |
+| **G14** | 1 | survival (the mob must move by itself) | a GS-140 zombie (`/rpg spawn zombie 140`) walks or is pushed through a Nether portal | still `[140]` in the Nether, where any arrival point rolls at least [200] (`mobinfo`'s "would roll" line); **its HP reads full**, which is F1 and expected | the would-roll line proves the two numbers differ |
+| **G15** | 1 | creative | `/summon zombie ~ ~ ~ {BukkitValues:{"rpg:mob_gear_score":0}}` | re-rolled from position, with a WARN line | this is the **only** way to reach the below-1 arm |
+| **G15b** | 1 | creative | the same with `"rpg:mob_gear_score":900` | re-rolled from position (not [900], not clamped to [500]), with a WARN line | the above-cap arm; near spawn a re-roll reads ~[100], which is unambiguous |
+| **G16** | 1 | creative | a zombie villager conversion, and a slime split, from a GS-300 source | the children read [300] | the parent's GS is not the one their position would roll |
+| **G17** | 3 | creative | a regeneration potion splashed on a damaged GS 300 zombie; the probe logs the heal | its plate rises (it never moved before slice 3), and `applied / vanilla` = **15** (M15) | the before-state is taken on master; GS 300 separates proportional (15) from flat (5) |
+| **G18** | 1 (re-read in 3) | creative | a `/rpg spawn knell` Knell in lava, then a `/rpg spawn knell 200` Knell in lava | `applied / vanilla` = **18**, then **36** (M14: 360 / 20, then 720 / 20) | 18 is today's number too, so the GS 200 Knell is the row that shows its custom max entering the proportion |
+| **G19** | 1 | creative | a zombie **placed** 12,000 blocks from overworld spawn | **`[500]`, not `[580]`** (M20); `mobinfo`'s "would roll" also reads 500 | 580 is exactly what the uncapped curve gives, so the two outcomes cannot be confused |
+| **G20** | 3 | creative | in the End: the dragon at GS 300 (it sits at ~[300] by M23), damaged, healing from a crystal; the probe logs the heal | `applied / vanilla` = the dragon's custom max / its vanilla attribute (**15** at GS 300) | the crystal is M15's named case; "the crystals stay as strong as in vanilla" is this ratio |
+
+---
+
+## §5 OPEN QUESTIONS FOR BEN
+
+**None open.** All eleven were answered on 2026-09-27 and are recorded verbatim in §0 as M13–M23:
+
+| was | ruled as |
+|---|---|
+| Q1 environmental damage above GS 100 | M13 — proportional |
+| Q2 environmental damage on a custom mob | M14 — proportional, no special case |
+| Q3 heals on mobs | M15 — proportional |
+| Q4 mob non-melee damage on a player | M16 — flat, `vanilla × 5 × GS/100` |
+| Q5 the Knell's damage | M17 — parked (§6 F15) |
+| Q6 custom mobs and distance GS | M18 — distance, until the M3 exceptions |
+| Q7 the shape of distance | M19 — a circle |
+| Q8 a cap | M20 — capped at 500 |
+| Q9 the hostile line | M21 — `Enemy` plus the edge cases |
+| Q10 the `[GS]` colour | M22 — AQUA |
+| Q11 the End's origin | M23 — (0, 0), always |
+
+The one thing the seat is asked to confirm on the diff, which is a reading of a ruling rather than a
+new question, is in §6 F15.
+
+---
+
+## §6 FINDINGS — recorded, not fixed
+
+- **F1. A mob's current HP resets to full on unload, restart and portal.** `onMobRemove` clears the
+  store, and the next seed builds a fresh `HealthState` at full. It is pre-existing, and five times
+  the HP makes it five times more exploitable (hit, walk away, return). A fix would persist current
+  HP (or its fraction) in the PDC beside the GS. It is its own decision, because it changes the store
+  from pure memory into partly persisted state.
+- **F2. `mobMutate` is a second seed path.** It is **fixed in slice 1** (listed here so the finding is
+  not lost if slice 1 is re-cut).
+- **F3. Mob→mob melee never enters the store** (`NEXT.md`, *Custom HP moves ONLY through the
+  `applyDamage` pipeline*). Scaling does not reach it: an iron golem kills a GS 500 zombie in
+  vanilla time, because the zombie's vanilla health is untouched (M9). It is a SUMMONER prerequisite,
+  already recorded there.
+- **F4. Mob melee is priced from the seed-time `ATTACK_DAMAGE` attribute.** It misses:
+  - later equipment pickup;
+  - vanilla's random ranges (the iron golem);
+  - difficulty;
+  - any contact damage that is not the attribute (the pufferfish candidate prices at 0).
+
+  Scaling multiplies it faithfully.
+- **F5. Damage-over-time ticks (POISON, WITHER) cannot carry a GS.** They name no causing entity, so
+  M16's flat pricing cannot reach them. They stay on Route B's share-of-player-max pricing (×5 at max
+  100), with no GS. A fix would scale at effect application.
+- **F6. Difficulty may split Route A from Route B** (§1.2, unmeasured). It is settled in slice 2 by
+  `javap`, not changed on a guess.
+- **F7. No enable-time sweep.** A living entity present before our listeners register is never
+  seeded until something hits it: no plate, and environmental damage passes to vanilla. **Fixed in
+  slice 1** because GS assignment needs it. It is recorded because it is pre-existing.
+- **F8. `nameplate_opt_out` has no writer in `paper/src/main`.** Only `/data` or `/summon` can set it.
+- **F9. Stale on arrival, fixed in slice 1.**
+  - `NameplateText`'s javadoc says *"nothing seeds a mob above vanilla's 1024 this phase"*. Slice 1's
+    Warden does.
+  - `MobDefinition`'s javadoc has the same shape. It says *"only `maxHealth` is wired this pass"*, and
+    that stays true, so it is left alone.
+- **F10. `DamageScale`'s class javadoc table** ("untagged mob 16 / 16 → k = 1", "the Knell 360 / 20 →
+  k = 18") **becomes false in slice 1** (an untagged zombie is 100 / 20 → k = 5), and its "one call
+  site by construction" claim **becomes false in slice 3**, which adds the mob heal site. Each is
+  corrected in that slice's own commit.
+- **F11. `GearScore`'s javadoc section *"UNTIL MOBS SCALE, THE SERVER GETS EASIER"*** is the debt
+  this plan pays. Revisiting `GearScore.MIN`'s rationale (*"the bound that makes an unscaled-mob world
+  playable"*) is M10's balance pass, not this one.
+- **F12. Mob-sourced damage on a MOB victim** (a skeleton's arrow in a zombie, a creeper's blast in a
+  crowd) is priced as environmental: **proportional** to the victim's bar (M13), with no attacker
+  GS. A decision for the mob→mob pass.
+- **F13. A player's VANILLA bow on a mob is also priced as environmental** (PROJECTILE, Route B), so
+  it is proportional: ×5 × GS/100 on a vanilla mob after slice 1. Weapon balance is M10's; the bucket
+  is recorded so the balance pass finds it.
+- ~~**F14. Integer range.**~~ **WITHDRAWN by M20.** It said an uncapped GS reaches ~1.2 million at the
+  overworld border and ~9.6 million in the Nether, and still fits an `int`. With the cap at 500 there
+  is no range question left.
+- **F15. OPEN — the Knell's damage (M17, parked).** It hits with a vanilla wither skeleton's
+  `ATTACK_DAMAGE` at ×1 (M4, no vanilla 5×), while an ordinary wither skeleton hits ×5 after slice 2.
+  So the named boss hits a fifth as hard as its base mob. It keeps its current behaviour and slice 2
+  adds no `attack_damage` field.
+
+  **One reading for the seat to confirm on the diff:** slice 2 applies M4's GS/100 to the Knell's
+  attack like any custom mob's, so a GS 100 Knell is unchanged and a GS 200 Knell hits twice as
+  hard. If M17's *"keeps its current behaviour"* is meant to cover the GS factor as well, slice 2
+  exempts custom mobs' attack from `MobScaling.attackDamage` entirely. At GS 100 the two readings are
+  the same number, so no gate row near spawn can tell them apart.
+
+---
+
+## REPORT CHECKLIST (for the seat)
+
+- The PR is opened against `master` and is **not merged**. #161 is untouched.
+- No code, no boot. The only file is this one.
