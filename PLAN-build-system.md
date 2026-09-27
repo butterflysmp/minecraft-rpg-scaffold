@@ -113,6 +113,27 @@ when asked, and they replace the template:**
 
 32. **The leap's embers each deal 60 damage in a 3-block radius.** This closes section 7.7's UNRULED note.
 
+**Ben's rulings 33-36, 2026-09-27, given at the tuning boot (relayed by the seat). Recorded verbatim.
+33 changes the ember counts in rulings 27 and 28/31; 34 and 36 change two of ruling 25's numbers.**
+
+33. **SWAP THE EMBER COUNTS**, each keeping its own damage and radius:
+    - Ember Cache throws 5 embers (angles 0, 30, -30, 60, -60), still 8 dmg in r4;
+    - the Updraft leap throws 3 embers in an even ring (0, 120, -120), still 60 dmg in r3 (ruling 32).
+
+    If Ben meant swapping the whole ember sets instead, he will say so.
+34. **Recall's dash distance goes from 8 to 5 blocks.** The distance field is the INTENDED length,
+    calibrated against speed. Measure the actual travel in this boot, and adjust so a flat-ground Recall reads
+    about 5 blocks.
+35. **The leap goes 2 blocks HIGHER than it currently measures.** Report the current median apex, then tune
+    lift until the median is that + 2. Keep the pushback within ruling 28's 3-4 blocks.
+36. **Recall's cooldown goes from 200 to 360 ticks (18 s)**, on the 4-tick grid.
+
+> **What these supersede, named so the older rulings above are read through them:** ruling 27's "three embers
+> exactly: angles 0/40/−40" is now **five, at 0/±30/±60** (33); ruling 28's "throws 5 embers" and ruling 31's
+> "even ring (72° apart)" are now **three, 120° apart** (33); ruling 25's "8-block" dash and "200-tick
+> cooldown" are now **5 blocks** (34) and **360 ticks** (36); ruling 28's "about 4–5 blocks up" is now
+> **the measured baseline + 2** (35). The older rulings are left verbatim, as rulings are.
+
 **And one clarification, given while building slice 1 (2026-09-25):** Q pressed over the stone with a
 screen open **refuses and casts nothing**. §2.5 and ST5 stand as written, and the new Q row reads that
 way.

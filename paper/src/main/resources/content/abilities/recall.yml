@@ -11,7 +11,7 @@
 id: recall
 display_name: "<gold>Recall</gold>"   # MiniMessage, not legacy color codes
 element: kinetic
-cooldown_ticks: 200          # ruling 25; a multiple of 4 (the held right-click grid)
+cooldown_ticks: 360          # ruling 36 (was 200, ruling 25): 18 s, a multiple of 4 (the held right-click grid)
 
 cost:
   resource: mana
@@ -20,8 +20,8 @@ cost:
 cast:
   type: dash
   direction: reverse_facing  # ALWAYS opposite facing -- a straight backpedal, ignoring WASD
-  distance: 8                # ruling 25
-  speed: 2.3                 # ruling 25
+  distance: 5                # ruling 34 (was 8, ruling 25): the INTENDED length; speed is calibrated against it
+  speed: 2.3                 # ruling 25's figure, RE-CALIBRATED at the tuning boot so a flat-ground Recall travels ~5 (ruling 34)
   lift: 0.3                  # ruling 25
 
 # The cast visual rides on_hit: a dash's untargeted effects fire once, at the pre-dash feet.

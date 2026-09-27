@@ -563,17 +563,19 @@ class AbilityLoaderTest {
 
         AbilityDefinition def = registry.find("recall").orElseThrow();
         assertEquals("kinetic", def.element());
-        assertEquals(200, def.cooldownTicks());
+        assertEquals(360, def.cooldownTicks(), "ruling 36 (was ruling 25's 200): 18 s, on the 4-tick grid");
         assertEquals(35.0, def.cost().amount(), 0.0);
         var dash = assertInstanceOf(CastSpec.Dash.class, def.cast());
-        assertEquals(new CastSpec.Dash(8, 2.3, 0.3, CastSpec.DashDirection.REVERSE_FACING), dash,
-                "ruling 25: the 8-block reverse-facing dash, speed 2.3, lift 0.3 -- and no safe landing");
+        // distance 5 is ruling 34 (was 8). speed is CALIBRATED against it at the tuning boot, so the figure here
+        // is whatever that boot measured to travel ~5 blocks -- see PLAN-build-system.md section 7.8.
+        assertEquals(new CastSpec.Dash(5, 2.3, 0.3, CastSpec.DashDirection.REVERSE_FACING), dash,
+                "rulings 25 and 34: the 5-block reverse-facing dash, lift 0.3 -- and no safe landing");
         assertTrue(def.onHit().stream().noneMatch(EffectSpec.ThrowEmbers.class::isInstance),
                 "ruling 24: Recall's embers on use are removed");
     }
 
     /**
-     * The shipped leap (section 7.7): a safe-landing dash that throws a RING of five embers, each 60 fire damage
+     * The shipped leap (section 7.7): a safe-landing dash that throws a RING of three embers (ruling 33), each 60 fire damage
      * in a 3-block radius (ruling 32). The dash and ember launch numbers are PLACEHOLDERS tuned at boot, so only
      * their shape is pinned here -- up is larger than back, and the angles are an even ring.
      */
@@ -598,7 +600,8 @@ class AbilityLoaderTest {
                 .filter(EffectSpec.ThrowEmbers.class::isInstance)
                 .map(EffectSpec.ThrowEmbers.class::cast)
                 .findFirst().orElseThrow(() -> new AssertionError("no throw_embers: the ring is gone"));
-        assertEquals(List.of(0.0, 72.0, 144.0, -144.0, -72.0), embers.anglesDegrees(), "ruling 31: an even ring");
+        assertEquals(List.of(0.0, 120.0, -120.0), embers.anglesDegrees(),
+                "ruling 33 (was ruling 31's five at 72): three, an even ring");
         assertEquals(3.0, embers.burst().radius(), 0.0, "ruling 32");
         assertEquals(new EffectSpec.Damage(60, "fire"), embers.burst().effects().get(0), "ruling 32");
         assertEquals(1, embers.burst().effects().size());

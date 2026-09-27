@@ -117,7 +117,10 @@ class FragmentLoaderTest {
 
     // ------------------------------------------------------------------ section 7.3: behaviour fragments
 
-    /** Ember Cache as shipped: Rekindle's three embers exactly (ruling 27), a target, and no stats. */
+    /**
+     * Ember Cache as shipped: FIVE embers at 0/±30/±60 (ruling 33, which replaced ruling 27's three at 0/±40),
+     * still Rekindle's burst (8 fire in r4, ruling 27), a target, and no stats.
+     */
     @Test
     void theShippedEmberCacheIsABehaviourFragmentWithRekindlesEmbers() {
         FragmentRegistry registry = new FragmentLoader(log, name -> true).loadAll(new File("src/main/resources/content/fragments"));
@@ -126,7 +129,7 @@ class FragmentLoaderTest {
         assertEquals("recall", cache.target());
         assertTrue(cache.modifiers().isEmpty());
         var embers = (io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.ThrowEmbers) cache.addOnHit().get(0);
-        assertEquals(List.of(0.0, 40.0, -40.0), embers.anglesDegrees(), "ruling 27");
+        assertEquals(List.of(0.0, 30.0, -30.0, 60.0, -60.0), embers.anglesDegrees(), "ruling 33");
         assertEquals(4.0, embers.burst().radius(), 0.0, "ruling 27");
         assertEquals(new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(8, "fire"),
                 embers.burst().effects().get(0), "ruling 27");

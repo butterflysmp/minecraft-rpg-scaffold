@@ -27,7 +27,7 @@ cast:
 # Thrown at TAKE-OFF (a dash's untargeted effects fire once, at the pre-dash feet), in an even ring (ruling 31).
 on_hit:
   - type: throw_embers
-    angles_degrees: [0, 72, 144, -144, -72]   # ruling 31: five, 72 degrees apart
+    angles_degrees: [0, 120, -120]   # ruling 33 (was ruling 31's five at 72): three, an even ring 120 degrees apart
     speed: 0.25              # PLACEHOLDER numbers -- tuned at boot
     launch_lift: 0.25        # PLACEHOLDER numbers -- tuned at boot
     item: blaze_powder

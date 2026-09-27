@@ -1,0 +1,209 @@
+# GATE — Recall: the Rekindle rework, Ember Cache, and the Updraft recast
+
+**Status: NOT RUN.** Every prediction below was written **before** any boot. It already reflects Ben's rulings
+33-36 (2026-09-27), and each prediction they touched is marked **"edited before any reading (rulings 33-36)"**:
+this file is written for the first time here, so "edited" means *changed from the §7.9 text it was derived
+from*, not changed after a reading. Readings go **beside** a prediction, never over it, and a prediction is not
+edited once its row has been read.
+
+**The one blank filled after the tuning boot and BEFORE any row is read:** the leap's measured baseline apex
+(ruling 35), in RC9. It is a measurement, not a prediction, and the commit that fills it is the tuning commit,
+which precedes the gate boot.
+
+```
+ROWS     24   R0a R0b R0c RC1 RC2 RC3 RC4a RC4b RC4c RC4d RC5a RC5b RC5c RC6a RC6b RC6c RC7 RC8 RC9 RC10 RC11 RC12 BA13 RC13
+         ──
+         24   = git grep -c '^### R0\|^### RC\|^### BA' <ref> -- GATE-recall.md
+```
+
+**Plan:** `PLAN-build-system.md` §7 (rulings 24-36), as built (§7.10); the tuning figures are §7.8's.
+
+**Declared game mode: SURVIVAL, EVERY ROW.** Fall damage (RC6) is survival-only, mana is spent only in
+survival, and creative changes costs (the creative-divergence register).
+
+**Boot:** `./scripts/dev-server.sh --refresh-content` on `feat/recall`'s tip. The refresh is REQUIRED (this
+branch changes `content/`). Restarts inside a row are WITHOUT the flag.
+
+**Set-up shared by most rows:** an op player in survival as a **Fire Ranger**, the Ability Stone in the hotbar,
+Recall in **Active 1** (left) and Solar Lance in Active 2 (right), flat open ground, and mobs to hit
+(`/rpg spawn` or any). `/rpg mana refill` between rows as needed.
+
+**What the shipped content says (the rows read against these):**
+
+| thing | value | ruling |
+|---|---|---|
+| Recall | kinetic, 35 mana, **360-tick (18.0 s) cooldown**, a reverse-facing dash of **~5 blocks** on flat ground | 24, 25, **34, 36** |
+| Ember Cache (fragment) | Recall throws **5 embers at 0/±30/±60**, each **8 fire in r4** | 27, **33** |
+| Updraft (aspect) | recast Recall at ticks **10-50** for **Updraft Leap**: free, no cooldown of its own | 28-30 |
+| Updraft Leap | a leap **baseline + 2 up** (RC9), **3-4 back**, **3 embers in a ring (0/±120)**, each **60 fire in r3**; no fall damage on the landing | 28, 31, 32, **33, 35** |
+
+---
+
+## R0 — THE DEPLOYED BUILD CARRIES THIS SLICE. IF ANY R0 FAILS, STOP
+
+### R0a — the build line names the tip
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <tip>` naming `feat/recall`'s tip SHA -- not `-dirty`, not `unknown`, and **not the spike's** | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+
+### R0b — the jar carries Recall, and not the spike
+
+| prediction | instrument | READING |
+|---|---|---|
+| PRESENT: `RecastRule`, `RecastTracker`, `InputHold`, `SafeLanding`, `ClassPool`, `content/abilities/recall.yml`, `content/abilities/recall_updraft.yml`. ABSENT: `content/abilities/rekindle.yml`, `content/aspects/banked_embers.yml`, the tuning spike's `TuningLog`, and the control | the scan below | |
+
+```powershell
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'))
+foreach ($c in 'io/github/butterflysmp/rpg/core/build/RecastRule.class',
+               'io/github/butterflysmp/rpg/core/build/RecastTracker.class',
+               'io/github/butterflysmp/rpg/core/build/InputHold.class',
+               'io/github/butterflysmp/rpg/core/build/SafeLanding.class',
+               'io/github/butterflysmp/rpg/core/build/ClassPool.class',
+               'content/abilities/recall.yml',
+               'content/abilities/recall_updraft.yml',
+               'content/abilities/rekindle.yml',
+               'content/aspects/banked_embers.yml',
+               'io/github/butterflysmp/rpg/paper/adapter/TuningLog.class',
+               'io/github/butterflysmp/rpg/paper/menu/NoSuchClassControl.class') {
+  if ($zip.GetEntry($c)) { "PRESENT $c" } else { "ABSENT  $c" }
+}
+$zip.Dispose()
+```
+
+### R0c — the boot log: the content loads, nothing Recall-related refused
+
+| prediction | instrument | READING |
+|---|---|---|
+| the `Loaded ...` line reads **`8 abilities`**, **`2 pools, 6 fragments, 4 aspects`** (the shipped directories at this branch; the class file `ranger.yml` merges into the cells and is not a pool of its own); **no** line says `Refusing` or `Skipping` about `recall`, `recall_updraft`, `fragment_ember_cache`, `updraft`, `ranger` or `ranger_fire`. The one known content WARN (`volley_stone`'s 27-tick cooldown) is pre-existing and not this slice's | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','Content:'` | |
+
+---
+
+## THE ROWS
+
+### RC1 — Recall alone: the dash, and no ember (ruling 24)
+
+| prediction | READING |
+|---|---|
+| no fragment, no aspect slotted. Recall: the reverse-facing dash and the whoosh; **no ember** leaves the caster | |
+
+### RC2 — Ember Cache: five embers, Rekindle's burst (rulings 27, 33)
+
+| prediction | READING |
+|---|---|
+| **edited before any reading (rulings 33-36)**: Ember Cache slotted. Recall throws exactly **5** embers, at **0/±30/±60** (a fan behind the take-off, the centre one straight along the dash's reverse). A zombie beside one takes the burst: **8, fire** | |
+
+### RC3 — Ember Cache inactive (§7.3; carries BA13)
+
+| prediction | READING |
+|---|---|
+| server STOPPED; the build file for this player's Fire Ranger cell hand-edited **ON DISK** (quote the file before and after) so Active 1 is empty; boot. The Build screen shows the fragment *Inactive -- requires Recall equipped*; Solar Lance casts with **no ember**. Restore the file (quote it): RC2 holds again | |
+
+### RC4a — Updraft: the recast leaps (rulings 28-30, 33)
+
+| prediction | READING |
+|---|---|
+| **edited before any reading (rulings 33-36)**: Updraft slotted. Recall, then a clean press **11-49 ticks** later: the leap, and **3** embers in an even ring (**0/±120**). **No mana spent** (HUD), and no cooldown line for the recast | |
+
+### RC4b — a press before tick 10: no leap (the floor)
+
+| prediction | READING |
+|---|---|
+| a press **before tick 10**, then nothing: **no leap**. The press shows Recall's cooldown line | |
+
+### RC4c — a press after tick 50: no leap (the window end)
+
+| prediction | READING |
+|---|---|
+| a press **after tick 50**: Recall's cooldown line, **no leap** | |
+
+### RC4d — one recast per cast
+
+| prediction | READING |
+|---|---|
+| Recall, recast, then a third press inside 50: **no second leap** | |
+
+### RC5a — a held left input does not recast
+
+| prediction | READING |
+|---|---|
+| **hold left on a block** through the whole window: **no leap** | |
+
+### RC5b — a held right input does not recast; a fresh press does
+
+| prediction | READING |
+|---|---|
+| Recall in **Active 2** (right). **Hold right in air** through the whole window: no leap. Release, pause ≥ 9 ticks, press: **the leap** | |
+
+### RC5c — the §7.4 residual, RECORDED rather than predicted
+
+| prediction | READING |
+|---|---|
+| a left hold swept off the block for 9+ ticks and back: **recorded, not predicted** | |
+
+### RC6a — the leap's landing takes no fall damage (ruling 31)
+
+| prediction | READING |
+|---|---|
+| the leap from flat ground: **no fall damage** and no hurt flash. HP read before and after, and equal | |
+
+### RC6b — the mark clears on landing
+
+| prediction | READING |
+|---|---|
+| after RC6a, walk off a 6-block ledge: **normal fall damage** | |
+
+### RC6c — the mark clears in water
+
+| prediction | READING |
+|---|---|
+| a leap into water, then a 6-block drop: normal damage on the drop | |
+
+### RC7 — Recall is class-wide (ruling 24)
+
+| prediction | READING |
+|---|---|
+| a Fire Ranger's Active picker offers Recall; a Fire **Mage**'s does NOT | |
+
+### RC8 — the stale copies are named, never deleted (ruling 26)
+
+| prediction | READING |
+|---|---|
+| **THE `run/` FOLDER HAS NO STALE COPY TO NAME**: measured before this file was written, `run/plugins/Rpg/content/abilities/` and `aspects/` hold only this branch's files (the 22:57 `8dc9674` boot refreshed them). So the row **stages** them: with the server stopped, write `rekindle.yml` (ability), `banked_embers.yml` (aspect) and `rekindle_cast.yml` (visual) into their `run/plugins/Rpg/content/` folders from `git show 35d2526:paper/src/main/resources/content/<dir>/<file>`, then boot **WITHOUT** `--refresh-content`. The boot log names each of the three **ONCE**, and all three files are still on disk afterwards. Banked Embers is in **no** picker | |
+
+### RC9 — the tuned figures (rulings 28, 33, 35)
+
+| prediction | READING |
+|---|---|
+| **edited before any reading (rulings 33-36)**. From §7.8's final table, at the tuned sha: **median leap apex = BASELINE + 2**, where **BASELINE = `____` blocks** *(filled from the tuning boot's first measurement, before any row is read)*; **pushback 3-4 blocks**, standing AND with S held; the leap's **3 embers 3-4 blocks out** at the fuse. And by eye in this boot: the leap visibly clears roughly that height | |
+
+### RC10 — a saved `rekindle` loadout (§7.2)
+
+| prediction | READING |
+|---|---|
+| a saved build naming `rekindle` shows that Active slot **EMPTY**, and nothing else changes | |
+
+### RC11 — Recall travels about 5 blocks (ruling 34)
+
+| prediction | READING |
+|---|---|
+| **edited before any reading (rulings 33-36)**: from flat ground, no key held, facing along an axis: Recall moves the player **about 5 blocks** back, read as the change in the F3 feet coordinate between the take-off and the point where the player comes to rest | |
+
+### RC12 — Recall's cooldown is 18 s (ruling 36)
+
+| prediction | READING |
+|---|---|
+| **edited before any reading (rulings 33-36)**: after a cast, a second press shows Recall's cooldown line counting from **18.0 s**; the tooltip/lore states **18.0 s** | |
+
+### BA13 — CARRIED: a build file read ON DISK
+
+| prediction | READING |
+|---|---|
+| RC3 reads a build file on disk. If RC3's itemised reading quotes the file, BA13 closes there, and says so | |
+
+### RC13 — the leap's embers hit (ruling 32)
+
+| prediction | READING |
+|---|---|
+| a zombie standing where one of the leap's 3 embers comes to rest takes the burst: **60, fire** | |

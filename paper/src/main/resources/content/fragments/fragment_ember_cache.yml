@@ -11,11 +11,11 @@
 
 display_name: "<gold>Ember Cache</gold>"
 icon: blaze_powder
-description: ["Recall throws three embers where you stood."]
+description: ["Recall throws five embers where you stood."]
 target: recall
 add_on_hit:
   - type: throw_embers
-    angles_degrees: [0, 40, -40]   # ruling 27
+    angles_degrees: [0, 30, -30, 60, -60]   # ruling 33 (was ruling 27's 0/40/-40): five embers
     speed: 0.6
     launch_lift: 0.25
     item: blaze_powder
