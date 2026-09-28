@@ -1,18 +1,20 @@
 package io.github.butterflysmp.rpg.paper.health;
 
-import io.github.butterflysmp.rpg.core.mob.DistanceGearScore;
+import io.github.butterflysmp.rpg.core.mob.DimensionGearScore;
 import io.github.butterflysmp.rpg.core.mob.MobDimension;
 import org.bukkit.Location;
 import org.bukkit.World;
 
 /**
  * Where a mob's distance is measured FROM, and which curve it is read against -- the only two things
- * about a position that {@code DistanceGearScore} does not decide.
+ * about a position that {@code DimensionGearScore} does not decide.
  *
  * <ul>
- *   <li>The overworld and the Nether measure from the world's spawn point (the brief's curves).
  *   <li><b>The End measures from (0, 0), always, never its spawn point (M23).</b> This is the only
- *       place that rule lives, and nothing unit-tests it: gate row G7 is its witness.
+ *       place that rule lives, and nothing unit-tests it: the M25 End rows are its witness.
+ *   <li>The overworld and the Nether still measure from the world's spawn point, but since M25 their
+ *       curves have no distance term, so the distance is computed and then ignored. It is kept because
+ *       {@code /rpg mobinfo} prints it, and a later boss or activity source (M3's seam) may want it.
  * </ul>
  *
  * <p>A {@code CUSTOM} environment reads the overworld curve: a custom world has no ruling, and the
@@ -35,9 +37,9 @@ public final class MobOrigin {
     public static double horizontalDistance(Location at) {
         World world = at.getWorld();
         if (dimensionOf(world) == MobDimension.END) {
-            return DistanceGearScore.horizontalDistance(at.getX(), at.getZ(), 0.0, 0.0);
+            return DimensionGearScore.horizontalDistance(at.getX(), at.getZ(), 0.0, 0.0);
         }
         Location spawn = world.getSpawnLocation();
-        return DistanceGearScore.horizontalDistance(at.getX(), at.getZ(), spawn.getX(), spawn.getZ());
+        return DimensionGearScore.horizontalDistance(at.getX(), at.getZ(), spawn.getX(), spawn.getZ());
     }
 }
