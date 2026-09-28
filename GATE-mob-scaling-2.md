@@ -5,6 +5,11 @@
 > whose log shows Ben's LOGIN, whether or not Ben names the row.** "Reported good or skipped -- not itemised"
 > applies **only** to rows that rest on Ben's own observation: feel, visuals, chat he saw.
 
+**Status, 2026-09-28: merge approved by the seat 2026-09-28 with G10 carried forward.** It is gated on the
+`ad686c9`, `0f8fd81` and `ef2d91c` boots. G10 (the shooter is gone before impact) is covered by unit tests and
+CARRIED FORWARD into the next gate, not waived. The slice 1 carried rows and the other probe rows stay "not
+itemised" and are carried forward too.
+
 **CURRENT TALLY (updated after the `ad686c9` boot, 2026-09-28):**
 - **PASS:**
   - R0a, R0b and R0c (every boot; `ad686c9`'s at 03:48:48);
