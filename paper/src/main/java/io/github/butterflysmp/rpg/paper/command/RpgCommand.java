@@ -886,7 +886,7 @@ public final class RpgCommand {
                             + (MobSeeding.isCustom(mobs, mobId) ? " (custom)" : "")
                             + "  " + (hostile ? "HOSTILE" : "PASSIVE"),
                     "GS stored=" + (stored == null ? "none" : stored)
-                            + "  would roll=" + GearScoreSource.DISTANCE.gearScoreFor(dimension, distance)
+                            + "  would roll=" + GearScoreSource.BLANKET.gearScoreFor(dimension, distance)
                             + "  (" + dimension + ", " + Math.round(distance) + " blocks from " + origin + ")",
                     stats.tracks(id)
                             ? "custom HP " + Math.round(stats.current(id)) + "/" + Math.round(stats.max(id))

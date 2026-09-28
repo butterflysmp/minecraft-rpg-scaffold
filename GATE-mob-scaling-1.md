@@ -1,5 +1,16 @@
 # GATE — Mob scaling, slice 1: health x5 x GS/100, the stored gear score, the [GS] nameplate
 
+> **M25 NOTE, 2026-09-28. Written beside the readings, never over them.** Ben's M25 replaced the distance
+> curves this gate was written against: the overworld is a flat GS 100, the Nether a flat 200, and the End
+> 300 to 1,000 blocks from (0, 0), then +100 per 10,000. Verdicts, and no prediction below is edited:
+> - **RETIRED, superseded by M25:** **G19** (12,000 out → `[500]`, now `[100]`), **G6** (`[200]`/`[360]`/`[500]`,
+>   now `[200]` at all three), **G2** (2,500 out → `[200]`, now `[100]`), and **G1b**'s 2,500-block spider
+>   (`[200]`, now `[100]`). Their PASS-as-reported readings stand for the curve they were read against.
+> - **Still true under M25:** **G7**'s End centre `[300]`, G1, G1b's spawn spider, G3, G4 and G5.
+> - **Carried into `GATE-mob-scaling-m25.md`** (unread here, and still unread after slice 2): G13, G12, G14,
+>   G15, G15b, G16, G11 and G18, with G14 and G15/G15b REWRITTEN there for M25. GX-MELEE became slice 2's G8,
+>   which PASSED.
+
 **Status: READ 2026-09-27 on `e946882` -- 12 of 21 PASS, 9 NOT READ.** R0a/R0b/R0c PASS (read by Session B
 from the 19:35:09 boot). Ben's LOGIN is in that boot's log (`BaronVonYeetus joined the game` at 19:40:48), so
 readings count. **The 9 row PASSes are AS REPORTED by Ben**, in one multi-select: G1 G3 G5 G19 G6 G7 G1b G2 G4. Not

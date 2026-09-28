@@ -72,7 +72,7 @@ public final class MobNameplateManager implements HealthListener {
      * interface type, one implementation. A boss or activity source replaces this, and a stored score
      * still wins over it (M5).
      */
-    private final GearScoreSource gearScores = GearScoreSource.DISTANCE;
+    private final GearScoreSource gearScores = GearScoreSource.BLANKET;
     /** {@link #toggleTrace}'s flag. Volatile: toggled on a command thread, read on every entity's. */
     private volatile boolean trace;
 
