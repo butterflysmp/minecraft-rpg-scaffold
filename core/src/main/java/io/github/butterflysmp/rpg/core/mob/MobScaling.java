@@ -55,7 +55,8 @@ public final class MobScaling {
      * the event's vanilla amount through {@link MobDamagePricing#price}. A custom mob's attack takes the
      * GS/100 like its health (the seat's reading of M17, PLAN §6 F15): unchanged at GS 100.
      *
-     * @param base the vanilla amount: the attribute, or the event's {@code getDamage()}
+     * @param base the vanilla amount: the attribute, or the event's amount with vanilla's difficulty
+     *             scaling undone ({@link VanillaDifficulty}, M24)
      */
     public static double attackDamage(double base, boolean isCustom, boolean isHostile, int gs) {
         // The same product as maxHealth, written in a different order only so each line is its own

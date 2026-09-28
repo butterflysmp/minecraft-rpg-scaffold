@@ -6,18 +6,23 @@ commit. The build that boots is the commit that contains this file, so a predict
 for having existed first. Readings go **beside** a prediction, never over it, and a prediction is not edited once its
 row has been read. **Readings count only if Ben's LOGIN appears in THIS boot's log.**
 
+> **EDITED 2026-09-28, BEFORE ANY READING, FOR M24 (mob damage ignores difficulty).** No row had been read and this
+> slice had not booted. Every changed prediction carries **"edited before any reading (M24)"**. G-DIFF and G-DIFFb
+> are new. The first version of this file is `6df2566`, and `git diff 6df2566 -- GATE-mob-scaling-2.md` shows every
+> change.
+
 ```
-ROWS     32   R0a R0b R0c
-              G8 G8b G9 G9b G10
+ROWS     34   R0a R0b R0c
+              G8 G8b G9 G9b G10 G-DIFF G-DIFFb
               P-ARROW P-TRIDENT P-BLAZE P-GHAST P-SKULL P-SPIT P-SHULKER P-CREEPER P-WITCH P-BOOM P-FANGS
               P-GUARDIAN P-BREATH P-WIND P-DOT
               G13 G12 G14 G15 G15b G16 G11 G18 GX-ENV
          ──
-         32   = 17 headings   git grep -c '^### R0\|^### G' <ref> -- GATE-mob-scaling-2.md
+         34   = 19 headings   git grep -c '^### R0\|^### G' <ref> -- GATE-mob-scaling-2.md
               + 15 probe rows git grep -c '^| \*\*P-' <ref> -- GATE-mob-scaling-2.md
 ```
 
-**Plan:** `PLAN-mob-scaling.md` §1.2, §3 slice 2 and §4 (G8-G10). Rulings M1-M23, and **M16** above all.
+**Plan:** `PLAN-mob-scaling.md` §1.2, §3 slice 2 and §4 (G8-G10). Rulings M1-M24, and **M16** and **M24** above all.
 
 ## Set-up
 
@@ -30,14 +35,16 @@ cost the row measures. Only the carried-forward nameplate rows are creative.
 - **`/rpg mobtrace` ON for every damage row.** Each mob-to-player hit then logs one line:
 
   ```
-  MOBHIT cause=<DamageCause> direct=<type> causing=<type> vanilla=<n> gs=<n|-> from=<DIRECT|CAUSING|ABSENT>
-         custom=<bool> applied=<n> ratio=<applied/vanilla> victimMax=<player max>
+  MOBHIT cause=<DamageCause> direct=<type> causing=<type> difficulty=<EASY|NORMAL|HARD> raw=<n> vanilla=<n>
+         gs=<n|-> from=<DIRECT|CAUSING|ABSENT> custom=<bool> applied=<n> ratio=<applied/vanilla> victimMax=<player max>
   ```
 
-  **The row reads `ratio` and `victimMax` off the server; nothing here needs a predicted HP number.** `vanilla` is
-  the amount after the damage window and the shield. For every non-melee path it is vanilla's `getDamage()`, which
-  **already includes vanilla's difficulty adjustment** (measured with `javap`: `Player.hurtServer` applies it before
-  `LivingEntity.hurtServer` raises the Bukkit event). The ratio is unaffected by that; see *Findings* F6.
+  **The row reads `ratio` and `victimMax` off the server; nothing here needs a predicted HP number.**
+  *Edited before any reading (M24):* `raw` is the event's own `getDamage()`, which **includes vanilla's difficulty
+  scaling** (`Player.hurtServer` applies it before `LivingEntity.hurtServer` raises the Bukkit event, measured with
+  `javap`). `vanilla` is that amount **with the scaling undone** (M24), after the damage window and the shield. On a
+  source that scales with difficulty, `raw` and `vanilla` are related by vanilla's formula: EASY `raw = min(v/2 + 1, v)`,
+  NORMAL `raw = v`, HARD `raw = 1.5v`. For melee, both are the attribute.
 - `/rpg spawn <mob> <gs>` spawns a mob at your feet at that score, and `/rpg mobinfo` reads the mob in your
   crosshair. **Every row names its GS, and all of them avoid 100** unless the row is about 100.
 - **A player max that is NOT 100:** `/rpg healthboost 300` mints a `health_boost_TEMP`. **Held in the main hand**,
@@ -63,7 +70,7 @@ and max 400.
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: core `MobDamagePricing`, `MobDamagePricing$Resolved`, `MobDamagePricing$MobFacts`, `RerouteDamagePrice`, `MobScaling`. ABSENT: the control | the scan below | |
+| PRESENT: core `MobDamagePricing`, `MobDamagePricing$Resolved`, `MobDamagePricing$MobFacts`, `RerouteDamagePrice`, `MobScaling`, and *(edited before any reading (M24))* `VanillaDifficulty` and `VanillaDifficulty$Difficulty`. ABSENT: the control | the scan below | |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -73,6 +80,8 @@ foreach ($c in 'io/github/butterflysmp/rpg/core/mob/MobDamagePricing.class',
                'io/github/butterflysmp/rpg/core/mob/MobDamagePricing$MobFacts.class',
                'io/github/butterflysmp/rpg/core/combat/RerouteDamagePrice.class',
                'io/github/butterflysmp/rpg/core/mob/MobScaling.class',
+               'io/github/butterflysmp/rpg/core/mob/VanillaDifficulty.class',
+               'io/github/butterflysmp/rpg/core/mob/VanillaDifficulty$Difficulty.class',
                'io/github/butterflysmp/rpg/paper/menu/NoSuchClassControl.class') {
   if ($zip.GetEntry($c)) { "PRESENT $c" } else { "ABSENT  $c" }
 }
@@ -93,7 +102,7 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| `/rpg spawn zombie 100`, and take one hit at max 100. `MOBHIT cause=ENTITY_ATTACK direct=zombie causing=zombie ... gs=100 from=DIRECT ratio=5.000`. `vanilla` is `mobinfo`'s vanilla `ATTACK_DAMAGE` (the attribute, not a difficulty-adjusted amount: F6). **Slice 1's GX-MELEE expected x1 here; this slice expects x5.** On its own this row cannot tell flat from share-of-max (both give 5 at max 100); G8b and G9b can | |
+| `/rpg spawn zombie 100`, and take one hit at max 100. `MOBHIT cause=ENTITY_ATTACK direct=zombie causing=zombie ... gs=100 from=DIRECT ratio=5.000`. `raw` and `vanilla` are both `mobinfo`'s vanilla `ATTACK_DAMAGE`, the attribute, on every difficulty. *(Edited before any reading (M24): this said "not a difficulty-adjusted amount: F6". Melee was already difficulty-blind; M24 makes the other paths match it.)* **Slice 1's GX-MELEE expected x1 here; this slice expects x5.** On its own this row cannot tell flat from share-of-max (both give 5 at max 100); G8b and G9b can | |
 
 ### G8b — melee at GS 300 is x15 (SURVIVAL)
 
@@ -105,7 +114,7 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| `/rpg spawn creeper 300` and let it blow; `/rpg spawn skeleton 300` and take an arrow. Both lines read **`ratio=15.000 victimMax=100.0`**. The creeper reads `cause=ENTITY_EXPLOSION direct=creeper causing=creeper from=DIRECT` (`explosion(entity, causing)`, both the creeper). The skeleton reads `cause=PROJECTILE direct=arrow causing=skeleton from=DIRECT` (the launch stamp) | |
+| `/rpg spawn creeper 300` and let it blow; `/rpg spawn skeleton 300` and take an arrow. Both lines read **`ratio=15.000 victimMax=100.0`**. The creeper reads `cause=ENTITY_EXPLOSION direct=creeper causing=creeper from=DIRECT` (`explosion(entity, causing)`, both the creeper). The skeleton reads `cause=PROJECTILE direct=arrow causing=skeleton from=DIRECT` (the launch stamp). *Edited before any reading (M24):* on this server's `easy`, each line's `raw` is `min(vanilla/2 + 1, vanilla)`: the undoing is visible in the line, and the ratio is taken against the undone `vanilla` | |
 
 ### G9b — THE SAME, AT MAX 400. THE ROW THAT CANNOT PASS BY ACCIDENT (SURVIVAL)
 
@@ -117,7 +126,19 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| `/rpg spawn skeleton 300` at range. Right after it looses, `/kill` it (aimed with `@e[type=skeleton,limit=1,sort=nearest]`). The arrow lands: **`direct=arrow causing=none gs=300 from=DIRECT ratio=15.000`**. Without the launch stamp, a gone shooter leaves nothing mob-shaped, and the hit prices by share-of-max with no MOBHIT line at all | |
+| `/rpg spawn skeleton 300` at range. Right after it looses, `/kill` it (aimed with `@e[type=skeleton,limit=1,sort=nearest]`). The arrow lands: **`direct=arrow causing=none gs=300 from=DIRECT ratio=15.000`**. Without the launch stamp, a gone shooter leaves nothing mob-shaped, and the hit prices by share-of-max with no MOBHIT line at all. *Edited before any reading (M24), and deliberately a RANGE:* with no causing entity, whether vanilla scaled this hit depends on the arrow damage type's scaling setting, **which was not read**. So `raw = vanilla` (it did not scale) and `raw = min(vanilla/2 + 1, vanilla)` (it did) are both consistent with M24. The row's claim is `ratio=15.000`; the reading says which of the two it was | |
+
+### G-DIFF — the same skeleton at GS 100 hits for the same amount on easy and hard (SURVIVAL) — NEW (M24)
+
+| prediction | READING |
+|---|---|
+| `/rpg spawn skeleton 100`. Take **five** arrows on `/difficulty easy`, then `/difficulty hard` and five more. **Every line reads `ratio=5.000`.** On easy, each `raw` is `min(vanilla/2 + 1, vanilla)`; on hard, each `raw` is `1.5 x vanilla`. **The `vanilla` values come from the same spread on both** (whole numbers, as `ceil(speed x base)` is), with no upward shift on hard. **Why five, and why "the same spread" rather than "the same number":** vanilla's arrow damage is random per shot (`setBaseDamageFromMob` draws `triangle(.., 0.57425)`, and the impact speed varies), so two shots on ONE difficulty can already differ. What M24 removes is the shift: +0.11 x id on the base at launch, and x1.5 (hard) or `/2 + 1` (easy) at impact. **Before M24, hard's `raw` would run 1.5 x easy's pre-scaling amount and no `vanilla` field existed. After it, `applied` is 5 x `vanilla` on both.** G-DIFFb is the deterministic twin | |
+
+### G-DIFFb — a GS 100 shulker's bullet is exactly 20 on easy and on hard (SURVIVAL) — NEW (M24)
+
+| prediction | READING |
+|---|---|
+| `/rpg spawn shulker 100`. One bullet on `/difficulty easy`, one on `/difficulty hard`. The bullet is a fixed `4.0f` (`ShulkerBullet.onHitEntity`, `mobProjectile`, read with `javap`), so there is no randomness. **Easy: `raw=3.000 vanilla=4.000 applied=20.000`. Hard: `raw=6.000 vanilla=4.000 applied=20.000`.** Identical `applied` on both is M24. **Before M24, the flat price would have been 15 on easy and 30 on hard.** The two `raw` values assume the `mob_projectile` damage type scales with difficulty, **which was not read**. If both read `raw=4.000`, the type does not scale, vanilla never adjusted the bullet, and the row still holds on `applied` Set `/difficulty easy` back afterwards | |
 
 ---
 
@@ -212,12 +233,16 @@ seeding or storage, so their predictions stand as slice 1 wrote them.
 
 ## Findings this gate carries (named, not fixed)
 
-- **F6, SETTLED BY MEASUREMENT: melee is difficulty-blind; every other path is difficulty-adjusted.** `javap` on the
-  pinned server jar: `Player.hurtServer` scales `amount` by difficulty (easy `min(a/2 + 1, a)`, hard `a x 3/2`) when
-  `scalesWithDifficulty()`, then calls `LivingEntity.hurtServer`, which raises the Bukkit event. So Route B's
-  `getDamage()` is post-difficulty, while Route A prices from the seeded attribute and never sees difficulty. The
-  server runs `easy`. **This slice changes neither route**: making them agree is a ruling (which one is right?), not
-  a repricing.
+- ~~**F6: melee is difficulty-blind; every other path is difficulty-adjusted.**~~ **CLOSED BY M24** *(edited before
+  any reading (M24))*. The measurement stands: `Player.hurtServer` scales when `scalesWithDifficulty()`, EASY
+  `min(a/2 + 1, a)` and HARD `a x 3/2`, before the Bukkit event. Every other difficulty channel into a hit's AMOUNT
+  was found by sweeping every `getDifficulty` reference in `net.minecraft.world.entity`: the guardian beam's HARD +2,
+  and the mob arrow's `+ id x 0.11`. All three are undone (`VanillaDifficulty`), and G-DIFF and G-DIFFb are the rows.
+  **What M24 cannot reach**, per `PLAN-mob-scaling.md` §6 F6:
+  - PEACEFUL, where a scaled hit never lands;
+  - how often a mob hits (inaccuracy, the Wither's extra skulls);
+  - effect durations (F5);
+  - equipment rolled from local difficulty.
 - **ABSENT is unreachable from shipped play.** Every hostile mob is seeded at world-add, and the seed stores a score,
   so a hostile mob with no score has to be untracked when it hits. The arm is guarded by
   `MobDamagePricingTest.anAbsentGsIsFiveTimesNeverOneAndNeverZero` and the absent-arm mutation, and **no row here

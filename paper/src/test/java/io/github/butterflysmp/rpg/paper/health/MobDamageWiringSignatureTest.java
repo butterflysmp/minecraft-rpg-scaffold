@@ -81,6 +81,37 @@ class MobDamageWiringSignatureTest {
                 "the bootstrap must store the SCALED attack, not attackDamageOf(mob) raw");
     }
 
+    /**
+     * M24: the rider undoes vanilla's difficulty scaling on the RAW amount and feeds THAT to the window.
+     * {@code VanillaDifficultyTest} proves the reversal; only the listener can forget to call it, or call
+     * it after the claim, where EASY's affine inverse would be applied to a partial amount.
+     */
+    @Test
+    void theRiderUndoesDifficultyBeforeTheWindow() throws IOException {
+        List<String> code = codeLines(listeners());
+        int undo = indexOf(code, "VanillaDifficulty.undifficulted(eventAmount");
+        int claim = indexOf(code, "damageWindow.claim(id, vanillaAmount, false)");
+        assertTrue(undo >= 0, "the rider must undo difficulty (M24)");
+        assertTrue(claim >= 0, "the window must claim the undone amount, not event.getDamage()");
+        assertTrue(undo < claim, "the reversal must come BEFORE the window claim");
+    }
+
+    /** M24's arrow half: the launch handler removes setBaseDamageFromMob's difficulty shift. */
+    @Test
+    void theLaunchHandlerUndoesTheMobArrowShift() throws IOException {
+        assertTrue(indexOf(codeLines(listeners()), "VanillaDifficulty.mobArrowBaseDamage(arrow.getDamage()") >= 0,
+                "a skeleton's arrow keeps +0.11 per difficulty level without this (M24)");
+    }
+
+    private static Path listeners() {
+        return MAIN.resolve(Path.of("io", "github", "butterflysmp", "rpg", "paper", "listener", "RpgListeners.java"));
+    }
+
+    private static int indexOf(List<String> code, String needle) {
+        for (int i = 0; i < code.size(); i++) if (code.get(i).contains(needle)) return i;
+        return -1;
+    }
+
     private static List<String> codeLines(Path file) throws IOException {
         return Files.readAllLines(file, StandardCharsets.UTF_8).stream().filter(l -> !isComment(l)).toList();
     }

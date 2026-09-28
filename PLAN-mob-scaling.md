@@ -78,6 +78,12 @@ spawn point; **the End measures from (0, 0) (M23)**. **Every curve clamps at 500
   is unchanged.
 - **M23.** The End is measured from (0, 0), always. Not its spawn point.
 
+### Ben's ruling, 2026-09-28 — M24
+
+- **M24.** MOB DAMAGE IGNORES DIFFICULTY. Every mob-to-player hit is exactly vanilla x 5 x GS/100
+  (custom: authored x GS/100), on every path, whatever the server's difficulty. Gear score is the
+  difficulty dial. **It closes §6 F6.**
+
 **M21's full list, as ruled.** HOSTILE (gets a GS) is `mob instanceof org.bukkit.entity.Enemy`, whose
 closure in the pinned `paper-api-26.1.2.build.74-stable.jar` is: AbstractSkeleton, Blaze, Bogged,
 Breeze, CaveSpider, Creaking, Creeper, Drowned, ElderGuardian, EnderDragon, Enderman, Endermite,
@@ -194,11 +200,9 @@ finding in this plan.**
   - any mob whose contact damage is not that attribute.
 
   Pre-existing, and recorded in §6 F4. Scaling multiplies it faithfully, flaws included.
-- **F-difficulty (UNMEASURED).** Route A reads an attribute, which does not change with difficulty.
-  Route B reads `getDamage()`. Whether vanilla applies its difficulty adjustment to a player victim
-  **before** the Bukkit event is built was **not read**. If it does, Route A and Route B also disagree
-  by difficulty. It is settled by `javap` on the player's `hurtServer` in slice 2, and neither route
-  is changed on a guess.
+- ~~**F-difficulty (UNMEASURED).**~~ **MEASURED in slice 2 and CLOSED by M24** (§6 F6 has the
+  account). Vanilla does adjust before the Bukkit event, so Route B was post-difficulty while Route A
+  was not. After M24 neither route sees difficulty.
 
 ### 1.3 Environmental damage and healing on mobs
 
@@ -711,8 +715,33 @@ new question, is in §6 F15.
 - **F5. Damage-over-time ticks (POISON, WITHER) cannot carry a GS.** They name no causing entity, so
   M16's flat pricing cannot reach them. They stay on Route B's share-of-player-max pricing (×5 at max
   100), with no GS. A fix would scale at effect application.
-- **F6. Difficulty may split Route A from Route B** (§1.2, unmeasured). It is settled in slice 2 by
-  `javap`, not changed on a guess.
+- ~~**F6. Difficulty may split Route A from Route B.**~~ **CLOSED by M24 (2026-09-28).**
+  - **Measured** with `javap` on the pinned `paper-26.1.2.jar`. `Player.hurtServer` scales the amount
+    when `scalesWithDifficulty()`: EASY `min(a/2 + 1, a)`, HARD `a x 3/2`, and PEACEFUL returns before
+    any event. It then calls `LivingEntity.hurtServer`, which raises the Bukkit event (`Avatar` does not
+    override it). So Route B was post-difficulty and Route A (the attribute) was not.
+  - **Two more amount channels**, found by sweeping every `getDifficulty` reference in
+    `net.minecraft.world.entity`:
+    - `Guardian$GuardianAttackGoal.tick`: the beam is 1, +2 on HARD, +2 for an elder;
+    - `AbstractArrow.setBaseDamageFromMob`: `v x 2 + triangle(id x 0.11, 0.57425)`. Its only caller is
+      `ProjectileUtil.getMobArrow`, which is called only from `AbstractSkeleton.getArrow` and
+      `Illusioner.performRangedAttack`.
+  - **Slice 2 undoes all three** (`core/mob/VanillaDifficulty`). The player's scaling is inverted on
+    the raw event amount, before the damage window. The guardian's HARD bonus is subtracted after it.
+    The arrow shift is subtracted from the base damage at launch, because the hit is
+    `ceil(speed x base)` and a ceiling cannot be reversed at impact.
+  - **What M24 cannot reach, recorded rather than guessed:**
+    - PEACEFUL, where a scaled hit never lands at all;
+    - how OFTEN a mob hits. The skeleton's shot passes the difficulty id to its inaccuracy
+      (`AbstractSkeleton.performRangedAttack`, read). `CrossbowAttackMob.performCrossbowAttack`,
+      `Drowned.performRangedAttack`, the breeze's `Shoot.tick`, `Illusioner.performRangedAttack` and
+      `WitherBoss.customServerAiStep` also reference difficulty; **their formulas were not read**, and
+      none of them sets a damage amount the sweep could see;
+    - effect DURATIONS: the wither skull's wither (10 s normal, 40 s hard, read). `CaveSpider`, `Bee`
+      and `Husk` reference difficulty in `doHurtTarget`, not read further; they apply effects. Effect
+      ticks name no entity (F5);
+    - equipment rolled from LOCAL difficulty (`Mob.enchantSpawnedEquipment`, raid buffs). For example,
+      a Power bow's bonus reaches the arrow.
 - **F7. No enable-time sweep.** A living entity present before our listeners register is never
   seeded until something hits it: no plate, and environmental damage passes to vanilla. **Fixed in
   slice 1** because GS assignment needs it. It is recorded because it is pre-existing.
