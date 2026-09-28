@@ -1085,6 +1085,19 @@ new question, is in §6 F15.
 
   **Deferred to the Ender Dragon boss fight work** (Ben, 2026-09-28: "we'll come back to this later
   when we do our Ender Dragon boss fight"). It is not in the F20 slice. §7.9 cross-references it.
+- **F23. Staging traps met on the F20 boot (2026-09-28, `002352cb`). All are gate hygiene; none is a code
+  defect.**
+  - **A `/rpg spawn` mob is not persistent**, so vanilla's random despawn can remove it mid-row. The F20b spider
+    vanished 7 s after its last heal (a `MOBREMOVE` with no command and no death). A row that reads "still alive
+    later" must first make its mob persistent (console `data merge entity <uuid> {PersistenceRequired:1b}`), or
+    a despawn reads exactly like a death.
+  - **Two summoned dragons damage each other.** A dragon's head hurts what it touches, which spoils a "hurt only
+    by X" row. Summon one.
+  - **A `/rpg mobdamage` with no re-seed line in its own second has missed** (the ray found no mob). Four missed
+    this boot. Read the re-seed line before reading the Health.
+  - **Ungated vanilla heal sources log capped lines at full, and that is correct:** the Wither's REGEN, the iron
+    golem's repair, and a horse's regen. F18's "no capped line" applies only to the GATED sources (Regeneration and
+    the crystal). `GATE-mob-scaling-f20.md`'s M26-WITHER text said otherwise, and its readings record the miss.
 
 ---
 
