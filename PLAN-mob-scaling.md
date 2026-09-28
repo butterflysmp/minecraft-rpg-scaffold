@@ -41,6 +41,10 @@ Every citation names a **method or section**, never a line (CLAUDE.md, *the poin
 > **M8 IS SUPERSEDED BY M13 AND M15** (below). It stays above, verbatim, because it was ruled;
 > nothing in this plan implements it.
 
+> **RETIRED, SUPERSEDED BY M25 (2026-09-28).** This curve table is the pre-M25 rule, kept as the record.
+> Under M25 the overworld is a flat 100 and the Nether a flat 200. The End is 300 to 1,000 blocks from
+> (0, 0), then +100 per 10,000, capped at 500 (`core/mob/DimensionGearScore`). Do not derive from it.
+
 **The curves.** Distance is horizontal (X/Z). The overworld and the Nether measure from that world's
 spawn point; **the End measures from (0, 0) (M23)**. **Every curve clamps at 500 (M20):**
 
@@ -311,7 +315,8 @@ hard as the common mob it is built on. PARKED by M17**: it keeps its current beh
 open in §6 F15. Slice 2 adds no `attack_damage` field.
 
 **M18: a custom mob takes the distance GS** like any hostile mob, until the M3 boss exceptions exist.
-A Knell spawned 2,500 blocks out is GS 200, 720 HP.
+A Knell spawned 2,500 blocks out is GS 200, 720 HP. *(RETIRED by M25: an overworld Knell is GS 100, 360 HP,
+at any distance. M18 itself stands; it now gives a custom mob the dimension GS.)*
 
 ### 1.6 The nameplate
 
@@ -398,6 +403,12 @@ separation property (an untagged mob gets vanilla unchanged) is about the **base
 stay testable apart from the multiplier.
 
 ### 2.2 `core/mob/DistanceGearScore` — pure
+
+> **REWRITTEN BY M25 (2026-09-28): the class is now `core/mob/DimensionGearScore`**, and
+> `GearScoreSource.DISTANCE` is now `BLANKET`. The overworld and Nether are flat; the End is
+> `300 + max(0, d - 1000) / 100`, rounded and clamped at `MobGearScore.CAP`. The section below is the
+> pre-M25 design, kept as the record. Its rounding, clamp and NaN-guard reasoning carries over to the
+> End curve, and its rates do not.
 
 ```
 of(MobDimension dimension, double horizontalDistance) -> int
@@ -522,7 +533,8 @@ slice 1 is already the largest.
 - `MobScaling.maxHealth` in `MobScalingTest`: the full grid over {vanilla, custom} × {hostile,
   passive} × GS {100, 200, 300, 500}. It includes the M2 examples (zombie 20 → 500 at GS 500, Warden
   500 → 12,500) and the Knell (360 → 360 at GS 100).
-- `DistanceGearScore` in `DistanceGearScoreTest`:
+- *(RETIRED by M25: this test was replaced by `DimensionGearScoreTest`, which pins the M25 rows. The
+  list below is slice 1's record.)* `DistanceGearScore` in `DistanceGearScoreTest`:
   - each world at 0 and 2,500 blocks, plus `CUSTOM`→overworld;
   - **the cap (M20), on both sides of it, in every world**: overworld 9,975 / 10,000 / 12,000
     (→ 499 / 500 / **500, not 580**); End 4,975 / 5,000 / 6,000 (→ 499 / 500 / **500, not 540**); Nether 900 / 937.5 / 2,500
@@ -654,6 +666,19 @@ tuning logger was a spike. Its output fills the ‡ cells in this plan's §1.2 t
 ---
 
 ## §4 GATE ROWS
+
+> **M25 VERDICTS ON THIS TABLE (2026-09-28).** These rows were written against the pre-M25 curves. The
+> live gate is `GATE-mob-scaling-m25.md`, which carries the still-unread rows forward.
+> - **RETIRED, superseded by M25:** **G1b**'s second spider (2,500 out → `[200]`), **G2** (2,500 out →
+>   `[200]`), **G6** (Nether `[200]`/`[360]`/`[500]`) and **G19** (12,000 out → `[500]`). Under M25 they
+>   read `[100]`, `[100]`, `[200]` at all three distances, and `[100]`. Each was read PASS-as-reported on
+>   slice 1, and that record stands for the curve it was read against.
+> - **REWRITTEN under M25:** **G7** (the End centre is still `[300]`; the second enderman reads
+>   `300 + max(0, d - 1000) / 100`, which is 300 anywhere within 1,000 of (0, 0)); **G14** (the Nether's
+>   "would roll" is now exactly 200, not "at least 200"); **G15**/**G15b** (a re-roll near overworld spawn
+>   is exactly `[100]`, not `~[100]`).
+> - **CARRIED, unaffected:** G5 (passive), G12, G13, G16 (a stored or inherited GS), G11, G18
+>   (proportional environmental damage), and the damage rows G8–G10.
 
 **Game mode is declared per row** (verification.md, *THE CREATIVE-DIVERGENCE REGISTER*). **Creative
 removes the cost that every damage row measures**: a creative player takes no damage and is not
