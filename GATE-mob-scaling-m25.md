@@ -1,5 +1,7 @@
 # GATE — Mob scaling M25: flat overworld and Nether gear score, the new End curve
 
+**Status, 2026-09-28: merge approved by the seat 2026-09-28; M25-SPAWN, G10 and the carried rows carried forward.**
+
 **Status: READ 2026-09-28 on `210f5b8f` -- 7 of 33 PASS: R0a-c, M25-OW, M25-NETHER, M25-END-C and M25-END-11K.**
 - **The boot:** it began at 04:22:34 (`Build: 210f5b8f`). Ben's LOGIN is at 04:24:26, and he wore no armour.
 - **M25-SPAWN:** the End half was reported as 400 by Ben but has no attributable log line (three enderman seeds
@@ -36,6 +38,10 @@ ROWS     33   R0a R0b R0c
 - **`/rpg mobtrace` first.** Each seed then logs `MOBSEED <uuid> <type> gs=<n> source=<rolled|stored|passive>
   max=<n>`, and each mob hit logs a `MOBHIT` line. **The M25 rows read the `MOBSEED` line**, which the server writes
   whether or not anyone looks at a nameplate.
+- **STANDING TIP (the seat, 2026-09-28, from this gate's M25-SPAWN):** a `/rpg spawn` in a freshly loaded area
+  lands in the same second as natural seeds, so its `MOBSEED` line cannot be told apart by time alone. **Match it
+  by UUID** (console `data get entity @e[…,sort=nearest] UUID`, converted to the dashed form), **or spawn after the
+  chunks have settled.**
 - **The world's difficulty does not matter to any M25 row.** A GS is rolled from position and dimension only.
 - **Existing mobs keep their stored GS (M5).** A mob seeded before this build still shows its old GS, which is the
   seat's accepted default. **Every M25 row therefore reads a mob seeded on THIS boot** (`source=rolled` in its
