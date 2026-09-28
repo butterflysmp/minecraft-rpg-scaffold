@@ -13,8 +13,9 @@ package io.github.butterflysmp.rpg.core.mob;
  *   custom passive         1              1             none shipped                (M4 + M7)
  * </pre>
  *
- * <p>Health only, this slice. The attack half lands in slice 2, beside the code that reads it -- an
- * output nothing reads is a claim nothing tests.
+ * <p><b>Health and attack take the SAME two factors</b> (M1 and M2 each say "health AND damage"). The
+ * attack half is every mob-to-player hit (M16): melee through the seeded attack, and every other path
+ * through {@link MobDamagePricing}, which prices with {@link #attackDamage} rather than a copy of it.
  *
  * <p><b>There is no environmental factor, by ruling.</b> Environmental damage and healing on a mob are
  * PROPORTIONAL (M13-M15), which is {@code DamageScale.toCustom} against the mob's VANILLA max-health
@@ -45,8 +46,25 @@ public final class MobScaling {
      * @param gs        the mob's stored gear score; must be at least {@link MobGearScore#MIN} when hostile
      */
     public static double maxHealth(double base, boolean isCustom, boolean isHostile, int gs) {
-        double vanilla = isCustom ? 1.0 : VANILLA_FACTOR;
-        return base * vanilla * gsFactor(isHostile, gs);
+        return base * vanillaFactor(isCustom) * gsFactor(isHostile, gs);
+    }
+
+    /**
+     * The damage a mob deals a player: its vanilla amount x5 unless custom (M1, M4), x GS/100 if hostile
+     * (M2). Melee passes the vanilla {@code ATTACK_DAMAGE} attribute at the seed; every other path passes
+     * the event's vanilla amount through {@link MobDamagePricing#price}. A custom mob's attack takes the
+     * GS/100 like its health (the seat's reading of M17, PLAN §6 F15): unchanged at GS 100.
+     *
+     * @param base the vanilla amount: the attribute, or the event's {@code getDamage()}
+     */
+    public static double attackDamage(double base, boolean isCustom, boolean isHostile, int gs) {
+        // The same product as maxHealth, written in a different order only so each line is its own
+        // mutation target.
+        return vanillaFactor(isCustom) * gsFactor(isHostile, gs) * base;
+    }
+
+    private static double vanillaFactor(boolean isCustom) {
+        return isCustom ? 1.0 : VANILLA_FACTOR;
     }
 
     private static double gsFactor(boolean isHostile, int gs) {

@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthState;
 import io.github.butterflysmp.rpg.core.mob.GearScoreSource;
+import io.github.butterflysmp.rpg.core.mob.MobDamagePricing;
 import io.github.butterflysmp.rpg.core.mob.MobGearScore;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobScaling;
@@ -112,8 +113,8 @@ public final class MobNameplateManager implements HealthListener {
      * Seed a mob's custom combat stats if not already tracked, and return its state (null for a player
      * / armor stand). HP comes from the mob's CONTENT DEFINITION when it carries a {@code mob_id} tag,
      * and from its vanilla max otherwise, and is then SCALED -- x5 and x GS/100, see {@link #seed}.
-     * Attack damage is still vanilla ATTACK_DAMAGE, unscaled, for both: the attack half of the scaling
-     * is mob-scaling slice 2. Register-if-absent, so repeat calls are idempotent.
+     * Attack damage is the vanilla ATTACK_DAMAGE attribute scaled the same way (mob-scaling slice 2,
+     * M16), for both. Register-if-absent, so repeat calls are idempotent.
      *
      * Register-if-absent is also why the spawn path MUST tag the entity before it enters the world:
      * {@code EntityAddToWorldEvent} lands here first, and a tag applied afterwards would arrive to find
@@ -174,7 +175,10 @@ public final class MobNameplateManager implements HealthListener {
 
         double base = MobSeeding.maxHealth(mobs, mobId, maxHealthOf(mob));
         double max = MobScaling.maxHealth(base, custom, hostile, score.orElse(0));
-        return new Seeded(stats.bootstrapIfAbsent(mob.getUniqueId(), max, attackDamageOf(mob), false),
+        // Slice 2: melee is priced HERE, once, so onMobMeleeAttack's read of the stat is already M16's
+        // vanilla x 5 x GS/100. The attribute itself is only read, never written (M9's attack mirror).
+        double attack = MobScaling.attackDamage(attackDamageOf(mob), custom, hostile, score.orElse(0));
+        return new Seeded(stats.bootstrapIfAbsent(mob.getUniqueId(), max, attack, false),
                 score, source);
     }
 
@@ -273,6 +277,59 @@ public final class MobNameplateManager implements HealthListener {
     public boolean toggleTrace() {
         trace = !trace;
         return trace;
+    }
+
+    /** Whether {@code /rpg mobtrace} is on. Slice 2's {@code MOBHIT} lines ride the same switch. */
+    public boolean tracing() {
+        return trace;
+    }
+
+    /**
+     * What one entity in a damage source says about the mob behind it, for
+     * {@link MobDamagePricing#resolve}. Null when it says nothing: no entity, a player, an armor stand,
+     * or a non-living entity carrying no stamp.
+     *
+     * <p>A living mob answers for itself: custom-ness from its {@code mob_id}, hostility from
+     * {@link MobClassifier}, and its stored score, raw. A projectile answers with the stamp
+     * {@link #stampProjectile} wrote at launch; only a hostile shooter is stamped, so a stamp means
+     * hostile.
+     *
+     * <p><b>Reads the entity's PDC on the calling thread.</b> On Paper that is the one main thread. On
+     * Folia a causing mob can sit in another region, and this is the read the deferred
+     * {@code MobGearScores} map would replace (PLAN §3 slice 2, resolution step 2).
+     */
+    public MobDamagePricing.MobFacts factsOf(Entity entity) {
+        if (entity == null || entity instanceof Player || entity instanceof ArmorStand) return null;
+        var pdc = entity.getPersistentDataContainer();
+        OptionalInt gs = pdc.has(keys.mobGearScore, PersistentDataType.INTEGER)
+                ? OptionalInt.of(pdc.get(keys.mobGearScore, PersistentDataType.INTEGER))
+                : OptionalInt.empty();
+        boolean custom = MobSeeding.isCustom(mobs, pdc.get(keys.mobId, PersistentDataType.STRING));
+        if (entity instanceof LivingEntity living) {
+            return new MobDamagePricing.MobFacts(custom, MobClassifier.isHostile(living), gs);
+        }
+        return gs.isPresent() ? new MobDamagePricing.MobFacts(custom, true, gs) : null;
+    }
+
+    /**
+     * Stamp a hostile mob's projectile with its shooter's score (and {@code mob_id}, if it is custom),
+     * so the hit prices at the score the shot was FIRED at. The shooter can die mid-flight (G10), and a
+     * projectile outlives its shooter's chunk. The same key as the mob's own score: it names the same
+     * quantity, and {@link #factsOf} reads both the same way.
+     *
+     * <p>Only a valid stored score is copied. An unseeded or passive shooter leaves the projectile
+     * unstamped, and the hit then resolves from the causing entity, if it still exists.
+     */
+    public void stampProjectile(org.bukkit.entity.Projectile projectile) {
+        if (!(projectile.getShooter() instanceof LivingEntity shooter) || shooter instanceof Player) return;
+        if (!MobClassifier.isHostile(shooter)) return;
+        var from = shooter.getPersistentDataContainer();
+        Integer gs = from.get(keys.mobGearScore, PersistentDataType.INTEGER);
+        if (gs == null || !MobGearScore.isValidStored(gs)) return;
+        var to = projectile.getPersistentDataContainer();
+        to.set(keys.mobGearScore, PersistentDataType.INTEGER, gs);
+        String mobId = from.get(keys.mobId, PersistentDataType.STRING);
+        if (mobId != null) to.set(keys.mobId, PersistentDataType.STRING, mobId);
     }
 
     /**
