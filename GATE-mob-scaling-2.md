@@ -132,7 +132,7 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| `/rpg spawn skeleton 100`. Take **five** arrows on `/difficulty easy`, then `/difficulty hard` and five more. **Every line reads `ratio=5.000`.** On easy, each `raw` is `min(vanilla/2 + 1, vanilla)`; on hard, each `raw` is `1.5 x vanilla`. **The `vanilla` values come from the same spread on both** (whole numbers, as `ceil(speed x base)` is), with no upward shift on hard. **Why five, and why "the same spread" rather than "the same number":** vanilla's arrow damage is random per shot (`setBaseDamageFromMob` draws `triangle(.., 0.57425)`, and the impact speed varies), so two shots on ONE difficulty can already differ. What M24 removes is the shift: +0.11 x id on the base at launch, and x1.5 (hard) or `/2 + 1` (easy) at impact. **Before M24, hard's `raw` would run 1.5 x easy's pre-scaling amount and no `vanilla` field existed. After it, `applied` is 5 x `vanilla` on both.** G-DIFFb is the deterministic twin | |
+| `/rpg spawn skeleton 100`. Take **five** arrows on `/difficulty easy`, then `/difficulty hard` and five more. **Every line reads `ratio=5.000`.** On easy, each `raw` is `min(vanilla/2 + 1, vanilla)`; on hard, each `raw` is `1.5 x vanilla`. **The `vanilla` values come from the same spread on both** (whole numbers, as `ceil(speed x base)` is), with no upward shift on hard. **Why five, and why "the same spread" rather than "the same number":** vanilla's arrow damage is random per shot (`setBaseDamageFromMob` draws `triangle(.., 0.57425)`, and the impact speed varies), so two shots on ONE difficulty can already differ. What M24 removes is the shift *(edited before any reading (M24 reference): this said "+0.11 x id on the base"; it is measured from NORMAL, so NORMAL is untouched)*: the base has (id - 2) x 0.11 subtracted at launch, so easy's base gains 0.11 and hard's loses 0.11, landing both on NORMAL's; and x1.5 (hard) or `/2 + 1` (easy) is undone at impact. **The `vanilla` spread on both is therefore vanilla-NORMAL's**, not a difficulty-free one below it. **Before M24, hard's `raw` would run 1.5 x easy's pre-scaling amount and no `vanilla` field existed. After it, `applied` is 5 x `vanilla` on both.** G-DIFFb is the deterministic twin | |
 
 ### G-DIFFb — a GS 100 shulker's bullet is exactly 20 on easy and on hard (SURVIVAL) — NEW (M24)
 
@@ -237,7 +237,9 @@ seeding or storage, so their predictions stand as slice 1 wrote them.
   any reading (M24))*. The measurement stands: `Player.hurtServer` scales when `scalesWithDifficulty()`, EASY
   `min(a/2 + 1, a)` and HARD `a x 3/2`, before the Bukkit event. Every other difficulty channel into a hit's AMOUNT
   was found by sweeping every `getDifficulty` reference in `net.minecraft.world.entity`: the guardian beam's HARD +2,
-  and the mob arrow's `+ id x 0.11`. All three are undone (`VanillaDifficulty`), and G-DIFF and G-DIFFb are the rows.
+  and the mob arrow's `+ id x 0.11`. All three are moved to NORMAL (`VanillaDifficulty`), M24's reference, and
+  G-DIFF and G-DIFFb are the rows. *(Edited before any reading (M24 reference): this said "undone", and the arrow
+  was first normalised to PEACEFUL.)*
   **What M24 cannot reach**, per `PLAN-mob-scaling.md` §6 F6:
   - PEACEFUL, where a scaled hit never lands;
   - how often a mob hits (inaccuracy, the Wither's extra skulls);

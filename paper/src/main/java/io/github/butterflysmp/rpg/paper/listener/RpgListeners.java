@@ -2614,8 +2614,9 @@ public final class RpgListeners implements Listener {
         // setBaseDamageFromMob adds difficultyId x 0.11 to the triangle's mode. Those two are its only
         // callers (AbstractSkeleton.getArrow, Illusioner.performRangedAttack), and the base is already set
         // when the arrow is added and this event fires (performRangedAttack: getArrow, then
-        // Projectile$Delayed.spawn). Undone HERE, because the hit is ceil(speed x base), and a ceiling
-        // cannot be reversed at impact. A pillager's crossbow arrow is not built this way, and is left alone.
+        // Projectile$Delayed.spawn). Moved to NORMAL's base HERE (M24's reference; NORMAL is untouched),
+        // because the hit is ceil(speed x base), and a ceiling cannot be reversed at impact. A pillager's
+        // crossbow arrow is not built this way, and is left alone.
         if (event.getEntity() instanceof org.bukkit.entity.AbstractArrow arrow
                 && (arrow.getShooter() instanceof org.bukkit.entity.AbstractSkeleton
                     || arrow.getShooter() instanceof org.bukkit.entity.Illusioner)) {

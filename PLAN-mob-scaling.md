@@ -83,6 +83,8 @@ spawn point; **the End measures from (0, 0) (M23)**. **Every curve clamps at 500
 - **M24.** MOB DAMAGE IGNORES DIFFICULTY. Every mob-to-player hit is exactly vanilla x 5 x GS/100
   (custom: authored x GS/100), on every path, whatever the server's difficulty. Gear score is the
   difficulty dial. **It closes §6 F6.**
+  - **M24's reference (the seat, 2026-09-28): "vanilla" in M24 means vanilla at NORMAL, on every
+    path.** Each difficulty channel leaves NORMAL untouched and moves EASY and HARD to it.
 
 **M21's full list, as ruled.** HOSTILE (gets a GS) is `mob instanceof org.bukkit.entity.Enemy`, whose
 closure in the pinned `paper-api-26.1.2.build.74-stable.jar` is: AbstractSkeleton, Blaze, Bogged,
@@ -726,10 +728,12 @@ new question, is in §6 F15.
     - `AbstractArrow.setBaseDamageFromMob`: `v x 2 + triangle(id x 0.11, 0.57425)`. Its only caller is
       `ProjectileUtil.getMobArrow`, which is called only from `AbstractSkeleton.getArrow` and
       `Illusioner.performRangedAttack`.
-  - **Slice 2 undoes all three** (`core/mob/VanillaDifficulty`). The player's scaling is inverted on
-    the raw event amount, before the damage window. The guardian's HARD bonus is subtracted after it.
-    The arrow shift is subtracted from the base damage at launch, because the hit is
-    `ceil(speed x base)` and a ceiling cannot be reversed at impact.
+  - **Slice 2 moves all three to NORMAL** (`core/mob/VanillaDifficulty`), M24's reference, where each
+    is untouched. The player's scaling is inverted on the raw event amount, before the damage window.
+    The guardian's HARD bonus is subtracted after it. The arrow's base is shifted by
+    `(id - 2) x 0.11` at launch, because the hit is `ceil(speed x base)` and a ceiling cannot be
+    reversed at impact. (`0f8fd81` shifted by `id x 0.11`, which normalised arrows to PEACEFUL alone.
+    The seat caught it in review.)
   - **What M24 cannot reach, recorded rather than guessed:**
     - PEACEFUL, where a scaled hit never lands at all;
     - how OFTEN a mob hits. The skeleton's shot passes the difficulty id to its inaccuracy

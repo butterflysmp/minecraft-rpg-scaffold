@@ -5,8 +5,9 @@ package io.github.butterflysmp.rpg.core.mob;
  * mob: authored x GS/100), whatever the server's difficulty. The gear score is the difficulty dial.
  *
  * <p>Vanilla lets difficulty into a mob's hit on a player through three channels that change the
- * AMOUNT. Each is read from the pinned {@code paper-26.1.2.jar} with {@code javap}, and each is undone
- * here:
+ * AMOUNT. Each is read from the pinned {@code paper-26.1.2.jar} with {@code javap}, and each is moved
+ * here to its value at <b>NORMAL, the one reference difficulty</b> ("vanilla" in M24 means vanilla at
+ * NORMAL). NORMAL itself is untouched by all three:
  *
  * <pre>
  *   channel                                   where                                    undone by
@@ -49,7 +50,8 @@ public final class VanillaDifficulty {
     public static final double GUARDIAN_HARD_BEAM_BONUS = 2.0;
 
     /**
-     * The amount of a mob's hit on a player as if difficulty did not exist.
+     * The amount of a mob's hit on a player as vanilla deals it at NORMAL, which is M24's "vanilla" on
+     * every path. NORMAL is the fixed point of all three channels.
      *
      * <p>It runs on the RAW event amount, before the damage window, because the EASY reversal is affine
      * ({@code 2(x - 1)}), not a scale: applied to a window's partial amount it would be wrong.
@@ -68,11 +70,16 @@ public final class VanillaDifficulty {
     }
 
     /**
-     * A mob arrow's base damage with the difficulty shift removed. Applied at LAUNCH, because the hit
-     * is {@code ceil(speed x base)}, and a ceiling cannot be reversed at impact.
+     * A mob arrow's base damage moved to NORMAL's: NORMAL is untouched, and EASY and HARD move to it by
+     * one 0.11 step per level. Applied at LAUNCH, because the hit is {@code ceil(speed x base)}, and a
+     * ceiling cannot be reversed at impact.
+     *
+     * <p><b>Measured from NORMAL, not from zero.</b> The first version subtracted {@code id x 0.11}, which
+     * also removed NORMAL's own 0.22, so mob arrows normalised to PEACEFUL while every other channel
+     * normalised to NORMAL (the seat's review of {@code 0f8fd81}).
      */
     public static double mobArrowBaseDamage(double vanillaBase, Difficulty difficulty) {
-        return vanillaBase - difficulty.id() * MOB_ARROW_SHIFT_PER_LEVEL;
+        return vanillaBase - (difficulty.id() - Difficulty.NORMAL.id()) * MOB_ARROW_SHIFT_PER_LEVEL;
     }
 
     /**

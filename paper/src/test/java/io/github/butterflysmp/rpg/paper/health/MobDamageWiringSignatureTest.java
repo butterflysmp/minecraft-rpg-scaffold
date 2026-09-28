@@ -96,11 +96,11 @@ class MobDamageWiringSignatureTest {
         assertTrue(undo < claim, "the reversal must come BEFORE the window claim");
     }
 
-    /** M24's arrow half: the launch handler removes setBaseDamageFromMob's difficulty shift. */
+    /** M24's arrow half: the launch handler moves setBaseDamageFromMob's difficulty shift to NORMAL's. */
     @Test
     void theLaunchHandlerUndoesTheMobArrowShift() throws IOException {
         assertTrue(indexOf(codeLines(listeners()), "VanillaDifficulty.mobArrowBaseDamage(arrow.getDamage()") >= 0,
-                "a skeleton's arrow keeps +0.11 per difficulty level without this (M24)");
+                "a skeleton's arrow keeps +0.11 per difficulty level away from NORMAL without this (M24)");
     }
 
     private static Path listeners() {

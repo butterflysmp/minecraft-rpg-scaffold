@@ -47,7 +47,7 @@ class VanillaDifficultyTest {
     void theSameHitPricesIdenticallyOnEasyNormalAndHard() {
         Resolved gs300 = new Resolved(From.DIRECT, false, true, 300);
         for (float a : AMOUNTS) {
-            double expected = MobDamagePricing.price(a, gs300);    // the hit as if difficulty did not exist
+            double expected = MobDamagePricing.price(a, gs300);    // the hit as vanilla deals it at NORMAL
             for (Difficulty d : PLAYABLE) {
                 double eventAmount = vanillaScale(a, d);
                 double priced = MobDamagePricing.price(
@@ -100,17 +100,45 @@ class VanillaDifficultyTest {
         }
     }
 
+    /** setBaseDamageFromMob(1.6), copied from the bytecode: 3.2 + triangle(id * 0.11, 0.57425), one fixed draw. */
+    private static double vanillaArrowBase(Difficulty d, double sample) {
+        return 1.6f * 2.0f + (d.id() * 0.11 + 0.57425 * sample);
+    }
+
     @Test
-    void aMobArrowsBaseDamageLosesItsDifficultyShift() {
-        // setBaseDamageFromMob(1.6): 3.2 + triangle(id * 0.11, 0.57425). The triangle's sample is the same
-        // draw whatever the difficulty, so after the shift is removed the base is identical on all three.
+    void aMobArrowsBaseDamageMovesToNormals() {
+        // The triangle's sample is the same draw whatever the difficulty, so once the shift is measured
+        // from NORMAL, the base is NORMAL's on all three -- the reference every other channel uses.
         double sample = 0.37;                               // one fixed draw of (r1 - r2), in [-1, 1]
-        double withoutDifficulty = 1.6f * 2.0f + 0.57425 * sample;
+        double normal = vanillaArrowBase(Difficulty.NORMAL, sample);
         for (Difficulty d : PLAYABLE) {
-            double vanillaBase = 1.6f * 2.0f + (d.id() * 0.11 + 0.57425 * sample);
-            assertClose(withoutDifficulty, VanillaDifficulty.mobArrowBaseDamage(vanillaBase, d),
-                    d.name() + ". Mutation: no shift -> +0.11 per level -> reddens");
+            assertClose(normal, VanillaDifficulty.mobArrowBaseDamage(vanillaArrowBase(d, sample), d),
+                    d.name() + ". Mutation: no shift -> +0.11 per level away from NORMAL -> reddens");
         }
+    }
+
+    @Test
+    void aNormalArrowIsUntouchedAndEasyAndHardEqualIt() {
+        // M24's "vanilla" means vanilla at NORMAL, on every path. NORMAL is therefore the fixed point, the
+        // same as unscale and the guardian bonus leave it. Mutation: restore id * 0.11 (normalise to
+        // PEACEFUL) -> NORMAL loses 0.22 -> the first assertion reddens.
+        for (double sample : new double[] {-1.0, -0.37, 0.0, 0.52, 1.0}) {
+            double normal = vanillaArrowBase(Difficulty.NORMAL, sample);
+            assertEquals(normal, VanillaDifficulty.mobArrowBaseDamage(normal, Difficulty.NORMAL), 0.0,
+                    "a NORMAL arrow's base must come back unchanged, sample " + sample);
+            assertClose(normal, VanillaDifficulty.mobArrowBaseDamage(vanillaArrowBase(Difficulty.EASY, sample),
+                    Difficulty.EASY), "EASY equals NORMAL, sample " + sample);
+            assertClose(normal, VanillaDifficulty.mobArrowBaseDamage(vanillaArrowBase(Difficulty.HARD, sample),
+                    Difficulty.HARD), "HARD equals NORMAL, sample " + sample);
+        }
+    }
+
+    @Test
+    void everyChannelLeavesNormalUntouched() {
+        // The consistency the seat's review found missing: one reference difficulty for all three channels.
+        assertEquals(7.3, VanillaDifficulty.undifficulted(7.3, Difficulty.NORMAL, true, false), 0.0, "the player's scaling");
+        assertEquals(1.0, VanillaDifficulty.undifficulted(1.0, Difficulty.NORMAL, true, true), 0.0, "the guardian beam");
+        assertEquals(3.5, VanillaDifficulty.mobArrowBaseDamage(3.5, Difficulty.NORMAL), 0.0, "the mob arrow");
     }
 
     @Test
