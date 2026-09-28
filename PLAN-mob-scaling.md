@@ -86,6 +86,26 @@ spawn point; **the End measures from (0, 0) (M23)**. **Every curve clamps at 500
   - **M24's reference (the seat, 2026-09-28): "vanilla" in M24 means vanilla at NORMAL, on every
     path.** Each difficulty channel leaves NORMAL untouched and moves EASY and HARD to it.
 
+### Ben's ruling, 2026-09-28 — M25
+
+- **M25.** It REPLACES the M3 distance curve for the overworld and the Nether, and the M23 End curve.
+  - OVERWORLD: every hostile mob is GS 100. No distance term.
+  - NETHER: every hostile mob is GS 200. No distance term.
+  - END: GS 300 within 1,000 blocks of (0,0). Beyond that, +100 GS per 10,000 blocks.
+
+  **The seat's defaults (Ben may overrule; they are defaults, not rulings):**
+  - The End curve is CONTINUOUS, like the old ones:
+    `GS = 300 + max(0, hypot(x, z) - 1000) / 100`, rounded, clamped at `MobGearScore.CAP` (500).
+    Worked points: 1,000 → 300; 6,000 → 350; 11,000 → 400; 21,000 → 500 (the cap).
+  - Mobs that already exist keep their stored GS (M5, never re-rolled). That is accepted on the dev
+    world. It is stated here, and nothing is migrated.
+  - The `GearScoreSource` seam (M3's exceptions) stays.
+
+  **What M25 supersedes, so no reader applies the old curves:** the curve table under *The curves*
+  above; M3's "every 2,500 blocks is +100 GS", for the overworld and the Nether; M11's Nether rate; and
+  M12's End rate. M11's and M12's starting values (200, 300) and M23's End origin (0, 0) survive into
+  M25. M19 (a circle) and M20 (the 500 cap) still apply to the End curve.
+
 **M21's full list, as ruled.** HOSTILE (gets a GS) is `mob instanceof org.bukkit.entity.Enemy`, whose
 closure in the pinned `paper-api-26.1.2.build.74-stable.jar` is: AbstractSkeleton, Blaze, Bogged,
 Breeze, CaveSpider, Creaking, Creeper, Drowned, ElderGuardian, EnderDragon, Enderman, Endermite,
