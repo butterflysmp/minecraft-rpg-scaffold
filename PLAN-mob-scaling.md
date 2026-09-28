@@ -110,6 +110,22 @@ spawn point; **the End measures from (0, 0) (M23)**. **Every curve clamps at 500
   M12's End rate. M11's and M12's starting values (200, 300) and M23's End origin (0, 0) survive into
   M25. M19 (a circle) and M20 (the 500 cap) still apply to the End curve.
 
+### Ben's rulings, 2026-09-28 — M26 and M27
+
+- **M26.** Vanilla's health-based behaviour COMES BACK for scaled mobs, all of it:
+  - the dragon's and the Wither's boss bars;
+  - the Wither's half-health armour phase;
+  - golem cracks;
+  - witches drinking;
+  - feeding pets and repairing golems;
+  - every other reader in §7's table.
+
+  Nothing is carved out; they all read the same number.
+- **M27.** The perched dragon never being knocked airborne by damage is DEFERRED to the Ender Dragon
+  boss fight work (Ben: "we'll come back to this later when we do our Ender Dragon boss fight").
+  Record it as its own §6 finding, cross-referenced from §7. It is NOT in this slice.
+  *(Recorded as §6 F22.)*
+
 **M21's full list, as ruled.** HOSTILE (gets a GS) is `mob instanceof org.bukkit.entity.Enemy`, whose
 closure in the pinned `paper-api-26.1.2.build.74-stable.jar` is: AbstractSkeleton, Blaze, Bogged,
 Breeze, CaveSpider, Creaking, Creeper, Drowned, ElderGuardian, EnderDragon, Enderman, Endermite,
@@ -1059,6 +1075,16 @@ new question, is in §6 F15.
   - **G11's GS 500 zombie must read `max=500` in its MOBSEED.** Since F16c a `/rpg spawn` runs vanilla
     spawn setup, which can roll a LEADER zombie with a raised MAX_HEALTH (seen: `max=1240`, vanilla
     49.6). That zombie survives the drop, correctly and as in vanilla, so it cannot read "both die".
+- **F22. DEFERRED (M27): a perched dragon is never knocked airborne by damage.** Found by §7's read
+  of the pinned jar:
+  - `EnderDragon.hurt(…, EnderDragonPart, …)` adds the health drop across `reallyHurt` to
+    `sittingDamageReceived` while a sitting phase is active, and takes off past `0.25 × getMaxHealth()`.
+  - Our riders token every hit to 0.01, so the drop is 0.01 per hit, and a perched dragon never
+    reaches the threshold from damage.
+  - The F20 mirror writes vanilla health OUTSIDE `hurt()`, so it does not change this.
+
+  **Deferred to the Ender Dragon boss fight work** (Ben, 2026-09-28: "we'll come back to this later
+  when we do our Ender Dragon boss fight"). It is not in the F20 slice. §7.9 cross-references it.
 
 ---
 
@@ -1243,12 +1269,19 @@ by executing the expression in Java, not predicted:
 - **NEVER KILLED BY THE MIRROR:**
   - `/rpg mobdamage 239` on a GS 300 spider leaves the store at 1 and `Health` at **`1.0f`** (the floor,
     not 0.0667), and the spider is **alive**.
-  - A punch (the 0.01 token) leaves it alive.
+  - ~~A punch (the 0.01 token) leaves it alive.~~ **Withdrawn while writing the gate (2026-09-28):** a
+    punch also deals the player's custom damage, at least the 1 HP left, so it kills through our store.
+    That is death being ours, and it tests nothing about the floor. The gate reads "still alive 10
+    seconds later" instead.
   - `/rpg mobdamage 1` then kills it ONCE, with one death and its drops (death is ours).
 - **Regressions:** G17 and G20 read as before (ratio 15.000).
 - **Carried:** every row unread on `GATE-mob-scaling-3.md`.
 
-### 7.9 FOR BEN
+### 7.9 FOR BEN — ANSWERED 2026-09-28
+
+**Both questions below are answered, and are kept as asked.** Question 1: **yes, all of it (M26).**
+Question 2: **deferred to the Ender Dragon boss fight work (M27), recorded as §6 F22.** The seat
+approved §7 as written, and it is built on the same branch.
 
 1. **Do you want vanilla's health-keyed behaviour back for scaled mobs?** The mirror returns it, all at
    once, keyed on the custom fraction:
