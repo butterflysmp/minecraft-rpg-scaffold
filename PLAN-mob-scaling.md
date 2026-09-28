@@ -781,7 +781,8 @@ new question, is in §6 F15.
   hard. If M17's *"keeps its current behaviour"* is meant to cover the GS factor as well, slice 2
   exempts custom mobs' attack from `MobScaling.attackDamage` entirely. At GS 100 the two readings are
   the same number, so no gate row near spawn can tell them apart.
-- **F16. RANGED HALF FIXED (`DefaultMainHand`); MELEE HALF WAITS ON A SEAT RULING — `/rpg spawn` gave
+- **F16. FIXED FOR RANGED AND MELEE (`DefaultMainHand`, `MeleeSeed`); F16c (the wither skeleton's
+  base) OPEN FOR A RULING — `/rpg spawn` gave
   vanilla mobs NO default weapon.** Ben found it on
   2026-09-28: a spawned skeleton has no bow. On that boot each G9/G9b skeleton was armed by hand with
   `/item replace entity @e[type=skeleton,sort=nearest,limit=1] weapon.mainhand with bow`.
@@ -793,8 +794,9 @@ new question, is in §6 F15.
     `createSpawnWeapon`, where every default weapon is handed out.
   - **The fix. Its RANGED half is built (`core/mob/DefaultMainHand`, applied in `RpgCommand`'s pre-spawn
     consumer, pinned by `DefaultMainHandTest` and `SpawnDefaultMainHandSignatureTest`): bow for skeleton,
-    stray, bogged, parched and illusioner; crossbow for pillager. The MELEE rows below wait on the
-    seed-timing ruling at the end of this entry.** Keep
+    stray, bogged, parched and illusioner; crossbow for pillager. The MELEE rows joined after the
+    seat's seed-timing ruling at the end of this entry, and the table is applied to VANILLA spawns
+    only.** Keep
     `randomizeData = false`, so determinism stays, and add a FIXED per-type main-hand table, applied in
     the pre-spawn consumer. It covers **only the mobs whose vanilla weapon is GUARANTEED**, read from
     each override's bytecode:
@@ -867,6 +869,43 @@ new question, is in §6 F15.
       sword-wielding mob below its own vanilla hit. Once the seed is deterministic, the four melee
       entries (wither skeleton, vindicator, vex, piglin brute) can join the table, and `/rpg spawn`
       matches a natural spawn at any distance.
+
+      **RULED by the seat (2026-09-28), and BUILT:** the seed ALWAYS counts the held main-hand weapon,
+      whatever the pairing.
+      - **How:** `core/mob/MeleeSeed` = `ATTACK_DAMAGE`'s BASE + the weapon's `ADD_VALUE` modifiers.
+      - **Where the modifiers are read:** the item's full component,
+        `ItemStack.getData(DataComponentTypes.ATTRIBUTE_MODIFIERS)` (pinned paper-api:
+        `public <T> T getData(DataComponentType$Valued<T>)`), filtered to `ATTACK_DAMAGE` entries whose
+        `EquipmentSlotGroup.test(EquipmentSlot.HAND)` holds. It is `@ApiStatus.Experimental`, like the
+        `EQUIPPABLE` read `EquipmentReads` already makes.
+      - **Operations:** every vanilla weapon builder read uses `ADD_VALUE` for attack damage
+        (`ToolMaterial.createSwordAttributes`, `createToolAttributes`, which the axes reach through
+        `Properties.axe` → `tool`, the spear's `Properties.spear`, and `TridentItem.createAttributes`). So
+        no stop was needed. A non-ADD modifier at runtime is left out and WARNed, not ordered by guess.
+      - **The table:** the four melee entries joined it (ten in all, applied to VANILLA spawns only).
+        The Knell keeps no weapon, so its parked damage (M17) does not move.
+
+    - **Findings, recorded and not fixed (the seat's list, plus what the reads found):**
+      - **A weapon PICKED UP or dropped after seeding does not re-price.** A mob is seeded once (M5).
+      - **The rolled weapons are counted only if rolled:** the zombified piglin's golden sword or
+        spear, the drowned's trident, a zombie's sword, spear or shovel. The count now happens at the
+        seed, consistently, whoever is near.
+      - **F16c, NEW, FOR A RULING: `finalizeSpawn` also sets the wither skeleton's attack BASE.**
+        `WitherSkeleton.finalizeSpawn` calls `setBaseValue(4.0)` on `ATTACK_DAMAGE` after `super`. The
+        registered base is the attribute's default, **2.0**
+        (`DefaultAttributes`: `WITHER_SKELETON` → `AbstractSkeleton.createAttributes` →
+        `Monster.createMonsterAttributes` adds `ATTACK_DAMAGE` with no value; the `RangedAttribute`
+        default is 2.0). **So a `/rpg spawn wither_skeleton` seeds 2.0 + stone sword 4.0 = 6.0, while
+        a natural one seeds 4.0 + 4.0 = 8.0.** That breaks "`/rpg spawn` matches a natural spawn". A
+        sweep of every method in `net.minecraft.world.entity` that writes `ATTACK_DAMAGE` found this the
+        only fixed `finalizeSpawn` write. The others are state setters (slime and phantom size, baby
+        hoglin and zoglin, goat age, the killer-bunny variant), and all of them write the base, which
+        `getBaseValue()` sees. **Proposed:** a fixed base for the wither skeleton (4.0), applied in the
+        consumer beside the weapon. **Not built, because it was not ruled.** F16b is predicted for
+        the build as it stands (6.0).
+      - **G16's slime half cannot be produced by `/rpg spawn`.** Without `finalizeSpawn` a slime never
+        rolls a size (`Slime.setSize` is reached from it), so `/rpg spawn slime 300` is not the "large
+        one" G16 asks for.
 
 ---
 

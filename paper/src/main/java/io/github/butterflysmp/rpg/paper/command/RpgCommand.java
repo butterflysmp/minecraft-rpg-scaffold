@@ -830,16 +830,19 @@ public final class RpgCommand {
                                 .set(adapters.keys().mobGearScore, PersistentDataType.INTEGER, gearScore);
                     }
                     // F16: randomizeData=false skips finalizeSpawn, and with it every default weapon, so
-                    // put back the GUARANTEED ranged ones. In the consumer, before the add, as a natural
-                    // spawn has it. Keyed by the BASE entity, so a custom mob built on a skeleton gets
-                    // its bow too.
-                    DefaultMainHand.of(baseEntity.toLowerCase(Locale.ROOT))
-                            .map(Material::matchMaterial)
-                            .ifPresent(item -> {
-                                if (entity.getEquipment() != null) {
-                                    entity.getEquipment().setItemInMainHand(new ItemStack(item));
-                                }
-                            });
+                    // put back the GUARANTEED ones. In the consumer, before the add, as a natural spawn
+                    // has it. VANILLA spawns only: a custom mob keeps its content shape, and the Knell
+                    // (a wither skeleton) must not pick up a stone sword that would move its parked
+                    // damage (M17).
+                    if (def == null) {
+                        DefaultMainHand.of(baseEntity.toLowerCase(Locale.ROOT))
+                                .map(Material::matchMaterial)
+                                .ifPresent(item -> {
+                                    if (entity.getEquipment() != null) {
+                                        entity.getEquipment().setItemInMainHand(new ItemStack(item));
+                                    }
+                                });
+                    }
                 });
 
         // The add event has already seeded it, inside spawn(), so the store holds the real numbers.

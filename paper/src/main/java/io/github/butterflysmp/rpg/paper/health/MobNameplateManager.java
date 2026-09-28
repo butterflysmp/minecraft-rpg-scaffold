@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthState;
 import io.github.butterflysmp.rpg.core.mob.GearScoreSource;
+import io.github.butterflysmp.rpg.core.mob.MeleeSeed;
 import io.github.butterflysmp.rpg.core.mob.MobDamagePricing;
 import io.github.butterflysmp.rpg.core.mob.MobGearScore;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
@@ -395,13 +396,46 @@ public final class MobNameplateManager implements HealthListener {
     }
 
     /**
-     * A mob's custom attack damage, bootstrapped from its vanilla ATTACK_DAMAGE attribute -- the attack
-     * mirror of {@link #maxHealthOf}. A mob with no such attribute (many passive mobs) deals 0 custom
-     * melee, which is correct: it had no vanilla melee to bridge either.
+     * A mob's vanilla melee attack, before scaling: its {@code ATTACK_DAMAGE} BASE plus its held main-hand
+     * weapon's ADD modifiers ({@link MeleeSeed}, the seat's ruling of 2026-09-28, PLAN §6 F16). A mob
+     * with no such attribute (many passive mobs) deals 0 custom melee, which is correct: it had no vanilla
+     * melee to bridge either.
+     *
+     * <p><b>Never {@code attr.getValue()}.</b> This runs inside {@code EntityAddToWorldEvent}, and vanilla
+     * has folded the held weapon into the live value only if a player paired with the mob first
+     * ({@code ServerEntity.sendPairingData} calls {@code detectEquipmentUpdates}). The live value was a
+     * fact about who stood nearby. The weapon's modifiers are read from the ITEM instead: its full
+     * {@code ATTRIBUTE_MODIFIERS} component, filtered to {@code ATTACK_DAMAGE} entries whose slot group
+     * covers the main hand.
      */
-    private static double attackDamageOf(LivingEntity mob) {
+    private double attackDamageOf(LivingEntity mob) {
         AttributeInstance attr = mob.getAttribute(Attribute.ATTACK_DAMAGE);
-        return attr != null ? attr.getValue() : 0.0;
+        if (attr == null) return 0.0;
+        MeleeSeed.Seed seed = MeleeSeed.attack(attr.getBaseValue(), mainHandAttackModifiers(mob));
+        if (seed.unpriced() > 0) {
+            log.warning("mob " + mob.getUniqueId() + " (" + mob.getType().key() + ") holds a weapon with "
+                    + seed.unpriced() + " non-ADD attack modifier(s), which the seed leaves out (MeleeSeed)");
+        }
+        return seed.attack();
+    }
+
+    /** The held main-hand item's attack-damage modifiers that apply to the main hand. */
+    private static java.util.List<MeleeSeed.Modifier> mainHandAttackModifiers(LivingEntity mob) {
+        var equipment = mob.getEquipment();
+        if (equipment == null) return java.util.List.of();
+        var hand = equipment.getItemInMainHand();
+        if (hand.isEmpty()) return java.util.List.of();
+        var modifiers = hand.getData(io.papermc.paper.datacomponent.DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        if (modifiers == null) return java.util.List.of();
+        java.util.List<MeleeSeed.Modifier> out = new java.util.ArrayList<>();
+        for (var entry : modifiers.modifiers()) {
+            if (!Attribute.ATTACK_DAMAGE.equals(entry.attribute())) continue;
+            if (!entry.getGroup().test(org.bukkit.inventory.EquipmentSlot.HAND)) continue;
+            var op = entry.modifier().getOperation() == org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER
+                    ? MeleeSeed.Operation.ADD_VALUE : MeleeSeed.Operation.OTHER;
+            out.add(new MeleeSeed.Modifier(op, entry.modifier().getAmount()));
+        }
+        return out;
     }
 
     /**

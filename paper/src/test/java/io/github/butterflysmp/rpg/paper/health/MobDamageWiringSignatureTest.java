@@ -103,6 +103,29 @@ class MobDamageWiringSignatureTest {
                 "a skeleton's arrow keeps +0.11 per difficulty level away from NORMAL without this (M24)");
     }
 
+    /**
+     * The seat's melee ruling: the seed counts the held weapon from the ITEM, onto the attribute's BASE.
+     * The live {@code getValue()} of {@code ATTACK_DAMAGE} is what the ruling retired, because it depends
+     * on whether a player paired with the mob before the seed. Only a source scan can see which one is
+     * read.
+     */
+    @Test
+    void theMeleeSeedReadsTheBasePlusTheItemNeverTheLiveValue() throws IOException {
+        Path seedFile = MAIN.resolve(Path.of("io", "github", "butterflysmp", "rpg", "paper", "health",
+                "MobNameplateManager.java"));
+        List<String> code = codeLines(seedFile);
+        int from = indexOf(code, "private double attackDamageOf(LivingEntity mob)");
+        assertTrue(from >= 0, "POSITIVE CONTROL: attackDamageOf is found, so the scan is not blind");
+        int to = indexOf(code.subList(from + 1, code.size()), "private ") + from + 1;   // the next member
+        List<String> body = code.subList(from, to);
+        assertTrue(body.stream().anyMatch(l -> l.contains("MeleeSeed.attack(attr.getBaseValue(), mainHandAttackModifiers(mob))")),
+                "the seed must be MeleeSeed over the BASE and the item's modifiers");
+        assertTrue(body.stream().noneMatch(l -> l.contains("attr.getValue()")),
+                "the live ATTACK_DAMAGE value must not be read: it depends on player pairing");
+        assertTrue(indexOf(code, "hand.getData(io.papermc.paper.datacomponent.DataComponentTypes.ATTRIBUTE_MODIFIERS)") >= 0,
+                "the weapon's modifiers are read from the item's component");
+    }
+
     private static Path listeners() {
         return MAIN.resolve(Path.of("io", "github", "butterflysmp", "rpg", "paper", "listener", "RpgListeners.java"));
     }

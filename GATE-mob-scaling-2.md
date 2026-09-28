@@ -6,9 +6,18 @@
 > applies **only** to rows that rest on Ben's own observation: feel, visuals, chat he saw.
 
 **CURRENT TALLY (after the ruling):**
-- **PASS:** R0a, R0b and R0c (both boots); **G8**, the **G9 creeper** half, the **G9b creeper** half and **G-DIFFb**,
-  each citing its re-run `MOBHIT` line quoted in its cell.
+- **PASS:** R0a, R0b and R0c (both boots); **G8**, the **G9 creeper** half, the **G9b creeper** half, **G-DIFFb**
+  and **P-SHULKER**, each citing its re-run `MOBHIT` line(s) quoted in its cell.
 - **NO READING:** the **G9** and **G9b skeleton** halves (no bow: PLAN §6 F16).
+- **The ruling's SWEEP (2026-09-28), both `ef2d91c` boots after LOGIN:**
+  - **Boot 1** (`2026-09-28-1.log.gz`, login 01:22:56) has **no** `MOBHIT`, `MOBSEED`, `MOBREMOVE` or GS WARN line at
+    all; mobtrace was never on.
+  - **Boot 2** (01:38:46, login 01:40:33) has 9 `MOBHIT` lines: G8's; G9's and G9b's creepers; G-DIFFb's two;
+    P-SHULKER's two; and two skeleton **melee** lines, which no row predicts.
+  - **Its other evidence lines match no prediction:** no `gs=222` (G12), `gs=437` (G13) or `gs=140` (G14); no
+    invalid-GS WARN (G15/G15b); no `resolved NO gear score`. Its 6 `MOBSEED … gs=300 source=stored` lines are
+    all `/rpg spawn … 300` (3 creepers, 1 skeleton, 2 shulkers), not conversions, so G16 is untouched.
+  - **So the sweep adds P-SHULKER and nothing else.**
 - **Everything else:** unchanged below.
 
 **Status (history): READ 2026-09-28 on `ef2d91c` -- 3 of 34 PASS (R0 only); 31 "reported good or skipped -- not itemised";
@@ -63,15 +72,16 @@ row has been read. **Readings count only if Ben's LOGIN appears in THIS boot's l
 > change.
 
 ```
-ROWS     35   R0a R0b R0c
-              G8 G8b G9 G9b G10 G-DIFF G-DIFFb F16a
+ROWS     36   R0a R0b R0c
+              G8 G8b G9 G9b G10 G-DIFF G-DIFFb F16a F16b
               P-ARROW P-TRIDENT P-BLAZE P-GHAST P-SKULL P-SPIT P-SHULKER P-CREEPER P-WITCH P-BOOM P-FANGS
               P-GUARDIAN P-BREATH P-WIND P-DOT
               G13 G12 G14 G15 G15b G16 G11 G18 GX-ENV
          ──
-         35   = 20 headings   git grep -c '^### R0\|^### G\|^### F16' <ref> -- GATE-mob-scaling-2.md
+         36   = 21 headings   git grep -c '^### R0\|^### G\|^### F16' <ref> -- GATE-mob-scaling-2.md
               + 15 probe rows git grep -c '^| \*\*P-' <ref> -- GATE-mob-scaling-2.md
-              (F16a added 2026-09-28 with the F16 fix, before any boot of it; the heading grep widened to count it)
+              (F16a added 2026-09-28 with the F16 fix, before any boot of it; the heading grep widened to count it.
+               F16b added with the melee seed, before any boot of it)
 ```
 
 **Plan:** `PLAN-mob-scaling.md` §1.2, §3 slice 2 and §4 (G8-G10). Rulings M1-M24, and **M16** and **M24** above all.
@@ -198,6 +208,12 @@ $zip.Dispose()
 |---|---|
 | `/rpg spawn skeleton 100`, then on the **server console** (Session B runs these, so the reading is the server's own), anchored at Ben so "nearest" means the skeleton beside him: (1) `execute at BaronVonYeetus run data get entity @e[type=skeleton,limit=1,sort=nearest] Health`, the **positive control**: a number such as `20.0f` proves the selector found the skeleton. (2) `execute at BaronVonYeetus run data get entity @e[type=skeleton,limit=1,sort=nearest] equipment.mainhand`. **Predicted: `... has the following entity data: {count: 1, id: "minecraft:bow"}`**, possibly with extra keys; the row reads `id: "minecraft:bow"`. **Before F16 (`ef2d91c`), (2) reads `Found no elements matching equipment.mainhand`** (the bow never existed). **Why this path:** 26.1 has no `HandItems`. `LivingEntity` saves and loads equipment under `equipment` (`addAdditionalSaveData` / `readAdditionalSaveData`, read with `javap`), and `mainhand` is `EquipmentSlot`'s serialised name (its static initialiser). `execute at` pins where "nearest" is measured from, because where a bare console selector measures from was not read | |
 
+### F16b — a `/rpg spawn wither_skeleton 100` hits for base + its stone sword, x5 (SURVIVAL) — NEW (the melee seed, predicted before the boot)
+
+| prediction | READING |
+|---|---|
+| `/rpg mobtrace` on, unarmoured, max 100. `/rpg spawn wither_skeleton 100`, and take **one melee hit**. **Predicted `MOBHIT`: `cause=ENTITY_ATTACK direct=wither_skeleton causing=wither_skeleton ... raw=6.000 vanilla=6.000 gs=100 from=DIRECT custom=false applied=30.000 ratio=5.000 victimMax=100.0`.** **Where 6.000 comes from, all read with `javap` from `paper-26.1.2.jar`:** (1) the **base is 2.0**: `DefaultAttributes` gives `WITHER_SKELETON` `AbstractSkeleton.createAttributes`, which calls `Monster.createMonsterAttributes`, which adds `ATTACK_DAMAGE` with no value, so `Attributes`' `RangedAttribute("attribute.name.attack_damage", 2.0, …)` default holds. `WitherSkeleton.finalizeSpawn` would set it to 4.0, but `/rpg spawn` skips `finalizeSpawn` (PLAN §6 **F16c**). (2) **The stone sword adds 4.0, `ADD_VALUE`**: `Items` registers it as `.sword(ToolMaterial.STONE, 3.0f, -2.4f)`, `createSwordAttributes` adds `3.0 + STONE.attackDamageBonus`, and STONE's bonus is `1.0` (`fconst_1` in `ToolMaterial.<clinit>`). So 2.0 + 4.0 = **6.0**, x5 x GS 100/100 = **30.0**. **Why it cannot pass by accident:** without the weapon term (the pre-ruling live read with nobody paired, or no sword at all) `vanilla` reads **2.000**; with F16c's base fixed it would read **8.000**, a natural spawn's. **A reading of 8.000 here would mean F16c's divergence is not what the jar says**, not a pass. `mobinfo`'s "custom attack" should read 30. **What each field is, for melee:** `raw` and `vanilla` both print the LIVE `ATTACK_DAMAGE` value (the trace passes the one attribute twice), which includes the sword because Ben stands on the spawn and pairs it. `applied` is the SEED (`MeleeSeed`: base + sword, from the item) x5. So `ratio=5.000` is live against seed, and holds only while the two agree, which is the in-range case this row sets up | |
+
 ---
 
 ## THE PROBE TABLE — every §1.2 path that can be produced in game (SURVIVAL)
@@ -216,7 +232,7 @@ signatures read with `javap` (`DamageSources.arrow(AbstractArrow, Entity)`, `ind
 | **P-GHAST** | `ghast 300` | impact: `fireball` / `ghast` / `DIRECT`, cause ‡. **The blast is a second hit**: `explosion(fireball, ghast)`, so it is also `DIRECT` from the fireball's stamp. Both lines read the same | **15.000** each | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
 | **P-SKULL** | a Wither: `/rpg spawn wither 300` (a creative build, then survival to take the hit) | `wither_skull` / `wither` / `DIRECT`, cause ‡ | **15.000** | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
 | **P-SPIT** | a llama you anger (hit it once); **passive by M21** | `llama_spit` / `llama` / `CAUSING`, **`gs=-`** (passive: no stamp, no GS) | **5.000** | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
-| **P-SHULKER** | `shulker 300` | `shulker_bullet` / `shulker` / `DIRECT`, cause ‡ | **15.000** | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
+| **P-SHULKER** | `shulker 300` | `shulker_bullet` / `shulker` / `DIRECT`, cause ‡ | **15.000** | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note **PASS, by the seat's ruling of 2026-09-28** (a log-line row PASSes on a verbatim line in a boot whose log shows Ben's LOGIN; this boot's is 01:40:33). The lines, VERBATIM: `[01:45:24] [Rpg] MOBHIT cause=PROJECTILE direct=shulker_bullet causing=shulker difficulty=HARD raw=6.000 vanilla=4.000 gs=300 from=DIRECT custom=false applied=60.000 ratio=15.000 victimMax=100.0` and `[01:47:09] [Rpg] MOBHIT cause=PROJECTILE direct=shulker_bullet causing=shulker difficulty=EASY raw=3.000 vanilla=4.000 gs=300 from=DIRECT custom=false applied=60.000 ratio=15.000 victimMax=100.0`. They match `shulker_bullet` / `shulker` / `DIRECT` and ratio 15.000. The unpredicted cause reads `PROJECTILE` |
 | **P-CREEPER** | `creeper 200` | `creeper` / `creeper` / `DIRECT` | **10.000** | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
 | **P-WITCH** | `witch 300`, and take a harming splash | `potion` (or `splash_potion`) / `witch` / `DIRECT`, cause ‡ (MAGIC expected) | **15.000** | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
 | **P-BOOM** | `warden 300`, sonic boom | `warden` / `warden` / `DIRECT` (`sonicBoom(entity)`) | **15.000** | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
