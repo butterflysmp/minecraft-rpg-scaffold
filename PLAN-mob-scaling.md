@@ -1049,6 +1049,16 @@ new question, is in §6 F15.
   the store at all. **Witnessed in `GATE-mob-scaling-3.md` F20a (the dragon) and F20b (a spider).**
   The fix is a decision for the seat (e.g. token the vanilla health in `applyDamage` too, or have the
   heal arm drive the heal instead of vanilla's gate), and nothing is built.
+  **Read 2026-09-28 on `8d7e0c90`: F20a and F20b PASS.** A dragon hurt only by `/rpg mobdamage` logged
+  no crystal heal for 14 s, and a spider logged no Regeneration heal for 20 s. Each started healing
+  right after one punch.
+- **F21. Two carried staging traps, both found on the slice 3 boot.**
+  - **G18 is HOLLOW:** the Knell is a `wither_skeleton`, which vanilla makes immune to lava, so the
+    "Knell in lava" row (carried unread since slice 1) can never read M14. A fall would work; the
+    arithmetic is pinned by `DamageScaleTest`'s Knell rows.
+  - **G11's GS 500 zombie must read `max=500` in its MOBSEED.** Since F16c a `/rpg spawn` runs vanilla
+    spawn setup, which can roll a LEADER zombie with a raised MAX_HEALTH (seen: `max=1240`, vanilla
+    49.6). That zombie survives the drop, correctly and as in vanilla, so it cannot read "both die".
 
 ---
 
