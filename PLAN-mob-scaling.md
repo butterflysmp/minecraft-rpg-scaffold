@@ -1062,6 +1062,212 @@ new question, is in §6 F15.
 
 ---
 
+## §7 F20 — THE VANILLA MIRROR (phase 1: the plan; no code)
+
+**The recommendation is the seat's MIRROR, CONFIRMED by the pinned jar, with one widening**: it
+mirrors every store write, raises as well as lowers, and runs from one listener rather than from each
+path. Every jar claim below was read on 2026-09-28 from `run/versions/26.1.2/paper-26.1.2.jar` with
+`javap -c`, and the source claims were read at `6dd1eeb9`.
+
+### 7.1 THE RULE
+
+After every write to a TRACKED MOB's custom store, set its vanilla health to
+
+```
+vanilla = clamp( newCurrent / customMax × vanillaMax ,  floor ,  vanillaMax )     floor = min(vanillaMax, 1.0)
+```
+
+where `vanillaMax` is the entity's own MAX_HEALTH attribute value. There are four conditions:
+- **The attribute is never written (M9 stands).** Only `setHealth` is called.
+- **Death stays ours.** When `newCurrent <= 0` (`reachedZero`), the mirror writes NOTHING, and
+  `MobDeathSystem`'s `setHealth(0)` is the only thing that kills.
+- **Floored above 0 while the store is above 0**, so vanilla never kills a mob that our store says is
+  alive. The floor is the existing `VANILLA_LIVE_FLOOR` (1.0, today in `RpgListeners`), moved to
+  the one place both use.
+- **Players are excluded** (`targetIsPlayer`). `HeartBarRenderer` owns their bar.
+
+### 7.2 THE ONE PLACE: THE `HealthChange` SEAM, AS A FIFTH `HealthListener`
+
+The hook is neither the lowering call nor its callers. **It is the store's own notification, the
+`HealthChange` seam.** `RpgPlugin` builds `new CombatantStats(new CompositeHealthListener(healthSystem,
+nameplates, popups, mobDeath))`; the mirror is a fifth listener, `MobVanillaMirror`, in the same list.
+
+**Why this is one place and not each path:** `CombatantStats` is the only writer of current health.
+It has exactly three writers, and each emits exactly one `HealthChange`:
+- `damage` emits `DAMAGE`;
+- `heal` emits `HEAL`;
+- `reconcileMaxModifiers` emits `MAX_CHANGE`.
+
+So every path in §6 F20's table reaches the mirror without being named: `applyDamage` (abilities,
+weapons, scorch, Ignite, reflects, `/rpg mobdamage`), the tokened riders, and every heal. **A NEW
+damage path added next year is mirrored without anyone remembering to.** Hooking the callers instead
+would be about seven sites, and the eighth, added later, would silently leave vanilla full. That is F20
+again, reintroduced by omission. Hooking inside `CombatantStats` itself is impossible: `core` cannot
+touch Bukkit. The listener IS the port.
+
+**Threading:** `HealthListener.onChange` runs on the TARGET's owning thread. `MobDeathSystem`'s javadoc
+states that contract and already relies on it to call `setHealth(0)`, so the mirror adds no new thread
+exposure and makes no scheduler hop.
+
+**The seed is the one write the seam does not carry, and it is named rather than missed.**
+`bootstrapIfAbsent` creates a mob's store at FULL with no event, while vanilla health comes from the
+entity's NBT and can be anything: F1 resets the store on every load, not the vanilla health. So
+`MobNameplateManager.seedCombatStats` calls the SAME mirror function once after the bootstrap, and
+vanilla goes to `vanillaMax`. **That makes one function with two callers: the seam for every write,
+and the seed for creation.**
+
+### 7.3 `LivingEntity.setHealth` ON THE PINNED JAR: THE FOUR READS
+
+`CraftLivingEntity.setHealth(double)`, in full:
+1. It rounds to float first (`d2f f2d`).
+2. It checks `0 <= value <= getMaxHealth()`, or throws `IllegalArgumentException("Health value (%s) must
+   be between 0 and %s…")`.
+3. If `generation && value == 0` it discards the entity.
+4. It calls `LivingEntity.setHealth(float)`.
+5. If `value == 0` it calls `die(damageSources().generic())`.
+
+`LivingEntity.setHealth(float)` for a non-player: `entityData.set(DATA_HEALTH_ID, Mth.clamp(v, 0,
+getMaxHealth()))`. No class under `net.minecraft.world.entity` overrides `setHealth(float)`: a scan of
+all 1,133 classes found only `LivingEntity`, which is the scan's control.
+
+| question | answer, from the bytecode |
+|---|---|
+| **Does it fire an `EntityDamageEvent` or `EntityRegainHealthEvent`?** | **NO.** The only calls are the precondition, the synced-data write and, at exactly 0, `die`. **No recursion into our listeners** is possible, except `EntityDeathEvent` at 0, which the mirror never writes |
+| **Does it play a hurt animation or sound, or reset the invulnerability ticks?** | **NO.** `invulnerableTime`, `hurtTime` and every sound call are absent from both methods |
+| **Does it trigger death at `<= 0`, and what is the smallest safe value?** | **At EXACTLY 0 it dies immediately** (Craft's `die(generic)`). A negative value throws. **Any value that stays positive AFTER the float rounding is alive**; a double small enough to round to `0.0f` (below about half the smallest positive float) DIES. The floor of 1.0 is far from that edge, and is the value the token floor already writes today |
+| **Does it change the dragon's phase or its crystal targeting?** | **NO.** `EnderDragon` has no `setHealth`. Its phase logic reads health only INSIDE `hurt(…, EnderDragonPart, …)`: health at or below 0 there means `setHealth(1.0f)` plus the DYING phase, and a perched dragon counts the drop across `reallyHurt` into `sittingDamageReceived` (takeoff past `0.25 × max`). A `setHealth` from outside `hurt` touches neither. **A crystal heals when all three hold** (`checkCrystals`): `nearestCrystal != null` (any `EndCrystal` within the bounding box inflated by 32, re-searched on a 1-in-10 roll each tick), `tickCount % 10 == 0`, and **`getHealth() < getMaxHealth()`**. The mirror makes that last test true exactly when our store is below max |
+
+**The upper bound cannot throw.** `x = fraction × vanillaMax` with `fraction <= 1`, and Craft compares
+the float-ROUNDED value against `getMaxHealth()`, itself the float max. Rounding is monotone, so
+`x <= vanillaMax` rounds to at most the float max: measured on the leader zombie's attribute, 49.6
+becomes `49.599998`. The core function still clamps, because a throw on the entity thread is the
+failure to rule out, not reason about.
+
+### 7.4 WHAT THE MIRROR TURNS ON: EVERY VANILLA READER OF A MOB'S HEALTH
+
+A scan of the same 1,133 classes found 52 methods that call `getHealth()` or `getMaxHealth()`. For a
+tracked mob, today each of them reads a vanilla health pinned at or near full by 0.01 tokens. The mob
+side:
+
+| class of reader | members (from the scan) | today | with the mirror |
+|---|---|---|---|
+| **gated heals, which are F20 itself** | `RegenerationMobEffect`, `EnderDragon.checkCrystals`, `AbstractHorse`/`Camel`/`Llama.handleEating`, `Wolf`/`Cat`/`AbstractNautilus`/`IronGolem.mobInteract` (feeding, iron repair), `Witch.aiStep` (drinks below max), `HappyGhast.continuousHeal` | fire only after a token hit, then never stop (F18) | fire exactly while the store is below max |
+| **health shown to players** | `EnderDragonFight.updateDragon` and `WitherBoss.customServerAiStep` (boss bars, `setProgress(health / max)`), `Raid.getHealthOfLivingRaiders` (the raid bar), `IronGolem.getCrackiness`, `Wolf.getTailAngle`/`getAmbientSound` | **the dragon's and the Wither's boss bars sit at about full for the whole fight** | show the custom fraction |
+| **behaviour keyed on health** | `WitherBoss.isPowered` (`health <= max / 2`: the armour phase that deflects arrows), `Axolotl.hurtServer` (plays dead), `Mob.getMaxFallDistance` (pathfinding) | **the Wither never enters its half-health phase** | vanilla's behaviour returns, keyed on the custom fraction |
+| **writers we don't own** | `WitherBoss.makeInvulnerable` (the spawn charge-up), `Slime.setSize`, `Zombie.handleAttributes` (a leader) | unchanged | unchanged, and overwritten at the next store write |
+
+**Most of this is a PLAYER-FACING change beyond F20**, which is §7.9's question for Ben.
+
+### 7.5 F18 IS FIXED BY THE SAME LISTENER
+
+F18 is "vanilla health never recovers, so the heals never stop." A `HEAL` change writes vanilla UP, so
+**when the store reaches max, vanilla reaches `vanillaMax` exactly and both gated heals stop.**
+`HealthState.heal` clamps to `max.value()`, the same double the fraction divides by, so the fraction is
+exactly 1.0 there. The capped `before = after = max` lines disappear. This is why the mirror must fire
+on every kind, not only on lowering writes: **a lowering-only mirror fixes F20 and leaves F18.**
+
+### 7.6 A HEAL THROUGH OUR OWN PATH
+
+- **Content `heal:` effects on a mob, `/rpg mobheal`**: `CombatantStats.heal` emits `HEAL`, and the mirror
+  writes vanilla up.
+- **A rerouted vanilla heal (slice 3):** `healTrackedMob` cancels the event, then calls `stats.heal`. The
+  mirror's `setHealth` runs INSIDE the regain event, and vanilla's own post-event write is skipped
+  because the event is cancelled (`checkCrystals`: `if (callEvent()) setHealth(getHealth() +
+  getAmount())`). **Net effect: vanilla health rises by exactly the vanilla amount**, since the store
+  rose by `amount × customMax / vanillaMax`. So vanilla moves as if vanilla had healed it, and nothing
+  diverges.
+- **The tokened riders** still subtract their 0.01 inside vanilla's `actuallyHurt`, and the store write
+  lands a scheduler hop later (`applyDamage` runs `onEntity`), where the mirror overwrites the token.
+  **The token floor stays**: it covers the window before that hop.
+
+### 7.7 THE ALTERNATIVE, AND WHY IT IS REJECTED: OUR OWN REGEN AND CRYSTAL TICKING
+
+The alternative: leave vanilla health alone and replace the gated vanilla heals with our own (a
+Regeneration tick, a crystal-proximity tick, and so on). **Rejected, and the scan above is the
+reason:**
+1. **The gated set is not two sources, it is at least nine** (§7.4's first row), and every future
+   Mojang heal is a new silent gap. That is the same "each path" failure the seam avoids.
+2. **It fixes none of the display and behaviour readers.** The boss bars, the Wither's half-health phase
+   and golem cracks read vanilla health, not heals. They would stay wrong.
+3. **It duplicates vanilla logic that the mirror lets vanilla run itself**, at vanilla's own cadence,
+   with vanilla's own conditions.
+
+It would be preferable only if `setHealth` had side effects, and §7.3 measured none.
+
+### 7.8 TESTS FIRST, MUTATIONS, GATE ROWS
+
+**Core (tests first), a pure function** `MobVanillaMirror.healthFor(newCurrent, customMax, vanillaMax)`
+returning an empty `OptionalDouble` for "write nothing". *(`OptionalDouble` is a box that holds one
+double or nothing.)* The rows:
+- full returns exactly `vanillaMax`, half returns half, and a tiny fraction returns the floor;
+- `newCurrent <= 0` returns EMPTY (death is ours);
+- `customMax` or `vanillaMax` that is `<= 0` or NaN returns EMPTY (fail soft: leave vanilla alone);
+- a `vanillaMax` below 1 floors at `vanillaMax`;
+- the result is never above `vanillaMax`, over a grid.
+
+A second pure decision, `shouldMirror(HealthChange)`: `DAMAGE`, `HEAL` and `MAX_CHANGE` mirror, a
+player never mirrors, and `reachedZero` never mirrors.
+
+**Paper:**
+- `MobVanillaMirror implements HealthListener`, registered in the composite.
+- The seed calls the function once.
+- A signature test pins both registrations. Without it, deleting either leaves every unit test green.
+
+**Mutations owed**, each with what reddens:
+1. writing the floor when `newCurrent <= 0`, which revives a mob at death → the core EMPTY row;
+2. deleting the floor → the tiny-fraction row;
+3. `vanillaMax` replaced by `customMax`, which would throw on the entity thread → the never-above-max
+   grid;
+4. `HEAL` excluded (lowering-only, which leaves F18) → the `shouldMirror` row;
+5. the player exclusion dropped → the `shouldMirror` row;
+6. the listener removed from the composite, or the seed call removed → the signature test.
+
+**Gate rows**, to be predicted in the slice's gate file before its boot. The values below were computed
+by executing the expression in Java, not predicted:
+- **F20b′: RE-PREDICTED AS PASS WITH HEALS.**
+  - A GS 300 spider hurt only by `/rpg mobdamage 100`: console `Health` is `9.333333f` (140 / 240 × 16).
+  - Under Regeneration II it **heals without any punch**: `MOBHEAL … before=140.000 after=155.000`,
+    and the next Health read is `10.333333f`.
+  - At 240 the Health is `16.0f` and the heal lines STOP (F18 fixed): zero `before = after = max`
+    lines.
+- **F20a′: RE-PREDICTED AS PASS WITH HEALS.**
+  - A dragon hurt only by `/rpg mobdamage 500`: `Health` is `166.66667f`, and the crystal heals it
+    **without a punch**, 2500 → 3000 in 34 lines.
+  - It ends at `Health 200.0f`, with no capped line.
+  - Its boss bar visibly drops, then refills (an observation).
+- **NO-RECURSION:**
+  - `/rpg mobdamage 100` on a full, untouched GS 300 spider with no heal source nearby.
+  - The Health moves to `9.333333f` with **zero MOBHEAL and zero MOBHIT lines**, and no exception or
+    `StackOverflowError`.
+  - The mirror's write raised no event.
+- **NEVER KILLED BY THE MIRROR:**
+  - `/rpg mobdamage 239` on a GS 300 spider leaves the store at 1 and `Health` at **`1.0f`** (the floor,
+    not 0.0667), and the spider is **alive**.
+  - A punch (the 0.01 token) leaves it alive.
+  - `/rpg mobdamage 1` then kills it ONCE, with one death and its drops (death is ours).
+- **Regressions:** G17 and G20 read as before (ratio 15.000).
+- **Carried:** every row unread on `GATE-mob-scaling-3.md`.
+
+### 7.9 FOR BEN
+
+1. **Do you want vanilla's health-keyed behaviour back for scaled mobs?** The mirror returns it, all at
+   once, keyed on the custom fraction:
+   - the Wither's half-health armour phase (arrows deflect), which today never happens;
+   - the dragon's and the Wither's boss bars moving, which today sit at about full;
+   - iron golem cracks;
+   - witches drinking;
+   - pets and golems healable by feeding and iron.
+
+   **Recommended: yes**, since that is how vanilla plays at 5×. The alternative is a mirror that
+   excludes chosen readers, which cannot be done: they all read the same number.
+2. **A neighbour found by this read, NOT fixed by the mirror:** a dragon perched on the podium takes off
+   after taking 25% of its max in damage, counted as the health drop inside `hurt()`. Our tokens make
+   that drop 0.01 per hit, so **a perched dragon is never knocked into the air by damage today**. The
+   mirror writes outside `hurt()`, so it does not change this. Fix it in this slice, or record it as its
+   own finding?
+
+---
+
 ## REPORT CHECKLIST (for the seat)
 
 - The PR is opened against `master` and is **not merged**. #161 is untouched.
