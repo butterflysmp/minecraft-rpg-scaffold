@@ -781,18 +781,25 @@ new question, is in §6 F15.
   hard. If M17's *"keeps its current behaviour"* is meant to cover the GS factor as well, slice 2
   exempts custom mobs' attack from `MobScaling.attackDamage` entirely. At GS 100 the two readings are
   the same number, so no gate row near spawn can tell them apart.
-- **F16. FIXED FOR RANGED AND MELEE (`DefaultMainHand`, `MeleeSeed`); F16c (the wither skeleton's
-  base) OPEN FOR A RULING — `/rpg spawn` gave
-  vanilla mobs NO default weapon.** Ben found it on
+- **F16. FIXED: a VANILLA `/rpg spawn` now runs vanilla's own spawn setup (`randomizeData = true`, the
+  seat's F16c ruling), and the melee seed counts the held weapon (`MeleeSeed`). The `DefaultMainHand`
+  table below is SUPERSEDED and deleted; it is kept here as the record of how the ruling was reached —
+  `/rpg spawn` gave vanilla mobs NO default weapon.** Ben found it on
   2026-09-28: a spawned skeleton has no bow. On that boot each G9/G9b skeleton was armed by hand with
   `/item replace entity @e[type=skeleton,sort=nearest,limit=1] weapon.mainhand with bow`.
   - **Cause, read with `javap` from the pinned `paper-26.1.2.jar`.**
     `CraftRegionAccessor.addEntity(entity, reason, consumer, randomizeData)` runs
     `if (randomizeData && entity instanceof Mob) mob.finalizeSpawn(...)`, then the consumer, then
-    `addEntityToWorld`. `RpgCommand`'s spawn passes `randomizeData = false`, chosen for determinism.
+    `addEntityToWorld`. **The offsets:** `15: iload 4` / `17: ifeq 59` / `21: instanceof Mob`, then
+    **`55: Mob.finalizeSpawn`**, **`80: Consumer.accept`**, and **`88: addEntityToWorld`**, which raises
+    `EntityAddToWorldEvent` and so runs the seed. **Correction:** the seat's first F16c ruling assumed the
+    consumer ran BEFORE `finalizeSpawn`. That was wrong, and the build stopped on it. The consumer runs
+    AFTER vanilla's setup and BEFORE the add, so vanilla's setup cannot overwrite `mob_gear_score`,
+    `mob_id` or the name, by order, and a given GS still seeds as `source=stored`. `RpgCommand`'s spawn
+    used to pass `randomizeData = false`, chosen for determinism.
     So `finalizeSpawn` never runs, and with it `populateDefaultEquipmentSlots` and the piglin's
     `createSpawnWeapon`, where every default weapon is handed out.
-  - **The fix. Its RANGED half is built (`core/mob/DefaultMainHand`, applied in `RpgCommand`'s pre-spawn
+  - **SUPERSEDED BY F16c (below), deleted with its tests. As first built:** the fix. Its RANGED half is built (`core/mob/DefaultMainHand`, applied in `RpgCommand`'s pre-spawn
     consumer, pinned by `DefaultMainHandTest` and `SpawnDefaultMainHandSignatureTest`): bow for skeleton,
     stray, bogged, parched and illusioner; crossbow for pillager. The MELEE rows joined after the
     seat's seed-timing ruling at the end of this entry, and the table is applied to VANILLA spawns
@@ -890,7 +897,7 @@ new question, is in §6 F15.
       - **The rolled weapons are counted only if rolled:** the zombified piglin's golden sword or
         spear, the drowned's trident, a zombie's sword, spear or shovel. The count now happens at the
         seed, consistently, whoever is near.
-      - **F16c, NEW, FOR A RULING: `finalizeSpawn` also sets the wither skeleton's attack BASE.**
+      - **F16c (RESOLVED below, by running vanilla's setup): `finalizeSpawn` also sets the wither skeleton's attack BASE.**
         `WitherSkeleton.finalizeSpawn` calls `setBaseValue(4.0)` on `ATTACK_DAMAGE` after `super`. The
         registered base is the attribute's default, **2.0**
         (`DefaultAttributes`: `WITHER_SKELETON` → `AbstractSkeleton.createAttributes` →
@@ -905,7 +912,49 @@ new question, is in §6 F15.
         the build as it stands (6.0).
       - **G16's slime half cannot be produced by `/rpg spawn`.** Without `finalizeSpawn` a slime never
         rolls a size (`Slime.setSize` is reached from it), so `/rpg spawn slime 300` is not the "large
-        one" G16 asks for.
+        one" G16 asks for. *(RESOLVED by F16c below.)*
+
+  - **F16c, RULED AND BUILT (the seat, 2026-09-28): a VANILLA `/rpg spawn` runs vanilla's own spawn
+    setup.** The table was re-implementing `finalizeSpawn` one finding at a time: the weapons, then the
+    wither skeleton's 4.0 base, then slime size. That would have kept leaking.
+    - **`randomizeData = (def == null)`:** TRUE for a vanilla mob, FALSE for a custom one. A custom
+      mob's content shape is authoritative, and the Knell stays unarmed with its parked damage (M17).
+      `SpawnRandomizeSignatureTest` pins the condition; inverting it is a killed mutation.
+    - **`DefaultMainHand` and both its tests are DELETED. `MeleeSeed` is KEPT:** the pairing timing is
+      independent of how the weapon got there.
+    - **So the F16c base divergence and the G16 slime gap are gone.** A spawned wither skeleton gets
+      `finalizeSpawn`'s 4.0 base and its stone sword, as a natural one does. A spawned slime rolls a
+      size.
+    - **ACCEPTED: a dev spawn of a vanilla mob is now as random as a natural one.** Baby, equipment
+      (including the rolled weapons: a zombie's sword, spear or shovel, the drowned's trident),
+      variant, size and jockeys. Two spawns of one type are no longer the same mob.
+    - **Jockeys, as the seat accepted them.**
+      - **A rider or mount is its own mob,** scored as any natural spawn is: its GS rolls from position
+        (`source=rolled`; passive, none). The command's `[gs]` applies to the named mob only.
+      - **The chicken jockey is fine.** `Zombie.finalizeSpawn` calls `addFreshEntity(chicken)` itself
+        (offset 317), so the chicken is added, raises its own `EntityAddToWorldEvent`, and gets no GS,
+        being passive. The zombie is the named mob.
+      - **KNOWN DIVERGENCE, NOT FIXED (ruling (a)):** a `/rpg spawn` of a VANILLA **spider** (vanilla's
+        jockey roll) or **strider** (its rider roll) can create a rider that is set riding but **never
+        added to the world**. `Spider.finalizeSpawn` and `Strider.spawnJockey` create and `startRiding`
+        it with no add, and `/rpg spawn`'s path (`addEntityToWorld` → `ServerLevel.addFreshEntity` →
+        Moonrise `EntityLookup.addNewEntity(e, false)` → `addEntity(e, false, false)`) adds no passenger;
+        Moonrise's only recursive adder, `addRecursivelySafe`, serves chunk loading. So the rider raises
+        no `EntityAddToWorldEvent`, and has **no seed and no GS**. **Its in-game behaviour is
+        unmeasured.** **Natural spawns are unaffected** (`NaturalSpawner` uses
+        `addFreshEntityWithPassengers`). **The jockey rates are unread**, so no rate is stated here.
+        **Workaround: re-spawn.** **No gate row depends on a spider or strider rider.** In
+        `GATE-mob-scaling-2.md`, P-DOT uses a cave spider, which extends `Spider` and so can roll the
+        jockey, but it reads only the spider's own poison ticks. No row reads a strider. In the slice 1
+        gate, G1b reads a spider's own nameplate.
+    - **Gate predictions that fixed an ABSOLUTE vanilla number** (every other prediction is a ratio
+      against that mob's own vanilla field, so it survives the randomness):
+      - **F16b** is re-predicted, since the base is now 4.0: vanilla 8.000, applied 40.000, ratio 5.000.
+      - **G-DIFFb's** `raw=3/6` and `vanilla=4` stay. A shulker bullet is a fixed `4.0f`, and a
+        shulker's `finalizeSpawn` rolls no damage.
+      - **G8** stays a ratio. A zombie may now spawn as a baby or holding a rolled weapon; `vanilla` is
+        then that zombie's own attribute plus its weapon, and the ratio is still 5.000.
+      - **G16** is rewritten: re-spawn until the slime is size 4, read by console.
 
 ---
 
