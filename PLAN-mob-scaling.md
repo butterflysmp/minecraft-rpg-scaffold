@@ -1022,6 +1022,33 @@ new question, is in §6 F15.
   therefore stay the OBSERVATION rows they were on slices 1 and M25, and the ratio is pinned in
   `DamageScaleTest` alone. **A `MOBENV` trace beside `MOBHEAL` would make both log-witnessed**; not
   built, because the slice 3 brief names only the heal line.
+- **F20. PLAYER-FACING: a mob hurt ONLY by our own damage keeps FULL vanilla health, so it never
+  regenerates, and an End crystal never heals a dragon hurt only that way.** F18's premise ("a hit
+  lowers vanilla health") holds only for the paths that TOKEN a vanilla damage event. Read from source
+  (2026-09-28, `eb1c8d34`) and the pinned server jar:
+
+  | damage path onto a tracked mob | how it lands | vanilla health |
+  |---|---|---|
+  | player melee, weapon melee swings | `onPlayerMeleeAttack` sets the event to the 0.01 token | **lowered** |
+  | the sweep | `onPlayerSweepAttack` tokens | **lowered** |
+  | environmental: fall, lava, fire, drowning, … | `onEnvironmentalDamage` tokens | **lowered** |
+  | mob-on-mob (F12), a player's VANILLA bow (F13) | the same environmental rider, tokened | **lowered** |
+  | a scorched mob's vanilla FIRE_TICK | suppressed, but "still tokens" | **lowered** (incidental) |
+  | a `VanillaDamagePolicy` PASS cause | vanilla applies it untouched | **lowered** |
+  | **every ability and weapon effect**: `EffectSpec.Damage` and `WeaponDamage`, delivered by rays, projectile bodies (their `ProjectileHitEvent` is cancelled), `Burst`, `Area` and `ThrowEmbers` | `BukkitCombatant.applyDamage`: the custom store plus `playHurtAnimation`; **no vanilla event** | **FULL** |
+  | the scorch burn tick (`EntityScorchSink`), Ignite's detonation | `applyDamage` | **FULL** |
+  | thorns and a shield reflect onto a mob attacker | `applyDamage` | **FULL** |
+  | `/rpg mobdamage` (dev) | `applyDamage`, "the same entry point abilities use" | **FULL** |
+
+  Both slice 3 heals test `getHealth() < getMaxHealth()` first (`RegenerationMobEffect`,
+  `EnderDragon.checkCrystals`), so they **never fire** on a mob whose only damage was the FULL rows. So a
+  Ranger or Mage fighting the dragon with a ray or a projectile weapon **fights a dragon its crystals
+  cannot heal**, while a melee player's first swing turns the crystals on (and F18 keeps them on).
+  Likewise a regeneration effect, or a witch's own healing (it drinks only below its vanilla max), does
+  nothing for a mob hurt only by abilities. **Not a regression**: before slice 3, no vanilla heal reached
+  the store at all. **Witnessed in `GATE-mob-scaling-3.md` F20a (the dragon) and F20b (a spider).**
+  The fix is a decision for the seat (e.g. token the vanilla health in `applyDamage` too, or have the
+  heal arm drive the heal instead of vanilla's gate), and nothing is built.
 
 ---
 

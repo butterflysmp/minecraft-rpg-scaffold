@@ -8,14 +8,14 @@ LOG LINE is PASS when that line appears verbatim after the LOGIN, named by Ben o
 rows that rest on Ben's own observation.
 
 ```
-ROWS     32   R0a R0b R0c
-              G17 G17-UNDEAD G20
+ROWS     34   R0a R0b R0c
+              F20b G17 G17-UNDEAD F20a G20
               G11 G18
               M25-SPAWN G10 G8b GX-ENV G13 G12 G14 G15 G15b G16
               P-ARROW P-TRIDENT P-BLAZE P-GHAST P-SKULL P-SPIT P-CREEPER P-WITCH P-BOOM P-FANGS P-GUARDIAN
               P-BREATH P-WIND P-DOT
          ──
-         32   = 18 headings   git grep -c '^### R0\|^### M25-\|^### G' <ref> -- GATE-mob-scaling-3.md
+         34   = 20 headings   git grep -c '^### R0\|^### M25-\|^### G\|^### F20' <ref> -- GATE-mob-scaling-3.md
               + 14 probe rows git grep -c '^| \*\*P-' <ref> -- GATE-mob-scaling-3.md
 ```
 
@@ -94,6 +94,21 @@ $zip.Dispose()
 
 ## THE HEAL ROWS (M15) — READ FROM THE `MOBHEAL` LINE (CREATIVE)
 
+**ADDED BEFORE THE BOOT, 2026-09-28, at the seat's request: F20b and F20a (§6 F20).** Our own damage
+(`BukkitCombatant.applyDamage`: every ability and weapon effect, and `/rpg mobdamage`, "the same entry point abilities
+use") never touches vanilla health, so a mob hurt ONLY that way keeps its vanilla max and neither heal fires. **Each
+F20 row is read FIRST on the same mob as its G row, because the G row's single punch is what lowers vanilla health,
+and it cannot be undone.** So on the spider, G17 continues from F20b with the Regeneration already running: its
+"hit it once" is the only step left, and the heals start from 140. On the dragon, G20's heals start from 2500 and
+climb 15 a line to 3000 (34 lines, about 17 seconds), then continue at `before = after = max` (F18). Console reads use `execute at BaronVonYeetus run data get entity
+@e[type=<type>,limit=1,sort=nearest] Health`, whose reply lands in the log.
+
+### F20b — a spider hurt ONLY by `/rpg mobdamage` takes no Regeneration heal (CREATIVE) — before G17, same spider
+
+| prediction | READING |
+|---|---|
+| `/rpg spawn spider 300` (plate `[300] Spider 240/240`). Console: its `Health` reads **`16.0f`** (the control: the vanilla max). Look at it and `/rpg mobdamage 100`: chat `SPIDER damaged: 140/240 custom HP`, the plate drops to 140. Console again: **`Health` still `16.0f`**. Then `/effect give @e[type=spider,limit=1,sort=nearest] minecraft:regeneration 60 1` and wait **10 seconds** (8 heal periods of 25 ticks): **NO `MOBHEAL` line names its uuid**, and the plate stays at 140. **A `MOBHEAL` line here, or a Health below 16.0f, refutes F20** | _(not run)_ |
+
 ### G17 — Regeneration on a damaged GS 300 spider heals x15 (CREATIVE) — RE-STAGED from a zombie (F17)
 
 | prediction | READING |
@@ -105,6 +120,24 @@ $zip.Dispose()
 | prediction | READING |
 |---|---|
 | `/rpg spawn zombie 300`, hit it once, then `/effect give @e[type=zombie,limit=1,sort=nearest] minecraft:regeneration 30 1`. **The command is refused** (vanilla's "Unable to apply this effect" message: `#minecraft:undead` is in `ignores_poison_and_regen`, read from the pinned jar), and **no `MOBHEAL` line names that zombie's uuid**. This row is why G17 does not read a zombie; if a `MOBHEAL` line DOES appear, the jar reading is wrong and G17's re-staging must be revisited | _(not run)_ |
+
+### STAGING THE DRAGON (added before the boot) — THIS WORLD'S DRAGON IS DEAD
+
+The End's `ender_dragon_fight.dat` reads `dragon_killed 1` and `previously_killed 1`, and no `ender_dragon`
+`MOBSEED` appears in any log, including M25's visit to (0, 100, 0). So the dragon is **summoned**:
+
+1. `/execute in minecraft:the_end run tp @s 0 100 40`, then fly up a little so the dragon has air around it.
+2. `/summon ender_dragon ~ ~8 ~15`. A summoned dragon starts HOVERING and stays put. **Do NOT add `NoAI`**: read from
+   the jar, `checkCrystals` runs before the NoAI return, but its hit parts are only moved after it, so a NoAI dragon
+   could not be hit at all. Expect **`MOBSEED <uuid> ender_dragon gs=300 source=rolled max=3000`** (200 × 5 × 3;
+   M25: within 1,000 blocks of (0, 0)).
+3. `/summon end_crystal ~ ~ ~5`. The dragon finds any crystal within 32 blocks of its bounding box (jar).
+
+### F20a — the dragon hurt ONLY by `/rpg mobdamage` is NOT healed by the crystal (CREATIVE) — before G20, same dragon
+
+| prediction | READING |
+|---|---|
+| With the dragon and crystal staged and the dragon never touched: console `Health` **`200.0f`** (the control). Look at the dragon and `/rpg mobdamage 500`: chat `ENDER_DRAGON damaged: 2500/3000 custom HP`. Console again: **`Health` still `200.0f`**. Wait **10 seconds** (20 crystal ticks): **NO `MOBHEAL` line names the dragon's uuid.** This is F20's player-facing case: a ray or projectile weapon's hit is the same `applyDamage` call. *If the chat says "Look at a mob.", the ray missed the dragon's body: re-aim at its middle. That is a missed staging, not a reading* | _(not run)_ |
 
 ### G20 — an End crystal heals the dragon proportionally (CREATIVE)
 
