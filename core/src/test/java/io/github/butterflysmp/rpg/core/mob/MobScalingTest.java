@@ -80,4 +80,57 @@ class MobScalingTest {
         // The passive path never reads gs, so the seed can pass anything for it.
         assertEquals(50, MobScaling.maxHealth(10, false, false, 0), EPS);
     }
+
+    // --- the attack half (slice 2): the same grid, because M1 and M2 say "health AND damage" ----------
+
+    @Test
+    void aGs100ZombieHitsForFiveTimesItsAttribute() {
+        // A zombie's vanilla ATTACK_DAMAGE is 3: GX-MELEE's expectation, now x5 rather than x1.
+        assertEquals(15, MobScaling.attackDamage(3, false, true, 100), EPS, "3 x 5 x 1.00 (M1)");
+    }
+
+    @Test
+    void vanillaHostileAttackIsFiveTimesTimesGsOverOneHundred() {
+        // base 3: no cell collides with its own GS, and 3 x 5 = 15 is not the baseline either
+        assertEquals(15, MobScaling.attackDamage(3, false, true, 100), EPS);
+        assertEquals(30, MobScaling.attackDamage(3, false, true, 200), EPS);
+        assertEquals(45, MobScaling.attackDamage(3, false, true, 300), EPS);
+        assertEquals(75, MobScaling.attackDamage(3, false, true, 500), EPS);
+        // Mutation: attackDamage's vanilla factor -> 1 reddens every row (3, 6, 9, 15).
+    }
+
+    @Test
+    void vanillaPassiveAttackIsFiveTimesAndIgnoresTheGs() {
+        // M21's neutral-outside-Enemy row: a wolf or an iron golem is x5 damage with no GS. Base 4 (a wolf).
+        assertEquals(20, MobScaling.attackDamage(4, false, false, 100), EPS);
+        assertEquals(20, MobScaling.attackDamage(4, false, false, 500), EPS,
+                "a passive mob takes NO gear score on its damage either (M7, M21)");
+    }
+
+    @Test
+    void customHostileAttackTakesOnlyTheGs() {
+        // M4, and the seat's reading of M17 (F15): the Knell's melee is its base's attribute x GS/100,
+        // with no vanilla 5x. At GS 100 it is unchanged; at GS 200 it doubles. Base 8 is illustrative, not
+        // a measured wither-skeleton attribute.
+        assertEquals(8, MobScaling.attackDamage(8, true, true, 100), EPS,
+                "no vanilla 5x on a custom mob (M4). Mutation: ignore isCustom -> 40 -> reddens");
+        assertEquals(16, MobScaling.attackDamage(8, true, true, 200), EPS, "the GS still applies (M4)");
+    }
+
+    @Test
+    void customPassiveAttackIsUnscaled() {
+        assertEquals(6, MobScaling.attackDamage(6, true, false, 500), EPS);
+    }
+
+    @Test
+    void aZeroAttackStaysZero() {
+        // F4's pufferfish: a mob with no ATTACK_DAMAGE attribute seeds 0, and scaling cannot invent damage.
+        assertEquals(0, MobScaling.attackDamage(0, false, true, 500), EPS);
+    }
+
+    @Test
+    void theAttackGuardMatchesTheHealthGuard() {
+        assertThrows(IllegalArgumentException.class, () -> MobScaling.attackDamage(3, false, true, 0));
+        assertThrows(IllegalArgumentException.class, () -> MobScaling.attackDamage(3, false, true, 501));
+    }
 }

@@ -9,7 +9,9 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.FireCadence;
 import io.github.butterflysmp.rpg.core.combat.Ignite;
-import io.github.butterflysmp.rpg.core.combat.DamageScale;
+import io.github.butterflysmp.rpg.core.combat.RerouteDamagePrice;
+import io.github.butterflysmp.rpg.core.mob.MobDamagePricing;
+import io.github.butterflysmp.rpg.core.mob.VanillaDifficulty;
 import io.github.butterflysmp.rpg.core.combat.DamageWindow;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
@@ -2055,6 +2057,14 @@ public final class RpgListeners implements Listener {
         // final, and never reassigned -- ShieldExchange derives both numbers from it below, so no
         // reduced local exists here that could be passed to the reflect by mistake.
         final double preMitigation = adapters.stats().attackValue(attacker.getUniqueId());
+        if (nameplates.tracing()) {
+            // G8's witness: the seeded attack over the vanilla attribute it was scaled from (M16).
+            var attackAttr = attacker.getAttribute(Attribute.ATTACK_DAMAGE);
+            MobDamagePricing.MobFacts facts = nameplates.factsOf(attacker);
+            double attribute = attackAttr == null ? 0.0 : attackAttr.getValue();
+            MobDamagePricing.resolve(facts, facts, false).ifPresent(source -> traceMobHit(
+                    event.getCause().name(), attacker, attacker, attribute, attribute, source, preMitigation, victim));
+        }
 
         // THE BLOCK, and it must be resolved BEFORE the token below. EntityDamageEvent.setDamage
         // re-derives every modifier by scaling it against the new base, so reading the BLOCKING
@@ -2240,7 +2250,20 @@ public final class RpgListeners implements Listener {
         // bypassesCooldown is false and cannot be otherwise today: Bukkit's Tag exposes no
         // damage_types registry and DamageType carries no tag membership, so vanilla's
         // BYPASSES_COOLDOWN is unreadable from here. The parameter exists for OUR abilities.
-        double toDeal = damageWindow.claim(id, event.getDamage(), false);
+        //
+        // M24, MOB DAMAGE IGNORES DIFFICULTY: a mob-sourced hit on a player enters the window with
+        // vanilla's difficulty scaling UNDONE. It happens here, on the raw amount and before the claim,
+        // because EASY's reversal is affine (2(x - 1)) and would be wrong on a window's partial amount.
+        // Resolved here for the same reason, and used below for the price.
+        boolean victimIsPlayer = target instanceof Player;
+        Optional<MobDamagePricing.Resolved> mobSource = victimIsPlayer
+                ? mobSourceOf(event) : Optional.empty();    // F12: a mob victim stays proportional
+        double eventAmount = event.getDamage();
+        double vanillaAmount = mobSource.isPresent()
+                ? VanillaDifficulty.undifficulted(eventAmount, difficultyOf(target.getWorld()),
+                        event.getDamageSource().scalesWithDifficulty(), isGuardianBeam(event))
+                : eventAmount;
+        double toDeal = damageWindow.claim(id, vanillaAmount, false);
         if (toDeal <= 0.0) {
             // Absorbed. It still tokens and still floors -- it must not reach vanilla either -- but it
             // resolves no shield and wears no durability, because nothing landed. Logged with
@@ -2269,20 +2292,41 @@ public final class RpgListeners implements Listener {
 
         // THE CONVERSION, AND THIS IS ITS ONLY CALL SITE IN THE PROJECT. An audit of every
         // applyDamage entry found exactly one vanilla-denominated number reaching the custom store --
-        // this one. Sweep, mob-melee and thorns price from stats().attackValue; ability and weapon
-        // damage from content; the dev commands from an operator-typed integer. A second call to
-        // DamageScale.toCustom anywhere would be k squared.
+        // this one. Sweep and thorns price from stats().attackValue, and mob melee from the seeded
+        // attack; ability and weapon damage from content; the dev commands from an operator-typed
+        // integer. A second conversion anywhere would be k squared.
+        //
+        // MOB SCALING SLICE 2 SPLITS THIS ONE CONVERSION INTO A CHOICE, AND IT IS STILL ONE CALL.
+        // A mob-sourced hit on a PLAYER is priced flat, vanilla x 5 x GS/100 (M16), INSTEAD OF
+        // DamageScale's share of the player's max, never after it. Stacked, a GS 100 arrow would be
+        // x25. RerouteDamagePrice.of makes the choice in core, where RerouteDamagePriceTest asserts
+        // both maxes; DamageScale.toCustom is reached only through it.
         //
         // LAST STEP, on the value handed to applyDamage. The window upstream stays in VANILLA units
         // (commit 1's invariant), and the shield's DR and reflect are PERCENTAGES, so they COMMUTE
         // with a scalar -- converting before or after them is the same number. The ordering here is
         // documentation, not correctness.
         var maxAttr = target.getAttribute(Attribute.MAX_HEALTH);
-        double applied = DamageScale.toCustom(
+        double applied = RerouteDamagePrice.of(
                 exchange.applied(),
+                mobSource,
+                victimIsPlayer,
                 adapters.stats().max(id),
                 maxAttr == null ? Double.NaN : maxAttr.getValue(),
                 adapters.stats().isBarPuppeted(id));
+        if (mobSource.isPresent()) {
+            MobDamagePricing.Resolved source = mobSource.get();
+            if (source.from() == MobDamagePricing.From.ABSENT) {
+                // Visible, never silent (PLAN §3 slice 2): priced at x5 with no GS factor.
+                plugin.getLogger().warning("mob-sourced " + event.getCause() + " on " + target.getName()
+                        + " resolved NO gear score (direct " + typeOf(event.getDamageSource().getDirectEntity())
+                        + ", causing " + typeOf(event.getDamageSource().getCausingEntity())
+                        + "), so it is priced at GS " + source.gearScore());
+            }
+            traceMobHit(event.getCause().name(), event.getDamageSource().getDirectEntity(),
+                    event.getDamageSource().getCausingEntity(), eventAmount, exchange.applied(), source, applied,
+                    target);
+        }
 
 
         event.setDamage(TOKEN_DAMAGE);      // ride: keep i-frames, flash, knockback, cadence
@@ -2311,6 +2355,74 @@ public final class RpgListeners implements Listener {
         DamageSource source = event.getDamageSource();
         Entity causing = source == null ? null : source.getCausingEntity();
         return causing != null ? causing.getUniqueId() : target.getUniqueId();
+    }
+
+    /**
+     * Whether this hit is mob-sourced, and at what gear score (M16): the direct entity's stamp first,
+     * then the causing mob. {@link MobDamagePricing#resolve} owns the order, so this only gathers the
+     * facts.
+     *
+     * <p><b>By the source's ENTITIES, never by its cause.</b> Which vanilla damage type Bukkit maps to
+     * which {@code DamageCause} was left unmeasured (PLAN §1.2 ‡), and it does not matter here: a
+     * skeleton's arrow is mob-sourced whether it arrives as PROJECTILE or anything else. A cause with no
+     * entity, such as a fall, lava or a poison tick (F5), resolves empty and keeps {@code DamageScale}.
+     */
+    private Optional<MobDamagePricing.Resolved> mobSourceOf(EntityDamageEvent event) {
+        DamageSource source = event.getDamageSource();
+        if (source == null) return Optional.empty();
+        Entity causing = source.getCausingEntity();
+        return MobDamagePricing.resolve(
+                nameplates.factsOf(source.getDirectEntity()),
+                nameplates.factsOf(causing),
+                causing instanceof Player);
+    }
+
+    /** Bukkit's difficulty as core's, by NAME: core carries vanilla's ids and never Bukkit's type. */
+    static VanillaDifficulty.Difficulty difficultyOf(org.bukkit.World world) {
+        return switch (world.getDifficulty()) {
+            case PEACEFUL -> VanillaDifficulty.Difficulty.PEACEFUL;
+            case EASY -> VanillaDifficulty.Difficulty.EASY;
+            case NORMAL -> VanillaDifficulty.Difficulty.NORMAL;
+            case HARD -> VanillaDifficulty.Difficulty.HARD;
+        };
+    }
+
+    /**
+     * A guardian's beam: {@code indirectMagic(guardian, guardian)}, read from
+     * {@code Guardian$GuardianAttackGoal.tick}. MAGIC is part of the test, because the same guardian is
+     * the direct entity of its spikes' THORNS hit too, and that carries no HARD bonus. (Its bite is
+     * ENTITY_ATTACK, melee, and never reaches this handler.)
+     */
+    private static boolean isGuardianBeam(EntityDamageEvent event) {
+        Entity direct = event.getDamageSource().getDirectEntity();
+        return event.getCause() == EntityDamageEvent.DamageCause.MAGIC
+                && direct instanceof org.bukkit.entity.Guardian
+                && direct == event.getDamageSource().getCausingEntity();
+    }
+
+    private static String typeOf(Entity entity) {
+        return entity == null ? "none" : entity.getType().key().value();
+    }
+
+    /**
+     * {@code MOBHIT} -- one line per mob-to-player hit while {@code /rpg mobtrace} is on. It is the probe
+     * PLAN §3 slice 2 asked for, kept as a dev trace rather than a throwaway spike, so the gate reads its
+     * ratios from the server rather than predicting them. {@code applied / vanilla} is the multiplier
+     * (15 at GS 300, at ANY player max, by M16), and {@code victimMax} is printed beside it so a row at
+     * max 400 shows the max did not move it. {@code raw} is the event's own amount, WITH vanilla's
+     * difficulty scaling; {@code vanilla} is the amount with it undone (M24), after the window and the
+     * shield. For melee, both are the attribute.
+     */
+    private void traceMobHit(String cause, Entity direct, Entity causing, double raw, double vanilla,
+                             MobDamagePricing.Resolved source, double applied, LivingEntity victim) {
+        if (!nameplates.tracing()) return;
+        plugin.getLogger().info(String.format(java.util.Locale.ROOT,
+                "MOBHIT cause=%s direct=%s causing=%s difficulty=%s raw=%.3f vanilla=%.3f gs=%s from=%s"
+                        + " custom=%s applied=%.3f ratio=%.3f victimMax=%.1f",
+                cause, typeOf(direct), typeOf(causing), victim.getWorld().getDifficulty(), raw, vanilla,
+                source.hostile() ? String.valueOf(source.gearScore()) : "-", source.from(), source.custom(),
+                applied, vanilla > 0 ? applied / vanilla : Double.NaN,
+                adapters.stats().max(victim.getUniqueId())));
     }
 
     /**
@@ -2484,6 +2596,33 @@ public final class RpgListeners implements Listener {
         if (event.getEntity().getShooter() instanceof Entity shooter && isFrozen(shooter)) {
             event.setCancelled(true);
         }
+    }
+
+    /**
+     * Mob scaling slice 2: a hostile mob's projectile carries its shooter's gear score from launch, so
+     * the hit prices at the score it was FIRED at, even if the shooter is dead by impact (G10). HIGH and
+     * ignoreCancelled: a frozen mob's cancelled shot (above, at NORMAL) is never stamped.
+     *
+     * <p>{@code ProjectileLaunchEvent} is raised for any projectile added to the world, not only a bow
+     * draw, so this covers arrows, tridents, fireballs, wither skulls, shulker bullets, wind charges and
+     * thrown potions alike. Evoker fangs and area clouds are not projectiles and are never stamped; they
+     * resolve from their causing entity instead.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onMobProjectileLaunch(ProjectileLaunchEvent event) {
+        // M24: a skeleton's or illusioner's arrow was built by ProjectileUtil.getMobArrow, whose
+        // setBaseDamageFromMob adds difficultyId x 0.11 to the triangle's mode. Those two are its only
+        // callers (AbstractSkeleton.getArrow, Illusioner.performRangedAttack), and the base is already set
+        // when the arrow is added and this event fires (performRangedAttack: getArrow, then
+        // Projectile$Delayed.spawn). Moved to NORMAL's base HERE (M24's reference; NORMAL is untouched),
+        // because the hit is ceil(speed x base), and a ceiling cannot be reversed at impact. A pillager's
+        // crossbow arrow is not built this way, and is left alone.
+        if (event.getEntity() instanceof org.bukkit.entity.AbstractArrow arrow
+                && (arrow.getShooter() instanceof org.bukkit.entity.AbstractSkeleton
+                    || arrow.getShooter() instanceof org.bukkit.entity.Illusioner)) {
+            arrow.setDamage(VanillaDifficulty.mobArrowBaseDamage(arrow.getDamage(), difficultyOf(arrow.getWorld())));
+        }
+        nameplates.stampProjectile(event.getEntity());
     }
 
     /** Creeper: detonation is an attack -- a frozen creeper does not explode (the per-tick fuse

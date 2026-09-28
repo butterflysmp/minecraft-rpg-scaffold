@@ -5,6 +5,8 @@ import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthState;
 import io.github.butterflysmp.rpg.core.mob.GearScoreSource;
+import io.github.butterflysmp.rpg.core.mob.MeleeSeed;
+import io.github.butterflysmp.rpg.core.mob.MobDamagePricing;
 import io.github.butterflysmp.rpg.core.mob.MobGearScore;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobScaling;
@@ -112,8 +114,8 @@ public final class MobNameplateManager implements HealthListener {
      * Seed a mob's custom combat stats if not already tracked, and return its state (null for a player
      * / armor stand). HP comes from the mob's CONTENT DEFINITION when it carries a {@code mob_id} tag,
      * and from its vanilla max otherwise, and is then SCALED -- x5 and x GS/100, see {@link #seed}.
-     * Attack damage is still vanilla ATTACK_DAMAGE, unscaled, for both: the attack half of the scaling
-     * is mob-scaling slice 2. Register-if-absent, so repeat calls are idempotent.
+     * Attack damage is the vanilla ATTACK_DAMAGE attribute scaled the same way (mob-scaling slice 2,
+     * M16), for both. Register-if-absent, so repeat calls are idempotent.
      *
      * Register-if-absent is also why the spawn path MUST tag the entity before it enters the world:
      * {@code EntityAddToWorldEvent} lands here first, and a tag applied afterwards would arrive to find
@@ -174,7 +176,10 @@ public final class MobNameplateManager implements HealthListener {
 
         double base = MobSeeding.maxHealth(mobs, mobId, maxHealthOf(mob));
         double max = MobScaling.maxHealth(base, custom, hostile, score.orElse(0));
-        return new Seeded(stats.bootstrapIfAbsent(mob.getUniqueId(), max, attackDamageOf(mob), false),
+        // Slice 2: melee is priced HERE, once, so onMobMeleeAttack's read of the stat is already M16's
+        // vanilla x 5 x GS/100. The attribute itself is only read, never written (M9's attack mirror).
+        double attack = MobScaling.attackDamage(attackDamageOf(mob), custom, hostile, score.orElse(0));
+        return new Seeded(stats.bootstrapIfAbsent(mob.getUniqueId(), max, attack, false),
                 score, source);
     }
 
@@ -275,6 +280,59 @@ public final class MobNameplateManager implements HealthListener {
         return trace;
     }
 
+    /** Whether {@code /rpg mobtrace} is on. Slice 2's {@code MOBHIT} lines ride the same switch. */
+    public boolean tracing() {
+        return trace;
+    }
+
+    /**
+     * What one entity in a damage source says about the mob behind it, for
+     * {@link MobDamagePricing#resolve}. Null when it says nothing: no entity, a player, an armor stand,
+     * or a non-living entity carrying no stamp.
+     *
+     * <p>A living mob answers for itself: custom-ness from its {@code mob_id}, hostility from
+     * {@link MobClassifier}, and its stored score, raw. A projectile answers with the stamp
+     * {@link #stampProjectile} wrote at launch; only a hostile shooter is stamped, so a stamp means
+     * hostile.
+     *
+     * <p><b>Reads the entity's PDC on the calling thread.</b> On Paper that is the one main thread. On
+     * Folia a causing mob can sit in another region, and this is the read the deferred
+     * {@code MobGearScores} map would replace (PLAN §3 slice 2, resolution step 2).
+     */
+    public MobDamagePricing.MobFacts factsOf(Entity entity) {
+        if (entity == null || entity instanceof Player || entity instanceof ArmorStand) return null;
+        var pdc = entity.getPersistentDataContainer();
+        OptionalInt gs = pdc.has(keys.mobGearScore, PersistentDataType.INTEGER)
+                ? OptionalInt.of(pdc.get(keys.mobGearScore, PersistentDataType.INTEGER))
+                : OptionalInt.empty();
+        boolean custom = MobSeeding.isCustom(mobs, pdc.get(keys.mobId, PersistentDataType.STRING));
+        if (entity instanceof LivingEntity living) {
+            return new MobDamagePricing.MobFacts(custom, MobClassifier.isHostile(living), gs);
+        }
+        return gs.isPresent() ? new MobDamagePricing.MobFacts(custom, true, gs) : null;
+    }
+
+    /**
+     * Stamp a hostile mob's projectile with its shooter's score (and {@code mob_id}, if it is custom),
+     * so the hit prices at the score the shot was FIRED at. The shooter can die mid-flight (G10), and a
+     * projectile outlives its shooter's chunk. The same key as the mob's own score: it names the same
+     * quantity, and {@link #factsOf} reads both the same way.
+     *
+     * <p>Only a valid stored score is copied. An unseeded or passive shooter leaves the projectile
+     * unstamped, and the hit then resolves from the causing entity, if it still exists.
+     */
+    public void stampProjectile(org.bukkit.entity.Projectile projectile) {
+        if (!(projectile.getShooter() instanceof LivingEntity shooter) || shooter instanceof Player) return;
+        if (!MobClassifier.isHostile(shooter)) return;
+        var from = shooter.getPersistentDataContainer();
+        Integer gs = from.get(keys.mobGearScore, PersistentDataType.INTEGER);
+        if (gs == null || !MobGearScore.isValidStored(gs)) return;
+        var to = projectile.getPersistentDataContainer();
+        to.set(keys.mobGearScore, PersistentDataType.INTEGER, gs);
+        String mobId = from.get(keys.mobId, PersistentDataType.STRING);
+        if (mobId != null) to.set(keys.mobId, PersistentDataType.STRING, mobId);
+    }
+
     /**
      * The pure map half of {@link #onMobAppear}: create the plate only if absent, and return its
      * resulting version. Bukkit-free and {@code static} so it is unit-testable on a plain map -- no
@@ -338,13 +396,46 @@ public final class MobNameplateManager implements HealthListener {
     }
 
     /**
-     * A mob's custom attack damage, bootstrapped from its vanilla ATTACK_DAMAGE attribute -- the attack
-     * mirror of {@link #maxHealthOf}. A mob with no such attribute (many passive mobs) deals 0 custom
-     * melee, which is correct: it had no vanilla melee to bridge either.
+     * A mob's vanilla melee attack, before scaling: its {@code ATTACK_DAMAGE} BASE plus its held main-hand
+     * weapon's ADD modifiers ({@link MeleeSeed}, the seat's ruling of 2026-09-28, PLAN §6 F16). A mob
+     * with no such attribute (many passive mobs) deals 0 custom melee, which is correct: it had no vanilla
+     * melee to bridge either.
+     *
+     * <p><b>Never {@code attr.getValue()}.</b> This runs inside {@code EntityAddToWorldEvent}, and vanilla
+     * has folded the held weapon into the live value only if a player paired with the mob first
+     * ({@code ServerEntity.sendPairingData} calls {@code detectEquipmentUpdates}). The live value was a
+     * fact about who stood nearby. The weapon's modifiers are read from the ITEM instead: its full
+     * {@code ATTRIBUTE_MODIFIERS} component, filtered to {@code ATTACK_DAMAGE} entries whose slot group
+     * covers the main hand.
      */
-    private static double attackDamageOf(LivingEntity mob) {
+    private double attackDamageOf(LivingEntity mob) {
         AttributeInstance attr = mob.getAttribute(Attribute.ATTACK_DAMAGE);
-        return attr != null ? attr.getValue() : 0.0;
+        if (attr == null) return 0.0;
+        MeleeSeed.Seed seed = MeleeSeed.attack(attr.getBaseValue(), mainHandAttackModifiers(mob));
+        if (seed.unpriced() > 0) {
+            log.warning("mob " + mob.getUniqueId() + " (" + mob.getType().key() + ") holds a weapon with "
+                    + seed.unpriced() + " non-ADD attack modifier(s), which the seed leaves out (MeleeSeed)");
+        }
+        return seed.attack();
+    }
+
+    /** The held main-hand item's attack-damage modifiers that apply to the main hand. */
+    private static java.util.List<MeleeSeed.Modifier> mainHandAttackModifiers(LivingEntity mob) {
+        var equipment = mob.getEquipment();
+        if (equipment == null) return java.util.List.of();
+        var hand = equipment.getItemInMainHand();
+        if (hand.isEmpty()) return java.util.List.of();
+        var modifiers = hand.getData(io.papermc.paper.datacomponent.DataComponentTypes.ATTRIBUTE_MODIFIERS);
+        if (modifiers == null) return java.util.List.of();
+        java.util.List<MeleeSeed.Modifier> out = new java.util.ArrayList<>();
+        for (var entry : modifiers.modifiers()) {
+            if (!Attribute.ATTACK_DAMAGE.equals(entry.attribute())) continue;
+            if (!entry.getGroup().test(org.bukkit.inventory.EquipmentSlot.HAND)) continue;
+            var op = entry.modifier().getOperation() == org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER
+                    ? MeleeSeed.Operation.ADD_VALUE : MeleeSeed.Operation.OTHER;
+            out.add(new MeleeSeed.Modifier(op, entry.modifier().getAmount()));
+        }
+        return out;
     }
 
     /**

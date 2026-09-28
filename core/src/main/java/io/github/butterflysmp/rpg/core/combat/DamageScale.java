@@ -15,6 +15,10 @@ package io.github.butterflysmp.rpg.core.combat;
  * ability and weapon damage from content; the dev commands from an operator-typed integer. So this
  * conversion has one call site by construction, and adding a second would be the bug.
  *
+ * <p><b>Since mob scaling slice 2 that call site is {@link RerouteDamagePrice#of}</b>, which the rider
+ * calls once. A mob-sourced hit on a player takes M16's flat price INSTEAD of this conversion, never
+ * after it; every other rerouted hit still comes here.
+ *
  * <h2>THE DENOMINATOR IS 20, AND IT IS NOT {@code heartCount*2}</h2>
  *
  * The obvious factor is {@code customMax / (heartCount(customMax)*2)} — the player's rendered bar.

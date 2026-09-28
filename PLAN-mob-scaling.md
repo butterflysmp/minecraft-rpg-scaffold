@@ -78,6 +78,14 @@ spawn point; **the End measures from (0, 0) (M23)**. **Every curve clamps at 500
   is unchanged.
 - **M23.** The End is measured from (0, 0), always. Not its spawn point.
 
+### Ben's ruling, 2026-09-28 — M24
+
+- **M24.** MOB DAMAGE IGNORES DIFFICULTY. Every mob-to-player hit is exactly vanilla x 5 x GS/100
+  (custom: authored x GS/100), on every path, whatever the server's difficulty. Gear score is the
+  difficulty dial. **It closes §6 F6.**
+  - **M24's reference (the seat, 2026-09-28): "vanilla" in M24 means vanilla at NORMAL, on every
+    path.** Each difficulty channel leaves NORMAL untouched and moves EASY and HARD to it.
+
 **M21's full list, as ruled.** HOSTILE (gets a GS) is `mob instanceof org.bukkit.entity.Enemy`, whose
 closure in the pinned `paper-api-26.1.2.build.74-stable.jar` is: AbstractSkeleton, Blaze, Bogged,
 Breeze, CaveSpider, Creaking, Creeper, Drowned, ElderGuardian, EnderDragon, Enderman, Endermite,
@@ -194,11 +202,9 @@ finding in this plan.**
   - any mob whose contact damage is not that attribute.
 
   Pre-existing, and recorded in §6 F4. Scaling multiplies it faithfully, flaws included.
-- **F-difficulty (UNMEASURED).** Route A reads an attribute, which does not change with difficulty.
-  Route B reads `getDamage()`. Whether vanilla applies its difficulty adjustment to a player victim
-  **before** the Bukkit event is built was **not read**. If it does, Route A and Route B also disagree
-  by difficulty. It is settled by `javap` on the player's `hurtServer` in slice 2, and neither route
-  is changed on a guess.
+- ~~**F-difficulty (UNMEASURED).**~~ **MEASURED in slice 2 and CLOSED by M24** (§6 F6 has the
+  account). Vanilla does adjust before the Bukkit event, so Route B was post-difficulty while Route A
+  was not. After M24 neither route sees difficulty.
 
 ### 1.3 Environmental damage and healing on mobs
 
@@ -711,8 +717,35 @@ new question, is in §6 F15.
 - **F5. Damage-over-time ticks (POISON, WITHER) cannot carry a GS.** They name no causing entity, so
   M16's flat pricing cannot reach them. They stay on Route B's share-of-player-max pricing (×5 at max
   100), with no GS. A fix would scale at effect application.
-- **F6. Difficulty may split Route A from Route B** (§1.2, unmeasured). It is settled in slice 2 by
-  `javap`, not changed on a guess.
+- ~~**F6. Difficulty may split Route A from Route B.**~~ **CLOSED by M24 (2026-09-28).**
+  - **Measured** with `javap` on the pinned `paper-26.1.2.jar`. `Player.hurtServer` scales the amount
+    when `scalesWithDifficulty()`: EASY `min(a/2 + 1, a)`, HARD `a x 3/2`, and PEACEFUL returns before
+    any event. It then calls `LivingEntity.hurtServer`, which raises the Bukkit event (`Avatar` does not
+    override it). So Route B was post-difficulty and Route A (the attribute) was not.
+  - **Two more amount channels**, found by sweeping every `getDifficulty` reference in
+    `net.minecraft.world.entity`:
+    - `Guardian$GuardianAttackGoal.tick`: the beam is 1, +2 on HARD, +2 for an elder;
+    - `AbstractArrow.setBaseDamageFromMob`: `v x 2 + triangle(id x 0.11, 0.57425)`. Its only caller is
+      `ProjectileUtil.getMobArrow`, which is called only from `AbstractSkeleton.getArrow` and
+      `Illusioner.performRangedAttack`.
+  - **Slice 2 moves all three to NORMAL** (`core/mob/VanillaDifficulty`), M24's reference, where each
+    is untouched. The player's scaling is inverted on the raw event amount, before the damage window.
+    The guardian's HARD bonus is subtracted after it. The arrow's base is shifted by
+    `(id - 2) x 0.11` at launch, because the hit is `ceil(speed x base)` and a ceiling cannot be
+    reversed at impact. (`0f8fd81` shifted by `id x 0.11`, which normalised arrows to PEACEFUL alone.
+    The seat caught it in review.)
+  - **What M24 cannot reach, recorded rather than guessed:**
+    - PEACEFUL, where a scaled hit never lands at all;
+    - how OFTEN a mob hits. The skeleton's shot passes the difficulty id to its inaccuracy
+      (`AbstractSkeleton.performRangedAttack`, read). `CrossbowAttackMob.performCrossbowAttack`,
+      `Drowned.performRangedAttack`, the breeze's `Shoot.tick`, `Illusioner.performRangedAttack` and
+      `WitherBoss.customServerAiStep` also reference difficulty; **their formulas were not read**, and
+      none of them sets a damage amount the sweep could see;
+    - effect DURATIONS: the wither skull's wither (10 s normal, 40 s hard, read). `CaveSpider`, `Bee`
+      and `Husk` reference difficulty in `doHurtTarget`, not read further; they apply effects. Effect
+      ticks name no entity (F5);
+    - equipment rolled from LOCAL difficulty (`Mob.enchantSpawnedEquipment`, raid buffs). For example,
+      a Power bow's bonus reaches the arrow.
 - **F7. No enable-time sweep.** A living entity present before our listeners register is never
   seeded until something hits it: no plate, and environmental damage passes to vanilla. **Fixed in
   slice 1** because GS assignment needs it. It is recorded because it is pre-existing.
@@ -748,6 +781,180 @@ new question, is in §6 F15.
   hard. If M17's *"keeps its current behaviour"* is meant to cover the GS factor as well, slice 2
   exempts custom mobs' attack from `MobScaling.attackDamage` entirely. At GS 100 the two readings are
   the same number, so no gate row near spawn can tell them apart.
+- **F16. FIXED: a VANILLA `/rpg spawn` now runs vanilla's own spawn setup (`randomizeData = true`, the
+  seat's F16c ruling), and the melee seed counts the held weapon (`MeleeSeed`). The `DefaultMainHand`
+  table below is SUPERSEDED and deleted; it is kept here as the record of how the ruling was reached —
+  `/rpg spawn` gave vanilla mobs NO default weapon.** Ben found it on
+  2026-09-28: a spawned skeleton has no bow. On that boot each G9/G9b skeleton was armed by hand with
+  `/item replace entity @e[type=skeleton,sort=nearest,limit=1] weapon.mainhand with bow`.
+  - **Cause, read with `javap` from the pinned `paper-26.1.2.jar`.**
+    `CraftRegionAccessor.addEntity(entity, reason, consumer, randomizeData)` runs
+    `if (randomizeData && entity instanceof Mob) mob.finalizeSpawn(...)`, then the consumer, then
+    `addEntityToWorld`. **The offsets:** `15: iload 4` / `17: ifeq 59` / `21: instanceof Mob`, then
+    **`55: Mob.finalizeSpawn`**, **`80: Consumer.accept`**, and **`88: addEntityToWorld`**, which raises
+    `EntityAddToWorldEvent` and so runs the seed. **Correction:** the seat's first F16c ruling assumed the
+    consumer ran BEFORE `finalizeSpawn`. That was wrong, and the build stopped on it. The consumer runs
+    AFTER vanilla's setup and BEFORE the add, so vanilla's setup cannot overwrite `mob_gear_score`,
+    `mob_id` or the name, by order, and a given GS still seeds as `source=stored`. `RpgCommand`'s spawn
+    used to pass `randomizeData = false`, chosen for determinism.
+    So `finalizeSpawn` never runs, and with it `populateDefaultEquipmentSlots` and the piglin's
+    `createSpawnWeapon`, where every default weapon is handed out.
+  - **SUPERSEDED BY F16c (below), deleted with its tests. As first built:** the fix. Its RANGED half is built (`core/mob/DefaultMainHand`, applied in `RpgCommand`'s pre-spawn
+    consumer, pinned by `DefaultMainHandTest` and `SpawnDefaultMainHandSignatureTest`): bow for skeleton,
+    stray, bogged, parched and illusioner; crossbow for pillager. The MELEE rows joined after the
+    seat's seed-timing ruling at the end of this entry, and the table is applied to VANILLA spawns
+    only.** Keep
+    `randomizeData = false`, so determinism stays, and add a FIXED per-type main-hand table, applied in
+    the pre-spawn consumer. It covers **only the mobs whose vanilla weapon is GUARANTEED**, read from
+    each override's bytecode:
+
+    | mob | guaranteed main hand | where, and the condition |
+    |---|---|---|
+    | skeleton, stray, bogged, parched | `BOW` | `AbstractSkeleton.populateDefaultEquipmentSlots`, after `super`'s rolled armour. None of the four declares its own override (Parched checked by class-block bounds) |
+    | wither skeleton | `STONE_SWORD` | `WitherSkeleton.populateDefaultEquipmentSlots`, unconditional |
+    | pillager | `CROSSBOW` | `Pillager.populateDefaultEquipmentSlots`, unconditional |
+    | vindicator | `IRON_AXE` | `Vindicator.populateDefaultEquipmentSlots`, only when `getCurrentRaid()` is null (`ifnonnull → return`). A `/rpg spawn` is never in a raid |
+    | illusioner | `BOW` | `Illusioner.finalizeSpawn`, unconditional |
+    | vex | `IRON_SWORD` | `Vex.populateDefaultEquipmentSlots`, unconditional |
+    | piglin brute | `GOLDEN_AXE` | `PiglinBrute.populateDefaultEquipmentSlots`, unconditional |
+
+    **Corrections to the seat's expected list:** the zombified piglin's golden sword is **ROLLED**, not
+    guaranteed: `ZombifiedPiglin.populateDefaultEquipmentSlots` picks by `nextInt` between
+    `GOLDEN_SPEAR` and `GOLDEN_SWORD`. So it stays OFF. The illusioner, vex and piglin brute are
+    **added**. The other four the seat expected are confirmed.
+  - **Rolled, so they stay OFF, and the table must not grow them:**
+    - the drowned's `TRIDENT` or `FISHING_ROD` (`nextFloat`/`nextInt`);
+    - a zombie or husk's `IRON_SWORD`, `IRON_SPEAR` or `IRON_SHOVEL` (a difficulty-weighted
+      `nextFloat`);
+    - the piglin's `CROSSBOW` versus a `GOLDEN_SPEAR`/`GOLDEN_SWORD` (`createSpawnWeapon`);
+    - the zombified piglin's golden weapon;
+    - `Mob`'s random armour;
+    - the fox's mouth item.
+  - **The rows a weapon-less spawn silently changes:**
+    - slice 2: **G9 and G9b** (the skeleton's arrow half); **G10** (the arrow in flight); **G-DIFF**
+      (skeleton arrows); **P-ARROW** (skeleton, stray, bogged, and the pillager's crossbow bolt).
+      Unarmed, each mob walks up and punches instead: an `ENTITY_ATTACK` line that looks like a
+      reading, and is not one for the arrow rows. **P-TRIDENT** was already "natural spawns only",
+      because the trident is rolled;
+    - slice 1: **none change their reading**. Every slice 1 row reads health or a nameplate, not a
+      held item. But `/rpg spawn knell` takes the same path, so **the Knell spawns without its stone
+      sword** (M17's parked damage).
+    - ~~**Unmeasured:** whether a held weapon's modifier is in `ATTACK_DAMAGE` when the seed reads
+      it.~~ **MEASURED 2026-09-28, and the answer is "it depends on who is near"** (read with `javap`
+      from `paper-26.1.2.jar`):
+      1. **A natural spawn equips BEFORE the add.** `NaturalSpawner.spawnCategoryForPosition` calls
+         `Mob.finalizeSpawn` (offset 497) before `ServerLevel.addFreshEntityWithPassengers` (538). The
+         chunk-generation path does the same (500 before 511).
+      2. **The add pairs nearby players before our event.** `ServerLevel$EntityCallbacks.onTrackingStart`
+         calls `ServerChunkCache.addEntity` (offset 204), then builds and calls `EntityAddToWorldEvent`
+         (258–261). `ChunkMap.addEntity` runs `TrackedEntity.updatePlayers(level.players())`. For each
+         player within `getEffectiveRange()`, `updatePlayer` calls `ServerEntity.addPairing`, which
+         calls `sendPairingData` synchronously.
+      3. **Pairing folds the held weapon into the attribute.** `sendPairingData` calls
+         `LivingEntity.detectEquipmentUpdates`, which calls `collectEquipmentChanges`. That applies
+         each equipped item's modifiers (`ItemStack.forEachModifier`). The only other callers are
+         `LivingEntity.tick`, `ArmorStand.tick` and `Player.detectEquipmentUpdates`, all later than
+         the add.
+      4. **Our seed runs INLINE in that event** (`RpgListeners.onEntityAdd` → `onMobAppear` → `seed`,
+         not deferred).
+
+      **So `seedCombatStats` counts a held weapon's modifier IF AND ONLY IF a player was within
+      tracking range when the mob was added.** A wither skeleton spawning near a player seeds with its
+      stone sword's damage; the same mob spawning out of range seeds without it, and keeps the smaller
+      number for life, since the seed is register-if-absent. **This is pre-existing and affects every
+      natural spawn with a weapon** (an F4 relative). A `/rpg spawn` with the melee table would always
+      pair, because the caller stands on it, so it would match only the in-range half of natural spawns.
+      Bows and crossbows register no attack modifier (`Items`: `durability` only; the stone sword goes
+      through `.sword(ToolMaterial.STONE, …)`), which is why the ranged half ships without this question.
+
+      **RECOMMENDATION (for the seat to rule before the melee half ships):** make the seed independent
+      of pairing, by **always** counting the main-hand weapon. That means seeding `ATTACK_DAMAGE` as vanilla
+      itself settles it after the first tick, which is the attribute value vanilla melee then deals
+      (M1's "5x vanilla damage" is 5x that hit). Concretely: base value plus the held item's
+      default attack modifiers, computed at the seed, rather than trusting whatever pairing has or has
+      not applied. The alternative, always EXCLUDING the weapon, is equally deterministic, but prices a
+      sword-wielding mob below its own vanilla hit. Once the seed is deterministic, the four melee
+      entries (wither skeleton, vindicator, vex, piglin brute) can join the table, and `/rpg spawn`
+      matches a natural spawn at any distance.
+
+      **RULED by the seat (2026-09-28), and BUILT:** the seed ALWAYS counts the held main-hand weapon,
+      whatever the pairing.
+      - **How:** `core/mob/MeleeSeed` = `ATTACK_DAMAGE`'s BASE + the weapon's `ADD_VALUE` modifiers.
+      - **Where the modifiers are read:** the item's full component,
+        `ItemStack.getData(DataComponentTypes.ATTRIBUTE_MODIFIERS)` (pinned paper-api:
+        `public <T> T getData(DataComponentType$Valued<T>)`), filtered to `ATTACK_DAMAGE` entries whose
+        `EquipmentSlotGroup.test(EquipmentSlot.HAND)` holds. It is `@ApiStatus.Experimental`, like the
+        `EQUIPPABLE` read `EquipmentReads` already makes.
+      - **Operations:** every vanilla weapon builder read uses `ADD_VALUE` for attack damage
+        (`ToolMaterial.createSwordAttributes`, `createToolAttributes`, which the axes reach through
+        `Properties.axe` → `tool`, the spear's `Properties.spear`, and `TridentItem.createAttributes`). So
+        no stop was needed. A non-ADD modifier at runtime is left out and WARNed, not ordered by guess.
+      - **The table:** the four melee entries joined it (ten in all, applied to VANILLA spawns only).
+        The Knell keeps no weapon, so its parked damage (M17) does not move.
+
+    - **Findings, recorded and not fixed (the seat's list, plus what the reads found):**
+      - **A weapon PICKED UP or dropped after seeding does not re-price.** A mob is seeded once (M5).
+      - **The rolled weapons are counted only if rolled:** the zombified piglin's golden sword or
+        spear, the drowned's trident, a zombie's sword, spear or shovel. The count now happens at the
+        seed, consistently, whoever is near.
+      - **F16c (RESOLVED below, by running vanilla's setup): `finalizeSpawn` also sets the wither skeleton's attack BASE.**
+        `WitherSkeleton.finalizeSpawn` calls `setBaseValue(4.0)` on `ATTACK_DAMAGE` after `super`. The
+        registered base is the attribute's default, **2.0**
+        (`DefaultAttributes`: `WITHER_SKELETON` → `AbstractSkeleton.createAttributes` →
+        `Monster.createMonsterAttributes` adds `ATTACK_DAMAGE` with no value; the `RangedAttribute`
+        default is 2.0). **So a `/rpg spawn wither_skeleton` seeds 2.0 + stone sword 4.0 = 6.0, while
+        a natural one seeds 4.0 + 4.0 = 8.0.** That breaks "`/rpg spawn` matches a natural spawn". A
+        sweep of every method in `net.minecraft.world.entity` that writes `ATTACK_DAMAGE` found this the
+        only fixed `finalizeSpawn` write. The others are state setters (slime and phantom size, baby
+        hoglin and zoglin, goat age, the killer-bunny variant), and all of them write the base, which
+        `getBaseValue()` sees. **Proposed:** a fixed base for the wither skeleton (4.0), applied in the
+        consumer beside the weapon. **Not built, because it was not ruled.** F16b is predicted for
+        the build as it stands (6.0).
+      - **G16's slime half cannot be produced by `/rpg spawn`.** Without `finalizeSpawn` a slime never
+        rolls a size (`Slime.setSize` is reached from it), so `/rpg spawn slime 300` is not the "large
+        one" G16 asks for. *(RESOLVED by F16c below.)*
+
+  - **F16c, RULED AND BUILT (the seat, 2026-09-28): a VANILLA `/rpg spawn` runs vanilla's own spawn
+    setup.** The table was re-implementing `finalizeSpawn` one finding at a time: the weapons, then the
+    wither skeleton's 4.0 base, then slime size. That would have kept leaking.
+    - **`randomizeData = (def == null)`:** TRUE for a vanilla mob, FALSE for a custom one. A custom
+      mob's content shape is authoritative, and the Knell stays unarmed with its parked damage (M17).
+      `SpawnRandomizeSignatureTest` pins the condition; inverting it is a killed mutation.
+    - **`DefaultMainHand` and both its tests are DELETED. `MeleeSeed` is KEPT:** the pairing timing is
+      independent of how the weapon got there.
+    - **So the F16c base divergence and the G16 slime gap are gone.** A spawned wither skeleton gets
+      `finalizeSpawn`'s 4.0 base and its stone sword, as a natural one does. A spawned slime rolls a
+      size.
+    - **ACCEPTED: a dev spawn of a vanilla mob is now as random as a natural one.** Baby, equipment
+      (including the rolled weapons: a zombie's sword, spear or shovel, the drowned's trident),
+      variant, size and jockeys. Two spawns of one type are no longer the same mob.
+    - **Jockeys, as the seat accepted them.**
+      - **A rider or mount is its own mob,** scored as any natural spawn is: its GS rolls from position
+        (`source=rolled`; passive, none). The command's `[gs]` applies to the named mob only.
+      - **The chicken jockey is fine.** `Zombie.finalizeSpawn` calls `addFreshEntity(chicken)` itself
+        (offset 317), so the chicken is added, raises its own `EntityAddToWorldEvent`, and gets no GS,
+        being passive. The zombie is the named mob.
+      - **KNOWN DIVERGENCE, NOT FIXED (ruling (a)):** a `/rpg spawn` of a VANILLA **spider** (vanilla's
+        jockey roll) or **strider** (its rider roll) can create a rider that is set riding but **never
+        added to the world**. `Spider.finalizeSpawn` and `Strider.spawnJockey` create and `startRiding`
+        it with no add, and `/rpg spawn`'s path (`addEntityToWorld` → `ServerLevel.addFreshEntity` →
+        Moonrise `EntityLookup.addNewEntity(e, false)` → `addEntity(e, false, false)`) adds no passenger;
+        Moonrise's only recursive adder, `addRecursivelySafe`, serves chunk loading. So the rider raises
+        no `EntityAddToWorldEvent`, and has **no seed and no GS**. **Its in-game behaviour is
+        unmeasured.** **Natural spawns are unaffected** (`NaturalSpawner` uses
+        `addFreshEntityWithPassengers`). **The jockey rates are unread**, so no rate is stated here.
+        **Workaround: re-spawn.** **No gate row depends on a spider or strider rider.** In
+        `GATE-mob-scaling-2.md`, P-DOT uses a cave spider, which extends `Spider` and so can roll the
+        jockey, but it reads only the spider's own poison ticks. No row reads a strider. In the slice 1
+        gate, G1b reads a spider's own nameplate.
+    - **Gate predictions that fixed an ABSOLUTE vanilla number** (every other prediction is a ratio
+      against that mob's own vanilla field, so it survives the randomness):
+      - **F16b** is re-predicted, since the base is now 4.0: vanilla 8.000, applied 40.000, ratio 5.000.
+      - **G-DIFFb's** `raw=3/6` and `vanilla=4` stay. A shulker bullet is a fixed `4.0f`, and a
+        shulker's `finalizeSpawn` rolls no damage.
+      - **G8** stays a ratio. A zombie may now spawn as a baby or holding a rolled weapon; `vanilla` is
+        then that zombie's own attribute plus its weapon, and the ratio is still 5.000.
+      - **G16** is rewritten: re-spawn until the slime is size 4, read by console.
 
 ---
 
