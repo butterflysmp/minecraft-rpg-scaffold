@@ -781,7 +781,8 @@ new question, is in §6 F15.
   hard. If M17's *"keeps its current behaviour"* is meant to cover the GS factor as well, slice 2
   exempts custom mobs' attack from `MobScaling.attackDamage` entirely. At GS 100 the two readings are
   the same number, so no gate row near spawn can tell them apart.
-- **F16. OPEN, FIX PROPOSED — `/rpg spawn` gives vanilla mobs NO default weapon.** Ben found it on
+- **F16. RANGED HALF FIXED (`DefaultMainHand`); MELEE HALF WAITS ON A SEAT RULING — `/rpg spawn` gave
+  vanilla mobs NO default weapon.** Ben found it on
   2026-09-28: a spawned skeleton has no bow. On that boot each G9/G9b skeleton was armed by hand with
   `/item replace entity @e[type=skeleton,sort=nearest,limit=1] weapon.mainhand with bow`.
   - **Cause, read with `javap` from the pinned `paper-26.1.2.jar`.**
@@ -790,7 +791,10 @@ new question, is in §6 F15.
     `addEntityToWorld`. `RpgCommand`'s spawn passes `randomizeData = false`, chosen for determinism.
     So `finalizeSpawn` never runs, and with it `populateDefaultEquipmentSlots` and the piglin's
     `createSpawnWeapon`, where every default weapon is handed out.
-  - **The fix (proposed; its own small commit, which the seat diffs before the next boot):** keep
+  - **The fix. Its RANGED half is built (`core/mob/DefaultMainHand`, applied in `RpgCommand`'s pre-spawn
+    consumer, pinned by `DefaultMainHandTest` and `SpawnDefaultMainHandSignatureTest`): bow for skeleton,
+    stray, bogged, parched and illusioner; crossbow for pillager. The MELEE rows below wait on the
+    seed-timing ruling at the end of this entry.** Keep
     `randomizeData = false`, so determinism stays, and add a FIXED per-type main-hand table, applied in
     the pre-spawn consumer. It covers **only the mobs whose vanilla weapon is GUARANTEED**, read from
     each override's bytecode:
@@ -826,10 +830,43 @@ new question, is in §6 F15.
     - slice 1: **none change their reading**. Every slice 1 row reads health or a nameplate, not a
       held item. But `/rpg spawn knell` takes the same path, so **the Knell spawns without its stone
       sword** (M17's parked damage).
-    - **Unmeasured, and it decides whether the table also moves melee prices:** whether a held
-      weapon's attribute modifier is already in `ATTACK_DAMAGE` when the seed reads it at world-add.
-      Vanilla applies equipment modifiers on a later tick. Until that is read, the table is a fix for
-      ranged rows only.
+    - ~~**Unmeasured:** whether a held weapon's modifier is in `ATTACK_DAMAGE` when the seed reads
+      it.~~ **MEASURED 2026-09-28, and the answer is "it depends on who is near"** (read with `javap`
+      from `paper-26.1.2.jar`):
+      1. **A natural spawn equips BEFORE the add.** `NaturalSpawner.spawnCategoryForPosition` calls
+         `Mob.finalizeSpawn` (offset 497) before `ServerLevel.addFreshEntityWithPassengers` (538). The
+         chunk-generation path does the same (500 before 511).
+      2. **The add pairs nearby players before our event.** `ServerLevel$EntityCallbacks.onTrackingStart`
+         calls `ServerChunkCache.addEntity` (offset 204), then builds and calls `EntityAddToWorldEvent`
+         (258–261). `ChunkMap.addEntity` runs `TrackedEntity.updatePlayers(level.players())`. For each
+         player within `getEffectiveRange()`, `updatePlayer` calls `ServerEntity.addPairing`, which
+         calls `sendPairingData` synchronously.
+      3. **Pairing folds the held weapon into the attribute.** `sendPairingData` calls
+         `LivingEntity.detectEquipmentUpdates`, which calls `collectEquipmentChanges`. That applies
+         each equipped item's modifiers (`ItemStack.forEachModifier`). The only other callers are
+         `LivingEntity.tick`, `ArmorStand.tick` and `Player.detectEquipmentUpdates`, all later than
+         the add.
+      4. **Our seed runs INLINE in that event** (`RpgListeners.onEntityAdd` → `onMobAppear` → `seed`,
+         not deferred).
+
+      **So `seedCombatStats` counts a held weapon's modifier IF AND ONLY IF a player was within
+      tracking range when the mob was added.** A wither skeleton spawning near a player seeds with its
+      stone sword's damage; the same mob spawning out of range seeds without it, and keeps the smaller
+      number for life, since the seed is register-if-absent. **This is pre-existing and affects every
+      natural spawn with a weapon** (an F4 relative). A `/rpg spawn` with the melee table would always
+      pair, because the caller stands on it, so it would match only the in-range half of natural spawns.
+      Bows and crossbows register no attack modifier (`Items`: `durability` only; the stone sword goes
+      through `.sword(ToolMaterial.STONE, …)`), which is why the ranged half ships without this question.
+
+      **RECOMMENDATION (for the seat to rule before the melee half ships):** make the seed independent
+      of pairing, by **always** counting the main-hand weapon. That means seeding `ATTACK_DAMAGE` as vanilla
+      itself settles it after the first tick, which is the attribute value vanilla melee then deals
+      (M1's "5x vanilla damage" is 5x that hit). Concretely: base value plus the held item's
+      default attack modifiers, computed at the seed, rather than trusting whatever pairing has or has
+      not applied. The alternative, always EXCLUDING the weapon, is equally deterministic, but prices a
+      sword-wielding mob below its own vanilla hit. Once the seed is deterministic, the four melee
+      entries (wither skeleton, vindicator, vex, piglin brute) can join the table, and `/rpg spawn`
+      matches a natural spawn at any distance.
 
 ---
 

@@ -63,14 +63,15 @@ row has been read. **Readings count only if Ben's LOGIN appears in THIS boot's l
 > change.
 
 ```
-ROWS     34   R0a R0b R0c
-              G8 G8b G9 G9b G10 G-DIFF G-DIFFb
+ROWS     35   R0a R0b R0c
+              G8 G8b G9 G9b G10 G-DIFF G-DIFFb F16a
               P-ARROW P-TRIDENT P-BLAZE P-GHAST P-SKULL P-SPIT P-SHULKER P-CREEPER P-WITCH P-BOOM P-FANGS
               P-GUARDIAN P-BREATH P-WIND P-DOT
               G13 G12 G14 G15 G15b G16 G11 G18 GX-ENV
          ──
-         34   = 19 headings   git grep -c '^### R0\|^### G' <ref> -- GATE-mob-scaling-2.md
+         35   = 20 headings   git grep -c '^### R0\|^### G\|^### F16' <ref> -- GATE-mob-scaling-2.md
               + 15 probe rows git grep -c '^| \*\*P-' <ref> -- GATE-mob-scaling-2.md
+              (F16a added 2026-09-28 with the F16 fix, before any boot of it; the heading grep widened to count it)
 ```
 
 **Plan:** `PLAN-mob-scaling.md` §1.2, §3 slice 2 and §4 (G8-G10). Rulings M1-M24, and **M16** and **M24** above all.
@@ -190,6 +191,12 @@ $zip.Dispose()
 | prediction | READING |
 |---|---|
 | `/rpg spawn shulker 100`. One bullet on `/difficulty easy`, one on `/difficulty hard`. The bullet is a fixed `4.0f` (`ShulkerBullet.onHitEntity`, `mobProjectile`, read with `javap`), so there is no randomness. **Easy: `raw=3.000 vanilla=4.000 applied=20.000`. Hard: `raw=6.000 vanilla=4.000 applied=20.000`.** Identical `applied` on both is M24. **Before M24, the flat price would have been 15 on easy and 30 on hard.** The two `raw` values assume the `mob_projectile` damage type scales with difficulty, **which was not read**. If both read `raw=4.000`, the type does not scale, vanilla never adjusted the bullet, and the row still holds on `applied` Set `/difficulty easy` back afterwards | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note **RE-RUN, 2026-09-28, boot of 01:38:46 (`Build: ef2d91c`, login 01:40:33): STILL NOT ITEMISED.** Ben did not name the rows he ran, so under the seat's rule none becomes PASS or FAIL. The log's own lines, VERBATIM: hard: `[01:45:08] [Rpg] MOBHIT cause=PROJECTILE direct=shulker_bullet causing=shulker difficulty=HARD raw=6.000 vanilla=4.000 gs=100 from=DIRECT custom=false applied=20.000 ratio=5.000 victimMax=100.0`; easy (after `/difficulty easy` at 01:46:32): `[01:46:40] [Rpg] MOBHIT cause=PROJECTILE direct=shulker_bullet causing=shulker difficulty=EASY raw=3.000 vanilla=4.000 gs=100 from=DIRECT custom=false applied=20.000 ratio=5.000 victimMax=100.0`. **Both match the prediction EXACTLY** (easy `raw=3` / hard `raw=6`, `vanilla=4`, `applied=20` on both). The unread assumption in this row, that `mob_projectile` scales with difficulty, is now measured: it does **PASS, by the seat's ruling of 2026-09-28** (see the header): the predicted log line appears verbatim above, in the 01:38:46 boot, whose log shows Ben's LOGIN (01:40:33), both halves (01:45:08 HARD and 01:46:40 EASY). |
+
+### F16a — `/rpg spawn skeleton 100` holds a bow (CREATIVE) — NEW (F16, predicted before the boot)
+
+| prediction | READING |
+|---|---|
+| `/rpg spawn skeleton 100`, then on the **server console** (Session B runs these, so the reading is the server's own), anchored at Ben so "nearest" means the skeleton beside him: (1) `execute at BaronVonYeetus run data get entity @e[type=skeleton,limit=1,sort=nearest] Health`, the **positive control**: a number such as `20.0f` proves the selector found the skeleton. (2) `execute at BaronVonYeetus run data get entity @e[type=skeleton,limit=1,sort=nearest] equipment.mainhand`. **Predicted: `... has the following entity data: {count: 1, id: "minecraft:bow"}`**, possibly with extra keys; the row reads `id: "minecraft:bow"`. **Before F16 (`ef2d91c`), (2) reads `Found no elements matching equipment.mainhand`** (the bow never existed). **Why this path:** 26.1 has no `HandItems`. `LivingEntity` saves and loads equipment under `equipment` (`addAdditionalSaveData` / `readAdditionalSaveData`, read with `javap`), and `mainhand` is `EquipmentSlot`'s serialised name (its static initialiser). `execute at` pins where "nearest" is measured from, because where a bare console selector measures from was not read | |
 
 ---
 

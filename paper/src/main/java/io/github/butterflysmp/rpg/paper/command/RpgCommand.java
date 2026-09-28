@@ -28,6 +28,7 @@ import io.github.butterflysmp.rpg.core.combat.StatsSheetValues;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
+import io.github.butterflysmp.rpg.core.mob.DefaultMainHand;
 import io.github.butterflysmp.rpg.core.mob.GearScoreSource;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobDimension;
@@ -100,6 +101,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.entity.Enemy;
@@ -754,7 +756,9 @@ public final class RpgCommand {
      * PRE-SPAWN CONSUMER, which runs before the add event.
      *
      * {@code randomizeData: false} keeps a dev spawn deterministic -- no random equipment or variant --
-     * so two spawns of the same mob are the same mob.
+     * so two spawns of the same mob are the same mob. It also skips {@code finalizeSpawn}, which is
+     * where vanilla hands out even its GUARANTEED weapons, so the consumer puts the ranged ones back
+     * from {@code DefaultMainHand} (PLAN-mob-scaling.md §6 F16).
      *
      * The CustomName is the mob's IDENTITY only, never its HP: the health bar stays a per-viewer packet
      * override (see PacketNameplateSender). CustomNameVisible is false so vanilla does not float the
@@ -825,6 +829,17 @@ public final class RpgCommand {
                         entity.getPersistentDataContainer()
                                 .set(adapters.keys().mobGearScore, PersistentDataType.INTEGER, gearScore);
                     }
+                    // F16: randomizeData=false skips finalizeSpawn, and with it every default weapon, so
+                    // put back the GUARANTEED ranged ones. In the consumer, before the add, as a natural
+                    // spawn has it. Keyed by the BASE entity, so a custom mob built on a skeleton gets
+                    // its bow too.
+                    DefaultMainHand.of(baseEntity.toLowerCase(Locale.ROOT))
+                            .map(Material::matchMaterial)
+                            .ifPresent(item -> {
+                                if (entity.getEquipment() != null) {
+                                    entity.getEquipment().setItemInMainHand(new ItemStack(item));
+                                }
+                            });
                 });
 
         // The add event has already seeded it, inside spawn(), so the store holds the real numbers.
