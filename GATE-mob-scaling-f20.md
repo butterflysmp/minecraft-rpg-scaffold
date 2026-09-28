@@ -1,5 +1,7 @@
 # GATE — Mob scaling F20: the vanilla mirror (M26)
 
+**Status, 2026-09-28: merge approved by the seat 2026-09-28; unread rows carried.**
+
 **Status: READ 2026-09-28 on `002352cb` -- 9 of 34 PASS: R0a-c, NO-RECURSION, F20b-HEAL, NEVER-KILLED, F20a-HEAL,
 M26-WITHER and M26-GOLEM** (the last two with Ben's observations named: "the bar dropped and the aura showed", "cracks
 went light, medium, heavy, repair sound played").
