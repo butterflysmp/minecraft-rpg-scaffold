@@ -1,5 +1,8 @@
 # GATE — Mob scaling slice 3: proportional healing on mobs (M15)
 
+**Status, 2026-09-28: merge approved by the seat 2026-09-28; F20 moves to its own slice; unread rows carried. G18 is
+rewritten as a FALL on the Knell (F21), carried forward.**
+
 **Status: READ 2026-09-28 on `8d7e0c90` (docs-only on `eb1c8d34`) -- 10 of 34 PASS: R0a-c, F20b, G17, G17-UNDEAD, F20a,
 G20, and G11 as Ben reported it.**
 - **The boot:** it began at 04:58:43 (`Build: 8d7e0c90`). Ben's LOGIN is at 05:01:05, with no armour: `equipment {}`
