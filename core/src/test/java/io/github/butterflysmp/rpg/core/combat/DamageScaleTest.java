@@ -199,4 +199,37 @@ class DamageScaleTest {
         // Mutation M5: convert twice at the call site -> the rider's own numbers become k^2 -> the
         // in-game rows redden; this row pins the arithmetic that makes it recognisable.
     }
+
+    // --- M13/M14/M15 PINS FOR SCALED MOBS (mob scaling slice 3) -----------------------------------
+    //
+    // Until slice 3 no row sat above GS 100. The proportion is vanilla amount / the VANILLA MAX_HEALTH
+    // attribute x the mob's custom max, so it is right only while the scaled max never reaches that
+    // attribute (M9). Slice 3's heal arm uses the SAME arithmetic (M15), so these rows are also the
+    // heal's numbers. (Under M25 a GS 300 zombie is a /rpg spawn or an End mob; GS 500 is past 21,000
+    // End blocks or a /rpg spawn. The arithmetic does not care where the score came from.)
+
+    private static final double ZOMBIE_BODY = 20.0;   // a zombie's vanilla MAX_HEALTH attribute
+
+    @Test
+    void aGs300ZombieTakesFifteenTimesVanilla() {
+        // custom max 20 x 5 x 3.00 = 300, attribute 20 -> k = 15. Distinct from flat x5 (M8, withdrawn).
+        assertEquals(60.0, mob(LAVA, 300.0, ZOMBIE_BODY), EPS, "lava 4 x 15");
+        assertEquals(LAVA / ZOMBIE_BODY, mob(LAVA, 300.0, ZOMBIE_BODY) / 300.0, EPS,
+                "the same 20% of its bar a vanilla zombie loses (M13)");
+        // Mutation: replace the mob denominator with the custom max -> k = 1 -> 4.0 -> reddens.
+    }
+
+    @Test
+    void aGs500ZombieTakesTwentyFiveTimesAndAVanillaLethalAmountIsExactlyItsBar() {
+        assertEquals(100.0, mob(LAVA, 500.0, ZOMBIE_BODY), EPS, "lava 4 x 25");
+        assertEquals(500.0, mob(ZOMBIE_BODY, 500.0, ZOMBIE_BODY), EPS,
+                "20, which kills a vanilla zombie outright, is exactly its whole custom max (M13's own sentence)");
+    }
+
+    @Test
+    void theKnellIsEighteenAtGs100AndThirtySixAtGs200() {
+        // M14: a custom mob takes the same proportion. Knell 360 (GS 100) and 720 (GS 200) on a 20 body.
+        assertEquals(72.0, mob(LAVA, KNELL_MAX, MOB_BODY), EPS, "x18");
+        assertEquals(144.0, mob(LAVA, 720.0, MOB_BODY), EPS, "x36: its custom max entering the proportion");
+    }
 }
