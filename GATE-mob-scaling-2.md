@@ -8,7 +8,28 @@ seat's rule, every row is recorded as **"reported good or skipped -- not itemise
 stopped the server through the console file at 01:33:25 (`Stopping the server` with no in-game `/stop` line). It
 was a clean shutdown, all dimensions saved, and afterwards zero `java.exe` were running.
 
-**What the log shows. Read this before crediting any row.** This boot logs every command (`commands.log: true`).
+**RE-RUN, 2026-09-28, of G8, G9, G9b and G-DIFFb only (the seat's instruction). STILL NOT ITEMISED, BUT NOW
+WITNESSED IN THE LOG.**
+- **The boot:** it began at 01:38:46, built from `ef2d91c` checked out detached (so `Build: ef2d91c`; `249397b`
+  differs only in this file). R0 was re-read: `[01:38:50] [Rpg] Build: ef2d91c`, 800 entries with all 7 slice
+  classes and no control, and the same `Loaded ...` line. Ben's LOGIN is at 01:40:33.
+- **Armour:** checked from the console with a control. At 01:40:55, `data get entity BaronVonYeetus Health` returned
+  `22.0f` and `equipment` returned `{}` (after Ben's `/clear` at 01:40:35 and `/kill` at 01:40:42). At 01:48:50,
+  `Health` returned `12.04f` and `equipment` was absent (nothing equipped). No armour `/rpg give` on this boot.
+- **Ben ran `/gamemode survival` and `/rpg mobtrace`** (01:41:06 and 01:41:11), and then **did not name the rows he
+  ran**. So each of the four keeps "not itemised", and the `MOBHIT` lines are quoted verbatim beside each row for
+  the seat.
+- **What those lines show:** every one matches its prediction. The arrow halves of G9 and G9b are **NO READING**:
+  `/rpg spawn skeleton` spawns with no bow (PLAN §6 F16), and the log has no `/item replace ... with bow` line.
+- **THE WORLD WAS ON HARD, NOT EASY.** This file's set-up said "the server's difficulty, `easy`". That was wrong.
+  `run/server.properties` says easy, but Ben's `/difficulty hard` of 2026-09-25 (log `2026-09-25-4`) persists in
+  the world's saved data, and `MOBHIT` printed `difficulty=HARD` until his `/difficulty easy` at 01:46:32. G-DIFFb
+  set each difficulty explicitly, so it is unaffected.
+- **Not in the four, recorded as observations only:** a GS 300 shulker bullet read `ratio=15.000` on both HARD
+  (01:45:24) and EASY (01:47:09). That is P-SHULKER-shaped evidence; its status stays not itemised.
+- The server was stopped through the console file at 01:49:03, cleanly, with zero `java.exe` left.
+
+**What the log shows (the FIRST session, 00:35:46 boot). Read this before crediting any row.** This boot logs every command (`commands.log: true`).
 Between the login and the stop there is **no `/rpg mobtrace`, so there is NO `MOBHIT` line at all**, and no
 `/rpg spawn`, `/rpg mobinfo`, `/difficulty` or `/rpg healthboost`. The commands were `/tp` to (7500, 7500),
 (7500, 0) and (5000, 0); `/gamemode survival|creative`; `/rpg give` of four netherite armour pieces (the helmet seven
@@ -121,7 +142,7 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| `/rpg spawn zombie 100`, and take one hit at max 100. `MOBHIT cause=ENTITY_ATTACK direct=zombie causing=zombie ... gs=100 from=DIRECT ratio=5.000`. `raw` and `vanilla` are both `mobinfo`'s vanilla `ATTACK_DAMAGE`, the attribute, on every difficulty. *(Edited before any reading (M24): this said "not a difficulty-adjusted amount: F6". Melee was already difficulty-blind; M24 makes the other paths match it.)* **Slice 1's GX-MELEE expected x1 here; this slice expects x5.** On its own this row cannot tell flat from share-of-max (both give 5 at max 100); G8b and G9b can | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
+| `/rpg spawn zombie 100`, and take one hit at max 100. `MOBHIT cause=ENTITY_ATTACK direct=zombie causing=zombie ... gs=100 from=DIRECT ratio=5.000`. `raw` and `vanilla` are both `mobinfo`'s vanilla `ATTACK_DAMAGE`, the attribute, on every difficulty. *(Edited before any reading (M24): this said "not a difficulty-adjusted amount: F6". Melee was already difficulty-blind; M24 makes the other paths match it.)* **Slice 1's GX-MELEE expected x1 here; this slice expects x5.** On its own this row cannot tell flat from share-of-max (both give 5 at max 100); G8b and G9b can | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note **RE-RUN, 2026-09-28, boot of 01:38:46 (`Build: ef2d91c`, login 01:40:33): STILL NOT ITEMISED.** Ben did not name the rows he ran, so under the seat's rule none becomes PASS or FAIL. The log's own lines, VERBATIM: `[01:41:20] [Rpg] MOBHIT cause=ENTITY_ATTACK direct=zombie causing=zombie difficulty=HARD raw=3.000 vanilla=3.000 gs=100 from=DIRECT custom=false applied=15.000 ratio=5.000 victimMax=100.0`, after `/rpg spawn zombie 100` at 01:41:19. It matches the prediction (ratio 5.000, `raw` = `vanilla` = the attribute on HARD) |
 
 ### G8b — melee at GS 300 is x15 (SURVIVAL)
 
@@ -133,13 +154,13 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| `/rpg spawn creeper 300` and let it blow; `/rpg spawn skeleton 300` and take an arrow. Both lines read **`ratio=15.000 victimMax=100.0`**. The creeper reads `cause=ENTITY_EXPLOSION direct=creeper causing=creeper from=DIRECT` (`explosion(entity, causing)`, both the creeper). The skeleton reads `cause=PROJECTILE direct=arrow causing=skeleton from=DIRECT` (the launch stamp). *Edited before any reading (M24):* on this server's `easy`, each line's `raw` is `min(vanilla/2 + 1, vanilla)`: the undoing is visible in the line, and the ratio is taken against the undone `vanilla` | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
+| `/rpg spawn creeper 300` and let it blow; `/rpg spawn skeleton 300` and take an arrow. Both lines read **`ratio=15.000 victimMax=100.0`**. The creeper reads `cause=ENTITY_EXPLOSION direct=creeper causing=creeper from=DIRECT` (`explosion(entity, causing)`, both the creeper). The skeleton reads `cause=PROJECTILE direct=arrow causing=skeleton from=DIRECT` (the launch stamp). *Edited before any reading (M24):* on this server's `easy`, each line's `raw` is `min(vanilla/2 + 1, vanilla)`: the undoing is visible in the line, and the ratio is taken against the undone `vanilla` | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note **RE-RUN, 2026-09-28, boot of 01:38:46 (`Build: ef2d91c`, login 01:40:33): STILL NOT ITEMISED.** Ben did not name the rows he ran, so under the seat's rule none becomes PASS or FAIL. The log's own lines, VERBATIM: creeper: `[01:42:20] [Rpg] MOBHIT cause=ENTITY_EXPLOSION direct=creeper causing=creeper difficulty=HARD raw=51.277 vanilla=34.185 gs=300 from=DIRECT custom=false applied=512.771 ratio=15.000 victimMax=100.0`, after `/rpg spawn creeper 300` at 01:42:19. It matches (ratio 15.000 at max 100; `raw` = 1.5 x `vanilla`, HARD undone). **Skeleton ARROW half: NO READING.** The `/rpg spawn skeleton 300` at 01:42:56 had NO BOW (PLAN §6 F16), and **the log carries no `/item replace ... with bow` line**, so it was never armed. Its only lines are melee, not the arrow the row predicts: `[01:42:58] [Rpg] MOBHIT cause=ENTITY_ATTACK direct=skeleton causing=skeleton difficulty=HARD raw=2.000 vanilla=2.000 gs=300 from=DIRECT custom=false applied=30.000 ratio=15.000 victimMax=100.0` (logged twice at 01:42:58) |
 
 ### G9b — THE SAME, AT MAX 400. THE ROW THAT CANNOT PASS BY ACCIDENT (SURVIVAL)
 
 | prediction | READING |
 |---|---|
-| Hold `/rpg healthboost 300`'s item in the main hand; confirm `victimMax=400.0` in the line. The creeper and the skeleton at GS 300 again: **`ratio=15.000 victimMax=400.0`** for both. **The old pricing reads 20.000; the stacking bug reads 300.000.** This is the seat's required row, "a player whose max HP is NOT 100", and the reason the unit test takes no player max | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
+| Hold `/rpg healthboost 300`'s item in the main hand; confirm `victimMax=400.0` in the line. The creeper and the skeleton at GS 300 again: **`ratio=15.000 victimMax=400.0`** for both. **The old pricing reads 20.000; the stacking bug reads 300.000.** This is the seat's required row, "a player whose max HP is NOT 100", and the reason the unit test takes no player max | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note **RE-RUN, 2026-09-28, boot of 01:38:46 (`Build: ef2d91c`, login 01:40:33): STILL NOT ITEMISED.** Ben did not name the rows he ran, so under the seat's rule none becomes PASS or FAIL. The log's own lines, VERBATIM: creeper: `[01:44:01] [Rpg] MOBHIT cause=ENTITY_EXPLOSION direct=creeper causing=creeper difficulty=HARD raw=50.346 vanilla=33.564 gs=300 from=DIRECT custom=false applied=503.456 ratio=15.000 victimMax=400.0`, after `/rpg healthboost` (01:43:35) and `/rpg spawn creeper 300` (01:43:59). **It matches: ratio 15.000 at `victimMax=400.0`**, where the old pricing reads 20 and stacking 300. **Skeleton ARROW half: NO READING.** No skeleton was spawned at max 400, and no `/item` line exists |
 
 ### G10 — the shooter dies mid-flight; the arrow keeps its stamp (SURVIVAL)
 
@@ -157,7 +178,7 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| `/rpg spawn shulker 100`. One bullet on `/difficulty easy`, one on `/difficulty hard`. The bullet is a fixed `4.0f` (`ShulkerBullet.onHitEntity`, `mobProjectile`, read with `javap`), so there is no randomness. **Easy: `raw=3.000 vanilla=4.000 applied=20.000`. Hard: `raw=6.000 vanilla=4.000 applied=20.000`.** Identical `applied` on both is M24. **Before M24, the flat price would have been 15 on easy and 30 on hard.** The two `raw` values assume the `mob_projectile` damage type scales with difficulty, **which was not read**. If both read `raw=4.000`, the type does not scale, vanilla never adjusted the bullet, and the row still holds on `applied` Set `/difficulty easy` back afterwards | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note |
+| `/rpg spawn shulker 100`. One bullet on `/difficulty easy`, one on `/difficulty hard`. The bullet is a fixed `4.0f` (`ShulkerBullet.onHitEntity`, `mobProjectile`, read with `javap`), so there is no randomness. **Easy: `raw=3.000 vanilla=4.000 applied=20.000`. Hard: `raw=6.000 vanilla=4.000 applied=20.000`.** Identical `applied` on both is M24. **Before M24, the flat price would have been 15 on easy and 30 on hard.** The two `raw` values assume the `mob_projectile` damage type scales with difficulty, **which was not read**. If both read `raw=4.000`, the type does not scale, vanilla never adjusted the bullet, and the row still holds on `applied` Set `/difficulty easy` back afterwards | **Reported good or skipped -- not itemised.** Ben declined the one question (2026-09-28). The log has no `MOBHIT` line and no `/rpg spawn`: see the Status note **RE-RUN, 2026-09-28, boot of 01:38:46 (`Build: ef2d91c`, login 01:40:33): STILL NOT ITEMISED.** Ben did not name the rows he ran, so under the seat's rule none becomes PASS or FAIL. The log's own lines, VERBATIM: hard: `[01:45:08] [Rpg] MOBHIT cause=PROJECTILE direct=shulker_bullet causing=shulker difficulty=HARD raw=6.000 vanilla=4.000 gs=100 from=DIRECT custom=false applied=20.000 ratio=5.000 victimMax=100.0`; easy (after `/difficulty easy` at 01:46:32): `[01:46:40] [Rpg] MOBHIT cause=PROJECTILE direct=shulker_bullet causing=shulker difficulty=EASY raw=3.000 vanilla=4.000 gs=100 from=DIRECT custom=false applied=20.000 ratio=5.000 victimMax=100.0`. **Both match the prediction EXACTLY** (easy `raw=3` / hard `raw=6`, `vanilla=4`, `applied=20` on both). The unread assumption in this row, that `mob_projectile` scales with difficulty, is now measured: it does |
 
 ---
 

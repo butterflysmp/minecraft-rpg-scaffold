@@ -781,6 +781,55 @@ new question, is in §6 F15.
   hard. If M17's *"keeps its current behaviour"* is meant to cover the GS factor as well, slice 2
   exempts custom mobs' attack from `MobScaling.attackDamage` entirely. At GS 100 the two readings are
   the same number, so no gate row near spawn can tell them apart.
+- **F16. OPEN, FIX PROPOSED — `/rpg spawn` gives vanilla mobs NO default weapon.** Ben found it on
+  2026-09-28: a spawned skeleton has no bow. On that boot each G9/G9b skeleton was armed by hand with
+  `/item replace entity @e[type=skeleton,sort=nearest,limit=1] weapon.mainhand with bow`.
+  - **Cause, read with `javap` from the pinned `paper-26.1.2.jar`.**
+    `CraftRegionAccessor.addEntity(entity, reason, consumer, randomizeData)` runs
+    `if (randomizeData && entity instanceof Mob) mob.finalizeSpawn(...)`, then the consumer, then
+    `addEntityToWorld`. `RpgCommand`'s spawn passes `randomizeData = false`, chosen for determinism.
+    So `finalizeSpawn` never runs, and with it `populateDefaultEquipmentSlots` and the piglin's
+    `createSpawnWeapon`, where every default weapon is handed out.
+  - **The fix (proposed; its own small commit, which the seat diffs before the next boot):** keep
+    `randomizeData = false`, so determinism stays, and add a FIXED per-type main-hand table, applied in
+    the pre-spawn consumer. It covers **only the mobs whose vanilla weapon is GUARANTEED**, read from
+    each override's bytecode:
+
+    | mob | guaranteed main hand | where, and the condition |
+    |---|---|---|
+    | skeleton, stray, bogged, parched | `BOW` | `AbstractSkeleton.populateDefaultEquipmentSlots`, after `super`'s rolled armour. None of the four declares its own override (Parched checked by class-block bounds) |
+    | wither skeleton | `STONE_SWORD` | `WitherSkeleton.populateDefaultEquipmentSlots`, unconditional |
+    | pillager | `CROSSBOW` | `Pillager.populateDefaultEquipmentSlots`, unconditional |
+    | vindicator | `IRON_AXE` | `Vindicator.populateDefaultEquipmentSlots`, only when `getCurrentRaid()` is null (`ifnonnull → return`). A `/rpg spawn` is never in a raid |
+    | illusioner | `BOW` | `Illusioner.finalizeSpawn`, unconditional |
+    | vex | `IRON_SWORD` | `Vex.populateDefaultEquipmentSlots`, unconditional |
+    | piglin brute | `GOLDEN_AXE` | `PiglinBrute.populateDefaultEquipmentSlots`, unconditional |
+
+    **Corrections to the seat's expected list:** the zombified piglin's golden sword is **ROLLED**, not
+    guaranteed: `ZombifiedPiglin.populateDefaultEquipmentSlots` picks by `nextInt` between
+    `GOLDEN_SPEAR` and `GOLDEN_SWORD`. So it stays OFF. The illusioner, vex and piglin brute are
+    **added**. The other four the seat expected are confirmed.
+  - **Rolled, so they stay OFF, and the table must not grow them:**
+    - the drowned's `TRIDENT` or `FISHING_ROD` (`nextFloat`/`nextInt`);
+    - a zombie or husk's `IRON_SWORD`, `IRON_SPEAR` or `IRON_SHOVEL` (a difficulty-weighted
+      `nextFloat`);
+    - the piglin's `CROSSBOW` versus a `GOLDEN_SPEAR`/`GOLDEN_SWORD` (`createSpawnWeapon`);
+    - the zombified piglin's golden weapon;
+    - `Mob`'s random armour;
+    - the fox's mouth item.
+  - **The rows a weapon-less spawn silently changes:**
+    - slice 2: **G9 and G9b** (the skeleton's arrow half); **G10** (the arrow in flight); **G-DIFF**
+      (skeleton arrows); **P-ARROW** (skeleton, stray, bogged, and the pillager's crossbow bolt).
+      Unarmed, each mob walks up and punches instead: an `ENTITY_ATTACK` line that looks like a
+      reading, and is not one for the arrow rows. **P-TRIDENT** was already "natural spawns only",
+      because the trident is rolled;
+    - slice 1: **none change their reading**. Every slice 1 row reads health or a nameplate, not a
+      held item. But `/rpg spawn knell` takes the same path, so **the Knell spawns without its stone
+      sword** (M17's parked damage).
+    - **Unmeasured, and it decides whether the table also moves melee prices:** whether a held
+      weapon's attribute modifier is already in `ATTACK_DAMAGE` when the seed reads it at world-add.
+      Vanilla applies equipment modifiers on a later tick. Until that is read, the table is a fix for
+      ranged rows only.
 
 ---
 
