@@ -6,6 +6,8 @@ import io.github.butterflysmp.rpg.core.mob.MobSeeding;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The separation guarantee: a tagged mob scales, an untagged one is untouched.
@@ -67,6 +69,20 @@ class MobSeedingTest {
     void aDanglingTagFallsBackToVanillaRatherThanZeroOrThrowing() {
         assertEquals(VANILLA_WITHER_SKELETON,
                 MobSeeding.maxHealth(registryWithKnell(), "deleted_boss", VANILLA_WITHER_SKELETON), EPS);
+    }
+
+    /**
+     * isCustom must branch on exactly what maxHealth branches on. A dangling tag seeds VANILLA numbers,
+     * so it must count as vanilla for MobScaling too, or a mob whose content file was deleted seeds at
+     * a fifth of its untagged twin's health.
+     */
+    @Test
+    void isCustomAgreesWithMaxHealthOnEveryTagShape() {
+        MobRegistry mobs = registryWithKnell();
+        assertTrue(MobSeeding.isCustom(mobs, "knell"), "a known tag is custom");
+        assertFalse(MobSeeding.isCustom(mobs, null), "no tag is vanilla");
+        assertFalse(MobSeeding.isCustom(mobs, "deleted_boss"),
+                "a dangling tag is VANILLA, matching maxHealth's fallback. Mutation: mobId != null -> reddens");
     }
 
     @Test

@@ -104,6 +104,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityTeleportEvent;
+import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -718,6 +719,20 @@ public final class RpgListeners implements Listener {
             // ScorchStatusTest.forgettingTwiceIsANoOp).
             adapters.scorch().forget(mob.getUniqueId());
         }
+    }
+
+    /**
+     * A mob converted into another -- a zombie villager, a drowned, a zombified piglin, a stray, or a
+     * slime's split children -- keeps its gear score (PLAN-mob-scaling.md §1.7). Dispatch-only; the
+     * manager decides who passes what on.
+     *
+     * <p>Measured from the pinned server jar, and the reason this is enough: the transform event fires
+     * BEFORE the new entities are added, so the score is on them when {@link #onEntityAdd} seeds them.
+     * ignoreCancelled: a cancelled conversion adds nothing, and there is nothing to inherit.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onMobTransform(EntityTransformEvent event) {
+        nameplates.inheritGearScore(event.getEntity(), event.getTransformedEntities());
     }
 
     /**

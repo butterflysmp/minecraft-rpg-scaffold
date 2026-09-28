@@ -41,4 +41,16 @@ public final class MobSeeding {
                 .map(MobDefinition::maxHealth)
                 .orElse(vanillaMax);
     }
+
+    /**
+     * Whether a mob counts as CUSTOM for {@link MobScaling} -- no vanilla 5x (M4).
+     *
+     * <p>The same predicate {@link #maxHealth} branches on, and it must stay the same one: a dangling
+     * tag falls back to VANILLA numbers there, so it must count as vanilla here too. Otherwise a mob
+     * whose content file was deleted would seed at 20 x 1 instead of 20 x 5 -- a fifth of the health of
+     * its untagged twin, with nothing to show why.
+     */
+    public static boolean isCustom(MobRegistry mobs, String mobId) {
+        return mobId != null && mobs.find(mobId).isPresent();
+    }
 }

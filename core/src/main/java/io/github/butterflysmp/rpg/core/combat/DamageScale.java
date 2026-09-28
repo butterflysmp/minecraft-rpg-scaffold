@@ -73,10 +73,18 @@ public final class DamageScale {
      * a puppeted bar and the entity's REAL max-health attribute otherwise:
      *
      * <pre>
-     *   player          100 / 20   -> k = 5
-     *   untagged mob     16 / 16   -> k = 1   (its custom max was SEEDED from that attribute)
-     *   the Knell       360 / 20   -> k = 18  (shipped content, and the largest change here)
+     *   player              100 / 20   -> k = 5
+     *   spider, GS 100       80 / 16   -> k = 5   (custom max = attribute x 5 x GS/100, seeded)
+     *   zombie, GS 300      300 / 20   -> k = 15
+     *   the Knell, GS 100   360 / 20   -> k = 18
      * </pre>
+     *
+     * <p><b>For a mob, k is Ben's M13/M14 PROPORTION, word for word</b> -- vanilla amount / vanilla
+     * max x the mob's max, so a fall that kills a vanilla zombie kills any zombie at any gear score.
+     * <b>It is right only while the denominator stays VANILLA</b>: mob scaling seeds the scaled max
+     * into the custom store and never into the attribute (M9). Write it into the attribute and k
+     * collapses to 1 for every mob, silently. (Until mob scaling, an untagged mob's k was 1, because
+     * its custom max WAS its attribute.)
      *
      * @param vanillaAmount       the raw vanilla number. Non-positive returns 0.
      * @param customMax           the victim's custom max. Non-positive or NaN FAILS SOFT to k = 1 —

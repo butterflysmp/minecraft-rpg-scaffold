@@ -4,7 +4,10 @@ import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthChange;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthListener;
 import io.github.butterflysmp.rpg.core.combat.stat.HealthState;
+import io.github.butterflysmp.rpg.core.mob.GearScoreSource;
+import io.github.butterflysmp.rpg.core.mob.MobGearScore;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
+import io.github.butterflysmp.rpg.core.mob.MobScaling;
 import io.github.butterflysmp.rpg.core.mob.MobSeeding;
 import io.github.butterflysmp.rpg.paper.adapter.EntityTaskTarget;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
@@ -22,6 +25,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,6 +65,14 @@ public final class MobNameplateManager implements HealthListener {
     private final MobRegistry mobs;
     private final Map<UUID, Nameplate> nameplates = new ConcurrentHashMap<>();
     private CombatantStats stats;
+    /**
+     * Where a hostile mob's score comes from when it carries none. The M3 seam: one field of the
+     * interface type, one implementation. A boss or activity source replaces this, and a stored score
+     * still wins over it (M5).
+     */
+    private final GearScoreSource gearScores = GearScoreSource.DISTANCE;
+    /** {@link #toggleTrace}'s flag. Volatile: toggled on a command thread, read on every entity's. */
+    private volatile boolean trace;
 
     /**
      * The mob registry arrives by CONSTRUCTOR rather than on {@code AdapterContext}, unlike the
@@ -99,8 +111,9 @@ public final class MobNameplateManager implements HealthListener {
     /**
      * Seed a mob's custom combat stats if not already tracked, and return its state (null for a player
      * / armor stand). HP comes from the mob's CONTENT DEFINITION when it carries a {@code mob_id} tag,
-     * and from its vanilla max otherwise; attack damage is still vanilla ATTACK_DAMAGE for both (the
-     * mob stat block grows in a later pass). Register-if-absent, so repeat calls are idempotent.
+     * and from its vanilla max otherwise, and is then SCALED -- x5 and x GS/100, see {@link #seed}.
+     * Attack damage is still vanilla ATTACK_DAMAGE, unscaled, for both: the attack half of the scaling
+     * is mob-scaling slice 2. Register-if-absent, so repeat calls are idempotent.
      *
      * Register-if-absent is also why the spawn path MUST tag the entity before it enters the world:
      * {@code EntityAddToWorldEvent} lands here first, and a tag applied afterwards would arrive to find
@@ -114,14 +127,112 @@ public final class MobNameplateManager implements HealthListener {
      * attackValue 0 and deal zero custom damage -- a silent regression from the old event.getDamage().)
      */
     public HealthState seedCombatStats(LivingEntity mob) {
+        Seeded seeded = seed(mob);
+        return seeded == null ? null : seeded.state();
+    }
+
+    /** What one seed decided: the store entry, the mob's score (empty for a passive mob), and why. */
+    private record Seeded(HealthState state, OptionalInt gearScore, String source) {}
+
+    /**
+     * The seed, and the only place a mob's max HP is decided (PLAN-mob-scaling.md, slice 1).
+     *
+     * <ol>
+     *   <li><b>Which base</b> -- {@link MobSeeding}: a CUSTOM mob's content definition, keyed by its own
+     *       {@code mob_id} tag and never by its type (the Knell is a wither skeleton; ordinary wither
+     *       skeletons stay ordinary), else the vanilla attribute.
+     *   <li><b>Which score</b> -- {@link #gearScoreOf}, hostile mobs only (M7, M21).
+     *   <li><b>How much</b> -- {@link MobScaling}: x5 unless custom (M1, M4), x GS/100 if hostile (M2).
+     * </ol>
+     *
+     * <p><b>*** THE SCALED MAX GOES INTO THE CUSTOM STORE AND NOWHERE ELSE (M9). ***</b> Never into the
+     * vanilla {@code MAX_HEALTH} attribute: a GS 500 Warden is 12,500, past vanilla's cap -- and,
+     * quieter and worse, environmental damage on a mob is priced as vanilla amount / THAT ATTRIBUTE x
+     * the custom max ({@code DamageScale.toCustom}), which is exactly M13's proportion only while the
+     * attribute stays vanilla. Write the scaled max into it and every fall, fire and lava hit on every
+     * mob silently becomes x1, with the nameplate still reading correctly.
+     * {@code MobAttributeUntouchedSignatureTest} is the mechanical guard.
+     */
+    private Seeded seed(LivingEntity mob) {
         if (mob instanceof Player || mob instanceof ArmorStand) return null;
-        // A CUSTOM mob seeds from its content definition; everything else takes the vanilla path
-        // below, byte for byte as it did before custom mobs existed. Keyed by the entity's own
-        // mob_id tag, never by its type -- the Knell is a wither skeleton, and ordinary wither
-        // skeletons must stay ordinary. MobSeeding owns that decision so it is core-testable.
         String mobId = mob.getPersistentDataContainer().get(keys.mobId, PersistentDataType.STRING);
-        double max = MobSeeding.maxHealth(mobs, mobId, maxHealthOf(mob));
-        return stats.bootstrapIfAbsent(mob.getUniqueId(), max, attackDamageOf(mob), false);
+        boolean custom = MobSeeding.isCustom(mobs, mobId);
+        boolean hostile = MobClassifier.isHostile(mob);
+
+        OptionalInt score = OptionalInt.empty();
+        String source = "passive";                    // a passive mob's PDC is never read or written (M7)
+        if (hostile) {
+            Integer stored = storedGearScore(mob);
+            if (stored != null) {
+                score = OptionalInt.of(stored);
+                source = "stored";
+            } else {
+                score = OptionalInt.of(rollAndStore(mob));
+                source = "rolled";
+            }
+        }
+
+        double base = MobSeeding.maxHealth(mobs, mobId, maxHealthOf(mob));
+        double max = MobScaling.maxHealth(base, custom, hostile, score.orElse(0));
+        return new Seeded(stats.bootstrapIfAbsent(mob.getUniqueId(), max, attackDamageOf(mob), false),
+                score, source);
+    }
+
+    /**
+     * The mob's stored score if it carries a trustworthy one, else null.
+     *
+     * <p>A value outside {@code 1..500} (or of the wrong PDC type) was not written by us -- only a
+     * {@code /summon ... BukkitValues} can put one there -- so it is reported at WARN and treated as
+     * absent, and the caller rolls one from position. That is not a re-roll in M5's sense.
+     */
+    private Integer storedGearScore(LivingEntity mob) {
+        var pdc = mob.getPersistentDataContainer();
+        if (!pdc.has(keys.mobGearScore)) return null;
+        Integer stored = pdc.has(keys.mobGearScore, PersistentDataType.INTEGER)
+                ? pdc.get(keys.mobGearScore, PersistentDataType.INTEGER) : null;
+        if (stored != null && MobGearScore.isValidStored(stored)) return stored;
+        log.warning("mob " + mob.getUniqueId() + " (" + mob.getType().key() + ") carried an invalid "
+                + keys.mobGearScore + " (" + stored + "; must be " + MobGearScore.MIN + ".."
+                + MobGearScore.CAP + "), so it is re-rolled from its position");
+        return null;
+    }
+
+    /**
+     * Roll a score from where the mob is NOW, and store it on the mob, once. Every later seed -- a
+     * chunk reload, a restart, a portal arrival -- reads it back instead (M5).
+     */
+    private int rollAndStore(LivingEntity mob) {
+        int rolled = gearScores.gearScoreFor(
+                MobOrigin.dimensionOf(mob.getWorld()), MobOrigin.horizontalDistance(mob.getLocation()));
+        mob.getPersistentDataContainer().set(keys.mobGearScore, PersistentDataType.INTEGER, rolled);
+        return rolled;
+    }
+
+    /**
+     * A mob CONVERTED into another (a villager into a zombie villager, a zombie into a drowned, a slime
+     * split into smaller ones) passes its score on, so the new mob is the same fight (PLAN §1.7).
+     *
+     * <p><b>This runs BEFORE the new entities are added to the world</b> -- measured from the pinned
+     * server jar, not assumed: {@code Mob.convertTo} calls {@code callEntityTransformEvent} before
+     * {@code addFreshEntity}, and {@code Slime.remove} fires one transform event for all its children
+     * before adding any. So this write is in place when their add event seeds them, and inheriting is
+     * one PDC write. Vanilla's conversion copies no Bukkit PDC ({@code ConversionType.convertCommon}),
+     * which is why this is needed at all.
+     *
+     * <p>Only a scored source passes anything on (a villager has none, so its zombie rolls at the
+     * conversion point), and only a HOSTILE target takes it (a cured zombie villager becomes a passive
+     * villager and gets no key).
+     */
+    public void inheritGearScore(Entity from, java.util.List<Entity> to) {
+        var pdc = from.getPersistentDataContainer();
+        if (!pdc.has(keys.mobGearScore, PersistentDataType.INTEGER)) return;
+        Integer score = pdc.get(keys.mobGearScore, PersistentDataType.INTEGER);
+        if (score == null || !MobGearScore.isValidStored(score)) return;
+        for (Entity target : to) {
+            if (target instanceof LivingEntity living && MobClassifier.isHostile(living)) {
+                living.getPersistentDataContainer().set(keys.mobGearScore, PersistentDataType.INTEGER, score);
+            }
+        }
     }
 
     /**
@@ -130,8 +241,14 @@ public final class MobNameplateManager implements HealthListener {
      * display is skipped.
      */
     public void onMobAppear(LivingEntity mob) {
-        HealthState state = seedCombatStats(mob);   // opt-out-AGNOSTIC: combat stats always seed
-        if (state == null) return;                  // player / armor stand: no plate, no stats
+        Seeded seeded = seed(mob);                  // opt-out-AGNOSTIC: combat stats always seed
+        if (seeded == null) return;                 // player / armor stand: no plate, no stats
+        HealthState state = seeded.state();
+        if (trace) {
+            log.info("MOBSEED " + mob.getUniqueId() + " " + mob.getType().key().value()
+                    + " gs=" + (seeded.gearScore().isPresent() ? seeded.gearScore().getAsInt() : "-")
+                    + " source=" + seeded.source() + " max=" + Math.round(state.max()));
+        }
         // The opt-out flag suppresses only the NAMEPLATE display -- the stats above are already seeded.
         if (mob.getPersistentDataContainer().has(keys.nameplateOptOut, PersistentDataType.BYTE)) return;
         // Register-if-absent, NOT replace -- mirrors bootstrapIfAbsent (the store half). onMobAppear
@@ -140,7 +257,22 @@ public final class MobNameplateManager implements HealthListener {
         // viewer's 4-tick LOS sample, so some casts are missed ("every-other-cast"). The version must
         // climb monotonically for ViewerNameplateState.decide() to resend. Real combat never re-appears
         // a mob, so it was always monotonic there -- only the dev command re-appeared per hit.
-        registerIfAbsent(nameplates, mob.getUniqueId(), mob.name(), state.current(), state.max());
+        // The [GS] rides in the FIXED base name, so every later onChange rebuild keeps it (M5, M6).
+        registerIfAbsent(nameplates, mob.getUniqueId(),
+                NameplateText.nameWithScore(seeded.gearScore(), mob.name()), state.current(), state.max());
+    }
+
+    /**
+     * A dev trace for the gate: when on, every seed logs {@code MOBSEED <uuid> <type> gs=.. source=..}
+     * and every removal logs {@code MOBREMOVE <uuid>}. It exists because "the score survived an unload"
+     * is HOLLOW IN TIME without proof the chunk unloaded: a mob that never left prints the same number.
+     * G12 reads a MOBREMOVE line followed by a {@code source=stored} MOBSEED for the same uuid.
+     *
+     * @return the new state
+     */
+    public boolean toggleTrace() {
+        trace = !trace;
+        return trace;
     }
 
     /**
@@ -158,6 +290,7 @@ public final class MobNameplateManager implements HealthListener {
 
     /** A mob was removed (death, despawn, chunk-unload). Drop its nameplate and health state -- no leak. */
     public void onMobRemove(UUID id) {
+        if (trace) log.info("MOBREMOVE " + id);
         nameplates.remove(id);
         stats.clear(id);
     }
