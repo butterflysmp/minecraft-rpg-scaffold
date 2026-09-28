@@ -803,7 +803,8 @@ new question, is in §6 F15.
 - **F10. `DamageScale`'s class javadoc table** ("untagged mob 16 / 16 → k = 1", "the Knell 360 / 20 →
   k = 18") **becomes false in slice 1** (an untagged zombie is 100 / 20 → k = 5), and its "one call
   site by construction" claim **becomes false in slice 3**, which adds the mob heal site. Each is
-  corrected in that slice's own commit.
+  corrected in that slice's own commit. *(Slice 3's half: restated as the rule, "no vanilla-denominated
+  DAMAGE is converted twice", naming both sites, in the slice 3 commit.)*
 - **F11. `GearScore`'s javadoc section *"UNTIL MOBS SCALE, THE SERVER GETS EASIER"*** is the debt
   this plan pays. Revisiting `GearScore.MIN`'s rationale (*"the bound that makes an unscaled-mob world
   playable"*) is M10's balance pass, not this one.
@@ -1000,6 +1001,27 @@ new question, is in §6 F15.
       - **G8** stays a ratio. A zombie may now spawn as a baby or holding a rolled weapon; `vanilla` is
         then that zombie's own attribute plus its weapon, and the ratio is still 5.000.
       - **G16** is rewritten: re-spawn until the slime is size 4, read by console.
+- **F17. G17's staging was hollow: a zombie takes no Regeneration.** Read from the pinned server jar
+  (26.1.2): `LivingEntity.canBeAffected` refuses REGENERATION and POISON for
+  `#ignores_poison_and_regen`, which is `#undead`, which holds `#zombies`. The §4 row's
+  *"a regeneration potion splashed on a damaged GS 300 zombie"* therefore fires no regain event and
+  logs nothing. **Re-staged in `GATE-mob-scaling-3.md` on a GS 300 SPIDER** (240 / 16, the same ratio
+  15), with a `G17-UNDEAD` control row that predicts the zombie's refusal. The prediction (x15) is
+  unchanged.
+- **F18. A tokened mob's vanilla health never climbs back, so its vanilla heals never stop.** Every
+  hit on a tracked mob tokens the vanilla damage to 0.01, and both heals slice 3 reads (Regeneration,
+  and the End crystal every 10 ticks) fire only while vanilla health is below the vanilla max (read
+  from the jar). The reroute CANCELS the vanilla heal, so vanilla health stays below max for good, and
+  the heals keep firing after the custom store is full. Each is a capped no-op (`HealthState.heal`
+  clamps at max), so nothing a player sees changes; under `/rpg mobtrace` they log `before = after =
+  max`, and a crystal-linked dragon logs one line every 10 ticks for as long as a crystal stands.
+  Dev-only. **A fix would let the vanilla heal through as well as rerouting it, which is a new
+  `MobHealPolicy` action, a decision for the seat.**
+- **F19. No log line reads a mob's ENVIRONMENTAL damage.** §4's G11 says *"the probe logs the FALL"*
+  and reads `applied / vanilla`; no such probe exists (`MOBHIT` is mob-to-player only). G11 and G18
+  therefore stay the OBSERVATION rows they were on slices 1 and M25, and the ratio is pinned in
+  `DamageScaleTest` alone. **A `MOBENV` trace beside `MOBHEAL` would make both log-witnessed**; not
+  built, because the slice 3 brief names only the heal line.
 
 ---
 
