@@ -47,9 +47,15 @@ class MobDamageWiringSignatureTest {
         // POSITIVE CONTROL: the chooser call is found, so a needle that matched nothing cannot pass.
         assertEquals(1, chooser.size(), "the rider calls RerouteDamagePrice.of exactly once: " + chooser);
         assertTrue(chooser.get(0).startsWith("RpgListeners.java"), chooser.get(0));
-        assertEquals(List.of(), toCustom,
-                "M16: DamageScale.toCustom is reached only through RerouteDamagePrice.of. A direct call"
-                        + " here either converts a second time (k squared) or stacks on the flat mob price");
+        // Since mob scaling slice 3 (M15) paper holds exactly ONE toCustom call, and it is the tracked-mob
+        // HEAL arm: a heal is the opposite direction and cannot be converted twice with a damage. Any
+        // other call, in particular one wrapped around the chooser, is still the slice 2 defect.
+        assertEquals(List.of("RpgListeners.java: double custom = DamageScale.toCustom(event.getAmount(),"
+                        + " adapters.stats().max(id), vanillaMax, false);"),
+                toCustom,
+                "M16 and M15: DamageScale.toCustom is reached for DAMAGE only through RerouteDamagePrice.of,"
+                        + " and paper's one direct call is the mob heal arm, proportional. A heal priced x1 or"
+                        + " flat x5 (M8, withdrawn), or a second damage conversion, changes this list");
     }
 
     @Test

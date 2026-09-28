@@ -803,7 +803,8 @@ new question, is in §6 F15.
 - **F10. `DamageScale`'s class javadoc table** ("untagged mob 16 / 16 → k = 1", "the Knell 360 / 20 →
   k = 18") **becomes false in slice 1** (an untagged zombie is 100 / 20 → k = 5), and its "one call
   site by construction" claim **becomes false in slice 3**, which adds the mob heal site. Each is
-  corrected in that slice's own commit.
+  corrected in that slice's own commit. *(Slice 3's half: restated as the rule, "no vanilla-denominated
+  DAMAGE is converted twice", naming both sites, in the slice 3 commit.)*
 - **F11. `GearScore`'s javadoc section *"UNTIL MOBS SCALE, THE SERVER GETS EASIER"*** is the debt
   this plan pays. Revisiting `GearScore.MIN`'s rationale (*"the bound that makes an unscaled-mob world
   playable"*) is M10's balance pass, not this one.
@@ -1000,6 +1001,64 @@ new question, is in §6 F15.
       - **G8** stays a ratio. A zombie may now spawn as a baby or holding a rolled weapon; `vanilla` is
         then that zombie's own attribute plus its weapon, and the ratio is still 5.000.
       - **G16** is rewritten: re-spawn until the slime is size 4, read by console.
+- **F17. G17's staging was hollow: a zombie takes no Regeneration.** Read from the pinned server jar
+  (26.1.2): `LivingEntity.canBeAffected` refuses REGENERATION and POISON for
+  `#ignores_poison_and_regen`, which is `#undead`, which holds `#zombies`. The §4 row's
+  *"a regeneration potion splashed on a damaged GS 300 zombie"* therefore fires no regain event and
+  logs nothing. **Re-staged in `GATE-mob-scaling-3.md` on a GS 300 SPIDER** (240 / 16, the same ratio
+  15), with a `G17-UNDEAD` control row that predicts the zombie's refusal. The prediction (x15) is
+  unchanged.
+- **F18. A tokened mob's vanilla health never climbs back, so its vanilla heals never stop.** Every
+  hit on a tracked mob tokens the vanilla damage to 0.01, and both heals slice 3 reads (Regeneration,
+  and the End crystal every 10 ticks) fire only while vanilla health is below the vanilla max (read
+  from the jar). The reroute CANCELS the vanilla heal, so vanilla health stays below max for good, and
+  the heals keep firing after the custom store is full. Each is a capped no-op (`HealthState.heal`
+  clamps at max), so nothing a player sees changes; under `/rpg mobtrace` they log `before = after =
+  max`, and a crystal-linked dragon logs one line every 10 ticks for as long as a crystal stands.
+  Dev-only. **A fix would let the vanilla heal through as well as rerouting it, which is a new
+  `MobHealPolicy` action, a decision for the seat.**
+- **F19. No log line reads a mob's ENVIRONMENTAL damage.** §4's G11 says *"the probe logs the FALL"*
+  and reads `applied / vanilla`; no such probe exists (`MOBHIT` is mob-to-player only). G11 and G18
+  therefore stay the OBSERVATION rows they were on slices 1 and M25, and the ratio is pinned in
+  `DamageScaleTest` alone. **A `MOBENV` trace beside `MOBHEAL` would make both log-witnessed**; not
+  built, because the slice 3 brief names only the heal line.
+- **F20. PLAYER-FACING: a mob hurt ONLY by our own damage keeps FULL vanilla health, so it never
+  regenerates, and an End crystal never heals a dragon hurt only that way.** F18's premise ("a hit
+  lowers vanilla health") holds only for the paths that TOKEN a vanilla damage event. Read from source
+  (2026-09-28, `eb1c8d34`) and the pinned server jar:
+
+  | damage path onto a tracked mob | how it lands | vanilla health |
+  |---|---|---|
+  | player melee, weapon melee swings | `onPlayerMeleeAttack` sets the event to the 0.01 token | **lowered** |
+  | the sweep | `onPlayerSweepAttack` tokens | **lowered** |
+  | environmental: fall, lava, fire, drowning, … | `onEnvironmentalDamage` tokens | **lowered** |
+  | mob-on-mob (F12), a player's VANILLA bow (F13) | the same environmental rider, tokened | **lowered** |
+  | a scorched mob's vanilla FIRE_TICK | suppressed, but "still tokens" | **lowered** (incidental) |
+  | a `VanillaDamagePolicy` PASS cause | vanilla applies it untouched | **lowered** |
+  | **every ability and weapon effect**: `EffectSpec.Damage` and `WeaponDamage`, delivered by rays, projectile bodies (their `ProjectileHitEvent` is cancelled), `Burst`, `Area` and `ThrowEmbers` | `BukkitCombatant.applyDamage`: the custom store plus `playHurtAnimation`; **no vanilla event** | **FULL** |
+  | the scorch burn tick (`EntityScorchSink`), Ignite's detonation | `applyDamage` | **FULL** |
+  | thorns and a shield reflect onto a mob attacker | `applyDamage` | **FULL** |
+  | `/rpg mobdamage` (dev) | `applyDamage`, "the same entry point abilities use" | **FULL** |
+
+  Both slice 3 heals test `getHealth() < getMaxHealth()` first (`RegenerationMobEffect`,
+  `EnderDragon.checkCrystals`), so they **never fire** on a mob whose only damage was the FULL rows. So a
+  Ranger or Mage fighting the dragon with a ray or a projectile weapon **fights a dragon its crystals
+  cannot heal**, while a melee player's first swing turns the crystals on (and F18 keeps them on).
+  Likewise a regeneration effect, or a witch's own healing (it drinks only below its vanilla max), does
+  nothing for a mob hurt only by abilities. **Not a regression**: before slice 3, no vanilla heal reached
+  the store at all. **Witnessed in `GATE-mob-scaling-3.md` F20a (the dragon) and F20b (a spider).**
+  The fix is a decision for the seat (e.g. token the vanilla health in `applyDamage` too, or have the
+  heal arm drive the heal instead of vanilla's gate), and nothing is built.
+  **Read 2026-09-28 on `8d7e0c90`: F20a and F20b PASS.** A dragon hurt only by `/rpg mobdamage` logged
+  no crystal heal for 14 s, and a spider logged no Regeneration heal for 20 s. Each started healing
+  right after one punch.
+- **F21. Two carried staging traps, both found on the slice 3 boot.**
+  - **G18 is HOLLOW:** the Knell is a `wither_skeleton`, which vanilla makes immune to lava, so the
+    "Knell in lava" row (carried unread since slice 1) can never read M14. A fall would work; the
+    arithmetic is pinned by `DamageScaleTest`'s Knell rows.
+  - **G11's GS 500 zombie must read `max=500` in its MOBSEED.** Since F16c a `/rpg spawn` runs vanilla
+    spawn setup, which can roll a LEADER zombie with a raised MAX_HEALTH (seen: `max=1240`, vanilla
+    49.6). That zombie survives the drop, correctly and as in vanilla, so it cannot read "both die".
 
 ---
 

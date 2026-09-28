@@ -13,11 +13,23 @@ package io.github.butterflysmp.rpg.core.combat;
  * <p>An audit of every {@code applyDamage} call site found <b>exactly one vanilla-denominated
  * entry</b> — the environmental rider. Sweep, mob-melee and thorns price from the custom attack stat;
  * ability and weapon damage from content; the dev commands from an operator-typed integer. So this
- * conversion has one call site by construction, and adding a second would be the bug.
+ * conversion has ONE DAMAGE call site by construction, and adding a second damage site would be the
+ * bug.
  *
- * <p><b>Since mob scaling slice 2 that call site is {@link RerouteDamagePrice#of}</b>, which the rider
- * calls once. A mob-sourced hit on a player takes M16's flat price INSTEAD of this conversion, never
- * after it; every other rerouted hit still comes here.
+ * <p><b>THE RULE IT PROTECTS IS "no vanilla-denominated DAMAGE is converted twice" (k squared).</b> It
+ * said "one call site" until mob scaling slice 3, and that wording became false the day it was written
+ * down twice, so it is restated as the rule rather than the count:
+ * <ul>
+ *   <li><b>Damage: {@link RerouteDamagePrice#of}</b> (since slice 2), which the environmental rider calls
+ *       once. A mob-sourced hit on a player takes M16's flat price INSTEAD of this conversion, never
+ *       after it; every other rerouted hit still comes here.
+ *   <li><b>Heal: {@code RpgListeners}' tracked-mob regain arm</b> (slice 3, M15), which converts a
+ *       vanilla heal on a mob by the same proportion, so an End crystal heals the dragon the same
+ *       fraction of its bar as in vanilla. <b>A heal is the opposite direction and cannot be converted
+ *       twice with a damage.</b> A separately named heal function with this same body was rejected: two
+ *       copies of one proportion are two accounts of one rule.
+ * </ul>
+ * {@code MobDamageWiringSignatureTest} pins that paper holds exactly the heal site and no other.
  *
  * <h2>THE DENOMINATOR IS 20, AND IT IS NOT {@code heartCount*2}</h2>
  *

@@ -9,6 +9,7 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.combat.CooldownTracker;
 import io.github.butterflysmp.rpg.core.combat.FireCadence;
 import io.github.butterflysmp.rpg.core.combat.Ignite;
+import io.github.butterflysmp.rpg.core.combat.DamageScale;
 import io.github.butterflysmp.rpg.core.combat.RerouteDamagePrice;
 import io.github.butterflysmp.rpg.core.mob.MobDamagePricing;
 import io.github.butterflysmp.rpg.core.mob.VanillaDifficulty;
@@ -57,6 +58,7 @@ import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
 import io.github.butterflysmp.rpg.paper.hud.StatsBarSystem;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenSystem;
 import io.github.butterflysmp.rpg.paper.health.VanillaDamagePolicy;
+import io.github.butterflysmp.rpg.paper.health.MobHealPolicy;
 import io.github.butterflysmp.rpg.paper.health.VanillaHealPolicy;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.vault.VaultService;
@@ -2495,9 +2497,11 @@ public final class RpgListeners implements Listener {
      * {@code RegainReason} constants with no default arm, so a tenth is a compile error rather than a
      * silent fall-through. See that class for why {@code EATING} is rerouted rather than passed.
      *
-     * <p><b>Scope: tracked players only.</b> A mob's health is its own store's business and no vanilla
-     * heal is currently rewriting it; an untracked player is one between join and register, whose
-     * store read would throw. So both fall through untouched rather than being handled wrongly.
+     * <p><b>Scope: tracked players here, and tracked MOBS in {@link #healTrackedMob}</b> (mob scaling
+     * slice 3, M15). Until that slice this said a mob's heals were not ours, and every vanilla heal on a
+     * mob (a witch's potion, an End crystal on the dragon) moved only its vanilla health, which nothing
+     * reads. An untracked player is one between join and register, whose store read would throw, so it
+     * falls through untouched rather than being handled wrongly.
      *
      * <p>This cannot eat our own heals. Nothing here calls {@code Player#setHealth} through a path
      * that fires this event -- the renderer writes the attribute and the health directly, which the
@@ -2505,7 +2509,11 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onRegainHealth(EntityRegainHealthEvent event) {
-        if (!(event.getEntity() instanceof Player player)) return;
+        if (!(event.getEntity() instanceof Player player)) {
+            // Mob scaling slice 3 (M15): a tracked MOB's vanilla heals now reach its store.
+            if (event.getEntity() instanceof LivingEntity mob) healTrackedMob(event, mob);
+            return;
+        }
         UUID id = player.getUniqueId();
         if (!adapters.stats().tracks(id)) return;
 
@@ -2521,6 +2529,46 @@ public final class RpgListeners implements Listener {
             // worthless. Self-attributed: the event names no healer.
             double custom = HeartScale.customFromHealthPoints(event.getAmount(), adapters.stats().max(id));
             if (custom > 0) adapters.stats().heal(id, custom, id, true);
+        }
+    }
+
+    /**
+     * M15: a vanilla heal on a TRACKED MOB is cancelled and rerouted into its custom store, PROPORTIONALLY
+     * -- vanilla amount / the VANILLA MAX_HEALTH attribute x the custom max, the same arithmetic as
+     * environmental damage on a mob (M13, M14). So an End crystal heals the dragon the same fraction of
+     * its bar as in vanilla, and a GS 300 zombie's regeneration is x15, not the withdrawn flat x5 (M8).
+     *
+     * <p><b>An untracked mob is PASSED:</b> its vanilla health is its only truth, and
+     * {@code CombatantStats.heal} is a silent no-op on an untracked id, so cancelling would drop the heal.
+     *
+     * <p><b>{@code DamageScale.toCustom} is called here, a heal, beside its one DAMAGE site</b>
+     * ({@code RerouteDamagePrice.of}). Its javadoc states the rule this does not break: no vanilla DAMAGE
+     * is converted twice. {@code MobDamageWiringSignatureTest} pins that paper holds exactly this site.
+     *
+     * <p>Self-attributed, and {@code dealerIsPlayer} is FALSE: the event names no healer, and the healed
+     * mob is not a player. (The plan's sketch passed {@code true}, copied from the player arm, where the
+     * healer IS the player.)
+     */
+    private void healTrackedMob(EntityRegainHealthEvent event, LivingEntity mob) {
+        UUID id = mob.getUniqueId();
+        if (!adapters.stats().tracks(id)) return;
+        if (MobHealPolicy.forReason(event.getRegainReason()) == MobHealPolicy.Action.PASS) return;
+
+        event.setCancelled(true);
+        var maxAttr = mob.getAttribute(Attribute.MAX_HEALTH);
+        double vanillaMax = maxAttr == null ? Double.NaN : maxAttr.getValue();
+        double before = adapters.stats().current(id);
+        double custom = DamageScale.toCustom(event.getAmount(), adapters.stats().max(id), vanillaMax, false);
+        if (custom > 0) adapters.stats().heal(id, custom, id, false);
+        if (nameplates.tracing()) {
+            // MOBHEAL -- the heal rows' witness, on the same /rpg mobtrace switch as MOBSEED and MOBHIT.
+            // ratio = custom / vanilla is the proportion (M15): the custom max over the vanilla attribute.
+            plugin.getLogger().info(String.format(java.util.Locale.ROOT,
+                    "MOBHEAL %s %s reason=%s vanilla=%.3f custom=%.3f ratio=%.3f before=%.3f after=%.3f"
+                            + " max=%.1f vanillaMax=%.1f",
+                    id, typeOf(mob), event.getRegainReason(), event.getAmount(), custom,
+                    event.getAmount() > 0 ? custom / event.getAmount() : Double.NaN,
+                    before, adapters.stats().current(id), adapters.stats().max(id), vanillaMax));
         }
     }
 
