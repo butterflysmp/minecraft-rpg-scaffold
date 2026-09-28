@@ -179,8 +179,13 @@ public final class MobNameplateManager implements HealthListener {
         // Slice 2: melee is priced HERE, once, so onMobMeleeAttack's read of the stat is already M16's
         // vanilla x 5 x GS/100. The attribute itself is only read, never written (M9's attack mirror).
         double attack = MobScaling.attackDamage(attackDamageOf(mob), custom, hostile, score.orElse(0));
-        return new Seeded(stats.bootstrapIfAbsent(mob.getUniqueId(), max, attack, false),
-                score, source);
+        HealthState state = stats.bootstrapIfAbsent(mob.getUniqueId(), max, attack, false);
+        // F20: the seed is the one store write the HealthChange seam does not carry. A fresh store is at
+        // FULL (F1), while vanilla health comes from the entity's NBT and can be anything, so vanilla is
+        // mirrored here too. It mirrors the store's CURRENT, not its max, because this method is
+        // idempotent and runs again on every melee rider and every /rpg mobdamage.
+        MobVanillaMirror.apply(mob, state.current(), state.max());
+        return new Seeded(state, score, source);
     }
 
     /**

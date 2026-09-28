@@ -60,6 +60,7 @@ import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
 import io.github.butterflysmp.rpg.paper.health.DamagePopupManager;
 import io.github.butterflysmp.rpg.paper.health.MobDeathSystem;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
+import io.github.butterflysmp.rpg.paper.health.MobVanillaMirror;
 import io.github.butterflysmp.rpg.paper.health.PacketDamagePopupSender;
 import io.github.butterflysmp.rpg.paper.health.PacketNameplateSender;
 import io.github.butterflysmp.rpg.paper.health.PlayerHealthSystem;
@@ -494,7 +495,11 @@ public final class RpgPlugin extends JavaPlugin {
         // Fourth consumer: mob death. Also a pure seam consumer (no bind). Wired LAST so the displays
         // above render the final state before it kills the mob on the reachedZero transition.
         this.mobDeath = new MobDeathSystem(scheduler);
-        this.stats = new CombatantStats(new CompositeHealthListener(healthSystem, nameplates, popups, mobDeath));
+        // F20: a tracked mob's vanilla health mirrors the store after EVERY write (PLAN-mob-scaling.md §7).
+        // Before mobDeath, though order does not matter for correctness: the mirror skips the killing
+        // change, so it can never revive what mobDeath is about to kill.
+        this.stats = new CombatantStats(new CompositeHealthListener(
+                healthSystem, nameplates, popups, new MobVanillaMirror(), mobDeath));
         this.healthSystem.bind(stats);
         this.nameplates.bind(stats);
 

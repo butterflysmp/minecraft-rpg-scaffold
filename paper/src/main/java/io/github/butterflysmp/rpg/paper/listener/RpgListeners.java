@@ -17,6 +17,7 @@ import io.github.butterflysmp.rpg.core.combat.DamageWindow;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.SweepShare;
 import io.github.butterflysmp.rpg.core.combat.stat.HeartScale;
+import io.github.butterflysmp.rpg.core.combat.stat.VanillaMirror;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.combat.ShieldExchange;
 import io.github.butterflysmp.rpg.core.enchant.Thorns;
@@ -158,9 +159,12 @@ public final class RpgListeners implements Listener {
 
     /**
      * Where a tracked mob's vanilla health is floored so the token can't kill it (death is deferred).
-     * The mob analog of the player heart floor; small, since vanilla health is a puppet display only.
+     * The mob analog of the player heart floor. Since F20 it is the vanilla mirror's floor too, and it
+     * lives in {@link VanillaMirror#LIVE_FLOOR} so the two cannot drift apart. The token floor still
+     * matters under the mirror: it covers the scheduler hop between the token landing and the store
+     * write that the mirror follows.
      */
-    private static final double VANILLA_LIVE_FLOOR = 1.0;
+    private static final double VANILLA_LIVE_FLOOR = VanillaMirror.LIVE_FLOOR;
 
     private final CooldownTracker cooldowns;
     private final FireCadence fireCadence;
