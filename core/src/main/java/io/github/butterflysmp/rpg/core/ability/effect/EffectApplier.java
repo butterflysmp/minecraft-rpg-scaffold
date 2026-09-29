@@ -168,7 +168,7 @@ public final class EffectApplier {
                 // fix a defect that does not exist.
                 double amount = HitDamage.dealt(
                         HitDamage.hitBase(GearScore.scaledDamage(d.amount(), caster.triggerScore()),
-                                caster.enchantDamagePercent(), caster.classDamageBonus()),
+                                caster.enchantDamagePercent(), caster.classDamageBonus() + caster.weaponLevelDamage()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),
@@ -193,7 +193,7 @@ public final class EffectApplier {
                 // weapon swinging faster than the burn lasts is what makes the refresh path routine.
                 double amount = HitDamage.dealt(
                         HitDamage.hitBase(caster.attackDamage(), caster.enchantDamagePercent(),
-                                caster.classDamageBonus()),
+                                caster.classDamageBonus() + caster.weaponLevelDamage()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),

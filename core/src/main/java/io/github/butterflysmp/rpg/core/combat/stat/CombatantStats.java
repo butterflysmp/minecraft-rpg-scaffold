@@ -147,6 +147,15 @@ public final class CombatantStats {
     }
 
     /**
+     * Resolved LEVEL weapon-damage bonus (0.0 + modifiers). 0.0 when untracked, and on every mob: mobs
+     * are never reconciled, and a mob has no level.
+     */
+    public double levelDamageValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.levelDamageValue();
+    }
+
+    /**
      * Resolved ENCHANT-DAMAGE percent (0.0 + modifiers): the sum of the percentages granted by the
      * damage enchants active on the weapon this combatant holds, whose class matches that weapon's.
      * Multiplies the base of every direct damage effect they deal.
@@ -422,6 +431,17 @@ public final class CombatantStats {
         HealthState state = states.get(id);
         if (state == null) return;
         ModifierReconciler.reconcile(state.classDamageTarget(), desired);
+    }
+
+    /**
+     * Converge the LEVEL weapon-damage modifiers to {@code desired}. Same leak-proof diff as the class
+     * bonus above, and as silent. One source today, {@code LevelBonus.SOURCE}. No-op on an untracked
+     * combatant.
+     */
+    public void reconcileLevelDamageModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.levelDamageTarget(), desired);
     }
 
     /**

@@ -48,6 +48,14 @@ public final class HealthState {
      */
     private final Stat classDamage = new Stat(0.0);
     /**
+     * The LEVEL's weapon-damage bonus (Ben, 2026-09-29: +1 per level-up), base 0.0. A stat and not a
+     * {@code classDamage} source because it must reach WEAPON hits only, and a stat alone cannot know
+     * which hit is a weapon's: {@code Caster.weaponLevelDamage} reads it only when the cast was built on a
+     * weapon path (seat ruling L1). Kept apart from {@code classDamage} so a stone cast, which reads that
+     * one, never sees this one.
+     */
+    private final Stat levelDamage = new Stat(0.0);
+    /**
      * Enchant damage: the sum of the PERCENTAGES granted by the damage enchants active on the weapon
      * this combatant is HOLDING, whose class matches that weapon's own. Base 0.0, no constructor
      * parameter -- the entire value is item-contributed, like attack speed and the class bonus.
@@ -400,6 +408,15 @@ public final class HealthState {
 
     public int classDamageModifierCount() {
         return classDamage.modifierCount();
+    }
+
+    /**
+     * The resolved LEVEL weapon-damage bonus: {@code 0.0 + Sum(modifiers)}. A summand, 0 contributes
+     * nothing. Carried to every cast on the snapshot, and ADDED only on a weapon hit -- see
+     * {@link #levelDamage}.
+     */
+    public double levelDamageValue() {
+        return levelDamage.value();
     }
 
     // --- Enchant damage: a fifth Stat, a PERCENT, base 0.0 ------------------------------------------
@@ -781,6 +798,17 @@ public final class HealthState {
                 return classDamage.putModifier(source, amount);
             }
             @Override public boolean clearModifier(String source) { return classDamage.removeModifier(source); }
+        };
+    }
+
+    /** The level weapon-damage modifier surface. A plain {@link Stat}, like class damage. */
+    ModifierTarget levelDamageTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return levelDamage.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return levelDamage.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return levelDamage.removeModifier(source); }
         };
     }
 

@@ -78,11 +78,16 @@ import java.util.UUID;
  * field was added to avoid, and nothing downstream would throw. That is the same shape of trap
  * {@code enchantDamagePercent} was made a percent to sidestep -- except that there the neutral
  * value genuinely was 0.0, and here there is no neutral value at all. So it fails loud instead.
+ *
+ * <p>{@code levelDamageBonus} is the player level's weapon-damage bonus (PLAN-level-bonuses.md), a
+ * summand, 0.0 neutral. <b>Every snapshot carries it, and only a weapon hit adds it</b>: the snapshot
+ * cannot know whether it will feed a weapon trigger or a stone cast, so the gate is on {@code Caster}
+ * ({@code weaponLevelDamage}), not here.
  */
 public record CombatantSnapshot(UUID id, Vec3 position, double eyeHeight, boolean alive,
                                 boolean player, double attackSpeed, double attackDamage,
                                 double classDamageBonus, double enchantDamagePercent,
-                                double critMultiplier) {
+                                double critMultiplier, double levelDamageBonus) {
 
     public CombatantSnapshot {
         if (eyeHeight <= 0) {
