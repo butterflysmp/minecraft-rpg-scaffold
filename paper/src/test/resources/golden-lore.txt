@@ -1,16 +1,4 @@
 === WEAPONS ===
--- blaze_kings_staff
-   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Fireball" color=#FFAA00 O=. B=. S=. U=. I=F ["  Left-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "Throws a burning charge." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["30" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Cooldown: 0.4s | Mana Cost: 8" color=#555555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "The Blaze King kept it lit." color=#AAAAAA O=. B=. S=. U=. I=T
-   "It has not gone out since." color=#AAAAAA O=. B=. S=. U=. I=T
-   "" color=- O=. B=. S=. U=. I=F
-   "Legendary Magic Weapon" color=#FFAA00 O=. B=. S=. U=. I=F
 -- boltor
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
@@ -575,4 +563,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 94 renderings ===
+=== 93 renderings ===
