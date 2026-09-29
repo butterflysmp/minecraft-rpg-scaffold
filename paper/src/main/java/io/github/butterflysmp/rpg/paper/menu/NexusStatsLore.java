@@ -64,7 +64,7 @@ final class NexusStatsLore {
      * button.</b>
      */
     static Component name() {
-        return MenuIcons.line(StatsSheetLines.HEADER, NamedTextColor.GOLD);
+        return MenuIcons.name(StatsSheetLines.HEADER);
     }
 
     /**

@@ -142,4 +142,17 @@ class MenuIconsTest {
         // Mutation: return existing directly when chrome is empty -> the no-chrome case aliases ->
         // reddens there rather than here, which is why List.copyOf is used on both guards.
     }
+
+    /**
+     * Ben, 2026-09-29: "Green names". The one helper every Nexus button name goes through, and the Back button
+     * with it -- green, and non-italic like every other line. Mutation MUTNAME-GRAY (name() back to GRAY)
+     * reddens here and nowhere else in the suite, which is why this row exists.
+     */
+    @Test
+    void buttonNamesAreGreenAndTheBackButtonIsOne() {
+        assertEquals(net.kyori.adventure.text.format.NamedTextColor.GREEN, MenuIcons.name("Build").color());
+        assertEquals(net.kyori.adventure.text.format.TextDecoration.State.FALSE,
+                MenuIcons.name("Build").decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC));
+        assertEquals(net.kyori.adventure.text.format.NamedTextColor.GREEN, MenuIcons.backName("the Nexus").color());
+    }
 }

@@ -77,6 +77,13 @@ public final class RecipeBrowserMenu extends Menu {
     private final AdapterContext adapters;
     private final RecipeCatalogue catalogue;
     private final InventoryCraft inventoryCraft;
+    /**
+     * The breadcrumb to the Nexus hub, carried THROUGH this screen and handed back to crafting on Back,
+     * or null when crafting was opened from a world block. Until the NEXUS polish slice the browser
+     * dropped it, so Crafting -> Recipe Book -> Back lost crafting's "Back to the Nexus" button
+     * (PLAN-nexus-polish.md C1, F1).
+     */
+    private final java.util.function.Supplier<Menu> hub;
 
     /** Zero-based. Every read goes through {@link PageMath#clampPage} first. */
     private int page;
@@ -95,9 +102,15 @@ public final class RecipeBrowserMenu extends Menu {
     private Map<String, RecipeCatalogue.Entry> shown = Map.of();
 
     public RecipeBrowserMenu(Player viewer, AdapterContext adapters, RecipeCatalogue catalogue) {
+        this(viewer, adapters, catalogue, null);
+    }
+
+    public RecipeBrowserMenu(Player viewer, AdapterContext adapters, RecipeCatalogue catalogue,
+                             java.util.function.Supplier<Menu> hub) {
         super(viewer, RecipeBrowserLayout.SIZE, MenuIcons.line("Recipes", NamedTextColor.DARK_GRAY));
         this.adapters = adapters;
         this.catalogue = catalogue;
+        this.hub = hub;
         this.inventoryCraft = new InventoryCraft(viewer, adapters);
         recompute();
         render();
@@ -136,7 +149,7 @@ public final class RecipeBrowserMenu extends Menu {
 
         if (slot == RecipeBrowserLayout.BACK_SLOT) {
             adapters.scheduler().onEntity(viewer,
-                    () -> new CraftingMenu(viewer, adapters, catalogue).open());
+                    () -> new CraftingMenu(viewer, adapters, catalogue, hub).open());
             return;
         }
         if (slot == RecipeBrowserLayout.PREV_SLOT) {
@@ -311,27 +324,26 @@ public final class RecipeBrowserMenu extends Menu {
         // HIDDEN, not disabled, at the ends. A greyed-out button a player can still click and get
         // nothing from is the same "did I break it" experience as one that does nothing silently.
         getInventory().setItem(RecipeBrowserLayout.PREV_SLOT, page > 0
-                ? MenuIcons.icon(Material.ARROW, MenuIcons.line("Previous page", NamedTextColor.GRAY),
+                ? MenuIcons.icon(Material.ARROW, MenuIcons.name("Previous page"),
                         List.of(MenuIcons.line("Page " + PageMath.displayPage(page - 1),
                                 NamedTextColor.DARK_GRAY)))
                 : MenuIcons.filler());
 
         getInventory().setItem(RecipeBrowserLayout.NEXT_SLOT, page < pages - 1
-                ? MenuIcons.icon(Material.ARROW, MenuIcons.line("Next page", NamedTextColor.GRAY),
+                ? MenuIcons.icon(Material.ARROW, MenuIcons.name("Next page"),
                         List.of(MenuIcons.line("Page " + PageMath.displayPage(page + 1),
                                 NamedTextColor.DARK_GRAY)))
                 : MenuIcons.filler());
 
         getInventory().setItem(RecipeBrowserLayout.PAGE_SLOT, MenuIcons.icon(
                 Material.PAPER,
-                MenuIcons.line("Page " + PageMath.displayPage(page) + " of " + pages,
-                        NamedTextColor.WHITE),
+                MenuIcons.name("Page " + PageMath.displayPage(page) + " of " + pages),
                 List.of(MenuIcons.line(visible.size() + " you can craft now",
                         NamedTextColor.DARK_GRAY))));
 
         getInventory().setItem(RecipeBrowserLayout.BACK_SLOT, MenuIcons.icon(
                 Material.CRAFTING_TABLE,
-                MenuIcons.line("Back to crafting", NamedTextColor.GRAY),
+                MenuIcons.name("Back to crafting"),
                 List.of()));
     }
 
