@@ -85,7 +85,7 @@ public final class CastExecutor {
     public void execute(AbilityService.CastResult.Success success) {
         AbilityDefinition ability = success.ability();
         boolean charges = charges(ability);
-        Caster source = commit(ability, success.caster(), success.aim(), charges);
+        Caster source = commit(ability, success.caster(), success.aim(), charges, success.weaponTrigger());
         dispatch(ability, success.caster(), source, success.aim(), charges);
     }
 
@@ -132,7 +132,7 @@ public final class CastExecutor {
         Aim aim = success.aim();
         boolean charges = charges(ability);
 
-        Caster source = commit(ability, caster, aim, charges);
+        Caster source = commit(ability, caster, aim, charges, success.weaponTrigger());
         for (double yaw : yawOffsets) {
             // `pointing` rather than `new Aim(origin, rotated)`: the two-argument constructor would
             // RE-DERIVE the shooter's right from the rotated direction and discard the real one,
@@ -173,7 +173,7 @@ public final class CastExecutor {
      * @return the cast-frame {@link Caster} projection, shared by every shot the press produces
      */
     private Caster commit(AbilityDefinition ability, CombatantSnapshot caster, Aim aim,
-                          boolean charges) {
+                          boolean charges, boolean weaponTrigger) {
 
         // Project the cast-time snapshot down to what an effect landing LATER may read: the id,
         // plus the stats frozen on the caster's own thread. Built once, here, because this is the
@@ -190,6 +190,11 @@ public final class CastExecutor {
                 .withTriggerScore(world.triggerScoreOf(caster.id()))
                 // Which ability this is, for the PLAYERHIT trace only (Caster.withSource).
                 .withSource(ability.id());
+        // A WEAPON TRIGGER is a weapon hit, and only a weapon hit carries the level damage bonus
+        // (Caster.withWeaponHit; PLAN-level-bonuses.md, seat ruling L1). A stone cast arrives here with
+        // weaponTrigger false and leaves with it false. Frozen with everything else, so a staff's bolt
+        // lands as the weapon hit it was fired as.
+        if (weaponTrigger) source = source.withWeaponHit();
 
         // WHAT YOU HEAR WHEN YOU PRESS THE BUTTON. Fired here, before the switch, so it is
         // independent of cast shape and lands on the frame the cast was committed -- a projectile
@@ -256,7 +261,7 @@ public final class CastExecutor {
 
             // NOTE WHAT IS NOT PASSED: `source`, nor `aim`. A volley re-projects its caster before
             // EVERY shot, so the cast-frame projection above reaches no shot at all -- see volley().
-            case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley);
+            case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley, source.weaponHit());
         }
     }
 
@@ -297,10 +302,12 @@ public final class CastExecutor {
         // IGNORES it -- the stat already carries it. A melee weapon's ability can still author a
         // LITERAL Damage effect, and a site that silently carried BASELINE would price that literal
         // as unscored while every other route scaled it.
+        // Always a weapon hit: this arm is reached only from a held weapon's vanilla-melee trigger.
         detonate(ability, Caster.of(caster, chargeScale)
                 .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()))
                 .withTriggerScore(world.triggerScoreOf(caster.id()))
-                .withSource(ability.id()),
+                .withSource(ability.id())
+                .withWeaponHit(),
                 target, target.state().position());
         if (DamagePayload.isBasicAttack(ability.onHit())) onBasicAttackUse.run();
     }
@@ -663,12 +670,12 @@ public final class CastExecutor {
      * reason -- the scheduler cannot defer by less than a tick, so deferring a zero wind-up would
      * quietly make it 1 and a "no wind-up" volley would be indistinguishable from a 1-tick one.
      */
-    private void beginVolley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec) {
+    private void beginVolley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec, boolean weaponHit) {
         if (spec.windupTicks() == 0) {
-            volley(ability, casterId, spec, 0);
+            volley(ability, casterId, spec, 0, weaponHit);
             return;
         }
-        world.scheduleOn(casterId, spec.windupTicks(), () -> volley(ability, casterId, spec, 0));
+        world.scheduleOn(casterId, spec.windupTicks(), () -> volley(ability, casterId, spec, 0, weaponHit));
     }
 
     /**
@@ -702,7 +709,8 @@ public final class CastExecutor {
      * sees a value rolled and discarded, and would delete it correctly on the evidence in front of
      * them.
      */
-    private void volley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec, int shotIndex) {
+    private void volley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec, int shotIndex,
+                        boolean weaponHit) {
         Combatant self = world.combatant(casterId).orElse(null);
         if (self == null || !self.state().alive()) return;   // gone, or dead: the volley stops
         Aim live = world.aimOf(casterId).orElse(null);
@@ -723,12 +731,15 @@ public final class CastExecutor {
                 .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), self.state().attackDamage()))
                 .withTriggerScore(world.triggerScoreOf(casterId))
                 .withSource(ability.id());
+        // The flag is NOT re-read per shot -- there is nothing to re-read it from. It is how the volley
+        // was PRESSED (a weapon trigger or a stone), carried down from commit's Caster by dispatch.
+        if (weaponHit) source = source.withWeaponHit();
 
         fireInner(ability, source, live, spec.of());
 
         if (shotIndex + 1 >= spec.shots()) return;
         world.scheduleOn(casterId, spec.intervalTicks(),
-                () -> volley(ability, casterId, spec, shotIndex + 1));
+                () -> volley(ability, casterId, spec, shotIndex + 1, weaponHit));
     }
 
     /**

@@ -65,7 +65,14 @@ public final class AbilityService {
          * Note it carries the AIM, not a resolved target: nothing has looked at
          * the world yet, because nothing here is on the right thread to do so.
          */
-        record Success(AbilityDefinition ability, CombatantSnapshot caster, Aim aim) implements CastResult {}
+        /**
+         * {@code weaponTrigger}: was this a WEAPON trigger ({@link AbilityService#fireTrigger}) rather than an
+         * ability cast? The one fact the two paths still differ on here, carried so {@code CastExecutor} can mark the
+         * {@code Caster} a weapon hit ({@code Caster.withWeaponHit}) -- the level damage bonus reaches weapon hits
+         * only (PLAN-level-bonuses.md, seat ruling L1). A copy of a Success must carry it: see {@code DashAim}.
+         */
+        record Success(AbilityDefinition ability, CombatantSnapshot caster, Aim aim, boolean weaponTrigger)
+                implements CastResult {}
 
         record OnCooldown(long ticksRemaining) implements CastResult {}
 
@@ -155,7 +162,7 @@ public final class AbilityService {
         // moved it after them is what AbilityServiceTest's order-pinning test guards.
         if (!castable.contains(abilityId)) return new CastResult.Locked(abilityId);
 
-        return resolve(caster, derive.apply(def), aim);
+        return resolve(caster, derive.apply(def), aim, false);
     }
 
     /**
@@ -169,7 +176,7 @@ public final class AbilityService {
      * triggers cooldown independently and do not share a timer with any ability.
      */
     public CastResult fireTrigger(CombatantSnapshot caster, AbilityDefinition trigger, Aim aim) {
-        return resolve(caster, trigger, aim);
+        return resolve(caster, trigger, aim, true);
     }
 
     /**
@@ -185,7 +192,7 @@ public final class AbilityService {
     public CastResult castUnchecked(CombatantSnapshot caster, String abilityId, Aim aim) {
         AbilityDefinition def = registry.find(abilityId).orElse(null);
         if (def == null) return new CastResult.UnknownAbility(abilityId);
-        return new CastResult.Success(def, caster, aim);
+        return new CastResult.Success(def, caster, aim, false);
     }
 
     /**
@@ -193,7 +200,7 @@ public final class AbilityService {
      * cooldown trigger -> Success, all before returning. One code path, so the
      * order-pinning mutation test guards both callers.
      */
-    private CastResult resolve(CombatantSnapshot caster, AbilityDefinition def, Aim aim) {
+    private CastResult resolve(CombatantSnapshot caster, AbilityDefinition def, Aim aim, boolean weaponTrigger) {
         String id = def.id();
         if (!cooldowns.isReady(caster.id(), id)) {
             return new CastResult.OnCooldown(cooldowns.ticksRemaining(caster.id(), id));
@@ -240,6 +247,6 @@ public final class AbilityService {
         // were consumed at execution time, a player could spam-cast during the
         // hop onto the region thread.
         cooldowns.trigger(caster.id(), id, cooldownTicks);
-        return new CastResult.Success(def, caster, aim);
+        return new CastResult.Success(def, caster, aim, weaponTrigger);
     }
 }

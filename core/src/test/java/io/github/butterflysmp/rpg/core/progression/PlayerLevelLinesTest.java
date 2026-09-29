@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PlayerLevelLinesTest {
 
     private static final long LEVEL_13 = 19_980L;
+    // PlayerLevelTest's literal, summed from the table there, not re-derived through totalForLevel.
+    private static final long LEVEL_50 = 712_580L;
     private static final long LEVEL_99 = 11_642_250L;
 
     @Test
@@ -51,15 +53,21 @@ class PlayerLevelLinesTest {
         // the PR body. NOTE it can only bite on a machine whose default groups differently.
     }
 
+    /**
+     * The marker sits at the ACTIVE cap, 50 (seat ruling L2), not the curve's 99. Was pinned at 99 until
+     * the level slice; the curve's rungs to 99 still exist, and a player past 50 on them reads 50.
+     */
     @Test
-    void theLEVELLineCarriesTheMAXMarkerONLYAtTheCap() {
+    void theLEVELLineCarriesTheMAXMarkerONLYAtTheActiveCap() {
         assertEquals("1", PlayerLevelLines.level(0L), "a new player");
         assertEquals("13", PlayerLevelLines.level(LEVEL_13), "the grindstone's gate");
-        assertEquals("98", PlayerLevelLines.level(LEVEL_99 - 1L), "ONE XP SHORT is not maxed");
-        assertEquals("99 (MAX)", PlayerLevelLines.level(LEVEL_99), "exactly at the cap");
-        assertEquals("99 (MAX)", PlayerLevelLines.level(LEVEL_99 * 1000L),
-                "and far past it -- lifetime XP does not stop at 99");
-        // Mutation MUTMAX-ALWAYS: drop the isMaxed branch -> kill set RECORDED in the PR body.
+        assertEquals("49", PlayerLevelLines.level(LEVEL_50 - 1L), "ONE XP SHORT is not maxed");
+        assertEquals("50 (MAX)", PlayerLevelLines.level(LEVEL_50), "exactly at the active cap");
+        assertEquals("50 (MAX)", PlayerLevelLines.level(LEVEL_99),
+                "the curve's 99 is past the view clamp, and reads 50");
+        assertEquals("50 (MAX)", PlayerLevelLines.level(LEVEL_99 * 1000L),
+                "and far past it -- lifetime XP does not stop at the cap");
+        // Mutation MUTMAX-ALWAYS: drop the isAtActiveCap branch -> kill set RECORDED in the PR body.
     }
 
     @Test
@@ -76,11 +84,14 @@ class PlayerLevelLinesTest {
         // *** THE PREDECESSOR RETURNED Long.MAX_VALUE AND IT RENDERED. *** The tempting fix is a
         // word in the same column -- "To Next  MAX" -- which is the same defect in better clothes:
         // the column's subject is an AMOUNT REMAINING and there is none. Loud, so a caller cannot
-        // print the line by accident; the caller asks PlayerLevel.isMaxed and omits it.
-        var error = assertThrows(IllegalStateException.class, () -> PlayerLevelLines.toNext(LEVEL_99));
-        assertTrue(error.getMessage().contains("isMaxed"),
+        // print the line by accident; the caller asks PlayerLevel.isAtActiveCap and omits it.
+        var error = assertThrows(IllegalStateException.class, () -> PlayerLevelLines.toNext(LEVEL_50));
+        assertTrue(error.getMessage().contains("isAtActiveCap"),
                 "the message names the question the caller should have asked");
+        assertThrows(IllegalStateException.class, () -> PlayerLevelLines.toNext(LEVEL_99),
+                "past the active cap there is no next level either, though the curve has one");
         assertThrows(IllegalStateException.class, () -> PlayerLevelLines.toNext(Long.MAX_VALUE));
+        assertEquals("1", PlayerLevelLines.toNext(LEVEL_50 - 1L), "one XP short of the cap");
 
         // AND BELOW THE CAP IT IS A REAL, SHRINKING NUMBER.
         assertEquals("1,000", PlayerLevelLines.toNext(0L), "a new player needs the first rung");

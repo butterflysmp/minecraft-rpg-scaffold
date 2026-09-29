@@ -49,8 +49,9 @@ public final class DashAim {
         // FOUND 2026-09-21 by widening AimWiringSignatureTest from a NAMED LIST of Aim sites to a
         // walk over every main source. The named list had four entries and this was not one of
         // them -- which is the defect a named list has, and the reason the scan is now a walk.
+        // weaponTrigger carried over: a weapon's dash is still a weapon hit (PLAN-level-bonuses.md, L1).
         return new CastResult.Success(success.ability(), success.caster(),
-                success.aim().pointing(direction));
+                success.aim().pointing(direction), success.weaponTrigger());
     }
 
     /**
