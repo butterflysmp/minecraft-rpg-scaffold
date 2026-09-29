@@ -70,6 +70,35 @@ item would touch one, it says so and becomes a question, never a quiet change.
 
 ---
 
+### Ben, 2026-09-29, VERBATIM: the second answers, and the seat's rulings on `0f24131d`
+
+```
+  Commands: "one command per screen one word to keep them easy to type"
+  Sounds: "no"
+  Stand out: "Green names"
+```
+
+**THE SEAT'S READING (the seat's, not Ben's):**
+
+- **Commands:** one lowercase word per screen.
+- **Sounds: no.** Menus stay silent; §4's sound items (X1 / P4) are NOT taken.
+- **Stand out: "Green names".** Every Nexus button and item NAME is rendered in `<green>`. The other nine stand-out
+  options in §4.0b are NOT taken.
+
+**SEAT RULINGS (mechanism, and defaults Ben can overrule at the gate), 2026-09-29:**
+
+- **N1.** The five code-read defects are fixed in the NEXUS slice (mechanism), each with a gate row.
+- **N2. Wording defaults:** "Back to the Nexus" everywhere; one consistent locked-station lore. Barrier icons are kept
+  ONLY for "can't use / locked", and each other role gets its own icon. The before/after table goes in the PR so Ben
+  can overrule.
+- **N3. Commands:** one lowercase word per screen, proposed in the PR description (e.g. `/nexus`, `/build`,
+  `/vault` ...). None may clash with vanilla or another plugin's command: check the jar's command tree. Each is a
+  non-op permission node, `default: true`. What happens when a screen can't open (no class, dead, creative) is listed
+  per command. "In combat" is OUT OF SCOPE: nothing tracks it. The seat brings the names to Ben before the NEXUS gate
+  is committed.
+- **L5 (stack order, from the level rulings):** #168 (M1) → LEVEL → NEXUS polish → LEGACY-A → later slices. **Where
+  polish touches text #168's MC rows read, the NEXUS gate RESTATES those rows** — §5.2's option (ii).
+
 ## 1. REACHABILITY — TRACED FROM THE CODE, NOT ASSUMED
 
 ### 1.1 The three doors onto the hub (READ)

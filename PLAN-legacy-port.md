@@ -85,6 +85,31 @@ Goldrot Goon. We'll talk more about this later."
 
 ---
 
+### Ben, 2026-09-29, VERBATIM: the second answers, and the seat's rulings on `0f24131d`
+
+```
+  Scattershot: "Yes, Kinetic"
+  Old numbers: "Sure, everything will be getting tuned later so it's not that important right
+     now"
+  Acquisition: "We will cover acquisition later. Not important right now"
+```
+
+**THE SEAT'S READING (the seat's, not Ben's):**
+
+- **Scattershot:** a NEW item, the old 5-arrow crossbow fan, element `kinetic`. **Not `dragons_breath`. Q-P10
+  ANSWERED.** It is NOT content-only: it needs E6, a click-fired yaw fan (§2). So it is not in LEGACY-A unless E6
+  lands first.
+- **Old numbers:** cfde822's numbers are the STARTING values, marked PROVISIONAL (to be tuned). The Boltor rule still
+  governs citations and the 4-tick grid. **Q-P2 ANSWERED.**
+- **Acquisition:** `/rpg give` only, for now; no recipes, drops or loot. **Q-P4 ANSWERED.**
+
+**SEAT RULINGS (mechanism), 2026-09-29:**
+
+- **L4.** M17 stays separate from the mob body-fields slice. **Q-P11 ANSWERED: no.**
+- **L5. Stack order, bottom-up:** #168 (M1) → LEVEL → NEXUS polish → LEGACY-A (Short Bow, Blaze King's Staff: content
+  only) → later slices. Each slice has its own PR and gate, and each R0c predicts against the slice below it.
+- **L6.** Nothing is built until Ben answers his questions for that slice.
+
 ## 1. WHAT I READ
 
 **In this repo, at `2d60e9a3`:**

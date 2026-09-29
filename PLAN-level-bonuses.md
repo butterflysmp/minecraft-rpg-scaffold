@@ -101,6 +101,44 @@ not" is dropped. Under the ruling, only one number stands: **+250**.
 
 ---
 
+### 0.5 Ben, 2026-09-29, VERBATIM: the second answers, and the seat's rulings on `0f24131d`
+
+```
+  Regen: "It's +1 per 5 seconds for a total of +10 health per 5 seconds"
+  Crit on Actives: "Yes"
+  Damage at 50: "Yes"
+```
+
+**THE SEAT'S READING (the seat's, not Ben's):**
+
+- **Regen:** +1 on the per-5s figure at each of levels 10, 15, ..., 50 (9 steps), i.e. +0.2 HP/s per step in the
+  engine's unit. The base is `HealthRegen.BASE_PER_SECOND` = 0.2 HP/s, which the sheet shows as `1.00/5s`, so Ben's
+  "+10" is the sheet TOTAL at 50: `10.00/5s` (2.0 HP/s). The base IS exactly 1/5s, so the 9 steps and the "+10" agree.
+  **Q-L12 is ANSWERED: reading (R-5s).**
+- **Crit on Actives: intended.** The level's +5% crit goes through the shared crit stat and reaches stone casts.
+  **Q-L16 ANSWERED.**
+- **Damage at 50: +49** (L1 = 0, +1 per level-up). **No longer an assumption. Q-L11 ANSWERED.**
+
+**SEAT RULINGS (mechanism), 2026-09-29, on `0f24131d`:**
+
+- **L1. "Weapons only" damage: the FLAG ON `Caster`.** It is exact. The #168 overlap is not a conflict: the level
+  slice stacks on melee-m1 and edits `Caster` after it. The attack-stat route is REFUSED (it fails NAME THE QUANTITY:
+  staffs and fixed-damage weapons get nothing). The class-damage slot is REFUSED (the ~5-tick leak into stone casts).
+  The flag is set only at the weapon build sites (weapon triggers, `landBasicMelee`, shots). A unit test pins that a
+  stone cast carries it false.
+- **L2. The cap is a VIEW clamp.** Lifetime XP is never clamped. The displayed and effective level is
+  `min(curve level, ACTIVE_CAP = 50)`, and the curve's rungs to 99 stay. The SAVE trigger keys on the UNCLAMPED curve
+  level, so XP past 50 keeps writing at each curve rung, and a crash loses at most one rung, as today. No level-up
+  message fires past 50. A later cap raise giving no message is a §6 finding, not a stop.
+- **L3.** The level bonuses are a pure core function of the EFFECTIVE (clamped) level, with unit tests pinning every
+  rung Ben ruled.
+- **L4.** M17 stays separate from the mob body-fields slice.
+- **L5. Stack order, bottom-up:** #168 (M1) → LEVEL (bonuses + the head sub-menu) → NEXUS polish → LEGACY-A (Short
+  Bow, Blaze King's Staff: content only) → later slices. Each slice has its own PR and gate, and each R0c predicts
+  against the slice below it. Where polish touches text #168's MC rows read, the NEXUS gate RESTATES those rows.
+  M2 (Sunder) stays parked.
+- **L6.** Nothing is built until Ben answers his questions for that slice.
+
 ## §1 HOW LEVELLING WORKS TODAY
 
 ### 1.1 The curve: `C/progression/PlayerLevel`
