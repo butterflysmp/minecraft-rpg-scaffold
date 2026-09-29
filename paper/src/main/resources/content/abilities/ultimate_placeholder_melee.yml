@@ -1,0 +1,28 @@
+# PLACEHOLDER -- Ben designs. See ultimate_placeholder_ranger.yml: the same status, the same rule
+# (nothing may be derived from these numbers), and the same reason to exist -- Q needs something to
+# cast in the melee cell's gate (PLAN-melee-class.md section 7, slice M1).
+#
+# The shape: a SELF burst, a ground-pound around the caster, so the Melee Q reads differently from the
+# left-click ray and the right-click arc. It is NOT Sunder and says nothing about Sunder's slam.
+# 25 damage, distinct from both Actives' amounts, so a PLAYERHIT line says it was Q.
+#
+# cooldown_ticks is a multiple of 4. 1200 ticks = 60 s.
+
+id: ultimate_placeholder_melee
+display_name: "<gold>Melee Ultimate (placeholder)</gold>"
+element: fire
+cooldown_ticks: 1200
+cost:
+  resource: mana
+  amount: 60
+cast:
+  type: self
+on_hit:
+  - type: visual
+    visual_id: solar_detonation
+  - type: burst
+    radius: 5.0
+    effects:
+      - type: damage
+        amount: 25
+        element: fire
