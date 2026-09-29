@@ -106,8 +106,12 @@ class ScorchContentInvariantTest {
      * <p><b>23 -> 22 on 2026-09-29, the same slice, before any boot: Smolder removed</b> (Ben: "Let's remove the
      * smolder ability on the blaze kings staff"). Its burst was one site. This test's own discovery reads 22, and
      * the per-file count gives {@code blaze_kings_staff} 1 (control: {@code flint_staff} 1).
+     *
+     * <p><b>22 -> 21 on 2026-09-29, still before any row was read: the staff left LEGACY-A.</b> Ben wants a real
+     * fireball in straight flight on right-click, which needs engine work, so the staff moves to LEGACY-B (the seat).
+     * This test's own discovery reads 21, M1's figure: LEGACY-A now adds no fire site ({@code short_bow} is kinetic).
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 22;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 21;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare

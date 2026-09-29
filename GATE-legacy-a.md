@@ -1,13 +1,23 @@
-# GATE — LEGACY-A: the Short Bow and the Blaze King's Staff, ported from cfde822 (content only)
+# GATE — LEGACY-A: the Short Bow, ported from cfde822 (content only)
 
 **Status: NOT RUN.**
 
 *Amended 2026-09-29, BEFORE ANY BOOT, at the seat's instruction: Ben removed Smolder* (*"Let's remove the smolder
-ability on the blaze kings staff"*). **BK3 (Smolder's radius) is deleted, BK1's tooltip prediction loses the Smolder
-block, and R0c was re-read against the change (it does not move).** No row has been read, so no reading is touched.
-The rows below are the amended predictions.
+ability on the blaze kings staff"*). BK3 (Smolder's radius) was deleted, BK1's tooltip lost the Smolder block, and R0c
+was re-read against the change (it did not move).
 
-Every prediction below was written **before** any boot of this branch, and **this file is COMMITTED before the
+*Amended again 2026-09-29, BEFORE ANY ROW WAS READ, at the seat's instruction: THIS SLICE IS NOW THE SHORT BOW ONLY.*
+Ben, having seen the staff in game: *"The Blaze King's Staff is supposed to shoot an actual fire ball not the item, it
+also isn't supposed to be effected by gravity. A straight line. Also the ability should be Right Click not left."*
+That needs engine work (a real fireball body, no gravity, on right-click), so the staff moves to a later slice,
+LEGACY-B. **BK1 and BK2 are deleted, R0b drops the staff's file, and R0c is re-predicted: 14 weapons, not 15.**
+
+**The one boot so far, stated so it is not mistaken for a reading.** The stack was booted once, at `eab57026`
+(CC started it; Ben's LOGIN is in its log, 04:45:07). CC read R0 on it (PASS). Ben gave himself both weapons and issued
+`/stop` at 04:49:34; **no row here was read on it.** Ben's *"Short bow looks good"* afterwards is NOT itemised, so if it
+is recorded at all it goes in as *reported good -- not itemised*, never PASS. That boot's R0 does not carry to the next.
+
+Every prediction below was written **before** any row of this file was read, and **this file is COMMITTED before the
 boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been
 read. **NO BOOT until the seat has diffed this file.** This is the stack top: #168 → #169 → #170 → this. It is
 booted ONCE, and every gate beneath it is read in the same boot.
@@ -16,16 +26,15 @@ booted ONCE, and every gate beneath it is read in the same boot.
 that line appears verbatim after the LOGIN.
 
 ```
-ROWS      9   R0a R0b R0c
+ROWS      7   R0a R0b R0c
               SB1 SB2 SB3 SB4
-              BK1 BK2
          ──
-          9   = 3 R0 + 4 SB + 2 BK     git grep -c '^### R0\|^### SB\|^### BK' <ref> -- GATE-legacy-a.md
+          7   = 3 R0 + 4 SB     git grep -c '^### R0\|^### SB' <ref> -- GATE-legacy-a.md
 ```
 
-**Plan:** `PLAN-legacy-port.md` on `docs/batch-surveys` (`48053ddb`), sections 2.3 and 2.6 and RULINGS: Ben's
-2026-09-29 answers (old numbers are the provisional starting values; acquisition is `/rpg give` only) and the
-seat's L5 (LEGACY-A is these two; Scattershot waits for E6).
+**Plan:** `PLAN-legacy-port.md` on `docs/batch-surveys`, section 2.3 and RULINGS: Ben's 2026-09-29 answers (old
+numbers are the provisional starting values; acquisition is `/rpg give` only), the seat's L5, and Ben's staff
+feedback that moved the staff to LEGACY-B.
 
 ## GAME MODE
 
@@ -34,8 +43,8 @@ creative-divergence register).
 
 ## THE ORDER IN THE ONE BOOT
 
-#168's rows, then `GATE-level.md`, then `GATE-nexus-polish.md`, then **these**. **This slice adds two content files
-and touches no code**, so no earlier row is restated: nothing an earlier row reads is in these two files.
+#168's rows, then `GATE-level.md`, then `GATE-nexus-polish.md`, then **these**. **This slice adds one content file
+and touches no code**, so no earlier row is restated: nothing an earlier row reads is in it.
 
 ## Set-up
 
@@ -45,8 +54,8 @@ and touches no code**, so no earlier row is restated: nothing an earlier row rea
   record the stats head's `Lifetime XP` before this line if the earlier restore has run.
 - **No accessories and no armour**, so no class damage or crit gear is in play.
 - **`/rpg mobtrace`** ON (the reply names PLAYERHIT).
-- **`/rpg give short_bow`** and **`/rpg give blaze_kings_staff`**. **For each, in hand: `/rpg gearscore set 100`**,
-  so every figure below is the authored one (score 100 scales nothing).
+- **`/rpg give short_bow`**; with it in hand, **`/rpg gearscore set 100`**, so every figure below is the authored one
+  (score 100 scales nothing).
 - **The test zombie is #168's** (its section *THE TEST ZOMBIE*): the four commands, `NoAI:1b`, a fresh one per row.
   **A line with `crit=true` is not comparable: re-fire.**
 
@@ -60,17 +69,17 @@ and touches no code**, so no earlier row is restated: nothing an earlier row rea
 |---|---|---|
 | `[Rpg] Build: <sha>`, this PR's head, shortened. Not `-dirty`, not `unknown`, not #170's, #169's or #168's head | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
 
-### R0b — the jar carries both files and the three slices beneath
+### R0b — the jar carries the bow and the three slices beneath, and not the staff
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: `content/weapons/short_bow.yml`, `content/weapons/blaze_kings_staff.yml`, #170's `menu/NexusScreens`, #169's `menu/LevelMenu`, #168's `combat/TracedHit`. ABSENT: the control | `GATE-level.md` R0b's scan, with these five entries | |
+| PRESENT: `content/weapons/short_bow.yml`, #170's `menu/NexusScreens`, #169's `menu/LevelMenu`, #168's `combat/TracedHit`. ABSENT: the control, **and `content/weapons/blaze_kings_staff.yml`** (removed; a stale `run/` content folder could still hold a copy, which is why the boot uses `--refresh-content`) | `GATE-level.md` R0b's scan, with these six entries | |
 
-### R0c — two weapons more, and nothing else moved
+### R0c — one weapon more, and nothing else moved
 
 | prediction | instrument | READING |
 |---|---|---|
-| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **15 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against #170's prediction: **weapons 13 → 15**, every other count unchanged (neither file adds a visual). **Unchanged by the Smolder removal** (re-read 2026-09-29): a trigger is not a loaded count, and the staff is still one weapon. No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
+| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **14 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against #170's prediction: **weapons 13 → 14**, every other count unchanged (the bow adds no visual). **Re-predicted 2026-09-29 when the staff left** (it was 15). No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
 
 ---
 
@@ -102,25 +111,6 @@ and touches no code**, so no earlier row is restated: nothing an earlier row rea
 
 ---
 
-## THE BLAZE KING'S STAFF (cfde822 `StaffListener`; PLAN-legacy-port.md 2.6)
-
-### BK1 — the tooltip, and it does not stack (SURVIVAL) — witness: Ben
-
-| prediction | READING |
-|---|---|
-| Hover the staff (score set to 100). The golden rendering: **`Fire`**, blank, **`Fireball  Left-Click`**, `Throws a burning charge.`, **`Fire Damage: 30`**, **`Cooldown: 0.4s \| Mana Cost: 8`**, blank, the two flavour lines, blank, **`Legendary Magic Weapon`**. A second `/rpg give blaze_kings_staff` lands in a **separate slot** (a vanilla blaze rod stacks; the mint caps ours at 1) | |
-
-### BK2 — the Fireball: 30 fire, on a left-click (SURVIVAL) — witness: PLAYERHIT line
-
-| prediction | READING |
-|---|---|
-| `/rpg mana refill`. Zombie offset `~5 ~ ~0`, aim at it, **left-click**: a **fire charge** flies, and **`PLAYERHIT … source=blaze_kings_staff/left_click … element=fire sent=30.000 crit=false triggerScore=100`**. The zombie then burns (Scorch, from `fire.yml`) | |
-
-**No right-click row: the staff has none.** Smolder was removed by Ben before any boot (the Status note), which also
-makes Q-P5 (a caster-centred burst hitting players) moot for this item.
-
----
-
 ## LAST STEP — PUT BEN'S XP BACK
 
 `/rpg playerxp set @s <the number recorded> xp`.
@@ -129,8 +119,7 @@ makes Q-P5 (a caster-centred burst hitting players) moot for this item.
 
 ## NO MUTATIONS
 
-This slice is two content files and the three test edits content moves: `KNOWN_FIRE_DAMAGE_SITES` 21 → 22 (the
-staff's Fireball; it read 23 until Smolder's burst was removed, and the test's own discovery then read 22),
-`KNOWN_RANGER_WEAPONS` 6 → 7, the test's own list; and `golden-lore.txt` 92 → 94 renderings, regenerated: the two
-new blocks plus the footer line, then Smolder's five lines out of the staff's block and nothing else. There is no new
-code for a mutation to reach. The loaders and the invariants that read these files are the existing suite's.
+This slice is one content file and the test edits content moves. **Net against #170, `KNOWN_FIRE_DAMAGE_SITES` does
+not move** (21: it went to 23 with the staff, 22 when Smolder left, and back to 21 when the staff left; each step read
+from the test's own discovery). `KNOWN_RANGER_WEAPONS` 6 → 7, the test's own list. `golden-lore.txt` 92 → 93
+renderings: the short bow's block and the footer. There is no new code for a mutation to reach.
