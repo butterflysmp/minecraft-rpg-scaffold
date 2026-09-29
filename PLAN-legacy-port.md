@@ -110,6 +110,16 @@ Goldrot Goon. We'll talk more about this later."
   only) → later slices. Each slice has its own PR and gate, and each R0c predicts against the slice below it.
 - **L6.** Nothing is built until Ben answers his questions for that slice.
 
+### Ben, 2026-09-29, VERBATIM: Smolder
+
+```
+  Let's remove the smolder ability on the blaze kings staff
+```
+
+**THE SEAT'S READING (the seat's, not Ben's):** the Blaze King's Staff keeps its left-click Fireball only; its
+right-click Smolder trigger is deleted (#171, `eab57026`). **Q-P5 is moot for this item**, and stays open for the
+Withered Falchion's bomb. §2.6's Smolder rows stay as the record of what cfde822 did.
+
 ## 1. WHAT I READ
 
 **In this repo, at `2d60e9a3`:**
@@ -752,7 +762,8 @@ RULINGS, verbatim, as the pick above does.*
    - (§6 F2.)
 - **Q-P4. How is each weapon obtained?** A recipe (which shape?), or `/rpg give` only until loot exists? (§6 F11.)
 - **Q-P5. Should Smolder and the Falchion bomb hit other players?** Every burst does today. cfde822 skipped party
-   members. (§6 F6.)
+   members. (§6 F6.) **MOOT FOR SMOLDER, 2026-09-29: Ben removed it** (RULINGS). **Still OPEN for the Withered
+   Falchion's bomb.**
 - **Q-P6. Order in the stack:** the base is ruled (stacked on #168, §7.3). Where does this thread sit relative to the
    Nexus-polish and level-bonus slices? If the batch authors fire and another slice does too, the lower one owns the
    first recount of `KNOWN_FIRE_DAMAGE_SITES`.
