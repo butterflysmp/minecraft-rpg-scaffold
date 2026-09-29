@@ -1,6 +1,41 @@
 # GATE — Melee M1: the Fire Melee cell, all placeholders, and PLAYERHIT
 
-**Status: NOT RUN.** *Amended 2026-09-29, before any boot, at the seat's request (A-E):*
+**Status: R0 PASS; MC rows NOT READ (Ben ran no rows); NOT approved to merge.**
+Counts: 3 PASS (R0a-c), 0 FAIL, 0 not itemised, 16 NOT READ (MC1-MC10, MC12-MC17).
+
+**The boot, 2026-09-28, on `9ee59a2e`:**
+- **It was Ben's.** He ran `dev-server.sh --refresh-content` from his own Git Bash window, and the server started at
+  22:25:36. Process chain: `java` → `bash.exe --login -i …\scripts\dev-server.sh --refresh-content`, started 22:25:17.
+- **CC's own boot of the same tip ran at the same moment in the same working tree, and FAILED.** `maven-jar-plugin`
+  reported `Error assembling JAR: …\core\target\classes\…\RerouteDamagePrice.class`, because Ben's `clean package`
+  cleared `target/` mid-run. It deployed nothing and started no server. A core-only rerun afterwards packaged
+  cleanly. The tree was checked clean afterwards: `git status --porcelain` and `git stash list` empty, HEAD
+  `9ee59a2e`, `git diff --quiet HEAD` true. **The one-booter rule that follows is in PLAN-melee-class.md §6.5.**
+- **R0 was read by CC on that server** (the jar scan while it ran, the log lines as quoted in each row). The seat
+  ruled it this gate's R0.
+- **Ben's LOGIN, and everything after it, verbatim.** Ben then declined further testing.
+  ```
+  [22:26:17] [User Authenticator #0/INFO]: UUID of player BaronVonYeetus is b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5
+  [22:26:18] [Server thread/INFO]: BaronVonYeetus joined the game
+  [22:26:18] [Server thread/INFO]: BaronVonYeetus[/192.168.68.94:52724] logged in with entity id 61 at ([minecraft:overworld]-94.6897295799853, 63.0, 2.391039596178532)
+  [22:26:24] [Server thread/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, …]
+  [22:27:35] [Server thread/INFO]: BaronVonYeetus issued server command: /rpg mana refill
+  ```
+  There is no `/rpg mobtrace`, no staging command, no MOBSEED and no PLAYERHIT line. The log did not change from
+  22:27:35 to at least 22:45:51. **Every MC row is NOT READ, and each is carried in PLAN-melee-class.md §6.5.**
+- **The stop:** Ben typed `stop` in his console. The log reads:
+  - `[22:52:45] [Server thread/INFO]: Stopping the server`
+  - `[Rpg] Disabling Rpg v0.1.0-SNAPSHOT`
+  - `BaronVonYeetus lost connection: Server closed`
+  - every world through `ThreadedAnvilChunkStorage: All dimensions are saved`
+  - `All RegionFile I/O tasks to complete`
+
+  Afterwards **zero `java.exe`** were running. The whole log holds one `issued server command` line, the mana refill.
+
+**#168 stays OPEN.** It needs a later boot that reads R0 + MC1, MC2 and MC3 before the seat approves it. M2 does
+not start until it merges.
+
+(Before the boot, the status line read:) **Status: NOT RUN.** *Amended 2026-09-29, before any boot, at the seat's request (A-E):*
 - a fresh adult zombie per PLAYERHIT row, by `/summon` with NBT (read from the jar);
 - in-game selector commands, and no console or UUIDs;
 - the gives and the class slot;
@@ -115,13 +150,13 @@ pre-Defense, a fresh adult zombie is equivalent to the old one for every compari
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, the PR's head as `gh pr view <n> --json headRefOid` prints it, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, the PR's head as `gh pr view <n> --json headRefOid` prints it, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **PASS.** `[22:25:42] [Server thread/INFO]: [Rpg] Build: 9ee59a2e`, a bare hash, equal to the pushed head (`9ee59a2eb672…` on `git ls-remote`). Ben's boot (see Status) |
 
 ### R0b — the jar carries the trace and the cell
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: core `TracedHit`, `content/builds/melee_fire.yml` and `content/abilities/active_placeholder_melee.yml`. ABSENT: the control. All three are new on this branch, so master's jar reads ABSENT for them | the scan below | |
+| PRESENT: core `TracedHit`, `content/builds/melee_fire.yml` and `content/abilities/active_placeholder_melee.yml`. ABSENT: the control. All three are new on this branch, so master's jar reads ABSENT for them | the scan below | **PASS.** 817 entries: `PRESENT` TracedHit.class; `PRESENT` content/builds/melee_fire.yml; `PRESENT` content/abilities/active_placeholder_melee.yml; `ABSENT` NoSuchClassControl.class (the control). Read from `run\plugins\rpg-0.1.0-SNAPSHOT.jar` while Ben's server ran |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -139,7 +174,7 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 13 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against F20's reading on `002352cb`: abilities 8 → 11, pools 2 → 3, aspects 4 → 6, every other count unchanged. **No** `Refusing`, `Skipping`, `SEVERE` or exception. The known WARNs are `volley_stone`'s 27-tick cooldown and its summary line | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
+| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 13 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against F20's reading on `002352cb`: abilities 8 → 11, pools 2 → 3, aspects 4 → 6, every other count unchanged. **No** `Refusing`, `Skipping`, `SEVERE` or exception. The known WARNs are `volley_stone`'s 27-tick cooldown and its summary line | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | **PASS.** `[22:25:42] [Server thread/INFO]: [Rpg] Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 13 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. No `Refusing`, `Skipping`, `SEVERE` or exception; the only content WARNs are `volley_stone`'s pair. `--refresh-content` ran: every `run/plugins/Rpg/content/builds/*.yml` was rewritten at 22:25:42 |
 
 ---
 
@@ -149,55 +184,55 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| The Build screen's CLASS options read **Mage, Melee, Ranger**, in that order. Picking **Melee** offers ELEMENT **Fire** only, and the cell's name reads **Fire Melee** in gold | |
+| The Build screen's CLASS options read **Mage, Melee, Ranger**, in that order. Picking **Melee** offers ELEMENT **Fire** only, and the cell's name reads **Fire Melee** in gold | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC2 — the default loadout (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| A profile's first pick of Fire Melee shows **Q = Melee Ultimate (placeholder)**, **Left = Melee Thrust (placeholder)**, **Right = Melee Active (placeholder)** | |
+| A profile's first pick of Fire Melee shows **Q = Melee Ultimate (placeholder)**, **Left = Melee Thrust (placeholder)**, **Right = Melee Active (placeholder)** | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC3 — the stone's three inputs cast the three abilities (SURVIVAL) — witness: PLAYERHIT lines
 
 | prediction | READING |
 |---|---|
-| **Staging:** the four zombie commands with offset **`~3 ~ ~0`** (`/summon zombie ~3 ~ ~0 …`): 3.0 blocks straight ahead. Ben is left facing +X at pitch 0, which is level aim at it; do not move the mouse. **Left:** one line `source=active_placeholder_melee_thrust … sent=7.000 crit=false triggerScore=100`. **Right:** two lines, `source=active_placeholder_melee … sent=9.000` then `… sent=5.000`, same target. **Q:** one line `source=ultimate_placeholder_melee … sent=25.000`. The stone never leaves its slot (Ben) | |
+| **Staging:** the four zombie commands with offset **`~3 ~ ~0`** (`/summon zombie ~3 ~ ~0 …`): 3.0 blocks straight ahead. Ben is left facing +X at pitch 0, which is level aim at it; do not move the mouse. **Left:** one line `source=active_placeholder_melee_thrust … sent=7.000 crit=false triggerScore=100`. **Right:** two lines, `source=active_placeholder_melee … sent=9.000` then `… sent=5.000`, same target. **Q:** one line `source=ultimate_placeholder_melee … sent=25.000`. The stone never leaves its slot (Ben) | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC4 — no regression in the other two cells (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| Fire Ranger's default reads Q = Ranger Ultimate (placeholder), Left = Recall, Right = Solar Lance. Fire Mage's reads Q = Mage Ultimate (placeholder), Left = Ember Step, Right = Solar Grenade. Neither offers any Melee ability | |
+| Fire Ranger's default reads Q = Ranger Ultimate (placeholder), Left = Recall, Right = Solar Lance. Fire Mage's reads Q = Mage Ultimate (placeholder), Left = Ember Step, Right = Solar Grenade. Neither offers any Melee ability | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC5 — Q with the sword in hand drops it (SURVIVAL) — witness: Ben, plus the log
 
 | prediction | READING |
 |---|---|
-| As Fire Melee with `emberblade` in the main hand, Q: **the sword is dropped** and **no PLAYERHIT line** follows. This is **ruled behaviour** (Q5, O1: *"yes you can swap between them"*), recorded, not a defect | |
+| As Fire Melee with `emberblade` in the main hand, Q: **the sword is dropped** and **no PLAYERHIT line** follows. This is **ruled behaviour** (Q5, O1: *"yes you can swap between them"*), recorded, not a defect | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC6 — swapping from the stone resets the attack charge (SURVIVAL) — witness: PLAYERHIT lines
 
 | prediction | READING |
 |---|---|
-| **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level (as left by the `tp`). Hold `emberblade`, wait 2 s, swing: `source=emberblade/left_click … sent=S` (a full charge). Swap to the stone and back, and swing **at once**: `sent=` **below S** (§5.3, read from the jar). S itself is not predicted: it is the minted blade's score-scaled stat. The sweep is not read here | |
+| **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level (as left by the `tp`). Hold `emberblade`, wait 2 s, swing: `source=emberblade/left_click … sent=S` (a full charge). Swap to the stone and back, and swing **at once**: `sent=` **below S** (§5.3, read from the jar). S itself is not predicted: it is the minted blade's score-scaled stat. The sweep is not read here | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC7 — the fragment and aspect pickers (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| Fire Melee's **fragment** picker offers exactly **Vigor, Focus, Keen, Mending and Ward** (in their own colours), and **not Ember Cache**. Its **aspect** picker offers exactly **Keen Arc** and **Restless Quake** (added by the seat, 2026-09-29, before any boot) | |
+| Fire Melee's **fragment** picker offers exactly **Vigor, Focus, Keen, Mending and Ward** (in their own colours), and **not Ember Cache**. Its **aspect** picker offers exactly **Keen Arc** and **Restless Quake** (added by the seat, 2026-09-29, before any boot) | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC8 — the Brawler's Gauntlet is live for Melee and only for Melee (SURVIVAL) — witness: PLAYERHIT lines
 
 | prediction | READING |
 |---|---|
-| **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level, and **replace the zombie (the same four commands) whenever its nameplate is below half**: a fresh adult is equivalent, since `sent=` is pre-Defense. Hold `emberblade`, 2 s between swings so every swing is a full charge. The Gauntlet goes in and out by the Equipment screen (set-up), and the cell changes by star → Build. **(1)** No Gauntlet: `sent=S`. **(2)** Gauntlet in the class slot, wait 1 s (the 5-tick reconcile): **`sent=S+3.000`**. **(3)** Switch the cell to Fire Ranger with the Gauntlet still in the slot: **`sent=S`** (inert). **(4)** Back to Fire Melee: **`sent=S+3.000`**. `class_damage` is a flat addend after the percentages, so the difference is exactly 3 at full charge (`HitDamage.hitBase`) | |
+| **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level, and **replace the zombie (the same four commands) whenever its nameplate is below half**: a fresh adult is equivalent, since `sent=` is pre-Defense. Hold `emberblade`, 2 s between swings so every swing is a full charge. The Gauntlet goes in and out by the Equipment screen (set-up), and the cell changes by star → Build. **(1)** No Gauntlet: `sent=S`. **(2)** Gauntlet in the class slot, wait 1 s (the 5-tick reconcile): **`sent=S+3.000`**. **(3)** Switch the cell to Fire Ranger with the Gauntlet still in the slot: **`sent=S`** (inert). **(4)** Back to Fire Melee: **`sent=S+3.000`**. `class_damage` is a flat addend after the percentages, so the difference is exactly 3 at full charge (`HitDamage.hitBase`) | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC9 — a stone cast is gear-blind: CONFIRMATION OF RULED BEHAVIOUR (SURVIVAL) — witness: PLAYERHIT lines
 
 | prediction | READING |
 |---|---|
-| **Ben's Q6: Actives are gear-blind BY DESIGN.** **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level. Replace the zombie between the two halves if its nameplate is below half: a fresh adult is equivalent, since `sent=` is pre-Defense. Stone in hand, the right-click arc. **Without the Gauntlet:** `sent=9.000` and `sent=5.000`, both `triggerScore=100`. **With the Gauntlet in the class slot** (wait 1 s): **the identical two lines**, `sent=9.000` and `sent=5.000`, `triggerScore=100`. Any difference is a FAIL | |
+| **Ben's Q6: Actives are gear-blind BY DESIGN.** **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level. Replace the zombie between the two halves if its nameplate is below half: a fresh adult is equivalent, since `sent=` is pre-Defense. Stone in hand, the right-click arc. **Without the Gauntlet:** `sent=9.000` and `sent=5.000`, both `triggerScore=100`. **With the Gauntlet in the class slot** (wait 1 s): **the identical two lines**, `sent=9.000` and `sent=5.000`, `triggerScore=100`. Any difference is a FAIL | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ---
 
@@ -212,25 +247,25 @@ leaves it at exactly 0.
 
 | prediction | READING |
 |---|---|
-| **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level. d = 2.0 ± 0.1, right-click: **two lines, `source=active_placeholder_melee … sent=9.000 …` then `… sent=5.000 …`**, the same target uuid, `triggerScore=100`. Popup (secondary): two numbers | |
+| **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level. d = 2.0 ± 0.1, right-click: **two lines, `source=active_placeholder_melee … sent=9.000 …` then `… sent=5.000 …`**, the same target uuid, `triggerScore=100`. Popup (secondary): two numbers | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC12 — a fire hit accrues Scorch; the burn is not traced (SURVIVAL) — witness: `/data get … Fire`, plus the log
 
 | prediction | READING |
 |---|---|
-| **Staging:** the four zombie commands with offset **`~3 ~ ~0`**, aim level. CONTROL: `/data get entity @e[tag=t,limit=1] Fire` reads **0 or below** (not burning; `-1s` is expected, a vanilla default *not read from the jar*; this is why the set-up makes it night). One left-click thrust: the line `sent=7.000`, then within 1 s **`Fire` reads a positive value** (the accrued Scorch lights it, `BukkitCombatant.applyDamage`). **The burn ticks that follow add NO PLAYERHIT line**: only direct ability and weapon hits are traced (`TracedHit`) | |
+| **Staging:** the four zombie commands with offset **`~3 ~ ~0`**, aim level. CONTROL: `/data get entity @e[tag=t,limit=1] Fire` reads **0 or below** (not burning; `-1s` is expected, a vanilla default *not read from the jar*; this is why the set-up makes it night). One left-click thrust: the line `sent=7.000`, then within 1 s **`Fire` reads a positive value** (the accrued Scorch lights it, `BukkitCombatant.applyDamage`). **The burn ticks that follow add NO PLAYERHIT line**: only direct ability and weapon hits are traced (`TracedHit`) | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC13 — point-blank: the direct hit misses, only the burst lands (SURVIVAL) — witness: PLAYERHIT lines
 
 | prediction | READING |
 |---|---|
-| **Staging:** the four zombie commands with offset **`~0.6 ~ ~0`**: the two hitboxes (half-width 0.3 each) just touch. Collision may nudge either body, so read d **after** the summon and before the cast. **d below 0.935**, aim level (pitch 0 from the `tp`). Right-click: **exactly ONE line, `source=active_placeholder_melee … sent=5.000`**, and **no `sent=9.000`**. At d below ~0.94 the eye-to-feet cone misses (§6.3b, executed in `jshell`). The miss burst centres 3.5 ahead at eye height, and its 3.5 box still reaches the zombie. **If the read d is 0.935 or more, the row is VOID: re-stage** | |
+| **Staging:** the four zombie commands with offset **`~0.6 ~ ~0`**: the two hitboxes (half-width 0.3 each) just touch. Collision may nudge either body, so read d **after** the summon and before the cast. **d below 0.935**, aim level (pitch 0 from the `tp`). Right-click: **exactly ONE line, `source=active_placeholder_melee … sent=5.000`**, and **no `sent=9.000`**. At d below ~0.94 the eye-to-feet cone misses (§6.3b, executed in `jshell`). The miss burst centres 3.5 ahead at eye height, and its 3.5 box still reaches the zombie. **If the read d is 0.935 or more, the row is VOID: re-stage** | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC14 — diagonal at 4.5: the reach is a box (F2) (SURVIVAL) — witness: PLAYERHIT lines
 
 | prediction | READING |
 |---|---|
-| **Staging:** the four zombie commands with offset **`~3.2 ~ ~3.2`** (d = 4.53, **beyond `reach` 3.5**). Then aim AT the zombie's feet: **`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] feet`**. That keeps Ben's position and turns him so his look passes through its feet; the jar's `TeleportCommand` carries `facing`, `entity`, `facingEntity` and `facingAnchor`. Do not move the mouse before the right-click. **Two lines, `sent=9.000` then `sent=5.000`**: the direct hit connects, because `combatantsNear` is a hitbox-intersecting cube (F2). **One line, `sent=5.000` only, would mean a sphere**, and the finding would be wrong. F2 stays a finding either way (seat ruling 6): no fix | |
+| **Staging:** the four zombie commands with offset **`~3.2 ~ ~3.2`** (d = 4.53, **beyond `reach` 3.5**). Then aim AT the zombie's feet: **`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] feet`**. That keeps Ben's position and turns him so his look passes through its feet; the jar's `TeleportCommand` carries `facing`, `entity`, `facingEntity` and `facingAnchor`. Do not move the mouse before the right-click. **Two lines, `sent=9.000` then `sent=5.000`**: the direct hit connects, because `combatantsNear` is a hitbox-intersecting cube (F2). **One line, `sent=5.000` only, would mean a sphere**, and the finding would be wrong. F2 stays a finding either way (seat ruling 6): no fix | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ---
 
@@ -240,16 +275,16 @@ leaves it at exactly 0.
 
 | prediction | READING |
 |---|---|
-| **CREATIVE.** **Staging:** the four zombie commands with offset **`~3 ~ ~0`**. **Hotbar Q** with the stone: `source=ultimate_placeholder_melee … sent=25.000`. **Inventory Q** (the stone dragged in the open inventory) is refused and casts nothing, with no line. This is ST12's shape re-read for a Melee cell | |
+| **CREATIVE.** **Staging:** the four zombie commands with offset **`~3 ~ ~0`**. **Hotbar Q** with the stone: `source=ultimate_placeholder_melee … sent=25.000`. **Inventory Q** (the stone dragged in the open inventory) is refused and casts nothing, with no line. This is ST12's shape re-read for a Melee cell | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC16 — the trace toggles off and back on (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level, with the trace still ON so its MOBSEED line is read. Then `/rpg mobtrace` again: `Mob trace OFF (…)`. A right-click arc on the zombie then adds **zero** PLAYERHIT lines. `/rpg mobtrace` once more: `Mob trace ON (…)`, and the next arc logs its two lines | |
+| **Staging:** the four zombie commands with offset **`~2 ~ ~0`**, aim level, with the trace still ON so its MOBSEED line is read. Then `/rpg mobtrace` again: `Mob trace OFF (…)`. A right-click arc on the zombie then adds **zero** PLAYERHIT lines. `/rpg mobtrace` once more: `Mob trace ON (…)`, and the next arc logs its two lines | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) |
 
 ### MC17 — a hit on a player is not traced (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| **Only if a second player is on the server; otherwise NOT READ, and said so.** A thrust that hits the other player adds **no** PLAYERHIT line (the line is player-to-mob, `PlayerHitTraceTest.aPlayerTargetIsNotTraced`) | |
+| **Only if a second player is on the server; otherwise NOT READ, and said so.** A thrust that hits the other player adds **no** PLAYERHIT line (the line is player-to-mob, `PlayerHitTraceTest.aPlayerTargetIsNotTraced`) | **NOT READ.** No second player joined, and Ben ran no rows (Status) |

@@ -365,6 +365,34 @@ expression. No boot has seen it** (MC13).
 - **Not covered anywhere:** the box (F2), point-blank (§6.3b), the miss burst's eye-height centre, void_slash's
   `knockback 0.6` on a live mob, and a Melee cast from the STONE (it has never been in a loadout).
 
+### 6.5 CARRIED GATE ROWS, AND A PROCESS FINDING (M1's boot, 2026-09-28)
+
+**Carried: every MC row of `GATE-melee-cell.md`, NOT READ.** The boot of `9ee59a2e` read R0a-c (PASS). Ben logged in and
+ran no rows. The rows are carried unchanged, with predictions word for word:
+
+- **MC1, MC2, MC4, MC7:** the Build screen, the loadouts and the pickers (sight).
+- **MC3:** the stone's three inputs (the PLAYERHIT lines 7 / 9 + 5 / 25), plus its slot half (sight).
+- **MC5:** Q drops the sword (sight), and its "no PLAYERHIT" half (log).
+- **MC6:** the charge reset (log).
+- **MC8:** the Gauntlet's exact +3.000 (log).
+- **MC9:** gear-blind stone casts (log).
+- **MC10, MC13, MC14:** the arc's geometry (log). MC13 also needs its d < 0.935 precondition read.
+- **MC12:** the Fire read (sight), and "no PLAYERHIT from the burn" (log).
+- **MC15:** creative Q; hotbar half (log), inventory half (sight).
+- **MC16:** the trace toggle (log).
+- **MC17:** needs a second player.
+
+**#168 is not approved to merge until a boot reads at least R0 + MC1, MC2 and MC3** (the seat, 2026-09-28).
+
+**PROCESS FINDING: ONE BOOTER.** Two builds in one working tree at once corrupt `target/`.
+- **What happened:** Ben's `dev-server.sh --refresh-content` (build started 22:25:17) and CC's run of the same script
+  overlapped. Ben's `clean package` cleared `target/` while CC's was assembling the core jar. CC's build failed with
+  `Error assembling JAR: …RerouteDamagePrice.class` and deployed nothing. Ben's succeeded and booted.
+- **Nothing was corrupted this time,** but the collision is silent when it goes the other way. A jar assembled
+  after a `clean` removed some of its classes would deploy with classes missing. Only R0b's class scan would catch
+  it.
+- **Rule (the seat, 2026-09-28): only one of Ben or CC boots, and says so in chat first.**
+
 ---
 
 ## 7. PLACEHOLDERS VS DESIGN
