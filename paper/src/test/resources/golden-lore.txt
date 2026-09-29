@@ -7,11 +7,6 @@
    "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["30" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Cooldown: 0.4s | Mana Cost: 8" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
-   "Smolder" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "Everything near you starts to burn." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["1" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Cooldown: 20.0s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
    "The Blaze King kept it lit." color=#AAAAAA O=. B=. S=. U=. I=T
    "It has not gone out since." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
