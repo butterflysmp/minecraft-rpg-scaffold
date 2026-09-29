@@ -2,6 +2,11 @@
 
 **Status: NOT RUN.**
 
+*Amended 2026-09-29, BEFORE ANY BOOT, at the seat's instruction: Ben removed Smolder* (*"Let's remove the smolder
+ability on the blaze kings staff"*). **BK3 (Smolder's radius) is deleted, BK1's tooltip prediction loses the Smolder
+block, and R0c was re-read against the change (it does not move).** No row has been read, so no reading is touched.
+The rows below are the amended predictions.
+
 Every prediction below was written **before** any boot of this branch, and **this file is COMMITTED before the
 boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been
 read. **NO BOOT until the seat has diffed this file.** This is the stack top: #168 → #169 → #170 → this. It is
@@ -11,11 +16,11 @@ booted ONCE, and every gate beneath it is read in the same boot.
 that line appears verbatim after the LOGIN.
 
 ```
-ROWS     10   R0a R0b R0c
+ROWS      9   R0a R0b R0c
               SB1 SB2 SB3 SB4
-              BK1 BK2 BK3
+              BK1 BK2
          ──
-         10   = 3 R0 + 4 SB + 3 BK     git grep -c '^### R0\|^### SB\|^### BK' <ref> -- GATE-legacy-a.md
+          9   = 3 R0 + 4 SB + 2 BK     git grep -c '^### R0\|^### SB\|^### BK' <ref> -- GATE-legacy-a.md
 ```
 
 **Plan:** `PLAN-legacy-port.md` on `docs/batch-surveys` (`48053ddb`), sections 2.3 and 2.6 and RULINGS: Ben's
@@ -65,7 +70,7 @@ and touches no code**, so no earlier row is restated: nothing an earlier row rea
 
 | prediction | instrument | READING |
 |---|---|---|
-| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **15 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against #170's prediction: **weapons 13 → 15**, every other count unchanged (neither file adds a visual). No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
+| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **15 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against #170's prediction: **weapons 13 → 15**, every other count unchanged (neither file adds a visual). **Unchanged by the Smolder removal** (re-read 2026-09-29): a trigger is not a loaded count, and the staff is still one weapon. No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
 
 ---
 
@@ -103,7 +108,7 @@ and touches no code**, so no earlier row is restated: nothing an earlier row rea
 
 | prediction | READING |
 |---|---|
-| Hover the staff (score set to 100). The golden rendering: **`Fire`**, blank, **`Fireball  Left-Click`**, `Throws a burning charge.`, **`Fire Damage: 30`**, **`Cooldown: 0.4s \| Mana Cost: 8`**, blank, **`Smolder  Right-Click`**, `Everything near you starts to burn.`, **`Fire Damage: 1`**, **`Cooldown: 20.0s \| Mana Cost: 40`**, blank, the two flavour lines, blank, **`Legendary Magic Weapon`**. A second `/rpg give blaze_kings_staff` lands in a **separate slot** (a vanilla blaze rod stacks; the mint caps ours at 1) | |
+| Hover the staff (score set to 100). The golden rendering: **`Fire`**, blank, **`Fireball  Left-Click`**, `Throws a burning charge.`, **`Fire Damage: 30`**, **`Cooldown: 0.4s \| Mana Cost: 8`**, blank, the two flavour lines, blank, **`Legendary Magic Weapon`**. A second `/rpg give blaze_kings_staff` lands in a **separate slot** (a vanilla blaze rod stacks; the mint caps ours at 1) | |
 
 ### BK2 — the Fireball: 30 fire, on a left-click (SURVIVAL) — witness: PLAYERHIT line
 
@@ -111,14 +116,8 @@ and touches no code**, so no earlier row is restated: nothing an earlier row rea
 |---|---|
 | `/rpg mana refill`. Zombie offset `~5 ~ ~0`, aim at it, **left-click**: a **fire charge** flies, and **`PLAYERHIT … source=blaze_kings_staff/left_click … element=fire sent=30.000 crit=false triggerScore=100`**. The zombie then burns (Scorch, from `fire.yml`) | |
 
-### BK3 — Smolder: 1 fire to everything within 10, nothing beyond (SURVIVAL) — witness: PLAYERHIT lines
-
-| prediction | READING |
-|---|---|
-| `/kill @e[tag=t]`, then two zombies: `/summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t"]}` and `/summon zombie ~14 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t"]}` (6 and 14 blocks away). `/rpg mana refill`, **right-click**: **exactly one** `PLAYERHIT … source=blaze_kings_staff/right_click … element=fire sent=1.000 …`, whose target is the zombie at 6; none for the zombie at 14 (radius 10). Ben is not hit (a burst skips its caster). **The burn is small, and that is the carried number** (the file's header): Scorch is capped by a 1-damage hit | |
-
-**Not a row: whether Smolder should hit other players.** It does today, as every caster-centred burst does
-(PLAN-legacy-port.md F6), and cfde822's skipped its party. That is Ben's open **Q-P5**, recorded, not staged here.
+**No right-click row: the staff has none.** Smolder was removed by Ben before any boot (the Status note), which also
+makes Q-P5 (a caster-centred burst hitting players) moot for this item.
 
 ---
 
@@ -130,7 +129,8 @@ and touches no code**, so no earlier row is restated: nothing an earlier row rea
 
 ## NO MUTATIONS
 
-This slice is two content files and the three test edits content moves: `KNOWN_FIRE_DAMAGE_SITES` 21 → 23, recounted
-per file with the test's own pattern; `KNOWN_RANGER_WEAPONS` 6 → 7, the test's own list; and `golden-lore.txt` 92 →
-94 renderings, regenerated, whose diff is the two new blocks plus the footer line and nothing else (+29 / −1). There is
-no new code for a mutation to reach. The loaders and the invariants that read these files are the existing suite's.
+This slice is two content files and the three test edits content moves: `KNOWN_FIRE_DAMAGE_SITES` 21 → 22 (the
+staff's Fireball; it read 23 until Smolder's burst was removed, and the test's own discovery then read 22),
+`KNOWN_RANGER_WEAPONS` 6 → 7, the test's own list; and `golden-lore.txt` 92 → 94 renderings, regenerated: the two
+new blocks plus the footer line, then Smolder's five lines out of the staff's block and nothing else. There is no new
+code for a mutation to reach. The loaders and the invariants that read these files are the existing suite's.
