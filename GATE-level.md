@@ -51,7 +51,11 @@ creative-divergence register, `verification.md`), and #168's rows in the same bo
 - **RECORD BEN'S REAL XP FIRST.** Click the Nexus star and read the stats head's `Lifetime XP` line. Write the number
   down. **The last step of this gate is `/rpg playerxp set @s <that number> xp`**, which puts it back.
 - **`/rpg mobtrace`** (if #168's rows have not already turned it on; the reply says ON or OFF, so toggle until ON).
-- **`/time set 18000`** and **`/gamerule doMobSpawning false`**, as #168's gate sets them.
+- **`/time set 18000`** and **`/gamerule spawn_mobs false`**. **FOR THIS BOOT, `spawn_mobs` REPLACES #168's
+  `/gamerule doMobSpawning false`**, which names no rule in 26.1: the pinned `paper-26.1.2.jar`'s
+  `net.minecraft.world.level.gamerules.GameRules` names it `spawn_mobs`, and `doMobSpawning` occurs 0 times in it
+  (`javap -c -p`, 60 rule names read). The seat's fix, 2026-09-29, instrument only. #168's gate carries a dated note
+  saying the same (`d399aed4`).
 - **Nothing in the ACCESSORY slots, no ARMOUR and no FRAGMENT slotted** for BN1 and BN2, so the sheet's baseline is the bare player. If
   anything is worn, the rows still read (they predict DELTAS against a level-1 baseline read in the same row), but a
   crit baseline that is not a whole percent can round a delta by one point; BN1 says where.
