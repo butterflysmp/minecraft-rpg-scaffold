@@ -75,6 +75,19 @@ public final class MenuIcons {
      * "simplified" away: lore and display names render italic by DEFAULT, so dropping the call
      * leaves the line italic via NOT_SET rather than making it plain. Same note EnchantLore carries.
      */
+    /**
+     * A BUTTON'S OR ITEM'S NAME on a Nexus screen: green (Ben, 2026-09-29: <i>"Green names"</i>, his answer to
+     * "make them stand out"; PLAN-nexus-polish.md section 4.0b, SO1).
+     *
+     * <p><b>Only for names whose colour said nothing.</b> A name whose colour carries a STATE keeps it: a
+     * locked station's dark gray (the lock cue {@code NexusMenu.station} depends on), Close's red, an ON toggle's
+     * green and an OFF one's gray, the anvil face's per-state colours, a level not yet reached. And a content
+     * display name keeps its own MiniMessage colour. One helper, so the colour is one edit if Ben changes it.
+     */
+    public static Component name(String text) {
+        return line(text, NamedTextColor.GREEN);
+    }
+
     public static Component line(String text, NamedTextColor color) {
         return Component.text(text, color).decoration(TextDecoration.ITALIC, false);
     }
@@ -210,7 +223,7 @@ public final class MenuIcons {
      * one screen, meaning different things.
      */
     public static Component backName(String destination) {
-        return line("Back to " + destination, NamedTextColor.GRAY);
+        return name("Back to " + destination);
     }
 
     /**

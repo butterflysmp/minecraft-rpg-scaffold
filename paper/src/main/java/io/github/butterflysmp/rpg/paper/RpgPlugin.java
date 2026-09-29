@@ -31,6 +31,7 @@ import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.command.MenuCommand;
 import io.github.butterflysmp.rpg.paper.command.RpgCommand;
+import io.github.butterflysmp.rpg.paper.command.ScreenCommands;
 import io.github.butterflysmp.rpg.paper.content.AbilityLoader;
 import io.github.butterflysmp.rpg.paper.content.PoolLoader;
 import io.github.butterflysmp.rpg.paper.build.StoneCaster;
@@ -679,6 +680,17 @@ public final class RpgPlugin extends JavaPlugin {
             event.registrar().register(
                     MenuCommand.build(adapters, profiles, weapons, resources, listeners.recipeCatalogue(), shields, armor, tools, vaults),
                     "Open the Nexus hub");
+            // One command per Nexus screen (Ben, 2026-09-29: "Names are good"). Further nodes in THIS
+            // handler, for the reason the /rpg and /menu nodes share it. register() returns the labels it
+            // actually took; they are LOGGED, because what it does when a label collides with another
+            // plugin's is not in the jar's javadoc (PLAN-nexus-polish.md section 9.1) and a boot row reads it.
+            var screenNodes = ScreenCommands.build(adapters, profiles, weapons, resources,
+                    listeners.recipeCatalogue(), shields, armor, tools, vaults);
+            var screens = io.github.butterflysmp.rpg.paper.menu.NexusScreens.Screen.values();
+            for (int i = 0; i < screens.length; i++) {
+                var labels = event.registrar().register(screenNodes.get(i), screens[i].description());
+                getLogger().info("Screen command /" + screens[i].command() + " registered as " + labels);
+            }
         });
     }
 

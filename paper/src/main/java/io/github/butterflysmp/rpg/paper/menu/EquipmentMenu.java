@@ -405,21 +405,21 @@ public final class EquipmentMenu extends Menu {
         getInventory().setItem(EquipmentMenuLayout.CLOSE_SLOT, MenuIcons.close());
         getInventory().setItem(EquipmentMenuLayout.BACK_SLOT, MenuIcons.back(Material.ARROW, "the Nexus"));
         ItemStack armourLabel = MenuIcons.icon(Material.IRON_CHESTPLATE,
-                MenuIcons.line("Armour", NamedTextColor.GRAY), List.of());
+                MenuIcons.name("Armour"), List.of());
         // Hide the chestplate's "+6 Armor" lines on a LABEL. The flag is display only -- the same one
         // ArmorItems.mint uses -- and the modifiers are left alone: ArmorItems' javadoc says why
         // stripping them instead is the banned pattern.
         armourLabel.editMeta(meta -> meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES));
         getInventory().setItem(EquipmentMenuLayout.ARMOR_LABEL_SLOT, armourLabel);
         getInventory().setItem(EquipmentMenuLayout.ACCESSORY_LABEL_SLOT, MenuIcons.icon(Material.ECHO_SHARD,
-                MenuIcons.line("Accessories", NamedTextColor.GRAY), List.of()));
+                MenuIcons.name("Accessories"), List.of()));
 
         EntityEquipment equipment = viewer.getEquipment();
         for (ArmorSlot armor : ArmorSlot.values()) {
             ItemStack worn = equipment.getItem(bukkitSlot(armor));
             getInventory().setItem(EquipmentMenuLayout.slotOf(armor), MenuSafety.isEmpty(worn)
                     ? MenuIcons.icon(Material.GRAY_STAINED_GLASS_PANE,
-                            MenuIcons.line(armorName(armor), NamedTextColor.GRAY),
+                            MenuIcons.name(armorName(armor)),
                             List.of(MenuIcons.line("Empty", NamedTextColor.DARK_GRAY)))
                     : worn.clone());
         }
@@ -476,7 +476,7 @@ public final class EquipmentMenu extends Menu {
                             MenuIcons.line("Choose a class to unlock", NamedTextColor.RED), List.of());
         }
         return MenuIcons.icon(Material.LIGHT_GRAY_STAINED_GLASS_PANE,
-                MenuIcons.line("Universal accessory slot", NamedTextColor.GRAY), List.of());
+                MenuIcons.name("Universal accessory slot"), List.of());
     }
 
     // --- helpers ----------------------------------------------------------------------------------

@@ -914,14 +914,14 @@ public final class NexusVaultMenu extends Menu {
         // one that does nothing silently.
         getInventory().setItem(NexusVaultLayout.PREV_SLOT, page > 0
                 ? MenuIcons.icon(Material.ARROW,
-                        MenuIcons.line("Previous page", NamedTextColor.GRAY),
+                        MenuIcons.name("Previous page"),
                         List.of(MenuIcons.line("Page " + PageMath.displayPage(page - 1),
                                 NamedTextColor.DARK_GRAY)))
                 : MenuIcons.filler());
 
         getInventory().setItem(NexusVaultLayout.NEXT_SLOT, page < VaultShape.PAGE_COUNT - 1
                 ? MenuIcons.icon(Material.ARROW,
-                        MenuIcons.line("Next page", NamedTextColor.GRAY),
+                        MenuIcons.name("Next page"),
                         List.of(MenuIcons.line("Page " + PageMath.displayPage(page + 1),
                                 NamedTextColor.DARK_GRAY)))
                 : MenuIcons.filler());
@@ -941,8 +941,8 @@ public final class NexusVaultMenu extends Menu {
 
         if (!VaultPageGate.unlocked(index, level)) {
             return MenuIcons.icon(Material.GRAY_STAINED_GLASS_PANE,
-                    MenuIcons.line("Page " + shown + " -- locked", NamedTextColor.DARK_GRAY),
-                    List.of(MenuIcons.line("Unlocks at level " + VaultPageGate.unlockLevel(index),
+                    MenuIcons.line("Page " + shown, NamedTextColor.DARK_GRAY),
+                    List.of(MenuIcons.line("Locked -- unlocks at level " + VaultPageGate.unlockLevel(index),
                                     NamedTextColor.DARK_GRAY),
                             MenuIcons.line("You are level " + level + ".",
                                     NamedTextColor.DARK_GRAY)));
@@ -955,7 +955,7 @@ public final class NexusVaultMenu extends Menu {
         }
 
         return MenuIcons.icon(Material.WHITE_STAINED_GLASS_PANE,
-                MenuIcons.line("Page " + shown, NamedTextColor.GRAY),
+                MenuIcons.name("Page " + shown),
                 List.of(MenuIcons.line("Click to open.", NamedTextColor.DARK_GRAY)));
     }
 
@@ -971,8 +971,8 @@ public final class NexusVaultMenu extends Menu {
         opaque.clear();
 
         if (!VaultPageGate.unlocked(page, level)) {
-            paintDeadStorage(Material.GRAY_STAINED_GLASS_PANE, "Locked",
-                    "Unlocks at level " + VaultPageGate.unlockLevel(page));
+            paintDeadStorage(Material.GRAY_STAINED_GLASS_PANE, "Page " + PageMath.displayPage(page),
+                    "Locked -- unlocks at level " + VaultPageGate.unlockLevel(page));
             return;
         }
 
