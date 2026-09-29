@@ -2,6 +2,10 @@
 
 **Status: NOT RUN.**
 
+*Amended 2026-09-29, BEFORE ANY ROW WAS READ: G3 added* (Ben's "also accessible via" line), *and G2's Close note
+records the seat's ruling. The stack was booted once at `eab57026` (R0 read by CC, PASS; Ben gave two items and
+issued `/stop`); no row in this file was read on it, and that boot's R0 does not carry to the next boot.*
+
 Every prediction below was written **before** any boot of this branch, and **this file is COMMITTED before the
 boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been
 read. **NO BOOT until the seat has diffed this file.** The stack boots ONCE, at its top, after NEXUS and LEGACY-A
@@ -11,12 +15,12 @@ are built and diffed (the seat, 2026-09-29).
 that line appears verbatim after the LOGIN.
 
 ```
-ROWS     17   R0a R0b R0c R0d
+ROWS     18   R0a R0b R0c R0d
               D1 D2 D3 D4 D5
-              G1 G2
+              G1 G2 G3
               CM1 CM2 CM3 CM4 CM5 CM6
          ──
-         17   = 4 R0 + 5 D + 2 G + 6 CM     git grep -c '^### R0\|^### D[0-9]\|^### G[0-9]\|^### CM' <ref> -- GATE-nexus-polish.md
+         18   = 4 R0 + 5 D + 3 G + 6 CM     git grep -c '^### R0\|^### D[0-9]\|^### G[0-9]\|^### CM' <ref> -- GATE-nexus-polish.md
 ```
 
 **Plan:** `PLAN-nexus-polish.md` on `docs/batch-surveys` (`48053ddb`): Ben's words (*"Green names"*, *"Names are
@@ -126,7 +130,17 @@ stacks on #168.
 
 **Barriers:** kept for "can't use / locked" and Ben's "nothing here" (NEXT.md, *TWO BARRIERS ON ONE SCREEN*). This
 slice moves only **"Empty this slot"** (a bucket, D2) and **a bad fragment icon's fallback** (`AMETHYST_SHARD`; no
-shipped fragment has a bad icon, so no row). **Close stays a barrier** — flagged to the seat, not decided here.
+shipped fragment has a bad icon, so no row). **Close stays a barrier** — ruled by the seat, 2026-09-29: Ben's
+2026-09-03 "nothing here" ruling governs, and N2 yields to it.
+
+### G3 — every button with a command says so, last, in gray (SURVIVAL) — witness: Ben
+
+**Added 2026-09-29, before any boot of this file's rows** (Ben: *"now we need a line in the lore that says "also
+accessible via" and the slash command"*).
+
+| prediction | READING |
+|---|---|
+| At level 5, open the star. The **LAST** lore line, in **gray**, of each button: **Build** `Also accessible via /build`; **Equipment** `/gear`; **Settings** `/settings`; **Crafting** (open) `/craft`; **Anvil**, **Enchanting**, **Grindstone** and **Vault** (all LOCKED at 5, below their three locked lines) `/anvil`, `/enchanting`, `/grindstone`, `/vault`; the **stats head** `Also accessible via /level`, below `Click for your level, its bonuses and unlocks.` Then Crafting → the **Recipe Book** button's last line: `Also accessible via /recipes` | |
 
 ---
 
@@ -187,3 +201,4 @@ Same instrument as `GATE-level.md`'s: a pristine copy, a marker grep and a line 
 | `MUTSCREEN-GATE` | `/vault` loses its gate | 1 / 1 | 1: `ScreenPermissionsTest.eachCommandCarriesItsHubButtonsLevelGate` |
 | `MUTSCREEN-YML` | `rpg.command.anvil` → `default: op` | 4 / 1 (three other `default: op` nodes exist; the delta is the reading) | 1: `ScreenPermissionsTest.everyScreenCommandsNodeIsDeclaredForEveryone` |
 | `MUTBROWSER-HUB` | the browser's Back hands crafting `null` | 1 / 1 | **NONE** — D1 is its only witness |
+| `MUTALSO-SETTINGS` | the Settings button's also-via line → a blank line (added with G3) | original gone 0 / 1 | 1: `ScreenPermissionsTest.everyScreensButtonCarriesItsAlsoViaLine` |

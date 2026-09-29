@@ -363,7 +363,7 @@ public final class NexusMenu extends Menu {
         // works" would be false, because the hijack replaces the vanilla chest at every level. The
         // sentence each station authors is NexusStationGate.Station.worldRoute().
         getInventory().setItem(NexusMenuLayout.VAULT_SLOT, station(
-                NexusStationGate.Station.VAULT, level, Material.ENDER_CHEST,
+                NexusStationGate.Station.VAULT, NexusScreens.Screen.VAULT, level, Material.ENDER_CHEST,
                 List.of(MenuIcons.line("Seven pages, " + VaultShape.TOTAL_SLOTS + " slots.",
                                 NamedTextColor.DARK_GRAY),
                         MenuIcons.line("Pages open as you level.", NamedTextColor.DARK_GRAY))));
@@ -375,7 +375,7 @@ public final class NexusMenu extends Menu {
         // in FILLER_SLOTS must be painted by something -- is the one slot 33 shipped a hole
         // through, and PAINTED_SLOTS plus NexusMenuLayoutTest is what now makes the two lists one.
         getInventory().setItem(NexusMenuLayout.ANVIL_SLOT, station(
-                NexusStationGate.Station.ANVIL, level, Material.ANVIL,
+                NexusStationGate.Station.ANVIL, NexusScreens.Screen.ANVIL, level, Material.ANVIL,
                 List.of(MenuIcons.line("Move a gear score onto a better item.",
                                 NamedTextColor.DARK_GRAY),
                         MenuIcons.line("Same kind only, and the sacrifice must score higher.",
@@ -384,14 +384,14 @@ public final class NexusMenu extends Menu {
         // THE CRAFTING-TYPE BAND, row 4. Both are icon() and both are BUILT -- the screens behind
         // them exist and work; only the route through the hub is new.
         getInventory().setItem(NexusMenuLayout.CRAFTING_SLOT, station(
-                NexusStationGate.Station.CRAFTING, level, Material.CRAFTING_TABLE,
+                NexusStationGate.Station.CRAFTING, NexusScreens.Screen.CRAFT, level, Material.CRAFTING_TABLE,
                 List.of(MenuIcons.line("The full grid, and the recipe book.",
                         NamedTextColor.DARK_GRAY))));
 
         // "Unpowered" is said HERE, on the button, and again as 0/30 on the screen itself. A player
         // who is about to walk to a real table should be able to learn that before opening this.
         getInventory().setItem(NexusMenuLayout.ENCHANT_SLOT, station(
-                NexusStationGate.Station.ENCHANTING, level, Material.ENCHANTING_TABLE,
+                NexusStationGate.Station.ENCHANTING, NexusScreens.Screen.ENCHANTING, level, Material.ENCHANTING_TABLE,
                 List.of(MenuIcons.line("Unpowered -- no bookshelves here.",
                                 NamedTextColor.DARK_GRAY),
                         MenuIcons.line("A real table with shelves reaches 30.",
@@ -402,7 +402,7 @@ public final class NexusMenu extends Menu {
         // set-subtraction filler has an invariant nothing checked: EVERY SLOT NOT IN FILLER_SLOTS
         // MUST BE PAINTED BY SOMETHING. NexusMenuLayoutTest now asserts it.
         getInventory().setItem(NexusMenuLayout.GRINDSTONE_SLOT, station(
-                NexusStationGate.Station.GRINDSTONE, level, Material.GRINDSTONE,
+                NexusStationGate.Station.GRINDSTONE, NexusScreens.Screen.GRINDSTONE, level, Material.GRINDSTONE,
                 List.of(MenuIcons.line("Strip enchants from your gear.", NamedTextColor.DARK_GRAY),
                         MenuIcons.line("Refunds " + GrindstoneRefund.REFUND_PERCENT
                                 + "% of what they cost.", NamedTextColor.DARK_GRAY))));
@@ -410,19 +410,22 @@ public final class NexusMenu extends Menu {
         getInventory().setItem(NexusMenuLayout.SETTINGS_SLOT, MenuIcons.icon(
                 Material.REDSTONE_TORCH,
                 MenuIcons.name("Settings"),
-                List.of(MenuIcons.line("Choose where the Nexus sits.", NamedTextColor.DARK_GRAY))));
+                List.of(MenuIcons.line("Choose where the Nexus sits.", NamedTextColor.DARK_GRAY),
+                        NexusScreens.alsoVia(NexusScreens.Screen.SETTINGS))));
 
         // THE EQUIPMENT SCREEN, row 3. Ungated, like Stats and Settings -- see EQUIPMENT_SLOT.
         getInventory().setItem(NexusMenuLayout.EQUIPMENT_SLOT, MenuIcons.icon(
                 Material.ARMOR_STAND,
                 MenuIcons.name("Equipment"),
-                List.of(MenuIcons.line("Your armour and accessories.", NamedTextColor.DARK_GRAY))));
+                List.of(MenuIcons.line("Your armour and accessories.", NamedTextColor.DARK_GRAY),
+                        NexusScreens.alsoVia(NexusScreens.Screen.GEAR))));
 
         // THE BUILD SCREEN, row 3, directly left of Equipment. Ungated, like Equipment (ruling 16).
         getInventory().setItem(NexusMenuLayout.BUILD_SLOT, MenuIcons.icon(
                 Material.LECTERN,
                 MenuIcons.name("Build"),
-                List.of(MenuIcons.line("Your class, element and abilities.", NamedTextColor.DARK_GRAY))));
+                List.of(MenuIcons.line("Your class, element and abilities.", NamedTextColor.DARK_GRAY),
+                        NexusScreens.alsoVia(NexusScreens.Screen.BUILD))));
 
         // icon(), NOT placeholder() -- THE OTHER HALF OF THE PAIR THE TORCH ABOVE IS ONE OF, and
         // the class javadoc carries the argument. The lore below is REAL and WORKING, and so, since the
@@ -470,6 +473,7 @@ public final class NexusMenu extends Menu {
                     meta.lore() == null ? List.of() : meta.lore());
             lore.add(MenuIcons.blank());
             lore.add(MenuIcons.line("Click for your level, its bonuses and unlocks.", NamedTextColor.DARK_GRAY));
+            lore.add(NexusScreens.alsoVia(NexusScreens.Screen.LEVEL));
             meta.lore(lore);
         });
 
@@ -500,16 +504,27 @@ public final class NexusMenu extends Menu {
      * gated</b>, not unbuilt, and {@code placeholder}'s <i>"Not implemented yet."</i> would be the
      * Q33 defect for a third time on this screen.
      */
-    private ItemStack station(NexusStationGate.Station station, int level, Material material,
+    private ItemStack station(NexusStationGate.Station station, NexusScreens.Screen screen, int level, Material material,
                               List<net.kyori.adventure.text.Component> openLore) {
         if (NexusStationGate.unlocked(station, level)) {
             return MenuIcons.icon(material,
-                    MenuIcons.name(station.displayName()), openLore);
+                    MenuIcons.name(station.displayName()), withAlsoVia(openLore, screen));
         }
         return MenuIcons.icon(material,
                 MenuIcons.line(NexusStationGate.lockedName(station), NamedTextColor.DARK_GRAY),
-                NexusStationGate.lockedLore(station, level).stream()
+                withAlsoVia(NexusStationGate.lockedLore(station, level).stream()
                         .map(text -> MenuIcons.line(text, NamedTextColor.DARK_GRAY))
-                        .toList());
+                        .toList(), screen));
+    }
+
+    /**
+     * {@code lore} with the station's "Also accessible via /command" line LAST -- on a LOCKED station too, because
+     * the command refuses the same way the button does (NexusScreens.refusal asks the same gate). Ben, 2026-09-29.
+     */
+    private static List<net.kyori.adventure.text.Component> withAlsoVia(
+            List<net.kyori.adventure.text.Component> lore, NexusScreens.Screen screen) {
+        List<net.kyori.adventure.text.Component> lines = new java.util.ArrayList<>(lore);
+        lines.add(NexusScreens.alsoVia(screen));
+        return lines;
     }
 }
