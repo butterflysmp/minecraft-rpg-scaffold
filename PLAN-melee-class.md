@@ -1,6 +1,7 @@
 # PLAN — THE MELEE CLASS: THE FIRST MELEE CELL, AND SUNDER
 
-**Phase 1: SURVEY ONLY. No Java, no content, no boot.** Read against master **`2d60e9a3`**
+**Phase 1 was SURVEY ONLY: no Java, no content, no boot. Since then Ben has ruled §10 and M1 is built** (see
+RULINGS). Read against master **`2d60e9a3`**
 (`2d60e9a3a2b76dcc92ac16bbe6fa3468337580c1`, quoted from `git ls-remote origin master` on 2026-09-28, #167). Citations name METHODS and SECTIONS, never line numbers. The short
 paths are `PLAN-build-system.md`'s: `P/` = `paper/src/main/java/io/github/butterflysmp/rpg/paper/`, `C/` =
 `core/src/main/java/io/github/butterflysmp/rpg/core/`, `content/` = `paper/src/main/resources/content/`.
@@ -34,6 +35,56 @@ anything rests on it.
 `content/builds/melee.yml`,** the way `recall` sits in `ranger.yml` (`PLAN-build-system.md` §7.1), so it is offered in
 every melee cell, whatever the element. **The other `melee_fire` slots (1 more Active, the Ultimate, Aspects) ship as
 placeholders unless Ben names them. Fragments reuse the shared five.**
+
+### BEN'S RULINGS ON SECTION 10 (via the seat, 2026-09-28/29), recorded verbatim
+
+| Q | Ben's words | what it rules |
+|---|---|---|
+| **Q1** direction | *"Always straight ahead."* | a new `DashDirection.FACING` (§8.1 option (a)) |
+| **Q2** the slam | *"It slams wherever you land."* | **S1**, the ground-contact machine (§8.2) |
+| **Q3** fall damage | *"None."* | **F-d** (§8.4); the seat's ruling 5 below |
+| **Q4** numbers | **not ruled** | §8.5's PROPOSED column is **M3's starting point only** |
+| **Q5** stone vs sword | *"You can swap between them."* | **O1, the status quo** (§5.5). Ruling 2 is unchanged |
+| **Q6** F1 | *"No."* | **Actives stay gear-blind BY DESIGN.** F1 is **closed as ruled behaviour, not a defect** |
+| **Q7** names | *"Fire Melee"* | the cell's display name. The Sunder hand is **not ruled**; the PROPOSED default `[sunder, placeholder]` (left = Sunder) **stands** |
+
+### THE SEAT'S RULINGS (mechanism, from Ben's), 2026-09-29
+
+1. **Order is M1 → M2 → M3.** M1 is approved to build: the `melee_fire` cell, display name `"<gold>Fire Melee</gold>"`,
+   all placeholders, content and tests, **no `melee.yml` yet**. **M2 starts only after M1 is merged.**
+2. **Q8 (an instrument, so the seat's) is YES.** A player-to-mob trace line under `/rpg mobtrace`, in its own commit in
+   M1 with a unit test. **MC10, MC13 and MC14 become log-line rows** (PASS on the verbatim line after LOGIN); the popup
+   is a secondary read.
+3. **MC9 is now a confirmation of ruled behaviour**, a single read: a stone cast at the same zombie, with and without
+   the Gauntlet in the class slot, gives identical `PLAYERHIT` amounts with `triggerScore 100`. The op-cast
+   `emberblade` half is dropped.
+4. **M2's S1 edge cases, all from *"wherever you land"*:**
+   - a **fall-absorbed end** (water, and likewise ladder, cobweb, anything `SafeLanding`'s fall-absorbed arm catches)
+     **IS a landing**: it slams at the live feet;
+   - a **failed take-off** (`TAKE_OFF_TICKS` clears) **slams IN PLACE**;
+   - **death or quit mid-leap: NO slam** (the entity scheduler retires it; no posthumous burst);
+   - **the BACKSTOP clearing: no slam.** A finding, not a stop.
+5. **Q3 *"None"* = F-d.** One S1 mark does both jobs: LANDED detonates the slam **and** spends the fall immunity, so a
+   Sunder landing never deals fall damage at any height. **SU10 predicts no fall damage on the Sunder landing, then a
+   normal 6-block drop deals normal damage** (the mark is cleared).
+6. **F2 stays a finding.** No fix in M1 or M2; it is a cross-class ruling later.
+
+### WHAT M1 BUILT, AND WHAT IN THIS SURVEY IT SUPERSEDES
+
+**The survey below is left as it was read at `2d60e9a3`.** Where M1 or a ruling has moved something, it is listed
+here rather than rewritten in place:
+
+- **§9.2's M1 table is superseded by `GATE-melee-cell.md`**, which carries the rulings above (MC9 re-scoped, MC10/13/14
+  as `PLAYERHIT` rows). §9.2's M2 table stands until M2 writes `GATE-sunder.md`.
+- **F1 (§5.4, §9.3) is CLOSED as ruled behaviour** (Q6). §10 Q6's O5 is not pursued.
+- **F5 is paid:** `brawlers_gauntlet.yml`'s header is replaced in M1.
+- **§8.3's *"`MOBHIT` will NOT witness it"* still holds; `PLAYERHIT` now does** (ruling 2). It prints the amount
+  **sent, before the target's Defense**; the popup shows the post-Defense figure (`TracedHit`'s javadoc).
+- **§7's cell is built with one change of detail:** §9.1 asked for a second placeholder Active to hold left until
+  Sunder, and it is `active_placeholder_melee_thrust` (a short ray). M2 deletes it. The Ultimate is the self burst
+  §7 proposed; the aspects are `keen_arc` (on the arc) and `restless_quake` (on the Ultimate).
+- **`PoolLoaderTest.exactlyTheTwoFirePoolsShip` (§1, §2.3) is renamed `exactlyTheThreeFireCellsShip`.**
+- **§10 is answered** by the two tables above, except Q4.
 
 ---
 
@@ -572,6 +623,8 @@ pool lands. It is gateable, but no Melee player exists to feel it.
 ---
 
 ## 10. QUESTIONS FOR BEN
+
+**ANSWERED 2026-09-28/29, except Q4.** The answers are under RULINGS, verbatim; the questions stay as they were asked.
 
 1. **Sunder's direction:** a new `FACING` (forward, WASD ignored), or `movement_else_forward` (WASD steers)?
    (§8.1)
