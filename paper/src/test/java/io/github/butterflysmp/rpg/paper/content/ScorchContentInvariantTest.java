@@ -102,8 +102,12 @@ class ScorchContentInvariantTest {
      * <p><b>21 -> 23 on 2026-09-29, LEGACY-A (PLAN-legacy-port.md): +2, both {@code blaze_kings_staff}.</b> Its
      * Fireball's direct hit and its Smolder burst. {@code short_bow} is kinetic and adds none. Counted per file with
      * this test's own pattern (blaze 2, short bow 0; control: {@code flint_staff} 1), not by adding the delta.
+     *
+     * <p><b>23 -> 22 on 2026-09-29, the same slice, before any boot: Smolder removed</b> (Ben: "Let's remove the
+     * smolder ability on the blaze kings staff"). Its burst was one site. This test's own discovery reads 22, and
+     * the per-file count gives {@code blaze_kings_staff} 1 (control: {@code flint_staff} 1).
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 23;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 22;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare
