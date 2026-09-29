@@ -2361,16 +2361,22 @@ public final class RpgCommand {
             return 0;
         }
 
-        int level = PlayerLevel.levelFor(after);
-        String progress = PlayerLevel.isMaxed(after)
+        // The EFFECTIVE level, as every player-facing surface shows it (PLAN-level-bonuses.md, L2). Past
+        // the active cap the reply also names the CURVE level, because this is the operator's instrument
+        // and "set 60 levels" lands on the curve's 60 while every screen reads 50.
+        int level = PlayerLevel.effectiveLevel(after);
+        int curveLevel = PlayerLevel.levelFor(after);
+        String progress = PlayerLevel.isAtActiveCap(after)
                 ? "MAX"
                 : PlayerLevel.intoCurrentLevel(after) + "/"
-                        + (PlayerLevel.intoCurrentLevel(after) + PlayerLevel.xpToNextLevel(after).orElseThrow());
+                        + (PlayerLevel.intoCurrentLevel(after) + PlayerLevel.xpToNextEffectiveLevel(after).orElseThrow());
         sender.sendMessage(Component.text(
                 (op == XpGrant.Op.ADD ? "Added " : "Set ") + amount + " "
                         + (unit == XpGrant.Unit.LEVELS ? "level(s) " : "XP ")
                         + (op == XpGrant.Op.ADD ? "to " : "for ") + target.getName()
-                        + " (now level " + level + ", " + progress + " into it, "
+                        + " (now level " + level
+                        + (curveLevel != level ? " [curve " + curveLevel + "]" : "")
+                        + ", " + progress + " into it, "
                         + after + " lifetime).",
                 NamedTextColor.GREEN));
         return 1;

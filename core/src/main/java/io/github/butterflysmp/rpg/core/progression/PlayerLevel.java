@@ -44,8 +44,31 @@ public final class PlayerLevel {
 
     private PlayerLevel() {}
 
-    /** The cap. There is no level 100 and no XP requirement beyond 99. */
+    /**
+     * The CURVE's cap. There is no level 100 and no XP requirement beyond 99.
+     *
+     * <p><b>Not the level a player can reach today -- that is {@link #ACTIVE_CAP}.</b> The rungs to 99 stay
+     * in the table (Ben, 2026-09-29: <i>"Keep the numbers for everything higher in the game files"</i>),
+     * and {@link #levelFor} still reads them, because the save trigger in {@code ProfileService} keys on
+     * the unclamped curve level (seat ruling L2, {@code PLAN-level-bonuses.md} section 0.5).
+     */
     public static final int MAX_LEVEL = 99;
+
+    /**
+     * The level a player can reach TODAY: a VIEW clamp over the curve, not a change to it (seat ruling
+     * L2). Lifetime XP is never clamped and keeps accruing past it, so raising this later lifts every
+     * player to the level their XP already buys, with no migration.
+     *
+     * <p>Every display, every gate and the level bonuses read {@link #effectiveLevel}. Only the save
+     * trigger reads {@link #levelFor}.
+     */
+    public static final int ACTIVE_CAP = 50;
+
+    static {
+        if (ACTIVE_CAP < 1 || ACTIVE_CAP > MAX_LEVEL) {
+            throw new IllegalStateException("ACTIVE_CAP " + ACTIVE_CAP + " is outside the curve 1.." + MAX_LEVEL);
+        }
+    }
 
     /**
      * XP to advance FROM this index TO the next level. Index 0 is unused; 1..98 are the rungs.
@@ -143,9 +166,35 @@ public final class PlayerLevel {
         return Math.max(0, lifetimeXp) - TOTAL_FOR_LEVEL[levelFor(lifetimeXp)];
     }
 
-    /** Is this player at the cap? The one question a display must ask before formatting a total. */
+    /**
+     * Is this XP at the CURVE's cap (99)? A question about the table, not about what a player sees --
+     * a display asks {@link #isAtActiveCap}.
+     */
     public static boolean isMaxed(long lifetimeXp) {
         return levelFor(lifetimeXp) >= MAX_LEVEL;
+    }
+
+    /**
+     * The level a player HAS: the curve's level, clamped to {@link #ACTIVE_CAP}. Every display, every
+     * level gate and the level bonuses read this. {@code Math.min} is the whole clamp.
+     */
+    public static int effectiveLevel(long lifetimeXp) {
+        return Math.min(levelFor(lifetimeXp), ACTIVE_CAP);
+    }
+
+    /** Is this player at the ACTIVE cap? The question a display asks before formatting "to next". */
+    public static boolean isAtActiveCap(long lifetimeXp) {
+        return effectiveLevel(lifetimeXp) >= ACTIVE_CAP;
+    }
+
+    /**
+     * XP to the next EFFECTIVE level, or EMPTY at the active cap -- the same {@code OptionalLong} contract
+     * as {@link #xpToNextLevel}, one cap lower. Below the cap the two agree exactly, because the next
+     * effective level is the next curve level.
+     */
+    public static OptionalLong xpToNextEffectiveLevel(long lifetimeXp) {
+        if (isAtActiveCap(lifetimeXp)) return OptionalLong.empty();
+        return xpToNextLevel(lifetimeXp);
     }
 
     /**

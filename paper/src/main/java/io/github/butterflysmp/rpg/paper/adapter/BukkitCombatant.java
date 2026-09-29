@@ -135,7 +135,11 @@ public final class BukkitCombatant {
                 // A MOB resolves critChance 0 (HealthState bases it on faction), so this is exactly
                 // Crit.NO_CRIT for every mob without a check here -- and exactly NO_CRIT for an
                 // untracked entity too, since CombatantStats returns 0 chance for one.
-                Crit.multiplier(critChance, critDamage, critRoll));
+                Crit.multiplier(critChance, critDamage, critRoll),
+                // The LEVEL's weapon-damage bonus, frozen for the reason every summand above is. Carried
+                // on every snapshot and ADDED only on a weapon hit (Caster.weaponLevelDamage): a stone
+                // cast carries it too and never reads it. 0.0 for a mob or an untracked entity.
+                stats.levelDamageValue(entity.getUniqueId()));
     }
 
     /** Dispatches onto the entity's own thread. Never reads the world, never returns state. */

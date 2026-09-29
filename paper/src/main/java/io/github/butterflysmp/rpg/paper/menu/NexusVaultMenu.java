@@ -879,7 +879,7 @@ public final class NexusVaultMenu extends Menu {
      */
     private int viewerLevel() {
         return profiles.profile(viewer.getUniqueId())
-                .map(profile -> PlayerLevel.levelFor(profile.lifetimeXp()))
+                .map(profile -> PlayerLevel.effectiveLevel(profile.lifetimeXp()))
                 .orElse(1);
     }
 
