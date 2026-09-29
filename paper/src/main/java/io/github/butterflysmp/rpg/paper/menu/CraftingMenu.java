@@ -930,7 +930,9 @@ public final class CraftingMenu extends Menu {
                         MenuIcons.line("Recipe Book", NamedTextColor.GREEN),
                         List.of(MenuIcons.line("Everything you can craft right now",
                                         NamedTextColor.GRAY),
-                                MenuIcons.line("Click to browse", NamedTextColor.DARK_GRAY))));
+                                MenuIcons.line("Click to browse", NamedTextColor.DARK_GRAY),
+                                // Last, as on the hub's buttons (Ben, 2026-09-29).
+                                NexusScreens.alsoVia(NexusScreens.Screen.RECIPES))));
 
         // Decoration, painted once and never repainted. Nothing in the chrome changes with the
         // recipe -- the status bar is the menu's only state indicator, and CraftStatus's javadoc

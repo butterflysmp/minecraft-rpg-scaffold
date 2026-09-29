@@ -69,6 +69,49 @@ class ScreenPermissionsTest {
         }
     }
 
+    /** Ben, 2026-09-29: "also accessible via" and the slash command. The text is built from command(), not typed. */
+    @Test
+    void theAlsoViaLineNamesEachScreensCommand() {
+        assertEquals("Also accessible via /level", NexusScreens.alsoViaText(NexusScreens.Screen.LEVEL));
+        assertEquals("Also accessible via /recipes", NexusScreens.alsoViaText(NexusScreens.Screen.RECIPES));
+        for (NexusScreens.Screen screen : NexusScreens.Screen.values()) {
+            assertEquals("Also accessible via /" + screen.command(), NexusScreens.alsoViaText(screen));
+        }
+    }
+
+    /**
+     * EVERY screen's button carries its line, read from source (the buttons need a server to render). Each Screen is
+     * named exactly once across the hub and the crafting screen, and only where the line is attached: an
+     * {@code alsoVia(...)} call, or the {@code station(...)} call that appends it in both its open and locked arms.
+     */
+    @Test
+    void everyScreensButtonCarriesItsAlsoViaLine() throws IOException {
+        Path menu = Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg", "paper", "menu");
+        String hub = Files.readString(menu.resolve("NexusMenu.java"), StandardCharsets.UTF_8);
+        String crafting = Files.readString(menu.resolve("CraftingMenu.java"), StandardCharsets.UTF_8);
+        assertTrue(hub.contains("withAlsoVia(openLore, screen)") && hub.contains(".toList(), screen)"),
+                "station() appends the line in BOTH arms, open and locked");
+        for (NexusScreens.Screen screen : NexusScreens.Screen.values()) {
+            String name = "NexusScreens.Screen." + screen.name();
+            int count = countOf(hub, name) + countOf(crafting, name);
+            assertEquals(1, count, screen + " is named once, at its button");
+            boolean attached = hub.contains("alsoVia(" + name + ")") || crafting.contains("alsoVia(" + name + ")")
+                    || hub.contains(", " + name + ", level, Material.");
+            assertTrue(attached, screen + "'s button carries the line");
+        }
+    }
+
+    private static int countOf(String text, String needle) {
+        int count = 0;
+        for (int at = text.indexOf(needle); at >= 0; at = text.indexOf(needle, at + 1)) {
+            // Screen.CRAFT is a prefix of nothing, but guard the next character so e.g. a future CRAFT_X cannot count.
+            int end = at + needle.length();
+            if (end < text.length() && Character.isJavaIdentifierPart(text.charAt(end))) continue;
+            count++;
+        }
+        return count;
+    }
+
     /** The command class decides nothing about a screen: it opens none itself and copies no gate. */
     @Test
     void theCommandClassOpensScreensOnlyThroughNexusScreens() throws IOException {
