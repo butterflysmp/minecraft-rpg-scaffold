@@ -558,6 +558,15 @@ predicts against LEGACY-A's R0c.
 | **Q-B6** | Presentation. cfde822 had a cast sound (`ENTITY_BLAZE_SHOOT`), impact particles (`FLAME` ×18, `LAVA` ×5) and an impact sound (`ITEM_FIRECHARGE_USE`). The staff today has none, and the vanilla smoke trail comes free. Add a visual? ___ (Ben) | Ben | out of scope unless asked |
 | **Q-B7** | Description text: keep *"Throws a burning charge."* or reword? ___ (Ben) | Ben | — |
 
+### THE SEAT'S RULINGS, 2026-09-29 (Q-B1, Q-B4, Q-B6 and Q-B7 have gone to Ben)
+
+- **Q-B2: (1-prime).** A driven body, and core's `castRay` owns the hit, so the gear score, the level/weapon flag,
+  PLAYERHIT and Scorch all apply unchanged. **No forked damage path.**
+- **Q-B3: COMPENSATE.** The body flies on the exact line, and the LB straight-flight row predicts **no lead**.
+- **Q-B5: the drive REMOVES the entity when its lifetime ends.** An orphan that outlives the drive (a chunk unloading
+  mid-flight) is accepted, and recorded in `NEXT.md` when the slice is built.
+- **When:** LEGACY-B is built AFTER the #168–#171 stack merges, stacked on master then.
+
 ---
 
 ## 9. UNVERIFIED, IN ONE PLACE
