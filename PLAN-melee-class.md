@@ -40,13 +40,17 @@ placeholders unless Ben names them. Fragments reuse the shared five.**
 
 | Q | Ben's words | what it rules |
 |---|---|---|
-| **Q1** direction | *"Always straight ahead."* | a new `DashDirection.FACING` (§8.1 option (a)) |
-| **Q2** the slam | *"It slams wherever you land."* | **S1**, the ground-contact machine (§8.2) |
-| **Q3** fall damage | *"None."* | **F-d** (§8.4); the seat's ruling 5 below |
+| **Q1** direction | *"Always straight ahead"* | a new `DashDirection.FACING` (§8.1 option (a)) |
+| **Q2** the slam | *"yes it slams where ever you land."* | **S1**, the ground-contact machine (§8.2) |
+| **Q3** fall damage | *"None"* | **F-d** (§8.4); the seat's ruling 5 below |
 | **Q4** numbers | **not ruled** | §8.5's PROPOSED column is **M3's starting point only** |
-| **Q5** stone vs sword | *"You can swap between them."* | **O1, the status quo** (§5.5). Ruling 2 is unchanged |
-| **Q6** F1 | *"No."* | **Actives stay gear-blind BY DESIGN.** F1 is **closed as ruled behaviour, not a defect** |
+| **Q5** stone vs sword | *"yes you can swap between them"* | **O1, the status quo** (§5.5). Ruling 2 is unchanged |
+| **Q6** F1 | *"no"* | **Actives stay gear-blind BY DESIGN.** F1 is **closed as ruled behaviour, not a defect** |
 | **Q7** names | *"Fire Melee"* | the cell's display name. The Sunder hand is **not ruled**; the PROPOSED default `[sunder, placeholder]` (left = Sunder) **stands** |
+
+*Corrected 2026-09-29, by the seat: this table first recorded the seat's paraphrase of Ben as verbatim. The words above
+are Ben's as he typed them on 2026-09-28. The quotation marks in the seat's ruling 4 below (*"wherever you land"*) are
+the seat's wording, not Ben's.*
 
 ### THE SEAT'S RULINGS (mechanism, from Ben's), 2026-09-29
 
