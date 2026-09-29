@@ -409,19 +409,19 @@ public final class NexusMenu extends Menu {
 
         getInventory().setItem(NexusMenuLayout.SETTINGS_SLOT, MenuIcons.icon(
                 Material.REDSTONE_TORCH,
-                MenuIcons.line("Settings", NamedTextColor.GRAY),
+                MenuIcons.name("Settings"),
                 List.of(MenuIcons.line("Choose where the Nexus sits.", NamedTextColor.DARK_GRAY))));
 
         // THE EQUIPMENT SCREEN, row 3. Ungated, like Stats and Settings -- see EQUIPMENT_SLOT.
         getInventory().setItem(NexusMenuLayout.EQUIPMENT_SLOT, MenuIcons.icon(
                 Material.ARMOR_STAND,
-                MenuIcons.line("Equipment", NamedTextColor.GRAY),
+                MenuIcons.name("Equipment"),
                 List.of(MenuIcons.line("Your armour and accessories.", NamedTextColor.DARK_GRAY))));
 
         // THE BUILD SCREEN, row 3, directly left of Equipment. Ungated, like Equipment (ruling 16).
         getInventory().setItem(NexusMenuLayout.BUILD_SLOT, MenuIcons.icon(
                 Material.LECTERN,
-                MenuIcons.line("Build", NamedTextColor.GRAY),
+                MenuIcons.name("Build"),
                 List.of(MenuIcons.line("Your class, element and abilities.", NamedTextColor.DARK_GRAY))));
 
         // icon(), NOT placeholder() -- THE OTHER HALF OF THE PAIR THE TORCH ABOVE IS ONE OF, and
@@ -504,7 +504,7 @@ public final class NexusMenu extends Menu {
                               List<net.kyori.adventure.text.Component> openLore) {
         if (NexusStationGate.unlocked(station, level)) {
             return MenuIcons.icon(material,
-                    MenuIcons.line(station.displayName(), NamedTextColor.GRAY), openLore);
+                    MenuIcons.name(station.displayName()), openLore);
         }
         return MenuIcons.icon(material,
                 MenuIcons.line(NexusStationGate.lockedName(station), NamedTextColor.DARK_GRAY),

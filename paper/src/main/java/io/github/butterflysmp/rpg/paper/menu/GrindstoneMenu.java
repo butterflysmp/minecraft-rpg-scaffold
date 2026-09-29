@@ -277,7 +277,7 @@ public final class GrindstoneMenu extends Menu {
 
     private ItemStack confirmIcon(GrindstoneButton.Face face) {
         return MenuIcons.icon(face.material(),
-                MenuIcons.line(face.text(), NamedTextColor.WHITE),
+                MenuIcons.name(face.text()),
                 List.of(MenuIcons.line("Strips EVERY enchant from every item here.",
                                 NamedTextColor.GRAY),
                         MenuIcons.line("The roll is kept; the levels are not.", NamedTextColor.GRAY),
@@ -417,7 +417,7 @@ public final class GrindstoneMenu extends Menu {
             getInventory().setItem(BACK_SLOT, MenuIcons.back(Material.ARROW, "the Nexus"));
         }
         getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.GRINDSTONE,
-                MenuIcons.line("Grindstone", NamedTextColor.WHITE),
+                MenuIcons.name("Grindstone"),
                 List.of(MenuIcons.line("Place weapons, shields, armor or tools below.",
                                 NamedTextColor.GRAY),
                         MenuIcons.line("Stripping clears every enchant they carry", NamedTextColor.GRAY),

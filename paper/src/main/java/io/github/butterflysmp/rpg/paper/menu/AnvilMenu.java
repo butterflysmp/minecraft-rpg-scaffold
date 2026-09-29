@@ -324,7 +324,7 @@ public final class AnvilMenu extends Menu {
             getInventory().setItem(BACK_SLOT, MenuIcons.back(Material.ARROW, "the Nexus"));
         }
         getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.ANVIL,
-                MenuIcons.line("Anvil", NamedTextColor.WHITE),
+                MenuIcons.name("Anvil"),
                 List.of(MenuIcons.line("Move a gear score onto a better item.",
                                 NamedTextColor.GRAY),
                         MenuIcons.line("Same kind only, and the sacrifice must score higher.",
@@ -578,7 +578,7 @@ public final class AnvilMenu extends Menu {
     private ItemStack confirmIcon(AnvilButton.Face face) {
         return MenuIcons.icon(AnvilFace.dyeFor(face.state()),
                 MenuIcons.line(face.text(), AnvilFace.nameColorFor(face.state())),
-                List.of(MenuIcons.line("Moves the sacrifice's score onto the item above.",
+                List.of(MenuIcons.line("Moves the sacrifice's score onto the item on the left.",
                                 NamedTextColor.GRAY),
                         MenuIcons.line("The sacrifice is consumed.", NamedTextColor.GRAY),
                         MenuIcons.blank(),
