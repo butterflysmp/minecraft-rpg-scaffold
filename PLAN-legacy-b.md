@@ -567,6 +567,41 @@ predicts against LEGACY-A's R0c.
   mid-flight) is accepted, and recorded in `NEXT.md` when the slice is built.
 - **When:** LEGACY-B is built AFTER the #168–#171 stack merges, stacked on master then.
 
+### BEN, 2026-09-29, VERBATIM: the answers to Q-B1, Q-B4 and Q-B6
+
+```
+  Q-B1: "yes, blaze fire ball"
+  Q-B4: "8 second despawn time, not a set block range"
+  Q-B6: "use the old sounds and effects"
+```
+
+Q-B7 was not answered.
+
+**THE SEAT'S READING (the seat's, not Ben's):**
+
+- **Q-B1:** a `SmallFireball`.
+- **Q-B4:** `max_lifetime_ticks: 160`. The drive removes the entity at 160 (Q-B5). The range is whatever 160 ticks of
+  flight covers: **no block range is authored or predicted**, and the LB rows read the despawn time.
+- **Q-B6:** cfde822's sounds and particles, through the visual system as new visual entries. **R0c's visual count
+  moves, so the gate predicts it.** Every parameter below is carried as **PROVISIONAL**.
+- **Q-B7:** keep *"Throws a burning charge."* as the default.
+
+**cfde822's exact call sites, read from `StaffListener` at cfde822:**
+
+| when | cfde822 method | call | parameters |
+|---|---|---|---|
+| cast | `onBlazeStaffInteract`, the fireball arm | `playSound(player.getLocation(), ENTITY_BLAZE_SHOOT, …)` | volume **1.0**, pitch **1.2**, at the player |
+| impact (entity AND block) | `onBlazeFireballHit` (`ProjectileHitEvent`) | `spawnParticle(FLAME, fireball location, …)` | count **18**, offsets **0.25 / 0.25 / 0.25**, extra **0.06** |
+| impact | `onBlazeFireballHit` | `spawnParticle(LAVA, fireball location, …)` | count **5**, offsets **0.1 / 0.1 / 0.1**, extra **0** |
+| impact | `onBlazeFireballHit` | `playSound(fireball location, ITEM_FIRECHARGE_USE, …)` | volume **1.0**, pitch **1.3** |
+
+**NOT carried, because they are not the Fireball's:**
+- the flint staff's `ITEM_FLINTANDSTEEL_USE` / `BLAZE_SHOOT 0.6/1.6` pair and its `FLAME ×12` / `×14` impacts, in the
+  same class;
+- Smolder's `LAVA ×25` and `ITEM_FIRECHARGE_USE 1.0/0.8`, since Smolder is removed.
+
+cfde822 had no flight particles on the fireball: the entity's own vanilla rendering was the trail.
+
 ---
 
 ## 9. UNVERIFIED, IN ONE PLACE
