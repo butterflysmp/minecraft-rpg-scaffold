@@ -24,7 +24,8 @@ import java.util.Locale;
  * wearing better clothes: the line's subject is an AMOUNT REMAINING, and there is no amount
  * remaining, so any value in that column is a lie about a quantity rather than a note about a state.
  *
- * <p><b>So the line is ABSENT at 99 and the marker goes on the LEVEL line instead</b>, where it is
+ * <p><b>So the line is ABSENT at the active cap ({@code PlayerLevel.ACTIVE_CAP}, 50) and the marker goes on
+ * the LEVEL line instead</b>, where it is
  * a fact about the level rather than a number in a column that should be empty.
  *
  * <p>This is not the "a conditional line is not an optional line" case that {@code NexusStatsLore}
@@ -62,10 +63,13 @@ public final class PlayerLevelLines {
         return String.format(Locale.ROOT, "%,d", value);
     }
 
-    /** The level, with {@link #MAX_MARKER} appended at the cap: {@code "13"}, {@code "99 (MAX)"}. */
+    /**
+     * The EFFECTIVE level, with {@link #MAX_MARKER} appended at the ACTIVE cap: {@code "13"}, {@code "50 (MAX)"}.
+     * A player past 50 on the curve reads {@code "50 (MAX)"} too: the cap is a view clamp (seat ruling L2).
+     */
     public static String level(long lifetimeXp) {
-        int level = PlayerLevel.levelFor(lifetimeXp);
-        return PlayerLevel.isMaxed(lifetimeXp) ? level + " " + MAX_MARKER : String.valueOf(level);
+        int level = PlayerLevel.effectiveLevel(lifetimeXp);
+        return PlayerLevel.isAtActiveCap(lifetimeXp) ? level + " " + MAX_MARKER : String.valueOf(level);
     }
 
     /** Total XP ever earned. Not "current XP" -- nothing spends it; {@code PlayerLevel} says why. */
@@ -78,11 +82,11 @@ public final class PlayerLevelLines {
      *
      * @throws IllegalStateException at the cap, where there is no next level. <b>Loud rather than a
      *         placeholder</b>: the caller must not render this line at all there, and
-     *         {@code PlayerLevel.isMaxed} is how it asks. A returned string would let a caller print
+     *         {@code PlayerLevel.isAtActiveCap} is how it asks. A returned string would let a caller print
      *         the line by accident, which is the exact failure the optional was introduced to stop.
      */
     public static String toNext(long lifetimeXp) {
-        return amount(PlayerLevel.xpToNextLevel(lifetimeXp).orElseThrow(() ->
-                new IllegalStateException("no next level at the cap; ask PlayerLevel.isMaxed first")));
+        return amount(PlayerLevel.xpToNextEffectiveLevel(lifetimeXp).orElseThrow(() ->
+                new IllegalStateException("no next level at the cap; ask PlayerLevel.isAtActiveCap first")));
     }
 }

@@ -214,4 +214,44 @@ class PlayerLevelTest {
         }
         assertEquals(98, checked, "the property has to have actually run");
     }
+
+    /**
+     * Seat ruling L2: the active cap is a VIEW clamp. The effective level stops at 50; the curve does not,
+     * and lifetime XP is never clamped.
+     */
+    @Test
+    void theActiveCapClampsTheViewAndNotTheCurve() {
+        assertEquals(50, PlayerLevel.ACTIVE_CAP);
+        assertEquals(49, PlayerLevel.effectiveLevel(LEVEL_50 - 1), "one XP short of 50");
+        assertEquals(50, PlayerLevel.effectiveLevel(LEVEL_50));
+        assertEquals(50, PlayerLevel.effectiveLevel(LEVEL_99), "the curve's 99 shows as 50");
+        assertEquals(99, PlayerLevel.levelFor(LEVEL_99), "the curve itself is untouched");
+        assertEquals(1, PlayerLevel.effectiveLevel(0));
+
+        assertFalse(PlayerLevel.isAtActiveCap(LEVEL_50 - 1));
+        assertTrue(PlayerLevel.isAtActiveCap(LEVEL_50));
+        assertFalse(PlayerLevel.isMaxed(LEVEL_50), "isMaxed is the CURVE's cap, not the view's");
+    }
+
+    /** Below the cap the next effective level is the next curve level; at it there is none. */
+    @Test
+    void xpToNextEffectiveLevelIsEmptyExactlyFromTheActiveCap() {
+        assertEquals(OptionalLong.of(1L), PlayerLevel.xpToNextEffectiveLevel(LEVEL_50 - 1));
+        assertEquals(PlayerLevel.xpToNextLevel(LEVEL_25), PlayerLevel.xpToNextEffectiveLevel(LEVEL_25));
+        assertEquals(OptionalLong.empty(), PlayerLevel.xpToNextEffectiveLevel(LEVEL_50));
+        assertTrue(PlayerLevel.xpToNextLevel(LEVEL_50).isPresent(), "the curve still has a rung 50 -> 51");
+    }
+
+    /**
+     * The save trigger keys on the UNCLAMPED curve level (L2), so XP past 50 still crosses a rung and is
+     * written at each one. If {@code levelFor} were clamped, every XP gain past 50 would look like "no
+     * level change" and reach disk only at quit.
+     */
+    @Test
+    void theCurveLevelStillMovesPastTheActiveCap() {
+        long level51 = PlayerLevel.totalForLevel(51);
+        assertTrue(PlayerLevel.levelFor(level51 - 1) != PlayerLevel.levelFor(level51), "50 -> 51 is a rung");
+        assertEquals(PlayerLevel.effectiveLevel(level51 - 1), PlayerLevel.effectiveLevel(level51),
+                "and the view does not move");
+    }
 }

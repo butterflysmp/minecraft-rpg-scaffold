@@ -106,8 +106,16 @@ public final class StatsSheetProjection {
 
         // The same three the snapshot projection reads, in the same units, so the Damage line below
         // composes exactly what a swing composes.
+        //
+        // Plus the LEVEL's damage, and only while one of our weapons is in hand: a weapon hit adds it
+        // and nothing else does (Caster.weaponLevelDamage, PLAN-level-bonuses.md seat ruling L1), so a
+        // line that showed it with an empty hand would advertise a number no hit deals.
+        boolean holdingWeapon = WeaponItems.heldWeaponId(player, adapters.keys())
+                .flatMap(weapons::find)
+                .isPresent();
         double damage = HitDamage.hitBase(stats.attackValue(id),
-                stats.enchantDamagePercentValue(id), stats.classDamageValue(id));
+                stats.enchantDamagePercentValue(id),
+                stats.classDamageValue(id) + (holdingWeapon ? stats.levelDamageValue(id) : 0.0));
 
         // THE QUIVER PAIR IS CONDITIONAL, AND THE CONDITION IS WHAT IS IN YOUR HAND. Every other
         // line is a fact about the player; a capacity is a fact about a weapon. Absent rather than
