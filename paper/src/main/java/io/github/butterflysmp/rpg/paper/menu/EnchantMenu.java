@@ -316,7 +316,7 @@ public final class EnchantMenu extends Menu {
         // fresh mints share identical meta, so a stack of 2 is constructible with /rpg give alone.
         // One write would enchant both, and the re-mint would then collapse the stack to one.
         if (cursor.getAmount() != 1) {
-            say("One weapon at a time.", NamedTextColor.GRAY);
+            say("One item at a time.", NamedTextColor.GRAY);
             return false;
         }
 
@@ -325,7 +325,7 @@ public final class EnchantMenu extends Menu {
         Optional<String> problem =
                 EnchantMenuLayout.overflow(EnchantItems.read(cursor, adapters.keys()));
         if (problem.isPresent()) {
-            say("This weapon carries more than this table can show (" + problem.get()
+            say("This item carries more than this table can show (" + problem.get()
                     + "). Use /rpg enchant show to read it.", NamedTextColor.RED);
             // warnOnce, not warning: a player can re-attempt the place as often as they like.
             adapters.warnOnce("An item reached the enchant table carrying " + problem.get()
@@ -404,8 +404,8 @@ public final class EnchantMenu extends Menu {
 
         if (gear == null) {
             getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.ENCHANTING_TABLE,
-                    MenuIcons.line("Enchanting", NamedTextColor.WHITE),
-                    List.of(MenuIcons.line("Place a weapon, shield, armor piece or tool above", NamedTextColor.GRAY),
+                    MenuIcons.name("Enchanting"),
+                    List.of(MenuIcons.line("Place a weapon, shield, armor piece or tool below", NamedTextColor.GRAY),
                             MenuIcons.line("to see the enchants it can carry.", NamedTextColor.GRAY),
                             MenuIcons.blank(),
                             MenuIcons.line("Unlocks are paid for in XP.", NamedTextColor.DARK_GRAY))));
@@ -413,7 +413,7 @@ public final class EnchantMenu extends Menu {
         }
 
         getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.ENCHANTING_TABLE,
-                MenuIcons.line("Enchanting", NamedTextColor.WHITE),
+                MenuIcons.name("Enchanting"),
                 List.of(MenuIcons.line("Click a candidate to unlock it,", NamedTextColor.GRAY),
                         MenuIcons.line("to make it active, or to level it.", NamedTextColor.GRAY),
                         MenuIcons.blank(),
@@ -516,7 +516,7 @@ public final class EnchantMenu extends Menu {
             lore.add(MenuIcons.line("Locked. Click to unlock at "
                     + EnchantLoreLines.romanNumeral(1) + price + ".", NamedTextColor.DARK_GRAY));
         } else if (active) {
-            lore.add(MenuIcons.line("Active on this weapon.", NamedTextColor.GREEN));
+            lore.add(MenuIcons.line("Active on this item.", NamedTextColor.GREEN));
             // Driven off the INTENT rather than off the cap arithmetic it used to repeat. Same
             // answer for every shipped case, and it also stops advertising a price on a candidate
             // whose content file is missing -- that click is refused at any price.
@@ -612,7 +612,7 @@ public final class EnchantMenu extends Menu {
     private void applyCandidateClick(int slotIndex, int candidateIndex) {
         ItemStack input = getInventory().getItem(INPUT_SLOT);
         if (input == null || input.getType().isAir()) {
-            say("Put one of your weapons or shields in the slot above.", NamedTextColor.GRAY);
+            say("Put a weapon, shield, armor piece or tool in the slot on the left.", NamedTextColor.GRAY);
             return;
         }
 
