@@ -77,6 +77,12 @@ there. Every other row is survival because survival is what ships (the creative-
   the log).` The reply text is new on this branch, so it is also a witness that the jar carries the change.
 - **`/time set 18000` and `/gamerule doMobSpawning false`.** Night, so a zombie does not catch fire in the sun (that fire
   would pollute MC12). No natural spawns to wander into a row.
+
+  > **INSTRUMENT NOTE, 2026-09-29, the seat's, added before any MC row was read. No reading and no prediction
+  > moves.** `doMobSpawning` is not a game rule in 26.1: the pinned `paper-26.1.2.jar`'s
+  > `net.minecraft.world.level.gamerules.GameRules` names the rule **`spawn_mobs`**, and `doMobSpawning` occurs 0
+  > times in it (`javap -c -p`, 60 rule names read). **Type `/gamerule spawn_mobs false`** instead. This file is
+  > read in the stack-top boot, and the top's gate (`GATE-level.md`, #169) states the same replacement.
 - **Stand on flat, solid ground with open space for 5 blocks to the east (+X) and to the south-east.** Every
   placement below is relative to Ben's feet.
 
