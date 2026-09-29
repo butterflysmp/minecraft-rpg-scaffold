@@ -86,6 +86,21 @@ public final class NexusScreens {
         NexusStationGate.Station gate() { return gate; }
     }
 
+    /**
+     * The lore line a button carries when its screen also has a command (Ben, 2026-09-29: <i>"now we need a line in
+     * the lore that says "also accessible via" and the slash command"</i>). The command comes from
+     * {@link Screen#command()}, never retyped, so a renamed command cannot leave a button advertising the old one.
+     * The wording, with its sentence-start capital, is a default Ben can overrule.
+     */
+    public static String alsoViaText(Screen screen) {
+        return "Also accessible via /" + screen.command();
+    }
+
+    /** {@link #alsoViaText} as the lore line: GRAY, and placed LAST on the button by every caller. */
+    public static net.kyori.adventure.text.Component alsoVia(Screen screen) {
+        return MenuIcons.line(alsoViaText(screen), net.kyori.adventure.text.format.NamedTextColor.GRAY);
+    }
+
     /** The sentence the player sees when refused, from the checks above in their order; empty to open. */
     public static Optional<String> refusal(Player player, Screen screen, PlayerProfile profile) {
         if (player.isDead()) return Optional.of("You can't open that while dead.");
