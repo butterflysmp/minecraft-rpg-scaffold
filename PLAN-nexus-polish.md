@@ -119,6 +119,41 @@ why the name is `/enchanting`. `level` appears only as an integer ARGUMENT's nam
 `/recipes`. PacketEvents 2.13.0's `plugin.yml` declares no commands; whether it registers any at runtime is
 UNVERIFIED (a boot shows it). This plugin's own roots are `/menu` and `/rpg`.
 
+**BOOT READING, 2026-09-29, `eab57026`, R0 only:** each of the ten `register()` return sets held its bare name and an
+`rpg:`-namespaced one (e.g. `[level, rpg:level]`), so no name was taken by anything else on that server.
+
+### Ben, 2026-09-29, VERBATIM: after seeing the menus in game
+
+```
+  3. The names in the nexus menu are nice, now we need a line in the lore that says "also
+     accessible via" and the slash command.
+```
+
+(Items 1 and 2 of the same message are about the weapons and are recorded in `PLAN-legacy-port.md`.)
+
+**THE SEAT'S READING AND RULINGS (the seat's, not Ben's):**
+
+- **Green names:** not an itemised gate reading (the one boot so far read no row here), but Ben is content with them.
+- **The line:** every hub button that has a screen command carries one lore line, **"Also accessible via
+  /&lt;command&gt;"**:
+  - the head, `/level`;
+  - Build, `/build`;
+  - Equipment, `/gear`;
+  - Vault, `/vault`;
+  - Anvil, `/anvil`;
+  - Crafting, `/craft`;
+  - Enchanting, `/enchanting`;
+  - Grindstone, `/grindstone`;
+  - Settings, `/settings`;
+  - the crafting screen's Recipe Book, `/recipes`.
+- **On locked stations too**, because the command refuses the same way the button does.
+- **Last in the lore, in GRAY.** The wording, with its capital A, is Ben's to overrule at the gate.
+- **The command text comes from `NexusScreens.Screen.command()`**, never retyped, with a test that every Screen's
+  button carries its line.
+- **Built as #170's `041094a5`**; `GATE-nexus-polish.md` gains G3.
+- **Close keeps its barrier** (the seat, 2026-09-29): Ben's 2026-09-03 "nothing here" ruling governs, and N2 yields
+  to it. **`/recipes` on crafting's level 3 is confirmed.**
+
 ## 1. REACHABILITY — TRACED FROM THE CODE, NOT ASSUMED
 
 ### 1.1 The three doors onto the hub (READ)

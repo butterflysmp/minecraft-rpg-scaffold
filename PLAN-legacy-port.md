@@ -120,6 +120,25 @@ Goldrot Goon. We'll talk more about this later."
 right-click Smolder trigger is deleted (#171, `eab57026`). **Q-P5 is moot for this item**, and stays open for the
 Withered Falchion's bomb. §2.6's Smolder rows stay as the record of what cfde822 did.
 
+### Ben, 2026-09-29, VERBATIM: after seeing the two weapons in game
+
+```
+  1. Short bow looks good
+  2. The Blaze King's Staff is supposed to shoot an actual fire ball not the item, it also
+     isn't supposed to be effected by gravity. A straight line. Also the ability should be
+     Right Click not left.
+```
+
+(Item 3 of the same message is about the Nexus menu and is recorded in `PLAN-nexus-polish.md`.)
+
+**THE SEAT'S READING (the seat's, not Ben's):**
+
+- **1** is not an itemised gate reading. He saw the bow on the one boot so far (`eab57026`), on which no gate row was
+  read. If recorded against a row, it is *reported good -- not itemised*, never PASS.
+- **2:** LEGACY-A becomes the **Short Bow only** (#171, `ab23ce6f`). The staff moves to a new slice, **LEGACY-B**,
+  after this stack boots. It needs engine work: a projectile body that is a real fireball entity, no gravity,
+  straight flight, on `right_click`. Its Phase 1 survey is `PLAN-legacy-b.md`.
+
 ## 1. WHAT I READ
 
 **In this repo, at `2d60e9a3`:**
