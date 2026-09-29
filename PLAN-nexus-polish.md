@@ -99,6 +99,26 @@ item would touch one, it says so and becomes a question, never a quiet change.
 - **L5 (stack order, from the level rulings):** #168 (M1) → LEVEL → NEXUS polish → LEGACY-A → later slices. **Where
   polish touches text #168's MC rows read, the NEXUS gate RESTATES those rows** — §5.2's option (ii).
 
+### Ben, 2026-09-29, VERBATIM: the command names
+
+```
+  Names are good
+```
+
+**THE SEAT'S READING (the seat's, not Ben's):** the names are **`/menu`** (existing), **`/level`**, **`/build`**,
+**`/gear`**, **`/vault`**, **`/anvil`**, **`/craft`**, **`/recipes`**, **`/enchanting`**, **`/grindstone`** and
+**`/settings`**: one lowercase word each, a permission node with `default: true`, and each respects the same level
+gate as its hub button (vault 20, anvil 7, crafting 3, enchanting 10, grindstone 13).
+
+**CLASH CHECK, 2026-09-29, from the pinned `paper-26.1.2.jar`** (`javap -c -p` over the 144 classes in
+`net/minecraft/server/commands`, `org/bukkit/command/defaults`, `io/papermc/paper/command`, `org/spigotmc` and
+`com/destroystokyo/paper/command`; 462 string literals; control: `enchant`, `give`, `gamemode` and `version` found):
+**no approved name clashes.** `enchant` is vanilla's root (`EnchantCommand`, passed to `Commands.literal`), which is
+why the name is `/enchanting`. `level` appears only as an integer ARGUMENT's name (in `EnchantCommand` and
+`RaidCommand`), not a root. Near miss, not a clash: vanilla's `/recipe` (`RecipeCommand`) is one letter from
+`/recipes`. PacketEvents 2.13.0's `plugin.yml` declares no commands; whether it registers any at runtime is
+UNVERIFIED (a boot shows it). This plugin's own roots are `/menu` and `/rpg`.
+
 ## 1. REACHABILITY — TRACED FROM THE CODE, NOT ASSUMED
 
 ### 1.1 The three doors onto the hub (READ)
