@@ -252,7 +252,7 @@ public final class SettingsMenu extends Menu {
 
         getInventory().setItem(SettingsMenuLayout.SLOT_SETTING_SLOT, MenuIcons.icon(
                 Material.ITEM_FRAME,
-                MenuIcons.line("Nexus Slot", NamedTextColor.GRAY),
+                MenuIcons.name("Nexus Slot"),
                 List.of(MenuIcons.line("Currently: " + where, NamedTextColor.DARK_GRAY),
                         MenuIcons.line("Click to choose a different cell.",
                                 NamedTextColor.DARK_GRAY))));
@@ -282,7 +282,7 @@ public final class SettingsMenu extends Menu {
                 : NexusSlotPickerLayout.slotName(stoneSlot);
         getInventory().setItem(SettingsMenuLayout.STONE_SLOT_SETTING_SLOT, MenuIcons.icon(
                 Material.ITEM_FRAME,
-                MenuIcons.line("Ability Stone Slot", NamedTextColor.GRAY),
+                MenuIcons.name("Ability Stone Slot"),
                 List.of(MenuIcons.line("Currently: " + stoneWhere, NamedTextColor.DARK_GRAY),
                         MenuIcons.line("Click to choose a different hotbar cell.",
                                 NamedTextColor.DARK_GRAY))));

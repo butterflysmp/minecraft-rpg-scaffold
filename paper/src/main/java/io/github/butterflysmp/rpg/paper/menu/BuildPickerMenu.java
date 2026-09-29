@@ -395,7 +395,7 @@ public final class BuildPickerMenu extends Menu {
         getInventory().setItem(BuildMenuLayout.CLOSE_SLOT, MenuIcons.close());
         getInventory().setItem(BuildMenuLayout.BACK_SLOT, MenuIcons.back(Material.ARROW, "Build"));
         getInventory().setItem(BuildMenuLayout.PICKER_TITLE_SLOT, MenuIcons.icon(material(),
-                MenuIcons.line(title(kind, slotIndex), NamedTextColor.GRAY), List.of()));
+                MenuIcons.name(title(kind, slotIndex)), List.of()));
 
         Optional<PlayerProfile> profile = profiles.profile(viewer.getUniqueId());
         Optional<Equipped> equipped = adapters.stones().equippedFor(viewer.getUniqueId(), profile);
@@ -485,8 +485,15 @@ public final class BuildPickerMenu extends Menu {
      */
     private ItemStack optionIcon(String id, boolean current, boolean inOtherActive) {
         if (EMPTY_THE_SLOT.equals(id)) {
-            return MenuIcons.icon(Material.BARRIER, MenuIcons.line("Empty this slot", NamedTextColor.GRAY),
-                    List.of(MenuIcons.line("Click to remove the fragment here.", NamedTextColor.DARK_GRAY)));
+            // NAMES ITS KIND: this option is offered on the fragment AND the aspect pickers, and said "fragment"
+            // on both until the NEXUS polish slice (PLAN-nexus-polish.md B1, F2).
+            //
+            // A BUCKET, NOT A BARRIER: the seat's N2 keeps BARRIER for "can't use / locked" and Ben's "nothing
+            // here" (NEXT.md, TWO BARRIERS ON ONE SCREEN), and this is an ACTION. An empty bucket is the
+            // default; the material is Ben's.
+            String what = kind == Kind.ASPECT ? "aspect" : "fragment";
+            return MenuIcons.icon(Material.BUCKET, MenuIcons.name("Empty this slot"),
+                    List.of(MenuIcons.line("Click to remove the " + what + " here.", NamedTextColor.DARK_GRAY)));
         }
         List<Component> lore = new ArrayList<>();
         Component name = switch (kind) {
