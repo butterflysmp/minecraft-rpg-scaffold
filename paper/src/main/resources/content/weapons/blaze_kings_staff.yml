@@ -1,10 +1,13 @@
 # THE BLAZE KING'S STAFF -- a port from the old project (cfde822, StaffListener), LEGACY-A
 # (PLAN-legacy-port.md 2.6).
 #
-# MECHANISM, NOT STRUCTURE: left-click throws a fireball; right-click, "Smolder", sets everything around the
-# wielder burning. The old fireball was a SmallFireball entity; this engine's projectiles are an item or an
-# arrow, so it throws a fire charge. The old Smolder ignited, then hit each burning body once a second; here
-# the burn is Scorch, which fire.yml's applies_status puts on every fire hit.
+# MECHANISM, NOT STRUCTURE: left-click throws a fireball. The old fireball was a SmallFireball entity; this
+# engine's projectiles are an item or an arrow, so it throws a fire charge. Its burn is Scorch, which
+# fire.yml's applies_status puts on every fire hit.
+#
+# ONE INPUT, BY RULING. cfde822's staff also had a right-click, "Smolder", a burst that set everything near the
+# wielder burning. Ben, 2026-09-29: "Let's remove the smolder ability on the blaze kings staff". So this staff
+# has no right_click, and PLAN-legacy-port.md's Q-P5 (should a caster-centred burst hit players) is moot for it.
 #
 # ================== EVERY NUMBER IS PROVISIONAL (Ben, 2026-09-29) ==================
 #
@@ -13,17 +16,6 @@
 #             cooldown 8    cfde822's 400 ms = 8 ticks, already on the 4-tick grid.
 #             speed    1.5  cfde822's velocity.
 #             gravity  0.05, lifetime 40: flint_staff's thrown item (no cfde822 figure in this port's record).
-#   Smolder   amount   1    cfde822 BLAZE_SMOLDER_DPS_BASE, its GS-1 per-second base, carried direct.
-#             cost    40    cfde822's mana.
-#             cooldown 400  cfde822's 20 s, on the grid.
-#             radius  10    cfde822's.
-#
-# SMOLDER'S BURN IS SMALL, AND THAT IS THE CARRIED NUMBER, NOT A BUG. Scorch is capped by the damage of the hit
-# that applied it (StatusDefinition.Scorch), and this hit is 1. A burst with no damage at all would burn for
-# nothing (PLAN-legacy-port.md F12). Ben: "everything will be getting tuned later".
-#
-# A CASTER-CENTRED BURST HITS OTHER PLAYERS today (PLAN-legacy-port.md F6); whether it should is Ben's open
-# Q-P5. cfde822's Smolder skipped party members.
 id: blaze_kings_staff
 display_name: "Blaze King's Staff"
 element: fire
@@ -52,20 +44,3 @@ triggers:
       - type: damage
         amount: 30
         element: fire
-  right_click:
-    name: "Smolder"
-    description:
-      - "Everything near you starts to burn."
-    cooldown_ticks: 400
-    cost:
-      resource: mana
-      amount: 40
-    cast:
-      type: self
-    on_hit:
-      - type: burst
-        radius: 10
-        effects:
-          - type: damage
-            amount: 1
-            element: fire
