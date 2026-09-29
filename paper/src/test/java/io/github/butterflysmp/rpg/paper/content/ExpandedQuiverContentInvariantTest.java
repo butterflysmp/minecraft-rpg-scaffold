@@ -87,8 +87,12 @@ class ExpandedQuiverContentInvariantTest {
      * and that file's table was updated in the same slice. <b>Recorded here because this is the row
      * a future author meets first</b>, and the interesting fact about a sixth ranger weapon is not
      * that there are six.
+     *
+     * <p><b>6 -> 7 on 2026-09-29, LEGACY-A: {@code short_bow}</b>, the old project's instant bow
+     * (PLAN-legacy-port.md 2.3). It authors {@code quiver_size: 8} (the Boltor's, provisional), so the
+     * invariant below passed on it unedited, as it did for the Plume. It is NOT in the dev-weapon exemption set.
      */
-    private static final int KNOWN_RANGER_WEAPONS = 6;
+    private static final int KNOWN_RANGER_WEAPONS = 7;
 
     /**
      * THE ONE EXEMPTION, AND IT IS A DEV WEAPON IN THE DELETION SET.

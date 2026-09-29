@@ -98,8 +98,12 @@ class ScorchContentInvariantTest {
      * {@code active_placeholder_melee} carries two (the direct hit and its burst), {@code
      * active_placeholder_melee_thrust} one and {@code ultimate_placeholder_melee} one, inside its burst. The two
      * new aspects only modify numbers and add none. Recount with this test's own pattern.
+     *
+     * <p><b>21 -> 23 on 2026-09-29, LEGACY-A (PLAN-legacy-port.md): +2, both {@code blaze_kings_staff}.</b> Its
+     * Fireball's direct hit and its Smolder burst. {@code short_bow} is kinetic and adds none. Counted per file with
+     * this test's own pattern (blaze 2, short bow 0; control: {@code flint_staff} 1), not by adding the delta.
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 21;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 23;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare
