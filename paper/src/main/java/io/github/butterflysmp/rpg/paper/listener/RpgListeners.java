@@ -105,6 +105,9 @@ import org.bukkit.damage.DamageSource;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.entity.SmallFireball;
+import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.entity.EntityCombustByEntityEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
@@ -521,12 +524,26 @@ public final class RpgListeners implements Listener {
      * passes through rather than stopping. <b>A pass-through is not a clean pass-through</b>, and the
      * boot row is what says whether that hitch is visible.
      *
-     * <p>{@code ENTITY} only. A BLOCK hit is left alone deliberately: the body is meant to stick, and
-     * the armed lifetime removes it on the next tick -- see {@code spawnBoltMarker}.
+     * <p>For an ARROW, {@code ENTITY} only. A BLOCK hit is left alone deliberately: the body is meant
+     * to stick, and the armed lifetime removes it on the next tick -- see {@code spawnArrowBody}.
+     *
+     * <h2>A FIREBALL BODY HAS ITS BLOCK HITS CANCELLED TOO, AND THE KIND TEST IS WHY THE ARROW STILL STICKS</h2>
+     *
+     * <p>LEGACY-B. A fireball's block hit reaches {@code BlockState.onProjectileHit} unless
+     * {@code hitCancelled}, and through it {@code TntBlock} PRIMES (the fireball is always on fire) and
+     * {@code CampfireBlock} LIGHTS -- read from the jar, {@code PLAN-legacy-b.md} section 2.2. Cancelling
+     * sets {@code hitCancelled}, and {@code Projectile.onHitBlock} then returns before that call. <b>It
+     * does not keep the body</b>: {@code SmallFireball.onHit} discards it on any contact, cancelled or
+     * not, and the flight resolves on its own ray. <b>And it does not stop fire placement</b>, which is
+     * not gated on {@code hitCancelled}; {@code setIsIncendiary(false)} at the spawn does that.
+     *
+     * <p>Keyed on the body's TYPE, so an arrow's block hit is still left alone. <b>Sole witness: gate
+     * row LB5 (b)</b>, the TNT that does not prime. No unit test can raise this event.
      */
     @EventHandler(ignoreCancelled = true)
     public void onPlumeBodyHit(ProjectileHitEvent event) {
-        if (event.getHitEntity() == null) return;               // a block hit is not ours to refuse
+        // A block hit is not ours to refuse for an arrow, which sticks; it is for a fireball.
+        if (event.getHitEntity() == null && !(event.getEntity() instanceof SmallFireball)) return;
         if (!event.getEntity().getPersistentDataContainer()
                 .has(adapters.keys().markerEntity, PersistentDataType.BYTE)) {
             return;
@@ -576,6 +593,54 @@ public final class RpgListeners implements Listener {
                         + " what closes it. Check that onPlumeBodyHit is registered and that this hit"
                         + " came through preHitTargetOrDeflectSelf. The damage is cancelled here;"
                         + " castRay owns every hit -- see PaperCombatWorld.spawnBoltMarker.");
+    }
+
+    /**
+     * A MARKER BODY MUST NEVER SET ANYTHING ALIGHT. A BACKSTOP, LOUD, THAT SHOULD NEVER FIRE.
+     *
+     * <p>LEGACY-B. A {@code SmallFireball} that hits an entity raises this event (5 s) before its
+     * damage, in {@code SmallFireball.onHitEntity}. {@link #onPlumeBodyHit} cancels the entity hit, and
+     * then {@code onHitEntity} never runs, so <b>this should never fire</b>. If it does, the cancel did
+     * not take, and the target would burn on vanilla's clock, uncredited, beside our Scorch.
+     *
+     * <p>Logged for {@link #onPlumeBodyDamage}'s reason: a silent backstop is a second mechanism, and a
+     * logged one is a detector.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onMarkerBodyCombust(EntityCombustByEntityEvent event) {
+        if (!event.getCombuster().getPersistentDataContainer()
+                .has(adapters.keys().markerEntity, PersistentDataType.BYTE)) {
+            return;
+        }
+        event.setCancelled(true);
+        adapters.log().warning(
+                "[fireball] A MARKER BODY set " + event.getEntity().getType() + " alight --"
+                        + " onPlumeBodyHit's ProjectileHitEvent CANCEL DID NOT TAKE, so"
+                        + " SmallFireball.onHitEntity ran. The combust is cancelled here; castRay owns"
+                        + " every hit and Scorch is the burn -- see PaperCombatWorld.spawnFireballBody.");
+    }
+
+    /**
+     * A MARKER BODY MUST NEVER PLACE FIRE. A BACKSTOP, LOUD, BEHIND {@code setIsIncendiary(false)}.
+     *
+     * <p>LEGACY-B. {@code SmallFireball.onHitBlock} raises this event before placing fire when the
+     * fireball {@code isIncendiary} -- and <b>that branch is not gated on the hit being cancelled</b>,
+     * so {@link #onPlumeBodyHit}'s cancel does not reach it. {@code PaperCombatWorld.spawnFireballBody}
+     * sets {@code isIncendiary} false, so <b>this should never fire</b>. If it does, that line did not
+     * take or was deleted as redundant.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onMarkerBodyIgnite(BlockIgniteEvent event) {
+        Entity igniter = event.getIgnitingEntity();
+        if (igniter == null || !igniter.getPersistentDataContainer()
+                .has(adapters.keys().markerEntity, PersistentDataType.BYTE)) {
+            return;
+        }
+        event.setCancelled(true);
+        adapters.log().warning(
+                "[fireball] A MARKER BODY tried to place fire at " + event.getBlock().getLocation()
+                        + " -- setIsIncendiary(false) DID NOT TAKE. The ignite is cancelled here --"
+                        + " see PaperCombatWorld.spawnFireballBody.");
     }
 
     @EventHandler
