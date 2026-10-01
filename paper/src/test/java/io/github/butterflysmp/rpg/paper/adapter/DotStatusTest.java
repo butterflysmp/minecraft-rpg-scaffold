@@ -33,14 +33,23 @@ class DotStatusTest {
         var ctx = new AdapterContext(null, null, null, null, null, null, null, null, 0.0, null, null,
                 null, null, () -> false);
         var clock = new FakeTickTarget();
+        var sink = new FakeScorchSink(clock, 100.0);
         UUID id = UUID.randomUUID();
 
-        ctx.wither().apply(id, clock, new FakeScorchSink(clock, 100.0), 1, 2.0, UUID.randomUUID(),
+        ctx.wither().apply(id, clock, sink, 1, 2.0, UUID.randomUUID(),
                 Wither.DEFAULT_DURATION_TICKS, "wither");
 
         assertTrue(ctx.wither().isActive(id), "the wither store holds it");
         assertFalse(ctx.scorch().isScorched(id), "and Ignite's store never sees it (WS2)");
         assertNotSame(ctx.scorch(), ctx.wither(), "two instances, by construction");
+
+        // AND THE CONTEXT BUILT IT AT WITHER'S RATES. The clock rows below build their own store, so
+        // without this a context wired with Scorch.RATES would pass every one of them.
+        clock.advance(400);
+        assertEquals(List.of(40L, 80L, 120L, 160L, 200L),
+                sink.burns.stream().map(FakeScorchSink.Burn::atTick).toList(),
+                "the context's wither ticks every 40, five times");
+        // Mutation: build the context's wither instance from Scorch.RATES -> six burns at 20 -> reddens.
     }
 
     /**
