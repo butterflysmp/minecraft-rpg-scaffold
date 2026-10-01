@@ -704,6 +704,97 @@ class ProjectileFlightTest {
                 "a TRAIL is orthogonal to both and must not be caught by the exclusion");
     }
 
+    /**
+     * THE BODY ID REACHES THE PORT UNCHANGED, AND THE ARROW IS THE CONTROL (LEGACY-B).
+     *
+     * <p>{@code spawnBoltMarker} grew the id as a parameter on the day a second body existed, as
+     * {@code AbilitySchema.parseBody}'s javadoc said it would. Core stays kind-agnostic: the id is a
+     * string, as {@code item} already is, and the adapter is what knows a fireball from an arrow.
+     *
+     * <p><b>Two casts in one row, so the assertion cannot pass on a constant.</b> A launch that
+     * hard-coded {@code "fireball"} (or kept passing {@code "arrow"}) would satisfy one of the two
+     * bodies and redden the other.
+     *
+     * <p>Mutation: pass a literal {@code "arrow"} at the call site in {@code ProjectileFlight.launch}
+     * -> the fireball assertion reddens and the arrow one does not.
+     */
+    @Test
+    void theBodyIdReachesThePortUnchangedForAFireballAndForAnArrow() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, bodied("fireball", 1.0, 0, 5), FORWARD);
+        cast(world, caster, bodied("arrow", 1.0, 0, 5), FORWARD);
+
+        assertEquals(2, world.markersEverSpawned.size(), "one body per cast");
+        assertEquals("fireball", world.boltMarkerBodies.get(world.markersEverSpawned.get(0)),
+                "the fireball's id reaches the port as authored");
+        assertEquals("arrow", world.boltMarkerBodies.get(world.markersEverSpawned.get(1)),
+                "and the arrow's, so the row cannot pass on a constant");
+        assertNull(world.markers.get(world.markersEverSpawned.get(0)),
+                "a fireball is a BODY, not an item marker: spawnMarker must not have been called");
+    }
+
+    /**
+     * {@code gravity: 0} IS A STRAIGHT LINE, OVER THE WHOLE FLIGHT, AND THE BODY GOES AT THE FUSE.
+     *
+     * <p>The Blaze King's Staff is the first content to author {@code gravity: 0} (Ben, 2026-09-29:
+     * <i>"A straight line"</i>), so this is new in content and was untested. No core change was
+     * needed for it: {@code launchOne} adds no lift and a zero gravity leaves {@code nextVelocity}
+     * equal to {@code velocity}. <b>This row pins that, over every tick and not one</b>, because a
+     * one-tick assertion cannot see a drift that starts on tick two.
+     *
+     * <p>Staged at the staff's own numbers: speed 1.5, {@code max_lifetime_ticks 160} (Ben's
+     * "8 second despawn time", the seat's 160), aimed into open air so the fuse is the only exit.
+     * <b>The removal at the fuse is the Q-B5 ruling</b> ("the drive REMOVES the entity when its
+     * lifetime ends"), and the existing fuse path already does it; this row is its witness for a
+     * fireball body at the ruled lifetime.
+     *
+     * <p>Every expected position is computed in the row from the same additions the flight makes,
+     * never typed as a literal.
+     *
+     * <p>Mutations: give {@code launchOne} a lift, or apply gravity when it is zero -> the driven-
+     * vector assertion reddens. Drop {@code resolve} on the fuse -> the leak assertion reddens.
+     */
+    @Test
+    void aZeroGravityFireballFliesOneStraightLineUntilItsFuseRemovesIt() {
+        var world = new FakeWorld();
+        var caster = new FakeWorld.Dummy(Vec3.ZERO);
+
+        cast(world, caster, bodied("fireball", 1.5, 0, 160), EYE_FORWARD);
+        UUID body = world.markersEverSpawned.get(0);
+
+        world.advanceTicks(158);
+        assertTrue(world.markerPositions.containsKey(body), "still flying before its 160th step");
+        world.advanceTicks(10);
+        assertFalse(world.markerPositions.containsKey(body),
+                "removed when the lifetime ends -- the drive's removal, not an orphan");
+
+        List<Vec3> driven = world.markerVelocities.get(body);
+        assertEquals(159, driven.size(), "one drive per step that did not resolve");
+        Vec3 step = new Vec3(1.5, 0, 0);
+        for (int i = 0; i < driven.size(); i++) {
+            assertEquals(step, driven.get(i), "drive " + i + " must equal the first: no drop, no drift");
+        }
+
+        assertEquals(160, world.castRayFrom.size(), "one traced segment per step");
+        Vec3 at = EYE_FORWARD.origin();
+        for (int i = 0; i < world.castRayFrom.size(); i++) {
+            assertEquals(at, world.castRayFrom.get(i), "segment " + i + " starts on the one line");
+            at = at.add(step);
+        }
+        assertEquals(EYE_FORWARD.origin().y(), world.markerRemovedAt.get(body).y(), 0.0,
+                "and it went out at the height it was fired from");
+    }
+
+    /** One body of the named kind, no trail, a payload that presents nothing. */
+    private static AbilityDefinition bodied(String body, double speed, double gravity, int lifetime) {
+        return new AbilityDefinition("grenade", "Grenade", "fire",
+                0, ResourceCost.FREE,
+                new CastSpec.Projectile(speed, gravity, lifetime, null, null, null, body),
+                List.of(new EffectSpec.Damage(12, "fire")));
+    }
+
     /** 1 block/tick, no gravity, an ARROW body AND a trail -- what all four Plume casts author. */
     private static AbilityDefinition arrowBoltWithTrail(String trail, int lifetime) {
         return new AbilityDefinition("grenade", "Grenade", "fire",

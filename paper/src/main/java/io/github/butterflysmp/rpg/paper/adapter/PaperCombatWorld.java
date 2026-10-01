@@ -23,6 +23,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.SmallFireball;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.RayTraceResult;
@@ -662,8 +663,7 @@ public final class PaperCombatWorld implements CombatWorld {
      * {@code setDeltaMovement} and touches neither -- verified from the jar -- which is why the
      * velocity goes in that way both here and in {@link #driveMarker}.
      */
-    @Override
-    public UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks) {
+    private UUID spawnArrowBody(Vec3 at, Vec3 velocity) {
         // *** world.spawnArrow, NOT world.spawn -- AND THE DIFFERENCE IS NOT STYLE. ***
         //
         // CraftWorld.spawnArrow is a different construction path end to end, read from the pinned
@@ -753,6 +753,88 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * A bolt body of the authored kind. <b>This switch and {@code AbilitySchema.parseBody}'s set are
+     * one list in two files</b>: the schema refuses any id that is not here, so the {@code default}
+     * arm is reachable only by a kind added to the schema and not to this switch, and it throws on
+     * the cast rather than flying a bolt with no body.
+     *
+     * <p>{@code expectedLifetimeTicks} is not read by either kind. The arrow arms its own lifetime
+     * ({@link #ARMED_ARROW_LIFETIME}); the fireball has no vanilla timer to arm at all (see
+     * {@link #spawnFireballBody}), so its normal end is the flight's fuse calling {@link #removeMarker}.
+     */
+    @Override
+    public UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks, String body) {
+        return switch (body) {
+            case "arrow" -> spawnArrowBody(at, velocity);
+            case "fireball" -> spawnFireballBody(at, velocity);
+            default -> throw new IllegalArgumentException("no bolt body named '" + body
+                    + "' -- AbilitySchema.parseBody accepted an id this adapter cannot build");
+        };
+    }
+
+    /**
+     * The Blaze King's Staff's fireball (LEGACY-B): a real {@code SmallFireball}, DRIVEN along the path
+     * core computes, with core's {@code castRay} owning every hit (Q-B2, the seat: option 1-prime).
+     * {@code PLAN-legacy-b.md} sections 2 to 5 carry the jar readings this cites.
+     *
+     * <h2>WHAT THE BODY WOULD DO ON ITS OWN, AND WHAT STOPS EACH</h2>
+     *
+     * <pre>
+     *   vanilla 5 damage + 5 s ignite on an entity   RpgListeners.onPlumeBodyHit cancels the entity hit
+     *                                                 (backstops: onPlumeBodyDamage, onMarkerBodyCombust)
+     *   TNT primed, campfire lit, bell, target        onPlumeBodyHit cancels the BLOCK hit too, for a
+     *                                                 fireball only (the arrow must still stick)
+     *   fire placed on a block                        setIsIncendiary(false), below
+     *                                                 (backstop: RpgListeners.onMarkerBodyIgnite)
+     *   speeding up toward 1.9 blocks a tick          driveMarker's compensated velocity (FireballDrive)
+     *   explosion                                     nothing to stop: only LargeFireball explodes
+     *   punched back                                  nothing to stop: small_fireball is not in the
+     *                                                 redirectable_projectile tag
+     *   gravity                                       nothing to stop: the tick never applies it
+     * </pre>
+     *
+     * <h2>*** setIsIncendiary(false) IS LOAD-BEARING AND WILL READ AS REDUNDANT BESIDE THE CANCEL ***</h2>
+     *
+     * <p>{@code SmallFireball.onHitBlock} places fire when {@code isIncendiary}, and that branch is
+     * <b>not</b> gated on {@code hitCancelled}: a cancelled block hit still reaches it (read from the
+     * jar, PLAN section 3). Cancelling the hit event stops TNT and campfires and does NOT stop the fire.
+     * The default is {@code true} for a fireball with no Mob owner, which ours is. <b>Its sole witness
+     * is gate row LB5</b>: no unit test can see a fire block.
+     *
+     * <h2>NO SHOOTER, NOT PERSISTENT, TAGGED -- AS THE ARROW</h2>
+     *
+     * <p>{@code setShooter(null)}: castRay owns every hit, and an owner would only give vanilla a reason
+     * to treat this as somebody's fireball. It also means the owner-removed despawn in
+     * {@code AbstractHurtingProjectile.tick} never fires. The tag is what {@link #markerOf}, the hit
+     * cancel and both backstops read.
+     *
+     * <h2>NO VANILLA TIMER, SO THE ORPHAN FLIES (Q-B5)</h2>
+     *
+     * <p>A hurting projectile has no lifetime: it is discarded only at its first block or entity
+     * contact, when its chunk is not loaded, or when its owner is removed. <b>The normal end is the
+     * flight's fuse</b> ({@code max_lifetime_ticks}, 160 on the staff), which calls
+     * {@link #removeMarker}. An orphan -- a step chain that never reaches its fuse, as when a region
+     * unloads mid-flight -- keeps flying until a block, an unloaded chunk or a save, which
+     * {@code setPersistent(false)} covers. The seat accepted that (Q-B5); {@code NEXT.md} records it.
+     *
+     * <p><b>NOT {@code launchProjectile}</b>: that makes the player the owner. {@code world.spawn} with a
+     * consumer configures the body BEFORE it is added to the world, so no event can see it untagged.
+     * The velocity is the compensated drive, the same one {@link #driveMarker} will set on this frame.
+     */
+    private UUID spawnFireballBody(Vec3 at, Vec3 velocity) {
+        Vec3 drive = FireballDrive.velocityFor(velocity);
+        SmallFireball body = world.spawn(toLocation(at), SmallFireball.class, fireball -> {
+            fireball.setIsIncendiary(false);   // LOAD-BEARING: see the javadoc. Sole witness LB5.
+            fireball.setShooter(null);
+            fireball.setPersistent(false);
+            fireball.getPersistentDataContainer()
+                    .set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
+            fireball.setVelocity(new Vector(drive.x(), drive.y(), drive.z()));
+        });
+        return body.getUniqueId();
+    }
+
+    /**
      * Drive a marker: hand the platform's own mover this tick's displacement and let IT move the
      * entity. Deliberately NOT a reposition.
      *
@@ -836,7 +918,12 @@ public final class PaperCombatWorld implements CombatWorld {
     public void driveMarker(UUID markerId, Vec3 stepVelocity) {
         Entity marker = markerOf(markerId);
         if (marker != null) {
-            marker.setVelocity(new Vector(stepVelocity.x(), stepVelocity.y(), stepVelocity.z()));
+            // A FIREBALL'S OWN TICK PUSHES AND DRAGS BEFORE IT MOVES, so it is handed the velocity
+            // that its applyInertia turns back into this step (FireballDrive; Q-B3 COMPENSATE). An
+            // arrow and an item drag AFTER the move, so they take the step as it is.
+            Vec3 drive = marker instanceof SmallFireball
+                    ? FireballDrive.velocityFor(stepVelocity) : stepVelocity;
+            marker.setVelocity(new Vector(drive.x(), drive.y(), drive.z()));
         }
         // Silently absent is CORRECT here and is a reachable state, not a defensive one: a driven
         // ITEM body is a fully participating item entity, and fire, lava and cactus destroy those.

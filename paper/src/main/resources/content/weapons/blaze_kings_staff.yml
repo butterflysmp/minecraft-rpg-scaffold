@@ -1,0 +1,68 @@
+# THE BLAZE KING'S STAFF -- a port from the old project (cfde822, StaffListener). LEGACY-A shipped it as a thrown
+# fire charge on left-click and then took it out; LEGACY-B re-adds it here (PLAN-legacy-b.md).
+#
+# MECHANISM, NOT STRUCTURE: right-click shoots a fireball. Ben, 2026-09-29: "The Blaze King's Staff is supposed to
+# shoot an actual fire ball not the item, it also isn't supposed to be effected by gravity. A straight line. Also
+# the ability should be Right Click not left." So the body is a real fireball (Q-B1, Ben: "yes, blaze fire ball",
+# a SmallFireball), it flies straight (gravity 0), and the input is right_click. Its burn is Scorch, which
+# fire.yml's applies_status puts on every fire hit.
+#
+# THE FIREBALL IS A BODY, NOT THE HIT. Core's flight traces every hit and the fireball entity is driven along that
+# path (Q-B2, the seat: option 1-prime), so the gear score, PLAYERHIT and Scorch apply exactly as for every other
+# projectile. Everything the vanilla fireball would do on its own -- its own 5 damage, setting the target and the
+# blocks alight, priming TNT -- is switched off in the adapter (PaperCombatWorld.spawnFireballBody).
+#
+# ONE INPUT, BY RULING. cfde822's staff also had "Smolder"; Ben, 2026-09-29: "Let's remove the smolder ability on
+# the blaze kings staff". So this staff has right_click only.
+#
+# NO KNOCKBACK, AND THAT IS NOT AN OMISSION. A travelling RANGED weapon authors knockback (CLAUDE.md); this is a
+# MAGE weapon, which that rule leaves UNRULED, not excluded. Do not add one, and do not cite that rule here.
+#
+# ================== EVERY NUMBER IS PROVISIONAL (Ben, 2026-09-29) ==================
+#
+#   amount             30    cfde822's GS-1 base (power), carried direct as flint_staff's 20 was.
+#   cost                8    cfde822's mana.
+#   cooldown            8    cfde822's 400 ms = 8 ticks, already on the 4-tick grid.
+#   speed             1.5    cfde822's velocity.
+#   gravity             0    Ben's words, "A straight line". Replaces LEGACY-A's 0.05.
+#   max_lifetime_ticks 160   Ben, Q-B4: "8 second despawn time, not a set block range". The flight removes the
+#                            body when it ends (Q-B5); no block range is authored.
+#   visuals                  Ben, Q-B6: "use the old sounds and effects" -- cfde822's, in blaze_fireball_cast.yml
+#                            and blaze_fireball_impact.yml.
+#   description              "Throws a burning charge." kept (Q-B7 was not answered; the seat's default).
+id: blaze_kings_staff
+display_name: "Blaze King's Staff"
+element: fire
+rarity: legendary
+class: mage
+material: blaze_rod
+flavor:
+  - "The Blaze King kept it lit."
+  - "It has not gone out since."
+triggers:
+  right_click:
+    name: "Fireball"
+    description:
+      - "Throws a burning charge."
+    cooldown_ticks: 8
+    cost:
+      resource: mana
+      amount: 8
+    on_cast:
+      - type: visual
+        visual_id: blaze_fireball_cast
+    cast:
+      type: projectile
+      speed: 1.5
+      gravity: 0
+      max_lifetime_ticks: 160
+      body: fireball
+    on_hit:
+      # cfde822 played this on every contact, entity or block. Here it also plays where the 160-tick fuse runs
+      # out in mid-air, because ProjectileFlight lands a fuse as an impact with no target (flint_impact.yml has
+      # the same property). cfde822's fireball had no fuse, so it never did that.
+      - type: visual
+        visual_id: blaze_fireball_impact
+      - type: damage
+        amount: 30
+        element: fire
