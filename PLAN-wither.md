@@ -75,6 +75,50 @@ beside it.
 The sections below keep their survey text. Where a ruling settles them, they carry a `RULED` note and are not
 rewritten.
 
+### BEN, 2026-09-30, VERBATIM: the answers to Q-W1 to Q-W10
+
+```
+"8, yes everything else is fine"
+```
+
+**How the seat read it.** "8, yes" answers Q-W8. "Everything else is fine" accepts every PROPOSED value that had
+one:
+
+| | ruled |
+|---|---|
+| **Q-W1** | **a tick every 40 ticks (2 s)** |
+| **Q-W2** | **`min(5% of max, cap)` per tick, the cap HALF the applying hit** (`CAP_FRACTION 0.5`, as Scorch) |
+| **Q-W3** | **lasts 200 ticks (10 s)**, so 5 ticks (`ceil(200/40)`) |
+| **Q-W4** | **a re-hit RESETS the timer, as Scorch** (newest cap and credit, the clock not restarted); **no stacking** |
+| **Q-W5** | **it hurts players (PvP).** *Live only when PvP is: nothing can hit a player with a weapon today (section 8)* |
+| **Q-W8** | **"yes": a mob that is scorched AND withered and dies to a Wither tick STILL EXPLODES.** Ignite stays "died while scorched", unchanged. **WS2's guarantee narrows to: a NEVER-SCORCHED mob killed by Wither does not explode.** The gate carries the negative row (never scorched) and a scorched+withered positive row |
+| **Q-W9** | **the bow at 9.1's PROVISIONAL column**: damage 16, cooldown 16, quiver 8, reload 60 (the Short Bow's). The rest of that column, which "everything else is fine" also covers, is speed 3.0, gravity 0.05, lifetime 120 and knockback 0.1. **To be tuned later** |
+
+**THE SEAT FILLED THREE QUESTIONS THAT HAD NO PROPOSAL.** Ben has been told and can overrule at the gate:
+
+- **Q-W6: wither skeletons, the Wither and the Knell are IMMUNE** (vanilla-like). The Knell is a `wither_skeleton`,
+  so **an entity-type list `[wither_skeleton, wither]` covers all three**. Here a type key is the ruling, not the
+  per-entity trap `MobDefinition` warns about, because every wither skeleton is meant to be immune. *Phase 2:*
+  author the list in `statuses/withering.yml` (content as data), not in Java.
+- **Q-W7: option (a), the vanilla WITHER potion for its look only, with its own damage suppressed** (a gate in
+  `onEnvironmentalDamage` beside FIRE_TICK's: cause `WITHER` && `wither().isWithered(id)` → token, before
+  `damageWindow.claim`). The immune mobs are exactly the ones Paper refuses the potion on, so (a) loses nothing.
+  Section 6.4's consequences carry over unchanged, including that the gate would swallow a real wither skeleton's
+  vanilla wither on a player who is under ours too. **That case is only live once PvP is.**
+- **Q-W10: the bow's tooltip gets an "Inflicts Wither" line** (Ben may change the wording), and the status gains a
+  display name "Wither" if the schema needs one. **It does, and section 5.3 says what that costs.**
+
+### WHAT THE ANSWERS DO TO THE GATE (they move rows; the re-draft is in section 10)
+
+- **The Knell is immune, so it can no longer be the large target that shows the cap binding.** The cap binds when
+  `0.05 × max > cap` (arith):
+  - under `/rpg apply` (cap 2.0), any mob with max > 40;
+  - under the bow (cap `0.5 × 16 = 8`), a mob with max > 160.
+  
+  The one shipped custom mob is immune. **A vanilla candidate is a warden** (vanilla max 500), but whether mob scaling
+  moves its custom max is NOT predicted. **The row reads the max off the nameplate in the boot**, then predicts from
+  that.
+
 ### STANDING RULINGS THIS SURVEY TOUCHES, NOT RE-DERIVED HERE
 
 - **No custom item stacks above 1.** The bow is minted through `WeaponItems.mint`, so it inherits the rule.
@@ -239,6 +283,9 @@ is ALSO scorched, and is killed by a Wither tick, explodes.** This follows from 
 explode when killed by wither"* may mean to override that, or may not. **It is Q-W8.** Until it is answered, the WS2
 gate row uses a mob that has **never** been scorched.
 
+> **RULED 2026-09-30 (Q-W8, Ben: "8, yes"): it still explodes.** Ignite is unchanged. WS2's guarantee is exactly *a
+> never-scorched mob killed by Wither does not explode*, and the unit tests in 4.2 already test exactly that.
+
 ---
 
 ## 5. WS3: THE ELEMENT, THE ID, AND THE BLAST RADIUS
@@ -273,6 +320,41 @@ else (*read*). No status file has a `display_name`, and no tooltip line names a 
 element word and nothing about what it applies (*read*: no status reference in `WeaponLore` or `WeaponLoreLines`).
 **The player-visible "Wither" today is the element's word on the tooltip.** Giving statuses a display name is new
 schema, which makes it Q-W10.
+
+### 5.3 WHAT "INFLICTS WITHER" COSTS (Q-W10, filled by the seat; *read* unless marked)
+
+**Today:** `WeaponLore.build(weapon, elements, ...)` takes the `ElementRegistry` and **no `StatusRegistry`**.
+`elementLine` renders the element's `display_name`. `StatusDefinition`'s five records carry `id` (and, for two of them,
+a mechanic field) and **no display name**. **So the line can be had two ways, and they cost very different amounts.**
+
+**T1. DERIVED (the mechanic writes the line):** weapon element → `applies_status` → the status's `display_name` →
+"Inflicts Wither".
+- **schema:** an optional `display_name` in a status file. `StatusLoader.parse` reads it, and `StatusDefinition`
+  gains it, as a field on all five records or as one interface method. **Every test that constructs a status record
+  changes** (`StatusLoaderTest`, `ElementAccrualTest`, `ContentValidatorTest`, and so on); Phase 2 counts them.
+- **plumbing:** `WeaponLore.build` gains the `StatusRegistry`, and `WeaponItems`, its one production caller, passes
+  it, along with the tests that build lore.
+- **THE BLAST RADIUS IS THE DECISION.** If `scorch.yml` gets a `display_name` too, **five shipped fire weapons**
+  (`dragons_breath`, `ember_staff`, `emberblade`, `flint_staff`, `hunters_bow`) gain "Inflicts Scorch", and
+  `golden-lore.txt` moves for each. If only `withering.yml` gets one (the line renders only when a name is present),
+  fire weapons are unchanged and **wither is the only element whose tooltip names its status**. That inconsistency is
+  scoped but visible. **Ben's: do fire weapons say "Inflicts Scorch" too? (Q-W11)**
+- **It cannot lie.** The line exists exactly when the element accrues a status. Remove the accrual and the line goes
+  with it.
+- **One subtlety:** accrual reads each damage effect's `element:` and the line would read the weapon's top-level
+  `element:`. For this bow the two agree (`wither` and `wither`). *Inferred:* a weapon whose two elements differ would
+  show a line its hits do not earn. Phase 2 states which one the line reads.
+
+**T2. AUTHORED (the content file writes the line):** a weapon-level key or a flavor line reading "Inflicts Wither".
+- **cost:** almost nothing as flavor, which is zero code but renders italic and gray, as flavor does. A new key costs
+  a little more.
+- **it can lie.** Nothing ties the words to the mechanic. That is the `flint_staff.yml` "STACKS TO 64" shape: correct
+  on the day it is written, and unwatched afterwards.
+
+**RECOMMENDATION: T1, with `display_name` optional and the line rendered only when the status has one.** The display
+name "Wither" goes in `withering.yml`. Whether `scorch.yml` gets one is Q-W11. **Where the line sits** (directly under
+the element line, or below the gear-score line that Ben placed under the element on 2026-09-21) is proposed in Phase 2
+against `golden-lore.txt`, not here.
 
 ---
 
@@ -468,13 +550,16 @@ but no weapon wears the element until the bow. Every row here therefore applies 
 | R0a–c | build line names the head; the jar has `statuses/withering.yml`; `Loaded ... 5 statuses ...`, every other count unchanged | log |
 | **WS-C** · negative control · RUN FIRST | a never-scorched knell beside a second knell, killed by `/rpg mobdamage` with nothing applied: **no blast** (`GATE-ignite.md` I7's shape) | Ben |
 | WS1 | `/rpg apply withering 200` on a 20-max zombie: a `✖` number of **1** every **40 t** (PROPOSED), **5** of them, first one 2 s in; **no fire on the mob** | popup, Ben |
-| WS2 | the same on a knell (if not ruled immune): each tick **2** (`min(18, UNDECLARED_CAP 2.0)`), proving the cap binds | popup |
+| ~~WS2~~ | ~~the same on a knell (if not ruled immune): each tick **2** (`min(18, UNDECLARED_CAP 2.0)`), proving the cap binds~~ **WITHDRAWN 2026-09-30: the Knell is immune (Q-W6).** Replaced by WS2b | — |
+| WS2b | the cap binding, on a **non-immune** mob whose nameplate max is **> 40** (read the max first, in the boot): each tick **2** (`min(0.05 × max, 2.0)`). **The control row in the same block:** a 20-max zombie reads **1** (the percent arm) | DOTTICK |
+| WS2c | **immunity**: `/rpg apply withering 200` on a knell, a plain wither skeleton and (if staged) a Wither: **no tick, no DOTTICK line, no potion swirl** (Q-W6) | DOTTICK absence + Ben. *Null observation: record the command and the target, or "nothing happened" proves nothing* |
 | **WS3 · THE WS2 ROW** | a **never-scorched** mob with low HP (`/rpg mobdamage` it to ≤ 1 tick), withered, **dies to a Wither tick: NO explosion, no `ignite_blast`, the neighbour takes nothing** | Ben |
-| WS3-P · the positive control, same boot | the same staging with `/rpg apply scorch` instead: **it explodes** (Ignite still works, so WS3's silence means something) | Ben |
+| WS3-P · the positive control, same boot | **RE-DRAFTED for Q-W8:** the same staging, but the mob is **`/rpg apply scorch` AND `/rpg apply withering`**, and **a Wither tick kills it: it EXPLODES** (Ben's "8, yes"; Ignite unchanged). This also proves Ignite still works, so WS3's silence means something | Ben + DOTTICK (the killing tick names `withering`) |
 | WS4 | the death message for a WS3 kill names **the applier** (credit) | chat |
 | WS5 | re-apply every 10 t for 100 t: ticks still arrive every 40 t (refresh does not restart the clock) | popup |
-| WS6 | the look per Ben's Q-W7 pick. Under (a): particles on the zombie, none on the knell; **no extra number per tick** (the WITHER gate held) | Ben |
-| WS7 | immunity per Q-W6 | popup |
+| WS6 | **the look, (a) as ruled:** the vanilla wither swirl on the zombie for the window; **exactly one damage per tick** (one DOTTICK, no second number from vanilla's WITHER: the gate held) | Ben + DOTTICK count |
+| ~~WS7~~ | ~~immunity per Q-W6~~ **folded into WS2c** | — |
+| WS8 | **players (Q-W5) are NOT stageable:** nothing can hit a player with a weapon until PvP is live. `/rpg apply` targets a mob by its aim-ray (*inferred* from `RpgCommand`'s "the mob the player is aiming at"). **Recorded as unwitnessed, not as passed** | — |
 
 ### GATE-withered-shortbow.md (WITHERED-SHORTBOW)
 
@@ -484,7 +569,9 @@ but no weapon wears the element until the bow. Every row here therefore applies 
 | WB1 | tooltip, in order: **`Wither`** (dark gray), `Quiver: --/8`, blank, `Ranged Damage: <n>`, `Attack Speed: <20/cooldown, %.1f>`, …, **`Uncommon Ranged Weapon`**; a second `/rpg give` lands in its own slot | Ben |
 | **WB2 · PLAYERHIT** | zombie at `~8 ~ ~0`, one right-click: an arrow flies and **`PLAYERHIT … source=withered_shortbow/right_click … element=wither sent=<attack_damage>.000 crit=false triggerScore=100`** | PLAYERHIT line |
 | WB3 | after WB2's hit: `✖` tick numbers begin **one period later**, every period, for the ruled duration (the accrual path's first live instance) | popup |
-| WB4 | on a knell (if not immune): ticks of **`min(18, Q-W2's fraction × attack_damage)`**: the weapon's cap, not 2.0 | popup |
+| ~~WB4~~ | ~~on a knell (if not immune): ticks of `min(18, Q-W2's fraction × attack_damage)`~~ **WITHDRAWN: the Knell is immune.** Replaced by WB4b | — |
+| WB4b | **the weapon's cap**, on a non-immune mob whose nameplate max is **> 160** (read first; a warden is the candidate, and its scaled max is not predicted): each tick **8** (`0.5 × 16`), **not 2.0**. If no such mob can be staged, **the row is recorded UNWITNESSED**: below max 160 the percent arm hides the cap entirely | DOTTICK (`cap=8`) |
+| WB1b | **the tooltip carries "Inflicts Wither"** (Q-W10, wording Ben's to change), at the position Phase 2 fixes against `golden-lore.txt`. **A fire weapon's tooltip is unchanged, or gains "Inflicts Scorch"**, per Q-W11 | Ben |
 | **WB5 · the WS2 row on the real path** | a never-scorched zombie, hit once, **dies to a Wither tick: no explosion**. Then one with ≤ attack_damage HP **killed by the arrow itself: no explosion** (Ignite's second clause, K2) | Ben |
 | WB6 | it pushes (a zombie WITHOUT `NoAI`, as in SB3) | Ben |
 | WB7 | eight arrows, then the reload (as in SB4, with the ruled numbers) | Ben |
@@ -504,6 +591,15 @@ but no weapon wears the element until the bow. Every row here therefore applies 
 - content: `statuses/withering.yml` (new), `elements/wither.yml` (+`applies_status`), `elements/fire.yml` (the
   "only element" prose).
 
+**ADDED BY THE 2026-09-30 ANSWERS** (still *inferred*; Phase 2 measures):
+- **Q-W7 (a):** the potion applied beside the wither store, and **the WITHER gate in `onEnvironmentalDamage`**, which
+  is now in scope and no longer conditional;
+- **Q-W6:** the immunity list in `withering.yml` (`[wither_skeleton, wither]`), its parse, and the check at apply time;
+- **Q-W10 (T1):** an optional status `display_name` (`StatusLoader`, `StatusDefinition`, and every test constructing a
+  status record), `WeaponLore.build` taking the `StatusRegistry`, `WeaponItems` passing it, and `withering.yml`
+  `display_name: "Wither"`. **This belongs in WITHER-STATUS** (it is status schema), and the bow's
+  `golden-lore.txt` block shows its first rendering.
+
 **DOTTICK** (S3, its OWN commit inside WITHER-STATUS, with its own unit test): the shared store emits the line on
 each tick when `/rpg mobtrace` is on, for both instances. *Which class owns the mobtrace switch at that site, and
 how the store reaches it, is Phase 2's to read.* `MobNameplateManager` holds the switch today, and `RpgPlugin` passes
@@ -515,6 +611,12 @@ it to PLAYERHIT.
 ---
 
 ## 12. BEN'S QUESTIONS, IN PLAIN LANGUAGE
+
+> **ANSWERED 2026-09-30: "8, yes everything else is fine".** The seat filled Q-W6, Q-W7 and Q-W10. The ruled values
+> are in RULINGS, and the questions are kept below as they were asked. **One question is new, from Q-W10's costing:**
+>
+> - **Q-W11. Should fire weapons say "Inflicts Scorch" the way the bow says "Inflicts Wither"?** Yes changes five
+>   shipped tooltips. No leaves the bow as the only weapon whose tooltip names its effect (section 5.3).
 
 - **Q-W1. How often does Wither hurt?** Every 2 seconds like vanilla, or every second like Scorch? *(Proposed: every 2 s.)*
 - **Q-W2. How hard does each tick hit?** Proposed: 5% of the target's max health, but never more than **half** the
