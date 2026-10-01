@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
+import io.github.butterflysmp.rpg.core.combat.Wither;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.paper.accessory.Accessories;
 import io.github.butterflysmp.rpg.paper.build.Stones;
@@ -51,6 +52,8 @@ import java.util.logging.Logger;
  * read by the Settings screen and the slot picker, which are built from those same call sites
  * (PLAN-build-system.md section 2.5).
  *
+ * <p>{@code wither} is the second instance of {@code scorch}'s store ({@link DotStatus}, at
+ * {@code Wither.RATES}; WITHER-STATUS). A separate instance on purpose: Ignite reads {@code scorch} alone.
  * <p>{@code safeLandings} is a status store like {@code scorch}: a leap's fall-damage mark (section 7.6), armed by
  * the dash's handle and read by the FALL arm of {@code RpgListeners.onEnvironmentalDamage}.
  *
@@ -63,7 +66,7 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              ElementRegistry elements, EnchantRegistry enchants,
                              Logger log, Set<String> warned,
                              ImmobilizeStatus immobilize, SoakedStatus soaked,
-                             ImmobilizeStatus freeze, ScorchStatus scorch,
+                             ImmobilizeStatus freeze, ScorchStatus scorch, DotStatus wither,
                              CombatantStats stats, double anchorDrift,
                              CraftResultIndex craftResults, WeaponRegistry weapons,
                              Accessories accessories,
@@ -79,6 +82,10 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                           Stones stones, BooleanSupplier mobTrace) {
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
                 new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), new ScorchStatus(),
+                // THE SECOND INSTANCE OF THE ONE STORE, AND IT MUST BE A SEPARATE ONE (WS1, WS2): Ignite
+                // reads scorch() only, so handing this slot the scorch instance would make every withered
+                // death explode. DotStatusTest.aWitherApplicationNeverScorches holds it.
+                new DotStatus(Wither.RATES, "wither"),
                 stats, anchorDrift, craftResults, weapons, accessories, stones, new SafeLandings(), mobTrace);
     }
 

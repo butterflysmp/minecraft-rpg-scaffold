@@ -80,6 +80,7 @@ damage_symbol: "<gold>▲</gold>"
 # accrues and nothing else: an element that could declare arbitrary effects, rates and durations is
 # a far bigger feature than either thing this slice was for, and nobody has asked for it.
 #
-# FIRE IS THE ONLY ELEMENT THAT DECLARES THIS. The other six accrue nothing, and their files say so
+# FIRE AND WITHER ARE THE TWO ELEMENTS THAT DECLARE THIS (wither -> withering since WITHER-STATUS; this
+# said "fire is the only element" until then). The other five accrue nothing, and their files say so
 # by omission -- absent means off, never a rejection.
 applies_status: scorch
