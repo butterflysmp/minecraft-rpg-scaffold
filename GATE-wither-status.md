@@ -2,6 +2,10 @@
 
 **Status: NOT RUN.**
 
+*Amended 2026-10-01, BEFORE ANY BOOT, at the seat's rulings 5–7:* the `/rpg apply` reply now says **Refused** for an
+immune target (WS2c reads it beside DOTTICK's absence); forgetting a live wither strips the vanilla potion (new row
+WS9, UNWITNESSED); an unknown immune key is refused at load with a `Refusing` WARN (R0c's pattern). Rows 13 → 14.
+
 Every prediction below was written **before** any row of this file was read, and **this file is COMMITTED before the
 boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been read.
 **NO BOOT until the seat says so**, after the seat has diffed every slice.
@@ -14,10 +18,10 @@ boot**, the clock and percent rows here through `/rpg apply`, the weapon-capped 
 that line appears after the LOGIN with every predicted field as written.
 
 ```
-ROWS     13   R0a R0b R0c
-              WS-C WS1 WS2b WS2c WS3 WS3-P WS4 WS5 WS6 WS8
+ROWS     14   R0a R0b R0c
+              WS-C WS1 WS2b WS2c WS3 WS3-P WS4 WS5 WS6 WS8 WS9
          ──
-         13   = 3 R0 + 10 WS     git grep -c '^### R0\|^### WS' <ref> -- GATE-wither-status.md
+         14   = 3 R0 + 11 WS     git grep -c '^### R0\|^### WS' <ref> -- GATE-wither-status.md
 ```
 
 **Plan:** `PLAN-wither.md` on `docs/batch-surveys` (`fe73f5ff`): Ben's words and answers (2026-09-30), the seat's WS1–WS4,
@@ -59,9 +63,10 @@ DOTTICK <victim uuid> <type> status=<status id> applier=<uuid or -> sent=<%.3f> 
     @e[type=zombie,sort=nearest,limit=1] {NoAI:1b,PersistenceRequired:1b}` and step back four blocks →
     **`MOBSEED <uuid> zombie gs=20 source=… max=20`**. *`/rpg spawn` randomises vanilla spawn data, so it may be a
     baby or carry gear; the `max=` line is what is read, and a baby zombie's base max is also 20.*
-- **To apply:** look at the mob and run `/rpg apply withering 200`. **The reply ("Applied withering x1 (200t) to …")
-  is printed whether or not the status landed** (the command replies before the entity thread runs the arm, and the
-  immunity refusal is inside it), **so a reply is never a reading**; DOTTICK is.
+- **To apply:** look at the mob and run `/rpg apply withering 200`. On a non-immune mob the reply is
+  `Applied withering x1 (200t) to …`; **on an immune one it is `Refused: <type> is immune to withering
+  (statuses/withering.yml); nothing was applied`** (ruling 5; `ApplyArgsTest` pins the text). The reply says what the
+  command decided; **DOTTICK says what landed**, and the tick rows read DOTTICK.
 
 ---
 
@@ -128,11 +133,11 @@ $zip.Dispose()
 |---|---|
 | **The seat, 2026-10-01.** A **GS-100 zombie** (expected `max=100`; 5% = 5 > 2.0). `/rpg apply withering 200`: five lines with **`sent=2.000 cap=2.000`**: the cap binds. **The control, same block:** WS1's GS-20 zombie read **`sent=1.000 cap=2.000`**, the percent arm. Each `sent` is `min(0.05 × max, 2.0)` from that mob's own `MOBSEED max=` line | |
 
-### WS2c — immunity: wither skeletons and the Knell (SURVIVAL) — witness: DOTTICK ABSENCE + Ben, with a control
+### WS2c — immunity: wither skeletons and the Knell (SURVIVAL) — witness: the REPLY + DOTTICK ABSENCE + Ben, with a control
 
 | prediction | READING |
 |---|---|
-| Q-W6. `/rpg spawn knell`, and `/summon wither_skeleton ~3 ~ ~ {NoAI:1b,PersistenceRequired:1b}`. Look at each and run `/rpg apply withering 200`; **record the command and the target each time** (a null observation without them proves nothing). Over **240 ticks** after each: **no DOTTICK line naming that uuid, no wither swirl, the nameplate does not move.** **Control, immediately after:** the same command on a GS-100 zombie **does** produce DOTTICK lines, so the instrument was live. *The Wither boss is not staged (it explodes on spawn); its immunity is by the same list and is recorded UNWITNESSED* | |
+| Q-W6. `/rpg spawn knell`, and `/summon wither_skeleton ~3 ~ ~ {NoAI:1b,PersistenceRequired:1b}`. Look at each and run `/rpg apply withering 200`; **record the command and the target each time** (a null observation without them proves nothing). **The reply, for each (the Knell is a `wither_skeleton`): `Refused: wither_skeleton is immune to withering (statuses/withering.yml); nothing was applied`.** Over **240 ticks** after each: **no DOTTICK line naming that uuid, no wither swirl, the nameplate does not move.** **Control, immediately after:** the same command on a GS-100 zombie replies **`Applied withering x1 (200t) to ZOMBIE`** and **does** produce DOTTICK lines, so both instruments were live. *The Wither boss is not staged (it explodes on spawn); its immunity is by the same list and is recorded UNWITNESSED* | |
 
 ### WS3 — THE WS2 ROW: a never-scorched mob killed by Wither does NOT explode (SURVIVAL) — witness: Ben + DOTTICK
 
@@ -170,16 +175,22 @@ $zip.Dispose()
 |---|---|
 | Q-W5 (it hurts players) is **not stageable**: nothing can hit a player with a weapon until PvP is live, and `/rpg apply` targets a mob (`rayTraceEntities` excludes players). **Recorded as unwitnessed, not as passed** | |
 
+### WS9 — forgetting a live wither strips the vanilla potion (SURVIVAL) — recorded UNWITNESSED
+
+| prediction | READING |
+|---|---|
+| Ruling 6. **Not stageable in this boot:** the case it guards is a withered PLAYER quitting (nothing can wither a player, WS8), and the mob case is a withered mob unloading with its chunk, whose strip-before-save ordering is UNVERIFIED (`WitherPotion`'s javadoc; the quit ordering was read from the jar). `WitherPotionTest` is the decision's witness; the strip call is not witnessed. **Recorded as unwitnessed, not as passed** | |
+
 ---
 
 ## WHAT THIS GATE CANNOT SEE
 
 - **A real wither skeleton's vanilla wither on a player under ours is swallowed** while ours runs (PLAN 6.4). Live only
   with PvP.
-- **A player who quits mid-wither keeps the vanilla potion** (vanilla saves effects) while our store forgets them; on
-  rejoin the potion's ticks reroute as victim-credited damage until it expires. Live only with PvP.
-- **The immune list naming a real entity type** is not checked at boot (it needs the registry); a typo there would make
-  wither skeletons non-immune, and WS2c is the only witness.
+- **The potion strip on forget** (WS9): a player cannot be withered, and the chunk-unload ordering is not read.
+- *(Two items were here and were FIXED before any boot, rulings 6 and 7: a quitting player keeping the potion, and the
+  immune list unchecked against the entity types. An unknown key now reads `Refusing immune entity type '…' in status
+  'withering.yml'` at boot, which R0c's `Refusing` pattern catches.)*
 
 ## MUTATIONS (run 2026-10-01 against `ba21906d`, before this file was committed)
 
@@ -197,6 +208,11 @@ a focused run, restored by `cp` and proved byte-identical with `cmp`.
 | MUT-NOTRACE | the trace call deleted | `scorchAndWitherBothTraceEveryTickBeforeItsDamage` |
 | MUT-IDFALLBACK | `statusIdOf` always returns the kind name | `theStoreIsNamedForTheLoadedStatusOfItsKind` |
 | MUT-LOADERARM | `StatusLoader` without the `wither` arm | the three wither `StatusLoaderTest` rows |
+| *rulings 5–7, run against `5ac914d1`:* | | |
+| MUT-NOREGISTRY | the `KNOWN_ENTITY_TYPES` check disabled | `anUnknownImmuneKeyIsRefusedByNameAndTheRestLoads` only |
+| MUT-NOREFUSAL | `immunityRefusal` always empty (the replacement contains the needle, so "original gone" reads 1 by construction; delta 2) | `anImmuneTargetIsRefusedByNameAndTheControlsAreNot` only |
+| MUT-FORGETFALSE | `DotStatus.forget` always returns false | `WitherPotionTest.onlyALiveWitherHasItsPotionStripped` |
+| MUT-STRIPALWAYS | `forgetAndStrip` strips whether or not the wither was live | `WitherPotionTest.onlyALiveWitherHasItsPotionStripped` |
 
 **Sole witnesses, by construction (no unit test reaches a live entity or a raised event):** WS3 for `onEntityDeath`
 reading the scorch store only; WS6 for the WITHER damage gate in `onEnvironmentalDamage` and for `witherLook`; WS2c for
