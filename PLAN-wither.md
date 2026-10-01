@@ -56,6 +56,25 @@ beside it.
   file's proposal; the display name is Ben's ("Wither") (section 5).
 - **WS4. The look is Ben's choice.** This file surveys the options and does not pick one (section 6).
 
+### THE SEAT'S RULINGS ON THIS SURVEY, 2026-09-30 (after reading `a0b3cd55`)
+
+- **A correction, from the seat.** WS1's *"the cap = the damage of the hit that applied it"* was loose. Scorch's ruled
+  cap is `CAP_FRACTION 0.5`, and **Q-W2 stays Ben's** (section 3.4 stands as written).
+- **WS1: ACCEPTED as recommended.** `kind: wither`; a shared core `DotRates` record; **one** parameterised paper store,
+  created twice (`scorch()`, `wither()`). **Ignite reads only the scorch instance.**
+- **S1: NO TEMP fixture.** WITHER-STATUS and WITHERED-SHORTBOW **stack and boot together, at one stack top**. The
+  weapon-capped path is read in the bow's gate (the WB rows) **in the same boot**. The status gate uses `/rpg apply`
+  for the clock and percent rows.
+- **S2: Ignite's `depth` stays SCORCH-ONLY.** It does not go on the shared store.
+- **S3: YES, a trace line.** **`DOTTICK`** under `/rpg mobtrace`, carrying: the target's uuid and type, the status id,
+  the applier's uuid, the amount sent, the cap in force, and the tick time. It is emitted **for BOTH scorch and
+  wither, from the shared store**, in **its own commit with a unit test**. The tick rows become **log-line rows**,
+  and the popup becomes a secondary witness.
+- **Order:** Ben's answers to Q-W1 to Q-W10 come next. **Nothing is built until #168–#171 merges.**
+
+The sections below keep their survey text. Where a ruling settles them, they carry a `RULED` note and are not
+rewritten.
+
 ### STANDING RULINGS THIS SURVEY TOUCHES, NOT RE-DERIVED HERE
 
 - **No custom item stacks above 1.** The bow is minted through `WeaponItems.mint`, so it inherits the rule.
@@ -156,6 +175,7 @@ working.**
     and `Scorch`'s javadoc refuses that shape (*"a write-only field is worse than a deleted one"*). **Phase 2
     decision:** either `depth` stays scorch-only (a subclass or a wrapper), or the shared store carries it with the
     wither instance always passing 0 and saying so. This file leans to the first, and does not rule it.
+    **RULED (S2): scorch-only. `depth` does not go on the shared store.**
   - `setFireTicks` and the FIRE_TICK gate stay scorch's. Wither's look is section 6.
 - **Accrual becomes a dispatch on the kind.** Today `ElementAccrual.forHit` → `ScorchAccrual` →
   `ctx.scorch().apply` is scorch from end to end. It becomes "which store does this element's status feed",
@@ -428,11 +448,20 @@ accessories, `/rpg mobtrace` ON, gear score 100, and #168's test zombie (`NoAI:1
 tick reaches `applyDamage` from the sink. Tick rows are witnessed by **the damage popup** (the `✖` glyph, dark gray) and
 the nameplate, read by Ben. **Whether the slice adds a tick trace line is the seat's call (S3).**
 
+> **RULED (S3): it does.** A `DOTTICK` line (fields in RULINGS) comes from the shared store, for scorch and wither. So
+> every row below whose witness reads "popup" becomes a **DOTTICK row**: its prediction is the line, with the popup as a
+> secondary witness. **The rows are re-drafted against DOTTICK's exact format once that commit exists.** Writing a log
+> line's text before the line exists is a prediction about a string nobody has written.
+
 ### GATE-wither-status.md (WITHER-STATUS)
 
 **THE SEAT MUST READ S1 FIRST:** at this slice's tip, **no shipped content applies Wither.** The element accrues it,
 but no weapon wears the element until the bow. Every row here therefore applies it through
 `/rpg apply withering <duration>`, which caps at `Scorch.UNDECLARED_CAP` (2.0), not at a weapon's figure.
+
+> **RULED (S1): accepted as the split.** The two slices boot together at one stack top, so this gate is read in the
+> same boot as the bow's. The clock and percent rows use `/rpg apply`; WB3 and WB4 are the weapon-capped path. There
+> is no TEMP fixture.
 
 | row | prediction (SURVIVAL) | witness |
 |---|---|---|
@@ -475,7 +504,12 @@ but no weapon wears the element until the bow. Every row here therefore applies 
 - content: `statuses/withering.yml` (new), `elements/wither.yml` (+`applies_status`), `elements/fire.yml` (the
   "only element" prose).
 
-**WITHERED-SHORTBOW** (content only, stacked on it): `weapons/withered_shortbow.yml`, `golden-lore.txt`,
+**DOTTICK** (S3, its OWN commit inside WITHER-STATUS, with its own unit test): the shared store emits the line on
+each tick when `/rpg mobtrace` is on, for both instances. *Which class owns the mobtrace switch at that site, and
+how the store reaches it, is Phase 2's to read.* `MobNameplateManager` holds the switch today, and `RpgPlugin` passes
+it to PLAYERHIT.
+
+**WITHERED-SHORTBOW** (content only, stacked on it, **booted in the same boot**): `weapons/withered_shortbow.yml`, `golden-lore.txt`,
 `KNOWN_RANGER_WEAPONS`.
 
 ---
@@ -501,7 +535,7 @@ but no weapon wears the element until the bow. Every row here therefore applies 
 - **Q-W10. Where should the word "Wither" (the effect's name) show?** Today nothing names a status. The bow's tooltip
   would say "Wither" only as its element.
 
-## 13. THE SEAT'S QUESTIONS
+## 13. THE SEAT'S QUESTIONS (ALL THREE RULED 2026-09-30, see RULINGS: S1 one boot, no TEMP; S2 depth scorch-only; S3 DOTTICK)
 
 - **S1. WITHER-STATUS has no content applier at its own tip.** Its gate can only use `/rpg apply`, which caps at 2.0.
   The weapon-capped path is first witnessed in the bow's gate (WB3/WB4). Options: accept that split; or gate both
