@@ -32,6 +32,7 @@ import org.bukkit.persistence.PersistentDataType;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
+import io.github.butterflysmp.rpg.paper.adapter.WitherPotion;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
 import io.github.butterflysmp.rpg.paper.health.AttackSpeedAttributeOverride;
@@ -793,7 +794,7 @@ public final class RpgListeners implements Listener {
             adapters.scorch().forget(mob.getUniqueId());
             // Wither has no death-frame forget (no Ignite reads it), so this is its only removal
             // cleanup for a mob: any death, despawn or unload.
-            adapters.wither().forget(mob.getUniqueId());
+            WitherPotion.forgetAndStrip(adapters.wither(), mob);   // and the potion we put on (ruling 6)
         }
     }
 
@@ -1733,7 +1734,7 @@ public final class RpgListeners implements Listener {
         meleeHits.forgetAttacker(playerId);   // drop any swing that never landed
         damageWindow.forget(playerId);        // and their environmental window, or the map grows
         adapters.scorch().forget(playerId);   // and their burn
-        adapters.wither().forget(playerId);   // and their wither
+        WitherPotion.forgetAndStrip(adapters.wither(), event.getPlayer());   // their wither, and its potion
         resources.clear(playerId);
         profiles.onQuit(playerId);
         // Drop the cached vault. DELIBERATELY DOES NOT SAVE -- write-through already put every page
@@ -1812,7 +1813,7 @@ public final class RpgListeners implements Listener {
         // handling does not run on death and entity-removal filters players out, so without this a
         // player who died mid-burn respawns still scorched, burning on the old applier's credit.
         adapters.scorch().forget(event.getPlayer().getUniqueId());
-        adapters.wither().forget(event.getPlayer().getUniqueId());   // the same fix, for wither
+        WitherPotion.forgetAndStrip(adapters.wither(), event.getPlayer());   // the same fix, for wither and its potion
         // Same convergence as on join. onQuit does not run on death, and the cursor-at-death path
         // is unverified on 26.1 (GATE-nexus.md row 1), so a star lost to a death would otherwise
         // stay lost until the player's next reconnect rather than until their next respawn.
