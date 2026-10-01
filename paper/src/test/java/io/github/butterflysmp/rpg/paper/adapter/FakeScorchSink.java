@@ -42,6 +42,11 @@ final class FakeScorchSink implements ScorchSink {
 
     @Override public double victimMaxHealth() { return maxHealth; }
 
+    /** What DOTTICK reports as the victim's type. A zombie, as the gate rows' victims are. */
+    String victimType = "zombie";
+
+    @Override public String victimType() { return victimType; }
+
     @Override public void deal(double amount, UUID applierId, String element) {
         if (throwOnDeal) throw new IllegalStateException("staged failure inside deal");
         burns.add(new Burn(amount, applierId, clock.now(), element));
