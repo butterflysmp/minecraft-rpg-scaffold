@@ -212,6 +212,64 @@ class StatusLoaderTest {
         // Mutation: map "fire" to StatusDefinition.Scorch -> reddens.
     }
 
+    /**
+     * {@code kind: wither} (WITHER-STATUS) loads with its IMMUNE list, lowercased; absent means none.
+     * Mutation: drop the {@code "wither"} arm in {@code StatusLoader.parse} -> the file is skipped as an
+     * unknown kind -> reddens.
+     */
+    @Test
+    void loadsAWitherStatusWithItsImmuneTypesAndAnAbsentListIsEmpty() throws IOException {
+        write("withering.yml", """
+                kind: wither
+                immune:
+                  - wither_skeleton
+                  - Wither
+                """);
+        write("plain_wither.yml", "kind: wither\n");
+
+        StatusRegistry registry = load();
+        var wither = assertInstanceOf(StatusDefinition.Wither.class, registry.find("withering").orElseThrow());
+        assertEquals(java.util.Set.of("wither_skeleton", "wither"), wither.immune(), "lowercased");
+        assertTrue(wither.isImmune("wither_skeleton"));
+        assertFalse(wither.isImmune("zombie"), "the control: an unlisted type is not immune");
+        var plain = assertInstanceOf(StatusDefinition.Wither.class, registry.find("plain_wither").orElseThrow());
+        assertTrue(plain.immune().isEmpty(), "absent means nobody is immune, not a skipped file");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * A NAMESPACED IMMUNE KEY IS A NAMED, SKIPPED FILE. {@code minecraft:wither_skeleton} could never
+     * match the bare type key the check compares, so loading it would protect nobody while reading as a
+     * ruling. Mutation: drop the key check -> the file loads -> reddens.
+     */
+    @Test
+    void aNamespacedImmuneKeyIsSkippedAndNamed() throws IOException {
+        write("withering.yml", """
+                kind: wither
+                immune:
+                  - minecraft:wither_skeleton
+                """);
+
+        assertTrue(load().find("withering").isEmpty(), "the file must be skipped");
+        assertTrue(warningText().contains("minecraft:wither_skeleton"), warningText());
+    }
+
+    /**
+     * THE SHIPPED BYTES: {@code withering.yml} is {@code kind: wither} immune to wither skeletons and
+     * the Wither (Q-W6), read from the classpath and not from a fixture the test wrote itself.
+     * Mutation: delete a key from the shipped list -> reddens.
+     */
+    @Test
+    void theShippedWitheringIsAWitherImmuneToWitherSkeletonsAndTheWither() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/statuses/withering.yml")) {
+            assertNotNull(in, "withering.yml missing from the classpath");
+            write("withering.yml", new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+        }
+        var wither = assertInstanceOf(StatusDefinition.Wither.class, load().find("withering").orElseThrow());
+        assertEquals(java.util.Set.of("wither_skeleton", "wither"), wither.immune());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
     /** Ruling 22: a stale surge.yml in an old data folder is SKIPPED and named once, never deleted. */
     @Test
     void aRetiredStatusFileIsSkippedAndNamedOnce() throws IOException {

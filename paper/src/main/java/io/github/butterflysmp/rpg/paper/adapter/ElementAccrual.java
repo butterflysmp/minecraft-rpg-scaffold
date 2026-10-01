@@ -1,7 +1,9 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
 import io.github.butterflysmp.rpg.core.combat.AccrualRule;
+import io.github.butterflysmp.rpg.core.combat.DotRates;
 import io.github.butterflysmp.rpg.core.combat.Scorch;
+import io.github.butterflysmp.rpg.core.combat.Wither;
 import io.github.butterflysmp.rpg.core.combat.stat.DamageOutcome;
 import io.github.butterflysmp.rpg.paper.content.ElementDefinition;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
@@ -9,6 +11,7 @@ import io.github.butterflysmp.rpg.paper.content.StatusDefinition;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
 
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The element -> status bridge: given a hit that just landed, what does its element accrue?
@@ -25,6 +28,11 @@ import java.util.Optional;
  * {@link Scorch#DEFAULT_DURATION_TICKS}, whose javadoc has scoped it to "the weapon-damage entry
  * point only" since the day it was written; this is that entry point finally reaching it. An element
  * that could declare arbitrary effects is a far bigger feature than either thing this slice was for.
+ *
+ * <p><b>TWO STATUSES ACCRUE NOW, AND STILL ONLY BY KIND.</b> WITHER-STATUS added {@code kind: wither}
+ * ({@code wither.yml}'s {@code applies_status: withering}). Its window and cap fraction are
+ * {@code Wither.RATES}'s; the stack gate is scorch's, shared. Which store a hit feeds is {@link #kindOf}'s
+ * one switch, and {@link #accruesScorch} -- Ignite's predicate -- still answers for scorch alone.
  *
  * <h2>THERE IS NO {@code element == null} GUARD, AND THAT IS DELIBERATE</h2>
  *
@@ -76,28 +84,30 @@ public final class ElementAccrual {
     private ElementAccrual() {}
 
     /**
-     * What a landed hit accrues onto a burn: how many stacks, capped at what, for how long.
+     * WHICH damage-over-time store a hit feeds. Exactly the statuses that accrue from damage.
      *
-     * <p><b>NAMED FOR SCORCH, AND THAT IS THE POINT.</b> It first carried a {@code statusId} field
-     * that nothing in production read -- {@code BukkitCombatant} calls {@code ctx.scorch().apply}
-     * unconditionally and takes only the three numbers, so the id's only reader was a test. A field
-     * named for a dispatch it does not perform makes the call site look safer than it is.
-     *
-     * <p>Dropping it alone would not have fixed the hazard underneath, which is worth stating because
-     * the sealed switch does NOT protect against it: adding a status kind forces someone to write an
-     * ARM, not to write an arm that returns empty. The day some future arm returns a value here, the
-     * call site would apply SCORCH for it, silently, with no compile error anywhere.
-     *
-     * <p>So the TYPE carries the constraint instead of a field advertising a choice that is not made:
-     * a value of this type IS a scorch application. A second accruable status cannot reuse it without
-     * saying so at the point of writing, and "only scorch accrues" lives in exactly one place -- the
-     * switch in {@link #forHit}.
-     *
-     * @param stacks never zero -- {@link #forHit} returns empty rather than an application worth
-     *               nothing, because {@code ScorchStatus.apply} early-returns on a non-positive
-     *               count and a caller cannot tell that apart from a refused application
+     * <p>For Ben: an "enum" is a Java type with a fixed list of named values, here two.
      */
-    public record ScorchAccrual(int stacks, double cap, int durationTicks) {}
+    public enum DotKind { SCORCH, WITHER }
+
+    /**
+     * What a landed hit accrues onto a damage-over-time: WHICH one, how many stacks, capped at what,
+     * for how long, and which entity types it never lands on.
+     *
+     * <p><b>THIS WAS {@code ScorchAccrual}, AND ITS JAVADOC SAID WHAT WOULD HAPPEN THE DAY A SECOND
+     * STATUS ACCRUED.</b> It refused a {@code statusId} field because nothing dispatched on it: <i>"a
+     * field named for a dispatch it does not perform makes the call site look safer than it is"</i>, and
+     * <i>"a second accruable status cannot reuse it without saying so at the point of writing."</i>
+     * WITHER-STATUS is that point. The dispatch now exists -- {@code BukkitCombatant}'s accrual site
+     * switches on {@link #kind} exhaustively -- so the kind is a field that IS read, and the type is no
+     * longer a promise that the value is scorch.
+     *
+     * @param stacks     never zero -- {@link #forHit} returns empty rather than an application worth
+     *                   nothing, because the store early-returns on a non-positive count and a caller
+     *                   cannot tell that apart from a refused application
+     * @param immune     entity type keys this status never lands on (Q-W6); empty for scorch
+     */
+    public record Accrual(DotKind kind, int stacks, double cap, int durationTicks, Set<String> immune) {}
 
     /**
      * The accrual this hit earns, or empty for the many reasons a hit earns none.
@@ -137,19 +147,23 @@ public final class ElementAccrual {
      *                            burn through the STACK COUNT and never lower its ceiling, or it
      *                            re-enters the DoT through the back door after being ruled out of it
      */
-    public static Optional<ScorchAccrual> forHit(ElementRegistry elements, StatusRegistry statuses,
-                                                 String element, AccrualRule accrual,
-                                                 DamageOutcome outcome,
-                                                 double declaredMagnitude) {
-        if (!accruesScorch(elements, statuses, element, accrual)) return Optional.empty();
+    public static Optional<Accrual> forHit(ElementRegistry elements, StatusRegistry statuses,
+                                           String element, AccrualRule accrual,
+                                           DamageOutcome outcome,
+                                           double declaredMagnitude) {
+        StatusDefinition status = accruingStatus(elements, statuses, element, accrual);
+        Optional<DotKind> kind = status == null ? Optional.empty() : kindOf(status);
+        if (kind.isEmpty()) return Optional.empty();
 
         // THE LETHAL GATE, AND IT IS NOW THE ONLY THING SEPARATING THIS FROM IGNITE'S SECOND CLAUSE.
         // Everything above is shared; this line is the whole difference between "accrue onto a
         // survivor" and "ignite what this blow killed". Keeping it as one standalone statement is
         // what lets both consumers read from one predicate instead of two copies drifting apart.
+        // (For WITHER the same gate holds for the first of its two reasons: a lethal hit must not
+        // register a RepeatingTask after the removal that would have cancelled it.)
         if (outcome.newCurrent() <= 0) return Optional.empty();
 
-        return scorch(outcome, declaredMagnitude);
+        return accrue(kind.get(), status, outcome, declaredMagnitude);
     }
 
     /**
@@ -175,30 +189,53 @@ public final class ElementAccrual {
      * <p>No {@code "fire"} literal appears here, deliberately: the element names its status in
      * content and the status is matched on its TYPE. An element that gains {@code applies_status:
      * scorch} tomorrow ignites tomorrow, with no code change.
+     *
+     * <h2>IT KEEPS ITS NAME AND ITS MEANING, AND IT IS NEVER TRUE FOR WITHER (WS2)</h2>
+     *
+     * <p>This is Ignite's predicate (its second clause in {@code BukkitCombatant.applyDamage}). A
+     * wither element's hit accrues WITHER and this answers false, so the Withered Shortbow's lethal
+     * arrow does not explode what it killed. The answer comes from {@link #kindOf}'s one exhaustive
+     * switch, so "which statuses accrue" and "is it scorch" cannot drift apart.
      */
     public static boolean accruesScorch(ElementRegistry elements, StatusRegistry statuses,
                                         String element, AccrualRule accrual) {
-        if (!accrual.accrues()) return false;
+        StatusDefinition status = accruingStatus(elements, statuses, element, accrual);
+        return status != null && kindOf(status).filter(k -> k == DotKind.SCORCH).isPresent();
+    }
+
+    /** The status a hit wearing {@code element} would accrue, before asking whether it CAN accrue. */
+    private static StatusDefinition accruingStatus(ElementRegistry elements, StatusRegistry statuses,
+                                                   String element, AccrualRule accrual) {
+        if (!accrual.accrues()) return null;
 
         ElementDefinition def = elements.find(element).orElse(null);
-        if (def == null || def.appliesStatus() == null) return false;
+        if (def == null || def.appliesStatus() == null) return null;
 
-        StatusDefinition status = statuses.find(def.appliesStatus()).orElse(null);
-        if (status == null) return false;
+        return statuses.find(def.appliesStatus()).orElse(null);
+    }
 
-        // Exhaustive over the sealed type, so a new status kind is a compile error here rather than
-        // silently landing in the "accrues nothing" arm. ContentValidator.validateElements already
-        // NAMES a non-accruing status at boot, which is why this returns false without warning.
+    /**
+     * Which store a status accrues into, or empty if it cannot accrue from damage.
+     *
+     * <p>Exhaustive over the sealed type, so a new status kind is a compile error here rather than
+     * silently landing in the "accrues nothing" arm. ContentValidator.validateElements already NAMES a
+     * non-accruing status at boot, which is why the empty arms do not warn.
+     */
+    private static Optional<DotKind> kindOf(StatusDefinition status) {
         return switch (status) {
-            case StatusDefinition.Scorch ignored -> true;
-            case StatusDefinition.Fire ignored -> false;
-            case StatusDefinition.Potion ignored -> false;
-            case StatusDefinition.Immobilize ignored -> false;
-            case StatusDefinition.Soaked ignored -> false;
+            case StatusDefinition.Scorch ignored -> Optional.of(DotKind.SCORCH);
+            case StatusDefinition.Wither ignored -> Optional.of(DotKind.WITHER);
+            case StatusDefinition.Fire ignored -> Optional.empty();
+            case StatusDefinition.Potion ignored -> Optional.empty();
+            case StatusDefinition.Immobilize ignored -> Optional.empty();
+            case StatusDefinition.Soaked ignored -> Optional.empty();
         };
     }
 
-    private static Optional<ScorchAccrual> scorch(DamageOutcome outcome, double declaredMagnitude) {
+    private static Optional<Accrual> accrue(DotKind kind, StatusDefinition status,
+                                            DamageOutcome outcome, double declaredMagnitude) {
+        // THE STACK GATE IS SHARED: a hit that landed > 0 buys >= 1 stack, read only as yes/no, for
+        // wither exactly as for scorch (Scorch.stacksFor's floor; PLAN-wither.md section 2's table).
         int stacks = Scorch.stacksFor(outcome.dealt());
         if (stacks <= 0) return Optional.empty();
 
@@ -221,11 +258,16 @@ public final class ElementAccrual {
         // from what the system can produce. And a mutation inside an unreachable branch can only
         // redden the row that keeps the branch alive, so the two justified each other while neither
         // touched production. Both are gone; the invariant is stated once, here.
-        // HALF the hit, per Scorch.CAP_FRACTION -- which lives in core with every other scorch rate
-        // rather than as a bare 0.5 here, so the next person tuning scorch finds it where they look.
-        // The fraction applies to a WEAPON-DERIVED figure only: Scorch.UNDECLARED_CAP is deliberately
-        // not halved, and never meets this path anyway.
-        return Optional.of(new ScorchAccrual(
-                stacks, declaredMagnitude * Scorch.CAP_FRACTION, Scorch.DEFAULT_DURATION_TICKS));
+        // HALF the hit, per the status's own capFraction (Scorch.CAP_FRACTION, Wither.CAP_FRACTION) --
+        // which lives in core with every other rate rather than as a bare 0.5 here, so the next
+        // person tuning a status finds it where they look. The fraction applies to a WEAPON-DERIVED
+        // figure only: Scorch.UNDECLARED_CAP is deliberately not halved, and never meets this path.
+        DotRates rates = switch (kind) {
+            case SCORCH -> Scorch.RATES;
+            case WITHER -> Wither.RATES;
+        };
+        Set<String> immune = status instanceof StatusDefinition.Wither w ? w.immune() : Set.of();
+        return Optional.of(new Accrual(kind, stacks, declaredMagnitude * rates.capFraction(),
+                rates.defaultDurationTicks(), immune));
     }
 }
