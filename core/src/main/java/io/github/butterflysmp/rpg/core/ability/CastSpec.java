@@ -58,8 +58,9 @@ public sealed interface CastSpec {
         /**
          * <b>{@code item} AND {@code body} ARE MUTUALLY EXCLUSIVE, AND IT IS ENFORCED HERE RATHER
          * THAN TRUSTED.</b> A bolt has one body. {@code item} renders a dropped ITEM driven along
-         * the flight; {@code body} renders a real ARROW, oriented along its travel, with every
-         * interaction it would normally have switched off. Authoring both is a content mistake with
+         * the flight; {@code body} renders a real projectile ENTITY of the named kind -- an ARROW,
+         * oriented along its travel, or a FIREBALL (LEGACY-B) -- with every interaction it would
+         * normally have switched off. Authoring both is a content mistake with
          * no sensible resolution -- whichever the flight picked, the other field would silently do
          * nothing.
          *

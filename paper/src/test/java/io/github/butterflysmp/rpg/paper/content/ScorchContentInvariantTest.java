@@ -110,8 +110,11 @@ class ScorchContentInvariantTest {
      * <p><b>22 -> 21 on 2026-09-29, still before any row was read: the staff left LEGACY-A.</b> Ben wants a real
      * fireball in straight flight on right-click, which needs engine work, so the staff moves to LEGACY-B (the seat).
      * This test's own discovery reads 21, M1's figure: LEGACY-A now adds no fire site ({@code short_bow} is kinetic).
+     *
+     * <p><b>21 -> 22 in LEGACY-B: the staff is re-added</b>, as a right-click fireball with one fire damage site.
+     * This test's own discovery reads 22 (the first run after the re-add reddened with "expected 21 ... found 22").
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 21;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 22;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare
