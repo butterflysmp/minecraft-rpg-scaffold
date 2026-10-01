@@ -49,4 +49,25 @@ class ApplyArgsTest {
         assertEquals(ApplyArgs.MAX_STACKS, r.args().stacks(),
                 "stacks clamped so the apply loop can't run pathologically");
     }
+
+    /**
+     * THE REFUSAL REPLY (the seat's ruling 5): an immune target gets "Refused", naming the type and the
+     * status, never "Applied". A zombie is the control (not immune: no refusal), and so is a non-wither
+     * status on a wither skeleton.
+     *
+     * <p>Mutation: return empty unconditionally -> the refusal assertion reddens.
+     */
+    @Test
+    void anImmuneTargetIsRefusedByNameAndTheControlsAreNot() {
+        var withering = new io.github.butterflysmp.rpg.paper.content.StatusDefinition.Wither(
+                "withering", Set.of("wither_skeleton", "wither"));
+        assertEquals(java.util.Optional.of("Refused: wither_skeleton is immune to withering"
+                        + " (statuses/withering.yml); nothing was applied"),
+                ApplyArgs.immunityRefusal(withering, "wither_skeleton"));
+        assertTrue(ApplyArgs.immunityRefusal(withering, "zombie").isEmpty(), "a zombie is not immune");
+        assertTrue(ApplyArgs.immunityRefusal(
+                new io.github.butterflysmp.rpg.paper.content.StatusDefinition.Scorch("scorch"),
+                "wither_skeleton").isEmpty(), "scorch has no immune list");
+        assertTrue(ApplyArgs.immunityRefusal(null, "zombie").isEmpty(), "an unknown status is resolve's error");
+    }
 }
