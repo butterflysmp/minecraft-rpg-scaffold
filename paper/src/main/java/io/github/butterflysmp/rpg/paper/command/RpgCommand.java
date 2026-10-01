@@ -400,7 +400,7 @@ public final class RpgCommand {
                             boolean on = nameplates.toggleTrace();
                             ctx.getSource().getSender().sendMessage(Component.text(
                                     "Mob trace " + (on ? "ON" : "OFF")
-                                            + " (MOBSEED / MOBREMOVE / MOBHIT / MOBHEAL / PLAYERHIT in the log).",
+                                            + " (MOBSEED / MOBREMOVE / MOBHIT / MOBHEAL / PLAYERHIT / DOTTICK in the log).",
                                     NamedTextColor.GREEN));
                             return 1;
                         }))
