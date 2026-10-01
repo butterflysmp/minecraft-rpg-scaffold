@@ -343,6 +343,15 @@ public final class Scorch {
     public static final double UNDECLARED_CAP = 2.0;
 
     /**
+     * Scorch's four rates as the shared store reads them (WITHER-STATUS: a shared core {@link DotRates},
+     * the seat's WS1 ruling). {@link Wither#RATES} is the other instance. The constants above stay the
+     * account; this is only their shape for {@code DotStatus}, and {@link #damagePerTick} and
+     * {@link #damageTicksFor} below now delegate to it, so the two statuses run one rule.
+     */
+    public static final DotRates RATES =
+            new DotRates(PERIOD_TICKS, RATE_PER_SECOND, CAP_FRACTION, DEFAULT_DURATION_TICKS);
+
+    /**
      * What one scorch tick takes off {@code victimMaxHealth}, held to {@code cap}.
      *
      * {@code cap} is the AUTHORED damage of whatever applied the stacks -- never what that hit actually
@@ -353,7 +362,7 @@ public final class Scorch {
      * {@code (5000, 20) -> 20} (CAP BINDS -- the only shape that can see the min).
      */
     public static double damagePerTick(double victimMaxHealth, double cap) {
-        return Math.min(RATE_PER_SECOND * victimMaxHealth, cap);
+        return RATES.damagePerTick(victimMaxHealth, cap);
     }
 
     /**
@@ -441,7 +450,6 @@ public final class Scorch {
      * authors a duration any more; the dev apply command is the only way to reach one.
      */
     public static int damageTicksFor(int durationTicks) {
-        if (durationTicks <= 0) return 0;
-        return (durationTicks + PERIOD_TICKS - 1) / PERIOD_TICKS;
+        return RATES.damageTicksFor(durationTicks);
     }
 }
