@@ -1,0 +1,53 @@
+# THE WITHERED SHORTBOW -- an Uncommon ranged bow of the Wither element (WITHERED-SHORTBOW, PLAN-wither.md 9).
+#
+# Ben, 2026-09-30: "let's write up a message for a new weapon, the Withered Shortbow. This will be an Uncommon
+# ranged weapon of Wither element. It should apply Wither to the target on hit."
+#
+# ITS WITHER COMES FROM THE ELEMENT, so there is no `type: status` in its on_hit. elements/wither.yml declares
+# applies_status: withering (WITHER-STATUS; the seat's WS3), so every hit that lands applies our Wither, capped at
+# half the hit (8 from 16) for 200 ticks. A mob it kills does NOT explode -- by its arrow or by its Wither -- unless
+# that mob was also scorched (Ignite is "died while scorched"; Q-W8).
+#
+# NO "INFLICTS WITHER" TOOLTIP LINE. Ben, overruling the seat's Q-W10 fill: "no i don't want a tool tip that says it
+# inflicts wither". The tooltip names Wither only as the element.
+#
+# ================== EVERY NUMBER IS PROVISIONAL (Ben, 2026-09-30: "everything else is fine", 9.1's column) ==========
+#
+# "To be tuned later." Cited from short_bow.yml (an instant-fire projectile bow) and the Boltor (the ruled ranger
+# numbers), NEVER from hunters_bow (NEW CONTENT CITES THE BOLTOR).
+#
+#   attack_damage   16    the Short Bow's: the Wither ticks are what make it Uncommon.
+#   cooldown_ticks  16    one step slower than the Short Bow's 12, to pay for the DoT. A multiple of 4, as the
+#                         Boltor's 16 is.
+#   quiver_size      8    the Short Bow's and the Boltor's (ruled 8).
+#   reload_ticks    60    the Short Bow's and the Boltor's (ruled 60).
+#   speed           3.0   the Short Bow's.
+#   gravity         0.05  the Short Bow's.
+#   lifetime       120    the Short Bow's.
+#   knockback       0.1   the Short Bow's. A travelling ranged weapon authors knockback (the standing ruling).
+#
+# NO FLAVOR: PLAN-wither.md 9.1 left it "___ (Ben, or none)" with no proposal, so "everything else is fine" did
+# not cover it. Absent until Ben writes one.
+id: withered_shortbow
+display_name: "Withered Shortbow"
+element: wither
+rarity: uncommon
+class: ranger
+material: bow
+attack_damage: 16
+quiver_size: 8
+reload_ticks: 60
+triggers:
+  right_click:
+    cooldown_ticks: 16
+    cast:
+      type: projectile
+      speed: 3.0
+      gravity: 0.05
+      max_lifetime_ticks: 120
+      body: arrow
+    on_hit:
+      - type: weapon_damage
+        element: wither           # the element is what applies Wither (WS3); no `type: status` here
+      - type: knockback           # the standing ruling: a travelling ranged weapon authors knockback
+        strength: 0.1
