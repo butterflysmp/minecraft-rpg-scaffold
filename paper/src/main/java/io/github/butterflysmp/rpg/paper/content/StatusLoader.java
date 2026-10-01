@@ -83,7 +83,7 @@ public final class StatusLoader {
             case "freeze" -> new StatusDefinition.Immobilize(id, true);
             case "soaked" -> new StatusDefinition.Soaked(id);
             case "scorch" -> new StatusDefinition.Scorch(id);
-            case "wither" -> new StatusDefinition.Wither(id, immuneTypes(s));
+            case "wither" -> new StatusDefinition.Wither(id, immuneTypes(id, s));
             default -> throw new IllegalArgumentException("Unknown status kind: " + kind);
         };
     }
@@ -91,10 +91,16 @@ public final class StatusLoader {
     /**
      * {@code immune:}, a list of entity type keys, lowercased; absent means nobody is immune. A key with
      * a namespace or a space is refused as a named, skipped file -- it could never match the bare type
-     * key the check compares against, so it would read as a ruling and protect nothing. Whether the key
-     * names a REAL entity type needs the registry, which needs a server; it is not checked here.
+     * key the check compares against, so it would read as a ruling and protect nothing.
+     *
+     * <p><b>A WELL-FORMED KEY THAT NAMES NO ENTITY TYPE IS REFUSED, AND THE REST OF THE LIST LOADS</b> (the
+     * seat, 2026-10-01). {@code wither_skelton} would make every wither skeleton silently NON-immune while
+     * the file reads as a ruling. It is checked against {@link #KNOWN_ENTITY_TYPES}, the pinned API's
+     * {@code EntityType} list, and refused with a {@code Refusing} WARN naming the file and the key, so
+     * R0c's {@code 'Refusing'} pattern catches it at boot. The rest of the list still loads: one typo
+     * must not strip the immunity the correct keys rule.
      */
-    private static java.util.Set<String> immuneTypes(ConfigurationSection s) {
+    private java.util.Set<String> immuneTypes(String id, ConfigurationSection s) {
         java.util.Set<String> out = new java.util.LinkedHashSet<>();
         for (String raw : s.getStringList("immune")) {
             String key = raw.toLowerCase(Locale.ROOT).trim();
@@ -102,10 +108,28 @@ public final class StatusLoader {
                 throw new IllegalArgumentException("Invalid immune entity type '" + raw
                         + "'; expected a bare type key like wither_skeleton");
             }
+            if (!KNOWN_ENTITY_TYPES.contains(key)) {
+                log.warning("Refusing immune entity type '" + raw + "' in status '" + id + ".yml': no entity"
+                        + " type has that key, so it would protect nothing. The rest of the list loads.");
+                continue;
+            }
             out.add(key);
         }
         return out;
     }
+
+    /**
+     * Every entity type key the pinned API knows ({@code zombie}, {@code wither_skeleton}), read from
+     * {@link org.bukkit.entity.EntityType} -- the enum the jar ships, which mirrors the entity-type
+     * registry of the same build. Read without a server: the enum's static initialiser and
+     * {@code getKey()} touch no {@code Bukkit} call (checked with {@code javap -c} on build 74).
+     * {@code UNKNOWN} has no key and is skipped, since its {@code getKey()} throws.
+     */
+    static final java.util.Set<String> KNOWN_ENTITY_TYPES = java.util.Arrays.stream(
+                    org.bukkit.entity.EntityType.values())
+            .filter(t -> t != org.bukkit.entity.EntityType.UNKNOWN)
+            .map(t -> t.getKey().getKey())
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
     private static String req(ConfigurationSection s, String path) {
         String v = s.getString(path);
