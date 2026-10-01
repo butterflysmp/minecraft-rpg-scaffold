@@ -791,6 +791,9 @@ public final class RpgListeners implements Listener {
             // that is expected, and ScorchStatus.forget tolerates it (pinned by
             // ScorchStatusTest.forgettingTwiceIsANoOp).
             adapters.scorch().forget(mob.getUniqueId());
+            // Wither has no death-frame forget (no Ignite reads it), so this is its only removal
+            // cleanup for a mob: any death, despawn or unload.
+            adapters.wither().forget(mob.getUniqueId());
         }
     }
 
@@ -1730,6 +1733,7 @@ public final class RpgListeners implements Listener {
         meleeHits.forgetAttacker(playerId);   // drop any swing that never landed
         damageWindow.forget(playerId);        // and their environmental window, or the map grows
         adapters.scorch().forget(playerId);   // and their burn
+        adapters.wither().forget(playerId);   // and their wither
         resources.clear(playerId);
         profiles.onQuit(playerId);
         // Drop the cached vault. DELIBERATELY DOES NOT SAVE -- write-through already put every page
@@ -1808,6 +1812,7 @@ public final class RpgListeners implements Listener {
         // handling does not run on death and entity-removal filters players out, so without this a
         // player who died mid-burn respawns still scorched, burning on the old applier's credit.
         adapters.scorch().forget(event.getPlayer().getUniqueId());
+        adapters.wither().forget(event.getPlayer().getUniqueId());   // the same fix, for wither
         // Same convergence as on join. onQuit does not run on death, and the cursor-at-death path
         // is unverified on 26.1 (GATE-nexus.md row 1), so a star lost to a death would otherwise
         // stay lost until the player's next reconnect rather than until their next respawn.
@@ -2305,6 +2310,23 @@ public final class RpgListeners implements Listener {
         // "which causes should Defense touch?" question DefenseRule was built for.
         if (event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK
                 && adapters.scorch().isScorched(id)) {
+            event.setDamage(TOKEN_DAMAGE);
+            floorSoTokenCannotKill(target);
+            return;
+        }
+
+        // THE SAME GATE FOR WITHER'S LOOK (Q-W7 a, WITHER-STATUS). Our wither puts the vanilla WITHER
+        // potion on the victim for its swirl (BukkitCombatant.witherLook), and that potion deals 1.0
+        // every 40 ticks of its own, cause WITHER, naming no entity -- so VanillaDamagePolicy would
+        // REROUTE it into custom HP, uncapped and credited to the victim, beside our tick. While OUR
+        // wither is live this is ours: token it, BEFORE damageWindow.claim, for the FIRE_TICK gate's
+        // reasons above. The policy table does not change; this is a fact about a VICTIM.
+        //
+        // THE CONSEQUENCE, RECORDED (PLAN-wither.md 6.4): a player under our wither who is ALSO hit by
+        // a real wither skeleton has that skeleton's vanilla wither swallowed here for as long as ours
+        // runs. Live only once PvP is -- nothing can wither a player with a weapon today.
+        if (event.getCause() == EntityDamageEvent.DamageCause.WITHER
+                && adapters.wither().isActive(id)) {
             event.setDamage(TOKEN_DAMAGE);
             floorSoTokenCannotKill(target);
             return;

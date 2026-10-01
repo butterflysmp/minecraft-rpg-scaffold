@@ -1,0 +1,32 @@
+# What "withering" means: OUR wither, a damage-over-time on a clock we own, shaped like scorch
+# (WITHER-STATUS, PLAN-wither.md). The wither element applies it (elements/wither.yml).
+#
+# Ben, 2026-09-30: "It should function fairly similar to Vanilla Wither does and how our scorch already
+# does. Damage over time based off of the damage of the weapon used to inflict. Difference mobs Don't
+# explode when killed by wither". His answers, verbatim: "8, yes everything else is fine".
+#
+#   damage   min(5% of the victim's MAX health, THE CAP) every 40 ticks         Q-W1, Q-W2
+#   cap      HALF the damage of whatever applied it, as scorch's                 Q-W2
+#   window   200 ticks, so five ticks; a re-hit RESETS it, no stacking           Q-W3, Q-W4
+#   credit   the MOST RECENT applier
+#   armour   does NOT reduce it
+#   players  it hurts them too (Q-W5), live only once PvP is
+#   explode  NO: a never-scorched mob killed by wither does not explode. A mob that is scorched AND
+#            withered still does, because Ignite is "died while scorched" (Q-W8, Ben: "yes")
+#   look     the vanilla Wither potion, its own damage switched off (Q-W7 a, the seat's fill)
+#
+# Every rate is core.combat.Wither's, beside its account. This file says what KIND the status is, and
+# who it never lands on.
+#
+# The id of this status is its filename: withering. The ELEMENT is "wither" (a weapon writes
+# `element: wither`); the two namespaces are separate, as fire -> scorch is.
+
+kind: wither
+
+# IMMUNE (Q-W6, the seat's fill, vanilla-like): entity TYPE keys this status never lands on. Wither
+# skeletons and the Wither; the Knell is a wither_skeleton, so the first key covers it too. Vanilla
+# Paper refuses the Wither potion on exactly these (immune-to-wither-effect), so the look loses nothing.
+# A bare type key: `minecraft:wither_skeleton` is refused at load, because it could never match.
+immune:
+  - wither_skeleton
+  - wither

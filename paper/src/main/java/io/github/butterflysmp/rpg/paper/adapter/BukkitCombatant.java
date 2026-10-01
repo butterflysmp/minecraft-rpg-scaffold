@@ -244,18 +244,35 @@ public final class BukkitCombatant {
                 ElementAccrual.forHit(ctx.elements(), ctx.statuses(), element, accrual.rule(), outcome,
                                 declaredMagnitude)
                         .ifPresent(accrued -> {
-                            // The vanilla flame is the same visual the explicit path sets, and this
-                            // is now the THIRD end of that coupling: the other two are
-                            // applyStatus's Scorch arm and RpgListeners' FIRE_TICK suppression,
-                            // which reads isScorched to token the vanilla burn away. All three have
-                            // to move together.
-                            entity.setFireTicks(
-                                    Math.max(entity.getFireTicks(), accrued.durationTicks()));
-                            ctx.scorch().apply(entity.getUniqueId(),
-                                    new EntityTaskTarget(entity, ctx.scheduler(), ctx.log()),
-                                    new EntityScorchSink(entity, ctx),
-                                    accrued.stacks(), accrued.cap(), sourceId,
-                                    accrued.durationTicks(), element, accrual.depth() + 1);
+                            // IMMUNITY (Q-W6): a listed entity type is never accrued onto. Empty for
+                            // scorch; wither's list is withering.yml's.
+                            if (accrued.immune().contains(entity.getType().key().value())) return;
+                            switch (accrued.kind()) {
+                                case SCORCH -> {
+                                    // The vanilla flame is the same visual the explicit path sets, and
+                                    // this is now the THIRD end of that coupling: the other two are
+                                    // applyStatus's Scorch arm and RpgListeners' FIRE_TICK suppression,
+                                    // which reads isScorched to token the vanilla burn away. All three
+                                    // have to move together.
+                                    entity.setFireTicks(
+                                            Math.max(entity.getFireTicks(), accrued.durationTicks()));
+                                    ctx.scorch().apply(entity.getUniqueId(),
+                                            new EntityTaskTarget(entity, ctx.scheduler(), ctx.log()),
+                                            new EntityScorchSink(entity, ctx),
+                                            accrued.stacks(), accrued.cap(), sourceId,
+                                            accrued.durationTicks(), element, accrual.depth() + 1);
+                                }
+                                // NO FIRE AND NO DEPTH: wither is not Ignite's (WS2, S2). The look is the
+                                // vanilla potion, whose own damage RpgListeners tokens (Q-W7 a).
+                                case WITHER -> {
+                                    witherLook(accrued.durationTicks());
+                                    ctx.wither().apply(entity.getUniqueId(),
+                                            new EntityTaskTarget(entity, ctx.scheduler(), ctx.log()),
+                                            new EntityScorchSink(entity, ctx),
+                                            accrued.stacks(), accrued.cap(), sourceId,
+                                            accrued.durationTicks(), element);
+                                }
+                            }
                         });
 
                 // IGNITE'S SECOND CLAUSE: a fire hit that KILLS ignites what it killed, even though
@@ -448,6 +465,28 @@ public final class BukkitCombatant {
                                 0);
                     }
 
+                    // Wither (WITHER-STATUS): the explicit route, which only the dev apply command
+                    // reaches -- no content authors `type: status, status_id: withering`; the bow's
+                    // wither comes from its element. Immunity first (Q-W6), then the Scorch arm's
+                    // undeclared-cap fallback, SHARED rather than copied into a second constant: it
+                    // belongs to this apply path, not to a status. WS2b's rows read it (cap 2.0).
+                    case StatusDefinition.Wither wither -> {
+                        if (wither.isImmune(entity.getType().key().value())) return;
+                        double cap = sourceDamage;
+                        if (cap <= 0) {
+                            ctx.warnOnce("Status '" + statusId + "' was applied by a payload declaring"
+                                    + " no damage, so it has no basis for a cap; falling back to "
+                                    + Scorch.UNDECLARED_CAP + ". Give the payload a damage effect.");
+                            cap = Scorch.UNDECLARED_CAP;
+                        }
+                        witherLook(durationTicks);
+                        // NO ELEMENT, as the Scorch arm: nothing elemental applied a dev wither.
+                        ctx.wither().apply(entity.getUniqueId(),
+                                new EntityTaskTarget(entity, ctx.scheduler(), ctx.log()),
+                                new EntityScorchSink(entity, ctx),
+                                1, cap, applierId, durationTicks, null);
+                    }
+
                     case StatusDefinition.Potion potion -> {
                         PotionEffectType type = potionEffect(potion.potionType());
                         if (type == null) {
@@ -512,6 +551,25 @@ public final class BukkitCombatant {
          */
         private static PotionEffectType potionEffect(NamespacedKey key) {
             return Registry.MOB_EFFECT.get(key);
+        }
+
+        /**
+         * WITHER'S LOOK IS THE VANILLA POTION, AND ITS DAMAGE IS NOT OURS TO TAKE (Q-W7 a, the seat's
+         * fill, 2026-09-30). Wither I for the window: the dark swirl on anything, black hearts and the
+         * HUD icon on a player (client-side, UNVERIFIED). Its amplifier 0 is vanilla's 40-tick cadence,
+         * our own clock's too, but the two clocks are NOT phase-locked and need not be.
+         *
+         * <p><b>A SHARED VISUAL IS A COUPLING, WITH THREE ENDS, as Scorch's fire ticks are:</b> this line,
+         * the WITHER gate in {@code RpgListeners.onEnvironmentalDamage} (which tokens the potion's own
+         * 1.0 damage while {@code wither().isActive}), and the potion's expiry on vanilla's clock. Delete
+         * the gate and every tick lands twice -- ours, plus vanilla's rerouted into custom HP uncredited.
+         *
+         * <p>A refresh re-adds it at the full window, and vanilla keeps the longer of the two. The
+         * immune types are exactly the ones Paper refuses this potion on
+         * ({@code immune-to-wither-effect}), and they never reach this line.
+         */
+        private void witherLook(int durationTicks) {
+            entity.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, durationTicks, 0));
         }
 
         /**
