@@ -255,6 +255,40 @@ class StatusLoaderTest {
     }
 
     /**
+     * AN UNKNOWN IMMUNE KEY IS REFUSED BY NAME, AND THE REST OF THE LIST STILL LOADS (the seat,
+     * 2026-10-01). {@code wither_skelton} is well-formed and names nothing; the WARN begins
+     * {@code Refusing} so R0c's pattern finds it, and names the file and the key.
+     *
+     * <p>Mutation: drop the {@code KNOWN_ENTITY_TYPES} check -> the typo loads into the set -> reddens.
+     */
+    @Test
+    void anUnknownImmuneKeyIsRefusedByNameAndTheRestLoads() throws IOException {
+        write("withering.yml", """
+                kind: wither
+                immune:
+                  - wither_skelton
+                  - wither
+                """);
+
+        var wither = assertInstanceOf(StatusDefinition.Wither.class, load().find("withering").orElseThrow(),
+                "the file still loads");
+        assertEquals(java.util.Set.of("wither"), wither.immune(), "the correct key survives, the typo does not");
+        assertEquals(1, warnings.size(), "one WARN: " + warningText());
+        assertTrue(warningText().startsWith("Refusing"), warningText());
+        assertTrue(warningText().contains("withering.yml"), "names the file: " + warningText());
+        assertTrue(warningText().contains("wither_skelton"), "names the key: " + warningText());
+    }
+
+    /** The registry the check reads is the real one, not empty: the shipped keys are in it, a typo is not. */
+    @Test
+    void theEntityTypeListIsTheJarsAndKnowsTheShippedKeys() {
+        assertTrue(StatusLoader.KNOWN_ENTITY_TYPES.contains("wither_skeleton"));
+        assertTrue(StatusLoader.KNOWN_ENTITY_TYPES.contains("wither"));
+        assertTrue(StatusLoader.KNOWN_ENTITY_TYPES.contains("zombie"));
+        assertFalse(StatusLoader.KNOWN_ENTITY_TYPES.contains("wither_skelton"));
+    }
+
+    /**
      * THE SHIPPED BYTES: {@code withering.yml} is {@code kind: wither} immune to wither skeletons and
      * the Wither (Q-W6), read from the classpath and not from a fixture the test wrote itself.
      * Mutation: delete a key from the shipped list -> reddens.
