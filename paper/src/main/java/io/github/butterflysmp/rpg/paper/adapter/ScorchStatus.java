@@ -31,6 +31,11 @@ public final class ScorchStatus extends DotStatus {
         super(Scorch.RATES, "scorch");
     }
 
+    /** Production's: the content status id and the {@code DOTTICK} trace (see {@link DotStatus}). */
+    public ScorchStatus(String statusId, DotTrace trace) {
+        super(Scorch.RATES, "scorch", statusId, trace);
+    }
+
     /**
      * Apply scorch to {@code id}, or refresh the whole timer if already scorched, recording the
      * ignite-chain {@code depth} of whatever applied it. Everything but the depth is

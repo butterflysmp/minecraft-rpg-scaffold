@@ -150,9 +150,27 @@ public class DotStatus {
     /** The task's name in a failure's log line ({@code RepeatingTask.start}): {@code scorch}, {@code wither}. */
     private final String taskName;
 
-    public DotStatus(DotRates rates, String taskName) {
+    /** The content status id this instance runs, for {@code DOTTICK}: {@code scorch}, {@code withering}. */
+    private final String statusId;
+
+    /** Where every tick is reported ({@code DOTTICK}, the seat's S3 ruling). */
+    private final DotTrace trace;
+
+    /**
+     * @param statusId the content id of the status this instance runs, resolved from the loaded
+     *                 statuses by kind ({@code AdapterContext.statusIdOf}), so the trace names the id a
+     *                 gate row quotes ({@code withering}), not the kind ({@code wither})
+     */
+    public DotStatus(DotRates rates, String taskName, String statusId, DotTrace trace) {
         this.rates = rates;
         this.taskName = taskName;
+        this.statusId = statusId;
+        this.trace = trace;
+    }
+
+    /** No trace, and the task name as the status id: a store a test builds when the trace is not its subject. */
+    public DotStatus(DotRates rates, String taskName) {
+        this(rates, taskName, taskName, DotTrace.NONE);
     }
 
     /**
@@ -235,7 +253,7 @@ public class DotStatus {
             // Decrement-first existed only because the inline burn had already consumed tick one;
             // keeping it after deleting that burn silently drops the LAST period (a 120-tick scorch
             // would burn five times and fall silent for its sixth second). The two move together.
-            burnOnce(na, sink);
+            burnOnce(id, na, sink);
             na.remaining -= rates.periodTicks();
             return na.remaining > 0;
         };
@@ -276,8 +294,13 @@ public class DotStatus {
      * <i>unexpressible</i> rather than merely tested against, which is the stronger guarantee -- the
      * count would have to be re-added first, and its re-add trigger requires naming a consumer.
      */
-    private void burnOnce(Active a, ScorchSink sink) {
-        sink.deal(rates.damagePerTick(sink.victimMaxHealth(), a.cap), a.applierId, a.element);
+    private void burnOnce(UUID id, Active a, ScorchSink sink) {
+        double amount = rates.damagePerTick(sink.victimMaxHealth(), a.cap);
+        // DOTTICK BEFORE THE DAMAGE, so the tick that kills still has its line, ahead of the death it
+        // causes (WS3-P reads "the killing tick names withering"). One line per tick, for every
+        // instance of this store -- scorch and wither alike, which is the S3 ruling.
+        trace.tick(new DotTick(id, sink.victimType(), statusId, a.applierId, amount, a.cap));
+        sink.deal(amount, a.applierId, a.element);
     }
 
     /**
