@@ -1,7 +1,8 @@
 # PLAN — WITHER: OUR WITHER STATUS, THEN THE WITHERED SHORTBOW (SURVEY)
 
 **Phase 1: SURVEY ONLY. No Java, no content, no boot.** This file covers two slices, and both are built
-**after the #168 → #169 → #170 → #171 stack merges**, as LEGACY-B is:
+**after the #168 → #169 → #170 → #171 stack merges**, as LEGACY-B is *(superseded 2026-10-01: they stack on #171 now,
+above LEGACY-B; see RULINGS, 2026-10-01)*:
 
 1. **WITHER-STATUS**: Wither becomes a status of OUR OWN, shaped like Scorch: our clock, our damage path, a cap,
    credit to the applier, and no armour. The `wither` element gains `applies_status`, as `fire` has `scorch`.
@@ -71,6 +72,7 @@ beside it.
   wither, from the shared store**, in **its own commit with a unit test**. The tick rows become **log-line rows**,
   and the popup becomes a secondary witness.
 - **Order:** Ben's answers to Q-W1 to Q-W10 come next. **Nothing is built until #168–#171 merges.**
+  *(Superseded 2026-10-01: the slices stack on #171 now. See *2026-10-01* below.)*
 
 The sections below keep their survey text. Where a ruling settles them, they carry a `RULED` note and are not
 rewritten.
@@ -105,8 +107,40 @@ one:
   `damageWindow.claim`). The immune mobs are exactly the ones Paper refuses the potion on, so (a) loses nothing.
   Section 6.4's consequences carry over unchanged, including that the gate would swallow a real wither skeleton's
   vanilla wither on a player who is under ours too. **That case is only live once PvP is.**
-- **Q-W10: the bow's tooltip gets an "Inflicts Wither" line** (Ben may change the wording), and the status gains a
-  display name "Wither" if the schema needs one. **It does, and section 5.3 says what that costs.**
+- ~~**Q-W10: the bow's tooltip gets an "Inflicts Wither" line** (Ben may change the wording), and the status gains a
+  display name "Wither" if the schema needs one. **It does, and section 5.3 says what that costs.**~~
+  **OVERRULED by Ben, 2026-09-30: no such line** (see *2026-10-01* below).
+
+### 2026-10-01: BEN OVERRULES Q-W10, THE SEAT RE-STAGES THE CAP ROWS, AND THE SLICES STACK NOW
+
+**Ben, overruling the seat's Q-W10 fill (2026-09-30), verbatim:**
+
+```
+"no i don't want a tool tip that says it inflicts wither"
+```
+
+- **There is NO "Inflicts Wither" line.** Section 5.3's T1 and T2 are both **WITHDRAWN**: no status `display_name`,
+  no `StatusDefinition` field, no `WeaponLore` change, no `StatusRegistry` passed to `WeaponLore.build`.
+- **Q-W11 is MOOT.** Fire weapons are untouched, because nothing names a status.
+- **WB1b is DELETED.** WB1 predicts the bow's tooltip with **only its element** naming Wither.
+
+**The seat, the same day: the cap rows use MOB SCALING, not a hunt for a big mob.** The warden is dropped. A vanilla
+hostile mob's max is `base × 5 × gs / 100` (`MobScaling.maxHealth`, *read*), so **a zombie's max equals its gear
+score** (arith: `20 × 5 × gs / 100`). Both rows are **WITNESSED**, not conditional:
+
+| row | the binding case | the control (the percent arm) |
+|---|---|---|
+| **WS2b** (`/rpg apply`, cap 2.0) | a **GS-100 zombie** (max 100; 5% = 5 > 2.0): each tick **2.0** | **`/rpg spawn zombie 20`** (max 20; 5% = 1.0 < 2.0): each tick **1.0** |
+| **WB4b** (the bow, cap `0.5 × 16 = 8`) | **`/rpg spawn zombie 200`** (max 200; 5% = 10 > 8): each tick **8.0** | a **GS-100 zombie** (5% = 5 < 8): each tick **5.0** |
+
+**Each DOTTICK amount is predicted from that mob's own `MOBSEED … max=` line, read in the boot**, as
+`min(0.05 × max, cap)`, never from the table's arithmetic. The table is what the seat expects the `MOBSEED` lines to
+say. A `max=` that differs from it is a reading to record, and the prediction follows the line.
+
+**The seat, the same day: the slices no longer wait for #168–#171 to merge.** The stack is
+`#171 (ab23ce6f) → LEGACY-B → WITHER-STATUS → WITHERED-SHORTBOW`, each with its own PR and its own GATE committed before
+any boot. **One boot, at the new stack top, after the seat has diffed every slice.** Each R0c predicts against the slice
+below. Nothing in #168–#171 changes.
 
 ### WHAT THE ANSWERS DO TO THE GATE (they move rows; the re-draft is in section 10)
 
@@ -322,6 +356,9 @@ element word and nothing about what it applies (*read*: no status reference in `
 schema, which makes it Q-W10.
 
 ### 5.3 WHAT "INFLICTS WITHER" COSTS (Q-W10, filled by the seat; *read* unless marked)
+
+> **WITHDRAWN 2026-09-30: Ben overruled Q-W10** (*"no i don't want a tool tip that says it inflicts wither"*). Neither
+> T1 nor T2 is built, and Q-W11 is moot. The costing below is kept as it was written.
 
 **Today:** `WeaponLore.build(weapon, elements, ...)` takes the `ElementRegistry` and **no `StatusRegistry`**.
 `elementLine` renders the element's `display_name`. `StatusDefinition`'s five records carry `id` (and, for two of them,
@@ -551,7 +588,8 @@ but no weapon wears the element until the bow. Every row here therefore applies 
 | **WS-C** · negative control · RUN FIRST | a never-scorched knell beside a second knell, killed by `/rpg mobdamage` with nothing applied: **no blast** (`GATE-ignite.md` I7's shape) | Ben |
 | WS1 | `/rpg apply withering 200` on a 20-max zombie: a `✖` number of **1** every **40 t** (PROPOSED), **5** of them, first one 2 s in; **no fire on the mob** | popup, Ben |
 | ~~WS2~~ | ~~the same on a knell (if not ruled immune): each tick **2** (`min(18, UNDECLARED_CAP 2.0)`), proving the cap binds~~ **WITHDRAWN 2026-09-30: the Knell is immune (Q-W6).** Replaced by WS2b | — |
-| WS2b | the cap binding, on a **non-immune** mob whose nameplate max is **> 40** (read the max first, in the boot): each tick **2** (`min(0.05 × max, 2.0)`). **The control row in the same block:** a 20-max zombie reads **1** (the percent arm) | DOTTICK |
+| ~~WS2b (first draft)~~ | ~~a non-immune mob whose nameplate max is > 40~~ **RE-STAGED 2026-10-01 by the seat, below** | — |
+| WS2b | the cap binding, by mob scaling: **a GS-100 zombie** (expected `MOBSEED … max=100`; 5% = 5 > 2.0): each DOTTICK **`min(0.05 × max, 2.0)` = 2.0**. **The control in the same block: `/rpg spawn zombie 20`** (expected `max=20`; 5% = 1.0): each DOTTICK **1.0**, the percent arm. **Each prediction is computed from that mob's own `MOBSEED max=` line** | DOTTICK (WITNESSED) |
 | WS2c | **immunity**: `/rpg apply withering 200` on a knell, a plain wither skeleton and (if staged) a Wither: **no tick, no DOTTICK line, no potion swirl** (Q-W6) | DOTTICK absence + Ben. *Null observation: record the command and the target, or "nothing happened" proves nothing* |
 | **WS3 · THE WS2 ROW** | a **never-scorched** mob with low HP (`/rpg mobdamage` it to ≤ 1 tick), withered, **dies to a Wither tick: NO explosion, no `ignite_blast`, the neighbour takes nothing** | Ben |
 | WS3-P · the positive control, same boot | **RE-DRAFTED for Q-W8:** the same staging, but the mob is **`/rpg apply scorch` AND `/rpg apply withering`**, and **a Wither tick kills it: it EXPLODES** (Ben's "8, yes"; Ignite unchanged). This also proves Ignite still works, so WS3's silence means something | Ben + DOTTICK (the killing tick names `withering`) |
@@ -566,12 +604,13 @@ but no weapon wears the element until the bow. Every row here therefore applies 
 | row | prediction (SURVIVAL) | witness |
 |---|---|---|
 | R0a–c | the jar has `weapons/withered_shortbow.yml`; `14 → 15 weapons`, nothing else moved | log |
-| WB1 | tooltip, in order: **`Wither`** (dark gray), `Quiver: --/8`, blank, `Ranged Damage: <n>`, `Attack Speed: <20/cooldown, %.1f>`, …, **`Uncommon Ranged Weapon`**; a second `/rpg give` lands in its own slot | Ben |
+| WB1 | tooltip, in order (**no "Inflicts Wither" line**; Ben, Q-W10 overruled): **`Wither`** (dark gray), `Quiver: --/8`, blank, `Ranged Damage: <n>`, `Attack Speed: <20/cooldown, %.1f>`, …, **`Uncommon Ranged Weapon`**; a second `/rpg give` lands in its own slot | Ben |
 | **WB2 · PLAYERHIT** | zombie at `~8 ~ ~0`, one right-click: an arrow flies and **`PLAYERHIT … source=withered_shortbow/right_click … element=wither sent=<attack_damage>.000 crit=false triggerScore=100`** | PLAYERHIT line |
 | WB3 | after WB2's hit: `✖` tick numbers begin **one period later**, every period, for the ruled duration (the accrual path's first live instance) | popup |
 | ~~WB4~~ | ~~on a knell (if not immune): ticks of `min(18, Q-W2's fraction × attack_damage)`~~ **WITHDRAWN: the Knell is immune.** Replaced by WB4b | — |
-| WB4b | **the weapon's cap**, on a non-immune mob whose nameplate max is **> 160** (read first; a warden is the candidate, and its scaled max is not predicted): each tick **8** (`0.5 × 16`), **not 2.0**. If no such mob can be staged, **the row is recorded UNWITNESSED**: below max 160 the percent arm hides the cap entirely | DOTTICK (`cap=8`) |
-| WB1b | **the tooltip carries "Inflicts Wither"** (Q-W10, wording Ben's to change), at the position Phase 2 fixes against `golden-lore.txt`. **A fire weapon's tooltip is unchanged, or gains "Inflicts Scorch"**, per Q-W11 | Ben |
+| ~~WB4b (first draft)~~ | ~~a warden, max > 160, else UNWITNESSED~~ **RE-STAGED 2026-10-01 by the seat, below; the warden is dropped** | — |
+| WB4b | **the weapon's cap**, by mob scaling: **`/rpg spawn zombie 200`** (expected `MOBSEED … max=200`; 5% = 10 > 8): each DOTTICK **`min(0.05 × max, 8.0)` = 8.0** (`0.5 × 16`), **not 2.0**. **The control: a GS-100 zombie** (expected `max=100`; 5% = 5 < 8): each DOTTICK **5.0**, the percent arm. **Each prediction is computed from that mob's own `MOBSEED max=` line** | DOTTICK (`cap=8`; WITNESSED) |
+| ~~WB1b~~ | ~~the tooltip carries "Inflicts Wither"~~ **DELETED 2026-09-30: Ben overruled Q-W10.** WB1 is the tooltip row, with only the element naming Wither | — |
 | **WB5 · the WS2 row on the real path** | a never-scorched zombie, hit once, **dies to a Wither tick: no explosion**. Then one with ≤ attack_damage HP **killed by the arrow itself: no explosion** (Ignite's second clause, K2) | Ben |
 | WB6 | it pushes (a zombie WITHOUT `NoAI`, as in SB3) | Ben |
 | WB7 | eight arrows, then the reload (as in SB4, with the ruled numbers) | Ben |
@@ -595,10 +634,10 @@ but no weapon wears the element until the bow. Every row here therefore applies 
 - **Q-W7 (a):** the potion applied beside the wither store, and **the WITHER gate in `onEnvironmentalDamage`**, which
   is now in scope and no longer conditional;
 - **Q-W6:** the immunity list in `withering.yml` (`[wither_skeleton, wither]`), its parse, and the check at apply time;
-- **Q-W10 (T1):** an optional status `display_name` (`StatusLoader`, `StatusDefinition`, and every test constructing a
+- ~~**Q-W10 (T1):**~~ **WITHDRAWN 2026-09-30 (Ben overruled Q-W10): none of this is built.** ~~an optional status `display_name` (`StatusLoader`, `StatusDefinition`, and every test constructing a
   status record), `WeaponLore.build` taking the `StatusRegistry`, `WeaponItems` passing it, and `withering.yml`
   `display_name: "Wither"`. **This belongs in WITHER-STATUS** (it is status schema), and the bow's
-  `golden-lore.txt` block shows its first rendering.
+  `golden-lore.txt` block shows its first rendering.~~
 
 **DOTTICK** (S3, its OWN commit inside WITHER-STATUS, with its own unit test): the shared store emits the line on
 each tick when `/rpg mobtrace` is on, for both instances. *Which class owns the mobtrace switch at that site, and
@@ -615,8 +654,9 @@ it to PLAYERHIT.
 > **ANSWERED 2026-09-30: "8, yes everything else is fine".** The seat filled Q-W6, Q-W7 and Q-W10. The ruled values
 > are in RULINGS, and the questions are kept below as they were asked. **One question is new, from Q-W10's costing:**
 >
-> - **Q-W11. Should fire weapons say "Inflicts Scorch" the way the bow says "Inflicts Wither"?** Yes changes five
->   shipped tooltips. No leaves the bow as the only weapon whose tooltip names its effect (section 5.3).
+> - ~~**Q-W11. Should fire weapons say "Inflicts Scorch" the way the bow says "Inflicts Wither"?** Yes changes five
+>   shipped tooltips. No leaves the bow as the only weapon whose tooltip names its effect (section 5.3).~~
+>   **MOOT 2026-09-30: Ben overruled Q-W10, so no tooltip names a status.**
 
 - **Q-W1. How often does Wither hurt?** Every 2 seconds like vanilla, or every second like Scorch? *(Proposed: every 2 s.)*
 - **Q-W2. How hard does each tick hit?** Proposed: 5% of the target's max health, but never more than **half** the

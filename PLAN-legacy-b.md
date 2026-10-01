@@ -566,6 +566,11 @@ predicts against LEGACY-A's R0c.
 - **Q-B5: the drive REMOVES the entity when its lifetime ends.** An orphan that outlives the drive (a chunk unloading
   mid-flight) is accepted, and recorded in `NEXT.md` when the slice is built.
 - **When:** LEGACY-B is built AFTER the #168–#171 stack merges, stacked on master then.
+  **SUPERSEDED by the seat, 2026-10-01:** LEGACY-B stacks on #171 (`ab23ce6f`) NOW, with its own PR and its own GATE
+  committed before any boot, and WITHER-STATUS and WITHERED-SHORTBOW stack above it. One boot at the new stack top,
+  after the seat has diffed every slice. LEGACY-B's R0c predicts against LEGACY-A's. Nothing in #168–#171 changes. So
+  §7's *"Why not stacked on #171 now"* is overruled: the staff file #171 removed is re-added by LEGACY-B, and #171's BK
+  rows no longer read the staff.
 
 ### BEN, 2026-09-29, VERBATIM: the answers to Q-B1, Q-B4 and Q-B6
 
