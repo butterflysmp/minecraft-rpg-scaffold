@@ -11,7 +11,8 @@ import org.bukkit.NamespacedKey;
  */
 public sealed interface StatusDefinition
         permits StatusDefinition.Fire, StatusDefinition.Potion,
-                StatusDefinition.Immobilize, StatusDefinition.Soaked, StatusDefinition.Scorch {
+                StatusDefinition.Immobilize, StatusDefinition.Soaked, StatusDefinition.Scorch,
+                StatusDefinition.Wither {
 
     String id();
 
@@ -34,6 +35,37 @@ public sealed interface StatusDefinition
      * comes from the ability, as every other status's does.
      */
     record Scorch(String id) implements StatusDefinition {}
+
+    /**
+     * OUR wither: a damage-over-time on an owned 40-tick clock, shaped like {@link Scorch} and run by
+     * the same store, created a second time ({@code AdapterContext.wither()}). {@code min(5% of max,
+     * the cap)} per tick, the cap half the applying hit, 200 ticks, a re-hit resets the window, credit to
+     * the most recent applier, armour bypassed. The numbers are {@code core.combat.Wither}'s.
+     *
+     * <p><b>A NEW KIND, NOT A PARAMETERISED SCORCH (the seat's WS1 ruling), and the sealed type is why.</b>
+     * Every exhaustive switch over this interface -- accrual, the boot validator, {@code applyStatus} --
+     * became a compile error until it decided about Wither. Under a parameterised {@code kind: scorch}
+     * those sites would each need an "is it really scorch" flag, and the one forgotten would make a
+     * withered death explode, which looks exactly like the Ignite ruling working.
+     *
+     * <p><b>{@code immune}: entity type keys the status never lands on</b> (Q-W6, the seat's fill:
+     * wither skeletons, the Wither, and the Knell, which is a {@code wither_skeleton}). Authored in
+     * {@code withering.yml}, content as data. Matched against the victim's type key
+     * ({@code zombie}, {@code wither_skeleton}), so every entity of a listed type is immune -- the ruling
+     * is per type, which is why a type key is right here and not the per-entity trap
+     * {@code MobDefinition} warns about.
+     */
+    record Wither(String id, java.util.Set<String> immune) implements StatusDefinition {
+
+        public Wither {
+            immune = java.util.Set.copyOf(immune);
+        }
+
+        /** True when an entity of type {@code typeKey} (e.g. {@code wither_skeleton}) is immune. */
+        public boolean isImmune(String typeKey) {
+            return immune.contains(typeKey);
+        }
+    }
 
     /**
      * A movement lock: MOVEMENT_SPEED to zero (kills the mob's AI drive) plus per-tick
