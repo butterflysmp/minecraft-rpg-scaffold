@@ -83,8 +83,28 @@ public final class StatusLoader {
             case "freeze" -> new StatusDefinition.Immobilize(id, true);
             case "soaked" -> new StatusDefinition.Soaked(id);
             case "scorch" -> new StatusDefinition.Scorch(id);
+            case "wither" -> new StatusDefinition.Wither(id, immuneTypes(s));
             default -> throw new IllegalArgumentException("Unknown status kind: " + kind);
         };
+    }
+
+    /**
+     * {@code immune:}, a list of entity type keys, lowercased; absent means nobody is immune. A key with
+     * a namespace or a space is refused as a named, skipped file -- it could never match the bare type
+     * key the check compares against, so it would read as a ruling and protect nothing. Whether the key
+     * names a REAL entity type needs the registry, which needs a server; it is not checked here.
+     */
+    private static java.util.Set<String> immuneTypes(ConfigurationSection s) {
+        java.util.Set<String> out = new java.util.LinkedHashSet<>();
+        for (String raw : s.getStringList("immune")) {
+            String key = raw.toLowerCase(Locale.ROOT).trim();
+            if (!key.matches("[a-z0-9_]+")) {
+                throw new IllegalArgumentException("Invalid immune entity type '" + raw
+                        + "'; expected a bare type key like wither_skeleton");
+            }
+            out.add(key);
+        }
+        return out;
     }
 
     private static String req(ConfigurationSection s, String path) {

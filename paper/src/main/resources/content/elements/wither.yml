@@ -1,2 +1,8 @@
 display_name: "<dark_gray>Wither</dark_gray>"
 damage_symbol: "<dark_gray>✖</dark_gray>"
+
+# THE STATUS THIS ELEMENT'S DAMAGE ACCRUES (WITHER-STATUS; the seat's WS3 ruling: Wither sits on the
+# ELEMENT, as fire's scorch does). Every hit wearing element: wither that lands applies OUR wither,
+# capped at half the hit, for 200 ticks (statuses/withering.yml, core.combat.Wither). A weapon of this
+# element needs no `type: status` in its on_hit. The status id is "withering"; the element is "wither".
+applies_status: withering
