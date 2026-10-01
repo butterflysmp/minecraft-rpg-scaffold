@@ -332,11 +332,16 @@ public class DotStatus {
      * and <b>player respawn</b> -- and the third is a correctness fix rather than a leak fix, for the
      * same reason: quit handling does not run on death and the entity-removal handler filters players
      * out, so without it a player who dies mid-burn respawns still scorched.
+     *
+     * @return whether a LIVE DoT was dropped. {@link WitherPotion} reads it: only a wither this store
+     *         was running put the vanilla potion on, so only then is the potion ours to strip.
      */
-    public void forget(UUID id) {
+    public boolean forget(UUID id) {
+        boolean wasActive = isActive(id);
         Active a = active.remove(id);
         if (a != null && a.task != null) a.task.cancel();
         onEnded(id);
+        return wasActive;
     }
 
     /** Number of victims holding scorch state. The bounds check for tests. */
