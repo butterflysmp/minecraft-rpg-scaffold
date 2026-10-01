@@ -1030,8 +1030,9 @@ class AbilityLoaderTest {
      * row above), and the old member as the control, so a set that swapped {@code arrow} for
      * {@code fireball} instead of adding it cannot pass.
      *
-     * <p>Mutations: drop {@code "fireball"} from {@code AbilitySchema.BODIES} -> the first assertion
-     * reddens. Drop {@code "arrow"} -> the control reddens. Neither reddens the typo row.
+     * <p>Mutations, measured 2026-10-01: drop {@code "fireball"} from {@code AbilitySchema.BODIES} ->
+     * this row alone reddens (the fireball file is skipped). Drop {@code "arrow"} -> this row's control
+     * reddens, with the two older arrow-body rows above.
      */
     @Test
     void aFireballBodyParsesItsTypoIsRefusedAndTheArrowStillParses() throws IOException {
