@@ -400,7 +400,7 @@ public final class RpgCommand {
                             boolean on = nameplates.toggleTrace();
                             ctx.getSource().getSender().sendMessage(Component.text(
                                     "Mob trace " + (on ? "ON" : "OFF")
-                                            + " (MOBSEED / MOBREMOVE / MOBHIT / MOBHEAL / PLAYERHIT in the log).",
+                                            + " (MOBSEED / MOBREMOVE / MOBHIT / MOBHEAL / PLAYERHIT / DOTTICK in the log).",
                                     NamedTextColor.GREEN));
                             return 1;
                         }))
@@ -1421,6 +1421,15 @@ public final class RpgCommand {
                     e -> e instanceof LivingEntity living && !(living instanceof Player));
             if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
                 player.sendMessage(Component.text("Look at a mob to apply a status.", NamedTextColor.RED));
+                return;
+            }
+            // IMMUNITY IS ASKED HERE, BEFORE THE REPLY (the seat's ruling 5): the status arm refuses an
+            // immune target on the entity thread, after this task has already replied, so without this
+            // a refusal read "Applied". WS2c reads this reply and the absence of DOTTICK.
+            var refusal = ApplyArgs.immunityRefusal(
+                    adapters.statuses().find(args.statusId()).orElse(null), target.getType().key().value());
+            if (refusal.isPresent()) {
+                player.sendMessage(Component.text(refusal.get(), NamedTextColor.RED));
                 return;
             }
             var handle = BukkitCombatant.of(target, adapters).handle();

@@ -275,6 +275,22 @@ class ElementLoaderTest {
         // Mutation: add applies_status to kinetic.yml -> reddens, and the in-game control is gone.
     }
 
+    /**
+     * THE SHIPPED wither.yml ACCRUES withering (WITHER-STATUS; the seat's WS3: Wither sits on the
+     * ELEMENT). Against the real resource. Kinetic stays the control in the row above.
+     * Mutation: drop {@code applies_status} from the shipped wither.yml -> reddens.
+     */
+    @Test
+    void theBundledWITHERAccruesWithering() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/elements/wither.yml")) {
+            assertNotNull(in, "bundled element missing from the classpath: wither");
+            Files.write(dir.resolve("wither.yml"), in.readAllBytes());
+        }
+        ElementRegistry registry = load();
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals("withering", registry.find("wither").orElseThrow().appliesStatus());
+    }
+
     @Test
     void aCHEVRONGlyphIsRejectedTooAndTheMessageSaysSoRatherThanBlamingATag() throws IOException {
         // THE LIMITATION, MEASURED RATHER THAN CLAIMED IN A JAVADOC.
