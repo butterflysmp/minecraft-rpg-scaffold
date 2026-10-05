@@ -50,6 +50,24 @@ restated.
 
 ---
 
+## SELFTEST WITNESS AMENDMENT, 2026-10-05, BEFORE ANY BOOT (the seat's rulings c and d)
+
+**No prediction moves.** `/rpg selftest <gate>` (#175, `GATE-selftest.md`) stages and drives this gate's CORE rows on
+the shipped paths. Its lines are judged against the predictions below exactly as Ben's would be. **An AUTO reading is a
+reading of the server, never of the client, and an AUTO half never makes a row PASS on its own**
+(`.claude/rules/verification.md`, *AN AUTO READING IS A READING OF THE SERVER*). **The instrument never prints PASS or
+FAIL**: a reading is recorded `AUTO PASS (selftest <sha>)` beside the row, quoting the real lines between that row's
+`SELFTEST <gate> <row> START` and `DONE` (PLAYERHIT, DOTTICK, MOBSEED, CMD, REPLY, SLOT, PROBE). Staging is the gate's
+own commands; where the scenario differs, the row says so. Every row not listed keeps its witness as written.
+
+| row | witness now | the server's half, AUTO (`paper/src/main/resources/selftest/GATE-<gate>.yml#<row>`) | Ben's half |
+|---|---|---|---|
+| WB1 | AUTO-PARTIAL | two gives land in two slots (`INVENTORY`); the held bow's name and lore as the server built them (`HELD`) | the tooltip as the client draws it |
+| WB2 | AUTO | a synthetic right-click at the GS-100 zombie at `~8`; the PLAYERHIT line and its `caster=` | — |
+| WB3 | AUTO-PARTIAL | it runs only straight after WB2 (`after: WB2`); five DOTTICK lines with `applier=`, and the zombie's fire ticks | the wither swirl |
+
+---
+
 ## R0 — THE ONE R0 FOR THE WHOLE STACK. READ IT FIRST, BEFORE ANY ROW OF ANY GATE. IF ANY R0 FAILS, STOP
 
 > **INSTRUMENT NOTE, 2026-10-05, the seat's ruling c, added before any boot. No prediction moves.** At the
