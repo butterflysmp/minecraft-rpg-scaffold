@@ -52,6 +52,12 @@ restated.
 
 ## R0 — THE ONE R0 FOR THE WHOLE STACK. READ IT FIRST, BEFORE ANY ROW OF ANY GATE. IF ANY R0 FAILS, STOP
 
+> **INSTRUMENT NOTE, 2026-10-05, the seat's ruling c, added before any boot. No prediction moves.** At the
+> stack-top boot, this gate's R0 rows are SUPERSEDED by `GATE-selftest.md`'s R0 on `<sha>`; recorded SUPERSEDED, never
+> PASS or FAIL. Intermediate facts in R0b/R0c are not read. *`<sha>` is the stack top's head (#175) as that R0a reads it in
+> the boot: a commit beneath the top cannot name the top's hash.* **The one R0 moved to #175**, which carries the
+> cumulative R0 for #168-#175; the heading and paragraph below describe it as it stood before that move.
+
 **The seat's ruling 1, 2026-10-05.** This R0 is the stack's only R0: every gate beneath (#168-#173) carries a dated note
 recording its own R0 rows **SUPERSEDED** at this boot, never PASS or FAIL. The one exception is `GATE-nexus-polish.md`
 **R0d** (the ten screen commands), which is a #170 merge bar and is read as written. R0b reads one shipped entry from
