@@ -1,0 +1,13 @@
+# PLACEHOLDER -- Ben designs. An aspect (PLAN-build-system.md sections 2.4 and 2.4.1) for the Fire Melee
+# cell (PLAN-melee-class.md section 7, slice M1). NUMBERS ONLY, and none of them is a proposal.
+#
+# It targets the melee PLACEHOLDER, never Sunder: an aspect on Ben's ability is design (section 7).
+# Resolved: damage.amount moves EVERY damage effect in the target -- the direct 9 -> 9 x 1.2 = 10.8, and
+# the burst's 5 -> 6. Neither collides with another figure in the cell.
+# The id of this aspect is its filename: keen_arc.
+
+display_name: "<gold>Keen Arc</gold>"
+description: ["The Melee Active hits a little harder."]
+target: active_placeholder_melee
+modify:
+  - { field: damage.amount, percent: 20 }

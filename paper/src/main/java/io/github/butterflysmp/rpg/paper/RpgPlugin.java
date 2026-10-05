@@ -535,7 +535,9 @@ public final class RpgPlugin extends JavaPlugin {
         // Built once and shared: the adapters' warn-once set must outlive the
         // short-lived BukkitCombatant and PaperCombatWorld instances.
         this.adapters = new AdapterContext(scheduler, keys, visuals, statuses, elements, enchants, getLogger(), stats, anchorDrift, craftResults, weapons, accessories,
-                new Stones(keys, pools, abilities, builds, fragments, aspects));
+                new Stones(keys, pools, abilities, builds, fragments, aspects),
+                // /rpg mobtrace's switch, read for PLAYERHIT; nameplates is built above.
+                nameplates::tracing);
 
         // core takes a tick supplier, not Bukkit, so it stays unit-testable.
         this.cooldowns = new CooldownTracker(Bukkit::getCurrentTick);

@@ -1,0 +1,43 @@
+# PLACEHOLDER -- Ben designs. The Fire Melee cell's Active (PLAN-melee-class.md section 7, slice M1).
+#
+# THIS IS NOT A DESIGN AND ITS NUMBERS ARE NOT A PROPOSAL. Nothing may be derived from it -- the rule
+# ultimate_placeholder_ranger.yml gives every placeholder: parity with a placeholder is parity with nothing.
+#
+# The shape is the one thing chosen on purpose: a MELEE ARC, because it is the only way CastSpec.Melee
+# is cast from a stone by anyone (void_slash is in no pool, section 6.1). So this file is also the
+# first live coverage of CastExecutor.meleeTarget, and the melee gate's MC10, MC13 and MC14 read it.
+#
+# reach 3.5 and arc_degrees 120 are the figures section 6.3 executed its geometry with (the point-blank
+# edge at ~0.94 blocks, the box corner at ~6.06). CHANGE EITHER AND THOSE GATE PREDICTIONS MOVE.
+# The burst's 3.5 is that reach again, so a mob the direct hit misses point-blank is still inside the
+# miss burst's box (MC13 reads one line, not none). The two amounts, 9 direct and 5 burst, differ so a
+# PLAYERHIT line's sent= says which effect it was.
+#
+# In M2 this stays: the ruled default is [sunder, this] (Q7), left = Sunder, so this is Active 2.
+# cooldown_ticks is a multiple of 4 (the held-input grid).
+
+id: active_placeholder_melee
+display_name: "<gold>Melee Active (placeholder)</gold>"
+element: fire
+cooldown_ticks: 40
+cost:
+  resource: mana
+  amount: 15
+cast:
+  type: melee
+  reach: 3.5
+  arc_degrees: 120
+on_hit:
+  - type: visual
+    visual_id: solar_detonation
+  # The direct hit: only the combatant the arc resolved.
+  - type: damage
+    amount: 9
+    element: fire
+  # The sweep: centred on the target, or 3.5 ahead at eye height on a miss (section 6.2).
+  - type: burst
+    radius: 3.5
+    effects:
+      - type: damage
+        amount: 5
+        element: fire

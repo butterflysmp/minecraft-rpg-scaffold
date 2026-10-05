@@ -6,11 +6,13 @@ import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.BeamSamples;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
+import io.github.butterflysmp.rpg.core.combat.TracedHit;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import io.github.butterflysmp.rpg.paper.weapon.GearScoreItems;
 import io.github.butterflysmp.rpg.paper.weapon.ViewAim;
 import io.github.butterflysmp.rpg.paper.content.VisualDefinition;
 import io.github.butterflysmp.rpg.paper.content.VisualSpec;
+import org.bukkit.Bukkit;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -242,6 +244,21 @@ public final class PaperCombatWorld implements CombatWorld {
         if (!(world.getEntity(combatantId) instanceof Player player)) return GearScore.BASELINE;
         Regions.requireOwned(player);
         return GearScoreItems.heldScore(player, ctx.keys(), ctx.weapons());
+    }
+
+    /**
+     * {@code PLAYERHIT}: one log line per traced hit while {@code /rpg mobtrace} is on, beside
+     * {@code MOBHIT} (mob-to-player) on the same switch. The target's type is read here because core
+     * has no entity types; the lookup is the {@code Attribution} shape, and a target this thread does
+     * not own prints {@code ?} rather than being read off-thread.
+     */
+    @Override
+    public void traceHit(TracedHit hit) {
+        if (!ctx.mobTrace().getAsBoolean()) return;
+        Entity target = world.getEntity(hit.targetId());
+        String type = target == null ? "gone"
+                : Bukkit.isOwnedByCurrentRegion(target) ? target.getType().key().value() : "?";
+        ctx.log().info(hit.line(type));
     }
 
     /**
