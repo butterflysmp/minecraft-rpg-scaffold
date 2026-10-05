@@ -1,0 +1,23 @@
+# GATE-legacy-a.md (#171): the CORE row SB2.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 20
+
+# SB2: a shot lands for 16, kinetic, on the zombie at ~8.
+SB2:
+  - cmd: "rpg give short_bow"
+  - hold: short_bow
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~8 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 5
+  - cmd: "tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes"
+  - wait: 2
+  - use: right_click
+  - wait: 40
+  - probe: t

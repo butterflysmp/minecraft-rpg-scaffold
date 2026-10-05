@@ -1,0 +1,80 @@
+# GATE-level.md (#169): the CORE rows CP2, BN1 (L1 and L50), WD1, WD3 and LS1.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# CP2: exactly at the cap. The reply, then the star's stats head.
+CP2:
+  - cmd: "rpg playerxp set @s 50 levels"
+  - wait: 20
+  - cmd: "menu"
+  - wait: 3
+  - dump: menu
+  - close: ""
+
+# BN1: /rpg stats with an empty hand at L1, then at L50.
+BN1:
+  - hold: empty
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 20
+  - cmd: "rpg stats"
+  - wait: 2
+  - cmd: "rpg playerxp set @s 50 levels"
+  - wait: 20
+  - cmd: "rpg stats"
+
+# WD1: the same emberblade at L1 and L50, a full charge each, a fresh zombie at ~2 for every swing. Two swings per
+# level, so a crit=true line has a comparable spare.
+WD1:
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "rpg playerxp set @s 50 levels"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+
+# WD3: a stone thrust at L50 carries no level damage.
+WD3:
+  - expect_cell: "melee fire"
+  - cmd: "rpg playerxp set @s 50 levels"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - wait: 20
+  - swing: HAND
+  - wait: 20
+
+# LS1: at level 1, the head's hint line, then the level screen's page 1.
+LS1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 20
+  - cmd: "menu"
+  - wait: 3
+  - dump: menu
+  - click_material: PLAYER_HEAD
+  - wait: 3
+  - dump: menu
+  - close: ""
