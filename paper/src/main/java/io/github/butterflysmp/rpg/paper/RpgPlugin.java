@@ -1,6 +1,10 @@
 package io.github.butterflysmp.rpg.paper;
 
 import com.github.retrooper.packetevents.PacketEvents;
+import io.github.butterflysmp.rpg.paper.selftest.ScenarioLoader;
+import io.github.butterflysmp.rpg.paper.selftest.SelfTestCommand;
+import io.github.butterflysmp.rpg.paper.selftest.SelfTestGuard;
+import io.github.butterflysmp.rpg.paper.selftest.SelfTestService;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.AbilityService;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
@@ -632,9 +636,16 @@ public final class RpgPlugin extends JavaPlugin {
         // The Ability Stone's input side. Built here, not beside Stones, because it needs the ability
         // service and the profiles, which do not exist when AdapterContext is built.
         StoneCaster stoneCaster = new StoneCaster(abilityService, adapters, profiles, cooldowns, adapters.stones());
+        // /rpg selftest (PLAN-selftest.md). Built before the listeners, which hand it the quit. Its one line
+        // says whether the dev marker reached this JVM and how many scenarios the jar carries; GATE-selftest.md
+        // R0d reads it, and a refused scenario follows it as a WARN, by name.
+        SelfTestService selfTest = new SelfTestService(adapters, profiles, resources, nameplates, getLogger(),
+                buildCommit(), Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY), ScenarioLoader.load(this::getResource));
+        getLogger().info(selfTest.enableLine());
+        selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes, vaults, stoneCaster);
+                this, recipes, vaults, stoneCaster, selfTest);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md
@@ -671,9 +682,9 @@ public final class RpgPlugin extends JavaPlugin {
         // ONE handler, two nodes. A second registerEventHandler would be the sprawl the
         // banned-patterns table names; a second node inside this one is not.
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
-            event.registrar().register(
-                    RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults),
-                    "RPG commands");
+            var rpg = RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults);
+            rpg.addChild(SelfTestCommand.build(selfTest));   // /rpg selftest, without growing build()'s signature
+            event.registrar().register(rpg, "RPG commands");
             // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the
             // ONLY route to it once a player turns the Nexus star off, which is why it ships in
             // the same slice as the toggle rather than after it.
