@@ -1,0 +1,39 @@
+# GATE-withered-shortbow.md (#174): the CORE rows WB1 (its stack half; the tooltip as drawn is Ben's), WB2 and WB3.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 20
+
+# WB1: two gives land in two slots; the held bow's name and lore as the server built them.
+WB1:
+  - cmd: "rpg give withered_shortbow"
+  - cmd: "rpg give withered_shortbow"
+  - probe_inventory: withered_shortbow
+  - hold: withered_shortbow
+  - cmd: "rpg gearscore set 100"
+  - dump: held
+
+# WB2: 16 wither on a right-click at the GS-100 zombie at ~8. Record caster=; WB3 reads it.
+WB2:
+  - cmd: "rpg give withered_shortbow"
+  - hold: withered_shortbow
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~8 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 5
+  - cmd: "tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes"
+  - wait: 2
+  - use: right_click
+  - wait: 20
+  - probe: t
+
+# WB3: the accrued Wither on WB2's zombie: five DOTTICK lines whose applier= is WB2's caster=.
+WB3:
+  - after: WB2
+  - probe: t
+  - wait: 220
+  - probe: t

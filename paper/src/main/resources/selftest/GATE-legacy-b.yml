@@ -1,0 +1,56 @@
+# GATE-legacy-b.md (#172): the CORE rows LB2 and LB5 (a)(b). LB5 (c), the vanilla control, is not CORE.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 20
+  - cmd: "rpg give blaze_kings_staff"
+  - hold: blaze_kings_staff
+  - cmd: "rpg gearscore set 100"
+
+# LB2: 30 fire on a right-click, exactly one PLAYERHIT, none of the three marker warnings.
+LB2:
+  - hold: blaze_kings_staff
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~8 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 5
+  - cmd: "tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes"
+  - wait: 2
+  - use: right_click
+  - wait: 40
+  - probe: t
+
+# LB5: (a) three shots at an oak-plank wall 10 blocks east: no fire block. (b) a TNT block at eye height in the
+# wall: it does not prime. The corridor and the wall are SAVED first, and the run's restore puts them back.
+LB5:
+  - hold: blaze_kings_staff
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "1 0 -2 10 4 2"
+  - cmd: "fill ~1 ~ ~-2 ~9 ~4 ~2 air"
+  - cmd: "fill ~10 ~ ~-2 ~10 ~3 ~2 oak_planks"
+  - cmd: "fill ~10 ~4 ~-2 ~10 ~4 ~2 air"
+  - wait: 2
+  - probe_blocks: "FIRE 1 0 -2 10 4 2"
+  - note: "(a) three shots at the plank wall"
+  - cmd: "rpg mana refill"
+  - use: right_click
+  - wait: 12
+  - use: right_click
+  - wait: 12
+  - use: right_click
+  - wait: 40
+  - probe_blocks: "FIRE 1 0 -2 10 4 2"
+  - note: "(b) a TNT block at eye height in the wall"
+  - cmd: "setblock ~10 ~1 ~0 tnt"
+  - wait: 2
+  - cmd: "rpg mana refill"
+  - use: right_click
+  - wait: 40
+  - probe_blocks: "TNT 10 1 0 10 1 0"
+  - probe_entities: "TNT 16"
+  - probe_blocks: "FIRE 1 0 -2 10 4 2"
