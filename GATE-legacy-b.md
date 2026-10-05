@@ -55,6 +55,26 @@ visuals rows added for Q-B4 and Q-B6.
 
 ---
 
+## SELFTEST WITNESS AMENDMENT, 2026-10-05, BEFORE ANY BOOT (the seat's rulings c and d)
+
+**No prediction moves.** `/rpg selftest <gate>` (#175, `GATE-selftest.md`) stages and drives this gate's CORE rows on
+the shipped paths. Its lines are judged against the predictions below exactly as Ben's would be. **An AUTO reading is a
+reading of the server, never of the client, and an AUTO half never makes a row PASS on its own**
+(`.claude/rules/verification.md`, *AN AUTO READING IS A READING OF THE SERVER*). **The instrument never prints PASS or
+FAIL**: a reading is recorded `AUTO PASS (selftest <sha>)` beside the row, quoting the real lines between that row's
+`SELFTEST <gate> <row> START` and `DONE` (PLAYERHIT, DOTTICK, MOBSEED, CMD, REPLY, SLOT, PROBE). Staging is the gate's
+own commands; where the scenario differs, the row says so. Every row not listed keeps its witness as written.
+
+| row | witness now | the server's half, AUTO (`paper/src/main/resources/selftest/GATE-<gate>.yml#<row>`) | Ben's half |
+|---|---|---|---|
+| LB2 | AUTO | a synthetic right-click at the zombie at `~8`; the PLAYERHIT line and the absence of the three warnings | — |
+| LB5 | AUTO-PARTIAL | (a) and (b) only: **the wall is built by `/fill`** (the corridor and wall are saved first and restored at the run's end); `BLOCKS FIRE` counts before and after three shots, then the TNT block's count and the primed-TNT entity count after one more. (c) is not driven | each fireball vanishes at the wall |
+
+**The R0 moved again** (the seat's ruling c): the stack's one R0 is now `GATE-selftest.md`'s, on #175's head. The
+SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; read it as naming `GATE-selftest.md`.
+
+---
+
 ## R0
 
 > **INSTRUMENT NOTE, 2026-10-05, the seat's ruling 1, added before the stack-top boot. No prediction moves.** At the
