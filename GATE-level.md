@@ -71,6 +71,29 @@ creative-divergence register, `verification.md`), and #168's rows in the same bo
 
 ---
 
+## SELFTEST WITNESS AMENDMENT, 2026-10-05, BEFORE ANY BOOT (the seat's rulings c and d)
+
+**No prediction moves.** `/rpg selftest <gate>` (#175, `GATE-selftest.md`) stages and drives this gate's CORE rows on
+the shipped paths. Its lines are judged against the predictions below exactly as Ben's would be. **An AUTO reading is a
+reading of the server, never of the client, and an AUTO half never makes a row PASS on its own**
+(`.claude/rules/verification.md`, *AN AUTO READING IS A READING OF THE SERVER*). **The instrument never prints PASS or
+FAIL**: a reading is recorded `AUTO PASS (selftest <sha>)` beside the row, quoting the real lines between that row's
+`SELFTEST <gate> <row> START` and `DONE` (PLAYERHIT, DOTTICK, MOBSEED, CMD, REPLY, SLOT, PROBE). Staging is the gate's
+own commands; where the scenario differs, the row says so. Every row not listed keeps its witness as written.
+
+| row | witness now | the server's half, AUTO (`paper/src/main/resources/selftest/GATE-<gate>.yml#<row>`) | Ben's half |
+|---|---|---|---|
+| CP2 | AUTO | the `/rpg playerxp` reply, then the star's stats head, dumped | — |
+| BN1 | AUTO | `/rpg stats` replies with an empty hand at L1 and at L50 | — |
+| WD1 | AUTO | `Player#attack` at full charge (40 t between), each on a fresh zombie at `~2`. **Two swings per level**, so a `crit=true` line has a comparable spare already staged | — |
+| WD3 | AUTO | the stone's Left (`PlayerArmSwingEvent`) at L50 | — |
+| LS1 | AUTO-PARTIAL | the stats head's lore, then a click on the head and the level screen, dumped | a glance |
+
+**The R0 moved again** (the seat's ruling c): the stack's one R0 is now `GATE-selftest.md`'s, on #175's head. The
+SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; read it as naming `GATE-selftest.md`.
+
+---
+
 ## R0 — THE DEPLOYED BUILD CARRIES THIS BRANCH. IF ANY R0 FAILS, STOP
 
 > **INSTRUMENT NOTE, 2026-10-05, the seat's ruling 1, added before the stack-top boot. No prediction moves.** At the
