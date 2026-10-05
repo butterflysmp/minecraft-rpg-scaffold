@@ -75,7 +75,43 @@ import java.util.UUID;
  */
 public record Caster(UUID id, double attackDamage, double classDamageBonus,
                      double enchantDamagePercent, double chargeScale, double critMultiplier,
-                     double payloadDamage, int triggerScore, String source) {
+                     double payloadDamage, int triggerScore, String source,
+                     double levelDamageBonus, boolean weaponHit) {
+
+    /**
+     * This cast marked as a WEAPON HIT: a weapon trigger, a basic melee swing, a shot. <b>The only way the
+     * level's damage bonus reaches a hit</b> (Ben, 2026-09-29: <i>"Only weapons, we'll tackle the ability
+     * damage pipeline later"</i>; seat ruling L1).
+     *
+     * <h2>A FLAG, BECAUSE THE DAMAGE ARMS CANNOT TELL A WEAPON FROM A STONE</h2>
+     *
+     * <p>A stone-cast Active and a weapon trigger build this record from the same snapshot, through the
+     * same {@code AbilityService.resolve} and the same {@code CastExecutor} build sites. Nothing else on
+     * it says which one this was ({@link #source} names the ability but "nothing prices or gates on it").
+     * So the gate is set where the paths still differ -- {@code CastExecutor}'s build sites, from
+     * {@code CastResult.Success.weaponTrigger} and from {@code landBasicMelee} -- and read here.
+     *
+     * <p>Two routes were refused (PLAN-level-bonuses.md section 0.5): the ATTACK stat, which only the
+     * {@code WeaponDamage} arm reads, so every literal-damage weapon (every staff) would get nothing; and
+     * a class-damage source gated on a held weapon, which leaks into a stone cast for up to a reconcile
+     * period after switching.
+     *
+     * <p><b>{@code false} from {@link #of}</b>, so every caller that does not know it is a weapon -- a
+     * stone cast, a dev cast, a mob -- carries no level damage by construction.
+     */
+    public Caster withWeaponHit() {
+        return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, true);
+    }
+
+    /**
+     * The level damage THIS hit adds: the frozen {@link #levelDamageBonus} on a weapon hit, 0 otherwise.
+     * Both damage arms add it beside {@link #classDamageBonus}, flat on top of the base -- not scaled by
+     * the gear score and not multiplied by a damage enchant, because Ben's "+1 damage" is one point.
+     */
+    public double weaponLevelDamage() {
+        return weaponHit ? levelDamageBonus : 0.0;
+    }
 
     /**
      * This cast's payload with its HEADLINE DAMAGE attached -- {@code DamagePayload.headlineDamage},
@@ -97,7 +133,7 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withPayloadDamage(double payloadDamage) {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage, triggerScore, source);
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit);
     }
 
     /**
@@ -136,7 +172,7 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withTriggerScore(int triggerScore) {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage, triggerScore, source);
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit);
     }
 
     /**
@@ -153,7 +189,7 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withSource(String source) {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage, triggerScore, source);
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit);
     }
 
     /**
@@ -203,8 +239,10 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
         // shared with every mob in the game; a component meaningless for half its users acquires a
         // meaning by accident. Callers that know the weapon set it with withTriggerScore.
         // source is null for the same reason: only a cast path knows which ability it is running.
+        // weaponHit is false for the same reason again: only a weapon path knows it is one, and it says so
+        // with withWeaponHit. The level bonus is copied regardless -- it is inert until that flag is set.
         return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus(),
                 snapshot.enchantDamagePercent(), chargeScale, snapshot.critMultiplier(), 0.0,
-                GearScore.BASELINE, null);
+                GearScore.BASELINE, null, snapshot.levelDamageBonus(), false);
     }
 }

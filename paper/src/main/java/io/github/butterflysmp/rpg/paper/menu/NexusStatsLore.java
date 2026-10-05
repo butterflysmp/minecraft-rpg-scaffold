@@ -155,7 +155,7 @@ final class NexusStatsLore {
                 NamedTextColor.GOLD));
         lines.add(statLine(PlayerLevelLines.LIFETIME_LABEL, PlayerLevelLines.lifetime(total),
                 NamedTextColor.GRAY));
-        if (!PlayerLevel.isMaxed(total)) {
+        if (!PlayerLevel.isAtActiveCap(total)) {
             lines.add(statLine(PlayerLevelLines.TO_NEXT_LABEL, PlayerLevelLines.toNext(total),
                     NamedTextColor.GRAY));
         }
