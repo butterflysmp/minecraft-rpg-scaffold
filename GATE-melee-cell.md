@@ -152,6 +152,13 @@ pre-Defense, a fresh adult zombie is equivalent to the old one for every compari
 
 ## R0 — THE DEPLOYED BUILD CARRIES THIS BRANCH. IF ANY R0 FAILS, STOP
 
+> **INSTRUMENT NOTE, 2026-10-05, the seat's ruling 1, added before the stack-top boot. No prediction moves.** At the
+> stack-top boot, this gate's R0 rows are SUPERSEDED by `GATE-withered-shortbow.md`'s R0 on `<sha>`; recorded
+> SUPERSEDED, never PASS or FAIL. Intermediate facts in R0b/R0c are not read. *`<sha>` is the stack top's head as that
+> R0a reads it in the boot: a commit beneath the top cannot name the top's hash, because the top is rebased onto this
+> note.* **The R0 readings below, on `9ee59a2e` (2026-09-28), are that earlier boot's and stand as written**; they
+> are not re-read, and they do not carry to the stack-top boot.
+
 ### R0a — the build line names the head
 
 | prediction | instrument | READING |
