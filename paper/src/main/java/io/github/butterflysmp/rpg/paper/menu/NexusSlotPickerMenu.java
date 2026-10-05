@@ -273,7 +273,7 @@ public final class NexusSlotPickerMenu extends Menu {
         ItemStack occupant = viewer.getInventory().getItem(inventorySlot);
         if (MenuSafety.isEmpty(occupant)) {
             return MenuIcons.icon(Material.LIGHT_GRAY_STAINED_GLASS_PANE,
-                    MenuIcons.line("Empty (" + name + ")", NamedTextColor.GRAY),
+                    MenuIcons.name("Empty (" + name + ")"),
                     List.of(MenuIcons.line("Click to move " + noun() + " here.",
                             NamedTextColor.DARK_GRAY)));
         }
