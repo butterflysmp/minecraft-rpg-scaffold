@@ -52,6 +52,13 @@ stacks on #168.
 
 ## R0
 
+> **INSTRUMENT NOTE, 2026-10-05, the seat's ruling 1, added before the stack-top boot. No prediction moves.** At the
+> stack-top boot, this gate's R0a, R0b and R0c are SUPERSEDED by `GATE-withered-shortbow.md`'s R0 on `<sha>`; recorded
+> SUPERSEDED, never PASS or FAIL. Intermediate facts in R0b/R0c are not read. *`<sha>` is the stack top's head as that
+> R0a reads it in the boot: a commit beneath the top cannot name the top's hash, because the top is rebased onto this
+> note.* **R0d is NOT superseded:** it is one of #170's merge bars, it reads a log line of the same boot (the ten
+> `Screen command /…` lines), and it is read in that boot as written.
+
 ### R0a — the build line names this branch's head
 
 | prediction | instrument | READING |
