@@ -1874,3 +1874,39 @@ the fix, by everyone, including the person auditing for exactly this.
 > checkable. **A comment that never states the outcome has not claimed the bug is fixed, and must
 > not be read as though it had.**
 
+
+### AN AUTO READING IS A READING OF THE SERVER, NEVER OF THE CLIENT
+
+**This is the account. The pointer is `CLAUDE.md`'s VERIFICATION index.** Accepted by the seat, 2026-10-05 (ruling d),
+when `/rpg selftest` (#175, `PLAN-selftest.md`) began staging and driving gate rows.
+
+**The rule, four parts:**
+
+1. **An AUTO reading witnesses only what its driver reaches**: from the Bukkit event, the command dispatcher or
+   `Player.attack` down. **It never witnesses the input decode** (which click, which hand, the held cadence), **reach
+   or minimum charge, what the client renders** (a colour as seen, a tooltip's order, particles, sound, the swirl)
+   **or feel.**
+2. **An AUTO half never makes a row PASS on its own.** A row whose prediction includes any of the above is
+   AUTO-PARTIAL. Its Ben half is read by Ben, or it stays NOT READ.
+3. **A row's witness changes from Ben to AUTO only by an amendment committed BEFORE the boot**, dated, in the gate.
+   The amendment names each row's AUTO half and its Ben half. A reading taken by an instrument the gate did not name
+   when its predictions were committed is a reading of a different row.
+4. **The instrument never prints PASS or FAIL.** It prints what it drove and what it read. A person judges each row
+   from the real witness lines between its `SELFTEST <gate> <row> START` and `DONE` (PLAYERHIT, DOTTICK, MOBSEED, and
+   the instrument's CMD, REPLY, SLOT and PROBE lines) against the committed prediction. `SelfTestNeverJudgesTest` pins
+   the absence of both words in the package's compiled constants, with a control.
+
+**How it is recorded:** `**AUTO PASS** (selftest <sha>): <the lines>` beside the prediction, where Ben's reading
+is `**PASS**`. A reader sees which instrument read the row without opening the log.
+
+**Why the server/client line is drawn where it is.** Every driver was read from the pinned jar (`PLAN-selftest.md`
+§1 and §8):
+- `Player#attack` calls the attack packet's own `Player.attack`, but skips the packet's reach check
+  (`isWithinAttackRange`), its minimum-charge gate (`cannotAttackWithItem(item, 5)`) and the separate arm-swing
+  packet.
+- A synthetic `PlayerInteractEvent` reaches every listener, but nothing before the event: no rotation snap, no
+  `checkLimit`, no decode.
+- `performCommand` skips `PlayerCommandPreprocessEvent` and the "issued server command" line.
+
+**Each of those is a thing a real click does and the instrument does not**, so a row that depends on one is not
+witnessed by the instrument, however clean its lines.
