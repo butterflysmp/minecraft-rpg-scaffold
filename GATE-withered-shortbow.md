@@ -2,6 +2,10 @@
 
 **Status: NOT RUN.**
 
+*Amended 2026-10-05, BEFORE ANY BOOT, at the seat's ruling 1: R0 is now the ONE R0 for the whole stack* (R0b reads one
+entry from each of #168-#174; R0c predicts the cumulative `Loaded` line, derived from the last line read). Every gate
+beneath records its R0 SUPERSEDED. No WB prediction moved. Rows stay 10.
+
 Every prediction below was written **before** any row of this file was read, and **this file is COMMITTED before the
 boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been read.
 **NO BOOT until the seat says so**, after the seat has diffed every slice. **This is the stack top**:
@@ -29,7 +33,8 @@ restated.
 
 ## THE ORDER IN THE ONE BOOT
 
-Every gate beneath, through `GATE-wither-status.md`, then **these**.
+**This file's R0 first, once, for the whole stack.** Then every gate beneath, bottom-up, through
+`GATE-wither-status.md` (with `GATE-nexus-polish.md` R0d read in its place), then **these** WB rows.
 
 ## Set-up
 
@@ -45,24 +50,37 @@ Every gate beneath, through `GATE-wither-status.md`, then **these**.
 
 ---
 
-## R0
+## R0 — THE ONE R0 FOR THE WHOLE STACK. READ IT FIRST, BEFORE ANY ROW OF ANY GATE. IF ANY R0 FAILS, STOP
 
-### R0a — the build line names this branch's head
+**The seat's ruling 1, 2026-10-05.** This R0 is the stack's only R0: every gate beneath (#168-#173) carries a dated note
+recording its own R0 rows **SUPERSEDED** at this boot, never PASS or FAIL. The one exception is `GATE-nexus-polish.md`
+**R0d** (the ten screen commands), which is a #170 merge bar and is read as written. R0b reads one shipped entry from
+**each** of the seven slices; R0c predicts the **cumulative** `Loaded` line. Intermediate facts of the gates beneath
+(a lower R0b's ABSENT, a lower R0c's counts) are not read.
+
+### R0a — the build line names the stack top's head
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, WITHERED-SHORTBOW's head, shortened. Not `-dirty`, not `unknown`, not WITHER-STATUS's or any head beneath | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, WITHERED-SHORTBOW's head (#174) as `gh pr view 174 --json headRefOid` prints it, shortened. Not `-dirty`, not `unknown`, and not any head beneath. **This `<sha>` is the one every lower gate's SUPERSEDED note names** | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
 
-### R0b — the jar carries the bow, as authored
+### R0b — the jar carries all seven slices, and the bow as authored
 
 | prediction | instrument | READING |
 |---|---|---|
-| Entries PRESENT: `content/weapons/withered_shortbow.yml`, WITHER-STATUS's `content/statuses/withering.yml`. ABSENT: the control. **In the bow's text, as YAML keys (anchored):** PRESENT `element: wither` (top level), `rarity: uncommon`, `cooldown_ticks: 16`, `- type: knockback`; ABSENT `- type: status` | the scan below | |
+| Entries PRESENT, one per slice: #168 core `combat/TracedHit.class`; #169 core `progression/LevelBonus.class`; #170 paper `menu/NexusScreens.class`; #171 `content/weapons/short_bow.yml`; #172 paper `adapter/FireballDrive.class`; #173 paper `adapter/DotStatus.class` and `content/statuses/withering.yml`; #174 `content/weapons/withered_shortbow.yml`. ABSENT: the control. **In the bow's text, as YAML keys (anchored):** PRESENT `element: wither` (top level), `rarity: uncommon`, `cooldown_ticks: 16`, `- type: knockback`; ABSENT `- type: status` | the scan below | |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'))
-foreach ($c in 'content/weapons/withered_shortbow.yml', 'content/statuses/withering.yml',
+foreach ($c in 'io/github/butterflysmp/rpg/core/combat/TracedHit.class',
+               'io/github/butterflysmp/rpg/core/progression/LevelBonus.class',
+               'io/github/butterflysmp/rpg/paper/menu/NexusScreens.class',
+               'content/weapons/short_bow.yml',
+               'io/github/butterflysmp/rpg/paper/adapter/FireballDrive.class',
+               'io/github/butterflysmp/rpg/paper/adapter/DotStatus.class',
+               'content/statuses/withering.yml',
+               'content/weapons/withered_shortbow.yml',
                'io/github/butterflysmp/rpg/paper/menu/NoSuchClassControl.class') {
   if ($zip.GetEntry($c)) { "PRESENT $c" } else { "ABSENT  $c" }
 }
@@ -73,12 +91,11 @@ foreach ($k in '^element: wither\s*$', '^rarity: uncommon\s*$', '^\s+cooldown_ti
 $zip.Dispose()
 ```
 
-### R0c — one weapon more, and nothing else moved
+### R0c — the cumulative Loaded line, and nothing refused
 
 | prediction | instrument | READING |
 |---|---|---|
-| `Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **16 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against WITHER-STATUS's R0c prediction: **weapons 15 → 16**, every other count unchanged (the bow adds no visual and no status). No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair, and none naming `withered_shortbow` | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
-
+| `Loaded 11 abilities, **29 visuals**, **5 statuses**, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **16 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. **Derived from the last line actually READ**, `GATE-melee-cell.md` R0c on `9ee59a2e` (13 weapons, 27 visuals, 4 statuses), plus the content files added since, from `git diff --name-status 9ee59a2e <top> -- paper/src/main/resources/content` (2026-10-05): **weapons +3** (`short_bow` #171, `blaze_kings_staff` #172, `withered_shortbow` #174), **visuals +2** (`blaze_fireball_cast`, `blaze_fireball_impact`, #172), **statuses +1** (`withering`, #173); the only other content edits are `elements/fire.yml` and `elements/wither.yml` (modified, not added); every other count unchanged. No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair, **none naming `withered_shortbow`, `blaze_kings_staff`, `blaze_fireball` or `withering`**, and **no `element 'wither' applies status` warning** (carried from `GATE-wither-status.md` R0c) | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception','applies status'` | |
 ---
 
 ## THE BOW
