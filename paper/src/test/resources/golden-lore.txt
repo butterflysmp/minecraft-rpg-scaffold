@@ -193,6 +193,14 @@
    "It measures how many of a thing you can see at once." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Exotic Magic Weapon" color=#55FFFF O=. B=. S=. U=. I=F
+-- withered_shortbow
+   "Wither" color=#555555 O=. B=. S=. U=. I=F
+   "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["16" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Ranged Weapon" color=#55FF55 O=. B=. S=. U=. I=F
 
 === SHIELDS ===
 -- shield @bulwark=0.0
@@ -575,4 +583,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 94 renderings ===
+=== 95 renderings ===
