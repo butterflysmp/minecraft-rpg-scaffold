@@ -150,6 +150,27 @@ pre-Defense, a fresh adult zombie is equivalent to the old one for every compari
 
 ---
 
+## SELFTEST WITNESS AMENDMENT, 2026-10-05, BEFORE ANY BOOT (the seat's rulings c and d)
+
+**No prediction moves.** `/rpg selftest <gate>` (#175, `GATE-selftest.md`) stages and drives this gate's CORE rows on
+the shipped paths. Its lines are judged against the predictions below exactly as Ben's would be. **An AUTO reading is a
+reading of the server, never of the client, and an AUTO half never makes a row PASS on its own**
+(`.claude/rules/verification.md`, *AN AUTO READING IS A READING OF THE SERVER*). **The instrument never prints PASS or
+FAIL**: a reading is recorded `AUTO PASS (selftest <sha>)` beside the row, quoting the real lines between that row's
+`SELFTEST <gate> <row> START` and `DONE` (PLAYERHIT, DOTTICK, MOBSEED, CMD, REPLY, SLOT, PROBE). Staging is the gate's
+own commands; where the scenario differs, the row says so. Every row not listed keeps its witness as written.
+
+| row | witness now | the server's half, AUTO (`paper/src/main/resources/selftest/GATE-<gate>.yml#<row>`) | Ben's half |
+|---|---|---|---|
+| MC1 | AUTO-PARTIAL | the Build screen and both pickers dumped (option names, order, colours as built), and the pick's chat reply | the cell's name reads gold on his screen |
+| MC2 | AUTO-PARTIAL | the Build screen's three loadout cells, dumped | a glance |
+| MC3 | AUTO-PARTIAL | the three casts' PLAYERHIT lines, driven by `PlayerArmSwingEvent` (Left), `PlayerInteractEvent` (Right) and `dropItem(false)` (Q, the Q packet's own `ServerPlayer.drop`); the held item after Q | his own three inputs cast them, once: the input decode |
+
+**The R0 moved again** (the seat's ruling c): the stack's one R0 is now `GATE-selftest.md`'s, on #175's head. The
+SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; read it as naming `GATE-selftest.md`.
+
+---
+
 ## R0 — THE DEPLOYED BUILD CARRIES THIS BRANCH. IF ANY R0 FAILS, STOP
 
 > **INSTRUMENT NOTE, 2026-10-05, the seat's ruling 1, added before the stack-top boot. No prediction moves.** At the
