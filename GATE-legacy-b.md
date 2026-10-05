@@ -57,6 +57,12 @@ visuals rows added for Q-B4 and Q-B6.
 
 ## R0
 
+> **INSTRUMENT NOTE, 2026-10-05, the seat's ruling 1, added before the stack-top boot. No prediction moves.** At the
+> stack-top boot, this gate's R0 rows are SUPERSEDED by `GATE-withered-shortbow.md`'s R0 on `<sha>`; recorded
+> SUPERSEDED, never PASS or FAIL. Intermediate facts in R0b/R0c are not read. *`<sha>` is the stack top's head as that
+> R0a reads it in the boot: a commit beneath the top cannot name the top's hash, because the top is rebased onto this
+> note.* This answers the report under *THE ORDER IN THE ONE BOOT* above.
+
 ### R0a — the build line names this branch's head
 
 | prediction | instrument | READING |
