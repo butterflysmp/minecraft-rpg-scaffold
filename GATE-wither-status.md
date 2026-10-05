@@ -70,6 +70,29 @@ DOTTICK <victim uuid> <type> status=<status id> applier=<uuid or -> sent=<%.3f> 
 
 ---
 
+## SELFTEST WITNESS AMENDMENT, 2026-10-05, BEFORE ANY BOOT (the seat's rulings c and d)
+
+**No prediction moves.** `/rpg selftest <gate>` (#175, `GATE-selftest.md`) stages and drives this gate's CORE rows on
+the shipped paths. Its lines are judged against the predictions below exactly as Ben's would be. **An AUTO reading is a
+reading of the server, never of the client, and an AUTO half never makes a row PASS on its own**
+(`.claude/rules/verification.md`, *AN AUTO READING IS A READING OF THE SERVER*). **The instrument never prints PASS or
+FAIL**: a reading is recorded `AUTO PASS (selftest <sha>)` beside the row, quoting the real lines between that row's
+`SELFTEST <gate> <row> START` and `DONE` (PLAYERHIT, DOTTICK, MOBSEED, CMD, REPLY, SLOT, PROBE). Staging is the gate's
+own commands; where the scenario differs, the row says so. Every row not listed keeps its witness as written.
+
+| row | witness now | the server's half, AUTO (`paper/src/main/resources/selftest/GATE-<gate>.yml#<row>`) | Ben's half |
+|---|---|---|---|
+| WS-C | AUTO-PARTIAL | two knells, **the second 2 blocks from the first** (`~4 ~ ~0` and `~4 ~ ~2`); both custom HPs before and after `/rpg mobdamage 1000000` | no blast particles seen |
+| WS1 | AUTO | the GS-20 zombie (**teleported to `~4`** rather than Ben stepping back); `/rpg apply withering 200`; DOTTICK over 240 t | — |
+| WS2b | AUTO | the GS-100 zombie at `~4`; the same | — |
+| WS2c | AUTO-PARTIAL | the Knell and a wither skeleton at `~3`: the `Refused` reply and no DOTTICK over 240 t each; the GS-100 control's `Applied` reply and its DOTTICK | no wither swirl seen |
+| WS3 | AUTO-PARTIAL | the GS-20 zombie at `~4` and its neighbour at `~4 ~ ~2`; `/rpg mobdamage 19`, the apply, DOTTICK, the target's death (`PROBE … none`) and the neighbour's custom HP | no explosion seen |
+
+**The R0 moved again** (the seat's ruling c): the stack's one R0 is now `GATE-selftest.md`'s, on #175's head. The
+SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; read it as naming `GATE-selftest.md`.
+
+---
+
 ## R0
 
 > **INSTRUMENT NOTE, 2026-10-05, the seat's ruling 1, added before the stack-top boot. No prediction moves.** At the
