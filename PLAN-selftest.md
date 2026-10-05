@@ -1,6 +1,7 @@
 # PLAN — SELFTEST: an op-only instrument that stages and drives the log-witnessed gate rows
 
-**Status: PHASE 1, SURVEY ONLY.** Docs only: no code, no boot. Stop for the seat.
+**Status: PHASE 2 BUILT as #175, NOT RUN** (2026-10-05). Phase 1 was the survey below (sections 0-7), unchanged; section 8
+records the six reads and section 9 the seat's rulings.
 
 **Asked for:** the seat, 2026-10-05, after Ben's *"Yes, that would be nice"* (2026-10-05). The seat owns the
 mechanism, because it is a seat-domain instrument; **Ben rules only on what he must still see.**
@@ -400,12 +401,71 @@ WB6 and WB7 keep their feel halves.
 
 ---
 
-## 8. PHASE 2 READS OWED (NOT READ HERE)
+## 8. PHASE 2: THE SIX READS, DONE 2026-10-05 (javap on the pinned jars; the repo read at `f33ded99`)
 
-1. Whether `HumanEntity#dropItem(EquipmentSlot, …)` fires `PlayerDropItemEvent`, or whether the instrument must build
-   the `Item` and the event itself (the stone's Q).
-2. Whether a server-side `setHeldItemSlot` resets the attack ticker the way a client swap does (MC6).
-3. Whether our minted melee weapons carry `ItemTags.SWORDS` (the sweep).
-4. PacketEvents' system-chat wrapper on the send side (option A).
-5. That `LifecycleEvents.COMMANDS` registrations land in `Commands.getDispatcher()`'s tree (traced, not inferred).
-6. The Equipment screen's accessory-slot click path (MC8).
+**Status: Phase 2 BUILT as #175 (`feat/selftest`), NOT RUN, no boot.** The seat's rulings a-d are in §9.
+
+1. **The stone's Q has a real driver: `HumanEntity#dropItem(false)`.** `CraftHumanEntity.dropItem(Z)` calls
+   `24: ServerPlayer.drop(Z)Z`. The Q packet calls the same method: `handlePlayerAction` → `478` and `517:
+   ServerPlayer.drop(Z)Z`, after its drop-rate limit (`396-460`). `ServerPlayer.drop(Z)` → `51: drop(ItemStack,ZZ)` →
+   `LivingEntity.drop(…)`, which builds and calls the event (`98: new PlayerDropItemEvent`, `123: callEvent`). On a
+   cancel it puts the item back in the main hand (`138-176`). **Skipped:** only the packet's drop-rate limit. The
+   `dropItem(EquipmentSlot, …)` overloads go through `internalDropItemFromInventory` and are not used.
+2. **A server-side slot change resets the charge exactly as a client swap does.** The reset is in `Player.tick`, not
+   in the packet handler. Each tick compares `lastItemInMainHand` with the main hand (`284-311: ItemStack.matches`,
+   `isSameItem`) and calls `315: resetAttackStrengthTicker` on a change, whatever changed the slot.
+   `CraftInventoryPlayer.setHeldItemSlot` only sets the slot and sends `ClientboundSetHeldSlotPacket`. **Skipped:**
+   the client's `handleSetCarriedItem` fires `PlayerItemHeldEvent` (`58-92`), and `RpgListeners.onHeldItemChange`
+   listens to it (the quiver sweep). **So the HOLD driver fires `PlayerItemHeldEvent` first and sets the slot only if
+   it is not cancelled**, in the packet's own order.
+3. **Our melee weapons sweep.** `emberblade.yml` authors no `material`, and `WeaponDefinition.DEFAULT_MATERIAL` is
+   `iron_sword`. The jar's `data/minecraft/tags/item/swords.json` lists `minecraft:iron_sword`, so a standing,
+   full-charge `attack()` meets `isSweepAttack`'s SWORDS clause. No CORE row places a second mob in reach.
+4. **The reply reader is buildable copy-only.** PacketEvents 2.13.0's `WrapperPlayServerSystemChatMessage(PacketSendEvent)`
+   decodes in `read()` (`2: readComponent`, `23: readBoolean` for the overlay). `getMessage()` returns
+   `net.kyori.adventure.text.Component`, and **neither PacketEvents jar shades `net/kyori`** (`jar tf`: 0 entries),
+   so it is Paper's own Adventure. `isOverlay()` separates the action bar. Precedent: `VanillaCritParticleListener`
+   already reads a send-side wrapper. `EventManager.registerListener` returns a handle, and `unregisterListener`
+   takes it.
+5. **Lifecycle commands land in the dispatcher `performCommand` uses: traced.** `PaperCommands.setDispatcher` builds
+   its dispatcher on a `PaperCommands$1 extends ApiMirrorRootNode`, whose `getDispatcher()` returns `4:
+   net.minecraft.commands.Commands.getDispatcher()`. `CraftServer.dispatchCommand` parses against that dispatcher
+   (`67`). **Also read:** `git grep PlayerCommandPreprocessEvent f33ded99 -- *.java` finds 0 files (control: the same
+   grep for `PlayerInteractEvent` finds 2).
+6. **The Equipment screen's class slot is a shift-click away, and a synthetic click carries real state.**
+   `EquipmentMenu.shiftInElsewhere` → `accessoryShiftIn` handles a shift-click from the player's own inventory.
+   `InventoryClickEvent.getCurrentItem()` reads `getView().getItem(rawSlot)`, and `getClickedInventory()` reads
+   `getView().getInventory(rawSlot)`. So a synthetic event built from the live view hands `MenuRouting` the real slot
+   and item. `Menu.handleClick` cancels first, and our menus do every move themselves, so **a synthetic click and a
+   real one end in the same state.** Nothing vanilla runs after a cancelled click.
+
+### 8.1 What the reads changed in §2's classification
+
+| row | was | now | why |
+|---|---|---|---|
+| MC3 (CORE) | AUTO-PARTIAL, Q driver NOT READ | AUTO-PARTIAL, all three drivers read | read 1 |
+| **MC5** | **BEN** | **AUTO-PARTIAL** | read 1: `dropItem(false)` is the Q packet's own call. The server half (the sword dropped, no PLAYERHIT) is AUTO; Ben's Q key is the decode. Not CORE, so no scenario |
+| MC6 | AUTO, slot reset NOT READ | AUTO | read 2 |
+| **MC8** | AUTO-PARTIAL | **AUTO** | read 6: the Gauntlet goes in and out by a shift-click on the real Equipment screen. Not CORE, so no scenario |
+| WB1 (CORE) | "BEN, with an AUTO half" | AUTO-PARTIAL | the same thing, labelled consistently |
+
+**The CORE split as built (24 scenarios + R0d):**
+- **AUTO, 11:** CP2, BN1, WD1, WD3, CM1, CM2, SB2, LB2, WS1, WS2b, WB2.
+- **AUTO-PARTIAL, 13:** MC1, MC2, MC3, LS1, D1, G1, G3, LB5, WS-C, WS2c, WS3, WB1, WB3.
+- **R0d** is a boot line. §7 said 12 / 11 / 1. The difference is WS-C, now CORE (AUTO-PARTIAL), and WB1, relabelled.
+  §7's AUTO count included R0d; the 11 here does not.
+
+## 9. THE SEAT'S RULINGS, 2026-10-05 (verbatim in substance)
+
+- **a.** Reply capture is **(A)**, the PacketEvents send-side reader. COPY-ONLY: it never cancels, modifies or delays
+  a packet. It is registered only while a run is active, only for the test player, and unregistered on stop, finish
+  or quit. A unit or signature test pins copy-only. *Built: `ReplyReaderCopyOnlyTest`, with a control.*
+- **b.** The dev marker is `-Drpg.dev=true`, set only by `dev-server.sh`. The command refuses without it, in a non-dev
+  world, or with a second player online. *Built. "Non-dev world" is read as "not the server's first world"; this is
+  stated in `SelfTestGuard`.*
+- **c.** The one R0 moves to #175: `GATE-selftest.md` carries the cumulative R0 for #168-#175. #174 gets the
+  SUPERSEDED note. The boot is #175's tip.
+- **d.** The honesty rule is accepted. Added: the instrument never prints PASS or FAIL. *Account in
+  `verification.md`, pointer in `CLAUDE.md`, pinned by `SelfTestNeverJudgesTest`.*
+- **Not ruled, NOT BUILT:** §4's crash-restore file, and §4's refusal over other enabled plugins (not built: Paper's
+  bundled plugins would make it brittle).
