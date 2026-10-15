@@ -68,6 +68,17 @@ restated.
   there). **A fresh zombie per row. A `crit=true` PLAYERHIT is not comparable: re-fire on a fresh zombie.**
 - **Aim:** `/tp @s ~ ~ ~ facing entity <the zombie> eyes`, then one right-click.
 
+> **AIM NOTE, 2026-10-14 (instrument only; no prediction moves; written after the `38cc9903` boot, where WB2 and WB3
+> were VOID).** **`/tp @s ~ ~ ~ facing entity <the zombie> eyes` does not aim the player's eyes at the zombie's
+> eyes.** `eyes` is the TARGET's anchor only; the player's own anchor is the command source's, and a player's source
+> is built with `Anchor.FEET` (javap, Paper 26.1.2 build 74: `CommandSourceStack`'s 9-argument constructor;
+> `LookAt$LookAtEntity.perform` passes `source.getAnchor()`; `Entity.lookAt` computes from it). So the turn is FEET to
+> eyes, and the look ray -- which starts at the eyes -- runs parallel to the intended one, 1.62 blocks higher: over
+> a zombie at 8 blocks. The boot logged `pitch=-12.271`; eye to eye is -0.859 (computed). **Wherever this file says
+> to aim with that command** (this Set-up's **Aim:**, and WB2), **aim with** `/execute anchored eyes facing entity @e[tag=t,limit=1] eyes run tp @s ~ ~ ~ ~ ~`
+> (`execute anchored eyes` sets the anchor `CommandSourceStack.facing` reads -- verified from the jar, not yet in a
+> boot). The selftest's own scenario now aims with #175's `AIM` verb, eye to eye in Java.
+
 ---
 
 ## SELFTEST WITNESS AMENDMENT, 2026-10-05, BEFORE ANY BOOT (the seat's rulings c and d)
