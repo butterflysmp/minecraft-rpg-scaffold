@@ -157,6 +157,22 @@ LOGIN.
 |---|---|
 | **The positive control** (`verification.md`, *A CHECK THAT DID NOT RUN*): an instrument that drove nothing would print brackets with nothing between them. Under ST1's `level WD1`: **four** `PLAYERHIT … source=emberblade/left_click` lines; the two after the `CMD /rpg playerxp set @s 50 levels` line are each **exactly 49.000 above** the two before it, wherever both lines of a pair are `crit=false`. Under `wither-status WS1` and `WS2b`: `sent=1.000` and `sent=2.000` respectively. **If WD1's four `sent=` are equal, the instrument did not move the level, and every AUTO reading of `GATE-level.md` is VOID** | **FAIL in part -- the control held for GATE-level.md and FAILED for GATE-wither-status.md.** `level WD1`: four `PLAYERHIT ... source=emberblade/left_click`, `sent=7.000`, `7.000` before `CMD /rpg playerxp set @s 50 levels` and `56.000`, `56.000` after (L1305, L1321, L1334, L1352), all `crit=false` -- each exactly 49.000 above; the level moved, so GATE-level.md's AUTO readings stand. `wither-status WS1` and `WS2b`: **no `sent=` line at all** -- every `/rpg apply withering 200` replied `"Look at a mob to apply a status." [red]` (L1899, L1932), because the scenario's `tp @s ~ ~ ~ facing entity ... eyes` turns from the FEET (javap: a player's command source anchors at `Anchor.FEET`) and the look ray passed over the target; the boot's aimed DRIVE lines read `pitch=-12.271` at 8 blocks against -0.859 eye to eye. **Every AUTO reading of GATE-wither-status.md from this boot is VOID**, and with it SB2, LB2, WB2, WB3 (the same aim). The fix is the `AIM` verb (see the note under this table). |
 
+> **THE AIM FIX, 2026-10-14, after the `38cc9903` boot (instrument; no prediction moves).** The scenarios' ten
+> `tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes` steps (legacy-a SB2, legacy-b LB2, withered-shortbow WB2,
+> wither-status x7) are now **`aim: t`**, a new verb: `SelfTestAim.at` computes the yaw and pitch from the player's
+> EYE (`feetY + eyeHeight`) to the nearest living tagged entity's eye, in Java, and the driver turns the player with
+> `teleportAsync` (the Folia shape; each scenario already waits 2 t after the aim) and logs
+> `DRIVE aim teleportAsync eye->eye target=<uuid> <type> d=... yaw=... pitch=...`; the USE driver's own DRIVE line
+> still logs the pitch the server holds, so the next boot cross-checks it. **`SelfTestAimTest`** (5 tests) casts an
+> exact ray from the eye along that rotation into an exact box (no lenience) and asserts it hits a zombie and a wither
+> skeleton at d = 2, 3, 4 and 8, and off-axis (WS3's neighbour, MC14's diagonal); the sizes (player eye 1.62, zombie
+> 0.6 x 1.95 eye 1.74, wither skeleton 0.7 x 2.4 eye 2.1) are read from the pinned jar's `EntityType`. Its control
+> reproduces this boot's `pitch=-12.271` from the FEET and asserts that ray misses. **Mutation MUT-AIM-FEET**
+> (`targetEyeY - (feetY + eyeHeight)` to `targetEyeY - feetY`, restored by `cp`, `cmp`-identical): **4 of 5 red**
+> -- the three hitbox tests and `yawFollowsBukkitsConvention` (its level-pitch assertion); the control stays green, as
+> it must. The suite at the fix: core 1546, storage 92, paper 1139 run, 0 failed (surefire reports; `@Test` in
+> source 1546 / 92 / 1134 + 5). **Not yet read in a boot**: the next boot reads the VOID rows with it.
+
 ### ST6 — one run at a time (SURVIVAL) — witness: the log
 
 | prediction | READING |

@@ -15,6 +15,7 @@ import java.util.function.Predicate;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -74,6 +75,7 @@ final class SelfTestDrivers {
             case WAIT -> Optional.empty();   // the run schedules it; it never reaches a driver
             case TRACE -> trace();
             case ATTACK -> attack(p, a);
+            case AIM -> aim(p, a);
             case USE -> use(p);
             case SWING -> swing(p);
             case DROP -> drop(p);
@@ -115,6 +117,23 @@ final class SelfTestDrivers {
         run.log("DRIVE attack Player#attack target=" + e.getUniqueId() + " " + e.getType().getKey().getKey()
                 + " d=" + fmt(p.getLocation().distance(e.getLocation())) + " charge=" + fmt(p.getAttackCooldown()));
         p.attack(e);
+        return Optional.empty();
+    }
+
+    private Optional<String> aim(Player p, String tag) {
+        Optional<Entity> target = nearestTagged(p, tag);
+        if (target.isEmpty()) return Optional.of("no entity tagged '" + tag + "' within " + (int) REACH + " blocks");
+        Entity e = target.get();
+        Location feet = p.getLocation();
+        Location eye = e instanceof LivingEntity l ? l.getEyeLocation() : e.getLocation();
+        SelfTestAim.Rotation r = SelfTestAim.at(feet.getX(), feet.getY(), feet.getZ(), p.getEyeHeight(),
+                eye.getX(), eye.getY(), eye.getZ());
+        Location turned = feet.clone();
+        turned.setYaw(r.yaw());
+        turned.setPitch(r.pitch());
+        run.log("DRIVE aim teleportAsync eye->eye target=" + e.getUniqueId() + " " + e.getType().getKey().getKey()
+                + " d=" + fmt(horizontal(p, e)) + " yaw=" + fmt(r.yaw()) + " pitch=" + fmt(r.pitch()));
+        p.teleportAsync(turned);
         return Optional.empty();
     }
 

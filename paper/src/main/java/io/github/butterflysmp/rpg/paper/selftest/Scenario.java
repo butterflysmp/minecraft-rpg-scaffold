@@ -40,6 +40,11 @@ public record Scenario(String gate, String row, List<Step> steps) {
         TRACE,
         /** {@code Player#attack} on the nearest entity carrying this scoreboard tag. */
         ATTACK,
+        /**
+         * Turn the player's EYE to the eye of the nearest living entity carrying this tag ({@link SelfTestAim}).
+         * Not {@code tp … facing entity … eyes}: a player's command source anchors at the FEET, so that aims 1.62 high.
+         */
+        AIM,
         /** A synthetic {@code PlayerInteractEvent RIGHT_CLICK_AIR, HAND} into every listener, ours included. */
         USE,
         /** A synthetic {@code PlayerArmSwingEvent(HAND)}: the stone's Left. */
