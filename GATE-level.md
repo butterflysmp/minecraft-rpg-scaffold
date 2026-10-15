@@ -1,6 +1,26 @@
 # GATE — Level slice: the active cap of 50, Ben's level bonuses, and the head's level screen
 
-**Status: NOT RUN.**
+**Status at `38cc9903` (the stack-top boot, 2026-10-14): R0a-c SUPERSEDED (GATE-selftest.md R0, PASS); CP2, WD1, WD3
+PASS; BN1 PASS at L1 and L50 (its other five levels NOT READ); LS1 FAIL on one field (the head's LAST line -- #170's
+line follows it on the stack top); 6 NOT READ (CP1, CP3, BN2, WD2, LS2, LS3). NOT approved to merge: the seat
+approves, from origin.**
+
+**The boot, 2026-10-14, on `38cc9903` (#175's head, the stack top), Paper 26.1.2 build 74:**
+- CC booted it with `./scripts/dev-server.sh --refresh-content` on the seat's word; Ben was the only player. His
+  LOGIN is L80 (`BaronVonYeetus ... logged in`, 22:47:02). Line numbers are that boot's `run/logs/latest.log`.
+- `/rpg selftest all` ran twice. **Run 1 (L86-L1087) was in CREATIVE and certifies NOTHING** (the seat's ruling;
+  L1087 `RESTORED ... gamemode=CREATIVE`). **Run 2 (L1091-L2098, SURVIVAL, after `/gamemode survival` at L1088) is
+  the run of record**: every AUTO reading below is from inside its row's own START ... DONE bracket in run 2.
+- **Ben's hand steps.** His words, relayed by the seat: *"all done, everything looks good"*, then *"I ran all the
+  self checks and they are fine."* **The seat's ruling, 2026-10-14:** the second is Ben's explicit confirmation of
+  each check on the hand-step list he was given -- **MC3 (slot), MC1, MC2, LS1, D1, G1, G3, WB1, ST2, ST6** -- so
+  those sight halves are PASS, itemised by that list. Ben was in CREATIVE from 23:15:46 to 23:16:09 (L2102-L2104)
+  during his hand steps; which check, if any, fell in that window is not recorded. His hand window ran with the mob
+  trace OFF (L2098 `trace=false`), so a hand cast has no log line either way.
+- **The aim defect** (GATE-selftest.md ST5): `tp @s ~ ~ ~ facing entity <e> eyes` turns a player from the FEET, so
+  every selftest row aimed that way missed: SB2, LB2, WB2, WB3, WS-C, WS1, WS2b, WS2c, WS3 are VOID this boot and
+  carry to the next boot after #175's AIM fix.
+- **Observation, unexplained:** MOBREMOVE lines run through run 2, many naming uuids that appear nowhere else.
 
 Every prediction below was written **before** any boot of this branch, and **this file is COMMITTED before the
 boot**, so a prediction can be checked against origin for having existed first. Readings go **beside** a
@@ -106,13 +126,13 @@ SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; 
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head as `gh pr view <n> --json headRefOid` prints it, shortened. Not `-dirty`, not `unknown`, and **not #168's head** — the stack top is booted | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, this PR's head as `gh pr view <n> --json headRefOid` prints it, shortened. Not `-dirty`, not `unknown`, and **not #168's head** — the stack top is booted | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0, read PASS at 38cc9903 (L42 `[Rpg] Build: 38cc9903`). Not re-read here. |
 
 ### R0b — the jar carries the level slice, and #168 beneath it
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: core `progression/LevelBonus`, paper `menu/LevelMenu`, and #168's core `combat/TracedHit` (the slice below). ABSENT: the control. The first two are new on this branch, so #168's jar reads ABSENT for them | the scan below | |
+| PRESENT: core `progression/LevelBonus`, paper `menu/LevelMenu`, and #168's core `combat/TracedHit` (the slice below). ABSENT: the control. The first two are new on this branch, so #168's jar reads ABSENT for them | the scan below | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0b, read PASS at 38cc9903. The intermediate facts are not read. |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -130,7 +150,7 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 13 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes` — **identical to #168's R0c reading on `9ee59a2e`**, because this slice adds no content file (the slice below it is the baseline, seat ruling L5). **No** `Refusing`, `Skipping`, `SEVERE` or exception. The known WARNs are `volley_stone`'s 27-tick cooldown and its summary line | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
+| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 13 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes` — **identical to #168's R0c reading on `9ee59a2e`**, because this slice adds no content file (the slice below it is the baseline, seat ruling L5). **No** `Refusing`, `Skipping`, `SEVERE` or exception. The known WARNs are `volley_stone`'s 27-tick cooldown and its summary line | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0c, read PASS at 38cc9903 (L44). The intermediate facts are not read. |
 
 ---
 
@@ -142,19 +162,19 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| `/rpg playerxp set @s 49 levels` replies **`Set 49 level(s) for <name> (now level 49, 0/58940 into it, 653640 lifetime).`** The star's stats head then reads, as its first three lines: **`Level        49`**, **`Lifetime XP  653,640`**, **`To Next      58,940`** | |
+| `/rpg playerxp set @s 49 levels` replies **`Set 49 level(s) for <name> (now level 49, 0/58940 into it, 653640 lifetime).`** The star's stats head then reads, as its first three lines: **`Level        49`**, **`Lifetime XP  653,640`**, **`To Next      58,940`** | **38cc9903, 2026-10-14: NOT READ.** Not in the selftest; no `set @s 49` anywhere in the log. |
 
 ### CP2 — exactly at the cap (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| `/rpg playerxp set @s 50 levels` replies **`Set 50 level(s) for <name> (now level 50, MAX into it, 712580 lifetime).`** The stats head reads **`Level        50 (MAX)`**, **`Lifetime XP  712,580`**, and **no `To Next` line** | |
+| `/rpg playerxp set @s 50 levels` replies **`Set 50 level(s) for <name> (now level 50, MAX into it, 712580 lifetime).`** The stats head reads **`Level        50 (MAX)`**, **`Lifetime XP  712,580`**, and **no `To Next` line** | **38cc9903, 2026-10-14: PASS.** AUTO (selftest, run 2): L1231 `REPLY "Set 50 level(s) for BaronVonYeetus (now level 50, MAX into it, 712580 lifetime)." [green]`; the stats head L1235 `"Level        50 (MAX)"`, `"Lifetime XP  712,580"`, and no `To Next` line (0 in the lore). |
 
 ### CP3 — past the cap: the curve moves, the view does not (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| `/rpg playerxp set @s 60 levels` replies **`Set 60 level(s) for <name> (now level 50 [curve 60], MAX into it, 1681040 lifetime).`** The stats head reads **`Level        50 (MAX)`**, **`Lifetime XP  1,681,040`**, and no `To Next` line. `/rpg stats` reads exactly what it read at the end of CP2 (the bonus is the cap's) | |
+| `/rpg playerxp set @s 60 levels` replies **`Set 60 level(s) for <name> (now level 50 [curve 60], MAX into it, 1681040 lifetime).`** The stats head reads **`Level        50 (MAX)`**, **`Lifetime XP  1,681,040`**, and no `To Next` line. `/rpg stats` reads exactly what it read at the end of CP2 (the bonus is the cap's) | **38cc9903, 2026-10-14: NOT READ.** Not in the selftest; no `set @s 60` anywhere in the log. |
 
 **THE SAVE TRIGGER PAST THE CAP IS NOT A ROW HERE, AND THAT IS STATED RATHER THAN SKIPPED.** `ProfileService.addLifetimeXp` is unchanged by this slice; its write-to-disk trigger reads `PlayerLevel.levelFor`, which this slice did NOT clamp, so XP past 50 still writes at every curve rung. The claim is carried by `PlayerLevelTest.theCurveLevelStillMovesPastTheActiveCap`, and a boot row would need a crash between orb pickups to see it.
 
@@ -168,12 +188,12 @@ $zip.Dispose()
 
 | L | Max Health | Health Regen | Defense | Crit Chance | READING |
 |---|---|---|---|---|---|
-| 2 | HP₁ + 5 | R₁ | D₁ | C₁ | |
-| 5 | HP₁ + 20 | R₁ | D₁ + 1 | C₁ | |
-| 10 | HP₁ + 45 | R₁ + 1.00 | D₁ + 2 | C₁ + 1% | |
-| 49 | HP₁ + 240 | R₁ + 8.00 | D₁ + 9 | C₁ + 4% | |
-| 50 | HP₁ + 250 | R₁ + 9.00 | D₁ + 10 | C₁ + 5% | |
-| 60 | as at 50 | as at 50 | as at 50 | as at 50 | |
+| 2 | HP₁ + 5 | R₁ | D₁ | C₁ | **38cc9903: NOT READ** -- not driven (the amendment drives L1 and L50 only). |
+| 5 | HP₁ + 20 | R₁ | D₁ + 1 | C₁ | **38cc9903: NOT READ** -- not driven; Ben set level 5 by hand (L2099) but ran no `/rpg stats` after it. |
+| 10 | HP₁ + 45 | R₁ + 1.00 | D₁ + 2 | C₁ + 1% | **38cc9903: NOT READ** -- not driven. |
+| 49 | HP₁ + 240 | R₁ + 8.00 | D₁ + 9 | C₁ + 4% | **38cc9903: NOT READ** -- not driven. |
+| 50 | HP₁ + 250 | R₁ + 9.00 | D₁ + 10 | C₁ + 5% | **38cc9903, 2026-10-14: PASS.** AUTO (selftest, run 2), empty hand. Baseline at L1: L1258 `Max Health   100`, L1259 `Health Regen 1.00/5s`, L1262 `Defense      0`, L1264 `Crit Chance  15%` (the note below predicts exactly these). At L50: L1274 `Max Health   350`, L1275 `Health Regen 10.00/5s`, L1278 `Defense      10`, L1280 `Crit Chance  20%` -- the note's literals. The current-HP note is not read. |
+| 60 | as at 50 | as at 50 | as at 50 | as at 50 | **38cc9903: NOT READ** -- not driven. |
 
 - **With nothing worn and no fragment slotted in the Build screen, the level-1 baseline is `100`, `1.00/5s`, `0` and `15%`**, and level 50 reads **`350`**, **`10.00/5s`**, **`10`** and **`20%`** — Ben's *"+10 health per 5 seconds"* and *"+5% at level 50"* as the sheet prints them.
 - **Crit rounds to a whole percent** (`StatsSheetLines.critChance`). A delta of one point can read one off only when C₁'s underlying chance is not a whole percent, which a worn accessory can cause. Recorded, not predicted.
@@ -185,7 +205,7 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| At level 1, `/rpg stats` with **emberblade in the main hand**: `Damage` reads **W₁**; with an **empty hand**: **E₁**. At level 50: emberblade **W₁ + 49.00**; empty hand **E₁**, unchanged | |
+| At level 1, `/rpg stats` with **emberblade in the main hand**: `Damage` reads **W₁**; with an **empty hand**: **E₁**. At level 50: emberblade **W₁ + 49.00**; empty hand **E₁**, unchanged | **38cc9903, 2026-10-14: NOT READ.** No `/rpg stats` with the emberblade in hand. Incidental only, from BN1's bracket: empty-hand `Damage       0.00` at L1 (L1263) and L50 (L1279). The emberblade half -- `MUTLVL-SHEET`'s only witness -- is still owed. |
 
 ---
 
@@ -197,13 +217,13 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| **Staging:** the four zombie commands, offset `~2 ~ ~0`, aim level. Hold emberblade, **2 s between swings** (full charge). `set @s 1 levels`, wait 1 s, swing: `source=emberblade/left_click … sent=S₁ crit=false triggerScore=T`. `set @s 50 levels`, wait 1 s, swing: **`source=emberblade/left_click … sent=S₁+49.000 crit=false triggerScore=T`**, the same T | |
+| **Staging:** the four zombie commands, offset `~2 ~ ~0`, aim level. Hold emberblade, **2 s between swings** (full charge). `set @s 1 levels`, wait 1 s, swing: `source=emberblade/left_click … sent=S₁ crit=false triggerScore=T`. `set @s 50 levels`, wait 1 s, swing: **`source=emberblade/left_click … sent=S₁+49.000 crit=false triggerScore=T`**, the same T | **38cc9903, 2026-10-14: PASS.** AUTO (selftest, run 2), four fresh zombies, 4/4 `crit=false`: at L1 (L1293) L1305 and L1321 `source=emberblade/left_click ... sent=7.000 crit=false triggerScore=100`; at L50 (L1325) L1334 and L1352 `... sent=56.000 crit=false triggerScore=100`. 56.000 is 7.000 + 49.000 as written; T = 100 at both levels. This is GATE-selftest.md ST5's control. |
 
 ### WD2 — a weapon trigger with LITERAL damage: the case the refused attack-stat route missed (SURVIVAL) — witness: PLAYERHIT lines
 
 | prediction | READING |
 |---|---|
-| **Staging:** as WD1, `/rpg mana refill` before each cast. Right-click the emberblade at the zombie (its fireball, a `burst` of literal `damage 12`): at level 1, `source=emberblade/right_click … sent=F₁ crit=false triggerScore=T`; at level 50, **`… sent=F₁+49.000 crit=false triggerScore=T`**. The literal is score-scaled first and the level added after, so the difference is exactly 49 whatever T is | |
+| **Staging:** as WD1, `/rpg mana refill` before each cast. Right-click the emberblade at the zombie (its fireball, a `burst` of literal `damage 12`): at level 1, `source=emberblade/right_click … sent=F₁ crit=false triggerScore=T`; at level 50, **`… sent=F₁+49.000 crit=false triggerScore=T`**. The literal is score-scaled first and the level added after, so the difference is exactly 49 whatever T is | **38cc9903, 2026-10-14: NOT READ.** 0 `emberblade/right_click` lines after LOGIN. |
 
 ### WD3 — a STONE cast carries none of it (SURVIVAL) — witness: PLAYERHIT lines
 
@@ -211,7 +231,7 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| **Staging:** as WD1; the Ability Stone in hand, Fire Melee cell. At level 50 (after WD2), `/rpg mana refill`, **Left**: **`source=active_placeholder_melee_thrust … sent=7.000 crit=false triggerScore=100`** — identical to #168's MC3 reading at whatever level MC3 was read, and to the level-1 figure. Ben: *"Only weapons, we'll tackle the ability damage pipeline later"* | |
+| **Staging:** as WD1; the Ability Stone in hand, Fire Melee cell. At level 50 (after WD2), `/rpg mana refill`, **Left**: **`source=active_placeholder_melee_thrust … sent=7.000 crit=false triggerScore=100`** — identical to #168's MC3 reading at whatever level MC3 was read, and to the level-1 figure. Ben: *"Only weapons, we'll tackle the ability damage pipeline later"* | **38cc9903, 2026-10-14: PASS.** AUTO (selftest, run 2): L50 (L1360), Fire Melee (L1356 `CELL class=melee element=fire`); exactly 1 PLAYERHIT, L1376 `source=active_placeholder_melee_thrust ... sent=7.000 crit=false triggerScore=100`. Staged without WD2 (not run), as the amendment's scenario does. |
 
 **`DashAim`'s carry of the flag has NO row, because no shipped weapon can reach it.** `DashAim.resolve` copies a `Success` for a `CastSpec.Dash`, and **no file in `content/weapons/` authors `type: dash`** — only `ember_step`, `recall` and `recall_updraft`, all stone abilities, which carry the flag false either way. Mutation `MUTLVL-DASHAIM` (the carry replaced with `false`) reddens no unit test. The carry is kept because a copy that drops a record component is the defect the compiler caught when the component was added; it becomes testable the day a weapon authors a dash.
 
@@ -225,19 +245,19 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| `set @s 1 levels`, open the star. **The stats head's LAST lore line reads `Click for your level, its bonuses and unlocks.`**, below a blank line; every line above it is as before. Click the head: a screen titled **`Player Level`** opens. Slot 4 (top middle) is an **experience bottle** named **`Level 1`** with lore **`Lifetime XP: 0`**, **`To next level: 1,000 XP`**, blank, **`Your level grants nothing yet.`** The level cells show **levels 1-28** (page 1); **Previous page** is absent (a filler pane at bottom-left), **Next page** is present (paper, bottom-right). The **Level 1** cell is an experience bottle reading **`Where everyone starts.`**, blank, **`Reached`**. The **Level 3** cell is a **gray dye** named **`Level 3`** reading **`+5 Max Health`**, **`+1 Weapon Damage`**, **`Unlocks the Crafting station`**, blank, **`2,090 XP to go`** | |
+| `set @s 1 levels`, open the star. **The stats head's LAST lore line reads `Click for your level, its bonuses and unlocks.`**, below a blank line; every line above it is as before. Click the head: a screen titled **`Player Level`** opens. Slot 4 (top middle) is an **experience bottle** named **`Level 1`** with lore **`Lifetime XP: 0`**, **`To next level: 1,000 XP`**, blank, **`Your level grants nothing yet.`** The level cells show **levels 1-28** (page 1); **Previous page** is absent (a filler pane at bottom-left), **Next page** is present (paper, bottom-right). The **Level 1** cell is an experience bottle reading **`Where everyone starts.`**, blank, **`Reached`**. The **Level 3** cell is a **gray dye** named **`Level 3`** reading **`+5 Max Health`**, **`+1 Weapon Damage`**, **`Unlocks the Crafting station`**, blank, **`2,090 XP to go`** | **38cc9903, 2026-10-14: FAIL, one field -- read on the stack top, where #170 changes it.** AUTO (selftest, run 2): the stats head L1387 ends `""; "Click for your level, its bonuses and unlocks." [dark_gray]; "Also accessible via /level" [gray]` -- the hint is NOT the LAST lore line. The line after it is #170's (81f7e484; GATE-nexus-polish.md G3 predicts it exactly there), above this slice in the stack, so this is a prediction written on #169 and read on #175, not a defect of #169's code. Every other log field matches: L1398 `title="Player Level"`; L1399 slot 4 `EXPERIENCE_BOTTLE name="Level 1"`, `Lifetime XP: 0`, `To next level: 1,000 XP`, `""`, `Your level grants nothing yet.`; L1400-L1427 levels 1-28; L1400 `Where everyone starts.` / `Reached`; L1402 slot 12 `GRAY_DYE name="Level 3"` ... `Unlocks the Crafting station` ... `2,090 XP to go`; L1430 slot 53 `Next page`; no slot 45 dumped. "Every line above it is as before" and the filler pane cannot be read from the log. Ben's half (a glance): **PASS**, itemised (see Status) -- he saw the screen, not the prediction's "LAST". |
 
 ### LS2 — at level 50: the totals, page 2, the last unlock (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| `set @s 50 levels`, open the star, click the head. The summary is named **`Level 50 (MAX)`** with **`Lifetime XP: 712,580`**, **`You are at the level cap.`**, blank, **`Your level grants:`**, then **`+250 Max Health`**, **`+49 Weapon Damage`**, **`+9 Health Regen per 5s`**, **`+10 Defense`**, **`+5% Crit Chance`**, then **`Weapon Damage applies to weapon hits only.`** The screen opens on **page 2 (levels 29-50)**; the six cells after level 50 are filler. The **Level 50** cell is an experience bottle reading **`+10 Max Health`**, **`+1 Weapon Damage`**, **`+1 Health Regen per 5s`**, **`+1 Defense`**, **`+1% Crit Chance`**, **`Unlocks Vault page 7`**, blank, **`Reached`**. The **Level 30** cell is a **lime dye** reading **`+5 Max Health`**, **`+1 Weapon Damage`**, **`+1 Health Regen per 5s`**, **`+1 Defense`**, **`+1% Crit Chance`**, **`Unlocks Vault page 3`**, blank, **`Reached`** | |
+| `set @s 50 levels`, open the star, click the head. The summary is named **`Level 50 (MAX)`** with **`Lifetime XP: 712,580`**, **`You are at the level cap.`**, blank, **`Your level grants:`**, then **`+250 Max Health`**, **`+49 Weapon Damage`**, **`+9 Health Regen per 5s`**, **`+10 Defense`**, **`+5% Crit Chance`**, then **`Weapon Damage applies to weapon hits only.`** The screen opens on **page 2 (levels 29-50)**; the six cells after level 50 are filler. The **Level 50** cell is an experience bottle reading **`+10 Max Health`**, **`+1 Weapon Damage`**, **`+1 Health Regen per 5s`**, **`+1 Defense`**, **`+1% Crit Chance`**, **`Unlocks Vault page 7`**, blank, **`Reached`**. The **Level 30** cell is a **lime dye** reading **`+5 Max Health`**, **`+1 Weapon Damage`**, **`+1 Health Regen per 5s`**, **`+1 Defense`**, **`+1% Crit Chance`**, **`Unlocks Vault page 3`**, blank, **`Reached`** | **38cc9903, 2026-10-14: NOT READ.** The level screen was dumped only at level 1. |
 
 ### LS3 — paging, Back and Close (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| On LS2's screen: **Previous page** flips to levels 1-28 in place (no reopen: the cursor does not jump), and **Next page** flips back. **Back** (arrow, slot 48) returns to the **`Nexus Menu`**. Reopen the level screen: **Close** (barrier, slot 49) closes it. No item can be taken from or put into any slot | |
+| On LS2's screen: **Previous page** flips to levels 1-28 in place (no reopen: the cursor does not jump), and **Next page** flips back. **Back** (arrow, slot 48) returns to the **`Nexus Menu`**. Reopen the level screen: **Close** (barrier, slot 49) closes it. No item can be taken from or put into any slot | **38cc9903, 2026-10-14: NOT READ.** Runs on LS2's screen, never staged; the selftest only shows the static L1428 `Back to the Nexus` and L1429 `Close`, unclicked. |
 
 ---
 
