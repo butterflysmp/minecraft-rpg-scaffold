@@ -65,16 +65,16 @@ final class AbilitySchema {
             // form, exactly like `homing`, and orthogonal to it: a spread of homing bodies is
             // authorable and means what it says.
             // `body` is OPTIONAL and absent means null. It is the OTHER kind of body: `item` renders
-            // a dropped item driven along the flight, `body` renders a real arrow oriented along its
-            // travel with every interaction switched off. MUTUALLY EXCLUSIVE with `item` -- a bolt
-            // has one body -- and refused here rather than resolved, because whichever the flight
-            // picked the other key would silently do nothing.
+            // a dropped item driven along the flight, `body` renders a real projectile entity (an
+            // arrow oriented along its travel, or a fireball) with every interaction switched off.
+            // MUTUALLY EXCLUSIVE with `item` -- a bolt has one body -- and refused here rather than
+            // resolved, because whichever the flight picked the other key would silently do nothing.
             //
-            // The VALUE is checked because there is exactly one body kind and a typo must be a named
-            // file rather than a bolt that quietly renders nothing. That is a different standard
-            // from `item`, which is NOT checked here (the adapter warns once and falls back to
-            // BLAZE_POWDER), and the difference is deliberate: `item` names a Material out of a
-            // huge open set, `body` names one of ours out of a set of one.
+            // The VALUE is checked because the body kinds are ours, a set of two (parseBody), and a
+            // typo must be a named file rather than a bolt that quietly renders nothing. That is a
+            // different standard from `item`, which is NOT checked here (the adapter warns once and
+            // falls back to BLAZE_POWDER), and the difference is deliberate: `item` names a Material
+            // out of a huge open set, `body` names one of ours out of a set we wrote.
             case "projectile" -> new CastSpec.Projectile(
                     s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
                     s.getInt("max_lifetime_ticks", 100), s.getString("trail"), s.getString("item"),
@@ -174,25 +174,32 @@ final class AbilitySchema {
      * without a server. Both throws land in the same {@code catch} and read the same to an operator.
      */
     /**
-     * The one body kind {@code body:} may name.
+     * The body kinds {@code body:} may name: {@code arrow} (the Dragon's Plume) and {@code fireball}
+     * (the Blaze King's Staff, LEGACY-B).
      *
-     * <p><b>A SET OF ONE IS STILL A SET, AND IT IS CHECKED LIKE ONE.</b> Today the only answer is
-     * {@code arrow}; the day a second body exists this becomes a switch and
-     * {@code CombatWorld.spawnBoltMarker} grows the id as a parameter. Until then a typo --
-     * {@code body: arow} -- is a NAMED, SKIPPED FILE, which is this grammar's contract for every
-     * malformed field, rather than a bolt that silently renders no body at all.
+     * <p><b>THIS WAS A SET OF ONE, AND IT SAID WHAT WOULD HAPPEN THE DAY A SECOND BODY EXISTED</b>:
+     * it becomes a set, and {@code CombatWorld.spawnBoltMarker} grows the id as a parameter. Both
+     * happened in LEGACY-B. <b>The set here and the switch in {@code PaperCombatWorld.spawnBoltMarker}
+     * are one list in two files</b>: an id accepted here that the adapter cannot build would reach
+     * its {@code default} arm and throw on the cast, so a third kind is added to both or to neither.
+     *
+     * <p>A typo -- {@code body: fireballl} -- is a NAMED, SKIPPED FILE, which is this grammar's
+     * contract for every malformed field, rather than a bolt that silently renders no body at all.
      *
      * <p>Absent means null, which is the ordinary case for every projectile in the repo.
      */
     private static String parseBody(String raw) {
         if (raw == null) return null;
         String body = raw.toLowerCase(Locale.ROOT);
-        if (!body.equals("arrow")) {
+        if (!BODIES.contains(body)) {
             throw new IllegalArgumentException(
-                    "Unknown projectile body '" + raw + "'; the only body is 'arrow'");
+                    "Unknown projectile body '" + raw + "'; the bodies are " + BODIES);
         }
         return body;
     }
+
+    /** {@link #parseBody}'s set, in a fixed order so the refusal message reads the same every boot. */
+    private static final List<String> BODIES = List.of("arrow", "fireball");
 
     private static CastSpec.Homing parseHoming(ConfigurationSection s) {
         if (s == null) return null;

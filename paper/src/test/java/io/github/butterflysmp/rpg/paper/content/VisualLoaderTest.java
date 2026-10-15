@@ -355,6 +355,48 @@ class VisualLoaderTest {
         assertEquals(0.0, dust.speed(), 1e-9, "inert for DUST, but authored rather than omitted");
     }
 
+    /**
+     * THE BLAZE KING'S STAFF'S TWO VISUALS LOAD FROM THE SHIPPED TREE WITH cfde822's NUMBERS (LEGACY-B,
+     * Q-B6: Ben, "use the old sounds and effects").
+     *
+     * <p>The shipped-tree load above asserts {@code lapis_beam} only, and the loader SKIPS a bad file
+     * with a warning rather than failing, so without this row a typo in either new file (a particle
+     * name, a sound key) would ship green and show up as a boot warning and a silent staff. Every
+     * number is cfde822 {@code StaffListener}'s, read for {@code PLAN-legacy-b.md} section 8.
+     *
+     * <p>Mutation: edit any number in either shipped yml -> this reddens naming it.
+     */
+    @Test
+    void theShippedBlazeFireballVisualsCarryCfde822sNumbers() {
+        VisualRegistry shipped = new VisualLoader(log).loadAll(new File("src/main/resources/content/visuals"));
+
+        var cast = shipped.find("blaze_fireball_cast").orElseThrow(
+                () -> new AssertionError("blaze_fireball_cast.yml did not load: " + warningText()));
+        assertEquals(1, cast.steps().size(), "the cast is one sound");
+        var shoot = (VisualSpec.Sound) cast.steps().get(0);
+        assertEquals("entity.blaze.shoot", shoot.key());
+        assertEquals(1.0f, shoot.volume(), 0f);
+        assertEquals(1.2f, shoot.pitch(), 0f);
+
+        var impact = shipped.find("blaze_fireball_impact").orElseThrow(
+                () -> new AssertionError("blaze_fireball_impact.yml did not load: " + warningText()));
+        assertEquals(3, impact.steps().size(), "flame, lava, crack");
+        var flame = (VisualSpec.Particles) impact.steps().get(0);
+        assertEquals(Particle.FLAME, flame.particle());
+        assertEquals(18, flame.count());
+        assertEquals(0.25, flame.spread(), 0.0);
+        assertEquals(0.06, flame.speed(), 0.0);
+        var lava = (VisualSpec.Particles) impact.steps().get(1);
+        assertEquals(Particle.LAVA, lava.particle());
+        assertEquals(5, lava.count());
+        assertEquals(0.1, lava.spread(), 0.0);
+        assertEquals(0.0, lava.speed(), 0.0, "authored, not the schema's 1.0 default");
+        var crack = (VisualSpec.Sound) impact.steps().get(2);
+        assertEquals("item.firecharge.use", crack.key());
+        assertEquals(1.0f, crack.volume(), 0f);
+        assertEquals(1.3f, crack.pitch(), 0f);
+    }
+
     /** A constant name, not a key. Would have been a silent no-sound at runtime. */
     @Test
     void invalidSoundKeyIsSkippedNotCrashed() throws IOException {

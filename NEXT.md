@@ -11502,3 +11502,22 @@ a plan: a figure in a plan is a claim.
 > tuning this weapon's burn is **per-arrow damage**, which moves the cap linearly. **Adding arrows
 > does not move it at all**, so anyone who lowers the per-arrow damage to compensate for "seven
 > hits" will be weakening a burn that was already the weakest of the three.
+
+## LEGACY-B — THE FIREBALL BODY'S ORPHAN, ACCEPTED (Q-B5, THE SEAT, 2026-09-29)
+
+**Recorded here because the ruling said it would be, when the slice was built (2026-10-01).** The Blaze King's
+Staff's body is a real `SmallFireball`, driven along core's flight (`PaperCombatWorld.spawnFireballBody`).
+
+- **The normal end is the flight's fuse.** At `max_lifetime_ticks` (160 on the staff, Ben's "8 second despawn
+  time") `ProjectileFlight.resolve` calls `removeMarker`. On a hit the same call removes it. The seat's Q-B5:
+  *"the drive REMOVES the entity when its lifetime ends."* `ProjectileFlightTest`'s zero-gravity fireball row is
+  its unit witness.
+- **A hurting projectile has NO vanilla timer** (`AbstractHurtingProjectile.tick`, read for `PLAN-legacy-b.md`
+  2.2). It is discarded only at its first block or entity contact, when its chunk is not loaded, or when its owner
+  is removed, and ours has no owner. **So an ORPHAN -- a step chain that stops before its fuse, as when a region
+  unloads mid-flight or the plugin disables -- flies on.** Undriven it speeds toward 1.9 blocks a tick, straight,
+  until a block, the edge of loaded chunks, or a save (`setPersistent(false)`). It cannot hurt anything: entity
+  hits are cancelled, it is non-incendiary, and block hits are cancelled so TNT does not prime.
+- **ACCEPTED by the seat, not fixed.** There is no `Scheduler.onEntityLater`, and a scheduled removal is the second
+  mechanism the Plume plan rejected as *"the one that rots"*. A healthy build never produces an orphan, so **no
+  gate row can stage one** (`GATE-legacy-b.md`, *WHAT THIS GATE CANNOT SEE*).

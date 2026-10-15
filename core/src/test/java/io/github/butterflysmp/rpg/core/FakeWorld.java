@@ -370,9 +370,16 @@ public final class FakeWorld implements CombatWorld {
      *  kind of body was made, which a shared map could not. */
     public final Map<UUID, Vec3> boltMarkerLaunchVelocities = new HashMap<>();
 
-    @Override public UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks) {
+    /** Every body ever spawned through {@link #spawnBoltMarker}, id -> the body id it was asked for
+     *  ({@code arrow}, {@code fireball}). Kept after removal, like {@link #markerSpawnedAt}, so a row
+     *  can ask which KIND reached the port after the bolt has resolved. */
+    public final Map<UUID, String> boltMarkerBodies = new HashMap<>();
+
+    @Override public UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks,
+                                          String body) {
         UUID id = UUID.randomUUID();
         boltMarkerLaunchVelocities.put(id, velocity);
+        boltMarkerBodies.put(id, body);
         markerPositions.put(id, at);
         markerSpawnedAt.put(id, at);
         markersEverSpawned.add(id);

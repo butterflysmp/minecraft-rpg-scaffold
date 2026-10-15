@@ -1,0 +1,16 @@
+# The Blaze King's Staff firing its fireball -- what you hear the instant you press right-click.
+# Id is the filename: blaze_fireball_cast.
+#
+# PROVISIONAL (Ben, Q-B6, 2026-09-29: "use the old sounds and effects"). cfde822 StaffListener.onBlazeStaffInteract,
+# the fireball arm: playSound(player.getLocation(), ENTITY_BLAZE_SHOOT, 1.0, 1.2). on_cast plays it at the aim
+# origin, the eye, rather than at the feet as cfde822 did.
+#
+# Its own file, not flint_cast: that one layers flint-and-steel under a quieter, higher blaze shot (0.6 / 1.6), and
+# a shared visual is a coupling invisible at both ends. The key is already shipped in flint_cast.yml, verified there
+# in SoundEvents.class on the pinned 26.1.2 server jar.
+
+steps:
+  - type: sound
+    key: entity.blaze.shoot
+    volume: 1.0
+    pitch: 1.2
