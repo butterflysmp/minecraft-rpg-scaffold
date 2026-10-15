@@ -392,13 +392,15 @@ public final class RpgCommand {
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .executes(ctx -> mobInfo(ctx, adapters, mobs)))
                 // Toggle the MOBSEED / MOBREMOVE log lines -- the witness that a gear score survived a
-                // REAL unload (gate row G12), not a mob that never left.
+                // REAL unload (gate row G12), not a mob that never left. MOBHIT, MOBHEAL and PLAYERHIT
+                // ride the same switch.
                 .then(Commands.literal("mobtrace")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .executes(ctx -> {
                             boolean on = nameplates.toggleTrace();
                             ctx.getSource().getSender().sendMessage(Component.text(
-                                    "Mob seed trace " + (on ? "ON" : "OFF") + " (MOBSEED / MOBREMOVE in the log).",
+                                    "Mob trace " + (on ? "ON" : "OFF")
+                                            + " (MOBSEED / MOBREMOVE / MOBHIT / MOBHEAL / PLAYERHIT in the log).",
                                     NamedTextColor.GREEN));
                             return 1;
                         }))

@@ -75,7 +75,7 @@ import java.util.UUID;
  */
 public record Caster(UUID id, double attackDamage, double classDamageBonus,
                      double enchantDamagePercent, double chargeScale, double critMultiplier,
-                     double payloadDamage, int triggerScore) {
+                     double payloadDamage, int triggerScore, String source) {
 
     /**
      * This cast's payload with its HEADLINE DAMAGE attached -- {@code DamagePayload.headlineDamage},
@@ -97,7 +97,7 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withPayloadDamage(double payloadDamage) {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage, triggerScore);
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source);
     }
 
     /**
@@ -136,7 +136,24 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withTriggerScore(int triggerScore) {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage, triggerScore);
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source);
+    }
+
+    /**
+     * WHICH ABILITY this cast is: its id, or {@code <weapon>/<input>} for a weapon trigger
+     * ({@code WeaponLoader} names a trigger's ability that way). It exists for ONE reader, the
+     * {@code PLAYERHIT} trace ({@link TracedHit}), and nothing prices or gates on it.
+     *
+     * <p>It rides the record for the reason {@code payloadDamage} does: a projectile's impact and an
+     * area's pulse land long after the cast, and a {@code Caster} is all that reaches them.
+     *
+     * <p><b>Null from {@link #of}</b>, and only {@code CastExecutor}'s three build sites set it -- the
+     * same three that set {@link #triggerScore}. A null prints as {@code -} in the trace, never as a
+     * made-up id.
+     */
+    public Caster withSource(String source) {
+        return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source);
     }
 
     /**
@@ -185,8 +202,9 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
         // A held item's score is a property of the ITEM, not of the combatant, and this snapshot is
         // shared with every mob in the game; a component meaningless for half its users acquires a
         // meaning by accident. Callers that know the weapon set it with withTriggerScore.
+        // source is null for the same reason: only a cast path knows which ability it is running.
         return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus(),
                 snapshot.enchantDamagePercent(), chargeScale, snapshot.critMultiplier(), 0.0,
-                GearScore.BASELINE);
+                GearScore.BASELINE, null);
     }
 }

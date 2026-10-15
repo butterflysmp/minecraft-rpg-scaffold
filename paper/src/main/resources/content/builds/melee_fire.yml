@@ -1,0 +1,37 @@
+# The Fire Melee's POOL (PLAN-melee-class.md section 7, slice M1; ruling A: the first melee cell is fire).
+#
+# EVERY ABILITY AND ASPECT HERE IS A PLACEHOLDER, and the cell exists now so a Melee player exists to feel
+# Sunder when it lands (section 9.1). The display name is Ben's (Q7, 2026-09-29).
+#
+# NO melee.yml YET. Sunder is class-wide (section 4) and arrives with melee.yml in M2; a class file that
+# offers nothing is refused, so it cannot ship first. Until then active_placeholder_melee_thrust holds
+# Active 1, and M2 replaces it: the ruled default is [sunder, active_placeholder_melee], left = Sunder (Q7).
+#
+# The fire element does work: every hit below accrues Scorch (elements/fire.yml, applies_status). Sunder
+# is kinetic and will not.
+
+class: melee
+element: fire
+display_name: "<gold>Fire Melee</gold>"
+
+ultimates:
+  - ultimate_placeholder_melee
+actives:
+  - active_placeholder_melee_thrust   # TEMPORARY: Active 1 until Sunder (M2)
+  - active_placeholder_melee
+# PLACEHOLDER -- Ben designs. The shared five (ruling 11: one of each). NOT fragment_ember_cache: it is a
+# behaviour fragment on recall, which this pool does not offer, and the loader refuses it (section 2.3).
+fragments:
+  - fragment_vigor
+  - fragment_focus
+  - fragment_keen
+  - fragment_mending
+  - fragment_ward
+# PLACEHOLDER -- Ben designs. Numbers-only, each on one of THIS pool's placeholders; none on Sunder.
+aspects:
+  - keen_arc
+  - restless_quake
+
+default:
+  ultimate: ultimate_placeholder_melee
+  actives: [active_placeholder_melee_thrust, active_placeholder_melee]    # left, right

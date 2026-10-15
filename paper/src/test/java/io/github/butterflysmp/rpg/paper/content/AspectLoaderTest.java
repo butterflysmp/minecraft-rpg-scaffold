@@ -214,12 +214,15 @@ class AspectLoaderTest {
         assertTrue(Files.exists(dir.resolve("banked_embers.yml")), "never deleted");
     }
 
-    /** The four shipped aspects parse, pass their own pools' checks, and are marked as placeholders. */
+    /**
+     * The six shipped aspects parse, pass their own pools' checks, and are marked as placeholders. Six since
+     * PLAN-melee-class.md slice M1 added the Fire Melee's two (keen_arc, restless_quake).
+     */
     @Test
     void theShippedAspectsLoadPassAndAreMarkedPlaceholders() throws IOException {
         File shipped = new File("src/main/resources/content/aspects");
         File[] files = shipped.listFiles((d, n) -> n.endsWith(".yml"));
-        assertTrue(files != null && files.length == 4, "four shipped aspects");
+        assertTrue(files != null && files.length == 6, "six shipped aspects");
         AspectRegistry parsed = new AspectLoader(log).loadAll(shipped);
         PoolRegistry pools = new PoolRegistry();
         pools.register(new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
@@ -230,8 +233,13 @@ class AspectLoaderTest {
                 List.of("ultimate_placeholder_mage"), List.of("ember_step", "solar_grenade", "solar_lance"),
                 new Loadout("ultimate_placeholder_mage", "ember_step", "solar_grenade"), List.of(),
                 List.of("cinder_wake", "lingering_sun")));
+        pools.register(new PoolDefinition(new CellKey("melee", "fire"), "Fire Melee",
+                List.of("ultimate_placeholder_melee"),
+                List.of("active_placeholder_melee_thrust", "active_placeholder_melee"),
+                new Loadout("ultimate_placeholder_melee", "active_placeholder_melee_thrust", "active_placeholder_melee"),
+                List.of(), List.of("keen_arc", "restless_quake")));
         AspectRegistry kept = checked(parsed, pools);
-        assertEquals(4, kept.size(), "every shipped aspect passes: " + warningText());
+        assertEquals(6, kept.size(), "every shipped aspect passes: " + warningText());
         assertFalse(warningText().contains("Refusing"), warningText());
         // Every shipped aspect is a placeholder EXCEPT updraft, which is RULED (rulings 28-30) and says so.
         for (File f : files) {

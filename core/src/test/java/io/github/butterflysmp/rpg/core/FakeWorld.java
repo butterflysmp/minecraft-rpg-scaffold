@@ -282,6 +282,13 @@ public final class FakeWorld implements CombatWorld {
                 .orElse(GearScore.BASELINE);
     }
 
+    /** Every hit the applier reported to the PLAYERHIT trace, in order. */
+    public final List<io.github.butterflysmp.rpg.core.combat.TracedHit> traced = new ArrayList<>();
+
+    @Override public void traceHit(io.github.butterflysmp.rpg.core.combat.TracedHit hit) {
+        traced.add(hit);
+    }
+
     @Override public void present(Vec3 at, String visualId) {
         presented.add(visualId);
         presentedAt.add(at);

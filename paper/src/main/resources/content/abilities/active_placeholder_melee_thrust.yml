@@ -1,0 +1,27 @@
+# PLACEHOLDER -- Ben designs. The Fire Melee cell's SECOND Active, and it is TEMPORARY in a way the other
+# placeholders are not: it holds Active 1 (left) only until Sunder ships in M2 (PLAN-melee-class.md
+# section 9.1). A cell needs two Actives (PoolDefinition), and Sunder cannot be listed before melee.yml
+# exists. M2 deletes this file and the default becomes [sunder, active_placeholder_melee] (Q7).
+#
+# THIS IS NOT A DESIGN AND ITS NUMBERS ARE NOT A PROPOSAL. Nothing may be derived from it.
+#
+# The shape: a SHORT RAY, so left reads differently from the right-click arc and the Q burst in the gate.
+# 7 damage, distinct from the arc's 9 and 5, so a PLAYERHIT line says which Active landed.
+# cooldown_ticks is a multiple of 4.
+
+id: active_placeholder_melee_thrust
+display_name: "<gold>Melee Thrust (placeholder)</gold>"
+element: fire
+cooldown_ticks: 60
+cost:
+  resource: mana
+  amount: 10
+cast:
+  type: ray
+  range: 6
+on_hit:
+  - type: visual
+    visual_id: solar_lance
+  - type: damage
+    amount: 7
+    element: fire

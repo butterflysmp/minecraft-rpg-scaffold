@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
+import io.github.butterflysmp.rpg.core.combat.TracedHit;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import java.util.List;
 
@@ -173,6 +174,7 @@ public final class EffectApplier {
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),
                             DefenseRule.APPLIES, d.element());
                     onDirectDamage.accept(amount, d.element());   // inside the gate: a refused hit reports nothing
+                    trace(caster, target, amount, d.element());
                 }
             }
             case EffectSpec.WeaponDamage wd -> {
@@ -197,6 +199,7 @@ public final class EffectApplier {
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),
                             DefenseRule.APPLIES, wd.element());
                     onDirectDamage.accept(amount, wd.element());   // inside the gate: a refused hit reports nothing
+                    trace(caster, target, amount, wd.element());
                 }
             }
             case EffectSpec.Heal h -> target.handle().applyHeal(h.amount());
@@ -276,6 +279,17 @@ public final class EffectApplier {
             return;
         }
         world.schedule(at, 1, () -> trackEmber(te, caster, itemId, at, fuseLeft - 1));
+    }
+
+    /**
+     * Report one landed direct hit to the {@code PLAYERHIT} trace ({@link TracedHit}). Called only from
+     * inside a damage arm's gate, after {@code applyDamage}, so a refused hit reports nothing. A PLAYER
+     * target is skipped here rather than in the adapter, so the unit tests can see the rule.
+     */
+    private void trace(Caster caster, Combatant target, double sent, String element) {
+        if (target.state().player()) return;
+        world.traceHit(new TracedHit(caster.id(), caster.source(), target.state().id(), element, sent,
+                caster.crit(), caster.triggerScore()));
     }
 
     /**

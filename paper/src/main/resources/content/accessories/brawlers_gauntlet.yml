@@ -1,8 +1,11 @@
 # The MELEE class accessory -- worn only in slot 0, only by a profile whose class is melee.
 #
-# NOBODY CAN WEAR THIS YET, and that is RULED rather than a gap (PLAN-accessories.md, RULINGS Q1):
-# no melee pool ships, so the Build screen offers no melee and no profile can be melee. It is authored
-# now so the class-slot rules have a melee subject, and a melee pool is its own later slice.
+# WEARABLE SINCE THE FIRE MELEE CELL SHIPPED (PLAN-melee-class.md, slice M1). Until then it was RULED
+# unwearable (PLAN-accessories.md, RULINGS Q1: no melee pool, so no profile could be melee); that header
+# was falsified by M1 and is replaced here, in the same change (the plan's finding F5).
+#
+# class_damage reaches a MELEE WEAPON's hits only. A stone cast carries none of it, and that is RULED
+# too: Actives are gear-blind BY DESIGN (Ben, 2026-09-29, Q6; the plan's F1, closed as ruled behaviour).
 #
 # Numbers RULED by Ben, 2026-09-24 (RULINGS Q2) -- not derived. Stronger than a universal, with a
 # drawback. class_damage is FLAT and applies only while a melee weapon is held (RULINGS Q3); the

@@ -135,6 +135,28 @@ class PoolLoaderTest {
         assertEquals("ultimate_placeholder_mage", pool.defaultLoadout().idFor(LoadoutSlot.ULTIMATE));
     }
 
+    /**
+     * PLAN-melee-class.md slice M1: the Fire Melee cell loads ALONE -- no melee.yml ships yet, so nothing is
+     * merged in, and the default is the two placeholders (the thrust holds left until Sunder, M2).
+     */
+    @Test
+    void theBundledFireMeleePoolLoads() throws IOException {
+        copyBundled("melee_fire.yml");
+
+        PoolRegistry registry = load(BUNDLED_ABILITY);
+
+        assertTrue(warnings.isEmpty(), warningText());
+        PoolDefinition pool = registry.find("melee", "fire").orElseThrow();
+        assertEquals("<gold>Fire Melee</gold>", pool.displayName(), "Ben's name, Q7");
+        assertEquals("active_placeholder_melee_thrust", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_1));
+        assertEquals("active_placeholder_melee", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_2));
+        assertEquals("ultimate_placeholder_melee", pool.defaultLoadout().idFor(LoadoutSlot.ULTIMATE));
+        assertEquals(List.of("active_placeholder_melee_thrust", "active_placeholder_melee"), pool.actives(),
+                "the cell's own two, and nothing merged: there is no melee.yml yet");
+        assertEquals(List.of("fragment_vigor", "fragment_focus", "fragment_keen", "fragment_mending",
+                "fragment_ward"), pool.fragments(), "the shared five, and not fragment_ember_cache");
+    }
+
     /** The fragment predicate can say NO too -- the control for the fragment rows below. */
     @Test
     void theBundledFragmentPredicateIsNotBlind() {
@@ -148,8 +170,10 @@ class PoolLoaderTest {
         copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         copyBundled("mage_fire.yml");
+        copyBundled("melee_fire.yml");
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(3, registry.size(), "the loop below must see every cell, or it checks nothing");
         for (PoolDefinition pool : registry.all()) {
             assertTrue(pool.fragments().size() >= 4, pool.cell() + " offers " + pool.fragments());
         }
@@ -188,10 +212,12 @@ class PoolLoaderTest {
         copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         copyBundled("mage_fire.yml");
+        copyBundled("melee_fire.yml");
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(List.of("searing_lance", "updraft"), registry.find("ranger", "fire").orElseThrow().aspects());
         assertEquals(List.of("cinder_wake", "lingering_sun"), registry.find("mage", "fire").orElseThrow().aspects());
+        assertEquals(List.of("keen_arc", "restless_quake"), registry.find("melee", "fire").orElseThrow().aspects());
     }
 
     /** An aspect whose TARGET the pool does not offer is refused: it could never be active there. */
@@ -232,19 +258,22 @@ class PoolLoaderTest {
 
     /**
      * Ruling 7: FIRE only, because only fire has pools. Read from the SHIPPED directory, so a stray file is
-     * noticed: two cells and one class file (section 7.1), which is not a cell.
+     * noticed: three cells and one class file (section 7.1), which is not a cell.
+     *
+     * <p>Was {@code exactlyTheTwoFirePoolsShip} until PLAN-melee-class.md slice M1 added {@code melee_fire.yml}.
+     * M2 adds {@code melee.yml} to this list, and the cell count stays three.
      */
     @Test
-    void exactlyTheTwoFirePoolsShip() throws IOException {
+    void exactlyTheThreeFireCellsShip() throws IOException {
         File shipped = new File("src/main/resources/content/builds");
         String[] names = shipped.list((d, n) -> n.endsWith(".yml"));
         assertNotNull(names, "the shipped builds directory must be readable");
         java.util.Arrays.sort(names);
-        assertEquals(List.of("mage_fire.yml", "ranger.yml", "ranger_fire.yml"), List.of(names));
+        assertEquals(List.of("mage_fire.yml", "melee_fire.yml", "ranger.yml", "ranger_fire.yml"), List.of(names));
         for (String name : names) copyBundled(name);
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertTrue(warnings.isEmpty(), warningText());
-        assertEquals(2, registry.size());
+        assertEquals(3, registry.size());
     }
 
     // ------------------------------------------------------------------ section 7.1: the class file
@@ -260,15 +289,17 @@ class PoolLoaderTest {
         assertTrue(warningText().contains("recall"), warningText());
     }
 
-    /** Ruling 24: the Mage is offered no Ranger class-wide ability. */
+    /** Ruling 24: the Mage is offered no Ranger class-wide ability -- and, since slice M1, nor is the Melee. */
     @Test
     void aClassFileReachesOnlyItsOwnClass() throws IOException {
         copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         copyBundled("mage_fire.yml");
+        copyBundled("melee_fire.yml");
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertTrue(registry.find("ranger", "fire").orElseThrow().actives().contains("recall"));
         assertFalse(registry.find("mage", "fire").orElseThrow().actives().contains("recall"));
+        assertFalse(registry.find("melee", "fire").orElseThrow().actives().contains("recall"));
     }
 
     /** One fact, one home: an id both class-wide and cell-listed is refused, naming it -- not de-duplicated. */
