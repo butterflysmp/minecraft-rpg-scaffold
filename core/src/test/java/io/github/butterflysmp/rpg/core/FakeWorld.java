@@ -468,6 +468,13 @@ public final class FakeWorld implements CombatWorld {
         public double classDamageBonus = 0.0;
 
         /**
+         * The LEVEL weapon-damage bonus this dummy's snapshot carries. Defaults to 0, so every test written
+         * before the level slice sees the numbers it always saw. A weapon hit adds it; a stone cast does not
+         * ({@code Caster.weaponLevelDamage}).
+         */
+        public double levelDamageBonus = 0.0;
+
+        /**
          * The enchant-damage PERCENT this dummy's snapshot carries -- the sum of the percentages
          * granted by the damage enchants active on the weapon it holds, gated on that weapon's own
          * class, frozen at cast time. Sharpness III is {@code 15.0}, not {@code 1.15}.
@@ -604,7 +611,7 @@ public final class FakeWorld implements CombatWorld {
 
         public CombatantSnapshot snapshot() {
             return new CombatantSnapshot(id, pos, eyeHeight, health > 0, player, attackSpeed, attackDamage,
-                    classDamageBonus, enchantDamagePercent, critMultiplier);
+                    classDamageBonus, enchantDamagePercent, critMultiplier, levelDamageBonus);
         }
 
         /**
