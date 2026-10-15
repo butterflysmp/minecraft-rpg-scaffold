@@ -1,0 +1,55 @@
+# GATE-melee-cell.md (#168): the CORE rows MC1-MC3. Each step is one verb (Scenario.Verb); staging uses the gate's
+# own commands, plus the "selftest" tag the run's restore removes. The instrument reads; it never judges.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# MC1: the class picker offers Melee; Melee offers Fire; the cell is named Fire Melee.
+MC1:
+  - cmd: "build"
+  - wait: 3
+  - dump: menu
+  - click: "Class"
+  - wait: 3
+  - dump: menu
+  - click: "Melee"
+  - wait: 3
+  - click: "Element"
+  - wait: 3
+  - dump: menu
+  - click: "Fire"
+  - wait: 3
+  - dump: menu
+  - close: ""
+
+# MC2: the default loadout, read off the Build screen.
+MC2:
+  - expect_cell: "melee fire"
+  - cmd: "build"
+  - wait: 3
+  - dump: menu
+  - close: ""
+
+# MC3: the stone's three inputs, on the gate's zombie at ~3 ~ ~0, level aim.
+MC3:
+  - expect_cell: "melee fire"
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 5
+  - probe: t
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - note: "Left (the thrust)"
+  - swing: HAND
+  - wait: 20
+  - note: "Right (the arc)"
+  - use: right_click
+  - wait: 20
+  - note: "Q (the Ultimate)"
+  - drop: selected
+  - wait: 20
+  - dump: held
+  - probe: t
