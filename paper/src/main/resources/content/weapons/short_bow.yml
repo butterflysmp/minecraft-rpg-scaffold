@@ -1,0 +1,54 @@
+# THE SHORT BOW -- a port from the old project (cfde822, ShortBowWeapon), LEGACY-A (PLAN-legacy-port.md 2.3).
+#
+# MECHANISM, NOT STRUCTURE (HANDOFF-damage-system.md): an instant-fire bow, one arrow per right-click. The old
+# bow's inventory ammo has no counterpart here -- the quiver is the ammo model -- so it authors a magazine.
+#
+# ================== EVERY NUMBER IS PROVISIONAL (Ben, 2026-09-29) ==================
+#
+# Ben: "everything will be getting tuned later". The old numbers are the STARTING values; where the old bow
+# had none, the Boltor's ruled number stands in (NEW CONTENT CITES THE BOLTOR).
+#
+#   attack_damage   16    cfde822 RangedData.SHORT_BOW_BASE_DAMAGE_MIN, its GS-1 base, carried direct as
+#                         flint_staff's 20 was. THE OLD BOW ROLLED 16-23 PER SHOT; this engine has no roll, so
+#                         the floor is carried and the choice of floor is Ben's to change.
+#   cooldown_ticks  12    cfde822 SHORT_BOW_COOLDOWN_MS 500 = 10 ticks, OFF the 4-tick input grid, where it
+#                         would fire every 12 anyway (WeaponLoader's cooldown_ticks section). Authored as 12.
+#   speed           3.0   cfde822's arrow velocity.
+#   quiver_size      8    the Boltor's (ruled). The old bow had no magazine.
+#   reload_ticks    60    the Boltor's (ruled).
+#   gravity         0.05  dragons_breath's arrow body (no cfde822 figure is in this port's record).
+#   lifetime       120    dragons_breath's.
+#   knockback       0.1   dragons_breath's, the one shipped non-dev travelling ranged weapon that authors one.
+#
+# KNOCKBACK IS AUTHORED AGAINST THE OLD BOW, ON PURPOSE. cfde822 tagged its arrows ARROW_NO_KNOCKBACK; the
+# operator's ruling (2026-09-13) is that a travelling ranged weapon authors knockback, and the ruling wins
+# (PLAN-legacy-port.md F3).
+#
+# ELEMENT: cfde822's bow was elementless; kinetic is this project's no-element element, the Boltor's.
+# Ben's to change.
+id: short_bow
+display_name: "Short Bow"
+element: kinetic
+rarity: common
+class: ranger
+material: bow
+attack_damage: 16
+quiver_size: 8
+reload_ticks: 60
+flavor:
+  - "Short to draw."
+  - "Shorter to answer."
+triggers:
+  right_click:
+    cooldown_ticks: 12
+    cast:
+      type: projectile
+      speed: 3.0
+      gravity: 0.05
+      max_lifetime_ticks: 120
+      body: arrow
+    on_hit:
+      - type: weapon_damage
+        element: kinetic
+      - type: knockback
+        strength: 0.1
