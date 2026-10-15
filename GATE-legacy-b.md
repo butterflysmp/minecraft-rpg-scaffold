@@ -1,6 +1,25 @@
 # GATE — LEGACY-B: the Blaze King's Staff shoots a real fireball
 
-**Status: NOT RUN.**
+**Status at `38cc9903` (the stack-top boot, 2026-10-14): R0a-c SUPERSEDED (GATE-selftest.md R0, PASS); LB2 VOID (the
+aim defect; carries to the next boot after #175's fix); LB5 PARTIAL (counts match, no impact witness, no control);
+10 NOT READ (LB1, LB3, LB4, LB4b, LB6-LB11); 0 PASS, 0 FAIL. NOT a merge candidate this round: LB2 is its bar.**
+
+**The boot, 2026-10-14, on `38cc9903` (#175's head, the stack top), Paper 26.1.2 build 74:**
+- CC booted it with `./scripts/dev-server.sh --refresh-content` on the seat's word; Ben was the only player. His
+  LOGIN is L80 (`BaronVonYeetus ... logged in`, 22:47:02). Line numbers are that boot's `run/logs/latest.log`.
+- `/rpg selftest all` ran twice. **Run 1 (L86-L1087) was in CREATIVE and certifies NOTHING** (the seat's ruling;
+  L1087 `RESTORED ... gamemode=CREATIVE`). **Run 2 (L1091-L2098, SURVIVAL, after `/gamemode survival` at L1088) is
+  the run of record**: every AUTO reading below is from inside its row's own START ... DONE bracket in run 2.
+- **Ben's hand steps.** His words, relayed by the seat: *"all done, everything looks good"*, then *"I ran all the
+  self checks and they are fine."* **The seat's ruling, 2026-10-14:** the second is Ben's explicit confirmation of
+  each check on the hand-step list he was given -- **MC3 (slot), MC1, MC2, LS1, D1, G1, G3, WB1, ST2, ST6** -- so
+  those sight halves are PASS, itemised by that list. Ben was in CREATIVE from 23:15:46 to 23:16:09 (L2102-L2104)
+  during his hand steps; which check, if any, fell in that window is not recorded. His hand window ran with the mob
+  trace OFF (L2098 `trace=false`), so a hand cast has no log line either way.
+- **The aim defect** (GATE-selftest.md ST5): `tp @s ~ ~ ~ facing entity <e> eyes` turns a player from the FEET, so
+  every selftest row aimed that way missed: SB2, LB2, WB2, WB3, WS-C, WS1, WS2b, WS2c, WS3 are VOID this boot and
+  carry to the next boot after #175's AIM fix.
+- **Observation, unexplained:** MOBREMOVE lines run through run 2, many naming uuids that appear nowhere else.
 
 Every prediction below was written **before** any row of this file was read, and **this file is COMMITTED before the
 boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been read.
@@ -87,13 +106,13 @@ SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; 
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, LEGACY-B's head, shortened. Not `-dirty`, not `unknown`, not #171's `ab23ce6f` or any head beneath it | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, LEGACY-B's head, shortened. Not `-dirty`, not `unknown`, not #171's `ab23ce6f` or any head beneath it | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0, read PASS at 38cc9903 (L42 `[Rpg] Build: 38cc9903`). Not read here. |
 
 ### R0b — the jar carries the fireball staff, the two visuals and the drive
 
 | prediction | instrument | READING |
 |---|---|---|
-| Entries PRESENT: `content/weapons/blaze_kings_staff.yml`, `content/visuals/blaze_fireball_cast.yml`, `content/visuals/blaze_fireball_impact.yml`, paper `adapter/FireballDrive.class`, #171's `content/weapons/short_bow.yml`. ABSENT: the control. **In the staff's text, as YAML keys (anchored, so a comment cannot match):** PRESENT `body: fireball`, `gravity: 0`, `max_lifetime_ticks: 160`, `right_click:`; ABSENT `item: fire_charge`, `left_click:`. **Control:** `short_bow.yml` reads `body: arrow` PRESENT | the scan below | |
+| Entries PRESENT: `content/weapons/blaze_kings_staff.yml`, `content/visuals/blaze_fireball_cast.yml`, `content/visuals/blaze_fireball_impact.yml`, paper `adapter/FireballDrive.class`, #171's `content/weapons/short_bow.yml`. ABSENT: the control. **In the staff's text, as YAML keys (anchored, so a comment cannot match):** PRESENT `body: fireball`, `gravity: 0`, `max_lifetime_ticks: 160`, `right_click:`; ABSENT `item: fire_charge`, `left_click:`. **Control:** `short_bow.yml` reads `body: arrow` PRESENT | the scan below | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0b, read PASS at 38cc9903. The intermediate facts are not read. |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -118,7 +137,7 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| `Loaded 11 abilities, **29 visuals**, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **15 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against LEGACY-A's R0c prediction: **weapons 14 → 15, visuals 27 → 29**, every other count unchanged. No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair, and none naming `blaze_kings_staff` or `blaze_fireball` | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
+| `Loaded 11 abilities, **29 visuals**, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **15 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against LEGACY-A's R0c prediction: **weapons 14 → 15, visuals 27 → 29**, every other count unchanged. No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair, and none naming `blaze_kings_staff` or `blaze_fireball` | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0c, read PASS at 38cc9903 (L44). The intermediate facts are not read. |
 
 ---
 
@@ -128,73 +147,73 @@ $zip.Dispose()
 
 | prediction | READING |
 |---|---|
-| Hover (score 100). In order: **`Fire`**, blank, **`Fireball  Right-Click`**, `Throws a burning charge.`, `Fire Damage: 30`, `Cooldown: 0.4s \| Mana Cost: 8`, blank, `The Blaze King kept it lit.`, `It has not gone out since.` (italic), blank, **`Legendary Magic Weapon`** — the golden rendering. **A second `/rpg give blaze_kings_staff` lands in its own slot.** **Left-click at the air: no cast, no mana spent, no cooldown shown.** Whatever a left-click with `flint_staff` does today, it does here (*not surveyed*: record what is seen) | |
+| Hover (score 100). In order: **`Fire`**, blank, **`Fireball  Right-Click`**, `Throws a burning charge.`, `Fire Damage: 30`, `Cooldown: 0.4s \| Mana Cost: 8`, blank, `The Blaze King kept it lit.`, `It has not gone out since.` (italic), blank, **`Legendary Magic Weapon`** — the golden rendering. **A second `/rpg give blaze_kings_staff` lands in its own slot.** **Left-click at the air: no cast, no mana spent, no cooldown shown.** Whatever a left-click with `flint_staff` does today, it does here (*not surveyed*: record what is seen) | **38cc9903, 2026-10-14: NOT READ.** No second `/rpg give blaze_kings_staff` (the setup gave it once, L1742) and no left-click observation. |
 
 ### LB2 — PLAYERHIT: 30 fire on a right-click, and no vanilla damage (SURVIVAL) — witness: PLAYERHIT line
 
 | prediction | READING |
 |---|---|
-| Zombie offset `~8 ~0`, aim at it (`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes`), **right-click once**: **`PLAYERHIT … source=blaze_kings_staff/right_click … element=fire sent=30.000 crit=false triggerScore=100`**. **Exactly one** PLAYERHIT for the shot. **No `[plume] A MARKER BODY dealt damage` warning, no `[fireball] A MARKER BODY set` warning and no `[fireball] A MARKER BODY tried to place fire` warning** in the log. The zombie burns afterwards (Scorch, `fire.yml`) | |
+| Zombie offset `~8 ~0`, aim at it (`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes`), **right-click once**: **`PLAYERHIT … source=blaze_kings_staff/right_click … element=fire sent=30.000 crit=false triggerScore=100`**. **Exactly one** PLAYERHIT for the shot. **No `[plume] A MARKER BODY dealt damage` warning, no `[fireball] A MARKER BODY set` warning and no `[fireball] A MARKER BODY tried to place fire` warning** in the log. The zombie burns afterwards (Scorch, `fire.yml`) | **38cc9903, 2026-10-14: VOID** (the seat's ruling) -- the aim defect: `tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes` (L1763) turns from the FEET, so the eye ray passed 1.62 high over the zombie at 8 blocks. L1766 `DRIVE use ... item=blaze_kings_staff yaw=-90.000 pitch=-12.271` (eye-to-eye is -0.859); 0 PLAYERHIT in L1749-L1770; L1769 `PROBE ... 3a45dfe0 ... customHP=100.000/100.000 fireTicks=0 ... d=8.000`. No `MARKER BODY` warning anywhere in the log -- an absence that certifies nothing, since nothing was hit. Carries to the next boot after #175's AIM fix. See the AIM NOTE below. |
 
 ### LB3 — it is a fireball, not an item (SURVIVAL) — witness: Ben, with F3+B
 
 | prediction | READING |
 |---|---|
-| Fire into open air with F3+B on. The body is **the blaze's fireball**: a small fire-charge sprite that faces the camera, trailing **smoke**, with a **~0.31-block hitbox cube**. It is **not** a dropped item (no spin, no bob, no item hitbox). It **appears a few blocks out**, not at the staff (vanilla's render gate, `PLAN-legacy-b.md` §5.6; *inferred* for the client). **Positive control, same session:** `/rpg give flint_staff`; its thrown flint looks different in each of these respects | |
+| Fire into open air with F3+B on. The body is **the blaze's fireball**: a small fire-charge sprite that faces the camera, trailing **smoke**, with a **~0.31-block hitbox cube**. It is **not** a dropped item (no spin, no bob, no item hitbox). It **appears a few blocks out**, not at the staff (vanilla's render gate, `PLAN-legacy-b.md` §5.6; *inferred* for the client). **Positive control, same session:** `/rpg give flint_staff`; its thrown flint looks different in each of these respects | **38cc9903, 2026-10-14: NOT READ.** No `flint_staff` control given; no observation. |
 
 ### LB4 — a straight line: no drop (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| Stand on a long flat surface. `/tp @s ~ ~ ~ -90 0` (east, level). Fire once. **The fireball stays at eye height for as far as it can be seen**, with no visible drop. **No range is predicted** (the seat's Q-B4 reading: no block range is authored). **Positive control:** `flint_staff` from the same spot (gravity 0.05) **visibly drops**, so this staging CAN show a drop | |
+| Stand on a long flat surface. `/tp @s ~ ~ ~ -90 0` (east, level). Fire once. **The fireball stays at eye height for as far as it can be seen**, with no visible drop. **No range is predicted** (the seat's Q-B4 reading: no block range is authored). **Positive control:** `flint_staff` from the same spot (gravity 0.05) **visibly drops**, so this staging CAN show a drop | **38cc9903, 2026-10-14: NOT READ.** No `flint_staff` control; no observation. |
 
 ### LB4b — it despawns at 8 seconds, not at 2 and not never (SURVIVAL) — witness: the server's own entity test
 
 | prediction | READING |
 |---|---|
-| **Fired straight UP, so the body stays in Ben's chunk column**, where it is always tracked and simulated (fired level, it would leave simulation distance long before 8 s; `AbstractHurtingProjectile` is always activation-range ACTIVE, read from `ActivationRange.initializeEntityActivationState`). **Stand below y 70** (record the y) so 240 blocks of climb from the eye stays under the build limit of 319. **Control first:** `/execute if entity @e[type=small_fireball]` reads **`Test failed`**. Then `/tp @s ~ ~ ~ ~ -90`, fire once, and run the same command **at about 4 s: `Test passed, count: 1`**, and **at about 10 s: `Test failed`**. The lifetime is 160 ticks; the flight's fuse removes the body then (Q-B5). **A count still 1 at 10 s is the removal NOT happening**, and the 2 s of LEGACY-A's old lifetime would read failed at 4 s | |
+| **Fired straight UP, so the body stays in Ben's chunk column**, where it is always tracked and simulated (fired level, it would leave simulation distance long before 8 s; `AbstractHurtingProjectile` is always activation-range ACTIVE, read from `ActivationRange.initializeEntityActivationState`). **Stand below y 70** (record the y) so 240 blocks of climb from the eye stays under the build limit of 319. **Control first:** `/execute if entity @e[type=small_fireball]` reads **`Test failed`**. Then `/tp @s ~ ~ ~ ~ -90`, fire once, and run the same command **at about 4 s: `Test passed, count: 1`**, and **at about 10 s: `Test failed`**. The lifetime is 160 ticks; the flight's fuse removes the body then (Q-B5). **A count still 1 at 10 s is the removal NOT happening**, and the 2 s of LEGACY-A's old lifetime would read failed at 4 s | **38cc9903, 2026-10-14: NOT READ.** No `/execute if entity @e[type=small_fireball]` command or reply in the log. |
 
 ### LB5 — no block ignition, no TNT (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| **(a)** Face a wall of oak planks 10 blocks east, with air in front of it. Fire three times: **no fire block appears**, and each fireball **vanishes at the wall**. **(b)** Replace one plank with TNT and fire at it: **it does not prime.** **(c) Positive control, vanilla, NOT OURS:** `/summon small_fireball ~ ~1.6 ~2 {Motion:[1.0d,0.0d,0.0d]}` aimed at the planks. Vanilla's default is incendiary, so **it places fire**. *UNVERIFIED*: the `Motion` key in 26.1; if the summon does not move, record it and do not read (c) as a pass. **(a)'s no-fire is the SOLE witness of `setIsIncendiary(false)`; (b) is the SOLE witness of the block-hit cancel in `onPlumeBodyHit`.** No unit test can raise either | |
+| **(a)** Face a wall of oak planks 10 blocks east, with air in front of it. Fire three times: **no fire block appears**, and each fireball **vanishes at the wall**. **(b)** Replace one plank with TNT and fire at it: **it does not prime.** **(c) Positive control, vanilla, NOT OURS:** `/summon small_fireball ~ ~1.6 ~2 {Motion:[1.0d,0.0d,0.0d]}` aimed at the planks. Vanilla's default is incendiary, so **it places fire**. *UNVERIFIED*: the `Motion` key in 26.1; if the summon does not move, record it and do not read (c) as a pass. **(a)'s no-fire is the SOLE witness of `setIsIncendiary(false)`; (b) is the SOLE witness of the block-hit cancel in `onPlumeBodyHit`.** No unit test can raise either | **38cc9903, 2026-10-14: PARTIAL -- every server count matches, but no server line shows a fireball reaching the wall, and the positive control (c) was not driven.** AUTO (selftest, run 2), staging confirmed: the corridor and the top row were already air (L1783, L1786 `"No blocks were filled" [red]` -- a no-change fill, not a failure), the wall 20/20 planks (L1784 `"Successfully filled 20 block(s)"`), the TNT at -94, 64, 5 (L1805), aim level (`pitch=0.000`, L1790, L1792, L1795, L1807). (a) L1787 `BLOCKS FIRE count=0` before and L1801 `count=0` after three shots. (b) L1811 `BLOCKS TNT count=1` (the block remains), L1812 `ENTITIES TNT count=0 radius=16` (40 t after the shot, inside an 80 t fuse), L1813 `FIRE count=0`. **These counts cannot tell a guard that held from a fireball that never arrived** (a hollow fixture in OBSERVABILITY): the selftest logs no cast or impact line. (c) not driven. Ben's half (each fireball vanishes at the wall): NOT READ -- not on his hand-step list. |
 
 ### LB6 — no explosion, at a block or at a mob (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| Fire at the plank wall and at a test zombie. **No explosion sound, no explosion particles, no broken blocks, no crater, no push.** This row guards the entity TYPE: a `LargeFireball` spawned by mistake explodes in `onHit`, which a cancelled block hit still reaches | |
+| Fire at the plank wall and at a test zombie. **No explosion sound, no explosion particles, no broken blocks, no crater, no push.** This row guards the entity TYPE: a `LargeFireball` spawned by mistake explodes in `onHit`, which a cancelled block hit still reaches | **38cc9903, 2026-10-14: NOT READ.** The zombie half was never hit (LB2 VOID); nothing itemised about explosions. |
 
 ### LB7 — a small fireball cannot be punched back (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| **This row witnesses the entity TYPE, not our driven body**, which moves 1.5 blocks a tick and cannot be staged for a punch. `/summon small_fireball ~ ~1.6 ~2 {Motion:[0.0d,0.0d,0.0d],acceleration_power:0.0d}`. Left-click it: **the crosshair does not select it and nothing happens.** **Positive control:** `/summon fireball ~ ~1.6 ~2 {Motion:[0.0d,0.0d,0.0d],acceleration_power:0.0d}` (the ghast's). Left-click it: **it is deflected** along the look direction. *UNVERIFIED*: the summon keys; if either summon does not hold still, record it and do not read the row | |
+| **This row witnesses the entity TYPE, not our driven body**, which moves 1.5 blocks a tick and cannot be staged for a punch. `/summon small_fireball ~ ~1.6 ~2 {Motion:[0.0d,0.0d,0.0d],acceleration_power:0.0d}`. Left-click it: **the crosshair does not select it and nothing happens.** **Positive control:** `/summon fireball ~ ~1.6 ~2 {Motion:[0.0d,0.0d,0.0d],acceleration_power:0.0d}` (the ghast's). Left-click it: **it is deflected** along the look direction. *UNVERIFIED*: the summon keys; if either summon does not hold still, record it and do not read the row | **38cc9903, 2026-10-14: NOT READ.** No `/summon small_fireball` or `/summon fireball` in the log. |
 
 ### LB8 — the shooter is never hit (SURVIVAL) — witness: Ben + the log
 
 | prediction | READING |
 |---|---|
-| Record health. `/tp @s ~ ~ ~ ~ 90` (straight down) and fire three times, then `/tp @s ~ ~ ~ ~ 60` and fire three more. **Health unchanged. Ben does not catch fire. No PLAYERHIT naming Ben. No backstop warning.** The ground under him does not ignite. Core's `castRay` excludes the caster, and the unowned body's own hit on him is cancelled | |
+| Record health. `/tp @s ~ ~ ~ ~ 90` (straight down) and fire three times, then `/tp @s ~ ~ ~ ~ 60` and fire three more. **Health unchanged. Ben does not catch fire. No PLAYERHIT naming Ben. No backstop warning.** The ground under him does not ignite. Core's `castRay` excludes the caster, and the unowned body's own hit on him is cancelled | **38cc9903, 2026-10-14: NOT READ.** The straight-down and 60-degree shots were never staged. |
 
 ### LB9 — the body arrives with the hit: the compensated drive (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| Zombie offset `~30 ~0`, `NoAI`, aimed. Fire once. **The fireball reaches the zombie at the moment the damage lands**: no visible gap before it, no body carrying on past it (Q-B3 COMPENSATE predicts **no lead**). **The honest limit:** uncompensated, the lead would be `0.02 × ticks` blocks (awk), 0.4 blocks at this range, which may be invisible; so a PASS here does not distinguish compensated from uncompensated. **`FireballDriveTest` is the unit witness of the arithmetic; this row is the only witness that the jar's push and drag are still `0.1` and `0.95f`** | |
+| Zombie offset `~30 ~0`, `NoAI`, aimed. Fire once. **The fireball reaches the zombie at the moment the damage lands**: no visible gap before it, no body carrying on past it (Q-B3 COMPENSATE predicts **no lead**). **The honest limit:** uncompensated, the lead would be `0.02 × ticks` blocks (awk), 0.4 blocks at this range, which may be invisible; so a PASS here does not distinguish compensated from uncompensated. **`FireballDriveTest` is the unit witness of the arithmetic; this row is the only witness that the jar's push and drag are still `0.1` and `0.95f`** | **38cc9903, 2026-10-14: NOT READ.** No zombie at `~30`. Still the sole witness of the jar constants. |
 
 ### LB10 — the old sounds and effects (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| **PROVISIONAL (Ben, Q-B6: "use the old sounds and effects").** On each right-click that casts: **a blaze shoot** (pitch a little high), at the press, not at the impact. At the zombie (LB2's staging) and at the plank wall (LB5a): **a burst of flame with a few lava drips and a fire-charge crack** where it lands. **A refused press is silent** (hold right-click until the mana runs out: 8 a shot, and `/rpg mana` has only `refill`) (`on_cast` fires only on a cast) | |
+| **PROVISIONAL (Ben, Q-B6: "use the old sounds and effects").** On each right-click that casts: **a blaze shoot** (pitch a little high), at the press, not at the impact. At the zombie (LB2's staging) and at the plank wall (LB5a): **a burst of flame with a few lava drips and a fire-charge crack** where it lands. **A refused press is silent** (hold right-click until the mana runs out: 8 a shot, and `/rpg mana` has only `refill`) (`on_cast` fires only on a cast) | **38cc9903, 2026-10-14: NOT READ.** Nothing itemised; the refused-press half was never staged. |
 
 ### LB11 — the fuse impact in mid-air (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| **Not cfde822's behaviour, recorded rather than ruled:** the flight lands its 160-tick fuse as an impact with no target, so `blaze_fireball_impact` plays where the fireball runs out, in mid-air (`flint_impact.yml` has the same property). Fired straight up as in LB4b, the burst is 240 blocks up and **will not be seen or heard**; this row is therefore recorded **UNWITNESSED** unless Ben finds a staging that shows it, and it is listed so the property is not mistaken for absent | |
+| **Not cfde822's behaviour, recorded rather than ruled:** the flight lands its 160-tick fuse as an impact with no target, so `blaze_fireball_impact` plays where the fireball runs out, in mid-air (`flint_impact.yml` has the same property). Fired straight up as in LB4b, the burst is 240 blocks up and **will not be seen or heard**; this row is therefore recorded **UNWITNESSED** unless Ben finds a staging that shows it, and it is listed so the property is not mistaken for absent | **38cc9903, 2026-10-14: NOT READ** (UNWITNESSED, as the row provides). |
 
 ---
 
