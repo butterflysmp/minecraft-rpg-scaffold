@@ -155,6 +155,17 @@ $zip.Dispose()
 |---|---|
 | Zombie offset `~8 ~0`, aim at it (`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes`), **right-click once**: **`PLAYERHIT … source=blaze_kings_staff/right_click … element=fire sent=30.000 crit=false triggerScore=100`**. **Exactly one** PLAYERHIT for the shot. **No `[plume] A MARKER BODY dealt damage` warning, no `[fireball] A MARKER BODY set` warning and no `[fireball] A MARKER BODY tried to place fire` warning** in the log. The zombie burns afterwards (Scorch, `fire.yml`) | **38cc9903, 2026-10-14: VOID** (the seat's ruling) -- the aim defect: `tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes` (L1763) turns from the FEET, so the eye ray passed 1.62 high over the zombie at 8 blocks. L1766 `DRIVE use ... item=blaze_kings_staff yaw=-90.000 pitch=-12.271` (eye-to-eye is -0.859); 0 PLAYERHIT in L1749-L1770; L1769 `PROBE ... 3a45dfe0 ... customHP=100.000/100.000 fireTicks=0 ... d=8.000`. No `MARKER BODY` warning anywhere in the log -- an absence that certifies nothing, since nothing was hit. Carries to the next boot after #175's AIM fix. See the AIM NOTE below. |
 
+> **AIM NOTE, 2026-10-14 (instrument only; no prediction moves; written after the `38cc9903` boot, where this row
+> was VOID).** **`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes` does not aim the player's eyes at the zombie's
+> eyes.** `eyes` is the TARGET's anchor only; the player's own anchor is the command source's, and a player's source
+> is built with `Anchor.FEET` (javap, Paper 26.1.2 build 74: `CommandSourceStack`'s 9-argument constructor;
+> `LookAt$LookAtEntity.perform` passes `source.getAnchor()`; `Entity.lookAt` computes from it). So the turn is FEET to
+> eyes, and the look ray -- which starts at the eyes -- runs parallel to the intended one, 1.62 blocks higher: over
+> a zombie at 8 blocks. The boot logged `pitch=-12.271`; eye to eye is -0.859 (computed). **Wherever this file says
+> to aim with that command** (this row's staging), **aim with** `/execute anchored eyes facing entity @e[tag=t,limit=1] eyes run tp @s ~ ~ ~ ~ ~`
+> (`execute anchored eyes` sets the anchor `CommandSourceStack.facing` reads -- verified from the jar, not yet in a
+> boot). The selftest's own scenario now aims with #175's `AIM` verb, eye to eye in Java.
+
 ### LB3 — it is a fireball, not an item (SURVIVAL) — witness: Ben, with F3+B
 
 | prediction | READING |
