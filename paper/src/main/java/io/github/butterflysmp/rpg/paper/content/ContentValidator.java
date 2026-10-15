@@ -360,6 +360,7 @@ public final class ContentValidator {
             }
             switch (status) {
                 case StatusDefinition.Scorch ignored -> { }
+                case StatusDefinition.Wither ignored -> { }
                 case StatusDefinition.Fire ignored -> problems.add(cannotAccrue(label, element));
                 case StatusDefinition.Potion ignored -> problems.add(cannotAccrue(label, element));
                 case StatusDefinition.Immobilize ignored -> problems.add(cannotAccrue(label, element));
@@ -379,8 +380,8 @@ public final class ContentValidator {
      */
     private static String cannotAccrue(String label, ElementDefinition element) {
         return label + " applies status '" + element.appliesStatus() + "', which exists but does "
-                + "not stack, so nothing will accrue. Only scorch can be accrued from damage today; "
-                + "a status with no stack count and no duration of its own has nothing to apply";
+                + "not stack, so nothing will accrue. Only scorch and wither can be accrued from damage "
+                + "today; a status with no stack count and no duration of its own has nothing to apply";
     }
     /**
      * Every element named -- a weapon's, an ability's, a damage effect's -- must resolve to

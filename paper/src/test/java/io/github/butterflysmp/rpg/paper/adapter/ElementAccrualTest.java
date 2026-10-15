@@ -47,7 +47,7 @@ class ElementAccrualTest {
         return registry;
     }
 
-    private static Optional<ElementAccrual.ScorchAccrual> accrue(String element, DamageOutcome outcome,
+    private static Optional<ElementAccrual.Accrual> accrue(String element, DamageOutcome outcome,
                                                            double amount) {
         return ElementAccrual.forHit(elements("fire", "scorch"), statuses(), element,
                 AccrualRule.ACCRUES, outcome, amount);
@@ -320,5 +320,80 @@ class ElementAccrualTest {
         // predicate its own lethality check -> the first assertion reddens; give forHit its own
         // element check -> nothing reddens here, which is why the extraction is the guard rather
         // than this row.
+    }
+
+    // --- WITHER-STATUS: the second accruing kind, and WS2 (no explosion) ----------------------------
+
+    /** Fire -> scorch AND wither -> withering, as shipped, with the two immune types. */
+    private static ElementRegistry fireAndWither() {
+        var registry = new ElementRegistry();
+        registry.register(new ElementDefinition("fire", "fire", Component.text("*"), "scorch"));
+        registry.register(new ElementDefinition("wither", "wither", Component.text("x"), "withering"));
+        return registry;
+    }
+
+    private static StatusRegistry withWithering() {
+        var registry = statuses();
+        registry.register(new StatusDefinition.Wither("withering",
+                java.util.Set.of("wither_skeleton", "wither")));
+        return registry;
+    }
+
+    /**
+     * WS2's UNIT HALF (PLAN-wither.md 4.2): A WITHER HIT IS NEVER A SCORCH HIT, SO IGNITE'S SECOND
+     * CLAUSE CANNOT FIRE ON THE WITHERED SHORTBOW'S LETHAL ARROW -- AND FIRE, IN THE SAME REGISTRIES,
+     * STILL IS (the control, so the false is not a blind predicate).
+     *
+     * <p>The lethal outcome is staged on purpose: it is the exact shape Ignite's clause reads
+     * ({@code !wasScorched && dealt > 0 && newCurrent <= 0 && accruesScorch}).
+     *
+     * <p>Mutation: map {@code StatusDefinition.Wither} to {@code DotKind.SCORCH} in
+     * {@code ElementAccrual.kindOf} -> the wither assertion reddens, the fire control does not.
+     */
+    @Test
+    void aWitherHitNeverAnswersAccruesScorchAndAFireHitStillDoes() {
+        var elements = fireAndWither();
+        var statuses = withWithering();
+
+        assertFalse(ElementAccrual.accruesScorch(elements, statuses, "wither", AccrualRule.ACCRUES),
+                "wither accrues WITHER, never scorch: a lethal wither arrow does not ignite (WS2, K2)");
+        assertTrue(ElementAccrual.accruesScorch(elements, statuses, "fire", AccrualRule.ACCRUES),
+                "the control: fire in the same registries still answers true");
+    }
+
+    /**
+     * A SURVIVING WITHER HIT ACCRUES INTO THE WITHER STORE, AT WITHER'S RULED NUMBERS -- not scorch's.
+     *
+     * <p>Three numbers that could be swapped for scorch's and would still look plausible: the kind,
+     * the window (200, not 120) and the immune set (empty for scorch). The cap fraction is 0.5 for
+     * both, so it is asserted as the value Q-W2 ruled (8 from a 16 hit, the bow's cap), not as a
+     * discriminator.
+     *
+     * <p>Mutations: return {@code Scorch.RATES} for WITHER in {@code accrue} -> the window reddens.
+     * Drop the immune set -> the immunity assertion reddens.
+     */
+    @Test
+    void aSurvivingWitherHitAccruesWitherAtWithersNumbers() {
+        var accrued = ElementAccrual.forHit(fireAndWither(), withWithering(), "wither",
+                AccrualRule.ACCRUES, new DamageOutcome(16.0, 84.0), 16.0).orElseThrow();
+
+        assertEquals(ElementAccrual.DotKind.WITHER, accrued.kind(), "the wither store, not scorch's");
+        assertEquals(8.0, accrued.cap(), EPS, "Q-W2: half the 16 hit -- the bow's WB4b cap");
+        assertEquals(200, accrued.durationTicks(), "Q-W3: 200 ticks, not scorch's 120");
+        assertTrue(accrued.immune().contains("wither_skeleton"), "Q-W6 travels with the accrual");
+        assertTrue(accrued.stacks() > 0, "the shared gate: a hit that landed buys one");
+
+        var fire = ElementAccrual.forHit(fireAndWither(), withWithering(), "fire",
+                AccrualRule.ACCRUES, new DamageOutcome(16.0, 84.0), 16.0).orElseThrow();
+        assertEquals(ElementAccrual.DotKind.SCORCH, fire.kind(), "the control: fire still feeds scorch");
+        assertEquals(Scorch.DEFAULT_DURATION_TICKS, fire.durationTicks());
+        assertTrue(fire.immune().isEmpty(), "scorch has no immune list");
+    }
+
+    /** A LETHAL wither hit accrues nothing, for the same ordering reason as fire's. */
+    @Test
+    void aLethalWitherHitAccruesNothing() {
+        assertTrue(ElementAccrual.forHit(fireAndWither(), withWithering(), "wither",
+                AccrualRule.ACCRUES, new DamageOutcome(16.0, 0.0), 16.0).isEmpty());
     }
 }

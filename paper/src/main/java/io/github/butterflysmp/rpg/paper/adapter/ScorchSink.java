@@ -24,6 +24,13 @@ public interface ScorchSink {
     double victimMaxHealth();
 
     /**
+     * The victim's entity type key ({@code zombie}, {@code wither_skeleton}), for the {@code DOTTICK}
+     * line's type field. A READ, on the victim's own thread, like {@link #victimMaxHealth()}. Abstract
+     * rather than {@code default}, so a fixture cannot compile without saying what it reports.
+     */
+    String victimType();
+
+    /**
      * Deal one scorch tick of {@code amount}, credited to {@code applierId}.
      *
      * <p><b>The applier reaching this parameter IS requirement A.</b> Before this slice the burn was

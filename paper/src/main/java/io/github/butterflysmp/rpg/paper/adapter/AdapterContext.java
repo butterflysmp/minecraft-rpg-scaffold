@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
+import io.github.butterflysmp.rpg.core.combat.Wither;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.paper.accessory.Accessories;
 import io.github.butterflysmp.rpg.paper.build.Stones;
@@ -7,7 +8,9 @@ import io.github.butterflysmp.rpg.core.weapon.CraftResultIndex;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.content.ElementRegistry;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
+import io.github.butterflysmp.rpg.paper.content.StatusDefinition;
 import io.github.butterflysmp.rpg.paper.content.StatusRegistry;
+import org.bukkit.Bukkit;
 import io.github.butterflysmp.rpg.paper.content.VisualRegistry;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 
@@ -51,6 +54,8 @@ import java.util.logging.Logger;
  * read by the Settings screen and the slot picker, which are built from those same call sites
  * (PLAN-build-system.md section 2.5).
  *
+ * <p>{@code wither} is the second instance of {@code scorch}'s store ({@link DotStatus}, at
+ * {@code Wither.RATES}; WITHER-STATUS). A separate instance on purpose: Ignite reads {@code scorch} alone.
  * <p>{@code safeLandings} is a status store like {@code scorch}: a leap's fall-damage mark (section 7.6), armed by
  * the dash's handle and read by the FALL arm of {@code RpgListeners.onEnvironmentalDamage}.
  *
@@ -63,7 +68,7 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              ElementRegistry elements, EnchantRegistry enchants,
                              Logger log, Set<String> warned,
                              ImmobilizeStatus immobilize, SoakedStatus soaked,
-                             ImmobilizeStatus freeze, ScorchStatus scorch,
+                             ImmobilizeStatus freeze, ScorchStatus scorch, DotStatus wither,
                              CombatantStats stats, double anchorDrift,
                              CraftResultIndex craftResults, WeaponRegistry weapons,
                              Accessories accessories,
@@ -78,8 +83,41 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                           Accessories accessories,
                           Stones stones, BooleanSupplier mobTrace) {
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
-                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), new ScorchStatus(),
+                new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(),
+                new ScorchStatus(statusIdOf(statuses, StatusDefinition.Scorch.class, "scorch"),
+                        dotTrace(log, mobTrace)),
+                // THE SECOND INSTANCE OF THE ONE STORE, AND IT MUST BE A SEPARATE ONE (WS1, WS2): Ignite
+                // reads scorch() only, so handing this slot the scorch instance would make every withered
+                // death explode. DotStatusTest.aWitherApplicationNeverScorches holds it.
+                new DotStatus(Wither.RATES, "wither",
+                        statusIdOf(statuses, StatusDefinition.Wither.class, "wither"),
+                        dotTrace(log, mobTrace)),
                 stats, anchorDrift, craftResults, weapons, accessories, stones, new SafeLandings(), mobTrace);
+    }
+
+    /**
+     * The {@code DOTTICK} trace (the seat's S3 ruling): one log line per DoT tick, from both stores,
+     * while {@code /rpg mobtrace} is on. The switch is read, not copied ({@code mobTrace}, as PLAYERHIT).
+     * The tick time is the server's ({@code Bukkit.getCurrentTick}), read on the victim's thread.
+     */
+    static DotTrace dotTrace(Logger log, BooleanSupplier mobTrace) {
+        return tick -> {
+            if (mobTrace.getAsBoolean()) log.info(tick.line(Bukkit.getCurrentTick()));
+        };
+    }
+
+    /**
+     * The content id of the loaded status of {@code kind} -- {@code withering} for {@code kind: wither}
+     * -- so {@code DOTTICK} names the id the gate rows quote. {@code fallback} (the kind's name) when no
+     * registry is given (a unit test) or none of that kind loaded, in which case nothing can apply it
+     * anyway. More than one of a kind: their ids joined with {@code |}, rather than one picked silently.
+     */
+    static String statusIdOf(StatusRegistry statuses, Class<? extends StatusDefinition> kind,
+                             String fallback) {
+        if (statuses == null) return fallback;
+        java.util.List<String> ids = statuses.all().stream().filter(kind::isInstance)
+                .map(StatusDefinition::id).sorted().toList();
+        return ids.isEmpty() ? fallback : String.join("|", ids);
     }
 
     /**

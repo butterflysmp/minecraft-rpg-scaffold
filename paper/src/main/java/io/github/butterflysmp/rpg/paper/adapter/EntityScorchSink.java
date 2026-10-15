@@ -47,6 +47,11 @@ public final class EntityScorchSink implements ScorchSink {
         return ctx.stats().tracks(id) ? ctx.stats().max(id) : 0.0;
     }
 
+    /** The same key {@code MOBSEED} prints. */
+    @Override public String victimType() {
+        return entity.getType().key().value();
+    }
+
     @Override public void deal(double amount, UUID applierId, String element) {
         if (amount <= 0) return;
         // THE BURN CARRIES ITS ELEMENT AND REFUSES TO ACCRUE FROM IT. The element is here so the

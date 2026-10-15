@@ -38,4 +38,25 @@ public record ApplyArgs(String statusId, int durationTicks, int stacks) {
         int stk = stacks == null ? DEFAULT_STACKS : Math.min(MAX_STACKS, Math.max(1, stacks));
         return Resolution.ok(new ApplyArgs(statusId, dur, stk));
     }
+
+    /**
+     * The reply when the looked-at mob is IMMUNE to the status, or empty when it is not (the seat's
+     * ruling 5, 2026-10-01: the reply must say it was refused, and why).
+     *
+     * <p>The command used to reply "Applied ..." before the entity thread ran the status arm, where the
+     * immunity refusal lives, so a refused application read exactly like a landed one. The command now
+     * asks this FIRST, on the same region task that found the target, and replies with this instead of
+     * applying. The arm in {@code BukkitCombatant} keeps its own check for every other caller.
+     *
+     * @param typeKey the target's entity type key, as {@code MOBSEED} prints it ({@code wither_skeleton})
+     */
+    public static java.util.Optional<String> immunityRefusal(
+            io.github.butterflysmp.rpg.paper.content.StatusDefinition status, String typeKey) {
+        if (status instanceof io.github.butterflysmp.rpg.paper.content.StatusDefinition.Wither wither
+                && wither.isImmune(typeKey)) {
+            return java.util.Optional.of("Refused: " + typeKey + " is immune to " + status.id()
+                    + " (statuses/" + status.id() + ".yml); nothing was applied");
+        }
+        return java.util.Optional.empty();
+    }
 }
