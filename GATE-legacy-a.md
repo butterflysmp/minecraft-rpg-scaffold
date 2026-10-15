@@ -1,6 +1,25 @@
 # GATE — LEGACY-A: the Short Bow, ported from cfde822 (content only)
 
-**Status: NOT RUN.**
+**Status at `38cc9903` (the stack-top boot, 2026-10-14): R0a-c SUPERSEDED (GATE-selftest.md R0, PASS); SB2 VOID (the
+aim defect; carries to the next boot after #175's fix); SB1, SB3, SB4 NOT READ; 0 PASS, 0 FAIL. NOT a merge
+candidate this round: SB2 is its bar.**
+
+**The boot, 2026-10-14, on `38cc9903` (#175's head, the stack top), Paper 26.1.2 build 74:**
+- CC booted it with `./scripts/dev-server.sh --refresh-content` on the seat's word; Ben was the only player. His
+  LOGIN is L80 (`BaronVonYeetus ... logged in`, 22:47:02). Line numbers are that boot's `run/logs/latest.log`.
+- `/rpg selftest all` ran twice. **Run 1 (L86-L1087) was in CREATIVE and certifies NOTHING** (the seat's ruling;
+  L1087 `RESTORED ... gamemode=CREATIVE`). **Run 2 (L1091-L2098, SURVIVAL, after `/gamemode survival` at L1088) is
+  the run of record**: every AUTO reading below is from inside its row's own START ... DONE bracket in run 2.
+- **Ben's hand steps.** His words, relayed by the seat: *"all done, everything looks good"*, then *"I ran all the
+  self checks and they are fine."* **The seat's ruling, 2026-10-14:** the second is Ben's explicit confirmation of
+  each check on the hand-step list he was given -- **MC3 (slot), MC1, MC2, LS1, D1, G1, G3, WB1, ST2, ST6** -- so
+  those sight halves are PASS, itemised by that list. Ben was in CREATIVE from 23:15:46 to 23:16:09 (L2102-L2104)
+  during his hand steps; which check, if any, fell in that window is not recorded. His hand window ran with the mob
+  trace OFF (L2098 `trace=false`), so a hand cast has no log line either way.
+- **The aim defect** (GATE-selftest.md ST5): `tp @s ~ ~ ~ facing entity <e> eyes` turns a player from the FEET, so
+  every selftest row aimed that way missed: SB2, LB2, WB2, WB3, WS-C, WS1, WS2b, WS2c, WS3 are VOID this boot and
+  carry to the next boot after #175's AIM fix.
+- **Observation, unexplained:** MOBREMOVE lines run through run 2, many naming uuids that appear nowhere else.
 
 *Amended 2026-09-29, BEFORE ANY BOOT, at the seat's instruction: Ben removed Smolder* (*"Let's remove the smolder
 ability on the blaze kings staff"*). BK3 (Smolder's radius) was deleted, BK1's tooltip lost the Smolder block, and R0c
@@ -92,19 +111,19 @@ SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; 
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head, shortened. Not `-dirty`, not `unknown`, not #170's, #169's or #168's head | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, this PR's head, shortened. Not `-dirty`, not `unknown`, not #170's, #169's or #168's head | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0, read PASS at 38cc9903 (L42 `[Rpg] Build: 38cc9903`). Not read here. |
 
 ### R0b — the jar carries the bow and the three slices beneath, and not the staff
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: `content/weapons/short_bow.yml`, #170's `menu/NexusScreens`, #169's `menu/LevelMenu`, #168's `combat/TracedHit`. ABSENT: the control, **and `content/weapons/blaze_kings_staff.yml`** (removed; a stale `run/` content folder could still hold a copy, which is why the boot uses `--refresh-content`) | `GATE-level.md` R0b's scan, with these six entries | |
+| PRESENT: `content/weapons/short_bow.yml`, #170's `menu/NexusScreens`, #169's `menu/LevelMenu`, #168's `combat/TracedHit`. ABSENT: the control, **and `content/weapons/blaze_kings_staff.yml`** (removed; a stale `run/` content folder could still hold a copy, which is why the boot uses `--refresh-content`) | `GATE-level.md` R0b's scan, with these six entries | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0b, read PASS at 38cc9903. The intermediate facts are not read. |
 
 ### R0c — one weapon more, and nothing else moved
 
 | prediction | instrument | READING |
 |---|---|---|
-| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **14 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against #170's prediction: **weapons 13 → 14**, every other count unchanged (the bow adds no visual). **Re-predicted 2026-09-29 when the staff left** (it was 15). No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
+| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **14 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against #170's prediction: **weapons 13 → 14**, every other count unchanged (the bow adds no visual). **Re-predicted 2026-09-29 when the staff left** (it was 15). No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0c, read PASS at 38cc9903 (L44). The intermediate facts are not read. |
 
 ---
 
@@ -114,25 +133,25 @@ SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; 
 
 | prediction | READING |
 |---|---|
-| Hover the bow (score set to 100). The lines read, in order: **`Kinetic`**, **`Quiver: --/8`**, blank, **`Ranged Damage: 16`**, **`Attack Speed: 1.7`**, blank, `Short to draw.`, `Shorter to answer.` (italic), blank, **`Common Ranged Weapon`** — the golden rendering. `/rpg give short_bow` a second time: **it lands in a separate slot**, never stacked (the standing decision: no custom stack above 1) | |
+| Hover the bow (score set to 100). The lines read, in order: **`Kinetic`**, **`Quiver: --/8`**, blank, **`Ranged Damage: 16`**, **`Attack Speed: 1.7`**, blank, `Short to draw.`, `Shorter to answer.` (italic), blank, **`Common Ranged Weapon`** — the golden rendering. `/rpg give short_bow` a second time: **it lands in a separate slot**, never stacked (the standing decision: no custom stack above 1) | **38cc9903, 2026-10-14: NOT READ.** No second `/rpg give short_bow` and no tooltip observation in this boot (the selftest gave it once, L1698). **For the next boot:** GATE-withered-shortbow.md WB1's held bow read `"Gear Score: 100"` and `"Quiver: 8/8"` (L2066) where its golden-rendering prediction says neither; this row predicts the same golden shape for a held item. |
 
 ### SB2 — a shot lands for 16, kinetic (SURVIVAL) — witness: PLAYERHIT line
 
 | prediction | READING |
 |---|---|
-| Zombie offset `~8 ~ ~0`, aim at it (`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes`), right-click once: an **arrow** flies (a visible arrow body), and **`PLAYERHIT … source=short_bow/right_click … element=kinetic sent=16.000 crit=false triggerScore=100`** | |
+| Zombie offset `~8 ~ ~0`, aim at it (`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes`), right-click once: an **arrow** flies (a visible arrow body), and **`PLAYERHIT … source=short_bow/right_click … element=kinetic sent=16.000 crit=false triggerScore=100`** | **38cc9903, 2026-10-14: VOID** (the seat's ruling) -- the aim defect: `tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes` (L1715) turns from the FEET, so the eye ray passed 1.62 high over the zombie at 8 blocks. L1718 `DRIVE use ... item=short_bow yaw=-90.000 pitch=-12.271` (eye-to-eye is -0.859); 0 PLAYERHIT in L1697-L1728; L1727 `PROBE ... 0e513ad0 ... customHP=100.000/100.000 ... d=8.000`. Carries to the next boot after #175's AIM fix. See the AIM NOTE below. |
 
 ### SB3 — it pushes: the ruling's knockback, against the old bow (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| Summon a zombie at `~8 ~ ~0` **without** `NoAI` (`/summon zombie ~8 ~ ~0 {PersistenceRequired:1b,IsBaby:0b,Tags:["t"]}`), and shoot it as it walks in. **It is pushed back along the arrow's line** (the ruled knockback, `strength: 0.1`). **Whether a `NoAI` mob takes knockback at all is UNVERIFIED**, which is why this row does not use one. Record the push as seen; the distance is not predicted | |
+| Summon a zombie at `~8 ~ ~0` **without** `NoAI` (`/summon zombie ~8 ~ ~0 {PersistenceRequired:1b,IsBaby:0b,Tags:["t"]}`), and shoot it as it walks in. **It is pushed back along the arrow's line** (the ruled knockback, `strength: 0.1`). **Whether a `NoAI` mob takes knockback at all is UNVERIFIED**, which is why this row does not use one. Record the push as seen; the distance is not predicted | **38cc9903, 2026-10-14: NOT READ.** The walking (no-NoAI) zombie was never summoned. |
 
 ### SB4 — eight arrows, then the reload (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
-| Hold right-click with a fresh bow: the quiver readout counts **8 → 0**, one shot per **12 ticks** at most (0.6 s; a held right-click cannot fire faster than its cooldown on the 4-tick grid). At 0 it reloads for **60 ticks** (3 s), then reads **8** again | |
+| Hold right-click with a fresh bow: the quiver readout counts **8 → 0**, one shot per **12 ticks** at most (0.6 s; a held right-click cannot fire faster than its cooldown on the 4-tick grid). At 0 it reloads for **60 ticks** (3 s), then reads **8** again | **38cc9903, 2026-10-14: NOT READ.** No held-fire session with the short bow. |
 
 ---
 
