@@ -141,6 +141,18 @@ SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; 
 |---|---|
 | Zombie offset `~8 ~ ~0`, aim at it (`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes`), right-click once: an **arrow** flies (a visible arrow body), and **`PLAYERHIT … source=short_bow/right_click … element=kinetic sent=16.000 crit=false triggerScore=100`** | **38cc9903, 2026-10-14: VOID** (the seat's ruling) -- the aim defect: `tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes` (L1715) turns from the FEET, so the eye ray passed 1.62 high over the zombie at 8 blocks. L1718 `DRIVE use ... item=short_bow yaw=-90.000 pitch=-12.271` (eye-to-eye is -0.859); 0 PLAYERHIT in L1697-L1728; L1727 `PROBE ... 0e513ad0 ... customHP=100.000/100.000 ... d=8.000`. Carries to the next boot after #175's AIM fix. See the AIM NOTE below. |
 
+> **AIM NOTE, 2026-10-14 (instrument only; no prediction moves; written after the `38cc9903` boot, where this row
+> was VOID).** **`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes` does not aim the player's eyes at the zombie's
+> eyes.** `eyes` is the TARGET's anchor only; the player's own anchor is the command source's, and a player's source
+> is built with `Anchor.FEET` (javap, Paper 26.1.2 build 74: `CommandSourceStack`'s 9-argument constructor;
+> `LookAt$LookAtEntity.perform` passes `source.getAnchor()`; `Entity.lookAt` computes from it). So the turn is FEET to
+> eyes, and the look ray -- which starts at the eyes -- runs parallel to the intended one, 1.62 blocks higher: over
+> a zombie at 8 blocks. The boot logged `pitch=-12.271`; eye to eye is -0.859 (computed). **Wherever this file says
+> to aim with that command** (this row's staging, and the SELFTEST WITNESS AMENDMENT's "aimed with the gate's
+> `tp ... facing`"), **aim with** `/execute anchored eyes facing entity @e[tag=t,limit=1] eyes run tp @s ~ ~ ~ ~ ~`
+> (`execute anchored eyes` sets the anchor `CommandSourceStack.facing` reads -- verified from the jar, not yet in a
+> boot). The selftest's own scenario now aims with #175's `AIM` verb, eye to eye in Java.
+
 ### SB3 — it pushes: the ruling's knockback, against the old bow (SURVIVAL) — witness: Ben
 
 | prediction | READING |
