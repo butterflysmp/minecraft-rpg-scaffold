@@ -321,6 +321,19 @@ leaves it at exactly 0.
 |---|---|
 | **Staging:** the four zombie commands with offset **`~3.2 ~ ~3.2`** (d = 4.53, **beyond `reach` 3.5**). Then aim AT the zombie's feet: **`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] feet`**. That keeps Ben's position and turns him so his look passes through its feet; the jar's `TeleportCommand` carries `facing`, `entity`, `facingEntity` and `facingAnchor`. Do not move the mouse before the right-click. **Two lines, `sent=9.000` then `sent=5.000`**: the direct hit connects, because `combatantsNear` is a hitbox-intersecting cube (F2). **One line, `sent=5.000` only, would mean a sphere**, and the finding would be wrong. F2 stays a finding either way (seat ruling 6): no fix | **NOT READ.** Ben ran no rows: after his LOGIN at 22:26:18 the log holds one command, `/rpg mana refill` (22:27:35), and no staging, no MOBSEED and no PLAYERHIT line (excerpt in Status) <br><br>**38cc9903, 2026-10-14: NOT READ.** No `~3.2 ~ ~3.2` staging in the log. See the AIM NOTE under this row's table: its aim command does not do what its staging says. |
 
+> **AIM NOTE, 2026-10-14 (instrument only; no prediction moves; written after the `38cc9903` boot, where this row
+> was NOT READ).** **`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] feet` does not turn Ben "so his look passes
+> through its feet".** The player's own anchor is the command source's, and a player's source is built with
+> `Anchor.FEET` (javap, Paper 26.1.2 build 74: `CommandSourceStack`'s 9-argument constructor;
+> `LookAt$LookAtEntity.perform` passes `source.getAnchor()`; `Entity.lookAt` computes from it). So the turn is FEET to
+> FEET: **level, pitch 0**, and the look ray from the eyes runs 1.62 up -- through the zombie's 1.95-tall box, not its
+> feet. **The row's outcome does not depend on it:** `meleeTarget` takes `combatantsNear(eye, 3.5)` (the box F2 is
+> about) and then needs `dot(eye->feet, aim) >= cos 60 = 0.5`; the level aim gives **0.9415** (19.70 degrees off,
+> computed, not estimated), so the direct target still qualifies, and two lines vs one still separates box from
+> sphere. **To make the staging do what it says, aim with** `/execute anchored eyes facing entity
+> @e[tag=t,limit=1] feet run tp @s ~ ~ ~ ~ ~` (`execute anchored eyes` sets the anchor `CommandSourceStack.facing`
+> reads -- verified from the jar, not yet in a boot). Found by the selftest's aimed rows, VOID at `38cc9903`.
+
 ---
 
 ## THE REST
