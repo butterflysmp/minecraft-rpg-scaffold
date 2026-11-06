@@ -13,6 +13,7 @@ import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import java.util.logging.Logger;
 
 /**
@@ -52,6 +53,10 @@ import java.util.logging.Logger;
  *
  * <p>{@code safeLandings} is a status store like {@code scorch}: a leap's fall-damage mark (section 7.6), armed by
  * the dash's handle and read by the FALL arm of {@code RpgListeners.onEnvironmentalDamage}.
+ *
+ * <p>{@code mobTrace} is {@code /rpg mobtrace}'s switch, read by {@code PaperCombatWorld.traceHit} for the
+ * {@code PLAYERHIT} line (PLAN-melee-class.md, Q8). The switch itself stays on {@code MobNameplateManager},
+ * beside {@code MOBSEED} and {@code MOBHIT}; this is a read of it, not a second copy.
  */
 public record AdapterContext(Scheduler scheduler, Keys keys,
                              VisualRegistry visuals, StatusRegistry statuses,
@@ -62,7 +67,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              CombatantStats stats, double anchorDrift,
                              CraftResultIndex craftResults, WeaponRegistry weapons,
                              Accessories accessories,
-                             Stones stones, SafeLandings safeLandings) {
+                             Stones stones, SafeLandings safeLandings,
+                             BooleanSupplier mobTrace) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
@@ -70,10 +76,10 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                           CombatantStats stats, double anchorDrift,
                           CraftResultIndex craftResults, WeaponRegistry weapons,
                           Accessories accessories,
-                          Stones stones) {
+                          Stones stones, BooleanSupplier mobTrace) {
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
                 new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(), new ScorchStatus(),
-                stats, anchorDrift, craftResults, weapons, accessories, stones, new SafeLandings());
+                stats, anchorDrift, craftResults, weapons, accessories, stones, new SafeLandings(), mobTrace);
     }
 
     /**

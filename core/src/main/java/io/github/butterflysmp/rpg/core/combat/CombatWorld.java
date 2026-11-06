@@ -144,6 +144,20 @@ public interface CombatWorld {
      */
     int triggerScoreOf(UUID combatantId);
 
+    /**
+     * A dev trace: {@code EffectApplier} reports every direct ability or weapon hit it lands on a
+     * non-player target, and the adapter logs it as {@code PLAYERHIT} while {@code /rpg mobtrace} is on.
+     * See {@link TracedHit} for what is and is not reported, and why its amount is the pre-Defense one.
+     *
+     * <p>Called on the thread that entered the applier, which owns the TARGET (the same thread
+     * {@code applyDamage} is called from). It must not throw and must not change anything.
+     *
+     * <p><b>Abstract rather than {@code default}</b>, for {@link #triggerScoreOf}'s reason: a default
+     * no-op would let the test fixture compile without recording, and then no row could see whether
+     * the applier reports at all.
+     */
+    void traceHit(TracedHit hit);
+
     /** Fire-and-forget presentation hook. Particles, sounds, damage numbers. */
     void present(Vec3 at, String visualId);
 

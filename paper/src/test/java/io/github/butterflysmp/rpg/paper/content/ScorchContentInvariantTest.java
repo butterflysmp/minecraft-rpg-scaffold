@@ -93,8 +93,13 @@ class ScorchContentInvariantTest {
      * ruling 24) and {@code banked_embers.yml} (deleted, ruling 26). Plus two: {@code fragment_ember_cache}'s burst
      * (Rekindle's, moved, ruling 27) and {@code recall_updraft}'s ring burst (ruling 32). Counted per file with
      * this test's own pattern; the unchanged total is not evidence that nothing changed.
+     *
+     * <p><b>17 -> 21 on 2026-09-29, the Fire Melee cell (PLAN-melee-class.md slice M1): +4, all PLACEHOLDERS.</b>
+     * {@code active_placeholder_melee} carries two (the direct hit and its burst), {@code
+     * active_placeholder_melee_thrust} one and {@code ultimate_placeholder_melee} one, inside its burst. The two
+     * new aspects only modify numbers and add none. Recount with this test's own pattern.
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 17;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 21;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare

@@ -1,0 +1,11 @@
+# PLACEHOLDER -- Ben designs. An aspect (PLAN-build-system.md sections 2.4 and 2.4.1) for the Fire Melee
+# cell (PLAN-melee-class.md section 7, slice M1). NUMBERS ONLY, and none of them is a proposal.
+#
+# It targets the Ultimate placeholder. Resolved: cooldown (1200 - 240) x 1 = 960, a multiple of 4.
+# The id of this aspect is its filename: restless_quake.
+
+display_name: "<gold>Restless Quake</gold>"
+description: ["The Melee Ultimate comes back sooner."]
+target: ultimate_placeholder_melee
+modify:
+  - { field: cooldown_ticks, flat: -240 }

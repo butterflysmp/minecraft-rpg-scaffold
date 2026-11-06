@@ -187,7 +187,9 @@ public final class CastExecutor {
                 // The held weapon's gear score, frozen here with everything else, for the same reason:
                 // a staff's bolt is priced by the staff that FIRED it, not by what is in hand when it
                 // lands. It scales the authored literal in EffectApplier's Damage arm.
-                .withTriggerScore(world.triggerScoreOf(caster.id()));
+                .withTriggerScore(world.triggerScoreOf(caster.id()))
+                // Which ability this is, for the PLAYERHIT trace only (Caster.withSource).
+                .withSource(ability.id());
 
         // WHAT YOU HEAR WHEN YOU PRESS THE BUTTON. Fired here, before the switch, so it is
         // independent of cast shape and lands on the frame the cast was committed -- a projectile
@@ -297,7 +299,8 @@ public final class CastExecutor {
         // as unscored while every other route scaled it.
         detonate(ability, Caster.of(caster, chargeScale)
                 .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()))
-                .withTriggerScore(world.triggerScoreOf(caster.id())),
+                .withTriggerScore(world.triggerScoreOf(caster.id()))
+                .withSource(ability.id()),
                 target, target.state().position());
         if (DamagePayload.isBasicAttack(ability.onHit())) onBasicAttackUse.run();
     }
@@ -718,7 +721,8 @@ public final class CastExecutor {
         // it is UNRULED; do not "fix" it here.
         Caster source = Caster.of(self.state())
                 .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), self.state().attackDamage()))
-                .withTriggerScore(world.triggerScoreOf(casterId));
+                .withTriggerScore(world.triggerScoreOf(casterId))
+                .withSource(ability.id());
 
         fireInner(ability, source, live, spec.of());
 
