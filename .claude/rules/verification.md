@@ -1750,7 +1750,7 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > re-deriving it means opening each `GATE-*.md` and reading its header for a declared mode:
   >
   > ```bash
-  > grep -lE 'gamemode|survival|creative|adventure|spectator' GATE-*.md   # CANDIDATES ONLY
+  > grep -lE 'gamemode|survival|creative|adventure|spectator' docs/gates/GATE-*.md   # CANDIDATES ONLY
   > ```
   >
   > **That command over-reports and must not be pasted as the answer.** Owed work, named here

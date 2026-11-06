@@ -1,7 +1,7 @@
 ---
 paths:
   - "paper/src/main/resources/content/**"
-  - "PLAN-*.md"
+  - "docs/plans/PLAN-*.md"
   - "paper/src/main/java/**/content/**"
   - "core/src/main/java/**/enchant/**"
 ---
