@@ -324,7 +324,7 @@ public final class CraftingMenu extends Menu {
             // back to them rather than being stranded behind a menu they navigated away from.
             viewer.closeInventory();
             adapters.scheduler().onEntityLater(viewer,
-                    () -> new RecipeBrowserMenu(viewer, adapters, catalogue).open(), 1);
+                    () -> new RecipeBrowserMenu(viewer, adapters, catalogue, hub).open(), 1);
             return;
         }
 
@@ -930,7 +930,9 @@ public final class CraftingMenu extends Menu {
                         MenuIcons.line("Recipe Book", NamedTextColor.GREEN),
                         List.of(MenuIcons.line("Everything you can craft right now",
                                         NamedTextColor.GRAY),
-                                MenuIcons.line("Click to browse", NamedTextColor.DARK_GRAY))));
+                                MenuIcons.line("Click to browse", NamedTextColor.DARK_GRAY),
+                                // Last, as on the hub's buttons (Ben, 2026-09-29).
+                                NexusScreens.alsoVia(NexusScreens.Screen.RECIPES))));
 
         // Decoration, painted once and never repainted. Nothing in the chrome changes with the
         // recipe -- the status bar is the menu's only state indicator, and CraftStatus's javadoc
@@ -938,7 +940,7 @@ public final class CraftingMenu extends Menu {
         // down by the loop above.)
         getInventory().setItem(CraftingMenuLayout.INDICATOR_SLOT,
                 MenuIcons.icon(Material.CRAFTING_TABLE,
-                        MenuIcons.line("Crafting", NamedTextColor.WHITE),
+                        MenuIcons.name("Crafting"),
                         List.of(MenuIcons.line("Lay a recipe in the grid,", NamedTextColor.GRAY),
                                 MenuIcons.line("or click a suggestion.", NamedTextColor.GRAY))));
     }

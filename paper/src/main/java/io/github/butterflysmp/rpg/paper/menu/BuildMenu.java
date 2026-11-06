@@ -182,7 +182,7 @@ public final class BuildMenu extends Menu {
                                java.util.function.Function<PlayerProfile, String> read,
                                java.util.function.Function<String, Component> label) {
         if (profile.isEmpty()) {
-            return MenuIcons.icon(material, MenuIcons.line(axis, NamedTextColor.GRAY),
+            return MenuIcons.icon(material, MenuIcons.name(axis),
                     List.of(MenuIcons.line(profileUnavailableText(), NamedTextColor.RED)));
         }
         String value = read.apply(profile.get());
@@ -271,7 +271,7 @@ public final class BuildMenu extends Menu {
                 id == null ? Optional.empty() : adapters.stones().fragments().find(id);
         if (fragment.isEmpty()) {
             return MenuIcons.icon(Material.LIGHT_GRAY_STAINED_GLASS_PANE,
-                    MenuIcons.line(label + ": (empty)", NamedTextColor.GRAY), List.of(footer));
+                    MenuIcons.name(label + ": (empty)"), List.of(footer));
         }
         List<Component> lore = new ArrayList<>();
         // Section 7.3: a BEHAVIOUR fragment whose target is not equipped stays slotted and reads INACTIVE -- the
@@ -284,7 +284,7 @@ public final class BuildMenu extends Menu {
         lore.add(MenuIcons.blank());
         lore.add(footer);
         return MenuIcons.icon(fragmentMaterial(fragment.get()),
-                MenuIcons.line(label + ": ", NamedTextColor.GRAY).append(
+                MenuIcons.name(label + ": ").append(
                         MiniMessage.miniMessage().deserialize(fragment.get().displayName())
                                 .decoration(TextDecoration.ITALIC, false)), lore);
     }
@@ -308,7 +308,9 @@ public final class BuildMenu extends Menu {
     /** The fragment's authored icon; the loader refused any icon that names no item, so this cannot miss. */
     static Material fragmentMaterial(io.github.butterflysmp.rpg.core.build.FragmentDefinition fragment) {
         Material material = Material.matchMaterial(fragment.icon().toUpperCase(java.util.Locale.ROOT));
-        return material == null ? Material.BARRIER : material;
+        // A bad icon name falls back to the fragment picker's own icon, not a BARRIER: a fragment that loaded
+        // is usable, and BARRIER now means "can't use / locked" (the seat's N2; PLAN-nexus-polish.md B5).
+        return material == null ? Material.AMETHYST_SHARD : material;
     }
 
     /** "Damage: 9  (12)": the resolved value, and the base in gray where an aspect changed it. */
@@ -340,7 +342,7 @@ public final class BuildMenu extends Menu {
                 id == null ? Optional.empty() : adapters.stones().aspects().find(id);
         if (aspect.isEmpty()) {
             return MenuIcons.icon(Material.LIGHT_GRAY_STAINED_GLASS_PANE,
-                    MenuIcons.line(label + ": (empty)", NamedTextColor.GRAY), List.of(footer));
+                    MenuIcons.name(label + ": (empty)"), List.of(footer));
         }
         boolean active = equippedIds.contains(aspect.get().target());
         List<Component> lore = new ArrayList<>();
@@ -352,7 +354,7 @@ public final class BuildMenu extends Menu {
         lore.add(MenuIcons.blank());
         lore.add(footer);
         return MenuIcons.icon(Material.FIRE_CHARGE,
-                MenuIcons.line(label + ": ", NamedTextColor.GRAY).append(
+                MenuIcons.name(label + ": ").append(
                         MiniMessage.miniMessage().deserialize(aspect.get().displayName())
                                 .decoration(TextDecoration.ITALIC, false)), lore);
     }

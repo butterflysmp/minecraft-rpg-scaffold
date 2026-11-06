@@ -40,3 +40,36 @@ permissions:
     description: Open the Nexus hub with /menu. Everyone -- it is the door to the game,
       and it is the ONLY route once a player turns the Nexus star off.
     default: true
+  # One per Nexus screen (Ben, 2026-09-29: "Names are good"). Everyone; the level gates
+  # still apply, in NexusScreens. The names are NexusScreens.Screen's, and
+  # ScreenPermissionsTest keeps the two lists in step.
+  rpg.command.level:
+    description: Open your level screen with /level.
+    default: true
+  rpg.command.build:
+    description: Open the Build screen with /build.
+    default: true
+  rpg.command.gear:
+    description: Open the Equipment screen with /gear.
+    default: true
+  rpg.command.vault:
+    description: Open your vault with /vault (level 20, as from the hub).
+    default: true
+  rpg.command.anvil:
+    description: Open the Nexus anvil with /anvil (level 7, as from the hub).
+    default: true
+  rpg.command.craft:
+    description: Open the Nexus crafting grid with /craft (level 3, as from the hub).
+    default: true
+  rpg.command.recipes:
+    description: Browse what you can craft with /recipes (crafting's level 3).
+    default: true
+  rpg.command.enchanting:
+    description: Open the Nexus enchanting table with /enchanting (level 10, as from the hub).
+    default: true
+  rpg.command.grindstone:
+    description: Open the Nexus grindstone with /grindstone (level 13, as from the hub).
+    default: true
+  rpg.command.settings:
+    description: Open the Nexus settings with /settings.
+    default: true
