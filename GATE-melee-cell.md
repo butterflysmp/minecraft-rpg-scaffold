@@ -1,7 +1,7 @@
 # GATE — Melee M1: the Fire Melee cell, all placeholders, and PLAYERHIT
 
 **Status at `38cc9903` (the stack-top boot, 2026-10-14): R0a-c SUPERSEDED (GATE-selftest.md R0, PASS); MC1, MC2,
-MC3 PASS; 13 NOT READ (MC4-MC10, MC12-MC17); 0 FAIL. NOT approved to merge: the seat approves, from origin.**
+MC3 PASS; 13 NOT READ (MC4-MC10, MC12-MC17); 0 FAIL. Merge approved by the seat, 2026-10-15; owner approval 2026-11-06.**
 
 **The boot, 2026-10-14, on `38cc9903` (#175's head, the stack top), Paper 26.1.2 build 74:**
 - CC booted it with `./scripts/dev-server.sh --refresh-content` on the seat's word; Ben was the only player. His
