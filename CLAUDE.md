@@ -22,6 +22,8 @@ Always run `./mvnw -pl core test` after changing anything in `core/`. Prefer add
 a unit test to `core/` over testing in-game. In-game testing is a 60-second loop;
 unit tests are a 2-second loop.
 
+New plans and gates go in `docs/plans/` and `docs/gates/`.
+
 ## Environment (verify before assuming)
 
 | Thing | Value |
