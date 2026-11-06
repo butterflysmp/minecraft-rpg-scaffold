@@ -2,8 +2,8 @@
 
 **Status at `38cc9903` (the stack-top boot, 2026-10-14): R0a-c SUPERSEDED (GATE-selftest.md R0, PASS); R0d PASS;
 D1, G1, G3, CM1, CM2 PASS (G1's gray-when-OFF clause never presented); 9 NOT READ (D2-D5, G2, CM3-CM6: their
-staging -- levels 7, 10, 20, `/anvil`, `/kill`, the console -- appears nowhere in the boot); 0 FAIL. NOT approved
-to merge: the seat approves, from origin.**
+staging -- levels 7, 10, 20, `/anvil`, `/kill`, the console -- appears nowhere in the boot); 0 FAIL. Merge approved by the seat,
+2026-10-15; owner approval 2026-11-06.** The merge bar is R0d, D1, G1, G3, CM1, CM2, all PASS. D2-D5, G2, CM3-CM6 and G1's "gray when OFF" clause are NOT merge-bar rows: they are CARRIED (seat, 2026-10-15), recorded in `PLAN-nexus-polish.md` section 6, and do not block.
 
 **The boot, 2026-10-14, on `38cc9903` (#175's head, the stack top), Paper 26.1.2 build 74:**
 - CC booted it with `./scripts/dev-server.sh --refresh-content` on the seat's word; Ben was the only player. His
