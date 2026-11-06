@@ -61,7 +61,7 @@ class SelfTestScenariosTest {
     @Test
     void everyScenarioNamesARowOfItsGate() throws IOException {
         for (var gate : shipped().gates().entrySet()) {
-            Path md = Path.of("..", "GATE-" + gate.getKey() + ".md");
+            Path md = Path.of("..", "docs", "gates", "GATE-" + gate.getKey() + ".md");
             Set<String> headings = ScenarioLoader.headings(Files.readString(md, StandardCharsets.UTF_8));
             assertTrue(headings.size() >= 7, md + " read as " + headings + " -- the heading pattern found too few rows");
             assertEquals(List.of(), ScenarioLoader.unpaired(gate.getValue(), headings), md.toString());
