@@ -171,6 +171,7 @@ class NexusStatsLoreTest {
     // ------------------------------------------------------------ the progression block (slice 9)
 
     private static final long LEVEL_13 = 19_980L;
+    private static final long LEVEL_50 = 712_580L;
     private static final long LEVEL_99 = 11_642_250L;
 
     @Test
@@ -214,12 +215,18 @@ class NexusStatsLoreTest {
     void atTheCAPThereIsNoToNextLine_andTheLevelCarriesTheMarkerInstead() {
         // *** THE PREDECESSOR PRINTED Long.MAX_VALUE HERE. *** The line is ABSENT rather than
         // carrying a placeholder: its column's subject is an amount remaining, and there is none.
-        List<Component> lore = NexusStatsLore.lore(Optional.of(bare()), OptionalLong.of(LEVEL_99), OptionalInt.empty());
+        //
+        // THE CAP IS THE ACTIVE CAP, 50 (PLAN-level-bonuses.md, seat ruling L2). This row pinned 99
+        // until the level slice; the curve still has 99 rungs, and a player past 50 on them reads 50.
+        List<Component> lore = NexusStatsLore.lore(Optional.of(bare()), OptionalLong.of(LEVEL_50), OptionalInt.empty());
         List<Component> statsOnly = NexusStatsLore.lore(Optional.of(bare()), OptionalLong.empty(), OptionalInt.empty());
 
         assertEquals(2, lore.size() - statsOnly.size(), "TWO lines at the cap, not three");
-        assertEquals("Level        99 (MAX)", plain(lore.get(0)));
-        assertEquals("Lifetime XP  11,642,250", plain(lore.get(1)));
+        assertEquals("Level        50 (MAX)", plain(lore.get(0)));
+        assertEquals("Lifetime XP  712,580", plain(lore.get(1)));
+        List<Component> pastTheCap = NexusStatsLore.lore(Optional.of(bare()), OptionalLong.of(LEVEL_99), OptionalInt.empty());
+        assertEquals("Level        50 (MAX)", plain(pastTheCap.get(0)), "the curve's 99 reads as the cap");
+        assertEquals(2, pastTheCap.size() - statsOnly.size(), "and has no 'to next' line either");
         for (Component line : lore) {
             assertFalse(plain(line).contains("To Next"),
                     "no 'to next' line at the cap: " + plain(line));
@@ -229,9 +236,9 @@ class NexusStatsLoreTest {
 
         // ONE SHORT OF THE CAP STILL HAS ALL THREE -- the boundary, without which "two lines" is
         // equally consistent with the line having been dropped everywhere.
-        assertEquals(3, NexusStatsLore.lore(Optional.of(bare()), OptionalLong.of(LEVEL_99 - 1), OptionalInt.empty()).size()
-                - statsOnly.size(), "level 98 still has a next level");
-        // Mutation MUTCAP-ALWAYS: drop the isMaxed branch -> throws, reddening here.
+        assertEquals(3, NexusStatsLore.lore(Optional.of(bare()), OptionalLong.of(LEVEL_50 - 1), OptionalInt.empty()).size()
+                - statsOnly.size(), "level 49 still has a next level");
+        // Mutation MUTCAP-ALWAYS: drop the isAtActiveCap branch -> throws, reddening here.
     }
 
     @Test

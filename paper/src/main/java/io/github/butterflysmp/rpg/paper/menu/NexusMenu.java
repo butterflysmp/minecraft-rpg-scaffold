@@ -53,8 +53,8 @@ import java.util.Set;
  * inverted.</b>
  *
  * <p><b>The stats head is the opposite case and uses {@link MenuIcons#icon}.</b> It carries REAL
- * lore -- a working readout of live figures, from {@code StatsSheetProjection} -- and only its
- * CLICK is unbuilt. Rendering it with {@code placeholder} would print <i>"Not implemented yet."</i>
+ * lore -- a working readout of live figures, from {@code StatsSheetProjection} -- and its
+ * CLICK was unbuilt until the level slice (it now opens {@link LevelMenu}). Rendering it with {@code placeholder} would print <i>"Not implemented yet."</i>
  * above correct, live stat numbers.
  *
  * <p><b>That is not hypothetical: it is the defect {@code MenuIcons.placeholder}'s own javadoc
@@ -69,7 +69,7 @@ import java.util.Set;
  *   real lore, unbuilt click only     icon()          its own figures
  *
  *   settings torch   was the first    NOW icon()      the screen exists (4b)
- *   stats head       always icon()        icon()      live figures, click still unbuilt (3)
+ *   stats head       always icon()        icon()      live figures; click built in the level slice
  * </pre>
  *
  * <p>Reaching for {@code placeholder} is a claim that something is NOT BUILT. A surface that
@@ -193,7 +193,7 @@ public final class NexusMenu extends Menu {
      */
     private int viewerLevel() {
         return profiles.profile(viewer.getUniqueId())
-                .map(profile -> PlayerLevel.levelFor(profile.lifetimeXp()))
+                .map(profile -> PlayerLevel.effectiveLevel(profile.lifetimeXp()))
                 .orElse(1);
     }
 
@@ -312,9 +312,17 @@ public final class NexusMenu extends Menu {
                                     recipes, shields, armor, tools, vaults)).open());
             return;
         }
-        // Every filler pane is inert, and the stats head's click is still unbuilt -- slice 3's
-        // decision, unchanged. Falling through rather than branching on STATS_SLOT deliberately: a
-        // no-op branch would read as a wired button whose body someone forgot to write.
+        if (click.slot() == NexusMenuLayout.STATS_SLOT) {
+            // THE HEAD OPENS THE LEVEL SCREEN (Ben, 2026-09-29; PLAN-level-bonuses.md). It was unbuilt
+            // from slice 3 until the level slice. Hop a tick, no explicit close: neither screen holds
+            // input slots. The same breadcrumb every other sub-screen takes.
+            adapters.scheduler().onEntity(viewer, () ->
+                    new LevelMenu(viewer, adapters, profiles,
+                            () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
+                                    recipes, shields, armor, tools, vaults)).open());
+            return;
+        }
+        // Every filler pane is inert.
     }
 
     @Override
@@ -417,8 +425,8 @@ public final class NexusMenu extends Menu {
                 List.of(MenuIcons.line("Your class, element and abilities.", NamedTextColor.DARK_GRAY))));
 
         // icon(), NOT placeholder() -- THE OTHER HALF OF THE PAIR THE TORCH ABOVE IS ONE OF, and
-        // the class javadoc carries the argument. The lore below is REAL and WORKING; only the
-        // click is unbuilt. placeholder() would print "Not implemented yet." above live stat
+        // the class javadoc carries the argument. The lore below is REAL and WORKING, and so, since the
+        // level slice, is the click. placeholder() would print "Not implemented yet." above live stat
         // figures, which is the Q33 defect with the readout and the notice inverted.
         // THE PROGRESSION BLOCK RIDES ON THE SAME HEAD, above the eight combat stats. Its source is
         // the PROFILE, not StatsSheetValues -- a different store and a different formatter -- which
@@ -454,6 +462,16 @@ public final class NexusMenu extends Menu {
         // It returns a boolean and can fail; the failure renders as Steve, which is what
         // GATE-nexus.md's own-skin row is reading.
         head.editMeta(SkullMeta.class, meta -> meta.setOwningPlayer(viewer));
+
+        // The head is a button now (the level screen), so it says so -- LAST, below every stat line,
+        // so nothing a reading of the sheet above it depends on moves. Wording is Ben's to change.
+        head.editMeta(meta -> {
+            List<net.kyori.adventure.text.Component> lore = new java.util.ArrayList<>(
+                    meta.lore() == null ? List.of() : meta.lore());
+            lore.add(MenuIcons.blank());
+            lore.add(MenuIcons.line("Click for your level, its bonuses and unlocks.", NamedTextColor.DARK_GRAY));
+            meta.lore(lore);
+        });
 
         getInventory().setItem(NexusMenuLayout.STATS_SLOT, head);
     }
