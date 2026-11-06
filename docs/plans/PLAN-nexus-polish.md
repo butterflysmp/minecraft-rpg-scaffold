@@ -933,6 +933,17 @@ first, and build the level screen on them.
   `P/` at `2d60e9a3`** (the only near-hit is a comment in `RecipeBrowserMenu`), so it is gone or was never merged.
   Recorded so nobody re-derives it.
 
+**Carried gate rows, from #170 (seat, 2026-10-15; recorded 2026-11-06 at the repo tidy).** `GATE-nexus-polish.md` merged as
+`09ab2dce` with these rows NOT READ. Their staging (levels 7, 10 and 20, `/anvil`, `/kill`, the console) appears nowhere in
+the 38cc9903 boot. They are NOT merge-bar rows: the bar was R0d, D1, G1, G3, CM1 and CM2, all PASS. They do not block, and
+they are owed a reading on a later boot.
+
+- **D2, D3, D4, D5.**
+- **G2.**
+- **CM3, CM4, CM5, CM6.**
+- **G1's "gray when OFF" clause** -- both Settings toggles were ON (L1494, L1496), so the OFF colour was never on
+  screen. G1 itself reads PASS on its other clauses.
+
 ---
 
 ## 7. WHAT PINS THE TEXT AND THE SLOTS
