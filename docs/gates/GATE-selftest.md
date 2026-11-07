@@ -22,6 +22,8 @@ GATE-wither-status.md). After the boot: the AIM fix (the note under ST5). NOT a 
   carry to the next boot after #175's AIM fix.
 - **Observation, unexplained:** MOBREMOVE lines run through run 2, many naming uuids that appear nowhere else.
 
+*Amended 2026-11-06, BEFORE THE NEXT BOOT, at the seat's instruction (no recorded reading moves): the instrument now REFUSES outside SURVIVAL (new row ST7, `SelfTestGuardTest`), its restore removes the XP orbs a staged kill drops (ST2 re-predicted beneath its table, `SelfTestRestoreTargetsTest`), and a new verb `probe_positions` gives GATE-legacy-b.md LB5 its impact witness.* The cumulative R0 stays here, on the stack top; every R0 beneath stays SUPERSEDED. Rows go from 10 to 11.
+
 Every prediction below was written **before** any boot of this branch, and **this file is COMMITTED before the boot**.
 Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been read. **NO
 BOOT until the seat says so.** **This is the stack top**: `#168 → #169 → #170 → #171 → #172 → #173 → #174 → this`.
@@ -31,10 +33,10 @@ It is booted ONCE, at this branch's head, and every gate beneath it is read in t
 that line appears after the LOGIN with every predicted field as written.
 
 ```
-ROWS     10   R0a R0b R0c R0d
-              ST1 ST2 ST3 ST4 ST5 ST6
+ROWS     11   R0a R0b R0c R0d
+              ST1 ST2 ST3 ST4 ST5 ST6 ST7
          ──
-         10   = 4 R0 + 6 ST     git grep -c '^### R0\|^### ST' <ref> -- GATE-selftest.md
+         11   = 4 R0 + 7 ST     git grep -c '^### R0\|^### ST' <ref> -- docs/gates/GATE-selftest.md
 ```
 
 **Plan:** `PLAN-selftest.md` on `docs/batch-surveys`: the Phase 1 survey, the seat's rulings a-d (2026-10-05), and §8's
@@ -43,7 +45,7 @@ six reads, done in Phase 2 and recorded there. **The rule the readings answer to
 
 ## GAME MODE
 
-**SURVIVAL on every row.** The instrument changes nothing about the mode. It snapshots it and restores it.
+**SURVIVAL on every row.** The instrument changes nothing about the mode. It snapshots it and restores it. **And since 2026-11-06 it refuses to start outside SURVIVAL** (ST7), so a run in another mode cannot happen, rather than happening and certifying nothing.
 
 ## THE ORDER IN THE ONE BOOT
 
@@ -139,6 +141,8 @@ LOGIN.
 |---|---|
 | Record `Lifetime XP`, the hotbar, the position. `/rpg selftest level`; when the log shows `SELFTEST level WD1 START`, type **`/rpg selftest stop`**. The reply: **`Selftest stopped; everything it changed is restored (the log says what).`** The log: `SELFTEST RUN STOPPED by /rpg selftest stop`, then `SELFTEST RUN RESTORED xp=<the recorded number> … gamemode=SURVIVAL …`. **Ben:** the stats head's `Lifetime XP` reads the recorded number; **no emberblade** in the inventory (WD1 gave one); he stands where he stood; no tagged zombie remains near him. **No further `SELFTEST level` line** after the stop | **PASS.** Log half: `/rpg selftest level` (L2108); L2167 `SELFTEST level WD1 START`; `/rpg selftest stop` (L2193); L2194 `SELFTEST RUN STOPPED by /rpg selftest stop`; L2195 `RUN RESTORED xp=0 ... gamemode=SURVIVAL ... mobsRemoved=2`; no `SELFTEST level` line after the stop. The run had moved the XP: its own CP2 replied `712580 lifetime` (L2122). Ben's half (the reply text, Lifetime XP, no emberblade, his position, no tagged zombie): **PASS**, itemised (see Status). **Beside it, from the log:** the next run's snapshot (L2197, 23:18:07) holds `xp=4` (L2407's restore) -- Ben picked up 4 XP of orbs between 23:17:45 and 23:18:07 (`PlayerExpChangeEvent`, the only path to Lifetime XP, needs an orb). A head read after that pickup shows 4, not 0; the restore does not clear the orbs its staging's kills drop. An instrument gap, carried to the fix. |
 
+**ST2 RE-PREDICTED, 2026-11-06, before the next boot (the orbs).** The same steps. The `RESTORED` line now ends **`… mobsRemoved=<n> orbsRemoved=<m>`**, and `m` counts every experience orb within 48 blocks at the restore (the staged kills' drops). After the restore, **no experience orb is near Ben**, and the NEXT run's snapshot holds the **same Lifetime XP the restore wrote** (the 38cc9903 gap was `xp=0` restored, then `xp=4` at the next snapshot). `m` is not predicted as a number: it depends on what the kills dropped and what Ben had already picked up. The restore takes every orb in range, untagged, so an orb Ben dropped himself goes too. On the dev world, that is a stated trade.
+
 ### ST3 — the reply reader exists only during a run (SURVIVAL) — witness: the log
 
 | prediction | READING |
@@ -180,6 +184,12 @@ LOGIN.
 | During a run, Ben types `/rpg selftest level` again: the reply **`Refusing: a selftest is already running. /rpg selftest stop ends it.`**, logged as `SELFTEST … REPLY "Refusing: a selftest is already running. …" [gray]` under whichever row is running, and **no second `SELFTEST RUN START`** | **PASS.** During the run started at L2196-L2197, Ben's second `/rpg selftest level` (L2274) was refused: L2275 `SELFTEST level WD1 REPLY "Refusing: a selftest is already running. /rpg selftest stop ends it." [gray]`; no `RUN START` between L2197 and that run's restore (L2407): 4 in the whole log, one per run. Ben's half: **PASS**, itemised (see Status). |
 
 ---
+
+### ST7 — the instrument refuses outside SURVIVAL (CREATIVE, then SURVIVAL) — witness: Ben + the log
+
+| prediction | READING |
+|---|---|
+| Added 2026-11-06, before the next boot. **In CREATIVE**, type `/rpg selftest level`. The reply: **`Refusing: you are in CREATIVE; a selftest runs only in SURVIVAL (/gamemode survival).`** The log has **no `SELFTEST RUN START`** for it, because the guard runs before a run exists, so there is no bracket and no `REPLY` line. Then `/gamemode survival` and `/rpg selftest level`: it starts (`SELFTEST RUN START level …`). **The refusal text is Ben's half (chat); the absent and present RUN START are the log's half.** `SelfTestGuardTest` pins every mode but SURVIVAL, and the order (marker, world, players, mode) | _(not run)_ |
 
 ## WHAT THIS GATE CANNOT SEE
 
