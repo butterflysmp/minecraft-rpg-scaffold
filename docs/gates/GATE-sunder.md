@@ -6,7 +6,7 @@
 - **SU8's amendment and the SU9/SU11/SU12 diagnoses are READ and ACCEPTED, pending the next boot.** That is the `death_rules` scenario with the restore, and the three staging-artefact diagnoses. They were committed as `c53c78f7`, which is `ba6b4a10` after the rebase onto `55425aad` (the patch id is unchanged). Acceptance is of the amendment and the diagnoses, NOT a reading: the four rows stay unread until the next boot.
 - **SU4 is ruled by Ben: the slam ignores walls, revisitable.** See SU4.
 
-**Status: NOT RUN.** Written 2026-11-06, before any boot of this branch. **NO BOOT until the seat says so.** This is the
+**Status: NOT RUN.** Written 2026-11-06, before any boot of this branch. *Amended 2026-11-06, before any boot: R0 moved on to `GATE-deft-hands.md` (see the R0 section).* **NO BOOT until the seat says so.** This is the
 new STACK TOP (`#168 → … → #175 → this`), so the stack's one R0 moves here from `GATE-selftest.md`, which records its R0
 SUPERSEDED by this file.
 
@@ -90,6 +90,8 @@ the deleted `active_placeholder_melee_thrust` reads that slot as **empty** until
 ---
 
 ## R0 — THE ONE R0 FOR THE WHOLE STACK (moved here from GATE-selftest.md). READ IT FIRST. IF ANY R0 FAILS, STOP
+
+**SUPERSEDED, 2026-11-06, before any boot: the stack's one R0 is now `GATE-deft-hands.md`'s** (Deft Hands is stacked on this branch and is the new top). The rows below were never read; at the boot they are recorded SUPERSEDED, never PASS or FAIL.
 
 Every gate beneath carries its R0 SUPERSEDED, never PASS or FAIL. `GATE-selftest.md`'s note names this file. The one
 exception is unchanged: `GATE-nexus-polish.md` R0d was #170's merge bar and is merged.
