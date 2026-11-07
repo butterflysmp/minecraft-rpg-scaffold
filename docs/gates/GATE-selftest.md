@@ -24,6 +24,8 @@ GATE-wither-status.md). After the boot: the AIM fix (the note under ST5). NOT a 
 
 *Amended 2026-11-06, BEFORE THE NEXT BOOT, at the seat's instruction (no recorded reading moves): the instrument now REFUSES outside SURVIVAL (new row ST7, `SelfTestGuardTest`), its restore removes the XP orbs a staged kill drops (ST2 re-predicted beneath its table, `SelfTestRestoreTargetsTest`), and a new verb `probe_positions` gives GATE-legacy-b.md LB5 its impact witness.* The cumulative R0 stays here, on the stack top; every R0 beneath stays SUPERSEDED. Rows go from 10 to 11.
 
+*Amended 2026-11-06, BEFORE THE NEXT BOOT, when Sunder (Melee M2) was stacked on this branch (instrument only; no recorded reading moves): THE STACK'S ONE R0 MOVED TO `GATE-sunder.md`, the new stack top.* This file's R0a-d (read PASS at 38cc9903) are SUPERSEDED at the next boot, as every R0 beneath was. And ST1's `rows=24` across seven gates becomes **`rows=34` across eight** (`GATE-sunder.md` adds 10 scenarios); re-predicted beneath ST1's table.
+
 Every prediction below was written **before** any boot of this branch, and **this file is COMMITTED before the boot**.
 Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been read. **NO
 BOOT until the seat says so.** **This is the stack top**: `#168 → #169 → #170 → #171 → #172 → #173 → #174 → this`.
@@ -70,6 +72,8 @@ six reads, done in Phase 2 and recorded there. **The rule the readings answer to
 ---
 
 ## R0 — THE ONE R0 FOR THE WHOLE STACK (the seat's ruling c). READ IT FIRST. IF ANY R0 FAILS, STOP
+
+**SUPERSEDED, 2026-11-06, before the next boot: the stack's one R0 is now `GATE-sunder.md`'s** (the new stack top). The rows below stay as read at 38cc9903; at the next boot they are recorded SUPERSEDED, never PASS or FAIL.
 
 Every gate beneath carries a dated note recording its own R0 rows **SUPERSEDED** at this boot, never PASS or FAIL.
 `GATE-withered-shortbow.md`'s note names this file. The one exception is unchanged: `GATE-nexus-polish.md` **R0d**, a
@@ -134,6 +138,8 @@ LOGIN.
 | prediction | READING |
 |---|---|
 | In `/rpg selftest all`'s log: `SELFTEST RUN START all rows=24 selftest=<R0a's sha> player=<Ben's uuid>`; then, for each gate in index order, `SELFTEST <gate> setup START …` and `DONE`, then each CORE row's `START scenario=selftest/GATE-<gate>.yml#<row> …` and exactly one `DONE ticks=<n>` or `SKIPPED <why>`; then `SELFTEST RUN FINISHED` and `SELFTEST RUN RESTORED xp=<the recorded Lifetime XP> …`. **No `SELFTEST` line contains `PASS` or `FAIL`** (`SelfTestNeverJudgesTest` pins the compiled constants; this row reads the log). **Every SKIPPED is a reading**: record each one and its reason | **Run 1 certifies nothing** (L86-L1087, CREATIVE: L1087 `gamemode=CREATIVE`; the seat's ruling). **Run 2 (L1091-L2098, SURVIVAL), log half PASS:** L1091 `SELFTEST RUN START all rows=24 selftest=38cc9903 player=b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5`; the seven gates in index order, each setup START ... DONE then its rows; 31 `START scenario=` and 31 `DONE ticks=` (24 rows + 7 setups), **0 SKIPPED**; the DONE ticks sum to 2291 (the computed 2,291); `RUN FINISHED`, then L2098 `RUN RESTORED xp=0 ... gamemode=SURVIVAL ...`. **0 `SELFTEST` lines in the whole log contain PASS or FAIL.** **The restore half (xp = the recorded Lifetime XP): NOT READ, no baseline** -- the seat's ruling. Beside it: the session's chat carries "Lifetime XP before run 2 was 0", unattributed; the seat ruled Ben's baseline not given. |
+
+**ST1 RE-PREDICTED, 2026-11-06, before the next boot (the stack grew):** `SELFTEST RUN START all rows=34 …`; eight gates in index order, `sunder` last; 34 rows and 8 setups each with exactly one `DONE` or `SKIPPED`. Everything else in ST1's prediction stands.
 
 ### ST2 — stop restores what the run changed (SURVIVAL) — witness: the log + Ben
 

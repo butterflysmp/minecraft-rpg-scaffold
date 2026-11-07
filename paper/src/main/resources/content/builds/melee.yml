@@ -1,0 +1,6 @@
+# CLASS-WIDE: what EVERY Melee cell offers (PLAN-melee-class.md section 4; ranger.yml's shape, PLAN-build-system.md
+# section 7.1). At load these ids are added to each melee cell's actives. Sunder is Ben's (ruling B).
+
+class: melee
+actives:
+  - sunder

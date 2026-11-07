@@ -113,8 +113,13 @@ class ScorchContentInvariantTest {
      *
      * <p><b>21 -> 22 in LEGACY-B: the staff is re-added</b>, as a right-click fireball with one fire damage site.
      * This test's own discovery reads 22 (the first run after the re-add reddened with "expected 21 ... found 22").
+     *
+     * <p><b>22 -> 21 in MELEE M2 (PLAN-melee-class.md section 8): {@code active_placeholder_melee_thrust}
+     * deleted</b>, one site. {@code sunder} is kinetic and adds none. Counted per file with this test's own pattern
+     * (thrust 1 at the base, sunder 0; control: {@code flint_staff} 1); the run before this edit reddened with
+     * "expected 22 ... found 21".
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 22;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 21;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare

@@ -89,6 +89,7 @@ final class SelfTestDrivers {
             case PROBE_BLOCKS -> probeBlocks(p, a);
             case PROBE_ENTITIES -> probeEntities(p, a);
             case PROBE_POSITIONS -> probePositions(p, a);
+            case PROBE_SELF -> probeSelf(p);
             case SAVE_BLOCKS -> saveBlocks(p, a);
             case EXPECT_CELL -> expectCell(p, a);
             case AFTER -> run.previousRow().equals(a)
@@ -297,6 +298,16 @@ final class SelfTestDrivers {
         double r = Double.parseDouble(f[1]);
         long count = p.getNearbyEntities(r, r, r).stream().filter(e -> e.getType() == type).count();
         run.log("ENTITIES " + type + " count=" + count + " radius=" + f[1]);
+        return Optional.empty();
+    }
+
+    private Optional<String> probeSelf(Player p) {
+        String hp = run.stats().tracks(p.getUniqueId())
+                ? fmt(run.stats().current(p.getUniqueId())) + "/" + fmt(run.stats().max(p.getUniqueId()))
+                : "untracked";
+        Location l = p.getLocation();
+        run.log("SELF customHP=" + hp + " at=" + String.format(Locale.ROOT, "%.2f %.2f %.2f", l.getX(), l.getY(), l.getZ())
+                + " onGround=" + p.isOnGround() + " fall=" + fmt(p.getFallDistance()));
         return Optional.empty();
     }
 
