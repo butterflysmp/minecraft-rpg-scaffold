@@ -91,8 +91,12 @@ class ExpandedQuiverContentInvariantTest {
      * <p><b>6 -> 7 on 2026-09-29, LEGACY-A: {@code short_bow}</b>, the old project's instant bow
      * (PLAN-legacy-port.md 2.3). It authors {@code quiver_size: 8} (the Boltor's, provisional), so the
      * invariant below passed on it unedited, as it did for the Plume. It is NOT in the dev-weapon exemption set.
+     *
+     * <p><b>7 -> 8 on 2026-10-01, WITHERED-SHORTBOW: {@code withered_shortbow}</b> (PLAN-wither.md 9). This test's
+     * own discovery found it ("expected 7 ranger weapons, found [..., withered_shortbow]"). It authors
+     * {@code quiver_size: 8} (provisional), so the invariant below passed on it unedited.
      */
-    private static final int KNOWN_RANGER_WEAPONS = 7;
+    private static final int KNOWN_RANGER_WEAPONS = 8;
 
     /**
      * THE ONE EXEMPTION, AND IT IS A DEV WEAPON IN THE DELETION SET.
