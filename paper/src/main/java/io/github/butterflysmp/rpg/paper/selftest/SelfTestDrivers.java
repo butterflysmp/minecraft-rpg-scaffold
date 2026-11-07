@@ -88,6 +88,7 @@ final class SelfTestDrivers {
             case PROBE_INVENTORY -> probeInventory(p, a);
             case PROBE_BLOCKS -> probeBlocks(p, a);
             case PROBE_ENTITIES -> probeEntities(p, a);
+            case PROBE_POSITIONS -> probePositions(p, a);
             case SAVE_BLOCKS -> saveBlocks(p, a);
             case EXPECT_CELL -> expectCell(p, a);
             case AFTER -> run.previousRow().equals(a)
@@ -296,6 +297,25 @@ final class SelfTestDrivers {
         double r = Double.parseDouble(f[1]);
         long count = p.getNearbyEntities(r, r, r).stream().filter(e -> e.getType() == type).count();
         run.log("ENTITIES " + type + " count=" + count + " radius=" + f[1]);
+        return Optional.empty();
+    }
+
+    private Optional<String> probePositions(Player p, String arg) {
+        String[] f = arg.split("\\s+");
+        if (f.length != 2) return Optional.of("PROBE_POSITIONS wants '<type> <radius>', got '" + arg + "'");
+        EntityType type;
+        try { type = EntityType.valueOf(f[0].toUpperCase(Locale.ROOT)); }
+        catch (IllegalArgumentException e) { return Optional.of("unknown entity type " + f[0]); }
+        double r = Double.parseDouble(f[1]);
+        Location feet = p.getLocation();
+        List<String> at = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(r, r, r)) {
+            if (e.getType() != type) continue;
+            Location l = e.getLocation();
+            at.add(String.format(Locale.ROOT, "%.2f %.2f %.2f",
+                    l.getX() - feet.getX(), l.getY() - feet.getY(), l.getZ() - feet.getZ()));
+        }
+        run.log("POSITIONS " + type + " n=" + at.size() + " at=[" + String.join("; ", at) + "] radius=" + f[1]);
         return Optional.empty();
     }
 
