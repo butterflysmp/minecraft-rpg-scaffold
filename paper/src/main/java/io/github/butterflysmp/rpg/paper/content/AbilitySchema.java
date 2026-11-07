@@ -85,7 +85,9 @@ final class AbilitySchema {
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
                     parseDashDirection(s.getString("direction", "movement_else_forward")),
                     // Ruling 31 (PLAN-build-system.md section 7.6): no fall damage from the first landing after it.
-                    s.getBoolean("safe_landing", false));
+                    s.getBoolean("safe_landing", false),
+                    // Sunder (PLAN-melee-class.md section 8.2, S1): detonated where the leap comes down.
+                    parseOnLand(s.getMapList("on_land")));
             // A cast that REPEATS another cast on a clock. `of` is required and is a whitelist:
             // see innerCast below. windup_ticks 0 means the first shot fires on the cast frame.
             case "volley"     -> new CastSpec.Volley(
@@ -263,10 +265,29 @@ final class AbilitySchema {
         return new IllegalArgumentException("a volley cannot repeat cast type '" + type + "': " + why
                 + ". Only 'ray' and 'projectile' are repeatable");
     }
+    /**
+     * A dash's {@code on_land}: UNTARGETED effects only (a {@code burst}, a {@code visual}). A landing has no target
+     * -- the executor detonates it with an empty target set -- so a top-level {@code damage} or {@code knockback}
+     * would load, read as a slam, and hit nobody. Refused here with the fix in the message, rather than shipped
+     * silent. Absent means an empty list: every dash before Sunder.
+     */
+    private static List<EffectSpec> parseOnLand(List<Map<?, ?>> raw) {
+        List<EffectSpec> onLand = parseEffects(raw);
+        for (EffectSpec e : onLand) {
+            if (!(e instanceof EffectSpec.Untargeted)) {
+                throw new IllegalArgumentException("on_land takes untargeted effects only (a burst or a visual): a"
+                        + " landing has no target, so a top-level '" + e.getClass().getSimpleName().toLowerCase(Locale.ROOT)
+                        + "' would hit nobody. Put it inside a burst");
+            }
+        }
+        return onLand;
+    }
+
     private static CastSpec.DashDirection parseDashDirection(String raw) {
         return switch (raw.toLowerCase(Locale.ROOT)) {
             case "movement_else_forward" -> CastSpec.DashDirection.MOVEMENT_ELSE_FORWARD;
             case "reverse_facing"        -> CastSpec.DashDirection.REVERSE_FACING;
+            case "facing"                -> CastSpec.DashDirection.FACING;
             default -> throw new IllegalArgumentException("Unknown dash direction: " + raw);
         };
     }

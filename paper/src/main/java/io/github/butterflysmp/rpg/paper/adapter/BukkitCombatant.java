@@ -398,6 +398,11 @@ public final class BukkitCombatant {
             ctx.scheduler().onEntity(entity, () -> ctx.safeLandings().arm(entity, ctx.scheduler()));
         }
 
+        /** The same mark, carrying Sunder's slam (S1, the seat's ruling 5). Queued the same way, for the same reason. */
+        @Override public void armLanding(io.github.butterflysmp.rpg.core.build.LandingHook hook) {
+            ctx.scheduler().onEntity(entity, () -> ctx.safeLandings().arm(entity, ctx.scheduler(), hook));
+        }
+
         /**
          * duration and amplifier come from the ability; the status definition only says
          * what kind of thing a "scorch" is. An unknown id is a content mistake, not a

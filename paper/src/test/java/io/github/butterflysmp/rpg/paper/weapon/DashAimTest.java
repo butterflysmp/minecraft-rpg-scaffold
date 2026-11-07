@@ -77,4 +77,28 @@ class DashAimTest {
         assertEquals(0.0, atNinety.y(), 1e-9);
         assertEquals(0.0, atNinety.z(), 1e-9);
     }
+
+    // --- Sunder's facing dash (Q1, "Always straight ahead"): horizontal, along facing, and the negation of reverse. ---
+
+    @Test
+    void facingGoesStraightAheadOnTheGroundPlane() {
+        Vec3 atZero = DashAim.facing(0);
+        assertEquals(0.0, atZero.x(), 1e-9);
+        assertEquals(0.0, atZero.y(), 1e-9);
+        assertEquals(1.0, atZero.z(), 1e-9, "yaw 0 faces +Z, so Sunder leaps +Z");
+        Vec3 atMinusNinety = DashAim.facing(-90);
+        assertEquals(1.0, atMinusNinety.x(), 1e-9, "yaw -90 faces +X (the selftest's east)");
+        assertEquals(0.0, atMinusNinety.z(), 1e-9);
+    }
+
+    @Test
+    void facingIsTheExactNegationOfReverseFacingAtEveryYaw() {
+        for (double yaw : new double[] {0, 30, 45, 90, 135, 180, -45, -90, 270}) {
+            Vec3 f = DashAim.facing(yaw);
+            Vec3 r = DashAim.reverseFacing(yaw);
+            assertEquals(0.0, f.y(), 1e-9, "flat (yaw " + yaw + ")");
+            assertEquals(-r.x(), f.x(), 1e-9, "yaw " + yaw);
+            assertEquals(-r.z(), f.z(), 1e-9, "yaw " + yaw);
+        }
+    }
 }

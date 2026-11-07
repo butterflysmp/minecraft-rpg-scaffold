@@ -265,6 +265,13 @@ public final class PaperCombatWorld implements CombatWorld {
         ctx.log().info(hit.line(type));
     }
 
+    @Override
+    public void traceLanding(java.util.UUID casterId, String source, io.github.butterflysmp.rpg.core.build.Touchdown how,
+                             Vec3 feet) {
+        if (!ctx.mobTrace().getAsBoolean()) return;
+        ctx.log().info(how.line(casterId, source, feet));
+    }
+
     /**
      * The project's only spawned entity: a thrown ember. A real Item launched from the caster
      * with {@code velocity}; vanilla physics flies and lands it, so it arcs, bounces, and rolls

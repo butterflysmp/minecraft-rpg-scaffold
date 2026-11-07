@@ -1,5 +1,9 @@
 package io.github.butterflysmp.rpg.core.ability;
 
+import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
+
+import java.util.List;
+
 /** How the ability reaches its target. */
 public sealed interface CastSpec {
     record Self() implements CastSpec {}
@@ -336,7 +340,12 @@ public sealed interface CastSpec {
          * Recall: the reverse of facing, ALWAYS -- a straight backpedal, ignoring WASD. Also {@code recall_updraft}'s
          * leap (section 7.5): a small {@code speed} and a large {@code lift} make it "up, and a little back".
          */
-        REVERSE_FACING
+        REVERSE_FACING,
+        /**
+         * Sunder (Ben, Q1: <i>"Always straight ahead"</i>): along facing, ALWAYS, ignoring WASD -- {@code
+         * REVERSE_FACING} without the negation. Horizontal, so pitch does nothing (section 8.1).
+         */
+        FACING
     }
 
     /**
@@ -354,13 +363,33 @@ public sealed interface CastSpec {
      *
      * {@code safeLanding} (ruling 31, section 7.6): the caster takes no fall damage from the first landing after
      * this dash. False for every dash before Recall's leap.
+     *
+     * {@code onLand} (Sunder, PLAN-melee-class.md section 8.2, S1): UNTARGETED effects detonated at the caster's
+     * LIVE feet when the leap comes down, however it comes down ({@code Touchdown}). Empty for every dash before
+     * Sunder, whose {@code on_hit} still fires at take-off. A non-empty {@code onLand} ALSO makes the landing free
+     * of fall damage, whatever {@code safeLanding} says: the seat's ruling 5 (Q3 <i>"None"</i>, F-d) is ONE mark that
+     * both detonates the slam and spends the fall immunity, so there is no slam without the immunity to express.
      */
-    record Dash(double distance, double speed, double lift, DashDirection direction, boolean safeLanding)
-            implements CastSpec {
+    record Dash(double distance, double speed, double lift, DashDirection direction, boolean safeLanding,
+                List<EffectSpec> onLand) implements CastSpec {
+
+        public Dash {
+            onLand = List.copyOf(onLand);
+        }
+
+        /** A dash with no slam -- every dash before Sunder. */
+        public Dash(double distance, double speed, double lift, DashDirection direction, boolean safeLanding) {
+            this(distance, speed, lift, direction, safeLanding, List.of());
+        }
 
         /** A dash that leaves fall damage alone -- every dash before section 7.5. */
         public Dash(double distance, double speed, double lift, DashDirection direction) {
             this(distance, speed, lift, direction, false);
+        }
+
+        /** Whether this leap holds a landing mark: for its slam, or for {@code safeLanding} alone. */
+        public boolean armsLanding() {
+            return safeLanding || !onLand.isEmpty();
         }
     }
 

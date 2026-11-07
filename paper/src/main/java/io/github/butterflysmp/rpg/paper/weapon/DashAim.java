@@ -34,6 +34,7 @@ public final class DashAim {
         Vec3 direction = switch (dash.direction()) {
             case MOVEMENT_ELSE_FORWARD -> movementDirection(player);
             case REVERSE_FACING -> reverseFacing(player.getLocation().getYaw());
+            case FACING -> facing(player.getLocation().getYaw());
         };
         // `pointing` rather than `new Aim(origin, direction)`, and it is not cosmetic: the
         // two-argument constructor RE-DERIVES the shooter's right from the direction it is given
@@ -52,6 +53,14 @@ public final class DashAim {
         // weaponTrigger carried over: a weapon's dash is still a weapon hit (PLAN-level-bonuses.md, L1).
         return new CastResult.Success(success.ability(), success.caster(),
                 success.aim().pointing(direction), success.weaponTrigger());
+    }
+
+    /**
+     * Sunder (Q1, <i>"Always straight ahead"</i>): the facing flattened to the ground plane, WASD ignored -- {@link
+     * #reverseFacing} without the negation. Package-visible for the same unit row.
+     */
+    static Vec3 facing(double yawDegrees) {
+        return directionFromInput(yawDegrees, false, false, false, false);
     }
 
     /**
