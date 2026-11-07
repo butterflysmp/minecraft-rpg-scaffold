@@ -414,7 +414,11 @@ public final class PlayerHealthSystem implements HealthListener {
             // SEPARATE FROM THE LINE ABOVE, NOT MERGED INTO IT. Two scanners against two targets is
             // what buys the ability to watch one stat hold still while the other moves; merging them
             // would delete the only staging in which that observation exists.
-            stats.reconcileReloadTimeModifiers(id, ReloadTimeModifierItems.desiredModifiers(player, keys));
+            // DEFT HANDS made it TWO SOURCES, so they reconcile in ONE call through a named merge, for the reason the
+            // quiver pair above gives: separately, each would wipe the other.
+            stats.reconcileReloadTimeModifiers(id, DeftHandsModifierItems.mergedSources(
+                    ReloadTimeModifierItems.desiredModifiers(player, keys),
+                    DeftHandsModifierItems.desiredModifiers(player, keys, weapons, enchants)));
 
             DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
             // Accessory defense merged BEFORE the reconcile, so the bar override below draws a value that

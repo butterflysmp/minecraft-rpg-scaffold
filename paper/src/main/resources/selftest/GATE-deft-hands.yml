@@ -1,0 +1,62 @@
+# GATE-deft-hands.md: the rows the instrument can drive. DH2 and DH4 start a reload, which only the left-click PACKET
+# can do (WeaponSwingListener), so they are Ben's input; DH5 is a unit row; DH7 and DH8 are Ben's. Every reading
+# below is a REPLY line from /rpg reloadtime, which quotes the held weapon's resolved reload from the live stat (the
+# clock item it mints is never equipped here). 40 ticks after each enchant change lets the health scan reconcile.
+setup:
+  - trace: on
+  - close: ""
+
+# DH1: Deft Hands III on a held Boltor: its lore line, and 60 -> 42.
+DH1:
+  - cmd: "rpg give boltor"
+  - hold: boltor
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 deft_hands"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 40
+  - dump: held
+  - cmd: "rpg reloadtime 0"
+  - wait: 2
+
+# DH3: levels I and II on that Boltor; level I on dragons_breath (40) and on quiver_stone (34).
+DH3:
+  - after: DH1
+  - hold: boltor
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 40
+  - cmd: "rpg reloadtime 0"
+  - wait: 2
+  - cmd: "rpg enchant level 0 0 2"
+  - wait: 40
+  - cmd: "rpg reloadtime 0"
+  - wait: 2
+  - cmd: "rpg give dragons_breath"
+  - hold: dragons_breath
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 deft_hands"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 40
+  - cmd: "rpg reloadtime 0"
+  - wait: 2
+  - cmd: "rpg give quiver_stone"
+  - hold: quiver_stone
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 deft_hands"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 40
+  - cmd: "rpg reloadtime 0"
+  - wait: 2
+
+# DH6: quiver_stone at III, then the dev instrument's -30 quoted on top: 34 - 11 - 30 stops at the one-tick floor.
+DH6:
+  - after: DH3
+  - hold: quiver_stone
+  - cmd: "rpg enchant level 0 0 3"
+  - wait: 40
+  - cmd: "rpg reloadtime 0"
+  - wait: 2
+  - cmd: "rpg reloadtime -30"
+  - wait: 2

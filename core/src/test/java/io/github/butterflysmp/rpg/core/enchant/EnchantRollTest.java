@@ -410,4 +410,23 @@ class EnchantRollTest {
                 .forEach(slot -> assertTrue(slot.candidates().isEmpty(), "no candidate on any slot"));
         // Mutation: delete the ACCESSORY return in EnchantRoll.poolFor -> reddens.
     }
+
+    /**
+     * DEFT HANDS (GATE-deft-hands.md DH5): a class: ranger enchant enters EVERY ranger pool and no other, beside the
+     * ranger's other enchant and the universals. Pool membership by CLASS is the whole runtime gate -- the roster
+     * carries no weapon -- so a no-reload ranger weapon (hunters_bow) gets it too, which DeftHandsContentInvariantTest
+     * bounds to the one named dev weapon.
+     */
+    @Test
+    void deftHandsEntersTheRangerPoolAndNoOther() {
+        List<Rollable> roster = List.of(new Rollable("expanded_quiver", GearClass.RANGER),
+                new Rollable("deft_hands", GearClass.RANGER), new Rollable("unbreaking", null),
+                new Rollable("sharpness", GearClass.MELEE));
+        assertEquals(List.of(new Rollable("expanded_quiver", GearClass.RANGER), new Rollable("deft_hands", GearClass.RANGER),
+                new Rollable("unbreaking", null)), EnchantRoll.poolFor(GearClass.RANGER, roster));
+        for (GearClass other : List.of(GearClass.MAGE, GearClass.MELEE, GearClass.SHIELD, GearClass.ARMOR)) {
+            assertFalse(EnchantRoll.poolFor(other, roster).contains(new Rollable("deft_hands", GearClass.RANGER)),
+                    other.name());
+        }
+    }
 }

@@ -1,0 +1,33 @@
+# DEFT HANDS -- the Ranger reload enchant (PLAN-deft-hands.md). Ben, 2026-11-06: "I'd like to pivot to adding a
+# new Enchantment, Deft hands, increases reload speed by 10/20/30% Ranger weapon exclusive", and on the open
+# question: "a" -- reload TIME x0.9 / 0.8 / 0.7.
+#
+# `effect: reload_time` binds core/combat/ReloadTime, which already shipped (the A2 quiver slice). The enchant adds
+# the effect token, ReloadTime.percentCut and the scanner (DeftHandsModifierItems); the stat it joins is the same
+# flat reloadTimeBonus the dev instrument feeds.
+#
+# A PERCENT OF THE HELD WEAPON'S AUTHORED reload_ticks, converted to whole ticks ONCE, by floorDiv (the house MODE;
+# here it takes the larger cut). The quantity, named: three authored reloads reach this enchant, and every tier is
+# a real cut (executed, and pinned in ReloadTimeTest):
+#
+#   reload_ticks 60 (boltor, locust, dragons_plume, short_bow, withered_shortbow)   54 / 48 / 42
+#   reload_ticks 40 (dragons_breath)                                                 36 / 32 / 28
+#   reload_ticks 34 (quiver_stone, a dev weapon)                                     30 / 27 / 23
+#
+# NEVER AN INSTANT RELOAD: the resolved reload stops at ReloadTime.MIN_TICKS (1 tick), the seat's ruling. Content
+# alone never gets there; stacking the dev reload instrument can, and the floor holds.
+#
+# `class: ranger`, and the loader refuses `universal` (Gate.RANGER_ONLY): a universal reload enchant would enter
+# every sword's pool and grant nothing. hunters_bow is ranger and has NO reload, so it can roll this and gain
+# nothing -- a finding, accepted as for expanded_quiver, because it is a dev weapon in the deletion set.
+# DeftHandsContentInvariantTest is the gate on every OTHER ranger weapon.
+#
+# THE DIRECTION IS NEGATIVE (fewer ticks), so the scanner's gate is ReloadTime.declares, `!= NONE` -- never
+# QuiverSize.boosts' `> NONE`, which would declare nothing here.
+display_name: "Deft Hands"
+# Ben's to overrule; the seat's default.
+icon: feather
+max_level: 3
+effect: reload_time
+class: ranger
+value_by_level: [10, 20, 30]
