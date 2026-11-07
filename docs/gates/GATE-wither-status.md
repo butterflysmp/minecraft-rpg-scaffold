@@ -41,7 +41,7 @@ that line appears after the LOGIN with every predicted field as written.
 ROWS     14   R0a R0b R0c
               WS-C WS1 WS2b WS2c WS3 WS3-P WS4 WS5 WS6 WS8 WS9
          ──
-         14   = 3 R0 + 11 WS     git grep -c '^### R0\|^### WS' <ref> -- GATE-wither-status.md
+         14   = 3 R0 + 11 WS     git grep -c '^### R0\|^### WS' <ref> -- docs/gates/GATE-wither-status.md
 ```
 
 **Plan:** `PLAN-wither.md` on `docs/batch-surveys` (`fe73f5ff`): Ben's words and answers (2026-09-30), the seat's WS1–WS4,
