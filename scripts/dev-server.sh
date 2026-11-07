@@ -153,4 +153,6 @@ fi
 echo "==> Booting Paper (type 'stop' or Ctrl+C to quit)"
 echo
 cd "$RUN_DIR"
-exec java -Xms2G -Xmx2G -jar paper.jar --nogui
+# -Drpg.dev=true IS THE DEV MARKER, and this is the only place it is set (PLAN-selftest.md, the seat's
+# ruling b). /rpg selftest refuses without it, so a production server can never run the instrument.
+exec java -Xms2G -Xmx2G -Drpg.dev=true -jar paper.jar --nogui

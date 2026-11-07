@@ -1,0 +1,104 @@
+# GATE-nexus-polish.md (#170): the CORE rows D1, G1, G3, CM1 and CM2. R0d is a boot log line and needs no scenario.
+setup:
+  - close: ""
+
+# D1: Crafting -> Recipe Book -> Back to crafting keeps "Back to the Nexus".
+D1:
+  - cmd: "rpg playerxp set @s 3 levels"
+  - wait: 20
+  - cmd: "menu"
+  - wait: 3
+  - click: "Crafting"
+  - wait: 3
+  - dump: menu
+  - click: "Recipe Book"
+  - wait: 3
+  - dump: menu
+  - click: "Back to crafting"
+  - wait: 3
+  - dump: menu
+  - click: "Back to the Nexus"
+  - wait: 3
+  - dump: menu
+  - close: ""
+
+# G1: names green, state colours kept, at level 5; then Settings.
+G1:
+  - cmd: "rpg playerxp set @s 5 levels"
+  - wait: 20
+  - cmd: "menu"
+  - wait: 3
+  - dump: menu
+  - click: "Settings"
+  - wait: 3
+  - dump: menu
+  - close: ""
+
+# G3: every button's last lore line, at level 5; then Crafting's Recipe Book button.
+G3:
+  - cmd: "rpg playerxp set @s 5 levels"
+  - wait: 20
+  - cmd: "menu"
+  - wait: 3
+  - dump: menu
+  - click: "Crafting"
+  - wait: 3
+  - dump: menu
+  - close: ""
+
+# CM1: the ungated four open at level 1, each with Back to the Nexus.
+CM1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 20
+  - cmd: "level"
+  - wait: 3
+  - dump: menu
+  - click: "Back to the Nexus"
+  - wait: 3
+  - dump: menu
+  - close: ""
+  - cmd: "build"
+  - wait: 3
+  - dump: menu
+  - click: "Back to the Nexus"
+  - wait: 3
+  - dump: menu
+  - close: ""
+  - cmd: "gear"
+  - wait: 3
+  - dump: menu
+  - click: "Back to the Nexus"
+  - wait: 3
+  - dump: menu
+  - close: ""
+  - cmd: "settings"
+  - wait: 3
+  - dump: menu
+  - click: "Back to the Nexus"
+  - wait: 3
+  - dump: menu
+  - close: ""
+
+# CM2: the gated six refuse at level 1 and open nothing.
+CM2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 20
+  - close: ""
+  - cmd: "craft"
+  - wait: 3
+  - dump: menu
+  - cmd: "recipes"
+  - wait: 3
+  - dump: menu
+  - cmd: "anvil"
+  - wait: 3
+  - dump: menu
+  - cmd: "enchanting"
+  - wait: 3
+  - dump: menu
+  - cmd: "grindstone"
+  - wait: 3
+  - dump: menu
+  - cmd: "vault"
+  - wait: 3
+  - dump: menu
