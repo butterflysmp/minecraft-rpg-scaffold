@@ -281,6 +281,41 @@ class EnchantLoaderTest {
         assertTrue(ex.getMessage().contains("noeffect"), "the message must name the file at fault");
     }
 
+    /** DEFT HANDS as shipped (PLAN-deft-hands.md; Ben's ruling (a), the seat's rulings 2026-11-06). */
+    @Test
+    void theShippedDeftHandsLoadsAsRuled(@TempDir Path dir) throws IOException {
+        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+        EnchantDefinition deft = enchants.find("deft_hands").orElseThrow(() -> new AssertionError("deft_hands did not load"));
+        assertEquals("Deft Hands", deft.displayName());
+        assertEquals(EnchantEffect.RELOAD_TIME, deft.effect());
+        assertEquals(GearClass.RANGER, deft.gearClass(), "Ranger weapon exclusive");
+        assertEquals(3, deft.maxLevel());
+        assertEquals(List.of(10, 20, 30), deft.valueByLevel(), "percent cut of the reload TIME, ruling (a)");
+    }
+
+    /**
+     * RANGER_ONLY, for reload_time as for quiver_size: universal would roll onto every sword and grant nothing, and
+     * a mage or melee weapon has no reload to cut. Each is REFUSED, not loaded inert.
+     */
+    @Test
+    void aReloadTimeEnchantOnAnyClassButRangerIsRefused(@TempDir Path dir) throws IOException {
+        Path enchantsDir = bundledEnchants(dir);
+        String body = "display_name: \"Slow Hands\"\nmax_level: 3\neffect: reload_time\nvalue_by_level: [10, 20, 30]\n";
+        Files.writeString(enchantsDir.resolve("universal_reload.yml"), body + "class: universal\n");
+        Files.writeString(enchantsDir.resolve("mage_reload.yml"), body + "class: mage\n");
+        Files.writeString(enchantsDir.resolve("melee_reload.yml"), body + "class: melee\n");
+        // THE CONTROL: the same body as class: ranger LOADS, so the three refusals are the gate's, not a bad body's.
+        Files.writeString(enchantsDir.resolve("ranger_reload.yml"), body + "class: ranger\n");
+
+        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
+
+        assertTrue(enchants.find("ranger_reload").isPresent(), "the control: a ranger reload_time enchant loads");
+        assertEquals(shippedIds().size() + 1, enchants.size(), "three refused, the control and the shipped roster loaded");
+        assertTrue(enchants.find("universal_reload").isEmpty(), "universal is the dangerous typo");
+        assertTrue(enchants.find("mage_reload").isEmpty());
+        assertTrue(enchants.find("melee_reload").isEmpty());
+    }
+
     @Test
     void anUnknownEffectOrClassIsRefusedAndEchoesTheBadValue(@TempDir Path dir) throws IOException {
         Path enchantsDir = bundledEnchants(dir);

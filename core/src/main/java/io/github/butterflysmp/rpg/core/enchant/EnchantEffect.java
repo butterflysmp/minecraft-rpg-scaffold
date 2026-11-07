@@ -134,7 +134,21 @@ public enum EnchantEffect {
      * {@code QuiverSize.boosts}, which is {@code > NONE}. {@code ReloadTime} in the same family is
      * inverted and gates on {@code != NONE}; see that class, and do not unify them.
      */
-    QUIVER_SIZE;
+    QUIVER_SIZE,
+
+    /**
+     * Shortens the HELD weapon's reload by a PERCENT of its authored {@code reload_ticks}: Deft Hands
+     * (PLAN-deft-hands.md; Ben, 2026-11-06: reload TIME x0.9 / 0.8 / 0.7). Content token {@code reload_time}.
+     *
+     * <p><b>A PERCENT, NOT FLAT TICKS, and the arithmetic half passes where Expanded Quiver's did not:</b> the
+     * authored reloads that reach it are 60, 40 and 34, and the smallest tier cut is 4 ticks, never zero. It is
+     * converted to whole ticks ONCE, against the authored value, by {@code ReloadTime.percentCut}, and then joins
+     * the same flat {@code reloadTimeBonus} stat the dev instrument feeds.
+     *
+     * <p><b>Its contribution is NEGATIVE</b>, so its gate is {@code ReloadTime.declares} ({@code != NONE}). The
+     * {@code > NONE} of {@link #QUIVER_SIZE}'s {@code QuiverSize.boosts} would declare nothing, silently.
+     */
+    RELOAD_TIME;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides
