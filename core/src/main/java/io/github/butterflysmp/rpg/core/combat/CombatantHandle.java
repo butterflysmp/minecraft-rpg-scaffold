@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.combat;
 
 import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.build.LandingHook;
 
 import java.util.UUID;
 
@@ -175,6 +176,15 @@ public interface CombatantHandle {
      * Abstract on purpose -- a new implementation must decide, rather than inherit a silent no-op.
      */
     void armSafeLanding();
+
+    /**
+     * {@link #armSafeLanding} WITH A SLAM (Sunder; PLAN-melee-class.md section 8.2, S1, and the seat's rulings 4 and
+     * 5). The same one mark: immune to the landing's fall damage, and when it ends {@code hook} is called back
+     * exactly once on the thread that owns this combatant -- {@code landed} with the live feet for a slamming
+     * {@code Touchdown}, {@code ended} otherwise (the backstop, death or quit, a re-arm). Abstract on purpose, like
+     * {@link #armSafeLanding}.
+     */
+    void armLanding(LandingHook hook);
 
     default void applyStatus(String statusId, int durationTicks, int amplifier) {
         applyStatus(statusId, durationTicks, amplifier, null, 0.0);
