@@ -41,7 +41,7 @@ that line appears after the LOGIN with every predicted field as written.
 ROWS     10   R0a R0b R0c
               WB1 WB2 WB3 WB4b WB5 WB6 WB7
          ──
-         10   = 3 R0 + 7 WB     git grep -c '^### R0\|^### WB' <ref> -- GATE-withered-shortbow.md
+         10   = 3 R0 + 7 WB     git grep -c '^### R0\|^### WB' <ref> -- docs/gates/GATE-withered-shortbow.md
 ```
 
 **Plan:** `PLAN-wither.md` on `docs/batch-surveys` (`fe73f5ff`), section 9 and RULINGS: Ben's words, his "everything else
