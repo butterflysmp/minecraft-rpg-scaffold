@@ -10,6 +10,28 @@ reload speed by 10/20/30% Ranger weapon exclusive"*
 
 **Every number here is Ben's to rule.** Section 4 carries his open question undecided.
 
+## RULINGS — 2026-11-06, AFTER THE SURVEY. DECIDED; NOT RE-DERIVED HERE
+
+**Ben, on question 4, verbatim:** *"a"* — the seat's gloss, as relayed: **(a) = reload TIME x0.9 / 0.8 / 0.7**, not (b)
+= reload SPEED x1.1 / 1.2 / 1.3. Section 4 below stays as it was asked.
+
+**The seat's rulings, same day:**
+- **Conversion:** once, against the held weapon's AUTHORED `reload_ticks`, in integer arithmetic (`floorDiv`). Unit
+  tests pin every tier on 60, 40 and 34.
+- **The scanner gates on `ReloadTime.declares`** (`!= NONE`), with a mutation to `> NONE` that must redden a test.
+- **Eligibility:** `class: ranger` plus a `DeftHandsContentInvariantTest` sibling to Expanded Quiver's. `hunters_bow`
+  (deletion set) can roll it uselessly: recorded as a finding, no special case.
+- **MINIMUM RELOAD: the resolved reload never goes below 1 tick** (no instant reload), whatever stacks. A unit test
+  with the dev reload item stacked on Level III proves the clamp. Shipped content never reaches it. *This answers
+  section 5's owed floor ruling and Ben's question 5.*
+- **DH2's reload trace line: YES**, an instrument line under `/rpg mobtrace`, in its own commit with a unit test.
+- **Display name "Deft Hands"; icon `feather`** (the default; Ben can overrule).
+- **The side finding is fixed** in the build PR: `expanded_quiver.yml`'s "four-round magazine / +75%" now reads
+  Dragon's Breath's shipped `quiver_size 5` (+60%). A comment-only edit.
+- **STACK:** the build is ONE PR on `feat/sunder` (#178), so the stack stays linear and one boot reads everything. The
+  cumulative R0 moves to `GATE-deft-hands.md`.
+- **The seat's correction on the brief's eligibility premise (section 3) is accepted**, and owned by the seat.
+
 ---
 
 ## 1. THE MECHANISM — `core/combat/ReloadTime` (READ)
