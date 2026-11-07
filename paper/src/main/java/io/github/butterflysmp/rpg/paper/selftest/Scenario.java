@@ -74,6 +74,11 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * sample taken each tick shows where a body was last seen (GATE-legacy-b.md LB5's impact witness).
          */
         PROBE_POSITIONS,
+        /**
+         * Log the PLAYER'S own state, which {@link #PROBE} cannot see ({@code getNearbyEntities} excludes the
+         * player): custom HP, feet, on-ground, fall distance. GATE-sunder.md's fall-damage and landing rows read it.
+         */
+        PROBE_SELF,
         /** {@code "dx1 dy1 dz1 dx2 dy2 dz2"}: remember those blocks, so the run's restore puts them back. */
         SAVE_BLOCKS,
         /** {@code "<class> <element>"}: SKIPPED unless the profile's Build cell is this one. */

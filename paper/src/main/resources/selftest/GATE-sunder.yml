@@ -1,0 +1,241 @@
+# GATE-sunder.md (Melee M2): every row the instrument can drive. SU3 (a held movement key) and SU8 (the player's own
+# death) are Ben's hand rows and have no scenario (the gate says why). Each casting row opens with `wait: 240`,
+# Sunder's PROVISIONAL cooldown, and stages around wherever the player stands: aligned to a block centre, facing east,
+# every fill box SAVED first so the run's restore puts it back. The instrument reads; it never judges.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# SU1: the Left picker offers Sunder and not the thrust; pick it, and the Build screen shows it. THIS SAVES Left =
+# Sunder in the profile, and the restore does not undo a saved loadout (the gate says so before the boot).
+SU1:
+  - expect_cell: "melee fire"
+  - cmd: "build"
+  - wait: 3
+  - dump: menu
+  - click: "Left: "
+  - wait: 3
+  - dump: menu
+  - click: "Sunder"
+  - wait: 3
+  - dump: menu
+  - close: ""
+
+# SU2: flat ground; sa beside the take-off point, sb beside the landing.
+SU2:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -4 12 4 4"
+  - cmd: "fill ~-1 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-1 ~ ~-4 ~12 ~4 ~4 air"
+  - cmd: 'summon zombie ~0 ~ ~-2.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","sa","selftest"]}'
+  - cmd: 'summon zombie ~5 ~ ~2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","sb","selftest"]}'
+  - wait: 5
+  - probe: sa
+  - probe: sb
+  - probe_self: ""
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - swing: HAND
+  - wait: 60
+  - probe_self: ""
+  - probe: sa
+  - probe: sb
+
+# SU4: a wall whose west face is 2.5 ahead; sw stands BEHIND it.
+SU4:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -4 12 4 4"
+  - cmd: "fill ~-1 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-1 ~ ~-4 ~12 ~4 ~4 air"
+  - cmd: "fill ~3 ~ ~-4 ~3 ~3 ~4 stone"
+  - cmd: 'summon zombie ~4.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","sw","selftest"]}'
+  - wait: 5
+  - probe: sw
+  - probe_self: ""
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - swing: HAND
+  - wait: 60
+  - probe_self: ""
+  - probe: sw
+
+# SU5: the floor ends 1.5 ahead; the lower floor is 4 below.
+SU5:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -5 -4 12 4 4"
+  - cmd: "fill ~-1 ~-5 ~-4 ~12 ~4 ~4 air"
+  - cmd: "fill ~-1 ~-1 ~-4 ~1 ~-1 ~4 stone"
+  - cmd: "fill ~2 ~-5 ~-4 ~12 ~-5 ~4 stone"
+  - wait: 5
+  - probe_self: ""
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - swing: HAND
+  - wait: 60
+  - probe_self: ""
+
+# SU6: one take-off block, then water 3 deep from 2 to 12 ahead, its surface level with the start's floor.
+SU6:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -4 -4 12 4 4"
+  - cmd: "fill ~-1 ~ ~-4 ~12 ~4 ~4 air"
+  - cmd: "fill ~-1 ~-1 ~-4 ~1 ~-1 ~4 stone"
+  - cmd: "fill ~2 ~-4 ~-4 ~12 ~-4 ~4 stone"
+  - cmd: "fill ~2 ~-3 ~-4 ~12 ~-1 ~4 water"
+  - wait: 5
+  - probe_self: ""
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - swing: HAND
+  - wait: 60
+  - probe_self: ""
+
+# SU7: flat floor, a stone ceiling 2 up (a 0.2-block gap over the player).
+SU7:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -4 12 4 4"
+  - cmd: "fill ~-1 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-1 ~ ~-4 ~12 ~4 ~4 air"
+  - cmd: "fill ~-1 ~2 ~-4 ~12 ~2 ~4 stone"
+  - wait: 5
+  - probe_self: ""
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - swing: HAND
+  - wait: 60
+  - probe_self: ""
+
+# SU9: an air start -- teleported 1.2 up, Left on the same tick.
+SU9:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -4 16 5 4"
+  - cmd: "fill ~-1 ~-1 ~-4 ~16 ~-1 ~4 stone"
+  - cmd: "fill ~-1 ~ ~-4 ~16 ~5 ~4 air"
+  - wait: 5
+  - probe_self: ""
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - cmd: "tp @s ~ ~1.2 ~"
+  - swing: HAND
+  - wait: 60
+  - probe_self: ""
+
+# SU10: SU5's ledge with the player's HP read before and after; then an ordinary 7-block drop.
+SU10:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -5 -4 12 4 4"
+  - cmd: "fill ~-1 ~-5 ~-4 ~12 ~4 ~4 air"
+  - cmd: "fill ~-1 ~-1 ~-4 ~1 ~-1 ~4 stone"
+  - cmd: "fill ~2 ~-5 ~-4 ~12 ~-5 ~4 stone"
+  - wait: 5
+  - probe_self: ""
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - swing: HAND
+  - wait: 40
+  - probe_self: ""
+  - wait: 40
+  - note: "the ordinary drop: 7 blocks, no mark"
+  - cmd: "tp @s ~ ~7 ~"
+  - wait: 40
+  - probe_self: ""
+
+# SU11: a GS-300 /rpg spawn zombie 5 ahead and 2 aside, held in place with NoAI.
+SU11:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -4 12 4 4"
+  - cmd: "fill ~-1 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-1 ~ ~-4 ~12 ~4 ~4 air"
+  - cmd: "tp @s ~5 ~ ~2"
+  - cmd: "rpg spawn zombie 300"
+  - cmd: "tag @e[type=zombie,distance=..1.5,sort=nearest,limit=1] add s11"
+  - cmd: "tag @e[tag=s11] add t"
+  - cmd: "tag @e[tag=s11] add selftest"
+  - cmd: "data merge entity @e[tag=s11,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-5 ~ ~-2 -90 0"
+  - wait: 5
+  - probe: s11
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - swing: HAND
+  - wait: 60
+  - probe: s11
+
+# SU12: an AI zombie 5 ahead and 2 aside, slowed so it stands; its position sampled every 2 ticks after the cast.
+SU12:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -4 12 4 4"
+  - cmd: "fill ~-1 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-1 ~ ~-4 ~12 ~4 ~4 air"
+  - cmd: "tp @s ~5 ~ ~2"
+  - cmd: "rpg spawn zombie"
+  - cmd: "tag @e[type=zombie,distance=..1.5,sort=nearest,limit=1] add s12"
+  - cmd: "tag @e[tag=s12] add t"
+  - cmd: "tag @e[tag=s12] add selftest"
+  - cmd: "effect give @e[tag=s12] slowness 30 255 true"
+  - cmd: "tp @s ~-5 ~ ~-2 -90 0"
+  - wait: 5
+  - probe_positions: "ZOMBIE 12"
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - swing: HAND
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - wait: 2
+  - probe_positions: "ZOMBIE 12"
+  - probe: s12
