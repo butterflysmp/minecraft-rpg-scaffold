@@ -26,6 +26,8 @@ golden rendering) with its non-stacking half PASS; WB2, WB3 VOID (the aim defect
 entry from each of #168-#174; R0c predicts the cumulative `Loaded` line, derived from the last line read). Every gate
 beneath records its R0 SUPERSEDED. No WB prediction moved. Rows stay 10.
 
+*Amended 2026-11-06, BEFORE THE NEXT BOOT, at the seat's instruction (instrument only; no recorded reading moves): WB1 is re-predicted for the HELD, SCORED bow.* WB1's 38cc9903 prediction and its FAIL reading stand as written. The re-prediction sits beneath WB1's table and is what the next boot reads.
+
 Every prediction below was written **before** any row of this file was read, and **this file is COMMITTED before the
 boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been read.
 **NO BOOT until the seat says so**, after the seat has diffed every slice. **This is the stack top**:
@@ -160,6 +162,8 @@ $zip.Dispose()
 | prediction | READING |
 |---|---|
 | Hover (score 100). In order: **`Wither`** (dark gray), **`Quiver: --/8`**, blank, **`Ranged Damage: 16`**, **`Attack Speed: 1.3`**, blank, **`Uncommon Ranged Weapon`** — the golden rendering. **No "Inflicts Wither" line** (Ben overruled Q-W10) and no flavor (none is authored). A second `/rpg give withered_shortbow` lands in its own slot | **38cc9903, 2026-10-14: FAIL (the lore, as predicted); the non-stacking half PASS.** AUTO (selftest, run 2): two gives land in two slots, L2062 `INVENTORY withered_shortbow slots=[3x1, 4x1]` -- PASS. The held bow, L2066: `lore=["Wither" [dark_gray]; "Gear Score: 100" [gray, aqua]; "Quiver: 8/8" [gray]; "" []; "Ranged Damage: 16" [gray, red]; "Attack Speed: 1.3" [gray, red]; "" []; "Uncommon Ranged Weapon" [green]]`. Against the prediction: `Wither` dark gray, the damage, speed, blanks and rarity, no "Inflicts Wither" line and no flavour all match; but an unpredicted `"Gear Score: 100"` line sits between `Wither` and the quiver line, and the quiver reads `"Quiver: 8/8"`, not `Quiver: --/8`. The prediction quoted "the golden rendering", which a held, scored item does not show -- a prediction defect, not a build defect, but as written it fails. Ben's half (the tooltip as the client draws it): **PASS**, itemised (see Status) -- the client draws this same lore; his check is that it looks right, not that it matches the prediction. His hand give (L2106) had no `/rpg gearscore set 100`. |
+
+**WB1 RE-PREDICTED, 2026-11-06, before the next boot** (derived from the code: `QuiverItems.stampFull` stamps the magazine full at mint, so `WeaponLoreLines.quiverLine` renders `8/8`; `WeaponLore` calls `GearLore.appendScore` after the element line and before the quiver line, rendering `Gear Score: <n>` with a gray label and an aqua value; `/rpg give` stamps a rolled score at acquire, `GearScoreItems.stampOnAcquire`, so a given bow is always scored). **The selftest's WB1 steps: two gives, hold, `/rpg gearscore set 100`, dump held. The held bow's lore, in order:** **`Wither`** (dark gray), **`Gear Score: 100`** (`Gear Score: ` gray, `100` aqua), **`Quiver: 8/8`** (gray), blank, **`Ranged Damage: 16`** (gray label, red value), **`Attack Speed: 1.3`** (gray label, red value), blank, **`Uncommon Ranged Weapon`** (green). No "Inflicts Wither" line, no flavour. The two gives land in two slots. Ben's half is unchanged: the tooltip as the client draws it.
 
 ### WB2 — PLAYERHIT: 16 wither on a right-click (SURVIVAL) — witness: PLAYERHIT line
 
