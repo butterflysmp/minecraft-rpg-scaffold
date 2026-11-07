@@ -1,6 +1,6 @@
 # GATE — SUNDER (Melee M2): the facing leap, the slam where it lands, no fall damage (and the stack's one R0)
 
-**Status: NOT RUN.** Written 2026-11-06, before any boot of this branch. **NO BOOT until the seat says so.** This is the
+**Status: NOT RUN.** Written 2026-11-06, before any boot of this branch. *Amended 2026-11-06, before any boot: R0 moved on to `GATE-deft-hands.md` (see the R0 section).* **NO BOOT until the seat says so.** This is the
 new STACK TOP (`#168 → … → #175 → this`), so the stack's one R0 moves here from `GATE-selftest.md`, which records its R0
 SUPERSEDED by this file.
 
@@ -84,6 +84,8 @@ the deleted `active_placeholder_melee_thrust` reads that slot as **empty** until
 ---
 
 ## R0 — THE ONE R0 FOR THE WHOLE STACK (moved here from GATE-selftest.md). READ IT FIRST. IF ANY R0 FAILS, STOP
+
+**SUPERSEDED, 2026-11-06, before any boot: the stack's one R0 is now `GATE-deft-hands.md`'s** (Deft Hands is stacked on this branch and is the new top). The rows below were never read; at the boot they are recorded SUPERSEDED, never PASS or FAIL.
 
 Every gate beneath carries its R0 SUPERSEDED, never PASS or FAIL. `GATE-selftest.md`'s note names this file. The one
 exception is unchanged: `GATE-nexus-polish.md` R0d was #170's merge bar and is merged.
