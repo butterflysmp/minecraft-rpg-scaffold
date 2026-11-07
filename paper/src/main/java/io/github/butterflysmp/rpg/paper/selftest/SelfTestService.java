@@ -64,7 +64,8 @@ public final class SelfTestService {
     /** Start {@code all}, one gate, or one row of one gate. Returns the reply. */
     public String start(Player player, String gate, String row) {
         Optional<String> refusal = SelfTestGuard.refusal(devServer,
-                player.getWorld().equals(Bukkit.getWorlds().getFirst()), Bukkit.getOnlinePlayers().size());
+                player.getWorld().equals(Bukkit.getWorlds().getFirst()), Bukkit.getOnlinePlayers().size(),
+                player.getGameMode().name());
         if (refusal.isPresent()) return refusal.get();
         if (active != null) return "Refusing: a selftest is already running. /rpg selftest stop ends it.";
 

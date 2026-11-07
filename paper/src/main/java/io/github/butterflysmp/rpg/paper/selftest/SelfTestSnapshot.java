@@ -17,6 +17,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -31,10 +32,20 @@ import org.bukkit.inventory.ItemStack;
  *
  * <p><b>Every mob a scenario makes carries the scoreboard tag {@value #MOB_TAG}</b> (the YAML's summon and
  * {@code data merge} lines add it), and the restore removes every such mob near the player.
+ *
+ * <p><b>And every experience orb near the player</b> (the seat, 2026-11-06). A staged kill drops orbs, and an orb
+ * picked up AFTER the restore is a Lifetime XP gain the restore never sees: GATE-selftest.md ST2's 38cc9903 reading
+ * found the next run's snapshot at {@code xp=4}. An orb carries no tag to say who dropped it, so the restore takes
+ * every orb in range; on the dev world that is the instrument's own.
  */
 final class SelfTestSnapshot {
 
     static final String MOB_TAG = "selftest";
+
+    /** What the restore removes: a tagged mob, or an experience orb. Never a player. Pure, so it is a unit row. */
+    static boolean removedOnRestore(boolean isPlayer, boolean tagged, boolean experienceOrb) {
+        return !isPlayer && (tagged || experienceOrb);
+    }
 
     private final UUID id;
     private final long lifetimeXp;
@@ -90,10 +101,12 @@ final class SelfTestSnapshot {
                    Scheduler scheduler) {
         p.closeInventory();
         int mobs = 0;
+        int orbs = 0;
         for (Entity e : p.getNearbyEntities(48, 48, 48)) {
-            if (e instanceof Player || !e.getScoreboardTags().contains(MOB_TAG)) continue;
+            boolean orb = e instanceof ExperienceOrb;
+            if (!removedOnRestore(e instanceof Player, e.getScoreboardTags().contains(MOB_TAG), orb)) continue;
             scheduler.onEntity(e, e::remove);
-            mobs++;
+            if (orb) orbs++; else mobs++;
         }
         List<BlockState> reverse = new ArrayList<>(blocks.values());
         java.util.Collections.reverse(reverse);
@@ -118,6 +131,6 @@ final class SelfTestSnapshot {
         return "RESTORED xp=" + (xp ? lifetimeXp : "NOT-RESTORED") + " cell=" + (cell ? classId + "/" + elementId : "NOT-RESTORED")
                 + " gamemode=" + gameMode + " held=" + heldSlot + " mana=" + String.format("%.1f", mana)
                 + " trace=" + nameplates.tracing() + " spawn_mobs=" + spawnMobs + " time=" + time
-                + " blocks=" + blocks.size() + " mobsRemoved=" + mobs;
+                + " blocks=" + blocks.size() + " mobsRemoved=" + mobs + " orbsRemoved=" + orbs;
     }
 }

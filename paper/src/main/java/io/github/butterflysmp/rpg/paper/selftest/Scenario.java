@@ -69,6 +69,11 @@ public record Scenario(String gate, String row, List<Step> steps) {
         PROBE_BLOCKS,
         /** {@code "<entity type> <radius>"}: count those entities near the player. */
         PROBE_ENTITIES,
+        /**
+         * {@code "<entity type> <radius>"}: log each of those entities' position RELATIVE TO THE PLAYER'S FEET, so a
+         * sample taken each tick shows where a body was last seen (GATE-legacy-b.md LB5's impact witness).
+         */
+        PROBE_POSITIONS,
         /** {@code "dx1 dy1 dz1 dx2 dy2 dz2"}: remember those blocks, so the run's restore puts them back. */
         SAVE_BLOCKS,
         /** {@code "<class> <element>"}: SKIPPED unless the profile's Build cell is this one. */

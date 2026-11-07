@@ -26,6 +26,8 @@ LB2:
 
 # LB5: (a) three shots at an oak-plank wall 10 blocks east: no fire block. (b) a TNT block at eye height in the
 # wall: it does not prime. The corridor and the wall are SAVED first, and the run's restore puts them back.
+# (2026-11-06) The first (a) shot and the (b) shot are sampled every tick by probe_positions, so a fireball that never
+# reached the wall cannot pass for a guard that held. Each wait is split, never lengthened: the row's ticks are unchanged.
 LB5:
   - hold: blaze_kings_staff
   - cmd: "kill @e[tag=t]"
@@ -39,7 +41,31 @@ LB5:
   - note: "(a) three shots at the plank wall"
   - cmd: "rpg mana refill"
   - use: right_click
-  - wait: 12
+  - note: "(a) the first shot sampled every tick: the impact witness"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
   - use: right_click
   - wait: 12
   - use: right_click
@@ -50,7 +76,32 @@ LB5:
   - wait: 2
   - cmd: "rpg mana refill"
   - use: right_click
-  - wait: 40
+  - note: "(b) the TNT shot sampled every tick: the impact witness"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 1
+  - probe_positions: "SMALL_FIREBALL 16"
+  - wait: 28
   - probe_blocks: "TNT 10 1 0 10 1 0"
   - probe_entities: "TNT 16"
   - probe_blocks: "FIRE 1 0 -2 10 4 2"
