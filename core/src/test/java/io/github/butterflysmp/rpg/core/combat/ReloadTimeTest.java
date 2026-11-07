@@ -253,4 +253,12 @@ class ReloadTimeTest {
         assertEquals(1, ReloadTime.MIN_TICKS);
     }
 
+    /** DH2's instrument line under /rpg mobtrace: its shape is pinned here, not at a boot. */
+    @Test
+    void theReloadTraceLineNamesTheWeaponBothDurationsAndTheDeadline() {
+        var id = java.util.UUID.fromString("00000000-0000-0000-0000-000000000002");
+        assertEquals("RELOAD player=00000000-0000-0000-0000-000000000002 weapon=boltor authored=60 resolved=42"
+                        + " start=1000 completesAt=1042",
+                ReloadTime.line(id, "boltor", 60, 42, NOW, NOW + 42));
+    }
 }

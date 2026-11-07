@@ -187,6 +187,16 @@ public final class ReloadTime {
         return Math.floorDiv(-authoredTicks * percent, 100);
     }
 
+    /**
+     * The {@code /rpg mobtrace} line for a reload that just began (GATE-deft-hands.md DH2): {@code RELOAD
+     * player=<uuid> weapon=<id> authored=<n> resolved=<n> start=<tick> completesAt=<tick>}. Formatted here, in core,
+     * so its shape is a unit row.
+     */
+    public static String line(java.util.UUID playerId, String weaponId, int authoredTicks, int resolvedTicks,
+                              long start, long completesAt) {
+        return "RELOAD player=" + playerId + " weapon=" + weaponId + " authored=" + authoredTicks
+                + " resolved=" + resolvedTicks + " start=" + start + " completesAt=" + completesAt;
+    }
 
     /**
      * The one conversion from the {@code double} a {@code Stat} sums to whole ticks. FLOOR.
