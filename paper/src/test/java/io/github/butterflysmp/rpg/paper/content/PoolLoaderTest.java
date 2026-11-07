@@ -136,11 +136,12 @@ class PoolLoaderTest {
     }
 
     /**
-     * PLAN-melee-class.md slice M1: the Fire Melee cell loads ALONE -- no melee.yml ships yet, so nothing is
-     * merged in, and the default is the two placeholders (the thrust holds left until Sunder, M2).
+     * PLAN-melee-class.md slice M2: the Fire Melee cell with its class file. Sunder arrives from melee.yml, the
+     * thrust is gone, and the default is Ben's [sunder, active_placeholder_melee], left = Sunder (Q7).
      */
     @Test
     void theBundledFireMeleePoolLoads() throws IOException {
+        copyBundled("melee.yml");
         copyBundled("melee_fire.yml");
 
         PoolRegistry registry = load(BUNDLED_ABILITY);
@@ -148,11 +149,12 @@ class PoolLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
         PoolDefinition pool = registry.find("melee", "fire").orElseThrow();
         assertEquals("<gold>Fire Melee</gold>", pool.displayName(), "Ben's name, Q7");
-        assertEquals("active_placeholder_melee_thrust", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_1));
+        assertEquals("sunder", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_1), "Q7: left = Sunder");
         assertEquals("active_placeholder_melee", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_2));
         assertEquals("ultimate_placeholder_melee", pool.defaultLoadout().idFor(LoadoutSlot.ULTIMATE));
-        assertEquals(List.of("active_placeholder_melee_thrust", "active_placeholder_melee"), pool.actives(),
-                "the cell's own two, and nothing merged: there is no melee.yml yet");
+        assertTrue(pool.actives().contains("sunder"), "merged in from melee.yml: " + pool.actives());
+        assertTrue(pool.actives().contains("active_placeholder_melee"), pool.actives().toString());
+        assertEquals(2, pool.actives().size(), "the cell's own one plus Sunder, and no thrust: " + pool.actives());
         assertEquals(List.of("fragment_vigor", "fragment_focus", "fragment_keen", "fragment_mending",
                 "fragment_ward"), pool.fragments(), "the shared five, and not fragment_ember_cache");
     }
@@ -170,6 +172,7 @@ class PoolLoaderTest {
         copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         copyBundled("mage_fire.yml");
+        copyBundled("melee.yml");
         copyBundled("melee_fire.yml");
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertTrue(warnings.isEmpty(), warningText());
@@ -212,6 +215,7 @@ class PoolLoaderTest {
         copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         copyBundled("mage_fire.yml");
+        copyBundled("melee.yml");
         copyBundled("melee_fire.yml");
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertTrue(warnings.isEmpty(), warningText());
@@ -261,7 +265,7 @@ class PoolLoaderTest {
      * noticed: three cells and one class file (section 7.1), which is not a cell.
      *
      * <p>Was {@code exactlyTheTwoFirePoolsShip} until PLAN-melee-class.md slice M1 added {@code melee_fire.yml}.
-     * M2 adds {@code melee.yml} to this list, and the cell count stays three.
+     * M2 added {@code melee.yml} to this list, and the cell count stayed three.
      */
     @Test
     void exactlyTheThreeFireCellsShip() throws IOException {
@@ -269,7 +273,8 @@ class PoolLoaderTest {
         String[] names = shipped.list((d, n) -> n.endsWith(".yml"));
         assertNotNull(names, "the shipped builds directory must be readable");
         java.util.Arrays.sort(names);
-        assertEquals(List.of("mage_fire.yml", "melee_fire.yml", "ranger.yml", "ranger_fire.yml"), List.of(names));
+        assertEquals(List.of("mage_fire.yml", "melee.yml", "melee_fire.yml", "ranger.yml", "ranger_fire.yml"),
+                List.of(names));
         for (String name : names) copyBundled(name);
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertTrue(warnings.isEmpty(), warningText());
@@ -295,11 +300,15 @@ class PoolLoaderTest {
         copyBundled("ranger.yml");
         copyBundled("ranger_fire.yml");
         copyBundled("mage_fire.yml");
+        copyBundled("melee.yml");
         copyBundled("melee_fire.yml");
         PoolRegistry registry = load(BUNDLED_ABILITY);
         assertTrue(registry.find("ranger", "fire").orElseThrow().actives().contains("recall"));
         assertFalse(registry.find("mage", "fire").orElseThrow().actives().contains("recall"));
         assertFalse(registry.find("melee", "fire").orElseThrow().actives().contains("recall"));
+        assertTrue(registry.find("melee", "fire").orElseThrow().actives().contains("sunder"));
+        assertFalse(registry.find("ranger", "fire").orElseThrow().actives().contains("sunder"), "M2: SU1's other half");
+        assertFalse(registry.find("mage", "fire").orElseThrow().actives().contains("sunder"));
     }
 
     /** One fact, one home: an id both class-wide and cell-listed is refused, naming it -- not de-duplicated. */

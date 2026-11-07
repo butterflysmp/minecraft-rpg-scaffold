@@ -575,6 +575,78 @@ class AbilityLoaderTest {
     }
 
     /**
+     * SUNDER (PLAN-melee-class.md section 8; rulings Q1-Q3): a FACING dash whose slam is its {@code on_land}, and
+     * nothing at take-off. The numbers are PROVISIONAL (8.5) and pinned only so a change to them is a decision
+     * someone sees, not a drift: the tuning boot (M3) moves them here and in the gate together.
+     */
+    @Test
+    void bundledSunderContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/abilities/sunder.yml")) {
+            assertNotNull(in, "bundled content is missing from the classpath");
+            Files.write(dir.resolve("sunder.yml"), in.readAllBytes());
+        }
+
+        AbilityRegistry registry = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        AbilityDefinition def = registry.find("sunder").orElseThrow();
+        assertEquals("kinetic", def.element(), "ruling B");
+        assertEquals(240, def.cooldownTicks());
+        assertEquals(0, def.cooldownTicks() % 4, "the held-input grid");
+        assertEquals(30.0, def.cost().amount(), 0.0);
+        var dash = assertInstanceOf(CastSpec.Dash.class, def.cast());
+        assertEquals(CastSpec.DashDirection.FACING, dash.direction(), "Q1: always straight ahead");
+        assertEquals(5, dash.distance(), 0.0);
+        assertEquals(1.1, dash.speed(), 0.0);
+        assertEquals(0.5, dash.lift(), 0.0);
+        assertTrue(dash.armsLanding(), "ruling 5: the slam's mark is the fall immunity");
+        assertEquals(List.of(), def.onHit(), "nothing at take-off: a dash's on_hit fires on the cast frame");
+        assertEquals(List.of(new EffectSpec.Burst(3.0, List.of(new EffectSpec.Damage(20, "kinetic"),
+                new EffectSpec.Knockback(0.6)))), dash.onLand());
+    }
+
+    /** A landing has no target: a top-level targeted effect in on_land would hit nobody, so it is refused by name. */
+    @Test
+    void aTargetedEffectAtTheTopOfOnLandIsRefused() throws IOException {
+        write("slam.yml", """
+                id: slam
+                element: kinetic
+                cooldown_ticks: 40
+                cast:
+                  type: dash
+                  direction: facing
+                  on_land:
+                    - type: damage
+                      amount: 5
+                      element: kinetic
+                on_hit: []
+                """);
+
+        AbilityRegistry registry = load();
+
+        assertTrue(registry.find("slam").isEmpty(), "refused, not loaded with a slam that hits nobody");
+        assertTrue(warningText().contains("on_land takes untargeted effects only"), warningText());
+        assertTrue(warningText().contains("Put it inside a burst"), warningText());
+    }
+
+    /** Absent on_land is every dash before Sunder: an empty list, and no landing mark unless safe_landing says so. */
+    @Test
+    void aDashWithoutOnLandHasAnEmptyOne() throws IOException {
+        write("step.yml", """
+                id: step
+                element: fire
+                cooldown_ticks: 40
+                cast:
+                  type: dash
+                on_hit: []
+                """);
+
+        var dash = assertInstanceOf(CastSpec.Dash.class, load().find("step").orElseThrow().cast());
+        assertEquals(List.of(), dash.onLand());
+        assertFalse(dash.armsLanding());
+    }
+
+    /**
      * The shipped leap (section 7.7): a safe-landing dash that throws three embers IN FRONT (ruling 37), each 60 fire damage
      * in a 3-block radius (ruling 32). The dash and ember launch numbers are PLACEHOLDERS tuned at boot, so only
      * their shape is pinned here -- up is larger than back, and the angles are an even ring.
