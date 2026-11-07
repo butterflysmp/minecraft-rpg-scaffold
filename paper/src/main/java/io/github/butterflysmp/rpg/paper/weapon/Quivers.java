@@ -429,6 +429,12 @@ public final class Quivers {
         // carries the deadline it was made for. Recomputing it in the scheduler call would be a second
         // source for one value -- which is how a cue goes silent for a reason nobody can see.
         long completesAt = Quiver.reloadCompletesAt(now, reloadTicks);
+        // GATE-deft-hands.md DH2's instrument (the seat, 2026-11-06): the reload's authored and resolved lengths and
+        // its deadline, under /rpg mobtrace, from the SAME numbers just stamped -- never re-derived for the line.
+        if (adapters.mobTrace().getAsBoolean()) {
+            adapters.log().info(ReloadTime.line(player.getUniqueId(), weapon.id(), weapon.reloadTicks(), reloadTicks,
+                    now, completesAt));
+        }
 
         held.editMeta(meta -> {
             meta.getPersistentDataContainer().set(keys.quiverReloadStartedAt,
