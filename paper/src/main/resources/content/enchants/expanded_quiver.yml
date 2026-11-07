@@ -27,12 +27,12 @@
 #
 # This used to read "Nearly uniform in effect across BOTH weapons, which is the argument for the
 # shape" -- true of the two rows it was measured on and FALSIFIED by dragons_breath, which ships a
-# four-round magazine. Level III is +75% there against +25% on the Locust: a three-fold difference
+# five-round magazine (quiver_size 5). Level III is +60% there against +25% on the Locust: a 2.4-fold difference
 # in what one slot buys, which is not uniformity by any reading.
 #
 # THE SHAPE IS NOT RE-RULED BY THIS COMMENT. Flat is still right for the reason the section above
-# gives -- a PERCENTAGE tier below one whole arrow grants ZERO, and at a magazine of 4 a percentage
-# would be worse still, since 25% of 4 is the smallest tier that grants anything at all. What has
+# gives -- a PERCENTAGE tier below one whole arrow grants ZERO, and at a magazine of 5 a percentage
+# would be worse still, since 20% of 5 is the smallest tier that grants anything at all. What has
 # gone is the claim that the flat shape happens to be EVEN across the range; it is even across the
 # middle of the range and steep at the bottom.
 #

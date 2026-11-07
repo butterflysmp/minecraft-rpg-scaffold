@@ -42,6 +42,22 @@ class EnchantEffectLineTest {
             "growth", "Growth", 3, EnchantEffect.MAX_HEALTH, GearClass.ARMOR, List.of(10, 20, 30));
     private static final EnchantDefinition MANA_BANK = new EnchantDefinition(
             "mana_bank", "Mana Bank", 3, EnchantEffect.MAX_MANA, GearClass.ARMOR, List.of(10, 20, 30));
+    // deft_hands.yml. A PERCENT CUT of the reload time, Ben's ruling (a).
+    private static final EnchantDefinition DEFT_HANDS = new EnchantDefinition(
+            "deft_hands", "Deft Hands", 3, EnchantEffect.RELOAD_TIME, GearClass.RANGER, List.of(10, 20, 30));
+
+    /** Ruling (a): the TIME is cut, so the line is a minus on "Reload Time" -- never "+N% Reload Speed". */
+    @Test
+    void deftHandsSaysTheReloadTimeCutAtEveryLevel() {
+        assertEquals(" (-10% Reload Time)", EnchantEffectLine.of(DEFT_HANDS, 1, GearClass.RANGER));
+        assertEquals(" (-20% Reload Time)", EnchantEffectLine.of(DEFT_HANDS, 2, GearClass.RANGER));
+        assertEquals(" (-30% Reload Time)", EnchantEffectLine.of(DEFT_HANDS, 3, GearClass.RANGER));
+    }
+
+    @Test
+    void deftHandsIsInertOffARangerWeapon() {
+        assertEquals(" (inert: a Ranged enchant on a Melee weapon)", EnchantEffectLine.of(DEFT_HANDS, 3, GearClass.MELEE));
+    }
 
     @Test
     void damageEnchantReportsItsPercentAndMultiplier() {

@@ -135,9 +135,12 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             // roll pool and sell an XP unlock that does nothing. Same refusal ARMOR_ONLY and
             // SHIELD_ONLY make, for the same reason.
             case QUIVER_SIZE -> Gate.RANGER_ONLY;
+            // DEFT HANDS: the RELOAD is the thing this effect modifies, and magazine <=> reload is enforced both ways
+            // (WeaponDefinition), so it is exactly the set QUIVER_SIZE reaches. Same gate, same refusal of universal.
+            case RELOAD_TIME -> Gate.RANGER_ONLY;
         };
         boolean curved = switch (effect) {
-            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE -> true;
+            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> true;
             case DURABILITY                                                            -> false;
         };
 
@@ -253,8 +256,8 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                 // an off-hand parry dagger. What it is not is an invitation to open it without a
                 // weapon that needs it.
                 yield gearClass == GearClass.RANGER ? null
-                        : "must be class: ranger -- it resolves a MAGAZINE, and only ranger weapons"
-                                + " author quiver_size"
+                        : "must be class: ranger -- it resolves a MAGAZINE or its RELOAD, and only ranger"
+                                + " weapons author quiver_size and reload_ticks"
                                 + (gearClass == null
                                         ? " (universal would put it in every weapon's pool, inert)"
                                         : ", was class: " + gearClass.name().toLowerCase());

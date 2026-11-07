@@ -118,7 +118,16 @@ class ReloadTimeTest {
     }
 
     /**
-     * THE DOWNWARD DIRECTION, AND ZERO IS AN INSTANT RELOAD RATHER THAN A BROKEN ONE.
+     * THE DOWNWARD DIRECTION, DOWN TO THE RULED ONE-TICK FLOOR AND NO FURTHER.
+     *
+     * <p><b>RE-RULED 2026-11-06 (the seat, at Deft Hands): the resolved reload never goes below
+     * {@link ReloadTime#MIN_TICKS}.</b> The paragraphs below are this row's ORIGINAL account, kept because
+     * the mechanism half of it is still true -- a 0-tick reload is reachable and representable, which
+     * {@code reloadCompletesAt}'s own rows below still witness directly. What changed is the BALANCE call
+     * those paragraphs deferred. The assertions now pin the floor; mutation: drop the {@code Math.max} in
+     * {@code resolve} and the 0 and -6 rows redden.
+     *
+     * <p><b>ORIGINAL TITLE: THE DOWNWARD DIRECTION, AND ZERO IS AN INSTANT RELOAD RATHER THAN A BROKEN ONE.</b>
      *
      * <p><b>This row is the slice's only witness for the direction gear will actually move this
      * stat</b>, because no A2 instrument can reduce it. It is also the measurement behind the ruling
@@ -140,24 +149,20 @@ class ReloadTimeTest {
      * its {@code Math.max}, which would stamp a deadline BEFORE its own start.
      */
     @Test
-    void theResolvedDurationGoesDownFreelyAndZeroIsAnInstantReload() {
+    void theResolvedDurationGoesDownToTheOneTickFloorAndNoFurther() {
         assertEquals(20, ReloadTime.resolve(AUTHORED, -14.0), "34 - 14, passed straight through");
-        assertEquals(0, ReloadTime.resolve(AUTHORED, -34.0), "exactly 0 is reachable");
-        assertEquals(-6, ReloadTime.resolve(AUTHORED, -40.0),
-                "and BELOW zero is not refused here -- there is no floor in resolve, deliberately");
+        assertEquals(1, ReloadTime.resolve(AUTHORED, -33.0), "exactly the floor is reachable");
+        assertEquals(ReloadTime.MIN_TICKS, ReloadTime.resolve(AUTHORED, -34.0), "34 - 34 stops at one tick, not 0");
+        assertEquals(ReloadTime.MIN_TICKS, ReloadTime.resolve(AUTHORED, -40.0), "and below zero stops there too");
 
-        long completesAt = Quiver.reloadCompletesAt(NOW, ReloadTime.resolve(AUTHORED, -34.0));
+        // The MECHANISM half, unchanged and still true: a 0-tick deadline IS its start, and is complete then.
+        long completesAt = Quiver.reloadCompletesAt(NOW, 0);
         assertEquals(NOW, completesAt, "a 0-tick reload's deadline IS its start");
         assertTrue(Quiver.reloadComplete(NOW, NOW, completesAt),
-                "and it is complete on that same tick -- stamped, matured, cleared. A reachable "
-                        + "state, which is why there is no mechanism argument for a reload floor.");
+                "and it is complete on that same tick -- representable; the floor is a balance ruling");
         assertEquals(0L, Quiver.reloadTicksRemaining(NOW, NOW, completesAt));
-
-        long fromNegative = Quiver.reloadCompletesAt(NOW, ReloadTime.resolve(AUTHORED, -40.0));
-        assertEquals(NOW, fromNegative,
-                "a NEGATIVE resolved duration is clamped by reloadCompletesAt's Math.max -- one "
-                        + "enforcement site, and a representability rule (a deadline is never before "
-                        + "its own start) rather than a balance floor");
+        assertEquals(NOW, Quiver.reloadCompletesAt(NOW, -6),
+                "reloadCompletesAt's Math.max is still the representability rule, a separate site");
     }
 
     /**
@@ -203,4 +208,49 @@ class ReloadTimeTest {
         assertEquals(11, ReloadTime.ticks(summed));
         assertEquals(AUTHORED + 11, ReloadTime.resolve(AUTHORED, summed));
     }
+
+    /**
+     * DEFT HANDS, EVERY TIER ON EVERY SHIPPED RELOAD (Ben's ruling (a): reload TIME x0.9 / 0.8 / 0.7). The three
+     * authored values that reach the enchant are 60, 40 and 34 (PLAN-deft-hands.md section 2). The whole grid is
+     * asserted, because a rounding error lands in ONE cell; the expected values were EXECUTED in jshell with
+     * {@code Math.floorDiv(-R * pct, 100)} before this row was written. No tier is a zero change.
+     */
+    @Test
+    void deftHandsCutsEveryTierOnEveryShippedReloadAndNoneRoundsToZero() {
+        int[] authored = {60, 40, 34};
+        int[] percent = {10, 20, 30};
+        int[][] cut = {{-6, -12, -18}, {-4, -8, -12}, {-4, -7, -11}};
+        int[][] resolved = {{54, 48, 42}, {36, 32, 28}, {30, 27, 23}};
+        for (int r = 0; r < authored.length; r++) {
+            for (int p = 0; p < percent.length; p++) {
+                int c = ReloadTime.percentCut(authored[r], percent[p]);
+                String at = authored[r] + " ticks at " + percent[p] + "%";
+                assertEquals(cut[r][p], c, at);
+                assertTrue(ReloadTime.declares(c), at + ": a reduction must declare (!= NONE, never > NONE)");
+                assertEquals(resolved[r][p], ReloadTime.resolve(authored[r], c), at);
+            }
+        }
+    }
+
+    /** 34 x 10% is 3.4 and FLOORS to a 4-tick cut: the mode, and the integer form does it without a double. */
+    @Test
+    void aFractionalCutFloorsToTheLargerCut() {
+        assertEquals(-4, ReloadTime.percentCut(34, 10));
+        assertEquals(-11, ReloadTime.percentCut(34, 30), "10.2 -> 11");
+    }
+
+    /**
+     * THE RULED FLOOR UNDER STACKING (the seat, 2026-11-06): Deft Hands III on the shortest authored reload, plus the
+     * dev reload instrument at -30 (the clock item, {@code ReloadTimeModifierItems}), would resolve to 34 - 11 - 30 =
+     * -7. It resolves to ONE TICK. Shipped content alone never gets near it: III on 34 is 23.
+     */
+    @Test
+    void deftHandsIIIStackedWithTheDevReloadItemStopsAtTheOneTickFloor() {
+        int cut = ReloadTime.percentCut(34, 30);
+        assertEquals(23, ReloadTime.resolve(34, cut), "content alone: nowhere near the floor");
+        assertEquals(ReloadTime.MIN_TICKS, ReloadTime.resolve(34, cut + -30.0),
+                "34 - 11 - 30 would be -7: an instant reload, which the floor rules out");
+        assertEquals(1, ReloadTime.MIN_TICKS);
+    }
+
 }
