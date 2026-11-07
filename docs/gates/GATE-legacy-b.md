@@ -21,6 +21,8 @@ aim defect; carries to the next boot after #175's fix); LB5 PARTIAL (counts matc
   carry to the next boot after #175's AIM fix.
 - **Observation, unexplained:** MOBREMOVE lines run through run 2, many naming uuids that appear nowhere else.
 
+*Amended 2026-11-06, BEFORE THE NEXT BOOT, at the seat's instruction (instrument only; no recorded reading moves): LB5 gains an IMPACT WITNESS.* The 38cc9903 reading found that LB5's counts "cannot tell a guard that held from a fireball that never arrived". #175's selftest now samples LB5's first (a) shot and its (b) shot every tick with `probe_positions` (`GATE-legacy-b.yml`), so the reading says where each body was last seen. The witness and its prediction sit beneath LB5's table. LB5's original prediction and reading stand as written.
+
 Every prediction below was written **before** any row of this file was read, and **this file is COMMITTED before the
 boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been read.
 **NO BOOT until the seat says so**, after the seat has diffed every slice.
@@ -36,7 +38,7 @@ that line appears verbatim after the LOGIN.
 ROWS     15   R0a R0b R0c
               LB1 LB2 LB3 LB4 LB4b LB5 LB6 LB7 LB8 LB9 LB10 LB11
          ──
-         15   = 3 R0 + 12 LB     git grep -c '^### R0\|^### LB' <ref> -- GATE-legacy-b.md
+         15   = 3 R0 + 12 LB     git grep -c '^### R0\|^### LB' <ref> -- docs/gates/GATE-legacy-b.md
 ```
 
 **Plan:** `PLAN-legacy-b.md` on `docs/batch-surveys` (`fe73f5ff`): Ben's words (2026-09-29), his Q-B1/Q-B4/Q-B6
@@ -189,6 +191,12 @@ $zip.Dispose()
 | prediction | READING |
 |---|---|
 | **(a)** Face a wall of oak planks 10 blocks east, with air in front of it. Fire three times: **no fire block appears**, and each fireball **vanishes at the wall**. **(b)** Replace one plank with TNT and fire at it: **it does not prime.** **(c) Positive control, vanilla, NOT OURS:** `/summon small_fireball ~ ~1.6 ~2 {Motion:[1.0d,0.0d,0.0d]}` aimed at the planks. Vanilla's default is incendiary, so **it places fire**. *UNVERIFIED*: the `Motion` key in 26.1; if the summon does not move, record it and do not read (c) as a pass. **(a)'s no-fire is the SOLE witness of `setIsIncendiary(false)`; (b) is the SOLE witness of the block-hit cancel in `onPlumeBodyHit`.** No unit test can raise either | **38cc9903, 2026-10-14: PARTIAL -- every server count matches, but no server line shows a fireball reaching the wall, and the positive control (c) was not driven.** AUTO (selftest, run 2), staging confirmed: the corridor and the top row were already air (L1783, L1786 `"No blocks were filled" [red]` -- a no-change fill, not a failure), the wall 20/20 planks (L1784 `"Successfully filled 20 block(s)"`), the TNT at -94, 64, 5 (L1805), aim level (`pitch=0.000`, L1790, L1792, L1795, L1807). (a) L1787 `BLOCKS FIRE count=0` before and L1801 `count=0` after three shots. (b) L1811 `BLOCKS TNT count=1` (the block remains), L1812 `ENTITIES TNT count=0 radius=16` (40 t after the shot, inside an 80 t fuse), L1813 `FIRE count=0`. **These counts cannot tell a guard that held from a fireball that never arrived** (a hollow fixture in OBSERVABILITY): the selftest logs no cast or impact line. (c) not driven. Ben's half (each fireball vanishes at the wall): NOT READ -- not on his hand-step list. |
+
+**LB5 IMPACT WITNESS, added 2026-11-06, before the next boot.** AUTO, from `/rpg selftest legacy-b`. After the first (a) shot, and again after the (b) shot, there are twelve lines, one per tick, each **`POSITIONS SMALL_FIREBALL n=<k> at=[<dx> <dy> <dz>; …] radius=16`**. Positions are relative to Ben's feet: he stands at a block centre facing east (yaw -90, pitch 0), and the wall's west face is at **dx = 9.5** (the wall is the block column `~10`, spanning dx 9.5 to 10.5).
+
+- **Predicted:** a run of `n=1` samples whose `dx` rises each tick, with `dz` near 0. Then `n=0` for every remaining sample. **The last `n=1` sample has 7.5 < dx ≤ 9.5.** The upper bound is the face. The lower bound is the authored `speed 1.5` per tick (`blaze_kings_staff.yml`) plus half a block of margin: a body last seen further back ended in the air.
+- **How it is read against the counts:** `n=0` on all twelve means the body never spawned or was never in range, and (a)'s or (b)'s no-fire/no-prime count is then VACUOUS, not PASS. A last `dx` at or below 7.5 is the same: it never reached the wall. **Any `dx` above 9.6 means the body passed the face**, a finding in its own right.
+- **Not predicted:** `dy` (the body's spawn height is not traced here), and how many `n=1` samples there are, since the drive's per-tick step is not re-derived here.
 
 ### LB6 — no explosion, at a block or at a mob (SURVIVAL) — witness: Ben
 
