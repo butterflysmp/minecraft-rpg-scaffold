@@ -127,7 +127,12 @@ public final class ProjectileFlight {
         //   a rendered BODY at the eye is the bolt leaving the staff.
         //
         // The old repo dropped its flint item immediately, at the eye. A bolt that pops into
-        // existence one tick downrange is a different weapon. Same distinction EffectApplier's
+        // existence one tick downrange is a different weapon.
+        //
+        // NOT TRUE OF EVERY BODY KIND, AND THE EXCEPTION IS THE CLIENT'S, NOT OURS: a FIREBALL body
+        // (LEGACY-B) is spawned here too, but vanilla's Fireball.shouldRenderAtSqrDistance hides it
+        // for its first two ticks within 3.5 blocks of the camera, so it appears a few blocks out.
+        // Read from the jar (PLAN-legacy-b.md 2.2), inferred for the client; gate row LB3 reads it. Same distinction EffectApplier's
         // trackEmber relies on when it draws inline on its own launch frame: its particle sits on a
         // body that is already there.
         //
@@ -149,7 +154,8 @@ public final class ProjectileFlight {
             // THE LAUNCH VELOCITY GOES IN AT CREATION, WHICH IS THE OPPOSITE OF THE ITEM PATH.
             // An arrow points along its own velocity; spawned still it has no direction to take on
             // its first frame and snaps into line a tick later. See CombatWorld.spawnBoltMarker.
-            markerId = world.spawnBoltMarker(origin, velocity, maxLifetimeTicks);
+            // The body id goes through as authored; the adapter knows an arrow from a fireball.
+            markerId = world.spawnBoltMarker(origin, velocity, maxLifetimeTicks, look.body());
         } else if (look.item() != null) {
             markerId = world.spawnMarker(origin, look.item(), maxLifetimeTicks);
         } else {
