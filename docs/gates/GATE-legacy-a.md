@@ -36,6 +36,8 @@ LEGACY-B. **BK1 and BK2 are deleted, R0b drops the staff's file, and R0c is re-p
 `/stop` at 04:49:34; **no row here was read on it.** Ben's *"Short bow looks good"* afterwards is NOT itemised, so if it
 is recorded at all it goes in as *reported good -- not itemised*, never PASS. That boot's R0 does not carry to the next.
 
+*Amended 2026-11-06, BEFORE THE NEXT BOOT, at the seat's instruction (instrument only; no recorded reading moves): SB1 is re-predicted for the HELD, SCORED bow.* SB1's 38cc9903 prediction quoted the golden rendering, which a held item after `/rpg gearscore set 100` does not show (GATE-withered-shortbow.md WB1 read it, L2066). The re-prediction sits beneath SB1's table; the original prediction stays as written.
+
 Every prediction below was written **before** any row of this file was read, and **this file is COMMITTED before the
 boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been
 read. **NO BOOT until the seat has diffed this file.** This is the stack top: #168 → #169 → #170 → this. It is
@@ -134,6 +136,8 @@ SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; 
 | prediction | READING |
 |---|---|
 | Hover the bow (score set to 100). The lines read, in order: **`Kinetic`**, **`Quiver: --/8`**, blank, **`Ranged Damage: 16`**, **`Attack Speed: 1.7`**, blank, `Short to draw.`, `Shorter to answer.` (italic), blank, **`Common Ranged Weapon`** — the golden rendering. `/rpg give short_bow` a second time: **it lands in a separate slot**, never stacked (the standing decision: no custom stack above 1) | **38cc9903, 2026-10-14: NOT READ.** No second `/rpg give short_bow` and no tooltip observation in this boot (the selftest gave it once, L1698). **For the next boot:** GATE-withered-shortbow.md WB1's held bow read `"Gear Score: 100"` and `"Quiver: 8/8"` (L2066) where its golden-rendering prediction says neither; this row predicts the same golden shape for a held item. |
+
+**SB1 RE-PREDICTED, 2026-11-06, before the next boot** (derived from the code, not from a reading: `QuiverItems.stampFull` stamps the magazine full at mint, so `WeaponLoreLines.quiverLine` renders `8/8` rather than `--/8`; `WeaponLore` calls `GearLore.appendScore` after the element line and before the quiver line, and a scored item renders `Gear Score: <n>` with a gray label and an aqua value). **Hold the bow and `/rpg gearscore set 100`, then hover. In order:** **`Kinetic`**, **`Gear Score: 100`** (`Gear Score: ` gray, `100` aqua), **`Quiver: 8/8`** (gray), blank, **`Ranged Damage: 16`**, **`Attack Speed: 1.7`**, blank, `Short to draw.`, `Shorter to answer.` (italic), blank, **`Common Ranged Weapon`**. `/rpg give` stamps a ROLLED score at acquire (`GearScoreItems.stampOnAcquire`), so before the `gearscore set` the line shows that rolled number, not 100, and no golden (unstamped) rendering is reachable by a give. The non-stacking half is unchanged.
 
 ### SB2 — a shot lands for 16, kinetic (SURVIVAL) — witness: PLAYERHIT line
 
