@@ -50,7 +50,7 @@ that line appears verbatim after the LOGIN.
 ROWS      7   R0a R0b R0c
               SB1 SB2 SB3 SB4
          ──
-          7   = 3 R0 + 4 SB     git grep -c '^### R0\|^### SB' <ref> -- GATE-legacy-a.md
+          7   = 3 R0 + 4 SB     git grep -c '^### R0\|^### SB' <ref> -- docs/gates/GATE-legacy-a.md
 ```
 
 **Plan:** `PLAN-legacy-port.md` on `docs/batch-surveys`, section 2.3 and RULINGS: Ben's 2026-09-29 answers (old
