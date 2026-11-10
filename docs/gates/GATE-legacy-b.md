@@ -159,6 +159,12 @@ $zip.Dispose()
 |---|---|
 | Zombie offset `~8 ~0`, aim at it (`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes`), **right-click once**: **`PLAYERHIT … source=blaze_kings_staff/right_click … element=fire sent=30.000 crit=false triggerScore=100`**. **Exactly one** PLAYERHIT for the shot. **No `[plume] A MARKER BODY dealt damage` warning, no `[fireball] A MARKER BODY set` warning and no `[fireball] A MARKER BODY tried to place fire` warning** in the log. The zombie burns afterwards (Scorch, `fire.yml`) | **38cc9903, 2026-10-14: VOID** (the seat's ruling) -- the aim defect: `tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes` (L1763) turns from the FEET, so the eye ray passed 1.62 high over the zombie at 8 blocks. L1766 `DRIVE use ... item=blaze_kings_staff yaw=-90.000 pitch=-12.271` (eye-to-eye is -0.859); 0 PLAYERHIT in L1749-L1770; L1769 `PROBE ... 3a45dfe0 ... customHP=100.000/100.000 fireTicks=0 ... d=8.000`. No `MARKER BODY` warning anywhere in the log -- an absence that certifies nothing, since nothing was hit. Carries to the next boot after #175's AIM fix. See the AIM NOTE below. **61e722f2, 2026-11-10 (run 3): FAIL as staged, by a defect found in the reading.** L3547 `DRIVE aim ... eye->eye ... d=8.000 pitch=-0.859` (the aim SB2 hit with); L3548 `DRIVE use ... item=blaze_kings_staff`; 0 PLAYERHIT in the bracket; L3555 PROBE 100.000/100.000 fireTicks=0. **The cause (seat-accepted, 2026-11-10):** this row's own `/kill @e[tag=t]` (L3540) put SB2's zombie `98011576` into its death animation at the same spot (d=8), and it was removed at L3551, after the shot. `PaperCombatWorld.castRay` accepts any `LivingEntity` but the caster, dying ones included, so the flight ended on the corpse and dealt nothing. 0 `MARKER BODY` warnings in the log, which certifies nothing, since nothing live was hit. Fix owed before the next boot. |
 
+**LB2 AMENDED, 2026-11-10, before the next boot (the seat's instruction: every single-hit prediction allows a crit,
+as Sunder's rows already do).** The PLAYERHIT reads **either `sent=30.000 crit=false` or `sent=60.000 crit=true`**:
+the base 30 fire, or 30 x 2.0, the crit multiplier WD1 verified at the `61e722f2` boot (`sent=112.000 crit=true`
+against `56.000 crit=false`, GATE-selftest.md ST5). Every other clause of LB2's prediction stands. A `crit=true`
+line at any other `sent` is a FAIL.
+
 > **AIM NOTE, 2026-10-14 (instrument only; no prediction moves; written after the `38cc9903` boot, where this row
 > was VOID).** **`/tp @s ~ ~ ~ facing entity @e[tag=t,limit=1] eyes` does not aim the player's eyes at the zombie's
 > eyes.** `eyes` is the TARGET's anchor only; the player's own anchor is the command source's, and a player's source
@@ -199,6 +205,26 @@ $zip.Dispose()
 - **Predicted:** a run of `n=1` samples whose `dx` rises each tick, with `dz` near 0. Then `n=0` for every remaining sample. **The last `n=1` sample has 7.5 < dx ≤ 9.5.** The upper bound is the face. The lower bound is the authored `speed 1.5` per tick (`blaze_kings_staff.yml`) plus half a block of margin: a body last seen further back ended in the air.
 - **How it is read against the counts:** `n=0` on all twelve means the body never spawned or was never in range, and (a)'s or (b)'s no-fire/no-prime count is then VACUOUS, not PASS. A last `dx` at or below 7.5 is the same: it never reached the wall. **Any `dx` above 9.6 means the body passed the face**, a finding in its own right.
 - **Not predicted:** `dy` (the body's spawn height is not traced here), and how many `n=1` samples there are, since the drive's per-tick step is not re-derived here.
+
+**LB5's BAND RE-DERIVED, 2026-11-10, before the next boot (the seat's instruction; run 3's reading stays VACUOUS as
+written, with its note).** The band above assumed the sampled body IS the flight. It is one step behind:
+`ProjectileFlight.launch` spawns the body and runs the first `step` in the same tick, and `step` moves the logical
+position on but only hands the body its velocity (`driveMarker`), which vanilla applies on the body's next tick.
+Run 3's first sample, `dx 0.00`, is that lag. **The derivation:**
+- the logical flight stands at `1.5 k` (`speed 1.5`, `gravity 0`, aim level);
+- the wall face is at `dx 9.5`, so the step from `9.0` to `10.5` is the first to cross it, and the flight ends there;
+- the body shows the previous position, so a flight that reaches the wall is **last sighted at `dx 7.50` (±0.01)**,
+  then `n=0`.
+
+**The new band:**
+- **last `n=1` at `dx 7.50`:** the flight reached the wall, and the counts are READ;
+- **last `n=1` at `dx 6.00` or below:** it ended short (as (a)'s did, on a dying mob), and the counts are VACUOUS;
+- **any sample at `dx 9.00` or beyond:** the flight crossed the face without ending, which is a finding in its own
+  right.
+
+Run 3 fits it exactly: (b) last at 7.50 (L3618, then `n=0` from L3619), (a) last at 6.00 (L3584, then `n=0`
+from L3585). **Valid only while the step is 1.5 and
+the spawn samples at 0.00;** a changed speed or spawn point re-derives it.
 
 ### LB6 — no explosion, at a block or at a mob (SURVIVAL) — witness: Ben
 
