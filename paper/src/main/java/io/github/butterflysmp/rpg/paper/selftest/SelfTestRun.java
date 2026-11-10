@@ -10,7 +10,10 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
 /**
@@ -43,6 +46,7 @@ final class SelfTestRun {
     private int stepIndex;
     private long rowStartTick;
     private String previousRow = "";
+    private String previousGate;
     private boolean ended;
 
     SelfTestRun(SelfTestService service, Player player, List<Scenario> queue) {
@@ -78,7 +82,29 @@ final class SelfTestRun {
         stepIndex = 0;
         rowStartTick = Bukkit.getCurrentTick();
         log("START scenario=" + s.source() + " selftest=" + service.build() + " player=" + player.getUniqueId());
-        advance();
+        boolean gateBoundary = SelfTestStaging.gateChanged(previousGate, s.gate());
+        previousGate = s.gate();
+        // A chained row reads what the row before it left (its blocks, its mobs, its held item): leave it all.
+        if (SelfTestStaging.chained(s)) {
+            advance();
+            return;
+        }
+        // THE ROW-START CLEAN (SelfTestStaging; the 61e722f2 boot's staging leaks). The last chain's blocks go back,
+        // the inventory goes back at a gate boundary, every tagged entity goes, and the player returns to where the
+        // run began, so no row stages from the floor or the hotbar or the mobs the last one left. THE TELEPORT GOES
+        // FIRST: a player still standing in a pit the last row dug would otherwise be inside the restored blocks for
+        // a tick, and suffocation is damage the run's restore does not undo. The start was air when the run began, so
+        // it is air again once its blocks are back.
+        Location start = snapshot.start();
+        player.teleportAsync(start).thenRun(() -> service.scheduler().onEntity(player, () -> {
+            if (ended) return;
+            int blocks = snapshot.restoreRowBlocks();
+            if (gateBoundary) snapshot.restoreInventory(player);
+            int removed = snapshot.removeTagged(player, service.scheduler());
+            log("CLEAN blocks=" + blocks + " removed=" + removed + " inventory=" + (gateBoundary ? "restored" : "kept")
+                    + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ()));
+            advance();
+        }));
     }
 
     private void advance() {
@@ -105,6 +131,12 @@ final class SelfTestRun {
                     nextScenario();
                     return;
                 }
+                // A kill leaves a body in its death animation for about a second, and the next aim or look-ray can
+                // land on it (WS2c's control hit the dying wither skeleton). Wait until none is left.
+                if (SelfTestStaging.isKill(step)) {
+                    settle(0);
+                    return;
+                }
             }
         } catch (RuntimeException e) {
             log("ABORTED " + e);
@@ -113,6 +145,21 @@ final class SelfTestRun {
         }
         // Two ticks for the last step's replies to come back through the reader, then DONE.
         service.scheduler().onEntityLater(player, this::rowDone, 2);
+    }
+
+    /** Polls once a tick until no dying body is near the player, or {@link SelfTestStaging#SETTLE_CAP_TICKS} pass. */
+    private void settle(int waited) {
+        if (ended) return;
+        int dying = 0;
+        for (Entity e : player.getNearbyEntities(48, 48, 48)) {
+            if (SelfTestStaging.dying(e instanceof LivingEntity, e instanceof LivingEntity l && l.isDead(), e.isValid())) dying++;
+        }
+        if (dying == 0 || waited >= SelfTestStaging.SETTLE_CAP_TICKS) {
+            log("SETTLED dying=" + dying + " ticks=" + waited);
+            advance();
+            return;
+        }
+        service.scheduler().onEntityLater(player, () -> settle(waited + 1), 1);
     }
 
     private void rowDone() {

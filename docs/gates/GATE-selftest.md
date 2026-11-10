@@ -26,6 +26,8 @@ GATE-wither-status.md). After the boot: the AIM fix (the note under ST5). NOT a 
 
 *Amended 2026-11-06, BEFORE THE NEXT BOOT, at the seat's instruction (no recorded reading moves): the instrument now REFUSES outside SURVIVAL (new row ST7, `SelfTestGuardTest`), its restore removes the XP orbs a staged kill drops (ST2 re-predicted beneath its table, `SelfTestRestoreTargetsTest`), and a new verb `probe_positions` gives GATE-legacy-b.md LB5 its impact witness.* The cumulative R0 stays here, on the stack top; every R0 beneath stays SUPERSEDED. Rows go from 10 to 11.
 
+*Amended 2026-11-10, BEFORE THE NEXT BOOT, after the `61e722f2` boot's readings, at the seat's instruction (no recorded reading moves): the staging leaks that boot found are fixed in the run (`SelfTestStaging`, `SelfTestStagingTest`), and four new rows witness the fixes live: ST8 (the row-start clean), ST9 (settling after a kill), ST10 (blocks back per chain, staged from the run's start), ST11 (the inventory back at every gate boundary).* The projectile and look-ray half of the defect (a dying body taking the hit) is `LiveTargets`, on #172. Rows go from 11 to 15.
+
 Every prediction below was written **before** any boot of this branch, and **this file is COMMITTED before the boot**.
 Readings go **beside** a prediction, never over it, and a prediction is not edited once its row has been read. **NO
 BOOT until the seat says so.** **This is the stack top**: `#168 → #169 → #170 → #171 → #172 → #173 → #174 → this`.
@@ -35,10 +37,10 @@ It is booted ONCE, at this branch's head, and every gate beneath it is read in t
 that line appears after the LOGIN with every predicted field as written.
 
 ```
-ROWS     11   R0a R0b R0c R0d
-              ST1 ST2 ST3 ST4 ST5 ST6 ST7
+ROWS     15   R0a R0b R0c R0d
+              ST1 ST2 ST3 ST4 ST5 ST6 ST7 ST8 ST9 ST10 ST11
          ──
-         11   = 4 R0 + 7 ST     git grep -c '^### R0\|^### ST' <ref> -- docs/gates/GATE-selftest.md
+         15   = 4 R0 + 11 ST    git grep -c '^### R0\|^### ST' <ref> -- docs/gates/GATE-selftest.md
 ```
 
 **Plan:** `PLAN-selftest.md` on `docs/batch-surveys`: the Phase 1 survey, the seat's rulings a-d (2026-10-05), and §8's
@@ -192,6 +194,49 @@ LOGIN.
 | prediction | READING |
 |---|---|
 | Added 2026-11-06, before the next boot. **In CREATIVE**, type `/rpg selftest level`. The reply: **`Refusing: you are in CREATIVE; a selftest runs only in SURVIVAL (/gamemode survival).`** The log has **no `SELFTEST RUN START`** for it, because the guard runs before a run exists, so there is no bracket and no `REPLY` line. Then `/gamemode survival` and `/rpg selftest level`: it starts (`SELFTEST RUN START level …`). **The refusal text is Ben's half (chat); the absent and present RUN START are the log's half.** `SelfTestGuardTest` pins every mode but SURVIVAL, and the order (marker, world, players, mode) | **61e722f2, 2026-11-10: the log half as predicted; Ben's half (the refusal text) NOT READ.** L82 `/gamemode creative`; L84 `/rpg selftest level`, with no `SELFTEST RUN START` after it; L85 `/gamemode survival`; L87 `/rpg selftest level` and L88 `SELFTEST RUN START level rows=5 ...`. Ben did not send the refusal text. |
+
+**ST8-ST11 were added 2026-11-10, before the next boot**, for the staging fixes in `SelfTestStaging`. Each is read from
+`/rpg selftest all`'s log at the stack top. The counts below are for the scenarios at #180's head when these rows were
+written: 9 gates, 37 rows + 9 setups = 46 scenarios, of which 3 are CHAINED (DH3, DH6, WB3: their first step is
+`after:`).
+
+### ST8 — every unchained row starts clean (SURVIVAL) — witness: the log
+
+| prediction | READING |
+|---|---|
+| Right after each unchained scenario's `START`, exactly one **`SELFTEST <gate> <row> CLEAN blocks=<n> removed=<k> inventory=<restored\|kept> return=<x y z>`**: **43** under `all` (46 scenarios minus the 3 chained), and **none** in DH3's, DH6's or WB3's bracket. **Every CLEAN's `return=` is the same position, the player's at `RUN START`.** And the leak the `61e722f2` boot found is gone: SU2's bracket has exactly one `PLAYERHIT … source=sunder`, the one naming `sb`, with no hit on any uuid staged by an earlier row (run 3 had one on WS3's tag-`n` neighbour, `GATE-sunder.md` SU2). `SelfTestStagingTest` (`rowStartRemovesEveryTaggedEntityAndNeverAPlayer`, `aRowWhoseFirstStepIsAfterIsChainedAndNoOtherIs`, the wiring scan) pins the decision | _(not run)_ |
+
+### ST9 — after a kill, the next step waits for the dying to leave (SURVIVAL) — witness: the log
+
+| prediction | READING |
+|---|---|
+| Every `CMD /kill …` line is followed, before the row's next step line, by exactly one **`SETTLED dying=0 ticks=<t>`** with `t` ≤ 40 (`SETTLE_CAP_TICKS`). That is 29 under `all`, if no row skips before its kill (`git grep -h -E '^\s*- cmd: "kill ' <ref> -- 'paper/src/main/resources/selftest/*.yml' \| wc -l` = 29 at #180's head). A row-start kill finds nothing after ST8's clean (`No entity was found`), so `ticks=0` there; **a mid-row kill (WS2c's Knell and wither skeleton) shows `ticks` near 20**, the death animation. **`SETTLED dying=<k>` with `k` > 0 means the 40-tick cap was hit: a finding, not a pass.** The live consequence: WS2c's control apply replies `Applied withering x1 (200t) to ZOMBIE` and produces DOTTICK lines (run 3's replied `Refused: wither_skeleton is immune`) | _(not run)_ |
+
+### ST10 — blocks go back per chain, and every row stages from the run's start (SURVIVAL) — witness: the log
+
+| prediction | READING |
+|---|---|
+| Each `CLEAN`'s `blocks=` is the number of distinct blocks the PREVIOUS chain saved: the sum of its `STAGE saved <n> blocks` lines when its boxes do not overlap, and fewer when they do. It is `0` after a chain that saved none. **Every Sunder row's first `SELF` line reads the `y` of `RUN START`'s position** (run 3's first `SELF` lines read y 63.00 for SU2, SU4 and SU5, then 59.00 for SU6, 56.00 for SU7 and SU9, and 57.00 for SU10, at L4005-L4181, as the rows stacked downward), and **no player death appears in the run** (runs 1 and 2 of the `61e722f2` boot drowned their player). The `RUN RESTORED` line's `blocks=` counts every save in the run (`RowBlocks.total`), so a block saved by two chains counts twice; it is no longer distinct positions. `SelfTestStagingTest.rowBlocksRestoreNewestFirstKeepTheFirstSaveAndEmpty` pins the order and the first-save rule | _(not run)_ |
+
+### ST11 — the inventory goes back at every gate boundary (SURVIVAL) — witness: the log
+
+| prediction | READING |
+|---|---|
+| Under `all`, **8** `CLEAN` lines read `inventory=restored`: the first scenario of each gate after the first. Every other `CLEAN` reads `inventory=kept`. **DH1 is not SKIPPED:** its bracket has `DRIVE hold PlayerItemHeldEvent+setHeldItemSlot … item=boltor`, where run 3 had `SKIPPED no hotbar slot holds boltor` (`GATE-deft-hands.md` DH1). Restoring at the boundary returns the inventory the run began with, so a gate's setup gives land in Ben's own free slots. **If his own hotbar is full, DH1 still skips: record his hotbar if it does.** `SelfTestStagingTest.aGateBoundaryIsAChangeOfGateAndTheFirstGateIsNot` pins the decision | _(not run)_ |
+
+**ST8-ST11's unit rows and mutations** (run 2026-11-10 on `feat/selftest`'s working tree, before this text was
+committed). `SelfTestStagingTest` (8). Each mutation landed with marker 1, original 0 and one changed line against a
+pristine copy; its row reddened; the file was restored by `cp`, `cmp`-identical, markers 0:
+
+| mutation | killed by |
+|---|---|
+| MUTCHAIN: `chained` always false | `aRowWhoseFirstStepIsAfterIsChainedAndNoOtherIs` |
+| MUTDYING: `dying` without `valid` | `aDyingBodyIsDeadAndStillInTheWorld` |
+| MUTPLAYER: `removedAtRowStart` without `!isPlayer` | `rowStartRemovesEveryTaggedEntityAndNeverAPlayer` |
+| MUTGATE: `gateChanged` without the equality | `aGateBoundaryIsAChangeOfGateAndTheFirstGateIsNot` |
+| MUTREVERSE: the drain without its reverse | `rowBlocksRestoreNewestFirstKeepTheFirstSaveAndEmpty` |
+| MUTKILL: `startsWith("kill ")` → `startsWith("kill")` | `onlyAKillCommandStartsTheWait` |
+| MUTWIRE: `SelfTestRun`'s chained check removed | `theRunCleansAtEveryUnchainedRowAndSettlesAfterEveryKill` |
 
 ## WHAT THIS GATE CANNOT SEE
 

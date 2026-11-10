@@ -4,10 +4,7 @@ import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
@@ -59,8 +56,12 @@ final class SelfTestSnapshot {
     private final double mana;
     private final String classId;
     private final String elementId;
-    /** First-saved state per block, in save order; restored in reverse so an overlap ends at the oldest. */
-    private final Map<Location, BlockState> blocks = new LinkedHashMap<>();
+    /**
+     * First-saved state per block, in save order; restored in reverse so an overlap ends at the oldest. Drained at
+     * every unchained row start ({@link #restoreRowBlocks}), not only at the end of the run: run 2 of the
+     * {@code 61e722f2} boot drowned its player because each Sunder row staged from the floor the last one left.
+     */
+    private final SelfTestStaging.RowBlocks<Location, BlockState> blocks = new SelfTestStaging.RowBlocks<>();
 
     private SelfTestSnapshot(Player p, ProfileService profiles, ResourcePool resources, MobNameplateManager nameplates) {
         this.id = p.getUniqueId();
@@ -90,7 +91,38 @@ final class SelfTestSnapshot {
     }
 
     void saveBlock(BlockState state) {
-        blocks.putIfAbsent(state.getLocation(), state);
+        blocks.save(state.getLocation(), state);
+    }
+
+    /** Puts back the blocks the last chain of rows saved, newest first. Returns how many. */
+    int restoreRowBlocks() {
+        List<BlockState> newestFirst = blocks.drainNewestFirst();
+        for (BlockState state : newestFirst) state.update(true, false);
+        return newestFirst.size();
+    }
+
+    /** Where the player stood when the run began: every unchained row is staged from here again. */
+    Location start() {
+        return location.clone();
+    }
+
+    /** The inventory and held slot the run began with, put back at every gate boundary (DH1's full hotbar). */
+    void restoreInventory(Player p) {
+        ItemStack[] copy = new ItemStack[contents.length];
+        for (int i = 0; i < contents.length; i++) copy[i] = contents[i] == null ? null : contents[i].clone();
+        p.getInventory().setContents(copy);
+        p.getInventory().setHeldItemSlot(heldSlot);
+    }
+
+    /** Removes, without a death animation, every entity the instrument tagged near the player. Returns how many. */
+    int removeTagged(Player p, Scheduler scheduler) {
+        int n = 0;
+        for (Entity e : p.getNearbyEntities(48, 48, 48)) {
+            if (!SelfTestStaging.removedAtRowStart(e instanceof Player, e.getScoreboardTags().contains(MOB_TAG))) continue;
+            scheduler.onEntity(e, e::remove);
+            n++;
+        }
+        return n;
     }
 
     /**
@@ -108,9 +140,7 @@ final class SelfTestSnapshot {
             scheduler.onEntity(e, e::remove);
             if (orb) orbs++; else mobs++;
         }
-        List<BlockState> reverse = new ArrayList<>(blocks.values());
-        java.util.Collections.reverse(reverse);
-        for (BlockState state : reverse) state.update(true, false);
+        for (BlockState state : blocks.drainNewestFirst()) state.update(true, false);   // the last chain's
 
         p.getInventory().setContents(contents);
         p.getInventory().setHeldItemSlot(heldSlot);
@@ -131,6 +161,6 @@ final class SelfTestSnapshot {
         return "RESTORED xp=" + (xp ? lifetimeXp : "NOT-RESTORED") + " cell=" + (cell ? classId + "/" + elementId : "NOT-RESTORED")
                 + " gamemode=" + gameMode + " held=" + heldSlot + " mana=" + String.format("%.1f", mana)
                 + " trace=" + nameplates.tracing() + " spawn_mobs=" + spawnMobs + " time=" + time
-                + " blocks=" + blocks.size() + " mobsRemoved=" + mobs + " orbsRemoved=" + orbs;
+                + " blocks=" + blocks.total() + " mobsRemoved=" + mobs + " orbsRemoved=" + orbs;
     }
 }
