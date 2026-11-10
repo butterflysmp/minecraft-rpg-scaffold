@@ -783,9 +783,11 @@ class ContentValidatorTest {
      * THE ONLY THING SEPARATING A CORRECT EMPTY ARM FROM AN INCORRECT ONE.
      *
      * <p><b>The hazard is that the wrong answer looks native to the file.</b> {@code checkCast}
-     * already contains THREE arms that are literally {@code -> { }}: {@code Self}, {@code Melee} and
-     * {@code Dash}, and all three are right, because none of those kinds names a visual. So
-     * {@code case CastSpec.Volley ignored -> { }} would compile, sit unremarkably beside its three
+     * already contains TWO arms that are literally {@code -> { }}: {@code Self} and {@code Melee},
+     * and both are right, because neither kind names a visual. ({@code Dash} was a third until
+     * Sunder's {@code on_land} gave a dash an effect list, and the empty arm then hid exactly this
+     * defect: see {@link #aSlamsDanglingVisualIsReportedAndNamedAsOnLand}.) So
+     * {@code case CastSpec.Volley ignored -> { }} would compile, sit unremarkably beside its
      * neighbours, pass review by eye, and silently stop validating beams and trails for every volley
      * ever authored. Nothing else in the project would notice: the ability still loads, still fires,
      * and simply draws nothing.
@@ -816,6 +818,50 @@ class ContentValidatorTest {
         assertTrue(problems.isEmpty(), problems.toString());
         // THE CONTROL. Without it the row above passes just as well against an arm that reports a
         // problem for EVERY volley, which is the opposite defect and equally silent in a diff.
+    }
+
+    // --- The dash arm: Sunder's on_land is an effect list, so it is walked ---
+
+    /** A Sunder-shaped leap whose slam carries {@code onLand}. */
+    private static AbilityRegistry slamWith(List<EffectSpec> onLand) {
+        var registry = new AbilityRegistry();
+        registry.register(new AbilityDefinition("sunder", "Sunder", "kinetic", 240, new ResourceCost("mana", 30),
+                new CastSpec.Dash(5, 1.1, 0.5, CastSpec.DashDirection.FACING, false, onLand), List.of()));
+        return registry;
+    }
+
+    /**
+     * A SLAM'S DANGLING VISUAL IS A NAMED PROBLEM, AND THE LABEL SAYS on_land.
+     *
+     * <p>The leap still fires and the slam still hits; it just draws nothing. That is the silent
+     * no-visual this class exists to name. The status nested in the burst is checked in the same
+     * row, so the walk is proved to reach INTO the slam's burst and not only its top level.
+     *
+     * <p>Mutation: put back {@code case CastSpec.Dash ignored -> { }} -> 0 problems, reddens.
+     */
+    @Test
+    void aSlamsDanglingVisualIsReportedAndNamedAsOnLand() {
+        var problems = validator(visualsWith("something_else"), statusesWith("scorch")).validate(slamWith(List.of(
+                new EffectSpec.Visual("no_such_slam_visual"),
+                new EffectSpec.Burst(3.0, List.of(
+                        new EffectSpec.Damage(20, "kinetic"),
+                        new EffectSpec.Status("no_such_slam_status", 40, 0))))));
+
+        assertEquals(2, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("no_such_slam_visual"), problems.toString());
+        assertTrue(problems.get(1).contains("no_such_slam_status"), problems.toString());
+        assertTrue(problems.stream().allMatch(p -> p.contains("ability 'sunder' on_land")),
+                "the label must say the reference is in the SLAM, not on_hit: " + problems);
+    }
+
+    @Test
+    void aSlamWhoseReferencesResolveIsSILENT() {
+        var problems = validator(visualsWith("slam_visual"), statusesWith("scorch")).validate(slamWith(List.of(
+                new EffectSpec.Visual("slam_visual"),
+                new EffectSpec.Burst(3.0, List.of(new EffectSpec.Status("scorch", 40, 0))))));
+
+        assertTrue(problems.isEmpty(), problems.toString());
+        // THE CONTROL: the row above passes just as well against an arm that reports every slam.
     }
 
     @Test
