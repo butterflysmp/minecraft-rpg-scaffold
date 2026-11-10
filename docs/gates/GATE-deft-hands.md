@@ -125,6 +125,11 @@ $zip.Dispose()
 |---|---|---|
 | Exactly one line **`[Rpg] Selftest: dev server, 37 scenarios across 9 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands]`** (34 + this gate's 3: DH1, DH3, DH6), and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | **61e722f2, 2026-11-10: PASS.** L50 `[Rpg] Selftest: dev server, 37 scenarios across 9 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands]`, exactly; no `Refusing selftest` line. |
 
+**R0d RE-PREDICTED FOR THE NEXT BOOT, 2026-11-10 (the reading above stays as read):** SU8 gained a scenario
+(`GATE-sunder.md` SU8, its death half), so the line becomes **`[Rpg] Selftest: dev server, 38 scenarios across 9
+gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands]`**,
+with still no `Refusing selftest` line. `SelfTestScenariosTest.theScenariosAreExactlyTheCoreRows` pins the 38.
+
 ---
 
 ## THE ROWS
