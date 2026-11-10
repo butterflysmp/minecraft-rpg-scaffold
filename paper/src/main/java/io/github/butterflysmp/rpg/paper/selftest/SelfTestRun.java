@@ -6,10 +6,13 @@ import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
+import org.bukkit.GameRules;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -47,6 +50,8 @@ final class SelfTestRun {
     private long rowStartTick;
     private String previousRow = "";
     private String previousGate;
+    private final SelfTestStaging.RowRules<GameRule<Boolean>> rowRules = new SelfTestStaging.RowRules<>();
+    private boolean deathExpected;
     private boolean ended;
 
     SelfTestRun(SelfTestService service, Player player, List<Scenario> queue) {
@@ -109,6 +114,11 @@ final class SelfTestRun {
 
     private void advance() {
         if (ended) return;
+        // A death_rules row may lose its player (SU8): wait for the respawn instead of aborting.
+        if (SelfTestStaging.waitForRespawn(deathExpected, player.isDead()) && player.isOnline()) {
+            awaitRespawn(player.getLocation(), 0);
+            return;
+        }
         Optional<String> invalid = invalidated();
         if (invalid.isPresent()) {
             end("ABORTED " + invalid.get());
@@ -127,6 +137,7 @@ final class SelfTestRun {
                 drainReplies();
                 if (skip.isPresent()) {
                     log("SKIPPED " + skip.get());
+                    restoreRowRules();
                     previousRow = "";
                     nextScenario();
                     return;
@@ -162,9 +173,61 @@ final class SelfTestRun {
         service.scheduler().onEntityLater(player, () -> settle(waited + 1), 1);
     }
 
+    /**
+     * Polls for the respawn on the REGION scheduler, never the player's own. Paper retires an entity's tasks across a
+     * death (`PaperScheduler.onEntityLater` passes no retired callback, so a retired task simply never runs), and run
+     * 2 of the {@code 61e722f2} boot shows it: after Ben drowned in SU11's 240-tick wait the row logged nothing for 78
+     * seconds, until he stopped it. Back on the player's scheduler only once he is alive again.
+     */
+    private void awaitRespawn(Location where, int waited) {
+        if (ended) return;
+        if (!player.isOnline()) {
+            end("ABORTED the player left");
+            return;
+        }
+        if (!player.isDead()) {
+            log("RESPAWNED ticks=" + waited);
+            service.scheduler().onEntity(player, this::advance);
+            return;
+        }
+        if (waited >= SelfTestStaging.RESPAWN_CAP_TICKS) {
+            end("ABORTED the player did not respawn in " + waited + " ticks");
+            return;
+        }
+        service.scheduler().onRegionLater(where, () -> awaitRespawn(where, waited + 1), 1);
+    }
+
+    /** {@code death_rules}: this row only, keep_inventory and immediate_respawn on, and the row may lose its player. */
+    void deathRules() {
+        for (GameRule<Boolean> rule : List.of(GameRules.KEEP_INVENTORY, GameRules.IMMEDIATE_RESPAWN)) {
+            rowRules.record(rule, world.getGameRuleValue(rule));
+        }
+        deathExpected = true;
+        log("DEATH_RULES keep_inventory=" + world.getGameRuleValue(GameRules.KEEP_INVENTORY)
+                + "->true immediate_respawn=" + world.getGameRuleValue(GameRules.IMMEDIATE_RESPAWN) + "->true");
+        service.scheduler().onGlobal(() -> {
+            world.setGameRule(GameRules.KEEP_INVENTORY, true);
+            world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
+        });
+    }
+
+    /** Puts back what a death_rules row changed, at its end, however it ends. */
+    private void restoreRowRules() {
+        deathExpected = false;
+        if (!rowRules.active()) return;
+        Map<GameRule<Boolean>, Boolean> back = rowRules.drain();
+        StringBuilder line = new StringBuilder("RULES restored");
+        for (var e : back.entrySet()) line.append(' ').append(e.getKey().getKey().getKey()).append('=').append(e.getValue());
+        log(line.toString());
+        service.scheduler().onGlobal(() -> back.forEach((rule, value) -> {
+            if (value != null) world.setGameRule(rule, value);
+        }));
+    }
+
     private void rowDone() {
         if (ended) return;
         drainReplies();
+        restoreRowRules();
         log("DONE ticks=" + (Bukkit.getCurrentTick() - rowStartTick));
         previousRow = current().row();
         nextScenario();
@@ -186,6 +249,7 @@ final class SelfTestRun {
         ended = true;
         drainReplies();
         if (reader != null) PacketEvents.getAPI().getEventManager().unregisterListener(reader);
+        restoreRowRules();   // a row that ended mid-way; the snapshot below puts the RUN START values back too
         String restored = snapshot.restore(player, service.profiles(), service.resources(), service.nameplates(),
                 service.scheduler());
         service.log("SELFTEST RUN " + why);

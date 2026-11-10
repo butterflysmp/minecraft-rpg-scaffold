@@ -122,6 +122,31 @@ SU7:
   - wait: 60
   - probe_self: ""
 
+# SU8 (the death half; added 2026-11-10 on the seat's ruling, the quit half stays Ben's): a zombie 5 ahead, one Left,
+# and the player killed mid-leap 10 ticks after the press by an ordinary `kill @s` (DamageCause.KILL, which
+# VanillaDamagePolicy passes to vanilla: the server's own damage-to-death path). death_rules sets keep_inventory and
+# immediate_respawn for this row only, and lets the run wait for the respawn instead of aborting.
+SU8:
+  - expect_cell: "melee fire"
+  - wait: 240
+  - cmd: "kill @e[tag=t]"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -4 12 4 4"
+  - cmd: "fill ~-1 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-1 ~ ~-4 ~12 ~4 ~4 air"
+  - cmd: 'summon zombie ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 5
+  - probe: t
+  - death_rules: on
+  - hold: stone
+  - cmd: "rpg mana refill"
+  - swing: HAND
+  - wait: 10
+  - cmd: "kill @s"
+  - wait: 40
+  - probe_self: ""
+  - probe: t
+
 # SU9: an air start -- teleported 1.2 up, Left on the same tick.
 SU9:
   - expect_cell: "melee fire"
@@ -139,6 +164,9 @@ SU9:
   - swing: HAND
   - wait: 60
   - probe_self: ""
+  - probe_blocks: "WATER -10 0 -4 7 5 4"
+  - probe_blocks: "SAND -10 0 -4 7 5 4"
+  - probe_blocks: "GRAVEL -10 0 -4 7 5 4"
 
 # SU10: SU5's ledge with the player's HP read before and after; then an ordinary 7-block drop.
 SU10:
@@ -162,6 +190,7 @@ SU10:
   - cmd: "tp @s ~ ~7 ~"
   - wait: 40
   - probe_self: ""
+  - probe_blocks: "WATER -9 -2 -4 7 7 4"
 
 # SU11: a GS-300 /rpg spawn zombie 5 ahead and 2 aside, held in place with NoAI.
 SU11:
@@ -186,6 +215,7 @@ SU11:
   - swing: HAND
   - wait: 60
   - probe: s11
+  - probe_blocks: "WATER -6 0 -4 7 4 4"
 
 # SU12: an AI zombie 5 ahead and 2 aside, slowed so it stands; its position sampled every 2 ticks after the cast.
 SU12:
@@ -239,3 +269,4 @@ SU12:
   - wait: 2
   - probe_positions: "ZOMBIE 12"
   - probe: s12
+  - probe_blocks: "WATER -6 0 -4 7 4 4"

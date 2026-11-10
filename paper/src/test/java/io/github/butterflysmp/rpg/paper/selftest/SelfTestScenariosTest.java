@@ -48,7 +48,7 @@ class SelfTestScenariosTest {
                 "legacy-b", List.of("LB2", "LB5"),
                 "wither-status", List.of("WS-C", "WS1", "WS2b", "WS2c", "WS3"),
                 "withered-shortbow", List.of("WB1", "WB2", "WB3"),
-                "sunder", List.of("SU1", "SU2", "SU4", "SU5", "SU6", "SU7", "SU9", "SU10", "SU11", "SU12"));
+                "sunder", List.of("SU1", "SU2", "SU4", "SU5", "SU6", "SU7", "SU8", "SU9", "SU10", "SU11", "SU12"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -56,7 +56,8 @@ class SelfTestScenariosTest {
             assertEquals(gate.getValue(), rows, gate.getKey());
         }
         // 24 CORE rows on the seat's run sheet + WS-C (made CORE 2026-10-05) - R0d (a boot line, no scenario). Then +10, GATE-sunder.md (2026-11-06).
-        assertEquals(34, loaded.rows());
+        // Then +1, SU8's death half (the seat's ruling, 2026-11-10).
+        assertEquals(35, loaded.rows());
     }
 
     @Test

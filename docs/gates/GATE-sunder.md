@@ -196,11 +196,57 @@ read after Ben's LOGIN, each row inside its own `SELFTEST sunder <row> START …
 |---|---|
 | **Hand row, with `/rpg mobtrace` ON and a zombie ~5 ahead.** Ben presses Left; the console runs `/kill <Ben>` while he is in the air (about half a second after the press). **`LANDING … source=sunder how=FORGOTTEN slam=false at=-`**, and **no `PLAYERHIT … source=sunder`** after it. On respawn, nothing slams. Then once more with a **quit** mid-leap instead of a death: the same `how=FORGOTTEN slam=false` line | **61e722f2, 2026-11-10: NOT STAGEABLE this boot.** The console `/kill` needs console input, and the dev server has none (stdin is null, RCON is off). Carried; the proposal is under WHAT THIS GATE CANNOT SEE. |
 
+**SU8 AMENDED, 2026-11-10, BEFORE THE NEXT BOOT (the seat's ruling): the DEATH half is now AUTO-PARTIAL, by a new
+scenario; the QUIT half stays Ben's.**
+
+**The scenario**, `selftest/GATE-sunder.yml#SU8`:
+- a zombie 5 ahead; `death_rules: on`; one Left;
+- 10 ticks later, `cmd: kill @s`. That is `DamageCause.KILL`, which `VanillaDamagePolicy` passes to vanilla, so it is
+  the server's own damage-to-death path, the same as the console `/kill` this row named. *It is issued from Ben's own
+  command source, not the console, so it needs his op.*
+
+**What `death_rules` does.** It sets `keep_inventory` and `immediate_respawn` for this row only. The run then waits
+for the respawn instead of aborting, polling on the REGION scheduler (`SelfTestRun.awaitRespawn`), because a death
+retires the player's own scheduler. Both rules go back at the row's end, and both are in the run's restore set. The
+plugin already keeps a dying player's inventory (`onPlayerDeath`'s `setKeepInventory(true)`); the game rule is a
+second guard, by the ruling.
+
+**The AUTO half, predicted, in SU8's bracket, in order:**
+1. `DEATH_RULES keep_inventory=<b>->true immediate_respawn=<b>->true`;
+2. `DRIVE swing`, then `CMD /kill @s`;
+3. **`LANDING … source=sunder how=FORGOTTEN slam=false at=-`**;
+4. `SETTLED dying=0 …`, then `RESPAWNED ticks=<t>` with `t` < 200;
+5. the `SELF` after the respawn reads `customHP=100.000/100.000` (a respawn resets it);
+6. the last `PROBE tag=t` reads 100.000/100.000, or `none within 16 blocks` if the respawn point is far. Either is
+   accepted, because the probe is not this row's witness;
+7. `RULES restored keep_inventory=<b> immediate_respawn=<b>`, with the values DEATH_RULES found.
+
+**No `PLAYERHIT … source=sunder` anywhere in the bracket, and no `RUN ABORTED`.** The run's `RUN RESTORED` line now
+ends `keep_inventory=<b> immediate_respawn=<b>`, the RUN START values.
+
+**The quit half** (a quit mid-leap gives the same `how=FORGOTTEN slam=false` line) **stays Ben's hand step**: the
+instrument cannot quit its own player.
+
 ### SU9 — from mid-air: the leap lands farther, and the slam is at the real landing (SURVIVAL) — witness: LANDING
 
 | prediction | READING |
 |---|---|
 | Flat floor; the player is teleported 1.2 blocks up and presses Left on the same tick (an AIR START: the mark sees not-on-ground on its first step). **Exactly one `LANDING … how=LANDED slam=true`** with `y` equal to the floor the start stood on (the `SELF` taken BEFORE the teleport, ±0.01), and `z` within 0.5. **The landing `x` is RECORDED and compared with SU2's, not predicted** (section 7.8 saw ~2× for Recall mid-jump; this is a teleport, not a jump) | **61e722f2, 2026-11-10 (run 3): NOT AS PREDICTED, on y.** L4150 SELF before the teleport, y 56.00 at x -105.50; L4153 `tp @s ~ ~1.2 ~`; L4158 `LANDING ... how=LANDED slam=true at=-96.54 57.00 8.50`: y 57.00 against the predicted 56.00 (±0.01); z equal. The landing x is recorded: +8.96 from the start (SU2's was +5.82). Why it came down a block high is not read (the row's air fill reported 802 blocks changed, L4147). |
+
+**SU9 DIAGNOSED, 2026-11-10, before the next boot, read-only from the run-3 log and the scenario: a STAGING ARTEFACT,
+not a code defect, so the prediction stands.**
+- **The staging.** Run 3 staged SU9 underground. The floor had stacked down to y 56, 7 below the surface at y 63, so
+  the row's fills cut a pocket: the stone floor changed 25 of 162 cells (the rest were already solid) and the air fill
+  802 of 972 (L4145, L4148).
+- **The landing.** The player came down ON a block at y 56 (L4158 at y 57.00, and L4159 `onGround=true` at 57.00),
+  inside a box the air fill had just cleared.
+- **The likeliest cause** is a falling block: sand or gravel from the y 62 ceiling the pocket opened under. The area is
+  beach (turtles, frogs and a drowned spawned near it). **No line names the block, so this is UNVERIFIED.**
+- **`a8ad33bb` removes the condition:** every unchained row now stages from the run's start, on the surface, so SU9's
+  box has open air above it.
+- **Instrument added (before the boot):** after the landing, `probe_blocks` WATER, SAND and GRAVEL over the box,
+  relative to the landing (`-10 0 -4 7 5 4`). **Predicted: `count=0` for all three.** A non-zero SAND or GRAVEL count
+  would witness the falling-block cause.
 
 ### SU10 — no fall damage on a Sunder landing at any height; then an ordinary drop hurts (SURVIVAL) — witness: SELF
 
@@ -208,17 +254,53 @@ read after Ben's LOGIN, each row inside its own `SELFTEST sunder <row> START …
 |---|---|
 | SU5's ledge again (a ~5-block fall counting the lift: above vanilla's 3-block threshold, *UNVERIFIED* from the jar). `SELF` before the cast; one Left; `SELF` after the landing (40 t later): **customHP identical**, and **one `LANDING … how=LANDED slam=true`** (the seat's ruling 5: the mark spent its immunity AND slammed). Then, 40 t later, `tp @s ~ ~7 ~` and 40 t: the third `SELF` reads **customHP lower than the second** (the mark cleared; an ordinary fall hurts). **The amount is recorded, not predicted.** And **no LANDING line for the ordinary drop** (no mark) | **61e722f2, 2026-11-10 (run 3): the fields as predicted, with a staging caveat.** L4181 SELF 100.000/100.000 at y 57.00; L4185 `LANDING ... how=LANDED slam=true at=-89.07 54.00 8.50`; L4187 SELF 100.000/100.000, identical; L4189 the ordinary `tp @s ~ ~7 ~`; L4192 SELF 80.200/100.000, lower (the amount recorded); no LANDING for the ordinary drop. **The caveat:** the ledge was 3 blocks (57 to 54), not the ~5 the row assumes, and no line shows whether that height would hurt without Sunder. **Run 2's SU10 is VOID** (L2815-L2827): the leap ended in water (L2820 `onGround=false fall=0.000` at y 57.70, 40 t after the cast), and the only LANDING, L2825, came after the ordinary drop. |
 
+**SU10 INSTRUMENT ADDED, 2026-11-10, before the next boot.** The row digs 5 below wherever it stages, which is below
+sea level on a surface at y 63. Run 2's SU10 flooded. So after the ordinary drop there is a WATER `probe_blocks` over
+the pit, relative to the player's final position (`-9 -2 -4 7 7 4`). **Predicted `count=0`.** A non-zero count makes
+the row VOID (the leap ended in water), not FAIL. **Stage the run on dry ground, away from water.**
+
 ### SU11 — a slam on a GS-300 zombie deals the authored 20, sent at score 100 (SURVIVAL) — witness: PLAYERHIT + PROBE
 
 | prediction | READING |
 |---|---|
 | `/rpg spawn zombie 300` placed 5 ahead and 2 aside (slowed in place with NoAI). **`MOBSEED <uuid> zombie gs=300 …`** for it. One Left. **`PLAYERHIT … source=sunder target=<that uuid> zombie element=kinetic sent=20.000 crit=<b> triggerScore=100`** (`sent=20.000` on `crit=false`; 20 × the crit multiplier on `crit=true`) — the stone's score (finding F1, ruled by Q6), not the gear's. Its `PROBE` customHP drops; **the drop is recorded** (it is after the zombie's Defense, which this row does not predict). Ben's half (secondary): the popup reads the same number as the drop | **61e722f2, 2026-11-10 (run 3): PARTIAL.** L4212 `MOBSEED e4d8fa45 zombie gs=300 source=stored max=300`; L4229 PROBE 300.000/300.000 at d=5.385; L4232 the swing; L4234 the 60 t PROBE, 300.000/300.000, with the player still 1.2 above it (d=2.020 dy=-1.198); L4235 DONE. The predicted line arrived after the bracket: L4238 `LANDING ... how=LANDED slam=true at=-83.78 54.00 8.50` and L4239 `PLAYERHIT ... target=e4d8fa45 ... element=kinetic sent=20.000 crit=false triggerScore=100`, as predicted, at the stone's score. Its PROBE drop was never read: the next row's `/kill` removed it. Why the leap was still in the air at 60 t is not read; the server lagged about 3 s at 09:50:04-09:50:07 (L4233, `Mana refilled` replied 3 s after its command). |
 
+**SU11 DIAGNOSED, 2026-11-10, before the next boot: a STAGING ARTEFACT (water), not a code defect, so the prediction
+stands.**
+- **The staging.** SU11 was staged at y 54: 9 below the surface, below sea level (63), and beside the ocean. The air
+  fill changed 395 of 630 cells (L4206).
+- **The reading.** The 60 t PROBE found the player still 1.2 above the floor (L4234: `d=2.020 dy=-1.198`). On dry
+  ground a leap lands in about 20 ticks (SU2: swing L4008, LANDING L4010, within one second). **A player held up for
+  60 ticks is floating.** The same stretch in run 2 read `onGround=false fall=0.000` in water (SU10, L2820).
+- **Why the mark landed late.** It ended when his feet reached the floor (L4238 `how=LANDED`), after the bracket. That
+  is the designed behaviour in water (SU6's range: ABSORBED or LANDED): water keeps zeroing the fall distance, so the
+  mark ends only on the ground or at the backstop.
+- **Instrument added:** a WATER `probe_blocks` at the row's end, relative to the landing (`-6 0 -4 7 4 4`).
+  **Predicted `count=0`.**
+
 ### SU12 — knockback pushes a mob away from where the leap came down (SURVIVAL) — witness: POSITIONS
 
 | prediction | READING |
 |---|---|
 | An AI zombie from `/rpg spawn zombie`, 5 ahead and 2 aside (`+z`), given slowness 255 so it stands. `POSITIONS ZOMBIE` sampled before the cast and every 2 ticks for 30 ticks after it. **After the `LANDING` line, the zombie's `z` relative to the landing feet INCREASES** (pushed away, `+z`), and it takes one `PLAYERHIT … source=sunder`. **How far is RECORDED, not predicted** (MC11 measured nothing). *UNVERIFIED*: that slowness 255 suppresses walking but not knockback velocity; if the zombie never moves, the row is VOID for that reason, not a FAIL of the slam | **61e722f2, 2026-11-10 (run 3): NOT AS PREDICTED.** L4257 `MOBSEED f14797c0 zombie gs=100 ... max=212`; L4277 the swing. `POSITIONS ZOMBIE` first shows TWO zombies, the `s12` zombie at +5 and SU11's zombie at 0 (killed by this row's `/kill`, L4240: a dying body), both shifting together as the player moved; after the leap, one zombie with its relative z constant at 2.00, so no +z push. No LANDING and no PLAYERHIT inside the bracket after the cast, and none later in the log (28 LANDING lines in all, none after L4298); L4297 `s12` 211.538/211.538, not hit. The leap's end is not in the bracket. Cause not read; carried. |
+
+**SU12 DIAGNOSED, 2026-11-10, before the next boot: the same water artefact as SU11, so the prediction stands.**
+- **The staging.** SU12 was staged at y 54, like SU11. Its air fill changed 614 of 630 cells (L4251), so the pocket
+  was cut almost wholly from solid ground, below sea level. A drowned came into tracking range in the tick it staged
+  (L4285).
+- **The reading.** After the cast the player rose above the zombie and hung there. The relative dy went -0.91, -1.48,
+  -1.81, -2.00, -2.11, -2.16, then -2.17 drifting to -1.94 over about 15 ticks (L4280-L4296). That is buoyancy, not a
+  fall.
+- **Why no slam.** There is no LANDING because his feet never reached the ground inside the bracket. With no slam
+  there is no PLAYERHIT and no push.
+- **Instrument added:** a WATER `probe_blocks` at the row's end (`-6 0 -4 7 4 4`). **Predicted `count=0`.**
+
+**A RUN-LOOP FINDING FROM THESE RUNS, recorded and not fixed (not asked).** A death in a row WITHOUT `death_rules`
+does not abort the run; it stalls it silently. Run 2 shows it: Ben drowned at L2831, 11 seconds into SU11's 240-tick
+wait, and the row logged nothing more until his `/rpg selftest stop` 78 seconds later (L2900). The wait is a task on
+the player's own scheduler, and `PaperScheduler.onEntityLater` passes no retired callback, so a task a death retires
+simply never runs. `invalidated()`'s `"the player died"` check is therefore never reached. The likely fix is an abort
+from the death event; it is owed to the seat.
 
 ---
 

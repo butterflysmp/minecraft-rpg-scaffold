@@ -90,6 +90,7 @@ final class SelfTestDrivers {
             case PROBE_ENTITIES -> probeEntities(p, a);
             case PROBE_POSITIONS -> probePositions(p, a);
             case PROBE_SELF -> probeSelf(p);
+            case DEATH_RULES -> { run.deathRules(); yield Optional.empty(); }
             case SAVE_BLOCKS -> saveBlocks(p, a);
             case EXPECT_CELL -> expectCell(p, a);
             case AFTER -> run.previousRow().equals(a)

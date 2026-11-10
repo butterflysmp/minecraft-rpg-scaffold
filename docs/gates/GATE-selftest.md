@@ -206,6 +206,16 @@ LOGIN.
 written: 9 gates, 37 rows + 9 setups = 46 scenarios, of which 3 are CHAINED (DH3, DH6, WB3: their first step is
 `after:`).
 
+**RECOUNTED, 2026-11-10, before the next boot, when SU8 gained a scenario (`GATE-sunder.md` SU8).** It adds one row,
+which is unchained, and two kill steps (`kill @e[tag=t]` and `kill @s`). Under `all` at #180's head:
+- ST1's `rows=37` becomes **`rows=38`**: 47 scenarios, each with exactly one DONE or SKIPPED;
+- ST8's 43 `CLEAN` lines become **44**;
+- ST9's 29 kill steps become **31** (`git grep -h -E '^\s*- cmd: "kill ' <ref> -- 'paper/src/main/resources/selftest/*.yml' | wc -l`,
+  31 on `feat/sunder` at this change; Deft Hands adds none).
+
+ST9's `SETTLED dying=0` holds after SU8's `kill @s` as well, because `getNearbyEntities` excludes the player. Every
+other number in ST8-ST11 stands.
+
 ### ST8 — every unchained row starts clean (SURVIVAL) — witness: the log
 
 | prediction | READING |

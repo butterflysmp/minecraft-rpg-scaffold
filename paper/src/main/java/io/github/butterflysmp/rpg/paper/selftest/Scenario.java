@@ -79,6 +79,14 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * player): custom HP, feet, on-ground, fall distance. GATE-sunder.md's fall-damage and landing rows read it.
          */
         PROBE_SELF,
+        /**
+         * For THIS ROW ONLY, sets {@code keep_inventory} and {@code immediate_respawn} true, and lets the player die
+         * without aborting the run: the run waits for the respawn instead. The values the row found go back at the
+         * row's end, and the run's restore holds both as they were at RUN START. GATE-sunder.md SU8 (a death
+         * mid-leap, the seat's ruling 2026-11-10) is its one user; the death itself is an ordinary {@code kill @s}
+         * step, the server's own damage-to-death path.
+         */
+        DEATH_RULES,
         /** {@code "dx1 dy1 dz1 dx2 dy2 dz2"}: remember those blocks, so the run's restore puts them back. */
         SAVE_BLOCKS,
         /** {@code "<class> <element>"}: SKIPPED unless the profile's Build cell is this one. */
