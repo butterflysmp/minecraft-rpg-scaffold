@@ -52,6 +52,7 @@ import io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
+import io.github.butterflysmp.rpg.paper.adapter.LiveTargets;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
@@ -697,7 +698,7 @@ public final class RpgCommand {
         adapters.scheduler().onRegion(eye, () -> {
             RayTraceResult hit = player.getWorld().rayTraceEntities(
                     eye, eye.getDirection(), TARGET_RANGE, TARGET_LENIENCE,
-                    e -> e instanceof LivingEntity living && !(living instanceof Player));
+                    LiveTargets::isLiveMob);
             if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
                 player.sendMessage(Component.text("Look at a mob.", NamedTextColor.RED));
                 return;
@@ -894,7 +895,7 @@ public final class RpgCommand {
         adapters.scheduler().onRegion(eye, () -> {
             RayTraceResult hit = player.getWorld().rayTraceEntities(
                     eye, eye.getDirection(), TARGET_RANGE, TARGET_LENIENCE,
-                    e -> e instanceof LivingEntity living && !(living instanceof Player));
+                    LiveTargets::isLiveMob);
             if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
                 player.sendMessage(Component.text("Look at a mob.", NamedTextColor.RED));
                 return;
@@ -1452,7 +1453,7 @@ public final class RpgCommand {
         adapters.scheduler().onRegion(eye, () -> {
             RayTraceResult hit = player.getWorld().rayTraceEntities(
                     eye, eye.getDirection(), TARGET_RANGE, TARGET_LENIENCE,
-                    e -> e instanceof LivingEntity living && !(living instanceof Player));
+                    LiveTargets::isLiveMob);
             if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
                 player.sendMessage(Component.text("Look at a mob to apply a status.", NamedTextColor.RED));
                 return;

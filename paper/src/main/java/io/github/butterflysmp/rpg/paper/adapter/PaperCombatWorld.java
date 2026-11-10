@@ -84,7 +84,9 @@ public final class PaperCombatWorld implements CombatWorld {
     @Override
     public Collection<Combatant> combatantsNear(Vec3 center, double radius) {
         return world.getNearbyEntities(toLocation(center), radius, radius, radius).stream()
-                .filter(LivingEntity.class::isInstance)
+                // Live bodies only (LiveTargets): melee, the dash's swept line, bursts and homing all pick from here,
+                // and a mob in its death animation must not take a hit meant for a live one.
+                .filter(LiveTargets::isLive)
                 .map(LivingEntity.class::cast)
                 .map(e -> BukkitCombatant.of(e, ctx)) // snapshot taken here, on this thread
                 .toList();
@@ -125,7 +127,8 @@ public final class PaperCombatWorld implements CombatWorld {
         RayTraceResult result = world.rayTrace(
                 toLocation(from), direction, distance,
                 FluidCollisionMode.NEVER, /* ignorePassableBlocks */ true, RAY_SIZE,
-                entity -> entity instanceof LivingEntity && !entity.getUniqueId().equals(ignoreId));
+                // Live bodies only: a corpse on the line of fire ended the flight and dealt nothing (LiveTargets).
+                LiveTargets.except(ignoreId));
 
         if (result == null) return Optional.empty();
 
