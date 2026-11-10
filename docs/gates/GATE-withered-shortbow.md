@@ -173,6 +173,12 @@ $zip.Dispose()
 |---|---|
 | GS-100 zombie at offset `~8 ~0`, aimed, one right-click: an **arrow** flies, and **`PLAYERHIT caster=<Ben's uuid> source=withered_shortbow/right_click target=<the zombie's uuid> … element=wither sent=16.000 crit=false triggerScore=100`**. Exactly one PLAYERHIT for the shot. **Record `caster=`; WB3 reads it** | **38cc9903, 2026-10-14: VOID** (the seat's ruling) -- the aim defect (see the AIM NOTE under Set-up). The target was right (L2082 `MOBSEED de736d06 zombie gs=100 source=rolled max=100`); L2088 `DRIVE use ... item=withered_shortbow yaw=-90.000 pitch=-12.271` (eye-to-eye is -0.859); 0 PLAYERHIT in the bracket; L2090 `customHP=100.000/100.000`. No `caster=` for WB3. Carries to the next boot after #175's AIM fix. **61e722f2, 2026-11-10 (run 3): FAIL as staged, by the defect `GATE-legacy-b.md` LB2 records.** L3901 `/kill @e[tag=t]` put WS3's GS-20 zombie `7f5f8324` into its death animation at dx about 4, on this line of fire (the same stand point, -133.5 63 9.5); L3910 aim eye->eye d=8.000 pitch=-0.859; L3911 the use; L3912 `MOBREMOVE 7f5f8324`, after the shot; 0 PLAYERHIT; L3913 100.000/100.000. The arrow ended on the corpse. No `caster=` for WB3. |
 
+**WB2 AMENDED, 2026-11-10, before the next boot (the seat's instruction: every single-hit prediction allows a crit,
+as Sunder's rows already do).** The PLAYERHIT reads **either `sent=16.000 crit=false` or `sent=32.000 crit=true`**:
+the base 16 wither, or 16 x 2.0, the crit multiplier WD1 verified at the `61e722f2` boot (GATE-selftest.md ST5).
+Every other clause of WB2's prediction stands, including "record `caster=`". A `crit=true` line at any other `sent`
+is a FAIL.
+
 ### WB3 — the accrued Wither on the real path, and the CREDIT (SURVIVAL) — witness: DOTTICK
 
 | prediction | READING |
