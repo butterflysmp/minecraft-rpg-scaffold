@@ -2,6 +2,10 @@
 
 **Status at `61e722f2` (the stack-top boot, 2026-11-10; run 3 is the run of record; the boot account is `GATE-deft-hands.md`'s): R0a-d SUPERSEDED (GATE-deft-hands.md R0, PASS); SU1, SU5, SU6, SU7 as predicted; SU2 as predicted, plus one unpredicted hit on a leftover mob; SU4 as predicted, the slam through a wall CONFIRMED (a design question for Ben, not fixed); SU10 as predicted with a staging caveat (run 2's SU10 is VOID); SU9 NOT AS PREDICTED (it landed a block high); SU11 PARTIAL (its hit arrived after its bracket); SU12 NOT AS PREDICTED (no landing and no hit in its bracket); SU3 NOT READ (Ben paused; carried); SU8 NOT STAGEABLE (no console input; carried). NOT a merge candidate: the stack merges bottom-up.**
 
+**The seat, 2026-11-12:**
+- **SU8's amendment and the SU9/SU11/SU12 diagnoses are READ and ACCEPTED, pending the next boot.** That is the `death_rules` scenario with the restore, and the three staging-artefact diagnoses. They were committed as `c53c78f7`, which is `ba6b4a10` after the rebase onto `55425aad` (the patch id is unchanged). Acceptance is of the amendment and the diagnoses, NOT a reading: the four rows stay unread until the next boot.
+- **SU4 is ruled by Ben: the slam ignores walls, revisitable.** See SU4.
+
 **Status: NOT RUN.** Written 2026-11-06, before any boot of this branch. **NO BOOT until the seat says so.** This is the
 new STACK TOP (`#168 → … → #175 → this`), so the stack's one R0 moves here from `GATE-selftest.md`, which records its R0
 SUPERSEDED by this file.
@@ -171,6 +175,8 @@ read after Ben's LOGIN, each row inside its own `SELFTEST sunder <row> START …
 | prediction | READING |
 |---|---|
 | A stone wall at `~3` (x = start + 3, its west face 2.5 from the player's centre), 4 high. A NoAI zombie **`sw` at `~4.5 ~ ~0`, BEHIND the wall**. One Left. **`LANDING … how=LANDED slam=true`** with `x` at most **start + 2.2** (the wall face minus the player's half-width, 0.3) and `y` equal to the start's (±0.01). **AND `sw` IS HIT: one `PLAYERHIT … source=sunder target=<sw's uuid> … sent=20.000` (or 20 × the crit multiplier on `crit=true`).** **This contradicts section 9.2's SU4 ("on this side only"), and it is predicted from the code, not guessed:** a `Burst` is `world.combatantsNear(origin, radius)`, a plain box query with no line-of-sight test (section 8.2's own S3 column says so; finding F2). `sw` is 2.3 to 2.8 blocks from the landing feet in `x`, inside the 3.0 half-extent. **A finding for the seat, raised before the boot (see the PR):** the mechanism Ben ruled (S1) does land at the wall's foot, and its slam is not wall-blocked | **61e722f2, 2026-11-10 (run 3): as predicted, and the finding is CONFIRMED.** L4041 SELF at -127.50; L4047 `LANDING ... how=LANDED slam=true at=-125.30 63.00 9.50` (start + 2.20, y equal); L4048 `PLAYERHIT ... target=6b5398ae (sw, behind the wall) ... element=kinetic sent=40.000 crit=true` (20 x 2.0); L4051 `sw` 60.000/100.000. The slam reaches through the wall (the box query, finding F2). Recorded as read: a design question for Ben, not fixed (seat, 2026-11-10). |
+
+**SU4 RULED, 2026-11-12 (Ben, via the seat), verbatim, and REVISITABLE:** *"ignore walls for now but I might change my mind later"*. **The slam ignores walls, as built.** The reading above stands as the ruled behaviour, and no code changes. If Ben reverses it, the fix is an engine-wide line-of-sight option on `Burst` (finding F2), not a Sunder special case. The ruling is recorded in `PLAN-melee-class.md` RULINGS.
 
 ### SU5 — off a 4-block ledge: the slam lands on the lower level (SURVIVAL) — witness: LANDING
 

@@ -73,6 +73,16 @@ the seat's wording, not Ben's.*
    normal 6-block drop deals normal damage** (the mark is cleared).
 6. **F2 stays a finding.** No fix in M1 or M2; it is a cross-class ruling later.
 
+### BEN'S RULING ON SU4, THE SLAM THROUGH A WALL (via the seat, 2026-11-12), recorded verbatim: REVISITABLE
+
+| Q | Ben's words | what it rules |
+|---|---|---|
+| **SU4** the slam reaches through a wall (`GATE-sunder.md` SU4, confirmed at `61e722f2`) | *"ignore walls for now but I might change my mind later"* | **The slam IGNORES WALLS, as built.** The burst is a box query (`combatantsNear`) with no line-of-sight test. **No code change.** |
+
+**REVISITABLE, in Ben's own words.** If he reverses it, the fix is **an engine-wide line-of-sight option on `Burst`**,
+under finding F2 (§9.3; the M2 note below ties the missing line-of-sight test to F2). **It is not a Sunder special
+case.** §9.2's SU4 *"on this side only"* stays superseded.
+
 ### WHAT M1 BUILT, AND WHAT IN THIS SURVEY IT SUPERSEDES
 
 **The survey below is left as it was read at `2d60e9a3`.** Where M1 or a ruling has moved something, it is listed
