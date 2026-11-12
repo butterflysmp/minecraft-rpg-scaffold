@@ -153,6 +153,17 @@
    "It measures how long you spend not shooting." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Exotic Ranged Weapon" color=#55FFFF O=. B=. S=. U=. I=F
+-- short_bow
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["16" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.7" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Short to draw." color=#AAAAAA O=. B=. S=. U=. I=T
+   "Shorter to answer." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Ranged Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- volley_stone
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -552,4 +563,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 92 renderings ===
+=== 93 renderings ===
