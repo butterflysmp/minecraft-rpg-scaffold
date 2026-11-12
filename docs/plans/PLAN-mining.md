@@ -458,3 +458,28 @@ from the project pack.
   Blocks`: the bootstrap is `RotatedPillarBlock."<init>"`), so it is the gate's test block. Patch
   blocks must be chosen from blocks with no `attack` override, or the area rule must cancel earlier, at
   `PlayerInteractEvent` LEFT_CLICK_BLOCK.
+
+**Found while building the spike (2026-11-12, spike head `1dbcc156`), recorded here because the spike does not
+merge:**
+
+- **F-M9 (instrument):** `scripts/check-crlf.sh` has no binary exclusion, and the spike adds the repo's first image
+  files.
+  - It sweeps every file from `git ls-files --cached --others --exclude-standard` and reported
+    `1 MIXED: …/mining_spot.png CR=3 LF=2`. A PNG's 8-byte signature is `\x89 P N G \r \n \x1a \n` (`od -c` on the
+    file), so every PNG carries a CR and an LF by definition. **The verdict is a false MIXED. "Normalising" the file,
+    as the script advises, would corrupt the image.**
+  - Git itself classifies both PNGs correctly: `git ls-files --eol` reads `i/-text w/-text`, and
+    `git show HEAD:<png> | cmp - <png>` is silent for both.
+  - **Before any pack lands on master:** either `check-crlf.sh` skips files whose eol class is `-text`, or
+    `.gitattributes` gains `*.png binary` and the script honours it. That is an instrument change, so it is a
+    ruling, not done in the spike.
+- **F-M10 (for candidate A):** in SURVIVAL, `handleAnimate` fires **no** `PlayerInteractEvent` LEFT_CLICK_BLOCK.
+  - It fires LEFT_CLICK_BLOCK only `if gameMode == ADVENTURE` (bytecode 158 `if_acmpne 218`), and LEFT_CLICK_AIR
+    only when its own server ray hits nothing (114 `ifnonnull 144`, then 121–137).
+  - So a survival block click's LEFT_CLICK_BLOCK comes from the **dig START** (F2 step 4), not from the swing.
+  - **Under A the server's hit test must be its own ray at `PlayerArmSwingEvent`**, which is what the spike's `aim`
+    field does. No vanilla event carries the swing's block hit in survival.
+- **F-M11:** the spike's zip is deterministic per working tree, not per commit. The JSON files are text, so a CRLF
+  checkout and an LF checkout build different bytes and different SHA-1s. Harmless for a dev offer. **A shipped pack
+  must be built from the blobs (or with `eol=lf` pinned on `resourcepack/**`)**, or two seats publish two hashes for
+  one commit.
