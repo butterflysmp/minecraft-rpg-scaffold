@@ -69,6 +69,8 @@ import io.github.butterflysmp.rpg.paper.health.MobOrigin;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.vault.VaultDevCommand;
 import io.github.butterflysmp.rpg.paper.vault.VaultService;
+import io.github.butterflysmp.rpg.paper.mining.spike.MineSpike;
+import io.github.butterflysmp.rpg.paper.mining.spike.MineSpikeCommand;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
@@ -157,7 +159,8 @@ public final class RpgCommand {
                                                                MobNameplateManager nameplates,
                                                                ResourcePool resources,
                                                                FireCadence fireCadence,
-                                                               VaultService vaults) {
+                                                               VaultService vaults,
+                                                               MineSpike mineSpike) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -537,6 +540,27 @@ public final class RpgCommand {
                                 .executes(VaultDevCommand::usage)
                                 .then(vaultCell((ctx, page, slot) ->
                                         VaultDevCommand.take(ctx, vaults, page, slot)))))
+                // *** /rpg minespike -- SPIKE CODE (spike/mining-input, never merged). ***
+                //
+                // Permissions.DEV and nothing else: the seat's ruling, 2026-11-12. The brief's
+                // -Drpg.dev=true exists only on the parked feat/selftest. MineSpikeWiringSignatureTest
+                // asserts the gate. GATE-mining-spike.md is its only reader.
+                .then(Commands.literal("minespike")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(MineSpikeCommand::usage)
+                        .then(Commands.literal("block")
+                                .executes(ctx -> MineSpikeCommand.toggle(ctx, mineSpike, MineSpike.Mode.BLOCK)))
+                        .then(Commands.literal("box")
+                                .executes(ctx -> MineSpikeCommand.toggle(ctx, mineSpike, MineSpike.Mode.BOX)))
+                        .then(Commands.literal("model")
+                                .executes(ctx -> MineSpikeCommand.toggle(ctx, mineSpike, MineSpike.Mode.MODEL)))
+                        .then(Commands.literal("pick")
+                                .executes(MineSpikeCommand::usage)
+                                .then(Commands.argument("speed", DoubleArgumentType.doubleArg(0.25, 20.0))
+                                        .executes(ctx -> MineSpikeCommand.pick(ctx, mineSpike,
+                                                DoubleArgumentType.getDouble(ctx, "speed")))))
+                        .then(Commands.literal("pack")
+                                .executes(ctx -> MineSpikeCommand.pack(ctx, mineSpike))))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
                 // unit test. Hold it and a bare bar fills in ~50s instead of 100; drop it and the rate

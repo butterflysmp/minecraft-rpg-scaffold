@@ -127,6 +127,10 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import io.papermc.paper.event.player.PlayerArmSwingEvent;
+import com.destroystokyo.paper.event.player.PlayerUseUnknownEntityEvent;
+import io.github.butterflysmp.rpg.paper.mining.spike.MineSpike;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.inventory.ItemStack;
 import java.util.Optional;
 import io.github.butterflysmp.rpg.core.build.LockedSlots;
@@ -283,6 +287,8 @@ public final class RpgListeners implements Listener {
 
     /** The Ability Stone's input side (PLAN-build-system.md section 2.5). */
     private final StoneCaster stoneCaster;
+    /** SPIKE CODE (spike/mining-input, never merged): the mining input spike's witness. */
+    private final MineSpike mineSpike;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -293,8 +299,9 @@ public final class RpgListeners implements Listener {
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar, HealthRegenSystem healthRegen,
                         Plugin plugin, RecipeRegistry recipes,
-                        VaultService vaults, StoneCaster stoneCaster) {
+                        VaultService vaults, StoneCaster stoneCaster, MineSpike mineSpike) {
         this.stoneCaster = stoneCaster;
+        this.mineSpike = mineSpike;
         this.plugin = plugin;
         this.vaults = vaults;
         this.recipes = recipes;
@@ -1406,6 +1413,58 @@ public final class RpgListeners implements Listener {
      * this after the {@code LEFT_CLICK_BLOCK} interact (quoted, section 1.7). Main hand only is implicit:
      * digging always uses the main hand.
      */
+    // ---- SPIKE CODE: the mining input spike's EVENT lines (GATE-mining-spike.md). Never merged. ----
+    //
+    // Each line reads getAttackCooldown() INSIDE the vanilla handler. For PlayerArmSwingEvent that is
+    // BEFORE the swing's reset (handleAnimate: event at 289-325, reset at 340; PLAN-mining.md F1), which
+    // is the pre-reset reading the PACKET line cannot give. MONITOR where the handler only reads;
+    // HIGHEST where it cancels, so the cancel stands over anything at NORMAL.
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onMineSpikeArmSwing(PlayerAnimationEvent event) {
+        if (!(event instanceof PlayerArmSwingEvent swing)) return;
+        mineSpike.logEvent(event.getPlayer(),
+                swing.getHand() == EquipmentSlot.HAND ? "ARM_SWING" : "ARM_SWING_OFFHAND", null, true);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onMineSpikeLeftClick(PlayerInteractEvent event) {
+        if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
+            mineSpike.logEvent(event.getPlayer(), "INTERACT_LEFT_BLOCK", null, true);
+        } else if (event.getAction() == Action.LEFT_CLICK_AIR) {
+            mineSpike.logEvent(event.getPlayer(), "INTERACT_LEFT_AIR", null, true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onMineSpikeBlockDamage(BlockDamageEvent event) {
+        if (!mineSpike.isSpikedBlock(event.getPlayer(), event.getBlock())) return;
+        event.setCancelled(true);
+        mineSpike.logEvent(event.getPlayer(), "BLOCK_DAMAGE", null, false);
+    }
+
+    /** F2b: a cancelled BlockDamageEvent does not cover every break route, so the break is cancelled AND witnessed. */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onMineSpikeBlockBreak(BlockBreakEvent event) {
+        if (!mineSpike.isSpikedBlock(event.getPlayer(), event.getBlock())) return;
+        event.setCancelled(true);
+        mineSpike.logEvent(event.getPlayer(), "BLOCK_BREAK", null, false);
+    }
+
+    /** Fired by handleAttack (bytecode 289) for an id the server does not know: candidate B's hit. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onMineSpikeUnknownEntity(PlayerUseUnknownEntityEvent event) {
+        mineSpike.logEvent(event.getPlayer(), event.isAttack() ? "UNKNOWN_ENTITY_ATTACK" : "UNKNOWN_ENTITY_USE",
+                event.getEntityId(), false);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onMineSpikePackStatus(PlayerResourcePackStatusEvent event) {
+        mineSpike.logPackStatus(event.getPlayer(), event.getStatus().name());
+    }
+
+    // ---- end SPIKE CODE ----
+
     @EventHandler
     public void onStoneBlockDamage(BlockDamageEvent event) {
         if (!StoneItems.isStone(event.getPlayer().getInventory().getItemInMainHand(), adapters.keys())) return;
@@ -1659,6 +1718,7 @@ public final class RpgListeners implements Listener {
         event.getPlayer().closeInventory();
 
         UUID playerId = event.getPlayer().getUniqueId();
+        mineSpike.forget(event.getPlayer());  // SPIKE CODE: the input spike's session, if any
         cooldowns.clear(playerId);
         stoneCaster.forget(playerId);         // the Q-swing guard's drop tick, and the recast state
         adapters.safeLandings().forget(playerId);   // a leap's fall-damage mark (section 7.6)

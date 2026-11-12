@@ -72,6 +72,8 @@ import io.github.butterflysmp.rpg.paper.menu.Menu;
 import io.github.butterflysmp.rpg.paper.packet.ExampleTelegraphListener;
 import io.github.butterflysmp.rpg.paper.packet.VanillaCritParticleListener;
 import io.github.butterflysmp.rpg.paper.packet.WeaponSwingListener;
+import io.github.butterflysmp.rpg.paper.mining.spike.MineSpike;
+import io.github.butterflysmp.rpg.paper.mining.spike.MineSpikeListener;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.scheduler.PaperScheduler;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
@@ -193,6 +195,8 @@ public final class RpgPlugin extends JavaPlugin {
     private ProfileService profiles;
     private VaultRepository vaultRepository;
     private VaultService vaults;
+    /** SPIKE CODE (spike/mining-input, never merged). */
+    private MineSpike mineSpike;
     private Accessories accessories;
 
     @Override
@@ -632,9 +636,12 @@ public final class RpgPlugin extends JavaPlugin {
         // The Ability Stone's input side. Built here, not beside Stones, because it needs the ability
         // service and the profiles, which do not exist when AdapterContext is built.
         StoneCaster stoneCaster = new StoneCaster(abilityService, adapters, profiles, cooldowns, adapters.stones());
+        // SPIKE CODE (spike/mining-input, never merged): one instance, passed to the listener, the
+        // packet listener and the command. Stopped in onDisable, which also stops its pack server.
+        this.mineSpike = new MineSpike(getLogger());
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes, vaults, stoneCaster);
+                this, recipes, vaults, stoneCaster, mineSpike);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md
@@ -667,12 +674,15 @@ public final class RpgPlugin extends JavaPlugin {
         // why it cannot eat our own spawnParticle burst.
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new VanillaCritParticleListener());
+        // SPIKE CODE: the mining input spike's packet witness. MONITOR, never cancels, hops to log.
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new MineSpikeListener(scheduler, mineSpike));
 
         // ONE handler, two nodes. A second registerEventHandler would be the sprawl the
         // banned-patterns table names; a second node inside this one is not.
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(
-                    RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults),
+                    RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults, mineSpike),
                     "RPG commands");
             // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the
             // ONLY route to it once a player turns the Nexus star off, which is why it ships in
@@ -893,6 +903,9 @@ OLD
 
     @Override
     public void onDisable() {
+        // SPIKE CODE: tear down the mining spike's sessions and STOP its 127.0.0.1 pack server.
+        if (mineSpike != null) mineSpike.shutdown();
+
         // FIRST, ahead of the profile flush: a menu can be holding a player's weapon, and nothing
         // else in the plugin gives it back. A weapon returned to an inventory has to be written
         // before the shutdown save runs, or it is saved out of existence.
