@@ -2,6 +2,8 @@
 
 **Status at `61e722f2` (the stack-top boot, 2026-11-10; run 3 is the run of record; the boot account is `GATE-deft-hands.md`'s): R0a-c SUPERSEDED (GATE-deft-hands.md R0, PASS); SB1 PASS (Ben); SB2 read as `crit=true sent=32.000`, with the seat's note: bar MET; SB3, SB4 NOT READ. The merge bar (SB1, SB2) is MET. The seat approves the merge, pending Ben's own OK in his words.**
 
+**APPROVED FOR MERGE, 2026-11-12. Ben, verbatim:** *"if it's ready yes it can be merged"*. The seat confirms it is ready: SB1 PASS; SB2 read with the seat's note; the reviewed head `6e9f92ed` differs from `bb8a226c` only by its readings commit. SB3 and SB4 ship NOT READ, and are not part of the merge bar.
+
 **Status at `38cc9903` (the stack-top boot, 2026-10-14): R0a-c SUPERSEDED (GATE-selftest.md R0, PASS); SB2 VOID (the
 aim defect; carries to the next boot after #175's fix); SB1, SB3, SB4 NOT READ; 0 PASS, 0 FAIL. NOT a merge
 candidate this round: SB2 is its bar.**
