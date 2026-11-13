@@ -10,6 +10,15 @@ lives on that branch beside the code it tests, because the boot is bound to that
 readings, the read gate is copied byte for byte onto this branch with a dated note naming the spike sha it was read
 at. The spike branch is not deleted until the seat has confirmed that the two blobs diff empty.
 
+**THE GATE COPY, 2026-11-13.** `docs/gates/GATE-mining-spike.md` on this branch is a byte-for-byte copy of the same
+path on `spike/mining-input` at **`d6879d868c48bc13ce987b3d954a5cfaff443ed4`**. The readings are from the boot of
+`1dbcc156` (2026-11-12) and were committed at `11e94e2c`; `d6879d86` adds only the seat's dated line, *"Seat read
+2026-11-13 from origin at 11e94e2c: readings accepted"*. The copy was made with
+`git checkout spike/mining-input -- docs/gates/GATE-mining-spike.md`, so the index took the spike's blob as it
+stands, **`fde186791f824b819e19cb38e727d6a98ac14341`** on both refs (`git rev-parse <ref>:docs/gates/GATE-mining-spike.md`).
+This note lives here and not in the copied file, so the two blobs stay identical. `spike/mining-input` is kept until
+the seat confirms the copy.
+
 **The open stack is PARKED, not abandoned** (Ben, 2026-11-12): #172–#180 and #177. Nothing here touches those branches.
 
 ---
