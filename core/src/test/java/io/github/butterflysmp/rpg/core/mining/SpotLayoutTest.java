@@ -29,10 +29,45 @@ class SpotLayoutTest {
     // --- VeinSize -------------------------------------------------------------------------------
 
     @Test
-    void theSmallVeinIs48By32PixelsWith54Tiles() {
+    void theSmallVeinIs48By32PixelsAndGuaranteesTwentySpots() {
         assertEquals(48, SMALL.widthPx());
         assertEquals(32, SMALL.heightPx());
-        assertEquals(54, SMALL.tileCapacity(), "floor(48 / 5) x floor(32 / 5) = 9 x 6");
+        // The WORST-CASE guarantee (the seat's F-A, 2026-11-13), not the perfect tiling (9 x 6 = 54,
+        // which a random maximal packing can fall far short of). Centre area 44 x 28; each centre
+        // blocks a 9 x 9 square of centres: ceil(44 / 9) x ceil(28 / 9) = 5 x 4.
+        assertEquals(20, SMALL.guaranteedSpots());
+    }
+
+    @Test
+    void theRefusedBoundIsTheWorstCaseGuaranteeOnBothSides() {
+        assertEquals(20, new VeinSize("s", 3, 2, 1, 20).maxSpots(), "20 is accepted on a 3 x 2");
+        assertThrows(IllegalArgumentException.class, () -> new VeinSize("s", 3, 2, 1, 21));
+        // 1 x 1: centre area 12 x 12, ceil(12 / 9) = 2 per axis.
+        assertEquals(4, new VeinSize("s", 1, 1, 1, 4).guaranteedSpots());
+        assertThrows(IllegalArgumentException.class, () -> new VeinSize("s", 1, 1, 1, 5));
+        // A wide strip: 5 x 1 is 80 x 16 pixels, centre area 76 x 12: ceil(76/9) = 9, ceil(12/9) = 2.
+        assertEquals(18, new VeinSize("s", 5, 1, 1, 18).guaranteedSpots());
+        assertThrows(IllegalArgumentException.class, () -> new VeinSize("s", 5, 1, 1, 19));
+        // Mutation: ceil -> floor (4 x 3 = 12 on the 3 x 2) -> "20 is accepted" reddens.
+        // Mutation: the perfect-tiling count (54) -> 21 is accepted -> reddens.
+    }
+
+    @Test
+    void aDenseVeinAtTheGuaranteedMaximumStillRollsAndObeysTheRules() {
+        // The bound promises a free legal position exists; rejection sampling must still FIND it.
+        // This probes that at the worst count the bound allows, on 300 fixed seeds.
+        VeinSize dense = new VeinSize("dense", 3, 2, 20, 20);
+        for (long seed = 0; seed < 300; seed++) {
+            List<Spot> spots = SpotLayout.roll(dense, new SplittableRandom(seed)).spots();
+            assertEquals(20, spots.size());
+            for (int i = 0; i < spots.size(); i++) {
+                for (int j = i + 1; j < spots.size(); j++) {
+                    Spot a = spots.get(i), b = spots.get(j);
+                    assertTrue(Math.max(Math.abs(a.cu() - b.cu()), Math.abs(a.cv() - b.cv())) >= 5,
+                            "seed " + seed);
+                }
+            }
+        }
     }
 
     @Test
@@ -42,9 +77,8 @@ class SpotLayoutTest {
         assertThrows(IllegalArgumentException.class, () -> new VeinSize("s", 3, 0, 2, 3));
         assertThrows(IllegalArgumentException.class, () -> new VeinSize("s", 3, 2, 0, 3));
         assertThrows(IllegalArgumentException.class, () -> new VeinSize("s", 3, 2, 3, 2));
-        // 1 x 1 is 16 x 16 pixels: 3 x 3 = 9 tiles. Ten spots cannot be guaranteed.
-        assertEquals(9, new VeinSize("s", 1, 1, 1, 9).tileCapacity());
-        assertThrows(IllegalArgumentException.class, () -> new VeinSize("s", 1, 1, 1, 10));
+        // Above the worst-case guarantee (both sides are in the row below this one).
+        assertThrows(IllegalArgumentException.class, () -> new VeinSize("s", 1, 1, 1, 5));
         // Mutation: drop the capacity refusal -> the last line reddens.
     }
 
