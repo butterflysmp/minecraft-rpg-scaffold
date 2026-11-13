@@ -448,37 +448,256 @@ an early click on the box, and MS3(b), whether holding repeats an ATTACK) stay U
 
 ---
 
-## 5. SLICE 1
+## 5. SLICE 1: THE DESIGN (2026-11-13; replaces the Phase 0 sketch)
 
-**Scope** (the brief): Trail style only (hit spots stay as cracks, the last spot shatters), one ore, no levels, no
-pickaxe stats beyond attack speed, placed by a dev command on the wall the player looks at. Custom-model visuals
-from the project pack.
+**Scope, per Ben:** Trail style only (hit spots stay as cracks, the last hit breaks the patch); one ore (vanilla iron);
+one size (the Small vein); no levels; no pickaxe stats beyond attack speed (and the vanilla 1.2 is the value); no
+areas. Hit detection is A (§2). Patches are placed by a dev command on the wall the player looks at.
 
-**The module split:**
-- **`core/`, no Bukkit:**
-  - `mining/` holds the patch state machine: spots, which spot is live, the hit or miss rule given a charge and an
-    input event, and the Trail-style crack and shatter states.
-  - The face-box maths for A: a ray against a 5/16 square on a block face, in 1/16 units.
-  - The regrowth timers: a `Map<UUID, …>` in memory, a deadline per player per slot, kept on logout, lost on restart.
-  - The size and spot re-roll on regrowth, seeded and testable.
-- **`content/`:** one ore YAML (`content/mining/ores/<id>.yml`) carrying the drop, the regrowth ticks, the spot
-  count range, the patch size range and the model ids. A loader in the `AbilityLoader` tradition is the only class
-  that knows the schema.
-- **`paper/`:** the packet visuals (ITEM_DISPLAY with the item_model, plus INTERACTION if B wins), the input
-  listener (the winning candidate's packet or event), the dev placement command, the BlockDamage/BlockBreak
-  cancellation (per patch block in slice 1, the area rule once areas exist), the pickaxe check ("denied if not
-  holding a pickaxe"), and the pack offer.
+**Every number below is either RULED (§1, with its quote), DERIVED (from a fact, with the derivation), or on the
+*Numbers for Ben* list at the end of this section, marked PROVISIONAL.** No other number is picked here.
 
-**WHAT SLICE 1 DOES NOT BUILD:**
+**Slice 1 branches from master and takes NOTHING from `spike/mining-input` by cherry-pick.** What it re-implements,
+with fresh tests, is listed at the end of this section.
+
+### 5.1 The words
+- **slot**: a fixed place on a wall where a patch can appear. One anchor block, one face (N, S, E or W), one vein
+  size. Shared by every player. Placed and removed by dev commands in slice 1.
+- **footprint**: the slot's blocks. For a size `width × height` in blocks, the anchor is the bottom-centre block as
+  the player sees the face, and the footprint runs `⌊width/2⌋` blocks to each side and `height − 1` blocks up. For
+  the Small vein (3 × 2), that is the anchor, one block left, one right, and the three above them.
+- **patch**: one player's instance at a slot. It has a rolled spot layout and a progress. Nobody else sees it.
+- **spot**: a weak spot on the patch. Its visible mark is 3 × 3 pixels and its hit box is 5 × 5 pixels (Ben, §1).
+  1 pixel = 1/16 block.
+- **crack**: a spot that has been hit. It stays on the patch until the patch breaks (Trail style).
+
+### 5.2 core: the rules, unit-tested first (package `io.github.butterflysmp.rpg.core.mining`)
+All core types are pure Java: no Bukkit, no PacketEvents. **Each one's test is written before the paper wiring.**
+
+**The face geometry (`FaceFrame`).**
+- For each wall face, the frame gives the outward normal and the two in-plane axes as the player sees the face:
+  `u` to the player's right, and `v` up. NORTH: the normal is −Z, and right is −X (a player facing south sees west
+  on their right). The other three rotate it. A test pins all four.
+- **Patch pixel coordinates**: `(pu, pv)`, integers, origin at the footprint's bottom-left as the player sees it.
+  `pu ∈ [0, width·16 − 1]`, `pv ∈ [0, height·16 − 1]`. For the Small vein: 48 × 32 pixels.
+- `worldToPatch(eye, direction)`: intersect the ray with the face plane (the footprint's outer face), returning
+  fractional patch pixels, or EMPTY when the ray is parallel to the plane or points away from it.
+
+**The hit test (`SpotBox`).**
+- A spot is centred on pixel `(cu, cv)`. Its 3 × 3 mark covers pixels `cu−1..cu+1` × `cv−1..cv+1`. Its 5 × 5 box
+  covers `cu−2..cu+2` × `cv−2..cv+2`, which is fractional patch coordinates `[cu − 2, cu + 3)` × `[cv − 2, cv + 3)`.
+- **in** when the ray's patch point lies in that box. Edge rule: the low edge is in, the high edge is out, so two
+  adjacent boxes never both claim a point. Tests: the four corners, the four edges either side, the centre, and a ray
+  that misses the plane.
+- **Only the LIVE spot's box counts.** A click on a crack, or anywhere else on the patch, is a miss.
+
+**The charged rule (`ChargeRule`).**
+- **Charged iff `getAttackCooldown()` returns exactly 1.0f.** The API clamps at 1.0 (F1), so a full charge reads
+  exactly 1.0f.
+- **No tolerance.** At 1.2 the read one tick before full is **0.9900** (§5.7, TOOLS table). A threshold like
+  `≥ 0.99` would accept an uncharged swing. The test pins 1.0f as charged, and 0.99f and 0.9999f as not.
+
+**The spot layout (`SpotLayout.roll(size, rng)`).**
+- The count is drawn uniformly from the size's `spots.min..spots.max`, inclusive.
+- **Each centre is placed so its 5 × 5 box lies wholly inside the patch**: `cu ∈ [2, width·16 − 3]`,
+  `cv ∈ [2, height·16 − 3]`. This is the EDGE MARGIN of 2 pixels, DERIVED from the 5 × 5 box. It is on the list
+  below because it could be wider for the art's sake.
+- **No two spots' 5 × 5 boxes overlap**: the centres are at Chebyshev distance ≥ 5. That is the SPOT SPACING of 5
+  pixels, DERIVED from the box (it is the smallest spacing at which no point is in two boxes). Also on the list.
+- **The reveal order is the roll order.**
+- The generator is injected (`java.util.random.RandomGenerator`), so tests seed it. Placement is rejection sampling
+  with a bounded number of attempts, then `IllegalStateException`. The size's constructor refuses a `spots.max`
+  greater than the number of disjoint 5 × 5 tiles in the margin-bounded area, so a legal size cannot hit that bound
+  in practice. The test rolls 10,000 seeds of every shipped size and asserts every layout obeys both rules.
+- **Re-rolled at every regrowth**: size and spot positions re-roll each regrowth (the brief). With one size, only
+  the spots move.
+
+**The patch state machine (`Patch`).**
+```
+FRESH(spot 1 live) --charged hit on the live spot--> spot 1 becomes a CRACK, spot 2 is revealed and live
+   ...
+last spot live --charged hit--> BROKEN: pays the yield, starts regrowth, and every mark goes
+BROKEN --regrowth deadline passes--> a fresh roll, FRESH
+```
+- **Input:** one `Click(float cooldown, Optional<PatchPoint> aim, boolean holdingPickaxe, long tick)`.
+- **Outcome**, a sealed type (a closed set of record types that a `switch` can check exhaustively):
+  - `NotLive`: the patch is BROKEN and regrowing. Nothing changes.
+  - `Denied`: not holding a pickaxe. Nothing changes. (Ben: *"Yes, denied if not holding a pickaxe"*.)
+  - `Miss`: the aim is outside the live spot's box. **Nothing changes in slice 1: no penalty.**
+  - `Uncharged`: the aim is in the box, but the charge is under 1.0. **Nothing changes in slice 1: no penalty.**
+  - `Hit(revealed)`: the live spot cracks and the next is revealed.
+  - `Broke(payout)`: the last spot was hit. The patch is BROKEN.
+- The order of the checks is the order of that list. Each outcome has a test, plus one that walks a 3-spot patch
+  from FRESH to BROKEN.
+- **The state records each spot's reveal tick and hit tick.** Nothing reads them for payout in slice 1. They exist
+  so a gold window can be computed once Ben rules it (the list below), and the dev trace prints them.
+- **What a miss and an uncharged hit SHOW** (a sound, a message, nothing) is a question for Ben, on the list. Slice
+  1's default is nothing beyond the vanilla swing, except `Denied`, which sends an action-bar line.
+
+**The yield (`Payout`).**
+- `count = per_spot × spots_in_this_patch + completion_bonus`. Every term is a whole number of items, ≥ 0.
+- **NAME THE QUANTITY.** The quantity is an item count, an integer, so it is quantised by nature. Every term is
+  authored flat; there are no percentages and no multipliers. The eligible set is every patch of the ore.
+- `per_spot`, `completion_bonus` and the item are on the list. **No gold-window or perfect-chain term exists until
+  Ben rules one.**
+
+**The regrowth clock (`RegrowthClock`).**
+- In memory: `Map<UUID, Map<SlotId, Long>>`, the server tick at which that player's patch at that slot regrows. Time
+  comes from an injected `LongSupplier` (the paper side passes `Bukkit.getCurrentTick()`), so tests drive it.
+- **Kept when the player logs out**, because nothing removes the entry on quit. **Lost on restart**, because it is
+  memory. Nothing goes into `PlayerProfile`.
+- **NAME THE QUANTITY.** `regrowth_ticks` is server ticks, an integer, continuous to one tick. **1200 (Ben, §1:
+  *"1 minute is fine for now"*).** It counts SERVER ticks: under 20 TPS a "minute" is longer in real time. That is
+  stated here, not hidden.
+- **A partly mined patch is kept the same way** (state in memory per UUID per slot, kept across logout, lost on
+  restart). That is a choice made here, on the seat's list in the report.
+
+**The dev trace line (`MiningTraceLine`).** One format, pinned exactly by a test as `MineSpikeLine` was:
+`MINING click player=<name> slot=<id> outcome=<HIT|BROKE|MISS|UNCHARGED|DENIED|NOT_LIVE> spot=<i>/<n> cooldown=%.4f
+aim=<du>,<dv> tick=<t>`, plus `MINING break … payout=<item>x<count> regrow_at=<tick>` and `MINING regrow …`. It uses
+`Locale.ROOT`, with `-` for an absent field. It is printed only for players who turned the trace on (§5.4).
+
+### 5.3 content: the schema, the loader and ContentValidator
+Two new directories, flat like every other content directory (`RpgPlugin` copies every `content/*.yml` from the jar
+by prefix).
+
+**`content/ores/iron.yml`:**
+```yaml
+ores:
+  iron:
+    display_name: "Iron"
+    payout:
+      item: <NUMBERS FOR BEN: raw_iron, iron_ingot or iron_ore>   # a vanilla material, NOT minted
+      per_spot: <NUMBERS FOR BEN>          # items per spot in the patch, integer >= 0
+      completion_bonus: <NUMBERS FOR BEN>  # items added on break, integer >= 0
+    regrowth_ticks: 1200                   # RULED, Ben 2026-11-13: "1 minute is fine for now"
+    sizes: [small]                         # RULED, Ben 2026-11-13: "keep it as the small vein for now"
+    models:                                # item_model ids in the project pack
+      patch: rpg:mining/iron_patch
+      spot: rpg:mining/spot
+      crack: rpg:mining/crack
+```
+**`content/vein_sizes/small.yml`:**
+```yaml
+vein_sizes:
+  small:
+    width: 3        # blocks along the face (design doc, relayed by the seat)
+    height: 2       # blocks up the face
+    spots: { min: 2, max: 3 }   # design doc, relayed by the seat
+```
+
+**NAME THE QUANTITY for every key:**
+
+| key | quantity | arithmetic | eligibility |
+|---|---|---|---|
+| `width`, `height` | whole blocks of wall | integer ≥ 1; it scales one flat model (F-M4), so there is no −16..32 element limit | every slot of this size |
+| `spots.min`, `spots.max` | spot count | integer, 1 ≤ min ≤ max ≤ the tile capacity (§5.2) | every patch of this size |
+| `regrowth_ticks` | server ticks | integer > 0, continuous to 1 tick | every patch of this ore |
+| `payout.per_spot`, `payout.completion_bonus` | item count | integer ≥ 0, flat | every patch of this ore |
+| `payout.item` | a vanilla item | must resolve to an item `Material` | — |
+| `models.*` | an item_model id | must name a model the project pack ships | — |
+
+**Refusals.**
+- The core records (`OreDefinition`, `VeinSize`) refuse what needs no registry, in the `ToolDefinition` style:
+  blanks, ranges, `min > max`, capacity, and `regrowth_ticks ≤ 0`. The loader turns a refusal into a named skipped
+  entry. A unit test covers each refusal.
+- **`ContentValidator.validateMining`** does what needs the server, through predicate seams as the rest of that
+  class does:
+  - every `sizes:` entry names a loaded vein size;
+  - `payout.item` resolves (`Material.matchMaterial`, and `isItem()`);
+  - every model id has `assets/<ns>/items/<path>.json` in the jar's `resourcepack/`.
+- `RpgPlugin` gains the zero-check warning that tools and armour carry (*"No ores loaded from content/ores…"*), and
+  the `Loaded …` line gains `N ores, M vein sizes`. **R0c predicts that line.**
+
+### 5.4 paper: input, visuals, commands and storage
+
+**Input: the read site is `BlockDamageEvent`** (the seat's ruling 3 allowed it or the first `ARM_SWING`).
+- **Why `BLOCK_DAMAGE`:**
+  1. It reads before the reset: on every MS1 click it equalled the first `ARM_SWING`.
+  2. **It fires once per click by construction.** It comes from the dig START, and each click sends one START. MS1 read a
+     `BLOCK_DAMAGE` on every click (equal to its first `ARM_SWING`), and one `DIG_START` for the whole of MS3's 58-swing hold. So a hold gives one read, the
+     first, which is an honest click. A held swing can never be read.
+  3. It carries what the hit test needs: the block, `getBlockFace()` and `getItemInHand()` (on the pinned API,
+     `javap -p org.bukkit.event.block.BlockDamageEvent`). And it is the event slice 1 cancels anyway.
+  4. It needs no per-player pairing state.
+- **The second swing of the same click is ignored because no swing is a read site.** Slice 1 listens to no
+  `PlayerArmSwingEvent` and installs no packet listener. Nothing runs on a Netty thread.
+- **The handler**, one method in `RpgListeners`, on the main thread:
+  - it looks up the block in the footprint index; if the block is not in a footprint, it returns;
+  - it cancels the event, always, for every player;
+  - if `getBlockFace()` is not the slot's face, it returns, because a click on the side of the wall is not on the
+    patch;
+  - it builds a `Click` from `getAttackCooldown()`, the eye ray (`getEyeLocation()` and its direction) through
+    `FaceFrame.worldToPatch`, `Tag.ITEMS_PICKAXES.isTagged(getItemInHand().getType())`, and
+    `Bukkit.getCurrentTick()`;
+  - it hands the outcome to the visuals and the payout.
+- It is **not** `ignoreCancelled`: master's `onStoneBlockDamage` cancels the same event when a stone is held, and the
+  patch block must stay protected regardless (that click is `Denied` anyway).
+- **The aim is the server's rotation at the dig START.** The spike logged aim at `ARM_SWING`, one packet later. The
+  trace logs the aim, and gate row M-HIT compares it to where Ben aimed (§5.10).
+- **Not covered** by a dev slot: creative players (a creative START breaks before `BlockDamageEvent`, F2b, so
+  creative cannot mine, though `BlockBreakEvent` still protects the block), explosions, pistons, fluids and entity
+  block changes. **That is the area rule's job, and areas are out of scope.** F-M8 also stands: dev slots go on
+  blocks with no `attack` override (stone or deepslate), and the placement command does not police it.
+- **`BlockBreakEvent`** on a footprint block is cancelled for every player (F-M5).
+
+**The pickaxe requirement.** Any item in vanilla's `#minecraft:pickaxes` tag (`Tag.ITEMS_PICKAXES`), minted or not.
+Whether some pickaxes should not count (for example by tier) is a question for Ben, on the list.
+
+**Visuals: packet-only `ITEM_DISPLAY`s from the pack's models, per player** (F5; sent from the main thread, as
+`PacketDamagePopupSender` does).
+- Each patch is one display with `models.patch`, scaled `(width, height, 1)` and centred on the footprint's face,
+  0.0005 out. Each revealed spot is one display with `models.spot`, scaled 3/16, at its centre pixel, 0.001 out.
+  A hit swaps that display's item (index 23) to `models.crack`. The rotation follows `FaceFrame`. The display type
+  is FIXED (index 24 = 8).
+- **The break:** every display of that patch is destroyed, and the player alone gets a sound and a particle burst.
+  `Player#playSound` and `Player#spawnParticle` are per-player Bukkit calls, on the main thread. Which sound and
+  which particle are art choices, on the list.
+- **Lifecycle:** displays are spawned when a slot is placed (for players in that world), on
+  `PlayerChunkLoadEvent` for chunks that hold a slot, and on regrowth. They are destroyed on
+  `PlayerChunkUnloadEvent`, on slot removal and on quit. Both events are in the pinned API
+  (`io.papermc.paper.event.packet`).
+- **Regrowth while online:** on the break, `Scheduler.onEntityLater(player, …, 1200)` respawns the patch. If the
+  player has left, the entity scheduler drops the task, and the join or chunk-load path renders from the clock. The
+  `Scheduler` interface has no repeating call, and none is needed.
+- **Entity ids: ONE allocator** (F-M7). `PopupEntityIds` moves out of `health/` to a shared counter, used by the
+  damage popups and mining alike. The spike's second range picked by eye is not repeated.
+
+**The dev commands** (`/rpg mining …`, each with `.requires(Permissions.DEV)` on the line after `literal`, pinned
+by a wiring-signature test). Mining's dev commands move to the `rpg.dev` guard once #175 merges (§2).
+- `place <ore> <size>` places a slot on the looked-at wall face (`rayTraceBlocks(5)`). It refuses UP and DOWN
+  faces, any footprint block that is not solid, any footprint block whose neighbour in front is not passable, and
+  any overlap with another slot, naming the block that failed.
+- `remove` removes the slot under the crosshair: it destroys every player's displays and clears its patches and
+  clocks.
+- `regrow` clears the caller's own regrowth deadlines. It exists for the gate.
+- `trace` toggles the caller's `MINING` log lines.
+- `pack` offers the dev pack now (§5.8).
+
+**Where placed slots live in slice 1: in memory, in one `MiningSlots` registry** (slot id → slot, plus a footprint
+index from block to slot). **Lost on restart; the gate re-places its slot each boot.** It is NOT:
+- the area model (no notion of a region, a no-break rule, or which areas get patches);
+- persistence (no file and no repository);
+- natural placement (nothing places a slot except the dev command).
+
+A dev file would save the gate a command per boot, at the price of storage code that the area model will replace.
+That trade is the seat's to rule, and it is in the report.
+
+### 5.5 What slice 1 does NOT build
 - mining levels, and the XP curve below (recorded, not built);
 - Fortune, level rewards, recipes, and combat-gear requirements (Ben deferred these);
 - `PlayerProfile` persistence;
 - custom areas and the area no-break rule (the target, §2);
-- Unstable veins (3–5 spots: recorded only);
-- vanilla-variant ores;
-- natural placement (slot authoring beyond the dev command).
+- the dig-stop (Ben deferred it, F7);
+- candidate B (the seat, §2);
+- Unstable veins (3–5 spots: recorded only), and every size but Small;
+- custom ores, and any custom (minted) payout item;
+- any gold-window or perfect-chain payout, until Ben rules its numbers;
+- natural placement, and any persistence of slots;
+- requiring the pack (the real-server target, §5.8);
+- the `attack_speed` tool key (§5.7: slice 1 does not need it).
 
-### MINING XP: THE PLAYER LEVEL CURVE DIVIDED BY 10 (not built in slice 1)
+### 5.6 MINING XP: THE PLAYER LEVEL CURVE DIVIDED BY 10 (not built in slice 1)
 - **Executed, not predicted.** I compiled master's core (`./mvnw -q -pl core clean compile`) and ran jshell over
   `core/target/classes`, reading `PlayerLevel.XP_TO_NEXT` reflectively and calling `PlayerLevel.totalForLevel`:
   ```
@@ -500,7 +719,21 @@ from the project pack.
 - **NAME THE QUANTITY:** mining XP is an integer per rung, continuous enough at every rung (the smallest rung is
   100, from `XP_TO_NEXT[1] = 1000`). Eligibility: every player.
 
-### TOOLS: ATTACK SPEED ON A CUSTOM PICKAXE, UNDER NAME THE QUANTITY
+### 5.7 TOOLS: ATTACK SPEED ON A CUSTOM PICKAXE, UNDER NAME THE QUANTITY
+
+**SLICE 1 NEEDS NO ATTACK-SPEED MODIFIER, AND NOT THE KEY EITHER (2026-11-13).** Ben ruled the first pickaxe's speed
+*"Vanilla speed for now is fine"*. The vanilla iron pickaxe's own default is 1.2, so the value is already on the item:
+`ToolItems.mint` pins no modifier, so a minted `iron_pickaxe` keeps its type defaults, and `AttackSpeedAttributeOverride`
+leaves a pickaxe alone (§3, the override reading). Holding it, the player's speed is 1.2: a 16.666666-tick delay,
+first full read at ticker 17, as spike 1 read at that speed (MS1 and MS5).
+- **So the `attack_speed` key, the mint path and the tooltip-order fix below are for the FIRST PICKAXE WITH A
+  NON-VANILLA SPEED.** That pickaxe does not exist yet.
+- **Recommendation: build them in their own slice, with that pickaxe's content, and not in slice 1.** A key that no
+  shipped content declares has no in-game witness: the tooltip order (F-M15) could only be read through a test-only
+  tool. Until then, iron.yml's *"a minted tool changes nothing"* stays TRUE and is not rewritten.
+- If the seat wants it in slice 1 anyway, it is the separate PR S1-T in §5.10, and everything below applies unchanged.
+
+**The design, for whichever slice builds it:**
 - **The quantity:** the player's `ATTACK_SPEED` attribute while the pickaxe is held, in attacks per second. It is a
   continuous double.
   - **What it buys is quantised to whole ticks.** The ticker is an integer, and full charge is the first ticker with
@@ -526,6 +759,11 @@ from the project pack.
     - copies the type's default modifiers (F4: anything less erases the pickaxe's attack damage);
     - replaces the `minecraft:base_attack_speed` entry with `attackSpeed − 4.0`, `ADD_NUMBER`, `MAINHAND`, so the
       tooltip keeps vanilla's green "N Attack Speed" line;
+    - **builds the modifiers in an insertion-ordered multimap (`MultimapBuilder.linkedHashKeys().arrayListValues()`),
+      attack damage first, then attack speed**, so the tooltip keeps vanilla's order (Ben: *"yes for now"*). Never
+      `ArrayListMultimap`: its keys live in a `HashMap`, and that is how the spike's tooltip came out reversed
+      (F-M15). The order is pinned by a test on the ordered list of attribute keys the mint writes, and read on a
+      gate row;
     - keeps `setMaxStackSize(1)`.
   - When absent, mint is unchanged and pins nothing.
 - **What happens to iron.yml's statement.** iron.yml says *"WHAT A MINTED TOOL DOES NOT CHANGE: … ToolItems.mint
@@ -540,19 +778,134 @@ from the project pack.
 - **The override interaction is settled (§3, THE OVERRIDE READING):** a pickaxe is not a melee weapon, so the
   override removes its own key and leaves the item's modifier as the player's speed.
 
-### THE RESOURCE PACK
-- **Source path: `paper/src/main/resources/resourcepack/`.** It ships inside the plugin jar as a resource, so there
-  is no new Maven plugin and no separate artefact.
-- **Build:** the plugin zips that directory from its own jar in memory, in a fixed entry order with fixed
-  timestamps, so the SHA-1 is stable across builds of the same sources. The spike's `MineSpikePack` does this, and
-  `MineSpikePackTest` pins it.
-- **The dev offer** (spike only, `Permissions.DEV`):
-  - On first use, a `com.sun.net.httpserver.HttpServer` **bound to 127.0.0.1 only** serves the zip. It is stopped
-    on plugin disable.
-  - The player is sent `sendResourcePacks(ResourcePackRequest)` with that URI and the SHA-1 hex, `required(false)`.
-  - **This assumes the client runs on the server's machine.** The gate checks it.
-- **Shipping is NOT this.** A shipped pack needs a public HTTPS host and either `server.properties`
-  `resource-pack`/`-sha1` or a join-time request. That host is an operator decision, and is open.
+### 5.8 THE RESOURCE PACK
+*(The 2026-11-12 text described the spike's pack. It is rewritten for slice 1's real pack; the spike's own account
+is its gate's MS7.)*
+- **Source: `paper/src/main/resources/resourcepack/`.** It ships inside the plugin jar as a resource: no new Maven
+  plugin and no separate artefact.
+  - `pack.mcmeta`: format 84, `min_format`/`max_format` (F6).
+  - `assets/rpg/items/mining/{iron_patch,spot,crack}.json`, each `{"model":{"type":"minecraft:model","model":"rpg:item/mining/<id>"}}`.
+  - `assets/rpg/models/item/mining/<id>.json`: one flat 16 × 16 face each (F-M4).
+  - `assets/rpg/textures/item/mining/<id>.png`. **Placeholder art; the look is Ben's.** The patch texture is drawn at
+    the Small vein's 3 : 2 aspect, because one model is scaled `(3, 2, 1)` and a square texture would stretch.
+- **Built:** the plugin zips that directory from its own jar in memory, in a fixed entry order with fixed
+  timestamps, and hashes it with SHA-1.
+  - **The zip is only deterministic per commit once line endings are pinned (F-M11).** That PR adds
+    `.gitattributes` lines: `paper/src/main/resources/resourcepack/**/*.json` and `*.mcmeta` as `text eol=lf`, and
+    `*.png binary`. Then every checkout copies the same bytes into the jar.
+  - **And it lands after the F-M9 fix**, so `check-crlf.sh` stops false-MIXING the PNGs. That fix is its own small PR
+    to master with a positive control (the seat's F-M9 ruling), and it is §5.10's S1-0.
+  - A paper test (re-implementing `MineSpikePackTest`'s checks): `pack.mcmeta` parses at format 84; every items
+    JSON resolves to a model and every model to a PNG; the PNGs decode; two builds hash equal; and every ore's
+    `models.*` id exists in the pack (the same check ContentValidator makes at boot).
+- **Offered in dev, per Ben (*"it might be better to have it prompt or toggle for dev work"*):**
+  - a `com.sun.net.httpserver.HttpServer` **bound to 127.0.0.1 only** serves the zip. It starts on first offer
+    and stops on plugin disable (the standing rule). That assumes the client runs on the server's machine, which
+    spike 1 confirmed for Ben's seat (F-M17);
+  - **the toggle:** `config.yml` gains `mining.dev-pack-on-join: false`. When it is true, each join offers the pack
+    with `required(false)` and a prompt line. **The prompt** is the client's own accept-or-decline screen;
+  - **on demand:** `/rpg mining pack` offers it at any time;
+  - whether "prompt or toggle" means one of these or both is Ben's to say. Both are cheap, so both are planned and
+    the question is on the list.
+- **The real server: the pack is REQUIRED** (Ben, §1). **That is the target, and it is NOT built in slice 1.** It
+  needs a public HTTPS host and `required(true)` (or `require-resource-pack=true`, which is the only setting that
+  kicks server-side, F6). The host is an operator decision, and it is open.
+
+### 5.9 WHAT HAPPENS TO THE SPIKE CODE
+**Slice 1 branches from master and cherry-picks nothing from `spike/mining-input`.** That branch never merges, and is
+deleted only after the seat confirms the gate copy (status block).
+
+| spike idea | slice 1 |
+|---|---|
+| `FacePoint`: face axes, the pixel snap, the box test, the rotation | **re-implemented** as `FaceFrame` and `SpotBox` (§5.2), with the edge rule stated and fresh tests |
+| `MineSpikeVisuals`: ITEM_DISPLAY metadata 11–15, 23 and 24, a fresh wrapper per send | **re-implemented** in `MiningVisuals`, with the item swap for a crack |
+| `MineSpikePack`: the deterministic in-memory zip, the SHA-1, the 127.0.0.1 server, the offer and the status log | **re-implemented**, plus the join toggle and F-M11's pinned line endings |
+| the pack layout (`items/` → `models/` → `textures/`, `pack.mcmeta` at 84) | **re-implemented** with slice 1's three models |
+| `MineSpikePackTest`'s checks | **re-implemented**, plus the ore-model check |
+| `givePick`'s default-modifier copy | **re-implemented only in the tools slice (§5.7)**, with the ordered multimap, never `ArrayListMultimap` |
+| `MineSpikeLine`'s pinned format | the **idea** only: `MiningTraceLine` is a new format with its own test |
+| `MineSpikeListener` (the packet classifier on the Netty thread) | **NOT carried.** Slice 1 has no packet listener (§5.4) |
+| the INTERACTION box (candidate B) | **NOT carried** (the seat, §2) |
+| `/rpg minespike` and its `PICK`/`PACK`/`PLACE` lines | **NOT carried.** Replaced by `/rpg mining …` |
+| the second entity-id range from `1_500_000_000` | **NOT carried.** One shared allocator (F-M7) |
+
+### 5.10 THE SLICE BREAKDOWN AND EACH SLICE'S GATE ROWS (in outline)
+One PR is too big to read: core, content, the pack, the visuals, the input and the commands. So:
+
+| PR | from | contents | gate |
+|---|---|---|---|
+| **S1-0** | master | F-M9: `check-crlf.sh` skips files git classes as `-text`, with a positive control (a PNG fixture is not flagged, and a mixed text fixture still is). An instrument change: its own small PR (the seat's F-M9 ruling) | none; the script's own controls |
+| **S1-a** | master | core `mining/` (§5.2) with every unit test; `OreDefinition` and `VeinSize`; the loader; `ContentValidator.validateMining`; `iron.yml` and `small.yml`; the zero-check and the `Loaded` line. No visuals, no input, no commands | R0 only; read at S1-b's boot |
+| **S1-b** | S1-a merged | the pack (with F-M11's `.gitattributes` lines, after S1-0); the shared entity-id allocator; `MiningVisuals`; `MiningSlots`; the `BlockDamageEvent` and `BlockBreakEvent` handler; the payout; the regrowth scheduling; `/rpg mining …`; the trace | the rows below |
+| **S1-T** | master, when the seat says | §5.7's `attack_speed` key, the ordered mint and the iron.yml rewrite, with the first pickaxe that declares a non-vanilla speed | a tooltip row and a refill row |
+
+**The S1-b gate's rows, in outline** (`docs/gates/GATE-mining-slice1.md`, SURVIVAL on every row, committed before
+any boot):
+- **R0a** the build line names the head. **R0b** the jar carries `resourcepack/` and the mining classes, with a
+  control class that must be absent. **R0c** the `Loaded …` line, with `1 ores, 1 vein sizes` and no refusal.
+- **M-PACK**: `/rpg mining pack`, accepted: ACCEPTED → DOWNLOADED → SUCCESSFULLY_LOADED, the sha1 equal to the
+  build's. The join toggle off: no offer at join. On: an offer at join.
+- **M-PLACE**: `place iron small` on a deepslate wall logs the slot and footprint. Each refusal (an UP face, a
+  non-solid footprint block, a blocked front, an overlap) names its block.
+- **M-LOOK (sight, F-M18)**: Ben states the patch's SIZE (3 wide × 2 tall?), FACING (flat on the wall, facing out?)
+  and POSITION (centred on the footprint?), and that the live spot sits where the trace says.
+- **M-HIT**: a charged click on the live spot logs `HIT` with cooldown 1.0000 and aim `in`. The mark becomes a crack
+  and the next spot appears. The aim at the dig START matches where Ben aimed (§5.4).
+- **M-MISS**: a charged click elsewhere on the patch logs `MISS`, and nothing changes. **M-UNCHARGED**: an early
+  click on the spot logs `UNCHARGED` with the predicted `(Δ+0.5)/16.666666`, and nothing changes.
+- **M-HOLD**: holding on the live spot logs at most one click, and nothing after it.
+- **M-DENY**: an empty hand and a sword each log `DENIED` with the action-bar line. A plain vanilla pickaxe (not
+  minted) works.
+- **M-BREAK**: the last spot logs `BROKE` and the payout. The inventory gains that item and count. Every mark goes,
+  and the sound and particles play. Clicks then log `NOT_LIVE`.
+- **M-REGROW**: 1200 ticks after the break (the trace's `regrow_at`), the patch returns with a re-rolled layout:
+  the spot positions in the trace differ.
+- **M-LOGOUT**: break, log out, log back in before `regrow_at`: still regrowing. After it: fresh.
+- **M-PROTECT**: a survival hold breaks nothing (no BlockBreakEvent gets through; the crack visual is accepted,
+  F-M14). A creative break attempt is cancelled and the block resyncs.
+- **M-REMOVE**: `remove` clears the marks, and the wall digs normally again.
+- **M-SERVER-LIST** (control, as MS6): no display entity in the server's entity list, with a positive control.
+- **M-SECOND-PLAYER** (only if a second client is available): the second player sees their own patch, not the
+  first's progress. **Otherwise recorded as NOT READ, not as passed.**
+- **LAST STEP**: a clean `/stop`.
+
+### 5.11 NUMBERS FOR BEN
+**Every number slice 1 needs that Ben has NOT ruled. Each is PROVISIONAL until he does.** Where Ben's design doc
+proposes a value (as relayed by the seat), it is given. **The design doc itself is not in this repo or in any brief I
+have read**, so where the seat has relayed none, none is given, and none is invented.
+
+| # | number | proposed value | source of the proposal |
+|---|---|---|---|
+| N1 | **the payout item** (a question, not a number): raw iron, an iron ingot, or the iron ore block | — | none. Ben has not said; not picked |
+| N2 | **ore per spot** (`payout.per_spot`, whole items) | — | none relayed |
+| N3 | **any completion bonus** (`payout.completion_bonus`, whole items; 0 means none) | — | none relayed |
+| N4 | **the gold-window length** | about 1.5 s = **30 ticks**, PROVISIONAL | the design doc, relayed by the seat |
+| N5 | **the gold-window bonus** | — | none relayed |
+| N6 | **whether a perfect chain pays extra in slice 1** (a yes or no, then a number) | — | none relayed. Slice 1 pays none until ruled |
+| N7 | **spots per Small vein** | **2–3**, PROVISIONAL | the design doc, relayed by the seat; not in Ben's words |
+| N8 | **the Small vein's size** | **3 wide × 2 high** blocks, PROVISIONAL | the design doc, relayed by the seat ("2 x 3 block patch (H x W)"); not in Ben's words. The spike's patch was 2 wide × 3 high (F-M18) |
+| N9 | **the edge margin** (pixels between a 5 × 5 box and the patch edge) | **2**, PROVISIONAL | mine, DERIVED: the smallest margin that keeps the box on the patch |
+| N10 | **the spot spacing** (minimum Chebyshev distance between centres, pixels) | **5**, PROVISIONAL | mine, DERIVED: the smallest spacing at which no two 5 × 5 boxes overlap |
+| N11 | **the display offsets off the wall** (patch, spot) | **0.0005 and 0.001** blocks, PROVISIONAL | mine, carried from the spike; MS7 read only "an orange square with a gray background", so how these offsets look is NOT STATED |
+
+**What the gold window would mean, so Ben can rule it:** N4 and N6 imply a window that starts when a spot is
+revealed, in which a charged hit counts as "gold". **That reading is mine, from the words, and is not confirmed.**
+If it is right:
+- a hit resets the ticker in the tick it lands, and the next spot is revealed in that same tick. At 1.2 the next full
+  charge is at ticker 17 (the §5.7 table). **So a 30-tick window leaves 13 ticks (0.65 s) to land a charged hit on
+  the new spot.** That is arithmetic on ruled numbers, not a measurement;
+- the FIRST spot has no hit before it. What starts its window (the patch appearing, the player's first click, or
+  nothing at all) is part of N4.
+Slice 1's `Patch` records each spot's reveal tick and hit tick (§5.2) so that none of this needs a state change
+later.
+
+**Questions for Ben that are not numbers** (kept apart from the list above, so it stays numbers):
+- What a miss and an uncharged hit should SHOW: nothing, a sound, or a message. The proposal is nothing beyond the
+  vanilla swing.
+- Which pickaxes count for *"denied if not holding a pickaxe"*: every item in `#minecraft:pickaxes` (the proposal),
+  or only some.
+- *"prompt or toggle"* for the dev pack: the join toggle, the command, or both (both are planned).
+- The break's sound and particle.
 
 ---
 
