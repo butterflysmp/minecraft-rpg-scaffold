@@ -6,6 +6,9 @@ READING. The predictions below are unchanged. **The seat has not yet read these 
 2026-11-12, before any boot of this branch. **NO BOOT until the seat has diffed the spike code AND this gate and says
 so, and Ben says ready.**
 
+**Seat read 2026-11-13 from origin at `11e94e2c`: readings accepted.** (This line is added below the status above;
+that status, including its "not yet read" sentence, is kept as written on 2026-11-12.)
+
 **This branch, `spike/mining-input`, does NOT merge.** The gate lives here because the boot is bound to this branch's
 build sha. After its readings are committed here, this file is copied **byte for byte** onto `docs/mining-plan`, with
 a dated note naming the spike sha it was read at. This branch is not deleted until the seat has confirmed the two
