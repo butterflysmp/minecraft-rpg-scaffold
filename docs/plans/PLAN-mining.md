@@ -5,6 +5,9 @@
 `docs/mining-plan`, does not merge until the input spike's readings are folded into it and the seat has diffed it
 (the seat's ruling, 2026-11-12).
 
+**2026-11-13: the spike's readings are folded in** (§1's 2026-11-13 rulings, §2's 2026-11-13 rulings, §3's F7, §6's
+findings F-M12 to F-M18), and §5 is now SLICE 1 as a buildable design. Still PLAN ONLY: it waits for the seat's diff.
+
 **The spike** is `spike/mining-input`, also from `55425aad`. It will NOT merge. Its gate, `GATE-mining-spike.md`,
 lives on that branch beside the code it tests, because the boot is bound to that branch's build sha. After its
 readings, the read gate is copied byte for byte onto this branch with a dated note naming the spike sha it was read
@@ -42,6 +45,36 @@ the seat confirms the copy.
 
 **Deferred by Ben:** Mining Fortune, mining level rewards, recipes, and whether top ores need combat gear.
 
+### BEN'S RULINGS, 2026-11-13, VERBATIM (relayed by the seat after spike 1)
+
+| topic | Ben's words |
+|---|---|
+| Adventure mode | *"No players will never be in adventure mode."* |
+| requiring the resource pack | *"yes it will be required for the real server but it might be better to have it prompt or toggle for dev work"* |
+| vanilla tooltip order (Attack Damage, then Attack Speed) | *"yes for now"* |
+| stopping the client's dig (the crack and ghost while holding) | *"I feel like the Dig stop is pointless because block breaking is already blocked and the cracks are purely client side visuals. At best defer this to a later date as a polish"* |
+| the first ore, custom or vanilla | *"let's keep it vanilla for now, we'll do iron"* |
+| Small vein only, or all four sizes | *"keep it as the small vein for now"* |
+| the first pickaxe's swing speed (vanilla is 1.2) | *"Vanilla speed for now is fine"* |
+| regrowth time (the draft said about 1 minute for common ore) | *"1 minute is fine for now"* |
+
+**The last four are RULED "for now" values, not provisional** (the seat, 2026-11-13). In slice 1's terms:
+- **the ore is vanilla iron.** WHICH ITEM a patch pays (raw iron, an ingot or the ore block) is NOT ruled: it is on
+  §5's *Numbers for Ben*;
+- **the Small vein only.** Per Ben's design doc, as relayed by the seat, that is a patch 2 blocks high × 3 wide with
+  2–3 weak spots. The schema describes a size generally, so the other three sizes are content later, not code;
+- **attack speed 1.2**, the vanilla iron pickaxe's own default: a delay of `(float)(1.0 / 1.2 × 20.0)` = 16.666666
+  ticks, first full read at ticker 17 (§5 TOOLS table; spike 1's MS1 and MS5 read it);
+- **regrowth 1 minute = 1200 ticks**, per player, per patch slot.
+
+**What they settle:**
+- **Adventure mode is OUT** as a mechanism for anything mining does. F2's ADVENTURE branch and F-M6 stay as facts,
+  and are no longer a design route.
+- **The pack is REQUIRED on the real server**: that is the target. In dev it is offered with a prompt or a toggle (§5,
+  THE RESOURCE PACK). Requiring it is recorded, not built, in slice 1.
+- **The minted pickaxe's tooltip keeps vanilla's order**: Attack Damage above Attack Speed (F-M15, §5 TOOLS).
+- **The dig-stop is DEFERRED as polish.** Slice 1 does not build it. F7a is recorded as the candidate (§3, F7).
+
 ## 2. THE SEAT'S RULINGS
 
 **From the brief (2026-11-12):**
@@ -53,6 +86,7 @@ the seat confirms the copy.
 - Minigame state and rules go in `core/` (no Bukkit). Content goes in YAML under `content/`.
 - OPEN, to be settled by the spike: how a hit is detected. **A**: the server ray-casts the look vector against the
   spot's 5×5 box on the face. **B**: a packet-only INTERACTION entity, sized to the box, reports an attack.
+  - **SETTLED 2026-11-13: A** (the seat's ruling 2, below).
 
 **From the planning round (2026-11-12):**
 - **The spike's gate is `.requires(Permissions.DEV)` and nothing else.** There is no `-D` property, no change to
@@ -67,6 +101,21 @@ damage is a property of the AREA, not of a patch.
   "is this block position in a custom area", with its source of truth still to be ruled, and (b) ONE listener
   consulting it for `BlockDamageEvent` and `BlockBreakEvent`.
 - Until then, the spike cancels damage and break on the spiked block only.
+- **2026-11-13: slice 1 builds NO areas** (Ben's scope, relayed by the seat). It cancels `BlockDamageEvent` and
+  `BlockBreakEvent` on the blocks under a placed patch slot (§5). The area rule stays the target, unbuilt.
+
+**From the seat, 2026-11-13, after reading the spike's readings from origin at `11e94e2c`:**
+1. **THE DIG-STOP IS DEFERRED** (Ben, §1). Slice 1 does not build it. F7a (`block_break_speed` at 0, per player, per
+   area) is recorded as the candidate for that later polish, **UNREAD on the client** (§3, F7). The server-side
+   cancel of `BlockDamageEvent` and `BlockBreakEvent` on a patch's block stays in slice 1.
+2. **HIT DETECTION IS CANDIDATE A, unconditionally:** a left-click on the patch's block, with the server's own ray
+   against the spot's 5×5 box on the face. Spike 1 read that the charge is readable before the reset, that
+   single-click aim landed in the box, and that a held click never reads charged. **Candidate B (the INTERACTION box)
+   is NOT built.** Its two unread questions, the hold repeat (MS3(b)) and the early click (MS2(b)), are recorded as
+   UNREAD, not answered.
+3. **A reads the charge at `BLOCK_DAMAGE` or at the FIRST `ARM_SWING` of a click**, never at the second swing of a
+   click and never at the packet hop. §5 says which one slice 1 uses and why, and how the second swing of the same
+   click is ignored.
 
 **THE DESIGN.** Every ore patch and every weak spot is a **packet-only display entity showing a CUSTOM MODEL from the
 project's resource pack**, shown to one player. **A vanilla item is never the shipped look.** The spike's
@@ -296,6 +345,74 @@ AttackSpeedAttributeOverride.apply(player, keys,
 - item_model resolution, and the model's size and placement on screen;
 - the pack prompt, and what a declined pack looks like.
 
+*(Spike 1 read every one of those on 2026-11-12. The answers are the gate's readings, `GATE-mining-spike.md`, and
+the ones that change the design are §6's F-M12 to F-M18.)*
+
+### F7. Stopping the client's dig: what the server controls per player (read 2026-11-12, NO BOOT; accepted 2026-11-13)
+**Status: DEFERRED as polish (Ben, §1). F7a is the candidate. Nothing here is built in slice 1.**
+
+The instruments are the same jars as above. `javap -c -p` was run on the mojang-mapped classes
+`net.minecraft.world.entity.player.Player`, `net.minecraft.world.entity.ai.attributes.Attributes`,
+`...attributes.AttributeMap`, `net.minecraft.world.level.block.state.BlockBehaviour`,
+`net.minecraft.server.level.ServerPlayerGameMode`, `net.minecraft.world.item.Item` and
+`net.minecraft.world.item.component.Tool`. `javap -p` was run on the pinned `paper-api` for the Bukkit names.
+
+**How dig progress is computed.**
+- Each tick, progress grows by `BlockBehaviour#getDestroyProgress`, which is
+  `player.getDestroySpeed(state) / hardness / (hasCorrectToolForDrops ? 30 : 100)`. It is 0 when hardness is −1.
+- **`Player#getDestroySpeed(BlockState)`**, in bytecode order:
+  1. `ItemStack.getDestroySpeed` (4–8);
+  2. plus `MINING_EFFICIENCY`, only when that speed is above 1 (14–27);
+  3. × `(1 + (amplifier + 1) × 0.2)` when `MobEffectUtil.hasDigSpeed` (Haste or Conduit Power, 30–50);
+  4. × the Mining Fatigue factor (53–124);
+  5. × **`BLOCK_BREAK_SPEED`** (128–135);
+  6. × `SUBMERGED_MINING_SPEED` when the eyes are in water (138–155);
+  7. ÷ 5 when not on the ground.
+- `ServerPlayer` does not override it. The client shares `Player`, so it is expected (not read) to compute the same.
+
+**F7a: the `block_break_speed` attribute, THE CANDIDATE.**
+- `Attributes` `<clinit>` 126–149: `RangedAttribute("attribute.name.block_break_speed", 1.0, 0.0, 1024.0)`, then
+  **`setSyncable(true)`** (142–143). `AttributeMap` puts every `isClientSyncable()` instance into
+  `attributesToSync`, so a change reaches the client.
+- The Bukkit name is **`Attribute.BLOCK_BREAK_SPEED`** (`javap -p org.bukkit.attribute.Attribute` on the pinned API).
+- **At 0, progress is exactly 0**, because the attribute multiplies the whole speed. Then, in
+  `ServerPlayerGameMode#handleBlockBreakAction` (when the START is not cancelled):
+  - **START:** an insta-mine needs progress ≥ 1 (554 `fload`, 556 `fconst_1`, 557 `fcmpl`, then `destroyAndAck`
+    at 568). 0 is not.
+  - **STOP:** `progress × (ticks + 1) ≥ 0.7` (743 `getDestroyProgress`, 756 `ldc 0.7f`, 759 `fcmpl`), then
+    `destroyAndAck` at 791. 0 is not, so the server arms `hasDelayedDestroy` instead.
+  - **`tick()`:** the delayed destroy completes only when `incrementDestroyProgress ≥ 1` (60 `invokevirtual`,
+    65 `fconst_1`, 66 `fcmpl`). That never happens.
+- **The design it implies (deferred):** a modifier on the player's `BLOCK_BREAK_SPEED`, added on entering an area and
+  removed on leaving. It is per player and per area. It is not per item, so vanilla digging in the normal world is
+  untouched.
+
+**F7b: Mining Fatigue never reaches zero.** `Player#getDestroySpeed` switches on the amplifier (100–118): 0 → ×0.3,
+1 → ×0.09, 2 → ×0.0027, 3 and above → ×8.1E-4. No level stops progress outright. The Bukkit name is
+`PotionEffectType.MINING_FATIGUE`. How the effect reaches the client was not read.
+
+**F7c: the held item's `minecraft:tool` component.**
+- `Item#getDestroySpeed` reads `DataComponents.TOOL` and returns `Tool#getMiningSpeed(state)`: the first matching
+  rule's speed, else `default_mining_speed`. With no tool component it returns 1.0.
+- `Tool(List<Rule> rules, float defaultMiningSpeed, int damagePerBlock, boolean canDestroyBlocksInCreative)`.
+  `default_mining_speed` is `Codec.FLOAT`, **so 0 is accepted**. A rule's `speed` is `ExtraCodecs.POSITIVE_FLOAT`,
+  so a rule cannot be 0. The stream codecs are plain `FLOAT`.
+- The Bukkit route is `ItemMeta#getTool` / `setTool`, then `ToolComponent#setDefaultMiningSpeed(float)`.
+- **The cost:** it lives on the ITEM, so it applies wherever the item goes, including the normal world, where Ben
+  ruled vanilla ores stay diggable. It only works with area-only items, or by swapping items at area borders.
+
+**F7d: everything else the server controls per player.** Haste and Conduit Power, `SUBMERGED_MINING_SPEED`,
+`MINING_EFFICIENCY` (only above speed 1), the on-ground ÷5, the correct-tool divisor (30 or 100), and Paper's
+`BlockDamageEvent#setInstaBreak`, which only forces progress up. **Only F7a at 0, and F7c's `default_mining_speed`
+at 0, reach exactly zero.**
+
+**Client-only, UNREAD, so these become gate rows if the polish is ever built:**
+- with `BLOCK_BREAK_SPEED` at 0, does the client still draw the crack, predict a break, flicker or ghost the block?
+- does it still send a swing and a `START_DESTROY_BLOCK` per click, and still two swings per click (F-M12)? That
+  decides whether A's read site survives the polish;
+- do the attack indicator and the swing animation still work?
+- does the attribute take effect on the client the tick it is applied, and clear when it is removed?
+
 ---
 
 ## 4. CANDIDATES A AND B, COMPARED ON THOSE FACTS
@@ -325,6 +442,9 @@ AttackSpeedAttributeOverride.apply(player, keys,
 **The question the spike settles:** does the click reliably produce a pre-reset charge reading, and does the hit
 test agree with what Ben aimed at? A wins if its ray-cast matches Ben's aim and a swing always arrives. B wins if
 ATTACK reliably arrives for the box and Ben's indicator matches. Neither is picked here.
+
+**SETTLED 2026-11-13: A, unconditionally (the seat's ruling 2, §2).** B is not built. B's two unread rows (MS2(b),
+an early click on the box, and MS3(b), whether holding repeats an ATTACK) stay UNREAD.
 
 ---
 
@@ -492,3 +612,42 @@ merge:**
   checkout and an LF checkout build different bytes and different SHA-1s. Harmless for a dev offer. **A shipped pack
   must be built from the blobs (or with `eol=lf` pinned on `resourcepack/**`)**, or two seats publish two hashes for
   one commit.
+
+**Found by spike 1's boot (2026-11-12, build `1dbcc156`, readings at `11e94e2c`; accepted by the seat 2026-11-13).**
+The gate's READING blocks are the account; these are the pointers.
+
+- **F-M6 RESOLVED 2026-11-13:** Ben ruled *"No players will never be in adventure mode."* The ADVENTURE facts stand;
+  ADVENTURE is not a design route, and every mining gate stays SURVIVAL.
+- **F-M12: a block click carries TWO arm swings.** On every block click, two `PlayerArmSwingEvent`s fire in the same
+  tick. The first reads before the reset (1.0000 on a charged click); the second reads `0.0300` (Δ=0 at 1.2),
+  because the first just reset the ticker (MS1). A click on the INTERACTION box carried ONE (MS2). **So any read site
+  that fires per swing must take the first and ignore the second.** §5 removes the question by reading at
+  `BLOCK_DAMAGE`.
+- **F-M13: on the box, ATTACK precedes SWING**, on all 8 box attacks, and `PlayerUseUnknownEntityEvent` read 1.0000
+  each time (MS2, MS3(b)). Recorded for the record. B is not built.
+- **F-M14: holding left-click on the patch block.** The client sends one `DIG_START`, then a `DIG_STOP` at +16 ticks
+  and again every 20 or 21 ticks (MS3: ticks 9902, then 9918, 9938, 9959), and never a second `DIG_START`. Ben saw the
+  deepslate *"cracked flickered vanished and came back. but only when not mining the emerald"* (MS4, quoted, not
+  interpreted). The server never broke it: zero `BLOCK_BREAK` lines. **Ben accepted this as a client visual and
+  deferred stopping it as polish** (§1; F7a is the candidate).
+- **F-M15: the spike pickaxe's tooltip showed Attack Speed ABOVE Attack Damage**, the reverse of vanilla (MS5).
+  - The cause: `MineSpike.givePick` collected the modifiers in Guava's `ArrayListMultimap`, whose keys live in a
+    `HashMap` (Guava 33.5.0: `Platform.newHashMapWithExpectedSize` → `Maps.newHashMapWithExpectedSize`).
+    `CraftMetaItem.setAttributeModifiers` and `applyModifiers` copy `entries()` in that map's order, and the tooltip
+    prints in component order.
+  - The fix, for the slice that gives `ToolItems.mint` its modifier: an insertion-ordered multimap
+    (`MultimapBuilder.linkedHashKeys().arrayListValues()`), filled damage first, then speed, plus a test pinning the
+    order. Ben: *"yes for now"* to vanilla order.
+- **F-M16: the next boot of the PARKED stack must also use `--refresh-content`.** The spike boot found
+  `run/plugins/Rpg/content` holding the STACK's content (16 weapons, plus sunder, deft_hands, withering, melee.yml),
+  because `saveResource` never overwrites. That boot refreshed it to master-plus-spike content (14 weapons). A stack
+  boot without the flag would load master's content under the stack's code. The backup taken before the boot is
+  `C:\Users\Neb91\IdeaProjects\rpg-run-backups\2026-11-12-pre-mining-spike`.
+- **F-M17: my mid-boot warning was WRONG.** During the boot I told Ben the pack download would fail, because the
+  HTTP server binds 127.0.0.1 and his client connected over the LAN address. It did not fail: the client runs on the
+  server's machine, so 127.0.0.1 reached the server, and the fifth offer went ACCEPTED → DOWNLOADED →
+  SUCCESSFULLY_LOADED (MS7). Recorded as wrong in the gate.
+- **F-M18: the patch model's on-screen SIZE, FACING and POSITION were NOT STATED in spike 1.** Ben described the
+  accepted look only as *"an orange square with a gray background"* (MS7). Slice 1's gate reads them. **Note:** the
+  spike scaled its patch (2, 3, 1), 2 wide × 3 tall, while the Small vein is 2 high × 3 wide (§1). Slice 1's patch
+  model and scale follow the Small vein, not the spike.
