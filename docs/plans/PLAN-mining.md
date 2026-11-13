@@ -58,6 +58,17 @@ the seat confirms the copy.
 | the first pickaxe's swing speed (vanilla is 1.2) | *"Vanilla speed for now is fine"* |
 | regrowth time (the draft said about 1 minute for common ore) | *"1 minute is fine for now"* |
 | what an iron patch hands the player (raw iron, iron ingots, or iron ore blocks) | *"raw iron"* |
+| *"Small vein is 3 wide by 2 tall with 2-3 spots, as your doc's table says. Is that right?"* | *"yes"* |
+| *"How much raw iron per spot? Your doc gives Small no completion bonus; keep that?"* | *"2-4 per spot with a 5 completion bonus"* |
+| *"Is the gold window in slice 1, or later?"* | *"later"* |
+| *"Should a miss make a sound in slice 1? Your doc mentions a dull clink."* | *"yes"* |
+
+**The last four rows were relayed by the seat, 2026-11-13, with the questions quoted as asked.** What they set:
+- **N7 and N8 are RULED**: the Small vein is width 3, height 2, with 2 to 3 spots.
+- **N2 is RULED as a range**: 2 to 4 raw iron per spot. **N3 is RULED**: a completion bonus of 5 for Small.
+- **N4, N5 and N6 (the gold window, and any perfect-chain pay) are DEFERRED by Ben.** Slice 1 builds no gold window
+  and no gold art. Keeping each spot's reveal tick and hit tick in the patch state is still fine.
+- **A miss plays a sound.**
 
 **The four rows before the last are RULED "for now" values, not provisional** (the seat, 2026-11-13). The last row,
 *"raw iron"*, reached the plan in the seat's diff of 2026-11-13. In slice 1's terms:
@@ -148,6 +159,26 @@ damage is a property of the AREA, not of a patch.
   and `payout.completion_bonus` are left UNSET in `iron.yml`. The loader refuses an ore without them, with a test,
   so no value is picked silently. **Consequence:** until they land, the shipped `iron.yml` is refused at boot, so
   the build loads 0 ores and the zero-check warning fires. That is why S1-a's PR is not marked ready.
+  *(LIFTED the same day by the seat's ruling 5 below: `iron.yml` carries the ruled values. The loader's refusal of
+  an ore with no payout stays, with its test.)*
+
+**From the seat, 2026-11-13, after Ben's remaining numbers (§1):**
+1. **`payout.per_spot` is a RANGE**, `{ min: 2, max: 4 }`, whole items, `0 ≤ min ≤ max`. The amount is rolled
+   uniformly and **independently for each spot, at the break**, from the injected `RandomGenerator`. The trace's
+   break line shows each spot's roll and the total.
+2. **The completion bonus is per VEIN SIZE**, authored in the ore file as a map keyed by size id:
+   `completion_bonus: { small: 5 }`. The loader refuses an ore that lists a size in `sizes:` with no
+   `completion_bonus` entry for it, and refuses an entry for a size it does not list. The reason: Ben's design has
+   the bonus growing with size, and it is an ore's economy number.
+3. **Payout = the sum of the per-spot rolls + the size's completion bonus.** For Small iron that is **9 to 17 raw
+   iron per break** (§5.2, executed), with both ends pinned by a seeded test. NAME THE QUANTITY still applies:
+   whole item counts, flat, no percentages.
+4. **Sounds are content, not code.** The content names a sound key for MISS and one for BREAK, each a placeholder
+   vanilla sound marked PLACEHOLDER. UNCHARGED and NOT_LIVE play nothing in slice 1. DENIED keeps its action-bar
+   line. The sound plays to that one player only. Playing it is S1-b's job; S1-a carries only the schema, the loader
+   and the validator's check that the key resolves. (Where the keys live is argued in §5.3: the ore file.)
+5. **The instruction to leave the payout counts UNSET is lifted.** `iron.yml` carries the ruled values. The loader
+   still refuses an ore with no payout, and keeps its test.
 
 **THE DESIGN.** Every ore patch and every weak spot is a **packet-only display entity showing a CUSTOM MODEL from the
 project's resource pack**, shown to one player. **A vanilla item is never the shipped look.** The spike's
@@ -565,6 +596,9 @@ BROKEN --regrowth deadline passes--> a fresh roll, FRESH
   so a gold window can be computed once Ben rules it (the list below), and the dev trace prints them.
 - **What a miss and an uncharged hit SHOW** (a sound, a message, nothing) is a question for Ben, on the list. Slice
   1's default is nothing beyond the vanilla swing, except `Denied`, which sends an action-bar line.
+  *(2026-11-13, RULED: a `Miss` plays the ore's miss sound (Ben: "yes"), and a `Broke` plays its break sound, each to
+  that player only. `Uncharged` and `NotLive` play nothing. `Denied` keeps its action-bar line. Core only reports
+  the outcome; S1-b plays the sound.)*
 
 **The yield (`Payout`).**
 - `count = per_spot × spots_in_this_patch + completion_bonus`. Every term is a whole number of items, ≥ 0.
@@ -573,6 +607,16 @@ BROKEN --regrowth deadline passes--> a fresh roll, FRESH
 - `per_spot`, `completion_bonus` and the item are on the list. **No gold-window or perfect-chain term exists until
   Ben rules one.** *(2026-11-13: the item is now RULED, `minecraft:raw_iron`, §1. `per_spot` and
   `completion_bonus` are still Ben's, and are UNSET until he rules them, §2.)*
+- **2026-11-13, RULED (Ben, and the seat's rulings 1–3 in §2). This replaces the `count` formula above:**
+  - `count = Σ roll_i + completion_bonus[size]`. There is one `roll_i` per spot in this patch, each drawn uniformly
+    and independently from `per_spot.min..per_spot.max` inclusive, at the break, from the injected
+    `RandomGenerator`. The bonus is the ore's entry for the patch's vein size.
+  - **Small iron:** `per_spot` 2..4, bonus 5, spots 2..3. **Executed** (a shell loop over the spot counts):
+    2 spots → 9..13, 3 spots → 11..17, **so 9..17 raw iron per break.** A test pins both ends with a deterministic
+    generator (every roll at `min` with 2 spots gives 9; every roll at `max` with 3 spots gives 17). A seeded sweep
+    asserts every total lies in 9..17 and that both ends occur.
+  - **NAME THE QUANTITY:** whole item counts, flat, no percentages and no multipliers.
+  - **No gold-window or perfect-chain term:** Ben deferred them (*"later"*).
 - **Delivery:** `PlayerInventory#addItem`. Whatever it returns as not fitting is dropped at the player's feet with
   `World#dropItemNaturally`, as vanilla does with a full inventory (the seat's ruling, §2). The trace's break line
   carries both parts.
@@ -595,6 +639,8 @@ aim=<du>,<dv> tick=<t>`, plus `MINING break … payout=<item>x<count> regrow_at=
 *(2026-11-13: the break line becomes `… payout=<item>x<count> kept=<n> dropped=<n> regrow_at=<tick>`, where
 `kept + dropped = count`. `dropped` is what a full inventory left at the player's feet. The full-inventory case
 gets its own gate row in S1-b.)*
+*(2026-11-13, the seat's ruling 1: the break line also carries each spot's roll and the bonus,
+`rolls=<r1>+<r2>[+<r3>] bonus=<b>`, so that `count` is checkable by addition on the line itself.)*
 
 ### 5.3 content: the schema, the loader and ContentValidator
 Two new directories, flat like every other content directory (`RpgPlugin` copies every `content/*.yml` from the jar
@@ -607,16 +653,31 @@ ores:
     display_name: "Iron"
     payout:
       item: raw_iron                       # RULED, Ben 2026-11-13: "raw iron". A vanilla material, NOT minted
-      # per_spot:          UNSET until Ben rules it. Items per spot in the patch, integer >= 0.
-      # completion_bonus:  UNSET until Ben rules it. Items added on break, integer >= 0.
-      # The loader REFUSES an ore without both, so until they land this file is refused at boot.
+      per_spot: { min: 2, max: 4 }         # RULED, Ben 2026-11-13: "2-4 per spot". Rolled per spot, at the break
+      completion_bonus: { small: 5 }       # RULED, Ben 2026-11-13: "with a 5 completion bonus". Keyed by vein size
     regrowth_ticks: 1200                   # RULED, Ben 2026-11-13: "1 minute is fine for now"
     sizes: [small]                         # RULED, Ben 2026-11-13: "keep it as the small vein for now"
     models:                                # item_model ids in the project pack
       patch: rpg:mining/iron_patch
       spot: rpg:mining/spot
       crack: rpg:mining/crack
+    sounds:                                # PLACEHOLDER vanilla sounds (the seat's ruling 4); Ben's art pass replaces them
+      miss: minecraft:block.stone.hit      # PLACEHOLDER. Ben: a miss makes a sound ("yes"; his doc: "a dull clink")
+      break: minecraft:block.stone.break   # PLACEHOLDER
 ```
+*(This block was rewritten on 2026-11-13 for Ben's numbers. The earlier text had `per_spot` and `completion_bonus`
+UNSET, with the note that the loader refuses the file until they land. That refusal of a missing payout stays.)*
+
+**Why the sound keys live in the ORE file, not in a mining defaults file** (the seat left the choice to me, to be
+argued here):
+- **It reuses the one schema and loader** that already exist. A defaults file is a third file type, with its own
+  loader and validator path and its own zero-check, all to carry two keys.
+- **A sound is an ore's character.** Iron's clink and a future gem ore's chime are per-ore by nature, as the models
+  already are, and there is one place to look for everything an ore shows and plays.
+- **The cost:** the second ore repeats two lines if it wants the same sounds. That is cheaper than a defaults file
+  and an override rule, and it is the trade to revisit if many ores share sounds.
+- **The break particle** (the seat's ruling 7: placeholder, named in content) joins the same `sounds`-style block in
+  S1-b, the slice that plays it. S1-a ships only the two sound keys the seat named.
 **`content/vein_sizes/small.yml`:**
 ```yaml
 vein_sizes:
@@ -625,6 +686,7 @@ vein_sizes:
     height: 2       # blocks up the face
     spots: { min: 2, max: 3 }   # design doc, relayed by the seat
 ```
+*(2026-11-13: all three values are now RULED. Ben said "yes" to "3 wide by 2 tall with 2-3 spots", §1.)*
 
 **NAME THE QUANTITY for every key:**
 
@@ -633,9 +695,19 @@ vein_sizes:
 | `width`, `height` | whole blocks of wall | integer ≥ 1; it scales one flat model (F-M4), so there is no −16..32 element limit | every slot of this size |
 | `spots.min`, `spots.max` | spot count | integer, 1 ≤ min ≤ max ≤ the tile capacity (§5.2) | every patch of this size |
 | `regrowth_ticks` | server ticks | integer > 0, continuous to 1 tick | every patch of this ore |
-| `payout.per_spot`, `payout.completion_bonus` | item count | integer ≥ 0, flat | every patch of this ore |
+| `payout.per_spot.min`, `.max` | item count per spot | integer, 0 ≤ min ≤ max, flat, rolled uniformly per spot | every patch of this ore |
+| `payout.completion_bonus.<size>` | item count per break | integer ≥ 0, flat; exactly one entry per listed size | every patch of this ore at that size |
 | `payout.item` | a vanilla item | must resolve to an item `Material` | — |
 | `models.*` | an item_model id | must name a model the project pack ships | — |
+| `sounds.miss`, `sounds.break` | a vanilla sound key | must resolve in the sound registry; PLACEHOLDER | — |
+
+*(The two payout rows replace the 2026-11-13 morning row "`payout.per_spot`, `payout.completion_bonus` — item count
+— integer ≥ 0, flat", per the seat's rulings 1 and 2.)*
+
+**Refusals added by Ben's numbers** (each with a unit test): an ore with no `payout` or no `per_spot` (the refusal
+that predates the numbers stays); `per_spot.min > max`, or a negative value; a size in `sizes:` with no
+`completion_bonus` entry; a `completion_bonus` entry for a size not in `sizes:`; a negative bonus; a missing
+`sounds.miss` or `sounds.break`. ContentValidator adds: each sound key resolves.
 
 **Refusals.**
 - The core records (`OreDefinition`, `VeinSize`) refuse what needs no registry, in the `ToolDefinition` style:
@@ -891,13 +963,19 @@ any boot):
   and POSITION (centred on the footprint?), and that the live spot sits where the trace says.
 - **M-HIT**: a charged click on the live spot logs `HIT` with cooldown 1.0000 and aim `in`. The mark becomes a crack
   and the next spot appears. The aim at the dig START matches where Ben aimed (§5.4).
-- **M-MISS**: a charged click elsewhere on the patch logs `MISS`, and nothing changes. **M-UNCHARGED**: an early
+- **M-MISS**: a charged click elsewhere on the patch logs `MISS`, nothing changes, and **Ben hears the miss sound
+  (`sounds.miss`, the PLACEHOLDER `minecraft:block.stone.hit`)**, which a second player does not hear (if one is
+  present). An uncharged click plays nothing. **M-UNCHARGED**: an early
   click on the spot logs `UNCHARGED` with the predicted `(Δ+0.5)/16.666666`, and nothing changes. **M-CHARGE-17** reads the boundary spike 1 never isolated: a click at Δ=16 logs `UNCHARGED` 0.9900, and one at Δ=17 logs `HIT` 1.0000.
 - **M-HOLD**: holding on the live spot logs at most one click, and nothing after it.
 - **M-DENY**: an empty hand and a sword each log `DENIED` with the action-bar line. A plain vanilla pickaxe (not
   minted) works.
-- **M-BREAK**: the last spot logs `BROKE` and the payout. The inventory gains that item and count. Every mark goes,
-  and the sound and particles play. Clicks then log `NOT_LIVE`.
+- **M-BREAK**: the last spot logs `BROKE`, and the break line shows one roll per spot, **each in 2..4**, plus
+  `bonus=5`, with **a total inside 9..17** that equals their sum (11..17 if the patch had 3 spots, 9..13 if 2). The
+  inventory gains that many raw iron. Every mark goes, and the break sound (`sounds.break`, PLACEHOLDER) and the
+  particles play. Clicks then log `NOT_LIVE` and play nothing.
+- **M-FULL**: the same break with a nearly full inventory: `kept + dropped = count`, and the dropped raw iron lies at
+  Ben's feet.
 - **M-REGROW**: 1200 ticks after the break (the trace's `regrow_at`), the patch returns with a re-rolled layout:
   the spot positions in the trace differ.
 - **M-LOGOUT**: break, log out, log back in before `regrow_at`: still regrowing. After it: fresh.
@@ -909,51 +987,34 @@ any boot):
   first's progress. **Otherwise recorded as NOT READ, not as passed.**
 - **LAST STEP**: a clean `/stop`.
 
-### 5.11 NUMBERS FOR BEN
-**Every number slice 1 needs that Ben has NOT ruled. Each is PROVISIONAL until he does.** Where Ben's design doc
-proposes a value (as relayed by the seat), it is given. **The design doc itself is not in this repo or in any brief I
-have read**, so where the seat has relayed none, none is given, and none is invented.
+### 5.11 NUMBERS FOR BEN: NOTHING OPEN FOR SLICE 1 (2026-11-13)
+**Every number slice 1 needs is now RULED.** This section shrank on 2026-11-13 once Ben's remaining numbers
+arrived. The rulings are quoted in §1 and the mechanism values in §2:
 
-| # | number | proposed value | source of the proposal |
+| # | number | value | ruled by |
 |---|---|---|---|
-| N2 | **ore per spot** (`payout.per_spot`, whole items) | — | none relayed |
-| N3 | **any completion bonus** (`payout.completion_bonus`, whole items; 0 means none) | — | none relayed |
-| N4 | **the gold-window length** | about 1.5 s = **30 ticks**, PROVISIONAL | the design doc, relayed by the seat |
-| N5 | **the gold-window bonus** | — | none relayed |
-| N6 | **whether a perfect chain pays extra in slice 1** (a yes or no, then a number) | — | none relayed. Slice 1 pays none until ruled |
-| N7 | **spots per Small vein** | **2–3**, PROVISIONAL | the design doc, relayed by the seat; not in Ben's words |
-| N8 | **the Small vein's size** | **3 wide × 2 high** blocks, PROVISIONAL | the design doc, relayed by the seat ("2 x 3 block patch (H x W)"); not in Ben's words. The spike's patch was 2 wide × 3 high (F-M18) |
+| N1 | the payout item | `minecraft:raw_iron` | Ben, *"raw iron"* |
+| N2 | ore per spot | **2 to 4**, rolled per spot | Ben, *"2-4 per spot"* |
+| N3 | the Small completion bonus | **5** | Ben, *"with a 5 completion bonus"* |
+| N7 | spots per Small vein | **2 to 3** | Ben, *"yes"* |
+| N8 | the Small vein's size | **3 wide × 2 high** | Ben, *"yes"* |
+| N9, N10, N11 | edge margin 2 px; spot spacing 5 px; offsets 0.0005 / 0.001 | as listed | the seat (derived mechanism values) |
 
-**Off this list, 2026-11-13 (the seat's diff):**
-- **N1, the payout item, is RULED by Ben: *"raw iron"*** (§1).
-- **N9 (edge margin 2 px), N10 (spot spacing 5 px) and N11 (offsets 0.0005 / 0.001)** are DERIVED mechanism values.
-  The seat ruled them its own to rule, and approved them (§2, ruling 6).
-- **Still with Ben**, and asked by the seat: N7 and N8 as a confirmation; N2; N3; whether the gold window (N4–N6) is
-  in slice 1 at all; and whether a miss makes a sound.
+**DEFERRED by Ben (*"later"*), so not open for slice 1:** N4 (the gold-window length; the design doc proposes about
+1.5 s = 30 ticks), N5 (its bonus) and N6 (any perfect-chain pay). Slice 1 builds no gold window and no gold art.
 
-**What the gold window would mean, so Ben can rule it:** N4 and N6 imply a window that starts when a spot is
-revealed, in which a charged hit counts as "gold". **That reading is mine, from the words, and is not confirmed.**
-If it is right:
-- a hit resets the ticker in the tick it lands, and the next spot is revealed in that same tick. At 1.2 the next full
-  charge is at ticker 17 (the §5.7 table). **So a 30-tick window leaves 13 ticks (0.65 s) to land a charged hit on
-  the new spot.** That is arithmetic on ruled numbers, not a measurement;
-- the FIRST spot has no hit before it. What starts its window (the patch appearing, the player's first click, or
-  nothing at all) is part of N4.
-Slice 1's `Patch` records each spot's reveal tick and hit tick (§5.2) so that none of this needs a state change
-later.
+**Kept for that later slice, because it is arithmetic on ruled numbers and costs nothing to keep:** if the window
+opens when a spot is revealed (my reading of the words, NOT confirmed), then at 1.2 the next full charge is at ticker
+17, so a 30-tick window leaves 13 ticks (0.65 s) to land a charged hit. What opens the FIRST spot's window is
+unanswered. `Patch` already records each spot's reveal tick and hit tick (§5.2).
 
-**Questions for Ben that are not numbers** (kept apart from the list above, so it stays numbers):
-- What a miss and an uncharged hit should SHOW: nothing, a sound, or a message. The proposal is nothing beyond the
-  vanilla swing.
-- Which pickaxes count for *"denied if not holding a pickaxe"*: every item in `#minecraft:pickaxes` (the proposal),
-  or only some.
-- *"prompt or toggle"* for the dev pack: the join toggle, the command, or both (both are planned).
-- The break's sound and particle.
-
-*(2026-11-13, the seat's ruling 7: until Ben says otherwise, the pickaxe test is the `#minecraft:pickaxes` tag; the
-dev pack gets both the toggle and the command; and the break's sound and particle are PLACEHOLDERS, named as
-placeholders in content. Their keys join the ore schema in S1-b, the slice that plays them, so S1-a ships no key that
-nothing reads. Whether a miss makes a sound is still with Ben.)*
+**The non-number questions, all settled for slice 1:**
+- a miss plays a sound (Ben, *"yes"*); an uncharged hit plays nothing (the seat's ruling 4);
+- the pickaxe test is the `#minecraft:pickaxes` tag (the seat's ruling 7, until Ben says otherwise);
+- the dev pack gets both the join toggle and the command (the seat's ruling 7);
+- the miss and break sounds are PLACEHOLDER keys in the ore file, and S1-a carries their schema (the seat's ruling
+  4). The break particle is a placeholder named in content, and its key joins the schema in S1-b, the slice that
+  shows it. *(This corrects the morning's note that both the sound and the particle keys wait for S1-b.)*
 
 ---
 
