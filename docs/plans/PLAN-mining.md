@@ -64,7 +64,7 @@ the seat confirms the copy.
 - **the Small vein only.** Per Ben's design doc, as relayed by the seat, that is a patch 2 blocks high × 3 wide with
   2–3 weak spots. The schema describes a size generally, so the other three sizes are content later, not code;
 - **attack speed 1.2**, the vanilla iron pickaxe's own default: a delay of `(float)(1.0 / 1.2 × 20.0)` = 16.666666
-  ticks, first full read at ticker 17 (§5 TOOLS table; spike 1's MS1 and MS5 read it);
+  ticks, first full read at ticker 17 (§5.7 TOOLS table, executed). Spike 1 did NOT isolate the 17: at 1.2 its full reads were all ≥ 20 ticks apart and its latest early read was 0.8100 (Δ=13); its early reads fit the formula (MS1);
 - **regrowth 1 minute = 1200 ticks**, per player, per patch slot.
 
 **What they settle:**
@@ -725,7 +725,7 @@ That trade is the seat's to rule, and it is in the report.
 *"Vanilla speed for now is fine"*. The vanilla iron pickaxe's own default is 1.2, so the value is already on the item:
 `ToolItems.mint` pins no modifier, so a minted `iron_pickaxe` keeps its type defaults, and `AttackSpeedAttributeOverride`
 leaves a pickaxe alone (§3, the override reading). Holding it, the player's speed is 1.2: a 16.666666-tick delay,
-first full read at ticker 17, as spike 1 read at that speed (MS1 and MS5).
+first full read at ticker 17 by the executed formula. Spike 1 fitted that formula at 1.2 (MS1) but never isolated the tick-17 boundary, so a slice 1 row reads it.
 - **So the `attack_speed` key, the mint path and the tooltip-order fix below are for the FIRST PICKAXE WITH A
   NON-VANILLA SPEED.** That pickaxe does not exist yet.
 - **Recommendation: build them in their own slice, with that pickaxe's content, and not in slice 1.** A key that no
@@ -852,7 +852,7 @@ any boot):
 - **M-HIT**: a charged click on the live spot logs `HIT` with cooldown 1.0000 and aim `in`. The mark becomes a crack
   and the next spot appears. The aim at the dig START matches where Ben aimed (§5.4).
 - **M-MISS**: a charged click elsewhere on the patch logs `MISS`, and nothing changes. **M-UNCHARGED**: an early
-  click on the spot logs `UNCHARGED` with the predicted `(Δ+0.5)/16.666666`, and nothing changes.
+  click on the spot logs `UNCHARGED` with the predicted `(Δ+0.5)/16.666666`, and nothing changes. **M-CHARGE-17** reads the boundary spike 1 never isolated: a click at Δ=16 logs `UNCHARGED` 0.9900, and one at Δ=17 logs `HIT` 1.0000.
 - **M-HOLD**: holding on the live spot logs at most one click, and nothing after it.
 - **M-DENY**: an empty hand and a sword each log `DENIED` with the action-bar line. A plain vanilla pickaxe (not
   minted) works.
