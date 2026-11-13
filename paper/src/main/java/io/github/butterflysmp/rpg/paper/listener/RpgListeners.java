@@ -126,6 +126,10 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.block.BlockBreakEvent;
+import io.github.butterflysmp.rpg.paper.mining.MiningService;
+import io.papermc.paper.event.packet.PlayerChunkLoadEvent;
+import io.papermc.paper.event.packet.PlayerChunkUnloadEvent;
 import io.papermc.paper.event.player.PlayerArmSwingEvent;
 import org.bukkit.inventory.ItemStack;
 import java.util.Optional;
@@ -283,6 +287,8 @@ public final class RpgListeners implements Listener {
 
     /** The Ability Stone's input side (PLAN-build-system.md section 2.5). */
     private final StoneCaster stoneCaster;
+    /** Mining slice 1 (PLAN-mining.md 5.4). Every handler below that names it runs on the main thread. */
+    private final MiningService mining;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -293,8 +299,9 @@ public final class RpgListeners implements Listener {
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar, HealthRegenSystem healthRegen,
                         Plugin plugin, RecipeRegistry recipes,
-                        VaultService vaults, StoneCaster stoneCaster) {
+                        VaultService vaults, StoneCaster stoneCaster, MiningService mining) {
         this.stoneCaster = stoneCaster;
+        this.mining = mining;
         this.plugin = plugin;
         this.vaults = vaults;
         this.recipes = recipes;
@@ -1410,6 +1417,60 @@ public final class RpgListeners implements Listener {
     public void onStoneBlockDamage(BlockDamageEvent event) {
         if (!StoneItems.isStone(event.getPlayer().getInventory().getItemInMainHand(), adapters.keys())) return;
         event.setCancelled(true);
+    }
+
+    /**
+     * MINING'S INPUT (PLAN-mining.md 5.4; the seat's ruling 1, 2026-11-13): a left-click on a placed
+     * patch slot's block. BlockDamageEvent fires once per click, from the dig START, BEFORE the swing
+     * resets the attack ticker, so the charge read here is the click's own. No arm-swing handler and
+     * no packet listener exist for mining.
+     *
+     * <p>NOT {@code ignoreCancelled}: {@link #onStoneBlockDamage} may already have cancelled this
+     * event for a held stone, and the patch block must be protected and judged regardless (a stone
+     * is not a pickaxe, so that click is Denied).
+     */
+    @EventHandler
+    public void onMiningBlockDamage(BlockDamageEvent event) {
+        mining.onBlockDamage(event);
+    }
+
+    /** F-M5: the break routes BlockDamageEvent does not see (a creative break; a STOP on destroyPos). */
+    @EventHandler
+    public void onMiningBlockBreak(BlockBreakEvent event) {
+        mining.onBlockBreak(event);
+    }
+
+    /**
+     * Shows the player's patches in a chunk as the client receives it. PlayerChunkLoadEvent is a
+     * SYNCHRONOUS event (it extends ChunkEvent with the sync constructor, and its one caller is the
+     * player's chunk sender on the server tick), so this runs on the main thread.
+     */
+    @EventHandler
+    public void onMiningChunkLoad(PlayerChunkLoadEvent event) {
+        mining.onChunkLoad(event.getPlayer(), event.getChunk());
+    }
+
+    @EventHandler
+    public void onMiningChunkUnload(PlayerChunkUnloadEvent event) {
+        mining.onChunkUnload(event.getPlayer(), event.getChunk());
+    }
+
+    /** The dev pack's join toggle ({@code mining.dev-pack-on-join}, default false). */
+    @EventHandler
+    public void onMiningJoin(PlayerJoinEvent event) {
+        mining.onJoin(event.getPlayer());
+    }
+
+    /** Logs the client's answer to the dev pack (MINING pack status), the gate's M-PACK witness. */
+    @EventHandler
+    public void onMiningPackStatus(org.bukkit.event.player.PlayerResourcePackStatusEvent event) {
+        mining.onPackStatus(event.getPlayer(), event.getID(), event.getStatus().name());
+    }
+
+    /** Forgets what the client was shown. Patches and regrowth clocks are KEPT across logout. */
+    @EventHandler
+    public void onMiningQuit(PlayerQuitEvent event) {
+        mining.onQuit(event.getPlayer());
     }
 
     /**

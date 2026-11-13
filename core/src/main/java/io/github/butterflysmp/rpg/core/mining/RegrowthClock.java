@@ -45,6 +45,17 @@ public final class RegrowthClock {
         return false;
     }
 
+    /** The deadline, if that player's patch at that slot is regrowing now. */
+    public java.util.OptionalLong deadline(UUID player, String slotId) {
+        if (!isRegrowing(player, slotId)) return java.util.OptionalLong.empty();
+        return java.util.OptionalLong.of(deadlines.get(player).get(slotId));
+    }
+
+    /** Ends every regrowth of one player (the dev command {@code /rpg mining regrow}). */
+    public void clearPlayer(UUID player) {
+        deadlines.remove(player);
+    }
+
     /** Clears a removed slot for every player. */
     public void clearSlot(String slotId) {
         for (Iterator<Map<String, Long>> it = deadlines.values().iterator(); it.hasNext(); ) {

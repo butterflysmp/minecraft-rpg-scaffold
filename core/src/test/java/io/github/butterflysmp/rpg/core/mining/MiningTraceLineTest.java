@@ -36,6 +36,15 @@ class MiningTraceLineTest {
     }
 
     @Test
+    void aShowLineListsEverySpotCentreAndTheLiveIndex() {
+        // The gate's witness for where the spots are: M-HIT checks the aim against the live spot's
+        // centre, and M-REGROW checks the re-roll by comparing two of these lines.
+        assertEquals("MINING show player=Ben slot=s1 spots=10,12;30,20;41,7 live=2/3 tick=99",
+                MiningTraceLine.show("Ben", "s1",
+                        List.of(new Spot(10, 12), new Spot(30, 20), new Spot(41, 7)), 1, 99));
+    }
+
+    @Test
     void aRegrowLine() {
         assertEquals("MINING regrow player=Ben slot=s1 spots=2 tick=1363",
                 MiningTraceLine.regrow("Ben", "s1", 2, 1363));

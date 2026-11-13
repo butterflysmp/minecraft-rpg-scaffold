@@ -26,12 +26,14 @@ import java.util.TreeSet;
  * @param crackModel      the item_model id for a hit spot
  * @param missSound       the sound key a Miss plays. A PLACEHOLDER in slice 1
  * @param breakSound      the sound key a Broke plays. A PLACEHOLDER in slice 1
+ * @param breakParticle   the particle key a Broke shows. A PLACEHOLDER in slice 1 (the seat's ruling 7);
+ *                        added in S1-b, the slice that shows it
  */
 public record OreDefinition(String id, String displayName, String payoutItem,
                             int perSpotMin, int perSpotMax, Map<String, Integer> completionBonus,
                             int regrowthTicks, List<String> sizes,
                             String patchModel, String spotModel, String crackModel,
-                            String missSound, String breakSound) {
+                            String missSound, String breakSound, String breakParticle) {
 
     public OreDefinition {
         requireText(id, "id", "?");
@@ -42,6 +44,7 @@ public record OreDefinition(String id, String displayName, String payoutItem,
         requireText(crackModel, "models.crack", id);
         requireText(missSound, "sounds.miss", id);
         requireText(breakSound, "sounds.break", id);
+        requireText(breakParticle, "particles.break", id);
         if (regrowthTicks < 1) {
             throw new IllegalArgumentException("ore '" + id + "' has regrowth_ticks " + regrowthTicks
                     + "; it must be at least 1");

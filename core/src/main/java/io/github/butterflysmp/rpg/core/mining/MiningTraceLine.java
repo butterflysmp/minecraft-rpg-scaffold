@@ -33,6 +33,16 @@ public final class MiningTraceLine {
                 player, slotId, item, payout.total(), rolls, payout.bonus(), kept, dropped, regrowAt);
     }
 
+    /**
+     * A patch shown to a player: every spot centre in reveal order, and the live spot 1-based. The
+     * gate's witness for where the spots are (M-HIT's aim, M-REGROW's re-roll).
+     */
+    public static String show(String player, String slotId, java.util.List<Spot> spots, int liveIndex, long tick) {
+        String centres = spots.stream().map(s -> s.cu() + "," + s.cv()).collect(Collectors.joining(";"));
+        return String.format(Locale.ROOT, "MINING show player=%s slot=%s spots=%s live=%d/%d tick=%d",
+                player, slotId, centres, liveIndex + 1, spots.size(), tick);
+    }
+
     public static String regrow(String player, String slotId, int spots, long tick) {
         return String.format(Locale.ROOT, "MINING regrow player=%s slot=%s spots=%d tick=%d",
                 player, slotId, spots, tick);

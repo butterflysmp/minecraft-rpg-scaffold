@@ -49,3 +49,8 @@ ores:
     sounds:
       miss: minecraft:block.stone.hit       # PLACEHOLDER
       break: minecraft:block.stone.break    # PLACEHOLDER
+    # PLACEHOLDER vanilla particle for the break (the seat's ruling 7), shown to the one player only.
+    # It must be a particle that needs no data: a block or dust particle cannot be spawned bare, and
+    # ContentValidator refuses one.
+    particles:
+      break: minecraft:poof                 # PLACEHOLDER

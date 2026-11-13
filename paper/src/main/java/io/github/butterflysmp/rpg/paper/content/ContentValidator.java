@@ -262,8 +262,8 @@ public final class ContentValidator {
 
     /**
      * An ore's cross-file and registry references (PLAN-mining.md 5.3). The refusals that need no
-     * server already ran in {@link OreDefinition}'s constructor; these need the vein-size registry
-     * or the Bukkit registry, so they are warnings at boot, like everything else here.
+     * server already ran in {@link OreDefinition}'s constructor; these need the vein-size registry,
+     * the Bukkit registry or the plugin jar, so they are warnings at boot, like everything else here.
      *
      * <ul>
      *   <li>every {@code sizes:} entry names a LOADED vein size. An ore whose only size failed to
@@ -271,17 +271,23 @@ public final class ContentValidator {
      *   <li>{@code payout.item} resolves to an ITEM (a block-only material cannot be handed over);</li>
      *   <li>{@code sounds.miss} and {@code sounds.break} parse as keys and resolve in the sound
      *       registry, through the same {@code soundExists} seam the visual check uses;</li>
-     *   <li>each {@code models.*} id parses as a key. <b>Whether the PACK ships that model is NOT
-     *       checked here yet</b>: slice 1's pack arrives in S1-b, and the in-pack check arrives with
-     *       it. Until then a well-formed id naming nothing passes, and that is stated rather than
-     *       hidden.</li>
+     *   <li>{@code particles.break} parses as a key and names a particle that needs NO data. A
+     *       particle that needs data (a block particle, a dust colour) cannot be spawned without it;</li>
+     *   <li>each {@code models.*} id parses as a key AND the project pack ships it, as
+     *       {@code assets/<ns>/items/<path>.json} under the jar's {@code resourcepack/}. S1-a could
+     *       only check the first half; the pack arrived in S1-b, and this is the half the seat ruled
+     *       S1-b must add (2026-11-13). Gate row R0c depends on it.</li>
      * </ul>
      *
-     * @param itemExists does this name resolve to a Material that is an item
+     * @param itemExists     does this name resolve to a Material that is an item
+     * @param particleUsable does this key name a particle that needs no data
+     * @param packHasModel   does the project pack ship an item model definition for this key
      * @return every problem found, each naming the ore at fault. Empty is good.
      */
     public List<String> validateMining(Collection<OreDefinition> ores, VeinSizeRegistry sizes,
-                                       Predicate<String> itemExists) {
+                                       Predicate<String> itemExists,
+                                       Predicate<NamespacedKey> particleUsable,
+                                       Predicate<NamespacedKey> packHasModel) {
         List<String> problems = new ArrayList<>();
         for (OreDefinition ore : ores) {
             for (String size : ore.sizes()) {
@@ -296,9 +302,17 @@ public final class ContentValidator {
             }
             checkMiningSound(ore, "sounds.miss", ore.missSound(), problems);
             checkMiningSound(ore, "sounds.break", ore.breakSound(), problems);
-            checkModelKey(ore, "models.patch", ore.patchModel(), problems);
-            checkModelKey(ore, "models.spot", ore.spotModel(), problems);
-            checkModelKey(ore, "models.crack", ore.crackModel(), problems);
+            NamespacedKey particle = NamespacedKey.fromString(ore.breakParticle());
+            if (particle == null) {
+                problems.add("ore '" + ore.id() + "' particles.break '" + ore.breakParticle()
+                        + "' is not a valid particle key");
+            } else if (!particleUsable.test(particle)) {
+                problems.add("ore '" + ore.id() + "' particles.break '" + ore.breakParticle()
+                        + "' is not a particle that can be shown without data; the break would show nothing");
+            }
+            checkModel(ore, "models.patch", ore.patchModel(), packHasModel, problems);
+            checkModel(ore, "models.spot", ore.spotModel(), packHasModel, problems);
+            checkModel(ore, "models.crack", ore.crackModel(), packHasModel, problems);
         }
         return problems;
     }
@@ -313,9 +327,15 @@ public final class ContentValidator {
         }
     }
 
-    private static void checkModelKey(OreDefinition ore, String key, String value, List<String> problems) {
-        if (NamespacedKey.fromString(value) == null) {
+    private static void checkModel(OreDefinition ore, String key, String value,
+                                   Predicate<NamespacedKey> packHasModel, List<String> problems) {
+        NamespacedKey parsed = NamespacedKey.fromString(value);
+        if (parsed == null) {
             problems.add("ore '" + ore.id() + "' " + key + " '" + value + "' is not a valid item_model key");
+        } else if (!packHasModel.test(parsed)) {
+            problems.add("ore '" + ore.id() + "' " + key + " '" + value + "' is not in the project pack ("
+                    + "no resourcepack/assets/" + parsed.getNamespace() + "/items/" + parsed.getKey()
+                    + ".json); a player with the pack would see the missing-model cube");
         }
     }
 

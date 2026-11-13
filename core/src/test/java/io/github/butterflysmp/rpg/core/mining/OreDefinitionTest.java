@@ -20,7 +20,7 @@ class OreDefinitionTest {
     static OreDefinition iron(Map<String, Integer> bonus, List<String> sizes) {
         return new OreDefinition("iron", "Iron", "raw_iron", 2, 4, bonus, 1200, sizes,
                 "rpg:mining/iron_patch", "rpg:mining/spot", "rpg:mining/crack",
-                "minecraft:block.stone.hit", "minecraft:block.stone.break");
+                "minecraft:block.stone.hit", "minecraft:block.stone.break", "minecraft:poof");
     }
 
     @Test
@@ -51,15 +51,18 @@ class OreDefinitionTest {
         assertThrows(IllegalArgumentException.class, () -> iron(Map.of(), List.of()), "no sizes");
         assertThrows(IllegalArgumentException.class, () -> iron(Map.of("small", -1), List.of("small")));
         assertThrows(IllegalArgumentException.class, () -> new OreDefinition("iron", "Iron", "raw_iron",
-                3, 2, Map.of("small", 5), 1200, List.of("small"), "a:b", "a:c", "a:d", "a:e", "a:f"));
+                3, 2, Map.of("small", 5), 1200, List.of("small"), "a:b", "a:c", "a:d", "a:e", "a:f", "a:g"));
         assertThrows(IllegalArgumentException.class, () -> new OreDefinition("iron", "Iron", "raw_iron",
-                -1, 2, Map.of("small", 5), 1200, List.of("small"), "a:b", "a:c", "a:d", "a:e", "a:f"));
+                -1, 2, Map.of("small", 5), 1200, List.of("small"), "a:b", "a:c", "a:d", "a:e", "a:f", "a:g"));
         assertThrows(IllegalArgumentException.class, () -> new OreDefinition("iron", "Iron", "raw_iron",
-                2, 4, Map.of("small", 5), 0, List.of("small"), "a:b", "a:c", "a:d", "a:e", "a:f"));
+                2, 4, Map.of("small", 5), 0, List.of("small"), "a:b", "a:c", "a:d", "a:e", "a:f", "a:g"));
         assertThrows(IllegalArgumentException.class, () -> new OreDefinition("iron", "Iron", " ",
-                2, 4, Map.of("small", 5), 1200, List.of("small"), "a:b", "a:c", "a:d", "a:e", "a:f"));
+                2, 4, Map.of("small", 5), 1200, List.of("small"), "a:b", "a:c", "a:d", "a:e", "a:f", "a:g"));
         assertThrows(IllegalArgumentException.class, () -> new OreDefinition("iron", "Iron", "raw_iron",
-                2, 4, Map.of("small", 5), 1200, List.of("small"), "a:b", "a:c", "a:d", " ", "a:f"),
+                2, 4, Map.of("small", 5), 1200, List.of("small"), "a:b", "a:c", "a:d", " ", "a:f", "a:g"),
                 "a blank miss sound");
+        assertThrows(IllegalArgumentException.class, () -> new OreDefinition("iron", "Iron", "raw_iron",
+                2, 4, Map.of("small", 5), 1200, List.of("small"), "a:b", "a:c", "a:d", "a:e", "a:f", " "),
+                "a blank break particle");
     }
 }

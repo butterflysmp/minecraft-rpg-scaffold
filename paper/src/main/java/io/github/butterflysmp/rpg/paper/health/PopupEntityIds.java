@@ -7,12 +7,17 @@ import java.util.concurrent.atomic.AtomicInteger;
  * {@link Integer#MAX_VALUE}. The server assigns real entity ids counting UP from 0, so this range can't
  * collide with a real entity within a server's uptime (ids reset on restart). One id per number, never
  * reused. Thread-safe (an {@code AtomicInteger}); the popup fires on the target's owning thread.
+ *
+ * <p><b>ONE COUNTER FOR EVERY PACKET-ONLY ENTITY</b> (PLAN-mining.md F-M7, the seat's ruling 8,
+ * 2026-11-13). RpgPlugin builds a single instance and hands it to the damage popups AND to mining's
+ * displays, so the two cannot collide. This is the smallest move that does it: the class stays where
+ * it is, under its old name, with its package-private test seam unchanged, and only becomes public.
  */
-final class PopupEntityIds {
+public final class PopupEntityIds {
 
     private final AtomicInteger next;
 
-    PopupEntityIds() {
+    public PopupEntityIds() {
         this(Integer.MAX_VALUE);
     }
 
@@ -21,7 +26,7 @@ final class PopupEntityIds {
         this.next = new AtomicInteger(start);
     }
 
-    int next() {
+    public int next() {
         return next.getAndDecrement();
     }
 }

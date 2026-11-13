@@ -49,6 +49,31 @@ public record FaceFrame(int ax, int ay, int az, WallFace face, int width, int he
         return blocks;
     }
 
+    /** The patch origin (pixel 0, 0) on the plane: the footprint face's bottom-left as the player sees it. */
+    private double originX() { return face.rx != 0 ? leftX() + (face.rx > 0 ? 0 : 1) : planeX(); }
+    private double originZ() { return face.rz != 0 ? leftZ() + (face.rz > 0 ? 0 : 1) : planeZ(); }
+    private double planeX() { return ax + (face.nx > 0 ? 1 : 0); }
+    private double planeZ() { return az + (face.nz > 0 ? 1 : 0); }
+
+    /**
+     * The world point of patch pixel coordinates {@code (u, v)}, moved {@code outset} blocks off the
+     * wall along the outward normal. The inverse of {@link #worldToPatch} on the plane; the round
+     * trip is pinned by {@code FaceFrameWorldTest}.
+     *
+     * @return {@code {x, y, z}}
+     */
+    public double[] patchToWorld(double u, double v, double outset) {
+        double x = originX() + face.rx * u / 16.0 + face.nx * outset;
+        double y = ay + v / 16.0;
+        double z = originZ() + face.rz * u / 16.0 + face.nz * outset;
+        return new double[]{x, y, z};
+    }
+
+    /** The middle of the footprint's face, {@code outset} blocks off the wall. */
+    public double[] centre(double outset) {
+        return patchToWorld(width * 8.0, height * 8.0, outset);
+    }
+
     /**
      * Where the ray from the eye along {@code (dx, dy, dz)} meets the patch plane, in patch pixels.
      * The direction need not be normalised.
@@ -61,10 +86,8 @@ public record FaceFrame(int ax, int ay, int az, WallFace face, int width, int he
         // A point on the plane, and the plane's origin corner. Along the normal, the outer face is
         // the block's high side when the normal is positive and its low side when negative. Along
         // the right axis, u = 0 is the left column's edge that is furthest AGAINST the right axis.
-        double planeX = ax + (face.nx > 0 ? 1 : 0);
-        double planeZ = az + (face.nz > 0 ? 1 : 0);
-        double originX = face.rx != 0 ? leftX() + (face.rx > 0 ? 0 : 1) : planeX;
-        double originZ = face.rz != 0 ? leftZ() + (face.rz > 0 ? 0 : 1) : planeZ;
+        double originX = originX();
+        double originZ = originZ();
         double originY = ay;
 
         double denom = face.nx * dx + face.nz * dz;

@@ -26,6 +26,9 @@ class MiningContentValidationTest {
     private static final Set<String> SOUNDS = Set.of("minecraft:block.stone.hit", "minecraft:block.stone.break");
     private static final Predicate<NamespacedKey> SOUND_EXISTS = key -> SOUNDS.contains(key.toString());
     private static final Predicate<String> ITEM_EXISTS = name -> name.equals("raw_iron");
+    private static final Predicate<NamespacedKey> PARTICLE_USABLE = key -> key.toString().equals("minecraft:poof");
+    private static final Set<String> PACK = Set.of("rpg:mining/iron_patch", "rpg:mining/spot", "rpg:mining/crack");
+    private static final Predicate<NamespacedKey> PACK_HAS = key -> PACK.contains(key.toString());
 
     private static ContentValidator validator() {
         return new ContentValidator(new VisualRegistry(), new StatusRegistry(), new ElementRegistry(),
@@ -41,8 +44,15 @@ class MiningContentValidationTest {
     private static OreDefinition ore(String item, List<String> sizes, String patch, String miss, String brk) {
         Map<String, Integer> bonus = new java.util.HashMap<>();
         for (String s : sizes) bonus.put(s, 5);
+        return ore(item, sizes, patch, miss, brk, "minecraft:poof");
+    }
+
+    private static OreDefinition ore(String item, List<String> sizes, String patch, String miss, String brk,
+                                     String particle) {
+        Map<String, Integer> bonus = new java.util.HashMap<>();
+        for (String s : sizes) bonus.put(s, 5);
         return new OreDefinition("iron", "Iron", item, 2, 4, bonus, 1200, sizes,
-                patch, "rpg:mining/spot", "rpg:mining/crack", miss, brk);
+                patch, "rpg:mining/spot", "rpg:mining/crack", miss, brk, particle);
     }
 
     private static OreDefinition clean() {
@@ -51,7 +61,7 @@ class MiningContentValidationTest {
     }
 
     private static List<String> check(OreDefinition ore) {
-        return validator().validateMining(List.of(ore), small(), ITEM_EXISTS);
+        return validator().validateMining(List.of(ore), small(), ITEM_EXISTS, PARTICLE_USABLE, PACK_HAS);
     }
 
     private static void assertOne(List<String> problems, String needle) {
@@ -86,6 +96,22 @@ class MiningContentValidationTest {
     void aBreakSoundThatIsNotEvenAKeyIsNamed() {
         assertOne(check(ore("raw_iron", List.of("small"), "rpg:mining/iron_patch",
                 "minecraft:block.stone.hit", "Not A Key")), "sounds.break");
+    }
+
+    @Test
+    void aModelThePackDoesNotShipIsNamed() {
+        // Well-formed, so S1-a's check passed it; the pack has no such item definition.
+        assertOne(check(ore("raw_iron", List.of("small"), "rpg:mining/gold_patch",
+                "minecraft:block.stone.hit", "minecraft:block.stone.break")), "not in the project pack");
+        // Mutation: skip the packHasModel test -> no problem -> reddens.
+    }
+
+    @Test
+    void aParticleThatNeedsDataOrDoesNotExistIsNamed() {
+        assertOne(check(ore("raw_iron", List.of("small"), "rpg:mining/iron_patch",
+                "minecraft:block.stone.hit", "minecraft:block.stone.break", "minecraft:block")), "particles.break");
+        assertOne(check(ore("raw_iron", List.of("small"), "rpg:mining/iron_patch",
+                "minecraft:block.stone.hit", "minecraft:block.stone.break", "Not A Key")), "particles.break");
     }
 
     @Test
