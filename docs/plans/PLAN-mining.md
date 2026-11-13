@@ -572,6 +572,12 @@ All core types are pure Java: no Bukkit, no PacketEvents. **Each one's test is w
   with a bounded number of attempts, then `IllegalStateException`. The size's constructor refuses a `spots.max`
   greater than the number of disjoint 5 × 5 tiles in the margin-bounded area, so a legal size cannot hit that bound
   in practice. The test rolls 10,000 seeds of every shipped size and asserts every layout obeys both rules.
+  *(2026-11-13, the seat's F-A, fixed on S1-a in `e7308aa4`: "the number of disjoint 5 × 5 tiles" counted a
+  perfect tiling, and a random packing can stop far short of one, so the bound overstated its guarantee. It is now
+  the WORST-CASE count, `ceil(aw/9) × ceil(ah/9)` over the centre area `aw = widthPx − 4`, `ah = heightPx − 4`.
+  Each placed centre blocks a 9 × 9 square of centres, and the grid points `(9i, 9j)` are pairwise 9 apart, so
+  fewer spots than that always leave a free legal position. Small: 5 × 4 = 20, which Small's 3 is well under.
+  Rejection sampling and its exception are unchanged.)*
 - **Re-rolled at every regrowth**: size and spot positions re-roll each regrowth (the brief). With one size, only
   the spots move.
 
@@ -693,7 +699,7 @@ vein_sizes:
 | key | quantity | arithmetic | eligibility |
 |---|---|---|---|
 | `width`, `height` | whole blocks of wall | integer ≥ 1; it scales one flat model (F-M4), so there is no −16..32 element limit | every slot of this size |
-| `spots.min`, `spots.max` | spot count | integer, 1 ≤ min ≤ max ≤ the tile capacity (§5.2) | every patch of this size |
+| `spots.min`, `spots.max` | spot count | integer, 1 ≤ min ≤ max ≤ the worst-case guaranteed count (§5.2, F-A; was "the tile capacity") | every patch of this size |
 | `regrowth_ticks` | server ticks | integer > 0, continuous to 1 tick | every patch of this ore |
 | `payout.per_spot.min`, `.max` | item count per spot | integer, 0 ≤ min ≤ max, flat, rolled uniformly per spot | every patch of this ore |
 | `payout.completion_bonus.<size>` | item count per break | integer ≥ 0, flat; exactly one entry per listed size | every patch of this ore at that size |
@@ -951,6 +957,16 @@ One PR is too big to read: core, content, the pack, the visuals, the input and t
 | **S1-b** | S1-a merged | the pack (with F-M11's `.gitattributes` lines, after S1-0); the shared entity-id allocator; `MiningVisuals`; `MiningSlots`; the `BlockDamageEvent` and `BlockBreakEvent` handler; the payout; the regrowth scheduling; `/rpg mining …`; the trace | the rows below |
 | **S1-T** | master, when the seat says | §5.7's `attack_speed` key, the ordered mint and the iron.yml rewrite, with the first pickaxe that declares a non-vanilla speed | a tooltip row and a refill row |
 
+**THE ORDER, CHANGED BY THE SEAT, 2026-11-13: S1-b IS STACKED ON S1-a, AND S1-a DOES NOT MERGE FIRST.** S1-a changes
+plugin enable (two new loaders, the `Loaded` line, two zero-checks and `validateMining`) and has never been booted.
+So, under the standing stacked-PR rule:
+- S1-b branches from `feat/mining-s1a` (with its F-A commit), not from a master that has S1-a;
+- the ONE R0 lives on the stack top's gate, `docs/gates/GATE-mining-slice1.md`, and one boot reads both slices;
+- they merge **bottom-up** after the seat approves: S1-a first, then S1-b rebased with `--onto` onto the squash, with
+  its patch ids shown unchanged across the rebase.
+The table's "S1-a merged" in S1-b's *from* column describes the plan before this ruling. S1-0 (#181) is
+independent of both: script only, no runtime effect.
+
 **The S1-b gate's rows, in outline** (`docs/gates/GATE-mining-slice1.md`, SURVIVAL on every row, committed before
 any boot):
 - **R0a** the build line names the head. **R0b** the jar carries `resourcepack/` and the mining classes, with a
@@ -1109,6 +1125,20 @@ The gate's READING blocks are the account; these are the pointers.
   HTTP server binds 127.0.0.1 and his client connected over the LAN address. It did not fail: the client runs on the
   server's machine, so 127.0.0.1 reached the server, and the fifth offer went ACCEPTED → DOWNLOADED →
   SUCCESSFULLY_LOADED (MS7). Recorded as wrong in the gate.
+- **F-M19 (the seat's F-A, 2026-11-13): `VeinSize`'s spot ceiling overstated its guarantee.** It refused
+  `spots.max` only above the perfect-tiling count, but `SpotLayout` places at random. The fix is on S1-a
+  (`e7308aa4`): the ceiling is the worst-case count, `ceil(aw/9) × ceil(ah/9)` (§5.2). Small is unaffected (3 ≤ 20).
+- **F-M20 (the seat's F-B, 2026-11-13): S1-a changes the `Loaded` line, and the PARKED stack's gates predict the old
+  line verbatim.** S1-a appends `…, N ores, M vein sizes` after `N recipes`. Read on 2026-11-13, read-only, from the
+  parked tips on the wire (`git diff --name-only origin/master...origin/<branch> -- docs/gates`, then
+  `grep -n "Loaded [0-9]* abilities"` in each). **Six gate files** on the stack carry a verbatim `Loaded …` R0c:
+  `GATE-legacy-b.md` (L144), `GATE-wither-status.md` (L164), `GATE-withered-shortbow.md` (L157),
+  `GATE-selftest.md` (L121 on feat/selftest, L125 above it), `GATE-sunder.md` (L140 on feat/sunder, L142 above it)
+  and `GATE-deft-hands.md` (L121), which ends `… 1 mobs, 3 recipes`. `docs/dragon-mobs` adds no gate.
+  - **When the stack is rebased onto a master that has S1-a, each such R0c needs a dated re-prediction BEFORE its
+    boot**, appending `, 1 ores, 1 vein sizes` (or whatever counts that master ships), with the old prediction
+    kept beside it.
+  - The parked branches are NOT touched now (the standing constraint).
 - **F-M18: the patch model's on-screen SIZE, FACING and POSITION were NOT STATED in spike 1.** Ben described the
   accepted look only as *"an orange square with a gray background"* (MS7). Slice 1's gate reads them. **Note:** the
   spike scaled its patch (2, 3, 1), 2 wide × 3 tall, while the Small vein is 2 high × 3 wide (§1). Slice 1's patch
