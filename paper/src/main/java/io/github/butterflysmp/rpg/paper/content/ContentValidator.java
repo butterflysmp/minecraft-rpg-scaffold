@@ -5,6 +5,8 @@ import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
 import io.github.butterflysmp.rpg.core.build.PoolDefinition;
+import io.github.butterflysmp.rpg.core.mining.OreDefinition;
+import io.github.butterflysmp.rpg.core.mining.VeinSizeRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.weapon.CraftResultToken;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
@@ -256,6 +258,65 @@ public final class ContentValidator {
             }
         }
         return problems;
+    }
+
+    /**
+     * An ore's cross-file and registry references (PLAN-mining.md 5.3). The refusals that need no
+     * server already ran in {@link OreDefinition}'s constructor; these need the vein-size registry
+     * or the Bukkit registry, so they are warnings at boot, like everything else here.
+     *
+     * <ul>
+     *   <li>every {@code sizes:} entry names a LOADED vein size. An ore whose only size failed to
+     *       load would otherwise be loaded and unplaceable, with nothing said;</li>
+     *   <li>{@code payout.item} resolves to an ITEM (a block-only material cannot be handed over);</li>
+     *   <li>{@code sounds.miss} and {@code sounds.break} parse as keys and resolve in the sound
+     *       registry, through the same {@code soundExists} seam the visual check uses;</li>
+     *   <li>each {@code models.*} id parses as a key. <b>Whether the PACK ships that model is NOT
+     *       checked here yet</b>: slice 1's pack arrives in S1-b, and the in-pack check arrives with
+     *       it. Until then a well-formed id naming nothing passes, and that is stated rather than
+     *       hidden.</li>
+     * </ul>
+     *
+     * @param itemExists does this name resolve to a Material that is an item
+     * @return every problem found, each naming the ore at fault. Empty is good.
+     */
+    public List<String> validateMining(Collection<OreDefinition> ores, VeinSizeRegistry sizes,
+                                       Predicate<String> itemExists) {
+        List<String> problems = new ArrayList<>();
+        for (OreDefinition ore : ores) {
+            for (String size : ore.sizes()) {
+                if (sizes.find(size).isEmpty()) {
+                    problems.add("ore '" + ore.id() + "' lists vein size '" + size
+                            + "', which did not load; a patch of this ore at that size can never be placed");
+                }
+            }
+            if (!itemExists.test(ore.payoutItem())) {
+                problems.add("ore '" + ore.id() + "' pays '" + ore.payoutItem()
+                        + "', which is not an item; a break would hand over nothing");
+            }
+            checkMiningSound(ore, "sounds.miss", ore.missSound(), problems);
+            checkMiningSound(ore, "sounds.break", ore.breakSound(), problems);
+            checkModelKey(ore, "models.patch", ore.patchModel(), problems);
+            checkModelKey(ore, "models.spot", ore.spotModel(), problems);
+            checkModelKey(ore, "models.crack", ore.crackModel(), problems);
+        }
+        return problems;
+    }
+
+    private void checkMiningSound(OreDefinition ore, String key, String value, List<String> problems) {
+        NamespacedKey parsed = NamespacedKey.fromString(value);
+        if (parsed == null) {
+            problems.add("ore '" + ore.id() + "' " + key + " '" + value + "' is not a valid sound key");
+        } else if (!soundExists.test(parsed)) {
+            problems.add("ore '" + ore.id() + "' " + key + " '" + value
+                    + "' is not a sound; it would play nothing, silently");
+        }
+    }
+
+    private static void checkModelKey(OreDefinition ore, String key, String value, List<String> problems) {
+        if (NamespacedKey.fromString(value) == null) {
+            problems.add("ore '" + ore.id() + "' " + key + " '" + value + "' is not a valid item_model key");
+        }
     }
 
     /**
