@@ -1561,6 +1561,25 @@ same day):
   S2-PACK-AFTER-DEATH. Ben's Q21 ("not sure", NOT STATED) and Q22 ("yes") were given before those rows ran and are
   bound to no reading.
 
+**From the seat's read of the S2 readings, 2026-11-14** (read from origin at `37534ac2`: ACCEPTED; #186 approved to
+merge, only on Ben's own words):
+
+- **F-M45: THE SEAT'S RULINGS ON THE S2 READINGS.**
+  1. **PASS as recorded:** R0a–c, S2-PACK-JOIN, S2-PLACE-XL, S2-SIZE-SMALL, S2-SIZE-MEDIUM, the roll and sight halves
+     of S2-SIZE-LARGE and S2-SIZE-XL, S2-DENIED-SOUND, S2-MISS-COOLDOWN, S2-REGROW, LAST. The large patch's break, read
+     out of the steps, is accepted as an extra reading and stays recorded that way.
+  2. **S2-OUTSIDE: the rule is READ** (eight lines, three blocks, no outcome, no sound, the control heard). "Which
+     block" is NOT AS PREDICTED and does not matter to the rule.
+  3. **SURVIVAL is inferred again** (F-M43). The run-sheet rule is F-M46, below.
+  4. **NOT READ, never passes, carried:** S2-ROLL-REFUSED (both refusals), S2-RESPAWN, S2-PACK-AFTER-DEATH,
+     S2-SECOND-PLAYER, S2-MEDIUM-CAP, and the extra_large break half. Q21 is NOT STATED; Q22 is bound to no reading.
+     They do not block this merge: every path is behind `Permissions.DEV`, and the rules are unit-tested and
+     mutation-checked.
+  5. **F-M44 is accepted as recorded.** The build-line check caught it, which is what R0a is for.
+- **F-M46 (the seat's ruling 3, 2026-11-14): A RUN SHEET'S FIRST LINE AFTER LOGIN IS `/gamemode survival`**, on its
+  own, before anything else, **and the gate's first row reads it** in the log. Set-up step 1 was skipped in both the
+  S1-c and the S2 boots (F-M35, F-M43), and both times SURVIVAL rested on an inference.
+
 ### CARRIED HAND ROWS, 2026-11-14, AFTER THE S2 BOOT: THE NEXT MINING GATE MUST INCLUDE THESE
 
 **This list SUPERSEDES the one below.** Each is **NOT READ** and **never a pass**:
@@ -1570,6 +1589,10 @@ same day):
 3. **Whether a death and respawn drops a server-offered pack.**
 4. **`/rpg mining roll`'s two stageable refusals as log lines** (S2-ROLL-REFUSED): a size that does not fit, and a
    size that is not loaded.
+5. **S2-MEDIUM-CAP**: a medium slot showing only small and medium over several rolls (added 2026-11-14 by the seat's
+   ruling 4 on the readings, F-M45).
+6. **The extra_large break half**: a break of an extra_large patch with its payout inside 26..46 (added 2026-11-14 by
+   the same ruling).
 
 ### CARRIED HAND ROWS, 2026-11-14, AFTER BEN'S (a) AND THE SEAT'S RULING ON IT: S2'S GATE INCLUDES THESE — SUPERSEDED 2026-11-14, AFTER THE S2 BOOT (the list above)
 

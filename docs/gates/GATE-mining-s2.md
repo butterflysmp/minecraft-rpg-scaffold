@@ -3,6 +3,9 @@
 **Status: NOT RUN.** Written 2026-11-14, before any boot of `feat/mining-s2`. **NO BOOT until the seat has diffed
 S2's code AND this gate, and Ben says ready.**
 
+**Seat read 2026-11-14 from origin at 37534ac2: readings accepted; approved to merge with the carried rows listed in
+PLAN-mining.md**
+
 **READ 2026-11-14** (the seat's boot approval of 2026-11-14 for `03bd1bf0` only, on Ben's "ready"). One boot,
 `./scripts/dev-server.sh --refresh-content`, `[Rpg] Build: 03bd1bf0`; Ben's LOGIN at L80 of that boot's
 `run/logs/latest.log` (07:53:03), `/stop` at L171 (08:02:57). Every `L<n>` below is a line of that log. Ben's answers
