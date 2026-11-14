@@ -262,6 +262,9 @@ behaviour, and the fix is then a deliberate choice, as `ExpandedQuiverContentInv
 1. **"10/20/30%": does it cut the reload TIME by that much (a: 3.0s → 2.1s at III), or make the reload that much
    FASTER (b: 3.0s → 2.3s at III)?** The seat recommends (a).
 2. **The tooltip words:** `-30% Reload Time`, or something else?
+   - **ANSWERED by Ben, 2026-11-14 (relayed by the seat after the `e82df2b3` boot), on the weapon tooltip's enchant
+     line:** *"just Deft Hands III"*. The line is the name and the numeral only, as `EnchantLoreLines.label` builds
+     it. `-30% Reload Time` stays in the command and menu replies. No code change (`GATE-deft-hands.md` DH1).
 3. **The icon:** a feather (proposed), a clock, or another item?
 4. **Should it also be allowed on the dev bow `hunters_bow`,** which has no reload and would show the enchant while
    it does nothing? Expanded Quiver already does this there today.

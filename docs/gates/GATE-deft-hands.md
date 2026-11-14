@@ -350,6 +350,8 @@ read after Ben's LOGIN.
 
 **CORRECTION, 2026-11-14 (the seat's ruling 7). The prediction above stands as written; this is beside it.** The lore clause predicted `(-30% Reload Time)` on the tooltip. The code renders `Deft Hands III`: `EnchantLoreLines.label` gives the name and the numeral only, and the percentage is in the command and menu replies. **This is not simply a wrong prediction:** `PLAN-deft-hands.md` (L264) asked Ben *"The tooltip words: `-30% Reload Time`, or something else?"*, and this row predicted the percentage on the tooltip. Whether the tooltip carries it is Ben's ruling, which the seat has asked for. Not a merge blocker; a change, if he wants one, is a follow-up PR.
 
+**BEN'S RULING, 2026-11-14 (relayed by the seat), beside the correction above:** asked whether the weapon tooltip's enchant line should read "Deft Hands III" alone or also carry "-30% Reload Time", Ben said *"just Deft Hands III"*. **The code is right as built** (`EnchantLoreLines.label`: the name and the numeral), **DH1's lore prediction was wrong**, and `PLAN-deft-hands.md`'s question 2 is answered. No code change. DH1's lore half is closed on this ruling; its reload half was AS PREDICTED.
+
 ### DH2 — a real reload on the Deft III Boltor takes 42 ticks (SURVIVAL) — witness: the RELOAD line
 
 | prediction | READING |
