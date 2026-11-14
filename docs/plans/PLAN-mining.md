@@ -27,6 +27,12 @@ seat's rulings in §2. The design (§5.12) and the gate (`GATE-mining-s2.md`) la
 readings in `GATE-mining-s2.md`. Findings F-M41 to F-M44, and the CARRIED HAND ROWS list dated after the S2 boot
 (which supersedes the earlier ones), are in §6.
 
+**2026-11-14: MINING JOINS `/rpg selftest`** on `feat/mining-selftest` from master **`01727a8c`** (read from the
+wire: `git ls-remote origin refs/heads/master` → `01727a8c621ddd67c18b74c698ae9861c4d9496d`). The review seat's brief:
+mining's server-side gate rows become selftest scenarios (`docs/gates/GATE-mining-auto.md`), the selftest's settle
+fix (GATE-selftest.md ST9) lands first, and `/rpg mining` moves under the `rpg.dev` guard. The seat's ruling on the
+guard and the carried rows this branch turns AUTO are in §2 and §6, dated 2026-11-14 (selftest).
+
 **The spike** is `spike/mining-input`, also from `55425aad`. It will NOT merge. Its gate, `GATE-mining-spike.md`,
 lives on that branch beside the code it tests, because the boot is bound to that branch's build sha. After its
 readings, the read gate is copied byte for byte onto this branch with a dated note naming the spike sha it was read
@@ -158,6 +164,11 @@ The roll weights are **PROVISIONAL** (the seat's words). Small's 3 × 2 and 2–
   `scripts/dev-server.sh`, and nothing is copied from feat/selftest. The brief named `-Drpg.dev=true`, but that
   property exists only on the parked feat/selftest branch (`SelfTestGuard`).
   - **Mining's real dev commands move to the `rpg.dev` guard once #175 has merged.**
+  - **THE SEAT'S RULING, 2026-11-14 (the selftest brief; #175 merged as `472a358e`):** the whole `/rpg mining`
+    subtree requires BOTH `Permissions.DEV` AND the dev-server marker (`-Drpg.dev=true`, set only by
+    `scripts/dev-server.sh`), reusing `SelfTestGuard.DEV_PROPERTY`, the one definition of that property. It does NOT
+    take the selftest's other conditions (dev world, one player, SURVIVAL): those belong to a run, not to a dev
+    command. Built on `feat/mining-selftest`.
 - Where the docs live: see the status block above.
 
 **From Ben's addendum, the AREA RULE is the target:** custom areas are no-break as a whole, so cancelling block
@@ -1579,6 +1590,25 @@ merge, only on Ben's own words):
 - **F-M46 (the seat's ruling 3, 2026-11-14): A RUN SHEET'S FIRST LINE AFTER LOGIN IS `/gamemode survival`**, on its
   own, before anything else, **and the gate's first row reads it** in the log. Set-up step 1 was skipped in both the
   S1-c and the S2 boots (F-M35, F-M43), and both times SURVIVAL rested on an inference.
+
+### CARRIED ROWS, 2026-11-14 (selftest): WHICH OF THE LIST BELOW `feat/mining-selftest` TURNS AUTO
+
+The list below stands as written. `feat/mining-selftest` adds `docs/gates/GATE-mining-auto.md`, whose scenarios
+`/rpg selftest` drives through the shipped `BlockDamageEvent` path. **An AUTO reading is a reading of the SERVER**
+(`.claude/rules/verification.md`, *AN AUTO READING IS A READING OF THE SERVER*): a row with a sight or sound half
+keeps that half for Ben. None of these is read until that gate boots; until then each stays **NOT READ**.
+
+| carried row (the list below) | this branch | the gate row |
+|---|---|---|
+| 1. M-SECOND-PLAYER | **stays HAND**: a selftest refuses with two players online (`SelfTestGuard`) | — |
+| 2. the same-world respawn re-shows the patch | **AUTO** (the log half: the same `size=`, `spots=`, `live=` after the respawn); the sight stays Ben's | A4 |
+| 3. whether a death drops the server-offered pack | **split**: AUTO reads that no `MINING pack offer` or `pack status` line follows the death; **whether the art survives is Ben's sight** (one run-sheet question) | A4 |
+| 4. `/rpg mining roll`'s two stageable refusals | **AUTO** | A1 |
+| 5. S2-MEDIUM-CAP | **AUTO**, at the 21 placements `GATE-mining-s2.md` derived | A2 |
+| 6. the extra_large break half | **AUTO** | A3 |
+
+**Also recorded here, at the seat's instruction:** Ben's ruling of 2026-11-14 on the Deft Hands tooltip ("just Deft
+Hands III") is already on master; this branch adds nothing to it.
 
 ### CARRIED HAND ROWS, 2026-11-14, AFTER THE S2 BOOT: THE NEXT MINING GATE MUST INCLUDE THESE
 
