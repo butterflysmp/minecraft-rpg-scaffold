@@ -67,6 +67,29 @@ class MiningBookTest {
     }
 
     @Test
+    void peekReadsTheExistingPatchAndNeverCreatesOne() {
+        // The selftest's read-only accessor. A peek before the first look finds nothing AND draws nothing:
+        // the script holds exactly one patch's draws, so a peek that rolled would leave the look below
+        // short of numbers ("exhausted"), and a peek that created would return the patch.
+        MiningBook book = book(0, 2, 10, 10, 30, 20);
+        assertTrue(book.peek(BEN, smallSlot().id()).isEmpty(), "no look yet: nothing to read");
+        Patch first = look(book, BEN, smallSlot()).orElseThrow();
+        assertSame(first, book.peek(BEN, smallSlot().id()).orElseThrow(), "the same patch the shipped path made");
+        assertTrue(book.peek(OTHER, smallSlot().id()).isEmpty(), "another player's patch is not this one");
+    }
+
+    @Test
+    void peekIsEmptyWhileRegrowingAndDoesNotEndTheRegrowth() {
+        MiningBook book = book(0, 2, 10, 10, 30, 20, 2, 2);
+        Patch p = look(book, BEN, smallSlot()).orElseThrow();
+        clickAt(book, BEN, smallSlot(), ANCHOR, hitAt(p.layout().spots().get(0), 110));
+        clickAt(book, BEN, smallSlot(), ANCHOR, hitAt(p.layout().spots().get(1), 111));
+        assertTrue(book.peek(BEN, smallSlot().id()).isEmpty(), "broken: regrowing, no patch");
+        assertEquals(100 + 1200, book.regrowAt(BEN, smallSlot().id()).orElseThrow(),
+                "and the peek left the clock alone (the clock reads the book's now, 100, not the click's tick)");
+    }
+
+    @Test
     void eachPlayerHasTheirOwnPatchAtTheSameSlot() {
         MiningBook book = book(0, 2, 10, 10, 30, 20, 0, 2, 40, 6, 3, 25);
         Patch ben = look(book, BEN, smallSlot()).orElseThrow();

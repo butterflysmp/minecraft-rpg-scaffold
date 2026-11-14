@@ -690,7 +690,7 @@ public final class RpgPlugin extends JavaPlugin {
         // The dev-server marker, read ONCE: the selftest's guard and /rpg mining's (the seat's ruling, 2026-11-14)
         // both take this value, so the two can never disagree about what kind of server this is.
         boolean devServer = Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY);
-        SelfTestService selfTest = new SelfTestService(adapters, profiles, resources, nameplates, getLogger(),
+        SelfTestService selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
                 buildCommit(), devServer, ScenarioLoader.load(this::getResource));
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);

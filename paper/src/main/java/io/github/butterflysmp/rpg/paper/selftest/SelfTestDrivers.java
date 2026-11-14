@@ -2,7 +2,9 @@ package io.github.butterflysmp.rpg.paper.selftest;
 
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.build.StoneItems;
+import io.github.butterflysmp.rpg.core.mining.Spot;
 import io.github.butterflysmp.rpg.paper.menu.Menu;
+import io.github.butterflysmp.rpg.paper.mining.MiningService;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import io.papermc.paper.event.player.PlayerArmSwingEvent;
@@ -17,6 +19,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -24,6 +27,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -35,6 +39,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.util.RayTraceResult;
 
 /**
  * The verbs. <b>Each one is the ONLY code that reaches its shipped path, and each says in its line what it drove</b>,
@@ -96,6 +101,10 @@ final class SelfTestDrivers {
             case AFTER -> run.previousRow().equals(a)
                     ? Optional.empty()
                     : Optional.of("it reads the state " + a + " leaves, and " + a + " did not run just before it");
+            case AIM_BLOCK -> aimBlock(p, a);
+            case AIM_PATCH -> aimPatch(p, a);
+            case DIG -> dig(p);
+            case MINING_TRACE -> miningTrace(p);
             case NOTE -> { run.log("NOTE " + a); yield Optional.empty(); }
         };
     }
@@ -348,6 +357,97 @@ final class SelfTestDrivers {
         run.log("CELL class=" + cls + " element=" + el);
         if (want.length == 2 && want[0].equalsIgnoreCase(cls) && want[1].equalsIgnoreCase(el)) return Optional.empty();
         return Optional.of("the Build cell is " + cls + "/" + el + ", and this row is staged for " + arg);
+    }
+
+    // --- mining (GATE-mining-auto.md) ---------------------------------------------------------------------------
+
+    /** How far AIM_PATCH looks along the eye for the slot it aims within. The placements are 1.5 blocks away. */
+    private static final double SLOT_LOOKUP_REACH = 6.0;
+
+    private Optional<String> aimBlock(Player p, String arg) {
+        String[] f = arg.split("\\s+");
+        if (f.length != 4) return Optional.of("AIM_BLOCK wants 'dx dy dz FACE', got '" + arg + "'");
+        BlockFace face;
+        try { face = BlockFace.valueOf(f[3].toUpperCase(Locale.ROOT)); }
+        catch (IllegalArgumentException e) { return Optional.of("unknown face " + f[3]); }
+        Block b = p.getLocation().getBlock().getRelative(Integer.parseInt(f[0]), Integer.parseInt(f[1]), Integer.parseInt(f[2]));
+        double[] t = SelfTestMiningAim.faceCentre(b.getX(), b.getY(), b.getZ(), face.getModX(), face.getModY(), face.getModZ());
+        turnEyeTo(p, t, "DRIVE aim_block teleportAsync eye->face block=" + b.getX() + "," + b.getY() + "," + b.getZ()
+                + " " + b.getType().getKey().getKey() + " face=" + face);
+        return Optional.empty();
+    }
+
+    private Optional<String> aimPatch(Player p, String arg) {
+        RayTraceResult hit = p.rayTraceBlocks(SLOT_LOOKUP_REACH);
+        if (hit == null || hit.getHitBlock() == null) {
+            return Optional.of("the eye meets no block within " + (int) SLOT_LOOKUP_REACH + ", so no slot to aim at");
+        }
+        Optional<MiningService.PatchView> found = run.mining().peek(p, hit.getHitBlock());
+        if (found.isEmpty()) return Optional.of("the looked-at block is under no mining slot");
+        MiningService.PatchView view = found.get();
+        if (!view.live()) {
+            // Regrowing (or never shown): there is no patch to aim within. The aim stays where it is, so a DIG that
+            // follows is judged on the slot as a real click would be: NOT_LIVE.
+            run.log("DRIVE aim_patch slot=" + view.slotId() + " patch=none aim unchanged");
+            return Optional.empty();
+        }
+        double[] uv;
+        try { uv = SelfTestMiningAim.target(arg, view.frame(), view.spots(), view.liveIndex()); }
+        catch (IllegalArgumentException e) { return Optional.of(e.getMessage()); }
+        double[] w = view.frame().patchToWorld(uv[0], uv[1], 0.0);
+        StringBuilder spots = new StringBuilder();
+        for (Spot s : view.spots()) spots.append(spots.isEmpty() ? "" : ";").append(s.cu()).append(',').append(s.cv());
+        turnEyeTo(p, w, "DRIVE aim_patch teleportAsync eye->patch slot=" + view.slotId() + " size=" + view.sizeId()
+                + " spots=" + spots + " live=" + (view.liveIndex() + 1) + "/" + view.spots().size()
+                + " target=" + arg.trim() + " pixel=" + String.format(Locale.ROOT, "%.2f,%.2f", uv[0], uv[1]));
+        return Optional.empty();
+    }
+
+    /** Turns the eye to a world point, as AIM does ({@link SelfTestAim}, from the EYE), and logs where. */
+    private void turnEyeTo(Player p, double[] t, String what) {
+        Location feet = p.getLocation();
+        SelfTestAim.Rotation r = SelfTestAim.at(feet.getX(), feet.getY(), feet.getZ(), p.getEyeHeight(), t[0], t[1], t[2]);
+        Location turned = feet.clone();
+        turned.setYaw(r.yaw());
+        turned.setPitch(r.pitch());
+        run.log(what + " at=" + String.format(Locale.ROOT, "%.3f %.3f %.3f", t[0], t[1], t[2])
+                + " yaw=" + fmt(r.yaw()) + " pitch=" + fmt(r.pitch()));
+        p.teleportAsync(turned);
+    }
+
+    /**
+     * One click on the block the eye meets, as the dig START reaches the server: {@code BlockDamageEvent} with the
+     * face and the main-hand item, into every listener; then the arm swing's server-side reset. The event is the
+     * shipped read site (PLAN-mining.md 5.4), so {@code MiningService} reads the charge, the aim and the item from the
+     * player exactly as for Ben's click. The DRIVE line's {@code cooldown} is read before the event, the value the
+     * MINING click line must repeat.
+     */
+    private Optional<String> dig(Player p) {
+        var rangeAttribute = p.getAttribute(Attribute.BLOCK_INTERACTION_RANGE);
+        double range = rangeAttribute == null ? 4.5 : rangeAttribute.getValue();
+        RayTraceResult hit = p.rayTraceBlocks(range);
+        if (hit == null || hit.getHitBlock() == null || hit.getHitBlockFace() == null) {
+            return Optional.of("the eye meets no block within the block-interaction range " + fmt(range));
+        }
+        Block b = hit.getHitBlock();
+        ItemStack item = p.getInventory().getItemInMainHand();
+        var speedAttribute = p.getAttribute(Attribute.ATTACK_SPEED);
+        float before = p.getAttackCooldown();
+        BlockDamageEvent event = new BlockDamageEvent(p, b, hit.getHitBlockFace(), item, false);
+        Bukkit.getPluginManager().callEvent(event);
+        p.resetCooldown();
+        run.log("DRIVE dig BlockDamageEvent block=" + b.getX() + "," + b.getY() + "," + b.getZ() + " face="
+                + hit.getHitBlockFace() + " item=" + itemId(item) + " cooldown=" + String.format(Locale.ROOT, "%.4f", before)
+                + " attack_speed=" + (speedAttribute == null ? "?" : fmt(speedAttribute.getValue()))
+                + " cancelled=" + event.isCancelled() + " then resetCooldown cooldown=" + String.format(Locale.ROOT, "%.4f", p.getAttackCooldown()));
+        return Optional.empty();
+    }
+
+    private Optional<String> miningTrace(Player p) {
+        MiningService mining = run.mining();
+        if (!mining.isTracing(p)) mining.trace(p);   // the shipped toggle, which logs its own MINING trace line
+        run.log("DRIVE mining_trace on=" + mining.isTracing(p));
+        return Optional.empty();
     }
 
     // --- helpers -------------------------------------------------------------------------------------------------

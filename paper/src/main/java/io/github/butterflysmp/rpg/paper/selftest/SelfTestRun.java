@@ -285,6 +285,7 @@ final class SelfTestRun {
     Player player() { return player; }
     SelfTestSnapshot snapshot() { return snapshot; }
     MobNameplateManager nameplates() { return service.nameplates(); }
+    io.github.butterflysmp.rpg.paper.mining.MiningService mining() { return service.mining(); }
     ProfileService profiles() { return service.profiles(); }
     CombatantStats stats() { return service.stats(); }
 }

@@ -1,0 +1,410 @@
+# GATE-mining-auto.md: every mining row the instrument can drive through the SHIPPED path. A click is a
+# BlockDamageEvent fired into every listener (the dig verb), so RpgListeners and MiningService judge it as they judge
+# Ben's, then the arm swing's server-side reset (Player#resetCooldown). The witnesses are the MINING and HUD lines the
+# shipped code logs, and the instrument's DRIVE lines. The instrument reads; it never judges.
+#
+# THE STAGING, the same in every row (SelfTestMiningAimTest assumes it): the player at a block centre facing south; a
+# floor; a deepslate wall 7 wide and 4 high whose NORTH face is 1.5 blocks ahead; every fill box SAVED first, so the
+# row-start clean and the run's restore put it back. The main hand is replaced with an iron pickaxe (attack speed
+# 1.2); the run's restore puts the inventory back. Every row first removes a slot a skipped row may have left (the
+# reply says when there was none), and every row ends by removing the slot it placed.
+#
+# A charged click is `aim_patch: live`, `wait: 17`, `dig`: the previous dig reset the ticker, and 17 ticks after a
+# reset getAttackCooldown() reads (17 + 0.5) / 16.666666 clamped = 1.0 (executed; GATE-mining-auto.md, A7). A row
+# that cannot know its spot count (2 or 3, 4 or 5 ...) clicks the maximum; a click after the break reads NOT_LIVE.
+setup:
+  - mining_trace: on
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# A1: the two roll refusals at a medium slot (a size that does not fit; a size that is not loaded), then the
+# control: a size that fits is rolled.
+A1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining roll large"
+  - cmd: "rpg mining roll huge"
+  - cmd: "rpg mining roll medium"
+  - wait: 2
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A2: the medium cap. 21 placements of a medium slot at the same anchor, each a fresh roll through the same
+# creation point regrowth uses (PLAN-mining.md F-M38), each removed again.
+A2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining remove"
+
+# A3: an extra_large patch forced and mined to the break: 8 or 9 charged clicks, then a spare click if it had 8.
+A3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron extra_large"
+  - cmd: "rpg mining roll extra_large"
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A4: a death and a respawn in the same world. One HIT first, so the live index (2) differs from a fresh
+# patch's (1). A marker at the feet brings the player back if the respawn point is far; the 100-tick wait is Ben's look.
+A4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron extra_large"
+  - cmd: "rpg mining roll small"
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - cmd: 'summon minecraft:marker ~ ~ ~ {Tags:["mhome","selftest"]}'
+  - death_rules: on
+  - wait: 2
+  - cmd: "kill @s"
+  - wait: 20
+  - cmd: "tp @s @e[type=minecraft:marker,tag=mhome,limit=1]"
+  - wait: 100
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A5: the three place refusals: an UP face; a wall with an air row where a medium footprint's top row would be;
+# a duplicate slot (after the control placement succeeds).
+A5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - aim_block: "0 -1 1 UP"
+  - wait: 2
+  - cmd: "rpg mining place iron medium"
+  - cmd: "fill ~-3 ~2 ~2 ~3 ~3 ~2 minecraft:air"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining place iron medium"
+  - cmd: "fill ~-3 ~2 ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining place iron medium"
+  - wait: 2
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A6: small, medium and large, each forced at an extra_large slot and mined to the break.
+A6:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron extra_large"
+  - cmd: "rpg mining roll small"
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - cmd: "rpg mining roll medium"
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - cmd: "rpg mining roll large"
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A7: the charge boundary. A HIT resets the ticker; a click 16 ticks later reads 0.9900 (UNCHARGED); a click 17
+# ticks after ITS reset reads 1.0000 (HIT).
+A7:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron extra_large"
+  - cmd: "rpg mining roll large"
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 16
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A8: a MISS beside the live spot; an UNCHARGED click in the box; then a charged click that is still on spot 1.
+A8:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron extra_large"
+  - cmd: "rpg mining roll small"
+  - aim_patch: beside
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 5
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A9: the miss-sound cooldown: misses at t0, t0 + 7 and t0 + 8.
+A9:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron extra_large"
+  - cmd: "rpg mining roll small"
+  - aim_patch: beside
+  - wait: 17
+  - dig: ""
+  - wait: 7
+  - dig: ""
+  - wait: 1
+  - dig: ""
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A10: DENIED with a stick in the main hand, twice 10 ticks apart, then 45 ticks for the HUD's hold-end.
+A10:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron extra_large"
+  - cmd: "rpg mining roll small"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:stick"
+  - aim_patch: live
+  - wait: 5
+  - dig: ""
+  - wait: 10
+  - dig: ""
+  - wait: 45
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A11: a click on the slot's top corner block, outside a small patch; then the control, a charged click on the patch.
+A11:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron extra_large"
+  - cmd: "rpg mining roll small"
+  - aim_block: "3 3 2 NORTH"
+  - wait: 2
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+
+# A12: a real regrowth. A small patch forced at a MEDIUM slot is broken; 1210 ticks covers regrowth_ticks 1200.
+A12:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 0"
+  - save_blocks: "-4 -1 -1 4 5 4"
+  - cmd: "fill ~-4 ~-1 ~-1 ~4 ~-1 ~4 minecraft:stone"
+  - cmd: "fill ~-4 ~ ~-1 ~4 ~5 ~4 minecraft:air"
+  - cmd: "fill ~-3 ~ ~2 ~3 ~3 ~2 minecraft:deepslate"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_pickaxe"
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"
+  - cmd: "rpg mining place iron medium"
+  - cmd: "rpg mining roll small"
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - aim_patch: live
+  - wait: 17
+  - dig: ""
+  - wait: 1210
+  - aim_block: "0 0 2 NORTH"
+  - wait: 2
+  - cmd: "rpg mining remove"

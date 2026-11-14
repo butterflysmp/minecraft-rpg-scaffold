@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
+import io.github.butterflysmp.rpg.paper.mining.MiningService;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public final class SelfTestService {
     private final ProfileService profiles;
     private final ResourcePool resources;
     private final MobNameplateManager nameplates;
+    private final MiningService mining;
     private final Logger log;
     private final String build;
     private final boolean devServer;
@@ -34,12 +36,13 @@ public final class SelfTestService {
     private SelfTestRun active;
 
     public SelfTestService(AdapterContext adapters, ProfileService profiles, ResourcePool resources,
-                           MobNameplateManager nameplates, Logger log, String build, boolean devServer,
+                           MobNameplateManager nameplates, MiningService mining, Logger log, String build, boolean devServer,
                            ScenarioLoader.Loaded loaded) {
         this.adapters = adapters;
         this.profiles = profiles;
         this.resources = resources;
         this.nameplates = nameplates;
+        this.mining = mining;
         this.log = log;
         this.build = build;
         this.devServer = devServer;
@@ -116,4 +119,5 @@ public final class SelfTestService {
     ProfileService profiles() { return profiles; }
     ResourcePool resources() { return resources; }
     MobNameplateManager nameplates() { return nameplates; }
+    MiningService mining() { return mining; }
 }

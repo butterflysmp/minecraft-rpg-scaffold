@@ -93,6 +93,30 @@ public record Scenario(String gate, String row, List<Step> steps) {
         EXPECT_CELL,
         /** {@code "<row>"}: SKIPPED unless that row ran, unskipped, immediately before this one in the same run. */
         AFTER,
+        /**
+         * {@code "dx dy dz FACE"}: turn the player's EYE to the middle of that face of the block at that offset from the
+         * player's block ({@link SelfTestMiningAim#faceCentre}), by {@code teleportAsync}, as {@link #AIM} turns it.
+         * GATE-mining-auto.md: the wall a slot is placed on (its NORTH face), a floor's UP face, a slot block outside
+         * the patch. Wait 2 ticks after it before anything reads the aim.
+         */
+        AIM_BLOCK,
+        /**
+         * {@code "live" | "spot <i>" | "pixel <u> <v>" | "beside"}: turn the EYE to a point on the caller's patch at
+         * the slot the eye already looks at. It READS the patch from {@code MiningService#peek} (the real book, read-only)
+         * and logs what it read and where it aimed. While the slot is regrowing there is no patch: it logs that and
+         * leaves the aim alone, so a following DIG reads NOT_LIVE.
+         */
+        AIM_PATCH,
+        /**
+         * One mining click, as the shipped path sees one: a {@code BlockDamageEvent} for the block the eye ray meets
+         * within the player's block-interaction range, with its face and the MAIN-HAND item, into every listener
+         * ({@code RpgListeners} hands it to {@code MiningService}); then {@code Player#resetCooldown}, the reset the
+         * click's arm swing does on the server ({@code ServerPlayer.swing} → {@code resetAttackStrengthTicker}).
+         * It SKIPS the dig packet, its reach check and the swing animation.
+         */
+        DIG,
+        /** {@code "on"}: turn the player's {@code /rpg mining trace} ON through the shipped toggle, only if it is off. */
+        MINING_TRACE,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

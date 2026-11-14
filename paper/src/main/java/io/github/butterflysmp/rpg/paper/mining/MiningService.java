@@ -382,6 +382,37 @@ public final class MiningService {
         }
     }
 
+    // --- Read-only, for /rpg selftest (GATE-mining-auto.md) ------------------------------------
+
+    /**
+     * What one player's patch at one slot looks like now, as the selftest's aim reads it. A value, so the
+     * reader cannot change the patch. {@code live} is false while the slot is regrowing or before the
+     * player was first shown it; then {@code frame} is the SLOT's, {@code sizeId} is {@code "-"} and
+     * {@code spots} is empty.
+     */
+    public record PatchView(String slotId, boolean live, String sizeId, FaceFrame frame, List<Spot> spots,
+                            int liveIndex) { }
+
+    /**
+     * READ-ONLY: the caller's patch at the slot that {@code block} belongs to, or empty if no slot holds
+     * that block. Never creates a patch ({@link MiningBook#peek}), never shows or hides a display, and
+     * changes no clock. Main thread, like every method here.
+     */
+    public Optional<PatchView> peek(Player player, Block block) {
+        Optional<Slot> slot = slots.at(block.getWorld().getUID().toString(),
+                new BlockPos(block.getX(), block.getY(), block.getZ()));
+        if (slot.isEmpty()) return Optional.empty();
+        Slot s = slot.get();
+        return Optional.of(book.peek(player.getUniqueId(), s.id())
+                .map(p -> new PatchView(s.id(), true, p.size().id(), p.frame(s), p.layout().spots(), p.liveIndex()))
+                .orElseGet(() -> new PatchView(s.id(), false, "-", s.frame(), List.of(), -1)));
+    }
+
+    /** READ-ONLY: whether this player's MINING trace is on (the selftest turns it ON, never off). */
+    public boolean isTracing(Player player) {
+        return tracing.contains(player.getUniqueId());
+    }
+
     // --- Rendering ------------------------------------------------------------------------------
 
     /** Spawns the player's patch at this slot if they are not already shown it. @return true if shown now */
