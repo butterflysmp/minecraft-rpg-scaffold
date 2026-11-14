@@ -18,6 +18,11 @@ findings F-M12 to F-M18), and §5 is now SLICE 1 as a buildable design. Still PL
 the seat the same day (the sound rows count). Findings F-M32 to F-M36, and the CARRIED HAND ROWS list dated after
 S1-c (which supersedes slice 1's), are in §6.
 
+**2026-11-14: S2 OPENS** on `feat/mining-s2` from master **`6470ee8d`** (read from the wire:
+`git ls-remote origin refs/heads/master` → `6470ee8dd62b8a5a1db9205c7a1a4df121e768a7`). Four vein sizes, each patch
+rolling its size per regrowth, the DENIED sound and the miss-sound cooldown. Ben's words of 2026-11-14 are in §1, the
+seat's rulings in §2. The design (§5.12) and the gate (`GATE-mining-s2.md`) land in later commits on this branch.
+
 **The spike** is `spike/mining-input`, also from `55425aad`. It will NOT merge. Its gate, `GATE-mining-spike.md`,
 lives on that branch beside the code it tests, because the boot is bound to that branch's build sha. After its
 readings, the read gate is copied byte for byte onto this branch with a dated note naming the spike sha it was read
@@ -98,6 +103,38 @@ the seat confirms the copy.
   THE RESOURCE PACK). Requiring it is recorded, not built, in slice 1.
 - **The minted pickaxe's tooltip keeps vanilla's order**: Attack Damage above Attack Speed (F-M15, §5 TOOLS).
 - **The dig-stop is DEFERRED as polish.** Slice 1 does not build it. F7a is recorded as the candidate (§3, F7).
+
+### BEN'S RULINGS, 2026-11-14, VERBATIM (relayed by the seat in the S2 brief)
+
+After the S1-c boot:
+
+| | topic | Ben's words |
+|---|---|---|
+| a | the S1-c gate rows he skipped | *"Everything after the break row was already run which is why i chose to skip them, no point running them again"* |
+| b | asked if a placeholder sound is fine for the "need a pickaxe" message | *"Placeholder for now is fine"* |
+| c | asked if the miss sound should play only on a charged miss | *"Miss sound should have a slight cooldown, let's say .4 seconds"* |
+
+On vein sizes (the seat's four questions, his four answers):
+
+| | topic | Ben's words |
+|---|---|---|
+| d | asked whether a placed patch keeps one size or rolls a size each regrowth | *"The end goal is for patches to grow of random sizes and ores and types"* |
+| e | asked whether completion bonuses of 6, 8 and 10 for Medium, Large and Extra Large are right (Small is 5) | *"This is fine for now. Tuning will come later"* |
+| f | asked for regrowth time by size | *"Regrowth can be 1 minute across the board"* |
+| g | asked whether per-spot yield stays 2-4 for every size | *"yes"* |
+
+**FROM BEN'S DESIGN DOC, RELAYED BY THE SEAT, 2026-11-14.** These are the doc's values, NOT Ben's words in chat.
+Each is marked *design doc, relayed* wherever it is used.
+
+| size | width × height (blocks) | spots | roll weight |
+|---|---|---|---|
+| small | 3 × 2 | 2–3 | 50 |
+| medium | 5 × 3 | 4–5 | 30 |
+| large | 7 × 3 | 6–7 | 15 |
+| extra_large | 7 × 4 | 8–9 | 5 |
+
+The roll weights are **PROVISIONAL** (the seat's words). Small's 3 × 2 and 2–3 were already RULED by Ben on 2026-11-13
+(the table above).
 
 ## 2. THE SEAT'S RULINGS
 
@@ -189,6 +226,48 @@ damage is a property of the AREA, not of a patch.
    and the validator's check that the key resolves. (Where the keys live is argued in §5.3: the ore file.)
 5. **The instruction to leave the payout counts UNSET is lifted.** `iron.yml` carries the ruled values. The loader
    still refuses an ore with no payout, and keeps its test.
+
+**From the seat, 2026-11-14, on Ben's (a) (the S1-c rows he skipped):** these S1-c carried rows are **CLOSED BY
+BEN'S RULING 2026-11-14, NOT READ, never passes**: the place refusal texts, the server-list check, the
+full-inventory ground check, the relog and logout sights, the post-remove dig. **STILL CARRIED, never read by
+anything:** a second player sees their own patch; a same-world respawn re-shows the patch; whether a death drops a
+server-offered pack.
+
+**From the seat, 2026-11-14: the mechanism rulings for S2 (four vein sizes rolled per regrowth, and two sound
+rulings). Code + gate, no boot.**
+1. **A SLOT IS A LOCATION WITH A MAXIMUM SIZE.** `/rpg mining place <ore> <size>` now means "the largest size this
+   location can hold". The slot's footprint is that maximum size's footprint, from the same bottom-centre anchor rule
+   as today. Every block of it is protected always.
+2. **EACH PATCH ROLLS ITS SIZE WHEN IT IS CREATED** (first show, and every regrowth), per player, from the ore's size
+   weights, restricted to sizes that fit the slot (width and height both at most the maximum's), weights renormalised
+   over those. The patch sits at the slot's anchor by the same rule, so it is centred on the slot and its bottom row
+   is the slot's bottom row.
+3. The weights are the ore's: in iron.yml, `sizes` becomes a map of size id to an integer weight greater than 0.
+   NAME THE QUANTITY: a relative weight, an integer; a size's chance is its weight over the sum of the eligible
+   weights. The roll uses the injected RandomGenerator.
+4. A click on a slot block OUTSIDE the current patch's footprint (or its face while the patch is regrowing) is
+   cancelled and judged as nothing: no click outcome, no sound. The trace may log it as its own line; pin the format
+   if so.
+5. Payout: per_spot stays 2..4 for every size; completion_bonus is small 5, medium 6, large 8, extra_large 10;
+   regrowth_ticks stays 1200. Put the executed payout range for each size in the plan and pin both ends of each with
+   seeded tests.
+6. THE PATCH ART: one flat model per size, at that size's aspect, named per size in the ore's models (placeholder
+   textures; the look is Ben's later). The spot and crack models are unchanged. The pack's sha1 will change;
+   MiningPack's file list and its tests follow.
+7. A DEV COMMAND TO FORCE A SIZE, so a gate does not depend on luck: `/rpg mining roll <size>` (Permissions.DEV,
+   wired and pinned like the others) replaces the caller's patch at the looked-at slot with a fresh patch of that
+   size, refusing a size that does not fit the slot or that the ore does not list. It logs always.
+8. THE DENIED SOUND: a placeholder vanilla sound, named in content and marked PLACEHOLDER, played to the one player
+   when a DENIED action-bar hold STARTS with no hold already live. A DENIED click that replaces a live hold plays
+   nothing.
+9. THE MISS SOUND COOLDOWN: 8 server ticks (Ben's 0.4 s), per player, counted from the last miss sound that actually
+   PLAYED. A MISS inside it is still a MISS, still logged, and plays nothing. One named value, the rule in core, tests
+   first. The click line gains a field that says whether the miss sound played, so a gate can read it without an ear.
+10. Ore and minigame style are NOT rolled in S2 (one ore, Trail only). Say in the plan how the slot and the patch roll
+    would take them later, so nothing here has to be undone; build none of it.
+11. Core first, tests first, no Bukkit in core, no packet listener, everything on the main thread as slice 1
+    documents. Mutation-check the guards that matter: the fit rule, the renormalised roll, the outside-the-patch rule,
+    the cooldown boundary at exactly 8 ticks, the denied-sound "no live hold" condition, each size's payout ends.
 
 **THE DESIGN.** Every ore patch and every weak spot is a **packet-only display entity showing a CUSTOM MODEL from the
 project's resource pack**, shown to one player. **A vanilla item is never the shipped look.** The spike's
