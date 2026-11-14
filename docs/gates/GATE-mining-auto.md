@@ -1,5 +1,12 @@
 # GATE — MINING-AUTO: `/rpg selftest` drives mining's server-side rows; the settle fix (ST9) re-read; `/rpg mining` under the dev guard
 
+**Seat read 2026-11-14 from origin at `e27f44a6`: readings accepted; approved to merge**, on Ben's own words. **OWED,
+read-only, in the next selftest-touching branch (the seat's ruling 3):** ST9R's tick clause is NOT DIAGNOSED — from
+the pinned jar, why a killed mob's body is removed after 1-2 ticks in some cases and 20 in others (which kill path,
+which entity types), then a dated re-prediction; never from memory. **The one mining row still carried, never read:**
+M-SECOND-PLAYER (a second player sees their own patch). G2 stays unit-only; Sunder's SU10 was offered and skipped,
+still carried. PLAN-mining.md §6 carries the rulings (F-M47 to F-M50) and the new carried list.
+
 **Status at `2ca368ad` (READ, 2026-11-14; the boot the seat approved at this sha only).** One boot, booted by CC with
 `./scripts/dev-server.sh --refresh-content` on Ben's "Ready". Line numbers are that boot's `run/logs/latest.log`
 (build L42 `2ca368ad`). Ben's LOGIN L81 (10:56:48); the first command after it L85 `/gamemode survival`, alone; L86

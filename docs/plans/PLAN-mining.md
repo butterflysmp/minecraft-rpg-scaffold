@@ -1591,7 +1591,46 @@ merge, only on Ben's own words):
   own, before anything else, **and the gate's first row reads it** in the log. Set-up step 1 was skipped in both the
   S1-c and the S2 boots (F-M35, F-M43), and both times SURVIVAL rested on an inference.
 
-### CARRIED ROWS, 2026-11-14 (selftest): WHICH OF THE LIST BELOW `feat/mining-selftest` TURNS AUTO
+**From the seat's read of the mining-auto readings, 2026-11-14** (`feat/mining-selftest`, #187; booted at `2ca368ad`,
+readings at `e27f44a6`, `docs/gates/GATE-mining-auto.md`; ACCEPTED, approved to merge on Ben's own words):
+
+- **F-M47 (ruling 1): THE FRAMEWORK'S SPACING IS READ, OFFSET 0.** Every `wait:` length used between two digs (17, 16,
+  10, 7, 5, 1) read its own gap in the click lines' `tick=`, with the predicted cooldown. The exact-tick rows (A7-A10,
+  A12) stand as read.
+- **F-M48 (ruling 2): R0a-d, G1, A1-A9, A11, A12 and LAST AS PREDICTED; A10 AS PREDICTED in every clause it rests
+  on.** Its side cooldown read 1.0000 against a predicted 0.9000 after an `item replace`: a wrong prediction about which
+  tick the item-change reset lands on (n ticks later it reads n, not n − 1; A11's 0.5700 is the second witness).
+  Recorded; no row depends on it.
+- **F-M49 (ruling 3): ST9R — THE FIX IS READ, THE TICK CLAUSE IS NOT DIAGNOSED.** 32 settles, every one ending
+  `dying=0`; the 11 with a body read `first=1`; WS2c's dead-body probes went from 2 to 0. The tick clause is NOT AS
+  PREDICTED (5 read 20, 6 read 1 or 2). Accepted for the merge, because the wait's purpose is met. **OWED, read-only, in
+  the next selftest-touching branch:** from the pinned jar, why a killed mob's body is removed after 1-2 ticks in some
+  cases and 20 in others (which kill path, which entity types), then a dated re-prediction. Never from memory. **The
+  gate's own miscounts, recorded:** it expected 10 bodies from run 3's `Killed` replies and there were 11 (the reply
+  count undercounted run 3's WD1); and its clause "run 3 had two" dead-body probes missed run 3's WS3 line, which is
+  that row's own DOT-killed subject.
+- **F-M50 (ruling 4): THE EIGHT NON-MINING ROWS THAT READ DIFFERENTLY FROM RUN 3 OF `e82df2b3` ARE ACCEPTED AS
+  EXPLAINED:** the settle's new waits (WD1, WD3, LB5, WS1, WS2b, WS2c, WS3), and a crit that did not roll in WD1 and
+  LB2. LB2's 30 is its uncrit prediction.
+
+### CARRIED ROWS, 2026-11-14, AFTER THE MINING-AUTO BOOT: THE NEXT MINING GATE MUST INCLUDE THESE (the seat's ruling 5)
+
+**This list SUPERSEDES the two below.** Of the six rows carried after S2:
+
+- **READ (AUTO), at `2ca368ad`:** `/rpg mining roll`'s two refusals (A1), S2-MEDIUM-CAP at 21 placements (A2), the
+  extra_large break (A3), and the same-world respawn's re-show (A4).
+- **READ by Ben:** whether a death drops the pack's art — Q1 *"yes"*, bound to A4, whose log shows the re-show and no
+  pack line.
+
+**STILL CARRIED, NOT READ, never a pass:**
+
+1. **M-SECOND-PLAYER**: each player sees their own patch. Needs a second client; a selftest refuses with two online.
+
+**Also carried, outside mining's rows:** G2 (`/rpg mining` absent off a dev server) stays **unit-only**, by
+construction. Sunder's **SU10** (a leap off a ledge takes no fall damage) was offered and skipped: still carried
+(`GATE-sunder.md`).
+
+### CARRIED ROWS, 2026-11-14 (selftest): WHICH OF THE LIST BELOW `feat/mining-selftest` TURNS AUTO — SUPERSEDED 2026-11-14, AFTER THE MINING-AUTO BOOT (the list above)
 
 The list below stands as written. `feat/mining-selftest` adds `docs/gates/GATE-mining-auto.md`, whose scenarios
 `/rpg selftest` drives through the shipped `BlockDamageEvent` path. **An AUTO reading is a reading of the SERVER**
@@ -1610,7 +1649,7 @@ keeps that half for Ben. None of these is read until that gate boots; until then
 **Also recorded here, at the seat's instruction:** Ben's ruling of 2026-11-14 on the Deft Hands tooltip ("just Deft
 Hands III") is already on master; this branch adds nothing to it.
 
-### CARRIED HAND ROWS, 2026-11-14, AFTER THE S2 BOOT: THE NEXT MINING GATE MUST INCLUDE THESE
+### CARRIED HAND ROWS, 2026-11-14, AFTER THE S2 BOOT: THE NEXT MINING GATE MUST INCLUDE THESE — SUPERSEDED 2026-11-14, AFTER THE MINING-AUTO BOOT (the list above)
 
 **This list SUPERSEDES the one below.** Each is **NOT READ** and **never a pass**:
 
