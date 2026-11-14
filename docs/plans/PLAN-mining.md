@@ -12,6 +12,7 @@ findings F-M12 to F-M18), and §5 is now SLICE 1 as a buildable design. Still PL
 `GATE-mining-slice1.md`); readings committed at **`9eb45815`**, Ben's follow-up words as a dated addendum at
 **`a95e56f6`**. The seat read both from origin and accepted them, 2026-11-14. Findings F-M25 to F-M28 and the
 **carried hand rows** the next mining gate must include are at the end of §6; §5.4 carries a dated correction.
+> **APPROVED TO MERGE, 2026-11-14 (gate-less: the approval line lives here and in #184's description, per the seat's ruling of 2026-11-14):** the seat's merge approval of 2026-11-14, approved head `#184 9a398711`, on Ben's words *"go ahead and merge them"*.
 
 **The spike** is `spike/mining-input`, also from `55425aad`. It will NOT merge. Its gate, `GATE-mining-spike.md`,
 lives on that branch beside the code it tests, because the boot is bound to that branch's build sha. After its
