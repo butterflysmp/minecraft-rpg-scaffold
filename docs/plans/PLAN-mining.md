@@ -23,6 +23,10 @@ S1-c (which supersedes slice 1's), are in §6.
 rolling its size per regrowth, the DENIED sound and the miss-sound cooldown. Ben's words of 2026-11-14 are in §1, the
 seat's rulings in §2. The design (§5.12) and the gate (`GATE-mining-s2.md`) land in later commits on this branch.
 
+**2026-11-14: S2 READ.** `feat/mining-s2` (#186) booted at **`03bd1bf0`**, on the seat's approval and Ben's "ready";
+readings in `GATE-mining-s2.md`. Findings F-M41 to F-M44, and the CARRIED HAND ROWS list dated after the S2 boot
+(which supersedes the earlier ones), are in §6.
+
 **The spike** is `spike/mining-input`, also from `55425aad`. It will NOT merge. Its gate, `GATE-mining-spike.md`,
 lives on that branch beside the code it tests, because the boot is bound to that branch's build sha. After its
 readings, the read gate is copied byte for byte onto this branch with a dated note naming the spike sha it was read
@@ -1532,9 +1536,44 @@ same day):
 - **F-M40: the order "ask `isLive`, then replace the hold" is pinned by a source-order signature test and was NOT
   mutation-checked.** Its guard (`if (noLiveHold)`) and `isLive`'s boundary were.
 
-### CARRIED HAND ROWS, 2026-11-14, AFTER BEN'S (a) AND THE SEAT'S RULING ON IT: S2'S GATE INCLUDES THESE
+**From the S2 boot, 2026-11-14** (`03bd1bf0`; readings in `GATE-mining-s2.md` on `feat/mining-s2`):
 
-**This list SUPERSEDES the one below.** Rows 1 to 6 of the list below (the place refusal texts, the server-list
+- **F-M41: THE SEAT'S RULINGS ON S2'S POINTS, 2026-11-14.** (1) A regrowing slot judges every block `NOT_LIVE`:
+  accepted as built (F-M37). (2) S2-MEDIUM-CAP at 5 placements, a weak witness; then, before the run sheet, NOT RUN.
+  (3) "Ore does not list size" unit-tested only, NOT READ: accepted. (4) **`sounds.denied` in `iron.yml` is accepted
+  for now, but it is not really an ore's property** (the DENIED text is one value in code, `MiningNotices`), **and may
+  move when a second ore exists.** (5) The three trace format changes: accepted. Also by ruling: S2-SIZE-LARGE and
+  S2-SIZE-XL roll and sight only (break halves NOT RUN), S2-SECOND-PLAYER NOT READ unless a second client exists.
+- **F-M42: S2 READ.** Every rule built was read in game: the size roll (a real regrowth rolled medium after a small
+  broke), each forced size at its footprint (Ben: yes, yes for all four), the payout rule following the rolled size
+  (medium's bonus 6 at an extra_large slot), the outside-the-patch rule (8 `click-outside` lines on three blocks, no
+  outcome), the DENIED sound once per message (5 holds, `sound=` exactly when no hold was live), and the miss-sound
+  cooldown on 14 MISS lines **including a gap of exactly 8 ticks reading `yes`**. Pack `49f2e465…`/8227 as predicted.
+- **F-M43: SET-UP STEP 1 WAS SKIPPED AGAIN** (as F-M35): no `/gamemode survival` in the log, so SURVIVAL is inferred
+  from the click lines a second time. Twice is a pattern: the next run sheet should put the mode command FIRST and
+  read it before any other step.
+- **F-M44 (instrument): MY FIRST R0 READ WAS OF THE PREVIOUS BOOT.** A wait loop on `Done (` in `latest.log` matched
+  S1-c's log before the new server had rotated it; the jar scan ran before the new jar was deployed. Caught by the
+  `Build:` hash (`0578366d`) and the log's mtime, discarded before Ben logged in, and re-read on this boot. **A
+  readiness wait must bind to the boot it waits for** (a fresh mtime and the expected `Build:` hash), not to a
+  line that any previous boot also printed.
+- **S2's rows NOT RUN** (Ben stopped after step 13's `remove`): S2-ROLL-REFUSED's two texts, S2-RESPAWN and
+  S2-PACK-AFTER-DEATH. Ben's Q21 ("not sure", NOT STATED) and Q22 ("yes") were given before those rows ran and are
+  bound to no reading.
+
+### CARRIED HAND ROWS, 2026-11-14, AFTER THE S2 BOOT: THE NEXT MINING GATE MUST INCLUDE THESE
+
+**This list SUPERSEDES the one below.** Each is **NOT READ** and **never a pass**:
+
+1. **M-SECOND-PLAYER**: each player sees their own patch. Needs a second client.
+2. **The same-world respawn** re-shows the patch. A death is stageable (F-M30).
+3. **Whether a death and respawn drops a server-offered pack.**
+4. **`/rpg mining roll`'s two stageable refusals as log lines** (S2-ROLL-REFUSED): a size that does not fit, and a
+   size that is not loaded.
+
+### CARRIED HAND ROWS, 2026-11-14, AFTER BEN'S (a) AND THE SEAT'S RULING ON IT: S2'S GATE INCLUDES THESE — SUPERSEDED 2026-11-14, AFTER THE S2 BOOT (the list above)
+
+**This list SUPERSEDED the one below.** Rows 1 to 6 of the list below (the place refusal texts, the server-list
 check, the full-inventory ground check, the relog and logout sights, the post-remove dig) are **CLOSED BY BEN'S
 RULING 2026-11-14, NOT READ, never passes** (§2). Each row here is **NOT READ** and **never a pass**:
 
