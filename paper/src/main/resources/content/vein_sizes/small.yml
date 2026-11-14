@@ -1,0 +1,26 @@
+# The vein sizes: a patch's footprint on the wall, and how many weak spots it rolls.
+#
+# Read by MiningContentLoader (PLAN-mining.md section 5.3). Every number is REQUIRED; a missing
+# one is refused by name rather than defaulted, because a defaulted 0 would load quietly wrong.
+#
+# NAME THE QUANTITY:
+#   width, height   whole blocks of wall. One flat model is scaled to (width, height), so there
+#                   is no model-element limit on them.
+#   spots.min/max   whole spots per patch, rolled uniformly in the range, inclusive, at every
+#                   regrowth. max may not exceed the number of non-overlapping 5 x 5 pixel boxes
+#                   the patch can hold (VeinSize refuses it otherwise).
+#
+# SLICE 1 SHIPS ONLY THE SMALL VEIN. Ben, 2026-11-13: "keep it as the small vein for now". The
+# other three sizes in his design are content later, not code: a new entry here, and the ore's
+# sizes: and completion_bonus: naming it.
+
+vein_sizes:
+
+  small:
+    # RULED, Ben 2026-11-13. Asked "Small vein is 3 wide by 2 tall with 2-3 spots, as your doc's
+    # table says. Is that right?", he said "yes".
+    width: 3        # blocks along the face, as the player sees it
+    height: 2       # blocks up the face
+    spots:
+      min: 2
+      max: 3

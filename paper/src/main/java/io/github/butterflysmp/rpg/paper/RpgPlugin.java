@@ -21,6 +21,8 @@ import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ShieldRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ToolDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ToolRegistry;
+import io.github.butterflysmp.rpg.core.mining.OreRegistry;
+import io.github.butterflysmp.rpg.core.mining.VeinSizeRegistry;
 import io.github.butterflysmp.rpg.core.weapon.AccessoryRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
@@ -52,6 +54,7 @@ import io.github.butterflysmp.rpg.paper.content.ArmorConsistency;
 import io.github.butterflysmp.rpg.paper.content.ArmorLoader;
 import io.github.butterflysmp.rpg.paper.content.ShieldLoader;
 import io.github.butterflysmp.rpg.paper.content.ToolLoader;
+import io.github.butterflysmp.rpg.paper.content.MiningContentLoader;
 import io.github.butterflysmp.rpg.paper.content.AccessoryLoader;
 import io.github.butterflysmp.rpg.paper.accessory.Accessories;
 import io.github.butterflysmp.rpg.paper.accessory.AccessoryService;
@@ -172,6 +175,9 @@ public final class RpgPlugin extends JavaPlugin {
     private ShieldRegistry shields;
     private ArmorRegistry armor;
     private ToolRegistry tools;
+    // Mining slice 1 (S1-a): loaded and validated only. Nothing reads them in play until S1-b.
+    private OreRegistry ores;
+    private VeinSizeRegistry veinSizes;
     private AccessoryRegistry accessoryRegistry;
     private MobRegistry mobs;
     private RecipeRegistry recipes;
@@ -258,6 +264,11 @@ public final class RpgPlugin extends JavaPlugin {
                         || armor.find(id).isPresent() || tools.find(id).isPresent());
         this.mobs = new MobLoader(getLogger()).loadAll(new File(contentDir, "mobs"));
         this.recipes = new RecipeLoader(getLogger()).loadAll(new File(contentDir, "recipes"));
+        // Mining (PLAN-mining.md 5.3). Sizes first only for readability: an ore's sizes: are checked
+        // against the size registry by ContentValidator.validateMining, not here.
+        MiningContentLoader miningLoader = new MiningContentLoader(getLogger());
+        this.veinSizes = miningLoader.loadVeinSizes(new File(contentDir, "vein_sizes"));
+        this.ores = miningLoader.loadOres(new File(contentDir, "ores"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
@@ -266,7 +277,8 @@ public final class RpgPlugin extends JavaPlugin {
                 + shields.size() + " shields, " + armor.size() + " armor, "
                 + tools.size() + " tools, " + accessoryRegistry.size() + " accessories, "
                 + mobs.size() + " mobs, "
-                + recipes.size() + " recipes");
+                + recipes.size() + " recipes, "
+                + ores.size() + " ores, " + veinSizes.size() + " vein sizes");
 
         // ZERO IS A DEFECT, NOT A QUIET NO-OP. A loader that discovers nothing reads exactly like
         // one that worked, and this is the failure mode CLAUDE.md records twice: getResource on a
@@ -346,6 +358,19 @@ public final class RpgPlugin extends JavaPlugin {
                     + "crafting an iron pickaxe will hand out a plain vanilla one. Note this does "
                     + "NOT break mining: an untagged pickaxe digs exactly as a minted one does, "
                     + "because we pin no attributes. Expected 5 tools from iron.yml.");
+        }
+
+        // And again on the two mining directories (PLAN-mining.md 5.3), the NEWEST, so the likeliest
+        // to arrive empty on an existing run/ folder for the reason the tools guard records. Slice 1
+        // expects exactly one of each: the Small vein and iron. A refused entry has already named
+        // itself above; these lines say the directory as a whole came up empty.
+        if (veinSizes.size() == 0) {
+            getLogger().warning("No vein sizes loaded from content/vein_sizes -- no ore patch can be "
+                    + "placed. Expected 1 (small) from small.yml.");
+        }
+        if (ores.size() == 0) {
+            getLogger().warning("No ores loaded from content/ores -- no ore patch can be placed. "
+                    + "Expected 1 (iron) from iron.yml.");
         }
 
         // ONE ID, FOUR REGISTRIES. /rpg give resolves weapons, then shields, then armor, then
@@ -880,6 +905,13 @@ OLD
                 name -> {
                     Material material = Material.matchMaterial(name);
                     return material != null && material.getMaxDurability() > 0;
+                }));
+        // An ore's sizes must have loaded, its payout must be an ITEM, and its two sounds must
+        // resolve (PLAN-mining.md 5.3). The same resolver and the same sound seam as above.
+        problems.addAll(validator.validateMining(ores.all(), veinSizes,
+                name -> {
+                    Material material = Material.matchMaterial(name);
+                    return material != null && material.isItem();
                 }));
 
         for (String problem : problems) {

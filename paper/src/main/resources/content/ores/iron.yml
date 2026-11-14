@@ -1,0 +1,51 @@
+# The ores a patch can be made of.
+#
+# Read by MiningContentLoader (PLAN-mining.md section 5.3). Every number is REQUIRED; a missing
+# one is refused by name rather than defaulted, because 0 is a legal payout and a defaulted 0
+# would ship a patch that pays nothing and says nothing.
+#
+# NAME THE QUANTITY:
+#   payout.per_spot.min/max     whole items per spot. Each spot in the patch is rolled on its
+#                               own, uniformly in the range, inclusive, at the break.
+#   payout.completion_bonus     whole items added once per break, KEYED BY VEIN SIZE. It must
+#                               have exactly one entry per size in sizes:, no more and no fewer.
+#   regrowth_ticks              SERVER ticks before a broken patch comes back for that player.
+#                               Under 20 TPS a "minute" is longer in real time.
+#   Every count is flat: no percentages and no multipliers.
+#
+# THE PAYOUT ITEM IS A PLAIN VANILLA ITEM, NOT MINTED. So the "no custom item stacks above 1"
+# standing decision does not reach it, and raw iron stacks to 64 as it always has. A future minted
+# drop would re-open that question (PLAN-mining.md, the seat's diff of 2026-11-13).
+
+ores:
+
+  iron:
+    # RULED, Ben 2026-11-13: "let's keep it vanilla for now, we'll do iron".
+    display_name: "Iron"
+    payout:
+      # RULED, Ben 2026-11-13: "raw iron".
+      item: raw_iron
+      # RULED, Ben 2026-11-13: "2-4 per spot with a 5 completion bonus".
+      # With the Small vein's 2 to 3 spots that is 9 to 17 raw iron per break:
+      #   2 spots: 2+2+5 = 9 .. 4+4+5 = 13;  3 spots: 2+2+2+5 = 11 .. 4+4+4+5 = 17.
+      per_spot:
+        min: 2
+        max: 4
+      completion_bonus:
+        small: 5
+    # RULED, Ben 2026-11-13: "1 minute is fine for now". 60 s x 20 ticks.
+    regrowth_ticks: 1200
+    # RULED, Ben 2026-11-13: "keep it as the small vein for now".
+    sizes: [small]
+    # item_model ids in the project resource pack. The pack itself arrives in S1-b; until then
+    # these are checked only for being well-formed keys.
+    models:
+      patch: rpg:mining/iron_patch
+      spot: rpg:mining/spot
+      crack: rpg:mining/crack
+    # PLACEHOLDER vanilla sounds (the seat's ruling 4, 2026-11-13), played to the one player only.
+    # Ben ruled a miss makes a sound ("yes"; his design doc mentions "a dull clink"). An uncharged
+    # hit and a click on a regrowing patch play nothing.
+    sounds:
+      miss: minecraft:block.stone.hit       # PLACEHOLDER
+      break: minecraft:block.stone.break    # PLACEHOLDER
