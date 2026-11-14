@@ -476,6 +476,59 @@ at 0, reach exactly zero.**
 - do the attack indicator and the swing animation still work?
 - does the attribute take effect on the client the tick it is applied, and clear when it is removed?
 
+### F8. Chunk load/unload on respawn, dimension change and quit; the entity scheduler (read 2026-11-14, NO BOOT; the seat's D2)
+
+**Instrument.** `run/versions/26.1.2/paper-26.1.2.jar`, `META-INF/MANIFEST.MF` `Build-Number: 74`
+(`26.1.2.build.74-stable`, Git-Commit `e4e17fc`), not Paperclip-nested. Classes extracted with
+`jar.exe xf <jar> net ca io org/bukkit/craftbukkit` and read with
+`C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p <class>`; callers found by grepping the extracted classes
+for the target's name, then reading the enclosing method in the dump. The events are
+`io.papermc.paper.event.packet.PlayerChunkLoadEvent` / `PlayerChunkUnloadEvent` (paper-api `jar tf`; the
+`-sources.jar` for their constructors).
+
+- **F8a. `PlayerChunkUnloadEvent` fires for every sent chunk on a dimension change AND on a same-world respawn (and
+  on quit), naming the OLD world.**
+  - Its only live construction site is `RegionizedPlayerChunkLoader$PlayerChunkLoaderData#sendUnloadChunkRaw`
+    (new at 90, `callEvent` at 131, built only when a listener exists, 80–87). `PlayerChunkSender#dropChunk` also
+    builds one, and nothing in the jar calls it.
+  - The path: `Entity#setRemoved` 117 → `EntityLookup` → `ServerLevel$EntityCallbacks#onTrackingEnd` 312 →
+    `ChunkMap#removeEntity` (ServerPlayer) → `updatePlayerStatus(p, false)` 138 →
+    `RegionizedPlayerChunkLoader#removePlayer` 29 → `PlayerChunkLoaderData#remove` 34 → the broadcast map's
+    `removeFromOld` → `removeCallback` → `sendUnloadChunk` (if `sentChunks.remove`) → `sendUnloadChunkRaw`.
+  - Dimension change: `ServerPlayer#teleport(TeleportTransition)` calls `removePlayerImmediately(this,
+    CHANGED_DIMENSION)` at 467 and `setServerLevel` at **534**, the method's only level change. Respawn:
+    `PlayerList#respawn` removes at **77** and calls `spawnIn(newLevel)` at **180**. The event's chunk comes from
+    `CraftPlayer.getWorld()` (`sendUnloadChunkRaw` 98–116), which is `CraftEntity#getWorld` →
+    `entity.level().getWorld()` (CraftPlayer does not override it). **So both paths name the OLD world**, and
+    `MiningService.onChunkUnload` finds the slot and clears `shown`.
+- **F8b. `PlayerChunkLoadEvent` fires again for those chunks afterwards, over the following ticks.** The re-add
+  (`ServerLevel#addRespawnedPlayer` from respawn 501; `addDuringTeleport` from teleport 561) reaches
+  `RegionizedPlayerChunkLoader#addPlayer`, which builds a NEW `PlayerChunkLoaderData` (35–44) with an empty
+  `sentChunks`, so every chunk is sent again: `ServerChunkCache#tick` 81 → `RegionizedPlayerChunkLoader#tick` 92 →
+  `updateQueues` 1098 → `sendChunk` 85 → `PlayerChunkSender#sendChunk` (event at 42, `callEvent` at 64; its only
+  caller).
+- **F8c. The Player is the SAME object after a respawn and a dimension change, and its entity scheduler is NOT
+  retired; on QUIT it is, and a task with a null retired callback is dropped.**
+  - `PlayerList#respawn` 87–88 is `aload_1; astore 9` (no `new ServerPlayer`; `restoreFrom` 103, `unsetRemoved`
+    185). `ServerPlayer#teleport` returns `aload_0` (695–696) and calls `unsetRemoved` at 471.
+  - `Entity#setRemoved` reaches `retireScheduler()` (146) only for a non-ServerPlayer (instanceof 127–131), so a
+    ServerPlayer is exempt there whatever the reason. The only other caller is `PlayerList#remove(ServerPlayer,
+    Component)` at 300, the quit.
+  - `EntityScheduler#retire` calls a task's retired callback only if it is non-null (ifnonnull at 94 and 186).
+    `PaperScheduler.onEntityLater` passes null, so **a quit drops the regrowth task silently** (D1).
+  - **So D1's fix needs no respawn hook.**
+- **F8d. Both events fire on the main (server tick) thread, and are constructed synchronous.**
+  `MinecraftServer#tickChildren` 431 → `ServerLevel#tick` 436 → `ServerChunkCache#tick` 81 →
+  `RegionizedPlayerChunkLoader#tick`, which opens with `TickThread.ensureTickThread("Cannot tick player chunk
+  loader async")` (0–2); `removePlayer`, `addPlayer` (1–3) and `PlayerChunkLoaderData#remove` (4–7) carry the same
+  guard. Both event constructors call `super(chunk)` → `ChunkEvent(Chunk)` → `WorldEvent(World)`, the one-argument
+  constructor, not `(World, boolean)`. **UNREAD:** the body of `WorldEvent(World)` was not opened; it is expected to
+  reach `Event()`, i.e. not async. `RpgListeners`' javadoc ("synchronous, main thread") rests on the tick-thread
+  guards above.
+
+**D2 therefore needs no code** (the seat: "if the jar shows the events already cover it, record that and change
+nothing"). The gate reads the dimension half (`M-RESPAWN`); the respawn half is NOT READ (it needs a death).
+
 ---
 
 ## 4. CANDIDATES A AND B, COMPARED ON THOSE FACTS
@@ -778,8 +831,17 @@ Whether some pickaxes should not count (for example by tier) is a question for B
 - **Regrowth while online:** on the break, `Scheduler.onEntityLater(player, …, 1200)` respawns the patch. If the
   player has left, the entity scheduler drops the task, and the join or chunk-load path renders from the clock. The
   `Scheduler` interface has no repeating call, and none is needed.
+  > **CORRECTED 2026-11-14 (the seat's D1, F-M21): the sentence above was FALSE as built, and the seat approved
+  > it.** Nothing in the join or chunk-load path armed a respawn: `show` found the patch regrowing and returned, so
+  > after a relog the wall stayed bare past `regrow_at` until a click. The design now: **whenever `show` finds the
+  > player's patch at a slot regrowing, it makes sure ONE pending task exists for that player and slot on the
+  > CURRENT Player** (`MiningBook.claimRegrowthTask`, `RegrowthTasks`: deduped per player and slot, with a
+  > never-reused token; the marker clears when the task shows the patch, on quit and on slot removal). The break
+  > arms the first task the same way. A respawn or dimension change needs no hook (F8c).
 - **Entity ids: ONE allocator** (F-M7). `PopupEntityIds` moves out of `health/` to a shared counter, used by the
   damage popups and mining alike. The spike's second range picked by eye is not repeated.
+  > **As built (S1-b), the class did NOT move or rename** (F-M23): it stays `health/PopupEntityIds`, made public
+  > and shared.
 
 **The dev commands** (`/rpg mining …`, each with `.requires(Permissions.DEV)` on the line after `literal`, pinned
 by a wiring-signature test). Mining's dev commands move to the `rpg.dev` guard once #175 merges (§2).
@@ -1143,3 +1205,25 @@ The gate's READING blocks are the account; these are the pointers.
   accepted look only as *"an orange square with a gray background"* (MS7). Slice 1's gate reads them. **Note:** the
   spike scaled its patch (2, 3, 1), 2 wide × 3 tall, while the Small vein is 2 high × 3 wide (§1). Slice 1's patch
   model and scale follow the Small vein, not the spike.
+- **F-M21 (the seat's D1, 2026-11-13): regrowth never showed after a relog.** The break's task ran on the breaking
+  Player's entity scheduler with a null retired callback, and a quit retires that scheduler (F8c), so the task was
+  dropped. On rejoin the chunk load reached `show`, which found the patch regrowing and returned; nothing re-armed
+  the respawn. §5.4's *"the join or chunk-load path renders from the clock"* was false, the seat approved it, and the
+  gate's M-LOGOUT predicted the opposite of the code. **Fixed on S1-b (`7c16235b`)**: §5.4's correction. Core
+  `RegrowthTasks` and `MiningBook.claimRegrowthTask` (tests first; the first run was a compile failure rather than a
+  behavioural red), wired in `show`, `onBroke` and `onQuit`; six mutations, all red. The gate gains M-RELOG (the
+  chunk-load path, ruling 4), and M-LOGOUT is VOID if the wall is clicked before `regrow_at`.
+- **F-M22 (the seat's D2, 2026-11-13): a stale `shown` after a respawn or a dimension change. NOT A DEFECT, from
+  the jar.** F8a/F8b: both paths fire `PlayerChunkUnloadEvent` for every sent chunk, naming the old world, and then
+  `PlayerChunkLoadEvent` again, so `shown` is cleared and rebuilt. No code changed. The gate's M-RESPAWN reads the
+  dimension half via the nether roof; the respawn half is NOT READ, because staging it needs a death and Ben's
+  inventory holds his Ability Stone and Nexus star.
+- **F-M23: `PopupEntityIds` keeps its popup name and package (`paper/health`) although mining now shares it.** §5.4
+  said it would move to a shared counter; S1-b made it public and shared it, and left the name to keep the change
+  minimal (`PopupEntityIdsTest` unchanged). The seat accepted it, 2026-11-13. A cosmetic debt: a rename to a
+  neutral name in a neutral package, in its own change.
+- **F-M24 (the seat's G1, 2026-11-13): the gate as first written spent more spots than a Small patch has.** M-HIT,
+  M-UNCHARGED (its first click was a HIT), M-CHARGE-17 (ten charged clicks on the live spot), M-HOLD and M-DENY step
+  3 needed far more than the n − 1 = 1 or 2 HITs a patch holds before it breaks, so it would have broken mid-row
+  into a 60-second regrowth. Amended before any boot: M-UNCHARGED and M-CHARGE-17 read on clicks beside the spot,
+  and a standing rule makes an early break M-BREAK's reading.
