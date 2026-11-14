@@ -1,5 +1,7 @@
 # GATE — LEGACY-B: the Blaze King's Staff shoots a real fireball
 
+**Seat read 2026-11-14 from origin at `7e620f38`: readings accepted; approved to merge.** Run 3 (L2206-L3657) is the run of record; runs 1 and 2 ran on Peaceful and certify nothing. LB2 and LB5's AUTO half met the bars. **Carried, NOT READ, never a pass:** LB5 (c), and the optional hand rows LB1, LB3, LB4, LB4b, LB6-LB11.
+
 **Status at `e82df2b3` (the stack-top boot, 2026-11-14; run 3, L2206-L3657, is the run of record proposed to the seat; the boot account is `GATE-deft-hands.md`'s): R0a-c SUPERSEDED (GATE-deft-hands.md R0, all four AS PREDICTED); LB2 AS PREDICTED (as amended: the crit); LB5 (a) and (b) AS PREDICTED, the counts READ (both flights last sighted at `dx 7.50`), (c) not driven, Ben's half "Yes" (not bound to one run); LB1, LB3, LB4, LB4b, LB6-LB11 NOT READ (optional; Ben's answer on the optional rows is NOT STATED). This gate's bars (LB2, LB5's AUTO half) are met, pending the seat.**
 
 **Status at `61e722f2` (the stack-top boot, 2026-11-10; run 3 is the run of record; the boot account is `GATE-deft-hands.md`'s): R0a-c SUPERSEDED (GATE-deft-hands.md R0, PASS); LB2 FAIL as staged (a dying mob intercepted the fireball: `PaperCombatWorld.castRay` accepts dying entities); LB5 VACUOUS as written (its impact witness: (a) ended on the same kind of corpse, (b) reached the wall once the body's one-step lag is counted); LB1, LB3, LB4, LB4b, LB6-LB11 NOT READ. NOT a merge candidate: it waits for the castRay fix and the next boot.**

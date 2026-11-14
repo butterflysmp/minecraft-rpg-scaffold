@@ -1,5 +1,7 @@
 # GATE — WITHERED-SHORTBOW: an Uncommon ranged bow of the Wither element (content only)
 
+**Seat read 2026-11-14 from origin at `7e620f38`: readings accepted; approved to merge.** Run 3 is the run of record. WB1, WB2, and WB3 with the credit met the bars. **Carried, NOT READ, never a pass:** WB3's wither swirl, and the optional hand rows WB4b, WB5, WB6, WB7.
+
 **Status at `e82df2b3` (the stack-top boot, 2026-11-14; run 3, L2206-L3657, is the run of record proposed to the seat; the boot account is `GATE-deft-hands.md`'s): R0a-c SUPERSEDED (GATE-deft-hands.md R0, all four AS PREDICTED); WB1 AS PREDICTED (as re-predicted; Ben's tooltip half PASS at 61e722f2, not re-read); WB2 AS PREDICTED; WB3 AS PREDICTED, including the credit; WB4b, WB5, WB6, WB7 NOT READ (optional). This gate's bars are met, pending the seat.**
 
 **Status at `61e722f2` (the stack-top boot, 2026-11-10; run 3 is the run of record; the boot account is `GATE-deft-hands.md`'s): R0a-c SUPERSEDED (GATE-deft-hands.md R0, PASS); WB1 PASS (AUTO as re-predicted, and Ben); WB2 FAIL as staged (the castRay defect LB2 records: a dying mob on the line of fire); WB3 VOID (no WB2 hit to follow); WB4b, WB5, WB6, WB7 NOT READ. NOT a merge candidate.**
