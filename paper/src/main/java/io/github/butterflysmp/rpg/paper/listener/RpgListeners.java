@@ -293,6 +293,7 @@ public final class RpgListeners implements Listener {
     private final StoneCaster stoneCaster;
     /** Mining slice 1 (PLAN-mining.md 5.4). Every handler below that names it runs on the main thread. */
     private final MiningService mining;
+    private final io.github.butterflysmp.rpg.paper.selftest.SelfTestService selfTest;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -303,9 +304,11 @@ public final class RpgListeners implements Listener {
                         PlayerHealthSystem healthSystem, MobNameplateManager nameplates,
                         StatsBarSystem statsBar, HealthRegenSystem healthRegen,
                         Plugin plugin, RecipeRegistry recipes,
-                        VaultService vaults, StoneCaster stoneCaster, MiningService mining) {
+                        VaultService vaults, StoneCaster stoneCaster, MiningService mining,
+                        io.github.butterflysmp.rpg.paper.selftest.SelfTestService selfTest) {
         this.stoneCaster = stoneCaster;
         this.mining = mining;
+        this.selfTest = selfTest;
         this.plugin = plugin;
         this.vaults = vaults;
         this.recipes = recipes;
@@ -1781,6 +1784,10 @@ public final class RpgListeners implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        // BEFORE EVERYTHING: a running selftest restores the inventory, XP and position it changed, and
+        // the restore must write while the inventory can still be written (PLAN-selftest.md §4).
+        selfTest.onQuit(event.getPlayer());
+
         // FIRST, ahead of the clears: a menu holding this player's weapon must give it back while
         // their inventory can still be written. Writes during PlayerQuitEvent persist -- the save
         // runs after this event. Bukkit does fire InventoryCloseEvent on disconnect, but its
