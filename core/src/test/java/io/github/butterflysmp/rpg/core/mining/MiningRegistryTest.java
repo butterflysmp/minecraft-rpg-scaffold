@@ -2,8 +2,6 @@ package io.github.butterflysmp.rpg.core.mining;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -25,9 +23,9 @@ class MiningRegistryTest {
     @Test
     void aDuplicateOreIdIsRefused() {
         OreRegistry ores = new OreRegistry();
-        ores.register(OreDefinitionTest.iron(Map.of("small", 5), List.of("small")));
+        ores.register(MiningFixtures.iron());
         assertThrows(IllegalStateException.class,
-                () -> ores.register(OreDefinitionTest.iron(Map.of("small", 5), List.of("small"))));
+                () -> ores.register(MiningFixtures.iron()));
         assertEquals(1, ores.all().size());
     }
 }

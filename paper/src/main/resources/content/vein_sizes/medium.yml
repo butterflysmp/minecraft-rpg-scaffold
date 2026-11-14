@@ -1,0 +1,17 @@
+# A vein size: a patch's footprint on the wall, and how many weak spots it rolls. Mining S2.
+#
+# Read by MiningContentLoader (PLAN-mining.md sections 5.3 and 5.12). Every number is REQUIRED.
+# NAME THE QUANTITY: width and height are whole blocks of wall; spots.min/max are whole spots per
+# patch, rolled uniformly in the range, inclusive. VeinSize refuses a spots.max above the worst-case
+# guarantee for the footprint, which for this size is 45 (executed, PLAN-mining.md 5.12).
+
+vein_sizes:
+
+  medium:
+    # Ben's design doc, relayed by the seat 2026-11-14 (NOT Ben's words in chat): 5 x 3 blocks,
+    # 4-5 spots.
+    width: 5        # blocks along the face, as the player sees it
+    height: 3       # blocks up the face
+    spots:
+      min: 4
+      max: 5

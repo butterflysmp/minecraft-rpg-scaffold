@@ -137,6 +137,38 @@ class SpotLayoutTest {
     }
 
     @Test
+    void tenThousandSeededRollsOfEachS2SizeAllObeyBothRules() {
+        // S2: the three new sizes (design doc, relayed). Each is far under its worst-case guarantee
+        // (medium 5 <= 45, large 7 <= 60, extra_large 9 <= 84; executed in PLAN 5.12), so the sampler
+        // must never throw.
+        for (VeinSize size : List.of(MiningFixtures.medium(), MiningFixtures.large(), MiningFixtures.extraLarge())) {
+            Set<Integer> counts = new HashSet<>();
+            for (long seed = 0; seed < 10_000; seed++) {
+                List<Spot> spots = SpotLayout.roll(size, new SplittableRandom(seed)).spots();
+                counts.add(spots.size());
+                for (int i = 0; i < spots.size(); i++) {
+                    Spot a = spots.get(i);
+                    assertTrue(a.cu() - 2 >= 0 && a.cu() + 2 <= size.width() * 16 - 1, size.id() + " seed " + seed + " u: " + a);
+                    assertTrue(a.cv() - 2 >= 0 && a.cv() + 2 <= size.height() * 16 - 1, size.id() + " seed " + seed + " v: " + a);
+                    for (int j = i + 1; j < spots.size(); j++) {
+                        Spot b = spots.get(j);
+                        assertTrue(Math.max(Math.abs(a.cu() - b.cu()), Math.abs(a.cv() - b.cv())) >= 5,
+                                size.id() + " seed " + seed + ": " + a + " and " + b);
+                    }
+                }
+            }
+            assertEquals(Set.of(size.minSpots(), size.maxSpots()), counts, size.id());
+        }
+    }
+
+    @Test
+    void theS2SizesGuaranteeTheirExecutedCeilings() {
+        assertEquals(45, MiningFixtures.medium().guaranteedSpots());
+        assertEquals(60, MiningFixtures.large().guaranteedSpots());
+        assertEquals(84, MiningFixtures.extraLarge().guaranteedSpots());
+    }
+
+    @Test
     void theCountComesFromTheRangeInclusive() {
         // count first, then (u, v) per spot.
         assertEquals(3, SpotLayout.roll(SMALL, ScriptedRandom.of(3, 2, 2, 20, 20, 40, 2)).spots().size());

@@ -10,9 +10,10 @@
 #                   regrowth. max may not exceed the number of non-overlapping 5 x 5 pixel boxes
 #                   the patch can hold (VeinSize refuses it otherwise).
 #
-# SLICE 1 SHIPS ONLY THE SMALL VEIN. Ben, 2026-11-13: "keep it as the small vein for now". The
-# other three sizes in his design are content later, not code: a new entry here, and the ore's
-# sizes: and completion_bonus: naming it.
+# Slice 1 shipped only the small vein (Ben, 2026-11-13: "keep it as the small vein for now"). Mining
+# S2 adds the other three of his design, one file each: medium.yml, large.yml, extra_large.yml.
+# A slot is placed at a MAXIMUM size, and each patch rolls a size that fits it (both width and height
+# at most the maximum's), so the sizes are compared by their width and height here.
 
 vein_sizes:
 

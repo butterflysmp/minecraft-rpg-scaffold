@@ -17,6 +17,13 @@ class MiningNoticesTest {
     }
 
     @Test
+    void theMissSoundCooldownIsBensPointFourSecondsInTicks() {
+        // Ben, 2026-11-14: "Miss sound should have a slight cooldown, let's say .4 seconds". 0.4 s at
+        // 20 ticks a second is 8 SERVER ticks (the seat's ruling 9).
+        assertEquals(8, MiningNotices.MISS_SOUND_COOLDOWN_TICKS);
+    }
+
+    @Test
     void theDeniedTextIsUnchangedFromSliceOne() {
         // Slice 1's gate (M-DENY) predicted this exact text; S1-c only changes how long it shows.
         assertEquals("You need a pickaxe to mine this.", MiningNotices.DENIED_TEXT);

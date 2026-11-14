@@ -1,0 +1,19 @@
+{
+  "textures": {
+    "face": "rpg:item/mining/iron_patch_large",
+    "particle": "rpg:item/mining/iron_patch_large"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 8],
+      "to": [16, 16, 8],
+      "faces": {
+        "south": { "uv": [0, 0, 16, 16], "texture": "#face" },
+        "north": { "uv": [0, 0, 16, 16], "texture": "#face" }
+      }
+    }
+  ],
+  "display": {
+    "fixed": { "rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1, 1, 1] }
+  }
+}

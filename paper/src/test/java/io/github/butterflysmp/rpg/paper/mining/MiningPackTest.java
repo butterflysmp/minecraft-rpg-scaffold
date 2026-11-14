@@ -1,6 +1,8 @@
 package io.github.butterflysmp.rpg.paper.mining;
 
 import io.github.butterflysmp.rpg.core.mining.OreDefinition;
+import io.github.butterflysmp.rpg.core.mining.VeinSize;
+import io.github.butterflysmp.rpg.core.mining.VeinSizeRegistry;
 import io.github.butterflysmp.rpg.paper.content.MiningContentLoader;
 import org.bukkit.NamespacedKey;
 import org.junit.jupiter.api.Test;
@@ -60,7 +62,8 @@ class MiningPackTest {
     void theFileListIsExactlyTheTree() throws IOException {
         assertEquals(new TreeSet<>(treeFiles()), new TreeSet<>(MiningPack.FILES),
                 "MiningPack.FILES must name every file under resourcepack/ and nothing else");
-        assertEquals(10, MiningPack.FILES.size(), "pack.mcmeta + 3 item definitions + 3 models + 3 textures");
+        assertEquals(19, MiningPack.FILES.size(),
+                "pack.mcmeta + 6 item definitions + 6 models + 6 textures (S2: four patch sizes, a spot, a crack)");
     }
 
     @Test
@@ -89,16 +92,24 @@ class MiningPackTest {
                 assertTrue(Files.isRegularFile(ROOT.resolve(png)), modelFile + " -> missing " + png);
             }
         }
-        assertEquals(3, items);
-        assertEquals(6, textures, "a face and a particle texture per model");
+        assertEquals(6, items);
+        assertEquals(12, textures, "a face and a particle texture per model");
     }
 
     @Test
-    void theTexturesDecodeAndThePatchIsDrawnAtTheSmallVeinsAspect() throws IOException {
-        BufferedImage patch = ImageIO.read(ROOT.resolve("assets/rpg/textures/item/mining/iron_patch.png").toFile());
-        assertNotNull(patch);
-        assertEquals(48, patch.getWidth(), "3 blocks x 16");
-        assertEquals(32, patch.getHeight(), "2 blocks x 16");
+    void theTexturesDecodeAndEachPatchIsDrawnAtItsSizesAspect() throws IOException {
+        // S2 (the seat's ruling 6): one flat model per size, scaled (width, height, 1) by the display,
+        // so each texture is drawn at 16 pixels per block of ITS size, read from the shipped YAML.
+        VeinSizeRegistry sizes = new MiningContentLoader(Logger.getAnonymousLogger())
+                .loadVeinSizes(new File("src/main/resources/content/vein_sizes"));
+        assertEquals(4, sizes.size(), "small, medium, large, extra_large");
+        for (VeinSize size : sizes.all()) {
+            String png = "assets/rpg/textures/item/mining/iron_patch_" + size.id() + ".png";
+            BufferedImage patch = ImageIO.read(ROOT.resolve(png).toFile());
+            assertNotNull(patch, png);
+            assertEquals(size.width() * 16, patch.getWidth(), size.id() + ": " + size.width() + " blocks x 16");
+            assertEquals(size.height() * 16, patch.getHeight(), size.id() + ": " + size.height() + " blocks x 16");
+        }
         for (String id : List.of("spot", "crack")) {
             BufferedImage img = ImageIO.read(ROOT.resolve("assets/rpg/textures/item/mining/" + id + ".png").toFile());
             assertNotNull(img, id);
@@ -130,7 +141,7 @@ class MiningPackTest {
                 if (by == '\r') { withCr.add(f); break; }
             }
         }
-        assertEquals(7, checked, "the scan reached every text file");
+        assertEquals(13, checked, "the scan reached every text file");
         assertEquals(List.of(), withCr);
     }
 
@@ -141,7 +152,11 @@ class MiningPackTest {
         assertFalse(ores.isEmpty(), "the shipped ores must load");
         ClassLoader loader = MiningPackTest.class.getClassLoader();
         for (OreDefinition ore : ores) {
-            for (String id : List.of(ore.patchModel(), ore.spotModel(), ore.crackModel())) {
+            List<String> ids = new ArrayList<>(ore.patchModels().values());
+            assertEquals(ore.sizes().size(), ids.size(), "one patch model per size");
+            ids.add(ore.spotModel());
+            ids.add(ore.crackModel());
+            for (String id : ids) {
                 NamespacedKey key = NamespacedKey.fromString(id);
                 assertNotNull(key, id);
                 assertTrue(MiningPack.hasItemModel(loader, key), ore.id() + ": " + id + " is not in the pack");

@@ -51,6 +51,14 @@ public final class RegrowthClock {
         return java.util.OptionalLong.of(deadlines.get(player).get(slotId));
     }
 
+    /** Ends one player's regrowth at one slot (S2: {@code /rpg mining roll} forces a fresh patch). */
+    public void clear(UUID player, String slotId) {
+        Map<String, Long> slots = deadlines.get(player);
+        if (slots == null) return;
+        slots.remove(slotId);
+        if (slots.isEmpty()) deadlines.remove(player);
+    }
+
     /** Ends every regrowth of one player (the dev command {@code /rpg mining regrow}). */
     public void clearPlayer(UUID player) {
         deadlines.remove(player);

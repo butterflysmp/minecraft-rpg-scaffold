@@ -108,10 +108,27 @@ public final class MiningContentLoader {
         ConfigurationSection models = requireSection(s, "models", where);
         ConfigurationSection sounds = requireSection(s, "sounds", where);
         ConfigurationSection particles = requireSection(s, "particles", where);
-        if (s.isString("sizes")) {
-            throw new IllegalArgumentException(where + " has a scalar 'sizes:'; it must be a list, e.g. [small]");
+        // S2 (the seat's ruling 3): sizes: is a MAP of size id to a whole-number roll weight. Slice 1's
+        // list form is refused by name, so an old file says what changed rather than loading 0 sizes.
+        if (s.isList("sizes") || s.isString("sizes")) {
+            throw new IllegalArgumentException(where + " has 'sizes:' as a list or a scalar; since Mining S2 it is a"
+                    + " map of size id to roll weight, e.g. { small: 50, medium: 30 }");
         }
-        List<String> sizes = s.getStringList("sizes");
+        ConfigurationSection sizeSection = requireSection(s, "sizes", where);
+        Map<String, Integer> weights = new LinkedHashMap<>();
+        for (String size : sizeSection.getKeys(false)) {
+            weights.put(size, requireInt(sizeSection, size, where + " sizes"));
+        }
+        // S2 (the seat's ruling 6): models.patch is a MAP of size id to that size's model.
+        if (models.isString("patch")) {
+            throw new IllegalArgumentException(where + " has a single 'models.patch:'; since Mining S2 it is a map"
+                    + " of size id to item_model, one per size");
+        }
+        ConfigurationSection patchSection = requireSection(models, "patch", where + " models");
+        Map<String, String> patchModels = new LinkedHashMap<>();
+        for (String size : patchSection.getKeys(false)) {
+            patchModels.put(size, patchSection.getString(size));
+        }
         return new OreDefinition(id,
                 s.getString("display_name"),
                 payout.getString("item"),
@@ -119,9 +136,9 @@ public final class MiningContentLoader {
                 requireInt(perSpot, "max", where + " payout.per_spot"),
                 bonus,
                 requireInt(s, "regrowth_ticks", where),
-                sizes,
-                models.getString("patch"), models.getString("spot"), models.getString("crack"),
-                sounds.getString("miss"), sounds.getString("break"),
+                weights,
+                patchModels, models.getString("spot"), models.getString("crack"),
+                sounds.getString("miss"), sounds.getString("break"), sounds.getString("denied"),
                 particles.getString("break"));
     }
 

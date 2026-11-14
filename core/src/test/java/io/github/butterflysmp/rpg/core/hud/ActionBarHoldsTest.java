@@ -5,8 +5,10 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Who owns a player's action bar at tick t (the seat's mechanism rulings 1-3, 2026-11-14, for Ben's
@@ -79,6 +81,29 @@ class ActionBarHoldsTest {
     void aHoldOfNoTicksIsRefused() {
         assertThrows(IllegalArgumentException.class, () -> holds.hold(BEN, "x", "denied", 100, 0, true));
         assertThrows(IllegalArgumentException.class, () -> holds.hold(BEN, "x", "denied", 100, -1, true));
+    }
+
+    // --- S2: is a hold LIVE at tick t (the seat's ruling 8: the DENIED sound plays only when none is) --
+
+    @Test
+    void aHoldIsLiveFromItsStartUpToButNotIncludingItsEnd() {
+        assertFalse(holds.isLive(BEN, 100), "no hold");
+        holds.hold(BEN, "DENIED", "denied", 100, 30, true);
+        assertTrue(holds.isLive(BEN, 100), "the start tick");
+        assertTrue(holds.isLive(BEN, 129), "one tick before the end");
+        assertFalse(holds.isLive(BEN, 130), "AT the end tick it is over, even before a beat releases it");
+        assertFalse(holds.isLive(OTHER, 110), "per player");
+        // Mutation: '<' -> '<=' in isLive -> live at 130 -> reddens.
+    }
+
+    @Test
+    void aReleasedOrClearedHoldIsNotLive() {
+        holds.hold(BEN, "DENIED", "denied", 100, 30, true);
+        holds.beat(BEN, 135);
+        assertFalse(holds.isLive(BEN, 120), "released: gone, whatever tick is asked about");
+        holds.hold(BEN, "DENIED", "denied", 200, 30, true);
+        holds.clear(BEN);
+        assertFalse(holds.isLive(BEN, 210));
     }
 
     @Test

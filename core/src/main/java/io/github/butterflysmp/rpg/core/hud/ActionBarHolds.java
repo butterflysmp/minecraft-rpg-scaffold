@@ -67,6 +67,16 @@ public final class ActionBarHolds<M> {
         return new Beat.Released<>(hold);
     }
 
+    /**
+     * Is a hold LIVE for this player at tick {@code now}: started, and {@code now < until}? Mining S2
+     * (the seat's ruling 8): the DENIED sound plays only when a hold STARTS with none already live. A
+     * hold whose end has passed is not live even before a beat has released it.
+     */
+    public boolean isLive(UUID player, long now) {
+        Hold<M> hold = holds.get(player);
+        return hold != null && now < hold.until();
+    }
+
     /** Ends this player's hold (on quit). */
     public void clear(UUID player) {
         holds.remove(player);

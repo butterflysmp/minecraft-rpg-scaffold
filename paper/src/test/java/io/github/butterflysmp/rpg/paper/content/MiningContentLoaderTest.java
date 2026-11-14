@@ -79,14 +79,17 @@ class MiningContentLoaderTest {
                       completion_bonus:
                         small: 5
                     regrowth_ticks: 1200
-                    sizes: [small]
+                    sizes:
+                      small: 50
                     models:
-                      patch: rpg:mining/iron_patch
+                      patch:
+                        small: rpg:mining/iron_patch_small
                       spot: rpg:mining/spot
                       crack: rpg:mining/crack
                     sounds:
                       miss: minecraft:block.stone.hit
                       break: minecraft:block.stone.break
+                      denied: minecraft:entity.villager.no
                     particles:
                       break: minecraft:poof
                 """;
@@ -98,12 +101,17 @@ class MiningContentLoaderTest {
     // --- The shipped content --------------------------------------------------------------------
 
     @Test
-    void theShippedSmallVeinIsTheRuledThreeByTwoWithTwoToThreeSpots() {
+    void theShippedVeinSizesAreTheFourOfTheDesignDoc() {
         File shipped = new File("src/main/resources/content/vein_sizes");
         assertTrue(shipped.isDirectory(), shipped.getAbsolutePath());
         VeinSizeRegistry registry = new MiningContentLoader(log).loadVeinSizes(shipped);
-        assertEquals(1, registry.size(), "slice 1 ships the Small vein only; warnings: " + warnings);
-        assertEquals(new VeinSize("small", 3, 2, 2, 3), registry.find("small").orElseThrow());
+        assertEquals(4, registry.size(), "S2 ships four sizes; warnings: " + warnings);
+        assertEquals(new VeinSize("small", 3, 2, 2, 3), registry.find("small").orElseThrow(), "RULED, Ben 2026-11-13");
+        // Ben's design doc, relayed by the seat 2026-11-14.
+        assertEquals(new VeinSize("medium", 5, 3, 4, 5), registry.find("medium").orElseThrow());
+        assertEquals(new VeinSize("large", 7, 3, 6, 7), registry.find("large").orElseThrow());
+        assertEquals(new VeinSize("extra_large", 7, 4, 8, 9), registry.find("extra_large").orElseThrow());
+        assertTrue(warnings.isEmpty(), warnings.toString());
     }
 
     @Test
@@ -116,11 +124,18 @@ class MiningContentLoaderTest {
         assertEquals("raw_iron", iron.payoutItem(), "Ben: \"raw iron\"");
         assertEquals(new PayoutRule(2, 4, 5), iron.payoutRule("small"),
                 "Ben: \"2-4 per spot with a 5 completion bonus\"");
-        assertEquals(1200, iron.regrowthTicks(), "Ben: \"1 minute is fine for now\"");
-        assertEquals(List.of("small"), iron.sizes());
+        assertEquals(new PayoutRule(2, 4, 6), iron.payoutRule("medium"), "Ben 2026-11-14: \"This is fine for now\"");
+        assertEquals(new PayoutRule(2, 4, 8), iron.payoutRule("large"));
+        assertEquals(new PayoutRule(2, 4, 10), iron.payoutRule("extra_large"));
+        assertEquals(1200, iron.regrowthTicks(), "Ben: \"Regrowth can be 1 minute across the board\"");
+        assertEquals(List.of("small", "medium", "large", "extra_large"), iron.sizes(), "authored order");
+        assertEquals(List.of(50, 30, 15, 5), List.copyOf(iron.sizeWeights().values()), "PROVISIONAL, design doc");
         assertEquals("minecraft:block.stone.hit", iron.missSound());
         assertEquals("minecraft:block.stone.break", iron.breakSound());
-        assertEquals("rpg:mining/iron_patch", iron.patchModel());
+        assertEquals("minecraft:entity.villager.no", iron.deniedSound(), "PLACEHOLDER, the seat's ruling 8");
+        for (String size : iron.sizes()) {
+            assertEquals("rpg:mining/iron_patch_" + size, iron.patchModel(size));
+        }
         assertEquals("minecraft:poof", iron.breakParticle());
         assertTrue(warnings.isEmpty(), "the shipped file loads with no warning: " + warnings);
     }
@@ -160,7 +175,34 @@ class MiningContentLoaderTest {
 
     @Test
     void aSizeWithNoBonusIsRefused() throws IOException {
-        assertRefused(ores(ore("    sizes: [small]", "    sizes: [small, medium]")), "medium");
+        assertRefused(ores(ore("      small: 50\n", "      small: 50\n      medium: 30\n")), "medium");
+    }
+
+    @Test
+    void aSizeWeightMustBeAWholeNumberAtLeastOne() throws IOException {
+        assertRefused(ores(ore("      small: 50\n", "      small: 0\n")), "weight");
+        warnings.clear();
+        assertRefused(ores(ore("      small: 50\n", "      small: heavy\n")), "'small:'");
+    }
+
+    @Test
+    void aSizeWithNoPatchModelIsRefused() throws IOException {
+        // large is weighted and has a bonus, but no models.patch entry.
+        assertRefused(ores(ore("      small: 50\n", "      small: 50\n      large: 15\n")
+                .replace("        small: 5\n", "        small: 5\n        large: 8\n")), "models.patch");
+    }
+
+    @Test
+    void slice1sListSizesAndSinglePatchModelAreRefusedByName() throws IOException {
+        assertRefused(ores(ore("    sizes:\n      small: 50\n", "    sizes: [small]\n")), "map of size id to roll weight");
+        warnings.clear();
+        assertRefused(ores(ore("      patch:\n        small: rpg:mining/iron_patch_small\n",
+                "      patch: rpg:mining/iron_patch\n")), "single 'models.patch:'");
+    }
+
+    @Test
+    void aMissingDeniedSoundIsRefused() throws IOException {
+        assertRefused(ores(ore("      denied: minecraft:entity.villager.no\n", "")), "sounds.denied");
     }
 
     @Test
@@ -185,7 +227,7 @@ class MiningContentLoaderTest {
 
     @Test
     void aScalarSizesIsRefused() throws IOException {
-        assertRefused(ores(ore("    sizes: [small]", "    sizes: small")), "scalar 'sizes:'");
+        assertRefused(ores(ore("    sizes:\n      small: 50\n", "    sizes: small\n")), "a list or a scalar");
     }
 
     @Test
