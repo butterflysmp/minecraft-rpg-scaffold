@@ -273,6 +273,8 @@ other number in ST8-ST11 stands.
 
 **FIXED, 2026-11-14, on `feat/mining-selftest`, BEFORE ITS BOOT (no prediction or reading above moves).** `SelfTestStaging.dying(living, dead)` drops the `valid` term, and `SelfTestRun.settle` no longer asks `isValid()`; "still in the world" is what `getNearbyEntities` already means. The SETTLED line gains `first=<k>`, the count at the first poll. `SelfTestStagingTest`'s hollow row is replaced by rows whose inputs are derived the way `CraftEntity` derives them (`isDead = !isAlive`, `isValid = isAlive && valid`), with a row proving no reported state is both dead and valid. **The live re-read is `GATE-mining-auto.md` ST9R**, at that branch's boot.
 
+**RE-READ, 2026-11-14, at `2ca368ad` (`GATE-mining-auto.md` ST9R is the account).** 32 kills, 32 SETTLED, all `dying=0`. The 11 kills that left a body all read `first=1`, each body's `MOBREMOVE` logged before its SETTLED: the wait now waits. 5 read `ticks=20` and 6 read `ticks=1` or `2`; why some bodies leave after 1-2 ticks is not diagnosed. WS2c's `dead=true` probes went from 2 to 0.
+
 ### ST10 — blocks go back per chain, and every row stages from the run's start (SURVIVAL) — witness: the log
 
 | prediction | READING |
