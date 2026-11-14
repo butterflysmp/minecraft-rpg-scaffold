@@ -52,6 +52,8 @@ final class SelfTestRun {
     private String previousGate;
     private final SelfTestStaging.RowRules<GameRule<Boolean>> rowRules = new SelfTestStaging.RowRules<>();
     private boolean deathExpected;
+    /** The dying count at the current settle's first poll (ST9's {@code first=}). */
+    private int settleFirst;
     private boolean ended;
 
     SelfTestRun(SelfTestService service, Player player, List<Scenario> queue) {
@@ -158,15 +160,19 @@ final class SelfTestRun {
         service.scheduler().onEntityLater(player, this::rowDone, 2);
     }
 
-    /** Polls once a tick until no dying body is near the player, or {@link SelfTestStaging#SETTLE_CAP_TICKS} pass. */
+    /**
+     * Polls once a tick until no dying body is near the player, or {@link SelfTestStaging#SETTLE_CAP_TICKS} pass. The
+     * SETTLED line's {@code first=} is the count at the first poll, so a reader sees the wait had something to wait for.
+     */
     private void settle(int waited) {
         if (ended) return;
         int dying = 0;
         for (Entity e : player.getNearbyEntities(48, 48, 48)) {
-            if (SelfTestStaging.dying(e instanceof LivingEntity, e instanceof LivingEntity l && l.isDead(), e.isValid())) dying++;
+            if (SelfTestStaging.dying(e instanceof LivingEntity, e instanceof LivingEntity l && l.isDead())) dying++;
         }
+        if (waited == 0) settleFirst = dying;
         if (dying == 0 || waited >= SelfTestStaging.SETTLE_CAP_TICKS) {
-            log("SETTLED dying=" + dying + " ticks=" + waited);
+            log("SETTLED dying=" + dying + " ticks=" + waited + " first=" + settleFirst);
             advance();
             return;
         }
