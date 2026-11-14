@@ -106,6 +106,12 @@ SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; 
 > R0a reads it in the boot: a commit beneath the top cannot name the top's hash, because the top is rebased onto this
 > note.* This answers the report under *THE ORDER IN THE ONE BOOT* above.
 
+> **2026-11-14, before the next boot, when the stack was un-parked (rebased onto master `af7a1bd5`). No prediction
+> moves; nothing above is removed.** At the next stack-top boot this gate's R0 rows are **SUPERSEDED by
+> `GATE-deft-hands.md`'s R0** (#180, the stack top), recorded SUPERSEDED, never PASS or FAIL. The note above names
+> `GATE-withered-shortbow.md`, and the *SELFTEST WITNESS AMENDMENT* above names `GATE-selftest.md`: each describes
+> the stack as it stood when it was written.
+
 ### R0a — the build line names this branch's head
 
 | prediction | instrument | READING |

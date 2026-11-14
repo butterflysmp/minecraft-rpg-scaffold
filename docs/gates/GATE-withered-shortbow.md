@@ -111,6 +111,11 @@ own commands; where the scenario differs, the row says so. Every row not listed 
 > the boot: a commit beneath the top cannot name the top's hash.* **The one R0 moved to #175**, which carries the
 > cumulative R0 for #168-#175; the heading and paragraph below describe it as it stood before that move.
 
+> **2026-11-14, before the next boot, when the stack was un-parked (rebased onto master `af7a1bd5`). No prediction
+> moves; nothing above is removed.** At the next stack-top boot this gate's R0 rows are **SUPERSEDED by
+> `GATE-deft-hands.md`'s R0** (#180, the stack top), recorded SUPERSEDED, never PASS or FAIL. The note above names
+> `GATE-selftest.md`; it describes the stack as it stood when it was written.
+
 **The seat's ruling 1, 2026-10-05.** This R0 is the stack's only R0: every gate beneath (#168-#173) carries a dated note
 recording its own R0 rows **SUPERSEDED** at this boot, never PASS or FAIL. The one exception is `GATE-nexus-polish.md`
 **R0d** (the ten screen commands), which is a #170 merge bar and is read as written. R0b reads one shipped entry from

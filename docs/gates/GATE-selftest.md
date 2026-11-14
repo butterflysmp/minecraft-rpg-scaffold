@@ -79,6 +79,11 @@ six reads, done in Phase 2 and recorded there. **The rule the readings answer to
 
 **SUPERSEDED, 2026-11-06, before the next boot: the stack's one R0 is now `GATE-sunder.md`'s** (the new stack top). The rows below stay as read at 38cc9903; at the next boot they are recorded SUPERSEDED, never PASS or FAIL.
 
+**2026-11-14, before the next boot, when the stack was un-parked (rebased onto master `af7a1bd5`). No prediction moves;
+nothing above is removed.** At the next stack-top boot this gate's R0 rows are **SUPERSEDED by `GATE-deft-hands.md`'s
+R0** (#180, the stack top), recorded SUPERSEDED, never PASS or FAIL. The note above names `GATE-sunder.md`, which
+itself records the move to `GATE-deft-hands.md`; this line names the top directly.
+
 Every gate beneath carries a dated note recording its own R0 rows **SUPERSEDED** at this boot, never PASS or FAIL.
 `GATE-withered-shortbow.md`'s note names this file. The one exception is unchanged: `GATE-nexus-polish.md` **R0d**, a
 #170 merge bar, is read as written.

@@ -42,6 +42,82 @@ ROWS     12   R0a R0b R0c R0d
          12   = 4 R0 + 8 DH     git grep -c '^### R0\|^### DH' <ref> -- docs/gates/GATE-deft-hands.md
 ```
 
+## THE NEXT BOOT: THE STACK UN-PARKED ONTO MASTER (dated additions, 2026-11-14, BEFORE ANY BOOT)
+
+**Nothing above or below is edited; these are additions.** On 2026-11-14 the six branches were rebased, bottom-up,
+onto master `af7a1bd5`, which now carries the Mining system (#181, #182, #183, #184, #185, #186). Old tips → new tips:
+#172 `2c99b55c` → `f3bb0a4c`, #173 `c4b39e13` → `22907818`, #174 `d06a749d` → `03bc17d8`, #175 `3eec8a22` → `5656a0e0`,
+#178 `2bc97dc5` → `30b5cbc6`, #180 `d7aa63b4` → `aa637901` (then this file's commit on top). 61 commits, none
+squashed, reordered, dropped or reworded; 60 keep their `git patch-id --stable`. **One commit conflicted:** #175's
+`df9e2a14` → `85233eb0`, in `RpgPlugin.java` and `RpgListeners.java`, where master had appended `MiningService mining`
+to the `RpgListeners` constructor and to `RpgCommand.build`, and the commit appended `SelfTestService selfTest` and
+`rpg.addChild(SelfTestCommand.build(selfTest))`. Both kept: `…, stoneCaster, mining, selfTest)`, and
+`RpgCommand.build(…, vaults, mining)` followed by the `addChild`. `./mvnw clean test` at every new tip: core / storage
+/ paper `1667/92/1155`, `1672/92/1173`, `1672/92/1176`, `1672/92/1216`, `1688/92/1234`, **`1693/92/1246` at
+`aa637901`**; master `1665/92/1142`.
+
+**THE RESOLUTION'S RUNTIME WITNESSES, because two of its lines are visible to no test.** Deleting
+`getLogger().info(selfTest.enableLine())` or `rpg.addChild(SelfTestCommand.build(selfTest))` left the whole suite green
+(`1693/92/1246` both times), so **R0d is the sole witness of the first, and any `/rpg selftest` reply or
+`SELFTEST RUN START` line is the sole witness of the second** (ST7's start half is the first such line). Mining's half
+of the resolution is compile-enforced (dropping or swapping either `mining` argument does not build); at boot, the
+`MINING pack offer` line at LOGIN (below) shows the listener holds the mining service.
+
+### CARRIED STATE, DONE BY THE BOOTER BEFORE THE BOOT, IN THIS ORDER (added 2026-11-14)
+
+1. **No JVM running:** `Get-Process java -ErrorAction SilentlyContinue` prints nothing.
+2. **A fresh dated backup**, with no server running, in ONE bash invocation from the repo root (the folder is named
+   by the day it is taken; `mkdir` without `-p` refuses an existing folder):
+
+   ```bash
+   B="/c/Users/Neb91/IdeaProjects/rpg-run-backups/$(date +%F)-pre-combat-stack"; mkdir "$B" && cp -a run/plugins/Rpg run/world "$B/" && for p in "run/plugins/Rpg $B/Rpg" "run/world $B/world"; do set -- $p; echo "$1: $(find "$1" -type f | wc -l) files $(find "$1" -type f -printf '%s\n' | awk '{s+=$1} END{print s}') bytes; $2: $(find "$2" -type f | wc -l) files $(find "$2" -type f -printf '%s\n' | awk '{s+=$1} END{print s}') bytes; diff -rq lines: $(diff -rq "$1" "$2" | wc -l)"; done
+   ```
+
+   Report the folder, both pairs of counts, and `diff -rq lines: 0` for each.
+3. **Check, do not assume, the join toggle in Ben's local file:** `grep -n "dev-pack-on-join" run/plugins/Rpg/config.yml`
+   must print `12:  dev-pack-on-join: true` (read 2026-11-14 while writing this section). If it does not, STOP.
+4. **Boot:** `./scripts/dev-server.sh --refresh-content`. **The flag is required** (PLAN-mining.md F-M16): the deployed
+   `run/plugins/Rpg/content` is master's (14 weapons, 4 statuses, no `deft_hands.yml`, and the deleted
+   `active_placeholder_melee_thrust.yml` still present), and `saveResource` never overwrites. The flag `rm -rf`s that
+   folder, so nothing master shipped and this stack deleted can linger.
+5. **R0 binds to THIS boot** (PLAN-mining.md F-M44): the jar now deployed is the S2 build `03bd1bf0`, so a wait on
+   `Done (` can match the old log. Read R0 only on a `latest.log` with a fresh mtime whose `[Rpg] Build:` line names
+   the stack top's head.
+
+**Also carried, not actions:**
+- **The last session ended CLEAN.** The S2 boot (2026-11-14, build `03bd1bf0`) logged `/stop` (L171), `Disabling Rpg`
+  (L174) and `All dimensions are saved` (L204) in `run/logs/latest.log` (mtime 2026-11-14 08:02:58), and no
+  `java.exe` was running when this was written. **This supersedes, for the next boot, the "must not assume" in the
+  2026-11-12 stop note above**, which describes the `61e722f2` session; four master boots have run since.
+- **A resource pack is offered at EVERY LOGIN, and that is expected, not a defect:** Ben's local config has
+  `mining.dev-pack-on-join: true` (PLAN-mining.md F-M26). Predicted, in the same second as the LOGIN line:
+  `MINING pack offer player=BaronVonYeetus url=http://127.0.0.1:` a port `/rpg-pack.zip
+  sha1=49f2e465b2b6bbb24380425830c8572f14acd11c bytes=8227`, then `MINING pack status … status=ACCEPTED`,
+  `DOWNLOADED`, `SUCCESSFULLY_LOADED`. **S2's sha1 and bytes**, because nothing the pack is built from moved:
+  `git diff --stat 1cefaea9 aa637901 -- paper/src/main/resources/resourcepack paper/src/main/java/io/github/butterflysmp/rpg/paper/mining/MiningPack.java`
+  prints nothing. A different sha1 is recorded, not an R0 failure; no row of this stack reads the pack.
+- **No mining slot exists at boot** (slots are in memory and lost on restart, PLAN-mining.md 5.4), so mining's block
+  handlers find nothing during a selftest run. Nothing in this stack's rows places one.
+- **Mining's dev commands and the selftest are behind two different guards, side by side:** `/rpg mining` is behind
+  `Permissions.DEV` only (`MiningWiringSignatureTest` pins it); `/rpg selftest` is behind `SelfTestGuard` (`-Drpg.dev=true`
+  from `dev-server.sh`, the dev world, one player, SURVIVAL). PLAN-mining.md records that mining's move under the
+  `rpg.dev` guard follows #175's merge; the rebase did not move it.
+
+### RUN-SHEET RULES FOR THIS BOOT (added 2026-11-14, learned on the Mining boots after the stack was parked)
+
+- **No placeholder in any command** (PLAN-mining.md F-M25). Every command Ben types is posted by the booter as the
+  literal command, filled from a reading already in hand. Where a value is not known until the run, the sheet says
+  to ask for it. *(The row text above still carries forms like `<bonus>`; those are descriptions of a command, and
+  the booter posts the literal one.)*
+- **The FIRST line after LOGIN is `/gamemode survival`, on its own** (PLAN-mining.md F-M43 and the seat's ruling
+  F-M46), read in the log as `BaronVonYeetus issued server command: /gamemode survival` before any other command
+  line. `/rpg selftest` refuses outside SURVIVAL anyway (ST7). **ST7 then switches to CREATIVE on purpose**
+  (`/gamemode creative`, `/rpg selftest level`, `/gamemode survival`, `/rpg selftest level`); that comes AFTER the
+  first line, and does not replace it.
+- **Anything read from chat is read from the log where it can be.** Inside a selftest run, a command's reply is a
+  `REPLY` line. **Outside a run there is no `REPLY` line**: ST7's refusal text and any `/rpg reloadtime` reply Ben
+  types by hand are chat only, and stay Ben's halves.
+
 ## THE WITNESSES, AND THE HONESTY RULE
 
 - **`RELOAD player=<uuid> weapon=<id> authored=<n> resolved=<n> start=<tick> completesAt=<tick>`**: new in this slice,
@@ -114,11 +190,88 @@ foreach ($k in '^effect: reload_time\s*$', '^class: ranger\s*$', '^icon: feather
 $zip.Dispose()
 ```
 
+**R0b, ADDED 2026-11-14, before the next boot (the prediction above stands and is read as written).** On master
+`af7a1bd5` the jar must ALSO carry Mining, which no slice of this stack wrote, so a jar built from the parked tips
+(or any head beneath master) fails here. **PRESENT:** core `mining/SizeRoll.class`, `mining/MissSoundCooldown.class`,
+`hud/ActionBarHolds.class`; paper `mining/MiningService.class`, `mining/MiningPack.class`,
+`content/MiningContentLoader.class`; `content/ores/iron.yml`, `content/vein_sizes/extra_large.yml`; the resource pack's
+`resourcepack/pack.mcmeta`, `resourcepack/assets/rpg/items/mining/iron_patch_small.json`,
+`resourcepack/assets/rpg/textures/item/mining/iron_patch_extra_large.png`. **ABSENT:**
+`resourcepack/assets/rpg/items/mining/iron_patch.json` (slice 1's name, renamed in S2: present means a pre-S2 master)
+and the control `mining/NoSuchClassControl.class`. **11 PRESENT, 2 ABSENT.** The same scan, pointed at
+`paper\target\rpg-0.1.0-SNAPSHOT.jar` built from `aa637901` on 2026-11-14 (not deployed, not booted), printed exactly
+that; it is a dry run of the instrument, not a reading of R0b.
+
+```powershell
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'))
+foreach ($c in 'io/github/butterflysmp/rpg/core/mining/SizeRoll.class',
+               'io/github/butterflysmp/rpg/core/mining/MissSoundCooldown.class',
+               'io/github/butterflysmp/rpg/core/hud/ActionBarHolds.class',
+               'io/github/butterflysmp/rpg/paper/mining/MiningService.class',
+               'io/github/butterflysmp/rpg/paper/mining/MiningPack.class',
+               'io/github/butterflysmp/rpg/paper/content/MiningContentLoader.class',
+               'content/ores/iron.yml',
+               'content/vein_sizes/extra_large.yml',
+               'resourcepack/pack.mcmeta',
+               'resourcepack/assets/rpg/items/mining/iron_patch_small.json',
+               'resourcepack/assets/rpg/textures/item/mining/iron_patch_extra_large.png',
+               'resourcepack/assets/rpg/items/mining/iron_patch.json',
+               'io/github/butterflysmp/rpg/paper/mining/NoSuchClassControl.class') {
+  if ($zip.GetEntry($c)) { "PRESENT $c" } else { "ABSENT  $c" }
+}
+$zip.Dispose()
+```
+
 ### R0c — the cumulative Loaded line, and nothing refused
 
 | prediction | instrument | READING |
 |---|---|---|
 | `Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, **11 enchants**, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. That is GATE-sunder.md's R0c with enchants 10 → 11 (`deft_hands.yml`; `ls content/enchants/*.yml` = 11 at this head). No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair, and **none naming `deft_hands` or `reload_time`** | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | **61e722f2, 2026-11-10: PASS.** L44 `[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`, exactly as predicted. No `Refusing`, `Skipping`, `SEVERE` or `Exception` line at all (not even `volley_stone`'s known pair). |
+
+**R0c RE-PREDICTED FOR THE NEXT BOOT, 2026-11-14, before any boot (the prediction and reading above stay as written;
+PLAN-mining.md F-M20).** Master `af7a1bd5` appends `, N ores, M vein sizes` after `N recipes` (`RpgPlugin`'s `Loaded`
+line). On the rebased stack the line is predicted as:
+
+**`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes, 1 ores, 4 vein sizes`**
+
+No `Refusing`, `Skipping`, `SEVERE` or `Exception` beyond `volley_stone`'s known pair, none naming `deft_hands` or
+`reload_time`; and Mining's absences, as S2's R0c predicted them: no `No ores`, no `No vein`, no `Skipping malformed
+vein size`, no `Content:` line naming `ore 'iron'`. Instrument: `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception','No ores','No vein','Content:'`.
+
+**Every count is DERIVED from the content at `aa637901`, not copied** (the content is unchanged by this file's
+commit). Each registry is the loader's size: one entry per `.yml` file, except **pools** (only the `builds/` files with
+a top-level `element:` are cells; `ranger.yml` and `melee.yml` are class files, `PoolLoader`), **armor** (each tier
+file expands to its four `pieces:`, `ArmorLoader`) and **tools** (one file, keyed under `tools:`, `ToolLoader`). Run
+from the repo root:
+
+| count | command | printed |
+|---|---|---|
+| abilities | `git ls-tree --name-only aa637901 paper/src/main/resources/content/abilities/ \| grep -c '\.yml$'` | 11 |
+| visuals | `git ls-tree --name-only aa637901 paper/src/main/resources/content/visuals/ \| grep -c '\.yml$'` | 29 |
+| statuses | `git ls-tree --name-only aa637901 paper/src/main/resources/content/statuses/ \| grep -c '\.yml$'` | 5 |
+| elements | `git ls-tree --name-only aa637901 paper/src/main/resources/content/elements/ \| grep -c '\.yml$'` | 7 |
+| enchants | `git ls-tree --name-only aa637901 paper/src/main/resources/content/enchants/ \| grep -c '\.yml$'` | 11 |
+| pools | `git grep -l -E '^element:' aa637901 -- 'paper/src/main/resources/content/builds/*.yml' \| wc -l` | 3 |
+| fragments | `git ls-tree --name-only aa637901 paper/src/main/resources/content/fragments/ \| grep -c '\.yml$'` | 6 |
+| aspects | `git ls-tree --name-only aa637901 paper/src/main/resources/content/aspects/ \| grep -c '\.yml$'` | 6 |
+| weapons | `git ls-tree --name-only aa637901 paper/src/main/resources/content/weapons/ \| grep -c '\.yml$'` | 16 |
+| shields | `git ls-tree --name-only aa637901 paper/src/main/resources/content/shields/ \| grep -c '\.yml$'` | 1 |
+| armor | `git grep -h -E '^  (head\|chest\|legs\|feet):' aa637901 -- 'paper/src/main/resources/content/armor/*.yml' \| wc -l` | 24 |
+| tools | `git show aa637901:paper/src/main/resources/content/tools/iron.yml \| grep -cE '^  [a-z_]+:\s*$'` | 5 |
+| accessories | `git ls-tree --name-only aa637901 paper/src/main/resources/content/accessories/ \| grep -c '\.yml$'` | 6 |
+| mobs | `git ls-tree --name-only aa637901 paper/src/main/resources/content/mobs/ \| grep -c '\.yml$'` | 1 |
+| recipes | `git ls-tree --name-only aa637901 paper/src/main/resources/content/recipes/ \| grep -c '\.yml$'` | 3 |
+| ores | `git ls-tree --name-only aa637901 paper/src/main/resources/content/ores/ \| grep -c '\.yml$'` | 1 |
+| vein sizes | `git ls-tree --name-only aa637901 paper/src/main/resources/content/vein_sizes/ \| grep -c '\.yml$'` | 4 |
+
+**The control, run the same day:** the same commands at `af7a1bd5` print `11, 27, 4, 7, 10, 3, 6, 6, 14, 1, 24, 5, 6,
+1, 3, 1, 4`, which is exactly the `Loaded` line `GATE-mining-s2.md`'s R0c READ on the S2 boot. So the derivation
+reproduces a line a server printed, on the tree that printed it. **The counts that move from master:** visuals 27 → 29
+(the Blaze King's Staff's two), statuses 4 → 5 (`withering.yml`), enchants 10 → 11 (`deft_hands.yml`), weapons 14 → 16
+(`blaze_kings_staff.yml`, `withered_shortbow.yml`); abilities stay 11 (Sunder added, `active_placeholder_melee_thrust.yml`
+deleted). The result equals the 61e722f2 prediction above with Mining's tail appended. *(In this table `\|` is a
+Markdown escape; type `|`.)*
 
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
@@ -208,3 +361,81 @@ Each mutation landed with marker 1 and one changed line, its test reddened, and 
 | `EnchantDefinition`: `RELOAD_TIME` gated `MAIN_HAND_ONLY` (admits universal) | `EnchantLoaderTest.aReloadTimeEnchantOnAnyClassButRangerIsRefused` |
 | `EnchantEffectLine`: ruling (b)'s wording `+N% Reload Speed` | `EnchantEffectLineTest.deftHandsSaysTheReloadTimeCutAtEveryLevel` |
 | `DeftHandsContentInvariantTest`: its reload pattern made blind | its own positive control, and the invariant row |
+
+---
+
+## EVERY ROW OF THE STACK, AT THE NEXT BOOT (added 2026-11-14, before any boot)
+
+**One table for all six gates, read from the gate files at `aa637901`.** "State" is the latest reading (the `61e722f2`
+boot, 2026-11-10, run 3) plus any later dated amendment. **AUTO** = driven by `/rpg selftest`: the row is a top-level
+key in `paper/src/main/resources/selftest/GATE-<gate>.yml` (38 keys across 9 files at `aa637901`; R0d predicts 38).
+The ST rows are read from the selftest run's own log. **HAND** = Ben's input or eyes. **AUTO-PARTIAL** = an AUTO
+server half plus a HAND half, named. "Handoff" is the previous seat's merge-bar list as relayed in the 2026-11-14 brief;
+a blank there means the handoff does not name the row. 82 rows: 15 + 14 + 10 + 15 + 16 + 12.
+
+| PR, gate | row | witness | state | handoff |
+|---|---|---|---|---|
+| #172 legacy-b | R0a, R0b, R0c | — | SUPERSEDED at `61e722f2`; SUPERSEDED again at the next boot (this file's R0) | |
+| #172 | LB1 | HAND | NOT READ | |
+| #172 | LB2 | AUTO | FAIL as staged at `61e722f2` (a dying mob took the shot); `LiveTargets` fix `27dda674`; prediction amended to allow a crit (`f3bb0a4c`). Unread since | bar |
+| #172 | LB3, LB4, LB4b | HAND | NOT READ | |
+| #172 | LB5 | AUTO-PARTIAL; HAND: each fireball vanishes at the wall | VACUOUS as written at `61e722f2`; band re-derived (`f3bb0a4c`). Unread since | bar (re-derived band) |
+| #172 | LB6, LB7, LB8, LB9, LB10, LB11 | HAND (LB8: Ben + the log) | NOT READ | |
+| #173 wither-status | R0a, R0b, R0c | — | SUPERSEDED, as #172's | |
+| #173 | WS-C | AUTO-PARTIAL; HAND: no blast particles seen | AUTO half as predicted at `61e722f2`; HAND half NOT READ | bar; HAND half carried |
+| #173 | WS1 | AUTO | **PASS** at `61e722f2` | bar (see finding 1) |
+| #173 | WS2b | AUTO | VOID (a dying mob took the look-ray) | bar |
+| #173 | WS2c | AUTO-PARTIAL; HAND: no wither swirl seen | VOID | bar |
+| #173 | WS3 | AUTO-PARTIAL; HAND: no explosion seen | VOID | bar |
+| #173 | WS3-P, WS5, WS6 | HAND (WS3-P and WS5 read DOTTICK) | NOT READ | |
+| #173 | WS4 | none here: MOVED to WB3 | — | |
+| #173 | WS8, WS9 | none | recorded UNWITNESSED as written | |
+| #174 withered-shortbow | R0a, R0b, R0c | — | SUPERSEDED, as #172's | |
+| #174 | WB1 | AUTO-PARTIAL; HAND: the tooltip as drawn | **PASS** at `61e722f2` (AUTO as re-predicted, and Ben) | already PASS |
+| #174 | WB2 | AUTO | FAIL as staged (LB2's defect); prediction amended to allow a crit (`03bc17d8`). Unread since | bar |
+| #174 | WB3 | AUTO-PARTIAL (chained after WB2); HAND: the wither swirl | VOID (no WB2 hit to follow) | bar |
+| #174 | WB4b, WB5, WB6, WB7 | HAND (WB4b reads DOTTICK) | NOT READ | |
+| #175 selftest | R0a, R0b, R0c, R0d | — | SUPERSEDED at `61e722f2` (PASS at `38cc9903`, as that boot's top) | |
+| #175 | ST1 | AUTO (the run's log); its restore half needs Ben's Lifetime XP as a baseline | log half as re-predicted at `61e722f2`; restore half NOT READ (no baseline sent). Re-predicted `rows=38` | bar; XP restore carried |
+| #175 | ST2 | AUTO (the log) + HAND | PASS at `38cc9903`; NOT READ at `61e722f2` | (see finding 3) |
+| #175 | ST3 | AUTO (the log); its sight half HAND | log half PASS at `38cc9903`; NOT READ at `61e722f2` | (see finding 3) |
+| #175 | ST4, ST6 | AUTO (the log) | PASS at `38cc9903`; NOT READ at `61e722f2` | (see finding 3) |
+| #175 | ST5 | AUTO (the log): the control for every AUTO row | FAIL in part at `61e722f2` (the level half holds; the WS2b half VOID) | bar |
+| #175 | ST7 | HAND + the log (Ben changes mode; the refusal is chat, never logged) | log half as predicted at `61e722f2`; refusal text NOT READ | bar; refusal text carried |
+| #175 | ST8, ST9, ST10, ST11 | AUTO (the log) | written 2026-11-10, after the boot; NOT RUN | bar |
+| #178 sunder | R0a, R0b, R0c, R0d | — | SUPERSEDED at `61e722f2` | |
+| #178 | SU1 | AUTO-PARTIAL; the not-offered half is a unit row | as predicted at `61e722f2` | bar (see finding 2) |
+| #178 | SU2 | AUTO; HAND: the leap's look | as predicted, plus one unpredicted hit on a leftover mob (ST8 reads the fix) | bar |
+| #178 | SU3 | HAND (a held movement key) | NOT READ | bar; carried |
+| #178 | SU4 | AUTO | as predicted; the slam through a wall confirmed and **ruled by Ben, 2026-11-12** (the slam ignores walls, revisitable) | recorded |
+| #178 | SU5, SU6 | AUTO | as predicted | |
+| #178 | SU7 | AUTO-PARTIAL (its ending is a range) | as predicted | |
+| #178 | SU8 | AUTO death half (added 2026-11-10, accepted by the seat 2026-11-12); HAND quit half | NOT STAGEABLE at `61e722f2`; unread since | (see finding 3) |
+| #178 | SU9, SU12 | AUTO-PARTIAL | NOT AS PREDICTED; diagnosed as staging artefacts, accepted 2026-11-12; unread since | (see finding 3) |
+| #178 | SU10 | AUTO | as predicted, with a staging caveat (run 2's SU10 is VOID) | bar |
+| #178 | SU11 | AUTO; HAND: the popup and nameplate (secondary) | PARTIAL; diagnosed, accepted 2026-11-12; unread since | (see finding 3) |
+| #180 deft-hands | R0a, R0b, R0c, R0d | the stack's ONE R0 | PASS at `61e722f2`, on that head. **Re-read on the new head**, with R0b's and R0c's 2026-11-14 additions | |
+| #180 | DH1 | AUTO-PARTIAL; HAND: the stats sheet's `Reload` line | SKIPPED (no hotbar slot; ST11 reads the fix) | bar |
+| #180 | DH2 | HAND input; the `RELOAD` line is the reading | NOT READ | bar; carried |
+| #180 | DH3, DH6 | AUTO (chained: DH3 after DH1, DH6 after DH3) | SKIPPED (chained to DH1) | bar |
+| #180 | DH4, DH7, DH8 | HAND | NOT READ | carried |
+| #180 | DH5 | UNIT | PASS (unit) at `61e722f2`; green again at `aa637901` (`EnchantRollTest` 25, `DeftHandsContentInvariantTest` 3, in `./mvnw clean test`) | |
+
+**FINDINGS ON THE HANDOFF'S LIST, checked against the gate files (2026-11-14). Nothing above is changed by them; they
+are the seat's to rule.**
+
+1. **#173's WS1 is already PASS** (`GATE-wither-status.md`'s `61e722f2` status line). It is in the bar list because
+   that gate's `38cc9903` status names "the VOID rows" as its bar, and WS1 was VOID then.
+2. **#178's SU1 already read "as predicted"** at `61e722f2`. SU2 and SU10 are also "as predicted", each with a caveat
+   (an extra hit; run 2's VOID), which is a reason to re-read them; SU1 has no caveat recorded.
+3. **Rows the handoff does not name, which are not PASS:** SU8, SU9, SU11, SU12 (`GATE-sunder.md`: the seat accepted
+   their amendment and diagnoses on 2026-11-12, and "the four rows stay unread until the next boot"); ST2, ST3, ST4,
+   ST6 (NOT READ at `61e722f2`; their only PASS is on `38cc9903`, an earlier build).
+4. **Only two gates name a bar in their own text:** `GATE-legacy-b.md` ("LB2 is its bar") and `GATE-wither-status.md`
+   ("the VOID rows are its bar"), both in their `38cc9903` status lines. Every other bar in the list is the handoff's,
+   not a gate's.
+5. **HAND halves the carried list does not name:** WS2c's (no wither swirl), WS3's (no explosion), WB3's (the wither
+   swirl), LB5's (each fireball vanishes at the wall), ST2's, ST3's sight half, DH1's glance, SU2's look, SU8's quit
+   half, SU11's popup.
+6. Every name in the carried list matches a HAND half or a HAND row in the gates: DH2, DH4, SU3, DH7, DH8, ST7's
+   refusal text, ST1's restore half (the `RUN RESTORED xp=` line needs Ben's baseline), WS-C's no-blast half.
