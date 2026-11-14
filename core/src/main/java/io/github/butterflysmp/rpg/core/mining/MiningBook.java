@@ -58,6 +58,17 @@ public final class MiningBook {
         return Optional.of(patch);
     }
 
+    /**
+     * READ-ONLY: this player's live patch at this slot if one EXISTS, and nothing else. Unlike
+     * {@link #patch} it never creates one, so it never draws from the random generator and never
+     * prunes the clock. Empty while regrowing and before the first look. For {@code /rpg selftest}'s
+     * aim, which must see the patch the shipped path made without becoming a second path that makes one.
+     */
+    public Optional<Patch> peek(UUID player, String slotId) {
+        Map<String, Patch> mine = patches.get(player);
+        return mine == null ? Optional.empty() : Optional.ofNullable(mine.get(slotId));
+    }
+
     private Patch create(VeinSize size, OreDefinition ore) {
         return new Patch(size, SpotLayout.roll(size, rng), ore.payoutRule(size.id()), now.getAsLong());
     }

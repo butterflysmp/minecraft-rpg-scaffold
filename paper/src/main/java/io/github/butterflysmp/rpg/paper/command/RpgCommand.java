@@ -161,7 +161,8 @@ public final class RpgCommand {
                                                                ResourcePool resources,
                                                                FireCadence fireCadence,
                                                                VaultService vaults,
-                                                               MiningService mining) {
+                                                               MiningService mining,
+                                                               boolean devServer) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -543,11 +544,12 @@ public final class RpgCommand {
                                         VaultDevCommand.take(ctx, vaults, page, slot)))))
                 // *** /rpg mining -- Mining slice 1's dev commands (PLAN-mining.md 5.4). ***
                 //
-                // Permissions.DEV and nothing else, on the line after the literal, so the whole branch
-                // is gated. They move to the rpg.dev guard once #175 merges (PLAN section 2).
-                // MiningWiringSignatureTest asserts it.
+                // Permissions.DEV AND the dev-server marker (the seat's ruling, 2026-11-14, PLAN
+                // section 2), on the line after the literal, so the whole branch is gated: off a dev
+                // server it is absent (MiningDevCommand.permitted says why). MiningWiringSignatureTest
+                // asserts it.
                 .then(Commands.literal("mining")
-                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .requires(source -> MiningDevCommand.permitted(source.getSender().hasPermission(Permissions.DEV), devServer))
                         .executes(MiningDevCommand::usage)
                         .then(Commands.literal("place")
                                 .executes(MiningDevCommand::usage)

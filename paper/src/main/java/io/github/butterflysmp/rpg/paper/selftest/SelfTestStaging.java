@@ -42,9 +42,22 @@ final class SelfTestStaging {
         return !isPlayer && taggedBySelftest;
     }
 
-    /** A body in its death animation: still in the world (valid), already dead. The run waits for these to leave. */
-    static boolean dying(boolean living, boolean dead, boolean valid) {
-        return living && dead && valid;
+    /**
+     * A body in its death animation: a living entity that is dead and still near the player. The run waits for these
+     * to leave.
+     *
+     * <p><b>"Still in the world" is the CALLER's job, not a term here</b> (the ST9 fix, 2026-11-14): the run asks only
+     * about entities {@code getNearbyEntities} returns, and a body removed from its level is no longer in the level's
+     * entity lookup, so it is never presented. What a dying mob reports between death and removal, read from the
+     * pinned server jar (Paper 26.1.2 build 74, {@code javap -c -p}): {@code CraftEntity#isDead} is
+     * {@code !entity.isAlive()}, true from the moment health reaches 0 ({@code LivingEntity#isAlive} is
+     * {@code !isRemoved() && getHealth() > 0 && !dead}); {@code LivingEntity#baseTick} calls {@code tickDeath} while
+     * {@code isDeadOrDying()}, and {@code tickDeath} removes the body (KILLED) on the tick {@code ++deathTime} reaches
+     * 20. The old third term was {@code CraftEntity#isValid}, which is {@code entity.isAlive() && entity.valid}: false
+     * for EVERY dead body, so {@code dead && valid} could never hold and every wait returned at {@code ticks=0}.
+     */
+    static boolean dying(boolean living, boolean dead) {
+        return living && dead;
     }
 
     /** A step that can leave a dying body behind it. */

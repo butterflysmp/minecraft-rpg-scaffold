@@ -27,6 +27,12 @@ seat's rulings in §2. The design (§5.12) and the gate (`GATE-mining-s2.md`) la
 readings in `GATE-mining-s2.md`. Findings F-M41 to F-M44, and the CARRIED HAND ROWS list dated after the S2 boot
 (which supersedes the earlier ones), are in §6.
 
+**2026-11-14: MINING JOINS `/rpg selftest`** on `feat/mining-selftest` from master **`01727a8c`** (read from the
+wire: `git ls-remote origin refs/heads/master` → `01727a8c621ddd67c18b74c698ae9861c4d9496d`). The review seat's brief:
+mining's server-side gate rows become selftest scenarios (`docs/gates/GATE-mining-auto.md`), the selftest's settle
+fix (GATE-selftest.md ST9) lands first, and `/rpg mining` moves under the `rpg.dev` guard. The seat's ruling on the
+guard and the carried rows this branch turns AUTO are in §2 and §6, dated 2026-11-14 (selftest).
+
 **The spike** is `spike/mining-input`, also from `55425aad`. It will NOT merge. Its gate, `GATE-mining-spike.md`,
 lives on that branch beside the code it tests, because the boot is bound to that branch's build sha. After its
 readings, the read gate is copied byte for byte onto this branch with a dated note naming the spike sha it was read
@@ -158,6 +164,11 @@ The roll weights are **PROVISIONAL** (the seat's words). Small's 3 × 2 and 2–
   `scripts/dev-server.sh`, and nothing is copied from feat/selftest. The brief named `-Drpg.dev=true`, but that
   property exists only on the parked feat/selftest branch (`SelfTestGuard`).
   - **Mining's real dev commands move to the `rpg.dev` guard once #175 has merged.**
+  - **THE SEAT'S RULING, 2026-11-14 (the selftest brief; #175 merged as `472a358e`):** the whole `/rpg mining`
+    subtree requires BOTH `Permissions.DEV` AND the dev-server marker (`-Drpg.dev=true`, set only by
+    `scripts/dev-server.sh`), reusing `SelfTestGuard.DEV_PROPERTY`, the one definition of that property. It does NOT
+    take the selftest's other conditions (dev world, one player, SURVIVAL): those belong to a run, not to a dev
+    command. Built on `feat/mining-selftest`.
 - Where the docs live: see the status block above.
 
 **From Ben's addendum, the AREA RULE is the target:** custom areas are no-break as a whole, so cancelling block
@@ -1580,7 +1591,65 @@ merge, only on Ben's own words):
   own, before anything else, **and the gate's first row reads it** in the log. Set-up step 1 was skipped in both the
   S1-c and the S2 boots (F-M35, F-M43), and both times SURVIVAL rested on an inference.
 
-### CARRIED HAND ROWS, 2026-11-14, AFTER THE S2 BOOT: THE NEXT MINING GATE MUST INCLUDE THESE
+**From the seat's read of the mining-auto readings, 2026-11-14** (`feat/mining-selftest`, #187; booted at `2ca368ad`,
+readings at `e27f44a6`, `docs/gates/GATE-mining-auto.md`; ACCEPTED, approved to merge on Ben's own words):
+
+- **F-M47 (ruling 1): THE FRAMEWORK'S SPACING IS READ, OFFSET 0.** Every `wait:` length used between two digs (17, 16,
+  10, 7, 5, 1) read its own gap in the click lines' `tick=`, with the predicted cooldown. The exact-tick rows (A7-A10,
+  A12) stand as read.
+- **F-M48 (ruling 2): R0a-d, G1, A1-A9, A11, A12 and LAST AS PREDICTED; A10 AS PREDICTED in every clause it rests
+  on.** Its side cooldown read 1.0000 against a predicted 0.9000 after an `item replace`: a wrong prediction about which
+  tick the item-change reset lands on (n ticks later it reads n, not n − 1; A11's 0.5700 is the second witness).
+  Recorded; no row depends on it.
+- **F-M49 (ruling 3): ST9R — THE FIX IS READ, THE TICK CLAUSE IS NOT DIAGNOSED.** 32 settles, every one ending
+  `dying=0`; the 11 with a body read `first=1`; WS2c's dead-body probes went from 2 to 0. The tick clause is NOT AS
+  PREDICTED (5 read 20, 6 read 1 or 2). Accepted for the merge, because the wait's purpose is met. **OWED, read-only, in
+  the next selftest-touching branch:** from the pinned jar, why a killed mob's body is removed after 1-2 ticks in some
+  cases and 20 in others (which kill path, which entity types), then a dated re-prediction. Never from memory. **The
+  gate's own miscounts, recorded:** it expected 10 bodies from run 3's `Killed` replies and there were 11 (the reply
+  count undercounted run 3's WD1); and its clause "run 3 had two" dead-body probes missed run 3's WS3 line, which is
+  that row's own DOT-killed subject.
+- **F-M50 (ruling 4): THE EIGHT NON-MINING ROWS THAT READ DIFFERENTLY FROM RUN 3 OF `e82df2b3` ARE ACCEPTED AS
+  EXPLAINED:** the settle's new waits (WD1, WD3, LB5, WS1, WS2b, WS2c, WS3), and a crit that did not roll in WD1 and
+  LB2. LB2's 30 is its uncrit prediction.
+
+### CARRIED ROWS, 2026-11-14, AFTER THE MINING-AUTO BOOT: THE NEXT MINING GATE MUST INCLUDE THESE (the seat's ruling 5)
+
+**This list SUPERSEDES the two below.** Of the six rows carried after S2:
+
+- **READ (AUTO), at `2ca368ad`:** `/rpg mining roll`'s two refusals (A1), S2-MEDIUM-CAP at 21 placements (A2), the
+  extra_large break (A3), and the same-world respawn's re-show (A4).
+- **READ by Ben:** whether a death drops the pack's art — Q1 *"yes"*, bound to A4, whose log shows the re-show and no
+  pack line.
+
+**STILL CARRIED, NOT READ, never a pass:**
+
+1. **M-SECOND-PLAYER**: each player sees their own patch. Needs a second client; a selftest refuses with two online.
+
+**Also carried, outside mining's rows:** G2 (`/rpg mining` absent off a dev server) stays **unit-only**, by
+construction. Sunder's **SU10** (a leap off a ledge takes no fall damage) was offered and skipped: still carried
+(`GATE-sunder.md`).
+
+### CARRIED ROWS, 2026-11-14 (selftest): WHICH OF THE LIST BELOW `feat/mining-selftest` TURNS AUTO — SUPERSEDED 2026-11-14, AFTER THE MINING-AUTO BOOT (the list above)
+
+The list below stands as written. `feat/mining-selftest` adds `docs/gates/GATE-mining-auto.md`, whose scenarios
+`/rpg selftest` drives through the shipped `BlockDamageEvent` path. **An AUTO reading is a reading of the SERVER**
+(`.claude/rules/verification.md`, *AN AUTO READING IS A READING OF THE SERVER*): a row with a sight or sound half
+keeps that half for Ben. None of these is read until that gate boots; until then each stays **NOT READ**.
+
+| carried row (the list below) | this branch | the gate row |
+|---|---|---|
+| 1. M-SECOND-PLAYER | **stays HAND**: a selftest refuses with two players online (`SelfTestGuard`) | — |
+| 2. the same-world respawn re-shows the patch | **AUTO** (the log half: the same `size=`, `spots=`, `live=` after the respawn); the sight stays Ben's | A4 |
+| 3. whether a death drops the server-offered pack | **split**: AUTO reads that no `MINING pack offer` or `pack status` line follows the death; **whether the art survives is Ben's sight** (one run-sheet question) | A4 |
+| 4. `/rpg mining roll`'s two stageable refusals | **AUTO** | A1 |
+| 5. S2-MEDIUM-CAP | **AUTO**, at the 21 placements `GATE-mining-s2.md` derived | A2 |
+| 6. the extra_large break half | **AUTO** | A3 |
+
+**Also recorded here, at the seat's instruction:** Ben's ruling of 2026-11-14 on the Deft Hands tooltip ("just Deft
+Hands III") is already on master; this branch adds nothing to it.
+
+### CARRIED HAND ROWS, 2026-11-14, AFTER THE S2 BOOT: THE NEXT MINING GATE MUST INCLUDE THESE — SUPERSEDED 2026-11-14, AFTER THE MINING-AUTO BOOT (the list above)
 
 **This list SUPERSEDES the one below.** Each is **NOT READ** and **never a pass**:
 

@@ -47,12 +47,45 @@ class SelfTestStagingTest {
 
     // --- 3. after a kill, wait for the dying ---
 
+    /**
+     * What {@code CraftEntity} reports for an entity {@code getNearbyEntities} returns, built the way the pinned server
+     * builds it (Paper 26.1.2 build 74, {@code javap -c -p org.bukkit.craftbukkit.entity.CraftEntity}): {@code isDead()}
+     * is {@code !entity.isAlive()}, and {@code isValid()} is {@code entity.isAlive() && entity.valid}. The two are
+     * DERIVED from one {@code alive}, never set independently: the old fixture handed {@code dying} {@code dead=true}
+     * with {@code valid=true}, a pair no entity can report (GATE-selftest.md ST9's diagnosis, 2026-11-14).
+     */
+    private record Reported(boolean dead, boolean valid) {
+        static Reported of(boolean alive, boolean inLevel) {
+            return new Reported(!alive, alive && inLevel);
+        }
+    }
+
+    /**
+     * The two states a living entity near the player can be in. A third, "removed", is never presented: a removed body
+     * leaves its level's entity lookup, so {@code getNearbyEntities} does not return it.
+     */
+    private static final Reported LIVE_MOB = Reported.of(true, true);
+    private static final Reported DYING_BODY = Reported.of(false, true);   // health 0, deathTime < 20, not yet removed
+
     @Test
-    void aDyingBodyIsDeadAndStillInTheWorld() {
-        assertTrue(SelfTestStaging.dying(true, true, true), "killed, not yet removed: the death animation");
-        assertFalse(SelfTestStaging.dying(true, false, true), "THE CONTROL: a live mob is not dying");
-        assertFalse(SelfTestStaging.dying(true, true, false), "a removed body is gone, not dying: nothing to wait for");
-        assertFalse(SelfTestStaging.dying(false, true, true), "only a living entity has a death animation");
+    void aDyingBodyIsALivingEntityTheServerReportsDead() {
+        assertTrue(SelfTestStaging.dying(true, DYING_BODY.dead()), "killed, not yet removed: the 20-tick death animation");
+        assertFalse(SelfTestStaging.dying(true, LIVE_MOB.dead()), "THE CONTROL: a live mob is not dying");
+        assertFalse(SelfTestStaging.dying(false, true), "only a living entity has a death animation (an item, an orb)");
+    }
+
+    @Test
+    void theOldValidTermIsFalseForEveryBodyTheServerCanReportDead() {
+        // WHY ST9 READ ticks=0 ON ALL 31 WAITS: isValid() needs isAlive(), so a dead body is never valid. Over both
+        // values of both inputs, no reported state is dead AND valid. If CraftEntity ever changes, this row is the one
+        // that says the old reasoning needs re-reading.
+        for (boolean alive : new boolean[]{true, false}) {
+            for (boolean inLevel : new boolean[]{true, false}) {
+                Reported r = Reported.of(alive, inLevel);
+                assertFalse(r.dead() && r.valid(), "alive=" + alive + " inLevel=" + inLevel);
+            }
+        }
+        assertTrue(DYING_BODY.dead() && !DYING_BODY.valid(), "the dying body: dead, and NOT valid");
     }
 
     @Test
@@ -171,5 +204,15 @@ class SelfTestStagingTest {
         String advance = between(run, "private void advance()", "private void settle(");
         assertTrue(advance.contains("SelfTestStaging.isKill(step)") && advance.contains("settle(0)"),
                 "every kill step hands over to settle before the next step");
+    }
+
+    @Test
+    void theSettleCountsByDeadAloneAndNeverAsksIsValid() throws IOException {
+        // The ST9 defect lived at the CALL SITE as much as in the predicate: isValid() is false for every dead body.
+        String settle = between(Files.readString(RUN, StandardCharsets.UTF_8), "private void settle(", "private void awaitRespawn(");
+        assertTrue(settle.contains("SelfTestStaging.dying(e instanceof LivingEntity, e instanceof LivingEntity l && l.isDead())"),
+                settle);
+        assertFalse(settle.contains("isValid()"), "isValid() needs isAlive(): a dead body is never valid");
+        assertTrue(settle.contains("\" first=\" + settleFirst"), "the SETTLED line says what the first poll saw");
     }
 }
