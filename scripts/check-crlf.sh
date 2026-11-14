@@ -81,6 +81,33 @@
 # once for CRLF and once for LF -- because the OK branch has two arms and a
 # classifier that handled only one of them would still pass a single positive.
 #
+# *** A FILE GIT CLASSES AS BINARY (`w/-text`) IS SKIPPED, AND NAMED. *** Added
+# 2026-11-13 (PLAN-mining.md F-M9). A PNG's 8-byte signature is
+# `\x89 P N G \r \n \x1a \n`, so EVERY PNG carries one CR and at least one LF and
+# classifies MIXED -- a false verdict whose advised fix (re-checkout, or
+# "normalise it in place") would corrupt the image. Line endings mean nothing in
+# a binary file, so it is not this instrument's business.
+#
+# The classification is GIT'S OWN, from `git ls-files --eol`: the `w/` field,
+# i.e. the WORKING-TREE content, which is what this script measures and which
+# git reports for untracked files too. It is not an extension list, so a new
+# binary type needs no edit here. Git calls content `-text` when it finds a NUL
+# byte in roughly its first 8000 bytes.
+#
+# Its reach today is wider than PNGs, and that is stated rather than discovered:
+# EnchantCodecTest.java is `-text` on purpose (a NUL inside a string literal;
+# see .gitattributes), so it leaves the sweep too. Every skipped file is NAMED
+# on every run, so nothing leaves the sweep silently.
+#
+# The skip has its own pair of controls, run through the SAME listing and the
+# SAME skip test as the sweep, in a throwaway git repo:
+#
+#   a binary fixture that the classifier alone calls MIXED  -> must be SKIPPED
+#   a mixed TEXT fixture                                    -> must still be MIXED
+#
+# The binary fixture is built to classify MIXED on purpose: if it classified
+# clean, passing it would prove nothing about the skip.
+#
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -125,13 +152,52 @@ for want in mixed:MIXED crlf:CRLF lf:LF; do
   [ "$got" = "$expect" ] || CTL_FAIL="$CTL_FAIL  $name: expected $expect, classified $got"$'\n'
 done
 
+# The listing the sweep walks, as one function so the skip controls run the same
+# code: one "<w-class><TAB><path>" line per file, from git's own --eol report.
+# -z keeps an unusual path intact; the class is the second field of the
+# NUL-terminated record's prefix, and the path follows the first TAB.
+list_files() {
+  local rec idx wt rest
+  git -C "$1" ls-files -z --eol --cached --others --exclude-standard |
+    while IFS= read -r -d '' rec; do
+      read -r idx wt rest <<<"${rec%%$'\t'*}"
+      printf '%s\t%s\n' "${wt#w/}" "${rec#*$'\t'}"
+    done
+}
+
+# Git's working-tree class "-text" means binary content. Nothing else is skipped.
+is_binary() { [ "$1" = "-text" ]; }
+
+# The skip's two controls, in a throwaway repo (untracked files, so git reports
+# their working-tree class without anything being committed or normalised).
+CTL_REPO="$CTL_DIR/repo"
+mkdir "$CTL_REPO"
+git -C "$CTL_REPO" init -q
+# binary.png: the real PNG signature, then NULs (so git calls it -text), a lone CR
+# and a final LF -- 2 CR and 3 LF, so the classifier alone calls it MIXED.
+printf '\x89PNG\r\n\x1a\n\0\0\0\rIHDR\n' > "$CTL_REPO/binary.png"
+printf 'a\r\nb\nc\r\n'                     > "$CTL_REPO/mixed.txt"    # text, 2 CR, 3 LF
+# The binary fixture must classify MIXED on its own, or the skip control is hollow.
+got="$(classify "$CTL_REPO/binary.png" | cut -d' ' -f1)"
+[ "$got" = "MIXED" ] || CTL_FAIL="$CTL_FAIL  binary.png: the classifier alone must call it MIXED, got $got (the skip control would be hollow)"$'\n'
+skip_bin=""; skip_mixed=""
+while IFS=$'\t' read -r cls path; do
+  case "$path" in
+    binary.png) is_binary "$cls" && skip_bin=SKIPPED || skip_bin="NOT SKIPPED (class $cls)" ;;
+    mixed.txt)  if is_binary "$cls"; then skip_mixed="SKIPPED (class $cls)"
+                else skip_mixed="$(classify "$CTL_REPO/$path" | cut -d' ' -f1)"; fi ;;
+  esac
+done < <(list_files "$CTL_REPO")
+[ "$skip_bin" = "SKIPPED" ] || CTL_FAIL="$CTL_FAIL  binary.png: expected SKIPPED by git's -text class, got ${skip_bin:-NOT LISTED}"$'\n'
+[ "$skip_mixed" = "MIXED" ] || CTL_FAIL="$CTL_FAIL  mixed.txt: expected MIXED (text is never skipped), got ${skip_mixed:-NOT LISTED}"$'\n'
+
 if [ -n "$CTL_FAIL" ]; then
   echo "BLIND -- control failed. No verdict was reached."
   printf '%s' "$CTL_FAIL"
   echo "  The classifier cannot be trusted, so a CLEAN report would be meaningless."
   exit 3
 fi
-[ "$QUIET" -eq 1 ] || echo "control: PASS -- MIXED flagged, CRLF and LF both passed; the sweep is not blind"
+[ "$QUIET" -eq 1 ] || echo "control: PASS -- MIXED flagged, CRLF and LF both passed; a binary fixture skipped, a mixed text fixture still flagged; the sweep is not blind"
 
 # --- THE SWEEP -------------------------------------------------------------
 #
@@ -144,14 +210,20 @@ fi
 # `--exclude-standard` is what keeps that affordable: it honours .gitignore, so
 # `target/`, `run/` and `.idea/` never enter the walk. Measured at the time of
 # writing: 699 tracked + 1 untracked = 700, with no build output in it.
-total=0; n_lf=0; n_crlf=0; n_mixed=0; mixed_list=""
+total=0; n_lf=0; n_crlf=0; n_mixed=0; mixed_list=""; n_bin=0; bin_list=""
 
-while IFS= read -r f; do
+while IFS=$'\t' read -r cls f; do
   # A tracked path can be absent from the working tree (sparse checkout, a
   # deletion staged but not committed). Skipping is correct -- there are no
   # bytes to measure -- and it is counted out of the total rather than silently
   # folded into it.
   [ -f "$f" ] || continue
+  # Binary by git's own working-tree classification: counted and NAMED, never
+  # measured (see the header).
+  if is_binary "$cls"; then
+    n_bin=$((n_bin + 1)); bin_list="$bin_list  $f"$'\n'
+    continue
+  fi
   total=$((total + 1))
   read -r kind cr lf <<<"$(classify "$f")"
   case "$kind" in
@@ -160,7 +232,7 @@ while IFS= read -r f; do
     MIXED) n_mixed=$((n_mixed + 1))
            mixed_list="$mixed_list  $f  CR=$cr LF=$lf"$'\n' ;;
   esac
-done < <(git ls-files --cached --others --exclude-standard)
+done < <(list_files .)
 
 # *** FINDING ZERO FILES IS A DEFECT, NOT A QUIET PASS. *** A sweep that walked
 # nothing reports CLEAN, and on a tree this size that can only mean the walk
@@ -172,6 +244,8 @@ fi
 
 if [ "$QUIET" -eq 0 ]; then
   echo "swept $total files in the WORKING TREE (tracked + untracked, ignores honoured): $n_lf LF, $n_crlf CRLF, $n_mixed MIXED"
+  echo "skipped $n_bin file(s) git classes as binary (-text), not measured:"
+  printf '%s' "$bin_list"
 fi
 
 if [ "$n_mixed" -gt 0 ]; then
