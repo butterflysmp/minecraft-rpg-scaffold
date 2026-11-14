@@ -32,6 +32,19 @@ audio was off (Q11, Q13, Q17). Never a pass. Also not read in this boot, and lis
 passes: the join toggle's ON half (M-PACK), the same-world respawn (M-RESPAWN), M-SERVER-LIST, M-SECOND-PLAYER, the
 M-PLACE refusal texts, M-FULL's final ground check, and the remove step's "digs normally".
 
+**ADDENDUM 2026-11-14, after the readings commit `9eb45815`** (Ben's words relayed by the seat; nothing above is
+changed). To the four follow-up questions (Q23–Q25; M-PLACE's refusal texts; the M-SERVER-LIST and M-FULL chat
+outputs; the missing pickaxes), Ben: *"questions 1-4 not sure and skip"*. On the pack after reconnecting, Ben: *"The
+pack did drop and I had to re do it on join that's on my end. It looks like purple and black squares until i turned
+it back on"*.
+- **FINDING (the seat's miss): the project pack is NOT loaded after a reconnect until `/rpg mining pack` is run
+  again**, and until then the patch shows as *"purple and black squares"*. It is **not** Ben's end:
+  `mining.dev-pack-on-join` is false in `run/`, so nothing offers the pack at LOGIN, exactly as M-PACK predicted.
+  The relog rows did not account for it. **Which sights had the pack** (offer and status times against each row's
+  show lines) is recorded under M-RELOG, M-LOGOUT and M-RESPAWN. Their log halves stand on their own.
+- **For the next boot of this stack (CARRIED, nothing changed now):** set `mining.dev-pack-on-join: true` in
+  `run/plugins/Rpg/config.yml` (Ben's local file, not the repo default). That also lets the toggle's ON half be read.
+
 Every prediction below was written **before** any row was read, and **this file is COMMITTED before the boot**.
 Readings go **beside** a prediction, never over it. A prediction is not edited once its row has been read. Readings
 count only if Ben's LOGIN appears in THIS boot's log.
@@ -381,6 +394,11 @@ and the HIT line's `spot=`. 3. Disconnect, and reconnect. 4. Stand where the wal
 **Q24.** Was the crack still there? (yes/no) **Ben gave no answer**: NOT STATED
 **Q25.** Was there exactly one live spot, where it was before? (yes/no) **Ben gave no answer**: NOT STATED
 
+**Addendum 2026-11-14 (the pack).** The reconnect at L197 (05:36:39) left the pack unloaded; L198's show (05:36:39)
+went to a client **without** the project models. The pack was re-offered at L199–L200 (05:36:57) and reached
+SUCCESSFULLY_LOADED at L203 (05:36:59). **Any sight between 05:36:39 and 05:36:59 was without the models**
+(*"purple and black squares"*). Q23–Q25 stay NOT STATED (*"not sure and skip"*). The log half stands.
+
 ### M-LOGOUT — regrowth is kept across logout (SURVIVAL) — witness: the log + Ben's sight
 
 **Steps.** 1. Break the patch (`/rpg mining regrow` first if needed). 2. Disconnect within 20 seconds and reconnect
@@ -393,6 +411,12 @@ and would read the click path, not the patch returning by itself.
 | On reconnecting before `regrow_at`: **no patch** and no `MINING show` line (the clock is kept across logout; the seat's ruling 4). After `regrow_at`: the patch appears **by itself** and a `MINING show` line prints. The trace stays ON across the reconnect. (If the reconnect lands after `regrow_at`, the first half is NOT WITNESSED.) **Why it is true now (amended before any boot, G3):** the quit drops the break's regrowth task (F8c); on reconnect the chunk load reaches `show`, which finds the patch regrowing and arms ONE new task on the new session's Player (D1). Before D1 the wall stayed bare until a click | **PASS (log and sight). D1 WITNESSED.** L204 `HIT spot=2/3` (IN (6,17)), L205 `BROKE spot=3/3 aim=41.27,25.37` (IN (41,25)), L206 `payout=raw_ironx14 rolls=3+3+3 bonus=5 kept=14 dropped=0 regrow_at=16864` (3 + 3 + 3 + 5 = 14, inside 11..17). Disconnect L207 05:37:24 (12 s after the break); reconnect L211 05:37:54 (**42 s after the break; the step said within 40 s**; still before `regrow_at`). On reconnect: no `MINING show` line (Ben Q21: the wall was bare). **No click line between the reconnect and `regrow_at`: the row is NOT VOID.** L216–L217 at 05:38:11: `MINING show … spots=33,20;14,8;24,27 live=1/3 tick=16864` and **`MINING regrow … tick=16864`, exactly `regrow_at`**. A `regrow` line is printed only by the regrowth task, so this is the task the reconnect's chunk load re-armed (D1). (Ben applied M-RESPAWN's two effects at L212 and L214 before `regrow_at`: no click, no effect on this row) |
 
 **Q21.** When you came back, was the wall bare at first? (yes/no) **Ben: "yes"**
+
+**Addendum 2026-11-14 (the pack).** The reconnect at L211 (05:37:54) left the pack unloaded, and it was not
+re-offered until L220–L224 (05:38:18–05:38:19, in the nether). So **the patch's return at L216–L217 (05:38:11) was
+shown to a client WITHOUT the project models.** Q21 (*"the wall was bare at first"*) is unaffected: before
+`regrow_at` there was no display to draw, with or without the pack. The log half, including the `regrow` line at
+`regrow_at`, stands.
 
 ### M-RESPAWN — the patch comes back after a dimension change (SURVIVAL) — witness: the log + Ben's sight
 
@@ -428,6 +452,14 @@ has its own death rules, so **nothing in this row may risk a death.**
 
 **Q26.** On the nether roof, did you take any damage? (yes/no) **Ben: "no"**
 **Q27.** Back at the wall, without clicking, was the patch there? (yes/no) **Ben: "yes"**
+
+**Addendum 2026-11-14 (the pack, and the pickaxes).** The pack reached SUCCESSFULLY_LOADED at L224 (05:38:19), after
+step 1's show line (L216, 05:38:11, shown without the models; see M-LOGOUT). **No reconnect followed** (there is
+no `logged in` line after L211; the death and respawn at L226–L229 are not a reconnect). So L229's show (05:39:29) and the
+row's reading show at L236 (05:40:59), and with them **Q27, were with the pack loaded**, on the reading that a
+respawn does not drop a server pack. That premise was not checked; Ben's report names only reconnects. **The
+pickaxes:** Ben: *"questions 1-4 not sure and skip"*. The loss is recorded as read from his player data; nothing is
+restored or minted.
 
 ### M-PROTECT — the slot's blocks cannot be broken in survival (SURVIVAL) — witness: the log + Ben's sight
 
