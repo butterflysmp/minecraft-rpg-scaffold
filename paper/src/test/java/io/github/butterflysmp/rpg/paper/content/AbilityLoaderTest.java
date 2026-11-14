@@ -1022,6 +1022,72 @@ class AbilityLoaderTest {
     }
 
     /**
+     * {@code body: fireball} PARSES (LEGACY-B), A NEAR-MISS OF IT IS REFUSED, AND THE ARROW STILL
+     * PARSES BESIDE IT.
+     *
+     * <p>The set grew from one to two, so the three rows a set of two owes are all here at once:
+     * the new member accepted, a typo OF THE NEW MEMBER refused (a typo of {@code arrow} is the
+     * row above), and the old member as the control, so a set that swapped {@code arrow} for
+     * {@code fireball} instead of adding it cannot pass.
+     *
+     * <p>Mutations, measured 2026-10-01: drop {@code "fireball"} from {@code AbilitySchema.BODIES} ->
+     * this row alone reddens (the fireball file is skipped). Drop {@code "arrow"} -> this row's control
+     * reddens, with the two older arrow-body rows above.
+     */
+    @Test
+    void aFireballBodyParsesItsTypoIsRefusedAndTheArrowStillParses() throws IOException {
+        write("fireball_bodied.yml", """
+                id: fireball_bodied
+                element: fire
+                cast:
+                  type: projectile
+                  speed: 1.5
+                  gravity: 0
+                  body: fireball
+                on_hit:
+                  - type: damage
+                    amount: 30
+                    element: fire
+                """);
+        write("fireballl_bodied.yml", """
+                id: fireballl_bodied
+                element: fire
+                cast:
+                  type: projectile
+                  speed: 1.5
+                  body: fireballl
+                on_hit:
+                  - type: damage
+                    amount: 30
+                    element: fire
+                """);
+        write("arrow_control.yml", """
+                id: arrow_control
+                element: fire
+                cast:
+                  type: projectile
+                  speed: 2.5
+                  body: arrow
+                on_hit:
+                  - type: damage
+                    amount: 20
+                    element: fire
+                """);
+
+        var registry = load();
+
+        var fireball = (CastSpec.Projectile) registry.find("fireball_bodied").orElseThrow().cast();
+        assertEquals("fireball", fireball.body(), "the new body kind is carried as authored");
+        assertNull(fireball.item(), "and it is the body slot, not the item slot");
+        assertEquals(0.0, fireball.gravity(), 0.0, "gravity 0 parses as zero, not as absent");
+        assertTrue(registry.find("fireballl_bodied").isEmpty(), "a near-miss is a skipped file");
+        assertTrue(warningText().contains("fireballl"),
+                "named by what was authored: " + warningText());
+        var arrow = (CastSpec.Projectile) registry.find("arrow_control").orElseThrow().cast();
+        assertEquals("arrow", arrow.body(), "the control: the old member still parses");
+    }
+
+    /**
      * {@code archetype:} is RETIRED (build system slice 2): a file still declaring it LOADS, and ONE warning
      * names every such file. This CAUSES the condition -- no shipped ability declares the key any more, so
      * production never reaches that warning, and this row is its only exercise.

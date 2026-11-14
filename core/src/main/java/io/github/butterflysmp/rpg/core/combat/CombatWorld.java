@@ -214,7 +214,8 @@ public interface CombatWorld {
     UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks);
 
     /**
-     * Plant an ARROW BODY at {@code at}, already moving at {@code velocity}, and return its id.
+     * Plant a BOLT BODY of kind {@code body} -- an arrow or a fireball -- at {@code at}, already
+     * moving at {@code velocity}, and return its id.
      * The sibling of {@link #spawnMarker}, and everything that method's contract says about
      * ownership, {@code expectedLifetimeTicks} and {@link #driveMarker} applies here unchanged.
      *
@@ -235,9 +236,17 @@ public interface CombatWorld {
      * The launch velocity is therefore part of creating the body, not something done to it
      * afterwards -- which is why it is a constructor argument here and a forbidden one there.
      *
+     * <p><b>{@code body} NAMES THE KIND, AND CORE DOES NOT KNOW WHAT EITHER KIND IS.</b> It is the
+     * authored {@code body:} id ({@code arrow}, {@code fireball}), passed through as a string the
+     * way {@code itemId} is. It grew here on the day a second body existed (LEGACY-B, the Blaze
+     * King's Staff's fireball), as {@code AbilitySchema.parseBody}'s javadoc said it would; the
+     * schema refuses any id the adapter cannot build, so an unknown one never reaches this call.
+     * <b>The velocity rule above is the arrow's reason, and it does no harm to a fireball</b>: a
+     * fireball has no rotation to take from it, and the drive overwrites it on the launch frame.
+     *
      * <p>Only legal on the thread owning {@code at}'s region, like every other world write.
      */
-    UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks);
+    UUID spawnBoltMarker(Vec3 at, Vec3 velocity, int expectedLifetimeTicks, String body);
 
     /**
      * Drive a marker: give it {@code stepVelocity} as this tick's motion and let the platform carry
