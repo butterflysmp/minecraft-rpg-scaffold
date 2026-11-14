@@ -1,5 +1,38 @@
 # GATE — DEFT HANDS: the Ranger reload enchant, the one-tick floor, the RELOAD line (and the stack's one R0)
 
+**Status at `e82df2b3` (the stack-top boot, 2026-11-14; run 3 is the run of record proposed to the seat): R0a-d AS PREDICTED (the stack's one R0); DH2, DH3, DH6 AS PREDICTED; DH1's reload half AS PREDICTED and its LORE half NOT AS PREDICTED (a wrong prediction, by the code: see DH1); DH5 PASS (unit); DH7 answered "yes" by Ben (optional; see the audio note); DH4, DH8 NOT READ. NOT a merge candidate until the seat rules on DH1.**
+
+**The boot, 2026-11-14, on `e82df2b3` (#180's head, the stack top), Paper 26.1.2 build 74, PacketEvents 2.13.0.** The seat approved this sha the same day and Ben said "ready". Line numbers are this boot's `run/logs/latest.log` (3798 lines).
+- **Carried state, as done.** No JVM (`Get-Process java`: count 0). Backup `C:\Users\Neb91\IdeaProjects\rpg-run-backups\2026-11-14-pre-combat-stack`: `run/plugins/Rpg` 117 files / 353870 bytes, source and copy; `run/world` 193 files / 204963698 bytes, source and copy; `diff -rq lines: 0` for each. `grep -n "dev-pack-on-join" run/plugins/Rpg/config.yml` printed `12:  dev-pack-on-join: true`. The working tree was clean at `e82df2b3`, equal to `git ls-remote origin refs/heads/feat/deft-hands`.
+- **Booted** with `./scripts/dev-server.sh --refresh-content`. R0 was read on this boot's log only (mtime 08:50:44, after the S2 log's 08:02:58; L42 `[Rpg] Build: e82df2b3`), before any LOGIN.
+- **LOGIN L81 (08:54:54).** Pack L79 `MINING pack offer … sha1=49f2e465b2b6bbb24380425830c8572f14acd11c bytes=8227`, then L82 ACCEPTED, L83 DOWNLOADED, L84 SUCCESSFULLY_LOADED: as predicted. Ben: a prompt was shown — *"Yes"*. **The first command after LOGIN is L86 `/gamemode survival`**, alone (F-M46).
+- **Run 1** (L89-L1348, 08:56:21-08:59:45): FINISHED, but **on Peaceful**. Every mob-staged row was SKIPPED `no entity tagged 't'`, beside replies like L182 `"Monsters cannot be summoned in Peaceful difficulty"`. It certifies nothing about those rows.
+- **Run 2** (L1350-L2202, from 09:06:25): also Peaceful. Ben's ST6 refusal (L1474) is read here. Ben stopped it at L2200.
+- **L2203: Ben typed `/difficulty hard`** on his own.
+- **Run 3** (L2206-L3657, 09:07:30-09:12:15): **38 rows, 0 SKIPPED. Proposed as the run of record.**
+- Then ST3 (L3659), ST7 (L3660-L3666), ST2 (L3665-L3743), DH2 (L3745-L3756), SU3 (L3757-L3758).
+- **The stop:** L3761 `/stop`, L3764 `Disabling Rpg`, L3794 `All dimensions are saved`, and no `java.exe` afterwards. **A clean stop.** The log is copied, byte-identical, outside the repo, before any boot can rotate it.
+
+**FINDINGS FROM THIS BOOT, for the seat:**
+1. **THE CARRIED STATE DID NOT CHECK THE WORLD'S DIFFICULTY, AND THE WORLD WAS ON PEACEFUL.** Runs 1 and 2 are the cost. The next sheet should read the difficulty (`/difficulty` with no argument prints it) and set it by a literal command. Run 3 ran at HARD, the difficulty Ben set; no row of this stack predicts a difficulty.
+2. **ST9's settle never waited:** all 31 `SETTLED` read `ticks=0`, while two `dead=true` bodies were still in range (`GATE-selftest.md` ST9).
+3. **DH1's lore clause was a wrong prediction** (below).
+4. **SU10 is VOID by water** (`GATE-sunder.md` SU10).
+5. **The cap-fallback WARN** at the first `/rpg apply withering` (L2967), present at 61e722f2 too (`GATE-wither-status.md` WS1).
+6. **The stale SU8 header comment** in `selftest/GATE-sunder.yml` (`GATE-sunder.md` status).
+7. **The optional rows were offered and not run.** Ben's answer to "do you want them" was not given: NOT STATED.
+
+**THE BARS (the seat's ruling 1, 2026-11-14), as read. The seat's to rule:**
+
+| PR | bars | met? |
+|---|---|---|
+| #172 | LB2, LB5's AUTO half | **met** |
+| #173 | WS-C (AUTO), WS1, WS2b, WS2c, WS3 (AUTO); WS-C's no-blast half (HAND) | AUTO **met**. The HAND half was answered *"I don't think so … I could be mistaken"*: **the seat's to rule** |
+| #174 | WB1, WB2, WB3 | **met** |
+| #175 | ST1 (incl. the XP baseline and restore), ST2, ST3's log half, ST4, ST5, ST6, ST7 (incl. the mode switch and refusal text), ST8-ST11 | **not met:** ST9 NOT AS PREDICTED in one clause; ST10's "no death" clause overtaken by SU8. The rest met |
+| #178 | SU1, SU2, SU4-SU12's AUTO halves, SU8's death half; SU3 (HAND) | **not met:** SU10 VOID. The rest met |
+| #180 | DH1, DH3, DH6 (AUTO); DH2 (HAND) | **not met:** DH1's lore clause NOT AS PREDICTED (a prediction error). The rest met |
+
 **Status at `61e722f2` (the stack-top boot, 2026-11-10): R0a-d PASS (the stack's one R0); DH5 PASS (unit); DH1, DH3, DH6 SKIPPED (a staging defect: no hotbar slot for the Boltor); DH2, DH4, DH7, DH8 NOT READ (Ben paused; carried). NOT a merge candidate.**
 
 **The boot, 2026-11-10, on `61e722f2` (#180's head, the stack top), Paper 26.1.2 build 74, PacketEvents 2.13.0.** CC booted it with `./scripts/dev-server.sh --refresh-content` on the seat's word; Ben was the only player (LOGIN L81, 09:32:48). Line numbers are this boot's `run/logs/latest.log`.
@@ -155,6 +188,8 @@ Every gate beneath carries its R0 SUPERSEDED, never PASS or FAIL. `GATE-sunder.m
 |---|---|---|
 | `[Rpg] Build: <sha>`, this PR's head as `gh pr view <n> --json headRefOid` prints it, shortened. Not `-dirty`, not `unknown`, and not Sunder's (#178) or any head beneath | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **61e722f2, 2026-11-10: PASS.** L43 `[Rpg] Build: 61e722f2`, #180's head (`gh pr view 180 --json headRefOid` printed `61e722f2d5e39fd04589dbc81ec3b2f99556afb5`); not `-dirty`, not `unknown`. |
 
+**e82df2b3, 2026-11-14: AS PREDICTED.** L42 `[Rpg] Build: e82df2b3`, #180's head as `git ls-remote origin refs/heads/feat/deft-hands` printed it (`e82df2b3bd1d8bf40075929eff19375f3ea87851`); not `-dirty`, not `unknown`. Read on a log with a fresh mtime (08:50:44), before any LOGIN (F-M44).
+
 ### R0b — the jar carries every slice, Sunder, and Deft Hands
 
 | prediction | instrument | READING |
@@ -223,6 +258,8 @@ foreach ($c in 'io/github/butterflysmp/rpg/core/mining/SizeRoll.class',
 $zip.Dispose()
 ```
 
+**e82df2b3, 2026-11-14: AS PREDICTED, both scans** (`run\plugins\rpg-0.1.0-SNAPSHOT.jar`, deployed 08:50:37). The first: all 15 slice entries PRESENT; `content/abilities/active_placeholder_melee_thrust.yml` and `NoSuchClassControl.class` ABSENT; in `deft_hands.yml` PRESENT `^effect: reload_time`, `^class: ranger`, `^icon: feather`, ABSENT `^class: universal`. **The 2026-11-14 mining addition:** 11 PRESENT (`SizeRoll`, `MissSoundCooldown`, `ActionBarHolds`, `MiningService`, `MiningPack`, `MiningContentLoader`, `ores/iron.yml`, `vein_sizes/extra_large.yml`, `pack.mcmeta`, `iron_patch_small.json`, `iron_patch_extra_large.png`); `iron_patch.json` and the control ABSENT.
+
 ### R0c — the cumulative Loaded line, and nothing refused
 
 | prediction | instrument | READING |
@@ -273,6 +310,8 @@ reproduces a line a server printed, on the tree that printed it. **The counts th
 deleted). The result equals the 61e722f2 prediction above with Mining's tail appended. *(In this table `\|` is a
 Markdown escape; type `|`.)*
 
+**e82df2b3, 2026-11-14: AS PREDICTED, as re-predicted.** L43 `[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes, 1 ores, 4 vein sizes`, verbatim. The only `[Rpg]` WARNs at enable are `volley_stone`'s known pair (L44-L45). No `Refusing`, `Skipping`, `SEVERE` or `Exception`; nothing names `deft_hands`, `reload_time` or `ore 'iron'`; no `No ores`, no `No vein`.
+
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
 | prediction | instrument | READING |
@@ -283,6 +322,8 @@ Markdown escape; type `|`.)*
 (`GATE-sunder.md` SU8, its death half), so the line becomes **`[Rpg] Selftest: dev server, 38 scenarios across 9
 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands]`**,
 with still no `Refusing selftest` line. `SelfTestScenariosTest.theScenariosAreExactlyTheCoreRows` pins the 38.
+
+**e82df2b3, 2026-11-14: AS PREDICTED, as re-predicted (38).** L49 `[Rpg] Selftest: dev server, 38 scenarios across 9 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands]`, exactly; no `Refusing selftest` line. **This is the sole witness of the resolution's `getLogger().info(selfTest.enableLine())`** (R7). The first `SELFTEST RUN START` (L89) witnesses its `rpg.addChild(SelfTestCommand…)` (R6).
 
 ---
 
@@ -297,11 +338,15 @@ read after Ben's LOGIN.
 |---|---|
 | `/rpg give boltor`, held; `/rpg enchant clear`, `candidate 0 deft_hands`, `level 0 0 3`, `active 0 0`; 40 t for the health scan. The held `DUMP`'s lore carries a line naming **`Deft Hands`** and **`(-30% Reload Time)`**. `/rpg reloadtime 0`'s `REPLY`: **`60 -> 42 ticks (3.00s -> 2.10s)`**. Ben's half: the stats sheet's `Reload` line reads the same 2.1 s | **61e722f2, 2026-11-10 (run 3): SKIPPED, a staging defect.** L4304 `CMD /rpg give boltor`, then L4305 `SKIPPED no hotbar slot holds boltor` in the same tick. Every earlier gate's gives stay in the inventory until the run's final restore, so the likeliest cause is a full hotbar; that is not proven, since no inventory probe precedes the hold. Carried; a per-gate inventory snapshot is owed in the selftest (seat, 2026-11-10). |
 
+**e82df2b3, 2026-11-14 (run 3): the reload half AS PREDICTED; the LORE half NOT AS PREDICTED.** L3596 `DRIVE hold … item=boltor` (not SKIPPED; ST11's fix). L3605 `REPLY "Slot 0 active: Deft Hands III (-30% Reload Time)."`. L3606 the held `DUMP`'s lore: `"Deft Hands III" [gray]; ""; "Kinetic"; "Gear Score: 100"; "Quiver: 8/8"; …`. **It names `Deft Hands`, with no `(-30% Reload Time)` on any lore line.** **By the code this is a wrong prediction, not a defect:** `EnchantLoreLines.label` renders an active enchant's tooltip line as the name plus the numeral, nothing more, and the `(-30% Reload Time)` text belongs to the command and menu replies (L3605). The prediction quoted the reply's form. L3608 `REPLY "Gave reload_time_boost (+0 ticks, no change: 60 -> 42 ticks (3.00s -> 2.10s)). …"`: **the reload half is exact.** Ben's half (the stats sheet's `Reload` line): NOT READ.
+
 ### DH2 — a real reload on the Deft III Boltor takes 42 ticks (SURVIVAL) — witness: the RELOAD line
 
 | prediction | READING |
 |---|---|
 | **Ben's input, with `/rpg mobtrace` ON:** DH1's Boltor and a stack of arrows. Fire all 8, then left-click to reload. **One `RELOAD player=<Ben> weapon=boltor authored=60 resolved=42 start=<t> completesAt=<t+42>`**, with `completesAt − start = 42` exactly. Then once more with the enchant cleared (`/rpg enchant clear`, 40 t): `authored=60 resolved=60`, a difference of 60 | **61e722f2, 2026-11-10: NOT READ.** Ben paused before it (seat, 2026-11-10); carried. |
+
+**e82df2b3, 2026-11-14: AS PREDICTED.** Ben's input with the trace on (L3745 `/rpg mobtrace`; the RELOAD lines print only with it): L3746 `/rpg give boltor`, L3747-L3751 the four enchant commands, L3752 `/give @s minecraft:arrow 64`. **L3754 `RELOAD player=b6ae27e9-… weapon=boltor authored=60 resolved=42 start=29969 completesAt=30011`: 30011 − 29969 = 42.** Then L3755 `/rpg enchant clear`, and **L3756 `… authored=60 resolved=60 start=30389 completesAt=30449`: a difference of 60.** One RELOAD line per reload. Ben: 8 shots and a reload, twice — *"yes"* (answer 15).
 
 ### DH3 — every tier on every shipped reload length (SURVIVAL) — witness: the log
 
@@ -309,11 +354,15 @@ read after Ben's LOGIN.
 |---|---|
 | Via `/rpg reloadtime 0`'s `REPLY`, 40 t after each enchant change. **Boltor: I `60 -> 54 ticks (3.00s -> 2.70s)`, II `60 -> 48 ticks (3.00s -> 2.40s)`. `dragons_breath` I: `40 -> 36 ticks (2.00s -> 1.80s)`. `quiver_stone` I: `34 -> 30 ticks (1.70s -> 1.50s)`**, where 3.4 floors to a 4-tick cut. The full 18-point grid is `ReloadTimeTest.deftHandsCutsEveryTierOnEveryShippedReloadAndNoneRoundsToZero`; this row reads four of its cells through the shipped stat | **61e722f2, 2026-11-10 (run 3): SKIPPED** (L4307: chained to DH1). Carried. |
 
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED, all four cells.** Boltor I L3615 `60 -> 54 ticks (3.00s -> 2.70s)`; II L3619 `60 -> 48 ticks (3.00s -> 2.40s)`; `dragons_breath` I L3632 `40 -> 36 ticks (2.00s -> 1.80s)`; `quiver_stone` I L3645 `34 -> 30 ticks (1.70s -> 1.50s)`.
+
 ### DH4 — the first shot after a shortened reload (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
 | **Hand row.** The Deft III Boltor, empty, with arrows: reload, then hold right-click. The first shot comes no earlier than the `RELOAD` line's `completesAt`, and within one held-input spacing of it (the 4-tick grid; `GATE-locust.md` row 1 measured inputs no closer than 3 t). **The felt gap is RECORDED, not predicted**: maturity is read on the next input (`QuiverState`), so part of a short saving can be swallowed | **61e722f2, 2026-11-10: NOT READ.** Ben paused before it (seat, 2026-11-10); carried. |
+
+**e82df2b3, 2026-11-14: NOT READ** (optional; not on the sheet as a question).
 
 ### DH5 — eligibility is by class: every ranger pool, no other (UNIT) — witness: the unit row
 
@@ -321,11 +370,15 @@ read after Ben's LOGIN.
 |---|---|
 | `EnchantRollTest.deftHandsEntersTheRangerPoolAndNoOther` green in the suite at this head (ranger in; mage, melee, shield, armor out), and `DeftHandsContentInvariantTest` green (every ranger weapon but `hunters_bow` authors `reload_ticks`). **Not a boot read:** a weapon's table shows candidates rolled at random, so its absence or presence on one item says nothing about the pool. **`hunters_bow` CAN roll Deft Hands and gain nothing:** a recorded finding, by ruling | **61e722f2, 2026-11-10: PASS (unit).** `./mvnw clean test` at `61e722f2`, run before the boot: core 1567, storage 92, paper 1172, 0 failures, which includes `EnchantRollTest.deftHandsEntersTheRangerPoolAndNoOther` and `DeftHandsContentInvariantTest`. |
 
+**e82df2b3, 2026-11-14: PASS (unit)**, unchanged: `EnchantRollTest` (25) and `DeftHandsContentInvariantTest` (3) green in `./mvnw clean test` at `aa637901` (core 1693, storage 92, paper 1246, 0 failures). `e82df2b3` adds only gate text over that tree.
+
 ### DH6 — stacking reaches the one-tick floor and stops (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
 | `quiver_stone` with Deft III (34 → 23), then `/rpg reloadtime -30`'s `REPLY`: **`34 -> 1 ticks (1.70s -> 0.05s)`**. 34 − 11 − 30 would be −7, an instant reload; the floor (`ReloadTime.MIN_TICKS`, the seat's ruling) holds it at one tick. The clock item the command mints is NOT equipped, so this is the price the command quotes, not a stat change | **61e722f2, 2026-11-10 (run 3): SKIPPED** (L4309: chained to DH3). Carried. |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** L3652 `34 -> 23 ticks (1.70s -> 1.15s)` (Deft III); L3654 `Gave reload_time_boost (-30 ticks, FASTER: 34 -> 1 ticks (1.70s -> 0.05s))`. The one-tick floor holds.
 
 ### DH7 — the reload cue sounds at the shortened completion (SURVIVAL) — witness: Ben
 
@@ -333,11 +386,15 @@ read after Ben's LOGIN.
 |---|---|
 | **Hand row**, with DH2's reload. The reload-complete sound plays about 2.1 s after the left-click (42 t), not 3 s. `Quivers.beginReload` hands the cue the resolved `reloadTicks`; this row is the client's ear | **61e722f2, 2026-11-10: NOT READ.** Carried. |
 
+**e82df2b3, 2026-11-14: Ben answered "yes"** (optional): the first reload's sound finished sooner than the second's (answer 16). The two reloads were 42 and 60 ticks (DH2). **Recorded as given, with a caution for the seat:** Ben said earlier, of WS-C, that he *"didn't have audio on"*. Whether audio was on for DH2's reloads is not stated.
+
 ### DH8 — the grindstone strips it like any enchant (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
 | **Hand row.** The Deft III Boltor into the grindstone, stripped. The refund matches any level-III enchant's (`GrindstoneRefund`, 35% of the list spend; Deft Hands has no cost of its own), and `/rpg reloadtime 0` then reads `60 -> 60 ticks` | **61e722f2, 2026-11-10: NOT READ.** Carried. |
+
+**e82df2b3, 2026-11-14: NOT READ** (optional; not run).
 
 ---
 

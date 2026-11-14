@@ -1,5 +1,7 @@
 # GATE — WITHER-STATUS: our Wither, shaped like Scorch
 
+**Status at `e82df2b3` (the stack-top boot, 2026-11-14; run 3, L2206-L3657, is the run of record proposed to the seat; the boot account is `GATE-deft-hands.md`'s): R0a-c SUPERSEDED (GATE-deft-hands.md R0, all four AS PREDICTED); WS-C's AUTO half AS PREDICTED, its Ben half answered with a qualification ("I don't think so … I could be mistaken"; the seat's to rule); WS1, WS2b, WS3's server half AS PREDICTED; WS2c AS PREDICTED (its control shows one DOTTICK line, see the row); WS3's Ben half NOT STATED; WS3-P, WS5, WS6 NOT READ; WS8, WS9 UNWITNESSED as written. One unpredicted line, also in the 61e722f2 log: the cap-fallback WARN (WS1).**
+
 **Status at `61e722f2` (the stack-top boot, 2026-11-10; run 3 is the run of record; the boot account is `GATE-deft-hands.md`'s): R0a-c SUPERSEDED (GATE-deft-hands.md R0, PASS); WS1 PASS; WS-C's AUTO half as predicted, its Ben half NOT READ; WS2b, WS2c, WS3 VOID (a staging defect: the previous row's dying mob took the look-ray); WS3-P, WS5, WS6 NOT READ; WS8, WS9 UNWITNESSED as written. NOT a merge candidate.**
 
 **Status at `38cc9903` (the stack-top boot, 2026-10-14): R0a-c SUPERSEDED (GATE-selftest.md R0, PASS); WS-C, WS1,
@@ -136,6 +138,8 @@ SUPERSEDED note under this gate's R0 heading names `GATE-withered-shortbow.md`; 
 |---|---|---|
 | `[Rpg] Build: <sha>`, WITHER-STATUS's head, shortened. Not `-dirty`, not `unknown`, not LEGACY-B's or any head beneath | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0, read PASS at 38cc9903 (L42 `[Rpg] Build: 38cc9903`). Not read here. **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
 
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (AS PREDICTED).
+
 ### R0b — the jar carries the status, the element's accrual and the shared store
 
 | prediction | instrument | READING |
@@ -163,11 +167,15 @@ foreach ($pair in @(@('content/statuses/withering.yml', 'kind: wither'),
 $zip.Dispose()
 ```
 
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0b (AS PREDICTED).
+
 ### R0c — one status more, and nothing else moved
 
 | prediction | instrument | READING |
 |---|---|---|
 | `Loaded 11 abilities, 29 visuals, **5 statuses**, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 15 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. Against LEGACY-B's R0c prediction: **statuses 4 → 5**, every other count unchanged. No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair; **no `element 'wither' applies status` warning** (the validator accepts a wither kind) | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception','applies status'` | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0c, read PASS at 38cc9903 (L44; no `applies status` warning). The intermediate facts are not read. **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
+
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0c (AS PREDICTED). This gate's two carried absences hold: no `Refusing` names `withering.yml`, and no `element 'wither' applies status` warning (the boot's only `[Rpg]` WARNs at enable are `volley_stone`'s pair, L44-L45).
 
 ---
 
@@ -179,11 +187,15 @@ $zip.Dispose()
 |---|---|
 | `GATE-ignite.md` I7's shape. `/rpg spawn knell` twice, side by side (NoAI as above). Look at the first and `/rpg mobdamage 1000000`: it dies. **No blast, no `ignite_blast` particles, the second knell's nameplate does not move.** So a blast in WS3-P is caused by something, and silence in WS3 means something | **38cc9903, 2026-10-14: VOID** (the seat's ruling: everything AUTO in this file from this boot is VOID) -- the aim defect (`tp ... facing entity ... eyes` turns from the FEET). Staging was right: two Knells, L1834 and L1843 `MOBSEED ... wither_skeleton gs=100 ... max=360`, 360/360 (L1854). L1856 `/rpg mobdamage 1000000` replied L1860 `"Look at a mob." [red]`; the target stayed 360/360, alive (L1861) -- no death was presented. Observation: MOBREMOVE lines L1857-L1859 follow, unexplained. **61e722f2, 2026-11-10 (run 3): the AUTO half as predicted; Ben's half NOT READ.** L3649 and L3658 two Knells, `max=360`; L3667 aim eye->eye d=4; L3670 `/rpg mobdamage 1000000`; L3672 `Knell died`; L3675 `0/360 custom HP`; L3676 `PROBE tag=t none within 16 blocks`; L3677 the second Knell 360.000/360.000, its nameplate unmoved. 0 `ignite_blast` or `blast` lines in run 3. The no-blast sight half was not on Ben's returned list. |
 
+**e82df2b3, 2026-11-14 (run 3): the AUTO half AS PREDICTED.** L2913 and L2922: two Knells, `MOBSEED … wither_skeleton gs=100 … max=360`, at z 7.50 and 9.50 (L2920, L2929), 2 blocks apart. L2930 aim `d=4.000`; L2933 `/rpg mobdamage 1000000`; L2935 `Knell died`; L2937 `0/360 custom HP`; L2938 `PROBE tag=t none within 16 blocks`; L2939 the second Knell `360.000/360.000`, `d=4.472`, the same as before (L2932). **0 lines matching `blast` or `ignite` in the whole log** (`grep -ciE 'blast|ignite'`; the pattern's control matches `ignite_blast`). **Ben's half (no blast seen), verbatim, answer 4:** *"I don't think so, I saw a cloud like particle and didn't have audio on so i could be mistaken"*; answer 5, the other Knell moved: *"no"*. Recorded as given. Whether the cloud-like particle was vanilla's death puff or a blast is not settled by any line in the log: **UNVERIFIED, and the seat's to rule.** Only run 3 staged Knells (runs 1 and 2 were Peaceful and SKIPPED this row), so both answers are bound to run 3's WS-C (09:08:14).
+
 ### WS1 — the clock and the percent arm, on a GS-20 zombie (SURVIVAL) — witness: DOTTICK
 
 | prediction | READING |
 |---|---|
 | GS-20 zombie (expected `max=20`). `/rpg apply withering 200`. **Five** lines `DOTTICK <its uuid> zombie status=withering applier=- sent=1.000 cap=2.000 tick=<n>`, their `tick=` values **40 apart**, the first **about 40 ticks** after the command (the first tick is one period in, never on application), and **no sixth**. **No fire on the mob** (wither sets no fire ticks). Secondary: five dark-gray `✖ 1` popups | **38cc9903, 2026-10-14: VOID** -- the aim defect. The target was right (L1877 `MOBSEED 41d8bf79 zombie gs=20 source=stored max=20`); L1890 `/rpg apply withering 200` replied L1899 `"Look at a mob to apply a status." [red]`; 0 DOTTICK in the bracket; 20/20 before and after (L1889, L1900). This voids GATE-selftest.md ST5's WS1 half. **61e722f2, 2026-11-10 (run 3): PASS.** L3690 `MOBSEED ... zombie gs=20 source=stored max=20`; L3698 aim eye->eye d=4; L3700 `/rpg apply withering 200`; five `DOTTICK ... status=withering applier=- sent=1.000 cap=2.000` at L3705, L3708, L3711, L3718, L3719, ticks 17120 / 17160 / 17200 / 17240 / 17280 (40 apart), the first about 2 s after the apply, and no sixth inside the 240 t bracket; L3725 PROBE 15.000/20.000 fireTicks=0. The popups (secondary): not read. |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** L2955 `MOBSEED 98cd3280-… zombie gs=20 … max=20`; L2966 `/rpg apply withering 200` at 09:08:16; L2968-L2972 five `DOTTICK 98cd3280-… zombie status=withering applier=- sent=1.000 cap=2.000` at ticks 21095, 21135, 21175, 21215 and 21255, 40 apart, the first at 09:08:18 (about 40 ticks after the apply). 5 DOTTICK lines for that uuid in the whole log, so no sixth. L2974 `fireTicks=0` (15/20). Secondary popups NOT READ. **Unpredicted, and not new:** L2967 `[Rpg] Status 'withering' was applied by a payload declaring no damage, so it has no basis for a cap; falling back to 2.0.` The 61e722f2 log has the same WARN (its L1106). The `cap=2.000` read here and in WS2b is that fallback, since `/rpg apply` carries no damage. Recorded for the seat.
 
 ### WS2b — the cap BINDS, by mob scaling (SURVIVAL) — witness: DOTTICK (WITNESSED)
 
@@ -191,11 +203,15 @@ $zip.Dispose()
 |---|---|
 | **The seat, 2026-10-01.** A **GS-100 zombie** (expected `max=100`; 5% = 5 > 2.0). `/rpg apply withering 200`: five lines with **`sent=2.000 cap=2.000`**: the cap binds. **The control, same block:** WS1's GS-20 zombie read **`sent=1.000 cap=2.000`**, the percent arm. Each `sent` is `min(0.05 × max, 2.0)` from that mob's own `MOBSEED max=` line | **38cc9903, 2026-10-14: VOID** -- the aim defect. The target was right (L1909 `MOBSEED bc8b4974 zombie gs=100 source=rolled max=100`); L1920 apply replied L1932 `"Look at a mob to apply a status." [red]`; 0 DOTTICK; 100/100 (L1919, L1933). Its control, WS1, is VOID too. **61e722f2, 2026-11-10 (run 3): VOID, a staging defect.** L3734 `MOBSEED ... gs=100 ... max=100`; L3741 the PROBE lists WS1's zombie `decfcc8b` `dead=true` at d=4.000 (killed by this row's `/kill`); L3743 the apply; L3754 `Applied withering x1 (200t) to ZOMBIE`; 0 DOTTICK; L3755 100.000/100.000. The look-ray took the dying WS1 zombie. Re-read after the staging fix. |
 
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** L2986 `MOBSEED 2996a4a1-… zombie gs=100 … max=100`; L2993-L2997 five `DOTTICK … applier=- sent=2.000 cap=2.000` at ticks 21343 to 21503, 40 apart. The control, WS1 above: `sent=1.000`. The cap binds.
+
 ### WS2c — immunity: wither skeletons and the Knell (SURVIVAL) — witness: the REPLY + DOTTICK ABSENCE + Ben, with a control
 
 | prediction | READING |
 |---|---|
 | Q-W6. `/rpg spawn knell`, and `/summon wither_skeleton ~3 ~ ~ {NoAI:1b,PersistenceRequired:1b}`. Look at each and run `/rpg apply withering 200`; **record the command and the target each time** (a null observation without them proves nothing). **The reply, for each (the Knell is a `wither_skeleton`): `Refused: wither_skeleton is immune to withering (statuses/withering.yml); nothing was applied`.** Over **240 ticks** after each: **no DOTTICK line naming that uuid, no wither swirl, the nameplate does not move.** **Control, immediately after:** the same command on a GS-100 zombie replies **`Applied withering x1 (200t) to ZOMBIE`** and **does** produce DOTTICK lines, so both instruments were live. *The Wither boss is not staged (it explodes on spawn); its immunity is by the same list and is recorded UNWITNESSED* | **38cc9903, 2026-10-14: VOID** -- the aim defect. All three applies were refused for the AIM, never for immunity: the Knell (L1944 max=360; L1957 to L1965), the wither skeleton (L1973 max=100; L1981 to L1987) and the zombie control (L1994; L2002 to L2004), each `"Look at a mob to apply a status." [red]`. No `Refused: ... immune` reply, and the control produced no DOTTICK, so every absence here is hollow. **61e722f2, 2026-11-10 (run 3): VOID, because the control failed.** The Knell: L3766 `max=360`, L3777 the apply, L3785 `Refused: wither_skeleton is immune to withering (statuses/withering.yml); nothing was applied`. The wither skeleton: L3792, L3799 the apply, L3813 the same refusal, but L3797 shows the Knell `dead=true` at the same d=3, so which body was refused is not shown. **The control zombie:** L3820, L3826 the apply, **L3830 `Refused: wither_skeleton is immune ...`**: it hit the dying wither skeleton (L3824 `dead=true`, d=3), and produced no DOTTICK. Every absence in this row is hollow. |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED (one note on the control's line count).** The Knell: L3012 `max=360`, L3021 aim `d=3.000`, L3023 apply, L3024 **`Refused: wither_skeleton is immune to withering (statuses/withering.yml); nothing was applied`**, 12 s after the apply; 0 DOTTICK for `d24a2d7b` in the whole log; L3025 `360.000/360.000`. The wither skeleton: L3033 `MOBSEED d196b5ac-… wither_skeleton`, L3039 apply, L3041 the same Refused text; 0 DOTTICK for `d196b5ac`; L3042 `100.000/100.000`. **The control:** L3049 `MOBSEED d880bb2d-… zombie gs=100`, L3055 apply, L3057 `DOTTICK d880bb2d-… sent=2.000 cap=2.000`, L3058 **`Applied withering x1 (200t) to ZOMBIE`**. **The note:** the control shows ONE DOTTICK line where the prediction says "lines". The row ends 60 ticks after the control's apply (L3060 `DONE ticks=558`), so one tick is all it can show; both instruments were live. **Seen in the PROBEs, for ST9:** L3037 and L3053 list the killed immune mob as `dead=true` while the next mob is already staged (see `GATE-selftest.md` ST9). The live target was still the one aimed at (L3036, L3052). Ben's half (no wither swirl, no nameplate movement): NOT READ (not on the sheet).
 
 ### WS3 — THE WS2 ROW: a never-scorched mob killed by Wither does NOT explode (SURVIVAL) — witness: Ben + DOTTICK
 
@@ -203,11 +219,15 @@ $zip.Dispose()
 |---|---|
 | WS2 as narrowed by Q-W8. A **fresh GS-20 zombie**, never scorched, with a second zombie two blocks from it. Look at the first: `/rpg mobdamage 19` (nameplate **1/20**), then `/rpg apply withering 200`. About 40 ticks later the line `DOTTICK <its uuid> zombie status=withering … sent=1.000` appears and **it dies. NO explosion, no `ignite_blast`, the neighbour's nameplate does not move.** Unit halves: `ElementAccrualTest`, `DotStatusTest`; **`onEntityDeath` reading `scorch()` only has no unit witness, and this row is its only one** | **38cc9903, 2026-10-14: VOID** -- the aim defect. The target was right (L2017 `MOBSEED b3d1056a zombie gs=20 ... max=20`); L2035 `/rpg mobdamage 19` replied L2036 `"Look at a mob." [red]` and L2039 apply replied L2041 `"Look at a mob to apply a status." [red]`; 20/20, alive (L2042), the neighbour 100/100 (L2043). No death was presented. `onEntityDeath` reading `scorch()` only is still unwitnessed. **61e722f2, 2026-11-10 (run 3): VOID, the same defect.** L3843 `MOBSEED ... gs=20 ... max=20`; L3851 the neighbour; L3856 WS2c's control zombie `ee1e47f3` `dead=true` at d=3; L3859 `/rpg mobdamage 19` replied **L3861 `ZOMBIE damaged: 81/100 custom HP`**, that GS-100 corpse, not the GS-20 target; L3864 the apply, L3867 `Applied ...`; L3868 the target 20.000/20.000 and alive, no DOTTICK; L3869 the neighbour 100/100. No death was presented, so `onEntityDeath` reading `scorch()` only is still unwitnessed. |
 
+**e82df2b3, 2026-11-14 (run 3): the server half AS PREDICTED; Ben's half NOT STATED.** L3074 `MOBSEED 4dcea977-… zombie gs=20 … max=20`; L3083 the neighbour `cd2d304d-…` (tag `n`) at `~4 ~ ~2`; L3090 `/rpg mobdamage 19`, L3092 `1/20 custom HP`; L3094 apply; L3095 `DOTTICK 4dcea977-… sent=1.000`; L3097 `customHP=0.000/20.000 … dead=true`; L3098 the neighbour `100.000/100.000`, unmoved (`d=4.472`, as at L3089). 0 `blast` or `ignite` lines in the log. **Ben's half (no explosion), answer 7: "Not sure", so NOT STATED.**
+
 ### WS3-P — the positive control: scorched AND withered still explodes (SURVIVAL) — witness: Ben + DOTTICK
 
 | prediction | READING |
 |---|---|
 | Q-W8, Ben: *"8, yes"*. A fresh GS-20 zombie with a neighbour, `/rpg mobdamage 18` (**2/20**). Look at it: `/rpg apply withering 200`, then **within one second** `/rpg apply scorch 120`. **Why that kills by wither (arith, not a reading):** with the scorch `d` ticks after the wither and `d < 20`, scorch's first tick (`d + 20`) lands before wither's (40), and wither's is the second 1.0. **Predicted lines, in order:** `DOTTICK … status=scorch … sent=1.000`, then `DOTTICK … status=withering … sent=1.000`, then **it dies and EXPLODES** (`ignite_blast`, the neighbour takes damage). **The last line before the death names `withering`.** If it names `scorch` (the second command came later than 20 ticks), Q-W8's exact case is **not** witnessed: re-stage, and record each attempt | **38cc9903, 2026-10-14: NOT READ.** Never staged: no `/rpg apply` among Ben's commands (L2099-L2108), and 0 `status=withering` lines in the log. **61e722f2, 2026-11-10: NOT READ** (not staged). |
+
+**e82df2b3, 2026-11-14: NOT READ** (optional hand row; not run).
 
 ### WS4 — credit (SURVIVAL) — witness: none here; MOVED to the bow's gate
 
@@ -215,11 +235,15 @@ $zip.Dispose()
 |---|---|
 | **Not readable under `/rpg apply`**, by construction: the three-argument `applyStatus` passes no applier, so every line here reads `applier=-`. **The credit is read in `GATE-withered-shortbow.md` WB3**, where the arrow's applier is Ben (`applier=<Ben's uuid>`). Recorded here so the row is not counted as passed | **38cc9903, 2026-10-14: NOT READ.** Moved to GATE-withered-shortbow.md WB3, which is VOID at this boot. **61e722f2, 2026-11-10:** moved to the bow's gate, as written; no reading here. |
 
+**e82df2b3, 2026-11-14:** moved to `GATE-withered-shortbow.md` WB3, which read the credit (`applier=` equal to WB2's `caster=`).
+
 ### WS5 — a re-apply resets the window and does not restart the clock (SURVIVAL) — witness: DOTTICK
 
 | prediction | READING |
 |---|---|
 | GS-100 zombie. `/rpg apply withering 200`, then **repeat the command by hand as fast as chat allows for about 6 seconds**. **DOTTICK lines keep arriving every 40 ticks throughout** (`tick=` spacing 40, never a gap of 80 or more while re-applying). After the last re-apply, **five more lines**. The 10-tick re-hit case is `DotStatusTest`'s; this row is its live counterpart at human speed | **38cc9903, 2026-10-14: NOT READ.** Never staged; 0 `status=withering` lines. **61e722f2, 2026-11-10: NOT READ** (not staged). |
+
+**e82df2b3, 2026-11-14: NOT READ** (optional hand row; not run).
 
 ### WS6 — the look, and exactly one damage per tick (SURVIVAL) — witness: Ben + the nameplate
 
@@ -227,17 +251,23 @@ $zip.Dispose()
 |---|---|
 | Q-W7 (a). A **fresh GS-100 zombie** (`100/100`). `/rpg apply withering 200`. **The vanilla wither swirl shows on it for the window.** After **at least 12 s**: five DOTTICK lines of `sent=2.000`, and the **nameplate reads 90/100**. **If the potion's own damage leaked past the gate**, each of its five 1.0 vanilla ticks would land as 5% of the custom max (proportional, M13) and it would read about **65/100**. *UNVERIFIED: whether each tokened potion tick flashes the hurt animation* | **38cc9903, 2026-10-14: NOT READ.** Never staged (no apply was issued); the sole witness for the WITHER damage gate and `witherLook` is still owed. **61e722f2, 2026-11-10: NOT READ** (not staged). |
 
+**e82df2b3, 2026-11-14: NOT READ** (optional hand row; not run).
+
 ### WS8 — players (SURVIVAL) — recorded UNWITNESSED
 
 | prediction | READING |
 |---|---|
 | Q-W5 (it hurts players) is **not stageable**: nothing can hit a player with a weapon until PvP is live, and `/rpg apply` targets a mob (`rayTraceEntities` excludes players). **Recorded as unwitnessed, not as passed** | **38cc9903, 2026-10-14: UNWITNESSED**, as written (no PvP to stage). Not read, not passed. **61e722f2, 2026-11-10: UNWITNESSED**, as written. Not read, not passed. |
 
+**e82df2b3, 2026-11-14: UNWITNESSED**, as written.
+
 ### WS9 — forgetting a live wither strips the vanilla potion (SURVIVAL) — recorded UNWITNESSED
 
 | prediction | READING |
 |---|---|
 | Ruling 6. **Not stageable in this boot:** the case it guards is a withered PLAYER quitting (nothing can wither a player, WS8), and the mob case is a withered mob unloading with its chunk, whose strip-before-save ordering is UNVERIFIED (`WitherPotion`'s javadoc; the quit ordering was read from the jar). `WitherPotionTest` is the decision's witness; the strip call is not witnessed. **Recorded as unwitnessed, not as passed** | **38cc9903, 2026-10-14: UNWITNESSED**, as written. `WitherPotionTest` witnesses the decision. Not read, not passed. **61e722f2, 2026-11-10: UNWITNESSED**, as written. Not read, not passed. |
+
+**e82df2b3, 2026-11-14: UNWITNESSED**, as written.
 
 ---
 

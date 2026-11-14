@@ -1,5 +1,7 @@
 # GATE — SUNDER (Melee M2): the facing leap, the slam where it lands, no fall damage (and the stack's one R0)
 
+**Status at `e82df2b3` (the stack-top boot, 2026-11-14; run 3, L2206-L3657, is the run of record proposed to the seat; the boot account is `GATE-deft-hands.md`'s): R0a-d SUPERSEDED (GATE-deft-hands.md R0, all four AS PREDICTED); SU1, SU2, SU4 (as ruled), SU5, SU6, SU7, SU9, SU11, SU12 AS PREDICTED; SU8's death half AS PREDICTED (amended), its quit half NOT READ; SU3 AS PREDICTED by Ben (both directions "yes"); SU10 VOID by its own water instrument (`BLOCKS WATER count=155`), and its ordinary drop took no damage. A finding, recorded per the seat's ruling 3: `selftest/GATE-sunder.yml`'s header comment still says SU8 has no scenario, while its line 125 adds one (left as is).**
+
 **Status at `61e722f2` (the stack-top boot, 2026-11-10; run 3 is the run of record; the boot account is `GATE-deft-hands.md`'s): R0a-d SUPERSEDED (GATE-deft-hands.md R0, PASS); SU1, SU5, SU6, SU7 as predicted; SU2 as predicted, plus one unpredicted hit on a leftover mob; SU4 as predicted, the slam through a wall CONFIRMED (a design question for Ben, not fixed); SU10 as predicted with a staging caveat (run 2's SU10 is VOID); SU9 NOT AS PREDICTED (it landed a block high); SU11 PARTIAL (its hit arrived after its bracket); SU12 NOT AS PREDICTED (no landing and no hit in its bracket); SU3 NOT READ (Ben paused; carried); SU8 NOT STAGEABLE (no console input; carried). NOT a merge candidate: the stack merges bottom-up.**
 
 **The seat, 2026-11-12:**
@@ -102,6 +104,8 @@ exception is unchanged: `GATE-nexus-polish.md` R0d was #170's merge bar and is m
 |---|---|---|
 | `[Rpg] Build: <sha>`, this PR's head as `gh pr view <n> --json headRefOid` prints it, shortened. Not `-dirty`, not `unknown`, and not #175's or any head beneath | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
 
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (AS PREDICTED).
+
 ### R0b — the jar carries every slice, Sunder, and NOT the deleted thrust
 
 | prediction | instrument | READING |
@@ -135,17 +139,23 @@ foreach ($k in '^\s+direction: facing\b', '^\s+on_land:', '^\s+safe_landing:') {
 $zip.Dispose()
 ```
 
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0b (AS PREDICTED: `sunder.yml`, `melee.yml`, `Touchdown.class` PRESENT; the thrust ABSENT).
+
 ### R0c — the cumulative Loaded line, and nothing refused
 
 | prediction | instrument | READING |
 |---|---|---|
 | `Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes` — **identical to GATE-selftest.md's R0c**: abilities −1 (the thrust) +1 (sunder) = 11; `melee.yml` is a CLASS file, not a pool, so pools stay 3 (cells). Counted at this head: `ls content/abilities/*.yml` = 11. No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair, none naming `sunder`, `melee` or `melee_fire`, and **no `has no cell to offer`** warning | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception','offer'` | **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
 
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0c (AS PREDICTED).
+
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
 | Exactly one line **`[Rpg] Selftest: dev server, 34 scenarios across 8 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder]`** (24 + this gate's 10: SU1, SU2, SU4, SU5, SU6, SU7, SU9, SU10, SU11, SU12), and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
+
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0d (AS PREDICTED: 38 scenarios).
 
 ---
 
@@ -160,17 +170,23 @@ read after Ben's LOGIN, each row inside its own `SELFTEST sunder <row> START …
 |---|---|
 | The Build screen's first `DUMP` shows a slot named `Left: <ability>`. The Left picker's `DUMP` lists an option named **`Sunder`** and one named **`Melee Active (placeholder)`**, and **no option containing `thrust`**. After the `click "Sunder"`, the Build screen's `DUMP` shows **`Left: Sunder`**. *Not predicted:* the first `Left:` name (Ben's saved build decides it: `Sunder` with lore `Active -- the default` if he never saved one, an empty slot if his save names the thrust). The other half — Fire Ranger's and Fire Mage's pickers do NOT offer Sunder — is `PoolLoaderTest.aClassFileReachesOnlyItsOwnClass`, not this row | **61e722f2, 2026-11-10 (run 3): as predicted.** The Build screen's first dump: L3937 `Left: Sunder` (the first name, not predicted: run 1's and run 2's SU1 had already saved Sunder). The Left picker: L3950 `Melee Active (placeholder)` and L3951 `Sunder`, and no option containing `thrust`; the click; L3955 `Saved: Left = Sunder`; the Build screen after it, L3960 `Left: Sunder`. |
 
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** L3172 `CELL class=melee element=fire`. The first Build `DUMP`: L3178 `Left: Sunder` (Ben's saved build; not predicted). The Left picker (L3189-L3194): **`Melee Active (placeholder)`** (L3191) and **`Sunder`** (L3192, "Current"); no option containing `thrust`. L3195 the click on `Sunder`; L3196 `REPLY "Saved: Left = Sunder"`; the Build `DUMP` after it shows **`Left: Sunder`** (L3201).
+
 ### SU2 — on flat ground the slam lands where the leap lands, not at take-off (SURVIVAL) — witness: LANDING + PLAYERHIT
 
 | prediction | READING |
 |---|---|
 | Two NoAI zombies: **`sa` at `~0 ~ ~-2.5`** (2.5 beside the take-off point, inside a take-off burst) and **`sb` at `~5 ~ ~2`** (beside the landing). One Left. **Exactly one `LANDING … source=sunder how=LANDED slam=true at=<x y z>`**, with `y` equal to the first `SELF`'s y (±0.01), `z` equal to it (±0.5: FACING is straight ahead), and `x` greater by **3.5 to 7.0** (section 7.8: Recall's grounded speed 1.1 travelled 4.64 to first landing; lift 0.5 is not simulated, so the band is wide on purpose). **Exactly one `PLAYERHIT … source=sunder target=<sb's uuid> zombie … element=kinetic sent=20.000 … triggerScore=100`**, and **none naming `sa`**. **`sent=20.000` holds for `crit=false`; on `crit=true`, `sent` is 20 × the crit multiplier, and the line is read with that, not failed.** `sa`'s `PROBE` customHP is unchanged; `sb`'s drops. **The `LANDING` line comes before the `PLAYERHIT`** (the trace runs first). If the landing `x` comes out beyond 8.3 from the start, `sb` falls outside the cube and the row is VOID, not FAIL: record the `x` | **61e722f2, 2026-11-10 (run 3): as predicted for `sa` and `sb`; one unpredicted extra hit.** L4005 SELF at -133.50 63.00 9.50; L4010 `LANDING ... how=LANDED slam=true at=-127.68 63.00 9.50` (x +5.82, inside 3.5-7.0; y and z equal); L4012 `PLAYERHIT ... target=bb5fe995 (sb) zombie element=kinetic sent=20.000 crit=false triggerScore=100`; none naming `sa`; L4015 `sa` 100.000/100.000; L4016 `sb` 80.000/100.000; the LANDING before the PLAYERHIT. **Unpredicted:** L4011, a second PLAYERHIT on `6ee7c57e`, WS3's neighbour zombie (tag `n`), which no row ever removed: a staging leak. |
 
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** L3239 `SELF … at=-117.50 63.00 7.50`. **Exactly one** L3243 `LANDING … source=sunder how=LANDED slam=true at=-111.68 63.00 7.50`: x **+5.82** (band 3.5 to 7.0), y equal, z equal. **Exactly one** L3244 `PLAYERHIT … source=sunder target=19f6ee73-… zombie element=kinetic sent=20.000 crit=false triggerScore=100`, which is `sb`. None names `sa` (`b23cd462`). `sa` stays `100.000/100.000` (L3237 → L3247); `sb` goes 100 → **80** (L3238 → L3248). The LANDING comes before the PLAYERHIT. No hit on an earlier row's mob (the 61e722f2 leak is gone; `GATE-selftest.md` ST8). Ben's half (the leap's look): NOT READ.
+
 ### SU3 — the leap ignores WASD: with A held it still goes straight ahead (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
 | **Hand row.** Fire Melee, stone in hand, on open flat ground facing a landmark. Hold **A** and press Left: the leap goes **straight ahead**, toward the landmark, not left. Then hold **S** and press Left: still straight ahead, not back. With `/rpg mobtrace` on, each `LANDING` line's `at=` is ahead of where you stood along your facing. (`movement_else_forward` would have gone left, then back.) | **61e722f2, 2026-11-10: NOT READ.** Ben paused before it (seat, 2026-11-10); carried. |
+
+**e82df2b3, 2026-11-14: AS PREDICTED, by Ben.** With A held, the leap went straight ahead — *"yes"* (answer 17). With S held — *"yes"* (answer 18). Trace on (the `RELOAD` lines at L3754 and L3756 print only with it). L3757 `LANDING … source=sunder how=LANDED slam=true at=-121.26 63.00 5.10` (09:16:43); L3758 `… at=-107.98 63.00 4.14` (09:16:55). **The log holds no start position or facing for these two casts**, so "`at=` ahead along your facing" cannot be checked from it; the reading is Ben's.
 
 ### SU4 — into a wall: the slam lands at the wall's foot — and reaches THROUGH it (SURVIVAL) — witness: LANDING + PLAYERHIT
 
@@ -180,11 +196,15 @@ read after Ben's LOGIN, each row inside its own `SELFTEST sunder <row> START …
 
 **SU4 RULED, 2026-11-12 (Ben, via the seat), verbatim, and REVISITABLE:** *"ignore walls for now but I might change my mind later"*. **The slam ignores walls, as built.** The reading above stands as the ruled behaviour, and no code changes. If Ben reverses it, the fix is an engine-wide line-of-sight option on `Burst` (finding F2), not a Sunder special case. The ruling is recorded in `PLAN-melee-class.md` RULINGS.
 
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED, as ruled (the slam ignores walls).** L3276 `SELF at=-117.50 63.00 7.50`; L3280 `LANDING … how=LANDED slam=true at=-115.30 63.00 7.50`: x **+2.20**, the bound itself (at most start + 2.2), and y equal. L3281 `PLAYERHIT … target=fa7319e6-… zombie … sent=20.000 crit=false`, which is `sw`, behind the wall. L3284 `sw` `80.000/100.000`.
+
 ### SU5 — off a 4-block ledge: the slam lands on the lower level (SURVIVAL) — witness: LANDING
 
 | prediction | READING |
 |---|---|
 | The floor ends 1.5 blocks ahead; the lower floor is 4 below. One Left. **`LANDING … how=LANDED slam=true at=<x y z>`** with **`y` = the start's y − 4** (±0.01) and `x` at least start + 1.5. **Exactly one LANDING line**: none at the edge, none in mid-air | **61e722f2, 2026-11-10 (run 3): as predicted.** L4071 SELF at -125.50 63.00; L4077 `LANDING ... how=LANDED slam=true at=-118.97 59.00 9.50` (y = 63 - 4; x at least start + 1.5); exactly one LANDING in the bracket. |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** L3306 `SELF … 63.00`; exactly one L3310 `LANDING … how=LANDED slam=true at=-110.95 59.00 7.50`: y = 63 − 4, and x +6.55 (at least +1.5).
 
 ### SU6 — into water: a fall-absorbed end IS a landing, and slams at the live feet (SURVIVAL) — witness: LANDING
 
@@ -192,11 +212,15 @@ read after Ben's LOGIN, each row inside its own `SELFTEST sunder <row> START …
 |---|---|
 | One take-off block, then water 3 deep (its surface level with the start's floor, 2 to 12 ahead). One Left. **Exactly one `LANDING … source=sunder slam=true`**, with **`how=ABSORBED` or `how=LANDED`** — a RANGE, stated as one: water zeroes the fall distance mid-air (ABSORBED) unless the leaper's feet reach the bottom first and read on-ground (LANDED). *UNVERIFIED*: which vanilla gives. **`slam=true` is the control; `how` is recorded.** `y` below the start's y. **No `how=BACKSTOP`, no `slam=false`** | **61e722f2, 2026-11-10 (run 3): as predicted; `how=ABSORBED` recorded.** L4100 SELF y 59.00; L4104 `LANDING ... how=ABSORBED slam=true at=-113.68 58.57 8.50` (y below the start's); no BACKSTOP and no `slam=false`. |
 
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** Exactly one L3340 `LANDING … source=sunder how=ABSORBED slam=true at=-111.68 62.57 7.50`. `how` recorded: **ABSORBED**. y 62.57 is below the start's 63.00. No BACKSTOP, no `slam=false`.
+
 ### SU7 — under a 2-block ceiling: the slam still happens, in place or on landing (SURVIVAL) — witness: LANDING
 
 | prediction | READING |
 |---|---|
 | Flat floor, a stone ceiling 2 blocks up (a 0.2-block gap over a 1.8-tall player). One Left. **Exactly one `LANDING … source=sunder slam=true`**, with **`how=NO_TAKE_OFF` or `how=LANDED`** — a RANGE: if the 0.2 gap lets the player leave the ground for a tick, the mark goes AIRBORNE and lands (LANDED); if not, `TAKE_OFF_TICKS` (4) clears it and it slams in place (NO_TAKE_OFF, the seat's ruling 4). **Both slam, so `slam=true` is the control and `how` is recorded.** `y` equal to the start's (±0.01). NO_TAKE_OFF itself is unit-tested (`TouchdownTest.aFailedTakeOffSlamsInPlace`, `SafeLandingsTest.aFailedTakeOffSlamsInPlace`) | **61e722f2, 2026-11-10 (run 3): as predicted; `how=LANDED` recorded.** L4127 SELF y 56.00; L4131 `LANDING ... how=LANDED slam=true at=-110.25 56.00 8.50`. |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** Exactly one L3367 `LANDING … how=LANDED slam=true at=-115.25 63.00 7.50`. `how` recorded: **LANDED**. y equal to the start's.
 
 ### SU8 — dying mid-leap: no posthumous slam (SURVIVAL) — witness: Ben + the log
 
@@ -235,6 +259,8 @@ ends `keep_inventory=<b> immediate_respawn=<b>`, the RUN START values.
 **The quit half** (a quit mid-leap gives the same `how=FORGOTTEN slam=false` line) **stays Ben's hand step**: the
 instrument cannot quit its own player.
 
+**e82df2b3, 2026-11-14 (run 3): the DEATH half AS PREDICTED, as amended; the quit half NOT READ.** In order: L3392 `DEATH_RULES keep_inventory=false->true immediate_respawn=false->true`; L3395 `DRIVE swing`; L3397 `CMD /kill @s`; L3398 **`LANDING … source=sunder how=FORGOTTEN slam=false at=-`**; L3401 `SETTLED dying=0 ticks=0`; L3402 `RESPAWNED ticks=1` (under 200); L3405 `SELF customHP=100.000/100.000` (at the respawn point, y 68.00); L3406 `PROBE tag=t … 100.000/100.000 … d=17.000`; L3407 `RULES restored keep_inventory=false immediate_respawn=false`, the values DEATH_RULES found. **No `PLAYERHIT … source=sunder` in the bracket (L3371-L3408), and no `RUN ABORTED`.** Run 3's `RUN RESTORED` (L3657) ends `keep_inventory=false immediate_respawn=false`.
+
 ### SU9 — from mid-air: the leap lands farther, and the slam is at the real landing (SURVIVAL) — witness: LANDING
 
 | prediction | READING |
@@ -256,6 +282,8 @@ not a code defect, so the prediction stands.**
   relative to the landing (`-10 0 -4 7 5 4`). **Predicted: `count=0` for all three.** A non-zero SAND or GRAVEL count
   would witness the falling-block cause.
 
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED; the 61e722f2 staging artefact did not recur.** L3426 `SELF … at=-117.50 63.00 7.50` (before the teleport); L3429 `/tp @s ~ ~1.2 ~`; exactly one L3434 `LANDING … how=LANDED slam=true at=-108.25 63.00 7.50`: y equal to the floor, z equal. **x recorded: +9.25, against SU2's +5.82** (farther). L3436-L3438 `BLOCKS WATER count=0`, `SAND count=0`, `GRAVEL count=0`.
+
 ### SU10 — no fall damage on a Sunder landing at any height; then an ordinary drop hurts (SURVIVAL) — witness: SELF
 
 | prediction | READING |
@@ -266,6 +294,8 @@ not a code defect, so the prediction stands.**
 sea level on a surface at y 63. Run 2's SU10 flooded. So after the ordinary drop there is a WATER `probe_blocks` over
 the pit, relative to the player's final position (`-9 -2 -4 7 7 4`). **Predicted `count=0`.** A non-zero count makes
 the row VOID (the leap ended in water), not FAIL. **Stage the run on dry ground, away from water.**
+
+**e82df2b3, 2026-11-14 (run 3): VOID, by the row's own water instrument; and its second half reads NOT AS PREDICTED.** The Sunder half, as predicted: L3460 `SELF customHP=100.000/100.000 at=… 63.00`; one L3465 `LANDING … how=LANDED slam=true at=-110.95 59.00 7.50`; L3467 `SELF customHP=100.000/100.000`, identical. The ordinary drop: L3469 `/tp @s ~ ~7 ~`; L3473 the third `SELF` reads **`customHP=100.000/100.000 at=-112.11 59.00 8.70 onGround=true`, not lower**. L3474 **`BLOCKS WATER count=155 box=-9 -2 -4 7 7 4`**: non-zero, so the row is VOID by the 2026-11-10 instrument, not FAIL. The likeliest reading is that the pit, dug 5 below a surface at y 63 at a spot near water, held water when the drop ended, and a fall into water does no damage. **UNVERIFIED:** no line says where the 155 blocks are or when they arrived. No LANDING for the ordinary drop, as predicted. **This is a bar, and it is not met.**
 
 ### SU11 — a slam on a GS-300 zombie deals the authored 20, sent at score 100 (SURVIVAL) — witness: PLAYERHIT + PROBE
 
@@ -285,6 +315,8 @@ stands.**
   mark ends only on the ground or at the backstop.
 - **Instrument added:** a WATER `probe_blocks` at the row's end, relative to the landing (`-6 0 -4 7 4 4`).
   **Predicted `count=0`.**
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** L3497 `MOBSEED 9cb5bcdd-… zombie gs=300 … max=300`; L3518 `LANDING … how=LANDED slam=true`; L3519 `PLAYERHIT … target=9cb5bcdd-… zombie element=kinetic sent=20.000 crit=false triggerScore=100`. PROBE 300 → **280** (L3514 → L3521): **the drop is recorded as 20**. L3522 `BLOCKS WATER count=0`. Ben's half (the popup): NOT READ.
 
 ### SU12 — knockback pushes a mob away from where the leap came down (SURVIVAL) — witness: POSITIONS
 
@@ -309,6 +341,8 @@ wait, and the row logged nothing more until his `/rpg selftest stop` 78 seconds 
 the player's own scheduler, and `PaperScheduler.onEntityLater` passes no retired callback, so a task a death retires
 simply never runs. `invalidated()`'s `"the player died"` check is therefore never reached. The likely fix is an abort
 from the death event; it is owed to the seat.
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** L3545 `MOBSEED c74ded8c-… zombie`. `POSITIONS ZOMBIE`, relative to the player (L3562-L3583): z is 2.00 through the leap; L3575 `LANDING … how=LANDED slam=true`; L3576 one `PLAYERHIT … target=c74ded8c-… sent=20.000 crit=false`; then z goes **2.56, 3.02, 3.16, 3.21, 3.22, 3.22, 3.22**: it increases, pushed away. **The push is recorded: +1.22 in z** (x −0.82 → −1.69). L3584 `80.000/100.000`; L3585 `BLOCKS WATER count=0`. The zombie moved, so slowness 255 did not suppress the knockback.
 
 ---
 
