@@ -1,0 +1,44 @@
+# SUNDER -- Ben's first Melee ability (ruling B, 2026-09-28): "The player leaps forward and slams into the
+# ground, dealing damage and knocking enemies back." Element kinetic. CLASS-WIDE: offered by builds/melee.yml
+# to every melee cell, the way recall sits in ranger.yml (PLAN-melee-class.md section 4).
+#
+# THE MECHANISM IS RULED (PLAN-melee-class.md RULINGS):
+#   direction: facing    Q1 "Always straight ahead" -- WASD ignored, pitch ignored (section 8.1 (a)).
+#   on_land              Q2 "yes it slams where ever you land" -- S1, the ground-contact machine (Touchdown).
+#                        The slam is at the LIVE feet when the leap comes down: at a wall's foot, on the lower
+#                        level of a ledge, in water (a fall-absorbed end IS a landing), and IN PLACE when the
+#                        leap never leaves the ground. Death or quit mid-leap: no slam. The backstop: no slam.
+#   fall damage          Q3 "None" -- F-d, the seat's ruling 5. A non-empty on_land arms ONE mark that both
+#                        detonates the slam and spends the fall immunity, so a Sunder landing never deals fall
+#                        damage at any height. No safe_landing key is needed or read for that.
+#   on_hit               EMPTY ON PURPOSE. A dash's on_hit fires at TAKE-OFF (section 8.2), which is the
+#                        opposite of a slam. Nothing here hits where the player stood.
+#
+# *** EVERY NUMBER BELOW IS PROVISIONAL, for the M3 tuning boot (section 8.5's PROPOSED column, Q4 not ruled). ***
+# Nothing is derived from a dev weapon. cooldown_ticks is a multiple of 4 (the held-input grid).
+#
+# The burst is a cube half-extent live and a sphere in FakeWorld (finding F2); radius 3.0 is that half-extent.
+
+id: sunder
+display_name: "<gold>Sunder</gold>"   # MiniMessage, not legacy color codes
+element: kinetic
+cooldown_ticks: 240        # PROVISIONAL (8.5): a multiple of 4; an offensive tool shorter than Recall's 360
+cost:
+  resource: mana
+  amount: 30               # PROVISIONAL (8.5): below Recall's 35
+cast:
+  type: dash
+  direction: facing
+  distance: 5              # PROVISIONAL (8.5): Recall's reach; also the swept line, which hits nothing (empty on_hit)
+  speed: 1.1               # PROVISIONAL (8.5): Recall's horizontal, direction reversed
+  lift: 0.5                # PROVISIONAL (8.5): an ESTIMATE for airtime; not simulated (section 7.8)
+  on_land:
+    - type: burst
+      radius: 3.0          # PROVISIONAL (8.5)
+      effects:
+        - type: damage
+          amount: 20       # PLACEHOLDER, Ben tunes. No ruled melee precedent exists (8.5)
+          element: kinetic
+        - type: knockback
+          strength: 0.6    # PROVISIONAL (8.5): void_slash's authored 0.6, unruled and never measured
+on_hit: []

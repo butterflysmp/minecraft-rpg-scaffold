@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -94,6 +95,52 @@ class SelfTestStagingTest {
         blocks.save("a", "a-next-chain");
         assertEquals(List.of("a-next-chain"), blocks.drainNewestFirst(), "a new chain saves afresh");
         assertEquals(3, blocks.total(), "the RESTORED line's blocks= counts every save in the run");
+    }
+
+    // --- 6. SU8's death_rules: a row may lose its player, and the rules go back ---
+
+    @Test
+    void onlyADeathRulesRowWaitsForTheRespawn() {
+        assertTrue(SelfTestStaging.waitForRespawn(true, true), "SU8: the death is the row's subject");
+        assertFalse(SelfTestStaging.waitForRespawn(false, true), "any other death still aborts the run");
+        assertFalse(SelfTestStaging.waitForRespawn(true, false), "THE CONTROL: alive, nothing to wait for");
+        assertTrue(SelfTestStaging.RESPAWN_CAP_TICKS >= 100, "an immediate respawn is one client round trip; the cap must outlast a lag spike");
+    }
+
+    @Test
+    void rowRulesPutBackWhatTheRowFoundAndOnlyOnce() {
+        SelfTestStaging.RowRules<String> rules = new SelfTestStaging.RowRules<>();
+        assertFalse(rules.active());
+        rules.record("keep_inventory", false);
+        rules.record("immediate_respawn", null);   // a rule with no value is real, and must not be overwritten
+        rules.record("keep_inventory", true);       // a second record in the row cannot replace what the world had
+        rules.record("immediate_respawn", true);
+
+        assertTrue(rules.active());
+        Map<String, Boolean> back = rules.drain();
+        assertEquals(Boolean.FALSE, back.get("keep_inventory"));
+        assertTrue(back.containsKey("immediate_respawn"));
+        assertNull(back.get("immediate_respawn"));
+        assertFalse(rules.active(), "drained: the next row starts with nothing to put back");
+    }
+
+    private static final Path SNAPSHOT = Path.of("src/main/java/io/github/butterflysmp/rpg/paper/selftest/SelfTestSnapshot.java");
+
+    @Test
+    void bothDeathRulesAreInTheRunsRestoreSet() throws IOException {
+        String snapshot = Files.readString(SNAPSHOT, StandardCharsets.UTF_8);
+        for (String rule : List.of("KEEP_INVENTORY", "IMMEDIATE_RESPAWN")) {
+            assertTrue(snapshot.contains("world.getGameRuleValue(GameRules." + rule + ")"), rule + " is captured at RUN START");
+            assertTrue(snapshot.contains("world.setGameRule(GameRules." + rule + ","), rule + " is put back by the restore");
+        }
+        String run = Files.readString(RUN, StandardCharsets.UTF_8);
+        String wait = between(run, "private void awaitRespawn(", "void deathRules()");
+        assertTrue(wait.contains("onRegionLater(") && !wait.contains("onEntityLater("),
+                "the respawn poll must not ride the player's own scheduler, which a death retires (run 2's stall)");
+        assertTrue(between(run, "private void rowDone()", "nextScenario();").contains("restoreRowRules()"),
+                "a death_rules row puts its rules back when it ends");
+        assertTrue(between(run, "void end(String why)", "service.ended(this)").contains("restoreRowRules()"),
+                "and when the run ends mid-row");
     }
 
     // --- the wiring: the run takes each decision where the boot needs it ---

@@ -3,6 +3,8 @@ package io.github.butterflysmp.rpg.core.ability;
 import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectApplier;
+import io.github.butterflysmp.rpg.core.build.LandingHook;
+import io.github.butterflysmp.rpg.core.build.Touchdown;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
@@ -326,15 +328,22 @@ public final class CastExecutor {
                       Aim aim, CastSpec.Dash dash) {
         // Horizontal drive along the resolved direction, plus a touch of up so the caster
         // leaves the ground and first-tick friction does not eat the horizontal velocity.
+        Vec3 drive = aim.direction();
+        // Directed untargeted effects (an ember fan) fire toward the caster's FACING. For a
+        // reverse-facing dash that is the opposite of the drive: you throw forward, then
+        // retreat away from what you threw.
+        Vec3 facing = dash.direction() == CastSpec.DashDirection.REVERSE_FACING ? drive.negate() : drive;
+
         Combatant self = world.combatant(caster.id()).orElse(null);
         if (self != null) {
-            Vec3 impulse = aim.direction().scale(dash.speed()).add(new Vec3(0, dash.lift(), 0));
+            Vec3 impulse = drive.scale(dash.speed()).add(new Vec3(0, dash.lift(), 0));
             self.handle().applyImpulse(impulse);
             // Ruling 31: queued AFTER the impulse on the same handle, so the mark exists before the take-off.
-            if (dash.safeLanding()) self.handle().armSafeLanding();
+            // A slam is the same mark with a hook (the seat's ruling 5, F-d): one arm, never both.
+            if (!dash.onLand().isEmpty()) self.handle().armLanding(slam(ability, caster, source, dash, facing));
+            else if (dash.safeLanding()) self.handle().armSafeLanding();
         }
 
-        Vec3 drive = aim.direction();
         Vec3 origin = caster.position();
         double reach = dash.distance();
         Vec3 midpoint = origin.add(drive.scale(reach / 2));
@@ -343,12 +352,30 @@ public final class CastExecutor {
         List<Combatant> hits = SweptLine.enemiesAlong(
                 origin, drive, reach, DASH_HIT_RADIUS, candidates, caster.id());
 
-        // Directed untargeted effects (an ember fan) fire toward the caster's FACING. For a
-        // reverse-facing dash that is the opposite of the drive: you throw forward, then
-        // retreat away from what you threw. Origin is the caster's PRE-dash snapshot feet, so
-        // the embers launch from where you stood, not from where the impulse is carrying you.
-        Vec3 facing = dash.direction() == CastSpec.DashDirection.REVERSE_FACING ? drive.negate() : drive;
+        // Origin is the caster's PRE-dash snapshot feet, so the embers launch from where you
+        // stood, not from where the impulse is carrying you.
         effects.applyToSet(ability.onHit(), source, hits, origin, facing);
+    }
+
+    /**
+     * SUNDER'S SLAM (PLAN-melee-class.md section 8.2, S1): the dash's {@code on_land} at the LIVE feet, when and
+     * however the leap comes down. The {@code source} Caster is the one frozen at cast, like a grenade's: the slam
+     * lands with the cast's numbers whatever the caster picked up mid-air. The trace goes first, so the log reads
+     * the landing before the hits it caused. No target set: {@code on_land} is untargeted by schema (a burst finds
+     * its own), and the caster is excluded from it as from every burst.
+     */
+    private LandingHook slam(AbilityDefinition ability, CombatantSnapshot caster, Caster source,
+                             CastSpec.Dash dash, Vec3 facing) {
+        return new LandingHook() {
+            @Override public void landed(Vec3 feet, Touchdown how) {
+                world.traceLanding(caster.id(), ability.id(), how, feet);
+                effects.applyToSet(dash.onLand(), source, List.of(), feet, facing);
+            }
+
+            @Override public void ended(Touchdown how) {
+                world.traceLanding(caster.id(), ability.id(), how, null);
+            }
+        };
     }
 
     /**

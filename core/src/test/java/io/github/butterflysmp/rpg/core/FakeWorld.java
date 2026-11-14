@@ -289,6 +289,18 @@ public final class FakeWorld implements CombatWorld {
         traced.add(hit);
     }
 
+    /** One slamming leap's ending, as the LANDING trace would print it. {@code feet} null for a non-slam. */
+    public record TracedLanding(UUID casterId, String source, io.github.butterflysmp.rpg.core.build.Touchdown how,
+                                Vec3 feet) {}
+
+    /** Every landing reported to the LANDING trace, in order. */
+    public final List<TracedLanding> landings = new ArrayList<>();
+
+    @Override public void traceLanding(UUID casterId, String source, io.github.butterflysmp.rpg.core.build.Touchdown how,
+                                       Vec3 feet) {
+        landings.add(new TracedLanding(casterId, source, how, feet));
+    }
+
     @Override public void present(Vec3 at, String visualId) {
         presented.add(visualId);
         presentedAt.add(at);
@@ -579,6 +591,12 @@ public final class FakeWorld implements CombatWorld {
         /** How many times a safe-landing dash armed this dummy (section 7.6). */
         public int safeLandingArms;
 
+        /** The slam a Sunder-shaped dash armed on this dummy, or null. A test ends the leap by calling it. */
+        public io.github.butterflysmp.rpg.core.build.LandingHook landingHook;
+
+        /** How many times a slamming dash armed this dummy. */
+        public int landingArms;
+
         /** Who last damaged this dummy. Null means the damage was unattributed. */
         public UUID lastDamageSource;
 
@@ -660,6 +678,10 @@ public final class FakeWorld implements CombatWorld {
         }
         @Override public void applyImpulse(Vec3 velocity) { this.lastImpulse = velocity; }
         @Override public void armSafeLanding() { safeLandingArms++; }
+        @Override public void armLanding(io.github.butterflysmp.rpg.core.build.LandingHook hook) {
+            landingHook = hook;
+            landingArms++;
+        }
         @Override public void applyStatus(String id, int dur, int amp, UUID applierId, double srcDmg) {
             statuses.add(id);
             lastStatusApplier = applierId;

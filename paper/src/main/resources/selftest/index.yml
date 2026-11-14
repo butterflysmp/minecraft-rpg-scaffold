@@ -1,6 +1,6 @@
 # /rpg selftest's gates, in BOOT ORDER (PLAN-selftest.md section 5). `/rpg selftest all` walks them in this order,
-# each gate's `setup:` first, then its rows in file order. Each name is a gate file at the repo root:
-# melee-cell is GATE-melee-cell.md, and its scenarios are selftest/GATE-melee-cell.yml.
+# each gate's `setup:` first, then its rows in file order. Each name is a gate file under docs/gates/:
+# melee-cell is docs/gates/GATE-melee-cell.md, and its scenarios are selftest/GATE-melee-cell.yml.
 # SelfTestScenariosTest pins that every scenario key here is a `### <id> ` heading in its gate.
 gates:
   - melee-cell
@@ -10,3 +10,4 @@ gates:
   - legacy-b
   - wither-status
   - withered-shortbow
+  - sunder

@@ -57,6 +57,39 @@ final class SelfTestStaging {
         return previousGate != null && !previousGate.equals(nextGate);
     }
 
+    /** The longest a {@code death_rules} row waits for its player to respawn before the run aborts. */
+    static final int RESPAWN_CAP_TICKS = 200;
+
+    /**
+     * Whether the run waits instead of aborting: only a row that declared {@code death_rules} may lose its player,
+     * and only for as long as the player is actually dead. Every other death still aborts the run, as it did before
+     * (runs 1 and 2 of the {@code 61e722f2} boot).
+     */
+    static boolean waitForRespawn(boolean deathExpected, boolean dead) {
+        return deathExpected && dead;
+    }
+
+    /**
+     * The game rules ONE ROW changed, each with the value the row found. The FIRST value recorded is the one restored,
+     * so setting a rule twice in a row cannot overwrite what the world had. Drained at the row's end.
+     */
+    static final class RowRules<R> {
+        private final Map<R, Boolean> before = new LinkedHashMap<>();
+
+        void record(R rule, Boolean found) {
+            if (!before.containsKey(rule)) before.put(rule, found);   // not putIfAbsent: a null found value is real
+        }
+
+        /** The rules to put back, each with its found value, and the store empties. */
+        Map<R, Boolean> drain() {
+            Map<R, Boolean> out = new LinkedHashMap<>(before);
+            before.clear();
+            return out;
+        }
+
+        boolean active() { return !before.isEmpty(); }
+    }
+
     /**
      * The blocks a chain of rows has saved, first save wins. The run drains them, newest first, at the next unchained
      * row, so the restore undoes the saves in the reverse order they were taken.

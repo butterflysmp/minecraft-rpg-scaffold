@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.combat;
 
 import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.build.Touchdown;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
@@ -157,6 +158,13 @@ public interface CombatWorld {
      * the applier reports at all.
      */
     void traceHit(TracedHit hit);
+
+    /**
+     * Report how a slamming leap's mark ended, under the same switch as {@link #traceHit} ({@code /rpg mobtrace}):
+     * one line per ending, slam or not, so a "no slam" reading is a line that says so rather than an absent
+     * PLAYERHIT. {@code feet} is null for an ending that does not slam. Abstract for {@link #traceHit}'s reason.
+     */
+    void traceLanding(UUID casterId, String source, Touchdown how, Vec3 feet);
 
     /** Fire-and-forget presentation hook. Particles, sounds, damage numbers. */
     void present(Vec3 at, String visualId);

@@ -2324,7 +2324,7 @@ public final class RpgListeners implements Listener {
         // before the tracked gate and the scorch arm, and CANCELLED rather than tokened: the ruling is "no fall
         // damage", and a token still plays the hurt flash and sound. A fall has no cadence to preserve (the reason
         // this handler tokens everything else). The mark is spent: one landing per leap.
-        if (event.getCause() == EntityDamageEvent.DamageCause.FALL && adapters.safeLandings().consumeFall(id)) {
+        if (event.getCause() == EntityDamageEvent.DamageCause.FALL && adapters.safeLandings().consumeFall(target)) {
             event.setCancelled(true);
             return;
         }

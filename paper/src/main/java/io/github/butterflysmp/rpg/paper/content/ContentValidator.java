@@ -612,9 +612,16 @@ public final class ContentValidator {
             // construction, so this recursion is one level deep by the type, not by luck.
             case CastSpec.Volley volley ->
                     checkCast(volley.of(), ownerLabel + " volley inner cast", problems);
+            // A DASH NAMES NO VISUAL ITSELF, BUT ITS on_land IS AN EFFECT LIST (Sunder's slam), and it
+            // dangles a visual_id, status_id or element exactly as on_hit does. This arm was `{ }`
+            // until Sunder shipped the first non-empty on_land: the volley hazard above, realised.
+            case CastSpec.Dash dash -> {
+                for (EffectSpec effect : dash.onLand()) {
+                    checkEffect(effect, ownerLabel + " on_land", problems);
+                }
+            }
             case CastSpec.Self ignored -> { }
             case CastSpec.Melee ignored -> { }
-            case CastSpec.Dash ignored -> { }
         }
     }
 
