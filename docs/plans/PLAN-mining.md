@@ -1274,6 +1274,25 @@ The gate's READING blocks are the account; these are the pointers.
   lets another message hold the bar** (read 2026-11-14). `StoneNotice`'s javadoc states the same collision and says
   `QuiverNotice` lives with it; their gate rows read that the line is visible, not for how long. **Where the
   "You need a pickaxe" message goes is Ben's ruling, asked by the seat and not yet given.** Not fixed.
+  > **RULED AND BUILT ON S1-c, 2026-11-14.** Ben: *"Is it possible to have the pickaxe message over ride the action
+  > bar for 1.5s"*; the seat answered yes. `core.hud.ActionBarHolds` holds a player's bar until a tick, and the
+  > stats bar re-sends the held message on each beat inside the hold; DENIED holds it for
+  > `MiningNotices.DENIED_HOLD_TICKS` = 30 server ticks. Read by `GATE-mining-s1c.md`'s C-DENY-HOLD.
+- **F-M29 (S1-c, 2026-11-14): `StoneNotice` and `QuiverNotice` keep the overwrite.** They write the same action bar
+  and are overwritten the same way, and **neither uses the hold**, because Ben has not ruled on them (the seat's
+  ruling 4 for S1-c). `StoneNotice`'s javadoc now points at `ActionBarHolds`. A hold is one call per notice
+  when he does.
+- **F-M30 (S1-c, 2026-11-14): A CORRECTION TO F-M25. THE DEATH COULD NOT HAVE DROPPED THE PICKAXES.**
+  `RpgListeners.onPlayerDeath` sets `keepInventory`, clears the drops and keeps the level, for every death (its
+  javadoc: *"Death is a setback, not a loot loss: keep inventory + XP, drop nothing"*). So the five iron pickaxes
+  missing after slice 1's boot did not leave by the `/kill`; their cause stays UNREAD. F-M25's placeholder rule is
+  unaffected. **The same handler bears on the carried respawn rows:** a death here keeps the Ability Stone and the
+  Nexus star. Whether that makes a staged death acceptable is the seat's and Ben's call; S1-c's gate does not stage
+  one (the brief).
+- **F-M31 (S1-c, 2026-11-14): slice 1's gate predicted the duplicate-placement refusal with a full stop the code
+  does not print.** `SlotRegistry.place` throws `"a slot already exists at " + slot.id()`, no full stop; M-PLACE's
+  prediction ended `… at <id>."`. Its chat text was never read, so nothing was recorded against it. S1-c's gate
+  predicts the code's text, now a log reading (`MINING place-refused`).
 
 ### CARRIED HAND ROWS: THE NEXT MINING GATE MUST INCLUDE THESE (the seat, 2026-11-14)
 

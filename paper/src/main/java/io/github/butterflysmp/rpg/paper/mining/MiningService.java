@@ -4,7 +4,9 @@ import io.github.butterflysmp.rpg.core.mining.BlockPos;
 import io.github.butterflysmp.rpg.core.mining.Click;
 import io.github.butterflysmp.rpg.core.mining.ClickOutcome;
 import io.github.butterflysmp.rpg.core.mining.FaceFrame;
+import io.github.butterflysmp.rpg.core.hud.ActionBarHolds;
 import io.github.butterflysmp.rpg.core.mining.MiningBook;
+import io.github.butterflysmp.rpg.core.mining.MiningNotices;
 import io.github.butterflysmp.rpg.core.mining.MiningTraceLine;
 import io.github.butterflysmp.rpg.core.mining.OreDefinition;
 import io.github.butterflysmp.rpg.core.mining.OreRegistry;
@@ -85,6 +87,8 @@ public final class MiningService {
     private final MiningPack pack;
     private final PopupEntityIds ids;
     private final boolean packOnJoin;
+    /** Who owns each player's action bar; DENIED takes it for MiningNotices.DENIED_HOLD_TICKS (S1-c). */
+    private final ActionBarHolds<Component> holds;
     private final Set<UUID> tracing = new HashSet<>();
     /** What each player is currently shown, per slot id. */
     private final Map<UUID, Map<String, Shown>> shown = new HashMap<>();
@@ -101,7 +105,7 @@ public final class MiningService {
 
     public MiningService(Logger log, Scheduler scheduler, OreRegistry ores, VeinSizeRegistry sizes,
                          SlotRegistry slots, MiningBook book, MiningPack pack, PopupEntityIds ids,
-                         boolean packOnJoin) {
+                         boolean packOnJoin, ActionBarHolds<Component> holds) {
         this.log = log;
         this.scheduler = scheduler;
         this.ores = ores;
@@ -112,6 +116,7 @@ public final class MiningService {
         this.pack = pack;
         this.ids = ids;
         this.packOnJoin = packOnJoin;
+        this.holds = holds;
     }
 
     // --- Events -------------------------------------------------------------------------------
@@ -155,11 +160,25 @@ public final class MiningService {
             case ClickOutcome.Hit hit -> onHit(player, slot, ore.get(), before.orElseThrow(), hit);
             case ClickOutcome.Broke broke -> onBroke(player, slot, ore.get(), broke);
             case ClickOutcome.Miss miss -> playAt(player, slot, ore.get().missSound());
-            case ClickOutcome.Denied denied ->
-                    player.sendActionBar(Component.text("You need a pickaxe to mine this.", NamedTextColor.RED));
+            case ClickOutcome.Denied denied -> deny(player, tick);
             case ClickOutcome.Uncharged uncharged -> { }   // plays nothing (the seat's ruling 4)
             case ClickOutcome.NotLive notLive -> { }       // plays nothing
         }
+    }
+
+    /**
+     * DENIED: the red notice takes the player's action bar for {@link MiningNotices#DENIED_HOLD_TICKS}
+     * (Ben, 2026-11-14: 1.5 s). Sent at once here; the stats bar re-sends it on each of its beats
+     * inside the hold and draws the stats line again on the first beat at or after the end. A second
+     * DENIED inside the hold REPLACES it, so the hold restarts from that click. Main thread (a Bukkit
+     * event), the same thread as the stats bar's loop on Paper.
+     */
+    private void deny(Player player, long tick) {
+        Component text = Component.text(MiningNotices.DENIED_TEXT, NamedTextColor.RED);
+        ActionBarHolds.Hold<Component> hold = holds.hold(player.getUniqueId(), text, "denied", tick,
+                MiningNotices.DENIED_HOLD_TICKS, tracing.contains(player.getUniqueId()));
+        player.sendActionBar(text);
+        trace(player, MiningTraceLine.hold(player.getName(), hold.reason(), hold.start(), hold.until()));
     }
 
     /** The other break route (F-M5): a creative break, or a STOP on a block left in destroyPos. */
@@ -228,17 +247,17 @@ public final class MiningService {
     /** {@code /rpg mining place <ore> <size>} on the looked-at wall face. @return the message to show */
     public Component place(Player player, String oreId, String sizeId) {
         Optional<OreDefinition> ore = ores.find(oreId);
-        if (ore.isEmpty()) return error("No ore '" + oreId + "' is loaded.");
+        if (ore.isEmpty()) return refuse(player, "No ore '" + oreId + "' is loaded.");
         Optional<VeinSize> size = sizes.find(sizeId);
-        if (size.isEmpty()) return error("No vein size '" + sizeId + "' is loaded.");
-        if (!ore.get().sizes().contains(sizeId)) return error("Ore '" + oreId + "' does not list size '" + sizeId + "'.");
+        if (size.isEmpty()) return refuse(player, "No vein size '" + sizeId + "' is loaded.");
+        if (!ore.get().sizes().contains(sizeId)) return refuse(player, "Ore '" + oreId + "' does not list size '" + sizeId + "'.");
 
         RayTraceResult hit = player.rayTraceBlocks(PLACE_REACH);
         if (hit == null || hit.getHitBlock() == null || hit.getHitBlockFace() == null) {
-            return error("Look at a wall within " + (int) PLACE_REACH + " blocks.");
+            return refuse(player, "Look at a wall within " + (int) PLACE_REACH + " blocks.");
         }
         WallFace face = toWallFace(hit.getHitBlockFace());
-        if (face == null) return error("A patch goes on a wall (north, south, east or west face), not "
+        if (face == null) return refuse(player, "A patch goes on a wall (north, south, east or west face), not "
                 + hit.getHitBlockFace().name().toLowerCase() + ".");
         Block anchor = hit.getHitBlock();
         World world = anchor.getWorld();
@@ -246,15 +265,15 @@ public final class MiningService {
                 size.get().width(), size.get().height());
         for (BlockPos b : frame.footprint()) {
             Block wall = world.getBlockAt(b.x(), b.y(), b.z());
-            if (!wall.getType().isSolid()) return error("Block " + coords(b) + " is not solid.");
+            if (!wall.getType().isSolid()) return refuse(player, "Block " + coords(b) + " is not solid.");
             Block front = world.getBlockAt(b.x() + face.nx, b.y(), b.z() + face.nz);
-            if (!front.isPassable()) return error("The face of block " + coords(b) + " is covered.");
+            if (!front.isPassable()) return refuse(player, "The face of block " + coords(b) + " is covered.");
         }
         Slot slot = Slot.of(world.getUID().toString(), frame, oreId, sizeId);
         try {
             slots.place(slot);
         } catch (IllegalArgumentException overlap) {
-            return error(overlap.getMessage());
+            return refuse(player, overlap.getMessage());
         }
         log.info("MINING place slot=" + slot.id() + " ore=" + oreId + " size=" + sizeId
                 + " footprint=" + footprintText(frame) + " by=" + player.getName());
@@ -500,6 +519,15 @@ public final class MiningService {
         List<String> parts = new ArrayList<>();
         for (BlockPos b : frame.footprint()) parts.add(coords(b));
         return String.join(";", parts);
+    }
+
+    /**
+     * A {@code /rpg mining place} refusal: logged ALWAYS as {@code MINING place-refused} with the chat
+     * text verbatim (S1-c, so M-PLACE's refusals are a log reading), then shown in red.
+     */
+    private Component refuse(Player player, String text) {
+        log.info(MiningTraceLine.placeRefused(player.getName(), text));
+        return error(text);
     }
 
     private static Component error(String text) {

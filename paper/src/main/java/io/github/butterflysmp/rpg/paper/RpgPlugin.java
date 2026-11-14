@@ -65,6 +65,7 @@ import io.github.butterflysmp.rpg.paper.health.DamagePopupManager;
 import io.github.butterflysmp.rpg.paper.health.PopupEntityIds;
 import io.github.butterflysmp.rpg.paper.mining.MiningPack;
 import io.github.butterflysmp.rpg.paper.mining.MiningService;
+import io.github.butterflysmp.rpg.core.hud.ActionBarHolds;
 import io.github.butterflysmp.rpg.core.mining.MiningBook;
 import io.github.butterflysmp.rpg.core.mining.RegrowthClock;
 import io.github.butterflysmp.rpg.core.mining.SlotRegistry;
@@ -633,7 +634,11 @@ public final class RpgPlugin extends JavaPlugin {
         // well above this -- said because a reader checking whether that ordering holds should not
         // have to look. (This named "line 444" until the accessories slice moved it; a section, not
         // a line, is what survives an insertion above it.)
-        this.statsBar = new StatsBarSystem(scheduler, stats, resources, adapters);
+        // Mining S1-c: ONE set of action-bar holds, shared by the bar that draws and the notice that
+        // takes it (today only mining's DENIED, below). In memory; a hold ends on quit.
+        ActionBarHolds<net.kyori.adventure.text.Component> actionBarHolds = new ActionBarHolds<>();
+        this.statsBar = new StatsBarSystem(scheduler, stats, resources, adapters, actionBarHolds,
+                Bukkit::getCurrentTick);
 
         // Passive health regeneration: its own per-player loop, on its own clock. See the class
         // javadoc for why it is not folded into the reconcile loop that already visits everyone.
@@ -674,7 +679,7 @@ public final class RpgPlugin extends JavaPlugin {
                 new MiningBook(new RegrowthClock(Bukkit::getCurrentTick), new java.util.SplittableRandom(),
                         Bukkit::getCurrentTick),
                 new MiningPack(getLogger()), fakeEntityIds,
-                getConfig().getBoolean("mining.dev-pack-on-join", false));
+                getConfig().getBoolean("mining.dev-pack-on-join", false), actionBarHolds);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
                 this, recipes, vaults, stoneCaster, mining);

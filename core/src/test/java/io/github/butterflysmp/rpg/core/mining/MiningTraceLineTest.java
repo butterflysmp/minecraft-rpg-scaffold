@@ -29,6 +29,22 @@ class MiningTraceLineTest {
     }
 
     @Test
+    void aHoldLineCarriesItsStartAndEndTick() {
+        // S1-c: the DENIED message's hold on the action bar, start and end 30 ticks apart.
+        assertEquals("MINING hold player=Ben reason=denied start=4410 until=4440",
+                MiningTraceLine.hold("Ben", "denied", 4410, 4440));
+    }
+
+    @Test
+    void aPlaceRefusalLineCarriesTheExactChatText() {
+        // S1-c: so M-PLACE's refusals are a LOG reading. The reason is the chat text verbatim, to the
+        // end of the line, so it may contain spaces, commas and parentheses.
+        assertEquals("MINING place-refused player=Ben reason=A patch goes on a wall (north, south, east or west face), not up.",
+                MiningTraceLine.placeRefused("Ben", "A patch goes on a wall (north, south, east or west face), not up."));
+        // Mutation: "place-refused" -> "place-refuse" in the format -> reddens.
+    }
+
+    @Test
     void aBreakLine() {
         assertEquals("MINING break player=Ben slot=s1 payout=raw_ironx14 rolls=2+3+4 bonus=5 kept=10 dropped=4 regrow_at=1363",
                 MiningTraceLine.breakLine("Ben", "s1", "raw_iron",
