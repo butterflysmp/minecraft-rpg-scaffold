@@ -3,6 +3,9 @@
 **Status: NOT RUN.** Written 2026-11-13, before any boot of this stack. **NO BOOT until the seat has diffed S1-b's code
 AND this gate, and Ben says ready.**
 
+**Seat read 2026-11-14 from origin at a95e56f6: readings and addendum accepted; approved to merge with the carried
+rows listed in PLAN-mining.md** (§6, *CARRIED HAND ROWS*, on `docs/mining-plan` at `9a398711`).
+
 **The stack.** `feat/mining-s1a` (PR #182: `bebe9680`, plus the F-A commit `e7308aa4`) is the bottom. `feat/mining-s1b`
 is built on it and is the top. **The ONE R0 is this file's, and it binds the boot to the S1-b head**, so one boot reads
 both slices (the seat's ruling, 2026-11-13; PLAN-mining.md 5.10). They merge bottom-up after the seat approves.
@@ -318,6 +321,12 @@ live spot** (and off any crack), each one **the instant the crosshair meter look
 | prediction | READING |
 |---|---|
 | **Exactly one `MINING click` line for the whole hold**: the dig START's `BlockDamageEvent` (MS3 read one DIG_START for a 58-swing hold), which is the first click and may be a HIT, **or BROKE if it is the last spot (n = 2): then THE STANDING RULE applies** (amended before any boot, G1). No line for any held swing. The deepslate does not break (no block change; the crack and flicker Ben saw in spike 1 are a client visual he accepted, F-M14) | **NOT AS PREDICTED: two click lines in the hold, not one.** L151 `outcome=BROKE spot=2/2 cooldown=1.0000 aim=10.01,25.71` (IN the box of (10,25)) at tick 10629: **the hold's START took the last spot (n = 2), so THE STANDING RULE applies and this is M-BREAK's first reading.** Then L153 `outcome=NOT_LIVE cooldown=0.8100` at 10656, 27 ticks later, inside the 3-second hold. Cause UNREAD: a second press, or the client restarting the dig. No line for any held swing beyond those. Ben did not run `/rpg mining regrow` after the early break (L155–L157 are three `place` commands, refused); the patch regrew by itself (M-REGROW) |
+
+**Correction to this prediction's reason, 2026-11-14 (the seat's ruling 1; PLAN F-M27). The prediction above is kept
+as written.** It rested on §5.4's "fires once per click by construction". The reading shows a hold RESTARTS the
+dig: two click lines here and three in M-PROTECT. **What keeps a hold from mining is the CHARGE RULE, not the event
+count:** the restarted digs read `0.1500`, `0.0900` and `0.2700` (2, 1 and 4 ticks after a reset), and a read below
+`1.0` can never be a HIT. This row's `0.8100` restart (13 ticks) is not explained by a hold and stays UNREAD.
 
 ### M-DENY — no pickaxe, no mining; any pickaxe will do (SURVIVAL) — witness: the log + Ben's sight
 
