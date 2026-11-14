@@ -11,6 +11,27 @@ both slices (the seat's ruling, 2026-11-13; PLAN-mining.md 5.10). They merge bot
 *amended before any boot*. Nothing in this file has been read; the amendments follow two code fixes (D1: the regrowth
 task is re-armed on the next look after a relog; D2: see M-RESPAWN) and the seat's hit budget.
 
+**READ 2026-11-14** (the seat's approval of 2026-11-14 for `863bf10a` only, on Ben's "ready"). One boot,
+`./scripts/dev-server.sh --refresh-content`, `[Rpg] Build: 863bf10a`; Ben's LOGIN at L79 of that boot's
+`run/logs/latest.log` (05:25:35), `/stop` at L242 (05:42:19). Every `L<n>` below is a line of that log. Ben's sight
+answers were relayed by the seat with his words quoted, and are recorded as given. Readings sit beside the
+predictions, which are unchanged.
+
+**THE READING IN ONE PLACE.** R0 PASS. **PASS:** M-TRACE, M-LOOK, M-HIT, M-CHARGE-17 (Δ = 16 and Δ = 17 both
+witnessed), M-BREAK (two breaks; the first landed in M-HOLD under THE STANDING RULE), M-REGROW, M-FULL, M-LOGOUT
+(D1 witnessed), M-PROTECT (by sight), LAST STEP. **Log half PASS, a half not read:** M-PACK (no prompt: NOT AS
+PREDICTED), M-PLACE (refusal texts NOT READ), M-MISS, M-UNCHARGED (sound NOT READ), M-DENY (action bar a DEFECT),
+M-RELOG (sight NOT STATED), M-RESPAWN (dimension half PASS; same-world respawn NOT READ). **NOT AS PREDICTED:**
+M-HOLD (two click lines in the hold), M-PACK's prompt, M-DENY's action bar. **NOT READ:** M-SERVER-LIST (the test
+results were not logged or relayed), M-SECOND-PLAYER (no second client). **AN UNPLANNED DEATH** in M-RESPAWN
+(`/kill` at L226), recorded under that row with what Ben's player data shows.
+
+**CARRIED TO THE NEXT BOOT, as hand rows** (the seat, 2026-11-14): **the SOUND halves of M-MISS, M-UNCHARGED and
+M-BREAK** (miss sound plays; an uncharged click plays nothing; the break sound plays), NOT READ here because Ben's
+audio was off (Q11, Q13, Q17). Never a pass. Also not read in this boot, and listed so they are not mistaken for
+passes: the join toggle's ON half (M-PACK), the same-world respawn (M-RESPAWN), M-SERVER-LIST, M-SECOND-PLAYER, the
+M-PLACE refusal texts, M-FULL's final ground check, and the remove step's "digs normally".
+
 Every prediction below was written **before** any row was read, and **this file is COMMITTED before the boot**.
 Readings go **beside** a prediction, never over it. A prediction is not edited once its row has been read. Readings
 count only if Ben's LOGIN appears in THIS boot's log.
@@ -128,13 +149,13 @@ full read (1.0000) is at Δ = 17**. A block click's first swing resets the ticke
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`: **`feat/mining-s1b`'s head as read from `git ls-remote origin refs/heads/feat/mining-s1b` at boot time**, shortened. Not `-dirty`, not `unknown`, not S1-a's `e7308aa4`, not master's `55425aad` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | _(not run)_ |
+| `[Rpg] Build: <sha>`: **`feat/mining-s1b`'s head as read from `git ls-remote origin refs/heads/feat/mining-s1b` at boot time**, shortened. Not `-dirty`, not `unknown`, not S1-a's `e7308aa4`, not master's `55425aad` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **PASS.** L42 `[Rpg] Build: 863bf10a`: the S1-b head as read from `git ls-remote origin refs/heads/feat/mining-s1b` before the boot (`863bf10aa18cab36d425d5cf0c327884e514dc94`). Not `-dirty`, not `unknown` |
 
 ### R0b — the jar carries both slices and the pack
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: core `mining/Patch`, `mining/VeinSize`, `mining/MiningBook` (S1-a and S1-b); paper `content/MiningContentLoader` (S1-a); paper `mining/MiningService`, `mining/MiningPack` (S1-b); `content/ores/iron.yml`; `resourcepack/pack.mcmeta`; `resourcepack/assets/rpg/items/mining/iron_patch.json`. ABSENT: the control | the scan below | _(not run)_ |
+| PRESENT: core `mining/Patch`, `mining/VeinSize`, `mining/MiningBook` (S1-a and S1-b); paper `content/MiningContentLoader` (S1-a); paper `mining/MiningService`, `mining/MiningPack` (S1-b); `content/ores/iron.yml`; `resourcepack/pack.mcmeta`; `resourcepack/assets/rpg/items/mining/iron_patch.json`. ABSENT: the control | the scan below | **PASS.** All nine PRESENT; `NoSuchClassControl.class` ABSENT. Read before Ben's LOGIN |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -158,7 +179,7 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 14 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes, 1 ores, 1 vein sizes`. **That is spike 1's READ R0c line (`GATE-mining-spike.md`, L44 of that boot, master's content) with S1-a's two counts appended**; neither slice adds any other content file. **No `Content:` line names `ore 'iron'`**: its sizes load, `raw_iron` is an item, both sounds and `minecraft:poof` resolve, and all three models are in the jar's pack (S1-b's in-pack check, which this row depends on). No `Skipping malformed ore`, `Skipping malformed vein size`, `No ores loaded`, `No vein sizes loaded`, `SEVERE` or exception. The only expected `[Rpg]` WARN lines at enable are `volley_stone`'s known pair | `Select-String -Path run\logs\latest.log -Pattern 'Loaded \d+ abilities','Content:','Skipping','No ores','No vein','SEVERE','Exception'` | _(not run)_ |
+| `Loaded 11 abilities, 27 visuals, 4 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 14 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes, 1 ores, 1 vein sizes`. **That is spike 1's READ R0c line (`GATE-mining-spike.md`, L44 of that boot, master's content) with S1-a's two counts appended**; neither slice adds any other content file. **No `Content:` line names `ore 'iron'`**: its sizes load, `raw_iron` is an item, both sounds and `minecraft:poof` resolve, and all three models are in the jar's pack (S1-b's in-pack check, which this row depends on). No `Skipping malformed ore`, `Skipping malformed vein size`, `No ores loaded`, `No vein sizes loaded`, `SEVERE` or exception. The only expected `[Rpg]` WARN lines at enable are `volley_stone`'s known pair | `Select-String -Path run\logs\latest.log -Pattern 'Loaded \d+ abilities','Content:','Skipping','No ores','No vein','SEVERE','Exception'` | **PASS.** L43 is the predicted line exactly, ending `… 1 mobs, 3 recipes, 1 ores, 1 vein sizes`. No `Content:` line names `ore 'iron'`; no `Skipping`, `No ores`, `No vein`, `SEVERE` or exception. The only `[Rpg]` WARN lines are `volley_stone`'s known pair (L44, L45). No `[Rpg]` warning at any of Ben's three LOGINs (L79, L197, L211) |
 
 ---
 
@@ -183,10 +204,10 @@ live spot's centre from the latest `show` line (the 5 × 5 box, low edge in, hig
 
 | prediction | READING |
 |---|---|
-| **From F6 and `MiningPack`.** One `MINING pack offer player=<Ben> url=http://127.0.0.1:<port>/rpg-pack.zip sha1=<40 hex> bytes=<n>`, then `MINING pack status ... status=ACCEPTED`, `DOWNLOADED`, `SUCCESSFULLY_LOADED`, in that order. **No disconnect** (`require-resource-pack=false`). A second `/rpg mining pack` in the same boot logs the **same sha1** (the zip is deterministic: `MiningPackTest`). **The join toggle is OFF** (CARRIED STATE): there is no `MINING pack offer` line at LOGIN. **The toggle ON is NOT READ in this boot**, because it needs a config edit and a restart | _(not run)_ |
+| **From F6 and `MiningPack`.** One `MINING pack offer player=<Ben> url=http://127.0.0.1:<port>/rpg-pack.zip sha1=<40 hex> bytes=<n>`, then `MINING pack status ... status=ACCEPTED`, `DOWNLOADED`, `SUCCESSFULLY_LOADED`, in that order. **No disconnect** (`require-resource-pack=false`). A second `/rpg mining pack` in the same boot logs the **same sha1** (the zip is deterministic: `MiningPackTest`). **The join toggle is OFF** (CARRIED STATE): there is no `MINING pack offer` line at LOGIN. **The toggle ON is NOT READ in this boot**, because it needs a config edit and a restart | **Log half PASS; the prompt NOT AS PREDICTED.** L94 `MINING pack offer … url=http://127.0.0.1:58412/rpg-pack.zip sha1=1e11f1c1e75b20cb547c34de0734812ca7ad2134 bytes=3225`, then ACCEPTED (L95), DOWNLOADED (L96), SUCCESSFULLY_LOADED (L97), in that order. No disconnect. No `MINING pack offer` at any LOGIN (the toggle is OFF). Two later offers (L200 at 05:36:57, L221 at 05:38:18) log the **same sha1**. **The client did not ask**: Ben, Q1/Q2, "it auto accepted, didn't prompt me". The step said "when the client asks". Likely cause, UNREAD: the client's per-server pack setting from the 2026-11-12 spike boot. **The join toggle's ON half is NOT READ** (as planned) |
 
-**Q1.** Did the client show a prompt to download a pack? (yes/no)
-**Q2.** After choosing Yes, did it finish without an error? (yes/no)
+**Q1.** Did the client show a prompt to download a pack? (yes/no) **Ben: "No, I ran the command and it auto accepted"** (NOT AS PREDICTED: no prompt)
+**Q2.** After choosing Yes, did it finish without an error? (yes/no) **Ben: "Yes it finished but it auto accepted, didn't prompt me"**
 
 ### M-TRACE — the trace turns on (SURVIVAL) — witness: the log
 
@@ -194,7 +215,7 @@ live spot's centre from the latest `show` line (the 5 × 5 box, low edge in, hig
 
 | prediction | READING |
 |---|---|
-| `MINING trace player=<Ben> on=true`, and the chat line "Mining trace ON." Every later row reads lines this enables | _(not run)_ |
+| `MINING trace player=<Ben> on=true`, and the chat line "Mining trace ON." Every later row reads lines this enables | **PASS** (log). L99 `MINING trace player=BaronVonYeetus on=true`. The chat line "Mining trace ON." is not logged: NOT READ |
 
 ### M-PLACE — the slot is placed, and each refusal names its block (SURVIVAL) — witness: the log + chat
 
@@ -206,7 +227,7 @@ live spot's centre from the latest `show` line (the 5 × 5 box, low edge in, hig
 
 | prediction | READING |
 |---|---|
-| Below, `<x>,<y>,<z>` is the **lower** row's centre block. **1:** red "A patch goes on a wall (north, south, east or west face), not up." No `MINING place` line. **2:** red "Block <x+1>,<y+2>,<z> is not solid.": the footprint runs one row UP from the looked-at block, that row is air, and its first block is the one on the player's LEFT (facing south, left is east, +X; `FaceFrame.footprint` order). No `MINING place`. **3:** green "Placed iron small at <world-uuid>:<x>,<y>,<z>:NORTH.", and one `MINING place slot=<world-uuid>:<x>,<y>,<z>:NORTH ore=iron size=small footprint=<6 blocks> by=<Ben>`, with the six blocks being the wall's. Then a `MINING show ... spots=<2 or 3 centres> live=1/<n>`. **4:** red "a slot already exists at <id>." | _(not run)_ |
+| Below, `<x>,<y>,<z>` is the **lower** row's centre block. **1:** red "A patch goes on a wall (north, south, east or west face), not up." No `MINING place` line. **2:** red "Block <x+1>,<y+2>,<z> is not solid.": the footprint runs one row UP from the looked-at block, that row is air, and its first block is the one on the player's LEFT (facing south, left is east, +X; `FaceFrame.footprint` order). No `MINING place`. **3:** green "Placed iron small at <world-uuid>:<x>,<y>,<z>:NORTH.", and one `MINING place slot=<world-uuid>:<x>,<y>,<z>:NORTH ore=iron size=small footprint=<6 blocks> by=<Ben>`, with the six blocks being the wall's. Then a `MINING show ... spots=<2 or 3 centres> live=1/<n>`. **4:** red "a slot already exists at <id>." | **Step 3 PASS; steps 1, 2 and 4 NOT READ.** L106 `MINING place slot=e404d973-…:-117,63,9:NORTH ore=iron size=small footprint=-116,63,9;-117,63,9;-118,63,9;-116,64,9;-117,64,9;-118,64,9`: six blocks, the first `-116` = x+1, the player's left (east) as predicted. L107 `MINING show … spots=20,17;10,25 live=1/2` (n = 2). The refusals' chat text is not logged and was not relayed, so steps 1, 2 and 4 are NOT READ. The log shows **five** place commands before the success (L100–L104, the first typed `small.` with a trailing full stop) and two after (L108–L109, the first again `small.`), none with a `MINING place` line: consistent with refusals, not a reading of their text |
 
 ### M-LOOK — the patch and the spot on screen (SURVIVAL, pack loaded) — witness: Ben's sight
 
@@ -215,14 +236,14 @@ F-M18: spike 1 never stated the model's size, facing or position. This row reads
 
 | prediction | READING |
 |---|---|
-| **From F5 and `MiningService`.** A flat placeholder patch (grey with tan flecks, a dark border) covering the whole 3 × 2 north face; ONE yellow spot with a dark border, 3/16 of a block square, at the first `show` centre; no flicker between the patch and the wall or the spot. **MEASUREMENT (client):** the facing and whether a 48 × 32 texture renders unstretched are client behaviour, and are read here, not predicted | _(not run)_ |
+| **From F5 and `MiningService`.** A flat placeholder patch (grey with tan flecks, a dark border) covering the whole 3 × 2 north face; ONE yellow spot with a dark border, 3/16 of a block square, at the first `show` centre; no flicker between the patch and the wall or the spot. **MEASUREMENT (client):** the facing and whether a 48 × 32 texture renders unstretched are client behaviour, and are read here, not predicted | **PASS by sight**, Ben Q3–Q8: as wide and as tall as the wall, flat and facing him, exactly one spot, "Gray", no flicker. Q3/Q4 read the 48 × 32 texture as covering the 3 × 2 face. (The colour prediction was "grey with tan flecks": Ben's one word is "Gray") |
 
-**Q3.** Is the patch as wide as the 3-block wall? (yes/no)
-**Q4.** Is it as tall as the 2-block wall? (yes/no)
-**Q5.** Is it flat on the wall's face, facing you? (yes/no)
-**Q6.** Do you see exactly one small spot on it? (yes/no)
-**Q7.** One word for the patch's colour.
-**Q8.** Does anything flicker where the patch meets the wall or the spot? (yes/no)
+**Q3.** Is the patch as wide as the 3-block wall? (yes/no) **Ben: "Yes"**
+**Q4.** Is it as tall as the 2-block wall? (yes/no) **Ben: "Yes"**
+**Q5.** Is it flat on the wall's face, facing you? (yes/no) **Ben: "Yes"**
+**Q6.** Do you see exactly one small spot on it? (yes/no) **Ben: "Yes"**
+**Q7.** One word for the patch's colour. **Ben: "Gray"**
+**Q8.** Does anything flicker where the patch meets the wall or the spot? (yes/no) **Ben: "No"**
 
 ### M-SERVER-LIST — the displays are not server entities (SURVIVAL) — witness: the command output
 
@@ -232,7 +253,7 @@ F-M18: spike 1 never stated the model's size, facing or position. This row reads
 
 | prediction | READING |
 |---|---|
-| **1:** "Test failed": the patch and spot are packet-only. **2:** "Test passed, count: 1", then the kill removes it. If 2 fails, 1 proves nothing | _(not run)_ |
+| **1:** "Test failed": the patch and spot are packet-only. **2:** "Test passed, count: 1", then the kill removes it. If 2 fails, 1 proves nothing | **NOT READ.** The commands ran (step 1 twice, L110–L111; `/summon` "Summoned new Item Display" L112–L113; step 2's test L114; `/kill` "Killed Item Display" L115–L116), so the control's entity existed and was removed. The `/execute if` results ("Test failed" / "Test passed, count: 1") are not logged and were not relayed, so neither half has a reading |
 
 ### M-HIT — a charged hit cracks the live spot and reveals the next (SURVIVAL) — witness: the log + Ben's sight
 
@@ -240,10 +261,10 @@ F-M18: spike 1 never stated the model's size, facing or position. This row reads
 
 | prediction | READING |
 |---|---|
-| One `MINING click ... outcome=HIT spot=1/<n> cooldown=1.0000 aim=<u>,<v>` with the aim IN the first `show` centre's box. The aim is read at the dig START (PLAN 5.4); spike 1's single-click aims were within 0.86 px of the centre. Then the spot becomes a crack and a second spot appears, and a click on the crack later is a MISS | _(not run)_ |
+| One `MINING click ... outcome=HIT spot=1/<n> cooldown=1.0000 aim=<u>,<v>` with the aim IN the first `show` centre's box. The aim is read at the dig START (PLAN 5.4); spike 1's single-click aims were within 0.86 px of the centre. Then the spot becomes a crack and a second spot appears, and a click on the crack later is a MISS | **PASS** (log and sight). L124 `outcome=HIT spot=1/2 cooldown=1.0000 aim=20.59,18.00`, IN the box of the first centre (20,17): 18 ≤ 20.59 < 23, 15 ≤ 18.00 < 20; 0.51 px from the spot's centre (20.5, 17.5). Ben Q9/Q10: the spot cracked and a new one appeared. "A click on the crack later is a MISS": NOT WITNESSED (no later click landed in the crack's box). **Set-up step 7 was skipped**: the pickaxe was given at L122–L123 (05:31:53), after five DENIED clicks (see M-DENY) |
 
-**Q9.** Did the spot change to a crack? (yes/no)
-**Q10.** Did a new spot appear somewhere else on the patch? (yes/no)
+**Q9.** Did the spot change to a crack? (yes/no) **Ben: "Yes"**
+**Q10.** Did a new spot appear somewhere else on the patch? (yes/no) **Ben: "Yes"**
 
 ### M-MISS — a charged click off the live spot changes nothing and plays the miss sound (SURVIVAL) — witness: the log + Ben's sight
 
@@ -251,10 +272,10 @@ F-M18: spike 1 never stated the model's size, facing or position. This row reads
 
 | prediction | READING |
 |---|---|
-| `MINING click ... outcome=MISS cooldown=1.0000` with the aim OUTSIDE the live spot's box. Nothing changes. **The miss sound plays to Ben only** (`sounds.miss`, the PLACEHOLDER `minecraft:block.stone.hit`). An uncharged click beside the spot is also a MISS and also plays it (the order of checks; `PatchTest.aimOutsideAndUnchargedIsAMiss`) | _(not run)_ |
+| `MINING click ... outcome=MISS cooldown=1.0000` with the aim OUTSIDE the live spot's box. Nothing changes. **The miss sound plays to Ben only** (`sounds.miss`, the PLACEHOLDER `minecraft:block.stone.hit`). An uncharged click beside the spot is also a MISS and also plays it (the order of checks; `PatchTest.aimOutsideAndUnchargedIsAMiss`) | **Log half PASS; the sound NOT READ; Q12 NOT STATED.** L125 `outcome=MISS spot=2/2 cooldown=1.0000 aim=26.55,21.80`, outside the live box of (10,25). The next line still reads `spot=2/2`: nothing changed (the log half of "nothing changes"). An uncharged click beside the spot is a MISS: L127 `MISS cooldown=0.2700 aim=13.19,24.88` (u ≥ 13, outside). **The miss sound is NOT READ** (Ben, Q11: "I didn't have audio on"); CARRIED |
 
-**Q11.** Did you hear a sound when you missed? (yes/no)
-**Q12.** Did anything on the patch change? (yes/no)
+**Q11.** Did you hear a sound when you missed? (yes/no) **Ben: "I didn't have audio on"**: NOT STATED; the sound half is NOT READ and CARRIED
+**Q12.** Did anything on the patch change? (yes/no) **Ben: "I'm not sure what this question is asking"**: NOT STATED
 
 ### M-UNCHARGED — an early click on the live spot changes nothing and plays nothing (SURVIVAL) — witness: the log + Ben's sight
 
@@ -263,9 +284,9 @@ F-M18: spike 1 never stated the model's size, facing or position. This row reads
 
 | prediction | READING |
 |---|---|
-| The first: `MINING click ... outcome=MISS` (its swing resets the ticker, F1). The second: `MINING click ... outcome=UNCHARGED cooldown=<(Δ+0.5)/16.666666>`, Δ being its tick minus the first's (under 10 ticks, so under 0.6300), with the aim IN the live spot's box and `spot=` the SAME index as the MISS line's. **An UNCHARGED click plays nothing**, and nothing changes: the live spot stays live. (If the second click lands outside the box it is a MISS with the miss sound, recorded as such, and the row is repeated) | _(not run)_ |
+| The first: `MINING click ... outcome=MISS` (its swing resets the ticker, F1). The second: `MINING click ... outcome=UNCHARGED cooldown=<(Δ+0.5)/16.666666>`, Δ being its tick minus the first's (under 10 ticks, so under 0.6300), with the aim IN the live spot's box and `spot=` the SAME index as the MISS line's. **An UNCHARGED click plays nothing**, and nothing changes: the live spot stays live. (If the second click lands outside the box it is a MISS with the miss sound, recorded as such, and the row is repeated) | **Log half PASS; the sound NOT READ.** Two MISS-then-UNCHARGED pairs. (a) L130 MISS `cooldown=1.0000 aim=14.97,25.20` (outside) at tick 9887, then L131 `UNCHARGED spot=2/2 cooldown=0.5100 aim=10.10,25.52` (IN the box of (10,25)) at 9896: Δ = 9, under half a second; the same `spot=2/2`; nothing changed. The formula gives 0.5700 at Δ = 9, and **0.5100 is Δ = 8, one tick off** (the instrument phase; see M-CHARGE-17). Under 0.6300 as predicted. (b) An earlier pair: L127 MISS (0.2700, tick 9610), then L128 UNCHARGED 0.2700 at 9615 (Δ 5, the formula gives 0.3300, one tick off) and L129 UNCHARGED 0.7500 at 9627 (Δ 12, exact), both IN the box. M-FULL adds five more in-game UNCHARGED lines, all IN the box and none spending a spot. **No sound reading** (Q13, audio off); CARRIED |
 
-**Q13.** On the fast second click on a spot, did you hear a sound? (yes/no)
+**Q13.** On the fast second click on a spot, did you hear a sound? (yes/no) **Ben: "Didn't have audio on"**: NOT STATED; the sound half is NOT READ and CARRIED
 
 ### M-CHARGE-17 — the full-charge boundary spike 1 never isolated (SURVIVAL) — witness: the log
 
@@ -275,7 +296,7 @@ live spot** (and off any crack), each one **the instant the crosshair meter look
 
 | prediction | READING |
 |---|---|
-| 20 `MINING click ... outcome=MISS` lines. Δ is each line's tick minus the previous click line's. **At Δ = 16 the line reads `cooldown=0.9900`; at Δ = 17 it reads `cooldown=1.0000`.** **If neither Δ occurs, the boundary is NOT WITNESSED**, recorded as such and not as a pass. About 10% of spike 1's reads sat one tick off the logged tick difference (the instrument phase); that is recorded, not a failure. **What this row does not read:** the mapping from a cooldown to HIT or UNCHARGED (`ChargeRule`: exactly 1.0f) is unit-tested (`SpotBoxAndChargeTest`), and is read in game by M-HIT (`1.0000` → HIT) and M-UNCHARGED (below 1 → UNCHARGED) | _(not run)_ |
+| 20 `MINING click ... outcome=MISS` lines. Δ is each line's tick minus the previous click line's. **At Δ = 16 the line reads `cooldown=0.9900`; at Δ = 17 it reads `cooldown=1.0000`.** **If neither Δ occurs, the boundary is NOT WITNESSED**, recorded as such and not as a pass. About 10% of spike 1's reads sat one tick off the logged tick difference (the instrument phase); that is recorded, not a failure. **What this row does not read:** the mapping from a cooldown to HIT or UNCHARGED (`ChargeRule`: exactly 1.0f) is unit-tested (`SpotBoxAndChargeTest`), and is read in game by M-HIT (`1.0000` → HIT) and M-UNCHARGED (below 1 → UNCHARGED) | **PASS: the boundary is WITNESSED.** 19 MISS lines (L132–L150, ticks 10099–10416; **19, not 20**), all at `aim=15.8x,25.5x`, outside the live box of (10,25). Deltas between consecutive lines: **Δ = 16 twice** (10329→10345, 10345→10361), both `cooldown=0.9900`, as predicted. **Δ = 17 five times**: four `1.0000` (10117→10134, 10134→10151, 10151→10168, 10293→10310) and one `0.9900` (10222→10239), one tick off, the instrument phase the prediction allows for. Every other Δ (18, 19) read 1.0000 |
 
 ### M-HOLD — holding left-click on the live spot hits at most once (SURVIVAL) — witness: the log
 
@@ -283,7 +304,7 @@ live spot** (and off any crack), each one **the instant the crosshair meter look
 
 | prediction | READING |
 |---|---|
-| **Exactly one `MINING click` line for the whole hold**: the dig START's `BlockDamageEvent` (MS3 read one DIG_START for a 58-swing hold), which is the first click and may be a HIT, **or BROKE if it is the last spot (n = 2): then THE STANDING RULE applies** (amended before any boot, G1). No line for any held swing. The deepslate does not break (no block change; the crack and flicker Ben saw in spike 1 are a client visual he accepted, F-M14) | _(not run)_ |
+| **Exactly one `MINING click` line for the whole hold**: the dig START's `BlockDamageEvent` (MS3 read one DIG_START for a 58-swing hold), which is the first click and may be a HIT, **or BROKE if it is the last spot (n = 2): then THE STANDING RULE applies** (amended before any boot, G1). No line for any held swing. The deepslate does not break (no block change; the crack and flicker Ben saw in spike 1 are a client visual he accepted, F-M14) | **NOT AS PREDICTED: two click lines in the hold, not one.** L151 `outcome=BROKE spot=2/2 cooldown=1.0000 aim=10.01,25.71` (IN the box of (10,25)) at tick 10629: **the hold's START took the last spot (n = 2), so THE STANDING RULE applies and this is M-BREAK's first reading.** Then L153 `outcome=NOT_LIVE cooldown=0.8100` at 10656, 27 ticks later, inside the 3-second hold. Cause UNREAD: a second press, or the client restarting the dig. No line for any held swing beyond those. Ben did not run `/rpg mining regrow` after the early break (L155–L157 are three `place` commands, refused); the patch regrew by itself (M-REGROW) |
 
 ### M-DENY — no pickaxe, no mining; any pickaxe will do (SURVIVAL) — witness: the log + Ben's sight
 
@@ -291,9 +312,9 @@ live spot** (and off any crack), each one **the instant the crosshair meter look
 
 | prediction | READING |
 |---|---|
-| **1 and 2:** `MINING click ... outcome=DENIED`, and the action bar shows "You need a pickaxe to mine this." in red. Nothing changes, no sound. **3:** `HIT` (or `BROKE`, and then THE STANDING RULE applies; amended before any boot, G1): any item in `#minecraft:pickaxes` counts, minted or not (the seat's ruling 7) | _(not run)_ |
+| **1 and 2:** `MINING click ... outcome=DENIED`, and the action bar shows "You need a pickaxe to mine this." in red. Nothing changes, no sound. **3:** `HIT` (or `BROKE`, and then THE STANDING RULE applies; amended before any boot, G1): any item in `#minecraft:pickaxes` counts, minted or not (the seat's ruling 7) | **Log half PASS; the action bar NOT AS PREDICTED (a DEFECT).** On the regrown patch: L162–L165 four `DENIED spot=1/2` (05:34:33–35), after the sword was given (L158–L159). The log cannot separate step 1 (empty hand) from step 2 (sword); the last two read 0.8400 at Δ 10 and 0.7600 at Δ 9, which is the sword's 1.6 speed exactly ((Δ+0.5)/12.5, computed). Nothing changed (`spot=1/2` throughout). Step 3: L166 `HIT spot=1/2 cooldown=1.0000 aim=24.43,8.95`, IN the box of (24,8). **Ben, Q14: "Yes but the HP/defense/Mana overode it faster than it could be read"**: the DENIED line is overwritten by the HUD (`StatsBarSystem`, every 10 ticks); recorded as a finding, not fixed (Ben's ruling). Also: five DENIED lines at L117–L121 (05:31:42–44), before set-up step 7's pickaxe was given; two read `0.7000` at Δ 16 and Δ 4 with the held item unknown: UNEXPLAINED, no prediction attached |
 
-**Q14.** With an empty hand, did a red message appear above the hotbar? (yes/no)
+**Q14.** With an empty hand, did a red message appear above the hotbar? (yes/no) **Ben: "Yes but the HP/defense/Mana overode it faster than it could be read"**: a DEFECT (the HUD overwrites the line)
 
 ### M-BREAK — the last spot breaks the patch and pays raw iron (SURVIVAL) — witness: the log + Ben's sight + inventory
 
@@ -303,12 +324,12 @@ says which break this row's reading is** (amended before any boot, G1).
 
 | prediction | READING |
 |---|---|
-| The last hit logs `MINING click ... outcome=BROKE`, then `MINING break ... payout=raw_ironx<count> rolls=<one per spot> bonus=5 kept=<count> dropped=0 regrow_at=<tick + 1200>`. **Each roll is 2, 3 or 4; the count is their sum + 5, inside 9..17** (9..13 for 2 spots, 11..17 for 3; Ben: "2-4 per spot with a 5 completion bonus"). The inventory gains exactly `count` raw iron. Every mark goes; the break sound (`minecraft:block.stone.break`, PLACEHOLDER) and a poof (PLACEHOLDER) play to Ben only. A click straight after logs `NOT_LIVE` and plays nothing | _(not run)_ |
+| The last hit logs `MINING click ... outcome=BROKE`, then `MINING break ... payout=raw_ironx<count> rolls=<one per spot> bonus=5 kept=<count> dropped=0 regrow_at=<tick + 1200>`. **Each roll is 2, 3 or 4; the count is their sum + 5, inside 9..17** (9..13 for 2 spots, 11..17 for 3; Ben: "2-4 per spot with a 5 completion bonus"). The inventory gains exactly `count` raw iron. Every mark goes; the break sound (`minecraft:block.stone.break`, PLACEHOLDER) and a poof (PLACEHOLDER) play to Ben only. A click straight after logs `NOT_LIVE` and plays nothing | **PASS (both breaks).** **First break (THE STANDING RULE: it landed in M-HOLD):** L152 `payout=raw_ironx9 rolls=2+2 bonus=5 kept=9 dropped=0 regrow_at=11829` (= 10629 + 1200). 2 + 2 + 5 = 9, inside 9..13 for 2 spots. **Ben, QA "0 Raw Iron", Q15 "9"**: the inventory gained exactly the count. L153, the click straight after, is `NOT_LIVE`. **Second break, as written:** L167 `BROKE spot=2/2 aim=7.70,21.18` (IN the box of (7,21)), L168 `payout=raw_ironx12 rolls=4+3 bonus=5 kept=12 dropped=0 regrow_at=14103` (= 12903 + 1200), inside 9..13. Cross-check: L169–L170 `/clear @s minecraft:raw_iron` "Removed 21 item(s)" = 9 + 12 with QA 0. Ben Q16 the patch disappeared, Q18 a puff of particles. **The break sound is NOT READ** (Q17, audio off); CARRIED |
 
-**Q15.** How many raw iron did you gain? (one number)
-**Q16.** Did the patch disappear? (yes/no)
-**Q17.** Did you hear a break sound? (yes/no)
-**Q18.** Did you see a puff of particles? (yes/no)
+**Q15.** How many raw iron did you gain? (one number) **Ben: "9"** (QA: "0 Raw Iron")
+**Q16.** Did the patch disappear? (yes/no) **Ben: "Yes"**
+**Q17.** Did you hear a break sound? (yes/no) **Ben: "Didn't have audio on"**: NOT STATED; the sound half is NOT READ and CARRIED
+**Q18.** Did you see a puff of particles? (yes/no) **Ben: "Yes"**
 
 ### M-REGROW — the patch returns after 1200 ticks, re-rolled (SURVIVAL) — witness: the log + Ben's sight
 
@@ -316,9 +337,9 @@ says which break this row's reading is** (amended before any boot, G1).
 
 | prediction | READING |
 |---|---|
-| At tick ≥ the break line's `regrow_at`, `MINING show ... live=1/<n>` and `MINING regrow ... spots=<n>`. **The `spots=` centres differ from the previous `show` line's** (re-rolled; a repeat is possible but unlikely, and is recorded). Ben sees a fresh patch with one spot. (Ben: "1 minute is fine for now"; it counts server ticks, so under 20 TPS it is longer.) | _(not run)_ |
+| At tick ≥ the break line's `regrow_at`, `MINING show ... live=1/<n>` and `MINING regrow ... spots=<n>`. **The `spots=` centres differ from the previous `show` line's** (re-rolled; a repeat is possible but unlikely, and is recorded). Ben sees a fresh patch with one spot. (Ben: "1 minute is fine for now"; it counts server ticks, so under 20 TPS it is longer.) | **PASS.** L160–L161 at 05:34:00: `MINING show … spots=24,8;7,21 live=1/2 tick=11829` and `MINING regrow … spots=2 tick=11829`: **exactly at the first break's `regrow_at` (11829)**, by itself (no `/rpg mining regrow` ran). The centres differ from the previous show's `20,17;10,25`: re-rolled. Ben Q19: "yes" |
 
-**Q19.** Did the patch come back by itself? (yes/no)
+**Q19.** Did the patch come back by itself? (yes/no) **Ben: "yes"**
 
 ### M-FULL — a full inventory drops the remainder at your feet (SURVIVAL) — witness: the log + Ben's sight
 
@@ -328,9 +349,9 @@ picks nothing up). 3. `/rpg mining regrow` if the patch is not up. 4. Break the 
 
 | prediction | READING |
 |---|---|
-| `MINING regrow-all player=<Ben> shown=<0 or 1>`. The break line reads **`kept=0 dropped=<count>`** with `kept + dropped = count` (the seat's ruling: the remainder drops at the player's feet, as vanilla does). The raw iron lies at Ben's feet | _(not run)_ |
+| `MINING regrow-all player=<Ben> shown=<0 or 1>`. The break line reads **`kept=0 dropped=<count>`** with `kept + dropped = count` (the seat's ruling: the remainder drops at the player's feet, as vanilla does). The raw iron lies at Ben's feet | **PASS** (log; the ground clean-up step 8 NOT READ). L171–L172 "Gave 2304 [Cobblestone]"; L175 `MINING regrow-all … shown=1` (show L174 `spots=15,18;4,7 live=1/2`). L176 HIT, then five UNCHARGED (L177–L181, all IN the box of (4,7), no spot spent), then L182 `BROKE spot=2/2 aim=5.08,7.25` and L183 `payout=raw_ironx9 rolls=2+2 bonus=5 kept=0 dropped=9 regrow_at=15250`: **kept 0, dropped 9**, as predicted. Ben Q20: "Yes". Clean-up: L184–L185 `/kill @e[type=minecraft:item,distance=..16]` "Killed 5 entities" (n ≥ 1, the positive control); L186–L187 `/clear @s minecraft:cobblestone` "Removed 2048 item(s)"; L188 the final `/execute if entity` ran, and its result is not logged and was not relayed: NOT READ. (5 entities fits four spilled cobblestone stacks plus one raw iron stack; an inference, not read) |
 
-**Q20.** Did raw iron drop on the ground at your feet? (yes/no)
+**Q20.** Did raw iron drop on the ground at your feet? (yes/no) **Ben: "Yes"**
 
 **Clean-up, in this order (amended before any boot, G6)**, so the next rows start clean. M-BREAK's inventory count
 was taken BEFORE this row (set-up step 5 and the first break), and step 1's `/clear` only happens after it.
@@ -354,11 +375,11 @@ and the HIT line's `spot=`. 3. Disconnect, and reconnect. 4. Stand where the wal
 
 | prediction | READING |
 |---|---|
-| After the reconnect, one `MINING show player=<Ben> slot=<id> spots=<...> live=2/<n>` line whose **`spots=` centres are the SAME as the last `show` line before the disconnect** and whose live index is the one after the HIT (`live=2/<n>`). No `MINING click` line between the reconnect and that show. The trace stays ON across the reconnect (it is keyed by UUID and a quit does not clear it). By sight: the patch, ONE crack and ONE live spot, in the places they were | _(not run)_ |
+| After the reconnect, one `MINING show player=<Ben> slot=<id> spots=<...> live=2/<n>` line whose **`spots=` centres are the SAME as the last `show` line before the disconnect** and whose live index is the one after the HIT (`live=2/<n>`). No `MINING click` line between the reconnect and that show. The trace stays ON across the reconnect (it is keyed by UUID and a quit does not clear it). By sight: the patch, ONE crack and ONE live spot, in the places they were | **Log half PASS; the sight half NOT STATED.** L189–L191 `/rpg mining regrow`: show `spots=17,24;6,17;41,25 live=1/3`. L192 `HIT spot=1/3 cooldown=1.0000 aim=17.64,24.29` (IN the box of (17,24)) at 05:36:33; disconnect L193 the same second; reconnect L197 05:36:39. **L198 `MINING show … spots=17,24;6,17;41,25 live=2/3 tick=15008`: the SAME centres and the live index after the HIT**, with no `MINING click` line between the reconnect and it. The trace stayed ON. Q23–Q25: Ben gave no answer: NOT STATED. **Not in the steps:** Ben re-ran `/rpg mining pack` at L199–L203 after the reconnect (the join toggle is OFF, so nothing re-offers the pack). Whether the client kept the pack across the reconnect is UNREAD |
 
-**Q23.** After reconnecting, was the patch back on the wall? (yes/no)
-**Q24.** Was the crack still there? (yes/no)
-**Q25.** Was there exactly one live spot, where it was before? (yes/no)
+**Q23.** After reconnecting, was the patch back on the wall? (yes/no) **Ben gave no answer**: NOT STATED
+**Q24.** Was the crack still there? (yes/no) **Ben gave no answer**: NOT STATED
+**Q25.** Was there exactly one live spot, where it was before? (yes/no) **Ben gave no answer**: NOT STATED
 
 ### M-LOGOUT — regrowth is kept across logout (SURVIVAL) — witness: the log + Ben's sight
 
@@ -369,9 +390,9 @@ and would read the click path, not the patch returning by itself.
 
 | prediction | READING |
 |---|---|
-| On reconnecting before `regrow_at`: **no patch** and no `MINING show` line (the clock is kept across logout; the seat's ruling 4). After `regrow_at`: the patch appears **by itself** and a `MINING show` line prints. The trace stays ON across the reconnect. (If the reconnect lands after `regrow_at`, the first half is NOT WITNESSED.) **Why it is true now (amended before any boot, G3):** the quit drops the break's regrowth task (F8c); on reconnect the chunk load reaches `show`, which finds the patch regrowing and arms ONE new task on the new session's Player (D1). Before D1 the wall stayed bare until a click | _(not run)_ |
+| On reconnecting before `regrow_at`: **no patch** and no `MINING show` line (the clock is kept across logout; the seat's ruling 4). After `regrow_at`: the patch appears **by itself** and a `MINING show` line prints. The trace stays ON across the reconnect. (If the reconnect lands after `regrow_at`, the first half is NOT WITNESSED.) **Why it is true now (amended before any boot, G3):** the quit drops the break's regrowth task (F8c); on reconnect the chunk load reaches `show`, which finds the patch regrowing and arms ONE new task on the new session's Player (D1). Before D1 the wall stayed bare until a click | **PASS (log and sight). D1 WITNESSED.** L204 `HIT spot=2/3` (IN (6,17)), L205 `BROKE spot=3/3 aim=41.27,25.37` (IN (41,25)), L206 `payout=raw_ironx14 rolls=3+3+3 bonus=5 kept=14 dropped=0 regrow_at=16864` (3 + 3 + 3 + 5 = 14, inside 11..17). Disconnect L207 05:37:24 (12 s after the break); reconnect L211 05:37:54 (**42 s after the break; the step said within 40 s**; still before `regrow_at`). On reconnect: no `MINING show` line (Ben Q21: the wall was bare). **No click line between the reconnect and `regrow_at`: the row is NOT VOID.** L216–L217 at 05:38:11: `MINING show … spots=33,20;14,8;24,27 live=1/3 tick=16864` and **`MINING regrow … tick=16864`, exactly `regrow_at`**. A `regrow` line is printed only by the regrowth task, so this is the task the reconnect's chunk load re-armed (D1). (Ben applied M-RESPAWN's two effects at L212 and L214 before `regrow_at`: no click, no effect on this row) |
 
-**Q21.** When you came back, was the wall bare at first? (yes/no)
+**Q21.** When you came back, was the wall bare at first? (yes/no) **Ben: "yes"**
 
 ### M-RESPAWN — the patch comes back after a dimension change (SURVIVAL) — witness: the log + Ben's sight
 
@@ -403,10 +424,10 @@ has its own death rules, so **nothing in this row may risk a death.**
 
 | prediction | READING |
 |---|---|
-| **Step 3:** no `MINING` line (the unloads clear `shown` and log nothing). Ben takes no damage. **Step 4:** within a few seconds of arriving, one `MINING show player=<Ben> slot=<id>` line whose `spots=` and `live=` equal step 1's line, and no `MINING click` line before it. By sight: the patch and its spot are back. **If no `show` line prints and the wall is bare, D2 is real** (a stale `shown`): FAIL, recorded, and a relog is the recovery | _(not run)_ |
+| **Step 3:** no `MINING` line (the unloads clear `shown` and log nothing). Ben takes no damage. **Step 4:** within a few seconds of arriving, one `MINING show player=<Ben> slot=<id>` line whose `spots=` and `live=` equal step 1's line, and no `MINING click` line before it. By sight: the patch and its spot are back. **If no `show` line prints and the wall is bare, D2 is real** (a stale `shown`): FAIL, recorded, and a relog is the recovery | **Dimension half PASS (log and sight); the same-world respawn half NOT READ; and an UNPLANNED DEATH.** Step 1's line: L216 `spots=33,20;14,8;24,27 live=1/3`. Step 3: L218–L219 teleported to the nether roof; no `MINING` line while there. **First return FAILED**: L225 the placeholder `tp @s <x> <y> <z−3> 0 0` was typed literally and did nothing. **L226–L228 `/kill`, "BaronVonYeetus was killed" (05:39:27): a DEATH, which the staging said must not happen.** The respawn put him in the overworld, and L229 `MINING show … spots=33,20;14,8;24,27 live=1/3 tick=18410` re-showed the patch: an unplanned reading of a respawn WITH a dimension change (nether → overworld), **not** the same-world respawn this row leaves NOT READ. L230–L231 `/rpg mining regrow` `shown=0`: already shown, so `shown` was not stale. **The row as written, second attempt:** L232–L233 to the nether, L234–L235 back to `-116.5 63 6.5`, **L236 `MINING show … spots=33,20;14,8;24,27 live=1/3 tick=20208`, equal to step 1's line**, with no click line before it. Ben Q26 "no" damage, Q27 "yes", the patch was there. **The death's cost, from Ben's player data against the backup** (read-only): the Ability Stone (`rpg:build_stone`) and the Nexus star (`rpg:nexus`) are still in his inventory. **Five iron pickaxes in the backup (four named, with attribute modifiers, and one plain) are not**; whether the death dropped them or Ben moved them is UNREAD |
 
-**Q26.** On the nether roof, did you take any damage? (yes/no)
-**Q27.** Back at the wall, without clicking, was the patch there? (yes/no)
+**Q26.** On the nether roof, did you take any damage? (yes/no) **Ben: "no"**
+**Q27.** Back at the wall, without clicking, was the patch there? (yes/no) **Ben: "yes"**
 
 ### M-PROTECT — the slot's blocks cannot be broken in survival (SURVIVAL) — witness: the log + Ben's sight
 
@@ -415,15 +436,15 @@ has its own death rules, so **nothing in this row may risk a death.**
 
 | prediction | READING |
 |---|---|
-| The block is still deepslate afterwards. No block change in the log. The client may show a crack or a brief vanish and return (F-M14, accepted by Ben as a client visual and deferred). **The creative half of the plan's M-PROTECT is not in this gate** (GAME MODE) | _(not run)_ |
+| The block is still deepslate afterwards. No block change in the log. The client may show a crack or a brief vanish and return (F-M14, accepted by Ben as a client visual and deferred). **The creative half of the plan's M-PROTECT is not in this gate** (GAME MODE) | **PASS by sight; the log half is vacuous.** L237–L239 three `MISS spot=1/3` lines (cooldowns 0.1500, 0.0900, 0.2700; aims 32.3,25.1 and 20.3,25.2, outside the live box of (33,20)), the first and last 235 ticks apart. Ben Q22: "yes", the block was still there. "No block change in the log": **this log never records block changes**, so that half has no instrument and is not a reading. Three click lines in one hold: no count was predicted for this row (compare M-HOLD) |
 
-**Q22.** After 10 seconds, was the block still there? (yes/no)
+**Q22.** After 10 seconds, was the block still there? (yes/no) **Ben: "yes"**
 
 ### M-SECOND-PLAYER — each player sees their own patch (SURVIVAL) — witness: a second client
 
 | prediction | READING |
 |---|---|
-| **Only if a second client is available.** The second player sees their own fresh patch at the slot, with its own spots, not Ben's progress; Ben's sounds are not heard by them. **Otherwise this row is NOT READ**, and that is recorded, never treated as a pass | _(not run)_ |
+| **Only if a second client is available.** The second player sees their own fresh patch at the slot, with its own spots, not Ben's progress; Ben's sounds are not heard by them. **Otherwise this row is NOT READ**, and that is recorded, never treated as a pass | **NOT READ.** Ben, QB: "No" second client |
 
 ### THE REMOVE STEP (inside the LAST STEP's run-up; not a row)
 
@@ -436,4 +457,4 @@ vanish, and the deepslate then digs normally. Recorded as a reading under the LA
 
 | prediction | READING |
 |---|---|
-| `/stop` from the console. The log shows `Stopping`, `Disabling Rpg`, and `All dimensions are saved`, with no exception between them. No `java.exe` remains afterwards (`Get-Process java -ErrorAction SilentlyContinue` prints nothing). The 127.0.0.1 pack server stops with the plugin (`MiningService.shutdown`) | _(not run)_ |
+| `/stop` from the console. The log shows `Stopping`, `Disabling Rpg`, and `All dimensions are saved`, with no exception between them. No `java.exe` remains afterwards (`Get-Process java -ErrorAction SilentlyContinue` prints nothing). The 127.0.0.1 pack server stops with the plugin (`MiningService.shutdown`) | **PASS.** L241 `MINING remove slot=e404d973-…:-117,63,9:NORTH by=BaronVonYeetus` (the remove step; its chat line and "the deepslate then digs normally" are NOT READ). `/stop` was issued **from chat** by Ben (L242), not the console. L244 `Stopping server`, L245 `Disabling Rpg v0.1.0-SNAPSHOT`, L275 `All dimensions are saved`, no exception or SEVERE between them. `Get-Process java` afterwards: 0. The pack server has no stop line; the JVM is gone |
