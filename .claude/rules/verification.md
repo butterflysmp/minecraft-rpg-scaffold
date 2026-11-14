@@ -6,6 +6,8 @@ paths:
 
 ## VERIFICATION — a check that did not run looks exactly like a check that passed
 
+Gates closed before cd790dcc name root paths; at later refs read them as docs/gates/.
+
 ### A CHECK THAT DID NOT RUN, AND A GUARD NOBODY WATCHED FAIL
 
 **Verify a check ran before believing it passed.**
