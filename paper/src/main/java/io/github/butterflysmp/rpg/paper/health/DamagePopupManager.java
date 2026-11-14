@@ -42,14 +42,21 @@ public final class DamagePopupManager implements HealthListener {
 
     private final Scheduler scheduler;
     private final DamagePopupSender sender;
-    private final PopupEntityIds ids = new PopupEntityIds();
+    private final PopupEntityIds ids;
     private final ElementRegistry elements;
 
     public DamagePopupManager(Scheduler scheduler, DamagePopupSender sender,
                               ElementRegistry elements) {
+        this(scheduler, sender, elements, new PopupEntityIds());
+    }
+
+    /** @param ids the plugin's ONE packet-entity id counter, shared with mining's displays (F-M7) */
+    public DamagePopupManager(Scheduler scheduler, DamagePopupSender sender,
+                              ElementRegistry elements, PopupEntityIds ids) {
         this.scheduler = scheduler;
         this.sender = sender;
         this.elements = elements;
+        this.ids = ids;
     }
 
     @Override

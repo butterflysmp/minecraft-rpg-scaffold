@@ -9,3 +9,16 @@ immobilize:
   # to the value, then snap): small -> jitter, large -> creep. There is no good nonzero
   # value; 0 is the fix. This knob exists only as an escape hatch.
   anchor-drift-blocks: 0.0
+
+mining:
+  # Offer the project resource pack (the ore patch art) to every player as they join, with the
+  # client's accept-or-decline prompt and required=false. DEV ONLY: the pack is served from
+  # 127.0.0.1, so only a client on the server's own machine can download it.
+  #
+  # DEFAULT false. /rpg mining pack offers it on demand either way. Ben, 2026-11-13: "it will be
+  # required for the real server but it might be better to have it prompt or toggle for dev work".
+  # REQUIRED on the real server is the target and is NOT built here (PLAN-mining.md 5.8).
+  #
+  # An existing run/ config.yml predates this key (saveDefaultConfig never rewrites it), so the code
+  # reads it with a false default.
+  dev-pack-on-join: false

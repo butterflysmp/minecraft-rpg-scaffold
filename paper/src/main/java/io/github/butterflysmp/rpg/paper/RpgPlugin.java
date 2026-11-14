@@ -62,6 +62,12 @@ import io.github.butterflysmp.rpg.paper.content.RecipeLoader;
 import io.github.butterflysmp.rpg.paper.content.RecipeRegistrar;
 import io.github.butterflysmp.rpg.paper.content.WeaponLoader;
 import io.github.butterflysmp.rpg.paper.health.DamagePopupManager;
+import io.github.butterflysmp.rpg.paper.health.PopupEntityIds;
+import io.github.butterflysmp.rpg.paper.mining.MiningPack;
+import io.github.butterflysmp.rpg.paper.mining.MiningService;
+import io.github.butterflysmp.rpg.core.mining.MiningBook;
+import io.github.butterflysmp.rpg.core.mining.RegrowthClock;
+import io.github.butterflysmp.rpg.core.mining.SlotRegistry;
 import io.github.butterflysmp.rpg.paper.health.MobDeathSystem;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.health.MobVanillaMirror;
@@ -199,6 +205,8 @@ public final class RpgPlugin extends JavaPlugin {
     private ProfileService profiles;
     private VaultRepository vaultRepository;
     private VaultService vaults;
+    private PopupEntityIds fakeEntityIds;
+    private MiningService mining;
     private Accessories accessories;
 
     @Override
@@ -517,7 +525,9 @@ public final class RpgPlugin extends JavaPlugin {
         this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys, mobs, getLogger());
         // Third display: the per-dealer damage-number popup. Pure seam consumer -- reads amount/dealer
         // off the event, so no bind(stats) and no mob-lifecycle hooks (unlike the nameplate).
-        this.popups = new DamagePopupManager(scheduler, new PacketDamagePopupSender(), elements);
+        // ONE packet-entity id counter for the popups AND mining's displays (F-M7, the seat's ruling 8).
+        this.fakeEntityIds = new PopupEntityIds();
+        this.popups = new DamagePopupManager(scheduler, new PacketDamagePopupSender(), elements, fakeEntityIds);
         // Fourth consumer: mob death. Also a pure seam consumer (no bind). Wired LAST so the displays
         // above render the final state before it kills the mob on the reachedZero transition.
         this.mobDeath = new MobDeathSystem(scheduler);
@@ -657,9 +667,17 @@ public final class RpgPlugin extends JavaPlugin {
         // The Ability Stone's input side. Built here, not beside Stones, because it needs the ability
         // service and the profiles, which do not exist when AdapterContext is built.
         StoneCaster stoneCaster = new StoneCaster(abilityService, adapters, profiles, cooldowns, adapters.stones());
+        // Mining slice 1 (PLAN-mining.md 5.4). Slots, patches and regrowth clocks are IN MEMORY and lost
+        // on restart (the seat's ruling 4). The join toggle reads config with a false default, because
+        // saveDefaultConfig never rewrites an existing run/ config.yml.
+        this.mining = new MiningService(getLogger(), scheduler, ores, veinSizes, new SlotRegistry(),
+                new MiningBook(new RegrowthClock(Bukkit::getCurrentTick), new java.util.SplittableRandom(),
+                        Bukkit::getCurrentTick),
+                new MiningPack(getLogger()), fakeEntityIds,
+                getConfig().getBoolean("mining.dev-pack-on-join", false));
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes, vaults, stoneCaster);
+                this, recipes, vaults, stoneCaster, mining);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md
@@ -697,7 +715,7 @@ public final class RpgPlugin extends JavaPlugin {
         // banned-patterns table names; a second node inside this one is not.
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             event.registrar().register(
-                    RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults),
+                    RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults, mining),
                     "RPG commands");
             // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the
             // ONLY route to it once a player turns the Nexus star off, which is why it ships in
@@ -912,7 +930,14 @@ OLD
                 name -> {
                     Material material = Material.matchMaterial(name);
                     return material != null && material.isItem();
-                }));
+                },
+                // S1-b: the break particle must need no data, or it cannot be spawned bare.
+                key -> {
+                    org.bukkit.Particle particle = Registry.PARTICLE_TYPE.get(key);
+                    return particle != null && particle.getDataType() == Void.class;
+                },
+                // S1-b: every model id must be in THIS jar's pack (MiningPack's source tree).
+                key -> MiningPack.hasItemModel(getClass().getClassLoader(), key)));
 
         for (String problem : problems) {
             getLogger().warning("Content: " + problem);
@@ -925,6 +950,10 @@ OLD
 
     @Override
     public void onDisable() {
+        // Mining: destroy every player's fake displays and STOP the 127.0.0.1 pack server (the
+        // standing rule: the dev HTTP server stops on disable). Touches no player data.
+        if (mining != null) mining.shutdown();
+
         // FIRST, ahead of the profile flush: a menu can be holding a player's weapon, and nothing
         // else in the plugin gives it back. A weapon returned to an inventory has to be written
         // before the shutdown save runs, or it is saved out of existence.

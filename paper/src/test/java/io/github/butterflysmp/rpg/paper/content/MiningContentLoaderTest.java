@@ -87,6 +87,8 @@ class MiningContentLoaderTest {
                     sounds:
                       miss: minecraft:block.stone.hit
                       break: minecraft:block.stone.break
+                    particles:
+                      break: minecraft:poof
                 """;
         if (replace == null) return valid;
         if (!valid.contains(replace)) throw new AssertionError("fixture has no '" + replace + "'");
@@ -119,6 +121,7 @@ class MiningContentLoaderTest {
         assertEquals("minecraft:block.stone.hit", iron.missSound());
         assertEquals("minecraft:block.stone.break", iron.breakSound());
         assertEquals("rpg:mining/iron_patch", iron.patchModel());
+        assertEquals("minecraft:poof", iron.breakParticle());
         assertTrue(warnings.isEmpty(), "the shipped file loads with no warning: " + warnings);
     }
 
@@ -173,6 +176,11 @@ class MiningContentLoaderTest {
     @Test
     void aMissingSoundIsRefused() throws IOException {
         assertRefused(ores(ore("      miss: minecraft:block.stone.hit\n", "")), "sounds.miss");
+    }
+
+    @Test
+    void aMissingParticlesSectionIsRefused() throws IOException {
+        assertRefused(ores(ore("    particles:\n      break: minecraft:poof\n", "")), "'particles:'");
     }
 
     @Test

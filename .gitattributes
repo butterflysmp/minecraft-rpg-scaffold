@@ -61,3 +61,18 @@ mvnw.cmd    text eol=crlf
 #
 # Last match wins in this file, so this MUST stay below `*.java text`.
 core/src/test/java/io/github/butterflysmp/rpg/core/enchant/EnchantCodecTest.java -text
+
+# *** THE PROJECT RESOURCE PACK IS HASHED, SO ITS BYTES MUST BE THE SAME ON EVERY CHECKOUT. ***
+#
+# PLAN-mining.md F-M11 (2026-11-12): MiningPack zips paper/src/main/resources/resourcepack/ from the
+# plugin jar and offers it with its SHA-1. Maven copies the WORKING TREE into the jar, so under
+# `text` alone a CRLF checkout and an LF checkout would build two zips and two hashes for one
+# commit. `eol=lf` pins the working tree, so every seat builds the same bytes.
+#
+# `*.png binary`: a PNG's signature holds a CR and an LF by definition, and git must never touch
+# them. Git already detects PNGs as binary by content (`w/-text`); this line writes the property
+# down instead of leaving it to the heuristic. check-crlf.sh (from PR #181) reads git's content
+# class and skips them either way.
+paper/src/main/resources/resourcepack/**/*.json     text eol=lf
+paper/src/main/resources/resourcepack/**/*.mcmeta   text eol=lf
+*.png                                               binary

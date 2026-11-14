@@ -107,6 +107,7 @@ public final class MiningContentLoader {
         }
         ConfigurationSection models = requireSection(s, "models", where);
         ConfigurationSection sounds = requireSection(s, "sounds", where);
+        ConfigurationSection particles = requireSection(s, "particles", where);
         if (s.isString("sizes")) {
             throw new IllegalArgumentException(where + " has a scalar 'sizes:'; it must be a list, e.g. [small]");
         }
@@ -120,7 +121,8 @@ public final class MiningContentLoader {
                 requireInt(s, "regrowth_ticks", where),
                 sizes,
                 models.getString("patch"), models.getString("spot"), models.getString("crack"),
-                sounds.getString("miss"), sounds.getString("break"));
+                sounds.getString("miss"), sounds.getString("break"),
+                particles.getString("break"));
     }
 
     private static ConfigurationSection requireSection(ConfigurationSection s, String key, String where) {

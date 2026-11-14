@@ -69,6 +69,8 @@ import io.github.butterflysmp.rpg.paper.health.MobOrigin;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.vault.VaultDevCommand;
 import io.github.butterflysmp.rpg.paper.vault.VaultService;
+import io.github.butterflysmp.rpg.paper.mining.MiningDevCommand;
+import io.github.butterflysmp.rpg.paper.mining.MiningService;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DashAim;
@@ -157,7 +159,8 @@ public final class RpgCommand {
                                                                MobNameplateManager nameplates,
                                                                ResourcePool resources,
                                                                FireCadence fireCadence,
-                                                               VaultService vaults) {
+                                                               VaultService vaults,
+                                                               MiningService mining) {
         return Commands.literal("rpg")
                 .then(Commands.literal("abilities")
                         // requires() gates the whole branch: an unpermitted sender
@@ -537,6 +540,30 @@ public final class RpgCommand {
                                 .executes(VaultDevCommand::usage)
                                 .then(vaultCell((ctx, page, slot) ->
                                         VaultDevCommand.take(ctx, vaults, page, slot)))))
+                // *** /rpg mining -- Mining slice 1's dev commands (PLAN-mining.md 5.4). ***
+                //
+                // Permissions.DEV and nothing else, on the line after the literal, so the whole branch
+                // is gated. They move to the rpg.dev guard once #175 merges (PLAN section 2).
+                // MiningWiringSignatureTest asserts it.
+                .then(Commands.literal("mining")
+                        .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                        .executes(MiningDevCommand::usage)
+                        .then(Commands.literal("place")
+                                .executes(MiningDevCommand::usage)
+                                .then(Commands.argument("ore", StringArgumentType.word())
+                                        .executes(MiningDevCommand::usage)
+                                        .then(Commands.argument("size", StringArgumentType.word())
+                                                .executes(ctx -> MiningDevCommand.place(ctx, mining,
+                                                        StringArgumentType.getString(ctx, "ore"),
+                                                        StringArgumentType.getString(ctx, "size"))))))
+                        .then(Commands.literal("remove")
+                                .executes(ctx -> MiningDevCommand.remove(ctx, mining)))
+                        .then(Commands.literal("regrow")
+                                .executes(ctx -> MiningDevCommand.regrow(ctx, mining)))
+                        .then(Commands.literal("trace")
+                                .executes(ctx -> MiningDevCommand.trace(ctx, mining)))
+                        .then(Commands.literal("pack")
+                                .executes(ctx -> MiningDevCommand.pack(ctx, mining))))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content
                 // grants mana regen yet, so without this the reconcile surface is provable only by
                 // unit test. Hold it and a bare bar fills in ~50s instead of 100; drop it and the rate
