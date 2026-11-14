@@ -687,8 +687,11 @@ public final class RpgPlugin extends JavaPlugin {
         // /rpg selftest (PLAN-selftest.md). Built before the listeners, which hand it the quit. Its one line
         // says whether the dev marker reached this JVM and how many scenarios the jar carries; GATE-selftest.md
         // R0d reads it, and a refused scenario follows it as a WARN, by name.
+        // The dev-server marker, read ONCE: the selftest's guard and /rpg mining's (the seat's ruling, 2026-11-14)
+        // both take this value, so the two can never disagree about what kind of server this is.
+        boolean devServer = Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY);
         SelfTestService selfTest = new SelfTestService(adapters, profiles, resources, nameplates, getLogger(),
-                buildCommit(), Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY), ScenarioLoader.load(this::getResource));
+                buildCommit(), devServer, ScenarioLoader.load(this::getResource));
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
@@ -730,7 +733,7 @@ public final class RpgPlugin extends JavaPlugin {
         // ONE handler, two nodes. A second registerEventHandler would be the sprawl the
         // banned-patterns table names; a second node inside this one is not.
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
-            var rpg = RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults, mining);
+            var rpg = RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults, mining, devServer);
             rpg.addChild(SelfTestCommand.build(selfTest));   // /rpg selftest, without growing build()'s signature
             event.registrar().register(rpg, "RPG commands");
             // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the

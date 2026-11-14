@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -44,12 +45,53 @@ class MiningWiringSignatureTest {
     }
 
     @Test
-    void theMiningBranchIsGatedByPermissionsDevOnTheLineAfterItsLiteral() throws IOException {
+    void theMiningBranchIsGatedByTheDevRuleOnTheLineAfterItsLiteral() throws IOException {
+        // The seat's ruling, 2026-11-14: Permissions.DEV AND the dev-server marker, for the WHOLE branch. Anchored at
+        // both ends (the closing parens), so a widened or narrowed call cannot keep matching.
         List<String> cmd = lines("command/RpgCommand.java");
         int at = indexOf(cmd, "Commands.literal(\"mining\")");
-        assertEquals(".requires(source -> source.getSender().hasPermission(Permissions.DEV))",
-                cmd.get(at + 1).strip(), "the whole /rpg mining branch is DEV-only");
+        assertEquals(".requires(source -> MiningDevCommand.permitted(source.getSender().hasPermission(Permissions.DEV), devServer))",
+                cmd.get(at + 1).strip(), "the whole /rpg mining branch is DEV AND dev-server only");
         // Mutation: move the requires below .executes(MiningDevCommand::usage) -> reddens.
+    }
+
+    @Test
+    void theMiningRuleIsTheDevPermissionAndADevServerAndNothingElse() {
+        assertTrue(MiningDevCommand.permitted(true, true), "an op on a dev server");
+        assertFalse(MiningDevCommand.permitted(true, false), "an op on a server dev-server.sh did not boot: absent");
+        assertFalse(MiningDevCommand.permitted(false, true), "a non-op on a dev server: absent, as before");
+        assertFalse(MiningDevCommand.permitted(false, false));
+        // Nothing else: the rule takes no world, player count or game mode (the selftest's RUN conditions).
+        assertEquals(2, java.util.Arrays.stream(MiningDevCommand.class.getDeclaredMethods())
+                .filter(m -> m.getName().equals("permitted")).findFirst().orElseThrow().getParameterCount());
+    }
+
+    @Test
+    void theDevMarkerIsDefinedOnceReadOnceAndHandedToBothGuards() throws IOException {
+        // The seat: reuse the selftest's ONE definition of the property, do not add a second. Scanned over every main
+        // source file: the property NAME appears as a literal once (SelfTestGuard), and it is READ once (RpgPlugin).
+        List<String> literals = new ArrayList<>();
+        List<String> reads = new ArrayList<>();
+        int scanned = 0;
+        try (Stream<Path> files = Files.walk(MAIN)) {
+            for (Path f : files.filter(p -> p.toString().endsWith(".java")).toList()) {
+                scanned++;
+                for (String line : Files.readAllLines(f, StandardCharsets.UTF_8)) {
+                    String code = line.strip();
+                    if (code.startsWith("*") || code.startsWith("//") || code.startsWith("/*")) continue;   // prose
+                    if (code.contains("\"rpg.dev\"")) literals.add(f.getFileName() + ": " + code);
+                    if (code.contains("Boolean.getBoolean(")) reads.add(f.getFileName() + ": " + code);
+                }
+            }
+        }
+        assertTrue(scanned > 100, "the scan reached the paper sources (" + scanned + " files)");
+        assertEquals(List.of("SelfTestGuard.java: public static final String DEV_PROPERTY = \"rpg.dev\";"), literals);
+        assertEquals(List.of("RpgPlugin.java: boolean devServer = Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY);"), reads);
+
+        List<String> plugin = lines("RpgPlugin.java");
+        indexOf(plugin, "buildCommit(), devServer, ScenarioLoader.load(this::getResource));");
+        indexOf(plugin, "fireCadence, vaults, mining, devServer);");
+        // Mutations: give RpgCommand its own Boolean.getBoolean, or pass true to build() -> reddens.
     }
 
     @Test

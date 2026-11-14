@@ -11,12 +11,32 @@ import java.util.function.BiFunction;
 
 /**
  * The {@code /rpg mining} dev commands (PLAN-mining.md 5.4). Wired in {@code RpgCommand} behind
- * {@code Permissions.DEV}; they move to the {@code rpg.dev} guard once #175 merges (PLAN §2).
- * Each runs on the main thread, as Brigadier executes commands there.
+ * {@link #permitted}: {@code Permissions.DEV} AND the dev-server marker (the seat's ruling, 2026-11-14,
+ * PLAN §2). Each runs on the main thread, as Brigadier executes commands there.
  */
 public final class MiningDevCommand {
 
     private MiningDevCommand() {}
+
+    /**
+     * Whether a sender sees {@code /rpg mining} at all: the DEV permission AND a dev server. The seat's
+     * ruling, 2026-11-14: BOTH, and nothing else. The selftest's other conditions (the dev world, one
+     * player, SURVIVAL) belong to a RUN, not to a dev command, so they are not here.
+     *
+     * <p>{@code devServer} is {@code Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY)}, read ONCE in
+     * {@code RpgPlugin} and handed to both the selftest and this rule: {@code -Drpg.dev=true}, which only
+     * {@code scripts/dev-server.sh} sets.
+     *
+     * <p><b>Off a dev server the subtree is ABSENT, not a refusal.</b> This is a Brigadier
+     * {@code requires}, so a sender it rejects is never sent the node and the dispatcher answers as it
+     * does for any command that sender cannot use. Absent, because: the marker is fixed for the JVM's
+     * life, so the answer never changes mid-boot; a refusal would need a node every sender can see and
+     * a check on each of its leaves; and a production server should not advertise dev tools. The cost:
+     * an op on a non-dev server learns nothing from the reply. That is the trade, stated.
+     */
+    public static boolean permitted(boolean hasDevPermission, boolean devServer) {
+        return hasDevPermission && devServer;
+    }
 
     public static int usage(CommandContext<CommandSourceStack> ctx) {
         ctx.getSource().getSender().sendMessage(Component.text(
