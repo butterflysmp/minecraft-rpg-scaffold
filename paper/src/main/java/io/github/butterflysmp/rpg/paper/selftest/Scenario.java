@@ -57,6 +57,14 @@ public record Scenario(String gate, String row, List<Step> steps) {
         CLICK,
         /** The same, on the first slot of this material. */
         CLICK_MATERIAL,
+        /**
+         * {@code "<top|bottom> <weapon id>"}: a synthetic {@code InventoryClickEvent SHIFT_LEFT MOVE_TO_OTHER_INVENTORY}
+         * on the first slot of that half of the open view holding that weapon. {@code MenuRouting} PERFORMS a shift-move
+         * itself ({@code shiftMove}: clear the source, write the destination), so this moves the item for real, on the
+         * shipped path; a plain left place is only PERMITTED and would be applied by nothing. GATE-nexus-back.md: an
+         * item into a menu's input slot, and back out of a vault cell.
+         */
+        SHIFT_CLICK,
         /** {@code Player#closeInventory}. */
         CLOSE,
         /** Log the open screen ({@code menu}) or the held item ({@code held}): names, lore, colours as the server built them. */

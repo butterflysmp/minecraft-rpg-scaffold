@@ -87,6 +87,7 @@ final class SelfTestDrivers {
             case HOLD -> hold(p, a);
             case CLICK -> click(p, a, item -> plain(item.effectiveName()).startsWith(a), "name^=\"" + a + "\"");
             case CLICK_MATERIAL -> click(p, a, item -> item.getType().name().equalsIgnoreCase(a), "material=" + a);
+            case SHIFT_CLICK -> shiftClick(p, a);
             case CLOSE -> { p.closeInventory(); run.log("DRIVE close"); yield Optional.empty(); }
             case DUMP -> dump(p, a);
             case PROBE -> probe(p, a);
@@ -227,6 +228,35 @@ final class SelfTestDrivers {
             return Optional.empty();
         }
         return Optional.of("no slot of " + top.getHolder().getClass().getSimpleName() + " matches " + label);
+    }
+
+    /**
+     * A shift-click on the first slot of one half of the open view holding {@code weaponId}, routed as the client's is:
+     * {@code RpgListeners.onMenuClick} → {@code Menu.handleClick} → {@code MenuRouting.shiftMove}, which performs the
+     * move itself. The raw slot and its slot type come from the view, so {@code getClickedInventory()} names the half
+     * the client's click would.
+     */
+    private Optional<String> shiftClick(Player p, String arg) {
+        String[] f = arg.split("\\s+");
+        if (f.length != 2 || !(f[0].equals("top") || f[0].equals("bottom"))) {
+            return Optional.of("SHIFT_CLICK wants '<top|bottom> <weapon id>', got '" + arg + "'");
+        }
+        InventoryView view = p.getOpenInventory();
+        Inventory top = view.getTopInventory();
+        if (!(top.getHolder() instanceof Menu)) return Optional.of("no menu is open to shift-click " + arg);
+        boolean inTop = f[0].equals("top");
+        int from = inTop ? 0 : top.getSize();
+        int to = inTop ? top.getSize() : view.countSlots();
+        for (int raw = from; raw < to; raw++) {
+            ItemStack item = view.getItem(raw);
+            if (item == null || item.isEmpty() || WeaponItems.weaponId(item, keys).filter(f[1]::equals).isEmpty()) continue;
+            run.log("DRIVE shift-click InventoryClickEvent SHIFT_LEFT MOVE_TO_OTHER_INVENTORY " + f[0] + " slot=" + raw
+                    + " " + f[1] + " x" + item.getAmount());
+            Bukkit.getPluginManager().callEvent(new InventoryClickEvent(view, view.getSlotType(raw), raw,
+                    ClickType.SHIFT_LEFT, InventoryAction.MOVE_TO_OTHER_INVENTORY));
+            return Optional.empty();
+        }
+        return Optional.of("no " + f[0] + " slot of " + top.getHolder().getClass().getSimpleName() + " holds " + f[1]);
     }
 
     private Optional<String> dump(Player p, String what) {

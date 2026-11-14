@@ -306,25 +306,18 @@ public final class CraftingMenu extends Menu {
         }
 
         if (click.slot() == CraftingMenuLayout.BACK_SLOT && origin() == Origin.FROM_NEXUS) {
-            // CLOSE FIRST, THEN HOP -- unlike the hub's own navigation, and Menu.open's javadoc is
-            // where the rule lives. THIS screen has input slots (the grid), so returnEverything
-            // must run on the close before the screen changes, or a loaded grid is stranded behind
-            // a menu the player navigated away from. Exactly the browser button's reasoning below.
-            viewer.closeInventory();
-            adapters.scheduler().onEntityLater(viewer, () -> hub.get().open(), 1);
+            // navigateTo, Menu.open's rule since 2026-11-14. THIS screen has input slots (the grid),
+            // so returnEverything runs in this click, before the screen changes, or a loaded grid
+            // would be stranded behind a menu the player navigated away from.
+            navigateTo(adapters.scheduler(), hub);
             return;
         }
         if (click.slot() == CraftingMenuLayout.BROWSER_SLOT) {
-            // CLOSE FIRST, OPEN AFTER. Opening an inventory from inside a click handler while
-            // another is open is the classic way to end up with a desynced client holding a ghost
-            // item, so this closes, and the scheduler hop lands the open on the next tick when the
-            // close has actually happened.
-            //
-            // returnEverything runs on the close, so whatever the player loaded into the grid comes
-            // back to them rather than being stranded behind a menu they navigated away from.
-            viewer.closeInventory();
-            adapters.scheduler().onEntityLater(viewer,
-                    () -> new RecipeBrowserMenu(viewer, adapters, catalogue, hub).open(), 1);
+            // navigateTo, Menu.open's rule since 2026-11-14 (it was close-first until then). The
+            // hop keeps the open out of this click handler, which is the ghost-item half; the grid
+            // comes back in this click, which is the stranded-grid half.
+            navigateTo(adapters.scheduler(),
+                    () -> new RecipeBrowserMenu(viewer, adapters, catalogue, hub));
             return;
         }
 

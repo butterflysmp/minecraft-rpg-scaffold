@@ -971,9 +971,9 @@ public final class RpgListeners implements Listener {
         // the same collision from the other side.
         //
         // OPENING AN INVENTORY DIRECTLY FROM AN EVENT HANDLER IS FINE HERE, AND THE CEREMONY
-        // CraftingMenu USES DOES NOT APPLY. That close-then-hop-through-the-scheduler dance exists
-        // for MENU-TO-MENU navigation, where a container is already open and openInventory during
-        // the close would race. No container is open on a right-click in the world, so there is
+        // CraftingMenu USES DOES NOT APPLY. That hop-through-the-scheduler (Menu.navigateTo since
+        // 2026-11-14; close-then-hop before it) exists for MENU-TO-MENU navigation, where a
+        // container is already open and openInventory inside its click would race. No container is open on a right-click in the world, so there is
         // nothing to close and nothing to hop for. Do not copy the dance in.
         if (NexusItems.isNexus(event.getPlayer().getInventory().getItemInMainHand(),
                 adapters.keys())) {
