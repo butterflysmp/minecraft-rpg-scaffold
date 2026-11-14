@@ -8,11 +8,11 @@ import io.github.butterflysmp.rpg.core.hud.ActionBarHolds;
 import io.github.butterflysmp.rpg.core.mining.MiningBook;
 import io.github.butterflysmp.rpg.core.mining.MiningNotices;
 import io.github.butterflysmp.rpg.core.mining.MiningTraceLine;
+import io.github.butterflysmp.rpg.core.mining.MissSoundCooldown;
 import io.github.butterflysmp.rpg.core.mining.OreDefinition;
 import io.github.butterflysmp.rpg.core.mining.OreRegistry;
 import io.github.butterflysmp.rpg.core.mining.Patch;
 import io.github.butterflysmp.rpg.core.mining.PatchPoint;
-import io.github.butterflysmp.rpg.core.mining.PayoutRule;
 import io.github.butterflysmp.rpg.core.mining.Slot;
 import io.github.butterflysmp.rpg.core.mining.SlotRegistry;
 import io.github.butterflysmp.rpg.core.mining.Spot;
@@ -89,6 +89,8 @@ public final class MiningService {
     private final boolean packOnJoin;
     /** Who owns each player's action bar; DENIED takes it for MiningNotices.DENIED_HOLD_TICKS (S1-c). */
     private final ActionBarHolds<Component> holds;
+    /** S2 (the seat's ruling 9): the miss sound's per-player cooldown, MiningNotices.MISS_SOUND_COOLDOWN_TICKS. */
+    private final MissSoundCooldown missSounds = new MissSoundCooldown();
     private final Set<UUID> tracing = new HashSet<>();
     /** What each player is currently shown, per slot id. */
     private final Map<UUID, Map<String, Shown>> shown = new HashMap<>();
@@ -125,42 +127,54 @@ public final class MiningService {
     public void onBlockDamage(BlockDamageEvent event) {
         Block block = event.getBlock();
         String world = block.getWorld().getUID().toString();
-        Optional<Slot> found = slots.at(world, new BlockPos(block.getX(), block.getY(), block.getZ()));
+        BlockPos pos = new BlockPos(block.getX(), block.getY(), block.getZ());
+        Optional<Slot> found = slots.at(world, pos);
         if (found.isEmpty()) return;
-        event.setCancelled(true);
+        event.setCancelled(true);   // every slot block is protected always (S2 ruling 1)
         Slot slot = found.get();
         if (event.getBlockFace() != toBlockFace(slot.frame().face())) return;   // the side of the wall
 
         Player player = event.getPlayer();
         Optional<OreDefinition> ore = ores.find(slot.oreId());
-        Optional<VeinSize> size = sizes.find(slot.sizeId());
-        if (ore.isEmpty() || size.isEmpty()) return;   // its content failed to load; boot named it
-        PayoutRule rule = ore.get().payoutRule(slot.sizeId());
+        if (ore.isEmpty() || sizes.find(slot.sizeId()).isEmpty()) return;   // content failed to load; boot named it
 
         // Read everything the click needs NOW, before anything else can move the ticker.
         float cooldown = player.getAttackCooldown();
         Location eye = player.getEyeLocation();
         Vector dir = eye.getDirection();
-        Optional<PatchPoint> aim = slot.frame().worldToPatch(eye.getX(), eye.getY(), eye.getZ(),
-                dir.getX(), dir.getY(), dir.getZ());
         boolean pickaxe = Tag.ITEMS_PICKAXES.isTagged(event.getItemInHand().getType());
         long tick = Bukkit.getCurrentTick();
 
         show(player, slot);   // a click on a patch the player was never shown still has one to judge
-        Optional<Patch> before = book.patch(player.getUniqueId(), slot, size.get(), rule);
+        Optional<Patch> before = book.patch(player.getUniqueId(), slot, ore.get(), sizes);
         int liveBefore = before.map(Patch::liveIndex).orElse(-1);
         int spotCount = before.map(p -> p.layout().spots().size()).orElse(0);
+        // S2: patch pixels are in the PATCH's frame (its own size at the slot's anchor). While
+        // regrowing there is no patch, and the NOT_LIVE line's aim is in the slot's frame.
+        FaceFrame aimFrame = before.map(p -> p.frame(slot)).orElse(slot.frame());
+        Optional<PatchPoint> aim = aimFrame.worldToPatch(eye.getX(), eye.getY(), eye.getZ(),
+                dir.getX(), dir.getY(), dir.getZ());
 
-        ClickOutcome outcome = book.click(player.getUniqueId(), slot, size.get(), rule,
-                ore.get().regrowthTicks(), new Click(cooldown, aim, pickaxe, tick));
+        Optional<ClickOutcome> judged = book.click(player.getUniqueId(), slot, ore.get(), sizes, pos,
+                new Click(cooldown, aim, pickaxe, tick));
+        if (judged.isEmpty()) {
+            // S2 ruling 4: a slot block outside the current patch. Cancelled above; judged as nothing.
+            trace(player, MiningTraceLine.clickOutside(player.getName(), slot.id(),
+                    before.orElseThrow().size().id(), pos, tick));
+            return;
+        }
+        ClickOutcome outcome = judged.get();
+        // S2 ruling 9: a MISS plays its sound only outside the cooldown; it is a MISS either way.
+        boolean missPlayed = outcome instanceof ClickOutcome.Miss && missSounds.tryPlay(player.getUniqueId(), tick);
+        String missField = outcome instanceof ClickOutcome.Miss ? MiningTraceLine.missSound(missPlayed) : MiningTraceLine.NO_MISS;
         trace(player, MiningTraceLine.click(player.getName(), slot.id(), name(outcome),
-                liveBefore, spotCount, cooldown, aim, tick));
+                liveBefore, spotCount, cooldown, aim, tick, missField));
 
         switch (outcome) {
             case ClickOutcome.Hit hit -> onHit(player, slot, ore.get(), before.orElseThrow(), hit);
-            case ClickOutcome.Broke broke -> onBroke(player, slot, ore.get(), broke);
-            case ClickOutcome.Miss miss -> playAt(player, slot, ore.get().missSound());
-            case ClickOutcome.Denied denied -> deny(player, tick);
+            case ClickOutcome.Broke broke -> onBroke(player, slot, ore.get(), before.orElseThrow(), broke);
+            case ClickOutcome.Miss miss -> { if (missPlayed) playAt(player, slot, ore.get().missSound()); }
+            case ClickOutcome.Denied denied -> deny(player, slot, ore.get(), tick);
             case ClickOutcome.Uncharged uncharged -> { }   // plays nothing (the seat's ruling 4)
             case ClickOutcome.NotLive notLive -> { }       // plays nothing
         }
@@ -172,13 +186,19 @@ public final class MiningService {
      * inside the hold and draws the stats line again on the first beat at or after the end. A second
      * DENIED inside the hold REPLACES it, so the hold restarts from that click. Main thread (a Bukkit
      * event), the same thread as the stats bar's loop on Paper.
+     *
+     * <p>S2 (the seat's ruling 8): the ore's DENIED sound plays only when this hold STARTS with no hold
+     * already live, so one message gets one sound. {@code isLive} is asked BEFORE the new hold replaces
+     * the old one.
      */
-    private void deny(Player player, long tick) {
+    private void deny(Player player, Slot slot, OreDefinition ore, long tick) {
+        boolean noLiveHold = !holds.isLive(player.getUniqueId(), tick);
         Component text = Component.text(MiningNotices.DENIED_TEXT, NamedTextColor.RED);
         ActionBarHolds.Hold<Component> hold = holds.hold(player.getUniqueId(), text, "denied", tick,
                 MiningNotices.DENIED_HOLD_TICKS, tracing.contains(player.getUniqueId()));
         player.sendActionBar(text);
-        trace(player, MiningTraceLine.hold(player.getName(), hold.reason(), hold.start(), hold.until()));
+        if (noLiveHold) playAt(player, slot, ore.deniedSound());
+        trace(player, MiningTraceLine.hold(player.getName(), hold.reason(), hold.start(), hold.until(), noLiveHold));
     }
 
     /** The other break route (F-M5): a creative break, or a STOP on a block left in destroyPos. */
@@ -212,6 +232,7 @@ public final class MiningService {
     public void onQuit(Player player) {
         shown.remove(player.getUniqueId());
         book.forgetSession(player.getUniqueId());   // its entity tasks are dropped with it (F8c)
+        missSounds.forget(player.getUniqueId());
     }
 
     /** Shows each slot whose patch display stands in this chunk. Main thread (a synchronous event). */
@@ -275,12 +296,45 @@ public final class MiningService {
         } catch (IllegalArgumentException overlap) {
             return refuse(player, overlap.getMessage());
         }
-        log.info("MINING place slot=" + slot.id() + " ore=" + oreId + " size=" + sizeId
+        // S2 (the seat's ruling 1): the size named here is the slot's MAXIMUM; each patch rolls its own.
+        log.info("MINING place slot=" + slot.id() + " ore=" + oreId + " max_size=" + sizeId
                 + " footprint=" + footprintText(frame) + " by=" + player.getName());
         for (Player viewer : world.getPlayers()) {
             if (viewer.isChunkSent(homeChunkKey(slot))) show(viewer, slot);
         }
-        return Component.text("Placed " + oreId + " " + sizeId + " at " + slot.id() + ".", NamedTextColor.GREEN);
+        return Component.text("Placed " + oreId + " (maximum " + sizeId + ") at " + slot.id() + ".", NamedTextColor.GREEN);
+    }
+
+    /**
+     * {@code /rpg mining roll <size>} (S2, the seat's ruling 7): replaces the caller's patch at the
+     * looked-at slot with a fresh patch of that size, so a gate does not depend on luck. Refuses a size
+     * that is not loaded, that the ore does not list, or that does not fit the slot. Logs ALWAYS.
+     */
+    public Component roll(Player player, String sizeId) {
+        RayTraceResult hit = player.rayTraceBlocks(PLACE_REACH);
+        if (hit == null || hit.getHitBlock() == null) return refuseRoll(player, "Look at a placed patch's wall.");
+        Block b = hit.getHitBlock();
+        Optional<Slot> slot = slots.at(b.getWorld().getUID().toString(), new BlockPos(b.getX(), b.getY(), b.getZ()));
+        if (slot.isEmpty()) return refuseRoll(player, "That block is not under a placed patch.");
+        Optional<OreDefinition> ore = ores.find(slot.get().oreId());
+        if (ore.isEmpty()) return refuseRoll(player, "No ore '" + slot.get().oreId() + "' is loaded.");
+        Patch patch;
+        try {
+            patch = book.force(player.getUniqueId(), slot.get(), ore.get(), sizes, sizeId);
+        } catch (IllegalArgumentException refused) {
+            return refuseRoll(player, refused.getMessage());
+        }
+        hide(player, slot.get());
+        log.info(MiningTraceLine.roll(player.getName(), slot.get().id(), patch.size().id(),
+                patch.layout().spots().size()));
+        show(player, slot.get());
+        return Component.text("Rolled a " + sizeId + " patch (" + patch.layout().spots().size() + " spots).",
+                NamedTextColor.GREEN);
+    }
+
+    private Component refuseRoll(Player player, String text) {
+        log.info(MiningTraceLine.rollRefused(player.getName(), text));
+        return error(text);
     }
 
     /** {@code /rpg mining remove}: the slot under the crosshair. */
@@ -335,9 +389,8 @@ public final class MiningService {
         Map<String, Shown> mine = shown.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>());
         if (mine.containsKey(slot.id())) return false;
         Optional<OreDefinition> ore = ores.find(slot.oreId());
-        Optional<VeinSize> size = sizes.find(slot.sizeId());
-        if (ore.isEmpty() || size.isEmpty()) return false;
-        Optional<Patch> patch = book.patch(player.getUniqueId(), slot, size.get(), ore.get().payoutRule(slot.sizeId()));
+        if (ore.isEmpty() || sizes.find(slot.sizeId()).isEmpty()) return false;
+        Optional<Patch> patch = book.patch(player.getUniqueId(), slot, ore.get(), sizes);
         if (patch.isEmpty()) {
             // REGROWING. Make sure ONE task on THIS session's Player will show it at regrow_at (the
             // seat's D1: a quit drops the old task, so a rejoin's chunk load must re-arm it).
@@ -345,13 +398,15 @@ public final class MiningService {
             return false;
         }
 
-        FaceFrame frame = slot.frame();
+        // S2: the patch is drawn at ITS rolled size, at the slot's anchor (centred, sharing the bottom
+        // row), with that size's own model (the seat's rulings 2 and 6).
+        Patch p = patch.get();
+        FaceFrame frame = p.frame(slot);
         float[] rot = frame.face().displayRotation();
         int patchId = ids.next();
-        visuals.spawn(player, patchId, frame.centre(PATCH_OUTSET), modelItem(ore.get().patchModel()), rot,
+        visuals.spawn(player, patchId, frame.centre(PATCH_OUTSET), modelItem(ore.get().patchModel(p.size().id())), rot,
                 frame.width(), frame.height(), 1f);
         List<Integer> spotIds = new ArrayList<>();
-        Patch p = patch.get();
         for (int i = 0; i <= p.liveIndex() && i < p.layout().spots().size(); i++) {
             int id = ids.next();
             String model = i < p.liveIndex() ? ore.get().crackModel() : ore.get().spotModel();
@@ -360,8 +415,8 @@ public final class MiningService {
             spotIds.add(id);
         }
         mine.put(slot.id(), new Shown(patchId, spotIds));
-        trace(player, MiningTraceLine.show(player.getName(), slot.id(), p.layout().spots(), p.liveIndex(),
-                Bukkit.getCurrentTick()));
+        trace(player, MiningTraceLine.show(player.getName(), slot.id(), p.size().id(), p.layout().spots(),
+                p.liveIndex(), Bukkit.getCurrentTick()));
         return true;
     }
 
@@ -377,12 +432,12 @@ public final class MiningService {
         if (s == null) return;
         visuals.setItem(player, s.spotIds().get(hit.crackedIndex()), modelItem(ore.crackModel()));
         int id = ids.next();
-        visuals.spawn(player, id, spotAt(slot.frame(), patch.layout().spots().get(hit.revealedIndex())),
+        visuals.spawn(player, id, spotAt(patch.frame(slot), patch.layout().spots().get(hit.revealedIndex())),
                 modelItem(ore.spotModel()), slot.frame().face().displayRotation(), SPOT_SCALE, SPOT_SCALE, 1f);
         s.spotIds().add(id);
     }
 
-    private void onBroke(Player player, Slot slot, OreDefinition ore, ClickOutcome.Broke broke) {
+    private void onBroke(Player player, Slot slot, OreDefinition ore, Patch patch, ClickOutcome.Broke broke) {
         hide(player, slot);
         Location centre = centreLocation(player.getWorld(), slot);
         playAt(player, slot, ore.breakSound());
@@ -402,8 +457,8 @@ public final class MiningService {
             }
         }
         long regrowAt = book.regrowAt(player.getUniqueId(), slot.id()).orElse(Bukkit.getCurrentTick());
-        trace(player, MiningTraceLine.breakLine(player.getName(), slot.id(), ore.payoutItem(), broke.payout(),
-                total - dropped, dropped, regrowAt));
+        trace(player, MiningTraceLine.breakLine(player.getName(), slot.id(), patch.size().id(), ore.payoutItem(),
+                broke.payout(), total - dropped, dropped, regrowAt));
         ensureRegrowthTask(player, slot);
     }
 
@@ -431,7 +486,7 @@ public final class MiningService {
             if (player.getWorld().getUID().toString().equals(slot.world())
                     && player.isChunkSent(homeChunkKey(slot)) && show(player, slot)) {
                 Patch p = currentPatch(player, slot);
-                trace(player, MiningTraceLine.regrow(player.getName(), slot.id(),
+                trace(player, MiningTraceLine.regrow(player.getName(), slot.id(), p == null ? "-" : p.size().id(),
                         p == null ? 0 : p.layout().spots().size(), Bukkit.getCurrentTick()));
             }
         }, delay);
@@ -439,9 +494,8 @@ public final class MiningService {
 
     private Patch currentPatch(Player player, Slot slot) {
         Optional<OreDefinition> ore = ores.find(slot.oreId());
-        Optional<VeinSize> size = sizes.find(slot.sizeId());
-        if (ore.isEmpty() || size.isEmpty()) return null;
-        return book.patch(player.getUniqueId(), slot, size.get(), ore.get().payoutRule(slot.sizeId())).orElse(null);
+        if (ore.isEmpty()) return null;
+        return book.patch(player.getUniqueId(), slot, ore.get(), sizes).orElse(null);
     }
 
     // --- Helpers -------------------------------------------------------------------------------

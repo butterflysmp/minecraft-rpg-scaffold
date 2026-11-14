@@ -53,13 +53,22 @@ public final class MiningPack {
     static final List<String> FILES = List.of(
             "pack.mcmeta",
             "assets/rpg/items/mining/crack.json",
-            "assets/rpg/items/mining/iron_patch.json",
+            "assets/rpg/items/mining/iron_patch_small.json",
+            "assets/rpg/items/mining/iron_patch_medium.json",
+            "assets/rpg/items/mining/iron_patch_large.json",
+            "assets/rpg/items/mining/iron_patch_extra_large.json",
             "assets/rpg/items/mining/spot.json",
             "assets/rpg/models/item/mining/crack.json",
-            "assets/rpg/models/item/mining/iron_patch.json",
+            "assets/rpg/models/item/mining/iron_patch_small.json",
+            "assets/rpg/models/item/mining/iron_patch_medium.json",
+            "assets/rpg/models/item/mining/iron_patch_large.json",
+            "assets/rpg/models/item/mining/iron_patch_extra_large.json",
             "assets/rpg/models/item/mining/spot.json",
             "assets/rpg/textures/item/mining/crack.png",
-            "assets/rpg/textures/item/mining/iron_patch.png",
+            "assets/rpg/textures/item/mining/iron_patch_small.png",
+            "assets/rpg/textures/item/mining/iron_patch_medium.png",
+            "assets/rpg/textures/item/mining/iron_patch_large.png",
+            "assets/rpg/textures/item/mining/iron_patch_extra_large.png",
             "assets/rpg/textures/item/mining/spot.png");
 
     static final String PATH = "/rpg-pack.zip";

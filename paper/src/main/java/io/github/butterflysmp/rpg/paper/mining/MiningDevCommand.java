@@ -20,8 +20,13 @@ public final class MiningDevCommand {
 
     public static int usage(CommandContext<CommandSourceStack> ctx) {
         ctx.getSource().getSender().sendMessage(Component.text(
-                "/rpg mining place <ore> <size> | remove | regrow | trace | pack", NamedTextColor.YELLOW));
+                "/rpg mining place <ore> <max size> | remove | regrow | roll <size> | trace | pack", NamedTextColor.YELLOW));
         return Command.SINGLE_SUCCESS;
+    }
+
+    /** S2: {@code /rpg mining roll <size>}, a fresh patch of that size at the looked-at slot. */
+    public static int roll(CommandContext<CommandSourceStack> ctx, MiningService mining, String size) {
+        return asPlayer(ctx, (player, m) -> m.roll(player, size), mining);
     }
 
     public static int place(CommandContext<CommandSourceStack> ctx, MiningService mining, String ore, String size) {

@@ -25,30 +25,56 @@ ores:
     payout:
       # RULED, Ben 2026-11-13: "raw iron".
       item: raw_iron
-      # RULED, Ben 2026-11-13: "2-4 per spot with a 5 completion bonus".
-      # With the Small vein's 2 to 3 spots that is 9 to 17 raw iron per break:
-      #   2 spots: 2+2+5 = 9 .. 4+4+5 = 13;  3 spots: 2+2+2+5 = 11 .. 4+4+4+5 = 17.
+      # RULED, Ben 2026-11-13: "2-4 per spot with a 5 completion bonus". And for every size, Ben
+      # 2026-11-14, asked whether per-spot yield stays 2-4 for every size: "yes".
       per_spot:
         min: 2
         max: 4
+      # Keyed by vein size: exactly one entry per size in sizes:. small 5 is RULED (Ben 2026-11-13).
+      # medium 6, large 8, extra_large 10: Ben 2026-11-14, "This is fine for now. Tuning will come later".
+      # Executed ranges per break (PLAN-mining.md 5.12), spots from the vein size files:
+      #   small 2-3 spots: 9..17;  medium 4-5: 14..26;  large 6-7: 20..36;  extra_large 8-9: 26..46.
       completion_bonus:
         small: 5
-    # RULED, Ben 2026-11-13: "1 minute is fine for now". 60 s x 20 ticks.
+        medium: 6
+        large: 8
+        extra_large: 10
+    # RULED, Ben 2026-11-13: "1 minute is fine for now". 60 s x 20 ticks. And for every size, Ben
+    # 2026-11-14: "Regrowth can be 1 minute across the board".
     regrowth_ticks: 1200
-    # RULED, Ben 2026-11-13: "keep it as the small vein for now".
-    sizes: [small]
-    # item_model ids in the project resource pack. The pack itself arrives in S1-b; until then
-    # these are checked only for being well-formed keys.
+    # S2: each patch ROLLS ITS SIZE when it is created (first show and every regrowth), from these
+    # weights, over the sizes that fit the slot (width and height both at most the slot's maximum),
+    # renormalised over those. Ben 2026-11-14: "The end goal is for patches to grow of random sizes
+    # and ores and types".
+    # NAME THE QUANTITY: a relative roll weight, a whole number at least 1. A size's chance at a slot is
+    # its weight over the sum of the eligible weights: at a medium slot, small 50/80 and medium 30/80.
+    # The weights are Ben's design doc, relayed by the seat: PROVISIONAL.
+    sizes:
+      small: 50          # PROVISIONAL (design doc, relayed)
+      medium: 30         # PROVISIONAL (design doc, relayed)
+      large: 15          # PROVISIONAL (design doc, relayed)
+      extra_large: 5     # PROVISIONAL (design doc, relayed)
+    # item_model ids in the project resource pack. S2: one flat patch model per size, at that size's
+    # aspect (the seat's ruling 6); PLACEHOLDER textures, the look is Ben's later.
     models:
-      patch: rpg:mining/iron_patch
+      patch:
+        small: rpg:mining/iron_patch_small
+        medium: rpg:mining/iron_patch_medium
+        large: rpg:mining/iron_patch_large
+        extra_large: rpg:mining/iron_patch_extra_large
       spot: rpg:mining/spot
       crack: rpg:mining/crack
     # PLACEHOLDER vanilla sounds (the seat's ruling 4, 2026-11-13), played to the one player only.
     # Ben ruled a miss makes a sound ("yes"; his design doc mentions "a dull clink"). An uncharged
-    # hit and a click on a regrowing patch play nothing.
+    # hit and a click on a regrowing patch play nothing. S2: the miss sound has a cooldown of 8 server
+    # ticks per player from the last one that PLAYED (Ben 2026-11-14: "let's say .4 seconds"). It is
+    # one value for every ore, so it is code, MiningNotices.MISS_SOUND_COOLDOWN_TICKS, not a key here.
     sounds:
       miss: minecraft:block.stone.hit       # PLACEHOLDER
       break: minecraft:block.stone.break    # PLACEHOLDER
+      # S2 (the seat's ruling 8): played to the one player when a DENIED hold STARTS with no hold
+      # already live. Ben 2026-11-14: "Placeholder for now is fine".
+      denied: minecraft:entity.villager.no  # PLACEHOLDER
     # PLACEHOLDER vanilla particle for the break (the seat's ruling 7), shown to the one player only.
     # It must be a particle that needs no data: a block or dust particle cannot be spawned bare, and
     # ContentValidator refuses one.

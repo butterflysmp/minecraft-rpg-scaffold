@@ -58,6 +58,49 @@ class PayoutTest {
         assertEquals(17, max);
     }
 
+    // --- S2: every size's executed range (the seat's ruling 5), both ends pinned ------------------
+    //
+    // per_spot 2..4 for every size (Ben: "yes"); bonus small 5, medium 6, large 8, extra_large 10
+    // (Ben: "This is fine for now"); spots from the design doc, relayed. Executed in jshell (PLAN 5.12):
+    //   small 9..17, medium 14..26, large 20..36, extra_large 26..46.
+
+    private static void assertEnds(VeinSize size, int low, int high) {
+        PayoutRule rule = MiningFixtures.iron().payoutRule(size.id());
+        assertEquals(low, rule.roll(size.minSpots(), ScriptedRandom.alwaysMin()).total(), size.id() + " low end");
+        assertEquals(high, rule.roll(size.maxSpots(), ScriptedRandom.alwaysMax()).total(), size.id() + " high end");
+    }
+
+    @Test
+    void eachSizesLowAndHighEndsAreTheExecutedOnes() {
+        assertEnds(MiningFixtures.small(), 9, 17);
+        assertEnds(MiningFixtures.medium(), 14, 26);
+        assertEnds(MiningFixtures.large(), 20, 36);
+        assertEnds(MiningFixtures.extraLarge(), 26, 46);
+        // Mutations: a bonus off by one in the fixture's ore, or the spot range off by one, moves one end.
+    }
+
+    @Test
+    void aSeededSweepOfEverySizeStaysInItsRangeAndReachesBothEnds() {
+        int[][] ends = {{9, 17}, {14, 26}, {20, 36}, {26, 46}};
+        List<VeinSize> sizes = List.of(MiningFixtures.small(), MiningFixtures.medium(),
+                MiningFixtures.large(), MiningFixtures.extraLarge());
+        for (int i = 0; i < sizes.size(); i++) {
+            VeinSize size = sizes.get(i);
+            PayoutRule rule = MiningFixtures.iron().payoutRule(size.id());
+            SplittableRandom rng = new SplittableRandom(20261114L + i);
+            int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
+            // 400,000 breaks: the rarest end, extra_large's 46 (9 spots, every roll 4), is 1 in 39,366.
+            for (int k = 0; k < 400_000; k++) {
+                int spots = rng.nextInt(size.minSpots(), size.maxSpots() + 1);
+                int total = rule.roll(spots, rng).total();
+                min = Math.min(min, total);
+                max = Math.max(max, total);
+            }
+            assertEquals(ends[i][0], min, size.id());
+            assertEquals(ends[i][1], max, size.id());
+        }
+    }
+
     @Test
     void aPayoutRuleRefusesNegativeOrInvertedCounts() {
         assertThrows(IllegalArgumentException.class, () -> new PayoutRule(-1, 4, 5));

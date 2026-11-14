@@ -6,9 +6,10 @@ package io.github.butterflysmp.rpg.core.mining;
  *
  * @param id     {@code <world>:<x>,<y>,<z>:<FACE>}, unique per anchor and face
  * @param world  the world's id as the paper side names it (its UUID string)
- * @param frame  the wall geometry
+ * @param frame  the wall geometry, at the maximum size
  * @param oreId  the ore a patch here is made of
- * @param sizeId the vein size
+ * @param sizeId the slot's MAXIMUM vein size (S2, the seat's ruling 1): the footprint is this size's,
+ *               and each patch rolls a size that fits inside it ({@link SizeRoll})
  */
 public record Slot(String id, String world, FaceFrame frame, String oreId, String sizeId) {
 

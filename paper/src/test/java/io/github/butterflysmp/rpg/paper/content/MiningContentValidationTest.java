@@ -23,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class MiningContentValidationTest {
 
-    private static final Set<String> SOUNDS = Set.of("minecraft:block.stone.hit", "minecraft:block.stone.break");
+    private static final Set<String> SOUNDS = Set.of("minecraft:block.stone.hit", "minecraft:block.stone.break",
+            "minecraft:entity.villager.no");
     private static final Predicate<NamespacedKey> SOUND_EXISTS = key -> SOUNDS.contains(key.toString());
     private static final Predicate<String> ITEM_EXISTS = name -> name.equals("raw_iron");
     private static final Predicate<NamespacedKey> PARTICLE_USABLE = key -> key.toString().equals("minecraft:poof");
@@ -51,8 +52,22 @@ class MiningContentValidationTest {
                                      String particle) {
         Map<String, Integer> bonus = new java.util.HashMap<>();
         for (String s : sizes) bonus.put(s, 5);
-        return new OreDefinition("iron", "Iron", item, 2, 4, bonus, 1200, sizes,
-                patch, "rpg:mining/spot", "rpg:mining/crack", miss, brk, particle);
+        return ore(item, sizes, patch, miss, brk, "minecraft:entity.villager.no", particle);
+    }
+
+    /** S2: weights and per-size patch models built from the size list; every size gets {@code patch}. */
+    private static OreDefinition ore(String item, List<String> sizes, String patch, String miss, String brk,
+                                     String denied, String particle) {
+        Map<String, Integer> bonus = new java.util.LinkedHashMap<>();
+        Map<String, Integer> weights = new java.util.LinkedHashMap<>();
+        Map<String, String> models = new java.util.LinkedHashMap<>();
+        for (String s : sizes) {
+            bonus.put(s, 5);
+            weights.put(s, 10);
+            models.put(s, patch);
+        }
+        return new OreDefinition("iron", "Iron", item, 2, 4, bonus, 1200, weights,
+                models, "rpg:mining/spot", "rpg:mining/crack", miss, brk, denied, particle);
     }
 
     private static OreDefinition clean() {
@@ -112,6 +127,37 @@ class MiningContentValidationTest {
                 "minecraft:block.stone.hit", "minecraft:block.stone.break", "minecraft:block")), "particles.break");
         assertOne(check(ore("raw_iron", List.of("small"), "rpg:mining/iron_patch",
                 "minecraft:block.stone.hit", "minecraft:block.stone.break", "Not A Key")), "particles.break");
+    }
+
+    @Test
+    void aDeniedSoundThatDoesNotResolveIsNamed() {
+        // S2, the seat's ruling 8: the new sound key goes through the same check as the other two.
+        assertOne(check(ore("raw_iron", List.of("small"), "rpg:mining/iron_patch",
+                "minecraft:block.stone.hit", "minecraft:block.stone.break", "minecraft:entity.villager.nope",
+                "minecraft:poof")), "sounds.denied");
+        // Mutation: drop the sounds.denied check -> no problem -> reddens.
+    }
+
+    @Test
+    void eachSizesPatchModelIsCheckedAndTheMissingOneIsNamedBySize() {
+        // S2, the seat's ruling 6: one model per size. Small's is in the pack; medium's is not.
+        VeinSizeRegistry sizes = small();
+        sizes.register(new VeinSize("medium", 5, 3, 4, 5));
+        Map<String, Integer> bonus = new java.util.LinkedHashMap<>();
+        Map<String, Integer> weights = new java.util.LinkedHashMap<>();
+        Map<String, String> models = new java.util.LinkedHashMap<>();
+        bonus.put("small", 5);
+        bonus.put("medium", 6);
+        weights.put("small", 50);
+        weights.put("medium", 30);
+        models.put("small", "rpg:mining/iron_patch");
+        models.put("medium", "rpg:mining/gold_patch");
+        OreDefinition ore = new OreDefinition("iron", "Iron", "raw_iron", 2, 4, bonus, 1200, weights, models,
+                "rpg:mining/spot", "rpg:mining/crack", "minecraft:block.stone.hit", "minecraft:block.stone.break",
+                "minecraft:entity.villager.no", "minecraft:poof");
+        assertOne(validator().validateMining(List.of(ore), sizes, ITEM_EXISTS, PARTICLE_USABLE, PACK_HAS),
+                "models.patch.medium");
+        // Mutation: check only the first size's model -> no problem -> reddens.
     }
 
     @Test

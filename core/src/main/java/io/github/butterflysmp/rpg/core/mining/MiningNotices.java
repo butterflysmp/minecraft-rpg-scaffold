@@ -22,4 +22,11 @@ public final class MiningNotices {
      * it lasts longer in real time.
      */
     public static final int DENIED_HOLD_TICKS = 30;
+
+    /**
+     * Mining S2: how long after a miss sound PLAYS before the next one may, in SERVER TICKS, per player.
+     * Ben, 2026-11-14: "Miss sound should have a slight cooldown, let's say .4 seconds". 0.4 s at 20 TPS
+     * = 8. A miss inside it is still a MISS and still logged; it plays nothing ({@link MissSoundCooldown}).
+     */
+    public static final int MISS_SOUND_COOLDOWN_TICKS = 8;
 }

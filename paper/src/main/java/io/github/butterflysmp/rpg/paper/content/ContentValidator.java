@@ -269,7 +269,7 @@ public final class ContentValidator {
      *   <li>every {@code sizes:} entry names a LOADED vein size. An ore whose only size failed to
      *       load would otherwise be loaded and unplaceable, with nothing said;</li>
      *   <li>{@code payout.item} resolves to an ITEM (a block-only material cannot be handed over);</li>
-     *   <li>{@code sounds.miss} and {@code sounds.break} parse as keys and resolve in the sound
+     *   <li>{@code sounds.miss}, {@code sounds.break} and (S2) {@code sounds.denied} parse as keys and resolve in the sound
      *       registry, through the same {@code soundExists} seam the visual check uses;</li>
      *   <li>{@code particles.break} parses as a key and names a particle that needs NO data. A
      *       particle that needs data (a block particle, a dust colour) cannot be spawned without it;</li>
@@ -302,6 +302,7 @@ public final class ContentValidator {
             }
             checkMiningSound(ore, "sounds.miss", ore.missSound(), problems);
             checkMiningSound(ore, "sounds.break", ore.breakSound(), problems);
+            checkMiningSound(ore, "sounds.denied", ore.deniedSound(), problems);   // S2, the seat's ruling 8
             NamespacedKey particle = NamespacedKey.fromString(ore.breakParticle());
             if (particle == null) {
                 problems.add("ore '" + ore.id() + "' particles.break '" + ore.breakParticle()
@@ -310,7 +311,10 @@ public final class ContentValidator {
                 problems.add("ore '" + ore.id() + "' particles.break '" + ore.breakParticle()
                         + "' is not a particle that can be shown without data; the break would show nothing");
             }
-            checkModel(ore, "models.patch", ore.patchModel(), packHasModel, problems);
+            // S2 (the seat's ruling 6): one patch model per size, each checked on its own.
+            for (String size : ore.sizes()) {
+                checkModel(ore, "models.patch." + size, ore.patchModel(size), packHasModel, problems);
+            }
             checkModel(ore, "models.spot", ore.spotModel(), packHasModel, problems);
             checkModel(ore, "models.crack", ore.crackModel(), packHasModel, problems);
         }

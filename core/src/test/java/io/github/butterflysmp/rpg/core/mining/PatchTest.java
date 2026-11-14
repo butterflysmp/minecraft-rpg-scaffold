@@ -31,7 +31,7 @@ class PatchTest {
     private static final PayoutRule RULE = new PayoutRule(2, 4, 5);
 
     private static Patch fresh() {
-        return new Patch(LAYOUT, RULE, 100L);
+        return new Patch(MiningFixtures.small(), LAYOUT, RULE, 100L);
     }
 
     /** The centre of a spot's centre pixel. */

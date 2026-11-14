@@ -370,12 +370,12 @@ public final class RpgPlugin extends JavaPlugin {
         }
 
         // And again on the two mining directories (PLAN-mining.md 5.3), the NEWEST, so the likeliest
-        // to arrive empty on an existing run/ folder for the reason the tools guard records. Slice 1
-        // expects exactly one of each: the Small vein and iron. A refused entry has already named
+        // to arrive empty on an existing run/ folder for the reason the tools guard records. Mining S2
+        // expects four sizes and one ore: small, medium, large, extra_large and iron. A refused entry has already named
         // itself above; these lines say the directory as a whole came up empty.
         if (veinSizes.size() == 0) {
             getLogger().warning("No vein sizes loaded from content/vein_sizes -- no ore patch can be "
-                    + "placed. Expected 1 (small) from small.yml.");
+                    + "placed. Expected 4 (small, medium, large, extra_large), one file each.");
         }
         if (ores.size() == 0) {
             getLogger().warning("No ores loaded from content/ores -- no ore patch can be placed. "

@@ -562,6 +562,13 @@ public final class RpgCommand {
                                 .executes(ctx -> MiningDevCommand.regrow(ctx, mining)))
                         .then(Commands.literal("trace")
                                 .executes(ctx -> MiningDevCommand.trace(ctx, mining)))
+                        // S2 (the seat's ruling 7): force the caller's patch at the looked-at slot to a
+                        // size. Inside the mining branch, so the branch's Permissions.DEV gates it.
+                        .then(Commands.literal("roll")
+                                .executes(MiningDevCommand::usage)
+                                .then(Commands.argument("size", StringArgumentType.word())
+                                        .executes(ctx -> MiningDevCommand.roll(ctx, mining,
+                                                StringArgumentType.getString(ctx, "size")))))
                         .then(Commands.literal("pack")
                                 .executes(ctx -> MiningDevCommand.pack(ctx, mining))))
                 // Mint a mana_regen_boost_TEMP. Same reason as the health-regen fixture: no content

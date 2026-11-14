@@ -25,6 +25,7 @@ public final class Patch {
 
     private static final long NONE = -1L;
 
+    private final VeinSize size;
     private final SpotLayout layout;
     private final PayoutRule payoutRule;
     private final long[] revealTicks;
@@ -32,12 +33,14 @@ public final class Patch {
     private int live;          // index of the live spot; == spot count once broken
 
     /**
+     * @param size       the vein size this patch ROLLED (S2): its footprint, and its bonus via the rule
      * @param layout     the rolled spots, in reveal order
      * @param payoutRule how the break pays
      * @param revealTick the tick the patch appeared, which reveals its first spot
      */
-    public Patch(SpotLayout layout, PayoutRule payoutRule, long revealTick) {
+    public Patch(VeinSize size, SpotLayout layout, PayoutRule payoutRule, long revealTick) {
         if (layout.spots().isEmpty()) throw new IllegalArgumentException("a patch needs at least one spot");
+        this.size = size;
         this.layout = layout;
         this.payoutRule = payoutRule;
         int n = layout.spots().size();
@@ -67,6 +70,17 @@ public final class Patch {
         }
         revealTicks[live] = click.tick();
         return new ClickOutcome.Hit(cracked, live);
+    }
+
+    /** The size this patch rolled (S2). */
+    public VeinSize size() { return size; }
+
+    /**
+     * This patch's footprint at {@code slot}: the slot's anchor and face at this patch's size (S2), so
+     * it is centred on the slot and shares its bottom row. Patch pixels and the aim are in THIS frame.
+     */
+    public FaceFrame frame(Slot slot) {
+        return slot.frame().withSize(size.width(), size.height());
     }
 
     public SpotLayout layout() { return layout; }

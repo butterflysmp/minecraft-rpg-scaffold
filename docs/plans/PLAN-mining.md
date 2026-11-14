@@ -18,6 +18,15 @@ findings F-M12 to F-M18), and §5 is now SLICE 1 as a buildable design. Still PL
 the seat the same day (the sound rows count). Findings F-M32 to F-M36, and the CARRIED HAND ROWS list dated after
 S1-c (which supersedes slice 1's), are in §6.
 
+**2026-11-14: S2 OPENS** on `feat/mining-s2` from master **`6470ee8d`** (read from the wire:
+`git ls-remote origin refs/heads/master` → `6470ee8dd62b8a5a1db9205c7a1a4df121e768a7`). Four vein sizes, each patch
+rolling its size per regrowth, the DENIED sound and the miss-sound cooldown. Ben's words of 2026-11-14 are in §1, the
+seat's rulings in §2. The design (§5.12) and the gate (`GATE-mining-s2.md`) land in later commits on this branch.
+
+**2026-11-14: S2 READ.** `feat/mining-s2` (#186) booted at **`03bd1bf0`**, on the seat's approval and Ben's "ready";
+readings in `GATE-mining-s2.md`. Findings F-M41 to F-M44, and the CARRIED HAND ROWS list dated after the S2 boot
+(which supersedes the earlier ones), are in §6.
+
 **The spike** is `spike/mining-input`, also from `55425aad`. It will NOT merge. Its gate, `GATE-mining-spike.md`,
 lives on that branch beside the code it tests, because the boot is bound to that branch's build sha. After its
 readings, the read gate is copied byte for byte onto this branch with a dated note naming the spike sha it was read
@@ -98,6 +107,38 @@ the seat confirms the copy.
   THE RESOURCE PACK). Requiring it is recorded, not built, in slice 1.
 - **The minted pickaxe's tooltip keeps vanilla's order**: Attack Damage above Attack Speed (F-M15, §5 TOOLS).
 - **The dig-stop is DEFERRED as polish.** Slice 1 does not build it. F7a is recorded as the candidate (§3, F7).
+
+### BEN'S RULINGS, 2026-11-14, VERBATIM (relayed by the seat in the S2 brief)
+
+After the S1-c boot:
+
+| | topic | Ben's words |
+|---|---|---|
+| a | the S1-c gate rows he skipped | *"Everything after the break row was already run which is why i chose to skip them, no point running them again"* |
+| b | asked if a placeholder sound is fine for the "need a pickaxe" message | *"Placeholder for now is fine"* |
+| c | asked if the miss sound should play only on a charged miss | *"Miss sound should have a slight cooldown, let's say .4 seconds"* |
+
+On vein sizes (the seat's four questions, his four answers):
+
+| | topic | Ben's words |
+|---|---|---|
+| d | asked whether a placed patch keeps one size or rolls a size each regrowth | *"The end goal is for patches to grow of random sizes and ores and types"* |
+| e | asked whether completion bonuses of 6, 8 and 10 for Medium, Large and Extra Large are right (Small is 5) | *"This is fine for now. Tuning will come later"* |
+| f | asked for regrowth time by size | *"Regrowth can be 1 minute across the board"* |
+| g | asked whether per-spot yield stays 2-4 for every size | *"yes"* |
+
+**FROM BEN'S DESIGN DOC, RELAYED BY THE SEAT, 2026-11-14.** These are the doc's values, NOT Ben's words in chat.
+Each is marked *design doc, relayed* wherever it is used.
+
+| size | width × height (blocks) | spots | roll weight |
+|---|---|---|---|
+| small | 3 × 2 | 2–3 | 50 |
+| medium | 5 × 3 | 4–5 | 30 |
+| large | 7 × 3 | 6–7 | 15 |
+| extra_large | 7 × 4 | 8–9 | 5 |
+
+The roll weights are **PROVISIONAL** (the seat's words). Small's 3 × 2 and 2–3 were already RULED by Ben on 2026-11-13
+(the table above).
 
 ## 2. THE SEAT'S RULINGS
 
@@ -189,6 +230,48 @@ damage is a property of the AREA, not of a patch.
    and the validator's check that the key resolves. (Where the keys live is argued in §5.3: the ore file.)
 5. **The instruction to leave the payout counts UNSET is lifted.** `iron.yml` carries the ruled values. The loader
    still refuses an ore with no payout, and keeps its test.
+
+**From the seat, 2026-11-14, on Ben's (a) (the S1-c rows he skipped):** these S1-c carried rows are **CLOSED BY
+BEN'S RULING 2026-11-14, NOT READ, never passes**: the place refusal texts, the server-list check, the
+full-inventory ground check, the relog and logout sights, the post-remove dig. **STILL CARRIED, never read by
+anything:** a second player sees their own patch; a same-world respawn re-shows the patch; whether a death drops a
+server-offered pack.
+
+**From the seat, 2026-11-14: the mechanism rulings for S2 (four vein sizes rolled per regrowth, and two sound
+rulings). Code + gate, no boot.**
+1. **A SLOT IS A LOCATION WITH A MAXIMUM SIZE.** `/rpg mining place <ore> <size>` now means "the largest size this
+   location can hold". The slot's footprint is that maximum size's footprint, from the same bottom-centre anchor rule
+   as today. Every block of it is protected always.
+2. **EACH PATCH ROLLS ITS SIZE WHEN IT IS CREATED** (first show, and every regrowth), per player, from the ore's size
+   weights, restricted to sizes that fit the slot (width and height both at most the maximum's), weights renormalised
+   over those. The patch sits at the slot's anchor by the same rule, so it is centred on the slot and its bottom row
+   is the slot's bottom row.
+3. The weights are the ore's: in iron.yml, `sizes` becomes a map of size id to an integer weight greater than 0.
+   NAME THE QUANTITY: a relative weight, an integer; a size's chance is its weight over the sum of the eligible
+   weights. The roll uses the injected RandomGenerator.
+4. A click on a slot block OUTSIDE the current patch's footprint (or its face while the patch is regrowing) is
+   cancelled and judged as nothing: no click outcome, no sound. The trace may log it as its own line; pin the format
+   if so.
+5. Payout: per_spot stays 2..4 for every size; completion_bonus is small 5, medium 6, large 8, extra_large 10;
+   regrowth_ticks stays 1200. Put the executed payout range for each size in the plan and pin both ends of each with
+   seeded tests.
+6. THE PATCH ART: one flat model per size, at that size's aspect, named per size in the ore's models (placeholder
+   textures; the look is Ben's later). The spot and crack models are unchanged. The pack's sha1 will change;
+   MiningPack's file list and its tests follow.
+7. A DEV COMMAND TO FORCE A SIZE, so a gate does not depend on luck: `/rpg mining roll <size>` (Permissions.DEV,
+   wired and pinned like the others) replaces the caller's patch at the looked-at slot with a fresh patch of that
+   size, refusing a size that does not fit the slot or that the ore does not list. It logs always.
+8. THE DENIED SOUND: a placeholder vanilla sound, named in content and marked PLACEHOLDER, played to the one player
+   when a DENIED action-bar hold STARTS with no hold already live. A DENIED click that replaces a live hold plays
+   nothing.
+9. THE MISS SOUND COOLDOWN: 8 server ticks (Ben's 0.4 s), per player, counted from the last miss sound that actually
+   PLAYED. A MISS inside it is still a MISS, still logged, and plays nothing. One named value, the rule in core, tests
+   first. The click line gains a field that says whether the miss sound played, so a gate can read it without an ear.
+10. Ore and minigame style are NOT rolled in S2 (one ore, Trail only). Say in the plan how the slot and the patch roll
+    would take them later, so nothing here has to be undone; build none of it.
+11. Core first, tests first, no Bukkit in core, no packet listener, everything on the main thread as slice 1
+    documents. Mutation-check the guards that matter: the fit rule, the renormalised roll, the outside-the-patch rule,
+    the cooldown boundary at exactly 8 ticks, the denied-sound "no live hold" condition, each size's payout ends.
 
 **THE DESIGN.** Every ore patch and every weak spot is a **packet-only display entity showing a CUSTOM MODEL from the
 project's resource pack**, shown to one player. **A vanilla item is never the shipped look.** The spike's
@@ -1111,6 +1194,112 @@ unanswered. `Patch` already records each spot's reveal tick and hit tick (§5.2)
   4). The break particle is a placeholder named in content, and its key joins the schema in S1-b, the slice that
   shows it. *(This corrects the morning's note that both the sound and the particle keys wait for S1-b.)*
 
+### 5.12 S2: FOUR VEIN SIZES ROLLED PER PATCH, THE DENIED SOUND, THE MISS-SOUND COOLDOWN (2026-11-14)
+
+Built on `feat/mining-s2` to the seat's S2 rulings 1–11 (§2), on Ben's words (d)–(g) and (b)–(c) (§1). Code + gate,
+no boot. The gate is `docs/gates/GATE-mining-s2.md`.
+
+**The words, changed.**
+- **slot**: a place on a wall with a **MAXIMUM size**, the size `/rpg mining place <ore> <size>` names. Its
+  footprint is that size's, from the same bottom-centre anchor (§5.1). Every footprint block is protected always.
+- **patch**: one player's instance at a slot, which now **rolls its own size** when it is created (its first show,
+  and every regrowth). It sits at the slot's anchor at its own size (`FaceFrame.withSize`), so it is centred on the
+  slot and shares the slot's bottom row. Its patch pixels, its aim and its spots are in ITS frame.
+
+**The sizes** (*design doc, relayed*; small RULED, §1). Spot ceilings executed in jshell, worst case (§5.2, F-A):
+
+| size | blocks | pixels | spots | ceiling | weight (PROVISIONAL) | completion bonus |
+|---|---|---|---|---|---|---|
+| small | 3 × 2 | 48 × 32 | 2–3 | 20 | 50 | 5 (RULED 2026-11-13) |
+| medium | 5 × 3 | 80 × 48 | 4–5 | 45 | 30 | 6 (Ben (e)) |
+| large | 7 × 3 | 112 × 48 | 6–7 | 60 | 15 | 8 (Ben (e)) |
+| extra_large | 7 × 4 | 112 × 64 | 8–9 | 84 | 5 | 10 (Ben (e)) |
+
+**The fit rule and the roll (core `SizeRoll`, tests first).** A size is eligible at a slot when its width AND its
+height are at most the maximum's, and the ore lists it. One draw from `[0, sum of the ELIGIBLE weights)`, walked
+over the eligible sizes in the ore's authored order: renormalised by construction, because an ineligible size has
+no slice of the draw. **NAME THE QUANTITY:** a relative integer weight, at least 1 (`OreDefinition` refuses 0); a
+size's chance at a slot is its weight over the eligible sum. For iron, by slot maximum (exact fractions):
+
+| slot maximum | eligible | draw range | chances |
+|---|---|---|---|
+| small | small | [0, 50) | small 1 |
+| medium | small, medium | [0, 80) | 50/80, 30/80 |
+| large | small, medium, large | [0, 95) | 50/95, 30/95, 15/95 |
+| extra_large | all four | [0, 100) | 50, 30, 15, 5 in 100 |
+
+large (7 × 3) fits extra_large (7 × 4); extra_large does not fit large (the height); large does not fit medium (the
+width). `SizeRollTest` has a row where each half of the rule is the only half that refuses.
+
+**The outside-the-patch rule (the seat's ruling 4).** `MiningBook.click` takes the clicked block. A slot block
+outside the current patch's footprint returns NO outcome: nothing changes, no sound, and the trace logs
+`MINING click-outside player=P slot=ID size=S block=x,y,z tick=t`. **My reading of the ruling's "(or its face while
+the patch is regrowing)":** while regrowing there is no current patch, so the whole slot face counts as "the patch",
+and every slot block is judged `NOT_LIVE` as in slice 1 (no outcome change, nothing played). The other reading, that
+a regrowing slot judges every click as nothing, would remove `NOT_LIVE`; it is the seat's to correct (report).
+
+**Payout (the seat's ruling 5), executed in jshell over each size's spot range** (`per_spot` 2..4, Ben (g)):
+
+| size | min spots → min | max spots → max | range per break |
+|---|---|---|---|
+| small | 2 → 2·2+5 = 9 | 3 → 3·4+5 = 17 | **9..17** |
+| medium | 4 → 4·2+6 = 14 | 5 → 5·4+6 = 26 | **14..26** |
+| large | 6 → 6·2+8 = 20 | 7 → 7·4+8 = 36 | **20..36** |
+| extra_large | 8 → 8·2+10 = 26 | 9 → 9·4+10 = 46 | **26..46** |
+
+Both ends of each are pinned by `PayoutTest` (a scripted min and max generator), and a seeded sweep of 400,000
+breaks per size stays inside each range and reaches both ends. The bonus is the ROLLED size's, not the slot's
+maximum's (`MiningBookTest` stages a medium patch in an extra_large slot: bonus 6, not 10 or 5). Regrowth stays 1200
+ticks for every size (Ben (f)).
+
+**The art (ruling 6).** `models.patch` is a map, one per size: `rpg:mining/iron_patch_{small,medium,large,extra_large}`.
+Slice 1's `iron_patch` is renamed `iron_patch_small` (the same PNG). The three new textures are PLACEHOLDERS, the
+small texture tiled to 80 × 48, 112 × 48 and 112 × 64 (16 px per block, `MiningPackTest` reads each size's
+dimensions from the shipped YAML). The pack is 19 files. **Its sha1 is `49f2e465b2b6bbb24380425830c8572f14acd11c`,
+8227 bytes**, computed from the committed blobs by a stand-alone copy of `MiningPack.build`. Control: the same
+program over master `6470ee8d`'s pack gives slice 1's `1e11f1c1…` and 3225 bytes.
+
+**The roll command (ruling 7).** `/rpg mining roll <size>`, inside the `/rpg mining` branch whose next line requires
+`Permissions.DEV`. It replaces the caller's patch at the looked-at slot with a fresh one of that size (no size draw)
+and ends that slot's regrowth for them. It refuses an unloaded size, a size the ore does not list, and a size that
+does not fit, naming the reason. It logs ALWAYS: `MINING roll player=P slot=ID size=S spots=n`, or
+`MINING roll-refused player=P reason=TEXT`.
+
+**The DENIED sound (ruling 8).** `sounds.denied: minecraft:entity.villager.no` in iron.yml, PLACEHOLDER (Ben (b)).
+`deny` asks `ActionBarHolds.isLive(player, tick)` BEFORE the new hold replaces the old one, and plays the sound only
+when no hold was live. The hold line gains `sound=yes|no`.
+
+**The miss-sound cooldown (ruling 9).** `MiningNotices.MISS_SOUND_COOLDOWN_TICKS` = 8 server ticks (Ben (c), 0.4 s),
+per player, counted from the last miss sound that PLAYED (`MissSoundCooldown`): a miss at exactly 8 ticks plays; at
+7 it does not; a silent miss does not restart the count. The click line gains `miss_sound=yes|no` on a MISS, `-`
+otherwise.
+
+**The trace lines, as changed** (all pinned by `MiningTraceLineTest`):
+- `MINING click … tick=t miss_sound=yes|no|-`
+- `MINING show player=P slot=ID size=S spots=… live=i/n tick=t`
+- `MINING break player=P slot=ID size=S payout=… rolls=… bonus=b kept=k dropped=d regrow_at=r`
+- `MINING regrow player=P slot=ID size=S spots=n tick=t`
+- `MINING hold player=P reason=denied start=s until=u sound=yes|no`
+- `MINING place slot=ID ore=O max_size=S footprint=… by=P` (was `size=`)
+- new: `click-outside`, `roll`, `roll-refused` (above).
+
+**HOW ORE AND STYLE WOULD BE ROLLED LATER (ruling 10, Ben (d): "random sizes and ores and types"). Nothing of it is
+built.**
+- **Ore.** Today a slot names its ore. Later a slot would name an ORE TABLE (ore id → weight), and `MiningBook.patch`
+  would draw the ore first, then the size from THAT ore's weights restricted to the slot's maximum, exactly as now.
+  The patch would carry its ore, as it now carries its size, and everything that reads `slot.oreId()` would read
+  the patch's ore instead (the payout, models and sounds already come from an `OreDefinition` passed in). Nothing
+  here has to be undone: the size roll already takes the ore as an argument.
+- **Style (minigame type).** Trail is the only style; `Patch` is its state machine. A later style would be a second
+  implementation behind a sealed interface over `click`, chosen by a third draw (or an ore's or area's style
+  table) at the same creation point. The slot, the fit rule and the size roll do not change; the trace's `size=`
+  field would gain a `style=` neighbour.
+- **The one creation point** is `MiningBook.patch` (and `force` for the dev command). Every roll lives there, so
+  adding a draw is one place.
+
+**What S2 does NOT build:** ore or style rolling; any change to Trail; gold windows; areas; persistence; a
+non-vanilla pickaxe; the dig-stop. The weights are PROVISIONAL and the art is placeholder.
+
 ---
 
 ## 6. FINDINGS
@@ -1331,9 +1520,93 @@ same day):
   stay recorded verbatim in the gate and bound to no reading. They do not block S1-c's merge: every path is behind
   `Permissions.DEV` (the seat's ruling 4).
 
-### CARRIED HAND ROWS, 2026-11-14, AFTER S1-c: THE NEXT MINING GATE MUST INCLUDE THESE (the seat's ruling 4)
+**From S2's build, 2026-11-14** (`feat/mining-s2`, no boot):
 
-**This list SUPERSEDES the one below** (kept as the record of what slice 1 carried). Each is **NOT READ** and
+- **F-M37: the brief's "(or its face while the patch is regrowing)" has two readings, and S2 builds one.** Built:
+  while regrowing, the whole slot face is "the patch", so every slot block is `NOT_LIVE` as in slice 1. Not built:
+  every click on a regrowing slot is judged as nothing (no `NOT_LIVE` at all). §5.12 states it; the seat's to
+  correct.
+- **F-M38: "several regrows" is staged as remove-then-place, not break-then-regrow.** A medium slot's patch holds 4
+  or 5 spots, so one real regrowth costs 4 to 5 charged clicks and a `/rpg mining regrow`; twenty-one of them would
+  cost about 100 clicks. `remove` clears the slot's patches and `place` shows a fresh one through the same
+  `MiningBook.patch` creation point that regrowth uses, so each pair is one roll. The real regrowth path is read on
+  its own row. The gate says why it reads 21 (`GATE-mining-s2.md`, S2-MEDIUM-CAP).
+- **F-M39: a `NOT_LIVE` line's aim is in the SLOT's frame**, because a regrowing slot has no patch to aim in. Every
+  other click line's aim is in the PATCH's frame. A gate comparing aims across a regrowth compares two frames.
+- **F-M40: the order "ask `isLive`, then replace the hold" is pinned by a source-order signature test and was NOT
+  mutation-checked.** Its guard (`if (noLiveHold)`) and `isLive`'s boundary were.
+
+**From the S2 boot, 2026-11-14** (`03bd1bf0`; readings in `GATE-mining-s2.md` on `feat/mining-s2`):
+
+- **F-M41: THE SEAT'S RULINGS ON S2'S POINTS, 2026-11-14.** (1) A regrowing slot judges every block `NOT_LIVE`:
+  accepted as built (F-M37). (2) S2-MEDIUM-CAP at 5 placements, a weak witness; then, before the run sheet, NOT RUN.
+  (3) "Ore does not list size" unit-tested only, NOT READ: accepted. (4) **`sounds.denied` in `iron.yml` is accepted
+  for now, but it is not really an ore's property** (the DENIED text is one value in code, `MiningNotices`), **and may
+  move when a second ore exists.** (5) The three trace format changes: accepted. Also by ruling: S2-SIZE-LARGE and
+  S2-SIZE-XL roll and sight only (break halves NOT RUN), S2-SECOND-PLAYER NOT READ unless a second client exists.
+- **F-M42: S2 READ.** Every rule built was read in game: the size roll (a real regrowth rolled medium after a small
+  broke), each forced size at its footprint (Ben: yes, yes for all four), the payout rule following the rolled size
+  (medium's bonus 6 at an extra_large slot), the outside-the-patch rule (8 `click-outside` lines on three blocks, no
+  outcome), the DENIED sound once per message (5 holds, `sound=` exactly when no hold was live), and the miss-sound
+  cooldown on 14 MISS lines **including a gap of exactly 8 ticks reading `yes`**. Pack `49f2e465…`/8227 as predicted.
+- **F-M43: SET-UP STEP 1 WAS SKIPPED AGAIN** (as F-M35): no `/gamemode survival` in the log, so SURVIVAL is inferred
+  from the click lines a second time. Twice is a pattern: the next run sheet should put the mode command FIRST and
+  read it before any other step.
+- **F-M44 (instrument): MY FIRST R0 READ WAS OF THE PREVIOUS BOOT.** A wait loop on `Done (` in `latest.log` matched
+  S1-c's log before the new server had rotated it; the jar scan ran before the new jar was deployed. Caught by the
+  `Build:` hash (`0578366d`) and the log's mtime, discarded before Ben logged in, and re-read on this boot. **A
+  readiness wait must bind to the boot it waits for** (a fresh mtime and the expected `Build:` hash), not to a
+  line that any previous boot also printed.
+- **S2's rows NOT RUN** (Ben stopped after step 13's `remove`): S2-ROLL-REFUSED's two texts, S2-RESPAWN and
+  S2-PACK-AFTER-DEATH. Ben's Q21 ("not sure", NOT STATED) and Q22 ("yes") were given before those rows ran and are
+  bound to no reading.
+
+**From the seat's read of the S2 readings, 2026-11-14** (read from origin at `37534ac2`: ACCEPTED; #186 approved to
+merge, only on Ben's own words):
+
+- **F-M45: THE SEAT'S RULINGS ON THE S2 READINGS.**
+  1. **PASS as recorded:** R0a–c, S2-PACK-JOIN, S2-PLACE-XL, S2-SIZE-SMALL, S2-SIZE-MEDIUM, the roll and sight halves
+     of S2-SIZE-LARGE and S2-SIZE-XL, S2-DENIED-SOUND, S2-MISS-COOLDOWN, S2-REGROW, LAST. The large patch's break, read
+     out of the steps, is accepted as an extra reading and stays recorded that way.
+  2. **S2-OUTSIDE: the rule is READ** (eight lines, three blocks, no outcome, no sound, the control heard). "Which
+     block" is NOT AS PREDICTED and does not matter to the rule.
+  3. **SURVIVAL is inferred again** (F-M43). The run-sheet rule is F-M46, below.
+  4. **NOT READ, never passes, carried:** S2-ROLL-REFUSED (both refusals), S2-RESPAWN, S2-PACK-AFTER-DEATH,
+     S2-SECOND-PLAYER, S2-MEDIUM-CAP, and the extra_large break half. Q21 is NOT STATED; Q22 is bound to no reading.
+     They do not block this merge: every path is behind `Permissions.DEV`, and the rules are unit-tested and
+     mutation-checked.
+  5. **F-M44 is accepted as recorded.** The build-line check caught it, which is what R0a is for.
+- **F-M46 (the seat's ruling 3, 2026-11-14): A RUN SHEET'S FIRST LINE AFTER LOGIN IS `/gamemode survival`**, on its
+  own, before anything else, **and the gate's first row reads it** in the log. Set-up step 1 was skipped in both the
+  S1-c and the S2 boots (F-M35, F-M43), and both times SURVIVAL rested on an inference.
+
+### CARRIED HAND ROWS, 2026-11-14, AFTER THE S2 BOOT: THE NEXT MINING GATE MUST INCLUDE THESE
+
+**This list SUPERSEDES the one below.** Each is **NOT READ** and **never a pass**:
+
+1. **M-SECOND-PLAYER**: each player sees their own patch. Needs a second client.
+2. **The same-world respawn** re-shows the patch. A death is stageable (F-M30).
+3. **Whether a death and respawn drops a server-offered pack.**
+4. **`/rpg mining roll`'s two stageable refusals as log lines** (S2-ROLL-REFUSED): a size that does not fit, and a
+   size that is not loaded.
+5. **S2-MEDIUM-CAP**: a medium slot showing only small and medium over several rolls (added 2026-11-14 by the seat's
+   ruling 4 on the readings, F-M45).
+6. **The extra_large break half**: a break of an extra_large patch with its payout inside 26..46 (added 2026-11-14 by
+   the same ruling).
+
+### CARRIED HAND ROWS, 2026-11-14, AFTER BEN'S (a) AND THE SEAT'S RULING ON IT: S2'S GATE INCLUDES THESE — SUPERSEDED 2026-11-14, AFTER THE S2 BOOT (the list above)
+
+**This list SUPERSEDED the one below.** Rows 1 to 6 of the list below (the place refusal texts, the server-list
+check, the full-inventory ground check, the relog and logout sights, the post-remove dig) are **CLOSED BY BEN'S
+RULING 2026-11-14, NOT READ, never passes** (§2). Each row here is **NOT READ** and **never a pass**:
+
+1. **M-SECOND-PLAYER**: each player sees their own patch. Needs a second client.
+2. **The same-world respawn** re-shows the patch. A death is stageable: it keeps inventory and drops nothing (F-M30).
+3. **Whether a death and respawn drops a server-offered pack.**
+
+### CARRIED HAND ROWS, 2026-11-14, AFTER S1-c: THE NEXT MINING GATE MUST INCLUDE THESE (the seat's ruling 4) — SUPERSEDED 2026-11-14 (the list above)
+
+**This list SUPERSEDED the one below** (kept as the record of what slice 1 carried). Each is **NOT READ** and
 **never a pass**. Read since: rows 1, 2 and 3 of the old list (the sounds, F-M32) and row 7 (the toggle ON, F-M34).
 
 1. **The three `/rpg mining place` refusals as log lines** (`MINING place-refused`; the line is unit-tested only):

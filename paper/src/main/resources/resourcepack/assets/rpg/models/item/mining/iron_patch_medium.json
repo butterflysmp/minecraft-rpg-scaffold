@@ -1,7 +1,7 @@
 {
   "textures": {
-    "face": "rpg:item/mining/iron_patch",
-    "particle": "rpg:item/mining/iron_patch"
+    "face": "rpg:item/mining/iron_patch_medium",
+    "particle": "rpg:item/mining/iron_patch_medium"
   },
   "elements": [
     {

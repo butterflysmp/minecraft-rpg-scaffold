@@ -31,6 +31,14 @@ public record FaceFrame(int ax, int ay, int az, WallFace face, int width, int he
         }
     }
 
+    /**
+     * The same anchor and face at another size (Mining S2): a patch smaller than its slot keeps the
+     * slot's anchor, so it is centred on the slot and shares its bottom row (the seat's ruling 2).
+     */
+    public FaceFrame withSize(int newWidth, int newHeight) {
+        return new FaceFrame(ax, ay, az, face, newWidth, newHeight);
+    }
+
     /** The left-most footprint column's block, as the player sees the face. */
     private int leftX() { return ax - (width / 2) * face.rx; }
     private int leftZ() { return az - (width / 2) * face.rz; }

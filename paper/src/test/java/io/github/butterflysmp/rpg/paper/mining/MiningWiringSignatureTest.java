@@ -142,9 +142,9 @@ class MiningWiringSignatureTest {
     @Test
     void deniedTakesTheBarForTheNamedTicksAndSendsAtOnce() throws IOException {
         List<String> svc = lines("mining/MiningService.java");
-        assertEquals("case ClickOutcome.Denied denied -> deny(player, tick);",
+        assertEquals("case ClickOutcome.Denied denied -> deny(player, slot, ore.get(), tick);",
                 svc.get(indexOf(svc, "case ClickOutcome.Denied denied ->")).strip());
-        int at = indexOf(svc, "private void deny(Player player, long tick) {");
+        int at = indexOf(svc, "private void deny(Player player, Slot slot, OreDefinition ore, long tick) {");
         List<String> body = blockAt(svc, at, "    ");
         String joined = String.join("\n", body);
         assertTrue(joined.contains("MiningNotices.DENIED_HOLD_TICKS"), "the ONE named value (ruling 3)");
@@ -164,6 +164,79 @@ class MiningWiringSignatureTest {
         List<String> refuse = blockAt(svc, indexOf(svc, "private Component refuse(Player player, String text) {"), "    ");
         assertEquals("log.info(MiningTraceLine.placeRefused(player.getName(), text));", refuse.get(1).strip());
         // Mutation: refuse() without its log line -> reddens.
+    }
+
+    // --- S2: the two sound rulings, the outside rule and the roll command -------------------------
+
+    @Test
+    void theDeniedSoundPlaysOnlyWhenNoHoldWasLiveAskedBeforeTheNewHold() throws IOException {
+        // The seat's ruling 8. isLive must be asked BEFORE hold() replaces the old hold, or the new hold
+        // is always live and the sound never plays. Bounded by deny's own closing brace.
+        List<String> svc = lines("mining/MiningService.java");
+        List<String> body = blockAt(svc, indexOf(svc, "private void deny(Player player, Slot slot, OreDefinition ore, long tick) {"), "    ");
+        int asked = indexOfIn(body, "boolean noLiveHold = !holds.isLive(player.getUniqueId(), tick);");
+        int held = indexOfIn(body, "holds.hold(player.getUniqueId(), text, \"denied\", tick,");
+        assertTrue(asked < held, "isLive is asked before the new hold: " + body);
+        indexOfIn(body, "if (noLiveHold) playAt(player, slot, ore.deniedSound());");
+        // Mutations: move the isLive line below hold() -> reddens; drop "if (noLiveHold)" -> reddens.
+    }
+
+    @Test
+    void aMissPlaysItsSoundOnlyWhenTheCooldownAllowsIt() throws IOException {
+        // The seat's ruling 9. The rule is core's (MissSoundCooldownTest); this pins that the paper side
+        // asks it for a MISS only, and plays only on its yes.
+        List<String> svc = lines("mining/MiningService.java");
+        assertEquals("boolean missPlayed = outcome instanceof ClickOutcome.Miss && missSounds.tryPlay(player.getUniqueId(), tick);",
+                svc.get(indexOf(svc, "boolean missPlayed =")).strip());
+        assertEquals("case ClickOutcome.Miss miss -> { if (missPlayed) playAt(player, slot, ore.get().missSound()); }",
+                svc.get(indexOf(svc, "case ClickOutcome.Miss miss ->")).strip());
+    }
+
+    @Test
+    void aClickOutsideThePatchIsTracedAndReturnsBeforeAnySound() throws IOException {
+        // The seat's ruling 4: judged as nothing. The branch logs its own line and returns; it plays
+        // nothing. Bounded by the if-block's own closing brace.
+        List<String> svc = lines("mining/MiningService.java");
+        List<String> branch = blockAt(svc, indexOf(svc, "if (judged.isEmpty()) {"), "        ");
+        assertTrue(branch.stream().anyMatch(l -> l.contains("MiningTraceLine.clickOutside(")), branch.toString());
+        assertEquals("return;", branch.get(branch.size() - 2).strip(), branch.toString());
+        assertTrue(branch.stream().noneMatch(l -> l.contains("playAt(") || l.contains("playSound(")), branch.toString());
+    }
+
+    @Test
+    void theRollCommandIsInsideTheDevGatedMiningBranch() throws IOException {
+        // The seat's ruling 7: Permissions.DEV like the others. Every /rpg mining child sits under the one
+        // literal whose next line requires DEV (pinned above); roll's literal lies between it and pack's.
+        List<String> cmd = lines("command/RpgCommand.java");
+        int mining = indexOf(cmd, "Commands.literal(\"mining\")");
+        int roll = indexOf(cmd, "Commands.literal(\"roll\")");
+        int pack = indexOf(cmd, "Commands.literal(\"pack\")");
+        assertTrue(mining < roll && roll < pack, "roll is a child of /rpg mining: " + mining + " < " + roll + " < " + pack);
+        assertEquals(".executes(ctx -> MiningDevCommand.roll(ctx, mining,", cmd.get(roll + 3).strip());
+    }
+
+    @Test
+    void theRollCommandLogsAlwaysOnSuccessAndOnEveryRefusal() throws IOException {
+        List<String> svc = lines("mining/MiningService.java");
+        List<String> roll = blockAt(svc, indexOf(svc, "public Component roll(Player player, String sizeId) {"), "    ");
+        assertTrue(roll.stream().anyMatch(l -> l.strip().startsWith("log.info(MiningTraceLine.roll(")), roll.toString());
+        assertTrue(roll.stream().noneMatch(l -> l.contains("return error(")), "no refusal bypasses the log");
+        assertEquals(4, roll.stream().filter(l -> l.contains("return refuseRoll(player, ")).count(),
+                "the four refusals counted when S2 wired it");
+        List<String> refuse = blockAt(svc, indexOf(svc, "private Component refuseRoll(Player player, String text) {"), "    ");
+        assertEquals("log.info(MiningTraceLine.rollRefused(player.getName(), text));", refuse.get(1).strip());
+    }
+
+    private static int indexOfIn(List<String> body, String exact) {
+        int found = -1;
+        for (int i = 0; i < body.size(); i++) {
+            if (body.get(i).contains(exact)) {
+                assertEquals(-1, found, "'" + exact + "' must appear exactly once");
+                found = i;
+            }
+        }
+        assertTrue(found >= 0, "'" + exact + "' not found in " + body);
+        return found;
     }
 
     // --- MiningService's pure helpers -----------------------------------------------------------

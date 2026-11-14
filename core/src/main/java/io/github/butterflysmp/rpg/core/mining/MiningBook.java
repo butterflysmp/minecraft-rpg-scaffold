@@ -37,28 +37,76 @@ public final class MiningBook {
         this.now = now;
     }
 
-    /** The player's live patch at this slot, rolled now if there is none; empty while regrowing. */
-    public Optional<Patch> patch(UUID player, Slot slot, VeinSize size, PayoutRule rule) {
+    /**
+     * The player's live patch at this slot, created now if there is none; empty while regrowing, or if
+     * the slot's maximum size did not load (boot named it).
+     *
+     * <p><b>S2: creating a patch ROLLS ITS SIZE</b> ({@link SizeRoll}: the ore's weights over the sizes
+     * that fit the slot), then its layout at that size. The size draw comes first, then the layout.
+     * This is the one place a patch is created by chance, so a first show and every regrowth roll alike.
+     */
+    public Optional<Patch> patch(UUID player, Slot slot, OreDefinition ore, VeinSizeRegistry sizes) {
         if (clock.isRegrowing(player, slot.id())) return Optional.empty();
         Map<String, Patch> mine = patches.computeIfAbsent(player, k -> new HashMap<>());
         Patch patch = mine.get(slot.id());
         if (patch == null) {
-            patch = new Patch(SpotLayout.roll(size, rng), rule, now.getAsLong());
+            Optional<VeinSize> max = sizes.find(slot.sizeId());
+            if (max.isEmpty()) return Optional.empty();
+            patch = create(SizeRoll.roll(ore, max.get(), sizes, rng), ore);
             mine.put(slot.id(), patch);
         }
         return Optional.of(patch);
     }
 
-    /** Applies one click. A break forgets the patch and starts its regrowth. */
-    public ClickOutcome click(UUID player, Slot slot, VeinSize size, PayoutRule rule, int regrowthTicks, Click click) {
-        Optional<Patch> patch = patch(player, slot, size, rule);
-        if (patch.isEmpty()) return ClickOutcome.NotLive.INSTANCE;
+    private Patch create(VeinSize size, OreDefinition ore) {
+        return new Patch(size, SpotLayout.roll(size, rng), ore.payoutRule(size.id()), now.getAsLong());
+    }
+
+    /**
+     * Applies one click on {@code block}, a block of this slot. A break forgets the patch and starts its
+     * regrowth.
+     *
+     * @return EMPTY when {@code block} is outside the current patch's footprint (S2, the seat's ruling
+     *         4): judged as nothing, nothing changes. While the patch is REGROWING there is no current
+     *         patch, so every block of the slot is judged NOT_LIVE, as in slice 1.
+     */
+    public Optional<ClickOutcome> click(UUID player, Slot slot, OreDefinition ore, VeinSizeRegistry sizes,
+                                        BlockPos block, Click click) {
+        Optional<Patch> patch = patch(player, slot, ore, sizes);
+        if (patch.isEmpty()) return Optional.of(ClickOutcome.NotLive.INSTANCE);
+        if (!patch.get().frame(slot).footprint().contains(block)) return Optional.empty();
         ClickOutcome outcome = patch.get().click(click, rng);
         if (outcome instanceof ClickOutcome.Broke) {
             patches.get(player).remove(slot.id());
-            clock.start(player, slot.id(), regrowthTicks);
+            clock.start(player, slot.id(), ore.regrowthTicks());
         }
-        return outcome;
+        return Optional.of(outcome);
+    }
+
+    /**
+     * {@code /rpg mining roll <size>} (S2, the seat's ruling 7): REPLACES this player's patch at this
+     * slot with a fresh one of {@code sizeId}, ending that slot's regrowth for them. No size draw.
+     *
+     * @throws IllegalArgumentException naming the reason, for a size that is not loaded, that the ore
+     *         does not list, or that does not fit the slot. The message is the player's chat text.
+     */
+    public Patch force(UUID player, Slot slot, OreDefinition ore, VeinSizeRegistry sizes, String sizeId) {
+        VeinSize size = sizes.find(sizeId).orElseThrow(
+                () -> new IllegalArgumentException("No vein size '" + sizeId + "' is loaded."));
+        if (!ore.sizeWeights().containsKey(sizeId)) {
+            throw new IllegalArgumentException("Ore '" + ore.id() + "' does not list size '" + sizeId + "'.");
+        }
+        VeinSize max = sizes.find(slot.sizeId()).orElseThrow(
+                () -> new IllegalArgumentException("No vein size '" + slot.sizeId() + "' is loaded."));
+        if (!SizeRoll.fits(size, max)) {
+            throw new IllegalArgumentException("Size '" + sizeId + "' (" + size.width() + " x " + size.height()
+                    + ") does not fit this slot, whose maximum is '" + max.id() + "' (" + max.width() + " x "
+                    + max.height() + ").");
+        }
+        clock.clear(player, slot.id());
+        Patch patch = create(size, ore);
+        patches.computeIfAbsent(player, k -> new HashMap<>()).put(slot.id(), patch);
+        return patch;
     }
 
     /** The tick this player's patch at that slot regrows, if it is regrowing. */
