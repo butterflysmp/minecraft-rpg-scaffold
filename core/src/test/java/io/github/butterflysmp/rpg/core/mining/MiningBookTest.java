@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -87,6 +88,65 @@ class MiningBookTest {
         assertTrue(book.patch(BEN, SLOT, SMALL, RULE).isEmpty());
         book.clearRegrowth(BEN);
         assertTrue(book.patch(BEN, SLOT, SMALL, RULE).isPresent());
+    }
+
+    // --- D1 (the seat, 2026-11-13): a regrowing patch always has ONE pending task in this session ---
+
+    /** Breaks BEN's patch at tick 120 so it regrows at 1320. Layout, then the two payout rolls. */
+    private MiningBook brokenAt120() {
+        MiningBook book = book(2, 10, 10, 30, 20, 2, 3, 2, 40, 6, 3, 25);
+        Patch p = book.patch(BEN, SLOT, SMALL, RULE).orElseThrow();
+        book.click(BEN, SLOT, SMALL, RULE, 1200, hitAt(p.layout().spots().get(0), 110));
+        now.set(120);
+        book.click(BEN, SLOT, SMALL, RULE, 1200, hitAt(p.layout().spots().get(1), 120));
+        return book;
+    }
+
+    @Test
+    void aRegrowingPatchClaimsOneTaskAndALivePatchClaimsNone() {
+        MiningBook live = book(2, 10, 10, 30, 20);
+        live.patch(BEN, SLOT, SMALL, RULE);
+        assertTrue(live.claimRegrowthTask(BEN, SLOT.id()).isEmpty(), "a live patch needs no regrowth task");
+
+        MiningBook book = brokenAt120();
+        now.set(500);
+        long token = book.claimRegrowthTask(BEN, SLOT.id()).orElseThrow();
+        assertTrue(book.claimRegrowthTask(BEN, SLOT.id()).isEmpty(), "deduped: one task per player and slot");
+        assertTrue(book.isCurrentRegrowthTask(BEN, SLOT.id(), token));
+        assertTrue(book.claimRegrowthTask(OTHER, SLOT.id()).isEmpty(), "OTHER is not regrowing there");
+        // Mutation: claim without the isRegrowing check -> the live patch claims a task -> reddens.
+    }
+
+    @Test
+    void aQuitDropsTheTaskSoTheRejoinedSessionClaimsAFreshOne() {
+        // The seat's D1 as a sequence: break, quit (the entity task is dropped), rejoin, chunk load.
+        MiningBook book = brokenAt120();
+        long old = book.claimRegrowthTask(BEN, SLOT.id()).orElseThrow();   // onBroke's task
+        book.forgetSession(BEN);                                            // quit
+        now.set(700);                                                       // rejoin, still regrowing
+        long fresh = book.claimRegrowthTask(BEN, SLOT.id()).orElseThrow();  // show() finds it regrowing
+        assertFalse(book.isCurrentRegrowthTask(BEN, SLOT.id(), old), "the old session's task is stale");
+        assertTrue(book.isCurrentRegrowthTask(BEN, SLOT.id(), fresh));
+        assertEquals(1320L, book.regrowAt(BEN, SLOT.id()).orElseThrow(), "the clock itself is KEPT across logout");
+        // Mutation: forgetSession does nothing -> the rejoin claims nothing -> orElseThrow reddens.
+    }
+
+    @Test
+    void releasingAfterTheShowFreesTheMarkerForTheNextBreak() {
+        MiningBook book = brokenAt120();
+        long token = book.claimRegrowthTask(BEN, SLOT.id()).orElseThrow();
+        now.set(1320);
+        assertTrue(book.releaseRegrowthTask(BEN, SLOT.id(), token));
+        assertFalse(book.isCurrentRegrowthTask(BEN, SLOT.id(), token));
+        assertTrue(book.claimRegrowthTask(BEN, SLOT.id()).isEmpty(), "regrown: nothing to claim");
+    }
+
+    @Test
+    void removingASlotDropsItsPendingTasks() {
+        MiningBook book = brokenAt120();
+        long token = book.claimRegrowthTask(BEN, SLOT.id()).orElseThrow();
+        book.clearSlot(SLOT.id());
+        assertFalse(book.isCurrentRegrowthTask(BEN, SLOT.id(), token));
     }
 
     @Test

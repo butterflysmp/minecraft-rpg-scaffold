@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -191,6 +192,7 @@ public final class MiningService {
     /** The client drops its fake entities on disconnect; forget what it was shown. State is kept. */
     public void onQuit(Player player) {
         shown.remove(player.getUniqueId());
+        book.forgetSession(player.getUniqueId());   // its entity tasks are dropped with it (F8c)
     }
 
     /** Shows each slot whose patch display stands in this chunk. Main thread (a synchronous event). */
@@ -200,6 +202,12 @@ public final class MiningService {
         }
     }
 
+    /**
+     * Forgets what the player was shown in this chunk. This is also what clears {@code shown} when the
+     * client drops its entities on a respawn or a dimension change: both remove the player from the old
+     * level's chunk loader, which fires this event for every sent chunk, naming the OLD world, and the
+     * re-add sends each chunk again through {@link #onChunkLoad} (PLAN F8a/F8b, the seat's D2).
+     */
     public void onChunkUnload(Player player, Chunk chunk) {
         for (Slot slot : slots.inChunk(chunk.getWorld().getUID().toString(), chunk.getX(), chunk.getZ())) {
             if (isHomeChunk(slot, chunk)) hide(player, slot);
@@ -311,7 +319,12 @@ public final class MiningService {
         Optional<VeinSize> size = sizes.find(slot.sizeId());
         if (ore.isEmpty() || size.isEmpty()) return false;
         Optional<Patch> patch = book.patch(player.getUniqueId(), slot, size.get(), ore.get().payoutRule(slot.sizeId()));
-        if (patch.isEmpty()) return false;   // regrowing
+        if (patch.isEmpty()) {
+            // REGROWING. Make sure ONE task on THIS session's Player will show it at regrow_at (the
+            // seat's D1: a quit drops the old task, so a rejoin's chunk load must re-arm it).
+            ensureRegrowthTask(player, slot);
+            return false;
+        }
 
         FaceFrame frame = slot.frame();
         float[] rot = frame.face().displayRotation();
@@ -372,19 +385,30 @@ public final class MiningService {
         long regrowAt = book.regrowAt(player.getUniqueId(), slot.id()).orElse(Bukkit.getCurrentTick());
         trace(player, MiningTraceLine.breakLine(player.getName(), slot.id(), ore.payoutItem(), broke.payout(),
                 total - dropped, dropped, regrowAt));
-        scheduleRegrowth(player, slot, regrowAt);
+        ensureRegrowthTask(player, slot);
     }
 
-    /** Respawns the patch when its regrowth ends, if the player is still here to see it. */
-    private void scheduleRegrowth(Player player, Slot slot, long regrowAt) {
+    /** Schedules the regrowth task unless one is already pending for this player and slot. */
+    private void ensureRegrowthTask(Player player, Slot slot) {
+        OptionalLong token = book.claimRegrowthTask(player.getUniqueId(), slot.id());
+        if (token.isPresent()) scheduleRegrowth(player, slot, token.getAsLong());
+    }
+
+    /**
+     * Respawns the patch when its regrowth ends, if the player is still here to see it. The task
+     * acts only while its token is current: a quit or a slot removal makes it stale.
+     */
+    private void scheduleRegrowth(Player player, Slot slot, long token) {
+        long regrowAt = book.regrowAt(player.getUniqueId(), slot.id()).orElse(Bukkit.getCurrentTick());
         long delay = Math.max(1L, regrowAt - Bukkit.getCurrentTick());
         scheduler.onEntityLater(player, () -> {
-            if (!player.isOnline() || slots.find(slot.id()).isEmpty()) return;
-            var remaining = book.regrowAt(player.getUniqueId(), slot.id());
-            if (remaining.isPresent()) {      // the task ran a tick early: wait out the rest
-                scheduleRegrowth(player, slot, remaining.getAsLong());
+            if (!book.isCurrentRegrowthTask(player.getUniqueId(), slot.id(), token)) return;   // stale
+            if (book.regrowAt(player.getUniqueId(), slot.id()).isPresent()) {
+                scheduleRegrowth(player, slot, token);   // ran a tick early: wait out the rest, same token
                 return;
             }
+            book.releaseRegrowthTask(player.getUniqueId(), slot.id(), token);
+            if (!player.isOnline() || slots.find(slot.id()).isEmpty()) return;
             if (player.getWorld().getUID().toString().equals(slot.world())
                     && player.isChunkSent(homeChunkKey(slot)) && show(player, slot)) {
                 Patch p = currentPatch(player, slot);

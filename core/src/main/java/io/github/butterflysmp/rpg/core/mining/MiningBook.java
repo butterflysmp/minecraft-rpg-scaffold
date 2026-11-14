@@ -24,6 +24,7 @@ public final class MiningBook {
     private final RandomGenerator rng;
     private final LongSupplier now;
     private final Map<UUID, Map<String, Patch>> patches = new HashMap<>();
+    private final RegrowthTasks tasks = new RegrowthTasks();
 
     /**
      * @param clock the regrowth deadlines
@@ -70,7 +71,37 @@ public final class MiningBook {
         clock.clearPlayer(player);
     }
 
-    /** Forgets a removed slot for every player: patches and clocks. */
+    // --- The regrowth task's marker (the seat's D1, 2026-11-13) ----------------------------------
+
+    /**
+     * Called whenever the paper side looks at this player's patch at this slot. If the patch is
+     * REGROWING and no task is pending for it, records one. @return the new task's token (schedule
+     * it now), or empty: not regrowing, or a task is already pending
+     */
+    public OptionalLong claimRegrowthTask(UUID player, String slotId) {
+        if (!clock.isRegrowing(player, slotId)) return OptionalLong.empty();
+        return tasks.claim(player, slotId);
+    }
+
+    /** True while the task holding {@code token} is the pending one; a stale task must do nothing. */
+    public boolean isCurrentRegrowthTask(UUID player, String slotId, long token) {
+        return tasks.isCurrent(player, slotId, token);
+    }
+
+    /** The task showed the patch (or found nothing to show): free the marker. */
+    public boolean releaseRegrowthTask(UUID player, String slotId, long token) {
+        return tasks.release(player, slotId, token);
+    }
+
+    /**
+     * On quit: the player's entity-scheduler tasks are dropped with the session, so their markers
+     * go too. Patches and the clock are KEPT (ruling 4); the next look reschedules.
+     */
+    public void forgetSession(UUID player) {
+        tasks.clearPlayer(player);
+    }
+
+    /** Forgets a removed slot for every player: patches, clocks and pending tasks. */
     public void clearSlot(String slotId) {
         for (Iterator<Map<String, Patch>> it = patches.values().iterator(); it.hasNext(); ) {
             Map<String, Patch> mine = it.next();
@@ -78,5 +109,6 @@ public final class MiningBook {
             if (mine.isEmpty()) it.remove();
         }
         clock.clearSlot(slotId);
+        tasks.clearSlot(slotId);
     }
 }

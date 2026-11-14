@@ -91,6 +91,33 @@ class MiningWiringSignatureTest {
         // Mutation: give mining its own new PopupEntityIds() -> "exactly once" reddens.
     }
 
+    /** Lines from {@code from} up to the next line that closes a block at {@code indent}. */
+    private static List<String> blockAt(List<String> lines, int from, String indent) {
+        int end = from + 1;
+        while (!lines.get(end).equals(indent + "}")) end++;
+        return lines.subList(from, end + 1);
+    }
+
+    @Test
+    void showReArmsTheRegrowthTaskWhenItFindsThePatchRegrowing() throws IOException {
+        // The seat's D1: a rejoin's chunk load reaches show(), finds the patch regrowing, and must
+        // schedule the task the quit dropped. Bounded by the if-block's own closing brace.
+        List<String> svc = lines("mining/MiningService.java");
+        int at = indexOf(svc, "if (patch.isEmpty()) {");
+        List<String> branch = blockAt(svc, at, "        ");
+        assertTrue(branch.stream().anyMatch(l -> l.strip().equals("ensureRegrowthTask(player, slot);")), branch.toString());
+        assertTrue(branch.size() < 10, "the brace scan found the if's own close: " + branch.size());
+        // Mutation: delete the ensureRegrowthTask call in that branch -> reddens.
+    }
+
+    @Test
+    void aQuitForgetsTheSessionsRegrowthTasks() throws IOException {
+        List<String> svc = lines("mining/MiningService.java");
+        int at = indexOf(svc, "public void onQuit(Player player) {");
+        List<String> body = blockAt(svc, at, "    ");
+        assertTrue(body.stream().anyMatch(l -> l.strip().startsWith("book.forgetSession(player.getUniqueId());")), body.toString());
+    }
+
     // --- MiningService's pure helpers -----------------------------------------------------------
 
     @Test
