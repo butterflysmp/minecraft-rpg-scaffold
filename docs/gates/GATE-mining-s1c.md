@@ -3,6 +3,9 @@
 **Status: NOT RUN.** Written 2026-11-14, before any boot of `feat/mining-s1c`. **NO BOOT until the seat has diffed
 S1-c's code AND this gate, and Ben says ready.**
 
+**Seat read 2026-11-14 from origin at 0574e940: readings accepted; the sound rows count (ruling 1); approved to merge
+with the carried rows listed in PLAN-mining.md** (§6, the CARRIED HAND ROWS list dated 2026-11-14, after S1-c).
+
 **READ 2026-11-14** (the seat's approval of 2026-11-14 for `0578366d` only, on Ben's "ready"). One boot,
 `./scripts/dev-server.sh --refresh-content`, `[Rpg] Build: 0578366d`; Ben's LOGIN at L81 of that boot's
 `run/logs/latest.log` (06:40:50), `/stop` at L242 (06:52:07). Every `L<n>` below is a line of that log. Ben's answers
@@ -255,6 +258,11 @@ $zip.Dispose()
 |---|---|
 | **1:** one `MINING click ... outcome=MISS cooldown=1.0000` with the aim outside the live box; **the miss sound (`sounds.miss`, `minecraft:block.stone.hit`, PLACEHOLDER) plays to Ben only, once.** **2:** two MISS lines (the second's cooldown below 1: an uncharged click beside the spot is a MISS, by the order of checks) and **two** sounds. **Step 2 is the control for C-UNCHARGED-SILENT: it shows Ben's ear counts two sounds half a second apart** | **The miss sound PASS by ear; the COUNT NOT AS PREDICTED.** **Step 1:** L153 `MISS cooldown=1.0000 aim=32.97,17.04` (outside the live box of (44,11)). Ben, Q9: "2 sounds, the deepslate mining behind it and the sound for a miss": the miss sound played, and **a second sound, the client's own deepslate dig sound, plays on every click on the wall**; the prediction counted one. **Step 2:** L154 `MISS 1.0000` and L155 `MISS 0.4500` (Δ 8). Ben, Q10: "The same sounds but twice". **Then a held sweep not in the steps:** L156–L227, **72 more MISS lines in 246 ticks** (15059 → 15305) with the aim moving across the patch: gaps of 1 to 9 ticks between lines (1 tick 5 times, 2 ticks 37 times, 3 ticks 12 times, 4 ticks 8 times) apart from two pauses of 23 and 26, and **65 of the 72 cooldowns equal their gap's `(Δ+0.5)/16.666666` exactly** (Δ 1 → 0.0900, Δ 2 → 0.1500, Δ 3 → 0.2100); the other 7 read LOWER, consistent with a swing between click lines that logs nothing (L185 reads 0.5100 after a 23-tick pause, i.e. 8 ticks after some swing): a held button restarting the dig every 1–4 ticks (PLAN F-M27's open question, read here for the first time; see the readings commit). **Q3, the precondition, did not name a sound** (Ben: "I don't likeit"); recorded, and whether these ear readings count under it is the seat's ruling |
 
+**Note beside the prediction, 2026-11-14 (the seat's ruling 2; PLAN F-M33). The prediction above is kept as
+written.** Its sound COUNTS were one too low per click, and the miss was the seat's as well as the gate's: every
+click on the wall starts a client dig, and the client plays its own block dig sound for it (the same client dig
+spike 1's MS4 and F-M14 showed, heard instead of seen). Our sounds played as ruled. The sound rows count (ruling 1).
+
 **Q9.** For the one click, how many sounds did you hear? (one number) **Ben: "2 sounds, the deepslate mining behind it and the sound for a miss."**
 **Q10.** For the two quick clicks, how many sounds did you hear? (one number) **Ben: "The same sounds but twice"**
 
@@ -266,6 +274,10 @@ $zip.Dispose()
 | prediction | READING |
 |---|---|
 | `MINING click ... outcome=MISS` (it plays the miss sound, and its swing resets the ticker), then `MINING click ... outcome=UNCHARGED cooldown=` below `0.6300`, with the aim IN the live box and the same `spot=` index. **The UNCHARGED click plays nothing, so Ben hears ONE sound for the two clicks** (against C-MISS-SOUND step 2's two). Nothing changes on the patch. (If the second click lands outside the box it is a MISS: recorded, and the row repeated) | **UNCHARGED plays nothing of ours: PASS by Ben's words; the count NOT AS PREDICTED.** L229 `MISS 1.0000 aim=34.38,14.52` (outside), L230 `UNCHARGED cooldown=0.5100 aim=44.33,11.67` (IN (44,11)) at Δ 9: the formula gives 0.5700, **one tick off**, as in slice 1. Repeated: L231 MISS, L232 `UNCHARGED 0.5100` at Δ 8 (exact), IN. Same `spot=1/2`, nothing changed. Ben, Q11: "2 sounds on the first click, 1 sound on the second. **The miss sound didn't play**". So the UNCHARGED click played no sound of ours; the one sound he heard is the client's dig sound (C-MISS-SOUND). Predicted "one sound for the two clicks"; read three, with ours exactly as ruled |
+
+**Note beside the prediction, 2026-11-14 (the seat's ruling 2; PLAN F-M33). The prediction above is kept as
+written.** "ONE sound for the two clicks" left out the client's dig sound on each click, so the count read three; the
+substance held: the UNCHARGED click played nothing of ours (Ben: "The miss sound didn't play"). Carried row 2 is READ.
 
 **Q11.** For these two clicks, how many sounds did you hear? (one number) **Ben: "2 sounds on the first click, 1 sound on the second. The miss sound didn't play"**
 
