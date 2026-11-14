@@ -118,6 +118,54 @@ class MiningWiringSignatureTest {
         assertTrue(body.stream().anyMatch(l -> l.strip().startsWith("book.forgetSession(player.getUniqueId());")), body.toString());
     }
 
+    // --- S1-c: the DENIED hold on the action bar, and the logged place refusals --------------------
+
+    @Test
+    void inAHoldTheStatsBarReSendsTheHeldMessageAndDrawsNothingElse() throws IOException {
+        // The seat's ruling 1: on each beat inside a hold, RE-SEND the held message, and return before
+        // the stats line is drawn. Bounded by the case's own next two lines.
+        List<String> bar = lines("hud/StatsBarSystem.java");
+        int at = indexOf(bar, "case ActionBarHolds.Beat.Held<Component> held -> {");
+        assertEquals("player.sendActionBar(held.hold().message());", bar.get(at + 1).strip(), "the re-send");
+        assertEquals("return true;", bar.get(at + 2).strip(), "and nothing else this beat");
+        // Mutations: delete the re-send, or the return (the stats line would overwrite it) -> reddens.
+    }
+
+    @Test
+    void aQuitEndsTheHold() throws IOException {
+        List<String> bar = lines("hud/StatsBarSystem.java");
+        int at = indexOf(bar, "public void onQuit(UUID playerId) {");
+        List<String> body = blockAt(bar, at, "    ");
+        assertTrue(body.stream().anyMatch(l -> l.strip().startsWith("holds.clear(playerId);")), body.toString());
+    }
+
+    @Test
+    void deniedTakesTheBarForTheNamedTicksAndSendsAtOnce() throws IOException {
+        List<String> svc = lines("mining/MiningService.java");
+        assertEquals("case ClickOutcome.Denied denied -> deny(player, tick);",
+                svc.get(indexOf(svc, "case ClickOutcome.Denied denied ->")).strip());
+        int at = indexOf(svc, "private void deny(Player player, long tick) {");
+        List<String> body = blockAt(svc, at, "    ");
+        String joined = String.join("\n", body);
+        assertTrue(joined.contains("MiningNotices.DENIED_HOLD_TICKS"), "the ONE named value (ruling 3)");
+        assertTrue(joined.contains("MiningNotices.DENIED_TEXT"), joined);
+        assertTrue(body.stream().anyMatch(l -> l.strip().equals("player.sendActionBar(text);")), "sent at once");
+        assertTrue(body.stream().noneMatch(l -> l.matches(".*[^A-Za-z_]30[^0-9].*")), "no literal 30 at the call site");
+        // Mutation: replace MiningNotices.DENIED_HOLD_TICKS with 30 -> reddens twice over.
+    }
+
+    @Test
+    void everyPlaceRefusalIsLoggedWithItsChatText() throws IOException {
+        List<String> svc = lines("mining/MiningService.java");
+        List<String> place = blockAt(svc, indexOf(svc, "public Component place(Player player, String oreId, String sizeId) {"), "    ");
+        long refusals = place.stream().filter(l -> l.contains("return refuse(player, ")).count();
+        assertEquals(8, refusals, "every refusal in place() goes through refuse(): the 8 counted when S1-c wired it");
+        assertTrue(place.stream().noneMatch(l -> l.contains("return error(")), "no refusal bypasses the log");
+        List<String> refuse = blockAt(svc, indexOf(svc, "private Component refuse(Player player, String text) {"), "    ");
+        assertEquals("log.info(MiningTraceLine.placeRefused(player.getName(), text));", refuse.get(1).strip());
+        // Mutation: refuse() without its log line -> reddens.
+    }
+
     // --- MiningService's pure helpers -----------------------------------------------------------
 
     @Test

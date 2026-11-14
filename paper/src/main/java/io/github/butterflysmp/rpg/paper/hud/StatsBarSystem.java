@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.hud;
 import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
+import io.github.butterflysmp.rpg.core.hud.ActionBarHolds;
 import io.github.butterflysmp.rpg.core.weapon.QuiverState;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
@@ -12,12 +13,14 @@ import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 import io.github.butterflysmp.rpg.paper.scheduler.TaskHandle;
 import io.github.butterflysmp.rpg.paper.weapon.Quivers;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongSupplier;
 
 /**
  * Sends each player their own action-bar stats line, on their own thread, often enough that it never
@@ -65,12 +68,22 @@ public final class StatsBarSystem {
      */
     private final Map<UUID, TaskHandle> tasks = new ConcurrentHashMap<>();
 
+    /**
+     * Who owns each player's bar (Mining S1-c). Shared with whatever starts a hold -- today only
+     * {@code MiningService}'s DENIED notice -- and read here on each beat. See {@link ActionBarHolds}.
+     */
+    private final ActionBarHolds<Component> holds;
+    /** The current server tick, for the hold's end. {@code Bukkit::getCurrentTick} in the plugin. */
+    private final LongSupplier now;
+
     public StatsBarSystem(Scheduler scheduler, CombatantStats stats, ResourcePool resources,
-                          AdapterContext adapters) {
+                          AdapterContext adapters, ActionBarHolds<Component> holds, LongSupplier now) {
         this.scheduler = scheduler;
         this.stats = stats;
         this.resources = resources;
         this.adapters = adapters;
+        this.holds = holds;
+        this.now = now;
     }
 
     /** Start this player's bar on join. */
@@ -91,6 +104,7 @@ public final class StatsBarSystem {
     public void onQuit(UUID playerId) {
         TaskHandle task = tasks.remove(playerId);
         if (task != null) task.cancel();
+        holds.clear(playerId);   // a hold ends on quit (the seat's ruling 2); none is ever persisted
     }
 
     private void start(Player player) {
@@ -100,6 +114,26 @@ public final class StatsBarSystem {
 
         EntityTaskTarget target = new EntityTaskTarget(player, scheduler, adapters.log());
         TaskHandle task = RepeatingTask.start(target, BAR_PERIOD_TICKS, "stats-bar", () -> {
+            // A HOLD OWNS THE BAR (Mining S1-c; the seat's ruling 1). While it is live this beat
+            // RE-SENDS the held message instead of drawing the stats line, so the message's time on
+            // screen never rests on how long a client keeps an action bar up. The first beat at or
+            // after its end draws the stats line again, and logs the end if the hold was traced.
+            // Checked BEFORE the bootstrap guard: a held message needs no stats. A frame skipped by a
+            // hold also skips the magazine settle below, which only matters to a readout not shown.
+            long tick = now.getAsLong();
+            switch (holds.beat(id, tick)) {
+                case ActionBarHolds.Beat.Held<Component> held -> {
+                    player.sendActionBar(held.hold().message());
+                    return true;
+                }
+                case ActionBarHolds.Beat.Released<Component> released -> {
+                    if (released.hold().traced()) {
+                        adapters.log().info(ActionBarHolds.endLine(player.getName(), released.hold(), tick));
+                    }
+                }
+                case ActionBarHolds.Beat.Stats<Component> none -> { }
+            }
+
             // Not yet bootstrapped: skip this frame rather than inventing numbers. CombatantStats
             // .current/.max THROW for an untracked id -- they do not return 0 -- so an unguarded read
             // would throw every period rather than merely display something wrong. Health registers

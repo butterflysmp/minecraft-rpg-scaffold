@@ -17,7 +17,9 @@ import org.bukkit.entity.Player;
  *
  * <p><b>Known collision, stated:</b> {@code StatsBarSystem} also writes the action bar periodically and
  * will overwrite this line. {@code QuiverNotice} lives with the same thing; gate rows read that the line
- * is VISIBLE, not how long it lasts.
+ * is VISIBLE, not how long it lasts. A way to hold the bar now exists ({@code core.hud.ActionBarHolds},
+ * Mining S1-c, used only by mining's DENIED notice); neither notice uses it, because Ben has not ruled
+ * on them (PLAN-mining.md F-M29).
  */
 public final class StoneNotice {
 

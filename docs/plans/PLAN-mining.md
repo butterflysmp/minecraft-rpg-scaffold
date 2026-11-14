@@ -14,6 +14,10 @@ findings F-M12 to F-M18), and §5 is now SLICE 1 as a buildable design. Still PL
 **carried hand rows** the next mining gate must include are at the end of §6; §5.4 carries a dated correction.
 > **APPROVED TO MERGE, 2026-11-14 (gate-less: the approval line lives here and in #184's description, per the seat's ruling of 2026-11-14):** the seat's merge approval of 2026-11-14, approved head `#184 9a398711`, on Ben's words *"go ahead and merge them"*.
 
+**2026-11-14: S1-c READ.** `feat/mining-s1c` (#185) booted at **`0578366d`**; readings at **`0574e940`**, accepted by
+the seat the same day (the sound rows count). Findings F-M32 to F-M36, and the CARRIED HAND ROWS list dated after
+S1-c (which supersedes slice 1's), are in §6.
+
 **The spike** is `spike/mining-input`, also from `55425aad`. It will NOT merge. Its gate, `GATE-mining-spike.md`,
 lives on that branch beside the code it tests, because the boot is bound to that branch's build sha. After its
 readings, the read gate is copied byte for byte onto this branch with a dated note naming the spike sha it was read
@@ -1183,6 +1187,8 @@ The gate's READING blocks are the account; these are the pointers.
   deepslate *"cracked flickered vanished and came back. but only when not mining the emerald"* (MS4, quoted, not
   interpreted). The server never broke it: zero `BLOCK_BREAK` lines. **Ben accepted this as a client visual and
   deferred stopping it as polish** (§1; F7a is the candidate).
+  > **2026-11-14: the same client dig is also HEARD** (F-M33): the client plays its own block dig sound on every
+  > click on the wall. Stopping the dig (F7) would stop both.
 - **F-M15: the spike pickaxe's tooltip showed Attack Speed ABOVE Attack Damage**, the reverse of vanilla (MS5).
   - The cause: `MineSpike.givePick` collected the modifiers in Guava's `ArrayListMultimap`, whose keys live in a
     `HashMap` (Guava 33.5.0: `Platform.newHashMapWithExpectedSize` → `Maps.newHashMapWithExpectedSize`).
@@ -1268,14 +1274,83 @@ The gate's READING blocks are the account; these are the pointers.
   full-charge delay is that short reads FULL on a held button and mines while held. **The client's restart gap must
   be established from a reading when that slice is scoped, not from memory**; the three numbers above are ticks
   since the last reset, not a measured restart interval. M-HOLD's `0.8100` restart (13 ticks) stays UNREAD.
+  > **THE FIRST READING, 2026-11-14 (S1-c's boot; the seat's ruling 6).** A held button SWEPT across the patch
+  > produced **72 MISS lines in 246 ticks, gaps mostly 1 to 4 ticks** (1 tick 5 times, 2 ticks 37 times, 3 ticks 12
+  > times, 4 ticks 8 times), and **65 of the 72 cooldowns equal `(gap + 0.5) / 16.666666` exactly** (the other 7 read
+  > lower). So a held button moving across blocks restarts the dig as often as every 1 to 2 ticks, each restart far
+  > below `1.0` at attack speed 1.2. **The restart gap is far shorter than any plausible pickaxe delay, so the open
+  > question for a fast pickaxe is what a held button reads when it stays on ONE block.** Still to be read when S1-T
+  > is scoped.
 - **F-M28: THE DENIED ACTION BAR IS OVERWRITTEN BY THE HUD BEFORE IT CAN BE READ (a DEFECT, awaiting Ben).** Ben, Q14:
   *"Yes but the HP/defense/Mana overode it faster than it could be read"*. `hud/StatsBarSystem` redraws each
   player's action bar every **10 ticks** (`BAR_PERIOD_TICKS`) on a per-player repeating task, and **nothing in the repo
   lets another message hold the bar** (read 2026-11-14). `StoneNotice`'s javadoc states the same collision and says
   `QuiverNotice` lives with it; their gate rows read that the line is visible, not for how long. **Where the
   "You need a pickaxe" message goes is Ben's ruling, asked by the seat and not yet given.** Not fixed.
+  > **RULED AND BUILT ON S1-c, 2026-11-14.** Ben: *"Is it possible to have the pickaxe message over ride the action
+  > bar for 1.5s"*; the seat answered yes. `core.hud.ActionBarHolds` holds a player's bar until a tick, and the
+  > stats bar re-sends the held message on each beat inside the hold; DENIED holds it for
+  > `MiningNotices.DENIED_HOLD_TICKS` = 30 server ticks. Read by `GATE-mining-s1c.md`'s C-DENY-HOLD.
+- **F-M29 (S1-c, 2026-11-14): `StoneNotice` and `QuiverNotice` keep the overwrite.** They write the same action bar
+  and are overwritten the same way, and **neither uses the hold**, because Ben has not ruled on them (the seat's
+  ruling 4 for S1-c). `StoneNotice`'s javadoc now points at `ActionBarHolds`. A hold is one call per notice
+  when he does.
+- **F-M30 (S1-c, 2026-11-14): A CORRECTION TO F-M25. THE DEATH COULD NOT HAVE DROPPED THE PICKAXES.**
+  `RpgListeners.onPlayerDeath` sets `keepInventory`, clears the drops and keeps the level, for every death (its
+  javadoc: *"Death is a setback, not a loot loss: keep inventory + XP, drop nothing"*). So the five iron pickaxes
+  missing after slice 1's boot did not leave by the `/kill`; their cause stays UNREAD. F-M25's placeholder rule is
+  unaffected. **The same handler bears on the carried respawn rows:** a death here keeps the Ability Stone and the
+  Nexus star. Whether that makes a staged death acceptable is the seat's and Ben's call; S1-c's gate does not stage
+  one (the brief).
+- **F-M31 (S1-c, 2026-11-14): slice 1's gate predicted the duplicate-placement refusal with a full stop the code
+  does not print.** `SlotRegistry.place` throws `"a slot already exists at " + slot.id()`, no full stop; M-PLACE's
+  prediction ended `… at <id>."`. Its chat text was never read, so nothing was recorded against it. S1-c's gate
+  predicts the code's text, now a log reading (`MINING place-refused`).
 
-### CARRIED HAND ROWS: THE NEXT MINING GATE MUST INCLUDE THESE (the seat, 2026-11-14)
+**From the S1-c boot, 2026-11-14** (`0578366d`; readings `0574e940` on `feat/mining-s1c`; the seat's read of the
+same day):
+
+- **F-M32 (the seat's ruling 1): THE SOUND ROWS COUNT.** S1-c's precondition (Q3 names the `/playsound` bell) was
+  not met in its words (Ben: *"I don't likeit"*), but Q9 to Q12 tell the sounds apart in his own words, which shows
+  the audio was on better than a name would. **Carried rows 1, 2 and 3 are READ:** the miss sound plays; an
+  UNCHARGED click in the box plays nothing of ours (*"The miss sound didn't play"*); the break sound plays.
+- **F-M33 (the seat's ruling 2; beside F-M14 and F7): THE CLIENT PLAYS ITS OWN DIG SOUND ON EVERY CLICK ON THE
+  WALL.** Every click starts a client dig (spike 1's MS4, F-M14), and the client plays the block's dig sound for it.
+  So every sound COUNT in S1-c's gate was one too low per click; the seat's miss as well as the gate's. Ben ruled
+  the client dig cosmetic and deferred the dig-stop (§1, F7); this is the same thing heard instead of seen.
+- **F-M34 (the seat's ruling 3): C-DENY-HOLD PASS.** The hold is read in game: 13 DENIED clicks, 13 holds of exactly
+  30 ticks, 6 releases 0 to 8 ticks after their end, and no release for any of the 7 replaced holds. **Carried row
+  7, the join toggle ON, is READ** (the pack offered at both LOGINs with no command, slice 1's sha1).
+- **F-M35 (the seat's ruling 5): set-up step 1 was not run in S1-c's boot**, so SURVIVAL was not set by command. It
+  is inferred from the click lines: `BlockDamageEvent` is not reached in ADVENTURE (F2), and a creative START breaks
+  first (F2b). Recorded as inferred.
+- **F-M36 (the seat's ruling 7): TWO DESIGN REQUESTS ARE WITH BEN, NOT BUILT.** (a) A sound with the DENIED message
+  (Ben, Q6: *"we should add a sound to go with it"*). (b) Whether the miss sound should play only on a FULLY CHARGED
+  miss: the held sweep (F-M27's note) played it 72 times in 246 ticks. Both await Ben's ruling.
+- **S1-c's rows NOT RUN** (Ben stopped after C-BREAK-SOUND) are NOT READ and carried below; Ben's Q14 to Q21 answers
+  stay recorded verbatim in the gate and bound to no reading. They do not block S1-c's merge: every path is behind
+  `Permissions.DEV` (the seat's ruling 4).
+
+### CARRIED HAND ROWS, 2026-11-14, AFTER S1-c: THE NEXT MINING GATE MUST INCLUDE THESE (the seat's ruling 4)
+
+**This list SUPERSEDES the one below** (kept as the record of what slice 1 carried). Each is **NOT READ** and
+**never a pass**. Read since: rows 1, 2 and 3 of the old list (the sounds, F-M32) and row 7 (the toggle ON, F-M34).
+
+1. **The three `/rpg mining place` refusals as log lines** (`MINING place-refused`; the line is unit-tested only):
+   a top face, a footprint with a non-solid block, a duplicate slot.
+2. **The displays are not server entities** (M-SERVER-LIST), in the log-carried form with its `/summon` control.
+3. **The full-inventory ground check**: items on the ground before the clean-up, none after, both in the log.
+4. **The relog of a part-mined patch** (C-RELOG-SIGHT): the log half (the same centres, `live=2/n`, no click
+   before the show) AND **its sight half with the pack loaded**: the patch drawn with its art, the crack, one live
+   spot.
+5. **The logout** (C-LOGOUT-SIGHT): the log half (no show at LOGIN, show and regrow at exactly `regrow_at`, no click
+   before) AND **its sight half with the pack loaded**: bare at first, back by itself, drawn with its art.
+6. **The wall digs normally after `/rpg mining remove`** (C-REMOVE-DIG), both directions in the log.
+7. **M-SECOND-PLAYER**: each player sees their own patch. Needs a second client.
+8. **The same-world respawn** re-shows the patch. Needs a death (F-M30: a death keeps inventory).
+9. **Whether a death and respawn drops a server-offered pack.** Needs a death.
+
+### CARRIED HAND ROWS: THE NEXT MINING GATE MUST INCLUDE THESE (the seat, 2026-11-14) — SUPERSEDED 2026-11-14, AFTER S1-c (the list above)
 
 Each is **NOT READ** in the slice 1 boot and is **never a pass**. They do not block slice 1's merge (the seat: the
 slice is reachable only through `Permissions.DEV`, and the packet-only display mechanism was read with its control

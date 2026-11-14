@@ -43,6 +43,20 @@ public final class MiningTraceLine {
                 player, slotId, centres, liveIndex + 1, spots.size(), tick);
     }
 
+    /** S1-c: a notice took the player's action bar from {@code start} until {@code until}. Traced. */
+    public static String hold(String player, String reason, long start, long until) {
+        return String.format(Locale.ROOT, "MINING hold player=%s reason=%s start=%d until=%d",
+                player, reason, start, until);
+    }
+
+    /**
+     * S1-c: {@code /rpg mining place} refused, with the chat text verbatim to the end of the line.
+     * Always logged, like {@code MINING place}: M-PLACE's refusals are then a log reading.
+     */
+    public static String placeRefused(String player, String reason) {
+        return "MINING place-refused player=" + player + " reason=" + reason;
+    }
+
     public static String regrow(String player, String slotId, int spots, long tick) {
         return String.format(Locale.ROOT, "MINING regrow player=%s slot=%s spots=%d tick=%d",
                 player, slotId, spots, tick);
