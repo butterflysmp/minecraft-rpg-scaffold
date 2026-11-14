@@ -165,10 +165,9 @@ public final class GrindstoneMenu extends Menu {
             return;
         }
         if (click.slot() == BACK_SLOT && openedFromNexus()) {
-            // CLOSE FIRST, THEN HOP -- Menu.open's rule. inputSlots() is non-empty, so the explicit
-            // close is what runs onClose and returns the tray BEFORE the hub replaces the screen.
-            viewer.closeInventory();
-            adapters.scheduler().onEntityLater(viewer, () -> hub.get().open(), 1);
+            // navigateTo, Menu.open's rule since 2026-11-14: the tray comes back in this click, the
+            // hub opens next tick, and its implicit close runs onClose (the arming task stops there).
+            navigateTo(adapters.scheduler(), hub);
             return;
         }
         if (click.slot() == CONFIRM_SLOT) {

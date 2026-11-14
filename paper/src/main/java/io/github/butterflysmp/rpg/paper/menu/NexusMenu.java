@@ -228,12 +228,12 @@ public final class NexusMenu extends Menu {
             return;
         }
         if (click.slot() == NexusMenuLayout.VAULT_SLOT) {
-            // *** CLOSE FIRST IS NOT NEEDED HERE AND THE ASYMMETRY IS WORTH READING. ***
+            // *** NO navigateTo NEEDED HERE, AND THE ASYMMETRY IS WORTH READING. ***
             //
-            // Menu.open's rule is about the DEPARTING menu: close explicitly only when it holds
-            // input slots, so returnEverything runs before the screen changes. The hub holds none.
-            // The VAULT does -- which is why its own Back button closes first, and why this
-            // direction does not have to.
+            // Menu.open's rule is about the DEPARTING menu: one with input slots gives back in the
+            // click (navigateTo, since 2026-11-14; it closed explicitly first until then). The hub
+            // holds none. The VAULT does -- which is why its own Back button goes through
+            // navigateTo, and why this direction does not have to.
             adapters.scheduler().onEntity(viewer, () ->
                     new NexusVaultMenu(viewer, adapters, profiles, vaults,
                             () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
@@ -241,9 +241,9 @@ public final class NexusMenu extends Menu {
             return;
         }
         if (click.slot() == NexusMenuLayout.ANVIL_SLOT) {
-            // THE FIFTH STATION, and the same breadcrumb the other four carry. Close-then-hop is
-            // NOT needed from THIS side -- the hub holds no input slots; the anvil does its own
-            // explicit close when its Back button is pressed, because it holds two.
+            // THE FIFTH STATION, and the same breadcrumb the other four carry. No navigateTo from
+            // THIS side -- the hub holds no input slots; the anvil's own Back button goes through
+            // navigateTo, because it holds two.
             adapters.scheduler().onEntity(viewer, () ->
                     new AnvilMenu(viewer, weapons, shields, armor, tools, adapters,
                             () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,
@@ -274,9 +274,9 @@ public final class NexusMenu extends Menu {
             return;
         }
         if (click.slot() == NexusMenuLayout.GRINDSTONE_SLOT) {
-            // THE THIRD STATION, and the same breadcrumb the other two carry. Close-then-hop is
-            // NOT needed from THIS side -- the hub holds no input slots; the grindstone does its
-            // own explicit close when its Back button is pressed.
+            // THE THIRD STATION, and the same breadcrumb the other two carry. No navigateTo from
+            // THIS side -- the hub holds no input slots; the grindstone's own Back button goes
+            // through navigateTo.
             adapters.scheduler().onEntity(viewer, () ->
                     new GrindstoneMenu(viewer, weapons, shields, armor, tools, adapters,
                             () -> new NexusMenu(viewer, adapters, profiles, weapons, resources,

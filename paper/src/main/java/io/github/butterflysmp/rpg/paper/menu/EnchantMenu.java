@@ -346,12 +346,10 @@ public final class EnchantMenu extends Menu {
         }
 
         if (click.slot() == BACK_SLOT && openedFromNexus()) {
-            // CLOSE FIRST, THEN HOP -- Menu.open's rule, and this screen is on the demanding side
-            // of it. inputSlots() is non-empty, so the explicit close is what runs onClose and
-            // returns the player's weapon BEFORE the hub replaces the screen. Hopping without
-            // closing would swap the inventory out from under a weapon still sitting in slot 19.
-            viewer.closeInventory();
-            adapters.scheduler().onEntityLater(viewer, () -> hub.get().open(), 1);
+            // navigateTo, Menu.open's rule since 2026-11-14. The weapon in slot 19 comes back in
+            // THIS click, before the hub replaces the screen next tick; the hub's implicit close then
+            // runs onClose, whose returnEverything finds air.
+            navigateTo(adapters.scheduler(), hub);
             return;
         }
 

@@ -311,12 +311,13 @@ public final class NexusVaultMenu extends Menu {
         }
 
         if (click.slot() == NexusVaultLayout.BACK_SLOT && hub != null) {
-            // CLOSE FIRST, THEN HOP -- Menu.open's rule for a departing menu that HAS input slots.
-            // The close runs returnEverything, which hands back nothing while healthy and the whole
-            // page while degraded; either way the screen must be finished with before the next one
-            // opens.
-            viewer.closeInventory();
-            adapters.scheduler().onEntity(viewer, () -> hub.get().open());
+            // navigateTo, Menu.open's rule since 2026-11-14. In this click: returnEverything, which
+            // hands back the cursor alone while healthy (returnedSlots() is empty) and the unpersisted
+            // page while degraded. Next tick the hub's implicit close reaches onClose, which writes
+            // the page FIRST while healthy, claims and hands back while degraded, and sets `closed`
+            // -- the same onClose an explicit close ran, a tick later. VaultBackOrderTest compares
+            // the two orders on every path; the page cannot flip under it because the menu is inert.
+            navigateTo(adapters.scheduler(), hub);
             return;
         }
 
