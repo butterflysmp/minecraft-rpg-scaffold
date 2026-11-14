@@ -1,5 +1,9 @@
 # GATE — SELFTEST: `/rpg selftest` stages and drives the CORE rows of #168-#174 (and carries the stack's one R0)
 
+**Seat read 2026-11-14 from origin at `7e620f38`: readings accepted; approved to merge, under the condition of the seat's ruling 5, which holds (ST9's diagnosis below).** Run 3 is the run of record. ST1-ST8 and ST11 met the bars. **ST10's "no player death" clause was stale** (correction beside it); the rest holds. **ST9 is ACCEPTED as a known instrument defect:** the settle's `dying` test can never be true on this server, and no reading of run 3 rested on the wait. The fix is owed in a follow-up PR. **Carried, NOT READ, never a pass:** ST2's "no orb near Ben" and "the next run's snapshot" clauses.
+
+**Status at `e82df2b3` (the stack-top boot, 2026-11-14; run 3, L2206-L3657, is the run of record proposed to the seat; the boot account is `GATE-deft-hands.md`'s): R0a-d SUPERSEDED (GATE-deft-hands.md R0, all four AS PREDICTED); ST1 AS PREDICTED, both halves (XP 4 before, restored 4, 4 after); ST2 AS PREDICTED in every half read (the orb and next-snapshot clauses NOT READ); ST3, ST4, ST5, ST6, ST7, ST8, ST11 AS PREDICTED; ST9 NOT AS PREDICTED in one clause (every SETTLED reads `ticks=0`, and dying bodies were still present); ST10 AS PREDICTED except its "no player death" clause, which SU8's staged death overtook. Runs 1 and 2 ran on Peaceful (a carried-state miss) and are not the run of record.**
+
 **Status at `61e722f2` (the stack-top boot, 2026-11-10; run 3 is the run of record; the boot account is `GATE-deft-hands.md`'s): R0a-d SUPERSEDED (GATE-deft-hands.md R0, PASS); ST1's log half as re-predicted, its restore half NOT READ (no baseline was sent); ST5 FAIL in part (the level half holds; the WS2b half is VOID); ST7's log half as predicted, its refusal text NOT READ; ST2, ST3, ST4, ST6 NOT READ. Staging leaks found in the reading (dying targets take the look-ray; `n`-tagged mobs are never removed; placed blocks persist to the end of the run; the inventory fills across gates): fixes owed on this branch. NOT a merge candidate.**
 
 **Status at `38cc9903` (the stack-top boot, 2026-10-14): R0a-d PASS (the stack's one R0); ST2, ST4, ST6 PASS; ST1's log
@@ -79,6 +83,11 @@ six reads, done in Phase 2 and recorded there. **The rule the readings answer to
 
 **SUPERSEDED, 2026-11-06, before the next boot: the stack's one R0 is now `GATE-sunder.md`'s** (the new stack top). The rows below stay as read at 38cc9903; at the next boot they are recorded SUPERSEDED, never PASS or FAIL.
 
+**2026-11-14, before the next boot, when the stack was un-parked (rebased onto master `af7a1bd5`). No prediction moves;
+nothing above is removed.** At the next stack-top boot this gate's R0 rows are **SUPERSEDED by `GATE-deft-hands.md`'s
+R0** (#180, the stack top), recorded SUPERSEDED, never PASS or FAIL. The note above names `GATE-sunder.md`, which
+itself records the move to `GATE-deft-hands.md`; this line names the top directly.
+
 Every gate beneath carries a dated note recording its own R0 rows **SUPERSEDED** at this boot, never PASS or FAIL.
 `GATE-withered-shortbow.md`'s note names this file. The one exception is unchanged: `GATE-nexus-polish.md` **R0d**, a
 #170 merge bar, is read as written.
@@ -88,6 +97,8 @@ Every gate beneath carries a dated note recording its own R0 rows **SUPERSEDED**
 | prediction | instrument | READING |
 |---|---|---|
 | `[Rpg] Build: <sha>`, SELFTEST's head (#175) as `gh pr view 175 --json headRefOid` prints it, shortened. Not `-dirty`, not `unknown`, and not any head beneath. **This `<sha>` is the one every lower gate's SUPERSEDED note names** | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **PASS, 2026-10-14.** L42 `[Rpg] Build: 38cc9903`, equal to `gh pr view 175 --json headRefOid` at the boot (`38cc9903a70ad53dbf7b683b8edc3cf788e3714f`, OPEN), shortened; not `-dirty`, not `unknown`. **After the boot the stack was rebased upward to carry the readings**, so #175's head is no longer `38cc9903`; `git diff --name-only 38cc9903 <the new head>` lists 7 `GATE-*.md` files and **0 other paths**, so the booted code is the new head's code. **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
+
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (AS PREDICTED).
 
 ### R0b — the jar carries all eight slices, and the bow as authored
 
@@ -118,17 +129,23 @@ foreach ($k in '^element: wither\s*$', '^rarity: uncommon\s*$', '^\s+cooldown_ti
 $zip.Dispose()
 ```
 
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0b (AS PREDICTED).
+
 ### R0c — the cumulative Loaded line, and nothing refused
 
 | prediction | instrument | READING |
 |---|---|---|
 | `Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes` — **identical to `GATE-withered-shortbow.md`'s R0c prediction**, because #175 adds no file under `content/` (its scenarios are under `selftest/`, which the content loaders never read). That prediction's derivation stands: #168's R0c reading on `9ee59a2e` plus weapons +3, visuals +2, statuses +1. No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair, none naming `withered_shortbow`, `blaze_kings_staff`, `blaze_fireball` or `withering`, and no `element 'wither' applies status` warning | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception','applies status'` | **PASS, 2026-10-14.** L44 `[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`, identical to the prediction. No `Refusing`, `Skipping`, `SEVERE`, `Exception` or `applies status` line. The only content WARNs are `volley_stone`'s known pair (L45-L46), at WARN, which the instrument's patterns do not match. Paper itself warned (L72-L77) that 26.1.2 build 74 is 4 releases behind 26.3: a Step 0 notice, no action (the seat). **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
 
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0c (AS PREDICTED).
+
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
 | Exactly one line **`[Rpg] Selftest: dev server, 24 scenarios across 7 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow]`**, and **no** `Refusing selftest` line. *"NOT a dev server"* here means `dev-server.sh` did not boot this server, and **stops the gate** | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | **PASS, 2026-10-14.** Exactly one L50 `[Rpg] Selftest: dev server, 24 scenarios across 7 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow]`; no `Refusing selftest` line. **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
+
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0d (AS PREDICTED: L49, 38 scenarios across 9 gates).
 
 ---
 
@@ -143,7 +160,9 @@ LOGIN.
 |---|---|
 | In `/rpg selftest all`'s log: `SELFTEST RUN START all rows=24 selftest=<R0a's sha> player=<Ben's uuid>`; then, for each gate in index order, `SELFTEST <gate> setup START …` and `DONE`, then each CORE row's `START scenario=selftest/GATE-<gate>.yml#<row> …` and exactly one `DONE ticks=<n>` or `SKIPPED <why>`; then `SELFTEST RUN FINISHED` and `SELFTEST RUN RESTORED xp=<the recorded Lifetime XP> …`. **No `SELFTEST` line contains `PASS` or `FAIL`** (`SelfTestNeverJudgesTest` pins the compiled constants; this row reads the log). **Every SKIPPED is a reading**: record each one and its reason | **Run 1 certifies nothing** (L86-L1087, CREATIVE: L1087 `gamemode=CREATIVE`; the seat's ruling). **Run 2 (L1091-L2098, SURVIVAL), log half PASS:** L1091 `SELFTEST RUN START all rows=24 selftest=38cc9903 player=b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5`; the seven gates in index order, each setup START ... DONE then its rows; 31 `START scenario=` and 31 `DONE ticks=` (24 rows + 7 setups), **0 SKIPPED**; the DONE ticks sum to 2291 (the computed 2,291); `RUN FINISHED`, then L2098 `RUN RESTORED xp=0 ... gamemode=SURVIVAL ...`. **0 `SELFTEST` lines in the whole log contain PASS or FAIL.** **The restore half (xp = the recorded Lifetime XP): NOT READ, no baseline** -- the seat's ruling. Beside it: the session's chat carries "Lifetime XP before run 2 was 0", unattributed; the seat ruled Ben's baseline not given. **61e722f2, 2026-11-10: the log half as re-predicted (run 3); the restore half NOT READ.** L2917 `SELFTEST RUN START all rows=37 selftest=61e722f2 player=b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5`; nine gates in index order, `deft-hands` last; 46 `START scenario=` (37 rows + 9 setups) and 43 `DONE` + 3 `SKIPPED`, every SKIPPED with its reason (L4305 DH1 `no hotbar slot holds boltor`, a staging defect; L4307 DH3 and L4309 DH6 chained to it); L4310 `RUN FINISHED`; L4311 `RUN RESTORED xp=4 cell=melee/fire gamemode=SURVIVAL ...`; 0 `SELFTEST` lines with PASS or FAIL. The restore half needs Ben's Lifetime XP baseline, which he did not send. Runs 1 and 2 certify nothing (see Status). |
 
-**ST1 RE-PREDICTED, 2026-11-06, before the next boot (the stack grew):** `SELFTEST RUN START all rows=34 …`; eight gates in index order, `sunder` last; 34 rows and 8 setups each with exactly one `DONE` or `SKIPPED`. Everything else in ST1's prediction stands.
+**ST1 RE-PREDICTED, 2026-11-06, before the next boot (the stack grew):** `SELFTEST RUN START all rows=34 …`; eight gates in index order, `sunder` last; 34 rows and 8 setups each with exactly one `DONE` or `SKIPPED`. Everything else in ST1's prediction stands. **And again the same day, when Deft Hands stacked on Sunder: `rows=37` across nine gates, `deft-hands` last** (37 rows, 9 setups).
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED, as re-predicted (`rows=38`), both halves.** L2206 `SELFTEST RUN START all rows=38 selftest=e82df2b3 player=b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5`. Nine setups in index order: melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands. **47 scenario STARTs (38 rows + 9 setups), 47 `DONE`, 0 `SKIPPED`.** L3656 `RUN FINISHED`; L3657 `RUN RESTORED xp=4 …`. **0 `SELFTEST` lines contain `PASS` or `FAIL` as a word in the whole log** (`grep SELFTEST | grep -cwE 'PASS|FAIL'`; the same filter matches `SELFTEST x PASS`). **The restore half:** Ben's Lifetime XP before the run, answer 1: **4** (`/level` at L87, 08:56:02). The run set it (L2383 and others `/rpg playerxp set @s 1 levels`, "0 lifetime"), and `RESTORED xp=4`. After the run, answer 8: **4**. The log has no `/level` between run 3's end (L3657) and Ben's next command, so where he read the second figure is not in the log; accepted as given.
 
 ### ST2 — stop restores what the run changed (SURVIVAL) — witness: the log + Ben
 
@@ -153,17 +172,23 @@ LOGIN.
 
 **ST2 RE-PREDICTED, 2026-11-06, before the next boot (the orbs).** The same steps. The `RESTORED` line now ends **`… mobsRemoved=<n> orbsRemoved=<m>`**, and `m` counts every experience orb within 48 blocks at the restore (the staged kills' drops). After the restore, **no experience orb is near Ben**, and the NEXT run's snapshot holds the **same Lifetime XP the restore wrote** (the 38cc9903 gap was `xp=0` restored, then `xp=4` at the next snapshot). `m` is not predicted as a number: it depends on what the kills dropped and what Ben had already picked up. The restore takes every orb in range, untagged, so an orb Ben dropped himself goes too. On the dev world, that is a stated trade.
 
+**e82df2b3, 2026-11-14 (the level run after ST7): AS PREDICTED in every half read.** L3665 `/rpg selftest level`; L3666 `RUN START level rows=5`; WD1 was running (L3734-L3739 at 09:13:53); L3740 `/rpg selftest stop` (09:13:55); L3742 **`SELFTEST RUN STOPPED by /rpg selftest stop`**; L3743 **`RUN RESTORED xp=4 … gamemode=SURVIVAL … mobsRemoved=1 orbsRemoved=0 keep_inventory=false immediate_respawn=false`**; **0 `SELFTEST level` lines after L3742.** One copied REPLY, to WD1's summon from before the stop (L3741 `"Summoned new Zombie"`), lands between the stop command and `RUN STOPPED`. **Ben:** the reply said "Selftest stopped; everything it changed is restored" — *"yES"* (answer 11); an emberblade in the inventory — *"no"* (12); standing where he stood — *"yes"* (13); Lifetime XP — **4** (14), the recorded number. **NOT READ:** "no experience orb near Ben" (not asked), and "the NEXT run's snapshot holds the same Lifetime XP" (no later run). *Also, unscripted:* Ben stopped run 2 the same way (L2200 → L2201 `RUN STOPPED`, L2202 `RESTORED xp=4 … mobsRemoved=0 orbsRemoved=0`).
+
 ### ST3 — the reply reader exists only during a run (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
 | **During** ST1's run, the replies appear as `SELFTEST <gate> <row> REPLY …` (e.g. under `level BN1`, the `/rpg stats` lines). **After** the run ends, Ben types `/rpg stats`: the reply shows in his chat, and **no `REPLY` line** follows in the log. The reader's copy-only shape is `ReplyReaderCopyOnlyTest`'s; this row reads its lifetime | **Log half PASS.** `/rpg stats` at L2408 (23:21:32), after every run had ended, is the log's last line: 0 `REPLY` lines follow it. The control: during runs the reader did copy this command's reply (run 2, `SELFTEST level BN1 REPLY "Your Stats" [gold]` and its stat lines, L1255-L1265). Ben's half (the reply shows in his chat): NOT READ -- ST3 is not on his hand-step list. **61e722f2, 2026-11-10: NOT READ.** |
 
+**e82df2b3, 2026-11-14: AS PREDICTED, both halves.** During run 3 the reader copied replies (e.g. L2810 `SELFTEST legacy-b LB2 REPLY "Mana refilled to 100."`). After run 3 ended, L3659 `/rpg stats` (09:12:38) is followed by **0** `REPLY` lines; the next line is L3660, Ben's `/gamemode creative`. Ben: the reply showed in his chat — *"yes"* (answer 9).
+
 ### ST4 — every command the instrument runs is logged by the instrument (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
 | Each scenario command appears as `SELFTEST <gate> <row> CMD /<command>`. **Read from the jar, not from a run:** `performCommand` skips the `issued server command` line, so for those commands **no** `issued server command` line appears. Count both over ST1's run: CMD lines > 0, and the only `issued server command` lines are those Ben typed (`/rpg selftest all` itself, and any he typed by hand) | **PASS.** Over run 2 (L1091-L2098): 143 `SELFTEST <gate> <row> CMD /...` lines, and 0 `issued server command` lines inside the span; Ben's `/rpg selftest all` is L1090, just before it. **61e722f2, 2026-11-10: NOT READ.** |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** **238** `CMD /` lines inside run 3 (L2206-L3657) and **0** `issued server command` lines inside it. Every `issued server command` line in the log is one Ben typed (L86-L3761: `/gamemode`, `/level`, `/rpg selftest …`, `/difficulty hard`, `/rpg stats`, `/rpg mobtrace`, `/rpg give boltor`, `/rpg enchant …`, `/give … arrow 64`, `/stop`).
 
 ### ST5 — the instrument can read a DIFFERENCE (SURVIVAL) — witness: the log — the control for every AUTO row
 
@@ -187,11 +212,15 @@ LOGIN.
 > it must. The suite at the fix: core 1546, storage 92, paper 1139 run, 0 failed (surefire reports; `@Test` in
 > source 1546 / 92 / 1134 + 5). **Not yet read in a boot**: the next boot reads the VOID rows with it.
 
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED; the control holds for both gates.** `level WD1`: L2393 and L2404 `PLAYERHIT … source=emberblade/left_click … sent=7.000 crit=false`; L2406 `CMD /rpg playerxp set @s 50 levels`; L2418 `sent=112.000 crit=true`, L2429 `sent=56.000 crit=false`. The `crit=false` pair moves 7.000 → 56.000, **exactly +49.000**; the crit line is 56 × 2.0. `wither-status WS1` `sent=1.000` (L2968), `WS2b` `sent=2.000` (L2993). So the instrument moved the level, and every AUTO reading here and in the gates beneath stands on a live instrument.
+
 ### ST6 — one run at a time (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
 | During a run, Ben types `/rpg selftest level` again: the reply **`Refusing: a selftest is already running. /rpg selftest stop ends it.`**, logged as `SELFTEST … REPLY "Refusing: a selftest is already running. …" [gray]` under whichever row is running, and **no second `SELFTEST RUN START`** | **PASS.** During the run started at L2196-L2197, Ben's second `/rpg selftest level` (L2274) was refused: L2275 `SELFTEST level WD1 REPLY "Refusing: a selftest is already running. /rpg selftest stop ends it." [gray]`; no `RUN START` between L2197 and that run's restore (L2407): 4 in the whole log, one per run. Ben's half: **PASS**, itemised (see Status). **61e722f2, 2026-11-10: NOT READ.** |
+
+**e82df2b3, 2026-11-14: AS PREDICTED, read in run 2** (Ben typed it there). Run 2 started at L1350; L1472 Ben's `/rpg selftest level`; L1474 **`SELFTEST level CP2 REPLY "Refusing: a selftest is already running. /rpg selftest stop ends it." [gray]`**; no `RUN START` between L1350 and that run's stop (L2201). Ben: *"Refused"* (answer 3).
 
 ---
 
@@ -216,11 +245,15 @@ which is unchained, and two kill steps (`kill @e[tag=t]` and `kill @s`). Under `
 ST9's `SETTLED dying=0` holds after SU8's `kill @s` as well, because `getNearbyEntities` excludes the player. Every
 other number in ST8-ST11 stands.
 
+**e82df2b3, 2026-11-14: AS PREDICTED, both halves.** L3660 `/gamemode creative`; L3662 `/rpg selftest level`, with **no `SELFTEST RUN START`** before L3663 `/gamemode survival`; L3665 `/rpg selftest level`; L3666 **`SELFTEST RUN START level rows=5`**. Ben: the reply started "Refusing: you are in CREATIVE" — *"yes"* (answer 10). *And the run-sheet rule (F-M46):* the first command after the LOGIN (L81) is L86 `/gamemode survival`, alone.
+
 ### ST8 — every unchained row starts clean (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
 | Right after each unchained scenario's `START`, exactly one **`SELFTEST <gate> <row> CLEAN blocks=<n> removed=<k> inventory=<restored\|kept> return=<x y z>`**: **43** under `all` (46 scenarios minus the 3 chained), and **none** in DH3's, DH6's or WB3's bracket. **Every CLEAN's `return=` is the same position, the player's at `RUN START`.** And the leak the `61e722f2` boot found is gone: SU2's bracket has exactly one `PLAYERHIT … source=sunder`, the one naming `sb`, with no hit on any uuid staged by an earlier row (run 3 had one on WS3's tag-`n` neighbour, `GATE-sunder.md` SU2). `SelfTestStagingTest` (`rowStartRemovesEveryTaggedEntityAndNeverAPlayer`, `aRowWhoseFirstStepIsAfterIsChainedAndNoOtherIs`, the wiring scan) pins the decision | _(not run)_ |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** **44** `CLEAN` lines; **0** inside WB3's, DH3's and DH6's brackets. Every `CLEAN` has the same `return=-117.01 63.00 7.28` (one distinct value). SU2's bracket has exactly one `PLAYERHIT … source=sunder` (L3244), naming `sb` (`19f6ee73`), and no hit on any earlier row's mob.
 
 ### ST9 — after a kill, the next step waits for the dying to leave (SURVIVAL) — witness: the log
 
@@ -228,11 +261,25 @@ other number in ST8-ST11 stands.
 |---|---|
 | Every `CMD /kill …` line is followed, before the row's next step line, by exactly one **`SETTLED dying=0 ticks=<t>`** with `t` ≤ 40 (`SETTLE_CAP_TICKS`). That is 29 under `all`, if no row skips before its kill (`git grep -h -E '^\s*- cmd: "kill ' <ref> -- 'paper/src/main/resources/selftest/*.yml' \| wc -l` = 29 at #180's head). A row-start kill finds nothing after ST8's clean (`No entity was found`), so `ticks=0` there; **a mid-row kill (WS2c's Knell and wither skeleton) shows `ticks` near 20**, the death animation. **`SETTLED dying=<k>` with `k` > 0 means the 40-tick cap was hit: a finding, not a pass.** The live consequence: WS2c's control apply replies `Applied withering x1 (200t) to ZOMBIE` and produces DOTTICK lines (run 3's replied `Refused: wither_skeleton is immune`) | _(not run)_ |
 
+**e82df2b3, 2026-11-14 (run 3): NOT AS PREDICTED in one clause; the counts are as predicted.** 31 `CMD /kill` lines and 31 `SETTLED` lines (the recounted 31), every one `dying=0`. **But every `SETTLED` reads `ticks=0`, including WS2c's mid-row kills, predicted "near 20":** L3028 the Knell `died`, L3030 `Killed Knell`, L3031 `SETTLED dying=0 ticks=0`, and the same at L3047. **And the dying bodies were still there:** L3037 `PROBE tag=t d24a2d7b-… dead=true` and L3053 `PROBE tag=t d196b5ac-… dead=true`, each logged after the settle and after the next mob was staged; their `MOBREMOVE` lines are L3040 and L3056. So the settle did not count a body the PROBE saw as dead. **The live consequence the row names held anyway:** WS2c's control replied `Applied withering x1 (200t) to ZOMBIE` (L3058) with a DOTTICK (L3057). It held because the aim and apply take a live target (L3036, L3052: the aim names the live mob), not because the wait waited. **A finding for the seat:** why `dying` is 0 with a `dead=true` body in range is not diagnosed here.
+
+**DIAGNOSED, 2026-11-14, read-only from the code at `5656a0e0` and the pinned server jar (the seat's ruling 5). A COUNTING DEFECT IN THE INSTRUMENT'S WAIT, not in game code.**
+- **What the settle counts.** `SelfTestRun.settle` counts an entity near the player as dying when `SelfTestStaging.dying(e instanceof LivingEntity, l.isDead(), e.isValid())` holds, which is `living && dead && valid`. It returns the first time the count is 0.
+- **What PROBE's flag reads.** `SelfTestDrivers.probe` prints `dead=` from `l.isDead()` alone.
+- **Where they differ.** On the pinned server (`javap -c` on `run/versions/26.1.2/paper-26.1.2.jar`, Paper 26.1.2 build 74), `CraftEntity.isDead()` is `!entity.isAlive()`, and `CraftEntity.isValid()` is `entity.isAlive() && entity.valid`. No class on the path overrides either: `CraftLivingEntity`, `CraftMob`, `CraftMonster`, `CraftZombie`, `CraftAbstractSkeleton`, `CraftWitherSkeleton` declare neither, against `CraftEntity`, which declares both. **So `dead && valid` is `!isAlive() && isAlive() && valid`, which is never true.** The count is 0 on every poll, and every `SETTLED` returns on its first poll with `ticks=0` (all 31). The `valid` term was meant to say "still in the world", but on Paper it also says "alive".
+- **Why the unit row is green.** `SelfTestStagingTest.aDyingBodyIsDeadAndStillInTheWorld` hands `dying` three independent booleans, `dead=true` with `valid=true`, a combination the server cannot produce. That is a hollow fixture in KIND.
+- **No reading rested on the wait.** For each of run 3's 31 `CMD /kill` lines, every target a later line of that row names (the `DRIVE aim … target=`, `PLAYERHIT … target=` and `DOTTICK <uuid>` lines) is a mob whose `MOBSEED` comes AFTER the kill. No such line names a killed body. The kills with "Killed …" replies, where a dying body was present: WD1 L2394 → `67667af0` (seeded L2399), WD1 L2407 → `ab64172a` (L2413), WD3 L2439 → `86f28a15` (L2444), WS2b L2978 → `2996a4a1` (L2986), WS2c L3003 → `d24a2d7b` (L3012), WS2c L3027 → `d196b5ac` (L3033), WS2c L3044 → `d880bb2d` (L3049). LB5's L2828 is followed by no target line: its reading is the flight's sightings, and the last one at `dx 7.50` shows the flight reached the wall, past the body. WS3's L3063 and the WS-C/WS1 `tag=t` kills are followed in the same row by `tag=n` kills whose targets were seeded after. The rest replied "No entity was found", and SU8's `kill @s` killed the player. **The aim and the hits take live targets** (`nearestTagged` skips `isDead()`, and the cast paths use `LiveTargets`). That is what kept every reading on a live mob, not the wait.
+- **Owed:** a follow-up PR that counts a dying body by a test that does not include `isAlive()`, and a unit row whose fixture is a state the server produces.
+
 ### ST10 — blocks go back per chain, and every row stages from the run's start (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
 | Each `CLEAN`'s `blocks=` is the number of distinct blocks the PREVIOUS chain saved: the sum of its `STAGE saved <n> blocks` lines when its boxes do not overlap, and fewer when they do. It is `0` after a chain that saved none. **Every Sunder row's first `SELF` line reads the `y` of `RUN START`'s position** (run 3's first `SELF` lines read y 63.00 for SU2, SU4 and SU5, then 59.00 for SU6, 56.00 for SU7 and SU9, and 57.00 for SU10, at L4005-L4181, as the rows stacked downward), and **no player death appears in the run** (runs 1 and 2 of the `61e722f2` boot drowned their player). The `RUN RESTORED` line's `blocks=` counts every save in the run (`RowBlocks.total`), so a block saved by two chains counts twice; it is no longer distinct positions. `SelfTestStagingTest.rowBlocksRestoreNewestFirstKeepTheFirstSaveAndEmpty` pins the order and the first-save rule | _(not run)_ |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED, except the "no player death" clause, which SU8's amendment overtook.** Each non-zero `CLEAN blocks=` equals the previous chain's `STAGE saved` total, at all 11 (e.g. wither-status setup 250 = LB5's 250; SU6 1260; SU8 756). The rest read `0` after chains that saved none. **Every Sunder row's first `SELF` reads y 63.00, RUN START's y:** SU2 L3239, SU4 L3276, SU5 L3306, SU6 L3336, SU7 L3363, SU9 L3426, SU10 L3460. SU8's only `SELF` (L3405) follows its staged death, at the respawn point (y 68.00); SU11 and SU12 log no `SELF`. **One player death in the run: SU8's own `kill @s`** (L3397, L3399 `BaronVonYeetus was killed`). That is the 2026-11-10 SU8 amendment, written after this clause; there is no other death. `RUN RESTORED blocks=9574` equals the sum of run 3's `STAGE saved` lines, 9574.
+
+**CORRECTION, 2026-11-14, after the `e82df2b3` boot (the seat's ruling 5). The prediction above stands as written; this is beside it.** The clause *"no player death appears in the run"* was written on 2026-11-10, before SU8's amendment staged a death (`kill @s`) inside the same `all` run. It is stale. Read it as: **no player death except SU8's staged one.** Every other clause of ST10 holds.
 
 ### ST11 — the inventory goes back at every gate boundary (SURVIVAL) — witness: the log
 
@@ -253,6 +300,8 @@ pristine copy; its row reddened; the file was restored by `cp`, `cmp`-identical,
 | MUTREVERSE: the drain without its reverse | `rowBlocksRestoreNewestFirstKeepTheFirstSaveAndEmpty` |
 | MUTKILL: `startsWith("kill ")` → `startsWith("kill")` | `onlyAKillCommandStartsTheWait` |
 | MUTWIRE: `SelfTestRun`'s chained check removed | `theRunCleansAtEveryUnchainedRowAndSettlesAfterEveryKill` |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** **8** `CLEAN … inventory=restored`, one at each gate's setup after the first: level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder and deft-hands. 36 read `kept`. **DH1 is not SKIPPED:** L3596 `DRIVE hold PlayerItemHeldEvent+setHeldItemSlot 4->0 item=boltor`.
 
 ## WHAT THIS GATE CANNOT SEE
 

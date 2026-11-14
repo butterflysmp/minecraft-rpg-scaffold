@@ -185,6 +185,19 @@ public final class EnchantEffectLine {
                 int arrows = (int) EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield "+" + arrows + " Quiver " + (arrows == 1 ? "Arrow" : "Arrows");
             }
+            case RELOAD_TIME -> {
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
+                }
+                // DEFT HANDS, Ben's ruling (a): the reload TIME is cut by this percent, so the line says the time and
+                // a MINUS -- "-30% Reload Time", never "+30% Reload Speed", which is ruling (b) and was not chosen.
+                // "Reload" is the word the stats sheet already uses (StatsSheetLines.RELOAD_TIME_LABEL), the same
+                // rule the quiver arm above follows for "Quiver". The PERCENT is the tier's, not the ticks it buys:
+                // that depends on the weapon, and the stats sheet's Reload line shows the resolved seconds.
+                double percent = EnchantCurve.valueAt(definition.valueByLevel(), level);
+                yield String.format("-%.0f%% Reload Time", percent);
+            }
         };
     }
 }

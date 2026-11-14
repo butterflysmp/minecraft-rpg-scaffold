@@ -10,7 +10,19 @@ import io.github.butterflysmp.rpg.core.weapon.Quiver;
  * is as meaningless as half an arrow, and the server cannot schedule one. What differs is the floor,
  * and that difference is the whole content of this file's second half.
  *
- * <h2>THIS STAT HAS NO FLOOR, AND IT IS THE SAME STANDARD {@link QuiverSize} PASSES</h2>
+ * <h2>RULED 2026-11-06: THE RESOLVED RELOAD NEVER GOES BELOW {@link #MIN_TICKS} (1 TICK)</h2>
+ *
+ * <p><b>The seat's ruling, at Deft Hands (PLAN-deft-hands.md): "the resolved reload never goes below 1 tick (no
+ * instant reload), whatever stacks."</b> This is the BALANCE ruling the section below deferred to "the first slice
+ * that ships reload-reduction gear" -- Deft Hands is that slice. It is a balance floor, NOT a mechanism floor, and
+ * the mechanism argument below still stands as written: a 0-tick reload IS reachable and representable. The ruling
+ * removes it because an instant reload deletes the brake, not because the code cannot express one. Shipped content
+ * alone never reaches it (Deft Hands III on the shortest authored reload, 34, resolves to 23); only stacking the
+ * dev reload instrument does, and {@code ReloadTimeTest} drives exactly that.
+ *
+ * <h2>THE MECHANISM ARGUMENT, AS IT STOOD BEFORE THE RULING (KEPT: IT IS STILL TRUE)</h2>
+ *
+ * <h3>THIS STAT HAS NO MECHANISM FLOOR, AND IT IS THE SAME STANDARD {@link QuiverSize} PASSES</h3>
  *
  * <p>The test is <b>is there a resolved value at which the mechanic has no reachable state</b> --
  * not <i>did the sibling stat get a 1</i>. Applied to both, measured rather than reasoned:
@@ -27,11 +39,11 @@ import io.github.butterflysmp.rpg.core.weapon.Quiver;
  *     <td><b>NO</b></td></tr>
  * </table>
  *
- * <p><b>So {@link #resolve} floors nothing, and that is a conclusion rather than an omission.</b> An
+ * <p><b>So {@link #resolve} floored nothing -- a conclusion, not an omission, UNTIL 2026-11-06.</b> An
  * instant reload deletes the BRAKE this feature is about -- that is a real objection, and it is a
  * BALANCE objection, not a mechanism one. It stays where it already sits: the duration that still
  * brakes depends on the shortest achievable fire interval, which is 7, which is priced on <b>Q7 --
- * unrun</b>. The first slice that ships reload-reduction gear rules it, because that is the first
+ * unrun</b>. The first slice that ships reload-reduction gear rules it (Deft Hands did: {@link #MIN_TICKS}), because that is the first
  * time anyone can feel it.
  *
  * <h3>The constant that was ruled, retracted twice, never written, and then cited twice as real</h3>
@@ -54,9 +66,9 @@ import io.github.butterflysmp.rpg.core.weapon.Quiver;
  *
  * <p>{@code Quiver.reloadCompletesAt}'s {@code Math.max(reloadTicks, 0)} is not a balance floor. It
  * keeps a stamped deadline from landing BEFORE its own start -- a representability rule about the
- * pair of longs, the same kind as {@code QuiverState}'s both-or-neither check. Adding a clamp here
- * as well would be two enforcement sites for one quantity, which is the defect the capacity half of
- * this slice was reorganised to make unrepresentable, so {@link #resolve} deliberately does not.
+ * pair of longs, the same kind as {@code QuiverState}'s both-or-neither check. The ruled floor in
+ * {@link #resolve} is NOT a second site for THAT rule: it is a different rule (balance, on the resolved
+ * duration), and reloadCompletesAt's clamp still guards only the pair of longs. One site per rule.
  *
  * <p><b>There are already two layers on the AUTHORED side and they are the same number</b>:
  * {@code WeaponDefinition} refuses {@code quiverSize > 0 && reloadTicks <= 0}, so an authored reload
@@ -68,6 +80,13 @@ public final class ReloadTime {
 
     /** No bonus. The {@code 0-is-absent} convention every stat helper here shares. */
     public static final int NONE = 0;
+
+    /**
+     * The shortest a resolved reload may be: ONE TICK, never an instant reload (the seat, 2026-11-06, at Deft Hands).
+     * A balance floor on the resolved value only -- the authored side keeps {@code WeaponDefinition}'s own {@code >= 1}
+     * rule, and {@code Quiver.reloadCompletesAt}'s {@code Math.max(…, 0)} stays the representability rule it was.
+     */
+    public static final int MIN_TICKS = 1;
 
     /**
      * Does this amount declare a modifier at all? <b>{@code != NONE}, and it is NOT called
@@ -95,8 +114,8 @@ public final class ReloadTime {
      * diverge on its primary direction. The question was right and the body was the copy.
      *
      * <p><b>RULED by the operator: the Ranger has reload-speed gear, in both directions.</b> The
-     * consequence accepted with it: with no reload floor, a large enough reduction resolves to 0 --
-     * an instant reload. That is the balance question already priced on Q7, not a new one.
+     * consequence accepted with it: a large enough reduction once resolved to 0 --
+     * an instant reload. Ruled out 2026-11-06: {@link #resolve} now stops at {@link #MIN_TICKS}.
      *
      * <p><b>{@link QuiverSize#boosts} keeps {@code > NONE} AND its name, deliberately</b>, and this
      * paragraph exists so nobody unifies them for consistency. Two sibling helpers with different
@@ -119,11 +138,12 @@ public final class ReloadTime {
     }
 
     /**
-     * The resolved reload duration: a weapon's authored ticks plus whatever the wielder's gear adds.
+     * The resolved reload duration: a weapon's authored ticks plus whatever the wielder's gear adds, and NEVER BELOW
+     * {@link #MIN_TICKS}.
      *
-     * <p><b>No floor and no clamp</b> -- see the class javadoc. A negative resolved value is not
-     * refused here; {@code Quiver.reloadCompletesAt} takes it to a deadline equal to its start, which
-     * is an instant reload and a fully reachable state.
+     * <p><b>One floor, here, and only here</b> (the seat's ruling, 2026-11-06; see the class javadoc). Before it this
+     * method had none, and a resolved 0 or below was an instant reload -- reachable, and now ruled out on balance.
+     * The clamp sits on the RESOLVED value, so any number of stacked sources can at most reach one tick.
      *
      * <p><b>In {@code core} for the reason {@code QuiverSize.resolve} is:</b> its natural home looks
      * like the single site in {@code paper} that reads the stat, and a decision placed there is
@@ -137,14 +157,45 @@ public final class ReloadTime {
      * human-driven boot row drives the other way, reading the collision caveat at that command.
      *
      * <p>So the downward direction has exactly one UNATTENDED witness in this slice, and it is
-     * {@code ReloadTimeTest.theResolvedDurationGoesDownFreelyAndZeroIsAnInstantReload}. Do not delete
+     * {@code ReloadTimeTest.theResolvedDurationGoesDownToTheOneTickFloorAndNoFurther}. Do not delete
      * it as redundant with the upward rows; nothing else covers that half without a person driving it.
      *
      * @param authoredTicks  the weapon's own {@code reload_ticks}, already validated {@code > 0}
      * @param bonusStatValue {@code HealthState}'s summed modifiers, in ticks
      */
     public static int resolve(int authoredTicks, double bonusStatValue) {
-        return authoredTicks + ticks(bonusStatValue);
+        return Math.max(MIN_TICKS, authoredTicks + ticks(bonusStatValue));
+    }
+
+    /**
+     * DEFT HANDS: a percent reduction of a weapon's AUTHORED reload, as whole ticks to ADD (so, negative).
+     *
+     * <p><b>Ben's ruling (a), 2026-11-06: reload TIME x0.9 / 0.8 / 0.7</b> for 10 / 20 / 30. So the contribution is
+     * {@code -(authored x percent / 100)}, FLOORED -- {@link #ticks}'s mode, one rounding rule per weapon, and here
+     * floor takes the larger cut (34 x 10% = 3.4 takes 4 ticks off), the side this stat's floor already lands on.
+     *
+     * <p><b>INTEGER ARITHMETIC, deliberately</b> ({@code Math.floorDiv}), not {@code percent / 100.0}: in a double
+     * {@code 34 * 0.1} is {@code 3.4000000000000004}, and a product that lands on an integer would floor one tick too
+     * far through it. Converted ONCE, against the AUTHORED value, so it does not compound with any other source --
+     * every source is then a flat sum through {@link #resolve}. Every tier on 60, 40 and 34 is pinned in
+     * {@code ReloadTimeTest}, executed, not characterised.
+     *
+     * @param authoredTicks the held weapon's {@code reload_ticks}, {@code > 0} for any weapon that has a reload
+     * @param percent       the enchant's resolved {@code value_by_level}, 10 / 20 / 30
+     */
+    public static int percentCut(int authoredTicks, int percent) {
+        return Math.floorDiv(-authoredTicks * percent, 100);
+    }
+
+    /**
+     * The {@code /rpg mobtrace} line for a reload that just began (GATE-deft-hands.md DH2): {@code RELOAD
+     * player=<uuid> weapon=<id> authored=<n> resolved=<n> start=<tick> completesAt=<tick>}. Formatted here, in core,
+     * so its shape is a unit row.
+     */
+    public static String line(java.util.UUID playerId, String weaponId, int authoredTicks, int resolvedTicks,
+                              long start, long completesAt) {
+        return "RELOAD player=" + playerId + " weapon=" + weaponId + " authored=" + authoredTicks
+                + " resolved=" + resolvedTicks + " start=" + start + " completesAt=" + completesAt;
     }
 
     /**

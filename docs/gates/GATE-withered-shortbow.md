@@ -1,5 +1,9 @@
 # GATE — WITHERED-SHORTBOW: an Uncommon ranged bow of the Wither element (content only)
 
+**Seat read 2026-11-14 from origin at `7e620f38`: readings accepted; approved to merge.** Run 3 is the run of record. WB1, WB2, and WB3 with the credit met the bars. **Carried, NOT READ, never a pass:** WB3's wither swirl, and the optional hand rows WB4b, WB5, WB6, WB7.
+
+**Status at `e82df2b3` (the stack-top boot, 2026-11-14; run 3, L2206-L3657, is the run of record proposed to the seat; the boot account is `GATE-deft-hands.md`'s): R0a-c SUPERSEDED (GATE-deft-hands.md R0, all four AS PREDICTED); WB1 AS PREDICTED (as re-predicted; Ben's tooltip half PASS at 61e722f2, not re-read); WB2 AS PREDICTED; WB3 AS PREDICTED, including the credit; WB4b, WB5, WB6, WB7 NOT READ (optional). This gate's bars are met, pending the seat.**
+
 **Status at `61e722f2` (the stack-top boot, 2026-11-10; run 3 is the run of record; the boot account is `GATE-deft-hands.md`'s): R0a-c SUPERSEDED (GATE-deft-hands.md R0, PASS); WB1 PASS (AUTO as re-predicted, and Ben); WB2 FAIL as staged (the castRay defect LB2 records: a dying mob on the line of fire); WB3 VOID (no WB2 hit to follow); WB4b, WB5, WB6, WB7 NOT READ. NOT a merge candidate.**
 
 **Status at `38cc9903` (the stack-top boot, 2026-10-14): R0a-c SUPERSEDED (GATE-selftest.md R0, PASS); WB1 FAIL on
@@ -111,6 +115,11 @@ own commands; where the scenario differs, the row says so. Every row not listed 
 > the boot: a commit beneath the top cannot name the top's hash.* **The one R0 moved to #175**, which carries the
 > cumulative R0 for #168-#175; the heading and paragraph below describe it as it stood before that move.
 
+> **2026-11-14, before the next boot, when the stack was un-parked (rebased onto master `af7a1bd5`). No prediction
+> moves; nothing above is removed.** At the next stack-top boot this gate's R0 rows are **SUPERSEDED by
+> `GATE-deft-hands.md`'s R0** (#180, the stack top), recorded SUPERSEDED, never PASS or FAIL. The note above names
+> `GATE-selftest.md`; it describes the stack as it stood when it was written.
+
 **The seat's ruling 1, 2026-10-05.** This R0 is the stack's only R0: every gate beneath (#168-#173) carries a dated note
 recording its own R0 rows **SUPERSEDED** at this boot, never PASS or FAIL. The one exception is `GATE-nexus-polish.md`
 **R0d** (the ten screen commands), which is a #170 merge bar and is read as written. R0b reads one shipped entry from
@@ -122,6 +131,8 @@ recording its own R0 rows **SUPERSEDED** at this boot, never PASS or FAIL. The o
 | prediction | instrument | READING |
 |---|---|---|
 | `[Rpg] Build: <sha>`, WITHERED-SHORTBOW's head (#174) as `gh pr view 174 --json headRefOid` prints it, shortened. Not `-dirty`, not `unknown`, and not any head beneath. **This `<sha>` is the one every lower gate's SUPERSEDED note names** | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **38cc9903, 2026-10-14: SUPERSEDED** -- by GATE-selftest.md R0 (this file's instrument note), read PASS at 38cc9903 (L42 `[Rpg] Build: 38cc9903`). Not read here. **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
+
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (AS PREDICTED).
 
 ### R0b — the jar carries all seven slices, and the bow as authored
 
@@ -150,11 +161,16 @@ foreach ($k in '^element: wither\s*$', '^rarity: uncommon\s*$', '^\s+cooldown_ti
 $zip.Dispose()
 ```
 
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0b (AS PREDICTED).
+
 ### R0c — the cumulative Loaded line, and nothing refused
 
 | prediction | instrument | READING |
 |---|---|---|
 | `Loaded 11 abilities, **29 visuals**, **5 statuses**, 7 elements, 10 enchants, 3 pools, 6 fragments, 6 aspects, **16 weapons**, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes`. **Derived from the last line actually READ**, `GATE-melee-cell.md` R0c on `9ee59a2e` (13 weapons, 27 visuals, 4 statuses), plus the content files added since, from `git diff --name-status 9ee59a2e <top> -- paper/src/main/resources/content` (2026-10-05): **weapons +3** (`short_bow` #171, `blaze_kings_staff` #172, `withered_shortbow` #174), **visuals +2** (`blaze_fireball_cast`, `blaze_fireball_impact`, #172), **statuses +1** (`withering`, #173); the only other content edits are `elements/fire.yml` and `elements/wither.yml` (modified, not added); every other count unchanged. No `Refusing`, `Skipping`, `SEVERE` or exception beyond `volley_stone`'s known pair, **none naming `withered_shortbow`, `blaze_kings_staff`, `blaze_fireball` or `withering`**, and **no `element 'wither' applies status` warning** (carried from `GATE-wither-status.md` R0c) | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception','applies status'` | **38cc9903, 2026-10-14: SUPERSEDED** -- GATE-selftest.md R0c, read PASS at 38cc9903 (L44, identical to this row's old prediction). Not read here. **61e722f2, 2026-11-10: SUPERSEDED** by `GATE-deft-hands.md`'s R0 (PASS). Never PASS or FAIL here. |
+
+**e82df2b3, 2026-11-14: SUPERSEDED** by `GATE-deft-hands.md`'s R0c (AS PREDICTED: 16 weapons, 5 statuses).
+
 ---
 
 ## THE BOW
@@ -166,6 +182,8 @@ $zip.Dispose()
 | Hover (score 100). In order: **`Wither`** (dark gray), **`Quiver: --/8`**, blank, **`Ranged Damage: 16`**, **`Attack Speed: 1.3`**, blank, **`Uncommon Ranged Weapon`** — the golden rendering. **No "Inflicts Wither" line** (Ben overruled Q-W10) and no flavor (none is authored). A second `/rpg give withered_shortbow` lands in its own slot | **38cc9903, 2026-10-14: FAIL (the lore, as predicted); the non-stacking half PASS.** AUTO (selftest, run 2): two gives land in two slots, L2062 `INVENTORY withered_shortbow slots=[3x1, 4x1]` -- PASS. The held bow, L2066: `lore=["Wither" [dark_gray]; "Gear Score: 100" [gray, aqua]; "Quiver: 8/8" [gray]; "" []; "Ranged Damage: 16" [gray, red]; "Attack Speed: 1.3" [gray, red]; "" []; "Uncommon Ranged Weapon" [green]]`. Against the prediction: `Wither` dark gray, the damage, speed, blanks and rarity, no "Inflicts Wither" line and no flavour all match; but an unpredicted `"Gear Score: 100"` line sits between `Wither` and the quiver line, and the quiver reads `"Quiver: 8/8"`, not `Quiver: --/8`. The prediction quoted "the golden rendering", which a held, scored item does not show -- a prediction defect, not a build defect, but as written it fails. Ben's half (the tooltip as the client draws it): **PASS**, itemised (see Status) -- the client draws this same lore; his check is that it looks right, not that it matches the prediction. His hand give (L2106) had no `/rpg gearscore set 100`. **61e722f2, 2026-11-10: PASS.** AUTO (run 3): L3887 `INVENTORY withered_shortbow slots=[4x1, 5x1]`, two slots. L3891 the held bow's lore, exactly as re-predicted: `"Wither" [dark_gray]; "Gear Score: 100" [gray, aqua]; "Quiver: 8/8" [gray]; "" []; "Ranged Damage: 16" [gray, red]; "Attack Speed: 1.3" [gray, red]; "" []; "Uncommon Ranged Weapon" [green]`, with no "Inflicts Wither" line and no flavour. Ben's half: PASS. His hand give and score set are L4795 and L4819; his words, relayed by the seat: *"SB1 and WB1 both good"*; the seat ruled the sight half PASS. |
 
 **WB1 RE-PREDICTED, 2026-11-06, before the next boot** (derived from the code: `QuiverItems.stampFull` stamps the magazine full at mint, so `WeaponLoreLines.quiverLine` renders `8/8`; `WeaponLore` calls `GearLore.appendScore` after the element line and before the quiver line, rendering `Gear Score: <n>` with a gray label and an aqua value; `/rpg give` stamps a rolled score at acquire, `GearScoreItems.stampOnAcquire`, so a given bow is always scored). **The selftest's WB1 steps: two gives, hold, `/rpg gearscore set 100`, dump held. The held bow's lore, in order:** **`Wither`** (dark gray), **`Gear Score: 100`** (`Gear Score: ` gray, `100` aqua), **`Quiver: 8/8`** (gray), blank, **`Ranged Damage: 16`** (gray label, red value), **`Attack Speed: 1.3`** (gray label, red value), blank, **`Uncommon Ranged Weapon`** (green). No "Inflicts Wither" line, no flavour. The two gives land in two slots. Ben's half is unchanged: the tooltip as the client draws it.
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED, as re-predicted.** L3117-L3118 two `/rpg give withered_shortbow`; L3120 `INVENTORY withered_shortbow slots=[0x1, 1x1]`, two slots. L3124 `HELD withered_shortbow BOW x1 name="Withered Shortbow"`, lore in order: `"Wither" [dark_gray]; "Gear Score: 100" [gray, aqua]; "Quiver: 8/8" [gray]; "" []; "Ranged Damage: 16" [gray, red]; "Attack Speed: 1.3" [gray, red]; "" []; "Uncommon Ranged Weapon" [green]`. No "Inflicts Wither" line, no flavour. Ben's half (the tooltip as drawn): not re-read at this boot (PASS at 61e722f2).
 
 ### WB2 — PLAYERHIT: 16 wither on a right-click (SURVIVAL) — witness: PLAYERHIT line
 
@@ -179,11 +197,15 @@ the base 16 wither, or 16 x 2.0, the crit multiplier WD1 verified at the `61e722
 Every other clause of WB2's prediction stands, including "record `caster=`". A `crit=true` line at any other `sent`
 is a FAIL.
 
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED.** L3144 aim `d=8.000 pitch=-0.859`; L3145 `DRIVE use … item=withered_shortbow`; L3146 `PLAYERHIT caster=b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5 source=withered_shortbow/right_click target=79ece4e6-… zombie element=wither sent=16.000 crit=false triggerScore=100`. It is the only PLAYERHIT on that zombie in the log. **`caster=` recorded: `b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5`** (Ben). L3147 `84.000/100.000`. "An arrow flies" is not logged: NOT READ.
+
 ### WB3 — the accrued Wither on the real path, and the CREDIT (SURVIVAL) — witness: DOTTICK
 
 | prediction | READING |
 |---|---|
 | After WB2's hit, on the same zombie (expected `max=100`): **five** lines **`DOTTICK <the zombie's uuid> zombie status=withering applier=<WB2's caster=> sent=5.000 cap=8.000 tick=<n>`**, 40 apart, the first about 40 ticks after the hit. `cap=8.000` is half the 16 hit (Q-W2), and `sent` is `min(0.05 × 100, 8.0)`, the percent arm. **`applier=` equal to WB2's `caster=` is the credit row (WS4, moved here from the status gate, where `/rpg apply` passes no applier).** The vanilla wither swirl shows; no fire. This is the accrual path's first live instance | **38cc9903, 2026-10-14: VOID** -- the aim defect, through WB2 (no hit to accrue from). 0 DOTTICK in L2092-L2096; de736d06 `customHP=100.000/100.000 fireTicks=0` (L2093, L2095). The credit (WS4) is not witnessed. Observation: L2094 MOBREMOVE of a uuid never seeded, unexplained. **61e722f2, 2026-11-10 (run 3): VOID.** There was no WB2 hit to follow: L3916 and L3918 PROBE 100.000/100.000, and 0 DOTTICK in the bracket. |
+
+**e82df2b3, 2026-11-14 (run 3): AS PREDICTED, including the CREDIT.** L3151-L3155 five `DOTTICK 79ece4e6-… zombie status=withering applier=b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5 sent=5.000 cap=8.000` at ticks 22249 to 22409, 40 apart. The first is at 09:09:16, about 40 ticks after the hit at 09:09:14. 5 lines for that uuid in the whole log. **`applier=` equals WB2's `caster=`** (WS4's credit). L3156 `fireTicks=0` (59/100). Ben's half (the wither swirl): NOT READ.
 
 ### WB4b — the WEAPON's cap binds, by mob scaling (SURVIVAL) — witness: DOTTICK (WITNESSED)
 
@@ -191,11 +213,15 @@ is a FAIL.
 |---|---|
 | **The seat, 2026-10-01.** A **GS-200 zombie** (expected `max=200`; 5% = 10 > 8), one arrow: five lines with **`sent=8.000 cap=8.000`**: the weapon's cap binds, **not 2.0**. **The control:** WB3's GS-100 zombie read **`sent=5.000 cap=8.000`**, the percent arm. Each `sent` is `min(0.05 × max, 8.0)` from that mob's own `MOBSEED max=` line | **38cc9903, 2026-10-14: NOT READ.** No GS-200 zombie staged; 0 `withered_shortbow/` PLAYERHIT, 0 withering DOTTICK. **61e722f2, 2026-11-10: NOT READ** (not staged). |
 
+**e82df2b3, 2026-11-14: NOT READ** (optional hand row; not run).
+
 ### WB5 — WS2 on the real path: no explosion, by the Wither or by the arrow (SURVIVAL) — witness: Ben + the log
 
 | prediction | READING |
 |---|---|
 | **(a) Killed by the Wither.** A fresh, never-scorched **GS-20** zombie (expected `max=20`) with a second zombie two blocks away. One arrow: `sent=16.000`, nameplate **4/20**. Then four lines `DOTTICK … status=withering applier=<Ben> sent=1.000 cap=8.000`, and **it dies on the fourth. NO explosion, no `ignite_blast`, the neighbour's nameplate does not move.** **(b) Killed by the arrow.** A fresh GS-20 zombie, `/rpg mobdamage 10` (**10/20**), with a neighbour. One arrow: `PLAYERHIT … element=wither sent=16.000` and **it dies to the arrow. NO explosion** (Ignite's second clause asks `accruesScorch`, false for wither: `ElementAccrualTest`). (a) is the Q-W8-narrowed WS2; (b) is K2 | **38cc9903, 2026-10-14: NOT READ.** Not staged. The sole witness for no explosion on a live death is still owed. **61e722f2, 2026-11-10: NOT READ** (not staged). |
+
+**e82df2b3, 2026-11-14: NOT READ** (optional hand row; not run).
 
 ### WB6 — it pushes (SURVIVAL) — witness: Ben
 
@@ -203,11 +229,15 @@ is a FAIL.
 |---|---|
 | As `GATE-legacy-a.md` SB3: a zombie **without** `NoAI` (`/summon zombie ~8 ~ ~0 {PersistenceRequired:1b,IsBaby:0b,Tags:["t"]}`), shot as it walks in: **it is pushed back along the arrow's line** (`strength: 0.1`). Record the push as seen; the distance is not predicted. **Sole witness of the knockback being applied** (`WitheredShortbowContentTest` pins that it is AUTHORED) | **38cc9903, 2026-10-14: NOT READ.** The walking (no-NoAI) zombie was never summoned. The sole witness for knockback landing is still owed. **61e722f2, 2026-11-10: NOT READ** (not staged). |
 
+**e82df2b3, 2026-11-14: NOT READ** (optional hand row; not run).
+
 ### WB7 — eight arrows, then the reload (SURVIVAL) — witness: Ben
 
 | prediction | READING |
 |---|---|
 | Hold right-click with a fresh bow: the quiver readout counts **8 → 0**, one shot per **16 ticks** at most (0.8 s; on the 4-tick grid). At 0 it reloads for **60 ticks** (3 s), then reads **8** again | **38cc9903, 2026-10-14: NOT READ.** No log witness, and not on Ben's hand-step list. A fresh bow was given in survival (L2106) but nothing names the 8-to-0 count or the reload. **61e722f2, 2026-11-10: NOT READ** (not staged). |
+
+**e82df2b3, 2026-11-14: NOT READ** (optional hand row; not run).
 
 ---
 
