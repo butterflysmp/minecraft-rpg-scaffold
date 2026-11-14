@@ -8,6 +8,11 @@
 **2026-11-13: the spike's readings are folded in** (§1's 2026-11-13 rulings, §2's 2026-11-13 rulings, §3's F7, §6's
 findings F-M12 to F-M18), and §5 is now SLICE 1 as a buildable design. Still PLAN ONLY: it waits for the seat's diff.
 
+**2026-11-14: SLICE 1 READ.** One boot of the stack top `feat/mining-s1b` at **`863bf10a`** (S1-a + S1-b, gate
+`GATE-mining-slice1.md`); readings committed at **`9eb45815`**, Ben's follow-up words as a dated addendum at
+**`a95e56f6`**. The seat read both from origin and accepted them, 2026-11-14. Findings F-M25 to F-M28 and the
+**carried hand rows** the next mining gate must include are at the end of §6; §5.4 carries a dated correction.
+
 **The spike** is `spike/mining-input`, also from `55425aad`. It will NOT merge. Its gate, `GATE-mining-spike.md`,
 lives on that branch beside the code it tests, because the boot is bound to that branch's build sha. After its
 readings, the read gate is copied byte for byte onto this branch with a dated note naming the spike sha it was read
@@ -788,6 +793,13 @@ that predates the numbers stays); `per_spot.min > max`, or a negative value; a s
   2. **It fires once per click by construction.** It comes from the dig START, and each click sends one START. MS1 read a
      `BLOCK_DAMAGE` on every click (equal to its first `ARM_SWING`), and one `DIG_START` for the whole of MS3's 58-swing hold. So a hold gives one read, the
      first, which is an honest click. A held swing can never be read.
+     > **CORRECTED 2026-11-14 (the seat's ruling 1 on the slice 1 readings; F-M27). What was claimed:** "fires once
+     > per click by construction", so "a hold gives one read". The seat approved that reason. **What was read** (slice
+     > 1 boot of `863bf10a`): a hold produced **two** click lines in M-HOLD and **three** in M-PROTECT. The client
+     > restarts the dig during a hold. **What actually protects a hold from mining is the CHARGE RULE, not the event
+     > count:** the restarted digs read `0.1500`, `0.0900` and `0.2700` (2, 1 and 4 ticks after a reset, at a
+     > 16.67-tick delay; they logged MISS because the aim was off the live spot), and a read below `1.0` can never be a HIT. The `0.8100` restart in M-HOLD (13 ticks) is not explained by a hold
+     > and stays UNREAD (a re-press is the likely cause, not asserted). The sentence above is kept as written.
   3. It carries what the hit test needs: the block, `getBlockFace()` and `getItemInHand()` (on the pinned API,
      `javap -p org.bukkit.event.block.BlockDamageEvent`). And it is the event slice 1 cancels anyway.
   4. It needs no per-player pairing state.
@@ -1227,3 +1239,57 @@ The gate's READING blocks are the account; these are the pointers.
   3 needed far more than the n − 1 = 1 or 2 HITs a patch holds before it breaks, so it would have broken mid-row
   into a 60-second regrowth. Amended before any boot: M-UNCHARGED and M-CHARGE-17 read on clicks beside the spot,
   and a standing rule makes an early break M-BREAK's reading.
+
+**From the slice 1 boot, 2026-11-14** (`863bf10a`; readings `9eb45815`, addendum `a95e56f6`, on `feat/mining-s1b`;
+`L<n>` is a line of that boot's `run/logs/latest.log`):
+
+- **F-M25: A RUN-SHEET COMMAND WITH A PLACEHOLDER IN IT GETS TYPED LITERALLY, AND THIS ONE COST A DEATH.** The sheet
+  gave M-RESPAWN's way back as `/execute in minecraft:overworld run tp @s <x> <y> <z−3> 0 0`. Ben typed it as
+  written (L225); it did nothing, and he left the nether with `/kill` (L226–L228), the one thing the staging said
+  must not happen. **The rule: every command on a run sheet is the literal command, filled in by whoever writes the
+  sheet from a reading already in hand** (the slot id is in the `MINING place` line), never a template. Where the
+  value is not known until the run, the sheet says to ask for it. **What the player data showed** (read-only,
+  `run/world/players/data/<uuid>.dat` against the 2026-11-14 backup): the Ability Stone (`rpg:build_stone`) and the
+  Nexus star (`rpg:nexus`) are still in Ben's inventory; **five iron pickaxes present before the run (four named, with
+  attribute modifiers, and one plain) are not.** Whether the death dropped them is UNREAD. Ben: *"questions 1-4 not
+  sure and skip"*. Nothing is restored or minted (the seat).
+- **F-M26: THE DEV PACK IS NOT RE-OFFERED AT LOGIN WHILE THE TOGGLE IS OFF, SO EVERY RECONNECT DROPS THE MODELS.**
+  After each reconnect the patch drew as *"purple and black squares"* (Ben) until `/rpg mining pack` ran again. That
+  is the designed behaviour with `mining.dev-pack-on-join: false` (M-PACK predicted no offer at LOGIN), and the gate's
+  relog rows did not account for it (the seat's miss). M-RELOG's show at 05:36:39 and M-LOGOUT's return at 05:38:11
+  reached a client without the models. **Before the next mining boot, Ben's local `run/plugins/Rpg/config.yml` gets
+  `mining.dev-pack-on-join: true`** (his file, not the repo default), which also lets the toggle's ON half be read.
+- **F-M27 (the seat's ruling 1, 2026-11-14): A HELD BUTTON RESTARTS THE DIG; THE CHARGE RULE, NOT THE EVENT COUNT,
+  KEEPS A HOLD FROM MINING.** §5.4's "fires once per click by construction" was false (dated note there): M-HOLD logged
+  two click lines and M-PROTECT three. The restarted digs read `0.1500`, `0.0900`, `0.2700`: 2, 1 and 4 ticks after a
+  reset at vanilla's 16.67-tick delay. **The fast-pickaxe consequence, to be solved before any pickaxe with a
+  non-vanilla attack speed ships (S1-T, §5.7):** if a held dig restarts after a gap of about 4 ticks, a pickaxe whose
+  full-charge delay is that short reads FULL on a held button and mines while held. **The client's restart gap must
+  be established from a reading when that slice is scoped, not from memory**; the three numbers above are ticks
+  since the last reset, not a measured restart interval. M-HOLD's `0.8100` restart (13 ticks) stays UNREAD.
+- **F-M28: THE DENIED ACTION BAR IS OVERWRITTEN BY THE HUD BEFORE IT CAN BE READ (a DEFECT, awaiting Ben).** Ben, Q14:
+  *"Yes but the HP/defense/Mana overode it faster than it could be read"*. `hud/StatsBarSystem` redraws each
+  player's action bar every **10 ticks** (`BAR_PERIOD_TICKS`) on a per-player repeating task, and **nothing in the repo
+  lets another message hold the bar** (read 2026-11-14). `StoneNotice`'s javadoc states the same collision and says
+  `QuiverNotice` lives with it; their gate rows read that the line is visible, not for how long. **Where the
+  "You need a pickaxe" message goes is Ben's ruling, asked by the seat and not yet given.** Not fixed.
+
+### CARRIED HAND ROWS: THE NEXT MINING GATE MUST INCLUDE THESE (the seat, 2026-11-14)
+
+Each is **NOT READ** in the slice 1 boot and is **never a pass**. They do not block slice 1's merge (the seat: the
+slice is reachable only through `Permissions.DEV`, and the packet-only display mechanism was read with its control
+in spike 1, MS6).
+
+1. **The miss sound plays** to the clicker only (M-MISS; audio was off, Q11).
+2. **An UNCHARGED click plays nothing** (M-UNCHARGED; Q13).
+3. **The break sound plays** (M-BREAK; Q17).
+4. **M-SERVER-LIST:** the displays are not server entities, with its `/summon` control (the results were not logged
+   or relayed).
+5. **M-SECOND-PLAYER:** each player sees their own patch (no second client).
+6. **The same-world respawn** re-shows the patch (M-RESPAWN's respawn half).
+7. **The join toggle's ON half:** `MINING pack offer` at LOGIN with `mining.dev-pack-on-join: true` (F-M26).
+8. **M-PLACE's refusal texts** (steps 1, 2 and 4).
+9. **M-FULL's final ground check** (`/execute if entity @e[type=minecraft:item,distance=..16]` reads "Test failed").
+10. **The deepslate digs normally after `/rpg mining remove`.**
+11. **Whether a death and respawn drops a server-offered pack** (the premise the M-RESPAWN addendum marks unchecked).
+12. **The sight halves of M-RELOG and M-LOGOUT, read WITH the pack loaded** (the toggle ON allows it).
