@@ -94,7 +94,7 @@ seat's.*
   `withering.yml`'s `immune` type key refuses today)?*
   > "Well come back to the wither effect"
 
-### THE SEAT'S READINGS OF THE GROWTH STAGES — THE SEAT'S, NOT BEN'S. SENT TO BEN, NOT YET CONFIRMED
+### THE SEAT'S READINGS OF THE GROWTH STAGES — THE SEAT'S WORDING, **CONFIRMED BY BEN 2026-11-15** (*"Yes it's correct"*, below)
 
 - **G1.** One counted Void death within the radius advances a Phage ONE stage. Stage 1 to stage 5 is four deaths,
   which is his *"Start with 4"*.
@@ -103,7 +103,8 @@ seat's.*
   stage-5 values. They explode near a target and do NOT split when killed.
 - **G4.** A stage 5 that is KILLED splits into two stage 1s. One that explodes does not (answer E).
 
-**Until Ben confirms them, every place below that leans on G1–G4 says so.**
+~~**Until Ben confirms them, every place below that leans on G1–G4 says so.**~~ **CONFIRMED 2026-11-15**: G1–G4
+now stand as ruled. Text below written before that date may still say "awaiting Ben"; this line governs it.
 
 ### THE SEAT'S MECHANISM RULINGS, 2026-11-15 (the seat's, stated in this file's words)
 
@@ -133,6 +134,60 @@ seat's.*
    model, light purple with pink flashes), and rules between that and a real `ShulkerBullet` after §7 F-S.
 7. **The Wither question is PARKED by Ben.** The Skreel's "Withered Mount" and any other wither-worded name now sit
    on Void mobs; that is a naming question for Ben and nothing more.
+
+### Ben, 2026-11-15, VERBATIM: the questions that blocked step R1
+
+*The seat's question, then Ben's words.*
+
+1. *Are the seat's four growth readings G1–G4 right?*
+   > "Yes it's correct"
+
+   **G1–G4 are CONFIRMED** (above). Answers Q14–Q17.
+2. *Does a stage 5's own death grow its two children, so they start at stage 2?*
+   > "No,"
+
+   Answers Q21: the children are born at stage 1.
+3. *Does any death split a stage 5 (a fall, another mob), or only a kill by a player or a summon?*
+   > "Any deaths"
+
+   Answers Q26. **Answer E still stands: a Phage that EXPLODES does not split.** "Any deaths" is every way a stage 5
+   can die; a self-destruct is not a death (§7 F-C), and E rules it out by name.
+4. *When a Phage grows a stage, does it heal to full or keep the same share of its health?*
+   > "Same share"
+
+   Answers Q19.
+5. *Is the Skreel's spider mount Void too?*
+   > "No it's no element"
+
+   Answers Q24. The mount has no element; it is in neither the mob file's `element` nor the vanilla table.
+6. *The seat offered this table of starting bodies from the old game, for him to tune later:*
+
+   | mob | size | speed | health |
+   |---|---|---|---|
+   | Knell | 1.6x | 0.6x | 480 in the old game / 360 in ours today |
+   | Phage stage 5 | about 3 blocks tall | 0.75x | 160 |
+   | Phage stage 1 | normal creeper size | 1.1x | 80 |
+   | Phalanx | normal size | 0.65x | 240 |
+   | Skreel rider | normal size | normal speed | 120 |
+   | Skreel mount | 1.5x | 1.3x | 120 |
+
+   > "Yes except the Phage will range from 1 block to 3 blocks in height. Speed
+   > will range from 1.5x to 0.5x"
+
+   **Ben did not choose between the Knell's two health values**, so **the seat rules that R1 leaves `knell.yml`'s
+   `max_health` as it ships (360)**. It stays a number for Ben (§3.R.5 K3). The Phage's height and speed are Ben's
+   words above; its health (80 and 160) is the table's, which he accepted.
+
+### THE SEAT'S RULINGS OWED FROM #177, AND FOR STEP R1, 2026-11-15
+
+8. **The Phalanx's projectile is our own small, invisible LIVING carrier with a display entity as its passenger,
+   never a `ShulkerBullet`.** The reason is a fact: our weapons reach only living entities
+   (`PaperCombatWorld.combatantsNear` keeps `LivingEntity` only, §7 F-S), so a real bullet would let every ability
+   pass through it, against Ben's L. *(Ruled after #177 merged; recorded here, as the seat directed, in the next
+   branch to touch this file.)*
+9. **The per-stage Phage BODY moves from R2 into R1** (§5.R): the Phage's body cannot be authored without it. In R1
+   the stage is set at spawn and nothing changes it.
+10. **R1 leaves `knell.yml`'s health as it ships** (answer 6 above).
 
 ---
 
@@ -919,27 +974,27 @@ rework: an answered question says where its answer is, and a new one is added at
 12. **OPEN.** If the server restarts mid-fight, is that fight simply lost?
 13. **SUPERSEDED.** It asked about the survey's order (§5.0). **Its successor:** is the order in §5.R right: bodies
     and elements first, then the whole Phage, then the Knell, the Phalanx, and the Skreel last?
-14. **AWAITING BEN — G1** (the seat's reading, RULINGS): one Void death in range advances a Phage one stage, so four
+14. **ANSWERED 2026-11-15, CONFIRMED** (RULINGS, the R1 questions, answer 1). **G1** (the seat's reading, RULINGS): one Void death in range advances a Phage one stage, so four
     take it from 1 to 5?
-15. **AWAITING BEN — G2:** one death advances every Phage below stage 5 in range, not only the nearest?
-16. **AWAITING BEN — G3:** stages 2–4 sit evenly between stage 1 and stage 5 in size, speed, health and blast, and
+15. **ANSWERED 2026-11-15, CONFIRMED** (answer 1). **G2:** one death advances every Phage below stage 5 in range, not only the nearest?
+16. **ANSWERED 2026-11-15, CONFIRMED** (answer 1). **G3:** stages 2–4 sit evenly between stage 1 and stage 5 in size, speed, health and blast, and
     they explode but never split?
-17. **AWAITING BEN — G4:** a stage 5 that is killed splits into two stage 1s, and one that explodes does not?
+17. **ANSWERED 2026-11-15, CONFIRMED** (answer 1). **G4:** a stage 5 that is killed splits into two stage 1s, and one that explodes does not?
 18. **OPEN.** When the Knell picks where to land, must it also be able to SEE the player it just hit from there, so it
     never lands behind a wall? (§3.R.1)
-19. **OPEN (ruling 5).** When a Phage grows a stage, does it heal to full, or keep the same fraction of its health?
+19. **ANSWERED 2026-11-15: "Same share"** (answer 4). When a Phage grows a stage, does it heal to full, or keep the same fraction of its health?
 20. **OPEN (ruling 5).** If a Void mob dies nearby while a Phage is already fusing, does that death still count?
-21. **OPEN.** When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
+21. **ANSWERED 2026-11-15: "No,"** (answer 2); the children start at stage 1. When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
     2? (§3.R.2)
 22. **OPEN.** Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
 23. **PARKED by Ben** (*"Well come back to the wither effect"*): should Wither damage-over-time land on these Void
     mobs? **The fact it waits on:** `withering.yml`'s `immune` list holds the type keys `wither_skeleton` and
     `wither`, so today it refuses the Knell, the Phalanx and the Skreel's RIDER, all wither skeletons. **It does not
     refuse the Skreel's mount (a spider) or the Phage (now a creeper).**
-24. **OPEN.** Is the Skreel's spider mount a Void mob too? Your note names the Skreel, and the mount is its own creature.
+24. **ANSWERED 2026-11-15: "No it's no element"** (answer 5). Is the Skreel's spider mount a Void mob too? Your note names the Skreel, and the mount is its own creature.
 25. **OPEN — a naming question only.** The mount is called "Withered Mount", and it now sits on a Void mob. Keep the
     name, or rename it? The same goes for any other wither-worded name in the fight.
-26. **OPEN.** Does ANY death split a stage 5 (a fall, `/kill`, another mob), or only a kill by a player or a summon?
+26. **ANSWERED 2026-11-15: "Any deaths"** (answer 3; answer E still stands, an explosion does not split). Does ANY death split a stage 5 (a fall, `/kill`, another mob), or only a kill by a player or a summon?
     The old Phage split only on a player's kill (§3.2).
 27. **OPEN — about the fight, not the Phage.** The growth is uncapped (answer D). Should split children count against the
     fight's mob caps, be refused at a cap, or be exempt as the old Lesser Phages were? (§6 C6)
