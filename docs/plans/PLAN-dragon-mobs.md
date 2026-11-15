@@ -1,0 +1,945 @@
+# PLAN — THE DRAGON-FIGHT MOBS: THE cfde822 SURVEY, AND BEN'S REWORK OF 2026-11-15
+
+> **READ THIS FIRST. THIS FILE HAS TWO LAYERS, AND THE LATER ONE GOVERNS.**
+> - **The REWORK, 2026-11-15** — the RULINGS block below, §3.R (four mobs), §4.2 (the capability table),
+>   §5 (the build order), §7 (facts from the pinned jar) and the QUESTIONS list. Ben redesigned the mobs, so **five
+>   mobs became four**: the Knell, the Phage (one name, five stages, on a CREEPER), the Phalanx, and the Skreel with
+>   its mount. **The Goldrot Goon and the wither-skeleton Lesser Phage are retired.**
+> - **The cfde822 SURVEY, 2026-11-06** — everything else: §1, §2, §3.1–§3.5, §4.1 and §5.0. **It is kept as the
+>   record of what the old game did and is NOT deleted.** Every number in it is a fact about cfde822, never adopted.
+>   Where the survey and the rework disagree, the rework governs, and the survey section carries a banner saying so.
+> - **Still docs only.** No Java, no content, no boot. Nothing below is built.
+
+## RULINGS
+
+*Ben's words are VERBATIM, his spelling included, copied from the seat's brief of 2026-11-15. Where the seat asked a
+question, the question comes first, then his words. The seat's own readings and rulings follow, marked as the
+seat's.*
+
+### Ben, 2026-11-15, VERBATIM: the rework
+
+**On the Knell:**
+> "The Knell's two main abilities, Knell Beam, and it's teleport are completely independent of
+> one another. The teleport is especially detrimental to Ranger players. Let's combine the two.
+> The Knell can only teleport when it's Knell Beam hits a target (The word "Target" is important
+> here because we will add a Summoner class later and we want it to teleport for summons too).
+> Instead of a Ranger Provoking a teleport, it will teleport shortly after it's Knell beam lands"
+
+**On the Phage and the Goldrot Goon:**
+> "Phage and Goldrot Goon, I'd like to combine these two simple mobs into a more complex and
+> unique mob. Instead of being a wither skeleton, I'd like this to be a Creeper base. We will
+> retexture it with a resource pack later. We will keep the name of Phage. The Larger Phage will
+> be about 3 blocks tall and very slow. When it gets close to a player it explodes dealing a lot
+> of damage. When killed it splits into 2 fast Phage's with low HP. When they get close to the
+> player they explode dealing a little damage. Here's the unique part. If enough Void mobs are
+> killed nearby a small phage, they will grow back into a big Phage, allowing them to split once
+> more."
+
+**On the Phalanx:**
+> "The Phalanx, there's a few problems with this one. The projectile is hard to see and even
+> when you do see it there's nothing the player can do about it. I'd like to make it's
+> projectile similar to the Shulker shot. Any attack destroys it. I'd also like to change the
+> colors from black to something more visible like light purple and pink flashes. I'm not too
+> familiar with the capabilities here with Shulker shots and the destruction. I'd rather not use
+> an actual shulker shot but if we have to it's okay."
+
+### Ben, 2026-11-15, VERBATIM: the seat's first follow-up questions
+
+- **A.** *Where does the Knell teleport to (the old one sidestepped 4-5 blocks)?*
+  > "The side step but I'd like to expand the range of it. I'm not sure how the old repo does
+  > it but a degree arc from the player would be nice. Maybe between 30 and 70 degrees."
+- **B.** *How long is "shortly"?*
+  > "The same time between the warning shot and the actual beam to keep the feeling if the
+  > mob. This should be a tunable number as well."
+- **C.** *Is there a warning before it moves?*
+  > "The hit itself is the warning"
+- **D.** *What stops the Phage snowball (each regrown big Phage splits again)?*
+  > "Nothing is in charge of the snowball, the players have to keep them in check. The ammount
+  > of Void mobs killed as well as the range from the Phage should be tunable numbers."
+- **E.** *When a big Phage explodes on its own, does it still split?*
+  > "No, it only splits when killed, not exploding"
+- **F.** *Can a player back away to cancel the explosion, like a normal Creeper?*
+  > "Yes but I might change my mind in testing"
+- **G.** *Does the explosion hurt other mobs?*
+  > "Only players and Summons"
+- **H.** *What counts as a "Void mob"?*
+  > "Void as in Void element. The Phage will be a Void element mob and it is fueled by fallen
+  > Void mobs. The Knell will also be a Void mob. The other two are Wither Mobs."
+
+  **The last sentence of H is SUPERSEDED the same day** by Ben's additional note below.
+- **I.** *How many deaths, how close, and from which causes?*
+  > "Start with 4, let's try 6 block radius. Any deaths."
+- **J.** *Names for the two sizes?*
+  > "Both are called Phage. The distinction is between size"
+- **K.** *Does the rest of the Phalanx stay (the blink and invisibility, the one-hit shield, the unfired bow)?*
+  > "Yes"
+- **L.** *Does "any attack destroys it" include area attacks that catch the projectile?*
+  > "Yes"
+
+### Ben, 2026-11-15, VERBATIM: the second round
+
+- **On A.** *The seat read: the Knell reappears on the circle around its TARGET, at the distance it stood, 30 to 70
+  degrees around, left or right.*
+  > "A. Yes that's correct. We will need checks to make sure it doesn't small in a wall,
+  > underground, or above ground as well."
+- **On I.** *The seat read: a Phage is a Void mob, so a Phage's death, a self-destruct included, counts toward a
+  nearby small Phage's growth.*
+  > "I. Yes, I have an idea for an easier way about this. 5 stages of growth. The large Phage
+  > is the 5th stage, the small Phage is the first. Only the 5th stage Phage splits. The small
+  > Phage grow each kill by a fraction of the size."
+- **An additional note:**
+  > "One additional note, I'd like to change the Phalanx and Skreel to Void mobs as well, so
+  > the whole fight is void. Also, normal Vanilla Enderman are also Void."
+- **On Wither.** *Should Wither damage-over-time now land on the Knell (a Void mob on a `wither_skeleton` body, which
+  `withering.yml`'s `immune` type key refuses today)?*
+  > "Well come back to the wither effect"
+
+### THE SEAT'S READINGS OF THE GROWTH STAGES — THE SEAT'S, NOT BEN'S. SENT TO BEN, NOT YET CONFIRMED
+
+- **G1.** One counted Void death within the radius advances a Phage ONE stage. Stage 1 to stage 5 is four deaths,
+  which is his *"Start with 4"*.
+- **G2.** One death advances EVERY Phage below stage 5 within the radius, not only the nearest.
+- **G3.** Stages 2–4 are in-between Phages: scale, speed, HP and explosion step evenly between the stage-1 and
+  stage-5 values. They explode near a target and do NOT split when killed.
+- **G4.** A stage 5 that is KILLED splits into two stage 1s. One that explodes does not (answer E).
+
+**Until Ben confirms them, every place below that leans on G1–G4 says so.**
+
+### THE SEAT'S MECHANISM RULINGS, 2026-11-15 (the seat's, stated in this file's words)
+
+1. **The Goldrot Goon is RETIRED as a mob.** Four mobs remain: Knell, Phage (one name, five stages), Phalanx, and
+   Skreel with its mount. The wither-skeleton Lesser Phage is gone.
+2. **All four are element `void`.** A mob's element is authored in its file and names an existing
+   `content/elements` id. A vanilla Enderman is Void and has no mob file, so the element also needs a content table
+   from vanilla entity type to element (`enderman: void`), which a mob file overrides. §3.R.0 says where that table
+   lives, what a creature in neither has, and what an element on a mob does on day one.
+3. **"Target" is a combatant, never specifically a player**, in every new mob capability: the beam's hit, the
+   teleport's anchor, the explosion's victims, the projectile's target. A summon then needs no rewrite. §7 F-E says
+   what the engine's notion of "hostile to mobs" is today.
+4. **The Knell's arrow dodge is REMOVED.** Its teleport follows its own beam landing on its target: a tunable delay
+   (ticks) that starts equal to the beam's telegraph, then a move to a point on the circle around the target at the
+   Knell's current distance, 30 to 70 degrees around (both bounds content), side chosen at random. A landing point
+   is VALID only if the body fits in passable space there, there is solid ground directly beneath, and it is near the
+   target's level (the tolerance is Ben's number). Try points across the arc on the chosen side, then the other
+   side; if none is valid the Knell does not move. **A beam that misses moves nothing.** This needs no pre-damage
+   hook.
+5. **The Phage's numbers are content**: the stage count (5); for stage 1 and stage 5 the body scale, speed, HP, and
+   the explosion's trigger distance, fuse, radius and damage, with stages between interpolated per G3; the split
+   count (2); the growth radius (6 blocks); which element's deaths count (void). **A stage is state on the live mob,
+   never a separate mob file.** Explosion damage is ours, priced by the mob-scaling rules, to players and summons
+   only, with NO block damage and no vanilla explosion damage.
+6. **The Phalanx's projectile is destroyed by ANY attack, area attacks included.** The seat leans to our own
+   projectile (a small hittable carrier that our weapons damage through the normal path, wearing a resource-pack
+   model, light purple with pink flashes), and rules between that and a real `ShulkerBullet` after §7 F-S.
+7. **The Wither question is PARKED by Ben.** The Skreel's "Withered Mount" and any other wither-worded name now sit
+   on Void mobs; that is a naming question for Ben and nothing more.
+
+---
+
+## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
+
+**Phase 1: SURVEY ONLY. No Java, no content, no boot, nothing ruled.** It covers the five mobs Ben picked on
+2026-09-29 (`PLAN-legacy-port.md` RULINGS): **the Knell, Skreel (with its spider mount), Phalanx, Phage (with the
+Lesser Phage it splits into) and Goldrot Goon.** For each it records what cfde822 did, what our mob schema would
+need to express it, and a proposed build order. Then it states the design constraints for the later dragon fight.
+**Ben rules every number and every order.**
+
+**Read against** (the survey; **the rework was read against master `cc2831ef`** (#188) and the pinned jar, §7):
+- master **`cd790dcc`** (#176, the docs tidy);
+- the old project `CreaperCrusher/Butterfly-SMP` at **`cfde822`** (`cfde8222ec2ac35661963776e9d8f0582bc4e12a`),
+  package `org.example1.butterflysmp`. It is not a local clone; every old file below was fetched with
+  `gh api "repos/CreaperCrusher/Butterfly-SMP/contents/<path>?ref=cfde8222ec2ac35661963776e9d8f0582bc4e12a"`.
+
+**What this builds on, not redoes:** `PLAN-legacy-port.md` §2.5 (Knell Beam), §3 (the five mobs, the spawn table,
+the Knell OLD vs NEW), §4 (today's schema), §6 (findings F8, F10, F13, F14, F15) and §9.1/§9.3 (the capability ids
+**MB1–MB5** and **E5**, reused here unchanged so the two files name one thing one way). Every fact carried over from it
+was re-read at cfde822. **Where the two disagree, §2 says so.** `PLAN-mob-scaling.md` supplies M4, M17, M21, M24,
+M25, M27 and §6 F15 / F22.
+
+**Citations** name a CLASS and a METHOD or a SECTION, never a line, and that includes the old repo. The short paths
+are `PLAN-build-system.md`'s: `P/` = `paper/src/main/java/io/github/butterflysmp/rpg/paper/`, `C/` =
+`core/src/main/java/io/github/butterflysmp/rpg/core/`, `content/` = `paper/src/main/resources/content/`.
+
+**HOW TO READ A NUMBER IN THIS FILE:**
+- A number labelled **cfde822** is a FACT about what the old code did. It is recorded, **never adopted**.
+- Every number a port would author reads **`___ (Ben)`**.
+- **Old mob HP was absolute**, set by `MobSpawnHelpers.applyVanillaMaxHp` onto the vanilla `MAX_HEALTH` attribute.
+  There was no gear score. Ours is a custom store × GS/100 (M4), so no cfde822 HP transfers as-is.
+- **Old mob timers in these classes are TICKS, not milliseconds.** Every timer below came from a `runTaskLater` /
+  `runTaskTimer` argument or a tick counter, so nothing needs the 50 ms/tick conversion. Seconds are shown beside
+  ticks for reading only (20 t = 1 s). *(The ms conversion in `PLAN-legacy-port.md` applies to weapon cooldowns.)*
+- **Old mob damage came in two kinds.** A vanilla melee or arrow hit on a player was ×5
+  (`CombatListener.onMobDamageMultiplier`, `Formulas.MOB_DAMAGE_MULTIPLIER = 5.0`) times a mob-level factor. A
+  scripted literal (the beam, blast, swirl, leap) was **exempt** from the ×5 (`CombatListener.runMobDamageMultiplierExempt`).
+  These five carry no `MOB_LEVEL`, so their level factor is 1 (*inferred*: `MobLootListener.onHostileMobDeathCoins`'s
+  comment says BOSS_NAME mobs never get a level; `Formulas.mobLevelDamageFactor` was not read). **Item-level scaling
+  (`GearScore.scalePower`) is a weapon fact and does not apply to any mob number here.**
+
+**READ vs INFERRED.** Every claim is marked:
+- *read*: I opened the method at the stated ref;
+- *inferred*: reasoned from code around it, not opened or not run;
+- *UNVERIFIED*: a Paper or vanilla behaviour not read from the pinned jar or the server jar.
+
+---
+
+## 1. WHAT I READ
+
+**At cfde822, in full** (13 files fetched to a scratch directory and read; the list is the `fetch` arguments):
+- `encounter/withered/`: `WitheredMobFactory`, `WitheredKnellBehavior`, `WitheredKnightSystem` (a facade),
+  `WitheredKnightUtil`, `WitheredMinionDeathListener`, `WitheredPhalanxBehavior`, `WitheredSpiderJockeyBehavior`;
+- `encounter/dragonfight/`: `DragonfightManager`, `DragonfightReinforcements`, `DragonfightFactionListener`,
+  `DragonfightCombatListener`;
+- `mob/MobSpawnHelpers`, `mob/MobLootListener`.
+
+**At cfde822, in part:** `CombatListener.onMobDamageMultiplier` / `runMobDamageMultiplierExempt`;
+`Formulas.MOB_DAMAGE_MULTIPLIER` (the constant only); `PlayerInteracts.getNearestPlayer`;
+`RangedListener.resolveBounceAwareKiller`; `CatalogueRegistry`'s mob list (`MobEntry` rows); the
+`spawnWitheredKnight` call in `WitheredCommanderEncounter` (grep only).
+
+**Found by** `gh api "repos/CreaperCrusher/Butterfly-SMP/git/trees/cfde8222ec2ac35661963776e9d8f0582bc4e12a?recursive=1"
+--jq '.tree[].path'` (323 paths) filtered with `grep -i -E 'dragon|knell|skreel|phalanx|phage|goldrot|goon|mob|wither|spider|minion|faction'`.
+**No class is named after any of the five mobs.** They live under their pre-rename names: Phage = `Grunt`, Goldrot
+Goon = `Rouge`, Phalanx = `Archer`, Knell = `Knight`, Skreel = `SpiderJockey` (*read*: `WitheredMobFactory`'s
+`spawnWithered*` methods and the PDC `BOSS_NAME` strings they set).
+
+**In this repo, at `cd790dcc`:** `content/mobs/knell.yml` (the only mob file; `ls content/mobs/`);
+`C/mob/MobDefinition`; `P/content/MobLoader`; `P/command/RpgCommand.spawnMob`; `P/content/ContentValidator.validateMobs`;
+`C/combat/ProjectileFlight.nearestMob`; `C/combat/Caster`'s record header; `C/mob/MobDamagePricing`'s class javadoc;
+`AbilityService.cast`'s signature; `storage/.../PlayerRepository` (that it exists). **Not read:** the
+`Scheduler` interface itself (only its `onEntity` call sites in `P/listener/RpgListeners`).
+
+---
+
+## 2. WHERE cfde822 DISAGREES WITH `PLAN-legacy-port.md`, OR ADDS TO IT
+
+None of these changes a tier in that file. Each changes what a port would have to reproduce.
+
+- **D1 — A WAVE IS CAPPED BY THE NEXT PHASE'S ROW.** `DragonfightManager.onDragonfightDamage` writes the new phase
+  index into its phase map and only then schedules `spawnPhaseWave(world, phaseToRun)` for the next tick (*read*: the
+  order of the two statements). Every `spawnWithered*` reads its cap through `currentDragonPhaseInWorld`, which reads
+  that map. So **wave 0 is capped by row 1, wave 1 by row 2, wave 2 by row 3** (*inferred* from the order; not run).
+  The legacy table's cap column is correct as a table; which row a wave meets was not stated. Every wave count fits
+  its row on its own, so a wave is clipped only by minions already alive from the trickle (*inferred*).
+- **D2 — THE GOON'S BLAST PROBABLY SPARES OTHER MINIONS.** The legacy file says the blast hits *"other minions and
+  players alike."* The source's own javadoc on `WitheredMinionDeathListener.onGoldrotGoonDeathExplode` says the
+  opposite: friendly fire between minions is cancelled, *"so the explosion can't chain through other Goons / Phages
+  / Archers."* The blast calls `le.damage(50.0, ws)` with the dead Goon as the source (*read*), and
+  `DragonfightFactionListener.onDragonfightFriendlyFire` cancels an `EntityDamageByEntityEvent` whose damager and
+  victim both carry `DRAGONFIGHT_MINION` (*read*). **Whether `LivingEntity.damage(double, Entity)` raises that event is
+  *UNVERIFIED*.** If it does, the blast hits players, Endermen and any untagged mob, and no minion. The dragon is
+  skipped by name either way (*read*).
+- **D3 — THERE WAS A FACTION WAR WITH ENDERMEN.** The legacy file records only *"no friendly fire between them."*
+  `DragonfightFactionListener.tickDragonfightFactions` also ran every 20 t while a fight was live (*read*):
+  - each registered minion with no target, a dead target or a friendly target was pointed at the **nearest Enderman
+    within 30 blocks**;
+  - each Enderman with no live target was pointed at the **nearest minion within 30 blocks**;
+  - `onEndermanSpawnDuringDragonfight` cancelled **NATURAL** Enderman spawns in the End inside |x| ≤ 200 and |z| ≤ 200
+    while any fight was active.
+- **D4 — THE PHALANX'S BLINK TRIGGER IS A BOX, NOT A RADIUS.** `schedulePhalanxBehavior` queries
+  `getNearbyEntities(loc, 5.0, 5.0, 5.0)`, which takes half-extents (*UNVERIFIED*: the Bukkit signature's meaning), so a
+  player anywhere in a 10 × 10 × 10 box triggers it. Creative and spectator players are skipped (*read*).
+- **D5 — THE PHALANX'S SHIELD EATS THE FIRST DAMAGE OF ANY KIND.** `onPhalanxShieldAbsorb` listens on
+  `EntityDamageEvent`, not the by-entity event (*read*). So a fall, fire, or a blast spends it as readily as a
+  player's hit. The legacy file says *"the first hit it takes."*
+- **D6 — THE KNELL'S DODGE ALSO CATCHES HITSCAN.** `onWitheredKnightDodgeProjectile` fires on a `Projectile` damager
+  **or** on any by-entity hit whose damage type is `ARROW` (the Boltor-style hitscan) (*read*). It always cancels the
+  damage. If both sidestep landings are blocked it **cancels and does not move** (`teleportKnightSideways` returns
+  early; *read*). So a Knell backed against a wall is immune to arrows and moves nowhere.
+- **D7 — THE SKREEL DOES NOT CIRCLE.** `circleAroundPlayer`'s own javadoc says it returns a point **along the
+  player-to-spider axis** at 12 blocks, *"so the spider doesn't teleport-circle"* (*read*). The legacy file says
+  *"Retreat circles to a stand-off band."* Also *read*: the loop starts **20 t after spawn**; the wind-up aborts if the
+  player leaves **6.4–18 blocks** (0.8 × 8 and 1.5 × 12); the landing hit's damager is **the rider, not the spider**.
+- **D8 — cfde822 CONTRADICTS ITSELF ON THE SPIDER'S SURVIVOR SPEED.** The class javadoc of
+  `scheduleWitheredSpiderJockeyBehavior` says the survivor gets *"default AI + speed buff"*. `convertSpiderToBrawler`
+  **divides** the speed by 1.3, removing the paired buff (*read*). The code governs what it did. Neither governs a port.
+- **D9 — `applyDragonfightFollowRange` IS ON `DragonfightManager`**, not on `MobSpawnHelpers` (*read*: both classes).
+  It sets `FOLLOW_RANGE` base to `DRAGONFIGHT_WITHER_FOLLOW_RANGE` = 64 on every minion, the spider included.
+- **D10 — COINS WERE PAID EVEN THOUGH DROPS WERE STRIPPED.** `DragonfightManager.onBossEntityDeath` clears drops and
+  XP on a tagged minion (*read*). `MobLootListener.onHostileMobDeathCoins` pays coins with `plugin.addTreasure`, a
+  direct credit rather than a drop (*inferred*: `addTreasure` not opened). Its table pays Knell 15, Goon 8, Phalanx 8,
+  Phage 5, Mount 5, Lesser Phage 2, **and keys the Skreel as `"§7Withered Spider Jockey"`**, which no mob carries, so
+  the Skreel falls through to the type default (*read*; legacy F10 says the same).
+- **D11 — THE CATALOGUE'S HP COLUMN IS STALE, CONFIRMED.** `CatalogueRegistry`'s `MobEntry` rows read Phage 300,
+  Goldrot Goon 150, Phalanx 400, Knell (listed as *"Withered Knight"*) 600, Skreel 200. The factory sets 160, 80, 240,
+  480, 120 (*read*, both). The factory is what spawned.
+
+---
+
+## 3. THE MOBS
+
+### 3.R THE REWORK, 2026-11-15 — FOUR MOBS. THIS GOVERNS; §3.1–§3.5 BELOW ARE THE cfde822 RECORD
+
+Each mob reads **cfde822 did / Ben's design now / what it needs**. Every number a port would author is in ONE list,
+§3.R.5 *Numbers for Ben*; nothing below picks one. The facts cited as **F-C**, **F-S**, **F-E** and **F-T** are §7's,
+read from the pinned jar.
+
+#### 3.R.0 Shared: the element on a mob, and "target"
+
+**What it needs (ruling 2):**
+- **A mob file names its element**: a new optional key, `element: void`, naming an existing `content/elements` id.
+  `MobDefinition` gains the component; `MobLoader.parse` reads it; `ContentValidator` names a dangling id at boot, as
+  it does a dangling `visual_id` (*inferred* placement, by analogy with the existing validator checks).
+- **A vanilla type needs a table**, because an Enderman has no mob file. **Proposed home: one new content file,
+  `content/mob_elements.yml`**, a map from a bare entity-type key to an element id (`enderman: void`), using the same
+  bare-key convention as `withering.yml`'s `immune` list. **It must NOT live in `content/mobs/`**: `MobLoader.loadAll`
+  parses every `*.yml` there as a mob, so a table file in that directory would load as a malformed mob (*read*:
+  `MobLoader.loadAll`'s filter is `n.endsWith(".yml")`).
+- **Resolution order:** the mob's `mob_id` → its file's `element`; else the entity's type → the table; else **no
+  element**. A creature in neither (a zombie, a cow, a player) has no element, and nothing counts it as Void.
+- **What an element on a mob does on day one: IDENTITY ONLY.** The Phage's growth asks "was the dead mob Void?"
+  and nothing else asks. **It does NOT type the mob's own damage and gives NO resistance** unless Ben rules so.
+  This matches `ElementDefinition`'s own javadoc: *"an element is never MATH. It multiplies nothing."* (*read*).
+- **Where the code reads it:** at the one death observation point (§7 F-E), on the dying mob's own thread, captured
+  before the body is gone, the same capture discipline `RpgListeners.onEntityDeath` already follows for Ignite.
+
+**Target (ruling 3):** every new capability takes a combatant as its target or victim, never a `Player`. **Today the
+engine's only "side" is a boolean, `player`**, on `HealthState` and `CombatantSnapshot`, and player-cast effects pick
+their victims as "not the caster, not a player" (§7 F-E). The mob capabilities here need the mirror: **"a combatant
+that is hostile to mobs"**, which today is exactly *a player*. **A Summoner would add a second member to that set**, so
+the predicate must be one named function, not a `player()` test repeated at each site.
+
+#### 3.R.1 The Knell
+
+| | |
+|---|---|
+| **cfde822 did** | §3.1: a beam every 100–200 t with a 12 t telegraph, and, separately, a sidestep 4–5 blocks on every arrow, with no cooldown. |
+| **Ben's design now** | **One ability, in two beats.** The beam as before. **When the beam HITS its target, the Knell teleports a tunable delay later** (B: starting equal to the telegraph). **No warning beyond the hit** (C). It lands on the circle around the target at its current distance, 30°–70° around, side random (A, ruling 4), and only on a VALID point (Ben's second-round A). **A miss moves nothing. Arrows no longer move it.** Element `void` (H). |
+| **what it needs** | MB1 body; MB3 + E5 for the beam, with **the beam reporting WHICH combatant it hit** (the teleport anchors on that target, not on a player); a **post-hit arc teleport with a landing check** (§4.2 N8), whose VALID test is §7 F-T. **MB4's pre-damage dodge is no longer needed by anyone.** |
+
+**The landing check, as ruled (ruling 4):** walk the arc on the chosen side, then the other; take the first VALID
+point. VALID = (1) the Knell's body fits there without collision, (2) solid ground directly beneath, (3) within a
+tolerance of the target's level. **Open for Ben: whether VALID also requires line of sight to the target**, so the
+Knell never lands behind a wall from the player it just hit (Q18).
+
+#### 3.R.2 The Phage — one name, five stages, on a creeper
+
+| | |
+|---|---|
+| **cfde822 did** | §3.2 and §3.3: two wither skeletons. The Phage split into 2 Lesser Phages on a player kill; the Goon exploded on a player kill. Neither grew. |
+| **Ben's design now** | **A creeper body** (retextured later). **Stage 5** is about 3 blocks tall, very slow, and explodes near a player for a lot. **Stage 1** is fast, low HP, and explodes near a player for a little. **Killed at stage 5, it splits into two stage 1s** (E: exploding does not split). **A Phage below stage 5 grows one stage per Void death in range** (I, G1–G2), so a regrown stage 5 can split again. **Nothing caps it** (answer D). A player can back away to cancel the fuse (F, *"I might change my mind in testing"*). The blast hurts **players and summons only** (G). Element `void`. |
+| **what it needs** | MB1 body fields **applied to a LIVE mob** (a stage change rescales it); a **stage** as state on the mob; a **proximity self-destruct** that is ours (trigger, fuse, back-away cancel, priced damage, no blocks); a **split on kill** that tells "killed" from "exploded"; **growth** fed by Void deaths in range. §4.2 N4–N6. |
+
+**Three jar facts shape the Phage (§7 F-C), and each is a reason it cannot simply be a vanilla creeper with numbers
+changed:**
+- **Vanilla's trigger distances are constants, not fields.** `SwellGoal` starts at 3 blocks (`distanceToSqr < 9.0`)
+  and cancels past 7 (`> 49.0`), centre to centre, and **neither follows `SCALE`**. Ruling 5 makes the trigger
+  distance content, so **the trigger has to be ours**, replacing vanilla's goal.
+- **`ignite()` defeats the back-away cancel.** An ignited creeper forces its swell direction up every tick
+  (`Creeper.tick`), so a fuse started with `ignite()` cannot be walked away from.
+- **A vanilla creeper explosion does not die, it is discarded**, and the blast hurts every entity in range before
+  any cancellable block event fires. So the explosion is ours too: cancel vanilla's at `ExplosionPrimeEvent` (the
+  creeper then survives with its swell reset), deal our own priced damage to players and summons, and remove the
+  Phage ourselves **with a reason we record**, so the split can ask "killed or exploded?".
+
+**Size:** a creeper is 0.6 × 1.7 blocks (§7 F-C), so *"about 3 blocks tall"* is a `SCALE` near 3 / 1.7. **The number is
+Ben's**; it is shown only so the quantity is named. The hitbox follows `SCALE` on a live mob (§7 F-C).
+
+**Open for Ben (ruling 5, plus three the rework raises):**
+- **Growing a stage: heal to full, or keep current HP as a fraction of the new max?** (Q19)
+- **A Void death while a Phage is mid-fuse: does it still count?** (Q20)
+- **Does a stage 5's own death count toward its two new children?** The children appear at the corpse, inside the
+  radius. If the split happens before the death is counted, each child is born at stage 2 (Q21).
+- **Do the children inherit the parent's gear score?** M21 already rules that slime and magma-cube children inherit
+  their parent's GS, and `RpgListeners.onMobTransform` does it through `nameplates.inheritGearScore` (*read*). The
+  split is not a vanilla transform, so it inherits nothing unless the split code passes it (Q22).
+
+#### 3.R.3 The Phalanx
+
+| | |
+|---|---|
+| **cfde822 did** | §3.4: a slow wither skeleton that never fires its bow, blinks away invisible when a player comes near, a non-entity dark swirl every 100 t that homes on the nearest player, and a shield that eats its first damage. |
+| **Ben's design now** | **Everything stays** (K) **except the swirl.** Its projectile becomes **something like a Shulker shot**: visible, slow, homing, and **destroyed by ANY attack, area attacks included** (L). **Light purple with pink flashes**, not black. A real Shulker bullet is acceptable if it must be, not preferred. Element `void` (Ben's additional note). |
+| **what it needs** | MB1 body; bow suppression; MB4 reduced to the **shield** and the **blink with invisibility**; a **destroyable homing projectile that seeks a combatant** (§4.2 N7). |
+
+**The seat's ruling between a real `ShulkerBullet` and our own carrier waits on §7 F-S.** In brief: a real bullet is
+destroyed by any damage that reaches it, but **our own weapons never reach it**, because our pipeline only damages
+living combatants, so an ability-cast area attack would pass straight through. It also hits for vanilla's 4 and
+applies Levitation, and moves on vanilla's block-axis path. **The case for our own carrier is a living body**, which
+our pipeline does hit. Detail in §7 F-S.
+
+#### 3.R.4 The Skreel, with its mount
+
+| | |
+|---|---|
+| **cfde822 did** | §3.5: a wither skeleton on a big spider; a retreat, wind-up, homing leap and slam; the survivor becomes a brawler. |
+| **Ben's design now** | **Unchanged in behaviour.** Element `void` (Ben's additional note). |
+| **what it needs** | MB1 and MB5, as before. **Open for Ben:** whether the spider MOUNT is also a Void mob (it is a separate entity, and the note names "Skreel"); and the name "Withered Mount" on a Void mob (Q24, Q25). |
+
+#### 3.R.5 NUMBERS FOR BEN — every unruled number in the rework, in one place
+
+**Every value in the "old" column is a FACT about cfde822 or about vanilla, recorded and never adopted.** Where the
+old mob had a different body (a wither skeleton where the Phage is now a creeper), the old number is not even the
+same quantity, and says so. **Ben has given three numbers, and they are starting values, still his to change:** the
+arc's 30° and 70° (A, *"Maybe"*), the 4 deaths (I, *"Start with 4"*) and the 6-block radius (I, *"let's try"*).
+Each row names the QUANTITY it sets.
+
+**Knell**
+
+| # | quantity | old value (fact, not adopted) |
+|---|---|---|
+| K1 | body `SCALE` | cfde822 1.6 |
+| K2 | movement-speed multiplier | cfde822 × 0.6 |
+| K3 | custom HP (× GS/100, M4) | cfde822 480 absolute; ships 360 in `knell.yml` |
+| K4 | equipment | cfde822: diamond armour, Prot I; diamond sword, Sharp IV, KB I, Fire Aspect I |
+| K5 | melee damage (`attack_damage`; **M17 NOTED, NOT DECIDED**) | cfde822: vanilla × 5 |
+| K6 | beam cycle, ticks between beams | cfde822 random 100–200 t |
+| K7 | beam telegraph, ticks | cfde822 12 t |
+| K8 | beam range, blocks | cfde822 40 |
+| K9 | beam hit tolerance (the target's box grown by), blocks | cfde822 1.0 |
+| K10 | beam damage (authored × GS/100 under M24, if Q-P12 so rules) | cfde822 35, `MAGIC`, ×5-exempt |
+| K11 | **teleport delay after the hit, ticks** — starts equal to K7 (B) | none: the old dodge was instant |
+| K12 | **arc's near bound, degrees** | Ben's starting value **30**; cfde822 had no arc (a 90° sidestep, 4–5 blocks) |
+| K13 | **arc's far bound, degrees** | Ben's starting value **70** |
+| K14 | **points tried per side** across the arc | none (cfde822 tried one point per side) |
+| K15 | **level tolerance**: how far above or below the target's feet a landing may be, blocks | none (cfde822 checked only the block and the one above) |
+
+**Phage** (stage-1 and stage-5 values; stages 2–4 interpolate per G3, awaiting Ben)
+
+| # | quantity | old value (fact, not adopted) |
+|---|---|---|
+| P1 | stage count | Ben: 5 (I, second round) |
+| P2 | **deaths per stage** (G1 reads 1, so 4 from stage 1 to 5) | Ben: *"Start with 4"* |
+| P3 | **growth radius**, blocks | Ben: *"let's try 6"* |
+| P4 | which element's deaths count | Ben: void (H) |
+| P5 | split count | cfde822 2 (Ben: 2) |
+| P6 | split spawn offset, blocks | cfde822 ±0.5 on x |
+| P7 / P8 | body `SCALE`, stage 1 / stage 5 | Ben: stage 5 *"about 3 blocks tall"* (a creeper is 1.7 tall, §7 F-C); cfde822's Lesser Phage 0.6 was a wither skeleton |
+| P9 / P10 | movement-speed multiplier, stage 1 / stage 5 | cfde822 Lesser × 1.10, Phage × 0.75 (wither-skeleton bodies) |
+| P11 / P12 | custom HP, stage 1 / stage 5 (× GS/100, M4) | cfde822 Lesser 80, Phage 160 (wither-skeleton bodies) |
+| P13 / P14 | **trigger distance**: how close a target must be to start the fuse, stage 1 / stage 5 | vanilla creeper 3 blocks, centre to centre (§7 F-C) |
+| P15 / P16 | **cancel distance**: how far away the target must get to cancel it (F) | vanilla creeper 7 blocks, or no line of sight (§7 F-C) |
+| P17 / P18 | **fuse, ticks**, stage 1 / stage 5 | vanilla creeper 30 t (`maxSwell`, §7 F-C) |
+| P19 / P20 | **blast radius**, blocks | vanilla creeper 3; cfde822 Goon a 4-block half-extent box |
+| P21 / P22 | **blast damage** (authored × GS/100 under M24, if Q-P12 so rules) | cfde822 Goon 50, ×5-exempt |
+
+**Phalanx**
+
+| # | quantity | old value (fact, not adopted) |
+|---|---|---|
+| X1 | custom HP | cfde822 240 |
+| X2 | movement-speed multiplier | cfde822 × 0.65 |
+| X3 | equipment | cfde822: Power V bow (never fired), shield in the off hand |
+| X4 | blink trigger, blocks | cfde822 a 5-block half-extent box (D4) |
+| X5 | blink landing distance, blocks | cfde822 6–16 |
+| X6 | blink attempts | cfde822 8 |
+| X7 | shot period, ticks | cfde822 100 t |
+| X8 | acquire range, blocks | cfde822 30 (re-acquire 35) |
+| X9 | **projectile speed**, blocks per tick | cfde822 0.2 (0.4 per 2 t); a vanilla Shulker bullet steps about 0.15 per tick (§7 F-S, *inferred*) |
+| X10 | **homing strength** per tick | cfde822 10% blend per step |
+| X11 | max flight, ticks / blocks | cfde822 400 t / 35 blocks |
+| X12 | hit tolerance, blocks | cfde822 1.2 half-extent box |
+| X13 | projectile damage (authored × GS/100 under M24, if Q-P12 so rules) | cfde822 40, ×5-exempt; a vanilla Shulker bullet 4 plus Levitation 200 t (§7 F-S) |
+| X14 | **projectile hit points**: how much damage destroys it | Ben: *"Any attack destroys it"*, so any damage at all; listed so the quantity is named |
+| X15 | what spends the one-hit shield | cfde822 the first damage of any kind (D5) |
+
+**Skreel and its mount** — unchanged from §3.5, every row still Ben's: mount HP (cfde822 120), mount `SCALE` (1.5),
+mount speed while paired (× 1.3), rider HP (120), rider gear (an iron spear), search range (50), stand-off band
+(8–12, stand-off 12), wind-up (15 t), leap timeout (40 t), landing reach (2.5), landing damage (35), knockback
+(0.7 horizontal, 0.4 vertical).
+
+---
+
+> **§3.1–§3.5 BELOW ARE THE cfde822 SURVEY, 2026-11-06, KEPT AS THE RECORD.** They describe five mobs, two of which
+> no longer exist as designed (the Goldrot Goon is retired; the Phage is now a creeper with stages). Where they
+> say "port ___ (Ben)", §3.R.5 is now the list.
+
+**Shared by all five at cfde822** (*read*: `WitheredMobFactory`, `DragonfightManager`):
+- **body:** a wither skeleton, except the Skreel's spider mount. `setRemoveWhenFarAway(false)`; Defense 0
+  (`MobSpawnHelpers.applyMobDefense(…, 0.0)`, which per its javadoc makes worn armour cosmetic: vanilla armour and
+  protection reductions are zeroed); follow range 64 (D9); every equipment drop chance set to 0;
+- **identity:** a PDC `BOSS_NAME` string with a `§` colour code, and a PDC `DRAGONFIGHT_MINION` byte. The spawn method
+  registers the entity in the per-world minion registry;
+- **AI:** vanilla, unless the mob's own section says otherwise. Targeting is vanilla's, plus D3's Enderman reconcile;
+- **every spawn is cap-checked** by `phaseCapFor(bossName, currentDragonPhaseInWorld)`, except the Lesser Phage. A
+  capped spawn returns null. Outside a fight the phase is −1, which clamps to row 0 (legacy F10's NPE).
+
+**The fight's spawn table** is in `PLAN-legacy-port.md` §3.0 and was re-read against
+`DragonfightReinforcements.spawnPhaseWave` / `spawnReinforcement` / `scheduleNext` and `PHASE_TYPE_CAPS`. **Every
+figure in it matches.** D1 adds which row a wave meets. Two details it omits (*read*):
+- the trickle starts at `initDragonfightEncounter` (phase 0, 160 t), before any threshold;
+- each trickle fire picks **one** anchor and jitters every spawn ±2 blocks around it. The anchors are 3 points on a
+  radius-15 ring **around (0, 0)**, rotated randomly (`findDragonfightGroupAnchors`); a void column is skipped.
+
+### 3.1 The Knell — SHIPS TODAY AS `content/mobs/knell.yml`, AS A NAME AND A HEALTH POOL
+
+| | cfde822 (`spawnWitheredKnight`, `WitheredKnellBehavior`, *read*) | port |
+|---|---|---|
+| **what it did** | A big, slow, armoured wither skeleton with vanilla melee. Every 5–10 s it locked a beam on a player, rooted itself for the telegraph, and fired. It sidestepped every arrow. | — |
+| **body** | wither skeleton; `SCALE` 1.6; speed × 0.6; HP 480; full diamond armour, Protection I on each piece; diamond sword with Sharpness IV, Knockback I, Fire Aspect I | scale ___ (Ben), speed ___ (Ben), HP ___ (Ben) (ships 360), gear ___ (Ben) |
+| **AI** | vanilla wither-skeleton melee; the beam loop runs beside it | — |
+| **attack: melee** | vanilla sword hit × 5 on a player. Its vanilla value with that sword is *UNVERIFIED* (not computed) | ___ (Ben); **M17 is NOTED, NOT DECIDED** |
+| **attack: beam** | **trigger:** a random 100–200 t (5–10 s) delay, then the vanilla target if it is a player, else the nearest non-creative, non-spectator player within 40. No player in range: wait another cycle. **Telegraph:** locks origin (its eye) and endpoint (the target at 0.6 × its height) once; bell resonate; a purple dust line (RGB 95,35,165, size 0.8) flashed at tick 0 and tick 9; `stopPathfinding()` every tick for **12 t** (0.6 s). **Fire:** block-clipped, a cyan dust line (RGB 40,230,235, size 1.4), bell + amethyst chime. **Hits only the locked player**, and only if that player's box grown by 1.0 still meets the segment. **Damage:** 35, `DamageType.MAGIC`, ×5-exempt. **Cooldown:** the next random 100–200 t starts after it fires. **Range:** 40. | every number ___ (Ben) |
+| **reaction: dodge** | **trigger:** any projectile damager, or any `ARROW`-typed by-entity hit (D6). Cancels the damage, deletes the projectile, and teleports 4–5 blocks (uniform random) perpendicular to the incoming direction, picking left or right at random and falling back to the other side if the landing is solid (`WitheredKnightUtil.isPassableLanding`: the block and the one above are non-solid). Soul and soul-fire particles and an amethyst step at both ends. **No cooldown.** Custom ranged weapons that dealt damage by direct `damage()` calls consulted it through `tryWitheredKnightDodge`. Melee, magic and summons are not dodged. | ___ (Ben), and whether at all |
+| **dragon fight** | waves 0/1/3 (wave 0 at 80% has none); trickled from phase 1; cap 0/2/4/5. Drops and XP stripped; 15 coins (D10) | — |
+
+**What ships here** (*read*, `knell.yml` and `RpgCommand.spawnMob`): `base_entity: wither_skeleton`,
+`display_name: "Knell"`, `max_health: 360`. **It spawns with NO weapon and NO armour**: `spawnMob` passes
+`randomizeData = (def == null)`, so a custom mob skips vanilla's spawn equipment (`PLAN-mob-scaling.md` §6 F16 records
+the same). It has vanilla scale and speed, no beam and no dodge, and it hits with a bare wither skeleton's
+`ATTACK_DAMAGE` × GS/100 and no ×5 (M4, §6 F15). The beam's relation to the Knell Beam weapon is
+`PLAN-legacy-port.md` §2.5, re-read here: same colours, range, hit radius and telegraph length; the mob's beam hits one
+locked target where the weapon pierces; the mob's `playSound` volume/pitch pairs are the weapon's swapped.
+
+### 3.2 Phage, and the Lesser Phage
+
+| | Phage (`spawnWitheredGrunt`, *read*) | Lesser Phage (`spawnLesserPhage`, *read*) | port |
+|---|---|---|---|
+| **what it did** | the fight's rank and file: an armoured wither skeleton with a stone sword | the split form: small, fast, unarmoured | — |
+| **body** | HP 160; speed × 0.75; one armour tier rolled per spawn, uniform over gold / chainmail / iron, all four pieces of that tier; stone sword | HP 80; `SCALE` 0.6; speed × 1.10; all armour cleared; stone sword | HP, scale, speed, gear ___ (Ben) |
+| **AI** | vanilla | vanilla | — |
+| **attacks** | vanilla melee × 5 only | vanilla melee × 5 only | ___ (Ben) |
+| **on death** | **split:** only when `resolveBounceAwareKiller` finds a player (the killer, or a PDC `LAST_BOUNCE_KILLER`). Spawns 2 Lesser Phages at the corpse, +0.5 and −0.5 on x. Despawns, `/kill` and non-player deaths do not split (`WitheredMinionDeathListener.onPhageDeathSplit`) | never splits | count, offset ___ (Ben) |
+| **dragon fight** | waves 6/4/2; trickled from phase 0; cap 10/8/8/7; **the storm's only spawn** (3 per trickle fire during a storm's grace or active window) | **bypasses the cap** (the method has no cap check); tagged `DRAGONFIGHT_MINION` and registered, so it counts toward the global registry but has no cap column of its own | — |
+
+Both carry the catalogue id `WITHERED_GRUNT` (*read*). Coins 5 and 2 (D10).
+
+### 3.3 Goldrot Goon
+
+| | cfde822 (`spawnWitheredRouge`, `onGoldrotGoonDeathExplode`, *read*) | port |
+|---|---|---|
+| **what it did** | a fast, gold-clad wither skeleton that explodes when a player kills it | — |
+| **body** | HP 80; speed × 1.25; golden chestplate with Projectile Protection IV (cosmetic under Defense 0, *inferred* from `applyMobDefense`'s javadoc); golden sword with Sharpness IV | HP, speed, gear ___ (Ben) |
+| **AI** | vanilla | — |
+| **attack: melee** | vanilla melee × 5 | ___ (Ben) |
+| **on death: blast** | **trigger:** a player kill as in §3.2 (`resolveBounceAwareKiller`). **Telegraph:** none; an `EXPLOSION_EMITTER` particle and a generic explode sound at the corpse. **Damage:** 50 to every living entity in a 4 × 4 × 4 half-extent box (`getNearbyLivingEntities(at, 4, 4, 4)`) except itself and any Ender Dragon, ×5-exempt, no block damage. **Who it hits:** D2. | radius, damage ___ (Ben); who it hits ___ (Ben) |
+| **dragon fight** | waves 3/3/2; trickled from phase 0; cap 4/4/3/2 | — |
+
+**Its relation to `GoldrotSet` is the name and the gold theme only** (`PLAN-legacy-port.md` §3.3; not re-read here,
+*inferred* still true because neither factory method nor death listener refers to it, *read*). Coins 8.
+
+### 3.4 Phalanx
+
+| | cfde822 (`spawnWitheredArcher`, `WitheredPhalanxBehavior`, *read*) | port |
+|---|---|---|
+| **what it did** | a slow wither skeleton with a bow it never fires. It warps away and turns invisible when a player gets close, shoots a slow homing dark swirl every 5 s, and a shield absorbs its first damage | — |
+| **body** | HP 240; speed × 0.65; bow with Power V in the main hand (*inferred* cosmetic, because every shot is cancelled; see AI); shield in the off hand; PDC `PHALANX_SHIELD` byte | HP, speed, gear ___ (Ben) |
+| **AI** | vanilla skeleton AI still runs and draws the bow; **every `EntityShootBowEvent` from it is cancelled** (`onPhalanxBowSuppress`). Which goal vanilla picks with a bow is *UNVERIFIED*. One loop every tick runs the blink and the swirl | — |
+| **behaviour: blink** | **trigger:** a non-creative, non-spectator player in the D4 box while it is **not** already invisible. Tries 8 random points 6–16 blocks out at the column's highest block + 1; the first passable one wins; none passes, no blink. **Effect:** squid-ink puffs at both ends, an enderman-teleport sound, `setInvisible(true)` and a PDC `PHALANX_INVISIBLE` byte. **Cooldown:** none, but it cannot blink again until it is visible | every number ___ (Ben) |
+| **attack: swirl** | **trigger:** a tick counter reaches 100 t (5 s); target the nearest non-creative, non-spectator player within 30. No target: the counter resets and it tries again in 100 t. Firing **clears invisibility**. **Telegraph:** a wither-ambient sound at launch; no wind-up. **Flight:** not an entity. Starts at its eye aimed at the target's eye; moves 0.4 blocks every 2 t; each step blends 10% toward the target's eye and renormalises; re-acquires the nearest player within 35 if the target is lost; three squid-ink particles in a rotating triangle per step. **Ends** on a solid block, past 35 blocks from its start, after 200 steps (400 t), or when the Phalanx dies. **Hit:** the first living entity within a 1.2 half-extent box that is not itself, not the dragon and not a minion; **players and non-minion mobs alike.** **Damage:** 40 via `damage(40.0, ws)`, ×5-exempt | every number ___ (Ben) |
+| **reaction: one-shot shield** | the first `EntityDamageEvent` of any cause while it holds `PHALANX_SHIELD` is cancelled; shield-break sound; off hand cleared; byte removed (D5) | ___ (Ben), and what spends it ___ (Ben) |
+| **dragon fight** | waves 0/2/3; trickled from phase 1; cap 0/3/4/4. Coins 8 | — |
+
+### 3.5 Skreel, with its Withered Mount
+
+| | cfde822 (`spawnWitheredSpiderJockey`, `WitheredSpiderJockeyBehavior`, *read*) | port |
+|---|---|---|
+| **what it did** | a wither skeleton riding a big spider. The pair keeps 8–12 blocks off a player, winds up, leaps in a homing arc, and slams down. If either dies, the other becomes an ordinary brawler | — |
+| **body: mount** | spider; `BOSS_NAME` "§8Withered Mount"; HP 120; `SCALE` 1.5; speed × 1.3 while paired; **no catalogue id, no equipment**; follow range 64 | every number ___ (Ben) |
+| **body: rider** | wither skeleton; "§7Skreel"; catalogue `WITHERED_SPIDER_JOCKEY`; HP 120; iron spear in the main hand, no enchants (its comment: the leap's damage is scripted, the spear is for melee after a dismount); speed untouched. Mounted with `spider.addPassenger(ws)` | HP, gear ___ (Ben) |
+| **AI** | **vanilla targeting suppressed:** every tick, `setTarget(null)` on both. Target is the nearest non-creative, non-spectator player within 50 blocks of the spider. No target: stop and reset to RETREAT. A target change resets to RETREAT. A four-state loop, every tick from 20 t after spawn | — |
+| **RETREAT** | if the player is 8–12 blocks away, go to WINDUP; else pathfind (speed arg 1.6) to the point 12 blocks from the player along the player-to-spider axis (D7) | ___ (Ben) |
+| **WINDUP (the telegraph)** | stop; on entry a spider-ambient sound and 15 crit particles. If the player leaves 6.4–18 blocks, back to RETREAT. After **15 t** (0.75 s) launch: horizontal speed = horizontal distance / 28 (a nominal 28 t flight), vertical 1.2, spider-hurt sound | ___ (Ben) |
+| **LEAP** | every tick, re-aim the horizontal velocity at the player at that same speed (homing); keep the vertical. **Lands** when it touches ground after leaving it. **Aborts** to RETREAT if, once airborne, its horizontal speed falls below half the launch speed ("stuck"), or after **40 t** (2 s) | ___ (Ben) |
+| **LAND: the hit** | if the player is within 2.5 blocks of the spider and not creative or spectator: **35** damage with **the rider as damager**, ×5-exempt; knockback 0.7 horizontal away from the spider, 0.4 vertical; a crit sound. Then RETREAT. **Cooldown:** none beyond the loop; the next leap needs a fresh RETREAT → WINDUP | every number ___ (Ben) |
+| **pair break** | the mount dies: the rider leaves the vehicle and `setAI(true)` (a no-op, *inferred*: AI was never disabled). The rider dies: the spider stops pathing, `setAI(true)`, and its speed is divided by 1.3 (D8). The loop ends either way | ___ (Ben) |
+| **dragon fight** | 2 pairs in wave 2; trickled from phase 2; cap 0/0/3/4, **counted by Skreels**, so it caps pairs. Both entities are tagged and registered. Coins: mount 5, Skreel the type default (D10) | — |
+
+**One vanilla fact bites the spear:** what a spear does when a mob wields it is *UNVERIFIED* (`PLAN-legacy-port.md`
+§6 F8).
+
+---
+
+## 4. WHAT OUR MOB SCHEMA CAN SAY TODAY
+
+**The whole schema is four fields** (*read*): `MobDefinition(id, baseEntity, displayName, maxHealth)`, filled by
+`MobLoader.parse` from `base_entity`, `display_name` and `max_health`; the id is the filename. **`MobDefinition` has 8
+constructor call sites**: 5 in `MobRegistryTest`, 2 in `MobSeedingTest`, 1 in `MobLoader` (counted with
+`grep -rn 'new MobDefinition(' --include=*.java .` piped to a per-file count, at `cd790dcc`). Its own javadoc says it
+is *"Shaped to grow. {@code attackDamage} and the rest of the stat block become further components."*
+
+**What a content file can and cannot express, read from the Knell:**
+- **CAN:** which vanilla entity; its real CustomName (MiniMessage); its custom HP pool, which is uncapped (the
+  `knell.yml` comment), and × GS/100 under M4 with GS from M25 (overworld 100, Nether 200, End 300 within 1,000 blocks
+  of (0, 0)).
+- **CAN, by omission:** vanilla AI and vanilla targeting, because nothing replaces them.
+- **CANNOT:** equipment (it spawns bare, §3.1), scale, speed, attack damage, follow range, any timed behaviour, any
+  reaction to damage, anything on death, a mount, a faction, a drop table.
+- **ONE WAY IN:** `/rpg spawn <id>` is the only writer of `mob_id` (`RpgCommand.spawnMob`, *read*). There is no
+  natural spawn and no spawner.
+
+**Engine facts that bite** (*read* unless marked):
+- **Homing skips players.** `ProjectileFlight.nearestMob` has `if (candidate.state().player()) continue;`. A
+  mob-cast homing bolt reusing the projectile cast could not seek a player (legacy F14).
+- **The cast pipeline takes a snapshot, not a player.** `AbilityService.cast(CombatantSnapshot caster, …)`. Every
+  paper caller found (`P/build/StoneCaster`, `P/command/RpgCommand`) is player-driven (*inferred* from a grep for
+  `.cast(` in `paper/src/main/java`; whether a mob snapshot runs end to end is not known).
+- **Mob damage pricing is M24's:** a custom mob's hit is authored × GS/100, but no authored field exists, so every
+  scripted mob hit is unpriced (legacy F13).
+
+### 4.1 Each capability, tiered — THE cfde822 SURVEY'S TABLE, SUPERSEDED BY §4.2, KEPT AS THE RECORD
+
+**(a)** content-only, expressible in YAML today. **(b)** an engine capability: a new field or handler in an existing
+system. **(c)** a new system. The ids are `PLAN-legacy-port.md` §9.1's.
+
+| capability | needed by | tier | note |
+|---|---|---|---|
+| name + HP on a vanilla body | all five, as six files | **(a)** | the Lesser Phage and the mount are their own files |
+| equipment: main hand, off hand, four armour slots; enchants on them; drop chance 0 | Knell, Phage, Goon, Phalanx, Skreel | **(b) MB1** | the per-spawn **random armour tier** of the Phage is a small extra: a pick-one list |
+| `SCALE`, `MOVEMENT_SPEED` multiplier, `FOLLOW_RANGE` | Knell, Lesser Phage, mount; speed on four | **(b) MB1** | `Attribute.SCALE`, `MOVEMENT_SPEED`, `FOLLOW_RANGE` exist in the pinned jar (`PLAN-legacy-port.md` §1, javap; runtime behaviour *UNVERIFIED*) |
+| `attack_damage` | all five's vanilla melee | **(b) MB1** | **closes M17 only if Ben rules it** (NOTED, NOT DECIDED) |
+| suppress the vanilla bow shot | Phalanx | **(b)** | one listener keyed on `mob_id` |
+| on death: spawn N of mob id X | Phage | **(b) MB2** | must name its kill condition (player kill only, at cfde822) |
+| on death: an area hit | Goon | **(b) MB2** | its price is legacy Q-P12; who it hits is D2 |
+| a timed attack at a player: lock, telegraph, root, fire | Knell beam | **(b)/(c) MB3 + E5** | MB3 is the runner (a periodic cast by a mob); E5 is the aim-locked wind-up, shared with the Knell Beam weapon |
+| a homing bolt that seeks players | Phalanx swirl | **(b)** inside MB3 | needs a player-seeking mode beside `nearestMob`'s skip (legacy F14) |
+| a pre-damage reaction: cancel + sidestep | Knell dodge | **(c) MB4** | it must see custom weapons' hits too, which today resolve through our own pipeline, not vanilla projectiles (*inferred*) |
+| a pre-damage reaction: one-shot shield | Phalanx | **(c) MB4** | the same hook as the dodge |
+| proximity blink + invisibility, revealed on attack | Phalanx | **(c) MB4** | `LivingEntity.setInvisible` exists in the jar (legacy §1) |
+| a mounted pair, spawned together, with survivor conversion | Skreel + mount | **(c) MB5** | `Entity.addPassenger` exists in the jar (legacy §1) |
+| a movement state machine (retreat, wind-up, leap, land) | Skreel | **(c) MB5** | cfde822 used pathfinder `moveTo` plus `setVelocity` every tick |
+| faction: no friendly fire among fight mobs; war with Endermen | all five | **(c), the fight's** | it is fight state, not a mob field (§6 C4) |
+| drops/XP stripped, coin payout | all five | **(c), the fight's** | there is no coin or drop table for mobs here today (*inferred*: no `drops` key in `MobLoader`) |
+
+### 4.2 THE REWORK'S CAPABILITY TABLE, 2026-11-15 — FOUR MOBS. THIS GOVERNS
+
+Tiers as §4.1: **(a)** content only; **(b)** a new field or handler in an existing system; **(c)** a new system. The
+MB/E ids are `PLAN-legacy-port.md` §9.1's; **N1–N8 are new here.**
+
+**What falls away:**
+
+| capability | was needed by | why it goes |
+|---|---|---|
+| ~~MB4 pre-damage reaction: cancel + sidestep~~ | the Knell's dodge | ruling 4: the dodge is removed. **The teleport now follows the beam's hit**, so no hook before damage is needed |
+| ~~MB2 on-death area hit~~ | the Goldrot Goon's blast | ruling 1: the Goon is retired. Its idea lives on as the Phage's self-destruct (N4), which fires **alive and near a target**, not on death, and is re-priced |
+| ~~the wither-skeleton Lesser Phage as its own file~~ | the Phage's split | rulings 1 and 5: a stage is state on one mob, never a separate file |
+| ~~the Phage's random armour tier; the Goon's gold gear~~ | Phage, Goon | creeper bodies wear nothing |
+| ~~the non-entity swirl~~ | Phalanx | replaced by N7, a projectile that can be hit |
+
+**What stays, and what is new:**
+
+| id | capability | needed by | tier | note |
+|---|---|---|---|---|
+| — | name + HP on a vanilla body | all four (five files with the mount) | **(a)** | ships today for the Knell |
+| **MB1** | body fields: `SCALE`, speed multiplier, follow range, equipment, `attack_damage` if M17 is ruled | all four | **(b)** | **the Phage needs them applied to a LIVE mob**, not only at spawn: a stage change rescales it, and `SCALE` refreshes the hitbox live (§7 F-C) |
+| **N1** | **element on a mob**: `element:` in the mob file | all four | **(b)** | one optional component and one validator check (§3.R.0) |
+| **N2** | **element on a vanilla type**: `content/mob_elements.yml` | Endermen (Phage growth) | **(b)** | a new small content file and loader; a mob file overrides it (§3.R.0) |
+| **N3** | **"hostile to mobs" as one named predicate** over combatants | every N below | **(b)** | today it is `player()` (§7 F-E); a Summoner adds to it in one place |
+| **MB3 + E5** | a mob's timed beam: lock, telegraph, root, fire | Knell | **(b)/(c)** | as before, **plus it reports which combatant it hit**, which N8 needs |
+| **N8** | **post-hit arc teleport with a landing check** | Knell | **(b)**, on MB3 | a scheduled move a delay after the hit; VALID per ruling 4 via §7 F-T's collision API |
+| **N4** | **proximity self-destruct, ours**: a content trigger distance, fuse, back-away cancel; damage priced by mob-scaling to players and summons only; no blocks; the mob removed with a recorded reason | Phage | **(c)** | replaces vanilla's `SwellGoal` and cancels vanilla's explosion (§7 F-C); `MobGoals` exists in the jar (`PLAN-legacy-port.md` §1) |
+| **N5** | **growth stages fed by nearby deaths**: a stage on the mob (PDC), advanced by element-`void` deaths within a radius | Phage | **(c)** | listens at the one death point (§7 F-E) **and** at N4's own detonation, because a vanilla-style explosion is not a death |
+| **N6** | **split on kill**: at stage 5, a KILL (never a self-destruct) spawns N of the same mob at stage 1 | Phage | **(b)** | MB2's "spawn N of an id", narrowed; it needs N4's recorded reason to tell killed from exploded |
+| **N7** | **a destroyable homing projectile that seeks a combatant** | Phalanx | **(c)** | the seat rules real bullet vs our carrier after §7 F-S; either way the homing must seek N3's set, the reverse of `ProjectileFlight.nearestMob`'s player skip (legacy F14) |
+| **MB4** (reduced) | the one-shot shield; the proximity blink with invisibility | Phalanx | **(c)** | the dodge half is gone, so MB4 is the Phalanx's alone |
+| — | bow suppression | Phalanx | **(b)** | unchanged |
+| **MB5** | the mounted pair and its movement state machine | Skreel + mount | **(c)** | unchanged |
+| — | faction, drops, coins | the fight | **(c), the fight's** | unchanged; §6 |
+
+---
+
+## 5. BUILD ORDER — SMALLEST FIRST. BEN RULES THE ORDER
+
+### 5.R THE REWORK'S ORDER, 2026-11-15. THIS GOVERNS
+
+Each step names what it unlocks and its gate rows **in outline** (each gate is written when its numbers are ruled).
+**Every row declares its game mode** (`verification.md`, *THE CREATIVE-DIVERGENCE REGISTER*), and **vanilla's swell
+skips creative and spectator targets** (§7 F-C), so a creative bench reads no Phage row. **"AUTO-able"** marks a row
+whose prediction is server-side only, so `/rpg selftest` could drive it under an amendment committed before the boot
+(`verification.md`, *AN AUTO READING IS A READING OF THE SERVER*); everything a player sees or feels stays Ben's.
+
+1. **R1 — MB1 body fields + N1 element on a mob + N2 the vanilla table.** Core test first, then `MobLoader`
+   (`MobDefinition` has 8 constructor call sites, §4). **Unlocks:** all four bodies inert, and every mob's identity
+   for growth. *Rows:* `/rpg spawn` each mob in the End and the overworld (M25's 300 against 100); `SCALE`, speed and
+   HP read back; an Enderman and a Knell resolve to `void`, a zombie to none. **AUTO-able:** spawn, attribute and
+   element reads. **Ben's:** how each body looks.
+2. **R2 — the Phage's stages + N6 the split on kill.** A stage on the live mob, its body set from P7–P12. **Unlocks:**
+   a Phage that can be killed into two stage 1s. *Rows:* spawn at stage 5, kill it → two stage 1s; spawn at stage 3,
+   kill it → nothing; a death by `/kill`, a fall or another mob → as Ben rules Q26. **AUTO-able:** the kill (`Player#attack`) and
+   the count of children. **Ben's:** that the split reads as one creature becoming two.
+3. **R3 — N3 + N4, the Phage's self-destruct.** **Unlocks:** the Phage as a threat. *Rows:* approach to inside P13
+   → fuse; back out past P15 → cancel (F); stand → blast; the damage on a player is P21 × GS/100; **no block broken;
+   no mob hurt**; a stage 5 that explodes does **not** split (E). **AUTO-able:** the damage line, the absence of
+   children, a mob's HP unchanged. **Ben's:** the back-away feel, the swell's look and sound.
+4. **R4 — N5, growth.** **Unlocks:** the snowball (answer D). *Rows:* four Void deaths within P3 take a stage 1 to 5 (G1);
+   one death advances two Phages at once (G2); a death at P3 + 1 does not count; an Enderman's death counts (H); a
+   zombie's does not; a self-destruct counts (second-round I). **AUTO-able:** all of those, by seeding and killing.
+   **Ben's:** what growing looks like.
+5. **R5 — MB3 + E5, the Knell's beam**, reporting its hit. **Unlocks:** the Knell's attack, and E5 for the Knell Beam
+   weapon (`PLAN-legacy-port.md` §9.2 step 5). *Rows:* the telegraph roots it; a hit lands K10 × GS/100; a miss lands
+   nothing. **AUTO-able:** the damage line. **Ben's:** the telegraph and the beam as seen.
+6. **R6 — N8, the post-hit teleport.** **Unlocks:** the whole Knell. *Rows:* after a hit, it moves K11 ticks later
+   to a point K12–K13 degrees around at its distance; a miss moves nothing; an arrow moves nothing; boxed in (every
+   arc point walled) it stays put; never inside a block, under the floor or in the air. **AUTO-able:** the position
+   before and after, its angle and distance from the target, and the block checks. **Ben's:** whether it reads fair
+   to a Ranger.
+7. **R7 — the Phalanx: N7 the projectile, MB4 (reduced), bow suppression.** **Unlocks:** the whole Phalanx. *Rows:*
+   the shot homes on its target; one melee hit, one arrow, one ability burst and one Boltor ray each destroy it (L);
+   it is light purple with pink flashes; the shield eats the first damage; the blink. **AUTO-able:** destruction by
+   each attack type, the damage line. **Ben's:** the colours and whether it is now easy to see.
+8. **R8 — MB5, the Skreel and its mount.** Unchanged, last, for the same reasons as before.
+
+**Why this order:** R1 is every mob's prerequisite. The Phage comes next and whole (R2–R4), because it is the fight's
+most numerous mob and the most new mechanism, and because each of its three steps is playable alone. The Knell's two
+steps follow, the beam before the move that depends on its hit. The Phalanx needs N3 (from R3) for its projectile's
+target. The Skreel is still last: the only pair, the only state machine, the only spear.
+
+### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
+
+This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.
+
+1. **S1 — MB1, mob body fields** (equipment, scale, speed, follow range, and `attack_damage` if M17 is ruled). Core
+   unit test first, then `MobLoader`; 8 call sites (§4). **Unlocks:** Phage, Lesser Phage and Goldrot Goon as nearly
+   whole mobs (all three are vanilla AI at cfde822); the Knell's body; the mount's and the Phalanx's bodies, inert.
+2. **S2 — MB2, on-death effects** (spawn N of an id; an area hit). **Unlocks:** the Phage split and the Goon blast,
+   so the fight's wave-0 mobs are complete. Gated on the blast's price (legacy Q-P12) and on who it hits (Q4 below).
+3. **S3 — MB3 + E5, a mob's timed attack with an aim-locked telegraph.** **Unlocks:** the Knell's beam, and E5 for the
+   Knell Beam weapon (legacy §9.2 step 5) for free.
+4. **S4 — MB4, pre-damage reactions + blink.** **Unlocks:** the Knell's dodge and the Phalanx's shield, which share one
+   hook, and the Phalanx's blink. *Differs from legacy §9.3*, which split the dodge (step 3) from the Phalanx (step 4):
+   the shield and the dodge are the same hook, so building it once is the smaller slice.
+5. **S5 — the Phalanx's swirl**: MB3 with a player-seeking homing mode, plus bow suppression. **Unlocks:** the whole
+   Phalanx.
+6. **S6 — MB5, the mounted pair and its state machine.** **Unlocks:** the Skreel. Last, because it is the only pair,
+   the only state machine and the only spear.
+
+**Why this order:** each step adds one capability; it follows the old fight's escalation (wave 0 is Phages and Goons,
+wave 1 adds Phalanx and Knell, wave 2 adds Skreels); and S1–S2 give the fight its most numerous mobs before any
+scripted behaviour. **The dragon fight itself is its own thread, after these**, and the faction and drop rows of §4.1
+belong to it.
+
+**Each mob slice's gate** carries `/rpg spawn <id>` rows in the End and the overworld, so M25's 300 against 100 is
+read, not assumed (legacy §8). **The game mode is declared on every row** (`verification.md`, *THE
+CREATIVE-DIVERGENCE REGISTER*): every cfde822 behaviour above skips creative and spectator players, so a creative
+bench reads none of them.
+
+---
+
+## 6. DESIGN CONSTRAINTS FOR THE LATER DRAGON FIGHT
+
+**Ben's direction, as briefed (intent, not his words verbatim):** one **TEMPORARY WORLD per group** now, built so it
+can move to **a proxy plus a per-fight server** later. The fight does not care where it runs. The **arena is a
+template file**. **Fight state lives in the fight**, not in static singletons (CLAUDE.md invariant 3). **Player saving
+stays behind its storage port** (`PlayerRepository`).
+
+Each constraint below says what it forbids in practice, and what cfde822 did instead (*read* unless marked). The
+mobs above do not need the fight to exist, but **every mob capability must be built so the fight can own it.**
+
+- **C1 — ONE TEMPORARY WORLD PER GROUP.**
+  - **Forbids:** finding the fight by dimension or by a fixed world (`Environment.THE_END`, `getEnderDragonBattle()`,
+    `getServer().getWorlds()` scans); fixed coordinates as fight geometry ((0, 0), the radius-15 anchor ring, the
+    ±200 Enderman box); one fight per world assumed by a map keyed on world UUID shared across fights; a mob behaviour
+    that reads anything outside its own world.
+  - **cfde822 did:** all of those. The fight was the vanilla End's dragon, started through the `DragonBattle` respawn
+    ritual (`spawnDragonfightEncounter`), anchored at (0, 0), and its registries were keyed by world UUID.
+  - **And it meets M25** (*inferred*): GS is read from the dimension and the distance from (0, 0). A temporary world's
+    environment and coordinates would set the minions' GS. Whether the fight sets its own GS through M3's
+    `GearScoreSource` seam is Q9.
+- **C2 — THE FIGHT DOES NOT CARE WHERE IT RUNS (proxy + per-fight server later).**
+  - **Forbids:** `Bukkit.getOnlinePlayers()` or `world.getPlayers()` as the roster (invariant 3); server-wide
+    broadcasts (cfde822 used `getServer().broadcast` for start, fail and death); reading another fight's state; a fight
+    that assumes the player's profile was loaded by this JVM before the fight began.
+  - **Requires** (*inferred*): the roster is handed to the fight when it starts; getting players in and out is one
+    seam (a local teleport now, a proxy transfer later); the fight reports its result as data, not as side effects on
+    shared server state.
+- **C3 — THE ARENA IS A TEMPLATE FILE.**
+  - **Forbids:** using vanilla End generation, pillars or crystals as the arena; anchor points, rings and boxes as Java
+    literals; the spawn table (waves, caps, cadences, the storm's Phage-only rule) in Java. **Invariant 2 already says
+    the spawn table is content**, and the template is where its positions live.
+  - **cfde822 did:** every one as a Java constant (`PHASE_TYPE_CAPS`, `DRAGONFIGHT_REINFORCEMENT_PERIOD_TICKS`,
+    `DRAGONFIGHT_PILLAR_RING_RADIUS`, the `switch` in `spawnPhaseWave`).
+- **C4 — FIGHT STATE LIVES IN THE FIGHT.**
+  - **Forbids:** fight state in a plugin-wide manager or a static; a mob's behaviour loop that outlives its fight; a
+    cleanup that sweeps "every tagged entity in the world" rather than the fight's own list; `BukkitRunnable` or the
+    Bukkit scheduler (banned; every loop goes through `Scheduler`, and a per-mob loop through `onEntity`).
+  - **cfde822 did:** one manager held 7 `Map` fields of per-fight state keyed by dragon or world UUID, and
+    `DragonfightReinforcements` an 8th (counted by grepping `private final Map<` in both fetched files). Every mob
+    loop was a self-rescheduling `BukkitRunnable` that ended only when its mob died. Teardown swept every entity
+    tagged `DRAGONFIGHT_MINION` in the world.
+  - **So the mob capabilities must be fight-ownable:** an MB3/MB4/MB5 behaviour is started and stopped by its owner,
+    and a `mob_id` mob spawned by a fight belongs to that fight (*inferred* design consequence).
+- **C5 — PLAYER SAVING STAYS BEHIND `PlayerRepository`.**
+  - **Forbids:** the fight writing player data itself (files, PDC as the record of rewards); rewards granted only in
+    memory on the fight's server; `Scheduler.async` touching the Bukkit API while it saves.
+  - **cfde822 did:** credited coins directly (`plugin.addTreasure`, D10) on the shared server.
+- **C6 — THE WHOLE FIGHT IS VOID** (added by the rework, 2026-11-15; Ben's additional note).
+  - **All four mobs are element `void`, and so is every vanilla Enderman** (§3.R.0). An Enderman has no mob file and
+    is Void by the type table, so **an Enderman that dies within a small Phage's growth radius feeds it, wherever
+    it dies and whoever kills it** (Ben, I: *"Any deaths."*). In the End that includes Endermen the fight never
+    spawned. If the fight revives cfde822's war with Endermen (D3, Q10), **the war itself grows Phages.**
+  - **Forbids:** keying growth on "a fight mob died" or on a fight's own list. Growth is keyed on the dead mob's
+    element and the distance, and nothing else, so it runs the same inside and outside a fight.
+  - **OPEN — BEN'S UNCAPPED GROWTH AGAINST THE FIGHT'S MOB CAPS (Q27).** Ben ruled the snowball uncapped (answer D).
+    cfde822 capped every spawn per phase, but its split **bypassed** the cap (§3.2). A regrown stage 5 that splits
+    adds two Phages per kill with no ceiling, so the fight must say whether split children count against a cap, are
+    refused at a cap, or are exempt as cfde822's were. **That is a question about the FIGHT, not about the Phage**;
+    the Phage capability spawns what it is told.
+
+**NOTED, NOT DECIDED:**
+- **M17, the Knell's damage** (`PLAN-mob-scaling.md` §0 M17, §6 F15). S1 can add `attack_damage`; whether it does,
+  and the Knell's number, are Ben's (legacy Q-P11).
+- **M27 / F22, the perched dragon** that damage never knocks airborne (`PLAN-mob-scaling.md` §0 M27, §6 F22). For the
+  record only: cfde822's perched dragon took **× 0.4 on every non-melee hit** and **× 4 on MAGIC** to undo vanilla's
+  0.25 (`DragonfightCombatListener.onPerchedDragonDamage` / `onDragonVanillaScalingCompensation`, *read*), and the
+  dragon was immune while a Commander, a Dark Mage or any End crystal lived (`onDragonfightImmunityGate`, *read*).
+  Recorded, not adopted.
+
+---
+
+## 7. FACTS FROM THE PINNED JAR, FOR THE REWORK (2026-11-15)
+
+**The instrument.** `pom.xml`'s `paper.version` is `26.1.2.build.74-stable`. API source: `jar xf` of
+`~/.m2/repository/io/papermc/paper/paper-api/26.1.2.build.74-stable/paper-api-26.1.2.build.74-stable-sources.jar`.
+Behaviour: `javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar <class>`, whose manifest reads `Build-Number: 74`,
+`Implementation-Version: 26.1.2-74-e4e17fc` (`jar xf … META-INF/MANIFEST.MF`), so it is the same build. `javap` and
+`jar` are the JDK's, at `~/.jdks/openjdk-26.0.1/bin/`. **READ** = the bytecode or the source was opened;
+**INFERRED** = reasoned from what was opened; **UNVERIFIED** = not opened. Server classes are mojang-mapped
+(`net.minecraft.…`).
+
+### F-C. The creeper
+
+- **Start and stop (READ, `net.minecraft.world.entity.ai.goal.SwellGoal`).** `canUse`: the swell direction is
+  already up, **or** it has a live target with `distanceToSqr < 9.0` (3 blocks). `tick`: the swell direction goes
+  **down** (−1) if the target is null or dying, **or `distanceToSqr > 49.0` (7 blocks)**, or the target fails
+  `EntitySelector.NO_CREATIVE_OR_SPECTATOR`, or `Sensing.hasLineOfSight` is false; otherwise **up** (+1). The goal
+  is registered at priority 2 (`Creeper.registerGoals`). **Both distances are literals** and measured from the
+  entity's position, so they **do not follow `SCALE`** (READ: the constants; INFERRED: that `distanceToSqr` uses
+  positions, not boxes).
+- **The fuse (READ, `Creeper.<init>`, `Creeper.tick`).** `maxSwell = 30` (ticks) and `explosionRadius = 3` are set
+  in the constructor. `tick` adds the swell direction to `swell` each tick, floors it at 0, and calls
+  `explodeCreeper()` when `swell >= maxSwell`. **If `isIgnited()`, `tick` forces the direction to +1 every tick**, so
+  an ignited creeper cannot be backed away from.
+- **The API (READ, `org.bukkit.entity.Creeper` source; `CraftCreeper`).** `setMaxFuseTicks(int)` and
+  `setExplosionRadius(int)` (each rejects < 0), `setFuseTicks`, `getFuseTicks`, `explode()` (calls
+  `explodeCreeper()` directly), `ignite()`, `ignite(Entity)`, `setIgnited(boolean)`, `isIgnited()`. **There is no
+  API for the swell direction**, so no API call starts a back-away-cancellable fuse.
+- **The events, in order (READ, `Creeper.explodeCreeper`, `ServerExplosion.explode` / `interactWithBlocks`,
+  `Creeper.setIgnited`).**
+  1. `CreeperIgniteEvent` (cancellable) fires only from `setIgnited`, i.e. flint and steel or `ignite()`. **A
+     proximity swell fires no event at its start.**
+  2. `ExplosionPrimeEvent` (cancellable; radius and fire settable) fires in `explodeCreeper`. **Cancelled: the
+     creeper lives, `swell` is reset to 0 and `DATA_IS_IGNITED` set false.**
+  3. Not cancelled: `dead = true`, then `ServerLevel.explode(…, radius, fire, ExplosionInteraction.MOB)`. Inside,
+     **`hurtEntities()` runs BEFORE `interactWithBlocks()`**, and `EntityExplodeEvent` fires inside
+     `interactWithBlocks`, and only when the explosion interacts with blocks at all. **So cancelling
+     `EntityExplodeEvent` spares blocks and cannot spare entities.**
+  4. Then the lingering cloud, `triggerOnDeathMobEffects(…, KILLED)`, and **`discard(EntityRemoveEvent.Cause.EXPLODE)`**.
+- **Suppressing the damage while the creeper still dies.** Not offered by vanilla in one step (READ, above):
+  cancelling the prime keeps the creeper alive; letting it through hurts entities first. **The route for N4 is to
+  cancel `ExplosionPrimeEvent`, deal our own damage, and remove the creeper ourselves.** Whether a radius of 0 set
+  on the prime event hurts nothing is **UNVERIFIED**, and the route above does not need it.
+- **"Exploded" vs "was killed".** A self-exploded creeper is **discarded with cause `EXPLODE`**, and
+  `explodeCreeper`'s call list contains no death call (READ), so **it raises no `EntityDeathEvent`** (INFERRED: the
+  discard path was not opened). A creeper killed through our pipeline dies by `MobDeathSystem`'s `setHealth(0)`,
+  which **does** raise `EntityDeathEvent` (READ, `MobDeathSystem`'s javadoc and code). Under N4 the explosion is
+  ours, so our code records the reason itself.
+- **`SCALE` on a live creeper (READ, `LivingEntity.onAttributeUpdated`, `LivingEntity.getDimensions`).** A change to
+  `Attributes.SCALE` calls `refreshDimensions()`, and `getDimensions` multiplies the type's dimensions by
+  `getScale()`. **So the hitbox follows a stage change on a live mob. The swell distances do not** (above). A
+  creeper's base size is **0.6 × 1.7** (READ, `EntityType.<clinit>`, `sized(0.6f, 1.7f)` for `creeper`).
+
+### F-S. The Shulker bullet, and our own alternative
+
+- **Spawning (READ).** The server constructor is `ShulkerBullet(Level, LivingEntity owner, Entity target,
+  Direction.Axis)`; the target is any `Entity`, so a player is fine. The API has `getTarget()` / `setTarget(Entity)`,
+  `setTargetDelta`, `setCurrentMovementDirection`, `setFlightSteps` (`org.bukkit.entity.ShulkerBullet` source); the
+  owner is the `Projectile` shooter (INFERRED: `setShooter` was not opened).
+- **Movement (READ, `ShulkerBullet.selectNextMoveDirection`, `tick`).** It picks its next step along **one block
+  axis** (east/west, up/down, north/south) toward the target, re-chosen over the flight, so it zig-zags on the grid
+  rather than curving. Each tick its velocity is blended toward a target delta (clamped by `1.025`, `0.2` blend).
+  The constant `0.15` recurs in the direction code; **that it is the per-tick speed is INFERRED.** No gravity while
+  the target is valid. **It despawns on Peaceful** (`checkDespawn`).
+- **What destroys it (READ, `ShulkerBullet.hurtServer`).** **Any** damage that reaches `hurtServer` and is not
+  cancelled by `CraftEventFactory.handleNonLivingEntityDamageEvent` destroys it: a crit-particle puff, the hurt
+  sound, `destroy(EntityRemoveEvent.Cause.DEATH)`. There is no damage-type check. **Which attacks reach
+  `hurtServer`:** a player's melee (READ: `isPickable` returns true; INFERRED: that a swing then reaches `hurtServer`), vanilla arrows and
+  vanilla explosions (UNVERIFIED). **OUR weapons do not reach it at all**, READ: `PaperCombatWorld.combatantsNear`
+  keeps only `LiveTargets.isLive` entities cast to `LivingEntity`, and a bullet is not living. So **our rays,
+  bursts, sweeps and projectiles pass through a real bullet**, which breaks ruling 6's "any attack".
+- **On impact (READ, `ShulkerBullet.onHitEntity`, `onHitBlock`, `onHit`).** On an entity: `hurtOrSimulate` with
+  `damageSources().mobProjectile(this, owner)` for **4.0**, then post-attack enchant effects, then **Levitation for
+  200 ticks** (`EntityPotionEffectEvent.Cause.ATTACK`). On a block: an explosion particle and the hit sound. Either
+  way `destroy(Cause.HIT)`. **Replacing the impact:** the damage would pass through our vanilla pricing
+  (`VanillaDamagePolicy`), and the Levitation through `EntityPotionEffectEvent`, which a listener could cancel
+  (INFERRED); whether `ProjectileHitEvent` can cancel the whole impact is **UNVERIFIED**.
+- **Its look.** The bullet is drawn by the client from its entity type; **recolouring it needs a resource-pack
+  override of the bullet's texture, which would recolour EVERY Shulker's bullet** (INFERRED). Its size is 0.3125 ×
+  0.3125 (READ, `EntityType.<clinit>`).
+- **Our own alternative, briefly.** The constraint is that our pipeline hits only living combatants (above), so
+  **the smallest thing all our attacks AND vanilla melee and arrows can hit is a small LIVING entity**, made
+  invisible (`LivingEntity.setInvisible`, in the jar per `PLAN-legacy-port.md` §1), with AI off, carrying a display
+  entity as a passenger (`Entity.addPassenger`, same source) that wears a resource-pack model. **Which living type
+  is smallest and behaves best is UNVERIFIED and is the first thing N7's slice reads.** An `Interaction` entity is
+  hittable by a player's click but is **not living**, so it fails the same test as the real bullet (READ: the server jar's `net.minecraft.world.entity.Interaction` extends `Entity`, not `LivingEntity`; INFERRED:
+  so `combatantsNear` would skip it). **The seat's lean toward our own carrier therefore rests on a READ fact, not a preference.**
+
+### F-E. "Hostile to mobs", and where a mob death is observed
+
+- **Hostility today (READ).** There is no faction. The only side marker is the boolean **`player`** on
+  `HealthState` / `CombatantSnapshot`. Player-cast effects choose victims as "not the caster and not a player"
+  at four sites: `EffectApplier.applyToNearbyMobs`, `Ignite`'s blast loop, `ProjectileFlight.nearestMob` and
+  `SweptLine` (`grep -rn 'player()' core/src/main | grep continue`, at `cc2831ef`: 4 lines). **Mobs choose targets
+  through vanilla AI** (`getTarget`), which in vanilla means players. `MobClassifier` (`instanceof Enemy`) decides
+  gear score, **not** hostility. **A Summoner would add a second "side" member** (a summon is a mob that mobs should
+  attack and our player effects should spare), so the four sites and every new N-capability should ask one named
+  predicate rather than `player()`.
+- **Where a death is observed (READ, `RpgListeners.onEntityDeath`).** One `EntityDeathEvent` handler, today used
+  for Ignite. **It sees every living death: a vanilla Enderman we never spawned, a mob killed by `/kill` or the void
+  (its own javadoc: those never reach zero custom HP, so `MobDeathSystem` misses them and this event does not), and
+  our own kills** (via `setHealth(0)`). Its javadoc also records, read from the jar, that **the event can fire twice
+  for one entity** (it is cancellable with a revive health), so a growth counter needs a once-ness guard, as Ignite's
+  `forget` is. **It does NOT see a self-exploded vanilla creeper** (F-C), which is discarded, not killed. Under N4
+  the Phage's explosion is ours, so **N5 listens in two places: this handler, and N4's detonation.**
+
+### F-T. "Can this body stand here?" — the API, so the Knell's check is not hand-rolled
+
+- **READ, `org.bukkit.entity.Entity` source (Paper "Collision API"):** `collidesAt(Location)` checks this entity's
+  own bounding box moved to that location against blocks, the world border and hard entities (boats, shulkers), and
+  **does not load chunks**. `wouldCollideUsing(BoundingBox)` does the same for a given box.
+- **READ, `org.bukkit.RegionAccessor` source:** `hasCollisionsIn(BoundingBox)`, the world-side form.
+- **So the body-fits half is one call**, and it uses the Knell's real, scaled box (READ: `getDimensions` scales by
+  `getScale()`, F-C).
+- **The ground-beneath half is NOT offered** by any of the three: they ask "is this space free", not "is there floor
+  under it". The simplest form is the same call on a thin box just below the feet: **a collision there means there
+  is ground** (INFERRED; it treats any colliding block as ground, a slab or a fence included). The level tolerance
+  (K15) is a plain comparison of Y values. **"Does not load chunks"** means an unloaded landing point reads as free
+  (INFERRED), so the check must also require the chunk to be loaded.
+
+---
+
+## QUESTIONS FOR BEN
+
+*Answers go into the RULINGS block at the top of this file, verbatim. Legacy Q-P11 to Q-P14 stay open where they are;
+Q2, Q3 and Q5 below restate three of them in one line each so this list stands alone.* **Redone 2026-11-15 for the
+rework: an answered question says where its answer is, and a new one is added at the end.**
+
+1. **OPEN.** Should these mobs only appear inside the dragon fight, or also out in the world?
+2. **OPEN.** Should the Knell get its own hit strength now (M17), or keep hitting like a bare wither skeleton for a while longer?
+3. **OPEN.** The beam, the Phage's blast, the Phalanx's shot and the Skreel's leap: should each be a number you set,
+   times gear score / 100, like other custom mobs? *(Was "the blast" of the Goon; the blast is now the Phage's.)*
+4. **ANSWERED by G** (RULINGS): the blast hurts *"Only players and Summons"*. *(It was asked of the Goon's death
+   blast; the Goon is retired and the answer now governs the Phage's.)*
+5. **OPEN.** Is the Skreel's spider its own mob, with its own name and health bar?
+6. **OPEN.** When one of the Skreel pair dies, should the other keep fighting as a normal mob?
+7. **OPEN.** Should the Phalanx's shield block the first damage of any kind (a fall, fire), or only the first hit from a player?
+8. **REMOVED by the Knell rework** (RULINGS, the Knell; seat ruling 4). The Knell no longer reacts to arrows.
+9. **OPEN.** Inside the fight's world, what gear score should the mobs have: the End's 300, or a number the fight sets?
+10. **OPEN.** Should the fight's mobs fight Endermen, as the old fight's did? *(Now also: every Enderman is Void, so
+    a war with them feeds the Phages; §6 C6.)*
+11. **OPEN.** Should the fight's mobs drop anything or pay coins, given that the old ones dropped nothing but still paid coins?
+12. **OPEN.** If the server restarts mid-fight, is that fight simply lost?
+13. **SUPERSEDED.** It asked about the survey's order (§5.0). **Its successor:** is the order in §5.R right: bodies
+    and elements first, then the whole Phage, then the Knell, the Phalanx, and the Skreel last?
+14. **AWAITING BEN — G1** (the seat's reading, RULINGS): one Void death in range advances a Phage one stage, so four
+    take it from 1 to 5?
+15. **AWAITING BEN — G2:** one death advances every Phage below stage 5 in range, not only the nearest?
+16. **AWAITING BEN — G3:** stages 2–4 sit evenly between stage 1 and stage 5 in size, speed, health and blast, and
+    they explode but never split?
+17. **AWAITING BEN — G4:** a stage 5 that is killed splits into two stage 1s, and one that explodes does not?
+18. **OPEN.** When the Knell picks where to land, must it also be able to SEE the player it just hit from there, so it
+    never lands behind a wall? (§3.R.1)
+19. **OPEN (ruling 5).** When a Phage grows a stage, does it heal to full, or keep the same fraction of its health?
+20. **OPEN (ruling 5).** If a Void mob dies nearby while a Phage is already fusing, does that death still count?
+21. **OPEN.** When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
+    2? (§3.R.2)
+22. **OPEN.** Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
+23. **PARKED by Ben** (*"Well come back to the wither effect"*): should Wither damage-over-time land on these Void
+    mobs? **The fact it waits on:** `withering.yml`'s `immune` list holds the type keys `wither_skeleton` and
+    `wither`, so today it refuses the Knell, the Phalanx and the Skreel's RIDER, all wither skeletons. **It does not
+    refuse the Skreel's mount (a spider) or the Phage (now a creeper).**
+24. **OPEN.** Is the Skreel's spider mount a Void mob too? Your note names the Skreel, and the mount is its own creature.
+25. **OPEN — a naming question only.** The mount is called "Withered Mount", and it now sits on a Void mob. Keep the
+    name, or rename it? The same goes for any other wither-worded name in the fight.
+26. **OPEN.** Does ANY death split a stage 5 (a fall, `/kill`, another mob), or only a kill by a player or a summon?
+    The old Phage split only on a player's kill (§3.2).
+27. **OPEN — about the fight, not the Phage.** The growth is uncapped (answer D). Should split children count against the
+    fight's mob caps, be refused at a cap, or be exempt as the old Lesser Phages were? (§6 C6)
