@@ -34,14 +34,15 @@ class SelfTestScenariosTest {
         ScenarioLoader.Loaded loaded = shipped();
         assertEquals(List.of(), loaded.refusals());
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
-                "withered-shortbow", "sunder", "deft-hands", "mining-auto"), List.copyOf(loaded.gates().keySet()),
-                "the ten gates, in boot order; mining-auto LAST (the seat, 2026-11-14)");
+                "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back"), List.copyOf(loaded.gates().keySet()),
+                "the eleven gates, in boot order; nexus-back LAST, after mining-auto (2026-11-14)");
     }
 
     /** The seat's CORE rows, one scenario each (2026-10-05). R0d is a boot log line and has none. */
     @Test
     void theScenariosAreExactlyTheCoreRows() {
-        Map<String, List<String>> expected = Map.of(
+        // Map.of takes at most ten pairs; the eleventh gate (nexus-back, 2026-11-14) is put after it.
+        Map<String, List<String>> expected = new java.util.LinkedHashMap<>(Map.of(
                 "melee-cell", List.of("MC1", "MC2", "MC3"),
                 "level", List.of("CP2", "BN1", "WD1", "WD3", "LS1"),
                 "nexus-polish", List.of("D1", "G1", "G3", "CM1", "CM2"),
@@ -51,7 +52,8 @@ class SelfTestScenariosTest {
                 "withered-shortbow", List.of("WB1", "WB2", "WB3"),
                 "sunder", List.of("SU1", "SU2", "SU4", "SU5", "SU6", "SU7", "SU8", "SU9", "SU10", "SU11", "SU12"),
                 "deft-hands", List.of("DH1", "DH3", "DH6"),
-                "mining-auto", List.of("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12"));
+                "mining-auto", List.of("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12")));
+        expected.put("nexus-back", List.of("NB1", "NB2", "NB3", "NB4", "NB5", "NB6", "NB7"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -59,8 +61,8 @@ class SelfTestScenariosTest {
             assertEquals(gate.getValue(), rows, gate.getKey());
         }
         // 24 CORE rows on the seat's run sheet + WS-C (made CORE 2026-10-05) - R0d (a boot line, no scenario). Then +10, GATE-sunder.md, and +3, GATE-deft-hands.md (2026-11-06).
-        // Then +1, SU8's death half (the seat's ruling, 2026-11-10). Then +12, GATE-mining-auto.md (2026-11-14).
-        assertEquals(50, loaded.rows());
+        // Then +1, SU8's death half (the seat's ruling, 2026-11-10). Then +12, GATE-mining-auto.md (2026-11-14). Then +7, GATE-nexus-back.md (2026-11-14).
+        assertEquals(57, loaded.rows());
     }
 
     @Test

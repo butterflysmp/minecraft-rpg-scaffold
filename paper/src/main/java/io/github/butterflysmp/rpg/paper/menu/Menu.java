@@ -10,7 +10,10 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
+import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
+
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * A custom chest menu, and the project's one place where clicking a container is decided.
@@ -35,6 +38,9 @@ public abstract class Menu implements InventoryHolder {
     private final Inventory inventory;
     protected final Player viewer;
 
+    /** Set by {@link #navigateTo}; from then on the menu takes no click and permits no drag. */
+    private final Departure departure = new Departure();
+
     /**
      * @param size must be a multiple of nine, 9..54, as a chest inventory is.
      */
@@ -51,9 +57,40 @@ public abstract class Menu implements InventoryHolder {
     /**
      * Show this menu to its viewer.
      *
-     * <h2>NAVIGATING FROM ANOTHER MENU: HOP A TICK ALWAYS, CLOSE FIRST ONLY SOMETIMES</h2>
+     * <h2>NAVIGATING FROM ANOTHER MENU: HOP A TICK ALWAYS; NEVER CLOSE EXPLICITLY; A MENU WITH
+     * INPUT SLOTS DEPARTS THROUGH {@link #navigateTo}</h2>
      *
-     * <b>Never call this directly from inside a click handler.</b> The click event has not finished
+     * <b>THE RULE SINCE 2026-11-14 (feat/nexus-back, {@code GATE-nexus-back.md}).</b> Every
+     * menu-to-menu button on a menu WITH input slots calls {@link #navigateTo}. A menu with none
+     * may still hop and open directly, as the Level, Settings, Build and Equipment screens do: for
+     * them {@code navigateTo} would add only a cursor give-back and the freeze, and they were not
+     * migrated in the slice that wrote this (the seat's ruling 4). New code uses
+     * {@code navigateTo} either way. It runs {@link #returnEverything} at once, in
+     * the click, then hops a tick and opens the next menu. It never calls {@code closeInventory()}.
+     * The close {@code openInventory} performs on the way in still reaches {@link #onClose}, so
+     * everything a close settles (the vault's write, an arming task cancelled, anything put in an
+     * input slot during the hop) still runs, exactly once more, and {@code returnEverything} is
+     * idempotent. The departing menu drops every click and drag from the moment it departs.
+     *
+     * <p><b>WHAT THE OLD RULE WAS, AND WHY IT WAS CONSERVATIVE.</b> Until 2026-11-14 the rule below
+     * (the table) had a menu WITH input slots close explicitly first, so its items came back
+     * before the screen changed. That was correct and it was cautious: it did not rely on the
+     * implicit close, which nobody had read from the jar. Its cost was the visible close and
+     * reopen, and the mouse pointer re-centred on every Back, which Ben reported for exactly the
+     * five menus with input slots. <b>What now carries the rule:</b> the jar facts F1-F4 in
+     * {@code GATE-nexus-back.md} (Paper 26.1.2 build 74): F1, {@code openInventory} on a custom
+     * inventory fires {@code InventoryCloseEvent} for the old one synchronously, reason
+     * {@code OPEN_NEW}, before the open packet, through the same
+     * {@code CraftEventFactory.handleInventoryCloseEvent} an explicit close uses; F2 and F4, both
+     * paths then run the same {@code ServerPlayer.doCloseContainer}, so a cursor item is treated
+     * identically (our {@code onClose} has already handed it back by then); F3, only the explicit
+     * path sends a close-container packet. <b>One gap, stated:</b> the implicit close is skipped
+     * while the player {@code isImmobile()} (dead, sleeping, removed, disconnected). Death and
+     * disconnect close the screen themselves first, and the give-back already ran in the click.
+     * The gate's AUTO rows NB1-NB6 read the server half; Ben's HAND rows read the screen and the
+     * pointer.
+     *
+     * <p><b>Never call this directly from inside a click handler.</b> The click event has not finished
      * being processed and the client has not applied the cancellation, which is how a desynced
      * client ends up holding a ghost item. Go through the {@code Scheduler}.
      *
@@ -63,8 +100,9 @@ public abstract class Menu implements InventoryHolder {
      * tick."</i> So {@code onEntity} and {@code onEntityLater(..., 1)} are equivalent for this
      * purpose; neither runs inline.
      *
-     * <p><b>The explicit {@code closeInventory()} is a SEPARATE question, and it is about
-     * {@link #returnEverything}, not about ghosts.</b> {@code openInventory} implicitly closes
+     * <p><b>SUPERSEDED 2026-11-14 (the table and the next paragraph), kept as the record.</b> The
+     * explicit {@code closeInventory()} is a SEPARATE question, and it is about
+     * {@link #returnEverything}, not about ghosts. {@code openInventory} implicitly closes
      * whatever is open, which fires the close event and reaches {@link #onClose}. So:
      *
      * <pre>
@@ -73,7 +111,10 @@ public abstract class Menu implements InventoryHolder {
      *   departing menu has NONE          hop and open; the implicit close is sufficient
      * </pre>
      *
-     * <p><b>THIS RESOLVES AN ASYMMETRY THAT WAS UNDOCUMENTED UNTIL 2026-09-16.</b>
+     * <p><b>(SUPERSEDED 2026-11-14 with the table above. The asymmetry it explains still exists, and
+     * still falls exactly on the input-slot line: the crafting grid now departs through
+     * {@link #navigateTo}, the browser still hops without one.)</b>
+     * <b>THIS RESOLVES AN ASYMMETRY THAT WAS UNDOCUMENTED UNTIL 2026-09-16.</b>
      * {@code CraftingMenu} closes then hops; {@code RecipeBrowserMenu}'s back button hops without
      * closing, with no comment. It read as one of them being wrong. <b>Neither is</b> -- the
      * crafting grid is {@code inputSlots()} and the browser's is empty, so they differ exactly where
@@ -83,6 +124,39 @@ public abstract class Menu implements InventoryHolder {
      */
     public final void open() {
         viewer.openInventory(inventory);
+    }
+
+    /**
+     * Leave this menu for another: the one route for a menu-to-menu button (the rule is on
+     * {@link #open}).
+     *
+     * <ol>
+     *   <li><b>Now, in the click:</b> {@link #returnEverything}. The player's items are back in their
+     *       inventory in the same tick as the click, as they were when Back closed the screen
+     *       explicitly. For the vault while healthy that is the cursor alone; its page stays and is
+     *       written by the close.</li>
+     *   <li><b>Now:</b> this menu goes inert. {@link #handleClick} and {@link #handleDrag} drop
+     *       everything from here on, so nothing new can be put in during the hop, nothing can flip a
+     *       vault page under its closing write, and a second Back cannot open the next menu twice.
+     *       Before this method the explicit close gave that for free; the screen is now visible for
+     *       one more tick, so it is stated.</li>
+     *   <li><b>Next tick:</b> {@code next.get().open()}. Its {@code openInventory} closes this menu
+     *       (reason {@code OPEN_NEW}, F1), which reaches {@link #onClose}: the vault writes its page,
+     *       the anvil and grindstone cancel their arming tasks, and {@code returnEverything} runs a
+     *       second time and finds air, or returns anything that did reach a slot.</li>
+     * </ol>
+     *
+     * <p><b>No {@code closeInventory()}, and adding one back is the bug Ben reported:</b> it sends
+     * the client a close-container packet (F3), the screen visibly closes, and the pointer
+     * re-centres when the next one opens. {@code MenuNavigationSignatureTest} pins its absence.
+     *
+     * @param next built inside the hop, so it reads the player's state as of the open
+     */
+    protected final void navigateTo(Scheduler scheduler, Supplier<? extends Menu> next) {
+        departure.begin(
+                this::returnEverything,
+                hop -> scheduler.onEntity(viewer, hop),
+                () -> next.get().open());
     }
 
     /**
@@ -240,6 +314,7 @@ public abstract class Menu implements InventoryHolder {
 
     public final void handleClick(InventoryClickEvent event) {
         event.setCancelled(true);      // FIRST. Nothing below can make this not have happened.
+        if (departure.underway()) return;   // departing: inert for the hop (navigateTo, step 2)
         MenuClick click = MenuRouting.route(event, this);
         if (click != null) onClick(click);
     }
@@ -258,8 +333,9 @@ public abstract class Menu implements InventoryHolder {
      * simply agree with a list the player already made.
      *
      * <p>Cancelled FIRST and un-cancelled only at the end, the same shape {@link #handleClick} uses,
-     * so a {@code return} added later by someone who has not read this is safe. Every one of the
-     * four refusals below is a bare {@code return} onto an already-cancelled event.
+     * so a {@code return} added later by someone who has not read this is safe. Every refusal
+     * below is a bare {@code return} onto an already-cancelled event (the departing-menu refusal
+     * was added 2026-11-14 by exactly that route).
      *
      * <p>A drag entirely inside the player's own inventory is left alone, because it is none of our
      * business -- that is the one path that never cancels.
@@ -277,6 +353,7 @@ public abstract class Menu implements InventoryHolder {
         if (!touchesMenu) return;
 
         event.setCancelled(true);      // FIRST. Every refusal below is now just a return.
+        if (departure.underway()) return;   // departing: nothing lands during the hop
 
         for (int raw : event.getRawSlots()) {
             // Spanning both halves. A mixed drag has no safe partial reading, and un-cancelling it

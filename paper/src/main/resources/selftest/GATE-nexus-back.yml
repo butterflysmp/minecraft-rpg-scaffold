@@ -1,0 +1,175 @@
+# GATE-nexus-back.md: Back from the five input-slot menus (and Crafting's Recipe Book) no longer closes the screen
+# first. Each row puts one boltor into the menu's input slot through the router's own shift-move, presses the menu's
+# button, and reads where the boltor is: in the SAME tick as the click (no wait between the click and the probe), and
+# again after the hop. An AUTO reading is a reading of the SERVER: whether the screen visibly closed, and where the
+# pointer went, are Ben's (HAND rows H1-H3).
+setup:
+  - close: ""
+  - cmd: "rpg playerxp set @s 20 levels"
+  - wait: 20
+  - cmd: "rpg give boltor"
+  - wait: 2
+
+# NB1: Anvil. The boltor into the anvil, Back, and it is in the inventory in the click's own tick.
+NB1:
+  - hold: boltor
+  - dump: held
+  - probe_inventory: boltor
+  - cmd: "menu"
+  - wait: 3
+  - click: "Anvil"
+  - wait: 3
+  - shift_click: "bottom boltor"
+  - wait: 2
+  - dump: menu
+  - probe_inventory: boltor
+  - click: "Back to the Nexus"
+  - probe_inventory: boltor
+  - dump: menu
+  - wait: 3
+  - dump: menu
+  - probe_inventory: boltor
+  - close: ""
+  - hold: boltor
+  - dump: held
+
+# NB2: Enchanting.
+NB2:
+  - hold: boltor
+  - dump: held
+  - probe_inventory: boltor
+  - cmd: "menu"
+  - wait: 3
+  - click: "Enchanting"
+  - wait: 3
+  - shift_click: "bottom boltor"
+  - wait: 2
+  - dump: menu
+  - probe_inventory: boltor
+  - click: "Back to the Nexus"
+  - probe_inventory: boltor
+  - dump: menu
+  - wait: 3
+  - dump: menu
+  - probe_inventory: boltor
+  - close: ""
+  - hold: boltor
+  - dump: held
+
+# NB3: Grindstone.
+NB3:
+  - hold: boltor
+  - dump: held
+  - probe_inventory: boltor
+  - cmd: "menu"
+  - wait: 3
+  - click: "Grindstone"
+  - wait: 3
+  - shift_click: "bottom boltor"
+  - wait: 2
+  - dump: menu
+  - probe_inventory: boltor
+  - click: "Back to the Nexus"
+  - probe_inventory: boltor
+  - dump: menu
+  - wait: 3
+  - dump: menu
+  - probe_inventory: boltor
+  - close: ""
+  - hold: boltor
+  - dump: held
+
+# NB4: Crafting, the boltor in the grid.
+NB4:
+  - hold: boltor
+  - dump: held
+  - probe_inventory: boltor
+  - cmd: "menu"
+  - wait: 3
+  - click: "Crafting"
+  - wait: 3
+  - shift_click: "bottom boltor"
+  - wait: 2
+  - dump: menu
+  - probe_inventory: boltor
+  - click: "Back to the Nexus"
+  - probe_inventory: boltor
+  - dump: menu
+  - wait: 3
+  - dump: menu
+  - probe_inventory: boltor
+  - close: ""
+  - hold: boltor
+  - dump: held
+
+# NB5: the Vault. The boltor into a cell, Back: it STAYS in the vault (storage, not a workbench). Reopened, the saved
+# page still holds it; then it is shift-clicked back out, so the row leaves the vault as it found it.
+NB5:
+  - hold: boltor
+  - dump: held
+  - probe_inventory: boltor
+  - cmd: "menu"
+  - wait: 3
+  - click: "Vault"
+  - wait: 3
+  - shift_click: "bottom boltor"
+  - wait: 3
+  - dump: menu
+  - probe_inventory: boltor
+  - click: "Back to the Nexus"
+  - probe_inventory: boltor
+  - dump: menu
+  - wait: 3
+  - dump: menu
+  - close: ""
+  - wait: 3
+  - cmd: "menu"
+  - wait: 3
+  - click: "Vault"
+  - wait: 3
+  - dump: menu
+  - probe_inventory: boltor
+  - shift_click: "top boltor"
+  - wait: 3
+  - probe_inventory: boltor
+  - close: ""
+  - hold: boltor
+  - dump: held
+
+# NB6: Crafting -> Recipe Book with a loaded grid, then Back to crafting.
+NB6:
+  - probe_inventory: boltor
+  - cmd: "menu"
+  - wait: 3
+  - click: "Crafting"
+  - wait: 3
+  - shift_click: "bottom boltor"
+  - wait: 2
+  - dump: menu
+  - probe_inventory: boltor
+  - click: "Recipe Book"
+  - probe_inventory: boltor
+  - dump: menu
+  - wait: 3
+  - dump: menu
+  - click: "Back to crafting"
+  - wait: 3
+  - dump: menu
+  - probe_inventory: boltor
+  - close: ""
+
+# NB7: a departing menu is inert. Back, then a shift-click in the SAME tick: the router never sees it, so the boltor
+# stays in the inventory and the hub still opens once.
+NB7:
+  - probe_inventory: boltor
+  - cmd: "menu"
+  - wait: 3
+  - click: "Anvil"
+  - wait: 3
+  - click: "Back to the Nexus"
+  - shift_click: "bottom boltor"
+  - probe_inventory: boltor
+  - wait: 3
+  - dump: menu
+  - probe_inventory: boltor
+  - close: ""

@@ -47,6 +47,13 @@ stands, **`fde186791f824b819e19cb38e727d6a98ac14341`** on both refs (`git rev-pa
 This note lives here and not in the copied file, so the two blobs stay identical. `spike/mining-input` is kept until
 the seat confirms the copy.
 
+**DATED 2026-11-14: the two sentences above about keeping the spike branch are HISTORY.** The seat confirmed the gate
+copy (§2, *"The gate copy is confirmed"*); `spike/mining-input` is **deleted** (`git ls-remote origin
+refs/heads/spike/mining-input` prints nothing); its commits are kept under the annotated tag **`archive/mining-spike`**,
+which points at `d6879d868c48bc13ce987b3d954a5cfaff443ed4`, the sha named above (`git ls-remote origin
+refs/tags/archive/mining-spike` → tag object `0d111d33fc1384661659d852192c6f029a1905bd`; `git rev-parse
+archive/mining-spike^{commit}` → `d6879d86…`).
+
 **The open stack is PARKED, not abandoned** (Ben, 2026-11-12): #172–#180 and #177. Nothing here touches those branches.
 
 ---
@@ -1608,7 +1615,10 @@ readings at `e27f44a6`, `docs/gates/GATE-mining-auto.md`; ACCEPTED, approved to 
   cases and 20 in others (which kill path, which entity types), then a dated re-prediction. Never from memory. **The
   gate's own miscounts, recorded:** it expected 10 bodies from run 3's `Killed` replies and there were 11 (the reply
   count undercounted run 3's WD1); and its clause "run 3 had two" dead-body probes missed run 3's WS3 line, which is
-  that row's own DOT-killed subject.
+  that row's own DOT-killed subject. **DIAGNOSED 2026-11-14, read-only, on `feat/nexus-back`** (account and dated
+  re-prediction: `GATE-nexus-back.md` ST9R2): a row whose first kill hits a mob the PREVIOUS row left kills a body
+  the row-start CLEAN has already scheduled for `remove()` on the next tick, so it leaves after 1-2 ticks; a body seeded
+  inside its row leaves at `tickDeath`'s 20. Any entity type. 11 of 11 bodies of the `2ca368ad` run separate on it.
 - **F-M50 (ruling 4): THE EIGHT NON-MINING ROWS THAT READ DIFFERENTLY FROM RUN 3 OF `e82df2b3` ARE ACCEPTED AS
   EXPLAINED:** the settle's new waits (WD1, WD3, LB5, WS1, WS2b, WS2c, WS3), and a crit that did not roll in WD1 and
   LB2. LB2's 30 is its uncrit prediction.
