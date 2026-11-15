@@ -1,6 +1,11 @@
 # GATE — NEXUS-BACK: "Back" from the five input-slot menus, and Crafting's Recipe Book, without the close-and-reopen
 
-**Status: NOT RUN.** Every prediction below was written **before** any boot of `feat/nexus-back`, and this file is
+**Status: READ, 2026-11-15, at `159a5e1f` (was NOT RUN when committed).** One boot, run by the seat's per-gate
+ruling: `/rpg selftest nexus-back`, not `/rpg selftest all`. ST9R2 NOT READ by ruling; LAST NOT AS PREDICTED (FORM) by
+ruling, its form-independent half read. Every other row read as predicted. The readings are in the READING cells and
+in *CARRIED STATE, READ* below.
+
+Every prediction below was written **before** any boot of `feat/nexus-back`, and this file is
 **committed before the boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once
 its row has been read. **NO BOOT until the seat has diffed the code AND this gate, and Ben says ready.**
 
@@ -101,6 +106,43 @@ REGISTER*), and its cursor is not the survival cursor.
 - **What the run gives and restores:** setup gives one boltor (`rpg give boltor`) and sets 20 levels; the run's
   restore puts back Ben's inventory, XP, held slot and game mode as they were at RUN START.
 
+**CARRIED STATE, READ 2026-11-15** (the booter; `latest.log` line numbers are this boot's; a bold line, not a
+heading, so the ROWS block's `^### ` count stays 17):
+
+- **The seat's rulings for this boot, 2026-11-15:** (1) run ONLY this gate, by the per-gate form
+  `/rpg selftest nexus-back`; (2) ST9R2 is therefore NOT READ and carried to the next full run; (3) NB5 writes Ben's
+  real vault, accepted on a fresh backup. **LAST, ruled 2026-11-15:** its prediction stands unedited; the parts that
+  do not depend on the form are read; the rest is NOT AS PREDICTED (FORM). The seat's own words: that difference is the
+  seat's doing, not a fault.
+- **Wire, before the boot:** `git ls-remote` printed `refs/heads/master` `84462b2c78cbf2491af8d1797abaf690da659c17`,
+  and `refs/heads/feat/nexus-back` = `refs/pull/188/head` = `159a5e1f673d95119fb81cd8fa15d55cdb572fd0`. The local
+  HEAD was the same, and `git status --porcelain` printed 0 lines.
+- **1. No JVM:** `Get-Process java` printed nothing. Pins: `paper.version` `26.1.2.build.74-stable`,
+  `packetevents.version` `2.13.0`. The server jar's MANIFEST reads `26.1.2-74-e4e17fc` / `Build-Number: 74`, and the
+  plugins folder holds `packetevents-spigot-2.13.0.jar`.
+- **2. The backup:** `C:\Users\Neb91\IdeaProjects\rpg-run-backups\2026-11-15-pre-nexus-back`.
+  `run/plugins/Rpg`: 124 files, 368857 bytes on both sides, `diff -rq lines: 0`. `run/world`: 193 files, 204963759
+  bytes on both sides, `diff -rq lines: 0`.
+- **3. The toggle:** `12:  dev-pack-on-join: true`, as predicted.
+- **4. The boot:** `./scripts/dev-server.sh --refresh-content`. `Done (5.365s)!` at 14:30:28; `latest.log` mtime
+  14:30:29.93 at the R0 read.
+- **LOGIN:** L81 `BaronVonYeetus … logged in` at 14:33:20. The pack status lines (L82–L84) are `ACCEPTED`,
+  `DOWNLOADED`, `SUCCESSFULLY_LOADED`. **The pack offered** (L79, 14:33:19, the join's own offer, one second before
+  the `logged in` line): `sha1=49f2e465b2b6bbb24380425830c8572f14acd11c bytes=8227`, **unchanged as predicted**.
+- **The run sheet, from the log:** L85 `/gamemode survival` (the first command after LOGIN, alone), L87 `/difficulty`,
+  L88 `/difficulty hard`, L89 `/rpg selftest nexus-back`. **The world's difficulty before the set** is not in the log;
+  **Ben, Q18: yes, `/difficulty` said Hard.**
+- **The NB baseline B:** `INVENTORY boltor slots=[0x1]` in every row. Ben's inventory held **no** boltor at run start;
+  the one entry is setup's.
+- **Run time, measured:** RUN START 14:34:21 (L90) to RUN RESTORED 14:34:28 (L392), about 7 s. The DONE ticks sum
+  to **137** (setup 25, NB1-NB4 14 each, NB5 27, NB6 17, NB7 12), against the **129** computed from the waits.
+- **The HAND block, from the log:** L393 `/rpg playerxp set @s 20 levels`, L394 `/rpg give boltor`, then `/menu` at
+  L395, L396, L399, L400, L401, and `/men` at L397 and L398. A second `/rpg give boltor` at L402 (14:38:42) was **not
+  on the run sheet**. L403 `/rpg playerxp set @s 712580 xp` (the restore, from L392's `xp=712580`). L404 `/stop`.
+- **Shutdown:** L406 `Stopping server`, L437 `ThreadedAnvilChunkStorage: All dimensions are saved`, L439 `All
+  RegionFile I/O tasks to complete`; the log ends on MoonriseCommon's pool waits at 14:38:47. Afterwards,
+  `Get-Process java` printed nothing.
+
 ## R0 — THIS PR'S BUILD. READ IT FIRST. IF ANY R0 FAILS, STOP
 
 `GATE-mining-auto.md`'s R0 rows are SUPERSEDED at this boot, never PASS or FAIL.
@@ -109,13 +151,13 @@ REGISTER*), and its cursor is not the survival cursor.
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/nexus-back` prints it, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/nexus-back` prints it, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **2026-11-15: AS PREDICTED.** `run\logs\latest.log:42:[14:30:27] [Server thread/INFO]: [Rpg] Build: 159a5e1f`; ls-remote `159a5e1f673d95119fb81cd8fa15d55cdb572fd0`; log mtime 14:30:29.93, this boot |
 
 ### R0b — the jar carries this branch
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: `selftest/GATE-nexus-back.yml`, paper `menu/Departure.class`; in `selftest/index.yml`, the line `  - nexus-back`. ABSENT: the control `selftest/NoSuchClassControl.class` | the scan below | |
+| PRESENT: `selftest/GATE-nexus-back.yml`, paper `menu/Departure.class`; in `selftest/index.yml`, the line `  - nexus-back`. ABSENT: the control `selftest/NoSuchClassControl.class` | the scan below | **2026-11-15: AS PREDICTED.** `PRESENT selftest/GATE-nexus-back.yml`, `PRESENT io/github/butterflysmp/rpg/paper/menu/Departure.class`, `ABSENT  io/github/butterflysmp/rpg/paper/selftest/NoSuchClassControl.class`, `PRESENT index nexus-back` |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -134,13 +176,13 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes, 1 ores, 4 vein sizes`**, exactly L43 of the master `84462b2c` boot (11:41:01, 2026-11-14), because this branch changes nothing the loaders read: `git diff 84462b2c HEAD -- paper/src/main/resources/content \| wc -l` prints 0. No `Refusing`, `Skipping`, `SEVERE` or `Exception` beyond `volley_stone`'s known pair | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | |
+| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 1 mobs, 3 recipes, 1 ores, 4 vein sizes`**, exactly L43 of the master `84462b2c` boot (11:41:01, 2026-11-14), because this branch changes nothing the loaders read: `git diff 84462b2c HEAD -- paper/src/main/resources/content \| wc -l` prints 0. No `Refusing`, `Skipping`, `SEVERE` or `Exception` beyond `volley_stone`'s known pair | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','Exception'` | **2026-11-15: AS PREDICTED.** L43, the predicted line character for character (besides it the pattern found only vanilla's `Loaded 1515 recipes`, `Loaded 1617 advancements` and `Loaded packetevents v2.13.0`). **No** `Refusing`, `Skipping`, `SEVERE` or `Exception` line at all. `volley_stone`'s pair is L44–L45, both `WARN` (`cooldown_ticks 0 … effective cooldown is 27` and `1 content problem(s)`); the instrument's pattern does not match them, and they were read with `grep -n -i volley` |
 
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one line **`[Rpg] Selftest: dev server, 57 scenarios across 11 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
+| Exactly one line **`[Rpg] Selftest: dev server, 57 scenarios across 11 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | **2026-11-15: AS PREDICTED.** Exactly one line, L49 `[Rpg] Selftest: dev server, 57 scenarios across 11 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back]`; no `Refusing selftest` |
 
 **The 57 and the 11 are DERIVED.** From the repo root at this head:
 
@@ -201,7 +243,7 @@ removed. **No code change is proposed here** (the seat asked for a diagnosis).
 
 | prediction (dated 2026-11-14, before this boot) | READING |
 |---|---|
-| Over the whole `/rpg selftest all` run: **32** `CMD /kill` lines (`git grep -h -E '^\s*- cmd: "kill ' HEAD -- 'paper/src/main/resources/selftest/*.yml' \| wc -l` printed 32; this gate adds none), each followed by exactly one `SETTLED`, every one `dying=0`. **The per-line rule:** a kill that finds nothing (`No entity was found`), or kills the player, reads `ticks=0 first=0`; **a kill whose body was seeded INSIDE its row reads `ticks=20 first=1`; a kill whose body was seeded BEFORE its row's START, in a row whose `CLEAN` line reads `removed=` ≥ 1, reads `ticks=1` or `ticks=2`, `first=1`.** No other `ticks=` value. **Expected counts**, the `2ca368ad` run's, because no other gate's scenario file changed (`git diff --stat 84462b2c HEAD -- paper/src/main/resources/selftest` lists only `index.yml` and `GATE-nexus-back.yml`): 21 at `ticks=0`, 5 at `20`, 6 at `1`/`2`. The per-line rule is the prediction; the counts depend on what each kill finds that day | |
+| Over the whole `/rpg selftest all` run: **32** `CMD /kill` lines (`git grep -h -E '^\s*- cmd: "kill ' HEAD -- 'paper/src/main/resources/selftest/*.yml' \| wc -l` printed 32; this gate adds none), each followed by exactly one `SETTLED`, every one `dying=0`. **The per-line rule:** a kill that finds nothing (`No entity was found`), or kills the player, reads `ticks=0 first=0`; **a kill whose body was seeded INSIDE its row reads `ticks=20 first=1`; a kill whose body was seeded BEFORE its row's START, in a row whose `CLEAN` line reads `removed=` ≥ 1, reads `ticks=1` or `ticks=2`, `first=1`.** No other `ticks=` value. **Expected counts**, the `2ca368ad` run's, because no other gate's scenario file changed (`git diff --stat 84462b2c HEAD -- paper/src/main/resources/selftest` lists only `index.yml` and `GATE-nexus-back.yml`): 21 at `ticks=0`, 5 at `20`, 6 at `1`/`2`. The per-line rule is the prediction; the counts depend on what each kill finds that day | **NOT READ, 2026-11-15, by the seat's ruling 2 of that date:** the boot ran `/rpg selftest nexus-back` (ruling 1), which has no `/kill`, so the run this row predicts did not happen. **Carried to the next full `/rpg selftest all` run.** The prediction is not edited |
 
 ---
 
@@ -236,25 +278,25 @@ one entry `<slot>x1` plus whatever boltors Ben's own inventory held at run start
 
 | prediction | READING |
 |---|---|
-| `HELD boltor …` (before) and the closing `HELD boltor …` are **identical after the item id**: type, `x1`, name, lore. After `shift_click`: `DRIVE shift-click … bottom slot=<n> boltor x1`; `SCREEN AnvilMenu`, with a `SLOT 20` line for the boltor (`AnvilMenuLayout.TARGET_SLOT`, the lowest input slot; `MenuRouting.firstEmptyInput` walks a `TreeSet`); `INVENTORY` = B less one entry. After `click "Back to the Nexus"`, **in the same tick:** `INVENTORY` = B; **`SCREEN AnvilMenu`, with NO `SLOT 20` line** (the departing menu, still up, its input empty). After `wait 3`: `SCREEN NexusMenu`; `INVENTORY` = B | |
+| `HELD boltor …` (before) and the closing `HELD boltor …` are **identical after the item id**: type, `x1`, name, lore. After `shift_click`: `DRIVE shift-click … bottom slot=<n> boltor x1`; `SCREEN AnvilMenu`, with a `SLOT 20` line for the boltor (`AnvilMenuLayout.TARGET_SLOT`, the lowest input slot; `MenuRouting.firstEmptyInput` walks a `TreeSet`); `INVENTORY` = B less one entry. After `click "Back to the Nexus"`, **in the same tick:** `INVENTORY` = B; **`SCREEN AnvilMenu`, with NO `SLOT 20` line** (the departing menu, still up, its input empty). After `wait 3`: `SCREEN NexusMenu`; `INVENTORY` = B | **2026-11-15: AS PREDICTED** (L99–L139, `DONE ticks=14`). B = `slots=[0x1]` (L103). Two HELD lines, one distinct text after `HELD `. L107 `DRIVE shift-click … bottom slot=81 boltor x1`; L108 `SCREEN AnvilMenu`, L110 `SLOT 20 CROSSBOW name="Boltor"`; L115 `INVENTORY boltor slots=[]`. L116 Back; **same tick** L117 `slots=[0x1]`, L118 `SCREEN AnvilMenu` with SLOTs 4, 24, 31, 48, 49 and **no `SLOT 20`** (grep count 0 over L118–L123). L124 `SCREEN NexusMenu`; L135 `slots=[0x1]` |
 
 ### NB2 — Enchanting (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| As NB1, with `SCREEN EnchantMenu` and the boltor at **`SLOT 19`** (`EnchantMenuLayout.INPUT_SLOT`, the only input). Same tick after Back: `INVENTORY` = B, `SCREEN EnchantMenu` with no `SLOT 19` line. After `wait 3`: `SCREEN NexusMenu`, `INVENTORY` = B; HELD lines identical | |
+| As NB1, with `SCREEN EnchantMenu` and the boltor at **`SLOT 19`** (`EnchantMenuLayout.INPUT_SLOT`, the only input). Same tick after Back: `INVENTORY` = B, `SCREEN EnchantMenu` with no `SLOT 19` line. After `wait 3`: `SCREEN NexusMenu`, `INVENTORY` = B; HELD lines identical | **2026-11-15: AS PREDICTED** (L140–L191, `DONE ticks=14`). B = `[0x1]` (L144); L148 `SCREEN EnchantMenu`, L151 `SLOT 19 CROSSBOW name="Boltor"`; L161 `[]`. L162 Back; **same tick** L163 `[0x1]`, L164 `SCREEN EnchantMenu`, **no `SLOT 19`** (count 0 over L164–L175). L176 `SCREEN NexusMenu`; L187 `[0x1]`. HELD ×2, one distinct |
 
 ### NB3 — Grindstone (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| As NB1, with `SCREEN GrindstoneMenu` and the boltor in the LOWEST tray cell (`GrindstoneMenuLayout.INPUT_SLOTS`, first free in index order; the number is read, not predicted). Same tick after Back: `INVENTORY` = B, `SCREEN GrindstoneMenu` with that `SLOT` line gone. After `wait 3`: `SCREEN NexusMenu`, `INVENTORY` = B; HELD lines identical | |
+| As NB1, with `SCREEN GrindstoneMenu` and the boltor in the LOWEST tray cell (`GrindstoneMenuLayout.INPUT_SLOTS`, first free in index order; the number is read, not predicted). Same tick after Back: `INVENTORY` = B, `SCREEN GrindstoneMenu` with that `SLOT` line gone. After `wait 3`: `SCREEN NexusMenu`, `INVENTORY` = B; HELD lines identical | **2026-11-15: AS PREDICTED** (L192–L229, `DONE ticks=14`). The lowest tray cell READ: **`SLOT 10`** (L202 `SLOT 10 CROSSBOW name="Boltor"`, in L200's `SCREEN GrindstoneMenu`); L206 `[]`. L207 Back; **same tick** L208 `[0x1]`, L209 `SCREEN GrindstoneMenu`, **no `SLOT 10`** (count 0 over L209–L213; the control, the same grep over L200–L205, finds it). L214 `SCREEN NexusMenu`; L225 `[0x1]`. HELD ×2, one distinct |
 
 ### NB4 — Crafting, the boltor in the grid (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| As NB1, with `SCREEN CraftingMenu` and the boltor in the LOWEST grid slot (`CraftingMenuLayout.GRID_SLOTS`; a boltor stacks to 1, so `topUpTarget` finds no room and `firstEmptyInput` places it). Same tick after Back: `INVENTORY` = B, `SCREEN CraftingMenu` with that `SLOT` line gone. After `wait 3`: `SCREEN NexusMenu`, `INVENTORY` = B; HELD lines identical | |
+| As NB1, with `SCREEN CraftingMenu` and the boltor in the LOWEST grid slot (`CraftingMenuLayout.GRID_SLOTS`; a boltor stacks to 1, so `topUpTarget` finds no room and `firstEmptyInput` places it). Same tick after Back: `INVENTORY` = B, `SCREEN CraftingMenu` with that `SLOT` line gone. After `wait 3`: `SCREEN NexusMenu`, `INVENTORY` = B; HELD lines identical | **2026-11-15: AS PREDICTED** (L230–L267, `DONE ticks=14`). The lowest grid slot READ: **`SLOT 10`** (L240, in L238's `SCREEN CraftingMenu`); L244 `[]`. L245 Back; **same tick** L246 `[0x1]`, L247 `SCREEN CraftingMenu`, **no `SLOT 10`** (count 0 over L247–L251; the control over L238–L243 finds it). L252 `SCREEN NexusMenu`; L263 `[0x1]`. HELD ×2, one distinct |
 
 ### NB5 — the Vault: Back leaves the saved page exactly as a close would (SURVIVAL) — witness: the log
 
@@ -268,19 +310,19 @@ degraded vault cannot be staged by the instrument.
 
 | prediction | READING |
 |---|---|
-| After `shift_click`: `SCREEN NexusVaultMenu` with a `SLOT` line for the boltor in the first free storage cell; `INVENTORY` = B less one. After `click "Back to the Nexus"`, **same tick:** `INVENTORY` = B less one (**the boltor STAYS in the vault**), `SCREEN NexusVaultMenu` with that `SLOT` line still present. After `wait 3`: `SCREEN NexusMenu`. Reopened (`close`, `menu`, `click "Vault"`): **`SCREEN NexusVaultMenu` with the boltor's `SLOT` line at the same slot** (a new `NexusVaultMenu` paints its page from `VaultService.vault(uuid)`, the store `writePage` updates, not from the screen it replaced; so this is the saved page as the service holds it, not the bytes on disk), and `INVENTORY` = B less one. After `shift_click "top boltor"` and `wait 3`: `INVENTORY` = B. HELD lines identical | |
+| After `shift_click`: `SCREEN NexusVaultMenu` with a `SLOT` line for the boltor in the first free storage cell; `INVENTORY` = B less one. After `click "Back to the Nexus"`, **same tick:** `INVENTORY` = B less one (**the boltor STAYS in the vault**), `SCREEN NexusVaultMenu` with that `SLOT` line still present. After `wait 3`: `SCREEN NexusMenu`. Reopened (`close`, `menu`, `click "Vault"`): **`SCREEN NexusVaultMenu` with the boltor's `SLOT` line at the same slot** (a new `NexusVaultMenu` paints its page from `VaultService.vault(uuid)`, the store `writePage` updates, not from the screen it replaced; so this is the saved page as the service holds it, not the bytes on disk), and `INVENTORY` = B less one. After `shift_click "top boltor"` and `wait 3`: `INVENTORY` = B. HELD lines identical | **2026-11-15: AS PREDICTED** (L268–L335, `DONE ticks=27`). The first free storage cell READ: **`SLOT 9`** (L285, in L276's `SCREEN NexusVaultMenu`); L288 `[]`. L289 Back; **same tick** L290 `slots=[]` (**the boltor stayed in the vault**), L291 `SCREEN NexusVaultMenu` with L300 `SLOT 9 CROSSBOW name="Boltor"` still present. L303 `SCREEN NexusMenu`. Reopened (L315 `/menu`, L316 `Vault`): L317 `SCREEN NexusVaultMenu`, **L326 `SLOT 9 … Boltor`, the same slot**; L329 `[]`. L330 `shift-click … top slot=9 boltor x1`; L331 `[0x1]` = B. HELD ×2, one distinct. **Ben's vault page 1 is left as the row found it** (on the service's word: the bytes on disk were not read) |
 
 ### NB6 — Crafting → Recipe Book with a loaded grid → Back to crafting (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| After `shift_click`: `SCREEN CraftingMenu` with the boltor in the lowest grid slot; `INVENTORY` = B less one. After `click "Recipe Book"`, **same tick:** `INVENTORY` = B, `SCREEN CraftingMenu` with that `SLOT` line gone. After `wait 3`: `SCREEN RecipeBrowserMenu`. After `click "Back to crafting"` and `wait 3`: `SCREEN CraftingMenu` with **no** grid `SLOT` line and a `Back to the Nexus` slot (D1's breadcrumb, `GATE-nexus-polish.md`); `INVENTORY` = B | |
+| After `shift_click`: `SCREEN CraftingMenu` with the boltor in the lowest grid slot; `INVENTORY` = B less one. After `click "Recipe Book"`, **same tick:** `INVENTORY` = B, `SCREEN CraftingMenu` with that `SLOT` line gone. After `wait 3`: `SCREEN RecipeBrowserMenu`. After `click "Back to crafting"` and `wait 3`: `SCREEN CraftingMenu` with **no** grid `SLOT` line and a `Back to the Nexus` slot (D1's breadcrumb, `GATE-nexus-polish.md`); `INVENTORY` = B | **2026-11-15: AS PREDICTED** (L336–L368, `DONE ticks=17`). L342 `SCREEN CraftingMenu`, L344 `SLOT 10 … Boltor`; L348 `[]`. L349 `click … slot=26 "Recipe Book"`; **same tick** L350 `[0x1]`, L351 `SCREEN CraftingMenu`, **no `SLOT 10`** (count 0 over L351–L355). L356 `SCREEN RecipeBrowserMenu`. L360 `Back to crafting`; L361 `SCREEN CraftingMenu` with SLOTs 4, 26, 48 (`ARROW name="Back to the Nexus"`), 49 and **no grid `SLOT` line**; L366 `[0x1]` |
 
 ### NB7 — a departing menu is inert: a shift-click in the hop's tick is dropped (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `click "Back to the Nexus"` in the Anvil, then `shift_click "bottom boltor"` **in the same tick**: the driver logs `DRIVE shift-click … bottom slot=<n> boltor x1` (it found the boltor and fired the event), and the same-tick `INVENTORY` = B (**the router never ran**: `Menu.handleClick` returns at `departure.underway()` before `MenuRouting.route`). After `wait 3`: `SCREEN NexusMenu`, `INVENTORY` = B. **The control is in the reading:** without the freeze, the router performs the move and the same-tick `INVENTORY` reads B less one (the hub's implicit close would then hand it back, so the `wait 3` reading alone could not tell) | |
+| `click "Back to the Nexus"` in the Anvil, then `shift_click "bottom boltor"` **in the same tick**: the driver logs `DRIVE shift-click … bottom slot=<n> boltor x1` (it found the boltor and fired the event), and the same-tick `INVENTORY` = B (**the router never ran**: `Menu.handleClick` returns at `departure.underway()` before `MenuRouting.route`). After `wait 3`: `SCREEN NexusMenu`, `INVENTORY` = B. **The control is in the reading:** without the freeze, the router performs the move and the same-tick `INVENTORY` reads B less one (the hub's implicit close would then hand it back, so the `wait 3` reading alone could not tell) | **2026-11-15: AS PREDICTED** (L369–L390, `DONE ticks=12`). B = `[0x1]` (L371). L373 `Anvil`, L374 `Back to the Nexus`, L375 `DRIVE shift-click InventoryClickEvent SHIFT_LEFT MOVE_TO_OTHER_INVENTORY bottom slot=81 boltor x1` (fired); **same tick** L376 `slots=[0x1]` = B: **the router did not move it**. L377 `SCREEN NexusMenu`; L388 `[0x1]` |
 
 ### H1 — the screen does not visibly close, and the pointer stays (SURVIVAL) — witness: Ben (Q1-Q12)
 
@@ -290,12 +332,18 @@ from the Nexus (`/menu`, then the station), move the mouse pointer well away fro
 
 | departure | Q: did the Nexus (or the Recipe Book) appear WITHOUT the screen visibly closing first? | Q: is the pointer still where it was when you clicked? | READING |
 |---|---|---|---|
-| Vault → Back | Q1 | Q2 | |
-| Anvil → Back | Q3 | Q4 | |
-| Crafting → Back | Q5 | Q6 | |
-| Enchanting → Back | Q7 | Q8 | |
-| Grindstone → Back | Q9 | Q10 | |
-| Crafting → Recipe Book | Q11 | Q12 | |
+| Vault → Back | Q1 | Q2 | **2026-11-15:** Q1 yes, Q2 yes (see the note below) |
+| Anvil → Back | Q3 | Q4 | **2026-11-15:** Q3 yes, Q4 yes |
+| Crafting → Back | Q5 | Q6 | **2026-11-15:** Q5 yes, Q6 yes |
+| Enchanting → Back | Q7 | Q8 | **2026-11-15:** Q7 yes, Q8 yes |
+| Grindstone → Back | Q9 | Q10 | **2026-11-15:** Q9 yes, Q10 yes |
+| Crafting → Recipe Book | Q11 | Q12 | **2026-11-15:** Q11 yes, Q12 yes |
+
+**H1 READING, 2026-11-15: AS PREDICTED, on Ben's word.** Ben answered the twelve together, verbatim: *"Q1-12 -
+results as intended"*. Every H1 prediction is yes, so that reads as yes ×12, accepted as given and not re-asked. **What
+the log shows of it:** between L395 and L401 there are five `/menu` commands and two `/men` (L397, L398). The hub's
+Back returns to the Nexus, so a station can be opened again from the hub without `/menu`; the log does not record menu
+clicks outside a selftest, so **which departures were driven in which order is Ben's statement, not a log reading.**
 
 **Predicted yes on all twelve, and this is the row Ben's report is about.** It rests on F3 (only the open packet is
 sent) and on what the client does with an open screen packet while a screen is open, **which the jar cannot answer**.
@@ -305,25 +353,25 @@ A "no" is a finding about the client, recorded with which departure.
 
 | prediction | READING |
 |---|---|
-| Ben runs `/rpg give boltor`, opens the Anvil from the Nexus, puts the boltor in the left slot by hand, and clicks Back. **Q13: in your inventory now, is there exactly one boltor from this, and nothing on the ground at your feet?** Predicted yes | |
+| Ben runs `/rpg give boltor`, opens the Anvil from the Nexus, puts the boltor in the left slot by hand, and clicks Back. **Q13: in your inventory now, is there exactly one boltor from this, and nothing on the ground at your feet?** Predicted yes | **2026-11-15: AS PREDICTED. Q13: yes** (Ben). L394 is the sheet's `/rpg give boltor` |
 
 ### H3 — an item held on the cursor comes back (SURVIVAL) — witness: Ben (Q14)
 
 | prediction | READING |
 |---|---|
-| In the Anvil (from the Nexus), Ben picks the boltor up from his own inventory so it is on the pointer, and clicks Back while holding it. **Q14: when the Nexus is up, is the boltor in your inventory (not on the pointer, not on the ground)?** Predicted yes: `returnEverything`'s cursor branch hands it back in the click (`setItemOnCursor(null)`, then `MenuSafety.give`) | |
+| In the Anvil (from the Nexus), Ben picks the boltor up from his own inventory so it is on the pointer, and clicks Back while holding it. **Q14: when the Nexus is up, is the boltor in your inventory (not on the pointer, not on the ground)?** Predicted yes: `returnEverything`'s cursor branch hands it back in the click (`setItemOnCursor(null)`, then `MenuSafety.give`) | **2026-11-15: AS PREDICTED. Q14: yes** (Ben) |
 
 ### C1 — CONTROL: the Close button and Esc still close the screen and return the items (SURVIVAL) — witness: Ben (Q15, Q16)
 
 | prediction | READING |
 |---|---|
-| Unchanged code (`closeInventory()` under each `CLOSE_SLOT`; Esc's close event). Ben puts the boltor in the Anvil's left slot and clicks the **Close** button: **Q15: did the screen close, and is the boltor back in your inventory?** Then the same with **Esc**: **Q16: did the screen close, and is the boltor back?** Predicted yes and yes. **This row is the control on H1:** if H1's "without the screen visibly closing" were satisfied by every screen change, Close would fail to look like a close here | |
+| Unchanged code (`closeInventory()` under each `CLOSE_SLOT`; Esc's close event). Ben puts the boltor in the Anvil's left slot and clicks the **Close** button: **Q15: did the screen close, and is the boltor back in your inventory?** Then the same with **Esc**: **Q16: did the screen close, and is the boltor back?** Predicted yes and yes. **This row is the control on H1:** if H1's "without the screen visibly closing" were satisfied by every screen change, Close would fail to look like a close here | **2026-11-15: AS PREDICTED. Q15: yes, Q16: yes** (Ben, verbatim *"Q15/16 - yes"*). **Not on the sheet:** a second `/rpg give boltor` at L402 (14:38:42), after C1 and before the XP restore; it is recorded, not explained |
 
 ### LAST — the run ends and restores (SURVIVAL) — witness: the log + Ben (Q17)
 
 | prediction | READING |
 |---|---|
-| `SELFTEST RUN START all rows=57`; eleven setups in index order, `nexus-back` last; **68** scenario STARTs, each with exactly one `DONE` or `SKIPPED` (every SKIPPED a reading, with its reason); `SELFTEST RUN FINISHED`, then `SELFTEST RUN RESTORED xp=<Ben's> … gamemode=SURVIVAL …`. **No `SELFTEST` line contains `PASS` or `FAIL` as a word.** **Q17: is the item that was in your hand before the run back in your hand?** Predicted yes | |
+| `SELFTEST RUN START all rows=57`; eleven setups in index order, `nexus-back` last; **68** scenario STARTs, each with exactly one `DONE` or `SKIPPED` (every SKIPPED a reading, with its reason); `SELFTEST RUN FINISHED`, then `SELFTEST RUN RESTORED xp=<Ben's> … gamemode=SURVIVAL …`. **No `SELFTEST` line contains `PASS` or `FAIL` as a word.** **Q17: is the item that was in your hand before the run back in your hand?** Predicted yes | **2026-11-15: the per-gate form was run by the seat's ruling of 2026-11-15.** **READ, the half that does not depend on the form: AS PREDICTED.** 8 STARTs (setup + NB1–NB7), 8 `DONE`, 0 `SKIPPED`: one each. L391 `SELFTEST RUN FINISHED`, then L392 `SELFTEST RUN RESTORED xp=712580 cell=mage/fire gamemode=SURVIVAL held=4 mana=100.0 trace=false spawn_mobs=false time=6000 blocks=0 mobsRemoved=0 orbsRemoved=0 keep_inventory=false immediate_respawn=false`. **0** SELFTEST lines contain `PASS` or `FAIL` as a word (`grep -cwE 'PASS\|FAIL'` over L90–L392). **Q17: yes** (Ben, asked as "right after the selftest finished"). **NOT AS PREDICTED (FORM), by ruling, not a defect of the build:** L90 reads `SELFTEST RUN START nexus-back rows=7 selftest=159a5e1f player=b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5`, not `all rows=57`; there is **one** setup (nexus-back's), not eleven; and there are **8** scenario STARTs, not 68 |
 
 ## HOW LONG IT RUNS (computed from the files, not measured)
 
@@ -331,7 +379,8 @@ A "no" is a finding about the client, recorded with which departure.
 cd paper/src/main/resources/selftest; for g in $(grep -E '^  - ' index.yml | tr -d '\r' | sed 's/  - //'); do f=GATE-$g.yml; echo "$g waits=$(grep -E '^\s*- wait:' $f | tr -d '\r' | awk '{s+=$3} END{print s+0}') scenarios=$(grep -cE '^[A-Za-z0-9-]+:' $f)"; done
 ```
 
-- **This gate:** waits **113** + 2 × 8 scenarios = **129 ticks, about 6.5 s.**
+- **This gate:** waits **113** + 2 × 8 scenarios = **129 ticks, about 6.5 s.** *Measured 2026-11-15, the per-gate run:
+  the DONE ticks sum to 137, and RUN START (14:34:21) to RESTORED (14:34:28) is about 7 s.*
 - **The whole `/rpg selftest all`:** the `2ca368ad` run's DONE ticks summed to **7905** (GATE-mining-auto.md LAST);
   plus this gate's 129, **≈ 8034 ticks, about 6 min 42 s at 20 TPS.**
 
