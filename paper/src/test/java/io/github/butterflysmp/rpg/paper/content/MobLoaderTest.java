@@ -2,6 +2,8 @@ package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
+import io.github.butterflysmp.rpg.core.mob.MobBody;
+import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -13,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalDouble;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -25,6 +28,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * and skipped, and the rest still load.
  */
 class MobLoaderTest {
+
+    /** The element ids the loader may accept; production passes the loaded ElementRegistry's. */
+    private static final java.util.Set<String> ELEMENTS = java.util.Set.of("void", "fire", "kinetic");
 
     @TempDir
     Path dir;
@@ -51,7 +57,7 @@ class MobLoaderTest {
     }
 
     private MobRegistry load() {
-        return new MobLoader(log).loadAll(new File(dir.toString()));
+        return new MobLoader(log, ELEMENTS::contains).loadAll(new File(dir.toString()));
     }
 
     private String warningText() {
@@ -118,7 +124,7 @@ class MobLoaderTest {
 
     @Test
     void missingDirectoryYieldsEmptyRegistry() {
-        var mobs = new MobLoader(log).loadAll(new File(dir.toFile(), "does_not_exist"));
+        var mobs = new MobLoader(log, ELEMENTS::contains).loadAll(new File(dir.toFile(), "does_not_exist"));
         assertEquals(0, mobs.size());
     }
 
@@ -147,5 +153,124 @@ class MobLoaderTest {
         // so setting it to 0 is caught by warnings.isEmpty() above before reaching here. Kept as a
         // deliberate restatement of the invariant at the point it is read, not as load-bearing cover.
         assertTrue(knell.maxHealth() > 0, "the Knell declares custom health");
+    }
+
+    // ---- dragon-mobs step R1: body fields, element, stages (PLAN-dragon-mobs.md) ----
+
+    /** A file with no body fields loads exactly as before: a vanilla body, no element, no stages. */
+    @Test
+    void aFileWithNoBodyFieldsLoadsAsBefore() throws IOException {
+        write("wraith.yml", "base_entity: zombie\nmax_health: 50\n");
+
+        MobDefinition wraith = load().find("wraith").orElseThrow();
+
+        assertEquals(MobBody.VANILLA, wraith.body());
+        assertNull(wraith.element());
+        assertNull(wraith.stages());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** Both directions of the round trip: an authored value ARRIVES, and an absent one stays absent. */
+    @Test
+    void scaleSpeedAndElementArrive() throws IOException {
+        write("knell.yml", """
+                base_entity: wither_skeleton
+                max_health: 360
+                scale: 1.6
+                speed: 0.6
+                element: void
+                """);
+        write("phalanx.yml", "base_entity: wither_skeleton\nmax_health: 240\nspeed: 0.65\n");
+
+        MobRegistry mobs = load();
+
+        MobDefinition knell = mobs.find("knell").orElseThrow();
+        assertEquals(OptionalDouble.of(1.6), knell.body().scale());
+        assertEquals(OptionalDouble.of(0.6), knell.body().speedMultiplier());
+        assertEquals("void", knell.element());
+        MobDefinition phalanx = mobs.find("phalanx").orElseThrow();
+        assertEquals(OptionalDouble.empty(), phalanx.body().scale(), "no scale authored, none arrives");
+        assertEquals(OptionalDouble.of(0.65), phalanx.body().speedMultiplier());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** An element that names nothing is REFUSED at load, the file and the id both named, and the rest load. */
+    @Test
+    void anUnknownElementIsRefusedNamingTheFileAndTheId() throws IOException {
+        write("knell.yml", "base_entity: wither_skeleton\nmax_health: 360\nelement: viod\n");
+        write("wraith.yml", "base_entity: zombie\nmax_health: 50\n");
+
+        MobRegistry mobs = load();
+
+        assertTrue(mobs.find("knell").isEmpty(), "a mob naming an unknown element does not load");
+        assertTrue(mobs.find("wraith").isPresent(), "the others still load");
+        assertTrue(warningText().contains("knell.yml"), warningText());
+        assertTrue(warningText().contains("'viod'"), warningText());
+    }
+
+    @Test
+    void stagesLoadWithTheFirstStagesHealthAsTheMax() throws IOException {
+        write("phage.yml", """
+                base_entity: creeper
+                element: void
+                stages:
+                  count: 5
+                  first: { height: 1.0, speed: 1.5, max_health: 80 }
+                  last:  { height: 3.0, speed: 0.5, max_health: 160 }
+                """);
+
+        MobDefinition phage = load().find("phage").orElseThrow();
+
+        assertEquals(5, phage.stages().count());
+        assertEquals(new StageBody(1.0, 1.5, 80), phage.stages().first());
+        assertEquals(new StageBody(3.0, 0.5, 160), phage.stages().last());
+        assertEquals(80, phage.maxHealth(), 0.0, "a staged mob's max_health is its stage-1 health");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** A staged file must not also author the fields its stages own: two sources for one number is refused. */
+    @Test
+    void aStagedFileThatAlsoAuthorsTopLevelBodyFieldsIsRefused() throws IOException {
+        write("phage.yml", """
+                base_entity: creeper
+                max_health: 80
+                stages:
+                  count: 5
+                  first: { height: 1.0, speed: 1.5, max_health: 80 }
+                  last:  { height: 3.0, speed: 0.5, max_health: 160 }
+                """);
+        write("phage2.yml", """
+                base_entity: creeper
+                scale: 2.0
+                stages:
+                  count: 5
+                  first: { height: 1.0, speed: 1.5, max_health: 80 }
+                  last:  { height: 3.0, speed: 0.5, max_health: 160 }
+                """);
+
+        MobRegistry mobs = load();
+
+        assertEquals(0, mobs.size());
+        assertTrue(warningText().contains("phage.yml"), warningText());
+        assertTrue(warningText().contains("phage2.yml"), warningText());
+    }
+
+    /** Every bundled mob file loads with no warning, through the loader production runs. */
+    @Test
+    void everyBundledMobLoads() throws IOException {
+        for (String name : List.of("knell", "phage", "phalanx", "skreel", "withered_mount")) {
+            try (var in = getClass().getResourceAsStream("/content/mobs/" + name + ".yml")) {
+                assertNotNull(in, name + " is missing from the classpath");
+                Files.write(dir.resolve(name + ".yml"), in.readAllBytes());
+            }
+        }
+
+        MobRegistry mobs = load();
+
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(5, mobs.size());
+        assertEquals(OptionalDouble.of(1.6), mobs.find("knell").orElseThrow().body().scale());
+        assertEquals("void", mobs.find("phage").orElseThrow().element());
+        assertNull(mobs.find("withered_mount").orElseThrow().element(), "the mount has no element (Ben)");
     }
 }

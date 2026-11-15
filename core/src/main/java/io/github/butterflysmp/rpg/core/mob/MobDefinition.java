@@ -17,14 +17,44 @@ package io.github.butterflysmp.rpg.core.mob;
  * Shaped to grow. {@code attackDamage} and the rest of the stat block become further components; only
  * {@code maxHealth} is wired this pass, and the custom health store is uncapped, so 5000 is the same
  * mechanism as 360 rather than a different one.
+ *
+ * <p><b>Grown in dragon-mobs step R1</b> (PLAN-dragon-mobs.md) by three optional components, each absent by default
+ * so every older file and call site means what it always meant:
+ * <ul>
+ *   <li>{@code body}: scale and a speed multiplier ({@link MobBody}); {@link MobBody#VANILLA} when unauthored.</li>
+ *   <li>{@code element}: an existing {@code content/elements} id, or null. IDENTITY ONLY on day one: it types no
+ *       damage, resists nothing, and refuses no status. The loader refuses an id that names no element.</li>
+ *   <li>{@code stages}: the Phage's per-stage bodies ({@link MobStages}), or null. A staged mob's
+ *       {@code maxHealth} is its stage-1 health, and its body lives in its stages, never in {@code body} too.</li>
+ * </ul>
+ * Gear (the plan's MB1 equipment) is DEFERRED past R1 and has no component here.
  */
 public record MobDefinition(
         String id,
         String baseEntity,
         String displayName,
-        double maxHealth
+        double maxHealth,
+        MobBody body,
+        String element,
+        MobStages stages
 ) {
+    /**
+     * The original four-field form: a vanilla body, no element, no stages. Kept so the existing call sites (tests
+     * and older code) read unchanged. (A record may declare extra constructors; each must call the full one.)
+     */
+    public MobDefinition(String id, String baseEntity, String displayName, double maxHealth) {
+        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null);
+    }
+
     public MobDefinition {
+        if (body == null) body = MobBody.VANILLA;
+        if (element != null && element.isBlank()) {
+            throw new IllegalArgumentException("mob '" + id + "' element must name an element, or be left out");
+        }
+        if (stages != null && !body.isVanilla()) {
+            throw new IllegalArgumentException("mob '" + id + "' authors stages AND top-level scale/speed;"
+                    + " a staged mob's body lives in its stages only");
+        }
         if (id == null || id.isBlank()) throw new IllegalArgumentException("mob id required");
         // Required, never defaulted -- the same reasoning that made a weapon's class required. A
         // silent default here would spawn the wrong creature and look entirely intentional.

@@ -58,6 +58,7 @@ import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ManaRegenModifierItems;
+import io.github.butterflysmp.rpg.paper.health.MobBodyApplier;
 import io.github.butterflysmp.rpg.paper.health.QuiverSizeModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ReloadTimeModifierItems;
 import io.github.butterflysmp.rpg.paper.hud.AccessorySheet;
@@ -384,11 +385,24 @@ public final class RpgCommand {
                                     }
                                     return builder.buildFuture();
                                 })
-                                .executes(ctx -> spawnFromCommand(ctx, mobs, adapters, null))
+                                .executes(ctx -> spawnFromCommand(ctx, mobs, adapters, null, null))
+                                // A STAGED mob at a chosen stage (PLAN-dragon-mobs.md step R1):
+                                // /rpg spawn phage stage 3 [gs]. A literal, not a bare second number, because
+                                // [gs] is already a bare number and "phage 3" would be ambiguous. The range is
+                                // the MOB'S stage count, checked in spawnMob; Brigadier only bounds it below.
+                                .then(Commands.literal("stage")
+                                        .then(Commands.argument("stage", IntegerArgumentType.integer(1))
+                                                .executes(ctx -> spawnFromCommand(ctx, mobs, adapters, null,
+                                                        IntegerArgumentType.getInteger(ctx, "stage")))
+                                                .then(Commands.argument("gs",
+                                                                IntegerArgumentType.integer(MobGearScore.MIN, MobGearScore.CAP))
+                                                        .executes(ctx -> spawnFromCommand(ctx, mobs, adapters,
+                                                                IntegerArgumentType.getInteger(ctx, "gs"),
+                                                                IntegerArgumentType.getInteger(ctx, "stage"))))))
                                 .then(Commands.argument("gs",
                                                 IntegerArgumentType.integer(MobGearScore.MIN, MobGearScore.CAP))
                                         .executes(ctx -> spawnFromCommand(ctx, mobs, adapters,
-                                                IntegerArgumentType.getInteger(ctx, "gs"))))))
+                                                IntegerArgumentType.getInteger(ctx, "gs"), null)))))
                 // Read the looked-at mob: its hostility, stored gear score, the score its position
                 // WOULD roll, its custom HP, and its VANILLA attributes. The last line is what lets a gate
                 // check "x5" against a printed number rather than a remembered one, and check M9 (the
@@ -808,12 +822,12 @@ public final class RpgCommand {
      * bare name alongside our nameplate -- death messages and /data read "Knell" either way.
      */
     private static int spawnFromCommand(CommandContext<CommandSourceStack> ctx, MobRegistry mobs,
-                                        AdapterContext adapters, Integer gearScore) {
+                                        AdapterContext adapters, Integer gearScore, Integer stage) {
         if (!(ctx.getSource().getExecutor() instanceof Player player)) {
             ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
             return 0;
         }
-        return spawnMob(player, StringArgumentType.getString(ctx, "mob"), mobs, adapters, gearScore);
+        return spawnMob(player, StringArgumentType.getString(ctx, "mob"), mobs, adapters, gearScore, stage);
     }
 
     /**
@@ -827,7 +841,7 @@ public final class RpgCommand {
      * reads as a spawn that worked.
      */
     private static int spawnMob(Player player, String mobId, MobRegistry mobs, AdapterContext adapters,
-                                Integer gearScore) {
+                                Integer gearScore, Integer stage) {
         MobDefinition def = mobs.find(mobId).orElse(null);
         String baseEntity = def != null ? def.baseEntity() : mobId;
 
@@ -856,6 +870,21 @@ public final class RpgCommand {
                     + " Spawn it without [gs].", NamedTextColor.RED));
             return 0;
         }
+        // THE STAGE (PLAN-dragon-mobs.md step R1). Refused, not dropped, for a mob without stages, for the same reason
+        // [gs] is refused for a passive mob: a silently ignored argument reads as a spawn that worked. A staged mob
+        // given no stage is stage 1.
+        boolean staged = def != null && def.stages() != null;
+        if (stage != null && !staged) {
+            player.sendMessage(Component.text("'" + mobId + "' has no stages. Spawn it without 'stage'.",
+                    NamedTextColor.RED));
+            return 0;
+        }
+        int atStage = stage == null ? 1 : stage;
+        if (staged && !def.stages().isValid(atStage)) {
+            player.sendMessage(Component.text("'" + mobId + "' has stages 1 to " + def.stages().count()
+                    + "; " + atStage + " is not one of them.", NamedTextColor.RED));
+            return 0;
+        }
         Component name = def == null ? null : MiniMessage.miniMessage().deserialize(def.displayName());
 
         LivingEntity spawned = player.getWorld().spawn(
@@ -867,6 +896,9 @@ public final class RpgCommand {
                                 .set(adapters.keys().mobId, PersistentDataType.STRING, def.id());
                         entity.customName(name);
                         entity.setCustomNameVisible(false);
+                        // The BODY and the stage, here for the same reason as the tag: before the add event
+                        // seeds health from the stage (MobBodyApplier's javadoc).
+                        MobBodyApplier.apply(entity, def, atStage, adapters.keys());
                     }
                     if (gearScore != null) {
                         entity.getPersistentDataContainer()
@@ -881,7 +913,7 @@ public final class RpgCommand {
         String hp = adapters.stats().tracks(id) ? Math.round(adapters.stats().max(id)) + " HP" : "untracked";
         player.sendMessage(Component.text("Spawned ", NamedTextColor.AQUA)
                 .append(name != null ? name : Component.text(type.getKey().getKey()))
-                .append(Component.text(" (" + baseEntity + ", " + hp
+                .append(Component.text(" (" + baseEntity + (staged ? ", stage " + atStage : "") + ", " + hp
                         + (stored != null ? ", GS " + stored + (gearScore != null ? " given" : " rolled") : ", passive")
                         + ")", NamedTextColor.GRAY)));
         return 1;

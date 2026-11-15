@@ -665,7 +665,7 @@ MB/E ids are `PLAN-legacy-port.md` §9.1's; **N1–N8 are new here.**
 | id | capability | needed by | tier | note |
 |---|---|---|---|---|
 | — | name + HP on a vanilla body | all four (five files with the mount) | **(a)** | ships today for the Knell |
-| **MB1** | body fields: `SCALE`, speed multiplier, follow range, equipment, `attack_damage` if M17 is ruled | all four | **(b)** | **the Phage needs them applied to a LIVE mob**, not only at spawn: a stage change rescales it, and `SCALE` refreshes the hitbox live (§7 F-C) |
+| **MB1** | body fields: `SCALE`, speed multiplier, follow range, equipment, `attack_damage` if M17 is ruled | all four | **(b)** | **R1 BUILT scale, speed and health only (§5.R.1); equipment, follow range and `attack_damage` are DEFERRED.** **the Phage needs them applied to a LIVE mob**, not only at spawn: a stage change rescales it, and `SCALE` refreshes the hitbox live (§7 F-C) |
 | **N1** | **element on a mob**: `element:` in the mob file | all four | **(b)** | one optional component and one validator check (§3.R.0) |
 | **N2** | **element on a vanilla type**: `content/mob_elements.yml` | Endermen (Phage growth) | **(b)** | a new small content file and loader; a mob file overrides it (§3.R.0) |
 | **N3** | **"hostile to mobs" as one named predicate** over combatants | every N below | **(b)** | today it is `player()` (§7 F-E); a Summoner adds to it in one place |
@@ -727,6 +727,47 @@ whose prediction is server-side only, so `/rpg selftest` could drive it under an
 most numerous mob and the most new mechanism, and because each of its three steps is playable alone. The Knell's two
 steps follow, the beam before the move that depends on its hit. The Phalanx needs N3 (from R3) for its projectile's
 target. The Skreel is still last: the only pair, the only state machine, the only spear.
+
+### 5.R.1 STEP R1 AS BUILT (`feat/dragon-bodies`, 2026-11-15) — AND THE AMENDMENT TO R1 AND R2
+
+**THE SEAT AMENDED 5.R (ruling 9): the Phage's per-stage BODY moves from R2 into R1**, because the Phage's body cannot
+be authored without it. R1 sets the stage at spawn; **nothing changes it in R1** (no growth, no split). R2 keeps the
+split on kill. The gate is `docs/gates/GATE-dragon-bodies.md`.
+
+**What R1 built** (MB1 limited to scale, speed and health; N1; N2; the stage bodies):
+
+| piece | as built | where |
+|---|---|---|
+| **scale** | the value of the `SCALE` attribute, written as its BASE | `MobBody`, `MobBodyApplier` |
+| **speed** | a MULTIPLIER of the base type's DEFAULT movement speed (`AttributeInstance#getDefaultValue`), written as the BASE, so re-applying it does not stack and our slows (modifiers) still sit on top | `MobBodies.applySpeed` |
+| **health** | unchanged meaning: `max_health` is the AUTHORED health, × GS/100, never × 5 (M4, GS from M25). A staged mob's is its stage's | `MobSeeding.maxHealth(…, stage, …)` |
+| **element** | optional `element:`, an id in `content/elements/`; an unknown id makes the file a named, skipped file at load (`Skipping malformed mob '<file>': element '<id>' names no element …`). IDENTITY ONLY | `MobLoader`, `MobDefinition` |
+| **the vanilla table** | `content/mob_elements.yml`, one row `enderman: void`; a row naming no entity type or no element is refused with `Refusing row …`, and the rest load | `MobElementLoader` |
+| **the resolver** | one class in core: the mob's file (if it names an element), else the table by the bare type key, else none | `core.mob.MobElementResolver` |
+| **the stages** | `stages: { count, first: {height, speed, max_health}, last: {…} }`, linear between; a staged file authoring top-level `max_health`, `scale` or `speed` is refused | `MobStages`, `StageBody` |
+| **the stage on the mob** | the PDC key `mob_stage` (an INTEGER), written in the spawn's pre-spawn consumer beside `mob_id`, so the add event's seed reads it; PDC, so it survives a chunk unload and a restart. A bad stored value seeds as stage 1 and is named at WARN | `Keys.mobStage`, `MobBodyApplier.stageOf` |
+| **the dev spawn** | `/rpg spawn <mob> stage <n> [gs]`: a LITERAL `stage`, because `[gs]` is already a bare number. No stage given is stage 1; a stage on an unstaged mob, or outside the mob's count, is refused by name and spawns nothing | `RpgCommand.spawnMob` |
+| **no explosion** | `ExplosionPrimeEvent`, `CreeperIgniteEvent` and `CreeperPowerEvent` are cancelled for a creeper carrying `mob_id`; each logs `CREEPERGUARD …` | `CustomCreeperGuard`, `RpgListeners` |
+
+**THE QUANTITY THE PHAGE AUTHORS IS HEIGHT IN BLOCKS, NOT SCALE, AND WHY.** It is the unit Ben ruled in (*"from 1
+block to 3 blocks in height"*), so the file carries his numbers verbatim (1.0 and 3.0) instead of 1/1.7 and 3/1.7.
+And it is cleanly NAMED: `Entity#getHeight()`, the hitbox height, which the gate reads back directly. The plugin turns
+it into scale from the creeper's own unscaled height, read off the entity (1.7 from `EntityType`, §7 F-C), so the
+file never states 1.7. The other mobs author `scale`, because their ruling was a ratio (*"1.6x"*). **Linear in height
+is linear in scale** (scale = height / 1.7), so G3's "evenly between" holds in both.
+
+**THREE CHOICES R1 MADE THAT THE SEAT SHOULD SEE:**
+- **A mob file that authors NO element falls through to the vanilla table** rather than meaning "none". No shipped
+  mob reaches the difference (the mount is a spider, and `spider` is not in the table); `MobElementResolverTest` pins
+  the choice as a row. The other reading would make "no `element:`" a third way of saying none.
+- **The mount's id is `withered_mount` and its name "Withered Mount"**, the old game's, both Ben's to change (Q25).
+  Rider and mount are separate mobs; nothing pairs them in R1.
+- **The guard keys on the `mob_id` TAG, not on the registry, and covers any creeper of ours**, not only the Phage: a
+  creeper we spawned stays ours if its file is removed. Today the Phage is the only one.
+
+**DEFERRED FROM MB1, BY THE BRIEF:** equipment (K4, X3, the Skreel's spear) and `attack_damage` (M17). So in R1 **the
+Knell is unarmed and the Phalanx has no bow: both melee like a bare wither skeleton** (the M4/M24 custom-mob melee
+of today, PLAN-mob-scaling.md §6 F15), and the Skreel has no spear. **Follow range** (cfde822's 64) is also not in R1.
 
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 

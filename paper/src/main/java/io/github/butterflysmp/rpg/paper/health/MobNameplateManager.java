@@ -174,7 +174,10 @@ public final class MobNameplateManager implements HealthListener {
             }
         }
 
-        double base = MobSeeding.maxHealth(mobs, mobId, maxHealthOf(mob));
+        // A STAGED mob (the Phage) seeds from its stage, read off the live mob (PLAN-dragon-mobs.md step R1). The
+        // stage tag is written in the same pre-spawn consumer as mob_id, so it is here before this first seed.
+        int stage = mobId == null ? 1 : MobBodyApplier.stageOf(mob, mobs.find(mobId).orElse(null), keys, log);
+        double base = MobSeeding.maxHealth(mobs, mobId, stage, maxHealthOf(mob));
         double max = MobScaling.maxHealth(base, custom, hostile, score.orElse(0));
         // Slice 2: melee is priced HERE, once, so onMobMeleeAttack's read of the stat is already M16's
         // vanilla x 5 x GS/100. The attribute itself is only read, never written (M9's attack mirror).

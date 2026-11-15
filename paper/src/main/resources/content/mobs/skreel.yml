@@ -1,0 +1,14 @@
+# THE SKREEL, the rider (PLAN-dragon-mobs.md). R1 builds its BODY only.
+#
+# Its mount is a SEPARATE mob, withered_mount.yml. In R1 NOTHING PAIRS THEM: spawning one does not spawn the other,
+# and neither rides the other. The pairing, the leap and the survivor rule are step R8. Its spear is gear, deferred.
+
+base_entity: wither_skeleton
+display_name: "Skreel"
+
+# THE QUANTITY: authored health, x GS/100 and never x5 (M4). The old game's 120, accepted by Ben, 2026-11-15.
+# Normal size and normal speed, so neither scale nor speed is authored: the body stays vanilla.
+max_health: 120
+
+# ELEMENT: Void (Ben's additional note, 2026-11-15). IDENTITY ONLY today.
+element: void

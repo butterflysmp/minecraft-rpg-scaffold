@@ -26,4 +26,22 @@ display_name: "Knell"
 # The custom health store is uncapped, so this is the same mechanism at 360 as at 5000 -- vanilla's
 # 1024 attribute cap does not apply, because nothing here touches the vanilla attribute. A boss is
 # a bigger number in this field, not a different feature.
+#
+# THE QUANTITY: authored health. The seed multiplies it by GS/100 and never by 5 (PLAN-mob-scaling.md M4), so in
+# the End within 1,000 blocks of (0, 0) it is x3 (M25). UNCHANGED by dragon-mobs step R1: Ben did not choose between
+# the old game's 480 and this 360, so the seat ruled it stays as it ships (PLAN-dragon-mobs.md, K3).
 max_health: 360
+
+# BODY (dragon-mobs step R1; Ben's starting values from the old game, 2026-11-15, his to tune).
+# scale: the value of the SCALE attribute. 1.6 is 1.6x a wither skeleton in every dimension, hitbox included.
+scale: 1.6
+# speed: a MULTIPLIER of a wither skeleton's DEFAULT movement speed, never an absolute speed.
+speed: 0.6
+
+# ELEMENT: an id in content/elements/. IDENTITY ONLY today: it types none of the Knell's damage and resists nothing.
+# What asks it first is the Phage's growth (a Void death nearby grows a Phage). Ben, 2026-11-15: the whole fight is
+# Void.
+element: void
+#
+# NOT YET HERE: gear (the old game's diamond set and sword) is deferred past R1, so the Knell still spawns bare and
+# hits like a bare wither skeleton (M17, parked). Its beam and the teleport after it are steps R5 and R6.

@@ -89,7 +89,7 @@ class MiningWiringSignatureTest {
         assertEquals(List.of("RpgPlugin.java: boolean devServer = Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY);"), reads);
 
         List<String> plugin = lines("RpgPlugin.java");
-        indexOf(plugin, "buildCommit(), devServer, ScenarioLoader.load(this::getResource));");
+        indexOf(plugin, "buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements);");
         indexOf(plugin, "fireCadence, vaults, mining, devServer);");
         // Mutations: give RpgCommand its own Boolean.getBoolean, or pass true to build() -> reddens.
     }

@@ -36,6 +36,7 @@ import io.github.butterflysmp.rpg.paper.adapter.WitherPotion;
 import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
 import io.github.butterflysmp.rpg.paper.health.AttackSpeedAttributeOverride;
+import io.github.butterflysmp.rpg.paper.health.CustomCreeperGuard;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.menu.AnvilMenu;
 import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
@@ -2838,6 +2839,43 @@ public final class RpgListeners implements Listener {
     @EventHandler
     public void onFrozenExplosionPrime(ExplosionPrimeEvent event) {
         if (isFrozen(event.getEntity())) event.setCancelled(true);
+    }
+
+    /**
+     * One of OUR creepers (the Phage) never explodes the vanilla way: the swell's prime is cancelled every time, so
+     * it swells, resets and swells again (PLAN-dragon-mobs.md step R1; {@link CustomCreeperGuard}). The log line
+     * is the witness that a fuse actually completed and was refused, so a gate row can tell "never swelled" from
+     * "swelled and was stopped".
+     */
+    @EventHandler
+    public void onCustomCreeperPrime(ExplosionPrimeEvent event) {
+        if (!(event.getEntity() instanceof org.bukkit.entity.Creeper creeper)) return;
+        String mobId = creeper.getPersistentDataContainer().get(adapters.keys().mobId, PersistentDataType.STRING);
+        if (!CustomCreeperGuard.refusesVanillaDetonation(true, mobId)) return;
+        event.setCancelled(true);
+        adapters.log().info("CREEPERGUARD prime cancelled mob=" + mobId + " id=" + creeper.getUniqueId());
+    }
+
+    /** Flint and steel or a fire charge cannot ignite one of our creepers ({@link CustomCreeperGuard}). */
+    @EventHandler
+    public void onCustomCreeperIgnite(com.destroystokyo.paper.event.entity.CreeperIgniteEvent event) {
+        String mobId = event.getEntity().getPersistentDataContainer()
+                .get(adapters.keys().mobId, PersistentDataType.STRING);
+        if (event.isIgnited() && CustomCreeperGuard.refusesVanillaDetonation(true, mobId)) {
+            event.setCancelled(true);
+            adapters.log().info("CREEPERGUARD ignite cancelled mob=" + mobId + " id=" + event.getEntity().getUniqueId());
+        }
+    }
+
+    /** Lightning cannot charge one of our creepers ({@link CustomCreeperGuard}). */
+    @EventHandler
+    public void onCustomCreeperPower(org.bukkit.event.entity.CreeperPowerEvent event) {
+        String mobId = event.getEntity().getPersistentDataContainer()
+                .get(adapters.keys().mobId, PersistentDataType.STRING);
+        if (CustomCreeperGuard.refusesVanillaDetonation(true, mobId)) {
+            event.setCancelled(true);
+            adapters.log().info("CREEPERGUARD power cancelled mob=" + mobId + " id=" + event.getEntity().getUniqueId());
+        }
     }
 
     /**
