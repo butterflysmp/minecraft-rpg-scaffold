@@ -34,8 +34,9 @@ class SelfTestScenariosTest {
         ScenarioLoader.Loaded loaded = shipped();
         assertEquals(List.of(), loaded.refusals());
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
-                "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back"), List.copyOf(loaded.gates().keySet()),
-                "the eleven gates, in boot order; nexus-back LAST, after mining-auto (2026-11-14)");
+                "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies"),
+                List.copyOf(loaded.gates().keySet()),
+                "the twelve gates, in boot order; nexus-back after mining-auto (2026-11-14), dragon-bodies LAST (2026-11-15)");
     }
 
     /** The seat's CORE rows, one scenario each (2026-10-05). R0d is a boot log line and has none. */
@@ -54,6 +55,8 @@ class SelfTestScenariosTest {
                 "deft-hands", List.of("DH1", "DH3", "DH6"),
                 "mining-auto", List.of("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12")));
         expected.put("nexus-back", List.of("NB1", "NB2", "NB3", "NB4", "NB5", "NB6", "NB7"));
+        expected.put("dragon-bodies", List.of("DB1", "DB2", "DB3", "DB4", "DB5", "DB6", "DB7", "DB8", "DB9", "DB10",
+                "DB11"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -62,7 +65,10 @@ class SelfTestScenariosTest {
         }
         // 24 CORE rows on the seat's run sheet + WS-C (made CORE 2026-10-05) - R0d (a boot line, no scenario). Then +10, GATE-sunder.md, and +3, GATE-deft-hands.md (2026-11-06).
         // Then +1, SU8's death half (the seat's ruling, 2026-11-10). Then +12, GATE-mining-auto.md (2026-11-14). Then +7, GATE-nexus-back.md (2026-11-14).
-        assertEquals(57, loaded.rows());
+        // Then GATE-dragon-bodies.md (2026-11-15). RECOUNTED from the files, not adjusted: in selftest/, the index's
+        // gates (grep -cE '^  - ' index.yml) printed 12; their top-level keys (^[A-Za-z0-9-]+:) 80; their setups 12;
+        // so 80 - 12 = 68. The same three commands at master 5b71e24b print 11, 68, 11: 57, this line's old value.
+        assertEquals(68, loaded.rows());
     }
 
     @Test
