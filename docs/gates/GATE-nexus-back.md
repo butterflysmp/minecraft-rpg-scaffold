@@ -5,6 +5,9 @@ ruling: `/rpg selftest nexus-back`, not `/rpg selftest all`. ST9R2 NOT READ by r
 ruling, its form-independent half read. Every other row read as predicted. The readings are in the READING cells and
 in *CARRIED STATE, READ* below.
 
+**Seat read 2026-11-15 from origin at 3c811f7d: readings accepted; approved to merge.** ST9R2 is NOT READ and carried
+to the next full `/rpg selftest all` run.
+
 Every prediction below was written **before** any boot of `feat/nexus-back`, and this file is
 **committed before the boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once
 its row has been read. **NO BOOT until the seat has diffed the code AND this gate, and Ben says ready.**
