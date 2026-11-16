@@ -72,13 +72,15 @@ class DragonBlastWiringTest {
 
     /**
      * THE SAME PATH AS A MOB'S MELEE HIT (the seat's ruling 25): each victim is hit through
-     * {@code BukkitCombatant.of(victim, ...).handle().applyDamage(amount, phageId)}, the two-argument form
+     * {@code BukkitCombatant.of(victim, ...).handle().applyDamage(dealt, phageId)}, the two-argument form
      * {@code RpgListeners.onMobMeleeAttack} uses, so the store applies the victim's defence and the hit wears no element.
      */
     @Test
     void eachVictimIsHitThroughTheMeleePath() throws IOException {
         List<String> blaster = codeLines(MAIN.resolve(Path.of("health", "MobBlaster.java")));
-        assertTrue(blaster.stream().anyMatch(l -> l.contains(".handle().applyDamage(damage, phageId)")), "two-arg hit");
+        assertTrue(blaster.stream().anyMatch(l -> l.contains(".handle().applyDamage(dealt, phageId)")), "two-arg hit");
+        assertTrue(blaster.stream().anyMatch(l -> l.contains("double dealt = base * hit.factor();")),
+                "each victim takes the zero-distance damage times its share of vanilla's curve");
         List<String> listeners = codeLines(MAIN.resolve(Path.of("listener", "RpgListeners.java")));
         assertTrue(listeners.stream().anyMatch(l -> l.contains(".applyDamage(exchange.applied(), attacker.getUniqueId());")),
                 "the melee hit this mirrors is still the two-argument form");

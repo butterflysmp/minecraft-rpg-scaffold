@@ -65,7 +65,7 @@ class SelfTestScenariosTest {
         expected.put("dragon-growth", List.of("DG1R2", "DG2R2", "DG3R2", "DG4R2", "DG5R2", "DG6R2", "DG7R2", "DG8R2",
                 "DG9R2"));
         // Step R3: GATE-dragon-blast.md's own rows; BQ1 is Ben's three ASK questions.
-        expected.put("dragon-blast", List.of("BL1", "BL2", "BL3", "BL4", "BL5", "BL6", "BL7", "BL8", "BQ1"));
+        expected.put("dragon-blast", List.of("BL1", "BL2", "BL3", "BL4", "BL5", "BL6", "BL7", "BL8", "BL9", "BQ1"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -85,7 +85,9 @@ class SelfTestScenariosTest {
         // feat/dragon-growth 39bb2e90 the same commands print 14, 97, 14: 83, this line's old value.
         // Then GATE-dragon-blast.md (step R3, 2026-11-15), RECOUNTED the same way: 15 gates, 106 keys, 15 setups, so 91.
         // At master 94915476 the same commands print 14, 96, 14: 82, this line's old value.
-        assertEquals(91, loaded.rows());
+        // Then BL9, vanilla's blast shape (the seat's brief of 2026-11-16), RECOUNTED the same way: 15 gates, 107 keys,
+        // 15 setups, so 92. At feat/dragon-blast 58165392 the same commands print 15, 106, 15: 91, this line's old value.
+        assertEquals(92, loaded.rows());
     }
 
     @Test
