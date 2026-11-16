@@ -6,6 +6,11 @@
 # one leaked into later rows and was grown there); the setup declares the difficulty; every row-start clean is
 # followed by a LEFTOVER line. The text below is the original header, and still describes the staging.
 #
+# 2026-11-16, STEP R3 MOVED TWO ROWS OUT OF THIS FILE (the seat's brief; GATE-dragon-fix.md's dated note). DG6R2 and
+# DG9R2 each split a stage 5 and left two LIVE children beside the player, and from R3 a live Phage within 3 blocks
+# blows. They are re-predicted in GATE-dragon-blast.md as DG6R3 and DG9R3, where a frozen parent's children are born
+# frozen. Their old predictions and readings stay in GATE-dragon-fix.md. The other seven rows split nothing and stay.
+#
 # GATE-dragon-growth.md: the Phage's growth (the plan's step R4), read from the SERVER. Each row spawns Phages through
 # the shipped /rpg spawn at gear score 300, tags them, freezes them with NoAI, and kills creatures beside them with
 # /kill; it then reads each Phage's BODY (and, in DG7, its health) and the GROWTH lines the shipped code logs.
@@ -123,25 +128,6 @@ DG5R2:
   - wait: 2
   - probe_body: dg5a
 
-# DG6R2: a stage 5 killed 2 blocks from a stage-2 Phage: it splits, its two children stay at stage 1, the bystander
-# goes to stage 3.
-DG6R2:
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
-  - save_blocks: "-3 -1 -4 12 5 4"
-  - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
-  - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
-  - cmd: "tp @s ~3 ~ ~"
-  - spawn: "dg6b frozen phage stage 2 300"
-  - cmd: "tp @s ~2 ~ ~"
-  - spawn: "dg6p frozen phage stage 5 300"
-  - cmd: "tp @s ~-5 ~ ~ -90 0"
-  - wait: 5
-  - cmd: "kill @e[tag=dg6p]"
-  - wait: 2
-  - probe_body: dg6b
-  - probe_body: dg6p
-  - probe_entities: "creeper 16"
-
 # DG7R2: a stage-1 Phage at half health grows and reads half of its new maximum.
 DG7R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
@@ -179,22 +165,3 @@ DG8R2:
   - wait: 2
   - probe_body: dg8big
   - probe_body: dg8small
-
-# DG9R2: a stage-4 Phage grown to 5 by a death, then killed, splits.
-DG9R2:
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
-  - save_blocks: "-3 -1 -4 12 5 4"
-  - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
-  - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
-  - cmd: "tp @s ~3 ~ ~"
-  - spawn: "dg9 frozen phage stage 4 300"
-  - cmd: "tp @s ~-3 ~ ~ -90 0"
-  - wait: 5
-  - cmd: 'summon enderman ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,Tags:["dg9e","t","selftest"]}'
-  - cmd: "kill @e[tag=dg9e]"
-  - wait: 2
-  - probe_body: dg9
-  - cmd: "kill @e[tag=dg9]"
-  - wait: 2
-  - probe_body: dg9
-  - probe_entities: "creeper 16"

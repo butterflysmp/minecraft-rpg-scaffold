@@ -18,6 +18,11 @@
 # THE PLAYER SURVIVES EVERY ROW: a row in which he can be hit first heals him to his maximum (rpg heal), and the
 # largest blast is 50 before his defence, at gear score 100 and zero distance; distance only lowers it. His maximum
 # is at least 100 (CombatantStats DEFAULT_PLAYER_BASE); it read 350 at the last boot.
+#
+# AND THE SIX R3 ROWS FROM THE OLDER DRAGON GATES (2026-11-16), below BL9, keep their own gear scores (300; DS1R3 200).
+# Only DS1R3 can hit him: one heal, then two thawed stage-1 children at GS 200, each 40 at zero distance, and the one
+# that blows second may first have grown to stage 2 (a blast is a Void death), 55. So at most 40 + 55 = 95 before his
+# defence, under his 100.
 
 setup:
   - difficulty: normal
@@ -175,6 +180,112 @@ BL9:
   - wait: 5
   - detonate: bl9
   - wait: 5
+
+# --- THE OLDER SPLIT ROWS, RE-PREDICTED FOR R3 (the seat's brief of 2026-11-16) ---------------------------------------
+# Each is named for the GATE-dragon-fix.md row it re-predicts, with the next suffix, and keeps that row's staging and
+# gear score (300, except DS1R3's 200: see its row). What changed is the CHILDREN: a frozen parent's children are now
+# born FROZEN (SelfTestSnapshot.freezeSplitChild), each logging "CHILD parent=<uuid> child=<uuid> frozen=true", so
+# none can swell beside the player. DS1R3 is the one row that wants them live, and thaws them itself.
+
+# DS1R3: a stage 5 killed by the PLAYER'S emberblade at 1 custom health splits into two frozen stage 1s (S1). Then he is
+# healed, the children are THAWED, and each comes for him and blows (S2): a swell needs a target within 3 blocks.
+DS1R3:
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "ds1 frozen phage stage 5 200"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - aim: ds1
+  - wait: 2
+  - cmd: "rpg mobdamage 319"
+  - wait: 40
+  - attack: ds1
+  - wait: 30
+  - probe_entities: "creeper 16"
+  - probe_body: ds1
+  - cmd: "rpg heal 1000000"
+  - cmd: "execute as @e[tag=ds1,type=creeper] run data merge entity @s {NoAI:0b}"
+  - wait: 200
+  - probe_entities: "creeper 16"
+
+# DS2R3: a stage 5 killed by /kill splits; its two children are born frozen.
+DS2R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "ds2 frozen phage stage 5 300"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=ds2]"
+  - wait: 5
+  - probe_entities: "creeper 16"
+  - probe_body: ds2
+
+# DS5R3: once only: after a split the count is 2, and it is still 2 forty ticks later (frozen children cannot blow).
+DS5R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "ds5 frozen phage stage 5 300"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=ds5]"
+  - wait: 5
+  - probe_entities: "creeper 16"
+  - wait: 40
+  - probe_entities: "creeper 16"
+
+# DS6R3: the row-start clean removes DS5R3's two children (they carry DS5R3's tags), so this row starts with none. It
+# MUST follow DS5R3 directly.
+DS6R3:
+  - probe_entities: "creeper 16"
+
+# DG6R3: a stage 5 killed 2 blocks from a stage-2 Phage splits; its two frozen children stay at 1, the bystander goes
+# to 3. The growth gate's staging: the floor runs to x + 12.
+DG6R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 12 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "dg6b frozen phage stage 2 300"
+  - cmd: "tp @s ~2 ~ ~"
+  - spawn: "dg6p frozen phage stage 5 300"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=dg6p]"
+  - wait: 2
+  - probe_body: dg6b
+  - probe_body: dg6p
+  - probe_entities: "creeper 16"
+
+# DG9R3: a stage-4 Phage grown to 5 by a death, then killed, splits into two frozen children.
+DG9R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 12 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "dg9 frozen phage stage 4 300"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: 'summon enderman ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,Tags:["dg9e","t","selftest"]}'
+  - cmd: "kill @e[tag=dg9e]"
+  - wait: 2
+  - probe_body: dg9
+  - cmd: "kill @e[tag=dg9]"
+  - wait: 2
+  - probe_body: dg9
+  - probe_entities: "creeper 16"
 
 # BQ1: Ben's three questions, by the ASK step. A live stage-1 Phage blows on him, then a live stage-5 one; he is
 # healed to full before each. He stands still while each Phage swells.

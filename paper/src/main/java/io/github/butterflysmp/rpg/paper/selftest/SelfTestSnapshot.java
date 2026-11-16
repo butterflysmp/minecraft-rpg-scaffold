@@ -57,6 +57,23 @@ final class SelfTestSnapshot {
         return parentTags.contains(MOB_TAG) ? java.util.Set.copyOf(parentTags) : java.util.Set.of();
     }
 
+    /**
+     * Whether a SPLIT CHILD is born FROZEN (step R3; the seat's brief of 2026-11-16): only when its parent is one the
+     * instrument tagged AND froze. Pure, so it is a unit row.
+     *
+     * <p>Why: from step R3 a live Phage within 3 blocks of the player swells and blows, and the rows that kill a frozen
+     * stage 5 never asked for its children to be live. Why AT BIRTH, inside the child's pre-spawn consumer, and not by
+     * a later step: a creeper's swell rises by its swell direction EVERY tick whatever its AI ({@code Creeper.tick},
+     * read in the jar), and only its swell goal turns that direction up. NoAI stops the goals
+     * ({@code Mob.isEffectiveAi}), so a child frozen before its first tick keeps the fresh direction, −1
+     * ({@code Creeper.defineSynchedData}), and never swells; a child frozen after it began to swell keeps swelling and
+     * still blows. A row that wants live children thaws them itself, in the blast gate (DS1R3). A mob the instrument
+     * never tagged is untouched, so production is too.
+     */
+    static boolean freezeSplitChild(java.util.Set<String> parentTags, boolean parentHasAi) {
+        return parentTags.contains(MOB_TAG) && !parentHasAi;
+    }
+
     private final UUID id;
     private final long lifetimeXp;
     private final GameMode gameMode;

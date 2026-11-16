@@ -2,6 +2,12 @@
 # each named for the row of GATE-dragon-split.md it re-predicts; SelfTestScenariosTest pairs this file with
 # GATE-dragon-fix.md. The old rows' predictions and readings stay in GATE-dragon-split.md, as they are.
 #
+# 2026-11-16, STEP R3 MOVED FOUR ROWS OUT OF THIS FILE (the seat's brief; GATE-dragon-fix.md's dated note). Every row
+# that splits a stage 5 left two LIVE children beside the player, and from R3 a live Phage within 3 blocks blows. DS1R2,
+# DS2R2, DS5R2 and DS6R2 are re-predicted in GATE-dragon-blast.md as DS1R3, DS2R3, DS5R3 and DS6R3, where a frozen
+# parent's children are born frozen (SelfTestSnapshot.freezeSplitChild) and DS1R3 thaws its own on purpose. Their old
+# predictions and readings stay in GATE-dragon-fix.md. DS3R2 and DS4R2 split nothing and stay, unchanged.
+#
 # WHAT CHANGED (GATE-dragon-fix.md, D2, D3): every Phage is spawned by the SPAWN step, tagged and frozen inside its
 # pre-spawn consumer, never by a nearest-mob selector afterwards; the setup declares the difficulty; every row-start
 # clean is followed by a LEFTOVER line. DS1R2 kills with the EMBERBLADE, one of our weapons: a vanilla iron sword deals
@@ -20,45 +26,6 @@ setup:
   - cmd: "time set 6000"
   - cmd: "gamerule spawn_mobs false"
   - close: ""
-
-# DS1R2: a stage 5 killed by the PLAYER'S ATTACK with the emberblade, at 1 custom health. Then, AI on, the children:
-# S1 (two exist where it died) and S2 (each targets the player) read from the server.
-DS1R2:
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
-  - save_blocks: "-3 -1 -4 8 5 4"
-  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
-  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
-  - cmd: "tp @s ~3 ~ ~"
-  - spawn: "ds1 frozen phage stage 5 300"
-  - cmd: "tp @s ~-3 ~ ~ -90 0"
-  - wait: 5
-  - aim: ds1
-  - wait: 2
-  - cmd: "rpg mobdamage 479"
-  - wait: 40
-  - attack: ds1
-  - wait: 30
-  - probe_entities: "creeper 16"
-  - probe_body: ds1
-  - wait: 60
-  - probe_target: ds1
-
-# DS2R2: a stage 5 killed by a cause that is NOT the player: /kill (LivingEntity#kill, genericKill).
-DS2R2:
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
-  - save_blocks: "-3 -1 -4 8 5 4"
-  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
-  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
-  - cmd: "tp @s ~3 ~ ~"
-  - spawn: "ds2 frozen phage stage 5 300"
-  - cmd: "tp @s ~-3 ~ ~ -90 0"
-  - wait: 5
-  - cmd: "kill @e[tag=ds2]"
-  - wait: 5
-  - probe_entities: "creeper 16"
-  - probe_body: ds2
 
 # DS3R2: a stage 3 killed: no split.
 DS3R2:
@@ -86,24 +53,4 @@ DS4R2:
   - wait: 5
   - cmd: "kill @e[tag=ds4]"
   - wait: 5
-  - probe_entities: "creeper 16"
-
-# DS5R2: once only, read on the server: after a split the count is 2, and it is still 2 forty ticks later.
-DS5R2:
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
-  - save_blocks: "-3 -1 -4 8 5 4"
-  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
-  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
-  - cmd: "tp @s ~3 ~ ~"
-  - spawn: "ds5 frozen phage stage 5 300"
-  - cmd: "tp @s ~-3 ~ ~ -90 0"
-  - wait: 5
-  - cmd: "kill @e[tag=ds5]"
-  - wait: 5
-  - probe_entities: "creeper 16"
-  - wait: 40
-  - probe_entities: "creeper 16"
-
-# DS6R2: the row-start clean removes DS5R2's two children (they carry DS5R2's tags), so this row starts with none.
-DS6R2:
   - probe_entities: "creeper 16"
