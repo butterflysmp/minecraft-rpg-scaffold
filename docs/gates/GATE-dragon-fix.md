@@ -5,6 +5,8 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+> **2026-11-15: approved to merge by the review seat after the boot of d59d2bf5; see GATE-dragon-fix.md for the readings.**
+
 **THIS PR IS THE STACK TOP.** `feat/dragon-fix` is stacked on `feat/dragon-growth` (#191), on `feat/dragon-split`
 (#190), on `feat/dragon-bodies` (#189). The first boot of the stack (`bda8e89c`, 2026-11-15) read most AUTO rows NOT AS
 PREDICTED; its readings and dated notes are in the three lower gates, and the record (the seat's misses, the boot's

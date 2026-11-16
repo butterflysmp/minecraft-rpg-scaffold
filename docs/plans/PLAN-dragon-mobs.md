@@ -258,6 +258,19 @@ selftest sets the difficulty itself**.
 
 **Q30 is new and OPEN** (below). Nothing is built for it until Ben answers.
 
+### THE BOOT OF THE FIX (`d59d2bf5`, 2026-11-15): THE SEAT'S READING, AND TWO CARRIED NOTES
+
+The readings are in `GATE-dragon-fix.md`. **The seat's reading:** R0a-R0d PASS; 28 of 29 rows as predicted. The stack
+was approved to merge on that boot (the dated line in each of the four gates' Status).
+
+**Two notes, carried:**
+1. **DB10R2 part (4) stays NOT AS PREDICTED.** The prediction said "equal" where it meant "did not fall": Ben's custom
+   health rose from 166 to 176 over the row, with no damage line. The cause, regeneration, is INFERRED. It is not a
+   pass, and it does not block: parts (1)-(3) held, and step R3 replaces this row.
+2. **Not shown by this boot: the difficulty restore putting back a DIFFERENT value.** Every run read
+   `DIFFICULTY found=NORMAL set=NORMAL` and restored `difficulty=NORMAL`, so the restore ran but put back the value it
+   had set. A run started from another difficulty is the reading still owed.
+
 ### WHAT GROWTH (R4) LEAVES FOR THE SELF-DESTRUCT (R3)
 
 - **A Phage's self-destruct counts as a Void death** (Ben's second round, I: *"Yes"*, the seat having read that a

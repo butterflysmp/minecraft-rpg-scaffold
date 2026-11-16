@@ -4,6 +4,8 @@
 **committed before the boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once
 its row has been read. **NO BOOT until the seat has diffed the code AND this gate, and Ben says ready.**
 
+> **2026-11-15: approved to merge by the review seat after the boot of d59d2bf5; see GATE-dragon-fix.md for the readings.**
+
 > **NOTE, 2026-11-15 (added on `feat/dragon-split`, step R2, before any boot; no prediction below is changed).** This
 > gate will be read in a **STACKED BOOT** of `feat/dragon-split`'s head, which carries this step and the next. In
 > that boot **this file's R0a-R0d are SUPERSEDED** by `GATE-dragon-split.md`'s R0 (its R0a names that branch's head,

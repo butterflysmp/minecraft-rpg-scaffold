@@ -4,6 +4,8 @@
 **committed before the boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once
 its row has been read. **NO BOOT until the seat has diffed the code AND this gate, and Ben says ready.**
 
+> **2026-11-15: approved to merge by the review seat after the boot of d59d2bf5; see GATE-dragon-fix.md for the readings.**
+
 **THIS PR IS THE STACK TOP.** `feat/dragon-split` (#R2) is stacked on `feat/dragon-bodies` (#189, step R1, NOT RUN).
 **The coming boot is ONE STACKED BOOT of this branch's head**, and it reads BOTH gates. So:
 - **The ONE R0 of that boot is this file's R0a-R0d.** `GATE-dragon-bodies.md`'s R0 rows are **SUPERSEDED in a stacked
