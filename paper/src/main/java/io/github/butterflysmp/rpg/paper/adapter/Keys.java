@@ -195,6 +195,13 @@ public final class Keys {
      */
     public final NamespacedKey mobStage;
 
+    /**
+     * Set (a BYTE) on a staged mob the moment it SPLITS on death (PLAN-dragon-mobs.md step R2), before any child is
+     * spawned. It is the once-only guard: the death event can be delivered twice for one mob (a cancelled death
+     * revives it), and a mob carrying this never splits again.
+     */
+    public final NamespacedKey mobSplit;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -422,6 +429,7 @@ public final class Keys {
         this.mobId = new NamespacedKey(plugin, "mob_id");
         this.mobGearScore = new NamespacedKey(plugin, "mob_gear_score");
         this.mobStage = new NamespacedKey(plugin, "mob_stage");
+        this.mobSplit = new NamespacedKey(plugin, "mob_split");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");

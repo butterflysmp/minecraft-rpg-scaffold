@@ -28,6 +28,9 @@ package io.github.butterflysmp.rpg.core.mob;
  *       {@code maxHealth} is its stage-1 health, and its body lives in its stages, never in {@code body} too.</li>
  * </ul>
  * Gear (the plan's MB1 equipment) is DEFERRED past R1 and has no component here.
+ *
+ * <p><b>Grown again in step R2</b> by {@code split} ({@link MobSplit}), or null: what a staged mob leaves behind
+ * when it dies at its last stage. A split needs stages, and its child stage must be one of them.
  */
 public record MobDefinition(
         String id,
@@ -36,20 +39,36 @@ public record MobDefinition(
         double maxHealth,
         MobBody body,
         String element,
-        MobStages stages
+        MobStages stages,
+        MobSplit split
 ) {
     /**
      * The original four-field form: a vanilla body, no element, no stages. Kept so the existing call sites (tests
      * and older code) read unchanged. (A record may declare extra constructors; each must call the full one.)
      */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth) {
-        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null);
+        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null);
+    }
+
+    /** Step R1's seven-field form: no split (step R2's component). Kept so R1's call sites read unchanged. */
+    public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
+                         MobBody body, String element, MobStages stages) {
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, null);
     }
 
     public MobDefinition {
         if (body == null) body = MobBody.VANILLA;
         if (element != null && element.isBlank()) {
             throw new IllegalArgumentException("mob '" + id + "' element must name an element, or be left out");
+        }
+        // Step R2: a split names a child STAGE, so it needs stages, and the child stage must be one of them.
+        if (split != null && stages == null) {
+            throw new IllegalArgumentException("mob '" + id + "' authors a split but no stages; a split names a"
+                    + " child stage");
+        }
+        if (split != null && !stages.isValid(split.childStage())) {
+            throw new IllegalArgumentException("mob '" + id + "' split.child_stage " + split.childStage()
+                    + " is not one of its stages 1.." + stages.count());
         }
         if (stages != null && !body.isVanilla()) {
             throw new IllegalArgumentException("mob '" + id + "' authors stages AND top-level scale/speed;"

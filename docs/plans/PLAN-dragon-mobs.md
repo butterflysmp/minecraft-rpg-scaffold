@@ -790,6 +790,22 @@ is linear in scale** (scale = height / 1.7), so G3's "evenly between" holds in b
 Knell is unarmed and the Phalanx has no bow: both melee like a bare wither skeleton** (the M4/M24 custom-mob melee
 of today, PLAN-mob-scaling.md §6 F15), and the Skreel has no spear. **Follow range** (cfde822's 64) is also not in R1.
 
+### 5.R.2 STEP R2 AS BUILT (`feat/dragon-split`, stacked on R1, 2026-11-15)
+
+The gate is `docs/gates/GATE-dragon-split.md`, which also carries the ONE R0 and the ONE run sheet of the stacked boot.
+
+| piece | as built | where |
+|---|---|---|
+| **the rule** | `split: { at: last, count, child_stage, spread }` on the mob file; a death at the LAST stage gives `count` children at `child_stage`; any other stage, or a mob with no block, gives none. `at` accepts only `last` (Ben: "Only the 5th stage Phage splits") | `core.mob.MobSplit`, `MobLoader` |
+| **the death point** | a separate `EntityDeathEvent` handler at **MONITOR, ignoreCancelled**, so only a death that happens splits; "any deaths" is every cause that raises the event (a player, a mob, a fall, fire, the void, `/kill`); `remove()`, a despawn, a chunk unload and a vanilla creeper's own explosion raise none | `RpgListeners.onMobDeathSplit` |
+| **once only** | the parent is marked `mob_split` (PDC) BEFORE its first child spawns; a marked mob never splits again | `MobSplitter`, `Keys.mobSplit` |
+| **the children** | made ours on the SAME path as `/rpg spawn` (`MobSpawner.stampCustom` inside `World#spawn`'s pre-spawn consumer, now shared): `mob_id`, name, stage-1 body and stage tag; seeded at full health; the PARENT'S gear score through M21's own `MobNameplateManager.inheritGearScore` | `MobSpawner`, `MobSplitter` |
+| **where they stand** | the parent's position ± `spread` (0.5, content, P6) on x; a spot whose child body would collide (`RegionAccessor#hasCollisionsIn`) is replaced by the parent's own spot, which a smaller child always fits | `MobSplitter` |
+| **the instrument** | a split child of a mob the instrument tagged takes all the parent's tags, so the row-start clean (which uses `remove()`, never a death) and the restore remove it | `SelfTestSnapshot.tagsForSplitChild`, `SelfTestService.adoptSplitChild` |
+
+**Not testable until R3:** an exploding Phage does not split (E). No explosion of ours exists and R1 cancels vanilla's;
+R3's detonation must remove the Phage without raising a death.
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.

@@ -44,6 +44,19 @@ final class SelfTestSnapshot {
         return !isPlayer && (tagged || experienceOrb);
     }
 
+    /**
+     * The tags a SPLIT CHILD takes from its parent (PLAN-dragon-mobs.md step R2): ALL of the parent's, when the
+     * parent is one the instrument tagged; NONE otherwise. Pure, so it is a unit row.
+     *
+     * <p>Why: a row that kills a stage-5 Phage leaves two children, and the row-start clean and the restore remove
+     * only what carries {@link #MOB_TAG}. Without this, the children would be untagged and leak into the next row and
+     * out of the run. With it, they carry the row's own tags too, so the row can PROBE them by its tag. A mob the
+     * instrument never tagged (any mob outside a run) passes nothing on, so production is untouched.
+     */
+    static java.util.Set<String> tagsForSplitChild(java.util.Set<String> parentTags) {
+        return parentTags.contains(MOB_TAG) ? java.util.Set.copyOf(parentTags) : java.util.Set.of();
+    }
+
     private final UUID id;
     private final long lifetimeXp;
     private final GameMode gameMode;

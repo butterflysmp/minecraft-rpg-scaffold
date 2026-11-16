@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobBody;
+import io.github.butterflysmp.rpg.core.mob.MobSplit;
 import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -253,6 +254,57 @@ class MobLoaderTest {
         assertEquals(0, mobs.size());
         assertTrue(warningText().contains("phage.yml"), warningText());
         assertTrue(warningText().contains("phage2.yml"), warningText());
+    }
+
+    // ---- dragon-mobs step R2: the split ----
+
+    private static final String STAGES = """
+            stages:
+              count: 5
+              first: { height: 1.0, speed: 1.5, max_health: 80 }
+              last:  { height: 3.0, speed: 0.5, max_health: 160 }
+            """;
+
+    /** The split's three numbers ARRIVE from content, and a file without the block has none. */
+    @Test
+    void theSplitBlockArrives() throws IOException {
+        write("phage.yml", "base_entity: creeper\n" + STAGES
+                + "split:\n  at: last\n  count: 3\n  child_stage: 2\n  spread: 0.75\n");
+        write("plain.yml", "base_entity: creeper\n" + STAGES);
+
+        MobRegistry mobs = load();
+
+        assertEquals(new MobSplit(3, 2, 0.75), mobs.find("phage").orElseThrow().split());
+        assertNull(mobs.find("plain").orElseThrow().split(), "no split block, no split");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** A split on an unstaged mob, an `at` other than last, and a missing key are each a named, skipped file. */
+    @Test
+    void aMalformedSplitIsRefused() throws IOException {
+        write("nostages.yml", "base_entity: creeper\nmax_health: 80\n"
+                + "split:\n  at: last\n  count: 2\n  child_stage: 1\n  spread: 0.5\n");
+        write("first.yml", "base_entity: creeper\n" + STAGES
+                + "split:\n  at: first\n  count: 2\n  child_stage: 1\n  spread: 0.5\n");
+        write("nospread.yml", "base_entity: creeper\n" + STAGES + "split:\n  at: last\n  count: 2\n  child_stage: 1\n");
+
+        MobRegistry mobs = load();
+
+        assertEquals(0, mobs.size());
+        for (String f : List.of("nostages.yml", "first.yml", "nospread.yml")) {
+            assertTrue(warningText().contains(f), f + ": " + warningText());
+        }
+    }
+
+    /** The Phage we ship splits into 2 at stage 1, half a block either side. */
+    @Test
+    void theBundledPhageSplitsIntoTwoStageOnes() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/mobs/phage.yml")) {
+            assertNotNull(in);
+            Files.write(dir.resolve("phage.yml"), in.readAllBytes());
+        }
+        assertEquals(new MobSplit(2, 1, 0.5), load().find("phage").orElseThrow().split());
+        assertTrue(warnings.isEmpty(), warningText());
     }
 
     /** Every bundled mob file loads with no warning, through the loader production runs. */

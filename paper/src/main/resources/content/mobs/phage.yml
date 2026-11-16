@@ -35,3 +35,24 @@ stages:
   count: 5
   first: { height: 1.0, speed: 1.5, max_health: 80 }
   last:  { height: 3.0, speed: 0.5, max_health: 160 }
+
+# THE SPLIT (dragon-mobs step R2). When a Phage at its LAST stage dies, of ANY cause (Ben: "Any deaths"), it leaves
+# `count` children at `child_stage`, each at FULL health for that stage and with the parent's gear score (Ben:
+# "gearscore should be the same as the parent Phage"). Its own death does not grow them (Ben: "No,").
+#
+# NAME THE QUANTITY:
+#   at           which stage splits. Only `last` is accepted: Ben ruled "Only the 5th stage Phage splits".
+#   count        how many children, a whole number of mobs.
+#   child_stage  the stage each child is born at; one of the stages above.
+#   spread       BLOCKS from the parent to each child, along one axis: two children stand at -0.5 and +0.5. The old
+#                game's offset, put to Ben as a starting number; NOT YET CONFIRMED by him. A child whose spot is
+#                inside a block is born at the parent's own spot instead.
+#
+# NOT A DEATH, so no split: a despawn, a chunk unload, or being removed by a command or a plugin. An EXPLOSION never
+# splits it either (Ben, E: "it only splits when killed, not exploding"); R1 cancels every vanilla explosion, and R3's
+# own detonation will remove the Phage without a death.
+split:
+  at: last
+  count: 2
+  child_stage: 1
+  spread: 0.5

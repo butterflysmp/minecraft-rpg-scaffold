@@ -118,6 +118,15 @@ public final class SelfTestService {
     String build() { return build; }
     Keys keys() { return adapters.keys(); }
 
+    /**
+     * A split child of a mob the instrument tagged takes its parent's tags, inside the child's pre-spawn consumer, so
+     * it is never in the world untagged (PLAN-dragon-mobs.md step R2; {@link SelfTestSnapshot#tagsForSplitChild}).
+     * Called by the split for every child; a no-op for a parent the instrument never tagged.
+     */
+    public void adoptSplitChild(org.bukkit.entity.LivingEntity parent, org.bukkit.entity.LivingEntity child) {
+        for (String tag : SelfTestSnapshot.tagsForSplitChild(parent.getScoreboardTags())) child.addScoreboardTag(tag);
+    }
+
     /** "The element of this creature", for PROBE_BODY (PLAN-dragon-mobs.md step R1). */
     MobElementResolver mobElements() { return mobElements; }
     Scheduler scheduler() { return adapters.scheduler(); }
