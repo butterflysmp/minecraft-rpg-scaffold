@@ -110,8 +110,60 @@ final class SelfTestRun {
             int removed = snapshot.removeTagged(player, service.scheduler());
             log("CLEAN blocks=" + blocks + " removed=" + removed + " inventory=" + (gateBoundary ? "restored" : "kept")
                     + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ()));
-            advance();
+            // A ROW STARTS CLEAN OR SAYS SO (GATE-dragon-fix.md, C3). The removals above run on each mob's own
+            // scheduler, a tick later, so the count waits for them; then every live body still in the row's radius
+            // is named. The 2026-11-15 boot's rows staged beside mobs earlier rows had leaked, and no line said so.
+            service.scheduler().onEntityLater(player, () -> {
+                if (ended) return;
+                log(SelfTestStaging.leftoverLine(SelfTestStaging.LEFTOVER_RADIUS, leftovers()));
+                advance();
+            }, SelfTestStaging.LEFTOVER_WAIT_TICKS);
         }));
+    }
+
+    /** Every live body in the row's radius that is not the player or scenery: "type uuid", nearest first. */
+    private List<String> leftovers() {
+        int r = SelfTestStaging.LEFTOVER_RADIUS;
+        return player.getNearbyEntities(r, r, r).stream()
+                .filter(e -> e.getLocation().distanceSquared(player.getLocation()) <= (double) r * r)
+                .filter(e -> SelfTestStaging.leftover(e instanceof LivingEntity, e instanceof Player,
+                        e instanceof org.bukkit.entity.ArmorStand, e instanceof LivingEntity l && l.isDead()))
+                .sorted(java.util.Comparator.comparingDouble(e -> e.getLocation().distanceSquared(player.getLocation())))
+                .map(e -> e.getType().getKey().getKey() + " " + e.getUniqueId())
+                .toList();
+    }
+
+    // --- ASK: a question in chat, the next chat line logged verbatim (GATE-dragon-fix.md, C6) ----------------------
+
+    /** The question waiting for an answer, or null. Touched only on the player's thread. */
+    private SelfTestAsk.Ask pendingAsk;
+    /** Which question a timeout belongs to, so a late timeout never resolves a later question. */
+    private int askSerial;
+    private long askStartTick;
+
+    private void ask(Scenario.Step step) {
+        SelfTestAsk.Ask a = SelfTestAsk.parse(step.arg()).orElseThrow(
+                () -> new IllegalStateException("ask: the loader admitted '" + step.arg() + "'"));
+        pendingAsk = a;
+        int serial = ++askSerial;
+        askStartTick = Bukkit.getCurrentTick();
+        player.sendMessage(net.kyori.adventure.text.Component.text(SelfTestAsk.prompt(a),
+                net.kyori.adventure.text.format.NamedTextColor.GOLD));
+        service.scheduler().onEntityLater(player, () -> {
+            if (ended || pendingAsk == null || serial != askSerial) return;
+            log(SelfTestAsk.notStated(pendingAsk));
+            pendingAsk = null;
+            advance();
+        }, a.timeoutTicks());
+    }
+
+    /** The player's chat line, on the player's thread (SelfTestService#onChat hops it here). Ignored unless asked. */
+    void answer(String line) {
+        if (ended || pendingAsk == null) return;
+        log(SelfTestAsk.answered(pendingAsk, line, Bukkit.getCurrentTick() - askStartTick));
+        pendingAsk = null;
+        askSerial++;   // the pending timeout now belongs to no question
+        advance();
     }
 
     private void advance() {
@@ -133,6 +185,10 @@ final class SelfTestRun {
                 Scenario.Step step = s.steps().get(stepIndex++);
                 if (step.verb() == Scenario.Verb.WAIT) {
                     service.scheduler().onEntityLater(player, this::advance, Long.parseLong(step.arg().trim()));
+                    return;
+                }
+                if (step.verb() == Scenario.Verb.ASK) {
+                    ask(step);   // resumes from answer() or the timeout
                     return;
                 }
                 Optional<String> skip = drivers.execute(player, step);
@@ -288,4 +344,6 @@ final class SelfTestRun {
     io.github.butterflysmp.rpg.paper.mining.MiningService mining() { return service.mining(); }
     ProfileService profiles() { return service.profiles(); }
     CombatantStats stats() { return service.stats(); }
+    SelfTestService.Spawner spawner() { return service.spawner(); }
+    io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler() { return service.scheduler(); }
 }

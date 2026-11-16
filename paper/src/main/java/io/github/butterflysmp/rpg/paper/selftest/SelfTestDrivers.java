@@ -23,6 +23,7 @@ import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import io.github.butterflysmp.rpg.paper.health.MobBodyApplier;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -111,7 +112,75 @@ final class SelfTestDrivers {
             case DIG -> dig(p);
             case MINING_TRACE -> miningTrace(p);
             case NOTE -> { run.log("NOTE " + a); yield Optional.empty(); }
+            case SPAWN -> spawn(p, a);
+            case ASK -> Optional.empty();   // the run puts the question and waits; it never reaches a driver
+            case DIFFICULTY -> difficulty(p, a);
+            case PROBE_TARGET -> probeTarget(p, a);
+            case RETURN -> returnToStart(p);
         };
+    }
+
+    // --- the steps added after the 2026-11-15 boot (GATE-dragon-fix.md) -------------------------------------------
+
+    /**
+     * SPAWN: {@code /rpg spawn}'s own path ({@code RpgCommand.spawnFor}), with the row's tag, {@code t} and
+     * {@code selftest} added inside the pre-spawn consumer, and the AI switched off there when {@code frozen}
+     * ({@code setAI(false)} is NoAI; {@code setRemoveWhenFarAway(false)} is PersistenceRequired, as the old
+     * {@code data merge} lines set). The mob is tagged by identity, so there is nothing for a selector to confuse.
+     */
+    private Optional<String> spawn(Player p, String arg) {
+        SelfTestSpawn.Spec spec = SelfTestSpawn.parse(arg).orElseThrow(
+                () -> new IllegalStateException("spawn: the loader admitted '" + arg + "'"));
+        Optional<LivingEntity> spawned = run.spawner().spawn(p, spec.mob(), spec.stage(), spec.gearScore(), entity -> {
+            entity.addScoreboardTag(spec.tag());
+            entity.addScoreboardTag("t");
+            entity.addScoreboardTag(SelfTestSnapshot.MOB_TAG);
+            if (spec.frozen()) entity.setAI(false);
+            entity.setRemoveWhenFarAway(false);
+        });
+        run.log(spawned.map(e -> "DRIVE spawn tag=" + spec.tag() + " " + e.getUniqueId() + " " + spec.mob()
+                        + (spec.frozen() ? " frozen" : " live"))
+                .orElse("DRIVE spawn tag=" + spec.tag() + " REFUSED " + spec.mob()));
+        return Optional.empty();
+    }
+
+    /** DIFFICULTY: log what the world has and what this gate declares, and set it on the global scheduler. */
+    private Optional<String> difficulty(Player p, String arg) {
+        org.bukkit.Difficulty want = SelfTestStaging.difficulty(arg).orElseThrow(
+                () -> new IllegalStateException("difficulty: the loader admitted '" + arg + "'"));
+        org.bukkit.World world = p.getWorld();
+        run.log("DIFFICULTY found=" + world.getDifficulty() + " set=" + want);
+        run.scheduler().onGlobal(() -> world.setDifficulty(want));
+        return Optional.empty();
+    }
+
+    /** PROBE_TARGET: what each tagged mob's AI is after. {@code self} is the run's player. */
+    private Optional<String> probeTarget(Player p, String tag) {
+        List<Entity> tagged = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(REACH, REACH, REACH)) if (e.getScoreboardTags().contains(tag)) tagged.add(e);
+        if (tagged.isEmpty()) {
+            run.log("TARGET tag=" + tag + " none within " + (int) REACH + " blocks");
+            return Optional.empty();
+        }
+        tagged.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));
+        for (Entity e : tagged) {
+            if (!(e instanceof org.bukkit.entity.Mob mob)) continue;
+            LivingEntity target = mob.getTarget();
+            String who = target == null ? "none"
+                    : target.getUniqueId().equals(p.getUniqueId()) ? "self"
+                    : target.getType().getKey().getKey() + " " + target.getUniqueId();
+            run.log("TARGET tag=" + tag + " " + mob.getUniqueId() + " type=" + mob.getType().getKey().getKey()
+                    + " target=" + who + " dead=" + mob.isDead());
+        }
+        return Optional.empty();
+    }
+
+    /** RETURN: back to where the run began, so a box relative to the player's block is the row's box again. */
+    private Optional<String> returnToStart(Player p) {
+        org.bukkit.Location start = run.snapshot().start();
+        p.teleportAsync(start);
+        run.log("DRIVE return " + String.format(Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ()));
+        return Optional.empty();
     }
 
     private Optional<String> command(Player p, String text) {
@@ -339,8 +408,11 @@ final class SelfTestDrivers {
                     + " scale=" + (scale == null ? "none" : fmt(scale.getValue()))
                     + " height=" + fmt(mob.getHeight())
                     + " speedBase=" + (speed == null ? "none" : String.format(Locale.ROOT, "%.4f", speed.getBaseValue()))
-                    + " speedDefault=" + (speed == null ? "none" : String.format(Locale.ROOT, "%.4f", speed.getDefaultValue()))
-                    + " speedX=" + (speed == null ? "none" : fmt(speed.getBaseValue() / speed.getDefaultValue()))
+                    // speedType: the ENTITY TYPE's own base, the quantity the applier scales from (GATE-dragon-fix.md,
+                    // D1). This was speedDefault, printed from the attribute's registry default (0.7 for every mob),
+                    // until the 2026-11-15 boot showed it; the rename is so no old line can be mistaken for a new one.
+                    + " speedType=" + String.format(Locale.ROOT, "%.4f", MobBodyApplier.typeBaseSpeed(mob))
+                    + " speedX=" + (speed == null ? "none" : fmt(speed.getBaseValue() / MobBodyApplier.typeBaseSpeed(mob)))
                     + " maxHP=" + maxHp + " gs=" + (gs == null ? "-" : gs)
                     + " element=" + mobElements.elementOf(mobId, typeKey).orElse("none")
                     + " dead=" + mob.isDead());

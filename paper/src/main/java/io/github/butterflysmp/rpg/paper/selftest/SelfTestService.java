@@ -35,11 +35,23 @@ public final class SelfTestService {
     private final boolean devServer;
     private final ScenarioLoader.Loaded loaded;
     private final MobElementResolver mobElements;
+    private final Spawner spawner;
     private SelfTestRun active;
+
+    /**
+     * {@code /rpg spawn}'s own path with a pre-spawn hook, for the SPAWN step (GATE-dragon-fix.md, C2). RpgPlugin binds
+     * it to {@code RpgCommand.spawnFor}, so the step spawns exactly what the command spawns. Empty when refused.
+     */
+    @FunctionalInterface
+    public interface Spawner {
+        Optional<org.bukkit.entity.LivingEntity> spawn(Player player, String mob, Integer stage, Integer gearScore,
+                                                     java.util.function.Consumer<? super org.bukkit.entity.LivingEntity> preAdd);
+    }
 
     public SelfTestService(AdapterContext adapters, ProfileService profiles, ResourcePool resources,
                            MobNameplateManager nameplates, MiningService mining, Logger log, String build, boolean devServer,
-                           ScenarioLoader.Loaded loaded, MobElementResolver mobElements) {
+                           ScenarioLoader.Loaded loaded, MobElementResolver mobElements, Spawner spawner) {
+        this.spawner = spawner;
         this.adapters = adapters;
         this.profiles = profiles;
         this.resources = resources;
@@ -108,6 +120,18 @@ public final class SelfTestService {
         }
     }
 
+    /**
+     * The player's chat line, from {@code RpgListeners.onSelfTestChat} on the ASYNC chat thread (GATE-dragon-fix.md,
+     * C6). Nothing is read or touched here but the hand-off: the run is reached on the player's own scheduler, where it
+     * lives, and ignores the line unless a question is waiting.
+     */
+    public void onChat(Player player, String line) {
+        adapters.scheduler().onEntity(player, () -> {
+            SelfTestRun run = active;
+            if (run != null && run.player().getUniqueId().equals(player.getUniqueId())) run.answer(line);
+        });
+    }
+
     void ended(SelfTestRun run) {
         if (active == run) active = null;
     }
@@ -129,6 +153,7 @@ public final class SelfTestService {
 
     /** "The element of this creature", for PROBE_BODY (PLAN-dragon-mobs.md step R1). */
     MobElementResolver mobElements() { return mobElements; }
+    Spawner spawner() { return spawner; }
     Scheduler scheduler() { return adapters.scheduler(); }
     CombatantStats stats() { return adapters.stats(); }
     ProfileService profiles() { return profiles; }

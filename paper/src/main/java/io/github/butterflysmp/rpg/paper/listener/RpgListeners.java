@@ -1820,6 +1820,18 @@ public final class RpgListeners implements Listener {
                 weapons, adapters, Bukkit.getCurrentTick());
     }
 
+    /**
+     * The selftest's ASK step reads the player's next chat line (GATE-dragon-fix.md, C6). This runs on Paper's ASYNC
+     * chat thread, so it touches nothing: it renders the message to plain text (Adventure serialisation, no Bukkit
+     * state) and hands it to the service, which hops to the player's own scheduler. MONITOR, and it never cancels: the
+     * line still reaches chat as typed. Without a waiting question the run ignores it.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSelfTestChat(io.papermc.paper.event.player.AsyncChatEvent event) {
+        selfTest.onChat(event.getPlayer(),
+                net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.message()));
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         // BEFORE EVERYTHING: a running selftest restores the inventory, XP and position it changed, and

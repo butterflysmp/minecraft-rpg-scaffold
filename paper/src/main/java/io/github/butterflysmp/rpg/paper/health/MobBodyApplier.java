@@ -59,11 +59,32 @@ public final class MobBodyApplier {
         def.body().speedMultiplier().ifPresent(m -> applySpeed(entity, m));
     }
 
+    /**
+     * The ENTITY TYPE's own base movement speed: 0.25 for a creeper or a wither skeleton, 0.3 for a spider (vanilla's
+     * {@code createAttributes}, read from the server jar of build 74). Read from {@code EntityType#getDefaultAttributes},
+     * which wraps {@code DefaultAttributes.getSupplier(type)} (CraftMagicNumbers#getDefaultEntityAttributes), so it is
+     * the type's number and NOTHING we write to the live entity can move it: a grown Phage's next stage lands on this
+     * times its multiplier, never on its own written base.
+     *
+     * <p><b>Never {@code AttributeInstance#getDefaultValue}.</b> That is the ATTRIBUTE's registry default, the same
+     * 0.7 for every mob (CraftAttributeInstance#getDefaultValue -> Attribute#getDefaultValue; {@code Attributes}'
+     * static initialiser registers movement_speed at 0.7). The 2026-11-15 boot read every BODY line at
+     * {@code speedDefault=0.7000} because this method read that. Also PROBE_BODY's {@code speedType=}, so the probe
+     * prints the quantity the applier scales from.
+     *
+     * <p>{@code NaN} for a type with no default attribute set, or none for movement speed (no living mob we spawn).
+     */
+    public static double typeBaseSpeed(LivingEntity entity) {
+        if (!entity.getType().hasDefaultAttributes()) return Double.NaN;
+        AttributeInstance typeSpeed = entity.getType().getDefaultAttributes().getAttribute(Attribute.MOVEMENT_SPEED);
+        return typeSpeed == null ? Double.NaN : typeSpeed.getBaseValue();
+    }
+
     private static void applySpeed(LivingEntity entity, double multiplier) {
         AttributeInstance speed = entity.getAttribute(Attribute.MOVEMENT_SPEED);
-        if (speed == null) return;
+        if (speed == null || Double.isNaN(typeBaseSpeed(entity))) return;
         MobBodies.applySpeed(new MobBodies.BodyAttribute() {
-            @Override public double defaultValue() { return speed.getDefaultValue(); }
+            @Override public double typeBase() { return typeBaseSpeed(entity); }
             @Override public double baseValue() { return speed.getBaseValue(); }
             @Override public void setBaseValue(double value) { speed.setBaseValue(value); }
         }, multiplier);
