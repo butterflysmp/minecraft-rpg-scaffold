@@ -335,3 +335,12 @@ once leaves bigger children.** For Ben: Q30.
 answer (B5, B6, S1, S2), keep two or three sight rows for size; and an `ASK` step that posts a row's question in chat
 during the run and logs Ben's typed `yes`/`no` as `ANSWER <row> …`. Meanwhile his chat lines already reach the log
 as `<BaronVonYeetus> …`.
+
+> **DATED NOTE, 2026-11-15, after the first boot (`feat/dragon-fix`, Part A).** **This gate's R0 and run sheet are
+> SUPERSEDED by `GATE-dragon-fix.md`**, the new stack top, which holds the ONE R0 and the ONE run sheet of the next
+> boot. Every AUTO row here that read NOT AS PREDICTED is re-predicted there as a new row named for it (`…R2`); the
+> predictions and readings above stay as they are. **The seat's misses, in its words, and the boot's departures are
+> recorded in `PLAN-dragon-mobs.md`, RULINGS, *THE FIRST BOOT OF THE STACK*:** the seat passed this stack's speed
+> predictions on arithmetic from `speedDefault=0.25` without the jar read for what `AttributeInstance#getDefaultValue`
+> returns; the seat passed #190 without seeing that B2's and B6's cleanups split a stage 5; and the run sheet let a
+> hostile mob stand beside Ben before the difficulty was set.
