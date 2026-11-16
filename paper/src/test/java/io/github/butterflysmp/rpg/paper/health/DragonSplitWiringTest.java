@@ -23,11 +23,13 @@ class DragonSplitWiringTest {
     @Test
     void theHandlerRunsAtMonitorOnDeathsThatHappen() throws IOException {
         List<String> code = codeLines(MAIN.resolve(Path.of("listener", "RpgListeners.java")));
-        int handler = indexOf(code, "public void onMobDeathSplit(EntityDeathEvent event) {");
-        assertTrue(handler > 0, "the split handler exists");
+        // Renamed onMobDeath in the growth step, which runs growth first and then the split in this one handler.
+        int handler = indexOf(code, "public void onMobDeath(EntityDeathEvent event) {");
+        assertTrue(handler > 0, "the death handler exists");
         assertEquals("@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)",
                 code.get(handler - 1).trim(), "its annotation");
-        assertTrue(code.get(handler + 2).contains("MobSplitter.onDeath(event.getEntity(),"), code.get(handler + 2));
+        int split = indexOf(code, "MobSplitter.onDeath(event.getEntity(),");
+        assertTrue(split > handler && split <= handler + 6, "the split is called inside it: " + handler + " " + split);
     }
 
     /**

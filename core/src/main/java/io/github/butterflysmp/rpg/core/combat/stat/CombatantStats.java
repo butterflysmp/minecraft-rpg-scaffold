@@ -361,6 +361,20 @@ public final class CombatantStats {
     }
 
     /**
+     * A staged mob's stage change (PLAN-dragon-mobs.md, growth): its maximum moves to {@code newMax} and current
+     * keeps the SAME SHARE ({@link HealthState#rescaleMaxKeepingShare}). Emits ONE {@code MAX_CHANGE} when the
+     * maximum moved, so the nameplate and the vanilla mirror redraw from the new numbers. No-op on an untracked id.
+     */
+    public void rescaleMaxKeepingShare(UUID id, double newMax) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        if (state.rescaleMaxKeepingShare(newMax)) {
+            listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.MAX_CHANGE, 0.0,
+                    null, false, state.current(), state.max(), false));
+        }
+    }
+
+    /**
      * Converge {@code id}'s ATTACK-DAMAGE modifiers to exactly {@code desired} (source -> amount, from
      * the combatant's equipped weapon). Same leak-proof diff as {@link #reconcileMaxModifiers}, on the
      * attack stat. SILENT: attack damage has no display seam (no heart bar, no nameplate) -- the tooltip

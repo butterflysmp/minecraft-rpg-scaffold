@@ -202,6 +202,13 @@ public final class Keys {
      */
     public final NamespacedKey mobSplit;
 
+    /**
+     * Set (a BYTE) on a DEAD creature the moment its death is COUNTED toward growth (the plan's step R4), before any
+     * stage changes. The once-only guard for growth: the death event can be delivered twice, and a death already
+     * counted grows nothing. Written on the dying creature, vanilla ones included (an Enderman).
+     */
+    public final NamespacedKey mobGrowthFed;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -430,6 +437,7 @@ public final class Keys {
         this.mobGearScore = new NamespacedKey(plugin, "mob_gear_score");
         this.mobStage = new NamespacedKey(plugin, "mob_stage");
         this.mobSplit = new NamespacedKey(plugin, "mob_split");
+        this.mobGrowthFed = new NamespacedKey(plugin, "mob_growth_fed");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");

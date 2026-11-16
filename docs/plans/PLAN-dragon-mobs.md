@@ -210,6 +210,32 @@ The seat put the old game's offset to Ben as a starting number he may overrule: 
 parent, along one axis (cfde822: +0.5 and −0.5 on x, §3.2). **It is NOT Ben's ruling yet**; it ships as content
 (`phage.yml`, `split.spread`) so he can change it without a build.
 
+### THE BUILD ORDER CHANGED: GROWTH (R4) IS BUILT AHEAD OF THE SELF-DESTRUCT (R3) — NOT YET BEN'S RULING
+
+**What happened, 2026-11-15, stated plainly.** The seat proposed building the Phage's growth (§5.R step R4) before its
+self-destruct (R3), because every growth ruling exists and the explosion's numbers (P13-P22) do not. The seat put it to
+Ben as a yes/no. **His reply, verbatim:**
+> "I'm still not gonna be home for another 90 minutes. Is there anything more we can do?"
+
+**The seat TOOK that as a go-ahead.** It is **not a ruling on the order in Ben's words**: he did not say yes to R4
+before R3. **The order is Ben's to confirm or reverse** (Q28). If he reverses it, R4 waits on its branch for R3.
+
+### THE SEAT'S RULINGS ON #190 (STEP R2), 2026-11-15
+
+16. **The split in its own MONITOR, ignoreCancelled handler beside `onEntityDeath`: ACCEPTED.**
+17. **S1's `/rpg mobdamage 159` helper: ACCEPTED.**
+18. **Noted, not blocking:** DS1 rests on an INFERRED fact (an iron sword's hit takes at least 1 custom health from a
+    mob), and the split's first red was the mutation pass, not a run before the code existed.
+19. **Merge order:** #189 first; each stacked PR is retargeted to master BEFORE its base branch is deleted.
+
+### WHAT GROWTH (R4) LEAVES FOR THE SELF-DESTRUCT (R3)
+
+- **A Phage's self-destruct counts as a Void death** (Ben's second round, I: *"Yes"*, the seat having read that a
+  self-destruct is included). Nothing of ours explodes yet, so R4 cannot count it. **R4 leaves the seam**: one method
+  R3's detonation will call to report "a creature of this element died here" without a death event (§5.R.3).
+- **Q20 is still OPEN:** whether a Void death that happens while a Phage is mid-fuse still counts. R4 grows a Phage
+  whatever it is doing, because no fuse of ours exists; R3 must rule it before it ships.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -806,6 +832,36 @@ The gate is `docs/gates/GATE-dragon-split.md`, which also carries the ONE R0 and
 **Not testable until R3:** an exploding Phage does not split (E). No explosion of ours exists and R1 cancels vanilla's;
 R3's detonation must remove the Phage without raising a death.
 
+### 5.R.3 GROWTH (THE PLAN'S STEP R4) AS BUILT (`feat/dragon-growth`, stacked on R2, BUILT AHEAD OF R3, 2026-11-15)
+
+**The order is not yet Ben's** (RULINGS, *THE BUILD ORDER CHANGED*; Q28). The gate is `docs/gates/GATE-dragon-growth.md`,
+which now carries the ONE R0 and the ONE run sheet of the stacked boot.
+
+| piece | as built | where |
+|---|---|---|
+| **the rule** | `growth: { element, radius, stages_per_death }` on the mob file. A death grows a candidate when the candidate is a living staged mob with the block, below its last stage, in the same world, with its FEET within `radius` blocks (a sphere, inclusive) of the dead creature's feet, and the dead creature's element is `element`. `+stages_per_death`, capped at the last stage. EVERY such candidate grows (G2); the dying creature never grows itself | `core.mob.MobGrowth` |
+| **what counts** | a death that raises `EntityDeathEvent` (R2's definition), of a creature whose element, by `MobElementResolver`, is the growth element: our Void mobs by their file, a vanilla Enderman by the table. A zombie, the mount and a player count for nothing | `MobGrower.onDeath` |
+| **once only** | the dead creature is marked `mob_growth_fed` (PDC) BEFORE any stage changes; a marked death grows nothing | `Keys.mobGrowthFed` |
+| **the search** | a CUBE (`World#getNearbyEntities`) of the largest growth radius any loaded mob authors; the rule decides the SPHERE | `MobGrower.reportDeath` |
+| **the parent and its children** | growth and the split run in ONE `EntityDeathEvent` handler at MONITOR, ignoreCancelled, GROWTH FIRST: its candidates are collected before the split spawns the children, so a stage 5's death grows the other Phages and never its own two children. Pinned by `DragonGrowthWiringTest` (and the mutation that swaps the two calls) | `RpgListeners.onMobDeath` |
+| **the stage change** | applied on the growing mob's own thread (`Scheduler.onEntity`), the tick after the death, re-reading its stage there so two deaths in one tick add up. The stage tag and the body by `MobBodyApplier.apply` (R1's re-appliable rules), then health by `CombatantStats.rescaleMaxKeepingShare`: the new stage's maximum at the mob's STORED gear score, current at the same share (Ben: "Same share"), as ONE max modifier (`mob_stage`) measured from the seeded base, emitting one `MAX_CHANGE` so the nameplate redraws. Tags, target and gear score are untouched; `mob_split` is never written, so a Phage grown to 5 splits when it dies | `MobGrower.applyGrowth` |
+| **the log** | `GROWTH mob=… id=… from=… to=… fed=<type>[/<mob id>] <uuid> element=… d=… max=…`, one per stage change | `MobGrower` |
+| **the seam for R3** | `MobGrower.reportDeath(world, at, element, deadId, …)`: "a creature of this element died here", with no death event. The event path calls it; R3's detonation will call it for a self-destruct (Ben, I). Nothing else calls it yet | `MobGrower` |
+
+**FINDING, NOT FIXED IN THIS STEP: A PHAGE THAT GROWS WHERE IT DOES NOT FIT.** Read from the server jar (build 74;
+`javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar net.minecraft.world.entity.Entity`): a change to `SCALE` calls
+`refreshDimensions`, and when the new body is larger (and the old and new are each at most 4 blocks, which the Phage's
+3 always is), it calls `fudgePositionAfterSizeChange`, which asks `Level.findFreePosition` for room for the new box
+near the old one and **moves the mob there** (`setPos`) when it finds one. **When it finds none** (a 1-wide gap, a
+2-high tunnel with a stage 3 → 4), the bytecode continues past that branch; what it then does was **not read**. The
+**INFERRED** outcome is that the mob stays where it is, overlapping blocks, and takes vanilla suffocation damage
+(`IN_WALL`), which our `VanillaDamagePolicy` prices as environmental damage, proportional (M13). **A fit check before
+growing is NOT built**; whether a Phage should refuse to grow, grow anyway, or grow and be pushed is Ben's (Q29).
+
+**AN EQUIVALENT MUTANT, REMOVED RATHER THAN KEPT:** the rule first carried `if (stage >= last) return stage` before
+the cap. Its mutation (`>=` to `>`) survived the whole suite, because `min(last, last + k)` is already `last`. The line
+was deleted; the cap is the one rule, and its mutation reddens three rows.
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.
@@ -1061,7 +1117,7 @@ rework: an answered question says where its answer is, and a new one is added at
 18. **OPEN.** When the Knell picks where to land, must it also be able to SEE the player it just hit from there, so it
     never lands behind a wall? (§3.R.1)
 19. **ANSWERED 2026-11-15: "Same share"** (answer 4). When a Phage grows a stage, does it heal to full, or keep the same fraction of its health?
-20. **OPEN (ruling 5).** If a Void mob dies nearby while a Phage is already fusing, does that death still count?
+20. **OPEN (ruling 5), and LEFT FOR R3** (RULINGS, *WHAT GROWTH LEAVES*). If a Void mob dies nearby while a Phage is already fusing, does that death still count?
 21. **ANSWERED 2026-11-15: "No,"** (answer 2); the children start at stage 1. When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
     2? (§3.R.2)
 22. **ANSWERED 2026-11-15: "gearscore should be the same as the parent Phage."** (RULINGS, the split's gear score.) Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
@@ -1076,3 +1132,9 @@ rework: an answered question says where its answer is, and a new one is added at
     The old Phage split only on a player's kill (§3.2).
 27. **OPEN — about the fight, not the Phage.** The growth is uncapped (answer D). Should split children count against the
     fight's mob caps, be refused at a cap, or be exempt as the old Lesser Phages were? (§6 C6)
+28. **OPEN — the build order.** The Phage's growing was built BEFORE its exploding (RULINGS, *THE BUILD ORDER
+    CHANGED*), on the seat's reading of "Is there anything more we can do?" as a yes. Is that order right, or should
+    growing wait until the explosion is in?
+29. **OPEN.** A Phage that grows in a space too small for its new size (a narrow gap, a low tunnel): should it not
+    grow there, grow anyway (the server shifts it if it finds room, and otherwise it may take suffocation damage), or
+    something else? (§5.R.3, the finding)
