@@ -959,6 +959,31 @@ growing is NOT built**; whether a Phage should refuse to grow, grow anyway, or g
 the cap. Its mutation (`>=` to `>`) survived the whole suite, because `min(last, last + k)` is already `last`. The line
 was deleted; the cap is the one rule, and its mutation reddens three rows.
 
+### 5.R.4 STEP R3 AS BUILT (`feat/dragon-blast`, off master `94915476`, 2026-11-15) — THE BLAST
+
+The gate is `docs/gates/GATE-dragon-blast.md`, its own scenario file `selftest/GATE-dragon-blast.yml`. **N4 is built
+WITHOUT replacing the swell** (the seat's ruling 20): vanilla's `SwellGoal` is the trigger, the cancel and the fuse.
+
+| piece | as built | where |
+|---|---|---|
+| **the rule** | `blast: { radius, damage: { first, last }, fuse_ticks }` on the mob file; damage linear by stage, x GS/100 as a custom mob's hit (`MobScaling.attackDamage`); victims inside the radius, feet to feet, inclusive, full damage. A blast needs stages | `core.mob.MobBlast`, `MobLoader` |
+| **N3, the predicate** | `MobHostility.hostileTo(side, exemptMode)`: true for a survival or adventure player only. A Summoner adds a `Side` here | `core.mob.MobHostility` |
+| **the fuse** | `fuse_ticks` written with `Creeper#setMaxFuseTicks` in the one spawn path, so split children get it; saved by the server as `Fuse` | `MobSpawner.stampCustom` |
+| **the detonation** | at our creeper's `ExplosionPrimeEvent`: cancelled FIRST (never a vanilla explosion), a frozen Phage stops there, else `MobBlaster.detonate`: victims hit through `BukkitCombatant.of(victim).handle().applyDamage(damage, phageId)`, the two-argument form a mob's melee hit takes; the particle `EXPLOSION_EMITTER` and the sound `ENTITY_GENERIC_EXPLODE`; one `BLAST` line; growth's death path; `remove()` | `RpgListeners.onCustomCreeperPrime`, `MobBlaster` |
+| **no split** | `remove()` is `discard(PLUGIN)` and raises no death event, so the one death handler never sees a blown Phage | `DragonBlastWiringTest` |
+| **one Void death** | `MobGrower.onDeath(phage, …)` before the removal: marks `mob_growth_fed`, resolves void, reports with the Phage's own id, which never grows itself | `MobBlaster` |
+| **the log** | `BLAST mob=… id=… stage=… gs=… damage=<before defence> radius=… victims=<n> [<type> <uuid> d=…] spared=<n> [...]`. The per-prime `CREEPERGUARD prime cancelled` line is gone; the ignite and power lines stay | `MobBlaster`, `RpgListeners` |
+| **the instrument** | `HURT before= after= defense= dealer= dealerType=`, one per DAMAGE change to the run's player, from the store's own change (`HealthChange.beforeDefense`, new); the steps `detonate`, `ignite`, `probe_fuse`, `await_fuse` | `SelfTestDamageTap`, `SelfTestBlast`, `SelfTestRun`, `SelfTestDrivers` |
+
+**WHAT THE DAMAGE PATH GIVES THE BLAST TODAY, READ FROM THE CODE.** The two-argument `applyDamage` is
+`CritState.NORMAL`, `DefenseRule.APPLIES`, element **null**: no element (so no Void typing, Q31), the victim's defence
+applies, no crit, and **no vanilla damage event**, so no `DamageCause`, no knockback (P-c), no hurt cadence of vanilla's,
+and **no shield block** (`ShieldBlock.resolve` reads a vanilla event; Q32). The amount is never × 5 and never moved by
+difficulty (M24 undoes difficulty on vanilla events, and this is not one).
+
+**A CREATIVE OR SPECTATOR PLAYER inside a blast another player triggered is not hurt**: the predicate excludes him and
+the `BLAST` line names him under `spared`. Unit-only (`MobBlastTest`): the selftest refuses to run with two players.
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.
