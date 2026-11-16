@@ -12,6 +12,17 @@ its row has been read. **NO BOOT until the seat has diffed the code AND this gat
   boot. Its DB rows and B rows are still read against `GATE-dragon-bodies.md`'s predictions; only the R0 and the
   order of typing come from here.
 
+> **NOTE, 2026-11-15 (added on `feat/dragon-growth`, the plan's step R4, before any boot; no prediction below is
+> changed).** The stacked boot is now of `feat/dragon-growth`'s head. **This file's R0a-R0d and its run sheet are
+> SUPERSEDED in that boot by `GATE-dragon-growth.md`'s.** DS1-DS6 and S1-S2 are still read against THIS file's
+> predictions. **Checked row by row against growth, which is live in that boot:** every death in DS1-DS6 is a Phage's,
+> so each is also a Void death, but no row has another Phage within 6 blocks of the one that dies (each row stages one
+> Phage; the split's children are born after growth has collected its candidates). So growth adds no GROWTH line and
+> changes no reading here. **S2's cleanup** kills two stage-1 Phages in one command: the first death schedules a
+> stage change for the second on ITS next tick, by which time the same command has killed it, so the scheduled change
+> finds it gone and does nothing (`MobGrower.applyGrowth` returns on `!isValid()`). Nothing is left, and no prediction
+> rests on it.
+
 **Plan:** `PLAN-dragon-mobs.md` — RULINGS (G4, E, "Any deaths", "No,", Ben's gear-score answer, the offset put to
 him), §3.R.2, §4.2 N6, §5.R step R2. **The rule every AUTO row answers to:** `.claude/rules/verification.md`, *AN AUTO
 READING IS A READING OF THE SERVER, NEVER OF THE CLIENT*.

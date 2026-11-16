@@ -12,6 +12,16 @@ its row has been read. **NO BOOT until the seat has diffed the code AND this gat
 > the predictions in THIS file, unchanged.** One consequence for DB2-DB4's `maxHP`: unchanged, because R2 adds a
 > `split:` block to `phage.yml` and touches no stage body.
 
+> **NOTE, 2026-11-15 (added on `feat/dragon-growth`, the plan's step R4, before any boot; no prediction below is
+> changed).** The stacked boot is now of `feat/dragon-growth`'s head. **This file's R0a-R0d and its run sheet are
+> SUPERSEDED in that boot by `GATE-dragon-growth.md`'s** (which also supersede `GATE-dragon-split.md`'s). DB1-DB11 and
+> B1-B6 are still read against THIS file's predictions. **Checked row by row against growth:** no DB row kills
+> anything, so growth changes none of their readings. **A defect in the B rows, found on this branch: B2's and B6's
+> cleanup `/kill @e[type=creeper,distance=..20]` each kill a stage-5 Phage, which since R2 SPLITS and leaves two live
+> small Phages.** The rows were written before the split existed, and `GATE-dragon-split.md`'s note missed it. The
+> stacked run sheet in `GATE-dragon-growth.md` has Ben type each of those two cleanup lines twice. No prediction here
+> rests on the cleanup.
+
 **Plan:** `PLAN-dragon-mobs.md` — RULINGS (Ben's R1 answers and the seat's rulings 8-10), §3.R.0 (the element on a
 mob), §4.2 (MB1 limited, N1, N2) and §5.R step R1. **The rule every AUTO row answers to:**
 `.claude/rules/verification.md`, *AN AUTO READING IS A READING OF THE SERVER, NEVER OF THE CLIENT*.

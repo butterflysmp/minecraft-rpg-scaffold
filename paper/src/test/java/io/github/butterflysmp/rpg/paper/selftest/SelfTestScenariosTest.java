@@ -35,10 +35,10 @@ class SelfTestScenariosTest {
         assertEquals(List.of(), loaded.refusals());
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
-                "dragon-split"),
+                "dragon-split", "dragon-growth"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies and"
-                        + " dragon-split LAST (2026-11-15)");
+                "the fourteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
+                        + " dragon-split and dragon-growth LAST (2026-11-15)");
     }
 
     /** The seat's CORE rows, one scenario each (2026-10-05). R0d is a boot log line and has none. */
@@ -60,6 +60,7 @@ class SelfTestScenariosTest {
         expected.put("dragon-bodies", List.of("DB1", "DB2", "DB3", "DB4", "DB5", "DB6", "DB7", "DB8", "DB9", "DB10",
                 "DB11"));
         expected.put("dragon-split", List.of("DS1", "DS2", "DS3", "DS4", "DS5", "DS6"));
+        expected.put("dragon-growth", List.of("DG1", "DG2", "DG3", "DG4", "DG5", "DG6", "DG7", "DG8", "DG9"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -73,7 +74,9 @@ class SelfTestScenariosTest {
         // so 80 - 12 = 68. The same three commands at master 5b71e24b print 11, 68, 11: 57, this line's old value.
         // Then GATE-dragon-split.md (2026-11-15), RECOUNTED the same way: 13 gates, 87 keys, 13 setups, so 74. At
         // feat/dragon-bodies 974e4357 the same commands print 12, 80, 12: 68, this line's old value.
-        assertEquals(74, loaded.rows());
+        // Then GATE-dragon-growth.md (2026-11-15), RECOUNTED the same way: 14 gates, 97 keys, 14 setups, so 83. At
+        // feat/dragon-split 56a8bb00 the same commands print 13, 87, 13: 74, this line's old value.
+        assertEquals(83, loaded.rows());
     }
 
     @Test
