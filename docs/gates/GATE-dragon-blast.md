@@ -5,16 +5,27 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+> **2026-11-16: THE PREDICTIONS IN THIS FILE WERE REWRITTEN BEFORE ANY BOOT, AND THIS IS WHY.** The version first
+> committed at `58165392` predicted a blast of 3 blocks at full damage (the seat's provisional P-c). Vanilla's reach is
+> twice its power, 6, with falloff (`PLAN-dragon-mobs.md` §8 F2, §7 F-B), and Ben ruled *"keep vanillas shap"*. No row of
+> that version was ever booted or read, so the seat directed that its predictions be rewritten in the same PR rather
+> than kept as a dead record. **What changed:** BL1 and BL2 predict the falloff on the printed distance; BL3 and BL4 blow
+> 7 blocks from the player instead of 5, so he stays outside the reach; BL6 and BL7 are now the reach's edge (5.90 hit,
+> 6.05 not), where they were 3.00 and 3.05; BL9 is new, a fixed half-reach hit; R0b checks `reach: 6`; R0d counts 92.
+> BL5, BL8, BQ1 and the run sheet are unchanged.
+
 The plan is `PLAN-dragon-mobs.md`: RULINGS (*Ben, 2026-11-15, VERBATIM: the blast's numbers*; the seat's provisional
-P-a to P-e; the seat's mechanism rulings 20-26), §5.R.4 (step R3 as built), §8 F2, Q31-Q33. The scenarios are
-`paper/src/main/resources/selftest/GATE-dragon-blast.yml`, paired with THIS file (`SelfTestScenariosTest.docOf`).
+P-a, P-b, P-d, P-e; the seat's mechanism rulings 20-26; *THE SEAT'S MISS ON THE BLAST'S RADIUS*, Ben's *"keep vanillas
+shap"* and rulings 27-31), §5.R.4 (step R3 as built), §7 F-B (the jar's reach and curve), §8 F2 and F3, Q31-Q35. The
+scenarios are `paper/src/main/resources/selftest/GATE-dragon-blast.yml`, paired with THIS file
+(`SelfTestScenariosTest.docOf`).
 
 ```
-ROWS     13   R0a R0b R0c R0d
-              BL1 BL2 BL3 BL4 BL5 BL6 BL7 BL8
+ROWS     14   R0a R0b R0c R0d
+              BL1 BL2 BL3 BL4 BL5 BL6 BL7 BL8 BL9
               BQ1
          ──
-         13   = 4 R0 + 8 BL + 1 BQ                git grep -c -E '^### ' <ref> -- docs/gates/GATE-dragon-blast.md
+         14   = 4 R0 + 9 BL + 1 BQ                git grep -c -E '^### ' <ref> -- docs/gates/GATE-dragon-blast.md
 ```
 
 ## GAME MODE, DIFFICULTY, GEAR SCORE AND THE PLAYER'S HEALTH
@@ -24,14 +35,17 @@ ROWS     13   R0a R0b R0c R0d
 - **The difficulty is set by the selftest itself**: the scenario file's `setup:` begins `difficulty: normal`; the run
   logs `DIFFICULTY found=<what the world had> set=NORMAL` and restores what it found at RUN START (`RESTORED …
   difficulty=<that>`). **Ben types no `/difficulty` line.**
-- **Every mob is spawned at GEAR SCORE 100**, so every blast deals its AUTHORED damage: 20 at stage 1, 50 at stage 5
-  (`MobBlastTest.theDamageIsPricedByGearScoreAsACustomMobsHitIs`: ×1 at GS 100, never ×5 for a custom mob).
-- **THE PLAYER CANNOT DIE IN ANY ROW, AND WHY.** Each row in which he can be hit (BL1, BL2, BL6, and BQ1 twice) first
-  runs `rpg heal 1000000`, which heals him to his maximum (`RpgCommand.healSelf`, capped at max). At most one blast
-  reaches him per heal. The largest is **50 before his defence** (BL2, BQ1's second); defence only lowers it
+- **Every mob is spawned at GEAR SCORE 100**, so every blast's damage at ZERO distance (`base=`) is its AUTHORED damage:
+  20 at stage 1, 50 at stage 5 (`MobBlastTest.theDamageIsPricedByGearScoreAsACustomMobsHitIs`: ×1 at GS 100, never ×5
+  for a custom mob). Out to the reach it is multiplied by `MobBlast.falloff`.
+- **THE PLAYER CANNOT DIE IN ANY ROW, AND WHY.** Each row in which he can be hit (BL1, BL2, BL6, BL9, and BQ1 twice)
+  first runs `rpg heal 1000000`, which heals him to his maximum (`RpgCommand.healSelf`, capped at max). At most one blast
+  reaches him per heal. The largest he can take is **50 before his defence** (a stage 5 at zero distance; BL2 and BQ1's
+  second): the factor is at most 1 (`falloff` is 1 at zero and falls), and defence only lowers it
   (`Defense.applyDefense`: `damage × 100 / (100 + defense)`, the damage itself when defence ≤ 0). **His maximum is at
-  least 100** (`CombatantStats.DEFAULT_PLAYER_BASE`, a player's base; INFERRED that no shipped modifier lowers a
-  player below it) and read 350 at the last boot. 50 < 100. The heal's reply prints the maximum he starts from.
+  least 100** (`CombatantStats.DEFAULT_PLAYER_BASE`, a player's base; INFERRED that no shipped modifier lowers a player
+  below it) and read 350 at the last boot. **50 < 100**, so at least 50 is left. The heal's reply prints the maximum he
+  starts from.
 
 ## WHAT THE ROWS STAND ON — EACH FACT, AND ITS MARK
 
@@ -55,28 +69,40 @@ below was read with `C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p -cp
   `GATE-dragon-fix.md` DB10R2 logged three primes for one stage-1 Phage two blocks east in 100 ticks. The live rows wait
   120. **That a stage 5 does the same is INFERRED** (same goal, same distances; its speed is irrelevant while it stands
   within 3).
-- **S5. The damage — READ (the code).** `MobBlast.price`: the authored damage × GS/100 (`MobScaling.attackDamage`,
-  custom). At GS 100: 20.000 and 50.000 (executed in jshell: `20.0+(50.0-20.0)*((double)(s-1)/4)` prints 20.0, 27.5,
-  35.0, 42.5, 50.0). Each victim is hit through `BukkitCombatant.of(victim).handle().applyDamage(damage, phageId)`, the
+- **S5. The reach and the curve — READ, §7 F-B.** Vanilla's creeper hurts out to `radius * 2` = 6, inclusive
+  (`ServerExplosion#hurtEntities`), measured between the victim's position and the blast's centre, the creeper's
+  position: **feet to feet, the same two points ours uses.** Its damage is `(x*x + x)/2 * 7 * f + 1`,
+  `x = (1 - d/f) * exposure` (`ExplosionDamageCalculator#getEntityDamageAmount`). Ours keeps only the shape:
+  `MobBlast.falloff(d, 6) = (x*x + x)/2`, `x = 1 - d/6`, exposure 1, no `* 7 * f`, no `+ 1`. **No cover, no knockback.**
+- **S6. The damage — READ (the code).** A victim at distance d is dealt `base × falloff(d)` before its defence, where
+  `base = MobBlast.price` (the authored damage × GS/100). A victim exactly at the reach is listed with factor 0 and not
+  hit. Each other victim is hit through `BukkitCombatant.of(victim).handle().applyDamage(dealt, phageId)`, the
   two-argument form a mob's melee hit takes, which defers the hit one tick to the victim's own scheduler; the store then
-  applies defence. **So the HURT line follows the BLAST line by about a tick.**
-- **S6. The HURT line — READ (the code).** One per DAMAGE change the store makes to the run's player inside a row:
+  applies defence. **So the HURT line follows the BLAST line by about a tick, and its `before` is the BLAST line's
+  `dealt` (the same double, printed to the same three places).**
+- **S7. The HURT line — READ (the code).** One per DAMAGE change the store makes to the run's player inside a row:
   `HURT before=<offered> after=<landed> defense=<his defence> dealer=<uuid|self|none> dealerType=<type[/mob id]|gone>`.
   `before` is the store's own `amount` before the curve (`HealthChange#beforeDefense`); `after` is what landed.
   **`dealerType` is NOT predicted for a blast:** the Phage is removed in the same task as the blast, and whether
   `CraftWorld#getEntity` (→ `ServerLevel#getEntity`) still resolves a discarded entity a tick later was **not read**;
   it prints `gone` if not.
-- **S7. The distances — READ (the code), executed (the arithmetic).** A frozen mob is spawned at the player's feet after
-  a `tp` of the stated offset from a block centre, so feet to feet is the offset exactly where the coordinates are
-  exact: `+3` → `d=3.00`; `+3.05` → 3.0499999999999970 at x = −91.5, whose square is not ≤ 9 (jshell). A frozen (NoAI)
-  mob does not move. The radius is inclusive (`MobBlastTest.exactlyThreeBlocksIsInsideAndJustBeyondIsNot`).
-- **S8. Health of the frozen bystanders — READ.** A husk's `MAX_HEALTH` is the attribute's registry default, 20
+- **S8. The distances — READ (the code), executed (the arithmetic).** A frozen mob is spawned at the player's feet after
+  a `tp` of the stated offset from a block centre and back, so feet to feet is the offset. Executed in jshell for start
+  x = −92.0, −91.5, 13.0 and 200.0: `+5.9` and back measures 5.9000000000000060 or 5.9 exactly, printing `d=5.900
+  factor=0.008472 dealt=0.169` at base 20 every time; `+6.05` measures 6.0499999999999970 to 6.0500000000000110, beyond
+  6 every time; `+3` and `+7` are exact. A frozen (NoAI) mob does not move. The reach is inclusive
+  (`MobBlastTest.exactlyTheReachIsInsideAndJustBeyondIsNot`).
+- **S9. Health of the frozen bystanders — READ.** A husk's `MAX_HEALTH` is the attribute's registry default, 20
   (`Attributes`' `max_health` is `RangedAttribute(…, 20.0d, …)`; `Zombie.createAttributes`, which `Husk` inherits, adds
   no `MAX_HEALTH`); × 5 × GS/100 (M1, M2) = **100**. A stage-5 Phage at GS 100 is **160** (`DB4R2`'s body, ×1). A husk
-  does not burn at noon (the setup's `time set 6000` would burn a zombie, and a burn is damage: the brief's "zombie" is a
-  husk here for that reason).
-- **S9. The radius in vanilla — READ, §8 F2.** Vanilla's creeper "3" is a power whose damage reaches 6 blocks with
-  falloff. These rows test OUR rule (3 blocks, full damage); Q33 asks Ben.
+  does not burn at noon (the setup's `time set 6000` would burn a zombie, and a burn is damage: a husk stands in for the
+  brief's zombie for that reason).
+- **S10. The printed figures, and the tolerance on a formula read against them.** The BLAST line prints `d` to three
+  places, `factor` to six and `dealt` to three. Where a row predicts `factor = falloff(d)` on the PRINTED `d`, the
+  printed `d` is off the true one by at most 0.0005, and the curve's steepest slope is at zero distance,
+  `(2x + 1) / (2 × reach)` at x = 1: **0.25 per block** (executed: `3.0/12`). So the factor recomputed from the printed
+  `d` agrees with the printed factor **within 0.000125 + 0.0000005**, and `dealt` agrees with `base × printed factor`
+  **within 0.0005 (its own rounding) + base × 0.0000005**. These are the tolerances, and that is their basis.
 
 **What no row here can show, said once:** the `max=30` in a FUSE line cannot tell content's 30 from vanilla's default
 30, because the content value IS vanilla's (Ben's ruling). The wiring is pinned by
@@ -115,13 +141,13 @@ below was read with `C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p -cp
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-blast` prints it, shortened. **Not** master's `94915476`. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-blast` prints it, shortened. **Not** master's `94915476`, and **not** `58165392` (this PR's head before the shape change). Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
 
-### R0b — the jar carries step R3
+### R0b — the jar carries step R3, at vanilla's shape
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: the seven entries below the control. In `content/mobs/phage.yml`, the lines `blast:` and `  fuse_ticks: 30`; in `selftest/GATE-dragon-blast.yml`, the line `  - difficulty: normal`. ABSENT: the control `selftest/NoSuchClassControl.class` | the scan below | |
+| PRESENT: the seven entries below the control. In `content/mobs/phage.yml`, the lines `blast:`, `  reach: 6` and `  fuse_ticks: 30`, and **no** `  radius: 3` (the shape before 2026-11-16); in `selftest/GATE-dragon-blast.yml`, the line `  - difficulty: normal`. ABSENT: the control `selftest/NoSuchClassControl.class` | the scan below | |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -139,10 +165,15 @@ foreach ($c in 'selftest/GATE-dragon-blast.yml',
 function Text($name) { $r = New-Object IO.StreamReader($zip.GetEntry($name).Open()); $t = $r.ReadToEnd(); $r.Close(); $t }
 $p = Text 'content/mobs/phage.yml'
 if ($p -match "(?m)^blast:\s*$") { "PRESENT blast:" } else { "ABSENT  blast:" }
+if ($p -match "(?m)^  reach: 6\s*$") { "PRESENT reach: 6" } else { "ABSENT  reach: 6" }
+if ($p -match "(?m)^  radius: 3\s*$") { "PRESENT radius: 3" } else { "ABSENT  radius: 3" }
 if ($p -match "(?m)^  fuse_ticks: 30\s*$") { "PRESENT fuse_ticks: 30" } else { "ABSENT  fuse_ticks: 30" }
 if ((Text 'selftest/GATE-dragon-blast.yml') -match "(?m)^  - difficulty: normal\s*$") { "PRESENT difficulty dragon-blast" } else { "ABSENT  difficulty dragon-blast" }
 $zip.Dispose()
 ```
+
+**The `radius: 3` line is the control for the `reach: 6` one:** `growth:`'s `  radius: 6` is in the same file and must
+not satisfy either needle, and the old blast key must read ABSENT.
 
 ### R0c — the Loaded line, and nothing refused
 
@@ -154,12 +185,13 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one line **`[Rpg] Selftest: dev server, 91 scenarios across 15 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast]`**, and **no** `Refusing selftest` line (a malformed `detonate`, `ignite`, `probe_fuse` or `await_fuse` step is refused at load, by name) | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
+| Exactly one line **`[Rpg] Selftest: dev server, 92 scenarios across 15 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast]`**, and **no** `Refusing selftest` line (a malformed `detonate`, `ignite`, `probe_fuse` or `await_fuse` step is refused at load, by name) | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
 
-**The 91 is DERIVED.** From `paper/src/main/resources/selftest/` at this head: `grep -cE '^  - ' index.yml` prints
+**The 92 is DERIVED.** From `paper/src/main/resources/selftest/` at this head: `grep -cE '^  - ' index.yml` prints
 **15**; `cat $(grep -E '^  - ' index.yml | tr -d '\r' | sed 's/  - /GATE-/; s/$/.yml/') | grep -cE '^[A-Za-z0-9-]+:'`
-prints **106**; the same with `'^setup:'` prints **15**: 106 − 15 = **91**. At master `94915476` the first two print 14
-and 96 (82, `GATE-dragon-fix.md` R0d's reading: the control). `SelfTestScenariosTest` pins the 91.
+prints **107**; the same with `'^setup:'` prints **15**: 107 − 15 = **92**. The controls: at `58165392` the blast file
+alone has 10 keys and the same commands give 106, so 91; at master `94915476` they print 14 and 96, so 82 (`GATE-dragon-fix.md`
+R0d's reading). `SelfTestScenariosTest` pins the 92.
 
 ---
 
@@ -176,59 +208,65 @@ stage-5 `REPLY "Spawned Phage (creeper, stage 5, 160 HP, GS 100 given)" [aqua, g
 anywhere in the run** (ruling 26 removed it). **No `SPLIT` line anywhere in the run.** **A non-zero LEFTOVER in any row
 makes that row NOT AS PREDICTED**, whatever else it reads, and names what was there.
 
+**A BLAST line** is `[Rpg] BLAST mob=phage id=<uuid> stage=<n> gs=100 base=<20.000|50.000> reach=6.00 victims=<n>
+[player <uuid> d=<d> factor=<f> dealt=<x>, …] spared=<n> [<type>[/<mob id>] <uuid> d=<d> factor=<f>, …]`.
+
 **A row that heals** logs `REPLY "Custom HP: <M>/<M>" [green]`, M his maximum, recorded and not predicted.
 
-### BL1 — a LIVE stage-1 Phage blows on the player for 20 before defence; it is gone; the floor is whole (SURVIVAL)
+### BL1 — a LIVE stage-1 Phage blows on the player; the damage falls off with his distance; it is gone; the floor is whole (SURVIVAL)
+
+**The distance cannot be held fixed in a live row:** the swell starts wherever the Phage stands when the player is
+within 3 and in sight, which is vanilla's AI timing (S3, S4). So the figure is the formula on the printed distance.
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `BLOCKS STONE count=108 box=-3 -1 -4 8 -1 4` before the spawn. (2) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl1 uuid> stage=1 gs=100 damage=20.000 radius=3.00 victims=1 [player <Ben's uuid> d=<recorded; at most 3.00>] spared=0 []`. (3) **Exactly one** `HURT before=20.000 after=<A> defense=<D> dealer=<the bl1 uuid> dealerType=<recorded>`, after the BLAST line, with **A = 20 × 100 / (100 + D)** to the printed three places (D ≤ 0: A = 20.000). (4) `ENTITIES CREEPER count=0 radius=16`. (5) After `DRIVE return <x y z>`, `BLOCKS STONE count=108 box=-3 -1 -4 8 -1 4` again. (6) No `GROWTH` line | S2-S6; (1)/(5) the box is 12 × 1 × 9 = 108 (`GATE-dragon-fix.md` DB10R2 read it) and nothing of ours touches a block | |
+| (1) `BLOCKS STONE count=108 box=-3 -1 -4 8 -1 4` before the spawn. (2) **Exactly one** BLAST line, `id=<the bl1 uuid> stage=1 gs=100 base=20.000 reach=6.00 victims=1 [player <Ben's uuid> d=<D> factor=<F> dealt=<X>] spared=0 []`, with **F = falloff(D) = (x² + x)/2, x = 1 − D/6**, and **X = 20 × F**, each within S10's tolerance. **A BOUND, stated as one:** D < 3 (the swell starts inside 3 and the Phage stands while it swells, INFERRED from `SwellGoal`, S3), so F > 0.375 and X > 7.500. (3) **Exactly one** `HURT before=<X, the same three places> after=<A> defense=<Dp> dealer=<the bl1 uuid> dealerType=<recorded>`, after the BLAST line, with **A = X × 100 / (100 + Dp)** to the printed three places (Dp ≤ 0: A = X). (4) `ENTITIES CREEPER count=0 radius=16`. (5) After `DRIVE return <x y z>`, `BLOCKS STONE count=108 box=-3 -1 -4 8 -1 4` again. (6) No `GROWTH` line | S2-S7, S10; (1)/(5) the box is 12 × 1 × 9 = 108 (`GATE-dragon-fix.md` DB10R2 read it) and nothing of ours touches a block | |
 
-### BL2 — a LIVE stage-5 Phage blows for 50 before defence, and leaves NO children (SURVIVAL) — Ben's E
+### BL2 — a LIVE stage-5 Phage blows on the player from a base of 50, and leaves NO children (SURVIVAL) — Ben's E
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `BLOCKS STONE count=108 …` before. (2) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl2 uuid> stage=5 gs=100 damage=50.000 radius=3.00 victims=1 [player <Ben's uuid> d=<recorded; at most 3.00>] spared=0 []`. (3) **Exactly one** `HURT before=50.000 after=<50 × 100 / (100 + D)> defense=<D> dealer=<the bl2 uuid> dealerType=<recorded>`. (4) `ENTITIES CREEPER count=0 radius=16`: **zero children**. (5) **No `SPLIT` line in the bracket.** (6) The second `BLOCKS STONE count=108 …` | S2-S6; (4)/(5): removal raises no death event (`CraftEntity#remove` is `discard(PLUGIN)`, `RpgListeners.onMobDeath`'s javadoc; `DragonBlastWiringTest.theBlastRemovesThePhageWithoutADeath`) | |
+| (1) `BLOCKS STONE count=108 …` before. (2) **Exactly one** BLAST line, `id=<the bl2 uuid> stage=5 gs=100 base=50.000 reach=6.00 victims=1 [player <Ben's uuid> d=<D> factor=<F> dealt=<X>] spared=0 []`, with **F = falloff(D)** and **X = 50 × F** (S10's tolerance); **the bound** D < 3, so X > 18.750. (3) **Exactly one** `HURT before=<X> after=<X × 100 / (100 + Dp)> defense=<Dp> dealer=<the bl2 uuid> dealerType=<recorded>`. (4) `ENTITIES CREEPER count=0 radius=16`: **zero children**. (5) **No `SPLIT` line in the bracket.** (6) The second `BLOCKS STONE count=108 …` | S2-S7, S10; (4)/(5): removal raises no death event (`CraftEntity#remove` is `discard(PLUGIN)`, `RpgListeners.onMobDeath`'s javadoc; `DragonBlastWiringTest.theBlastRemovesThePhageWithoutADeath`) | |
 
 ### BL3 — a blast is a Void death: a stage-1 Phage 3.00 away grows to stage 2; the one that blew never grows (SURVIVAL)
 
-A frozen stage-1 Phage (`bl3x`) five blocks east is blown by DETONATE; a frozen stage-1 Phage (`bl3b`) stands 3.00 north
-of it. The player is 5.00 from the blast, outside its radius.
+A frozen stage-1 Phage (`bl3x`) SEVEN blocks east is blown by DETONATE; a frozen stage-1 Phage (`bl3b`) stands 3.00 north
+of it. The player is 7.00 from the blast, outside its 6-block reach.
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `DRIVE detonate tag=bl3x <the bl3x uuid>`. (2) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl3x uuid> stage=1 gs=100 damage=20.000 radius=3.00 victims=0 [] spared=1 [creeper/phage <the bl3b uuid> d=3.00]`. (3) **Exactly one** `[Rpg] GROWTH mob=phage id=<the bl3b uuid> from=1 to=2 fed=creeper/phage <the bl3x uuid> element=void d=3.00 max=100`; **no GROWTH line names bl3x.** (4) `BODY tag=bl3b <uuid> type=creeper mob=phage stage=2 scale=0.882 height=1.500 speedBase=0.3125 speedType=0.2500 speedX=1.250 maxHP=100.000 gs=100 element=void dead=false`. (5) `BODY tag=bl3x none within 16 blocks`. (6) `ENTITIES CREEPER count=1 radius=16`. (7) No `HURT` line | S2, S7; (3) growth's death path with the Phage's own id (`MobGrower.onDeath`, `MobGrowth.stageAfter` skips the dead id: `MobGrowthTest.theDyingCreatureNeverGrowsItself`); stage 2's body as `GATE-dragon-fix.md` DG1R2 read it, its health 100 = stage 2's 100 × GS 100/100 | |
+| (1) `DRIVE detonate tag=bl3x <the bl3x uuid>`. (2) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl3x uuid> stage=1 gs=100 base=20.000 reach=6.00 victims=0 [] spared=1 [creeper/phage <the bl3b uuid> d=3.000 factor=0.375000]`. (3) **Exactly one** `[Rpg] GROWTH mob=phage id=<the bl3b uuid> from=1 to=2 fed=creeper/phage <the bl3x uuid> element=void d=3.00 max=100`; **no GROWTH line names bl3x.** (4) `BODY tag=bl3b <uuid> type=creeper mob=phage stage=2 scale=0.882 height=1.500 speedBase=0.3125 speedType=0.2500 speedX=1.250 maxHP=100.000 gs=100 element=void dead=false`. (5) `BODY tag=bl3x none within 16 blocks`. (6) `ENTITIES CREEPER count=1 radius=16`. (7) No `HURT` line | S2, S5, S8; 0.375000 is `falloff(3, 6)` (jshell); (3) growth's death path with the Phage's own id (`MobGrower.onDeath`; `MobGrowth.stageAfter` skips the dead id: `MobGrowthTest.theDyingCreatureNeverGrowsItself`); stage 2's body as `GATE-dragon-fix.md` DG1R2 read it, its health 100 = stage 2's 100 × GS 100/100 | |
 
-### BL4 — a frozen husk and a frozen stage-5 Phage inside the blast keep their health (SURVIVAL) — Ben's G
+### BL4 — a frozen husk and a frozen stage-5 Phage well inside the reach keep their health (SURVIVAL) — Ben's G
 
-A frozen stage-1 Phage (`bl4x`) five blocks east is blown by DETONATE; a frozen husk (`bl4h`) 2.00 north of it and a
-frozen stage-5 Phage (`bl4p`) 2.00 south. The player is 5.00 from the blast.
+A frozen stage-1 Phage (`bl4x`) SEVEN blocks east is blown by DETONATE; a frozen husk (`bl4h`) 2.00 north of it and a
+frozen stage-5 Phage (`bl4p`) 2.00 south, each a third of the way to the reach. The player is 7.00 from the blast.
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) Before the blast: `PROBE tag=bl4h <uuid> husk customHP=100.000/100.000 fireTicks=0 dead=false d=5.385 dy=0.000` and `PROBE tag=bl4p <uuid> creeper customHP=160.000/160.000 fireTicks=0 dead=false d=5.385 dy=0.000`. (2) `REPLY "Spawned husk (husk, 100 HP, GS 100 given)" [aqua, gray]` for the husk. (3) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl4x uuid> stage=1 gs=100 damage=20.000 radius=3.00 victims=0 [] spared=2 [<both, in either order: husk <the bl4h uuid> d=2.00, creeper/phage <the bl4p uuid> d=2.00>]`. (4) After it, the two PROBE lines **unchanged**. (5) **No GROWTH line** (a stage 5 does not grow; a husk is not a candidate). (6) `ENTITIES CREEPER count=1 radius=16` | S8; `d=5.385` is √29 (jshell: `String.format("%.3f", Math.sqrt(29.0))` prints 5.385); `fireTicks=0` stands on `GATE-dragon-fix.md` DG7R2's frozen creeper reading 0 (INFERRED to hold for a husk); (2)'s colours INFERRED from the Phage's reply (an unnamed mob's type key inherits the aqua) | |
+| (1) Before the blast: `PROBE tag=bl4h <uuid> husk customHP=100.000/100.000 fireTicks=0 dead=false d=7.280 dy=0.000` and `PROBE tag=bl4p <uuid> creeper customHP=160.000/160.000 fireTicks=0 dead=false d=7.280 dy=0.000`. (2) `REPLY "Spawned husk (husk, 100 HP, GS 100 given)" [aqua, gray]` for the husk. (3) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl4x uuid> stage=1 gs=100 base=20.000 reach=6.00 victims=0 [] spared=2 [<both, in either order: husk <the bl4h uuid> d=2.000 factor=0.555556, creeper/phage <the bl4p uuid> d=2.000 factor=0.555556>]`. (4) After it, the two PROBE lines **unchanged**. (5) **No GROWTH line** (a stage 5 does not grow; a husk is not a candidate). (6) `ENTITIES CREEPER count=1 radius=16` | S9; 0.555556 is `falloff(2, 6)` and `d=7.280` is √53 (jshell: `String.format("%.3f", Math.sqrt(53))` prints 7.280); `fireTicks=0` stands on `GATE-dragon-fix.md` DG7R2's frozen creeper reading 0 (INFERRED to hold for a husk); (2)'s colours INFERRED from the Phage's reply (an unnamed mob's type key inherits the aqua) | |
 
 ### BL5 — backing away cancels the fuse: past 7 blocks the swell falls and nothing blows (SURVIVAL) — Ben's F
 
 A live stage-1 Phage two blocks east. When its swell reaches 10 of 30, the player steps nine blocks west (onto the
 row's floor, which reaches x − 12). Five ticks later the swell is read, and then the Phage is killed, so it cannot follow
-him into the next row.
+him into the next row. **Unchanged by the shape change**: nothing blows in this row.
 
 | prediction | stands on | READING |
 |---|---|---|
 | (1) `FUSE tag=bl5 <uuid> fuse=10/30 ignited=false waited=<recorded>`. (2) After the step and five ticks, `FUSE tag=bl5 <uuid> fuse=<n>/30 ignited=false` with **n < 10**: **a BOUND, not a figure** (n is recorded): which tick the goal turns the swell down on, relative to the player's task, was not read, so n is 6, 7 or 8 by the READ mechanism, and the bound is what the claim needs. (3) `ENTITIES CREEPER count=1 radius=16`: alive. (4) `CMD /kill @e[tag=bl5]`, `SETTLED dying=0 ticks=<t> first=1`, then `ENTITIES CREEPER count=0 radius=16`. (5) **No BLAST line and no HURT line in the bracket.** (6) No SPLIT (a stage 1) and no GROWTH line (no other Phage) | S1, S3: the swell rises one a tick, so the first reading ≥ 10 polled each tick is 10; nine blocks west of a Phage at most two east is more than 7; past 7 the goal turns the swell down | |
 
-### BL6 — a victim at exactly 3.00 blocks is hit (SURVIVAL)
+### BL6 — just inside the reach (5.90 blocks), the player is hit for a sliver (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `DRIVE detonate tag=bl6 <the bl6 uuid>`. (2) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl6 uuid> stage=1 gs=100 damage=20.000 radius=3.00 victims=1 [player <Ben's uuid> d=3.00] spared=0 []`. (3) **Exactly one** `HURT before=20.000 after=<20 × 100 / (100 + D)> defense=<D> dealer=<the bl6 uuid> dealerType=<recorded>` | S5-S7: the feet are exactly 3 apart, and the radius is inclusive | |
+| (1) `DRIVE detonate tag=bl6 <the bl6 uuid>`. (2) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl6 uuid> stage=1 gs=100 base=20.000 reach=6.00 victims=1 [player <Ben's uuid> d=5.900 factor=0.008472 dealt=0.169] spared=0 []`. (3) **Exactly one** `HURT before=0.169 after=<0.169… × 100 / (100 + Dp), to three places> defense=<Dp> dealer=<the bl6 uuid> dealerType=<recorded>` | S5-S8: jshell, `20 × falloff(5.9000000000000060, 6)` prints `0.169`, factor `0.008472` | |
 
-### BL7 — a victim 3.05 blocks away is not (SURVIVAL)
+### BL7 — just beyond the reach (6.05 blocks), the player is not hit (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `DRIVE detonate tag=bl7 <the bl7 uuid>`. (2) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl7 uuid> stage=1 gs=100 damage=20.000 radius=3.00 victims=0 [] spared=0 []`. (3) **No HURT line in the bracket.** BL6 is this row's control: the same staging 0.05 nearer is hit | S7 | |
+| (1) `DRIVE detonate tag=bl7 <the bl7 uuid>`. (2) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl7 uuid> stage=1 gs=100 base=20.000 reach=6.00 victims=0 [] spared=0 []`. (3) **No HURT line in the bracket.** BL6 is this row's control: the same staging 0.15 nearer is hit | S8: 6.05 measures above 6 at every start tried (jshell) | |
 
 ### BL8 — flint and steel's route still cannot light a Phage (SURVIVAL)
 
@@ -236,10 +274,19 @@ him into the next row.
 |---|---|---|
 | (1) `DRIVE ignite tag=bl8 <the bl8 uuid>`, then `[Rpg] CREEPERGUARD ignite cancelled mob=phage id=<the bl8 uuid>`. (2) Forty ticks later, `FUSE tag=bl8 <uuid> fuse=0/30 ignited=false`. (3) `ENTITIES CREEPER count=1 radius=16`. (4) **No BLAST line in the bracket** | `CraftCreeper#ignite()` → the server's `ignite()` → `CreeperIgniteEvent` (§7 F-C; flint and steel's `mobInteract` calls the same `ignite()`, `CustomCreeperGuard`'s javadoc), refused by `RpgListeners.onCustomCreeperIgnite`; S1: frozen, it never swells | |
 
+### BL9 — at half the reach (3.00 blocks), the player takes three eighths of the base (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) `DRIVE detonate tag=bl9 <the bl9 uuid>`. (2) **Exactly one** `[Rpg] BLAST mob=phage id=<the bl9 uuid> stage=1 gs=100 base=20.000 reach=6.00 victims=1 [player <Ben's uuid> d=3.000 factor=0.375000 dealt=7.500] spared=0 []`. (3) **Exactly one** `HURT before=7.500 after=<7.5 × 100 / (100 + Dp), to three places> defense=<Dp> dealer=<the bl9 uuid> dealerType=<recorded>` | S5-S8: `falloff(3, 6)` = 0.375 exactly (x = 0.5; jshell), × 20 = 7.5 | |
+
 **WHAT IS UNIT-ONLY, AND WHY:** a CREATIVE player inside a blast another player triggered. The selftest refuses to run
 with more than one player online (`SelfTestGuard`), and a creative runner is refused too, so no row can stage it. The rule
-is `MobBlastTest.mobsAreHostileToPlayersOnly` and `theBlastHitsPlayersInsideTheRadiusAndSparesEveryoneElseInside`: the
-creative player is **not hurt**, and the BLAST line names him under `spared`.
+is `MobBlastTest.mobsAreHostileToPlayersOnly` and `theBlastHitsPlayersInsideTheReachAndSparesEveryoneElseInside`: the
+creative player is **not hurt**, and the BLAST line names him under `spared`. **So is a victim EXACTLY at the reach**
+(listed, factor 0, not hit): the instrument places a frozen Phage at an offset from a block centre, and whether `+6` and
+back measures exactly 6.0 depends on the start's coordinates in floating point, so a row could not promise which side of
+the edge it lands on (the same test, `edge` at 6.0).
 
 ---
 
@@ -250,9 +297,10 @@ creative player is **not hurt**, and the BLAST line names him under `spared`.
 Ben's words for the two sizes (PLAN-dragon-mobs.md, RULINGS, *On the Phage and the Goldrot Goon*): the big Phage
 *"When it gets close to a player it explodes dealing a lot of damage"*; the small ones *"When they get close to the
 player they explode dealing a little damage."* He is healed before each. A live stage-1 Phage (`bq1small`) blows on him
-first (its BLAST and HURT lines are recorded beside the answers, `damage=20.000`); then a live stage 5 (`bq1big`,
-`damage=50.000`). Each question waits 1200 ticks (one minute) for his next chat line. **These are at gear score 100**, so
-the damage he feels is the authored 20 and 50 before his defence; at the End's 300 it would be three times that.
+first (its BLAST and HURT lines are recorded beside the answers, `base=20.000`, and the `dealt` at his distance); then a
+live stage 5 (`bq1big`, `base=50.000`). Each question waits 1200 ticks (one minute) for his next chat line. **These are at
+gear score 100**, so the most he can feel is the authored 20 and 50 before his defence, less with distance; at the End's
+300 it would be three times that.
 
 | prediction | READING |
 |---|---|

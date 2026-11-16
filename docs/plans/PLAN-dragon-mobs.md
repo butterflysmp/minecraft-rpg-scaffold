@@ -292,7 +292,8 @@ the fuse length (vanilla 1.5 seconds), the blast radius (vanilla 3), and the dam
 - **P-a. Damage:** stage 1 deals 20, stage 5 deals 50 (the old Goon's blast), stages between linear, as G3 has the
   body.
 - **P-b. Damage is multiplied by the Phage's gear score / 100**, as its health is (old Q3).
-- **P-c. Full damage to every victim inside the radius;** no falloff, no cover check, no knockback.
+- ~~**P-c. Full damage to every victim inside the radius;** no falloff, no cover check, no knockback.~~ **REPLACED
+  2026-11-16 by Ben's "keep vanillas shap"** (below): vanilla's reach and falloff; still no cover and no knockback.
 - **P-d. Q30 unchanged:** a newborn child can grow from other deaths at once, as built.
 - **P-e. Q20 unchanged:** a Void death during a fuse counts, as built.
 
@@ -331,7 +332,40 @@ before and after defence), because D5 stayed UNVERIFIED and DB10R2 mis-predicted
 what gear score and health it runs at and why the largest predicted blast cannot kill the player.
 
 **NOT IN R3:** replacing the swell goal, knockback, falloff, block damage, any change to growth or the split beyond
-calling the seam, the other three mobs.
+calling the seam, the other three mobs. *(Falloff came IN on 2026-11-16, below: Ben's "keep vanillas shap".)*
+
+### THE SEAT'S MISS ON THE BLAST'S RADIUS, AND BEN'S RULING ON ITS SHAPE, 2026-11-16
+
+**The seat's miss, in the seat's words:** the seat told Ben a vanilla creeper's blast radius is 3 blocks, from memory.
+3 is the explosion POWER; `ServerExplosion.hurtEntities` reaches `radius * 2` with falloff (§8 F2, read for #193). **It
+is the seat's second miss on this work from an unread vanilla number** (the first: `GATE-dragon-bodies.md`'s speeds,
+RULINGS, *THE FIRST BOOT OF THE STACK*, miss 1).
+
+*The seat put three options to Ben: (1) vanilla's real shape, reaching about 6 blocks, full damage up close and fading
+with distance; (2) as built, 3 blocks all or nothing; (3) a radius of his own; and told him the consequence of (2): the
+swell starts inside 3 blocks, the Phage stands still while it swells, and one step back makes it blow harmlessly.*
+
+**Ben, 2026-11-16, VERBATIM:**
+> "keep vanillas shap"
+
+**This answers Q33 and REPLACES the seat's provisional P-c** (full damage inside 3 blocks). P-a (20 and 50), P-b (×
+gear score / 100), P-d and P-e stay the seat's provisional proposals, unruled.
+
+### THE SEAT'S MECHANISM RULINGS ON THE BLAST'S SHAPE, 2026-11-16 (the seat's, stated in this file's words)
+
+27. **Reach and falloff are vanilla's, read from the jar, never from memory** (§7 F-B: the reach for power 3, the two
+    points measured between, the expression from distance to damage, and where exposure and knockback enter).
+28. **Our damage × vanilla's curve.** The authored damage (20 at stage 1, 50 at stage 5, × GS/100) is what a victim
+    takes at ZERO distance; at distance d it is that times vanilla's distance curve NORMALISED to 1 at zero and 0 at
+    the reach. One named pure function in core (`MobBlast.falloff`), tested against values computed from the jar's
+    expression in jshell. **Vanilla's damage constants and its +1 are not carried over; only the shape.**
+29. **Content names the quantity:** `radius: 3` becomes the reach in BLOCKS as read (6), and the file says in words
+    what a victim at half the reach takes (three eighths).
+30. **Not built, recorded as questions for Ben, not asked yet:** cover (vanilla weakens a blast by the blocks between,
+    Q34) and knockback (Q35). The blast still ignores walls and pushes no one.
+31. **Everything else in #193 stands.** The seat ACCEPTED: the husk in place of a zombie; ruling numbers 20-26; the
+    HURT line's `dealerType` not predicted; the fuse readable only by the unit test; BQ1 at GS 100; Q31 and Q32 open
+    and parked; the Folia threading note in §8 (F3).
 
 ---
 
@@ -966,18 +1000,18 @@ WITHOUT replacing the swell** (the seat's ruling 20): vanilla's `SwellGoal` is t
 
 | piece | as built | where |
 |---|---|---|
-| **the rule** | `blast: { radius, damage: { first, last }, fuse_ticks }` on the mob file; damage linear by stage, x GS/100 as a custom mob's hit (`MobScaling.attackDamage`); victims inside the radius, feet to feet, inclusive, full damage. A blast needs stages | `core.mob.MobBlast`, `MobLoader` |
+| **the rule** | `blast: { reach, damage: { first, last }, fuse_ticks }` on the mob file; damage linear by stage, x GS/100 as a custom mob's hit (`MobScaling.attackDamage`), at ZERO distance; victims inside the reach (6), feet to feet, inclusive, each taking it x `MobBlast.falloff(d, reach)` = `(x*x + x) / 2`, `x = 1 - d / reach` (vanilla's shape, §7 F-B; Ben, "keep vanillas shap"). A blast needs stages. *(Until 2026-11-16: `radius: 3`, full damage, the seat's P-c.)* | `core.mob.MobBlast`, `MobLoader` |
 | **N3, the predicate** | `MobHostility.hostileTo(side, exemptMode)`: true for a survival or adventure player only. A Summoner adds a `Side` here | `core.mob.MobHostility` |
 | **the fuse** | `fuse_ticks` written with `Creeper#setMaxFuseTicks` in the one spawn path, so split children get it; saved by the server as `Fuse` | `MobSpawner.stampCustom` |
 | **the detonation** | at our creeper's `ExplosionPrimeEvent`: cancelled FIRST (never a vanilla explosion), a frozen Phage stops there, else `MobBlaster.detonate`: victims hit through `BukkitCombatant.of(victim).handle().applyDamage(damage, phageId)`, the two-argument form a mob's melee hit takes; the particle `EXPLOSION_EMITTER` and the sound `ENTITY_GENERIC_EXPLODE`; one `BLAST` line; growth's death path; `remove()` | `RpgListeners.onCustomCreeperPrime`, `MobBlaster` |
 | **no split** | `remove()` is `discard(PLUGIN)` and raises no death event, so the one death handler never sees a blown Phage | `DragonBlastWiringTest` |
 | **one Void death** | `MobGrower.onDeath(phage, …)` before the removal: marks `mob_growth_fed`, resolves void, reports with the Phage's own id, which never grows itself | `MobBlaster` |
-| **the log** | `BLAST mob=… id=… stage=… gs=… damage=<before defence> radius=… victims=<n> [<type> <uuid> d=…] spared=<n> [...]`. The per-prime `CREEPERGUARD prime cancelled` line is gone; the ignite and power lines stay | `MobBlaster`, `RpgListeners` |
+| **the log** | `BLAST mob=… id=… stage=… gs=… base=<at zero distance> reach=… victims=<n> [<type> <uuid> d=… factor=… dealt=<before defence>] spared=<n> [<type> <uuid> d=… factor=…]`; a victim exactly at the reach is listed with factor 0 and not hit. The per-prime `CREEPERGUARD prime cancelled` line is gone; the ignite and power lines stay | `MobBlaster`, `RpgListeners` |
 | **the instrument** | `HURT before= after= defense= dealer= dealerType=`, one per DAMAGE change to the run's player, from the store's own change (`HealthChange.beforeDefense`, new); the steps `detonate`, `ignite`, `probe_fuse`, `await_fuse` | `SelfTestDamageTap`, `SelfTestBlast`, `SelfTestRun`, `SelfTestDrivers` |
 
 **WHAT THE DAMAGE PATH GIVES THE BLAST TODAY, READ FROM THE CODE.** The two-argument `applyDamage` is
 `CritState.NORMAL`, `DefenseRule.APPLIES`, element **null**: no element (so no Void typing, Q31), the victim's defence
-applies, no crit, and **no vanilla damage event**, so no `DamageCause`, no knockback (P-c), no hurt cadence of vanilla's,
+applies, no crit, and **no vanilla damage event**, so no `DamageCause`, no knockback (ruling 30, Q35), no hurt cadence of vanilla's,
 and **no shield block** (`ShieldBlock.resolve` reads a vanilla event; Q32). The amount is never × 5 and never moved by
 difficulty (M24 undoes difficulty on vanilla events, and this is not one).
 
@@ -1138,6 +1172,39 @@ Behaviour: `javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar <class>`, whose
   `getScale()`. **So the hitbox follows a stage change on a live mob. The swell distances do not** (above). A
   creeper's base size is **0.6 × 1.7** (READ, `EntityType.<clinit>`, `sized(0.6f, 1.7f)` for `creeper`).
 
+### F-B. The blast's reach and falloff (read 2026-11-16, for ruling 27)
+
+Every line below is **READ**, with `C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p -cp
+run/versions/26.1.2/paper-26.1.2.jar <class>`.
+
+- **How far, for power 3: 6 blocks, inclusive.** `net.minecraft.world.level.ServerExplosion#hurtEntities` opens with
+  `f = radius * 2.0F` (`getfield radius`, `fconst_2`, `fmul`), gathers entities in the box from `floor(center - f - 1)` to `floor(center + f + 1)` on each axis, and
+  SKIPS one when `sqrt(entity.distanceToSqr(center)) / f > 1` (`ddiv`, `dconst_1`, `dcmpl`, `ifgt`): exactly at `f` is
+  inside. A creeper's power is `explosionRadius` (3, `Creeper.<init>`) × 1 (× 2 when powered), passed by
+  `Creeper.explodeCreeper` through `ExplosionPrimeEvent.getRadius()`. So `f` = 6.
+- **The two points: the victim's position and the blast's centre, i.e. feet to feet.** `Entity#distanceToSqr(Vec3)`
+  subtracts the vector from `getX()`, `getY()`, `getZ()`, the entity's position (its feet). The centre is
+  `Creeper.explodeCreeper`'s `getX()`, `getY()`, `getZ()` passed to `ServerLevel.explode`: the creeper's own position.
+  **Ours measures the same two points**, so there is no difference for a player or anything else. (The EYE position
+  enters only the knockback's direction, below.)
+- **Distance to damage.** `net.minecraft.world.level.ExplosionDamageCalculator#getEntityDamageAmount(Explosion,
+  Entity, float exposure)`: `f = radius * 2`; `r = sqrt(entity.distanceToSqr(center)) / f`; `x = (1 - r) * exposure`;
+  returns `(float) ((x * x + x) / 2.0 * 7.0 * f + 1.0)`. At power 3 and full exposure: 43 at zero distance, 1 at the
+  reach.
+- **Where exposure (cover) enters:** the third argument, computed by `ServerExplosion#getBlockDensity(Vec3, Entity)`
+  (Paper's cache around `getSeenFraction`), the share of rays from the centre to the entity's box not blocked. It is
+  computed only when the calculator says the entity is damaged or has a non-zero knockback multiplier. **Left out:
+  exposure is 1** (ruling 30, Q34).
+- **Where knockback enters:** after the hurt, `hurtEntities` scales the direction (the victim's EYE position minus the
+  centre, normalised; `PrimedTnt` uses its position) by the knockback multiplier, exposure and the victim's explosion
+  knockback resistance (`LivingEntity.getAttributeValue`), raises `EntityKnockbackEvent`, and `Entity.push`es it; a
+  creative flying or spectator player is skipped, and Paper's `disableExplosionKnockback` turns it off. **Left out: our
+  blast pushes no one** (ruling 30, Q35).
+- **The shape we keep:** with exposure 1 and the `* 7 * f` and `+ 1` removed, `(x * x + x) / 2` with `x = 1 - d / f`:
+  1 at zero distance, 0 at the reach. Executed in jshell from the expression above, `(vanilla(d) - 1) / (7 * f)` at
+  `f = 6`: d = 0 → 1.000000000; 1.5 → 0.656250000; 2 → 0.555555571; 3 → 0.375000000; 4.5 → 0.156250000; 5.9 →
+  0.008472221; 6 → 0.000000000 (the float rows are vanilla's `d2f`; ours is the double).
+
 ### F-S. The Shulker bullet, and our own alternative
 
 - **Spawning (READ).** The server constructor is `ShulkerBullet(Level, LivingEntity owner, Entity target,
@@ -1230,6 +1297,14 @@ Behaviour: `javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar <class>`, whose
   power. **So "keep vanilla's radius" and "3 blocks, full damage" (P-c) are different quantities**: R3 builds the
   latter, as ruled, and Q33 puts the difference to Ben. READ with
   `javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar net.minecraft.world.level.ServerExplosion`.
+  **Answered 2026-11-16:** Ben, *"keep vanillas shap"*; the reach and the curve are §7 F-B, and #193 now builds them.
+- **F3, 2026-11-16, the seat's ruling 31: two Folia notes on the blast, not fixed (the project runs on Paper).**
+  - The selftest's `detonate` step calls `Creeper#explode()` from the PLAYER'S thread
+    (`SelfTestDrivers.creepers`). On Paper every entity is on the main thread; on Folia the creeper may be another
+    region's, and the call would need `Scheduler.onEntity(creeper, …)`.
+  - `MobBlaster.detonate` hits a victim inline only when `Bukkit.isOwnedByCurrentRegion(victim)`, else on the
+    victim's own scheduler a tick later. That branch is written for Folia and has never run: on Paper every victim is
+    owned.
 
 ## QUESTIONS FOR BEN
 
@@ -1293,7 +1368,11 @@ rework: an answered question says where its answer is, and a new one is added at
     same path as a mob's melee hit, which carries none (§5.R.4).
 32. **OPEN, new with step R3.** A shield can block a vanilla creeper's blast. The Phage's blast cannot be blocked: it
     raises no vanilla damage event, and our shield block is read from one (§5.R.4). Should a raised shield block it?
-33. **OPEN, new with step R3: the radius you kept is not quite vanilla's reach.** A vanilla creeper's "radius 3" is its
+33. **ANSWERED 2026-11-16: "keep vanillas shap"** (RULINGS, *THE SEAT'S MISS ON THE BLAST'S RADIUS*). The radius you
+    kept is not quite vanilla's reach. A vanilla creeper's "radius 3" is its
     explosion POWER; the blast actually hurts creatures up to TWICE that, 6 blocks, falling off with distance and
     cover (§8 F2). The Phage hurts everything within 3 blocks for full damage and nothing beyond (the seat's P-c). Keep
     3 at full damage, or reach further?
+34. **OPEN, NOT ASKED YET (the seat's ruling 30).** A vanilla blast is weaker behind cover: the blocks between it and you
+    cut the damage. The Phage's goes straight through walls. Should cover protect you?
+35. **OPEN, NOT ASKED YET (the seat's ruling 30).** A vanilla blast throws you back. The Phage's pushes no one. Should it?
