@@ -210,6 +210,32 @@ The seat put the old game's offset to Ben as a starting number he may overrule: 
 parent, along one axis (cfde822: +0.5 and −0.5 on x, §3.2). **It is NOT Ben's ruling yet**; it ships as content
 (`phage.yml`, `split.spread`) so he can change it without a build.
 
+### THE BUILD ORDER CHANGED: GROWTH (R4) IS BUILT AHEAD OF THE SELF-DESTRUCT (R3) — NOT YET BEN'S RULING
+
+**What happened, 2026-11-15, stated plainly.** The seat proposed building the Phage's growth (§5.R step R4) before its
+self-destruct (R3), because every growth ruling exists and the explosion's numbers (P13-P22) do not. The seat put it to
+Ben as a yes/no. **His reply, verbatim:**
+> "I'm still not gonna be home for another 90 minutes. Is there anything more we can do?"
+
+**The seat TOOK that as a go-ahead.** It is **not a ruling on the order in Ben's words**: he did not say yes to R4
+before R3. **The order is Ben's to confirm or reverse** (Q28). If he reverses it, R4 waits on its branch for R3.
+
+### THE SEAT'S RULINGS ON #190 (STEP R2), 2026-11-15
+
+16. **The split in its own MONITOR, ignoreCancelled handler beside `onEntityDeath`: ACCEPTED.**
+17. **S1's `/rpg mobdamage 159` helper: ACCEPTED.**
+18. **Noted, not blocking:** DS1 rests on an INFERRED fact (an iron sword's hit takes at least 1 custom health from a
+    mob), and the split's first red was the mutation pass, not a run before the code existed.
+19. **Merge order:** #189 first; each stacked PR is retargeted to master BEFORE its base branch is deleted.
+
+### WHAT GROWTH (R4) LEAVES FOR THE SELF-DESTRUCT (R3)
+
+- **A Phage's self-destruct counts as a Void death** (Ben's second round, I: *"Yes"*, the seat having read that a
+  self-destruct is included). Nothing of ours explodes yet, so R4 cannot count it. **R4 leaves the seam**: one method
+  R3's detonation will call to report "a creature of this element died here" without a death event (§5.R.3).
+- **Q20 is still OPEN:** whether a Void death that happens while a Phage is mid-fuse still counts. R4 grows a Phage
+  whatever it is doing, because no fuse of ours exists; R3 must rule it before it ships.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1061,7 +1087,7 @@ rework: an answered question says where its answer is, and a new one is added at
 18. **OPEN.** When the Knell picks where to land, must it also be able to SEE the player it just hit from there, so it
     never lands behind a wall? (§3.R.1)
 19. **ANSWERED 2026-11-15: "Same share"** (answer 4). When a Phage grows a stage, does it heal to full, or keep the same fraction of its health?
-20. **OPEN (ruling 5).** If a Void mob dies nearby while a Phage is already fusing, does that death still count?
+20. **OPEN (ruling 5), and LEFT FOR R3** (RULINGS, *WHAT GROWTH LEAVES*). If a Void mob dies nearby while a Phage is already fusing, does that death still count?
 21. **ANSWERED 2026-11-15: "No,"** (answer 2); the children start at stage 1. When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
     2? (§3.R.2)
 22. **ANSWERED 2026-11-15: "gearscore should be the same as the parent Phage."** (RULINGS, the split's gear score.) Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
@@ -1076,3 +1102,6 @@ rework: an answered question says where its answer is, and a new one is added at
     The old Phage split only on a player's kill (§3.2).
 27. **OPEN — about the fight, not the Phage.** The growth is uncapped (answer D). Should split children count against the
     fight's mob caps, be refused at a cap, or be exempt as the old Lesser Phages were? (§6 C6)
+28. **OPEN — the build order.** The Phage's growing was built BEFORE its exploding (RULINGS, *THE BUILD ORDER
+    CHANGED*), on the seat's reading of "Is there anything more we can do?" as a yes. Is that order right, or should
+    growing wait until the explosion is in?
