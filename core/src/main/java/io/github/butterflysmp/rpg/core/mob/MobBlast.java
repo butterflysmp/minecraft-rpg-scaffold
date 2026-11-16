@@ -70,7 +70,10 @@ public record MobBlast(double reach, double firstDamage, double lastDamage, int 
      * {@code x = 1} and 0 at {@code x = 0}. Half the reach is {@code x = 0.5}: three eighths.
      */
     public static double falloff(double distance, double reach) {
-        if (distance >= reach) return 0.0;
+        // BEYOND the reach x is negative and (x*x + x) / 2 would be too: this guard is what keeps it 0. Written ">", as
+        // vanilla's skip is; ">=" is an EQUIVALENT mutant (at exactly the reach x = 0, so the share is 0 either way),
+        // measured 2026-11-16: it survived the suite. Its real job is pinned by deleting the line, which reddens.
+        if (distance > reach) return 0.0;
         double x = 1.0 - distance / reach;
         return (x * x + x) / 2.0;
     }
