@@ -189,6 +189,27 @@ now stand as ruled. Text below written before that date may still say "awaiting 
    the stage is set at spawn and nothing changes it.
 10. **R1 leaves `knell.yml`'s health as it ships** (answer 6 above).
 
+### Ben, 2026-11-15, VERBATIM: the split's gear score
+
+*The seat asked: do the two children keep their parent's gear score, as slime children do?*
+> "gearscore should be the same as the parent Phage."
+
+Answers Q22.
+
+### THE SEAT'S RULINGS ON #189 (STEP R1), 2026-11-15
+
+11. **A mob file with no `element:` falls through to the vanilla table: ACCEPTED.** Absence is not an override.
+12. **The `MiningWiringSignatureTest` needle update: ACCEPTED.**
+13. **DB10's `CREEPERGUARD` count as a lower bound: ACCEPTED.**
+14. **The mount's 1.3x speed, always on in R1: ACCEPTED.** R8 revisits it.
+15. **The guard's production log line: ACCEPTED for R1.** Revisit at R3.
+
+### THE SPLIT OFFSET (P6) — A STARTING NUMBER PUT TO BEN, NOT YET CONFIRMED BY HIM
+
+The seat put the old game's offset to Ben as a starting number he may overrule: **half a block either side** of the
+parent, along one axis (cfde822: +0.5 and −0.5 on x, §3.2). **It is NOT Ben's ruling yet**; it ships as content
+(`phage.yml`, `split.spread`) so he can change it without a build.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1027,7 +1048,7 @@ rework: an answered question says where its answer is, and a new one is added at
 20. **OPEN (ruling 5).** If a Void mob dies nearby while a Phage is already fusing, does that death still count?
 21. **ANSWERED 2026-11-15: "No,"** (answer 2); the children start at stage 1. When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
     2? (§3.R.2)
-22. **OPEN.** Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
+22. **ANSWERED 2026-11-15: "gearscore should be the same as the parent Phage."** (RULINGS, the split's gear score.) Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
 23. **PARKED by Ben** (*"Well come back to the wither effect"*): should Wither damage-over-time land on these Void
     mobs? **The fact it waits on:** `withering.yml`'s `immune` list holds the type keys `wither_skeleton` and
     `wither`, so today it refuses the Knell, the Phalanx and the Skreel's RIDER, all wither skeletons. **It does not
