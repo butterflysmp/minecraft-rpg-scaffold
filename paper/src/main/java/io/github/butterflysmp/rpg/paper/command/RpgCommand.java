@@ -842,6 +842,18 @@ public final class RpgCommand {
      */
     private static int spawnMob(Player player, String mobId, MobRegistry mobs, AdapterContext adapters,
                                 Integer gearScore, Integer stage) {
+        return spawnFor(player, mobId, mobs, adapters, gearScore, stage, entity -> {}).isPresent() ? 1 : 0;
+    }
+
+    /**
+     * {@code /rpg spawn}'s whole path, and the selftest's SPAWN step's (GATE-dragon-fix.md, C2): the same refusals,
+     * the same reply, the same pre-spawn stamp. {@code preAdd} runs LAST inside the pre-spawn consumer, after the stamp
+     * and the gear score, so whatever it adds (the instrument's tags, NoAI) is on the mob before the add event and the
+     * mob is never in the world without it. The command passes a no-op. Empty when refused.
+     */
+    public static Optional<LivingEntity> spawnFor(Player player, String mobId, MobRegistry mobs, AdapterContext adapters,
+                                Integer gearScore, Integer stage,
+                                java.util.function.Consumer<? super LivingEntity> preAdd) {
         MobDefinition def = mobs.find(mobId).orElse(null);
         String baseEntity = def != null ? def.baseEntity() : mobId;
 
@@ -852,7 +864,7 @@ public final class RpgCommand {
             String available = String.join(", ", mobs.all().stream().map(MobDefinition::id).toList());
             player.sendMessage(Component.text("Custom: " + available + ", or any vanilla mob (zombie, warden, ...)",
                     NamedTextColor.GRAY));
-            return 0;
+            return Optional.empty();
         }
         // Both already warned at boot by ContentValidator; refuse here rather than throw, so a bad
         // content file is a red chat line and not a stack trace in the command dispatcher.
@@ -860,7 +872,7 @@ public final class RpgCommand {
             player.sendMessage(Component.text(
                     "Mob '" + def.id() + "' has base_entity '" + def.baseEntity()
                             + "', which is not a living entity. See the boot log.", NamedTextColor.RED));
-            return 0;
+            return Optional.empty();
         }
 
         Class<? extends LivingEntity> entityClass = type.getEntityClass().asSubclass(LivingEntity.class);
@@ -868,7 +880,7 @@ public final class RpgCommand {
         if (gearScore != null && !Enemy.class.isAssignableFrom(entityClass)) {
             player.sendMessage(Component.text("'" + mobId + "' is a passive mob and takes no gear score (M7)."
                     + " Spawn it without [gs].", NamedTextColor.RED));
-            return 0;
+            return Optional.empty();
         }
         // THE STAGE (PLAN-dragon-mobs.md step R1). Refused, not dropped, for a mob without stages, for the same reason
         // [gs] is refused for a passive mob: a silently ignored argument reads as a spawn that worked. A staged mob
@@ -877,13 +889,13 @@ public final class RpgCommand {
         if (stage != null && !staged) {
             player.sendMessage(Component.text("'" + mobId + "' has no stages. Spawn it without 'stage'.",
                     NamedTextColor.RED));
-            return 0;
+            return Optional.empty();
         }
         int atStage = stage == null ? 1 : stage;
         if (staged && !def.stages().isValid(atStage)) {
             player.sendMessage(Component.text("'" + mobId + "' has stages 1 to " + def.stages().count()
                     + "; " + atStage + " is not one of them.", NamedTextColor.RED));
-            return 0;
+            return Optional.empty();
         }
         Component name = def == null ? null : MiniMessage.miniMessage().deserialize(def.displayName());
 
@@ -900,6 +912,7 @@ public final class RpgCommand {
                         entity.getPersistentDataContainer()
                                 .set(adapters.keys().mobGearScore, PersistentDataType.INTEGER, gearScore);
                     }
+                    preAdd.accept(entity);
                 });
 
         // The add event has already seeded it, inside spawn(), so the store holds the real numbers.
@@ -912,7 +925,7 @@ public final class RpgCommand {
                 .append(Component.text(" (" + baseEntity + (staged ? ", stage " + atStage : "") + ", " + hp
                         + (stored != null ? ", GS " + stored + (gearScore != null ? " given" : " rolled") : ", passive")
                         + ")", NamedTextColor.GRAY)));
-        return 1;
+        return Optional.of(spawned);
     }
 
     /** {@code /rpg mobinfo}: everything about the looked-at mob that a mob-scaling gate row reads. */

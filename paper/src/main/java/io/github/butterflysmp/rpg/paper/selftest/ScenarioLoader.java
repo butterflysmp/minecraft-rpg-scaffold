@@ -75,7 +75,16 @@ public final class ScenarioLoader {
                     ok = false;
                     continue;
                 }
-                steps.add(new Scenario.Step(verb, entry.getValue() == null ? "" : String.valueOf(entry.getValue())));
+                String arg = entry.getValue() == null ? "" : String.valueOf(entry.getValue());
+                // A step whose verb has a grammar (spawn, ask, difficulty) is checked here, so a malformed one is a
+                // named refusal at boot rather than an ABORTED run half-way through a gate.
+                var bad = SelfTestStaging.refusal(verb, arg);
+                if (bad.isPresent()) {
+                    refusals.add("Refusing selftest/GATE-" + gate + ".yml#" + key + ": " + bad.get());
+                    ok = false;
+                    continue;
+                }
+                steps.add(new Scenario.Step(verb, arg));
             }
             // A row with a refused step is not loaded at all: running the steps that DID parse would drive a
             // different row than the key names.

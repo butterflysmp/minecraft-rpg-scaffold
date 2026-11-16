@@ -1,3 +1,11 @@
+# GATE-dragon-growth.md's rows, RE-RUN after the 2026-11-15 boot. The rows here are GATE-dragon-fix.md's (DG1R2 ...),
+# each named for the row of GATE-dragon-growth.md it re-predicts; SelfTestScenariosTest pairs this file with
+# GATE-dragon-fix.md. The old rows' predictions and readings stay in GATE-dragon-growth.md, as they are. WHAT CHANGED
+# (GATE-dragon-fix.md, D2): every Phage is spawned by the SPAWN step, tagged and frozen inside its pre-spawn consumer,
+# never by a nearest-mob selector afterwards (on 2026-11-15 that selector tagged the last row's Phage, and the new
+# one leaked into later rows and was grown there); the setup declares the difficulty; every row-start clean is
+# followed by a LEFTOVER line. The text below is the original header, and still describes the staging.
+#
 # GATE-dragon-growth.md: the Phage's growth (the plan's step R4), read from the SERVER. Each row spawns Phages through
 # the shipped /rpg spawn at gear score 300, tags them, freezes them with NoAI, and kills creatures beside them with
 # /kill; it then reads each Phage's BODY (and, in DG7, its health) and the GROWTH lines the shipped code logs.
@@ -9,22 +17,20 @@
 # followed by the settle (it is a "kill" step) and then two more ticks, because a stage change is applied on the
 # growing Phage's own thread, the tick after the death.
 setup:
+  - difficulty: normal
+  - wait: 2
   - cmd: "time set 6000"
   - cmd: "gamerule spawn_mobs false"
   - close: ""
 
-# DG1: four Enderman deaths, 2 blocks from a stage-1 Phage, take it to stage 5, one stage each; a BODY line after each.
-DG1:
+# DG1R2: four Enderman deaths, 2 blocks from a stage-1 Phage, take it to stage 5, one stage each; a BODY line after each.
+DG1R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 12 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
   - cmd: "tp @s ~3 ~ ~"
-  - cmd: "rpg spawn phage 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg1"
-  - cmd: "tag @e[tag=dg1] add t"
-  - cmd: "tag @e[tag=dg1] add selftest"
-  - cmd: "data merge entity @e[tag=dg1,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg1 frozen phage 300"
   - cmd: "tp @s ~-3 ~ ~ -90 0"
   - wait: 5
   - probe_body: dg1
@@ -45,24 +51,16 @@ DG1:
   - wait: 2
   - probe_body: dg1
 
-# DG2: one Enderman death advances two Phages, the near one (2.00 away) and the far one (3.61 away).
-DG2:
+# DG2R2: one Enderman death advances two Phages, the near one (2.00 away) and the far one (3.61 away).
+DG2R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 12 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
   - cmd: "tp @s ~3 ~ ~"
-  - cmd: "rpg spawn phage 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg2a"
-  - cmd: "tag @e[tag=dg2a] add t"
-  - cmd: "tag @e[tag=dg2a] add selftest"
-  - cmd: "data merge entity @e[tag=dg2a,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg2a frozen phage 300"
   - cmd: "tp @s ~ ~ ~3"
-  - cmd: "rpg spawn phage 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg2b"
-  - cmd: "tag @e[tag=dg2b] add t"
-  - cmd: "tag @e[tag=dg2b] add selftest"
-  - cmd: "data merge entity @e[tag=dg2b,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg2b frozen phage 300"
   - cmd: "tp @s ~-3 ~ ~-3 -90 0"
   - wait: 5
   - cmd: 'summon enderman ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,Tags:["dg2e","t","selftest"]}'
@@ -71,18 +69,14 @@ DG2:
   - probe_body: dg2a
   - probe_body: dg2b
 
-# DG3: a death 6.05 blocks away advances nothing; then the control, a death exactly 6.00 away, advances the Phage.
-DG3:
+# DG3R2: a death 6.05 blocks away advances nothing; then the control, a death exactly 6.00 away, advances the Phage.
+DG3R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 12 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
   - cmd: "tp @s ~3 ~ ~"
-  - cmd: "rpg spawn phage 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg3"
-  - cmd: "tag @e[tag=dg3] add t"
-  - cmd: "tag @e[tag=dg3] add selftest"
-  - cmd: "data merge entity @e[tag=dg3,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg3 frozen phage 300"
   - cmd: "tp @s ~-3 ~ ~ -90 0"
   - wait: 5
   - cmd: 'summon enderman ~9.05 ~ ~0 {NoAI:1b,PersistenceRequired:1b,Tags:["dg3far","t","selftest"]}'
@@ -94,18 +88,14 @@ DG3:
   - wait: 2
   - probe_body: dg3
 
-# DG4: a zombie's death (no element) advances nothing; then the control, an Enderman's, advances the Phage.
-DG4:
+# DG4R2: a zombie's death (no element) advances nothing; then the control, an Enderman's, advances the Phage.
+DG4R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 12 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
   - cmd: "tp @s ~3 ~ ~"
-  - cmd: "rpg spawn phage 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg4"
-  - cmd: "tag @e[tag=dg4] add t"
-  - cmd: "tag @e[tag=dg4] add selftest"
-  - cmd: "data merge entity @e[tag=dg4,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg4 frozen phage 300"
   - cmd: "tp @s ~-3 ~ ~ -90 0"
   - wait: 5
   - cmd: 'summon zombie ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["dg4z","t","selftest"]}'
@@ -117,49 +107,33 @@ DG4:
   - wait: 2
   - probe_body: dg4
 
-# DG5: a Phage's own death (a stage 3, which does not split) advances another Phage 2 blocks away.
-DG5:
+# DG5R2: a Phage's own death (a stage 3, which does not split) advances another Phage 2 blocks away.
+DG5R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 12 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
   - cmd: "tp @s ~3 ~ ~"
-  - cmd: "rpg spawn phage 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg5a"
-  - cmd: "tag @e[tag=dg5a] add t"
-  - cmd: "tag @e[tag=dg5a] add selftest"
-  - cmd: "data merge entity @e[tag=dg5a,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg5a frozen phage 300"
   - cmd: "tp @s ~2 ~ ~"
-  - cmd: "rpg spawn phage stage 3 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg5b"
-  - cmd: "tag @e[tag=dg5b] add t"
-  - cmd: "tag @e[tag=dg5b] add selftest"
-  - cmd: "data merge entity @e[tag=dg5b,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg5b frozen phage stage 3 300"
   - cmd: "tp @s ~-5 ~ ~ -90 0"
   - wait: 5
   - cmd: "kill @e[tag=dg5b]"
   - wait: 2
   - probe_body: dg5a
 
-# DG6: a stage 5 killed 2 blocks from a stage-2 Phage: it splits, its two children stay at stage 1, the bystander
+# DG6R2: a stage 5 killed 2 blocks from a stage-2 Phage: it splits, its two children stay at stage 1, the bystander
 # goes to stage 3.
-DG6:
+DG6R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 12 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
   - cmd: "tp @s ~3 ~ ~"
-  - cmd: "rpg spawn phage stage 2 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg6b"
-  - cmd: "tag @e[tag=dg6b] add t"
-  - cmd: "tag @e[tag=dg6b] add selftest"
-  - cmd: "data merge entity @e[tag=dg6b,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg6b frozen phage stage 2 300"
   - cmd: "tp @s ~2 ~ ~"
-  - cmd: "rpg spawn phage stage 5 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg6p"
-  - cmd: "tag @e[tag=dg6p] add t"
-  - cmd: "tag @e[tag=dg6p] add selftest"
-  - cmd: "data merge entity @e[tag=dg6p,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg6p frozen phage stage 5 300"
   - cmd: "tp @s ~-5 ~ ~ -90 0"
   - wait: 5
   - cmd: "kill @e[tag=dg6p]"
@@ -168,18 +142,14 @@ DG6:
   - probe_body: dg6p
   - probe_entities: "creeper 16"
 
-# DG7: a stage-1 Phage at half health grows and reads half of its new maximum.
-DG7:
+# DG7R2: a stage-1 Phage at half health grows and reads half of its new maximum.
+DG7R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 12 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
   - cmd: "tp @s ~3 ~ ~"
-  - cmd: "rpg spawn phage 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg7"
-  - cmd: "tag @e[tag=dg7] add t"
-  - cmd: "tag @e[tag=dg7] add selftest"
-  - cmd: "data merge entity @e[tag=dg7,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg7 frozen phage 300"
   - cmd: "tp @s ~-3 ~ ~ -90 0"
   - wait: 5
   - aim: dg7
@@ -192,24 +162,16 @@ DG7:
   - wait: 2
   - probe: dg7
 
-# DG8: a stage 5 beside a death stays 5; the control, a stage 1 beside the same death, goes to 2.
-DG8:
+# DG8R2: a stage 5 beside a death stays 5; the control, a stage 1 beside the same death, goes to 2.
+DG8R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 12 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
   - cmd: "tp @s ~3 ~ ~"
-  - cmd: "rpg spawn phage stage 5 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg8big"
-  - cmd: "tag @e[tag=dg8big] add t"
-  - cmd: "tag @e[tag=dg8big] add selftest"
-  - cmd: "data merge entity @e[tag=dg8big,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg8big frozen phage stage 5 300"
   - cmd: "tp @s ~ ~ ~3"
-  - cmd: "rpg spawn phage 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg8small"
-  - cmd: "tag @e[tag=dg8small] add t"
-  - cmd: "tag @e[tag=dg8small] add selftest"
-  - cmd: "data merge entity @e[tag=dg8small,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg8small frozen phage 300"
   - cmd: "tp @s ~-3 ~ ~-3 -90 0"
   - wait: 5
   - cmd: 'summon enderman ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,Tags:["dg8e","t","selftest"]}'
@@ -218,18 +180,14 @@ DG8:
   - probe_body: dg8big
   - probe_body: dg8small
 
-# DG9: a stage-4 Phage grown to 5 by a death, then killed, splits.
-DG9:
+# DG9R2: a stage-4 Phage grown to 5 by a death, then killed, splits.
+DG9R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 12 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
   - cmd: "tp @s ~3 ~ ~"
-  - cmd: "rpg spawn phage stage 4 300"
-  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add dg9"
-  - cmd: "tag @e[tag=dg9] add t"
-  - cmd: "tag @e[tag=dg9] add selftest"
-  - cmd: "data merge entity @e[tag=dg9,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - spawn: "dg9 frozen phage stage 4 300"
   - cmd: "tp @s ~-3 ~ ~ -90 0"
   - wait: 5
   - cmd: 'summon enderman ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,Tags:["dg9e","t","selftest"]}'

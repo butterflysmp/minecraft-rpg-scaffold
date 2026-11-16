@@ -700,7 +700,10 @@ public final class RpgPlugin extends JavaPlugin {
         // both take this value, so the two can never disagree about what kind of server this is.
         boolean devServer = Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY);
         SelfTestService selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
-                buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements);
+                buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements,
+                // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).
+                (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
+                        p, mob, this.mobs, adapters, gs, stage, preAdd));
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,

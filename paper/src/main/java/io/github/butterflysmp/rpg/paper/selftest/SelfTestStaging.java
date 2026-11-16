@@ -70,6 +70,56 @@ final class SelfTestStaging {
         return previousGate != null && !previousGate.equals(nextGate);
     }
 
+    /**
+     * How long after the row-start clean the LEFTOVER count is taken. The clean's removals are not immediate: each is
+     * scheduled on the mob's OWN scheduler ({@code PaperScheduler.onEntity} -> {@code FoliaEntityScheduler#run} ->
+     * {@code runDelayed(…, 1L)} -> {@code EntityScheduler#schedule}, keyed {@code tickCount + 1}, run by that entity's
+     * next {@code executeTick}; read from the server jar of build 74). So a count in the same tick would count the mobs
+     * the clean has just removed. Two ticks covers the entity's next tick whichever order the server ticks the player
+     * and the mob in.
+     */
+    static final int LEFTOVER_WAIT_TICKS = 2;
+
+    /** The radius the LEFTOVER count covers: PROBE_ENTITIES' and PROBE_BODY's 16. */
+    static final int LEFTOVER_RADIUS = 16;
+
+    /**
+     * A body the row-start clean should have left no trace of (GATE-dragon-fix.md, C3): living, not the player, not an
+     * armour stand (scenery, never staged), and not already dead. Anything else a row did not spawn and finds beside
+     * it is named, so a row never starts dirty without saying so.
+     */
+    static boolean leftover(boolean living, boolean player, boolean armourStand, boolean dead) {
+        return living && !player && !armourStand && !dead;
+    }
+
+    /** One line, logged after every row-start clean. The gate predicts {@code LEFTOVER living=0 radius=16}. */
+    static String leftoverLine(int radius, List<String> found) {
+        return "LEFTOVER living=" + found.size() + " radius=" + radius
+                + (found.isEmpty() ? "" : " [" + String.join(", ", found) + "]");
+    }
+
+    /** The DIFFICULTY step's argument; empty for anything but the four (the loader refuses it by name). */
+    static java.util.Optional<org.bukkit.Difficulty> difficulty(String arg) {
+        try {
+            return java.util.Optional.of(org.bukkit.Difficulty.valueOf(arg.trim().toUpperCase(java.util.Locale.ROOT)));
+        } catch (IllegalArgumentException e) {
+            return java.util.Optional.empty();
+        }
+    }
+
+    /** Why a step's argument is refused at load, or empty. Only the verbs with a grammar of their own are checked. */
+    static java.util.Optional<String> refusal(Scenario.Verb verb, String arg) {
+        return switch (verb) {
+            case SPAWN -> SelfTestSpawn.parse(arg).isPresent() ? java.util.Optional.empty()
+                    : java.util.Optional.of("spawn takes '<tag> <frozen|live> <mob> [stage <n>] [<gs>]', got '" + arg + "'");
+            case ASK -> SelfTestAsk.parse(arg).isPresent() ? java.util.Optional.empty()
+                    : java.util.Optional.of("ask takes '<n> <timeout ticks> <question>', got '" + arg + "'");
+            case DIFFICULTY -> difficulty(arg).isPresent() ? java.util.Optional.empty()
+                    : java.util.Optional.of("difficulty takes peaceful, easy, normal or hard, got '" + arg + "'");
+            default -> java.util.Optional.empty();
+        };
+    }
+
     /** The longest a {@code death_rules} row waits for its player to respawn before the run aborts. */
     static final int RESPAWN_CAP_TICKS = 200;
 

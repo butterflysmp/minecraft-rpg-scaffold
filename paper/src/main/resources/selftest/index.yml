@@ -2,6 +2,9 @@
 # each gate's `setup:` first, then its rows in file order. Each name is a gate file under docs/gates/:
 # melee-cell is docs/gates/GATE-melee-cell.md, and its scenarios are selftest/GATE-melee-cell.yml.
 # SelfTestScenariosTest pins that every scenario key here is a `### <id> ` heading in its gate.
+# ONE EXCEPTION, the seat's ruling of 2026-11-15: dragon-bodies, dragon-split and dragon-growth are paired with
+# docs/gates/GATE-dragon-fix.md, not their own gate files (SelfTestScenariosTest.docOf). Their rows since the first boot
+# of the dragon stack are that gate's re-predictions, and keeping three files kept Ben's three selftest commands.
 gates:
   - melee-cell
   - level

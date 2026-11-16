@@ -126,6 +126,33 @@ public record Scenario(String gate, String row, List<Step> steps) {
         DIG,
         /** {@code "on"}: turn the player's {@code /rpg mining trace} ON through the shipped toggle, only if it is off. */
         MINING_TRACE,
+        /**
+         * {@code "<tag> <frozen|live> <mob> [stage <n>] [<gs>]"}: {@code /rpg spawn}'s own path at the player's feet,
+         * with the row's tag, {@code t} and {@code selftest} added INSIDE the pre-spawn consumer, and {@code frozen}
+         * switching the AI off there too ({@link SelfTestSpawn}). The mob is tagged by identity, so it is never in the
+         * world untagged and never confused with the last row's (GATE-dragon-fix.md, D2). Logged as a DRIVE line
+         * carrying its uuid; the command's own reply follows as a REPLY line.
+         */
+        SPAWN,
+        /**
+         * {@code "<n> <timeout ticks> <question>"}: show the numbered yes/no question in the player's chat, wait for
+         * his next chat line or the timeout, and log question and answer verbatim on ONE line ({@link SelfTestAsk}).
+         * It never interprets the answer and never judges it.
+         */
+        ASK,
+        /**
+         * {@code "<peaceful|easy|normal|hard>"}: the difficulty this gate's rows need, in its {@code setup:}. Logs
+         * the difficulty it found and sets this one; the run's one restore puts back what it found at RUN START, on
+         * every exit path (GATE-dragon-fix.md, C5). Wait 2 ticks after it: it is set on the global scheduler.
+         */
+        DIFFICULTY,
+        /** Log, for each entity carrying this tag within 16 blocks, what its AI is targeting: {@code self}, none, or a type and uuid. */
+        PROBE_TARGET,
+        /**
+         * Teleport the player back to where the run began (the row-start clean's spot), so a box probed relative to
+         * the player's block is the box it was before he was pushed. Wait 2 ticks after it: the teleport is async.
+         */
+        RETURN,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

@@ -67,6 +67,8 @@ final class SelfTestSnapshot {
     /** In the restore set since SU8's death_rules (2026-11-10): a row sets both, and an aborted row must not leave them set. */
     private final Boolean keepInventory;
     private final Boolean immediateRespawn;
+    /** The world's difficulty at RUN START, put back by the one restore (GATE-dragon-fix.md, C5). */
+    private final org.bukkit.Difficulty difficulty;
     private final long time;
     private final boolean trace;
     private final double mana;
@@ -95,6 +97,7 @@ final class SelfTestSnapshot {
         this.spawnMobs = world.getGameRuleValue(GameRules.SPAWN_MOBS);
         this.keepInventory = world.getGameRuleValue(GameRules.KEEP_INVENTORY);
         this.immediateRespawn = world.getGameRuleValue(GameRules.IMMEDIATE_RESPAWN);
+        this.difficulty = world.getDifficulty();
         this.time = world.getTime();
         this.trace = nameplates.tracing();
         this.mana = resources.current(id, ResourceCost.DEFAULT_RESOURCE);
@@ -177,11 +180,13 @@ final class SelfTestSnapshot {
             if (keepInventory != null) world.setGameRule(GameRules.KEEP_INVENTORY, keepInventory);
             if (immediateRespawn != null) world.setGameRule(GameRules.IMMEDIATE_RESPAWN, immediateRespawn);
             world.setTime(time);
+            if (difficulty != null) world.setDifficulty(difficulty);
         });
         return "RESTORED xp=" + (xp ? lifetimeXp : "NOT-RESTORED") + " cell=" + (cell ? classId + "/" + elementId : "NOT-RESTORED")
                 + " gamemode=" + gameMode + " held=" + heldSlot + " mana=" + String.format("%.1f", mana)
                 + " trace=" + nameplates.tracing() + " spawn_mobs=" + spawnMobs + " time=" + time
                 + " blocks=" + blocks.total() + " mobsRemoved=" + mobs + " orbsRemoved=" + orbs
-                + " keep_inventory=" + keepInventory + " immediate_respawn=" + immediateRespawn;
+                + " keep_inventory=" + keepInventory + " immediate_respawn=" + immediateRespawn
+                + " difficulty=" + difficulty;
     }
 }

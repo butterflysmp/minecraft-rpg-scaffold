@@ -4,6 +4,8 @@
 **committed before the boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once
 its row has been read. **NO BOOT until the seat has diffed the code AND this gate, and Ben says ready.**
 
+> **2026-11-15: approved to merge by the review seat after the boot of d59d2bf5; see GATE-dragon-fix.md for the readings.**
+
 > **NOTE, 2026-11-15 (added on `feat/dragon-split`, step R2, before any boot; no prediction below is changed).** This
 > gate will be read in a **STACKED BOOT** of `feat/dragon-split`'s head, which carries this step and the next. In
 > that boot **this file's R0a-R0d are SUPERSEDED** by `GATE-dragon-split.md`'s R0 (its R0a names that branch's head,
@@ -332,3 +334,15 @@ explosion (PLAN-dragon-mobs.md §7 F-C), and it is temporary until step R3 repla
 > gate's rows were read at the stacked boot of `bda8e89c`; R0 SUPERSEDED. Most rows read NOT AS PREDICTED, for two
 > defects found there: the speed defect (`speedDefault=0.7000` on every BODY line) and the selftest's tag race (a new
 > mob untagged, so it kept its AI and leaked into later rows). No prediction was edited.
+
+> **DATED NOTE, 2026-11-15, after the first boot (`feat/dragon-fix`, Part A).** **This gate's R0 and run sheet are
+> SUPERSEDED by `GATE-dragon-fix.md`**, the new stack top, which holds the ONE R0 and the ONE run sheet of the next
+> boot. Every AUTO row here that read NOT AS PREDICTED is re-predicted there as a new row named for it (`…R2`); the
+> predictions and readings above stay as they are. **The seat's misses, in its words, and the boot's departures are
+> recorded in `PLAN-dragon-mobs.md`, RULINGS, *THE FIRST BOOT OF THE STACK*:** the seat passed this stack's speed
+> predictions on arithmetic from `speedDefault=0.25` without the jar read for what `AttributeInstance#getDefaultValue`
+> returns; the seat passed #190 without seeing that B2's and B6's cleanups split a stage 5; and the run sheet let a
+> hostile mob stand beside Ben before the difficulty was set.
+> **B6's first answer, as Ben gave it, *"it stayed swelled until I move away from it"*, is NOT AS PREDICTED** (the
+> prediction was swell, reset, swell). The other sight readings (B1-B5) stand as "yes". Why the client shows that,
+> from the jar: `GATE-dragon-fix.md`, D4.

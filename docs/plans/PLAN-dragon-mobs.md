@@ -228,6 +228,49 @@ before R3. **The order is Ben's to confirm or reverse** (Q28). If he reverses it
     mob), and the split's first red was the mutation pass, not a run before the code existed.
 19. **Merge order:** #189 first; each stacked PR is retargeted to master BEFORE its base branch is deleted.
 
+### THE FIRST BOOT OF THE STACK (`bda8e89c`, 2026-11-15): THE SEAT'S MISSES, THE BOOT'S DEPARTURES, THE SEAT'S RULINGS
+
+The readings are in the three gates on `feat/dragon-growth` (`39bb2e90`); the account of that boot is
+`GATE-dragon-growth.md`'s *READINGS NOTE, 2026-11-15*. Most AUTO rows read NOT AS PREDICTED. The fix is
+`feat/dragon-fix`, `GATE-dragon-fix.md`.
+
+**THE SEAT'S MISSES, in the seat's words:**
+1. The seat passed GATE-dragon-bodies.md's speed predictions by redoing arithmetic on speedDefault=0.25, without
+   having the jar read for what AttributeInstance#getDefaultValue returns; that broke the seat's own rule against
+   reasoning about Paper internals from memory.
+2. The seat passed #190 without seeing that B2's and B6's cleanup lines kill a stage 5, which splits.
+3. The run sheet let a hostile mob stand beside Ben before the difficulty was set; he was killed on hard in the first
+   dragon-bodies run.
+
+**THE BOOT'S DEPARTURES** (as the booter reported them):
+- `/rpg selftest dragon-bodies` ran TWICE: first on hard (before `/difficulty normal`, and Ben was killed by a leaked
+  Skreel), then on normal. The DB readings are the second run's.
+- The B, S and G rows were posted to Ben in ONE message, at his request, and answered in one reply.
+- Ben set his own gear score to 500 (`/rpg gearscore set 500`) before the sight rows.
+
+**BEN'S SIGHT READINGS STAND:** B1-B5, S1, S2, G1, G2 "yes", as he gave them. **B6's first answer is recorded as he
+said it, *"it stayed swelled until I move away from it"*, and is NOT AS PREDICTED**: the gate predicted swell, reset,
+swell. (Why, from the jar: `GATE-dragon-fix.md`, D4.)
+
+**BEN'S PROPOSALS, ACCEPTED BY THE SEAT AS MECHANISM:** automate B5, B6, S1 and S2, keeping two or three by-sight rows;
+an ASK step in the selftest (the question in chat, his next chat line logged); and, the seat's addition, **the
+selftest sets the difficulty itself**.
+
+**Q30 is new and OPEN** (below). Nothing is built for it until Ben answers.
+
+### THE BOOT OF THE FIX (`d59d2bf5`, 2026-11-15): THE SEAT'S READING, AND TWO CARRIED NOTES
+
+The readings are in `GATE-dragon-fix.md`. **The seat's reading:** R0a-R0d PASS; 28 of 29 rows as predicted. The stack
+was approved to merge on that boot (the dated line in each of the four gates' Status).
+
+**Two notes, carried:**
+1. **DB10R2 part (4) stays NOT AS PREDICTED.** The prediction said "equal" where it meant "did not fall": Ben's custom
+   health rose from 166 to 176 over the row, with no damage line. The cause, regeneration, is INFERRED. It is not a
+   pass, and it does not block: parts (1)-(3) held, and step R3 replaces this row.
+2. **Not shown by this boot: the difficulty restore putting back a DIFFERENT value.** Every run read
+   `DIFFICULTY found=NORMAL set=NORMAL` and restored `difficulty=NORMAL`, so the restore ran but put back the value it
+   had set. A run started from another difficulty is the reading still owed.
+
 ### WHAT GROWTH (R4) LEAVES FOR THE SELF-DESTRUCT (R3)
 
 - **A Phage's self-destruct counts as a Void death** (Ben's second round, I: *"Yes"*, the seat having read that a
@@ -1085,6 +1128,23 @@ Behaviour: `javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar <class>`, whose
 
 ---
 
+## 8. FINDINGS
+
+**This section is new (2026-11-15):** the plan had no findings section, and the seat's ruling on #192 asked for one.
+
+- **F1, 2026-11-15, the seat's ruling (5) on #192: two older selftest scenario files still tag a mob by a nearest-entity
+  selector after spawning it, the pattern that leaked mobs at the first boot of the dragon stack.** Nothing is fixed
+  there now.
+  - `paper/src/main/resources/selftest/GATE-sunder.yml`, rows s11 and s12: `tag @e[type=zombie,distance=..1.5,sort=nearest,limit=1] add …`.
+    Exposed the same way the dragon rows were: the row-start clean's removals run a tick later on each mob's own
+    scheduler (GATE-dragon-fix.md, D2), so a zombie left on the same spot by the row before could take the tag.
+  - `paper/src/main/resources/selftest/GATE-wither-status.yml`, five `data merge entity @e[type=…,tag=!t,tag=!n,sort=nearest,limit=1]`
+    lines. Its selectors exclude mobs already tagged, so only an UNTAGGED survivor could be picked.
+  - **The fix, when it is scheduled, is the dragon one:** the `SPAWN` step, or for a vanilla mob a `/summon` that puts
+    its tags in its own NBT, so the mob is tagged by identity.
+  - Since the fix, every row-start clean is followed by `LEFTOVER living=<n> radius=16`, so a leak in those gates would
+    now be named in the log, though their gates do not predict the line.
+
 ## QUESTIONS FOR BEN
 
 *Answers go into the RULINGS block at the top of this file, verbatim. Legacy Q-P11 to Q-P14 stay open where they are;
@@ -1138,3 +1198,6 @@ rework: an answered question says where its answer is, and a new one is added at
 29. **OPEN.** A Phage that grows in a space too small for its new size (a narrow gap, a low tunnel): should it not
     grow there, grow anyway (the server shifts it if it finds room, and otherwise it may take suffocation damage), or
     something else? (§5.R.3, the finding)
+30. **OPEN, put to Ben by the seat 2026-11-15.** One command that kills several stage 5s at once splits each of them,
+    and the OTHER parents' deaths then grow the newborn children (read at the 2026-11-15 boot: one child went from
+    stage 1 to 4 in the same moment it was born). Keep that, or give a newborn a moment in which it cannot grow?

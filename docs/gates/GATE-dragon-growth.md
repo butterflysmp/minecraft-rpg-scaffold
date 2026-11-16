@@ -4,6 +4,8 @@
 **committed before the boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once
 its row has been read. **NO BOOT until the seat has diffed the code AND this gate, and Ben says ready.**
 
+> **2026-11-15: approved to merge by the review seat after the boot of d59d2bf5; see GATE-dragon-fix.md for the readings.**
+
 **THIS PR IS THE STACK TOP.** `feat/dragon-growth` is stacked on `feat/dragon-split` (#190, step R2), which is stacked
 on `feat/dragon-bodies` (#189, step R1). None is booted. **The coming boot is ONE STACKED BOOT of this branch's
 head**, and it reads all three gates. So:
@@ -335,3 +337,12 @@ once leaves bigger children.** For Ben: Q30.
 answer (B5, B6, S1, S2), keep two or three sight rows for size; and an `ASK` step that posts a row's question in chat
 during the run and logs Ben's typed `yes`/`no` as `ANSWER <row> …`. Meanwhile his chat lines already reach the log
 as `<BaronVonYeetus> …`.
+
+> **DATED NOTE, 2026-11-15, after the first boot (`feat/dragon-fix`, Part A).** **This gate's R0 and run sheet are
+> SUPERSEDED by `GATE-dragon-fix.md`**, the new stack top, which holds the ONE R0 and the ONE run sheet of the next
+> boot. Every AUTO row here that read NOT AS PREDICTED is re-predicted there as a new row named for it (`…R2`); the
+> predictions and readings above stay as they are. **The seat's misses, in its words, and the boot's departures are
+> recorded in `PLAN-dragon-mobs.md`, RULINGS, *THE FIRST BOOT OF THE STACK*:** the seat passed this stack's speed
+> predictions on arithmetic from `speedDefault=0.25` without the jar read for what `AttributeInstance#getDefaultValue`
+> returns; the seat passed #190 without seeing that B2's and B6's cleanups split a stage 5; and the run sheet let a
+> hostile mob stand beside Ben before the difficulty was set.
