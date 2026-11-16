@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.mob.MobBody;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
+import io.github.butterflysmp.rpg.core.mob.MobGrowth;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobSplit;
 import io.github.butterflysmp.rpg.core.mob.MobStages;
@@ -95,10 +96,13 @@ public final class MobLoader {
             MobStages stages = new MobStages(staged.getInt("count", 0),
                     stageBody(staged, "first"), stageBody(staged, "last"));
             return new MobDefinition(id, s.getString("base_entity"), s.getString("display_name", id),
-                    stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s));
+                    stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s));
         }
         if (s.contains("split")) {
             throw new IllegalArgumentException("'split' needs 'stages': a split names the stage its children are born at");
+        }
+        if (s.contains("growth")) {
+            throw new IllegalArgumentException("'growth' needs 'stages': growing moves a stage");
         }
         return new MobDefinition(
                 id,
@@ -126,6 +130,23 @@ public final class MobLoader {
                     + b.getString("at") + "'");
         }
         return new MobSplit(b.getInt("count"), b.getInt("child_stage"), b.getDouble("spread"));
+    }
+
+    /**
+     * The optional {@code growth:} block (the plan's step R4), or null. Every key is required when the block is
+     * present, and {@code element} must name a loaded element, as a mob's own {@code element} must.
+     */
+    private MobGrowth growth(ConfigurationSection s) {
+        ConfigurationSection b = s.getConfigurationSection("growth");
+        if (b == null) return null;
+        for (String key : List.of("element", "radius", "stages_per_death")) {
+            if (!b.contains(key)) throw new IllegalArgumentException("growth." + key + " is required");
+        }
+        String element = b.getString("element");
+        if (!elementExists.test(element)) {
+            throw new IllegalArgumentException("growth.element '" + element + "' names no element in content/elements");
+        }
+        return new MobGrowth(element, b.getDouble("radius"), b.getInt("stages_per_death"));
     }
 
     /** One stage's body: height in blocks, a speed multiplier, and the authored health. All three required. */

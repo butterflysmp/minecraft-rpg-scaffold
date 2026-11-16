@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobBody;
 import io.github.butterflysmp.rpg.core.mob.MobSplit;
+import io.github.butterflysmp.rpg.core.mob.MobGrowth;
 import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -304,6 +305,51 @@ class MobLoaderTest {
             Files.write(dir.resolve("phage.yml"), in.readAllBytes());
         }
         assertEquals(new MobSplit(2, 1, 0.5), load().find("phage").orElseThrow().split());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    // ---- the plan's step R4: growth ----
+
+    /** The growth block's three values ARRIVE from content, and a file without the block has none. */
+    @Test
+    void theGrowthBlockArrives() throws IOException {
+        write("phage.yml", "base_entity: creeper\n" + STAGES
+                + "growth:\n  element: fire\n  radius: 9.5\n  stages_per_death: 2\n");
+        write("plain.yml", "base_entity: creeper\n" + STAGES);
+
+        MobRegistry mobs = load();
+
+        assertEquals(new MobGrowth("fire", 9.5, 2), mobs.find("phage").orElseThrow().growth());
+        assertNull(mobs.find("plain").orElseThrow().growth());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** An unknown growth element, growth on an unstaged mob, and a missing key are each a named, skipped file. */
+    @Test
+    void aMalformedGrowthIsRefused() throws IOException {
+        write("viod.yml", "base_entity: creeper\n" + STAGES
+                + "growth:\n  element: viod\n  radius: 6\n  stages_per_death: 1\n");
+        write("unstaged.yml", "base_entity: creeper\nmax_health: 80\n"
+                + "growth:\n  element: void\n  radius: 6\n  stages_per_death: 1\n");
+        write("noradius.yml", "base_entity: creeper\n" + STAGES + "growth:\n  element: void\n  stages_per_death: 1\n");
+
+        MobRegistry mobs = load();
+
+        assertEquals(0, mobs.size());
+        for (String f : List.of("viod.yml", "unstaged.yml", "noradius.yml")) {
+            assertTrue(warningText().contains(f), f + ": " + warningText());
+        }
+        assertTrue(warningText().contains("'viod'"), warningText());
+    }
+
+    /** The Phage we ship grows on void deaths within 6 blocks, one stage each. */
+    @Test
+    void theBundledPhageGrowsOnVoidDeathsWithinSixBlocks() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/mobs/phage.yml")) {
+            assertNotNull(in);
+            Files.write(dir.resolve("phage.yml"), in.readAllBytes());
+        }
+        assertEquals(new MobGrowth("void", 6.0, 1), load().find("phage").orElseThrow().growth());
         assertTrue(warnings.isEmpty(), warningText());
     }
 

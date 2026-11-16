@@ -37,6 +37,7 @@ import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
 import io.github.butterflysmp.rpg.paper.health.AttackSpeedAttributeOverride;
 import io.github.butterflysmp.rpg.paper.health.CustomCreeperGuard;
+import io.github.butterflysmp.rpg.paper.health.MobGrower;
 import io.github.butterflysmp.rpg.paper.health.MobSplitter;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.menu.AnvilMenu;
@@ -296,6 +297,8 @@ public final class RpgListeners implements Listener {
     /** Mining slice 1 (PLAN-mining.md 5.4). Every handler below that names it runs on the main thread. */
     private final MiningService mining;
     private final io.github.butterflysmp.rpg.paper.selftest.SelfTestService selfTest;
+    /** "The element of this creature", for the Phage's growth (the plan's step R4). */
+    private final io.github.butterflysmp.rpg.core.mob.MobElementResolver mobElements;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -307,7 +310,9 @@ public final class RpgListeners implements Listener {
                         StatsBarSystem statsBar, HealthRegenSystem healthRegen,
                         Plugin plugin, RecipeRegistry recipes,
                         VaultService vaults, StoneCaster stoneCaster, MiningService mining,
-                        io.github.butterflysmp.rpg.paper.selftest.SelfTestService selfTest) {
+                        io.github.butterflysmp.rpg.paper.selftest.SelfTestService selfTest,
+                        io.github.butterflysmp.rpg.core.mob.MobElementResolver mobElements) {
+        this.mobElements = mobElements;
         this.stoneCaster = stoneCaster;
         this.mining = mining;
         this.selfTest = selfTest;
@@ -872,7 +877,13 @@ public final class RpgListeners implements Listener {
      * what {@code GATE-ignite.md} exists to witness.
      */
     /**
-     * THE PHAGE'S SPLIT ON DEATH (PLAN-dragon-mobs.md step R2; {@link MobSplitter}). A staged mob dying at its last
+     * A MOB'S DEATH, AS OUR MOBS SEE IT: first the GROWTH it feeds (the plan's step R4; {@link MobGrower}), then the
+     * SPLIT it causes (step R2; {@link MobSplitter}). <b>THE ORDER IS THE EXCLUSION, AND IT IS WRITTEN HERE, NOT LEFT
+     * TO LISTENER REGISTRATION:</b> growth collects its candidates first, on this frame, so a stage 5's own death
+     * grows the OTHER Phages near it and never the two children the split spawns a line later (Ben: "No,").
+     * {@code DragonGrowthWiringTest} pins the order.
+     *
+     * <p>THE SPLIT (PLAN-dragon-mobs.md step R2; {@link MobSplitter}): a staged mob dying at its last
      * stage leaves its split's children where it died.
      *
      * <p><b>"Any deaths" (Ben) is every cause that reaches this event</b>: a player, another mob, a fall, fire, the
@@ -888,8 +899,10 @@ public final class RpgListeners implements Listener {
      * scorched.
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onMobDeathSplit(EntityDeathEvent event) {
+    public void onMobDeath(EntityDeathEvent event) {
         if (event.getEntity() instanceof Player) return;
+        MobGrower.onDeath(event.getEntity(), nameplates.mobs(), mobElements, adapters.keys(), adapters.stats(),
+                adapters.scheduler(), adapters.log());
         MobSplitter.onDeath(event.getEntity(), nameplates.mobs(), adapters.keys(), nameplates, adapters.log(),
                 selfTest::adoptSplitChild);
     }

@@ -31,6 +31,9 @@ package io.github.butterflysmp.rpg.core.mob;
  *
  * <p><b>Grown again in step R2</b> by {@code split} ({@link MobSplit}), or null: what a staged mob leaves behind
  * when it dies at its last stage. A split needs stages, and its child stage must be one of them.
+ *
+ * <p><b>And in the growth step</b> by {@code growth} ({@link MobGrowth}), or null: which deaths nearby move a staged
+ * mob up its stages. Growth needs stages.
  */
 public record MobDefinition(
         String id,
@@ -40,26 +43,37 @@ public record MobDefinition(
         MobBody body,
         String element,
         MobStages stages,
-        MobSplit split
+        MobSplit split,
+        MobGrowth growth
 ) {
     /**
      * The original four-field form: a vanilla body, no element, no stages. Kept so the existing call sites (tests
      * and older code) read unchanged. (A record may declare extra constructors; each must call the full one.)
      */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth) {
-        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null, null);
     }
 
     /** Step R1's seven-field form: no split (step R2's component). Kept so R1's call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, null, null);
+    }
+
+    /** Step R2's eight-field form: no growth (the growth step's component). Kept so R2's call sites read unchanged. */
+    public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
+                         MobBody body, String element, MobStages stages, MobSplit split) {
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, null);
     }
 
     public MobDefinition {
         if (body == null) body = MobBody.VANILLA;
         if (element != null && element.isBlank()) {
             throw new IllegalArgumentException("mob '" + id + "' element must name an element, or be left out");
+        }
+        // The growth step: growing moves a STAGE, so it needs stages.
+        if (growth != null && stages == null) {
+            throw new IllegalArgumentException("mob '" + id + "' authors growth but no stages; growing moves a stage");
         }
         // Step R2: a split names a child STAGE, so it needs stages, and the child stage must be one of them.
         if (split != null && stages == null) {

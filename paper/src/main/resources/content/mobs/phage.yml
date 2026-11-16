@@ -56,3 +56,24 @@ split:
   count: 2
   child_stage: 1
   spread: 0.5
+
+# GROWTH (the plan's step R4). When a creature of `element` dies within `radius` of a living Phage below its last
+# stage, of ANY cause (Ben: "Any deaths"), that Phage gains `stages_per_death` stages; EVERY such Phage in range does
+# (G2). Ben: "Start with 4, let's try 6 block radius." One death is one stage (G1), so four deaths take a stage 1 to 5.
+# A grown Phage keeps the SAME SHARE of its health (Ben: "Same share"), its gear score, and its target. A stage 5 does
+# not grow, and a Phage that grows to 5 splits when it dies like any other. Nothing caps it (Ben, answer D).
+#
+# NAME THE QUANTITY:
+#   element            whose deaths count: void. Our Void mobs by their own file; a vanilla Enderman by
+#                      content/mob_elements.yml (Ben: "normal Vanilla Enderman are also Void"). The mount, a zombie
+#                      and a player count for nothing.
+#   radius             BLOCKS, the straight-line distance between the two creatures' feet, INCLUSIVE at exactly 6,
+#                      same world only. A sphere, never a cube.
+#   stages_per_death   stages gained per counted death; capped at the last stage.
+#
+# A stage 5's own death splits it AND counts as a Void death: it grows the OTHER Phages near it, never its own two
+# children (Ben: "No,"). A Phage's self-destruct will count too (Ben, I), from step R3.
+growth:
+  element: void
+  radius: 6
+  stages_per_death: 1

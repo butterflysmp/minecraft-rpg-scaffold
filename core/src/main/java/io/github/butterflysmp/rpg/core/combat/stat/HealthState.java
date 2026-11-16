@@ -1021,4 +1021,34 @@ public final class HealthState {
         double m = max.value();
         if (current > m) current = m;
     }
+
+    /** The max-modifier source a staged mob's stage change writes (PLAN-dragon-mobs.md, growth). */
+    public static final String STAGE_MAX_SOURCE = "mob_stage";
+
+    /**
+     * "SAME SHARE" (Ben, on a growing Phage): current health after a max change, at the same fraction of the maximum
+     * it had before. Pure, so it is a unit row. A maximum of 0 or less has no fraction, so the new maximum is full.
+     */
+    public static double sameShare(double currentBefore, double maxBefore, double maxAfter) {
+        if (maxBefore <= 0) return maxAfter;
+        return currentBefore / maxBefore * maxAfter;
+    }
+
+    /**
+     * Move this combatant's maximum to {@code newMax} and put current at the SAME SHARE of it (a growing Phage).
+     * The move is written as ONE max modifier, {@link #STAGE_MAX_SOURCE}, measured from the seeded base: the base is
+     * recovered as {@code max - thatModifier}, so a second call to the same maximum changes nothing and a third to a
+     * higher one moves from where it is, never compounding.
+     *
+     * @return true if the maximum actually changed
+     */
+    public boolean rescaleMaxKeepingShare(double newMax) {
+        double maxBefore = max.value();
+        double currentBefore = current;
+        double base = maxBefore - max.amountOf(STAGE_MAX_SOURCE);
+        boolean changed = max.putModifier(STAGE_MAX_SOURCE, newMax - base);
+        double maxAfter = max.value();
+        current = Math.max(0.0, Math.min(maxAfter, sameShare(currentBefore, maxBefore, maxAfter)));
+        return changed;
+    }
 }
