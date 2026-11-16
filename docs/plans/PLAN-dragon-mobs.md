@@ -1115,6 +1115,23 @@ Behaviour: `javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar <class>`, whose
 
 ---
 
+## 8. FINDINGS
+
+**This section is new (2026-11-15):** the plan had no findings section, and the seat's ruling on #192 asked for one.
+
+- **F1, 2026-11-15, the seat's ruling (5) on #192: two older selftest scenario files still tag a mob by a nearest-entity
+  selector after spawning it, the pattern that leaked mobs at the first boot of the dragon stack.** Nothing is fixed
+  there now.
+  - `paper/src/main/resources/selftest/GATE-sunder.yml`, rows s11 and s12: `tag @e[type=zombie,distance=..1.5,sort=nearest,limit=1] add …`.
+    Exposed the same way the dragon rows were: the row-start clean's removals run a tick later on each mob's own
+    scheduler (GATE-dragon-fix.md, D2), so a zombie left on the same spot by the row before could take the tag.
+  - `paper/src/main/resources/selftest/GATE-wither-status.yml`, five `data merge entity @e[type=…,tag=!t,tag=!n,sort=nearest,limit=1]`
+    lines. Its selectors exclude mobs already tagged, so only an UNTAGGED survivor could be picked.
+  - **The fix, when it is scheduled, is the dragon one:** the `SPAWN` step, or for a vanilla mob a `/summon` that puts
+    its tags in its own NBT, so the mob is tagged by identity.
+  - Since the fix, every row-start clean is followed by `LEFTOVER living=<n> radius=16`, so a leak in those gates would
+    now be named in the log, though their gates do not predict the line.
+
 ## QUESTIONS FOR BEN
 
 *Answers go into the RULINGS block at the top of this file, verbatim. Legacy Q-P11 to Q-P14 stay open where they are;
