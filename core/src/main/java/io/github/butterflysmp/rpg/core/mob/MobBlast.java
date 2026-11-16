@@ -8,26 +8,28 @@ import java.util.UUID;
 
 /**
  * A staged mob's SELF-DESTRUCT: the Phage's blast (PLAN-dragon-mobs.md step R3). Authored in the mob file's
- * {@code blast:} block. Ben: "for the explosion keep vanilla creeper numbers for everything except the damage". The
- * damage numbers are the seat's provisional P-a and P-b, until Ben rules.
+ * {@code blast:} block. Ben: "for the explosion keep vanilla creeper numbers for everything except the damage", and
+ * on its shape, "keep vanillas shap". The damage numbers are the seat's provisional P-a and P-b, until Ben rules.
  *
  * <p><b>NAME THE QUANTITY:</b>
  * <ul>
- *   <li>{@code radius}: BLOCKS, the straight-line distance between the Phage's FEET and the victim's FEET,
- *       INCLUSIVE, same world. A sphere. The Phage's is 3, vanilla's creeper number (but see PLAN section 8 F2:
- *       vanilla's 3 is an explosion POWER whose damage reaches twice as far, with falloff; Q33).</li>
+ *   <li>{@code reach}: BLOCKS, how far the blast hurts: the straight-line distance between the Phage's FEET and the
+ *       victim's FEET, INCLUSIVE, same world. A sphere. The Phage's is 6, vanilla's reach for a creeper: its power 3
+ *       doubled ({@code ServerExplosion.hurtEntities}, {@code radius * 2}), measured between the same two points
+ *       ({@code Entity.distanceToSqr(center)} is the entity's position, and the creeper explodes at its own).</li>
  *   <li>{@code firstDamage} / {@code lastDamage}: the AUTHORED damage at the first and last stage, linear between
- *       (G3), before gear score. The Phage's are 20 and 50 (P-a).</li>
+ *       (G3), before gear score, at ZERO distance. The Phage's are 20 and 50 (P-a).</li>
  *   <li>{@code fuseTicks}: TICKS from the swell's start to the blast, vanilla's {@code maxSwell}. The Phage's is 30
  *       (1.5 seconds). Paper applies it with {@code Creeper#setMaxFuseTicks}.</li>
  * </ul>
- * Every victim takes the FULL priced damage (P-c): no falloff, no cover check, no knockback.
+ * A victim at distance d takes the priced damage x {@link #falloff}(d, reach): vanilla's curve, normalised. No cover
+ * check (vanilla's exposure) and no knockback: both are left out knowingly, and both are questions for Ben.
  */
-public record MobBlast(double radius, double firstDamage, double lastDamage, int fuseTicks) {
+public record MobBlast(double reach, double firstDamage, double lastDamage, int fuseTicks) {
 
     public MobBlast {
-        if (!(radius > 0 && Double.isFinite(radius))) {
-            throw new IllegalArgumentException("blast.radius must be a positive number of blocks, was " + radius);
+        if (!(reach > 0 && Double.isFinite(reach))) {
+            throw new IllegalArgumentException("blast.reach must be a positive number of blocks, was " + reach);
         }
         requireDamage("blast.damage.first", firstDamage);
         requireDamage("blast.damage.last", lastDamage);
@@ -57,31 +59,53 @@ public record MobBlast(double radius, double firstDamage, double lastDamage, int
         return MobScaling.attackDamage(damageAt(stage, stages), true, hostile, gearScore);
     }
 
-    /** Inside the radius, feet to feet, inclusive. */
-    public boolean inRadius(Vec3 at, Vec3 other) {
-        return at.distanceSquared(other) <= radius * radius;
+    /**
+     * VANILLA'S DISTANCE CURVE, NORMALISED: the share of the zero-distance damage a victim takes at {@code distance}.
+     * 1 at zero, 0 at the reach and beyond, never negative.
+     *
+     * <p>Read from the server jar (build 74), {@code ExplosionDamageCalculator#getEntityDamageAmount}: vanilla deals
+     * {@code (x*x + x) / 2 * 7 * f + 1} with {@code x = (1 - d / f) * exposure} and {@code f} the reach. Only the SHAPE
+     * is kept (seat's ruling 28): exposure is 1 (no cover), and the {@code * 7 * f} and the {@code + 1} are vanilla's
+     * damage constants, which our authored damage replaces. What is left, {@code (x*x + x) / 2}, is already 1 at
+     * {@code x = 1} and 0 at {@code x = 0}. Half the reach is {@code x = 0.5}: three eighths.
+     */
+    public static double falloff(double distance, double reach) {
+        if (distance >= reach) return 0.0;
+        double x = 1.0 - distance / reach;
+        return (x * x + x) / 2.0;
+    }
+
+    /** Inside the reach, feet to feet, INCLUSIVE, as vanilla's skip is ({@code d / f > 1} skips). */
+    public boolean inReach(Vec3 at, Vec3 other) {
+        return at.distanceSquared(other) <= reach * reach;
     }
 
     /** A living creature near the blast: its id, its side, whether it is an exempt player, its world and feet. */
     public record Bystander(UUID id, MobHostility.Side side, boolean exemptMode, String world, Vec3 at) {}
 
+    /** One creature inside the reach: who, how far (feet to feet), and the share of the damage {@link #falloff} gives. */
+    public record Hit(Bystander who, double distance, double factor) {}
+
     /**
-     * Who the blast reaches. {@code victims} are hurt; {@code spared} were inside the radius and are NOT hurt (a mob,
-     * a creative player), named so a gate can see the blast knew they were there. Both keep the order given.
+     * Who the blast reaches. {@code victims} are hurt, each by the priced damage x its factor; {@code spared} were
+     * inside the reach and are NOT hurt (a mob, a creative player), named so a gate can see the blast knew they were
+     * there. A victim exactly at the reach is listed with factor 0. Both keep the order given.
      */
-    public record Reach(List<Bystander> victims, List<Bystander> spared) {}
+    public record Reach(List<Hit> victims, List<Hit> spared) {}
 
     /**
      * THE RULE for one blast at {@code at} in {@code world}. The exploding mob ({@code self}) is never in either
      * list; another world is in neither. The caller's search may be any shape that contains the sphere.
      */
     public Reach reach(UUID self, String world, Vec3 at, List<Bystander> bystanders) {
-        List<Bystander> victims = new ArrayList<>();
-        List<Bystander> spared = new ArrayList<>();
+        List<Hit> victims = new ArrayList<>();
+        List<Hit> spared = new ArrayList<>();
         for (Bystander b : bystanders) {
-            if (b.id().equals(self) || !b.world().equals(world) || !inRadius(at, b.at())) continue;
-            if (MobHostility.hostileTo(b.side(), b.exemptMode())) victims.add(b);
-            else spared.add(b);
+            if (b.id().equals(self) || !b.world().equals(world) || !inReach(at, b.at())) continue;
+            double d = Math.sqrt(at.distanceSquared(b.at()));
+            Hit hit = new Hit(b, d, falloff(d, reach));
+            if (MobHostility.hostileTo(b.side(), b.exemptMode())) victims.add(hit);
+            else spared.add(hit);
         }
         return new Reach(victims, spared);
     }

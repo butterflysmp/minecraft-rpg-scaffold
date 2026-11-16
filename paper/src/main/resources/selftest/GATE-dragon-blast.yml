@@ -1,6 +1,7 @@
 # GATE-dragon-blast.md: the Phage's blast (PLAN-dragon-mobs.md step R3), read from the SERVER. Every mob is spawned by
 # the SPAWN step (/rpg spawn's own path, tagged and frozen or live inside its pre-spawn consumer), at gear score 100,
-# so every blast is its authored damage: 20 at stage 1, 50 at stage 5.
+# so every blast's damage at ZERO distance is its authored 20 (stage 1) or 50 (stage 5). Out to the 6-block reach it
+# falls off on vanilla's curve, normalised: three eighths at 3 blocks, nothing at 6 (MobBlast.falloff).
 #
 # THE STAGING, the same in every row: the player at a block centre facing east (+x); a stone floor and six blocks of
 # air above it, every fill box SAVED first, so the row-start clean and the run's restore put it back. A mob is spawned
@@ -10,12 +11,13 @@
 # TWO WAYS A PHAGE BLOWS, AND THE ROWS USE BOTH:
 #   - LIVE (BL1, BL2, BQ1): AI on, two blocks from the player. Vanilla's swell starts inside 3 blocks and fills in the
 #     content's 30 ticks; its prime is then ours. This is the trigger a player meets.
-#   - FROZEN, by DETONATE (BL3, BL4, BL6, BL7): NoAI, at a fixed spot, blown with Creeper#explode(), which raises the
-#     same prime. So every distance in those rows is exact.
+#   - FROZEN, by DETONATE (BL3, BL4, BL6, BL7, BL9): NoAI, at a fixed spot, blown with Creeper#explode(), which raises
+#     the same prime. So every distance in those rows is exact. BL3 and BL4 blow SEVEN blocks from the player, outside
+#     the reach, so he is not a victim there.
 #
 # THE PLAYER SURVIVES EVERY ROW: a row in which he can be hit first heals him to his maximum (rpg heal), and the
-# largest blast is 50 before his defence, at gear score 100. His maximum is at least 100 (CombatantStats
-# DEFAULT_PLAYER_BASE); it read 350 at the last boot.
+# largest blast is 50 before his defence, at gear score 100 and zero distance; distance only lowers it. His maximum
+# is at least 100 (CombatantStats DEFAULT_PLAYER_BASE); it read 350 at the last boot.
 
 setup:
   - difficulty: normal
@@ -58,18 +60,18 @@ BL2:
   - wait: 2
   - probe_blocks: "STONE -3 -1 -4 8 -1 4"
 
-# BL3: a frozen stage-1 Phage blown five blocks east (the player is outside its radius) grows a stage-1 Phage 3.00 away
-# to stage 2; the Phage that blew never grows and is gone.
+# BL3: a frozen stage-1 Phage blown SEVEN blocks east (the player is outside its 6-block reach) grows a stage-1 Phage
+# 3.00 away to stage 2; the Phage that blew never grows and is gone.
 BL3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
-  - cmd: "tp @s ~5 ~ ~"
+  - cmd: "tp @s ~7 ~ ~"
   - spawn: "bl3x frozen phage 100"
   - cmd: "tp @s ~ ~ ~3"
   - spawn: "bl3b frozen phage 100"
-  - cmd: "tp @s ~-5 ~ ~-3 -90 0"
+  - cmd: "tp @s ~-7 ~ ~-3 -90 0"
   - wait: 5
   - detonate: bl3x
   - wait: 5
@@ -77,20 +79,20 @@ BL3:
   - probe_body: bl3x
   - probe_entities: "creeper 16"
 
-# BL4: a frozen husk and a frozen stage-5 Phage, each 2.00 from a frozen stage-1 Phage blown five blocks east, keep
+# BL4: a frozen husk and a frozen stage-5 Phage, each 2.00 from a frozen stage-1 Phage blown seven blocks east, keep
 # their health. (A husk, not a zombie: the setup's noon would burn a zombie, and that burn is damage.)
 BL4:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
-  - cmd: "tp @s ~5 ~ ~"
+  - cmd: "tp @s ~7 ~ ~"
   - spawn: "bl4x frozen phage 100"
   - cmd: "tp @s ~ ~ ~2"
   - spawn: "bl4h frozen husk 100"
   - cmd: "tp @s ~ ~ ~-4"
   - spawn: "bl4p frozen phage stage 5 100"
-  - cmd: "tp @s ~-5 ~ ~2 -90 0"
+  - cmd: "tp @s ~-7 ~ ~2 -90 0"
   - wait: 5
   - probe: bl4h
   - probe: bl4p
@@ -118,29 +120,29 @@ BL5:
   - cmd: "kill @e[tag=bl5]"
   - probe_entities: "creeper 16"
 
-# BL6: a frozen stage-1 Phage blown exactly 3.00 blocks east hits the player.
+# BL6: a frozen stage-1 Phage blown 5.90 blocks east, just inside the 6-block reach, hits the player for a sliver.
 BL6:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "tp @s ~3 ~ ~"
+  - cmd: "tp @s ~5.9 ~ ~"
   - spawn: "bl6 frozen phage 100"
-  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - cmd: "tp @s ~-5.9 ~ ~ -90 0"
   - wait: 5
   - detonate: bl6
   - wait: 5
 
-# BL7: a frozen stage-1 Phage blown 3.05 blocks east does not.
+# BL7: a frozen stage-1 Phage blown 6.05 blocks east, just beyond the reach, does not.
 BL7:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
   - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
-  - cmd: "tp @s ~3.05 ~ ~"
+  - cmd: "tp @s ~6.05 ~ ~"
   - spawn: "bl7 frozen phage 100"
-  - cmd: "tp @s ~-3.05 ~ ~ -90 0"
+  - cmd: "tp @s ~-6.05 ~ ~ -90 0"
   - wait: 5
   - detonate: bl7
   - wait: 5
@@ -159,6 +161,20 @@ BL8:
   - wait: 40
   - probe_fuse: bl8
   - probe_entities: "creeper 16"
+
+# BL9: a frozen stage-1 Phage blown exactly 3.00 blocks east, half the reach, hits the player for three eighths of 20.
+BL9:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "bl9 frozen phage 100"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - detonate: bl9
+  - wait: 5
 
 # BQ1: Ben's three questions, by the ASK step. A live stage-1 Phage blows on him, then a live stage-5 one; he is
 # healed to full before each. He stands still while each Phage swells.

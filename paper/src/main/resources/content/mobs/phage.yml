@@ -80,19 +80,28 @@ growth:
   stages_per_death: 1
 
 # THE BLAST (dragon-mobs step R3). Ben: "for the explosion keep vanilla creeper numbers for everything except the
-# damage". The damage is the seat's PROVISIONAL proposal (P-a, P-b), NOT YET BEN'S RULING.
+# damage", and on its shape, "keep vanillas shap". The damage is the seat's PROVISIONAL proposal (P-a, P-b), NOT YET
+# BEN'S RULING.
 #
 #   stage:   1      2      3      4      5
-#   damage:  20     27.5   35     42.5   50     before gear score; linear between first and last (as G3 has the body)
+#   damage:  20     27.5   35     42.5   50     at ZERO distance, before gear score; linear between first and last
+#
+#   distance:     0      1.5     3 (half)   4.5      6 (the reach)    beyond 6
+#   share taken:  all    65.6%   37.5%      15.6%    nothing          nothing
 #
 # NAME THE QUANTITY:
-#   radius       BLOCKS, the straight-line distance between the Phage's FEET and the victim's FEET, INCLUSIVE at exactly
-#                3, same world. A sphere. 3 is vanilla's creeper number, but vanilla's 3 is an explosion POWER whose
-#                damage reaches twice as far with falloff (PLAN-dragon-mobs.md section 8 F2, Q33). Here, every victim
-#                inside it takes the FULL damage and nothing outside takes any (P-c): no falloff, no cover, no push.
-#   damage       AUTHORED damage at the first and last stage, x gear score / 100 as the Phage's health is (P-b), never
-#                x5. It lands on the same path a mob's melee hit takes, so the player's defence cuts it as it cuts a
-#                melee hit. It wears NO element today (whether it is Void damage is Ben's question, Q31).
+#   reach        BLOCKS, how far the blast hurts: the straight-line distance between the Phage's FEET and the victim's
+#                FEET, same world, a sphere. 6 is vanilla's own reach for a creeper: its explosion power 3, doubled
+#                (ServerExplosion.hurtEntities, radius * 2; PLAN-dragon-mobs.md section 7 F-B). Vanilla measures between
+#                the same two points: the victim's position (its feet) and the creeper's position, where it explodes.
+#   falloff      NOT a number in this file: vanilla's own curve, normalised (Ben: "keep vanillas shap"). A victim at
+#                distance d takes the damage below times (x*x + x) / 2, where x = 1 - d / reach: ALL of it at the
+#                Phage's feet, THREE EIGHTHS of it at half the reach (3 blocks), and nothing at the reach.
+#                Vanilla also weakens a blast by the blocks in the way, and pushes its victims. NEITHER is done here:
+#                the blast goes through walls and pushes no one (Ben's questions, Q34 and Q35).
+#   damage       AUTHORED damage at the first and last stage, at zero distance, x gear score / 100 as the Phage's
+#                health is (P-b), never x5. It lands on the same path a mob's melee hit takes, so the player's defence
+#                cuts it as it cuts a melee hit. It wears NO element today (whether it is Void damage is Q31).
 #   fuse_ticks   TICKS from the swell's start to the blast, vanilla's 30 (1.5 seconds), written to the creeper with
 #                Creeper#setMaxFuseTicks at spawn. The swell starts within 3 blocks of a target and cancels past 7 or
 #                out of sight: those two distances are vanilla's own and are NOT authored here (they cannot be until
@@ -101,6 +110,6 @@ growth:
 # VICTIMS: players only, today (Ben: "Only players and Summons"). No mob is hurt, a Phage included. A creative or
 # spectator player is not hurt.
 blast:
-  radius: 3
+  reach: 6
   damage: { first: 20, last: 50 }
   fuse_ticks: 30

@@ -38,13 +38,15 @@ import java.util.UUID;
  *
  * <h2>WHAT IT DOES, IN ORDER</h2>
  * <ol>
- *   <li><b>The victims</b> (the seat's ruling 24): every living creature within the blast radius, feet to feet, that
+ *   <li><b>The victims</b> (the seat's ruling 24): every living creature within the blast's REACH, feet to feet, that
  *       {@link MobHostility#hostileTo} names. Today that is a survival or adventure player; a mob (the Phage's own
  *       kind included) and a creative or spectator player are SPARED, and named in the log line as spared. The
- *       search is a cube of the radius; {@link MobBlast#reach} decides the sphere.</li>
- *   <li><b>The damage</b> (the seat's provisional P-a to P-c): the stage's authored damage, x GS/100
- *       ({@link MobBlast#price}), FULL to every victim, no falloff, no cover, no knockback. Each victim is hit through
- *       {@code BukkitCombatant.of(victim).handle().applyDamage(damage, phageId)}, the two-argument form a mob's melee
+ *       search is a cube of the reach; {@link MobBlast#reach} decides the sphere.</li>
+ *   <li><b>The damage</b> (P-a and P-b, the seat's; the shape Ben's, "keep vanillas shap"): the stage's authored
+ *       damage, x GS/100 ({@link MobBlast#price}), is the damage at ZERO distance; each victim takes it x
+ *       {@link MobBlast#falloff} of its distance, vanilla's curve normalised. No cover, no knockback (PLAN Q34, Q35). A
+ *       victim whose share is 0 (exactly at the reach) is listed and not hit. Each other victim is hit through
+ *       {@code BukkitCombatant.of(victim).handle().applyDamage(dealt, phageId)}, the two-argument form a mob's melee
  *       hit takes ({@code RpgListeners.onMobMeleeAttack}), so the store applies the victim's defence exactly as for a
  *       melee hit, and the hit wears no element and cannot crit. <b>A shield cannot block it</b>: our block is read
  *       from a vanilla damage event (ShieldBlock), and this hit raises none (PLAN Q32).</li>
@@ -52,8 +54,9 @@ import java.util.UUID;
  *       creeper's blast sends ({@code Level.explode} passes {@code ParticleTypes.EXPLOSION_EMITTER} and
  *       {@code SoundEvents.GENERIC_EXPLODE}). A particle and a sound touch no block and hurt nothing.</li>
  *   <li><b>One line</b>, {@code BLAST ...} (the seat's ruling 26), naming the mob, its uuid, stage, gear score, the
- *       damage each victim was dealt BEFORE its defence, and each victim and spared creature with its distance. The
- *       amount after defence is the store's, a tick later (the selftest's HURT line).</li>
+ *       zero-distance damage ({@code base}) and the reach; each victim with its distance, its factor and the damage it
+ *       was dealt BEFORE its defence; and each spared creature with its distance and factor. The amount after defence
+ *       is the store's, a tick later (the selftest's HURT line).</li>
  *   <li><b>Growth</b> (the seat's ruling 23): {@link MobGrower#onDeath}, growth's death path, which needs no event. It
  *       marks the Phage counted (once only), resolves its element (void) and calls the seam
  *       {@link MobGrower#reportDeath} with the PHAGE'S OWN id as the dead creature, which never grows itself. Called
@@ -93,12 +96,12 @@ public final class MobBlaster {
             adapters.log().warning("BLAST " + mobId + " " + phage.getUniqueId() + " has no valid gear score (stored "
                     + stored + "), so it is priced at GS " + gs);
         }
-        double damage = blast.price(stage, def.stages(), hostile, gs);
+        double base = blast.price(stage, def.stages(), hostile, gs);   // at zero distance
 
         World world = phage.getWorld();
         Location at = phage.getLocation();
         UUID phageId = phage.getUniqueId();
-        double r = blast.radius();
+        double r = blast.reach();
         List<MobBlast.Bystander> bystanders = new ArrayList<>();
         Map<UUID, LivingEntity> bodies = new HashMap<>();
         for (Entity e : world.getNearbyEntities(at, r, r, r)) {
@@ -113,13 +116,15 @@ public final class MobBlaster {
         }
         MobBlast.Reach reach = blast.reach(phageId, world.getName(), vec(at), bystanders);
 
-        for (MobBlast.Bystander b : reach.victims()) {
-            LivingEntity victim = bodies.get(b.id());
+        for (MobBlast.Hit hit : reach.victims()) {
+            double dealt = base * hit.factor();
+            if (!(dealt > 0)) continue;   // exactly at the reach: listed, and nothing to deal
+            LivingEntity victim = bodies.get(hit.who().id());
             if (Bukkit.isOwnedByCurrentRegion(victim)) {
-                BukkitCombatant.of(victim, adapters).handle().applyDamage(damage, phageId);
+                BukkitCombatant.of(victim, adapters).handle().applyDamage(dealt, phageId);
             } else {
                 adapters.scheduler().onEntity(victim,
-                        () -> BukkitCombatant.of(victim, adapters).handle().applyDamage(damage, phageId));
+                        () -> BukkitCombatant.of(victim, adapters).handle().applyDamage(dealt, phageId));
             }
         }
 
@@ -127,9 +132,9 @@ public final class MobBlaster {
         world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 4.0f, 0.7f);
 
         adapters.log().info("BLAST mob=" + mobId + " id=" + phageId + " stage=" + stage + " gs=" + gs
-                + String.format(Locale.ROOT, " damage=%.3f radius=%.2f", damage, r)
-                + " victims=" + reach.victims().size() + " " + names(reach.victims(), bodies, at, adapters)
-                + " spared=" + reach.spared().size() + " " + names(reach.spared(), bodies, at, adapters));
+                + String.format(Locale.ROOT, " base=%.3f reach=%.2f", base, r)
+                + " victims=" + reach.victims().size() + " " + names(reach.victims(), bodies, base, adapters)
+                + " spared=" + reach.spared().size() + " " + names(reach.spared(), bodies, Double.NaN, adapters));
 
         MobGrower.onDeath(phage, mobs, elements, adapters.keys(), adapters.stats(), adapters.scheduler(),
                 adapters.log());
@@ -137,15 +142,19 @@ public final class MobBlaster {
         return reach.victims().size();
     }
 
-    /** {@code [<type>[/<mob id>] <uuid> d=<feet to feet>, ...]}, in the order the rule kept. */
-    private static String names(List<MobBlast.Bystander> list, Map<UUID, LivingEntity> bodies, Location at,
+    /**
+     * {@code [<type>[/<mob id>] <uuid> d=<feet to feet> factor=<share>[ dealt=<before defence>], ...]}, in the order
+     * the rule kept. {@code dealt} is printed for victims only ({@code base} is NaN for the spared).
+     */
+    private static String names(List<MobBlast.Hit> list, Map<UUID, LivingEntity> bodies, double base,
                                 AdapterContext adapters) {
         List<String> out = new ArrayList<>();
-        for (MobBlast.Bystander b : list) {
-            LivingEntity e = bodies.get(b.id());
+        for (MobBlast.Hit hit : list) {
+            LivingEntity e = bodies.get(hit.who().id());
             String id = e.getPersistentDataContainer().get(adapters.keys().mobId, PersistentDataType.STRING);
-            out.add(e.getType().getKey().getKey() + (id == null ? "" : "/" + id) + " " + b.id()
-                    + String.format(Locale.ROOT, " d=%.2f", Math.sqrt(vec(at).distanceSquared(b.at()))));
+            out.add(e.getType().getKey().getKey() + (id == null ? "" : "/" + id) + " " + hit.who().id()
+                    + String.format(Locale.ROOT, " d=%.3f factor=%.6f", hit.distance(), hit.factor())
+                    + (Double.isNaN(base) ? "" : String.format(Locale.ROOT, " dealt=%.3f", base * hit.factor())));
         }
         return out.toString();
     }

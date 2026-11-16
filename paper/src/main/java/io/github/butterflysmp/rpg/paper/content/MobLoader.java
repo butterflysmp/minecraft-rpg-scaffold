@@ -155,16 +155,16 @@ public final class MobLoader {
 
     /**
      * The optional {@code blast:} block (dragon-mobs step R3), or null. Every key is required when the block is
-     * present: {@code radius} (blocks), {@code damage.first} and {@code damage.last} (authored damage at the first and
-     * last stage), {@code fuse_ticks} (ticks). {@link MobBlast} refuses a bad value by name.
+     * present: {@code reach} (blocks), {@code damage.first} and {@code damage.last} (authored damage at the first and
+     * last stage, at zero distance), {@code fuse_ticks} (ticks). {@link MobBlast} refuses a bad value by name.
      */
     private static MobBlast blast(ConfigurationSection s) {
         ConfigurationSection b = s.getConfigurationSection("blast");
         if (b == null) return null;
-        for (String key : List.of("radius", "damage.first", "damage.last", "fuse_ticks")) {
+        for (String key : List.of("reach", "damage.first", "damage.last", "fuse_ticks")) {
             if (!b.contains(key)) throw new IllegalArgumentException("blast." + key + " is required");
         }
-        return new MobBlast(b.getDouble("radius"), b.getDouble("damage.first"), b.getDouble("damage.last"),
+        return new MobBlast(b.getDouble("reach"), b.getDouble("damage.first"), b.getDouble("damage.last"),
                 b.getInt("fuse_ticks"));
     }
 
