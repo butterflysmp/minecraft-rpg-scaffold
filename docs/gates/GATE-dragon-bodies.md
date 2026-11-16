@@ -118,13 +118,13 @@ max printed `%.3f`. At gear score 100, `maxHP` is the authored health × 1.00 (P
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-bodies` prints it, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | _(not run)_ |
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-bodies` prints it, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **SUPERSEDED** at the stacked boot of `bda8e89c` (2026-11-15): `GATE-dragon-growth.md`'s R0a-R0d were read instead, all PASS |
 
 ### R0b — the jar carries this branch
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: `selftest/GATE-dragon-bodies.yml`, `content/mob_elements.yml`, `content/mobs/phage.yml`, paper `health/MobBodyApplier.class`, paper `health/CustomCreeperGuard.class`, core `mob/MobElementResolver.class`; in `selftest/index.yml`, the line `  - dragon-bodies`. ABSENT: the control `selftest/NoSuchClassControl.class` | the scan below | _(not run)_ |
+| PRESENT: `selftest/GATE-dragon-bodies.yml`, `content/mob_elements.yml`, `content/mobs/phage.yml`, paper `health/MobBodyApplier.class`, paper `health/CustomCreeperGuard.class`, core `mob/MobElementResolver.class`; in `selftest/index.yml`, the line `  - dragon-bodies`. ABSENT: the control `selftest/NoSuchClassControl.class` | the scan below | **SUPERSEDED** at the stacked boot of `bda8e89c` (2026-11-15): `GATE-dragon-growth.md`'s R0a-R0d were read instead, all PASS |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -147,13 +147,13 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**. Derived from `GATE-nexus-back.md` R0c's reading (`… 6 accessories, 1 mobs, 3 recipes …`), changed in exactly two places: **`5 mobs`** (knell, phage, phalanx, skreel, withered_mount) and the new **`1 mob elements`**, because this branch's content diff is `content/mobs/` and `content/mob_elements.yml` only (`git diff --stat 5b71e24b HEAD -- paper/src/main/resources/content`). No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN`, beyond `volley_stone`'s known pair (`Content: weapon 'volley_stone' …`, `1 content problem(s)`); no `Skipping malformed mob`; no `Refusing row` | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN\]: \[Rpg\]','Exception','Content:'` | _(not run)_ |
+| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**. Derived from `GATE-nexus-back.md` R0c's reading (`… 6 accessories, 1 mobs, 3 recipes …`), changed in exactly two places: **`5 mobs`** (knell, phage, phalanx, skreel, withered_mount) and the new **`1 mob elements`**, because this branch's content diff is `content/mobs/` and `content/mob_elements.yml` only (`git diff --stat 5b71e24b HEAD -- paper/src/main/resources/content`). No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN`, beyond `volley_stone`'s known pair (`Content: weapon 'volley_stone' …`, `1 content problem(s)`); no `Skipping malformed mob`; no `Refusing row` | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN\]: \[Rpg\]','Exception','Content:'` | **SUPERSEDED** at the stacked boot of `bda8e89c` (2026-11-15): `GATE-dragon-growth.md`'s R0a-R0d were read instead, all PASS |
 
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one line **`[Rpg] Selftest: dev server, 68 scenarios across 12 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | _(not run)_ |
+| Exactly one line **`[Rpg] Selftest: dev server, 68 scenarios across 12 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | **SUPERSEDED** at the stacked boot of `bda8e89c` (2026-11-15): `GATE-dragon-growth.md`'s R0a-R0d were read instead, all PASS |
 
 **The 68 and the 12 are DERIVED.** From the repo root at this head:
 
@@ -185,25 +185,25 @@ instrument's own. NoAI is set on DB1-DB7's mobs after their spawn, which touches
 
 | prediction | READING |
 |---|---|
-| `BODY tag=db1 <uuid> type=wither_skeleton mob=knell stage=- scale=1.600 height=3.840 speedBase=0.1500 speedDefault=0.2500 speedX=0.600 maxHP=360.000 gs=100 element=void dead=false` | _(not run)_ |
+| `BODY tag=db1 <uuid> type=wither_skeleton mob=knell stage=- scale=1.600 height=3.840 speedBase=0.1500 speedDefault=0.2500 speedX=0.600 maxHP=360.000 gs=100 element=void dead=false` | **NOT AS PREDICTED (speed).** `BODY tag=db1 a489dc28-827e-456d-b5d0-f1004e154a27 type=wither_skeleton mob=knell stage=- scale=1.600 height=3.840 speedBase=0.4200 speedDefault=0.7000 speedX=0.600 maxHP=360.000 gs=100 element=void dead=false` |
 
 ### DB2 — a Phage, no stage given, is stage 1 (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `REPLY "Spawned Phage (creeper, stage 1, 80 HP, GS 100 given)" [aqua, gray]` (the root is aqua, the name uncoloured, the bracket gray: `RpgCommand.spawnMob` and `SelfTestLines.collect`), and `BODY tag=db2 <uuid> type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedDefault=0.2500 speedX=1.500 maxHP=80.000 gs=100 element=void dead=false` | _(not run)_ |
+| `REPLY "Spawned Phage (creeper, stage 1, 80 HP, GS 100 given)" [aqua, gray]` (the root is aqua, the name uncoloured, the bracket gray: `RpgCommand.spawnMob` and `SelfTestLines.collect`), and `BODY tag=db2 <uuid> type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedDefault=0.2500 speedX=1.500 maxHP=80.000 gs=100 element=void dead=false` | **NOT AS PREDICTED (speed).** REPLY verbatim: `REPLY "Spawned Phage (creeper, stage 1, 80 HP, GS 100 given)" [aqua, gray]`. `BODY tag=db2 ebf9d6f0-df16-4551-b15d-4258ac3c9c1e type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=1.0500 speedDefault=0.7000 speedX=1.500 maxHP=80.000 gs=100 element=void dead=false` |
 
 ### DB3 — a Phage at stage 3 (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `BODY tag=db3 <uuid> type=creeper mob=phage stage=3 scale=1.176 height=2.000 speedBase=0.2500 speedDefault=0.2500 speedX=1.000 maxHP=120.000 gs=100 element=void dead=false` | _(not run)_ |
+| `BODY tag=db3 <uuid> type=creeper mob=phage stage=3 scale=1.176 height=2.000 speedBase=0.2500 speedDefault=0.2500 speedX=1.000 maxHP=120.000 gs=100 element=void dead=false` | **NOT AS PREDICTED.** `BODY tag=db3 none within 16 blocks`. The tag landed on DB2's Phage (`REPLY "Target either already has the tag or has too many tags" [red]`), so the new stage 3 was never tagged and kept its AI |
 
 ### DB4 — a Phage at stage 5 (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `BODY tag=db4 <uuid> type=creeper mob=phage stage=5 scale=1.765 height=3.000 speedBase=0.1250 speedDefault=0.2500 speedX=0.500 maxHP=160.000 gs=100 element=void dead=false` | _(not run)_ |
+| `BODY tag=db4 <uuid> type=creeper mob=phage stage=5 scale=1.765 height=3.000 speedBase=0.1250 speedDefault=0.2500 speedX=0.500 maxHP=160.000 gs=100 element=void dead=false` | **NOT AS PREDICTED.** `BODY tag=db4 caff5939-2b4e-441d-84c3-67711248fc32 type=creeper mob=phage stage=3 scale=1.176 height=2.000 speedBase=0.7000 speedDefault=0.7000 speedX=1.000 maxHP=120.000 gs=100 element=void dead=false`: DB3's stage 3, tagged in DB4's place |
 
 **DB2 to DB4 together are the interpolation, read live:** height 1, 2, 3; speedX 1.5, 1.0, 0.5; health 80, 120, 160.
 `MobStagesTest` holds all five stages exactly; these three are its server-side witness. **And the three maxHP values
@@ -214,31 +214,31 @@ differ, so the seed read each mob's own stage**: a seed that ignored the stage w
 
 | prediction | READING |
 |---|---|
-| `BODY tag=db5 <uuid> type=wither_skeleton mob=phalanx stage=- scale=1.000 height=2.400 speedBase=0.1625 speedDefault=0.2500 speedX=0.650 maxHP=240.000 gs=100 element=void dead=false` | _(not run)_ |
+| `BODY tag=db5 <uuid> type=wither_skeleton mob=phalanx stage=- scale=1.000 height=2.400 speedBase=0.1625 speedDefault=0.2500 speedX=0.650 maxHP=240.000 gs=100 element=void dead=false` | **NOT AS PREDICTED (speed).** `BODY tag=db5 fd70e054-489a-4915-90e7-2041f32b3626 type=wither_skeleton mob=phalanx stage=- scale=1.000 height=2.400 speedBase=0.4550 speedDefault=0.7000 speedX=0.650 maxHP=240.000 gs=100 element=void dead=false` |
 
 ### DB6 — the Skreel alone; nothing spawns its mount (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `BODY tag=db6 <uuid> type=wither_skeleton mob=skreel stage=- scale=1.000 height=2.400 speedBase=0.2500 speedDefault=0.2500 speedX=1.000 maxHP=120.000 gs=100 element=void dead=false`, then `ENTITIES SPIDER count=0 radius=8` | _(not run)_ |
+| `BODY tag=db6 <uuid> type=wither_skeleton mob=skreel stage=- scale=1.000 height=2.400 speedBase=0.2500 speedDefault=0.2500 speedX=1.000 maxHP=120.000 gs=100 element=void dead=false`, then `ENTITIES SPIDER count=0 radius=8` | **NOT AS PREDICTED.** `BODY tag=db6 none within 16 blocks` (the tag landed on DB5's Phalanx: `REPLY "Added tag 'db6' to Phalanx"`); `ENTITIES SPIDER count=0 radius=8` as predicted |
 
 ### DB7 — the mount alone, with NO element; nothing spawns a rider (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `BODY tag=db7 <uuid> type=spider mob=withered_mount stage=- scale=1.500 height=1.350 speedBase=0.3900 speedDefault=0.3000 speedX=1.300 maxHP=120.000 gs=100 element=none dead=false`, then `ENTITIES WITHER_SKELETON count=0 radius=8` | _(not run)_ |
+| `BODY tag=db7 <uuid> type=spider mob=withered_mount stage=- scale=1.500 height=1.350 speedBase=0.3900 speedDefault=0.3000 speedX=1.300 maxHP=120.000 gs=100 element=none dead=false`, then `ENTITIES WITHER_SKELETON count=0 radius=8` | **NOT AS PREDICTED.** `BODY tag=db7 403c687b-4a1e-43b8-90fa-899d29e52613 type=spider mob=withered_mount stage=- scale=1.500 height=1.350 speedBase=0.9100 speedDefault=0.7000 speedX=1.300 maxHP=120.000 gs=100 element=none dead=false`; `ENTITIES WITHER_SKELETON count=1 radius=8` (INFERRED: DB6's untagged Skreel) |
 
 ### DB8 — a vanilla Enderman is Void by the table (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `BODY tag=db8 <uuid> type=enderman mob=- stage=- … element=void dead=false`. Only `type`, `mob`, `stage` and `element` are predicted: a summoned Enderman's other fields are vanilla's, not this slice's | _(not run)_ |
+| `BODY tag=db8 <uuid> type=enderman mob=- stage=- … element=void dead=false`. Only `type`, `mob`, `stage` and `element` are predicted: a summoned Enderman's other fields are vanilla's, not this slice's | **AS PREDICTED on its four fields.** `BODY tag=db8 4a84f70c-20fa-41be-b419-657c51e413ea type=enderman mob=- stage=- scale=1.000 height=2.900 speedBase=0.3000 speedDefault=0.7000 speedX=0.429 maxHP=200.000 gs=100 element=void dead=false` |
 
 ### DB9 — a vanilla zombie has no element (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `BODY tag=db9 <uuid> type=zombie mob=- stage=- … element=none dead=false`. As DB8, only those four fields are predicted | _(not run)_ |
+| `BODY tag=db9 <uuid> type=zombie mob=- stage=- … element=none dead=false`. As DB8, only those four fields are predicted | **AS PREDICTED on its four fields.** `BODY tag=db9 38b84bc9-eef9-4bde-b0b7-5837c0ea9415 type=zombie mob=- stage=- scale=1.000 height=1.950 speedBase=0.2300 speedDefault=0.7000 speedX=0.329 maxHP=100.000 gs=100 element=none dead=false` |
 
 ### DB10 — a Phage beside the player for 100 ticks swells and never explodes (SURVIVAL) — witness: the log
 
@@ -246,13 +246,13 @@ A stage-1 Phage, AI ON, spawned two blocks east of the player; 100 ticks is more
 
 | prediction | READING |
 |---|---|
-| (1) `BLOCKS STONE count=108 box=-3 -1 -4 8 -1 4` **before and after** the wait: the floor is 12 × 9 blocks (x from −3 to 8, z from −4 to 4), and no block broke. (2) `BODY tag=db10 <uuid> type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedDefault=0.2500 speedX=1.500 maxHP=80.000 gs=100 element=void dead=false`: alive after the wait. (3) **At least one** `[Rpg] CREEPERGUARD prime cancelled mob=phage id=<the db10 uuid>` between DB10's START and DONE: the fuse completed and was refused, so the row did not pass by the Phage never swelling. **The count is a LOWER BOUND, not a prediction of the number** (when the creeper acquires its target is vanilla's random goal timing); the number seen is recorded. (4) The two `SELF customHP=` readings are equal: the player took no damage. **Zero `CREEPERGUARD` lines makes this row NOT AS PREDICTED even if (1), (2) and (4) hold**, because then nothing was tested | _(not run)_ |
+| (1) `BLOCKS STONE count=108 box=-3 -1 -4 8 -1 4` **before and after** the wait: the floor is 12 × 9 blocks (x from −3 to 8, z from −4 to 4), and no block broke. (2) `BODY tag=db10 <uuid> type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedDefault=0.2500 speedX=1.500 maxHP=80.000 gs=100 element=void dead=false`: alive after the wait. (3) **At least one** `[Rpg] CREEPERGUARD prime cancelled mob=phage id=<the db10 uuid>` between DB10's START and DONE: the fuse completed and was refused, so the row did not pass by the Phage never swelling. **The count is a LOWER BOUND, not a prediction of the number** (when the creeper acquires its target is vanilla's random goal timing); the number seen is recorded. (4) The two `SELF customHP=` readings are equal: the player took no damage. **Zero `CREEPERGUARD` lines makes this row NOT AS PREDICTED even if (1), (2) and (4) hold**, because then nothing was tested | **NOT AS PREDICTED.** (1) `BLOCKS STONE count=108 box=-3 -1 -4 8 -1 4` before; `BLOCKS STONE count=35 box=-3 -1 -4 8 -1 4` after, but the player had been moved (`at=-95.50` → `at=-102.93`) and the box is player-relative (INFERRED), so the second count read a different floor. (2) `BODY tag=db10 cd4df77b-e8d1-418b-b43d-579119cfcc89 type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=1.0500 speedDefault=0.7000 speedX=1.500 maxHP=80.000 gs=100 element=void dead=false`. (3) Met: 2 × `CREEPERGUARD prime cancelled mob=phage id=cd4df77b-e8d1-418b-b43d-579119cfcc89` (plus 1 for a leftover, `5a4bcfd9-…`). (4) `SELF customHP=350.000/350.000` → `SELF customHP=324.545/350.000`: the player took damage (source not read; AI-on leftovers were present) |
 
 ### DB11 — the spawn command's two refusals (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `REPLY "'phage' has stages 1 to 5; 6 is not one of them." [red]`, then `REPLY "'knell' has no stages. Spawn it without 'stage'." [red]`, then `ENTITIES CREEPER count=0 radius=8` and `ENTITIES WITHER_SKELETON count=0 radius=8`: neither refusal spawned anything | _(not run)_ |
+| `REPLY "'phage' has stages 1 to 5; 6 is not one of them." [red]`, then `REPLY "'knell' has no stages. Spawn it without 'stage'." [red]`, then `ENTITIES CREEPER count=0 radius=8` and `ENTITIES WITHER_SKELETON count=0 radius=8`: neither refusal spawned anything | **NOT AS PREDICTED (counts).** Both REPLYs verbatim: `REPLY "'phage' has stages 1 to 5; 6 is not one of them." [red]`, `REPLY "'knell' has no stages. Spawn it without 'stage'." [red]`. But `ENTITIES CREEPER count=2 radius=8` and `ENTITIES WITHER_SKELETON count=1 radius=8`: earlier rows' untagged leftovers (INFERRED), not spawns by the refusals |
 
 ---
 
@@ -268,7 +268,7 @@ you.
 
 | question | READING |
 |---|---|
-| Is it about one block tall, its head about level with the top of a block beside it? **yes / no** | _(not run)_ |
+| Is it about one block tall, its head about level with the top of a block beside it? **yes / no** | Ben: "yes" |
 
 Cleanup: `/kill @e[type=creeper,distance=..20]`
 
@@ -278,7 +278,7 @@ Cleanup: `/kill @e[type=creeper,distance=..20]`
 
 | question | READING |
 |---|---|
-| Is it about three blocks tall, clearly taller than you? **yes / no** | _(not run)_ |
+| Is it about three blocks tall, clearly taller than you? **yes / no** | Ben: "yes" |
 
 Cleanup: `/kill @e[type=creeper,distance=..20]`
 
@@ -288,7 +288,7 @@ Cleanup: `/kill @e[type=creeper,distance=..20]`
 
 | question | READING |
 |---|---|
-| Is it clearly bigger than you? **yes / no** | _(not run)_ |
+| Is it clearly bigger than you? **yes / no** | Ben: "yes" |
 
 Cleanup: `/kill @e[type=wither_skeleton,distance=..20]`
 
@@ -299,7 +299,7 @@ away · `/summon spider ~ ~ ~ {NoAI:1b}` · look at both.
 
 | question | READING |
 |---|---|
-| Is the Withered Mount clearly bigger than the plain spider? **yes / no** | _(not run)_ |
+| Is the Withered Mount clearly bigger than the plain spider? **yes / no** | Ben: "Yes" |
 
 Cleanup: `/kill @e[type=spider,distance=..20]`
 
@@ -310,7 +310,7 @@ turn and look.
 
 | question | READING |
 |---|---|
-| Did the small one keep up and the big one fall behind? **yes / no** | _(not run)_ |
+| Did the small one keep up and the big one fall behind? **yes / no** | Ben: "yes" |
 
 Keep both alive for B6.
 
@@ -320,10 +320,15 @@ Stand still and let the small Phage from B5 reach you. Watch it for about five s
 
 | question | READING |
 |---|---|
-| It swelled and shrank back, and never exploded? **yes / no** — and was any block broken around you? **yes / no** | _(not run)_ |
+| It swelled and shrank back, and never exploded? **yes / no** — and was any block broken around you? **yes / no** | Ben, first question: "it stayed swelled until I move away from it". Second: "no explosion no blocks broken" |
 
 Cleanup: `/kill @e[type=creeper,distance=..20]`
 
 **What B6 is expected to look like, said in advance so it is not read as a defect:** the Phage swells (flashes white
 and grows), then snaps back to normal and starts again, for as long as you stand close. That is the cancelled
 explosion (PLAN-dragon-mobs.md §7 F-C), and it is temporary until step R3 replaces the swell with ours.
+
+> **READINGS NOTE, 2026-11-15 (a pointer; the account is `GATE-dragon-growth.md`, *READINGS NOTE, 2026-11-15*).** This
+> gate's rows were read at the stacked boot of `bda8e89c`; R0 SUPERSEDED. Most rows read NOT AS PREDICTED, for two
+> defects found there: the speed defect (`speedDefault=0.7000` on every BODY line) and the selftest's tag race (a new
+> mob untagged, so it kept its AI and leaked into later rows). No prediction was edited.

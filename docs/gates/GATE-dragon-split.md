@@ -118,13 +118,13 @@ is `80 × 300 / 100 = 240`, printed `240.000`; a stage 5 at 300 is `160 × 3 = 4
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-split` prints it, shortened. **Not** `feat/dragon-bodies`'s `974e4357`. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | _(not run)_ |
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-split` prints it, shortened. **Not** `feat/dragon-bodies`'s `974e4357`. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **SUPERSEDED** at the stacked boot of `bda8e89c` (2026-11-15): `GATE-dragon-growth.md`'s R0a-R0d were read instead, all PASS |
 
 ### R0b — the jar carries BOTH steps
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT, step R1: `selftest/GATE-dragon-bodies.yml`, `content/mob_elements.yml`, `content/mobs/phage.yml`, paper `health/MobBodyApplier.class`, paper `health/CustomCreeperGuard.class`, core `mob/MobElementResolver.class`. PRESENT, step R2: `selftest/GATE-dragon-split.yml`, paper `health/MobSplitter.class`, paper `health/MobSpawner.class`, core `mob/MobSplit.class`; in `content/mobs/phage.yml`, the line `split:`; in `selftest/index.yml`, the lines `  - dragon-bodies` and `  - dragon-split`. ABSENT: the control `selftest/NoSuchClassControl.class` | the scan below | _(not run)_ |
+| PRESENT, step R1: `selftest/GATE-dragon-bodies.yml`, `content/mob_elements.yml`, `content/mobs/phage.yml`, paper `health/MobBodyApplier.class`, paper `health/CustomCreeperGuard.class`, core `mob/MobElementResolver.class`. PRESENT, step R2: `selftest/GATE-dragon-split.yml`, paper `health/MobSplitter.class`, paper `health/MobSpawner.class`, core `mob/MobSplit.class`; in `content/mobs/phage.yml`, the line `split:`; in `selftest/index.yml`, the lines `  - dragon-bodies` and `  - dragon-split`. ABSENT: the control `selftest/NoSuchClassControl.class` | the scan below | **SUPERSEDED** at the stacked boot of `bda8e89c` (2026-11-15): `GATE-dragon-growth.md`'s R0a-R0d were read instead, all PASS |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -155,13 +155,13 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**: exactly `GATE-dragon-bodies.md`'s R0c prediction, because R2 adds a block to `phage.yml` and no file (`git diff --stat 974e4357 HEAD -- paper/src/main/resources/content` lists `phage.yml` alone). No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN`, beyond `volley_stone`'s known pair (`Content: weapon 'volley_stone' …`, `1 content problem(s)`); no `Skipping malformed mob` | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN\]: \[Rpg\]','Exception','Content:'` | _(not run)_ |
+| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**: exactly `GATE-dragon-bodies.md`'s R0c prediction, because R2 adds a block to `phage.yml` and no file (`git diff --stat 974e4357 HEAD -- paper/src/main/resources/content` lists `phage.yml` alone). No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN`, beyond `volley_stone`'s known pair (`Content: weapon 'volley_stone' …`, `1 content problem(s)`); no `Skipping malformed mob` | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN\]: \[Rpg\]','Exception','Content:'` | **SUPERSEDED** at the stacked boot of `bda8e89c` (2026-11-15): `GATE-dragon-growth.md`'s R0a-R0d were read instead, all PASS |
 
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one line **`[Rpg] Selftest: dev server, 74 scenarios across 13 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | _(not run)_ |
+| Exactly one line **`[Rpg] Selftest: dev server, 74 scenarios across 13 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | **SUPERSEDED** at the stacked boot of `bda8e89c` (2026-11-15): `GATE-dragon-growth.md`'s R0a-R0d were read instead, all PASS |
 
 **The 74 and the 13 are DERIVED.** From the repo root at this head:
 
@@ -199,37 +199,37 @@ are not this gate's reading**; their count is not predicted.
 
 | prediction | READING |
 |---|---|
-| (1) `REPLY "CREEPER damaged: 1/480 custom HP" [green]` (stage 5 at gs 300 is 480; 479 taken leaves 1). (2) `DRIVE attack Player#attack target=<the ds1 uuid> creeper …`, then **exactly one** `[Rpg] SPLIT mob=phage parent=<the ds1 uuid> stage=5 gs=300 children=2 childStage=1 [<uuid> dx=-0.50, <uuid> dx=0.50]`. (3) `ENTITIES CREEPER count=2 radius=16`. (4) **Exactly two** BODY lines, each the child line above with `tag=ds1`. **`gs=300` IS the reading that matters**: the overworld rolls 100, so 300 is the parent's score and not the place's. **INFERRED, not read:** that the iron sword's hit deals at least 1 custom health to a mob; if it deals less, there is no death and no SPLIT line, and this row reads that | _(not run)_ |
+| (1) `REPLY "CREEPER damaged: 1/480 custom HP" [green]` (stage 5 at gs 300 is 480; 479 taken leaves 1). (2) `DRIVE attack Player#attack target=<the ds1 uuid> creeper …`, then **exactly one** `[Rpg] SPLIT mob=phage parent=<the ds1 uuid> stage=5 gs=300 children=2 childStage=1 [<uuid> dx=-0.50, <uuid> dx=0.50]`. (3) `ENTITIES CREEPER count=2 radius=16`. (4) **Exactly two** BODY lines, each the child line above with `tag=ds1`. **`gs=300` IS the reading that matters**: the overworld rolls 100, so 300 is the parent's score and not the place's. **INFERRED, not read:** that the iron sword's hit deals at least 1 custom health to a mob; if it deals less, there is no death and no SPLIT line, and this row reads that | **NOT AS PREDICTED.** (1) verbatim: `REPLY "CREEPER damaged: 1/480 custom HP" [green]`. (2) `DRIVE attack Player#attack target=13a6d25c-e3cc-454d-81c9-58f6f0d432df creeper d=3.000 charge=1.000`, then **no** SPLIT line. (3) `ENTITIES CREEPER count=1 radius=16`. (4) `BODY tag=ds1 13a6d25c-e3cc-454d-81c9-58f6f0d432df type=creeper mob=phage stage=5 … maxHP=480.000 gs=300 … dead=false`. The iron sword's hit did not kill (the row's own INFERRED caveat); why was not read |
 
 ### DS2 — a stage 5 killed by `/kill`, not the player, also splits (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `CMD /kill @e[tag=ds2]`, **exactly one** SPLIT line for the ds2 parent (as DS1's, `parent=<the ds2 uuid>`), then the settle's `SETTLED dying=0 ticks=<t> first=1` (the parent's body; the children are alive and not counted, so `first=1`, not 3), `ENTITIES CREEPER count=2 radius=16`, and **exactly two** child BODY lines with `tag=ds2`. `ticks=` is recorded, not predicted (ST9R's tick clause is still undiagnosed) | _(not run)_ |
+| `CMD /kill @e[tag=ds2]`, **exactly one** SPLIT line for the ds2 parent (as DS1's, `parent=<the ds2 uuid>`), then the settle's `SETTLED dying=0 ticks=<t> first=1` (the parent's body; the children are alive and not counted, so `first=1`, not 3), `ENTITIES CREEPER count=2 radius=16`, and **exactly two** child BODY lines with `tag=ds2`. `ticks=` is recorded, not predicted (ST9R's tick clause is still undiagnosed) | **NOT AS PREDICTED.** The tag landed on DS1's Phage (`REPLY "Target either already has the tag or has too many tags" [red]`, twice). `CMD /kill @e[tag=ds2]` → `REPLY "No entity was found" [red]`; `SETTLED dying=0 ticks=0 first=0`; `ENTITIES CREEPER count=1 radius=16`; `BODY tag=ds2 none within 16 blocks`. No SPLIT line |
 
 ### DS3 — a stage 3 killed does not split (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `CMD /kill @e[tag=ds3]`, **no** SPLIT line between DS3's START and DONE, and `ENTITIES CREEPER count=0 radius=16` | _(not run)_ |
+| `CMD /kill @e[tag=ds3]`, **no** SPLIT line between DS3's START and DONE, and `ENTITIES CREEPER count=0 radius=16` | **NOT AS PREDICTED.** The tag landed on DS2's untagged stage 5: `SPLIT mob=phage parent=1ab28b31-1778-4300-8093-52e359567839 stage=5 gs=300 children=2 childStage=1 [1b0164cd-8bac-444b-b7ec-e712549d4b9e dx=-0.50, 16566a70-950b-4286-af7b-b27b31e3d652 dx=0.50]` inside DS3; `ENTITIES CREEPER count=3 radius=16` |
 
 ### DS4 — a stage 1 killed does not split (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| `CMD /kill @e[tag=ds4]`, **no** SPLIT line between DS4's START and DONE, and `ENTITIES CREEPER count=0 radius=16` | _(not run)_ |
+| `CMD /kill @e[tag=ds4]`, **no** SPLIT line between DS4's START and DONE, and `ENTITIES CREEPER count=0 radius=16` | **NOT AS PREDICTED (count).** No SPLIT line (as predicted). `ENTITIES CREEPER count=1 radius=16` (INFERRED: DS3's untagged stage 3) |
 
 ### DS5 — once only, read on the server: two after the split, still two forty ticks later (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| **Exactly one** SPLIT line between DS5's START and DONE, and `ENTITIES CREEPER count=2 radius=16` **twice**, the second forty ticks after the first. **What this row can and cannot see:** it reads that one death splits once and nothing adds children afterwards. **It cannot stage a SECOND delivery of the death event** (only a plugin that cancels and revives can); that guard's proof is `MobSplitTest.aMobThatHasAlreadySplitAddsNone` and `DragonSplitWiringTest.theMarkIsReadThenWrittenBeforeAnyChildSpawns`, with the mutations `MUTONCE` and `MUTMARKWRITE` that redden them | _(not run)_ |
+| **Exactly one** SPLIT line between DS5's START and DONE, and `ENTITIES CREEPER count=2 radius=16` **twice**, the second forty ticks after the first. **What this row can and cannot see:** it reads that one death splits once and nothing adds children afterwards. **It cannot stage a SECOND delivery of the death event** (only a plugin that cancels and revives can); that guard's proof is `MobSplitTest.aMobThatHasAlreadySplitAddsNone` and `DragonSplitWiringTest.theMarkIsReadThenWrittenBeforeAnyChildSpawns`, with the mutations `MUTONCE` and `MUTMARKWRITE` that redden them | **NOT AS PREDICTED (count); ONCE-ONLY HOLDS.** Exactly one `SPLIT mob=phage parent=91a6f23c-70d9-4f96-afd1-b82af253d9ac stage=5 gs=300 children=2 childStage=1 [0464d160-9e82-4b64-9e32-3e715eea5cc6 dx=-0.50, 87474e3b-4ef4-4f5d-a5ba-581d67c310b4 dx=0.50]`; `ENTITIES CREEPER count=3 radius=16` twice, forty ticks apart: 3, not 2, and unchanged |
 
 ### DS6 — the row-start clean removes the split's children (SURVIVAL) — witness: the log
 
 | prediction | READING |
 |---|---|
-| The `CLEAN … removed=2 …` line that the run logs between DS5's DONE and DS6's START (DS5's two children, which carry DS5's tags; the parent was already gone), then, inside DS6, `ENTITIES CREEPER count=0 radius=16`. **Zero leaked children.** Without the instrument's tag rule the clean would read `removed=0` and the count `2` | _(not run)_ |
+| The `CLEAN … removed=2 …` line that the run logs between DS5's DONE and DS6's START (DS5's two children, which carry DS5's tags; the parent was already gone), then, inside DS6, `ENTITIES CREEPER count=0 radius=16`. **Zero leaked children.** Without the instrument's tag rule the clean would read `removed=0` and the count `2` | **NOT AS PREDICTED (count).** DS6's own `CLEAN blocks=756 removed=2 inventory=kept …` line (logged just after DS6's START), as predicted. Then `ENTITIES CREEPER count=3 radius=16`, not 0 |
 
 ---
 
@@ -244,7 +244,7 @@ blocks and look at it · `/rpg mobdamage 159` · hit it once.
 
 | question | READING |
 |---|---|
-| When it died, did two small Phages appear where it stood? **yes / no** | _(not run)_ |
+| When it died, did two small Phages appear where it stood? **yes / no** | Ben: "Yes it splits when it dies" |
 
 ### S2 — the two small ones come at you (SURVIVAL)
 
@@ -252,7 +252,12 @@ Stand still after S1 and watch the two small Phages for about five seconds.
 
 | question | READING |
 |---|---|
-| Did they walk toward you (and swell without exploding, as in B6)? **yes / no** | _(not run)_ |
+| Did they walk toward you (and swell without exploding, as in B6)? **yes / no** | Ben: "yes" |
 
 Cleanup: `/kill @e[type=creeper,distance=..20]` — **this kills them, and a stage-1 Phage does not split**, so nothing
 is left.
+
+> **READINGS NOTE, 2026-11-15 (a pointer; the account is `GATE-dragon-growth.md`, *READINGS NOTE, 2026-11-15*).** This
+> gate's rows were read at the stacked boot of `bda8e89c`; R0 SUPERSEDED. Most rows read NOT AS PREDICTED, for two
+> defects found there: the speed defect (`speedDefault=0.7000` on every BODY line) and the selftest's tag race (a new
+> mob untagged, so it kept its AI and leaked into later rows). No prediction was edited.
