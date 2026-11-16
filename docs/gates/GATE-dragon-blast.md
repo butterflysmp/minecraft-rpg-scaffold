@@ -14,6 +14,15 @@ says ready.**
 > 6.05 not), where they were 3.00 and 3.05; BL9 is new, a fixed half-reach hit; R0b checks `reach: 6`; R0d counts 92.
 > BL5, BL8, BQ1 and the run sheet are unchanged.
 
+> **2026-11-16, LATER, STILL BEFORE ANY BOOT: SIX ROWS ADDED FROM THE OLDER DRAGON GATES, AND WHY.** The seat found that
+> this PR's diff touched no older dragon scenario, while rows merged on 2026-11-15 (`GATE-dragon-fix.md`) put a LIVE
+> Phage beside the player, and from R3 a live Phage within 3 blocks blows. The audit is `PLAN-dragon-mobs.md`, RULINGS,
+> *THE BLAST AND THE ROWS ALREADY MERGED*. **What changed here:** a frozen parent's split children are now born frozen
+> (S11); DS1R3, DS2R3, DS5R3, DS6R3, DG6R3 and DG9R3 are new rows, each re-predicting the `GATE-dragon-fix.md` row it is
+> named for; S1's swell direction is now READ, and S11-S13 are new; R0b checks the moved keys; R0d counts 90; the
+> "no SPLIT line anywhere" sentence is scoped to BL1-BL9 and BQ1. **No earlier prediction in this file was changed in
+> what it predicts**, and the run sheet's commands are unchanged: every changed row is in this file.
+
 The plan is `PLAN-dragon-mobs.md`: RULINGS (*Ben, 2026-11-15, VERBATIM: the blast's numbers*; the seat's provisional
 P-a, P-b, P-d, P-e; the seat's mechanism rulings 20-26; *THE SEAT'S MISS ON THE BLAST'S RADIUS*, Ben's *"keep vanillas
 shap"* and rulings 27-31), §5.R.4 (step R3 as built), §7 F-B (the jar's reach and curve), §8 F2 and F3, Q31-Q35. The
@@ -21,11 +30,12 @@ scenarios are `paper/src/main/resources/selftest/GATE-dragon-blast.yml`, paired 
 (`SelfTestScenariosTest.docOf`).
 
 ```
-ROWS     14   R0a R0b R0c R0d
+ROWS     20   R0a R0b R0c R0d
               BL1 BL2 BL3 BL4 BL5 BL6 BL7 BL8 BL9
+              DS1R3 DS2R3 DS5R3 DS6R3 DG6R3 DG9R3
               BQ1
          ──
-         14   = 4 R0 + 9 BL + 1 BQ                git grep -c -E '^### ' <ref> -- docs/gates/GATE-dragon-blast.md
+         20   = 4 R0 + 9 BL + 6 R3 + 1 BQ         git grep -c -E '^### ' <ref> -- docs/gates/GATE-dragon-blast.md
 ```
 
 ## GAME MODE, DIFFICULTY, GEAR SCORE AND THE PLAYER'S HEALTH
@@ -46,6 +56,12 @@ ROWS     14   R0a R0b R0c R0d
   least 100** (`CombatantStats.DEFAULT_PLAYER_BASE`, a player's base; INFERRED that no shipped modifier lowers a player
   below it) and read 350 at the last boot. **50 < 100**, so at least 50 is left. The heal's reply prints the maximum he
   starts from.
+- **AND THE SIX R3 ROWS (below BL9) KEEP THEIR OWN GEAR SCORES:** 300, as in `GATE-dragon-fix.md`, except DS1R3's 200.
+  **Only DS1R3 can hit him**, and it is the one row where two blasts follow one heal: two thawed stage-1 children at GS
+  200, each **40** at zero distance, and the one that blows second may first have grown a stage from the first's blast
+  (a blast is a Void death, BL3), so **55** (stage 2's authored 27.5 × 2). At most **40 + 55 = 95 before his defence,
+  under his 100.** DS1R3 is at 200 and not 300 for exactly this: at 300 it would be 60 + 82.5 = 142.5. 200 still tells
+  the children's inherited gear score from the default 100.
 
 ## WHAT THE ROWS STAND ON — EACH FACT, AND ITS MARK
 
@@ -55,8 +71,9 @@ below was read with `C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p -cp
 
 - **S1. The fuse — READ.** `Creeper.tick`: `swell += swellDir` every tick, floored at 0; at `swell >= maxSwell` it calls
   `explodeCreeper()`. The tick runs while the creeper is alive whatever its AI, so a NoAI creeper keeps whatever swell
-  direction it has; a fresh one's is −1 (INFERRED: `DATA_SWELL_DIR`'s default, not opened), so a FROZEN Phage never
-  swells. `CraftCreeper#setMaxFuseTicks` writes `maxSwell` (`putfield maxSwell`); `getFuseTicks` reads `swell`;
+  direction it has; a fresh one's is −1 (READ 2026-11-16: `Creeper.defineSynchedData` defines `DATA_SWELL_DIR` as
+  `iconst_m1`; this said INFERRED, not opened, until then), so a Phage frozen from birth never swells, **and one frozen
+  after its swell began keeps swelling and blows** (S11). `CraftCreeper#setMaxFuseTicks` writes `maxSwell` (`putfield maxSwell`); `getFuseTicks` reads `swell`;
   `addAdditionalSaveData` writes `maxSwell` as `"Fuse"`.
 - **S2. The prime — READ.** `Creeper.explodeCreeper` fires `ExplosionPrimeEvent` (`CraftEventFactory.callExplosionPrimeEvent`).
   Cancelled, it sets `swell = 0` and clears `DATA_IS_IGNITED`, and nothing else; not cancelled, it explodes and
@@ -104,6 +121,27 @@ below was read with `C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p -cp
   `d` agrees with the printed factor **within 0.000125 + 0.0000005**, and `dealt` agrees with `base × printed factor`
   **within 0.0005 (its own rounding) + base × 0.0000005**. These are the tolerances, and that is their basis.
 
+- **S11. A frozen parent's children are born frozen — READ (the code and the jar).** `SelfTestService.adoptSplitChild`
+  runs inside each child's pre-spawn consumer (`MobSplitter.onDeath`), so before its first tick. When the parent carries
+  the instrument's tag and has no AI (`SelfTestSnapshot.freezeSplitChild`, `SelfTestSplitChildTest`), it calls
+  `setAI(false)` on the child; for every tagged parent it logs `CHILD parent=<uuid> child=<uuid> frozen=<true|false>`,
+  row-prefixed, before the `SPLIT` line, **its `frozen` read back from the child** (`!hasAI()`), not the rule's answer,
+  so the line witnesses the freeze landing. NoAI stops the goals (`Mob.isEffectiveAi` is the parent's `&& !isNoAi()`, and
+  `LivingEntity.aiStep` runs `serverAiStep` only when it is true), and only `SwellGoal.tick` sets the swell direction to
+  +1 besides an ignite (S1), so a child born frozen never swells. **Freezing at birth is the point:** S1's tick would
+  carry a swell begun before a later freeze through to the blast.
+- **S12. Whom a live child can swell at — READ.** `Creeper.registerGoals`' target selector holds
+  `NearestAttackableTargetGoal(Player)` and `HurtByTargetGoal`, and `SwellGoal.canUse` needs a live target at
+  `distanceToSqr < 9.0` (S3). In DS1R3 nothing hurts a child (a blast spares mobs, `MobHostility`) and Ben is the one
+  player online (`SelfTestGuard`), so **a BLAST line naming a live child is that child having targeted him within 3
+  blocks**: S2's AUTO half.
+- **S13. The thaw — INFERRED.** DS1R3 thaws its children with vanilla's
+  `execute as @e[tag=ds1,type=creeper] run data merge entity @s {NoAI:0b}`, which merges the tag into each child's saved
+  data and loads it back. **That it changes nothing else of ours is INFERRED**: our body, stage and gear score live in
+  attributes, scale and the persistent data container, all saved and loaded by the same merge. Its timing is not
+  predicted: the children born live in `GATE-dragon-fix.md` DS1R2 primed twice each within 90 ticks of birth (READ at
+  the 2026-11-15 boot, `CREEPERGUARD` lines, the same prime event), and DS1R3 waits 200 after the thaw.
+
 **What no row here can show, said once:** the `max=30` in a FUSE line cannot tell content's 30 from vanilla's default
 30, because the content value IS vanilla's (Ben's ruling). The wiring is pinned by
 `DragonBlastWiringTest.theFuseIsWrittenAtSpawn` instead.
@@ -130,7 +168,12 @@ below was read with `C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p -cp
 1. `/gamemode survival` — **alone, the first line after login.**
 2. `/rpg selftest dragon-blast` — stand still and touch nothing, **except when a gold question appears in chat**: then
    type your answer (`yes` or `no`) in chat. There are three questions. Wait for the chat to say the run finished.
+   (In one row, DS1R3, two small Phages walk to you and blow; stand still for that too.)
 3. `/stop`
+
+**Why only this one selftest (2026-11-16):** every row the R3 audit changed is in THIS file (DS1R3 … DG9R3). The three
+older dragon files lost rows and changed none (`git diff` on each shows deletions and a header note only), so none of
+their remaining rows is re-run.
 
 **No cleanup lines:** every mob a row makes is tagged at spawn, and the run's restore removes every tagged mob. **No
 `/difficulty` lines:** the selftest sets and restores it.
@@ -169,8 +212,16 @@ if ($p -match "(?m)^  reach: 6\s*$") { "PRESENT reach: 6" } else { "ABSENT  reac
 if ($p -match "(?m)^  radius: 3\s*$") { "PRESENT radius: 3" } else { "ABSENT  radius: 3" }
 if ($p -match "(?m)^  fuse_ticks: 30\s*$") { "PRESENT fuse_ticks: 30" } else { "ABSENT  fuse_ticks: 30" }
 if ((Text 'selftest/GATE-dragon-blast.yml') -match "(?m)^  - difficulty: normal\s*$") { "PRESENT difficulty dragon-blast" } else { "ABSENT  difficulty dragon-blast" }
+foreach ($k in @(@('dragon-blast', 'DS1R3'), @('dragon-blast', 'DG9R3'), @('dragon-bodies', 'DB11R2'), @('dragon-bodies', 'DB10R2'), @('dragon-bodies', 'DQ1'), @('dragon-split', 'DS1R2'), @('dragon-growth', 'DG9R2'))) {
+  if ((Text "selftest/GATE-$($k[0]).yml") -match "(?m)^$($k[1]):\s*$") { "PRESENT $($k[0]) $($k[1]):" } else { "ABSENT  $($k[0]) $($k[1]):" }
+}
 $zip.Dispose()
 ```
+
+**And the moved rows (2026-11-16):** PRESENT `dragon-blast DS1R3:`, `dragon-blast DG9R3:` and `dragon-bodies DB11R2:`
+(the control: a row that stayed, so the needle can find a key in that file); ABSENT `dragon-bodies DB10R2:`,
+`dragon-bodies DQ1:`, `dragon-split DS1R2:` and `dragon-growth DG9R2:`. A jar built before the audit reads the
+opposite on all six.
 
 **The `radius: 3` line is the control for the `reach: 6` one:** `growth:`'s `  radius: 6` is in the same file and must
 not satisfy either needle, and the old blast key must read ABSENT.
@@ -185,13 +236,13 @@ not satisfy either needle, and the old blast key must read ABSENT.
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one line **`[Rpg] Selftest: dev server, 92 scenarios across 15 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast]`**, and **no** `Refusing selftest` line (a malformed `detonate`, `ignite`, `probe_fuse` or `await_fuse` step is refused at load, by name) | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
+| Exactly one line **`[Rpg] Selftest: dev server, 90 scenarios across 15 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast]`**, and **no** `Refusing selftest` line (a malformed `detonate`, `ignite`, `probe_fuse` or `await_fuse` step is refused at load, by name) | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
 
-**The 92 is DERIVED.** From `paper/src/main/resources/selftest/` at this head: `grep -cE '^  - ' index.yml` prints
+**The 90 is DERIVED.** From `paper/src/main/resources/selftest/` at this head: `grep -cE '^  - ' index.yml` prints
 **15**; `cat $(grep -E '^  - ' index.yml | tr -d '\r' | sed 's/  - /GATE-/; s/$/.yml/') | grep -cE '^[A-Za-z0-9-]+:'`
-prints **107**; the same with `'^setup:'` prints **15**: 107 − 15 = **92**. The controls: at `58165392` the blast file
-alone has 10 keys and the same commands give 106, so 91; at master `94915476` they print 14 and 96, so 82 (`GATE-dragon-fix.md`
-R0d's reading). `SelfTestScenariosTest` pins the 92.
+prints **105**; the same with `'^setup:'` prints **15**: 105 − 15 = **90**. The controls: at `ba74df59` (before the
+audit of 2026-11-16) the same commands print 15, 107, 15, so 92; at `58165392`, 106, so 91; at master `94915476` they
+print 14 and 96, so 82 (`GATE-dragon-fix.md` R0d's reading). `SelfTestScenariosTest` pins the 90.
 
 ---
 
@@ -205,7 +256,8 @@ read after Ben's LOGIN, inside the row's own `SELFTEST dragon-blast <row> START 
 for each mob the row spawns, one `DRIVE spawn tag=<its tag> <uuid> <mob> frozen` (or `live` where the row says) and
 the command's reply: a stage-1 Phage `REPLY "Spawned Phage (creeper, stage 1, 80 HP, GS 100 given)" [aqua, gray]`, a
 stage-5 `REPLY "Spawned Phage (creeper, stage 5, 160 HP, GS 100 given)" [aqua, gray]`. **No `CREEPERGUARD prime` line
-anywhere in the run** (ruling 26 removed it). **No `SPLIT` line anywhere in the run.** **A non-zero LEFTOVER in any row
+anywhere in the run** (ruling 26 removed it). **No `SPLIT` line in BL1-BL9 or BQ1** (the six R3 rows split on
+purpose, and say so). **A non-zero LEFTOVER in any row
 makes that row NOT AS PREDICTED**, whatever else it reads, and names what was there.
 
 **A BLAST line** is `[Rpg] BLAST mob=phage id=<uuid> stage=<n> gs=100 base=<20.000|50.000> reach=6.00 victims=<n>
@@ -287,6 +339,70 @@ creative player is **not hurt**, and the BLAST line names him under `spared`. **
 (listed, factor 0, not hit): the instrument places a frozen Phage at an offset from a block centre, and whether `+6` and
 back measures exactly 6.0 depends on the start's coordinates in floating point, so a row could not promise which side of
 the edge it lands on (the same test, `edge` at 6.0).
+
+---
+
+## THE OLDER SPLIT ROWS, RE-PREDICTED FOR R3 — SERVER ONLY, SURVIVAL, DIFFICULTY NORMAL
+
+**Why these are here** (the seat's brief of 2026-11-16; the audit is `PLAN-dragon-mobs.md`, RULINGS, *THE BLAST AND THE
+ROWS ALREADY MERGED*): each of these rows killed a frozen stage 5 a few blocks from the player and left two LIVE
+children beside him, and from R3 a live Phage within 3 blocks blows. Each is now a new row named for the
+`GATE-dragon-fix.md` row it re-predicts, with the next suffix. **DS2R3, DS5R3, DS6R3, DG6R3 and DG9R3 keep that row's
+steps EXACTLY** (diffed against the old scenario blocks, 2026-11-16); what changed is that a frozen parent's children
+are born frozen (S11). **DS1R3's steps differ**: see its row. The old rows' predictions and readings stay in
+`GATE-dragon-fix.md`, with a dated note.
+
+**In each of these rows, beyond the every-row lines above:** the spawn replies are the old row's, verbatim (a stage 5
+at GS 300 `REPLY "Spawned Phage (creeper, stage 5, 480 HP, GS 300 given)" [aqua, gray]`; a stage 2 `… stage 2, 300 HP …`;
+a stage 4 `… stage 4, 420 HP …`). **Before each `SPLIT` line, exactly two `CHILD parent=<that SPLIT's parent uuid>
+child=<uuid> frozen=true`, their two child uuids the `SPLIT` line's two** (DS1R3 too: it thaws them later). **A kill
+step** logs `CMD /kill @e[tag=<t>]` and then `SETTLED dying=0 ticks=<t> first=1`, `ticks=` recorded.
+
+### DS1R3 — a stage 5 killed by the PLAYER'S emberblade splits into two stage 1s (S1); thawed, each comes for him and blows (S2) (SURVIVAL) — re-predicts GATE-dragon-fix.md DS1R2
+
+**What changed from DS1R2, and why:** the gear score is **200**, not 300 (so his survival is arithmetic, not a reading
+of his maximum; see *THE PLAYER CANNOT DIE*), so `rpg mobdamage 319` brings the stage 5's 320 to 1. S2 was DS1R2's
+`probe_target` sixty ticks after the split; the children are now born frozen and could not target him, so DS1R3 heals
+him, thaws them (S13), and reads S2 from their BLAST lines (S12). **DS1R2's `TARGET` lines are not re-read anywhere**:
+their claim, that a child comes for the player, is carried here by the blast that ends it.
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) `REPLY "Spawned Phage (creeper, stage 5, 320 HP, GS 200 given)" [aqua, gray]` and `REPLY "CREEPER damaged: 1/320 custom HP" [green]`. (2) `DRIVE attack Player#attack target=<the ds1 uuid> creeper d=3.000 charge=1.000`, the two `CHILD … frozen=true` lines, then **exactly one** `[Rpg] SPLIT mob=phage parent=<the ds1 uuid> stage=5 gs=200 children=2 childStage=1 [<A> dx=-0.50, <B> dx=0.50]`. (3) `ENTITIES CREEPER count=2 radius=16`. (4) **Exactly two** BODY lines, each `BODY tag=ds1 <uuid> type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedType=0.2500 speedX=1.500 maxHP=160.000 gs=200 element=void dead=false`, the uuids A and B. (5) `REPLY "Custom HP: <M>/<M>" [green]`, then the thaw's `CMD` line (its reply recorded, not predicted). (6) **Within the 200 ticks, exactly two BLAST lines, one `id=<A>` and one `id=<B>`, in either order.** Call the first X and the second Y. X's is `stage=1 gs=200 base=40.000 reach=6.00 victims=1 [player <Ben's uuid> d=<D1> factor=<F1> dealt=<40 × F1>] spared=<n> […]`, with **n = 1, naming `creeper/phage <Y> d=<d> factor=<falloff(d)>`, exactly when Y stood within 6 of X**, else `spared=0 []`. **If n = 1:** exactly one `[Rpg] GROWTH mob=phage id=<Y> from=1 to=2 fed=creeper/phage <X> element=void d=<that d, to two places> max=200` after X's BLAST, and Y's BLAST is `stage=2 gs=200 base=55.000 …`. **If n = 0:** no GROWTH line, and Y's BLAST is `stage=1 gs=200 base=40.000 …`. Either way Y's is `victims=1 [player <Ben's uuid> d=<D2> factor=<F2> dealt=<base × F2>] spared=0 []`. Each F is `falloff(D)` within S10's tolerance, **and the bound D < 3** (BL1's), so each F > 0.375. (7) **Exactly two** `HURT before=<each dealt> after=<before × 100 / (100 + Dp)> defense=<Dp> dealer=<X, then Y> dealerType=<recorded>`. (8) `ENTITIES CREEPER count=0 radius=16`. (9) No SPLIT line after the first, and no `CREEPERGUARD prime` line | (1)-(4) as `GATE-dragon-fix.md` DS1R2 read them, at GS 200: 160 × 2 = 320 for the parent, 80 × 2 = 160 for each child; S11 for the CHILD lines. (6): S12 (a BLAST from a live child is its target within 3 blocks: S2); the spared/GROWTH link because the blast's reach and growth's radius are both 6, both inclusive, both between the same two points (the dead Phage's position, read before it is removed, and the other Phage's; `MobBlaster.detonate` calls `MobGrower.onDeath` before `remove()`); stage 2's 27.5 × 2 = 55 and its health 100 × 2 = 200; no split, because a blast is a removal (BL2). **The timing depends on vanilla's AI** (S13): that both blow inside 200 ticks is INFERRED from DS1R2's primes. **The one shape (6) does not cover:** X and Y blowing in the SAME tick, where Y would blow at stage 1 although X's line spares it. It is recorded if read, as NOT AS PREDICTED | |
+
+### DS2R3 — a stage 5 killed by `/kill` splits; its children are born frozen (SURVIVAL) — re-predicts GATE-dragon-fix.md DS2R2
+
+| prediction | stands on | READING |
+|---|---|---|
+| `CMD /kill @e[tag=ds2]`, the two `CHILD parent=<the ds2 uuid> … frozen=true` lines, **exactly one** SPLIT line `parent=<the ds2 uuid> stage=5 gs=300 children=2 childStage=1 [<uuid> dx=-0.50, <uuid> dx=0.50]`, then `SETTLED dying=0 ticks=<t> first=1`, `ENTITIES CREEPER count=2 radius=16`, and **exactly two** BODY lines `tag=ds2`, each `type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedType=0.2500 speedX=1.500 maxHP=240.000 gs=300 element=void dead=false`. **No BLAST line and no HURT line** | DS2R2's reading (2026-11-15); S11 | |
+
+### DS5R3 — once only: two after the split, still two forty ticks later (SURVIVAL) — re-predicts GATE-dragon-fix.md DS5R2
+
+**Why this row needed R3's fix and was not merely moved:** DS5R2's two live children primed three times between its two
+counts on 2026-11-15 (`CREEPERGUARD` lines, READ). On this branch each first prime is a blast, which removes its
+Phage, so DS5R2's second count could not have read 2.
+
+| prediction | stands on | READING |
+|---|---|---|
+| The two `CHILD … frozen=true` lines, **exactly one** SPLIT line in the bracket (`parent=<the ds5 uuid> stage=5 gs=300 children=2 childStage=1 …`), and `ENTITIES CREEPER count=2 radius=16` **twice**, forty ticks apart. **No BLAST line and no HURT line** | DS5R2's reading; S11, S1: a child born frozen never swells | |
+
+### DS6R3 — the row-start clean removes DS5R3's children (SURVIVAL) — re-predicts GATE-dragon-fix.md DS6R2
+
+| prediction | stands on | READING |
+|---|---|---|
+| DS6R3's own `CLEAN blocks=756 removed=2 inventory=kept …` (DS5R3's two children, carrying its tags; 756 is DS5R3's saved box, 12 × 7 × 9), then `LEFTOVER living=0 radius=16`, then `ENTITIES CREEPER count=0 radius=16` | DS6R2's reading; the order in the scenario file (DS6R3 directly after DS5R3) | |
+
+### DG6R3 — a stage 5's death splits it; its frozen children stay at 1, the bystander goes to 3 (SURVIVAL) — re-predicts GATE-dragon-fix.md DG6R2
+
+| prediction | stands on | READING |
+|---|---|---|
+| (0) The two `CHILD parent=<the dg6p uuid> … frozen=true` lines. (1) **Exactly one** `SPLIT mob=phage parent=<the dg6p uuid> stage=5 gs=300 children=2 childStage=1 [<uuid> dx=-0.50, <uuid> dx=0.50]`. (2) **Exactly one** GROWTH line in the bracket: `id=<the dg6b uuid> from=2 to=3 fed=creeper/phage <the dg6p uuid> element=void d=2.00 max=360`; **none names either child.** (3) A stage-3 BODY line for dg6b (`scale=1.176 height=2.000 speedBase=0.2500 speedType=0.2500 speedX=1.000 maxHP=360.000 gs=300`). (4) **Exactly two** stage-1 BODY lines for dg6p, `maxHP=240.000 gs=300`. (5) `ENTITIES CREEPER count=3 radius=16`. (6) **No BLAST line and no HURT line** | DG6R2's reading; S11 | |
+
+### DG9R3 — a Phage grown to 5, then killed, splits into two frozen children (SURVIVAL) — re-predicts GATE-dragon-fix.md DG9R2
+
+| prediction | stands on | READING |
+|---|---|---|
+| **Exactly one** GROWTH line `id=<the dg9 uuid> from=4 to=5 … d=2.00 max=480`, then a stage-5 BODY line for dg9. After its kill: the two `CHILD parent=<the dg9 uuid> … frozen=true` lines, **exactly one** `SPLIT mob=phage parent=<the dg9 uuid> stage=5 gs=300 children=2 childStage=1 [<uuid> dx=-0.50, <uuid> dx=0.50]`, **exactly two** stage-1 BODY lines for dg9 (`maxHP=240.000 gs=300`), and `ENTITIES CREEPER count=2 radius=16`. **No BLAST line and no HURT line** | DG9R2's reading; S11 | |
 
 ---
 

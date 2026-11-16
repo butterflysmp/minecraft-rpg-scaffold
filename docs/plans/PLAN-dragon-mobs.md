@@ -367,6 +367,45 @@ gear score / 100), P-d and P-e stay the seat's provisional proposals, unruled.
     HURT line's `dealerType` not predicted; the fuse readable only by the unit test; BQ1 at GS 100; Q31 and Q32 open
     and parked; the Folia threading note in §8 (F3).
 
+### THE BLAST AND THE ROWS ALREADY MERGED, 2026-11-16: THE SEAT'S MISS AND MINE, THE AUDIT, AND WHAT WAS DONE
+
+**The miss, recorded as the seat's AND mine, both.** The brief for R3 did not ask what the blast does to the rows
+already merged, and my report on #193 did not raise it. Those rows (`GATE-dragon-fix.md`, merged with #189-#192 on
+2026-11-15) were written when a Phage could never explode. On #193 a live Phage within 3 blocks of the player swells,
+blows, hurts him and is removed, and the `CREEPERGUARD prime` line some of them predict no longer exists. Their gate was
+not on #193's run sheet, so the boot would have read clean and left rows on master whose predictions the code could no
+longer meet, waiting for the owed full `/rpg selftest all` reading (ST9R2). **The seat found it in its diff of
+`ba74df59`.**
+
+**The audit** (every row of `GATE-dragon-bodies.yml`, `-split.yml` and `-growth.yml`, for a LIVE Phage that can come
+within the swell's 3 blocks of the player, split children and Phages left live by an earlier step of the row
+included). The jar facts it stands on: a creeper's swell rises by its direction every tick whatever its AI
+(`Creeper.tick`); a fresh direction is −1 (`Creeper.defineSynchedData`); only `SwellGoal.tick` sets it to +1, and only
+with a target within 3 blocks (`SwellGoal.canUse`); NoAI stops the goals (`Mob.isEffectiveAi`). **So a Phage frozen
+from birth never swells, and every frozen SPAWN in these files is one.** The live ones:
+
+| row | the live Phage | what it would read on #193 | done |
+|---|---|---|---|
+| DB10R2 | a live stage 1, two blocks east, 100 ticks | a BLAST and a HURT line, the Phage gone (its BODY reads none), no `CREEPERGUARD` line: (3) and (4) fail, and "never explodes" is false. Which tick: vanilla's AI (it primed three times in 100 ticks on 2026-11-15) | **RETIRED.** `GATE-dragon-blast.md` BL1 carries it |
+| DQ1 | two live (stage 5 and 1), five blocks east, Ben walking away and back | each blows on him once within 3 blocks, at a tick his walking decides. Already ANSWERED (yes, yes) on 2026-11-15 | **RETIRED**, not re-asked |
+| DS1R2 | two live children at 2.5 and 3.5 blocks, for 90 ticks | they primed four times before the TARGET probe on 2026-11-15, so each would blow on him first (22.5 to 60 before defence each, at GS 300 and the swell inside 3 blocks, the second perhaps grown a stage), and the TARGET probe would find fewer than two. Which ticks: vanilla's AI | **RE-PREDICTED** as DS1R3: children born frozen for S1, thawed for S2 |
+| DS5R2 | two live children, 45+ ticks | they primed three times between its two counts on 2026-11-15, so the second count would read fewer than 2 | **RE-PREDICTED** as DS5R3, children born frozen |
+| DS6R2 | none; reads DS5R2's children | stays true only if it follows DS5R2 | **MOVED with it** as DS6R3 |
+| DS2R2, DG6R2, DG9R2 | two live children each, alive about 22-28 ticks before the next row's clean (a 20-tick death settle, 2 or 5 ticks of wait, the clean's own ticks INFERRED) | **probably the same lines**: a blast needs 30 ticks of swell after a target is found, and no prime was read in their brackets on 2026-11-15. But the margin is a few ticks and rests on runner timing that was not read | **RE-PREDICTED** as DS2R3, DG6R3 and DG9R3, the same steps, children born frozen |
+| the other 17 rows | none (every Phage frozen, no split) | as read on 2026-11-15 | **unchanged, not re-run** |
+
+**What was done.** (1) A split child of a FROZEN tagged parent is born frozen, in its pre-spawn consumer, and logs
+`CHILD … frozen=true` (`SelfTestSnapshot.freezeSplitChild`). Freezing later would not do: a swell already begun runs
+on to the blast. (2) The eight rows above left their files; their predictions and readings stay in
+`GATE-dragon-fix.md`, each under a dated note. (3) The six re-predicted rows are in `GATE-dragon-blast.md` and its
+scenario file, so `/rpg selftest dragon-blast` drives every changed row and the run sheet is unchanged. (4)
+`SelfTestScenariosTest.noScenarioOutsideTheBlastGateLeavesALivePhage` pins on the FILES that no scenario outside the
+blast gate spawns a live Phage or thaws one, with the blast gate's six as its control.
+
+**S2 (the children come for him) is read in DS1R3**, from each thawed child's BLAST line: a creeper swells only at a
+target within 3 blocks, its targets are players and whoever hurt it, and Ben is the one player. DS1R2's `TARGET`
+probe is not re-read anywhere.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
