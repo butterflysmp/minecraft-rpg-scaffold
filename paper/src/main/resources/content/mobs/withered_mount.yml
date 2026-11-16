@@ -1,0 +1,18 @@
+# THE SKREEL'S MOUNT, a big spider (PLAN-dragon-mobs.md). R1 builds its BODY only, as its own mob.
+#
+# ITS ID AND NAME ARE THE OLD GAME'S AND ARE BEN'S TO CHANGE: the plan's question Q25 asks whether "Withered Mount"
+# should stay now that the fight is Void. In R1 nothing pairs it with a Skreel (step R8).
+
+base_entity: spider
+display_name: "Withered Mount"
+
+# THE QUANTITY: authored health, x GS/100 and never x5 (M4). The old game's 120, accepted by Ben, 2026-11-15.
+max_health: 120
+
+# scale: the value of the SCALE attribute, 1.5x a spider. speed: a MULTIPLIER of a spider's DEFAULT movement speed.
+# The old game gave it x1.3 only while paired; with no pairing in R1 it has it always.
+scale: 1.5
+speed: 1.3
+
+# NO ELEMENT, on purpose. Ben, 2026-11-15: "No it's no element". (A spider is not in content/mob_elements.yml, so it
+# has none from the table either.)

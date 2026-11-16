@@ -87,6 +87,7 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * player): custom HP, feet, on-ground, fall distance. GATE-sunder.md's fall-damage and landing rows read it.
          */
         PROBE_SELF,
+        PROBE_BODY,
         /**
          * For THIS ROW ONLY, sets {@code keep_inventory} and {@code immediate_respawn} true, and lets the player die
          * without aborting the run: the run waits for the respawn instead. The values the row found go back at the

@@ -187,6 +187,14 @@ public final class Keys {
      */
     public final NamespacedKey mobGearScore;
 
+    /**
+     * A STAGED custom mob's stage (an INTEGER, 1 to the mob's stage count), the Phage's today
+     * (PLAN-dragon-mobs.md step R1). Written once, in the spawn's pre-spawn consumer, beside {@link #mobId}, so it
+     * is on the entity before the add event seeds its health. It is PDC, so it survives a chunk unload and a
+     * restart. Nothing changes it in R1: no growth, no split.
+     */
+    public final NamespacedKey mobStage;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -413,6 +421,7 @@ public final class Keys {
         this.classDamageBoostClass = new NamespacedKey(plugin, "class_damage_boost_temp_class");
         this.mobId = new NamespacedKey(plugin, "mob_id");
         this.mobGearScore = new NamespacedKey(plugin, "mob_gear_score");
+        this.mobStage = new NamespacedKey(plugin, "mob_stage");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");

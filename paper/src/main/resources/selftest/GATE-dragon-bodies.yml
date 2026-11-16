@@ -1,0 +1,174 @@
+# GATE-dragon-bodies.md: dragon-mobs step R1, the bodies and their elements, read from the SERVER. Every body row
+# spawns one mob through the shipped /rpg spawn at gear score 100 (so its custom max is its authored health x 1.00),
+# tags it, freezes it with NoAI so it stands still while it is read, and reads it with PROBE_BODY. DB10 leaves its
+# Phage's AI ON, beside the player, for longer than a vanilla fuse.
+#
+# THE STAGING, the same in every row: the player at a block centre facing east (+x); a stone floor and six blocks of
+# air above it, every fill box SAVED first, so the row-start clean and the run's restore put it back. A mob is spawned
+# by stepping the player to its spot, spawning at the feet, and stepping back. The run's restore removes every mob
+# tagged "selftest".
+setup:
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# DB1: the Knell. scale 1.6, speed 0.6, health 360 (unchanged), element void.
+DB1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~5 ~ ~"
+  - cmd: "rpg spawn knell 100"
+  - cmd: "tag @e[type=wither_skeleton,distance=..1.5,sort=nearest,limit=1] add db1"
+  - cmd: "tag @e[tag=db1] add t"
+  - cmd: "tag @e[tag=db1] add selftest"
+  - cmd: "data merge entity @e[tag=db1,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - probe_body: db1
+
+# DB2: a Phage at stage 1 (the default: no stage given). 1 block tall, 1.5x speed, 80 health, element void.
+DB2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~5 ~ ~"
+  - cmd: "rpg spawn phage 100"
+  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add db2"
+  - cmd: "tag @e[tag=db2] add t"
+  - cmd: "tag @e[tag=db2] add selftest"
+  - cmd: "data merge entity @e[tag=db2,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - probe_body: db2
+
+# DB3: a Phage at stage 3. 2 blocks tall, 1.0x speed, 120 health.
+DB3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~5 ~ ~"
+  - cmd: "rpg spawn phage stage 3 100"
+  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add db3"
+  - cmd: "tag @e[tag=db3] add t"
+  - cmd: "tag @e[tag=db3] add selftest"
+  - cmd: "data merge entity @e[tag=db3,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - probe_body: db3
+
+# DB4: a Phage at stage 5. 3 blocks tall, 0.5x speed, 160 health.
+DB4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~5 ~ ~"
+  - cmd: "rpg spawn phage stage 5 100"
+  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add db4"
+  - cmd: "tag @e[tag=db4] add t"
+  - cmd: "tag @e[tag=db4] add selftest"
+  - cmd: "data merge entity @e[tag=db4,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - probe_body: db4
+
+# DB5: the Phalanx. Normal size, 0.65x speed, 240 health, element void.
+DB5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~5 ~ ~"
+  - cmd: "rpg spawn phalanx 100"
+  - cmd: "tag @e[type=wither_skeleton,distance=..1.5,sort=nearest,limit=1] add db5"
+  - cmd: "tag @e[tag=db5] add t"
+  - cmd: "tag @e[tag=db5] add selftest"
+  - cmd: "data merge entity @e[tag=db5,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - probe_body: db5
+
+# DB6: the Skreel, the rider, alone. Normal size and speed, 120 health, element void.
+DB6:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~5 ~ ~"
+  - cmd: "rpg spawn skreel 100"
+  - cmd: "tag @e[type=wither_skeleton,distance=..1.5,sort=nearest,limit=1] add db6"
+  - cmd: "tag @e[tag=db6] add t"
+  - cmd: "tag @e[tag=db6] add selftest"
+  - cmd: "data merge entity @e[tag=db6,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - probe_body: db6
+  - probe_entities: "spider 8"
+
+# DB7: the mount, alone. 1.5x size, 1.3x speed, 120 health, NO element.
+DB7:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~5 ~ ~"
+  - cmd: "rpg spawn withered_mount 100"
+  - cmd: "tag @e[type=spider,distance=..1.5,sort=nearest,limit=1] add db7"
+  - cmd: "tag @e[tag=db7] add t"
+  - cmd: "tag @e[tag=db7] add selftest"
+  - cmd: "data merge entity @e[tag=db7,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - probe_body: db7
+  - probe_entities: "wither_skeleton 8"
+
+# DB8: a vanilla Enderman, summoned (no mob file): the table makes it Void.
+DB8:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: 'summon enderman ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,Tags:["db8","t","selftest"]}'
+  - wait: 5
+  - probe_body: db8
+
+# DB9: a vanilla zombie, summoned: in neither the mob files nor the table, so it has no element.
+DB9:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: 'summon zombie ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["db9","t","selftest"]}'
+  - wait: 5
+  - probe_body: db9
+
+# DB10: a stage-1 Phage with its AI ON, two blocks from the player in SURVIVAL, for 100 ticks: more than three vanilla
+# fuses of 30. It must still be alive, the floor whole, and the player unhurt.
+DB10:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - probe_blocks: "STONE -3 -1 -4 8 -1 4"
+  - probe_self: ""
+  - cmd: "tp @s ~2 ~ ~"
+  - cmd: "rpg spawn phage 100"
+  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add db10"
+  - cmd: "tag @e[tag=db10] add t"
+  - cmd: "tag @e[tag=db10] add selftest"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 100
+  - probe_body: db10
+  - probe_blocks: "STONE -3 -1 -4 8 -1 4"
+  - probe_self: ""
+
+# DB11: the spawn command's refusals. A stage the Phage does not have, and a stage on a mob without stages.
+DB11:
+  - cmd: "rpg spawn phage stage 6"
+  - cmd: "rpg spawn knell stage 2"
+  - probe_entities: "creeper 8"
+  - probe_entities: "wither_skeleton 8"

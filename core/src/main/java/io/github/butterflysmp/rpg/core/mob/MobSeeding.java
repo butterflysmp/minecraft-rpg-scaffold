@@ -43,6 +43,19 @@ public final class MobSeeding {
     }
 
     /**
+     * The same, for a mob that may be STAGED (PLAN-dragon-mobs.md step R1): a staged mob's base health is its
+     * stage's, read from the stage on the live mob; an unstaged mob ignores the stage. A stage outside the mob's
+     * range is refused here (paper validates the stored tag before asking, and treats a bad one as stage 1).
+     */
+    public static double maxHealth(MobRegistry mobs, String mobId, int stage, double vanillaMax) {
+        if (mobId == null) return vanillaMax;
+        MobDefinition def = mobs.find(mobId).orElse(null);
+        if (def == null) return vanillaMax;
+        if (def.stages() == null) return def.maxHealth();
+        return def.stages().at(stage).maxHealth();
+    }
+
+    /**
      * Whether a mob counts as CUSTOM for {@link MobScaling} -- no vanilla 5x (M4).
      *
      * <p>The same predicate {@link #maxHealth} branches on, and it must stay the same one: a dangling

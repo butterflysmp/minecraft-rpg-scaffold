@@ -61,7 +61,7 @@ final class SelfTestRun {
         this.player = player;
         this.queue = List.copyOf(queue);
         this.world = player.getWorld();
-        this.drivers = new SelfTestDrivers(this, service.keys());
+        this.drivers = new SelfTestDrivers(this, service.keys(), service.mobElements());
     }
 
     void start(String what) {

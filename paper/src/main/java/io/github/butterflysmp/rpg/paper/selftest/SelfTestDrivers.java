@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.selftest;
 
+import io.github.butterflysmp.rpg.core.mob.MobElementResolver;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.build.StoneItems;
 import io.github.butterflysmp.rpg.core.mining.Spot;
@@ -67,10 +68,12 @@ final class SelfTestDrivers {
 
     private final SelfTestRun run;
     private final Keys keys;
+    private final MobElementResolver mobElements;
 
-    SelfTestDrivers(SelfTestRun run, Keys keys) {
+    SelfTestDrivers(SelfTestRun run, Keys keys, MobElementResolver mobElements) {
         this.run = run;
         this.keys = keys;
+        this.mobElements = mobElements;
     }
 
     Optional<String> execute(Player p, Scenario.Step step) {
@@ -96,6 +99,7 @@ final class SelfTestDrivers {
             case PROBE_ENTITIES -> probeEntities(p, a);
             case PROBE_POSITIONS -> probePositions(p, a);
             case PROBE_SELF -> probeSelf(p);
+            case PROBE_BODY -> probeBody(p, a);
             case DEATH_RULES -> { run.deathRules(); yield Optional.empty(); }
             case SAVE_BLOCKS -> saveBlocks(p, a);
             case EXPECT_CELL -> expectCell(p, a);
@@ -301,6 +305,45 @@ final class SelfTestDrivers {
                     + " customHP=" + hp + " fireTicks=" + e.getFireTicks()
                     + " dead=" + (e instanceof LivingEntity l && l.isDead())
                     + " d=" + fmt(horizontal(p, e)) + " dy=" + fmt(e.getLocation().getY() - p.getLocation().getY()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * PROBE_BODY &lt;tag&gt;: a tagged mob's BODY as the SERVER holds it (PLAN-dragon-mobs.md step R1). One BODY line per
+     * tagged mob within reach, nearest first: its type, its {@code mob_id} and {@code mob_stage} tags, the value of
+     * its {@code SCALE} attribute, its hitbox height ({@code Entity#getHeight}), its movement speed's base and the
+     * type's default and their ratio, its custom-store max health and stored gear score, and the element the one
+     * resolver gives it. It reads; it never judges, and it never writes.
+     */
+    private Optional<String> probeBody(Player p, String tag) {
+        List<Entity> tagged = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(REACH, REACH, REACH)) if (e.getScoreboardTags().contains(tag)) tagged.add(e);
+        if (tagged.isEmpty()) {
+            run.log("BODY tag=" + tag + " none within " + (int) REACH + " blocks");
+            return Optional.empty();
+        }
+        tagged.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));
+        for (Entity e : tagged) {
+            if (!(e instanceof LivingEntity mob)) continue;
+            var pdc = mob.getPersistentDataContainer();
+            String mobId = pdc.get(keys.mobId, org.bukkit.persistence.PersistentDataType.STRING);
+            Integer stage = pdc.get(keys.mobStage, org.bukkit.persistence.PersistentDataType.INTEGER);
+            Integer gs = pdc.get(keys.mobGearScore, org.bukkit.persistence.PersistentDataType.INTEGER);
+            var scale = mob.getAttribute(Attribute.SCALE);
+            var speed = mob.getAttribute(Attribute.MOVEMENT_SPEED);
+            String typeKey = mob.getType().getKey().getKey();
+            String maxHp = run.stats().tracks(mob.getUniqueId()) ? fmt(run.stats().max(mob.getUniqueId())) : "untracked";
+            run.log("BODY tag=" + tag + " " + mob.getUniqueId() + " type=" + typeKey
+                    + " mob=" + (mobId == null ? "-" : mobId) + " stage=" + (stage == null ? "-" : stage)
+                    + " scale=" + (scale == null ? "none" : fmt(scale.getValue()))
+                    + " height=" + fmt(mob.getHeight())
+                    + " speedBase=" + (speed == null ? "none" : String.format(Locale.ROOT, "%.4f", speed.getBaseValue()))
+                    + " speedDefault=" + (speed == null ? "none" : String.format(Locale.ROOT, "%.4f", speed.getDefaultValue()))
+                    + " speedX=" + (speed == null ? "none" : fmt(speed.getBaseValue() / speed.getDefaultValue()))
+                    + " maxHP=" + maxHp + " gs=" + (gs == null ? "-" : gs)
+                    + " element=" + mobElements.elementOf(mobId, typeKey).orElse("none")
+                    + " dead=" + mob.isDead());
         }
         return Optional.empty();
     }

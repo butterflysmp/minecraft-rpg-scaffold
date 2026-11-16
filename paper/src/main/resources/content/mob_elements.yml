@@ -1,0 +1,15 @@
+# THE VANILLA TABLE: a vanilla entity type -> its element (PLAN-dragon-mobs.md, N2 and step R1).
+#
+# It exists because a creature with no mob file can still have an element. Ben, 2026-11-15: "normal Vanilla
+# Enderman are also Void". Our own mobs author `element:` in their own file (content/mobs/), and that wins over this
+# table. A creature in neither has NO element.
+#
+# The key is a bare entity-type key (enderman, not minecraft:enderman); the value names a file in content/elements/.
+# A row naming no entity or no element is refused at boot with a "Refusing" warning, and the rest of the table loads.
+#
+# An element on a creature is IDENTITY ONLY today: it types none of its damage, resists nothing, and refuses no
+# status. The first thing that asks is the Phage's growth (step R4), which counts Void deaths nearby.
+#
+# This file lives at the content root, NOT in content/mobs/: every .yml there is loaded as a mob.
+
+enderman: void

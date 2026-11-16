@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.selftest;
 
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
+import io.github.butterflysmp.rpg.core.mob.MobElementResolver;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
@@ -33,11 +34,12 @@ public final class SelfTestService {
     private final String build;
     private final boolean devServer;
     private final ScenarioLoader.Loaded loaded;
+    private final MobElementResolver mobElements;
     private SelfTestRun active;
 
     public SelfTestService(AdapterContext adapters, ProfileService profiles, ResourcePool resources,
                            MobNameplateManager nameplates, MiningService mining, Logger log, String build, boolean devServer,
-                           ScenarioLoader.Loaded loaded) {
+                           ScenarioLoader.Loaded loaded, MobElementResolver mobElements) {
         this.adapters = adapters;
         this.profiles = profiles;
         this.resources = resources;
@@ -47,6 +49,7 @@ public final class SelfTestService {
         this.build = build;
         this.devServer = devServer;
         this.loaded = loaded;
+        this.mobElements = mobElements;
     }
 
     /** One line at boot. GATE-selftest.md's R0d reads it. Refusals follow it, one WARN each. */
@@ -114,6 +117,9 @@ public final class SelfTestService {
     void log(String line) { log.info(line); }
     String build() { return build; }
     Keys keys() { return adapters.keys(); }
+
+    /** "The element of this creature", for PROBE_BODY (PLAN-dragon-mobs.md step R1). */
+    MobElementResolver mobElements() { return mobElements; }
     Scheduler scheduler() { return adapters.scheduler(); }
     CombatantStats stats() { return adapters.stats(); }
     ProfileService profiles() { return profiles; }

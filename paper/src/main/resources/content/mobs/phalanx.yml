@@ -1,0 +1,18 @@
+# THE PHALANX (PLAN-dragon-mobs.md). R1 builds its BODY only.
+#
+# NOT YET HERE, and each is its own step: the bow and the off-hand shield (gear is deferred past R1), so it spawns bare
+# and MELEES LIKE A BARE WITHER SKELETON; the one-hit shield, the blink with invisibility, and its shot (our own small
+# living carrier, never a Shulker bullet: seat ruling 8). All of those are step R7.
+
+base_entity: wither_skeleton
+display_name: "Phalanx"
+
+# THE QUANTITY: authored health, x GS/100 and never x5 (PLAN-mob-scaling.md M4). The old game's 240, accepted by Ben
+# as a starting value, 2026-11-15.
+max_health: 240
+
+# speed: a MULTIPLIER of a wither skeleton's DEFAULT movement speed. No scale: it is normal size.
+speed: 0.65
+
+# ELEMENT: Void (Ben, 2026-11-15: "change the Phalanx and Skreel to Void mobs as well"). IDENTITY ONLY today.
+element: void

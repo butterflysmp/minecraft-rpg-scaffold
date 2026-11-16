@@ -94,7 +94,7 @@ seat's.*
   `withering.yml`'s `immune` type key refuses today)?*
   > "Well come back to the wither effect"
 
-### THE SEAT'S READINGS OF THE GROWTH STAGES — THE SEAT'S, NOT BEN'S. SENT TO BEN, NOT YET CONFIRMED
+### THE SEAT'S READINGS OF THE GROWTH STAGES — THE SEAT'S WORDING, **CONFIRMED BY BEN 2026-11-15** (*"Yes it's correct"*, below)
 
 - **G1.** One counted Void death within the radius advances a Phage ONE stage. Stage 1 to stage 5 is four deaths,
   which is his *"Start with 4"*.
@@ -103,7 +103,8 @@ seat's.*
   stage-5 values. They explode near a target and do NOT split when killed.
 - **G4.** A stage 5 that is KILLED splits into two stage 1s. One that explodes does not (answer E).
 
-**Until Ben confirms them, every place below that leans on G1–G4 says so.**
+~~**Until Ben confirms them, every place below that leans on G1–G4 says so.**~~ **CONFIRMED 2026-11-15**: G1–G4
+now stand as ruled. Text below written before that date may still say "awaiting Ben"; this line governs it.
 
 ### THE SEAT'S MECHANISM RULINGS, 2026-11-15 (the seat's, stated in this file's words)
 
@@ -133,6 +134,60 @@ seat's.*
    model, light purple with pink flashes), and rules between that and a real `ShulkerBullet` after §7 F-S.
 7. **The Wither question is PARKED by Ben.** The Skreel's "Withered Mount" and any other wither-worded name now sit
    on Void mobs; that is a naming question for Ben and nothing more.
+
+### Ben, 2026-11-15, VERBATIM: the questions that blocked step R1
+
+*The seat's question, then Ben's words.*
+
+1. *Are the seat's four growth readings G1–G4 right?*
+   > "Yes it's correct"
+
+   **G1–G4 are CONFIRMED** (above). Answers Q14–Q17.
+2. *Does a stage 5's own death grow its two children, so they start at stage 2?*
+   > "No,"
+
+   Answers Q21: the children are born at stage 1.
+3. *Does any death split a stage 5 (a fall, another mob), or only a kill by a player or a summon?*
+   > "Any deaths"
+
+   Answers Q26. **Answer E still stands: a Phage that EXPLODES does not split.** "Any deaths" is every way a stage 5
+   can die; a self-destruct is not a death (§7 F-C), and E rules it out by name.
+4. *When a Phage grows a stage, does it heal to full or keep the same share of its health?*
+   > "Same share"
+
+   Answers Q19.
+5. *Is the Skreel's spider mount Void too?*
+   > "No it's no element"
+
+   Answers Q24. The mount has no element; it is in neither the mob file's `element` nor the vanilla table.
+6. *The seat offered this table of starting bodies from the old game, for him to tune later:*
+
+   | mob | size | speed | health |
+   |---|---|---|---|
+   | Knell | 1.6x | 0.6x | 480 in the old game / 360 in ours today |
+   | Phage stage 5 | about 3 blocks tall | 0.75x | 160 |
+   | Phage stage 1 | normal creeper size | 1.1x | 80 |
+   | Phalanx | normal size | 0.65x | 240 |
+   | Skreel rider | normal size | normal speed | 120 |
+   | Skreel mount | 1.5x | 1.3x | 120 |
+
+   > "Yes except the Phage will range from 1 block to 3 blocks in height. Speed
+   > will range from 1.5x to 0.5x"
+
+   **Ben did not choose between the Knell's two health values**, so **the seat rules that R1 leaves `knell.yml`'s
+   `max_health` as it ships (360)**. It stays a number for Ben (§3.R.5 K3). The Phage's height and speed are Ben's
+   words above; its health (80 and 160) is the table's, which he accepted.
+
+### THE SEAT'S RULINGS OWED FROM #177, AND FOR STEP R1, 2026-11-15
+
+8. **The Phalanx's projectile is our own small, invisible LIVING carrier with a display entity as its passenger,
+   never a `ShulkerBullet`.** The reason is a fact: our weapons reach only living entities
+   (`PaperCombatWorld.combatantsNear` keeps `LivingEntity` only, §7 F-S), so a real bullet would let every ability
+   pass through it, against Ben's L. *(Ruled after #177 merged; recorded here, as the seat directed, in the next
+   branch to touch this file.)*
+9. **The per-stage Phage BODY moves from R2 into R1** (§5.R): the Phage's body cannot be authored without it. In R1
+   the stage is set at spawn and nothing changes it.
+10. **R1 leaves `knell.yml`'s health as it ships** (answer 6 above).
 
 ---
 
@@ -610,7 +665,7 @@ MB/E ids are `PLAN-legacy-port.md` §9.1's; **N1–N8 are new here.**
 | id | capability | needed by | tier | note |
 |---|---|---|---|---|
 | — | name + HP on a vanilla body | all four (five files with the mount) | **(a)** | ships today for the Knell |
-| **MB1** | body fields: `SCALE`, speed multiplier, follow range, equipment, `attack_damage` if M17 is ruled | all four | **(b)** | **the Phage needs them applied to a LIVE mob**, not only at spawn: a stage change rescales it, and `SCALE` refreshes the hitbox live (§7 F-C) |
+| **MB1** | body fields: `SCALE`, speed multiplier, follow range, equipment, `attack_damage` if M17 is ruled | all four | **(b)** | **R1 BUILT scale, speed and health only (§5.R.1); equipment, follow range and `attack_damage` are DEFERRED.** **the Phage needs them applied to a LIVE mob**, not only at spawn: a stage change rescales it, and `SCALE` refreshes the hitbox live (§7 F-C) |
 | **N1** | **element on a mob**: `element:` in the mob file | all four | **(b)** | one optional component and one validator check (§3.R.0) |
 | **N2** | **element on a vanilla type**: `content/mob_elements.yml` | Endermen (Phage growth) | **(b)** | a new small content file and loader; a mob file overrides it (§3.R.0) |
 | **N3** | **"hostile to mobs" as one named predicate** over combatants | every N below | **(b)** | today it is `player()` (§7 F-E); a Summoner adds to it in one place |
@@ -672,6 +727,47 @@ whose prediction is server-side only, so `/rpg selftest` could drive it under an
 most numerous mob and the most new mechanism, and because each of its three steps is playable alone. The Knell's two
 steps follow, the beam before the move that depends on its hit. The Phalanx needs N3 (from R3) for its projectile's
 target. The Skreel is still last: the only pair, the only state machine, the only spear.
+
+### 5.R.1 STEP R1 AS BUILT (`feat/dragon-bodies`, 2026-11-15) — AND THE AMENDMENT TO R1 AND R2
+
+**THE SEAT AMENDED 5.R (ruling 9): the Phage's per-stage BODY moves from R2 into R1**, because the Phage's body cannot
+be authored without it. R1 sets the stage at spawn; **nothing changes it in R1** (no growth, no split). R2 keeps the
+split on kill. The gate is `docs/gates/GATE-dragon-bodies.md`.
+
+**What R1 built** (MB1 limited to scale, speed and health; N1; N2; the stage bodies):
+
+| piece | as built | where |
+|---|---|---|
+| **scale** | the value of the `SCALE` attribute, written as its BASE | `MobBody`, `MobBodyApplier` |
+| **speed** | a MULTIPLIER of the base type's DEFAULT movement speed (`AttributeInstance#getDefaultValue`), written as the BASE, so re-applying it does not stack and our slows (modifiers) still sit on top | `MobBodies.applySpeed` |
+| **health** | unchanged meaning: `max_health` is the AUTHORED health, × GS/100, never × 5 (M4, GS from M25). A staged mob's is its stage's | `MobSeeding.maxHealth(…, stage, …)` |
+| **element** | optional `element:`, an id in `content/elements/`; an unknown id makes the file a named, skipped file at load (`Skipping malformed mob '<file>': element '<id>' names no element …`). IDENTITY ONLY | `MobLoader`, `MobDefinition` |
+| **the vanilla table** | `content/mob_elements.yml`, one row `enderman: void`; a row naming no entity type or no element is refused with `Refusing row …`, and the rest load | `MobElementLoader` |
+| **the resolver** | one class in core: the mob's file (if it names an element), else the table by the bare type key, else none | `core.mob.MobElementResolver` |
+| **the stages** | `stages: { count, first: {height, speed, max_health}, last: {…} }`, linear between; a staged file authoring top-level `max_health`, `scale` or `speed` is refused | `MobStages`, `StageBody` |
+| **the stage on the mob** | the PDC key `mob_stage` (an INTEGER), written in the spawn's pre-spawn consumer beside `mob_id`, so the add event's seed reads it; PDC, so it survives a chunk unload and a restart. A bad stored value seeds as stage 1 and is named at WARN | `Keys.mobStage`, `MobBodyApplier.stageOf` |
+| **the dev spawn** | `/rpg spawn <mob> stage <n> [gs]`: a LITERAL `stage`, because `[gs]` is already a bare number. No stage given is stage 1; a stage on an unstaged mob, or outside the mob's count, is refused by name and spawns nothing | `RpgCommand.spawnMob` |
+| **no explosion** | `ExplosionPrimeEvent`, `CreeperIgniteEvent` and `CreeperPowerEvent` are cancelled for a creeper carrying `mob_id`; each logs `CREEPERGUARD …` | `CustomCreeperGuard`, `RpgListeners` |
+
+**THE QUANTITY THE PHAGE AUTHORS IS HEIGHT IN BLOCKS, NOT SCALE, AND WHY.** It is the unit Ben ruled in (*"from 1
+block to 3 blocks in height"*), so the file carries his numbers verbatim (1.0 and 3.0) instead of 1/1.7 and 3/1.7.
+And it is cleanly NAMED: `Entity#getHeight()`, the hitbox height, which the gate reads back directly. The plugin turns
+it into scale from the creeper's own unscaled height, read off the entity (1.7 from `EntityType`, §7 F-C), so the
+file never states 1.7. The other mobs author `scale`, because their ruling was a ratio (*"1.6x"*). **Linear in height
+is linear in scale** (scale = height / 1.7), so G3's "evenly between" holds in both.
+
+**THREE CHOICES R1 MADE THAT THE SEAT SHOULD SEE:**
+- **A mob file that authors NO element falls through to the vanilla table** rather than meaning "none". No shipped
+  mob reaches the difference (the mount is a spider, and `spider` is not in the table); `MobElementResolverTest` pins
+  the choice as a row. The other reading would make "no `element:`" a third way of saying none.
+- **The mount's id is `withered_mount` and its name "Withered Mount"**, the old game's, both Ben's to change (Q25).
+  Rider and mount are separate mobs; nothing pairs them in R1.
+- **The guard keys on the `mob_id` TAG, not on the registry, and covers any creeper of ours**, not only the Phage: a
+  creeper we spawned stays ours if its file is removed. Today the Phage is the only one.
+
+**DEFERRED FROM MB1, BY THE BRIEF:** equipment (K4, X3, the Skreel's spear) and `attack_damage` (M17). So in R1 **the
+Knell is unarmed and the Phalanx has no bow: both melee like a bare wither skeleton** (the M4/M24 custom-mob melee
+of today, PLAN-mob-scaling.md §6 F15), and the Skreel has no spear. **Follow range** (cfde822's 64) is also not in R1.
 
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
@@ -919,27 +1015,27 @@ rework: an answered question says where its answer is, and a new one is added at
 12. **OPEN.** If the server restarts mid-fight, is that fight simply lost?
 13. **SUPERSEDED.** It asked about the survey's order (§5.0). **Its successor:** is the order in §5.R right: bodies
     and elements first, then the whole Phage, then the Knell, the Phalanx, and the Skreel last?
-14. **AWAITING BEN — G1** (the seat's reading, RULINGS): one Void death in range advances a Phage one stage, so four
+14. **ANSWERED 2026-11-15, CONFIRMED** (RULINGS, the R1 questions, answer 1). **G1** (the seat's reading, RULINGS): one Void death in range advances a Phage one stage, so four
     take it from 1 to 5?
-15. **AWAITING BEN — G2:** one death advances every Phage below stage 5 in range, not only the nearest?
-16. **AWAITING BEN — G3:** stages 2–4 sit evenly between stage 1 and stage 5 in size, speed, health and blast, and
+15. **ANSWERED 2026-11-15, CONFIRMED** (answer 1). **G2:** one death advances every Phage below stage 5 in range, not only the nearest?
+16. **ANSWERED 2026-11-15, CONFIRMED** (answer 1). **G3:** stages 2–4 sit evenly between stage 1 and stage 5 in size, speed, health and blast, and
     they explode but never split?
-17. **AWAITING BEN — G4:** a stage 5 that is killed splits into two stage 1s, and one that explodes does not?
+17. **ANSWERED 2026-11-15, CONFIRMED** (answer 1). **G4:** a stage 5 that is killed splits into two stage 1s, and one that explodes does not?
 18. **OPEN.** When the Knell picks where to land, must it also be able to SEE the player it just hit from there, so it
     never lands behind a wall? (§3.R.1)
-19. **OPEN (ruling 5).** When a Phage grows a stage, does it heal to full, or keep the same fraction of its health?
+19. **ANSWERED 2026-11-15: "Same share"** (answer 4). When a Phage grows a stage, does it heal to full, or keep the same fraction of its health?
 20. **OPEN (ruling 5).** If a Void mob dies nearby while a Phage is already fusing, does that death still count?
-21. **OPEN.** When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
+21. **ANSWERED 2026-11-15: "No,"** (answer 2); the children start at stage 1. When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
     2? (§3.R.2)
 22. **OPEN.** Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
 23. **PARKED by Ben** (*"Well come back to the wither effect"*): should Wither damage-over-time land on these Void
     mobs? **The fact it waits on:** `withering.yml`'s `immune` list holds the type keys `wither_skeleton` and
     `wither`, so today it refuses the Knell, the Phalanx and the Skreel's RIDER, all wither skeletons. **It does not
     refuse the Skreel's mount (a spider) or the Phage (now a creeper).**
-24. **OPEN.** Is the Skreel's spider mount a Void mob too? Your note names the Skreel, and the mount is its own creature.
+24. **ANSWERED 2026-11-15: "No it's no element"** (answer 5). Is the Skreel's spider mount a Void mob too? Your note names the Skreel, and the mount is its own creature.
 25. **OPEN — a naming question only.** The mount is called "Withered Mount", and it now sits on a Void mob. Keep the
     name, or rename it? The same goes for any other wither-worded name in the fight.
-26. **OPEN.** Does ANY death split a stage 5 (a fall, `/kill`, another mob), or only a kill by a player or a summon?
+26. **ANSWERED 2026-11-15: "Any deaths"** (answer 3; answer E still stands, an explosion does not split). Does ANY death split a stage 5 (a fall, `/kill`, another mob), or only a kill by a player or a summon?
     The old Phage split only on a player's kill (§3.2).
 27. **OPEN — about the fight, not the Phage.** The growth is uncapped (answer D). Should split children count against the
     fight's mob caps, be refused at a cap, or be exempt as the old Lesser Phages were? (§6 C6)

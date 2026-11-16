@@ -29,6 +29,7 @@ import io.github.butterflysmp.rpg.core.mining.OreRegistry;
 import io.github.butterflysmp.rpg.core.mining.VeinSizeRegistry;
 import io.github.butterflysmp.rpg.core.weapon.AccessoryRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
+import io.github.butterflysmp.rpg.core.mob.MobElementResolver;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.recipe.RecipeRegistry;
 import io.github.butterflysmp.rpg.core.weapon.WeaponService;
@@ -44,6 +45,7 @@ import io.github.butterflysmp.rpg.paper.build.StoneCaster;
 import io.github.butterflysmp.rpg.paper.build.Stones;
 import io.github.butterflysmp.rpg.paper.build.BuildService;
 import io.github.butterflysmp.rpg.storage.FileBuildRepository;
+import io.github.butterflysmp.rpg.paper.content.MobElementLoader;
 import io.github.butterflysmp.rpg.paper.content.MobLoader;
 import io.github.butterflysmp.rpg.paper.content.ContentValidator;
 import io.github.butterflysmp.rpg.paper.content.ElementLoader;
@@ -191,6 +193,7 @@ public final class RpgPlugin extends JavaPlugin {
     private VeinSizeRegistry veinSizes;
     private AccessoryRegistry accessoryRegistry;
     private MobRegistry mobs;
+    private MobElementResolver mobElements;
     private RecipeRegistry recipes;
     private CraftResultIndex craftResults;
     private CooldownTracker cooldowns;
@@ -275,7 +278,13 @@ public final class RpgPlugin extends JavaPlugin {
                 new File(contentDir, "accessories"),
                 id -> weapons.find(id).isPresent() || shields.find(id).isPresent()
                         || armor.find(id).isPresent() || tools.find(id).isPresent());
-        this.mobs = new MobLoader(getLogger()).loadAll(new File(contentDir, "mobs"));
+        // A mob's element must name a loaded element, so elements load first (above) and the mob loader asks.
+        this.mobs = new MobLoader(getLogger(), id -> elements.find(id).isPresent())
+                .loadAll(new File(contentDir, "mobs"));
+        // The vanilla table (PLAN-dragon-mobs.md N2): an Enderman is Void and has no mob file. One resolver answers
+        // "the element of this creature": the mob's file, else this table, else none.
+        this.mobElements = new MobElementResolver(mobs, new MobElementLoader(getLogger(),
+                id -> elements.find(id).isPresent()).load(new File(contentDir, "mob_elements.yml")));
         this.recipes = new RecipeLoader(getLogger()).loadAll(new File(contentDir, "recipes"));
         // Mining (PLAN-mining.md 5.3). Sizes first only for readability: an ore's sizes: are checked
         // against the size registry by ContentValidator.validateMining, not here.
@@ -289,7 +298,7 @@ public final class RpgPlugin extends JavaPlugin {
                 + weapons.size() + " weapons, "
                 + shields.size() + " shields, " + armor.size() + " armor, "
                 + tools.size() + " tools, " + accessoryRegistry.size() + " accessories, "
-                + mobs.size() + " mobs, "
+                + mobs.size() + " mobs, " + mobElements.tableSize() + " mob elements, "
                 + recipes.size() + " recipes, "
                 + ores.size() + " ores, " + veinSizes.size() + " vein sizes");
 
@@ -691,7 +700,7 @@ public final class RpgPlugin extends JavaPlugin {
         // both take this value, so the two can never disagree about what kind of server this is.
         boolean devServer = Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY);
         SelfTestService selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
-                buildCommit(), devServer, ScenarioLoader.load(this::getResource));
+                buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,

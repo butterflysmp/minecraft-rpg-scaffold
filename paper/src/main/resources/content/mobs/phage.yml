@@ -1,0 +1,37 @@
+# THE PHAGE: one name, five stages, on a creeper (PLAN-dragon-mobs.md, Ben's rework of 2026-11-15).
+#
+# Ben: "Both are called Phage. The distinction is between size." Stage 1 is small and fast; stage 5 is about three
+# blocks tall and very slow. A stage is STATE ON THE LIVE MOB (its mob_stage tag), never a separate file. Spawn one
+# at a chosen stage with /rpg spawn phage stage <n> (default 1).
+#
+# WHAT R1 BUILDS: the five stage bodies, and nothing that changes a stage. No growth (R4), no split (R2).
+#
+# IT DOES NOT EXPLODE IN R1. Its vanilla swell still runs, but the explosion is cancelled every time, so a Phage next
+# to a player swells, resets, and swells again; its fuse is never allowed to finish. Flint and steel cannot ignite it
+# and lightning cannot charge it. That is temporary: R3 replaces the swell with our own, and the explosion with ours.
+
+base_entity: creeper
+display_name: "Phage"
+
+# ELEMENT: Void. IDENTITY ONLY today. A Phage is Void and is fed by Void deaths (Ben, H).
+element: void
+
+# STAGES. Content gives the count and the FIRST and LAST bodies; every stage between is linear (G3, confirmed by Ben):
+#
+#   stage:   1      2      3      4      5
+#   height:  1.0    1.5    2.0    2.5    3.0    blocks
+#   speed:   1.5x   1.25x  1.0x   0.75x  0.5x
+#   health:  80     100    120    140    160
+#
+# NAME THE QUANTITY:
+#   height      the body's HEIGHT IN BLOCKS, the unit Ben ruled in ("from 1 block to 3 blocks in height"). The plugin
+#               turns it into the SCALE that produces it from the creeper's own unscaled height (1.7), so 1.0 is
+#               scale 1/1.7 and 3.0 is 3/1.7; the width scales with it.
+#   speed       a MULTIPLIER of a creeper's DEFAULT movement speed, never an absolute speed.
+#   max_health  authored health: x GS/100, never x5 (PLAN-mob-scaling.md M4, GS from M25).
+#
+# A staged mob authors NO top-level max_health, scale or speed: its stages own them, and the loader refuses both.
+stages:
+  count: 5
+  first: { height: 1.0, speed: 1.5, max_health: 80 }
+  last:  { height: 3.0, speed: 0.5, max_health: 160 }
