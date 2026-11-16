@@ -5,6 +5,7 @@
 # ONE EXCEPTION, the seat's ruling of 2026-11-15: dragon-bodies, dragon-split and dragon-growth are paired with
 # docs/gates/GATE-dragon-fix.md, not their own gate files (SelfTestScenariosTest.docOf). Their rows since the first boot
 # of the dragon stack are that gate's re-predictions, and keeping three files kept Ben's three selftest commands.
+# dragon-blast (step R3, 2026-11-15) is paired with its OWN gate file, docs/gates/GATE-dragon-blast.md, by the rule.
 gates:
   - melee-cell
   - level
@@ -20,3 +21,4 @@ gates:
   - dragon-bodies
   - dragon-split
   - dragon-growth
+  - dragon-blast

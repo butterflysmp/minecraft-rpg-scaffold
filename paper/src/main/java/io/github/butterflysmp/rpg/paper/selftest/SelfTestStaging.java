@@ -116,6 +116,11 @@ final class SelfTestStaging {
                     : java.util.Optional.of("ask takes '<n> <timeout ticks> <question>', got '" + arg + "'");
             case DIFFICULTY -> difficulty(arg).isPresent() ? java.util.Optional.empty()
                     : java.util.Optional.of("difficulty takes peaceful, easy, normal or hard, got '" + arg + "'");
+            case AWAIT_FUSE -> SelfTestBlast.parseAwait(arg).isPresent() ? java.util.Optional.empty()
+                    : java.util.Optional.of("await_fuse takes '<tag> <min fuse> <timeout ticks>', got '" + arg + "'");
+            case DETONATE, IGNITE, PROBE_FUSE -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
+                    : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes one tag, got '"
+                            + arg + "'");
             default -> java.util.Optional.empty();
         };
     }

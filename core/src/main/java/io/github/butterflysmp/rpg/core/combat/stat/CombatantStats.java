@@ -312,7 +312,7 @@ public final class CombatantStats {
         boolean reachedZero = state.damage(dealt);
         listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, dealt,
                 dealer, dealerIsPlayer, state.current(), state.max(), reachedZero, crit.isCrit(),
-                element));
+                element, amount));   // amount = what was OFFERED, before the curve above (HealthChange#beforeDefense)
         return new DamageOutcome(dealt, state.current());
     }
 

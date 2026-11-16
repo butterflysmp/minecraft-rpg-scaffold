@@ -4,11 +4,11 @@
 # blocks tall and very slow. A stage is STATE ON THE LIVE MOB (its mob_stage tag), never a separate file. Spawn one
 # at a chosen stage with /rpg spawn phage stage <n> (default 1).
 #
-# WHAT R1 BUILDS: the five stage bodies, and nothing that changes a stage. No growth (R4), no split (R2).
+# WHAT R1 BUILT: the five stage bodies. R2 added the split, the growth step its growth, and R3 its blast (below).
 #
-# IT DOES NOT EXPLODE IN R1. Its vanilla swell still runs, but the explosion is cancelled every time, so a Phage next
-# to a player swells, resets, and swells again; its fuse is never allowed to finish. Flint and steel cannot ignite it
-# and lightning cannot charge it. That is temporary: R3 replaces the swell with our own, and the explosion with ours.
+# IT EXPLODES OURS, FROM R3. Vanilla's swell is still its fuse (Ben kept vanilla's numbers), but vanilla's explosion
+# is refused every time, and ours runs in its place: no blocks broken, players hurt, the Phage removed without dying.
+# Flint and steel cannot ignite it and lightning cannot charge it, as in R1.
 
 base_entity: creeper
 display_name: "Phage"
@@ -49,8 +49,8 @@ stages:
 #                inside a block is born at the parent's own spot instead.
 #
 # NOT A DEATH, so no split: a despawn, a chunk unload, or being removed by a command or a plugin. An EXPLOSION never
-# splits it either (Ben, E: "it only splits when killed, not exploding"); R1 cancels every vanilla explosion, and R3's
-# own detonation will remove the Phage without a death.
+# splits it either (Ben, E: "it only splits when killed, not exploding"): every vanilla explosion is refused, and our
+# own detonation (blast, below) removes the Phage without a death.
 split:
   at: last
   count: 2
@@ -72,8 +72,35 @@ split:
 #   stages_per_death   stages gained per counted death; capped at the last stage.
 #
 # A stage 5's own death splits it AND counts as a Void death: it grows the OTHER Phages near it, never its own two
-# children (Ben: "No,"). A Phage's self-destruct will count too (Ben, I), from step R3.
+# children (Ben: "No,"). A Phage's self-destruct counts too (Ben, I): one blast is one Void death, and the Phage that
+# blew never grows itself.
 growth:
   element: void
   radius: 6
   stages_per_death: 1
+
+# THE BLAST (dragon-mobs step R3). Ben: "for the explosion keep vanilla creeper numbers for everything except the
+# damage". The damage is the seat's PROVISIONAL proposal (P-a, P-b), NOT YET BEN'S RULING.
+#
+#   stage:   1      2      3      4      5
+#   damage:  20     27.5   35     42.5   50     before gear score; linear between first and last (as G3 has the body)
+#
+# NAME THE QUANTITY:
+#   radius       BLOCKS, the straight-line distance between the Phage's FEET and the victim's FEET, INCLUSIVE at exactly
+#                3, same world. A sphere. 3 is vanilla's creeper number, but vanilla's 3 is an explosion POWER whose
+#                damage reaches twice as far with falloff (PLAN-dragon-mobs.md section 8 F2, Q33). Here, every victim
+#                inside it takes the FULL damage and nothing outside takes any (P-c): no falloff, no cover, no push.
+#   damage       AUTHORED damage at the first and last stage, x gear score / 100 as the Phage's health is (P-b), never
+#                x5. It lands on the same path a mob's melee hit takes, so the player's defence cuts it as it cuts a
+#                melee hit. It wears NO element today (whether it is Void damage is Ben's question, Q31).
+#   fuse_ticks   TICKS from the swell's start to the blast, vanilla's 30 (1.5 seconds), written to the creeper with
+#                Creeper#setMaxFuseTicks at spawn. The swell starts within 3 blocks of a target and cancels past 7 or
+#                out of sight: those two distances are vanilla's own and are NOT authored here (they cannot be until
+#                the swell is replaced; the seat's ruling 20).
+#
+# VICTIMS: players only, today (Ben: "Only players and Summons"). No mob is hurt, a Phage included. A creative or
+# spectator player is not hurt.
+blast:
+  radius: 3
+  damage: { first: 20, last: 50 }
+  fuse_ticks: 30

@@ -191,6 +191,11 @@ final class SelfTestRun {
                     ask(step);   // resumes from answer() or the timeout
                     return;
                 }
+                if (step.verb() == Scenario.Verb.AWAIT_FUSE) {
+                    awaitFuse(SelfTestBlast.parseAwait(step.arg()).orElseThrow(
+                            () -> new IllegalStateException("await_fuse: the loader admitted '" + step.arg() + "'")), 0);
+                    return;   // resumes when the swell reaches the threshold, or at the timeout
+                }
                 Optional<String> skip = drivers.execute(player, step);
                 drainReplies();
                 if (skip.isPresent()) {
@@ -241,6 +246,66 @@ final class SelfTestRun {
      * 2 of the {@code 61e722f2} boot shows it: after Ben drowned in SU11's 240-tick wait the row logged nothing for 78
      * seconds, until he stopped it. Back on the player's scheduler only once he is alive again.
      */
+    /**
+     * AWAIT_FUSE (dragon-mobs step R3; {@link SelfTestBlast}): poll the nearest creeper carrying the tag once a tick
+     * until its swell reaches the threshold, then log its FUSE line with the ticks waited. The swell rises by one a
+     * tick ({@code Creeper.tick}), so the first reading at or past the threshold is the threshold itself unless a
+     * tick was skipped. No such creeper, or the timeout, is logged by name and the row goes on.
+     */
+    private void awaitFuse(SelfTestBlast.Await a, int waited) {
+        if (ended) return;
+        org.bukkit.entity.Creeper c = player.getNearbyEntities(48, 48, 48).stream()
+                .filter(e -> e instanceof org.bukkit.entity.Creeper && e.getScoreboardTags().contains(a.tag()))
+                .map(e -> (org.bukkit.entity.Creeper) e)
+                .min(java.util.Comparator.comparingDouble(e -> e.getLocation().distanceSquared(player.getLocation())))
+                .orElse(null);
+        if (c == null) {
+            log("FUSE tag=" + a.tag() + " none within 48 blocks after " + waited + " ticks");
+            advance();
+            return;
+        }
+        if (c.getFuseTicks() >= a.minFuse()) {
+            log(SelfTestBlast.fuseLine(a.tag(), c.getUniqueId(), c.getFuseTicks(), c.getMaxFuseTicks(), c.isIgnited())
+                    + " waited=" + waited);
+            advance();
+            return;
+        }
+        if (waited >= a.timeoutTicks()) {
+            log(SelfTestBlast.fuseLine(a.tag(), c.getUniqueId(), c.getFuseTicks(), c.getMaxFuseTicks(), c.isIgnited())
+                    + " waited=" + waited + " under " + a.minFuse() + " at the timeout");
+            advance();
+            return;
+        }
+        service.scheduler().onEntityLater(player, () -> awaitFuse(a, waited + 1), 1);
+    }
+
+    /**
+     * THE PLAYER'S DAMAGE LINE (dragon-mobs step R3; {@link SelfTestBlast#hurtLine}), from the store's own change,
+     * so the amount before defence and the amount that landed are both the store's. Called on the player's thread,
+     * inside the hit. The dealer's type is looked up NOW: a dealer already removed (a Phage that blew) reads
+     * {@code gone}, and the hit's own uuid is still printed.
+     */
+    void hurt(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
+        if (ended || scenarioIndex < 0 || !change.target().equals(player.getUniqueId())) return;
+        String dealer;
+        String type;
+        if (change.dealer() == null) {
+            dealer = "none";
+            type = "none";
+        } else if (change.dealer().equals(player.getUniqueId())) {
+            dealer = "self";
+            type = "self";
+        } else {
+            dealer = change.dealer().toString();
+            Entity e = player.getWorld().getEntity(change.dealer());
+            String mobId = e == null ? null
+                    : e.getPersistentDataContainer().get(service.keys().mobId, org.bukkit.persistence.PersistentDataType.STRING);
+            type = e == null ? "gone" : e.getType().getKey().getKey() + (mobId == null ? "" : "/" + mobId);
+        }
+        log(SelfTestBlast.hurtLine(change.beforeDefense(), change.amount(), service.stats().defenseValue(player.getUniqueId()),
+                dealer, type));
+    }
+
     private void awaitRespawn(Location where, int waited) {
         if (ended) return;
         if (!player.isOnline()) {

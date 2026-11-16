@@ -34,6 +34,9 @@ package io.github.butterflysmp.rpg.core.mob;
  *
  * <p><b>And in the growth step</b> by {@code growth} ({@link MobGrowth}), or null: which deaths nearby move a staged
  * mob up its stages. Growth needs stages.
+ *
+ * <p><b>And in step R3</b> by {@code blast} ({@link MobBlast}), or null: the self-destruct a staged mob detonates when
+ * its fuse completes. A blast's damage is priced by stage, so it needs stages.
  */
 public record MobDefinition(
         String id,
@@ -44,26 +47,33 @@ public record MobDefinition(
         String element,
         MobStages stages,
         MobSplit split,
-        MobGrowth growth
+        MobGrowth growth,
+        MobBlast blast
 ) {
     /**
      * The original four-field form: a vanilla body, no element, no stages. Kept so the existing call sites (tests
      * and older code) read unchanged. (A record may declare extra constructors; each must call the full one.)
      */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth) {
-        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null, null, null);
     }
 
     /** Step R1's seven-field form: no split (step R2's component). Kept so R1's call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, null, null, null);
     }
 
     /** Step R2's eight-field form: no growth (the growth step's component). Kept so R2's call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, null, null);
+    }
+
+    /** The growth step's nine-field form: no blast (step R3's component). Kept so its call sites read unchanged. */
+    public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
+                         MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth) {
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, null);
     }
 
     public MobDefinition {
@@ -74,6 +84,10 @@ public record MobDefinition(
         // The growth step: growing moves a STAGE, so it needs stages.
         if (growth != null && stages == null) {
             throw new IllegalArgumentException("mob '" + id + "' authors growth but no stages; growing moves a stage");
+        }
+        // Step R3: a blast's damage is priced by STAGE, so it needs stages.
+        if (blast != null && stages == null) {
+            throw new IllegalArgumentException("mob '" + id + "' authors a blast but no stages; its damage is per stage");
         }
         // Step R2: a split names a child STAGE, so it needs stages, and the child stage must be one of them.
         if (split != null && stages == null) {

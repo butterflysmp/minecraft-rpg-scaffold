@@ -3,9 +3,11 @@ package io.github.butterflysmp.rpg.paper.health;
 /**
  * ONE OF OUR CREEPERS NEVER DETONATES THE VANILLA WAY (PLAN-dragon-mobs.md step R1). Today that is the Phage.
  *
- * <p>The Phage's explosion will be ours, end to end (seat ruling, step R3): our trigger distance, our fuse, our
- * priced damage to players and summons only, and no blocks. Until R3 builds it, the Phage must not explode at all,
- * so all three vanilla routes to a creeper explosion are refused for a creeper that carries a {@code mob_id}. Read
+ * <p><b>STEP R3 BUILT THE PHAGE'S OWN EXPLOSION</b> ({@link MobBlaster}): at the prime, the vanilla explosion is
+ * still refused here, and our detonation runs in its place (priced damage to players only today, no blocks, the
+ * Phage removed without a death). The trigger and the fuse stay vanilla's swell, because Ben kept vanilla's numbers
+ * (PLAN-dragon-mobs.md, the seat's ruling 20); the notes on the swell below describe R1, before anything detonated.
+ * All three vanilla routes to a creeper explosion are refused for a creeper that carries a {@code mob_id}. Read
  * from the pinned server jar (build 74; PLAN-dragon-mobs.md section 7 F-C, and {@code Creeper.mobInteract} /
  * {@code thunderHit} for this slice):
  *

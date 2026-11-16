@@ -117,7 +117,36 @@ final class SelfTestDrivers {
             case DIFFICULTY -> difficulty(p, a);
             case PROBE_TARGET -> probeTarget(p, a);
             case RETURN -> returnToStart(p);
+            case DETONATE -> creepers(p, a, "detonate", c -> c.explode());
+            case IGNITE -> creepers(p, a, "ignite", c -> c.ignite());
+            case PROBE_FUSE -> creepers(p, a, null, c -> run.log(SelfTestBlast.fuseLine(a, c.getUniqueId(),
+                    c.getFuseTicks(), c.getMaxFuseTicks(), c.isIgnited())));
+            case AWAIT_FUSE -> Optional.empty();   // the run polls it; it never reaches a driver
         };
+    }
+
+    // --- the steps added for dragon-mobs step R3 (GATE-dragon-blast.md; SelfTestBlast) -----------------------------
+
+    /**
+     * DETONATE, IGNITE and PROBE_FUSE: act on every creeper carrying {@code tag} within reach, nearest first. A
+     * driving verb logs {@code DRIVE <verb> <uuid>} BEFORE it acts, so the line precedes whatever the act logs.
+     */
+    private Optional<String> creepers(Player p, String tag, String verb,
+                                      java.util.function.Consumer<org.bukkit.entity.Creeper> act) {
+        List<org.bukkit.entity.Creeper> found = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(REACH, REACH, REACH)) {
+            if (e instanceof org.bukkit.entity.Creeper c && e.getScoreboardTags().contains(tag)) found.add(c);
+        }
+        if (found.isEmpty()) {
+            run.log((verb == null ? "FUSE" : "DRIVE " + verb) + " tag=" + tag + " none within " + (int) REACH + " blocks");
+            return Optional.empty();
+        }
+        found.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));
+        for (org.bukkit.entity.Creeper c : found) {
+            if (verb != null) run.log("DRIVE " + verb + " tag=" + tag + " " + c.getUniqueId());
+            act.accept(c);
+        }
+        return Optional.empty();
     }
 
     // --- the steps added after the 2026-11-15 boot (GATE-dragon-fix.md) -------------------------------------------

@@ -153,6 +153,14 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * the player's block is the box it was before he was pushed. Wait 2 ticks after it: the teleport is async.
          */
         RETURN,
+        /** {@code <tag>}: blow the tagged creeper with {@code Creeper#explode()} (dragon-mobs R3; {@link SelfTestBlast}). */
+        DETONATE,
+        /** {@code <tag>}: {@code Creeper#ignite()} on the tagged creeper, flint and steel's route ({@link SelfTestBlast}). */
+        IGNITE,
+        /** {@code <tag>}: log each tagged creeper's FUSE line, its swell over its fuse ({@link SelfTestBlast}). */
+        PROBE_FUSE,
+        /** {@code "<tag> <min fuse> <timeout ticks>"}: wait until the tagged creeper's swell reaches min ({@link SelfTestBlast}). */
+        AWAIT_FUSE,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

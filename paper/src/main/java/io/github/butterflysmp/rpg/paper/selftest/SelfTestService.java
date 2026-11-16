@@ -132,6 +132,15 @@ public final class SelfTestService {
         });
     }
 
+    /**
+     * A DAMAGE change on a player (dragon-mobs step R3), from {@link SelfTestDamageTap}: the running row's HURT line,
+     * when the player is the run's. Called on the player's own thread, inside the hit.
+     */
+    void onPlayerHurt(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
+        SelfTestRun run = active;
+        if (run != null) run.hurt(change);
+    }
+
     void ended(SelfTestRun run) {
         if (active == run) active = null;
     }
