@@ -279,6 +279,60 @@ was approved to merge on that boot (the dated line in each of the four gates' St
 - **Q20 is still OPEN:** whether a Void death that happens while a Phage is mid-fuse still counts. R4 grows a Phage
   whatever it is doing, because no fuse of ours exists; R3 must rule it before it ships.
 
+### Ben, 2026-11-15, VERBATIM: the blast's numbers (step R3)
+
+*The seat asked, per size: how close before the fuse starts (vanilla 3 blocks), how far back cancels it (vanilla 7),
+the fuse length (vanilla 1.5 seconds), the blast radius (vanilla 3), and the damage.*
+> "for the explosion keep vanilla creeper numbers for everything except the damage"
+
+### THE SEAT'S PROPOSALS FOR THE BLAST, 2026-11-15 — THE SEAT'S, NOT BEN'S. PROVISIONAL UNTIL HE RULES
+
+*Put to Ben in these terms. R3 builds them as written; each is his to confirm or change.*
+
+- **P-a. Damage:** stage 1 deals 20, stage 5 deals 50 (the old Goon's blast), stages between linear, as G3 has the
+  body.
+- **P-b. Damage is multiplied by the Phage's gear score / 100**, as its health is (old Q3).
+- **P-c. Full damage to every victim inside the radius;** no falloff, no cover check, no knockback.
+- **P-d. Q30 unchanged:** a newborn child can grow from other deaths at once, as built.
+- **P-e. Q20 unchanged:** a Void death during a fuse counts, as built.
+
+### THE SEAT'S MECHANISM RULINGS FOR STEP R3, 2026-11-15 (the seat's, stated in this file's words)
+
+20. **Because Ben's numbers are vanilla's, R3 keeps vanilla's swell as the fuse.** The creeper's own goal starts the
+    swell inside 3 blocks and cancels it past 7 or without line of sight (§7 F-C), and the client animates it natively
+    (`GATE-dragon-fix.md`, D4). **§4.2 N4's "replace the goal" is NOT built.** What that defers: the trigger and cancel
+    distances are vanilla LITERALS, so they cannot be tuned, per stage or at all, until the goal is replaced; nor do
+    they follow the Phage's scale. **Ben's "Yes but I might change my mind in testing" (F) is the ruling that would
+    reopen it.**
+21. **The detonation is ours, at the prime.** When one of our creepers' `ExplosionPrimeEvent` fires, the event is still
+    cancelled (no vanilla explosion, no block damage, ever), and in its place our detonation runs: damage to the
+    victims, an explosion's sight and sound with no block effect, and the Phage **REMOVED WITHOUT A DEATH**. The
+    ignite (flint and steel) and power (lightning) guards stay as they are.
+22. **No split on a blast** (Ben, E: *"No, it only splits when killed, not exploding"*). Removal without a death event
+    is what guarantees it; pinned by a test and by a gate row at stage 5.
+23. **A blast is a Void death for growth** (Ben's second round, I). The detonation calls the seam growth left for
+    exactly this (§5.R.3). The exploding Phage never grows itself; other Phages in its growth radius advance a stage.
+    One blast is counted once.
+24. **Victims: "Only players and Summons"** (Ben, G). R3 builds the ONE named predicate (§4.2 N3) for "a combatant a
+    mob is hostile to"; today it is true for players only, and it is the one place a Summoner will widen. No mob is
+    hurt, the Phage's own kind included. A creative or spectator player is not a victim.
+25. **The blast in content, on the Phage, each quantity named:** the radius in BLOCKS (3), a sphere measured between
+    the Phage's and the victim's feet positions, inclusive; the damage for the first and last stage (20 and 50), linear
+    between, core-tested like the stage table; the fuse in TICKS (30), applied through the API if the jar offers a
+    setter, else recorded as vanilla's and not authored. **The damage goes through the SAME path any mob's hit on a
+    player takes**, so gear-score pricing and the player's defence apply exactly as for a melee hit. Whether the blast
+    is Void damage is a question for Ben; no typing is invented.
+26. **The guard's production log line** (accepted for R1, ruling 15, "revisit at R3"): the per-prime `CREEPERGUARD`
+    info line goes; one line per detonation stays, naming the mob, uuid, stage, gear score, each victim and the damage
+    dealt, so the gate reads the blast from the log.
+
+**Also in R3, for the instrument (the seat's):** a damage line for the player during a selftest row (source, amount
+before and after defence), because D5 stayed UNVERIFIED and DB10R2 mis-predicted for want of one; and every row says
+what gear score and health it runs at and why the largest predicted blast cannot kill the player.
+
+**NOT IN R3:** replacing the swell goal, knockback, falloff, block damage, any change to growth or the split beyond
+calling the seam, the other three mobs.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1144,6 +1198,13 @@ Behaviour: `javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar <class>`, whose
     its tags in its own NBT, so the mob is tagged by identity.
   - Since the fix, every row-start clean is followed by `LEFTOVER living=<n> radius=16`, so a leak in those gates would
     now be named in the log, though their gates do not predict the line.
+- **F2, 2026-11-15, read for step R3: vanilla's creeper "radius 3" is an explosion POWER, and its damage reaches twice
+  that.** `net.minecraft.world.level.ServerExplosion.hurtEntities` opens with `radius * 2.0F` (`getfield radius`,
+  `fconst_2`, `fmul`) and searches that box; the damage then falls off with distance and exposure (the falloff was not
+  read). `Creeper.explodeCreeper` passes `explosionRadius` (3, `Creeper.<init>`) times 1, or 2 when powered, as that
+  power. **So "keep vanilla's radius" and "3 blocks, full damage" (P-c) are different quantities**: R3 builds the
+  latter, as ruled, and Q33 puts the difference to Ben. READ with
+  `javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar net.minecraft.world.level.ServerExplosion`.
 
 ## QUESTIONS FOR BEN
 
@@ -1178,6 +1239,7 @@ rework: an answered question says where its answer is, and a new one is added at
     never lands behind a wall? (§3.R.1)
 19. **ANSWERED 2026-11-15: "Same share"** (answer 4). When a Phage grows a stage, does it heal to full, or keep the same fraction of its health?
 20. **OPEN (ruling 5), and LEFT FOR R3** (RULINGS, *WHAT GROWTH LEAVES*). If a Void mob dies nearby while a Phage is already fusing, does that death still count?
+    *(R3 ships the seat's provisional P-e: it counts, as built, until Ben rules.)*
 21. **ANSWERED 2026-11-15: "No,"** (answer 2); the children start at stage 1. When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
     2? (§3.R.2)
 22. **ANSWERED 2026-11-15: "gearscore should be the same as the parent Phage."** (RULINGS, the split's gear score.) Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
@@ -1201,3 +1263,12 @@ rework: an answered question says where its answer is, and a new one is added at
 30. **OPEN, put to Ben by the seat 2026-11-15.** One command that kills several stage 5s at once splits each of them,
     and the OTHER parents' deaths then grow the newborn children (read at the 2026-11-15 boot: one child went from
     stage 1 to 4 in the same moment it was born). Keep that, or give a newborn a moment in which it cannot grow?
+  *(The seat's provisional P-d keeps it, as built, until Ben rules.)*
+31. **OPEN, new with step R3.** Is the Phage's blast VOID damage? Today it wears no element at all: it lands on the
+    same path as a mob's melee hit, which carries none (§5.R.4).
+32. **OPEN, new with step R3.** A shield can block a vanilla creeper's blast. The Phage's blast cannot be blocked: it
+    raises no vanilla damage event, and our shield block is read from one (§5.R.4). Should a raised shield block it?
+33. **OPEN, new with step R3: the radius you kept is not quite vanilla's reach.** A vanilla creeper's "radius 3" is its
+    explosion POWER; the blast actually hurts creatures up to TWICE that, 6 blocks, falling off with distance and
+    cover (§8 F2). The Phage hurts everything within 3 blocks for full damage and nothing beyond (the seat's P-c). Keep
+    3 at full damage, or reach further?
