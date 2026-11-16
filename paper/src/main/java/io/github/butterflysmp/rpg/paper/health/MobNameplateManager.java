@@ -248,6 +248,11 @@ public final class MobNameplateManager implements HealthListener {
         }
     }
 
+    /** The mob definitions this manager seeds from; the Phage's split reads its rule here (step R2). */
+    public MobRegistry mobs() {
+        return mobs;
+    }
+
     /**
      * A mob appeared (spawn or chunk-load) on its own thread. Seed its combat stats (always), then cache
      * the initial nameplate -- UNLESS it opts out, in which case the stats are still seeded and only the

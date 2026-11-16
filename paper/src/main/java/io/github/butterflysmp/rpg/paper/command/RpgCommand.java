@@ -58,7 +58,7 @@ import io.github.butterflysmp.rpg.paper.content.EnchantDefinition;
 import io.github.butterflysmp.rpg.paper.health.CritModifierItems;
 import io.github.butterflysmp.rpg.paper.health.HealthRegenModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ManaRegenModifierItems;
-import io.github.butterflysmp.rpg.paper.health.MobBodyApplier;
+import io.github.butterflysmp.rpg.paper.health.MobSpawner;
 import io.github.butterflysmp.rpg.paper.health.QuiverSizeModifierItems;
 import io.github.butterflysmp.rpg.paper.health.ReloadTimeModifierItems;
 import io.github.butterflysmp.rpg.paper.hud.AccessorySheet;
@@ -892,13 +892,9 @@ public final class RpgCommand {
                 entity -> {
                     // BEFORE the add event -- see the javadoc above. Order is the whole trick.
                     if (def != null) {
-                        entity.getPersistentDataContainer()
-                                .set(adapters.keys().mobId, PersistentDataType.STRING, def.id());
-                        entity.customName(name);
-                        entity.setCustomNameVisible(false);
-                        // The BODY and the stage, here for the same reason as the tag: before the add event
-                        // seeds health from the stage (MobBodyApplier's javadoc).
-                        MobBodyApplier.apply(entity, def, atStage, adapters.keys());
+                        // The mob_id tag, the name, the body and the stage: the ONE path a mob is made ours,
+                        // shared with the Phage's split (MobSpawner, PLAN-dragon-mobs.md step R2).
+                        MobSpawner.stampCustom(entity, def, atStage, adapters.keys());
                     }
                     if (gearScore != null) {
                         entity.getPersistentDataContainer()

@@ -34,9 +34,11 @@ class SelfTestScenariosTest {
         ScenarioLoader.Loaded loaded = shipped();
         assertEquals(List.of(), loaded.refusals());
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
-                "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies"),
+                "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
+                "dragon-split"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twelve gates, in boot order; nexus-back after mining-auto (2026-11-14), dragon-bodies LAST (2026-11-15)");
+                "the thirteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies and"
+                        + " dragon-split LAST (2026-11-15)");
     }
 
     /** The seat's CORE rows, one scenario each (2026-10-05). R0d is a boot log line and has none. */
@@ -57,6 +59,7 @@ class SelfTestScenariosTest {
         expected.put("nexus-back", List.of("NB1", "NB2", "NB3", "NB4", "NB5", "NB6", "NB7"));
         expected.put("dragon-bodies", List.of("DB1", "DB2", "DB3", "DB4", "DB5", "DB6", "DB7", "DB8", "DB9", "DB10",
                 "DB11"));
+        expected.put("dragon-split", List.of("DS1", "DS2", "DS3", "DS4", "DS5", "DS6"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -68,7 +71,9 @@ class SelfTestScenariosTest {
         // Then GATE-dragon-bodies.md (2026-11-15). RECOUNTED from the files, not adjusted: in selftest/, the index's
         // gates (grep -cE '^  - ' index.yml) printed 12; their top-level keys (^[A-Za-z0-9-]+:) 80; their setups 12;
         // so 80 - 12 = 68. The same three commands at master 5b71e24b print 11, 68, 11: 57, this line's old value.
-        assertEquals(68, loaded.rows());
+        // Then GATE-dragon-split.md (2026-11-15), RECOUNTED the same way: 13 gates, 87 keys, 13 setups, so 74. At
+        // feat/dragon-bodies 974e4357 the same commands print 12, 80, 12: 68, this line's old value.
+        assertEquals(74, loaded.rows());
     }
 
     @Test

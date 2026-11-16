@@ -189,6 +189,27 @@ now stand as ruled. Text below written before that date may still say "awaiting 
    the stage is set at spawn and nothing changes it.
 10. **R1 leaves `knell.yml`'s health as it ships** (answer 6 above).
 
+### Ben, 2026-11-15, VERBATIM: the split's gear score
+
+*The seat asked: do the two children keep their parent's gear score, as slime children do?*
+> "gearscore should be the same as the parent Phage."
+
+Answers Q22.
+
+### THE SEAT'S RULINGS ON #189 (STEP R1), 2026-11-15
+
+11. **A mob file with no `element:` falls through to the vanilla table: ACCEPTED.** Absence is not an override.
+12. **The `MiningWiringSignatureTest` needle update: ACCEPTED.**
+13. **DB10's `CREEPERGUARD` count as a lower bound: ACCEPTED.**
+14. **The mount's 1.3x speed, always on in R1: ACCEPTED.** R8 revisits it.
+15. **The guard's production log line: ACCEPTED for R1.** Revisit at R3.
+
+### THE SPLIT OFFSET (P6) — A STARTING NUMBER PUT TO BEN, NOT YET CONFIRMED BY HIM
+
+The seat put the old game's offset to Ben as a starting number he may overrule: **half a block either side** of the
+parent, along one axis (cfde822: +0.5 and −0.5 on x, §3.2). **It is NOT Ben's ruling yet**; it ships as content
+(`phage.yml`, `split.spread`) so he can change it without a build.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -769,6 +790,22 @@ is linear in scale** (scale = height / 1.7), so G3's "evenly between" holds in b
 Knell is unarmed and the Phalanx has no bow: both melee like a bare wither skeleton** (the M4/M24 custom-mob melee
 of today, PLAN-mob-scaling.md §6 F15), and the Skreel has no spear. **Follow range** (cfde822's 64) is also not in R1.
 
+### 5.R.2 STEP R2 AS BUILT (`feat/dragon-split`, stacked on R1, 2026-11-15)
+
+The gate is `docs/gates/GATE-dragon-split.md`, which also carries the ONE R0 and the ONE run sheet of the stacked boot.
+
+| piece | as built | where |
+|---|---|---|
+| **the rule** | `split: { at: last, count, child_stage, spread }` on the mob file; a death at the LAST stage gives `count` children at `child_stage`; any other stage, or a mob with no block, gives none. `at` accepts only `last` (Ben: "Only the 5th stage Phage splits") | `core.mob.MobSplit`, `MobLoader` |
+| **the death point** | a separate `EntityDeathEvent` handler at **MONITOR, ignoreCancelled**, so only a death that happens splits; "any deaths" is every cause that raises the event (a player, a mob, a fall, fire, the void, `/kill`); `remove()`, a despawn, a chunk unload and a vanilla creeper's own explosion raise none | `RpgListeners.onMobDeathSplit` |
+| **once only** | the parent is marked `mob_split` (PDC) BEFORE its first child spawns; a marked mob never splits again | `MobSplitter`, `Keys.mobSplit` |
+| **the children** | made ours on the SAME path as `/rpg spawn` (`MobSpawner.stampCustom` inside `World#spawn`'s pre-spawn consumer, now shared): `mob_id`, name, stage-1 body and stage tag; seeded at full health; the PARENT'S gear score through M21's own `MobNameplateManager.inheritGearScore` | `MobSpawner`, `MobSplitter` |
+| **where they stand** | the parent's position ± `spread` (0.5, content, P6) on x; a spot whose child body would collide (`RegionAccessor#hasCollisionsIn`) is replaced by the parent's own spot, which a smaller child always fits | `MobSplitter` |
+| **the instrument** | a split child of a mob the instrument tagged takes all the parent's tags, so the row-start clean (which uses `remove()`, never a death) and the restore remove it | `SelfTestSnapshot.tagsForSplitChild`, `SelfTestService.adoptSplitChild` |
+
+**Not testable until R3:** an exploding Phage does not split (E). No explosion of ours exists and R1 cancels vanilla's;
+R3's detonation must remove the Phage without raising a death.
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.
@@ -1027,7 +1064,7 @@ rework: an answered question says where its answer is, and a new one is added at
 20. **OPEN (ruling 5).** If a Void mob dies nearby while a Phage is already fusing, does that death still count?
 21. **ANSWERED 2026-11-15: "No,"** (answer 2); the children start at stage 1. When a stage 5 splits, does its own death count toward its two new children, so they are born at stage
     2? (§3.R.2)
-22. **OPEN.** Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
+22. **ANSWERED 2026-11-15: "gearscore should be the same as the parent Phage."** (RULINGS, the split's gear score.) Do the two children keep their parent's gear score, as slime children do? (§3.R.2)
 23. **PARKED by Ben** (*"Well come back to the wither effect"*): should Wither damage-over-time land on these Void
     mobs? **The fact it waits on:** `withering.yml`'s `immune` list holds the type keys `wither_skeleton` and
     `wither`, so today it refuses the Knell, the Phalanx and the Skreel's RIDER, all wither skeletons. **It does not

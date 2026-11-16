@@ -37,6 +37,7 @@ import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
 import io.github.butterflysmp.rpg.paper.health.AttackSpeedAttributeOverride;
 import io.github.butterflysmp.rpg.paper.health.CustomCreeperGuard;
+import io.github.butterflysmp.rpg.paper.health.MobSplitter;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
 import io.github.butterflysmp.rpg.paper.menu.AnvilMenu;
 import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
@@ -870,6 +871,29 @@ public final class RpgListeners implements Listener {
      * indistinguishable from "no mob happened to be scorched", so nothing would report it. That is
      * what {@code GATE-ignite.md} exists to witness.
      */
+    /**
+     * THE PHAGE'S SPLIT ON DEATH (PLAN-dragon-mobs.md step R2; {@link MobSplitter}). A staged mob dying at its last
+     * stage leaves its split's children where it died.
+     *
+     * <p><b>"Any deaths" (Ben) is every cause that reaches this event</b>: a player, another mob, a fall, fire, the
+     * void, {@code /kill} ({@code LivingEntity#kill} hurts with {@code genericKill}, and the death event is raised from
+     * {@code LivingEntity#dropAllDeathLoot} on the death path; javap, build 74). <b>Not a death, and so never a
+     * split:</b> a {@code remove()} ({@code CraftEntity#remove} is {@code discard(PLUGIN)}), a despawn
+     * ({@code Mob#checkDespawn} is {@code discard(DESPAWN)}), a chunk unload, and a vanilla creeper's own explosion
+     * ({@code discard(EXPLODE)}, section 7 F-C). R3's detonation will remove the Phage the same way, without a split.
+     *
+     * <p><b>MONITOR, ignoreCancelled</b>: the split acts only on a death that HAPPENS. A death another plugin cancels
+     * (a revive) splits nothing; the once-only guard ({@code mob_split}) covers the event delivered twice. It is a
+     * separate handler from {@link #onEntityDeath} because that one runs at NORMAL and returns early for anything not
+     * scorched.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMobDeathSplit(EntityDeathEvent event) {
+        if (event.getEntity() instanceof Player) return;
+        MobSplitter.onDeath(event.getEntity(), nameplates.mobs(), adapters.keys(), nameplates, adapters.log(),
+                selfTest::adoptSplitChild);
+    }
+
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity mob = event.getEntity();

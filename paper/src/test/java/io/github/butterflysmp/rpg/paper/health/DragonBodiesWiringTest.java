@@ -41,16 +41,24 @@ class DragonBodiesWiringTest {
         }
     }
 
-    /** The body and the stage go on in the PRE-SPAWN consumer, before the add event seeds health. */
+    /**
+     * The body and the stage go on in the PRE-SPAWN consumer, before the add event seeds health. Since step R2 the
+     * writes live in {@code MobSpawner.stampCustom}, shared with the split, so this reads both files: the command
+     * calls it inside {@code spawn(...)}, and the stamp writes {@code mob_id} before it applies the body.
+     */
     @Test
     void theSpawnAppliesTheBodyInsideThePreSpawnConsumer() throws IOException {
-        List<String> code = codeLines(MAIN.resolve(Path.of("command", "RpgCommand.java")));
-        int consumer = indexOf(code, ".set(adapters.keys().mobId, PersistentDataType.STRING, def.id());");
-        int apply = indexOf(code, "MobBodyApplier.apply(entity, def, atStage, adapters.keys());");
-        int spawnEnd = indexOf(code, "UUID id = spawned.getUniqueId();");
-        assertTrue(consumer > 0 && apply > consumer && apply < spawnEnd,
-                "the body is applied after mob_id is written and before spawn() returns: "
-                        + consumer + " < " + apply + " < " + spawnEnd);
+        List<String> command = codeLines(MAIN.resolve(Path.of("command", "RpgCommand.java")));
+        int spawnStart = indexOf(command, "LivingEntity spawned = player.getWorld().spawn(");
+        int stamp = indexOf(command, "MobSpawner.stampCustom(entity, def, atStage, adapters.keys());");
+        int spawnEnd = indexOf(command, "UUID id = spawned.getUniqueId();");
+        assertTrue(spawnStart > 0 && stamp > spawnStart && stamp < spawnEnd,
+                "the stamp runs inside spawn(): " + spawnStart + " < " + stamp + " < " + spawnEnd);
+
+        List<String> spawner = codeLines(MAIN.resolve(Path.of("health", "MobSpawner.java")));
+        int tag = indexOf(spawner, "entity.getPersistentDataContainer().set(keys.mobId, PersistentDataType.STRING, def.id());");
+        int apply = indexOf(spawner, "MobBodyApplier.apply(entity, def, stage, keys);");
+        assertTrue(tag > 0 && apply > tag, "mob_id is written, then the body applied: " + tag + " < " + apply);
     }
 
     /** The seed asks the STAGED form, so a stage-3 Phage seeds 120 and not its file's stage-1 80. */

@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.mob.MobBody;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
+import io.github.butterflysmp.rpg.core.mob.MobSplit;
 import io.github.butterflysmp.rpg.core.mob.MobStages;
 import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.bukkit.configuration.ConfigurationSection;
@@ -94,7 +95,10 @@ public final class MobLoader {
             MobStages stages = new MobStages(staged.getInt("count", 0),
                     stageBody(staged, "first"), stageBody(staged, "last"));
             return new MobDefinition(id, s.getString("base_entity"), s.getString("display_name", id),
-                    stages.first().maxHealth(), MobBody.VANILLA, element, stages);
+                    stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s));
+        }
+        if (s.contains("split")) {
+            throw new IllegalArgumentException("'split' needs 'stages': a split names the stage its children are born at");
         }
         return new MobDefinition(
                 id,
@@ -104,6 +108,24 @@ public final class MobLoader {
                 new MobBody(optional(s, "scale"), optional(s, "speed")),
                 element,
                 null);
+    }
+
+    /**
+     * The optional {@code split:} block (PLAN-dragon-mobs.md step R2), or null. Every key is required when the block
+     * is present, and {@code at} must say {@code last}: Ben ruled that only the last stage splits, and the file says
+     * so in words rather than leaving it implied.
+     */
+    private static MobSplit split(ConfigurationSection s) {
+        ConfigurationSection b = s.getConfigurationSection("split");
+        if (b == null) return null;
+        for (String key : List.of("at", "count", "child_stage", "spread")) {
+            if (!b.contains(key)) throw new IllegalArgumentException("split." + key + " is required");
+        }
+        if (!"last".equals(b.getString("at"))) {
+            throw new IllegalArgumentException("split.at must be 'last' (only the last stage splits), was '"
+                    + b.getString("at") + "'");
+        }
+        return new MobSplit(b.getInt("count"), b.getInt("child_stage"), b.getDouble("spread"));
     }
 
     /** One stage's body: height in blocks, a speed multiplier, and the authored health. All three required. */

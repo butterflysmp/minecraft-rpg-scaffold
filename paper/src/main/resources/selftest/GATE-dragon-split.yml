@@ -1,0 +1,116 @@
+# GATE-dragon-split.md: dragon-mobs step R2, the Phage's split on death, read from the SERVER. Each row spawns one
+# Phage through the shipped /rpg spawn at gear score 300 (the overworld rolls 100, so a child reading gs=300 took its
+# PARENT's score, not the place's), tags it, freezes it with NoAI, kills it, and counts and reads what is left.
+#
+# THE STAGING, the same in every row: the player at a block centre facing east (+x); a stone floor and six blocks of
+# air above it, every fill box SAVED first. The Phage is spawned three blocks east. A split child takes ALL its
+# parent's tags (the instrument's own rule, SelfTestSnapshot.tagsForSplitChild), so the children carry the row's tag,
+# "t" and "selftest": PROBE_BODY reads them by the row's tag, and the row-start clean and the restore remove them.
+setup:
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# DS1: a stage 5 killed by the PLAYER'S ATTACK. Its custom health is taken to 1 with /rpg mobdamage (credited to the
+# player), then Player#attack with an iron sword lands the killing blow.
+DS1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - cmd: "rpg spawn phage stage 5 300"
+  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add ds1"
+  - cmd: "tag @e[tag=ds1] add t"
+  - cmd: "tag @e[tag=ds1] add selftest"
+  - cmd: "data merge entity @e[tag=ds1,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - aim: ds1
+  - wait: 2
+  - cmd: "rpg mobdamage 479"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:iron_sword"
+  - wait: 25
+  - attack: ds1
+  - wait: 30
+  - probe_entities: "creeper 16"
+  - probe_body: ds1
+
+# DS2: a stage 5 killed by a cause that is NOT the player: /kill (LivingEntity#kill, genericKill).
+DS2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - cmd: "rpg spawn phage stage 5 300"
+  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add ds2"
+  - cmd: "tag @e[tag=ds2] add t"
+  - cmd: "tag @e[tag=ds2] add selftest"
+  - cmd: "data merge entity @e[tag=ds2,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=ds2]"
+  - wait: 5
+  - probe_entities: "creeper 16"
+  - probe_body: ds2
+
+# DS3: a stage 3 killed: no split.
+DS3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - cmd: "rpg spawn phage stage 3 300"
+  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add ds3"
+  - cmd: "tag @e[tag=ds3] add t"
+  - cmd: "tag @e[tag=ds3] add selftest"
+  - cmd: "data merge entity @e[tag=ds3,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=ds3]"
+  - wait: 5
+  - probe_entities: "creeper 16"
+
+# DS4: a stage 1 killed: no split.
+DS4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - cmd: "rpg spawn phage 300"
+  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add ds4"
+  - cmd: "tag @e[tag=ds4] add t"
+  - cmd: "tag @e[tag=ds4] add selftest"
+  - cmd: "data merge entity @e[tag=ds4,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=ds4]"
+  - wait: 5
+  - probe_entities: "creeper 16"
+
+# DS5: once only, read on the server: after a split the count is 2, and it is still 2 forty ticks later.
+DS5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - cmd: "rpg spawn phage stage 5 300"
+  - cmd: "tag @e[type=creeper,distance=..1.5,sort=nearest,limit=1] add ds5"
+  - cmd: "tag @e[tag=ds5] add t"
+  - cmd: "tag @e[tag=ds5] add selftest"
+  - cmd: "data merge entity @e[tag=ds5,limit=1] {NoAI:1b,PersistenceRequired:1b}"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=ds5]"
+  - wait: 5
+  - probe_entities: "creeper 16"
+  - wait: 40
+  - probe_entities: "creeper 16"
+
+# DS6: the row-start clean removes DS5's two children (they carry DS5's tags), so this row starts with none.
+DS6:
+  - probe_entities: "creeper 16"
