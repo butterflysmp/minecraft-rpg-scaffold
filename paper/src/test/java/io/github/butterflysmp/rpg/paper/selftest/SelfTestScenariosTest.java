@@ -35,10 +35,10 @@ class SelfTestScenariosTest {
         assertEquals(List.of(), loaded.refusals());
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
-                "dragon-split", "dragon-growth"),
+                "dragon-split", "dragon-growth", "dragon-blast"),
                 List.copyOf(loaded.gates().keySet()),
-                "the fourteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
-                        + " dragon-split and dragon-growth LAST (2026-11-15)");
+                "the fifteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
+                        + " dragon-split and dragon-growth (2026-11-15), then dragon-blast LAST (step R3, 2026-11-15)");
     }
 
     /** The seat's CORE rows, one scenario each (2026-10-05). R0d is a boot log line and has none. */
@@ -64,6 +64,8 @@ class SelfTestScenariosTest {
         expected.put("dragon-split", List.of("DS1R2", "DS2R2", "DS3R2", "DS4R2", "DS5R2", "DS6R2"));
         expected.put("dragon-growth", List.of("DG1R2", "DG2R2", "DG3R2", "DG4R2", "DG5R2", "DG6R2", "DG7R2", "DG8R2",
                 "DG9R2"));
+        // Step R3: GATE-dragon-blast.md's own rows; BQ1 is Ben's three ASK questions.
+        expected.put("dragon-blast", List.of("BL1", "BL2", "BL3", "BL4", "BL5", "BL6", "BL7", "BL8", "BQ1"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -81,7 +83,9 @@ class SelfTestScenariosTest {
         // feat/dragon-split 56a8bb00 the same commands print 13, 87, 13: 74, this line's old value.
         // Then GATE-dragon-fix.md (2026-11-15), RECOUNTED the same way: 14 gates, 96 keys, 14 setups, so 82. At
         // feat/dragon-growth 39bb2e90 the same commands print 14, 97, 14: 83, this line's old value.
-        assertEquals(82, loaded.rows());
+        // Then GATE-dragon-blast.md (step R3, 2026-11-15), RECOUNTED the same way: 15 gates, 106 keys, 15 setups, so 91.
+        // At master 94915476 the same commands print 14, 96, 14: 82, this line's old value.
+        assertEquals(91, loaded.rows());
     }
 
     @Test
@@ -98,15 +102,17 @@ class SelfTestScenariosTest {
      * Which gate file a scenario file's rows are headings in. Its own, except the three dragon gates, whose rows since
      * the 2026-11-15 boot are re-predictions held in GATE-dragon-fix.md, the stack top (its brief: the old
      * predictions and readings stay as they are, and every re-run row is a new row named for the old one).
+     * NAMED, not a prefix: {@code dragon-blast} (step R3) is a dragon gate with its OWN file, and a prefix test sent it
+     * to GATE-dragon-fix.md.
      */
     static String docOf(String gate) {
-        return gate.startsWith("dragon-") ? "dragon-fix" : gate;
+        return Set.of("dragon-bodies", "dragon-split", "dragon-growth").contains(gate) ? "dragon-fix" : gate;
     }
 
-    /** The three dragon gates declare the difficulty their rows need, first thing in their setup (GATE-dragon-fix.md, C5). */
+    /** The dragon gates declare the difficulty their rows need, first thing in their setup (GATE-dragon-fix.md, C5). */
     @Test
     void theDragonGatesDeclareNormalFirstInTheirSetup() {
-        for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth")) {
+        for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth", "dragon-blast")) {
             Scenario setup = shipped().gates().get(gate).getFirst();
             assertEquals(Scenario.SETUP, setup.row(), gate);
             assertEquals(new Scenario.Step(Scenario.Verb.DIFFICULTY, "normal"), setup.steps().getFirst(), gate);
