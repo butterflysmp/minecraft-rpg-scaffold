@@ -4,6 +4,14 @@
 **committed before the boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once
 its row has been read. **NO BOOT until the seat has diffed the code AND this gate, and Ben says ready.**
 
+> **NOTE, 2026-11-15 (added on `feat/dragon-split`, step R2, before any boot; no prediction below is changed).** This
+> gate will be read in a **STACKED BOOT** of `feat/dragon-split`'s head, which carries this step and the next. In
+> that boot **this file's R0a-R0d are SUPERSEDED** by `GATE-dragon-split.md`'s R0 (its R0a names that branch's head,
+> not this one's, and its R0b-R0d cover both steps), and **this file's run sheet is replaced** by
+> `GATE-dragon-split.md`'s, which runs this gate's selftest and B1-B6 in it. **DB1-DB11 and B1-B6 are read against
+> the predictions in THIS file, unchanged.** One consequence for DB2-DB4's `maxHP`: unchanged, because R2 adds a
+> `split:` block to `phage.yml` and touches no stage body.
+
 **Plan:** `PLAN-dragon-mobs.md` — RULINGS (Ben's R1 answers and the seat's rulings 8-10), §3.R.0 (the element on a
 mob), §4.2 (MB1 limited, N1, N2) and §5.R step R1. **The rule every AUTO row answers to:**
 `.claude/rules/verification.md`, *AN AUTO READING IS A READING OF THE SERVER, NEVER OF THE CLIENT*.
