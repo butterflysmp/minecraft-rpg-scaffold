@@ -5,6 +5,28 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the content AND this gate, and
 Ben says ready.**
 
+> **READ, 2026-11-17: booted at `07d06837` on the seat's approval and Ben's "ready".** Server log `08:14:24` to the
+> clean `/stop` at `08:18:55`. Carried state: no JVM; backup `rpg-run-backups/2026-11-17-pre-dragon-knell-5`
+> (`run/plugins/Rpg` 129 files, 387488 bytes; `run/world` 193 files, 204963724 bytes; `diff -rq lines: 0` each);
+> `12:  dev-pack-on-join: true`. Ben logged in at `08:14:32`, typed `/gamemode survival` first (`08:14:57`), then each
+> selftest once, each to `SELFTEST RUN FINISHED`, then `/stop`.
+>
+> **The result: every AUTO row AS PREDICTED, 28 of 28, RE1 and the re-purposed TP14R4 included.** No run was stopped,
+> so the server-stop restore stays UNREAD on a server.
+>
+> **Ben's two answers: "yes" (the shot is in the middle now, the way he wanted); and, to "Does the whole sequence feel
+> right now?", "it's almost there. The second purple line is out of place. remove it other than that everything is
+> perfect"**, his words, not yes or no, recorded verbatim (the second purple line is `flash_at`'s tick 18).
+>
+> **Counts:** 28 TELEGRAPH lines, each with exactly two sound lines at its tick, `block.bell.use pitch=1.00` then
+> `block.bell.resonate`; 27 FIRE lines (the 28th telegraph is KB9R5's, cancelled `elapsed=8/24`), each with exactly two,
+> `block.bell.use pitch=1.50` then `block.amethyst_block.chime`; **every fire 24 ticks after its telegraph (27 of
+> 27)**; 17 TELEPORT decisions, **every one 24 ticks after the fire of the hit that scheduled it (17 of 17)**; 5
+> `skipped … knell-gone`, each inside its own row; **no `ignored … pending` line** (unreachable at 24 and 24). 22 hits
+> and 22 HURT lines, each `before=65.000 after=59.091 defense=10.000 dealerType=wither_skeleton/knell`: no hit from
+> anything but a beam. Every LEFTOVER line `living=0`. Both runs: `DIFFICULTY found=NORMAL set=NORMAL`, `RESTORED …
+> difficulty=NORMAL`, no `ABORTED` or `NOT-RESTORED` line.
+
 **What this gate re-predicts, and why.** Ben, after the boot of `0b4037ec` (`PLAN-dragon-mobs.md`, RULINGS): *"the timing
 of the warning and teleport are good, I want the shot to be in the middle"*, and *"no"* to the lower first bell. The
 seat's reading, told to him before the brief and built here: **the lock and the move stay 48 ticks apart, the fire at
@@ -135,13 +157,13 @@ applies to every force in a row.
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-knell-5` prints it, shortened. **Not** master's `2d7b593d`; not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1`, after this boot's `Done` | |
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-knell-5` prints it, shortened. **Not** master's `2d7b593d`; not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1`, after this boot's `Done` | READ 2026-11-17: `[08:14:24] [Server thread/INFO]: [Rpg] Build: 07d06837`, this PR's head (`git ls-remote` `07d06837e465…`). **MATCH** |
 
 ### R0b — the jar carries 24 and 24 and the bell at 1.0
 
 | prediction | instrument | READING |
 |---|---|---|
-| In `content/mobs/knell.yml`: PRESENT `  telegraph_ticks: 24`, `  flash_at: [0, 18]`, `  delay_ticks: 24`, and **the telegraph list holding the bell at pitch 1.0 then the resonance**; ABSENT `  telegraph_ticks: 20`, `  flash_at: [0, 15]`, `  delay_ticks: 28`, `      - { key: block.bell.use, volume: 1.0, pitch: 0.8 }`. Keys: `GATE-dragon-beam.yml` `KB1R5:`, `WA1R3:` PRESENT, `KB1R4:` ABSENT; `GATE-dragon-teleport.yml` `TP14R4:`, `KB10R6:` PRESENT, `TP14R3:` ABSENT. **The controls, the same on both builds:** `knell.yml` PRESENT `      - { key: block.bell.use, volume: 1.0, pitch: 1.5 }`; `scheduler/InlineScheduler.class` PRESENT; `GATE-dragon-blast.yml` `BQ1R2:` PRESENT | the scan below | |
+| In `content/mobs/knell.yml`: PRESENT `  telegraph_ticks: 24`, `  flash_at: [0, 18]`, `  delay_ticks: 24`, and **the telegraph list holding the bell at pitch 1.0 then the resonance**; ABSENT `  telegraph_ticks: 20`, `  flash_at: [0, 15]`, `  delay_ticks: 28`, `      - { key: block.bell.use, volume: 1.0, pitch: 0.8 }`. Keys: `GATE-dragon-beam.yml` `KB1R5:`, `WA1R3:` PRESENT, `KB1R4:` ABSENT; `GATE-dragon-teleport.yml` `TP14R4:`, `KB10R6:` PRESENT, `TP14R3:` ABSENT. **The controls, the same on both builds:** `knell.yml` PRESENT `      - { key: block.bell.use, volume: 1.0, pitch: 1.5 }`; `scheduler/InlineScheduler.class` PRESENT; `GATE-dragon-blast.yml` `BQ1R2:` PRESENT | the scan below | READ: all 17 lines as predicted: `telegraph_ticks: 24`, `flash_at: [0, 18]`, `delay_ticks: 24` and the telegraph list (bell 1.0, then the resonance) PRESENT; 20, [0, 15], 28 and the 0.8 bell ABSENT; `KB1R5:`, `WA1R3:`, `TP14R4:`, `KB10R6:` PRESENT, `KB1R4:` and `TP14R3:` ABSENT; the three controls PRESENT. **MATCH** |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -167,13 +189,13 @@ on the four new keys and PRESENT on `KB1R4:` and `TP14R3:`**; the three controls
 
 | prediction | instrument | READING |
 |---|---|---|
-| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**, verbatim the boot of `0b4037ec`'s. No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN` beyond `volley_stone`'s known pair. **A `Skipping malformed mob 'knell.yml'` line would mean the beam or teleport block was refused** (`4 mobs`) | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN','Exception','Content:'` | |
+| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**, verbatim the boot of `0b4037ec`'s. No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN` beyond `volley_stone`'s known pair. **A `Skipping malformed mob 'knell.yml'` line would mean the beam or teleport block was refused** (`4 mobs`) | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN','Exception','Content:'` | READ: the Loaded line verbatim as predicted; no `Refusing`, `Skipping`, `SEVERE` or `Exception` in the whole log; the only `[Rpg]` WARN lines are `volley_stone`'s known pair (and Paper's own update banner, not ours). **MATCH** |
 
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one line **`[Rpg] Selftest: dev server, 117 scenarios across 17 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
+| Exactly one line **`[Rpg] Selftest: dev server, 117 scenarios across 17 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | READ: `[Rpg] Selftest: dev server, 117 scenarios across 17 gates [melee-cell, … dragon-beam, dragon-teleport]`, the list verbatim; no `Refusing selftest`. **MATCH** |
 
 **The 117 is RECOUNTED from the files at this branch's head:** in `paper/src/main/resources/selftest/`,
 `grep -cE '^  - ' index.yml` prints **17**; `cat $(grep -E '^  - ' index.yml | tr -d '\r' | sed 's/  - /GATE-/;
@@ -209,157 +231,157 @@ after the lock.
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit's lines exactly as above (the fire at T + 24). Then the kill, **exactly one** `TELEPORT skipped mob=knell id=<K> target=<Ben> reason=knell-gone`, then `SETTLED`; no decision line | K1, K2, K3 | |
+| The forced hit's lines exactly as above (the fire at T + 24). Then the kill, **exactly one** `TELEPORT skipped mob=knell id=<K> target=<Ben> reason=knell-gone`, then `SETTLED`; no decision line | K1, K2, K3 | READ (F = -100.500 63.000 6.500 in both runs): both telegraph sounds (bell 1.00, then the resonance) and both fire sounds (bell 1.50, then the chime) at their ticks; TELEGRAPH `tick=737 … ticks=24`; FIRE `tick=761 … length=12.259 clip=block tolerance=1.00 tested=1 [player <Ben> gap=0.000 hit] dealt=65.000` (737 + 24); one REPORT; one HURT `before=65.000 after=59.091 defense=10.000`; the kill, one `TELEPORT skipped … reason=knell-gone`, then `SETTLED`. **MATCH** |
 
 ### KB2R5 — supersedes KB2R4: the root on a walking Knell, 24 ticks (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (0) `knell live`, 15 east. (1) **THE CONTROL:** two AT lines 5 ticks apart, the second's x < the first's − 0.01, or the row is HOLLOW. (2) the two telegraph sounds and one TELEGRAPH `forced=true ticks=24`, its `at=` RECORDED. (3) the FIRE **24** later, its `at=` the TELEGRAPH's on all three coordinates. (4) the two fire sounds; `[player <Ben> gap=0.000 hit] dealt=65.000`, `length` and `dir` RECORDED; one REPORT; one HURT. (5) the AT 40 ticks after the force (fire + 14 or 15): RECORDED. (6) the kill, one skip line. (7) no HURT but the beam's | K2, K4 | |
+| (0) `knell live`, 15 east. (1) **THE CONTROL:** two AT lines 5 ticks apart, the second's x < the first's − 0.01, or the row is HOLLOW. (2) the two telegraph sounds and one TELEGRAPH `forced=true ticks=24`, its `at=` RECORDED. (3) the FIRE **24** later, its `at=` the TELEGRAPH's on all three coordinates. (4) the two fire sounds; `[player <Ben> gap=0.000 hit] dealt=65.000`, `length` and `dir` RECORDED; one REPORT; one HURT. (5) the AT 40 ticks after the force (fire + 14 or 15): RECORDED. (6) the kill, one skip line. (7) no HURT but the beam's | K2, K4 | READ: (1) **CONTROL PASSED:** `x=-88.108`, then `x=-88.465`. (2) both telegraph sounds (bell 1.00, then the resonance) and both fire sounds (bell 1.50, then the chime) at their ticks; TELEGRAPH `tick=872 lived=66 at=-88.536 63.000 7.000 … ticks=24`. (3) FIRE `tick=896 at=-88.536 63.000 7.000`, **the same: ROOTED for the 24.** (4) `length=17.963 … [player <Ben> gap=0.000 hit] dealt=65.000`, `dir=-0.981494 -0.187049 -0.041020`; one REPORT; one HURT. (5) RECORDED: the AT 40 ticks after the force (fire + 14 or 15) `x=-88.536 y=63.000 z=7.000`, where it fired (inside K4's bound). (6) one skip line. (7) no HURT but the beam's. **MATCH** |
 
 ### WA1R3 — supersedes WA1R2, RE-TIMED: the Knell walks again after a beam (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (0) `knell live`, 15 east. (1) **THE CONTROL**, or HOLLOW. (2) the two telegraph sounds, one TELEGRAPH at T. (3) `CMD /tp @s ~ ~ ~3`. (4) the two fire sounds and FIRE `tick=<T+24>`, `at=` the TELEGRAPH's, **`[player <Ben> gap=<g> miss] dealt=none`, g ≥ 2.0**; no REPORT, no HURT, **no TELEPORT line**. (5) **THE WALK:** the AT **55** ticks after the force (fire + 29 or 30); its horizontal distance from F + (0, 0, 3) **less than the FIRE's `at=` distance by more than 0.20**. (6) the kill; no TELEPORT line. (7) no HURT | K2, K4 | |
+| (0) `knell live`, 15 east. (1) **THE CONTROL**, or HOLLOW. (2) the two telegraph sounds, one TELEGRAPH at T. (3) `CMD /tp @s ~ ~ ~3`. (4) the two fire sounds and FIRE `tick=<T+24>`, `at=` the TELEGRAPH's, **`[player <Ben> gap=<g> miss] dealt=none`, g ≥ 2.0**; no REPORT, no HURT, **no TELEPORT line**. (5) **THE WALK:** the AT **55** ticks after the force (fire + 29 or 30); its horizontal distance from F + (0, 0, 3) **less than the FIRE's `at=` distance by more than 0.20**. (6) the kill; no TELEPORT line. (7) no HURT | K2, K4 | READ: (1) **CONTROL PASSED:** `x=-88.024`, then `x=-88.381`. (2) both telegraph sounds (bell 1.00, then the resonance) and both fire sounds (bell 1.50, then the chime) at their ticks; TELEGRAPH `tick=1007 lived=66 at=-88.452 63.000 7.002`. (3) the step. (4) FIRE `tick=1031 at=-88.452 63.000 7.002` (rooted) `… [player <Ben> gap=2.580 miss] dealt=none`; no REPORT, HURT or TELEPORT line. (5) **THE WALK:** the AT 55 ticks after the force `x=-88.892 y=63.000 z=7.803`; from F + (0, 0, 3) = (-100.500, 9.500): **12.304 at the fire, 11.731 at fire + 30, a drop of 0.573 > 0.20** (executed). (6) the kill; no TELEPORT line. (7) no HURT. **MATCH** |
 
 ### KB3R5 — supersedes KB3R4: the line fixed at the lock; 3 south, missed (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The telegraph's lines; `CMD /tp @s ~ ~ ~3`; the fire's sounds; `BEAM fire … tick=<T+24> … [player <Ben> gap=2.700 miss] dealt=none`; no REPORT, HURT or TELEPORT line | K3 | |
+| The telegraph's lines; `CMD /tp @s ~ ~ ~3`; the fire's sounds; `BEAM fire … tick=<T+24> … [player <Ben> gap=2.700 miss] dealt=none`; no REPORT, HURT or TELEPORT line | K3 | READ: TELEGRAPH `tick=1097`; FIRE `tick=1121 … [player <Ben> gap=2.700 miss] dealt=none`; no REPORT, HURT or TELEPORT line. **MATCH** |
 
 ### KB4R5 — supersedes KB4R4: 1.2 south, still hit (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `… gap=0.900 hit] dealt=65.000`; one REPORT; one HURT; after the kill one `TELEPORT skipped … knell-gone`, inside this row | K3 | |
+| `… gap=0.900 hit] dealt=65.000`; one REPORT; one HURT; after the kill one `TELEPORT skipped … knell-gone`, inside this row | K3 | READ: FIRE `tick=1196 … gap=0.900 hit] dealt=65.000`; one REPORT; one HURT; one `TELEPORT skipped … knell-gone` inside this row. **MATCH** |
 
 ### KB5R5 — supersedes KB5R4: 1.4 south, missed (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `… gap=1.100 miss] dealt=none`; no REPORT, HURT or TELEPORT line | K3 | |
+| `… gap=1.100 miss] dealt=none`; no REPORT, HURT or TELEPORT line | K3 | READ: FIRE `tick=1271 … gap=1.100 miss] dealt=none`; no REPORT, HURT or TELEPORT line. **MATCH** |
 
 ### KB6R5 — supersedes KB6R4: beyond the range, nothing (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `BEAM none mob=knell id=<K> forced=true tick=<t> range=40.00 reason=no-target`; **no BEAM sound line**, no TELEGRAPH, no FIRE; `AT …` 41.000 east of F; no TELEPORT line | K3 | |
+| `BEAM none mob=knell id=<K> forced=true tick=<t> range=40.00 reason=no-target`; **no BEAM sound line**, no TELEGRAPH, no FIRE; `AT …` 41.000 east of F; no TELEPORT line | K3 | READ: `BEAM none mob=knell id=<K> forced=true tick=1322 range=40.00 reason=no-target`; no sound, TELEGRAPH or FIRE line; `AT … x=-59.500 y=63.000 z=6.500` (41.000 east of F); no TELEPORT line. **MATCH** |
 
 ### KB7R5 — supersedes KB7R4: a husk in the line keeps its health (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| the husk `customHP=100.000/100.000` before and after; `BEAM fire … tested=2 [player <Ben> gap=0.000 hit, husk <uuid> gap=0.144 spared] dealt=65.000`; one REPORT; one HURT; one skip line | K3 | |
+| the husk `customHP=100.000/100.000` before and after; `BEAM fire … tested=2 [player <Ben> gap=0.000 hit, husk <uuid> gap=0.144 spared] dealt=65.000`; one REPORT; one HURT; one skip line | K3 | READ: the husk `customHP=100.000/100.000` before and after; FIRE `tick=1401 … tested=2 [player <Ben> gap=0.000 hit, husk <uuid> gap=0.144 spared] dealt=65.000`; one REPORT; one HURT; one skip line. **MATCH** |
 
 ### KB8R5 — supersedes KB8R4: a glass wall stops it (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `BEAM fire … length=3.639 clip=block tolerance=1.00 tested=1 [player <Ben> gap=4.200 miss] dealt=none`; no REPORT, HURT or TELEPORT line | K3 | |
+| `BEAM fire … length=3.639 clip=block tolerance=1.00 tested=1 [player <Ben> gap=4.200 miss] dealt=none`; no REPORT, HURT or TELEPORT line | K3 | READ: FIRE `tick=1476 … length=3.639 clip=block tolerance=1.00 tested=1 [player <Ben> gap=4.200 miss] dealt=none`; no REPORT, HURT or TELEPORT line. **MATCH** |
 
 ### KB9R5 — supersedes KB9R4: killed mid-telegraph, nothing fires (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The two telegraph sound lines and the TELEGRAPH at T; the kill 10 ticks after the force; **exactly one** `BEAM cancelled mob=knell id=<K> elapsed=<n>/24 reason=gone`, **1 ≤ n ≤ 23**, n RECORDED; no fire sound line, no FIRE, REPORT, HURT or TELEPORT line | K2 | |
+| The two telegraph sound lines and the TELEGRAPH at T; the kill 10 ticks after the force; **exactly one** `BEAM cancelled mob=knell id=<K> elapsed=<n>/24 reason=gone`, **1 ≤ n ≤ 23**, n RECORDED; no fire sound line, no FIRE, REPORT, HURT or TELEPORT line | K2 | READ: both telegraph sound lines and the TELEGRAPH at `tick=1527`; `BEAM cancelled mob=knell id=<K> elapsed=8/24 reason=gone` (n = 8); no fire sound line, no FIRE, REPORT, HURT or TELEPORT line. **MATCH** |
 
 ### KB10R6 — supersedes KB10R5: the move 24 ticks after the fire (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| AT at K; the forced hit; **exactly one** `TELEPORT … tick=<FIRE + 24> from=<K> center=<F> radius=8.000 bearing=0.000 side=right first=50.000 tried=1 [right 50.000 ok y=<F.y> at=<F + (5.142, 0, 6.128)>] landed=<the same> moved=true`; the AT line there | K1, K3 | |
+| AT at K; the forced hit; **exactly one** `TELEPORT … tick=<FIRE + 24> from=<K> center=<F> radius=8.000 bearing=0.000 side=right first=50.000 tried=1 [right 50.000 ok y=<F.y> at=<F + (5.142, 0, 6.128)>] landed=<the same> moved=true`; the AT line there | K1, K3 | READ: AT at K `-92.500 63.000 6.500`; FIRE `tick=1968` a hit; `TELEPORT … tick=1992 from=-92.500 63.000 6.500 center=-100.500 63.000 6.500 radius=8.000 bearing=0.000 side=right first=50.000 tried=1 [right 50.000 ok y=63.000 at=-95.358 63.000 12.628] landed=-95.358 63.000 12.628 moved=true` (1992 = 1968 + 24); AT there. **MATCH** |
 
 ### TP2R5 — supersedes TP2R4: 50 degrees left (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; one TELEPORT at the FIRE + 24, `side=left first=50.000 tried=1 [left 50.000 ok y=<F.y> at=<F + (5.142, 0, −6.128)>] … moved=true`; AT there | K1, K3 | |
+| The forced hit; one TELEPORT at the FIRE + 24, `side=left first=50.000 tried=1 [left 50.000 ok y=<F.y> at=<F + (5.142, 0, −6.128)>] … moved=true`; AT there | K1, K3 | READ: FIRE `tick=2108`; `TELEPORT … tick=2132 … side=left first=50.000 tried=1 … landed=-95.358 63.000 0.372 moved=true` (F + (5.142, 0, −6.128)); AT there. **MATCH** |
 
 ### TP3R5 — supersedes TP3R4: 30 degrees right (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; one TELEPORT at the FIRE + 24, `side=right first=30.000 tried=1 [right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT there | K1, K3 | |
+| The forced hit; one TELEPORT at the FIRE + 24, `side=right first=30.000 tried=1 [right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT there | K1, K3 | READ: FIRE `tick=2248`; `TELEPORT … tick=2272 … side=right first=30.000 tried=1 … landed=-93.572 63.000 10.500 moved=true`; AT there. **MATCH** |
 
 ### TP4R5 — supersedes TP4R4: 70 degrees right (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; one TELEPORT at the FIRE + 24, `side=right first=70.000 tried=1 [right 70.000 ok y=<F.y> at=<F + (2.736, 0, 7.518)>] … moved=true`; AT there | K1, K3 | |
+| The forced hit; one TELEPORT at the FIRE + 24, `side=right first=70.000 tried=1 [right 70.000 ok y=<F.y> at=<F + (2.736, 0, 7.518)>] … moved=true`; AT there | K1, K3 | READ: FIRE `tick=2388`; `TELEPORT … tick=2412 … side=right first=70.000 tried=1 … landed=-97.764 63.000 14.018 moved=true`; AT there. **MATCH** |
 
 ### TP5R5 — supersedes TP5R4: a miss moves nothing (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| AT at K; the forced beam's sounds and lines; the step; `… gap=2.700 miss] dealt=none`; no REPORT, no HURT, **no TELEPORT line of any kind** through the 130 ticks; AT at K | K1 | |
+| AT at K; the forced beam's sounds and lines; the step; `… gap=2.700 miss] dealt=none`; no REPORT, no HURT, **no TELEPORT line of any kind** through the 130 ticks; AT at K | K1 | READ: AT at K; FIRE `tick=2528 … gap=2.700 miss] dealt=none`; no REPORT, HURT or TELEPORT line; AT at K. **MATCH** |
 
 ### TP6R5 — supersedes TP6R4: every right spot walled; it lands left (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| One TELEPORT at the FIRE + 24, `tried=6 [right 50.000 no-footing blocked=7 ungrounded=0, right 30.000 no-footing blocked=7 ungrounded=0, right 43.333 no-footing blocked=7 ungrounded=0, right 56.667 no-footing blocked=7 ungrounded=0, right 70.000 no-footing blocked=7 ungrounded=0, left 50.000 ok y=<F.y> at=<F + (5.142, 0, −6.128)>] … moved=true`; AT there | K1, K3 | |
+| One TELEPORT at the FIRE + 24, `tried=6 [right 50.000 no-footing blocked=7 ungrounded=0, right 30.000 no-footing blocked=7 ungrounded=0, right 43.333 no-footing blocked=7 ungrounded=0, right 56.667 no-footing blocked=7 ungrounded=0, right 70.000 no-footing blocked=7 ungrounded=0, left 50.000 ok y=<F.y> at=<F + (5.142, 0, −6.128)>] … moved=true`; AT there | K1, K3 | READ: FIRE `tick=2668`; `TELEPORT … tick=2692 … tried=6 [right 50.000, 30.000, 43.333, 56.667, 70.000 each no-footing blocked=7 ungrounded=0, left 50.000 ok …] landed=-95.358 63.000 0.372 moved=true`; AT there. **MATCH** |
 
 ### TP7R5 — supersedes TP7R4: walled in everywhere; none, and it stays (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| One TELEPORT at the FIRE + 24, `tried=10`, all ten `no-footing blocked=7 ungrounded=0`, `landed=none moved=-`; AT at K before and after | K1, K3 | |
+| One TELEPORT at the FIRE + 24, `tried=10`, all ten `no-footing blocked=7 ungrounded=0`, `landed=none moved=-`; AT at K before and after | K1, K3 | READ: FIRE `tick=2808`; `TELEPORT … tick=2832 … tried=10 [` all ten `no-footing blocked=7 ungrounded=0` `] landed=none moved=-`; AT at K before and after. **MATCH** |
 
 ### TP8R5 — supersedes TP8R4: a pit two deep (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| One TELEPORT at the FIRE + 24, `tried=1 [right 50.000 ok y=<F.y − 2> at=<F + (5.142, −2, 6.128)>] … moved=true`; AT there | K1, K3 | |
+| One TELEPORT at the FIRE + 24, `tried=1 [right 50.000 ok y=<F.y − 2> at=<F + (5.142, −2, 6.128)>] … moved=true`; AT there | K1, K3 | READ: FIRE `tick=2948`; `TELEPORT … tick=2972 … tried=1 … landed=-95.358 61.000 12.628 moved=true`; AT there. **MATCH** |
 
 ### TP9R5 — supersedes TP9R4: a step two high (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| One TELEPORT at the FIRE + 24, `tried=1 [right 50.000 ok y=<F.y + 2> at=<F + (5.142, 2, 6.128)>] … moved=true`; AT there | K1, K3 | |
+| One TELEPORT at the FIRE + 24, `tried=1 [right 50.000 ok y=<F.y + 2> at=<F + (5.142, 2, 6.128)>] … moved=true`; AT there | K1, K3 | READ: FIRE `tick=3088`; `TELEPORT … tick=3112 … tried=1 … landed=-95.358 65.000 12.628 moved=true`; AT there. **MATCH** |
 
 ### TP10R5 — supersedes TP10R4: ground four down, refused (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| One TELEPORT at the FIRE + 24, `tried=2 [right 50.000 no-footing blocked=0 ungrounded=7, right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT there | K1, K3 | |
+| One TELEPORT at the FIRE + 24, `tried=2 [right 50.000 no-footing blocked=0 ungrounded=7, right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT there | K1, K3 | READ: FIRE `tick=3228`; `TELEPORT … tick=3252 … tried=2 [right 50.000 no-footing blocked=0 ungrounded=7, right 30.000 ok …] landed=-93.572 63.000 10.500 moved=true`; AT there. **MATCH** |
 
 ### TP11R5 — supersedes TP11R4: no sight, refused (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| One TELEPORT at the FIRE + 24, `tried=2 [right 50.000 no-sight y=<F.y>, right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT there | K1, K3 | |
+| One TELEPORT at the FIRE + 24, `tried=2 [right 50.000 no-sight y=<F.y>, right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT there | K1, K3 | READ: FIRE `tick=3368`; `TELEPORT … tick=3392 … tried=2 [right 50.000 no-sight y=63.000, right 30.000 ok …] landed=-93.572 63.000 10.500 moved=true`; AT there. **MATCH** |
 
 ### TP12R5 — supersedes TP12R4: he steps 2 north during the delay (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit at F; `CMD /tp @s ~ ~ ~-2` 40 ticks after the force (after the fire, 9 or 10 before the move); `TELEPORT … tick=<FIRE + 24> center=<F + (0, 0, −2)> radius=8.246 bearing=14.036 side=right first=50.000 tried=1 [right 50.000 ok … at=<F + (3.610, 0, 5.414)>] … moved=true`; AT there | K1, K3 | |
+| The forced hit at F; `CMD /tp @s ~ ~ ~-2` 40 ticks after the force (after the fire, 9 or 10 before the move); `TELEPORT … tick=<FIRE + 24> center=<F + (0, 0, −2)> radius=8.246 bearing=14.036 side=right first=50.000 tried=1 [right 50.000 ok … at=<F + (3.610, 0, 5.414)>] … moved=true`; AT there | K1, K3 | READ: FIRE `tick=3508` at F; `CMD /tp @s ~ ~ ~-2`; `TELEPORT … tick=3532 … center=-100.500 63.000 4.500 radius=8.246 bearing=14.036 side=right first=50.000 tried=1 … landed=-96.890 63.000 11.914 moved=true` (F + (3.610, 0, 5.414)); AT there. **MATCH** |
 
 ### TP13R5 — supersedes TP13R4: the Knell killed during the delay (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit (its fire 9 or 10 ticks before the kill); `CMD /kill @e[tag=tp13r5]` 35 ticks after the force; **exactly one** `TELEPORT skipped mob=knell id=<K> target=<Ben> reason=knell-gone`; no decision line | K1 | |
+| The forced hit (its fire 9 or 10 ticks before the kill); `CMD /kill @e[tag=tp13r5]` 35 ticks after the force; **exactly one** `TELEPORT skipped mob=knell id=<K> target=<Ben> reason=knell-gone`; no decision line | K1 | READ: FIRE `tick=3648`, a hit; `CMD /kill @e[tag=tp13r5]`; exactly one `TELEPORT skipped mob=knell id=<K> target=<Ben> reason=knell-gone`; no decision line. **MATCH** |
 
 ### TP14R4 — supersedes TP14R3, RE-PURPOSED (the header): a hit after the move lands moves the Knell again (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) The first forced hit: TELEGRAPH₁ at T₁, FIRE₁ at T₁ + 24, one HURT. (2) **exactly one** TELEPORT at **FIRE₁ + 24 = T₁ + 48**, `side=right first=50.000 tried=1 [right 50.000 ok … at=<F + (5.142, 0, 6.128)>] … moved=true` (the fixed draw). (3) **55 ticks after the first force**, in one tick: `CMD /rpg heal 1000000`, then `DRIVE beam` with no `refused=`. (4) TELEGRAPH₂ at **T₂ = T₁ + 55**, `at=<F + (5.142, 0, 6.128)>` (where it landed), with its two sounds; its two fire sounds and FIRE₂ at **T₁ + 79**, `… [player <Ben> gap=<g> hit] dealt=65.000` (an open line from the landing; `length`, `dir` and `g` RECORDED), REPORT, one HURT; **no `TELEPORT ignored` line**. (5) **a second TELEPORT at FIRE₂ + 24 = T₁ + 103**, `from=<F + (5.142, 0, 6.128)> center=<F> radius=8.000 bearing=50.000`, the production draw, `moved=true`, RECORDED; the AT line at its landing | K1, K3, K5 | |
+| (1) The first forced hit: TELEGRAPH₁ at T₁, FIRE₁ at T₁ + 24, one HURT. (2) **exactly one** TELEPORT at **FIRE₁ + 24 = T₁ + 48**, `side=right first=50.000 tried=1 [right 50.000 ok … at=<F + (5.142, 0, 6.128)>] … moved=true` (the fixed draw). (3) **55 ticks after the first force**, in one tick: `CMD /rpg heal 1000000`, then `DRIVE beam` with no `refused=`. (4) TELEGRAPH₂ at **T₂ = T₁ + 55**, `at=<F + (5.142, 0, 6.128)>` (where it landed), with its two sounds; its two fire sounds and FIRE₂ at **T₁ + 79**, `… [player <Ben> gap=<g> hit] dealt=65.000` (an open line from the landing; `length`, `dir` and `g` RECORDED), REPORT, one HURT; **no `TELEPORT ignored` line**. (5) **a second TELEPORT at FIRE₂ + 24 = T₁ + 103**, `from=<F + (5.142, 0, 6.128)> center=<F> radius=8.000 bearing=50.000`, the production draw, `moved=true`, RECORDED; the AT line at its landing | K1, K3, K5 | READ: (1) TELEGRAPH₁ `tick=3754`, FIRE₁ `tick=3778` (T₁ + 24) hit, one HURT. (2) `TELEPORT … tick=3802` (**T₁ + 48**) `side=right first=50.000 tried=1 … landed=-95.358 63.000 12.628 moved=true`. (3) the heal and `DRIVE beam` with no `refused=`. (4) TELEGRAPH₂ `tick=3809 lived=61` (**T₁ + 55**) `at=-95.358 63.000 12.628` with both sounds; FIRE₂ `tick=3833` (**T₁ + 79**) `dir=-0.618172 -0.274086 -0.736709 length=12.259 … [player <Ben> gap=0.000 hit] dealt=65.000`, REPORT, one HURT; **no `TELEPORT ignored` line.** (5) the second `TELEPORT … tick=3857` (**T₁ + 103**) `from=-95.358 63.000 12.628 center=-100.500 63.000 6.500 radius=8.000 bearing=50.000 side=right first=38.423 tried=1 … landed=-100.280 63.000 14.497 moved=true` (the production draw); the AT there. **MATCH: the pending move is cleared when it lands** |
 
 ### KB11R6 — supersedes KB11R5: the live cycle, by bound, unbroken by a move (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) both spawns, `REPLY "The base value for attribute Speed for entity Knell set to 0" []`, the draw. (2) the first own TELEGRAPH `forced=false`, **99 ≤ lived ≤ 201**, at K, `ticks=24`, its two sounds at its tick. (3) its FIRE 24 later with its two sounds, a hit; one HURT. (4) **a TELEPORT at that FIRE + 24**, `side=right first=50.000 … landed=<F + (5.142, 0, 6.128)> moved=true`. (5) each next own TELEGRAPH's `lived` − the previous one's − 24 **within 100 to 200**, with the previous hit's move between them. (6) each later hit's move at its FIRE + 24, the production draw, RECORDED, `radius=8.000`. (7) no line names the frozen Knell's uuid but its spawn. (8) between two heals at most one HURT. (9) the kills; anything pending cancelled inside the row, RECORDED | K1 | |
+| (1) both spawns, `REPLY "The base value for attribute Speed for entity Knell set to 0" []`, the draw. (2) the first own TELEGRAPH `forced=false`, **99 ≤ lived ≤ 201**, at K, `ticks=24`, its two sounds at its tick. (3) its FIRE 24 later with its two sounds, a hit; one HURT. (4) **a TELEPORT at that FIRE + 24**, `side=right first=50.000 … landed=<F + (5.142, 0, 6.128)> moved=true`. (5) each next own TELEGRAPH's `lived` − the previous one's − 24 **within 100 to 200**, with the previous hit's move between them. (6) each later hit's move at its FIRE + 24, the production draw, RECORDED, `radius=8.000`. (7) no line names the frozen Knell's uuid but its spawn. (8) between two heals at most one HURT. (9) the kills; anything pending cancelled inside the row, RECORDED | K1 | READ: (1) both spawns, the speed REPLY, the draw. (2) first own TELEGRAPH `forced=false tick=4078 lived=175` (inside 99 to 201) at K, `ticks=24`, both sounds. (3) FIRE `tick=4102` hit; one HURT. (4) `TELEPORT … tick=4126` (+24) `side=right first=50.000 … landed=-95.358 63.000 12.628 moved=true`. (5) next own TELEGRAPH `tick=4290 lived=387`: 387 − 175 − 24 = **188**. (6) FIRE `tick=4314` hit; `TELEPORT … tick=4338` (+24) `bearing=50.000 side=left first=46.293 … landed=-92.517 63.000 7.017`, `radius=8.000`, the production draw. (7) the frozen Knell's uuid on its spawn line only. (8) heals at 08:17:39, :44, :49, :54, :59, 08:18:04; HURTs at 08:17:49 (after that second's heal) and 08:18:00, each alone between two heals. (9) the kills; nothing pending. **MATCH** |
 
 ### RE1 — as in knell-4: the NORMAL end of each run still logs its RESTORED line unchanged (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| For EACH run: `SELFTEST RUN FINISHED`, then **exactly one** `SELFTEST RUN RESTORED xp=<n> cell=<class>/<element> gamemode=SURVIVAL held=<h> mana=<m> trace=false spawn_mobs=<what it found> time=<what it found> blocks=<n> mobsRemoved=<n> orbsRemoved=<n> keep_inventory=false immediate_respawn=false difficulty=NORMAL`, **its fields and their order as at `0b4037ec`**; **no `ABORTED` and no `NOT-RESTORED` line** in either run. (A run stopped mid-way would instead log `ABORTED reason=server-stop`, then RESTORED: the server-stop restore is pinned by `SelfTestDisableWiringTest` only and has never been read on a server) | K1; `GATE-dragon-knell-4.md` B5 | |
+| For EACH run: `SELFTEST RUN FINISHED`, then **exactly one** `SELFTEST RUN RESTORED xp=<n> cell=<class>/<element> gamemode=SURVIVAL held=<h> mana=<m> trace=false spawn_mobs=<what it found> time=<what it found> blocks=<n> mobsRemoved=<n> orbsRemoved=<n> keep_inventory=false immediate_respawn=false difficulty=NORMAL`, **its fields and their order as at `0b4037ec`**; **no `ABORTED` and no `NOT-RESTORED` line** in either run. (A run stopped mid-way would instead log `ABORTED reason=server-stop`, then RESTORED: the server-stop restore is pinned by `SelfTestDisableWiringTest` only and has never been read on a server) | K1; `GATE-dragon-knell-4.md` B5 | READ: dragon-beam `08:15:55 SELFTEST RUN FINISHED`, then `SELFTEST RUN RESTORED xp=712595 cell=mage/fire gamemode=SURVIVAL held=0 mana=100.0 trace=false spawn_mobs=false time=6000 blocks=22879 mobsRemoved=0 orbsRemoved=0 keep_inventory=false immediate_respawn=false difficulty=NORMAL`; dragon-teleport `08:18:43 SELFTEST RUN FINISHED`, then `… held=0 … blocks=101754 mobsRemoved=1 orbsRemoved=0 keep_inventory=false immediate_respawn=false difficulty=NORMAL`. The fields and their order as at `0b4037ec`. **No `ABORTED` and no `NOT-RESTORED` line in either run. MATCH** |
 
 ---
 
@@ -372,10 +394,10 @@ half. **His answers are his ear, never a measurement.** Two questions in all.
 
 | prediction | stands on | READING |
 |---|---|---|
-| **Server half:** a heal; the gold line; one forced beam from a frozen Knell 12 east while he stands still: the two telegraph sounds, the TELEGRAPH `ticks=24`, the two fire sounds, FIRE at T + 24 `… length=18.001 … [player <Ben> gap=0.000 hit] dealt=65.000`, one HURT; **its move at the FIRE + 24** (`radius=12.000 bearing=0.000`, the production draw, RECORDED), 48 after the lock; then the ASK; the kill, no skip line. **His half, yes/no:** ASK 1 *"Is the shot in the middle now, the way you wanted?"* | K1, K2; Ben's ruling | |
+| **Server half:** a heal; the gold line; one forced beam from a frozen Knell 12 east while he stands still: the two telegraph sounds, the TELEGRAPH `ticks=24`, the two fire sounds, FIRE at T + 24 `… length=18.001 … [player <Ben> gap=0.000 hit] dealt=65.000`, one HURT; **its move at the FIRE + 24** (`radius=12.000 bearing=0.000`, the production draw, RECORDED), 48 after the lock; then the ASK; the kill, no skip line. **His half, yes/no:** ASK 1 *"Is the shot in the middle now, the way you wanted?"* | K1, K2; Ben's ruling | READ, server half: the heal; the gold line; both telegraph sounds (bell 1.00, then the resonance) and both fire sounds (bell 1.50, then the chime) at their ticks; TELEGRAPH `tick=1662 lived=61 at=-88.500 63.000 6.500 … ticks=24`; FIRE `tick=1686 … length=18.001 … [player <Ben> gap=0.000 hit] dealt=65.000`; one HURT; **the move at the FIRE + 24: `TELEPORT … tick=1710 … radius=12.000 bearing=0.000 side=right first=42.460 tried=1 … landed=-91.647 63.000 14.601 moved=true`**, 48 after the lock; the ASK; the kill, no skip line. His half, verbatim: **`ASK 1 question="Is the shot in the middle now, the way you wanted?" answer="yes" ticks=73`** |
 
 ### TQ1R5 — supersedes GATE-dragon-knell-4.md TQ1R4: the whole sequence (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| **Server half:** a heal; the gold line; one forced beam from a frozen Knell 12 east, a hit, the two telegraph sounds and the two fire sounds; **one TELEPORT at the FIRE + 24**, `radius=12.000 bearing=0.000`, the production draw, RECORDED. **His half, yes/no:** ASK 1 *"Does the whole sequence feel right now?"* | K1, K2 | |
+| **Server half:** a heal; the gold line; one forced beam from a frozen Knell 12 east, a hit, the two telegraph sounds and the two fire sounds; **one TELEPORT at the FIRE + 24**, `radius=12.000 bearing=0.000`, the production draw, RECORDED. **His half, yes/no:** ASK 1 *"Does the whole sequence feel right now?"* | K1, K2 | READ, server half: the heal; the gold line; both telegraph sounds (bell 1.00, then the resonance) and both fire sounds (bell 1.50, then the chime) at their ticks; FIRE `tick=4598 … hit] dealt=65.000`; one HURT; `TELEPORT … tick=4622` (+24) `radius=12.000 bearing=0.000 side=left first=30.683 tried=1 … landed=-90.180 63.000 0.377 moved=true`. His half, verbatim: **`ASK 1 question="Does the whole sequence feel right now?" answer="it's almost there. The second purple line is out of place. remove it other than that everything is perfect" ticks=463`**: not yes or no, recorded as his words |
