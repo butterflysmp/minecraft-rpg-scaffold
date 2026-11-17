@@ -8,6 +8,7 @@ import io.github.butterflysmp.rpg.core.mob.MobGrowth;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobSplit;
 import io.github.butterflysmp.rpg.core.mob.MobStages;
+import io.github.butterflysmp.rpg.core.mob.MobTeleport;
 import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -99,7 +100,7 @@ public final class MobLoader {
                     stageBody(staged, "first"), stageBody(staged, "last"));
             return new MobDefinition(id, s.getString("base_entity"), s.getString("display_name", id),
                     stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s), blast(s),
-                    beam(s));
+                    beam(s), teleport(s));
         }
         if (s.contains("blast")) {
             throw new IllegalArgumentException("'blast' needs 'stages': its damage is authored per stage");
@@ -118,7 +119,7 @@ public final class MobLoader {
                 new MobBody(optional(s, "scale"), optional(s, "speed")),
                 element,
                 null, null, null, null,
-                beam(s));
+                beam(s), teleport(s));
     }
 
     /**
@@ -128,6 +129,24 @@ public final class MobLoader {
      * the eye), {@code aim_height} (a FRACTION of the target's height), {@code tolerance} (BLOCKS the target's box is
      * grown by), {@code damage} (authored, before gear score). {@link MobBeam} refuses a bad value by name.
      */
+    /**
+     * The optional {@code teleport:} block (dragon-mobs step R6), or null. Every key is required when the block is
+     * present: {@code delay_ticks} (TICKS from the hit to the move), {@code arc_degrees.min} and {@code .max} (DEGREES
+     * around the target), {@code spots_per_side}, {@code level_tolerance} (whole BLOCKS above or below the target's
+     * feet), {@code require_sight}. {@link MobTeleport} refuses a bad value by name; {@code MobDefinition} refuses a
+     * teleport with no beam, and a delay not shorter than the beam's {@code cycle_ticks.min}.
+     */
+    private static MobTeleport teleport(ConfigurationSection s) {
+        ConfigurationSection b = s.getConfigurationSection("teleport");
+        if (b == null) return null;
+        for (String key : List.of("delay_ticks", "arc_degrees.min", "arc_degrees.max", "spots_per_side",
+                "level_tolerance", "require_sight")) {
+            if (!b.contains(key)) throw new IllegalArgumentException("teleport." + key + " is required");
+        }
+        return new MobTeleport(b.getInt("delay_ticks"), b.getDouble("arc_degrees.min"), b.getDouble("arc_degrees.max"),
+                b.getInt("spots_per_side"), b.getInt("level_tolerance"), b.getBoolean("require_sight"));
+    }
+
     private static MobBeam beam(ConfigurationSection s) {
         ConfigurationSection b = s.getConfigurationSection("beam");
         if (b == null) return null;

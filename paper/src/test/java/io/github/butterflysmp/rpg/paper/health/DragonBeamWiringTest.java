@@ -91,7 +91,7 @@ class DragonBeamWiringTest {
         assertTrue(gate > 0 && dmg > gate && dmg < gate + 8, "applyDamage(amount, dealer), inside the hit branch");
         assertEquals(2, b.stream().filter(s -> s.contains("applyDamage(")).count(), "the owned and the scheduled call only");
         int report = indexOf(b, "MobBeam.report(shot, mob.getUniqueId(), a.mobId, k.target.getUniqueId(), tick, fired).ifPresent(hit -> {");
-        int tell = indexAfter(b, report, "for (Listener l : listeners) l.onBeamHit(hit);");
+        int tell = indexAfter(b, report, "for (Listener l : listeners) l.onBeamHit(mob, k.target, hit);");
         assertTrue(report > dmg && tell > report && tell < report + 4, "the listeners are told inside the report");
         assertEquals(1, b.stream().filter(s -> s.contains("l.onBeamHit(")).count(), "and nowhere else");
     }

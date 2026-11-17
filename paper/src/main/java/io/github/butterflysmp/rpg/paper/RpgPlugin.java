@@ -708,11 +708,16 @@ public final class RpgPlugin extends JavaPlugin {
         io.github.butterflysmp.rpg.paper.health.MobBeamer beams = new io.github.butterflysmp.rpg.paper.health.MobBeamer(
                 () -> this.mobs, adapters,
                 io.github.butterflysmp.rpg.core.mob.BeamCycle.uniform(new java.util.Random()));
+        // THE KNELL'S TELEPORT (dragon-mobs step R6): told of each beam HIT by the beamer, and of each removal.
+        io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports = new io.github.butterflysmp.rpg.paper.health.MobTeleporter(
+                () -> this.mobs, adapters,
+                io.github.butterflysmp.rpg.core.mob.BeamTeleport.uniform(new java.util.Random()));
+        beams.addListener(teleports);
         SelfTestService selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
                 buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements,
                 // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).
                 (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
-                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams);
+                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports);
         selfTestDamage.bind(selfTest);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);

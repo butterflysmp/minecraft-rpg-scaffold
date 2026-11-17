@@ -132,7 +132,30 @@ final class SelfTestDrivers {
             });
             case BEAM -> beam(p, a);
             case PROBE_AT -> probeAt(p, a);
+            case TELEPORT_DRAW -> teleportDraw(p, a);
         };
+    }
+
+    /** TELEPORT_DRAW (dragon-mobs step R6): fix each tagged Knell's next draw, on its own thread, and say so. */
+    private Optional<String> teleportDraw(Player p, String arg) {
+        SelfTestBeam.Draw d = SelfTestBeam.parseDraw(arg).orElseThrow(
+                () -> new IllegalStateException("teleport_draw: the loader admitted '" + arg + "'"));
+        double r = SelfTestBeam.REACH;
+        List<LivingEntity> found = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(r, r, r)) {
+            if (e instanceof LivingEntity l && e.getScoreboardTags().contains(d.tag())) found.add(l);
+        }
+        if (found.isEmpty()) {
+            run.log(SelfTestBeam.noneLine(d.tag(), "DRIVE teleport_draw", (int) r));
+            return Optional.empty();
+        }
+        for (LivingEntity e : found) {
+            run.scheduler().onEntity(e, () -> {
+                run.teleports().fix(e.getUniqueId(), d.draw());
+                run.log(SelfTestBeam.drawLine(d.tag(), e.getUniqueId(), d.draw()));
+            });
+        }
+        return Optional.empty();
     }
 
     /** PROBE_AT (dragon-mobs step R5): each tagged living mob within {@link SelfTestBeam#REACH}, nearest first. */

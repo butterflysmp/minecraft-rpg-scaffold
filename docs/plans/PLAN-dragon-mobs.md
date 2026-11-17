@@ -474,6 +474,71 @@ is (P-b).
 **Not asked and not ruled:** K9 (the hit tolerance, old +1.0); whether the beam is Void damage; whether a shield blocks
 it. Step R5 ships K9 at the old 1.0 as a content number, the beam with no element, and no shield block (§3.R.1.a).
 
+### THE SEAT ON #195 (STEP R5), 2026-11-17 — PASSED BY DIFF, LEFT UNBOOTED SO ONE BOOT READS R5 AND R6 TOGETHER
+
+**ACCEPTED (the seat's words, stated in this file's):**
+- **I11's additions**, the transient MOVEMENT_SPEED × 0 modifier and the one-time zeroing of horizontal velocity at the
+  lock, because the record's intent is a rooted Knell.
+- **I23**: a NoAI Knell never starts a beam of its own.
+- **The logged gap is the box-growth distance**, not a perpendicular one.
+- **The report is this plan's "MB3 + E5"**, not `PLAN-legacy-port.md`'s E5 (the aim-locked wind-up).
+- **The live cycle's bound is measured from the Knell's appearance** (I3).
+- **The pen for the live rows.**
+
+**FINDINGS, NOTHING BUILT:**
+- **I24** (a Knell under our Freeze status still beams) is a question for Ben.
+- **The 13 closed manual gates that spawn a live Knell** keep their readings and would not re-read as predicted on
+  this branch.
+
+**The "inherited or chosen" list I1-I24 has been put to Ben in plain words by the seat; he has not ruled on any item.**
+
+### THE SEAT'S PROPOSALS FOR THE TELEPORT (STEP R6), 2026-11-17 — THE SEAT'S, PROVISIONAL AND UNRULED
+
+*Put to Ben in these terms on 2026-11-17. R6 builds them as written; each is his to confirm or change.*
+
+- **T-a. K14:** it tries 5 spots on its chosen side, then 5 on the other, then stays put.
+- **T-b. K15:** the landing ground may be up to 3 blocks above or below the target's feet.
+- **T-c. Q18:** a landing spot must have line of sight to the target, so the Knell never lands behind a wall.
+
+**K11 (the delay) is 12 ticks**, Ben's "the same time between the warning shot and the actual beam" (B), its own number.
+**K12 and K13 are Ben's 30 and 70** (A, *"Maybe"*), starting values.
+
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the beam and the teleport (the stacked boot of `e52e54b6`)
+
+*Read in `GATE-dragon-beam.md` KQ1 and `GATE-dragon-teleport.md` TQ1.*
+
+**The beam (KQ1):**
+- Asked *"Did the hit feel fair for a single shot?"*, Ben:
+  > "i think it needs to be more damage"
+- Asked *"Was it possible to step out of the way in time?"*, Ben:
+  > "maybe a slight increase in duration"
+
+**The seat has asked him for the numbers:** the damage (K10, 35 today); the telegraph (K7, 12 today; the seat
+suggesting 16 ticks); and whether the teleport delay (K11, 12 today) follows it. **NOT built.**
+
+**The teleport (TQ1):** asked *"After it hit you, did it move to a new spot?"*, *"Could you find it again straight
+away?"* and *"Does that feel fair to someone fighting it with a bow?"*, Ben answered each:
+> "yes"
+
+> "yes"
+
+> "yes"
+
+**The seat takes these as Ben's confirmation by play of the arc (30 to 70 degrees), the delay (12 ticks) and the
+seat's provisional T-a, T-b and T-c, as they played.**
+
+### THE STACKED BOOT OF R5 AND R6 (`e52e54b6`, 2026-11-17): TWO CARRIED NOTES
+
+1. **THE ROOT ON A WALKING KNELL IS UNREAD.** `GATE-dragon-beam.md` KB2 read HOLLOW: its penned live Knell never
+   walked (both AT reads and both BEAM lines at its spawn point), so "rooted during the telegraph" (I11) was never
+   tested against a Knell trying to move. **Cause INFERRED, not read:** the pen's glass blocks the line of sight
+   vanilla's targeting needs, so it never targeted the player. A fixture that can see him and cannot reach him is
+   owed.
+2. **KB4's TIMING NOTE.** The dated note predicted a `knell-gone` skip for KB4's Knell; instead it moved
+   (`TELEPORT … tick=3567 … moved=true`, in KB5's bracket before KB5's CLEAN). The row ran 25 ticks past the force,
+   not 23, so the move (the FIRE + 12) came before the next row's removal. **The code read right; the timing
+   prediction was wrong.** The thin margin was accepted beforehand; nothing was changed.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1187,6 +1252,27 @@ part is `BeamLine` (and `BeamBox`), caster-agnostic and in core.** Not shared, s
 report (the teleport's, though a weapon could raise it), mana, and the weapon's ray shape. The brief's "E5" for the
 report is this plan's §4.2 row *MB3 + E5 … plus it reports which combatant it hit*; the legacy plan's E5 is the
 wind-up alone.
+
+### 5.R.6 STEP R6 AS BUILT (`feat/dragon-teleport`, stacked on `feat/dragon-beam` `1bfee281`, 2026-11-17) — THE TELEPORT
+
+The gate is `docs/gates/GATE-dragon-teleport.md`, the stack top, carrying the ONE R0 and run sheet of the stacked boot.
+
+| piece | as built | where |
+|---|---|---|
+| **the rule** | `teleport: { delay_ticks, arc_degrees: { min, max }, spots_per_side, level_tolerance, require_sight }` on the mob file. The Knell's: 12 (K11, B), 30 and 70 (K12, K13, A), and the seat's provisional 5 (T-a, K14), 3 (T-b, K15), true (T-c, Q18). A teleport needs a beam, and a delay not shorter than `beam.cycle_ticks.min` is refused at load, the mob and both numbers named | `core.mob.MobTeleport`, `MobDefinition`, `MobLoader` |
+| **the trigger** | the beam's report and nothing else: `MobTeleporter` is a `MobBeamer.Listener`, told inside `MobBeam.report(...).ifPresent`. No arrow dodge exists in our code | `MobTeleporter`, `MobBeamer` |
+| **the delay** | a one-shot `RepeatingTask` of period `delay_ticks` on the Knell's own entity scheduler, started at the FIRE; dead, removed or unloaded first, it logs `TELEPORT skipped … reason=knell-gone`; the target re-checked at its end (`BeamTeleport.skip`: gone, another world, no longer one the Knell is hostile to) | `MobTeleporter`, `core.mob.BeamTeleport` |
+| **the landing** | pure, in core, from the positions at the END of the delay: centre the target's FEET; radius the HORIZONTAL distance target→Knell; angle zero the Knell's bearing from the target; a column turned by an angle in DEGREES (RIGHT, a right turn for someone at the target facing the Knell: `(x cos a − z sin a, x sin a + z cos a)`; LEFT the angle negated). **Order:** the drawn side's angles (the drawn first angle, then `spots_per_side − 1` spread evenly from min to max, both included), then the other side's, the same angles. **Per column:** loaded, else UNLOADED; the nearest standing height `feet.y + k`, k = 0, +1, −1, +2, −2, … out to `level_tolerance`, that FITS and is GROUNDED, else NO_FOOTING with the counts; then SEES, else NO_SIGHT. First OK wins; none, it stays | `BeamTeleport.decide` |
+| **VALID** | `World#isChunkLoaded`; `Entity#wouldCollideUsing(box)` for the Knell's own scaled box; `RegionAccessor#hasCollisionsIn` on a thin slab under its footprint; `World#rayTraceBlocks` eye → the target's aim point, the beam's block rule. Each READ in the server jar (the gate's T4, T5) | `MobTeleporter.footing` |
+| **the move** | `Entity#teleport` facing the target, level; READ: the jar's same-world teleport zeroes the velocity and touches neither the navigation nor the target, so the path is stopped after the move. The target, the beam's clock, health and tags are untouched | `MobTeleporter` |
+| **sight and sound** | cfde822's sidestep's, READ (§3.1): soul and soul-fire particles and an amethyst step, at the departure and the arrival. Counts (12 each), spread, volume and pitch (1.0, 1.0): NOT IN THE RECORD, chosen | `MobTeleporter.puff` |
+| **the log** | `TELEPORT mob=… id=… target=… tick=… from=… center=… radius=… bearing=… side=… first=… tried=<n> [<side> <angle> <verdict>, …] landed=…/none moved=…`; `TELEPORT skipped … reason=…`; `TELEPORT ignored … reason=pending` | `MobTeleportLines` |
+| **the instrument** | `teleport_draw: "<tag> <right/left> <degrees>"` fixes that Knell's NEXT decision | `SelfTestBeam`, `SelfTestDrivers` |
+
+**FOR BEN, CHOSEN AND NOT IN ANY RULING:** the order within a side (the random angle, then the arc spread evenly); RIGHT
+and LEFT each 50%; heights tried nearest first with UP before DOWN at equal distance; a footing refused by sight is not
+retried at another height; a second hit while a move is pending is ignored (only a forced beam can do it); the puff's
+counts and the sound's volume.
 
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 

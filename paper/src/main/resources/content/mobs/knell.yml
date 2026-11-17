@@ -68,6 +68,28 @@ beam:
   # The AUTHORED damage, before gear score and before the victim's defence. Ben's 35. It is x gear score / 100, as a
   # custom mob's hit is (the seat's provisional, as the Phage's blast). No element, no knockback, no shield block.
   damage: 35
+
+# THE TELEPORT AFTER THE BEAM LANDS (dragon-mobs step R6). Ben: "The Knell can only teleport when it's Knell Beam hits
+# a target"; "a degree arc from the player would be nice. Maybe between 30 and 70 degrees"; "The hit itself is the
+# warning". A miss, an arrow, melee or any other damage moves nothing. It lands on the circle around its TARGET's feet,
+# at the horizontal distance it stood, turned 30 to 70 degrees to a random side (PLAN-dragon-mobs.md section 5.R.6).
+teleport:
+  # TICKS from the beam's hit to the move. Ben: "The same time between the warning shot and the actual beam ... This
+  # should be a tunable number as well": 12, equal to telegraph_ticks today, its own number. It must be shorter than
+  # cycle_ticks.min, so a move never falls inside the next telegraph; a longer one is refused at load.
+  delay_ticks: 12
+  # DEGREES around the target, measured at the target's feet from the Knell's own bearing, both included. Ben's 30
+  # and 70, starting numbers.
+  arc_degrees: { min: 30, max: 70 }
+  # How many landing spots are tried on the chosen side before the other: one random angle, then the rest spread
+  # evenly across the arc. If none on either side will do, the Knell stays put. The seat's 5, NOT YET BEN'S (T-a).
+  spots_per_side: 5
+  # Whole BLOCKS above or below the target's feet the landing may stand; the nearest standing height wins. The
+  # seat's 3, NOT YET BEN'S (T-b).
+  level_tolerance: 3
+  # A landing must SEE the target (from the Knell's eye there to the target's aim point; blocks stop sight as they
+  # stop the beam), so it never lands behind a wall. The seat's yes, NOT YET BEN'S (T-c, Q18).
+  require_sight: true
 #
 # NOT YET HERE: gear (the old game's diamond set and sword) is deferred past R1, so the Knell still spawns bare and
-# hits like a bare wither skeleton (M17, parked). The teleport after a hit is step R6, not built: a hit moves nothing.
+# hits like a bare wither skeleton (M17, parked).

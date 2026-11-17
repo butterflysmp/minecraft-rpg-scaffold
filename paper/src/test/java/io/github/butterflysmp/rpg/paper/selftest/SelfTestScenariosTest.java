@@ -35,10 +35,10 @@ class SelfTestScenariosTest {
         assertEquals(List.of(), loaded.refusals());
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
-                "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam"),
+                "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport"),
                 List.copyOf(loaded.gates().keySet()),
-                "the sixteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
-                        + " dragon-split and dragon-growth (2026-11-15), then dragon-blast (step R3, 2026-11-15), then dragon-beam LAST (step R5, 2026-11-17)");
+                "the seventeen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
+                        + " dragon-split and dragon-growth (2026-11-15), then dragon-blast (step R3, 2026-11-15), then dragon-beam (step R5) and dragon-teleport LAST (step R6, 2026-11-17)");
     }
 
     /** The seat's CORE rows, one scenario each (2026-10-05). R0d is a boot log line and has none. */
@@ -71,8 +71,13 @@ class SelfTestScenariosTest {
         expected.put("dragon-blast", List.of("BL1R2", "BL2R2", "BL3R2", "BL4R2", "BL5R2", "BL6R2", "BL7R2", "BL8R2",
                 "BL9R2", "DS1R4", "DS2R4", "DS5R4", "DS6R4", "DG6R4", "DG9R4", "BQ1R2"));
         // Step R5 (GATE-dragon-beam.md, 2026-11-17): eleven AUTO rows and Ben's three questions, in one.
-        expected.put("dragon-beam", List.of("KB1", "KB2", "KB3", "KB4", "KB5", "KB6", "KB7", "KB8", "KB9", "KB10",
-                "KB11", "KQ1"));
+        // Step R6 (GATE-dragon-teleport.md) moved KB10 and KB11 out, re-predicted there as KB10R2 and KB11R2.
+        expected.put("dragon-beam", List.of("KB1", "KB2", "KB3", "KB4", "KB5", "KB6", "KB7", "KB8", "KB9",
+                "KQ1"));
+        // Step R6 (GATE-dragon-teleport.md, 2026-11-17, stacked on R5): twelve new AUTO rows, the two re-predictions,
+        // and Ben's three questions in one.
+        expected.put("dragon-teleport", List.of("KB10R2", "TP2", "TP3", "TP4", "TP5", "TP6", "TP7", "TP8", "TP9",
+                "TP10", "TP11", "TP12", "TP13", "KB11R2", "TQ1"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -102,7 +107,9 @@ class SelfTestScenariosTest {
         // print 15, 105, 15: 90, the same.
         // Then GATE-dragon-beam.md (step R5, 2026-11-17), RECOUNTED the same way: 16 gates, 118 keys, 16 setups, so 102.
         // At master 8671ab16 the same commands print 15, 105, 15: 90, this line's old value.
-        assertEquals(102, loaded.rows());
+        // Then GATE-dragon-teleport.md (step R6, 2026-11-17), RECOUNTED the same way: 17 gates, 132 keys, 17 setups,
+        // so 115. At feat/dragon-beam 1bfee281 the same commands print 16, 118, 16: 102, this line's old value.
+        assertEquals(115, loaded.rows());
     }
 
     /**
@@ -202,18 +209,19 @@ class SelfTestScenariosTest {
                             && steps.get(i + 1).arg().contains("NoAI:1b");
                     if (!(liveSpawn || (bareCmd && !frozenAtOnce))) continue;
                     String where = gate.getKey() + "#" + s.row() + " " + st.verb() + " " + a;
-                    if (gate.getKey().equals("dragon-beam")) beamGate.add(where); else live.add(where);
+                    if (Set.of("dragon-beam", "dragon-teleport").contains(gate.getKey())) beamGate.add(where); else live.add(where);
                 }
             }
         }
         assertEquals(List.of(), live, "a live Knell outside the beam gate would beam the player at a time no row predicts");
-        assertEquals(2, beamGate.size(), "the control: the beam gate's KB2 and KB11 are seen: " + beamGate);
+        assertEquals(2, beamGate.size(), "the control: the beam gate's KB2 and the teleport gate's KB11R2 are seen: " + beamGate);
     }
 
     /** The dragon gates declare the difficulty their rows need, first thing in their setup (GATE-dragon-fix.md, C5). */
     @Test
     void theDragonGatesDeclareNormalFirstInTheirSetup() {
-        for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam")) {
+        for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam",
+                "dragon-teleport")) {
             Scenario setup = shipped().gates().get(gate).getFirst();
             assertEquals(Scenario.SETUP, setup.row(), gate);
             assertEquals(new Scenario.Step(Scenario.Verb.DIFFICULTY, "normal"), setup.steps().getFirst(), gate);

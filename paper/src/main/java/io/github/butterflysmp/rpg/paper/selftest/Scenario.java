@@ -183,6 +183,12 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * read whether it moved ({@link SelfTestBeam}).
          */
         PROBE_AT,
+        /**
+         * {@code "<tag> <right|left> <degrees>"}: fix the side and the first angle of each tagged Knell's NEXT teleport
+         * decision (dragon-mobs step R6, the brief's ruling 8), so a row predicts exact coordinates. Logs
+         * {@code DRIVE teleport_draw tag=<t> <uuid> side=<s> first=<a>} ({@link SelfTestBeam}).
+         */
+        TELEPORT_DRAW,
         /** A line for the reader. Changes nothing. */
         NOTE
     }
