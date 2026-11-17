@@ -1,24 +1,23 @@
-# THE KNELL'S TELEPORT, AS RE-PREDICTED BY GATE-dragon-knell-4.md (Ben's one more number, 2026-11-17). The file keeps
+# THE KNELL'S TELEPORT, AS RE-PREDICTED BY GATE-dragon-knell-5.md (the shot in the middle, 2026-11-17). The file keeps
 # its name so the run sheet's command is unchanged (`/rpg selftest dragon-teleport`). Every row is now
-# GATE-dragon-knell-4.md's, renamed with the next suffix (KB10R4 -> KB10R5, TP2R3 -> TP2R4, TP14R2 -> TP14R3): the
-# delay moved, and every row prints the beam's sound lines, which now carry the second bell. The old readings stay in
-# GATE-dragon-knell-3.md.
+# GATE-dragon-knell-5.md's, named for the GATE-dragon-knell-4.md row it supersedes with the next suffix. The old
+# readings stay in GATE-dragon-knell-4.md.
 #
-# THE TELEPORT NOW: 28 ticks after a beam HITS its target (Ben: "let's try 1.4 seconds after the shot"; his number,
-# counted from the fire, derived from no sound), the Knell moves to the circle around the target's feet, at the
-# horizontal distance it stood, 30 to 70 degrees around. The landing rules are unchanged.
+# THE TELEPORT NOW: 24 ticks after a beam HITS its target, 48 after its lock (Ben: "I want the shot to be in the
+# middle"; the telegraph and the delay are a pair, 24 and 24), the Knell moves to the circle around the target's feet,
+# at the horizontal distance it stood, 30 to 70 degrees around. The landing rules are unchanged.
 #
-# EVERY ROW WAITS PAST ITS MOVE: a forced beam's fire is at most 22 ticks after the BEAM step, so its move is at most
+# EVERY ROW WAITS PAST ITS MOVE: a forced beam's fire is at most 26 ticks after the BEAM step, so its move is at most
 # 50 after it; each row waits 130 ticks after the step before its last read, so the TELEPORT line lands inside the
 # row, never in the next one's bracket.
 #
 # THE STAGING: the player at a block centre facing east (+x); a stone floor 23 x 21 and air 8 high above it, every fill
 # box SAVED first. A Knell is spawned FROZEN (NoAI: it cannot walk or melee) 8 blocks east. TELEPORT_DRAW fixes its next
-# decision's side and first angle, so every landing is an exact coordinate. KB11R5 is the one LIVE Knell, its walking
-# speed set to 0 so it cannot reach him.
+# decision's side and first angle, so every landing is an exact coordinate. The live-cycle row's Knell is the one LIVE
+# Knell, its walking speed set to 0 so it cannot reach him.
 #
-# THE PLAYER CANNOT DIE IN ANY ROW (GATE-dragon-knell-4.md): every row heals him before every beam that can land, at
-# most 65 before his defence; KB11R5 heals him every 100 ticks, and its beams are at least 120 ticks apart.
+# THE PLAYER CANNOT DIE IN ANY ROW (GATE-dragon-knell-5.md): every row heals him before every beam that can land, at
+# most 65 before his defence; the live-cycle row heals him every 100 ticks, and its beams are at least 124 ticks apart.
 
 setup:
   - difficulty: normal
@@ -27,92 +26,92 @@ setup:
   - cmd: "gamerule spawn_mobs false"
   - close: ""
 
-# KB10R5: re-predicts GATE-dragon-knell-3.md KB10R4. A forced hit; 28 ticks after the fire the Knell lands 50 degrees RIGHT (toward south), 8 blocks from him: (+5.142, 0, +6.128).
-KB10R5:
+# KB10R6: re-predicts GATE-dragon-knell-4.md KB10R5. A forced hit; 24 ticks after the fire the Knell lands 50 degrees RIGHT (toward south), 8 blocks from him: (+5.142, 0, +6.128).
+KB10R6:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "kb10r5 frozen knell 100"
+  - spawn: "kb10r6 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - probe_at: kb10r5
-  - teleport_draw: "kb10r5 right 50"
-  - beam: kb10r5
+  - probe_at: kb10r6
+  - teleport_draw: "kb10r6 right 50"
+  - beam: kb10r6
   - wait: 130
-  - probe_at: kb10r5
+  - probe_at: kb10r6
 
-# TP2R4: the other side, 50 degrees left: (+5.142, 0, -6.128).
-TP2R4:
+# TP2R5: the other side, 50 degrees left: (+5.142, 0, -6.128).
+TP2R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp2r4 frozen knell 100"
+  - spawn: "tp2r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp2r4 left 50"
-  - beam: tp2r4
+  - teleport_draw: "tp2r5 left 50"
+  - beam: tp2r5
   - wait: 130
-  - probe_at: tp2r4
+  - probe_at: tp2r5
 
-# TP3R4: the arc's near bound, 30 degrees right: (+6.928, 0, +4.000).
-TP3R4:
+# TP3R5: the arc's near bound, 30 degrees right: (+6.928, 0, +4.000).
+TP3R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp3r4 frozen knell 100"
+  - spawn: "tp3r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp3r4 right 30"
-  - beam: tp3r4
+  - teleport_draw: "tp3r5 right 30"
+  - beam: tp3r5
   - wait: 130
-  - probe_at: tp3r4
+  - probe_at: tp3r5
 
-# TP4R4: the arc's far bound, 70 degrees right: (+2.736, 0, +7.518).
-TP4R4:
+# TP4R5: the arc's far bound, 70 degrees right: (+2.736, 0, +7.518).
+TP4R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp4r4 frozen knell 100"
+  - spawn: "tp4r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp4r4 right 70"
-  - beam: tp4r4
+  - teleport_draw: "tp4r5 right 70"
+  - beam: tp4r5
   - wait: 130
-  - probe_at: tp4r4
+  - probe_at: tp4r5
 
-# TP5R4: a forced MISS (he steps 3 south during the telegraph) moves nothing: no TELEPORT line through the 130 ticks.
-TP5R4:
+# TP5R5: a forced MISS (he steps 3 south during the telegraph) moves nothing: no TELEPORT line through the 130 ticks.
+TP5R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp5r4 frozen knell 100"
+  - spawn: "tp5r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - probe_at: tp5r4
-  - teleport_draw: "tp5r4 right 50"
-  - beam: tp5r4
+  - probe_at: tp5r5
+  - teleport_draw: "tp5r5 right 50"
+  - beam: tp5r5
   - wait: 3
   - cmd: "tp @s ~ ~ ~3"
   - wait: 127
-  - probe_at: tp5r4
+  - probe_at: tp5r5
 
-# TP6R4: glass over every RIGHT spot: five refused, then it lands 50 degrees LEFT.
-TP6R4:
+# TP6R5: glass over every RIGHT spot: five refused, then it lands 50 degrees LEFT.
+TP6R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
@@ -120,16 +119,16 @@ TP6R4:
   - cmd: "fill ~1 ~ ~2 ~9 ~7 ~10 glass"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp6r4 frozen knell 100"
+  - spawn: "tp6r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp6r4 right 50"
-  - beam: tp6r4
+  - teleport_draw: "tp6r5 right 50"
+  - beam: tp6r5
   - wait: 130
-  - probe_at: tp6r4
+  - probe_at: tp6r5
 
-# TP7R4: glass over every spot on BOTH sides: all ten refused, "landed=none", and it stays.
-TP7R4:
+# TP7R5: glass over every spot on BOTH sides: all ten refused, "landed=none", and it stays.
+TP7R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
@@ -138,17 +137,17 @@ TP7R4:
   - cmd: "fill ~1 ~ ~-10 ~9 ~7 ~-2 glass"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp7r4 frozen knell 100"
+  - spawn: "tp7r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - probe_at: tp7r4
-  - teleport_draw: "tp7r4 right 50"
-  - beam: tp7r4
+  - probe_at: tp7r5
+  - teleport_draw: "tp7r5 right 50"
+  - beam: tp7r5
   - wait: 130
-  - probe_at: tp7r4
+  - probe_at: tp7r5
 
-# TP8R4: a pit two deep under the right-50 spot: it stands on the pit's floor, 2 below his feet.
-TP8R4:
+# TP8R5: a pit two deep under the right-50 spot: it stands on the pit's floor, 2 below his feet.
+TP8R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
@@ -157,16 +156,16 @@ TP8R4:
   - cmd: "fill ~4 ~-3 ~5 ~6 ~-3 ~7 stone"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp8r4 frozen knell 100"
+  - spawn: "tp8r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp8r4 right 50"
-  - beam: tp8r4
+  - teleport_draw: "tp8r5 right 50"
+  - beam: tp8r5
   - wait: 130
-  - probe_at: tp8r4
+  - probe_at: tp8r5
 
-# TP9R4: a stone step two high on the right-50 spot: it stands on top of it, 2 above his feet.
-TP9R4:
+# TP9R5: a stone step two high on the right-50 spot: it stands on top of it, 2 above his feet.
+TP9R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
@@ -174,16 +173,16 @@ TP9R4:
   - cmd: "fill ~4 ~ ~5 ~6 ~1 ~7 stone"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp9r4 frozen knell 100"
+  - spawn: "tp9r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp9r4 right 50"
-  - beam: tp9r4
+  - teleport_draw: "tp9r5 right 50"
+  - beam: tp9r5
   - wait: 130
-  - probe_at: tp9r4
+  - probe_at: tp9r5
 
-# TP10R4: a pit FOUR deep under the right-50 spot, beyond the 3-block tolerance: refused; it lands 30 degrees right.
-TP10R4:
+# TP10R5: a pit FOUR deep under the right-50 spot, beyond the 3-block tolerance: refused; it lands 30 degrees right.
+TP10R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
@@ -192,16 +191,16 @@ TP10R4:
   - cmd: "fill ~4 ~-5 ~5 ~6 ~-5 ~7 stone"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp10r4 frozen knell 100"
+  - spawn: "tp10r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp10r4 right 50"
-  - beam: tp10r4
+  - teleport_draw: "tp10r5 right 50"
+  - beam: tp10r5
   - wait: 130
-  - probe_at: tp10r4
+  - probe_at: tp10r5
 
-# TP11R4: the right-50 spot has ground but a glass wall hides him: refused by sight; it lands 30 degrees right.
-TP11R4:
+# TP11R5: the right-50 spot has ground but a glass wall hides him: refused by sight; it lands 30 degrees right.
+TP11R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
@@ -209,85 +208,88 @@ TP11R4:
   - cmd: "fill ~2 ~ ~3 ~3 ~5 ~3 glass"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp11r4 frozen knell 100"
+  - spawn: "tp11r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp11r4 right 50"
-  - beam: tp11r4
+  - teleport_draw: "tp11r5 right 50"
+  - beam: tp11r5
   - wait: 130
-  - probe_at: tp11r4
+  - probe_at: tp11r5
 
-# TP12R4: he steps 2 NORTH 40 ticks after the force, 19 after the fire: the circle is around where he stands at its end.
-TP12R4:
+# TP12R5: he steps 2 NORTH 40 ticks after the force, 14 or 15 after the fire: the circle is around where he stands at its end.
+TP12R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp12r4 frozen knell 100"
+  - spawn: "tp12r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp12r4 right 50"
-  - beam: tp12r4
+  - teleport_draw: "tp12r5 right 50"
+  - beam: tp12r5
   - wait: 40
   - cmd: "tp @s ~ ~ ~-2"
   - wait: 90
-  - probe_at: tp12r4
+  - probe_at: tp12r5
 
-# TP13R4: the Knell is killed 35 ticks after the force, 14 after the fire: nothing moves, and one line says why.
-TP13R4:
+# TP13R5: the Knell is killed 35 ticks after the force, 9 or 10 after the fire: nothing moves, and one line says why.
+TP13R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp13r4 frozen knell 100"
+  - spawn: "tp13r5 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp13r4 right 50"
-  - beam: tp13r4
+  - teleport_draw: "tp13r5 right 50"
+  - beam: tp13r5
   - wait: 35
-  - cmd: "kill @e[tag=tp13r4]"
+  - cmd: "kill @e[tag=tp13r5]"
   - wait: 65
 
-# TP14R3: a beam forced while a move is PENDING hits him and is ignored for the teleport ("TELEPORT ignored ... reason=pending"); the first hit's move still lands 28 ticks after the first fire. A heal and the second force 23 ticks after the first force (about 2 after the first fire), so the second fire lands 5 ticks BEFORE the first move.
-TP14R3:
+# TP14R4: A HIT AFTER THE MOVE HAS LANDED MOVES THE KNELL AGAIN. At 24 and 24 a forced second beam cannot fire while a
+# move is pending (its fire is at least 25 ticks after the first, the move 24), so this row now reads that the pending
+# move is cleared when it lands: the first hit's move 24 ticks after the first fire, then a heal and the second force
+# 55 ticks after the first force (5 or 6 after the first move), its hit, and a SECOND move 24 ticks after its fire.
+TP14R4:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp14r3 frozen knell 100"
+  - spawn: "tp14r4 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp14r3 right 50"
-  - beam: tp14r3
-  - wait: 23
+  - teleport_draw: "tp14r4 right 50"
+  - beam: tp14r4
+  - wait: 55
   - cmd: "rpg heal 1000000"
-  - beam: tp14r3
+  - beam: tp14r4
   - wait: 90
-  - probe_at: tp14r3
+  - probe_at: tp14r4
 
-# KB11R5: re-predicts GATE-dragon-knell-3.md KB11R4. The live cycle by bound, and unbroken by a move. A LIVE Knell 8
+# KB11R6: re-predicts GATE-dragon-knell-4.md KB11R5. The live cycle by bound, and unbroken by a move. A LIVE Knell 8
 # east, its walking speed set to 0 (it cannot reach him), begins its own first beam 100 to 200 ticks after it
-# appears; the hit moves it (right 50, fixed) 28 ticks later; its NEXT own beam comes 100 to 200 ticks after the FIRST
+# appears; the hit moves it (right 50, fixed) 24 ticks later; its NEXT own beam comes 100 to 200 ticks after the FIRST
 # FIRE. A frozen Knell in range begins none. He is healed every 100 ticks; the row ends by killing both.
-KB11R5:
+KB11R6:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~4 ~ ~-5"
-  - spawn: "kb11r5f frozen knell 100"
+  - spawn: "kb11r6f frozen knell 100"
   - cmd: "tp @s ~4 ~ ~5"
-  - spawn: "kb11r5 live knell 100"
-  - cmd: "attribute @e[tag=kb11r5,limit=1] minecraft:movement_speed base set 0"
+  - spawn: "kb11r6 live knell 100"
+  - cmd: "attribute @e[tag=kb11r6,limit=1] minecraft:movement_speed base set 0"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
-  - teleport_draw: "kb11r5 right 50"
+  - teleport_draw: "kb11r6 right 50"
   - wait: 100
   - cmd: "rpg heal 1000000"
   - wait: 100
@@ -299,24 +301,24 @@ KB11R5:
   - wait: 100
   - cmd: "rpg heal 1000000"
   - wait: 60
-  - probe_at: kb11r5
-  - cmd: "kill @e[tag=kb11r5]"
-  - cmd: "kill @e[tag=kb11r5f]"
+  - probe_at: kb11r6
+  - cmd: "kill @e[tag=kb11r6]"
+  - cmd: "kill @e[tag=kb11r6f]"
   - wait: 5
 
-# TQ1R4: Ben's last question. A frozen Knell 12 blocks east beams him once; its move is NOT fixed (the
-# production draw). He listens for the ring after the hit and watches the Knell as it fades.
-TQ1R4:
+# TQ1R5: Ben's last question. A frozen Knell 12 blocks east beams him once; its move is NOT fixed (the
+# production draw). He listens for the shot between the warning and the move.
+TQ1R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-14 -1 -14 14 7 14"
   - cmd: "fill ~-14 ~-1 ~-14 ~14 ~-1 ~14 stone"
   - cmd: "fill ~-14 ~ ~-14 ~14 ~7 ~14 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~12 ~ ~"
-  - spawn: "tq1r4 frozen knell 100"
+  - spawn: "tq1r5 frozen knell 100"
   - cmd: "tp @s ~-12 ~ ~ -90 0"
-  - cmd: 'tellraw @s {"text":"Stand still. A low bell and the ringing at the warning, a higher bell at the shot, the Knell moving 1.4 seconds after it.","color":"gold"}'
+  - cmd: 'tellraw @s {"text":"Stand still. The bell and the ringing at the warning, the higher bell at the shot, the Knell moving as long again after it.","color":"gold"}'
   - wait: 60
-  - beam: tq1r4
+  - beam: tq1r5
   - wait: 130
   - ask: "1 1200 Does the whole sequence feel right now?"

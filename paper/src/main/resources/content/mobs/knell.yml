@@ -84,8 +84,8 @@ beam:
       - { key: block.bell.use, volume: 1.0, pitch: 1.0 }
       - { key: block.bell.resonate, volume: 1.4, pitch: 1.0 }
     # Played at the fire: a SECOND, HIGHER bell, then the amethyst chime. BEN'S: that there is one ("Add a second,
-    # higher pitched bell for the actual shot"); the 1.5 is THE SEAT'S starting value, CONFIRMED BY PLAY (2.492 / 1.5 = 1.661 s, the same
-    # assumption), at the first bell's volume. The chime is the seat's, as before.
+    # higher pitched bell for the actual shot"); the 1.5 is THE SEAT'S starting value, CONFIRMED BY PLAY
+    # (2.492 / 1.5 = 1.661 s, the same assumption), at the first bell's volume. The chime is the seat's, as before.
     fire:
       - { key: block.bell.use, volume: 1.0, pitch: 1.5 }
       - { key: block.amethyst_block.chime, volume: 1.0, pitch: 1.0 }
