@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import io.github.butterflysmp.rpg.core.mob.BeamBox;
 import io.github.butterflysmp.rpg.core.mob.BeamCycle;
 import io.github.butterflysmp.rpg.core.mob.BeamHit;
+import io.github.butterflysmp.rpg.core.mob.BeamSound;
 import io.github.butterflysmp.rpg.core.mob.BeamLine;
 import io.github.butterflysmp.rpg.core.mob.MobBeam;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
@@ -22,7 +23,6 @@ import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
-import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -234,8 +234,8 @@ public final class MobBeamer {
         a.lock = new Locked(line, target, kind(target));
         root(mob);
         if (a.cycle.flashing()) drawLine(mob.getWorld(), line, WARNING);
-        // cfde822's bell resonate at the mob's (volume, pitch) = (1.4, 0.7), READ (PLAN-legacy-port.md section 2.5).
-        mob.getWorld().playSound(mob.getLocation(), Sound.BLOCK_BELL_RESONATE, SoundCategory.HOSTILE, 1.4f, 0.7f);
+        // The telegraph's sounds, from content (the follow-up of 2026-11-17: the bell strike plays with the warning).
+        playSounds(mob, a, "telegraph", a.beam.telegraphSounds());
         adapters.log().info(MobBeamLines.telegraph(a.mobId, mob.getUniqueId(), gearScore(a), forced,
                 Bukkit.getCurrentTick(), mob.getTicksLived(), vec(mob.getLocation()), a.lock.targetKind,
                 target.getUniqueId(), eye, aim, line.direction(), a.beam.range(), a.beam.telegraphTicks()));
@@ -312,9 +312,8 @@ public final class MobBeamer {
 
         drawLine(world, fired, BEAM);
         Location at = mob.getLocation();
-        // cfde822's bell and amethyst chime, READ; their volume and pitch are NOT IN THE RECORD: 1.0 and 1.0 (I20).
-        world.playSound(at, Sound.BLOCK_BELL_USE, SoundCategory.HOSTILE, 1.0f, 1.0f);
-        world.playSound(at, Sound.BLOCK_AMETHYST_BLOCK_CHIME, SoundCategory.HOSTILE, 1.0f, 1.0f);
+        // The fire's sounds, from content (the follow-up: the resonance starts at the real shot; the chime stays).
+        playSounds(mob, a, "fire", a.beam.fireSounds());
 
         List<String> kinds = new ArrayList<>();
         for (MobBeam.Tested tested : shot.tested()) {
@@ -331,6 +330,20 @@ public final class MobBeamer {
                     hit.from(), hit.to()));
             for (Listener l : listeners) l.onBeamHit(mob, k.target, hit);
         });
+    }
+
+    /**
+     * Play each authored sound at the mob, in order, and log one line for each (the follow-up of 2026-11-17), so the
+     * gate reads what was played and when from the server. The key is the sound EVENT key; the client picks the
+     * variant, and multiplies our pitch by that variant's, which the server cannot know.
+     */
+    private void playSounds(Mob mob, Active a, String when, List<BeamSound> sounds) {
+        long tick = Bukkit.getCurrentTick();
+        for (BeamSound s : sounds) {
+            mob.getWorld().playSound(mob.getLocation(), s.key(), SoundCategory.HOSTILE, (float) s.volume(),
+                    (float) s.pitch());
+            adapters.log().info(MobBeamLines.sound(a.mobId, mob.getUniqueId(), when, tick, s));
+        }
     }
 
     // --- the root (I11) ------------------------------------------------------------------------------------------

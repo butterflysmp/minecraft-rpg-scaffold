@@ -48,6 +48,12 @@ final class MobBeamLines {
                 + " dealt=" + (hit ? String.format(Locale.ROOT, "%.3f", base) : "none");
     }
 
+    /** One sound the beam played: when ({@code telegraph} or {@code fire}), the server tick, and what was passed. */
+    static String sound(String mobId, UUID id, String when, long tick, io.github.butterflysmp.rpg.core.mob.BeamSound s) {
+        return "BEAM sound mob=" + mobId + " id=" + id + " when=" + when + " tick=" + tick + " key=" + s.key()
+                + String.format(Locale.ROOT, " volume=%.2f pitch=%.2f", s.volume(), s.pitch());
+    }
+
     /** The E5 seam's line: raised on a hit only. */
     static String report(String mobId, UUID id, String targetKind, UUID target, long tick, Vec3 from, Vec3 to) {
         return "BEAM report mob=" + mobId + " id=" + id + " target=" + targetKind + " " + target + " tick=" + tick

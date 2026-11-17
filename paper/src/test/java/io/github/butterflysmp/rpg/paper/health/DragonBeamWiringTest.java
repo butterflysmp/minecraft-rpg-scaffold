@@ -96,6 +96,26 @@ class DragonBeamWiringTest {
         assertEquals(1, b.stream().filter(s -> s.contains("l.onBeamHit(")).count(), "and nowhere else");
     }
 
+    /**
+     * THE SOUNDS ARE CONTENT (the follow-up of 2026-11-17): the beamer names no Sound constant and plays each authored
+     * sound through one method, which logs a line for each; the telegraph plays its list at the lock and the fire
+     * plays its list at the fire. Production's loader refuses a key the server's sound registry does not know.
+     */
+    @Test
+    void theSoundsComeFromContentAndEachIsLogged() throws IOException {
+        List<String> b = beamer();
+        assertTrue(b.stream().noneMatch(s -> s.contains("Sound.")), "no Sound constant in the beamer");
+        assertEquals(1, b.stream().filter(s -> s.contains("playSounds(mob, a, \"telegraph\", a.beam.telegraphSounds());")).count());
+        assertEquals(1, b.stream().filter(s -> s.contains("playSounds(mob, a, \"fire\", a.beam.fireSounds());")).count());
+        int play = indexOf(b, "private void playSounds(Mob mob, Active a, String when, List<BeamSound> sounds) {");
+        int world = indexAfter(b, play, "mob.getWorld().playSound(mob.getLocation(), s.key(), SoundCategory.HOSTILE, (float) s.volume(),");
+        int line = indexAfter(b, play, "adapters.log().info(MobBeamLines.sound(a.mobId, mob.getUniqueId(), when, tick, s));");
+        assertTrue(play > 0 && world > play && line > world && line < play + 8, "each sound is played, then logged");
+        List<String> plugin = codeLines(MAIN.resolve("RpgPlugin.java"));
+        assertTrue(plugin.stream().anyMatch(s -> s.contains("RpgPlugin::soundKnown)")) && plugin.stream().anyMatch(s -> s.contains("return k != null && org.bukkit.Registry.SOUND_EVENT.get(k) != null;")),
+                "production's loader asks the server's sound registry");
+    }
+
     /** A force only marks the attempt due; the attempt runs in the loop's own step, so the fire's timing is the loop's. */
     @Test
     void aForceNeverRunsTheAttemptItself() throws IOException {

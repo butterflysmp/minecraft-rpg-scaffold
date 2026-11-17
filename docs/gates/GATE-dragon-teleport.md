@@ -9,6 +9,12 @@ and Ben says ready.**
 
 **2026-11-17: approved to merge by the review seat after the boot of e52e54b6; see GATE-dragon-teleport.md for the readings.**
 
+> **DATED NOTE, 2026-11-17, the Knell follow-up (`GATE-dragon-knell-2.md`). NOTHING BELOW IS EDITED.** Every row of
+> `selftest/GATE-dragon-teleport.yml` is now that gate's, renamed with the next suffix: **KB10R2, TP2-TP13, KB11R2 and TQ1
+> are SUPERSEDED by KB10R3, TP2R2-TP13R2, KB11R3 and TQ1R2** (the move 89 ticks after the fire, not 12), and **TP14** is
+> new. **This file's R0 and run sheet are SUPERSEDED for that boot by `GATE-dragon-knell-2.md`'s.** The predictions and
+> readings below stand as the record.
+
 **This PR is the STACK TOP** (`feat/dragon-teleport` on `feat/dragon-beam`, PR #195, which is passed and unbooted).
 **The ONE R0 and the ONE run sheet of the stacked boot are HERE.** `GATE-dragon-beam.md`'s R0 and run sheet are
 superseded (its dated note); its AUTO rows and KQ1 are still read in this boot, by the first selftest command.

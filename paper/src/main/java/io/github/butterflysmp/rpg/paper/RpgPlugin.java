@@ -282,7 +282,8 @@ public final class RpgPlugin extends JavaPlugin {
                 id -> weapons.find(id).isPresent() || shields.find(id).isPresent()
                         || armor.find(id).isPresent() || tools.find(id).isPresent());
         // A mob's element must name a loaded element, so elements load first (above) and the mob loader asks.
-        this.mobs = new MobLoader(getLogger(), id -> elements.find(id).isPresent())
+        this.mobs = new MobLoader(getLogger(), id -> elements.find(id).isPresent(),
+                RpgPlugin::soundKnown)
                 .loadAll(new File(contentDir, "mobs"));
         // The vanilla table (PLAN-dragon-mobs.md N2): an Enderman is Void and has no mob file. One resolver answers
         // "the element of this creature": the mob's file, else this table, else none.
@@ -802,6 +803,15 @@ public final class RpgPlugin extends JavaPlugin {
      * plugin that refuses to enable over its own build stamp would be a worse outcome than not
      * knowing the build.
      */
+    /**
+     * Is {@code key} a sound event the server knows (the follow-up of 2026-11-17: a beam sound's key, from
+     * content)? {@code NamespacedKey.fromString} answers null for a malformed key, which is then unknown, never a throw.
+     */
+    static boolean soundKnown(String key) {
+        org.bukkit.NamespacedKey k = org.bukkit.NamespacedKey.fromString(key);
+        return k != null && org.bukkit.Registry.SOUND_EVENT.get(k) != null;
+    }
+
     private String buildCommit() {
         try (java.io.InputStream in = getResource("build-id.properties")) {
             if (in == null) return "unknown (build-id.properties missing from the jar)";
