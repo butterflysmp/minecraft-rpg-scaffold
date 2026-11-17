@@ -5,6 +5,8 @@ is **committed before the boot**. Readings go **beside** a prediction, never ove
 once its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate,
 and Ben says ready.**
 
+**READ 2026-11-17, at the stacked boot of `e52e54b6`: R0a-R0d PASS, all fifteen rows AS PREDICTED; readings beside each prediction, and the READINGS NOTE at the end.**
+
 **This PR is the STACK TOP** (`feat/dragon-teleport` on `feat/dragon-beam`, PR #195, which is passed and unbooted).
 **The ONE R0 and the ONE run sheet of the stacked boot are HERE.** `GATE-dragon-beam.md`'s R0 and run sheet are
 superseded (its dated note); its AUTO rows and KQ1 are still read in this boot, by the first selftest command.
@@ -157,13 +159,13 @@ three questions; folding R6's rows into R5's file would rename rows that the sea
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-teleport` prints it, shortened. **Not** `feat/dragon-beam`'s `1bfee281`, not master's `8671ab16`; not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-teleport` prints it, shortened. **Not** `feat/dragon-beam`'s `1bfee281`, not master's `8671ab16`; not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **PASS, 2026-11-17.** `[04:24:10] [Server thread/INFO]: [Rpg] Build: e52e54b6`; `git ls-remote` printed `e52e54b6aabe58086e54486acc573a9275a878f0 refs/heads/feat/dragon-teleport`. `Done (6.118s)!` at 04:24:11; Ben's LOGIN at 04:25:16 |
 
 ### R0b — the jar carries BOTH steps
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT in `content/mobs/knell.yml`: R5's `  cycle_ticks: { min: 100, max: 200 }`, `  telegraph_ticks: 12`, `  damage: 35`, and R6's `  delay_ticks: 12`, `  arc_degrees: { min: 30, max: 70 }`. Classes, each in its DECOMPRESSED entry: R5's `MobBeamer.class` `knell-beam`, `MobBeamLines.class` `BEAM telegraph mob=`; R6's `MobTeleporter.class` `knell-teleport`, `MobTeleportLines.class` `TELEPORT skipped mob=`, `SelfTestBeam.class` `DRIVE teleport_draw tag=`. Keys: `GATE-dragon-beam.yml` `KB1:` and `KQ1:` PRESENT, `KB10:` and `KB11:` ABSENT (moved by R6); `GATE-dragon-teleport.yml` `KB10R2:`, `KB11R2:`, `TQ1:` PRESENT. Controls: `NoSuchTextControl` ABSENT in `MobTeleporter.class`; `GATE-dragon-blast.yml` `BQ1R2:` PRESENT | the scan below | |
+| PRESENT in `content/mobs/knell.yml`: R5's `  cycle_ticks: { min: 100, max: 200 }`, `  telegraph_ticks: 12`, `  damage: 35`, and R6's `  delay_ticks: 12`, `  arc_degrees: { min: 30, max: 70 }`. Classes, each in its DECOMPRESSED entry: R5's `MobBeamer.class` `knell-beam`, `MobBeamLines.class` `BEAM telegraph mob=`; R6's `MobTeleporter.class` `knell-teleport`, `MobTeleportLines.class` `TELEPORT skipped mob=`, `SelfTestBeam.class` `DRIVE teleport_draw tag=`. Keys: `GATE-dragon-beam.yml` `KB1:` and `KQ1:` PRESENT, `KB10:` and `KB11:` ABSENT (moved by R6); `GATE-dragon-teleport.yml` `KB10R2:`, `KB11R2:`, `TQ1:` PRESENT. Controls: `NoSuchTextControl` ABSENT in `MobTeleporter.class`; `GATE-dragon-blast.yml` `BQ1R2:` PRESENT | the scan below | **PASS, 2026-11-17.** All nineteen lines as predicted: PRESENT the five `knell.yml` lines, `knell-beam`, `BEAM telegraph mob=`, `knell-teleport`, `TELEPORT skipped mob=`, `DRIVE teleport_draw tag=`, `dragon-beam KB1:`, `dragon-beam KQ1:`, `dragon-teleport KB10R2:`, `KB11R2:`, `TQ1:`, `dragon-blast BQ1R2:` (the key control); ABSENT `NoSuchTextControl` (the text control), `dragon-beam KB10:`, `dragon-beam KB11:` |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -193,13 +195,13 @@ everything of both steps. **The key needle is anchored at `:` and the line's end
 
 | prediction | instrument | READING |
 |---|---|---|
-| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**, verbatim `GATE-dragon-blast-2.md` R0c's reading: neither step adds a content file. No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN`, beyond `volley_stone`'s known pair. **A `Skipping malformed mob 'knell.yml'` line would mean its beam or teleport block was refused**, the Loaded line then reading `4 mobs` | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN','Exception','Content:'` | |
+| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**, verbatim `GATE-dragon-blast-2.md` R0c's reading: neither step adds a content file. No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN`, beyond `volley_stone`'s known pair. **A `Skipping malformed mob 'knell.yml'` line would mean its beam or teleport block was refused**, the Loaded line then reading `4 mobs` | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN','Exception','Content:'` | **PASS, 2026-11-17.** The Loaded line verbatim as predicted; the only `[Rpg]` WARNs are `volley_stone`'s pair (`Content: weapon 'volley_stone' trigger 'left_click' authors cooldown_ticks 0…` and `1 content problem(s)…`); the other WARN lines are Paper's version banner. No `Refusing`, `Skipping`, `SEVERE` or `Exception`, before or after the runs |
 
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one line **`[Rpg] Selftest: dev server, 115 scenarios across 17 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport]`**, and **no** `Refusing selftest` line (a malformed `teleport_draw` is refused at load, by name) | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
+| Exactly one line **`[Rpg] Selftest: dev server, 115 scenarios across 17 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport]`**, and **no** `Refusing selftest` line (a malformed `teleport_draw` is refused at load, by name) | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | **PASS, 2026-11-17.** `[Rpg] Selftest: dev server, 115 scenarios across 17 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport]`, once; no `Refusing selftest` |
 
 **The 115 is RECOUNTED from the files at this branch's head:** in `paper/src/main/resources/selftest/`,
 `grep -cE '^  - ' index.yml` prints **17**; `cat $(grep -E '^  - ' index.yml | tr -d '\r' | sed 's/  - /GATE-/;
@@ -237,85 +239,85 @@ a verdict `ok y=<h> at=<x y z>`, `no-footing blocked=<n> ungrounded=<n>`, `no-si
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `AT tag=kb10r2 <uuid>` at K before the force. (2) The forced hit, as above. (3) **Exactly one** `TELEPORT … tick=<T+24> from=<K> center=<F> radius=8.000 bearing=0.000 side=right first=50.000 tried=1 [right 50.000 ok y=<F.y> at=<F + (5.142, 0, 6.128)>] landed=<F + (5.142, 0, 6.128)> moved=true`. (4) 40 ticks after the force, `AT tag=kb10r2 <uuid>` at **F + (5.142, 0, 6.128)**: its horizontal distance to him 8.000 (unchanged) and its bearing from him turned 50.000 degrees toward south | T1-T3, T6, T7, T8 | |
+| (1) `AT tag=kb10r2 <uuid>` at K before the force. (2) The forced hit, as above. (3) **Exactly one** `TELEPORT … tick=<T+24> from=<K> center=<F> radius=8.000 bearing=0.000 side=right first=50.000 tried=1 [right 50.000 ok y=<F.y> at=<F + (5.142, 0, 6.128)>] landed=<F + (5.142, 0, 6.128)> moved=true`. (4) 40 ticks after the force, `AT tag=kb10r2 <uuid>` at **F + (5.142, 0, 6.128)**: its horizontal distance to him 8.000 (unchanged) and its bearing from him turned 50.000 degrees toward south | T1-T3, T6, T7, T8 | **AS PREDICTED, 2026-11-17.** F = -98.500 63.000 6.500 (the REPORT `to=-98.547 64.066 6.500`). (1) `AT tag=kb10r2 470dc3df-fc90-4f1f-8ea0-f4226b6ec2da x=-90.500 y=63.000 z=6.500` = K. (2) FIRE `tick=5285 … gap=0.000 hit] dealt=35.000`, one REPORT, `HURT before=35.000 after=31.818 defense=10.000 dealer=470dc3df-fc90-4f1f-8ea0-f4226b6ec2da dealerType=wither_skeleton/knell`. (3) `[Rpg] TELEPORT mob=knell id=470dc3df-fc90-4f1f-8ea0-f4226b6ec2da target=player b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5 tick=5297 from=-90.500 63.000 6.500 center=-98.500 63.000 6.500 radius=8.000 bearing=0.000 side=right first=50.000 tried=1 [right 50.000 ok y=63.000 at=-93.358 63.000 12.628] landed=-93.358 63.000 12.628 moved=true`, the FIRE + 12. (4) `AT tag=kb10r2 470dc3df-fc90-4f1f-8ea0-f4226b6ec2da x=-93.358 y=63.000 z=12.628` = F + (5.142, 0, 6.128) |
 
 ### TP2 — the other side: 50 degrees left (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; `TELEPORT … radius=8.000 bearing=0.000 side=left first=50.000 tried=1 [left 50.000 ok y=<F.y> at=<F + (5.142, 0, −6.128)>] landed=<the same> moved=true`; the AT line at **F + (5.142, 0, −6.128)** | T3 | |
+| The forced hit; `TELEPORT … radius=8.000 bearing=0.000 side=left first=50.000 tried=1 [left 50.000 ok y=<F.y> at=<F + (5.142, 0, −6.128)>] landed=<the same> moved=true`; the AT line at **F + (5.142, 0, −6.128)** | T3 | **AS PREDICTED, 2026-11-17.** `TELEPORT … tick=5347 … radius=8.000 bearing=0.000 side=left first=50.000 tried=1 [left 50.000 ok y=63.000 at=-93.358 63.000 0.372] landed=-93.358 63.000 0.372 moved=true`; `AT tag=tp2 c4b31b65-1052-4e9b-8c1c-deb565ade59c x=-93.358 y=63.000 z=0.372` = F + (5.142, 0, -6.128) |
 
 ### TP3 — the arc's near bound, 30 degrees right (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; `TELEPORT … side=right first=30.000 tried=1 [right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; the AT line at **F + (6.928, 0, 4.000)** | T3 | |
+| The forced hit; `TELEPORT … side=right first=30.000 tried=1 [right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; the AT line at **F + (6.928, 0, 4.000)** | T3 | **AS PREDICTED, 2026-11-17.** `TELEPORT … tick=5397 … side=right first=30.000 tried=1 [right 30.000 ok y=63.000 at=-91.572 63.000 10.500] landed=-91.572 63.000 10.500 moved=true`; `AT tag=tp3 38d2d813-c81e-4f7c-87ce-4145234174f7 x=-91.572 y=63.000 z=10.500` = F + (6.928, 0, 4.000) |
 
 ### TP4 — the arc's far bound, 70 degrees right (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; `TELEPORT … side=right first=70.000 tried=1 [right 70.000 ok y=<F.y> at=<F + (2.736, 0, 7.518)>] … moved=true`; the AT line at **F + (2.736, 0, 7.518)** | T3 | |
+| The forced hit; `TELEPORT … side=right first=70.000 tried=1 [right 70.000 ok y=<F.y> at=<F + (2.736, 0, 7.518)>] … moved=true`; the AT line at **F + (2.736, 0, 7.518)** | T3 | **AS PREDICTED, 2026-11-17.** `TELEPORT … tick=5447 … side=right first=70.000 tried=1 [right 70.000 ok y=63.000 at=-95.764 63.000 14.018] landed=-95.764 63.000 14.018 moved=true`; `AT tag=tp4 d2aadb35-6a0d-4973-9369-3248fede8741 x=-95.764 y=63.000 z=14.018` = F + (2.736, 0, 7.518) |
 
 ### TP5 — a forced MISS moves nothing (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) AT at K. (2) One TELEGRAPH; `CMD /tp @s ~ ~ ~3` after it; one FIRE `… [player <Ben's uuid> gap=2.700 miss] dealt=none`; **no REPORT, no HURT**. (3) **No TELEPORT line of any kind for it** through the 40 ticks. (4) AT at **K**, unchanged. The `teleport_draw` it was given is never consumed | T1; `GATE-dragon-beam.md` KB3 | |
+| (1) AT at K. (2) One TELEGRAPH; `CMD /tp @s ~ ~ ~3` after it; one FIRE `… [player <Ben's uuid> gap=2.700 miss] dealt=none`; **no REPORT, no HURT**. (3) **No TELEPORT line of any kind for it** through the 40 ticks. (4) AT at **K**, unchanged. The `teleport_draw` it was given is never consumed | T1; `GATE-dragon-beam.md` KB3 | **AS PREDICTED, 2026-11-17.** `AT tag=tp5 e65eddc3-6a73-46e5-9411-1332506760b1 x=-90.500 y=63.000 z=6.500` before; FIRE `tick=5485 … [player b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5 gap=2.700 miss] dealt=none`; no REPORT, no HURT; **no TELEPORT line of either kind for e65eddc3** (`grep -c` 0); the same AT line after |
 
 ### TP6 — every right spot walled: it lands on the left (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit (the glass does not touch the beam, T5); `TELEPORT … side=right first=50.000 tried=6 [right 50.000 no-footing blocked=7 ungrounded=0, right 30.000 no-footing blocked=7 ungrounded=0, right 43.333 no-footing blocked=7 ungrounded=0, right 56.667 no-footing blocked=7 ungrounded=0, right 70.000 no-footing blocked=7 ungrounded=0, left 50.000 ok y=<F.y> at=<F + (5.142, 0, −6.128)>] landed=<the same> moved=true`; AT at **F + (5.142, 0, −6.128)** | T4 (35 of 35 heights walled, executed), T3 | |
+| The forced hit (the glass does not touch the beam, T5); `TELEPORT … side=right first=50.000 tried=6 [right 50.000 no-footing blocked=7 ungrounded=0, right 30.000 no-footing blocked=7 ungrounded=0, right 43.333 no-footing blocked=7 ungrounded=0, right 56.667 no-footing blocked=7 ungrounded=0, right 70.000 no-footing blocked=7 ungrounded=0, left 50.000 ok y=<F.y> at=<F + (5.142, 0, −6.128)>] landed=<the same> moved=true`; AT at **F + (5.142, 0, −6.128)** | T4 (35 of 35 heights walled, executed), T3 | **AS PREDICTED, 2026-11-17.** `TELEPORT … tick=5550 … side=right first=50.000 tried=6 [right 50.000 no-footing blocked=7 ungrounded=0, right 30.000 no-footing blocked=7 ungrounded=0, right 43.333 no-footing blocked=7 ungrounded=0, right 56.667 no-footing blocked=7 ungrounded=0, right 70.000 no-footing blocked=7 ungrounded=0, left 50.000 ok y=63.000 at=-93.358 63.000 0.372] landed=-93.358 63.000 0.372 moved=true`; `AT tag=tp6 … x=-93.358 y=63.000 z=0.372` |
 
 ### TP7 — walled in on every candidate: none, and it stays (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; `TELEPORT … side=right first=50.000 tried=10 [right 50.000 no-footing blocked=7 ungrounded=0, right 30.000 …, right 43.333 …, right 56.667 …, right 70.000 …, left 50.000 …, left 30.000 …, left 43.333 …, left 56.667 …, left 70.000 no-footing blocked=7 ungrounded=0] landed=none moved=-` (every entry `no-footing blocked=7 ungrounded=0`); AT at **K** before and after | T4 | |
+| The forced hit; `TELEPORT … side=right first=50.000 tried=10 [right 50.000 no-footing blocked=7 ungrounded=0, right 30.000 …, right 43.333 …, right 56.667 …, right 70.000 …, left 50.000 …, left 30.000 …, left 43.333 …, left 56.667 …, left 70.000 no-footing blocked=7 ungrounded=0] landed=none moved=-` (every entry `no-footing blocked=7 ungrounded=0`); AT at **K** before and after | T4 | **AS PREDICTED, 2026-11-17.** `TELEPORT … tick=5600 … side=right first=50.000 tried=10 [` ten entries, every one `no-footing blocked=7 ungrounded=0`, ending `left 70.000 no-footing blocked=7 ungrounded=0] landed=none moved=-`; `AT tag=tp7 8fe56d88-6ea4-4f3a-bade-5b4e401eef7a x=-90.500 y=63.000 z=6.500` before and after |
 
 ### TP8 — a pit two deep: it stands on the pit's floor, 2 below his feet (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; `TELEPORT … tried=1 [right 50.000 ok y=<F.y − 2> at=<F + (5.142, −2, 6.128)>] landed=<the same> moved=true` (heights tried 0, +1, −1, +2 with no ground under them, then −2 on the pit's stone); AT at **F + (5.142, −2, 6.128)** | T4, T5 (sight from the pit, executed) | |
+| The forced hit; `TELEPORT … tried=1 [right 50.000 ok y=<F.y − 2> at=<F + (5.142, −2, 6.128)>] landed=<the same> moved=true` (heights tried 0, +1, −1, +2 with no ground under them, then −2 on the pit's stone); AT at **F + (5.142, −2, 6.128)** | T4, T5 (sight from the pit, executed) | **AS PREDICTED, 2026-11-17.** `TELEPORT … tick=5650 … tried=1 [right 50.000 ok y=61.000 at=-93.358 61.000 12.628] landed=-93.358 61.000 12.628 moved=true`; `AT tag=tp8 4f0085d8-8996-4b72-8ffb-3434c9493a60 x=-93.358 y=61.000 z=12.628` = F + (5.142, -2, 6.128) |
 
 ### TP9 — a step two high: it stands on top, 2 above his feet (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; `TELEPORT … tried=1 [right 50.000 ok y=<F.y + 2> at=<F + (5.142, 2, 6.128)>] … moved=true` (0 and +1 blocked by the step, −1 by the floor, then +2 on its top); AT at **F + (5.142, 2, 6.128)** | T4, T5 | |
+| The forced hit; `TELEPORT … tried=1 [right 50.000 ok y=<F.y + 2> at=<F + (5.142, 2, 6.128)>] … moved=true` (0 and +1 blocked by the step, −1 by the floor, then +2 on its top); AT at **F + (5.142, 2, 6.128)** | T4, T5 | **AS PREDICTED, 2026-11-17.** `TELEPORT … tick=5700 … tried=1 [right 50.000 ok y=65.000 at=-93.358 65.000 12.628] landed=-93.358 65.000 12.628 moved=true`; `AT tag=tp9 e78c6eae-6e2b-415f-bab5-8a9126451a54 x=-93.358 y=65.000 z=12.628` = F + (5.142, 2, 6.128) |
 
 ### TP10 — ground four down, beyond the 3-block tolerance: refused; it lands on the next spot (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; `TELEPORT … tried=2 [right 50.000 no-footing blocked=0 ungrounded=7, right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT at **F + (6.928, 0, 4.000)**. TP8 is its control (the same pit, 2 deep, is stood in) | T4 (both footprints, executed) | |
+| The forced hit; `TELEPORT … tried=2 [right 50.000 no-footing blocked=0 ungrounded=7, right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT at **F + (6.928, 0, 4.000)**. TP8 is its control (the same pit, 2 deep, is stood in) | T4 (both footprints, executed) | **AS PREDICTED, 2026-11-17.** `TELEPORT … tick=5750 … tried=2 [right 50.000 no-footing blocked=0 ungrounded=7, right 30.000 ok y=63.000 at=-91.572 63.000 10.500] landed=-91.572 63.000 10.500 moved=true`; `AT tag=tp10 … x=-91.572 y=63.000 z=10.500` |
 
 ### TP11 — ground, but no sight of him: refused by sight; it lands on the next spot (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; `TELEPORT … tried=2 [right 50.000 no-sight y=<F.y>, right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT at **F + (6.928, 0, 4.000)**. KB10R2 is its control (the same spot, no wall, is taken) | T5 (executed: the wall meets the 50-degree line and not the 30's) | |
+| The forced hit; `TELEPORT … tried=2 [right 50.000 no-sight y=<F.y>, right 30.000 ok y=<F.y> at=<F + (6.928, 0, 4.000)>] … moved=true`; AT at **F + (6.928, 0, 4.000)**. KB10R2 is its control (the same spot, no wall, is taken) | T5 (executed: the wall meets the 50-degree line and not the 30's) | **AS PREDICTED, 2026-11-17.** `TELEPORT … tick=5800 … tried=2 [right 50.000 no-sight y=63.000, right 30.000 ok y=63.000 at=-91.572 63.000 10.500] landed=-91.572 63.000 10.500 moved=true`; `AT tag=tp11 … x=-91.572 y=63.000 z=10.500` |
 
 ### TP12 — he steps 2 north during the delay: the circle is around where he is at the end (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit at F; `CMD /tp @s ~ ~ ~-2` after the FIRE line and before T+24; `TELEPORT … center=<F + (0, 0, −2)> radius=8.246 bearing=14.036 side=right first=50.000 tried=1 [right 50.000 ok y=<F.y> at=<F + (3.610, 0, 5.414)>] … moved=true` (F + (0, 0, −2) + (3.610, 0, 7.414)); AT at **F + (3.610, 0, 5.414)**, 8.246 from his new feet | T3 | |
+| The forced hit at F; `CMD /tp @s ~ ~ ~-2` after the FIRE line and before T+24; `TELEPORT … center=<F + (0, 0, −2)> radius=8.246 bearing=14.036 side=right first=50.000 tried=1 [right 50.000 ok y=<F.y> at=<F + (3.610, 0, 5.414)>] … moved=true` (F + (0, 0, −2) + (3.610, 0, 7.414)); AT at **F + (3.610, 0, 5.414)**, 8.246 from his new feet | T3 | **AS PREDICTED, 2026-11-17.** FIRE `tick=5838`; `CMD /tp @s ~ ~ ~-2` after it; `TELEPORT … tick=5850 from=-90.500 63.000 6.500 center=-98.500 63.000 4.500 radius=8.246 bearing=14.036 side=right first=50.000 tried=1 [right 50.000 ok y=63.000 at=-94.890 63.000 11.914] landed=-94.890 63.000 11.914 moved=true`; `AT tag=tp12 541874c7-5c8e-4ad8-b63a-bcad1104da25 x=-94.890 y=63.000 z=11.914` = F + (3.610, 0, 5.414) |
 
 ### TP13 — the Knell is killed during the delay: nothing moves, and one line says why (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The forced hit; `CMD /kill @e[tag=tp13]` 18 ticks after the force (after the FIRE, before T+24); **exactly one** `TELEPORT skipped mob=knell id=<the tp13 uuid> target=<Ben's uuid> reason=knell-gone`; **no TELEPORT decision line** | T2 | |
+| The forced hit; `CMD /kill @e[tag=tp13]` 18 ticks after the force (after the FIRE, before T+24); **exactly one** `TELEPORT skipped mob=knell id=<the tp13 uuid> target=<Ben's uuid> reason=knell-gone`; **no TELEPORT decision line** | T2 | **AS PREDICTED, 2026-11-17.** TELEGRAPH `tick=5883`, FIRE `tick=5895 … gap=0.000 hit] dealt=35.000`, one HURT; `CMD /kill @e[tag=tp13]` after the FIRE; **exactly one** `[Rpg] TELEPORT skipped mob=knell id=746d35df-1fba-432e-b0c9-323a4d4b6996 target=b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5 reason=knell-gone`; no decision line |
 
 ### KB11R2 — re-predicts GATE-dragon-beam.md KB11: the live cycle by bound, unbroken by a move (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `DRIVE spawn tag=kb11r2f <uuid> knell frozen`, `DRIVE spawn tag=kb11r2 <uuid> knell live`, `CMD /attribute @e[tag=kb11r2,limit=1] minecraft:movement_speed base set 0` and its reply (RECORDED), `DRIVE teleport_draw tag=kb11r2 <uuid> side=right first=50.000`. (2) Its FIRST own TELEGRAPH: `forced=false`, **99 ≤ lived ≤ 201** (`GATE-dragon-beam.md` B9), `at=` K. (3) Its FIRE 12 later, a hit (`gap=0.000 hit`, the line open), its REPORT, one HURT `before=35.000`. (4) **A TELEPORT 12 after that FIRE, `side=right first=50.000 … landed=<F + (5.142, 0, 6.128)> moved=true`.** (5) **THE CLOCK UNBROKEN: its NEXT own TELEGRAPH `forced=false`, `at=` the landing (it cannot walk), with `lived` − the first's `lived` − 12 within 100 to 200** (both read from the one Knell's tick count in the same task order, so B9's ±1 cancels) (I2: a fresh 100-200 wait drawn AT the fire, which the move does not touch). (6) Every later own beam the same way: each TELEGRAPH's `lived` minus the previous one's minus 12 within 100 to 200; each FIRE 12 after; each hit's TELEPORT 12 after its FIRE, **its side and angle the production draw's, RECORDED**, its `radius=` 8.000 (the radius is kept). At least two own TELEGRAPHs fit in the 430 ticks; a third may. (7) **No BEAM or TELEPORT line names the kb11r2f uuid.** (8) Between any two `REPLY "Custom HP: …"` heal lines, at most one HURT. (9) A telegraph or a move still pending at the row's end is cancelled or skipped by the next row's clean, in TQ1's bracket, RECORDED | B9, I1, I2, I23; T2, T3, T6 | |
+| (1) `DRIVE spawn tag=kb11r2f <uuid> knell frozen`, `DRIVE spawn tag=kb11r2 <uuid> knell live`, `CMD /attribute @e[tag=kb11r2,limit=1] minecraft:movement_speed base set 0` and its reply (RECORDED), `DRIVE teleport_draw tag=kb11r2 <uuid> side=right first=50.000`. (2) Its FIRST own TELEGRAPH: `forced=false`, **99 ≤ lived ≤ 201** (`GATE-dragon-beam.md` B9), `at=` K. (3) Its FIRE 12 later, a hit (`gap=0.000 hit`, the line open), its REPORT, one HURT `before=35.000`. (4) **A TELEPORT 12 after that FIRE, `side=right first=50.000 … landed=<F + (5.142, 0, 6.128)> moved=true`.** (5) **THE CLOCK UNBROKEN: its NEXT own TELEGRAPH `forced=false`, `at=` the landing (it cannot walk), with `lived` − the first's `lived` − 12 within 100 to 200** (both read from the one Knell's tick count in the same task order, so B9's ±1 cancels) (I2: a fresh 100-200 wait drawn AT the fire, which the move does not touch). (6) Every later own beam the same way: each TELEGRAPH's `lived` minus the previous one's minus 12 within 100 to 200; each FIRE 12 after; each hit's TELEPORT 12 after its FIRE, **its side and angle the production draw's, RECORDED**, its `radius=` 8.000 (the radius is kept). At least two own TELEGRAPHs fit in the 430 ticks; a third may. (7) **No BEAM or TELEPORT line names the kb11r2f uuid.** (8) Between any two `REPLY "Custom HP: …"` heal lines, at most one HURT. (9) A telegraph or a move still pending at the row's end is cancelled or skipped by the next row's clean, in TQ1's bracket, RECORDED | B9, I1, I2, I23; T2, T3, T6 | **AS PREDICTED, 2026-11-17.** (1) `DRIVE spawn tag=kb11r2f 8ef9e299-e014-4b85-b939-4b7f6f27e41f knell frozen`, `DRIVE spawn tag=kb11r2 77ef2cfa-7fac-48d4-8ddc-189a811c05b8 knell live`, `REPLY "The base value for attribute Speed for entity Knell set to 0" []`, `DRIVE teleport_draw tag=kb11r2 … side=right first=50.000`. (2) `BEAM telegraph … forced=false tick=6136 lived=181 at=-90.500 63.000 6.500`: 99 ≤ 181 ≤ 201. (3) FIRE `tick=6148 … gap=0.000 hit] dealt=35.000`, REPORT, one HURT. (4) `TELEPORT … tick=6160 … side=right first=50.000 tried=1 [right 50.000 ok y=63.000 at=-93.358 63.000 12.628] landed=-93.358 63.000 12.628 moved=true`. (5) **The clock unbroken:** `BEAM telegraph … forced=false tick=6268 lived=313 at=-93.358 63.000 12.628`: 313 − 181 − 12 = 120, within 100 to 200, at the landing. (6) FIRE `tick=6280 … gap=0.000 hit] dealt=35.000`; `TELEPORT … tick=6292 … radius=8.000 bearing=50.000 side=left first=37.703 tried=1 [left 37.703 ok y=63.000 at=-90.684 63.000 8.204] landed=-90.684 63.000 8.204 moved=true` (the production draw); no third TELEGRAPH in the 435 ticks; `AT tag=kb11r2 … x=-90.684 y=63.000 z=8.204`. (7) No line names 8ef9e299. (8) Two HURT lines, each between two heals. (9) Nothing pending at the end (TQ1's `CLEAN … removed=2`, no cancel or skip line) |
 
 ---
 
@@ -329,4 +331,24 @@ tells him in advance what to watch (step 3), and the selftest says it again in g
 
 | prediction | stands on | READING |
 |---|---|---|
-| **The server half.** A heal; the gold line; 60 ticks; one forced beam from a frozen Knell 12 east: a hit if he stood still (one REPORT, one HURT `before=35.000`). **No `teleport_draw`: the production draw.** 12 ticks after the FIRE, one TELEPORT, `radius=12.000 bearing=0.000`, its side, first angle, every candidate and the landing **RECORDED**, not predicted (an open floor: `tried=1` and `moved=true` are expected, not required). Then the three ASK lines with his answers, verbatim. **His half:** ASK 1 *"After it hit you, did it move to a new spot?"*; ASK 2 *"Could you find it again straight away?"*; ASK 3 *"Does that feel fair to someone fighting it with a bow?"* (yes/no each) | T1-T6; the sight and sound at each end are cfde822's sidestep's, READ (`PLAN-dragon-mobs.md` §3.1: soul and soul-fire particles, an amethyst step) | |
+| **The server half.** A heal; the gold line; 60 ticks; one forced beam from a frozen Knell 12 east: a hit if he stood still (one REPORT, one HURT `before=35.000`). **No `teleport_draw`: the production draw.** 12 ticks after the FIRE, one TELEPORT, `radius=12.000 bearing=0.000`, its side, first angle, every candidate and the landing **RECORDED**, not predicted (an open floor: `tried=1` and `moved=true` are expected, not required). Then the three ASK lines with his answers, verbatim. **His half:** ASK 1 *"After it hit you, did it move to a new spot?"*; ASK 2 *"Could you find it again straight away?"*; ASK 3 *"Does that feel fair to someone fighting it with a bow?"* (yes/no each) | T1-T6; the sight and sound at each end are cfde822's sidestep's, READ (`PLAN-dragon-mobs.md` §3.1: soul and soul-fire particles, an amethyst step) | **Server half, 2026-11-17.** TELEGRAPH `forced=true tick=6451 lived=61 at=-86.500 63.000 6.500`; FIRE `tick=6463 … length=18.001 clip=block … gap=0.000 hit] dealt=35.000`; REPORT; `HURT before=35.000 after=31.818 …`; `TELEPORT … tick=6475 from=-86.500 63.000 6.500 center=-98.500 63.000 6.500 radius=12.000 bearing=0.000 side=left first=32.546 tried=1 [left 32.546 ok y=63.000 at=-88.385 63.000 0.044] landed=-88.385 63.000 0.044 moved=true`. **His half, verbatim:** ASK 1 `question="After it hit you, did it move to a new spot?" answer="yes"`; ASK 2 `question="Could you find it again straight away?" answer="yes"`; ASK 3 `question="Does that feel fair to someone fighting it with a bow?" answer="yes"` |
+
+---
+
+## READINGS NOTE, 2026-11-17 — THE STACKED BOOT OF `e52e54b6`
+
+**What ran:** one boot of `feat/dragon-teleport` `e52e54b6` (`Done` 04:24:11); Ben's LOGIN 04:25:16; `/gamemode
+survival`; `/rpg selftest dragon-beam` once (04:27:02 to 04:28:20); `/rpg selftest dragon-teleport` once (04:28:33 to
+04:29:44); `/stop` 04:29:57, a clean stop (the chunk and I/O saves logged, the boot script exited 0, no JVM left). No
+extra run. Each run read `DIFFICULTY found=NORMAL set=NORMAL` and restored `difficulty=NORMAL`.
+
+**R0a-R0d PASS. All fifteen rows of this gate read AS PREDICTED**, with KB10R2 and KB11R2 the two re-predictions, and
+TQ1's server half and Ben's three answers recorded. **Every TELEPORT came exactly 12 ticks after its FIRE (17 of 17)
+and every FIRE exactly 12 after its TELEGRAPH (25 of 25), across both runs.** Every landing the gate predicted read to
+three places. **The Knell's eye printed 3.360 above its feet in all 26 TELEGRAPH lines**, so `GATE-dragon-beam.md`
+B2, INFERRED when written, now has its reading. Every HURT line (22 of them, both runs) is a Knell's beam,
+`before=35.000`, `dealerType=wither_skeleton/knell`; nothing else hurt him. All 27 LEFTOVER lines read `living=0`.
+
+**The two departures were in `GATE-dragon-beam.md`'s rows, and are recorded there:** KB2's control did not hold (its
+penned Knell never walked), and KB4's Knell moved before the next row's clean removed it (the thin margin the seat
+accepted). Both are diagnosed in that gate's READINGS NOTE; **nothing was changed.**
