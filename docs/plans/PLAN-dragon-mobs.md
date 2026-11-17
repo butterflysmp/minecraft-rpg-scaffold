@@ -702,6 +702,15 @@ TQ1R4 ASK 1 question="Does the whole sequence feel right now?" answer="the timin
   stay 48 ticks apart, and the fire moves to their middle, so the telegraph becomes **24 ticks** and the teleport delay
   **24**. **NOT built.**
 
+### THE SHOT IN THE MIDDLE, AS BUILT (`feat/dragon-knell-5`, 2026-11-17)
+
+Ben's answers after the boot of `0b4037ec` are verbatim above. **THE SEAT'S READING, as built here, and told to Ben
+before the brief was sent:** the lock and the move stay **48 ticks apart, as today** (his "the timing of the warning
+and teleport are good"), and the fire moves to their **middle** (his "I want the shot to be in the middle"): the
+telegraph becomes **24 ticks** (was 20) and the teleport delay **24** (was 28). And, for his "no" to the lower first
+bell, the telegraph's bell goes **back to pitch 1.0**. The shot's bell (1.5) and the chime are unchanged.
+**The two 24s are a pair: they must sum to 48 until Ben rules otherwise; neither is derived from a sound.**
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
