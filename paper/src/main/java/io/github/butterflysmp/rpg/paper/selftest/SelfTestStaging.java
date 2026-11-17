@@ -98,6 +98,31 @@ final class SelfTestStaging {
                 + (found.isEmpty() ? "" : " [" + String.join(", ", found) + "]");
     }
 
+    /**
+     * C2, CLOSED HERE (dragon-mobs step R7b): the radius the row-start clean ends what can OUTLIVE a row in. 48, the
+     * reach of every shot and probe step. The boot of 3dc0e184 read SH7R2's shot destroyed by SH4R2's grenade field (an
+     * ability area field, age 9), because the clean removed tagged MOBS and nothing else.
+     */
+    static final int LINGER_RADIUS = 48;
+
+    /**
+     * WHAT CAN OUTLIVE A ROW, besides its mobs (measured from the code, step R7b): a point-scheduled chain of core work
+     * (an area field's pulses, a projectile's flight, a ray's steps, an ember's tracking, an Ignite fuse:
+     * {@code PendingWork}), and the ENTITIES those chains move: a vanilla or ability projectile (an arrow, a fireball
+     * body), an area-effect cloud, and a marker of ours (an Item or a fireball carrying {@code marker_entity}). The clean
+     * ends the work FIRST (so no chain re-spawns what it removes) and then each such entity. Never a player.
+     * Entity-bound work (a status's ticks, {@code scheduleOn}) dies with its mob, which the tagged-mob clean removes.
+     */
+    static boolean lingering(boolean projectile, boolean cloud, boolean marker, boolean player) {
+        return !player && (projectile || cloud || marker);
+    }
+
+    /** One line after the clean's linger pass, beside LEFTOVER. A row predicts {@code LINGER work=0 entities=0 radius=48}. */
+    static String lingerLine(int radius, int work, List<String> ended) {
+        return "LINGER work=" + work + " entities=" + ended.size() + " radius=" + radius
+                + (ended.isEmpty() ? "" : " [" + String.join(", ", ended) + "]");
+    }
+
     /** The DIFFICULTY step's argument; empty for anything but the four (the loader refuses it by name). */
     static java.util.Optional<org.bukkit.Difficulty> difficulty(String arg) {
         try {
@@ -122,10 +147,12 @@ final class SelfTestStaging {
                     : java.util.Optional.of("await_fuse takes '<tag> <min fuse> <timeout ticks>', got '" + arg + "'");
             case STRIKE_AT_AGE -> SelfTestStrike.parseAtAge(arg).isPresent() ? java.util.Optional.empty()
                     : java.util.Optional.of("strike_at_age takes '<tag> <age> <timeout ticks>', got '" + arg + "'");
+            case BLINK -> SelfTestBlink.parse(arg).isPresent() ? java.util.Optional.empty()
+                    : java.util.Optional.of("blink takes '<tag> <angle> <distance>', got '" + arg + "'");
             case WATCH_SWINGS -> arg.trim().equals("on") || arg.trim().equals("off") ? java.util.Optional.empty()
                     : java.util.Optional.of("watch_swings takes on or off, got '" + arg + "'");
             case DETONATE, IGNITE, PROBE_FUSE, THAW, PROBE_MOTION, BEAM, PROBE_AT, SHOT, PROBE_SHOT, AIM_SHAPE, STRIKE_LOOK,
-                    SHOOT_ARROW -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
+                    SHOOT_ARROW, PROBE_SHIELD -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes one tag, got '"
                             + arg + "'");
             default -> java.util.Optional.empty();

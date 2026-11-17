@@ -151,19 +151,34 @@ public final class BeamTeleport {
     }
 
     private static Verdict judge(MobTeleport t, Candidate c, Footing footing) {
-        if (!footing.loaded(c.column())) return new Verdict(c, Outcome.UNLOADED, Optional.empty(), 0, 0);
+        Foothold f = foot(c.column(), t.levelTolerance(), t.requireSight(), footing);
+        return new Verdict(c, f.outcome(), f.landing(), f.blocked(), f.ungrounded());
+    }
+
+    /** What one column came to: its outcome, its footing (OK and NO_SIGHT carry it), and NO_FOOTING's counts. */
+    public record Foothold(Outcome outcome, Optional<Vec3> landing, int blocked, int ungrounded) {}
+
+    /**
+     * THE ONE LANDING CHECK, shared by the Knell's teleport and the Phalanx's blink (step R7b: "do not write a second
+     * landing checker"). For a column whose y is the height to search around: {@code loaded}, or UNLOADED; then the
+     * nearest height ({@link #heights} of {@code levelTolerance}) that {@code fits} and is {@code grounded}, or
+     * NO_FOOTING with the counts; then, if {@code requireSight}, {@code sees} from that footing, or NO_SIGHT (no other
+     * height is tried).
+     */
+    public static Foothold foot(Vec3 column, int levelTolerance, boolean requireSight, Footing footing) {
+        if (!footing.loaded(column)) return new Foothold(Outcome.UNLOADED, Optional.empty(), 0, 0);
         int blocked = 0;
         int ungrounded = 0;
-        for (int k : heights(t.levelTolerance())) {
-            Vec3 feet = new Vec3(c.column().x(), c.column().y() + k, c.column().z());
+        for (int k : heights(levelTolerance)) {
+            Vec3 feet = new Vec3(column.x(), column.y() + k, column.z());
             if (!footing.fits(feet)) { blocked++; continue; }
             if (!footing.grounded(feet)) { ungrounded++; continue; }
-            if (t.requireSight() && !footing.sees(feet)) {
-                return new Verdict(c, Outcome.NO_SIGHT, Optional.of(feet), 0, 0);
+            if (requireSight && !footing.sees(feet)) {
+                return new Foothold(Outcome.NO_SIGHT, Optional.of(feet), 0, 0);
             }
-            return new Verdict(c, Outcome.OK, Optional.of(feet), 0, 0);
+            return new Foothold(Outcome.OK, Optional.of(feet), 0, 0);
         }
-        return new Verdict(c, Outcome.NO_FOOTING, Optional.empty(), blocked, ungrounded);
+        return new Foothold(Outcome.NO_FOOTING, Optional.empty(), blocked, ungrounded);
     }
 
     /** Why a move due at the end of the delay does not happen, or empty when it goes ahead. */

@@ -28,6 +28,20 @@ final class SelfTestStrike {
     /** {@code strike_at_age}'s argument: strike the tagged Phalanx's shot the tick its age reaches {@code age}. */
     record AtAge(String tag, int age, int timeoutTicks) {}
 
+    /** What a STRIKE_AT_AGE poll does this tick. */
+    enum Next { WAIT, STRIKE, NO_SHOT_AT_TIMEOUT, YOUNG_AT_TIMEOUT }
+
+    /**
+     * C3, CLOSED HERE (step R7b). The boot of 3dc0e184 read SH15 as {@code no live shot after 0 ticks}: the row forced a
+     * shot and polled in the same tick, before the Phalanx's loop had fired it, and the first build gave up on the first
+     * empty poll. Now NO SHOT YET is a wait like any other; only the timeout ends it, and the line says which it was.
+     */
+    static Next next(boolean live, int age, int wanted, int waited, int timeoutTicks) {
+        if (live && age >= wanted) return Next.STRIKE;
+        if (waited >= timeoutTicks) return live ? Next.YOUNG_AT_TIMEOUT : Next.NO_SHOT_AT_TIMEOUT;
+        return Next.WAIT;
+    }
+
     static Optional<AtAge> parseAtAge(String arg) {
         String[] w = arg.trim().split("\\s+");
         if (w.length != 3 || w[0].isEmpty()) return Optional.empty();

@@ -49,6 +49,32 @@ class MobShotLinesTest {
                 MobShotLines.probe("phalanx", MOB, SHOT, 25, AT, ORIGIN, new Vec3(-0.2, 0, 0), box, shape));
     }
 
+    /** The blink's ONE line (step R7b): the trigger, where it stood, every attempt with its verdict, and the landing. */
+    @Test
+    void theBlinkLine() {
+        io.github.butterflysmp.rpg.core.mob.MobBlink.Decision landed = new io.github.butterflysmp.rpg.core.mob.MobBlink.Decision(
+                java.util.List.of(
+                        new io.github.butterflysmp.rpg.core.mob.MobBlink.Verdict(new io.github.butterflysmp.rpg.core.mob.MobBlink.Draw(0, 10),
+                                new Vec3(10, 64, 0), io.github.butterflysmp.rpg.core.mob.BeamTeleport.Outcome.NO_FOOTING,
+                                java.util.Optional.empty(), 7, 0),
+                        new io.github.butterflysmp.rpg.core.mob.MobBlink.Verdict(new io.github.butterflysmp.rpg.core.mob.MobBlink.Draw(90, 8),
+                                new Vec3(0, 64, 8), io.github.butterflysmp.rpg.core.mob.BeamTeleport.Outcome.OK,
+                                java.util.Optional.of(new Vec3(0, 65, 8)), 0, 0)),
+                java.util.Optional.of(new Vec3(0, 65, 8)));
+        assertEquals("BLINK mob=phalanx id=" + MOB + " tick=9 forced=false trigger=player " + P
+                        + " from=0.000 64.000 0.000 tried=2 [0.000 10.000 NO_FOOTING blocked=7 ungrounded=0,"
+                        + " 90.000 8.000 OK at=0.000 65.000 8.000] landed=0.000 65.000 8.000",
+                MobShotLines.blink("phalanx", MOB, 9, false, "player", P, new Vec3(0, 64, 0), landed));
+        io.github.butterflysmp.rpg.core.mob.MobBlink.Decision stays = new io.github.butterflysmp.rpg.core.mob.MobBlink.Decision(
+                java.util.List.of(new io.github.butterflysmp.rpg.core.mob.MobBlink.Verdict(new io.github.butterflysmp.rpg.core.mob.MobBlink.Draw(0, 6),
+                        new Vec3(6, 64, 0), io.github.butterflysmp.rpg.core.mob.BeamTeleport.Outcome.UNLOADED,
+                        java.util.Optional.empty(), 0, 0)),
+                java.util.Optional.empty());
+        assertEquals("BLINK mob=phalanx id=" + MOB + " tick=9 forced=true trigger=none from=0.000 64.000 0.000 tried=1"
+                        + " [0.000 6.000 UNLOADED] landed=none",
+                MobShotLines.blink("phalanx", MOB, 9, true, null, null, new Vec3(0, 64, 0), stays));
+    }
+
     @Test
     void theOtherLines() {
         assertEquals("SHOT none mob=phalanx id=" + MOB + " tick=7 range=30.0", MobShotLines.none("phalanx", MOB, 7, 30));

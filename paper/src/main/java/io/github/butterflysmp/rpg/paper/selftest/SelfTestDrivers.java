@@ -140,7 +140,35 @@ final class SelfTestDrivers {
             case STRIKE_LOOK -> strikeAlong(p, a, "strike_look", p.getEyeLocation().getDirection());
             case STRIKE_AT_AGE -> Optional.empty();   // the run polls it; it never reaches a driver
             case SHOOT_ARROW -> shootArrow(p, a);
+            case BLINK -> blink(p, a);
+            case PROBE_SHIELD -> tagged(p, a, "shield", e -> {
+                org.bukkit.inventory.ItemStack off = e instanceof LivingEntity l && l.getEquipment() != null
+                        ? l.getEquipment().getItemInOffHand() : null;
+                run.log(io.github.butterflysmp.rpg.paper.health.MobShielder.probeLine(a, e.getUniqueId(),
+                        e.getPersistentDataContainer().has(keys.mobShield),
+                        off == null || off.getType().isAir() ? null : off.getType().getKey().getKey()));
+            });
         };
+    }
+
+    /** BLINK (step R7b): each tagged Phalanx blinks on its next tick, every attempt the given draw. */
+    private Optional<String> blink(Player p, String arg) {
+        SelfTestBlink.Forced f = SelfTestBlink.parse(arg).orElseThrow(
+                () -> new IllegalStateException("blink: the loader admitted '" + arg + "'"));
+        List<LivingEntity> found = taggedWithin48(p, f.tag());
+        if (found.isEmpty()) {
+            run.log(SelfTestBeam.noneLine(f.tag(), "DRIVE blink", (int) SelfTestBeam.REACH));
+            return Optional.empty();
+        }
+        for (LivingEntity e : found) {
+            run.scheduler().onEntity(e, () -> {
+                Optional<String> refused = run.shots().forceBlink(e, f.draw());
+                String head = String.format(java.util.Locale.ROOT, "DRIVE blink tag=%s %s angle=%.3f distance=%.3f",
+                        f.tag(), e.getUniqueId(), f.draw().angleDegrees(), f.draw().distance());
+                run.log(refused.map(why -> head + " refused=" + why).orElse(head));
+            });
+        }
+        return Optional.empty();
     }
 
     /** The visible shape's centre of the nearest carrier tagged {@code tag}, and that carrier; empty when none. */
@@ -325,8 +353,10 @@ final class SelfTestDrivers {
             if (e instanceof LivingEntity l && e.getScoreboardTags().contains(tag)) found.add(l);
         }
         if (found.isEmpty()) {
-            run.log((what.equals("thaw") ? "DRIVE thaw" : "MOTION") + " tag=" + tag + " none within " + (int) REACH
-                    + " blocks");
+            // Each caller's own line head (step R7b: PROBE_SHIELD's is SHIELD; before it, this said MOTION for every
+            // caller but thaw).
+            run.log((what.equals("thaw") ? "DRIVE thaw" : what.equals("shield") ? "SHIELD" : "MOTION") + " tag=" + tag
+                    + " none within " + (int) REACH + " blocks");
             return Optional.empty();
         }
         found.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));

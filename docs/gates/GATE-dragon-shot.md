@@ -7,6 +7,11 @@ says ready.**
 
 **2026-11-17: approved to merge by the review seat after the boots of 8ec16e89 and 3dc0e184, with C1-C4 carried.**
 
+> **2026-11-17, step R7b (`feat/dragon-blink`): `GATE-dragon-blink.md` SUPERSEDES the four carried items.** C1 (the shape
+> not centred in the box, SH1R2's `inside=false`) is closed by its BC1X and BC1Z; C2 (SH7R2's wall, unread, and the clean
+> that could not end an ability's field) by BC2A and BC2B; C3 (SH15's `no live shot after 0 ticks`) by BC3; C4 (the
+> frog's pushing) by BC4A and BC4B. Their rows are re-run there, not here; nothing above this note is edited.
+
 > **AFTER THE BOOT OF `8ec16e89`: THE RE-PREDICTION IS THE LAST SECTION OF THIS FILE** (*RE-PREDICTED AFTER THE BOOT OF
 > `8ec16e89`*, the seat's rulings on #201), NOT RUN. Nothing above it is edited by that section.
 

@@ -793,6 +793,34 @@ damager=player <Ben>`, one tick before the reach.
 damage refused, `/kill` ends it); an ownerless or dispenser arrow is refused; the 0.0513 homing (the seat's conversion
 of the old game's 10% per 2-tick step).
 
+### Ben, 2026-11-17, VERBATIM: the Phalanx's shield (step R7b, `feat/dragon-blink`)
+
+*The seat asked: should the Phalanx's shield absorb the first damage of any kind, including a fall or fire, as in the old
+game, or only the first hit from a player?* Ben:
+
+> "1. yes the first damage of any kind"
+
+**That answers Q7.** **THE SEAT'S READING:** the blink's numbers stand as STARTING numbers he left unchanged on
+2026-11-17, **not numbers he typed**: X4 (a player within 5 blocks), X5 (it lands 6 to 16 blocks off) and X6 (8 attempts).
+
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the blink and the shield (the boot of `ef770b8a`)
+
+*Read in `GATE-dragon-blink.md`, BQ1, in the order logged:*
+
+```
+BQ1 ASK 1 question="Does the glowing shape sit where you can hit it?" answer="yes" ticks=266
+BQ1 ASK 2 question="Did the shot shove you?" answer="I don't think so" ticks=331
+BQ1 ASK 3 question="Did the Phalanx blink away when you got close?" answer=NOT STATED after 1200 ticks
+BQ1 ASK 4 question="Did its shield visibly eat your first hit?" answer="yes but it needs a larger cooldown. Say 12 seconds. Answer for question 3" ticks=627
+```
+
+And in chat after the run, his own correction: `<BaronVonYeetus> question 4: yes it did`. So the line the ASK step
+captured for question 4 is his answer to question 3, and question 4's answer is "yes it did".
+
+- **CONFIRMED BY PLAY:** the shape sits where it can be hit; the blink; the shield eating the first hit.
+- **RULED BY BEN AND NOT BUILT:** the blink needs a cooldown, "Say 12 seconds" (**240 ticks**).
+- **THE SEAT'S, put to him:** the cooldown is counted from a blink that LANDS; a failed attempt does not spend it.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1672,6 +1700,33 @@ section, carries D1-D3 and every row). The table above described the first build
 - **The instrument watches a real swing** and can strike along his look.
 - **X-l** is now the frog's 0.8 cube, and **X-c's conversion table stands as the conversion's limits** (the seat).
 
+### 5.R.10 STEP R7b AS BUILT (`feat/dragon-blink`, off master `275e9d0d`, 2026-11-17) — THE BLINK, THE SHIELD, C1-C4
+
+**The gate is `GATE-dragon-blink.md`; its INHERITED OR CHOSEN table is the item-by-item account of the blink and the
+shield, each marked READ or NOT IN THE RECORD, and is not repeated here.** What the code is:
+
+- **The blink, pure, in core: `MobBlink`** (`blink:` in the mob file). Its trigger is `MobHostility` and a box of
+  half-extent `trigger_range` round its feet. Its draws come from an injected `MobBlink.Source` (uniform in production,
+  the instrument's fixed draw for BLINK). Its landing is decided through the Knell's ONE check, **`BeamTeleport.foot`**,
+  which `BeamTeleport.judge` now calls too (a refactor, no behaviour change: its 20 rows stayed green), through
+  **`MobTeleporter.footing(mob, aim)`**, the Knell's port with the aim optional (null: sight is never asked). One `BLINK`
+  line carries the decision and every refusal.
+- **The blink, Bukkit, in `MobShooter`:** last in its Phalanx's tick, after the fire and every shot's step, so it cannot
+  fight or orphan a shot. Its own blink needs AI. It teleports, stops its path, goes invisible, puffs and sounds at both
+  ends, and reads itself back (`BLINK moved`). Firing clears invisibility (`BLINK visible … reason=fired`).
+- **The shield: `MobShield`** (`shield:` in the mob file) and **`MobShielder`**, the **`ShieldSink`** every handle of ours
+  asks. The ONE point is `BukkitCombatant.Handle.applyDamage`, directly after the shot's strike. The state is the
+  `mob_shield` PDC byte, set at the spawn stamp. The riders: `applyKnockback`, `applyImpulse` and `applyStatus` drop a
+  call in the absorb's tick, and `RpgListeners.onShieldedKnockback` cancels a vanilla push while it is up or in that tick.
+- **C1 (closed): `calibrate` runs at the START of every step, before the teleport,** and retranslates on any change. The
+  diagnosis is in its javadoc: the one-time calibration read the offset before the display's first ride tick.
+- **C2 (closed): `PendingWork`**, in `AdapterContext`. Every `PaperCombatWorld.schedule` link registers its point and
+  runs only if still pending. The row-start clean ends the work within 48 and then removes projectiles, area-effect
+  clouds and our markers there (`LINGER`).
+- **C3 (closed): `SelfTestStrike.next`**: no shot yet is a wait, until the timeout.
+- **C4 (closed): a scoreboard team `rpg_shot` whose collision rule is NEVER**, joined at the fire and left at the end;
+  `setCollidable` is never called, so an arrow still hits it (one test pins both).
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.
@@ -2101,6 +2156,33 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   - **C3. UNREAD:** a strike in the last tick before the reach. SH15's `strike_at_age` must wait for the shot to exist.
   - **C4. UNREAD:** whether the collidable carrier pushes, or is pushed by, a player or a mob. Nothing in the instrument
     reads it.
+  - **2026-11-17, step R7b: C1-C4 are built as closed (§5.R.10) and re-staged in `GATE-dragon-blink.md`. NOT READ: they
+    close when its rows are read on a server.**
+  - **2026-11-17, the boot of `ef770b8a`: C1-C4 CLOSED** (`GATE-dragon-blink.md`, the seat's reading at merge):
+    - **C1 CLOSED:** BC1X and BC1Z read `inside=true` at ages 5, 15 and 25 on both axes, the box's and the shape's
+      centres equal to three places;
+    - **C2 CLOSED:** BC2B read `SHOT blocked … age=16 … block=stone`, nothing refused, after `LINGER work=1` ended BC2A's
+      field;
+    - **C3 CLOSED:** BC3 read `SHOT destroyed … age=32 … by=vanilla cause=ENTITY_ATTACK damager=player`, and no `no
+      live shot` line;
+    - **C4 CLOSED:** BC4A's two `SELF … at=` and BC4B's husk's two `AT` identical across a shot; Ben: "I don't think so".
+- **CARRIED FROM #202, NEW** (the seat's ruling at merge, 2026-11-17):
+  - **R3. DEFECT, TO DIAGNOSE:** a blink decided while the Phalanx is off the ground fails every draw. BQ1, tick 2647:
+    from y 63.305, all eight `NO_FOOTING` on a flat floor; the next tick, from y 63.000, it landed.
+  - **R5. UNREAD:** two `SHIELD knockback cancelled` lines against one `SHIELD absorbed` (BQ1, 12:43:35). No line reads
+    a melee hit's damage on a mob.
+  - **BC4B's cleanup:** its `/kill @e[tag=bc4b]` does not select its husk (tagged `bc4bh`); BB1's clean removed it.
+  - **UNREAD:** zero damage not spending the shield (core test only); the shield byte surviving an unload.
+- **F17, RESTATED 2026-11-17 (the boot of `ef770b8a`):** the calibrated offset reads `0.000 0.600 -0.400`, the derived
+  0.375 × 1.6, not the 0.450 predicted. The 0.45 SH1R2 read was the shape's displacement under the old one-time
+  calibration; why it was 0.45 is still unexplained. Not closed.
+- **F17, 2026-11-17, step R7b: THE FROG'S PASSENGER OFFSET'S y IS UNEXPLAINED.** The boot of `3dc0e184` read the shape
+  displaced (0, 0.45, −0.40) from the box's centre. Its z is the frog's READ attachment, −0.25, times the scale 1.6. Its
+  y is not 0.375 × 1.6 = 0.600, and the 0.150 between them is not explained by anything read. **It changes nothing
+  built:** `calibrate` measures the offset rather than deriving it, and the gate's `inside=` reads the result.
+- **F18, 2026-11-17, step R7b: A FROZEN MOB NEVER MOVES UNDER A PUSH.** READ: `LivingEntity#aiStep` calls `travel` only
+  when `isEffectiveAi`, and `Mob#isEffectiveAi` is false under NoAI. So a row that reads a frozen mob's POSITION to see
+  a push is hollow. `GATE-dragon-blink.md` reads velocity, with a positive control. Its husk keeps its AI at speed 0.
 - **F15, 2026-11-17, step R7a: THE PAPER HALF'S GUARANTEES ARE PINNED ON THE SOURCE, NOT RUN.** That every handle strikes
   first, the seed refuses a shot, the death handler returns for one, and vanilla damage is cancelled at LOWEST are pinned
   by `DragonShotWiringTest` (each killed by a mutation), which reads lines, not behaviour. **The gate's SH2-SH5, SH9 and
@@ -2120,7 +2202,7 @@ rework: an answered question says where its answer is, and a new one is added at
    blast; the Goon is retired and the answer now governs the Phage's.)*
 5. **OPEN.** Is the Skreel's spider its own mob, with its own name and health bar?
 6. **OPEN.** When one of the Skreel pair dies, should the other keep fighting as a normal mob?
-7. **OPEN.** Should the Phalanx's shield block the first damage of any kind (a fall, fire), or only the first hit from a player?
+7. **ANSWERED 2026-11-17: "1. yes the first damage of any kind"** (RULINGS, *the Phalanx's shield*). *(Asked as:)* Should the Phalanx's shield block the first damage of any kind (a fall, fire), or only the first hit from a player?
 8. **REMOVED by the Knell rework** (RULINGS, the Knell; seat ruling 4). The Knell no longer reacts to arrows.
 9. **OPEN.** Inside the fight's world, what gear score should the mobs have: the End's 300, or a number the fight sets?
 10. **OPEN.** Should the fight's mobs fight Endermen, as the old fight's did? *(Now also: every Enderman is Void, so

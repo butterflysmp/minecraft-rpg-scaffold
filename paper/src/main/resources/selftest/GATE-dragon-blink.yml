@@ -1,0 +1,376 @@
+# THE PHALANX'S BLINK AND ITS ONE-HIT SHIELD, AND THE SHOT'S FOUR CARRIED ITEMS (step R7b, GATE-dragon-blink.md). Run by
+# `/rpg selftest dragon-blink`.
+#
+# THE STAGING: the player at a block centre facing east (+x) unless the row says; a stone floor and air above it, every
+# fill box SAVED first. Every Phalanx is spawned at GS 100 (240 health) and FROZEN, except BB4's and BQ1's: BB4's lives
+# about 26 ticks, under the 120 of its first shot; BQ1's is Ben's to fight, and he is healed every 10 seconds.
+#
+# THE PLAYER CANNOT DIE IN ANY ROW: each row heals him first, and no row lets more than two 40s land before the next
+# heal. His floor is 100.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# BC1X (C1): a forced shot flying WEST (-x) at a still player; three reads at ages ten apart, each with the hittable box
+# and the visible shape as numbers: inside=true at every one. The hit at age 33 ends it.
+BC1X:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "bc1x frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - shot: bc1x
+  - wait: 5
+  - probe_shot: bc1x
+  - wait: 10
+  - probe_shot: bc1x
+  - wait: 10
+  - probe_shot: bc1x
+  - wait: 20
+  - cmd: "kill @e[tag=bc1x]"
+  - wait: 5
+
+# BC1Z (C1, the second axis): the same, the Phalanx 8 NORTH and the player facing north, so the shot flies SOUTH (+z):
+# the frog's passenger point is toward its own -z whatever the flight, so this is the axis it would show on.
+BC1Z:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 180 0"
+  - save_blocks: "-4 -1 -10 4 6 4"
+  - cmd: "fill ~-4 ~-1 ~-10 ~4 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-10 ~4 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~ ~ ~-8"
+  - spawn: "bc1z frozen phalanx 100"
+  - cmd: "tp @s ~ ~ ~8 180 0"
+  - wait: 5
+  - shot: bc1z
+  - wait: 5
+  - probe_shot: bc1z
+  - wait: 10
+  - probe_shot: bc1z
+  - wait: 10
+  - probe_shot: bc1z
+  - wait: 20
+  - cmd: "kill @e[tag=bc1z]"
+  - wait: 5
+
+# BC2A (C2, its first half): a solar grenade thrown east, its field left pulsing when the row ends. No Phalanx.
+BC2A:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 14 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~14 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~14 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - wait: 5
+  - cmd: "rpg cast solar_grenade"
+  - wait: 30
+
+# BC2B (C2, re-staged): the wall, at once after BC2A, as SH7R2 followed SH4R2 at 3dc0e184. Its row-start clean ends
+# BC2A's field (its LINGER line names it), so the wall is what ends the shot: blocked, nothing refused, nothing destroyed.
+BC2B:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "bc2b frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - cmd: "fill ~4 ~ ~-2 ~4 ~3 ~2 stone"
+  - wait: 5
+  - shot: bc2b
+  - wait: 40
+  - probe_shot: bc2b
+  - cmd: "kill @e[tag=bc2b]"
+  - wait: 5
+
+# BC3 (C3): SH15 re-run. The strike is asked for in the SAME tick as the force, before the shot exists; it waits for the
+# shot, then for age 32, and strikes in that tick: destroyed at age 32.
+BC3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "bc3 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - shot: bc3
+  - strike_at_age: "bc3_shot 32 80"
+  - wait: 20
+  - probe_shot: bc3
+  - cmd: "kill @e[tag=bc3]"
+  - wait: 5
+
+# BC4A (C4, the player): his feet before the shot and after its hit, to three places. The shot pushes nothing and
+# authors no knockback.
+BC4A:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "bc4a frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - probe_self: ""
+  - shot: bc4a
+  - wait: 45
+  - probe_self: ""
+  - cmd: "kill @e[tag=bc4a]"
+  - wait: 5
+
+# BC4B (C4, a body the shot flies THROUGH): a husk 4 east, in the path, WITH its AI and a movement speed of 0, so it
+# cannot walk but a push still moves it (a NoAI mob never travels: LivingEntity#aiStep calls travel only when
+# isEffectiveAi, which NoAI makes false, READ). The shot never hits a mob, and its carrier never pushes it: the husk's
+# position before and after, to three places.
+BC4B:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: 'summon husk ~4 ~ ~0 {PersistenceRequired:1b,IsBaby:0b,attributes:[{id:"minecraft:movement_speed",base:0.0}],Tags:["bc4bh","t","selftest"]}'
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "bc4b frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - probe_at: bc4bh
+  - shot: bc4b
+  - wait: 45
+  - probe_at: bc4bh
+  - probe: bc4bh
+  - cmd: "kill @e[tag=bc4b]"
+  - wait: 5
+
+# BB1: a forced blink, every attempt the draw 90 degrees (+z) 8 blocks: the first stands, it lands 8 south of where it
+# stood, on the same floor, and is invisible.
+BB1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 12 6 12"
+  - cmd: "fill ~-4 ~-1 ~-4 ~12 ~-1 ~12 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~12 ~6 ~12 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "bb1 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - probe_at: bb1
+  - blink: "bb1 90 8"
+  - wait: 5
+  - probe_at: bb1
+  - cmd: "kill @e[tag=bb1]"
+  - wait: 5
+
+# BB2: a forced blink whose every attempt lands over a pit 9 deep: no height of the tolerance has ground under it, so all
+# eight are refused, ungrounded=7 each, and it stays where it stood.
+BB2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -6 -4 12 6 12"
+  - cmd: "fill ~-4 ~-1 ~-4 ~12 ~-1 ~12 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~12 ~6 ~12 air"
+  - cmd: "fill ~6 ~-6 ~6 ~10 ~-1 ~10 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "bb2 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - blink: "bb2 90 8"
+  - wait: 5
+  - probe_at: bb2
+  - cmd: "kill @e[tag=bb2]"
+  - wait: 5
+
+# BB3: a forced blink whose every attempt lands inside stone 9 high: no height fits, blocked=7 each, and it stays.
+BB3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -4 -4 12 6 12"
+  - cmd: "fill ~-4 ~-1 ~-4 ~12 ~-1 ~12 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~12 ~6 ~12 air"
+  - cmd: "fill ~6 ~-4 ~6 ~10 ~6 ~10 stone"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "bb3 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - blink: "bb3 90 8"
+  - wait: 5
+  - probe_at: bb3
+  - cmd: "kill @e[tag=bb3]"
+  - wait: 5
+
+# BB4: the trigger. A LIVE Phalanx 12 east; the player steps to 3 from it, inside its 5-block box: it blinks of its own,
+# by the uniform draw, once, and is invisible. The row ends ~26 ticks after the spawn, under its first shot's 120.
+BB4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-6 -1 -18 30 6 18"
+  - cmd: "fill ~-6 ~-1 ~-18 ~30 ~-1 ~18 stone"
+  - cmd: "fill ~-6 ~ ~-18 ~30 ~6 ~18 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~12 ~ ~"
+  - spawn: "bb4 live phalanx 100"
+  - cmd: "tp @s ~-12 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "tp @s ~9 ~ ~ -90 0"
+  - wait: 20
+  - probe_at: bb4
+  - cmd: "kill @e[tag=bb4]"
+  - wait: 5
+
+# BB5: firing makes it visible. A forced blink (as BB1), then a forced shot: it is visible again, and the shot leaves
+# from where it now stands.
+BB5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 12 6 12"
+  - cmd: "fill ~-4 ~-1 ~-4 ~12 ~-1 ~12 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~12 ~6 ~12 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "bb5 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - blink: "bb5 90 8"
+  - wait: 5
+  - shot: bb5
+  - wait: 5
+  - cmd: "kill @e[tag=bb5]"
+  - wait: 5
+
+# BS1: the shield eats the first hit WHOLE and only the first: two /rpg mobdamage 30 at a frozen Phalanx 4 east. The
+# probe reads it up with a shield in its off hand, then down with nothing in it; its health 240 after the first, 210
+# after the second.
+BS1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 8 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~8 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~4 ~ ~"
+  - spawn: "bs1 frozen phalanx 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - wait: 5
+  - probe_shield: bs1
+  - aim: bs1
+  - cmd: "rpg mobdamage 30"
+  - wait: 3
+  - probe_shield: bs1
+  - probe: bs1
+  - cmd: "rpg mobdamage 30"
+  - wait: 3
+  - probe: bs1
+  - cmd: "kill @e[tag=bs1]"
+  - wait: 5
+
+# BS2: a melee hit's push goes with it. One emberblade hit: the vanilla knockback is cancelled while the shield is up,
+# the hit absorbed a tick later, the Phalanx's VELOCITY still zero (a frozen mob never travels, so its position cannot
+# show a push; a knockback sets its velocity whether or not it moves); a second hit lands, and its velocity is a push:
+# the row's positive control.
+BS2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 8 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~8 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "tp @s ~2 ~ ~"
+  - spawn: "bs2 frozen phalanx 100"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 5
+  - probe_motion: bs2
+  - attack: bs2
+  - wait: 2
+  - probe_motion: bs2
+  - probe: bs2
+  - wait: 15
+  - attack: bs2
+  - wait: 2
+  - probe_motion: bs2
+  - probe: bs2
+  - cmd: "kill @e[tag=bs2]"
+  - wait: 5
+
+# BS3: nothing rides through. The short bow's arrow (weapon damage, then a knockback of 0.1) at a frozen Phalanx 6
+# east: the damage absorbed, the knockback dropped in the same tick, its velocity zero. A second arrow, the shield gone:
+# the damage lands and the knockback sets its velocity, the row's positive control.
+BS3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give short_bow"
+  - hold: short_bow
+  - cmd: "tp @s ~6 ~ ~"
+  - spawn: "bs3 frozen phalanx 100"
+  - cmd: "tp @s ~-6 ~ ~ -90 0"
+  - wait: 5
+  - probe_motion: bs3
+  - aim: bs3
+  - use: right_click
+  - wait: 10
+  - probe_motion: bs3
+  - probe_shield: bs3
+  - probe: bs3
+  - wait: 10
+  - aim: bs3
+  - use: right_click
+  - wait: 10
+  - probe_motion: bs3
+  - probe: bs3
+  - cmd: "kill @e[tag=bs3]"
+  - wait: 5
+
+# BS4: /kill ignores it. A frozen Phalanx with its shield up is killed by /kill: gone, and no SHIELD line.
+BS4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 8 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~8 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~4 ~ ~"
+  - spawn: "bs4 frozen phalanx 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - wait: 5
+  - probe_shield: bs4
+  - cmd: "kill @e[tag=bs4]"
+  - wait: 5
+  - probe_shield: bs4
+
+# BQ1: BEN'S ROW. A live Phalanx 12 east, his to fight for 40 seconds with the sword in his hand; healed every 10 seconds.
+BQ1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-6 -1 -18 30 6 18"
+  - cmd: "fill ~-6 ~-1 ~-18 ~30 ~-1 ~18 stone"
+  - cmd: "fill ~-6 ~ ~-18 ~30 ~6 ~18 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "tp @s ~12 ~ ~"
+  - spawn: "bq1 live phalanx 100"
+  - cmd: "tp @s ~-12 ~ ~ -90 0"
+  - cmd: 'tellraw @s {"text":"A Phalanx 12 blocks east shoots every 6 seconds. Watch a shot: does the glowing shape sit where you can hit it? Let one hit you. Then walk up to the Phalanx: it should vanish. Find it and hit it: its shield should eat your first hit. 40 seconds.","color":"gold"}'
+  - wait: 200
+  - cmd: "rpg heal 1000000"
+  - wait: 200
+  - cmd: "rpg heal 1000000"
+  - wait: 200
+  - cmd: "rpg heal 1000000"
+  - wait: 200
+  - ask: "1 1200 Does the glowing shape sit where you can hit it?"
+  - ask: "2 1200 Did the shot shove you?"
+  - ask: "3 1200 Did the Phalanx blink away when you got close?"
+  - ask: "4 1200 Did its shield visibly eat your first hit?"
+  - cmd: "kill @e[tag=bq1]"
+  - wait: 5

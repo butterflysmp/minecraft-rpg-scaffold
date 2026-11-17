@@ -73,7 +73,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              CraftResultIndex craftResults, WeaponRegistry weapons,
                              Accessories accessories,
                              Stones stones, SafeLandings safeLandings,
-                             BooleanSupplier mobTrace, ShotSink shots) {
+                             BooleanSupplier mobTrace, ShotSink shots,
+                             ShieldSink shields, PendingWork work) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
@@ -93,7 +94,7 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                         statusIdOf(statuses, StatusDefinition.Wither.class, "wither"),
                         dotTrace(log, mobTrace)),
                 stats, anchorDrift, craftResults, weapons, accessories, stones, new SafeLandings(), mobTrace,
-                new ShotSink.Late());
+                new ShotSink.Late(), new ShieldSink.Late(), new PendingWork());
     }
 
     /**

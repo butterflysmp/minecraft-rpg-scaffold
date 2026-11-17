@@ -722,6 +722,10 @@ public final class RpgPlugin extends JavaPlugin {
         // THE PHALANX'S SHOT (dragon-mobs step R7a): one loop per Phalanx, and the sink every handle of ours asks first.
         shooter = new io.github.butterflysmp.rpg.paper.health.MobShooter(() -> this.mobs, adapters);
         ((io.github.butterflysmp.rpg.paper.adapter.ShotSink.Late) adapters.shots()).bind(shooter);
+        shooter.clearShotTeam();   // C4 (step R7b): a crash's leftover team entries go
+        // THE PHALANX'S ONE-HIT SHIELD (step R7b): the sink every handle of ours asks after the shot's.
+        ((io.github.butterflysmp.rpg.paper.adapter.ShieldSink.Late) adapters.shields()).bind(
+                new io.github.butterflysmp.rpg.paper.health.MobShielder(() -> this.mobs, keys, getLogger()));
         selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
                 buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements,
                 // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).

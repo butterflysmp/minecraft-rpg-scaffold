@@ -210,6 +210,13 @@ public record Scenario(String gate, String row, List<Step> steps) {
         STRIKE_AT_AGE,
         /** {@code <tag>}: launch a real arrow, the player its shooter, from his eye toward the tagged shot's shape centre (speed 2.0 blocks a tick). */
         SHOOT_ARROW,
+        /**
+         * {@code "<tag> <angle> <distance>"}: each tagged Phalanx within 48 blocks BLINKS on its next tick, frozen or not,
+         * every attempt this one draw (step R7b). Its own {@code [Rpg] BLINK ...} line is the reading.
+         */
+        BLINK,
+        /** {@code <tag>}: log each tagged mob's one-hit shield, {@code SHIELD tag=<t> <uuid> up=<b> offhand=<item>} (step R7b). */
+        PROBE_SHIELD,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

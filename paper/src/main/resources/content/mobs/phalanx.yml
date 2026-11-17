@@ -1,8 +1,6 @@
-# THE PHALANX (PLAN-dragon-mobs.md). R1 built its BODY; step R7a (feat/dragon-shot) builds its bow and its SHOT.
-#
-# NOT YET HERE, each the next step's: the off-hand shield and the one-hit shield it gives, and the blink with
-# invisibility (Ben, K: "Yes", they stay). The shot is our own small living carrier, never a Shulker bullet (seat
-# ruling 8).
+# THE PHALANX (PLAN-dragon-mobs.md). R1 built its BODY; step R7a (feat/dragon-shot) built its bow and its SHOT; step
+# R7b (feat/dragon-blink) builds its BLINK and its ONE-HIT SHIELD (Ben, K: "Yes", they stay). The shot is our own small
+# living carrier, never a Shulker bullet (seat ruling 8).
 
 base_entity: wither_skeleton
 display_name: "Phalanx"
@@ -84,3 +82,41 @@ shot:
     # hurt sound, for Ben's "similar to the Shulker shot", CHOSEN.
     destroyed:
       - { key: entity.shulker_bullet.hurt, volume: 1.0, pitch: 1.0 }
+
+# THE BLINK (step R7b). cfde822 (section 3.4), READ: "a non-creative, non-spectator player in the D4 box while it is not
+# already invisible. Tries 8 random points 6-16 blocks out ... the first passable one wins; none passes, no blink.
+# Teleports; becomes invisible; squid-ink puffs at both ends, an enderman-teleport sound. Firing clears invisibility."
+# Ben left the numbers unchanged (PLAN X4-X6, 2026-11-17): STARTING numbers. Its own blink needs AI, as its fire does.
+blink:
+  # BLOCKS, the HALF-EXTENT of the box round the Phalanx's FEET that a player's box must meet: a box, not a distance,
+  # so a corner 5 off on both axes is inside. cfde822's D4 box (X4).
+  trigger_range: 5
+  # BLOCKS, the horizontal distance of each tried point from its feet, drawn uniformly between them (X5).
+  near: 6
+  far: 16
+  # How many points one blink tries before it gives up and stays (X6).
+  attempts: 8
+  # Whole BLOCKS above or below its feet a landing may stand, nearest first: the Knell's check and the Knell's 3
+  # (CHOSEN; cfde822 stood it on "the column's highest block + 1", which can land it on a roof).
+  level_tolerance: 3
+  # At BOTH ends. squid_ink is the record's; 12 puffs a end is CHOSEN (the record gives no count).
+  particle: squid_ink
+  particle_count: 12
+  sounds:
+    # The record's enderman-teleport; its volume and pitch are not in the record: 1.0 and 1.0, CHOSEN.
+    - { key: entity.enderman.teleport, volume: 1.0, pitch: 1.0 }
+
+# THE ONE-HIT SHIELD (step R7b). Ben, 2026-11-17: "1. yes the first damage of any kind". cfde822 (D5), READ: "the first
+# EntityDamageEvent of any cause while it holds PHALANX_SHIELD is cancelled; shield-break sound; off hand cleared; byte
+# removed". ONE per life, absorbed WHOLE (no health lost, nothing rides through it); a hit of zero does not spend it;
+# /kill and the void ignore it.
+shield:
+  # The ITEM key held in the off hand while it is up, never dropped: its look. The state is a byte on the mob, which
+  # survives an unload.
+  item: shield
+  # Drawn at the mob's middle when it absorbs. NOT IN THE RECORD: crit, 16, CHOSEN (it needs no data).
+  particle: crit
+  particle_count: 16
+  sounds:
+    # The record's "shield-break sound": item.shield.break, at 1.0 and 1.0 (CHOSEN; the record gives neither).
+    - { key: item.shield.break, volume: 1.0, pitch: 1.0 }

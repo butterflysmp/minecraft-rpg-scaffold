@@ -11,6 +11,8 @@ import io.github.butterflysmp.rpg.core.mob.MobSplit;
 import io.github.butterflysmp.rpg.core.mob.MobStages;
 import io.github.butterflysmp.rpg.core.mob.MobTeleport;
 import io.github.butterflysmp.rpg.core.mob.MobShot;
+import io.github.butterflysmp.rpg.core.mob.MobBlink;
+import io.github.butterflysmp.rpg.core.mob.MobShield;
 import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -121,7 +123,7 @@ public final class MobLoader {
                     stageBody(staged, "first"), stageBody(staged, "last"));
             return new MobDefinition(id, s.getString("base_entity"), s.getString("display_name", id),
                     stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s), blast(s),
-                    beam(s), teleport(s), shot(s), mainHand(s));
+                    beam(s), teleport(s), shot(s), mainHand(s), blink(s), shield(s));
         }
         if (s.contains("blast")) {
             throw new IllegalArgumentException("'blast' needs 'stages': its damage is authored per stage");
@@ -140,7 +142,76 @@ public final class MobLoader {
                 new MobBody(optional(s, "scale"), optional(s, "speed")),
                 element,
                 null, null, null, null,
-                beam(s), teleport(s), shot(s), mainHand(s));
+                beam(s), teleport(s), shot(s), mainHand(s), blink(s), shield(s));
+    }
+
+    /**
+     * The optional {@code blink:} block (dragon-mobs step R7b), or null. Every key required when present:
+     * {@code trigger_range} (BLOCKS, the half-extent of the box round its feet), {@code near} and {@code far} (BLOCKS),
+     * {@code attempts}, {@code level_tolerance} (whole BLOCKS), {@code particle} (a Bukkit {@code Particle} name),
+     * {@code particle_count}, {@code sounds} (a list of {@code { key, volume, pitch }}). {@link MobBlink} refuses a bad
+     * number by name.
+     */
+    private MobBlink blink(ConfigurationSection s) {
+        ConfigurationSection b = s.getConfigurationSection("blink");
+        if (b == null) return null;
+        for (String key : List.of("trigger_range", "near", "far", "attempts", "level_tolerance", "particle",
+                "particle_count", "sounds")) {
+            if (!b.contains(key)) throw new IllegalArgumentException("blink." + key + " is required");
+        }
+        return new MobBlink(b.getDouble("trigger_range"), b.getDouble("near"), b.getDouble("far"), b.getInt("attempts"),
+                b.getInt("level_tolerance"), soundList(b, "blink"), particle(b, "blink"), b.getInt("particle_count"));
+    }
+
+    /**
+     * The optional {@code shield:} block (dragon-mobs step R7b), or null. Every key required when present:
+     * {@code item} (the off-hand ITEM key), {@code particle}, {@code particle_count}, {@code sounds}.
+     */
+    private MobShield shield(ConfigurationSection s) {
+        ConfigurationSection b = s.getConfigurationSection("shield");
+        if (b == null) return null;
+        for (String key : List.of("item", "particle", "particle_count", "sounds")) {
+            if (!b.contains(key)) throw new IllegalArgumentException("shield." + key + " is required");
+        }
+        String item = b.getString("item");
+        if (!materialExists.test(item)) {
+            throw new IllegalArgumentException("shield.item '" + item + "' names no item the server knows");
+        }
+        return new MobShield(item, soundList(b, "shield"), particle(b, "shield"), b.getInt("particle_count"));
+    }
+
+    /** A {@code sounds:} list directly under a block (blink, shield), each key checked as the beam's are. */
+    private List<BeamSound> soundList(ConfigurationSection b, String block) {
+        List<BeamSound> out = new java.util.ArrayList<>();
+        for (Map<?, ?> m : b.getMapList("sounds")) {
+            for (String f : List.of("key", "volume", "pitch")) {
+                if (!m.containsKey(f)) throw new IllegalArgumentException(block + ".sounds entry " + m + " has no " + f);
+            }
+            String key = String.valueOf(m.get("key"));
+            if (!soundExists.test(key)) {
+                throw new IllegalArgumentException(block + ".sounds key '" + key + "' names no sound event the server knows");
+            }
+            out.add(new BeamSound(key, ((Number) m.get("volume")).doubleValue(), ((Number) m.get("pitch")).doubleValue()));
+        }
+        return out;
+    }
+
+    /** A Bukkit {@code Particle} name, lower case in the file; an unknown one is refused by name. */
+    private static String particle(ConfigurationSection b, String block) {
+        String name = b.getString("particle");
+        org.bukkit.Particle p;
+        try {
+            p = org.bukkit.Particle.valueOf(name.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException(block + ".particle '" + name + "' names no particle");
+        }
+        // The spawn passes no data, and a particle that needs some (block, dust, item) throws there, on the mob's
+        // thread, mid-blink or mid-absorb. Refused here instead, by name.
+        if (p.getDataType() != Void.class) {
+            throw new IllegalArgumentException(block + ".particle '" + name + "' needs data (" + p.getDataType().getSimpleName()
+                    + "); author one that needs none");
+        }
+        return name;
     }
 
     /** The optional {@code main_hand:} ITEM key (step R7a: the Phalanx's bow), or null; an unknown one is refused. */

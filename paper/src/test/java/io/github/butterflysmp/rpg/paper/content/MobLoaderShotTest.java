@@ -36,8 +36,10 @@ class MobLoaderShotTest {
     private Logger log;
     private final List<LogRecord> warnings = new ArrayList<>();
 
-    private static final Set<String> SOUNDS = Set.of("entity.wither.ambient", "entity.shulker_bullet.hurt");
-    private static final Set<String> MATERIALS = Set.of("bow", "amethyst_block");
+    private static final Set<String> SOUNDS = Set.of("entity.wither.ambient", "entity.shulker_bullet.hurt",
+            // step R7b: the bundled Phalanx now authors its blink's and its shield's sounds, and a shield item
+            "entity.enderman.teleport", "item.shield.break");
+    private static final Set<String> MATERIALS = Set.of("bow", "amethyst_block", "shield");
 
     /** Every number differs from every other and from the shipped file's, so a transposition has nowhere to hide. */
     private static final String SHOT_OK = """
