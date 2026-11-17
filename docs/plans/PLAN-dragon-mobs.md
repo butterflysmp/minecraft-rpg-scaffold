@@ -632,6 +632,23 @@ the server cannot know which variant a client drew.
 
 **SUPERSEDES** his 1.3-second warning (26 ticks) and the seat's 89-tick delay. Damage stays 65 (confirmed by play).
 
+### THE BOOT OF KNELL 3 (`9d0cbffb`, 2026-11-17): BEN'S FOUR ANSWERS, VERBATIM, AND THE SEAT'S DECISION
+
+Read from the server log of that boot (`GATE-dragon-knell-3.md`, KQ1R3 and TQ1R3), verbatim:
+
+```
+KQ1R3 ASK 1 question="Did the beam fire as the ringing became audible?" answer="yes" ticks=182
+KQ1R3 ASK 2 question="With 1 second, could you still step out of the way in time?" answer="yes" ticks=55
+TQ1R3 ASK 1 question="Did the Knell move about a second before the ringing faded?" answer="it moved about a second after the rining stopped" ticks=203
+TQ1R3 ASK 2 question="Does the whole sequence feel timed right now?" answer="not quite" ticks=105
+```
+
+- **CONFIRMED BY PLAY, Ben:** the 20-tick warning (he stepped out of the second beam, `gap=1.949 miss`), and the bell
+  strike with the resonance at the lock as its cue.
+- **`teleport.delay_ticks` 44 is NOT CONFIRMED.**
+- **THE SEAT'S DECISION:** the delay will not be derived from a sound file again; **Ben will tune it by ear with a dev
+  tool and rule the number.**
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1451,6 +1468,10 @@ teleport falls due), and its distance from him 30 ticks after the fire, predicte
 **CARRIED, UPDATED:** "walks again after a beam" is **PREDICTED** (WA1), not yet read. The 13 closed manual gates'
 finding now reads: a live Knell there hears the resonance at the warning, takes 65 one second later, and moves 44 ticks
 after a hit.
+
+**CARRIED, AFTER THE BOOT OF `9d0cbffb` (2026-11-17): "WALKS AGAIN AFTER A BEAM" CLOSED by WA1.** Its distance from
+him fell 1.562 blocks between the fire (12.374) and 30 ticks later (10.811), against more than 0.20 predicted; the
+21-tick bound stays INFERRED.
 
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
