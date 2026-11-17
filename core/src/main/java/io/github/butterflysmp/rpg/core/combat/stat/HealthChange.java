@@ -39,10 +39,22 @@ import java.util.UUID;
  *                       payload that named the element is three hops upstream. Null is the honest
  *                       value for every non-payload path -- the thorns reflect, the vanilla-damage
  *                       boundary, and scorch's own burn tick.
+ * @param beforeDefense  the DAMAGE offered BEFORE the target's defence; {@code amount} is what landed. Equal to
+ *                       {@code amount} for every change nothing mitigated (HEAL, MAX_CHANGE, a bypassed hit). Added
+ *                       in dragon-mobs step R3 for the selftest's damage line (GATE-dragon-fix.md D5): the store is
+ *                       the one place both numbers exist, and recomputing the curve elsewhere would be a second site.
  */
 public record HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
                            UUID dealer, boolean dealerIsPlayer, double newCurrent, double max,
-                           boolean reachedZero, boolean wasCrit, String element) {
+                           boolean reachedZero, boolean wasCrit, String element, double beforeDefense) {
+
+    /** The form before step R3: nothing mitigated, so before equals the amount. Every older site reads unchanged. */
+    public HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
+                        UUID dealer, boolean dealerIsPlayer, double newCurrent, double max,
+                        boolean reachedZero, boolean wasCrit, String element) {
+        this(target, targetIsPlayer, kind, amount, dealer, dealerIsPlayer, newCurrent, max,
+                reachedZero, wasCrit, element, amount);
+    }
 
     /**
      * A DAMAGE change wearing no element. Keeps every construction site that predates elements

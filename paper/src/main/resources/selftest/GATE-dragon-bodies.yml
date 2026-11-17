@@ -3,6 +3,12 @@
 # GATE-dragon-fix.md. DB8 and DB9 read as predicted on 2026-11-15 and are not re-run. The old rows' predictions and
 # readings stay in GATE-dragon-bodies.md, as they are.
 #
+# 2026-11-16, STEP R3 TOOK TWO ROWS OUT OF THIS FILE (the seat's brief; GATE-dragon-fix.md's dated note). From R3 a
+# live Phage within 3 blocks of the player swells and BLOWS. DB10R2 (a live Phage beside him for 100 ticks, "never
+# explodes") is now false, and GATE-dragon-blast.md BL1 carries the behaviour. DQ1 (two live Phages while Ben walks
+# away and back) was answered on 2026-11-15 and would now blow on him; it is not re-asked. Both rows' predictions and
+# readings stay in GATE-dragon-fix.md. Every Phage left in this file is FROZEN (SelfTestScenariosTest pins it).
+#
 # WHAT CHANGED, and why (GATE-dragon-fix.md, D1 and D2):
 #   - Every mob is spawned by the SPAWN step: /rpg spawn's own path, with the row's tag, "t" and "selftest" added and
 #     NoAI set INSIDE the pre-spawn consumer. The old rows spawned, then tagged the nearest mob within 1.5 blocks, and
@@ -109,44 +115,9 @@ DB7R2:
   - probe_body: db7
   - probe_entities: "wither_skeleton 8"
 
-# DB10R2: a stage-1 Phage with its AI ON, two blocks from the player in SURVIVAL, for 100 ticks. Alive after, the floor
-# whole, the player unhurt, and the guard fired at least once (B6's AUTO half). Before the second floor count the
-# player is RETURNED to the row's spot, because the box is relative to his block and a Phage's push can move him.
-DB10R2:
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
-  - save_blocks: "-3 -1 -4 8 5 4"
-  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
-  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
-  - probe_blocks: "STONE -3 -1 -4 8 -1 4"
-  - probe_self: ""
-  - cmd: "tp @s ~2 ~ ~"
-  - spawn: "db10 live phage 100"
-  - cmd: "tp @s ~-2 ~ ~ -90 0"
-  - wait: 100
-  - probe_body: db10
-  - return: ""
-  - wait: 2
-  - probe_blocks: "STONE -3 -1 -4 8 -1 4"
-  - probe_self: ""
-
 # DB11R2: the spawn command's refusals, typed as a player types them. Neither spawns anything.
 DB11R2:
   - cmd: "rpg spawn phage stage 6"
   - cmd: "rpg spawn knell stage 2"
   - probe_entities: "creeper 8"
   - probe_entities: "wither_skeleton 8"
-
-# DQ1: Ben's two speed questions, by the ASK step (GATE-dragon-fix.md). A stage-5 and a stage-1 Phage, AI ON, five
-# blocks east of him, three apart. He walks away and back while the question waits; each waits a minute for his line.
-DQ1:
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
-  - save_blocks: "-3 -1 -4 8 5 4"
-  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
-  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
-  - cmd: "tp @s ~5 ~ ~-2"
-  - spawn: "dq1big live phage stage 5 100"
-  - cmd: "tp @s ~ ~ ~3"
-  - spawn: "dq1small live phage 100"
-  - cmd: "tp @s ~-5 ~ ~-1 -90 0"
-  - ask: "1 1200 Walk away from the two Phages for a few seconds, then look back. Is the BIG Phage very slow?"
-  - ask: "2 1200 Is the SMALL Phage fast, but still possible to back away from?"

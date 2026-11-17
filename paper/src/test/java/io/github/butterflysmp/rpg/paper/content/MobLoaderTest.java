@@ -5,6 +5,7 @@ import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobBody;
 import io.github.butterflysmp.rpg.core.mob.MobSplit;
 import io.github.butterflysmp.rpg.core.mob.MobGrowth;
+import io.github.butterflysmp.rpg.core.mob.MobBlast;
 import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -350,6 +351,57 @@ class MobLoaderTest {
             Files.write(dir.resolve("phage.yml"), in.readAllBytes());
         }
         assertEquals(new MobGrowth("void", 6.0, 1), load().find("phage").orElseThrow().growth());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    // ---- dragon-mobs step R3: the blast ----
+
+    /** The blast's four numbers ARRIVE from content, and a file without the block has none. */
+    @Test
+    void theBlastBlockArrives() throws IOException {
+        write("phage.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 4.5\n  damage: { first: 11, last: 77 }\n  fuse_ticks: 44\n");
+        write("plain.yml", "base_entity: creeper\n" + STAGES);
+
+        MobRegistry mobs = load();
+
+        assertEquals(new MobBlast(4.5, 11, 77, 44), mobs.find("phage").orElseThrow().blast());
+        assertNull(mobs.find("plain").orElseThrow().blast(), "no blast block, no blast");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** A blast on an unstaged mob, a missing key, and a zero fuse are each a named, skipped file. */
+    @Test
+    void aMalformedBlastIsRefused() throws IOException {
+        write("unstaged.yml", "base_entity: creeper\nmax_health: 80\n"
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n");
+        write("nolast.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 3\n  damage: { first: 20 }\n  fuse_ticks: 30\n");
+        write("noreach.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n");
+        write("nofuse.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 0\n");
+
+        MobRegistry mobs = load();
+
+        assertEquals(0, mobs.size());
+        for (String f : List.of("unstaged.yml", "nolast.yml", "noreach.yml", "nofuse.yml")) {
+            assertTrue(warningText().contains(f), f + ": " + warningText());
+        }
+    }
+
+    /**
+     * THE PHAGE WE SHIP: vanilla's creeper numbers for everything but the damage (Ben), its shape ("keep vanillas
+     * shap"), and the seat's provisional 20 and 50 (P-a). The reach is 6 blocks: vanilla's power 3 doubled
+     * ({@code ServerExplosion.hurtEntities}, {@code radius * 2}); the fuse is 30 ticks, vanilla's {@code maxSwell}.
+     */
+    @Test
+    void theBundledPhageBlastsForTwentyToFiftyOutToSixBlocks() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/mobs/phage.yml")) {
+            assertNotNull(in);
+            Files.write(dir.resolve("phage.yml"), in.readAllBytes());
+        }
+        assertEquals(new MobBlast(6.0, 20.0, 50.0, 30), load().find("phage").orElseThrow().blast());
         assertTrue(warnings.isEmpty(), warningText());
     }
 

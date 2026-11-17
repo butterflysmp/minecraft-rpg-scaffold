@@ -37,6 +37,7 @@ import io.github.butterflysmp.rpg.paper.adapter.ImmobilizePhysics;
 import io.github.butterflysmp.rpg.paper.health.ArmorBarOverride;
 import io.github.butterflysmp.rpg.paper.health.AttackSpeedAttributeOverride;
 import io.github.butterflysmp.rpg.paper.health.CustomCreeperGuard;
+import io.github.butterflysmp.rpg.paper.health.MobBlaster;
 import io.github.butterflysmp.rpg.paper.health.MobGrower;
 import io.github.butterflysmp.rpg.paper.health.MobSplitter;
 import io.github.butterflysmp.rpg.paper.health.MobNameplateManager;
@@ -2891,10 +2892,20 @@ public final class RpgListeners implements Listener {
     }
 
     /**
-     * One of OUR creepers (the Phage) never explodes the vanilla way: the swell's prime is cancelled every time, so
-     * it swells, resets and swells again (PLAN-dragon-mobs.md step R1; {@link CustomCreeperGuard}). The log line
-     * is the witness that a fuse actually completed and was refused, so a gate row can tell "never swelled" from
-     * "swelled and was stopped".
+     * One of OUR creepers (the Phage) never explodes the vanilla way, and from step R3 it explodes OURS
+     * (PLAN-dragon-mobs.md; the seat's ruling 21; {@link CustomCreeperGuard}, {@link MobBlaster}).
+     *
+     * <p>Vanilla's swell is still the fuse (the seat's ruling 20: Ben kept vanilla's numbers): it starts inside 3
+     * blocks, cancels past 7 or out of sight, and fills in the mob's {@code fuse_ticks}. When it is full the server
+     * fires this event. <b>The event is cancelled FIRST, always</b>, so there is never a vanilla explosion and never
+     * block damage; a FROZEN Phage stops there (a frozen creeper does not explode, as {@link #onFrozenExplosionPrime}
+     * already rules, and the order of two handlers at one priority is not ours to rely on); otherwise our
+     * detonation runs in its place. Cancelled, the server resets the swell and clears the ignited flag
+     * ({@code Creeper.explodeCreeper}, section 7 F-C), on a Phage our detonation has by then removed.
+     *
+     * <p>The per-prime {@code CREEPERGUARD prime cancelled} line is GONE (ruling 26, revisiting R1's ruling 15): the
+     * detonation's own {@code BLAST} line is the witness now. A creeper of ours that authors no blast is still cancelled
+     * and now says nothing.
      */
     @EventHandler
     public void onCustomCreeperPrime(ExplosionPrimeEvent event) {
@@ -2902,7 +2913,8 @@ public final class RpgListeners implements Listener {
         String mobId = creeper.getPersistentDataContainer().get(adapters.keys().mobId, PersistentDataType.STRING);
         if (!CustomCreeperGuard.refusesVanillaDetonation(true, mobId)) return;
         event.setCancelled(true);
-        adapters.log().info("CREEPERGUARD prime cancelled mob=" + mobId + " id=" + creeper.getUniqueId());
+        if (isFrozen(creeper)) return;
+        MobBlaster.detonate(creeper, mobId, nameplates.mobs(), mobElements, adapters);
     }
 
     /** Flint and steel or a fire charge cannot ignite one of our creepers ({@link CustomCreeperGuard}). */

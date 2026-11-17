@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.content;
 
+import io.github.butterflysmp.rpg.core.mob.MobBlast;
 import io.github.butterflysmp.rpg.core.mob.MobBody;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobGrowth;
@@ -96,7 +97,10 @@ public final class MobLoader {
             MobStages stages = new MobStages(staged.getInt("count", 0),
                     stageBody(staged, "first"), stageBody(staged, "last"));
             return new MobDefinition(id, s.getString("base_entity"), s.getString("display_name", id),
-                    stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s));
+                    stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s), blast(s));
+        }
+        if (s.contains("blast")) {
+            throw new IllegalArgumentException("'blast' needs 'stages': its damage is authored per stage");
         }
         if (s.contains("split")) {
             throw new IllegalArgumentException("'split' needs 'stages': a split names the stage its children are born at");
@@ -147,6 +151,21 @@ public final class MobLoader {
             throw new IllegalArgumentException("growth.element '" + element + "' names no element in content/elements");
         }
         return new MobGrowth(element, b.getDouble("radius"), b.getInt("stages_per_death"));
+    }
+
+    /**
+     * The optional {@code blast:} block (dragon-mobs step R3), or null. Every key is required when the block is
+     * present: {@code reach} (blocks), {@code damage.first} and {@code damage.last} (authored damage at the first and
+     * last stage, at zero distance), {@code fuse_ticks} (ticks). {@link MobBlast} refuses a bad value by name.
+     */
+    private static MobBlast blast(ConfigurationSection s) {
+        ConfigurationSection b = s.getConfigurationSection("blast");
+        if (b == null) return null;
+        for (String key : List.of("reach", "damage.first", "damage.last", "fuse_ticks")) {
+            if (!b.contains(key)) throw new IllegalArgumentException("blast." + key + " is required");
+        }
+        return new MobBlast(b.getDouble("reach"), b.getDouble("damage.first"), b.getDouble("damage.last"),
+                b.getInt("fuse_ticks"));
     }
 
     /** One stage's body: height in blocks, a speed multiplier, and the authored health. All three required. */

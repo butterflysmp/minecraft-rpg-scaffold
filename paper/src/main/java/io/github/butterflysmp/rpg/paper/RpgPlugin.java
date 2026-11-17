@@ -206,6 +206,9 @@ public final class RpgPlugin extends JavaPlugin {
     private HealthRegenSystem healthRegen;
     private DamagePopupManager popups;
     private MobDeathSystem mobDeath;
+    /** The selftest's HURT line (dragon-mobs R3): in the store's composite from the start, bound to the service later. */
+    private final io.github.butterflysmp.rpg.paper.selftest.SelfTestDamageTap selfTestDamage =
+            new io.github.butterflysmp.rpg.paper.selftest.SelfTestDamageTap();
     private AbilityService abilityService;
     private WeaponService weaponService;
     private ExecutorService storageIo;
@@ -549,7 +552,7 @@ public final class RpgPlugin extends JavaPlugin {
         // Before mobDeath, though order does not matter for correctness: the mirror skips the killing
         // change, so it can never revive what mobDeath is about to kill.
         this.stats = new CombatantStats(new CompositeHealthListener(
-                healthSystem, nameplates, popups, new MobVanillaMirror(), mobDeath));
+                healthSystem, nameplates, popups, new MobVanillaMirror(), selfTestDamage, mobDeath));
         this.healthSystem.bind(stats);
         this.nameplates.bind(stats);
 
@@ -704,6 +707,7 @@ public final class RpgPlugin extends JavaPlugin {
                 // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).
                 (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
                         p, mob, this.mobs, adapters, gs, stage, preAdd));
+        selfTestDamage.bind(selfTest);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,

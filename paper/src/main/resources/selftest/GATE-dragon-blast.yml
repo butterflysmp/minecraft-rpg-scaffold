@@ -1,0 +1,309 @@
+# GATE-dragon-blast.md: the Phage's blast (PLAN-dragon-mobs.md step R3), read from the SERVER. Every mob is spawned by
+# the SPAWN step (/rpg spawn's own path, tagged and frozen or live inside its pre-spawn consumer), at gear score 100,
+# so every blast's damage at ZERO distance is its authored 20 (stage 1) or 50 (stage 5). Out to the 6-block reach it
+# falls off on vanilla's curve, normalised: three eighths at 3 blocks, nothing at 6 (MobBlast.falloff).
+#
+# THE STAGING, the same in every row: the player at a block centre facing east (+x); a stone floor and six blocks of
+# air above it, every fill box SAVED first, so the row-start clean and the run's restore put it back. A mob is spawned
+# by stepping the player to its spot, spawning at the feet, and stepping back. The run's restore removes every mob
+# tagged "selftest".
+#
+# TWO WAYS A PHAGE BLOWS, AND THE ROWS USE BOTH:
+#   - LIVE (BL1, BL2, BQ1): AI on, two blocks from the player. Vanilla's swell starts inside 3 blocks and fills in the
+#     content's 30 ticks; its prime is then ours. This is the trigger a player meets.
+#   - FROZEN, by DETONATE (BL3, BL4, BL6, BL7, BL9): NoAI, at a fixed spot, blown with Creeper#explode(), which raises
+#     the same prime. So every distance in those rows is exact. BL3 and BL4 blow SEVEN blocks from the player, outside
+#     the reach, so he is not a victim there.
+#
+# THE PLAYER SURVIVES EVERY ROW: a row in which he can be hit first heals him to his maximum (rpg heal), and the
+# largest blast is 50 before his defence, at gear score 100 and zero distance; distance only lowers it. His maximum
+# is at least 100 (CombatantStats DEFAULT_PLAYER_BASE); it read 350 at the last boot.
+#
+# AND THE SIX R3 ROWS FROM THE OLDER DRAGON GATES (2026-11-16), below BL9, keep their own gear scores (300; DS1R3 200).
+# Only DS1R3 can hit him: one heal, then two thawed stage-1 children at GS 200, each 40 at zero distance, and the one
+# that blows second may first have grown to stage 2 (a blast is a Void death), 55. So at most 40 + 55 = 95 before his
+# defence, under his 100.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# BL1: a LIVE stage-1 Phage two blocks east blows on the player: 20 before defence, the Phage gone, the floor whole.
+BL1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - probe_blocks: "STONE -3 -1 -4 8 -1 4"
+  - cmd: "tp @s ~2 ~ ~"
+  - spawn: "bl1 live phage 100"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 120
+  - probe_entities: "creeper 16"
+  - return: ""
+  - wait: 2
+  - probe_blocks: "STONE -3 -1 -4 8 -1 4"
+
+# BL2: a LIVE stage-5 Phage two blocks east blows on the player: 50 before defence, and NO children, no split.
+BL2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - probe_blocks: "STONE -3 -1 -4 8 -1 4"
+  - cmd: "tp @s ~2 ~ ~"
+  - spawn: "bl2 live phage stage 5 100"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 120
+  - probe_entities: "creeper 16"
+  - return: ""
+  - wait: 2
+  - probe_blocks: "STONE -3 -1 -4 8 -1 4"
+
+# BL3: a frozen stage-1 Phage blown SEVEN blocks east (the player is outside its 6-block reach) grows a stage-1 Phage
+# 3.00 away to stage 2; the Phage that blew never grows and is gone.
+BL3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~7 ~ ~"
+  - spawn: "bl3x frozen phage 100"
+  - cmd: "tp @s ~ ~ ~3"
+  - spawn: "bl3b frozen phage 100"
+  - cmd: "tp @s ~-7 ~ ~-3 -90 0"
+  - wait: 5
+  - detonate: bl3x
+  - wait: 5
+  - probe_body: bl3b
+  - probe_body: bl3x
+  - probe_entities: "creeper 16"
+
+# BL4: a frozen husk and a frozen stage-5 Phage, each 2.00 from a frozen stage-1 Phage blown seven blocks east, keep
+# their health. (A husk, not a zombie: the setup's noon would burn a zombie, and that burn is damage.)
+BL4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~7 ~ ~"
+  - spawn: "bl4x frozen phage 100"
+  - cmd: "tp @s ~ ~ ~2"
+  - spawn: "bl4h frozen husk 100"
+  - cmd: "tp @s ~ ~ ~-4"
+  - spawn: "bl4p frozen phage stage 5 100"
+  - cmd: "tp @s ~-7 ~ ~2 -90 0"
+  - wait: 5
+  - probe: bl4h
+  - probe: bl4p
+  - detonate: bl4x
+  - wait: 5
+  - probe: bl4h
+  - probe: bl4p
+  - probe_entities: "creeper 16"
+
+# BL5: a LIVE stage-1 Phage's fuse is a third full when the player steps nine blocks west: the swell falls, nothing
+# blows. Then it is killed (a stage 1 does not split), so it cannot follow him into the next row.
+BL5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-12 -1 -4 8 5 4"
+  - cmd: "fill ~-12 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-12 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~2 ~ ~"
+  - spawn: "bl5 live phage 100"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - await_fuse: "bl5 10 200"
+  - cmd: "tp @s ~-9 ~ ~ -90 0"
+  - wait: 5
+  - probe_fuse: bl5
+  - probe_entities: "creeper 16"
+  - cmd: "kill @e[tag=bl5]"
+  - probe_entities: "creeper 16"
+
+# BL6: a frozen stage-1 Phage blown 5.90 blocks east, just inside the 6-block reach, hits the player for a sliver.
+BL6:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~5.9 ~ ~"
+  - spawn: "bl6 frozen phage 100"
+  - cmd: "tp @s ~-5.9 ~ ~ -90 0"
+  - wait: 5
+  - detonate: bl6
+  - wait: 5
+
+# BL7: a frozen stage-1 Phage blown 6.05 blocks east, just beyond the reach, does not.
+BL7:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~6.05 ~ ~"
+  - spawn: "bl7 frozen phage 100"
+  - cmd: "tp @s ~-6.05 ~ ~ -90 0"
+  - wait: 5
+  - detonate: bl7
+  - wait: 5
+
+# BL8: flint and steel's route (Creeper#ignite) still cannot light a Phage: refused, no swell, no blast.
+BL8:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~5 ~ ~"
+  - spawn: "bl8 frozen phage 100"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - ignite: bl8
+  - wait: 40
+  - probe_fuse: bl8
+  - probe_entities: "creeper 16"
+
+# BL9: a frozen stage-1 Phage blown exactly 3.00 blocks east, half the reach, hits the player for three eighths of 20.
+BL9:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "bl9 frozen phage 100"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - detonate: bl9
+  - wait: 5
+
+# --- THE OLDER SPLIT ROWS, RE-PREDICTED FOR R3 (the seat's brief of 2026-11-16) ---------------------------------------
+# Each is named for the GATE-dragon-fix.md row it re-predicts, with the next suffix, and keeps that row's staging and
+# gear score (300, except DS1R3's 200: see its row). What changed is the CHILDREN: a frozen parent's children are now
+# born FROZEN (SelfTestSnapshot.freezeSplitChild), each logging "CHILD parent=<uuid> child=<uuid> frozen=true", so
+# none can swell beside the player. DS1R3 is the one row that wants them live, and thaws them itself.
+
+# DS1R3: a stage 5 killed by the PLAYER'S emberblade at 1 custom health splits into two frozen stage 1s (S1). Then he is
+# healed, the children are THAWED, and each comes for him and blows (S2): a swell needs a target within 3 blocks.
+DS1R3:
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "ds1 frozen phage stage 5 200"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - aim: ds1
+  - wait: 2
+  - cmd: "rpg mobdamage 319"
+  - wait: 40
+  - attack: ds1
+  - wait: 30
+  - probe_entities: "creeper 16"
+  - probe_body: ds1
+  - cmd: "rpg heal 1000000"
+  - cmd: "execute as @e[tag=ds1,type=creeper] run data merge entity @s {NoAI:0b}"
+  - wait: 200
+  - probe_entities: "creeper 16"
+
+# DS2R3: a stage 5 killed by /kill splits; its two children are born frozen.
+DS2R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "ds2 frozen phage stage 5 300"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=ds2]"
+  - wait: 5
+  - probe_entities: "creeper 16"
+  - probe_body: ds2
+
+# DS5R3: once only: after a split the count is 2, and it is still 2 forty ticks later (frozen children cannot blow).
+DS5R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "ds5 frozen phage stage 5 300"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=ds5]"
+  - wait: 5
+  - probe_entities: "creeper 16"
+  - wait: 40
+  - probe_entities: "creeper 16"
+
+# DS6R3: the row-start clean removes DS5R3's two children (they carry DS5R3's tags), so this row starts with none. It
+# MUST follow DS5R3 directly.
+DS6R3:
+  - probe_entities: "creeper 16"
+
+# DG6R3: a stage 5 killed 2 blocks from a stage-2 Phage splits; its two frozen children stay at 1, the bystander goes
+# to 3. The growth gate's staging: the floor runs to x + 12.
+DG6R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 12 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "dg6b frozen phage stage 2 300"
+  - cmd: "tp @s ~2 ~ ~"
+  - spawn: "dg6p frozen phage stage 5 300"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=dg6p]"
+  - wait: 2
+  - probe_body: dg6b
+  - probe_body: dg6p
+  - probe_entities: "creeper 16"
+
+# DG9R3: a stage-4 Phage grown to 5 by a death, then killed, splits into two frozen children.
+DG9R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 12 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~12 ~5 ~4 air"
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "dg9 frozen phage stage 4 300"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 5
+  - cmd: 'summon enderman ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,Tags:["dg9e","t","selftest"]}'
+  - cmd: "kill @e[tag=dg9e]"
+  - wait: 2
+  - probe_body: dg9
+  - cmd: "kill @e[tag=dg9]"
+  - wait: 2
+  - probe_body: dg9
+  - probe_entities: "creeper 16"
+
+# BQ1: Ben's three questions, by the ASK step. A live stage-1 Phage blows on him, then a live stage-5 one; he is
+# healed to full before each. He stands still while each Phage swells.
+BQ1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 5 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~2 ~ ~"
+  - spawn: "bq1small live phage 100"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 120
+  - ask: "1 1200 Did that look and sound like an explosion?"
+  - ask: "2 1200 Your design says the small Phage explodes 'dealing a little damage'. Did that feel like a little?"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~2 ~ ~"
+  - spawn: "bq1big live phage stage 5 100"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 120
+  - ask: "3 1200 Your design says the big Phage explodes 'dealing a lot of damage'. Did that feel like a lot?"

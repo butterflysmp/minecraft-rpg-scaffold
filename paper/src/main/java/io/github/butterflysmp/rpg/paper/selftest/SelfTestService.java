@@ -132,6 +132,15 @@ public final class SelfTestService {
         });
     }
 
+    /**
+     * A DAMAGE change on a player (dragon-mobs step R3), from {@link SelfTestDamageTap}: the running row's HURT line,
+     * when the player is the run's. Called on the player's own thread, inside the hit.
+     */
+    void onPlayerHurt(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
+        SelfTestRun run = active;
+        if (run != null) run.hurt(change);
+    }
+
     void ended(SelfTestRun run) {
         if (active == run) active = null;
     }
@@ -145,10 +154,22 @@ public final class SelfTestService {
     /**
      * A split child of a mob the instrument tagged takes its parent's tags, inside the child's pre-spawn consumer, so
      * it is never in the world untagged (PLAN-dragon-mobs.md step R2; {@link SelfTestSnapshot#tagsForSplitChild}).
-     * Called by the split for every child; a no-op for a parent the instrument never tagged.
+     * Called by the split for every child; a no-op for a parent the instrument never tagged. From step R3 a FROZEN
+     * parent's child is also born frozen ({@link SelfTestSnapshot#freezeSplitChild}), and each adopted child logs
+     * {@code CHILD parent=<uuid> child=<uuid> frozen=<true|false>}, so a gate can read which it was.
      */
     public void adoptSplitChild(org.bukkit.entity.LivingEntity parent, org.bukkit.entity.LivingEntity child) {
-        for (String tag : SelfTestSnapshot.tagsForSplitChild(parent.getScoreboardTags())) child.addScoreboardTag(tag);
+        java.util.Set<String> tags = SelfTestSnapshot.tagsForSplitChild(parent.getScoreboardTags());
+        if (tags.isEmpty()) return;   // a mob the instrument never tagged: production, untouched
+        for (String tag : tags) child.addScoreboardTag(tag);
+        // Step R3: a frozen parent's child is born frozen, here, before its first tick (SelfTestSnapshot's javadoc).
+        if (SelfTestSnapshot.freezeSplitChild(parent.getScoreboardTags(), parent.hasAI())) child.setAI(false);
+        // READ BACK from the child, not the rule's answer, so the line witnesses the freeze landing.
+        String line = "CHILD parent=" + parent.getUniqueId() + " child=" + child.getUniqueId()
+                + " frozen=" + !child.hasAI();
+        SelfTestRun run = active;
+        if (run != null) run.log(line);
+        else log(line);
     }
 
     /** "The element of this creature", for PROBE_BODY (PLAN-dragon-mobs.md step R1). */

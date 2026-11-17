@@ -28,5 +28,11 @@ public final class MobSpawner {
         // The BODY and the stage, here for the same reason as the tag: before the add event seeds health from the
         // stage (MobBodyApplier's javadoc).
         MobBodyApplier.apply(entity, def, stage, keys);
+        // THE FUSE, from content (dragon-mobs step R3): vanilla's swell is the Phage's fuse (the seat's ruling 20), and
+        // its length is the server's maxSwell, which Creeper#setMaxFuseTicks writes (CraftCreeper, javap build 74:
+        // putfield maxSwell) and the creeper saves as "Fuse", so it survives an unload. Growth never changes it.
+        if (def.blast() != null && entity instanceof org.bukkit.entity.Creeper creeper) {
+            creeper.setMaxFuseTicks(def.blast().fuseTicks());
+        }
     }
 }

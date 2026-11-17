@@ -35,10 +35,10 @@ class SelfTestScenariosTest {
         assertEquals(List.of(), loaded.refusals());
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
-                "dragon-split", "dragon-growth"),
+                "dragon-split", "dragon-growth", "dragon-blast"),
                 List.copyOf(loaded.gates().keySet()),
-                "the fourteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
-                        + " dragon-split and dragon-growth LAST (2026-11-15)");
+                "the fifteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
+                        + " dragon-split and dragon-growth (2026-11-15), then dragon-blast LAST (step R3, 2026-11-15)");
     }
 
     /** The seat's CORE rows, one scenario each (2026-10-05). R0d is a boot log line and has none. */
@@ -58,12 +58,17 @@ class SelfTestScenariosTest {
                 "mining-auto", List.of("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12")));
         expected.put("nexus-back", List.of("NB1", "NB2", "NB3", "NB4", "NB5", "NB6", "NB7"));
         // The three dragon gates' rows are GATE-dragon-fix.md's since the 2026-11-15 boot: each re-predicts the old
-        // row it is named for (DB8 and DB9 read as predicted and are not re-run), and DQ1 is Ben's two ASK questions.
-        expected.put("dragon-bodies", List.of("DB1R2", "DB2R2", "DB3R2", "DB4R2", "DB5R2", "DB6R2", "DB7R2", "DB10R2",
-                "DB11R2", "DQ1"));
-        expected.put("dragon-split", List.of("DS1R2", "DS2R2", "DS3R2", "DS4R2", "DS5R2", "DS6R2"));
-        expected.put("dragon-growth", List.of("DG1R2", "DG2R2", "DG3R2", "DG4R2", "DG5R2", "DG6R2", "DG7R2", "DG8R2",
-                "DG9R2"));
+        // row it is named for (DB8 and DB9 read as predicted and are not re-run).
+        // STEP R3 TOOK EIGHT OF THEM OUT (the seat's brief of 2026-11-16; GATE-dragon-fix.md's dated note): DB10R2 and
+        // DQ1 retired (a live Phage now blows), and DS1R2, DS2R2, DS5R2, DS6R2, DG6R2 and DG9R2 re-predicted as R3
+        // rows in GATE-dragon-blast.md, where their split children are born frozen (or, in DS1R3, thawed on purpose).
+        expected.put("dragon-bodies", List.of("DB1R2", "DB2R2", "DB3R2", "DB4R2", "DB5R2", "DB6R2", "DB7R2",
+                "DB11R2"));
+        expected.put("dragon-split", List.of("DS3R2", "DS4R2"));
+        expected.put("dragon-growth", List.of("DG1R2", "DG2R2", "DG3R2", "DG4R2", "DG5R2", "DG7R2", "DG8R2"));
+        // Step R3: GATE-dragon-blast.md's own rows, then the six re-predicted split rows; BQ1 is Ben's three questions.
+        expected.put("dragon-blast", List.of("BL1", "BL2", "BL3", "BL4", "BL5", "BL6", "BL7", "BL8", "BL9",
+                "DS1R3", "DS2R3", "DS5R3", "DS6R3", "DG6R3", "DG9R3", "BQ1"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -81,7 +86,61 @@ class SelfTestScenariosTest {
         // feat/dragon-split 56a8bb00 the same commands print 13, 87, 13: 74, this line's old value.
         // Then GATE-dragon-fix.md (2026-11-15), RECOUNTED the same way: 14 gates, 96 keys, 14 setups, so 82. At
         // feat/dragon-growth 39bb2e90 the same commands print 14, 97, 14: 83, this line's old value.
-        assertEquals(82, loaded.rows());
+        // Then GATE-dragon-blast.md (step R3, 2026-11-15), RECOUNTED the same way: 15 gates, 106 keys, 15 setups, so 91.
+        // At master 94915476 the same commands print 14, 96, 14: 82, this line's old value.
+        // Then BL9, vanilla's blast shape (the seat's brief of 2026-11-16), RECOUNTED the same way: 15 gates, 107 keys,
+        // 15 setups, so 92. At feat/dragon-blast 58165392 the same commands print 15, 106, 15: 91, this line's old value.
+        // Then the R3 audit of the older dragon rows (the seat's brief of 2026-11-16), RECOUNTED the same way: 15 gates,
+        // 105 keys, 15 setups, so 90. At feat/dragon-blast ba74df59 the same commands print 15, 107, 15: 92, this
+        // line's old value.
+        assertEquals(90, loaded.rows());
+    }
+
+    /**
+     * NO DRAGON ROW OUTSIDE GATE-dragon-blast.yml LEAVES A LIVE PHAGE BESIDE THE PLAYER (the seat's brief of
+     * 2026-11-16, item 4). From step R3 a live Phage within 3 blocks swells and BLOWS, so a row that never asked for
+     * one would read a blast its prediction does not name. Stated on the FILES, in two halves:
+     * <ol>
+     *   <li>every SPAWN of a {@code phage} outside the blast gate is {@code frozen}, and no CMD there sets
+     *       {@code NoAI} to anything but {@code 1b} (the only way a step could thaw one);</li>
+     *   <li>a split child of a frozen tagged parent is born frozen ({@code SelfTestSnapshot.freezeSplitChild},
+     *       {@code SelfTestSplitChildTest}), so every Phage those spawns can make is frozen too.</li>
+     * </ol>
+     * A frozen Phage never swells: NoAI stops its goals ({@code Mob.isEffectiveAi}) and only its swell goal (or an
+     * ignite, which ours refuses) turns its swell up. <b>The positive control</b> is the blast gate itself: the same
+     * scan must FIND its five live spawns and DS1R3's one thaw there, or the scan is blind and its silence elsewhere
+     * proves nothing.
+     */
+    @Test
+    void noScenarioOutsideTheBlastGateLeavesALivePhage() {
+        List<String> blastGate = new ArrayList<>();
+        for (var gate : shipped().gates().entrySet()) {
+            List<String> found = new ArrayList<>();
+            for (Scenario s : gate.getValue()) {
+                for (Scenario.Step step : s.steps()) {
+                    if (livePhage(step)) found.add(s.row() + " " + step.arg());
+                }
+            }
+            if (gate.getKey().equals("dragon-blast")) blastGate.addAll(found);
+            else assertEquals(List.of(), found, gate.getKey() + " has a live Phage; it belongs in the blast gate");
+        }
+        assertEquals(List.of("BL1 bl1 live phage 100", "BL2 bl2 live phage stage 5 100", "BL5 bl5 live phage 100",
+                        "DS1R3 execute as @e[tag=ds1,type=creeper] run data merge entity @s {NoAI:0b}",
+                        "BQ1 bq1small live phage 100", "BQ1 bq1big live phage stage 5 100"),
+                blastGate, "the control: the scan must find every live Phage the blast gate stages on purpose");
+    }
+
+    /** A step that puts a live Phage in the world: a live phage SPAWN, or a CMD that sets NoAI to anything but 1b. */
+    private static boolean livePhage(Scenario.Step step) {
+        if (step.verb() == Scenario.Verb.SPAWN) {
+            SelfTestSpawn.Spec spec = SelfTestSpawn.parse(step.arg()).orElseThrow();
+            return spec.mob().equals("phage") && !spec.frozen();
+        }
+        if (step.verb() == Scenario.Verb.CMD) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("NoAI:([^,}\\]]*)").matcher(step.arg());
+            while (m.find()) if (!m.group(1).equals("1b")) return true;
+        }
+        return false;
     }
 
     @Test
@@ -98,15 +157,17 @@ class SelfTestScenariosTest {
      * Which gate file a scenario file's rows are headings in. Its own, except the three dragon gates, whose rows since
      * the 2026-11-15 boot are re-predictions held in GATE-dragon-fix.md, the stack top (its brief: the old
      * predictions and readings stay as they are, and every re-run row is a new row named for the old one).
+     * NAMED, not a prefix: {@code dragon-blast} (step R3) is a dragon gate with its OWN file, and a prefix test sent it
+     * to GATE-dragon-fix.md.
      */
     static String docOf(String gate) {
-        return gate.startsWith("dragon-") ? "dragon-fix" : gate;
+        return Set.of("dragon-bodies", "dragon-split", "dragon-growth").contains(gate) ? "dragon-fix" : gate;
     }
 
-    /** The three dragon gates declare the difficulty their rows need, first thing in their setup (GATE-dragon-fix.md, C5). */
+    /** The dragon gates declare the difficulty their rows need, first thing in their setup (GATE-dragon-fix.md, C5). */
     @Test
     void theDragonGatesDeclareNormalFirstInTheirSetup() {
-        for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth")) {
+        for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth", "dragon-blast")) {
             Scenario setup = shipped().gates().get(gate).getFirst();
             assertEquals(Scenario.SETUP, setup.row(), gate);
             assertEquals(new Scenario.Step(Scenario.Verb.DIFFICULTY, "normal"), setup.steps().getFirst(), gate);

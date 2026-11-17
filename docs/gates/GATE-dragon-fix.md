@@ -7,6 +7,8 @@ says ready.**
 
 > **2026-11-15: approved to merge by the review seat after the boot of d59d2bf5; see GATE-dragon-fix.md for the readings.**
 
+> **2026-11-16: STEP R3 (PR #193) TOOK EIGHT ROWS OF THIS FILE OUT OF ITS SCENARIOS, BEFORE ANY BOOT OF R3.** From R3 a live Phage within 3 blocks of the player blows. DB10R2 and DQ1 are retired; DS1R2, DS2R2, DS5R2, DS6R2, DG6R2 and DG9R2 are re-predicted in GATE-dragon-blast.md as DS1R3, DS2R3, DS5R3, DS6R3, DG6R3 and DG9R3. Each row carries its own dated note below; **no prediction or reading in this file was changed.** The audit is PLAN-dragon-mobs.md, RULINGS, *THE BLAST AND THE ROWS ALREADY MERGED*.
+
 **THIS PR IS THE STACK TOP.** `feat/dragon-fix` is stacked on `feat/dragon-growth` (#191), on `feat/dragon-split`
 (#190), on `feat/dragon-bodies` (#189). The first boot of the stack (`bda8e89c`, 2026-11-15) read most AUTO rows NOT AS
 PREDICTED; its readings and dated notes are in the three lower gates, and the record (the seat's misses, the boot's
@@ -288,6 +290,8 @@ speedX=… maxHP=… gs=… element=… dead=false`. The uuids are the only fiel
 
 ### DB10R2 — a Phage beside the player for 100 ticks swells, is refused, and never explodes (SURVIVAL) — re-predicts DB10; B6's AUTO half
 
+> **2026-11-16: RETIRED BY STEP R3, BEFORE ANY BOOT OF IT.** From R3 a live Phage within 3 blocks of the player swells and BLOWS, so "never explodes" is no longer true and this row's steps would read a blast its prediction does not name. **GATE-dragon-blast.md BL1 carries the behaviour now** (a live stage 1 two blocks east swells and blows; the floor is whole). The scenario is gone from selftest/GATE-dragon-bodies.yml; this row's prediction and reading stand above and below as they were.
+
 A stage-1 Phage, AI **ON** (`DRIVE spawn tag=db10 <uuid> phage live`), two blocks east of the player.
 
 | prediction | READING |
@@ -302,11 +306,15 @@ A stage-1 Phage, AI **ON** (`DRIVE spawn tag=db10 <uuid> phage live`), two block
 
 ### DS1R2 — a stage 5 killed by the PLAYER'S emberblade splits into two stage 1s, which come for him (SURVIVAL) — re-predicts GATE-dragon-split.md DS1; S1's and S2's AUTO halves
 
+> **2026-11-16: SUPERSEDED BY STEP R3, BEFORE ANY BOOT OF IT.** Its two live children three blocks from the player would now blow on him before the TARGET probe (they primed four times in this row's bracket on 2026-11-15). **Re-predicted as GATE-dragon-blast.md DS1R3**, which reads S1 with the children born frozen and S2 from each thawed child's blast. The scenario is gone from selftest/GATE-dragon-split.yml; this row's prediction and reading stand as they were.
+
 | prediction | READING |
 |---|---|
 | (1) `REPLY "Spawned Phage (creeper, stage 5, 480 HP, GS 300 given)" [aqua, gray]` and `REPLY "CREEPER damaged: 1/480 custom HP" [green]`. (2) `DRIVE attack Player#attack target=<the ds1 uuid> creeper d=3.000 charge=1.000` (d as read on 2026-11-15; a full charge after 40 ticks, the emberblade's being ~12.5, `SelfTestRun`'s javadoc), then **exactly one** `[Rpg] SPLIT mob=phage parent=<the ds1 uuid> stage=5 gs=300 children=2 childStage=1 [<uuid> dx=-0.50, <uuid> dx=0.50]`. (3) `ENTITIES CREEPER count=2 radius=16`. (4) **Exactly two** BODY lines, each `BODY tag=ds1 <uuid> type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedType=0.2500 speedX=1.500 maxHP=240.000 gs=300 element=void dead=false`. (5) **S2:** sixty ticks later, **exactly two** `TARGET tag=ds1 <uuid> type=creeper target=self dead=false`, one per child uuid. **INFERRED, not read:** that the emberblade's hit takes at least 1 custom health (any positive hit kills at 1); and that each child acquires the player within 90 ticks (vanilla's target goal is random-interval; the children have AI because NoAI is not a tag and is not inherited) | **AS PREDICTED, verbatim** (`LEFTOVER living=0 radius=16`). `SELFTEST dragon-split DS1R2 REPLY "Spawned Phage (creeper, stage 5, 480 HP, GS 300 given)" [aqua, gray]`; `SELFTEST dragon-split DS1R2 REPLY "CREEPER damaged: 1/480 custom HP" [green]`; `SELFTEST dragon-split DS1R2 DRIVE attack Player#attack target=454dd801-1519-4b88-83d1-689113f9c603 creeper d=3.000 charge=1.000`; `SPLIT mob=phage parent=454dd801-1519-4b88-83d1-689113f9c603 stage=5 gs=300 children=2 childStage=1 [ab58fb5a-50ff-451c-ba7f-3925f5cdea66 dx=-0.50, e1d8e386-b4cf-4df4-92ab-f918dcbceeed dx=0.50]`; `SELFTEST dragon-split DS1R2 ENTITIES CREEPER count=2 radius=16`; `SELFTEST dragon-split DS1R2 BODY tag=ds1 ab58fb5a-50ff-451c-ba7f-3925f5cdea66 type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedType=0.2500 speedX=1.500 maxHP=240.000 gs=300 element=void dead=false`; `SELFTEST dragon-split DS1R2 BODY tag=ds1 e1d8e386-b4cf-4df4-92ab-f918dcbceeed type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedType=0.2500 speedX=1.500 maxHP=240.000 gs=300 element=void dead=false`; `CREEPERGUARD prime cancelled mob=phage id=ab58fb5a-50ff-451c-ba7f-3925f5cdea66`; `CREEPERGUARD prime cancelled mob=phage id=e1d8e386-b4cf-4df4-92ab-f918dcbceeed`; `CREEPERGUARD prime cancelled mob=phage id=ab58fb5a-50ff-451c-ba7f-3925f5cdea66`; `CREEPERGUARD prime cancelled mob=phage id=e1d8e386-b4cf-4df4-92ab-f918dcbceeed`; `SELFTEST dragon-split DS1R2 TARGET tag=ds1 ab58fb5a-50ff-451c-ba7f-3925f5cdea66 type=creeper target=self dead=false`; `SELFTEST dragon-split DS1R2 TARGET tag=ds1 e1d8e386-b4cf-4df4-92ab-f918dcbceeed type=creeper target=self dead=false`;  |
 
 ### DS2R2 — a stage 5 killed by `/kill` splits (SURVIVAL) — re-predicts DS2
+
+> **2026-11-16: SUPERSEDED BY STEP R3, BEFORE ANY BOOT OF IT.** Its two children were live beside the player; from R3 a live Phage blows. **Re-predicted as GATE-dragon-blast.md DS2R3**, the same steps, the children born frozen. The scenario is gone from selftest/GATE-dragon-split.yml; this row's prediction and reading stand as they were.
 
 | prediction | READING |
 |---|---|
@@ -326,11 +334,15 @@ A stage-1 Phage, AI **ON** (`DRIVE spawn tag=db10 <uuid> phage live`), two block
 
 ### DS5R2 — once only: two after the split, still two forty ticks later (SURVIVAL) — re-predicts DS5
 
+> **2026-11-16: SUPERSEDED BY STEP R3, BEFORE ANY BOOT OF IT.** Its two live children primed three times between its two counts on 2026-11-15; from R3 each first prime is a blast that removes the Phage, so the second count could not read 2. **Re-predicted as GATE-dragon-blast.md DS5R3**, the same steps, the children born frozen. The scenario is gone from selftest/GATE-dragon-split.yml; this row's prediction and reading stand as they were.
+
 | prediction | READING |
 |---|---|
 | **Exactly one** SPLIT line in the bracket, and `ENTITIES CREEPER count=2 radius=16` **twice**, forty ticks apart | **AS PREDICTED, verbatim** (`LEFTOVER living=0 radius=16`). `SELFTEST dragon-split DS5R2 REPLY "Spawned Phage (creeper, stage 5, 480 HP, GS 300 given)" [aqua, gray]`; `SPLIT mob=phage parent=c1e5dbfd-03b8-4f14-9c98-8c751eb3a853 stage=5 gs=300 children=2 childStage=1 [43fb8bf6-a75e-485a-9d40-b7f8268c440b dx=-0.50, 775663bd-37a8-480c-bfc1-1e1f9e5d1ae0 dx=0.50]`; `SELFTEST dragon-split DS5R2 SETTLED dying=0 ticks=20 first=1`; `SELFTEST dragon-split DS5R2 ENTITIES CREEPER count=2 radius=16`; `CREEPERGUARD prime cancelled mob=phage id=43fb8bf6-a75e-485a-9d40-b7f8268c440b`; `CREEPERGUARD prime cancelled mob=phage id=775663bd-37a8-480c-bfc1-1e1f9e5d1ae0`; `CREEPERGUARD prime cancelled mob=phage id=43fb8bf6-a75e-485a-9d40-b7f8268c440b`; `SELFTEST dragon-split DS5R2 ENTITIES CREEPER count=2 radius=16`;  |
 
 ### DS6R2 — the row-start clean removes DS5R2's children (SURVIVAL) — re-predicts DS6
+
+> **2026-11-16: SUPERSEDED BY STEP R3, BEFORE ANY BOOT OF IT.** It reads DS5R2's children and must follow it, so it moved with it. **Re-predicted as GATE-dragon-blast.md DS6R3.** The scenario is gone from selftest/GATE-dragon-split.yml; this row's prediction and reading stand as they were.
 
 | prediction | READING |
 |---|---|
@@ -368,6 +380,8 @@ A stage-1 Phage, AI **ON** (`DRIVE spawn tag=db10 <uuid> phage live`), two block
 
 ### DG6R2 — a stage 5's death splits it; its children stay at 1, the bystander goes to 3 (SURVIVAL) — re-predicts DG6
 
+> **2026-11-16: SUPERSEDED BY STEP R3, BEFORE ANY BOOT OF IT.** Its two children were live beside the player; from R3 a live Phage blows. **Re-predicted as GATE-dragon-blast.md DG6R3**, the same steps, the children born frozen. The scenario is gone from selftest/GATE-dragon-growth.yml; this row's prediction and reading stand as they were.
+
 | prediction | READING |
 |---|---|
 | (1) **Exactly one** `SPLIT mob=phage parent=<the dg6p uuid> stage=5 gs=300 children=2 childStage=1 [<uuid> dx=-0.50, <uuid> dx=0.50]`. (2) **Exactly one** GROWTH line in the bracket: `id=<the dg6b uuid> from=2 to=3 fed=creeper/phage <the dg6p uuid> element=void d=2.00 max=360`; **none names either child.** (3) A stage-3 BODY line for dg6b (`scale=1.176 height=2.000 speedBase=0.2500 speedType=0.2500 speedX=1.000 maxHP=360.000 gs=300`). (4) **Exactly two** stage-1 BODY lines for dg6p, `maxHP=240.000 gs=300`. (5) `ENTITIES CREEPER count=3 radius=16` | **AS PREDICTED, verbatim** (`LEFTOVER living=0 radius=16`). `SELFTEST dragon-growth DG6R2 REPLY "Spawned Phage (creeper, stage 2, 300 HP, GS 300 given)" [aqua, gray]`; `SELFTEST dragon-growth DG6R2 REPLY "Spawned Phage (creeper, stage 5, 480 HP, GS 300 given)" [aqua, gray]`; `SPLIT mob=phage parent=627d2381-ab66-452f-ae24-6b46b3337d8e stage=5 gs=300 children=2 childStage=1 [7dfd93ad-db4d-497f-a9cd-3318a147c5d2 dx=-0.50, d14d7e04-f442-4f1a-a6fd-2df9fe7258cd dx=0.50]`; `GROWTH mob=phage id=c847c76f-ccf5-4487-bc7b-8961944a563b from=2 to=3 fed=creeper/phage 627d2381-ab66-452f-ae24-6b46b3337d8e element=void d=2.00 max=360`; `SELFTEST dragon-growth DG6R2 SETTLED dying=0 ticks=20 first=1`; `SELFTEST dragon-growth DG6R2 BODY tag=dg6b c847c76f-ccf5-4487-bc7b-8961944a563b type=creeper mob=phage stage=3 scale=1.176 height=2.000 speedBase=0.2500 speedType=0.2500 speedX=1.000 maxHP=360.000 gs=300 element=void dead=false`; `SELFTEST dragon-growth DG6R2 BODY tag=dg6p 7dfd93ad-db4d-497f-a9cd-3318a147c5d2 type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedType=0.2500 speedX=1.500 maxHP=240.000 gs=300 element=void dead=false`; `SELFTEST dragon-growth DG6R2 BODY tag=dg6p d14d7e04-f442-4f1a-a6fd-2df9fe7258cd type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedType=0.2500 speedX=1.500 maxHP=240.000 gs=300 element=void dead=false`; `SELFTEST dragon-growth DG6R2 ENTITIES CREEPER count=3 radius=16`;  |
@@ -386,6 +400,8 @@ A stage-1 Phage, AI **ON** (`DRIVE spawn tag=db10 <uuid> phage live`), two block
 
 ### DG9R2 — a Phage grown to 5, then killed, splits (SURVIVAL) — re-predicts DG9
 
+> **2026-11-16: SUPERSEDED BY STEP R3, BEFORE ANY BOOT OF IT.** Its two children were live beside the player; from R3 a live Phage blows. **Re-predicted as GATE-dragon-blast.md DG9R3**, the same steps, the children born frozen. The scenario is gone from selftest/GATE-dragon-growth.yml; this row's prediction and reading stand as they were.
+
 | prediction | READING |
 |---|---|
 | **Exactly one** GROWTH line `id=<the dg9 uuid> from=4 to=5 … d=2.00 max=480`, then a stage-5 BODY line for dg9. After its kill: **exactly one** `SPLIT mob=phage parent=<the dg9 uuid> stage=5 gs=300 children=2 childStage=1 [<uuid> dx=-0.50, <uuid> dx=0.50]`, **exactly two** stage-1 BODY lines for dg9 (`maxHP=240.000 gs=300`), and `ENTITIES CREEPER count=2 radius=16` | **AS PREDICTED, verbatim** (`LEFTOVER living=0 radius=16`). `SELFTEST dragon-growth DG9R2 REPLY "Spawned Phage (creeper, stage 4, 420 HP, GS 300 given)" [aqua, gray]`; `GROWTH mob=phage id=08999397-9c2c-48bb-9f37-dadb96833905 from=4 to=5 fed=enderman 4adf0e69-95e1-4bb0-9f62-69e47ee10465 element=void d=2.00 max=480`; `SELFTEST dragon-growth DG9R2 SETTLED dying=0 ticks=20 first=1`; `SELFTEST dragon-growth DG9R2 BODY tag=dg9 08999397-9c2c-48bb-9f37-dadb96833905 type=creeper mob=phage stage=5 scale=1.765 height=3.000 speedBase=0.1250 speedType=0.2500 speedX=0.500 maxHP=480.000 gs=300 element=void dead=false`; `SPLIT mob=phage parent=08999397-9c2c-48bb-9f37-dadb96833905 stage=5 gs=300 children=2 childStage=1 [2142a415-af2f-453f-ac5e-92fdc3665521 dx=-0.50, 17d3eec5-a3e4-4ac6-95aa-690cf79e7bfc dx=0.50]`; `SELFTEST dragon-growth DG9R2 SETTLED dying=0 ticks=20 first=1`; `SELFTEST dragon-growth DG9R2 BODY tag=dg9 2142a415-af2f-453f-ac5e-92fdc3665521 type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedType=0.2500 speedX=1.500 maxHP=240.000 gs=300 element=void dead=false`; `SELFTEST dragon-growth DG9R2 BODY tag=dg9 17d3eec5-a3e4-4ac6-95aa-690cf79e7bfc type=creeper mob=phage stage=1 scale=0.588 height=1.000 speedBase=0.3750 speedType=0.2500 speedX=1.500 maxHP=240.000 gs=300 element=void dead=false`; `SELFTEST dragon-growth DG9R2 ENTITIES CREEPER count=2 radius=16`;  |
@@ -398,6 +414,8 @@ A stage-1 Phage, AI **ON** (`DRIVE spawn tag=db10 <uuid> phage live`), two block
 the feel of the two speeds is his.
 
 ### DQ1 — the big Phage is very slow; the small one is fast but can be backed away from (SURVIVAL)
+
+> **2026-11-16: RETIRED BY STEP R3, BEFORE ANY BOOT OF IT.** Ben answered both questions on 2026-11-15 (below). From R3 its two live Phages would blow on him while he walks away and back, so it is not re-asked. Nothing carries it now: the speeds are DB2R2's and DB4R2's BODY lines, and the feel is his two answers. The scenario is gone from selftest/GATE-dragon-bodies.yml.
 
 A stage-5 and a stage-1 Phage, AI **ON** (`DRIVE spawn tag=dq1big … live`, `DRIVE spawn tag=dq1small … live`), five
 blocks east of him and three apart. Each question waits 1200 ticks (one minute) for his next chat line.
