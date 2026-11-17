@@ -7,6 +7,8 @@ says ready.**
 
 **READ 2026-11-17, in the stacked boot of `e52e54b6`** (R0 in `GATE-dragon-teleport.md`): KB2 HOLLOW for the root, KB4's Knell moved before the next clean, every other row as predicted; readings beside each prediction, and the READINGS NOTE at the end.
 
+**2026-11-17: approved to merge by the review seat after the boot of e52e54b6; see GATE-dragon-teleport.md for the readings.**
+
 > **DATED NOTE, 2026-11-17, step R6 (`feat/dragon-teleport`, stacked on this branch). NOTHING BELOW IS EDITED; this
 > note says what changed around it.** The seat passed this gate by diff and left it unbooted, so that ONE boot reads
 > R5 and R6 together.

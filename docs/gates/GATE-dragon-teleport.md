@@ -7,6 +7,8 @@ and Ben says ready.**
 
 **READ 2026-11-17, at the stacked boot of `e52e54b6`: R0a-R0d PASS, all fifteen rows AS PREDICTED; readings beside each prediction, and the READINGS NOTE at the end.**
 
+**2026-11-17: approved to merge by the review seat after the boot of e52e54b6; see GATE-dragon-teleport.md for the readings.**
+
 **This PR is the STACK TOP** (`feat/dragon-teleport` on `feat/dragon-beam`, PR #195, which is passed and unbooted).
 **The ONE R0 and the ONE run sheet of the stacked boot are HERE.** `GATE-dragon-beam.md`'s R0 and run sheet are
 superseded (its dated note); its AUTO rows and KQ1 are still read in this boot, by the first selftest command.

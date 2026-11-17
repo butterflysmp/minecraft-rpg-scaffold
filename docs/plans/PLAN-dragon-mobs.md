@@ -503,6 +503,42 @@ it. Step R5 ships K9 at the old 1.0 as a content number, the beam with no elemen
 **K11 (the delay) is 12 ticks**, Ben's "the same time between the warning shot and the actual beam" (B), its own number.
 **K12 and K13 are Ben's 30 and 70** (A, *"Maybe"*), starting values.
 
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the beam and the teleport (the stacked boot of `e52e54b6`)
+
+*Read in `GATE-dragon-beam.md` KQ1 and `GATE-dragon-teleport.md` TQ1.*
+
+**The beam (KQ1):**
+- Asked *"Did the hit feel fair for a single shot?"*, Ben:
+  > "i think it needs to be more damage"
+- Asked *"Was it possible to step out of the way in time?"*, Ben:
+  > "maybe a slight increase in duration"
+
+**The seat has asked him for the numbers:** the damage (K10, 35 today); the telegraph (K7, 12 today; the seat
+suggesting 16 ticks); and whether the teleport delay (K11, 12 today) follows it. **NOT built.**
+
+**The teleport (TQ1):** asked *"After it hit you, did it move to a new spot?"*, *"Could you find it again straight
+away?"* and *"Does that feel fair to someone fighting it with a bow?"*, Ben answered each:
+> "yes"
+
+> "yes"
+
+> "yes"
+
+**The seat takes these as Ben's confirmation by play of the arc (30 to 70 degrees), the delay (12 ticks) and the
+seat's provisional T-a, T-b and T-c, as they played.**
+
+### THE STACKED BOOT OF R5 AND R6 (`e52e54b6`, 2026-11-17): TWO CARRIED NOTES
+
+1. **THE ROOT ON A WALKING KNELL IS UNREAD.** `GATE-dragon-beam.md` KB2 read HOLLOW: its penned live Knell never
+   walked (both AT reads and both BEAM lines at its spawn point), so "rooted during the telegraph" (I11) was never
+   tested against a Knell trying to move. **Cause INFERRED, not read:** the pen's glass blocks the line of sight
+   vanilla's targeting needs, so it never targeted the player. A fixture that can see him and cannot reach him is
+   owed.
+2. **KB4's TIMING NOTE.** The dated note predicted a `knell-gone` skip for KB4's Knell; instead it moved
+   (`TELEPORT … tick=3567 … moved=true`, in KB5's bracket before KB5's CLEAN). The row ran 25 ticks past the force,
+   not 23, so the move (the FIRE + 12) came before the next row's removal. **The code read right; the timing
+   prediction was wrong.** The thin margin was accepted beforehand; nothing was changed.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
