@@ -403,6 +403,31 @@ re-predicted here **under their old name with the next suffix**. SH13-SH16 are n
 predicted and their lines do not change: **SH5, SH6, SH8, SH10, SH11, KQ1R6**. They are kept in the same file because
 the readings above are the evidence for the diagnosis below. The scenario file now carries only this section's rows.
 
+> **READ, 2026-11-17: booted at `3dc0e184` on the seat's approval and Ben's "ready".** Server log `10:27:44` to the clean
+> `/stop` at `10:30:09`. Carried state: no JVM; backup `rpg-run-backups/2026-11-17-pre-dragon-shot-r2`
+> (`run/plugins/Rpg` 129 files, 391492 bytes; `run/world` 193 files, 204963748 bytes; `diff -rq lines: 0` each);
+> `12:  dev-pack-on-join: true`. Ben logged in at `10:27:47`, ran `/rpg selftest dragon-shot` once (`10:28:10`) to
+> `SELFTEST RUN FINISHED` (`10:29:09`): `DIFFICULTY found=NORMAL set=NORMAL`, `RESTORED … gamemode=SURVIVAL … difficulty=NORMAL`.
+>
+> **THE DEPARTURES, recorded as they happened:**
+> - **He did not type `/gamemode survival`.** The run's restore put back `gamemode=SURVIVAL`, the mode it found at RUN
+>   START, so every row ran in survival as declared.
+> - **After the run, off the sheet**, he typed `/rpg spawn phalanx` (`10:29:15`) and played against a LIVE Phalanx for
+>   50 seconds, then `/kill @e[type=minecraft:wither_skeleton]` (`10:30:04`) and `/stop`. Its lines are not this
+>   gate's and none is read as a row. Recorded because one bears on F14: a shot that chased him as he moved
+>   **hit at `age=184`** (`shot=fe96b267…`), so a curving shot does live long.
+>
+> **The result: R0aR2-R0dR2 MATCH. AS PREDICTED: SH2R2, SH3R2, SH4R2, SH9R2, SH12R2, SH13, SH16. NOT AS PREDICTED:**
+> - **SH1R2:** `inside=false`, the shape 0.45 above and 0.4 to the side of the box.
+> - **SH7R2:** a leftover grenade field from SH4R2 destroyed the shot before the wall.
+> - **SH14:** on one cause only, `CUSTOM` for `PROJECTILE`.
+> - **SH15:** the strike never ran.
+>
+> **SQ1R2: Ben's own swing DESTROYED the shot at age 67, one tick before the reach, and he answered "yes", "yes".**
+> Every LEFTOVER read `living=0`; no orphan line; the run's two HURT lines (SH1R2, SH14) are shots. **No line records a
+> push** of or by a carrier: the shot's logged positions are the flight's own, set by teleport each tick, and no line
+> reads the player's or a mob's motion, so a push is neither seen nor ruled out by the log.
+
 ## D1-D3 — THE DIAGNOSIS, EACH WITH ITS EVIDENCE
 
 Every jar read uses `~/.jdks/openjdk-26.0.1/bin/javap.exe -c -p -cp <jar> <class>`. The server jar is
@@ -496,25 +521,25 @@ SH1R2, SH14 and SQ1R2, plus any row whose destroying step fails. 40 < 100.
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-shot` prints it, shortened; not `8ec16e89`, not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-shot` prints it, shortened; not `8ec16e89`, not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | READ 2026-11-17: `[10:27:44] [Server thread/INFO]: [Rpg] Build: 3dc0e184`, this PR's head (`git ls-remote` `3dc0e184411f…`). **MATCH** |
 
 ### R0bR2 — the jar carries the frog, the box and the refusal
 
 | prediction | instrument | READING |
 |---|---|---|
-| `phalanx.yml` PRESENT `  hit_box: 0.8` and `  homing: 0.0513`. Classes PRESENT `core/mob/ShotDamage.class` (in the shaded jar under `io/github/butterflysmp/rpg/core/mob/`) and `paper/selftest/SelfTestStrike.class`. `GATE-dragon-shot.yml` PRESENT `SH7R2:`, `SH16:`, `SQ1R2:`, ABSENT `SH7:`. **Controls, the same on both builds:** `phalanx.yml` PRESENT `  life_ticks: 240`; `health/MobShooter.class` PRESENT | R0b's scan above, with these names | |
+| `phalanx.yml` PRESENT `  hit_box: 0.8` and `  homing: 0.0513`. Classes PRESENT `core/mob/ShotDamage.class` (in the shaded jar under `io/github/butterflysmp/rpg/core/mob/`) and `paper/selftest/SelfTestStrike.class`. `GATE-dragon-shot.yml` PRESENT `SH7R2:`, `SH16:`, `SQ1R2:`, ABSENT `SH7:`. **Controls, the same on both builds:** `phalanx.yml` PRESENT `  life_ticks: 240`; `health/MobShooter.class` PRESENT | R0b's scan above, with these names | READ: `hit_box: 0.8`, `homing: 0.0513`, `life_ticks: 240` PRESENT; `ShotDamage.class`, `SelfTestStrike.class`, `MobShooter.class` PRESENT; `SH7R2:`, `SH16:`, `SQ1R2:` PRESENT, `SH7:` ABSENT. **MATCH** |
 
 ### R0cR2 — the Loaded line, and nothing refused
 
 | prediction | instrument | READING |
 |---|---|---|
-| The boot of `8ec16e89`'s Loaded line, verbatim (`… 5 mobs, 1 mob elements …`); no `Refusing`, `Skipping`, `SEVERE` or exception; no `[Rpg]` WARN beyond `volley_stone`'s pair | as R0c above | |
+| The boot of `8ec16e89`'s Loaded line, verbatim (`… 5 mobs, 1 mob elements …`); no `Refusing`, `Skipping`, `SEVERE` or exception; no `[Rpg]` WARN beyond `volley_stone`'s pair | as R0c above | READ: the Loaded line verbatim; no `Refusing`, `Skipping`, `SEVERE` or exception; the only `[Rpg]` WARN lines `volley_stone`'s pair. **MATCH** |
 
 ### R0dR2 — every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| **`[Rpg] Selftest: dev server, 129 scenarios across 18 gates [… dragon-teleport, dragon-shot]`**, no `Refusing selftest` | as R0d above | |
+| **`[Rpg] Selftest: dev server, 129 scenarios across 18 gates [… dragon-teleport, dragon-shot]`**, no `Refusing selftest` | as R0d above | READ: `[Rpg] Selftest: dev server, 129 scenarios across 18 gates [… dragon-teleport, dragon-shot]`; no `Refusing selftest`. **MATCH** |
 
 **The 129 is RECOUNTED from the files:** `grep -cE '^  - ' index.yml` prints 18. Summed over the eighteen files,
 `grep -cE '^[A-Za-z0-9-]+:'` prints 147 and `'^setup:'` prints 18: 147 − 18 = 129. At `ef242e95` the same three
@@ -530,67 +555,67 @@ non-attack.
 
 | prediction | stands on | READING |
 |---|---|---|
-| Two `SHOT at … age=<a> at=<centre> flown=<0.2a> v=… box=<centre ± 0.4> shape=<centre ± 0.2> inside=true`, at about ages 9-11 and 19-21, each matching the table to three places at its own age; the third read `live=0`; `SHOT hit … age=33 at=<feet + 1.412 1.705 0.000> flown=6.600 … dealt=40.000` and its HURT | the flight table; `calibrate` (the shape read from the display's server position plus its translation) | |
+| Two `SHOT at … age=<a> at=<centre> flown=<0.2a> v=… box=<centre ± 0.4> shape=<centre ± 0.2> inside=true`, at about ages 9-11 and 19-21, each matching the table to three places at its own age; the third read `live=0`; `SHOT hit … age=33 at=<feet + 1.412 1.705 0.000> flown=6.600 … dealt=40.000` and its HURT | the flight table; `calibrate` (the shape read from the display's server position plus its translation) | **NOT AS PREDICTED on `inside=`.** Feet `-100.5 63 6.5`. `SHOT at … age=10 at=-94.496 64.980 6.500 flown=2.000 v=-0.200 -0.012 0.000 box=-94.896 64.580 6.100..-94.096 65.380 6.900 shape=-94.696 65.230 5.900..-94.296 65.630 6.300 inside=false`; `age=20 at=-96.493 64.860 6.500 flown=4.000 … box=-96.893 64.460 6.100..-96.093 65.260 6.900 shape=-96.693 65.110 5.900..-96.293 65.510 6.300 inside=false`. **The centre and the box are as predicted to three places** (rel. 6.004 1.980 0 and 4.007 1.860 0; box ±0.4). **The shape is not centred:** its centre is 0.450 ABOVE the box's and 0.400 toward −z, so its top 0.25 and its −z face 0.2 lie outside the box. The calibration did not take; the shape is where the first translation (from the READ attachment, scaled) put it against a real rider offset of about (0, 1.05, −0.80) (derived from the reading, not measured directly). The hit: `SHOT hit … age=33 at=-99.088 64.705 6.500 flown=6.600 … dealt=40.000` and its HURT, **as predicted**. Cause of the missed calibration UNREAD |
 
 ### SH2R2 — supersedes SH2: Player#attack on the known shot, the carrier now a frog (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `DRIVE attack Player#attack target=<S> frog d=…`; `SHOT destroyed … age=<12..15> … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` (no `causer=`: the damager is the causer); no HURT | SH2's reading; ruling 1's ATTACK | |
+| `DRIVE attack Player#attack target=<S> frog d=…`; `SHOT destroyed … age=<12..15> … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` (no `causer=`: the damager is the causer); no HURT | SH2's reading; ruling 1's ATTACK | **AUTO PASS**: `DRIVE attack Player#attack target=<S> frog d=5.426 charge=1.000`; `SHOT destroyed … age=14 at=-95.295 64.932 6.500 flown=2.800 by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` (no `causer=`); no HURT. **AS PREDICTED** |
 
 ### SH3R2 — supersedes SH3: a real arrow, the player its shooter (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `DRIVE shoot_arrow tag=sh3r2_shot arrow=<A> shooter=<Ben> d=<about 5>`; `SHOT destroyed … age=<15..20> … by=vanilla cause=PROJECTILE damager=arrow <A> causer=player <Ben>`; no HURT | D2 (pickable again); `Projectile#canHitEntity` (READ); ruling 1's ATTACK (a projectile a combatant fired) | |
+| `DRIVE shoot_arrow tag=sh3r2_shot arrow=<A> shooter=<Ben> d=<about 5>`; `SHOT destroyed … age=<15..20> … by=vanilla cause=PROJECTILE damager=arrow <A> causer=player <Ben>`; no HURT | D2 (pickable again); `Projectile#canHitEntity` (READ); ruling 1's ATTACK (a projectile a combatant fired) | **AUTO PASS**: `DRIVE shoot_arrow tag=sh3r2_shot arrow=f7737ef9-288c-4089-9dfd-22e4f2fc51be shooter=<Ben> d=5.276`; `SHOT destroyed … age=17 at=-95.894 64.896 6.500 flown=3.400 by=vanilla cause=PROJECTILE damager=arrow f7737ef9-288c-4089-9dfd-22e4f2fc51be causer=player <Ben>`; no HURT. **AS PREDICTED: D2's fix read** (a vanilla arrow destroys the shot) |
 
 ### SH4R2 — supersedes SH4: the grenade cast at the shot, the carrier now a frog (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `DRIVE aim … frog d=…`; `SHOT destroyed … age=<33..52> … by=ability dealer=<Ben> element=fire amount=8.000`; no HURT | SH4's reading (`amount=8.000`) | |
+| `DRIVE aim … frog d=…`; `SHOT destroyed … age=<33..52> … by=ability dealer=<Ben> element=fire amount=8.000`; no HURT | SH4's reading (`amount=8.000`) | **AUTO PASS**: `DRIVE aim … target=<S> frog d=6.205`; `SHOT destroyed … age=36 at=-95.694 64.812 6.500 flown=7.200 by=ability dealer=<Ben> element=fire amount=8.000`; no HURT. **AS PREDICTED** |
 
 ### SH7R2 — supersedes SH7: a wall ends it BLOCKED, the body outside (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| **`SHOT blocked … age=16 at=<feet + 4.806 1.908 0.000> flown=3.200 block=stone`**; no `refused` line; no HURT | the swept box (table); `Block#getCollisionShape` | |
+| **`SHOT blocked … age=16 at=<feet + 4.806 1.908 0.000> flown=3.200 block=stone`**; no `refused` line; no HURT | the swept box (table); `Block#getCollisionShape` | **NOT AS PREDICTED, AND THE ROW DID NOT PRESENT ITS CONDITION** (a hollow fixture in TIME). `SHOT destroyed … age=9 at=-94.297 64.992 6.500 flown=1.800 by=ability dealer=<Ben> element=fire amount=2.000`, before the wall at age 16. An ability of HIS, fire, with no ability cast in this row: INFERRED to be **SH4R2's grenade FIELD (100 ticks, cast 4 seconds earlier at the same spot) pulsing into this row** (the amount alone does not identify it: the first boot's SH5 field read 4.000), and the row-start clean removes tagged mobs and blocks, not an ability's area. No `blocked` line, no `refused` line, no HURT. **The swept-box wall is UNREAD.** My staging defect: SH7R2 followed SH4R2 directly; at `8ec16e89` SH7 followed SH6's 10 seconds |
 
 ### SH9R2 — supersedes SH9: a destroyed shot feeds nothing, the Phalanx never killed (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `BODY tag=sh9r2p … stage=1 …` before and after, the same; the XP replies the same before and after; `SHOT destroyed … by=vanilla cause=ENTITY_ATTACK …`; **no `[Rpg] GROWTH` line in this row or in the next row's bracket** (the clean removes the Phalanx with `remove()`, no death) | S3 above; SH9's reading | |
+| `BODY tag=sh9r2p … stage=1 …` before and after, the same; the XP replies the same before and after; `SHOT destroyed … by=vanilla cause=ENTITY_ATTACK …`; **no `[Rpg] GROWTH` line in this row or in the next row's bracket** (the clean removes the Phalanx with `remove()`, no death) | S3 above; SH9's reading | **AUTO PASS**: `BODY tag=sh9r2p … stage=1 …` before and after, the same line; XP `1304 experience points` and `191 experience levels`, before and after the same; `SHOT destroyed … age=14 … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`; **no `GROWTH` line anywhere in the run** (and none in SH12R2's bracket, where the clean removed the Phalanx); no HURT. **AS PREDICTED** |
 
 ### SH12R2 — supersedes SH12: after its Phalanx is killed, no carrier is left (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `SHOT ended … reason=owner-gone`; **`ENTITIES FROG count=0 radius=16`** and **`ENTITIES BLOCK_DISPLAY count=0 radius=16`** | SH12's reading | |
+| `SHOT ended … reason=owner-gone`; **`ENTITIES FROG count=0 radius=16`** and **`ENTITIES BLOCK_DISPLAY count=0 radius=16`** | SH12's reading | **AUTO PASS**: `SHOT ended … age=9 at=-90.299 65.028 6.500 flown=1.800 reason=owner-gone`; `ENTITIES FROG count=0 radius=16`; `ENTITIES BLOCK_DISPLAY count=0 radius=16`. **AS PREDICTED** |
 
 ### SH13 — /kill ends it (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `CMD /kill @e[tag=sh13_shot]`; **`SHOT ended … reason=kill`**; no `destroyed`, no hit, no HURT; `live=0` | `LivingEntity#kill` hurts with `genericKill` (READ, `RpgListeners.onMobDeath`'s javadoc, javap build 74); its cause is `KILL`; ruling 1's END | |
+| `CMD /kill @e[tag=sh13_shot]`; **`SHOT ended … reason=kill`**; no `destroyed`, no hit, no HURT; `live=0` | `LivingEntity#kill` hurts with `genericKill` (READ, `RpgListeners.onMobDeath`'s javadoc, javap build 74); its cause is `KILL`; ruling 1's END | **AUTO PASS**: `CMD /kill @e[tag=sh13_shot]`; `SHOT ended … age=9 at=-94.297 64.992 6.500 flown=1.800 reason=kill`; no destroyed, no hit, no HURT; `live=0`. **AS PREDICTED** |
 
 ### SH14 — environmental damage is refused, once per cause (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| Four `SHOT refused … cause=<c>` lines, one each for **SUFFOCATION, FIRE, CRAMMING, PROJECTILE**, in that order and **SUFFOCATION once though it is dealt twice**; no `destroyed`; **`SHOT hit … age=33`** and its HURT for 40 | `/damage` with no source has no causing entity (INFERRED); the damage types `in_wall`, `in_fire`, `cramming` and `arrow` map to those causes (INFERRED, the mapping not opened); ruling 1's REFUSED | |
+| Four `SHOT refused … cause=<c>` lines, one each for **SUFFOCATION, FIRE, CRAMMING, PROJECTILE**, in that order and **SUFFOCATION once though it is dealt twice**; no `destroyed`; **`SHOT hit … age=33`** and its HURT for 40 | `/damage` with no source has no causing entity (INFERRED); the damage types `in_wall`, `in_fire`, `cramming` and `arrow` map to those causes (INFERRED, the mapping not opened); ruling 1's REFUSED | **NOT AS PREDICTED on one cause.** `SHOT refused … age=4 … cause=SUFFOCATION`, `cause=FIRE`, `cause=CRAMMING`, then **`cause=CUSTOM`** (predicted `PROJECTILE`: the INFERRED mapping of the ownerless `minecraft:arrow` damage type was wrong; it is refused either way); SUFFOCATION once though dealt twice; no destroyed; `SHOT hit … age=33 … dealt=40.000` and its HURT 40.000 / 36.364. **The refusal and the once-per-cause log: AS PREDICTED** |
 
 ### SH15 — a strike in the last tick before the reach wins (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `DRIVE strike_at_age tag=sh15_shot age=32 waited=<w>`; `DRIVE strike_at_age … picked=<S> frog at=<about 1.2>`; **`SHOT destroyed … age=32 … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**; no hit, no HURT | `SelfTestRun.strikeAtAge`: whichever of the player's and the Phalanx's tasks runs first in a tick, the strike lands before the shot's next step | |
+| `DRIVE strike_at_age tag=sh15_shot age=32 waited=<w>`; `DRIVE strike_at_age … picked=<S> frog at=<about 1.2>`; **`SHOT destroyed … age=32 … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**; no hit, no HURT | `SelfTestRun.strikeAtAge`: whichever of the player's and the Phalanx's tasks runs first in a tick, the strike lands before the shot's next step | **NOT AS PREDICTED: the strike never ran** (a hollow fixture in TIME). `DRIVE strike_at_age tag=sh15_shot no live shot after 0 ticks`, **before** the `SHOT fired … tick=1260` line: the SHOT step's force lands a tick or two later, and `strikeAtAge` gave up on "no live shot" instead of waiting. The shot then `ended … age=19 … reason=owner-gone` at the row's kill. **The last-tick strike is UNREAD.** My defect: no wait between the force and the strike, and a poll that ends on a not-yet-live shot |
 
 ### SH16 — the aimed swing (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `DRIVE watch_swings on`; `DRIVE aim_shape … target=<S> shape=<x y z>`; **`DRIVE strike_look tag=sh16_shot reach=3.000 picked=<S> frog at=<2.3..2.7>`**; **`SHOT destroyed … age=<25..27> … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**; no HURT. A `SWING kind=attack …` line from the instrument's own attack is RECORDED, not predicted (whether `Player#attack` raises `PrePlayerAttackEntityEvent` was not read) | SH16's reach (the table); his `ENTITY_INTERACTION_RANGE` (3.0 in survival, INFERRED); the ray picks the frog only if the box is where the shape is | |
+| `DRIVE watch_swings on`; `DRIVE aim_shape … target=<S> shape=<x y z>`; **`DRIVE strike_look tag=sh16_shot reach=3.000 picked=<S> frog at=<2.3..2.7>`**; **`SHOT destroyed … age=<25..27> … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**; no HURT. A `SWING kind=attack …` line from the instrument's own attack is RECORDED, not predicted (whether `Player#attack` raises `PrePlayerAttackEntityEvent` was not read) | SH16's reach (the table); his `ENTITY_INTERACTION_RANGE` (3.0 in survival, INFERRED); the ray picks the frog only if the box is where the shape is | **AUTO PASS**: `DRIVE watch_swings on`; `DRIVE aim_shape teleportAsync eye->shape target=<S> shape=-97.092 65.274 6.100 yaw=-96.694 pitch=-10.798`; **`DRIVE strike_look tag=sh16_shot reach=3.000 picked=<S> frog at=2.470`**; `SWING kind=attack target=<S> shot=<S> along=2.470 gap=0.000 eye=-100.500 64.620 6.500 look=0.976 0.187 -0.114`; **`SHOT destroyed … age=26 at=-97.691 64.789 6.500 flown=5.200 by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**; `SWING after shot=<S> live=false`; no HURT. **AS PREDICTED** (age 26, at 2.470, inside 25-27 and 2.3-2.7). Note: the look aimed at the SHAPE (off-centre, SH1R2) and still entered the 0.8 box |
 
 ## BEN'S ROW — BY THE ASK STEP, SURVIVAL
 
@@ -598,7 +623,7 @@ non-attack.
 
 | AUTO half, recorded beside his answers | Ben's half | READING |
 |---|---|---|
-| Every `SWING kind=arm …` line he makes during the shot's flight, with `along`/`miss` and `gap`; any `SWING kind=attack target=<S>` line; the one ending line, `SHOT destroyed … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` or `SHOT hit … age=68` and its HURT. **Not predicted: it is his swing** | `SQ1R2 ASK 1 question="Did your swing destroy it before it reached you?" answer=…`; `SQ1R2 ASK 2 question="Was it easy enough to hit?" answer=…` | |
+| Every `SWING kind=arm …` line he makes during the shot's flight, with `along`/`miss` and `gap`; any `SWING kind=attack target=<S>` line; the one ending line, `SHOT destroyed … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` or `SHOT hit … age=68` and its HURT. **Not predicted: it is his swing** | `SQ1R2 ASK 1 question="Did your swing destroy it before it reached you?" answer=…`; `SQ1R2 ASK 2 question="Was it easy enough to hit?" answer=…` | READ, in order by tick: `SHOT fired … tick=1452 shot=4105c217-d524-435a-a66b-63cc025733a5 … from=-85.500 65.100 6.500 aim=-100.500 64.620 6.500 dealt=40.000`; then `SWING kind=attack target=4105c217-… shot=4105c217-… along=1.265 gap=0.000 eye=-100.500 64.620 6.500 look=0.954 0.238 -0.180`; then **`SHOT destroyed … age=67 at=-98.893 64.671 6.500 flown=13.400 by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**; then `SWING kind=arm shot=none` (the arm event after the attack, the shot already gone); then `SWING after shot=4105c217-… live=false`. No HURT. Ben, verbatim: `SQ1R2 ASK 1 question="Did your swing destroy it before it reached you?" answer="yes" ticks=37`; `SQ1R2 ASK 2 question="Was it easy enough to hit?" answer="yes" ticks=66`. **D1's case: DESTROYED.** His own swing's look entered the server box at 1.265 and his attack destroyed the shot at age 67, ONE tick before the reach at 68. **His answer and the server agree.** The swing came late in the window: one swing, one attack, no misses logged |
 
 ## CARRIED STATE AND THE RUN SHEET
 
