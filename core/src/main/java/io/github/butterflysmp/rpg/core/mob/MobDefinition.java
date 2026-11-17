@@ -42,6 +42,10 @@ package io.github.butterflysmp.rpg.core.mob;
  *
  * <p><b>And in step R6</b> by {@code teleport} ({@link MobTeleport}), or null: the move after the beam hits. It needs a
  * beam, and its delay must be shorter than the beam's {@code cycle_ticks.min}.
+ *
+ * <p><b>And in step R7a</b> by {@code shot} ({@link MobShot}), or null: the Phalanx's destroyable homing shot; and by
+ * {@code mainHand}, or null: a vanilla ITEM key the mob holds, never dropped (the Phalanx's bow it never fires, X3).
+ * A mob with a shot never looses a vanilla arrow: paper cancels every bow shot of one.
  */
 public record MobDefinition(
         String id,
@@ -55,46 +59,56 @@ public record MobDefinition(
         MobGrowth growth,
         MobBlast blast,
         MobBeam beam,
-        MobTeleport teleport
+        MobTeleport teleport,
+        MobShot shot,
+        String mainHand
 ) {
     /**
      * The original four-field form: a vanilla body, no element, no stages. Kept so the existing call sites (tests
      * and older code) read unchanged. (A record may declare extra constructors; each must call the full one.)
      */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth) {
-        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null, null, null, null, null, null, null);
     }
 
     /** Step R1's seven-field form: no split (step R2's component). Kept so R1's call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, null, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, null, null, null, null, null, null, null);
     }
 
     /** Step R2's eight-field form: no growth (the growth step's component). Kept so R2's call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, null, null, null, null, null, null);
     }
 
     /** The growth step's nine-field form: no blast (step R3's component). Kept so its call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, null, null, null, null, null);
     }
 
     /** Step R3's ten-field form: no beam (step R5's component). Kept so its call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,
                          MobBlast blast) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, null, null, null, null);
     }
 
     /** Step R5's eleven-field form: no teleport (step R6's component). Kept so its call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,
                          MobBlast blast, MobBeam beam) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, beam, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, beam, null, null, null);
+    }
+
+    /** Step R6's twelve-field form: no shot and no main-hand item (step R7a's). Kept so its call sites read unchanged. */
+    public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
+                         MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,
+                         MobBlast blast, MobBeam beam, MobTeleport teleport) {
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, beam, teleport,
+                null, null);
     }
 
     public MobDefinition {
@@ -134,6 +148,9 @@ public record MobDefinition(
             throw new IllegalArgumentException("mob '" + id + "' teleport.delay_ticks (" + teleport.delayTicks()
                     + ") must be shorter than beam.cycle_ticks.min (" + beam.cycleMinTicks()
                     + "), or the move could fall inside the next telegraph");
+        }
+        if (mainHand != null && mainHand.isBlank()) {
+            throw new IllegalArgumentException("mob '" + id + "' main_hand must name an item, or be left out");
         }
         if (id == null || id.isBlank()) throw new IllegalArgumentException("mob id required");
         // Required, never defaulted -- the same reasoning that made a weapon's class required. A

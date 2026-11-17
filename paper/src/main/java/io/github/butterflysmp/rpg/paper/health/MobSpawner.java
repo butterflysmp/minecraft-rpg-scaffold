@@ -34,5 +34,16 @@ public final class MobSpawner {
         if (def.blast() != null && entity instanceof org.bukkit.entity.Creeper creeper) {
             creeper.setMaxFuseTicks(def.blast().fuseTicks());
         }
+        // THE MAIN HAND, from content (dragon-mobs step R7a: the Phalanx's bow, X3), NEVER DROPPED. Here, before the add
+        // event, for the same reason as the rest. Equipping a skeleton re-chooses its weapon goal (READ:
+        // AbstractSkeleton#onEquipItem -> reassessWeaponGoal, a bow -> RangedBowAttackGoal at priority 4). The loader
+        // refused an unknown key; a null here could only be a registry the loader never saw.
+        if (def.mainHand() != null && entity.getEquipment() != null) {
+            org.bukkit.Material item = org.bukkit.Material.matchMaterial(def.mainHand());
+            if (item != null) {
+                entity.getEquipment().setItemInMainHand(new org.bukkit.inventory.ItemStack(item));
+                entity.getEquipment().setItemInMainHandDropChance(0f);
+            }
+        }
     }
 }

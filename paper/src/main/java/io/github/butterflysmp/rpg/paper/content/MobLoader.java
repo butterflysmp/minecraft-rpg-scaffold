@@ -10,6 +10,7 @@ import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobSplit;
 import io.github.butterflysmp.rpg.core.mob.MobStages;
 import io.github.butterflysmp.rpg.core.mob.MobTeleport;
+import io.github.butterflysmp.rpg.core.mob.MobShot;
 import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -49,10 +50,23 @@ public final class MobLoader {
      *                      Production asks {@code Registry.SOUND_EVENT}; a test passes a set.
      */
     public MobLoader(Logger log, Predicate<String> elementExists, Predicate<String> soundExists) {
+        this(log, elementExists, soundExists, key -> true);
+    }
+
+    /**
+     * @param materialExists whether a key names a vanilla material the server knows; asked of {@code main_hand} (an
+     *                       ITEM) and of {@code shot.look.block} (a BLOCK), step R7a, so a typo is a named, skipped
+     *                       file. Production asks {@code Material.matchMaterial}; the three-argument form accepts any.
+     */
+    public MobLoader(Logger log, Predicate<String> elementExists, Predicate<String> soundExists,
+                     Predicate<String> materialExists) {
         this.log = log;
         this.elementExists = elementExists;
         this.soundExists = soundExists;
+        this.materialExists = materialExists;
     }
+
+    private final Predicate<String> materialExists;
 
     public MobRegistry loadAll(File mobsDir) {
         MobRegistry registry = new MobRegistry();
@@ -107,7 +121,7 @@ public final class MobLoader {
                     stageBody(staged, "first"), stageBody(staged, "last"));
             return new MobDefinition(id, s.getString("base_entity"), s.getString("display_name", id),
                     stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s), blast(s),
-                    beam(s), teleport(s));
+                    beam(s), teleport(s), shot(s), mainHand(s));
         }
         if (s.contains("blast")) {
             throw new IllegalArgumentException("'blast' needs 'stages': its damage is authored per stage");
@@ -126,7 +140,54 @@ public final class MobLoader {
                 new MobBody(optional(s, "scale"), optional(s, "speed")),
                 element,
                 null, null, null, null,
-                beam(s), teleport(s));
+                beam(s), teleport(s), shot(s), mainHand(s));
+    }
+
+    /** The optional {@code main_hand:} ITEM key (step R7a: the Phalanx's bow), or null; an unknown one is refused. */
+    private String mainHand(ConfigurationSection s) {
+        String key = s.getString("main_hand");
+        if (key != null && !materialExists.test(key)) {
+            throw new IllegalArgumentException("main_hand '" + key + "' names no item the server knows");
+        }
+        return key;
+    }
+
+    /**
+     * The optional {@code shot:} block (dragon-mobs step R7a), or null. Every key is required when the block is
+     * present; each is named in {@link MobShot}'s javadoc with its quantity. {@code sounds.fire} and
+     * {@code sounds.destroyed} are lists of {@code { key, volume, pitch }}, each key checked against the server's
+     * sound events; {@code look.block} is checked against its materials. {@link MobShot} refuses a bad value by name.
+     */
+    private MobShot shot(ConfigurationSection s) {
+        ConfigurationSection b = s.getConfigurationSection("shot");
+        if (b == null) return null;
+        for (String key : List.of("period_ticks", "acquire_range", "reacquire_range", "speed", "homing", "life_ticks",
+                "max_distance", "tolerance", "damage", "hit_box", "look.block", "look.size", "look.glow", "look.trail.rgb",
+                "look.trail.size", "look.flash.rgb", "look.flash.size", "look.flash.every_ticks", "sounds.fire",
+                "sounds.destroyed")) {
+            if (!b.contains(key)) throw new IllegalArgumentException("shot." + key + " is required");
+        }
+        String block = b.getString("look.block");
+        if (!materialExists.test(block)) {
+            throw new IllegalArgumentException("shot.look.block '" + block + "' names no block the server knows");
+        }
+        MobShot.ShotLook look = new MobShot.ShotLook(block, b.getDouble("look.size"), b.getDouble("hit_box"), rgb(b, "look.glow"),
+                rgb(b, "look.trail.rgb"), b.getDouble("look.trail.size"), rgb(b, "look.flash.rgb"),
+                b.getDouble("look.flash.size"), b.getInt("look.flash.every_ticks"));
+        return new MobShot(b.getInt("period_ticks"), b.getDouble("acquire_range"), b.getDouble("reacquire_range"),
+                b.getDouble("speed"), b.getDouble("homing"), b.getInt("life_ticks"), b.getDouble("max_distance"),
+                b.getDouble("tolerance"), b.getDouble("damage"), look,
+                sounds(b, "shot", "fire"), sounds(b, "shot", "destroyed"));
+    }
+
+    /** A colour authored as three whole numbers {@code [r, g, b]}, each 0 to 255, packed as {@code 0xRRGGBB}. */
+    private static int rgb(ConfigurationSection b, String key) {
+        List<Integer> c = b.getIntegerList(key);
+        if (c.size() != 3) throw new IllegalArgumentException("shot." + key + " must be [r, g, b], was " + b.get(key));
+        for (int v : c) {
+            if (v < 0 || v > 255) throw new IllegalArgumentException("shot." + key + " " + c + " has a part outside 0..255");
+        }
+        return (c.get(0) << 16) | (c.get(1) << 8) | c.get(2);
     }
 
     /**
@@ -163,7 +224,7 @@ public final class MobLoader {
         }
         return new MobBeam(b.getInt("cycle_ticks.min"), b.getInt("cycle_ticks.max"), b.getInt("telegraph_ticks"),
                 b.getIntegerList("flash_at"), b.getDouble("range"), b.getDouble("aim_height"),
-                b.getDouble("tolerance"), b.getDouble("damage"), sounds(b, "telegraph"), sounds(b, "fire"));
+                b.getDouble("tolerance"), b.getDouble("damage"), sounds(b, "beam", "telegraph"), sounds(b, "beam", "fire"));
     }
 
     /**
@@ -171,17 +232,17 @@ public final class MobLoader {
      * or {@code sounds.fire} (played at the fire), each a list of {@code { key, volume, pitch }}, every field
      * required. A key the server does not know is refused by name, so a typo is a skipped file, never a silent beam.
      */
-    private List<BeamSound> sounds(ConfigurationSection beam, String when) {
+    private List<BeamSound> sounds(ConfigurationSection beam, String block, String when) {
         List<BeamSound> out = new java.util.ArrayList<>();
         for (Map<?, ?> m : beam.getMapList("sounds." + when)) {
             for (String f : List.of("key", "volume", "pitch")) {
                 if (!m.containsKey(f)) {
-                    throw new IllegalArgumentException("beam.sounds." + when + " entry " + m + " has no " + f);
+                    throw new IllegalArgumentException(block + ".sounds." + when + " entry " + m + " has no " + f);
                 }
             }
             String key = String.valueOf(m.get("key"));
             if (!soundExists.test(key)) {
-                throw new IllegalArgumentException("beam.sounds." + when + " key '" + key
+                throw new IllegalArgumentException(block + ".sounds." + when + " key '" + key
                         + "' names no sound event the server knows");
             }
             out.add(new BeamSound(key, ((Number) m.get("volume")).doubleValue(),

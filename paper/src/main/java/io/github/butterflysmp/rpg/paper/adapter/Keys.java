@@ -215,6 +215,13 @@ public final class Keys {
      */
     public final NamespacedKey beamRoot;
 
+    /**
+     * THE PHALANX'S SHOT (dragon-mobs step R7a): a BYTE on the shot's carrier and on the display riding it. The
+     * one test of "is this a shot": a carrier is never seeded, never a nameplate, and any damage destroys it; an
+     * entity carrying it that no live shot owns is an orphan and is removed where it appears (MobShooter).
+     */
+    public final NamespacedKey mobShot;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -445,6 +452,7 @@ public final class Keys {
         this.mobSplit = new NamespacedKey(plugin, "mob_split");
         this.mobGrowthFed = new NamespacedKey(plugin, "mob_growth_fed");
         this.beamRoot = new NamespacedKey(plugin, "beam_root");
+        this.mobShot = new NamespacedKey(plugin, "mob_shot");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");

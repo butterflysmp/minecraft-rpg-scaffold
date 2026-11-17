@@ -177,4 +177,27 @@ class BeamCycleTest {
     void theProductionDrawOfAFixedWaitIsThatWait() {
         assertEquals(150, BeamCycle.uniform(new Random(1)).ticks(150, 150));
     }
+
+    /**
+     * THE KNELL'S ONE FLASH (Ben, 2026-11-17, KNELL 5: "The second purple line is out of place. remove it"): a beam
+     * authoring {@code flash_at: [0]} flashes at the lock and on no later telegraph tick, the shipped 24-tick telegraph.
+     */
+    @Test
+    void aSingleFlashAtTheLockIsAcceptedAndFlashesNowhereElse() {
+        MobBeam one = new MobBeam(100, 200, 24, List.of(0), 40, 0.6, 1.0, 65);
+        BeamCycle c = new BeamCycle(one, new Queued(100, 150));
+        List<Integer> flashed = new ArrayList<>();
+        for (int i = 1; i <= 100; i++) {
+            if (c.tick() == BeamCycle.Event.ATTEMPT) {
+                c.begin();
+                if (c.flashing()) flashed.add(0);
+            }
+        }
+        for (int t = 1; t < 24; t++) {
+            assertEquals(BeamCycle.Event.ROOT, c.tick());
+            if (c.flashing()) flashed.add(t);
+        }
+        assertEquals(BeamCycle.Event.FIRE, c.tick());
+        assertEquals(List.of(0), flashed);
+    }
 }

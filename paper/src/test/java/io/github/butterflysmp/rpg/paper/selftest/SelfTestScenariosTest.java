@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -35,9 +36,10 @@ class SelfTestScenariosTest {
         assertEquals(List.of(), loaded.refusals());
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
-                "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport"),
+                "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
+                        "dragon-shot"),
                 List.copyOf(loaded.gates().keySet()),
-                "the seventeen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
+                "the eighteen gates, in boot order (dragon-shot LAST, step R7a, 2026-11-17); nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
                         + " dragon-split and dragon-growth (2026-11-15), then dragon-blast (step R3, 2026-11-15), then dragon-beam (step R5) and dragon-teleport LAST (step R6, 2026-11-17)");
     }
 
@@ -88,6 +90,12 @@ class SelfTestScenariosTest {
         // with the next suffix (the move at fire + 28, and the new sound lines in every row).
         expected.put("dragon-teleport", List.of("KB10R6", "TP2R5", "TP3R5", "TP4R5", "TP5R5", "TP6R5", "TP7R5", "TP8R5",
                 "TP9R5", "TP10R5", "TP11R5", "TP12R5", "TP13R5", "TP14R4", "KB11R6", "TQ1R5"));
+        // Step R7a (GATE-dragon-shot.md, 2026-11-17): the Phalanx's shot, twelve AUTO rows; Ben's three questions; and the
+        // Knell's one flash, re-asked (KQ1R6).
+        // Then the re-prediction after the boot of 8ec16e89 (the seat's rulings on #201): the rows that changed take the next
+        // suffix, the new rows are SH13-SH16, and the rows read as predicted (SH5, SH6, SH8, SH10, SH11, KQ1R6) leave the file.
+        expected.put("dragon-shot", List.of("SH1R2", "SH2R2", "SH3R2", "SH4R2", "SH7R2", "SH9R2", "SH12R2", "SH13", "SH14",
+                "SH15", "SH16", "SQ1R2"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -126,7 +134,11 @@ class SelfTestScenariosTest {
         // Then GATE-dragon-knell-4.md (Ben's one more number, 2026-11-17), RECOUNTED: 17 gates, 134 keys, 17 setups,
         // so 117, unchanged: it renames rows and adds none. At master 6b587faa the same commands print the same, so
         // this line cannot tell the two apart; the row lists above can.
-        assertEquals(117, loaded.rows());
+        // Then GATE-dragon-shot.md (step R7a, 2026-11-17), RECOUNTED the same way: 18 gates, 149 keys, 18 setups, so 131.
+        // At feat/dragon-shot 08e5f27e (master 8365e7f6 plus a docs commit) the same commands print 17, 134, 17: 117.
+        // Then the re-prediction after the boot of 8ec16e89, RECOUNTED the same way: 18 gates, 147 keys, 18 setups, so 129. At
+        // feat/dragon-shot ef242e95 the same commands print 18, 149, 18: 131, this line's old value.
+        assertEquals(129, loaded.rows());
     }
 
     /**
@@ -240,11 +252,54 @@ class SelfTestScenariosTest {
                 + "seen: " + beamGate);
     }
 
+    /**
+     * NO ROW OUTSIDE GATE-dragon-shot.yml MAKES A PHALANX FIRE (step R7a, the seat's ruling 12). A Phalanx with its AI
+     * on fires of its own 120 ticks after it appears; a frozen one never does, but the SHOT step makes one fire. So
+     * outside the shot gate a Phalanx must be spawned frozen, or by {@code rpg spawn phalanx} followed at once by a
+     * {@code data merge} that sets {@code NoAI:1b}; and no SHOT step appears. The control: the shot gate's twelve SHOT steps
+     * ARE found, and the shared live-spawn pattern matches a live spawn written in the test (none is shipped now).
+     */
+    @Test
+    void noScenarioOutsideTheShotGateMakesAPhalanxFire() {
+        List<String> outside = new ArrayList<>();
+        List<String> shotGate = new ArrayList<>();
+        for (var gate : shipped().gates().entrySet()) {
+            for (Scenario s : gate.getValue()) {
+                List<Scenario.Step> steps = s.steps();
+                for (int i = 0; i < steps.size(); i++) {
+                    Scenario.Step st = steps.get(i);
+                    String a = st.arg().trim();
+                    boolean liveSpawn = st.verb() == Scenario.Verb.SPAWN && livePhalanxSpawn(a);
+                    boolean bareCmd = st.verb() == Scenario.Verb.CMD && a.matches("rpg spawn phalanx( \\d+)?");
+                    boolean frozenAtOnce = i + 1 < steps.size() && steps.get(i + 1).verb() == Scenario.Verb.CMD
+                            && steps.get(i + 1).arg().contains("NoAI:1b");
+                    boolean forced = st.verb() == Scenario.Verb.SHOT;
+                    if (!(liveSpawn || forced || (bareCmd && !frozenAtOnce))) continue;
+                    String where = gate.getKey() + "#" + s.row() + " " + st.verb() + " " + a;
+                    if (gate.getKey().equals("dragon-shot")) shotGate.add(where); else outside.add(where);
+                }
+            }
+        }
+        assertEquals(List.of(), outside, "a firing Phalanx outside the shot gate would hit the player at a time no row predicts");
+        // Since the re-prediction after the boot of 8ec16e89 the shot gate stages no LIVE Phalanx (SH10 and SH11 read as
+        // predicted and left the file), so the live-spawn pattern's positive control is a scenario written here.
+        assertEquals(0, shotGate.stream().filter(w -> w.contains(" SPAWN ")).count(), "no live Phalanx in the shot gate now: " + shotGate);
+        assertEquals(12, shotGate.stream().filter(w -> w.contains(" SHOT ")).count(), "the control: the shot gate's twelve SHOT steps: " + shotGate);
+        Scenario.Step live = new Scenario.Step(Scenario.Verb.SPAWN, "x live phalanx 100");
+        assertTrue(livePhalanxSpawn(live.arg().trim()), "the control: the scan's own pattern matches a live Phalanx spawn");
+        assertFalse(livePhalanxSpawn("x frozen phalanx 100"), "and not a frozen one");
+    }
+
+    /** The scan's one pattern for a live Phalanx SPAWN, shared with its control. */
+    private static boolean livePhalanxSpawn(String arg) {
+        return arg.matches("\\S+ live phalanx\\b.*");
+    }
+
     /** The dragon gates declare the difficulty their rows need, first thing in their setup (GATE-dragon-fix.md, C5). */
     @Test
     void theDragonGatesDeclareNormalFirstInTheirSetup() {
         for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam",
-                "dragon-teleport")) {
+                "dragon-teleport", "dragon-shot")) {
             Scenario setup = shipped().gates().get(gate).getFirst();
             assertEquals(Scenario.SETUP, setup.row(), gate);
             assertEquals(new Scenario.Step(Scenario.Verb.DIFFICULTY, "normal"), setup.steps().getFirst(), gate);

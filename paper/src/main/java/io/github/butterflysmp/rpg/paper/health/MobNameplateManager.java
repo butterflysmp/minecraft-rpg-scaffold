@@ -157,6 +157,10 @@ public final class MobNameplateManager implements HealthListener {
      */
     private Seeded seed(LivingEntity mob) {
         if (mob instanceof Player || mob instanceof ArmorStand) return null;
+        // THE PHALANX'S SHOT (dragon-mobs step R7a) is never seeded: no custom health, no gear score, no nameplate. So
+        // it is never in the store, MobDeathSystem can never kill it, and nothing a death pays can ever be paid for it.
+        // Every caller (the add event, the melee rider, /rpg mobdamage) comes through here.
+        if (mob.getPersistentDataContainer().has(keys.mobShot)) return null;
         String mobId = mob.getPersistentDataContainer().get(keys.mobId, PersistentDataType.STRING);
         boolean custom = MobSeeding.isCustom(mobs, mobId);
         boolean hostile = MobClassifier.isHostile(mob);

@@ -1,8 +1,8 @@
-# THE PHALANX (PLAN-dragon-mobs.md). R1 builds its BODY only.
+# THE PHALANX (PLAN-dragon-mobs.md). R1 built its BODY; step R7a (feat/dragon-shot) builds its bow and its SHOT.
 #
-# NOT YET HERE, and each is its own step: the bow and the off-hand shield (gear is deferred past R1), so it spawns bare
-# and MELEES LIKE A BARE WITHER SKELETON; the one-hit shield, the blink with invisibility, and its shot (our own small
-# living carrier, never a Shulker bullet: seat ruling 8). All of those are step R7.
+# NOT YET HERE, each the next step's: the off-hand shield and the one-hit shield it gives, and the blink with
+# invisibility (Ben, K: "Yes", they stay). The shot is our own small living carrier, never a Shulker bullet (seat
+# ruling 8).
 
 base_entity: wither_skeleton
 display_name: "Phalanx"
@@ -16,3 +16,71 @@ speed: 0.65
 
 # ELEMENT: Void (Ben, 2026-11-15: "change the Phalanx and Skreel to Void mobs as well"). IDENTITY ONLY today.
 element: void
+
+# THE BOW IT NEVER FIRES (X3, cfde822's; Ben, K: "Yes"). An ITEM key, held in the main hand, never dropped. Holding a
+# bow, vanilla gives a skeleton its RangedBowAttackGoal in place of melee (AbstractSkeleton#reassessWeaponGoal), so it
+# keeps its distance and draws; every shot it looses is cancelled (a mob with a shot never looses a vanilla arrow).
+# cfde822's Power V is NOT authored: the bow never fires, so the enchantment would be a glint and nothing else.
+main_hand: bow
+
+# THE SHOT (step R7a). Ben, 2026-11-17: "change the duration of the shot to 12s and it fires a shot every 6s". Every
+# other number is the old game's (cfde822, section 3.4), a STARTING number he left unchanged.
+shot:
+  # TICKS from the Phalanx appearing, or from its last attempt, to its next attempt. Ben's 6 s.
+  period_ticks: 120
+  # BLOCKS from the Phalanx's EYE to a target's EYE, inclusive: who it may fire at. cfde822's 30.
+  acquire_range: 30
+  # BLOCKS from the SHOT to a body's EYE: who a shot whose target is lost (dead, gone, another world, creative or
+  # spectator) turns to, the nearest. cfde822's 35. None within it: the shot flies on straight.
+  reacquire_range: 35
+  # BLOCKS PER TICK, every step the same length: 4 blocks a second. cfde822 moved 0.4 every 2 ticks.
+  speed: 0.2
+  # A FRACTION PER TICK: each tick, (1 - homing) x its unit direction of flight + homing x the unit direction to its
+  # target's eye, made a unit again. cfde822 blended 10% per STEP, and its step was 2 TICKS (0.4 blocks): the same
+  # expression, applied half as often. Ben accepted the old game's steering, so this is the per-tick value two of
+  # whose ticks give the old game's one step: 1 - sqrt(0.9) = 0.0513167, to four places. It is exact for a target
+  # nearly ahead; renormalising between our two ticks makes it turn slightly LESS than the old step at wide angles
+  # (6.18 degrees against 6.34 for a target at right angles; jshell, PLAN-dragon-mobs.md 5.R.9 X-c). The seat's
+  # conversion of a number Ben left unchanged, not a number he typed.
+  homing: 0.0513
+  # TICKS of flight, then it expires. Ben's 12 s.
+  life_ticks: 240
+  # BLOCKS, the straight line from where it was FIRED to where it is: past this it expires. cfde822: "past 35 blocks
+  # from its start". A straight flight passes it at tick 176 (35 / 0.2 = 175, then past), before the life's 240.
+  max_distance: 35
+  # BLOCKS a body's box is grown by on every side: the shot hits a player when it is inside the grown box. cfde822's
+  # 1.2 half-extent box. It never hits a mob.
+  tolerance: 1.2
+  # The AUTHORED damage of a hit, x the Phalanx's gear score / 100 (the seat's, provisional), before the player's
+  # defence. No element, no knockback. cfde822's 40.
+  damage: 40
+  # BLOCKS, the edge of the cube a player can HIT, centred on the shape (the seat's provisional number, for Ben to
+  # tune; the seat's ruling 2 on #201: what he sees is what he can hit). At least look.size. The carrier is a frog, a
+  # 0.5 cube, scaled to this edge (SCALE = 0.8 / 0.5 = 1.6). It does NOT make the shot easier to land: whom the shot
+  # hits is its centre against a body's box grown by the tolerance above. It is what is swept for blocks, so a wall
+  # stops the shot while its whole box is still outside the wall.
+  hit_box: 0.8
+  # THE LOOK, CHOSEN by the seat's ruling 8 until a resource-pack model exists; for Ben. Light purple with pink
+  # flashes: a small glowing block riding the carrier, a light purple dust every tick, a pink dust every 4 ticks.
+  look:
+    # A BLOCK key; the display shows it, its edge `size` BLOCKS, centred on the carrier's box, at full brightness.
+    block: amethyst_block
+    size: 0.4
+    # The display's glow outline, [r, g, b]: seen through walls, so it reads at 30 blocks.
+    glow: [200, 140, 255]
+    trail:
+      rgb: [200, 140, 255]
+      size: 1.5
+    flash:
+      rgb: [255, 105, 180]
+      size: 2.0
+      every_ticks: 4
+  sounds:
+    # At the fire. cfde822: "a wither-ambient sound at launch"; the record does not say which wither, nor the volume or
+    # pitch: entity.wither.ambient at 0.5 and 1.5 is CHOSEN.
+    fire:
+      - { key: entity.wither.ambient, volume: 0.5, pitch: 1.5 }
+    # When an attack destroys it. Not in the record (cfde822's swirl could not be destroyed): the Shulker bullet's own
+    # hurt sound, for Ben's "similar to the Shulker shot", CHOSEN.
+    destroyed:
+      - { key: entity.shulker_bullet.hurt, volume: 1.0, pitch: 1.0 }

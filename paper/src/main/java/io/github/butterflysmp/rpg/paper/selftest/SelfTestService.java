@@ -37,6 +37,7 @@ public final class SelfTestService {
     private final MobElementResolver mobElements;
     /** The Knell's beam, for the BEAM step (dragon-mobs step R5). */
     private final io.github.butterflysmp.rpg.paper.health.MobBeamer beams;
+    private final io.github.butterflysmp.rpg.paper.health.MobShooter shots;
     /** The Knell's teleport, for the TELEPORT_DRAW step (dragon-mobs step R6). */
     private final io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports;
     private final Spawner spawner;
@@ -56,7 +57,11 @@ public final class SelfTestService {
                            MobNameplateManager nameplates, MiningService mining, Logger log, String build, boolean devServer,
                            ScenarioLoader.Loaded loaded, MobElementResolver mobElements, Spawner spawner,
                            io.github.butterflysmp.rpg.paper.health.MobBeamer beams,
-                           io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports) {
+                           io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports,
+                           io.github.butterflysmp.rpg.paper.health.MobShooter shots) {
+        this.shots = shots;
+        // A tagged Phalanx's shot is tagged by identity at its fire (step R7a), as a split child is at its birth.
+        shots.addListener(this::adoptShot);
         this.teleports = teleports;
         this.beams = beams;
         this.spawner = spawner;
@@ -189,10 +194,32 @@ public final class SelfTestService {
         else log(line);
     }
 
+    /**
+     * A Phalanx's shot was fired (step R7a): if the instrument tagged the Phalanx, the shot takes
+     * {@link SelfTestSnapshot#tagsForShot}, and one line names it, so a row reads which carrier is its shot.
+     */
+    /** One of the player's own swings, attacks or interacts (step R7a): to the active run, which logs it only while a row watches. */
+    public void watchSwing(org.bukkit.entity.Player p, String kind) {
+        SelfTestRun run = active;
+        if (run != null && run.player().equals(p)) run.watchSwing(kind);
+    }
+
+    public void adoptShot(org.bukkit.entity.Mob owner, org.bukkit.entity.LivingEntity carrier) {
+        java.util.Set<String> tags = SelfTestSnapshot.tagsForShot(owner.getScoreboardTags());
+        if (tags.isEmpty()) return;
+        for (String tag : tags) carrier.addScoreboardTag(tag);
+        String line = "SHOTTAG owner=" + owner.getUniqueId() + " shot=" + carrier.getUniqueId() + " tags="
+                + new java.util.TreeSet<>(carrier.getScoreboardTags());
+        SelfTestRun run = active;
+        if (run != null) run.log(line);
+        else log(line);
+    }
+
     /** "The element of this creature", for PROBE_BODY (PLAN-dragon-mobs.md step R1). */
     MobElementResolver mobElements() { return mobElements; }
     io.github.butterflysmp.rpg.paper.health.MobBeamer beams() { return beams; }
     io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports() { return teleports; }
+    io.github.butterflysmp.rpg.paper.health.MobShooter shots() { return shots; }
     Spawner spawner() { return spawner; }
     Scheduler scheduler() { return adapters.scheduler(); }
     CombatantStats stats() { return adapters.stats(); }

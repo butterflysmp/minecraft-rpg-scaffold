@@ -87,6 +87,7 @@ final class SelfTestRun {
         }
         Scenario s = current();
         stepIndex = 0;
+        watchingSwings = false;   // a row watches swings only when it says so (step R7a)
         rowStartTick = Bukkit.getCurrentTick();
         log("START scenario=" + s.source() + " selftest=" + service.build() + " player=" + player.getUniqueId());
         boolean gateBoundary = SelfTestStaging.gateChanged(previousGate, s.gate());
@@ -191,6 +192,11 @@ final class SelfTestRun {
                     ask(step);   // resumes from answer() or the timeout
                     return;
                 }
+                if (step.verb() == Scenario.Verb.STRIKE_AT_AGE) {
+                    strikeAtAge(SelfTestStrike.parseAtAge(step.arg()).orElseThrow(
+                            () -> new IllegalStateException("strike_at_age: the loader admitted '" + step.arg() + "'")), 0);
+                    return;   // resumes when the shot reaches the age, or at the timeout
+                }
                 if (step.verb() == Scenario.Verb.AWAIT_FUSE) {
                     awaitFuse(SelfTestBlast.parseAwait(step.arg()).orElseThrow(
                             () -> new IllegalStateException("await_fuse: the loader admitted '" + step.arg() + "'")), 0);
@@ -252,6 +258,76 @@ final class SelfTestRun {
      * tick ({@code Creeper.tick}), so the first reading at or past the threshold is the threshold itself unless a
      * tick was skipped. No such creeper, or the timeout, is logged by name and the row goes on.
      */
+    // --- the Phalanx's shot: a real swing, watched (the seat's ruling 4 on #201) -------------------------------------
+
+    /** Set by the WATCH_SWINGS step; reset at every row's start. Touched only on the player's thread. */
+    private boolean watchingSwings;
+
+    void watchSwings(boolean on) {
+        watchingSwings = on;
+    }
+
+    /**
+     * One of the player's own swings, attacks or interacts (RpgListeners), while a row watches: the nearest live shot,
+     * the distance along HIS LOOK into its server box, or a miss and the gap, out to his interaction range; and one tick
+     * later whether that shot is still live.
+     */
+    void watchSwing(String kind) {
+        if (ended || !watchingSwings) return;
+        Location eye = player.getEyeLocation();
+        var shots = service.shots().liveShots(eye);
+        if (shots.isEmpty()) {
+            log(SelfTestStrike.swingLine(kind, null, java.util.OptionalDouble.empty(), 0, null, null));
+            return;
+        }
+        var s = shots.getFirst();
+        var range = player.getAttribute(org.bukkit.attribute.Attribute.ENTITY_INTERACTION_RANGE);
+        double reach = range == null ? 3.0 : range.getValue();
+        io.github.butterflysmp.rpg.core.Vec3 e = new io.github.butterflysmp.rpg.core.Vec3(eye.getX(), eye.getY(), eye.getZ());
+        org.bukkit.util.Vector d = eye.getDirection();
+        io.github.butterflysmp.rpg.core.Vec3 look = new io.github.butterflysmp.rpg.core.Vec3(d.getX(), d.getY(), d.getZ());
+        log(SelfTestStrike.swingLine(kind, s.id(), SelfTestStrike.along(e, look, reach, s.box()),
+                SelfTestStrike.gap(e, look, reach, s.box()), e, look));
+        service.scheduler().onEntityLater(player, () -> {
+            if (!ended) log(SelfTestStrike.afterLine(s.id(), service.shots().isLive(s.id())));
+        }, 1);
+    }
+
+    /**
+     * STRIKE_AT_AGE (the seat's ruling 3 on #201): polled each tick on the player's thread until the tagged shot's age
+     * reaches the given age, then the strike in that same tick. Whichever of this task and the Phalanx's loop runs first
+     * in a tick, the strike lands before the shot's NEXT step, so an age N strike reads the shot at age N.
+     */
+    private void strikeAtAge(SelfTestStrike.AtAge a, int waited) {
+        if (ended) return;
+        Entity carrier = player.getNearbyEntities(48, 48, 48).stream()
+                .filter(x -> x.getScoreboardTags().contains(a.tag()))
+                .min(java.util.Comparator.comparingDouble(x -> x.getLocation().distanceSquared(player.getLocation())))
+                .orElse(null);
+        var live = carrier == null ? null : service.shots().liveShots(player.getEyeLocation()).stream()
+                .filter(s -> s.id().equals(carrier.getUniqueId())).findFirst().orElse(null);
+        if (live == null) {
+            log("DRIVE strike_at_age tag=" + a.tag() + " no live shot after " + waited + " ticks");
+            advance();
+            return;
+        }
+        if (live.age() >= a.age()) {
+            var c = io.github.butterflysmp.rpg.paper.health.MobShooter.shapeCentre(live.carrier()).orElse(live.centre());
+            Location eye = player.getEyeLocation();
+            log("DRIVE strike_at_age tag=" + a.tag() + " age=" + live.age() + " waited=" + waited);
+            drivers.strikeAlong(player, a.tag(), "strike_at_age",
+                    new org.bukkit.util.Vector(c.x() - eye.getX(), c.y() - eye.getY(), c.z() - eye.getZ()));
+            advance();
+            return;
+        }
+        if (waited >= a.timeoutTicks()) {
+            log("DRIVE strike_at_age tag=" + a.tag() + " age=" + live.age() + " under " + a.age() + " at the timeout");
+            advance();
+            return;
+        }
+        service.scheduler().onEntityLater(player, () -> strikeAtAge(a, waited + 1), 1);
+    }
+
     private void awaitFuse(SelfTestBlast.Await a, int waited) {
         if (ended) return;
         org.bukkit.entity.Creeper c = player.getNearbyEntities(48, 48, 48).stream()
@@ -435,4 +511,5 @@ final class SelfTestRun {
     io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler() { return service.scheduler(); }
     io.github.butterflysmp.rpg.paper.health.MobBeamer beams() { return service.beams(); }
     io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports() { return service.teleports(); }
+    io.github.butterflysmp.rpg.paper.health.MobShooter shots() { return service.shots(); }
 }
