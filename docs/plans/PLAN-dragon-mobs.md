@@ -1420,6 +1420,38 @@ answered by every row ending itself (an explicit kill or wait), so no TELEPORT l
   not diagnosed, is vanilla's path recalculation delay.** If a later row shows it never walks again, that is a
   defect.
 
+### 5.R.8 BEN'S RE-TIMING AS BUILT (`feat/dragon-knell-3`, off master `232f82b4`, 2026-11-17)
+
+The gate is `docs/gates/GATE-dragon-knell-3.md`; both Knell scenario files are paired with it.
+
+| piece | as built | where |
+|---|---|---|
+| **the numbers** | `telegraph_ticks` 20 (Ben's 1 s); `flash_at` [0, 15] (the seat's); `teleport.delay_ticks` 44 (the seat's arithmetic, RULINGS); `damage` 65 unchanged | `knell.yml` |
+| **the sounds** | at the telegraph: `block.bell.use` 1.0 / 1.0 then `block.bell.resonate` 1.4 / 1.0; at the fire: `block.amethyst_block.chime` 1.0 / 1.0 alone | `knell.yml` |
+| **code** | **none.** The sounds were already content (KNELL 2), so the re-timing is a content change; the load-time check (delay shorter than the cycle minimum) is unchanged, 44 < 100 | |
+
+**The 44 is counted from the FIRE and was derived for a 20-tick telegraph** (the resonance starts at the lock): change one
+and the other must be re-derived. `knell.yml`'s comment says so.
+
+**WHAT THE RE-TIMING CHANGES (B3), changed nothing:** the resonance now starts whether or not the beam will hit, and rings
+on after a miss with no teleport to mark its end; a Knell killed mid-telegraph leaves both telegraph sounds ringing (the
+API can stop a sound already sent, `Player#stopSound(String, SoundCategory)`, per player by key and category, so it would
+cut every Knell's resonance that player hears: NOT built); the window in which a hit Knell is free to walk and melee
+before it moves is 44 ticks, down from 89; a miss has only the chime at its fire.
+
+**"THE KNELL WALKS AGAIN AFTER A BEAM" (B4), DIAGNOSED FROM THE JAR: A BOUNDED DELAY, NOT A DEFECT.** `stopPathfinding`
+nulls the navigation's path; `MeleeAttackGoal` (`(this, 1.2, false)`) then reports it cannot continue, the goal
+selector stops it, and it restarts only through `canUse`, which passes at most once every 20 game ticks and is asked on
+alternate ticks. Our root zeroes velocity once and its modifier is removed at the fire, so nothing is left stuck. **So
+the walk resumes at most 21 ticks after the fire (INFERRED from the reads: the order of our task against the mob's AI
+inside one tick was not read)**, and KB2R2's 13-tick reading was inside it. Every read with its class, member and
+`javap` command is in the gate's K3. **Its witness is WA1**: a live Knell, a forced MISS (he steps 3 south, so no
+teleport falls due), and its distance from him 30 ticks after the fire, predicted smaller by more than 0.20.
+
+**CARRIED, UPDATED:** "walks again after a beam" is **PREDICTED** (WA1), not yet read. The 13 closed manual gates'
+finding now reads: a live Knell there hears the resonance at the warning, takes 65 one second later, and moves 44 ticks
+after a hit.
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.

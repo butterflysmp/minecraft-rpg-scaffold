@@ -1,30 +1,29 @@
-# THE KNELL'S BEAM, AS RE-PREDICTED BY GATE-dragon-knell-2.md (the follow-up of 2026-11-17). The file keeps its name so
-# the run sheet's command is unchanged (`/rpg selftest dragon-beam`); its rows are now GATE-dragon-knell-2.md's, each
-# a new row named for the GATE-dragon-beam.md row it supersedes, with the next suffix (KB1 -> KB1R2). The old rows'
-# predictions and readings stay in GATE-dragon-beam.md, untouched, under a dated note (SelfTestScenariosTest.docOf).
+# THE KNELL'S BEAM, AS RE-PREDICTED BY GATE-dragon-knell-3.md (Ben's re-timing, 2026-11-17). The file keeps its name
+# so the run sheet's command is unchanged (`/rpg selftest dragon-beam`); its rows are now GATE-dragon-knell-3.md's,
+# each named for the GATE-dragon-knell-2.md row it supersedes with the next suffix (KB1R3 -> KB1R3), and WA1 is new.
+# The old rows' predictions and readings stay in GATE-dragon-knell-2.md, untouched, under a dated note.
 #
-# THE BEAM NOW: every 100 to 200 ticks a Knell locks a line from its EYE through its target's aim point, telegraphs
-# for 26 ticks (Ben's 1.3 s), rooted, with the bell STRIKE at the lock; then fires along that fixed line, out to 40
-# blocks or the first block, with the RESONANCE and the chime. Only the locked target is hit, when its box grown by
-# 1.0 meets the segment: 65 x gear score / 100 before defence (Ben's 65). A hit moves the Knell 89 ticks later.
+# THE BEAM NOW: every 100 to 200 ticks a Knell locks a line from its EYE through its target's aim point; the bell
+# STRIKE and the RESONANCE both start at the lock; it telegraphs for 20 ticks (Ben's 1 s), rooted; then fires along
+# that fixed line, out to 40 blocks or the first block, with the amethyst chime. Only the locked target is hit, when
+# its box grown by 1.0 meets the segment: 65 x gear score / 100 before defence. A hit moves the Knell 44 ticks later.
 #
 # EVERY ROW ENDS ITSELF: after its fire (or its none), the row KILLS its Knell and waits for the death to settle, so a
-# hit's pending teleport is skipped INSIDE the row (`TELEPORT skipped ... reason=knell-gone`), never in the next row's
-# bracket. On 2026-11-17 KB4's Knell moved in KB5's bracket because the row's end rested on the runner's tick count.
+# hit's pending teleport is skipped INSIDE the row (`TELEPORT skipped ... reason=knell-gone`): the kill is 40 ticks
+# after the force, the move would be 64 or 65.
 #
 # THE STAGING: the player at a block centre facing east (+x); a stone floor and air above it, every fill box SAVED
 # first. A mob is spawned by stepping the player to its spot, spawning at the feet, and stepping back.
 #
 # TWO KINDS OF KNELL:
 #   - FROZEN (NoAI): it cannot walk or melee, and its OWN cycle never begins a beam (I23). The BEAM step forces one.
-#     Every row but KB2R2.
-#   - LIVE, IN THE OPEN (KB2R2 only): AI on, 15 blocks east on an open floor, so it SEES him (vanilla targeting needs
-#     sight: LivingEntity.hasLineOfSight clips eye to eye with COLLIDER blocks, which is why KB2's glass pen kept its
-#     Knell blind). It walks toward him at most 0.0947 blocks a tick (read from the jar), so it cannot reach him before
-#     the row kills it (GATE-dragon-knell-2.md, THE PLAYER CANNOT DIE).
+#     Every row but KB2R3 and WA1.
+#   - LIVE, IN THE OPEN (KB2R3 and WA1): AI on, 15 blocks east on an open floor, so it SEES him (vanilla targeting
+#     needs sight). It walks toward him at most 0.0947 blocks a tick (read from the jar), so it cannot reach him before
+#     the row kills it (GATE-dragon-knell-3.md, THE PLAYER CANNOT DIE).
 #
 # THE PLAYER CANNOT DIE IN ANY ROW: each row heals him first, and no row deals more than one 65 before his defence
-# after a heal (KQ1R2 heals between its two beams).
+# after a heal (KQ1R3 heals between its two beams).
 
 setup:
   - difficulty: normal
@@ -33,138 +32,164 @@ setup:
   - cmd: "gamerule spawn_mobs false"
   - close: ""
 
-# KB1R2: a forced beam at a still player, from a frozen Knell 8 blocks east: the strike at the lock, the fire 26 ticks
-# later with the resonance and the chime, dealt 65; then the row kills the Knell and its pending teleport is skipped.
-KB1R2:
+# KB1R3: a forced beam at a still player, from a frozen Knell 8 blocks east: the strike and the resonance at the
+# lock, the fire 20 ticks later with the chime, dealt 65; then the row kills the Knell and its pending teleport is
+# skipped.
+KB1R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -1 -4 12 6 4"
   - cmd: "fill ~-10 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-10 ~ ~-4 ~12 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "kb1r2 frozen knell 100"
+  - spawn: "kb1r3 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - beam: kb1r2
+  - beam: kb1r3
   - wait: 40
-  - cmd: "kill @e[tag=kb1r2]"
+  - cmd: "kill @e[tag=kb1r3]"
   - wait: 5
 
-# KB2R2: the root, READ ON A WALKING KNELL (KB2 was hollow). A LIVE Knell 15 blocks east, in the open, sees him and
-# walks toward him; two AT reads 5 ticks apart are the control that it is walking; the force; its feet at the
-# telegraph and at the fire 26 ticks later are the same; 12 ticks after the fire it has walked again. Then killed.
-KB2R2:
+# KB2R3: the root on a walking Knell, re-read at the new length (KB2R2 read it). A LIVE Knell 15 blocks east, in
+# the open, sees him and walks toward him; two AT reads 5 ticks apart are the control that it is walking; the
+# force; its feet at the telegraph and at the fire 20 ticks later are the same. The read 40 ticks after the force
+# is RECORDED (WA1 predicts the walk). Then killed.
+KB2R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -1 -4 17 6 4"
   - cmd: "fill ~-10 ~-1 ~-4 ~17 ~-1 ~4 stone"
   - cmd: "fill ~-10 ~ ~-4 ~17 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~15 ~ ~"
-  - spawn: "kb2r2 live knell 100"
+  - spawn: "kb2r3 live knell 100"
   - cmd: "tp @s ~-15 ~ ~ -90 0"
   - wait: 60
-  - probe_at: kb2r2
+  - probe_at: kb2r3
   - wait: 5
-  - probe_at: kb2r2
-  - beam: kb2r2
+  - probe_at: kb2r3
+  - beam: kb2r3
   - wait: 40
-  - probe_at: kb2r2
-  - cmd: "kill @e[tag=kb2r2]"
+  - probe_at: kb2r3
+  - cmd: "kill @e[tag=kb2r3]"
   - wait: 5
 
-# KB3R2: the line is FIXED at the lock: he steps 3 blocks south 3 ticks after the force; the fire names a miss. No
+# WA1: THE KNELL WALKS AGAIN AFTER A BEAM (new; KB2R3's part 5 read it standing 13 ticks after its fire). A LIVE Knell
+# 15 blocks east, in the open; the walking control; a forced beam he steps out of (3 south, 3 ticks after the force),
+# so it MISSES and no teleport falls due; 30 ticks after the fire it has walked toward him again. Then killed.
+WA1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-10 -1 -4 17 6 4"
+  - cmd: "fill ~-10 ~-1 ~-4 ~17 ~-1 ~4 stone"
+  - cmd: "fill ~-10 ~ ~-4 ~17 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~15 ~ ~"
+  - spawn: "wa1 live knell 100"
+  - cmd: "tp @s ~-15 ~ ~ -90 0"
+  - wait: 60
+  - probe_at: wa1
+  - wait: 5
+  - probe_at: wa1
+  - beam: wa1
+  - wait: 3
+  - cmd: "tp @s ~ ~ ~3"
+  - wait: 48
+  - probe_at: wa1
+  - cmd: "kill @e[tag=wa1]"
+  - wait: 5
+
+# KB3R3: the line is FIXED at the lock: he steps 3 blocks south 3 ticks after the force; the fire names a miss. No
 # hit, so nothing is pending when the row kills its Knell.
-KB3R2:
+KB3R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -1 -4 12 6 4"
   - cmd: "fill ~-10 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-10 ~ ~-4 ~12 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "kb3r2 frozen knell 100"
+  - spawn: "kb3r3 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - beam: kb3r2
+  - beam: kb3r3
   - wait: 3
   - cmd: "tp @s ~ ~ ~3"
   - wait: 37
-  - cmd: "kill @e[tag=kb3r2]"
+  - cmd: "kill @e[tag=kb3r3]"
   - wait: 5
 
-# KB4R2: the tolerance, inside its edge: 1.2 south, 0.900 off the line, still a hit; then killed, its teleport skipped.
-KB4R2:
+# KB4R3: the tolerance, inside its edge: 1.2 south, 0.900 off the line, still a hit; then killed, its teleport skipped.
+KB4R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -1 -4 12 6 4"
   - cmd: "fill ~-10 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-10 ~ ~-4 ~12 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "kb4r2 frozen knell 100"
+  - spawn: "kb4r3 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - beam: kb4r2
+  - beam: kb4r3
   - wait: 3
   - cmd: "tp @s ~ ~ ~1.2"
   - wait: 37
-  - cmd: "kill @e[tag=kb4r2]"
+  - cmd: "kill @e[tag=kb4r3]"
   - wait: 5
 
-# KB5R2: the tolerance, just outside it: 1.4 south, 1.100 off, a miss.
-KB5R2:
+# KB5R3: the tolerance, just outside it: 1.4 south, 1.100 off, a miss.
+KB5R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -1 -4 12 6 4"
   - cmd: "fill ~-10 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-10 ~ ~-4 ~12 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "kb5r2 frozen knell 100"
+  - spawn: "kb5r3 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - beam: kb5r2
+  - beam: kb5r3
   - wait: 3
   - cmd: "tp @s ~ ~ ~1.4"
   - wait: 37
-  - cmd: "kill @e[tag=kb5r2]"
+  - cmd: "kill @e[tag=kb5r3]"
   - wait: 5
 
-# KB6R2: a target beyond the range (41 blocks): BEAM none, no telegraph, no sound.
-KB6R2:
+# KB6R3: a target beyond the range (41 blocks): BEAM none, no telegraph, no sound.
+KB6R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "40 -1 -1 42 5 1"
   - cmd: "fill ~40 ~-1 ~-1 ~42 ~-1 ~1 stone"
   - cmd: "fill ~40 ~ ~-1 ~42 ~5 ~1 air"
   - cmd: "tp @s ~41 ~ ~"
-  - spawn: "kb6r2 frozen knell 100"
+  - spawn: "kb6r3 frozen knell 100"
   - cmd: "tp @s ~-41 ~ ~ -90 0"
   - wait: 5
-  - beam: kb6r2
+  - beam: kb6r3
   - wait: 20
-  - probe_at: kb6r2
-  - cmd: "kill @e[tag=kb6r2]"
+  - probe_at: kb6r3
+  - cmd: "kill @e[tag=kb6r3]"
   - wait: 5
 
-# KB7R2: a frozen husk standing in the line, 4 blocks east, keeps its health; the player behind it is hit.
-KB7R2:
+# KB7R3: a frozen husk standing in the line, 4 blocks east, keeps its health; the player behind it is hit.
+KB7R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -1 -4 12 6 4"
   - cmd: "fill ~-10 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-10 ~ ~-4 ~12 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "kb7r2 frozen knell 100"
+  - spawn: "kb7r3 frozen knell 100"
   - cmd: "tp @s ~-4 ~ ~"
-  - spawn: "kb7r2h frozen husk 100"
+  - spawn: "kb7r3h frozen husk 100"
   - cmd: "tp @s ~-4 ~ ~ -90 0"
   - wait: 5
-  - probe: kb7r2h
-  - beam: kb7r2
+  - probe: kb7r3h
+  - beam: kb7r3
   - wait: 40
-  - probe: kb7r2h
-  - cmd: "kill @e[tag=kb7r2]"
+  - probe: kb7r3h
+  - cmd: "kill @e[tag=kb7r3]"
   - wait: 5
 
-# KB8R2: a block stops it: a glass wall at x+4 clips the fire (length 3.639), a miss.
-KB8R2:
+# KB8R3: a block stops it: a glass wall at x+4 clips the fire (length 3.639), a miss.
+KB8R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -1 -4 12 6 4"
   - cmd: "fill ~-10 ~-1 ~-4 ~12 ~-1 ~4 stone"
@@ -172,52 +197,51 @@ KB8R2:
   - cmd: "fill ~4 ~ ~-2 ~4 ~4 ~2 glass"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "kb8r2 frozen knell 100"
+  - spawn: "kb8r3 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - beam: kb8r2
+  - beam: kb8r3
   - wait: 40
-  - cmd: "kill @e[tag=kb8r2]"
+  - cmd: "kill @e[tag=kb8r3]"
   - wait: 5
 
-# KB9R2: a Knell killed mid-telegraph (10 ticks into its 26) fires nothing: no fire, no fire sounds.
-KB9R2:
+# KB9R3: a Knell killed mid-telegraph (10 ticks into its 20) fires nothing: no fire, no fire sounds.
+KB9R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -1 -4 12 6 4"
   - cmd: "fill ~-10 ~-1 ~-4 ~12 ~-1 ~4 stone"
   - cmd: "fill ~-10 ~ ~-4 ~12 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "kb9r2 frozen knell 100"
+  - spawn: "kb9r3 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - beam: kb9r2
+  - beam: kb9r3
   - wait: 10
-  - cmd: "kill @e[tag=kb9r2]"
+  - cmd: "kill @e[tag=kb9r3]"
   - wait: 40
 
-# KQ1R2: Ben's three beam questions. A frozen Knell 12 blocks east beams him twice: once while he stands still, once
-# while he steps aside at the warning. The selftest tells him in chat before each. Each hit moves it 89 ticks later.
-KQ1R2:
+# KQ1R3: Ben's two beam questions. A frozen Knell 12 blocks east beams him twice: once while he stands still, once
+# while he steps aside at the warning. The selftest tells him in chat before each. Each hit moves it 44 ticks later.
+KQ1R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-14 -1 -14 16 6 14"
   - cmd: "fill ~-14 ~-1 ~-14 ~16 ~-1 ~14 stone"
   - cmd: "fill ~-14 ~ ~-14 ~16 ~6 ~14 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~12 ~ ~"
-  - spawn: "kq1r2 frozen knell 100"
+  - spawn: "kq1r3 frozen knell 100"
   - cmd: "tp @s ~-12 ~ ~ -90 0"
-  - cmd: 'tellraw @s {"text":"Stand still and listen. A bell strike is the warning; the beam fires as the bell starts to ring.","color":"gold"}'
+  - cmd: 'tellraw @s {"text":"Stand still and listen. The bell strike and its ringing start together; the beam fires one second later.","color":"gold"}'
   - wait: 60
-  - beam: kq1r2
+  - beam: kq1r3
   - wait: 40
-  - ask: "1 1200 Did the bell strike warn you before the beam?"
-  - ask: "2 1200 Did 65 feel right for a single shot?"
+  - ask: "1 1200 Did the beam fire as the ringing became audible?"
   - cmd: "rpg heal 1000000"
   - cmd: 'tellraw @s {"text":"Now: as soon as you hear the bell strike, step sideways out of the purple line.","color":"gold"}'
   - wait: 100
-  - beam: kq1r2
+  - beam: kq1r3
   - wait: 40
-  - ask: "3 1200 With 1.3 seconds, could you step out of the way in time?"
-  - cmd: "kill @e[tag=kq1r2]"
+  - ask: "2 1200 With 1 second, could you still step out of the way in time?"
+  - cmd: "kill @e[tag=kq1r3]"
   - wait: 5
