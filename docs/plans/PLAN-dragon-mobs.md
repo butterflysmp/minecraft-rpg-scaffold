@@ -1323,6 +1323,50 @@ and LEFT each 50%; heights tried nearest first with UP before DOWN at equal dist
 retried at another height; a second hit while a move is pending is ignored (only a forced beam can do it); the puff's
 counts and the sound's volume.
 
+### 5.R.7 THE KNELL FOLLOW-UP AS BUILT (`feat/dragon-knell-2`, off master `7a3e9985`, 2026-11-17)
+
+The gate is `docs/gates/GATE-dragon-knell-2.md`; both Knell scenario files are paired with it.
+
+| piece | as built | where |
+|---|---|---|
+| **the numbers** | `damage` 65 (Ben); `telegraph_ticks` 26 (Ben's 1.3 s); `flash_at` [0, 20] (the seat's); `teleport.delay_ticks` 89 (the seat's, below) | `knell.yml` |
+| **the sounds, as content** | `beam.sounds.telegraph` and `beam.sounds.fire`, each a list of `{ key, volume, pitch }`, every field required; a key the server's `Registry.SOUND_EVENT` does not know is refused at load, by name. The Knell's: `block.bell.use` 1.0 / 1.0 at the telegraph (its volume kept from when it played at the fire); `block.bell.resonate` 1.4 / **1.0** (its volume kept; its pitch was 0.7) and `block.amethyst_block.chime` 1.0 / 1.0 at the fire | `core.mob.BeamSound`, `MobBeam`, `MobLoader`, `RpgPlugin.soundKnown` |
+| **one line per sound played** | `BEAM sound mob=… id=… when=<telegraph/fire> tick=… key=… volume=… pitch=…`, just before the TELEGRAPH or FIRE line | `MobBeamer.playSounds`, `MobBeamLines.sound` |
+
+**THE DELAY, 89, AND WHAT IT STANDS ON.** The resonance file is 3.780 s (`block/bell/resonate.ogg`, 181431 samples at
+48000 Hz); the client's slowest variant is pitch 0.85 (`sounds.json`), so at our pitch 1.0 it ends at 3.780 / 0.85 =
+4.447 s = 88.9 ticks, rounded UP to 89 so the sound has always finished. **One authored number in TICKS; the code never
+computes it from a sound.** The server cannot know which variant a client drew, and "playback speed equals pitch" is
+still assumed, not read. **89 is below the cycle's 100-tick minimum with 11 to spare; the load-time check refuses a
+delay that is not shorter (100 refused, 99 accepted: `MobTeleportTest`). A longer resonance (a lower pitch) would need
+a longer cycle.**
+
+**WHAT A LONGER DELAY CHANGES (the brief's B6), DECIDED OUT LOUD.** Read in `MobTeleporter` and `BeamTeleport.skip`:
+
+| during the 89 ticks | what the code does | kept or changed |
+|---|---|---|
+| the target dies | at the end, `skip`: `target-gone` (`LiveTargets.isLive` is false for a dead body) | KEPT |
+| the target logs out | the same, `target-gone` (INFERRED: a quit player's entity is no longer valid) | KEPT |
+| the target changes world | `target-world` | KEPT |
+| the target goes creative or spectator | `target-exempt` (`MobHostility`) | KEPT |
+| the Knell is hit | nothing: no damage listener moves or cancels it | KEPT |
+| the Knell is killed | `knell-gone` (read at the stacked boot, TP13) | KEPT |
+| the Knell is unloaded | its removal cancels the task: `knell-gone` | KEPT |
+| a second beam | its OWN cycle cannot start one (its minimum wait after a fire, 100, exceeds 89; pinned at load and by `MobLoaderTest.theBundledKnellsDelayIsElevenTicksShorterThanItsCycle`); a FORCED one that hits logs `TELEPORT ignored … reason=pending`, and the first move still lands at its own fire + 89 | KEPT, pinned by gate row TP14 |
+| the Knell walks and melees | it is rooted only during the telegraph, so for the 89 ticks it is free to walk toward its target and hit it | KEPT, **for Ben to see** |
+| where it lands | the circle is drawn around where the target stands at the END of the delay, at the Knell's horizontal distance THEN | KEPT |
+
+**THE ROOT ON A WALKING KNELL (KB2R2).** Vanilla targeting needs sight, READ: `AbstractSkeleton` targets players with a
+must-see `NearestAttackableTargetGoal`, and `LivingEntity.hasLineOfSight` clips eye to eye with COLLIDER blocks, which
+is why KB2's glass pen kept its Knell blind. KB2R2 puts a live Knell 15 blocks away on an open floor (within its
+`FOLLOW_RANGE` of 16). Its top walking speed, READ and executed: `MeleeAttackGoal(this, 1.2, false)` × its speed
+base 0.15 = 0.18 as the forward input; ground friction 0.6 × 0.91; × 0.21600002 / friction³; steady displacement
+**0.0947 blocks a tick**. Live for at most 105 ticks before the row kills it, 26 of them rooted, it walks at most 79:
+**7.48 blocks, against at least 12 needed to reach him. The margin is 4.5 blocks, about 48 ticks at its top speed.**
+
+**CARRIED, UPDATED:** the root on a walking Knell is now **PREDICTED** (KB2R2), not yet read; KB4's timing note is
+answered by every row ending itself (an explicit kill or wait), so no TELEPORT line rests on the runner's tick count.
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.

@@ -9,6 +9,11 @@ says ready.**
 
 **2026-11-17: approved to merge by the review seat after the boot of e52e54b6; see GATE-dragon-teleport.md for the readings.**
 
+> **DATED NOTE, 2026-11-17, the Knell follow-up (`GATE-dragon-knell-2.md`). NOTHING BELOW IS EDITED.** Every row of
+> `selftest/GATE-dragon-beam.yml` is now that gate's, renamed with the next suffix: **KB1-KB9 and KQ1 are SUPERSEDED by
+> KB1R2-KB9R2 and KQ1R2** (65 damage, a 26-tick telegraph, the bell timing as content, every row ending itself). KB2R2
+> re-reads the root on a WALKING Knell, which KB2 left unread. The predictions and readings below stand as the record.
+
 > **DATED NOTE, 2026-11-17, step R6 (`feat/dragon-teleport`, stacked on this branch). NOTHING BELOW IS EDITED; this
 > note says what changed around it.** The seat passed this gate by diff and left it unbooted, so that ONE boot reads
 > R5 and R6 together.
