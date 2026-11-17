@@ -513,22 +513,23 @@ class MobLoaderTest {
     }
 
     /**
-     * THE KNELL WE SHIP (Ben's re-timing, 2026-11-17, KNELL 3): 65 damage (confirmed by play), a 20-tick (1-second)
-     * telegraph ("change the warning shot time from 1.3s to 1s") flashing at ticks 0 and 15 (the seat's, three
-     * quarters through), the bell strike AND the resonance at the telegraph ("Start playing the resonance at the same
-     * time as the bell"), and the chime alone at the fire (the seat's, unruled). The cycle, range, aim and tolerance
-     * are unchanged.
+     * THE KNELL WE SHIP (KNELL 4, 2026-11-17): 65 damage, a 20-tick telegraph flashing at ticks 0 and 15, and TWO
+     * BELLS: Ben's "Add a second, higher pitched bell for the actual shot. Maybe even lower the pitch of the initial
+     * bell". At the telegraph the bell at pitch 0.8 (the seat's starting value, was 1.0) then the resonance; at the
+     * fire the bell at pitch 1.5 (the seat's starting value), at the first bell's volume, then the chime. The cycle,
+     * range, aim and tolerance are unchanged.
      */
     @Test
-    void theBundledKnellBeamsAsBenRetimedIt() throws IOException {
+    void theBundledKnellBeamsWithTwoBells() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
         assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 20, List.of(0, 15), 40.0, 0.6, 1.0, 65.0,
-                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.0),
+                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 0.8),
                         new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.resonate", 1.4, 1.0)),
-                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.amethyst_block.chime", 1.0, 1.0))),
+                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.5),
+                        new io.github.butterflysmp.rpg.core.mob.BeamSound("block.amethyst_block.chime", 1.0, 1.0))),
                 load().find("knell").orElseThrow().beam());
         assertTrue(warnings.isEmpty(), warningText());
     }

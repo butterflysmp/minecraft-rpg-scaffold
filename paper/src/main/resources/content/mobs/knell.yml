@@ -74,14 +74,19 @@ beam:
   # server cannot know which it drew. Both lists play at a fixed POSITION (the Knell's, at that tick): a sound already
   # sent keeps ringing whatever then happens to the beam or the Knell.
   sounds:
-    # Played at the telegraph's tick 0, the lock: the bell STRIKE (2.49 s at pitch 1.0) and the RESONANCE (3.780 s,
-    # 4.200 s or 4.447 s as the client draws it), together. Both volumes kept (1.0 and 1.4). The resonance now rings
-    # whether or not the beam will hit.
+    # Played at the telegraph's tick 0, the lock: the bell STRIKE and the RESONANCE (3.780 s, 4.200 s or 4.447 s as the
+    # client draws it), together; the resonance rings whether or not the beam will hit. BEN'S (2026-11-17): the first
+    # bell is LOWER ("Maybe even lower the pitch of the initial bell"); the 0.8 is THE SEAT'S starting value (was 1.0).
+    # A lower pitch LENGTHENS a sound and a higher one shortens it: the bell's file is 2.492 s, so 2.492 / 0.8 = 3.115 s
+    # here, still assuming playback speed equals pitch (not read). Volumes kept (1.0 and 1.4).
     telegraph:
-      - { key: block.bell.use, volume: 1.0, pitch: 1.0 }
+      - { key: block.bell.use, volume: 1.0, pitch: 0.8 }
       - { key: block.bell.resonate, volume: 1.4, pitch: 1.0 }
-    # Played at the fire: the amethyst chime alone (the seat's, NOT BEN'S).
+    # Played at the fire: a SECOND, HIGHER bell, then the amethyst chime. BEN'S: that there is one ("Add a second,
+    # higher pitched bell for the actual shot"); the 1.5 is THE SEAT'S starting value (2.492 / 1.5 = 1.661 s, the same
+    # assumption), at the first bell's volume. The chime is the seat's, as before.
     fire:
+      - { key: block.bell.use, volume: 1.0, pitch: 1.5 }
       - { key: block.amethyst_block.chime, volume: 1.0, pitch: 1.0 }
 
 # THE TELEPORT AFTER THE BEAM LANDS (dragon-mobs step R6). Ben: "The Knell can only teleport when it's Knell Beam hits
