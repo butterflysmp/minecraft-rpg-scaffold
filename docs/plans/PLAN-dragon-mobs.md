@@ -457,6 +457,23 @@ selftest asked and Ben answered, verbatim:
 **The seat takes these as Ben's confirmation, by play, of the 60 and 150 damage and of knockback at 1.0.** They are no
 longer only the seat's reading of "increase 3x".
 
+### Ben, 2026-11-17, VERBATIM: the Knell's beam starts from the old game's numbers (step R5)
+
+*The seat asked: may the Knell's beam start from the old game's numbers: fires every 5 to 10 seconds, warns for 0.6
+seconds before firing (and that same 0.6 seconds becomes the delay before its teleport, as he ruled), reaches 40
+blocks, deals 35 damage?* Ben:
+
+> "yes"
+
+**So K6 is 100 to 200 ticks, K7 12 ticks, K8 40 blocks, K10 35, and K11 starts at 12 ticks**, each a starting number
+of his to tune (§3.R.5).
+
+**THE SEAT'S, PROVISIONAL AND UNRULED:** beam damage is multiplied by the Knell's gear score / 100, as the Phage's blast
+is (P-b).
+
+**Not asked and not ruled:** K9 (the hit tolerance, old +1.0); whether the beam is Void damage; whether a shield blocks
+it. Step R5 ships K9 at the old 1.0 as a content number, the beam with no element, and no shield block (§3.R.1.a).
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -633,6 +650,42 @@ the predicate must be one named function, not a `player()` test repeated at each
 point. VALID = (1) the Knell's body fits there without collision, (2) solid ground directly beneath, (3) within a
 tolerance of the target's level. **Open for Ben: whether VALID also requires line of sight to the target**, so the
 Knell never lands behind a wall from the player it just hit (Q18).
+
+#### 3.R.1.a THE BEAM, INHERITED OR CHOSEN, FOR BEN TO SEE (step R5, 2026-11-17)
+
+**The seat's ruling 1 for R5: where Ben has not re-ruled, the beam behaves as cfde822's did.** Ben re-ruled only the
+numbers (RULINGS, *the Knell's beam starts from the old game's numbers*) and the teleport that follows a hit (R6). Every
+other behaviour is below. **READ** = stated in §3.1's record of cfde822 (or `PLAN-legacy-port.md` §2.5, which §3.1
+cites). **NOT IN THE RECORD** = the record is silent, so step R5 CHOSE the simplest behaviour and says what it chose.
+The old source was not re-fetched for this list; each NOT IN THE RECORD item could be turned into a READ by fetching
+`WitheredKnellBehavior` at cfde822, if Ben or the seat wants that before a choice stands.
+
+| # | behaviour | mark | what R5 does |
+|---|---|---|---|
+| I1 | the wait between beams | **READ** (§3.1: "a random 100–200 t (5–10 s) delay") | a whole number of ticks drawn uniformly from `cycle_ticks.min` to `cycle_ticks.max`, both included (content: 100, 200). *Inclusive*: NOT IN THE RECORD, chosen |
+| I2 | when the next wait starts | **READ** ("the next random 100–200 t starts after it fires") | a fresh draw at the fire, hit or miss |
+| I3 | when the FIRST wait starts | NOT IN THE RECORD | when the Knell enters the world (a spawn, or its chunk loading), the moment our seed runs. **So the first beam comes 100–200 ticks after the Knell appears, not after it gains a target** (the cycle does not wait for one; I5) |
+| I4 | who it aims at | **READ** ("the vanilla target if it is a player, else the nearest non-creative, non-spectator player within 40") | the Knell's vanilla target if `MobHostility.hostileTo` names it and it is in range; else the nearest combatant `hostileTo` names within range. A Summoner's summon joins by the one predicate (seat ruling 3) |
+| I5 | no one to aim at | **READ** ("No player in range: wait another cycle") | a fresh draw; no line in the log (a FORCED attempt logs `BEAM none`) |
+| I6 | how "in range" is measured | NOT IN THE RECORD (it says "within 40") | the straight line from the Knell's EYE to the target's AIM POINT (I8) is at most `range` blocks, inclusive. The same two points the line is drawn between, so a target in range is one the line can reach |
+| I7 | does starting need sight | NOT IN THE RECORD | **no.** The record names no sight check; blocks stop the beam at the fire (I13), so a target behind a wall is telegraphed at and not hit |
+| I8 | the telegraph fixes the line | **READ** ("locks origin (its eye) and endpoint (the target at 0.6 × its height) once") | the origin is the Knell's eye, the direction is the eye to the target's feet + `aim_height` (0.6, a FRACTION of its height), both fixed at the telegraph's first tick. **It does not track** |
+| I9 | the telegraph's length | **READ** (12 t) | `telegraph_ticks` (12): the fire is exactly 12 ticks after the telegraph's first tick |
+| I10 | the telegraph's sight and sound | **READ** (a purple dust line RGB 95,35,165, size 0.8, at tick 0 and tick 9; a bell resonate, volume 1.4, pitch 0.7, `PLAN-legacy-port.md` §2.5) | as read, drawn along the locked line to its full range. The two flash ticks are content (`flash_at: [0, 9]`), each inside the telegraph, so a shorter telegraph cannot silently lose a flash. *Particle spacing (one every 0.5 blocks) and the sound's category (hostile)*: NOT IN THE RECORD, chosen |
+| I11 | the Knell is rooted | **READ** (`stopPathfinding()` every tick for 12 t) | `stopPathfinding()` every telegraph tick, **AND a MOVEMENT_SPEED × 0 modifier for the telegraph, which the record does not have.** Why: a melee goal re-paths on its own ticks (INFERRED from vanilla's `MeleeAttackGoal`, not read), so stopping the path alone may let the Knell drift. The modifier is TRANSIENT (`addTransientModifier`, READ in the pinned API), so a chunk unload mid-telegraph cannot save it onto the mob. **The seat should rule whether the extra modifier stands** |
+| I12 | what the fire tests | **READ** ("Hits only the locked player, and only if that player's box grown by 1.0 still meets the segment") | the LOCKED target only, at the fire, with its box at that moment grown by `tolerance` (1.0) on every side, against the segment. Every other creature the grown-box test catches is LISTED in the log as spared and never hurt |
+| I13 | do blocks stop it | **READ** ("block-clipped") | the segment runs from the eye along the locked direction to the first block with a collision box, or to `range`. *Fluids and passable blocks (grass, flowers) do not stop it*: NOT IN THE RECORD, chosen |
+| I14 | does the segment end at the aim point or run on | NOT IN THE RECORD | it runs on to the range (or the first block): a target who backs away along the line is still in it. The Knell Beam weapon's ray is the same length (`PLAN-legacy-port.md` §2.5) |
+| I15 | the target dies, is removed or leaves the world mid-telegraph | NOT IN THE RECORD | the beam still fires along its line; the target is listed `gone` and nothing is hurt |
+| I16 | the target leaves range mid-telegraph | NOT IN THE RECORD | nothing special: the line is fixed and runs to the range, so a target is hit exactly when it is still in the line |
+| I17 | the target turns creative or spectator mid-telegraph | NOT IN THE RECORD | re-asked at the fire: `MobHostility.hostileTo` false → listed `exempt`, not hit |
+| I18 | the Knell is hurt mid-telegraph | NOT IN THE RECORD | nothing: the telegraph runs on |
+| I19 | the Knell dies or is removed mid-telegraph | NOT IN THE RECORD (cfde822's loops ended with their mob, §6 C4) | **nothing fires.** The loop stops the tick it finds the Knell gone and logs `BEAM cancelled` |
+| I20 | the fire's sight and sound | **READ** (a cyan dust line RGB 40,230,235, size 1.4; a bell and an amethyst chime) | as read, along the clipped segment. *Their volume and pitch*: NOT IN THE RECORD (only the resonate's pair is), chosen 1.0 and 1.0 |
+| I21 | damage | **READ** (35, `MAGIC`, ×5-exempt) | `damage` (35) × GS/100 (the seat's provisional) through `MobScaling.attackDamage`, dealt by the mob-hit path's final call, `applyDamage(amount, knellId)`: the player's defence applies, **no element, no knockback, no crit, and no shield block** (that path raises no vanilla event; Q31, Q32 for the blast are the same questions here) |
+| I22 | a creative or spectator player | **READ** (skipped) | never aimed at and never hit (`MobHostility`) |
+| I23 | a Knell with no AI (NoAI, "frozen") | NOT IN THE RECORD (cfde822 never froze a mob) | **its own cycle never begins a beam** (an attempt is a fresh draw), as a vanilla NoAI mob attacks nothing. The selftest's forced beam still works on one. **This is also what keeps every older selftest row's frozen Knell from beaming the player** (the R5 audit) |
+| I24 | a Knell under our Freeze status | NOT IN THE RECORD | **not handled**: Freeze cancels vanilla melee events, and the beam raises none, so a Freeze-immobilised Knell still beams. Recorded for Ben, not built |
 
 #### 3.R.2 The Phage — one name, five stages, on a creeper
 
