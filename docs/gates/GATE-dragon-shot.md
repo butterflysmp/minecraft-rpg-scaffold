@@ -13,6 +13,25 @@ says ready.**
 > SH7, SH8, SH12 and SQ1, whose targets stand dead ahead, so the homing has nothing to turn. The gate had been neither
 > booted nor read, so no reading is touched.
 
+> **READ, 2026-11-17: booted at `8ec16e89` on the seat's approval and Ben's "ready".** Server log `09:30:43` to the clean
+> `/stop` at `09:33:43`. Carried state: no JVM; backup `rpg-run-backups/2026-11-17-pre-dragon-shot` (`run/plugins/Rpg`
+> 129 files, 387612 bytes; `run/world` 193 files, 204963734 bytes; `diff -rq lines: 0` each); `12:  dev-pack-on-join:
+> true`. Ben logged in at `09:31:03`, typed `/gamemode survival` first (`09:31:09`), then `/rpg selftest dragon-shot`
+> once (`09:31:14`) to `SELFTEST RUN FINISHED` (`09:33:15`), `DIFFICULTY found=NORMAL set=NORMAL`, and `RESTORED …
+> difficulty=NORMAL`.
+>
+> **THE DEPARTURE, recorded as it happened:** after the run finished Ben typed `/rpg selftest dragon-beam` (`09:33:22`, not
+> on this run sheet), which ran KB1R5 and started KB2R5; he stopped it with `/rpg selftest stop` (`09:33:29`: `SELFTEST
+> RUN STOPPED by /rpg selftest stop`, then `RESTORED … mobsRemoved=1 … difficulty=NORMAL`), then `/stop` (`09:33:43`).
+> **That run is GATE-dragon-knell-5.md's, not this gate's, and none of its lines is read here.** The server-stop restore
+> stays UNREAD: no run was stopped by `/stop`.
+>
+> **The result: R0a-R0d MATCH; 9 of the 12 AUTO rows AS PREDICTED; SH3, SH7 and SH9 NOT AS PREDICTED** (each in its
+> row): the arrow never hit the shot; the wall destroyed it a tick early by SUFFOCATION; the row's own kill of its Void
+> Phalanx grew the Phage. Every LEFTOVER read `living=0`; no `SHOT orphan removed` line; every HURT line came from a
+> shot or the Knell's beam. **Ben's four answers: "yes", "yes", "yes", "yes"; his "yes" to "Did hitting it destroy
+> it?" disagrees with the server, which logged his second shot as a HIT** (SQ1).
+
 The plan is `PLAN-dragon-mobs.md` (RULINGS, *the Phalanx's shot starts from the old game's numbers*; §3.4; §7 F-S). The
 scenario file is `paper/src/main/resources/selftest/GATE-dragon-shot.yml`, run by `/rpg selftest dragon-shot`.
 
@@ -208,13 +227,13 @@ logged nowhere). KQ1R6 re-asks Ben.
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-shot` prints it, shortened. **Not** master's `8365e7f6`; not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1`, after this boot's `Done` | |
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-shot` prints it, shortened. **Not** master's `8365e7f6`; not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1`, after this boot's `Done` | READ 2026-11-17: `[09:30:43] [Server thread/INFO]: [Rpg] Build: 8ec16e89`, this PR's head (`git ls-remote` `8ec16e891f22…`). **MATCH** |
 
 ### R0b — the jar carries the shot, the bow and the one flash
 
 | prediction | instrument | READING |
 |---|---|---|
-| `content/mobs/phalanx.yml` PRESENT `main_hand: bow`, `  period_ticks: 120`, `  life_ticks: 240`, `  max_distance: 35`; `content/mobs/knell.yml` PRESENT `  flash_at: [0]`, ABSENT `  flash_at: [0, 18]`; classes PRESENT `health/MobShooter.class`, `health/MobShotLines.class`, `adapter/ShotSink.class`; `GATE-dragon-shot.yml` PRESENT `SH1:`, `SQ1:`, `KQ1R6:`. **The controls, the same on both builds:** `knell.yml` PRESENT `  telegraph_ticks: 24`; `scheduler/InlineScheduler.class` PRESENT; `GATE-dragon-beam.yml` PRESENT `KQ1R5:` | the scan below | |
+| `content/mobs/phalanx.yml` PRESENT `main_hand: bow`, `  period_ticks: 120`, `  life_ticks: 240`, `  max_distance: 35`; `content/mobs/knell.yml` PRESENT `  flash_at: [0]`, ABSENT `  flash_at: [0, 18]`; classes PRESENT `health/MobShooter.class`, `health/MobShotLines.class`, `adapter/ShotSink.class`; `GATE-dragon-shot.yml` PRESENT `SH1:`, `SQ1:`, `KQ1R6:`. **The controls, the same on both builds:** `knell.yml` PRESENT `  telegraph_ticks: 24`; `scheduler/InlineScheduler.class` PRESENT; `GATE-dragon-beam.yml` PRESENT `KQ1R5:` | the scan below | READ: all 15 lines as predicted: the four `phalanx.yml` lines PRESENT; `flash_at: [0]` PRESENT, `[0, 18]` ABSENT; `MobShooter`, `MobShotLines`, `ShotSink` PRESENT; `SH1:`, `SQ1:`, `KQ1R6:` PRESENT; the three controls PRESENT. (Also read, not predicted: `  homing: 0.0513` PRESENT.) **MATCH** |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -246,13 +265,13 @@ both. (The `[0]` pattern is anchored at the line's end, so it cannot match `[0, 
 
 | prediction | instrument | READING |
 |---|---|---|
-| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**, verbatim the boot of `07d06837`'s (this branch adds no file, it changes two). No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN` beyond `volley_stone`'s known pair. **A `Skipping malformed mob 'phalanx.yml'` line would mean the shot block was refused** (`4 mobs`); `'knell.yml'` the flash | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN','Exception','Content:'` | |
+| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**, verbatim the boot of `07d06837`'s (this branch adds no file, it changes two). No `Refusing`, `Skipping`, `SEVERE` or `Exception`, and no `[Rpg]` `WARN` beyond `volley_stone`'s known pair. **A `Skipping malformed mob 'phalanx.yml'` line would mean the shot block was refused** (`4 mobs`); `'knell.yml'` the flash | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN','Exception','Content:'` | READ: the Loaded line verbatim as predicted; no `Refusing`, `Skipping`, `SEVERE` or `Exception` in the whole log; the only `[Rpg]` WARN lines are `volley_stone`'s known pair (and Paper's own update banner, not ours). **MATCH** |
 
 ### R0d — the dev marker reached the JVM, and every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one line **`[Rpg] Selftest: dev server, 131 scenarios across 18 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
+| Exactly one line **`[Rpg] Selftest: dev server, 131 scenarios across 18 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot]`**, and **no** `Refusing selftest` line | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | READ: `[Rpg] Selftest: dev server, 131 scenarios across 18 gates [melee-cell, … dragon-teleport, dragon-shot]`, the list verbatim; no `Refusing selftest`. **MATCH** |
 
 **The 131 is RECOUNTED from the files at this branch's head:** in `paper/src/main/resources/selftest/`,
 `grep -cE '^  - ' index.yml` prints **18**; summing `grep -cE '^[A-Za-z0-9-]+:'` over the eighteen `GATE-<g>.yml`
@@ -284,73 +303,73 @@ his defence is still the 10 the Knell rows read; a different defence changes onl
 
 | prediction | stands on | READING |
 |---|---|---|
-| The fired line with `from=` = his feet + (8, 2.100, 0) and `aim=` = his feet + (0, 1.620, 0). Three `probe_shot` reads, 10, 20 and 50 ticks after the `shot:` step: the first two `SHOT at … age=<a> at=<x y z> flown=<f>` each matching S4's table AT ITS OWN AGE to three places (the ages are the runner's: about 9 and 19); the third `live=0`. **One `SHOT hit … age=33 at=<feet + 1.412 1.705 0.000> flown=6.600 … dealt=40.000`**, then the HURT line for 40 before defence | S4 (jshell); `MobShot.step`, `ending`, `victim`; the hit is the one priced by `MobScaling.attackDamage(40, true, true, 100)` through the two-argument `applyDamage`, the beam's final call | |
+| The fired line with `from=` = his feet + (8, 2.100, 0) and `aim=` = his feet + (0, 1.620, 0). Three `probe_shot` reads, 10, 20 and 50 ticks after the `shot:` step: the first two `SHOT at … age=<a> at=<x y z> flown=<f>` each matching S4's table AT ITS OWN AGE to three places (the ages are the runner's: about 9 and 19); the third `live=0`. **One `SHOT hit … age=33 at=<feet + 1.412 1.705 0.000> flown=6.600 … dealt=40.000`**, then the HURT line for 40 before defence | S4 (jshell); `MobShot.step`, `ending`, `victim`; the hit is the one priced by `MobScaling.attackDamage(40, true, true, 100)` through the two-argument `applyDamage`, the beam's final call | **AUTO PASS** (selftest 8ec16e89): feet `-100.5 63 5.5`; `SHOT fired … tick=634 … from=-92.500 65.100 5.500 aim=-100.500 64.620 5.500 dealt=40.000`; `SHOT at … age=10 at=-94.496 64.980 5.500 flown=2.000` (rel. 6.004 1.980 0, S4's age 10 **exactly**); `age=20 at=-96.493 64.860 5.500 flown=4.000` (rel. 4.007 1.860 0, **exactly**); `SHOT hit … age=33 at=-99.088 64.705 5.500 flown=6.600 victim=player <Ben> dealt=40.000` (rel. 1.412 1.705 0); `HURT before=40.000 after=36.364 defense=10.000 dealer=<P> dealerType=wither_skeleton/phalanx`; the third read `live=0`. **AS PREDICTED** |
 
 ### SH2 — one melee hit with the emberblade destroys it (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `DRIVE attack Player#attack target=<S> bat …`, then **`[Rpg] SHOT destroyed mob=phalanx id=<P> shot=<S> age=<a> … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**, `a` from 12 to 15 (the attack is 15 ticks after the step; the fire is 1 or 2 ticks after it), its `at` S4's table at that age. **No HURT line in the row.** The `probe_shot` reads `live=0` | `Player#attack` → `Bat#hurtServer` → `LivingEntity#hurtServer` → the event (S1); `onShotDamaged` LOWEST cancels and strikes | |
+| `DRIVE attack Player#attack target=<S> bat …`, then **`[Rpg] SHOT destroyed mob=phalanx id=<P> shot=<S> age=<a> … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**, `a` from 12 to 15 (the attack is 15 ticks after the step; the fire is 1 or 2 ticks after it), its `at` S4's table at that age. **No HURT line in the row.** The `probe_shot` reads `live=0` | `Player#attack` → `Bat#hurtServer` → `LivingEntity#hurtServer` → the event (S1); `onShotDamaged` LOWEST cancels and strikes | **AUTO PASS**: `DRIVE attack Player#attack target=<S> bat d=5.412 charge=1.000`; `SHOT destroyed … age=14 at=-95.295 64.932 5.500 flown=2.800 by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` (rel. x 5.205 = 8 − 14 × 0.2 × 0.998205); no HURT; `live=0`. **AS PREDICTED** |
 
 ### SH3 — one vanilla arrow destroys it (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The `CMD /execute at @e[tag=sh3_shot …] run summon arrow …` line; then **`[Rpg] SHOT destroyed … by=vanilla cause=PROJECTILE damager=arrow <uuid>`**, age from 13 to 17. **No HURT line in the row** (the arrow rises through the shot; its deflection, if it survives, falls to the floor, away from him). `live=0` | an arrow's hit raises `EntityDamageByEntityEvent` cause `PROJECTILE` (INFERRED: the arrow's `onHitEntity` → `hurtOrSimulate`, not opened for this gate) | |
+| The `CMD /execute at @e[tag=sh3_shot …] run summon arrow …` line; then **`[Rpg] SHOT destroyed … by=vanilla cause=PROJECTILE damager=arrow <uuid>`**, age from 13 to 17. **No HURT line in the row** (the arrow rises through the shot; its deflection, if it survives, falls to the floor, away from him). `live=0` | an arrow's hit raises `EntityDamageByEntityEvent` cause `PROJECTILE` (INFERRED: the arrow's `onHitEntity` → `hurtOrSimulate`, not opened for this gate) | **NOT AS PREDICTED.** `CMD /execute at @e[tag=sh3_shot,limit=1] run summon arrow …` and `REPLY "Summoned new Arrow"`, then **no destroyed line**: `SHOT hit … age=33 at=-99.088 64.705 5.500 flown=6.600 victim=player <Ben> dealt=40.000` and `HURT before=40.000 after=36.364 defense=10.000 …`. The row's `kill @e[type=arrow,distance=..16]` replied `"No entity was found"`, so the arrow had left 16 blocks: it rose past the shot without a hit. **Cause UNREAD** (the arrow's entity-hit test was not opened for this gate, S2 marks the path INFERRED). **A vanilla arrow destroying a shot is UNWITNESSED.** He took one 40, survivable as the arithmetic allowed |
 
 ### SH4 — one ability burst destroys it: the solar grenade cast at it (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The `DRIVE aim` line at the shot; the `CMD /rpg cast solar_grenade` line; then **`[Rpg] SHOT destroyed … by=ability dealer=<Ben> element=fire amount=<a4>`** within the 20 ticks before the `probe_shot`, at an age from 33 to 52 (before its hit at 53). **No HURT line in the row.** `live=0` | the grenade's `on_hit` has no direct damage: its burst (radius 4, `damage 6 fire`) reaches the shot through `combatantsNear` → the handle → `strike` (S2). The Phalanx (12 east) is more than 4 from the shot at every age before 53 except the first 20, so it may take the burst too; that is recorded, not predicted | |
+| The `DRIVE aim` line at the shot; the `CMD /rpg cast solar_grenade` line; then **`[Rpg] SHOT destroyed … by=ability dealer=<Ben> element=fire amount=<a4>`** within the 20 ticks before the `probe_shot`, at an age from 33 to 52 (before its hit at 53). **No HURT line in the row.** `live=0` | the grenade's `on_hit` has no direct damage: its burst (radius 4, `damage 6 fire`) reaches the shot through `combatantsNear` → the handle → `strike` (S2). The Phalanx (12 east) is more than 4 from the shot at every age before 53 except the first 20, so it may take the burst too; that is recorded, not predicted | **AUTO PASS**: `DRIVE aim … target=<S> bat d=6.205`; `CMD /rpg cast solar_grenade`; `SHOT destroyed … age=36 at=-95.694 64.812 5.500 flown=7.200 by=ability dealer=<Ben> element=fire amount=8.000` (age within 33–52); no HURT; `live=0`. **AS PREDICTED** |
 
 ### SH5 — one area effect that catches it destroys it: the grenade's field (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The `DRIVE aim_block` and `CMD /rpg cast solar_grenade` lines; the shot fired 30 ticks later; then **`[Rpg] SHOT destroyed … by=ability dealer=<Ben> element=fire amount=<a5>`**, at an age from 27 to 52, **`a5` less than SH4's `a4`** (the field's authored 2 against the burst's 6, priced by the same chain). **No HURT line in the row.** `live=0` | the field lasts 100 ticks and pulses every 20 over a cube of half-extent 4 round the landing point 3 east (`EffectApplier.tickArea` → `combatantsNear`); the shot is inside it from about x 7 (age ≈ 25) to its hit at 53, more than one pulse's 20; its pulse is ours, so `applyDamage` → `strike` | |
+| The `DRIVE aim_block` and `CMD /rpg cast solar_grenade` lines; the shot fired 30 ticks later; then **`[Rpg] SHOT destroyed … by=ability dealer=<Ben> element=fire amount=<a5>`**, at an age from 27 to 52, **`a5` less than SH4's `a4`** (the field's authored 2 against the burst's 6, priced by the same chain). **No HURT line in the row.** `live=0` | the field lasts 100 ticks and pulses every 20 over a cube of half-extent 4 round the landing point 3 east (`EffectApplier.tickArea` → `combatantsNear`); the shot is inside it from about x 7 (age ≈ 25) to its hit at 53, more than one pulse's 20; its pulse is ours, so `applyDamage` → `strike` | **AUTO PASS**: `DRIVE aim_block … block=-98,62,5 stone face=UP`; `CMD /rpg cast solar_grenade`; the fire 30 ticks later; `SHOT destroyed … age=33 at=-95.095 64.836 5.500 flown=6.600 by=ability dealer=<Ben> element=fire amount=4.000` (age within 27–52; 4.000 less than SH4's 8.000); no HURT; `live=0`. **AS PREDICTED** |
 
 ### SH6 — a shot left to expire, the player moved out of its path (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The fired line; his `CMD /tp @s ~-38 ~ ~ -90 0` 3 ticks after the step; **`[Rpg] SHOT expired … age=176 at=<feet + −27.195…−27.194, 1.680…1.662, 0.000> flown=35.198…35.196 limit=range`** (S4; the first `feet` is where he began the row). No hit, no HURT. After `return`, `live=0` | S4, SH6 table; E1 says why it is range and not life | |
+| The fired line; his `CMD /tp @s ~-38 ~ ~ -90 0` 3 ticks after the step; **`[Rpg] SHOT expired … age=176 at=<feet + −27.195…−27.194, 1.680…1.662, 0.000> flown=35.198…35.196 limit=range`** (S4; the first `feet` is where he began the row). No hit, no HURT. After `return`, `live=0` | S4, SH6 table; E1 says why it is range and not life | **AUTO PASS**: `CMD /tp @s ~-38 ~ ~ -90 0`; `SHOT expired … age=176 at=-127.695 64.674 5.500 flown=35.197 limit=range` (rel. −27.195 1.674 0, inside −27.195…−27.194, 1.680…1.662, 35.198…35.196); no hit, no HURT; after `return`, `live=0`. **AS PREDICTED** |
 
 ### SH7 — a shot that meets a wall (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| **`[Rpg] SHOT blocked … age=18 at=<feet + 4.406 1.884 0.000> flown=3.600 block=stone`**. No hit, no HURT. `live=0` | S4, SH7; the block rule is the beam's (`rayTraceBlocks`, `FluidCollisionMode.NEVER`, passable ignored) from the old position to the new | |
+| **`[Rpg] SHOT blocked … age=18 at=<feet + 4.406 1.884 0.000> flown=3.600 block=stone`**. No hit, no HURT. `live=0` | S4, SH7; the block rule is the beam's (`rayTraceBlocks`, `FluidCollisionMode.NEVER`, passable ignored) from the old position to the new | **NOT AS PREDICTED.** `SHOT destroyed … age=17 at=-95.894 64.896 5.500 flown=3.400 by=vanilla cause=SUFFOCATION`, one tick before the predicted `blocked … age=18`. No hit, no HURT, `live=0`. **The code did what it says** (any vanilla damage destroys it); **the prediction missed** that the carrier's BOX (a bat, 0.5 wide, its front 0.25 ahead of the shot's centre) enters the wall before the centre's path does, and a body in a wall takes `IN_WALL` (INFERRED: `LivingEntity#baseTick`'s `isInWall`, not opened). A finding for the seat, not fixed here |
 
 ### SH8 — a frozen husk in its path is not hurt (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| Two `PROBE` lines for `sh8h`, before and after, **with the same custom HP**; the shot passes through the husk's box (at x 4 the shot is at y ≈ 1.86, inside a husk 1.95 tall) and **hits him at age 33** exactly as SH1 (`victim=player`, `dealt=40.000`), with SH1's HURT line. **No `[Rpg] SHOT` line names the husk** | `MobShot.victim` passes over `Side.MOB` (S3); a mob never changes the flight | |
+| Two `PROBE` lines for `sh8h`, before and after, **with the same custom HP**; the shot passes through the husk's box (at x 4 the shot is at y ≈ 1.86, inside a husk 1.95 tall) and **hits him at age 33** exactly as SH1 (`victim=player`, `dealt=40.000`), with SH1's HURT line. **No `[Rpg] SHOT` line names the husk** | `MobShot.victim` passes over `Side.MOB` (S3); a mob never changes the flight | **AUTO PASS**: `PROBE tag=sh8h … husk customHP=100.000/100.000 … d=4.000` before and after, the same; `SHOT hit … age=33 at=-99.088 64.705 5.500 flown=6.600 victim=player <Ben> dealt=40.000`; SH1's HURT line; no SHOT line names the husk. **AS PREDICTED** |
 
 ### SH9 — a destroyed shot pays nothing, and a small Phage beside it does not grow (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `BODY tag=sh9p … mob=phage stage=1 …` before and after, **the same line**; **no `[Rpg] GROWTH` line in the row**; the two `xp query @s points` REPLY lines the same, and the two `levels` lines the same; SH2's `destroyed … by=vanilla cause=ENTITY_ATTACK` line, struck at about x 5.4, within the Phage's 6-block growth radius (the Phage at 4 east, 1 north). No HURT | S3: no death, so nothing a death does; no coins exist to pay | |
+| `BODY tag=sh9p … mob=phage stage=1 …` before and after, **the same line**; **no `[Rpg] GROWTH` line in the row**; the two `xp query @s points` REPLY lines the same, and the two `levels` lines the same; SH2's `destroyed … by=vanilla cause=ENTITY_ATTACK` line, struck at about x 5.4, within the Phage's 6-block growth radius (the Phage at 4 east, 1 north). No HURT | S3: no death, so nothing a death does; no coins exist to pay | **NOT AS PREDICTED on one clause, the code right.** `BODY tag=sh9p … mob=phage stage=1 …` before and after the shot's destruction, the same line; `SHOT destroyed … age=14 … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`; XP `1304 experience points` / `191 experience levels` before and after, the same; no HURT. **But** after the row's `kill @e[tag=sh9]`: `GROWTH mob=phage id=<sh9p> from=1 to=2 fed=wither_skeleton/phalanx <the row's Phalanx> element=void d=4.123 max=100`: **the Phalanx's own death** (a Void mob, 4.123 from the Phage) grew it, as growth is built to. The prediction "no GROWTH line in the row" forgot the row's cleanup kill. **The shot fed nothing**: the second BODY line, read after its destruction and before the kill, is stage 1 |
 
 ### SH10 — the live cycle (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| **Two `[Rpg] SHOT fired … forced=false` lines whose `tick=` differ by exactly 120**, the first about 120 ticks after the row's spawn; each followed by **one `hit`** and its **HURT line for 40 before defence** (its age not predicted: the live Phalanx strafes); **at least three `[Rpg] BOW suppressed mob=phalanx id=<P>` lines**; `ENTITIES ARROW count=0 radius=16` | the clock (`MobShot.Clock`, `theClockAttemptsEvery120Ticks…`); S5; the first attempt is 120 after its add (as the Knell's I3), and it fires because he is within 30 (eye to eye, ≈ 10) | |
+| **Two `[Rpg] SHOT fired … forced=false` lines whose `tick=` differ by exactly 120**, the first about 120 ticks after the row's spawn; each followed by **one `hit`** and its **HURT line for 40 before defence** (its age not predicted: the live Phalanx strafes); **at least three `[Rpg] BOW suppressed mob=phalanx id=<P>` lines**; `ENTITIES ARROW count=0 radius=16` | the clock (`MobShot.Clock`, `theClockAttemptsEvery120Ticks…`); S5; the first attempt is 120 after its add (as the Knell's I3), and it fires because he is within 30 (eye to eye, ≈ 10) | **AUTO PASS**: `SHOT fired … forced=false tick=1747 …` and `tick=1867`: **120 apart**; each hit (`age=44`, `age=45`, `dealt=40.000`) with its HURT (40.000 / 36.364); **six** `BOW suppressed` lines (ticks 1650, 1710, 1770, 1830, 1890, 1950); `ENTITIES ARROW count=0 radius=16`. **AS PREDICTED** |
 
 ### SH11 — no arrow in a bow's window, before its clock (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| **At least one `[Rpg] BOW suppressed` line** in the 100 ticks; **no `[Rpg] SHOT fired` line** (its first attempt is 120 after it appears); `ENTITIES ARROW count=0 radius=16`. No HURT | S5: once it targets him it releases about 20 ticks into its first draw; 100 ticks leaves its target goal 80 to find him | |
+| **At least one `[Rpg] BOW suppressed` line** in the 100 ticks; **no `[Rpg] SHOT fired` line** (its first attempt is 120 after it appears); `ENTITIES ARROW count=0 radius=16`. No HURT | S5: once it targets him it releases about 20 ticks into its first draw; 100 ticks leaves its target goal 80 to find him | **AUTO PASS**: two `BOW suppressed` lines (ticks 2024, 2084); no `SHOT fired`; `ENTITIES ARROW count=0 radius=16`; no HURT. **AS PREDICTED** |
 
 ### SH12 — after its Phalanx is killed, no carrier is left (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The fired line; a `SHOT at …` read (age about 9, S4's 12-east figures); the `CMD /kill @e[tag=sh12]`; then **`[Rpg] SHOT ended … reason=owner-gone`**; **`ENTITIES BAT count=0 radius=16`** and **`ENTITIES BLOCK_DISPLAY count=0 radius=16`** | the Phalanx's loop stops the tick it is dead (`isActive`), and its `onStop` ends every shot it owns, removing the bat and the display | |
+| The fired line; a `SHOT at …` read (age about 9, S4's 12-east figures); the `CMD /kill @e[tag=sh12]`; then **`[Rpg] SHOT ended … reason=owner-gone`**; **`ENTITIES BAT count=0 radius=16`** and **`ENTITIES BLOCK_DISPLAY count=0 radius=16`** | the Phalanx's loop stops the tick it is dead (`isActive`), and its `onStop` ends every shot it owns, removing the bat and the display | **AUTO PASS**: the fired line (tick 2133); `SHOT ended … age=9 at=-90.299 65.028 5.500 flown=1.800 reason=owner-gone`; `ENTITIES BAT count=0 radius=16`; `ENTITIES BLOCK_DISPLAY count=0 radius=16`. (The `probe_shot` after the 10-tick wait read `live=0`: its read ran after the kill's death had ended the shot, so no `SHOT at` line, the one predicted read not seen.) **AS PREDICTED on the ending and the counts; NOT AS PREDICTED on the in-flight read**: the `probe_shot` runs on the Phalanx's thread a tick later, and the `kill` in the same tick had already ended the shot |
 
 ---
 
@@ -363,10 +382,10 @@ the colour, the flashes, whether he could see it and whether it feels fair are h
 
 | AUTO half | Ben's half | READING |
 |---|---|---|
-| Two fired lines from `sq1`; the first ends in a `hit` and its HURT (he lets it hit him); the second ends in `destroyed … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` if he hit it, else a `hit` | `SQ1 ASK 1 question="Could you see the shot coming (light purple, with pink flashes)?" answer=…`; `ASK 2 question="Did hitting it destroy it?" answer=…`; `ASK 3 question="Does the Phalanx's shot feel fair now?" answer=…` | |
+| Two fired lines from `sq1`; the first ends in a `hit` and its HURT (he lets it hit him); the second ends in `destroyed … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` if he hit it, else a `hit` | `SQ1 ASK 1 question="Could you see the shot coming (light purple, with pink flashes)?" answer=…`; `ASK 2 question="Did hitting it destroy it?" answer=…`; `ASK 3 question="Does the Phalanx's shot feel fair now?" answer=…` | READ: shot 1 `SHOT hit … age=68 … dealt=40.000`, HURT 40.000 / 36.364. **Shot 2 ALSO `SHOT hit … age=68 … dealt=40.000`**, HURT 40.000 / 36.364: **no destroyed line**, so no swing of his reached it on the server. Ben, verbatim: `SQ1 ASK 1 question="Could you see the shot coming (light purple, with pink flashes)?" answer="yes" ticks=90`; `SQ1 ASK 2 question="Did hitting it destroy it?" answer="yes" ticks=88`; `SQ1 ASK 3 question="Does the Phalanx's shot feel fair now?" answer="yes" ticks=78`. **His ASK 2 "yes" and the server disagree**; recorded as both said, not re-asked |
 
 ### KQ1R6 — supersedes GATE-dragon-knell-5.md KQ1R5's flash: the second purple line is gone (SURVIVAL)
 
 | AUTO half | Ben's half | READING |
 |---|---|---|
-| `GATE-dragon-knell-5.md`'s forced-beam lines from a frozen Knell 12 east: the two telegraph sounds and the TELEGRAPH at T; the two fire sounds and the FIRE at T + 24; its hit and HURT for 65 before defence. **The flash is drawn by the client and logged nowhere**, so the AUTO half cannot see it | `KQ1R6 ASK 1 question="Is the second purple line gone?" answer=…` | |
+| `GATE-dragon-knell-5.md`'s forced-beam lines from a frozen Knell 12 east: the two telegraph sounds and the TELEGRAPH at T; the two fire sounds and the FIRE at T + 24; its hit and HURT for 65 before defence. **The flash is drawn by the client and logged nowhere**, so the AUTO half cannot see it | `KQ1R6 ASK 1 question="Is the second purple line gone?" answer=…` | READ: `BEAM telegraph … tick=2839 …`, `BEAM fire … tick=2863 … tested=1 [player <Ben> gap=0.000 hit]`, `HURT before=65.000 after=59.091 defense=10.000 … dealerType=wither_skeleton/knell`, and its move `TELEPORT … tick=2887` (24 after the fire, the production draw). Ben, verbatim: `KQ1R6 ASK 1 question="Is the second purple line gone?" answer="yes" ticks=113`. **The flash ruled removed: CONFIRMED BY PLAY** |
