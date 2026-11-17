@@ -1445,6 +1445,16 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
 - **F6, 2026-11-17, INFERRED, not read: the same seam can drop a growth.** Because `applyGrowth` re-asks the rule at the
   new position, a live Phage inside 6 blocks at the death that walks beyond 6 before its own tick would not grow,
   though the BLAST line lists it as spared. No row has staged it.
+- **F4, F5 AND F6 BUILT, 2026-11-17, in `feat/dragon-blast-2`** (the seat's follow-up brief; `GATE-dragon-blast-2.md`,
+  NOT BOOTED). F4: the instrument's `thaw: <tag>` step, which logs the AI read back, used by DS1R4 in place of the data
+  merge. F5: `MobGrower.reportDeath` decides who grows and the distance from the positions at the death, each
+  `MobGrowth.Grow` carrying its distance; `applyGrowth` re-reads only the stage (`MobGrowth.restage`, which takes no
+  position); the GROWTH line prints that distance to three places. **F6, answered by reading the merged code
+  (`ca0ae38a`), not by a boot: yes, it could.** Its `applyGrowth` built a candidate at `vec(mob.getLocation())` on the
+  growing Phage's own tick and asked `stageAfter` again; past 6 that returns the old stage, and `if (to == from)
+  return;` then dropped the growth with no line. Only a LIVE candidate moves between the death and its tick, and only
+  one standing within about a tick's walk of the edge could cross it, so it was rare; it could never ADD a growth,
+  because only candidates decided at the death are scheduled. `restage` closes it.
 
 ## QUESTIONS FOR BEN
 

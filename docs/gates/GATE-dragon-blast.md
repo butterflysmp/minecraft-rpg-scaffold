@@ -7,6 +7,15 @@ says ready.**
 
 **2026-11-17: approved to merge by the review seat after the boot of bd7457a3.**
 
+> **2026-11-17, AFTER THE MERGE: EVERY ROW OF THIS FILE IS SUPERSEDED BY `GATE-dragon-blast-2.md`.** The follow-up of
+> 2026-11-17 (PLAN-dragon-mobs.md, RULINGS, *the 60 and the 150, and knockback*) changes the blast's damage (60 to
+> 150), adds vanilla's push, and fixes growth's decision at the death, so the figures BL1, BL2, BL6, BL9, DS1R3 and BQ1
+> predicted no longer describe the build, and BL3, DG6R3 and DG9R3's GROWTH `d` now prints three places. Each row is
+> re-predicted there as a new row named for this one with the next suffix (BL1 → BL1R2 … BL9 → BL9R2, DS1R3 → DS1R4,
+> DS2R3 → DS2R4, DS5R3 → DS5R4, DS6R3 → DS6R4, DG6R3 → DG6R4, DG9R3 → DG9R4, BQ1 → BQ1R2), and
+> `selftest/GATE-dragon-blast.yml` now carries those rows. **Nothing below is edited**: every prediction and reading
+> here stays the record of `bd7457a3`.
+
 > **2026-11-16: THE PREDICTIONS IN THIS FILE WERE REWRITTEN BEFORE ANY BOOT, AND THIS IS WHY.** The version first
 > committed at `58165392` predicted a blast of 3 blocks at full damage (the seat's provisional P-c). Vanilla's reach is
 > twice its power, 6, with falloff (`PLAN-dragon-mobs.md` §8 F2, §7 F-B), and Ben ruled *"keep vanillas shap"*. No row of
