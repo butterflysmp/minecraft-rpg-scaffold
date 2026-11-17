@@ -111,6 +111,7 @@ final class SelfTestRun {
             int removed = snapshot.removeTagged(player, service.scheduler());
             log("CLEAN blocks=" + blocks + " removed=" + removed + " inventory=" + (gateBoundary ? "restored" : "kept")
                     + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ()));
+            log(SelfTestStaging.lingerLine(SelfTestStaging.LINGER_RADIUS, endWork(start), endLingering(start)));
             // A ROW STARTS CLEAN OR SAYS SO (GATE-dragon-fix.md, C3). The removals above run on each mob's own
             // scheduler, a tick later, so the count waits for them; then every live body still in the row's radius
             // is named. The 2026-11-15 boot's rows staged beside mobs earlier rows had leaked, and no line said so.
@@ -120,6 +121,29 @@ final class SelfTestRun {
                 advance();
             }, SelfTestStaging.LEFTOVER_WAIT_TICKS);
         }));
+    }
+
+    /** C2 (step R7b), FIRST: end every point-scheduled chain round the start, so none re-spawns what the next pass removes. */
+    private int endWork(Location start) {
+        return service.work().cancelNear(start.getWorld().getUID(), start.getX(), start.getY(), start.getZ(),
+                SelfTestStaging.LINGER_RADIUS);
+    }
+
+    /** C2 (step R7b), THEN: remove each projectile, cloud and marker of ours round the start; "type uuid", nearest first. */
+    private List<String> endLingering(Location start) {
+        int r = SelfTestStaging.LINGER_RADIUS;
+        List<String> ended = new java.util.ArrayList<>();
+        start.getWorld().getNearbyEntities(start, r, r, r).stream()
+                .filter(e -> e.getLocation().distanceSquared(start) <= (double) r * r)
+                .filter(e -> SelfTestStaging.lingering(e instanceof org.bukkit.entity.Projectile,
+                        e instanceof org.bukkit.entity.AreaEffectCloud,
+                        e.getPersistentDataContainer().has(service.keys().markerEntity), e instanceof Player))
+                .sorted(java.util.Comparator.comparingDouble(e -> e.getLocation().distanceSquared(start)))
+                .forEach(e -> {
+                    ended.add(e.getType().getKey().getKey() + " " + e.getUniqueId());
+                    service.scheduler().onEntity(e, e::remove);
+                });
+        return ended;
     }
 
     /** Every live body in the row's radius that is not the player or scenery: "type uuid", nearest first. */
@@ -306,12 +330,14 @@ final class SelfTestRun {
                 .orElse(null);
         var live = carrier == null ? null : service.shots().liveShots(player.getEyeLocation()).stream()
                 .filter(s -> s.id().equals(carrier.getUniqueId())).findFirst().orElse(null);
-        if (live == null) {
-            log("DRIVE strike_at_age tag=" + a.tag() + " no live shot after " + waited + " ticks");
+        SelfTestStrike.Next next = SelfTestStrike.next(live != null, live == null ? 0 : live.age(), a.age(), waited,
+                a.timeoutTicks());
+        if (next == SelfTestStrike.Next.NO_SHOT_AT_TIMEOUT) {
+            log("DRIVE strike_at_age tag=" + a.tag() + " no live shot after " + waited + " ticks (the timeout)");
             advance();
             return;
         }
-        if (live.age() >= a.age()) {
+        if (next == SelfTestStrike.Next.STRIKE) {
             var c = io.github.butterflysmp.rpg.paper.health.MobShooter.shapeCentre(live.carrier()).orElse(live.centre());
             Location eye = player.getEyeLocation();
             log("DRIVE strike_at_age tag=" + a.tag() + " age=" + live.age() + " waited=" + waited);
@@ -320,7 +346,7 @@ final class SelfTestRun {
             advance();
             return;
         }
-        if (waited >= a.timeoutTicks()) {
+        if (next == SelfTestStrike.Next.YOUNG_AT_TIMEOUT) {
             log("DRIVE strike_at_age tag=" + a.tag() + " age=" + live.age() + " under " + a.age() + " at the timeout");
             advance();
             return;

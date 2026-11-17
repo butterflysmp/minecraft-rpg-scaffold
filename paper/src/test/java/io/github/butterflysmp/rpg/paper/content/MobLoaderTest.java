@@ -418,7 +418,9 @@ class MobLoaderTest {
     /** The sound keys this test's loader treats as real; production asks the server's sound registry. */
     private static final java.util.Set<String> SOUNDS =
             java.util.Set.of("block.bell.use", "block.bell.resonate", "block.amethyst_block.chime", "entity.cat.ambient",
-                    "entity.wither.ambient", "entity.shulker_bullet.hurt");
+                    "entity.wither.ambient", "entity.shulker_bullet.hurt",
+                    // step R7b: the Phalanx's blink and shield
+                    "entity.enderman.teleport", "item.shield.break");
 
     private static final String SOUNDS_OK = "  sounds:\n"
             + "    telegraph:\n      - { key: entity.cat.ambient, volume: 0.25, pitch: 1.75 }\n"

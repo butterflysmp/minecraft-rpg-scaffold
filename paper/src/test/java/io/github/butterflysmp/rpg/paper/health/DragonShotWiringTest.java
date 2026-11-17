@@ -55,7 +55,8 @@ class DragonShotWiringTest {
         int st = indexOf(code, "@Override public void applyStatus(String statusId, int durationTicks, int amplifier,");
         int stStrike = indexAfter(code, st, "if (ctx.shots().strike(entity, \"ability status=\" + statusId)) return;");
         int sw = indexAfter(code, st, "switch (def) {");
-        assertTrue(st > 0 && stStrike > st && stStrike + 1 == sw, "applyStatus: strike just before the switch: " + stStrike + " " + sw);
+        // Step R7b: the shield's rider line sits between the strike and the switch (DragonBlinkWiringTest pins it).
+        assertTrue(st > 0 && stStrike > st && stStrike + 2 == sw, "applyStatus: strike, the shield, then the switch: " + stStrike + " " + sw);
 
         int heal = indexOf(code, "@Override public void applyHeal(double amount) {");
         int healGuard = indexAfter(code, heal, "if (entity.getPersistentDataContainer().has(ctx.keys().mobShot)) return;");

@@ -173,11 +173,18 @@ public final class MobTeleporter implements MobBeamer.Listener {
      * </ul>
      */
     private static BeamTeleport.Footing footing(Mob mob, LivingEntity target, MobBeam beam) {
+        return footing(mob, beam.aimPoint(vec(target.getLocation()), target.getHeight()));
+    }
+
+    /**
+     * THE PORT, for any mob (step R7b: the Phalanx's blink uses this same one; "do not write a second landing
+     * checker"). {@code aim} is the point {@code sees} looks at, or null for a caller that never asks for sight.
+     */
+    static BeamTeleport.Footing footing(Mob mob, Vec3 aim) {
         World world = mob.getWorld();
         double half = mob.getWidth() / 2.0 - INSET;
         double height = mob.getHeight();
         double eye = mob.getEyeHeight();
-        Vec3 aim = beam.aimPoint(vec(target.getLocation()), target.getHeight());
         return new BeamTeleport.Footing() {
             @Override public boolean loaded(Vec3 f) {
                 return world.isChunkLoaded((int) Math.floor(f.x()) >> 4, (int) Math.floor(f.z()) >> 4);
@@ -194,6 +201,7 @@ public final class MobTeleporter implements MobBeamer.Listener {
             }
 
             @Override public boolean sees(Vec3 f) {
+                if (aim == null) throw new IllegalStateException("this footing was built with no aim; sight was not asked");
                 Vec3 from = new Vec3(f.x(), f.y() + eye, f.z());
                 Vec3 d = aim.subtract(from);
                 double len = d.length();

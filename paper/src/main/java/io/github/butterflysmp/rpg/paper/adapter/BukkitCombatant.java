@@ -203,6 +203,13 @@ public final class BukkitCombatant {
                         "ability dealer=%s element=%s amount=%.3f", sourceId, element, amount))) {
                     return;
                 }
+                // THE ONE-HIT SHIELD (step R7b, the seat's ruling 5): the ONE point every damage path passes. A shielded
+                // mob's first hit of any positive amount is absorbed WHOLE: nothing below runs for it, so no health, no
+                // accrual, no Ignite, no aggro and no flash; its look and its line are the shield's own.
+                if (ctx.shields().absorb(entity, amount, String.format(java.util.Locale.ROOT,
+                        "dealer=%s element=%s amount=%.3f", sourceId, element, amount))) {
+                    return;
+                }
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
                 Entity source = Attribution.attributableSource(
@@ -387,6 +394,7 @@ public final class BukkitCombatant {
                 if (ctx.shots().strike(entity, String.format(java.util.Locale.ROOT, "ability knockback=%.3f", strength))) {
                     return;
                 }
+                if (ctx.shields().suppressRider(entity, String.format(java.util.Locale.ROOT, "knockback=%.3f", strength))) return;
                 Vector v = new Vector(direction.x(), direction.y(), direction.z());
                 if (v.lengthSquared() > 0) v.normalize().multiply(strength);
                 entity.setVelocity(entity.getVelocity().add(v));
@@ -402,6 +410,7 @@ public final class BukkitCombatant {
         @Override public void applyImpulse(Vec3 velocity) {
             ctx.scheduler().onEntity(entity, () -> {
                 if (ctx.shots().strike(entity, "ability impulse")) return;   // step R7a: a shot is never moved by us
+                if (ctx.shields().suppressRider(entity, "impulse")) return;   // step R7b: nothing rides an absorbed hit
                 entity.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z()));
             });
         }
@@ -436,6 +445,7 @@ public final class BukkitCombatant {
                 // it instead. Wither, Ignite's scorch, Freeze, Rooted, Soaked: every status lands here or in
                 // applyDamage's accrual, and both ask first.
                 if (ctx.shots().strike(entity, "ability status=" + statusId)) return;
+                if (ctx.shields().suppressRider(entity, "status=" + statusId)) return;   // step R7b
                 switch (def) {
                     // Extend a burn, never shorten it. A 2s scorch pulse must not stomp
                     // the 10s burn someone already took from flint and steel.

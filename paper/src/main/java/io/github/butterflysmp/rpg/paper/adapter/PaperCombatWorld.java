@@ -177,7 +177,12 @@ public final class PaperCombatWorld implements CombatWorld {
 
     @Override
     public void schedule(Vec3 near, int delayTicks, Runnable task) {
-        ctx.scheduler().onRegionLater(toLocation(near), task, delayTicks);
+        // Registered with its point, so a clean can end it there (step R7b, C2; PendingWork). It runs only if it is
+        // still pending when its delay ends.
+        long id = ctx.work().add(world.getUID(), near.x(), near.y(), near.z());
+        ctx.scheduler().onRegionLater(toLocation(near), () -> {
+            if (ctx.work().take(id)) task.run();
+        }, delayTicks);
     }
 
     /**

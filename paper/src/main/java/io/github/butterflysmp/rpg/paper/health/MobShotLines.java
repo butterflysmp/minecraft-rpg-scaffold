@@ -89,6 +89,28 @@ public final class MobShotLines {
         return "SHOT orphan removed type=" + type + " uuid=" + id;
     }
 
+    /**
+     * The Phalanx's blink, ONE line (step R7b): what triggered it (or none, the instrument's force), where it stood, every
+     * attempt in order with the check that refused it (NO_FOOTING with how many heights did not fit and how many had no
+     * ground) or where it stands (OK), and where it landed, or none (it stays).
+     */
+    public static String blink(String mobId, UUID mob, long tick, boolean forced, String triggerKind, UUID trigger, Vec3 from,
+                               io.github.butterflysmp.rpg.core.mob.MobBlink.Decision d) {
+        StringBuilder tried = new StringBuilder();
+        for (var v : d.tried()) {
+            if (tried.length() > 0) tried.append(", ");
+            tried.append(String.format(Locale.ROOT, "%.3f %.3f %s", v.draw().angleDegrees(), v.draw().distance(), v.outcome()));
+            switch (v.outcome()) {
+                case NO_FOOTING -> tried.append(" blocked=").append(v.blocked()).append(" ungrounded=").append(v.ungrounded());
+                case OK, NO_SIGHT -> tried.append(" at=").append(v(v.landing().orElseThrow()));
+                default -> { }
+            }
+        }
+        return String.format(Locale.ROOT, "BLINK mob=%s id=%s tick=%d forced=%s trigger=%s from=%s tried=%d [%s] landed=%s",
+                mobId, mob, tick, forced, trigger == null ? "none" : triggerKind + " " + trigger, v(from), d.tried().size(),
+                tried, d.landing().map(MobShotLines::v).orElse("none"));
+    }
+
     /** A Phalanx's bow shot, cancelled (the seat's ruling 7): the arrow never enters the world. */
     public static String bowSuppressed(String mobId, UUID mob, long tick) {
         return "BOW suppressed mob=" + mobId + " id=" + mob + " tick=" + tick;

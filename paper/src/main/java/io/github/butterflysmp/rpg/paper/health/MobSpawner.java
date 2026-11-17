@@ -45,5 +45,15 @@ public final class MobSpawner {
                 entity.getEquipment().setItemInMainHandDropChance(0f);
             }
         }
+        // THE ONE-HIT SHIELD (step R7b): up from birth, its item in the off hand, never dropped. The byte is the state;
+        // the item is its look, cleared when it absorbs (cfde822: "off hand cleared; byte removed").
+        if (def.shield() != null) {
+            entity.getPersistentDataContainer().set(keys.mobShield, PersistentDataType.BYTE, (byte) 1);
+            org.bukkit.Material off = org.bukkit.Material.matchMaterial(def.shield().item());
+            if (off != null && entity.getEquipment() != null) {
+                entity.getEquipment().setItemInOffHand(new org.bukkit.inventory.ItemStack(off));
+                entity.getEquipment().setItemInOffHandDropChance(0f);
+            }
+        }
     }
 }

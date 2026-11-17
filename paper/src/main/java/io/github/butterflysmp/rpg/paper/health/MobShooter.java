@@ -9,6 +9,8 @@ import io.github.butterflysmp.rpg.core.mob.MobHostility;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobScaling;
 import io.github.butterflysmp.rpg.core.mob.MobShot;
+import io.github.butterflysmp.rpg.core.mob.MobBlink;
+import io.github.butterflysmp.rpg.core.mob.BeamTeleport;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.EntityTaskTarget;
@@ -105,8 +107,8 @@ public final class MobShooter implements ShotSink {
     private static final class Live {
         final Owner owner;
         final Frog carrier;
-        /** The display's real offset has been read on the server and its translation corrected. */
-        boolean calibrated;
+        /** The display's offset from the carrier's feet as last MEASURED on the server (C1), or null before the first. */
+        Vector3f offset;
         /** The vanilla causes already refused for this shot: each is logged once. */
         final java.util.Set<String> refused = new java.util.HashSet<>();
         BlockDisplay display;
@@ -128,12 +130,43 @@ public final class MobShooter implements ShotSink {
         final MobShot.Clock clock;
         final List<Live> shots = new ArrayList<>();
         RepeatingTask task;
-        Owner(Mob mob, String mobId, MobShot shot) {
+        /** Its blink, or null (step R7b). */
+        final MobBlink blink;
+        /** The instrument's fixed draw for the NEXT blink, which it forces on the next tick; null otherwise. */
+        MobBlink.Draw forced;
+        Owner(Mob mob, String mobId, MobShot shot, MobBlink blink) {
             this.mob = mob;
             this.mobId = mobId;
             this.shot = shot;
+            this.blink = blink;
             this.clock = new MobShot.Clock(shot.periodTicks());
         }
+    }
+
+    /**
+     * C4, CLOSED HERE (step R7b): the carrier never pushes and is never pushed, by a scoreboard team whose collision rule
+     * is NEVER. READ, {@code EntitySelector.pushableBy} (offsets 57-85) and {@code LivingEntity#pushEntities}: either
+     * body's team rule NEVER stops the push both ways. It does NOT touch {@code LivingEntity.collides}, which
+     * {@code isPickable} reads, so a vanilla arrow still hits the carrier (D2 on #201). The team is the main scoreboard's;
+     * each carrier joins it at its fire and leaves it at its end, and the enable sweep empties it of any entry left by a
+     * crash.
+     */
+    static final String SHOT_TEAM = "rpg_shot";
+
+    private static org.bukkit.scoreboard.Team shotTeam() {
+        org.bukkit.scoreboard.Scoreboard board = Bukkit.getScoreboardManager().getMainScoreboard();
+        org.bukkit.scoreboard.Team t = board.getTeam(SHOT_TEAM);
+        if (t == null) t = board.registerNewTeam(SHOT_TEAM);
+        if (t.getOption(org.bukkit.scoreboard.Team.Option.COLLISION_RULE) != org.bukkit.scoreboard.Team.OptionStatus.NEVER) {
+            t.setOption(org.bukkit.scoreboard.Team.Option.COLLISION_RULE, org.bukkit.scoreboard.Team.OptionStatus.NEVER);
+        }
+        return t;
+    }
+
+    /** The enable sweep: a team entry no live carrier owns is a crash's leftover, and goes. */
+    public void clearShotTeam() {
+        org.bukkit.scoreboard.Team t = shotTeam();
+        for (String entry : List.copyOf(t.getEntries())) t.removeEntry(entry);
     }
 
     /** A frog's box edge before any scale, BLOCKS (READ: EntityType frog sized(0.5f, 0.5f)). SCALE = hit box / this. */
@@ -146,9 +179,17 @@ public final class MobShooter implements ShotSink {
     private final Supplier<MobRegistry> mobs;
     private final AdapterContext adapters;
 
+    /** The blink's randomness (step R7b): production draws uniformly; the instrument fixes one draw. */
+    private final MobBlink.Source blinkSource;
+
     public MobShooter(Supplier<MobRegistry> mobs, AdapterContext adapters) {
+        this(mobs, adapters, MobBlink.uniform(new java.util.Random()));
+    }
+
+    public MobShooter(Supplier<MobRegistry> mobs, AdapterContext adapters, MobBlink.Source blinkSource) {
         this.mobs = mobs;
         this.adapters = adapters;
+        this.blinkSource = blinkSource;
     }
 
     public void addListener(Listener l) {
@@ -186,7 +227,7 @@ public final class MobShooter implements ShotSink {
         if (def == null || def.shot() == null) return;
         Owner running = owners.get(mob.getUniqueId());
         if (running != null && running.task.isRunning()) return;
-        Owner o = new Owner(mob, mobId, def.shot());
+        Owner o = new Owner(mob, mobId, def.shot(), def.blink());
         o.task = RepeatingTask.start(new EntityTaskTarget(mob, adapters.scheduler(), adapters.log()), 1, "phalanx-shot",
                 () -> {
                     step(o);
@@ -258,6 +299,10 @@ public final class MobShooter implements ShotSink {
             case FORCED -> attempt(o, true);
         }
         for (Live s : List.copyOf(o.shots)) advance(s);
+        // The blink LAST in the tick (step R7b): after this tick's fire and every shot's step, so a blink can neither
+        // swallow a fire nor touch a shot. The shots are the Phalanx's own list, and a blink is a same-world teleport,
+        // which neither removes the Phalanx nor stops this loop: a blink cannot orphan a shot.
+        blinkStep(o);
     }
 
     private void attempt(Owner o, boolean forced) {
@@ -345,7 +390,14 @@ public final class MobShooter implements ShotSink {
             d.setGlowColorOverride(Color.fromRGB(look.glowRgb()));
         });
         carrier.addPassenger(s.display);
+        shotTeam().addEntry(carrier.getUniqueId().toString());   // C4: it never pushes and is never pushed
         o.shots.add(s);
+        // cfde822: "Firing clears invisibility" (READ, section 3.4), so it may blink again.
+        if (mob.isInvisible()) {
+            mob.setInvisible(false);
+            adapters.log().info("BLINK visible mob=" + o.mobId + " id=" + mob.getUniqueId() + " tick="
+                    + Bukkit.getCurrentTick() + " reason=fired");
+        }
 
         int gs = gearScore(o);
         double dealt = o.shot.price(MobClassifier.isHostile(mob), gs);
@@ -354,6 +406,75 @@ public final class MobShooter implements ShotSink {
                 carrier.getUniqueId(), kind(target), target.getUniqueId(), eye, aim, dealt));
         draw(world, s);
         for (Listener l : listeners) l.onFired(mob, carrier);
+    }
+
+    // --- the blink (step R7b) ----------------------------------------------------------------------------------------
+
+    /** The instrument: the next tick forces a blink whose every attempt is this draw, frozen or not. Empty when it took. */
+    public Optional<String> forceBlink(LivingEntity entity, MobBlink.Draw draw) {
+        Owner o = owners.get(entity.getUniqueId());
+        if (o == null || !o.task.isRunning()) return Optional.of("no shot loop");
+        if (o.blink == null) return Optional.of("no blink");
+        o.forced = draw;
+        return Optional.empty();
+    }
+
+    /**
+     * cfde822: "a non-creative, non-spectator player in the D4 box while it is not already invisible" (READ). Its OWN
+     * blink needs AI, as its own fire does (a frozen Phalanx never acts of itself); the instrument's force does not.
+     */
+    private void blinkStep(Owner o) {
+        if (o.blink == null) return;
+        Mob mob = o.mob;
+        if (o.forced != null) {
+            MobBlink.Draw d = o.forced;
+            o.forced = null;
+            List<MobBlink.Draw> draws = new ArrayList<>();
+            for (int i = 0; i < o.blink.attempts(); i++) draws.add(d);
+            blink(o, draws, true, null);
+            return;
+        }
+        if (!mob.hasAI() || mob.isInvisible()) return;
+        Vec3 feet = vec(mob.getLocation());
+        double r = o.blink.triggerRange() + 2.0;
+        for (Entity e : mob.getWorld().getNearbyEntities(mob.getLocation(), r, r + 2.0, r)) {
+            if (!(e instanceof LivingEntity l) || l.equals(mob) || marked(l) || !LiveTargets.isLive(l)) continue;
+            if (o.blink.triggered(feet, box(l), side(l), exempt(l))) {
+                blink(o, o.blink.draws(blinkSource), false, l);
+                return;
+            }
+        }
+    }
+
+    /** The decision through the Knell's port (MobTeleporter.footing, no sight), one line, and the move if it lands. */
+    private void blink(Owner o, List<MobBlink.Draw> draws, boolean forced, LivingEntity trigger) {
+        Mob mob = o.mob;
+        Location from = mob.getLocation();
+        MobBlink.Decision d = o.blink.decide(vec(from), draws, MobTeleporter.footing(mob, null));
+        adapters.log().info(MobShotLines.blink(o.mobId, mob.getUniqueId(), Bukkit.getCurrentTick(), forced,
+                trigger == null ? null : kind(trigger), trigger == null ? null : trigger.getUniqueId(), vec(from), d));
+        if (d.landing().isEmpty()) return;
+        Vec3 l = d.landing().get();
+        puff(o.blink, from);
+        Location to = new Location(from.getWorld(), l.x(), l.y(), l.z(), from.getYaw(), from.getPitch());
+        if (!mob.teleport(to)) {
+            adapters.log().info("BLINK refused mob=" + o.mobId + " id=" + mob.getUniqueId() + " reason=teleport");
+            return;
+        }
+        mob.getPathfinder().stopPathfinding();
+        mob.setInvisible(true);
+        puff(o.blink, to);
+        // READ BACK, after the act: where it stands and whether it is invisible, never the decision restated.
+        Location now = mob.getLocation();
+        adapters.log().info(String.format(java.util.Locale.ROOT, "BLINK moved mob=%s id=%s tick=%d at=%.3f %.3f %.3f invisible=%s",
+                o.mobId, mob.getUniqueId(), Bukkit.getCurrentTick(), now.getX(), now.getY(), now.getZ(), mob.isInvisible()));
+    }
+
+    private static void puff(MobBlink b, Location at) {
+        Location mid = at.clone().add(0, 1.0, 0);
+        at.getWorld().spawnParticle(Particle.valueOf(b.particle().toUpperCase(java.util.Locale.ROOT)), mid,
+                b.particleCount(), 0.4, 0.8, 0.4, 0.02);
+        playSounds(at.getWorld(), at, b.sounds());
     }
 
     /** One tick of one shot: turn, test the block, the hit, the life and the range; then move it, or end it. */
@@ -365,6 +486,9 @@ public final class MobShooter implements ShotSink {
             end(s, "removed");
             return;
         }
+        // C1 (step R7b): measure the rider's REAL offset NOW, before this tick's teleport, while it stands where its last
+        // rideTick put it, and correct the translation whenever it differs (calibrate's javadoc has the evidence).
+        calibrate(s);
         World world = o.mob.getWorld();
         if (!carrier.getWorld().equals(world)) {
             end(s, "world");
@@ -401,7 +525,6 @@ public final class MobShooter implements ShotSink {
                 end(s, "teleport-refused");
                 return;
             }
-            if (!s.calibrated) calibrate(s);
             draw(world, s);
             return;
         }
@@ -502,6 +625,7 @@ public final class MobShooter implements ShotSink {
             displays.remove(s.display.getUniqueId());
             if (s.display.isValid()) s.display.remove();
         }
+        shotTeam().removeEntry(s.carrier.getUniqueId().toString());
         if (s.carrier.isValid()) s.carrier.remove();
     }
 
@@ -515,18 +639,45 @@ public final class MobShooter implements ShotSink {
     }
 
     /**
-     * The passenger's REAL offset, read on the server once it rides (its location minus the carrier's), and the
-     * translation corrected to it. The client positions a passenger by the same rule (INFERRED: Entity#positionRider is
-     * shared code), so what the server measures is where the client draws it. PROBE_SHOT reads the result as numbers.
+     * C1, CLOSED HERE (step R7b). The passenger's REAL offset from the carrier's feet, measured EVERY tick before our
+     * teleport, and the translation corrected whenever it moves by more than 1e-4 blocks on any axis.
+     *
+     * <p><b>Why the first build's one-time calibration did not take (the boot of 3dc0e184, SH1R2: the shape 0.45 above
+     * and 0.40 toward -z of the box's centre):</b>
+     * <ul>
+     *   <li>It ran ONCE, right after our first teleport. READ, {@code Entity#calculatePassengerTransition}: a vehicle's
+     *       teleport moves each passenger to the new position plus its CURRENT offset (position minus the vehicle's),
+     *       {@code transitionAsPassenger}, so the passenger keeps whatever offset it had.</li>
+     *   <li>The display was spawned at the carrier's own feet (offset 0), and the true offset is applied only in its
+     *       rideTick ({@code Entity#positionRider}). That had not run yet (INFERRED from the reading), so the one
+     *       measurement read 0 and centred the block for an offset of 0.</li>
+     *   <li>The rideTick then placed it at the frog's real passenger point, (0, 0.45, -0.40) by the reading. The frog's
+     *       READ attachment is (0, 0.375, -0.25), and the -0.40 is that z scaled by 1.6 exactly.</li>
+     * </ul>
+     *
+     * <p><b>Measured now at the start of every step, the block is centred from the tick after its first rideTick,
+     * and on any facing.</b> The carrier's yaw is always 0 (every teleport's Location has yaw 0), so the attachment
+     * never turns, whatever direction the shot flies. The client places a passenger by the same rule (INFERRED:
+     * {@code Entity#positionRider} is shared code), so the CLIENT draws the block where it draws its box. PROBE_SHOT
+     * reads the shape from the display's own server position plus its translation, a measurement, not this
+     * arithmetic.
      */
-    private static void calibrate(Live s) {
+    private void calibrate(Live s) {
         if (s.display == null || !s.display.isValid() || !s.carrier.equals(s.display.getVehicle())) return;
         Location c = s.carrier.getLocation();
         Location d = s.display.getLocation();
         Vector3f offset = new Vector3f((float) (d.getX() - c.getX()), (float) (d.getY() - c.getY()),
                 (float) (d.getZ() - c.getZ()));
+        if (s.offset != null && Math.abs(s.offset.x - offset.x) <= 1e-4 && Math.abs(s.offset.y - offset.y) <= 1e-4
+                && Math.abs(s.offset.z - offset.z) <= 1e-4) {
+            return;
+        }
+        s.offset = offset;
         s.display.setTransformation(shapeAt(offset, (float) s.carrier.getHeight(), (float) s.owner.shot.look().size()));
-        s.calibrated = true;
+        Owner o = s.owner;
+        adapters.log().info(String.format(java.util.Locale.ROOT,
+                "SHOT calibrated mob=%s id=%s shot=%s age=%d offset=%.3f %.3f %.3f", o.mobId, o.mob.getUniqueId(),
+                s.carrier.getUniqueId(), s.state.age(), offset.x, offset.y, offset.z));
     }
 
     /** The carrier's box at the old centre and at the new, joined: what it sweeps through this tick. */

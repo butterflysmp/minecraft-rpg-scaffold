@@ -2956,6 +2956,25 @@ public final class RpgListeners implements Listener {
         event.setCancelled(true);
     }
 
+    /**
+     * THE ONE-HIT SHIELD EATS ITS HIT'S PUSH TOO (dragon-mobs step R7b, CHOSEN): a vanilla knockback of ANY cause on a
+     * mob whose shield is still up, or absorbed this very tick, is cancelled and logged. A melee hit's knockback arrives
+     * after the damage event that the absorb ran inside, so "absorbed this tick" is the case that matters; "still up"
+     * covers a push whose damage is yet to come (an explosion's push and hurt arrive in either order). HIGH, so it runs
+     * after {@link #onCombatKnockback} and sees its verdict.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onShieldedKnockback(EntityKnockbackEvent event) {
+        if (!(event.getEntity() instanceof LivingEntity mob) || mob instanceof Player) return;
+        if (adapters.shields().up(mob)) {
+            event.setCancelled(true);
+            adapters.log().info("SHIELD knockback cancelled mob=" + mob.getUniqueId() + " cause=" + event.getCause()
+                    + " shield=up");
+            return;
+        }
+        if (adapters.shields().suppressRider(mob, "vanilla knockback cause=" + event.getCause())) event.setCancelled(true);
+    }
+
     /** Ranged: a frozen mob looses nothing -- a skeleton frozen mid-draw never fires. */
     @EventHandler
     public void onFrozenProjectileLaunch(ProjectileLaunchEvent event) {

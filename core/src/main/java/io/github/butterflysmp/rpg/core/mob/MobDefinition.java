@@ -61,46 +61,48 @@ public record MobDefinition(
         MobBeam beam,
         MobTeleport teleport,
         MobShot shot,
-        String mainHand
+        String mainHand,
+        MobBlink blink,
+        MobShield shield
 ) {
     /**
      * The original four-field form: a vanilla body, no element, no stages. Kept so the existing call sites (tests
      * and older code) read unchanged. (A record may declare extra constructors; each must call the full one.)
      */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth) {
-        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null, null, null, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /** Step R1's seven-field form: no split (step R2's component). Kept so R1's call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, null, null, null, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, null, null, null, null, null, null, null, null, null);
     }
 
     /** Step R2's eight-field form: no growth (the growth step's component). Kept so R2's call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, null, null, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, null, null, null, null, null, null, null, null);
     }
 
     /** The growth step's nine-field form: no blast (step R3's component). Kept so its call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, null, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, null, null, null, null, null, null, null);
     }
 
     /** Step R3's ten-field form: no beam (step R5's component). Kept so its call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,
                          MobBlast blast) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, null, null, null, null, null, null);
     }
 
     /** Step R5's eleven-field form: no teleport (step R6's component). Kept so its call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,
                          MobBlast blast, MobBeam beam) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, beam, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, beam, null, null, null, null, null);
     }
 
     /** Step R6's twelve-field form: no shot and no main-hand item (step R7a's). Kept so its call sites read unchanged. */
@@ -108,7 +110,15 @@ public record MobDefinition(
                          MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,
                          MobBlast blast, MobBeam beam, MobTeleport teleport) {
         this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, beam, teleport,
-                null, null);
+                null, null, null, null);
+    }
+
+    /** Step R7a's fourteen-field form: no blink and no shield (step R7b's). Kept so its call sites read unchanged. */
+    public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
+                         MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,
+                         MobBlast blast, MobBeam beam, MobTeleport teleport, MobShot shot, String mainHand) {
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, beam, teleport,
+                shot, mainHand, null, null);
     }
 
     public MobDefinition {

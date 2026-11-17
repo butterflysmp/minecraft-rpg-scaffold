@@ -222,6 +222,12 @@ public final class Keys {
      */
     public final NamespacedKey mobShot;
 
+    /**
+     * THE PHALANX'S ONE-HIT SHIELD IS UP (dragon-mobs step R7b): a BYTE on the live mob, set at its spawn when its file
+     * authors a shield, removed when the shield absorbs. In the PDC, so it survives a chunk unload and a restart.
+     */
+    public final NamespacedKey mobShield;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -453,6 +459,7 @@ public final class Keys {
         this.mobGrowthFed = new NamespacedKey(plugin, "mob_growth_fed");
         this.beamRoot = new NamespacedKey(plugin, "beam_root");
         this.mobShot = new NamespacedKey(plugin, "mob_shot");
+        this.mobShield = new NamespacedKey(plugin, "mob_shield");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");
