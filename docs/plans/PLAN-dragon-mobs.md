@@ -588,6 +588,25 @@ ruling replaces **for now** (*"what I want to try"*). **K10 goes from 35 to 65.*
   "playback speed equals pitch" is still assumed. **89 is below the cycle's 100-tick minimum with 11 to spare; a longer
   resonance (a lower pitch) would need a longer cycle**, and the load-time check refuses a delay that is not shorter.
 
+### THE BOOT OF KNELL 2 (`58c0f7a1`, 2026-11-17): BEN'S FIVE ANSWERS, VERBATIM, AND WHAT THEY CONFIRM
+
+Read from the server log of that boot (`GATE-dragon-knell-2.md`, KQ1R2 and TQ1R2), verbatim:
+
+```
+KQ1R2 ASK 1 question="Did the bell strike warn you before the beam?" answer="yes" ticks=114
+KQ1R2 ASK 2 question="Did 65 feel right for a single shot?" answer="yes" ticks=65
+KQ1R2 ASK 3 question="With 1.3 seconds, could you step out of the way in time?" answer="yes" ticks=87
+TQ1R2 ASK 1 question="Did the Knell move as the ringing ended?" answer="yes" ticks=130
+TQ1R2 ASK 2 question="Did that wait feel right?" answer="no" ticks=45
+```
+
+- **CONFIRMED BY PLAY, Ben:** `damage` 65; the 26-tick warning (he stepped out of the second beam, `gap=2.377 miss`);
+  the bell strike as the warning's cue.
+- **His "yes" that the Knell moved as the ringing ended is recorded as HIS EAR**, not as a measurement of "playback
+  speed equals pitch", which stays INFERRED.
+- **His "no" to the wait: `teleport.delay_ticks` 89 is NOT CONFIRMED, awaiting his number.** The seat has asked him
+  what he wants to try in its place.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1366,6 +1385,15 @@ base 0.15 = 0.18 as the forward input; ground friction 0.6 × 0.91; × 0.2160000
 
 **CARRIED, UPDATED:** the root on a walking Knell is now **PREDICTED** (KB2R2), not yet read; KB4's timing note is
 answered by every row ending itself (an explicit kill or wait), so no TELEPORT line rests on the runner's tick count.
+
+**CARRIED, AFTER THE BOOT OF `58c0f7a1` (2026-11-17):**
+
+- **THE ROOT ON A WALKING KNELL: CLOSED by KB2R2.** Its control read 0.357 blocks of walking in five ticks
+  (`x=-93.024`, then `x=-93.381`), and the telegraph and the fire read the same position (`at=-93.452 63.000 6.002`).
+- **"THE KNELL WALKS AGAIN AFTER A BEAM": UNREAD.** KB2R2 read it, 13 ticks after its fire, exactly where it fired.
+  The seat read `MobBeamer`: unroot runs at the fire and removes the transient modifier; **the seat's INFERENCE,
+  not diagnosed, is vanilla's path recalculation delay.** If a later row shows it never walks again, that is a
+  defect.
 
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 

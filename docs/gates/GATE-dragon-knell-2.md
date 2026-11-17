@@ -5,6 +5,8 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+**2026-11-17: approved to merge by the review seat after the boot of 58c0f7a1.**
+
 > **READ, 2026-11-17: booted at `58c0f7a1` on the seat's approval and Ben's "ready".** Server log `05:29:37` to the
 > clean `/stop` at `05:33:55`. Carried state: no JVM; backup `rpg-run-backups/2026-11-17-pre-dragon-knell-2`
 > (`run/plugins/Rpg` 129 files, 385586 bytes; `run/world` 193 files, 204963771 bytes; `diff -rq lines: 0` each);
