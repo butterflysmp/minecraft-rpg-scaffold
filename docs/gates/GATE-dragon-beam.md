@@ -5,6 +5,23 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+> **DATED NOTE, 2026-11-17, step R6 (`feat/dragon-teleport`, stacked on this branch). NOTHING BELOW IS EDITED; this
+> note says what changed around it.** The seat passed this gate by diff and left it unbooted, so that ONE boot reads
+> R5 and R6 together.
+> - **R0 AND THE RUN SHEET BELOW ARE SUPERSEDED in the stacked boot:** the ONE R0 (R0a-R0d, both steps' jar scan, 115
+>   scenarios across 17 gates) and the ONE run sheet (`/rpg selftest dragon-beam`, then `/rpg selftest
+>   dragon-teleport`) are `GATE-dragon-teleport.md`'s. This file's AUTO rows and KQ1 are still read in that boot.
+> - **KB10 IS SUPERSEDED, never run:** R6 makes "the Knell does NOT move after a hit" false. Re-predicted as
+>   **KB10R2** in `GATE-dragon-teleport.md`; its scenario left `selftest/GATE-dragon-beam.yml`.
+> - **KB11 IS SUPERSEDED, never run:** under R6 a hit moves its LIVE penned Knell out of the pen, onto the circle
+>   around the player, free to walk to him. Re-predicted as **KB11R2** (live, walking speed 0, no pen); its scenario
+>   left `selftest/GATE-dragon-beam.yml`.
+> - **Every row that HITS now leaves one TELEPORT line**, 12 ticks after its FIRE (`GATE-dragon-teleport.md`, THE ROWS
+>   ALREADY STACKED): KB1, KB4 and KB7 (and KB2 if it hits) end before the move is due, so the NEXT row's clean removes
+>   the Knell and **`TELEPORT skipped … reason=knell-gone` lands in the next row's bracket**; KQ1's two hits each move
+>   the frozen Knell during its ASK steps, so KQ1's bracket carries a `TELEPORT …` line after each hit. **No
+>   prediction below names a TELEPORT line, and none is changed.**
+
 **What this gate reads.** Step R5 of `PLAN-dragon-mobs.md` §5.R: the Knell's beam (MB3 + E5) as Ben ruled it on
 2026-11-17 (*"yes"* to the old game's numbers), with every behaviour he did not re-rule inherited from cfde822 or chosen
 where the record is silent (§3.R.1.a, I1-I24). Its scenarios are `selftest/GATE-dragon-beam.yml`, one gate of its own
@@ -282,11 +299,18 @@ Knell's feet**:
 
 ### KB10 — the Knell does NOT move after a hit (the teleport is step R6, not built) (SURVIVAL)
 
+> **SUPERSEDED, 2026-11-17, step R6, NEVER RUN:** a hit now moves the Knell 12 ticks later. Re-predicted as KB10R2 in
+> `GATE-dragon-teleport.md`; the scenario left `selftest/GATE-dragon-beam.yml`. The prediction below is kept as written.
+
 | prediction | stands on | READING |
 |---|---|---|
 | (1) `AT tag=kb10 <uuid> x=<x> y=<y> z=<z>` before the force: F + (8, 0, 0). (2) One TELEGRAPH, one FIRE `… [player <Ben's uuid> gap=0.000 hit] dealt=35.000`, one REPORT, one HURT `before=35.000`. (3) 40 ticks after the force (past the fire + 12, where R6's teleport will land), **the AT line identical to (1) on all three coordinates.** **A frozen mob is NOT a hollow fixture for a teleport:** a teleport sets its position directly and does not need its AI (INFERRED: `Entity#teleport` is not gated on `isEffectiveAi`); it is hollow only for walking, which this row does not test. **Step R6 re-predicts THIS row** | B7; nothing in R5 moves a Knell | |
 
 ### KB11 — the live cycle, by bound: a live penned Knell's own first beam between 100 and 200 ticks after it appears; a frozen one's never (SURVIVAL)
+
+> **SUPERSEDED, 2026-11-17, step R6, NEVER RUN:** a hit would move this LIVE penned Knell out of its pen, within reach
+> of the player. Re-predicted as KB11R2 in `GATE-dragon-teleport.md` (live, walking speed 0, no pen); the scenario
+> left `selftest/GATE-dragon-beam.yml`. The prediction below is kept as written.
 
 | prediction | stands on | READING |
 |---|---|---|

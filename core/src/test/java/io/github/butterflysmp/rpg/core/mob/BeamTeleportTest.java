@@ -71,6 +71,11 @@ class BeamTeleportTest {
         assertNear(new Vec3(100 - 4, 64, 200 + 3), col);
         assertEquals(5.0, Math.hypot(col.x() - 100, col.z() - 200), 1e-9, "the horizontal radius is unchanged");
         assertEquals(64.0, col.y(), 0.0, "a column is at the TARGET's feet height, not the Knell's");
+        // The decision's own radius and bearing, off-axis so that neither x nor z alone equals them.
+        BeamTeleport.Decision d = BeamTeleport.decide(T, TARGET, new Vec3(103, 70, 204),
+                new BeamTeleport.Draw(BeamTeleport.Side.RIGHT, 90), OPEN);
+        assertEquals(5.0, d.radius(), 1e-9);
+        assertEquals(Math.toDegrees(Math.atan2(4, 3)), d.bearingDegrees(), 1e-9, "53.13 degrees: south of east");
     }
 
     @Test

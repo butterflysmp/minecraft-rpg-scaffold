@@ -12,9 +12,9 @@
 #
 # TWO KINDS OF KNELL, AND THE ROWS USE BOTH:
 #   - FROZEN (NoAI): it cannot walk or melee, and its OWN cycle never begins a beam (I23). The BEAM step forces one
-#     NOW, at its normal choice of target. Every distance is exact. KB1, KB3-KB10, KQ1.
+#     NOW, at its normal choice of target. Every distance is exact. KB1, KB3-KB9, KQ1.
 #   - LIVE, PENNED: AI on, inside a two-high glass pen whose near wall is 4.5 blocks from the player, so it can never
-#     reach him (no melee, so no Wither effect). KB2 (forced, to read the root) and KB11 (its own cycle).
+#     reach him (no melee, so no Wither effect). KB2 (forced, to read the root). (KB11, its own cycle, moved to GATE-dragon-teleport.yml as KB11R2.)
 #
 # THE PLAYER CANNOT DIE IN ANY ROW (GATE-dragon-beam.md, THE PLAYER CANNOT DIE): each row that can hit him first
 # heals him to his maximum, at least 100, and no row can deal more than 35 before his defence after one heal.
@@ -177,39 +177,10 @@ KB9:
   - cmd: "kill @e[tag=kb9]"
   - wait: 25
 
-# KB10: the Knell does NOT move after a hit. The teleport (step R6) is not built: its feet before the force and 40
-# ticks later (past the fire + 12, where R6 will move it) are the same. R6 re-predicts THIS row.
-KB10:
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
-  - save_blocks: "-8 -1 -4 12 6 4"
-  - cmd: "fill ~-8 ~-1 ~-4 ~12 ~-1 ~4 stone"
-  - cmd: "fill ~-8 ~ ~-4 ~12 ~6 ~4 air"
-  - cmd: "rpg heal 1000000"
-  - cmd: "tp @s ~8 ~ ~"
-  - spawn: "kb10 frozen knell 100"
-  - cmd: "tp @s ~-8 ~ ~ -90 0"
-  - wait: 5
-  - probe_at: kb10
-  - beam: kb10
-  - wait: 40
-  - probe_at: kb10
-
-# KB11: the live cycle, by bound. A LIVE penned Knell begins its OWN first beam between 100 and 200 ticks after it
-# appears (forced=false). A FROZEN Knell beside the pen, in range all along, begins none (I23).
-KB11:
-  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
-  - save_blocks: "-10 -1 -4 17 6 4"
-  - cmd: "fill ~-10 ~-1 ~-4 ~17 ~-1 ~4 stone"
-  - cmd: "fill ~-10 ~ ~-4 ~17 ~6 ~4 air"
-  - cmd: "fill ~5 ~ ~-3 ~16 ~1 ~3 glass"
-  - cmd: "fill ~6 ~ ~-2 ~15 ~1 ~2 air"
-  - cmd: "rpg heal 1000000"
-  - cmd: "tp @s ~3 ~ ~-3"
-  - spawn: "kb11f frozen knell 100"
-  - cmd: "tp @s ~11 ~ ~3"
-  - spawn: "kb11 live knell 100"
-  - cmd: "tp @s ~-14 ~ ~ -90 0"
-  - wait: 215
+# KB10 AND KB11 LEFT THIS FILE, 2026-11-17, step R6 (GATE-dragon-teleport.md, THE ROWS ALREADY STACKED). KB10 read
+# "the Knell does NOT move after a hit", which R6 makes false. KB11's live penned Knell, once its beam hits, would
+# teleport OUT of its pen within reach of the player. Neither was ever booted; each is re-predicted as KB10R2 and KB11R2
+# in selftest/GATE-dragon-teleport.yml, and their predictions stay in GATE-dragon-beam.md under a dated note.
 
 # KQ1: Ben's three questions. A frozen Knell 12 blocks east beams him twice: once while he stands still, once while he
 # steps aside at the warning. The selftest tells him in chat before each.

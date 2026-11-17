@@ -1217,6 +1217,27 @@ report (the teleport's, though a weapon could raise it), mana, and the weapon's 
 report is this plan's §4.2 row *MB3 + E5 … plus it reports which combatant it hit*; the legacy plan's E5 is the
 wind-up alone.
 
+### 5.R.6 STEP R6 AS BUILT (`feat/dragon-teleport`, stacked on `feat/dragon-beam` `1bfee281`, 2026-11-17) — THE TELEPORT
+
+The gate is `docs/gates/GATE-dragon-teleport.md`, the stack top, carrying the ONE R0 and run sheet of the stacked boot.
+
+| piece | as built | where |
+|---|---|---|
+| **the rule** | `teleport: { delay_ticks, arc_degrees: { min, max }, spots_per_side, level_tolerance, require_sight }` on the mob file. The Knell's: 12 (K11, B), 30 and 70 (K12, K13, A), and the seat's provisional 5 (T-a, K14), 3 (T-b, K15), true (T-c, Q18). A teleport needs a beam, and a delay not shorter than `beam.cycle_ticks.min` is refused at load, the mob and both numbers named | `core.mob.MobTeleport`, `MobDefinition`, `MobLoader` |
+| **the trigger** | the beam's report and nothing else: `MobTeleporter` is a `MobBeamer.Listener`, told inside `MobBeam.report(...).ifPresent`. No arrow dodge exists in our code | `MobTeleporter`, `MobBeamer` |
+| **the delay** | a one-shot `RepeatingTask` of period `delay_ticks` on the Knell's own entity scheduler, started at the FIRE; dead, removed or unloaded first, it logs `TELEPORT skipped … reason=knell-gone`; the target re-checked at its end (`BeamTeleport.skip`: gone, another world, no longer one the Knell is hostile to) | `MobTeleporter`, `core.mob.BeamTeleport` |
+| **the landing** | pure, in core, from the positions at the END of the delay: centre the target's FEET; radius the HORIZONTAL distance target→Knell; angle zero the Knell's bearing from the target; a column turned by an angle in DEGREES (RIGHT, a right turn for someone at the target facing the Knell: `(x cos a − z sin a, x sin a + z cos a)`; LEFT the angle negated). **Order:** the drawn side's angles (the drawn first angle, then `spots_per_side − 1` spread evenly from min to max, both included), then the other side's, the same angles. **Per column:** loaded, else UNLOADED; the nearest standing height `feet.y + k`, k = 0, +1, −1, +2, −2, … out to `level_tolerance`, that FITS and is GROUNDED, else NO_FOOTING with the counts; then SEES, else NO_SIGHT. First OK wins; none, it stays | `BeamTeleport.decide` |
+| **VALID** | `World#isChunkLoaded`; `Entity#wouldCollideUsing(box)` for the Knell's own scaled box; `RegionAccessor#hasCollisionsIn` on a thin slab under its footprint; `World#rayTraceBlocks` eye → the target's aim point, the beam's block rule. Each READ in the server jar (the gate's T4, T5) | `MobTeleporter.footing` |
+| **the move** | `Entity#teleport` facing the target, level; READ: the jar's same-world teleport zeroes the velocity and touches neither the navigation nor the target, so the path is stopped after the move. The target, the beam's clock, health and tags are untouched | `MobTeleporter` |
+| **sight and sound** | cfde822's sidestep's, READ (§3.1): soul and soul-fire particles and an amethyst step, at the departure and the arrival. Counts (12 each), spread, volume and pitch (1.0, 1.0): NOT IN THE RECORD, chosen | `MobTeleporter.puff` |
+| **the log** | `TELEPORT mob=… id=… target=… tick=… from=… center=… radius=… bearing=… side=… first=… tried=<n> [<side> <angle> <verdict>, …] landed=…/none moved=…`; `TELEPORT skipped … reason=…`; `TELEPORT ignored … reason=pending` | `MobTeleportLines` |
+| **the instrument** | `teleport_draw: "<tag> <right/left> <degrees>"` fixes that Knell's NEXT decision | `SelfTestBeam`, `SelfTestDrivers` |
+
+**FOR BEN, CHOSEN AND NOT IN ANY RULING:** the order within a side (the random angle, then the arc spread evenly); RIGHT
+and LEFT each 50%; heights tried nearest first with UP before DOWN at equal distance; a footing refused by sight is not
+retried at another height; a second hit while a move is pending is ignored (only a forced beam can do it); the puff's
+counts and the sound's volume.
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.

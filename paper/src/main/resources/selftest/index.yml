@@ -7,6 +7,7 @@
 # of the dragon stack are that gate's re-predictions, and keeping three files kept Ben's three selftest commands.
 # dragon-blast (step R3, 2026-11-15) is paired with its OWN gate file, docs/gates/GATE-dragon-blast.md, by the rule.
 # dragon-beam (step R5, 2026-11-17) is paired with its OWN gate file, docs/gates/GATE-dragon-beam.md, by the rule.
+# dragon-teleport (step R6, 2026-11-17, stacked on R5) is paired with docs/gates/GATE-dragon-teleport.md, by the rule.
 gates:
   - melee-cell
   - level
@@ -24,3 +25,4 @@ gates:
   - dragon-growth
   - dragon-blast
   - dragon-beam
+  - dragon-teleport
