@@ -1,0 +1,236 @@
+# GATE-dragon-beam.md: the Knell's beam (PLAN-dragon-mobs.md step R5), read from the SERVER. Ben, 2026-11-17, to the
+# old game's numbers: "yes". Every 100 to 200 ticks a Knell locks a line from its EYE through its target's aim point
+# (0.6 of the target's height), telegraphs for 12 ticks, rooted, then fires along that fixed line, out to 40 blocks or
+# the first block. Only the locked target is hit, and only if its box grown by 1.0 on every side meets the segment:
+# 35 x gear score / 100 before defence. A hit raises the report (E5); a miss raises nothing. The teleport after a hit
+# (step R6) is NOT built: a hit moves nothing.
+#
+# THE STAGING, the same in every row: the player at a block centre facing east (+x); a stone floor and air above it,
+# every fill box SAVED first, so the row-start clean and the run's restore put it back. A mob is spawned by stepping
+# the player to its spot, spawning at the feet, and stepping back. The run's restore removes every mob tagged
+# "selftest" within 48 blocks.
+#
+# TWO KINDS OF KNELL, AND THE ROWS USE BOTH:
+#   - FROZEN (NoAI): it cannot walk or melee, and its OWN cycle never begins a beam (I23). The BEAM step forces one
+#     NOW, at its normal choice of target. Every distance is exact. KB1, KB3-KB10, KQ1.
+#   - LIVE, PENNED: AI on, inside a two-high glass pen whose near wall is 4.5 blocks from the player, so it can never
+#     reach him (no melee, so no Wither effect). KB2 (forced, to read the root) and KB11 (its own cycle).
+#
+# THE PLAYER CANNOT DIE IN ANY ROW (GATE-dragon-beam.md, THE PLAYER CANNOT DIE): each row that can hit him first
+# heals him to his maximum, at least 100, and no row can deal more than 35 before his defence after one heal.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# KB1: a forced beam at a still player, from a frozen Knell 8 blocks east: the telegraph, the fire 12 ticks later
+# naming him hit, the report, and one HURT line for 35 before defence.
+KB1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-8 -1 -4 12 6 4"
+  - cmd: "fill ~-8 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-8 ~ ~-4 ~12 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "kb1 frozen knell 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - beam: kb1
+  - wait: 20
+
+# KB2: the root. A LIVE Knell, penned 14 blocks east, walking toward the player; forced mid-walk. Its feet at the
+# telegraph and at the fire are the same; the two AT reads before the force are the control that it was walking.
+KB2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-10 -1 -4 17 6 4"
+  - cmd: "fill ~-10 ~-1 ~-4 ~17 ~-1 ~4 stone"
+  - cmd: "fill ~-10 ~ ~-4 ~17 ~6 ~4 air"
+  - cmd: "fill ~5 ~ ~-3 ~16 ~1 ~3 glass"
+  - cmd: "fill ~6 ~ ~-2 ~15 ~1 ~2 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~14 ~ ~"
+  - spawn: "kb2 live knell 100"
+  - cmd: "tp @s ~-14 ~ ~ -90 0"
+  - wait: 15
+  - probe_at: kb2
+  - wait: 5
+  - probe_at: kb2
+  - beam: kb2
+  - wait: 20
+  - probe_at: kb2
+
+# KB3: the line is FIXED at the telegraph. The player steps 3 blocks south 3 ticks after the force: the fire names
+# him a miss (gap 2.700), and no HURT and no report follow.
+KB3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-8 -1 -4 12 6 4"
+  - cmd: "fill ~-8 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-8 ~ ~-4 ~12 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "kb3 frozen knell 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - beam: kb3
+  - wait: 3
+  - cmd: "tp @s ~ ~ ~3"
+  - wait: 20
+
+# KB4: the tolerance, inside its edge. A step of 1.2 blocks south leaves his body 0.900 off the line: still a hit.
+KB4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-8 -1 -4 12 6 4"
+  - cmd: "fill ~-8 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-8 ~ ~-4 ~12 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "kb4 frozen knell 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - beam: kb4
+  - wait: 3
+  - cmd: "tp @s ~ ~ ~1.2"
+  - wait: 20
+
+# KB5: the tolerance, just outside it. A step of 1.4 blocks south leaves his body 1.100 off the line: a miss.
+KB5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-8 -1 -4 12 6 4"
+  - cmd: "fill ~-8 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-8 ~ ~-4 ~12 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "kb5 frozen knell 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - beam: kb5
+  - wait: 3
+  - cmd: "tp @s ~ ~ ~1.4"
+  - wait: 20
+
+# KB6: a target beyond the range. A frozen Knell 41 blocks east: its eye is 41.063 from his aim point, past 40. The
+# forced attempt finds no one: BEAM none, no telegraph, no fire.
+KB6:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "40 -1 -1 42 5 1"
+  - cmd: "fill ~40 ~-1 ~-1 ~42 ~-1 ~1 stone"
+  - cmd: "fill ~40 ~ ~-1 ~42 ~5 ~1 air"
+  - cmd: "tp @s ~41 ~ ~"
+  - spawn: "kb6 frozen knell 100"
+  - cmd: "tp @s ~-41 ~ ~ -90 0"
+  - wait: 5
+  - beam: kb6
+  - wait: 20
+  - probe_at: kb6
+
+# KB7: a frozen husk standing in the line, 4 blocks east, keeps its health: listed as spared, never hit. The beam
+# does not stop at it; the player behind it is hit.
+KB7:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-8 -1 -4 12 6 4"
+  - cmd: "fill ~-8 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-8 ~ ~-4 ~12 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "kb7 frozen knell 100"
+  - cmd: "tp @s ~-4 ~ ~"
+  - spawn: "kb7h frozen husk 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - wait: 5
+  - probe: kb7h
+  - beam: kb7
+  - wait: 20
+  - probe: kb7h
+
+# KB8: a block stops it. A glass wall at x+4 (its east face 4.5 blocks from the player): the fire is clipped there
+# (clip=block, length 3.639) and names him a miss.
+KB8:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-8 -1 -4 12 6 4"
+  - cmd: "fill ~-8 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-8 ~ ~-4 ~12 ~6 ~4 air"
+  - cmd: "fill ~4 ~ ~-2 ~4 ~4 ~2 glass"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "kb8 frozen knell 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - beam: kb8
+  - wait: 20
+
+# KB9: a Knell killed mid-telegraph fires nothing: the telegraph, then BEAM cancelled, and no fire, HURT or report.
+KB9:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-8 -1 -4 12 6 4"
+  - cmd: "fill ~-8 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-8 ~ ~-4 ~12 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "kb9 frozen knell 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - beam: kb9
+  - wait: 5
+  - cmd: "kill @e[tag=kb9]"
+  - wait: 25
+
+# KB10: the Knell does NOT move after a hit. The teleport (step R6) is not built: its feet before the force and 40
+# ticks later (past the fire + 12, where R6 will move it) are the same. R6 re-predicts THIS row.
+KB10:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-8 -1 -4 12 6 4"
+  - cmd: "fill ~-8 ~-1 ~-4 ~12 ~-1 ~4 stone"
+  - cmd: "fill ~-8 ~ ~-4 ~12 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "kb10 frozen knell 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - probe_at: kb10
+  - beam: kb10
+  - wait: 40
+  - probe_at: kb10
+
+# KB11: the live cycle, by bound. A LIVE penned Knell begins its OWN first beam between 100 and 200 ticks after it
+# appears (forced=false). A FROZEN Knell beside the pen, in range all along, begins none (I23).
+KB11:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-10 -1 -4 17 6 4"
+  - cmd: "fill ~-10 ~-1 ~-4 ~17 ~-1 ~4 stone"
+  - cmd: "fill ~-10 ~ ~-4 ~17 ~6 ~4 air"
+  - cmd: "fill ~5 ~ ~-3 ~16 ~1 ~3 glass"
+  - cmd: "fill ~6 ~ ~-2 ~15 ~1 ~2 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~3 ~ ~-3"
+  - spawn: "kb11f frozen knell 100"
+  - cmd: "tp @s ~11 ~ ~3"
+  - spawn: "kb11 live knell 100"
+  - cmd: "tp @s ~-14 ~ ~ -90 0"
+  - wait: 215
+
+# KQ1: Ben's three questions. A frozen Knell 12 blocks east beams him twice: once while he stands still, once while he
+# steps aside at the warning. The selftest tells him in chat before each.
+KQ1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-8 -1 -6 16 6 6"
+  - cmd: "fill ~-8 ~-1 ~-6 ~16 ~-1 ~6 stone"
+  - cmd: "fill ~-8 ~ ~-6 ~16 ~6 ~6 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~12 ~ ~"
+  - spawn: "kq1 frozen knell 100"
+  - cmd: "tp @s ~-12 ~ ~ -90 0"
+  - cmd: 'tellraw @s {"text":"Stand still and watch the Knell to your east. It will warn you, then fire.","color":"gold"}'
+  - wait: 60
+  - beam: kq1
+  - wait: 40
+  - ask: "1 1200 Did you see a warning before the beam hit you?"
+  - ask: "2 1200 Did the hit feel fair for a single shot?"
+  - cmd: "rpg heal 1000000"
+  - cmd: 'tellraw @s {"text":"Now: when you see the purple warning line, step sideways out of it.","color":"gold"}'
+  - wait: 60
+  - beam: kq1
+  - wait: 40
+  - ask: "3 1200 Was it possible to step out of the way in time?"

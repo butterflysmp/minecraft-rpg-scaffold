@@ -42,6 +42,32 @@ speed: 0.6
 # What asks it first is the Phage's growth (a Void death nearby grows a Phage). Ben, 2026-11-15: the whole fight is
 # Void.
 element: void
+
+# THE BEAM (dragon-mobs step R5). Ben, 2026-11-17, asked whether it may start from the old game's numbers (every 5 to
+# 10 seconds, a 0.6-second warning, 40 blocks, 35 damage): "yes". Each is his starting number to tune. Every behaviour
+# he did not re-rule is the old game's, listed with its mark in PLAN-dragon-mobs.md section 3.R.1.a.
+beam:
+  # TICKS from the Knell appearing (a spawn or its chunk loading), from a fire, or from an attempt that found no one,
+  # to its next attempt: a whole number drawn evenly from min to max, both included. 20 ticks = 1 second.
+  cycle_ticks: { min: 100, max: 200 }
+  # TICKS from the lock (the line is fixed: the Knell's eye through the target) to the fire. The Knell is rooted for
+  # all of it. Step R6's teleport delay starts equal to this (Ben: "The same time between the warning shot and the
+  # actual beam"), as its own number.
+  telegraph_ticks: 12
+  # The telegraph TICKS (0 = the lock) on which the purple warning line is drawn: the old game's 0 and 9. Each must be
+  # inside the telegraph, so a shorter telegraph cannot silently lose a flash.
+  flash_at: [0, 9]
+  # BLOCKS from the Knell's EYE. A target is in range when its aim point is at most this far away; the fired beam
+  # runs this far along the locked line unless a block stops it.
+  range: 40
+  # A FRACTION of the target's height above its feet: the point the line is locked through (the old game's 0.6).
+  aim_height: 0.6
+  # BLOCKS the target's body (its hitbox) is grown by on EVERY side before the beam is tested against it. The old
+  # game's 1.0. NOT ASKED of Ben (K9): a starting number, recorded as such.
+  tolerance: 1.0
+  # The AUTHORED damage, before gear score and before the victim's defence. Ben's 35. It is x gear score / 100, as a
+  # custom mob's hit is (the seat's provisional, as the Phage's blast). No element, no knockback, no shield block.
+  damage: 35
 #
 # NOT YET HERE: gear (the old game's diamond set and sword) is deferred past R1, so the Knell still spawns bare and
-# hits like a bare wither skeleton (M17, parked). Its beam and the teleport after it are steps R5 and R6.
+# hits like a bare wither skeleton (M17, parked). The teleport after a hit is step R6, not built: a hit moves nothing.

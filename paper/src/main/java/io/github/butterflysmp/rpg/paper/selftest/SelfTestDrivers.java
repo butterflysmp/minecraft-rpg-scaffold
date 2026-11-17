@@ -130,7 +130,54 @@ final class SelfTestDrivers {
                 org.bukkit.util.Vector v = e.getVelocity();
                 run.log(SelfTestBlast.motionLine(a, e.getUniqueId(), v.getX(), v.getY(), v.getZ()));
             });
+            case BEAM -> beam(p, a);
+            case PROBE_AT -> probeAt(p, a);
         };
+    }
+
+    /** PROBE_AT (dragon-mobs step R5): each tagged living mob within {@link SelfTestBeam#REACH}, nearest first. */
+    private Optional<String> probeAt(Player p, String tag) {
+        double r = SelfTestBeam.REACH;
+        List<LivingEntity> found = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(r, r, r)) {
+            if (e instanceof LivingEntity l && e.getScoreboardTags().contains(tag)) found.add(l);
+        }
+        if (found.isEmpty()) {
+            run.log(SelfTestBeam.noneLine(tag, "AT", (int) r));
+            return Optional.empty();
+        }
+        found.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));
+        for (LivingEntity e : found) {
+            org.bukkit.Location l = e.getLocation();
+            run.log(SelfTestBeam.atLine(tag, e.getUniqueId(), l.getX(), l.getY(), l.getZ()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * BEAM (dragon-mobs step R5): each tagged living mob within {@link SelfTestBeam#REACH} blocks, nearest first, is
+     * forced on its OWN thread ({@code Scheduler.onEntity}), so the force never writes another thread's clock. The DRIVE
+     * line is logged there too, so it says whether the force took.
+     */
+    private Optional<String> beam(Player p, String tag) {
+        double r = SelfTestBeam.REACH;
+        List<LivingEntity> found = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(r, r, r)) {
+            if (e instanceof LivingEntity l && e.getScoreboardTags().contains(tag)) found.add(l);
+        }
+        if (found.isEmpty()) {
+            run.log(SelfTestBeam.noneLine(tag, "DRIVE beam", (int) r));
+            return Optional.empty();
+        }
+        found.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));
+        for (LivingEntity e : found) {
+            run.scheduler().onEntity(e, () -> {
+                Optional<String> refused = run.beams().force(e);
+                run.log(refused.map(why -> SelfTestBeam.refusedLine(tag, e.getUniqueId(), why))
+                        .orElse(SelfTestBeam.driveLine(tag, e.getUniqueId())));
+            });
+        }
+        return Optional.empty();
     }
 
     /**

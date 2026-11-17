@@ -413,6 +413,74 @@ class MobLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
+    // ---- dragon-mobs step R5: the Knell's beam ----
+
+    private static final String BEAM_OK = "beam:\n  cycle_ticks: { min: 33, max: 77 }\n  telegraph_ticks: 9\n"
+            + "  flash_at: [0, 5]\n  range: 25.5\n  aim_height: 0.4\n  tolerance: 0.75\n  damage: 21\n";
+
+    /**
+     * Every one of the beam's numbers ARRIVES from content, each a value no other key in the block shares (so a
+     * transposition of two keys in the loader cannot pass), and a file without the block has none.
+     */
+    @Test
+    void theBeamBlockArrives() throws IOException {
+        write("knell.yml", "base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK);
+        write("plain.yml", "base_entity: zombie\nmax_health: 20\n");
+        MobRegistry mobs = load();
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(33, 77, 9, List.of(0, 5), 25.5, 0.4, 0.75, 21.0),
+                mobs.find("knell").orElseThrow().beam());
+        assertNull(mobs.find("plain").orElseThrow().beam(), "no beam block, no beam");
+    }
+
+    /** A staged mob may author a beam too: the beam does not depend on stages. */
+    @Test
+    void aStagedMobMayCarryABeam() throws IOException {
+        write("staged.yml", "base_entity: creeper\n" + STAGES + BEAM_OK);
+        MobRegistry mobs = load();
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(21.0, mobs.find("staged").orElseThrow().beam().damage(), 0.0);
+    }
+
+    /** Each missing key, and a flash outside the telegraph, is a named, skipped file. */
+    @Test
+    void aMalformedBeamIsRefused() throws IOException {
+        for (String key : List.of("cycle_ticks.min", "cycle_ticks.max", "telegraph_ticks", "flash_at", "range",
+                "aim_height", "tolerance", "damage")) {
+            String leaf = key.contains(".") ? key.substring(key.indexOf('.') + 1) : key;
+            String yaml = key.equals("cycle_ticks.min") ? BEAM_OK.replace("{ min: 33, max: 77 }", "{ max: 77 }")
+                    : key.equals("cycle_ticks.max") ? BEAM_OK.replace("{ min: 33, max: 77 }", "{ min: 33 }")
+                    : BEAM_OK.replaceAll("(?m)^  " + leaf + ":.*\\n", "");
+            assertTrue(!yaml.equals(BEAM_OK), "the fixture for " + key + " must actually remove it");
+            write("no_" + leaf + ".yml", "base_entity: wither_skeleton\nmax_health: 360\n" + yaml);
+        }
+        write("lateflash.yml", "base_entity: wither_skeleton\nmax_health: 360\n"
+                + BEAM_OK.replace("[0, 5]", "[0, 9]"));
+        MobRegistry mobs = load();
+        assertEquals(0, mobs.size(), warningText());
+        for (String f : List.of("no_min.yml", "no_max.yml", "no_telegraph_ticks.yml", "no_flash_at.yml",
+                "no_range.yml", "no_aim_height.yml", "no_tolerance.yml", "no_damage.yml", "lateflash.yml")) {
+            assertTrue(warningText().contains(f), f + ": " + warningText());
+        }
+        assertTrue(warningText().contains("beam.flash_at 9"), warningText());
+    }
+
+    /**
+     * THE KNELL WE SHIP (Ben, 2026-11-17, to the old game's numbers: "yes"): a beam every 100 to 200 ticks, a 12-tick
+     * telegraph flashing at its ticks 0 and 9, 40 blocks, through 0.6 of the target's height, a 1.0-block tolerance
+     * (cfde822's, K9, not asked), 35 damage.
+     */
+    @Test
+    void theBundledKnellBeamsAsTheOldGameDid() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
+            assertNotNull(in);
+            Files.write(dir.resolve("knell.yml"), in.readAllBytes());
+        }
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 12, List.of(0, 9), 40.0, 0.6, 1.0, 35.0),
+                load().find("knell").orElseThrow().beam());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
     /** Every bundled mob file loads with no warning, through the loader production runs. */
     @Test
     void everyBundledMobLoads() throws IOException {

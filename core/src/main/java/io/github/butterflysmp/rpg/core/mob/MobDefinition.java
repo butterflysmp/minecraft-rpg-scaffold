@@ -37,6 +37,8 @@ package io.github.butterflysmp.rpg.core.mob;
  *
  * <p><b>And in step R3</b> by {@code blast} ({@link MobBlast}), or null: the self-destruct a staged mob detonates when
  * its fuse completes. A blast's damage is priced by stage, so it needs stages.
+ *
+ * <p><b>And in step R5</b> by {@code beam} ({@link MobBeam}), or null: the Knell's timed beam. It needs no stages.
  */
 public record MobDefinition(
         String id,
@@ -48,32 +50,40 @@ public record MobDefinition(
         MobStages stages,
         MobSplit split,
         MobGrowth growth,
-        MobBlast blast
+        MobBlast blast,
+        MobBeam beam
 ) {
     /**
      * The original four-field form: a vanilla body, no element, no stages. Kept so the existing call sites (tests
      * and older code) read unchanged. (A record may declare extra constructors; each must call the full one.)
      */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth) {
-        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, MobBody.VANILLA, null, null, null, null, null, null);
     }
 
     /** Step R1's seven-field form: no split (step R2's component). Kept so R1's call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, null, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, null, null, null, null);
     }
 
     /** Step R2's eight-field form: no growth (the growth step's component). Kept so R2's call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, null, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, null, null, null);
     }
 
     /** The growth step's nine-field form: no blast (step R3's component). Kept so its call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth) {
-        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, null);
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, null, null);
+    }
+
+    /** Step R3's ten-field form: no beam (step R5's component). Kept so its call sites read unchanged. */
+    public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
+                         MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,
+                         MobBlast blast) {
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, null);
     }
 
     public MobDefinition {

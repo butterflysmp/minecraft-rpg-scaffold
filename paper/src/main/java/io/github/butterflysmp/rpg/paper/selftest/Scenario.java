@@ -172,6 +172,17 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * moved by a push, so a push on one shows here and never in its position ({@link SelfTestBlast}).
          */
         PROBE_MOTION,
+        /**
+         * {@code <tag>}: make each tagged beam mob within 48 blocks begin a beam NOW at its normal choice of target
+         * (dragon-mobs step R5, the brief's ruling 8), as DETONATE does a blast. Logs
+         * {@code DRIVE beam tag=<t> <uuid>} and, if it did not take, why ({@link SelfTestBeam}).
+         */
+        BEAM,
+        /**
+         * {@code <tag>}: log each tagged mob's feet, {@code AT tag=<t> <uuid> x= y= z=} to three places, so a row can
+         * read whether it moved ({@link SelfTestBeam}).
+         */
+        PROBE_AT,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

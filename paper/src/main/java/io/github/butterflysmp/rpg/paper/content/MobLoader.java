@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.content;
 
+import io.github.butterflysmp.rpg.core.mob.MobBeam;
 import io.github.butterflysmp.rpg.core.mob.MobBlast;
 import io.github.butterflysmp.rpg.core.mob.MobBody;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
@@ -97,7 +98,8 @@ public final class MobLoader {
             MobStages stages = new MobStages(staged.getInt("count", 0),
                     stageBody(staged, "first"), stageBody(staged, "last"));
             return new MobDefinition(id, s.getString("base_entity"), s.getString("display_name", id),
-                    stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s), blast(s));
+                    stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s), blast(s),
+                    beam(s));
         }
         if (s.contains("blast")) {
             throw new IllegalArgumentException("'blast' needs 'stages': its damage is authored per stage");
@@ -115,7 +117,27 @@ public final class MobLoader {
                 s.getDouble("max_health", 0.0),
                 new MobBody(optional(s, "scale"), optional(s, "speed")),
                 element,
-                null);
+                null, null, null, null,
+                beam(s));
+    }
+
+    /**
+     * The optional {@code beam:} block (dragon-mobs step R5), or null. Every key is required when the block is
+     * present: {@code cycle_ticks.min} and {@code .max} (TICKS between attempts), {@code telegraph_ticks} (TICKS from
+     * the lock to the fire), {@code flash_at} (the telegraph TICKS the warning is drawn on), {@code range} (BLOCKS from
+     * the eye), {@code aim_height} (a FRACTION of the target's height), {@code tolerance} (BLOCKS the target's box is
+     * grown by), {@code damage} (authored, before gear score). {@link MobBeam} refuses a bad value by name.
+     */
+    private static MobBeam beam(ConfigurationSection s) {
+        ConfigurationSection b = s.getConfigurationSection("beam");
+        if (b == null) return null;
+        for (String key : List.of("cycle_ticks.min", "cycle_ticks.max", "telegraph_ticks", "flash_at", "range",
+                "aim_height", "tolerance", "damage")) {
+            if (!b.contains(key)) throw new IllegalArgumentException("beam." + key + " is required");
+        }
+        return new MobBeam(b.getInt("cycle_ticks.min"), b.getInt("cycle_ticks.max"), b.getInt("telegraph_ticks"),
+                b.getIntegerList("flash_at"), b.getDouble("range"), b.getDouble("aim_height"),
+                b.getDouble("tolerance"), b.getDouble("damage"));
     }
 
     /**

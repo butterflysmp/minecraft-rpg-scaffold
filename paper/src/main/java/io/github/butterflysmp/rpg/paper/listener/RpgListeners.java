@@ -300,6 +300,8 @@ public final class RpgListeners implements Listener {
     private final io.github.butterflysmp.rpg.paper.selftest.SelfTestService selfTest;
     /** "The element of this creature", for the Phage's growth (the plan's step R4). */
     private final io.github.butterflysmp.rpg.core.mob.MobElementResolver mobElements;
+    /** The Knell's beam (dragon-mobs step R5): a loop per beam mob, started on its add, stopped on its remove. */
+    private final io.github.butterflysmp.rpg.paper.health.MobBeamer beams;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -312,7 +314,9 @@ public final class RpgListeners implements Listener {
                         Plugin plugin, RecipeRegistry recipes,
                         VaultService vaults, StoneCaster stoneCaster, MiningService mining,
                         io.github.butterflysmp.rpg.paper.selftest.SelfTestService selfTest,
-                        io.github.butterflysmp.rpg.core.mob.MobElementResolver mobElements) {
+                        io.github.butterflysmp.rpg.core.mob.MobElementResolver mobElements,
+                        io.github.butterflysmp.rpg.paper.health.MobBeamer beams) {
+        this.beams = beams;
         this.mobElements = mobElements;
         this.stoneCaster = stoneCaster;
         this.mining = mining;
@@ -786,6 +790,7 @@ public final class RpgListeners implements Listener {
     public void onEntityAdd(EntityAddToWorldEvent event) {
         if (event.getEntity() instanceof LivingEntity mob && !(mob instanceof Player)) {
             nameplates.onMobAppear(mob);
+            beams.onAppear(mob);   // its beam loop, if its file authors one (dragon-mobs step R5)
         }
     }
 
@@ -797,6 +802,7 @@ public final class RpgListeners implements Listener {
     public void onEntityRemove(EntityRemoveFromWorldEvent event) {
         if (event.getEntity() instanceof LivingEntity mob && !(mob instanceof Player)) {
             nameplates.onMobRemove(mob.getUniqueId());
+            beams.onRemove(mob.getUniqueId());   // and its beam loop, which must not outlive it (step R5)
             // And its melee window, or the map grows for the lifetime of the server.
             meleeHits.forget(mob.getUniqueId());
             damageWindow.forget(mob.getUniqueId());   // and its environmental window, same reason
