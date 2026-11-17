@@ -649,6 +649,23 @@ TQ1R3 ASK 2 question="Does the whole sequence feel timed right now?" answer="not
 - **THE SEAT'S DECISION:** the delay will not be derived from a sound file again; **Ben will tune it by ear with a dev
   tool and rule the number.**
 
+### Ben, 2026-11-17, VERBATIM: one more number for the teleport delay (the follow-up, `feat/dragon-knell-4`)
+
+After the boot of `9d0cbffb`, on a 44-tick delay, Ben answered *"it moved about a second after the rining stopped"* and
+*"not quite"*. The seat offered a dev tuning tool or one more number; Ben:
+
+> "I want to try one more number"
+
+The seat told him the delay stood at 2.2 seconds after the shot and that his description pointed about 2 seconds
+earlier; Ben:
+
+> "let's try 1.4 seconds after the shot"
+
+- **`teleport.delay_ticks` 28: HIS number** (1.4 s × 20), replacing the seat's 44. **Counted from the FIRE, and no longer
+  derived from any sound's length.**
+- **The dev tuning tool is NOT built: offered, and declined for now.**
+- Everything else stands: the 20-tick telegraph, the sounds, the damage, the arc and the landing checks.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
