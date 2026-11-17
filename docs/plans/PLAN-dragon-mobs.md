@@ -793,6 +793,16 @@ damager=player <Ben>`, one tick before the reach.
 damage refused, `/kill` ends it); an ownerless or dispenser arrow is refused; the 0.0513 homing (the seat's conversion
 of the old game's 10% per 2-tick step).
 
+### Ben, 2026-11-17, VERBATIM: the Phalanx's shield (step R7b, `feat/dragon-blink`)
+
+*The seat asked: should the Phalanx's shield absorb the first damage of any kind, including a fall or fire, as in the old
+game, or only the first hit from a player?* Ben:
+
+> "1. yes the first damage of any kind"
+
+**That answers Q7.** **THE SEAT'S READING:** the blink's numbers stand as STARTING numbers he left unchanged on
+2026-11-17, **not numbers he typed**: X4 (a player within 5 blocks), X5 (it lands 6 to 16 blocks off) and X6 (8 attempts).
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -2120,7 +2130,7 @@ rework: an answered question says where its answer is, and a new one is added at
    blast; the Goon is retired and the answer now governs the Phage's.)*
 5. **OPEN.** Is the Skreel's spider its own mob, with its own name and health bar?
 6. **OPEN.** When one of the Skreel pair dies, should the other keep fighting as a normal mob?
-7. **OPEN.** Should the Phalanx's shield block the first damage of any kind (a fall, fire), or only the first hit from a player?
+7. **ANSWERED 2026-11-17: "1. yes the first damage of any kind"** (RULINGS, *the Phalanx's shield*). *(Asked as:)* Should the Phalanx's shield block the first damage of any kind (a fall, fire), or only the first hit from a player?
 8. **REMOVED by the Knell rework** (RULINGS, the Knell; seat ruling 4). The Knell no longer reacts to arrows.
 9. **OPEN.** Inside the fight's world, what gear score should the mobs have: the End's 300, or a number the fight sets?
 10. **OPEN.** Should the fight's mobs fight Endermen, as the old fight's did? *(Now also: every Enderman is Void, so
