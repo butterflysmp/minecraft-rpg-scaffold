@@ -725,6 +725,26 @@ TQ1R5 ASK 1 question="Does the whole sequence feel right now?" answer="it's almo
 - **RULED AND NOT BUILT:** the telegraph's second flash (`flash_at` tick 18) is to be REMOVED, leaving the one flash at
   the lock. The seat carries it into the next branch that boots, where Ben sees it gone.
 
+### Ben, 2026-11-17, VERBATIM: the Phalanx's shot starts from the old game's numbers (step R7a, `feat/dragon-shot`)
+
+*The seat offered the old game's Phalanx numbers as a start: fires a shot every 5 seconds at a target within 30
+blocks; the shot flies at about 4 blocks per second, steers gently toward the target, and expires after 20 seconds or
+35 blocks; a hit deals 40; it blinks away when a player comes within 5 blocks, landing 6 to 16 blocks off; its shield
+absorbs the first hit it takes.* Ben:
+
+> "change the duration of the shot to 12s and it fires a shot every 6s"
+
+**THE SEAT'S READING (the seat's, stated in this file's words):** X7 is **120 ticks** and the shot's life is **240
+ticks**, his numbers. **Every other number in that list stands as a STARTING number he left unchanged, not one he
+typed:** X8 (30, re-acquire 35), X9 (0.2 blocks a tick), X10 (10%), the 35-block limit, X12 (1.2), X13 (40), and X4-X6
+and X15 for the later step.
+
+**THE SEAT'S, PROVISIONAL:** the shot's damage is multiplied by the Phalanx's gear score / 100, as elsewhere (P-b, the
+beam's I21).
+
+**ALSO BUILT IN THIS BRANCH:** the Knell's second warning flash, ruled removed on 2026-11-17 (*THE BOOT OF KNELL 5*,
+above): `knell.yml` `flash_at` becomes `[0]`.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
