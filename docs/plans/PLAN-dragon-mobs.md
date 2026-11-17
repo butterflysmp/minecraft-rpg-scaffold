@@ -474,6 +474,35 @@ is (P-b).
 **Not asked and not ruled:** K9 (the hit tolerance, old +1.0); whether the beam is Void damage; whether a shield blocks
 it. Step R5 ships K9 at the old 1.0 as a content number, the beam with no element, and no shield block (§3.R.1.a).
 
+### THE SEAT ON #195 (STEP R5), 2026-11-17 — PASSED BY DIFF, LEFT UNBOOTED SO ONE BOOT READS R5 AND R6 TOGETHER
+
+**ACCEPTED (the seat's words, stated in this file's):**
+- **I11's additions**, the transient MOVEMENT_SPEED × 0 modifier and the one-time zeroing of horizontal velocity at the
+  lock, because the record's intent is a rooted Knell.
+- **I23**: a NoAI Knell never starts a beam of its own.
+- **The logged gap is the box-growth distance**, not a perpendicular one.
+- **The report is this plan's "MB3 + E5"**, not `PLAN-legacy-port.md`'s E5 (the aim-locked wind-up).
+- **The live cycle's bound is measured from the Knell's appearance** (I3).
+- **The pen for the live rows.**
+
+**FINDINGS, NOTHING BUILT:**
+- **I24** (a Knell under our Freeze status still beams) is a question for Ben.
+- **The 13 closed manual gates that spawn a live Knell** keep their readings and would not re-read as predicted on
+  this branch.
+
+**The "inherited or chosen" list I1-I24 has been put to Ben in plain words by the seat; he has not ruled on any item.**
+
+### THE SEAT'S PROPOSALS FOR THE TELEPORT (STEP R6), 2026-11-17 — THE SEAT'S, PROVISIONAL AND UNRULED
+
+*Put to Ben in these terms on 2026-11-17. R6 builds them as written; each is his to confirm or change.*
+
+- **T-a. K14:** it tries 5 spots on its chosen side, then 5 on the other, then stays put.
+- **T-b. K15:** the landing ground may be up to 3 blocks above or below the target's feet.
+- **T-c. Q18:** a landing spot must have line of sight to the target, so the Knell never lands behind a wall.
+
+**K11 (the delay) is 12 ticks**, Ben's "the same time between the warning shot and the actual beam" (B), its own number.
+**K12 and K13 are Ben's 30 and 70** (A, *"Maybe"*), starting values.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
