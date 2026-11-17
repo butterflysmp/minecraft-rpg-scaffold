@@ -534,17 +534,18 @@ class MobLoaderTest {
     }
 
     /**
-     * THE TELEPORT'S 44 AGAINST THE CYCLE'S 100 (KNELL 3): the shipped delay leaves 56 ticks before the earliest next
-     * attempt, so a move never falls inside a telegraph; the load-time check refuses a delay that is not shorter.
+     * THE TELEPORT'S 28 AGAINST THE CYCLE'S 100 (KNELL 4, Ben's "let's try 1.4 seconds after the shot"): the shipped
+     * delay leaves 72 ticks before the earliest next attempt, so a move never falls inside a telegraph; the load-time
+     * check refuses a delay that is not shorter.
      */
     @Test
-    void theBundledKnellsDelayIsFiftySixTicksShorterThanItsCycle() throws IOException {
+    void theBundledKnellsDelayIsSeventyTwoTicksShorterThanItsCycle() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
         var knell = load().find("knell").orElseThrow();
-        assertEquals(56, knell.beam().cycleMinTicks() - knell.teleport().delayTicks());
+        assertEquals(72, knell.beam().cycleMinTicks() - knell.teleport().delayTicks());
     }
 
     // ---- dragon-mobs step R6: the teleport after the beam lands ----
@@ -602,7 +603,7 @@ class MobLoaderTest {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
-        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(44, 30, 70, 5, 3, true),
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(28, 30, 70, 5, 3, true),
                 load().find("knell").orElseThrow().teleport());
         assertTrue(warnings.isEmpty(), warningText());
     }
