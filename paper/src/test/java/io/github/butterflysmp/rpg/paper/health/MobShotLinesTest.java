@@ -37,8 +37,16 @@ class MobShotLinesTest {
                 MobShotLines.blocked("phalanx", MOB, SHOT, 25, AT, ORIGIN, "stone"));
         assertEquals("SHOT ended mob=phalanx " + head + " reason=owner-gone",
                 MobShotLines.ended("phalanx", MOB, SHOT, 25, AT, ORIGIN, "owner-gone"));
-        assertEquals("SHOT at mob=phalanx " + head + " v=-0.200 0.000 0.000",
-                MobShotLines.probe("phalanx", MOB, SHOT, 25, AT, ORIGIN, new Vec3(-0.2, 0, 0)));
+        assertEquals("SHOT refused mob=phalanx " + head + " cause=SUFFOCATION",
+                MobShotLines.refused("phalanx", MOB, SHOT, 25, AT, ORIGIN, "SUFFOCATION"));
+        // The probe carries the server's HITTABLE box and the visible SHAPE as numbers (the seat's ruling 2 on #201).
+        io.github.butterflysmp.rpg.core.mob.BeamBox box = new io.github.butterflysmp.rpg.core.mob.BeamBox(
+                new Vec3(6.6, 1.7, 3.6), new Vec3(7.4, 2.5, 4.4));
+        io.github.butterflysmp.rpg.core.mob.BeamBox shape = new io.github.butterflysmp.rpg.core.mob.BeamBox(
+                new Vec3(6.8, 1.9, 3.8), new Vec3(7.2, 2.3, 4.2));
+        assertEquals("SHOT at mob=phalanx " + head + " v=-0.200 0.000 0.000 box=6.600 1.700 3.600..7.400 2.500 4.400"
+                        + " shape=6.800 1.900 3.800..7.200 2.300 4.200 inside=true",
+                MobShotLines.probe("phalanx", MOB, SHOT, 25, AT, ORIGIN, new Vec3(-0.2, 0, 0), box, shape));
     }
 
     @Test

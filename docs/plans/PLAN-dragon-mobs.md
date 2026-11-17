@@ -1625,6 +1625,19 @@ resource-pack model, any element on the shot, the Skreel.
 | X-p | a player's HOMING projectile | NOT IN THE RECORD | may turn onto a shot, which is a living non-player body to `ProjectileFlight.nearestMob`. Not prevented |
 | X-q | firing and invisibility | READ ("firing clears invisibility") | the seam for the next step: there is no invisibility yet |
 
+**AFTER THE BOOT OF `8ec16e89`, 2026-11-17: THE SEAT'S RULINGS ON #201, AS BUILT** (`GATE-dragon-shot.md`, its last
+section, carries D1-D3 and every row). The table above described the first build. Read with these changes:
+- **The carrier is a FROG**, scaled by `Attribute.SCALE` to `shot.hit_box` (0.8 blocks, the seat's provisional number,
+  for Ben). A bat could not be made a cube.
+- **It is not made non-collidable.** That had made it unpickable, so no vanilla arrow could hit it: D2, a defect of ours.
+- **Only an attack destroys it** (`core.mob.ShotDamage`): a combatant's melee, projectile, explosion, magic or sonic
+  boom. `/kill` ends it. Everything else is refused, logged once per cause.
+- **A wall ends it "blocked"** when the carrier's box, swept along the tick's path, meets a block's collision shape. A
+  wall's SUFFOCATION destroyed one at that boot.
+- **The display's offset is re-measured on the server and corrected**, so the shape's centre is the box's centre.
+- **The instrument watches a real swing** and can strike along his look.
+- **X-l** is now the frog's 0.8 cube, and **X-c's conversion table stands as the conversion's limits** (the seat).
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.

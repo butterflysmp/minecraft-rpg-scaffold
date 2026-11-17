@@ -87,9 +87,16 @@ class DragonShotWiringTest {
         assertTrue(code.get(dmg - 1).contains("@EventHandler(priority = EventPriority.LOWEST)"), code.get(dmg - 1));
         int isShot = indexAfter(code, dmg, "if (!shots.isShot(event.getEntity())) return;");
         int cancel = indexAfter(code, dmg, "event.setCancelled(true);");
-        int strike = indexAfter(code, dmg, "shots.strike(event.getEntity(), by);");
-        assertTrue(isShot == dmg + 1 && cancel == dmg + 2 && strike > cancel && strike <= dmg + 7,
-                "onShotDamaged: " + dmg + " " + isShot + " " + cancel + " " + strike);
+        // The seat's ruling 1 on #201: ONLY AN ATTACK destroys it. The verdict is core's; each arm does one thing.
+        int verdict = indexAfter(code, dmg, "switch (io.github.butterflysmp.rpg.core.mob.ShotDamage.classify(event.getCause().name(), byCombatant)) {");
+        int attack = indexAfter(code, dmg, "case ATTACK -> shots.strike(event.getEntity(), by);");
+        int end = indexAfter(code, dmg, "case END -> shots.end(event.getEntity(), \"kill\");");
+        int refused = indexAfter(code, dmg, "case REFUSED -> shots.refuse(event.getEntity(), event.getCause().name());");
+        assertTrue(isShot == dmg + 1 && cancel == dmg + 2 && verdict > cancel && attack == verdict + 1
+                        && end == verdict + 2 && refused == verdict + 3 && refused <= dmg + 18,
+                "onShotDamaged: " + dmg + " " + isShot + " " + cancel + " " + verdict + " " + attack + " " + end + " " + refused);
+        assertEquals(1, code.stream().filter(l -> l.contains("shots.strike(event.getEntity(),")).count(),
+                "the only vanilla strike is the ATTACK arm's");
 
         int add = indexOf(code, "public void onEntityAdd(EntityAddToWorldEvent event) {");
         assertTrue(code.get(add + 1).contains("shots.onAppear(event.getEntity());"), code.get(add + 1));
@@ -124,15 +131,27 @@ class DragonShotWiringTest {
     @Test
     void theCarrierIsSetUpBeforeItsAddAndOnlyEverRemoved() throws IOException {
         List<String> code = file("health", "MobShooter.java");
-        int spawn = indexOf(code, "Bat carrier = world.spawn(feet(world, eye, 0.9), Bat.class, b -> {");
+        int spawn = indexOf(code, "Frog carrier = world.spawn(feet(world, eye, look.hitBox()), Frog.class, b -> {");
         int put = indexAfter(code, spawn, "carriers.put(b.getUniqueId(), made[0]);");
-        assertTrue(spawn > 0 && put > spawn && put < spawn + 14, "registered in the consumer: " + spawn + " " + put);
+        assertTrue(spawn > 0 && put > spawn && put < spawn + 18, "registered in the consumer: " + spawn + " " + put);
         for (String set : List.of("b.getPersistentDataContainer().set(adapters.keys().mobShot,", "b.setAI(false);",
                 "b.setSilent(true);", "b.setInvisible(true);", "b.setGravity(false);", "b.setPersistent(false);",
-                "b.setRemoveWhenFarAway(false);", "b.setCollidable(false);")) {
+                "b.setRemoveWhenFarAway(false);", "b.setAdult();",
+                "scale.setBaseValue(look.hitBox() / FROG_EDGE);")) {
             int at = indexAfter(code, spawn, set);
             assertTrue(at > spawn && at < put, set + " inside the consumer: " + at);
         }
+        // THE SEAT'S D2 ON #201: setCollidable(false) clears LivingEntity.collides, which LivingEntity#isPickable reads,
+        // and Entity#canBeHitByProjectile asks isPickable: no vanilla arrow could hit the carrier. Never again.
+        assertTrue(code.stream().noneMatch(l -> l.contains("setCollidable(")), "the carrier stays pickable");
+        // THE BLOCK CHECK IS THE CARRIER'S BOX swept along the tick's path (the seat's ruling 1), not the centre's ray.
+        assertTrue(indexOf(code, "Optional<org.bukkit.block.Block> wall = firstColliding(world, swept(carrier, from, to));") > 0,
+                "the swept box decides blocked");
+        assertTrue(code.stream().noneMatch(l -> l.contains("rayTraceBlocks(")), "no centre ray decides a block");
+        // THE ORDER IN A TICK (the seat's ruling 3): a struck shot is ended in strike(), and advance() returns for an
+        // ended shot before anything else, so a strike that lands before the step wins over the reach.
+        int adv = indexOf(code, "private void advance(Live s) {");
+        assertTrue(code.get(adv + 1).contains("if (s.ended) return;"), code.get(adv + 1));
         assertTrue(indexOf(code, "d.setPersistent(false);") > 0, "the display is never saved either");
         assertTrue(indexOf(code, "displays.add(d.getUniqueId());") > 0, "the display is registered in its consumer");
         assertTrue(indexOf(code, "if (s.carrier.isValid()) s.carrier.remove();") > 0, "ended by remove()");

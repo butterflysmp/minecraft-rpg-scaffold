@@ -51,6 +51,7 @@ class MobLoaderShotTest {
               max_distance: 19
               tolerance: 0.8
               damage: 13
+              hit_box: 0.65
               look:
                 block: amethyst_block
                 size: 0.45
@@ -101,7 +102,7 @@ class MobLoaderShotTest {
         MobDefinition def = load().find("p").orElseThrow();
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(new MobShot(77, 21, 26, 0.35, 0.15, 99, 19, 0.8, 13,
-                new MobShot.ShotLook("amethyst_block", 0.45, 0x010203, 0x040506, 1.25, 0x070809, 1.75, 3),
+                new MobShot.ShotLook("amethyst_block", 0.45, 0.65, 0x010203, 0x040506, 1.25, 0x070809, 1.75, 3),
                 List.of(new BeamSound("entity.wither.ambient", 0.25, 1.25)),
                 List.of(new BeamSound("entity.shulker_bullet.hurt", 0.5, 0.75))), def.shot());
         assertEquals("bow", def.mainHand());
@@ -118,7 +119,7 @@ class MobLoaderShotTest {
     @Test
     void eachMissingKeyIsANamedSkippedFile() throws IOException {
         List<String> leaves = List.of("period_ticks", "acquire_range", "reacquire_range", "speed", "homing",
-                "life_ticks", "max_distance", "tolerance", "damage");
+                "life_ticks", "max_distance", "tolerance", "damage", "hit_box");
         for (String leaf : leaves) {
             String yaml = SHOT_OK.replaceAll("(?m)^  " + leaf + ":.*\\n", "");
             assertTrue(!yaml.equals(SHOT_OK), "the fixture for " + leaf + " must actually remove it");
@@ -157,7 +158,7 @@ class MobLoaderShotTest {
         MobDefinition def = load().find("phalanx").orElseThrow();
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(new MobShot(120, 30, 35, 0.2, 0.0513, 240, 35, 1.2, 40,
-                new MobShot.ShotLook("amethyst_block", 0.4, 0xC88CFF, 0xC88CFF, 1.5, 0xFF69B4, 2.0, 4),
+                new MobShot.ShotLook("amethyst_block", 0.4, 0.8, 0xC88CFF, 0xC88CFF, 1.5, 0xFF69B4, 2.0, 4),
                 List.of(new BeamSound("entity.wither.ambient", 0.5, 1.5)),
                 List.of(new BeamSound("entity.shulker_bullet.hurt", 1.0, 1.0))), def.shot());
         assertEquals("bow", def.mainHand());

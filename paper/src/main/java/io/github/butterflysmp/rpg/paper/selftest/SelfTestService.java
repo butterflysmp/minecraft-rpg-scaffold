@@ -198,6 +198,12 @@ public final class SelfTestService {
      * A Phalanx's shot was fired (step R7a): if the instrument tagged the Phalanx, the shot takes
      * {@link SelfTestSnapshot#tagsForShot}, and one line names it, so a row reads which carrier is its shot.
      */
+    /** One of the player's own swings, attacks or interacts (step R7a): to the active run, which logs it only while a row watches. */
+    public void watchSwing(org.bukkit.entity.Player p, String kind) {
+        SelfTestRun run = active;
+        if (run != null && run.player().equals(p)) run.watchSwing(kind);
+    }
+
     public void adoptShot(org.bukkit.entity.Mob owner, org.bukkit.entity.LivingEntity carrier) {
         java.util.Set<String> tags = SelfTestSnapshot.tagsForShot(owner.getScoreboardTags());
         if (tags.isEmpty()) return;

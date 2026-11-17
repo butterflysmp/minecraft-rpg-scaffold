@@ -135,7 +135,72 @@ final class SelfTestDrivers {
             case TELEPORT_DRAW -> teleportDraw(p, a);
             case SHOT -> shoot(p, a);
             case PROBE_SHOT -> probeShot(p, a);
+            case WATCH_SWINGS -> { run.watchSwings(a.equals("on")); run.log("DRIVE watch_swings " + a); yield Optional.empty(); }
+            case AIM_SHAPE -> aimShape(p, a);
+            case STRIKE_LOOK -> strikeAlong(p, a, "strike_look", p.getEyeLocation().getDirection());
+            case STRIKE_AT_AGE -> Optional.empty();   // the run polls it; it never reaches a driver
+            case SHOOT_ARROW -> shootArrow(p, a);
         };
+    }
+
+    /** The visible shape's centre of the nearest carrier tagged {@code tag}, and that carrier; empty when none. */
+    private Optional<java.util.Map.Entry<Entity, io.github.butterflysmp.rpg.core.Vec3>> shapeOf(Player p, String tag) {
+        Optional<Entity> c = nearestTagged(p, tag);
+        if (c.isEmpty()) return Optional.empty();
+        return io.github.butterflysmp.rpg.paper.health.MobShooter.shapeCentre(c.get())
+                .map(v -> java.util.Map.entry(c.get(), v));
+    }
+
+    /** AIM_SHAPE (step R7a, the seat's ruling 4 on #201): the eye to the VISIBLE shape's centre, by teleportAsync. */
+    private Optional<String> aimShape(Player p, String tag) {
+        var s = shapeOf(p, tag);
+        if (s.isEmpty()) return Optional.of("no shot tagged '" + tag + "' carrying a shape within " + (int) REACH + " blocks");
+        Location feet = p.getLocation();
+        var c = s.get().getValue();
+        SelfTestAim.Rotation r = SelfTestAim.at(feet.getX(), feet.getY(), feet.getZ(), p.getEyeHeight(), c.x(), c.y(), c.z());
+        Location turned = feet.clone();
+        turned.setYaw(r.yaw());
+        turned.setPitch(r.pitch());
+        run.log("DRIVE aim_shape teleportAsync eye->shape target=" + s.get().getKey().getUniqueId() + " shape="
+                + fmt(c.x()) + " " + fmt(c.y()) + " " + fmt(c.z()) + " yaw=" + fmt(r.yaw()) + " pitch=" + fmt(r.pitch()));
+        p.teleportAsync(turned);
+        return Optional.empty();
+    }
+
+    /**
+     * STRIKE_LOOK and STRIKE_AT_AGE's strike (the seat's ruling 4 on #201): the server ray-casts from his eye along
+     * {@code dir}, out to his ENTITY_INTERACTION_RANGE, against blocks and every living body but him, and
+     * {@code Player#attack}s what it picks. A box that is not where the shape is reads as a pick of nothing.
+     */
+    Optional<String> strikeAlong(Player p, String tag, String what, org.bukkit.util.Vector dir) {
+        Location eye = p.getEyeLocation();
+        var range = p.getAttribute(org.bukkit.attribute.Attribute.ENTITY_INTERACTION_RANGE);
+        double reach = range == null ? 3.0 : range.getValue();
+        org.bukkit.util.RayTraceResult hit = p.getWorld().rayTrace(eye, dir.clone().normalize(), reach,
+                org.bukkit.FluidCollisionMode.NEVER, true, 0.0, e -> e instanceof LivingEntity && !e.equals(p));
+        Entity picked = hit == null ? null : hit.getHitEntity();
+        String at = hit == null ? "none" : fmt(hit.getHitPosition().distance(eye.toVector()));
+        run.log("DRIVE " + what + " tag=" + tag + " reach=" + fmt(reach) + " picked="
+                + (picked == null ? (hit != null && hit.getHitBlock() != null ? "block " + hit.getHitBlock().getType().getKey().getKey() : "none")
+                        : picked.getUniqueId() + " " + picked.getType().getKey().getKey()) + " at=" + at);
+        if (picked != null) p.attack(picked);
+        return Optional.empty();
+    }
+
+    /** SHOOT_ARROW (step R7a): a real arrow, the player its shooter, from his eye toward the shot's shape. */
+    private Optional<String> shootArrow(Player p, String tag) {
+        var s = shapeOf(p, tag);
+        if (s.isEmpty()) return Optional.of("no shot tagged '" + tag + "' carrying a shape within " + (int) REACH + " blocks");
+        Location eye = p.getEyeLocation();
+        var c = s.get().getValue();
+        org.bukkit.util.Vector dir = new org.bukkit.util.Vector(c.x() - eye.getX(), c.y() - eye.getY(), c.z() - eye.getZ());
+        double d = dir.length();
+        org.bukkit.entity.Arrow arrow = p.launchProjectile(org.bukkit.entity.Arrow.class, dir.normalize().multiply(2.0));
+        arrow.addScoreboardTag(SelfTestSnapshot.MOB_TAG);
+        arrow.setPickupStatus(org.bukkit.entity.AbstractArrow.PickupStatus.DISALLOWED);
+        run.log("DRIVE shoot_arrow tag=" + tag + " arrow=" + arrow.getUniqueId() + " shooter=" + p.getUniqueId()
+                + " d=" + fmt(d));
+        return Optional.empty();
     }
 
     /** The tagged living entities within the beam steps' 48 blocks, nearest first. */

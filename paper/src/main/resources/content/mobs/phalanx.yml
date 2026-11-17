@@ -54,6 +54,12 @@ shot:
   # The AUTHORED damage of a hit, x the Phalanx's gear score / 100 (the seat's, provisional), before the player's
   # defence. No element, no knockback. cfde822's 40.
   damage: 40
+  # BLOCKS, the edge of the cube a player can HIT, centred on the shape (the seat's provisional number, for Ben to
+  # tune; the seat's ruling 2 on #201: what he sees is what he can hit). At least look.size. The carrier is a frog, a
+  # 0.5 cube, scaled to this edge (SCALE = 0.8 / 0.5 = 1.6). It does NOT make the shot easier to land: whom the shot
+  # hits is its centre against a body's box grown by the tolerance above. It is what is swept for blocks, so a wall
+  # stops the shot while its whole box is still outside the wall.
+  hit_box: 0.8
   # THE LOOK, CHOSEN by the seat's ruling 8 until a resource-pack model exists; for Ben. Light purple with pink
   # flashes: a small glowing block riding the carrier, a light purple dust every tick, a pink dust every 4 ticks.
   look:

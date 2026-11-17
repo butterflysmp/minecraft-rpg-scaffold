@@ -5,6 +5,9 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+> **AFTER THE BOOT OF `8ec16e89`: THE RE-PREDICTION IS THE LAST SECTION OF THIS FILE** (*RE-PREDICTED AFTER THE BOOT OF
+> `8ec16e89`*, the seat's rulings on #201), NOT RUN. Nothing above it is edited by that section.
+
 > **REWRITTEN BEFORE ANY BOOT, 2026-11-17, on the seat's ruling on #201 (the homing matches the old game).** The homing
 > moved from 0.1 to **0.0513 a tick** (`phalanx.yml`; the plan's 5.R.9 X-c), so the flight was re-run in jshell at the
 > new value and every prediction resting on it re-checked. **Changed:** S4's expression; SH6's `at` and `flown` (its
@@ -389,3 +392,224 @@ the colour, the flashes, whether he could see it and whether it feels fair are h
 | AUTO half | Ben's half | READING |
 |---|---|---|
 | `GATE-dragon-knell-5.md`'s forced-beam lines from a frozen Knell 12 east: the two telegraph sounds and the TELEGRAPH at T; the two fire sounds and the FIRE at T + 24; its hit and HURT for 65 before defence. **The flash is drawn by the client and logged nowhere**, so the AUTO half cannot see it | `KQ1R6 ASK 1 question="Is the second purple line gone?" answer=…` | READ: `BEAM telegraph … tick=2839 …`, `BEAM fire … tick=2863 … tested=1 [player <Ben> gap=0.000 hit]`, `HURT before=65.000 after=59.091 defense=10.000 … dealerType=wither_skeleton/knell`, and its move `TELEPORT … tick=2887` (24 after the fire, the production draw). Ben, verbatim: `KQ1R6 ASK 1 question="Is the second purple line gone?" answer="yes" ticks=113`. **The flash ruled removed: CONFIRMED BY PLAY** |
+
+---
+
+# RE-PREDICTED AFTER THE BOOT OF `8ec16e89` (the seat's rulings on #201, 2026-11-17) — NOT RUN
+
+**Status: NOT RUN.** Everything below was written **before** any boot of the code it predicts. The predictions and
+readings ABOVE are the boot of `8ec16e89`'s and are **not edited**. Rows that failed or whose lines change are
+re-predicted here **under their old name with the next suffix**. SH13-SH16 are new. **Not re-run**, because they read as
+predicted and their lines do not change: **SH5, SH6, SH8, SH10, SH11, KQ1R6**. They are kept in the same file because
+the readings above are the evidence for the diagnosis below. The scenario file now carries only this section's rows.
+
+## D1-D3 — THE DIAGNOSIS, EACH WITH ITS EVIDENCE
+
+Every jar read uses `~/.jdks/openjdk-26.0.1/bin/javap.exe -c -p -cp <jar> <class>`. The server jar is
+`run/versions/26.1.2/paper-26.1.2.jar`. The client jar is `~/AppData/Roaming/.minecraft/versions/26.1.2/26.1.2.jar`,
+unobfuscated.
+
+### D1 — why Ben's swing did not destroy the shot: CANNOT BE TOLD FROM THIS BOOT; what is ruled out, and what a boot must show
+
+| candidate | evidence | mark | verdict |
+|---|---|---|---|
+| **any event naming his second shot between its fire and its hit** | the log from `09:32:48` (fired, `tick=2483`) to `09:32:51` (hit, age 68): only the fired, SHOTTAG, hit and HURT lines. `RpgListeners.onShotDamaged` logs a `destroyed` line for ANY damage event on a carrier, cancelled or not. **Our code logged no arm swing, attack or interact**, so their absence says nothing | READ (the log) | **no damage event reached the shot.** Whether his client sent an attack is unknowable from this boot |
+| **the server refused an attack it received** | `ServerGamePacketListenerImpl#handleAttack`: the world border, then `isWithinAttackRange(item, the server's box, 3.0)`, then `cannotAttackWithItem(item, 5)`, then `ServerPlayer.attack`. **There is no `isPickable` test.** `attack` reaches the damage event we log | READ | possible only by **reach** (his eye to the SERVER box, more than 3.0) or **charge** (a re-swing inside 5 ticks of the last). Both are unread |
+| **the client cannot pick it** | client `LivingEntity#isPickable` = `!isRemoved()` (offsets 0-12). The client's `LocalPlayer#pick` filters entities with `EntitySelector.CAN_BE_PICKED`, over the box `expandTowards(view × reach).inflate(1)`. No invisibility filter | READ (client jar) | **ruled out:** an invisible, NoAI carrier is pickable on the client |
+| **what he sees against what he can hit** | the bat's box was 0.5 × 0.9. The 0.4 block was centred in it from the PASSENGER rule `(0, height, 0)` (READ for a bat, `EntityType`) | READ / INFERRED (the client positions a rider by the same `Entity#positionRider`) | **ruled out for the bat.** For the FROG it would NOT hold: its passenger attachment is `(0, 0.375, −0.25)` (READ, `EntityType` frog `passengerAttachments`). Hence the calibration below |
+| **the client's box lags the server's** | a bat's `updateInterval` is the Builder's default **3** (READ, `EntityType$Builder.<init>`: `iconst_3`, `putfield updateInterval`; `bat` sets none). `ServerEntity#sendChanges` sends a position when `tickCount % updateInterval == 0`, or on `needsSync`, a dirty data set or a forced resync (READ, offsets 301-340) | READ (the send) / INFERRED (the client's interpolation between sends) | the client's box trails the server's by up to 3 ticks, **0.6 blocks**. The display rides the CLIENT's box, so what he sees stays inside what his client can pick. The server's box is NEARER him for an incoming shot, so the server's reach test is not made harder by the lag. **Not fixed: no API forces a per-tick position send**; the swing log measures it |
+| **the window** | from 15 east the bat's near face (0.25 ahead of the centre) comes within his 3.0 at about age 59 (the centre at x 3.25, 0.1999 a tick), and the shot hits at 68: about **9 ticks, 0.45 s** (est., from the line's geometry, not executed) | INFERRED | a tight window; ruling 2's 0.8 box (its face 0.4 ahead) widens it by about 1 tick |
+| **the order in a tick** | packets run as tasks on the main thread before the next tick's world work (`PacketUtils.ensureRunningOnSameThread`) | INFERRED | an attack that arrives before a tick is processed before that tick's step. Pinned in our code below |
+
+**What a boot must show to tell:** with `watch_swings` on, one `SWING kind=arm` line per swing he makes, carrying
+`along=` (his look's entry distance into the SERVER box) or `miss` and `gap=`. Then:
+- an `attack` line naming the shot means his client sent an attack and the server passed the reach and charge tests;
+- a `SHOT destroyed` line means it reached the damage event.
+
+The reading is: **arm swings with `miss`** = his look did not pass through the server box (aim, or lag); **`along` ≤ 3
+with no attack line** = his client did not pick it; **an attack line with no `destroyed`** = our code.
+
+### D2 — the arrow (SH3): A DEFECT OF OURS, FIXED
+
+The staging was sound. The arrow was summoned 0.8 under the carrier's feet, rising 1.5 a tick, and its swept, inflated
+box met the bat's on the next tick. **The arrow could not hit the carrier at all.** `Projectile#canHitEntity` →
+`Entity#canBeHitByProjectile` = `isAlive() && isPickable()`, and the server's `LivingEntity#isPickable` = `!isRemoved()
+&& this.collides` (offsets 1-19; READ). `collides` is the field Bukkit's `LivingEntity#setCollidable` sets, and
+`MobShooter` called `b.setCollidable(false)`. **Fixed:** the call is gone, pinned by `DragonShotWiringTest`
+(killed by MUTCOLLIDE).
+
+### D3 — suffocation (SH7): CONFIRMED, and the other causes
+
+The destroyed line read `by=vanilla cause=SUFFOCATION`. The carrier's box front, 0.25 ahead of its centre, entered the
+wall at age 17. A living body's in-wall damage is `LivingEntity#baseTick`'s `isInWall` → `IN_WALL`, Bukkit's
+`SUFFOCATION` (INFERRED: the cause in the log is the reading; the bytecode branch was not opened). **Every other cause
+that could reach the carrier, and what each did at `8ec16e89`:** all of them destroyed it, because any damage did.
+- the void: `VOID`;
+- cramming: `CRAMMING`;
+- a falling block: `FALLING_BLOCK`;
+- fire: `FIRE`, `FIRE_TICK`;
+- lava: `LAVA`;
+- drowning: `DROWNING`;
+- freezing: `FREEZE`;
+- lightning: `LIGHTNING`;
+- the world border: `WORLD_BORDER`;
+- `/kill`: `KILL`.
+
+**Now:** every one is REFUSED except `/kill`, which ENDS it (ruling 1).
+
+## WHAT CHANGED FOR EACH RULING
+
+| ruling | as built | where | pinned by |
+|---|---|---|---|
+| 1, only attacks destroy it | vanilla damage on a carrier is always cancelled, then `ShotDamage.classify(cause name, byCombatant)`. **ATTACK**: `ENTITY_ATTACK`, `ENTITY_SWEEP_ATTACK`, `PROJECTILE`, `ENTITY_EXPLOSION`, `MAGIC` or `SONIC_BOOM`, each only if the damage source's CAUSING entity is living. It is destroyed. **END**: `KILL`, which ends it `reason=kill`. **REFUSED**: everything else, logged once per cause per shot (`SHOT refused … cause=`). Our ability paths are attacks at the handles, as before | `core.mob.ShotDamage`, `RpgListeners.onShotDamaged`, `MobShooter.refuse` | `ShotDamageTest` (MUTCOMBATANT, MUTKILL); `DragonShotWiringTest` (MUTREFUSESTRIKE) |
+| 1, the body never enters a block | `blocked` is decided by the carrier's BOX at the old centre joined with its box at the new, against every block's COLLISION shape (`Block#getCollisionShape`, strict `overlaps`), before the move. The centre's ray is gone | `MobShooter.swept`, `firstColliding` | `DragonShotWiringTest` |
+| 2, what he sees is what he can hit | `shot.hit_box: 0.8` (BLOCKS, the hittable cube's edge, at least `look.size`). The carrier is a **FROG** (a 0.5 cube, READ) given that box by `Attribute.SCALE` = 0.8 / 0.5 = **1.6**. The display's translation is set from the frog's READ passenger attachment, then **re-measured on the server** the tick after it rides and corrected, so the shape's centre is the box's centre. **The shot's own hit test is unchanged** (its centre against the target's box grown by 1.2), so it is not easier for the shot. The block sweep uses the bigger box, so a wall stops it sooner | `phalanx.yml`, `MobShot.ShotLook.hitBox`, `MobShooter.fire`, `calibrate` | `MobShotTest.theHittableBoxMustHoldTheShape` (MUTHITBOX), `MobLoaderShotTest`; the `inside=` field of every `SHOT at` line |
+| 2, the lag | not fixed. No API forces a per-tick position send, and the display rides the client's box, so what he sees is inside what his client picks (D1) | | the SWING lines |
+| 3, the order in a tick | `strike` ends the shot at once, and `advance` returns first for an ended shot, so an attack processed before a step wins over that step's reach. A packet is processed before the tick it precedes (INFERRED, D1). SH15 reads a strike in the last tick before the reach | `MobShooter.advance` | `DragonShotWiringTest` (MUTORDERTICK2) |
+| 4, the instrument | `watch_swings: on/off`: every arm swing, attack and interact of the run's player, each logged against the nearest live shot with `along`/`miss`, `gap`, eye and look, and one tick later `SWING after … live=`. `aim_shape`: his eye to the visible shape. `strike_look`: the server rays ALONG HIS LOOK out to his `ENTITY_INTERACTION_RANGE` and `Player#attack`s the pick. `strike_at_age`: the same, toward the shape, in the tick the shot's age reaches N | `SelfTestStrike`, `SelfTestRun`, `SelfTestDrivers`, `RpgListeners.onShotWatch*` | `SelfTestStrikeTest` (MUTALONG) |
+| 5, the arrow | D2's fix; and `shoot_arrow`, a real arrow with the player as its shooter | `SelfTestDrivers.shootArrow` | SH3R2 |
+| 6, SH9 | the row never kills its Phalanx. The next row's clean removes it without a death | the scenario | SH9R2 |
+
+## THE FLIGHT FOR THESE ROWS (jshell, 2026-11-17, at homing 0.0513; positions relative to his feet)
+
+From 8 east, the shot's centre and the box and shape:
+
+| age | centre | box (the frog, ±0.4) | shape (the block, ±0.2) |
+|---|---|---|---|
+| 10 | 6.004 1.980 0.000 | 5.604 1.580 −0.400 .. 6.404 2.380 0.400 | 5.804 1.780 −0.200 .. 6.204 2.180 0.200 |
+| 20 | 4.007 1.860 0.000 | 3.607 1.460 −0.400 .. 4.407 2.260 0.400 | 3.807 1.660 −0.200 .. 4.207 2.060 0.200 |
+| 32 | 1.611 1.717 0.000 | 1.211 1.317 −0.400 .. 2.011 2.117 0.400 | 1.411 1.517 −0.200 .. 1.811 1.917 0.200 |
+
+**The hit is still at age 33**, at 1.412 1.705 0, because the tolerance test is the shot's centre. **SH7R2:** the
+swept box meets the wall block (x 3.5 to 4.5) first at **age 16**, centre 4.806 1.908 0 (its box would span 4.406 to
+5.206). **SH16's reach:** his eye (0, 1.62, 0) to the box's near face along his look is about **2.8 at age 24** and
+**2.4 to 2.6 at ages 25-26**, inside his 3.0.
+
+## THE PLAYER CANNOT DIE
+
+Each row heals him first. No row lets more than one 40 land after a heal. The rows where a shot can hit him are
+SH1R2, SH14 and SQ1R2, plus any row whose destroying step fails. 40 < 100.
+
+## R0 FOR THIS BOOT
+
+### R0aR2 — the build line names this branch's head
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-shot` prints it, shortened; not `8ec16e89`, not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+
+### R0bR2 — the jar carries the frog, the box and the refusal
+
+| prediction | instrument | READING |
+|---|---|---|
+| `phalanx.yml` PRESENT `  hit_box: 0.8` and `  homing: 0.0513`. Classes PRESENT `core/mob/ShotDamage.class` (in the shaded jar under `io/github/butterflysmp/rpg/core/mob/`) and `paper/selftest/SelfTestStrike.class`. `GATE-dragon-shot.yml` PRESENT `SH7R2:`, `SH16:`, `SQ1R2:`, ABSENT `SH7:`. **Controls, the same on both builds:** `phalanx.yml` PRESENT `  life_ticks: 240`; `health/MobShooter.class` PRESENT | R0b's scan above, with these names | |
+
+### R0cR2 — the Loaded line, and nothing refused
+
+| prediction | instrument | READING |
+|---|---|---|
+| The boot of `8ec16e89`'s Loaded line, verbatim (`… 5 mobs, 1 mob elements …`); no `Refusing`, `Skipping`, `SEVERE` or exception; no `[Rpg]` WARN beyond `volley_stone`'s pair | as R0c above | |
+
+### R0dR2 — every scenario loaded
+
+| prediction | instrument | READING |
+|---|---|---|
+| **`[Rpg] Selftest: dev server, 129 scenarios across 18 gates [… dragon-teleport, dragon-shot]`**, no `Refusing selftest` | as R0d above | |
+
+**The 129 is RECOUNTED from the files:** `grep -cE '^  - ' index.yml` prints 18. Summed over the eighteen files,
+`grep -cE '^[A-Za-z0-9-]+:'` prints 147 and `'^setup:'` prints 18: 147 − 18 = 129. At `ef242e95` the same three
+commands print 18, 149, 18: 131.
+
+## THE ROWS (AUTO; SURVIVAL, DIFFICULTY NORMAL; every row `LEFTOVER living=0 radius=16`)
+
+**Every forced shot** logs `SHOT fired … dealt=40.000` and a `SHOTTAG … tags=[<tag>_shot, selftest, t_shot]`, with
+exactly one ending line. **No `SHOT refused` line appears in any row but SH14**: no row stages a vanilla
+non-attack.
+
+### SH1R2 — supersedes SH1: the flight, with the box and the shape as numbers (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| Two `SHOT at … age=<a> at=<centre> flown=<0.2a> v=… box=<centre ± 0.4> shape=<centre ± 0.2> inside=true`, at about ages 9-11 and 19-21, each matching the table to three places at its own age; the third read `live=0`; `SHOT hit … age=33 at=<feet + 1.412 1.705 0.000> flown=6.600 … dealt=40.000` and its HURT | the flight table; `calibrate` (the shape read from the display's server position plus its translation) | |
+
+### SH2R2 — supersedes SH2: Player#attack on the known shot, the carrier now a frog (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `DRIVE attack Player#attack target=<S> frog d=…`; `SHOT destroyed … age=<12..15> … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` (no `causer=`: the damager is the causer); no HURT | SH2's reading; ruling 1's ATTACK | |
+
+### SH3R2 — supersedes SH3: a real arrow, the player its shooter (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `DRIVE shoot_arrow tag=sh3r2_shot arrow=<A> shooter=<Ben> d=<about 5>`; `SHOT destroyed … age=<15..20> … by=vanilla cause=PROJECTILE damager=arrow <A> causer=player <Ben>`; no HURT | D2 (pickable again); `Projectile#canHitEntity` (READ); ruling 1's ATTACK (a projectile a combatant fired) | |
+
+### SH4R2 — supersedes SH4: the grenade cast at the shot, the carrier now a frog (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `DRIVE aim … frog d=…`; `SHOT destroyed … age=<33..52> … by=ability dealer=<Ben> element=fire amount=8.000`; no HURT | SH4's reading (`amount=8.000`) | |
+
+### SH7R2 — supersedes SH7: a wall ends it BLOCKED, the body outside (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| **`SHOT blocked … age=16 at=<feet + 4.806 1.908 0.000> flown=3.200 block=stone`**; no `refused` line; no HURT | the swept box (table); `Block#getCollisionShape` | |
+
+### SH9R2 — supersedes SH9: a destroyed shot feeds nothing, the Phalanx never killed (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `BODY tag=sh9r2p … stage=1 …` before and after, the same; the XP replies the same before and after; `SHOT destroyed … by=vanilla cause=ENTITY_ATTACK …`; **no `[Rpg] GROWTH` line in this row or in the next row's bracket** (the clean removes the Phalanx with `remove()`, no death) | S3 above; SH9's reading | |
+
+### SH12R2 — supersedes SH12: after its Phalanx is killed, no carrier is left (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `SHOT ended … reason=owner-gone`; **`ENTITIES FROG count=0 radius=16`** and **`ENTITIES BLOCK_DISPLAY count=0 radius=16`** | SH12's reading | |
+
+### SH13 — /kill ends it (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `CMD /kill @e[tag=sh13_shot]`; **`SHOT ended … reason=kill`**; no `destroyed`, no hit, no HURT; `live=0` | `LivingEntity#kill` hurts with `genericKill` (READ, `RpgListeners.onMobDeath`'s javadoc, javap build 74); its cause is `KILL`; ruling 1's END | |
+
+### SH14 — environmental damage is refused, once per cause (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| Four `SHOT refused … cause=<c>` lines, one each for **SUFFOCATION, FIRE, CRAMMING, PROJECTILE**, in that order and **SUFFOCATION once though it is dealt twice**; no `destroyed`; **`SHOT hit … age=33`** and its HURT for 40 | `/damage` with no source has no causing entity (INFERRED); the damage types `in_wall`, `in_fire`, `cramming` and `arrow` map to those causes (INFERRED, the mapping not opened); ruling 1's REFUSED | |
+
+### SH15 — a strike in the last tick before the reach wins (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `DRIVE strike_at_age tag=sh15_shot age=32 waited=<w>`; `DRIVE strike_at_age … picked=<S> frog at=<about 1.2>`; **`SHOT destroyed … age=32 … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**; no hit, no HURT | `SelfTestRun.strikeAtAge`: whichever of the player's and the Phalanx's tasks runs first in a tick, the strike lands before the shot's next step | |
+
+### SH16 — the aimed swing (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `DRIVE watch_swings on`; `DRIVE aim_shape … target=<S> shape=<x y z>`; **`DRIVE strike_look tag=sh16_shot reach=3.000 picked=<S> frog at=<2.3..2.7>`**; **`SHOT destroyed … age=<25..27> … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>`**; no HURT. A `SWING kind=attack …` line from the instrument's own attack is RECORDED, not predicted (whether `Player#attack` raises `PrePlayerAttackEntityEvent` was not read) | SH16's reach (the table); his `ENTITY_INTERACTION_RANGE` (3.0 in survival, INFERRED); the ray picks the frog only if the box is where the shape is | |
+
+## BEN'S ROW — BY THE ASK STEP, SURVIVAL
+
+### SQ1R2 — supersedes SQ1's second question: did YOUR swing destroy it (SURVIVAL)
+
+| AUTO half, recorded beside his answers | Ben's half | READING |
+|---|---|---|
+| Every `SWING kind=arm …` line he makes during the shot's flight, with `along`/`miss` and `gap`; any `SWING kind=attack target=<S>` line; the one ending line, `SHOT destroyed … by=vanilla cause=ENTITY_ATTACK damager=player <Ben>` or `SHOT hit … age=68` and its HURT. **Not predicted: it is his swing** | `SQ1R2 ASK 1 question="Did your swing destroy it before it reached you?" answer=…`; `SQ1R2 ASK 2 question="Was it easy enough to hit?" answer=…` | |
+
+## CARRIED STATE AND THE RUN SHEET
+
+Carried state as above (the backup's folder suffix `-pre-dragon-shot-r2`). **The run sheet. Ben types these, in this
+order; every line is literal:**
+
+1. `/gamemode survival`, alone, the first line after login.
+2. `/rpg selftest dragon-shot`, **ONCE. Wait for the chat to say the run finished, and answer both gold questions.**
+   About **1 minute** plus your answers (its waits sum to 0.65 minutes, and one step waits about 1.6 seconds more for a shot to reach an age). Stand still and touch nothing until the gold
+   text asks. **At the end** a Phalanx fifteen blocks east fires one shot at you, with a sword in your hand: **hit it
+   before it reaches you.** Two questions; answer `yes` or `no`.
+3. `/stop`
+
+**Nothing else is run in this boot.**

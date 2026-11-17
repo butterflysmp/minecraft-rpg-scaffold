@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MobShotTest {
 
     private static final MobShot.ShotLook LOOK =
-            new MobShot.ShotLook("amethyst_block", 0.3125, 0xC88CFF, 0xC88CFF, 1.2, 0xFF69B4, 1.5, 4);
+            new MobShot.ShotLook("amethyst_block", 0.3125, 0.8, 0xC88CFF, 0xC88CFF, 1.2, 0xFF69B4, 1.5, 4);
 
     /** Fixed inputs: phalanx.yml's numbers but the homing, here the old game's 0.1 (phalanx.yml ships 0.0513 a tick). */
     private static MobShot fixture() {
@@ -258,8 +258,21 @@ class MobShotTest {
                 () -> new MobShot(120, 30, 35, 0.2, 0.1, 0, 35, 1.2, 40, LOOK, List.of(), List.of()))
                 .getMessage().contains("life_ticks"));
         assertTrue(assertThrows(IllegalArgumentException.class,
-                () -> new MobShot.ShotLook("amethyst_block", 0.3125, 0x1000000, 0, 1, 0, 1, 4))
+                () -> new MobShot.ShotLook("amethyst_block", 0.3125, 0.8, 0x1000000, 0, 1, 0, 1, 4))
                 .getMessage().contains("glow"));
+    }
+
+    /**
+     * WHAT HE SEES IS WHAT HE CAN HIT (the seat's ruling 2 on #201): the hittable box is content, an edge in BLOCKS,
+     * and it must hold the visible shape; a box smaller than the shape is refused by name.
+     */
+    @Test
+    void theHittableBoxMustHoldTheShape() {
+        assertEquals(0.8, LOOK.hitBox(), 0.0);
+        assertTrue(assertThrows(IllegalArgumentException.class,
+                () -> new MobShot.ShotLook("amethyst_block", 0.4, 0.39, 0, 0, 1, 0, 1, 4))
+                .getMessage().contains("shot.hit_box"));
+        new MobShot.ShotLook("amethyst_block", 0.4, 0.4, 0, 0, 1, 0, 1, 4);   // equal is allowed
     }
 
     @Test

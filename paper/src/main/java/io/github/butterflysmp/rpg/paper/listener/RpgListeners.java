@@ -941,11 +941,43 @@ public final class RpgListeners implements Listener {
     public void onShotDamaged(EntityDamageEvent event) {
         if (!shots.isShot(event.getEntity())) return;
         event.setCancelled(true);
+        // ONLY AN ATTACK DESTROYS IT (the seat's ruling 1 on #201, after a wall's SUFFOCATION destroyed one at the boot
+        // of 8ec16e89). A combatant is the damage source's CAUSING entity: the swinger, the archer, the bomber.
+        Entity causing = event.getDamageSource().getCausingEntity();
+        boolean byCombatant = causing instanceof LivingEntity;
         String by = "vanilla cause=" + event.getCause();
         if (event instanceof EntityDamageByEntityEvent e) {
             by += " damager=" + e.getDamager().getType().getKey().getKey() + " " + e.getDamager().getUniqueId();
         }
-        shots.strike(event.getEntity(), by);
+        if (causing != null && !(event instanceof EntityDamageByEntityEvent e2 && e2.getDamager().equals(causing))) {
+            by += " causer=" + causing.getType().getKey().getKey() + " " + causing.getUniqueId();
+        }
+        switch (io.github.butterflysmp.rpg.core.mob.ShotDamage.classify(event.getCause().name(), byCombatant)) {
+            case ATTACK -> shots.strike(event.getEntity(), by);
+            case END -> shots.end(event.getEntity(), "kill");
+            case REFUSED -> shots.refuse(event.getEntity(), event.getCause().name());
+        }
+    }
+
+    /**
+     * THE INSTRUMENT'S EYE ON A REAL SWING (the seat's ruling 4 on #201): an arm swing, an attack and an interact of
+     * the run's player, told to the selftest, which logs them only while a row watches. MONITOR and not
+     * ignoreCancelled: a refused attack is the reading the row is for.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onShotWatchArm(io.papermc.paper.event.player.PlayerArmSwingEvent event) {
+        selfTest.watchSwing(event.getPlayer(), "arm");
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onShotWatchAttack(PrePlayerAttackEntityEvent event) {
+        selfTest.watchSwing(event.getPlayer(), "attack target=" + event.getAttacked().getUniqueId()
+                + (event.isCancelled() ? " cancelled" : ""));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onShotWatchInteract(PlayerInteractEntityEvent event) {
+        selfTest.watchSwing(event.getPlayer(), "interact target=" + event.getRightClicked().getUniqueId());
     }
 
     /** NO MOB TARGETS A SHOT (the seat's ruling 2). READ: only the Warden's predicate could name a bat; this refuses all. */

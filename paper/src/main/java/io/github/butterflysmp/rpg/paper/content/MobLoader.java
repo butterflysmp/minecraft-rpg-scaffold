@@ -162,7 +162,7 @@ public final class MobLoader {
         ConfigurationSection b = s.getConfigurationSection("shot");
         if (b == null) return null;
         for (String key : List.of("period_ticks", "acquire_range", "reacquire_range", "speed", "homing", "life_ticks",
-                "max_distance", "tolerance", "damage", "look.block", "look.size", "look.glow", "look.trail.rgb",
+                "max_distance", "tolerance", "damage", "hit_box", "look.block", "look.size", "look.glow", "look.trail.rgb",
                 "look.trail.size", "look.flash.rgb", "look.flash.size", "look.flash.every_ticks", "sounds.fire",
                 "sounds.destroyed")) {
             if (!b.contains(key)) throw new IllegalArgumentException("shot." + key + " is required");
@@ -171,7 +171,7 @@ public final class MobLoader {
         if (!materialExists.test(block)) {
             throw new IllegalArgumentException("shot.look.block '" + block + "' names no block the server knows");
         }
-        MobShot.ShotLook look = new MobShot.ShotLook(block, b.getDouble("look.size"), rgb(b, "look.glow"),
+        MobShot.ShotLook look = new MobShot.ShotLook(block, b.getDouble("look.size"), b.getDouble("hit_box"), rgb(b, "look.glow"),
                 rgb(b, "look.trail.rgb"), b.getDouble("look.trail.size"), rgb(b, "look.flash.rgb"),
                 b.getDouble("look.flash.size"), b.getInt("look.flash.every_ticks"));
         return new MobShot(b.getInt("period_ticks"), b.getDouble("acquire_range"), b.getDouble("reacquire_range"),

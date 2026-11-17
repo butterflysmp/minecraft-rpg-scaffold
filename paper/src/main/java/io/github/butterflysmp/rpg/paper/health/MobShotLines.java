@@ -37,8 +37,21 @@ public final class MobShotLines {
     }
 
     /** The instrument's read of a live shot (the PROBE_SHOT step): where it is, its age, how far from its origin. */
-    public static String probe(String mobId, UUID mob, UUID shot, int age, Vec3 at, Vec3 origin, Vec3 velocity) {
-        return head("at", mobId, mob, shot, age, at, origin) + " v=" + v(velocity);
+    public static String probe(String mobId, UUID mob, UUID shot, int age, Vec3 at, Vec3 origin, Vec3 velocity,
+                               io.github.butterflysmp.rpg.core.mob.BeamBox box,
+                               io.github.butterflysmp.rpg.core.mob.BeamBox shape) {
+        // The server's HITTABLE box (the carrier's) and the visible SHAPE (the display's block, where the server puts
+        // it), and whether the shape lies wholly inside the box: the seat's ruling 2 on #201, read as numbers.
+        boolean inside = shape.min().x() >= box.min().x() && shape.min().y() >= box.min().y()
+                && shape.min().z() >= box.min().z() && shape.max().x() <= box.max().x()
+                && shape.max().y() <= box.max().y() && shape.max().z() <= box.max().z();
+        return head("at", mobId, mob, shot, age, at, origin) + " v=" + v(velocity) + " box=" + v(box.min()) + ".."
+                + v(box.max()) + " shape=" + v(shape.min()) + ".." + v(shape.max()) + " inside=" + inside;
+    }
+
+    /** Vanilla damage that is not an attack (a wall, fire, the void), refused: logged once per cause per shot. */
+    public static String refused(String mobId, UUID mob, UUID shot, int age, Vec3 at, Vec3 origin, String cause) {
+        return head("refused", mobId, mob, shot, age, at, origin) + " cause=" + cause;
     }
 
     public static String hit(String mobId, UUID mob, UUID shot, int age, Vec3 at, Vec3 origin, String victimKind,

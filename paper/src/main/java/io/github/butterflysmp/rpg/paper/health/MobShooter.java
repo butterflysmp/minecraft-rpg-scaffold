@@ -24,7 +24,7 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.SoundCategory;
 import org.bukkit.World;
-import org.bukkit.entity.Bat;
+import org.bukkit.entity.Frog;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
@@ -32,7 +32,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import org.joml.AxisAngle4f;
@@ -54,20 +53,22 @@ import java.util.function.Supplier;
  * ({@link MobShot}: the flight, the endings, the victim, the price, the clock); this class finds targets, carries the
  * shot as an entity, applies the result and draws it.
  *
- * <h2>THE CARRIER (the seat's ruling 1): a BAT, invisible, silent, no AI, no gravity, never saved</h2>
+ * <h2>THE CARRIER: A FROG SCALED TO THE HIT BOX, invisible, silent, no AI, no gravity, never saved</h2>
  * Our weapons reach only living bodies ({@code PaperCombatWorld.combatantsNear}, {@code castRay}: {@code LiveTargets}),
- * so the shot is a living entity. A bat, read in the pinned jar (the gate's S1): it is no {@code Enemy}, so no golem
- * targets it, and no vanilla goal names it but the Warden's (refused below); with NoAI it never moves, wakes or rests
- * of itself ({@code LivingEntity#aiStep} calls {@code travel} only for effective AI); {@code setSilent} stops its
- * ambient sound; it takes vanilla damage through the ordinary {@code LivingEntity} path, so a swing and an arrow raise
- * the event we meet (an invisible ARMOUR STAND's is raised already cancelled, which is why it is not one). It moves
- * only by our {@code teleport}, which carries its passenger. A small glowing block display rides it.
+ * so the shot is a living entity. It was a bat until the boot of {@code 8ec16e89}; the seat's ruling 2 on #201 asks
+ * for a hittable box 0.8 wide AND tall around the shape, and a bat (0.5 x 0.9) cannot be scaled to a cube. A frog is a
+ * 0.5 cube (READ, EntityType), a CREATURE, no {@code Enemy}; with NoAI its brain never runs; {@code setSilent} stops its
+ * sounds. It takes vanilla damage through the ordinary {@code LivingEntity} path. It moves only by our {@code teleport},
+ * which carries its passenger, a glowing block display centred on its box ({@link #calibrate}). It is NOT made
+ * non-collidable: that would make it unpickable, and no vanilla arrow could hit it (the seat's D2 on #201).
  *
  * <h2>A COMBATANT ONLY WHERE IT MUST BE (the seat's ruling 2)</h2>
  * <ul>
  *   <li><b>Every attack reaches it</b>: our pipeline's handles ask {@link ShotSink#strike} first
- *       ({@code BukkitCombatant}); vanilla's damage is met at LOWEST by {@code RpgListeners.onShotDamaged}. Either
- *       way it is destroyed, whatever the amount.</li>
+ *       ({@code BukkitCombatant}); vanilla's damage is met at LOWEST by {@code RpgListeners.onShotDamaged}, always
+ *       cancelled, and classified by core ({@code ShotDamage}): an ATTACK (a combatant's melee, projectile, explosion
+ *       or magic) destroys it, whatever the amount; {@code /kill} ENDS it; anything else is REFUSED and logged once per
+ *       cause ({@link #refuse}). A wall never damages it: the swept-box check ends it "blocked" first.</li>
  *   <li><b>It is never seeded</b> ({@code MobNameplateManager.seed}): no custom health, gear score or nameplate, so
  *       {@code MobDeathSystem} never sees it, and it never dies: it is {@code remove()}d, which raises no death event,
  *       so nothing a death does (XP, drops, the Phage's growth, the split) can happen for it. A vanilla death that
@@ -103,12 +104,16 @@ public final class MobShooter implements ShotSink {
 
     private static final class Live {
         final Owner owner;
-        final Bat carrier;
+        final Frog carrier;
+        /** The display's real offset has been read on the server and its translation corrected. */
+        boolean calibrated;
+        /** The vanilla causes already refused for this shot: each is logged once. */
+        final java.util.Set<String> refused = new java.util.HashSet<>();
         BlockDisplay display;
         MobShot.State state;
         LivingEntity target;
         boolean ended;
-        Live(Owner owner, Bat carrier, MobShot.State state, LivingEntity target) {
+        Live(Owner owner, Frog carrier, MobShot.State state, LivingEntity target) {
             this.owner = owner;
             this.carrier = carrier;
             this.state = state;
@@ -130,6 +135,9 @@ public final class MobShooter implements ShotSink {
             this.clock = new MobShot.Clock(shot.periodTicks());
         }
     }
+
+    /** A frog's box edge before any scale, BLOCKS (READ: EntityType frog sized(0.5f, 0.5f)). SCALE = hit box / this. */
+    static final double FROG_EDGE = 0.5;
 
     private final Map<UUID, Owner> owners = new ConcurrentHashMap<>();
     private final Map<UUID, Live> carriers = new ConcurrentHashMap<>();
@@ -234,7 +242,8 @@ public final class MobShooter implements ShotSink {
         List<String> out = new ArrayList<>();
         for (Live s : o.shots) {
             out.add(MobShotLines.probe(o.mobId, o.mob.getUniqueId(), s.carrier.getUniqueId(), s.state.age(),
-                    s.state.position(), s.state.origin(), s.state.velocity()));
+                    s.state.position(), s.state.origin(), s.state.velocity(), box(s.carrier),
+                    s.display == null ? box(s.carrier) : shape(s.display)));
         }
         return out;
     }
@@ -293,7 +302,13 @@ public final class MobShooter implements ShotSink {
         MobShot.ShotLook look = o.shot.look();
         Material block = Material.matchMaterial(look.block());
         Live[] made = new Live[1];
-        Bat carrier = world.spawn(feet(world, eye, 0.9), Bat.class, b -> {
+        // THE CARRIER IS A FROG (the seat's ruling 2 on #201: a hittable box 0.8 wide AND tall around the shape). READ,
+        // EntityType: frog sized(0.5f, 0.5f), a cube, so Attribute.SCALE makes it any cube (LivingEntity#getDimensions
+        // scales by getScale(), §7 F-C); a bat (0.5 x 0.9) cannot be one. A frog is a CREATURE (no Peaceful despawn, no
+        // Enemy, so no golem targets it); its brain runs only with AI (customServerAiStep); it is silent when setSilent.
+        // NOT setCollidable(false): that clears LivingEntity.collides, which isPickable reads, and a vanilla arrow
+        // asks isPickable through canBeHitByProjectile (READ, the seat's D2): the carrier would be unhittable by one.
+        Frog carrier = world.spawn(feet(world, eye, look.hitBox()), Frog.class, b -> {
             // Registered INSIDE the pre-spawn consumer, before its add event, so onAppear never takes it for an orphan.
             b.getPersistentDataContainer().set(adapters.keys().mobShot, PersistentDataType.BYTE, (byte) 1);
             b.setAI(false);
@@ -302,26 +317,29 @@ public final class MobShooter implements ShotSink {
             b.setGravity(false);
             b.setPersistent(false);
             b.setRemoveWhenFarAway(false);
-            b.setCollidable(false);
-            b.setAwake(true);
+            b.setAdult();
+            org.bukkit.attribute.AttributeInstance scale = b.getAttribute(org.bukkit.attribute.Attribute.SCALE);
+            if (scale != null) scale.setBaseValue(look.hitBox() / FROG_EDGE);
             made[0] = new Live(o, b, state, target);
             carriers.put(b.getUniqueId(), made[0]);
         });
         Live s = made[0];
-        // The carrier's real height (a bat's 0.9, READ): its feet go half of it below the shot's centre.
+        // Its box is now hitBox on every edge: its feet go half of it below the shot's centre. Yaw 0 always, so its
+        // passenger offset (below) never turns.
         carrier.teleport(feet(world, state.position(), carrier.getHeight()));
         float size = (float) look.size();
-        float h = (float) carrier.getHeight();
         s.display = world.spawn(carrier.getLocation(), BlockDisplay.class, d -> {
             d.getPersistentDataContainer().set(adapters.keys().mobShot, PersistentDataType.BYTE, (byte) 1);
             displays.add(d.getUniqueId());
             d.setPersistent(false);
             d.setBlock((block == null ? Material.AMETHYST_BLOCK : block).createBlockData());
-            // A passenger's origin sits at its vehicle's feet + (0, vehicle height, 0) (READ: Entity#positionRider,
-            // EntityAttachment.PASSENGER's AT_HEIGHT; a Display's vehicle attachment is ZERO). So the block is moved down
-            // by half the carrier's height and half its own edge: its centre is the carrier box's centre.
-            d.setTransformation(new Transformation(new Vector3f(-size / 2, -h / 2 - size / 2, -size / 2),
-                    new AxisAngle4f(), new Vector3f(size, size, size), new AxisAngle4f()));
+            // A passenger rides at its vehicle's feet + the vehicle's PASSENGER attachment (READ: Entity#positionRider;
+            // a Display's own vehicle attachment is ZERO). A frog's is (0, 0.375, -0.25) (READ, EntityType frog
+            // passengerAttachments), rotated by its yaw (0 here) and scaled with it (INFERRED). The first translation
+            // is from those numbers; the next tick re-measures the real offset on the server and corrects it
+            // (calibrate), so the block's centre is the box's centre whatever the offset is.
+            d.setTransformation(shapeAt(new Vector3f(0f, (float) (0.375 * look.hitBox() / FROG_EDGE),
+                    (float) (-0.25 * look.hitBox() / FROG_EDGE)), (float) carrier.getHeight(), size));
             d.setBrightness(new Display.Brightness(15, 15));
             d.setGlowing(true);
             d.setGlowColorOverride(Color.fromRGB(look.glowRgb()));
@@ -342,7 +360,7 @@ public final class MobShooter implements ShotSink {
     private void advance(Live s) {
         if (s.ended) return;
         Owner o = s.owner;
-        Bat carrier = s.carrier;
+        Frog carrier = s.carrier;
         if (!carrier.isValid()) {
             end(s, "removed");
             return;
@@ -369,11 +387,12 @@ public final class MobShooter implements ShotSink {
             end(s, "unloaded");
             return;
         }
-        // The block rule is the beam's (I13): the first block with a collision box; fluids and passable blocks do not.
-        Vec3 d = to.subtract(from);
-        RayTraceResult rt = world.rayTraceBlocks(loc(world, from), new Vector(d.x(), d.y(), d.z()), d.length(),
-                FluidCollisionMode.NEVER, true);
-        boolean blocked = rt != null && rt.getHitBlock() != null;
+        // THE BLOCK RULE IS THE CARRIER'S BOX SWEPT ALONG THIS TICK'S PATH (the seat's ruling 1 on #201): the box at the
+        // old centre and at the new, and all between (their union; at 0.2 a tick against a 0.8 box the union is the
+        // sweep, a little more on a diagonal). Any block whose COLLISION shape overlaps it ends the shot "blocked", before
+        // the move, so the body never enters a block. Fluids and passable blocks have no collision shape and do not stop it.
+        Optional<org.bukkit.block.Block> wall = firstColliding(world, swept(carrier, from, to));
+        boolean blocked = wall.isPresent();
         Optional<MobShot.Candidate> victim = blocked ? Optional.empty() : o.shot.victim(to, world.getName(), near(world, to, o.shot));
         Optional<MobShot.Ending> ending = o.shot.ending(next, blocked, victim.isPresent());
         s.state = next;
@@ -382,13 +401,14 @@ public final class MobShooter implements ShotSink {
                 end(s, "teleport-refused");
                 return;
             }
+            if (!s.calibrated) calibrate(s);
             draw(world, s);
             return;
         }
         UUID shotId = carrier.getUniqueId();
         switch (ending.get()) {
             case BLOCKED -> finish(s, MobShotLines.blocked(o.mobId, o.mob.getUniqueId(), shotId, next.age(), to,
-                    next.origin(), rt.getHitBlock().getType().getKey().getKey()));
+                    next.origin(), wall.get().getType().getKey().getKey()));
             case EXPIRED_LIFE -> finish(s, MobShotLines.expired(o.mobId, o.mob.getUniqueId(), shotId, next.age(), to,
                     next.origin(), "life"));
             case EXPIRED_RANGE -> finish(s, MobShotLines.expired(o.mobId, o.mob.getUniqueId(), shotId, next.age(), to,
@@ -483,6 +503,118 @@ public final class MobShooter implements ShotSink {
             if (s.display.isValid()) s.display.remove();
         }
         if (s.carrier.isValid()) s.carrier.remove();
+    }
+
+    /**
+     * The display's transformation for a passenger whose origin sits {@code offset} from the carrier's feet: the block
+     * of edge {@code size} centred on the carrier box's centre, {@code (0, height / 2, 0)} above its feet.
+     */
+    private static Transformation shapeAt(Vector3f offset, float height, float size) {
+        return new Transformation(new Vector3f(-offset.x - size / 2, height / 2 - offset.y - size / 2, -offset.z - size / 2),
+                new AxisAngle4f(), new Vector3f(size, size, size), new AxisAngle4f());
+    }
+
+    /**
+     * The passenger's REAL offset, read on the server once it rides (its location minus the carrier's), and the
+     * translation corrected to it. The client positions a passenger by the same rule (INFERRED: Entity#positionRider is
+     * shared code), so what the server measures is where the client draws it. PROBE_SHOT reads the result as numbers.
+     */
+    private static void calibrate(Live s) {
+        if (s.display == null || !s.display.isValid() || !s.carrier.equals(s.display.getVehicle())) return;
+        Location c = s.carrier.getLocation();
+        Location d = s.display.getLocation();
+        Vector3f offset = new Vector3f((float) (d.getX() - c.getX()), (float) (d.getY() - c.getY()),
+                (float) (d.getZ() - c.getZ()));
+        s.display.setTransformation(shapeAt(offset, (float) s.carrier.getHeight(), (float) s.owner.shot.look().size()));
+        s.calibrated = true;
+    }
+
+    /** The carrier's box at the old centre and at the new, joined: what it sweeps through this tick. */
+    private static org.bukkit.util.BoundingBox swept(Frog carrier, Vec3 from, Vec3 to) {
+        double half = carrier.getWidth() / 2.0;
+        double hh = carrier.getHeight() / 2.0;
+        return new org.bukkit.util.BoundingBox(from.x() - half, from.y() - hh, from.z() - half,
+                from.x() + half, from.y() + hh, from.z() + half)
+                .union(new org.bukkit.util.BoundingBox(to.x() - half, to.y() - hh, to.z() - half,
+                        to.x() + half, to.y() + hh, to.z() + half));
+    }
+
+    /**
+     * The first block (lowest x, then y, then z) whose COLLISION shape overlaps {@code box}, or empty. A block's shape
+     * is relative to the block, so each of its boxes is moved to the block's corner before the test; {@code overlaps} is
+     * strict, so a box that only touches a face does not overlap it.
+     */
+    private static Optional<org.bukkit.block.Block> firstColliding(World world, org.bukkit.util.BoundingBox box) {
+        for (int x = (int) Math.floor(box.getMinX()); x <= (int) Math.floor(box.getMaxX()); x++) {
+            for (int y = (int) Math.floor(box.getMinY()); y <= (int) Math.floor(box.getMaxY()); y++) {
+                for (int z = (int) Math.floor(box.getMinZ()); z <= (int) Math.floor(box.getMaxZ()); z++) {
+                    org.bukkit.block.Block b = world.getBlockAt(x, y, z);
+                    for (org.bukkit.util.BoundingBox part : b.getCollisionShape().getBoundingBoxes()) {
+                        if (part.clone().shift(x, y, z).overlaps(box)) return Optional.of(b);
+                    }
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** {@code /kill} (and anything else ruled to END it): the shot ends, named, without the destroyed sound. */
+    public void end(Entity entity, String reason) {
+        Live s = carriers.get(entity.getUniqueId());
+        if (s != null) end(s, reason);
+    }
+
+    /** A vanilla cause that is not an attack: nothing happens to the shot; the first of each cause is logged. */
+    public void refuse(Entity entity, String cause) {
+        Live s = carriers.get(entity.getUniqueId());
+        if (s == null || s.ended || !s.refused.add(cause)) return;
+        Owner o = s.owner;
+        adapters.log().info(MobShotLines.refused(o.mobId, o.mob.getUniqueId(), entity.getUniqueId(), s.state.age(),
+                s.state.position(), s.state.origin(), cause));
+    }
+
+    /** A live shot as the instrument sees it: its carrier, centre, age and server box. */
+    public record LiveShot(UUID id, Frog carrier, Vec3 centre, int age, BeamBox box) {}
+
+    /** Every live shot, nearest {@code to} first. On the main thread (Paper). */
+    public List<LiveShot> liveShots(Location to) {
+        List<LiveShot> out = new ArrayList<>();
+        for (Live s : carriers.values()) {
+            if (s.ended || !s.carrier.isValid() || !s.carrier.getWorld().equals(to.getWorld())) continue;
+            out.add(new LiveShot(s.carrier.getUniqueId(), s.carrier, s.state.position(), s.state.age(), box(s.carrier)));
+        }
+        out.sort(Comparator.comparingDouble(l -> l.centre().distanceSquared(vec(to))));
+        return out;
+    }
+
+    /** The centre of the VISIBLE shape riding this carrier, on the server; empty when it carries none. */
+    public static Optional<Vec3> shapeCentre(Entity carrier) {
+        for (Entity p : carrier.getPassengers()) {
+            if (p instanceof BlockDisplay d) {
+                BeamBox s = shape(d);
+                return Optional.of(s.center());
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Is this carrier's shot still live? */
+    public boolean isLive(UUID carrier) {
+        Live s = carriers.get(carrier);
+        return s != null && !s.ended;
+    }
+
+    private static BeamBox box(Entity e) {
+        var b = e.getBoundingBox();
+        return new BeamBox(new Vec3(b.getMinX(), b.getMinY(), b.getMinZ()), new Vec3(b.getMaxX(), b.getMaxY(), b.getMaxZ()));
+    }
+
+    /** The visible shape's box on the server: the display's position plus its translation, its scale on every edge. */
+    private static BeamBox shape(BlockDisplay d) {
+        Location l = d.getLocation();
+        Transformation t = d.getTransformation();
+        Vec3 min = new Vec3(l.getX() + t.getTranslation().x, l.getY() + t.getTranslation().y, l.getZ() + t.getTranslation().z);
+        return new BeamBox(min, min.add(new Vec3(t.getScale().x, t.getScale().y, t.getScale().z)));
     }
 
     // --- the look (the seat's ruling 8) ----------------------------------------------------------------------------

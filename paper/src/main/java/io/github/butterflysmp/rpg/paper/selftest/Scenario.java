@@ -200,6 +200,16 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * straight line from its origin ({@code flown}) and its velocity ({@code [Rpg]}-less {@code SHOT at ...}).
          */
         PROBE_SHOT,
+        /** {@code on|off}: while on, log every arm swing, attack and interact of the player against the nearest live shot ({@link SelfTestStrike}). */
+        WATCH_SWINGS,
+        /** {@code <tag>}: turn the player's EYE to the centre of the VISIBLE shape riding the nearest carrier with this tag, as AIM does. */
+        AIM_SHAPE,
+        /** {@code <tag>}: ray-cast from the player's eye ALONG HIS LOOK, out to his entity interaction range, and {@code Player#attack} what it picks. */
+        STRIKE_LOOK,
+        /** {@code "<tag> <age> <timeout ticks>"}: wait until the tagged shot's age reaches {@code age}, then in that tick ray-cast from his eye toward its shape's centre and attack what it picks. */
+        STRIKE_AT_AGE,
+        /** {@code <tag>}: launch a real arrow, the player its shooter, from his eye toward the tagged shot's shape centre (speed 2.0 blocks a tick). */
+        SHOOT_ARROW,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

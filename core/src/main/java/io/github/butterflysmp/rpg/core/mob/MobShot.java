@@ -169,13 +169,20 @@ public record MobShot(int periodTicks, double acquireRange, double reacquireRang
      * THE SHOT'S LOOK, as content (seat ruling 8 of R7a; CHOSEN, for Ben). {@code block} is the BLOCK key a small
      * display shows; {@code size} its edge in BLOCKS; {@code glow} the display's glow outline colour; {@code trail} a
      * dust particle (its colour and SIZE, the particle's own scale) drawn at the shot every tick; {@code flash} a
-     * second dust drawn every {@code flashEveryTicks} ticks.
+     * second dust drawn every {@code flashEveryTicks} ticks. {@code hitBox}: the edge, in BLOCKS, of the cube a player
+     * can HIT (the carrier's box), centred on the shape and at least as big as it (the seat's ruling 2 on #201: what
+     * he sees is what he can hit). It changes nothing about whom the SHOT hits: that is its centre against a body's box
+     * grown by the tolerance. It is what is swept for blocks, so a bigger box meets a wall sooner, never later.
      */
-    public record ShotLook(String block, double size, int glowRgb, int trailRgb, double trailSize, int flashRgb,
+    public record ShotLook(String block, double size, double hitBox, int glowRgb, int trailRgb, double trailSize, int flashRgb,
                            double flashSize, int flashEveryTicks) {
         public ShotLook {
             if (block == null || block.isBlank()) throw new IllegalArgumentException("shot.look.block is required");
             if (!(size > 0 && size <= 4)) throw new IllegalArgumentException("shot.look.size must be above 0 and at most 4 blocks, was " + size);
+            if (!(hitBox >= size && hitBox <= 4)) {
+                throw new IllegalArgumentException("shot.hit_box must be at least shot.look.size (" + size
+                        + ") and at most 4 blocks, was " + hitBox);
+            }
             rgb("shot.look.glow", glowRgb);
             rgb("shot.look.trail.rgb", trailRgb);
             rgb("shot.look.flash.rgb", flashRgb);
