@@ -411,4 +411,5 @@ final class SelfTestRun {
     CombatantStats stats() { return service.stats(); }
     SelfTestService.Spawner spawner() { return service.spawner(); }
     io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler() { return service.scheduler(); }
+    io.github.butterflysmp.rpg.paper.health.MobBeamer beams() { return service.beams(); }
 }

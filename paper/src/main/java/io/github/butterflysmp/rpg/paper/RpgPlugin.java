@@ -702,17 +702,23 @@ public final class RpgPlugin extends JavaPlugin {
         // The dev-server marker, read ONCE: the selftest's guard and /rpg mining's (the seat's ruling, 2026-11-14)
         // both take this value, so the two can never disagree about what kind of server this is.
         boolean devServer = Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY);
+        // THE KNELL'S BEAM (dragon-mobs step R5): one loop per beam mob, started and stopped by RpgListeners' add and
+        // remove handlers. this.mobs is read at each mob's appearance (reloadable). java.util.Random is thread-safe,
+        // so one instance serves every Knell's own thread.
+        io.github.butterflysmp.rpg.paper.health.MobBeamer beams = new io.github.butterflysmp.rpg.paper.health.MobBeamer(
+                () -> this.mobs, adapters,
+                io.github.butterflysmp.rpg.core.mob.BeamCycle.uniform(new java.util.Random()));
         SelfTestService selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
                 buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements,
                 // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).
                 (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
-                        p, mob, this.mobs, adapters, gs, stage, preAdd));
+                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams);
         selfTestDamage.bind(selfTest);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements);
+                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md
@@ -724,7 +730,10 @@ public final class RpgPlugin extends JavaPlugin {
         for (World world : getServer().getWorlds()) {
             for (LivingEntity mob : world.getLivingEntities()) {
                 if (mob instanceof Player) continue;
-                scheduler.onEntity(mob, () -> nameplates.onMobAppear(mob));
+                scheduler.onEntity(mob, () -> {
+                    nameplates.onMobAppear(mob);
+                    beams.onAppear(mob);   // a Knell loaded this early gets its beam loop too (step R5); idempotent
+                });
             }
         }
 

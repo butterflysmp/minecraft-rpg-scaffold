@@ -209,6 +209,12 @@ public final class Keys {
      */
     public final NamespacedKey mobGrowthFed;
 
+    /**
+     * The Knell's beam ROOT (dragon-mobs step R5): a MOVEMENT_SPEED x0 modifier for the telegraph only, added with
+     * addTransientModifier so it is never saved onto the mob (a chunk unload mid-telegraph cannot freeze a Knell).
+     */
+    public final NamespacedKey beamRoot;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -438,6 +444,7 @@ public final class Keys {
         this.mobStage = new NamespacedKey(plugin, "mob_stage");
         this.mobSplit = new NamespacedKey(plugin, "mob_split");
         this.mobGrowthFed = new NamespacedKey(plugin, "mob_growth_fed");
+        this.beamRoot = new NamespacedKey(plugin, "beam_root");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");
