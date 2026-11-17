@@ -759,6 +759,40 @@ exact only for a target nearly ahead (5.R.9 X-c).
 expires by range at tick 176, so his 12 seconds (240 ticks) binds only for a shot that curves; a straight shot lasting
 the full 240 would need a limit of 48 blocks (F14).
 
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the Phalanx's shot (the boots of `8ec16e89` and `3dc0e184`)
+
+*Read in `GATE-dragon-shot.md`, SQ1, KQ1R6 and SQ1R2.* At the boot of `8ec16e89`:
+
+```
+SQ1 ASK 1 question="Could you see the shot coming (light purple, with pink flashes)?" answer="yes" ticks=90
+SQ1 ASK 2 question="Did hitting it destroy it?" answer="yes" ticks=88
+SQ1 ASK 3 question="Does the Phalanx's shot feel fair now?" answer="yes" ticks=78
+KQ1R6 ASK 1 question="Is the second purple line gone?" answer="yes" ticks=113
+```
+
+(SQ1's ASK 2 "yes" disagrees with that boot's server, which logged both of his shots as hits. The question was put again
+in SQ1R2.) At the boot of `3dc0e184`:
+
+```
+SQ1R2 ASK 1 question="Did your swing destroy it before it reached you?" answer="yes" ticks=37
+SQ1R2 ASK 2 question="Was it easy enough to hit?" answer="yes" ticks=66
+```
+
+There the server agrees: `SWING kind=attack … along=1.265`, then `SHOT destroyed … age=67 … by=vanilla cause=ENTITY_ATTACK
+damager=player <Ben>`, one tick before the reach.
+
+**CONFIRMED BY PLAY, 2026-11-17:**
+- he could see the shot;
+- the look (light purple with pink flashes);
+- a hit destroys it (his own swing, read by the server in SQ1R2);
+- it feels fair;
+- it was easy enough to hit;
+- the Knell's second flash is gone.
+
+**THE SEAT'S, UNRULED BY HIM:** the 0.8 hit box (`shot.hit_box`); the frog carrier; only attacks destroy it (environmental
+damage refused, `/kill` ends it); an ownerless or dispenser arrow is refused; the 0.0513 homing (the seat's conversion
+of the old game's 10% per 2-tick step).
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -2048,6 +2082,25 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   a straight shot passes 35 blocks from its origin at tick 176, and the homing curls it only toward a target it then
   reaches. **Its only exercise is `MobShotTest.theLifeEndsItAtTick240AndNotAt239`.** It becomes reachable if the speed
   falls below 35 / 240 = 0.146 a tick, or the range rises past 48 (240 x 0.2).
+  **UPDATED 2026-11-17, the boot of `3dc0e184`:** for a STILL or straight-line target, as above. **A target that moves
+  keeps a curving shot alive far longer.** After the run, off the sheet, Ben played against a live Phalanx, and one of
+  its shots chased him and hit at `age=184` (`shot=fe96b267…`), within 35 blocks of its origin the whole time. So the
+  life of 240 binds a shot chasing a moving player. No row stages that, and the gate does not read it as a row.
+- **F16, 2026-11-17, step R7a: THE CLIENT'S BOX LAGS THE SERVER'S BY UP TO 3 TICKS.** READ: a frog's or a bat's position
+  is sent every `updateInterval` (3, the Builder's default) ticks, or on a forced sync (`ServerEntity#sendChanges`).
+  INFERRED: the client interpolates between sends, so at 0.2 blocks a tick its box trails the server's by up to 0.6.
+  **No API forces a per-tick send; nothing is built for it (the seat's ruling).** The display rides the client's box, so
+  what he sees is what his client picks. **SQ1R2's reading beside it:** one swing, landed. His look entered the server
+  box at 1.265 and the shot was destroyed at age 67. The lag did not cost that swing.
+- **CARRIED FROM #201, NONE A PASS, TO BE CLOSED FIRST IN THE NEXT BRANCH THAT BOOTS** (the Phalanx's blink and shield;
+  the seat's ruling at merge, 2026-11-17):
+  - **C1. DEFECT:** the visible shape is not inside the hittable box. Its centre is 0.45 above and 0.40 toward −z of
+    the box's centre (`inside=false`, SH1R2 at the boot of `3dc0e184`). Ruling 2 on #201 is not met.
+  - **C2. UNREAD:** the swept-box wall (`blocked`, nothing refused). SH7R2 was spoiled by SH4R2's grenade field. **The
+    row-start clean does not end an ability's area field; that is an instrument gap in its own right.**
+  - **C3. UNREAD:** a strike in the last tick before the reach. SH15's `strike_at_age` must wait for the shot to exist.
+  - **C4. UNREAD:** whether the collidable carrier pushes, or is pushed by, a player or a mob. Nothing in the instrument
+    reads it.
 - **F15, 2026-11-17, step R7a: THE PAPER HALF'S GUARANTEES ARE PINNED ON THE SOURCE, NOT RUN.** That every handle strikes
   first, the seed refuses a shot, the death handler returns for one, and vanilla damage is cancelled at LOWEST are pinned
   by `DragonShotWiringTest` (each killed by a mutation), which reads lines, not behaviour. **The gate's SH2-SH5, SH9 and

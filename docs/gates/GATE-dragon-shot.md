@@ -5,6 +5,8 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+**2026-11-17: approved to merge by the review seat after the boots of 8ec16e89 and 3dc0e184, with C1-C4 carried.**
+
 > **AFTER THE BOOT OF `8ec16e89`: THE RE-PREDICTION IS THE LAST SECTION OF THIS FILE** (*RE-PREDICTED AFTER THE BOOT OF
 > `8ec16e89`*, the seat's rulings on #201), NOT RUN. Nothing above it is edited by that section.
 
