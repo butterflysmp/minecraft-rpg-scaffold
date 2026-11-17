@@ -711,6 +711,20 @@ telegraph becomes **24 ticks** (was 20) and the teleport delay **24** (was 28). 
 bell, the telegraph's bell goes **back to pitch 1.0**. The shot's bell (1.5) and the chime are unchanged.
 **The two 24s are a pair: they must sum to 48 until Ben rules otherwise; neither is derived from a sound.**
 
+### THE BOOT OF KNELL 5 (`07d06837`, 2026-11-17): BEN'S TWO ANSWERS, VERBATIM; WHAT PLAY CONFIRMED; ONE RULING NOT BUILT
+
+Read from the server log of that boot (`GATE-dragon-knell-5.md`, KQ1R5 and TQ1R5), verbatim:
+
+```
+KQ1R5 ASK 1 question="Is the shot in the middle now, the way you wanted?" answer="yes" ticks=73
+TQ1R5 ASK 1 question="Does the whole sequence feel right now?" answer="it's almost there. The second purple line is out of place. remove it other than that everything is perfect" ticks=463
+```
+
+- **CONFIRMED BY PLAY:** the 24-tick telegraph; the 24-tick teleport delay; the first bell at pitch 1.0 with the
+  resonance at the lock; the bell at 1.5 with the chime at the shot; 65 damage.
+- **RULED AND NOT BUILT:** the telegraph's second flash (`flash_at` tick 18) is to be REMOVED, leaving the one flash at
+  the lock. The seat carries it into the next branch that boots, where Ben sees it gone.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1932,6 +1946,11 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   power loss) still leaves a run's staging in the world. It would need the run's snapshot (the saved blocks with their
   states, the tagged mobs' ids, the player's saved state, the game rules) written to disk at run start and at every
   row's staging, and read back and restored at the next enable, before any player joins.
+- **F12, 2026-11-17, the seat's ruling on #200: `TELEPORT ignored … reason=pending` IS UNREACHABLE IN SHIPPED CONTENT
+  AT 24/24.** A force is refused during a telegraph, so a second beam's fire is at least the telegraph plus one tick
+  (25) after the first, while the first move lands 24 after it: no beam, forced or the Knell's own, can hit while a
+  move is pending. The branch stays in `MobTeleporter`, pinned by its unit tests. **It becomes reachable again if the
+  delay ever exceeds the telegraph plus one tick.** TP14R4 now reads that the pending move clears when it lands.
 
 ## QUESTIONS FOR BEN
 
