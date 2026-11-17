@@ -37,9 +37,9 @@ class SelfTestScenariosTest {
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
-                        "dragon-shot", "dragon-blink"),
+                        "dragon-shot", "dragon-blink", "dragon-skreel"),
                 List.copyOf(loaded.gates().keySet()),
-                "the nineteen gates, in boot order (dragon-blink LAST, step R7b, after dragon-shot, step R7a, 2026-11-17); nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
+                "the twenty gates, in boot order (dragon-skreel LAST, step R8, 2026-11-17; before it dragon-blink, step R7b, after dragon-shot, step R7a, 2026-11-17); nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
                         + " dragon-split and dragon-growth (2026-11-15), then dragon-blast (step R3, 2026-11-15), then dragon-beam (step R5) and dragon-teleport LAST (step R6, 2026-11-17)");
     }
 
@@ -64,7 +64,7 @@ class SelfTestScenariosTest {
         // STEP R3 TOOK EIGHT OF THEM OUT (the seat's brief of 2026-11-16; GATE-dragon-fix.md's dated note): DB10R2 and
         // DQ1 retired (a live Phage now blows), and DS1R2, DS2R2, DS5R2, DS6R2, DG6R2 and DG9R2 re-predicted as R3
         // rows in GATE-dragon-blast.md, where their split children are born frozen (or, in DS1R3, thawed on purpose).
-        expected.put("dragon-bodies", List.of("DB1R2", "DB2R2", "DB3R2", "DB4R2", "DB5R2", "DB6R2", "DB7R2",
+        expected.put("dragon-bodies", List.of("DB1R2", "DB2R2", "DB3R2", "DB4R2", "DB5R2",
                 "DB11R2"));
         expected.put("dragon-split", List.of("DS3R2", "DS4R2"));
         expected.put("dragon-growth", List.of("DG1R2", "DG2R2", "DG3R2", "DG4R2", "DG5R2", "DG7R2", "DG8R2"));
@@ -100,6 +100,10 @@ class SelfTestScenariosTest {
         // (BS1-BS4) and Ben's row.
         expected.put("dragon-blink", List.of("BC1X", "BC1Z", "BC2A", "BC2B", "BC3", "BC4A", "BC4B", "BB1", "BB2", "BB3",
                 "BB4", "BB5", "BS1", "BS2", "BS3", "BS4", "BQ1"));
+        // Step R8 (GATE-dragon-skreel.md): DB6R3 and DB7R3 (re-predicting the bodies gate's DB6R2 and DB7R2, moved out of it),
+        // the pair (PS3-PS8), the Phalanx's cooldown and R3 (PB1-PB3), and Ben's two rows.
+        expected.put("dragon-skreel", List.of("DB6R3", "DB7R3", "PS3", "PS4", "PS5", "PS6", "PS7", "PS8", "PB1", "PB2",
+                "PB3", "PQ1", "PQ2"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -144,7 +148,9 @@ class SelfTestScenariosTest {
         // feat/dragon-shot ef242e95 the same commands print 18, 149, 18: 131, this line's old value.
         // Then GATE-dragon-blink.md (step R7b, 2026-11-17), RECOUNTED the same way: 19 gates, 165 keys, 19 setups, so 146.
         // At feat/dragon-blink be7bf586 (master 275e9d0d plus a docs commit) the same commands print 18, 147, 18: 129.
-        assertEquals(146, loaded.rows());
+        // Then GATE-dragon-skreel.md (step R8, 2026-11-17), RECOUNTED the same way: 20 gates, 177 keys, 20 setups, so 157.
+        // At master 185a6437 the same commands print 19, 165, 19: 146.
+        assertEquals(157, loaded.rows());
     }
 
     /**
@@ -283,14 +289,16 @@ class SelfTestScenariosTest {
                     if (!(liveSpawn || forced || (bareCmd && !frozenAtOnce))) continue;
                     String where = gate.getKey() + "#" + s.row() + " " + st.verb() + " " + a;
                     // Step R7b: the blink gate is a shot gate too (its C1-C4 rows force shots; BB4 and BQ1 are live).
-                    if (Set.of("dragon-shot", "dragon-blink").contains(gate.getKey())) shotGate.add(where); else outside.add(where);
+                    if (Set.of("dragon-shot", "dragon-blink", "dragon-skreel").contains(gate.getKey())) shotGate.add(where); else outside.add(where);
                 }
             }
         }
         assertEquals(List.of(), outside, "a firing Phalanx outside the shot gates would hit the player at a time no row predicts");
         // Since the re-prediction after the boot of 8ec16e89 the shot gate stages no LIVE Phalanx (SH10 and SH11 read as
         // predicted and left the file); the blink gate stages two, BB4's (gone before its first shot) and Ben's BQ1.
-        assertEquals(List.of("dragon-blink#BB4 SPAWN bb4 live phalanx 100", "dragon-blink#BQ1 SPAWN bq1 live phalanx 100"),
+        assertEquals(List.of("dragon-blink#BB4 SPAWN bb4 live phalanx 100", "dragon-blink#BQ1 SPAWN bq1 live phalanx 100",
+                        "dragon-skreel#PB1 SPAWN pb1 live phalanx 100", "dragon-skreel#PB2 SPAWN pb2 live phalanx 100",
+                        "dragon-skreel#PQ2 SPAWN pq2 live phalanx 100"),
                 shotGate.stream().filter(w -> w.contains(" SPAWN ")).toList(), "the live Phalanxes: " + shotGate);
         assertEquals(12, shotGate.stream().filter(w -> w.startsWith("dragon-shot#") && w.contains(" SHOT ")).count(),
                 "the control: the shot gate's twelve SHOT steps: " + shotGate);
@@ -299,6 +307,51 @@ class SelfTestScenariosTest {
         Scenario.Step live = new Scenario.Step(Scenario.Verb.SPAWN, "x live phalanx 100");
         assertTrue(livePhalanxSpawn(live.arg().trim()), "the control: the scan's own pattern matches a live Phalanx spawn");
         assertFalse(livePhalanxSpawn("x frozen phalanx 100"), "and not a frozen one");
+    }
+
+    /**
+     * NO ROW OUTSIDE GATE-dragon-skreel.yml LEAVES A LIVE SKREEL PAIR, OR A LIVE MOUNT, BESIDE THE PLAYER (step R8). A live
+     * pair winds up of its own 120 ticks after it appears and lands 55 on whoever is in its band; a frozen pair never does,
+     * but the POUNCE step makes one. So outside the Skreel gate a {@code skreel} or {@code withered_mount} is spawned
+     * frozen, or by {@code rpg spawn} followed at once by a {@code data merge} setting {@code NoAI:1b}, and no POUNCE step
+     * appears. The control: the Skreel gate's own live spawns and POUNCE steps ARE found, and the scan's pattern matches a
+     * live spawn of each written in the test.
+     */
+    @Test
+    void noScenarioOutsideTheSkreelGateLeavesALivePair() {
+        List<String> outside = new ArrayList<>();
+        List<String> skreelGate = new ArrayList<>();
+        for (var gate : shipped().gates().entrySet()) {
+            for (Scenario s : gate.getValue()) {
+                List<Scenario.Step> steps = s.steps();
+                for (int i = 0; i < steps.size(); i++) {
+                    Scenario.Step st = steps.get(i);
+                    String a = st.arg().trim();
+                    boolean liveSpawn = st.verb() == Scenario.Verb.SPAWN && livePairSpawn(a);
+                    boolean bareCmd = st.verb() == Scenario.Verb.CMD && a.matches("rpg spawn (skreel|withered_mount)( \\d+)?");
+                    boolean frozenAtOnce = i + 1 < steps.size() && steps.get(i + 1).verb() == Scenario.Verb.CMD
+                            && steps.get(i + 1).arg().contains("NoAI:1b");
+                    boolean forced = st.verb() == Scenario.Verb.POUNCE;
+                    if (!(liveSpawn || forced || (bareCmd && !frozenAtOnce))) continue;
+                    String where = gate.getKey() + "#" + s.row() + " " + st.verb() + " " + a;
+                    if (gate.getKey().equals("dragon-skreel")) skreelGate.add(where); else outside.add(where);
+                }
+            }
+        }
+        assertEquals(List.of(), outside, "a live Skreel pair outside its gate would pounce at a time no row predicts");
+        assertEquals(List.of("dragon-skreel#PS3 SPAWN ps3 live skreel 100", "dragon-skreel#PS4 SPAWN ps4 live skreel 100",
+                        "dragon-skreel#PS6 SPAWN ps6 live skreel 100", "dragon-skreel#PS7 SPAWN ps7 live skreel 100",
+                        "dragon-skreel#PS8 SPAWN ps8 live skreel 100", "dragon-skreel#PQ1 SPAWN pq1 live skreel 100"),
+                skreelGate.stream().filter(w -> w.contains(" SPAWN ")).toList(), "the control, its live pairs: " + skreelGate);
+        assertEquals(3, skreelGate.stream().filter(w -> w.contains(" POUNCE ")).count(),
+                "and its three POUNCE steps (PS3, PS4, PS6): " + skreelGate);
+        assertTrue(livePairSpawn("x live skreel 100") && livePairSpawn("x live withered_mount"),
+                "the control: the scan's own pattern matches a live spawn of each");
+        assertFalse(livePairSpawn("x frozen skreel 100"), "and not a frozen one");
+    }
+
+    private static boolean livePairSpawn(String arg) {
+        return arg.matches("\\S+ live (skreel|withered_mount)\\b.*");
     }
 
     /** The scan's one pattern for a live Phalanx SPAWN, shared with its control. */

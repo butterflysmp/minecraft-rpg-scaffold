@@ -11,6 +11,8 @@ end. No prediction above was edited.
 
 **2026-11-17: approved to merge by the review seat after the boot of ef770b8a.**
 
+**2026-11-17, STEP R8 (`feat/dragon-skreel`, before any boot of it): `GATE-dragon-skreel.md` closes this gate's carried items R2-R5** (READINGS, *What the run found*): **R2** the cooldown, Ben's 240 ticks, built and read by its PB1, PB2 and PQ2; **R3** the decision from a fractional height, diagnosed (whole-block heights from a fractional anchor) and fixed (the search anchored on floor(y)), read by its PB3; **R4** BC4B's cleanup, fixed in `GATE-dragon-blink.yml` (it now kills `bc4bh`); **R5** the two pushes cancelled against one absorb, READ from the jar there: one sprinting hit raises two knockback events. **What R8 changes in this file's rows, none re-run:** every BLINK line now ends `anchor=<y> cooldown=<n>` (`cooldown=0` on BB1-BB5, each a fresh Phalanx), every `BLINK moved` line `cooldown=240`; BB1-BB5's verdicts are unchanged (a whole height anchors on itself); BQ1's live Phalanx would now decide at most one landed blink per 240 ticks. **No prediction or reading below is changed.**
+
 The plan is `PLAN-dragon-mobs.md` (RULINGS, *Ben, 2026-11-17, VERBATIM: the Phalanx's shield*; §5.R.10 as built). The
 scenario file is `paper/src/main/resources/selftest/GATE-dragon-blink.yml`, run by `/rpg selftest dragon-blink`.
 

@@ -961,6 +961,9 @@ public final class RpgCommand {
                                 .set(adapters.keys().mobGearScore, PersistentDataType.INTEGER, riderScore);
                     }
                     preAdd.accept(entity);
+                    // BEFORE its add event, so the add event's MobPouncer.onAppear finds the pair and starts its loop on
+                    // the mount's next tick, by when the rider below has mounted it.
+                    io.github.butterflysmp.rpg.paper.health.MobPouncer.mark(entity, rider.getUniqueId(), adapters.keys());
                 });
         io.github.butterflysmp.rpg.paper.health.MobPouncer.pair((org.bukkit.entity.Mob) mount,
                 (org.bukkit.entity.Mob) rider, mountDef, adapters.keys());

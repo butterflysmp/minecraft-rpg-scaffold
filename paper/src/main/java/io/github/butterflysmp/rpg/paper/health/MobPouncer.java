@@ -148,12 +148,19 @@ public final class MobPouncer {
     // --- the pairing (called from the one spawn path) ---------------------------------------------------------------
 
     /**
-     * MAKE THE PAIR, on the spawning thread, the tick both are spawned: the rider becomes the mount's passenger, the
-     * mount is marked with its rider's uuid, and its ridden speed is added. The loop starts on the mount's next tick
-     * ({@link #onAppear} saw the mount's add event, before it had a passenger, and looks again then).
+     * MARK A MOUNT WITH ITS RIDER'S UUID, inside its pre-spawn consumer, BEFORE its add event: that event's
+     * {@link #onAppear} sees the mark and looks again on the mount's next tick, by when the rider has mounted it. Written
+     * any later, the add event would find no mark and the pair's loop would never start (only a reload would start it).
+     */
+    public static void mark(LivingEntity mount, UUID rider, Keys keys) {
+        mount.getPersistentDataContainer().set(keys.mountRider, PersistentDataType.STRING, rider.toString());
+    }
+
+    /**
+     * MAKE THE PAIR, on the spawning thread, the tick both are spawned: the rider becomes the mount's passenger and the
+     * mount's ridden speed is added. The loop starts on the mount's next tick ({@link #mark}).
      */
     public static void pair(Mob mount, Mob rider, MobDefinition mountDef, Keys keys) {
-        mount.getPersistentDataContainer().set(keys.mountRider, PersistentDataType.STRING, rider.getUniqueId().toString());
         mount.addPassenger(rider);
         ridden(mount, mountDef, keys);
     }

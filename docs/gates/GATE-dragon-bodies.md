@@ -6,6 +6,8 @@ its row has been read. **NO BOOT until the seat has diffed the code AND this gat
 
 > **2026-11-15: approved to merge by the review seat after the boot of d59d2bf5; see GATE-dragon-fix.md for the readings.**
 
+> **2026-11-17 (step R8, before any boot of it):** DB6 and DB7, and their re-predictions DB6R2 and DB7R2 in `GATE-dragon-fix.md`, are SUPERSEDED by `GATE-dragon-skreel.md`'s DB6R3 and DB7R3: a Skreel now spawns riding its mount, and the mount alone moves at a spider's own speed with 160 health. No prediction or reading here is changed.
+
 > **NOTE, 2026-11-15 (added on `feat/dragon-split`, step R2, before any boot; no prediction below is changed).** This
 > gate will be read in a **STACKED BOOT** of `feat/dragon-split`'s head, which carries this step and the next. In
 > that boot **this file's R0a-R0d are SUPERSEDED** by `GATE-dragon-split.md`'s R0 (its R0a names that branch's head,

@@ -9,6 +9,8 @@ says ready.**
 
 > **2026-11-16: STEP R3 (PR #193) TOOK EIGHT ROWS OF THIS FILE OUT OF ITS SCENARIOS, BEFORE ANY BOOT OF R3.** From R3 a live Phage within 3 blocks of the player blows. DB10R2 and DQ1 are retired; DS1R2, DS2R2, DS5R2, DS6R2, DG6R2 and DG9R2 are re-predicted in GATE-dragon-blast.md as DS1R3, DS2R3, DS5R3, DS6R3, DG6R3 and DG9R3. Each row carries its own dated note below; **no prediction or reading in this file was changed.** The audit is PLAN-dragon-mobs.md, RULINGS, *THE BLAST AND THE ROWS ALREADY MERGED*.
 
+> **2026-11-17: STEP R8 (`feat/dragon-skreel`) TOOK TWO MORE ROWS OUT OF THIS FILE'S SCENARIOS, BEFORE ANY BOOT OF R8.** A Skreel now spawns riding its mount, and the mount alone has a spider's own speed and 160 health, so **DB6R2** (`ENTITIES SPIDER count=0`) and **DB7R2** (`speedBase=0.3900`, `maxHP=120.000`) would read otherwise. Both are re-predicted in `GATE-dragon-skreel.md` as **DB6R3** and **DB7R3**, and their scenario rows moved to `GATE-dragon-skreel.yml`. **No prediction or reading in this file was changed.**
+
 **THIS PR IS THE STACK TOP.** `feat/dragon-fix` is stacked on `feat/dragon-growth` (#191), on `feat/dragon-split`
 (#190), on `feat/dragon-bodies` (#189). The first boot of the stack (`bda8e89c`, 2026-11-15) read most AUTO rows NOT AS
 PREDICTED; its readings and dated notes are in the three lower gates, and the record (the seat's misses, the boot's
@@ -278,11 +280,15 @@ speedX=… maxHP=… gs=… element=… dead=false`. The uuids are the only fiel
 
 ### DB6R2 — the Skreel alone; nothing spawns its mount (SURVIVAL) — re-predicts DB6
 
+> **2026-11-17: SUPERSEDED by `GATE-dragon-skreel.md`'s DB6R3** (step R8); the reading below stands as the record of R1.
+
 | prediction | READING |
 |---|---|
 | `BODY tag=db6 <uuid> type=wither_skeleton mob=skreel stage=- scale=1.000 height=2.400 speedBase=0.2500 speedType=0.2500 speedX=1.000 maxHP=120.000 gs=100 element=void dead=false`, then `ENTITIES SPIDER count=0 radius=8` | **AS PREDICTED, verbatim** (`LEFTOVER living=0 radius=16`). `SELFTEST dragon-bodies DB6R2 BODY tag=db6 6c5f9c31-8890-4528-8dcb-88344fd43635 type=wither_skeleton mob=skreel stage=- scale=1.000 height=2.400 speedBase=0.2500 speedType=0.2500 speedX=1.000 maxHP=120.000 gs=100 element=void dead=false`; `SELFTEST dragon-bodies DB6R2 ENTITIES SPIDER count=0 radius=8`;  |
 
 ### DB7R2 — the mount alone, at 1.3 × the spider's speed, with NO element (SURVIVAL) — re-predicts DB7
+
+> **2026-11-17: SUPERSEDED by `GATE-dragon-skreel.md`'s DB7R3** (step R8); the reading below stands as the record of R1.
 
 | prediction | READING |
 |---|---|

@@ -1136,6 +1136,8 @@ our pipeline does hit. Detail in §7 F-S.
 | **Ben's design now** | **Unchanged in behaviour.** Element `void` (Ben's additional note). |
 | **what it needs** | MB1 and MB5, as before. **Open for Ben:** whether the spider MOUNT is also a Void mob (it is a separate entity, and the note names "Skreel"); and the name "Withered Mount" on a Void mob (Q24, Q25). |
 
+**2026-11-17, step R8: BUILT** (§5.R.11), from the seat's numbers Ben accepted (RULINGS) and cfde822's where they are silent; the item-by-item account is `GATE-dragon-skreel.md`, INHERITED OR CHOSEN. Q24 is answered (no element); Q25 (the name) is still open.
+
 #### 3.R.5 NUMBERS FOR BEN — every unruled number in the rework, in one place
 
 **Every value in the "old" column is a FACT about cfde822 or about vanilla, recorded and never adopted.** Where the
@@ -1774,6 +1776,29 @@ shield, each marked READ or NOT IN THE RECORD, and is not repeated here.** What 
 - **C4 (closed): a scoreboard team `rpg_shot` whose collision rule is NEVER**, joined at the fire and left at the end;
   `setCollidable` is never called, so an arrow still hits it (one test pins both).
 
+### 5.R.11 STEP R8 AS BUILT (`feat/dragon-skreel`, off master `185a6437`, 2026-11-17) — THE SKREEL PAIR, THE BLINK'S COOLDOWN, R3
+
+**The gate is `GATE-dragon-skreel.md`; its INHERITED OR CHOSEN table (K1-K29) is the item-by-item account of the pair,
+each marked READ, ACCEPTED or NOT IN THE RECORD, and is not repeated here.** Its jar facts, the cycle's state machine,
+the leap's expression and R3's and R5's readings are there too. What the code is:
+
+| piece | as built | where |
+|---|---|---|
+| **the numbers** | `pounce:` in the RIDER'S file: `acquire_range 32`, `band 8-12`, `path_speed 1.6`, `windup_ticks 20`, `period_ticks 120`, `launch_vertical 1.2`, `timeout_ticks 40`, `reach 3`, `damage 55`, `knockback 0.7 / 0.4`, the warning's crit (15, every 5) and three sounds; `mount: withered_mount`; `main_hand: iron_spear`. The mount: `max_health 160`, `scale 1.5`, `ridden_speed 1.3`, **no base speed** | `skreel.yml`, `withered_mount.yml`, `core.mob.MobPounce` |
+| **the cycle** | pure: RECOVER → HOLD → WINDUP (20) → LEAP (to the ground, or 40) → RECOVER; the period from a wind-up's start; a frozen pair never begins one | `core.mob.PounceCycle` |
+| **the leap** | the record's vertical, a horizontal of distance / T held every tick, T from replaying vanilla's air step (the mob's gravity, drag `0.98f`) to the aim's height; the aim fixed at the wind-up's start | `MobPounce.leap` |
+| **one spawn** | the rider, then its mount at its feet through the same stamp, the rider's gear score and the same pre-add; `addPassenger`; the ridden modifier | `RpgCommand.spawnMount`, `MobPouncer.pair` |
+| **the loop** | period 1 on the MOUNT'S scheduler; ends with either half (dead, removed, unloaded, separated); a dead mount's rider dismounts; resumed on a paired or widowed mount's appearance | `paper.health.MobPouncer` |
+| **no vanilla target** | every target event of a paired mob cancelled | `RpgListeners.onPairTargeted` |
+| **the hit** | every combatant within 3 of the mount's feet, `applyDamage(55 × GS/100, rider)`, pushed by `setVelocity` (× 1 − KNOCKBACK_RESISTANCE) | `MobPouncer.land` |
+| **the blink's cooldown** | `blink.cooldown_ticks: 240`, required; counted first each loop tick, set by a landed blink only; blocks only the Phalanx's own blink; a forced one says `ignored` | `MobBlink.Cooldown`, `MobShooter.blinkStep` |
+| **R3** | the height search anchored on `floor(feet.y)` | `MobBlink.anchor` |
+| **the instrument** | `pounce: <tag>` (a wind-up now, aimed at his feet), `probe_pair: <tag>` | `SelfTestDrivers` |
+
+**THE CARRIED ITEMS FROM #202, CLOSED BY BUILD, NOT YET BY A READING:** R3 (PB3), R5 (read from the jar, no row), BC4B's
+tag (its scenario). **Still UNREAD:** zero damage not spending the shield (core test only); the shield byte surviving an
+unload.
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.
@@ -2220,6 +2245,22 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
     a melee hit's damage on a mob.
   - **BC4B's cleanup:** its `/kill @e[tag=bc4b]` does not select its husk (tagged `bc4bh`); BB1's clean removed it.
   - **UNREAD:** zero damage not spending the shield (core test only); the shield byte surviving an unload.
+  - **2026-11-17, step R8 (`GATE-dragon-skreel.md`):** **R3 DIAGNOSED AND FIXED, NOT READ** (the heights are whole
+    blocks from the column's y, and a fractional anchor stands none on a floor; anchored on floor(y) now; PB3 reads it on
+    a slab). **R5 READ, from the jar, no row:** one sprinting hit raises two knockback events (`LivingEntity#hurt`'s and
+    `Player#causeExtraKnockback`'s, both `ENTITY_ATTACK`); two lines against one absorb is correct. **BC4B's cleanup
+    FIXED** in its scenario.
+- **F19, 2026-11-17, step R8: THE KNELL'S TELEPORT HAS R3'S DEFECT, LATENT, NOT FIXED.** `BeamTeleport.decide` puts every
+  candidate column at the TARGET'S feet height, and the check tries whole blocks from it. A target mid-jump (or standing
+  on a slab) when the move falls due makes every candidate NO_FOOTING, and the Knell does not move. INFERRED from the code,
+  never read on a server; the Knell's 13 merged gates staged their targets standing on whole blocks. The fix is the
+  blink's (`MobBlink.anchor`), the seat's to schedule.
+- **F20, 2026-11-17, step R8: THE PAIR'S LOOP ASSUMES ITS TWO HALVES SHARE A THREAD.** It runs on the mount's scheduler
+  and reads and moves the rider (a passenger) and the landing's victims inline when the region owns them. Correct on Paper;
+  on Folia a passenger rides in its vehicle's region (INFERRED), and a victim outside it is struck on its own scheduler,
+  as the blast's are. Accepted on Paper, like F3, F9 and F13.
+- **F21, 2026-11-17, step R8: THE BLINK'S COOLDOWN IS NOT SAVED.** It lives on the Phalanx's loop, so a Phalanx that
+  unloads and loads mid-cooldown may blink at once, as its shot clock restarts. The seat's to rule if it should persist.
 - **F17, RESTATED 2026-11-17 (the boot of `ef770b8a`):** the calibrated offset reads `0.000 0.600 -0.400`, the derived
   0.375 × 1.6, not the 0.450 predicted. The 0.45 SH1R2 read was the shape's displacement under the old one-time
   calibration; why it was 0.45 is still unexplained. Not closed.
@@ -2247,8 +2288,8 @@ rework: an answered question says where its answer is, and a new one is added at
    times gear score / 100, like other custom mobs? *(Was "the blast" of the Goon; the blast is now the Phage's.)*
 4. **ANSWERED by G** (RULINGS): the blast hurts *"Only players and Summons"*. *(It was asked of the Goon's death
    blast; the Goon is retired and the answer now governs the Phage's.)*
-5. **OPEN.** Is the Skreel's spider its own mob, with its own name and health bar?
-6. **OPEN.** When one of the Skreel pair dies, should the other keep fighting as a normal mob?
+5. **ANSWERED 2026-11-17 by the accepted numbers** (RULINGS, *the Skreel's numbers*: "mount health 160", its own). Is the Skreel's spider its own mob, with its own name and health bar?
+6. **ANSWERED 2026-11-17 by the accepted text** (the rider "fights on foot as a plain melee mob"; the mount "carries on as a plain fast spider with no leap"). When one of the Skreel pair dies, should the other keep fighting as a normal mob?
 7. **ANSWERED 2026-11-17: "1. yes the first damage of any kind"** (RULINGS, *the Phalanx's shield*). *(Asked as:)* Should the Phalanx's shield block the first damage of any kind (a fall, fire), or only the first hit from a player?
 8. **REMOVED by the Knell rework** (RULINGS, the Knell; seat ruling 4). The Knell no longer reacts to arrows.
 9. **OPEN.** Inside the fight's world, what gear score should the mobs have: the End's 300, or a number the fight sets?

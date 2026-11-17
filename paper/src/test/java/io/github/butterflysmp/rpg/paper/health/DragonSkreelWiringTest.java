@@ -36,9 +36,17 @@ class DragonSkreelWiringTest {
         // pin; the gate's server reading is PS1, spawned at 300 where the overworld rolls 100.
         assertTrue(score > 0 && code.get(score - 2).trim().equals("if (riderScore != null) {"), "the guard: " + score);
         int pre = indexAfter(code, score, "preAdd.accept(entity);");
+        // THE MARK INSIDE THE CONSUMER, before the add event, or the add event finds no pair and the loop never starts.
+        int mark = indexAfter(code, pre, "MobPouncer.mark(entity, rider.getUniqueId(), adapters.keys());");
+        int close = indexAfter(code, pre, "});");
         int pair = indexAfter(code, pre, "MobPouncer.pair((org.bukkit.entity.Mob) mount,");
-        assertTrue(m > 0 && stamp > m && score > stamp && pre > score && pair > pre,
-                "stamp, the rider's score, the pre-add, inside the consumer, then the pair: " + stamp + " " + score + " " + pre + " " + pair);
+        assertTrue(m > 0 && stamp > m && score > stamp && pre > score && mark > pre && close > mark && pair > close,
+                "stamp, the rider's score, the pre-add, the mark, inside the consumer, then the pair: " + stamp + " "
+                        + score + " " + pre + " " + mark + " " + close + " " + pair);
+        List<String> p = file("health", "MobPouncer.java");
+        int appear = indexOf(p, "public void onAppear(Entity entity) {");
+        assertTrue(indexAfter(p, appear, "if (!pdc.has(adapters.keys().mountRider) && !pdc.has(adapters.keys().mountWidowed)) return;")
+                == appear + 3, "the add event looks for the mark");
     }
 
     // --- the ridden speed: transient, never a base ---------------------------------------------------------------------
