@@ -90,7 +90,7 @@ class MobGrowthTest {
         MobGrowth.Candidate outside = phageAt(1, new Vec3(7, 64, 0));
         MobGrowth.Candidate big = phageAt(5, new Vec3(0, 64, 1));
         List<MobGrowth.Grow> grows = MobGrowth.resolve(voidDeathAt(ORIGIN), false, List.of(near, further, outside, big));
-        assertEquals(List.of(new MobGrowth.Grow(near.id(), 1, 2), new MobGrowth.Grow(further.id(), 2, 3)), grows);
+        assertEquals(List.of(new MobGrowth.Grow(near.id(), 1, 2, 1.0), new MobGrowth.Grow(further.id(), 2, 3, 5.0)), grows);
     }
 
     /** The dying creature never grows itself, even if it is a Phage in its own radius. */
@@ -106,7 +106,7 @@ class MobGrowthTest {
     void aDeathAlreadyCountedGrowsNothing() {
         MobGrowth.Candidate p = phageAt(1, new Vec3(1, 64, 0));
         MobGrowth.Death death = voidDeathAt(ORIGIN);
-        assertEquals(List.of(new MobGrowth.Grow(p.id(), 1, 2)), MobGrowth.resolve(death, false, List.of(p)));
+        assertEquals(List.of(new MobGrowth.Grow(p.id(), 1, 2, 1.0)), MobGrowth.resolve(death, false, List.of(p)));
         assertEquals(List.of(), MobGrowth.resolve(death, true, List.of(p)));
     }
 
@@ -129,5 +129,47 @@ class MobGrowthTest {
         assertThrows(IllegalArgumentException.class, () -> new MobGrowth("void", 6.0, 0));
         assertThrows(IllegalArgumentException.class, () -> new MobDefinition("knell", "wither_skeleton", "Knell",
                 360, MobBody.VANILLA, "void", null, null, GROWTH), "growth needs stages");
+    }
+
+    // --- THE DECISION IS FIXED AT THE DEATH (the follow-up of 2026-11-17; PLAN-dragon-mobs.md section 8 F5) ----------
+
+    /**
+     * WHO grows and HOW FAR it stood are decided at the death, from the positions at the death, and travel with the
+     * grow: the distance is the candidate's feet to the death's point, AT THE DEATH. Distinct distances (1.0, 2.5, 4.25, each exact in a double)
+     * so a transposition between grows is red.
+     */
+    @Test
+    void eachGrowCarriesTheDistanceAtTheDeath() {
+        MobGrowth.Candidate a = phageAt(1, new Vec3(1, 64, 0));
+        MobGrowth.Candidate b = phageAt(3, new Vec3(0, 64, -2.5));
+        MobGrowth.Candidate c = phageAt(2, new Vec3(0, 68.25, 0));
+        List<MobGrowth.Grow> grows = MobGrowth.resolve(voidDeathAt(ORIGIN), false, List.of(a, b, c));
+        assertEquals(List.of(1.0, 2.5, 4.25), grows.stream().map(MobGrowth.Grow::distance).toList());
+        assertEquals(List.of(a.id(), b.id(), c.id()), grows.stream().map(MobGrowth.Grow::id).toList());
+    }
+
+    /**
+     * THE LATER TICK RE-READS ONLY THE STAGE: {@link MobGrowth#restage} takes the definition, the stage NOW and
+     * whether it is alive NOW, and no position, so it cannot re-decide who is in range. Two deaths in one tick each
+     * apply on the Phage's own tick, the second reading the stage the first wrote, so they ADD UP (1, then 2, then 3).
+     */
+    @Test
+    void theLaterTickReReadsOnlyTheStageSoTwoDeathsAddUp() {
+        int afterFirst = MobGrowth.restage(PHAGE, 1, true);
+        int afterSecond = MobGrowth.restage(PHAGE, afterFirst, true);
+        assertEquals(2, afterFirst);
+        assertEquals(3, afterSecond, "the second death reads the stage the first wrote");
+        MobDefinition two = phage(new MobGrowth("void", 6.0, 2));
+        assertEquals(5, MobGrowth.restage(two, 4, true), "two stages per death from 4 stops at the last stage");
+        assertEquals(5, MobGrowth.restage(PHAGE, 5, true), "a stage 5 stays 5");
+    }
+
+    /** A Phage that died or was removed between the death and its own tick is refused; a mob with no growth too. */
+    @Test
+    void theLaterTickStillRefusesAPhageThatIsNoLongerAlive() {
+        assertEquals(2, MobGrowth.restage(PHAGE, 2, false), "died in between: unchanged");
+        assertEquals(1, MobGrowth.restage(new MobDefinition("k", "wither_skeleton", "K", 360), 1, true),
+                "no growth block: unchanged");
+        assertEquals(1, MobGrowth.restage(null, 1, true), "a vanilla mob: unchanged");
     }
 }

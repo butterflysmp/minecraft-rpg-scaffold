@@ -356,52 +356,60 @@ class MobLoaderTest {
 
     // ---- dragon-mobs step R3: the blast ----
 
-    /** The blast's four numbers ARRIVE from content, and a file without the block has none. */
+    /** The blast's five numbers ARRIVE from content (the knockback multiplier since the follow-up of 2026-11-17), and a file without the block has none. */
     @Test
     void theBlastBlockArrives() throws IOException {
         write("phage.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 4.5\n  damage: { first: 11, last: 77 }\n  fuse_ticks: 44\n");
+                + "blast:\n  reach: 4.5\n  damage: { first: 11, last: 77 }\n  fuse_ticks: 44\n  knockback: 0.75\n");
         write("plain.yml", "base_entity: creeper\n" + STAGES);
 
         MobRegistry mobs = load();
 
-        assertEquals(new MobBlast(4.5, 11, 77, 44), mobs.find("phage").orElseThrow().blast());
+        assertEquals(new MobBlast(4.5, 11, 77, 44, 0.75), mobs.find("phage").orElseThrow().blast());
         assertNull(mobs.find("plain").orElseThrow().blast(), "no blast block, no blast");
         assertTrue(warnings.isEmpty(), warningText());
     }
 
-    /** A blast on an unstaged mob, a missing key, and a zero fuse are each a named, skipped file. */
+    /**
+     * A blast on an unstaged mob, a missing key, a zero fuse, a missing knockback and a negative one are each a named,
+     * skipped file. Every file but the one under test carries {@code knockback: 1}, so each is refused for its own key.
+     */
     @Test
     void aMalformedBlastIsRefused() throws IOException {
         write("unstaged.yml", "base_entity: creeper\nmax_health: 80\n"
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n");
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: 1\n");
         write("nolast.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20 }\n  fuse_ticks: 30\n");
+                + "blast:\n  reach: 3\n  damage: { first: 20 }\n  fuse_ticks: 30\n  knockback: 1\n");
         write("noreach.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n");
+                + "blast:\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: 1\n");
         write("nofuse.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 0\n");
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 0\n  knockback: 1\n");
+        write("noknock.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n");
+        write("negknock.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: -1\n");
 
         MobRegistry mobs = load();
 
         assertEquals(0, mobs.size());
-        for (String f : List.of("unstaged.yml", "nolast.yml", "noreach.yml", "nofuse.yml")) {
+        for (String f : List.of("unstaged.yml", "nolast.yml", "noreach.yml", "nofuse.yml", "noknock.yml",
+                "negknock.yml")) {
             assertTrue(warningText().contains(f), f + ": " + warningText());
         }
     }
 
     /**
      * THE PHAGE WE SHIP: vanilla's creeper numbers for everything but the damage (Ben), its shape ("keep vanillas
-     * shap"), and the seat's provisional 20 and 50 (P-a). The reach is 6 blocks: vanilla's power 3 doubled
+     * shap"), the 60 and 150 (the seat's reading of Ben's "increase 3x", replacing P-a, 2026-11-17), and vanilla's push at a multiplier of 1 (Q35 answered yes). The reach is 6 blocks: vanilla's power 3 doubled
      * ({@code ServerExplosion.hurtEntities}, {@code radius * 2}); the fuse is 30 ticks, vanilla's {@code maxSwell}.
      */
     @Test
-    void theBundledPhageBlastsForTwentyToFiftyOutToSixBlocks() throws IOException {
+    void theBundledPhageBlastsForSixtyToOneFiftyOutToSixBlocksAndPushesAsVanilla() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/phage.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("phage.yml"), in.readAllBytes());
         }
-        assertEquals(new MobBlast(6.0, 20.0, 50.0, 30), load().find("phage").orElseThrow().blast());
+        assertEquals(new MobBlast(6.0, 60.0, 150.0, 30, 1.0), load().find("phage").orElseThrow().blast());
         assertTrue(warnings.isEmpty(), warningText());
     }
 

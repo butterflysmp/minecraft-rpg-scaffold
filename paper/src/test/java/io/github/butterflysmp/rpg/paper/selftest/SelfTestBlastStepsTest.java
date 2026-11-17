@@ -57,4 +57,37 @@ class SelfTestBlastStepsTest {
         assertEquals(Optional.empty(), SelfTestStaging.refusal(Scenario.Verb.IGNITE, "bl8"));
         assertEquals(Optional.empty(), SelfTestStaging.refusal(Scenario.Verb.PROBE_FUSE, "bl8"));
     }
+
+    // --- the follow-up of 2026-11-17 (GATE-dragon-blast-2.md): THAW and PROBE_MOTION ---------------------------------
+
+    /**
+     * THAW (the owed finding, PLAN-dragon-mobs.md section 8 F4): the instrument's own way to switch a tagged mob's AI
+     * back on, in place of a vanilla {@code data merge}. Its line READS BACK the AI from the mob after the act, as the
+     * CHILD line does, so it witnesses the thaw landing rather than repeating the request.
+     */
+    @Test
+    void theThawLineReadsTheAiBack() {
+        assertEquals("DRIVE thaw tag=ds1 " + PHAGE + " ai=true", SelfTestBlast.thawLine("ds1", PHAGE, true));
+        assertEquals("DRIVE thaw tag=ds1 " + PHAGE + " ai=false", SelfTestBlast.thawLine("ds1", PHAGE, false));
+    }
+
+    /**
+     * PROBE_MOTION: a tagged mob's VELOCITY, to four places. A frozen mob cannot be moved by a push (NoAI skips
+     * {@code travel}), so a push shows in its velocity and never its position (plan, section 7 F-B). Distinct
+     * components, so a transposition is red.
+     */
+    @Test
+    void theMotionLineNamesEachComponent() {
+        assertEquals("MOTION tag=bl4h " + PHAGE + " vx=0.1250 vy=-0.0784 vz=0.5000",
+                SelfTestBlast.motionLine("bl4h", PHAGE, 0.125, -0.0784, 0.5));
+    }
+
+    @Test
+    void theLoaderRefusesABadThawOrMotionStepByName() {
+        assertTrue(SelfTestStaging.refusal(Scenario.Verb.THAW, "").isPresent(), "a tag is required");
+        assertTrue(SelfTestStaging.refusal(Scenario.Verb.THAW, "two words").isPresent(), "one tag only");
+        assertTrue(SelfTestStaging.refusal(Scenario.Verb.PROBE_MOTION, "").isPresent());
+        assertEquals(Optional.empty(), SelfTestStaging.refusal(Scenario.Verb.THAW, "ds1"));
+        assertEquals(Optional.empty(), SelfTestStaging.refusal(Scenario.Verb.PROBE_MOTION, "bl4h"));
+    }
 }

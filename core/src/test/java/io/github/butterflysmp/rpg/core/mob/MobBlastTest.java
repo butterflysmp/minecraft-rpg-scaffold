@@ -22,7 +22,7 @@ class MobBlastTest {
 
     private static final MobStages STAGES =
             new MobStages(5, new StageBody(1.0, 1.5, 80), new StageBody(3.0, 0.5, 160));
-    private static final MobBlast BLAST = new MobBlast(6.0, 20.0, 50.0, 30);
+    private static final MobBlast BLAST = new MobBlast(6.0, 20.0, 50.0, 30, 1.0);
     private static final Vec3 AT = new Vec3(0, 64, 0);
     private static final UUID SELF = UUID.randomUUID();
 
@@ -157,11 +157,14 @@ class MobBlastTest {
 
     @Test
     void aBadBlastIsRefusedByName() {
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(0, 20, 50, 30), "reach 0");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(Double.NaN, 20, 50, 30), "reach NaN");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, -1, 50, 30), "negative damage");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, Double.POSITIVE_INFINITY, 30));
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, 50, 0), "a fuse of 0 ticks");
+        assertThrows(IllegalArgumentException.class, () -> new MobBlast(0, 20, 50, 30, 1.0), "reach 0");
+        assertThrows(IllegalArgumentException.class, () -> new MobBlast(Double.NaN, 20, 50, 30, 1.0), "reach NaN");
+        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, -1, 50, 30, 1.0), "negative damage");
+        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, Double.POSITIVE_INFINITY, 30, 1.0));
+        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, 50, 0, 1.0), "a fuse of 0 ticks");
+        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, 50, 30, -0.5), "a negative knockback");
+        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, 50, 30, Double.NaN), "knockback NaN");
+        assertEquals(0.0, new MobBlast(6, 20, 50, 30, 0.0).knockback(), 0.0, "0 is allowed: it turns the push off");
     }
 
     /** A blast prices by STAGE, so it needs stages, as a split does. */
@@ -173,5 +176,71 @@ class MobBlastTest {
                 BLAST);
         assertEquals(BLAST, staged.blast());
         assertEquals(null, new MobDefinition("k", "wither_skeleton", "K", 360).blast(), "absent by default");
+    }
+
+    // --- knockback, vanilla's (the follow-up of 2026-11-17; PLAN-dragon-mobs.md section 7 F-B) ---------------------
+
+    /**
+     * VANILLA'S PUSH STRENGTH, at every distance the gate uses and both ends. The expected values were EXECUTED in
+     * jshell from {@code ServerExplosion#hurtEntities}' own expression, {@code (1 - r) * exposure * multiplier *
+     * (1 - resistance)} with {@code r = d / f}, {@code f = 6}, exposure 1, multiplier 1, resistance 0 (plan, F-B).
+     * LINEAR in distance: the damage's curve would give 0.555556 at 2 and 0.375 at 3, so a mix-up of the two is red.
+     */
+    @Test
+    void thePushIsVanillasLinearShareOfTheReach() {
+        double[][] grid = {{0, 1.0}, {1.5, 0.75}, {2, 0.666666667}, {3, 0.5}, {4.5, 0.25}, {5.9, 0.016666667},
+                {6, 0.0}};
+        for (double[] row : grid) {
+            assertEquals(row[1], MobBlast.knockbackStrength(row[0], 6.0, 1.0, 0.0), 1e-9, "d=" + row[0]);
+        }
+        assertEquals(0.0, MobBlast.knockbackStrength(6.5, 6.0, 1.0, 0.0), 0.0, "beyond the reach: 0, never negative");
+    }
+
+    /**
+     * The multiplier (content) and the victim's explosion knockback resistance scale it, as vanilla's do: jshell gave
+     * 0.333333333 at d = 2 with resistance 0.5, and 1.0 at d = 3 with multiplier 2. Multiplier 0 is off everywhere.
+     */
+    @Test
+    void theMultiplierAndTheResistanceScaleThePush() {
+        assertEquals(0.333333333, MobBlast.knockbackStrength(2, 6.0, 1.0, 0.5), 1e-9, "resistance 0.5");
+        assertEquals(1.0, MobBlast.knockbackStrength(3, 6.0, 2.0, 0.0), 1e-9, "multiplier 2");
+        assertEquals(0.4, MobBlast.knockbackStrength(3, 6.0, 0.8, 0.0), 1e-9, "multiplier 0.8");
+        for (double d : new double[]{0, 2, 5.9}) {
+            assertEquals(0.0, MobBlast.knockbackStrength(d, 6.0, 0.0, 0.0), 0.0, "multiplier 0 at d=" + d);
+        }
+        assertEquals(0.0, MobBlast.knockbackStrength(0, 6.0, 1.0, 1.0), 0.0, "full resistance");
+    }
+
+    /** The factor the strength came from, for the BLAST line: 1 - d / reach inside the reach, 0 beyond. */
+    @Test
+    void theKnockbackFactorIsOneMinusTheShareOfTheReach() {
+        assertEquals(1.0, MobBlast.knockbackFactor(0, 6.0), 0.0);
+        assertEquals(0.5, MobBlast.knockbackFactor(3, 6.0), 0.0);
+        assertEquals(0.0, MobBlast.knockbackFactor(7, 6.0), 0.0);
+        assertEquals(MobBlast.knockbackFactor(2, 6.0) * 0.8 * (1 - 0.25),
+                MobBlast.knockbackStrength(2, 6.0, 0.8, 0.25), 0.0, "the strength is the factor x multiplier x (1 - res)");
+    }
+
+    /** The blast's own multiplier: {@link MobBlast#knockbackAt} is the static rule with this blast's reach and number. */
+    @Test
+    void aBlastPushesWithItsOwnReachAndMultiplier() {
+        MobBlast half = new MobBlast(4.0, 20, 50, 30, 0.5);
+        assertEquals(MobBlast.knockbackStrength(1.0, 4.0, 0.5, 0.2), half.knockbackAt(1.0, 0.2), 0.0);
+        assertEquals(0.75 * 0.5, half.knockbackAt(1.0, 0.0), 1e-12);
+    }
+
+    /**
+     * THE DIRECTION, vanilla's: the victim's EYE minus the blast's centre, normalised, times the strength; ZERO when
+     * the two points are closer than {@code 1.0E-5F}, as {@code Vec3#normalize} in the jar does.
+     */
+    @Test
+    void thePushPointsFromTheBlastToTheVictimsEye() {
+        Vec3 push = MobBlast.pushVector(new Vec3(0, 64, 0), new Vec3(3, 68, 0), 0.5);
+        assertEquals(0.3, push.x(), 1e-12, "3/5 of 0.5");
+        assertEquals(0.4, push.y(), 1e-12, "4/5 of 0.5");
+        assertEquals(0.0, push.z(), 0.0);
+        assertEquals(Vec3.ZERO, MobBlast.pushVector(AT, new Vec3(0, 64.000001, 0), 1.0), "below 1.0E-5F: no direction");
+        Vec3 just = MobBlast.pushVector(AT, new Vec3(0, 64.00002, 0), 1.0);
+        assertEquals(1.0, just.y(), 1e-9, "just above it: a unit push upward");
     }
 }
