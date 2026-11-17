@@ -1,0 +1,326 @@
+# THE PHALANX'S SHOT (dragon-mobs step R7a; GATE-dragon-shot.md). `/rpg selftest dragon-shot`.
+#
+# THE SHOT: every 120 ticks a Phalanx with a target within 30 blocks (its eye to the target's eye) fires a shot from
+# its EYE at the target's EYE: 0.2 blocks a tick, turning 10% toward the target's eye each tick, until it meets a
+# block, comes inside the target's box grown by 1.2 (40 x GS/100 before defence), reaches 240 ticks, or is more than 35
+# blocks from where it was fired. ANY attack destroys it. It is carried by an invisible bat with a glowing block on it.
+#
+# THE STAGING: the player at a block centre facing east (+x); a stone floor and air above it, every fill box SAVED
+# first. A mob is spawned by stepping the player to its spot, spawning at the feet, and stepping back. The selftest
+# tags a tagged Phalanx's shot <tag>_shot at its fire (the SHOTTAG line), so a row can attack or aim at it.
+#
+# TWO KINDS OF PHALANX:
+#   - FROZEN (NoAI): it cannot walk or draw its bow, and its OWN clock never fires (as the Knell's I23). The SHOT step
+#     makes it fire on its next tick. Every row but SH10 and SH11.
+#   - LIVE (SH10, SH11): AI on, 10 blocks east in the open. It draws its bow at him (vanilla's RangedBowAttackGoal) and
+#     every release is cancelled; its own clock fires 120 ticks after it appears.
+#
+# THE PLAYER CANNOT DIE IN ANY ROW: each row heals him first, and no row lets more than one 40 (or the Knell's one 65)
+# land before the next heal. His floor is 100.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# SH1: a forced shot at a still player, from a frozen Phalanx 8 blocks east: the fired line, two reads of it in flight,
+# the hit at age 33, and his HURT line for 40 before defence. Then the Phalanx is killed.
+SH1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "sh1 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - shot: sh1
+  - wait: 10
+  - probe_shot: sh1
+  - wait: 10
+  - probe_shot: sh1
+  - wait: 30
+  - probe_shot: sh1
+  - cmd: "kill @e[tag=sh1]"
+  - wait: 5
+
+# SH2: one melee hit with one of our weapons (the emberblade) destroys it in flight: by=vanilla cause=ENTITY_ATTACK.
+SH2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "sh2 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - shot: sh2
+  - wait: 15
+  - attack: sh2_shot
+  - wait: 40
+  - probe_shot: sh2
+  - cmd: "kill @e[tag=sh2]"
+  - wait: 5
+
+# SH3: one vanilla arrow destroys it: summoned under the shot, rising through it: by=vanilla cause=PROJECTILE.
+SH3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "sh3 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - shot: sh3
+  - wait: 15
+  - cmd: 'execute at @e[tag=sh3_shot,limit=1] run summon arrow ~ ~-0.8 ~ {Motion:[0.0d,1.5d,0.0d],NoGravity:1b,Tags:["selftest","t"]}'
+  - wait: 40
+  - probe_shot: sh3
+  - cmd: "kill @e[type=arrow,distance=..16]"
+  - cmd: "kill @e[tag=sh3]"
+  - wait: 5
+
+# SH4: one ability burst destroys it: the solar grenade, cast at the shot, bursts on it (radius 4): by=ability, fire.
+SH4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 14 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~14 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~14 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~12 ~ ~"
+  - spawn: "sh4 frozen phalanx 100"
+  - cmd: "tp @s ~-12 ~ ~ -90 0"
+  - wait: 5
+  - shot: sh4
+  - wait: 30
+  - aim: sh4_shot
+  - wait: 2
+  - cmd: "rpg cast solar_grenade"
+  - wait: 20
+  - probe_shot: sh4
+  - wait: 40
+  - cmd: "kill @e[tag=sh4]"
+  - wait: 5
+
+# SH5: one area effect that catches it destroys it: the solar grenade's field (radius 4, a pulse every 20 ticks),
+# laid on the floor 3 east BEFORE the shot is fired, so only the field can reach it: by=ability, fire.
+SH5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 14 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~14 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~14 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~12 ~ ~"
+  - spawn: "sh5 frozen phalanx 100"
+  - cmd: "tp @s ~-12 ~ ~ -90 0"
+  - aim_block: "3 -1 0 UP"
+  - wait: 2
+  - cmd: "rpg cast solar_grenade"
+  - wait: 30
+  - shot: sh5
+  - wait: 70
+  - probe_shot: sh5
+  - cmd: "kill @e[tag=sh5]"
+  - wait: 5
+
+# SH6: a shot left to expire. 3 ticks after the force he is moved 38 west (a stone pad there), out of its reach; it
+# chases him and expires by RANGE at age 176, more than 35 blocks from where it was fired. The LIFE (240) cannot come
+# first in shipped content: a shot flies 0.2 a tick and passes 35 from its origin at 176 unless it curls, and it curls
+# only round a target it is reaching (the gate's E1). Then he comes back and the Phalanx is killed.
+SH6:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-40 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "fill ~-40 ~-1 ~-2 ~-36 ~-1 ~2 stone"
+  - cmd: "fill ~-40 ~ ~-2 ~-36 ~4 ~2 air"
+  - cmd: "fill ~-35 ~ ~-2 ~-5 ~4 ~2 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "sh6 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - shot: sh6
+  - wait: 3
+  - cmd: "tp @s ~-38 ~ ~ -90 0"
+  - wait: 200
+  - return: ""
+  - wait: 2
+  - probe_shot: sh6
+  - cmd: "kill @e[tag=sh6]"
+  - wait: 5
+
+# SH7: a shot that meets a wall: stone 4 east between them, it ends BLOCKED at age 18, and he takes nothing.
+SH7:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "sh7 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - cmd: "fill ~4 ~ ~-2 ~4 ~3 ~2 stone"
+  - wait: 5
+  - shot: sh7
+  - wait: 40
+  - probe_shot: sh7
+  - cmd: "kill @e[tag=sh7]"
+  - wait: 5
+
+# SH8: a frozen husk in its path, 4 east, is not hurt: the shot passes through it and hits him at age 33.
+SH8:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: 'summon husk ~4 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["sh8h","t","selftest"]}'
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "sh8 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - probe: sh8h
+  - shot: sh8
+  - wait: 50
+  - probe: sh8h
+  - cmd: "kill @e[tag=sh8]"
+  - wait: 5
+
+# SH9: a destroyed shot pays nothing and feeds nothing: a frozen stage 1 Phage 4 east and 1 north, inside the 6-block
+# growth radius of where the shot is struck; his XP before and after; the Phage's stage before and after.
+SH9:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 10 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~4 ~ ~-1"
+  - spawn: "sh9p frozen phage stage 1 100"
+  - cmd: "tp @s ~4 ~ ~1"
+  - spawn: "sh9 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - probe_body: sh9p
+  - cmd: "xp query @s points"
+  - cmd: "xp query @s levels"
+  - shot: sh9
+  - wait: 15
+  - attack: sh9_shot
+  - wait: 25
+  - probe_body: sh9p
+  - cmd: "xp query @s points"
+  - cmd: "xp query @s levels"
+  - cmd: "kill @e[tag=sh9]"
+  - wait: 5
+
+# SH10: the live cycle. A LIVE Phalanx 10 east fires of its own 120 ticks after it appears and again 120 ticks later;
+# each hits him (a heal between); it draws its bow at him the whole time and looses no arrow. Then killed.
+SH10:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-6 -1 -8 16 6 8"
+  - cmd: "fill ~-6 ~-1 ~-8 ~16 ~-1 ~8 stone"
+  - cmd: "fill ~-6 ~ ~-8 ~16 ~6 ~8 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~10 ~ ~"
+  - spawn: "sh10 live phalanx 100"
+  - cmd: "tp @s ~-10 ~ ~ -90 0"
+  - wait: 200
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - probe_entities: "arrow 16"
+  - cmd: "kill @e[tag=sh10]"
+  - wait: 5
+
+# SH11: no arrow in a bow's window. A LIVE Phalanx 10 east for 100 ticks, before its own clock's first 120: a
+# vanilla skeleton would have released at least once (20 ticks to draw once it targets him); the BOW lines say the
+# goal let go, and no arrow exists.
+SH11:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-6 -1 -8 16 6 8"
+  - cmd: "fill ~-6 ~-1 ~-8 ~16 ~-1 ~8 stone"
+  - cmd: "fill ~-6 ~ ~-8 ~16 ~6 ~8 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~10 ~ ~"
+  - spawn: "sh11 live phalanx 100"
+  - cmd: "tp @s ~-10 ~ ~ -90 0"
+  - wait: 100
+  - probe_entities: "arrow 16"
+  - cmd: "kill @e[tag=sh11]"
+  - wait: 5
+
+# SH12: after a Phalanx is killed, no carrier of its is left: a shot in flight from a frozen Phalanx 12 east, the
+# Phalanx killed 10 ticks after the force; the shot ends owner-gone; no bat and no block display within 16.
+SH12:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 14 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~14 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~14 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~12 ~ ~"
+  - spawn: "sh12 frozen phalanx 100"
+  - cmd: "tp @s ~-12 ~ ~ -90 0"
+  - wait: 5
+  - shot: sh12
+  - wait: 10
+  - probe_shot: sh12
+  - cmd: "kill @e[tag=sh12]"
+  - wait: 5
+  - probe_entities: "bat 16"
+  - probe_entities: "block_display 16"
+
+# SQ1: Ben's. Watch one shot come at him from a frozen Phalanx 15 east; then hit the next with the sword the row puts
+# in his hand. Three questions.
+SQ1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -6 17 6 6"
+  - cmd: "fill ~-4 ~-1 ~-6 ~17 ~-1 ~6 stone"
+  - cmd: "fill ~-4 ~ ~-6 ~17 ~6 ~6 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~15 ~ ~"
+  - spawn: "sq1 frozen phalanx 100"
+  - cmd: "tp @s ~-15 ~ ~ -90 0"
+  - cmd: 'tellraw @s {"text":"Stand still and watch: the Phalanx 15 blocks east fires one shot at you. Let it hit you.","color":"gold"}'
+  - wait: 60
+  - shot: sq1
+  - wait: 100
+  - ask: "1 1200 Could you see the shot coming (light purple, with pink flashes)?"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: 'tellraw @s {"text":"Now hit the next shot with the sword in your hand before it reaches you.","color":"gold"}'
+  - wait: 60
+  - shot: sq1
+  - wait: 100
+  - ask: "2 1200 Did hitting it destroy it?"
+  - ask: "3 1200 Does the Phalanx's shot feel fair now?"
+  - cmd: "kill @e[tag=sq1]"
+  - wait: 5
+
+# KQ1R6: Ben's question for the Knell, re-run for the flash ruled removed on 2026-11-17 (supersedes
+# GATE-dragon-knell-5.md KQ1R5's flash, not its question): a frozen Knell 12 east beams him once; one purple line at
+# the warning, none after; then the row asks, and kills the Knell.
+KQ1R6:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-14 -1 -14 16 6 14"
+  - cmd: "fill ~-14 ~-1 ~-14 ~16 ~-1 ~14 stone"
+  - cmd: "fill ~-14 ~ ~-14 ~16 ~6 ~14 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~12 ~ ~"
+  - spawn: "kq1r6 frozen knell 100"
+  - cmd: "tp @s ~-12 ~ ~ -90 0"
+  - cmd: 'tellraw @s {"text":"Watch the purple warning line before the Knell shoots: it should flash once, at the start, and not again.","color":"gold"}'
+  - wait: 60
+  - beam: kq1r6
+  - wait: 60
+  - ask: "1 1200 Is the second purple line gone?"
+  - cmd: "kill @e[tag=kq1r6]"
+  - wait: 5

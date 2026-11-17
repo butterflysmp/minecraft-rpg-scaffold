@@ -1569,6 +1569,48 @@ after a hit.
 him fell 1.562 blocks between the fire (12.374) and 30 ticks later (10.811), against more than 0.20 predicted; the
 21-tick bound stays INFERRED.
 
+### 5.R.9 STEP R7a AS BUILT (`feat/dragon-shot`, off master `8365e7f6`, 2026-11-17) — THE PHALANX'S SHOT
+
+The gate is `docs/gates/GATE-dragon-shot.md`, its own scenario file `selftest/GATE-dragon-shot.yml`. Its S1-S5 carry
+every jar read this step stands on. **NOT built here:** the blink, invisibility, the one-hit shield, the shield item, any
+resource-pack model, any element on the shot, the Skreel.
+
+| piece | as built | where |
+|---|---|---|
+| **the rule** | `shot: { period_ticks, acquire_range, reacquire_range, speed, homing, life_ticks, max_distance, tolerance, damage, look, sounds }`, each quantity named in `MobShot`'s javadoc and `phalanx.yml`. The Phalanx's: 120 and 240 (Ben), 30, 35, 0.2, 0.1, 35, 1.2, 40 (cfde822's, unchanged by him) | `core.mob.MobShot`, `MobLoader` |
+| **the flight** | pure: `flight = normalize((1 - homing) x flight + homing x normalize(aim - position))`, then `position += speed x flight`; the aim is the target's EYE (cfde822). Endings checked after each move, in order: a block on the path this tick, a hit (inside a hostile combatant's box grown by the tolerance; never a mob), the life, more than `max_distance` from the ORIGIN | `MobShot.step`, `ending`, `victim` |
+| **the clock** | an attempt every 120 ticks, the first 120 after the Phalanx appears; a NoAI Phalanx never fires of its own; a forced attempt resets the count | `MobShot.Clock` |
+| **the carrier** | an invisible, silent, NoAI, gravity-less, non-colliding, never-saved BAT, with a glowing block display riding it; moved only by `teleport` | `paper.health.MobShooter` |
+| **any attack destroys it** | our handles strike first (`BukkitCombatant`: damage, knockback, impulse, status); vanilla damage cancelled at LOWEST and struck (`RpgListeners.onShotDamaged`) | `ShotSink`, `RpgListeners` |
+| **the does-nots** | never seeded (`MobNameplateManager.seed`); never dies (removed); a death we did not make pays nothing and feeds no growth; never targeted; never through a portal | `DragonShotWiringTest` |
+| **no orphan** | its Phalanx's loop's stop ends it; `setPersistent(false)`; an unloaded column, another world or a refused move ends it; an unowned `mob_shot` entity is removed where it appears; `onDisable` ends every shot | `MobShooter`, `RpgPlugin` |
+| **the bow** | `main_hand: bow`, drop chance 0, set in the pre-spawn stamp; every `EntityShootBowEvent` of a mob with a shot is cancelled (`BOW suppressed` line) | `MobSpawner.stampCustom`, `RpgListeners.onShooterBow` |
+| **the log** | `SHOT fired`, `SHOT hit`, `SHOT destroyed … by=`, `SHOT expired … limit=life/range`, `SHOT blocked … block=`, `SHOT ended … reason=`, `SHOT retarget`, `SHOT none`, `SHOT orphan removed`, `BOW suppressed` | `MobShotLines` |
+| **the instrument** | `shot: <tag>` (fire on the next tick, frozen or not), `probe_shot: <tag>` (each live shot's position, age, distance from its origin); a tagged Phalanx's shot is tagged `<tag>_shot` | `SelfTestDrivers`, `SelfTestService.adoptShot` |
+| **the Knell's one flash** | `flash_at: [0]` (Ben, 2026-11-17: "remove it"); the loader and the beam already accepted a single flash, now pinned (`BeamCycleTest.aSingleFlashAtTheLockIsAcceptedAndFlashesNowhereElse`) | `knell.yml` |
+
+**FOR BEN: WHAT THE RECORD SAID, AND WHAT WAS CHOSEN WHERE IT WAS SILENT.** READ = §3.4's record of cfde822.
+
+| # | behaviour | mark | as built |
+|---|---|---|---|
+| X-a | who it fires at | READ ("the nearest non-creative, non-spectator player within 30") | its vanilla target if `MobHostility` names it and its eye is within 30 of the Phalanx's eye; else the nearest such. *Eye to eye*: CHOSEN |
+| X-b | does firing need sight | NOT IN THE RECORD | no; a wall in the way stops the shot (X-g) |
+| X-c | the homing | READ (10% per 2-tick step, toward the target's eye, renormalised) | 10% per TICK: it turns about twice as hard per block as cfde822's; 1 − √0.9 = 0.0513 per tick would match it. The seat read X10 as 10% |
+| X-d | the life | Ben: 12 s | 240 ticks. **Unreachable at the shipped numbers** (the gate's E1): a straight shot passes 35 blocks at tick 176 |
+| X-e | the 35-block limit | READ ("past 35 blocks from its start") | the straight line from its ORIGIN, not the path flown; past 35, not at it |
+| X-f | the hit | READ (the first living entity in a 1.2 half-extent box, mobs included) | a combatant mobs are hostile to (players today), nearest if two; **never a mob** (the seat's ruling 5); the box measured as cfde822's, turned round: the shot's centre inside the body's box grown by 1.2 |
+| X-g | a block | READ ("ends on a solid block") | the beam's rule: the first block with a collision box on this tick's path; fluids and passable blocks do not stop it |
+| X-h | a lost target | READ ("re-acquires the nearest player within 35") | the nearest within 35 of the SHOT, by the same predicate; none, and it flies on straight. *Measured from the shot*: CHOSEN |
+| X-i | its Phalanx dies | READ ("ends … when the Phalanx dies") | ended with it, and also when the Phalanx unloads (CHOSEN) |
+| X-j | the order of the endings in one tick | NOT IN THE RECORD | a block, then a hit, then the life, then the range |
+| X-k | the look | NOT IN THE RECORD (cfde822's was black squid ink) | a 0.4-block amethyst block display, full brightness, a glow outline RGB 200,140,255 (seen through walls); a dust trail RGB 200,140,255 size 1.5 every tick; a pink flash RGB 255,105,180 size 2.0, three particles, every 4 ticks. CHOSEN |
+| X-l | the carrier's box | NOT IN THE RECORD | a bat's own 0.5 x 0.9, unscaled, around the 0.4 block: easier to hit than it looks. CHOSEN |
+| X-m | the sounds | READ ("a wither-ambient sound at launch"; nothing else) | at the fire `entity.wither.ambient` 0.5 / 1.5 (which wither, the volume and the pitch: CHOSEN); destroyed `entity.shulker_bullet.hurt` 1.0 / 1.0 (CHOSEN, for "similar to the Shulker shot") |
+| X-n | the bow | READ (Power V, never fired) | a plain bow: the enchantment would be a glint and nothing else |
+| X-o | a frozen (NoAI) Phalanx | NOT IN THE RECORD | never fires of its own, as the Knell; the instrument's force still works |
+| X-p | a player's HOMING projectile | NOT IN THE RECORD | may turn onto a shot, which is a living non-player body to `ProjectileFlight.nearestMob`. Not prevented |
+| X-q | firing and invisibility | READ ("firing clears invisibility") | the seam for the next step: there is no invisibility yet |
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.
@@ -1971,6 +2013,18 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   (25) after the first, while the first move lands 24 after it: no beam, forced or the Knell's own, can hit while a
   move is pending. The branch stays in `MobTeleporter`, pinned by its unit tests. **It becomes reachable again if the
   delay ever exceeds the telegraph plus one tick.** TP14R4 now reads that the pending move clears when it lands.
+- **F13, 2026-11-17, step R7a: THE PHALANX'S SHOTS ARE MOVED FROM THE PHALANX'S THREAD.** Each shot is stepped inside its
+  Phalanx's own loop (`MobShooter`), which teleports the carrier and reads the target's eye and the blocks on the path.
+  **Correct on Paper, where every entity is on the main thread; on Folia** the shot may fly into a region its Phalanx's
+  thread does not own. Accepted on Paper, like F3 and F9; revisit before any Folia move.
+- **F14, 2026-11-17, step R7a: THE SHOT'S LIFE OF 240 TICKS IS UNREACHABLE AT THE SHIPPED NUMBERS.** At 0.2 blocks a tick
+  a straight shot passes 35 blocks from its origin at tick 176, and the homing curls it only toward a target it then
+  reaches. **Its only exercise is `MobShotTest.theLifeEndsItAtTick240AndNotAt239`.** It becomes reachable if the speed
+  falls below 35 / 240 = 0.146 a tick, or the range rises past 48 (240 x 0.2).
+- **F15, 2026-11-17, step R7a: THE PAPER HALF'S GUARANTEES ARE PINNED ON THE SOURCE, NOT RUN.** That every handle strikes
+  first, the seed refuses a shot, the death handler returns for one, and vanilla damage is cancelled at LOWEST are pinned
+  by `DragonShotWiringTest` (each killed by a mutation), which reads lines, not behaviour. **The gate's SH2-SH5, SH9 and
+  SH12 are their first server reading.**
 
 ## QUESTIONS FOR BEN
 
