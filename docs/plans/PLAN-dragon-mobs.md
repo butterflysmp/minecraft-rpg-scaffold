@@ -607,6 +607,31 @@ TQ1R2 ASK 2 question="Did that wait feel right?" answer="no" ticks=45
 - **His "no" to the wait: `teleport.delay_ticks` 89 is NOT CONFIRMED, awaiting his number.** The seat has asked him
   what he wants to try in its place.
 
+### Ben, 2026-11-17, VERBATIM: the re-timing of the bell (the follow-up, `feat/dragon-knell-3`)
+
+After answering "no" to *"Did that wait feel right?"* (the boot of `58c0f7a1`), Ben:
+
+> "Before I send this to CC, an elaboration on the no:
+> The Bell and warning shot are good, after that nothing is timed properly. The resonance doesn't become audible for
+> about a second after the sound starts and it ceases being audible for about a second at the end. I think we do a few
+> things here:
+> 1. Start playing the resonance at the same time as the bell
+> 2. change the warning shot time from 1.3s to 1s
+> 3. change the teleport time to one second before the resonance sound ends"
+
+**THE SEAT'S READING, as put to him:** at the warning's start the bell strike AND the resonance both begin; the shot
+comes 20 ticks later; the teleport comes 44 ticks after a hit.
+
+**THE 44 IS THE SEAT'S ARITHMETIC, NOT HIS NUMBER.** The client draws the resonance at pitch 1.0, 0.9 or 0.85, so it
+plays for 3.780 s, 4.200 s or 4.447 s (the measurement of 2026-11-17). The seat took the MIDDLE variant: 4.200 s from
+the sound's start, less his one second, is 3.200 s = **64 ticks after the telegraph's start**; less the 20-tick
+telegraph, **44 ticks after the fire**. By variant the move lands **0.58 s, 1.00 s or 1.25 s** before the sound ends;
+the server cannot know which variant a client drew.
+
+**CHOSEN BY THE SEAT, UNRULED:** the amethyst chime still plays at the fire; `flash_at` becomes [0, 15].
+
+**SUPERSEDES** his 1.3-second warning (26 ticks) and the seat's 89-tick delay. Damage stays 65 (confirmed by play).
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
