@@ -672,7 +672,8 @@ The old source was not re-fetched for this list; each NOT IN THE RECORD item cou
 | I8 | the telegraph fixes the line | **READ** ("locks origin (its eye) and endpoint (the target at 0.6 × its height) once") | the origin is the Knell's eye, the direction is the eye to the target's feet + `aim_height` (0.6, a FRACTION of its height), both fixed at the telegraph's first tick. **It does not track** |
 | I9 | the telegraph's length | **READ** (12 t) | `telegraph_ticks` (12): the fire is exactly 12 ticks after the telegraph's first tick |
 | I10 | the telegraph's sight and sound | **READ** (a purple dust line RGB 95,35,165, size 0.8, at tick 0 and tick 9; a bell resonate, volume 1.4, pitch 0.7, `PLAN-legacy-port.md` §2.5) | as read, drawn along the locked line to its full range. The two flash ticks are content (`flash_at: [0, 9]`), each inside the telegraph, so a shorter telegraph cannot silently lose a flash. *Particle spacing (one every 0.5 blocks) and the sound's category (hostile)*: NOT IN THE RECORD, chosen |
-| I11 | the Knell is rooted | **READ** (`stopPathfinding()` every tick for 12 t) | `stopPathfinding()` every telegraph tick, **AND a MOVEMENT_SPEED × 0 modifier for the telegraph, which the record does not have.** Why: a melee goal re-paths on its own ticks (INFERRED from vanilla's `MeleeAttackGoal`, not read), so stopping the path alone may let the Knell drift. The modifier is TRANSIENT (`addTransientModifier`, READ in the pinned API), so a chunk unload mid-telegraph cannot save it onto the mob. **The seat should rule whether the extra modifier stands** |
+| I11 | the Knell is rooted | **READ** (`stopPathfinding()` every tick for 12 t) | `stopPathfinding()` every telegraph tick, **AND a MOVEMENT_SPEED × 0 modifier for the telegraph, which the record does not have.** Why: a melee goal re-paths on its own ticks (INFERRED from vanilla's `MeleeAttackGoal`, not read), so stopping the path alone may let the Knell drift; and at the lock, ONCE, its horizontal velocity is zeroed, so a
+walking Knell does not slide on its momentum (a push during the telegraph is not undone, I18). The modifier is TRANSIENT (`addTransientModifier`, READ in the pinned API), so a chunk unload mid-telegraph cannot save it onto the mob. **The seat should rule whether the extra modifier stands** |
 | I12 | what the fire tests | **READ** ("Hits only the locked player, and only if that player's box grown by 1.0 still meets the segment") | the LOCKED target only, at the fire, with its box at that moment grown by `tolerance` (1.0) on every side, against the segment. Every other creature the grown-box test catches is LISTED in the log as spared and never hurt |
 | I13 | do blocks stop it | **READ** ("block-clipped") | the segment runs from the eye along the locked direction to the first block with a collision box, or to `range`. *Fluids and passable blocks (grass, flowers) do not stop it*: NOT IN THE RECORD, chosen |
 | I14 | does the segment end at the aim point or run on | NOT IN THE RECORD | it runs on to the range (or the first block): a target who backs away along the line is still in it. The Knell Beam weapon's ray is the same length (`PLAN-legacy-port.md` §2.5) |
@@ -1160,6 +1161,32 @@ difficulty (M24 undoes difficulty on vanilla events, and this is not one).
 
 **A CREATIVE OR SPECTATOR PLAYER inside a blast another player triggered is not hurt**: the predicate excludes him and
 the `BLAST` line names him under `spared`. Unit-only (`MobBlastTest`): the selftest refuses to run with two players.
+
+### 5.R.5 STEP R5 AS BUILT (`feat/dragon-beam`, off master `8671ab16`, 2026-11-17) — THE KNELL'S BEAM
+
+The gate is `docs/gates/GATE-dragon-beam.md`, its own scenario file `selftest/GATE-dragon-beam.yml`. Every behaviour
+and its mark is §3.R.1.a (I1-I24).
+
+| piece | as built | where |
+|---|---|---|
+| **the rule** | `beam: { cycle_ticks: { min, max }, telegraph_ticks, flash_at, range, aim_height, tolerance, damage }` on the mob file; each number named in `knell.yml` and `MobBeam`'s javadoc. The Knell's: 100, 200, 12, [0, 9], 40, 0.6, 1.0, 35 | `core.mob.MobBeam`, `MobLoader` |
+| **the hit decision** | pure, in core: the locked line `BeamLine.aimed(eye, aim, range)`, cut at the first block (`clip`); the target is HIT iff it is a live candidate in the Knell's world, `MobHostility.hostileTo` names it, and `line.meets(box, tolerance)`: the segment meets its box grown by the tolerance on every side (a slab test, inclusive). Every other creature the grown box meets is listed `spared` and never hurt. The logged `gap` is the smallest growth that meets, so **hit ⇔ gap ≤ tolerance**; it is the largest-AXIS distance at the closest point, not a perpendicular (Euclidean) one | `MobBeam.resolve`, `BeamLine` |
+| **the clock** | wait (drawn, injected `BeamCycle.Draw`), attempt, telegraph, fire; a fresh wait at the fire and after an empty attempt | `core.mob.BeamCycle` |
+| **the loop** | one period-1 `RepeatingTask` per beam mob on its own entity scheduler, started at `EntityAddToWorldEvent` (and the startup sweep), stopped by its `isActive` check the tick the mob is dead, removed or unloaded, and cancelled at `EntityRemoveFromWorldEvent`; its `onStop` releases the root and forgets it | `paper.health.MobBeamer`, `RpgListeners`, `RpgPlugin` |
+| **the damage** | `MobBeam.price` (= `MobScaling.attackDamage(damage, true, hostile, gs)`) through `applyDamage(amount, knellId)`: defence applies; no element, crit, knockback or shield block | `MobBeamer.fire` |
+| **E5, the report** | `MobBeam.report(shot, …)`: a `BeamHit(mob, mobId, target, tick, from, to)` on a hit, empty on a miss; `MobBeamer.addListener` is told of each. Nothing listens in R5; R6's teleport will | `core.mob.BeamHit`, `MobBeamer.Listener` |
+| **the log** | `BEAM telegraph …`, `BEAM fire …` (each tested creature with its gap and outcome, and the damage dealt), `BEAM report …`, `BEAM cancelled …`, `BEAM none …` (a forced attempt that found no one) | `MobBeamLines` |
+| **the instrument** | `beam: <tag>` (force an attempt now, on the mob's thread; it only marks the attempt due, so the fire's timing stays the loop's) and `probe_at: <tag>` (feet to three places), both reaching 48 blocks | `SelfTestBeam`, `SelfTestDrivers` |
+
+**WHAT E5 IS FOR IN `PLAN-legacy-port.md`, AND WHAT WAS BUILT IN COMMON.** There, E5 is the *aim-locked wind-up with a
+telegraph visual*, for the Knell Beam WEAPON (§9.2 step 5), which PIERCES and spends mana, and built "castable by a
+mob". The mob's beam and the weapon share: the aim locked at the start (an origin and a direction), a telegraph of
+N ticks, then a segment from the origin, clipped by blocks, tested against bodies grown by a tolerance. **That shared
+part is `BeamLine` (and `BeamBox`), caster-agnostic and in core.** Not shared, so not built for the weapon: the cycle
+(MB3, a mob's), the single-target rule (the weapon pierces: it would take every `meets` instead of the locked one), the
+report (the teleport's, though a weapon could raise it), mana, and the weapon's ray shape. The brief's "E5" for the
+report is this plan's §4.2 row *MB3 + E5 … plus it reports which combatant it hit*; the legacy plan's E5 is the
+wind-up alone.
 
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 

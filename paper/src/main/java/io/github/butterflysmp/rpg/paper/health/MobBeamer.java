@@ -333,6 +333,10 @@ public final class MobBeamer {
 
     private void root(Mob mob) {
         mob.getPathfinder().stopPathfinding();
+        // Once, at the lock: the walk's own momentum would otherwise carry it on for a few ticks after its speed is
+        // zero. Vertical motion is kept (gravity); a push during the telegraph is not undone (I18).
+        Vector v = mob.getVelocity();
+        mob.setVelocity(new Vector(0, v.getY(), 0));
         AttributeInstance speed = mob.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speed != null && speed.getModifier(adapters.keys().beamRoot) == null) {
             // x0: MULTIPLY_SCALAR_1 adds (factor - 1) of the total, so -1 is "times zero".

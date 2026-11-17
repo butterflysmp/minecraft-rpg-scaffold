@@ -131,11 +131,27 @@ final class SelfTestDrivers {
                 run.log(SelfTestBlast.motionLine(a, e.getUniqueId(), v.getX(), v.getY(), v.getZ()));
             });
             case BEAM -> beam(p, a);
-            case PROBE_AT -> tagged(p, a, "at", e -> {
-                org.bukkit.Location l = e.getLocation();
-                run.log(SelfTestBeam.atLine(a, e.getUniqueId(), l.getX(), l.getY(), l.getZ()));
-            });
+            case PROBE_AT -> probeAt(p, a);
         };
+    }
+
+    /** PROBE_AT (dragon-mobs step R5): each tagged living mob within {@link SelfTestBeam#REACH}, nearest first. */
+    private Optional<String> probeAt(Player p, String tag) {
+        double r = SelfTestBeam.REACH;
+        List<LivingEntity> found = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(r, r, r)) {
+            if (e instanceof LivingEntity l && e.getScoreboardTags().contains(tag)) found.add(l);
+        }
+        if (found.isEmpty()) {
+            run.log(SelfTestBeam.noneLine(tag, "AT", (int) r));
+            return Optional.empty();
+        }
+        found.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));
+        for (LivingEntity e : found) {
+            org.bukkit.Location l = e.getLocation();
+            run.log(SelfTestBeam.atLine(tag, e.getUniqueId(), l.getX(), l.getY(), l.getZ()));
+        }
+        return Optional.empty();
     }
 
     /**
@@ -174,7 +190,7 @@ final class SelfTestDrivers {
             if (e instanceof LivingEntity l && e.getScoreboardTags().contains(tag)) found.add(l);
         }
         if (found.isEmpty()) {
-            run.log((what.equals("thaw") ? "DRIVE thaw" : what.equals("at") ? "AT" : "MOTION") + " tag=" + tag + " none within " + (int) REACH
+            run.log((what.equals("thaw") ? "DRIVE thaw" : "MOTION") + " tag=" + tag + " none within " + (int) REACH
                     + " blocks");
             return Optional.empty();
         }

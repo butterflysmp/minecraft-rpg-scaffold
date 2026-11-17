@@ -35,10 +35,10 @@ class SelfTestScenariosTest {
         assertEquals(List.of(), loaded.refusals());
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
-                "dragon-split", "dragon-growth", "dragon-blast"),
+                "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam"),
                 List.copyOf(loaded.gates().keySet()),
-                "the fifteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
-                        + " dragon-split and dragon-growth (2026-11-15), then dragon-blast LAST (step R3, 2026-11-15)");
+                "the sixteen gates, in boot order; nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
+                        + " dragon-split and dragon-growth (2026-11-15), then dragon-blast (step R3, 2026-11-15), then dragon-beam LAST (step R5, 2026-11-17)");
     }
 
     /** The seat's CORE rows, one scenario each (2026-10-05). R0d is a boot log line and has none. */
@@ -70,6 +70,9 @@ class SelfTestScenariosTest {
         // named for the GATE-dragon-blast.md row it supersedes, with the next suffix. BQ1R2 is Ben's three questions.
         expected.put("dragon-blast", List.of("BL1R2", "BL2R2", "BL3R2", "BL4R2", "BL5R2", "BL6R2", "BL7R2", "BL8R2",
                 "BL9R2", "DS1R4", "DS2R4", "DS5R4", "DS6R4", "DG6R4", "DG9R4", "BQ1R2"));
+        // Step R5 (GATE-dragon-beam.md, 2026-11-17): eleven AUTO rows and Ben's three questions, in one.
+        expected.put("dragon-beam", List.of("KB1", "KB2", "KB3", "KB4", "KB5", "KB6", "KB7", "KB8", "KB9", "KB10",
+                "KB11", "KQ1"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -97,7 +100,9 @@ class SelfTestScenariosTest {
         // Then the follow-up of 2026-11-17 (GATE-dragon-blast-2.md), which RENAMES the blast gate's sixteen rows and adds
         // none, RECOUNTED the same way: 15 gates, 105 keys, 15 setups, so 90. At master ca0ae38a the same commands
         // print 15, 105, 15: 90, the same.
-        assertEquals(90, loaded.rows());
+        // Then GATE-dragon-beam.md (step R5, 2026-11-17), RECOUNTED the same way: 16 gates, 118 keys, 16 setups, so 102.
+        // At master 8671ab16 the same commands print 15, 105, 15: 90, this line's old value.
+        assertEquals(102, loaded.rows());
     }
 
     /**
@@ -174,10 +179,41 @@ class SelfTestScenariosTest {
         return Set.of("dragon-bodies", "dragon-split", "dragon-growth").contains(gate) ? "dragon-fix" : gate;
     }
 
+    /**
+     * NO ROW OUTSIDE GATE-dragon-beam.yml LEAVES A KNELL WITH ITS AI ON (the R5 audit, GATE-dragon-beam.md, THE ROWS
+     * ALREADY MERGED). Since step R5 a Knell with AI begins a beam of its own 100 to 200 ticks after it appears; a
+     * frozen (NoAI) one never does (I23). So an older row's Knell must be spawned frozen, or by {@code rpg spawn knell}
+     * followed at once by a {@code data merge} that sets {@code NoAI:1b}, or be a spawn the command refuses (DB11R2's
+     * {@code stage 2}). The control: the beam gate's own two live Knells (KB2, KB11) ARE found.
+     */
+    @Test
+    void noScenarioOutsideTheBeamGateLeavesALiveKnell() {
+        List<String> live = new ArrayList<>();
+        List<String> beamGate = new ArrayList<>();
+        for (var gate : shipped().gates().entrySet()) {
+            for (Scenario s : gate.getValue()) {
+                List<Scenario.Step> steps = s.steps();
+                for (int i = 0; i < steps.size(); i++) {
+                    Scenario.Step st = steps.get(i);
+                    String a = st.arg().trim();
+                    boolean liveSpawn = st.verb() == Scenario.Verb.SPAWN && a.matches("\\S+ live knell\\b.*");
+                    boolean bareCmd = st.verb() == Scenario.Verb.CMD && a.matches("rpg spawn knell( \\d+)?");
+                    boolean frozenAtOnce = i + 1 < steps.size() && steps.get(i + 1).verb() == Scenario.Verb.CMD
+                            && steps.get(i + 1).arg().contains("NoAI:1b");
+                    if (!(liveSpawn || (bareCmd && !frozenAtOnce))) continue;
+                    String where = gate.getKey() + "#" + s.row() + " " + st.verb() + " " + a;
+                    if (gate.getKey().equals("dragon-beam")) beamGate.add(where); else live.add(where);
+                }
+            }
+        }
+        assertEquals(List.of(), live, "a live Knell outside the beam gate would beam the player at a time no row predicts");
+        assertEquals(2, beamGate.size(), "the control: the beam gate's KB2 and KB11 are seen: " + beamGate);
+    }
+
     /** The dragon gates declare the difficulty their rows need, first thing in their setup (GATE-dragon-fix.md, C5). */
     @Test
     void theDragonGatesDeclareNormalFirstInTheirSetup() {
-        for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth", "dragon-blast")) {
+        for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam")) {
             Scenario setup = shipped().gates().get(gate).getFirst();
             assertEquals(Scenario.SETUP, setup.row(), gate);
             assertEquals(new Scenario.Step(Scenario.Verb.DIFFICULTY, "normal"), setup.steps().getFirst(), gate);
