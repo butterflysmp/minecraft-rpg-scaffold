@@ -7,6 +7,11 @@ gate, and Ben says ready.**
 
 **2026-11-17: approved to merge by the review seat after the boot of 0b4037ec.**
 
+> **DATED NOTE, 2026-11-17, the shot in the middle (`GATE-dragon-knell-5.md`). NOTHING BELOW IS EDITED.** Every row of both
+> Knell scenario files is now that gate's, renamed with the next suffix: **KB1R4-KB9R4, WA1R2 and KQ1R4; KB10R5, TP2R4-TP13R4,
+> TP14R3, KB11R5 and TQ1R4 are SUPERSEDED** by KB1R5-KB9R5, WA1R3 (re-timed) and KQ1R5; KB10R6, TP2R5-TP13R5, TP14R4
+> (re-purposed: its pending case is unreachable at 24 and 24), KB11R6 and TQ1R5. RE1 is re-predicted there unchanged.
+
 > **READ, 2026-11-17: booted at `0b4037ec` on the seat's approval and Ben's "ready".** Server log `07:45:15` to the
 > clean `/stop` at `07:49:36`. Carried state: no JVM; backup `rpg-run-backups/2026-11-17-pre-dragon-knell-4-2`
 > (`run/plugins/Rpg` 129 files, 386884 bytes; `run/world` 193 files, 204963703 bytes; `diff -rq lines: 0` each);

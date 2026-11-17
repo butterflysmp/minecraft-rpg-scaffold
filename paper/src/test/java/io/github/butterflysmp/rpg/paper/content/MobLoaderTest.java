@@ -513,20 +513,19 @@ class MobLoaderTest {
     }
 
     /**
-     * THE KNELL WE SHIP (KNELL 4, 2026-11-17): 65 damage, a 20-tick telegraph flashing at ticks 0 and 15, and TWO
-     * BELLS: Ben's "Add a second, higher pitched bell for the actual shot. Maybe even lower the pitch of the initial
-     * bell". At the telegraph the bell at pitch 0.8 (the seat's starting value, was 1.0) then the resonance; at the
-     * fire the bell at pitch 1.5 (the seat's starting value), at the first bell's volume, then the chime. The cycle,
-     * range, aim and tolerance are unchanged.
+     * THE KNELL WE SHIP (KNELL 5, 2026-11-17): 65 damage; a 24-tick telegraph flashing at ticks 0 and 18, the shot in
+     * the middle of the 48 ticks from the lock to the move (Ben's "I want the shot to be in the middle"); and two bells:
+     * at the telegraph the bell back at pitch 1.0 (he answered "no" to 0.8) then the resonance; at the fire the bell at
+     * pitch 1.5 (confirmed by play), then the chime. The cycle, range, aim and tolerance are unchanged.
      */
     @Test
-    void theBundledKnellBeamsWithTwoBells() throws IOException {
+    void theBundledKnellBeamsInTheMiddle() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
-        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 20, List.of(0, 15), 40.0, 0.6, 1.0, 65.0,
-                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 0.8),
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 24, List.of(0, 18), 40.0, 0.6, 1.0, 65.0,
+                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.0),
                         new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.resonate", 1.4, 1.0)),
                 List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.5),
                         new io.github.butterflysmp.rpg.core.mob.BeamSound("block.amethyst_block.chime", 1.0, 1.0))),
@@ -535,18 +534,18 @@ class MobLoaderTest {
     }
 
     /**
-     * THE TELEPORT'S 28 AGAINST THE CYCLE'S 100 (KNELL 4, Ben's "let's try 1.4 seconds after the shot"): the shipped
-     * delay leaves 72 ticks before the earliest next attempt, so a move never falls inside a telegraph; the load-time
+     * THE TELEPORT'S 24 AGAINST THE CYCLE'S 100 (KNELL 5, the shot in the middle): the shipped
+     * delay leaves 76 ticks before the earliest next attempt, so a move never falls inside a telegraph; the load-time
      * check refuses a delay that is not shorter.
      */
     @Test
-    void theBundledKnellsDelayIsSeventyTwoTicksShorterThanItsCycle() throws IOException {
+    void theBundledKnellsDelayIsSeventySixTicksShorterThanItsCycle() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
         var knell = load().find("knell").orElseThrow();
-        assertEquals(72, knell.beam().cycleMinTicks() - knell.teleport().delayTicks());
+        assertEquals(76, knell.beam().cycleMinTicks() - knell.teleport().delayTicks());
     }
 
     // ---- dragon-mobs step R6: the teleport after the beam lands ----
@@ -604,7 +603,7 @@ class MobLoaderTest {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
-        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(28, 30, 70, 5, 3, true),
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(24, 30, 70, 5, 3, true),
                 load().find("knell").orElseThrow().teleport());
         assertTrue(warnings.isEmpty(), warningText());
     }

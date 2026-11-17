@@ -51,11 +51,13 @@ beam:
   # to its next attempt: a whole number drawn evenly from min to max, both included. 20 ticks = 1 second.
   cycle_ticks: { min: 100, max: 200 }
   # TICKS from the lock (the line is fixed: the Knell's eye through the target) to the fire. The Knell is rooted for
-  # all of it. Ben, 2026-11-17 (KNELL 3): "change the warning shot time from 1.3s to 1s" = 20 ticks (was 26).
-  telegraph_ticks: 20
-  # The telegraph TICKS (0 = the lock) on which the purple warning line is drawn. The seat's 0 and 15, NOT BEN'S: the
+  # all of it. Ben, 2026-11-17 (KNELL 5): "I want the shot to be in the middle" of the 48 ticks from the lock to the
+  # move, his confirmed timing: 24 (was 20). A PAIR with teleport.delay_ticks: the two must sum to 48 until he rules
+  # otherwise. Neither is derived from a sound.
+  telegraph_ticks: 24
+  # The telegraph TICKS (0 = the lock) on which the purple warning line is drawn. The seat's 0 and 18, NOT BEN'S: the
   # second flash three quarters through, as before. Each must be inside the telegraph.
-  flash_at: [0, 15]
+  flash_at: [0, 18]
   # BLOCKS from the Knell's EYE. A target is in range when its aim point is at most this far away; the fired beam
   # runs this far along the locked line unless a block stops it.
   range: 40
@@ -75,16 +77,15 @@ beam:
   # sent keeps ringing whatever then happens to the beam or the Knell.
   sounds:
     # Played at the telegraph's tick 0, the lock: the bell STRIKE and the RESONANCE (3.780 s, 4.200 s or 4.447 s as the
-    # client draws it), together; the resonance rings whether or not the beam will hit. BEN'S (2026-11-17): the first
-    # bell is LOWER ("Maybe even lower the pitch of the initial bell"); the 0.8 is THE SEAT'S starting value (was 1.0).
-    # A lower pitch LENGTHENS a sound and a higher one shortens it: the bell's file is 2.492 s, so 2.492 / 0.8 = 3.115 s
-    # here, still assuming playback speed equals pitch (not read). Volumes kept (1.0 and 1.4).
+    # client draws it), together; the resonance rings whether or not the beam will hit. The bell is back at pitch 1.0:
+    # Ben answered "no" to the seat's 0.8 ("Is the lower first bell better than before?", the boot of 0b4037ec).
+    # Volumes kept (1.0 and 1.4).
     telegraph:
-      - { key: block.bell.use, volume: 1.0, pitch: 0.8 }
+      - { key: block.bell.use, volume: 1.0, pitch: 1.0 }
       - { key: block.bell.resonate, volume: 1.4, pitch: 1.0 }
     # Played at the fire: a SECOND, HIGHER bell, then the amethyst chime. BEN'S: that there is one ("Add a second,
-    # higher pitched bell for the actual shot"); the 1.5 is THE SEAT'S starting value (2.492 / 1.5 = 1.661 s, the same
-    # assumption), at the first bell's volume. The chime is the seat's, as before.
+    # higher pitched bell for the actual shot"); the 1.5 is THE SEAT'S starting value, CONFIRMED BY PLAY
+    # (2.492 / 1.5 = 1.661 s, the same assumption), at the first bell's volume. The chime is the seat's, as before.
     fire:
       - { key: block.bell.use, volume: 1.0, pitch: 1.5 }
       - { key: block.amethyst_block.chime, volume: 1.0, pitch: 1.0 }
@@ -94,12 +95,13 @@ beam:
 # warning". A miss, an arrow, melee or any other damage moves nothing. It lands on the circle around its TARGET's feet,
 # at the horizontal distance it stood, turned 30 to 70 degrees to a random side (PLAN-dragon-mobs.md section 5.R.6).
 teleport:
-  # TICKS from the beam's FIRE (the hit) to the move. BEN'S 28, 2026-11-17 (KNELL 4): "let's try 1.4 seconds after the
-  # shot" = 28 ticks, after he heard the seat's 44 land about a second after the ringing stopped. Counted from the
-  # FIRE, and NOT derived from any sound's length: it is his number, tuned by ear. It must be shorter than
-  # cycle_ticks.min (100; 72 to spare), so a move never falls inside the next telegraph; a longer one is refused at
+  # TICKS from the beam's FIRE (the hit) to the move. Ben, 2026-11-17 (KNELL 5): "I want the shot to be in the
+  # middle": the lock and the move stay 48 ticks apart, his confirmed timing ("the timing of the warning and teleport
+  # are good"), and the fire is at their middle, so 24 (was 28). A PAIR with beam.telegraph_ticks: the two must sum
+  # to 48 until he rules otherwise. Counted from the FIRE, and NOT derived from any sound. It must be shorter than
+  # cycle_ticks.min (100; 76 to spare), so a move never falls inside the next telegraph; a longer one is refused at
   # load.
-  delay_ticks: 28
+  delay_ticks: 24
   # DEGREES around the target, measured at the target's feet from the Knell's own bearing, both included. Ben's 30
   # and 70, starting numbers.
   arc_degrees: { min: 30, max: 70 }
