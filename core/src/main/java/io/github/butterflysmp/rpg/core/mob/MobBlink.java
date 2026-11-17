@@ -26,12 +26,24 @@ import java.util.random.RandomGenerator;
  *       through the Knell's check instead, so a blink never lands on a roof. NOT IN THE RECORD: 3, the Knell's.</li>
  *   <li>{@code sounds}, {@code particle}, {@code particleCount}: played and drawn at both ends of a blink (cfde822:
  *       "squid-ink puffs at both ends, an enderman-teleport sound"; the counts NOT IN THE RECORD).</li>
+ *   <li>{@code cooldownTicks} (step R8): TICKS after a blink that LANDS before the Phalanx may decide another. Ben,
+ *       2026-11-17: "needs a larger cooldown. Say 12 seconds" (240). A decision that lands nowhere does not start it
+ *       (the seat's reading, put to Ben, not objected to). 0 is no cooldown; a negative value is refused by name.</li>
  * </ul>
  */
 public record MobBlink(double triggerRange, double near, double far, int attempts, int levelTolerance,
-                       List<BeamSound> sounds, String particle, int particleCount) {
+                       List<BeamSound> sounds, String particle, int particleCount, int cooldownTicks) {
+
+    /** Step R7b's eight-number form: no cooldown. Kept so its call sites read unchanged. */
+    public MobBlink(double triggerRange, double near, double far, int attempts, int levelTolerance,
+                    List<BeamSound> sounds, String particle, int particleCount) {
+        this(triggerRange, near, far, attempts, levelTolerance, sounds, particle, particleCount, 0);
+    }
 
     public MobBlink {
+        if (cooldownTicks < 0) {
+            throw new IllegalArgumentException("blink.cooldown_ticks must be 0 or more ticks, was " + cooldownTicks);
+        }
         if (!(triggerRange > 0 && Double.isFinite(triggerRange))) {
             throw new IllegalArgumentException("blink.trigger_range must be above 0 blocks, was " + triggerRange);
         }
@@ -93,10 +105,19 @@ public record MobBlink(double triggerRange, double near, double far, int attempt
      * asked: cfde822's blink had none). The first OK wins and nothing after it is asked; none OK, no landing.
      */
     public Decision decide(Vec3 mobFeet, List<Draw> draws, BeamTeleport.Footing footing) {
+        return decide(mobFeet, mobFeet.y(), draws, footing);
+    }
+
+    /**
+     * THE DECISION, its height search anchored at {@code anchorY} rather than at the Phalanx's own feet (step R8, R3).
+     * Each column is the feet moved {@code distance} along {@code angle} horizontally, at {@code anchorY}; the Knell's
+     * check then tries whole blocks above and below THAT. Paper passes {@link #anchor}.
+     */
+    public Decision decide(Vec3 mobFeet, double anchorY, List<Draw> draws, BeamTeleport.Footing footing) {
         List<Verdict> tried = new ArrayList<>();
         for (Draw d : draws) {
             double a = Math.toRadians(d.angleDegrees());
-            Vec3 column = new Vec3(mobFeet.x() + Math.cos(a) * d.distance(), mobFeet.y(),
+            Vec3 column = new Vec3(mobFeet.x() + Math.cos(a) * d.distance(), anchorY,
                     mobFeet.z() + Math.sin(a) * d.distance());
             BeamTeleport.Foothold f = BeamTeleport.foot(column, levelTolerance, false, footing);
             Verdict v = new Verdict(d, column, f.outcome(), f.landing(), f.blocked(), f.ungrounded());
@@ -104,5 +125,57 @@ public record MobBlink(double triggerRange, double near, double far, int attempt
             if (f.outcome() == BeamTeleport.Outcome.OK) return new Decision(List.copyOf(tried), f.landing());
         }
         return new Decision(List.copyOf(tried), Optional.empty());
+    }
+
+    /**
+     * R3 (step R8): THE HEIGHT A BLINK'S SEARCH IS ANCHORED AT. The Knell's check tries WHOLE blocks above and below the
+     * column's y, and a floor's top is a whole number, so a search anchored at a FRACTIONAL height (a Phalanx mid-jump,
+     * 63.305 in BQ1) never stands a body on a floor: every height is 0.305 into a block (it does not fit) or 0.305 above
+     * one (no ground). So: on the ground, its own feet; off it, the top of the first ground beneath it, which paper finds
+     * (a ray straight down, at most {@code levelTolerance} blocks); none within reach, its own feet as before.
+     *
+     * <p>Why the ground beneath IT and not the triggering combatant's feet (the Knell's teleport searches from its
+     * target's): a forced blink has no trigger; a combatant mid-jump has a fractional height too, the same defect moved;
+     * and the blink's ring of 6 to 16 blocks is measured from the Phalanx.
+     */
+    public static double anchor(Vec3 feet, boolean onGround, java.util.OptionalDouble groundBelow) {
+        if (onGround) return feet.y();
+        return groundBelow.orElse(feet.y());
+    }
+
+    /** This blink's cooldown, a fresh counter for one live Phalanx (its loop holds it; it dies with the loop). */
+    public Cooldown cooldown() {
+        return new Cooldown(cooldownTicks);
+    }
+
+    /**
+     * THE COOLDOWN ON ONE LIVE PHALANX (step R8). {@link #landed} starts it at {@code cooldownTicks}; each loop tick
+     * {@link #tick} counts one down BEFORE the blink is considered. A blink that lands on loop tick L is followed by
+     * {@code cooldownTicks - 1} ticks on which it is running, and the earliest next decision is on tick
+     * L + {@code cooldownTicks}. Nothing else starts it: a decision that lands nowhere leaves it as it was.
+     */
+    public static final class Cooldown {
+        private final int length;
+        private int remaining;
+
+        Cooldown(int length) {
+            this.length = length;
+        }
+
+        public void tick() {
+            if (remaining > 0) remaining--;
+        }
+
+        public void landed() {
+            remaining = length;
+        }
+
+        public boolean running() {
+            return remaining > 0;
+        }
+
+        public int remaining() {
+            return remaining;
+        }
     }
 }
