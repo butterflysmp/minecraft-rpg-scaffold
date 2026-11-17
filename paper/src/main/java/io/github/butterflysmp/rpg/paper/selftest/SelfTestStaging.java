@@ -116,6 +116,8 @@ final class SelfTestStaging {
                     : java.util.Optional.of("ask takes '<n> <timeout ticks> <question>', got '" + arg + "'");
             case DIFFICULTY -> difficulty(arg).isPresent() ? java.util.Optional.empty()
                     : java.util.Optional.of("difficulty takes peaceful, easy, normal or hard, got '" + arg + "'");
+            case TELEPORT_DRAW -> SelfTestBeam.parseDraw(arg).isPresent() ? java.util.Optional.empty()
+                    : java.util.Optional.of("teleport_draw takes '<tag> <right|left> <degrees>', got '" + arg + "'");
             case AWAIT_FUSE -> SelfTestBlast.parseAwait(arg).isPresent() ? java.util.Optional.empty()
                     : java.util.Optional.of("await_fuse takes '<tag> <min fuse> <timeout ticks>', got '" + arg + "'");
             case DETONATE, IGNITE, PROBE_FUSE, THAW, PROBE_MOTION, BEAM, PROBE_AT -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()

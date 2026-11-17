@@ -481,6 +481,66 @@ class MobLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
+    // ---- dragon-mobs step R6: the teleport after the beam lands ----
+
+    private static final String TELEPORT_OK = "teleport:\n  delay_ticks: 17\n  arc_degrees: { min: 25, max: 65 }\n"
+            + "  spots_per_side: 4\n  level_tolerance: 2\n  require_sight: false\n";
+
+    /** Every number ARRIVES, each a value no other key shares, and a file without the block has none. */
+    @Test
+    void theTeleportBlockArrives() throws IOException {
+        write("knell.yml", "base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK + TELEPORT_OK);
+        write("beamonly.yml", "base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK);
+        MobRegistry mobs = load();
+        assertTrue(warnings.isEmpty(), warningText());
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(17, 25, 65, 4, 2, false),
+                mobs.find("knell").orElseThrow().teleport());
+        assertNull(mobs.find("beamonly").orElseThrow().teleport());
+    }
+
+    /**
+     * Each missing key is a named, skipped file; so is a teleport with no beam; and a delay not shorter than the
+     * beam's cycle minimum (33 in BEAM_OK) is refused with the file and both numbers named.
+     */
+    @Test
+    void aMalformedTeleportIsRefused() throws IOException {
+        for (String key : List.of("delay_ticks", "spots_per_side", "level_tolerance", "require_sight")) {
+            String yaml = TELEPORT_OK.replaceAll("(?m)^  " + key + ":.*\\n", "");
+            assertTrue(!yaml.equals(TELEPORT_OK), key);
+            write("no_" + key + ".yml", "base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK + yaml);
+        }
+        write("no_min.yml", "base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK
+                + TELEPORT_OK.replace("{ min: 25, max: 65 }", "{ max: 65 }"));
+        write("no_max.yml", "base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK
+                + TELEPORT_OK.replace("{ min: 25, max: 65 }", "{ min: 25 }"));
+        write("nobeam.yml", "base_entity: wither_skeleton\nmax_health: 360\n" + TELEPORT_OK);
+        write("slowmove.yml", "base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK
+                + TELEPORT_OK.replace("delay_ticks: 17", "delay_ticks: 33"));
+        MobRegistry mobs = load();
+        assertEquals(0, mobs.size(), warningText());
+        for (String f : List.of("no_delay_ticks.yml", "no_spots_per_side.yml", "no_level_tolerance.yml",
+                "no_require_sight.yml", "no_min.yml", "no_max.yml", "nobeam.yml", "slowmove.yml")) {
+            assertTrue(warningText().contains(f), f + ": " + warningText());
+        }
+        assertTrue(warningText().contains("teleport.delay_ticks (33) must be shorter than beam.cycle_ticks.min (33)"),
+                warningText());
+    }
+
+    /**
+     * THE KNELL WE SHIP: 12 ticks after the hit (Ben's "the same time between the warning shot and the actual beam",
+     * B), 30 to 70 degrees (Ben's, A), and the seat's provisional 5 a side (T-a), 3 blocks (T-b) and sight (T-c).
+     */
+    @Test
+    void theBundledKnellTeleportsAsRuledAndProposed() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
+            assertNotNull(in);
+            Files.write(dir.resolve("knell.yml"), in.readAllBytes());
+        }
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(12, 30, 70, 5, 3, true),
+                load().find("knell").orElseThrow().teleport());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
     /** Every bundled mob file loads with no warning, through the loader production runs. */
     @Test
     void everyBundledMobLoads() throws IOException {

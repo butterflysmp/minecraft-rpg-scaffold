@@ -37,6 +37,8 @@ public final class SelfTestService {
     private final MobElementResolver mobElements;
     /** The Knell's beam, for the BEAM step (dragon-mobs step R5). */
     private final io.github.butterflysmp.rpg.paper.health.MobBeamer beams;
+    /** The Knell's teleport, for the TELEPORT_DRAW step (dragon-mobs step R6). */
+    private final io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports;
     private final Spawner spawner;
     private SelfTestRun active;
 
@@ -53,7 +55,9 @@ public final class SelfTestService {
     public SelfTestService(AdapterContext adapters, ProfileService profiles, ResourcePool resources,
                            MobNameplateManager nameplates, MiningService mining, Logger log, String build, boolean devServer,
                            ScenarioLoader.Loaded loaded, MobElementResolver mobElements, Spawner spawner,
-                           io.github.butterflysmp.rpg.paper.health.MobBeamer beams) {
+                           io.github.butterflysmp.rpg.paper.health.MobBeamer beams,
+                           io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports) {
+        this.teleports = teleports;
         this.beams = beams;
         this.spawner = spawner;
         this.adapters = adapters;
@@ -179,6 +183,7 @@ public final class SelfTestService {
     /** "The element of this creature", for PROBE_BODY (PLAN-dragon-mobs.md step R1). */
     MobElementResolver mobElements() { return mobElements; }
     io.github.butterflysmp.rpg.paper.health.MobBeamer beams() { return beams; }
+    io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports() { return teleports; }
     Spawner spawner() { return spawner; }
     Scheduler scheduler() { return adapters.scheduler(); }
     CombatantStats stats() { return adapters.stats(); }

@@ -85,9 +85,12 @@ import java.util.function.Supplier;
 public final class MobBeamer {
 
     /** Told of each hit. Step R6's teleport is the first; none in step R5. */
-    @FunctionalInterface
     public interface Listener {
-        void onBeamHit(BeamHit hit);
+        /** The hit, on the beam mob's own thread, after the damage: the mob, its locked target, and the report. */
+        void onBeamHit(Mob mob, LivingEntity target, BeamHit hit);
+
+        /** The beam mob left the world (death, removal, unload): anything the listener holds for it must end. */
+        default void onRemove(UUID id) { }
     }
 
     /** The warning line: cfde822's purple dust (RGB 95,35,165, size 0.8). READ from the plan's section 3.1. */
@@ -175,6 +178,7 @@ public final class MobBeamer {
     public void onRemove(UUID id) {
         Active a = active.get(id);
         if (a != null) a.task.cancel();
+        for (Listener l : listeners) l.onRemove(id);
     }
 
     /**
@@ -325,7 +329,7 @@ public final class MobBeamer {
         MobBeam.report(shot, mob.getUniqueId(), a.mobId, k.target.getUniqueId(), tick, fired).ifPresent(hit -> {
             adapters.log().info(MobBeamLines.report(a.mobId, mob.getUniqueId(), k.targetKind, hit.target(), hit.tick(),
                     hit.from(), hit.to()));
-            for (Listener l : listeners) l.onBeamHit(hit);
+            for (Listener l : listeners) l.onBeamHit(mob, k.target, hit);
         });
     }
 
