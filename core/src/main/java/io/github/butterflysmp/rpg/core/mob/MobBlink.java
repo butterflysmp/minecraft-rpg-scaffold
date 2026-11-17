@@ -128,20 +128,26 @@ public record MobBlink(double triggerRange, double near, double far, int attempt
     }
 
     /**
-     * R3 (step R8): THE HEIGHT A BLINK'S SEARCH IS ANCHORED AT. The Knell's check tries WHOLE blocks above and below the
-     * column's y, and a floor's top is a whole number, so a search anchored at a FRACTIONAL height (a Phalanx mid-jump,
-     * 63.305 in BQ1) never stands a body on a floor: every height is 0.305 into a block (it does not fit) or 0.305 above
-     * one (no ground). So: on the ground, its own feet; off it, the top of the first ground beneath it, which paper finds
-     * (a ray straight down, at most {@code levelTolerance} blocks); none within reach, its own feet as before.
+     * R3 (step R8): THE HEIGHT A BLINK'S SEARCH IS ANCHORED AT: the WHOLE BLOCK its feet are in, floor(y). The Knell's
+     * check tries whole blocks above and below the column's y, and a full block's top is a whole number, so a search
+     * anchored at a FRACTIONAL height never stands a body on a floor: every height is (say) 0.305 into a block, so it
+     * does not fit, or 0.305 above one, so it has no ground. BQ1 met it mid-jump at 63.305; a Phalanx standing on a slab
+     * (63.5) meets it on the ground. From floor(y), every height tried is whole.
      *
-     * <p>Why the ground beneath IT and not the triggering combatant's feet (the Knell's teleport searches from its
-     * target's): a forced blink has no trigger; a combatant mid-jump has a fractional height too, the same defect moved;
-     * and the blink's ring of 6 to 16 blocks is measured from the Phalanx.
+     * <p>Why not the two leans the seat offered. The ground beneath the Phalanx: on a slab it IS on the ground, at 63.5,
+     * and fails the same way. The triggering combatant's feet (the Knell's teleport searches from its target's): a forced
+     * blink has no trigger, a combatant mid-jump is fractional too, and the blink's ring of 6 to 16 is measured from the
+     * Phalanx. A cost, stated: a landing on a slab's top (x.5) is never tried, as it never was from a whole-block height.
+     *
+     * <p>{@link #ANCHOR_SNAP} lifts a height within a millionth below a whole number onto it, so floating-point drift on a
+     * floor (62.9999999999) anchors on 63, its own block, not 62.
      */
-    public static double anchor(Vec3 feet, boolean onGround, java.util.OptionalDouble groundBelow) {
-        if (onGround) return feet.y();
-        return groundBelow.orElse(feet.y());
+    public static double anchor(double feetY) {
+        return Math.floor(feetY + ANCHOR_SNAP);
     }
+
+    /** BLOCKS: how far below a whole number a height may sit and still be anchored on it. NOT IN THE RECORD: chosen. */
+    public static final double ANCHOR_SNAP = 1.0E-6;
 
     /** This blink's cooldown, a fresh counter for one live Phalanx (its loop holds it; it dies with the loop). */
     public Cooldown cooldown() {

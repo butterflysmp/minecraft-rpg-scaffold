@@ -49,6 +49,7 @@ class MobLoaderBlinkTest {
               level_tolerance: 2
               particle: squid_ink
               particle_count: 11
+              cooldown_ticks: 180
               sounds:
                 - { key: entity.enderman.teleport, volume: 0.75, pitch: 1.25 }
             shield:
@@ -91,9 +92,19 @@ class MobLoaderBlinkTest {
         MobDefinition def = load().find("p").orElseThrow();
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(new MobBlink(4.5, 7, 13, 9, 2, List.of(new BeamSound("entity.enderman.teleport", 0.75, 1.25)),
-                "squid_ink", 11), def.blink());
+                "squid_ink", 11, 180), def.blink());
         assertEquals(new MobShield("shield", List.of(new BeamSound("item.shield.break", 0.5, 0.8)), "crit", 14),
                 def.shield());
+    }
+
+    /** Step R8: the cooldown is REQUIRED in a blink block, and a negative one is refused by name. */
+    @Test
+    void theCooldownIsRequiredAndANegativeOneIsRefusedByName() throws IOException {
+        write("a.yml", OK.replace("  cooldown_ticks: 180\n", ""));
+        write("b.yml", OK.replace("cooldown_ticks: 180", "cooldown_ticks: -1"));
+        assertEquals(0, load().size(), warningText());
+        assertTrue(warningText().contains("blink.cooldown_ticks is required"), warningText());
+        assertTrue(warningText().contains("blink.cooldown_ticks must be 0 or more ticks, was -1"), warningText());
     }
 
     @Test
@@ -133,7 +144,10 @@ class MobLoaderBlinkTest {
         assertTrue(warningText().contains("blink.far (5.0) must be at least blink.near (7.0)"), warningText());
     }
 
-    /** The shipped Phalanx: cfde822's blink (X4-X6, Ben left unchanged), the Knell's tolerance, its shield. */
+    /**
+     * The shipped Phalanx: cfde822's blink (X4-X6, Ben left unchanged), the Knell's tolerance, its shield; and since step
+     * R8, Ben's cooldown, "Say 12 seconds": 240 ticks.
+     */
     @Test
     void theBundledPhalanxBlinksAndShieldsWithTheRecordsNumbers() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/phalanx.yml")) {
@@ -146,7 +160,7 @@ class MobLoaderBlinkTest {
         MobDefinition def = l.loadAll(new File(dir.toString())).find("phalanx").orElseThrow();
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(new MobBlink(5, 6, 16, 8, 3, List.of(new BeamSound("entity.enderman.teleport", 1.0, 1.0)),
-                "squid_ink", 12), def.blink());
+                "squid_ink", 12, 240), def.blink());
         assertEquals(new MobShield("shield", List.of(new BeamSound("item.shield.break", 1.0, 1.0)), "crit", 16),
                 def.shield());
     }

@@ -102,6 +102,12 @@ blink:
   # At BOTH ends. squid_ink is the record's; 12 puffs a end is CHOSEN (the record gives no count).
   particle: squid_ink
   particle_count: 12
+  # TICKS after a blink that LANDS before it may decide another (step R8). Ben, 2026-11-17: "needs a larger cooldown.
+  # Say 12 seconds" (240, his number). A blink that lands nowhere does not start it (the seat's reading, put to Ben, not
+  # objected to). While it runs, a player inside trigger_range causes no blink and no BLINK line: the Phalanx fights as
+  # it stands. The instrument's forced blink ignores it and says so in its line; a forced blink that lands starts it.
+  # cfde822 had no cooldown (it could not blink again until it was visible, which it still cannot).
+  cooldown_ticks: 240
   sounds:
     # The record's enderman-teleport; its volume and pitch are not in the record: 1.0 and 1.0, CHOSEN.
     - { key: entity.enderman.teleport, volume: 1.0, pitch: 1.0 }

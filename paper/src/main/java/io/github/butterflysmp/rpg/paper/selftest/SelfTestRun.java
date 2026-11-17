@@ -538,4 +538,5 @@ final class SelfTestRun {
     io.github.butterflysmp.rpg.paper.health.MobBeamer beams() { return service.beams(); }
     io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports() { return service.teleports(); }
     io.github.butterflysmp.rpg.paper.health.MobShooter shots() { return service.shots(); }
+    io.github.butterflysmp.rpg.paper.health.MobPouncer pounces() { return service.pounces(); }
 }

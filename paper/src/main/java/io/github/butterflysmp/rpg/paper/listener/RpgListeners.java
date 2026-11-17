@@ -304,6 +304,8 @@ public final class RpgListeners implements Listener {
     private final io.github.butterflysmp.rpg.paper.health.MobBeamer beams;
     /** The Phalanx's shot (dragon-mobs step R7a): a loop per Phalanx, and the carriers it owns. */
     private final io.github.butterflysmp.rpg.paper.health.MobShooter shots;
+    /** The Skreel pair (dragon-mobs step R8): a loop per pair, on the mount; and the target block. */
+    private final io.github.butterflysmp.rpg.paper.health.MobPouncer pounces;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -318,7 +320,9 @@ public final class RpgListeners implements Listener {
                         io.github.butterflysmp.rpg.paper.selftest.SelfTestService selfTest,
                         io.github.butterflysmp.rpg.core.mob.MobElementResolver mobElements,
                         io.github.butterflysmp.rpg.paper.health.MobBeamer beams,
-                        io.github.butterflysmp.rpg.paper.health.MobShooter shots) {
+                        io.github.butterflysmp.rpg.paper.health.MobShooter shots,
+                        io.github.butterflysmp.rpg.paper.health.MobPouncer pounces) {
+        this.pounces = pounces;
         this.shots = shots;
         this.beams = beams;
         this.mobElements = mobElements;
@@ -799,6 +803,7 @@ public final class RpgListeners implements Listener {
         if (event.getEntity() instanceof LivingEntity mob && !(mob instanceof Player)) {
             nameplates.onMobAppear(mob);
             beams.onAppear(mob);   // its beam loop, if its file authors one (dragon-mobs step R5)
+            pounces.onAppear(mob);   // a paired or widowed mount, looked at on its next tick (step R8)
         }
     }
 
@@ -813,6 +818,7 @@ public final class RpgListeners implements Listener {
         if (event.getEntity() instanceof LivingEntity mob && !(mob instanceof Player)) {
             nameplates.onMobRemove(mob.getUniqueId());
             beams.onRemove(mob.getUniqueId());   // and its beam loop, which must not outlive it (step R5)
+            pounces.onRemove(mob.getUniqueId());   // and a pair's loop on a mount, which must not outlive it (step R8)
             // And its melee window, or the map grows for the lifetime of the server.
             meleeHits.forget(mob.getUniqueId());
             damageWindow.forget(mob.getUniqueId());   // and its environmental window, same reason
@@ -984,6 +990,17 @@ public final class RpgListeners implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onShotTargeted(org.bukkit.event.entity.EntityTargetEvent event) {
         if (event.getTarget() != null && shots.isShot(event.getTarget())) event.setCancelled(true);
+    }
+
+    /**
+     * A PAIRED SKREEL OR MOUNT NEVER TAKES A TARGET (dragon-mobs step R8): every target event naming one is cancelled
+     * while its pair lives, so no vanilla goal that needs a target (the rider's melee, the spider's leap and attack) can
+     * start, and the cycle alone moves the pair. cfde822 nulled both targets every tick (READ); this blocks them at the
+     * source and needs no undoing: the tick the pair breaks, the survivor targets as a plain mob again.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPairTargeted(org.bukkit.event.entity.EntityTargetEvent event) {
+        if (event.getTarget() != null && pounces.blocksTarget(event.getEntity())) event.setCancelled(true);
     }
 
     /** A SHOT NEVER CHANGES WORLD (the seat's ruling 6): a portal it flies through is refused, so it flies on. */

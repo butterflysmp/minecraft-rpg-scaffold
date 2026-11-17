@@ -173,7 +173,7 @@ class DragonBlinkWiringTest {
         int step = indexOf(code, "for (Live s : List.copyOf(o.shots)) advance(s);");
         int blink = indexAfter(code, step, "blinkStep(o);");
         assertTrue(step > 0 && blink > step && blink <= step + 5, "the blink after the shots: " + step + " " + blink);
-        assertTrue(indexOf(code, "MobBlink.Decision d = o.blink.decide(vec(from), draws, MobTeleporter.footing(mob, null));") > 0,
+        assertTrue(indexOf(code, "MobBlink.Decision d = o.blink.decide(vec(from), anchor, draws, MobTeleporter.footing(mob, null));") > 0,
                 "the Knell's port, no sight");
         int fire = indexOf(code, "shotTeam().addEntry(carrier.getUniqueId().toString());");
         int vis = indexAfter(code, fire, "mob.setInvisible(false);");

@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.OptionalDouble;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -94,12 +93,15 @@ class MobBlinkCooldownTest {
         }
     }
 
-    /** THE FIX: anchored on the ground beneath it (63.000), the same draw lands on the floor at its first height. */
+    /**
+     * THE FIX: anchored on the WHOLE BLOCK its feet are in (63), every height tried is a whole number, and the same draw
+     * lands on the floor at its first height.
+     */
     @Test
-    void anchoredOnTheGroundBeneathItTheSameDrawLands() {
+    void anchoredOnTheWholeBlockItsFeetAreInTheSameDrawLands() {
         MobBlink b = blink(240);
         Vec3 feet = new Vec3(-76.631, 63.305, 8.430);
-        double anchor = MobBlink.anchor(feet, false, OptionalDouble.of(63.0));
+        double anchor = MobBlink.anchor(feet.y());
         assertEquals(63.0, anchor);
         MobBlink.Decision d = b.decide(feet, anchor, List.of(new MobBlink.Draw(90.0, 8.0)), FLOOR_63);
         assertEquals(1, d.tried().size());
@@ -109,10 +111,28 @@ class MobBlinkCooldownTest {
         assertEquals(16.430, l.z(), 1e-9);
     }
 
+    /**
+     * THE SAME DEFECT ON THE GROUND: a Phalanx standing on a bottom slab (feet 63.5) blinking onto a full-block floor. From
+     * 63.5 every height is 63.5 + k and none rests on 63; from its block, 63, the first height does. This is the case a
+     * "ground beneath it" anchor would have missed (it IS on the ground), and the gate's row stages it, because a slab is
+     * a fractional height that holds still.
+     */
     @Test
-    void onTheGroundTheAnchorIsItsFeetAndWithNoGroundWithinReachItIsItsFeetToo() {
-        Vec3 slab = new Vec3(0, 63.5, 0);
-        assertEquals(63.5, MobBlink.anchor(slab, true, OptionalDouble.of(63.0)), "on the ground it stands where it stands");
-        assertEquals(70.25, MobBlink.anchor(new Vec3(0, 70.25, 0), false, OptionalDouble.empty()));
+    void aPhalanxOnASlabFailsFromItsFeetAndLandsFromItsBlock() {
+        MobBlink b = blink(240);
+        Vec3 feet = new Vec3(0.5, 63.5, 0.5);
+        List<MobBlink.Draw> draws = Collections.nCopies(8, new MobBlink.Draw(90.0, 8.0));
+        assertTrue(b.decide(feet, feet.y(), draws, FLOOR_63).landing().isEmpty(), "from its feet: nowhere");
+        assertEquals(63.0, b.decide(feet, MobBlink.anchor(feet.y()), draws, FLOOR_63).landing().orElseThrow().y(), 1e-12);
+    }
+
+    /** Whole numbers stay; a near-whole height from floating-point drift snaps to its own block, not the one below. */
+    @Test
+    void theAnchorIsTheWholeBlockAndANearWholeHeightIsItsOwn() {
+        assertEquals(63.0, MobBlink.anchor(63.0));
+        assertEquals(63.0, MobBlink.anchor(63.5));
+        assertEquals(70.0, MobBlink.anchor(70.25));
+        assertEquals(63.0, MobBlink.anchor(62.9999999999));
+        assertEquals(-2.0, MobBlink.anchor(-1.5));
     }
 }

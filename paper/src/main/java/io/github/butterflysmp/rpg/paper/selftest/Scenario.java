@@ -217,6 +217,15 @@ public record Scenario(String gate, String row, List<Step> steps) {
         BLINK,
         /** {@code <tag>}: log each tagged mob's one-hit shield, {@code SHIELD tag=<t> <uuid> up=<b> offhand=<item>} (step R7b). */
         PROBE_SHIELD,
+        /**
+         * {@code <tag>}: each tagged Skreel pair within 48 blocks (its mount or its rider carrying the tag) begins a WIND-UP
+         * on its next tick, aimed at the player's FEET as they stand now: a fixed aim (dragon-mobs step R8). Logs
+         * {@code DRIVE pounce tag=<t> <uuid> aim=<x y z>}, or why it did not take; the pair's own {@code SKREEL windup}
+         * line follows from its loop.
+         */
+        POUNCE,
+        /** {@code <tag>}: one {@code PAIR ...} line for each tagged mob: what it rides or carries, the cycle's stage, its speed (step R8). */
+        PROBE_PAIR,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

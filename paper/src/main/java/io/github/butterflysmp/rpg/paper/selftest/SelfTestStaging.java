@@ -152,7 +152,7 @@ final class SelfTestStaging {
             case WATCH_SWINGS -> arg.trim().equals("on") || arg.trim().equals("off") ? java.util.Optional.empty()
                     : java.util.Optional.of("watch_swings takes on or off, got '" + arg + "'");
             case DETONATE, IGNITE, PROBE_FUSE, THAW, PROBE_MOTION, BEAM, PROBE_AT, SHOT, PROBE_SHOT, AIM_SHAPE, STRIKE_LOOK,
-                    SHOOT_ARROW, PROBE_SHIELD -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
+                    SHOOT_ARROW, PROBE_SHIELD, POUNCE, PROBE_PAIR -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes one tag, got '"
                             + arg + "'");
             default -> java.util.Optional.empty();

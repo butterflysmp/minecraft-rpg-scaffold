@@ -13,6 +13,7 @@ import io.github.butterflysmp.rpg.core.mob.MobTeleport;
 import io.github.butterflysmp.rpg.core.mob.MobShot;
 import io.github.butterflysmp.rpg.core.mob.MobBlink;
 import io.github.butterflysmp.rpg.core.mob.MobShield;
+import io.github.butterflysmp.rpg.core.mob.MobPounce;
 import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -123,7 +124,8 @@ public final class MobLoader {
                     stageBody(staged, "first"), stageBody(staged, "last"));
             return new MobDefinition(id, s.getString("base_entity"), s.getString("display_name", id),
                     stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s), blast(s),
-                    beam(s), teleport(s), shot(s), mainHand(s), blink(s), shield(s));
+                    beam(s), teleport(s), shot(s), mainHand(s), blink(s), shield(s), mount(s), pounce(s),
+                    riddenSpeed(s));
         }
         if (s.contains("blast")) {
             throw new IllegalArgumentException("'blast' needs 'stages': its damage is authored per stage");
@@ -142,7 +144,8 @@ public final class MobLoader {
                 new MobBody(optional(s, "scale"), optional(s, "speed")),
                 element,
                 null, null, null, null,
-                beam(s), teleport(s), shot(s), mainHand(s), blink(s), shield(s));
+                beam(s), teleport(s), shot(s), mainHand(s), blink(s), shield(s), mount(s), pounce(s),
+                    riddenSpeed(s));
     }
 
     /**
@@ -156,11 +159,67 @@ public final class MobLoader {
         ConfigurationSection b = s.getConfigurationSection("blink");
         if (b == null) return null;
         for (String key : List.of("trigger_range", "near", "far", "attempts", "level_tolerance", "particle",
-                "particle_count", "sounds")) {
+                "particle_count", "cooldown_ticks", "sounds")) {
             if (!b.contains(key)) throw new IllegalArgumentException("blink." + key + " is required");
         }
+        // cooldown_ticks (step R8): TICKS after a blink that lands; required, never defaulted, and MobBlink refuses a
+        // negative one by name.
         return new MobBlink(b.getDouble("trigger_range"), b.getDouble("near"), b.getDouble("far"), b.getInt("attempts"),
-                b.getInt("level_tolerance"), soundList(b, "blink"), particle(b, "blink"), b.getInt("particle_count"));
+                b.getInt("level_tolerance"), soundList(b, "blink"), particle(b, "blink"), b.getInt("particle_count"),
+                b.getInt("cooldown_ticks"));
+    }
+
+    /** The optional {@code mount:} (step R8): the id of the mob file this one is spawned riding, or null. */
+    private static String mount(ConfigurationSection s) {
+        return s.getString("mount");
+    }
+
+    /** The optional {@code ridden_speed:} (step R8): a multiplier MobDefinition refuses unless above 0, or null. */
+    private static Double riddenSpeed(ConfigurationSection s) {
+        return s.contains("ridden_speed") ? s.getDouble("ridden_speed") : null;
+    }
+
+    /**
+     * The optional {@code pounce:} block (step R8, the Skreel's), or null. Every key required when present, nested keys
+     * named with their path ({@code pounce.band.far}): {@code acquire_range}, {@code band.near}, {@code band.far},
+     * {@code path_speed}, {@code windup_ticks}, {@code period_ticks}, {@code launch_vertical}, {@code timeout_ticks},
+     * {@code reach}, {@code damage}, {@code knockback.horizontal}, {@code knockback.vertical}, {@code windup.particle},
+     * {@code windup.particle_count}, {@code windup.every_ticks}, {@code windup.sounds}, {@code launch_sounds},
+     * {@code land_sounds}. {@link MobPounce} refuses a bad number by name; every sound key is checked.
+     */
+    private MobPounce pounce(ConfigurationSection s) {
+        ConfigurationSection p = s.getConfigurationSection("pounce");
+        if (p == null) return null;
+        for (String key : List.of("acquire_range", "band.near", "band.far", "path_speed", "windup_ticks", "period_ticks",
+                "launch_vertical", "timeout_ticks", "reach", "damage", "knockback.horizontal", "knockback.vertical",
+                "windup.particle", "windup.particle_count", "windup.every_ticks", "windup.sounds", "launch_sounds",
+                "land_sounds")) {
+            if (!p.contains(key)) throw new IllegalArgumentException("pounce." + key + " is required");
+        }
+        ConfigurationSection w = p.getConfigurationSection("windup");
+        return new MobPounce(p.getDouble("acquire_range"), p.getDouble("band.near"), p.getDouble("band.far"),
+                p.getDouble("path_speed"), p.getInt("windup_ticks"), p.getInt("period_ticks"),
+                p.getDouble("launch_vertical"), p.getInt("timeout_ticks"), p.getDouble("reach"), p.getDouble("damage"),
+                p.getDouble("knockback.horizontal"), p.getDouble("knockback.vertical"), particle(w, "pounce.windup"),
+                w.getInt("particle_count"), w.getInt("every_ticks"), soundList(w, "pounce.windup"),
+                soundsAt(p, "launch_sounds", "pounce"), soundsAt(p, "land_sounds", "pounce"));
+    }
+
+    /** A list of {@code { key, volume, pitch }} at {@code key} under {@code b}, each key checked as the beam's are. */
+    private List<BeamSound> soundsAt(ConfigurationSection b, String key, String block) {
+        List<BeamSound> out = new java.util.ArrayList<>();
+        for (Map<?, ?> m : b.getMapList(key)) {
+            for (String f : List.of("key", "volume", "pitch")) {
+                if (!m.containsKey(f)) throw new IllegalArgumentException(block + "." + key + " entry " + m + " has no " + f);
+            }
+            String sound = String.valueOf(m.get("key"));
+            if (!soundExists.test(sound)) {
+                throw new IllegalArgumentException(block + "." + key + " key '" + sound
+                        + "' names no sound event the server knows");
+            }
+            out.add(new BeamSound(sound, ((Number) m.get("volume")).doubleValue(), ((Number) m.get("pitch")).doubleValue()));
+        }
+        return out;
     }
 
     /**

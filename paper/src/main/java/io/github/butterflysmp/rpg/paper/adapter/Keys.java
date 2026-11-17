@@ -228,6 +228,18 @@ public final class Keys {
      */
     public final NamespacedKey mobShield;
 
+    /**
+     * THE SKREEL PAIR (dragon-mobs step R8). {@code mountRider}: a STRING on the MOUNT, its rider's uuid, written when
+     * the pair is made and removed when it breaks; in the PDC, so a pair that unloads and loads again finds itself.
+     * {@code mountWidowed}: a BYTE on a mount whose pair broke (its rider died or was separated): it keeps its ridden
+     * speed and never pairs again. {@code mountRidden} and {@code pounceRoot} key two TRANSIENT movement-speed
+     * modifiers on the mount (the ridden 1.3x, and the wind-up's x0), never saved onto the mob.
+     */
+    public final NamespacedKey mountRider;
+    public final NamespacedKey mountWidowed;
+    public final NamespacedKey mountRidden;
+    public final NamespacedKey pounceRoot;
+
     /** Reserved opt-out: a mob carrying this (BYTE) PDC gets no health nameplate. For future NPCs/cosmetics. */
     public final NamespacedKey nameplateOptOut;
 
@@ -460,6 +472,10 @@ public final class Keys {
         this.beamRoot = new NamespacedKey(plugin, "beam_root");
         this.mobShot = new NamespacedKey(plugin, "mob_shot");
         this.mobShield = new NamespacedKey(plugin, "mob_shield");
+        this.mountRider = new NamespacedKey(plugin, "mount_rider");
+        this.mountWidowed = new NamespacedKey(plugin, "mount_widowed");
+        this.mountRidden = new NamespacedKey(plugin, "mount_ridden");
+        this.pounceRoot = new NamespacedKey(plugin, "pounce_root");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");
