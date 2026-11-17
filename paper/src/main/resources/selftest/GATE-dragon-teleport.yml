@@ -1,8 +1,8 @@
 # THE KNELL'S TELEPORT, AS RE-PREDICTED BY GATE-dragon-knell-4.md (Ben's one more number, 2026-11-17). The file keeps
-# its name so the run sheet's command is unchanged (`/rpg selftest dragon-teleport`). Every row whose lines change at
-# the new delay is now GATE-dragon-knell-4.md's, renamed with the next suffix (KB10R5 -> KB10R5, TP2R4 -> TP2R4, TP14R3
-# -> TP14R3); TP5R3 (a miss) and TP13R3 (a kill during the delay) log the same lines at any delay and keep their names,
-# CARRIED in that gate with GATE-dragon-knell-3.md's predictions. The old readings stay in GATE-dragon-knell-3.md.
+# its name so the run sheet's command is unchanged (`/rpg selftest dragon-teleport`). Every row is now
+# GATE-dragon-knell-4.md's, renamed with the next suffix (KB10R4 -> KB10R5, TP2R3 -> TP2R4, TP14R2 -> TP14R3): the
+# delay moved, and every row prints the beam's sound lines, which now carry the second bell. The old readings stay in
+# GATE-dragon-knell-3.md.
 #
 # THE TELEPORT NOW: 28 ticks after a beam HITS its target (Ben: "let's try 1.4 seconds after the shot"; his number,
 # counted from the fire, derived from no sound), the Knell moves to the circle around the target's feet, at the
@@ -92,24 +92,24 @@ TP4R4:
   - wait: 130
   - probe_at: tp4r4
 
-# TP5R3: a forced MISS (he steps 3 south during the telegraph) moves nothing: no TELEPORT line through the 130 ticks.
-TP5R3:
+# TP5R4: a forced MISS (he steps 3 south during the telegraph) moves nothing: no TELEPORT line through the 130 ticks.
+TP5R4:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp5r3 frozen knell 100"
+  - spawn: "tp5r4 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - probe_at: tp5r3
-  - teleport_draw: "tp5r3 right 50"
-  - beam: tp5r3
+  - probe_at: tp5r4
+  - teleport_draw: "tp5r4 right 50"
+  - beam: tp5r4
   - wait: 3
   - cmd: "tp @s ~ ~ ~3"
   - wait: 127
-  - probe_at: tp5r3
+  - probe_at: tp5r4
 
 # TP6R4: glass over every RIGHT spot: five refused, then it lands 50 degrees LEFT.
 TP6R4:
@@ -235,21 +235,21 @@ TP12R4:
   - wait: 90
   - probe_at: tp12r4
 
-# TP13R3: the Knell is killed 35 ticks after the force, 14 after the fire: nothing moves, and one line says why.
-TP13R3:
+# TP13R4: the Knell is killed 35 ticks after the force, 14 after the fire: nothing moves, and one line says why.
+TP13R4:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-10 -5 -10 12 7 10"
   - cmd: "fill ~-10 ~-1 ~-10 ~12 ~-1 ~10 stone"
   - cmd: "fill ~-10 ~ ~-10 ~12 ~7 ~10 air"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~8 ~ ~"
-  - spawn: "tp13r3 frozen knell 100"
+  - spawn: "tp13r4 frozen knell 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
   - wait: 5
-  - teleport_draw: "tp13r3 right 50"
-  - beam: tp13r3
+  - teleport_draw: "tp13r4 right 50"
+  - beam: tp13r4
   - wait: 35
-  - cmd: "kill @e[tag=tp13r3]"
+  - cmd: "kill @e[tag=tp13r4]"
   - wait: 65
 
 # TP14R3: a beam forced while a move is PENDING hits him and is ignored for the teleport ("TELEPORT ignored ... reason=pending"); the first hit's move still lands 28 ticks after the first fire. A heal and the second force 23 ticks after the first force (about 2 after the first fire), so the second fire lands 5 ticks BEFORE the first move.
@@ -304,7 +304,7 @@ KB11R5:
   - cmd: "kill @e[tag=kb11r5f]"
   - wait: 5
 
-# TQ1R4: Ben's two teleport questions. A frozen Knell 12 blocks east beams him once; its move is NOT fixed (the
+# TQ1R4: Ben's last question. A frozen Knell 12 blocks east beams him once; its move is NOT fixed (the
 # production draw). He listens for the ring after the hit and watches the Knell as it fades.
 TQ1R4:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
@@ -315,9 +315,8 @@ TQ1R4:
   - cmd: "tp @s ~12 ~ ~"
   - spawn: "tq1r4 frozen knell 100"
   - cmd: "tp @s ~-12 ~ ~ -90 0"
-  - cmd: 'tellraw @s {"text":"Stand still. The bell strike and its ringing start together. After the beam hits you, watch the Knell and listen to the ringing.","color":"gold"}'
+  - cmd: 'tellraw @s {"text":"Stand still. A low bell and the ringing at the warning, a higher bell at the shot, the Knell moving 1.4 seconds after it.","color":"gold"}'
   - wait: 60
   - beam: tq1r4
   - wait: 130
-  - ask: "1 1200 Did the Knell move at the right moment in the ringing?"
-  - ask: "2 1200 Does the whole sequence feel timed right now?"
+  - ask: "1 1200 Does the whole sequence feel right now?"

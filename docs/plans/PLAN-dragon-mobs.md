@@ -666,6 +666,26 @@ earlier; Ben:
 - **The dev tuning tool is NOT built: offered, and declined for now.**
 - Everything else stands: the 20-tick telegraph, the sounds, the damage, the arc and the landing checks.
 
+### Ben, 2026-11-17, VERBATIM: the second bell, after the stopped run of `90768891` (still `feat/dragon-knell-4`)
+
+After the boot of `90768891`, whose run he stopped 23 seconds in (`GATE-dragon-knell-4.md`, THE STOPPED RUN), Ben:
+
+> "before I send this to CC, my take on the timing changes:
+> 1. The timing is perfect on the sounds but something is still missing
+> 2. Add a second, higher pitched bell for the actual shot. Maybe even lower the pitch of the initial bell"
+
+**THE SEAT'S READING:**
+- **His point 1 CONFIRMS, by ear and in his words, the 20-tick warning and the 28-tick teleport delay.** It was given
+  OUTSIDE the ASK step, and is recorded as such.
+- **His point 2 adds a sound.** That there is a second, higher bell at the shot, and that the first bell is lower, are
+  HIS. **THE SEAT'S STARTING NUMBERS, put to him as the seat's, not his:** the bell at the shot at pitch **1.5**; the
+  first bell lowered from 1.0 to **0.8**.
+
+**CARRIED, NEW:** a server stop during a selftest run now restores synchronously from `onDisable` (built in this PR,
+pinned by `SelfTestDisableWiringTest`, never read on a server). **STILL UNBUILT: a crash-survival file for a JVM that
+dies without disabling**; it would need the run's snapshot written to disk at run start and at every row's staging,
+and read back and restored at the next enable, before any player joins.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD

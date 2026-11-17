@@ -76,15 +76,16 @@ class SelfTestScenariosTest {
         // renamed with the next suffix; KB2R2 is the root read on a WALKING Knell, and TP14 is new.
         // Ben's re-timing (GATE-dragon-knell-3.md, 2026-11-17) re-predicted every row of both Knell files again, each
         // renamed with the next suffix; WA1 (the Knell walks again after a beam) is new, and KQ1R3 asks two questions.
-        expected.put("dragon-beam", List.of("KB1R3", "KB2R3", "WA1", "KB3R3", "KB4R3", "KB5R3", "KB6R3", "KB7R3",
-                "KB8R3", "KB9R3", "KQ1R3"));
+        // Ben's second bell (GATE-dragon-knell-4.md, 2026-11-17): every beam row prints the sound lines, so every one
+        // is renamed with the next suffix; KQ1R4 beams once and asks the two bell questions.
+        expected.put("dragon-beam", List.of("KB1R4", "KB2R4", "WA1R2", "KB3R4", "KB4R4", "KB5R4", "KB6R4", "KB7R4",
+                "KB8R4", "KB9R4", "KQ1R4"));
         // Step R6 (GATE-dragon-teleport.md, 2026-11-17, stacked on R5): twelve new AUTO rows, the two re-predictions,
         // and Ben's three questions in one.
-        // Ben's one more number (GATE-dragon-knell-4.md, 2026-11-17): the teleport file's rows whose lines change at
-        // a 28-tick delay are renamed with the next suffix; TP5R3 and TP13R3 log the same lines at any delay and keep
-        // their names (carried in knell-4). The beam file is unchanged.
-        expected.put("dragon-teleport", List.of("KB10R5", "TP2R4", "TP3R4", "TP4R4", "TP5R3", "TP6R4", "TP7R4", "TP8R4",
-                "TP9R4", "TP10R4", "TP11R4", "TP12R4", "TP13R3", "TP14R3", "KB11R5", "TQ1R4"));
+        // Ben's one more number and his second bell (GATE-dragon-knell-4.md, 2026-11-17): every teleport row is renamed
+        // with the next suffix (the move at fire + 28, and the new sound lines in every row).
+        expected.put("dragon-teleport", List.of("KB10R5", "TP2R4", "TP3R4", "TP4R4", "TP5R4", "TP6R4", "TP7R4", "TP8R4",
+                "TP9R4", "TP10R4", "TP11R4", "TP12R4", "TP13R4", "TP14R3", "KB11R5", "TQ1R4"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -199,10 +200,8 @@ class SelfTestScenariosTest {
         if (gate.equals("dragon-blast")) return "dragon-blast-2";   // re-predicted 2026-11-17, rows in the -2 gate
         // Ben's re-timing of 2026-11-17 (KNELL 3): both Knell files' rows are GATE-dragon-knell-3.md's re-predictions
         // (before it, GATE-dragon-knell-2.md's).
-        // Ben's one more number (KNELL 4): the teleport file's rows are GATE-dragon-knell-4.md's; the beam file's stay
-        // GATE-dragon-knell-3.md's (its lines do not change at a 28-tick delay).
-        if (gate.equals("dragon-teleport")) return "dragon-knell-4";
-        if (gate.equals("dragon-beam")) return "dragon-knell-3";
+        // Then KNELL 4 (Ben's 28 and his second bell): both files' rows are GATE-dragon-knell-4.md's.
+        if (Set.of("dragon-beam", "dragon-teleport").contains(gate)) return "dragon-knell-4";
         return Set.of("dragon-bodies", "dragon-split", "dragon-growth").contains(gate) ? "dragon-fix" : gate;
     }
 
@@ -234,7 +233,7 @@ class SelfTestScenariosTest {
             }
         }
         assertEquals(List.of(), live, "a live Knell outside the beam gate would beam the player at a time no row predicts");
-        assertEquals(3, beamGate.size(), "the control: the beam file's KB2R3 and WA1 and the teleport file's KB11R5 are "
+        assertEquals(3, beamGate.size(), "the control: the beam file's KB2R4 and WA1R2 and the teleport file's KB11R5 are "
                 + "seen: " + beamGate);
     }
 

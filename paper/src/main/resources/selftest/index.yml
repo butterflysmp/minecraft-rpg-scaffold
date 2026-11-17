@@ -14,6 +14,8 @@
 # THEN, Ben's re-timing of 2026-11-17 (KNELL 3): both are now paired with docs/gates/GATE-dragon-knell-3.md instead.
 # THEN, Ben's one more number (KNELL 4): dragon-teleport is paired with docs/gates/GATE-dragon-knell-4.md; dragon-beam stays
 # with GATE-dragon-knell-3.md (its lines do not change at a 28-tick delay).
+# THEN, Ben's second bell (still KNELL 4): BOTH are paired with docs/gates/GATE-dragon-knell-4.md (the beam rows print
+# the new sound lines).
 gates:
   - melee-cell
   - level
