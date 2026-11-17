@@ -821,6 +821,53 @@ captured for question 4 is his answer to question 3, and question 4's answer is 
 - **RULED BY BEN AND NOT BUILT:** the blink needs a cooldown, "Say 12 seconds" (**240 ticks**).
 - **THE SEAT'S, put to him:** the cooldown is counted from a blink that LANDS; a failed attempt does not spend it.
 
+### Ben, 2026-11-17, VERBATIM: the Skreel's numbers (step R8, `feat/dragon-skreel`)
+
+*The seat asked Ben to accept or change the old game's Skreel numbers.* Ben:
+
+> "can you suggest some numbers and I'll decide from there"
+
+*The seat suggested, with the old value beside each:*
+
+| quantity | the seat's suggestion | old (cfde822, §3.5) |
+|---|---|---|
+| rider health | 120 | 120 |
+| mount health | 160 | 120 |
+| mount speed with its rider | 1.3x | 1.3x |
+| notices a target within | 32 blocks | 50 |
+| circles at | 8 to 12 blocks | 8 to 12 |
+| wind-up before the leap | 1 second | 0.75 s |
+| time between leaps | 6 seconds | not recorded |
+| landing hit | 55 | 35 |
+| landing hit reaches | 3 blocks | 2.5 |
+| knockback | yes, moderate | yes |
+| if the mount dies first | the rider drops and fights on foot as a plain melee mob | |
+| if the rider dies first | the mount carries on as a plain fast spider with no leap | |
+| elements | the rider Void and the mount with no element | |
+| damage | scaled by gear score like the others | |
+
+Ben:
+
+> "I like your numbers. Let's start there"
+
+**RECORDED PLAINLY: these are THE SEAT'S numbers, accepted by Ben as a starting point. None is a number he typed.**
+
+**"MODERATE" KNOCKBACK IS THE OLD GAME'S VALUES: 0.7 horizontal (away from the spider) and 0.4 vertical** (§3.5, LAND:
+the hit, READ). **Against the blast's, they are moderate:** the push vector's length is √(0.7² + 0.4²) = **0.806 blocks
+a tick**. The Phage's blast (`phage.yml` `blast.knockback: 1.0`, §7 F-B) adds **1.0** at its centre, **0.75** at 1.5
+blocks, **0.5** at its half reach (3) and **0** at its reach (6), falling in a straight line. So the pounce pushes as
+hard as a blast does at about **1.16 blocks** from it (1 − d/6 = 0.806): weaker than the blast's strongest, stronger than
+the blast's push at the pounce's own reach of 3 (0.5). Nothing here shows them NOT moderate, so they stand.
+
+### Ben, 2026-11-17, VERBATIM: the Phalanx's blink cooldown (step R8 carries it)
+
+Ben ruled the blink (*the boot of `ef770b8a`*, above):
+
+> "needs a larger cooldown. Say 12 seconds"
+
+**240 ticks, his number.** **The seat told him it counts from a blink that LANDS and a failed attempt does not spend it;
+he did not object.**
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
