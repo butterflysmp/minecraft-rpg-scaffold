@@ -513,39 +513,38 @@ class MobLoaderTest {
     }
 
     /**
-     * THE KNELL WE SHIP (Ben, 2026-11-17, after the boot): 65 damage ("For damage I think 65 is good"), a 26-tick
-     * (1.3-second) telegraph ("let's try 1.3 seconds") flashing at ticks 0 and 20 (the seat's, three quarters through),
-     * the bell strike at the telegraph and the resonance (at pitch 1.0) and the chime at the fire ("The bell plays with
-     * the warning. The real shot comes when the resonance part starts."). The cycle, range, aim and tolerance are
-     * unchanged.
+     * THE KNELL WE SHIP (Ben's re-timing, 2026-11-17, KNELL 3): 65 damage (confirmed by play), a 20-tick (1-second)
+     * telegraph ("change the warning shot time from 1.3s to 1s") flashing at ticks 0 and 15 (the seat's, three
+     * quarters through), the bell strike AND the resonance at the telegraph ("Start playing the resonance at the same
+     * time as the bell"), and the chime alone at the fire (the seat's, unruled). The cycle, range, aim and tolerance
+     * are unchanged.
      */
     @Test
-    void theBundledKnellBeamsAsBenRuledAfterTheBoot() throws IOException {
+    void theBundledKnellBeamsAsBenRetimedIt() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
-        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 26, List.of(0, 20), 40.0, 0.6, 1.0, 65.0,
-                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.0)),
-                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.resonate", 1.4, 1.0),
-                        new io.github.butterflysmp.rpg.core.mob.BeamSound("block.amethyst_block.chime", 1.0, 1.0))),
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 20, List.of(0, 15), 40.0, 0.6, 1.0, 65.0,
+                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.0),
+                        new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.resonate", 1.4, 1.0)),
+                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.amethyst_block.chime", 1.0, 1.0))),
                 load().find("knell").orElseThrow().beam());
         assertTrue(warnings.isEmpty(), warningText());
     }
 
     /**
-     * THE TELEPORT'S 89 AGAINST THE CYCLE'S 100 (the follow-up's B5): the shipped delay leaves 11 ticks before the
-     * earliest next attempt, so a move never falls inside a telegraph. Lengthening the resonance (a lower pitch, a
-     * longer delay) would need a longer cycle; the load-time check refuses a delay that is not shorter.
+     * THE TELEPORT'S 44 AGAINST THE CYCLE'S 100 (KNELL 3): the shipped delay leaves 56 ticks before the earliest next
+     * attempt, so a move never falls inside a telegraph; the load-time check refuses a delay that is not shorter.
      */
     @Test
-    void theBundledKnellsDelayIsElevenTicksShorterThanItsCycle() throws IOException {
+    void theBundledKnellsDelayIsFiftySixTicksShorterThanItsCycle() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
         var knell = load().find("knell").orElseThrow();
-        assertEquals(11, knell.beam().cycleMinTicks() - knell.teleport().delayTicks());
+        assertEquals(56, knell.beam().cycleMinTicks() - knell.teleport().delayTicks());
     }
 
     // ---- dragon-mobs step R6: the teleport after the beam lands ----
@@ -603,7 +602,7 @@ class MobLoaderTest {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
-        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(89, 30, 70, 5, 3, true),
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(44, 30, 70, 5, 3, true),
                 load().find("knell").orElseThrow().teleport());
         assertTrue(warnings.isEmpty(), warningText());
     }
