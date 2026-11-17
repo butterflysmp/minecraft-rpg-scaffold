@@ -166,9 +166,13 @@ final class SelfTestSnapshot {
     /**
      * Put it all back. Runs on the player's own thread (a continuation, the stop command, or the quit event, whose
      * writes persist: the save runs after it). Returns the line that says what was restored.
+     *
+     * <p>{@code now} is the PLUGIN DISABLE's restore (a server stop mid-run): the scheduler is then an
+     * {@code InlineScheduler}, so every task below runs at once, and the teleport is synchronous, because
+     * {@code teleportAsync} would complete after the world save it must precede.
      */
     String restore(Player p, ProfileService profiles, ResourcePool resources, MobNameplateManager nameplates,
-                   Scheduler scheduler) {
+                   Scheduler scheduler, boolean now) {
         p.closeInventory();
         int mobs = 0;
         int orbs = 0;
@@ -183,7 +187,7 @@ final class SelfTestSnapshot {
         p.getInventory().setContents(contents);
         p.getInventory().setHeldItemSlot(heldSlot);
         p.setGameMode(gameMode);
-        p.teleportAsync(location);
+        if (now) p.teleport(location); else p.teleportAsync(location);
 
         boolean xp = profileLoaded() && profiles.setLifetimeXp(id, lifetimeXp);
         boolean cell = classId == null || profiles.setCell(id, classId, elementId);

@@ -209,6 +209,8 @@ public final class RpgPlugin extends JavaPlugin {
     /** The selftest's HURT line (dragon-mobs R3): in the store's composite from the start, bound to the service later. */
     private final io.github.butterflysmp.rpg.paper.selftest.SelfTestDamageTap selfTestDamage =
             new io.github.butterflysmp.rpg.paper.selftest.SelfTestDamageTap();
+    /** The selftest, kept for onDisable: a server stop during a run restores through it (GATE-dragon-knell-4.md). */
+    private SelfTestService selfTest;
     private AbilityService abilityService;
     private WeaponService weaponService;
     private ExecutorService storageIo;
@@ -714,7 +716,7 @@ public final class RpgPlugin extends JavaPlugin {
                 () -> this.mobs, adapters,
                 io.github.butterflysmp.rpg.core.mob.BeamTeleport.uniform(new java.util.Random()));
         beams.addListener(teleports);
-        SelfTestService selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
+        selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
                 buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements,
                 // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).
                 (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
@@ -1009,6 +1011,12 @@ OLD
 
     @Override
     public void onDisable() {
+        // THE SELFTEST, FIRST (GATE-dragon-knell-4.md): a /stop during a run. The server saves players and chunks right
+        // after this method (MinecraftServer#stopServer disables plugins first), and the player's quit arrives after our
+        // listeners are gone, so nothing else restores the run. It restores here, synchronously, before the profile
+        // flush below, which must carry the lifetime XP and cell the restore writes back.
+        if (selfTest != null) selfTest.onDisable();
+
         // Mining: destroy every player's fake displays and STOP the 127.0.0.1 pack server (the
         // standing rule: the dev HTTP server stops on disable). Touches no player data.
         if (mining != null) mining.shutdown();

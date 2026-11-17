@@ -121,6 +121,15 @@ public final class SelfTestService {
         return "Selftest stopped; everything it changed is restored (the log says what).";
     }
 
+    /**
+     * From {@code RpgPlugin.onDisable}, FIRST (GATE-dragon-knell-4.md): a server stop during a run. The quit event comes
+     * after the plugin is disabled, so it cannot do this; the run restores here, synchronously, before the server
+     * saves players and chunks.
+     */
+    public void onDisable() {
+        if (active != null) active.endAtDisable();
+    }
+
     /** From {@code RpgListeners.onQuit}, FIRST: the restore must write while the inventory can still be written. */
     public void onQuit(Player player) {
         if (active != null && active.player().getUniqueId().equals(player.getUniqueId())) {
