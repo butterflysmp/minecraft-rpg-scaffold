@@ -133,7 +133,54 @@ final class SelfTestDrivers {
             case BEAM -> beam(p, a);
             case PROBE_AT -> probeAt(p, a);
             case TELEPORT_DRAW -> teleportDraw(p, a);
+            case SHOT -> shoot(p, a);
+            case PROBE_SHOT -> probeShot(p, a);
         };
+    }
+
+    /** The tagged living entities within the beam steps' 48 blocks, nearest first. */
+    private List<LivingEntity> taggedWithin48(Player p, String tag) {
+        double r = SelfTestBeam.REACH;
+        List<LivingEntity> found = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(r, r, r)) {
+            if (e instanceof LivingEntity l && e.getScoreboardTags().contains(tag)) found.add(l);
+        }
+        found.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));
+        return found;
+    }
+
+    /** SHOT (dragon-mobs step R7a): each tagged Phalanx fires on its next tick; forced on its OWN thread. */
+    private Optional<String> shoot(Player p, String tag) {
+        List<LivingEntity> found = taggedWithin48(p, tag);
+        if (found.isEmpty()) {
+            run.log(SelfTestBeam.noneLine(tag, "DRIVE shot", (int) SelfTestBeam.REACH));
+            return Optional.empty();
+        }
+        for (LivingEntity e : found) {
+            run.scheduler().onEntity(e, () -> {
+                Optional<String> refused = run.shots().force(e);
+                run.log(refused.map(why -> "DRIVE shot tag=" + tag + " " + e.getUniqueId() + " refused=" + why)
+                        .orElse("DRIVE shot tag=" + tag + " " + e.getUniqueId()));
+            });
+        }
+        return Optional.empty();
+    }
+
+    /** PROBE_SHOT (dragon-mobs step R7a): every live shot of each tagged Phalanx, read on the Phalanx's thread. */
+    private Optional<String> probeShot(Player p, String tag) {
+        List<LivingEntity> found = taggedWithin48(p, tag);
+        if (found.isEmpty()) {
+            run.log(SelfTestBeam.noneLine(tag, "SHOT", (int) SelfTestBeam.REACH));
+            return Optional.empty();
+        }
+        for (LivingEntity e : found) {
+            run.scheduler().onEntity(e, () -> {
+                List<String> lines = run.shots().probe(e);
+                if (lines.isEmpty()) run.log("SHOT tag=" + tag + " " + e.getUniqueId() + " live=0");
+                for (String line : lines) run.log(line);
+            });
+        }
+        return Optional.empty();
     }
 
     /** TELEPORT_DRAW (dragon-mobs step R6): fix each tagged Knell's next draw, on its own thread, and say so. */

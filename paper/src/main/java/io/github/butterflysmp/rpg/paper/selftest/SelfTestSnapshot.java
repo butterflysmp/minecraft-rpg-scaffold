@@ -58,6 +58,20 @@ final class SelfTestSnapshot {
     }
 
     /**
+     * The tags a PHALANX'S SHOT takes from its Phalanx (dragon-mobs step R7a), only when the instrument tagged the
+     * Phalanx: {@code selftest} itself, so the row-start clean removes the shot, and every OTHER tag with
+     * {@code _shot} added, so a row names the shot ({@code attack: sh2_shot}) and never confuses it with the Phalanx
+     * ({@code sh2}). A Phalanx the instrument never tagged gives none: production, untouched. Pure, so it is a unit row.
+     */
+    static java.util.Set<String> tagsForShot(java.util.Set<String> ownerTags) {
+        if (!ownerTags.contains(MOB_TAG)) return java.util.Set.of();
+        java.util.Set<String> out = new java.util.TreeSet<>();
+        out.add(MOB_TAG);
+        for (String t : ownerTags) if (!t.equals(MOB_TAG)) out.add(t + "_shot");
+        return java.util.Set.copyOf(out);
+    }
+
+    /**
      * Whether a SPLIT CHILD is born FROZEN (step R3; the seat's brief of 2026-11-16): only when its parent is one the
      * instrument tagged AND froze. Pure, so it is a unit row.
      *

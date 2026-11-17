@@ -417,7 +417,8 @@ class MobLoaderTest {
 
     /** The sound keys this test's loader treats as real; production asks the server's sound registry. */
     private static final java.util.Set<String> SOUNDS =
-            java.util.Set.of("block.bell.use", "block.bell.resonate", "block.amethyst_block.chime", "entity.cat.ambient");
+            java.util.Set.of("block.bell.use", "block.bell.resonate", "block.amethyst_block.chime", "entity.cat.ambient",
+                    "entity.wither.ambient", "entity.shulker_bullet.hurt");
 
     private static final String SOUNDS_OK = "  sounds:\n"
             + "    telegraph:\n      - { key: entity.cat.ambient, volume: 0.25, pitch: 1.75 }\n"
@@ -513,7 +514,7 @@ class MobLoaderTest {
     }
 
     /**
-     * THE KNELL WE SHIP (KNELL 5, 2026-11-17): 65 damage; a 24-tick telegraph flashing at ticks 0 and 18, the shot in
+     * THE KNELL WE SHIP (KNELL 5, 2026-11-17): 65 damage; a 24-tick telegraph flashing at tick 0 only (Ben, "remove it"), the shot in
      * the middle of the 48 ticks from the lock to the move (Ben's "I want the shot to be in the middle"); and two bells:
      * at the telegraph the bell back at pitch 1.0 (he answered "no" to 0.8) then the resonance; at the fire the bell at
      * pitch 1.5 (confirmed by play), then the chime. The cycle, range, aim and tolerance are unchanged.
@@ -524,7 +525,7 @@ class MobLoaderTest {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
-        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 24, List.of(0, 18), 40.0, 0.6, 1.0, 65.0,
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 24, List.of(0), 40.0, 0.6, 1.0, 65.0,
                 List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.0),
                         new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.resonate", 1.4, 1.0)),
                 List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.5),

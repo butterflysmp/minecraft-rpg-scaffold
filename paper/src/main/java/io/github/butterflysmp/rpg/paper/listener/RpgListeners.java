@@ -302,6 +302,8 @@ public final class RpgListeners implements Listener {
     private final io.github.butterflysmp.rpg.core.mob.MobElementResolver mobElements;
     /** The Knell's beam (dragon-mobs step R5): a loop per beam mob, started on its add, stopped on its remove. */
     private final io.github.butterflysmp.rpg.paper.health.MobBeamer beams;
+    /** The Phalanx's shot (dragon-mobs step R7a): a loop per Phalanx, and the carriers it owns. */
+    private final io.github.butterflysmp.rpg.paper.health.MobShooter shots;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -315,7 +317,9 @@ public final class RpgListeners implements Listener {
                         VaultService vaults, StoneCaster stoneCaster, MiningService mining,
                         io.github.butterflysmp.rpg.paper.selftest.SelfTestService selfTest,
                         io.github.butterflysmp.rpg.core.mob.MobElementResolver mobElements,
-                        io.github.butterflysmp.rpg.paper.health.MobBeamer beams) {
+                        io.github.butterflysmp.rpg.paper.health.MobBeamer beams,
+                        io.github.butterflysmp.rpg.paper.health.MobShooter shots) {
+        this.shots = shots;
         this.beams = beams;
         this.mobElements = mobElements;
         this.stoneCaster = stoneCaster;
@@ -788,6 +792,10 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onEntityAdd(EntityAddToWorldEvent event) {
+        // THE PHALANX'S SHOT FIRST (dragon-mobs step R7a): a shot entity is never seeded and never a beam mob, and one
+        // no live shot owns is an orphan, removed here; a Phalanx's shot loop starts here too.
+        shots.onAppear(event.getEntity());
+        if (shots.isShot(event.getEntity())) return;
         if (event.getEntity() instanceof LivingEntity mob && !(mob instanceof Player)) {
             nameplates.onMobAppear(mob);
             beams.onAppear(mob);   // its beam loop, if its file authors one (dragon-mobs step R5)
@@ -800,6 +808,8 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onEntityRemove(EntityRemoveFromWorldEvent event) {
+        // A Phalanx's shot loop, which must not outlive it (its stop ends every shot it owns), and a shot's carrier.
+        shots.onRemove(event.getEntity().getUniqueId());
         if (event.getEntity() instanceof LivingEntity mob && !(mob instanceof Player)) {
             nameplates.onMobRemove(mob.getUniqueId());
             beams.onRemove(mob.getUniqueId());   // and its beam loop, which must not outlive it (step R5)
@@ -908,10 +918,69 @@ public final class RpgListeners implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMobDeath(EntityDeathEvent event) {
         if (event.getEntity() instanceof Player) return;
+        // A SHOT FEEDS NO GROWTH AND SPLITS NOTHING (dragon-mobs step R7a, the seat's ruling 2). A shot never dies (it is
+        // removed), so this is reached only by a death we did not make; it is refused here by name, not left to a bat
+        // happening to have no element.
+        if (shots.isShot(event.getEntity())) return;
         MobGrower.onDeath(event.getEntity(), nameplates.mobs(), mobElements, adapters.keys(), adapters.stats(),
                 adapters.scheduler(), adapters.log());
         MobSplitter.onDeath(event.getEntity(), nameplates.mobs(), adapters.keys(), nameplates, adapters.log(),
                 selfTest::adoptSplitChild);
+    }
+
+    // --- THE PHALANX'S SHOT (dragon-mobs step R7a; MobShooter's javadoc carries the whole account) -------------------
+
+    /**
+     * ANY VANILLA DAMAGE DESTROYS A SHOT (the seat's ruling 2; Ben: "Any attack destroys it", L: area attacks too): a
+     * swing ({@code ENTITY_ATTACK}, {@code ENTITY_SWEEP_ATTACK}), an arrow ({@code PROJECTILE}), a vanilla explosion,
+     * fire, {@code /kill}. LOWEST and not ignoreCancelled, so it sees the event first and cancels it: every handler of
+     * ours that prices damage is ignoreCancelled and never runs for a shot, and the carrier's vanilla health never moves.
+     * Our own pipeline's damage never raises this event; it meets the shot at {@code BukkitCombatant}'s handles.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onShotDamaged(EntityDamageEvent event) {
+        if (!shots.isShot(event.getEntity())) return;
+        event.setCancelled(true);
+        String by = "vanilla cause=" + event.getCause();
+        if (event instanceof EntityDamageByEntityEvent e) {
+            by += " damager=" + e.getDamager().getType().getKey().getKey() + " " + e.getDamager().getUniqueId();
+        }
+        shots.strike(event.getEntity(), by);
+    }
+
+    /** NO MOB TARGETS A SHOT (the seat's ruling 2). READ: only the Warden's predicate could name a bat; this refuses all. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onShotTargeted(org.bukkit.event.entity.EntityTargetEvent event) {
+        if (event.getTarget() != null && shots.isShot(event.getTarget())) event.setCancelled(true);
+    }
+
+    /** A SHOT NEVER CHANGES WORLD (the seat's ruling 6): a portal it flies through is refused, so it flies on. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onShotPortal(org.bukkit.event.entity.EntityPortalEvent event) {
+        if (shots.isShot(event.getEntity())) event.setCancelled(true);
+    }
+
+    /** A death we did not make (a shot is only ever removed) pays nothing: no drops, no XP. Growth and the split: onMobDeath. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onShotDeath(EntityDeathEvent event) {
+        if (!shots.isShot(event.getEntity())) return;
+        event.getDrops().clear();
+        event.setDroppedExp(0);
+    }
+
+    /**
+     * THE BOW IT NEVER FIRES (the seat's ruling 7; X3). A mob whose file authors a {@code shot:} holds a bow, and vanilla
+     * then runs its RangedBowAttackGoal: draw 20 ticks, release, wait 40 (20 on hard) (READ, RangedBowAttackGoal#tick,
+     * AbstractSkeleton#reassessWeaponGoal). The release calls {@code AbstractSkeleton#performRangedAttack}, which raises
+     * this event BEFORE the arrow is spawned and, cancelled, removes it unspawned (READ: the arrow is a
+     * {@code Projectile.Delayed} whose {@code spawn()} is skipped). So cancelling here means no arrow ever exists.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onShooterBow(org.bukkit.event.entity.EntityShootBowEvent event) {
+        if (event.getEntity() instanceof Player || !shots.firesShots(event.getEntity())) return;
+        event.setCancelled(true);
+        adapters.log().info(io.github.butterflysmp.rpg.paper.health.MobShotLines.bowSuppressed(
+                shots.mobIdOf(event.getEntity()), event.getEntity().getUniqueId(), org.bukkit.Bukkit.getCurrentTick()));
     }
 
     @EventHandler

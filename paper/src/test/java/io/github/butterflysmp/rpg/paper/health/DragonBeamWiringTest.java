@@ -112,7 +112,7 @@ class DragonBeamWiringTest {
         int line = indexAfter(b, play, "adapters.log().info(MobBeamLines.sound(a.mobId, mob.getUniqueId(), when, tick, s));");
         assertTrue(play > 0 && world > play && line > world && line < play + 8, "each sound is played, then logged");
         List<String> plugin = codeLines(MAIN.resolve("RpgPlugin.java"));
-        assertTrue(plugin.stream().anyMatch(s -> s.contains("RpgPlugin::soundKnown)")) && plugin.stream().anyMatch(s -> s.contains("return k != null && org.bukkit.Registry.SOUND_EVENT.get(k) != null;")),
+        assertTrue(plugin.stream().anyMatch(s -> s.contains("RpgPlugin::soundKnown, k -> org.bukkit.Material.matchMaterial(k) != null)")) && plugin.stream().anyMatch(s -> s.contains("return k != null && org.bukkit.Registry.SOUND_EVENT.get(k) != null;")),
                 "production's loader asks the server's sound registry");
     }
 

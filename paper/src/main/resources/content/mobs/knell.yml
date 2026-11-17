@@ -55,9 +55,9 @@ beam:
   # move, his confirmed timing: 24 (was 20). A PAIR with teleport.delay_ticks: the two must sum to 48 until he rules
   # otherwise. Neither is derived from a sound.
   telegraph_ticks: 24
-  # The telegraph TICKS (0 = the lock) on which the purple warning line is drawn. The seat's 0 and 18, NOT BEN'S: the
-  # second flash three quarters through, as before. Each must be inside the telegraph.
-  flash_at: [0, 18]
+  # The telegraph TICKS (0 = the lock) on which the purple warning line is drawn. ONE flash, at the lock: Ben, 2026-11-17,
+  # "The second purple line is out of place. remove it" (the seat's second flash at 18 is gone). Inside the telegraph.
+  flash_at: [0]
   # BLOCKS from the Knell's EYE. A target is in range when its aim point is at most this far away; the fired beam
   # runs this far along the locked line unless a block stops it.
   range: 40

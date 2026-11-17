@@ -120,7 +120,7 @@ final class SelfTestStaging {
                     : java.util.Optional.of("teleport_draw takes '<tag> <right|left> <degrees>', got '" + arg + "'");
             case AWAIT_FUSE -> SelfTestBlast.parseAwait(arg).isPresent() ? java.util.Optional.empty()
                     : java.util.Optional.of("await_fuse takes '<tag> <min fuse> <timeout ticks>', got '" + arg + "'");
-            case DETONATE, IGNITE, PROBE_FUSE, THAW, PROBE_MOTION, BEAM, PROBE_AT -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
+            case DETONATE, IGNITE, PROBE_FUSE, THAW, PROBE_MOTION, BEAM, PROBE_AT, SHOT, PROBE_SHOT -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes one tag, got '"
                             + arg + "'");
             default -> java.util.Optional.empty();

@@ -209,6 +209,9 @@ public final class RpgPlugin extends JavaPlugin {
     /** The selftest's HURT line (dragon-mobs R3): in the store's composite from the start, bound to the service later. */
     private final io.github.butterflysmp.rpg.paper.selftest.SelfTestDamageTap selfTestDamage =
             new io.github.butterflysmp.rpg.paper.selftest.SelfTestDamageTap();
+    /** The Phalanx's shot (dragon-mobs step R7a), kept for onDisable: a stop ends every live shot. */
+    private io.github.butterflysmp.rpg.paper.health.MobShooter shooter;
+
     /** The selftest, kept for onDisable: a server stop during a run restores through it (GATE-dragon-knell-4.md). */
     private SelfTestService selfTest;
     private AbilityService abilityService;
@@ -285,7 +288,7 @@ public final class RpgPlugin extends JavaPlugin {
                         || armor.find(id).isPresent() || tools.find(id).isPresent());
         // A mob's element must name a loaded element, so elements load first (above) and the mob loader asks.
         this.mobs = new MobLoader(getLogger(), id -> elements.find(id).isPresent(),
-                RpgPlugin::soundKnown)
+                RpgPlugin::soundKnown, k -> org.bukkit.Material.matchMaterial(k) != null)
                 .loadAll(new File(contentDir, "mobs"));
         // The vanilla table (PLAN-dragon-mobs.md N2): an Enderman is Void and has no mob file. One resolver answers
         // "the element of this creature": the mob's file, else this table, else none.
@@ -716,17 +719,20 @@ public final class RpgPlugin extends JavaPlugin {
                 () -> this.mobs, adapters,
                 io.github.butterflysmp.rpg.core.mob.BeamTeleport.uniform(new java.util.Random()));
         beams.addListener(teleports);
+        // THE PHALANX'S SHOT (dragon-mobs step R7a): one loop per Phalanx, and the sink every handle of ours asks first.
+        shooter = new io.github.butterflysmp.rpg.paper.health.MobShooter(() -> this.mobs, adapters);
+        ((io.github.butterflysmp.rpg.paper.adapter.ShotSink.Late) adapters.shots()).bind(shooter);
         selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
                 buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements,
                 // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).
                 (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
-                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports);
+                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports, shooter);
         selfTestDamage.bind(selfTest);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams);
+                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams, shooter);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md
@@ -743,6 +749,8 @@ public final class RpgPlugin extends JavaPlugin {
                     beams.onAppear(mob);   // a Knell loaded this early gets its beam loop too (step R5); idempotent
                 });
             }
+            // Every entity, not only the living: a shot's display that was somehow saved is an orphan too (step R7a).
+            for (org.bukkit.entity.Entity e : world.getEntities()) scheduler.onEntity(e, () -> shooter.onAppear(e));
         }
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
@@ -1020,6 +1028,8 @@ OLD
         // Mining: destroy every player's fake displays and STOP the 127.0.0.1 pack server (the
         // standing rule: the dev HTTP server stops on disable). Touches no player data.
         if (mining != null) mining.shutdown();
+        // Every live Phalanx shot ends now (step R7a): none is saved anyway (setPersistent(false)), and this says so.
+        if (shooter != null) shooter.shutdown();
 
         // FIRST, ahead of the profile flush: a menu can be holding a player's weapon, and nothing
         // else in the plugin gives it back. A weapon returned to an inventory has to be written

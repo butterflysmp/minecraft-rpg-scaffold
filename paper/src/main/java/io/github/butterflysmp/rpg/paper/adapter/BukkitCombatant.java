@@ -196,6 +196,13 @@ public final class BukkitCombatant {
                                           DefenseRule defense, String element,
                                           HitAccrual accrual) {
             ctx.scheduler().onEntity(entity, () -> {
+                // THE PHALANX'S SHOT (dragon-mobs step R7a, the seat's ruling 2): ANY damage that reaches a shot
+                // destroys it, whatever the amount, and nothing below runs for it: no store, no status, no accrual,
+                // no Ignite, no aggro, no flash. FIRST, so no later line can be reached by a shot.
+                if (ctx.shots().strike(entity, String.format(java.util.Locale.ROOT,
+                        "ability dealer=%s element=%s amount=%.3f", sourceId, element, amount))) {
+                    return;
+                }
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
                 Entity source = Attribution.attributableSource(
@@ -366,13 +373,20 @@ public final class BukkitCombatant {
          * is derived rather than hardcoded, so the seam never claims a player heal came from a mob.
          */
         @Override public void applyHeal(double amount) {
-            ctx.scheduler().onEntity(entity, () ->
-                    ctx.stats().heal(entity.getUniqueId(), amount,
-                            entity.getUniqueId(), entity instanceof Player));
+            ctx.scheduler().onEntity(entity, () -> {
+                // A shot is never healed (it has no health): a heal is not an attack, so it does not destroy one.
+                if (entity.getPersistentDataContainer().has(ctx.keys().mobShot)) return;
+                ctx.stats().heal(entity.getUniqueId(), amount,
+                        entity.getUniqueId(), entity instanceof Player);
+            });
         }
 
         @Override public void applyKnockback(Vec3 direction, double strength) {
             ctx.scheduler().onEntity(entity, () -> {
+                // A push is part of an attack: on a shot it destroys it (step R7a), and the shot is never moved.
+                if (ctx.shots().strike(entity, String.format(java.util.Locale.ROOT, "ability knockback=%.3f", strength))) {
+                    return;
+                }
                 Vector v = new Vector(direction.x(), direction.y(), direction.z());
                 if (v.lengthSquared() > 0) v.normalize().multiply(strength);
                 entity.setVelocity(entity.getVelocity().add(v));
@@ -386,8 +400,10 @@ public final class BukkitCombatant {
          * takes it from here: walls stop them, ledges drop them.
          */
         @Override public void applyImpulse(Vec3 velocity) {
-            ctx.scheduler().onEntity(entity, () ->
-                    entity.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z())));
+            ctx.scheduler().onEntity(entity, () -> {
+                if (ctx.shots().strike(entity, "ability impulse")) return;   // step R7a: a shot is never moved by us
+                entity.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z()));
+            });
         }
 
         /**
@@ -416,6 +432,10 @@ public final class BukkitCombatant {
                 return;
             }
             ctx.scheduler().onEntity(entity, () -> {
+                // STATUSES NEVER ATTACH TO A SHOT (step R7a, the seat's ruling 2): a hit that would apply one destroys
+                // it instead. Wither, Ignite's scorch, Freeze, Rooted, Soaked: every status lands here or in
+                // applyDamage's accrual, and both ask first.
+                if (ctx.shots().strike(entity, "ability status=" + statusId)) return;
                 switch (def) {
                     // Extend a burn, never shorten it. A 2s scorch pulse must not stomp
                     // the 10s burn someone already took from flint and steel.

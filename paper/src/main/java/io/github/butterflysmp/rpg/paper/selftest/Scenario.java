@@ -189,6 +189,17 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * {@code DRIVE teleport_draw tag=<t> <uuid> side=<s> first=<a>} ({@link SelfTestBeam}).
          */
         TELEPORT_DRAW,
+        /**
+         * {@code <tag>}: make each tagged Phalanx within 48 blocks FIRE its shot on its next tick, frozen or not
+         * (dragon-mobs step R7a, the seat's ruling 10). Logs {@code DRIVE shot tag=<t> <uuid>}, or why it did not take;
+         * the shot's own {@code [Rpg] SHOT fired ...} line follows from the Phalanx's loop.
+         */
+        SHOT,
+        /**
+         * {@code <tag>}: log each live shot of each tagged Phalanx within 48 blocks: its position, AGE in ticks, the
+         * straight line from its origin ({@code flown}) and its velocity ({@code [Rpg]}-less {@code SHOT at ...}).
+         */
+        PROBE_SHOT,
         /** A line for the reader. Changes nothing. */
         NOTE
     }
