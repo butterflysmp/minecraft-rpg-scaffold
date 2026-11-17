@@ -12,6 +12,8 @@
 # paired with docs/gates/GATE-dragon-knell-2.md (SelfTestScenariosTest.docOf), as the three dragon gates are with
 # GATE-dragon-fix.md: their rows are that gate's re-predictions, and keeping two files kept Ben's two commands.
 # THEN, Ben's re-timing of 2026-11-17 (KNELL 3): both are now paired with docs/gates/GATE-dragon-knell-3.md instead.
+# THEN, Ben's one more number (KNELL 4): dragon-teleport is paired with docs/gates/GATE-dragon-knell-4.md; dragon-beam stays
+# with GATE-dragon-knell-3.md (its lines do not change at a 28-tick delay).
 gates:
   - melee-cell
   - level
