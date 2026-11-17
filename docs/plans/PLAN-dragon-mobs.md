@@ -607,6 +607,48 @@ TQ1R2 ASK 2 question="Did that wait feel right?" answer="no" ticks=45
 - **His "no" to the wait: `teleport.delay_ticks` 89 is NOT CONFIRMED, awaiting his number.** The seat has asked him
   what he wants to try in its place.
 
+### Ben, 2026-11-17, VERBATIM: the re-timing of the bell (the follow-up, `feat/dragon-knell-3`)
+
+After answering "no" to *"Did that wait feel right?"* (the boot of `58c0f7a1`), Ben:
+
+> "Before I send this to CC, an elaboration on the no:
+> The Bell and warning shot are good, after that nothing is timed properly. The resonance doesn't become audible for
+> about a second after the sound starts and it ceases being audible for about a second at the end. I think we do a few
+> things here:
+> 1. Start playing the resonance at the same time as the bell
+> 2. change the warning shot time from 1.3s to 1s
+> 3. change the teleport time to one second before the resonance sound ends"
+
+**THE SEAT'S READING, as put to him:** at the warning's start the bell strike AND the resonance both begin; the shot
+comes 20 ticks later; the teleport comes 44 ticks after a hit.
+
+**THE 44 IS THE SEAT'S ARITHMETIC, NOT HIS NUMBER.** The client draws the resonance at pitch 1.0, 0.9 or 0.85, so it
+plays for 3.780 s, 4.200 s or 4.447 s (the measurement of 2026-11-17). The seat took the MIDDLE variant: 4.200 s from
+the sound's start, less his one second, is 3.200 s = **64 ticks after the telegraph's start**; less the 20-tick
+telegraph, **44 ticks after the fire**. By variant the move lands **0.58 s, 1.00 s or 1.25 s** before the sound ends;
+the server cannot know which variant a client drew.
+
+**CHOSEN BY THE SEAT, UNRULED:** the amethyst chime still plays at the fire; `flash_at` becomes [0, 15].
+
+**SUPERSEDES** his 1.3-second warning (26 ticks) and the seat's 89-tick delay. Damage stays 65 (confirmed by play).
+
+### THE BOOT OF KNELL 3 (`9d0cbffb`, 2026-11-17): BEN'S FOUR ANSWERS, VERBATIM, AND THE SEAT'S DECISION
+
+Read from the server log of that boot (`GATE-dragon-knell-3.md`, KQ1R3 and TQ1R3), verbatim:
+
+```
+KQ1R3 ASK 1 question="Did the beam fire as the ringing became audible?" answer="yes" ticks=182
+KQ1R3 ASK 2 question="With 1 second, could you still step out of the way in time?" answer="yes" ticks=55
+TQ1R3 ASK 1 question="Did the Knell move about a second before the ringing faded?" answer="it moved about a second after the rining stopped" ticks=203
+TQ1R3 ASK 2 question="Does the whole sequence feel timed right now?" answer="not quite" ticks=105
+```
+
+- **CONFIRMED BY PLAY, Ben:** the 20-tick warning (he stepped out of the second beam, `gap=1.949 miss`), and the bell
+  strike with the resonance at the lock as its cue.
+- **`teleport.delay_ticks` 44 is NOT CONFIRMED.**
+- **THE SEAT'S DECISION:** the delay will not be derived from a sound file again; **Ben will tune it by ear with a dev
+  tool and rule the number.**
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1394,6 +1436,42 @@ answered by every row ending itself (an explicit kill or wait), so no TELEPORT l
   The seat read `MobBeamer`: unroot runs at the fire and removes the transient modifier; **the seat's INFERENCE,
   not diagnosed, is vanilla's path recalculation delay.** If a later row shows it never walks again, that is a
   defect.
+
+### 5.R.8 BEN'S RE-TIMING AS BUILT (`feat/dragon-knell-3`, off master `232f82b4`, 2026-11-17)
+
+The gate is `docs/gates/GATE-dragon-knell-3.md`; both Knell scenario files are paired with it.
+
+| piece | as built | where |
+|---|---|---|
+| **the numbers** | `telegraph_ticks` 20 (Ben's 1 s); `flash_at` [0, 15] (the seat's); `teleport.delay_ticks` 44 (the seat's arithmetic, RULINGS); `damage` 65 unchanged | `knell.yml` |
+| **the sounds** | at the telegraph: `block.bell.use` 1.0 / 1.0 then `block.bell.resonate` 1.4 / 1.0; at the fire: `block.amethyst_block.chime` 1.0 / 1.0 alone | `knell.yml` |
+| **code** | **none.** The sounds were already content (KNELL 2), so the re-timing is a content change; the load-time check (delay shorter than the cycle minimum) is unchanged, 44 < 100 | |
+
+**The 44 is counted from the FIRE and was derived for a 20-tick telegraph** (the resonance starts at the lock): change one
+and the other must be re-derived. `knell.yml`'s comment says so.
+
+**WHAT THE RE-TIMING CHANGES (B3), changed nothing:** the resonance now starts whether or not the beam will hit, and rings
+on after a miss with no teleport to mark its end; a Knell killed mid-telegraph leaves both telegraph sounds ringing (the
+API can stop a sound already sent, `Player#stopSound(String, SoundCategory)`, per player by key and category, so it would
+cut every Knell's resonance that player hears: NOT built); the window in which a hit Knell is free to walk and melee
+before it moves is 44 ticks, down from 89; a miss has only the chime at its fire.
+
+**"THE KNELL WALKS AGAIN AFTER A BEAM" (B4), DIAGNOSED FROM THE JAR: A BOUNDED DELAY, NOT A DEFECT.** `stopPathfinding`
+nulls the navigation's path; `MeleeAttackGoal` (`(this, 1.2, false)`) then reports it cannot continue, the goal
+selector stops it, and it restarts only through `canUse`, which passes at most once every 20 game ticks and is asked on
+alternate ticks. Our root zeroes velocity once and its modifier is removed at the fire, so nothing is left stuck. **So
+the walk resumes at most 21 ticks after the fire (INFERRED from the reads: the order of our task against the mob's AI
+inside one tick was not read)**, and KB2R2's 13-tick reading was inside it. Every read with its class, member and
+`javap` command is in the gate's K3. **Its witness is WA1**: a live Knell, a forced MISS (he steps 3 south, so no
+teleport falls due), and its distance from him 30 ticks after the fire, predicted smaller by more than 0.20.
+
+**CARRIED, UPDATED:** "walks again after a beam" is **PREDICTED** (WA1), not yet read. The 13 closed manual gates'
+finding now reads: a live Knell there hears the resonance at the warning, takes 65 one second later, and moves 44 ticks
+after a hit.
+
+**CARRIED, AFTER THE BOOT OF `9d0cbffb` (2026-11-17): "WALKS AGAIN AFTER A BEAM" CLOSED by WA1.** Its distance from
+him fell 1.562 blocks between the fire (12.374) and 30 ticks later (10.811), against more than 0.20 predicted; the
+21-tick bound stays INFERRED.
 
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
