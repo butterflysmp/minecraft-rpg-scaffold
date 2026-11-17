@@ -745,6 +745,20 @@ beam's I21).
 **ALSO BUILT IN THIS BRANCH:** the Knell's second warning flash, ruled removed on 2026-11-17 (*THE BOOT OF KNELL 5*,
 above): `knell.yml` `flash_at` becomes `[0]`.
 
+### THE SEAT'S RULING ON #201, 2026-11-17: THE HOMING MATCHES THE OLD GAME (the seat's, stated in this file's words)
+
+Ben accepted the old game's steering ("steers gently", the seat's words for the record's 10%). **The 10% is a fact about
+the record: cfde822 blended 10% once per 2-TICK step** (it moved 0.4 blocks every 2 ticks, section 3.4). #201 first
+built 10% per tick, about twice as hard per block. **The seat ruled that the old game's feel is what he accepted**, so
+`phalanx.yml`'s `homing` is **0.0513 a tick**: 1 - sqrt(0.9) = 0.0513167, to four places, the per-tick fraction two of
+whose ticks give the record's one step. **That value is the seat's conversion of a number Ben left unchanged, not a
+number he typed.** The blend is the same expression as the record's; renormalising between our two ticks makes the match
+exact only for a target nearly ahead (5.R.9 X-c).
+
+**ALSO RECORDED, put to Ben by the seat and UNRULED:** at 0.2 blocks a tick and a 35-block limit, a straight shot
+expires by range at tick 176, so his 12 seconds (240 ticks) binds only for a shot that curves; a straight shot lasting
+the full 240 would need a limit of 48 blocks (F14).
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1577,7 +1591,7 @@ resource-pack model, any element on the shot, the Skreel.
 
 | piece | as built | where |
 |---|---|---|
-| **the rule** | `shot: { period_ticks, acquire_range, reacquire_range, speed, homing, life_ticks, max_distance, tolerance, damage, look, sounds }`, each quantity named in `MobShot`'s javadoc and `phalanx.yml`. The Phalanx's: 120 and 240 (Ben), 30, 35, 0.2, 0.1, 35, 1.2, 40 (cfde822's, unchanged by him) | `core.mob.MobShot`, `MobLoader` |
+| **the rule** | `shot: { period_ticks, acquire_range, reacquire_range, speed, homing, life_ticks, max_distance, tolerance, damage, look, sounds }`, each quantity named in `MobShot`'s javadoc and `phalanx.yml`. The Phalanx's: 120 and 240 (Ben), 30, 35, 0.2, 35, 1.2, 40 (cfde822's, unchanged by him), and homing 0.0513 a tick (the seat's conversion of cfde822's 10% per 2-tick step, the ruling on #201) | `core.mob.MobShot`, `MobLoader` |
 | **the flight** | pure: `flight = normalize((1 - homing) x flight + homing x normalize(aim - position))`, then `position += speed x flight`; the aim is the target's EYE (cfde822). Endings checked after each move, in order: a block on the path this tick, a hit (inside a hostile combatant's box grown by the tolerance; never a mob), the life, more than `max_distance` from the ORIGIN | `MobShot.step`, `ending`, `victim` |
 | **the clock** | an attempt every 120 ticks, the first 120 after the Phalanx appears; a NoAI Phalanx never fires of its own; a forced attempt resets the count | `MobShot.Clock` |
 | **the carrier** | an invisible, silent, NoAI, gravity-less, non-colliding, never-saved BAT, with a glowing block display riding it; moved only by `teleport` | `paper.health.MobShooter` |
@@ -1595,7 +1609,7 @@ resource-pack model, any element on the shot, the Skreel.
 |---|---|---|---|
 | X-a | who it fires at | READ ("the nearest non-creative, non-spectator player within 30") | its vanilla target if `MobHostility` names it and its eye is within 30 of the Phalanx's eye; else the nearest such. *Eye to eye*: CHOSEN |
 | X-b | does firing need sight | NOT IN THE RECORD | no; a wall in the way stops the shot (X-g) |
-| X-c | the homing | READ (10% per 2-tick step, toward the target's eye, renormalised) | 10% per TICK: it turns about twice as hard per block as cfde822's; 1 − √0.9 = 0.0513 per tick would match it. The seat read X10 as 10% |
+| X-c | the homing | READ (10% per 2-tick step, toward the target's eye, renormalised) | **0.0513 a TICK** (the seat's ruling on #201): 1 − √0.9 = 0.0513167, so two ticks give cfde822's one step. jshell, 2026-11-17, a target held still at an angle θ off the flight, the turn after the record's one step against our two ticks at 0.0513: θ 1° 0.099996° / 0.099964°; 10° 0.996344° / 0.995687°; 45° 4.166309° / 4.136585°; 90° 6.340192° / 6.176908°; 170° 1.241112° / 1.168353°. The per-tick value that matches exactly rises with θ, 0.0513167 (θ → 0) to 0.0540721 (170°), because ours renormalises between its two ticks. The record also moved 0.4 once per step where ours moves 0.2 twice, so the paths differ by a fraction of a step. #201's first build was 10% a tick |
 | X-d | the life | Ben: 12 s | 240 ticks. **Unreachable at the shipped numbers** (the gate's E1): a straight shot passes 35 blocks at tick 176 |
 | X-e | the 35-block limit | READ ("past 35 blocks from its start") | the straight line from its ORIGIN, not the path flown; past 35, not at it |
 | X-f | the hit | READ (the first living entity in a 1.2 half-extent box, mobs included) | a combatant mobs are hostile to (players today), nearest if two; **never a mob** (the seat's ruling 5); the box measured as cfde822's, turned round: the shot's centre inside the body's box grown by 1.2 |

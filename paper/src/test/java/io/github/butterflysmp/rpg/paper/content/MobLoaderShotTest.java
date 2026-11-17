@@ -145,7 +145,7 @@ class MobLoaderShotTest {
     }
 
     /**
-     * THE PHALANX WE SHIP (step R7a): Ben's 120 and 240; the old game's 30, 35, 0.2, 0.1, 35, 1.2 and 40, starting
+     * THE PHALANX WE SHIP (step R7a): Ben's 120 and 240; the homing 0.0513 a tick, the seat's conversion of the old game's 10% per 2-tick step; the old game's 30, 35, 0.2, 35, 1.2 and 40, starting
      * numbers he left unchanged; the seat's chosen look; the bow.
      */
     @Test
@@ -156,7 +156,7 @@ class MobLoaderShotTest {
         }
         MobDefinition def = load().find("phalanx").orElseThrow();
         assertTrue(warnings.isEmpty(), warningText());
-        assertEquals(new MobShot(120, 30, 35, 0.2, 0.1, 240, 35, 1.2, 40,
+        assertEquals(new MobShot(120, 30, 35, 0.2, 0.0513, 240, 35, 1.2, 40,
                 new MobShot.ShotLook("amethyst_block", 0.4, 0xC88CFF, 0xC88CFF, 1.5, 0xFF69B4, 2.0, 4),
                 List.of(new BeamSound("entity.wither.ambient", 0.5, 1.5)),
                 List.of(new BeamSound("entity.shulker_bullet.hurt", 1.0, 1.0))), def.shot());

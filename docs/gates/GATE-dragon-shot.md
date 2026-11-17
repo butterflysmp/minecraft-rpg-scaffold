@@ -5,6 +5,14 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+> **REWRITTEN BEFORE ANY BOOT, 2026-11-17, on the seat's ruling on #201 (the homing matches the old game).** The homing
+> moved from 0.1 to **0.0513 a tick** (`phalanx.yml`; the plan's 5.R.9 X-c), so the flight was re-run in jshell at the
+> new value and every prediction resting on it re-checked. **Changed:** S4's expression; SH6's `at` and `flown` (its
+> age, 176, did not move); E1's straight figure and turning radius; SH10's second wait, 100 to 140, so its second hit
+> does not rest on a thin margin; the run's length. **Unchanged, re-run and the same to three places:** SH1, SH4, SH5,
+> SH7, SH8, SH12 and SQ1, whose targets stand dead ahead, so the homing has nothing to turn. The gate had been neither
+> booted nor read, so no reading is touched.
+
 The plan is `PLAN-dragon-mobs.md` (RULINGS, *the Phalanx's shot starts from the old game's numbers*; §3.4; §7 F-S). The
 scenario file is `paper/src/main/resources/selftest/GATE-dragon-shot.yml`, run by `/rpg selftest dragon-shot`.
 
@@ -26,7 +34,7 @@ him after a heal:
 | SH1, SH8 | one shot | 40 | no: 40 < 100 |
 | SH2, SH3, SH4, SH5, SH9 | one shot, only if the row's destroying step failed | 40 | no |
 | SH6, SH7, SH12 | nothing (it expires, meets the wall, ends with its Phalanx); at worst one shot | 40 | no |
-| SH10 | the first shot (≈ tick 163), then the row heals (tick 200), then the second (≈ tick 283) | 40, then 40 | no: one 40 per heal |
+| SH10 | the first shot (≈ tick 163), then the row heals (tick 200), then the second (≈ tick 283); the row ends at 340, before a third fire (360) | 40, then 40 | no: one 40 per heal |
 | SH11 | nothing (100 ticks, before its clock's 120; the bow never fires) | 0 | no |
 | SQ1 | one shot; the row heals; then one more if he misses it | 40, then 40 | no: one 40 per heal |
 | KQ1R6 | one Knell beam | 65 | no: 65 < 100 |
@@ -96,7 +104,7 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`) or in the pinned API source (`pap
 
 ### S4 — THE FLIGHT, AS EXECUTED (jshell, 2026-11-17, the expression in `MobShot`'s javadoc, not our class)
 
-`toward = normalize(aim − position)`; `flight = normalize(0.9 × flight + 0.1 × toward)`; `position += 0.2 × flight`.
+`toward = normalize(aim − position)`; `flight = normalize(0.9487 × flight + 0.0513 × toward)`; `position += 0.2 × flight`.
 **Positions are RELATIVE TO HIS FEET** (the row's `CLEAN … return=` line is his feet); the Phalanx's eye is its feet +
 `(double) 2.1f` (READ, `EntityType`: `wither_skeleton` `eyeHeight(2.1f)`), his eye his feet + `(double) 1.62f`. A hit is
 the new position inside his box (0.6 × 1.8) grown by 1.2: x within ±1.5, y −1.2 to 3.0, z within ±1.5.
@@ -121,11 +129,11 @@ the new position inside his box (0.6 × 1.8) grown by 1.2: x within ±1.5, y −
 53**, 1.408 1.676 0.
 
 **SH6, chased to 38 west after k ticks** (k = his move's tick minus the fire's), **EXPIRED by range at age 176 for every k
-from 0 to 6**: at x −27.197 to −27.195, y 1.710 to 1.694, z 0; `flown` 35.199 to 35.197.
+from 0 to 6**: at x −27.195 to −27.194, y 1.680 to 1.662, z 0; `flown` 35.198 to 35.196.
 
 **E1 — THE LIFE OF 240 IS UNREACHABLE AT SHIPPED NUMBERS, SAID PLAINLY.** A shot flying straight passes 35 blocks from
-its origin at age 176 (jshell, above: a target 10000 west, `RANGE age=176 flown=35.198635`), 64 ticks before 240; and the
-homing turns it only toward a target it then reaches (≈ 1.8 blocks' turning radius at 0.2 a tick and 10%). So
+its origin at age 176 (jshell, above: a target 10000 west, `RANGE age=176 flown=35.197465`), 64 ticks before 240; and the
+homing turns it only toward a target it then reaches (≈ 3.7 blocks' turning radius at 0.2 a tick and 0.0513: at most 3.1 degrees a tick). So
 `limit=life` needs a shot that circles within 35 of where it was fired for 12 seconds without reaching anyone, which no
 row here can stage. **Its only exercise is `MobShotTest.theLifeEndsItAtTick240AndNotAt239` (killed by MUTLIFE).** The
 brief's "a shot left to expire at 240 ticks" is SH6, which expires by RANGE.
@@ -185,7 +193,7 @@ logged nowhere). KQ1R6 re-asks Ben.
 
 1. `/gamemode survival` — **alone, the first line after login.**
 2. `/rpg selftest dragon-shot` — **ONCE. Wait for the chat to say the run finished, and answer every gold question,
-   before the next command.** About **2½ minutes** plus the time you take to answer (its waits sum to 1.38 minutes; the
+   before the next command.** About **2½ minutes** plus the time you take to answer (its waits sum to 1.41 minutes; the
    fourteen rows' cleans and teleports add a few seconds each). **Stand still and touch nothing until the gold text
    asks you to.** You will be shot several times; you cannot die (every shot is 40 and you are healed before each).
    **Near the end** a Phalanx fifteen blocks east fires at you twice: **watch the first shot come at you and let it hit
@@ -306,7 +314,7 @@ his defence is still the 10 the Knell rows read; a different defence changes onl
 
 | prediction | stands on | READING |
 |---|---|---|
-| The fired line; his `CMD /tp @s ~-38 ~ ~ -90 0` 3 ticks after the step; **`[Rpg] SHOT expired … age=176 at=<feet + −27.197…−27.195, 1.710…1.694, 0.000> flown=35.199…35.197 limit=range`** (S4; the first `feet` is where he began the row). No hit, no HURT. After `return`, `live=0` | S4, SH6 table; E1 says why it is range and not life | |
+| The fired line; his `CMD /tp @s ~-38 ~ ~ -90 0` 3 ticks after the step; **`[Rpg] SHOT expired … age=176 at=<feet + −27.195…−27.194, 1.680…1.662, 0.000> flown=35.198…35.196 limit=range`** (S4; the first `feet` is where he began the row). No hit, no HURT. After `return`, `live=0` | S4, SH6 table; E1 says why it is range and not life | |
 
 ### SH7 — a shot that meets a wall (SURVIVAL)
 

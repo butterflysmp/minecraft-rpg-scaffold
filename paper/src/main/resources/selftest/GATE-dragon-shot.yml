@@ -223,7 +223,9 @@ SH9:
   - wait: 5
 
 # SH10: the live cycle. A LIVE Phalanx 10 east fires of its own 120 ticks after it appears and again 120 ticks later;
-# each hits him (a heal between); it draws its bow at him the whole time and looses no arrow. Then killed.
+# each hits him (a heal between); it draws its bow at him the whole time and looses no arrow. The row ends 340 ticks
+# after the spawn: the second hit (about 283) has a margin of more than 50 ticks for its strafing, and the third
+# fire (360) cannot come. Then killed.
 SH10:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-6 -1 -8 16 6 8"
@@ -235,7 +237,7 @@ SH10:
   - cmd: "tp @s ~-10 ~ ~ -90 0"
   - wait: 200
   - cmd: "rpg heal 1000000"
-  - wait: 100
+  - wait: 140
   - probe_entities: "arrow 16"
   - cmd: "kill @e[tag=sh10]"
   - wait: 5

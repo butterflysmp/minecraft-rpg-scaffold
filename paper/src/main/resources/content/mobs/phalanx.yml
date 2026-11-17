@@ -35,10 +35,14 @@ shot:
   reacquire_range: 35
   # BLOCKS PER TICK, every step the same length: 4 blocks a second. cfde822 moved 0.4 every 2 ticks.
   speed: 0.2
-  # A FRACTION: each tick, (1 - homing) x its direction of flight + homing x the direction to its target's eye, made a
-  # unit again. cfde822 blended 10% per STEP of 2 ticks; this is 10% per TICK, so it turns about twice as hard per
-  # block flown (to match cfde822 per block it would be 1 - sqrt(0.9) = 0.0513). The seat's reading: X10 is 10%.
-  homing: 0.1
+  # A FRACTION PER TICK: each tick, (1 - homing) x its unit direction of flight + homing x the unit direction to its
+  # target's eye, made a unit again. cfde822 blended 10% per STEP, and its step was 2 TICKS (0.4 blocks): the same
+  # expression, applied half as often. Ben accepted the old game's steering, so this is the per-tick value two of
+  # whose ticks give the old game's one step: 1 - sqrt(0.9) = 0.0513167, to four places. It is exact for a target
+  # nearly ahead; renormalising between our two ticks makes it turn slightly LESS than the old step at wide angles
+  # (6.18 degrees against 6.34 for a target at right angles; jshell, PLAN-dragon-mobs.md 5.R.9 X-c). The seat's
+  # conversion of a number Ben left unchanged, not a number he typed.
+  homing: 0.0513
   # TICKS of flight, then it expires. Ben's 12 s.
   life_ticks: 240
   # BLOCKS, the straight line from where it was FIRED to where it is: past this it expires. cfde822: "past 35 blocks

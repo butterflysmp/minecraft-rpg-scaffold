@@ -22,8 +22,8 @@ class MobShotTest {
     private static final MobShot.ShotLook LOOK =
             new MobShot.ShotLook("amethyst_block", 0.3125, 0xC88CFF, 0xC88CFF, 1.2, 0xFF69B4, 1.5, 4);
 
-    /** The shipped numbers (phalanx.yml): 120, 30, 35, 0.2, 0.1, 240, 35, 1.2, 40. */
-    private static MobShot shipped() {
+    /** Fixed inputs: phalanx.yml's numbers but the homing, here the old game's 0.1 (phalanx.yml ships 0.0513 a tick). */
+    private static MobShot fixture() {
         return new MobShot(120, 30, 35, 0.2, 0.1, 240, 35, 1.2, 40, LOOK, List.of(), List.of());
     }
 
@@ -41,7 +41,7 @@ class MobShotTest {
 
     @Test
     void theLaunchIsAtTheOriginAimedAtTheTargetAtTheSpeed() {
-        MobShot.State s = shipped().launch(new Vec3(0, 1.5, 0), new Vec3(10, 1.5, 0));
+        MobShot.State s = fixture().launch(new Vec3(0, 1.5, 0), new Vec3(10, 1.5, 0));
         close(new Vec3(0, 1.5, 0), s.position());
         close(new Vec3(0.2, 0, 0), s.velocity());
         assertEquals(0, s.age());
@@ -54,7 +54,7 @@ class MobShotTest {
      */
     @Test
     void twoStepsAtFixedInputsMatchTheFiguresExecutedInJshell() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         MobShot.State s = shot.launch(new Vec3(0, 1.5, 0), new Vec3(10, 1.5, 0));
         Optional<Vec3> aim = Optional.of(new Vec3(10, 1.5, 5));
         s = shot.step(s, aim);
@@ -65,6 +65,27 @@ class MobShotTest {
         close(new Vec3(0.199246575408321, 0, 0.017343649790525), s.velocity());
         assertEquals(2, s.age());
         assertEquals(0.2, s.velocity().length(), 1e-12, "the speed never changes");
+    }
+
+    /**
+     * THE SHIPPED 0.0513 IS THE OLD GAME'S STEERING (the seat's ruling on #201): cfde822 blended 10% once per 2-tick
+     * step; two of our ticks at 1 - sqrt(0.9) turn the same as that one step for a target nearly ahead (here 1 degree
+     * off, far away so the direction to it does not move): jshell, 2026-11-17, 0.099996 degrees for the old step,
+     * 0.099964 for two ticks at 0.0513. At 90 degrees off they part (6.340 against 6.177): renormalising between our
+     * two ticks, recorded in phalanx.yml.
+     */
+    @Test
+    void twoTicksAtTheShippedHomingTurnAsTheOldGamesOneStep() {
+        MobShot shot = new MobShot(120, 30, 35, 0.2, 0.0513, 240, 35, 1.2, 40, LOOK, List.of(), List.of());
+        double off = Math.toRadians(1.0);
+        Vec3 aim = new Vec3(1e7 * Math.cos(off), 0, 1e7 * Math.sin(off));
+        MobShot.State s = shot.launch(Vec3.ZERO, new Vec3(1, 0, 0));
+        s = shot.step(shot.step(s, Optional.of(aim)), Optional.of(aim));
+        double ours = Math.toDegrees(Math.atan2(s.velocity().z(), s.velocity().x()));
+        Vec3 old = new Vec3(1, 0, 0).scale(0.9).add(new Vec3(Math.cos(off), 0, Math.sin(off)).scale(0.1)).normalize();
+        double record = Math.toDegrees(Math.atan2(old.z(), old.x()));
+        assertEquals(0.099996, record, 1e-6);
+        assertEquals(0.099964, ours, 1e-6);
     }
 
     @Test
@@ -85,7 +106,7 @@ class MobShotTest {
 
     @Test
     void noTargetFliesStraightOn() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         MobShot.State s = shot.launch(new Vec3(0, 0, 0), new Vec3(0, 0, -1));
         for (int i = 0; i < 5; i++) s = shot.step(s, Optional.empty());
         close(new Vec3(0, 0, -1.0), s.position());
@@ -101,7 +122,7 @@ class MobShotTest {
 
     @Test
     void aShotCannotBeAimedAtItsOwnOrigin() {
-        assertThrows(IllegalArgumentException.class, () -> shipped().launch(Vec3.ZERO, Vec3.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> fixture().launch(Vec3.ZERO, Vec3.ZERO));
     }
 
     // --- the endings, each at its edge ---------------------------------------------------------------------------
@@ -112,14 +133,14 @@ class MobShotTest {
 
     @Test
     void theLifeEndsItAtTick240AndNotAt239() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         assertEquals(Optional.empty(), shot.ending(at(new Vec3(1, 0, 0), 239), false, false));
         assertEquals(Optional.of(MobShot.Ending.EXPIRED_LIFE), shot.ending(at(new Vec3(1, 0, 0), 240), false, false));
     }
 
     @Test
     void theRangeIsTheStraightLineFromTheOriginAndEndsItPast35() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         assertEquals(Optional.empty(), shot.ending(at(new Vec3(35, 0, 0), 10), false, false), "exactly 35 is inside");
         assertEquals(Optional.of(MobShot.Ending.EXPIRED_RANGE),
                 shot.ending(at(new Vec3(35.000001, 0, 0), 10), false, false));
@@ -129,7 +150,7 @@ class MobShotTest {
 
     @Test
     void aBlockEndsItFirstThenAHitThenTheLifeThenTheRange() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         MobShot.State old = at(new Vec3(40, 0, 0), 240);
         assertEquals(Optional.of(MobShot.Ending.BLOCKED), shot.ending(old, true, true));
         assertEquals(Optional.of(MobShot.Ending.HIT), shot.ending(old, false, true));
@@ -141,7 +162,7 @@ class MobShotTest {
 
     @Test
     void theToleranceIsTheBoxGrownBy1Point2FacesIncluded() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         assertTrue(shot.meets(PLAYER, new Vec3(1.5, 1.0, 0)), "on the grown face");
         assertFalse(shot.meets(PLAYER, new Vec3(1.5000001, 1.0, 0)));
         assertTrue(shot.meets(PLAYER, new Vec3(0, 3.0, 0)));
@@ -157,7 +178,7 @@ class MobShotTest {
 
     @Test
     void aPlayerInTheBoxIsHitAndAMobInTheSameBoxNever() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         MobShot.Candidate mob = body(MobHostility.Side.MOB, false, "w", Vec3.ZERO);
         MobShot.Candidate player = body(MobHostility.Side.PLAYER, false, "w", new Vec3(1, 0, 0));
         Vec3 p = new Vec3(0.2, 1.0, 0);
@@ -167,7 +188,7 @@ class MobShotTest {
 
     @Test
     void anExemptPlayerOrOneInAnotherWorldIsNeverHit() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         Vec3 p = new Vec3(0, 1.0, 0);
         assertEquals(Optional.empty(), shot.victim(p, "w", List.of(body(MobHostility.Side.PLAYER, true, "w", Vec3.ZERO))));
         assertEquals(Optional.empty(), shot.victim(p, "w", List.of(body(MobHostility.Side.PLAYER, false, "x", Vec3.ZERO))));
@@ -175,7 +196,7 @@ class MobShotTest {
 
     @Test
     void ofTwoPlayersInTheBoxTheNearerIsHit() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         MobShot.Candidate far = body(MobHostility.Side.PLAYER, false, "w", new Vec3(1.2, 0, 0));
         MobShot.Candidate near = body(MobHostility.Side.PLAYER, false, "w", new Vec3(-0.5, 0, 0));
         assertEquals(Optional.of(near), shot.victim(new Vec3(0, 0.9, 0), "w", List.of(far, near)));
@@ -185,7 +206,7 @@ class MobShotTest {
 
     @Test
     void aHitDeals40TimesGearScoreOver100BeforeDefence() {
-        MobShot shot = shipped();
+        MobShot shot = fixture();
         assertEquals(40.0, shot.price(true, 100), 1e-12);
         assertEquals(120.0, shot.price(true, 300), 1e-12);
         assertEquals(40.0, shot.price(false, 300), 1e-12, "a passive Phalanx (none ship) takes no GS factor");
