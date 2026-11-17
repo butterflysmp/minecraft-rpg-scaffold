@@ -62,6 +62,20 @@ class MobBeamLinesTest {
                         new Vec3(0.5537, 65.0954, 0.5)));
     }
 
+    /**
+     * ONE LINE PER SOUND PLAYED (the follow-up of 2026-11-17), so the gate reads "bell.use at the telegraph,
+     * resonate and chime at the fire" from the server: when, the tick, the key, the volume and the pitch as passed.
+     */
+    @Test
+    void theSoundLineSaysWhatWasPlayedAndWhen() {
+        assertEquals("BEAM sound mob=knell id=" + K + " when=telegraph tick=5000 key=block.bell.use volume=1.00 pitch=1.00",
+                MobBeamLines.sound("knell", K, "telegraph", 5000,
+                        new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.0)));
+        assertEquals("BEAM sound mob=knell id=" + K + " when=fire tick=5026 key=block.bell.resonate volume=1.40 pitch=1.00",
+                MobBeamLines.sound("knell", K, "fire", 5026,
+                        new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.resonate", 1.4, 1.0)));
+    }
+
     @Test
     void theCancelAndTheForcedNoneLines() {
         assertEquals("BEAM cancelled mob=knell id=" + K + " elapsed=4/12 reason=gone",

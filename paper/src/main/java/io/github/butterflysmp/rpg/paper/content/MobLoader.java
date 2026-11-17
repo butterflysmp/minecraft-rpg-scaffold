@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.content;
 
+import io.github.butterflysmp.rpg.core.mob.BeamSound;
 import io.github.butterflysmp.rpg.core.mob.MobBeam;
 import io.github.butterflysmp.rpg.core.mob.MobBlast;
 import io.github.butterflysmp.rpg.core.mob.MobBody;
@@ -16,6 +17,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
@@ -36,15 +38,20 @@ public final class MobLoader {
 
     private final Logger log;
     private final Predicate<String> elementExists;
+    private final Predicate<String> soundExists;
 
     /**
      * @param elementExists whether an id names a loaded element ({@code ElementRegistry}); asked of a mob's
      *                      {@code element}, so an unknown one is a named, skipped file at load rather than a mob
      *                      that silently has no element. Elements load before mobs (RpgPlugin's content order).
+     * @param soundExists   whether a key names a sound event the server knows; asked of every beam sound
+     *                      (the follow-up of 2026-11-17), so a typo is a named, skipped file rather than a silent beam.
+     *                      Production asks {@code Registry.SOUND_EVENT}; a test passes a set.
      */
-    public MobLoader(Logger log, Predicate<String> elementExists) {
+    public MobLoader(Logger log, Predicate<String> elementExists, Predicate<String> soundExists) {
         this.log = log;
         this.elementExists = elementExists;
+        this.soundExists = soundExists;
     }
 
     public MobRegistry loadAll(File mobsDir) {
@@ -147,16 +154,40 @@ public final class MobLoader {
                 b.getInt("spots_per_side"), b.getInt("level_tolerance"), b.getBoolean("require_sight"));
     }
 
-    private static MobBeam beam(ConfigurationSection s) {
+    private MobBeam beam(ConfigurationSection s) {
         ConfigurationSection b = s.getConfigurationSection("beam");
         if (b == null) return null;
         for (String key : List.of("cycle_ticks.min", "cycle_ticks.max", "telegraph_ticks", "flash_at", "range",
-                "aim_height", "tolerance", "damage")) {
+                "aim_height", "tolerance", "damage", "sounds.telegraph", "sounds.fire")) {
             if (!b.contains(key)) throw new IllegalArgumentException("beam." + key + " is required");
         }
         return new MobBeam(b.getInt("cycle_ticks.min"), b.getInt("cycle_ticks.max"), b.getInt("telegraph_ticks"),
                 b.getIntegerList("flash_at"), b.getDouble("range"), b.getDouble("aim_height"),
-                b.getDouble("tolerance"), b.getDouble("damage"));
+                b.getDouble("tolerance"), b.getDouble("damage"), sounds(b, "telegraph"), sounds(b, "fire"));
+    }
+
+    /**
+     * One of the beam's two sound lists (the follow-up of 2026-11-17): {@code sounds.telegraph} (played at the lock)
+     * or {@code sounds.fire} (played at the fire), each a list of {@code { key, volume, pitch }}, every field
+     * required. A key the server does not know is refused by name, so a typo is a skipped file, never a silent beam.
+     */
+    private List<BeamSound> sounds(ConfigurationSection beam, String when) {
+        List<BeamSound> out = new java.util.ArrayList<>();
+        for (Map<?, ?> m : beam.getMapList("sounds." + when)) {
+            for (String f : List.of("key", "volume", "pitch")) {
+                if (!m.containsKey(f)) {
+                    throw new IllegalArgumentException("beam.sounds." + when + " entry " + m + " has no " + f);
+                }
+            }
+            String key = String.valueOf(m.get("key"));
+            if (!soundExists.test(key)) {
+                throw new IllegalArgumentException("beam.sounds." + when + " key '" + key
+                        + "' names no sound event the server knows");
+            }
+            out.add(new BeamSound(key, ((Number) m.get("volume")).doubleValue(),
+                    ((Number) m.get("pitch")).doubleValue()));
+        }
+        return out;
     }
 
     /**

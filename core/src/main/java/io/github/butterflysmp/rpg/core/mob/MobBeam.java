@@ -30,7 +30,8 @@ import java.util.UUID;
  * </ul>
  */
 public record MobBeam(int cycleMinTicks, int cycleMaxTicks, int telegraphTicks, List<Integer> flashAt,
-                      double range, double aimHeight, double tolerance, double damage) {
+                      double range, double aimHeight, double tolerance, double damage,
+                      List<BeamSound> telegraphSounds, List<BeamSound> fireSounds) {
 
     public MobBeam {
         if (cycleMinTicks < 1) {
@@ -44,6 +45,8 @@ public record MobBeam(int cycleMinTicks, int cycleMaxTicks, int telegraphTicks, 
             throw new IllegalArgumentException("beam.telegraph_ticks must be at least 1, was " + telegraphTicks);
         }
         flashAt = List.copyOf(flashAt);
+        telegraphSounds = List.copyOf(telegraphSounds);
+        fireSounds = List.copyOf(fireSounds);
         for (int t : flashAt) {
             if (t < 0 || t >= telegraphTicks) {
                 throw new IllegalArgumentException("beam.flash_at " + t + " is not a telegraph tick (0.."
@@ -69,6 +72,13 @@ public record MobBeam(int cycleMinTicks, int cycleMaxTicks, int telegraphTicks, 
      * hit on a player is ({@link MobScaling#attackDamage}: x1 for a custom mob, x GS/100 when hostile). The seat's
      * provisional pricing, as the Phage's blast's P-b.
      */
+    /** The eight-number form with no sounds: step R5's call sites read unchanged. */
+    public MobBeam(int cycleMinTicks, int cycleMaxTicks, int telegraphTicks, List<Integer> flashAt,
+                   double range, double aimHeight, double tolerance, double damage) {
+        this(cycleMinTicks, cycleMaxTicks, telegraphTicks, flashAt, range, aimHeight, tolerance, damage, List.of(),
+                List.of());
+    }
+
     public double price(boolean hostile, int gearScore) {
         return MobScaling.attackDamage(damage, true, hostile, gearScore);
     }

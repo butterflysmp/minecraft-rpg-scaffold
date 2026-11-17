@@ -60,7 +60,7 @@ class MobLoaderTest {
     }
 
     private MobRegistry load() {
-        return new MobLoader(log, ELEMENTS::contains).loadAll(new File(dir.toString()));
+        return new MobLoader(log, ELEMENTS::contains, SOUNDS::contains).loadAll(new File(dir.toString()));
     }
 
     private String warningText() {
@@ -127,7 +127,7 @@ class MobLoaderTest {
 
     @Test
     void missingDirectoryYieldsEmptyRegistry() {
-        var mobs = new MobLoader(log, ELEMENTS::contains).loadAll(new File(dir.toFile(), "does_not_exist"));
+        var mobs = new MobLoader(log, ELEMENTS::contains, SOUNDS::contains).loadAll(new File(dir.toFile(), "does_not_exist"));
         assertEquals(0, mobs.size());
     }
 
@@ -413,14 +413,30 @@ class MobLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
-    // ---- dragon-mobs step R5: the Knell's beam ----
+    // ---- dragon-mobs step R5: the Knell's beam (and its sounds, the follow-up of 2026-11-17) ----
+
+    /** The sound keys this test's loader treats as real; production asks the server's sound registry. */
+    private static final java.util.Set<String> SOUNDS =
+            java.util.Set.of("block.bell.use", "block.bell.resonate", "block.amethyst_block.chime", "entity.cat.ambient");
+
+    private static final String SOUNDS_OK = "  sounds:\n"
+            + "    telegraph:\n      - { key: entity.cat.ambient, volume: 0.25, pitch: 1.75 }\n"
+            + "    fire:\n      - { key: block.bell.resonate, volume: 1.5, pitch: 0.5 }\n"
+            + "      - { key: block.amethyst_block.chime, volume: 0.75, pitch: 1.25 }\n";
 
     private static final String BEAM_OK = "beam:\n  cycle_ticks: { min: 33, max: 77 }\n  telegraph_ticks: 9\n"
-            + "  flash_at: [0, 5]\n  range: 25.5\n  aim_height: 0.4\n  tolerance: 0.75\n  damage: 21\n";
+            + "  flash_at: [0, 5]\n  range: 25.5\n  aim_height: 0.4\n  tolerance: 0.75\n  damage: 21\n" + SOUNDS_OK;
+
+    private static final List<io.github.butterflysmp.rpg.core.mob.BeamSound> TELEGRAPH_OK =
+            List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("entity.cat.ambient", 0.25, 1.75));
+    private static final List<io.github.butterflysmp.rpg.core.mob.BeamSound> FIRE_OK = List.of(
+            new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.resonate", 1.5, 0.5),
+            new io.github.butterflysmp.rpg.core.mob.BeamSound("block.amethyst_block.chime", 0.75, 1.25));
 
     /**
      * Every one of the beam's numbers ARRIVES from content, each a value no other key in the block shares (so a
-     * transposition of two keys in the loader cannot pass), and a file without the block has none.
+     * transposition of two keys in the loader cannot pass), the sounds in their two lists in order, and a file without
+     * the block has none.
      */
     @Test
     void theBeamBlockArrives() throws IOException {
@@ -428,8 +444,8 @@ class MobLoaderTest {
         write("plain.yml", "base_entity: zombie\nmax_health: 20\n");
         MobRegistry mobs = load();
         assertTrue(warnings.isEmpty(), warningText());
-        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(33, 77, 9, List.of(0, 5), 25.5, 0.4, 0.75, 21.0),
-                mobs.find("knell").orElseThrow().beam());
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(33, 77, 9, List.of(0, 5), 25.5, 0.4, 0.75, 21.0,
+                TELEGRAPH_OK, FIRE_OK), mobs.find("knell").orElseThrow().beam());
         assertNull(mobs.find("plain").orElseThrow().beam(), "no beam block, no beam");
     }
 
@@ -466,19 +482,70 @@ class MobLoaderTest {
     }
 
     /**
-     * THE KNELL WE SHIP (Ben, 2026-11-17, to the old game's numbers: "yes"): a beam every 100 to 200 ticks, a 12-tick
-     * telegraph flashing at its ticks 0 and 9, 40 blocks, through 0.6 of the target's height, a 1.0-block tolerance
-     * (cfde822's, K9, not asked), 35 damage.
+     * THE SOUNDS ARE CONTENT, AND EACH IS CHECKED: a key the server does not know is a named, skipped file (the key
+     * named); so is a missing sounds block, a missing list, and a sound with no key, volume or pitch.
      */
     @Test
-    void theBundledKnellBeamsAsTheOldGameDid() throws IOException {
+    void aMalformedSoundIsRefusedByName() throws IOException {
+        String cat = "{ key: entity.cat.ambient, volume: 0.25, pitch: 1.75 }";
+        String fireList = "    fire:\n      - { key: block.bell.resonate, volume: 1.5, pitch: 0.5 }\n"
+                + "      - { key: block.amethyst_block.chime, volume: 0.75, pitch: 1.25 }\n";
+        write("typo.yml", "base_entity: wither_skeleton\nmax_health: 360\n"
+                + BEAM_OK.replace("block.bell.resonate", "block.bell.resonnate"));
+        write("nosounds.yml", "base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK.replace(SOUNDS_OK, ""));
+        write("nofire.yml", "base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK.replace(fireList, ""));
+        write("nokey.yml", "base_entity: wither_skeleton\nmax_health: 360\n"
+                + BEAM_OK.replace(cat, "{ volume: 0.25, pitch: 1.75 }"));
+        write("novolume.yml", "base_entity: wither_skeleton\nmax_health: 360\n"
+                + BEAM_OK.replace(cat, "{ key: entity.cat.ambient, pitch: 1.75 }"));
+        write("nopitch.yml", "base_entity: wither_skeleton\nmax_health: 360\n"
+                + BEAM_OK.replace(cat, "{ key: entity.cat.ambient, volume: 0.25 }"));
+        for (String f : List.of("nosounds", "nofire", "nokey", "novolume", "nopitch")) {
+            assertTrue(Files.readString(dir.resolve(f + ".yml")).length()
+                    < ("base_entity: wither_skeleton\nmax_health: 360\n" + BEAM_OK).length(), f + " removed something");
+        }
+        MobRegistry mobs = load();
+        assertEquals(0, mobs.size(), warningText());
+        for (String f : List.of("typo.yml", "nosounds.yml", "nofire.yml", "nokey.yml", "novolume.yml", "nopitch.yml")) {
+            assertTrue(warningText().contains(f), f + ": " + warningText());
+        }
+        assertTrue(warningText().contains("block.bell.resonnate"), "the unknown key is named: " + warningText());
+    }
+
+    /**
+     * THE KNELL WE SHIP (Ben, 2026-11-17, after the boot): 65 damage ("For damage I think 65 is good"), a 26-tick
+     * (1.3-second) telegraph ("let's try 1.3 seconds") flashing at ticks 0 and 20 (the seat's, three quarters through),
+     * the bell strike at the telegraph and the resonance (at pitch 1.0) and the chime at the fire ("The bell plays with
+     * the warning. The real shot comes when the resonance part starts."). The cycle, range, aim and tolerance are
+     * unchanged.
+     */
+    @Test
+    void theBundledKnellBeamsAsBenRuledAfterTheBoot() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
-        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 12, List.of(0, 9), 40.0, 0.6, 1.0, 35.0),
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobBeam(100, 200, 26, List.of(0, 20), 40.0, 0.6, 1.0, 65.0,
+                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.use", 1.0, 1.0)),
+                List.of(new io.github.butterflysmp.rpg.core.mob.BeamSound("block.bell.resonate", 1.4, 1.0),
+                        new io.github.butterflysmp.rpg.core.mob.BeamSound("block.amethyst_block.chime", 1.0, 1.0))),
                 load().find("knell").orElseThrow().beam());
         assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * THE TELEPORT'S 89 AGAINST THE CYCLE'S 100 (the follow-up's B5): the shipped delay leaves 11 ticks before the
+     * earliest next attempt, so a move never falls inside a telegraph. Lengthening the resonance (a lower pitch, a
+     * longer delay) would need a longer cycle; the load-time check refuses a delay that is not shorter.
+     */
+    @Test
+    void theBundledKnellsDelayIsElevenTicksShorterThanItsCycle() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/mobs/knell.yml")) {
+            assertNotNull(in);
+            Files.write(dir.resolve("knell.yml"), in.readAllBytes());
+        }
+        var knell = load().find("knell").orElseThrow();
+        assertEquals(11, knell.beam().cycleMinTicks() - knell.teleport().delayTicks());
     }
 
     // ---- dragon-mobs step R6: the teleport after the beam lands ----
@@ -536,7 +603,7 @@ class MobLoaderTest {
             assertNotNull(in);
             Files.write(dir.resolve("knell.yml"), in.readAllBytes());
         }
-        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(12, 30, 70, 5, 3, true),
+        assertEquals(new io.github.butterflysmp.rpg.core.mob.MobTeleport(89, 30, 70, 5, 3, true),
                 load().find("knell").orElseThrow().teleport());
         assertTrue(warnings.isEmpty(), warningText());
     }
