@@ -172,7 +172,11 @@ class SelfTestStagingTest {
                 "the respawn poll must not ride the player's own scheduler, which a death retires (run 2's stall)");
         assertTrue(between(run, "private void rowDone()", "nextScenario();").contains("restoreRowRules()"),
                 "a death_rules row puts its rules back when it ends");
-        assertTrue(between(run, "void end(String why)", "service.ended(this)").contains("restoreRowRules()"),
+        // Since KNELL 4 every end (stop, quit, finish and the server stop) shares one private end, which takes the
+        // scheduler it restores through; the public one hands it the plugin's.
+        assertTrue(between(run, "void end(String why) {", "}").contains("end(why, service.scheduler(), false);"),
+                "the public end is the shared end with the plugin's scheduler");
+        assertTrue(between(run, "private void end(String why, ", "service.ended(this)").contains("restoreRowRules(scheduler);"),
                 "and when the run ends mid-row");
     }
 

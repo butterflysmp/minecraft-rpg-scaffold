@@ -340,13 +340,17 @@ final class SelfTestRun {
 
     /** Puts back what a death_rules row changed, at its end, however it ends. */
     private void restoreRowRules() {
+        restoreRowRules(service.scheduler());
+    }
+
+    private void restoreRowRules(io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler) {
         deathExpected = false;
         if (!rowRules.active()) return;
         Map<GameRule<Boolean>, Boolean> back = rowRules.drain();
         StringBuilder line = new StringBuilder("RULES restored");
         for (var e : back.entrySet()) line.append(' ').append(e.getKey().getKey().getKey()).append('=').append(e.getValue());
         log(line.toString());
-        service.scheduler().onGlobal(() -> back.forEach((rule, value) -> {
+        scheduler.onGlobal(() -> back.forEach((rule, value) -> {
             if (value != null) world.setGameRule(rule, value);
         }));
     }
@@ -372,13 +376,31 @@ final class SelfTestRun {
 
     /** Stop, quit and finish all come here. Idempotent: the second caller finds it ended. */
     void end(String why) {
+        end(why, service.scheduler(), false);
+    }
+
+    /**
+     * A SERVER STOP MID-RUN (GATE-dragon-knell-4.md). The plugin is disabling: its scheduler refuses tasks, and the
+     * server saves players and chunks right after (MinecraftServer#stopServer disables plugins first, read from the
+     * jar). So the same restore runs SYNCHRONOUSLY, every task inline, and anything it asked for later or off-thread is
+     * logged by name, never dropped silently. Its lines are the normal end's: ABORTED (reason=server-stop), RESTORED.
+     */
+    void endAtDisable() {
+        java.util.List<String> refused = new java.util.ArrayList<>();
+        io.github.butterflysmp.rpg.paper.scheduler.InlineScheduler inline =
+                new io.github.butterflysmp.rpg.paper.scheduler.InlineScheduler(refused::add);
+        end("ABORTED reason=server-stop", inline, true);
+        for (String what : refused) service.log("SELFTEST RUN NOT-RESTORED at server-stop: a task asked for " + what);
+    }
+
+    private void end(String why, io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler, boolean now) {
         if (ended) return;
         ended = true;
         drainReplies();
         if (reader != null) PacketEvents.getAPI().getEventManager().unregisterListener(reader);
-        restoreRowRules();   // a row that ended mid-way; the snapshot below puts the RUN START values back too
+        restoreRowRules(scheduler);   // a row that ended mid-way; the snapshot below puts the RUN START values back too
         String restored = snapshot.restore(player, service.profiles(), service.resources(), service.nameplates(),
-                service.scheduler());
+                scheduler, now);
         service.log("SELFTEST RUN " + why);
         service.log("SELFTEST RUN " + restored);
         service.ended(this);

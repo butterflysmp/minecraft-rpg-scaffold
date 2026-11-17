@@ -649,6 +649,59 @@ TQ1R3 ASK 2 question="Does the whole sequence feel timed right now?" answer="not
 - **THE SEAT'S DECISION:** the delay will not be derived from a sound file again; **Ben will tune it by ear with a dev
   tool and rule the number.**
 
+### Ben, 2026-11-17, VERBATIM: one more number for the teleport delay (the follow-up, `feat/dragon-knell-4`)
+
+After the boot of `9d0cbffb`, on a 44-tick delay, Ben answered *"it moved about a second after the rining stopped"* and
+*"not quite"*. The seat offered a dev tuning tool or one more number; Ben:
+
+> "I want to try one more number"
+
+The seat told him the delay stood at 2.2 seconds after the shot and that his description pointed about 2 seconds
+earlier; Ben:
+
+> "let's try 1.4 seconds after the shot"
+
+- **`teleport.delay_ticks` 28: HIS number** (1.4 s × 20), replacing the seat's 44. **Counted from the FIRE, and no longer
+  derived from any sound's length.**
+- **The dev tuning tool is NOT built: offered, and declined for now.**
+- Everything else stands: the 20-tick telegraph, the sounds, the damage, the arc and the landing checks.
+
+### Ben, 2026-11-17, VERBATIM: the second bell, after the stopped run of `90768891` (still `feat/dragon-knell-4`)
+
+After the boot of `90768891`, whose run he stopped 23 seconds in (`GATE-dragon-knell-4.md`, THE STOPPED RUN), Ben:
+
+> "before I send this to CC, my take on the timing changes:
+> 1. The timing is perfect on the sounds but something is still missing
+> 2. Add a second, higher pitched bell for the actual shot. Maybe even lower the pitch of the initial bell"
+
+**THE SEAT'S READING:**
+- **His point 1 CONFIRMS, by ear and in his words, the 20-tick warning and the 28-tick teleport delay.** It was given
+  OUTSIDE the ASK step, and is recorded as such.
+- **His point 2 adds a sound.** That there is a second, higher bell at the shot, and that the first bell is lower, are
+  HIS. **THE SEAT'S STARTING NUMBERS, put to him as the seat's, not his:** the bell at the shot at pitch **1.5**; the
+  first bell lowered from 1.0 to **0.8**.
+
+**CARRIED, NEW:** a server stop during a selftest run now restores synchronously from `onDisable` (built in this PR,
+pinned by `SelfTestDisableWiringTest`, never read on a server). **STILL UNBUILT: a crash-survival file for a JVM that
+dies without disabling**; it would need the run's snapshot written to disk at run start and at every row's staging,
+and read back and restored at the next enable, before any player joins.
+
+### THE BOOT OF KNELL 4 (`0b4037ec`, 2026-11-17): BEN'S THREE ANSWERS, VERBATIM, AND THE SEAT'S READING OF THE THIRD
+
+Read from the server log of that boot (`GATE-dragon-knell-4.md`, KQ1R4 and TQ1R4), verbatim:
+
+```
+KQ1R4 ASK 1 question="Does the higher bell at the shot give it what was missing?" answer="yes" ticks=88
+KQ1R4 ASK 2 question="Is the lower first bell better than before?" answer="no" ticks=64
+TQ1R4 ASK 1 question="Does the whole sequence feel right now?" answer="the timing of the warning and teleport are good, I want the shot to be in the middle" ticks=547
+```
+
+- **The second bell at the shot: CONFIRMED BY PLAY.** Its pitch 1.5 is the seat's starting value, unobjected.
+- **The first bell at 0.8: REJECTED by him.**
+- **THE SEAT'S READING of his third answer, put to him and NOT YET CONFIRMED in other words:** the lock and the move
+  stay 48 ticks apart, and the fire moves to their middle, so the telegraph becomes **24 ticks** and the teleport delay
+  **24**. **NOT built.**
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1852,6 +1905,24 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   heal). A blast pushes him, and vanilla's `SwellGoal.tick` turns a swell down only past 7 (`distanceToSqr > 49`), out
   of sight, or for a creative/spectator target, so a second Phage already swelling within 3 blows wherever he lands
   inside 7. DS1R4 read `d=3.916` for exactly that reason (NOT AS PREDICTED on that clause; the code read right).
+- **F8, 2026-11-17, the seat's ruling on #199: A TOKEN RENAME OVER A FILE LEAVES OUT THE LINE THAT DESCRIBES THE
+  RENAME.** Twice in one day a scripted rename of row keys (`s/\bKB1R2\b/KB1R3/g` and the like, over a whole scenario
+  file) also rewrote the header sentence that names the rename, so it read `(KB1R3 -> KB1R3)` (the beam file, after
+  KNELL 3) and `(KB10R5 -> KB10R5, TP2R4 -> TP2R4, TP14R3 -> TP14R3)` (the teleport file, after KNELL 4's first gate
+  commit). Both were caught later, only by reading the file, and corrected in `0b4037ec`. **Exclude the describing line
+  (by line number, or write the header after the rename), and read it back.**
+- **F9, 2026-11-17, the seat's ruling on #199: THE SELFTEST'S SERVER-STOP RESTORE ASSUMES THE MAIN THREAD.** It runs in
+  `onDisable` through an `InlineScheduler`, which runs every entity, region and global task on the calling thread.
+  **Correct on Paper, where onDisable is on the main thread and nothing else ticks; WRONG on Folia**, whose entities
+  and regions belong to their own threads. Accepted on Paper; revisit before any Folia move.
+- **F10, 2026-11-17: THE SERVER-STOP RESTORE IS UNREAD ON A SERVER.** Built in #199 (`d7c7ff54`), pinned by
+  `SelfTestDisableWiringTest` only; the boot of `0b4037ec` stopped no run, and the seat will not ask Ben to stop one
+  on purpose. Its first server reading will be the next run stopped mid-way: `SELFTEST RUN ABORTED
+  reason=server-stop`, then the RESTORED line.
+- **F11, 2026-11-17: THE SELFTEST'S CRASH-SURVIVAL FILE IS UNBUILT.** A JVM that dies without disabling (a kill, a
+  power loss) still leaves a run's staging in the world. It would need the run's snapshot (the saved blocks with their
+  states, the tagged mobs' ids, the player's saved state, the game rules) written to disk at run start and at every
+  row's staging, and read back and restored at the next enable, before any player joins.
 
 ## QUESTIONS FOR BEN
 
