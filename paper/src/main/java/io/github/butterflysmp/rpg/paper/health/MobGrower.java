@@ -42,8 +42,9 @@ import java.util.logging.Logger;
  *
  * <h2>THE STAGE CHANGE</h2>
  *
- * Applied on the GROWING mob's own thread ({@link Scheduler#onEntity}), which re-reads its stage there and asks the
- * rule again with it, so two deaths in one tick add up instead of both writing the same stage. It writes the stage tag
+ * Applied on the GROWING mob's own thread ({@link Scheduler#onEntity}), which re-reads ONLY its stage there
+ * ({@link MobGrowth#restage}; who grows was decided at the death), so two deaths in one tick add up instead of both
+ * writing the same stage. It writes the stage tag
  * and the body through {@link MobBodyApplier#apply} (R1's rules, written to be re-applied: height from the unscaled
  * height, speed from the type's default), then the health through {@link CombatantStats#rescaleMaxKeepingShare}: the
  * new stage's maximum at the mob's STORED gear score, current at the same share. It touches no tag, no target, and
@@ -105,24 +106,27 @@ public final class MobGrower {
         List<MobGrowth.Grow> grows = MobGrowth.resolve(death, alreadyCounted, candidates);
         for (MobGrowth.Grow g : grows) {
             LivingEntity mob = bodies.get(indexOf(candidates, g.id()));
-            scheduler.onEntity(mob, () -> applyGrowth(mob, death, fed, keys, mobs, stats, log));
+            scheduler.onEntity(mob, () -> applyGrowth(mob, death, g, fed, keys, mobs, stats, log));
         }
         return grows.size();
     }
 
     /**
-     * On the growing mob's thread: re-read its stage, ask the rule again with it, and apply the change. A mob that
-     * died or left meanwhile is skipped by the rule (not alive) or by the guard below.
+     * On the growing mob's thread, a tick or more after the death: apply a growth DECIDED AT THE DEATH (the follow-up
+     * of 2026-11-17; PLAN-dragon-mobs.md section 8 F5). WHO grows and the distance logged were settled in
+     * {@link #reportDeath}, from the positions at the death, and arrive in {@code grow}. Here only the STAGE is re-read
+     * ({@link MobGrowth#restage}), so two deaths in one tick add up; a mob that died or was removed meanwhile is
+     * refused (the validity guard below, and {@code restage} when it is not alive). Where the Phage stands NOW is never
+     * read: until this change it was, and a live Phage that walked past the radius in that tick lost its growth.
      */
-    private static void applyGrowth(LivingEntity mob, MobGrowth.Death death, String fed, Keys keys, MobRegistry mobs,
-                                    CombatantStats stats, Logger log) {
+    private static void applyGrowth(LivingEntity mob, MobGrowth.Death death, MobGrowth.Grow grow, String fed,
+                                    Keys keys, MobRegistry mobs, CombatantStats stats, Logger log) {
         if (!mob.isValid()) return;
         String mobId = mob.getPersistentDataContainer().get(keys.mobId, PersistentDataType.STRING);
         MobDefinition def = mobs.find(mobId).orElse(null);
         if (def == null) return;
         int from = MobBodyApplier.stageOf(mob, def, keys, log);
-        int to = MobGrowth.stageAfter(new MobGrowth.Candidate(mob.getUniqueId(), def, from, LiveTargets.isLive(mob),
-                mob.getWorld().getName(), vec(mob.getLocation())), death);
+        int to = MobGrowth.restage(def, from, LiveTargets.isLive(mob));
         if (to == from) return;
 
         MobBodyApplier.apply(mob, def, to, keys);                 // the stage tag, the height, the speed
@@ -130,11 +134,19 @@ public final class MobGrower {
         double newMax = MobScaling.maxHealth(def.stages().at(to).maxHealth(), true, MobClassifier.isHostile(mob),
                 gs == null ? 0 : gs);
         stats.rescaleMaxKeepingShare(mob.getUniqueId(), newMax);  // the new maximum, the same share
-        double d = Math.sqrt(vec(mob.getLocation()).distanceSquared(death.at()));
-        log.info("GROWTH mob=" + mobId + " id=" + mob.getUniqueId() + " from=" + from + " to=" + to
-                + " fed=" + fed + " element=" + death.element() + " d=" + String.format(Locale.ROOT, "%.2f", d)
-                + " max=" + String.format(Locale.ROOT, "%.0f", stats.tracks(mob.getUniqueId())
-                        ? stats.max(mob.getUniqueId()) : newMax));
+        log.info(growthLine(mobId, mob.getUniqueId(), from, to, fed, death.element(), grow.distance(),
+                stats.tracks(mob.getUniqueId()) ? stats.max(mob.getUniqueId()) : newMax));
+    }
+
+    /**
+     * The GROWTH line. {@code d} is the distance AT THE DEATH, to THREE places, as the BLAST line prints a spared
+     * creature's distance, so a Phage grown by a blast reads the same figure in both lines (it printed two places,
+     * from the position a tick later, until 2026-11-17).
+     */
+    static String growthLine(String mobId, UUID id, int from, int to, String fed, String element, double distance,
+                             double max) {
+        return "GROWTH mob=" + mobId + " id=" + id + " from=" + from + " to=" + to + " fed=" + fed + " element="
+                + element + String.format(Locale.ROOT, " d=%.3f max=%.0f", distance, max);
     }
 
     private static int indexOf(List<MobGrowth.Candidate> candidates, UUID id) {

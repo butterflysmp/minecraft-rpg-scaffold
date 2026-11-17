@@ -115,7 +115,8 @@ class DragonBlastWiringTest {
         }
         assertTrue(pushes >= 1, "the blaster pushes at all: " + pushes);
         assertTrue(code.stream().anyMatch(l -> l.contains("Attribute.EXPLOSION_KNOCKBACK_RESISTANCE")), "the resistance");
-        assertTrue(code.stream().anyMatch(l -> l.contains("blast.knockbackAt(hit.distance(), ")), "the strength");
+        assertTrue(code.stream().anyMatch(l -> l.contains("double strength = blast.knockbackAt(hit.distance(), resistance);")),
+                "the strength, with the resistance read from the victim (anchored at both ends: a constant in its place is red)");
         assertTrue(code.stream().anyMatch(l -> l.contains("MobBlast.pushVector(vec(at), vec(victim.getEyeLocation()), ")),
                 "the direction: the blast's centre to the victim's eye");
         assertTrue(code.stream().noneMatch(l -> l.contains("for (MobBlast.Hit") && l.contains("spared")),

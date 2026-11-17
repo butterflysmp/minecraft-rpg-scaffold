@@ -58,4 +58,14 @@ final class SelfTestBlast {
     static String fuseLine(String tag, UUID id, int fuse, int max, boolean ignited) {
         return "FUSE tag=" + tag + " " + id + " fuse=" + fuse + "/" + max + " ignited=" + ignited;
     }
+
+    /** THAW's line: the mob's AI READ BACK after the act, so it witnesses the thaw landing (the follow-up, F4). */
+    static String thawLine(String tag, UUID id, boolean aiAfter) {
+        return "DRIVE thaw tag=" + tag + " " + id + " ai=" + aiAfter;
+    }
+
+    /** PROBE_MOTION's line: the mob's velocity, each component to four places. */
+    static String motionLine(String tag, UUID id, double vx, double vy, double vz) {
+        return String.format(Locale.ROOT, "MOTION tag=%s %s vx=%.4f vy=%.4f vz=%.4f", tag, id, vx, vy, vz);
+    }
 }
