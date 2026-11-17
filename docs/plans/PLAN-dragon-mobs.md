@@ -289,8 +289,10 @@ the fuse length (vanilla 1.5 seconds), the blast radius (vanilla 3), and the dam
 
 *Put to Ben in these terms. R3 builds them as written; each is his to confirm or change.*
 
-- **P-a. Damage:** stage 1 deals 20, stage 5 deals 50 (the old Goon's blast), stages between linear, as G3 has the
-  body.
+- ~~**P-a. Damage:** stage 1 deals 20, stage 5 deals 50 (the old Goon's blast), stages between linear, as G3 has the
+  body.~~ **REPLACED 2026-11-17** (RULINGS, *the 60 and the 150, and knockback*): 60 at stage 1, 150 at
+  stage 5, linear between: the seat's reading of Ben's "increase 3x". **CONFIRMED BY PLAY 2026-11-17**
+  (RULINGS, the BQ1R2 answers).
 - **P-b. Damage is multiplied by the Phage's gear score / 100**, as its health is (old Q3).
 - ~~**P-c. Full damage to every victim inside the radius;** no falloff, no cover check, no knockback.~~ **REPLACED
   2026-11-16 by Ben's "keep vanillas shap"** (below): vanilla's reach and falloff; still no cover and no knockback.
@@ -418,6 +420,42 @@ the damage"* and *"i didn't see the little phage damage"*, recorded as neither y
 
 **THE SEAT'S READING, put to Ben and not yet confirmed in other words:** the authored damage goes from **20 to 60** at
 stage 1 and from **50 to 150** at stage 5, replacing the provisional P-a. **NOT built in #193.**
+
+### Ben, 2026-11-17, VERBATIM: the 60 and the 150, and knockback — AND THE SEAT'S READINGS OF IT
+
+The seat told Ben it read his two "increase 3x" answers as: small Phage 20 to 60, big Phage 50 to 150, and that at
+150 a big Phage at the feet of a 100-health player kills outright; and asked whether the blast should push players
+back as a vanilla explosion does, since he had said he did not see the damage. Ben:
+
+> "I didn't see the damage because I wasn't paying attention. But yes, knockback sounds like a good addition"
+
+**THE SEAT'S READINGS OF THAT, 2026-11-17 (the seat's, stated in this file's words):**
+
+- **The 60 and the 150 stand**, replacing the provisional P-a (stage 1 deals 60, stage 5 deals 150, the stages between
+  linear: 60, 82.5, 105, 127.5, 150). **This is the seat's reading of "increase 3x", given twice, and of his not
+  objecting when it was put to him, not a number he typed.**
+- **Q35 (knockback) is ANSWERED: yes.**
+- **His first-run answers to ASK 2 and ASK 3** (*"i didn't see the damage"*, *"i didn't see the little phage
+  damage"*) **are explained by him** ("I wasn't paying attention") **and are not a verdict on feel.**
+- **Still the seat's provisional and unruled:** P-b (× gear score / 100), P-d and P-e. **Still open:** Q31 (is the
+  blast Void damage), Q32 (a shield cannot block it), Q34 (cover).
+
+**Built in `feat/dragon-blast-2`:** the 60 and 150; vanilla's knockback, read from the jar (§7 F-B, *Knockback,
+re-read 2026-11-17*), as a multiplier in content (1.0 today); the growth decision fixed at the death (§8 F5, F6); and
+the instrument's `thaw` step (§8 F4).
+
+**CONFIRMED BY PLAY, 2026-11-17 (the boot of `3b07cbee`, `GATE-dragon-blast-2.md` BQ1R2).** After a small Phage's
+blast (33.333 before defence at 2 blocks) and a big one's (83.333), each pushing him with strength 0.666667, the
+selftest asked and Ben answered, verbatim:
+
+- *"Did the blast push you back?"* **"yes"**
+- *"Your design says the small Phage explodes 'dealing a little damage'. Watch your health bar: did that feel like a
+  little?"* **"yes"**
+- *"Your design says the big Phage explodes 'dealing a lot of damage'. Watch your health bar: did that feel like a
+  lot?"* **"yes"**
+
+**The seat takes these as Ben's confirmation, by play, of the 60 and 150 damage and of knockback at 1.0.** They are no
+longer only the seat's reading of "increase 3x".
 
 ---
 
@@ -1256,6 +1294,55 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   1 at zero distance, 0 at the reach. Executed in jshell from the expression above, `(vanilla(d) - 1) / (7 * f)` at
   `f = 6`: d = 0 → 1.000000000; 1.5 → 0.656250000; 2 → 0.555555571; 3 → 0.375000000; 4.5 → 0.156250000; 5.9 →
   0.008472221; 6 → 0.000000000 (the float rows are vanilla's `d2f`; ours is the double).
+- **Knockback, re-read 2026-11-17 for the follow-up (Ben's "knockback sounds like a good addition").** Every line
+  below is **READ**, with `C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p -cp
+  run/versions/26.1.2/paper-26.1.2.jar <class>` on the classes named, unless marked otherwise.
+  - **The strength:** `net.minecraft.world.level.ServerExplosion#hurtEntities`, bytecode 529-546:
+    `k = (1 - r) * exposure * knockbackMultiplier * (1 - resistance)`, all in double (`dconst_1`, `dload 11`, `dsub`,
+    `fload 17` `f2d` `dmul`, `fload 16` `f2d` `dmul`, `dconst_1` `dload 18` `dsub` `dmul`). `r` is the damage's own
+    `sqrt(entity.distanceToSqr(center)) / f`, `f = radius * 2`. **It is LINEAR in distance, not the damage's curve:**
+    1 at the centre, 0 at the reach. Executed in jshell from that expression at `f = 6`, exposure 1, multiplier 1,
+    resistance 0: d = 0 → 1.000000000; 1.5 → 0.750000000; 2 → 0.666666667; 3 → 0.500000000; 4.5 → 0.250000000;
+    5.9 → 0.016666667; 6 → 0.000000000. Resistance 0.5 at d = 2 → 0.333333333.
+  - **The knockback multiplier:** `ExplosionDamageCalculator#getKnockbackMultiplier(Entity)` is `fconst_1`, `freturn`:
+    **1** for every entity, in the default calculator a creeper's explosion uses.
+  - **The direction:** the victim's EYE position minus the centre, normalised (`Entity.getEyePosition`,
+    `Vec3.subtract`, `Vec3.normalize`; a `PrimedTnt` uses its feet, `Entity.position`). `Vec3#normalize` returns ZERO
+    below a length of `9.999999747378752E-6` (`ldc2_w`, `dcmpg`), i.e. `1.0E-5F`. The push is that direction scaled by
+    `k` (`Vec3.scale`).
+  - **The resistance:** a `LivingEntity`'s `getAttributeValue(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE)`, 0 for
+    anything else; in the API, `Attribute.EXPLOSION_KNOCKBACK_RESISTANCE` (read in the pinned `paper-api` jar).
+    Paper's `disableExplosionKnockback` world setting makes `k` 0 for a player.
+  - **The event:** `CraftEventFactory.callEntityKnockbackEvent(victim, source, attacker, Cause.EXPLOSION, k, push)`,
+    and only for a `LivingEntity`. It builds and calls a CHAIN: Bukkit's `org.bukkit.event.entity.EntityKnockbackEvent`
+    (or its `EntityKnockbackByEntityEvent`, with the explosion's source as the attacker), then the old
+    `com.destroystokyo.paper.event.entity.EntityKnockbackByEntityEvent`, then Paper's
+    `io.papermc.paper.event.entity.EntityKnockbackEvent`, each seeing the previous one's result. Cancelled, the push is
+    ZERO; otherwise the event's `getKnockback()`.
+  - **Can a plugin raise it? Not as vanilla does.** The chain is built inside `CraftEventFactory`, which is the
+    server's, not the API's. Paper's `io.papermc.paper.event.entity.EntityKnockbackEvent` has a public constructor
+    `(Entity, Cause, Vector)`, but it carries `@ApiStatus.Internal` (read with `javap -v` on the pinned `paper-api`
+    jar), and raising that one alone would not raise the Bukkit two a listener may be on. **So ours raises none**;
+    the seat rules whether to raise the internal one. Our own knockback listener, `RpgListeners.onCombatKnockback`,
+    returns unless the cause is `ENTITY_ATTACK`, so it never acted on an explosion's push either.
+  - **How it is applied:** `Entity#push(Vec3)` → `push(x, y, z, null)`: with no source entity it raises nothing more,
+    adds the vector to the delta movement (`setDeltaMovement(getDeltaMovement().add(...))`) and sets `needsSync`.
+    **A player's own client is not moved by that:** `hurtEntities` also puts the push in `hitPlayers`
+    (`Map.put`), and `ServerLevel.explode` sends each hit player a `ClientboundExplodePacket` carrying it, which the
+    client applies. **A plugin's route is `Entity#setVelocity`:** `CraftEntity.setVelocity` sets the delta movement
+    and `hurtMarked`, and `ServerEntity.sendChanges` sends a `ClientboundSetEntityMotionPacket` to a `ServerPlayer`
+    whose `hurtMarked` is set. **The difference, INFERRED:** vanilla's packet ADDS the push to the client's own motion;
+    `setVelocity(getVelocity().add(push))` sends the server's delta plus the push as the client's whole motion. For a
+    player standing still the server's delta is gravity's small downward part, so the two agree to that part.
+  - **Who is skipped:** an entity whose `ignoreExplosion` is true (`Entity` returns false; not overridden in `Player`);
+    anything beyond the reach (`r > 1`); an entity whose hurt was cancelled (`lastDamageCancelled`, which jumps past the
+    push); and, for the CLIENT packet only, a spectator or a flying creative player (`isSpectator`,
+    `isCreative` with `abilities.flying`), or any player under `disableExplosionKnockback`. **Vanilla pushes mobs too**;
+    ours pushes only the blast's victims (players), as the seat ruled.
+  - **And a frozen mob cannot be moved by a push, READ:** `LivingEntity#aiStep` calls `travel` only when
+    `canSimulateMovement()` and `isEffectiveAi()`, and a NoAI mob is not effective AI (§7 F-C). Its delta movement
+    is kept (only components under 0.003 are zeroed), so a push on a frozen mob shows in its VELOCITY, never its
+    position. **A gate row that reads a frozen mob's position to show it was not pushed would be hollow.**
 
 ### F-S. The Shulker bullet, and our own alternative
 
@@ -1372,6 +1459,34 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
 - **F6, 2026-11-17, INFERRED, not read: the same seam can drop a growth.** Because `applyGrowth` re-asks the rule at the
   new position, a live Phage inside 6 blocks at the death that walks beyond 6 before its own tick would not grow,
   though the BLAST line lists it as spared. No row has staged it.
+- **F4, F5 AND F6 BUILT, 2026-11-17, in `feat/dragon-blast-2`** (the seat's follow-up brief; `GATE-dragon-blast-2.md`,
+  NOT BOOTED). F4: the instrument's `thaw: <tag>` step, which logs the AI read back, used by DS1R4 in place of the data
+  merge. F5: `MobGrower.reportDeath` decides who grows and the distance from the positions at the death, each
+  `MobGrowth.Grow` carrying its distance; `applyGrowth` re-reads only the stage (`MobGrowth.restage`, which takes no
+  position); the GROWTH line prints that distance to three places. **F6, answered by reading the merged code
+  (`ca0ae38a`), not by a boot: yes, it could.** Its `applyGrowth` built a candidate at `vec(mob.getLocation())` on the
+  growing Phage's own tick and asked `stageAfter` again; past 6 that returns the old stage, and `if (to == from)
+  return;` then dropped the growth with no line. Only a LIVE candidate moves between the death and its tick, and only
+  one standing within about a tick's walk of the edge could cross it, so it was rare; it could never ADD a growth,
+  because only candidates decided at the death are scheduled. `restage` closes it.
+- **F7, 2026-11-17, the seat's ruling on #194: the Phage's push raises NO knockback event, by decision.** Vanilla's
+  explosion raises a chain from `CraftEventFactory.callEntityKnockbackEvent` (Bukkit's `EntityKnockbackEvent` or
+  `EntityKnockbackByEntityEvent`, the old `com.destroystokyo` `EntityKnockbackByEntityEvent`, and Paper's
+  `io.papermc.paper.event.entity.EntityKnockbackEvent`, cause `EXPLOSION`); a plugin cannot build that chain, and
+  Paper's own constructor is `@ApiStatus.Internal`, which we do not call (§7 F-B). **What a future protection plugin
+  would NOT see:** a region or anti-grief plugin that cancels or scales explosion knockback through any of those
+  events (a safe zone, a "no knockback" flag, an anti-cheat velocity check keyed on the event) will not see the
+  Phage's push, cannot cancel it, and may read the sudden velocity as unexplained. The push is still a plain
+  `setVelocity`, which such plugins may watch by other means. **Revisit if one is ever installed.**
+- **F5 AND F6 CLOSED, 2026-11-17, by the boot of `3b07cbee`** (`GATE-dragon-blast-2.md` DS1R4, the seat's reading). A
+  thawed, walking child's first blast spared its sibling at `d=0.797`, and the GROWTH line printed `d=0.797`: the
+  distance, and the decision, came from the death, not from a tick later. The reading that failed on 2026-11-17
+  (spared `d=0.737`, GROWTH `d=0.75`) now agrees.
+- **FOR WHOEVER NEXT PREDICTS A MULTI-PHAGE ROW, 2026-11-17: after a push, the bound on a live blast's distance is
+  `D ≤ 7`, not `D < 3`.** `D < 3` holds only while the player stands still during the swell (the first blast after a
+  heal). A blast pushes him, and vanilla's `SwellGoal.tick` turns a swell down only past 7 (`distanceToSqr > 49`), out
+  of sight, or for a creative/spectator target, so a second Phage already swelling within 3 blows wherever he lands
+  inside 7. DS1R4 read `d=3.916` for exactly that reason (NOT AS PREDICTED on that clause; the code read right).
 
 ## QUESTIONS FOR BEN
 
@@ -1442,4 +1557,5 @@ rework: an answered question says where its answer is, and a new one is added at
     3 at full damage, or reach further?
 34. **OPEN, NOT ASKED YET (the seat's ruling 30).** A vanilla blast is weaker behind cover: the blocks between it and you
     cut the damage. The Phage's goes straight through walls. Should cover protect you?
-35. **OPEN, NOT ASKED YET (the seat's ruling 30).** A vanilla blast throws you back. The Phage's pushes no one. Should it?
+35. **ANSWERED 2026-11-17: "But yes, knockback sounds like a good addition"** (RULINGS, *the 60 and the 150, and
+    knockback*; built in `feat/dragon-blast-2`). *(Asked as:)* A vanilla blast throws you back. The Phage's pushes no one. Should it?

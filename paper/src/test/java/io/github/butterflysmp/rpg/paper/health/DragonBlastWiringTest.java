@@ -94,6 +94,35 @@ class DragonBlastWiringTest {
                 "the fuse from content");
     }
 
+    /**
+     * ONLY THE VICTIMS ARE PUSHED (the follow-up of 2026-11-17; PLAN-dragon-mobs.md section 7 F-B). Every
+     * {@code setVelocity(} in the blaster sits inside the victims' loop, which ends before the particle, so a spared
+     * creature (a mob, a creative player) is never pushed. The push is vanilla's: the strength from
+     * {@code blast.knockbackAt} with the victim's EXPLOSION knockback resistance, the direction from the blast's centre
+     * to the victim's EYE ({@code MobBlast.pushVector}). The spared list is read only by the line, never by a loop.
+     */
+    @Test
+    void onlyTheVictimsArePushedAndThePushIsVanillas() throws IOException {
+        List<String> code = codeLines(MAIN.resolve(Path.of("health", "MobBlaster.java")));
+        int loop = indexOf(code, "for (MobBlast.Hit hit : reach.victims()) {");
+        int particle = indexOf(code, "world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1);");
+        assertTrue(loop > 0 && loop < particle, "the victims' loop, then the particle: " + loop + " " + particle);
+        int pushes = 0;
+        for (int i = 0; i < code.size(); i++) {
+            if (!code.get(i).contains("setVelocity(")) continue;
+            pushes++;
+            assertTrue(i > loop && i < particle, "a push outside the victims' loop, line " + i + ": " + code.get(i));
+        }
+        assertTrue(pushes >= 1, "the blaster pushes at all: " + pushes);
+        assertTrue(code.stream().anyMatch(l -> l.contains("Attribute.EXPLOSION_KNOCKBACK_RESISTANCE")), "the resistance");
+        assertTrue(code.stream().anyMatch(l -> l.contains("double strength = blast.knockbackAt(hit.distance(), resistance);")),
+                "the strength, with the resistance read from the victim (anchored at both ends: a constant in its place is red)");
+        assertTrue(code.stream().anyMatch(l -> l.contains("MobBlast.pushVector(vec(at), vec(victim.getEyeLocation()), ")),
+                "the direction: the blast's centre to the victim's eye");
+        assertTrue(code.stream().noneMatch(l -> l.contains("for (MobBlast.Hit") && l.contains("spared")),
+                "no loop over the spared");
+    }
+
     private static int indexOf(List<String> code, String needle) {
         return indexAfter(code, -1, needle);
     }

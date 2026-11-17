@@ -42,8 +42,12 @@ public record MobGrowth(String element, double radius, int stagesPerDeath) {
     /** A living creature that might grow: its id, its definition (null for a vanilla mob), stage, liveness, place. */
     public record Candidate(UUID id, MobDefinition def, int stage, boolean alive, String world, Vec3 at) {}
 
-    /** One stage change. */
-    public record Grow(UUID id, int from, int to) {}
+    /**
+     * One stage change, DECIDED AT THE DEATH: who, from which stage and to which then, and how far it stood from the
+     * death (feet to feet) AT THE DEATH. The later tick on the Phage's own thread re-reads only the stage
+     * ({@link #restage}); this distance is the one the GROWTH line prints.
+     */
+    public record Grow(UUID id, int from, int to, double distance) {}
 
     /**
      * THE RULE for one candidate: its stage after this death. Unchanged unless the candidate is a living staged mob
@@ -74,8 +78,20 @@ public record MobGrowth(String element, double radius, int stagesPerDeath) {
         if (alreadyCounted) return out;
         for (Candidate c : candidates) {
             int to = stageAfter(c, death);
-            if (to != c.stage()) out.add(new Grow(c.id(), c.stage(), to));
+            if (to != c.stage()) out.add(new Grow(c.id(), c.stage(), to, Math.sqrt(c.at().distanceSquared(death.at()))));
         }
         return out;
+    }
+
+    /**
+     * THE LATER TICK (the follow-up of 2026-11-17; PLAN-dragon-mobs.md section 8 F5): the stage a Phage that was
+     * decided at the death goes to NOW, from the stage it has NOW. It takes NO position, so it cannot re-decide who is
+     * in range: Ben's rule is a death "within" the radius WHEN IT HAPPENS, and that was settled by {@link #resolve}.
+     * It re-reads the stage so two deaths in one tick add up (the second reads what the first wrote), and refuses a
+     * Phage that died or was removed in between, or a mob with no growth.
+     */
+    public static int restage(MobDefinition def, int stageNow, boolean aliveNow) {
+        if (def == null || def.growth() == null || def.stages() == null || !aliveNow) return stageNow;
+        return Math.min(def.stages().count(), stageNow + def.growth().stagesPerDeath());
     }
 }

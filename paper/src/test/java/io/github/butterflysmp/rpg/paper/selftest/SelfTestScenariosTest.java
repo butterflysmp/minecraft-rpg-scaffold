@@ -66,9 +66,10 @@ class SelfTestScenariosTest {
                 "DB11R2"));
         expected.put("dragon-split", List.of("DS3R2", "DS4R2"));
         expected.put("dragon-growth", List.of("DG1R2", "DG2R2", "DG3R2", "DG4R2", "DG5R2", "DG7R2", "DG8R2"));
-        // Step R3: GATE-dragon-blast.md's own rows, then the six re-predicted split rows; BQ1 is Ben's three questions.
-        expected.put("dragon-blast", List.of("BL1", "BL2", "BL3", "BL4", "BL5", "BL6", "BL7", "BL8", "BL9",
-                "DS1R3", "DS2R3", "DS5R3", "DS6R3", "DG6R3", "DG9R3", "BQ1"));
+        // Step R3's rows, RE-PREDICTED by the follow-up of 2026-11-17 (GATE-dragon-blast-2.md): each is a new row
+        // named for the GATE-dragon-blast.md row it supersedes, with the next suffix. BQ1R2 is Ben's three questions.
+        expected.put("dragon-blast", List.of("BL1R2", "BL2R2", "BL3R2", "BL4R2", "BL5R2", "BL6R2", "BL7R2", "BL8R2",
+                "BL9R2", "DS1R4", "DS2R4", "DS5R4", "DS6R4", "DG6R4", "DG9R4", "BQ1R2"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -93,6 +94,9 @@ class SelfTestScenariosTest {
         // Then the R3 audit of the older dragon rows (the seat's brief of 2026-11-16), RECOUNTED the same way: 15 gates,
         // 105 keys, 15 setups, so 90. At feat/dragon-blast ba74df59 the same commands print 15, 107, 15: 92, this
         // line's old value.
+        // Then the follow-up of 2026-11-17 (GATE-dragon-blast-2.md), which RENAMES the blast gate's sixteen rows and adds
+        // none, RECOUNTED the same way: 15 gates, 105 keys, 15 setups, so 90. At master ca0ae38a the same commands
+        // print 15, 105, 15: 90, the same.
         assertEquals(90, loaded.rows());
     }
 
@@ -108,7 +112,7 @@ class SelfTestScenariosTest {
      * </ol>
      * A frozen Phage never swells: NoAI stops its goals ({@code Mob.isEffectiveAi}) and only its swell goal (or an
      * ignite, which ours refuses) turns its swell up. <b>The positive control</b> is the blast gate itself: the same
-     * scan must FIND its five live spawns and DS1R3's one thaw there, or the scan is blind and its silence elsewhere
+     * scan must FIND its three live spawns and DS1R4's one THAW there (since 2026-11-17), or the scan is blind and its silence elsewhere
      * proves nothing.
      */
     @Test
@@ -124,14 +128,19 @@ class SelfTestScenariosTest {
             if (gate.getKey().equals("dragon-blast")) blastGate.addAll(found);
             else assertEquals(List.of(), found, gate.getKey() + " has a live Phage; it belongs in the blast gate");
         }
-        assertEquals(List.of("BL1 bl1 live phage 100", "BL2 bl2 live phage stage 5 100", "BL5 bl5 live phage 100",
-                        "DS1R3 execute as @e[tag=ds1,type=creeper] run data merge entity @s {NoAI:0b}",
-                        "BQ1 bq1small live phage 100", "BQ1 bq1big live phage stage 5 100"),
+        // Since 2026-11-17 (GATE-dragon-blast-2.md): BQ1R2's two Phages are FROZEN and blown, and DS1R4 thaws with the
+        // instrument's THAW step instead of a data merge.
+        assertEquals(List.of("BL1R2 bl1 live phage 100", "BL2R2 bl2 live phage stage 5 60", "BL5R2 bl5 live phage 100",
+                        "DS1R4 ds1"),
                 blastGate, "the control: the scan must find every live Phage the blast gate stages on purpose");
     }
 
-    /** A step that puts a live Phage in the world: a live phage SPAWN, or a CMD that sets NoAI to anything but 1b. */
+    /**
+     * A step that puts a live Phage in the world: a live phage SPAWN, a CMD that sets NoAI to anything but 1b, or a
+     * THAW (which switches AI on for whatever carries its tag).
+     */
     private static boolean livePhage(Scenario.Step step) {
+        if (step.verb() == Scenario.Verb.THAW) return true;
         if (step.verb() == Scenario.Verb.SPAWN) {
             SelfTestSpawn.Spec spec = SelfTestSpawn.parse(step.arg()).orElseThrow();
             return spec.mob().equals("phage") && !spec.frozen();
@@ -161,6 +170,7 @@ class SelfTestScenariosTest {
      * to GATE-dragon-fix.md.
      */
     static String docOf(String gate) {
+        if (gate.equals("dragon-blast")) return "dragon-blast-2";   // re-predicted 2026-11-17, rows in the -2 gate
         return Set.of("dragon-bodies", "dragon-split", "dragon-growth").contains(gate) ? "dragon-fix" : gate;
     }
 

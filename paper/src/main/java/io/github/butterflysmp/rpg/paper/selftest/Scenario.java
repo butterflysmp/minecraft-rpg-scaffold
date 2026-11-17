@@ -161,6 +161,17 @@ public record Scenario(String gate, String row, List<Step> steps) {
         PROBE_FUSE,
         /** {@code "<tag> <min fuse> <timeout ticks>"}: wait until the tagged creeper's swell reaches min ({@link SelfTestBlast}). */
         AWAIT_FUSE,
+        /**
+         * {@code <tag>}: switch each tagged mob's AI back ON, the instrument's own thaw (the owed finding,
+         * PLAN-dragon-mobs.md section 8 F4), in place of a vanilla {@code data merge ... {NoAI:0b}}. Logs
+         * {@code DRIVE thaw tag=<t> <uuid> ai=<read back>} ({@link SelfTestBlast}).
+         */
+        THAW,
+        /**
+         * {@code <tag>}: log each tagged mob's VELOCITY, {@code MOTION tag=<t> <uuid> vx= vy= vz=}. A frozen mob cannot be
+         * moved by a push, so a push on one shows here and never in its position ({@link SelfTestBlast}).
+         */
+        PROBE_MOTION,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

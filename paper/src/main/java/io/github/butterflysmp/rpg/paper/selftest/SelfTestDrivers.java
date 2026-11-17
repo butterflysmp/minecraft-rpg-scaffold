@@ -122,7 +122,34 @@ final class SelfTestDrivers {
             case PROBE_FUSE -> creepers(p, a, null, c -> run.log(SelfTestBlast.fuseLine(a, c.getUniqueId(),
                     c.getFuseTicks(), c.getMaxFuseTicks(), c.isIgnited())));
             case AWAIT_FUSE -> Optional.empty();   // the run polls it; it never reaches a driver
+            case THAW -> tagged(p, a, "thaw", e -> {
+                if (e instanceof org.bukkit.entity.Mob m) m.setAI(true);
+                run.log(SelfTestBlast.thawLine(a, e.getUniqueId(), e.hasAI()));   // READ BACK, after the act
+            });
+            case PROBE_MOTION -> tagged(p, a, "motion", e -> {
+                org.bukkit.util.Vector v = e.getVelocity();
+                run.log(SelfTestBlast.motionLine(a, e.getUniqueId(), v.getX(), v.getY(), v.getZ()));
+            });
         };
+    }
+
+    /**
+     * THAW and PROBE_MOTION (the follow-up of 2026-11-17): act on every LIVING entity carrying {@code tag} within
+     * reach, nearest first, or log that there was none. Unlike {@link #creepers}, any mob: a husk's motion is read too.
+     */
+    private Optional<String> tagged(Player p, String tag, String what, java.util.function.Consumer<LivingEntity> act) {
+        List<LivingEntity> found = new ArrayList<>();
+        for (Entity e : p.getNearbyEntities(REACH, REACH, REACH)) {
+            if (e instanceof LivingEntity l && e.getScoreboardTags().contains(tag)) found.add(l);
+        }
+        if (found.isEmpty()) {
+            run.log((what.equals("thaw") ? "DRIVE thaw" : "MOTION") + " tag=" + tag + " none within " + (int) REACH
+                    + " blocks");
+            return Optional.empty();
+        }
+        found.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));
+        for (LivingEntity e : found) act.accept(e);
+        return Optional.empty();
     }
 
     // --- the steps added for dragon-mobs step R3 (GATE-dragon-blast.md; SelfTestBlast) -----------------------------

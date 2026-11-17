@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -62,6 +63,40 @@ class DragonGrowthWiringTest {
         List<String> code = codeLines(MAIN.resolve(Path.of("health", "MobGrower.java")));
         assertTrue(code.size() > 50, "must have read MobGrower, read " + code.size());
         assertFalse(code.stream().anyMatch(l -> l.contains("mobSplit")), "MobGrower touches no mob_split mark");
+    }
+
+    /**
+     * THE DECISION IS FIXED AT THE DEATH (the follow-up of 2026-11-17; PLAN-dragon-mobs.md section 8 F5). WHO grows
+     * and the distance logged are decided in {@code reportDeath}, from the positions at the death, and handed to
+     * {@code applyGrowth} with the grow. {@code applyGrowth}, a tick later on the Phage's own scheduler, re-reads only
+     * the STAGE ({@code MobGrowth.restage}): it never reads where the Phage stands now and never asks the range rule
+     * again. Bounded STRUCTURALLY, from {@code applyGrowth}'s declaration to the next member, never by a line count.
+     */
+    @Test
+    void theLaterTickReReadsOnlyTheStage() throws IOException {
+        List<String> code = codeLines(MAIN.resolve(Path.of("health", "MobGrower.java")));
+        int start = indexOf(code, "private static void applyGrowth(");
+        int end = start + 1;
+        while (end < code.size() && !code.get(end).startsWith("    private ") && !code.get(end).startsWith("    public ")
+                && !code.get(end).startsWith("    static ")) end++;
+        assertTrue(start > 0 && end > start + 5 && end < code.size(), "bounded applyGrowth: " + start + ".." + end);
+        List<String> body = code.subList(start, end);
+        assertTrue(body.stream().noneMatch(l -> l.contains("getLocation()")), "never where the Phage stands now");
+        assertTrue(body.stream().noneMatch(l -> l.contains("stageAfter(")), "never the range rule again");
+        assertTrue(body.stream().anyMatch(l -> l.contains("MobGrowth.restage(def, from, ")), "only the stage, re-read");
+        assertTrue(body.stream().anyMatch(l -> l.contains("grow.distance()")), "the distance decided at the death");
+        assertTrue(code.stream().anyMatch(l -> l.contains("applyGrowth(mob, death, g, fed,")),
+                "reportDeath hands each grow, decided at the death, to the later tick");
+    }
+
+    /** The GROWTH line, exact: the distance to THREE places, as the BLAST line prints its spared distance. */
+    @Test
+    void theGrowthLinePrintsTheDistanceAsTheBlastLineDoes() {
+        java.util.UUID id = java.util.UUID.fromString("50302ad8-568e-4e27-9496-ff7666f001fc");
+        assertEquals("GROWTH mob=phage id=" + id + " from=1 to=2 fed=creeper/phage x element=void d=0.737 max=120",
+                MobGrower.growthLine("phage", id, 1, 2, "creeper/phage x", "void", 0.7374, 120.0));
+        assertEquals("GROWTH mob=phage id=" + id + " from=4 to=5 fed=enderman y element=void d=2.000 max=480",
+                MobGrower.growthLine("phage", id, 4, 5, "enderman y", "void", 2.0, 480.0));
     }
 
     private static int indexOf(List<String> code, String needle) {
