@@ -5,6 +5,8 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+**2026-11-17: approved to merge by the review seat after the boot of bd7457a3.**
+
 > **2026-11-16: THE PREDICTIONS IN THIS FILE WERE REWRITTEN BEFORE ANY BOOT, AND THIS IS WHY.** The version first
 > committed at `58165392` predicted a blast of 3 blocks at full damage (the seat's provisional P-c). Vanilla's reach is
 > twice its power, 6, with falloff (`PLAN-dragon-mobs.md` §8 F2, §7 F-B), and Ben ruled *"keep vanillas shap"*. No row of

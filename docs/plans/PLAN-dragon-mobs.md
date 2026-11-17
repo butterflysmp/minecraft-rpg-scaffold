@@ -406,6 +406,19 @@ blast gate spawns a live Phage or thaws one, with the blast gate's six as its co
 target within 3 blocks, its targets are players and whoever hurt it, and Ben is the one player. DS1R2's `TARGET`
 probe is not re-read anywhere.
 
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the blast's damage — AND THE SEAT'S READING, NOT YET CONFIRMED BY HIM
+
+At the boot of `bd7457a3` (`GATE-dragon-blast.md`, BQ1, and its dated section), the selftest asked:
+
+- *"Your design says the small Phage explodes 'dealing a little damage'. Did that feel like a little?"*
+- *"Your design says the big Phage explodes 'dealing a lot of damage'. Did that feel like a lot?"*
+
+In the second run Ben answered each **"increase 3x"**. (In the first run, the run sheet's, he answered *"i didn't see
+the damage"* and *"i didn't see the little phage damage"*, recorded as neither yes nor no.)
+
+**THE SEAT'S READING, put to Ben and not yet confirmed in other words:** the authored damage goes from **20 to 60** at
+stage 1 and from **50 to 150** at stage 5, replacing the provisional P-a. **NOT built in #193.**
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1344,6 +1357,21 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   - `MobBlaster.detonate` hits a victim inline only when `Bukkit.isOwnedByCurrentRegion(victim)`, else on the
     victim's own scheduler a tick later. That branch is written for Folia and has never run: on Paper every victim is
     owned.
+- **F4, 2026-11-17, the seat's ruling on the boot of `bd7457a3`: the instrument has no thaw step.** DS1R3 thaws its
+  children with a vanilla `execute as @e[tag=ds1,type=creeper] run data merge entity @s {NoAI:0b}`, accepted for that
+  gate (that it changes nothing of ours but NoAI is INFERRED). A `thaw:` step in the selftest instrument, reading the
+  change back as the `CHILD` line does, is a later tidy-up. Owed, not scheduled.
+- **F5, 2026-11-17, the seat's ruling: growth decides a tick late, from where the Phage then stands.** The rule is
+  *"within the radius when it dies"*. `MobGrower.reportDeath` collects the candidates at the death, but
+  `MobGrower.applyGrowth`, on each candidate's own scheduler a tick or more later, asks `MobGrowth.stageAfter` again
+  with the candidate's position THEN, and logs the GROWTH line's `d` from it. Read at the boot: the second run's
+  DS1R3 spared its sibling at `d=0.737`, and the GROWTH line printed `d=0.75`. **The fix:** the decision is fixed at
+  the death; the later tick may only re-read the STAGE, so two deaths in one tick still add up. The gate's premise
+  (the spared `d` and the GROWTH `d` measured between the same two points) was wrong for a live candidate, and its
+  re-prediction belongs to the same follow-up.
+- **F6, 2026-11-17, INFERRED, not read: the same seam can drop a growth.** Because `applyGrowth` re-asks the rule at the
+  new position, a live Phage inside 6 blocks at the death that walks beyond 6 before its own tick would not grow,
+  though the BLAST line lists it as spared. No row has staged it.
 
 ## QUESTIONS FOR BEN
 
