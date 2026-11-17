@@ -539,6 +539,55 @@ seat's provisional T-a, T-b and T-c, as they played.**
    not 23, so the move (the FIRE + 12) came before the next row's removal. **The code read right; the timing
    prediction was wrong.** The thin margin was accepted beforehand; nothing was changed.
 
+### Ben, 2026-11-17, VERBATIM: the Knell's numbers after the boot, and the bell timing (the follow-up, `feat/dragon-knell-2`)
+
+*Asked for the numbers behind "i think it needs to be more damage" and "maybe a slight increase in duration", Ben:*
+
+> "1. For damage I think 65 is good"
+
+> "2. I'm not sure for the duration yet. I'd like to know how long the bell sound is that plays after the real shot"
+
+**THE FACTS HE WAS GIVEN, 2026-11-17 (the measurement, read only).** The beam played three sounds: at the lock,
+`block.bell.resonate` (volume 1.4, pitch 0.7); at the fire, `block.bell.use` (1.0, 1.0) and
+`block.amethyst_block.chime` (1.0, 1.0). The client's files and lengths, READ from asset index `30` (named by
+`versions/26.1.2/26.1.2.json`) and its `sounds.json`, each length the Ogg's final granule position over its sample
+rate:
+
+| event | file | file length | variant pitches in `sounds.json` | as played (our pitch x the variant's) |
+|---|---|---|---|---|
+| `block.bell.resonate` | `block/bell/resonate.ogg` | 3.780 s | 1.0, 0.85, 0.9 | at our 0.7: 5.400, 6.353, 6.000 s |
+| `block.bell.use` | `block/bell/bell_use01.ogg`, `bell_use02.ogg` | 2.492 s | 0.93, 0.95, 0.97 | at our 1.0: 2.679, 2.623, 2.569 s |
+| `block.amethyst_block.chime` | `block/amethyst/shimmer.ogg` | 4.322 s | (none) | 4.322 s |
+
+**"As played" ASSUMES playback speed equals pitch; how the client applies pitch was not read.**
+
+*Then Ben:*
+
+> "Here's what I want to try. The bell plays with the warning. The real shot comes when the resonance part starts. The teleport happens when the sound is fully finished, if a target is hit of course."
+
+*The seat's reading, put to him: the bell strike (`block.bell.use`) plays when the warning starts; the resonance
+(`block.bell.resonate`) starts at the real shot, at normal pitch; the teleport comes when the resonance has finished,
+about 4.4 seconds after a hit; and the slowed 0.7 pitch cannot be kept, because the resonance would then outlast the
+100-tick minimum between beams. The seat asked whether that reading was right, and how long the warning should be
+(0.8, 1.0 or the strike's full 2.6 seconds; 0.6 today). Ben:*
+
+> "1. yes"
+
+> "2. let's try 1.3 seconds"
+
+**WHAT THIS SUPERSEDES:** K7 (12 ticks; now 26, 1.3 seconds) and K11 (12 ticks; now 89, below), and Ben's earlier
+ruling that the teleport comes after *"The same time between the warning shot and the actual beam"* (B), which his new
+ruling replaces **for now** (*"what I want to try"*). **K10 goes from 35 to 65.**
+
+**THE SEAT'S, CHOSEN AND UNRULED, listed for Ben:**
+- the amethyst chime still plays at the shot;
+- the second warning flash moves from tick 9 to tick 20 (three quarters through, as before);
+- the teleport delay is **89 ticks**: the resonance file is 3.780 s, the client's slowest variant is pitch 0.85, so it
+  ends at 3.780 / 0.85 = 4.447 s = 88.9 ticks, rounded UP to 89 so the sound has always finished. **It is one authored
+  number in TICKS; the code never computes it from a sound.** The server cannot know which variant a client drew, and
+  "playback speed equals pitch" is still assumed. **89 is below the cycle's 100-tick minimum with 11 to spare; a longer
+  resonance (a lower pitch) would need a longer cycle**, and the load-time check refuses a delay that is not shorter.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
