@@ -803,6 +803,24 @@ game, or only the first hit from a player?* Ben:
 **That answers Q7.** **THE SEAT'S READING:** the blink's numbers stand as STARTING numbers he left unchanged on
 2026-11-17, **not numbers he typed**: X4 (a player within 5 blocks), X5 (it lands 6 to 16 blocks off) and X6 (8 attempts).
 
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the blink and the shield (the boot of `ef770b8a`)
+
+*Read in `GATE-dragon-blink.md`, BQ1, in the order logged:*
+
+```
+BQ1 ASK 1 question="Does the glowing shape sit where you can hit it?" answer="yes" ticks=266
+BQ1 ASK 2 question="Did the shot shove you?" answer="I don't think so" ticks=331
+BQ1 ASK 3 question="Did the Phalanx blink away when you got close?" answer=NOT STATED after 1200 ticks
+BQ1 ASK 4 question="Did its shield visibly eat your first hit?" answer="yes but it needs a larger cooldown. Say 12 seconds. Answer for question 3" ticks=627
+```
+
+And in chat after the run, his own correction: `<BaronVonYeetus> question 4: yes it did`. So the line the ASK step
+captured for question 4 is his answer to question 3, and question 4's answer is "yes it did".
+
+- **CONFIRMED BY PLAY:** the shape sits where it can be hit; the blink; the shield eating the first hit.
+- **RULED BY BEN AND NOT BUILT:** the blink needs a cooldown, "Say 12 seconds" (**240 ticks**).
+- **THE SEAT'S, put to him:** the cooldown is counted from a blink that LANDS; a failed attempt does not spend it.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -2140,6 +2158,24 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
     reads it.
   - **2026-11-17, step R7b: C1-C4 are built as closed (§5.R.10) and re-staged in `GATE-dragon-blink.md`. NOT READ: they
     close when its rows are read on a server.**
+  - **2026-11-17, the boot of `ef770b8a`: C1-C4 CLOSED** (`GATE-dragon-blink.md`, the seat's reading at merge):
+    - **C1 CLOSED:** BC1X and BC1Z read `inside=true` at ages 5, 15 and 25 on both axes, the box's and the shape's
+      centres equal to three places;
+    - **C2 CLOSED:** BC2B read `SHOT blocked … age=16 … block=stone`, nothing refused, after `LINGER work=1` ended BC2A's
+      field;
+    - **C3 CLOSED:** BC3 read `SHOT destroyed … age=32 … by=vanilla cause=ENTITY_ATTACK damager=player`, and no `no
+      live shot` line;
+    - **C4 CLOSED:** BC4A's two `SELF … at=` and BC4B's husk's two `AT` identical across a shot; Ben: "I don't think so".
+- **CARRIED FROM #202, NEW** (the seat's ruling at merge, 2026-11-17):
+  - **R3. DEFECT, TO DIAGNOSE:** a blink decided while the Phalanx is off the ground fails every draw. BQ1, tick 2647:
+    from y 63.305, all eight `NO_FOOTING` on a flat floor; the next tick, from y 63.000, it landed.
+  - **R5. UNREAD:** two `SHIELD knockback cancelled` lines against one `SHIELD absorbed` (BQ1, 12:43:35). No line reads
+    a melee hit's damage on a mob.
+  - **BC4B's cleanup:** its `/kill @e[tag=bc4b]` does not select its husk (tagged `bc4bh`); BB1's clean removed it.
+  - **UNREAD:** zero damage not spending the shield (core test only); the shield byte surviving an unload.
+- **F17, RESTATED 2026-11-17 (the boot of `ef770b8a`):** the calibrated offset reads `0.000 0.600 -0.400`, the derived
+  0.375 × 1.6, not the 0.450 predicted. The 0.45 SH1R2 read was the shape's displacement under the old one-time
+  calibration; why it was 0.45 is still unexplained. Not closed.
 - **F17, 2026-11-17, step R7b: THE FROG'S PASSENGER OFFSET'S y IS UNEXPLAINED.** The boot of `3dc0e184` read the shape
   displaced (0, 0.45, −0.40) from the box's centre. Its z is the frog's READ attachment, −0.25, times the scale 1.6. Its
   y is not 0.375 × 1.6 = 0.600, and the 0.150 between them is not explained by anything read. **It changes nothing

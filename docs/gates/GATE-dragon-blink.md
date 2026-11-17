@@ -9,6 +9,8 @@ says ready.**
 sit beside each row; the run's own account, BQ1 in order by tick, and what the run found are under **READINGS** at the
 end. No prediction above was edited.
 
+**2026-11-17: approved to merge by the review seat after the boot of ef770b8a.**
+
 The plan is `PLAN-dragon-mobs.md` (RULINGS, *Ben, 2026-11-17, VERBATIM: the Phalanx's shield*; §5.R.10 as built). The
 scenario file is `paper/src/main/resources/selftest/GATE-dragon-blink.yml`, run by `/rpg selftest dragon-blink`.
 
