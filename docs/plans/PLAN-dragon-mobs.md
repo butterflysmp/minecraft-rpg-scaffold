@@ -1455,6 +1455,15 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   return;` then dropped the growth with no line. Only a LIVE candidate moves between the death and its tick, and only
   one standing within about a tick's walk of the edge could cross it, so it was rare; it could never ADD a growth,
   because only candidates decided at the death are scheduled. `restage` closes it.
+- **F7, 2026-11-17, the seat's ruling on #194: the Phage's push raises NO knockback event, by decision.** Vanilla's
+  explosion raises a chain from `CraftEventFactory.callEntityKnockbackEvent` (Bukkit's `EntityKnockbackEvent` or
+  `EntityKnockbackByEntityEvent`, the old `com.destroystokyo` `EntityKnockbackByEntityEvent`, and Paper's
+  `io.papermc.paper.event.entity.EntityKnockbackEvent`, cause `EXPLOSION`); a plugin cannot build that chain, and
+  Paper's own constructor is `@ApiStatus.Internal`, which we do not call (§7 F-B). **What a future protection plugin
+  would NOT see:** a region or anti-grief plugin that cancels or scales explosion knockback through any of those
+  events (a safe zone, a "no knockback" flag, an anti-cheat velocity check keyed on the event) will not see the
+  Phage's push, cannot cancel it, and may read the sudden velocity as unexplained. The push is still a plain
+  `setVelocity`, which such plugins may watch by other means. **Revisit if one is ever installed.**
 
 ## QUESTIONS FOR BEN
 
