@@ -291,7 +291,8 @@ the fuse length (vanilla 1.5 seconds), the blast radius (vanilla 3), and the dam
 
 - ~~**P-a. Damage:** stage 1 deals 20, stage 5 deals 50 (the old Goon's blast), stages between linear, as G3 has the
   body.~~ **REPLACED 2026-11-17** (RULINGS, *the 60 and the 150, and knockback*): 60 at stage 1, 150 at
-  stage 5, linear between: the seat's reading of Ben's "increase 3x".
+  stage 5, linear between: the seat's reading of Ben's "increase 3x". **CONFIRMED BY PLAY 2026-11-17**
+  (RULINGS, the BQ1R2 answers).
 - **P-b. Damage is multiplied by the Phage's gear score / 100**, as its health is (old Q3).
 - ~~**P-c. Full damage to every victim inside the radius;** no falloff, no cover check, no knockback.~~ **REPLACED
   2026-11-16 by Ben's "keep vanillas shap"** (below): vanilla's reach and falloff; still no cover and no knockback.
@@ -442,6 +443,19 @@ back as a vanilla explosion does, since he had said he did not see the damage. B
 **Built in `feat/dragon-blast-2`:** the 60 and 150; vanilla's knockback, read from the jar (§7 F-B, *Knockback,
 re-read 2026-11-17*), as a multiplier in content (1.0 today); the growth decision fixed at the death (§8 F5, F6); and
 the instrument's `thaw` step (§8 F4).
+
+**CONFIRMED BY PLAY, 2026-11-17 (the boot of `3b07cbee`, `GATE-dragon-blast-2.md` BQ1R2).** After a small Phage's
+blast (33.333 before defence at 2 blocks) and a big one's (83.333), each pushing him with strength 0.666667, the
+selftest asked and Ben answered, verbatim:
+
+- *"Did the blast push you back?"* **"yes"**
+- *"Your design says the small Phage explodes 'dealing a little damage'. Watch your health bar: did that feel like a
+  little?"* **"yes"**
+- *"Your design says the big Phage explodes 'dealing a lot of damage'. Watch your health bar: did that feel like a
+  lot?"* **"yes"**
+
+**The seat takes these as Ben's confirmation, by play, of the 60 and 150 damage and of knockback at 1.0.** They are no
+longer only the seat's reading of "increase 3x".
 
 ---
 
@@ -1464,6 +1478,15 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   events (a safe zone, a "no knockback" flag, an anti-cheat velocity check keyed on the event) will not see the
   Phage's push, cannot cancel it, and may read the sudden velocity as unexplained. The push is still a plain
   `setVelocity`, which such plugins may watch by other means. **Revisit if one is ever installed.**
+- **F5 AND F6 CLOSED, 2026-11-17, by the boot of `3b07cbee`** (`GATE-dragon-blast-2.md` DS1R4, the seat's reading). A
+  thawed, walking child's first blast spared its sibling at `d=0.797`, and the GROWTH line printed `d=0.797`: the
+  distance, and the decision, came from the death, not from a tick later. The reading that failed on 2026-11-17
+  (spared `d=0.737`, GROWTH `d=0.75`) now agrees.
+- **FOR WHOEVER NEXT PREDICTS A MULTI-PHAGE ROW, 2026-11-17: after a push, the bound on a live blast's distance is
+  `D ≤ 7`, not `D < 3`.** `D < 3` holds only while the player stands still during the swell (the first blast after a
+  heal). A blast pushes him, and vanilla's `SwellGoal.tick` turns a swell down only past 7 (`distanceToSqr > 49`), out
+  of sight, or for a creative/spectator target, so a second Phage already swelling within 3 blows wherever he lands
+  inside 7. DS1R4 read `d=3.916` for exactly that reason (NOT AS PREDICTED on that clause; the code read right).
 
 ## QUESTIONS FOR BEN
 

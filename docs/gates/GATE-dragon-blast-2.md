@@ -5,6 +5,8 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+**2026-11-17: approved to merge by the review seat after the boot of 3b07cbee.**
+
 **What this gate re-predicts, and why.** The seat's brief of 2026-11-17 (PLAN-dragon-mobs.md, RULINGS, *the 60 and the
 150, and knockback*): the blast's damage goes to 60 (stage 1) and 150 (stage 5), it now pushes its victims as a vanilla
 blast does, and growth's decision is fixed at the death (§8 F5). **Every row of `selftest/GATE-dragon-blast.yml` is
