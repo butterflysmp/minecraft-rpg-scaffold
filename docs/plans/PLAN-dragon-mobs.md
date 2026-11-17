@@ -1682,6 +1682,33 @@ section, carries D1-D3 and every row). The table above described the first build
 - **The instrument watches a real swing** and can strike along his look.
 - **X-l** is now the frog's 0.8 cube, and **X-c's conversion table stands as the conversion's limits** (the seat).
 
+### 5.R.10 STEP R7b AS BUILT (`feat/dragon-blink`, off master `275e9d0d`, 2026-11-17) — THE BLINK, THE SHIELD, C1-C4
+
+**The gate is `GATE-dragon-blink.md`; its INHERITED OR CHOSEN table is the item-by-item account of the blink and the
+shield, each marked READ or NOT IN THE RECORD, and is not repeated here.** What the code is:
+
+- **The blink, pure, in core: `MobBlink`** (`blink:` in the mob file). Its trigger is `MobHostility` and a box of
+  half-extent `trigger_range` round its feet. Its draws come from an injected `MobBlink.Source` (uniform in production,
+  the instrument's fixed draw for BLINK). Its landing is decided through the Knell's ONE check, **`BeamTeleport.foot`**,
+  which `BeamTeleport.judge` now calls too (a refactor, no behaviour change: its 20 rows stayed green), through
+  **`MobTeleporter.footing(mob, aim)`**, the Knell's port with the aim optional (null: sight is never asked). One `BLINK`
+  line carries the decision and every refusal.
+- **The blink, Bukkit, in `MobShooter`:** last in its Phalanx's tick, after the fire and every shot's step, so it cannot
+  fight or orphan a shot. Its own blink needs AI. It teleports, stops its path, goes invisible, puffs and sounds at both
+  ends, and reads itself back (`BLINK moved`). Firing clears invisibility (`BLINK visible … reason=fired`).
+- **The shield: `MobShield`** (`shield:` in the mob file) and **`MobShielder`**, the **`ShieldSink`** every handle of ours
+  asks. The ONE point is `BukkitCombatant.Handle.applyDamage`, directly after the shot's strike. The state is the
+  `mob_shield` PDC byte, set at the spawn stamp. The riders: `applyKnockback`, `applyImpulse` and `applyStatus` drop a
+  call in the absorb's tick, and `RpgListeners.onShieldedKnockback` cancels a vanilla push while it is up or in that tick.
+- **C1 (closed): `calibrate` runs at the START of every step, before the teleport,** and retranslates on any change. The
+  diagnosis is in its javadoc: the one-time calibration read the offset before the display's first ride tick.
+- **C2 (closed): `PendingWork`**, in `AdapterContext`. Every `PaperCombatWorld.schedule` link registers its point and
+  runs only if still pending. The row-start clean ends the work within 48 and then removes projectiles, area-effect
+  clouds and our markers there (`LINGER`).
+- **C3 (closed): `SelfTestStrike.next`**: no shot yet is a wait, until the timeout.
+- **C4 (closed): a scoreboard team `rpg_shot` whose collision rule is NEVER**, joined at the fire and left at the end;
+  `setCollidable` is never called, so an arrow still hits it (one test pins both).
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.
@@ -2111,6 +2138,15 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   - **C3. UNREAD:** a strike in the last tick before the reach. SH15's `strike_at_age` must wait for the shot to exist.
   - **C4. UNREAD:** whether the collidable carrier pushes, or is pushed by, a player or a mob. Nothing in the instrument
     reads it.
+  - **2026-11-17, step R7b: C1-C4 are built as closed (§5.R.10) and re-staged in `GATE-dragon-blink.md`. NOT READ: they
+    close when its rows are read on a server.**
+- **F17, 2026-11-17, step R7b: THE FROG'S PASSENGER OFFSET'S y IS UNEXPLAINED.** The boot of `3dc0e184` read the shape
+  displaced (0, 0.45, −0.40) from the box's centre. Its z is the frog's READ attachment, −0.25, times the scale 1.6. Its
+  y is not 0.375 × 1.6 = 0.600, and the 0.150 between them is not explained by anything read. **It changes nothing
+  built:** `calibrate` measures the offset rather than deriving it, and the gate's `inside=` reads the result.
+- **F18, 2026-11-17, step R7b: A FROZEN MOB NEVER MOVES UNDER A PUSH.** READ: `LivingEntity#aiStep` calls `travel` only
+  when `isEffectiveAi`, and `Mob#isEffectiveAi` is false under NoAI. So a row that reads a frozen mob's POSITION to see
+  a push is hollow. `GATE-dragon-blink.md` reads velocity, with a positive control. Its husk keeps its AI at speed 0.
 - **F15, 2026-11-17, step R7a: THE PAPER HALF'S GUARANTEES ARE PINNED ON THE SOURCE, NOT RUN.** That every handle strikes
   first, the seed refuses a shot, the death handler returns for one, and vanilla damage is cancelled at LOWEST are pinned
   by `DragonShotWiringTest` (each killed by a mutation), which reads lines, not behaviour. **The gate's SH2-SH5, SH9 and

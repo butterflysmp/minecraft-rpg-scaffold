@@ -37,9 +37,9 @@ class SelfTestScenariosTest {
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
-                        "dragon-shot"),
+                        "dragon-shot", "dragon-blink"),
                 List.copyOf(loaded.gates().keySet()),
-                "the eighteen gates, in boot order (dragon-shot LAST, step R7a, 2026-11-17); nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
+                "the nineteen gates, in boot order (dragon-blink LAST, step R7b, after dragon-shot, step R7a, 2026-11-17); nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
                         + " dragon-split and dragon-growth (2026-11-15), then dragon-blast (step R3, 2026-11-15), then dragon-beam (step R5) and dragon-teleport LAST (step R6, 2026-11-17)");
     }
 
@@ -96,6 +96,10 @@ class SelfTestScenariosTest {
         // suffix, the new rows are SH13-SH16, and the rows read as predicted (SH5, SH6, SH8, SH10, SH11, KQ1R6) leave the file.
         expected.put("dragon-shot", List.of("SH1R2", "SH2R2", "SH3R2", "SH4R2", "SH7R2", "SH9R2", "SH12R2", "SH13", "SH14",
                 "SH15", "SH16", "SQ1R2"));
+        // Step R7b (GATE-dragon-blink.md): the shot's four carried items (BC1-BC4), the blink (BB1-BB5), the shield
+        // (BS1-BS4) and Ben's row.
+        expected.put("dragon-blink", List.of("BC1X", "BC1Z", "BC2A", "BC2B", "BC3", "BC4A", "BC4B", "BB1", "BB2", "BB3",
+                "BB4", "BB5", "BS1", "BS2", "BS3", "BS4", "BQ1"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -138,7 +142,9 @@ class SelfTestScenariosTest {
         // At feat/dragon-shot 08e5f27e (master 8365e7f6 plus a docs commit) the same commands print 17, 134, 17: 117.
         // Then the re-prediction after the boot of 8ec16e89, RECOUNTED the same way: 18 gates, 147 keys, 18 setups, so 129. At
         // feat/dragon-shot ef242e95 the same commands print 18, 149, 18: 131, this line's old value.
-        assertEquals(129, loaded.rows());
+        // Then GATE-dragon-blink.md (step R7b, 2026-11-17), RECOUNTED the same way: 19 gates, 165 keys, 19 setups, so 146.
+        // At feat/dragon-blink be7bf586 (master 275e9d0d plus a docs commit) the same commands print 18, 147, 18: 129.
+        assertEquals(146, loaded.rows());
     }
 
     /**
@@ -276,15 +282,20 @@ class SelfTestScenariosTest {
                     boolean forced = st.verb() == Scenario.Verb.SHOT;
                     if (!(liveSpawn || forced || (bareCmd && !frozenAtOnce))) continue;
                     String where = gate.getKey() + "#" + s.row() + " " + st.verb() + " " + a;
-                    if (gate.getKey().equals("dragon-shot")) shotGate.add(where); else outside.add(where);
+                    // Step R7b: the blink gate is a shot gate too (its C1-C4 rows force shots; BB4 and BQ1 are live).
+                    if (Set.of("dragon-shot", "dragon-blink").contains(gate.getKey())) shotGate.add(where); else outside.add(where);
                 }
             }
         }
-        assertEquals(List.of(), outside, "a firing Phalanx outside the shot gate would hit the player at a time no row predicts");
+        assertEquals(List.of(), outside, "a firing Phalanx outside the shot gates would hit the player at a time no row predicts");
         // Since the re-prediction after the boot of 8ec16e89 the shot gate stages no LIVE Phalanx (SH10 and SH11 read as
-        // predicted and left the file), so the live-spawn pattern's positive control is a scenario written here.
-        assertEquals(0, shotGate.stream().filter(w -> w.contains(" SPAWN ")).count(), "no live Phalanx in the shot gate now: " + shotGate);
-        assertEquals(12, shotGate.stream().filter(w -> w.contains(" SHOT ")).count(), "the control: the shot gate's twelve SHOT steps: " + shotGate);
+        // predicted and left the file); the blink gate stages two, BB4's (gone before its first shot) and Ben's BQ1.
+        assertEquals(List.of("dragon-blink#BB4 SPAWN bb4 live phalanx 100", "dragon-blink#BQ1 SPAWN bq1 live phalanx 100"),
+                shotGate.stream().filter(w -> w.contains(" SPAWN ")).toList(), "the live Phalanxes: " + shotGate);
+        assertEquals(12, shotGate.stream().filter(w -> w.startsWith("dragon-shot#") && w.contains(" SHOT ")).count(),
+                "the control: the shot gate's twelve SHOT steps: " + shotGate);
+        assertEquals(7, shotGate.stream().filter(w -> w.startsWith("dragon-blink#") && w.contains(" SHOT ")).count(),
+                "and the blink gate's seven (BC1X, BC1Z, BC2B, BC3, BC4A, BC4B, BB5): " + shotGate);
         Scenario.Step live = new Scenario.Step(Scenario.Verb.SPAWN, "x live phalanx 100");
         assertTrue(livePhalanxSpawn(live.arg().trim()), "the control: the scan's own pattern matches a live Phalanx spawn");
         assertFalse(livePhalanxSpawn("x frozen phalanx 100"), "and not a frozen one");
@@ -299,7 +310,7 @@ class SelfTestScenariosTest {
     @Test
     void theDragonGatesDeclareNormalFirstInTheirSetup() {
         for (String gate : List.of("dragon-bodies", "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam",
-                "dragon-teleport", "dragon-shot")) {
+                "dragon-teleport", "dragon-shot", "dragon-blink")) {
             Scenario setup = shipped().gates().get(gate).getFirst();
             assertEquals(Scenario.SETUP, setup.row(), gate);
             assertEquals(new Scenario.Step(Scenario.Verb.DIFFICULTY, "normal"), setup.steps().getFirst(), gate);
