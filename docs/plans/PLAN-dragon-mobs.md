@@ -1269,6 +1269,61 @@ his walk without stopping it, and let him sprint out from the edge.
 Ben:** first as "not reliable", since the same build dragged a still player to 0.491 in one run and only to 1.347 in
 the next; the drag's 0.28 is not raised until that variation is explained (carried as a DEFECT, §8).
 
+### THE DRAG MUST NOT DEPEND ON PACKET TIMING: THE DIAGNOSIS, AND THE SEAT'S RULING (2026-11-18, `feat/drag-additive`)
+
+**THE TWO RUNS OF `39c0b341`, SIDE BY SIDE.** Every DRAG line of both `/rpg selftest implosion-drag` runs, from
+`run/logs/latest.log` (run 1 11:54:57 to 11:57:16, run 2 11:57:22 to 11:59:46), regenerated in this branch with `grep -n
+"SELFTEST implosion-drag .* START\|DRAG source" run/logs/latest.log`. Same build, same staging, same player. *The first
+session's own table is not in the repo; this one is rebuilt from the log, and agrees with every figure the gate quotes.*
+
+| row | run 1 `start → end`, `sent` | run 2 `start → end`, `sent` |
+|---|---|---|
+| BL1R4 | 0.491 → 0.491, 0 | 0.491 → 0.491, 0 |
+| BL2R4 | 2.000 → 0.479, 7 | 2.000 → 0.493, 8 |
+| BL6R4 | 1.950 → 0.532, 16 | 1.950 → **0.837**, 20 |
+| BL9R4 | 3.000 → 0.475, 8 | 3.000 → 0.504, 18 |
+| IM1R2 | 5.900 → 5.506, 20 | 5.900 → **5.713**, 20 |
+| IM3R2 | 2.000 → 0.479, 7 | 2.000 → 0.502, 17 |
+| IM4R2 | 0.487 → 0.506, 18 | 0.425 → 0.506, 19 |
+| IM5R2 | 3.950 → 3.515, 20 | 3.950 → 3.606, 20 |
+| FZ1R2 | 0.950 → 0.482, 3 | 0.950 → 0.504, 14 |
+| FZ3R2 | 1.950 → 0.475, 9 | 1.950 → 0.475, 9 |
+| FZ5R2 | 2.950 → 0.552, 18 | 2.950 → **0.382**, 9 |
+| DS1R6 X / Y | 0.577 → 0.138, 2 / 0.989 → 0.505, 16 | 0.615 → 0.085, 4 / 0.994 → 0.506, 14 |
+| DR1 | 3.000 → 6.728, 6 (`left`) | 3.000 → 8.339, 6 (`left`) |
+| DR2 A / B | 3.000 → 0.564, 20 / 3.964 → 5.255, 20 | 3.000 → 0.551, 17 / 3.510 → 5.366, 20 |
+| BQ2 q2 (still, from 4) | 4.000 → 0.491, 15, `held` | 4.000 → **1.347**, 20, `pulled` |
+| BQ2 q3 (walking) | 3.200 → 2.102, 20 | 3.200 → **3.342**, 20 |
+| BQ2 q4 (sprinting) | 4.700 → 9.592, 7 ticks (`left`) | 4.700 → 8.812, 8 ticks (`left`) |
+
+**`sent` VARIES ROW BY ROW ON IDENTICAL STAGING** (7 against 8, 8 against 18, 3 against 14, 18 against 9): a send is
+made only on a tick the estimate exists and the cap leaves room, so the count follows the move packets that arrived.
+
+**THE CANDIDATES, WITH THEIR MARKS:**
+1. **A tick with no move packet reads as "at rest", and the send wipes the momentum the drag had built.** `DragMotion`
+   estimated his momentum from the last two positions the server saw; a tick on which no move packet arrived repeats
+   the last position, so the displacement is 0, the estimate 0, and the velocity sent (0 plus the add) REPLACES what he
+   carried (READ: `ClientPacketListener#handleSetEntityMotion` → `Entity#lerpMotion` → `setDeltaMovement`).
+   **INFERRED**: no instrument recorded his move packets per tick.
+2. **A late send replaces a newer momentum with an older one.** A send built from tick n's estimate that lands after
+   his tick n+1 replaces the momentum of n+1 with n's. **INFERRED**, for the same reason.
+3. **He moved, or held a key, in run 2.** He started run 2 having decided to look again, and no line read his keys.
+   **UNREAD, not ruled out.**
+4. **The server's own copy of his velocity was sent.** **RULED OUT BY THE CODE**: the drag never sent it (D2).
+
+**THE GATE'S J2 ASSUMPTION IS CONTRADICTED.** J2 marked as INFERRED "one move packet a server tick, and each send
+reaching him the next tick (a local server)". **The server was not local to him:** his login line reads
+`BaronVonYeetus[/192.168.68.90:56227] logged in with entity id 13` (11:54:32; again from `:64715` at 11:54:48), a
+second machine on his LAN. Real players will be remote. So the estimate's two assumptions were never the game's.
+
+**THE SEAT'S RULING (2026-11-18), its words in the brief:** *"no design that needs the server to know the client's
+momentum is acceptable."* The diagnostic boot proposed was NOT run on its own; its instrument rides in this branch
+(DRAGTICK, `GATE-drag-additive.md`).
+
+**THE SEAT'S NUMBER, TOLD TO BEN AS THE SEAT'S:** `drag` **0.28 → 0.33**, because he answered "not quite" after the run
+in which the drag worked as modelled, and "i think it needs to be a little bit stronger" after the second. **Sprinting
+out will then work only from nearer the edge.**
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
