@@ -907,10 +907,26 @@ vanilla target drops, as it often did at 16; the shot's own choice is what keeps
 - **THE CANNOT-REACH RULE (CHOSEN, for Ben):** a pair that cannot reach its band winds up FROM WHERE IT STANDS once it has
   a target within its acquire range and has waited one full period ready. As built: ready 120 ticks after the last
   wind-up began, so it winds up at 240 (`PounceCycle`). A tick with no target or no AI starts the wait again.
+  **REVISED by the seat's third brief (below): measured by progress, not by time ready.**
 - **"The pathfinder stops short" stays INFERRED until read; READ in this step** (`MobPounceTest`,
   `theBandsHalfWidthExceedsTheMountsStopOnAnAxisAndNotOnADiagonal`): a path is done with the mob under (width / 2 + 0.5)
   from its goal on each axis: **1.55 for the 2.1-wide mount, so up to 2.19 on a diagonal**, which the band's half-width
   of 2 does NOT exceed. The cannot-reach rule is the backstop.
+
+### THE SEAT'S THIRD BRIEF ON #203, 2026-11-17: THE PAIR MUST END INSIDE ITS BAND FROM ANY BEARING (the seat's, stated in this file's words)
+
+- **The backstop must not be what makes an ordinary approach work:** a pair whose path ends outside the band corrects
+  itself, and from any bearing and start within the acquire range, on open ground, comes to rest inside [near, far] and
+  winds up at its normal period. **Ben's band and the band test are NOT widened or loosened.**
+- **AS BUILT:** `MobPounce.goal` chooses the goal BLOCK, among those within 3 of the band's middle point, nearest that
+  point, whose stopping box (its centre ± the mount's tolerance on each axis, grown by 0.25, CHOSEN) lies wholly inside
+  the band; so the walk crosses into the band before its path can end, and the cycle stands it there. Proved in core
+  against the READ stopping rule over every 5 degrees, twelve start distances and four target positions (3456 cases,
+  all at rest inside 8 to 12); without the choice, 28 rest outside, the diagonals first. The goal is recomputed every
+  tick the pair is outside its band, so a pair chasing a walking player settles when he stops.
+- **THE CANNOT-REACH RULE, MEASURED BY PROGRESS:** a pair with its AI and a target, outside the band, that has not come
+  1 block nearer the band for a full period (`PROGRESS_BLOCKS`, CHOSEN), winds up from where it stands once ready. A pair
+  walking in good faith never counts.
 - **R3's anchor on floor(feet.y) is ACCEPTED,** with its cost recorded (a slab's top is never a landing). **F19 is a
   carried DEFECT**, first into the next branch that touches the Knell. **R5 as one hit raising two events is ACCEPTED**,
   "a sprint hit" marked INFERRED. **The pounce on plain KNOCKBACK_RESISTANCE is ACCEPTED** (a pounce is not an explosion).
@@ -2315,7 +2331,9 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   mount to EXACTLY the band's far edge (12), and the band counts only distances at or inside 12, so a mount that stopped
   past its goal parked outside the band and never wound up: PS6's died 12.4459 from him after 180 ticks with no second
   wind-up, and PQ1's pair wound up once in 599 ticks, at d=11.935, 473 ticks after it appeared. Fixed: the goal is the
-  band's middle, and the cannot-reach rule ends any wait at one period.
+  band's middle, and the cannot-reach rule ends any wait at one period. **Fixed further after the seat's third brief:** the
+  middle's own block could still leave the mount stopped outside the band on a diagonal, so the goal is now the block
+  whose stopping box lies inside the band (`MobPounce.goal`), and the cannot-reach rule is measured by progress.
 - **F23, 2026-11-17, THE PROBE LAG (found by DB6R3 at the boot of `45bc33ce`), AN INSTRUMENT DEFECT, FIXED IN STEP R8's
   SECOND ROUND.** `probe_pair` and `probe_shot` read their mob on its own scheduler, a tick after the step; a kill in the
   next step runs first, and DB6R3's PAIR lines read a dead pair (`stage=none`). The reads stay on the mob's thread (every

@@ -2,7 +2,7 @@
 # `/rpg selftest dragon-skreel`.
 #
 # SECOND BOOT (after the boot of 45bc33ce, 2026-11-17). Only the rows that FAILED or CHANGE are here, each under its
-# re-predicted name: the band edge fixed (DB6R4, PS6R2, PS9, PS10), Ben's 12-24 blink (PB1R2, PB2R2, PB4, BB4R2), and
+# re-predicted name: the band edge fixed (DB6R4, PS6R2, PS9, PS10, PS11), Ben's 12-24 blink (PB1R2, PB2R2, PB4, BB4R2), and
 # Ben's two rows (PQ3, PQ4). The rows that read as predicted at 45bc33ce and whose lines do not change are not re-run:
 # DB7R3, PS3, PS4, PS5, PS7, PS8, PB3.
 #
@@ -96,8 +96,8 @@ PS9:
   - wait: 5
 
 # PS10: IT CANNOT REACH THE BAND. A LIVE pair 20 east whose mount's movement speed is 0, so it can never walk into its
-# band (a stand-in for a wall: a spider climbs walls). Ready at the 120th tick; one full period later, the 240th, it
-# winds up from where it stands, 20 out, and its leap still lands on his feet.
+# band (a stand-in for a wall: a spider climbs walls). It makes no progress toward the band from its first tick, so on
+# its 121st, ready since its 120th, it winds up from where it stands, 20 out, and its leap still lands on his feet.
 PS10:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-16 -1 -12 24 14 12"
@@ -110,12 +110,33 @@ PS10:
   - cmd: "tp @s ~-20 ~ ~ -90 0"
   - wait: 2
   - probe_at: ps10
-  - wait: 200
+  - wait: 100
   - probe_at: ps10
-  - cmd: "rpg heal 1000000"
   - wait: 100
   - probe_self: ""
   - cmd: "kill @e[tag=ps10]"
+  - wait: 5
+
+# PS11: THE DIAGONAL. A LIVE pair spawned 12 east AND 12 south of him (a bearing of 45 degrees, 16.97 out), outside its
+# band. It walks in on the diagonal, comes to rest inside its band, and winds up of its own at the normal 120th tick,
+# from inside it.
+PS11:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-16 -1 -16 18 14 16"
+  - cmd: "fill ~-16 ~-1 ~-16 ~18 ~-1 ~16 stone"
+  - cmd: "fill ~-16 ~ ~-16 ~18 ~14 ~16 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~12 ~ ~12"
+  - spawn: "ps11 live skreel 100"
+  - cmd: "tp @s ~-12 ~ ~-12 -90 0"
+  - wait: 2
+  - probe_at: ps11
+  - wait: 100
+  - probe_at: ps11
+  - cmd: "rpg heal 1000000"
+  - wait: 80
+  - probe_self: ""
+  - cmd: "kill @e[tag=ps11]"
   - wait: 5
 
 # PB1R2 (re-predicts PB1): THE COOLDOWN, ITS SECOND BLINK NOW 12 TO 24 OUT. As PB1: a LIVE Phalanx 8 east at speed 0, a

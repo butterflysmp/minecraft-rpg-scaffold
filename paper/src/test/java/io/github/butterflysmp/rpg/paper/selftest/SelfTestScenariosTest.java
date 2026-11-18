@@ -105,7 +105,7 @@ class SelfTestScenariosTest {
         // Then its re-prediction after the boot of 45bc33ce: the rows that failed or change, re-named (DB6R4, PS6R2, PB1R2,
         // PB2R2, and the blink gate's BB4 as BB4R2), the band edge's two new rows (PS9, PS10), Ben's far end (PB4) and his
         // two rows (PQ3, PQ4). The rows that read as predicted and do not change left the file.
-        expected.put("dragon-skreel", List.of("DB6R4", "PS6R2", "PS9", "PS10", "PB1R2", "PB2R2", "PB4", "BB4R2", "PQ3",
+        expected.put("dragon-skreel", List.of("DB6R4", "PS6R2", "PS9", "PS10", "PS11", "PB1R2", "PB2R2", "PB4", "BB4R2", "PQ3",
                 "PQ4"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
@@ -155,7 +155,9 @@ class SelfTestScenariosTest {
         // At master 185a6437 the same commands print 19, 165, 19: 146.
         // Then its re-prediction after the boot of 45bc33ce, RECOUNTED the same way: 20 gates, 174 keys, 20 setups, so
         // 154. At feat/dragon-skreel 1c18e862 the same commands print 20, 177, 20: 157, this line's old value.
-        assertEquals(154, loaded.rows());
+        // Then PS11 (the diagonal, the seat's third brief), RECOUNTED the same way: 20 gates, 175 keys, 20 setups, so 155.
+        // At feat/dragon-skreel 4ba51506 the same commands print 20, 174, 20: 154, this line's old value.
+        assertEquals(155, loaded.rows());
     }
 
     /**
@@ -348,7 +350,8 @@ class SelfTestScenariosTest {
         }
         assertEquals(List.of(), outside, "a live Skreel pair outside its gate would pounce at a time no row predicts");
         assertEquals(List.of("dragon-skreel#PS6R2 SPAWN ps6r2 live skreel 100", "dragon-skreel#PS9 SPAWN ps9 live skreel 100",
-                        "dragon-skreel#PS10 SPAWN ps10 live skreel 100", "dragon-skreel#PQ3 SPAWN pq3 live skreel 100"),
+                        "dragon-skreel#PS10 SPAWN ps10 live skreel 100", "dragon-skreel#PS11 SPAWN ps11 live skreel 100",
+                        "dragon-skreel#PQ3 SPAWN pq3 live skreel 100"),
                 skreelGate.stream().filter(w -> w.contains(" SPAWN ")).toList(), "the control, its live pairs: " + skreelGate);
         // Since the re-prediction after the boot of 45bc33ce no shipped row forces a pounce (PS3, PS4 and PS6 left the
         // file), so the POUNCE half of this scan has no shipped hit: it is the verb's equality above, and nothing more.

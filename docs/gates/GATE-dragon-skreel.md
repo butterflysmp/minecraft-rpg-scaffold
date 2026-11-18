@@ -430,6 +430,15 @@ suffix; the rows that read as predicted and whose lines do not change are **not 
 `PLAN-dragon-mobs.md` (RULINGS, *Ben, … the boot of `45bc33ce`* and *THE SEAT'S RULINGS AFTER THE BOOT OF `45bc33ce`*;
 F22 and F23).
 
+> **2026-11-17, BEFORE ANY BOOT OF THIS ROUND: THIS SECTION'S PREDICTIONS ARE REWRITTEN IN PLACE, BY THE SEAT'S LEAVE.**
+> The seat's third brief on #203 ("the pair must end inside its band from any bearing") found that `4ba51506`'s goal,
+> the middle point's own block, can leave the 2.1-wide mount stopped outside the band from a diagonal, so that it leaps
+> only by the cannot-reach rule. This round had **not been booted or read**, so the seat allowed its predictions to be
+> rewritten in this PR rather than re-predicted under new names. **Rewritten:** items 2 and 3 below, and new item 7; the
+> survival table; R0b2 and R0d2; **PS6R2** (its wind-ups now at the normal period), **PS9**, **PS10** (the cannot-reach
+> rule now measured by progress: P + 121, not P + 240); **added: PS11** (the diagonal); and the run sheet's length.
+> Everything above this section, its predictions and its readings, is untouched.
+
 ## WHAT CHANGED, AND WHAT EACH CHANGE STANDS ON
 
 1. **THE BAND EDGE (F22), FIXED.** The stand-off point is the band's **middle**, (8 + 12) / 2 = **10**, never an edge
@@ -442,14 +451,26 @@ F22 and F23).
    y); `shouldTargetNextNodeInDirection` returns false on the last node, so the last is never passed early. **So a path
    is done with the mob under width / 2 + 0.5 from its goal on each axis.** The mount is 1.4 × 1.5 = 2.1 wide (READ,
    `EntityType` spider `sized(1.4f, 0.9f)`; DB6R3 read `height=1.350`, 0.9 × 1.5): **1.55 on an axis, 2.19 on a
-   diagonal. THE BAND'S HALF-WIDTH, 2, EXCEEDS THE FIRST AND NOT THE SECOND.** A mount whose line to him runs near a
-   diagonal can still stop outside the band. Pinned in `MobPounceTest`.
-3. **THE CANNOT-REACH RULE (the seat's ruling; CHOSEN, for Ben).** A pair ready to wind up (120 ticks after the last
-   wind-up began), with its AI and a target within its acquire range (32), and still outside the band, waits one full
-   period and then winds up **from where it stands**: at 240 after the last wind-up began. A tick with no target or no AI
-   starts the wait again. It is the backstop for item 2's diagonal, a wall, a pit, or any body too slow. **What it means
-   in play, for Ben:** a Skreel that cannot get to its band still leaps every 12 seconds, from any distance up to 32,
-   and the leap still comes down on the spot it aimed at (a leap of 30 flies about 1 block a tick).
+   diagonal. THE BAND'S HALF-WIDTH, 2, EXCEEDS THE FIRST AND NOT THE SECOND.** So the middle point's own block is NOT
+   the goal: **`MobPounce.goal` chooses, among the blocks within 3 of the middle point's, the one nearest it whose
+   stopping box (that block's centre, ± the mount's tolerance 1.05 on each axis, grown by a CHOSEN margin of 0.25) lies
+   wholly inside the band.** Then the walk always crosses into the band before its path can end, and the cycle stands it
+   there the tick it does; a path that did end would end inside the band. **Why this mechanism of the seat's three:** it
+   is the only one that needs no second walk (a correcting second goal costs a whole extra approach and still meets the
+   same rule) and no vanilla internals (the mount's move control is not in the Bukkit API; reaching it would be NMS,
+   banned here); it works on the rule as READ, at the one place the pair chooses where to go. Its price: the chosen
+   block can sit up to 3.52 blocks from the middle point, so the pair circles a little off its bearing. Pinned in
+   `MobPounceTest` (the sweep, below).
+3. **THE CANNOT-REACH RULE (the seat's ruling; CHOSEN, for Ben), MEASURED BY PROGRESS.** A pair with its AI and a target
+   within its acquire range (32), outside the band, that has not come **1 block nearer the band** (`MobPounce.bandGap`;
+   `PROGRESS_BLOCKS`, CHOSEN) for a full period (120 ticks), and is ready, winds up **from where it stands**. A tick in
+   the band, with no target or with no AI starts the wait again, and so does a wind-up. **A pair walking to its band in
+   good faith never counts** (a walking mount covers a block in about two ticks), so the backstop is not what makes an
+   ordinary approach work. A pair stuck from its first tick winds up on its 121st; one that stalls winds up a period
+   after its last block of progress. **What it means in play, for Ben:** a Skreel that cannot get to its band (a wall,
+   a pit) still leaps about every 6 seconds, from any distance up to 32, and the leap still comes down on the spot it
+   aimed at (a leap of 30 flies about 1 block a tick). So does one chasing a player who runs from it faster than it
+   closes, which is the rule working as meant.
 4. **BEN'S BLINK RANGE, RULED: 12 TO 24** (`phalanx.yml` `blink.near: 12`, `blink.far: 24`). The uniform draw is
    near + u × (far − near) with u in [0, 1), so a draw nearer than 12 is impossible by construction (`MobBlinkRangeTest`:
    its two ends and 100 000 seeded draws). **The instrument's forced draw is a fixed point, not bound by near and far**,
@@ -476,14 +497,21 @@ F22 and F23).
    `probe_shot` followed by a kill in `GATE-dragon-shot.yml` (SH1R2, SH2R2, SH3R2, SH7R2, SH13, SH14, SH15, SH16) and
    `GATE-dragon-blink.yml` (BC2B, BC3), and this gate's own rows. Those merged rows are not re-run; on a re-run their
    probes read the same tick as before and their kills come 2 ticks later. Their dated notes say so.
+7. **THE TARGET MOVES.** The goal is recomputed **every tick** the pair is outside its band (the CLOSE_IN step calls
+   `MobPounce.goal` from where he stands that tick and hands it to the pathfinder at once; pinned in
+   `DragonSkreelWiringTest`), and the cycle stands the pair the first tick it is inside the band. So a pair chasing a
+   walking player follows his feet tick by tick; when he stops, the next goal is a block whose stopping box lies in the
+   band round where he stands, and it settles there by the rule the sweep proves. A pair standing in its band while he
+   walks stays put until he leaves the band, then closes in again. **A wind-up, once begun, is unaffected:** its aim is
+   fixed at its first tick (as built in the first round) and it always leaps.
 
 ## THE PLAYER CANNOT DIE IN ANY ROW, THE FALL INCLUDED
 
 | row | what can reach him | most between heals | his floor |
 |---|---|---|---|
 | DB6R4 | nothing (frozen) | 0 | 350 |
-| PS6R2 | the pair, healed every 100 ticks; wind-ups at least 120 apart | one landing: 55, 50 after defence | 300 |
-| PS9, PS10 | the pair, healed before its one landing | one landing, 50 | 300 |
+| PS6R2 | the pair, healed every 100 ticks; wind-ups 120 apart | one landing: 55, 50 after defence | 300 |
+| PS9, PS10, PS11 | the pair, healed before its one landing | one landing, 50 | 300 |
 | PB1R2 | its shots (period 120), healed at +145 and +265 | two 40s, 36.364 each | 277.3 |
 | PB2R2 | nothing (no shot in 15 ticks) | 0 | 350 |
 | PB4 | one forced shot, fired 32 away and ended by the kill ~10 ticks later (0.2 a tick: it cannot arrive) | 0 | 350 |
@@ -503,11 +531,11 @@ horizontal direction, straight up). Every survivor that could reach him is kille
 |---|---|---|
 | `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-skreel` prints it, shortened. **Not** `45bc33ce` (the first round's boot) and not `1c18e862` (its readings); not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1`, after this boot's `Done` | |
 
-### R0b2 — the jar carries the fix, Ben's range and the new rows; the controls tell it from `45bc33ce`
+### R0b2 — the jar carries the fix, Ben's range and the new rows; the controls tell it from `45bc33ce` AND from `4ba51506`
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: `phalanx.yml` `  near: 12`, `  far: 24`; `MobPounce.class` `standOffDistance`; `MobShot.class` `chooseRange`; `SelfTestStaging.class` `the probe lag`; `GATE-dragon-skreel.yml` `PS10:`, `PB4:`. **ABSENT, and PRESENT in `45bc33ce`'s jar:** `phalanx.yml` `  near: 6`, `  far: 16`; `GATE-dragon-skreel.yml` `PS3:`. **The controls, PRESENT in both:** `phalanx.yml` `  cooldown_ticks: 240`; `health/MobPouncer.class`; `GATE-dragon-blink.yml` `BQ1:` | the scan below | |
+| PRESENT: `phalanx.yml` `  near: 12`, `  far: 24`; `MobPounce.class` `standOffDistance`, `waypointTolerance`; `PounceCycle.class` `bestGap`; `MobShot.class` `chooseRange`; `SelfTestStaging.class` `the probe lag`; `GATE-dragon-skreel.yml` `PS10:`, `PS11:`, `PB4:`. **ABSENT, and PRESENT in `45bc33ce`'s jar:** `phalanx.yml` `  near: 6`, `  far: 16`; `GATE-dragon-skreel.yml` `PS3:`. **Telling it from `4ba51506`** (the second round as first pushed, never booted): there `waypointTolerance`, `bestGap` and `PS11:` read ABSENT and `PounceCycle.class` `stranded` PRESENT; here the reverse. **The controls, PRESENT in both:** `phalanx.yml` `  cooldown_ticks: 240`; `health/MobPouncer.class`; `GATE-dragon-blink.yml` `BQ1:` | the scan below | |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -517,11 +545,11 @@ foreach ($q in @(@('phalanx.yml', '  near: 12'), @('phalanx.yml', '  far: 24'), 
   $y = Bytes "content/mobs/$($q[0])"
   if ($y -ne $null -and $y -match ("(?m)^" + [regex]::Escape($q[1]) + "\s*$")) { "PRESENT $($q[0]) '$($q[1])'" } else { "ABSENT  $($q[0]) '$($q[1])'" }
 }
-foreach ($c in @(@('core/mob/MobPounce', 'standOffDistance'), @('core/mob/MobShot', 'chooseRange'), @('paper/selftest/SelfTestStaging', 'the probe lag'), @('paper/health/MobPouncer', 'skreel-pounce'))) {
+foreach ($c in @(@('core/mob/MobPounce', 'standOffDistance'), @('core/mob/MobPounce', 'waypointTolerance'), @('core/mob/PounceCycle', 'bestGap'), @('core/mob/PounceCycle', 'stranded'), @('core/mob/MobShot', 'chooseRange'), @('paper/selftest/SelfTestStaging', 'the probe lag'), @('paper/health/MobPouncer', 'skreel-pounce'))) {
   $b = Bytes "io/github/butterflysmp/rpg/$($c[0]).class"
   if ($b -eq $null) { "MISSING $($c[0]).class" } elseif ($b.Contains($c[1])) { "PRESENT $($c[0]).class '$($c[1])'" } else { "ABSENT  $($c[0]).class '$($c[1])'" }
 }
-foreach ($q in @(@('dragon-skreel', 'PS10'), @('dragon-skreel', 'PB4'), @('dragon-skreel', 'PS3'), @('dragon-blink', 'BQ1'))) {
+foreach ($q in @(@('dragon-skreel', 'PS10'), @('dragon-skreel', 'PS11'), @('dragon-skreel', 'PB4'), @('dragon-skreel', 'PS3'), @('dragon-blink', 'BQ1'))) {
   $y = Bytes "selftest/GATE-$($q[0]).yml"
   if ($y -eq $null) { "MISSING selftest/GATE-$($q[0]).yml" } elseif ($y -match "(?m)^$($q[1]):\s*$") { "PRESENT $($q[0]) $($q[1]):" } else { "ABSENT  $($q[0]) $($q[1]):" }
 }
@@ -530,7 +558,9 @@ $zip.Dispose()
 
 `45bc33ce`'s jar reads the opposite on the six new lines (`near: 12`, `far: 24`, `standOffDistance`, `chooseRange`,
 `the probe lag`, `PS10:`/`PB4:`) and on the three old ones (`near: 6`, `far: 16`, `PS3:`); the controls are PRESENT in
-both. (`  near: 6` is anchored to the line, so `  near: 12` cannot match it; the same for `far`.)
+both. (`  near: 6` is anchored to the line, so `  near: 12` cannot match it; the same for `far`.) **And `4ba51506`'s jar**
+reads PRESENT on `stranded` and ABSENT on `waypointTolerance`, `bestGap` and `PS11:`, the reverse of this round's; every
+other line as this round's. Both directions were run before this was committed (the report says on which jars).
 
 ### R0c2 — the Loaded line, and nothing refused
 
@@ -542,12 +572,12 @@ both. (`  near: 6` is anchored to the line, so `  near: 12` cannot match it; the
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one line **`[Rpg] Selftest: dev server, 154 scenarios across 20 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot, dragon-blink, dragon-skreel]`**, no `Refusing selftest` | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
+| Exactly one line **`[Rpg] Selftest: dev server, 155 scenarios across 20 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot, dragon-blink, dragon-skreel]`**, no `Refusing selftest` | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
 
-**The 154 is RECOUNTED from the files at this round's head**, the first round's commands: in
+**The 155 is RECOUNTED from the files at this round's head**, the first round's commands: in
 `paper/src/main/resources/selftest/`, the index's gates (`grep -cE '^  - ' index.yml`) **20**; their top-level keys
-(`^[A-Za-z0-9-]+:`) **174**; their setups **20**; so **154**. At `1c18e862` the same commands print 20, 177, 20: 157. This
-gate's file holds 11 keys: its setup and the 10 rows below.
+(`^[A-Za-z0-9-]+:`) **175**; their setups **20**; so **155**. At `4ba51506` the same commands print 20, 174, 20: 154; at `1c18e862`, 20, 177, 20: 157. This
+gate's file holds 12 keys: its setup and the 11 rows below.
 
 ## THE ROWS — SERVER ONLY, SURVIVAL, DIFFICULTY NORMAL
 
@@ -562,23 +592,29 @@ killed by one `kill` logs `SKREEL broken … reason=mount-died rider_state=dead`
 |---|---|---|
 | As DB6R3, tag `db6r4`: `SKREEL paired … gs=300 speed=0.3900 base=0.3000`; the two BODY lines DB6R3 read, field for field; `ENTITIES SPIDER count=1 radius=8`. **The two PAIR lines BEFORE the kill's `SKREEL broken`**, either order: **`PAIR tag=db6r4 M type=spider/withered_mount vehicle=none passengers=[R] stage=RECOVER since=<4 to 7> speed=0.3900 base=0.3000 ridden=true rooted=false widowed=false ai=false`** and **`PAIR tag=db6r4 R type=wither_skeleton/skreel vehicle=M passengers=[] stage=RECOVER since=<4 to 7> speed=0.2500 base=0.2500 ridden=false rooted=false widowed=false ai=false`** | DB6R3's prediction and its reading; the `wait: 2` (F23). **The row discriminates:** without the wait it reads `stage=none since=-`, as DB6R3 did | |
 
-### PS6R2 — the pair's own cycle, never forced: three wind-ups or more (SURVIVAL, LIVE)
+### PS6R2 — the pair's own cycle, never forced, at the normal period (SURVIVAL, LIVE)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `SKREEL paired … tick=P gs=100 speed=0.3900 base=0.3000`. **At least THREE `SKREEL windup … forced=false … target=player <Ben> … d=<8.000 to 12.000>` lines before the probe (about P + 605)**, each **no sooner than 120 ticks after the last began**; **the first at exactly P + 120, `at=<x0+10 ± 1, y0, z0 ± 1>`** (it stands in its band from the start). Each one's `SKREEL leap … ticks=29 …` (level ground), and its **`SKREEL land … how=landed … victims=1 [player <Ben> d=<0.000 to 0.500> res=0.000 push=… 0.4000 …] spared=0 []`** and **HURT `before=55.000 after=50.000 defense=10.000 … dealerType=wither_skeleton/skreel`**. No other HURT. No wind-up with a `d` outside 8 to 12 (that would be the cannot-reach rule, which a pair in reach of its band never needs). `PAIR tag=ps6r2 M … stage=<RECOVER or HOLD> … ridden=true rooted=false widowed=false ai=true`, before the kill; `SELF customHP=<300.000 or 350.000>/350.000` | `PounceCycle` (`theNextWindUpIsAHundredAndTwentyTicksAfterThePreviousBegan`); the middle goal; the landing on his feet. **INFERRED, not read:** that after each landing it walks out to the band before its next 120 (PQ1 read 8.6 blocks in 77 ticks), so the second and third come at about +120 to +160 each; moving OUT it meets the band's near edge first, so their `d` is near 8. A late arrival only delays a wind-up; three still fit in 600 | |
+| `SKREEL paired … tick=P gs=100 speed=0.3900 base=0.3000`. **`SKREEL windup … forced=false … target=player <Ben> … d=<8.000 to 12.000>` at EXACTLY P + 120, P + 240, P + 360, P + 480 and P + 600**: every one 120 after the last began, the normal period, and every one from inside the band; the first `at=<x0+10 ± 1, y0, z0 ± 1>` (it stands in its band from the start). Each of the first four's `SKREEL leap … ticks=29 …` (level ground), its **`SKREEL land … how=landed … victims=1 [player <Ben> d=<0.000 to 0.500> res=0.000 push=… 0.4000 …] spared=0 []`** and its **HURT `before=55.000 after=50.000 defense=10.000 … dealerType=wither_skeleton/skreel`** (the fifth's leap falls after the kill). No other HURT. **No wind-up with a `d` outside 8 to 12, and none at any other tick:** either would be the cannot-reach rule, which an ordinary approach must never need (the seat's third brief). `PAIR tag=ps6r2 M … stage=<WINDUP or HOLD> … ridden=true rooted=false widowed=false ai=true`, before the kill; `SELF customHP=350.000/350.000` (healed at about P + 600, after the fourth landing) | `PounceCycle` (`theNextWindUpIsAHundredAndTwentyTicksAfterThePreviousBegan`); `MobPounce.goal` (`fromEveryBearingAndDistanceThePairRestsInsideTheBand`); the landing on his feet. **INFERRED, not read:** each landing (49 after its wind-up began) puts the mount at his feet; it walks out, crosses the band's near edge and is stood there (PS3 read the mount moving 0.65 a tick: 8 blocks in about 13 ticks), long before its next 120 | |
 
 ### PS9 — too near: it moves out, and winds up from inside its band (SURVIVAL, LIVE)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `AT tag=ps9 M x=<x0+4 ± 0.1> y=<y0> z=<z0 ± 0.1>` two ticks after the spawn. 100 ticks later **`AT tag=ps9 M` between 8.45 and 11.55 east of his feet, z within 1.55 of z0** (it paths out along +x to x0+10 and stops under 1.55 from it on each axis: item 2). **`SKREEL windup … tick=P+120 forced=false … d=<8.000 to 12.000>`**, the first wind-up of the row and the only one; its leap and its land `victims=1 [player <Ben> …]`; its HURT 55 → 50. `SELF customHP=300.000/350.000` | `PounceCycle` (`insideTheBandItHoldsAndNearerThanItItMovesOut`); `MobPounce.standOff` (a mount at 5 sent OUT to 10). **INFERRED:** it walks the 6 blocks in well under 100 ticks | |
+| `AT tag=ps9 M x=<x0+4 ± 0.1> y=<y0> z=<z0 ± 0.1>` two ticks after the spawn. 100 ticks later **`AT tag=ps9 M` between 8 and 12 from his feet** (it walks out toward its goal block, crosses the band's near edge and is stood there, then slides a little: item 2). **`SKREEL windup … tick=P+120 forced=false … d=<8.000 to 12.000>`**, the first wind-up of the row and the only one; its leap and its land `victims=1 [player <Ben> …]`; its HURT 55 → 50. `SELF customHP=300.000/350.000` | `PounceCycle` (`insideTheBandItHoldsAndNearerThanItItMovesOut`); `MobPounce.goal` (the sweep's starts at 0.5, 3, 6 and 7.9). **INFERRED:** it walks the 4 blocks to the near edge in well under 100 ticks | |
 
-### PS10 — it cannot reach the band: it winds up from where it stands, at the 240th tick (SURVIVAL, LIVE)
+### PS10 — it cannot reach the band: it winds up from where it stands, a period after its last progress (SURVIVAL, LIVE)
 
 | prediction | stands on | READING |
 |---|---|---|
-| Its mount's movement speed 0 (the `attribute` command's reply). `AT tag=ps10 M x=<x0+20> y=<y0> z=<z0>` two ticks after the spawn, and **the same to three places** 200 ticks later. **No `SKREEL windup` from P + 1 to P + 239. Then `SKREEL windup … tick=P+240 forced=false at=<x0+20 y0 z0> target=player <Ben> aim=<x0 y0 z0> d=20.000`**; `SKREEL leap … from=<x0+20 y0 z0> … v=-0.6897 1.2000 0.0000 ticks=29 horizontal=20.000 gravity=0.0800`; **`SKREEL land … how=landed age=29 at=<x0 y0 z0 ± 0.25> … victims=1 [player <Ben> d=<0.000 to 0.250> res=0.000 push=<…> 0.4000 <…>] spared=0 []`**; HURT 55 → 50; `SELF customHP=300.000/350.000` | `PounceCycle` (`aPairThatCannotReachTheBandWindsUpFromWhereItStandsAPeriodAfterItWasReady`, at 20); `MobPounce.leap` (−20/29 = −0.68966); a speed of 0 moves nothing (`MoveControl#tick` reads the vehicle's speed: the first round's jar fact). **A stand-in for a wall, said so:** a spider climbs walls, so a wall does not strand one. **INFERRED:** its leap flies though its walking speed is 0 (the leap is a velocity, held every tick) | |
+| Its mount's movement speed 0 (the `attribute` command's reply). `AT tag=ps10 M x=<x0+20> y=<y0> z=<z0>` two ticks after the spawn, and **the same to three places** 100 ticks later. **No `SKREEL windup` from P + 1 to P + 120** (at P + 120 it is ready, and has gone 119 ticks without progress). **Then `SKREEL windup … tick=P+121 forced=false at=<x0+20 y0 z0> target=player <Ben> aim=<x0 y0 z0> d=20.000`**; `SKREEL leap … from=<x0+20 y0 z0> … v=-0.6897 1.2000 0.0000 ticks=29 horizontal=20.000 gravity=0.0800`; **`SKREEL land … how=landed age=29 at=<x0 y0 z0 ± 0.25> … victims=1 [player <Ben> d=<0.000 to 0.250> res=0.000 push=<…> 0.4000 <…>] spared=0 []`**; HURT 55 → 50; `SELF customHP=300.000/350.000` | `PounceCycle` (`aPairThatMakesNoProgressTowardTheBandForAPeriodWindsUpFromWhereItStands`, at 20); `MobPounce.leap` (−20/29 = −0.68966); a speed of 0 moves nothing (`MoveControl#tick` reads the vehicle's speed: the first round's jar fact). **A stand-in for a wall, said so:** a spider climbs walls, so a wall does not strand one. **INFERRED:** its leap flies though its walking speed is 0 (the leap is a velocity, held every tick) | |
+
+### PS11 — the diagonal: it comes to rest inside its band and winds up at the normal period (SURVIVAL, LIVE)
+
+| prediction | stands on | READING |
+|---|---|---|
+| Spawned 12 east AND 12 south of his feet (a bearing of 45 degrees, 16.97 out, outside the band): `AT tag=ps11 M x=<x0+12 ± 0.1> y=<y0> z=<z0+12 ± 0.1>` two ticks after the spawn. 100 ticks later **`AT tag=ps11 M` between 8 and 12 from his feet**, within 3.6 of the 45-degree line's middle point (x0+7.07, z0+7.07) (the goal block can sit up to 3.52 off it). **`SKREEL windup … tick=P+120 forced=false at=<that AT> target=player <Ben> aim=<x0 y0 z0> d=<8.000 to 12.000>`**, the row's first and only wind-up, at the normal period; its leap (`ticks=29`) and its land `victims=1 [player <Ben> …]`; its HURT 55 → 50. `SELF customHP=300.000/350.000` | `MobPounce.goal` (the sweep's 45-degree cases from 12.5, 14, 18, 24 and 31.9; the mutation MUTNOCORRECT turns 28 of them red); `PounceCycle`. **INFERRED:** it walks in well under 100 ticks. **NOT A DISCRIMINATOR between this round and `4ba51506`, said so:** with him at a block centre, the middle point's own block on a 45-degree bearing has its centre 9.90 out and its stopping box's far corner 11.38 out, inside the band, so `4ba51506` would read this row the same. The failing diagonals are a target on or near a block's corner (the sweep's `(0, 0)`); the core sweep and its mutation are what tell the builds apart, and this row is a reading of the property on a server | |
 
 ### PB1R2 — the cooldown, its own blink now 12 to 24 out (SURVIVAL, LIVE)
 
@@ -635,8 +671,8 @@ killed by one `kill` logs `SKREEL broken … reason=mount-died rider_state=dead`
 
 1. `/gamemode survival` — **alone, the first line after login.**
 2. `/rpg selftest dragon-skreel` — **ONCE. Wait for the chat to say the run finished, and answer all three gold
-   questions, before the next command.** About **3 minutes** plus your answers: its waits sum to **2.74 minutes (3288
-   ticks)**, and the ten rows' starts and kills add a little. **Stand still and touch nothing until the first gold text**
+   questions, before the next command.** About **3 minutes** plus your answers: its waits sum to **2.81 minutes (3375
+   ticks)**, and the eleven rows' starts and kills add a little. **Stand still and touch nothing until the first gold text**
    (about 1½ minutes): Skreels will leap on you and a Phalanx will shoot you (you cannot die). **At the first gold
    text,** a Skreel on its mount 14 blocks east is yours for **30 seconds**: TRY to get out of the way of two of its
    leaps, then let the third land on you; **do not attack it**; two questions. **At the second,** a Phalanx 12 blocks
