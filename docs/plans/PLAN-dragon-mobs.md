@@ -1124,6 +1124,26 @@ have waited.**
 **STILL THE SEAT'S AND BEN'S, UNRULED:** the 0.5 margin; the 2.5 safe-landing threshold; the substitute for a client
 that never receives the packet (none: a missed packet is a missed animation, never a missed fuse).
 
+### Ben, 2026-11-17, VERBATIM: his four answers in the boot of `6d079ead` (`GATE-void-implosion.md`, BQ1R3)
+
+*Each question as the selftest asked it, then his answer, copied from the ASK lines of the log.*
+
+1. *"Did you see the big Phage swell up before it blew?"*
+   > "Not sure"
+
+   **NOT STATED.** Whether the swell packet shows on his client is UNREAD.
+2. *"Did you see black and dark purple particles swirl in to where it stood?"*
+   > "yes"
+3. *"Did it pull you in, and did the pull feel a little stronger than the old push?"*
+   > "yes it pulled me in, i think it needs to either be stronger or pull in multiple times or continue pulling in for a second"
+4. *"The small Phage now lights only within 1 block and its blast reaches 2. Does it still feel like a threat?"*
+   > "yes"
+
+**CONFIRMED BY PLAY:** the swirl; that the blast pulls him in; the small Phage still a threat at its scaled distances.
+
+**RULED BY BEN AND NOT BUILT:** the pull "needs to either be stronger or pull in multiple times or continue pulling in
+for a second". The seat has put a one-second continuing pull to him and awaits his answer. Nothing is built from it.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -2575,6 +2595,21 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
       move. PS10's and PS11's SELF lines read 302 against a predicted 300, as DB10R2 did on 2026-11-16. **PAID
       2026-11-17 in `feat/void-implosion`:** `.claude/rules/verification.md`, *PREDICT DAMAGE AGAINST THE HURT LINE*,
       indexed in `CLAUDE.md`.
+- **CARRIED AT THE MERGE OF #204** (the seat's ruling, 2026-11-18, after the boot of `6d079ead`):
+  - **CLOSED: F19, by KS1** (`GATE-void-implosion.md`): the Knell's teleport from a target on a slab.
+  - **NEW, CARRIED:**
+    - **The client swell, UNREAD:** ASK 1 was not stated ("Not sure"), so whether the swell packet shows on his client
+      is not known. The server's side read as built (every SWELL line `viewers=1`).
+    - **The travel model reads 7 to 12 percent long against a real player, cause unknown.** In every pulled row he came
+      to rest 0.88 to 0.93 of the modelled travel, always short, never past; the assumption that the client runs the
+      same travel as the server's model is now CONTRADICTED.
+    - **IM4's 0.41 west, cause unknown:** a stage-1 blast at d = 0.487 with no sideways pull, and he ended 0.41 away
+      from the Phage.
+    - **A blast on an airborne victim reads `h` and `ground` differently** (DS1R5's second blast: `d=2.318 h=0.934
+      ground=false`), and a gate's general clause must allow it.
+    - **A predicted figure at a rounding half is predicted from the game's own distance, not a literal** (BL6R3, FZ1:
+      the in-game distance was `1.9500000000000028`, one ulp off 1.95, at a half). Owed to `.claude/rules`, where gate
+      predictions are described, in the next branch that touches the rules.
 
 ## QUESTIONS FOR BEN
 

@@ -10,6 +10,8 @@ says ready.**
 rest point short; IM4: pushed out 0.01 further than bounded, and ended 0.41 west; DS1R5: the blanket `h = d` clause).
 Readings beside each prediction; the account under THE BOOT OF 2026-11-17 at the end. No prediction was edited.**
 
+**2026-11-18: approved to merge by the review seat after the boot of 6d079ead.**
+
 > **2026-11-17, REWRITTEN BEFORE ANY BOOT, AND WHY.** This gate was first committed at `bf3bf2d9` with Part C (the
 > Phage's own fuse and its distances by stage) STOPPED at the jar and the pull flat and capped on the ground. **It was
 > never booted and no row of it was read.** The seat then ruled (its two rulings on #204): **Part C by route (b)**, our
