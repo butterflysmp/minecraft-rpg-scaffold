@@ -12,6 +12,14 @@ Readings beside each prediction; the account under THE BOOT OF 2026-11-17 at the
 
 **2026-11-18: approved to merge by the review seat after the boot of 6d079ead.**
 
+**2026-11-18, SUPERSEDED IN PART BY `GATE-implosion-drag.md` (the drag, `feat/implosion-drag`).** Every row below whose
+scenario blows a Phage now reads differently (the BLAST head names the drag, a victim is dragged for 20 ticks, the swirl
+lasts 20), so its scenario MOVED to `selftest/GATE-implosion-drag.yml` and is re-predicted there with the next suffix:
+**BL1R3, BL2R3, BL3R3, BL4R3, BL6R3, BL7R3, BL9R3, IM1-IM6, FZ1, FZ3, FZ5 and DS1R5.** **BQ1R3 is retired**, its four
+answers recorded below. **BL5R3, BL8R3, KS1, DS2R5, DS5R5, DS6R5, DG6R5 and DG9R5 are NOT superseded:** they blow
+nothing, their scenarios stay in `selftest/GATE-dragon-blast.yml`, and their readings below stand. No prediction or
+reading below was edited.
+
 > **2026-11-17, REWRITTEN BEFORE ANY BOOT, AND WHY.** This gate was first committed at `bf3bf2d9` with Part C (the
 > Phage's own fuse and its distances by stage) STOPPED at the jar and the pull flat and capped on the ground. **It was
 > never booted and no row of it was read.** The seat then ruled (its two rulings on #204): **Part C by route (b)**, our
@@ -572,6 +580,15 @@ physics (READ); that a player's CLIENT runs the same travel was INFERRED (PLAN, 
 these readings weigh against it at that size. **The cause is NOT KNOWN** and nothing was changed. Ben's ASK 3 asks for
 more pull, which this shortfall also points at.
 
+> **2026-11-18, A CAUSE FOUND, INFERRED, AND IT IS OURS, NOT THE CLIENT'S PHYSICS** (`PLAN-dragon-mobs.md`, *THE DRAG AS
+> BUILT*, D2). The blast SET `victim.getVelocity().add(impulse)`, and a standing player's server-side velocity is not 0:
+> it is the resting `(0 − 0.08) × 0.98f = −0.0784` downward. So the lift sent was 0.0784 short, his flight a tick or two
+> shorter, and air time (friction 0.91) is where most of the travel came from. **EXECUTED** (jshell `d2.jsh`, the real
+> `Implosion.travelFactor`) with the sent lift `lift − 0.0784`: FZ1 0.423, IM3 1.400, FZ3 1.324, FZ5 2.169 against
+> readings of 0.42, 1.40, 1.32 and 2.16, each to the printed place; BL9R3's 2.21 fits a deficit of about 0.04 to 0.06
+> (one air tick short, 2.217), not the full 0.0784 (2.052). **That the server's copy held exactly −0.0784 at each blast is
+> INFERRED** (no row read his server velocity). The readings above are unchanged.
+
 ### F-C — IM4: HE ENDED 0.41 WEST, AWAY FROM THE PHAGE
 
 The pull was zero (`cap=0.000000 pull=0.000000`), the lift unscaled (`apex=3.326`), and the safe landing held (one
@@ -579,6 +596,15 @@ HURT, `fall=0.000`). But his feet went from -98.69 to -99.10. **The cause is NOT
 separable from this log: the client's own push out of the overlapping Phage left him a westward velocity the server
 never set, which his airtime (air friction 0.91) carried; or he moved. His client also pushed him 0.01 beyond the
 overlap bound before the blast, which accounts for (1) and (3) of the row.
+
+> **2026-11-18, A MECHANISM READ, ITS FIT INFERRED** (`PLAN-dragon-mobs.md`, *THE DRAG AS BUILT*, D3). The push out of an
+> overlapping mob runs on BOTH sides: `LivingEntity#pushEntities` is not gated to either, and `Entity#push(Entity)` adds
+> 0.05 a tick along the axis (READ). On the server it lands in the server's own copy of his velocity, and `Entity#push`
+> sets `needsSync`, never `hurtMarked` (READ), so it is never sent. **The blast then sent it**, by setting
+> `getVelocity().add(impulse)`: a westward residue with the lift, carried by his 25 or so air ticks. 0.41 west needs a
+> horizontal of about 0.068 at the take-off (EXECUTED, `d3.jsh`: `travelFactor(0.724230 − 0.0784) = 5.991`), of the order
+> of the push's own 0.05 a tick accumulated on the ground. **The size is INFERRED**: no row read his server velocity at the
+> blast. `GATE-implosion-drag.md` IM4R2 is the control: nothing is sent to him now.
 
 ### F-D — DS1R5: THE SECOND BLAST FOUND HIM IN THE AIR
 

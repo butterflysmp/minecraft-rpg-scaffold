@@ -1161,6 +1161,86 @@ gets you out; (4) it still never carries you past the centre; if you reach it yo
 **THE SEAT'S OWN CHANGE, told to him:** the Phage's lift goes to 0; a steady drag needs no toss. **THE SEAT'S FALLBACK,
 told to him:** if a resistible drag cannot be made to work on a player, several pulls in a row, his own second option.
 
+### THE DRAG AS BUILT (`feat/implosion-drag`, 2026-11-18): D1-D3, THE QUANTITY, THE NUMBERS
+
+**Every line READ with `C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p -cp <jar> <class>`**, the client jar
+`C:\Users\Neb91\AppData\Roaming\.minecraft\versions\26.1.2\26.1.2.jar` (unobfuscated, Mojang's names) where the question
+is the client's, the server jar `run/versions/26.1.2/paper-26.1.2.jar` where it is the server's.
+
+**D1. WHO MOVES A PLAYER.**
+- **A velocity the server sends REPLACES his** (READ, client): `ClientPacketListener#handleSetEntityMotion` calls
+  `Entity#lerpMotion`, which is `setDeltaMovement` (no override in `LocalPlayer` or `LivingEntity`).
+- **It lands before his next tick, and that tick still adds his input** (READ, client): `Minecraft#runTick` runs
+  `PacketProcessor#processQueuedPackets` before `tick`; in his tick, `LocalPlayer#applyInput` sets `xxa`/`zza` from his
+  keys (`modifyInput`: `0.98f`, then `LivingEntity#applyInput`: `0.98f` again), and `LivingEntity#travelInAir` ADDS them
+  (`Entity#moveRelative`: the input, not normalised under length 1, times the speed), moves, then applies friction.
+  **So a send wipes the momentum he carried, never the input of the tick it lands in.**
+- **The server sends at the end of its tick, only when marked** (READ, server): `CraftEntity#setVelocity` sets the
+  delta and `hurtMarked`; `ServerEntity#sendChanges` sends one `ClientboundSetEntityMotionPacket` of the entity's delta
+  to the player and his trackers when `hurtMarked`, after a `PlayerVelocityEvent`.
+- **What the server learns of where he went:** his positions, by move packet (`ServerGamePacketListenerImpl
+  #handleMovePlayer`, which compares them with the server's own `getDeltaMovement` only in its "moved too quickly" check;
+  READ); the server keeps his reported movement apart, `ServerPlayer#lastKnownClientMovement` (READ, the field and
+  `setKnownMovement`). **That the server's `getDeltaMovement` for a player never holds his walking is INFERRED** from
+  those reads: no path writes his reported motion into it.
+- **SO: a pull every tick that ADDED to `getVelocity()` would wipe his walking momentum every tick**; his fight against it
+  shrinks to one tick's input (0.096 walking, 0.125 sprinting, READ and EXECUTED below), where his own momentum carries
+  0.2115 and 0.2750 a tick. **Every second tick:** on the unsent tick he keeps his momentum and adds his input, so he
+  rebuilds half of it; the drag arrives as two-tick tugs. **Every fifth tick:** four ticks of his own walking, then a
+  jolt that wipes it: pulses, not a drag. **A resistible per-tick drag CAN work, and is what is built:** the server sends
+  HIS OWN MOMENTUM, estimated from his last two positions (the displacement times the friction of the tick's starting
+  state; vertical `(dy − 0.08) × 0.98f`), PLUS the drag's add (`DragMotion`). Each send then leaves his momentum as it
+  was and adds the drag: a force he fights with his whole speed. **No STOP:** the seat's fallback was not needed.
+  **INFERRED, the estimate's two assumptions:** one move packet a server tick, and a send reaching him the next tick (a
+  local server). A displacement over 1.0 is a teleport: no estimate that tick. **Nothing is sent to a victim the drag
+  adds nothing to.**
+
+**D2. THE 7 TO 12 PERCENT: A CAUSE FOUND, AND IT IS OURS.** The blast set `victim.getVelocity().add(impulse)`, and a
+standing player's server-side velocity holds the resting `(0 − 0.08) × 0.98f = −0.0784` (READ: `LivingEntity
+#travelInAir`'s gravity and drag, and `Player#canSimulateMovement` true off the client, one half of `LivingEntity
+#aiStep`'s gate on `travel`; that the other half, `isEffectiveAi`, lets it run for a player is INFERRED). So the sent
+lift was 0.0784 short. **EXECUTED** (jshell `d2.jsh`, the real
+`Implosion.travelFactor`) with lift − 0.0784: FZ1 0.423, IM3 1.400, FZ3 1.324, FZ5 2.169, against the readings 0.42,
+1.40, 1.32, 2.16, each to the printed place; BL9R3's 2.21 fits a deficit of 0.04 to 0.06 (one air tick short, 2.217),
+not 0.0784's 2.052. **INFERRED** that his server velocity held exactly that at each blast: no row read it. **The new
+drag cannot repeat it:** it has no lift, and it never sends the server's copy of a player's velocity. **The tolerance on
+every figure resting on his own physics is ± 0.20 blocks**, BL9R3's 0.158 residual rounded up (`GATE-implosion-drag.md`
+J5).
+
+**D3. IM4's 0.41 WEST: THE PUSH OUT OF AN OVERLAPPING MOB, ON BOTH SIDES.** `LivingEntity#pushEntities` runs on client
+and server alike (READ: no side gate; Paper adds its collision config), and `Entity#push(Entity)` moves each body
+`0.05` a tick along the axis apart when they overlap by `0.01` or more (READ: `ldc 0.009999999776482582d`, `ldc
+0.05000000074505806d`). On the client that pushed him out of the overlap (IM4's 0.19 before the blast). On the server
+it lands in the server's copy of his velocity, and `Entity#push(DDD, Entity)` sets `needsSync`, never `hurtMarked`
+(READ), so it is never sent. **The blast then sent it, with the lift**: 0.41 west over his air time needs about 0.068 a
+tick at take-off (EXECUTED, `d3.jsh`), of the order of that push. **The size is INFERRED.** IM4R2 is the control.
+
+**THE QUANTITY (`Implosion`).** `duration_ticks`: 1 is the single pull, unchanged (`pull`, `lift`, the rest-point cap,
+once). 2 or more is a DRAG: `pull` and `lift` must be 0 (refused by name otherwise), and `drag` is **BLOCKS PER TICK of
+horizontal velocity ADDED toward the origin each tick, at the origin, times `1 − d / reach` and `1 − resistance`**,
+each tick's add cut so the speed toward the origin is at most `(h − 0.5) / travelFactor(0)`, the speed whose slide ends
+at the margin (`Implosion.dragStep`). Where `pull` scaled a velocity given ONCE, `drag` is given every tick and ADDED to
+what he carries. `ImplosionDrag` runs one second: tick 0 is the blast's (it looks), ticks 1-20 pull; one who leaves the
+reach is not pulled, one who enters is, from his second sighting; one who is dead, gone, elsewhere or no longer allowed
+is dropped. `DragMotion` is the one tally: two drags on one body in one tick add to one velocity.
+
+**THE NUMBERS FOR BEN, the seat's starting values:** `duration_ticks: 20`, **`drag: 0.28`** (CHOSEN), `pull: 0`, `lift:
+0`, the 0.5 margin unchanged; the swirl's `duration_ticks` 10 → 20 (CHOSEN). **The read movement facts:** walking adds
+0.096040 a tick (terminal 0.21154), sprinting 0.124852 (terminal 0.27500) (`ImplosionDragTest.theReadMovementFacts`).
+**The four outcomes at a stage 5, EXECUTED through the real classes** (scratch `figures.jsh`; the table and why 0.28 in
+`GATE-implosion-drag.md`, *THE DRAG AS BUILT*): a still player from 2, 3, 4 or 5 rests at the margin, 0.500; walking
+away from 3 he ends the second at 0.769 (from rest) or 1.339 (already walking); sprinting away from 4, 4.5, 5 or 5.9 he
+is out of the reach by tick 14, 9, 6 or 1; at the margin he is held with no tick nearer than the last, and inside it
+nothing is sent. **For Ben, as information:** walking away from 4 he is still inside at the second's end (5.19).
+**Between two origins:** each pulls toward its own and its margin cuts only its own add; one origin between him and
+the other cannot stop the far one carrying him past it. **Unruled, listed for Ben.**
+
+**THE SWIRL (CHOSEN):** both spirals of `void_implosion.yml` drawn over 20 ticks, the same curve, half as fast; nothing
+else changed. **PART D:** the selftest's new `light: <tag>` lights a Phage's own fuse with no target and holds it lit
+(`MobFuse#light`), so a FROZEN stage 5 twelve blocks away swells and blows; `tell: <text>` shows gold text before it.
+**NOT IN THIS STEP, as briefed:** a suction during the fuse; cover; an element on the damage; any shipped ability or
+weapon using the shape.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
