@@ -37,9 +37,10 @@ class SelfTestScenariosTest {
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
-                        "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive"),
+                        "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-ring"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-one gates, in boot order (drag-additive LAST, the additive drag, 2026-11-18, in"
+                "the twenty-two gates, in boot order (fight-ring LAST, steps F4 + F5 of the dragon fight, 2026-11-18;"
+                        + " drag-additive before it, the additive drag, 2026-11-18, in"
                         + " implosion-drag's place: it re-predicts every one of its rows; implosion-drag LAST before it, the drag, 2026-11-18; before it dragon-skreel, step R8, 2026-11-17; before it dragon-blink, step R7b, after dragon-shot, step R7a, 2026-11-17); nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
                         + " dragon-split and dragon-growth (2026-11-15), then dragon-blast (step R3, 2026-11-15), then dragon-beam (step R5) and dragon-teleport LAST (step R6, 2026-11-17)");
     }
@@ -176,7 +177,10 @@ class SelfTestScenariosTest {
         // Then THE ADDITIVE DRAG (GATE-drag-additive.md, 2026-11-18), RECOUNTED the same way: 21 gates, 190 keys, 21
         // setups, so 169: implosion-drag's twenty retired and drag-additive's twenty-two in their place. At master
         // 401216aa the same commands print 21, 188, 21: 167, this line's old value.
-        assertEquals(169, loaded.rows());
+        // Then THE FIGHT RING (GATE-fight-ring.md, steps F4 + F5, 2026-11-18), RECOUNTED the same way: 22 gates, 206 keys,
+        // 22 setups, so 184: FR1-FR9 and BQ1-BQ6. At master efc29809 the same commands print 21, 190, 21: 169, this
+        // line's old value.
+        assertEquals(184, loaded.rows());
     }
 
     /**

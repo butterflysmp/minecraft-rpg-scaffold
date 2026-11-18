@@ -41,3 +41,5 @@ gates:
   - dragon-blink
   - dragon-skreel
   - drag-additive
+# fight-ring (steps F4 + F5, 2026-11-18) is paired with its OWN gate file, docs/gates/GATE-fight-ring.md, by the rule.
+  - fight-ring

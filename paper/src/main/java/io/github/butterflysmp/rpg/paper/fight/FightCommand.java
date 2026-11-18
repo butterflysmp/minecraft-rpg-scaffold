@@ -1,0 +1,63 @@
+package io.github.butterflysmp.rpg.paper.fight;
+
+import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.github.butterflysmp.rpg.paper.command.Permissions;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.entity.Player;
+
+import java.util.function.Function;
+
+/**
+ * {@code /rpg fight start | land <dx> <dz> | mage-die | stop}: the dev fixture of steps F4 + F5
+ * (GATE-fight-ring.md). Op-only ({@link Permissions#DEV}), and refused off a dev server ({@code -Drpg.dev=true}), as
+ * {@code /rpg selftest} is. Built as its own node and added under {@code /rpg} by {@code RpgPlugin}, so
+ * {@code RpgCommand.build}'s signature does not grow.
+ *
+ * <ul>
+ *   <li>{@code start}: C is the block position the command runs at (the caller's, or {@code execute positioned}'s);
+ *       the ring is at (C, 48) and the fight clock starts.</li>
+ *   <li>{@code land <dx> <dz>}: the Mage "lands" at C + (dx, dz), blocks; the reply names STARTED, HELD or REFUSED_*.</li>
+ *   <li>{@code mage-die}: the Mage dies now.</li>
+ *   <li>{@code stop}: the fixture ends; nothing it made remains.</li>
+ * </ul>
+ */
+public final class FightCommand {
+
+    private FightCommand() {}
+
+    public static LiteralCommandNode<CommandSourceStack> build(FightFixtures fixtures, boolean devServer) {
+        return Commands.literal("fight")
+                .requires(source -> source.getSender().hasPermission(Permissions.DEV))
+                .then(Commands.literal("start").executes(ctx -> reply(ctx, devServer,
+                        p -> fixtures.start(p, ctx.getSource().getLocation()))))
+                .then(Commands.literal("land")
+                        .then(Commands.argument("dx", DoubleArgumentType.doubleArg(-1000.0, 1000.0))
+                                .then(Commands.argument("dz", DoubleArgumentType.doubleArg(-1000.0, 1000.0))
+                                        .executes(ctx -> reply(ctx, devServer, p -> fixtures.land(
+                                                DoubleArgumentType.getDouble(ctx, "dx"),
+                                                DoubleArgumentType.getDouble(ctx, "dz")))))))
+                .then(Commands.literal("mage-die").executes(ctx -> reply(ctx, devServer, p -> fixtures.mageDie())))
+                .then(Commands.literal("stop").executes(ctx -> reply(ctx, devServer, p -> fixtures.stop("command"))))
+                .build();
+    }
+
+    private static int reply(CommandContext<CommandSourceStack> ctx, boolean devServer,
+                             Function<Player, String> action) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        if (!devServer) {
+            player.sendMessage(Component.text("The fight fixture runs only on a dev server (-Drpg.dev=true).",
+                    NamedTextColor.RED));
+            return 0;
+        }
+        player.sendMessage(Component.text(action.apply(player), NamedTextColor.GRAY));
+        return 1;
+    }
+}

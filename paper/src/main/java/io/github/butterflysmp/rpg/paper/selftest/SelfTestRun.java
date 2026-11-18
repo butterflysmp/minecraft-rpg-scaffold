@@ -508,8 +508,11 @@ final class SelfTestRun {
         // The drag's per-tick instrument is a scenario step's, never the server's: off at every run's end (it starts off).
         service.dragTrace().set(false);
         restored += " drag_tick=" + service.dragTrace().on();
+        // A fight fixture a row left running ends with the run (GATE-fight-ring.md): one line only when there was one.
+        String fight = service.stopFight();
         service.log("SELFTEST RUN " + why);
         service.log("SELFTEST RUN " + restored);
+        if (fight != null) service.log("SELFTEST RUN fight-fixture " + fight);
         service.ended(this);
     }
 

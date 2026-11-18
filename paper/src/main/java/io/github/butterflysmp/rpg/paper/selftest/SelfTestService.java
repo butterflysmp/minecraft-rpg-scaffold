@@ -166,6 +166,22 @@ public final class SelfTestService {
      * A DAMAGE change on a player (dragon-mobs step R3), from {@link SelfTestDamageTap}: the running row's HURT line,
      * when the player is the run's. Called on the player's own thread, inside the hit.
      */
+    /** Stops a running fight fixture and says what it did, or returns null when none ran (GATE-fight-ring.md). */
+    private volatile java.util.function.Supplier<String> fightStop = () -> null;
+
+    /**
+     * Bound late, like the damage tap: the fight fixture is built after this service. Every run's end calls it, so a
+     * row that aborted with a fixture running cannot leave lightning striking the player.
+     */
+    public void bindFightStop(java.util.function.Supplier<String> stop) {
+        this.fightStop = stop;
+    }
+
+    /** The run's end: stop a fixture a row left running; null when none was. */
+    String stopFight() {
+        return fightStop.get();
+    }
+
     void onPlayerHurt(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
         SelfTestRun run = active;
         if (run != null) run.hurt(change);

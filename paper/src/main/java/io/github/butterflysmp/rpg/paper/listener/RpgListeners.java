@@ -308,6 +308,8 @@ public final class RpgListeners implements Listener {
     private final io.github.butterflysmp.rpg.paper.health.MobPouncer pounces;
     /** The Phage's own fuse (the void implosion's Part C): told of each appearance, removal and new viewer. */
     private final io.github.butterflysmp.rpg.paper.health.PhageFuser fuser;
+    /** The dev fight fixture (GATE-fight-ring.md): a mob a player kills while it runs is fed to its ring. */
+    private final io.github.butterflysmp.rpg.paper.fight.FightFixtures fights;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -324,7 +326,9 @@ public final class RpgListeners implements Listener {
                         io.github.butterflysmp.rpg.paper.health.MobBeamer beams,
                         io.github.butterflysmp.rpg.paper.health.MobShooter shots,
                         io.github.butterflysmp.rpg.paper.health.MobPouncer pounces,
-                        io.github.butterflysmp.rpg.paper.health.PhageFuser fuser) {
+                        io.github.butterflysmp.rpg.paper.health.PhageFuser fuser,
+                        io.github.butterflysmp.rpg.paper.fight.FightFixtures fights) {
+        this.fights = fights;
         this.fuser = fuser;
         this.pounces = pounces;
         this.shots = shots;
@@ -943,6 +947,9 @@ public final class RpgListeners implements Listener {
         // removed), so this is reached only by a death we did not make; it is refused here by name, not left to a bat
         // happening to have no element.
         if (shots.isShot(event.getEntity())) return;
+        // THE DEV FIGHT FIXTURE (GATE-fight-ring.md): a kill by a player, any mob (the seat's placeholder), reaches its
+        // ring at the killer's feet. It does nothing while no fixture runs.
+        fights.onDeath(event);
         MobGrower.onDeath(event.getEntity(), nameplates.mobs(), mobElements, adapters.keys(), adapters.stats(),
                 adapters.scheduler(), adapters.log());
         MobSplitter.onDeath(event.getEntity(), nameplates.mobs(), adapters.keys(), nameplates, adapters.log(),

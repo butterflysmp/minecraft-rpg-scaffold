@@ -1,0 +1,117 @@
+package io.github.butterflysmp.rpg.paper.fight;
+
+import io.github.butterflysmp.rpg.core.combat.CritState;
+import io.github.butterflysmp.rpg.core.combat.DefenseRule;
+import io.github.butterflysmp.rpg.core.fight.RingFixture;
+import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
+import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
+import io.github.butterflysmp.rpg.paper.content.FightContent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.logging.Logger;
+
+/**
+ * The dev fixture's world ({@link RingFixture.Port}), on a real server. Every decision is the core fixture's; this
+ * only reads players and performs the four acts.
+ *
+ * <ul>
+ *   <li><b>The drawing:</b> {@code Player#spawnParticle(..., force = true)}, one call per point per viewer. READ from
+ *       the pinned server jar ({@code CraftPlayer.spawnParticle}, javap, build 74): it builds a
+ *       {@code ClientboundLevelParticlesPacket} with {@code overrideLimiter} = force and {@code alwaysShow} = false and
+ *       sends it straight to that player's connection, with no distance check. So the Bukkit call is enough and no
+ *       PacketEvents route is needed; {@code alwaysShow} stays false (Ben: "I don't care about the minimal particle
+ *       setting").</li>
+ *   <li><b>The bolt:</b> {@code World#strikeLightningEffect}, an EFFECT ONLY: no vanilla damage, no fire
+ *       (PLAN-dragon-fight.md section 4 g, READ). Never {@code strikeLightning}, which cfde822 used and which landed
+ *       vanilla's own damage and fire on top of its own. {@code FightPortSourceTest} pins which one this calls.</li>
+ *   <li><b>The damage:</b> the store's one entry, {@code BukkitCombatant#handle().applyDamage}, the same entry a mob's
+ *       hit on a player uses, so the selftest's HURT line is logged. With {@code DefenseRule.BYPASSED} and NO element:
+ *       the SEAT PLACEHOLDER for the mitigation question (no armour, no element), flagged to Ben. The dealer is the
+ *       player himself (a bolt has no entity), as {@code RpgListeners.attributableId} attributes sourceless harm.</li>
+ * </ul>
+ *
+ * <p><b>THREADING, AND IT IS A DEV FIXTURE'S SHORTCUT:</b> the loop runs on C's region thread and reads each
+ * participant's position from there. On Paper every region is the main thread, so that is safe here. On Folia a
+ * participant in another region would be read off his thread; the real fight (one temporary world, PLAN section 4 a)
+ * must read positions on each player's own scheduler. Recorded in the PLAN.
+ */
+final class BukkitFightPort implements RingFixture.Port {
+
+    private final World world;
+    private final Location centre;
+    private final FightContent fight;
+    private final AdapterContext adapters;
+    private final Logger log;
+    private final Particle.DustOptions dust;
+
+    BukkitFightPort(World world, Location centre, FightContent fight, AdapterContext adapters, Logger log) {
+        this.world = world;
+        this.centre = centre;
+        this.fight = fight;
+        this.adapters = adapters;
+        this.log = log;
+        this.dust = new Particle.DustOptions(
+                Color.fromRGB(fight.look().red(), fight.look().green(), fight.look().blue()),
+                (float) fight.look().dustSize());
+    }
+
+    @Override
+    public List<RingFixture.Participant> participants() {
+        List<RingFixture.Participant> out = new ArrayList<>();
+        for (Player p : world.getPlayers()) {
+            Location feet = p.getLocation();
+            if (!FightParticipants.takesPart(feet.getWorld() == world, feet.distance(centre), p.getGameMode(),
+                    fight.participantRadiusBlocks())) continue;
+            out.add(new RingFixture.Participant(p.getUniqueId(), p.getName(), feet.getX(), feet.getY(), feet.getZ()));
+        }
+        return out;
+    }
+
+    @Override
+    public void draw(List<UUID> viewers, List<double[]> points) {
+        for (UUID id : viewers) {
+            Player p = Bukkit.getPlayer(id);
+            if (p == null) continue;
+            for (double[] pt : points) {
+                p.spawnParticle(Particle.DUST, pt[0], pt[1], pt[2], 1, 0.0, 0.0, 0.0, 0.0, dust, true);
+            }
+        }
+    }
+
+    @Override
+    public void strikeEffect(UUID player, double xBlocks, double yBlocks, double zBlocks) {
+        world.strikeLightningEffect(new Location(world, xBlocks, yBlocks, zBlocks));
+    }
+
+    @Override
+    public void damage(UUID player, double amount) {
+        Player p = Bukkit.getPlayer(player);
+        if (p == null) return;
+        BukkitCombatant.of(p, adapters).handle()
+                .applyDamage(amount, player, CritState.NORMAL, DefenseRule.BYPASSED, null);
+    }
+
+    @Override
+    public void log(String line) {
+        log.info(line);
+    }
+
+    @Override
+    public void tell(String line) {
+        Component text = Component.text(line, NamedTextColor.GOLD);
+        for (RingFixture.Participant p : participants()) {
+            Player player = Bukkit.getPlayer(p.id());
+            if (player != null) player.sendMessage(text);
+        }
+    }
+}

@@ -190,6 +190,10 @@ public final class RpgPlugin extends JavaPlugin {
     private ToolRegistry tools;
     // Mining slice 1 (S1-a): loaded and validated only. Nothing reads them in play until S1-b.
     private OreRegistry ores;
+    /** The fight files, content/fights/ (PLAN-dragon-fight.md step F4). */
+    private java.util.Map<String, io.github.butterflysmp.rpg.paper.content.FightContent> fights = java.util.Map.of();
+    /** The dev fixture of steps F4 + F5 (GATE-fight-ring.md), kept for onDisable and the selftest run end. */
+    private io.github.butterflysmp.rpg.paper.fight.FightFixtures fightFixtures;
     private VeinSizeRegistry veinSizes;
     private AccessoryRegistry accessoryRegistry;
     private MobRegistry mobs;
@@ -300,6 +304,13 @@ public final class RpgPlugin extends JavaPlugin {
         MiningContentLoader miningLoader = new MiningContentLoader(getLogger());
         this.veinSizes = miningLoader.loadVeinSizes(new File(contentDir, "vein_sizes"));
         this.ores = miningLoader.loadOres(new File(contentDir, "ores"));
+        // The dragon fight (PLAN-dragon-fight.md step F4): one Loaded line per fight file, or a Refusing line naming why.
+        this.fights = new io.github.butterflysmp.rpg.paper.content.FightLoader(getLogger())
+                .loadAll(new File(contentDir, "fights"));
+        if (fights.isEmpty()) {
+            getLogger().warning("No fights loaded from content/fights -- /rpg fight has nothing to run. "
+                    + "Expected 1 (dragon) from dragon.yml.");
+        }
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
@@ -741,11 +752,18 @@ public final class RpgPlugin extends JavaPlugin {
                 (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
                         p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports, shooter, pouncer, fuser);
         selfTestDamage.bind(selfTest);
+        // The dev fight fixture (GATE-fight-ring.md). The fight file is read at each start, so a reload is picked up.
+        fightFixtures = new io.github.butterflysmp.rpg.paper.fight.FightFixtures(adapters,
+                () -> java.util.Optional.ofNullable(this.fights.get(
+                        io.github.butterflysmp.rpg.paper.fight.FightFixtures.FIGHT_ID)));
+        // Every selftest run's end stops a fixture a row left running, so an aborted row cannot leave him struck.
+        selfTest.bindFightStop(() -> fightFixtures.running() ? fightFixtures.stop("selftest-run-end") : null);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams, shooter, pouncer, fuser);
+                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams, shooter, pouncer, fuser,
+                fightFixtures);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md
@@ -795,6 +813,7 @@ public final class RpgPlugin extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             var rpg = RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults, mining, devServer);
             rpg.addChild(SelfTestCommand.build(selfTest));   // /rpg selftest, without growing build()'s signature
+            rpg.addChild(io.github.butterflysmp.rpg.paper.fight.FightCommand.build(fightFixtures, devServer)); // /rpg fight
             event.registrar().register(rpg, "RPG commands");
             // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the
             // ONLY route to it once a player turns the Nexus star off, which is why it ships in
@@ -1043,6 +1062,8 @@ OLD
         // listeners are gone, so nothing else restores the run. It restores here, synchronously, before the profile
         // flush below, which must carry the lifetime XP and cell the restore writes back.
         if (selfTest != null) selfTest.onDisable();
+        // The dev fight fixture ends cleanly on a stop or a disable (GATE-fight-ring.md). It changed no blocks.
+        if (fightFixtures != null) fightFixtures.onDisable();
 
         // Mining: destroy every player's fake displays and STOP the 127.0.0.1 pack server (the
         // standing rule: the dev HTTP server stops on disable). Touches no player data.
