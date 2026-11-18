@@ -622,6 +622,50 @@ world around a fixed point.
 
 **Fewest boots: four** (F4+F5, F6+F7, F8+F9, F10), with F1 to F3 at zero.
 
+### 6.1 F1 TO F3 AS BUILT (`feat/fight-core`, 2026-11-18): WHAT THE CODE SHOWED
+
+*The classes are in `core/.../core/fight/`: `FightSettings`, `Ring`, `Landing`, `FastClosePath`, `SlowClose`,
+`ReturnPath`, `StrikeRamp`, `MageCycle`. Every finding below is a seat choice or a gap in the brief, recorded here so
+the first boot can rule on it. None stops F4.*
+
+- **WITH THE SEAT PLACEHOLDERS, THE RING ALWAYS CLOSES BEFORE THE CRYSTALS FINISH, UNLESS THE PLAYERS KILL.** The slow
+  close lasts 12 / 0.4 = 30 s = **600 ticks**; ten crystals at 80 ticks take **800**. Each counted kill adds 1 block,
+  which is 50 ticks of slow close, so **at least 4 net kills inside the ring** are needed before POWERED can happen at
+  all. With no kills, every Mage cycle ends CLOSED at 30 s. A property of the placeholders, not of the code; Ben sets
+  them at the first boot (`MageCycleTest`, *withNoKillsTheRingClosesBeforeTheCrystalsFinish*, and the six-kill staging
+  in *theLastCrystalPowersTheMageOnTheExactTick*).
+- **"No cap" and "finite for any k" meet at k ≈ 1020.** 20 × 2^(k−1) passes the largest finite double there, so
+  `StrikeRamp.damageForStrike` returns `Double.MAX_VALUE` from that k on. Any finite value that large kills, so this is
+  not a gameplay cap. **Owed to F5:** the damage pipeline must take a `Double.MAX_VALUE` hit without overflowing (a
+  multiplier above 1 on it gives infinity). A dev-only edge: a player struck ten times in a row has already taken
+  20 × 2^9 = 10240 on his tenth.
+- **A closed ring contains no point, its centre included.** "Inside" is inclusive at the edge, and a radius-0 ring
+  would otherwise contain exactly its centre. `Ring.contains` refuses every point at radius 0 (§2 reading b).
+- **"One every 80 ticks from the start of the slow close" is read as the first at +80**, the tenth at +800. The other
+  reading, the first at +0, would power him at +720. Seat choice.
+- **Ties on one tick go against the players.** The machine places every transition on its exact tick before it acts
+  on that tick's input, so a kill on the tick the ring closes is too late, and a Mage death on the tick the last
+  crystal lights is too late (the fight fails POWERED). If the ring closes and the last crystal lights on the same
+  tick, the outcome is CLOSED. Seat choices.
+- **A held Mage counts as alive.** From a landing HELD during the return, the dragon's immunity flag (`mageAlive`) is
+  true again, though his fast close has not begun. A held Mage's death cancels the held landing. Seat choices; the
+  brief did not say.
+- **A kill's expansion is a snap, not a glide.** One counted kill moves every point of the ring 1 block in one tick,
+  20 blocks per second, above `v_fast`. The brief caps only the fast close and the return. F4 draws it; Ben may want
+  it eased.
+- **Two checks the settings record adds:** `mageRingRadius < borderRadius`, and **`v_slow ≤ v_fast`** (otherwise the
+  return's slow part would outrun the cap the brief requires of the return).
+- **Fractional durations land on whole ticks.** The slow close starts on the first whole tick at which the fast
+  close's progress has reached 1; the return's slow part ends on the first whole tick at which the radius is back at
+  12. The return's fast part then replays the fast close's own tick positions in reverse, so the "visits the close's
+  positions in reverse" property holds exactly. With the placeholders and d = 0, 18, 36 every duration is already
+  whole (144, 216, 288 ticks).
+- **The strike clock is the fight's tick**, a strike on every multiple of 40 from the fight's tick 0, not restarted per
+  Mage cycle. The brief did not say which clock.
+- **`mageDamageable` is advice to the wiring.** The machine cannot stop a hit; F6's damage gate (in our own pipeline,
+  §4 i) must read it. A Mage death fed in during the fast close (an admin kill) is handled: the ring returns from where
+  it stands.
+
 ---
 
 ## 7. OPEN, FOR BEN
