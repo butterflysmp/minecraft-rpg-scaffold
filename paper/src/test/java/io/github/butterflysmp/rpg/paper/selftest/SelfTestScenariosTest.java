@@ -37,9 +37,10 @@ class SelfTestScenariosTest {
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
-                        "dragon-shot", "dragon-blink", "dragon-skreel", "implosion-drag"),
+                        "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-one gates, in boot order (implosion-drag LAST, the drag, 2026-11-18; before it dragon-skreel, step R8, 2026-11-17; before it dragon-blink, step R7b, after dragon-shot, step R7a, 2026-11-17); nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
+                "the twenty-one gates, in boot order (drag-additive LAST, the additive drag, 2026-11-18, in"
+                        + " implosion-drag's place: it re-predicts every one of its rows; implosion-drag LAST before it, the drag, 2026-11-18; before it dragon-skreel, step R8, 2026-11-17; before it dragon-blink, step R7b, after dragon-shot, step R7a, 2026-11-17); nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
                         + " dragon-split and dragon-growth (2026-11-15), then dragon-blast (step R3, 2026-11-15), then dragon-beam (step R5) and dragon-teleport LAST (step R6, 2026-11-17)");
     }
 
@@ -75,8 +76,11 @@ class SelfTestScenariosTest {
         // Then THE DRAG (GATE-implosion-drag.md, 2026-11-18) MOVED every row that blows a Phage to its own file,
         // re-predicted with the next suffix, and retired BQ1R3: what stays here blows nothing.
         expected.put("dragon-blast", List.of("BL5R3", "BL8R3", "KS1", "DS2R5", "DS5R5", "DS6R5", "DG6R5", "DG9R5"));
-        expected.put("implosion-drag", List.of("BL1R4", "BL2R4", "BL3R4", "BL4R4", "BL6R4", "BL7R4", "BL9R4", "IM1R2",
-                "IM2R2", "IM3R2", "IM4R2", "IM5R2", "IM6R2", "FZ1R2", "FZ3R2", "FZ5R2", "DS1R6", "DR1", "DR2", "BQ2"));
+        // Then THE ADDITIVE DRAG (GATE-drag-additive.md, 2026-11-18) re-predicted every one of implosion-drag's rows with
+        // the next suffix (their staging unchanged), added SD5 and CS1, and replaced BQ2 with BQ3; implosion-drag retired.
+        expected.put("drag-additive", List.of("BL1R5", "BL2R5", "BL3R5", "BL4R5", "BL6R5", "BL7R5", "BL9R5", "SD5",
+                "CS1", "IM1R3", "IM2R3", "IM3R3", "IM4R3", "IM5R3", "IM6R3", "FZ1R3", "FZ3R3", "FZ5R3", "DS1R7",
+                "DR1R2", "DR2R2", "BQ3"));
         // Step R5 (GATE-dragon-beam.md, 2026-11-17): eleven AUTO rows and Ben's three questions, in one.
         // Step R6 (GATE-dragon-teleport.md) moved KB10 and KB11 out, re-predicted there as KB10R2 and KB11R2.
         // The Knell follow-up (GATE-dragon-knell-2.md, 2026-11-17) re-predicted every row of both Knell files, each
@@ -169,7 +173,10 @@ class SelfTestScenariosTest {
         // Then THE DRAG (GATE-implosion-drag.md, 2026-11-18), RECOUNTED the same way: 21 gates, 188 keys, 21 setups, so
         // 167: eighteen rows left dragon-blast (seventeen moved, BQ1R3 retired) and implosion-drag holds twenty (the
         // seventeen re-predicted, DR1, DR2 and BQ2). At master 24eb52e7 the same commands print 20, 185, 20: 165.
-        assertEquals(167, loaded.rows());
+        // Then THE ADDITIVE DRAG (GATE-drag-additive.md, 2026-11-18), RECOUNTED the same way: 21 gates, 190 keys, 21
+        // setups, so 169: implosion-drag's twenty retired and drag-additive's twenty-two in their place. At master
+        // 401216aa the same commands print 21, 188, 21: 167, this line's old value.
+        assertEquals(169, loaded.rows());
     }
 
     /**
@@ -199,7 +206,8 @@ class SelfTestScenariosTest {
             }
             // Since the drag (2026-11-18) the blast rows live in TWO files: the rows left in dragon-blast, and the
             // moved and new ones in implosion-drag.
-            if (Set.of("dragon-blast", "implosion-drag").contains(gate.getKey())) blastGate.addAll(found);
+            // Since the additive drag (2026-11-18), drag-additive in implosion-drag's place.
+            if (Set.of("dragon-blast", "drag-additive").contains(gate.getKey())) blastGate.addAll(found);
             else assertEquals(List.of(), found, gate.getKey() + " has a live Phage; it belongs in the blast gate");
         }
         // Since 2026-11-17 (GATE-dragon-blast-2.md): BQ1R2's two Phages are FROZEN and blown, and DS1R4 thaws with the
@@ -208,10 +216,11 @@ class SelfTestScenariosTest {
         // Part C the fuse rows' three and Ben's two, each held at speed 0.
         // Since the drag: BL5R3 stays in dragon-blast; the rest moved, renamed, to implosion-drag; BQ1R3's two are
         // retired; and BQ2's LIGHT (the instrument's forced fuse, which swells a FROZEN Phage) is counted as live too.
-        assertEquals(List.of("BL5R3 bl5 live phage 100", "BL1R4 bl1 live phage 100",
-                        "BL2R4 bl2 live phage stage 5 60", "FZ1R2 fz1 live phage 100",
-                        "FZ3R2 fz3 live phage stage 3 60", "FZ5R2 fz5 live phage stage 5 60", "DS1R6 ds1",
-                        "BQ2 bq2a"),
+        // Since the additive drag: the same, renamed with the next suffix; BQ3 lights nothing (BQ2's swell question was
+        // answered "yes" in both runs of 39c0b341), so it has no live Phage.
+        assertEquals(List.of("BL5R3 bl5 live phage 100", "BL1R5 bl1 live phage 100",
+                        "BL2R5 bl2 live phage stage 5 60", "FZ1R3 fz1 live phage 100",
+                        "FZ3R3 fz3 live phage stage 3 60", "FZ5R3 fz5 live phage stage 5 60", "DS1R7 ds1"),
                 blastGate, "the control: the scan must find every live Phage the blast gates stage on purpose");
     }
 

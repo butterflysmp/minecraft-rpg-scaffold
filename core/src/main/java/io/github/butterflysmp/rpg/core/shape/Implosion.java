@@ -57,7 +57,9 @@ import java.util.Optional;
  *       curve ({@link #factor}), so it fades to nothing at the reach. Where the single pull's {@code pull} scaled a
  *       velocity given ONCE ({@code pull x (1 - d / reach) x h / len}), the drag is a velocity given EVERY tick and
  *       ADDED to what the victim already carries, so it accumulates like a force and a victim's own walking or
- *       sprinting adds to it, against it ({@link #dragStep}). 0 for a single pull.</li>
+ *       sprinting adds to it, against it ({@link #dragStep}). 0 for a single pull. <b>On a PLAYER</b>
+ *       (feat/drag-additive, 2026-11-18) the server never knows what he carries, so his add is {@link #addStep}'s,
+ *       held near the margin by {@link #holdGain} and added by his own client.</li>
  * </ul>
  */
 public record Implosion(double reach, Falloff falloff, double pull, double lift, Resistance resistance,
@@ -146,11 +148,70 @@ public record Implosion(double reach, Falloff falloff, double pull, double lift,
     }
 
     /**
+     * TICKS OF LAG THE PLAYER'S HOLD IS SAFE AGAINST (feat/drag-additive, 2026-11-18). CHOSEN. The drag's add on a player
+     * is computed from where the server last saw him and lands on his client later; each tick of delay in that loop
+     * (his move packet waiting for the server's tick, the network either way) is one tick of lag. Within this many the
+     * hold never carries a still victim past the margin ({@link #holdGain}); beyond it, it can. 2 is a loop of about
+     * 100 ms. At 3 the stone gain falls to 0.0333 and walking away from 3 blocks outruns it (outcome b): the seat's.
+     */
+    public static final int LAG_ALLOWANCE_TICKS = 2;
+
+    /** Ticks the hold's impulse response is followed: far past any rest; a drag lasts 20. */
+    private static final int HOLD_TICKS = 800;
+
+    private static final java.util.concurrent.ConcurrentHashMap<Double, Double> GAINS =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * THE HOLD'S GAIN, per tick per block outside the margin, for a body on this footing: the LARGEST {@code c} such
+     * that a body at rest {@code e} blocks outside the margin, given each tick an add of {@code c x} (its distance
+     * outside the margin as the server saw it {@code lag} ticks before), never crosses the margin, for every lag 0 to
+     * {@link #LAG_ALLOWANCE_TICKS}, however long the adds go on and with no strength to limit them
+     * ({@link #holdsWithoutOvershoot}, bisected to the 50th halving). The response is linear in {@code e}, so one run
+     * at {@code e = 1} answers for every distance. It is the FOOTING'S because the decay is ({@link #tickMultiplier}):
+     * EXECUTED, stone 0.04067, slime 0.01609, ice 0.00278, air 0.00195. A pure function of two numbers, remembered.
+     */
+    public static double holdGain(boolean onGround, float blockFriction) {
+        double m = tickMultiplier(onGround, blockFriction);
+        return GAINS.computeIfAbsent(m, k -> {
+            double lo = 0.0;
+            double hi = 1.0;
+            for (int i = 0; i < 50; i++) {
+                double mid = (lo + hi) / 2;
+                boolean ok = true;
+                for (int lag = 0; lag <= LAG_ALLOWANCE_TICKS && ok; lag++) ok = holdsWithoutOvershoot(mid, k, lag);
+                if (ok) lo = mid;
+                else hi = mid;
+            }
+            return lo;
+        });
+    }
+
+    /**
+     * The hold's impulse response, in the client's own order (READ; {@code PlayerTravelModel}'s javadoc): a body at
+     * rest one block outside the margin; each tick the add {@code gain x max(0, e[n - lag])} lands on its momentum, it
+     * moves by that momentum, then the momentum is multiplied by {@code m}. True when it never crosses the margin.
+     */
+    public static boolean holdsWithoutOvershoot(double gain, double m, int lag) {
+        double[] e = new double[HOLD_TICKS + 1];
+        e[0] = 1.0;
+        double u = 0.0;
+        for (int n = 0; n < HOLD_TICKS; n++) {
+            u += gain * Math.max(0.0, e[Math.max(0, n - lag)]);
+            e[n + 1] = e[n] - u;
+            u *= m;
+            if (e[n + 1] < 0) return false;
+        }
+        return true;
+    }
+
+    /**
      * One tick of a drag on one victim. {@code distance} feet to feet and {@code horizontal} the cap's; {@code strength}
      * the drag's add before the margin ({@code drag x (1 - d / reach) x (1 - resistance)}); {@code toward} the victim's
-     * own momentum toward the origin; {@code cap} the speed toward the origin whose slide ends at the margin;
-     * {@code added} the add after the margin; {@code held} whether the margin limited it; {@code add} the add as a
-     * horizontal vector toward the origin.
+     * own momentum toward the origin (a mob's; {@code NaN} for a player, whose momentum is never known); {@code cap}
+     * the margin's bound: for a mob the SPEED toward the origin whose slide ends at the margin, for a player the ADD
+     * itself, {@link #holdGain} x (h - margin); {@code added} the add after the margin; {@code held} whether the margin
+     * limited it; {@code add} the add as a horizontal vector toward the origin.
      */
     public record DragStep(double distance, double horizontal, double strength, double toward, double cap,
                            double added, boolean held, Vec3 add) {}
@@ -317,5 +378,36 @@ public record Implosion(double reach, Falloff falloff, double pull, double lift,
         boolean held = added < strength;
         Vec3 add = none || added == 0.0 ? Vec3.ZERO : new Vec3(dx / h * added, 0.0, dz / h * added);
         return Optional.of(new DragStep(distance, h, strength, toward, cap, added, held, add));
+    }
+
+    /**
+     * THE DRAG'S RULE FOR A PLAYER (feat/drag-additive, 2026-11-18; the seat's ruling: no design may need the server to
+     * know his momentum). Empty beyond the reach. Otherwise an ADD, horizontal, toward the origin, which his own client
+     * adds to whatever momentum he carries: {@code min(strength, holdGain(footing) x max(0, h - MARGIN))}, the strength
+     * {@code drag x (1 - d / reach) x (1 - resistance)} as a mob's. A function of his distance and his footing alone;
+     * his momentum is never read, estimated or rebuilt ({@code toward} is {@code NaN}).
+     *
+     * <p><b>What the hold guarantees:</b> a victim not himself moving toward the origin is never carried past the
+     * margin by the drag, under the jar's movement model, while the server's view of him lags no more than
+     * {@link #LAG_ALLOWANCE_TICKS} (swept in {@code ImplosionDragTest}). At or inside the margin nothing is added, so a
+     * victim there is never moved by the drag in any direction. <b>What it does NOT guarantee:</b> a player sprinting
+     * INTO the origin passes it by his own legs; a lag beyond the allowance can carry a still one past the margin; and
+     * near the margin the add is small, so his own walking outweighs it there (walking away from about 2.9 blocks on
+     * stone he holds his ground: {@code 0.096040 / holdGain}).
+     */
+    public Optional<DragStep> addStep(Vec3 origin, Footing f) {
+        Vec3 feet = f.feet();
+        if (!inReach(origin, feet)) return Optional.empty();
+        double distance = Math.sqrt(origin.distanceSquared(feet));
+        double dx = origin.x() - feet.x();
+        double dz = origin.z() - feet.z();
+        double h = Math.hypot(dx, dz);
+        boolean none = h < 1.0E-5F;
+        double strength = drag * factor(distance, reach) * (1.0 - f.resistance());
+        double cap = holdGain(f.onGround(), f.blockFriction()) * Math.max(0.0, h - MARGIN);
+        double added = Math.max(0.0, Math.min(strength, cap));
+        boolean held = added < strength;
+        Vec3 add = none || added == 0.0 ? Vec3.ZERO : new Vec3(dx / h * added, 0.0, dz / h * added);
+        return Optional.of(new DragStep(distance, h, strength, Double.NaN, cap, added, held, add));
     }
 }

@@ -1,25 +1,28 @@
-# GATE-implosion-drag.md: THE IMPLOSION'S PULL CONTINUES FOR A SECOND (PLAN-dragon-mobs.md, RULINGS, Ben 2026-11-18:
-# "1. yes 2. yes 3. yes 4. yes"), read from the SERVER. `/rpg selftest implosion-drag`.
+# GATE-drag-additive.md: THE DRAG, ADDITIVE (feat/drag-additive, 2026-11-18; the seat's ruling: the drag must not
+# depend on packet timing). `/rpg selftest drag-additive`.
 #
-# THE PHAGE NOW: its blast damages as before, ONCE, at the instant it blows; then for the 20 ticks after it, everything
-# it is hostile to inside the stage's reach is DRAGGED toward where it stood: 0.28 blocks a tick of velocity added at
-# its feet, times 1 - d / reach, added to what the victim already carries, and cut so the slide stops half a block short
-# of the Phage's feet. No pull and no lift at the blast. The swirl lasts the same 20 ticks. One DRAG line per victim
-# when the second ends: `DRAG source=phage id=<the Phage> victim=player <Ben> start= end= ticks= sent= outcome=`.
+# THE PHAGE NOW: its blast damages as before, ONCE, at the instant it blows; then for the 20 ticks after it, every player
+# it is hostile to inside the stage's reach is DRAGGED toward where it stood. Each tick his OWN CLIENT is sent an add,
+# which it adds to whatever he is doing (an explosion packet's knockback, with no sound and nothing to see): the smaller
+# of 0.33 x (1 - d / reach) and the hold, 0.04067 x (his distance - 0.5) on stone. The server never reads, estimates or
+# rebuilds how he is moving. At or inside half a block of the Phage's feet nothing is added.
 #
-# ROWS: the blast rows of GATE-dragon-blast.yml whose lines change, MOVED HERE and re-predicted with the next suffix
-# (BL1R4-BL9R4, IM1R2-IM6R2, FZ1R2-FZ5R2, DS1R6); DR1 (he leaves the reach mid-drag) and DR2 (two blasts five ticks
-# apart); BQ2, Ben's five questions, the first of them the Part D swell. The rows that stayed in GATE-dragon-blast.yml
-# blow nothing near him and their lines do not change. SelfTestScenariosTest pairs this file with GATE-implosion-drag.md.
+# ROWS: every row of GATE-implosion-drag.yml, RE-PREDICTED with the next suffix (their staging is unchanged); SD5 (a
+# still player from 5); CS1 (the consistency row: the same staging from 4, FIVE times); BQ3, Ben's six questions.
+# GATE-implosion-drag.yml is retired with this file: its rows are these. SelfTestScenariosTest pairs this file with
+# GATE-drag-additive.md.
+#
+# THE INSTRUMENT: the setup turns DRAGTICK on (one line per player victim per drag tick: where the server saw him, his
+# move packets since the last tick, the add, its bound, his ping, his keys); the run's end turns it off.
 #
 # THE STAGING, the same as the blast gate's: the player at a block centre facing east (+x); a stone floor and air above
 # it, every fill box SAVED first; a mob spawned by stepping to its spot and back. A drag carries him EAST, toward a
-# Phage east of him, and never past half a block short of it.
+# Phage east of him.
 #
 # EVERY DETONATION IS FOLLOWED BY AT LEAST 24 TICKS IN ITS OWN ROW: the drag and the swirl are pending work for 20, and
-# the DRAG lines print when the drag's last tick runs. A row that read his feet after a blast reads them 45 ticks after.
+# the DRAG lines print when the drag's last tick runs. A row that reads his feet after a blast reads them 45 ticks after.
 #
-# THE PLAYER CANNOT DIE IN ANY ROW (GATE-implosion-drag.md, THE PLAYER CANNOT DIE): the most any row can deal before his
+# THE PLAYER CANNOT DIE IN ANY ROW (GATE-drag-additive.md, THE PLAYER CANNOT DIE): the most any row can deal before his
 # defence after one heal is under 100. The drag itself deals nothing.
 
 setup:
@@ -28,10 +31,10 @@ setup:
   - cmd: "time set 6000"
   - cmd: "gamerule spawn_mobs false"
   - close: ""
+  - drag_tick: "on"
 
-# BL1R4: a LIVE stage-1 Phage two blocks east walks in, lights inside its 1-block trigger, and blows; then it drags him
-# to half a block from where it stood. 30 ticks more than BL1R3 for the drag.
-BL1R4:
+# BL1R5: a LIVE stage-1 Phage two blocks east walks in, lights inside its 1-block trigger, blows, and drags him in.
+BL1R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-12 -1 -4 8 5 4"
   - cmd: "fill ~-12 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -47,9 +50,9 @@ BL1R4:
   - wait: 2
   - probe_blocks: "STONE -12 -1 -4 8 -1 4"
 
-# BL2R4: a LIVE stage-5 Phage at GEAR SCORE 60, two blocks east, inside its 3-block trigger: it lights at once, blows at
-# 2.000 (90 x 0.555556, no children), and drags him 1.5 blocks east to its margin.
-BL2R4:
+# BL2R5: a LIVE stage-5 Phage at GEAR SCORE 60, two blocks east, inside its 3-block trigger: it lights at once, blows at
+# 2.000 (90 x 0.555556, no children), and drags him in.
+BL2R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-12 -1 -4 8 5 4"
   - cmd: "fill ~-12 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -65,9 +68,9 @@ BL2R4:
   - wait: 2
   - probe_blocks: "STONE -12 -1 -4 8 -1 4"
 
-# BL3R4: a frozen stage-1 Phage blown SEVEN blocks east (outside its 2-block reach: no drag) grows a stage-1 Phage 3.00
-# away to stage 2; the Phage that blew is gone. 24 ticks, so the 20-tick swirl ends inside the row.
-BL3R4:
+# BL3R5: a frozen stage-1 Phage blown SEVEN blocks east (outside its 2-block reach: no drag) grows a stage-1 Phage 3.00
+# away to stage 2; the Phage that blew is gone.
+BL3R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -84,10 +87,9 @@ BL3R4:
   - probe_body: bl3x
   - probe_entities: "creeper 16"
 
-# BL4R4: a frozen husk and a frozen stage-5 Phage, each 2.00 from a frozen STAGE-5 Phage blown seven blocks east, are
-# neither hurt NOR DRAGGED: their velocity is read in the blast's tick, ten ticks into the drag, and twenty. THE
-# CONTROL: a third frozen husk (bl4c), given a velocity by a vanilla data merge, reads that velocity back.
-BL4R4:
+# BL4R5: a husk and a stage 5 two blocks from a STAGE-5 blast are neither hurt NOR DRAGGED; a control husk shows the
+# probe sees a velocity. The player is 7.28 away, beyond the reach.
+BL4R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -121,9 +123,8 @@ BL4R4:
   - probe: bl4p
   - probe_entities: "creeper 16"
 
-# BL6R4: THE STAGE-1 EDGE, inside: blown 1.95 blocks east, just inside its 2-block reach: a sliver of 60, and the drag
-# brings him in from the edge to half a block short. Feet read before and after.
-BL6R4:
+# BL6R5: THE STAGE-1 EDGE, inside (1.95 of 2): a sliver of 60, and the drag brings him in from the edge.
+BL6R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -138,8 +139,8 @@ BL6R4:
   - wait: 45
   - probe_self: ""
 
-# BL7R4: THE STAGE-1 EDGE, outside: blown 2.05 blocks east, just beyond its 2-block reach: neither hit nor dragged.
-BL7R4:
+# BL7R5: THE STAGE-1 EDGE, outside (2.05 of 2): neither hit nor dragged.
+BL7R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -153,9 +154,9 @@ BL7R4:
   - wait: 24
   - probe_self: ""
 
-# BL9R4: OUTCOME a AT 3: a STAGE-5 Phage blown at half its reach: three eighths of 150, and standing still he is dragged
-# 2.5 blocks east to half a block short of where it stood. Feet read before and after.
-BL9R4:
+# BL9R5: OUTCOME a AT 3: a STAGE-5 Phage blown at half its reach: three eighths of 150, and standing still he is dragged
+# east toward it. Feet read before and after.
+BL9R5:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-12 -1 -4 8 5 4"
   - cmd: "fill ~-12 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -170,11 +171,93 @@ BL9R4:
   - wait: 45
   - probe_self: ""
 
-# --- THE IMPLOSION ROWS, RE-PREDICTED FOR THE DRAG ------------------------------------------------------------------
+# SD5: OUTCOME a AT 5: a STAGE-5 Phage five blocks east; standing still he is dragged in most of the way.
+SD5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-12 -1 -4 8 5 4"
+  - cmd: "fill ~-12 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-12 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~5 ~ ~"
+  - spawn: "sd5 frozen phage stage 5 100"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - probe_self: ""
+  - detonate: sd5
+  - wait: 45
+  - probe_self: ""
 
-# IM1R2: THE STAGE-5 EDGE, inside: blown 5.90 blocks east: a sliver of 150, and a drag that fades to nothing at the reach
-# moves him about half a block in. Feet read before and after.
-IM1R2:
+# CS1: THE CONSISTENCY ROW, the point of this gate: the same staging, a still player four blocks from a STAGE-5 Phage,
+# FIVE times. Each time: back to the start, healed, a fresh Phage, his feet before and 45 ticks after. The DRAGTICK
+# lines record his move packets tick by tick; the five DRAG lines and five end points are compared.
+CS1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-12 -1 -4 8 5 4"
+  - cmd: "fill ~-12 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-12 ~ ~-4 ~8 ~5 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~4 ~ ~"
+  - spawn: "cs1a frozen phage stage 5 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - wait: 5
+  - probe_self: ""
+  - detonate: cs1a
+  - wait: 45
+  - probe_self: ""
+  - return: ""
+  - wait: 2
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~4 ~ ~"
+  - spawn: "cs1b frozen phage stage 5 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - wait: 5
+  - probe_self: ""
+  - detonate: cs1b
+  - wait: 45
+  - probe_self: ""
+  - return: ""
+  - wait: 2
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~4 ~ ~"
+  - spawn: "cs1c frozen phage stage 5 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - wait: 5
+  - probe_self: ""
+  - detonate: cs1c
+  - wait: 45
+  - probe_self: ""
+  - return: ""
+  - wait: 2
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~4 ~ ~"
+  - spawn: "cs1d frozen phage stage 5 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - wait: 5
+  - probe_self: ""
+  - detonate: cs1d
+  - wait: 45
+  - probe_self: ""
+  - return: ""
+  - wait: 2
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~4 ~ ~"
+  - spawn: "cs1e frozen phage stage 5 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - wait: 5
+  - probe_self: ""
+  - detonate: cs1e
+  - wait: 45
+  - probe_self: ""
+
+# --- THE IMPLOSION ROWS, RE-PREDICTED ------------------------------------------------------------------------------
+
+# IM1R3: THE STAGE-5 EDGE, inside: blown 5.90 blocks east: a sliver of 150, and a drag that fades to nothing at the
+# reach moves him about half a block in.
+IM1R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -189,8 +272,8 @@ IM1R2:
   - wait: 45
   - probe_self: ""
 
-# IM2R2: THE STAGE-5 EDGE, outside (6.05 blocks): neither hit nor dragged.
-IM2R2:
+# IM2R3: THE STAGE-5 EDGE, outside (6.05 of 6): neither hit nor dragged.
+IM2R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -204,9 +287,8 @@ IM2R2:
   - wait: 24
   - probe_self: ""
 
-# IM3R2: OUTCOME a AT 2, AND d: blown exactly 2.00 blocks east, he is dragged to half a block short of it and HELD
-# there to the second's end: never past it. Feet read before and after.
-IM3R2:
+# IM3R3: OUTCOME a AT 2, AND d: a STAGE-5 Phage two blocks east; dragged in, never past the margin.
+IM3R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -221,9 +303,8 @@ IM3R2:
   - wait: 45
   - probe_self: ""
 
-# IM4R2: OUTCOME d, INSIDE THE MARGIN: a frozen stage-1 Phage spawned 0.30 blocks east (inside his own box) is blown;
-# inside half a block the drag adds nothing, so he is not moved: no velocity is sent to him at all. Feet before and after.
-IM4R2:
+# IM4R3: OUTCOME d INSIDE THE MARGIN: a stage-1 Phage 0.30 east, inside his box; nothing is ever sent to him.
+IM4R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -238,8 +319,8 @@ IM4R2:
   - wait: 45
   - probe_self: ""
 
-# IM5R2: THE STAGE-3 EDGE, inside: blown 3.95 blocks east, just inside its 4-block reach. Feet before and after.
-IM5R2:
+# IM5R3: THE STAGE-3 EDGE, inside (3.95 of 4).
+IM5R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -254,8 +335,8 @@ IM5R2:
   - wait: 45
   - probe_self: ""
 
-# IM6R2: THE STAGE-3 EDGE, outside: blown 4.05 blocks east: neither hit nor dragged.
-IM6R2:
+# IM6R3: THE STAGE-3 EDGE, outside (4.05 of 4).
+IM6R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-3 -1 -4 8 5 4"
   - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -269,13 +350,11 @@ IM6R2:
   - wait: 24
   - probe_self: ""
 
-# --- THE FUSE BY STAGE, RE-PREDICTED FOR THE DRAG -------------------------------------------------------------------
-# As GATE-void-implosion.md's FZ rows: a LIVE Phage at speed 0, its trigger's edge from him; in, out, in again, and it
-# blows 30 ticks after it lit. His feet are now read 75 ticks after the last step in: 30 to the blast, 20 of drag, 25
-# of slide.
+# --- THE FUSE BY STAGE, RE-PREDICTED -------------------------------------------------------------------------------
+# Each: a LIVE Phage at speed 0, its trigger's edge + 0.05 from his feet; he steps IN 0.10, then OUT beyond its cancel,
+# then IN again; it blows 30 ticks after it lit and drags him. His feet are read 75 ticks after the last step in.
 
-# FZ1R2: stage 1, trigger 1.00, cancel 7/3.
-FZ1R2:
+FZ1R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-4 -1 -4 8 5 4"
   - cmd: "fill ~-4 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -300,8 +379,7 @@ FZ1R2:
   - probe_self: ""
   - probe_entities: "creeper 16"
 
-# FZ3R2: stage 3 at GEAR SCORE 60, trigger 2.00, cancel 14/3.
-FZ3R2:
+FZ3R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-4 -1 -4 8 5 4"
   - cmd: "fill ~-4 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -326,8 +404,7 @@ FZ3R2:
   - probe_self: ""
   - probe_entities: "creeper 16"
 
-# FZ5R2: stage 5 at GEAR SCORE 60, trigger 3.00, cancel 7.00.
-FZ5R2:
+FZ5R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-6 -1 -4 8 5 4"
   - cmd: "fill ~-6 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -354,10 +431,9 @@ FZ5R2:
 
 # --- THE SPLIT ROW WITH TWO BLASTS ----------------------------------------------------------------------------------
 
-# DS1R6: split by his emberblade at GEAR SCORE 60; thawed; each child walks in, lights inside its own trigger, and blows,
-# and each blast DRAGS him toward where that child stood: two drags, ten or so ticks apart, the second overlapping the
-# first. 30 ticks more than DS1R5 for the drags.
-DS1R6:
+# DS1R7: split by his emberblade at GS 60; thawed; each child walks in, lights and blows, and each drags him toward its
+# own feet. The two-origin case stays UNRULED: its ends are recorded, not judged.
+DS1R7:
   - cmd: "rpg give emberblade"
   - hold: emberblade
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
@@ -383,10 +459,9 @@ DS1R6:
 
 # --- THE DRAG'S OWN ROWS --------------------------------------------------------------------------------------------
 
-# DR1: HE LEAVES THE REACH MID-DRAG: a frozen stage-5 Phage blown 3.00 blocks east drags him in; six ticks later a step
-# moves him six blocks west, outside its reach, and the drag stops pulling him. Feet read before, just after the
-# step, and 40 ticks later: unchanged.
-DR1:
+# DR1R2: HE LEAVES THE REACH MID-DRAG: six ticks after a stage-5 blast at 3, a step of 6 west puts him outside; the drag
+# stops adding to him.
+DR1R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-12 -1 -4 8 5 4"
   - cmd: "fill ~-12 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -405,10 +480,9 @@ DR1:
   - wait: 40
   - probe_self: ""
 
-# DR2: TWO BLASTS FIVE TICKS APART: frozen stage-5 Phages at GEAR SCORE 60, A three blocks east and B three blocks west.
-# A blows; five ticks later B blows. Each drags him toward its own feet, each add cut by its own margin; A's, nearer by
-# then, wins, and once A's second ends B's carries him back west for its last five ticks. Feet before and after.
-DR2:
+# DR2R2: TWO BLASTS FIVE TICKS APART, A three blocks east and B three blocks west (six apart, so B stands exactly at A's
+# inclusive reach): each drags him toward its own origin, each add cut by its own margin.
+DR2R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-8 -1 -4 8 5 4"
   - cmd: "fill ~-8 ~-1 ~-4 ~8 ~-1 ~4 stone"
@@ -427,52 +501,50 @@ DR2:
   - wait: 50
   - probe_self: ""
 
-# --- BEN'S ROW --------------------------------------------------------------------------------------------------------
+# --- BEN'S ROW ------------------------------------------------------------------------------------------------------
 
-# BQ2: five questions, each told BEFORE what it asks about. (1) THE SWELL (Part D): a frozen stage-5 Phage 12 blocks
-# east, twice its reach away, is LIT by the instrument (it never lights by distance) and swells for 30 ticks before it
-# blows. (2) Standing still, a stage 5 blown 4 blocks east drags him in. (3) Facing a glass wall west, holding W, a stage
-# 5 three blocks behind him blows and the wall goes: walking, he is slowed but still dragged in. (4) The same, sprinting,
-# from 4.5 behind him: he gets out. (5) How it feels. A heal before every blast.
-BQ2:
+# BQ3: Ben's six questions, each staging told in GOLD first. Stand still twice from 4; walk away from 3 against a
+# glass wall; sprint away from 4.5; then two questions about the feel.
+BQ3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-20 -1 -4 13 5 4"
   - cmd: "fill ~-20 ~-1 ~-4 ~13 ~-1 ~4 stone"
   - cmd: "fill ~-20 ~ ~-4 ~13 ~5 ~4 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "tp @s ~12 ~ ~"
-  - spawn: "bq2a frozen phage stage 5 100"
-  - cmd: "tp @s ~-12 ~ ~ -90 0"
-  - tell: "QUESTION 1 IS COMING. Look at the BIG Phage 12 blocks in front of you and keep watching it. It is about to swell up and blow. It is too far away to hurt you."
+  - cmd: "tp @s ~4 ~ ~"
+  - spawn: "bq3a frozen phage stage 5 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - tell: "QUESTION 1 IS COMING. Stand still and touch nothing. The Phage 4 blocks in front of you will blow in 4 seconds. Let it drag you."
   - wait: 80
-  - light: bq2a
-  - wait: 60
-  - ask: "1 1200 Did you see the big Phage swell up before it blew?"
+  - detonate: bq3a
+  - wait: 45
+  - probe_self: ""
+  - ask: "1 1200 Standing still, did it drag you in toward where it stood, for about a second?"
   - return: ""
   - wait: 2
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~4 ~ ~"
-  - spawn: "bq2b frozen phage stage 5 100"
+  - spawn: "bq3b frozen phage stage 5 100"
   - cmd: "tp @s ~-4 ~ ~ -90 0"
-  - tell: "QUESTION 2 IS COMING. Stand still and touch nothing. The Phage 4 blocks in front of you will blow in 4 seconds. Let it drag you."
+  - tell: "QUESTION 2 IS COMING. The same again: stand still and touch nothing. The Phage 4 blocks in front of you will blow in 4 seconds."
   - wait: 80
-  - detonate: bq2b
+  - detonate: bq3b
   - wait: 45
   - probe_self: ""
-  - ask: "2 1200 Standing still, did it drag you in toward where it stood, for about a second?"
+  - ask: "2 1200 Did that drag feel the same as the first one?"
   - return: ""
   - wait: 2
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 90 0"
   - cmd: "fill ~-1 ~ ~-1 ~-1 ~1 ~1 glass"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~3 ~ ~"
-  - spawn: "bq2c frozen phage stage 5 100"
+  - spawn: "bq3c frozen phage stage 5 100"
   - cmd: "tp @s ~-3 ~ ~ 90 0"
   - tell: "QUESTION 3 IS COMING. You face a glass wall. HOLD W NOW (walk, do NOT sprint) and keep holding it until the chat says STOP. A Phage behind you will blow in 4 seconds, and the glass will vanish when it does."
   - wait: 80
   - cmd: "fill ~-1 ~ ~-1 ~-1 ~1 ~1 air"
-  - detonate: bq2c
+  - detonate: bq3c
   - wait: 30
   - tell: "STOP. Let go of W."
   - wait: 20
@@ -484,15 +556,16 @@ BQ2:
   - cmd: "fill ~-1 ~ ~-1 ~-1 ~1 ~1 glass"
   - cmd: "rpg heal 1000000"
   - cmd: "tp @s ~4.5 ~ ~"
-  - spawn: "bq2d frozen phage stage 5 100"
+  - spawn: "bq3d frozen phage stage 5 100"
   - cmd: "tp @s ~-4.5 ~ ~ 90 0"
   - tell: "QUESTION 4 IS COMING. You face a glass wall. HOLD W AND SPRINT NOW (Ctrl, or double-tap W) and keep both held until the chat says STOP. A Phage behind you, near the edge of its reach, will blow in 4 seconds, and the glass will vanish when it does."
   - wait: 80
   - cmd: "fill ~-1 ~ ~-1 ~-1 ~1 ~1 air"
-  - detonate: bq2d
+  - detonate: bq3d
   - wait: 30
   - tell: "STOP. Let go of W and sprint."
   - wait: 20
   - probe_self: ""
   - ask: "4 1200 Sprinting away from the edge, did you get out of the drag?"
-  - ask: "5 1200 Does the pull feel right now?"
+  - ask: "5 1200 During any of those drags, did you feel a stutter, or get snapped back to where you were?"
+  - ask: "6 1200 Does the pull feel right now?"

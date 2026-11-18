@@ -785,6 +785,10 @@ public final class RpgPlugin extends JavaPlugin {
         // why it cannot eat our own spawnParticle burst.
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new VanillaCritParticleListener());
+        // The drag's per-tick instrument (feat/drag-additive): counts each player's move packets on the Netty thread
+        // into a counter and touches nothing else; DRAGTICK reads it while the selftest has it on.
+        PacketEvents.getAPI().getEventManager()
+                .registerListener(new io.github.butterflysmp.rpg.paper.packet.MoveCountListener(adapters.dragTrace()));
 
         // ONE handler, two nodes. A second registerEventHandler would be the sprawl the
         // banned-patterns table names; a second node inside this one is not.

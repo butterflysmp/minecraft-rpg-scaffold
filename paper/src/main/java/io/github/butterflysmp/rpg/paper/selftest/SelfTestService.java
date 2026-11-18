@@ -182,6 +182,7 @@ public final class SelfTestService {
     Keys keys() { return adapters.keys(); }
     /** Every task core scheduled at a point, so the row-start clean can end it there (step R7b, C2). */
     io.github.butterflysmp.rpg.paper.adapter.PendingWork work() { return adapters.work(); }
+    io.github.butterflysmp.rpg.paper.adapter.DragTrace dragTrace() { return adapters.dragTrace(); }
 
     /**
      * A split child of a mob the instrument tagged takes its parent's tags, inside the child's pre-spawn consumer, so

@@ -1324,6 +1324,29 @@ momentum is acceptable."* The diagnostic boot proposed was NOT run on its own; i
 in which the drag worked as modelled, and "i think it needs to be a little bit stronger" after the second. **Sprinting
 out will then work only from nearer the edge.**
 
+### THE ADDITIVE DRAG AS BUILT (`feat/drag-additive`, 2026-11-18). THE ACCOUNT IS `GATE-drag-additive.md`
+
+*This is the pointer; B1-B4 with every READ line, the outcome table, the bands and the mutations are the gate's.*
+
+- **THE ROUTE (B4):** a player is sent each tick only the ADD, as a `ClientboundExplodePacket` whose `playerKnockback`
+  his client ADDS (`Entity#addDeltaMovement`), with the empty sound, an unseen particle 256 blocks up and no block
+  particles (`DragImpulse`). **Not B1:** Paper's teleport cannot carry a delta (`Vec3.ZERO`), and any position packet
+  makes the server drop his moves until he confirms it (B2), while a confirm of an id we chose that matches the server's
+  last kicks him.
+- **THE CAP WITHOUT HIS MOMENTUM:** the add is `min(drag x (1 - d/R) x (1 - res), gain x max(0, h - 0.5))`, the gain
+  the largest that never carries a still victim past the margin while the server's view lags 0 to 2 ticks
+  (`Implosion.holdGain`, CHOSEN allowance; stone 0.04067, EXECUTED). **What it does not guarantee:** a player running
+  INTO the Phage passes it; a lag of 3 or more can overshoot; near the margin his walking outweighs the hold; on ice or
+  in the air the gain is a tenth or less.
+- **`DragMotion`'s estimate is gone;** what remains is the mob's per-tick tally. A mob's drag is unchanged.
+- **The numbers at 0.33, EXECUTED:** a still player from 2, 3, 4 or 5 rests 0.578 to 1.397 from the feet within the
+  allowance; walking away from 3 he ends 2.92 to 2.97 (outcome b holds at lags 0 to 3, NARROWLY, and fails by 0.001 at
+  4); sprinting from rest he gets out from 3.9 to 4.3 by the lag (4.0 at lag 1, against 3.8 at 0.28).
+- **The instrument (Part D):** `DRAGTICK`, on by the selftest's `drag_tick: on`, off at the run's end; its moves counted
+  on the Netty thread and nothing else (`MoveCountListener`).
+- **OPEN FOR BEN AND THE SEAT, unruled:** the allowance (2 ticks); that the hold makes walking away nearly a standoff;
+  the jump that escapes the drag in the air; the two-origin case.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -2795,7 +2818,8 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   - **NEW, CARRIED:**
     - **A DEFECT: the drag varies from run to run on one build.** In the first run a still player was dragged from 4.000
       to 0.491 and held; in the second, the same staging read `end=1.347 outcome=pulled`, and four DRAG lines fell
-      outside the gate's bounds. The seat will not raise the drag's 0.28 until this is explained.
+      outside the gate's bounds. The seat will not raise the drag's 0.28 until this is explained. **BUILT AGAINST in
+      `feat/drag-additive` (the additive drag, 0.33); NOT CLOSED until `GATE-drag-additive.md` CS1 is read.**
     - **Two drags can carry a victim inside one origin's margin, UNRULED** (DS1R6: held 0.505 from the second child,
       0.138 from the first).
     - **DR1's 0.39 of drift after a teleport mid-drag, cause INFERRED** (momentum carried through the teleport; the drag

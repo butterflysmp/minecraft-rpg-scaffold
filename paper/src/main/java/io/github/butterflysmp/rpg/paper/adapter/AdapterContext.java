@@ -75,7 +75,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              Stones stones, SafeLandings safeLandings,
                              BooleanSupplier mobTrace, ShotSink shots,
                              ShieldSink shields, PendingWork work,
-                             io.github.butterflysmp.rpg.core.shape.DragMotion dragMotion) {
+                             io.github.butterflysmp.rpg.core.shape.DragMotion dragMotion,
+                             DragTrace dragTrace) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
@@ -97,7 +98,9 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                 stats, anchorDrift, craftResults, weapons, accessories, stones, new SafeLandings(), mobTrace,
                 new ShotSink.Late(), new ShieldSink.Late(), new PendingWork(),
                 // THE ONE TALLY OF EVERY DRAG (2026-11-18): two implosions on one body in one tick add to one velocity.
-                new io.github.butterflysmp.rpg.core.shape.DragMotion());
+                new io.github.butterflysmp.rpg.core.shape.DragMotion(),
+                // THE DRAG'S PER-TICK INSTRUMENT (feat/drag-additive): off until the selftest turns it on.
+                new DragTrace());
     }
 
     /**

@@ -461,7 +461,8 @@ class MobLoaderTest {
      * THE PHAGE WE SHIP: vanilla's creeper numbers for its last stage (reach 6, trigger 3, cancel 7, fuse 30), each
      * earlier stage's distances by its height (Ben: "The Large phage being the current distances and scaling everything
      * down to the small phage"; the seat's ruling 1 on #204); the 60 and 150; drawn as void_implosion. SINCE
-     * 2026-11-18 IT DRAGS (Ben's four yeses): 20 ticks at 0.28 blocks a tick, no pull and no lift (the seat's change).
+     * 2026-11-18 IT DRAGS (Ben's four yeses): 20 ticks, no pull and no lift (the seat's change); 0.33 blocks a tick
+     * since feat/drag-additive (the seat's number, 2026-11-18; 0.28 before).
      */
     @Test
     void theBundledPhageScalesItsDistancesByHeightAndDragsForASecond() throws IOException {
@@ -469,7 +470,7 @@ class MobLoaderTest {
             assertNotNull(in);
             Files.write(dir.resolve("phage.yml"), in.readAllBytes());
         }
-        assertEquals(blastOf(6, 3, 7, 30, 60, 150, 0.0, 0.0, "void_implosion", 20, 0.28),
+        assertEquals(blastOf(6, 3, 7, 30, 60, 150, 0.0, 0.0, "void_implosion", 20, 0.33),
                 load().find("phage").orElseThrow().blast());
         assertTrue(warnings.isEmpty(), warningText());
     }
