@@ -5,6 +5,8 @@
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate, and Ben
 says ready.**
 
+**2026-11-17: approved to merge by the review seat after the boots of 45bc33ce and 3d93a532.**
+
 The plan is `PLAN-dragon-mobs.md` (RULINGS, *Ben, 2026-11-17, VERBATIM: the Skreel's numbers* and *the Phalanx's blink
 cooldown*; §5.R.11 as built). The scenario file is `paper/src/main/resources/selftest/GATE-dragon-skreel.yml`, run by
 `/rpg selftest dragon-skreel`.

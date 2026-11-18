@@ -8,7 +8,15 @@
 > - **The cfde822 SURVEY, 2026-11-06** — everything else: §1, §2, §3.1–§3.5, §4.1 and §5.0. **It is kept as the
 >   record of what the old game did and is NOT deleted.** Every number in it is a fact about cfde822, never adopted.
 >   Where the survey and the rework disagree, the rework governs, and the survey section carries a banner saying so.
-> - **Still docs only.** No Java, no content, no boot. Nothing below is built.
+> - **Still docs only.** No Java, no content, no boot. Nothing below is built. *(The rework's first-day state, kept as
+>   the record; superseded by the status below.)*
+> - **STATUS, 2026-11-17: ALL FOUR DRAGON MOBS ARE BUILT** (the Knell, the Phage, the Phalanx, and the Skreel with its
+>   mount), **each with its gate read on a server**: the bodies in `GATE-dragon-bodies.md` and `GATE-dragon-fix.md`;
+>   the Knell's in `GATE-dragon-beam.md`, `GATE-dragon-teleport.md` and `GATE-dragon-knell-2.md` to `-5`; the Phage's
+>   in `GATE-dragon-split.md`, `GATE-dragon-growth.md`, `GATE-dragon-blast.md` and `GATE-dragon-blast-2.md`; the
+>   Phalanx's in `GATE-dragon-shot.md` and `GATE-dragon-blink.md`; the Skreel's in `GATE-dragon-skreel.md`. **What
+>   remains** is in the carried list (§8 FINDINGS, *CARRIED AT THE MERGE OF #203*), the open QUESTIONS FOR BEN, and
+>   §3.R.5 *Numbers for Ben*.
 
 ## RULINGS
 
@@ -912,6 +920,11 @@ vanilla target drops, as it often did at 16; the shot's own choice is what keeps
   `theBandsHalfWidthExceedsTheMountsStopOnAnAxisAndNotOnADiagonal`): a path is done with the mob under (width / 2 + 0.5)
   from its goal on each axis: **1.55 for the 2.1-wide mount, so up to 2.19 on a diagonal**, which the band's half-width
   of 2 does NOT exceed. The cannot-reach rule is the backstop.
+- **R3's anchor on floor(feet.y) is ACCEPTED,** with its cost recorded (a slab's top is never a landing). **F19 is a
+  carried DEFECT**, first into the next branch that touches the Knell. **R5 as one hit raising two events is ACCEPTED**,
+  "a sprint hit" marked INFERRED. **The pounce on plain KNOCKBACK_RESISTANCE is ACCEPTED** (a pounce is not an explosion).
+  **"No leap" read as no pounce is ACCEPTED as the seat's reading**, put to Ben. **Cancelling a paired mob's target
+  events and removing no goals is ACCEPTED.** **F21 is recorded as a finding.**
 
 ### THE SEAT'S THIRD BRIEF ON #203, 2026-11-17: THE PAIR MUST END INSIDE ITS BAND FROM ANY BEARING (the seat's, stated in this file's words)
 
@@ -927,11 +940,23 @@ vanilla target drops, as it often did at 16; the shot's own choice is what keeps
 - **THE CANNOT-REACH RULE, MEASURED BY PROGRESS:** a pair with its AI and a target, outside the band, that has not come
   1 block nearer the band for a full period (`PROGRESS_BLOCKS`, CHOSEN), winds up from where it stands once ready. A pair
   walking in good faith never counts.
-- **R3's anchor on floor(feet.y) is ACCEPTED,** with its cost recorded (a slab's top is never a landing). **F19 is a
-  carried DEFECT**, first into the next branch that touches the Knell. **R5 as one hit raising two events is ACCEPTED**,
-  "a sprint hit" marked INFERRED. **The pounce on plain KNOCKBACK_RESISTANCE is ACCEPTED** (a pounce is not an explosion).
-  **"No leap" read as no pounce is ACCEPTED as the seat's reading**, put to Ben. **Cancelling a paired mob's target
-  events and removing no goals is ACCEPTED.** **F21 is recorded as a finding.**
+
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the second round (the boot of `3d93a532`)
+
+> "With the Skreel leaping every six seconds, could you get out of the way in time?" — **"yes"**
+>
+> "Does it leap often enough now?" — **"yes"**
+>
+> "Does the Phalanx's blink range feel right at 12 to 24 blocks?" — **"yes"**
+
+**CONFIRMED BY PLAY:** the Skreel's wind-up is visible (the first round's "yes"); its leap can be dodged (he dodged the
+first two of PQ3's four); the landing hit feels right (the first round's "yes"); it leaps often enough (PQ3's four
+wind-ups, each 120 ticks after the last). The Phalanx's blink at 12 to 24 blocks (PQ4's draws 12.091 and 21.077) and its
+12-second cooldown (the first round's "yes"; PQ4's second blink 287 ticks after its first).
+
+**THE SEAT'S AND OURS, PUT TO BEN AND UNRULED:** the Skreel's K1-K29 choices (`GATE-dragon-skreel.md`, *THE SKREEL,
+INHERITED OR CHOSEN*); the cannot-reach rule, and that a player who outruns the pair triggers it; the Phalanx looking
+out to the re-acquire range, 35, from a landed blink until its next shot.
 
 ---
 
@@ -2354,6 +2379,24 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   first, the seed refuses a shot, the death handler returns for one, and vanilla damage is cancelled at LOWEST are pinned
   by `DragonShotWiringTest` (each killed by a mutation), which reads lines, not behaviour. **The gate's SH2-SH5, SH9 and
   SH12 are their first server reading.**
+- **CARRIED AT THE MERGE OF #203** (the seat's ruling, 2026-11-17, after the boots of `45bc33ce` and `3d93a532`):
+  - **CLOSED: THE BAND EDGE (F22).** PS6R2 read five wind-ups at exactly P + 120 to P + 600, every distance inside 8 to
+    12 (9.817 to 10.915); PS11, on a 45-degree bearing, came to rest 10.570 out and wound up at P + 120; and in Ben's
+    PQ3, four wind-ups 120 apart, 9.537 to 11.546 out.
+  - **CLOSED: THE PROBE LAG (F23),** by DB6R4: both PAIR lines read `stage=RECOVER` before the kill.
+  - **STILL CARRIED:**
+    - **F19, A DEFECT:** the Knell's teleport anchors its level search on its target's fractional feet, so a target on a
+      slab or mid-jump can fail every landing. First into the next branch that touches the Knell.
+    - **F21:** the blink cooldown is not saved across an unload.
+    - **The limits of the band proof:** it is horizontal, on open ground, and its slide is modelled (the 0.6 friction
+      INFERRED).
+    - **UNREAD:** the shield byte surviving an unload; zero damage not spending the shield.
+    - **UNREAD on a server:** the server-stop restore.
+    - **UNBUILT:** the crash-survival file.
+    - **The 13 closed manual gates that spawn live dragon mobs.**
+    - **A rule owed to `.claude/rules`, where gate predictions are described, in the next branch that touches the
+      rules** (the seat, 2026-11-17): predict damage against the HURT line, never a health figure regeneration can
+      move. PS10's and PS11's SELF lines read 302 against a predicted 300, as DB10R2 did on 2026-11-16.
 
 ## QUESTIONS FOR BEN
 
