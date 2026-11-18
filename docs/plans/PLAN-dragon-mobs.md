@@ -1144,6 +1144,23 @@ that never receives the packet (none: a missed packet is a missed animation, nev
 **RULED BY BEN AND NOT BUILT:** the pull "needs to either be stronger or pull in multiple times or continue pulling in
 for a second". The seat has put a one-second continuing pull to him and awaits his answer. Nothing is built from it.
 
+### Ben, 2026-11-18, VERBATIM: the implosion's pull continues for a second (`feat/implosion-drag`)
+
+After his answer "yes it pulled me in, i think it needs to either be stronger or pull in multiple times or continue
+pulling in for a second", the seat proposed: (1) it drags everything in reach steadily toward the centre for 1 second
+after the blast, where today it is a single yank, the swirl lasting the same second; (2) the damage stays at the instant
+of the blast; (3) you can fight it: walking away slows the drag but does not cancel it, and sprinting away from the edge
+gets you out; (4) it still never carries you past the centre; if you reach it you are held there until the second is up.
+**Ben:**
+
+> "1. yes
+> 2. yes
+> 3. yes
+> 4. yes"
+
+**THE SEAT'S OWN CHANGE, told to him:** the Phage's lift goes to 0; a steady drag needs no toss. **THE SEAT'S FALLBACK,
+told to him:** if a resistible drag cannot be made to work on a player, several pulls in a row, his own second option.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
