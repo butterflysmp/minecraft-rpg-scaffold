@@ -12,6 +12,9 @@ the teleport) and DR2 (the second Phage, exactly at the first's reach, listed as
 yes, yes, and "not quite". Readings beside each prediction; the account under THE BOOT at the end. No prediction was
 edited.**
 
+**2026-11-18: approved to merge by the review seat after the boot of 39c0b341, with the drag's run-to-run variation
+carried as a defect.**
+
 **What it gates.** Ben's four yeses of 2026-11-18 (PLAN-dragon-mobs.md, RULINGS): the Phage's blast DRAGS everything it
 is hostile to inside its reach toward where it stood for the 20 ticks after the blast; the damage stays at the blast's
 instant, once; walking away slows the drag, sprinting away from the edge escapes it; it never carries him past half a

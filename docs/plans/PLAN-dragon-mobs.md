@@ -1241,6 +1241,34 @@ else changed. **PART D:** the selftest's new `light: <tag>` lights a Phage's own
 **NOT IN THIS STEP, as briefed:** a suction during the fuse; cover; an element on the damage; any shipped ability or
 weapon using the shape.
 
+### Ben, 2026-11-18, VERBATIM, BY THE SELFTEST'S ASK STEP: the drag (the boot of `39c0b341`, `GATE-implosion-drag.md` BQ2)
+
+*Each question as the selftest asked it, then his answer, copied from the ASK lines of the log. **Run 1** is the run
+sheet's one run; **run 2** is the second run he started after it (a departure, recorded apart, not read as rows).*
+
+1. *"Did you see the big Phage swell up before it blew?"*
+   > run 1: "yes"
+   > run 2: "yes"
+2. *"Standing still, did it drag you in toward where it stood, for about a second?"*
+   > run 1: "yes"
+   > run 2: "yes"
+3. *"Walking away, did the drag slow you down without stopping you, so you still went back toward it?"*
+   > run 1: "yes"
+   > run 2: "it did stop me i think"
+4. *"Sprinting away from the edge, did you get out of the drag?"*
+   > run 1: "yes"
+   > run 2: "the pull did almost nothing"
+5. *"Does the pull feel right now?"*
+   > run 1: "not quite going to run the tests again"
+   > run 2: "i think it needs to be a little bit stronger"
+
+**CONFIRMED BY PLAY:** the swell shows on his client; in the first run the drag pulled him in for about a second, slowed
+his walk without stopping it, and let him sprint out from the edge.
+
+**NOT CONFIRMED:** the feel ("not quite"; "i think it needs to be a little bit stronger"). **The seat's reading, told to
+Ben:** first as "not reliable", since the same build dragged a still player to 0.491 in one run and only to 1.347 in
+the next; the drag's 0.28 is not raised until that variation is explained (carried as a DEFECT, §8).
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -2707,6 +2735,18 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
     - **A predicted figure at a rounding half is predicted from the game's own distance, not a literal** (BL6R3, FZ1:
       the in-game distance was `1.9500000000000028`, one ulp off 1.95, at a half). Owed to `.claude/rules`, where gate
       predictions are described, in the next branch that touches the rules.
+- **CARRIED AT THE MERGE OF #205** (the seat's ruling, 2026-11-18, after the boot of `39c0b341`):
+  - **CLOSED: the client swell** (#204's carried item): BQ2's question 1, "yes", in both runs.
+  - **NEW, CARRIED:**
+    - **A DEFECT: the drag varies from run to run on one build.** In the first run a still player was dragged from 4.000
+      to 0.491 and held; in the second, the same staging read `end=1.347 outcome=pulled`, and four DRAG lines fell
+      outside the gate's bounds. The seat will not raise the drag's 0.28 until this is explained.
+    - **Two drags can carry a victim inside one origin's margin, UNRULED** (DS1R6: held 0.505 from the second child,
+      0.138 from the first).
+    - **DR1's 0.39 of drift after a teleport mid-drag, cause INFERRED** (momentum carried through the teleport; the drag
+      sent nothing after he left).
+    - **Whether he was sprinting in BQ2's question 4, UNREAD:** INFERRED from its DRAG line against the model; no line
+      reads his speed before the blast.
 
 ## QUESTIONS FOR BEN
 
