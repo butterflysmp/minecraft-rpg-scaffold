@@ -69,6 +69,20 @@ do the crystals go out, does the dragon become hurtable; (8) one Mage per phase;
 
 **So:** the dragon's fireball attack is removed. **The perched breath stays vanilla, its lingering cloud included.**
 
+### Sixth message: how the ring is drawn, and the build order
+
+*The seat asked (1) how the ring is drawn: solid display segments, forced particles, or the square world border;
+(2) whether CC's proposed build order stands.*
+
+> "1. I would like to keep particles. We can try forced particles if that helps. I don't care about the minimal particle setting.
+> 2. Order is fine. Lightning ramping damage numbers can start at 20, 40, 80 and keeps doubling"
+
+**Seat readings of the sixth message, not Ben's words:**
+- The ring is drawn with **particles sent with force** (step F4).
+- Visibility under the client's **Minimal** particle setting is **accepted as not required**.
+- §6's build order is **RULED**.
+- A player's **k-th consecutive strike deals 20 × 2^(k−1)**, with **no cap**.
+
 ---
 
 ## 2. SEAT READINGS
@@ -109,9 +123,12 @@ clock, it returns a centre and a radius. No Bukkit. Everything that draws the ri
 | `M` | where the Mage lands | OPEN (where he may land, §7) |
 | `R_mage` | the ring's radius about `M` at the end of the fast close | **12** (Ben) |
 | `d` | the distance from `C` to `M`, horizontal | follows from `M` |
-| `v_fast` | the speed of the ring's FASTEST-MOVING point during the fast close, blocks per second | OPEN ("Slightly slower than a player sprinting") |
-| `v_slow` | the slow close's rate, blocks of radius per second | OPEN |
-| `e_kill` | the radius one counted kill adds back during the slow close | OPEN |
+| `v_fast` | the speed of the ring's FASTEST-MOVING point during the fast close, blocks per second | **5.0**, *seat placeholder, not Ben's; he sets it at the first boot* ("Slightly slower than a player sprinting") |
+| `v_slow` | the slow close's rate, blocks of radius per second | **0.4**, *seat placeholder, not Ben's; he sets it at the first boot* |
+| `e_kill` | the radius one counted kill adds back during the slow close, blocks | **1.0**, *seat placeholder, not Ben's; he sets it at the first boot* |
+| crystals | how many light, and how often, from the start of the slow close | **10, one every 80 ticks**, *seat placeholder, not Ben's; he sets it at the first boot* |
+| the return's speeds | how fast the ring returns after the Mage's death | **the same as the close**: the slow part at `v_slow`, the fast part capped at `v_fast`; *seat placeholder, not Ben's; he sets it at the first boot* |
+| strike damage | the k-th consecutive strike outside the ring | **20 × 2^(k−1), no cap** (Ben, sixth message; the seat's reading of "start at 20, 40, 80 and keeps doubling"). **Whether it is also multiplied by gear score stays OPEN** (`PLAN-dragon-mobs.md` Q3); F2 does not scale. |
 | `r(t)` | the ring's radius at time `t` | follows |
 
 **The fast close** (*seat derivation, to be pinned by a `core/` unit test before anything draws it*). The ring moves
@@ -133,7 +150,8 @@ away from `M`, and it moves `d + 36` blocks per unit of `s`. **So no point outru
 **The return after the Mage's death** is the same path run backwards (Ben, answer 7: "an inverse of it's shrinking
 instead of a snap back"): from (`M`, its radius at his death) back up to (`M`, 12), then from (`M`, 12) back to
 (`C`, 48) with the same fastest-point cap. **Whether the slow part of the return runs at `v_slow` or faster is OPEN**
-(§7).
+(§7). *(Since 2026-11-18 a seat placeholder runs it at `v_slow`, in the quantity table; Ben sets it at the first
+boot.)*
 
 **Lightning.** Outside the ring, a player is struck every 40 ticks (2 s, Ben's answer 2 keeps it). The damage ramps
 with that player's consecutive strikes, `k`, and `k` resets inside (§2 c). The ramp's numbers are OPEN. Outside the
@@ -389,11 +407,16 @@ memory; no boot. Each claim is marked **READ** (seen in bytecode or source), **I
 read; says from what) or **UNVERIFIED** (not settled). The reading was delegated to a subagent; **the seat
 re-ran the decisive one (c, the dragon's nodes) with a control** and it held.*
 
+> **CORRECTED 2026-11-18: CC ran that control, not the seat.** The line above, and "The seat's control" in the next
+> section, credit the seat with a check that CC (Claude Code) ran; the seat verifies from origin and did not re-run
+> the jar. The finding stands; only its attribution was wrong. Kept as written, with this note, so the correction is
+> visible.
+
 ### THE FINDING THAT SHAPES THE ARENA: THE DRAGON ORBITS (0, 0) OF ITS WORLD, WHATEVER WE SET
 
 **READ:** `EnderDragon.findClosestNode()` builds its 24 path nodes once, on rings of radius **60** (nodes 0–11),
 **40** (12–19) and **20** (20–23), from `Mth.cos` / `Mth.sin` of fixed angles, with **no `fightOrigin` term**. The
-seat's control: `fightOrigin` appears 4 times in the class's bytecode and 0 times in that method. The node height is
+seat's control *(CC's, not the seat's: see the correction of 2026-11-18 above)*: `fightOrigin` appears 4 times in the class's bytecode and 0 times in that method. The node height is
 `max(73, the MOTION_BLOCKING_NO_LEAVES heightmap + an offset)` (READ: 73, and the first ring's offset 5; the other
 rings' offsets not read). **INFERRED: the arena's centre `C` must be (0, 0) of the temporary world.**
 
@@ -578,7 +601,7 @@ design and is not designed here.**
 
 ## 6. PROPOSED BUILD ORDER
 
-*Proposal only. Ben rules the order.* Small steps, each bootable on its own, auto rows preferred, fewest boots.
+**RULED 2026-11-18** (sixth message: "Order is fine"). *(Was: proposal only; Ben rules the order.)* Small steps, each bootable on its own, auto rows preferred, fewest boots.
 **Steps F1 to F3 need no server at all**, and **F4 to F7 need no arena and no dragon**: they run in an ordinary
 world around a fixed point.
 
@@ -609,7 +632,8 @@ world around a fixed point.
 2. **Crystal count and pace** during the slow close.
 3. **Fast-close speed** `v_fast` in blocks per second ("Slightly slower than a player sprinting").
 4. **Slow-close speed** `v_slow`.
-5. **The lightning ramp's numbers**: the first strike's damage, the step, any cap.
+5. **ANSWERED 2026-11-18** (sixth message): "Lightning ramping damage numbers can start at 20, 40, 80 and keeps
+   doubling". *(Asked as:)* **The lightning ramp's numbers**: the first strike's damage, the step, any cap.
 6. **The Mage's health**, and **where he may land** (the seat's nesting bound, §2: no more than 36 blocks from the
    centre, or the ring sweeps outward over a standing player).
 7. **Expansion per kill** `e_kill`. *(Seat-added: which deaths count, any mob or the fight's own, and a summon's kill
@@ -619,8 +643,11 @@ world around a fixed point.
 10. **Entry, group size, and death mid-fight** (Ben: "not sure yet").
 11. **The dragon's health** ("for now it stays vanilla with increased health": how much).
 12. **Dialogue** ("Likely keep it": as is, or rewritten).
-13. *(Seat-added.)* **The return's slow part:** does it run back at `v_slow`, or faster?
-14. *(Seat-added, from §4.)* **How the ring is drawn:** display entities (round, independent of particle settings),
+13. *(Seat-added.)* **The return's slow part:** does it run back at `v_slow`, or faster? *(A seat placeholder runs it
+    at `v_slow` until Ben sets it.)*
+14. **ANSWERED 2026-11-18** (sixth message): "I would like to keep particles. We can try forced particles if that
+    helps. I don't care about the minimal particle setting." *(Asked as:)* *(Seat-added, from §4.)* **How the ring
+    is drawn:** display entities (round, independent of particle settings),
     particles through PacketEvents with `alwaysShow`, or a world border (square). §4 f.
 15. *(Seat-added, from §4, a FLAG, not a choice.)* **The dragon orbits (0, 0) of its world**, so the arena's
     template is centred there, which C1 otherwise forbids as fight geometry. One world per group keeps it safe; Ben
