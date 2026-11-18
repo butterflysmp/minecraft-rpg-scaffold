@@ -12,6 +12,13 @@ says ready.**
 > that could not end an ability's field) by BC2A and BC2B; C3 (SH15's `no live shot after 0 ticks`) by BC3; C4 (the
 > frog's pushing) by BC4A and BC4B. Their rows are re-run there, not here; nothing above this note is edited.
 
+> **2026-11-17, step R8's second round (`feat/dragon-skreel`, after the boot of `45bc33ce`): THE PROBE LAG (PLAN F23).**
+> `probe_shot` reads its Phalanx on the Phalanx's own scheduler, a tick after the step, so a kill in the next step ran
+> first. The loader now refuses a row that kills within 2 ticks of such a probe, and `GATE-dragon-shot.yml` gained a
+> `wait: 2` before the kill in **SH1R2, SH2R2, SH3R2, SH7R2, SH13, SH14, SH15 and SH16**. None is re-run. On a re-run each
+> probe reads the same tick as before and its kill comes 2 ticks later; no prediction below names a reading taken after
+> its row's kill. Nothing above this note is edited.
+
 > **AFTER THE BOOT OF `8ec16e89`: THE RE-PREDICTION IS THE LAST SECTION OF THIS FILE** (*RE-PREDICTED AFTER THE BOOT OF
 > `8ec16e89`*, the seat's rulings on #201), NOT RUN. Nothing above it is edited by that section.
 

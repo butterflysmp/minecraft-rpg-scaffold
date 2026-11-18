@@ -418,3 +418,231 @@ clean:** `Saving worlds`, `All dimensions are saved`, the build script exited 0,
   Recorded, not built; the number is his to rule.
   Neither has a PLAN number yet: `PLAN-dragon-mobs.md` already cites `PLAN-mob-scaling.md`'s F22, so the plan assigns
   their numbers when it records them.
+
+---
+
+# SECOND ROUND — RE-PREDICTED AFTER THE BOOT OF `45bc33ce`, 2026-11-17. **Status: NOT RUN.**
+
+Everything below was written **before** any boot of this round, and is committed before it. **The predictions and
+readings above are NOT edited.** The rows that failed or change are re-predicted here under their old name with the next
+suffix; the rows that read as predicted and whose lines do not change are **not re-run** and have left the scenario file:
+**DB7R3, PS3, PS4, PS5, PS7, PS8, PB3.** The seat's brief of 2026-11-17 and its rulings are recorded in
+`PLAN-dragon-mobs.md` (RULINGS, *Ben, … the boot of `45bc33ce`* and *THE SEAT'S RULINGS AFTER THE BOOT OF `45bc33ce`*;
+F22 and F23).
+
+## WHAT CHANGED, AND WHAT EACH CHANGE STANDS ON
+
+1. **THE BAND EDGE (F22), FIXED.** The stand-off point is the band's **middle**, (8 + 12) / 2 = **10**, never an edge
+   (`MobPounce.standOffDistance`). A pair nearer than 8 moves OUT to the same point; inside the band it holds.
+2. **HOW NEAR THE PATHFINDER TAKES A MOB TO ITS GOAL, READ** (`javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar
+   com.destroystokyo.paper.entity.PaperPathfinder` and `… net.minecraft.world.entity.ai.navigation.PathNavigation`):
+   `PaperPathfinder#findPath(Location)` calls `createPath(x, y, z, 0)`, a path to the goal's own block;
+   `PathNavigation#followThePath` sets `maxDistanceToWaypoint` to width / 2 when the width is over 0.75 (else 0.75 −
+   width / 2), and passes a node when the mob is under that from the node's block centre on x and on z (and under 1 on
+   y); `shouldTargetNextNodeInDirection` returns false on the last node, so the last is never passed early. **So a path
+   is done with the mob under width / 2 + 0.5 from its goal on each axis.** The mount is 1.4 × 1.5 = 2.1 wide (READ,
+   `EntityType` spider `sized(1.4f, 0.9f)`; DB6R3 read `height=1.350`, 0.9 × 1.5): **1.55 on an axis, 2.19 on a
+   diagonal. THE BAND'S HALF-WIDTH, 2, EXCEEDS THE FIRST AND NOT THE SECOND.** A mount whose line to him runs near a
+   diagonal can still stop outside the band. Pinned in `MobPounceTest`.
+3. **THE CANNOT-REACH RULE (the seat's ruling; CHOSEN, for Ben).** A pair ready to wind up (120 ticks after the last
+   wind-up began), with its AI and a target within its acquire range (32), and still outside the band, waits one full
+   period and then winds up **from where it stands**: at 240 after the last wind-up began. A tick with no target or no AI
+   starts the wait again. It is the backstop for item 2's diagonal, a wall, a pit, or any body too slow. **What it means
+   in play, for Ben:** a Skreel that cannot get to its band still leaps every 12 seconds, from any distance up to 32,
+   and the leap still comes down on the spot it aimed at (a leap of 30 flies about 1 block a tick).
+4. **BEN'S BLINK RANGE, RULED: 12 TO 24** (`phalanx.yml` `blink.near: 12`, `blink.far: 24`). The uniform draw is
+   near + u × (far − near) with u in [0, 1), so a draw nearer than 12 is impossible by construction (`MobBlinkRangeTest`:
+   its two ends and 100 000 seeded draws). **The instrument's forced draw is a fixed point, not bound by near and far**,
+   as the Knell's `teleport_draw` is: the merged forced rows' lines do not change.
+5. **WHAT A 24-BLOCK BLINK DOES TO ITS SHOTS AND ITS TARGET.**
+   - **A shot already in flight:** nothing. The blink is the last thing in the Phalanx's tick, after its fire and every
+     shot's step; a shot keeps its own target, its origin, its life of 240 and its 35 from the origin.
+   - **Its next shot:** a blink is triggered by a body within 5 of its feet, so after a landing 24 out that body's eye can
+     be **33.1** from the Phalanx's eye (`MobBlinkRangeTest`: 24 + 5.3 × √2 across, 10.28 up or down), **past the
+     acquire range of 30**. At X5's 16 it was at most 25.6. **Built (CHOSEN, put to Ben): from a blink that LANDS until
+     its next shot, it chooses whom to fire at out to the re-acquire range, 35** (`MobShot#chooseRange`); its first shot
+     puts it back on 30. So it keeps a target. PB4 reads both halves.
+   - **Its vanilla target:** a wither skeleton's follow range is 16 (READ: `DefaultAttributes` maps `WITHER_SKELETON` to
+     `AbstractSkeleton#createAttributes`, which adds only movement speed to `Mob#createMobAttributes`' `FOLLOW_RANGE
+     16.0`), and `TargetGoal#canContinueToUse` drops a target farther than that. After most blinks of 12 to 24 its
+     vanilla target drops, as it often did at 16. The shot's choice does not depend on it.
+   - **The landing check's chunk rule:** a column whose chunk is not loaded is refused like any other unfit point (the
+     Knell's port, `MobTeleporter.footing`). A landing 24 out is within 31.5 blocks of a player who triggered it, and
+     this server's view and simulation distances are 10 chunks (`run/server.properties`), so it is never refused for a
+     natural blink here.
+6. **THE PROBE LAG (F23), FIXED BY WAITING.** The pair and shot probes still read on the mob's own thread, a tick later,
+   so every reading already taken keeps its tick. A row must now wait 2 ticks between such a probe and a kill, and the
+   loader refuses one that does not (`SelfTestStaging.probeLag`). **Applied wherever the lag could hide a reading:** every
+   `probe_shot` followed by a kill in `GATE-dragon-shot.yml` (SH1R2, SH2R2, SH3R2, SH7R2, SH13, SH14, SH15, SH16) and
+   `GATE-dragon-blink.yml` (BC2B, BC3), and this gate's own rows. Those merged rows are not re-run; on a re-run their
+   probes read the same tick as before and their kills come 2 ticks later. Their dated notes say so.
+
+## THE PLAYER CANNOT DIE IN ANY ROW, THE FALL INCLUDED
+
+| row | what can reach him | most between heals | his floor |
+|---|---|---|---|
+| DB6R4 | nothing (frozen) | 0 | 350 |
+| PS6R2 | the pair, healed every 100 ticks; wind-ups at least 120 apart | one landing: 55, 50 after defence | 300 |
+| PS9, PS10 | the pair, healed before its one landing | one landing, 50 | 300 |
+| PB1R2 | its shots (period 120), healed at +145 and +265 | two 40s, 36.364 each | 277.3 |
+| PB2R2 | nothing (no shot in 15 ticks) | 0 | 350 |
+| PB4 | one forced shot, fired 32 away and ended by the kill ~10 ticks later (0.2 a tick: it cannot arrive) | 0 | 350 |
+| BB4R2 | nothing (no shot in 30 ticks) | 0 | 350 |
+| PQ3 | the pair, healed every 100 ticks | one landing, 50 | 300 |
+| PQ4 | its shots, healed every 200 ticks | two 40s, 72.7 | 277.3 |
+
+His floor is 100 (his max 350). **The fall:** a landing pushes at most 0.4 up, an apex of 1.153 blocks (the first
+round's arithmetic), under the 3-block safe fall; a landing on his feet pushes nothing sideways (`MobPounce.push`: no
+horizontal direction, straight up). Every survivor that could reach him is killed at the row's end.
+
+## R0 FOR THIS ROUND — READ IT FIRST. IF ANY R0 FAILS, STOP
+
+### R0a2 — the build line names THIS round's head
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <sha>`, this PR's head as `git ls-remote origin refs/heads/feat/dragon-skreel` prints it, shortened. **Not** `45bc33ce` (the first round's boot) and not `1c18e862` (its readings); not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1`, after this boot's `Done` | |
+
+### R0b2 — the jar carries the fix, Ben's range and the new rows; the controls tell it from `45bc33ce`
+
+| prediction | instrument | READING |
+|---|---|---|
+| PRESENT: `phalanx.yml` `  near: 12`, `  far: 24`; `MobPounce.class` `standOffDistance`; `MobShot.class` `chooseRange`; `SelfTestStaging.class` `the probe lag`; `GATE-dragon-skreel.yml` `PS10:`, `PB4:`. **ABSENT, and PRESENT in `45bc33ce`'s jar:** `phalanx.yml` `  near: 6`, `  far: 16`; `GATE-dragon-skreel.yml` `PS3:`. **The controls, PRESENT in both:** `phalanx.yml` `  cooldown_ticks: 240`; `health/MobPouncer.class`; `GATE-dragon-blink.yml` `BQ1:` | the scan below | |
+
+```powershell
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+foreach ($q in @(@('phalanx.yml', '  near: 12'), @('phalanx.yml', '  far: 24'), @('phalanx.yml', '  near: 6'), @('phalanx.yml', '  far: 16'), @('phalanx.yml', '  cooldown_ticks: 240'))) {
+  $y = Bytes "content/mobs/$($q[0])"
+  if ($y -ne $null -and $y -match ("(?m)^" + [regex]::Escape($q[1]) + "\s*$")) { "PRESENT $($q[0]) '$($q[1])'" } else { "ABSENT  $($q[0]) '$($q[1])'" }
+}
+foreach ($c in @(@('core/mob/MobPounce', 'standOffDistance'), @('core/mob/MobShot', 'chooseRange'), @('paper/selftest/SelfTestStaging', 'the probe lag'), @('paper/health/MobPouncer', 'skreel-pounce'))) {
+  $b = Bytes "io/github/butterflysmp/rpg/$($c[0]).class"
+  if ($b -eq $null) { "MISSING $($c[0]).class" } elseif ($b.Contains($c[1])) { "PRESENT $($c[0]).class '$($c[1])'" } else { "ABSENT  $($c[0]).class '$($c[1])'" }
+}
+foreach ($q in @(@('dragon-skreel', 'PS10'), @('dragon-skreel', 'PB4'), @('dragon-skreel', 'PS3'), @('dragon-blink', 'BQ1'))) {
+  $y = Bytes "selftest/GATE-$($q[0]).yml"
+  if ($y -eq $null) { "MISSING selftest/GATE-$($q[0]).yml" } elseif ($y -match "(?m)^$($q[1]):\s*$") { "PRESENT $($q[0]) $($q[1]):" } else { "ABSENT  $($q[0]) $($q[1]):" }
+}
+$zip.Dispose()
+```
+
+`45bc33ce`'s jar reads the opposite on the six new lines (`near: 12`, `far: 24`, `standOffDistance`, `chooseRange`,
+`the probe lag`, `PS10:`/`PB4:`) and on the three old ones (`near: 6`, `far: 16`, `PS3:`); the controls are PRESENT in
+both. (`  near: 6` is anchored to the line, so `  near: 12` cannot match it; the same for `far`.)
+
+### R0c2 — the Loaded line, and nothing refused
+
+| prediction | instrument | READING |
+|---|---|---|
+| **`[Rpg] Loaded 11 abilities, 29 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 5 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**, verbatim the first round's (this round adds no content file; it changes one). No `Refusing`, `Skipping`, `SEVERE` or `Exception`; no `[Rpg]` `WARN` beyond `volley_stone`'s known pair. **A `Refusing selftest/…: … (the probe lag)` line would mean a shipped row kills within 2 ticks of a probe** | `Select-String run\logs\latest.log -Pattern 'Loaded ','Refusing','Skipping','SEVERE','WARN','Exception'` | |
+
+### R0d2 — every scenario loaded
+
+| prediction | instrument | READING |
+|---|---|---|
+| Exactly one line **`[Rpg] Selftest: dev server, 154 scenarios across 20 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot, dragon-blink, dragon-skreel]`**, no `Refusing selftest` | `Select-String run\logs\latest.log -Pattern 'Selftest:','Refusing selftest'` | |
+
+**The 154 is RECOUNTED from the files at this round's head**, the first round's commands: in
+`paper/src/main/resources/selftest/`, the index's gates (`grep -cE '^  - ' index.yml`) **20**; their top-level keys
+(`^[A-Za-z0-9-]+:`) **174**; their setups **20**; so **154**. At `1c18e862` the same commands print 20, 177, 20: 157. This
+gate's file holds 11 keys: its setup and the 10 rows below.
+
+## THE ROWS — SERVER ONLY, SURVIVAL, DIFFICULTY NORMAL
+
+**As the first round:** every row starts `LEFTOVER living=0 radius=16` and `LINGER work=0 entities=0 radius=48`; P0 =
+his feet at the row's start, (x0, y0, z0); P the `SKREEL paired … tick=P` line's tick; a pair's loop takes its first step
+on P + 1 (`RepeatingTask.start` schedules its first step one period, 1 tick, later), so its 120th step is P + 120. A pair
+killed by one `kill` logs `SKREEL broken … reason=mount-died rider_state=dead`, not repeated below.
+
+### DB6R4 — one spawn makes two, read LIVE (SURVIVAL, FROZEN)
+
+| prediction | stands on | READING |
+|---|---|---|
+| As DB6R3, tag `db6r4`: `SKREEL paired … gs=300 speed=0.3900 base=0.3000`; the two BODY lines DB6R3 read, field for field; `ENTITIES SPIDER count=1 radius=8`. **The two PAIR lines BEFORE the kill's `SKREEL broken`**, either order: **`PAIR tag=db6r4 M type=spider/withered_mount vehicle=none passengers=[R] stage=RECOVER since=<4 to 7> speed=0.3900 base=0.3000 ridden=true rooted=false widowed=false ai=false`** and **`PAIR tag=db6r4 R type=wither_skeleton/skreel vehicle=M passengers=[] stage=RECOVER since=<4 to 7> speed=0.2500 base=0.2500 ridden=false rooted=false widowed=false ai=false`** | DB6R3's prediction and its reading; the `wait: 2` (F23). **The row discriminates:** without the wait it reads `stage=none since=-`, as DB6R3 did | |
+
+### PS6R2 — the pair's own cycle, never forced: three wind-ups or more (SURVIVAL, LIVE)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `SKREEL paired … tick=P gs=100 speed=0.3900 base=0.3000`. **At least THREE `SKREEL windup … forced=false … target=player <Ben> … d=<8.000 to 12.000>` lines before the probe (about P + 605)**, each **no sooner than 120 ticks after the last began**; **the first at exactly P + 120, `at=<x0+10 ± 1, y0, z0 ± 1>`** (it stands in its band from the start). Each one's `SKREEL leap … ticks=29 …` (level ground), and its **`SKREEL land … how=landed … victims=1 [player <Ben> d=<0.000 to 0.500> res=0.000 push=… 0.4000 …] spared=0 []`** and **HURT `before=55.000 after=50.000 defense=10.000 … dealerType=wither_skeleton/skreel`**. No other HURT. No wind-up with a `d` outside 8 to 12 (that would be the cannot-reach rule, which a pair in reach of its band never needs). `PAIR tag=ps6r2 M … stage=<RECOVER or HOLD> … ridden=true rooted=false widowed=false ai=true`, before the kill; `SELF customHP=<300.000 or 350.000>/350.000` | `PounceCycle` (`theNextWindUpIsAHundredAndTwentyTicksAfterThePreviousBegan`); the middle goal; the landing on his feet. **INFERRED, not read:** that after each landing it walks out to the band before its next 120 (PQ1 read 8.6 blocks in 77 ticks), so the second and third come at about +120 to +160 each; moving OUT it meets the band's near edge first, so their `d` is near 8. A late arrival only delays a wind-up; three still fit in 600 | |
+
+### PS9 — too near: it moves out, and winds up from inside its band (SURVIVAL, LIVE)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `AT tag=ps9 M x=<x0+4 ± 0.1> y=<y0> z=<z0 ± 0.1>` two ticks after the spawn. 100 ticks later **`AT tag=ps9 M` between 8.45 and 11.55 east of his feet, z within 1.55 of z0** (it paths out along +x to x0+10 and stops under 1.55 from it on each axis: item 2). **`SKREEL windup … tick=P+120 forced=false … d=<8.000 to 12.000>`**, the first wind-up of the row and the only one; its leap and its land `victims=1 [player <Ben> …]`; its HURT 55 → 50. `SELF customHP=300.000/350.000` | `PounceCycle` (`insideTheBandItHoldsAndNearerThanItItMovesOut`); `MobPounce.standOff` (a mount at 5 sent OUT to 10). **INFERRED:** it walks the 6 blocks in well under 100 ticks | |
+
+### PS10 — it cannot reach the band: it winds up from where it stands, at the 240th tick (SURVIVAL, LIVE)
+
+| prediction | stands on | READING |
+|---|---|---|
+| Its mount's movement speed 0 (the `attribute` command's reply). `AT tag=ps10 M x=<x0+20> y=<y0> z=<z0>` two ticks after the spawn, and **the same to three places** 200 ticks later. **No `SKREEL windup` from P + 1 to P + 239. Then `SKREEL windup … tick=P+240 forced=false at=<x0+20 y0 z0> target=player <Ben> aim=<x0 y0 z0> d=20.000`**; `SKREEL leap … from=<x0+20 y0 z0> … v=-0.6897 1.2000 0.0000 ticks=29 horizontal=20.000 gravity=0.0800`; **`SKREEL land … how=landed age=29 at=<x0 y0 z0 ± 0.25> … victims=1 [player <Ben> d=<0.000 to 0.250> res=0.000 push=<…> 0.4000 <…>] spared=0 []`**; HURT 55 → 50; `SELF customHP=300.000/350.000` | `PounceCycle` (`aPairThatCannotReachTheBandWindsUpFromWhereItStandsAPeriodAfterItWasReady`, at 20); `MobPounce.leap` (−20/29 = −0.68966); a speed of 0 moves nothing (`MoveControl#tick` reads the vehicle's speed: the first round's jar fact). **A stand-in for a wall, said so:** a spider climbs walls, so a wall does not strand one. **INFERRED:** its leap flies though its walking speed is 0 (the leap is a velocity, held every tick) | |
+
+### PB1R2 — the cooldown, its own blink now 12 to 24 out (SURVIVAL, LIVE)
+
+| prediction | stands on | READING |
+|---|---|---|
+| As PB1, tag `pb1r2`: the forced `BLINK … tick=L forced=true trigger=none from=<x0+8 y0 z0> tried=1 [90.000 8.000 OK at=<x0+8 y0 z0+8>] landed=<x0+8 y0 z0+8> anchor=<y0>.000 cooldown=0` and its `BLINK moved … cooldown=240`; its first shot at about L + 117 with `BLINK visible … reason=fired`, HURT 40 → 36.364; **no BLINK line from L + 1 to L + 239**; **exactly one `BLINK … tick=L+240 forced=false trigger=player <Ben> from=<x0+8 y0 z0+8> tried=1 [<a> <d> OK at=<Q>] landed=<Q> anchor=<y0>.000 cooldown=0`, with `d` in [12, 24], Q that far from F horizontally, and Q.y = y0** (the floor reaches 25 round it); `BLINK moved … at=<Q> … cooldown=240`; the second shot at about L + 237 and its HURT | PB1's reading; Ben's 12 to 24 (`MobBlinkRangeTest`); the floor | |
+
+### PB2R2 — a failed attempt does not start it, its own blink 12 to 24 out (SURVIVAL, LIVE)
+
+| prediction | stands on | READING |
+|---|---|---|
+| **`BLINK … forced=true trigger=none from=<x0+8 y0 z0> tried=8 [ … ] landed=none anchor=<y0>.000 cooldown=0`**, eight entries `90.000 8.000 NO_FOOTING blocked=0 ungrounded=7`, as PB2 read; no `BLINK moved`. **Within two ticks, exactly one `BLINK … forced=false trigger=player <Ben> from=<x0+8 y0 z0> tried=1 [<a> <d> OK at=<Q>] landed=<Q> anchor=<y0>.000 cooldown=0` with `d` in [12, 24] and Q.y = y0**; `BLINK moved … cooldown=240`. No SHOT line | PB2's reading; the pit is 8 out, nearer than any blink of its own can land, so its own first draw is never the pit | |
+
+### PB4 — Ben's far end, and the target a blinked Phalanx keeps (SURVIVAL, FROZEN)
+
+| prediction | stands on | READING |
+|---|---|---|
+| **`BLINK … forced=true trigger=none from=<x0+8 y0 z0> tried=1 [0.000 24.000 OK at=<x0+32 y0 z0>] landed=<x0+32 y0 z0> anchor=<y0>.000 cooldown=0`**; `BLINK moved … at=<x0+32 y0 z0> invisible=true cooldown=240`; `AT tag=pb4 X x=<x0+32>`. **Then the first forced shot: `BLINK visible … reason=fired` and `SHOT fired mob=phalanx id=X gs=100 forced=true … target=player <Ben> from=<x0+32 y0+2.100 z0> aim=<x0 y0+1.620 z0> dealt=40.000`**: eye to eye 32.004, past 30 and inside 35. **Then the second: `SHOT none mob=phalanx id=X tick=<t> range=30.0`**: its first shot put it back on 30, and he is 32 away. At the kill, `SHOT ended … reason=owner-gone` for the first shot. No HURT | `MobShot#chooseRange` (`untilItsNextShotABlinkedPhalanxChoosesOutToTheReacquireRange`); `MobShooter.choose` (DragonSkreelWiringTest); the eye heights (2.100 read on every first-round `SHOT fired`; the player's 1.62, READ, `EntityType`). **Both halves:** on `45bc33ce`'s build the FIRST shot reads `SHOT none … range=30.0` too | |
+
+### BB4R2 — a combatant in the box blinks it, now 12 to 24 out (SURVIVAL, LIVE)
+
+| prediction | stands on | READING |
+|---|---|---|
+| As `GATE-dragon-blink.md`'s BB4, tag `bb4r2`: **exactly one `BLINK mob=phalanx … forced=false trigger=player <Ben> from=<F> tried=1 [<a> <d> OK at=<Q>] landed=<Q> anchor=<y0>.000 cooldown=0`, F = (x0+12, y0, z0), with `d` in [12, 24], Q that far from F horizontally, and Q.y = y0** (the floor reaches 25 round it); `BLINK moved … at=<Q> invisible=true cooldown=240`; no `SHOT fired` (the row ends ~26 ticks after the spawn). The AT is recorded, not predicted | BB4's reading (`d` 9.360 in [6, 16]); Ben's 12 to 24 | |
+
+## BEN'S ROWS — BY THE ASK STEP, SURVIVAL
+
+### PQ3 — the Skreel, leaping every six seconds now (SURVIVAL, LIVE)
+
+| AUTO half, recorded beside his answers | Ben's half | READING |
+|---|---|---|
+| Every `SKREEL` line and every HURT in the row. **Not predicted: it is his play. Expected now (the first round's PQ1 wound up once in 599 ticks):** wind-ups about every 120 to 160 ticks while he is within 32, each at least 120 after the last; each in-band wind-up's `d` in 8 to 12; every HURT `dealerType=wither_skeleton/skreel`, `before=55.000` | `PQ3 ASK 1 question="With the Skreel leaping every six seconds, could you get out of the way in time?"`; `ASK 2 question="Does it leap often enough now?"`. The gold text asks him to TRY to dodge two and let the third land | |
+
+### PQ4 — the Phalanx's range, 12 to 24 (SURVIVAL, LIVE)
+
+| AUTO half | Ben's half | READING |
+|---|---|---|
+| Every `BLINK`, `BLINK moved`, `BLINK visible`, `SHOT` and `SHIELD` line. **Not predicted.** Each own `BLINK` decision at least **240 ticks** after the last `BLINK moved`; each own landing's draw `d` in [12, 24]. The gold text asks him to let it blink TWICE before killing it, the second 12 seconds after the first | `PQ4 ASK 1 question="Does the Phalanx's blink range feel right at 12 to 24 blocks?"` | |
+
+## CARRIED STATE FOR THIS ROUND, DONE BY THE BOOTER BEFORE THE BOOT, IN THIS ORDER
+
+1. **No JVM running:** `Get-Process java -ErrorAction SilentlyContinue` prints nothing.
+2. **A fresh dated backup**, with no server running, as the first round's step 2, the folder suffix
+   `-pre-dragon-skreel-2`. Report the folder, both pairs of counts, and `diff -rq lines: 0` each.
+3. **Check, do not assume:** `grep -n "dev-pack-on-join" run/plugins/Rpg/config.yml` must print
+   `12:  dev-pack-on-join: true`. If it does not, STOP and report.
+4. **The world's saved difficulty** is read by the setup's DIFFICULTY line and reported.
+5. **Boot this round's head:** `./scripts/dev-server.sh --refresh-content`, announcing "booting now", on Ben's "ready"
+   and the seat's approval.
+6. **R0 binds to THIS boot**, and is read before Ben types anything. **Readings count only after Ben's LOGIN in that
+   boot's log.**
+
+## THE RUN SHEET FOR THIS ROUND — BEN TYPES THESE, IN THIS ORDER. EVERY LINE IS LITERAL. NOTHING ELSE IS RUN
+
+1. `/gamemode survival` — **alone, the first line after login.**
+2. `/rpg selftest dragon-skreel` — **ONCE. Wait for the chat to say the run finished, and answer all three gold
+   questions, before the next command.** About **3 minutes** plus your answers: its waits sum to **2.74 minutes (3288
+   ticks)**, and the ten rows' starts and kills add a little. **Stand still and touch nothing until the first gold text**
+   (about 1½ minutes): Skreels will leap on you and a Phalanx will shoot you (you cannot die). **At the first gold
+   text,** a Skreel on its mount 14 blocks east is yours for **30 seconds**: TRY to get out of the way of two of its
+   leaps, then let the third land on you; **do not attack it**; two questions. **At the second,** a Phalanx 12 blocks
+   east is yours for **60 seconds** with the sword in your hand: walk up to it, follow it, **let it blink twice** (the
+   second comes 12 seconds after the first), then kill it; one question. Answer each `yes` or `no`, or in your own words.
+3. `/stop`
+
+**Nothing else is run in this boot: no other selftest, no other command.** A departure is recorded as it happened, apart
+from the readings.

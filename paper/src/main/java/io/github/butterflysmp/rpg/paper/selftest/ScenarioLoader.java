@@ -89,6 +89,11 @@ public final class ScenarioLoader {
             // A row with a refused step is not loaded at all: running the steps that DID parse would drive a
             // different row than the key names.
             if (!ok) continue;
+            var lag = SelfTestStaging.probeLag(steps);
+            if (lag.isPresent()) {
+                refusals.add("Refusing selftest/GATE-" + gate + ".yml#" + key + ": " + lag.get());
+                continue;
+            }
             Scenario scenario = new Scenario(gate, key, steps);
             if (key.equals(Scenario.SETUP)) out.addFirst(scenario);
             else out.add(scenario);

@@ -88,6 +88,7 @@ BC2B:
   - shot: bc2b
   - wait: 40
   - probe_shot: bc2b
+  - wait: 2
   - cmd: "kill @e[tag=bc2b]"
   - wait: 5
 
@@ -109,6 +110,7 @@ BC3:
   - strike_at_age: "bc3_shot 32 80"
   - wait: 20
   - probe_shot: bc3
+  - wait: 2
   - cmd: "kill @e[tag=bc3]"
   - wait: 5
 

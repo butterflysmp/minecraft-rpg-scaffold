@@ -102,8 +102,11 @@ class SelfTestScenariosTest {
                 "BB4", "BB5", "BS1", "BS2", "BS3", "BS4", "BQ1"));
         // Step R8 (GATE-dragon-skreel.md): DB6R3 and DB7R3 (re-predicting the bodies gate's DB6R2 and DB7R2, moved out of it),
         // the pair (PS3-PS8), the Phalanx's cooldown and R3 (PB1-PB3), and Ben's two rows.
-        expected.put("dragon-skreel", List.of("DB6R3", "DB7R3", "PS3", "PS4", "PS5", "PS6", "PS7", "PS8", "PB1", "PB2",
-                "PB3", "PQ1", "PQ2"));
+        // Then its re-prediction after the boot of 45bc33ce: the rows that failed or change, re-named (DB6R4, PS6R2, PB1R2,
+        // PB2R2, and the blink gate's BB4 as BB4R2), the band edge's two new rows (PS9, PS10), Ben's far end (PB4) and his
+        // two rows (PQ3, PQ4). The rows that read as predicted and do not change left the file.
+        expected.put("dragon-skreel", List.of("DB6R4", "PS6R2", "PS9", "PS10", "PB1R2", "PB2R2", "PB4", "BB4R2", "PQ3",
+                "PQ4"));
         ScenarioLoader.Loaded loaded = shipped();
         for (var gate : expected.entrySet()) {
             List<String> rows = new ArrayList<>();
@@ -150,7 +153,9 @@ class SelfTestScenariosTest {
         // At feat/dragon-blink be7bf586 (master 275e9d0d plus a docs commit) the same commands print 18, 147, 18: 129.
         // Then GATE-dragon-skreel.md (step R8, 2026-11-17), RECOUNTED the same way: 20 gates, 177 keys, 20 setups, so 157.
         // At master 185a6437 the same commands print 19, 165, 19: 146.
-        assertEquals(157, loaded.rows());
+        // Then its re-prediction after the boot of 45bc33ce, RECOUNTED the same way: 20 gates, 174 keys, 20 setups, so
+        // 154. At feat/dragon-skreel 1c18e862 the same commands print 20, 177, 20: 157, this line's old value.
+        assertEquals(154, loaded.rows());
     }
 
     /**
@@ -297,9 +302,12 @@ class SelfTestScenariosTest {
         // Since the re-prediction after the boot of 8ec16e89 the shot gate stages no LIVE Phalanx (SH10 and SH11 read as
         // predicted and left the file); the blink gate stages two, BB4's (gone before its first shot) and Ben's BQ1.
         assertEquals(List.of("dragon-blink#BB4 SPAWN bb4 live phalanx 100", "dragon-blink#BQ1 SPAWN bq1 live phalanx 100",
-                        "dragon-skreel#PB1 SPAWN pb1 live phalanx 100", "dragon-skreel#PB2 SPAWN pb2 live phalanx 100",
-                        "dragon-skreel#PQ2 SPAWN pq2 live phalanx 100"),
+                        "dragon-skreel#PB1R2 SPAWN pb1r2 live phalanx 100", "dragon-skreel#PB2R2 SPAWN pb2r2 live phalanx 100",
+                        "dragon-skreel#BB4R2 SPAWN bb4r2 live phalanx 100", "dragon-skreel#PQ4 SPAWN pq4 live phalanx 100"),
                 shotGate.stream().filter(w -> w.contains(" SPAWN ")).toList(), "the live Phalanxes: " + shotGate);
+        assertEquals(List.of("dragon-skreel#PB4 SHOT pb4", "dragon-skreel#PB4 SHOT pb4"),
+                shotGate.stream().filter(w -> w.startsWith("dragon-skreel#") && w.contains(" SHOT ")).toList(),
+                "and the Skreel gate's two, PB4's (step R8, the target a blinked Phalanx keeps): " + shotGate);
         assertEquals(12, shotGate.stream().filter(w -> w.startsWith("dragon-shot#") && w.contains(" SHOT ")).count(),
                 "the control: the shot gate's twelve SHOT steps: " + shotGate);
         assertEquals(7, shotGate.stream().filter(w -> w.startsWith("dragon-blink#") && w.contains(" SHOT ")).count(),
@@ -339,12 +347,12 @@ class SelfTestScenariosTest {
             }
         }
         assertEquals(List.of(), outside, "a live Skreel pair outside its gate would pounce at a time no row predicts");
-        assertEquals(List.of("dragon-skreel#PS3 SPAWN ps3 live skreel 100", "dragon-skreel#PS4 SPAWN ps4 live skreel 100",
-                        "dragon-skreel#PS6 SPAWN ps6 live skreel 100", "dragon-skreel#PS7 SPAWN ps7 live skreel 100",
-                        "dragon-skreel#PS8 SPAWN ps8 live skreel 100", "dragon-skreel#PQ1 SPAWN pq1 live skreel 100"),
+        assertEquals(List.of("dragon-skreel#PS6R2 SPAWN ps6r2 live skreel 100", "dragon-skreel#PS9 SPAWN ps9 live skreel 100",
+                        "dragon-skreel#PS10 SPAWN ps10 live skreel 100", "dragon-skreel#PQ3 SPAWN pq3 live skreel 100"),
                 skreelGate.stream().filter(w -> w.contains(" SPAWN ")).toList(), "the control, its live pairs: " + skreelGate);
-        assertEquals(3, skreelGate.stream().filter(w -> w.contains(" POUNCE ")).count(),
-                "and its three POUNCE steps (PS3, PS4, PS6): " + skreelGate);
+        // Since the re-prediction after the boot of 45bc33ce no shipped row forces a pounce (PS3, PS4 and PS6 left the
+        // file), so the POUNCE half of this scan has no shipped hit: it is the verb's equality above, and nothing more.
+        assertEquals(0, skreelGate.stream().filter(w -> w.contains(" POUNCE ")).count(), "no POUNCE step: " + skreelGate);
         assertTrue(livePairSpawn("x live skreel 100") && livePairSpawn("x live withered_mount"),
                 "the control: the scan's own pattern matches a live spawn of each");
         assertFalse(livePairSpawn("x frozen skreel 100"), "and not a frozen one");
@@ -387,6 +395,31 @@ class SelfTestScenariosTest {
         assertTrue(refusals.getFirst().contains("unknown verb 'teleport'"), refusals.getFirst());
         assertEquals(List.of("WB2", "WB9"), scenarios.stream().map(Scenario::row).toList(), "WB3 is refused whole");
         assertEquals(List.of("WB9"), ScenarioLoader.unpaired(scenarios, Set.of("WB2", "WB3")));
+    }
+
+    /**
+     * THE PROBE LAG REACHES THE LOADER (step R8, PLAN F23): a row that kills within 2 ticks of probe_pair is refused WHOLE
+     * at boot, by name; the same row with its `wait: 2` loads. Without this row, the loader's call to
+     * SelfTestStaging.probeLag could be dropped with every shipped scenario still loading (PLAGHOOK survived until it).
+     */
+    @Test
+    void aRowThatKillsInsideTheProbeLagIsRefusedAtLoadAndItsWaitedTwinLoads() throws InvalidConfigurationException {
+        YamlConfiguration file = new YamlConfiguration();
+        file.loadFromString("""
+                DB6R3:
+                  - probe_pair: db6
+                  - cmd: "kill @e[tag=db6]"
+                DB6R4:
+                  - probe_pair: db6r4
+                  - wait: 2
+                  - cmd: "kill @e[tag=db6r4]"
+                """);
+        List<String> refusals = new ArrayList<>();
+        List<Scenario> scenarios = ScenarioLoader.parse("dragon-skreel", file, refusals);
+        assertEquals(1, refusals.size(), refusals.toString());
+        assertTrue(refusals.getFirst().startsWith("Refusing selftest/GATE-dragon-skreel.yml#DB6R3: ")
+                && refusals.getFirst().endsWith("(the probe lag)"), refusals.getFirst());
+        assertEquals(List.of("DB6R4"), scenarios.stream().map(Scenario::row).toList(), "DB6R3 is refused whole");
     }
 
     @Test

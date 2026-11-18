@@ -38,6 +38,30 @@ class SelfTestStagingTest {
 
     // --- 2. row start removes every selftest-tagged entity ---
 
+    /**
+     * THE PROBE LAG (step R8, found by DB6R3 at 45bc33ce): probe_pair and probe_shot read on the MOB'S scheduler, the
+     * tick after the step, so a kill in the same tick is read as a dead mob. A row must wait 2 ticks between such a probe
+     * and a kill (2, as LEFTOVER_WAIT_TICKS: whichever order the server ticks the player and the mob in).
+     */
+    @Test
+    void aKillWithinTwoTicksOfAProbeThatReadsOnTheMobsThreadIsRefused() {
+        Scenario.Step pair = step(Scenario.Verb.PROBE_PAIR, "db6");
+        Scenario.Step shot = step(Scenario.Verb.PROBE_SHOT, "bc3");
+        Scenario.Step kill = step(Scenario.Verb.CMD, "kill @e[tag=db6]");
+        assertTrue(SelfTestStaging.probeLag(List.of(pair, kill)).orElseThrow().contains("probe_pair"), "DB6R3's shape");
+        assertTrue(SelfTestStaging.probeLag(List.of(shot, kill)).isPresent(), "probe_shot hops too");
+        assertTrue(SelfTestStaging.probeLag(List.of(pair, step(Scenario.Verb.WAIT, "1"), kill)).isPresent(), "1 is not enough");
+        assertTrue(SelfTestStaging.probeLag(List.of(pair, step(Scenario.Verb.PROBE_SELF, ""), kill)).isPresent(),
+                "a step that does not wait does not cover it");
+        assertTrue(SelfTestStaging.probeLag(List.of(pair, step(Scenario.Verb.WAIT, "1"), step(Scenario.Verb.WAIT, "1"), kill))
+                .isEmpty(), "two waits of 1 are 2");
+        assertTrue(SelfTestStaging.probeLag(List.of(pair, step(Scenario.Verb.WAIT, "2"), kill)).isEmpty());
+        assertTrue(SelfTestStaging.probeLag(List.of(step(Scenario.Verb.PROBE_AT, "x"), kill)).isEmpty(),
+                "THE CONTROL: probe_at reads in its own tick");
+        assertTrue(SelfTestStaging.probeLag(List.of(pair, step(Scenario.Verb.CMD, "tp @s ~1 ~ ~"))).isEmpty(),
+                "only a kill is refused");
+    }
+
     @Test
     void rowStartRemovesEveryTaggedEntityAndNeverAPlayer() {
         assertTrue(SelfTestStaging.removedAtRowStart(false, true), "WS3's tag-n neighbour took a hit in SU2");

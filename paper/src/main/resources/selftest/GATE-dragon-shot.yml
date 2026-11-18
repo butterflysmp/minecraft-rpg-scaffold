@@ -41,6 +41,7 @@ SH1R2:
   - probe_shot: sh1r2
   - wait: 30
   - probe_shot: sh1r2
+  - wait: 2
   - cmd: "kill @e[tag=sh1r2]"
   - wait: 5
 
@@ -63,6 +64,7 @@ SH2R2:
   - attack: sh2r2_shot
   - wait: 40
   - probe_shot: sh2r2
+  - wait: 2
   - cmd: "kill @e[tag=sh2r2]"
   - wait: 5
 
@@ -84,6 +86,7 @@ SH3R2:
   - shoot_arrow: sh3r2_shot
   - wait: 40
   - probe_shot: sh3r2
+  - wait: 2
   - cmd: "kill @e[type=arrow,distance=..16]"
   - cmd: "kill @e[tag=sh3r2]"
   - wait: 5
@@ -126,6 +129,7 @@ SH7R2:
   - shot: sh7r2
   - wait: 40
   - probe_shot: sh7r2
+  - wait: 2
   - cmd: "kill @e[tag=sh7r2]"
   - wait: 5
 
@@ -193,6 +197,7 @@ SH13:
   - cmd: "kill @e[tag=sh13_shot]"
   - wait: 40
   - probe_shot: sh13
+  - wait: 2
   - cmd: "kill @e[tag=sh13]"
   - wait: 5
 
@@ -218,6 +223,7 @@ SH14:
   - cmd: "damage @e[tag=sh14_shot,limit=1] 2 minecraft:arrow"
   - wait: 45
   - probe_shot: sh14
+  - wait: 2
   - cmd: "kill @e[tag=sh14]"
   - wait: 5
 
@@ -239,6 +245,7 @@ SH15:
   - strike_at_age: "sh15_shot 32 80"
   - wait: 20
   - probe_shot: sh15
+  - wait: 2
   - cmd: "kill @e[tag=sh15]"
   - wait: 5
 
@@ -267,6 +274,7 @@ SH16:
   - wait: 20
   - probe_shot: sh16
   - watch_swings: "off"
+  - wait: 2
   - cmd: "kill @e[tag=sh16]"
   - wait: 5
 
