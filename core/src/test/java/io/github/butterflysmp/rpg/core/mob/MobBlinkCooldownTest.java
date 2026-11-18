@@ -74,23 +74,23 @@ class MobBlinkCooldownTest {
     };
 
     /**
-     * BQ1, tick 2647, reproduced: decided from feet at 63.305, every height tried is 63.305 + k, and none sits on the
-     * floor's top. k = -1, -2, -3 are inside the floor (blocked=3), k = 0..3 hang 0.305 above a whole block
-     * (ungrounded=4): exactly the logged "NO_FOOTING blocked=3 ungrounded=4".
+     * BQ1, tick 2647, THE RECORD: decided from feet at 63.305, every height tried was 63.305 + k, and none sat on the
+     * floor's top. k = -1, -2, -3 were inside the floor (blocked=3), k = 0..3 hung 0.305 above a whole block
+     * (ungrounded=4): exactly the logged "NO_FOOTING blocked=3 ungrounded=4". Until 2026-11-17 this row passed the
+     * fractional height and asserted those counts.
+     *
+     * <p><b>F19, 2026-11-17:</b> the floor now happens INSIDE the shared check ({@link BeamTeleport#foot} anchors its
+     * column on {@link BeamTeleport#anchor}), so the Knell's teleport has the fix too, and a caller can no longer
+     * produce the defect by passing a fractional height. The same eight draws from the same feet now land on the floor.
      */
     @Test
-    void anchoredOnItsOwnFractionalHeightEveryDrawFailsAsTheBootLogged() {
+    void aFractionalHeightPassedAsTheAnchorIsFlooredByTheSharedCheckAndLands() {
         MobBlink b = blink(240);
         Vec3 feet = new Vec3(-76.631, 63.305, 8.430);
         List<MobBlink.Draw> draws = Collections.nCopies(8, new MobBlink.Draw(297.823, 9.626));
         MobBlink.Decision d = b.decide(feet, feet.y(), draws, FLOOR_63);
-        assertTrue(d.landing().isEmpty());
-        assertEquals(8, d.tried().size());
-        for (MobBlink.Verdict v : d.tried()) {
-            assertEquals(BeamTeleport.Outcome.NO_FOOTING, v.outcome());
-            assertEquals(3, v.blocked());
-            assertEquals(4, v.ungrounded());
-        }
+        assertEquals(63.0, d.landing().orElseThrow().y(), 1e-12);
+        assertEquals(1, d.tried().size(), "the first draw lands");
     }
 
     /**
@@ -115,14 +115,15 @@ class MobBlinkCooldownTest {
      * THE SAME DEFECT ON THE GROUND: a Phalanx standing on a bottom slab (feet 63.5) blinking onto a full-block floor. From
      * 63.5 every height is 63.5 + k and none rests on 63; from its block, 63, the first height does. This is the case a
      * "ground beneath it" anchor would have missed (it IS on the ground), and the gate's row stages it, because a slab is
-     * a fractional height that holds still.
+     * a fractional height that holds still. Until 2026-11-17 it also asserted "from its feet: nowhere"; since F19 the
+     * shared check floors any anchor, so from its feet it lands too, at the same height.
      */
     @Test
-    void aPhalanxOnASlabFailsFromItsFeetAndLandsFromItsBlock() {
+    void aPhalanxOnASlabLandsFromItsFeetAndFromItsBlockAlike() {
         MobBlink b = blink(240);
         Vec3 feet = new Vec3(0.5, 63.5, 0.5);
         List<MobBlink.Draw> draws = Collections.nCopies(8, new MobBlink.Draw(90.0, 8.0));
-        assertTrue(b.decide(feet, feet.y(), draws, FLOOR_63).landing().isEmpty(), "from its feet: nowhere");
+        assertEquals(63.0, b.decide(feet, feet.y(), draws, FLOOR_63).landing().orElseThrow().y(), 1e-12);
         assertEquals(63.0, b.decide(feet, MobBlink.anchor(feet.y()), draws, FLOOR_63).landing().orElseThrow().y(), 1e-12);
     }
 
