@@ -142,6 +142,77 @@ class PounceCycleTest {
         assertEquals(PounceCycle.Step.BEGIN, c.tick(true, at(10), true), "tick 120");
     }
 
+    // --- the band edge and the cannot-reach rule (step R8, the seat's brief after the boot of 45bc33ce) -------------
+
+    /** The steps at which a wind-up begins, counted from 1, over {@code n} ticks with the same inputs. */
+    private static List<Integer> begins(PounceCycle c, int n, boolean canAct, OptionalDouble d) {
+        List<Integer> out = new ArrayList<>();
+        for (int i = 1; i <= n; i++) if (c.tick(canAct, d, true) == PounceCycle.Step.BEGIN) out.add(i);
+        return out;
+    }
+
+    /**
+     * THE DEFECT, REPRODUCED. PS6's mount parked at 12.4459 (the old goal, the far edge, overshot): no wind-up in the band
+     * EVER; only the cannot-reach rule's, from where it stands, at 240. With the new goal it parks at 10.4459 and winds
+     * up on the 120th tick.
+     */
+    @Test
+    void parkedWherePs6ParkedItNeverWindsUpInTheBandAndAtTheNewGoalItDoesAtOneTwenty() {
+        PounceCycle old = new PounceCycle(MobPounceTest.pounce());
+        assertEquals(List.of(240), begins(old, 240, true, at(12.4459)), "only the cannot-reach wind-up, at 240");
+        PounceCycle fixed = new PounceCycle(MobPounceTest.pounce());
+        assertEquals(List.of(120), begins(fixed, 120, true, at(10.4459)));
+    }
+
+    /**
+     * THE CANNOT-REACH RULE (the seat's ruling; CHOSEN, for Ben): a pair that has been ready a full period (120 ticks)
+     * with a target in its acquire range and still not in the band winds up from where it stands. Ready at 120, so the
+     * wind-up is at 240 after the loop began, or 240 after the last wind-up began. At 20, at 5 (too near, a wall at its
+     * back), at 31.
+     */
+    @Test
+    void aPairThatCannotReachTheBandWindsUpFromWhereItStandsAPeriodAfterItWasReady() {
+        for (double d : new double[] {20, 5, 31}) {
+            PounceCycle c = new PounceCycle(MobPounceTest.pounce());
+            List<PounceCycle.Step> waiting = run(c, 239, true, at(d), true);
+            assertTrue(waiting.stream().allMatch(s -> s == PounceCycle.Step.CLOSE_IN), d + ": " + waiting.stream().distinct().toList());
+            assertEquals(PounceCycle.Step.BEGIN, c.tick(true, at(d), true), d + ": tick 240");
+        }
+    }
+
+    /** The wait is a full period of READY ticks with a target: a tick with no target, or no AI, starts it again. */
+    @Test
+    void theCannotReachWaitStartsAgainWhenTheTargetIsLostOrTheAiIsOff() {
+        PounceCycle c = new PounceCycle(MobPounceTest.pounce());
+        run(c, 200, true, at(20), true);                            // ready from 120: 80 ticks waited
+        assertEquals(PounceCycle.Step.STAND, c.tick(true, NONE, true));
+        assertEquals(List.of(121), begins(c, 121, true, at(20)), "a full period again after the lost target");
+        PounceCycle f = new PounceCycle(MobPounceTest.pounce());
+        run(f, 200, true, at(20), true);
+        f.tick(false, at(20), true);
+        assertEquals(List.of(121), begins(f, 121, true, at(20)), "and after a tick with no AI");
+        PounceCycle frozen = new PounceCycle(MobPounceTest.pounce());
+        assertEquals(List.of(), begins(frozen, 1000, false, at(20)), "a frozen pair never");
+    }
+
+    /** After a wind-up the clock is the period from ITS start: ready 120 after it began, stranded wind-up 240 after. */
+    @Test
+    void afterAWindUpTheNextStrandedOneIsTwoFortyAfterItBegan() {
+        PounceCycle c = leaping();                                   // began at its tick 0, launched at 20
+        run(c, 5, true, at(20), false);                              // 21..25 in the air
+        assertEquals(PounceCycle.Step.LANDED, c.tick(true, at(20), true));   // 26
+        assertEquals(List.of(214), begins(c, 214, true, at(20)), "26 + 214 = 240 after the begin");
+    }
+
+    /** A pair inside the band holds; nearer than it, it moves out (the same CLOSE_IN, to the middle). */
+    @Test
+    void insideTheBandItHoldsAndNearerThanItItMovesOut() {
+        PounceCycle c = new PounceCycle(MobPounceTest.pounce());
+        assertEquals(PounceCycle.Step.STAND, c.tick(true, at(10), true));
+        assertEquals(PounceCycle.Step.CLOSE_IN, c.tick(true, at(5), true));
+        assertEquals(PounceCycle.Step.STAND, c.tick(true, at(9.5541), true));
+    }
+
     // --- the instrument -----------------------------------------------------------------------------------------------
 
     @Test

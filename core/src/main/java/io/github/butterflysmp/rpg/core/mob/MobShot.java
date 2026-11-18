@@ -73,6 +73,22 @@ public record MobShot(int periodTicks, double acquireRange, double reacquireRang
         return eye.distanceSquared(aim) <= acquireRange * acquireRange;
     }
 
+    /**
+     * BLOCKS, eye to aim point: how far the Phalanx looks for whom to fire at. The acquire range; but FROM A BLINK THAT
+     * LANDS UNTIL ITS NEXT SHOT, the re-acquire range when that is the larger (step R8, CHOSEN, put to Ben). Ben's blink
+     * of 12 to 24 can leave the body that triggered it 33.1 from the Phalanx's eye (MobBlinkRangeTest has the geometry),
+     * past the acquire range of 30, where X5's 6 to 16 never could (25.6); 35 holds it.
+     */
+    public double chooseRange(boolean blinkedSinceFired) {
+        return blinkedSinceFired ? Math.max(acquireRange, reacquireRange) : acquireRange;
+    }
+
+    /** May the Phalanx fire at a body whose aim point is {@code aim}, as {@link #chooseRange} measures it? */
+    public boolean inChooseRange(Vec3 eye, Vec3 aim, boolean blinkedSinceFired) {
+        double r = chooseRange(blinkedSinceFired);
+        return eye.distanceSquared(aim) <= r * r;
+    }
+
     /** May a shot at {@code position} whose target is lost turn to a body whose aim point is {@code aim}? */
     public boolean inReacquireRange(Vec3 position, Vec3 aim) {
         return position.distanceSquared(aim) <= reacquireRange * reacquireRange;

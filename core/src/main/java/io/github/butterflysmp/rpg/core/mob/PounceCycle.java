@@ -12,7 +12,14 @@ import java.util.OptionalDouble;
  *   <li><b>RECOVER</b>: where it starts and where every leap ends. It holds the band (closes in when outside it, stands
  *       inside it) but may not begin a wind-up. It becomes HOLD the first tick the period has run since the last wind-up
  *       began (or since the loop began).</li>
- *   <li><b>HOLD</b>: as RECOVER, and a wind-up begins the first tick the target is in the band.</li>
+ *   <li><b>HOLD</b>: as RECOVER, and a wind-up begins the first tick the target is in the band. <b>THE CANNOT-REACH
+ *       RULE</b> (the seat's ruling, 2026-11-17, after THE BAND EDGE; CHOSEN, put to Ben): a pair that stays in HOLD with
+ *       its AI and a target (one within the acquire range: paper passes no distance for any other) but outside the band
+ *       for a full {@code periodTicks} winds up from WHERE IT STANDS, at whatever distance, on the tick that completes
+ *       the wait. HOLD begins {@code periodTicks} after the last wind-up began, so a pair that never reaches the band
+ *       winds up every 2 x {@code periodTicks} (240). A tick in HOLD with no target or no AI starts the wait again; a
+ *       wall, a pit, a body too slow or a pathfinder that stops short (the mount's stop exceeds the band's half-width on
+ *       a diagonal) all end here instead of waiting forever.</li>
  *   <li><b>WINDUP</b>: rooted. Begun on tick 0; ROOT on ticks 1 to {@code windupTicks - 1}; the LAUNCH on tick
  *       {@code windupTicks}. <b>Once begun it always leaps</b>: the target leaving the band, dying or vanishing changes
  *       nothing, because the aim was fixed when it began (the Knell's beam fires along its locked line the same way).</li>
@@ -33,7 +40,7 @@ public final class PounceCycle {
     public enum Step {
         /** Stop its path: no target, no AI, or in the band. */
         STAND,
-        /** Path to the stand-off point ({@link MobPounce#standOff}). */
+        /** Path to the stand-off point ({@link MobPounce#standOff}): in from beyond the band, or OUT from inside it. */
         CLOSE_IN,
         /** A wind-up's first tick: fix the aim, root, warn. */
         BEGIN,
@@ -55,6 +62,8 @@ public final class PounceCycle {
     private int sinceWindup;
     private boolean left;
     private boolean forced;
+    /** HOLD ticks in a row with AI and a target and outside the band: the cannot-reach rule's wait. */
+    private int stranded;
 
     public PounceCycle(MobPounce pounce) {
         this.pounce = pounce;
@@ -100,10 +109,21 @@ public final class PounceCycle {
             default -> {
                 if (stage == Stage.RECOVER && sinceWindup >= pounce.periodTicks()) stage = Stage.HOLD;
                 boolean inBand = distance.isPresent() && pounce.inBand(distance.getAsDouble());
-                if (forced || (stage == Stage.HOLD && canAct && inBand)) {
+                // THE CANNOT-REACH RULE: ready, able, a target, and still outside the band. The first such tick reads 0;
+                // the tick that reads a full period winds up from where it stands. Anything else starts it again.
+                boolean cannotReach = false;
+                if (stage == Stage.HOLD && canAct && distance.isPresent() && !inBand) {
+                    cannotReach = stranded >= pounce.periodTicks();
+                    stranded++;
+                } else {
+                    stranded = 0;
+                }
+                if (forced || (stage == Stage.HOLD && canAct && (inBand || cannotReach))) {
                     forced = false;
                     stage = Stage.WINDUP;
                     inStage = 0;
+                    // stranded needs no reset here: the next tick in this branch is RECOVER's, which resets it (MUTSTRANDBEGIN,
+                    // a reset here, survived every row: it was a second copy of that one).
                     sinceWindup = 0;
                     return Step.BEGIN;
                 }

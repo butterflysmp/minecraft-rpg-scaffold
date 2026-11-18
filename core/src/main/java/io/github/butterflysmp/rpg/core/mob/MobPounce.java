@@ -104,16 +104,29 @@ public record MobPounce(double acquireRange, double bandNear, double bandFar, do
     }
 
     /**
-     * cfde822, READ: "pathfind ... to the point 12 blocks from the player along the player-to-spider axis". The point
-     * {@code bandFar} blocks from the target's feet, horizontally, toward the mount, at the target's height. A mount
-     * straight above or below the target has no axis; +x is taken.
+     * BLOCKS from the target's feet to the stand-off point: the band's MIDDLE, (near + far) / 2, 10 at the shipped 8 and
+     * 12 (the seat's ruling after the boot of 45bc33ce, 2026-11-17). Never an edge: the pathfinder ends a path with the
+     * mob only NEAR its goal (MobPounceTest's {@code theBandsHalfWidthExceedsTheMountsStopOnAnAxisAndNotOnADiagonal} has
+     * the jar's rule), so a goal on an edge is met outside the band about half the time. That was THE BAND EDGE: cfde822's
+     * goal was the far edge, 12 (READ: "the point 12 blocks from the player"), PS6's mount parked at 12.4459, and no
+     * wind-up began.
+     */
+    public double standOffDistance() {
+        return (bandNear + bandFar) / 2.0;
+    }
+
+    /**
+     * Where the pair paths to when it is outside the band, nearer or farther: the point {@link #standOffDistance} from
+     * the target's feet, horizontally, toward the mount, at the target's height. A mount straight above or below the
+     * target has no axis; +x is taken.
      */
     public Vec3 standOff(Vec3 targetFeet, Vec3 mountFeet) {
+        double r = standOffDistance();
         double dx = mountFeet.x() - targetFeet.x();
         double dz = mountFeet.z() - targetFeet.z();
         double h = Math.hypot(dx, dz);
-        if (h == 0) return new Vec3(targetFeet.x() + bandFar, targetFeet.y(), targetFeet.z());
-        return new Vec3(targetFeet.x() + dx / h * bandFar, targetFeet.y(), targetFeet.z() + dz / h * bandFar);
+        if (h == 0) return new Vec3(targetFeet.x() + r, targetFeet.y(), targetFeet.z());
+        return new Vec3(targetFeet.x() + dx / h * r, targetFeet.y(), targetFeet.z() + dz / h * r);
     }
 
     /** What the landing deals BEFORE the victim's defence: the authored damage, priced as every custom mob's hit is. */

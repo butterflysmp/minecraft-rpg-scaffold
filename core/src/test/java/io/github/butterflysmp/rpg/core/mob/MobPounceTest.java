@@ -121,13 +121,68 @@ class MobPounceTest {
         assertTrue(!p.inBand(7.999) && !p.inBand(12.001));
     }
 
-    /** cfde822, READ: "pathfind to the point 12 blocks from the player along the player-to-spider axis". */
+    /**
+     * THE BAND EDGE, FIXED (step R8, the seat's brief of 2026-11-17 after the boot of 45bc33ce): the stand-off point is
+     * the band's MIDDLE, (near + far) / 2 = 10 at the shipped numbers, along the target-to-mount line at the target's
+     * height. A mount nearer than the band moves OUT to the same point. Until this fix it was the far edge, 12
+     * (cfde822's "the point 12 blocks from the player", READ).
+     */
     @Test
-    void theStandOffPointIsTheBandsFarEdgeAlongTheTargetToMountLineAtTheTargetsHeight() {
+    void theStandOffPointIsTheBandsMiddleAlongTheTargetToMountLineAtTheTargetsHeight() {
         MobPounce p = pounce();
-        assertEquals(new Vec3(12, 64, 0), p.standOff(new Vec3(0, 64, 0), new Vec3(20, 65, 0)));
-        assertEquals(new Vec3(0, 64, -12), p.standOff(new Vec3(0, 64, 0), new Vec3(0, 60, -3)));
-        assertEquals(new Vec3(12, 64, 0), p.standOff(new Vec3(0, 64, 0), new Vec3(0, 70, 0)), "straight above: +x");
+        assertEquals(10.0, p.standOffDistance(), EPS);
+        assertVec(new Vec3(10, 64, 0), p.standOff(new Vec3(0, 64, 0), new Vec3(20, 65, 0)));
+        assertVec(new Vec3(0, 64, -10), p.standOff(new Vec3(0, 64, 0), new Vec3(0, 60, -3)));
+        assertVec(new Vec3(10, 64, 0), p.standOff(new Vec3(0, 64, 0), new Vec3(0, 70, 0)));
+        // A mount 5 away, too near, is sent OUT to the same middle point; one 30 away IN to it.
+        assertVec(new Vec3(-6, 64, 8), p.standOff(new Vec3(0, 64, 0), new Vec3(-3, 64, 4)));
+        assertVec(new Vec3(-6, 64, 8), p.standOff(new Vec3(0, 64, 0), new Vec3(-18, 64, 24)));
+        // A band of 6 to 7 has its middle at 6.5: the rule is the middle, not the number 10.
+        MobPounce narrow = new MobPounce(32, 6, 7, 1.6, 20, 120, 1.2, 40, 3, 55, 0.7, 0.4, "crit", 15, 5,
+                List.of(), List.of(), List.of());
+        assertVec(new Vec3(6.5, 64, 0), narrow.standOff(new Vec3(0, 64, 0), new Vec3(9, 64, 0)));
+    }
+
+    /**
+     * THE DEFECT, REPRODUCED WITH PS6'S READING. PS6's mount died 12.4459 from him: 0.4459 past a goal at the far edge.
+     * Stopping that far past its goal, a goal at the far edge leaves the mount OUTSIDE the band; a goal at the middle
+     * leaves it inside, and so does stopping that far SHORT of it.
+     */
+    @Test
+    void aMountStoppingWherePs6StoppedIsOutsideTheBandWithTheOldGoalAndInsideWithTheNew() {
+        MobPounce p = pounce();
+        double past = 12.4459 - 12;
+        assertTrue(!p.inBand(p.bandFar() + past), "the old goal, the far edge: 12.4459 is outside");
+        assertTrue(p.inBand(p.standOffDistance() + past), "the new goal: 10.4459 is inside");
+        assertTrue(p.inBand(p.standOffDistance() - past), "and 9.5541, short of it, is inside");
+    }
+
+    /**
+     * HOW NEAR THE PATHFINDER TAKES A MOB TO ITS GOAL, READ (javap -c -p -cp run/versions/26.1.2/paper-26.1.2.jar
+     * net.minecraft.world.entity.ai.navigation.PathNavigation, and com.destroystokyo.paper.entity.PaperPathfinder):
+     * Paper's moveTo(Location) builds its path with {@code createPath(x, y, z, 0)}, to the goal's own block;
+     * {@code followThePath} sets {@code maxDistanceToWaypoint} = width / 2 when the width is over 0.75, else 0.75 - width
+     * / 2, and passes a node when the mob is under that from the node's block CENTRE on x AND on z (and under 1 on y);
+     * the last node is never passed early ({@code shouldTargetNextNodeInDirection} returns false on it). So the path is
+     * done with the mob under (width / 2 + 0.5) from the goal on each axis: the node's centre is within 0.5 of the goal.
+     * The mount is a spider (1.4 wide, READ: EntityType) at scale 1.5: 2.1 wide, so 1.55 on an axis and 1.55 x sqrt 2 =
+     * 2.192 on a diagonal. THE BAND'S HALF-WIDTH, 2, EXCEEDS THE FIRST AND NOT THE SECOND: a mount whose line to him
+     * runs near a diagonal can still stop outside the band. The cannot-reach rule (PounceCycle) is its backstop.
+     */
+    @Test
+    void theBandsHalfWidthExceedsTheMountsStopOnAnAxisAndNotOnADiagonal() {
+        MobPounce p = pounce();
+        double width = 1.4 * 1.5;
+        double waypoint = width > 0.75 ? width / 2 : 0.75 - width / 2;
+        double axis = waypoint + 0.5;
+        double diagonal = axis * Math.sqrt(2);
+        double halfWidth = (p.bandFar() - p.bandNear()) / 2;
+        assertEquals(1.55, axis, EPS);
+        assertEquals(2.0, halfWidth, EPS);
+        assertTrue(halfWidth > axis, "on an axis, a margin of " + (halfWidth - axis));
+        assertTrue(halfWidth < diagonal, "on a diagonal it does not: " + diagonal);
+        // The rider alone (a wither skeleton, 0.7 wide, READ: EntityType) would stop under 0.9 on an axis.
+        assertEquals(0.9, (0.7 > 0.75 ? 0.35 : 0.75 - 0.35) + 0.5, EPS);
     }
 
     // --- the landing: who it reaches --------------------------------------------------------------------------------

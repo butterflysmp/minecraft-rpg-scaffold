@@ -19,7 +19,9 @@ import java.util.random.RandomGenerator;
  *       meet (cfde822's D4: "a 5-block half-extent box", READ). A box, not a distance: a corner 5 off on both axes is
  *       inside (5).</li>
  *   <li>{@code near}, {@code far}: BLOCKS, the horizontal distance of each tried point from the Phalanx's feet, drawn
- *       uniformly between them, both included (X5: 6 and 16).</li>
+ *       uniformly between them, both included. RULED BY BEN, 2026-11-17: 12 and 24 ("Say 12-24 blocks"), replacing
+ *       X5's 6 and 16. A blink of 24 can leave its trigger past the shot's acquire range, so a Phalanx that has
+ *       blinked chooses out to the re-acquire range until its next shot ({@link MobShot#chooseRange}).</li>
  *   <li>{@code attempts}: how many points one blink tries before it gives up and stays (X6: 8).</li>
  *   <li>{@code levelTolerance}: whole BLOCKS above or below the Phalanx's feet a landing may stand, nearest first (the
  *       Knell's rule). cfde822 stood it on "the column's highest block + 1"; the seat's ruling 3 of R7b sends the blink
@@ -136,7 +138,7 @@ public record MobBlink(double triggerRange, double near, double far, int attempt
      *
      * <p>Why not the two leans the seat offered. The ground beneath the Phalanx: on a slab it IS on the ground, at 63.5,
      * and fails the same way. The triggering combatant's feet (the Knell's teleport searches from its target's): a forced
-     * blink has no trigger, a combatant mid-jump is fractional too, and the blink's ring of 6 to 16 is measured from the
+     * blink has no trigger, a combatant mid-jump is fractional too, and the blink's ring (12 to 24) is measured from the
      * Phalanx. A cost, stated: a landing on a slab's top (x.5) is never tried, as it never was from a whole-block height.
      *
      * <p>{@link #ANCHOR_SNAP} lifts a height within a millionth below a whole number onto it, so floating-point drift on a
