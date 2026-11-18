@@ -11,6 +11,17 @@ end. No prediction above was edited.
 
 **2026-11-17: approved to merge by the review seat after the boot of ef770b8a.**
 
+**2026-11-17, STEP R8 (`feat/dragon-skreel`, before any boot of it): `GATE-dragon-skreel.md` closes this gate's carried items R2-R5** (READINGS, *What the run found*): **R2** the cooldown, Ben's 240 ticks, built and read by its PB1, PB2 and PQ2; **R3** the decision from a fractional height, diagnosed (whole-block heights from a fractional anchor) and fixed (the search anchored on floor(y)), read by its PB3; **R4** BC4B's cleanup, fixed in `GATE-dragon-blink.yml` (it now kills `bc4bh`); **R5** the two pushes cancelled against one absorb, READ from the jar there: one sprinting hit raises two knockback events. **What R8 changes in this file's rows, none re-run:** every BLINK line now ends `anchor=<y> cooldown=<n>` (`cooldown=0` on BB1-BB5, each a fresh Phalanx), every `BLINK moved` line `cooldown=240`; BB1-BB5's verdicts are unchanged (a whole height anchors on itself); BQ1's live Phalanx would now decide at most one landed blink per 240 ticks. **No prediction or reading below is changed.**
+
+**2026-11-17, STEP R8's SECOND ROUND (`feat/dragon-skreel`, after the boot of `45bc33ce`): BEN RULED THE BLINK 12 TO 24
+BLOCKS** ("Say 12-24 blocks", replacing X5's 6 and 16; `PLAN-dragon-mobs.md` RULINGS). **What it changes here, none
+re-run:** BB4's own blink now draws 12 to 24, past its floor, so it is **re-predicted as BB4R2 in `GATE-dragon-skreel.md`**
+on a floor that reaches 25; BB1-BB3 and BB5 force a fixed draw of 8 (the instrument's point is not bound by near and far),
+so their lines do not change; BQ1's live Phalanx would land 12 to 24 out, and until its next shot after a landing it would
+choose whom to fire at out to 35, not 30 (`MobShot#chooseRange`). **THE PROBE LAG (PLAN F23):** `GATE-dragon-blink.yml`
+gained a `wait: 2` between `probe_shot` and the kill in **BC2B and BC3**; on a re-run each probe reads the same tick and
+its kill comes 2 ticks later. **No prediction or reading below is changed.**
+
 The plan is `PLAN-dragon-mobs.md` (RULINGS, *Ben, 2026-11-17, VERBATIM: the Phalanx's shield*; §5.R.10 as built). The
 scenario file is `paper/src/main/resources/selftest/GATE-dragon-blink.yml`, run by `/rpg selftest dragon-blink`.
 

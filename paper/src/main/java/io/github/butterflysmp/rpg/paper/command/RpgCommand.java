@@ -899,6 +899,20 @@ public final class RpgCommand {
         }
         Component name = def == null ? null : MiniMessage.miniMessage().deserialize(def.displayName());
 
+        // THE MOUNT (dragon-mobs step R8): a mob whose file names a mount is spawned RIDING one, both through this one
+        // path. Refused, not half-spawned, when the mount names no mob file or no living mob: a Skreel on foot would
+        // read as a spawn that worked.
+        MobDefinition mountDef = def == null || def.mount() == null ? null : mobs.find(def.mount()).orElse(null);
+        EntityType mountType = mountDef == null ? null
+                : Registry.ENTITY_TYPE.get(NamespacedKey.minecraft(mountDef.baseEntity().toLowerCase(Locale.ROOT)));
+        if (def != null && def.mount() != null && (mountDef == null || mountType == null || !mountType.isAlive()
+                || !org.bukkit.entity.Mob.class.isAssignableFrom(mountType.getEntityClass())
+                || !org.bukkit.entity.Mob.class.isAssignableFrom(entityClass))) {
+            player.sendMessage(Component.text("Mob '" + def.id() + "' rides '" + def.mount()
+                    + "', which names no mob that can carry it. See the boot log.", NamedTextColor.RED));
+            return Optional.empty();
+        }
+
         LivingEntity spawned = player.getWorld().spawn(
                 player.getLocation(), entityClass, CreatureSpawnEvent.SpawnReason.CUSTOM, def == null,
                 entity -> {
@@ -925,7 +939,41 @@ public final class RpgCommand {
                 .append(Component.text(" (" + baseEntity + (staged ? ", stage " + atStage : "") + ", " + hp
                         + (stored != null ? ", GS " + stored + (gearScore != null ? " given" : " rolled") : ", passive")
                         + ")", NamedTextColor.GRAY)));
+        if (mountDef != null) spawnMount(player, spawned, mountDef, mountType, stored, adapters, preAdd);
         return Optional.of(spawned);
+    }
+
+    /**
+     * THE PAIR (dragon-mobs step R8): the mount, spawned at the rider's feet through the same pre-spawn stamp, with the
+     * RIDER'S stored gear score written before its add event (so the pair shares one score, as a split child shares its
+     * parent's), the same {@code preAdd} (the instrument's tags, its NoAI), and its own body and health; then the rider
+     * mounts it and the pair is made ({@code MobPouncer.pair}). Each keeps its own tags, health and nameplate.
+     */
+    private static void spawnMount(Player player, LivingEntity rider, MobDefinition mountDef, EntityType mountType,
+                                   Integer riderScore, AdapterContext adapters,
+                                   java.util.function.Consumer<? super LivingEntity> preAdd) {
+        Class<? extends LivingEntity> cls = mountType.getEntityClass().asSubclass(LivingEntity.class);
+        LivingEntity mount = rider.getWorld().spawn(rider.getLocation(), cls, CreatureSpawnEvent.SpawnReason.CUSTOM, false,
+                entity -> {
+                    MobSpawner.stampCustom(entity, mountDef, 1, adapters.keys());
+                    if (riderScore != null) {
+                        entity.getPersistentDataContainer()
+                                .set(adapters.keys().mobGearScore, PersistentDataType.INTEGER, riderScore);
+                    }
+                    preAdd.accept(entity);
+                    // BEFORE its add event, so the add event's MobPouncer.onAppear finds the pair and starts its loop on
+                    // the mount's next tick, by when the rider below has mounted it.
+                    io.github.butterflysmp.rpg.paper.health.MobPouncer.mark(entity, rider.getUniqueId(), adapters.keys());
+                });
+        io.github.butterflysmp.rpg.paper.health.MobPouncer.pair((org.bukkit.entity.Mob) mount,
+                (org.bukkit.entity.Mob) rider, mountDef, adapters.keys());
+        UUID id = mount.getUniqueId();
+        Integer stored = mount.getPersistentDataContainer().get(adapters.keys().mobGearScore, PersistentDataType.INTEGER);
+        String hp = adapters.stats().tracks(id) ? Math.round(adapters.stats().max(id)) + " HP" : "untracked";
+        player.sendMessage(Component.text("  riding ", NamedTextColor.AQUA)
+                .append(MiniMessage.miniMessage().deserialize(mountDef.displayName()))
+                .append(Component.text(" (" + mountDef.baseEntity() + ", " + hp
+                        + (stored != null ? ", GS " + stored : ", passive") + ")", NamedTextColor.GRAY)));
     }
 
     /** {@code /rpg mobinfo}: everything about the looked-at mob that a mob-scaling gate row reads. */

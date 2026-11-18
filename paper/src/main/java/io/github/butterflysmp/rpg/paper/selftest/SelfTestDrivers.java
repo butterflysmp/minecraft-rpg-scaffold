@@ -148,7 +148,40 @@ final class SelfTestDrivers {
                         e.getPersistentDataContainer().has(keys.mobShield),
                         off == null || off.getType().isAir() ? null : off.getType().getKey().getKey()));
             });
+            case POUNCE -> pounce(p, a);
+            case PROBE_PAIR -> {
+                List<LivingEntity> found = taggedWithin48(p, a);
+                if (found.isEmpty()) run.log(SelfTestBeam.noneLine(a, "PAIR", (int) SelfTestBeam.REACH));
+                for (LivingEntity e : found) run.scheduler().onEntity(e, () -> run.log(run.pounces().probe(a, e)));
+                yield Optional.empty();
+            }
         };
+    }
+
+    /**
+     * POUNCE (dragon-mobs step R8): each tagged pair begins a wind-up on its next tick, aimed at the player's FEET as he
+     * stands at this step (a fixed aim: the pair never re-aims). Forced on the tagged mob's OWN thread; a pair is found
+     * once, through whichever of its two tagged halves comes first (the rider rides on the mount's thread).
+     */
+    private Optional<String> pounce(Player p, String tag) {
+        List<LivingEntity> found = taggedWithin48(p, tag);
+        if (found.isEmpty()) {
+            run.log(SelfTestBeam.noneLine(tag, "DRIVE pounce", (int) SelfTestBeam.REACH));
+            return Optional.empty();
+        }
+        Location feet = p.getLocation();
+        io.github.butterflysmp.rpg.core.Vec3 aim = new io.github.butterflysmp.rpg.core.Vec3(feet.getX(), feet.getY(), feet.getZ());
+        // One force per PAIR: the mount carries the loop, so a tagged rider on a tagged mount is skipped.
+        for (LivingEntity e : found) {
+            if (e.getVehicle() != null && found.contains(e.getVehicle())) continue;
+            run.scheduler().onEntity(e, () -> {
+                Optional<String> refused = run.pounces().force(e, aim);
+                String head = String.format(Locale.ROOT, "DRIVE pounce tag=%s %s aim=%.3f %.3f %.3f", tag,
+                        e.getUniqueId(), aim.x(), aim.y(), aim.z());
+                run.log(refused.map(why -> head + " refused=" + why).orElse(head));
+            });
+        }
+        return Optional.empty();
     }
 
     /** BLINK (step R7b): each tagged Phalanx blinks on its next tick, every attempt the given draw. */

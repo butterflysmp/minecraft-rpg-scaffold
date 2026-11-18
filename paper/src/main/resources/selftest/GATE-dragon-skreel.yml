@@ -1,0 +1,285 @@
+# THE SKREEL AND ITS MOUNT, AND THE PHALANX'S BLINK (step R8, GATE-dragon-skreel.md). Run by
+# `/rpg selftest dragon-skreel`.
+#
+# SECOND BOOT (after the boot of 45bc33ce, 2026-11-17). Only the rows that FAILED or CHANGE are here, each under its
+# re-predicted name: the band edge fixed (DB6R4, PS6R2, PS9, PS10, PS11), Ben's 12-24 blink (PB1R2, PB2R2, PB4, BB4R2), and
+# Ben's two rows (PQ3, PQ4). The rows that read as predicted at 45bc33ce and whose lines do not change are not re-run:
+# DB7R3, PS3, PS4, PS5, PS7, PS8, PB3.
+#
+# THE STAGING: the player at a block centre facing east (+x); a stone floor and AIR above it (14 high where a Skreel
+# leaps: it rises 8.19 blocks and the rider sits on top), every fill box SAVED first. Every mob is spawned at GS 100
+# unless the row says. Where a Phalanx blinks of its own, the floor reaches 25 blocks round it every way: its blink
+# lands 12 to 24 out.
+#
+# THE PLAYER CANNOT DIE IN ANY ROW: each row heals him first, and no row lets more than one Skreel landing (55, 50
+# after his defence) or two of the Phalanx's 40s land between heals. His floor is 100. A push lifts him at most 1.15
+# blocks.
+#
+# THE PROBE LAG (step R8): a probe_pair or probe_shot reads on the mob's own scheduler, a tick later, so every such
+# probe is followed by `wait: 2` before any kill. The loader refuses a row that does not.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# DB6R4 (re-predicts DB6R3, whose PAIR lines were read a tick late, after the kill): ONE SPAWN MAKES TWO, read live. A
+# FROZEN Skreel at GS 300, 5 east. The pair probe now has its 2 ticks before the kill.
+DB6R4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-3 -1 -4 8 6 4"
+  - cmd: "fill ~-3 ~-1 ~-4 ~8 ~-1 ~4 stone"
+  - cmd: "fill ~-3 ~ ~-4 ~8 ~6 ~4 air"
+  - cmd: "tp @s ~5 ~ ~"
+  - spawn: "db6r4 frozen skreel 300"
+  - cmd: "tp @s ~-5 ~ ~ -90 0"
+  - wait: 5
+  - probe_body: db6r4
+  - probe_pair: db6r4
+  - probe_entities: "spider 8"
+  - wait: 2
+  - cmd: "kill @e[tag=db6r4]"
+  - wait: 5
+
+# PS6R2 (re-predicts PS6): THE PAIR'S OWN CYCLE, NEVER FORCED. A LIVE pair 10 east, in its band. He stands still for 30
+# seconds and is healed every 100 ticks; its wind-ups are at least 120 apart, so at most one landing reaches him
+# between heals. Each landing comes down on his feet; the pair then moves OUT to its band and winds up again.
+PS6R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-16 -1 -12 18 14 12"
+  - cmd: "fill ~-16 ~-1 ~-12 ~18 ~-1 ~12 stone"
+  - cmd: "fill ~-16 ~ ~-12 ~18 ~14 ~12 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~10 ~ ~"
+  - spawn: "ps6r2 live skreel 100"
+  - cmd: "tp @s ~-10 ~ ~ -90 0"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 5
+  - probe_pair: ps6r2
+  - probe_self: ""
+  - wait: 2
+  - cmd: "kill @e[tag=ps6r2]"
+  - wait: 5
+
+# PS9: TOO NEAR, IT MOVES OUT. A LIVE pair spawned 4 east of him, inside the band's near edge. It walks out to its band
+# and stands there; its first wind-up, of its own, at the 120th tick, from inside the band.
+PS9:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-16 -1 -12 18 14 12"
+  - cmd: "fill ~-16 ~-1 ~-12 ~18 ~-1 ~12 stone"
+  - cmd: "fill ~-16 ~ ~-12 ~18 ~14 ~12 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~4 ~ ~"
+  - spawn: "ps9 live skreel 100"
+  - cmd: "tp @s ~-4 ~ ~ -90 0"
+  - wait: 2
+  - probe_at: ps9
+  - wait: 100
+  - probe_at: ps9
+  - cmd: "rpg heal 1000000"
+  - wait: 80
+  - probe_self: ""
+  - cmd: "kill @e[tag=ps9]"
+  - wait: 5
+
+# PS10: IT CANNOT REACH THE BAND. A LIVE pair 20 east whose mount's movement speed is 0, so it can never walk into its
+# band (a stand-in for a wall: a spider climbs walls). It makes no progress toward the band from its first tick, so on
+# its 121st, ready since its 120th, it winds up from where it stands, 20 out, and its leap still lands on his feet.
+PS10:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-16 -1 -12 24 14 12"
+  - cmd: "fill ~-16 ~-1 ~-12 ~24 ~-1 ~12 stone"
+  - cmd: "fill ~-16 ~ ~-12 ~24 ~14 ~12 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~20 ~ ~"
+  - spawn: "ps10 live skreel 100"
+  - cmd: "attribute @e[tag=ps10,type=spider,limit=1] minecraft:movement_speed base set 0"
+  - cmd: "tp @s ~-20 ~ ~ -90 0"
+  - wait: 2
+  - probe_at: ps10
+  - wait: 100
+  - probe_at: ps10
+  - wait: 100
+  - probe_self: ""
+  - cmd: "kill @e[tag=ps10]"
+  - wait: 5
+
+# PS11: THE DIAGONAL. A LIVE pair spawned 12 east AND 12 south of him (a bearing of 45 degrees, 16.97 out), outside its
+# band. It walks in on the diagonal, comes to rest inside its band, and winds up of its own at the normal 120th tick,
+# from inside it.
+PS11:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-16 -1 -16 18 14 16"
+  - cmd: "fill ~-16 ~-1 ~-16 ~18 ~-1 ~16 stone"
+  - cmd: "fill ~-16 ~ ~-16 ~18 ~14 ~16 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~12 ~ ~12"
+  - spawn: "ps11 live skreel 100"
+  - cmd: "tp @s ~-12 ~ ~-12 -90 0"
+  - wait: 2
+  - probe_at: ps11
+  - wait: 100
+  - probe_at: ps11
+  - cmd: "rpg heal 1000000"
+  - wait: 80
+  - probe_self: ""
+  - cmd: "kill @e[tag=ps11]"
+  - wait: 5
+
+# PB1R2 (re-predicts PB1): THE COOLDOWN, ITS SECOND BLINK NOW 12 TO 24 OUT. As PB1: a LIVE Phalanx 8 east at speed 0, a
+# forced blink 8 south (the instrument's draw is a fixed point, not bound by near and far), he steps to 3 west of it.
+# Its own blink at the 240th tick lands 12 to 24 out on a floor that reaches 25 round it.
+PB1R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-17 -1 -17 33 6 33"
+  - cmd: "fill ~-17 ~-1 ~-17 ~33 ~-1 ~33 stone"
+  - cmd: "fill ~-17 ~ ~-17 ~33 ~6 ~33 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "pb1r2 live phalanx 100"
+  - cmd: "attribute @e[tag=pb1r2,limit=1] minecraft:movement_speed base set 0"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 2
+  - blink: "pb1r2 90 8"
+  - wait: 3
+  - cmd: "tp @s ~5 ~ ~8 -90 0"
+  - wait: 140
+  - cmd: "rpg heal 1000000"
+  - wait: 120
+  - cmd: "rpg heal 1000000"
+  - wait: 20
+  - cmd: "kill @e[tag=pb1r2]"
+  - wait: 5
+
+# PB2R2 (re-predicts PB2): A FAILED ATTEMPT DOES NOT START IT, its own blink now 12 to 24 out. The pit is where the forced
+# draw lands (8 south), and 8 is nearer than any blink of its own can land now.
+PB2R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-17 -1 -25 33 6 25"
+  - save_blocks: "7 -6 7 9 -2 9"
+  - cmd: "fill ~-17 ~-1 ~-25 ~33 ~-1 ~25 stone"
+  - cmd: "fill ~-17 ~ ~-25 ~33 ~6 ~25 air"
+  - cmd: "fill ~7 ~-6 ~7 ~9 ~-1 ~9 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "pb2r2 live phalanx 100"
+  - cmd: "attribute @e[tag=pb2r2,limit=1] minecraft:movement_speed base set 0"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 2
+  - blink: "pb2r2 90 8"
+  - wait: 3
+  - cmd: "tp @s ~5 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "kill @e[tag=pb2r2]"
+  - wait: 5
+
+# PB4: BEN'S FAR END, AND THE TARGET IT KEEPS. A FROZEN Phalanx 8 east. A forced blink 24 east, the far end of his range:
+# it lands 32 from him, past the shot's acquire range of 30. A forced shot then fires at him (a Phalanx that has blinked
+# looks out to 35); a second forced shot, after the first put it back on 30, finds no one.
+PB4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -4 36 6 4"
+  - cmd: "fill ~-4 ~-1 ~-4 ~36 ~-1 ~4 stone"
+  - cmd: "fill ~-4 ~ ~-4 ~36 ~6 ~4 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~8 ~ ~"
+  - spawn: "pb4 frozen phalanx 100"
+  - cmd: "tp @s ~-8 ~ ~ -90 0"
+  - wait: 5
+  - blink: "pb4 0 24"
+  - wait: 3
+  - probe_at: pb4
+  - shot: pb4
+  - wait: 5
+  - shot: pb4
+  - wait: 5
+  - cmd: "kill @e[tag=pb4]"
+  - wait: 5
+
+# BB4R2 (re-predicts GATE-dragon-blink.md's BB4): A COMBATANT IN THE BOX BLINKS IT, now 12 to 24 out. A LIVE Phalanx 12
+# east; he steps to 3 west of it, inside its box; the floor reaches 25 round it.
+BB4R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-13 -1 -25 37 6 25"
+  - cmd: "fill ~-13 ~-1 ~-25 ~37 ~-1 ~25 stone"
+  - cmd: "fill ~-13 ~ ~-25 ~37 ~6 ~25 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~12 ~ ~"
+  - spawn: "bb4r2 live phalanx 100"
+  - cmd: "tp @s ~-12 ~ ~ -90 0"
+  - wait: 5
+  - cmd: "tp @s ~9 ~ ~ -90 0"
+  - wait: 20
+  - probe_at: bb4r2
+  - cmd: "kill @e[tag=bb4r2]"
+  - wait: 5
+
+# PQ3: BEN'S ROW, THE SKREEL, LEAPING EVERY SIX SECONDS NOW. A live pair 14 east for 30 seconds: TRY to dodge two of its
+# leaps, then let one land on him. He does not attack it. Healed every 5 seconds.
+PQ3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-18 -1 -18 30 14 18"
+  - cmd: "fill ~-18 ~-1 ~-18 ~30 ~-1 ~18 stone"
+  - cmd: "fill ~-18 ~ ~-18 ~30 ~14 ~18 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~14 ~ ~"
+  - spawn: "pq3 live skreel 100"
+  - cmd: "tp @s ~-14 ~ ~ -90 0"
+  - cmd: 'tellraw @s {"text":"A Skreel on its mount, 14 blocks east. It leaps about every 6 seconds: watch it crouch and spark, then TRY to get out of the way of two of its leaps, and let the third land on you. Do not attack it. 30 seconds.","color":"gold"}'
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "rpg heal 1000000"
+  - wait: 100
+  - cmd: "kill @e[tag=pq3]"
+  - wait: 5
+  - ask: "1 1200 With the Skreel leaping every six seconds, could you get out of the way in time?"
+  - ask: "2 1200 Does it leap often enough now?"
+
+# PQ4: BEN'S ROW, THE PHALANX'S RANGE. A live Phalanx 12 east on a floor 30 every way, his for 60 seconds with the
+# sword: let it blink twice before he kills it. Healed every 10 seconds.
+PQ4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-30 -1 -30 30 6 30"
+  - cmd: "fill ~-30 ~-1 ~-30 ~30 ~-1 ~30 stone"
+  - cmd: "fill ~-30 ~ ~-30 ~30 ~6 ~30 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "tp @s ~12 ~ ~"
+  - spawn: "pq4 live phalanx 100"
+  - cmd: "tp @s ~-12 ~ ~ -90 0"
+  - cmd: 'tellraw @s {"text":"A Phalanx 12 blocks east. Walk up to it: it blinks 12 to 24 blocks away. Follow it and let it blink TWICE before you kill it: the second blink comes 12 seconds after the first. 60 seconds.","color":"gold"}'
+  - wait: 200
+  - cmd: "rpg heal 1000000"
+  - wait: 200
+  - cmd: "rpg heal 1000000"
+  - wait: 200
+  - cmd: "rpg heal 1000000"
+  - wait: 200
+  - cmd: "rpg heal 1000000"
+  - wait: 200
+  - cmd: "rpg heal 1000000"
+  - wait: 200
+  - ask: "1 1200 Does the Phalanx's blink range feel right at 12 to 24 blocks?"
+  - cmd: "kill @e[tag=pq4]"
+  - wait: 5

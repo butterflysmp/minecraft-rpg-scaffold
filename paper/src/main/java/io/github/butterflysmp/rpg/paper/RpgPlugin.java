@@ -724,19 +724,22 @@ public final class RpgPlugin extends JavaPlugin {
         ((io.github.butterflysmp.rpg.paper.adapter.ShotSink.Late) adapters.shots()).bind(shooter);
         shooter.clearShotTeam();   // C4 (step R7b): a crash's leftover team entries go
         // THE PHALANX'S ONE-HIT SHIELD (step R7b): the sink every handle of ours asks after the shot's.
+        // THE SKREEL AND ITS MOUNT (dragon-mobs step R8): one loop per pair, on the mount; made by the one spawn path.
+        io.github.butterflysmp.rpg.paper.health.MobPouncer pouncer = new io.github.butterflysmp.rpg.paper.health.MobPouncer(
+                () -> this.mobs, adapters);
         ((io.github.butterflysmp.rpg.paper.adapter.ShieldSink.Late) adapters.shields()).bind(
                 new io.github.butterflysmp.rpg.paper.health.MobShielder(() -> this.mobs, keys, getLogger()));
         selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
                 buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements,
                 // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).
                 (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
-                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports, shooter);
+                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports, shooter, pouncer);
         selfTestDamage.bind(selfTest);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams, shooter);
+                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams, shooter, pouncer);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md
@@ -751,6 +754,7 @@ public final class RpgPlugin extends JavaPlugin {
                 scheduler.onEntity(mob, () -> {
                     nameplates.onMobAppear(mob);
                     beams.onAppear(mob);   // a Knell loaded this early gets its beam loop too (step R5); idempotent
+                    pouncer.onAppear(mob);   // and a paired or widowed mount (step R8); idempotent
                 });
             }
             // Every entity, not only the living: a shot's display that was somehow saved is an orphan too (step R7a).

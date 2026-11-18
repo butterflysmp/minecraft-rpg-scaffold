@@ -134,12 +134,25 @@ public final class MobShooter implements ShotSink {
         final MobBlink blink;
         /** The instrument's fixed draw for the NEXT blink, which it forces on the next tick; null otherwise. */
         MobBlink.Draw forced;
+        /**
+         * Its blink's cooldown (step R8), or null with no blink: STATE ON THE LIVE MOB, held by its loop and dying with
+         * it. NOT in the PDC: a Phalanx that unloads and loads again starts a fresh loop with no cooldown, as its shot
+         * clock starts fresh (X-o's sibling; the seat's to rule if it should persist).
+         */
+        final MobBlink.Cooldown cooldown;
+        /**
+         * A blink has LANDED since its last shot (step R8): until it fires, it chooses whom to fire at out to the
+         * re-acquire range ({@code MobShot#chooseRange}), because Ben's 24-block blink can leave its trigger past the
+         * acquire range. Live state, as the cooldown is.
+         */
+        boolean blinked;
         Owner(Mob mob, String mobId, MobShot shot, MobBlink blink) {
             this.mob = mob;
             this.mobId = mobId;
             this.shot = shot;
             this.blink = blink;
             this.clock = new MobShot.Clock(shot.periodTicks());
+            this.cooldown = blink == null ? null : blink.cooldown();
         }
     }
 
@@ -308,25 +321,26 @@ public final class MobShooter implements ShotSink {
     private void attempt(Owner o, boolean forced) {
         Mob mob = o.mob;
         Vec3 eye = vec(mob.getEyeLocation());
-        LivingEntity target = choose(mob, o.shot, eye);
+        LivingEntity target = choose(mob, o.shot, eye, o.blinked);
         if (target == null) {
             if (forced) adapters.log().info(MobShotLines.none(o.mobId, mob.getUniqueId(), Bukkit.getCurrentTick(),
-                    o.shot.acquireRange()));
+                    o.shot.chooseRange(o.blinked)));
             return;
         }
         fire(o, forced, eye, target);
     }
 
-    /** X8: its vanilla target if the predicate names it and it is in range; else the nearest such in range. */
-    private LivingEntity choose(Mob mob, MobShot shot, Vec3 eye) {
+    /** X8: its vanilla target if the predicate names it and it is in range; else the nearest such in range. The range is
+     * the acquire range, or the re-acquire range from a landed blink until the next shot (MobShot#chooseRange, step R8). */
+    private LivingEntity choose(Mob mob, MobShot shot, Vec3 eye, boolean blinked) {
         LivingEntity vanilla = mob.getTarget();
-        if (vanilla != null && eligible(mob, vanilla) && shot.inAcquireRange(eye, vec(vanilla.getEyeLocation()))) {
+        if (vanilla != null && eligible(mob, vanilla) && shot.inChooseRange(eye, vec(vanilla.getEyeLocation()), blinked)) {
             return vanilla;
         }
-        double r = shot.acquireRange();
+        double r = shot.chooseRange(blinked);
         List<LivingEntity> found = new ArrayList<>();
         for (Entity e : mob.getWorld().getNearbyEntities(mob.getEyeLocation(), r, r, r)) {
-            if (e instanceof LivingEntity l && eligible(mob, l) && shot.inAcquireRange(eye, vec(l.getEyeLocation()))) {
+            if (e instanceof LivingEntity l && eligible(mob, l) && shot.inChooseRange(eye, vec(l.getEyeLocation()), blinked)) {
                 found.add(l);
             }
         }
@@ -392,6 +406,7 @@ public final class MobShooter implements ShotSink {
         carrier.addPassenger(s.display);
         shotTeam().addEntry(carrier.getUniqueId().toString());   // C4: it never pushes and is never pushed
         o.shots.add(s);
+        o.blinked = false;   // its first shot after a blink puts it back on the acquire range
         // cfde822: "Firing clears invisibility" (READ, section 3.4), so it may blink again.
         if (mob.isInvisible()) {
             mob.setInvisible(false);
@@ -426,6 +441,9 @@ public final class MobShooter implements ShotSink {
     private void blinkStep(Owner o) {
         if (o.blink == null) return;
         Mob mob = o.mob;
+        // THE COOLDOWN (step R8), counted down FIRST each tick, so a blink that landed on tick L is followed by
+        // cooldown_ticks - 1 ticks that cannot decide, and tick L + cooldown_ticks can.
+        o.cooldown.tick();
         if (o.forced != null) {
             MobBlink.Draw d = o.forced;
             o.forced = null;
@@ -435,6 +453,9 @@ public final class MobShooter implements ShotSink {
             return;
         }
         if (!mob.hasAI() || mob.isInvisible()) return;
+        // While the cooldown runs, a combatant inside the trigger box causes no blink and no line: the Phalanx fights as
+        // it stands (its shot's clock and its vanilla bow goal run on, untouched). Ben, 2026-11-17: "Say 12 seconds".
+        if (o.cooldown.running()) return;
         Vec3 feet = vec(mob.getLocation());
         double r = o.blink.triggerRange() + 2.0;
         for (Entity e : mob.getWorld().getNearbyEntities(mob.getLocation(), r, r + 2.0, r)) {
@@ -450,10 +471,13 @@ public final class MobShooter implements ShotSink {
     private void blink(Owner o, List<MobBlink.Draw> draws, boolean forced, LivingEntity trigger) {
         Mob mob = o.mob;
         Location from = mob.getLocation();
-        MobBlink.Decision d = o.blink.decide(vec(from), draws, MobTeleporter.footing(mob, null));
+        // R3 (step R8): the search is anchored on the whole block its feet are in (MobBlink.anchor's javadoc).
+        double anchor = MobBlink.anchor(from.getY());
+        MobBlink.Decision d = o.blink.decide(vec(from), anchor, draws, MobTeleporter.footing(mob, null));
         adapters.log().info(MobShotLines.blink(o.mobId, mob.getUniqueId(), Bukkit.getCurrentTick(), forced,
-                trigger == null ? null : kind(trigger), trigger == null ? null : trigger.getUniqueId(), vec(from), d));
-        if (d.landing().isEmpty()) return;
+                trigger == null ? null : kind(trigger), trigger == null ? null : trigger.getUniqueId(), vec(from),
+                anchor, o.cooldown.remaining(), d));
+        if (d.landing().isEmpty()) return;   // a decision that lands nowhere leaves the cooldown as it was
         Vec3 l = d.landing().get();
         puff(o.blink, from);
         Location to = new Location(from.getWorld(), l.x(), l.y(), l.z(), from.getYaw(), from.getPitch());
@@ -464,10 +488,15 @@ public final class MobShooter implements ShotSink {
         mob.getPathfinder().stopPathfinding();
         mob.setInvisible(true);
         puff(o.blink, to);
+        // THE COOLDOWN STARTS HERE, at a blink that LANDS (forced or not), and nowhere else.
+        o.cooldown.landed();
+        o.blinked = true;
         // READ BACK, after the act: where it stands and whether it is invisible, never the decision restated.
         Location now = mob.getLocation();
-        adapters.log().info(String.format(java.util.Locale.ROOT, "BLINK moved mob=%s id=%s tick=%d at=%.3f %.3f %.3f invisible=%s",
-                o.mobId, mob.getUniqueId(), Bukkit.getCurrentTick(), now.getX(), now.getY(), now.getZ(), mob.isInvisible()));
+        adapters.log().info(String.format(java.util.Locale.ROOT,
+                "BLINK moved mob=%s id=%s tick=%d at=%.3f %.3f %.3f invisible=%s cooldown=%d",
+                o.mobId, mob.getUniqueId(), Bukkit.getCurrentTick(), now.getX(), now.getY(), now.getZ(), mob.isInvisible(),
+                o.cooldown.remaining()));
     }
 
     private static void puff(MobBlink b, Location at) {

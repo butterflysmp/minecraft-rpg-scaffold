@@ -1,14 +1,75 @@
-# THE SKREEL, the rider (PLAN-dragon-mobs.md). R1 builds its BODY only.
+# THE SKREEL, the rider (PLAN-dragon-mobs.md). R1 built its BODY; step R8 (feat/dragon-skreel) builds the PAIR: it is
+# spawned RIDING its mount, and the two leap together.
 #
-# Its mount is a SEPARATE mob, withered_mount.yml. In R1 NOTHING PAIRS THEM: spawning one does not spawn the other,
-# and neither rides the other. The pairing, the leap and the survivor rule are step R8. Its spear is gear, deferred.
+# THE NUMBERS ARE THE SEAT'S, ACCEPTED BY BEN AS A STARTING POINT, 2026-11-17 ("I like your numbers. Let's start
+# there"); none is a number he typed. Where they are silent, the old game's (cfde822, PLAN section 3.5, READ). Every
+# behaviour chosen where the record is silent is listed for Ben in GATE-dragon-skreel.md, INHERITED OR CHOSEN.
 
 base_entity: wither_skeleton
 display_name: "Skreel"
 
-# THE QUANTITY: authored health, x GS/100 and never x5 (M4). The old game's 120, accepted by Ben, 2026-11-15.
+# THE QUANTITY: authored health, x GS/100 and never x5 (M4). The seat's 120 (cfde822 120).
 # Normal size and normal speed, so neither scale nor speed is authored: the body stays vanilla.
 max_health: 120
 
-# ELEMENT: Void (Ben's additional note, 2026-11-15). IDENTITY ONLY today.
+# ELEMENT: Void (Ben's additional note, 2026-11-15). IDENTITY ONLY: its death feeds a small Phage nearby.
 element: void
+
+# THE SPEAR, an ITEM key held in the main hand, NEVER DROPPED. cfde822: "iron spear in the main hand, no enchants (its
+# comment: the leap's damage is scripted, the spear is for melee after a dismount)". A wither skeleton holding anything
+# but a bow takes vanilla's melee goal (AbstractSkeleton#reassessWeaponGoal tests only Items.BOW, READ), so on foot it
+# fights in melee with it. What a spear adds to a mob's melee is NOT READ (PLAN-legacy-port.md F8).
+main_hand: iron_spear
+
+# THE MOUNT: the id of the mob file it is spawned riding. /rpg spawn skreel makes both, through the one spawn path, the
+# mount carrying the Skreel's gear score.
+mount: withered_mount
+
+# THE POUNCE: the pair's cycle. Recover, hold the band, wind up (rooted), leap, land, and again.
+pounce:
+  # BLOCKS, feet to feet from the MOUNT, inclusive: who it may pick, the nearest combatant (a survival or adventure
+  # player today). The seat's 32 (cfde822 50).
+  acquire_range: 32
+  # BLOCKS, feet to feet, both included: the band it circles at; a wind-up begins only with its target inside it.
+  # 8 to 12 (the seat's and cfde822's).
+  band:
+    near: 8
+    far: 12
+  # The pathfinder's SPEED MULTIPLIER while it closes in on the band, over the mount's own speed. cfde822's 1.6.
+  path_speed: 1.6
+  # TICKS from a wind-up's first tick to the leap, the pair rooted throughout. The seat's 1 second (cfde822 15).
+  windup_ticks: 20
+  # TICKS from one wind-up's FIRST tick to the next one's earliest; also from the pair appearing to its first. The
+  # seat's 6 seconds (cfde822: none).
+  period_ticks: 120
+  # BLOCKS PER TICK upward at the leap. cfde822's 1.2: on level ground the pair rises 8.19 blocks and comes down 29 ticks
+  # later. Its horizontal speed is computed to land on the point fixed at the wind-up's start, and held every tick.
+  launch_vertical: 1.2
+  # TICKS after the leap at which a pair that has not come down ends its leap where it is; the hit is tested there.
+  # cfde822's 40.
+  timeout_ticks: 40
+  # BLOCKS, feet to feet from the MOUNT'S feet where it lands, inclusive: who the landing hits. Never a mob. The seat's
+  # 3 (cfde822 2.5).
+  reach: 3
+  # The AUTHORED landing hit, x the pair's gear score / 100, before the victim's defence. No element. The seat's 55
+  # (cfde822 35).
+  damage: 55
+  # BLOCKS PER TICK added to each victim's velocity, x (1 - its knockback resistance): horizontally away from where the
+  # mount landed, and up. cfde822's 0.7 and 0.4, the seat's "moderate": a push of 0.806, which the Phage's blast gives
+  # at 1.16 blocks from its centre (PLAN RULINGS).
+  knockback:
+    horizontal: 0.7
+    vertical: 0.4
+  # THE WARNING. cfde822: "a spider-ambient sound and 15 crit particles" on entry (READ). Repeating the particles every
+  # 5 ticks through the wind-up, and the sound's volume and pitch, are CHOSEN.
+  windup:
+    particle: crit
+    particle_count: 15
+    every_ticks: 5
+    sounds:
+      - { key: entity.spider.ambient, volume: 1.0, pitch: 1.0 }
+  # cfde822: "spider-hurt sound" at the launch, "a crit sound" at the landing (READ); volumes and pitches CHOSEN.
+  launch_sounds:
+    - { key: entity.spider.hurt, volume: 1.0, pitch: 1.0 }
+  land_sounds:
+    - { key: entity.player.attack.crit, volume: 1.0, pitch: 1.0 }

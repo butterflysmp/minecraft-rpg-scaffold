@@ -65,6 +65,37 @@ final class SelfTestStaging {
         return step.verb() == Scenario.Verb.CMD && step.arg().trim().startsWith("kill ");
     }
 
+    /**
+     * THE PROBE LAG (dragon-mobs step R8; found by DB6R3 at the boot of 45bc33ce). PROBE_PAIR and PROBE_SHOT read their
+     * mob on ITS OWN scheduler ({@code Scheduler.onEntity}: never another thread's state, the Folia rule), which runs the
+     * read on the mob's next tick. A kill in the step after it runs first, in the same tick, and the read is of a dead
+     * mob: DB6R3's PAIR lines read {@code stage=none} for a live pair. The reads stay where they are, so every reading
+     * already taken keeps its tick; a row must WAIT {@link #PROBE_LAG_TICKS} between such a probe and a kill instead,
+     * and the loader refuses one that does not.
+     */
+    static final int PROBE_LAG_TICKS = 2;
+
+    /** Why a row's steps are refused for the probe lag, or empty. Only {@code wait:} steps count toward the 2 ticks. */
+    static java.util.Optional<String> probeLag(List<Scenario.Step> steps) {
+        Scenario.Verb pending = null;
+        long waited = 0;
+        for (Scenario.Step step : steps) {
+            Scenario.Verb v = step.verb();
+            if (v == Scenario.Verb.PROBE_PAIR || v == Scenario.Verb.PROBE_SHOT) {
+                pending = v;
+                waited = 0;
+            } else if (pending != null && v == Scenario.Verb.WAIT) {
+                waited += Long.parseLong(step.arg().trim());
+                if (waited >= PROBE_LAG_TICKS) pending = null;
+            } else if (pending != null && isKill(step)) {
+                return java.util.Optional.of("'" + step.arg().trim() + "' comes " + waited + " tick(s) after "
+                        + pending.name().toLowerCase(java.util.Locale.ROOT) + ", which reads on the mob's own scheduler a tick"
+                        + " later; wait " + PROBE_LAG_TICKS + " before the kill (the probe lag)");
+            }
+        }
+        return java.util.Optional.empty();
+    }
+
     /** The next scenario belongs to a different gate than the last one, so the inventory goes back first. */
     static boolean gateChanged(String previousGate, String nextGate) {
         return previousGate != null && !previousGate.equals(nextGate);
@@ -152,7 +183,7 @@ final class SelfTestStaging {
             case WATCH_SWINGS -> arg.trim().equals("on") || arg.trim().equals("off") ? java.util.Optional.empty()
                     : java.util.Optional.of("watch_swings takes on or off, got '" + arg + "'");
             case DETONATE, IGNITE, PROBE_FUSE, THAW, PROBE_MOTION, BEAM, PROBE_AT, SHOT, PROBE_SHOT, AIM_SHAPE, STRIKE_LOOK,
-                    SHOOT_ARROW, PROBE_SHIELD -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
+                    SHOOT_ARROW, PROBE_SHIELD, POUNCE, PROBE_PAIR -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes one tag, got '"
                             + arg + "'");
             default -> java.util.Optional.empty();

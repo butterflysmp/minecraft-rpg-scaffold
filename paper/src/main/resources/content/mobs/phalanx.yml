@@ -91,9 +91,11 @@ blink:
   # BLOCKS, the HALF-EXTENT of the box round the Phalanx's FEET that a player's box must meet: a box, not a distance,
   # so a corner 5 off on both axes is inside. cfde822's D4 box (X4).
   trigger_range: 5
-  # BLOCKS, the horizontal distance of each tried point from its feet, drawn uniformly between them (X5).
-  near: 6
-  far: 16
+  # BLOCKS, the horizontal distance of each tried point from its feet, drawn uniformly between them. RULED BY BEN,
+  # 2026-11-17 (step R8): "Say 12-24 blocks", replacing X5's 6 and 16. At 24 its trigger can be 33.1 from its eye, past
+  # the shot's acquire_range of 30, so until its next shot a Phalanx that has blinked looks out to reacquire_range (35).
+  near: 12
+  far: 24
   # How many points one blink tries before it gives up and stays (X6).
   attempts: 8
   # Whole BLOCKS above or below its feet a landing may stand, nearest first: the Knell's check and the Knell's 3
@@ -102,6 +104,12 @@ blink:
   # At BOTH ends. squid_ink is the record's; 12 puffs a end is CHOSEN (the record gives no count).
   particle: squid_ink
   particle_count: 12
+  # TICKS after a blink that LANDS before it may decide another (step R8). Ben, 2026-11-17: "needs a larger cooldown.
+  # Say 12 seconds" (240, his number). A blink that lands nowhere does not start it (the seat's reading, put to Ben, not
+  # objected to). While it runs, a player inside trigger_range causes no blink and no BLINK line: the Phalanx fights as
+  # it stands. The instrument's forced blink ignores it and says so in its line; a forced blink that lands starts it.
+  # cfde822 had no cooldown (it could not blink again until it was visible, which it still cannot).
+  cooldown_ticks: 240
   sounds:
     # The record's enderman-teleport; its volume and pitch are not in the record: 1.0 and 1.0, CHOSEN.
     - { key: entity.enderman.teleport, volume: 1.0, pitch: 1.0 }

@@ -94,8 +94,20 @@ public final class MobShotLines {
      * attempt in order with the check that refused it (NO_FOOTING with how many heights did not fit and how many had no
      * ground) or where it stands (OK), and where it landed, or none (it stays).
      */
+    /*
+     * Step R8 appends two fields: anchor=<y>, the height the search was anchored at (R3: the ground beneath an airborne
+     * Phalanx, else its feet), and cooldown=<ticks left>, which is always 0 on a Phalanx's own blink (a running cooldown
+     * makes no decision and no line) and is followed by "ignored" on a FORCED blink made while one runs.
+     */
     public static String blink(String mobId, UUID mob, long tick, boolean forced, String triggerKind, UUID trigger, Vec3 from,
-                               io.github.butterflysmp.rpg.core.mob.MobBlink.Decision d) {
+                               double anchorY, int cooldown, io.github.butterflysmp.rpg.core.mob.MobBlink.Decision d) {
+        return blink(mobId, mob, tick, forced, triggerKind, trigger, from, d)
+                + String.format(Locale.ROOT, " anchor=%.3f cooldown=%d", anchorY, cooldown)
+                + (forced && cooldown > 0 ? " ignored" : "");
+    }
+
+    private static String blink(String mobId, UUID mob, long tick, boolean forced, String triggerKind, UUID trigger, Vec3 from,
+                                io.github.butterflysmp.rpg.core.mob.MobBlink.Decision d) {
         StringBuilder tried = new StringBuilder();
         for (var v : d.tried()) {
             if (tried.length() > 0) tried.append(", ");

@@ -8,7 +8,15 @@
 > - **The cfde822 SURVEY, 2026-11-06** — everything else: §1, §2, §3.1–§3.5, §4.1 and §5.0. **It is kept as the
 >   record of what the old game did and is NOT deleted.** Every number in it is a fact about cfde822, never adopted.
 >   Where the survey and the rework disagree, the rework governs, and the survey section carries a banner saying so.
-> - **Still docs only.** No Java, no content, no boot. Nothing below is built.
+> - **Still docs only.** No Java, no content, no boot. Nothing below is built. *(The rework's first-day state, kept as
+>   the record; superseded by the status below.)*
+> - **STATUS, 2026-11-17: ALL FOUR DRAGON MOBS ARE BUILT** (the Knell, the Phage, the Phalanx, and the Skreel with its
+>   mount), **each with its gate read on a server**: the bodies in `GATE-dragon-bodies.md` and `GATE-dragon-fix.md`;
+>   the Knell's in `GATE-dragon-beam.md`, `GATE-dragon-teleport.md` and `GATE-dragon-knell-2.md` to `-5`; the Phage's
+>   in `GATE-dragon-split.md`, `GATE-dragon-growth.md`, `GATE-dragon-blast.md` and `GATE-dragon-blast-2.md`; the
+>   Phalanx's in `GATE-dragon-shot.md` and `GATE-dragon-blink.md`; the Skreel's in `GATE-dragon-skreel.md`. **What
+>   remains** is in the carried list (§8 FINDINGS, *CARRIED AT THE MERGE OF #203*), the open QUESTIONS FOR BEN, and
+>   §3.R.5 *Numbers for Ben*.
 
 ## RULINGS
 
@@ -821,6 +829,135 @@ captured for question 4 is his answer to question 3, and question 4's answer is 
 - **RULED BY BEN AND NOT BUILT:** the blink needs a cooldown, "Say 12 seconds" (**240 ticks**).
 - **THE SEAT'S, put to him:** the cooldown is counted from a blink that LANDS; a failed attempt does not spend it.
 
+### Ben, 2026-11-17, VERBATIM: the Skreel's numbers (step R8, `feat/dragon-skreel`)
+
+*The seat asked Ben to accept or change the old game's Skreel numbers.* Ben:
+
+> "can you suggest some numbers and I'll decide from there"
+
+*The seat suggested, with the old value beside each:*
+
+| quantity | the seat's suggestion | old (cfde822, §3.5) |
+|---|---|---|
+| rider health | 120 | 120 |
+| mount health | 160 | 120 |
+| mount speed with its rider | 1.3x | 1.3x |
+| notices a target within | 32 blocks | 50 |
+| circles at | 8 to 12 blocks | 8 to 12 |
+| wind-up before the leap | 1 second | 0.75 s |
+| time between leaps | 6 seconds | not recorded |
+| landing hit | 55 | 35 |
+| landing hit reaches | 3 blocks | 2.5 |
+| knockback | yes, moderate | yes |
+| if the mount dies first | the rider drops and fights on foot as a plain melee mob | |
+| if the rider dies first | the mount carries on as a plain fast spider with no leap | |
+| elements | the rider Void and the mount with no element | |
+| damage | scaled by gear score like the others | |
+
+Ben:
+
+> "I like your numbers. Let's start there"
+
+**RECORDED PLAINLY: these are THE SEAT'S numbers, accepted by Ben as a starting point. None is a number he typed.**
+
+**"MODERATE" KNOCKBACK IS THE OLD GAME'S VALUES: 0.7 horizontal (away from the spider) and 0.4 vertical** (§3.5, LAND:
+the hit, READ). **Against the blast's, they are moderate:** the push vector's length is √(0.7² + 0.4²) = **0.806 blocks
+a tick**. The Phage's blast (`phage.yml` `blast.knockback: 1.0`, §7 F-B) adds **1.0** at its centre, **0.75** at 1.5
+blocks, **0.5** at its half reach (3) and **0** at its reach (6), falling in a straight line. So the pounce pushes as
+hard as a blast does at about **1.16 blocks** from it (1 − d/6 = 0.806): weaker than the blast's strongest, stronger than
+the blast's push at the pounce's own reach of 3 (0.5). Nothing here shows them NOT moderate, so they stand.
+
+### Ben, 2026-11-17, VERBATIM: the Phalanx's blink cooldown (step R8 carries it)
+
+Ben ruled the blink (*the boot of `ef770b8a`*, above):
+
+> "needs a larger cooldown. Say 12 seconds"
+
+**240 ticks, his number.** **The seat told him it counts from a blink that LANDS and a failed attempt does not spend it;
+he did not object.**
+
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the Skreel and the cooldown (the boot of `45bc33ce`)
+
+*PQ1, after 30 seconds beside a live Skreel pair that wound up ONCE (THE BAND EDGE, F22):*
+
+> "Could you see the Skreel wind up before it leapt?" — **"yes"**
+>
+> "Could you get out of the way in time?" — **"I didn't try to"**
+>
+> "Did the landing hit feel right for a pounce?" — **"yes"**
+
+*PQ2, after 40 seconds with a live Phalanx, which he killed inside its first cooldown:*
+
+> "Does the Phalanx's blink feel right with the 12-second cooldown?" — **"yes, but it needs to have a longer teleport
+> range. Say 12-24 blocks"**
+
+**What they confirm, and what they do not.** The wind-up is seen and the hit feels right (one landing, at 55). **The
+second answer is NOT a reading of the dodge:** he did not try. The cooldown was read by PB1 only; in PQ2 the Phalanx made
+one blink of its own before he killed it.
+
+**RULED BY BEN: THE PHALANX'S BLINK LANDS 12 TO 24 BLOCKS AWAY** ("Say 12-24 blocks"), replacing X5's starting 6 to 16.
+`phalanx.yml` `blink.near: 12`, `blink.far: 24`.
+
+**WHAT HIS 24 DOES, AND WHAT IS BUILT FOR IT (CHOSEN, put to him; not his ruling).** A blink is triggered by a body within
+5 of the Phalanx's feet; after a landing 24 out, that body's eye can be up to **33.1** from the Phalanx's eye
+(`MobBlinkRangeTest`, the geometry), **past the shot's acquire range of 30**. At X5's 16 it was at most 25.6, so this is
+new. **So from a blink that lands until its next shot, a Phalanx chooses whom to fire at out to the shot's re-acquire
+range, 35** (`MobShot#chooseRange`); its first shot puts it back on 30. Its vanilla target is a separate thing: a wither
+skeleton's follow range is 16 (READ: `AbstractSkeleton#createAttributes` adds nothing over `Mob#createMobAttributes`'
+`FOLLOW_RANGE 16.0`, and `TargetGoal#canContinueToUse` drops a target past it), so after most blinks of 12 to 24 its
+vanilla target drops, as it often did at 16; the shot's own choice is what keeps it fighting.
+
+### THE SEAT'S RULINGS AFTER THE BOOT OF `45bc33ce`, 2026-11-17 (the seat's, stated in this file's words)
+
+- **THE BAND EDGE (F22) IS A DEFECT; THE STAND-OFF POINT IS THE MIDDLE OF THE BAND,** (near + far) / 2 from the target,
+  10 at today's numbers, never an edge. A pair nearer than the band's near edge moves OUT to the same point; inside the
+  band it holds.
+- **THE CANNOT-REACH RULE (CHOSEN, for Ben):** a pair that cannot reach its band winds up FROM WHERE IT STANDS once it has
+  a target within its acquire range and has waited one full period ready. As built: ready 120 ticks after the last
+  wind-up began, so it winds up at 240 (`PounceCycle`). A tick with no target or no AI starts the wait again.
+  **REVISED by the seat's third brief (below): measured by progress, not by time ready.**
+- **"The pathfinder stops short" stays INFERRED until read; READ in this step** (`MobPounceTest`,
+  `theBandsHalfWidthExceedsTheMountsStopOnAnAxisAndNotOnADiagonal`): a path is done with the mob under (width / 2 + 0.5)
+  from its goal on each axis: **1.55 for the 2.1-wide mount, so up to 2.19 on a diagonal**, which the band's half-width
+  of 2 does NOT exceed. The cannot-reach rule is the backstop.
+- **R3's anchor on floor(feet.y) is ACCEPTED,** with its cost recorded (a slab's top is never a landing). **F19 is a
+  carried DEFECT**, first into the next branch that touches the Knell. **R5 as one hit raising two events is ACCEPTED**,
+  "a sprint hit" marked INFERRED. **The pounce on plain KNOCKBACK_RESISTANCE is ACCEPTED** (a pounce is not an explosion).
+  **"No leap" read as no pounce is ACCEPTED as the seat's reading**, put to Ben. **Cancelling a paired mob's target
+  events and removing no goals is ACCEPTED.** **F21 is recorded as a finding.**
+
+### THE SEAT'S THIRD BRIEF ON #203, 2026-11-17: THE PAIR MUST END INSIDE ITS BAND FROM ANY BEARING (the seat's, stated in this file's words)
+
+- **The backstop must not be what makes an ordinary approach work:** a pair whose path ends outside the band corrects
+  itself, and from any bearing and start within the acquire range, on open ground, comes to rest inside [near, far] and
+  winds up at its normal period. **Ben's band and the band test are NOT widened or loosened.**
+- **AS BUILT:** `MobPounce.goal` chooses the goal BLOCK, among those within 3 of the band's middle point, nearest that
+  point, whose stopping box (its centre ± the mount's tolerance on each axis, grown by 0.25, CHOSEN) lies wholly inside
+  the band; so the walk crosses into the band before its path can end, and the cycle stands it there. Proved in core
+  against the READ stopping rule over every 5 degrees, twelve start distances and four target positions (3456 cases,
+  all at rest inside 8 to 12); without the choice, 28 rest outside, the diagonals first. The goal is recomputed every
+  tick the pair is outside its band, so a pair chasing a walking player settles when he stops.
+- **THE CANNOT-REACH RULE, MEASURED BY PROGRESS:** a pair with its AI and a target, outside the band, that has not come
+  1 block nearer the band for a full period (`PROGRESS_BLOCKS`, CHOSEN), winds up from where it stands once ready. A pair
+  walking in good faith never counts.
+
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the second round (the boot of `3d93a532`)
+
+> "With the Skreel leaping every six seconds, could you get out of the way in time?" — **"yes"**
+>
+> "Does it leap often enough now?" — **"yes"**
+>
+> "Does the Phalanx's blink range feel right at 12 to 24 blocks?" — **"yes"**
+
+**CONFIRMED BY PLAY:** the Skreel's wind-up is visible (the first round's "yes"); its leap can be dodged (he dodged the
+first two of PQ3's four); the landing hit feels right (the first round's "yes"); it leaps often enough (PQ3's four
+wind-ups, each 120 ticks after the last). The Phalanx's blink at 12 to 24 blocks (PQ4's draws 12.091 and 21.077) and its
+12-second cooldown (the first round's "yes"; PQ4's second blink 287 ticks after its first).
+
+**THE SEAT'S AND OURS, PUT TO BEN AND UNRULED:** the Skreel's K1-K29 choices (`GATE-dragon-skreel.md`, *THE SKREEL,
+INHERITED OR CHOSEN*); the cannot-reach rule, and that a player who outruns the pair triggers it; the Phalanx looking
+out to the re-acquire range, 35, from a landed blink until its next shot.
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -1088,6 +1225,8 @@ our pipeline does hit. Detail in §7 F-S.
 | **cfde822 did** | §3.5: a wither skeleton on a big spider; a retreat, wind-up, homing leap and slam; the survivor becomes a brawler. |
 | **Ben's design now** | **Unchanged in behaviour.** Element `void` (Ben's additional note). |
 | **what it needs** | MB1 and MB5, as before. **Open for Ben:** whether the spider MOUNT is also a Void mob (it is a separate entity, and the note names "Skreel"); and the name "Withered Mount" on a Void mob (Q24, Q25). |
+
+**2026-11-17, step R8: BUILT** (§5.R.11), from the seat's numbers Ben accepted (RULINGS) and cfde822's where they are silent; the item-by-item account is `GATE-dragon-skreel.md`, INHERITED OR CHOSEN. Q24 is answered (no element); Q25 (the name) is still open.
 
 #### 3.R.5 NUMBERS FOR BEN — every unruled number in the rework, in one place
 
@@ -1727,6 +1866,29 @@ shield, each marked READ or NOT IN THE RECORD, and is not repeated here.** What 
 - **C4 (closed): a scoreboard team `rpg_shot` whose collision rule is NEVER**, joined at the fire and left at the end;
   `setCollidable` is never called, so an arrow still hits it (one test pins both).
 
+### 5.R.11 STEP R8 AS BUILT (`feat/dragon-skreel`, off master `185a6437`, 2026-11-17) — THE SKREEL PAIR, THE BLINK'S COOLDOWN, R3
+
+**The gate is `GATE-dragon-skreel.md`; its INHERITED OR CHOSEN table (K1-K29) is the item-by-item account of the pair,
+each marked READ, ACCEPTED or NOT IN THE RECORD, and is not repeated here.** Its jar facts, the cycle's state machine,
+the leap's expression and R3's and R5's readings are there too. What the code is:
+
+| piece | as built | where |
+|---|---|---|
+| **the numbers** | `pounce:` in the RIDER'S file: `acquire_range 32`, `band 8-12`, `path_speed 1.6`, `windup_ticks 20`, `period_ticks 120`, `launch_vertical 1.2`, `timeout_ticks 40`, `reach 3`, `damage 55`, `knockback 0.7 / 0.4`, the warning's crit (15, every 5) and three sounds; `mount: withered_mount`; `main_hand: iron_spear`. The mount: `max_health 160`, `scale 1.5`, `ridden_speed 1.3`, **no base speed** | `skreel.yml`, `withered_mount.yml`, `core.mob.MobPounce` |
+| **the cycle** | pure: RECOVER → HOLD → WINDUP (20) → LEAP (to the ground, or 40) → RECOVER; the period from a wind-up's start; a frozen pair never begins one | `core.mob.PounceCycle` |
+| **the leap** | the record's vertical, a horizontal of distance / T held every tick, T from replaying vanilla's air step (the mob's gravity, drag `0.98f`) to the aim's height; the aim fixed at the wind-up's start | `MobPounce.leap` |
+| **one spawn** | the rider, then its mount at its feet through the same stamp, the rider's gear score and the same pre-add; `addPassenger`; the ridden modifier | `RpgCommand.spawnMount`, `MobPouncer.pair` |
+| **the loop** | period 1 on the MOUNT'S scheduler; ends with either half (dead, removed, unloaded, separated); a dead mount's rider dismounts; resumed on a paired or widowed mount's appearance | `paper.health.MobPouncer` |
+| **no vanilla target** | every target event of a paired mob cancelled | `RpgListeners.onPairTargeted` |
+| **the hit** | every combatant within 3 of the mount's feet, `applyDamage(55 × GS/100, rider)`, pushed by `setVelocity` (× 1 − KNOCKBACK_RESISTANCE) | `MobPouncer.land` |
+| **the blink's cooldown** | `blink.cooldown_ticks: 240`, required; counted first each loop tick, set by a landed blink only; blocks only the Phalanx's own blink; a forced one says `ignored` | `MobBlink.Cooldown`, `MobShooter.blinkStep` |
+| **R3** | the height search anchored on `floor(feet.y)` | `MobBlink.anchor` |
+| **the instrument** | `pounce: <tag>` (a wind-up now, aimed at his feet), `probe_pair: <tag>` | `SelfTestDrivers` |
+
+**THE CARRIED ITEMS FROM #202, CLOSED BY BUILD, NOT YET BY A READING:** R3 (PB3), R5 (read from the jar, no row), BC4B's
+tag (its scenario). **Still UNREAD:** zero damage not spending the shield (core test only); the shield byte surviving an
+unload.
+
 ### 5.0 THE cfde822 SURVEY'S ORDER, 2026-11-06 — SUPERSEDED BY §5.R, KEPT AS THE RECORD
 
 This refines `PLAN-legacy-port.md` §9.3; where it differs, it says why.
@@ -2173,6 +2335,36 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
     a melee hit's damage on a mob.
   - **BC4B's cleanup:** its `/kill @e[tag=bc4b]` does not select its husk (tagged `bc4bh`); BB1's clean removed it.
   - **UNREAD:** zero damage not spending the shield (core test only); the shield byte surviving an unload.
+  - **2026-11-17, step R8 (`GATE-dragon-skreel.md`):** **R3 DIAGNOSED AND FIXED, NOT READ** (the heights are whole
+    blocks from the column's y, and a fractional anchor stands none on a floor; anchored on floor(y) now; PB3 reads it on
+    a slab). **R5 READ, from the jar, no row:** one sprinting hit raises two knockback events (`LivingEntity#hurt`'s and
+    `Player#causeExtraKnockback`'s, both `ENTITY_ATTACK`); two lines against one absorb is correct. **BC4B's cleanup
+    FIXED** in its scenario.
+- **F19, 2026-11-17, step R8: THE KNELL'S TELEPORT HAS R3'S DEFECT, LATENT, NOT FIXED.** `BeamTeleport.decide` puts every
+  candidate column at the TARGET'S feet height, and the check tries whole blocks from it. A target mid-jump (or standing
+  on a slab) when the move falls due makes every candidate NO_FOOTING, and the Knell does not move. INFERRED from the code,
+  never read on a server; the Knell's 13 merged gates staged their targets standing on whole blocks. The fix is the
+  blink's (`MobBlink.anchor`), the seat's to schedule.
+- **F20, 2026-11-17, step R8: THE PAIR'S LOOP ASSUMES ITS TWO HALVES SHARE A THREAD.** It runs on the mount's scheduler
+  and reads and moves the rider (a passenger) and the landing's victims inline when the region owns them. Correct on Paper;
+  on Folia a passenger rides in its vehicle's region (INFERRED), and a victim outside it is struck on its own scheduler,
+  as the blast's are. Accepted on Paper, like F3, F9 and F13.
+- **F21, 2026-11-17, step R8: THE BLINK'S COOLDOWN IS NOT SAVED.** It lives on the Phalanx's loop, so a Phalanx that
+  unloads and loads mid-cooldown may blink at once, as its shot clock restarts. The seat's to rule if it should persist.
+- **F22, 2026-11-17, THE BAND EDGE (found by PS6 and PQ1 at the boot of `45bc33ce`), A DEFECT, FIXED IN STEP R8's
+  SECOND ROUND.** (Not `PLAN-mob-scaling.md`'s F22, which this file cites as M27 / F22.) `MobPounce.standOff` sent the
+  mount to EXACTLY the band's far edge (12), and the band counts only distances at or inside 12, so a mount that stopped
+  past its goal parked outside the band and never wound up: PS6's died 12.4459 from him after 180 ticks with no second
+  wind-up, and PQ1's pair wound up once in 599 ticks, at d=11.935, 473 ticks after it appeared. Fixed: the goal is the
+  band's middle, and the cannot-reach rule ends any wait at one period. **Fixed further after the seat's third brief:** the
+  middle's own block could still leave the mount stopped outside the band on a diagonal, so the goal is now the block
+  whose stopping box lies inside the band (`MobPounce.goal`), and the cannot-reach rule is measured by progress.
+- **F23, 2026-11-17, THE PROBE LAG (found by DB6R3 at the boot of `45bc33ce`), AN INSTRUMENT DEFECT, FIXED IN STEP R8's
+  SECOND ROUND.** `probe_pair` and `probe_shot` read their mob on its own scheduler, a tick after the step; a kill in the
+  next step runs first, and DB6R3's PAIR lines read a dead pair (`stage=none`). The reads stay on the mob's thread (every
+  reading already taken keeps its tick); the loader now REFUSES a row that kills within 2 ticks of such a probe
+  (`SelfTestStaging.probeLag`), and every shipped row that did so has a `wait: 2` before its kill: eight in
+  `GATE-dragon-shot.yml`, two in `GATE-dragon-blink.yml`, and the Skreel gate's own.
 - **F17, RESTATED 2026-11-17 (the boot of `ef770b8a`):** the calibrated offset reads `0.000 0.600 -0.400`, the derived
   0.375 × 1.6, not the 0.450 predicted. The 0.45 SH1R2 read was the shape's displacement under the old one-time
   calibration; why it was 0.45 is still unexplained. Not closed.
@@ -2187,6 +2379,24 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   first, the seed refuses a shot, the death handler returns for one, and vanilla damage is cancelled at LOWEST are pinned
   by `DragonShotWiringTest` (each killed by a mutation), which reads lines, not behaviour. **The gate's SH2-SH5, SH9 and
   SH12 are their first server reading.**
+- **CARRIED AT THE MERGE OF #203** (the seat's ruling, 2026-11-17, after the boots of `45bc33ce` and `3d93a532`):
+  - **CLOSED: THE BAND EDGE (F22).** PS6R2 read five wind-ups at exactly P + 120 to P + 600, every distance inside 8 to
+    12 (9.817 to 10.915); PS11, on a 45-degree bearing, came to rest 10.570 out and wound up at P + 120; and in Ben's
+    PQ3, four wind-ups 120 apart, 9.537 to 11.546 out.
+  - **CLOSED: THE PROBE LAG (F23),** by DB6R4: both PAIR lines read `stage=RECOVER` before the kill.
+  - **STILL CARRIED:**
+    - **F19, A DEFECT:** the Knell's teleport anchors its level search on its target's fractional feet, so a target on a
+      slab or mid-jump can fail every landing. First into the next branch that touches the Knell.
+    - **F21:** the blink cooldown is not saved across an unload.
+    - **The limits of the band proof:** it is horizontal, on open ground, and its slide is modelled (the 0.6 friction
+      INFERRED).
+    - **UNREAD:** the shield byte surviving an unload; zero damage not spending the shield.
+    - **UNREAD on a server:** the server-stop restore.
+    - **UNBUILT:** the crash-survival file.
+    - **The 13 closed manual gates that spawn live dragon mobs.**
+    - **A rule owed to `.claude/rules`, where gate predictions are described, in the next branch that touches the
+      rules** (the seat, 2026-11-17): predict damage against the HURT line, never a health figure regeneration can
+      move. PS10's and PS11's SELF lines read 302 against a predicted 300, as DB10R2 did on 2026-11-16.
 
 ## QUESTIONS FOR BEN
 
@@ -2200,8 +2410,8 @@ rework: an answered question says where its answer is, and a new one is added at
    times gear score / 100, like other custom mobs? *(Was "the blast" of the Goon; the blast is now the Phage's.)*
 4. **ANSWERED by G** (RULINGS): the blast hurts *"Only players and Summons"*. *(It was asked of the Goon's death
    blast; the Goon is retired and the answer now governs the Phage's.)*
-5. **OPEN.** Is the Skreel's spider its own mob, with its own name and health bar?
-6. **OPEN.** When one of the Skreel pair dies, should the other keep fighting as a normal mob?
+5. **ANSWERED 2026-11-17 by the accepted numbers** (RULINGS, *the Skreel's numbers*: "mount health 160", its own). Is the Skreel's spider its own mob, with its own name and health bar?
+6. **ANSWERED 2026-11-17 by the accepted text** (the rider "fights on foot as a plain melee mob"; the mount "carries on as a plain fast spider with no leap"). When one of the Skreel pair dies, should the other keep fighting as a normal mob?
 7. **ANSWERED 2026-11-17: "1. yes the first damage of any kind"** (RULINGS, *the Phalanx's shield*). *(Asked as:)* Should the Phalanx's shield block the first damage of any kind (a fall, fire), or only the first hit from a player?
 8. **REMOVED by the Knell rework** (RULINGS, the Knell; seat ruling 4). The Knell no longer reacts to arrows.
 9. **OPEN.** Inside the fight's world, what gear score should the mobs have: the End's 300, or a number the fight sets?

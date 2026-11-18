@@ -88,6 +88,7 @@ BC2B:
   - shot: bc2b
   - wait: 40
   - probe_shot: bc2b
+  - wait: 2
   - cmd: "kill @e[tag=bc2b]"
   - wait: 5
 
@@ -109,6 +110,7 @@ BC3:
   - strike_at_age: "bc3_shot 32 80"
   - wait: 20
   - probe_shot: bc3
+  - wait: 2
   - cmd: "kill @e[tag=bc3]"
   - wait: 5
 
@@ -134,7 +136,8 @@ BC4A:
 # BC4B (C4, a body the shot flies THROUGH): a husk 4 east, in the path, WITH its AI and a movement speed of 0, so it
 # cannot walk but a push still moves it (a NoAI mob never travels: LivingEntity#aiStep calls travel only when
 # isEffectiveAi, which NoAI makes false, READ). The shot never hits a mob, and its carrier never pushes it: the husk's
-# position before and after, to three places.
+# position before and after, to three places. The row kills its husk itself (step R8: its kill of bc4b never selected the
+# husk, tagged bc4bh, and BB1's clean removed it).
 BC4B:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-4 -1 -4 10 6 4"
@@ -152,6 +155,7 @@ BC4B:
   - probe_at: bc4bh
   - probe: bc4bh
   - cmd: "kill @e[tag=bc4b]"
+  - cmd: "kill @e[tag=bc4bh]"
   - wait: 5
 
 # BB1: a forced blink, every attempt the draw 90 degrees (+z) 8 blocks: the first stands, it lands 8 south of where it
