@@ -202,6 +202,22 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * AN ABILITY'S IMPLOSION THAT DRAGS (2026-11-18): {@link ImplosionDrags}, the runner the Phage's blast uses, on the
+     * origin's region. The use's predicate, as {@code BukkitCombatant#applyPull} applies it to a single pull: never the
+     * caster, never a shot's carrier, never a creative or spectator player; {@code MOBS} every other non-player,
+     * {@code PLAYERS} every other player.
+     */
+    @Override
+    public void startDrag(Vec3 origin, io.github.butterflysmp.rpg.core.shape.Implosion shape,
+                          io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Affects affects, UUID casterId) {
+        boolean players = affects == io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Affects.PLAYERS;
+        ctx.scheduler().onRegion(toLocation(origin), () -> ImplosionDrags.start(ctx, world, origin, shape,
+                l -> !l.getUniqueId().equals(casterId) && !l.getPersistentDataContainer().has(ctx.keys().mobShot)
+                        && !ImplosionFooting.exempt(l) && (l instanceof Player) == players,
+                "ability", casterId));
+    }
+
+    /**
      * The live eye and look direction, read HERE, on the thread that owns the entity -- enforced by
      * {@link Regions#requireOwned}, exactly as {@code BukkitCombatant.snapshot} is.
      *

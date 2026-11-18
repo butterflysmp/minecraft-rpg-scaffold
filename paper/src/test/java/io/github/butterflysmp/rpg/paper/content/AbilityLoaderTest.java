@@ -1212,10 +1212,11 @@ class AbilityLoaderTest {
 
     /**
      * THE SHAPE'S SECOND USE, FROM CONTENT ALONE: the test-only fixture {@code void_pull_fixture.yml} (never shipped)
-     * names the void implosion, pulls MOBS and deals no damage. Every key arrives as the shape and the use.
+     * names the void implosion, pulls MOBS and deals no damage. Every key arrives as the shape and the use. Since
+     * 2026-11-18 it DRAGS: 20 ticks at 0.28, no pull (ImplosionEffectTest runs that drag on mobs).
      */
     @Test
-    void theTestOnlyFixtureNamesTheImplosionPullsMobsAndDealsNoDamage() throws IOException {
+    void theTestOnlyFixtureNamesTheImplosionDragsMobsAndDealsNoDamage() throws IOException {
         try (var in = getClass().getResourceAsStream("/fixtures/abilities/void_pull_fixture.yml")) {
             assertNotNull(in, "the fixture is on the TEST classpath");
             Files.write(dir.resolve("void_pull_fixture.yml"), in.readAllBytes());
@@ -1224,8 +1225,8 @@ class AbilityLoaderTest {
 
         var im = (EffectSpec.Implosion) load().find("void_pull_fixture").orElseThrow().onHit().get(0);
 
-        assertEquals(new Implosion(5.0, Implosion.Falloff.VANILLA_EXPLOSION, 1.0, 0.0, Implosion.Resistance.KNOCKBACK),
-                im.shape());
+        assertEquals(new Implosion(5.0, Implosion.Falloff.VANILLA_EXPLOSION, 0.0, 0.0, Implosion.Resistance.KNOCKBACK,
+                20, 0.28), im.shape());
         assertEquals(EffectSpec.Affects.MOBS, im.affects());
         assertEquals("void_implosion", im.visual());
         assertNull(im.damage(), "no damage authored, none dealt");
@@ -1265,10 +1266,18 @@ class AbilityLoaderTest {
                 + "    reach: 3\n    pull: 1\n    affects: mobs\n    resistance: armour\n");
         write("noreach.yml", "id: noreach\n" + head + "    pull: 1\n    affects: mobs\n");
         write("noaffects.yml", "id: noaffects\n" + head + "    reach: 3\n    pull: 1\n");
+        // Since 2026-11-18: a drag that still pulls, a drag with no drag, a drag on a single pull, a half tick.
+        write("dragpulls.yml", "id: dragpulls\n" + head
+                + "    reach: 3\n    pull: 1\n    affects: mobs\n    duration_ticks: 20\n    drag: 0.28\n");
+        write("dragnone.yml", "id: dragnone\n" + head + "    reach: 3\n    pull: 0\n    affects: mobs\n    duration_ticks: 20\n");
+        write("dragone.yml", "id: dragone\n" + head + "    reach: 3\n    pull: 1\n    affects: mobs\n    drag: 0.28\n");
+        write("draghalf.yml", "id: draghalf\n" + head
+                + "    reach: 3\n    pull: 0\n    affects: mobs\n    duration_ticks: 20.5\n    drag: 0.28\n");
 
         AbilityRegistry abilities = load();
 
-        for (String id : List.of("badaffects", "badfalloff", "badres", "noreach", "noaffects")) {
+        for (String id : List.of("badaffects", "badfalloff", "badres", "noreach", "noaffects", "dragpulls", "dragnone",
+                "dragone", "draghalf")) {
             assertTrue(abilities.find(id).isEmpty(), id);
             assertTrue(warningText().contains(id + ".yml"), id + ": " + warningText());
         }

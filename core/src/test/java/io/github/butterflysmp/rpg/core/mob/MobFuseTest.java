@@ -107,6 +107,34 @@ class MobFuseTest {
         assertEquals(MobFuse.Event.DETONATE, tick(f, 2.0, true), "22 ticks after the restart, from 8");
     }
 
+    /**
+     * THE INSTRUMENT'S LIGHT (GATE-implosion-drag.md's Part D row, 2026-11-18): a down fuse lit with NO target in
+     * reach, then left lit however far its target is, out of sight or gone, and it detonates 30 ticks after it was lit,
+     * as a START does.
+     */
+    @Test
+    void aLitFuseIgnoresItsTargetAndDetonatesThirtyTicksLater() {
+        MobFuse f = new MobFuse();
+        assertTrue(f.light(), "a down fuse lights");
+        assertTrue(f.fusing());
+        assertTrue(f.forced());
+        for (int t = 1; t < FUSE; t++) {
+            assertEquals(MobFuse.Event.NONE, f.tick(OptionalDouble.empty(), false, TRIGGER, CANCEL, FUSE),
+                    "no target, no sight: still no reset at " + t);
+        }
+        assertEquals(MobFuse.Event.DETONATE, f.tick(OptionalDouble.of(50.0), false, TRIGGER, CANCEL, FUSE));
+    }
+
+    /** Lighting a fuse already lit changes nothing that shows, but holds it lit from then on. */
+    @Test
+    void lightingALitFuseHoldsItWithoutANewStart() {
+        MobFuse f = new MobFuse();
+        assertEquals(MobFuse.Event.START, tick(f, 2.0, true));
+        assertFalse(f.light(), "already lit: no new start to show");
+        assertTrue(f.forced());
+        assertEquals(MobFuse.Event.NONE, tick(f, 50.0, true), "beyond the cancel, and no reset");
+    }
+
     @Test
     void theSwellNeverGoesBelowZero() {
         MobFuse f = new MobFuse();

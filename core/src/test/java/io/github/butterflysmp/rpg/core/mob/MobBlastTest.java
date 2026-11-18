@@ -249,6 +249,45 @@ class MobBlastTest {
                 .isEmpty());
     }
 
+    /**
+     * SINCE 2026-11-18 THE PHAGE DRAGS: its blast's implosion carries the duration and the drag, each stage at its own
+     * reach; the nine-number form stays a single pull.
+     */
+    @Test
+    void aDraggingBlastsImplosionCarriesItsDurationAndDragAtEveryStage() {
+        MobBlast drag = new MobBlast(StagedDistance.byHeight(6), StagedDistance.byHeight(3),
+                StagedDistance.byHeight(7), 30, 60, 150, 0.0, 0.0, "void_implosion", 20, 0.28);
+        for (int stage = 1; stage <= 5; stage++) {
+            Implosion s = drag.implosion(stage, STAGES);
+            assertEquals(20, s.durationTicks(), "stage " + stage);
+            assertEquals(0.28, s.drag(), 0.0, "stage " + stage);
+            assertTrue(s.drags());
+            assertEquals(drag.reachAt(stage, STAGES), s.reach(), 0.0, "stage " + stage + ": its own reach");
+        }
+        assertEquals(1, BLAST.implosion(5, STAGES).durationTicks(), "the nine-number blast is a single pull");
+        assertEquals(0.0, BLAST.implosion(5, STAGES).drag(), 0.0);
+    }
+
+    /** The shape's rules for a drag are refused AT LOAD, named as blast keys. */
+    @Test
+    void aDragWithAPullOrALiftOrNoDurationIsRefusedAsABlastKey() {
+        var r = StagedDistance.byHeight(6);
+        var t = StagedDistance.byHeight(3);
+        var c = StagedDistance.byHeight(7);
+        String pull = assertThrows(IllegalArgumentException.class,
+                () -> new MobBlast(r, t, c, 30, 60, 150, 1.25, 0.0, "v", 20, 0.28)).getMessage();
+        assertTrue(pull.contains("blast.pull must be 0"), pull);
+        String lift = assertThrows(IllegalArgumentException.class,
+                () -> new MobBlast(r, t, c, 30, 60, 150, 0.0, 1.0, "v", 20, 0.28)).getMessage();
+        assertTrue(lift.contains("blast.lift must be 0"), lift);
+        String one = assertThrows(IllegalArgumentException.class,
+                () -> new MobBlast(r, t, c, 30, 60, 150, 1.25, 1.0, "v", 1, 0.28)).getMessage();
+        assertTrue(one.contains("blast.drag"), one);
+        String zero = assertThrows(IllegalArgumentException.class,
+                () -> new MobBlast(r, t, c, 30, 60, 150, 0.0, 0.0, "v", 0, 0.0)).getMessage();
+        assertTrue(zero.contains("blast.duration_ticks"), zero);
+    }
+
     /** The falloff the BLAST line prints is the shape's, one home. */
     @Test
     void theBlastsFalloffIsTheShapesVanillaShare() {

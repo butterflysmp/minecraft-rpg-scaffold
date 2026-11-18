@@ -11,6 +11,7 @@ import io.github.butterflysmp.rpg.core.mob.MobScaling;
 import io.github.butterflysmp.rpg.core.shape.Implosion;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
+import io.github.butterflysmp.rpg.paper.adapter.ImplosionDrags;
 import io.github.butterflysmp.rpg.paper.adapter.ImplosionFooting;
 import io.github.butterflysmp.rpg.paper.adapter.LiveTargets;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
@@ -157,10 +158,21 @@ public final class MobBlaster {
 
         new PaperCombatWorld(world, adapters).present(vec(at), blast.visual(), r);
 
-        adapters.log().info(head(mobId, phageId, stage, gs, base, r, blast.pull(), blast.lift(), blast.visual())
+        adapters.log().info(head(mobId, phageId, stage, gs, base, r, blast.pull(), blast.lift(), blast.drag(),
+                blast.durationTicks(), blast.visual())
                 + " victims=" + reach.victims().size() + " " + names(reach.victims(), bodies, base, pulls, r, adapters)
                 + " spared=" + reach.spared().size() + " "
                 + names(reach.spared(), bodies, Double.NaN, Map.of(), r, adapters));
+
+        // THE DRAG (2026-11-18; Ben's four yeses): the second after the blast, from the Phage's feet, on every player
+        // it is hostile to, found afresh each tick (ImplosionDrags). The damage above was the blast's instant, once.
+        // Its tick 0 runs here, on the Phage's thread, which owns the origin; the Phage itself is removed below and is
+        // never one of its own victims.
+        if (shape.drags()) {
+            ImplosionDrags.start(adapters, world, vec(at), shape, l -> !l.getUniqueId().equals(phageId)
+                    && MobHostility.hostileTo(l instanceof Player ? MobHostility.Side.PLAYER : MobHostility.Side.MOB,
+                    ImplosionFooting.exempt(l)), "phage", phageId);
+        }
 
         MobGrower.onDeath(phage, mobs, elements, adapters.keys(), adapters.stats(), adapters.scheduler(),
                 adapters.log());
@@ -192,12 +204,13 @@ public final class MobBlaster {
 
     /**
      * The BLAST line's head: the mob, its stage and gear score, the zero-distance damage, the stage's reach, the pull
-     * and the lift, the look.
+     * and the lift, the drag and its duration in ticks (2026-11-18), the look.
      */
     static String head(String mobId, UUID id, int stage, int gs, double base, double reach, double pull, double lift,
-                       String visual) {
+                       double drag, int duration, String visual) {
         return "BLAST mob=" + mobId + " id=" + id + " stage=" + stage + " gs=" + gs
-                + String.format(Locale.ROOT, " base=%.3f reach=%.2f pull=%.2f lift=%.2f", base, reach, pull, lift)
+                + String.format(Locale.ROOT, " base=%.3f reach=%.2f pull=%.2f lift=%.2f drag=%.3f duration=%d", base,
+                reach, pull, lift, drag, duration)
                 + " visual=" + visual;
     }
 

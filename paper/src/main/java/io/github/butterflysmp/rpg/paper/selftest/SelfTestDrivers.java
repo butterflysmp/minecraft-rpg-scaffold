@@ -112,6 +112,12 @@ final class SelfTestDrivers {
             case DIG -> dig(p);
             case MINING_TRACE -> miningTrace(p);
             case NOTE -> { run.log("NOTE " + a); yield Optional.empty(); }
+            case TELL -> {
+                p.sendMessage(net.kyori.adventure.text.Component.text(a,
+                        net.kyori.adventure.text.format.NamedTextColor.GOLD));
+                run.log("TELL " + a);
+                yield Optional.empty();
+            }
             case SPAWN -> spawn(p, a);
             case ASK -> Optional.empty();   // the run puts the question and waits; it never reaches a driver
             case DIFFICULTY -> difficulty(p, a);
@@ -121,6 +127,11 @@ final class SelfTestDrivers {
             // ours, so the backstop does not refuse it.
             case DETONATE -> creepers(p, a, "detonate", c -> run.fuser().detonate(c));
             case IGNITE -> creepers(p, a, "ignite", c -> c.ignite());
+            // Our own fuse, lit by the instrument and held lit (the Part D row of GATE-implosion-drag.md): it shows the
+            // swell to every viewer and blows by the fuse's own end, wherever its target stands.
+            case LIGHT -> creepers(p, a, "light", c -> {
+                if (!run.fuser().light(c)) run.log("DRIVE light tag=" + a + " " + c.getUniqueId() + " no fuse of ours");
+            });
             case PROBE_FUSE -> creepers(p, a, null, c -> run.log(SelfTestBlast.fuseLine(a, c.getUniqueId(),
                     run.fuser().state(c.getUniqueId()), c.isIgnited())));
             case AWAIT_FUSE -> Optional.empty();   // the run polls it; it never reaches a driver

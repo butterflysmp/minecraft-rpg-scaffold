@@ -33,10 +33,17 @@ import java.util.UUID;
  *   <li>{@code pull}: a MULTIPLIER of the old push's HORIZONTAL part, toward the Phage: 1.25.</li>
  *   <li>{@code lift}: a MULTIPLIER of the old push's VERTICAL part: 1, the push's own lift (the seat's ruling 2).</li>
  *   <li>{@code visual}: the content visual drawn at the stage's reach in place of vanilla's puff ({@code void_implosion}).</li>
+ *   <li>{@code durationTicks}: TICKS the implosion acts for after the blast ({@link Implosion#durationTicks}): 1 is the
+ *       single pull, 20 the Phage's DRAG since 2026-11-18 (Ben's four yeses: "for 1 second after the blast").</li>
+ *   <li>{@code drag}: BLOCKS PER TICK added toward the Phage on each tick of the drag, at its feet, times
+ *       {@code 1 - d / reach} ({@link Implosion#drag}). The Phage's 0.28, CHOSEN (2026-11-18) to meet the seat's four
+ *       outcomes against the jar's own walking and sprinting (the gate lists it for Ben). With a drag, {@code pull} and
+ *       {@code lift} are 0: the seat's change, told to Ben, "a steady drag needs no toss".</li>
  * </ul>
  */
 public record MobBlast(StagedDistance reach, StagedDistance trigger, StagedDistance cancel, int fuseTicks,
-                       double firstDamage, double lastDamage, double pull, double lift, String visual) {
+                       double firstDamage, double lastDamage, double pull, double lift, String visual,
+                       int durationTicks, double drag) {
 
     public MobBlast {
         if (reach == null) throw new IllegalArgumentException("blast.reach is required");
@@ -54,6 +61,19 @@ public record MobBlast(StagedDistance reach, StagedDistance trigger, StagedDista
                     + lift);
         }
         if (visual == null || visual.isBlank()) throw new IllegalArgumentException("blast.visual is required");
+        // The shape's own rules for a duration and a drag, refused by name here at load, not at the first blast.
+        try {
+            new Implosion(1.0, Implosion.Falloff.VANILLA_EXPLOSION, pull, lift, Implosion.Resistance.NONE,
+                    durationTicks, drag);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("blast: " + e.getMessage().replace("implosion ", "blast."), e);
+        }
+    }
+
+    /** A SINGLE-PULL blast, as before 2026-11-18: a duration of 1 tick and no drag. */
+    public MobBlast(StagedDistance reach, StagedDistance trigger, StagedDistance cancel, int fuseTicks,
+                    double firstDamage, double lastDamage, double pull, double lift, String visual) {
+        this(reach, trigger, cancel, fuseTicks, firstDamage, lastDamage, pull, lift, visual, 1, 0.0);
     }
 
     private static void requireDamage(String name, double value) {
@@ -93,7 +113,7 @@ public record MobBlast(StagedDistance reach, StagedDistance trigger, StagedDista
      */
     public Implosion implosion(int stage, MobStages stages) {
         return new Implosion(reachAt(stage, stages), Implosion.Falloff.VANILLA_EXPLOSION, pull, lift,
-                Implosion.Resistance.EXPLOSION_KNOCKBACK);
+                Implosion.Resistance.EXPLOSION_KNOCKBACK, durationTicks, drag);
     }
 
     /** The AUTHORED damage at {@code stage}, before gear score: linear from the first stage's to the last's. */

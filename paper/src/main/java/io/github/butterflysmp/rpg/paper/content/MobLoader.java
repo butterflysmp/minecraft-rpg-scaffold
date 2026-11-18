@@ -436,12 +436,14 @@ public final class MobLoader {
                     + " this file is a stale copy, refresh it from the jar");
         }
         for (String key : List.of("reach", "trigger", "cancel", "damage.first", "damage.last", "fuse_ticks", "pull",
-                "lift", "visual")) {
+                "lift", "visual", "duration_ticks", "drag")) {
             if (!b.contains(key)) throw new IllegalArgumentException("blast." + key + " is required");
         }
+        // duration_ticks and drag (2026-11-18) are REQUIRED like every other key: a data-folder copy from before the
+        // drag lacks both and is refused by name, so it is refreshed rather than loaded as a single pull.
         return new MobBlast(staged(b, "reach"), staged(b, "trigger"), staged(b, "cancel"), b.getInt("fuse_ticks"),
                 b.getDouble("damage.first"), b.getDouble("damage.last"), b.getDouble("pull"), b.getDouble("lift"),
-                b.getString("visual"));
+                b.getString("visual"), b.getInt("duration_ticks"), b.getDouble("drag"));
     }
 
     /**

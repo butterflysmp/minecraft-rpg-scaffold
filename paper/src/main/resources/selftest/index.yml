@@ -17,6 +17,8 @@
 # THEN, Ben's second bell (still KNELL 4): BOTH are paired with docs/gates/GATE-dragon-knell-4.md (the beam rows print
 # the new sound lines).
 # THEN, the shot in the middle (KNELL 5): BOTH are paired with docs/gates/GATE-dragon-knell-5.md.
+# implosion-drag (the drag, 2026-11-18) is paired with its OWN gate file, docs/gates/GATE-implosion-drag.md, by the rule.
+# Every dragon-blast row that blows a Phage moved there; dragon-blast stays paired with GATE-void-implosion.md.
 gates:
   - melee-cell
   - level
@@ -38,3 +40,4 @@ gates:
   - dragon-shot
   - dragon-blink
   - dragon-skreel
+  - implosion-drag

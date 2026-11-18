@@ -14,8 +14,10 @@ on_hit:
   - type: implosion
     reach: 5                      # BLOCKS, origin to feet, inclusive
     falloff: vanilla_explosion    # the share of `damage` at distance d; inert here, no damage is authored
-    pull: 1.0                     # a MULTIPLIER of vanilla's explosion push, toward the origin
+    pull: 0                       # a single pull's MULTIPLIER of vanilla's push: 0, since this one drags
     resistance: knockback         # the attribute that cuts it: explosion_knockback | knockback | none
     affects: mobs                 # or players
-    lift: 0                       # a multiplier of the push's lift: 0 keeps them on the ground
+    lift: 0                       # a multiplier of the push's lift: a drag has none
+    duration_ticks: 20            # 2026-11-18: TICKS it drags for after it lands (1 would be a single pull)
+    drag: 0.28                    # BLOCKS PER TICK added toward the origin each tick, at the origin, x (1 - d / reach)
     visual: void_implosion        # drawn at the reach

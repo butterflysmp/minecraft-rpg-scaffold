@@ -226,6 +226,19 @@ public record Scenario(String gate, String row, List<Step> steps) {
         POUNCE,
         /** {@code <tag>}: one {@code PAIR ...} line for each tagged mob: what it rides or carries, the cycle's stage, its speed (step R8). */
         PROBE_PAIR,
+        /**
+         * {@code <text>}: show the text to the player in GOLD chat, the ASK prompt's colour, and log
+         * {@code TELL <text>}. It does not wait. A Ben row says what to do with it BEFORE the thing it asks about
+         * (GATE-implosion-drag.md, 2026-11-18: watch that Phage; walk away from the next one).
+         */
+        TELL,
+        /**
+         * {@code <tag>}: LIGHT each tagged Phage's own fuse now, however far its target is, and keep it lit to the blast
+         * (the instrument's forced fuse, {@code MobFuse#light}; GATE-implosion-drag.md's Part D row). Its START shows
+         * as one {@code SWELL ... reason=light} line, its end as the usual {@code FUSED}; nothing about its distance
+         * lights or resets it. Logs {@code DRIVE light tag=<t> <uuid>}, or why it did not take.
+         */
+        LIGHT,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

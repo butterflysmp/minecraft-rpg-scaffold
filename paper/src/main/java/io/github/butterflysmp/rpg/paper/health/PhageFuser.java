@@ -198,6 +198,22 @@ public final class PhageFuser {
         }
     }
 
+    /**
+     * THE INSTRUMENT'S LIGHT (2026-11-18; {@link MobFuse#light}): light this Phage's fuse now and hold it to the blast,
+     * shown to every viewer as a START is, logged {@code SWELL ... reason=light} with no distance. It then blows by the
+     * fuse's own end, the usual {@code FUSED} and {@code detonate}. A frozen Phage's fuse runs too: the loop does not ask
+     * for its AI. Must run on the creeper's thread. False when it has no fuse of ours.
+     */
+    public boolean light(Creeper creeper) {
+        Active a = active.get(creeper.getUniqueId());
+        if (a == null) return false;
+        if (a.fuse.light()) {
+            creeper.getPathfinder().stopPathfinding();
+            show(a, 1, "light", OptionalDouble.empty(), Double.NaN, Double.NaN);
+        }
+        return true;
+    }
+
     /** The fuse of one live Phage, for the instrument: swell, direction and the fuse's ticks; empty when none. */
     public java.util.Optional<int[]> state(UUID id) {
         Active a = active.get(id);

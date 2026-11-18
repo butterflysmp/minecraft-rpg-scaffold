@@ -19,12 +19,23 @@ class MobBlastLineTest {
     private static final UUID BEN = UUID.fromString("b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5");
     private static final UUID CHILD = UUID.fromString("50302ad8-568e-4e27-9496-ff7666f001fc");
 
-    /** The head names the stage's reach, the pull and the lift multipliers, and the visual. */
+    /**
+     * The head names the stage's reach, the pull and the lift multipliers, the DRAG and its DURATION (since 2026-11-18),
+     * and the visual. Every value differs from every other, so a transposition is red.
+     */
     @Test
-    void theHeadNamesTheStagesReachThePullTheLiftAndTheVisual() {
+    void theHeadNamesTheStagesReachThePullTheLiftTheDragItsDurationAndTheVisual() {
         assertEquals("BLAST mob=phage id=" + PHAGE + " stage=1 gs=100 base=60.000 reach=2.00 pull=1.25 lift=1.00"
-                        + " visual=void_implosion",
-                MobBlaster.head("phage", PHAGE, 1, 100, 60.0, 2.0, 1.25, 1.0, "void_implosion"));
+                        + " drag=0.280 duration=20 visual=void_implosion",
+                MobBlaster.head("phage", PHAGE, 1, 100, 60.0, 2.0, 1.25, 1.0, 0.28, 20, "void_implosion"));
+    }
+
+    /** The Phage's own head since 2026-11-18: no pull, no lift, a 20-tick drag of 0.28. */
+    @Test
+    void thePhagesHeadNowShowsNoPullNoLiftAndItsDrag() {
+        assertEquals("BLAST mob=phage id=" + PHAGE + " stage=5 gs=100 base=150.000 reach=6.00 pull=0.00 lift=0.00"
+                        + " drag=0.280 duration=20 visual=void_implosion",
+                MobBlaster.head("phage", PHAGE, 5, 100, 150.0, 6.0, 0.0, 0.0, 0.28, 20, "void_implosion"));
     }
 
     /**

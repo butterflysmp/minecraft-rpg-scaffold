@@ -180,6 +180,17 @@ public interface CombatWorld {
     }
 
     /**
+     * START AN IMPLOSION'S DRAG at {@code origin} (2026-11-18; {@code shape.drags()}): for the shape's duration the world
+     * finds, each tick, every combatant {@code affects} names near the origin (never {@code casterId}; never a creative
+     * or spectator player, a shot's carrier, or anything else our hostility rules exempt), reads each one's footing on
+     * the thread that owns it, and runs core's {@link io.github.butterflysmp.rpg.core.shape.ImplosionDrag} over them,
+     * setting each push's velocity. The drag is point work at the origin: the world's clean ends it. Abstract on
+     * purpose, like {@link CombatantHandle#applyPull}: a new port must decide.
+     */
+    void startDrag(Vec3 origin, io.github.butterflysmp.rpg.core.shape.Implosion shape,
+                   io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Affects affects, UUID casterId);
+
+    /**
      * Draw a named visual ALONG the segment from {@code from} to {@code to}, rather than at a
      * point. A beam.
      *

@@ -359,26 +359,34 @@ class MobLoaderTest {
 
     /** The fuse's distances by stage (the void implosion's Part C): a number is the last stage's, scaled by height. */
     private static MobBlast blastOf(double reach, double trigger, double cancel, int fuse, double first, double last,
-                                    double pull, double lift, String visual) {
+                                    double pull, double lift, String visual, int duration, double drag) {
         return new MobBlast(StagedDistance.byHeight(reach), StagedDistance.byHeight(trigger),
-                StagedDistance.byHeight(cancel), fuse, first, last, pull, lift, visual);
+                StagedDistance.byHeight(cancel), fuse, first, last, pull, lift, visual, duration, drag);
     }
 
     /**
      * The blast's fields ARRIVE from content (the pull, the lift and the visual since the void implosion; the trigger
-     * and the cancel, and every distance by stage, since its Part C), and a file without the block has none.
+     * and the cancel, and every distance by stage, since its Part C; the duration and the drag since 2026-11-18), and a
+     * file without the block has none. A single pull (duration 1, drag 0) and a drag (pull and lift 0) both arrive.
      */
     @Test
     void theBlastBlockArrives() throws IOException {
         write("phage.yml", "base_entity: creeper\n" + STAGES
                 + "blast:\n  reach: 4.5\n  trigger: 2.5\n  cancel: 5.5\n  damage: { first: 11, last: 77 }\n"
-                + "  fuse_ticks: 44\n  pull: 0.75\n  lift: 0.5\n  visual: void_implosion\n");
+                + "  fuse_ticks: 44\n  pull: 0.75\n  lift: 0.5\n  visual: void_implosion\n  duration_ticks: 1\n"
+                + "  drag: 0\n");
+        write("dragger.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 4.5\n  trigger: 2.5\n  cancel: 5.5\n  damage: { first: 11, last: 77 }\n"
+                + "  fuse_ticks: 44\n  pull: 0\n  lift: 0\n  visual: void_implosion\n  duration_ticks: 17\n"
+                + "  drag: 0.33\n");
         write("plain.yml", "base_entity: creeper\n" + STAGES);
 
         MobRegistry mobs = load();
 
-        assertEquals(blastOf(4.5, 2.5, 5.5, 44, 11, 77, 0.75, 0.5, "void_implosion"),
+        assertEquals(blastOf(4.5, 2.5, 5.5, 44, 11, 77, 0.75, 0.5, "void_implosion", 1, 0.0),
                 mobs.find("phage").orElseThrow().blast());
+        assertEquals(blastOf(4.5, 2.5, 5.5, 44, 11, 77, 0.0, 0.0, "void_implosion", 17, 0.33),
+                mobs.find("dragger").orElseThrow().blast());
         assertNull(mobs.find("plain").orElseThrow().blast(), "no blast block, no blast");
         assertTrue(warnings.isEmpty(), warningText());
     }
@@ -391,7 +399,8 @@ class MobLoaderTest {
     void aDistanceAuthoredAsFirstAndLastArrivesLinear() throws IOException {
         write("phage.yml", "base_entity: creeper\n" + STAGES
                 + "blast:\n  reach: { first: 1.5, last: 6 }\n  trigger: 3\n  cancel: { first: 3, last: 7 }\n"
-                + "  damage: { first: 60, last: 150 }\n  fuse_ticks: 30\n  pull: 1.25\n  lift: 1\n  visual: v\n");
+                + "  damage: { first: 60, last: 150 }\n  fuse_ticks: 30\n  pull: 1.25\n  lift: 1\n  visual: v\n"
+                + "  duration_ticks: 1\n  drag: 0\n");
 
         MobBlast b = load().find("phage").orElseThrow().blast();
 
@@ -414,27 +423,36 @@ class MobLoaderTest {
         String reach = "  reach: 3\n";
         String fuse = "  trigger: 1.5\n  cancel: 3.5\n";
         String damage = "  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n";
-        String rest = "  pull: 1\n  lift: 1\n  visual: v\n";
+        String last = "  duration_ticks: 1\n  drag: 0\n";
+        String rest = "  pull: 1\n  lift: 1\n  visual: v\n" + last;
         write("unstaged.yml", "base_entity: creeper\nmax_health: 80\nblast:\n" + reach + fuse + damage + rest);
         write("nolast.yml", head + reach + fuse + "  damage: { first: 20 }\n  fuse_ticks: 30\n" + rest);
         write("noreach.yml", head + fuse + damage + rest);
         write("notrigger.yml", head + reach + "  cancel: 3.5\n" + damage + rest);
         write("nocancel.yml", head + reach + "  trigger: 1.5\n" + damage + rest);
         write("nofuse.yml", head + reach + fuse + "  damage: { first: 20, last: 50 }\n  fuse_ticks: 0\n" + rest);
-        write("nopull.yml", head + reach + fuse + damage + "  lift: 1\n  visual: v\n");
-        write("negpull.yml", head + reach + fuse + damage + "  pull: -1\n  lift: 1\n  visual: v\n");
-        write("nolift.yml", head + reach + fuse + damage + "  pull: 1\n  visual: v\n");
-        write("novisual.yml", head + reach + fuse + damage + "  pull: 1\n  lift: 1\n");
+        write("nopull.yml", head + reach + fuse + damage + "  lift: 1\n  visual: v\n" + last);
+        write("negpull.yml", head + reach + fuse + damage + "  pull: -1\n  lift: 1\n  visual: v\n" + last);
+        write("nolift.yml", head + reach + fuse + damage + "  pull: 1\n  visual: v\n" + last);
+        write("novisual.yml", head + reach + fuse + damage + "  pull: 1\n  lift: 1\n" + last);
         write("inverted.yml", head + reach + "  trigger: 3.5\n  cancel: 1.5\n" + damage + rest);
         write("halfstaged.yml", head + "  reach: { first: 1 }\n" + fuse + damage + rest);
         write("staleknock.yml", head + reach + fuse + damage + "  knockback: 1\n" + rest);
+        // Since 2026-11-18: a copy from before the drag (no duration, no drag), and a drag that still pulls or lifts.
+        write("nodrag.yml", head + reach + fuse + damage + "  pull: 1\n  lift: 1\n  visual: v\n");
+        write("nodragkey.yml", head + reach + fuse + damage + "  pull: 1\n  lift: 1\n  visual: v\n  duration_ticks: 1\n");
+        write("dragpulls.yml", head + reach + fuse + damage + "  pull: 1\n  lift: 0\n  visual: v\n"
+                + "  duration_ticks: 20\n  drag: 0.28\n");
+        write("draglifts.yml", head + reach + fuse + damage + "  pull: 0\n  lift: 1\n  visual: v\n"
+                + "  duration_ticks: 20\n  drag: 0.28\n");
 
         MobRegistry mobs = load();
 
         assertEquals(0, mobs.size());
         for (String f : List.of("unstaged.yml", "nolast.yml", "noreach.yml", "notrigger.yml", "nocancel.yml",
                 "nofuse.yml", "nopull.yml", "negpull.yml", "nolift.yml", "novisual.yml", "inverted.yml",
-                "halfstaged.yml", "staleknock.yml")) {
+                "halfstaged.yml", "staleknock.yml", "nodrag.yml", "nodragkey.yml", "dragpulls.yml",
+                "draglifts.yml")) {
             assertTrue(warningText().contains(f), f + ": " + warningText());
         }
     }
@@ -442,16 +460,16 @@ class MobLoaderTest {
     /**
      * THE PHAGE WE SHIP: vanilla's creeper numbers for its last stage (reach 6, trigger 3, cancel 7, fuse 30), each
      * earlier stage's distances by its height (Ben: "The Large phage being the current distances and scaling everything
-     * down to the small phage"; the seat's ruling 1 on #204); the 60 and 150; a PULL at 1.25 x the push's horizontal
-     * with the push's own LIFT (the seat's ruling 2); drawn as void_implosion.
+     * down to the small phage"; the seat's ruling 1 on #204); the 60 and 150; drawn as void_implosion. SINCE
+     * 2026-11-18 IT DRAGS (Ben's four yeses): 20 ticks at 0.28 blocks a tick, no pull and no lift (the seat's change).
      */
     @Test
-    void theBundledPhageScalesItsDistancesByHeightAndPullsWithThePushsLift() throws IOException {
+    void theBundledPhageScalesItsDistancesByHeightAndDragsForASecond() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/phage.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("phage.yml"), in.readAllBytes());
         }
-        assertEquals(blastOf(6, 3, 7, 30, 60, 150, 1.25, 1.0, "void_implosion"),
+        assertEquals(blastOf(6, 3, 7, 30, 60, 150, 0.0, 0.0, "void_implosion", 20, 0.28),
                 load().find("phage").orElseThrow().blast());
         assertTrue(warnings.isEmpty(), warningText());
     }

@@ -45,8 +45,23 @@ import java.util.Optional;
  * victim's own (a player's keys, a mob's AI); and for a victim ALREADY IN THE AIR, whose height above any floor is
  * unknown, the slowest decay any flight can have, air's {@code 0.91} forever, so its cap is the tightest. <b>That a
  * player's CLIENT runs the same travel is INFERRED</b> (the client's {@code LivingEntity} is the same class).
+ *
+ * <p><b>SINCE 2026-11-18 IT CAN LAST</b> (Ben's four yeses: "it drags everything in reach steadily toward the centre
+ * for 1 second after the blast"). Two more quantities:
+ * <ul>
+ *   <li>{@code durationTicks}: TICKS the shape acts for. <b>1 is the single pull above</b>, unchanged: {@code pull},
+ *       {@code lift} and the rest-point cap, once. <b>2 or more is a DRAG</b> ({@link ImplosionDrag}): the pull and the
+ *       lift must then be 0, and {@code drag} acts every tick for that many ticks after the blast.</li>
+ *   <li>{@code drag}: BLOCKS PER TICK of horizontal velocity ADDED toward the origin on each tick of the drag, at the
+ *       origin itself; at distance d it is {@code drag x (1 - d / reach) x (1 - resistance)}, the old push's own linear
+ *       curve ({@link #factor}), so it fades to nothing at the reach. Where the single pull's {@code pull} scaled a
+ *       velocity given ONCE ({@code pull x (1 - d / reach) x h / len}), the drag is a velocity given EVERY tick and
+ *       ADDED to what the victim already carries, so it accumulates like a force and a victim's own walking or
+ *       sprinting adds to it, against it ({@link #dragStep}). 0 for a single pull.</li>
+ * </ul>
  */
-public record Implosion(double reach, Falloff falloff, double pull, double lift, Resistance resistance) {
+public record Implosion(double reach, Falloff falloff, double pull, double lift, Resistance resistance,
+                        int durationTicks, double drag) {
 
     public enum Falloff { VANILLA_EXPLOSION, FLAT }
 
@@ -94,7 +109,51 @@ public record Implosion(double reach, Falloff falloff, double pull, double lift,
         }
         if (falloff == null) throw new IllegalArgumentException("implosion falloff is required");
         if (resistance == null) throw new IllegalArgumentException("implosion resistance is required");
+        if (durationTicks < 1) {
+            throw new IllegalArgumentException("implosion duration_ticks must be 1 or more, was " + durationTicks);
+        }
+        if (!(drag >= 0 && Double.isFinite(drag))) {
+            throw new IllegalArgumentException("implosion drag must be 0 or more (blocks per tick), was " + drag);
+        }
+        if (durationTicks == 1 && drag > 0) {
+            throw new IllegalArgumentException("implosion drag " + drag + " needs duration_ticks of 2 or more;"
+                    + " a duration of 1 is a single pull, which uses pull");
+        }
+        if (durationTicks > 1) {
+            // A drag's pull and lift would be values authored and read by nobody: refused by name instead.
+            if (!(drag > 0)) {
+                throw new IllegalArgumentException("implosion duration_ticks " + durationTicks + " needs a drag above 0");
+            }
+            if (pull != 0) {
+                throw new IllegalArgumentException("implosion pull must be 0 when duration_ticks is " + durationTicks
+                        + " (a drag uses drag, not pull), was " + pull);
+            }
+            if (lift != 0) {
+                throw new IllegalArgumentException("implosion lift must be 0 when duration_ticks is " + durationTicks
+                        + " (a drag has no lift), was " + lift);
+            }
+        }
     }
+
+    /** A SINGLE PULL, as the shape was before 2026-11-18: a duration of 1 tick and no drag. */
+    public Implosion(double reach, Falloff falloff, double pull, double lift, Resistance resistance) {
+        this(reach, falloff, pull, lift, resistance, 1, 0.0);
+    }
+
+    /** True when the shape acts for more than one tick ({@link ImplosionDrag}). */
+    public boolean drags() {
+        return durationTicks > 1;
+    }
+
+    /**
+     * One tick of a drag on one victim. {@code distance} feet to feet and {@code horizontal} the cap's; {@code strength}
+     * the drag's add before the margin ({@code drag x (1 - d / reach) x (1 - resistance)}); {@code toward} the victim's
+     * own momentum toward the origin; {@code cap} the speed toward the origin whose slide ends at the margin;
+     * {@code added} the add after the margin; {@code held} whether the margin limited it; {@code add} the add as a
+     * horizontal vector toward the origin.
+     */
+    public record DragStep(double distance, double horizontal, double strength, double toward, double cap,
+                           double added, boolean held, Vec3 add) {}
 
     /**
      * What the world says about one victim, read on its own thread: its FEET, its EYE HEIGHT above them, whether it is
@@ -227,5 +286,36 @@ public record Implosion(double reach, Falloff falloff, double pull, double lift,
         double hz = horizontal < 1.0E-5F ? 0.0 : dz / horizontal * applied;
         return Optional.of(new Pull(distance, horizontal, share(distance), k, pushH, pushV, strength, vertical,
                 f.resistance(), f.onGround(), tf, cap, applied, capped, apex(vertical), new Vec3(hx, vertical, hz)));
+    }
+
+    /**
+     * THE DRAG'S RULE for one victim on one tick: empty beyond the reach. Otherwise the add, HORIZONTAL, toward the
+     * origin: {@code strength = drag x (1 - d / reach) x (1 - resistance)}, LIMITED so the victim is never carried past
+     * the margin (the seat's rule, and Ben's 4: "it still never carries you past the centre; if you reach it you are
+     * held there"): the speed toward the origin it may end the tick with is {@code cap = max(0, h - MARGIN) /
+     * travelFactor(0, ...)}, the speed whose slide on its own footing comes to rest at the margin, so the add is
+     * {@code clamp(cap - toward, 0, strength)}, {@code toward} being its own {@code momentum} toward the origin.
+     *
+     * <p>So a victim at or inside the margin is added NOTHING (never pushed outward, never moved by the drag), a victim
+     * whose own motion already reaches the margin is added nothing more (never braked), and a victim walking away is
+     * added the whole strength. The approach to the margin is geometric on the model (each tick's gap is at least the
+     * last one's times the friction), so it never oscillates and never crosses. A direction shorter than
+     * {@code 1.0E-5F} is none.
+     */
+    public Optional<DragStep> dragStep(Vec3 origin, Footing f, Vec3 momentum) {
+        Vec3 feet = f.feet();
+        if (!inReach(origin, feet)) return Optional.empty();
+        double distance = Math.sqrt(origin.distanceSquared(feet));
+        double dx = origin.x() - feet.x();
+        double dz = origin.z() - feet.z();
+        double h = Math.hypot(dx, dz);
+        boolean none = h < 1.0E-5F;
+        double strength = drag * factor(distance, reach) * (1.0 - f.resistance());
+        double cap = Math.max(0.0, h - MARGIN) / travelFactor(0.0, f.onGround(), f.blockFriction());
+        double toward = none ? 0.0 : (momentum.x() * dx + momentum.z() * dz) / h;
+        double added = Math.max(0.0, Math.min(strength, cap - toward));
+        boolean held = added < strength;
+        Vec3 add = none || added == 0.0 ? Vec3.ZERO : new Vec3(dx / h * added, 0.0, dz / h * added);
+        return Optional.of(new DragStep(distance, h, strength, toward, cap, added, held, add));
     }
 }
