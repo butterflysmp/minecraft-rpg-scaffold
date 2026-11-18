@@ -323,6 +323,8 @@ or (ii) **`dragons_breath`**, already shipped? **This survey does not pick.**
   airborne by damage"*, to *"our Ender Dragon boss fight"*.
 - Ben's words (RULINGS) say the event comes *"soon"*, after these mobs.
 - **This section records only which mob the old fight spawned, when, and how many.**
+- **The event itself is now planned in `PLAN-dragon-fight.md`** (2026-11-18). This is the pointer; that file is
+  the account, and its §3 supersedes nothing here.
 
 **How cfde822's fight spawned them** (*read*: `DragonfightManager.onDragonfightDamage`,
 `DragonfightReinforcements.spawnPhaseWave` / `spawnReinforcement` / `scheduleNext`, `PHASE_TYPE_CAPS`):

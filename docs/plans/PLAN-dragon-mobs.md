@@ -2336,6 +2336,9 @@ bench reads none of them.
 
 ## 6. DESIGN CONSTRAINTS FOR THE LATER DRAGON FIGHT
 
+> **THE FIGHT'S OWN PLAN IS `PLAN-dragon-fight.md`** (Ben's rulings of 2026-11-18, the cfde822 fight survey, and
+> what the server allows). This is the pointer; that file is the account. C1 to C6 below still bind it.
+
 **Ben's direction, as briefed (intent, not his words verbatim):** one **TEMPORARY WORLD per group** now, built so it
 can move to **a proxy plus a per-fight server** later. The fight does not care where it runs. The **arena is a
 template file**. **Fight state lives in the fight**, not in static singletons (CLAUDE.md invariant 3). **Player saving
