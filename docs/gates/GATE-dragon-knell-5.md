@@ -7,6 +7,12 @@ Ben says ready.**
 
 **2026-11-17: approved to merge by the review seat after the boot of 07d06837.**
 
+> **2026-11-17, `feat/void-implosion`: NO ROW OF THIS GATE IS SUPERSEDED.** F19 (the landing search anchored on the
+> target's fractional feet) is fixed in the shared `BeamTeleport.foot`, and its first server reading is
+> `GATE-void-implosion.md` KS1, a NEW row (a target standing on a slab), in the blast gate's file. The audit there
+> (*THE ROWS ALREADY MERGED*) finds no line of KB10R6, TP2R5-TP14R4, KB11R6 or TQ1R5 changed: every target here stands
+> on a whole-block floor, where floor(y) = y. **Every prediction and reading above stands as written.**
+
 > **READ, 2026-11-17: booted at `07d06837` on the seat's approval and Ben's "ready".** Server log `08:14:24` to the
 > clean `/stop` at `08:18:55`. Carried state: no JVM; backup `rpg-run-backups/2026-11-17-pre-dragon-knell-5`
 > (`run/plugins/Rpg` 129 files, 387488 bytes; `run/world` 193 files, 204963724 bytes; `diff -rq lines: 0` each);
