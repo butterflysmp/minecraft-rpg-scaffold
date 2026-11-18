@@ -36,8 +36,9 @@ import java.util.UUID;
  *   <li>{@code durationTicks}: TICKS the implosion acts for after the blast ({@link Implosion#durationTicks}): 1 is the
  *       single pull, 20 the Phage's DRAG since 2026-11-18 (Ben's four yeses: "for 1 second after the blast").</li>
  *   <li>{@code drag}: BLOCKS PER TICK added toward the Phage on each tick of the drag, at its feet, times
- *       {@code 1 - d / reach} ({@link Implosion#drag}). The Phage's 0.28, CHOSEN (2026-11-18) to meet the seat's four
- *       outcomes against the jar's own walking and sprinting (the gate lists it for Ben). With a drag, {@code pull} and
+ *       {@code 1 - d / reach} ({@link Implosion#drag}). The Phage's 0.33, the seat's number (2026-11-18,
+ *       feat/drag-additive; 0.28 before); on a player it is also held near the margin ({@link Implosion#addStep},
+ *       GATE-drag-additive.md). With a drag, {@code pull} and
  *       {@code lift} are 0: the seat's change, told to Ben, "a steady drag needs no toss".</li>
  * </ul>
  */

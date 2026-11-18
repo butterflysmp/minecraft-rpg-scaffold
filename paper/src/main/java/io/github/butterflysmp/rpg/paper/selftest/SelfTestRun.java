@@ -505,6 +505,9 @@ final class SelfTestRun {
         restoreRowRules(scheduler);   // a row that ended mid-way; the snapshot below puts the RUN START values back too
         String restored = snapshot.restore(player, service.profiles(), service.resources(), service.nameplates(),
                 scheduler, now);
+        // The drag's per-tick instrument is a scenario step's, never the server's: off at every run's end (it starts off).
+        service.dragTrace().set(false);
+        restored += " drag_tick=" + service.dragTrace().on();
         service.log("SELFTEST RUN " + why);
         service.log("SELFTEST RUN " + restored);
         service.ended(this);
@@ -533,6 +536,7 @@ final class SelfTestRun {
     SelfTestSnapshot snapshot() { return snapshot; }
     MobNameplateManager nameplates() { return service.nameplates(); }
     io.github.butterflysmp.rpg.paper.mining.MiningService mining() { return service.mining(); }
+    io.github.butterflysmp.rpg.paper.adapter.DragTrace dragTrace() { return service.dragTrace(); }
     ProfileService profiles() { return service.profiles(); }
     CombatantStats stats() { return service.stats(); }
     SelfTestService.Spawner spawner() { return service.spawner(); }

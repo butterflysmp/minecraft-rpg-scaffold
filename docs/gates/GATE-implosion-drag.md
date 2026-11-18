@@ -15,6 +15,16 @@ edited.**
 **2026-11-18: approved to merge by the review seat after the boot of 39c0b341, with the drag's run-to-run variation
 carried as a defect.**
 
+**2026-11-18, LATER (`feat/drag-additive`): EVERY ROW HERE IS SUPERSEDED, and this file keeps every prediction and
+reading as they stand.** The seat ruled that no design may need the server to know the client's momentum; the drag on a
+player is now an add his own client adds, and `drag` is 0.33. Each row is RE-PREDICTED in `GATE-drag-additive.md` with
+the next suffix, its staging unchanged: BL1R4 → BL1R5, BL2R4 → BL2R5, BL3R4 → BL3R5, BL4R4 → BL4R5, BL6R4 → BL6R5,
+BL7R4 → BL7R5, BL9R4 → BL9R5, IM1R2-IM6R2 → IM1R3-IM6R3, FZ1R2/FZ3R2/FZ5R2 → FZ1R3/FZ3R3/FZ5R3, DS1R6 → DS1R7, DR1 → DR1R2,
+DR2 → DR2R2. **BQ2 is RETIRED**, its drag questions asked again in BQ3. The scenario file moved with them
+(`selftest/GATE-implosion-drag.yml` → `selftest/GATE-drag-additive.yml`), so `/rpg selftest implosion-drag` no longer
+exists. **J2 is the assumption the diagnosis contradicted** (PLAN-dragon-mobs.md, *THE DRAG MUST NOT DEPEND ON PACKET
+TIMING*): Ben's client was at 192.168.68.90, not local.
+
 **What it gates.** Ben's four yeses of 2026-11-18 (PLAN-dragon-mobs.md, RULINGS): the Phage's blast DRAGS everything it
 is hostile to inside its reach toward where it stood for the 20 ticks after the blast; the damage stays at the blast's
 instant, once; walking away slows the drag, sprinting away from the edge escapes it; it never carries him past half a

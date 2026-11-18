@@ -239,6 +239,12 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * lights or resets it. Logs {@code DRIVE light tag=<t> <uuid>}, or why it did not take.
          */
         LIGHT,
+        /**
+         * {@code "on"}: turn the drag's per-tick instrument ON ({@code DragTrace}; GATE-drag-additive.md, Part D): one
+         * {@code DRAGTICK} line per player victim per drag tick. The run's restore turns it OFF. Logs
+         * {@code DRIVE drag_tick on=true}.
+         */
+        DRAG_TICK,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

@@ -17,6 +17,11 @@
 >   Phalanx's in `GATE-dragon-shot.md` and `GATE-dragon-blink.md`; the Skreel's in `GATE-dragon-skreel.md`. **What
 >   remains** is in the carried list (§8 FINDINGS, *CARRIED AT THE MERGE OF #203*), the open QUESTIONS FOR BEN, and
 >   §3.R.5 *Numbers for Ben*.
+> - **STATUS, 2026-11-18: THE PHAGE'S VOID IMPLOSION IS COMPLETE AS BEN DESIGNED IT:** the fuse and the reach scaled by
+>   its size, the swirl, and the one-second drag (#204, #205, #206; read in `GATE-void-implosion.md`,
+>   `GATE-implosion-drag.md` and `GATE-drag-additive.md`). **The `Implosion` shape is available to abilities and
+>   weapons from content** (`type: implosion`); **none ships yet.** What remains is in §8, *CARRIED AT THE MERGE OF
+>   #206*.
 
 ## RULINGS
 
@@ -1268,6 +1273,104 @@ his walk without stopping it, and let him sprint out from the edge.
 **NOT CONFIRMED:** the feel ("not quite"; "i think it needs to be a little bit stronger"). **The seat's reading, told to
 Ben:** first as "not reliable", since the same build dragged a still player to 0.491 in one run and only to 1.347 in
 the next; the drag's 0.28 is not raised until that variation is explained (carried as a DEFECT, §8).
+
+### THE DRAG MUST NOT DEPEND ON PACKET TIMING: THE DIAGNOSIS, AND THE SEAT'S RULING (2026-11-18, `feat/drag-additive`)
+
+**THE TWO RUNS OF `39c0b341`, SIDE BY SIDE.** Every DRAG line of both `/rpg selftest implosion-drag` runs, from
+`run/logs/latest.log` (run 1 11:54:57 to 11:57:16, run 2 11:57:22 to 11:59:46), regenerated in this branch with `grep -n
+"SELFTEST implosion-drag .* START\|DRAG source" run/logs/latest.log`. Same build, same staging, same player. *The first
+session's own table is not in the repo; this one is rebuilt from the log, and agrees with every figure the gate quotes.*
+
+| row | run 1 `start → end`, `sent` | run 2 `start → end`, `sent` |
+|---|---|---|
+| BL1R4 | 0.491 → 0.491, 0 | 0.491 → 0.491, 0 |
+| BL2R4 | 2.000 → 0.479, 7 | 2.000 → 0.493, 8 |
+| BL6R4 | 1.950 → 0.532, 16 | 1.950 → **0.837**, 20 |
+| BL9R4 | 3.000 → 0.475, 8 | 3.000 → 0.504, 18 |
+| IM1R2 | 5.900 → 5.506, 20 | 5.900 → **5.713**, 20 |
+| IM3R2 | 2.000 → 0.479, 7 | 2.000 → 0.502, 17 |
+| IM4R2 | 0.487 → 0.506, 18 | 0.425 → 0.506, 19 |
+| IM5R2 | 3.950 → 3.515, 20 | 3.950 → 3.606, 20 |
+| FZ1R2 | 0.950 → 0.482, 3 | 0.950 → 0.504, 14 |
+| FZ3R2 | 1.950 → 0.475, 9 | 1.950 → 0.475, 9 |
+| FZ5R2 | 2.950 → 0.552, 18 | 2.950 → **0.382**, 9 |
+| DS1R6 X / Y | 0.577 → 0.138, 2 / 0.989 → 0.505, 16 | 0.615 → 0.085, 4 / 0.994 → 0.506, 14 |
+| DR1 | 3.000 → 6.728, 6 (`left`) | 3.000 → 8.339, 6 (`left`) |
+| DR2 A / B | 3.000 → 0.564, 20 / 3.964 → 5.255, 20 | 3.000 → 0.551, 17 / 3.510 → 5.366, 20 |
+| BQ2 q2 (still, from 4) | 4.000 → 0.491, 15, `held` | 4.000 → **1.347**, 20, `pulled` |
+| BQ2 q3 (walking) | 3.200 → 2.102, 20 | 3.200 → **3.342**, 20 |
+| BQ2 q4 (sprinting) | 4.700 → 9.592, 7 ticks (`left`) | 4.700 → 8.812, 8 ticks (`left`) |
+
+**`sent` VARIES ROW BY ROW ON IDENTICAL STAGING** (7 against 8, 8 against 18, 3 against 14, 18 against 9): a send is
+made only on a tick the estimate exists and the cap leaves room, so the count follows the move packets that arrived.
+
+**THE CANDIDATES, WITH THEIR MARKS:**
+1. **A tick with no move packet reads as "at rest", and the send wipes the momentum the drag had built.** `DragMotion`
+   estimated his momentum from the last two positions the server saw; a tick on which no move packet arrived repeats
+   the last position, so the displacement is 0, the estimate 0, and the velocity sent (0 plus the add) REPLACES what he
+   carried (READ: `ClientPacketListener#handleSetEntityMotion` → `Entity#lerpMotion` → `setDeltaMovement`).
+   **INFERRED**: no instrument recorded his move packets per tick.
+2. **A late send replaces a newer momentum with an older one.** A send built from tick n's estimate that lands after
+   his tick n+1 replaces the momentum of n+1 with n's. **INFERRED**, for the same reason.
+3. **He moved, or held a key, in run 2.** He started run 2 having decided to look again, and no line read his keys.
+   **UNREAD, not ruled out.**
+4. **The server's own copy of his velocity was sent.** **RULED OUT BY THE CODE**: the drag never sent it (D2).
+
+**THE GATE'S J2 ASSUMPTION IS CONTRADICTED.** J2 marked as INFERRED "one move packet a server tick, and each send
+reaching him the next tick (a local server)". **The server was not local to him:** his login line reads
+`BaronVonYeetus[/192.168.68.90:56227] logged in with entity id 13` (11:54:32; again from `:64715` at 11:54:48), a
+second machine on his LAN. Real players will be remote. So the estimate's two assumptions were never the game's.
+
+**THE SEAT'S RULING (2026-11-18), its words in the brief:** *"no design that needs the server to know the client's
+momentum is acceptable."* The diagnostic boot proposed was NOT run on its own; its instrument rides in this branch
+(DRAGTICK, `GATE-drag-additive.md`).
+
+**THE SEAT'S NUMBER, TOLD TO BEN AS THE SEAT'S:** `drag` **0.28 → 0.33**, because he answered "not quite" after the run
+in which the drag worked as modelled, and "i think it needs to be a little bit stronger" after the second. **Sprinting
+out will then work only from nearer the edge.**
+
+### Ben, 2026-11-18, VERBATIM, BY THE SELFTEST'S ASK STEP: the additive drag (the boot of `5ee0587a`, `GATE-drag-additive.md` BQ3)
+
+1. *"Standing still, did it drag you in toward where it stood, for about a second?"*
+   > "yes"
+2. *"Did that drag feel the same as the first one?"*
+   > "not sure"
+3. *"Walking away, did the drag slow you down without stopping you, so you still went back toward it?"*
+   > "it basically stopped me which is what I want for walking"
+4. *"Sprinting away from the edge, did you get out of the drag?"*
+   > "yes"
+5. *"During any of those drags, did you feel a stutter, or get snapped back to where you were?"*
+   > "no"
+6. *"Does the pull feel right now?"*
+   > "feels good"
+
+**CONFIRMED BY PLAY:** the drag pulls him in for about a second; walking away is "basically stopped", which he says is
+what he wants; sprinting from the edge gets him out; no stutter or snap back; the pull **"feels good" at drag 0.33**
+(the seat's number, now confirmed by play). **NOT STATED:** whether two drags felt the same ("not sure"; the server read
+them identically, `start=4.000 end=1.056` each).
+
+### THE ADDITIVE DRAG AS BUILT (`feat/drag-additive`, 2026-11-18). THE ACCOUNT IS `GATE-drag-additive.md`
+
+*This is the pointer; B1-B4 with every READ line, the outcome table, the bands and the mutations are the gate's.*
+
+- **THE ROUTE (B4):** a player is sent each tick only the ADD, as a `ClientboundExplodePacket` whose `playerKnockback`
+  his client ADDS (`Entity#addDeltaMovement`), with the empty sound, an unseen particle 256 blocks up and no block
+  particles (`DragImpulse`). **Not B1:** Paper's teleport cannot carry a delta (`Vec3.ZERO`), and any position packet
+  makes the server drop his moves until he confirms it (B2), while a confirm of an id we chose that matches the server's
+  last kicks him.
+- **THE CAP WITHOUT HIS MOMENTUM:** the add is `min(drag x (1 - d/R) x (1 - res), gain x max(0, h - 0.5))`, the gain
+  the largest that never carries a still victim past the margin while the server's view lags 0 to 2 ticks
+  (`Implosion.holdGain`, CHOSEN allowance; stone 0.04067, EXECUTED). **What it does not guarantee:** a player running
+  INTO the Phage passes it; a lag of 3 or more can overshoot; near the margin his walking outweighs the hold; on ice or
+  in the air the gain is a tenth or less.
+- **`DragMotion`'s estimate is gone;** what remains is the mob's per-tick tally. A mob's drag is unchanged.
+- **The numbers at 0.33, EXECUTED:** a still player from 2, 3, 4 or 5 rests 0.578 to 1.397 from the feet within the
+  allowance; walking away from 3 he ends 2.92 to 2.97 (outcome b holds at lags 0 to 3, NARROWLY, and fails by 0.001 at
+  4); sprinting from rest he gets out from 3.9 to 4.3 by the lag (4.0 at lag 1, against 3.8 at 0.28).
+- **The instrument (Part D):** `DRAGTICK`, on by the selftest's `drag_tick: on`, off at the run's end; its moves counted
+  on the Netty thread and nothing else (`MoveCountListener`).
+- **OPEN FOR BEN AND THE SEAT, unruled:** the allowance (2 ticks); that the hold makes walking away nearly a standoff;
+  the jump that escapes the drag in the air; the two-origin case.
 
 ---
 
@@ -2740,13 +2843,29 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   - **NEW, CARRIED:**
     - **A DEFECT: the drag varies from run to run on one build.** In the first run a still player was dragged from 4.000
       to 0.491 and held; in the second, the same staging read `end=1.347 outcome=pulled`, and four DRAG lines fell
-      outside the gate's bounds. The seat will not raise the drag's 0.28 until this is explained.
+      outside the gate's bounds. The seat will not raise the drag's 0.28 until this is explained. **BUILT AGAINST in
+      `feat/drag-additive` (the additive drag, 0.33); NOT CLOSED until `GATE-drag-additive.md` CS1 is read.**
     - **Two drags can carry a victim inside one origin's margin, UNRULED** (DS1R6: held 0.505 from the second child,
       0.138 from the first).
     - **DR1's 0.39 of drift after a teleport mid-drag, cause INFERRED** (momentum carried through the teleport; the drag
       sent nothing after he left).
     - **Whether he was sprinting in BQ2's question 4, UNREAD:** INFERRED from its DRAG line against the model; no line
       reads his speed before the blast.
+- **CARRIED AT THE MERGE OF #206** (the seat's ruling, 2026-11-18, after the boot of `5ee0587a`):
+  - **CLOSED: the run-to-run variation** (#205's DEFECT), **for a clean connection, by CS1** (`GATE-drag-additive.md`):
+    five stagings from 4 read `end=1.056` five times, spread 0.000, on the lag-0 model's own figure.
+  - **CLOSED: the question-4 sprint** (#205's UNREAD): BQ3's DRAGTICK lines read `keys=forward,sprint` for all 21
+    ticks, out of the reach in 8.
+  - **CLOSED BY BUILD: DR1's 0.39 drift** (the old send's carried momentum): DR1R2 read +0.10.
+  - **STILL CARRIED:**
+    - **The drag UNREAD on an uneven or remote connection:** every DRAGTICK read one move packet a tick and `ping=0`;
+      batching and latency were not exercised. Its independence of them rests on its design and the core sweep.
+    - **The 2-tick lag allowance (`Implosion.LAG_ALLOWANCE_TICKS`), the builder's and UNRULED,** and what lies beyond
+      it: at a lag of 3 or more a still player can be carried past the MARGIN (from 3 at lag 4, rests 0.379 from the
+      feet), not past the origin.
+    - **A jumping player barely dragged while airborne, UNRULED** (the air gain 0.00195, a twentieth of stone's).
+    - **Two drags inside one margin, UNRULED** (DS1R7: X's drag carried him 0.402 from Y's feet).
+    - **The fixture's drag on a mob, and the dropped-mid-drag cases, UNREAD on a server.**
 
 ## QUESTIONS FOR BEN
 

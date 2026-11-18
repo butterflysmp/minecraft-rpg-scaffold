@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.Vec3;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -13,90 +14,159 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * THE DRAG (Ben, 2026-11-18: "1. yes 2. yes 3. yes 4. yes" to the seat's four points). The four outcomes are the spec,
- * each run here against {@link PlayerTravelModel}, the client's own travel READ from the jar, with the drag driven as
- * the server drives it ({@link ImplosionDrag}, {@link DragMotion}):
+ * THE DRAG (Ben, 2026-11-18: "1. yes 2. yes 3. yes 4. yes" to the seat's four points), ADDITIVE ON A PLAYER (the seat's
+ * ruling of 2026-11-18: no design may need the server to know his momentum). The four outcomes are the spec, each run
+ * here against {@link PlayerTravelModel}, the client's own travel READ from the jar, with the server's view of him
+ * LAGGING 0 to 4 ticks:
  * <ol type="a">
- *   <li>STANDING STILL at 2, 3, 4 and 5 blocks from a stage-5 blast: dragged to rest within the margin of the origin,
- *       or as near as the second allows.</li>
+ *   <li>STANDING STILL at 2, 3, 4 and 5 blocks from a stage-5 blast: dragged in and never past the margin.</li>
  *   <li>WALKING DIRECTLY AWAY from 3 blocks: still nearer the origin at the end than at the start.</li>
- *   <li>SPRINTING DIRECTLY AWAY from the outer third of the reach: outside the reach before the second is up.</li>
- *   <li>NEVER PAST THE ORIGIN: a victim that reaches the margin is HELD there; one already inside it is not moved.</li>
+ *   <li>SPRINTING DIRECTLY AWAY from the outer part of the reach: outside the reach before the second is up.</li>
+ *   <li>NEVER PAST THE MARGIN: for a victim not himself moving toward the origin, at a lag within
+ *       {@link Implosion#LAG_ALLOWANCE_TICKS}; inside the margin nothing is ever added.</li>
  * </ol>
- * The Phage's use: reach 6 (stage 5), vanilla's falloff for the damage, no pull and no lift, explosion knockback
- * resistance, 20 ticks, drag 0.28 BLOCKS PER TICK at the origin. Every expected figure that is not a bound is
- * computed here from the shape's own formula, or EXECUTED (the comment says which); none was worked by hand.
+ * The Phage's use: reach 6 (stage 5), no pull and no lift, explosion knockback resistance, 20 ticks, drag 0.33 BLOCKS
+ * PER TICK at the origin (the seat's number). Every expected figure that is not a bound is computed here from the
+ * shape's own formula, or EXECUTED (the comment says which); none was worked by hand.
  */
 class ImplosionDragTest {
 
     static final Implosion PHAGE = new Implosion(6.0, Implosion.Falloff.VANILLA_EXPLOSION, 0.0, 0.0,
-            Implosion.Resistance.EXPLOSION_KNOCKBACK, 20, 0.28);
+            Implosion.Resistance.EXPLOSION_KNOCKBACK, 20, 0.33);
     private static final Vec3 O = PlayerTravelModel.ORIGIN;
     private static final double SLIDE = 1.0 / (1.0 - PlayerTravelModel.M);   // travelFactor(0) on stone
     private static final UUID A = UUID.nameUUIDFromBytes("a".getBytes());
     private static final UUID B = UUID.nameUUIDFromBytes("b".getBytes());
+    private static final double GAIN = Implosion.holdGain(true, PlayerTravelModel.STONE);
 
     private static Implosion.Footing west(double h, boolean onGround, double resistance) {
         return new Implosion.Footing(new Vec3(O.x() - h, O.y(), O.z()), PlayerTravelModel.EYE, onGround,
                 PlayerTravelModel.STONE, resistance);
     }
 
-    // --- the quantity ----------------------------------------------------------------------------------------------
+    private static Implosion.Footing westOn(double h, float friction) {
+        return new Implosion.Footing(new Vec3(O.x() - h, O.y(), O.z()), PlayerTravelModel.EYE, true, friction, 0.0);
+    }
+
+    // --- THE ADD ON A PLAYER: a function of his distance and footing alone ------------------------------------------
 
     @Test
-    void oneTickAddsDragTimesTheLinearFactorTowardTheOriginOnTheGround() {
-        Implosion.DragStep s = PHAGE.dragStep(O, west(3.0, true, 0.0), Vec3.ZERO).orElseThrow();
-        double strength = 0.28 * (1 - 3.0 / 6.0);
+    void farOutThePlayersAddIsTheDragsStrengthTowardTheOrigin() {
+        Implosion.DragStep s = PHAGE.addStep(O, west(5.0, true, 0.0)).orElseThrow();
+        double strength = 0.33 * (1 - 5.0 / 6.0);
         assertEquals(strength, s.strength(), 1e-12, "drag x (1 - d / reach)");
-        assertEquals((3.0 - 0.5) / SLIDE, s.cap(), 1e-12, "the speed whose slide on stone ends at the margin");
-        assertEquals(strength, s.added(), 1e-12, "the cap does not bind at 3");
+        assertEquals(GAIN * (5.0 - 0.5), s.cap(), 1e-12, "the hold: gain x (h - margin)");
+        assertTrue(s.cap() > strength, "at 5 the strength is the smaller");
+        assertEquals(strength, s.added(), 1e-12);
         assertFalse(s.held());
         assertEquals(strength, s.add().x(), 1e-12, "toward the origin: +x, he stands west of it");
         assertEquals(0.0, s.add().y(), 0.0, "a drag has no vertical");
         assertEquals(0.0, s.add().z(), 1e-12);
+        assertTrue(Double.isNaN(s.toward()), "his momentum is never read, estimated or rebuilt");
     }
 
-    /** THE ONLY GUARD of the drag's {@code (1 - resistance)}: MUTNORES (2026-11-18) reddened this row and no other. */
+    @Test
+    void nearerTheHoldIsTheSmallerAndTheMarginLimitsTheAdd() {
+        Implosion.DragStep s = PHAGE.addStep(O, west(3.0, true, 0.0)).orElseThrow();
+        assertEquals(0.33 * 0.5, s.strength(), 1e-12);
+        assertEquals(GAIN * 2.5, s.cap(), 1e-12);
+        assertEquals(GAIN * 2.5, s.added(), 1e-12, "the hold binds at 3");
+        assertTrue(s.held());
+    }
+
+    /** THE ONLY GUARD of the add's {@code (1 - resistance)} on a player: see the mutation list in the gate. */
     @Test
     void theResistanceCutsTheStrength() {
-        Implosion.DragStep s = PHAGE.dragStep(O, west(3.0, true, 0.5), Vec3.ZERO).orElseThrow();
-        assertEquals(0.28 * 0.5 * 0.5, s.strength(), 1e-12, "x (1 - resistance)");
+        Implosion.DragStep s = PHAGE.addStep(O, west(5.0, true, 0.5)).orElseThrow();
+        assertEquals(0.33 * (1 - 5.0 / 6.0) * 0.5, s.strength(), 1e-12, "x (1 - resistance)");
+        assertEquals(s.strength(), s.added(), 1e-12);
     }
 
     @Test
     void beyondTheReachThereIsNoStepAndAtTheReachTheStrengthIsNothing() {
-        assertTrue(PHAGE.dragStep(O, west(6.05, true, 0.0), Vec3.ZERO).isEmpty());
-        Implosion.DragStep edge = PHAGE.dragStep(O, west(6.0, true, 0.0), Vec3.ZERO).orElseThrow();
-        assertEquals(0.0, edge.added(), 1e-12, "the linear factor is 0 at the reach");
+        assertTrue(PHAGE.addStep(O, west(6.05, true, 0.0)).isEmpty());
+        assertEquals(0.0, PHAGE.addStep(O, west(6.0, true, 0.0)).orElseThrow().added(), 1e-12);
     }
 
     @Test
-    void atOrInsideTheMarginNothingIsAddedAndItIsHeld() {
+    void atOrInsideTheMarginNothingIsAddedEver() {
         for (double h : new double[] {0.5, 0.3, 0.0}) {
-            Implosion.DragStep s = PHAGE.dragStep(O, west(h, true, 0.0), Vec3.ZERO).orElseThrow();
-            assertEquals(0.0, s.added(), 0.0, "at " + h + ": nothing toward, and never anything outward");
+            Implosion.DragStep s = PHAGE.addStep(O, west(h, true, 0.0)).orElseThrow();
+            assertEquals(0.0, s.added(), 0.0, "at " + h);
             assertTrue(s.held(), "at " + h);
             assertEquals(Vec3.ZERO, s.add(), "at " + h);
         }
     }
 
+    // --- THE HOLD'S GAIN: the largest that never carries a still victim past the margin, lag within the allowance --
+
+    /**
+     * EXECUTED (scratch {@code gain.jsh}, 2026-11-18, the same impulse response): stone 0.04067, slime 0.01609, ice
+     * 0.00278, air 0.00195 at an allowance of 2 ticks. The ice and the air are why the gain is the FOOTING'S: a slower
+     * decay carries an add much farther.
+     */
     @Test
-    void aVictimWhoseOwnMomentumAlreadyReachesTheMarginIsAddedNothingAndNeverBraked() {
-        double cap = (2.0 - 0.5) / SLIDE;
-        Implosion.DragStep fast = PHAGE.dragStep(O, west(2.0, true, 0.0), new Vec3(cap + 0.1, 0, 0)).orElseThrow();
-        assertEquals(0.0, fast.added(), 0.0, "already toward faster than the cap: no add, and no negative add");
-        Implosion.DragStep part = PHAGE.dragStep(O, west(2.0, true, 0.0), new Vec3(cap - 0.05, 0, 0)).orElseThrow();
-        assertEquals(0.05, part.added(), 1e-12, "topped up to the cap");
-        assertTrue(part.held(), "the margin limited it");
-        Implosion.DragStep away = PHAGE.dragStep(O, west(2.0, true, 0.0), new Vec3(-0.2, 0, 0)).orElseThrow();
-        assertEquals(away.strength(), away.added(), 1e-12, "walking away: the whole strength");
-        assertFalse(away.held());
+    void theGainIsTheFootingsAndItsFiguresAreTheExecutedOnes() {
+        assertEquals(2, Implosion.LAG_ALLOWANCE_TICKS);
+        assertEquals(0.04067, GAIN, 5e-6, "stone");
+        assertEquals(0.01609, Implosion.holdGain(true, 0.8f), 5e-6, "slime");
+        assertEquals(0.00278, Implosion.holdGain(true, 0.98f), 5e-6, "ice");
+        assertEquals(0.00195, Implosion.holdGain(false, PlayerTravelModel.STONE), 5e-6, "in the air");
+        assertEquals(GAIN, Implosion.holdGain(true, PlayerTravelModel.STONE), 0.0, "the same answer twice");
     }
 
+    /** TIGHT: at the gain no lag within the allowance overshoots; one percent more, one of them does. */
     @Test
-    void inTheAirTheCapUsesTheAirsSlowestDecay() {
-        Implosion.DragStep s = PHAGE.dragStep(O, west(1.0, false, 0.0), Vec3.ZERO).orElseThrow();
-        assertEquals((1.0 - 0.5) * (1 - Implosion.tickMultiplier(false, 0.6f)), s.cap(), 1e-12);
+    void theGainIsTheLargestThatHolds() {
+        double m = PlayerTravelModel.M;
+        for (int lag = 0; lag <= Implosion.LAG_ALLOWANCE_TICKS; lag++) {
+            assertTrue(Implosion.holdsWithoutOvershoot(GAIN, m, lag), "lag " + lag);
+        }
+        boolean someFails = false;
+        for (int lag = 0; lag <= Implosion.LAG_ALLOWANCE_TICKS; lag++) {
+            someFails |= !Implosion.holdsWithoutOvershoot(GAIN * 1.01, m, lag);
+        }
+        assertTrue(someFails, "one percent more and a lag within the allowance overshoots");
+        assertFalse(Implosion.holdsWithoutOvershoot(GAIN, m, Implosion.LAG_ALLOWANCE_TICKS + 1),
+                "WHAT IT DOES NOT GUARANTEE: one tick more lag than the allowance can overshoot");
+    }
+
+    /**
+     * THE CAP WITHOUT HIS MOMENTUM, SWEPT: every drag strength and reach the shape could be authored with, every start
+     * distance, every lag within the allowance, and seeded jitter within it: a still victim is never carried past the
+     * margin, at any tick.
+     */
+    @Test
+    void aStillVictimIsNeverCarriedPastTheMarginAtAnyLagWithinTheAllowance() {
+        for (double drag : new double[] {0.1, 0.28, 0.33, 0.6, 1.0, 5.0}) {
+            for (double reach : new double[] {2, 3, 4, 6}) {
+                Implosion shape = new Implosion(reach, Implosion.Falloff.VANILLA_EXPLOSION, 0, 0,
+                        Implosion.Resistance.NONE, 20, drag);
+                for (double h0 = 0.55; h0 <= reach; h0 += 0.05) {
+                    for (int lag = 0; lag <= Implosion.LAG_ALLOWANCE_TICKS; lag++) {
+                        PlayerTravelModel.Run r = PlayerTravelModel.run(shape, h0, 0.0, 0.0, lag);
+                        assertTrue(r.minimum() >= 0.5 - 1e-9, "drag " + drag + " reach " + reach + " from " + h0
+                                + " lag " + lag + ": nearest " + r.minimum());
+                    }
+                }
+            }
+        }
+        for (long seed = 0; seed < 200; seed++) {
+            Random rnd = new Random(seed);
+            int[] lags = new int[200];
+            for (int i = 0; i < lags.length; i++) lags[i] = rnd.nextInt(Implosion.LAG_ALLOWANCE_TICKS + 1);
+            for (double h0 = 0.6; h0 <= 6.0; h0 += 0.2) {
+                PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, h0, 0.0, 0.0, n -> lags[n], null, 0);
+                assertTrue(r.minimum() >= 0.5 - 1e-9, "jitter seed " + seed + " from " + h0 + ": " + r.minimum());
+            }
+        }
+    }
+
+    /** WHAT IT DOES NOT GUARANTEE, PINNED: a player moving INTO the origin passes it by his own legs. */
+    @Test
+    void aPlayerSprintingIntoTheOriginPassesItByHisOwnLegs() {
+        PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, 3.0, -PlayerTravelModel.SPRINT, 0.0, 0);
+        assertTrue(r.minimum() < 0.0, "he runs past the centre: " + r.minimum());
     }
 
     // --- what the shape accepts --------------------------------------------------------------------------------------
@@ -114,15 +184,15 @@ class ImplosionDragTest {
     void aBadDurationOrADragOnAPullIsRefusedByName() {
         var f = Implosion.Falloff.VANILLA_EXPLOSION;
         var r = Implosion.Resistance.NONE;
-        assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 0, 0, r, 0, 0.28))
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 0, 0, r, 0, 0.33))
                 .getMessage().contains("duration_ticks"));
-        assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 1.25, 0, r, 20, 0.28))
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 1.25, 0, r, 20, 0.33))
                 .getMessage().contains("pull must be 0"));
-        assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 0, 1.0, r, 20, 0.28))
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 0, 1.0, r, 20, 0.33))
                 .getMessage().contains("lift must be 0"));
         assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 0, 0, r, 20, 0.0))
                 .getMessage().contains("drag above 0"));
-        assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 1.25, 0, r, 1, 0.28))
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 1.25, 0, r, 1, 0.33))
                 .getMessage().contains("single pull"));
         assertTrue(assertThrows(IllegalArgumentException.class, () -> new Implosion(6, f, 0, 0, r, 20, -1))
                 .getMessage().contains("drag must be 0 or more"));
@@ -130,7 +200,7 @@ class ImplosionDragTest {
                 new Implosion(6, f, 1.25, 0, r), new DragMotion()), "a single pull is not a drag");
     }
 
-    // --- THE FOUR OUTCOMES, against the client's own travel ----------------------------------------------------------
+    // --- THE FOUR OUTCOMES, against the client's own travel, at every lag 0 to 4 ------------------------------------
 
     @Test
     void theReadMovementFacts() {
@@ -143,63 +213,128 @@ class ImplosionDragTest {
     }
 
     /**
-     * a. STANDING STILL: from 2, 3, 4 and 5 he is dragged to the margin and comes to rest there. At 0.28 the second is
-     * long enough from 5 (EXECUTED, scratch {@code sweep.jsh}: at 0.24 he rested at 1.207, at 0.26 at 0.614). A
-     * mutation that weakens the drag reddens the 5.
+     * a. STANDING STILL: from 2, 3, 4 and 5 he is dragged in, every tick of the second, never past the margin within
+     * the allowance. The figures (where he ends the second and rests, at each lag) are the gate's, EXECUTED by
+     * {@link #theOutcomeFiguresAsExecuted}.
      */
     @Test
-    void aStandingStillHeIsDraggedToTheMarginFromTwoThreeFourAndFive() {
+    void aStandingStillHeIsDraggedInFromTwoThreeFourAndFive() {
         for (double h0 : new double[] {2.0, 3.0, 4.0, 5.0}) {
-            PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, h0, 0.0, 0.0);
-            assertTrue(r.rest() >= 0.5 - 1e-9, "from " + h0 + ": never past the margin, rests at " + r.rest());
-            assertTrue(r.rest() < 0.51, "from " + h0 + ": at the margin, rests at " + r.rest());
-            assertEquals(ImplosionDrag.Outcome.HELD, r.summary().outcome(), "from " + h0);
-            assertEquals(20, r.summary().ticks(), "from " + h0 + ": pulled every tick of the second");
-        }
-    }
-
-    /** b. WALKING AWAY from 3: slowed, not cancelled, from rest and already at walking speed. */
-    @Test
-    void bWalkingAwayFromThreeHeEndsTheSecondNearerThanHeStarted() {
-        PlayerTravelModel.Run fromRest = PlayerTravelModel.run(PHAGE, 3.0, PlayerTravelModel.WALK, 0.0);
-        PlayerTravelModel.Run walking = PlayerTravelModel.run(PHAGE, 3.0, PlayerTravelModel.WALK,
-                PlayerTravelModel.terminal(PlayerTravelModel.WALK) * PlayerTravelModel.M);
-        assertTrue(fromRest.end() < 3.0, "from rest he ends the second at " + fromRest.end());
-        assertTrue(walking.end() < 3.0, "already walking he ends the second at " + walking.end());
-        assertTrue(walking.end() > fromRest.end(), "his own momentum carries him farther out first");
-    }
-
-    /** c. SPRINTING AWAY from the outer third (4 to 6 of 6): out of the reach before the second is up. */
-    @Test
-    void cSprintingAwayFromTheOuterThirdHeLeavesTheReachInTheSecond() {
-        for (double h0 : new double[] {4.0, 4.5, 5.0, 5.9}) {
-            PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, h0, PlayerTravelModel.SPRINT, 0.0);
-            assertEquals(ImplosionDrag.Outcome.LEFT, r.summary().outcome(), "from " + h0 + " at rest");
-            assertTrue(r.end() > 6.0, "from " + h0 + ": beyond the reach at the second's end, " + r.end());
-        }
-    }
-
-    /** d. NEVER PAST THE ORIGIN: reaching the margin he is held there, with no overshoot at any tick. */
-    @Test
-    void dReachingTheMarginHeIsHeldWithNoOvershootAtAnyTick() {
-        for (double h0 : new double[] {1.0, 2.0, 3.0}) {
-            PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, h0, 0.0, 0.0);
-            assertTrue(r.minimum() >= 0.5 - 1e-9, "from " + h0 + ": the nearest he ever came, " + r.minimum());
-            for (int i = 1; i < r.seen().size(); i++) {
-                assertTrue(r.seen().get(i) <= r.seen().get(i - 1) + 1e-12, "from " + h0 + ": no oscillation at "
-                        + i + ", " + r.seen());
+            for (int lag = 0; lag <= 4; lag++) {
+                PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, h0, 0.0, 0.0, lag);
+                assertTrue(r.rest() < h0 - 0.75 * (h0 - 0.5), "from " + h0 + " lag " + lag
+                        + ": three quarters of the way to the margin at least, rests at " + r.rest());
+                assertEquals(20, r.summary().ticks(), "from " + h0 + ": pulled every tick of the second");
+                if (lag <= Implosion.LAG_ALLOWANCE_TICKS) {
+                    assertTrue(r.minimum() >= 0.5 - 1e-9, "from " + h0 + " lag " + lag + ": " + r.minimum());
+                }
             }
         }
     }
 
-    /** d's other half: a victim already inside the margin is never moved, outward or in: nothing is ever sent. */
+    /**
+     * b. WALKING AWAY from 3: slowed, not cancelled, from rest and already at walking speed, at lags 0 to 3. NARROWLY:
+     * he ends 2.92 to 2.97 (EXECUTED, {@link #theOutcomeFiguresAsExecuted}), and at a lag of 4, already walking, he
+     * ends 3.001, no nearer (pinned there). Near the margin the hold is small and his walking is nearly its match.
+     */
     @Test
-    void dInsideTheMarginHeIsNeverMoved() {
-        PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, 0.3, 0.0, 0.0);
-        assertEquals(0, r.pushes(), "no velocity is ever sent to him");
-        assertEquals(0.3, r.rest(), 1e-12);
-        assertEquals(ImplosionDrag.Outcome.HELD, r.summary().outcome());
-        assertEquals(0, r.summary().sent());
+    void bWalkingAwayFromThreeHeEndsTheSecondNearerThanHeStarted() {
+        for (int lag = 0; lag <= 3; lag++) {
+            PlayerTravelModel.Run fromRest = PlayerTravelModel.run(PHAGE, 3.0, PlayerTravelModel.WALK, 0.0, lag);
+            PlayerTravelModel.Run walking = PlayerTravelModel.run(PHAGE, 3.0, PlayerTravelModel.WALK,
+                    PlayerTravelModel.terminal(PlayerTravelModel.WALK) * PlayerTravelModel.M, lag);
+            assertTrue(fromRest.end() < 3.0, "lag " + lag + ": from rest he ends the second at " + fromRest.end());
+            assertTrue(walking.end() < 3.0, "lag " + lag + ": already walking, at " + walking.end());
+        }
+    }
+
+    /**
+     * c. SPRINTING AWAY from 4.4, 4.5, 5 and 5.9 of 6, from rest: out of the reach before the second is up, at every lag
+     * 0 to 4. From 3.5 he is NOT, at any. Where it starts to work moves with the lag (EXECUTED,
+     * {@link #theOutcomeFiguresAsExecuted}): from 3.9 at lag 0, 4.0 at 1, 4.1 at 2, 4.2 at 3, 4.3 at 4; at drag 0.28
+     * and lag 1 it was 3.8. The sprint-out distance moved outward with 0.33, as the seat said.
+     */
+    @Test
+    void cSprintingAwayFromTheOuterPartHeLeavesTheReachInTheSecond() {
+        for (double h0 : new double[] {4.4, 4.5, 5.0, 5.9}) {
+            for (int lag = 0; lag <= 4; lag++) {
+                PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, h0, PlayerTravelModel.SPRINT, 0.0, lag);
+                assertEquals(ImplosionDrag.Outcome.LEFT, r.summary().outcome(), "from " + h0 + " lag " + lag);
+                assertTrue(r.exitTick() >= 0 && r.exitTick() <= 20, "from " + h0 + " lag " + lag);
+            }
+        }
+        for (int lag = 0; lag <= 4; lag++) {
+            PlayerTravelModel.Run held = PlayerTravelModel.run(PHAGE, 3.5, PlayerTravelModel.SPRINT, 0.0, lag);
+            assertTrue(held.exitTick() < 0, "lag " + lag + ": from 3.5 a sprinter is still inside, " + held.end());
+        }
+    }
+
+    /** d. NEVER PAST THE MARGIN: from 1, 2 and 3, within the allowance, at no tick nearer than the margin. */
+    @Test
+    void dReachingTheMarginHeIsNeverCarriedThrough() {
+        for (double h0 : new double[] {1.0, 2.0, 3.0}) {
+            for (int lag = 0; lag <= Implosion.LAG_ALLOWANCE_TICKS; lag++) {
+                PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, h0, 0.0, 0.0, lag);
+                assertTrue(r.minimum() >= 0.5 - 1e-9, "from " + h0 + " lag " + lag + ": " + r.minimum());
+            }
+        }
+    }
+
+    /**
+     * d's other half, and IM4R2's miss closed: inside the margin nothing is ever sent, even to a victim drifting
+     * OUTWARD (the old cap braked his outward drift; this one never reads it).
+     */
+    @Test
+    void dInsideTheMarginNothingIsEverSentEvenToOneDriftingOut() {
+        PlayerTravelModel.Run still = PlayerTravelModel.run(PHAGE, 0.3, 0.0, 0.0, 0);
+        assertEquals(0, still.pushes());
+        assertEquals(0.3, still.rest(), 1e-12);
+        PlayerTravelModel.Run drifting = PlayerTravelModel.run(PHAGE, 0.3, 0.0, 0.05, 0);
+        assertEquals(0, drifting.pushes(), "drifting out: still nothing sent");
+        assertEquals(0, drifting.summary().sent());
+        assertEquals(ImplosionDrag.Outcome.HELD, drifting.summary().outcome());
+    }
+
+    /**
+     * THE GATE'S FIGURES, EXECUTED AND PINNED: outcome a's ends of the second and rest points at lag 0 and 4, the
+     * consistency row's spread from 4, b's ends and c's exit ticks. The values were printed by this same arithmetic
+     * (scratch {@code figures.jsh} over the compiled test classes, 2026-11-18) and are copied into
+     * {@code GATE-drag-additive.md}; a change to the rule moves them and reddens this row first.
+     */
+    @Test
+    void theOutcomeFiguresAsExecuted() {
+        // a, standing still at a stage 5: {end of the second as the server sees it, rest}, lag 0 to 4.
+        double[][][] a = {
+            {{0.727, 0.679}, {0.697, 0.631}, {0.659, 0.578}, {0.610, 0.512}, {0.561, 0.429}},   // from 2
+            {{0.878, 0.796}, {0.829, 0.715}, {0.764, 0.626}, {0.683, 0.515}, {0.602, 0.379}},   // from 3
+            {{1.056, 0.935}, {1.008, 0.832}, {0.947, 0.711}, {0.888, 0.565}, {0.868, 0.389}},   // from 4
+            {{1.658, 1.397}, {1.796, 1.346}, {2.028, 1.293}, {2.385, 1.267}, {2.795, 1.281}},   // from 5
+        };
+        double[] from = {2.0, 3.0, 4.0, 5.0};
+        for (int i = 0; i < from.length; i++) {
+            for (int lag = 0; lag <= 4; lag++) {
+                PlayerTravelModel.Run r = PlayerTravelModel.run(PHAGE, from[i], 0.0, 0.0, lag);
+                assertEquals(a[i][lag][0], r.end(), 5e-4, "a from " + from[i] + " lag " + lag + ": end");
+                assertEquals(a[i][lag][1], r.rest(), 5e-4, "a from " + from[i] + " lag " + lag + ": rest");
+            }
+        }
+        // b, walking away from 3 (from rest; already walking), lag 0 to 4.
+        double[][] b = {{2.920, 2.964}, {2.918, 2.964}, {2.916, 2.964}, {2.917, 2.972}, {2.928, 3.001}};
+        for (int lag = 0; lag <= 4; lag++) {
+            assertEquals(b[lag][0], PlayerTravelModel.run(PHAGE, 3.0, PlayerTravelModel.WALK, 0.0, lag).end(), 5e-4);
+            assertEquals(b[lag][1], PlayerTravelModel.run(PHAGE, 3.0, PlayerTravelModel.WALK,
+                    PlayerTravelModel.terminal(PlayerTravelModel.WALK) * PlayerTravelModel.M, lag).end(), 5e-4);
+        }
+        // c, sprinting from rest: the nearest start, to a tenth, that gets out in the second, lag 0 to 4.
+        double[] out = {3.9, 4.0, 4.1, 4.2, 4.3};
+        for (int lag = 0; lag <= 4; lag++) {
+            assertTrue(PlayerTravelModel.run(PHAGE, out[lag], PlayerTravelModel.SPRINT, 0.0, lag).exitTick() >= 0);
+            assertTrue(PlayerTravelModel.run(PHAGE, out[lag] - 0.1, PlayerTravelModel.SPRINT, 0.0, lag).exitTick() < 0);
+        }
+        Implosion old = new Implosion(6.0, Implosion.Falloff.VANILLA_EXPLOSION, 0.0, 0.0,
+                Implosion.Resistance.EXPLOSION_KNOCKBACK, 20, 0.28);
+        assertTrue(PlayerTravelModel.run(old, 3.8, PlayerTravelModel.SPRINT, 0.0, 1).exitTick() >= 0, "0.28: 3.8");
+        assertTrue(PlayerTravelModel.run(old, 3.7, PlayerTravelModel.SPRINT, 0.0, 1).exitTick() < 0, "0.28: not 3.7");
     }
 
     // --- the session: who, when, and how it ends --------------------------------------------------------------------
@@ -208,17 +343,40 @@ class ImplosionDragTest {
         return new ImplosionDrag.Sighting(id, west(h, true, 0.0), velocity);
     }
 
+    private static ImplosionDrag.Sighting player(UUID id, double h) {
+        return new ImplosionDrag.Sighting(id, west(h, true, 0.0), null);
+    }
+
     @Test
-    void tickZeroOnlyLooksAndAMobIsPushedFromTickOneByItsOwnVelocityPlusTheAdd() {
+    void tickZeroOnlyLooksAndAMobIsSetToItsOwnVelocityPlusTheAdd() {
         ImplosionDrag d = new ImplosionDrag(O, PHAGE, new DragMotion());
         Vec3 v = new Vec3(0.01, -0.0784, 0.02);
         assertTrue(d.tick(0, List.of(mob(A, 3.0, v)), Set.of()).isEmpty(), "the blast's own tick pulls nobody");
         List<ImplosionDrag.Push> one = d.tick(1, List.of(mob(A, 3.0, v)), Set.of());
         assertEquals(1, one.size());
+        assertEquals(ImplosionDrag.Mode.SET, one.get(0).mode(), "the server owns a mob's motion");
         double add = PHAGE.dragStep(O, west(3.0, true, 0.0), v).orElseThrow().added();
-        assertEquals(new Vec3(0.01 + add, -0.0784, 0.02).x(), one.get(0).velocity().x(), 1e-12);
+        assertEquals(0.01 + add, one.get(0).velocity().x(), 1e-12);
         assertEquals(-0.0784, one.get(0).velocity().y(), 0.0, "the server's own vertical, untouched");
         assertEquals(0.02, one.get(0).velocity().z(), 1e-12);
+    }
+
+    /**
+     * A PLAYER IS ONLY EVER ADDED TO, AND THE ADD HAS NO HISTORY: the same footing on two ticks, whatever came before,
+     * gives the same push, and it is exactly {@link Implosion#addStep}'s. THE ONLY GUARD that no momentum reaches a
+     * player's push: see the mutation list in the gate.
+     */
+    @Test
+    void aPlayersPushIsTheAddAloneWithNoMomentumInIt() {
+        ImplosionDrag d = new ImplosionDrag(O, PHAGE, new DragMotion());
+        d.tick(0, List.of(player(A, 3.0)), Set.of());
+        List<ImplosionDrag.Push> first = d.tick(1, List.of(player(A, 3.0)), Set.of());
+        d.tick(2, List.of(player(A, 4.2)), Set.of());
+        List<ImplosionDrag.Push> again = d.tick(3, List.of(player(A, 3.0)), Set.of());
+        Vec3 add = PHAGE.addStep(O, west(3.0, true, 0.0)).orElseThrow().add();
+        assertEquals(ImplosionDrag.Mode.ADD, first.get(0).mode());
+        assertEquals(add, first.get(0).velocity());
+        assertEquals(add, again.get(0).velocity(), "a tick at 4.2 between changes nothing");
     }
 
     @Test
@@ -233,22 +391,21 @@ class ImplosionDragTest {
         assertThrows(IllegalStateException.class, () -> d.tick(21, List.of(), Set.of()));
     }
 
+    /** No momentum is needed now, so a player who walks into the reach midway is pulled from his FIRST sighting. */
     @Test
-    void aPlayerFirstSeenMidwayIsPulledFromHisSecondSighting() {
-        DragMotion m = new DragMotion();
-        ImplosionDrag d = new ImplosionDrag(O, PHAGE, m);
+    void aPlayerFirstSeenMidwayIsPulledFromHisFirstSighting() {
+        ImplosionDrag d = new ImplosionDrag(O, PHAGE, new DragMotion());
         for (int t = 0; t < 5; t++) d.tick(t, List.of(), Set.of());
-        assertTrue(d.tick(5, List.of(mob(B, 3.0, null)), Set.of()).isEmpty(), "his momentum is not known yet");
-        assertEquals(1, d.tick(6, List.of(mob(B, 3.0, null)), Set.of()).size(), "known now: pulled");
+        assertEquals(1, d.tick(5, List.of(player(B, 3.0)), Set.of()).size());
         assertEquals(1, d.summaries().get(0).ticks());
     }
 
     @Test
     void oneWhoLeavesTheReachIsNoLongerPulledAndEndsLeft() {
         ImplosionDrag d = new ImplosionDrag(O, PHAGE, new DragMotion());
-        d.tick(0, List.of(mob(A, 3.0, Vec3.ZERO)), Set.of());
-        d.tick(1, List.of(mob(A, 3.0, Vec3.ZERO)), Set.of());
-        assertTrue(d.tick(2, List.of(mob(A, 8.0, Vec3.ZERO)), Set.of()).isEmpty(), "outside the reach: nothing");
+        d.tick(0, List.of(player(A, 3.0)), Set.of());
+        d.tick(1, List.of(player(A, 3.0)), Set.of());
+        assertTrue(d.tick(2, List.of(player(A, 8.0)), Set.of()).isEmpty(), "outside the reach: nothing");
         ImplosionDrag.Summary s = d.summaries().get(0);
         assertEquals(ImplosionDrag.Outcome.LEFT, s.outcome());
         assertEquals(3.0, s.start(), 1e-12);
@@ -277,65 +434,70 @@ class ImplosionDragTest {
     }
 
     /**
-     * Two drags on one body in one tick: the second send carries both adds on the first's base (one velocity). THE ONLY
+     * Two drags on one MOB in one tick: the second set carries both adds on the first's base (one velocity). THE ONLY
      * GUARD of the tally: MUTTALLYSUM (2026-11-18) reddened this row and no other.
      */
     @Test
-    void twoDragsOnOneBodyInOneTickAddToOneVelocity() {
+    void twoDragsOnOneMobInOneTickAddToOneVelocity() {
         DragMotion m = new DragMotion();
         Vec3 east = new Vec3(O.x() + 6, O.y(), O.z());
         ImplosionDrag one = new ImplosionDrag(O, PHAGE, m);
         ImplosionDrag two = new ImplosionDrag(east, PHAGE, m);
         Vec3 v = Vec3.ZERO;
-        ImplosionDrag.Sighting s = mob(A, 2.0, v);   // 2 west of O, so 8 west of the second origin: outside it
-        one.tick(0, List.of(s), Set.of());
-        two.tick(0, List.of(s), Set.of());
         ImplosionDrag.Sighting near = mob(A, -2.0, v);   // 2 EAST of O: 4 west of the second, inside both
-        one.tick(1, List.of(near), Set.of());
-        two.tick(1, List.of(near), Set.of());
-        List<ImplosionDrag.Push> p1 = one.tick(2, List.of(near), Set.of());
-        List<ImplosionDrag.Push> p2 = two.tick(2, List.of(near), Set.of());
+        one.tick(0, List.of(near), Set.of());
+        two.tick(0, List.of(near), Set.of());
+        List<ImplosionDrag.Push> p1 = one.tick(1, List.of(near), Set.of());
+        List<ImplosionDrag.Push> p2 = two.tick(1, List.of(near), Set.of());
         double a1 = PHAGE.dragStep(O, near.footing(), v).orElseThrow().add().x();
         double a2 = PHAGE.dragStep(east, near.footing(), v).orElseThrow().add().x();
         assertTrue(a1 < 0 && a2 > 0, "each toward its own origin: one west, one east");
-        assertEquals(a1, p1.get(0).velocity().x(), 1e-12, "the first send: its own add");
-        assertEquals(a1 + a2, p2.get(0).velocity().x(), 1e-12, "the second send carries both");
+        assertEquals(a1, p1.get(0).velocity().x(), 1e-12, "the first set: its own add");
+        assertEquals(a1 + a2, p2.get(0).velocity().x(), 1e-12, "the second set carries both");
     }
 
-    // --- the momentum estimate --------------------------------------------------------------------------------------
-
+    /**
+     * Two drags on one PLAYER in one tick: each sends ITS OWN add, and the client adds both. A tally here would send
+     * the first add twice. Each is cut by its own margin only (the two-origin case stays UNRULED).
+     */
     @Test
-    void aPlayersMomentumIsHisLastTicksMotionTimesItsFriction() {
+    void twoDragsOnOnePlayerInOneTickEachSendItsOwnAdd() {
         DragMotion m = new DragMotion();
-        m.observe(A, 10, west(3.0, true, 0.0));
-        m.observe(A, 11, new Implosion.Footing(new Vec3(O.x() - 3.2, O.y() + 0.1, O.z() + 0.05),
-                PlayerTravelModel.EYE, true, PlayerTravelModel.STONE, 0.0));
-        Vec3 u = m.momentum(A, 11).orElseThrow();
-        assertEquals(-0.2 * PlayerTravelModel.M, u.x(), 1e-12, "the ground's friction, the state at the tick's start");
-        assertEquals(0.05 * PlayerTravelModel.M, u.z(), 1e-12);
-        assertEquals((0.1 - Implosion.GRAVITY) * Implosion.VERTICAL_DRAG, u.y(), 1e-12, "(dy - 0.08) x 0.98f");
-        m.observe(A, 11, west(9.0, true, 0.0));
-        assertEquals(u, m.momentum(A, 11).orElseThrow(), "a second sighting in the same tick changes nothing");
+        Vec3 east = new Vec3(O.x() + 6, O.y(), O.z());
+        ImplosionDrag one = new ImplosionDrag(O, PHAGE, m);
+        ImplosionDrag two = new ImplosionDrag(east, PHAGE, m);
+        ImplosionDrag.Sighting near = player(A, -2.0);
+        one.tick(0, List.of(near), Set.of());
+        two.tick(0, List.of(near), Set.of());
+        List<ImplosionDrag.Push> p1 = one.tick(1, List.of(near), Set.of());
+        List<ImplosionDrag.Push> p2 = two.tick(1, List.of(near), Set.of());
+        assertEquals(PHAGE.addStep(O, near.footing()).orElseThrow().add(), p1.get(0).velocity());
+        assertEquals(PHAGE.addStep(east, near.footing()).orElseThrow().add(), p2.get(0).velocity(),
+                "its own add, not the sum");
+    }
+
+    /** The instrument's window: every sighting of the last tick, pulled or not, with its step. */
+    @Test
+    void theLastTicksStepsNameEverySightingAndItsAdd() {
+        ImplosionDrag d = new ImplosionDrag(O, PHAGE, new DragMotion());
+        d.tick(0, List.of(player(A, 3.0)), Set.of());
+        assertEquals(1, d.steps().size());
+        assertEquals(null, d.steps().get(0).step(), "tick 0 only looks");
+        d.tick(1, List.of(player(A, 3.0), player(B, 9.0)), Set.of());
+        assertEquals(1, d.steps().size(), "B was never inside the reach: not a victim");
+        ImplosionDrag.Step s = d.steps().get(0);
+        assertEquals(A, s.id());
+        assertEquals(1, s.tick());
+        assertEquals(3.0, s.distance(), 1e-12);
+        assertEquals(PHAGE.addStep(O, west(3.0, true, 0.0)).orElseThrow(), s.step());
     }
 
     @Test
-    void noEstimateWithoutBothTicksOrAcrossATeleport() {
+    void aTallyNobodyUsesIsForgotten() {
         DragMotion m = new DragMotion();
-        m.observe(A, 10, west(3.0, true, 0.0));
-        assertTrue(m.momentum(A, 10).isEmpty(), "one sighting");
-        m.observe(A, 12, west(3.1, true, 0.0));
-        assertTrue(m.momentum(A, 12).isEmpty(), "a tick missed");
-        m.observe(A, 13, west(3.1 + DragMotion.MAX_STEP + 0.01, true, 0.0));
-        assertTrue(m.momentum(A, 13).isEmpty(), "farther than a step: a teleport");
-        assertTrue(m.momentum(A, 14).isEmpty(), "asked for a tick it was not seen");
-    }
-
-    @Test
-    void aBodyNobodyDragsIsForgotten() {
-        DragMotion m = new DragMotion();
-        m.observe(A, 10, west(3.0, true, 0.0));
-        m.observe(B, 13, west(3.0, true, 0.0));
+        m.tally(A, 10, Vec3.ZERO, Vec3.ZERO);
+        m.tally(B, 13, Vec3.ZERO, Vec3.ZERO);
         m.prune(13);
-        assertEquals(1, m.size(), "A last seen at 10 < 13 - 2");
+        assertEquals(1, m.size(), "A last tallied at 10 < 13 - 2");
     }
 }

@@ -111,6 +111,12 @@ final class SelfTestDrivers {
             case AIM_PATCH -> aimPatch(p, a);
             case DIG -> dig(p);
             case MINING_TRACE -> miningTrace(p);
+            case DRAG_TICK -> {
+                if (!a.equals("on")) yield Optional.of("drag_tick takes \"on\", was \"" + a + "\"");
+                run.dragTrace().set(true);
+                run.log("DRIVE drag_tick on=" + run.dragTrace().on());
+                yield Optional.empty();
+            }
             case NOTE -> { run.log("NOTE " + a); yield Optional.empty(); }
             case TELL -> {
                 p.sendMessage(net.kyori.adventure.text.Component.text(a,
