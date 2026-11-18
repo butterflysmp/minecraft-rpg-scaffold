@@ -666,6 +666,36 @@ the first boot can rule on it. None stops F4.*
   §4 i) must read it. A Mage death fed in during the fast close (an admin kill) is handled: the ring returns from where
   it stands.
 
+### 6.2 F4 + F5 AS BUILT (`feat/fight-ring`, 2026-11-18): WHAT THE CODE SHOWED
+
+*The fight file is `content/fights/dragon.yml`, the fixture `/rpg fight start | land <dx> <dz> | mage-die | stop`
+(`paper/.../fight/`), its logic core's `RingFixture`. The gate is `docs/gates/GATE-fight-ring.md`, NOT RUN at this
+writing.*
+
+- **A `Double.MAX_VALUE` strike is finite on the path the fixture takes, and becomes INFINITY on the defence path.**
+  MEASURED, not reasoned: `MaxValueStrikeTest` passes with `DefenseRule.BYPASSED`, and the same strike with
+  `DefenseRule.APPLIES` (armour 40) reads `dealt Infinity`. `Defense.applyDefense` computes `damage × 100 / (100 +
+  defence)`, and `MAX_VALUE × 100` overflows before the division. **So if Ben rules that armour reduces the lightning
+  (GATE-fight-ring.md BQ5), the ramp's saturation must come down to `MAX_VALUE / 100`, or the curve must divide first
+  (`damage × (100 / (100 + d))`; that reorders a floating-point product every hit in the game reaches, so it is not done
+  here).** A dev-only edge: a strike count of about 1014 in a row.
+- **The forced ring costs 906 packets per redraw at radius 48, 4530 a second per player** (5 redraws a second; one
+  `ClientboundLevelParticlesPacket` per point, READ in `CraftPlayer.spawnParticle`). cfde822's border sent 220 a redraw.
+  Spacing, heights and period are content.
+- **No PacketEvents for the forced send** (READ): `CraftPlayer.spawnParticle(..., force)` sets the packet's
+  `overrideLimiter` to force and `alwaysShow` to false, and sends to that player with no distance check.
+- **Folia, owed by the real fight:** the dev fixture reads participants' positions from C's region thread, safe on
+  Paper only. The fight in its temporary world must read each player on his own scheduler.
+- **Kill credit is `getKiller()`**: `MobDeathSystem` sets it for a player's store damage, vanilla for a vanilla kill. **A
+  summon's kill is not credited** (cfde822 credited the summon's owner, §3 fact 21). Which kills count is still §7
+  item 7.
+- **`start` takes C from the command's source**, not the player's feet, so a gate row can put C 60 blocks away with
+  `execute positioned` instead of teleporting the player into unknown ground. A seat choice.
+- **Lines the brief did not ask for, added so rows read exact ticks:** `FIGHTPHASE` (each change, on its own tick, a
+  landing's and a death's included), `FIGHTKILL` (radius before and after), and RINGTICK's `points=` and `viewers=`.
+- **Every selftest run's end stops a fixture a row left running** (one `SELFTEST RUN fight-fixture …` line), so an
+  aborted row cannot leave lightning striking the player; plugin disable stops it too.
+
 ---
 
 ## 7. OPEN, FOR BEN

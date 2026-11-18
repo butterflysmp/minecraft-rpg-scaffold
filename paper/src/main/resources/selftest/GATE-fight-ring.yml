@@ -1,0 +1,287 @@
+# GATE-fight-ring.md: STEPS F4 + F5, THE RING DRAWN AND THE LIGHTNING, IN AN ORDINARY WORLD (feat/fight-ring,
+# 2026-11-18). `/rpg selftest fight-ring`.
+#
+# THE FIXTURE: `/rpg fight start` puts C at the block the command runs at (the player's, or `execute positioned`'s);
+# `land <dx> <dz>`, `mage-die` and `stop` drive core's MageCycle. Its lines: RINGTICK (every 4 ticks), FIGHTPHASE (each
+# phase change, on its tick), STRIKE (each participant, each 40th tick), FIGHTKILL, FIGHT land|die|stop|FAILED_*.
+# The fight clock is 0 at the start; the first tick is 1, the first RINGTICK 4 and the first strike tick 40.
+#
+# THE PLAYER CANNOT DIE IN ANY ROW (GATE-fight-ring.md, THE PLAYER CANNOT DIE): every row that can strike him heals him
+# to full before each strike tick it can reach, and no strike is larger than 80 (his maximum is at least 100). The rows
+# that only watch the ring keep him at the Mage's point, which is inside every ring the cycle draws. Every row ends with
+# `rpg fight stop`; the run's end stops any fixture a row left running.
+#
+# THE STAGING: the player at a block centre facing east (+x); where he moves, a stone floor and air above it, every fill
+# box SAVED first. A mob is spawned by stepping to its spot and back.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# FR1: start; the ring is the border at C, IDLE.
+FR1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 9
+  - cmd: "rpg fight stop"
+
+# FR2: land 0 0; the radius falls from 48 to 12 in exactly 144 ticks, and SLOW_CLOSE begins on that tick.
+FR2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 0 0"
+  - wait: 160
+  - cmd: "rpg fight stop"
+
+# FR3: land 18 0; 216 ticks, the centre on the straight line from C to M. He steps onto M, inside every ring.
+FR3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 19 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~19 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~19 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 18 0"
+  - cmd: "tp @s ~18 ~ ~ -90 0"
+  - wait: 232
+  - cmd: "rpg fight stop"
+
+# FR4: land 36 0; 288 ticks, the centre on the straight line. He steps onto M.
+FR4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 37 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~37 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~37 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 36 0"
+  - cmd: "tp @s ~36 ~ ~ -90 0"
+  - wait: 304
+  - cmd: "rpg fight stop"
+
+# FR5: land 36.01 0 is REFUSED_TOO_FAR, and the ring is unchanged.
+FR5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg fight start"
+  - wait: 6
+  - cmd: "rpg fight land 36.01 0"
+  - wait: 6
+  - cmd: "rpg fight stop"
+
+# FR6: the slow close with no kills closes 600 ticks after it starts: FAILED_CLOSED. Stopped before the next strike.
+FR6:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 0 0"
+  - wait: 750
+  - cmd: "rpg fight stop"
+
+# FR7: kills in the slow close. Three kills from inside (the first +1.0, the next two capped at 12); then one from
+# outside the ring, which does not count.
+FR7:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -2 19 3 2"
+  - cmd: "fill ~-1 ~-1 ~-2 ~19 ~-1 ~2 stone"
+  - cmd: "fill ~-1 ~ ~-2 ~19 ~3 ~2 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 0 0"
+  - wait: 220
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "fk1 frozen knell 100"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 2
+  - aim: "fk1"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 2
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "fk2 frozen knell 100"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 2
+  - aim: "fk2"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 2
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "fk3 frozen knell 100"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 2
+  - aim: "fk3"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 2
+  - cmd: "tp @s ~14 ~ ~ -90 0"
+  - wait: 2
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "fk4 frozen knell 100"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - wait: 2
+  - aim: "fk4"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 2
+  - cmd: "tp @s ~-14 ~ ~ -90 0"
+  - wait: 4
+  - cmd: "rpg fight stop"
+
+# FR8: the strikes, SURVIVAL. C is 60 east, so he stands outside the 48 border: 20, then 40, then 80 (healed before
+# each); then 45 from C, inside, for one strike tick (no damage, the count resets); then outside again: 20.
+FR8:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 17 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~17 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~17 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "execute positioned ~60 ~ ~ run rpg fight start"
+  - wait: 30
+  - cmd: "rpg heal 1000000"
+  - wait: 20
+  - cmd: "rpg heal 1000000"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~15 ~ ~ -90 0"
+  - wait: 40
+  - cmd: "tp @s ~-15 ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - wait: 40
+  - cmd: "rpg fight stop"
+  - cmd: "rpg heal 1000000"
+
+# FR9: mage-die in the slow close: the radius rises back to 12 at 0.4 a second, then the fast close runs in reverse,
+# home at (C, 48); IDLE.
+FR9:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 0 0"
+  - wait: 244
+  - cmd: "rpg fight mage-die"
+  - wait: 260
+  - cmd: "rpg fight stop"
+
+# BQ1: standing at C with the ring at 48. Ben's words.
+BQ1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - tell: "QUESTION 1 IS COMING. The purple ring is 48 blocks around you. Turn slowly and look at all of it."
+  - wait: 200
+  - ask: "1 2400 Standing here, can you see the whole ring clearly, all the way round?"
+  - cmd: "rpg fight stop"
+
+# BQ2: the fast close toward a far landing, its fastest point behind him. C is 44 east, so the ring's west edge is 4
+# blocks behind him; the Mage lands 36 east of C. He sprints east for six seconds. Healed every 10 ticks, so even if
+# the edge catches him at once he takes at most 20, 40 and 80, one at a time.
+BQ2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "execute positioned ~44 ~ ~ run rpg fight start"
+  - tell: "QUESTION 2 IS COMING. Face EAST. The ring's WEST edge is 4 blocks behind you. When the next gold line says GO, sprint EAST and try to stay ahead of that edge for six seconds."
+  - wait: 100
+  - cmd: "rpg fight land 36 0"
+  - tell: "GO"
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg fight stop"
+  - cmd: "rpg heal 1000000"
+  - ask: "2 2400 Sprinting east, did the ring's west edge catch you? And did its speed feel slightly slower than a player sprinting?"
+
+# BQ3: the slow close's pace, watched from the Mage's point (inside every ring). Stopped before the question.
+BQ3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - tell: "QUESTION 3 IS COMING. Stand still. The ring will close fast to 12 blocks around you, then slowly. Watch the slow part."
+  - wait: 10
+  - cmd: "rpg fight land 0 0"
+  - wait: 344
+  - cmd: "rpg fight stop"
+  - ask: "3 2400 The slow close (after it reached 12 blocks): is its pace right?"
+
+# BQ4: a kill's one-block pop, watched from the Mage's point.
+BQ4:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 5 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~5 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~5 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 10
+  - cmd: "rpg fight land 0 0"
+  - wait: 200
+  - cmd: "tp @s ~3 ~ ~"
+  - spawn: "bk1 frozen knell 100"
+  - cmd: "tp @s ~-3 ~ ~ -90 0"
+  - tell: "QUESTION 4 IS COMING. Watch the ring. When the mob in front of you dies, the ring grows one block at once."
+  - wait: 60
+  - aim: "bk1"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 60
+  - cmd: "rpg fight stop"
+  - ask: "4 2400 When the mob died the ring jumped out one block at once. Is that fine, or should it glide out?"
+
+# BQ5: the lightning, SURVIVAL. C is 60 east; he is outside. 20, 40, 80, healed before each.
+BQ5:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - tell: "QUESTION 5 IS COMING. Stand still. You are outside the ring, so lightning will strike you three times: 20, then 40, then 80. You are healed between strikes."
+  - cmd: "execute positioned ~60 ~ ~ run rpg fight start"
+  - wait: 30
+  - cmd: "rpg heal 1000000"
+  - wait: 20
+  - cmd: "rpg heal 1000000"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 40
+  - cmd: "rpg fight stop"
+  - cmd: "rpg heal 1000000"
+  - ask: "5 2400 Do 20, then 40, then 80 feel right for lightning outside the ring?"
+  - ask: "6 2400 Should armour reduce the lightning's damage?"
+
+# BQ6: the ring's look. He stands at C, inside the border; nothing strikes him.
+BQ6:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - tell: "QUESTION 7 IS COMING. Look at the ring again: its colour, its height (three rows of dots) and how dense it is."
+  - wait: 100
+  - ask: "7 2400 The ring's look: is the colour, the height and the density right? Say what you would change."
+  - cmd: "rpg fight stop"
