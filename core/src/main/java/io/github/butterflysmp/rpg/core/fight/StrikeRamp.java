@@ -61,14 +61,24 @@ public final class StrikeRamp<K> {
     }
 
     /**
-     * The k-th consecutive strike's damage: {@code firstStrikeDamage x 2^(k-1)}, with no cap (Ben). <b>It stays
-     * finite for any k</b>: where the doubling would pass the largest finite double (k of about 1020 with 20), the
-     * result is {@link Double#MAX_VALUE}. Any finite value that large kills, so this is not a gameplay cap; it only
-     * keeps an infinity out of the damage pipeline.
+     * THE TECHNICAL CEILING (not a gameplay number): the most one strike can offer. Since F6 + F7 a strike goes
+     * through ARMOUR ({@code DefenseRule.APPLIES}; Ben, 2026-11-18: "yes"), and {@code Defense.applyDefense} computes
+     * {@code damage x SCALE / (SCALE + defence)}, multiplying BEFORE it divides, so an offered {@code Double.MAX_VALUE}
+     * becomes infinity (MEASURED, PLAN-dragon-fight.md section 6.2). Half of {@code MAX_VALUE / SCALE} keeps the product
+     * finite for every defence of 0 or more; {@code StrikeRampTest} executes the curve at defences 0 to MAX_VALUE.
+     * The guard lives HERE, in the ramp, so the defence curve every hit in the game reaches is not reordered.
+     */
+    public static final double CEILING_DAMAGE =
+            Double.MAX_VALUE / (2.0 * io.github.butterflysmp.rpg.core.combat.Defense.SCALE);
+
+    /**
+     * The k-th consecutive strike's damage, before armour: {@code firstStrikeDamage x 2^(k-1)}, with no gameplay cap
+     * (Ben). <b>It stays finite on the armour path for any k</b>: where the doubling would pass
+     * {@link #CEILING_DAMAGE} (k of about 1014 with 20), the result is the ceiling. Any value that large kills.
      */
     public static double damageForStrike(FightSettings settings, int k) {
         if (k < 1) throw new IllegalArgumentException("a strike count starts at 1: " + k);
         double damage = settings.firstStrikeDamage() * Math.pow(2.0, k - 1);
-        return Double.isFinite(damage) ? damage : Double.MAX_VALUE;
+        return Double.isFinite(damage) && damage < CEILING_DAMAGE ? damage : CEILING_DAMAGE;
     }
 }

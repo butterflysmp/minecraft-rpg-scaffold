@@ -211,6 +211,14 @@ public final class BukkitCombatant {
                         "dealer=%s element=%s amount=%.3f", sourceId, element, amount))) {
                     return;
                 }
+                // THE MAGE'S GATE (the dragon fight's step F6): while the fight says he cannot be hurt, EVERY damage that
+                // reaches a mob's custom health (weapon, ability, status tick, blast, a rerouted vanilla hit) is refused
+                // here, before the store: no health change, no number, no accrual, no aggro, no flash. The rule logs the
+                // MAGEGATE line and plays the cue. A vanilla hit on him is cancelled earlier (RpgListeners.onGatedDamage).
+                if (ctx.gate().refuses(entity.getUniqueId(), amount,
+                        element == null ? "hit" : "hit/" + element)) {
+                    return;
+                }
                 // Drain custom HP + fire the seam. dealerIsPlayer reuses the source's faction bit;
                 // the nameplate ignores the dealer this phase, the popup (1b) will need it.
                 Entity source = Attribution.attributableSource(

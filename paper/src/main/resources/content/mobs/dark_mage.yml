@@ -1,0 +1,19 @@
+# THE WITHERED DARK MAGE (PLAN-dragon-fight.md step F6). The dragon fight's Mage: he lands, glows, stays where he
+# lands, and channels the storm. He cannot be hurt until the slow close starts (Ben, 2026-11-18: "No he cannot be hurt
+# during the fast close, only once the slow close starts"); that gate is the fight's, not this file's.
+#
+# cfde822's Mage (PLAN section 3.2) had no AI and no attacks; this one has no goals at all (stationary), so he never
+# moves, attacks or targets, and gravity still stands him on the floor.
+
+# Ben's ("yes for now": a glowing wither skeleton).
+base_entity: wither_skeleton
+# SEAT PLACEHOLDER: cfde822's name.
+display_name: "Withered Dark Mage"
+# Ben's ("1500 works for now"), at gear score 100: a custom hostile mob's maximum is this x GS / 100.
+max_health: 1500
+# The fight is Void (PLAN-dragon-mobs.md section 6 C6).
+element: void
+# Seen through walls (cfde822's Mage glowed).
+glowing: true
+# No movement, no attacks, no targeting; no knockback moves him (the fight pins him where he landed).
+stationary: true

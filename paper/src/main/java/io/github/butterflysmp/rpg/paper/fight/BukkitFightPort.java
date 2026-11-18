@@ -35,8 +35,9 @@ import java.util.logging.Logger;
  *       (PLAN-dragon-fight.md section 4 g, READ). Never {@code strikeLightning}, which cfde822 used and which landed
  *       vanilla's own damage and fire on top of its own. {@code FightPortSourceTest} pins which one this calls.</li>
  *   <li><b>The damage:</b> the store's one entry, {@code BukkitCombatant#handle().applyDamage}, the same entry a mob's
- *       hit on a player uses, so the selftest's HURT line is logged. With {@code DefenseRule.BYPASSED} and NO element:
- *       the SEAT PLACEHOLDER for the mitigation question (no armour, no element), flagged to Ben. The dealer is the
+ *       hit on a player uses, so the selftest's HURT line is logged. With {@code DefenseRule.APPLIES} (armour reduces it;
+ *       Ben, 2026-11-18: "yes") and NO element (whether any element applies is OPEN). The ramp's ceiling keeps the
+ *       defence curve finite ({@code StrikeRamp.CEILING_DAMAGE}). The dealer is the
  *       player himself (a bolt has no entity), as {@code RpgListeners.attributableId} attributes sourceless harm.</li>
  * </ul>
  *
@@ -98,7 +99,7 @@ final class BukkitFightPort implements RingFixture.Port {
         Player p = Bukkit.getPlayer(player);
         if (p == null) return;
         BukkitCombatant.of(p, adapters).handle()
-                .applyDamage(amount, player, CritState.NORMAL, DefenseRule.BYPASSED, null);
+                .applyDamage(amount, player, CritState.NORMAL, DefenseRule.APPLIES, null);
     }
 
     @Override
@@ -113,5 +114,70 @@ final class BukkitFightPort implements RingFixture.Port {
             Player player = Bukkit.getPlayer(p.id());
             if (player != null) player.sendMessage(text);
         }
+    }
+
+    // --- step F7: the crystals --------------------------------------------------------------------------------------
+
+    /** The crystals this fixture lit, in order; the port owns them, so a stop removes every one. */
+    private final List<org.bukkit.entity.EnderCrystal> crystals = new ArrayList<>();
+    private java.util.function.Supplier<org.bukkit.entity.LivingEntity> mage = () -> null;
+    private List<Location> crystalSpots = List.of();
+
+    /** Bound by FightFixtures at the start: where the Mage is now, and the crystals' spots (spot n is index n - 1). */
+    void bind(java.util.function.Supplier<org.bukkit.entity.LivingEntity> mage, List<Location> spots) {
+        this.mage = mage;
+        this.crystalSpots = List.copyOf(spots);
+    }
+
+    /**
+     * Crystal {@code index} appears at its spot, its bottom hidden, its beam on the Mage, unbreakable (its damage event is
+     * cancelled by {@code RpgListeners.onFightCrystalDamage}; {@code setInvulnerable} the backstop), and NOT PERSISTED:
+     * READ from the server jar, {@code CraftEntity.setPersistent} writes {@code Entity.persist}, and
+     * {@code Entity.saveAsPassenger} writes nothing when it is false (its force flag aside), so a stop or a crash leaves
+     * no crystal in the world file. Every participant hears the cue at the crystal.
+     */
+    @Override
+    public void lightCrystal(int index) {
+        if (index < 1 || index > crystalSpots.size()) return;
+        Location spot = crystalSpots.get(index - 1);
+        org.bukkit.entity.LivingEntity target = mage.get();
+        org.bukkit.entity.EnderCrystal crystal = world.spawn(spot, org.bukkit.entity.EnderCrystal.class, c -> {
+            c.setShowingBottom(false);
+            c.setInvulnerable(true);
+            c.setPersistent(false);
+            c.getPersistentDataContainer().set(adapters.keys().fightCrystal,
+                    org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+            c.addScoreboardTag("fight_crystal");
+            if (target != null && target.isValid()) c.setBeamTarget(target.getLocation());
+        });
+        crystals.add(crystal);
+        FightContent.Cue cue = fight.litCue();
+        for (RingFixture.Participant p : participants()) {
+            Player player = Bukkit.getPlayer(p.id());
+            if (player != null) player.playSound(spot, cue.sound(), cue.volume(), cue.pitch());
+        }
+    }
+
+    @Override
+    public void clearCrystals() {
+        for (org.bukkit.entity.EnderCrystal c : crystals) {
+            if (c.isValid()) c.remove();
+        }
+        crystals.clear();
+    }
+
+    /** The refused-hit cue at the Mage, heard by whoever is near him (the attacker among them). */
+    @Override
+    public void refusedCue() {
+        org.bukkit.entity.LivingEntity m = mage.get();
+        if (m == null || !m.isValid()) return;
+        FightContent.Cue cue = fight.refusedCue();
+        world.playSound(m.getLocation(), cue.sound(), cue.volume(), cue.pitch());
+    }
+
+    /** The live crystals' count, for the CRYSTALPROBE line. */
+    List<org.bukkit.entity.EnderCrystal> crystals() {
+        crystals.removeIf(c -> !c.isValid());
+        return List.copyOf(crystals);
     }
 }

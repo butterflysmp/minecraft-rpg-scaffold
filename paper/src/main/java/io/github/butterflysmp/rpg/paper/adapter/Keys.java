@@ -228,6 +228,15 @@ public final class Keys {
      */
     public final NamespacedKey mobShield;
 
+    /** A STATIONARY MOB (the dragon fight's step F6, {@code stationary: true}): a BYTE set at its spawn; it targets nothing. */
+    public final NamespacedKey mobStationary;
+
+    /** THE FIGHT'S OWN CRYSTAL (step F7): a BYTE on each crystal the fixture lights; only these are made unbreakable. */
+    public final NamespacedKey fightCrystal;
+
+    /** THE FIGHT'S MAGE (step F6): a BYTE on the Mage the fixture spawns, so its death is told from any other. */
+    public final NamespacedKey fightMage;
+
     /**
      * THE SKREEL PAIR (dragon-mobs step R8). {@code mountRider}: a STRING on the MOUNT, its rider's uuid, written when
      * the pair is made and removed when it breaks; in the PDC, so a pair that unloads and loads again finds itself.
@@ -472,6 +481,9 @@ public final class Keys {
         this.beamRoot = new NamespacedKey(plugin, "beam_root");
         this.mobShot = new NamespacedKey(plugin, "mob_shot");
         this.mobShield = new NamespacedKey(plugin, "mob_shield");
+        this.mobStationary = new NamespacedKey(plugin, "mob_stationary");
+        this.fightCrystal = new NamespacedKey(plugin, "fight_crystal");
+        this.fightMage = new NamespacedKey(plugin, "fight_mage");
         this.mountRider = new NamespacedKey(plugin, "mount_rider");
         this.mountWidowed = new NamespacedKey(plugin, "mount_widowed");
         this.mountRidden = new NamespacedKey(plugin, "mount_ridden");

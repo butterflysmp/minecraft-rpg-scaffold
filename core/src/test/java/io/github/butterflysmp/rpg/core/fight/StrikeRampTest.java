@@ -21,14 +21,24 @@ class StrikeRampTest {
     }
 
     @Test
-    void theDamageStaysFiniteForAnyK() {
+    void theDamageSaturatesAtTheNamedCeilingForAnyK() {
         double huge = StrikeRamp.damageForStrike(S, Integer.MAX_VALUE);
-        assertTrue(Double.isFinite(huge), "k = Integer.MAX_VALUE must not be infinite");
-        assertEquals(Double.MAX_VALUE, huge, 0.0, "it saturates at the largest finite double");
-        // The last k that does not saturate is still exact doubling: 20 x 2^1019 is finite.
-        assertEquals(20.0 * Math.pow(2.0, 1019), StrikeRamp.damageForStrike(S, 1020), 0.0);
-        assertTrue(Double.isFinite(StrikeRamp.damageForStrike(S, 1020)));
+        assertEquals(StrikeRamp.CEILING_DAMAGE, huge, 0.0, "it saturates at the ceiling");
+        assertTrue(StrikeRamp.CEILING_DAMAGE < Double.MAX_VALUE);
+        // Below the ceiling it is exact doubling: 20 x 2^999 is far under it.
+        assertEquals(20.0 * Math.pow(2.0, 999), StrikeRamp.damageForStrike(S, 1000), 0.0);
         assertThrows(IllegalArgumentException.class, () -> StrikeRamp.damageForStrike(S, 0));
+    }
+
+    @Test
+    void theCeilingKeepsTheDefenceCurveFiniteAtAnyDefence() {
+        // EXECUTED, not reasoned (the defence curve multiplies by 100 before it divides; PLAN section 6.2).
+        for (double defence : new double[] {0.0, 0.5, 10.0, 40.0, 1e6, 1e300, Double.MAX_VALUE}) {
+            double landed = io.github.butterflysmp.rpg.core.combat.Defense.applyDefense(StrikeRamp.CEILING_DAMAGE, defence);
+            assertTrue(Double.isFinite(landed), "defence " + defence + " gives " + landed);
+        }
+        // CONTROL: the uncapped figure the ceiling replaces does overflow on the same curve.
+        assertTrue(Double.isInfinite(io.github.butterflysmp.rpg.core.combat.Defense.applyDefense(Double.MAX_VALUE, 40.0)));
     }
 
     @Test

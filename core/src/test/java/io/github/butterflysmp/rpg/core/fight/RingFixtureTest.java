@@ -49,6 +49,12 @@ class RingFixtureTest {
         @Override public void damage(UUID player, double amount) { damage.add(player + " " + amount); }
         @Override public void log(String line) { lines.add(line); }
         @Override public void tell(String line) { told.add(line); }
+        final List<Integer> lit = new ArrayList<>();
+        int clears;
+        int cues;
+        @Override public void lightCrystal(int index) { lit.add(index); }
+        @Override public void clearCrystals() { clears++; lit.clear(); }
+        @Override public void refusedCue() { cues++; }
 
         long count(String prefix) { return lines.stream().filter(l -> l.startsWith(prefix)).count(); }
         String last(String prefix) {
@@ -231,6 +237,58 @@ class RingFixtureTest {
         assertEquals("FIGHTPHASE t=244 SLOW_CLOSE->RETURNING", port.last("FIGHTPHASE"));
         f.tick();
         assertEquals("FIGHTPHASE t=488 RETURNING->IDLE", port.last("FIGHTPHASE"));
+    }
+
+    @Test
+    void crystalsLightOneEveryIntervalAndGoOutOnTheMagesDeathOnThatTick() {
+        FakePort port = new FakePort();
+        RingFixture f = fixture(port);
+        f.land(0.0, 0.0);
+        run(f, 144 + 79);
+        assertEquals(List.of(), port.lit, "none before slow close + 80");
+        f.tick();
+        assertEquals(List.of(1), port.lit);
+        assertEquals("CRYSTAL t=224 lit index=1", port.last("CRYSTAL"));
+        run(f, 160);
+        assertEquals(List.of(1, 2, 3), port.lit);
+        f.mageDie(); // t = 384
+        assertEquals(1, port.clears, "every crystal removed");
+        assertEquals(List.of("CRYSTAL t=384 removed index=1", "CRYSTAL t=384 removed index=2",
+                "CRYSTAL t=384 removed index=3"), port.lines.stream().filter(l -> l.contains("removed")).toList());
+        run(f, 50);
+        assertEquals(1, port.clears, "and nothing more while it returns");
+    }
+
+    @Test
+    void poweredCrystalsStayUntilStop() {
+        FakePort port = new FakePort();
+        port.place(ANA, "ana", CX, CZ);
+        RingFixture f = fixture(port);
+        f.land(0.0, 0.0);
+        run(f, 144);
+        for (int k = 0; k < 6; k++) {
+            run(f, 100);
+            f.kill(ANA, CX, CZ);
+        }
+        run(f, 200);
+        assertEquals("FIGHT FAILED_POWERED t=944", port.last("FIGHT FAILED"));
+        assertEquals(List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), port.lit);
+        run(f, 100);
+        assertEquals(0, port.clears, "POWERED: they stay");
+    }
+
+    @Test
+    void aRefusedHitIsLoggedWithTheTickThePhaseAndTheAmountAndCued() {
+        FakePort port = new FakePort();
+        RingFixture f = fixture(port);
+        f.land(0.0, 0.0);
+        run(f, 30);
+        assertFalse(f.mageDamageable(), "fast close");
+        f.refused(42.5, "ability");
+        assertEquals("MAGEGATE t=30 phase=FAST_CLOSE amount=42.500 source=ability refused", port.last("MAGEGATE"));
+        assertEquals(1, port.cues);
+        run(f, 114);
+        assertTrue(f.mageDamageable(), "the slow close's first tick");
     }
 
     @Test

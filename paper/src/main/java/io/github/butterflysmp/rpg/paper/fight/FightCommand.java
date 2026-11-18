@@ -21,8 +21,11 @@ import java.util.function.Function;
  * <ul>
  *   <li>{@code start}: C is the block position the command runs at (the caller's, or {@code execute positioned}'s);
  *       the ring is at (C, 48) and the fight clock starts.</li>
- *   <li>{@code land <dx> <dz>}: the Mage "lands" at C + (dx, dz), blocks; the reply names STARTED, HELD or REFUSED_*.</li>
- *   <li>{@code mage-die}: the Mage dies now.</li>
+ *   <li>{@code land <dx> <dz>}: the Mage lands at C + (dx, dz), blocks, on the standable block there, and is spawned;
+ *       the reply names STARTED, HELD or REFUSED_*. {@code land random}: a uniformly random standable spot within the
+ *       maximum landing distance.</li>
+ *   <li>{@code mage-die}: the Mage is killed through the store.</li>
+ *   <li>{@code probe}: one FIGHTPROBE line, the instrument's reading of the Mage and the crystals.</li>
  *   <li>{@code stop}: the fixture ends; nothing it made remains.</li>
  * </ul>
  */
@@ -35,7 +38,10 @@ public final class FightCommand {
                 .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                 .then(Commands.literal("start").executes(ctx -> reply(ctx, devServer,
                         p -> fixtures.start(p, ctx.getSource().getLocation()))))
+                .then(Commands.literal("probe").executes(ctx -> reply(ctx, devServer, p -> fixtures.probe())))
                 .then(Commands.literal("land")
+                        .then(Commands.literal("random").executes(ctx -> reply(ctx, devServer,
+                                p -> fixtures.landRandom())))
                         .then(Commands.argument("dx", DoubleArgumentType.doubleArg(-1000.0, 1000.0))
                                 .then(Commands.argument("dz", DoubleArgumentType.doubleArg(-1000.0, 1000.0))
                                         .executes(ctx -> reply(ctx, devServer, p -> fixtures.land(

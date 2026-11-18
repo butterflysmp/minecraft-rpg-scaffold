@@ -11,24 +11,30 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 
 /**
- * Loads {@code content/fights/} (PLAN-dragon-fight.md step F4). It is the only class that knows the fight schema.
+ * Loads {@code content/fights/} (PLAN-dragon-fight.md steps F4 to F7). It is the only class that knows the fight schema.
  *
  * <p><b>Every key is REQUIRED, never defaulted</b>, the shape of {@code MiningContentLoader}: a missing key would
  * otherwise read as 0, and a 0 radius or a 0 damage is a fight that silently does nothing. A file with any missing or
  * malformed key is REFUSED whole, with a {@code Refusing} warning naming the key, so R0c's pattern catches it at boot;
  * the range checks are the core records' ({@link FightSettings}, {@link RingLook}), and their message is the reason.
+ * The Mage's mob must be a loaded mob file and every sound a known sound, asked of the two predicates the plugin gives.
  */
 public final class FightLoader {
 
     static final String SUPPORTED_PARTICLE = "dust";
 
     private final Logger log;
+    private final Predicate<String> mobKnown;
+    private final Predicate<String> soundKnown;
 
-    public FightLoader(Logger log) {
+    public FightLoader(Logger log, Predicate<String> mobKnown, Predicate<String> soundKnown) {
         this.log = log;
+        this.mobKnown = mobKnown;
+        this.soundKnown = soundKnown;
     }
 
     /** Every {@code *.yml} in the directory, by file id. A refused file is absent and named. */
@@ -57,15 +63,17 @@ public final class FightLoader {
         return String.format(Locale.ROOT,
                 "Loaded fight '%s': border %.1f, mage ring %.1f, v_fast %.2f, v_slow %.2f, e_kill %.2f, "
                         + "%d crystals every %d ticks, a strike every %d ticks from %.1f; ring %s (%d,%d,%d) size %.2f "
-                        + "every %.2f blocks at %s every %d ticks; participants within %.1f",
+                        + "every %.2f blocks at %s, row shift %.2f, turn %.2f/s, every %d ticks; mage '%s' refused %s; "
+                        + "crystals at %.1f, %.1f up, lit %s; participants within %.1f",
                 f.id(), s.borderRadiusBlocks(), s.mageRingRadiusBlocks(), s.fastCloseBlocksPerSecond(),
                 s.slowCloseBlocksPerSecond(), s.killExpansionBlocks(), s.crystalCount(), s.crystalIntervalTicks(),
                 s.strikeIntervalTicks(), s.firstStrikeDamage(), l.particleKey(), l.red(), l.green(), l.blue(),
-                l.dustSize(), l.pointSpacingBlocks(), l.heightOffsetsBlocks(), l.redrawPeriodTicks(),
-                f.participantRadiusBlocks());
+                l.dustSize(), l.pointSpacingBlocks(), l.heightOffsetsBlocks(), l.rowShiftBlocks(),
+                l.turnBlocksPerSecond(), l.redrawPeriodTicks(), f.mageMob(), f.refusedCue().sound(),
+                f.crystalRingRadiusBlocks(), f.crystalHeightBlocks(), f.litCue().sound(), f.participantRadiusBlocks());
     }
 
-    static FightContent parse(String id, ConfigurationSection root) {
+    FightContent parse(String id, ConfigurationSection root) {
         ConfigurationSection s = section(root, "settings");
         FightSettings settings = new FightSettings(
                 number(s, "border_radius_blocks"),
@@ -100,13 +108,38 @@ public final class FightLoader {
                 number(r, "dust_size"),
                 number(r, "point_spacing_blocks"),
                 heights.stream().map(h -> ((Number) h).doubleValue()).toList(),
+                number(r, "row_shift_blocks"),
+                number(r, "turn_blocks_per_second"),
                 whole(r, "redraw_period_ticks"));
-        ConfigurationSection fx = section(root, "fixture");
-        double reach = number(fx, "participant_radius_blocks");
-        if (!(reach > 0.0) || Double.isInfinite(reach)) {
-            throw new IllegalArgumentException("fixture.participant_radius_blocks must be finite and > 0: " + reach);
+        ConfigurationSection m = section(root, "mage");
+        String mob = m.getString("mob");
+        if (mob == null) throw new IllegalArgumentException("mage has no 'mob:'");
+        if (!mobKnown.test(mob)) {
+            throw new IllegalArgumentException("mage.mob '" + mob + "' names no loaded mob file (content/mobs/)");
         }
-        return new FightContent(id, settings, look, reach);
+        FightContent.Cue refused = cue(m, "refused");
+        ConfigurationSection c = section(root, "crystals");
+        double crystalRadius = positive(c, "ring_radius_blocks");
+        double crystalHeight = number(c, "height_above_ground_blocks");
+        if (!Double.isFinite(crystalHeight)) {
+            throw new IllegalArgumentException("crystals.height_above_ground_blocks must be finite: " + crystalHeight);
+        }
+        FightContent.Cue lit = cue(c, "lit");
+        ConfigurationSection fx = section(root, "fixture");
+        double reach = positive(fx, "participant_radius_blocks");
+        return new FightContent(id, settings, look, mob, refused, crystalRadius, crystalHeight, lit, reach);
+    }
+
+    /** {@code <prefix>_sound}, {@code <prefix>_volume}, {@code <prefix>_pitch}; the sound must be known. */
+    private FightContent.Cue cue(ConfigurationSection s, String prefix) {
+        String sound = s.getString(prefix + "_sound");
+        if (sound == null) throw new IllegalArgumentException(s.getName() + " has no '" + prefix + "_sound:'");
+        if (!soundKnown.test(sound)) {
+            throw new IllegalArgumentException(s.getName() + "." + prefix + "_sound '" + sound + "' is not a known sound");
+        }
+        double volume = positive(s, prefix + "_volume");
+        double pitch = positive(s, prefix + "_pitch");
+        return new FightContent.Cue(sound, (float) volume, (float) pitch);
     }
 
     private static ConfigurationSection section(ConfigurationSection s, String key) {
@@ -116,6 +149,14 @@ public final class FightLoader {
                     + (s.contains(key) ? " (it is a scalar; it needs indented keys)" : ""));
         }
         return out;
+    }
+
+    private static double positive(ConfigurationSection s, String key) {
+        double v = number(s, key);
+        if (!(v > 0.0) || Double.isInfinite(v)) {
+            throw new IllegalArgumentException(s.getName() + "." + key + " must be finite and > 0: " + v);
+        }
+        return v;
     }
 
     /** A required number, whole or not; refused by name when missing or not a number. */

@@ -1682,6 +1682,13 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   >
   > **If R0 fails, STOP. No other row in the file is readable.**
   >
+  > **AND R0c'S STANDING CLAUSE, WRITTEN INTO EVERY GATE: "no `[Rpg]` WARN beyond `volley_stone`'s known pair".** The
+  > Loaded row searches `Refusing`, `Skipping`, `SEVERE`, `WARN` and exceptions, and predicts no `[Rpg]` WARN **except**
+  > `volley_stone`'s two `Content:` lines, which every boot prints. **2026-11-18, `GATE-fight-ring.md`:** its R0c dropped
+  > the carve-out, `GATE-drag-additive.md` had carried it, the seat's diff missed the drop, and the boot STOPPED at R0c on
+  > a warning older than the branch until the seat ruled. **Copy the clause; do not re-derive it.** When `volley_stone`
+  > is fixed or deleted, the clause goes in the same commit.
+  >
   > > ### *** AND THE SAME INSTRUMENT FAILURE ARRIVES WITHOUT A JAR: A CHARACTER CLASS THE TOOL DOES NOT READ AS ONE ***
   > >
   > > **The jar case is easy to believe because the input is obviously binary.** The general form is

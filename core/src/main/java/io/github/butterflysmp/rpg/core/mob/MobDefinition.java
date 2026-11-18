@@ -71,8 +71,18 @@ public record MobDefinition(
         MobShield shield,
         String mount,
         MobPounce pounce,
-        Double riddenSpeed
+        Double riddenSpeed,
+        MobStance stance
 ) {
+    /** Step R8's nineteen-field form: no stance (the dragon fight's step F6). Kept so its call sites read unchanged. */
+    public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
+                         MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,
+                         MobBlast blast, MobBeam beam, MobTeleport teleport, MobShot shot, String mainHand,
+                         MobBlink blink, MobShield shield, String mount, MobPounce pounce, Double riddenSpeed) {
+        this(id, baseEntity, displayName, maxHealth, body, element, stages, split, growth, blast, beam, teleport,
+                shot, mainHand, blink, shield, mount, pounce, riddenSpeed, MobStance.NONE);
+    }
+
     /** Step R7b's sixteen-field form: no mount, no pounce, no ridden speed (step R8's). Kept so its call sites read unchanged. */
     public MobDefinition(String id, String baseEntity, String displayName, double maxHealth,
                          MobBody body, String element, MobStages stages, MobSplit split, MobGrowth growth,

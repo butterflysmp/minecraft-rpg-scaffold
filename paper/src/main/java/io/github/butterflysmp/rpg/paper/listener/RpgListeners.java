@@ -3002,6 +3002,42 @@ public final class RpgListeners implements Listener {
      * covers a push whose damage is yet to come (an explosion's push and hurt arrive in either order). HIGH, so it runs
      * after {@link #onCombatKnockback} and sees its verdict.
      */
+    /**
+     * THE MAGE'S GATE, ITS VANILLA HALF (the dragon fight's step F6): a vanilla damage event of ANY cause on a guarded
+     * mob the gate refuses is CANCELLED here, at LOWEST, before every handler of ours (each is {@code ignoreCancelled}),
+     * so no token, no reroute, no flash and no knockback; and {@code /kill} and the void, which never reach the store,
+     * are refused too. The custom half is {@code BukkitCombatant}'s, at the store's one entry.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onGatedDamage(EntityDamageEvent event) {
+        if (adapters.gate().refuses(event.getEntity().getUniqueId(), event.getDamage(),
+                "vanilla/" + event.getCause().name().toLowerCase(java.util.Locale.ROOT))) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * THE FIGHT'S OWN CRYSTALS ARE UNBREAKABLE (step F7): any damage to one, from any source, is cancelled. Cancelling
+     * stops {@code EndCrystal.hurtServer} before its removal and its explosion (READ, PLAN-dragon-fight.md section 4 e).
+     * Only crystals carrying the fight's byte; a player's own crystal is untouched.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onFightCrystalDamage(EntityDamageEvent event) {
+        if (event.getEntity() instanceof org.bukkit.entity.EnderCrystal crystal
+                && crystal.getPersistentDataContainer().has(adapters.keys().fightCrystal)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** A STATIONARY MOB TARGETS NOTHING (step F6, {@code stationary: true}): any target set on it is refused. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onStationaryTarget(org.bukkit.event.entity.EntityTargetEvent event) {
+        if (event.getTarget() != null
+                && event.getEntity().getPersistentDataContainer().has(adapters.keys().mobStationary)) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onShieldedKnockback(EntityKnockbackEvent event) {
         if (!(event.getEntity() instanceof LivingEntity mob) || mob instanceof Player) return;

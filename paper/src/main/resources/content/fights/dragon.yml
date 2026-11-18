@@ -1,48 +1,75 @@
 # THE DRAGON FIGHT'S NUMBERS (PLAN-dragon-fight.md section 2, the quantity table). Every number the ring, the
-# lightning and the Mage cycle run on is here, and none is in Java: FightLoader reads this file into core's
-# FightSettings and RingLook. Every key is REQUIRED; a missing or malformed one refuses the whole file by name.
+# lightning, the Mage cycle, the Mage's gate and the crystals run on is here, and none is in Java: FightLoader reads
+# this file into core's FightSettings and RingLook. Every key is REQUIRED; a missing or malformed one refuses the whole
+# file by name.
 #
 # WHOSE EACH NUMBER IS, as of 2026-11-18:
-#   Ben's:                  border 48, mage ring 12, a strike every 40 ticks, first strike 20 (then doubling).
-#   SEAT PLACEHOLDERS:      v_fast, v_slow, e_kill, the crystals. Not Ben's; he sets them at the first boot.
-#   The seat's starting look: everything under ring_look. Ben judges it at the boot.
+#   Ben's:                  border 48, mage ring 12, v_fast 3.8, v_slow 0.6, a strike every 40 ticks, first strike 20
+#                           (then doubling), the strike through armour, the wall's four rows 1.5 apart.
+#   SEAT PLACEHOLDERS:      e_kill, the crystals' count and pace, the crystals' spots, the cues. Not Ben's.
+#   The seat's starting look: the colour, size, spacing, the row shift and the turn. Ben judges them at the boot.
 
 settings:
   # Ben's ("Keep the 48 block border ring").
   border_radius_blocks: 48.0
   # Ben's ("to 12 blocks around the Mage").
   mage_ring_radius_blocks: 12.0
-  # SEAT PLACEHOLDER, not Ben's; he sets it at the first boot. The fastest point of the ring, blocks per second
-  # (Ben: "Slightly slower than a player sprinting").
-  fast_close_blocks_per_second: 5.0
-  # SEAT PLACEHOLDER, not Ben's; he sets it at the first boot. The slow close's radius, blocks per second.
-  slow_close_blocks_per_second: 0.4
-  # SEAT PLACEHOLDER, not Ben's; he sets it at the first boot. Radius one counted kill adds back, blocks.
+  # Ben's, 2026-11-18: "Let's lower it to 3.8 blocks a second to allow players to react and catch up when struct".
+  # The fastest point of the ring, blocks per second.
+  fast_close_blocks_per_second: 3.8
+  # Ben's, 2026-11-18: "I think it should be a little faster. Maybe .6 blocks per second". Blocks of radius a second.
+  slow_close_blocks_per_second: 0.6
+  # SEAT PLACEHOLDER, not Ben's. Radius one counted kill adds back, blocks (Ben kept the jump: "the jump is fine").
   kill_expansion_blocks: 1.0
-  # SEAT PLACEHOLDER, not Ben's; he sets it at the first boot. How many crystals power the Mage.
+  # SEAT PLACEHOLDER, not Ben's. How many crystals power the Mage.
   crystal_count: 10
-  # SEAT PLACEHOLDER, not Ben's; he sets it at the first boot. Ticks between crystals, from the slow close's start.
+  # SEAT PLACEHOLDER, not Ben's. Ticks between crystals, from the slow close's start.
   crystal_interval_ticks: 80
   # Ben's ("Yes", every 2 s, as cfde822's storm struck).
   strike_interval_ticks: 40
-  # Ben's ("start at 20, 40, 80 and keeps doubling"). Not reduced by armour and wearing no element: a SEAT
-  # PLACEHOLDER for the mitigation question, flagged to Ben (GATE-fight-ring.md asks him).
+  # Ben's ("start at 20, 40, 80 and keeps doubling"). Reduced by armour (Ben, 2026-11-18: "yes"). It wears no element:
+  # whether Void resistance or any element applies is OPEN.
   first_strike_damage: 20.0
 
-# THE SEAT'S STARTING LOOK, judged by Ben at the boot. Particles sent with force (Ben: "I would like to keep particles.
-# We can try forced particles if that helps. I don't care about the minimal particle setting.").
+# THE WALL. Particles sent with force (Ben: "I would like to keep particles. We can try forced particles if that
+# helps. I don't care about the minimal particle setting."). Four rows 1.5 apart, each shifted round from the one
+# below, the whole wall turning slowly (Ben, 2026-11-18: "yes"; he asked for "Higher wall and a larger gap between each
+# row. Adding a slight twist to the particles would be cool").
 ring_look:
   # Only dust is supported.
   particle: dust
   # cfde822's border colour, StormSystem.STORM_PURPLE_DUST at cfde822: Color.fromRGB(170, 0, 255), size 1.6.
   color: [170, 0, 255]
   dust_size: 1.6
-  # The largest gap between neighbouring points round the ring, blocks. At radius 48 that is 302 points a height.
+  # The largest gap between neighbouring points round the ring, blocks. At radius 48 that is 302 points a row.
   point_spacing_blocks: 1.0
-  # Heights above the ground at C (C's block y), blocks: one ring of points at each.
-  height_offsets_blocks: [0.2, 1.2, 2.2]
+  # Heights above the ground at C (C's block y), blocks: one row of points at each. Ben's four rows 1.5 apart.
+  height_offsets_blocks: [0.2, 1.7, 3.2, 4.7]
+  # The seat's starting value: each row starts this far further round the ring than the row below, blocks.
+  row_shift_blocks: 0.25
+  # The seat's starting value: the whole wall turns at this speed along the circumference, blocks per second.
+  turn_blocks_per_second: 1.0
   # Ticks between redraws.
   redraw_period_ticks: 4
+
+# THE MAGE'S GATE (step F6). A hit while he cannot be hurt is refused whole, and the attacker hears this.
+mage:
+  # The mob file the fixture spawns (content/mobs/).
+  mob: dark_mage
+  # SEAT PLACEHOLDER: the refused-hit cue, at the Mage.
+  refused_sound: item.shield.block
+  refused_volume: 1.0
+  refused_pitch: 0.8
+
+# THE CRYSTALS (step F7). SEAT PLACEHOLDER spots, standing in for the pillars until the arena exists: crystal_count
+# spots evenly round a circle about C.
+crystals:
+  ring_radius_blocks: 40.0
+  height_above_ground_blocks: 12.0
+  # SEAT PLACEHOLDER: the cue as each crystal lights, at the crystal, heard by every participant.
+  lit_sound: block.beacon.power_select
+  lit_volume: 1.0
+  lit_pitch: 1.0
 
 # The dev fixture's own rule (GATE-fight-ring.md): who takes part.
 fixture:
