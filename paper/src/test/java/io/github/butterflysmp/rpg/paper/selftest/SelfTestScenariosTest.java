@@ -73,7 +73,8 @@ class SelfTestScenariosTest {
         // Then RE-PREDICTED again by the void implosion (GATE-void-implosion.md, 2026-11-17): the next suffix for every
         // row, the implosion's new rows IM1-IM4, and the Knell's slab row KS1 (F19), in the same file so one run reads all.
         expected.put("dragon-blast", List.of("BL1R3", "BL2R3", "BL3R3", "BL4R3", "BL5R3", "BL6R3", "BL7R3", "BL8R3",
-                "BL9R3", "IM1", "IM2", "IM3", "IM4", "KS1", "DS1R5", "DS2R5", "DS5R5", "DS6R5", "DG6R5", "DG9R5", "BQ1R3"));
+                "BL9R3", "IM1", "IM2", "IM3", "IM4", "IM5", "IM6", "FZ1", "FZ3", "FZ5", "KS1", "DS1R5", "DS2R5",
+                "DS5R5", "DS6R5", "DG6R5", "DG9R5", "BQ1R3"));
         // Step R5 (GATE-dragon-beam.md, 2026-11-17): eleven AUTO rows and Ben's three questions, in one.
         // Step R6 (GATE-dragon-teleport.md) moved KB10 and KB11 out, re-predicted there as KB10R2 and KB11R2.
         // The Knell follow-up (GATE-dragon-knell-2.md, 2026-11-17) re-predicted every row of both Knell files, each
@@ -161,7 +162,9 @@ class SelfTestScenariosTest {
         // At feat/dragon-skreel 4ba51506 the same commands print 20, 174, 20: 154, this line's old value.
         // Then the void implosion (GATE-void-implosion.md, 2026-11-17), RECOUNTED the same way: 20 gates, 180 keys, 20
         // setups, so 160. At master f6a596ea the same commands print 20, 175, 20: 155, this line's old value.
-        assertEquals(160, loaded.rows());
+        // Then Part C and the lift (the seat's two rulings on #204), RECOUNTED the same way: 20 gates, 185 keys, 20
+        // setups, so 165: the stage edges IM5 and IM6 and the fuse rows FZ1, FZ3 and FZ5. 160 was this line's old value.
+        assertEquals(165, loaded.rows());
     }
 
     /**
@@ -194,9 +197,12 @@ class SelfTestScenariosTest {
         }
         // Since 2026-11-17 (GATE-dragon-blast-2.md): BQ1R2's two Phages are FROZEN and blown, and DS1R4 thaws with the
         // instrument's THAW step instead of a data merge.
-        // Since the void implosion (GATE-void-implosion.md): the same four, renamed with the next suffix.
+        // Since the void implosion (GATE-void-implosion.md): the same four, renamed with the next suffix, and since its
+        // Part C the fuse rows' three and Ben's two, each held at speed 0.
         assertEquals(List.of("BL1R3 bl1 live phage 100", "BL2R3 bl2 live phage stage 5 60", "BL5R3 bl5 live phage 100",
-                        "DS1R5 ds1"),
+                        "FZ1 fz1 live phage 100", "FZ3 fz3 live phage stage 3 60", "FZ5 fz5 live phage stage 5 60",
+                        "DS1R5 ds1", "BQ1R3 bq1big live phage stage 5 60",
+                        "BQ1R3 bq1small live phage 100"),
                 blastGate, "the control: the scan must find every live Phage the blast gate stages on purpose");
     }
 

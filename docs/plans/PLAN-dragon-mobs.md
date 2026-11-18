@@ -1056,8 +1056,73 @@ push at every distance, though 1.25x in STRENGTH. **Ben's "a little bit stronger
 seat should expect a "no".** What would change it is the seat's: a lift (and a cap that models the flight), a larger
 multiplier where the cap does not bind, or a smaller margin.
 
+**ANSWERED 2026-11-17 by the seat's two rulings on #204 (below).**
 **THE SEAT'S RULINGS STILL OWED BEFORE ANY BOOT:** Part C's route (1-4 above); the pull's travel against "a little bit
 stronger".
+
+> **CORRECTED 2026-11-17, THE SAME DAY, AND THE TABLE ABOVE IS KEPT AS WRITTEN.** Its "old push travel" column (4.150,
+> 4.121, 2.663, 1.545, 0.592) came from a model that applied the AIR's friction on the take-off tick. Vanilla applies the
+> friction of the state the body STARTED the tick in (READ, `LivingEntity#travelInAir`: `onGround()` is read before the
+> move), and a pushed player started that tick on the ground. Re-executed in that order (`flight.jsh`), the old push
+> carried him **2.703, 2.768, 1.894, 1.153, 0.482** at d = 1 to 5. **The conclusion stands, smaller:** the flat, capped
+> pull (0.500, 1.500, 1.377, 0.918, 0.459) still travelled less than the push at every distance. The core test that pins
+> the corrected figures is `ImplosionTest.theTravelAtTwoThreeFourAndFiveBesideTheOldPush`; its mutation MUTTAKEOFF (the
+> air's friction on the take-off tick) reproduces the wrong figure, 4.268 at d = 2, and is red.
+
+### THE SEAT'S TWO RULINGS ON #204, 2026-11-17 (the seat's, stated in this file's words)
+
+1. **PART C IS BUILT BY ROUTE (b): OUR OWN FUSE, THE SWELL SHOWN BY PACKET.** PacketEvents 2.13.0 is already pinned and
+   already carries entity metadata for mining. Its conditions: the metadata index and type READ from the server jar and
+   agreed with PacketEvents' own naming (else STOP); the server's truth is OUR fuse (idle, fusing, detonate), the packet
+   only shows it, vanilla's swell goal removed through `MobGoals` and ours claiming `MOVE`; every viewer, and a viewer who
+   starts tracking mid-fuse, sees the state, and nothing stale survives a split, a growth, a removal or an unload; the
+   vanilla prime still cannot happen, the cancel kept as the backstop with its line; a startup self-check line naming the
+   index, read by R0; and a fall-back to route (a) for the fuse only if the packet cannot work. **The distances by stage
+   as the first brief's Part C item 3 ruled**, the reach scaling the blast, the pull and the swirl's width together.
+2. **THE PULL GETS THE PUSH'S LIFT, AND THE CAP MODELS THE FLIGHT.** The horizontal is 1.25 x the push's horizontal at
+   that distance, toward the origin; the vertical is the push's own lift, a named value a use can set to zero (the
+   fixture keeps zero). The cap is on where the victim COMES TO REST, through the flight and the slide, scaling the
+   horizontal down, never the lift; a victim already in the air or on ice is capped by its own model. No fall damage. Core
+   tests sweep the distance on stone, ice and in the air, and pin that where the cap does not bind the travel is 1.25 x
+   the old push's.
+
+**The seat also accepted, as built in `bf3bf2d9`:** F19's fix and its cost; the implosion as a shape with "who" belonging
+to each use; the content form; the test-only fixture; what it never pulls; the look; `h=` on the BLAST line; KS1 in the
+blast scenario file; the 12-tick wait. **And said its STOP had been wider than it needed: the reach scaling should not
+have waited.**
+
+### PART C AND THE LIFT, AS BUILT (`feat/void-implosion`, 2026-11-17)
+
+- **The index, READ and agreed.** Counted down the class chain in the pinned jar (`javap -c -p -cp
+  run/versions/26.1.2/paper-26.1.2.jar net.minecraft.world.entity.<Class>`, each `static {}`): `Entity` 8, `LivingEntity`
+  7, `Mob` 1, `PathfinderMob` and `Monster` 0, then `Creeper.DATA_SWELL_DIR` first: **16**, `EntityDataSerializers.INT`
+  (registered second, READ). `ClassTreeIdRegistry#define` numbers after the superclass's last (READ). PacketEvents 2.13.0
+  names the type `EntityDataTypes.INT` and gives it **id 1 at V_26_1** in its own `entity_data_serializer` mapping
+  (EXECUTED from its pinned jar, its own `SequentialNBTReader` and `ListDiff`; its list holds 43, as the server registers
+  43). PacketEvents names no per-entity index: the 16 is ours. `PhageFuser.selfCheck` logs `Phage swell packet: index=16
+  type=int typeId=<id> server=<version> readFor=V_26_1`, or `UNVERIFIED …` as a WARN.
+- **The fuse:** core `MobFuse` (idle, fusing, detonate; vanilla's order and strictness, read), ticked each server tick by
+  `PhageFuser` on the Phage's own thread; `SwellGoal` removed and a `MOVE`-claiming hold added at EVERY appearance (a
+  creeper read from disk re-registers its goals); a START or RESET sent as metadata (index 16, +1 or −1) to every
+  `getTrackedBy()` player and logged `SWELL`; a new tracker of a lit Phage sent +1 a tick later (READ:
+  `PlayerTrackEntityEvent` fires before `ServerEntity#addPairing`). Detonation through `PhageFuser.detonate`, which marks
+  the prime it raises; the prime handler REFUSES an unmarked prime (`CREEPERGUARD prime refused`). The selftest's DETONATE
+  goes through the same mark; `probe_fuse` and `await_fuse` read our fuse.
+- **The distances:** `StagedDistance`: the last stage's authored, earlier stages by height (trigger 1 to 3, cancel 7/3
+  to 7, reach 2 to 6), or `{ first, last }` linear, content-only. `MobBlast.checkStages` refuses a cancel not beyond its
+  trigger at any stage.
+- **The lift and the cap:** `Implosion` now splits the old push (strength `(1 − d/R)(1 − res)` along the eye) into its
+  horizontal part (x 1.25 toward the origin) and vertical (x `lift`); the horizontal is capped so the modelled rest point
+  (the flight, READ: gravity 0.08, drag 0.98f, friction by the state at the tick's START, the landing zeroing the
+  vertical; then the slide) is the horizontal distance less 0.5. **A lift whose apex reaches 2.5 blocks arms the dash's
+  safe-landing mark**: the lift is never scaled, and near the centre it carries a player above vanilla's 3-block safe fall
+  (d = 1 at stage 5: 3.200).
+- **The travel, beside the old push's** (stone, R = 0; jshell `flight2.jsh`): d = 2: push 2.768, pull **1.500**
+  (capped); d = 3: 1.894, **2.367**; d = 4: 1.153, **1.441**; d = 5: 0.482, **0.602**. Where the cap does not bind (d ≥
+  about 2.23), exactly 1.25 x.
+
+**STILL THE SEAT'S AND BEN'S, UNRULED:** the 0.5 margin; the 2.5 safe-landing threshold; the substitute for a client
+that never receives the packet (none: a missed packet is a missed animation, never a missed fuse).
 
 ---
 
