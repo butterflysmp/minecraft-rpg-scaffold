@@ -167,10 +167,11 @@ public final class BeamTeleport {
      */
     public static Foothold foot(Vec3 column, int levelTolerance, boolean requireSight, Footing footing) {
         if (!footing.loaded(column)) return new Foothold(Outcome.UNLOADED, Optional.empty(), 0, 0);
+        double base = anchor(column.y());   // F19: the WHOLE block the column's y is in; see anchor()
         int blocked = 0;
         int ungrounded = 0;
         for (int k : heights(levelTolerance)) {
-            Vec3 feet = new Vec3(column.x(), column.y() + k, column.z());
+            Vec3 feet = new Vec3(column.x(), base + k, column.z());
             if (!footing.fits(feet)) { blocked++; continue; }
             if (!footing.grounded(feet)) { ungrounded++; continue; }
             if (requireSight && !footing.sees(feet)) {
@@ -180,6 +181,30 @@ public final class BeamTeleport {
         }
         return new Foothold(Outcome.NO_FOOTING, Optional.empty(), blocked, ungrounded);
     }
+
+    /**
+     * THE HEIGHT EVERY LANDING SEARCH IS ANCHORED AT: the WHOLE block a height is in, floor(y). Moved here from
+     * {@code MobBlink.anchor} (step R8's R3 fix) on 2026-11-17 for F19, so the Knell's teleport and the Phalanx's
+     * blink share it inside {@link #foot}, the one landing check. A full block's top is a whole number, and
+     * {@link #foot} tries whole blocks from its anchor, so a FRACTIONAL anchor never stands a body on a floor: every
+     * height is (say) 0.5 into a block, so it does not fit, or 0.5 above one, so it has no ground. The Knell met that
+     * whenever its TARGET stood on a slab (64.5) or was mid-jump when the move fell due (F19); the Phalanx met it
+     * mid-jump (R3).
+     *
+     * <p><b>WHAT IT COSTS, stated:</b> a landing on a slab's top (x.5), or on any floor whose top is not a whole
+     * number (a path block, farmland, a snow layer), is NEVER tried, because every height tried is whole. A target
+     * standing on a slab is still reached (its anchor is the floor beside it); a Knell or a Phalanx in a field made only
+     * of slab tops cannot land anywhere and does not move.
+     *
+     * <p>{@link #ANCHOR_SNAP} lifts a height within a millionth below a whole number onto it, so floating-point drift on
+     * a floor (63.9999999999) anchors on 64, its own block, not 63.
+     */
+    public static double anchor(double y) {
+        return Math.floor(y + ANCHOR_SNAP);
+    }
+
+    /** BLOCKS: how far below a whole number a height may sit and still be anchored on it. NOT IN THE RECORD: chosen. */
+    public static final double ANCHOR_SNAP = 1.0E-6;
 
     /** Why a move due at the end of the delay does not happen, or empty when it goes ahead. */
     public enum Skip { KNELL_GONE, TARGET_GONE, TARGET_WORLD, TARGET_EXEMPT }

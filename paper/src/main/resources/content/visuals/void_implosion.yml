@@ -1,0 +1,46 @@
+# The id of this visual is its filename: void_implosion.
+#
+# THE VOID IMPLOSION'S LOOK (PLAN-dragon-mobs.md, 2026-11-17). Ben: "A void explosion that pulls things toward the
+# origin with black and dark purple swirling particles." The seat's point 5, which he answered "Yes": black and dark
+# purple particles spiralling INWARD over about half a second, with a deep sound, in place of the vanilla explosion
+# puff. Played by the Phage's blast (phage.yml, blast.visual) at the blast's own reach, so a spiral starts at the edge
+# of what it pulls and ends at the Phage's feet.
+#
+# EVERY NUMBER BELOW IS CHOSEN (2026-11-17), not Ben's and not read: listed for him in the gate.
+#
+# A `spiral` step: `arms` curves, each from `radius` (BLOCKS; the caller's reach replaces it) to the centre, turning
+# `turns` full turns on the way, drawn over `duration_ticks` TICKS with `points_per_tick` particles per arm per tick,
+# `height` BLOCKS above the feet, every arm turned by `phase_degrees`. One DUST particle per point, no spread.
+#
+#   two colours x 3 arms x 6 points x 10 ticks = 360 particles over 10 ticks (half a second)
+
+steps:
+  # Black. DUST, not SMOKE: a dust particle holds still where it is drawn, so the arms read as curves.
+  - type: spiral
+    particle: DUST
+    color: [16, 16, 16]
+    size: 1.5
+    duration_ticks: 10
+    arms: 3
+    turns: 1.5
+    points_per_tick: 6
+    phase_degrees: 0
+    height: 0.6
+
+  # Dark purple, its three arms between the black ones (60 degrees on).
+  - type: spiral
+    particle: DUST
+    color: [88, 24, 140]
+    size: 1.5
+    duration_ticks: 10
+    arms: 3
+    turns: 1.5
+    points_per_tick: 6
+    phase_degrees: 60
+    height: 0.6
+
+  # Deep: the respawn anchor's depletion, pitched down an octave and loud enough to carry past the reach.
+  - type: sound
+    key: block.respawn_anchor.deplete
+    volume: 2.0
+    pitch: 0.5

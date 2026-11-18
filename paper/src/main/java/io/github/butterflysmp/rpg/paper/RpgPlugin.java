@@ -729,17 +729,23 @@ public final class RpgPlugin extends JavaPlugin {
                 () -> this.mobs, adapters);
         ((io.github.butterflysmp.rpg.paper.adapter.ShieldSink.Late) adapters.shields()).bind(
                 new io.github.butterflysmp.rpg.paper.health.MobShielder(() -> this.mobs, keys, getLogger()));
+        // THE PHAGE'S OWN FUSE (the void implosion's Part C, the seat's route (b)): one loop per Phage, started and
+        // stopped by RpgListeners' add and remove handlers. Its self-check names the swell packet's index; R0 reads it.
+        io.github.butterflysmp.rpg.paper.health.PhageFuser fuser = new io.github.butterflysmp.rpg.paper.health.PhageFuser(
+                this, () -> this.mobs, adapters);
+        String swellCheck = fuser.selfCheck();
+        if (swellCheck.startsWith("UNVERIFIED")) getLogger().warning(swellCheck); else getLogger().info(swellCheck);
         selfTest = new SelfTestService(adapters, profiles, resources, nameplates, mining, getLogger(),
                 buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements,
                 // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).
                 (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
-                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports, shooter, pouncer);
+                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports, shooter, pouncer, fuser);
         selfTestDamage.bind(selfTest);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
-                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams, shooter, pouncer);
+                this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams, shooter, pouncer, fuser);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md
@@ -755,6 +761,7 @@ public final class RpgPlugin extends JavaPlugin {
                     nameplates.onMobAppear(mob);
                     beams.onAppear(mob);   // a Knell loaded this early gets its beam loop too (step R5); idempotent
                     pouncer.onAppear(mob);   // and a paired or widowed mount (step R8); idempotent
+                    fuser.onAppear(mob);   // and a Phage's fuse (the void implosion); idempotent
                 });
             }
             // Every entity, not only the living: a shot's display that was somehow saved is an orphan too (step R7a).

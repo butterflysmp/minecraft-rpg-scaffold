@@ -301,6 +301,14 @@ public final class FakeWorld implements CombatWorld {
         landings.add(new TracedLanding(casterId, source, how, feet));
     }
 
+    /** The radius each scaled presentation was handed (the void implosion's spiral); unscaled ones add nothing. */
+    public final List<Double> presentedRadius = new ArrayList<>();
+
+    @Override public void present(Vec3 at, String visualId, double radius) {
+        presentedRadius.add(radius);
+        present(at, visualId);
+    }
+
     @Override public void present(Vec3 at, String visualId) {
         presented.add(visualId);
         presentedAt.add(at);
@@ -677,6 +685,15 @@ public final class FakeWorld implements CombatWorld {
             knockbackCalls++;
         }
         @Override public void applyImpulse(Vec3 velocity) { this.lastImpulse = velocity; }
+        /** The void implosion's pull as handed over: how many, from where, which shape. The arithmetic is core's. */
+        public int pullCalls;
+        public Vec3 lastPullOrigin;
+        public io.github.butterflysmp.rpg.core.shape.Implosion lastPullShape;
+        @Override public void applyPull(Vec3 origin, io.github.butterflysmp.rpg.core.shape.Implosion shape) {
+            pullCalls++;
+            lastPullOrigin = origin;
+            lastPullShape = shape;
+        }
         @Override public void armSafeLanding() { safeLandingArms++; }
         @Override public void armLanding(io.github.butterflysmp.rpg.core.build.LandingHook hook) {
             landingHook = hook;

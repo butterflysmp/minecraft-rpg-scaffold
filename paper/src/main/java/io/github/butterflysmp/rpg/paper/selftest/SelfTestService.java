@@ -40,6 +40,8 @@ public final class SelfTestService {
     private final io.github.butterflysmp.rpg.paper.health.MobShooter shots;
     /** The Skreel pair, for the POUNCE and PROBE_PAIR steps (dragon-mobs step R8). */
     private final io.github.butterflysmp.rpg.paper.health.MobPouncer pounces;
+    /** The Phage's own fuse, for the DETONATE, PROBE_FUSE and AWAIT_FUSE steps (the void implosion's Part C). */
+    private final io.github.butterflysmp.rpg.paper.health.PhageFuser fuser;
     /** The Knell's teleport, for the TELEPORT_DRAW step (dragon-mobs step R6). */
     private final io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports;
     private final Spawner spawner;
@@ -61,7 +63,9 @@ public final class SelfTestService {
                            io.github.butterflysmp.rpg.paper.health.MobBeamer beams,
                            io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports,
                            io.github.butterflysmp.rpg.paper.health.MobShooter shots,
-                           io.github.butterflysmp.rpg.paper.health.MobPouncer pounces) {
+                           io.github.butterflysmp.rpg.paper.health.MobPouncer pounces,
+                           io.github.butterflysmp.rpg.paper.health.PhageFuser fuser) {
+        this.fuser = fuser;
         this.pounces = pounces;
         this.shots = shots;
         // A tagged Phalanx's shot is tagged by identity at its fire (step R7a), as a split child is at its birth.
@@ -227,6 +231,7 @@ public final class SelfTestService {
     io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports() { return teleports; }
     io.github.butterflysmp.rpg.paper.health.MobShooter shots() { return shots; }
     io.github.butterflysmp.rpg.paper.health.MobPouncer pounces() { return pounces; }
+    io.github.butterflysmp.rpg.paper.health.PhageFuser fuser() { return fuser; }
     Spawner spawner() { return spawner; }
     Scheduler scheduler() { return adapters.scheduler(); }
     CombatantStats stats() { return adapters.stats(); }

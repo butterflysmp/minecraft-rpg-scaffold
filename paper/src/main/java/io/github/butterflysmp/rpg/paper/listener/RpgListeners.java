@@ -306,6 +306,8 @@ public final class RpgListeners implements Listener {
     private final io.github.butterflysmp.rpg.paper.health.MobShooter shots;
     /** The Skreel pair (dragon-mobs step R8): a loop per pair, on the mount; and the target block. */
     private final io.github.butterflysmp.rpg.paper.health.MobPouncer pounces;
+    /** The Phage's own fuse (the void implosion's Part C): told of each appearance, removal and new viewer. */
+    private final io.github.butterflysmp.rpg.paper.health.PhageFuser fuser;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -321,7 +323,9 @@ public final class RpgListeners implements Listener {
                         io.github.butterflysmp.rpg.core.mob.MobElementResolver mobElements,
                         io.github.butterflysmp.rpg.paper.health.MobBeamer beams,
                         io.github.butterflysmp.rpg.paper.health.MobShooter shots,
-                        io.github.butterflysmp.rpg.paper.health.MobPouncer pounces) {
+                        io.github.butterflysmp.rpg.paper.health.MobPouncer pounces,
+                        io.github.butterflysmp.rpg.paper.health.PhageFuser fuser) {
+        this.fuser = fuser;
         this.pounces = pounces;
         this.shots = shots;
         this.beams = beams;
@@ -804,7 +808,17 @@ public final class RpgListeners implements Listener {
             nameplates.onMobAppear(mob);
             beams.onAppear(mob);   // its beam loop, if its file authors one (dragon-mobs step R5)
             pounces.onAppear(mob);   // a paired or widowed mount, looked at on its next tick (step R8)
+            fuser.onAppear(mob);   // a Phage: vanilla's swell goal goes, our fuse starts (the void implosion)
         }
+    }
+
+    /**
+     * A player began tracking an entity (the void implosion's Part C): a lit Phage shows its swell to the new viewer, a
+     * tick later ({@code PhageFuser#onTrack}: this event fires before the entity is sent).
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTrackEntity(io.papermc.paper.event.player.PlayerTrackEntityEvent event) {
+        fuser.onTrack(event.getPlayer(), event.getEntity());
     }
 
     /**
@@ -819,6 +833,7 @@ public final class RpgListeners implements Listener {
             nameplates.onMobRemove(mob.getUniqueId());
             beams.onRemove(mob.getUniqueId());   // and its beam loop, which must not outlive it (step R5)
             pounces.onRemove(mob.getUniqueId());   // and a pair's loop on a mount, which must not outlive it (step R8)
+            fuser.onRemove(mob.getUniqueId());   // and a Phage's fuse, which must not outlive it (the void implosion)
             // And its melee window, or the map grows for the lifetime of the server.
             meleeHits.forget(mob.getUniqueId());
             damageWindow.forget(mob.getUniqueId());   // and its environmental window, same reason
@@ -3056,6 +3071,14 @@ public final class RpgListeners implements Listener {
         String mobId = creeper.getPersistentDataContainer().get(adapters.keys().mobId, PersistentDataType.STRING);
         if (!CustomCreeperGuard.refusesVanillaDetonation(true, mobId)) return;
         event.setCancelled(true);
+        // THE BACKSTOP (the void implosion's Part C): a Phage blows only when OUR fuse (or the instrument's detonate)
+        // raised this prime, through PhageFuser.detonate. Vanilla's swell can no longer reach one (its goal is gone, the
+        // ignite refused), so a prime arriving any other way is named and refused, never a blast.
+        if (!fuser.isRaising(creeper.getUniqueId())) {
+            adapters.log().info("CREEPERGUARD prime refused mob=" + mobId + " id=" + creeper.getUniqueId()
+                    + " (not raised by our fuse)");
+            return;
+        }
         if (isFrozen(creeper)) return;
         MobBlaster.detonate(creeper, mobId, nameplates.mobs(), mobElements, adapters);
     }

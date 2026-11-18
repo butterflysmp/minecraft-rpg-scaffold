@@ -161,6 +161,50 @@ class BeamTeleportTest {
         assertEquals(0, v.ungrounded(), "an OK verdict counts nothing");
     }
 
+    // --- F19 (PLAN-dragon-mobs.md section 8): the search is anchored on the WHOLE block the target's feet are in --------
+
+    /** A flat floor whose top is y = 64: a body fits at 64 and above, and stands only at exactly 64. */
+    private static final BeamTeleport.Footing FLOOR_64 =
+            footing(p -> true, p -> p.y() >= 64, p -> p.y() == 64, p -> true);
+
+    @Test
+    void aTargetOnASlabStillGivesALandingOnTheFloorBesideIt() {
+        // F19: a target on a bottom slab stands at 64.5. Anchored there, every height tried is x.5: 64.5 fits with no
+        // ground, 63.5 does not fit, so all seven were NO_FOOTING and the Knell never moved. Anchored on floor(64.5).
+        BeamTeleport.Decision d = BeamTeleport.decide(T, new Vec3(100, 64.5, 200), new Vec3(108, 64, 200),
+                new BeamTeleport.Draw(BeamTeleport.Side.RIGHT, 50), FLOOR_64);
+        assertEquals(64.0, d.landing().orElseThrow().y(), 0.0);
+        assertEquals(1, d.tried().size(), "the first candidate stands on the floor");
+    }
+
+    @Test
+    void aTargetMidJumpStillGivesALandingOnTheFloorBelowIt() {
+        // F19: the move falls due while the target is 0.83 into a jump (64.83, a fraction that is no slab's).
+        BeamTeleport.Decision d = BeamTeleport.decide(T, new Vec3(100, 64.83, 200), new Vec3(108, 64, 200),
+                new BeamTeleport.Draw(BeamTeleport.Side.RIGHT, 50), FLOOR_64);
+        assertEquals(64.0, d.landing().orElseThrow().y(), 0.0);
+    }
+
+    @Test
+    void floatingPointDriftJustBelowAFloorAnchorsOnThatFloorNotTheBlockBelow() {
+        // The blink's ANCHOR_SNAP, now shared: 63.9999999999 is the floor at 64, not 0.9999999999 into block 63.
+        // Tolerance 0, so ONLY the anchored height is tried: anchored on 63 it would not fit, and nothing would land.
+        MobTeleport flat = new MobTeleport(12, 30, 70, 5, 0, true);
+        BeamTeleport.Decision d = BeamTeleport.decide(flat, new Vec3(100, 63.9999999999, 200),
+                new Vec3(108, 64, 200), new BeamTeleport.Draw(BeamTeleport.Side.RIGHT, 50), FLOOR_64);
+        assertEquals(64.0, d.landing().orElseThrow().y(), 0.0);
+    }
+
+    @Test
+    void theCostOfTheAnchorASlabTopIsNeverTried() {
+        // STATED COST (as the blink's): a floor made only of slab tops (stands at exactly 64.5) is never landed on,
+        // because every height tried from floor(64.5) = 64 is whole. Pinned so the cost is a decision, not a surprise.
+        BeamTeleport.Decision d = BeamTeleport.decide(T, new Vec3(100, 64.5, 200), new Vec3(108, 64.5, 200),
+                new BeamTeleport.Draw(BeamTeleport.Side.RIGHT, 50),
+                footing(p -> true, p -> p.y() >= 64.5, p -> p.y() == 64.5, p -> true));
+        assertTrue(d.landing().isEmpty());
+    }
+
     @Test
     void aRaisedStepWithinTheToleranceIsStoodOn() {
         // A step two high: the body does not fit at 64 or 65, the floor stops 63 down, and 66 stands on the step.

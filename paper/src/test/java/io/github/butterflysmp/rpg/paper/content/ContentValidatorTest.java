@@ -907,4 +907,47 @@ class ContentValidatorTest {
         // author may write 24 instead to make it visible. A warning, not a refusal: the ability
         // loads and works either way.
     }
+
+    // --- the void implosion (2026-11-17): its visual is named at boot, for an ability and for a blast -----------------
+
+    private static final io.github.butterflysmp.rpg.core.shape.Implosion SHAPE =
+            new io.github.butterflysmp.rpg.core.shape.Implosion(5, io.github.butterflysmp.rpg.core.shape.Implosion.Falloff.FLAT,
+                    1, 0, io.github.butterflysmp.rpg.core.shape.Implosion.Resistance.NONE);
+
+    @Test
+    void anImplosionNamingAMissingVisualOrABadElementIsReported() {
+        var problems = validator(visualsWith("solar_detonation"), statusesWith()).validate(abilitiesWith(List.of(
+                new EffectSpec.Implosion(SHAPE, EffectSpec.Affects.MOBS, "void_implosin",
+                        new EffectSpec.Damage(4, "plasma")))));
+        assertEquals(2, problems.size(), problems.toString());
+        assertTrue(problems.stream().anyMatch(p -> p.contains("implosion visual 'void_implosin'")), problems.toString());
+        assertTrue(problems.stream().anyMatch(p -> p.contains("plasma")), problems.toString());
+    }
+
+    @Test
+    void anImplosionNamingARealVisualIsClean() {
+        assertTrue(validator(visualsWith("void_implosion"), statusesWith()).validate(abilitiesWith(List.of(
+                new EffectSpec.Implosion(SHAPE, EffectSpec.Affects.MOBS, "void_implosion", null)))).isEmpty());
+    }
+
+    /** The Phage's blast names its look; a typo is named at boot, the real name is clean (the control). */
+    @Test
+    void aBlastNamingAMissingVisualIsReported() {
+        var stages = new io.github.butterflysmp.rpg.core.mob.MobStages(5,
+                new io.github.butterflysmp.rpg.core.mob.StageBody(1.0, 1.5, 80),
+                new io.github.butterflysmp.rpg.core.mob.StageBody(3.0, 0.5, 160));
+        java.util.function.Function<String, List<io.github.butterflysmp.rpg.core.mob.MobDefinition>> phage =
+                visual -> List.of(new io.github.butterflysmp.rpg.core.mob.MobDefinition("phage", "wither_skeleton", "P",
+                        80, io.github.butterflysmp.rpg.core.mob.MobBody.VANILLA, "void", stages, null, null,
+                        new io.github.butterflysmp.rpg.core.mob.MobBlast(
+                                io.github.butterflysmp.rpg.core.mob.StagedDistance.byHeight(6),
+                                io.github.butterflysmp.rpg.core.mob.StagedDistance.byHeight(3),
+                                io.github.butterflysmp.rpg.core.mob.StagedDistance.byHeight(7), 30, 60, 150, 1.25, 1.0, visual)));
+        var problems = validator(visualsWith("void_implosion"), statusesWith())
+                .validateMobs(phage.apply("void_implosin"), EXISTS, LIVING);
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("blast visual 'void_implosin'"), problems.toString());
+        assertTrue(validator(visualsWith("void_implosion"), statusesWith())
+                .validateMobs(phage.apply("void_implosion"), EXISTS, LIVING).isEmpty());
+    }
 }

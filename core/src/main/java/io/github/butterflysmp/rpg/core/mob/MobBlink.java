@@ -145,11 +145,11 @@ public record MobBlink(double triggerRange, double near, double far, int attempt
      * floor (62.9999999999) anchors on 63, its own block, not 62.
      */
     public static double anchor(double feetY) {
-        return Math.floor(feetY + ANCHOR_SNAP);
+        return BeamTeleport.anchor(feetY);   // F19, 2026-11-17: the rule now lives in the shared landing check
     }
 
-    /** BLOCKS: how far below a whole number a height may sit and still be anchored on it. NOT IN THE RECORD: chosen. */
-    public static final double ANCHOR_SNAP = 1.0E-6;
+    /** The shared snap ({@link BeamTeleport#ANCHOR_SNAP}), kept under this name for its existing readers. */
+    public static final double ANCHOR_SNAP = BeamTeleport.ANCHOR_SNAP;
 
     /** This blink's cooldown, a fresh counter for one live Phalanx (its loop holds it; it dies with the loop). */
     public Cooldown cooldown() {

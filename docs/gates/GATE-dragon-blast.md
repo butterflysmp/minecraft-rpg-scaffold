@@ -7,6 +7,9 @@ says ready.**
 
 **2026-11-17: approved to merge by the review seat after the boot of bd7457a3.**
 
+> **2026-11-17, `feat/void-implosion`:** this gate's rows were already superseded by `GATE-dragon-blast-2.md`, and those
+> rows are now superseded by `GATE-void-implosion.md` (the pull in place of the push). Nothing here is changed.
+
 > **2026-11-17, AFTER THE MERGE: EVERY ROW OF THIS FILE IS SUPERSEDED BY `GATE-dragon-blast-2.md`.** The follow-up of
 > 2026-11-17 (PLAN-dragon-mobs.md, RULINGS, *the 60 and the 150, and knockback*) changes the blast's damage (60 to
 > 150), adds vanilla's push, and fixes growth's decision at the death, so the figures BL1, BL2, BL6, BL9, DS1R3 and BQ1

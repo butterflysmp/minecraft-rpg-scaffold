@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.mob.BeamSound;
 import io.github.butterflysmp.rpg.core.mob.MobBeam;
 import io.github.butterflysmp.rpg.core.mob.MobBlast;
+import io.github.butterflysmp.rpg.core.mob.StagedDistance;
 import io.github.butterflysmp.rpg.core.mob.MobBody;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobGrowth;
@@ -419,17 +420,47 @@ public final class MobLoader {
     /**
      * The optional {@code blast:} block (dragon-mobs step R3), or null. Every key is required when the block is
      * present: {@code reach} (blocks), {@code damage.first} and {@code damage.last} (authored damage at the first and
-     * last stage, at zero distance), {@code fuse_ticks} (ticks), {@code knockback} (a multiplier of vanilla's push).
+     * last stage, at zero distance), {@code fuse_ticks} (ticks), {@code pull} (a multiplier of vanilla's push, toward
+     * the Phage: the void implosion, 2026-11-17) and {@code visual} (the content visual drawn at the reach).
      * {@link MobBlast} refuses a bad value by name.
+     *
+     * <p><b>A STALE {@code knockback:} KEY IS REFUSED, NOT IGNORED.</b> It was the push the pull replaced; a data folder
+     * copied before 2026-11-17 still carries it, and saveResource never overwrites. Ignoring it would load a Phage whose
+     * file says it pushes; refusing it names the file, so the copy is refreshed rather than misread.
      */
     private static MobBlast blast(ConfigurationSection s) {
         ConfigurationSection b = s.getConfigurationSection("blast");
         if (b == null) return null;
-        for (String key : List.of("reach", "damage.first", "damage.last", "fuse_ticks", "knockback")) {
+        if (b.contains("knockback")) {
+            throw new IllegalArgumentException("blast.knockback is retired: the blast PULLS since 2026-11-17 (blast.pull);"
+                    + " this file is a stale copy, refresh it from the jar");
+        }
+        for (String key : List.of("reach", "trigger", "cancel", "damage.first", "damage.last", "fuse_ticks", "pull",
+                "lift", "visual")) {
             if (!b.contains(key)) throw new IllegalArgumentException("blast." + key + " is required");
         }
-        return new MobBlast(b.getDouble("reach"), b.getDouble("damage.first"), b.getDouble("damage.last"),
-                b.getInt("fuse_ticks"), b.getDouble("knockback"));
+        return new MobBlast(staged(b, "reach"), staged(b, "trigger"), staged(b, "cancel"), b.getInt("fuse_ticks"),
+                b.getDouble("damage.first"), b.getDouble("damage.last"), b.getDouble("pull"), b.getDouble("lift"),
+                b.getString("visual"));
+    }
+
+    /**
+     * A distance that follows the stage (the void implosion's Part C): a NUMBER is the LAST stage's, every earlier
+     * stage's by its height ({@link StagedDistance#byHeight}); a SECTION {@code { first: <n>, last: <n> }} steps
+     * linearly between the two, the content-only way to tune the small one apart.
+     */
+    private static StagedDistance staged(ConfigurationSection b, String key) {
+        if (b.isConfigurationSection(key)) {
+            ConfigurationSection s = b.getConfigurationSection(key);
+            for (String k : List.of("first", "last")) {
+                if (!s.contains(k)) throw new IllegalArgumentException("blast." + key + "." + k + " is required");
+            }
+            return new StagedDistance(s.getDouble("first"), s.getDouble("last"));
+        }
+        if (!b.isDouble(key) && !b.isInt(key)) {
+            throw new IllegalArgumentException("blast." + key + " must be a number of blocks or { first, last }");
+        }
+        return StagedDistance.byHeight(b.getDouble(key));
     }
 
     /** One stage's body: height in blocks, a speed multiplier, and the authored health. All three required. */

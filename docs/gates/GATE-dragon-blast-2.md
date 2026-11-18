@@ -7,6 +7,12 @@ says ready.**
 
 **2026-11-17: approved to merge by the review seat after the boot of 3b07cbee.**
 
+> **2026-11-17, `feat/void-implosion`: EVERY ROW OF THIS GATE IS SUPERSEDED BY `GATE-void-implosion.md`**, as a new row
+> with the next suffix: BL1R2-BL9R2 → BL1R3-BL9R3, DS1R4, DS2R4, DS5R4, DS6R4 → DS1R5, DS2R5, DS5R5, DS6R5, DG6R4,
+> DG9R4 → DG6R5, DG9R5, BQ1R2 → BQ1R3. The blast now PULLS (Ben: "swap the push for the pull"), so every BLAST line's
+> head and victim entries change. **Every prediction and reading above stands as written**; this file is no longer the
+> pairing of `selftest/GATE-dragon-blast.yml`.
+
 **What this gate re-predicts, and why.** The seat's brief of 2026-11-17 (PLAN-dragon-mobs.md, RULINGS, *the 60 and the
 150, and knockback*): the blast's damage goes to 60 (stage 1) and 150 (stage 5), it now pushes its victims as a vanilla
 blast does, and growth's decision is fixed at the death (§8 F5). **Every row of `selftest/GATE-dragon-blast.yml` is

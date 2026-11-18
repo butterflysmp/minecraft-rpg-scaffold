@@ -387,8 +387,49 @@ final class AbilitySchema {
                     parseBurst(mapOf(m, type, "burst")),
                     strOrNull(m, "visual"),    // optional boom/flash at detonation
                     strOrNull(m, "trail"));    // optional per-tick flame trail along the arc
+            // The void implosion (2026-11-17): core's reusable shape, named by a use. See EffectSpec.Implosion.
+            case "implosion" -> parseImplosion(m, type);
             default -> throw new IllegalArgumentException("Unknown effect type: " + type);
         };
+    }
+
+    /**
+     * {@code type: implosion}: {@code reach} and {@code pull} required, {@code affects} required ({@code mobs} or
+     * {@code players}); {@code falloff} ({@code vanilla_explosion}, the default, or {@code flat}), {@code lift} (a
+     * multiplier of the push's lift; 0, the default, keeps them on the ground), {@code resistance}
+     * ({@code explosion_knockback}, {@code knockback} or {@code none}, the default), {@code visual} and {@code damage}
+     * ({@code { amount, element }}) optional. An unknown word in any of the three enums is refused by name.
+     */
+    private static EffectSpec.Implosion parseImplosion(Map<?, ?> m, String type) {
+        var shape = new io.github.butterflysmp.rpg.core.shape.Implosion(
+                num(m, type, "reach"),
+                word(m, type, "falloff", "vanilla_explosion", io.github.butterflysmp.rpg.core.shape.Implosion.Falloff.class),
+                num(m, type, "pull"),
+                numOr(m, type, "lift", 0.0),
+                word(m, type, "resistance", "none", io.github.butterflysmp.rpg.core.shape.Implosion.Resistance.class));
+        EffectSpec.Affects affects = word(m, type, "affects", null, EffectSpec.Affects.class);
+        EffectSpec.Damage damage = null;
+        if (m.get("damage") != null) {
+            Map<?, ?> d = mapOf(m, type, "damage");
+            damage = new EffectSpec.Damage(num(d, type + ".damage", "amount"), str(d, type + ".damage", "element"));
+        }
+        return new EffectSpec.Implosion(shape, affects, strOrNull(m, "visual"), damage);
+    }
+
+    /** A lower-case content word naming one of {@code kind}'s constants; {@code fallback} when absent, null = required. */
+    private static <E extends Enum<E>> E word(Map<?, ?> m, String type, String k, String fallback, Class<E> kind) {
+        Object v = m.get(k);
+        if (v == null && fallback == null) {
+            throw new IllegalArgumentException("Effect '" + type + "' is missing field: " + k);
+        }
+        String raw = String.valueOf(v == null ? fallback : v);
+        for (E e : kind.getEnumConstants()) {
+            if (e.name().toLowerCase(Locale.ROOT).equals(raw)) return e;
+        }
+        List<String> known = new java.util.ArrayList<>();
+        for (E e : kind.getEnumConstants()) known.add(e.name().toLowerCase(Locale.ROOT));
+        throw new IllegalArgumentException("Effect '" + type + "' field '" + k + "' must be one of " + known
+                + ", got: " + raw);
     }
 
     /** A nested burst section ({@code radius} + Targeted {@code effects}), for delayed_burst. */

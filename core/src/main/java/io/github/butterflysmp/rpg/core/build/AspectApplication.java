@@ -221,6 +221,9 @@ public final class AspectApplication {
                 case EffectSpec.ThrowEmbers e -> new EffectSpec.ThrowEmbers(e.anglesDegrees(), e.speed(),
                         e.launchLift(), e.itemId(), e.fuseTicks(), e.burst() == null ? null : rewriteBurst(e.burst()),
                         e.visual(), e.trail());
+                // No AspectField names an implosion (2026-11-17), and no shipped ability carries one: it passes through
+                // unchanged, its authored damage included. The first aspect that should reach it adds its fields here.
+                case EffectSpec.Implosion i -> i;
                 case EffectSpec.Visual v -> v;
             };
         }

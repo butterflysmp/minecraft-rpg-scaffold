@@ -25,7 +25,7 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
 
     /** Acts on the world rather than a victim. Always runs. */
     sealed interface Untargeted extends EffectSpec
-            permits Area, Burst, ThrowEmbers, Visual {}
+            permits Area, Burst, Implosion, ThrowEmbers, Visual {}
 
     /** element is a content id ("fire", "kinetic", ...) -- pure identity, validated at boot; never null. */
     record Damage(double amount, String element) implements Targeted {}
@@ -98,6 +98,45 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
                 throw new IllegalArgumentException("Effect 'area' radius must be > 0, got: " + radius);
             }
             effects = List.copyOf(effects);
+        }
+    }
+
+    /** WHO a use of a shape affects: the use's predicate, never the shape's. */
+    enum Affects {
+        /** Every combatant that is not a player (and never the caster). The test fixture's. */
+        MOBS,
+        /** Every player (never the caster). A creative or spectator player is exempted by the handle. */
+        PLAYERS
+    }
+
+    /**
+     * THE VOID IMPLOSION, NAMED FROM CONTENT ({@code type: implosion}; PLAN-dragon-mobs.md, the 2026-11-17 brief's
+     * Part D). Applied inline on the frame it lands, like a {@link Burst}: everyone inside the shape's reach whom
+     * {@code affects} names is pulled toward the origin by the shape ({@code CombatantHandle#applyPull}, which reads the
+     * victim's footing on its own thread), and, when the use authors {@code damage}, dealt that damage x the shape's
+     * falloff at its distance first. The {@code visual} (or null) is drawn ONCE at the origin at the shape's reach
+     * ({@code CombatWorld#present(Vec3, String, double)}). Its first use is the Phage's blast, which does not go
+     * through here: a mob's blast is priced by the mob rules, not by a caster.
+     *
+     * <pre>
+     * on_hit:
+     *   - type: implosion
+     *     reach: 5                       # BLOCKS, origin to feet, inclusive
+     *     falloff: vanilla_explosion     # or flat: the share of `damage` taken at distance d
+     *     pull: 1.0                      # a MULTIPLIER of the push's horizontal part, toward the origin
+     *     lift: 0                        # optional, default 0: a MULTIPLIER of the push's lift (0 stays grounded)
+     *     resistance: knockback          # explosion_knockback | knockback | none: the attribute that cuts it
+     *     affects: mobs                  # or players
+     *     visual: void_implosion         # optional, drawn at the reach
+     *     damage: { amount: 6, element: void }   # optional
+     * </pre>
+     */
+    record Implosion(io.github.butterflysmp.rpg.core.shape.Implosion shape, Affects affects, String visual,
+                     Damage damage) implements Untargeted {
+
+        public Implosion {
+            if (shape == null) throw new IllegalArgumentException("Effect 'implosion' needs a shape");
+            if (affects == null) throw new IllegalArgumentException("Effect 'implosion' needs 'affects'");
         }
     }
 

@@ -8,17 +8,16 @@ import io.github.butterflysmp.rpg.core.mob.MobGearScore;
 import io.github.butterflysmp.rpg.core.mob.MobHostility;
 import io.github.butterflysmp.rpg.core.mob.MobRegistry;
 import io.github.butterflysmp.rpg.core.mob.MobScaling;
+import io.github.butterflysmp.rpg.core.shape.Implosion;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
+import io.github.butterflysmp.rpg.paper.adapter.ImplosionFooting;
 import io.github.butterflysmp.rpg.paper.adapter.LiveTargets;
+import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
-import org.bukkit.SoundCategory;
 import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
@@ -34,9 +33,9 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * THE PHAGE'S DETONATION (PLAN-dragon-mobs.md step R3). The rules are core's ({@link MobBlast},
- * {@link MobHostility}); this is the Bukkit half, called from the one place a Phage's fuse ends:
- * {@code RpgListeners.onCustomCreeperPrime}, AFTER it has cancelled the vanilla prime.
+ * THE PHAGE'S DETONATION (PLAN-dragon-mobs.md step R3; since 2026-11-17, a VOID IMPLOSION). The rules are core's
+ * ({@link MobBlast}, {@link Implosion}, {@link MobHostility}); this is the Bukkit half, called from the one place a
+ * Phage's fuse ends: {@code RpgListeners.onCustomCreeperPrime}, AFTER it has cancelled the vanilla prime.
  *
  * <h2>WHAT IT DOES, IN ORDER</h2>
  * <ol>
@@ -44,29 +43,31 @@ import java.util.UUID;
  *       {@link MobHostility#hostileTo} names. Today that is a survival or adventure player; a mob (the Phage's own
  *       kind included) and a creative or spectator player are SPARED, and named in the log line as spared. The
  *       search is a cube of the reach; {@link MobBlast#reach} decides the sphere.</li>
- *   <li><b>The damage</b> (P-a and P-b, the seat's; the shape Ben's, "keep vanillas shap"): the stage's authored
- *       damage, x GS/100 ({@link MobBlast#price}), is the damage at ZERO distance; each victim takes it x
- *       {@link MobBlast#falloff} of its distance, vanilla's curve normalised. No cover (PLAN Q34). A
- *       victim whose share is 0 (exactly at the reach) is listed and not hit. Each other victim is hit through
+ *   <li><b>The damage</b> (60 and 150, CONFIRMED BY PLAY; P-b the seat's; the shape Ben's, "keep vanillas shap"): the
+ *       stage's authored damage, x GS/100 ({@link MobBlast#price}), is the damage at ZERO distance; each victim takes
+ *       it x {@link MobBlast#falloff} of its distance, vanilla's curve normalised. No cover (PLAN Q34). A victim whose
+ *       share is 0 (exactly at the reach) is listed and not hit. Each other victim is hit through
  *       {@code BukkitCombatant.of(victim).handle().applyDamage(dealt, phageId)}, the two-argument form a mob's melee
  *       hit takes ({@code RpgListeners.onMobMeleeAttack}), so the store applies the victim's defence exactly as for a
  *       melee hit, and the hit wears no element and cannot crit. <b>A shield cannot block it</b>: our block is read
  *       from a vanilla damage event (ShieldBlock), and this hit raises none (PLAN Q32).</li>
- *   <li><b>The push</b> (Ben, 2026-11-17: "knockback sounds like a good addition"; PLAN-dragon-mobs.md section 7 F-B,
- *       READ): each victim hit is pushed by vanilla's strength, {@link MobBlast#knockbackStrength}, linear in
- *       distance, times content's multiplier and {@code 1 - } the victim's {@code EXPLOSION_KNOCKBACK_RESISTANCE},
- *       along the blast's centre to the victim's EYE ({@link MobBlast#pushVector}), added to its velocity with
- *       {@code setVelocity}, which marks it for the client. <b>Only victims</b>: a spared mob or creative player is
- *       never pushed (vanilla pushes mobs too; the seat ruled players only). <b>No knockback event is raised</b>:
- *       vanilla's chain is built inside {@code CraftEventFactory}, and Paper's one public constructor is
- *       {@code @ApiStatus.Internal} (the plan's F-B; the seat's to rule).</li>
- *   <li><b>The sight and sound</b>: the large explosion particle and the generic explosion sound, the pair a vanilla
- *       creeper's blast sends ({@code Level.explode} passes {@code ParticleTypes.EXPLOSION_EMITTER} and
- *       {@code SoundEvents.GENERIC_EXPLODE}). A particle and a sound touch no block and hurt nothing.</li>
+ *   <li><b>The pull</b> (Ben, 2026-11-17: "A void explosion that pulls things toward the origin", "swap the push for
+ *       the pull"): each victim hit is pulled by the blast's {@link MobBlast#implosion}: vanilla's linear push curve x
+ *       content's {@code pull} (1.25) x {@code 1 - } the victim's {@code EXPLOSION_KNOCKBACK_RESISTANCE}, HORIZONTAL,
+ *       toward the Phage's feet, and CAPPED so the travel the jar's friction gives it stops half a block short of the
+ *       Phage (core's {@link Implosion#pull}, the footing read by {@link ImplosionFooting}). ADDED to the victim's
+ *       velocity with {@code setVelocity}, which marks it for the client. <b>Only victims</b>: a spared mob or creative
+ *       player is never pulled. <b>No knockback event is raised</b>, as none was for the push (F7).</li>
+ *   <li><b>The sight and sound</b>: the content visual the blast names ({@code void_implosion}: a black and a dark
+ *       purple spiral drawn INWARD from the reach over 10 ticks, and a deep sound), drawn at the blast's reach, in
+ *       place of vanilla's explosion emitter and generic explode. A particle and a sound touch no block and hurt
+ *       nothing.</li>
  *   <li><b>One line</b>, {@code BLAST ...} (the seat's ruling 26), naming the mob, its uuid, stage, gear score, the
- *       zero-distance damage ({@code base}) and the reach; each victim with its distance, its factor and the damage it
- *       was dealt BEFORE its defence; and each spared creature with its distance and factor. The amount after defence
- *       is the store's, a tick later (the selftest's HURT line).</li>
+ *       zero-distance damage ({@code base}), the reach, the pull multiplier and the visual; each victim with its
+ *       distance, its factor, the damage it was dealt BEFORE its defence, and its pull (the linear factor, its
+ *       resistance, whether it stood on the ground, the model's per-tick multiplier, the uncapped strength, the cap,
+ *       the speed applied, and whether the cap bound); and each spared creature with its distance and factor. The
+ *       amount after defence is the store's, a tick later (the selftest's HURT line).</li>
  *   <li><b>Growth</b> (the seat's ruling 23): {@link MobGrower#onDeath}, growth's death path, which needs no event. It
  *       marks the Phage counted (once only), resolves its element (void) and calls the seam
  *       {@link MobGrower#reportDeath} with the PHAGE'S OWN id as the dead creature, which never grows itself. Called
@@ -78,7 +79,8 @@ import java.util.UUID;
  *
  * <p><b>Threading.</b> Called on the Phage's own thread, inside its tick ({@code Creeper.tick} calls
  * {@code explodeCreeper()}, which fires the prime). A victim this thread does not own (possible on Folia at a region
- * edge) is hit from its own thread instead, a tick later; on Paper every victim is owned.
+ * edge) is hit and pulled from its own thread instead, a tick later, with the pull computed HERE from the footing at
+ * the blast; on Paper every victim is owned.
  */
 public final class MobBlaster {
 
@@ -111,7 +113,8 @@ public final class MobBlaster {
         World world = phage.getWorld();
         Location at = phage.getLocation();
         UUID phageId = phage.getUniqueId();
-        double r = blast.reach();
+        // THE STAGE'S REACH (the void implosion's Part C): stage 5's 6 blocks, stage 1's 2, by height.
+        double r = blast.reachAt(stage, def.stages());
         List<MobBlast.Bystander> bystanders = new ArrayList<>();
         Map<UUID, LivingEntity> bodies = new HashMap<>();
         for (Entity e : world.getNearbyEntities(at, r, r, r)) {
@@ -124,39 +127,38 @@ public final class MobBlaster {
                     living.getWorld().getName(), vec(living.getLocation())));
             bodies.put(living.getUniqueId(), living);
         }
-        MobBlast.Reach reach = blast.reach(phageId, world.getName(), vec(at), bystanders);
+        MobBlast.Reach reach = MobBlast.reach(phageId, world.getName(), vec(at), r, bystanders);
 
-        Map<UUID, double[]> pushes = new HashMap<>();   // victim -> {resistance, strength}, for the line
+        Implosion shape = blast.implosion(stage, def.stages());
+        Map<UUID, Implosion.Pull> pulls = new HashMap<>();   // victim -> its pull, for the line
         for (MobBlast.Hit hit : reach.victims()) {
             double dealt = base * hit.factor();
-            if (!(dealt > 0)) continue;   // exactly at the reach: listed, and nothing to deal (and no push: factor 0)
+            if (!(dealt > 0)) continue;   // exactly at the reach: listed, and nothing to deal (and nothing to pull)
             LivingEntity victim = bodies.get(hit.who().id());
-            // THE PUSH, vanilla's (PLAN-dragon-mobs.md section 7 F-B): the linear strength with the victim's own
-            // explosion knockback resistance, from the blast's centre to the victim's EYE. Computed HERE, at the
-            // blast, from the positions at the blast; applied with setVelocity, the plugin route that reaches a
-            // player's client (hurtMarked). Only a victim is pushed: a spared creature is never in this loop.
-            var attr = victim.getAttribute(Attribute.EXPLOSION_KNOCKBACK_RESISTANCE);
-            double resistance = attr == null ? 0.0 : attr.getValue();
-            double strength = blast.knockbackAt(hit.distance(), resistance);
-            pushes.put(victim.getUniqueId(), new double[] {resistance, strength});
-            Vec3 push = MobBlast.pushVector(vec(at), vec(victim.getEyeLocation()), strength);
-            Vector velocity = new Vector(push.x(), push.y(), push.z());
-            if (Bukkit.isOwnedByCurrentRegion(victim)) {
+            // THE PULL, the shape's: computed HERE, at the blast, from the victim's footing at the blast (feet, eye
+            // height, ground, the block's friction, its explosion knockback resistance): the push's own lift, and
+            // 1.25 x its horizontal toward the Phage, scaled down so the modelled rest point stops half a block short.
+            Implosion.Pull pull = shape.pull(vec(at), ImplosionFooting.of(victim, shape.resistance())).orElse(null);
+            if (pull != null) pulls.put(victim.getUniqueId(), pull);
+            Vec3 i = pull == null ? Vec3.ZERO : pull.impulse();
+            Vector velocity = new Vector(i.x(), i.y(), i.z());
+            boolean moves = i.x() != 0 || i.y() != 0 || i.z() != 0;
+            boolean safe = pull != null && pull.safeLanding();
+            Runnable land = () -> {
                 BukkitCombatant.of(victim, adapters).handle().applyDamage(dealt, phageId);
-                if (strength > 0) victim.setVelocity(victim.getVelocity().add(velocity));
-            } else {
-                adapters.scheduler().onEntity(victim, () -> {
-                    BukkitCombatant.of(victim, adapters).handle().applyDamage(dealt, phageId);
-                    if (strength > 0) victim.setVelocity(victim.getVelocity().add(velocity));
-                });
-            }
+                // Near the Phage the lift carries a player above the safe fall: the dash's mark (ruling 31) covers
+                // the landing, armed BEFORE the take-off, on the victim's own thread.
+                if (safe) adapters.safeLandings().arm(victim, adapters.scheduler());
+                if (moves) victim.setVelocity(victim.getVelocity().add(velocity));
+            };
+            if (Bukkit.isOwnedByCurrentRegion(victim)) land.run();
+            else adapters.scheduler().onEntity(victim, land);
         }
 
-        world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1);
-        world.playSound(at, Sound.ENTITY_GENERIC_EXPLODE, SoundCategory.HOSTILE, 4.0f, 0.7f);
+        new PaperCombatWorld(world, adapters).present(vec(at), blast.visual(), r);
 
-        adapters.log().info(head(mobId, phageId, stage, gs, base, r, blast.knockback())
-                + " victims=" + reach.victims().size() + " " + names(reach.victims(), bodies, base, pushes, r, adapters)
+        adapters.log().info(head(mobId, phageId, stage, gs, base, r, blast.pull(), blast.lift(), blast.visual())
+                + " victims=" + reach.victims().size() + " " + names(reach.victims(), bodies, base, pulls, r, adapters)
                 + " spared=" + reach.spared().size() + " "
                 + names(reach.spared(), bodies, Double.NaN, Map.of(), r, adapters));
 
@@ -167,46 +169,60 @@ public final class MobBlaster {
     }
 
     /**
-     * {@code [<entry>, ...]}, in the order the rule kept ({@link #entry}). {@code dealt} and the push are printed for
-     * victims only ({@code base} is NaN for the spared, who are neither hurt nor pushed). A victim exactly at the
-     * reach was neither hit nor pushed and has no recorded push: its {@code knock} and {@code push} print as 0.
+     * {@code [<entry>, ...]}, in the order the rule kept ({@link #entry}). {@code dealt} and the pull are printed for
+     * victims only ({@code base} is NaN for the spared, who are neither hurt nor pulled). A victim exactly at the reach
+     * was neither hit nor pulled and has no recorded pull: its pull fields print as 0.
      */
     private static String names(List<MobBlast.Hit> list, Map<UUID, LivingEntity> bodies, double base,
-                                Map<UUID, double[]> pushes, double reach, AdapterContext adapters) {
+                                Map<UUID, Implosion.Pull> pulls, double reach, AdapterContext adapters) {
         List<String> out = new ArrayList<>();
         for (MobBlast.Hit hit : list) {
             LivingEntity e = bodies.get(hit.who().id());
             String id = e.getPersistentDataContainer().get(adapters.keys().mobId, PersistentDataType.STRING);
             String kind = e.getType().getKey().getKey() + (id == null ? "" : "/" + id);
             if (Double.isNaN(base)) {
-                out.add(entry(kind, hit.who().id(), hit.distance(), hit.factor(), Double.NaN, Double.NaN, Double.NaN,
-                        Double.NaN));
+                out.add(spared(kind, hit.who().id(), hit.distance(), hit.factor()));
             } else {
-                double[] p = pushes.getOrDefault(hit.who().id(), new double[] {0.0, 0.0});
                 out.add(entry(kind, hit.who().id(), hit.distance(), hit.factor(), base * hit.factor(),
-                        MobBlast.knockbackFactor(hit.distance(), reach), p[0], p[1]));
+                        Implosion.factor(hit.distance(), reach), pulls.get(hit.who().id())));
             }
         }
         return out.toString();
     }
 
-    /** The BLAST line's head: the mob, its stage and gear score, the zero-distance damage, the reach, the multiplier. */
-    static String head(String mobId, UUID id, int stage, int gs, double base, double reach, double knockback) {
+    /**
+     * The BLAST line's head: the mob, its stage and gear score, the zero-distance damage, the stage's reach, the pull
+     * and the lift, the look.
+     */
+    static String head(String mobId, UUID id, int stage, int gs, double base, double reach, double pull, double lift,
+                       String visual) {
         return "BLAST mob=" + mobId + " id=" + id + " stage=" + stage + " gs=" + gs
-                + String.format(Locale.ROOT, " base=%.3f reach=%.2f knockback=%.2f", base, reach, knockback);
+                + String.format(Locale.ROOT, " base=%.3f reach=%.2f pull=%.2f lift=%.2f", base, reach, pull, lift)
+                + " visual=" + visual;
+    }
+
+    /** A SPARED creature's entry: {@code <type>[/<mob id>] <uuid> d=<feet to feet> factor=<damage share>}, no more. */
+    static String spared(String kind, UUID id, double distance, double factor) {
+        return kind + " " + id + String.format(Locale.ROOT, " d=%.3f factor=%.6f", distance, factor);
     }
 
     /**
-     * One creature's entry: {@code <type>[/<mob id>] <uuid> d=<feet to feet> factor=<damage share>}, and for a victim
-     * {@code dealt=<before defence> knock=<1 - d/reach> res=<explosion knockback resistance> push=<strength applied>}.
-     * {@code dealt} NaN marks a spared creature, and then nothing after the factor is printed.
+     * A VICTIM's entry: {@link #spared}'s, then {@code dealt=<before defence> knock=<1 - d/reach> res=<resistance>
+     * h=<horizontal distance, the cap's> ground=<on the ground> tf=<the model's blocks of rest per unit of horizontal
+     * speed> strength=<the uncapped horizontal> cap=<cap speed> pull=<horizontal applied> capped=<the cap bound>
+     * lift=<the vertical applied> apex=<its height> rest=<the modelled rest point, blocks> safe=<the mark armed>}.
+     * {@code p} null (a victim exactly at the reach) prints every pull field as 0.
      */
     static String entry(String kind, UUID id, double distance, double factor, double dealt, double knock,
-                        double resistance, double push) {
-        String s = kind + " " + id + String.format(Locale.ROOT, " d=%.3f factor=%.6f", distance, factor);
-        if (Double.isNaN(dealt)) return s;
-        return s + String.format(Locale.ROOT, " dealt=%.3f knock=%.6f res=%.3f push=%.6f", dealt, knock, resistance,
-                push);
+                        Implosion.Pull p) {
+        return spared(kind, id, distance, factor) + String.format(Locale.ROOT,
+                " dealt=%.3f knock=%.6f res=%.3f h=%.3f ground=%b tf=%.6f strength=%.6f cap=%.6f pull=%.6f capped=%b"
+                        + " lift=%.6f apex=%.3f rest=%.3f safe=%b",
+                dealt, knock, p == null ? 0.0 : p.resistance(), p == null ? 0.0 : p.horizontal(),
+                p != null && p.onGround(), p == null ? 0.0 : p.travelFactor(), p == null ? 0.0 : p.strength(),
+                p == null ? 0.0 : p.capSpeed(), p == null ? 0.0 : p.applied(), p != null && p.capped(),
+                p == null ? 0.0 : p.vertical(), p == null ? 0.0 : p.apex(), p == null ? 0.0 : p.travel(),
+                p != null && p.safeLanding());
     }
 
     private static Vec3 vec(Location l) {

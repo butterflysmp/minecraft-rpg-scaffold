@@ -240,6 +240,35 @@ public final class EffectApplier {
             // at the live position, count the fuse, detonate mob-only where it lies. No landing
             // detection, no separate marker -- the thrown item IS the marker.
             case EffectSpec.ThrowEmbers te -> throwEmbers(te, caster, origin, direction);
+
+            // The void implosion, named from content: inline on this frame, like a Burst. See implode().
+            case EffectSpec.Implosion im -> implode(im, caster, origin);
+        }
+    }
+
+    /**
+     * THE VOID IMPLOSION AS AN ABILITY'S EFFECT (PLAN-dragon-mobs.md, the 2026-11-17 brief's Part D). The visual first,
+     * once, at the origin and at the shape's reach. Then each combatant inside the reach that the use's {@code affects}
+     * names, never the caster: the authored damage (if any) x the shape's falloff at its feet-to-feet distance, through
+     * the same Damage arm every literal takes; then the pull, handed to its own handle, which reads its footing on its own
+     * thread and asks the shape for the capped impulse. A creative or spectator player is exempted there.
+     */
+    private void implode(EffectSpec.Implosion im, Caster caster, Vec3 origin) {
+        double reach = im.shape().reach();
+        if (im.visual() != null) world.present(origin, im.visual(), reach);
+        for (Combatant c : world.combatantsNear(origin, reach)) {
+            if (c.id().equals(caster.id())) continue;
+            boolean player = c.state().player();
+            if (im.affects() == EffectSpec.Affects.MOBS ? player : !player) continue;
+            if (!im.shape().inReach(origin, c.state().position())) continue;   // the port may hand back a cube
+            if (im.damage() != null) {
+                double share = im.shape().share(Math.sqrt(origin.distanceSquared(c.state().position())));
+                if (share > 0) {
+                    applyTargeted(new EffectSpec.Damage(im.damage().amount() * share, im.damage().element()),
+                            caster, c, origin);
+                }
+            }
+            c.handle().applyPull(origin, im.shape());
         }
     }
 

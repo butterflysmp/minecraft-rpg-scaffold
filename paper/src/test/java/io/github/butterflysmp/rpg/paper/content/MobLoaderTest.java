@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.mob.MobBody;
 import io.github.butterflysmp.rpg.core.mob.MobSplit;
 import io.github.butterflysmp.rpg.core.mob.MobGrowth;
 import io.github.butterflysmp.rpg.core.mob.MobBlast;
+import io.github.butterflysmp.rpg.core.mob.StagedDistance;
 import io.github.butterflysmp.rpg.core.mob.StageBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -356,60 +357,102 @@ class MobLoaderTest {
 
     // ---- dragon-mobs step R3: the blast ----
 
-    /** The blast's five numbers ARRIVE from content (the knockback multiplier since the follow-up of 2026-11-17), and a file without the block has none. */
+    /** The fuse's distances by stage (the void implosion's Part C): a number is the last stage's, scaled by height. */
+    private static MobBlast blastOf(double reach, double trigger, double cancel, int fuse, double first, double last,
+                                    double pull, double lift, String visual) {
+        return new MobBlast(StagedDistance.byHeight(reach), StagedDistance.byHeight(trigger),
+                StagedDistance.byHeight(cancel), fuse, first, last, pull, lift, visual);
+    }
+
+    /**
+     * The blast's fields ARRIVE from content (the pull, the lift and the visual since the void implosion; the trigger
+     * and the cancel, and every distance by stage, since its Part C), and a file without the block has none.
+     */
     @Test
     void theBlastBlockArrives() throws IOException {
         write("phage.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 4.5\n  damage: { first: 11, last: 77 }\n  fuse_ticks: 44\n  knockback: 0.75\n");
+                + "blast:\n  reach: 4.5\n  trigger: 2.5\n  cancel: 5.5\n  damage: { first: 11, last: 77 }\n"
+                + "  fuse_ticks: 44\n  pull: 0.75\n  lift: 0.5\n  visual: void_implosion\n");
         write("plain.yml", "base_entity: creeper\n" + STAGES);
 
         MobRegistry mobs = load();
 
-        assertEquals(new MobBlast(4.5, 11, 77, 44, 0.75), mobs.find("phage").orElseThrow().blast());
+        assertEquals(blastOf(4.5, 2.5, 5.5, 44, 11, 77, 0.75, 0.5, "void_implosion"),
+                mobs.find("phage").orElseThrow().blast());
         assertNull(mobs.find("plain").orElseThrow().blast(), "no blast block, no blast");
         assertTrue(warnings.isEmpty(), warningText());
     }
 
     /**
-     * A blast on an unstaged mob, a missing key, a zero fuse, a missing knockback and a negative one are each a named,
-     * skipped file. Every file but the one under test carries {@code knockback: 1}, so each is refused for its own key.
+     * THE CONTENT-ONLY WAY TO TUNE THE SMALL ONE APART: a distance authored as {@code { first, last }} arrives as a
+     * linear staged distance, a number as the last stage's scaled by height. Both forms in one file.
+     */
+    @Test
+    void aDistanceAuthoredAsFirstAndLastArrivesLinear() throws IOException {
+        write("phage.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: { first: 1.5, last: 6 }\n  trigger: 3\n  cancel: { first: 3, last: 7 }\n"
+                + "  damage: { first: 60, last: 150 }\n  fuse_ticks: 30\n  pull: 1.25\n  lift: 1\n  visual: v\n");
+
+        MobBlast b = load().find("phage").orElseThrow().blast();
+
+        assertEquals(new StagedDistance(1.5, 6.0), b.reach());
+        assertEquals(StagedDistance.byHeight(3), b.trigger());
+        assertEquals(new StagedDistance(3.0, 7.0), b.cancel());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * A blast on an unstaged mob; a missing key (reach, trigger, cancel, damage, pull, lift, visual); a zero fuse; a
+     * negative pull; a cancel not beyond its trigger; a {@code { first }} with no {@code last}; and a STALE
+     * {@code knockback:} key (the push the pull replaced, as a data folder copied before 2026-11-17 still has it) are
+     * each a named, skipped file. Every file but the one under test carries every other key, so each is refused for its
+     * own.
      */
     @Test
     void aMalformedBlastIsRefused() throws IOException {
-        write("unstaged.yml", "base_entity: creeper\nmax_health: 80\n"
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: 1\n");
-        write("nolast.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20 }\n  fuse_ticks: 30\n  knockback: 1\n");
-        write("noreach.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: 1\n");
-        write("nofuse.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 0\n  knockback: 1\n");
-        write("noknock.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n");
-        write("negknock.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: -1\n");
+        String head = "base_entity: creeper\n" + STAGES + "blast:\n";
+        String reach = "  reach: 3\n";
+        String fuse = "  trigger: 1.5\n  cancel: 3.5\n";
+        String damage = "  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n";
+        String rest = "  pull: 1\n  lift: 1\n  visual: v\n";
+        write("unstaged.yml", "base_entity: creeper\nmax_health: 80\nblast:\n" + reach + fuse + damage + rest);
+        write("nolast.yml", head + reach + fuse + "  damage: { first: 20 }\n  fuse_ticks: 30\n" + rest);
+        write("noreach.yml", head + fuse + damage + rest);
+        write("notrigger.yml", head + reach + "  cancel: 3.5\n" + damage + rest);
+        write("nocancel.yml", head + reach + "  trigger: 1.5\n" + damage + rest);
+        write("nofuse.yml", head + reach + fuse + "  damage: { first: 20, last: 50 }\n  fuse_ticks: 0\n" + rest);
+        write("nopull.yml", head + reach + fuse + damage + "  lift: 1\n  visual: v\n");
+        write("negpull.yml", head + reach + fuse + damage + "  pull: -1\n  lift: 1\n  visual: v\n");
+        write("nolift.yml", head + reach + fuse + damage + "  pull: 1\n  visual: v\n");
+        write("novisual.yml", head + reach + fuse + damage + "  pull: 1\n  lift: 1\n");
+        write("inverted.yml", head + reach + "  trigger: 3.5\n  cancel: 1.5\n" + damage + rest);
+        write("halfstaged.yml", head + "  reach: { first: 1 }\n" + fuse + damage + rest);
+        write("staleknock.yml", head + reach + fuse + damage + "  knockback: 1\n" + rest);
 
         MobRegistry mobs = load();
 
         assertEquals(0, mobs.size());
-        for (String f : List.of("unstaged.yml", "nolast.yml", "noreach.yml", "nofuse.yml", "noknock.yml",
-                "negknock.yml")) {
+        for (String f : List.of("unstaged.yml", "nolast.yml", "noreach.yml", "notrigger.yml", "nocancel.yml",
+                "nofuse.yml", "nopull.yml", "negpull.yml", "nolift.yml", "novisual.yml", "inverted.yml",
+                "halfstaged.yml", "staleknock.yml")) {
             assertTrue(warningText().contains(f), f + ": " + warningText());
         }
     }
 
     /**
-     * THE PHAGE WE SHIP: vanilla's creeper numbers for everything but the damage (Ben), its shape ("keep vanillas
-     * shap"), the 60 and 150 (the seat's reading of Ben's "increase 3x", replacing P-a, 2026-11-17), and vanilla's push at a multiplier of 1 (Q35 answered yes). The reach is 6 blocks: vanilla's power 3 doubled
-     * ({@code ServerExplosion.hurtEntities}, {@code radius * 2}); the fuse is 30 ticks, vanilla's {@code maxSwell}.
+     * THE PHAGE WE SHIP: vanilla's creeper numbers for its last stage (reach 6, trigger 3, cancel 7, fuse 30), each
+     * earlier stage's distances by its height (Ben: "The Large phage being the current distances and scaling everything
+     * down to the small phage"; the seat's ruling 1 on #204); the 60 and 150; a PULL at 1.25 x the push's horizontal
+     * with the push's own LIFT (the seat's ruling 2); drawn as void_implosion.
      */
     @Test
-    void theBundledPhageBlastsForSixtyToOneFiftyOutToSixBlocksAndPushesAsVanilla() throws IOException {
+    void theBundledPhageScalesItsDistancesByHeightAndPullsWithThePushsLift() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/phage.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("phage.yml"), in.readAllBytes());
         }
-        assertEquals(new MobBlast(6.0, 60.0, 150.0, 30, 1.0), load().find("phage").orElseThrow().blast());
+        assertEquals(blastOf(6, 3, 7, 30, 60, 150, 1.25, 1.0, "void_implosion"),
+                load().find("phage").orElseThrow().blast());
         assertTrue(warnings.isEmpty(), warningText());
     }
 

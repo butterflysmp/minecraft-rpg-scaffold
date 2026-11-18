@@ -59,6 +59,18 @@ final class SelfTestBlast {
         return "FUSE tag=" + tag + " " + id + " fuse=" + fuse + "/" + max + " ignited=" + ignited;
     }
 
+    /**
+     * Since the void implosion's Part C the FUSE is OURS ({@code PhageFuser}, {@code MobFuse}), not the server's
+     * {@code swell}, which stays 0: {@code fuse=<swell>/<fuse ticks> dir=<+1|-1>}, or {@code fuse=none} for a creeper
+     * with no fuse of ours; then whether the creeper is ignited (the server's flag, which the guard keeps false).
+     */
+    static String fuseLine(String tag, UUID id, java.util.Optional<int[]> state, boolean ignited) {
+        if (state.isEmpty()) return "FUSE tag=" + tag + " " + id + " fuse=none ignited=" + ignited;
+        int[] s = state.get();
+        return "FUSE tag=" + tag + " " + id + " fuse=" + s[0] + "/" + s[2] + " dir=" + (s[1] > 0 ? "+1" : "-1")
+                + " ignited=" + ignited;
+    }
+
     /** THAW's line: the mob's AI READ BACK after the act, so it witnesses the thaw landing (the follow-up, F4). */
     static String thawLine(String tag, UUID id, boolean aiAfter) {
         return "DRIVE thaw tag=" + tag + " " + id + " ai=" + aiAfter;

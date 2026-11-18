@@ -373,6 +373,10 @@ public final class ContentValidator {
                 problems.add(label + " names base_entity '" + mob.baseEntity()
                         + "', which is not a living entity and cannot carry health or a nameplate");
             }
+            // The void implosion (2026-11-17): the blast's look is a content visual, named at boot, not at the first blast.
+            if (mob.blast() != null && visuals.find(mob.blast().visual()).isEmpty()) {
+                problems.add(label + " names blast visual '" + mob.blast().visual() + "', which no visual defines");
+            }
         }
         return problems;
     }
@@ -659,6 +663,13 @@ public final class ContentValidator {
                             + embers.trail() + "', which no visual defines");
                 }
                 checkEffect(embers.burst(), ownerLabel, problems);
+            }
+            case EffectSpec.Implosion implosion -> {
+                if (implosion.visual() != null && visuals.find(implosion.visual()).isEmpty()) {
+                    problems.add(ownerLabel + " names implosion visual '"
+                            + implosion.visual() + "', which no visual defines");
+                }
+                if (implosion.damage() != null) checkEffect(implosion.damage(), ownerLabel, problems);
             }
             case EffectSpec.Damage damage -> checkElement(damage.element(), ownerLabel, problems);
             case EffectSpec.WeaponDamage weaponDamage -> checkElement(weaponDamage.element(), ownerLabel, problems);

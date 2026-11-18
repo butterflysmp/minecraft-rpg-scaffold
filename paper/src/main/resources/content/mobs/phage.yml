@@ -6,9 +6,9 @@
 #
 # WHAT R1 BUILT: the five stage bodies. R2 added the split, the growth step its growth, and R3 its blast (below).
 #
-# IT EXPLODES OURS, FROM R3. Vanilla's swell is still its fuse (Ben kept vanilla's numbers), but vanilla's explosion
-# is refused every time, and ours runs in its place: no blocks broken, players hurt, the Phage removed without dying.
-# Flint and steel cannot ignite it and lightning cannot charge it, as in R1.
+# IT EXPLODES OURS, FROM R3, ON A FUSE OF OURS SINCE 2026-11-17: vanilla's swell goal is removed and vanilla's
+# explosion is refused every time; our fuse and our blast run in their place: no blocks broken, players hurt and pulled,
+# the Phage removed without dying. Flint and steel cannot ignite it and lightning cannot charge it, as in R1.
 
 base_entity: creeper
 display_name: "Phage"
@@ -81,46 +81,72 @@ growth:
 
 # THE BLAST (dragon-mobs step R3). Ben: "for the explosion keep vanilla creeper numbers for everything except the
 # damage", and on its shape, "keep vanillas shap". The damage is 60 and 150 since 2026-11-17: the seat's reading of
-# Ben's "increase 3x" (said twice), which he did not correct when it was put to him; not a number he typed. It
-# replaced the provisional 20 and 50. The gear-score pricing below (P-b) is still the seat's provisional proposal.
-# Since the same day it pushes its victims back, as a vanilla blast does (Ben: "knockback sounds like a good
-# addition").
+# Ben's "increase 3x", CONFIRMED BY PLAY the same day. The gear-score pricing below (P-b) is still the seat's
+# provisional proposal.
 #
-#   stage:   1      2      3      4      5
-#   damage:  60     82.5   105    127.5  150    at ZERO distance, before gear score; linear between first and last
+# IT PULLS, SINCE 2026-11-17: A VOID IMPLOSION. Ben: "A void explosion that pulls things toward the origin with black
+# and dark purple swirling particles. I want this to happen when the phage explodes", and on the seat's points: "Yes,
+# swap the push for the pull", "A little bit stronger than the push today". The push it replaced is gone.
 #
-#   distance:     0      1.5     3 (half)   4.5      6 (the reach)    beyond 6
-#   share taken:  all    65.6%   37.5%      15.6%    nothing          nothing
+# ITS FUSE IS OURS, AND ITS DISTANCES FOLLOW ITS SIZE (the seat's ruling 1 on #204). Ben: "make the size of the Phage
+# affect the Fuse radius, explosion radius, etc. The Large phage being the current distances and scaling everything
+# down to the small phage." Vanilla's swell goal is removed; our fuse (core MobFuse) lights, resets and blows by the
+# numbers below, and the swelling is shown to every player watching by packet.
+#
+# THE RULE FOR EVERY DISTANCE BELOW: the number is the LAST stage's (stage 5, the large Phage: vanilla's own numbers),
+# and each earlier stage's is that times its HEIGHT over the last stage's height (1/3, 1/2, 2/3, 5/6, 1):
+#
+#   stage:     1       2       3       4       5
+#   height:    1.0     1.5     2.0     2.5     3.0     blocks (the stages above)
+#   trigger:   1.0     1.5     2.0     2.5     3.0     blocks: the fuse lights STRICTLY inside, with sight
+#   cancel:    2.333   3.5     4.667   5.833   7.0     blocks: a lit fuse resets STRICTLY beyond, or without sight
+#   reach:     2.0     3.0     4.0     5.0     6.0     blocks: who the blast hurts and pulls, and the swirl's width
+#   damage:    60      82.5    105     127.5   150     at ZERO distance, before gear score; linear between
+#
+# TO TUNE THE SMALL ONE APART, author a distance as { first: <stage 1's>, last: <stage 5's> } instead of a number: the
+# stages then step linearly between the two, and nothing else changes (MobLoader reads either form).
+#
+#   at the stage's reach R:  distance  0      R/4     R/2       3R/4     R
+#                            share     all    65.6%   37.5%     15.6%    nothing
 #
 # NAME THE QUANTITY:
-#   reach        BLOCKS, how far the blast hurts: the straight-line distance between the Phage's FEET and the victim's
-#                FEET, same world, a sphere. 6 is vanilla's own reach for a creeper: its explosion power 3, doubled
-#                (ServerExplosion.hurtEntities, radius * 2; PLAN-dragon-mobs.md section 7 F-B). Vanilla measures between
-#                the same two points: the victim's position (its feet) and the creeper's position, where it explodes.
-#   falloff      NOT a number in this file: vanilla's own curve, normalised (Ben: "keep vanillas shap"). A victim at
-#                distance d takes the damage below times (x*x + x) / 2, where x = 1 - d / reach: ALL of it at the
-#                Phage's feet, THREE EIGHTHS of it at half the reach (3 blocks), and nothing at the reach.
-#                Vanilla also weakens a blast by the blocks in the way. That is NOT done here: the blast goes
-#                through walls (Ben's question, Q34). It does push (below).
+#   reach        BLOCKS, LAST stage's: how far the blast hurts AND pulls, feet to feet, same world, a sphere. 6 is
+#                vanilla's reach for a creeper: its explosion power 3, doubled (ServerExplosion.hurtEntities, radius * 2;
+#                PLAN-dragon-mobs.md section 7 F-B). The swirl is drawn this wide.
+#   trigger      BLOCKS, LAST stage's: the fuse lights when its target, a combatant it is hostile to, is STRICTLY closer
+#                than this, feet to feet, and in sight. 3 is vanilla's SwellGoal (distanceToSqr < 9.0).
+#   cancel       BLOCKS, LAST stage's: a lit fuse turns back when the target is STRICTLY farther than this, out of sight,
+#                or gone. 7 is vanilla's (distanceToSqr > 49.0). A turned-back fuse falls a tick at a time.
+#   fuse_ticks   TICKS from the fuse lighting to the blast, vanilla's 30 (1.5 seconds), the same at every stage ("etc."
+#                is distances only, the seat's reading).
+#   falloff      NOT a number in this file: vanilla's own curve, normalised (Ben: "keep vanillas shap"): a victim at
+#                distance d takes the damage times (x*x + x) / 2, x = 1 - d / reach. No cover: the blast goes through
+#                walls (Q34).
 #   damage       AUTHORED damage at the first and last stage, at zero distance, x gear score / 100 as the Phage's
-#                health is (P-b), never x5. It lands on the same path a mob's melee hit takes, so the player's defence
-#                cuts it as it cuts a melee hit. It wears NO element today (whether it is Void damage is Q31).
-#   fuse_ticks   TICKS from the swell's start to the blast, vanilla's 30 (1.5 seconds), written to the creeper with
-#                Creeper#setMaxFuseTicks at spawn. The swell starts within 3 blocks of a target and cancels past 7 or
-#                out of sight: those two distances are vanilla's own and are NOT authored here (they cannot be until
-#                the swell is replaced; the seat's ruling 20).
-#   knockback    a MULTIPLIER of vanilla's own push for the same distance; never an absolute push. 1.0 is vanilla's:
-#                at the Phage's FEET a victim's velocity gains 1.0 (blocks per tick) away from the blast, pointing
-#                from the Phage's feet to the victim's eyes, so a little upward; at HALF the reach (3 blocks) it gains
-#                0.5; at the reach, nothing. The push falls off in a STRAIGHT LINE with distance (1 - distance /
-#                reach), not along the damage's curve. A victim's explosion knockback resistance cuts it as vanilla's
-#                does. 0 turns the push off; 2.0 would push twice as hard. Only the blast's victims are pushed: a mob or
-#                a creative player inside the reach is not. (PLAN-dragon-mobs.md section 7 F-B, read from the jar.)
+#                health is (P-b), never x5. The same path a mob's melee hit takes; no element (Q31).
+#   pull         a MULTIPLIER of the old push's HORIZONTAL part at that distance, pointed AT the Phage's feet. 1.25 is
+#                the seat's number for "a little bit stronger than the push today". The old push was (1 - d / reach) x
+#                (1 - explosion knockback resistance) along the line from the Phage's feet to the victim's eyes.
+#   lift         a MULTIPLIER of the old push's VERTICAL part: 1.0 is the same lift the push gave at that distance, so
+#                the victim is thrown up and in. 0 would keep it on the ground.
+#                NEVER PAST THE PHAGE: the horizontal is scaled DOWN (never the lift) so that, modelled through the
+#                flight and the slide by the server's own physics (gravity 0.08, drag 0.98, friction 0.6 x 0.91 on
+#                stone), the victim comes to rest at least half a block short of the Phage's feet. On stone that cap
+#                bites inside about 2.2 blocks of a stage-5 Phage; farther out the pull carries a victim exactly 1.25
+#                times as far as the push did. Near the Phage the lift alone can carry a player above 3 blocks: such a
+#                landing takes no fall damage (the dash's safe landing).
+#   visual       the content visual drawn at the stage's reach in place of vanilla's explosion puff and bang:
+#                void_implosion (content/visuals), a black and a dark purple spiral coming in over half a second, and a
+#                deep sound.
 #
-# VICTIMS: players only, today (Ben: "Only players and Summons"). No mob is hurt or pushed, a Phage included. A
-# creative or spectator player is not hurt or pushed.
+# VICTIMS: players only, today (Ben: "Only players and Summons"). No mob is hurt or pulled, a Phage included. A
+# creative or spectator player is not hurt or pulled.
 blast:
   reach: 6
-  damage: { first: 60, last: 150 }
+  trigger: 3
+  cancel: 7
   fuse_ticks: 30
-  knockback: 1.0
+  damage: { first: 60, last: 150 }
+  pull: 1.25
+  lift: 1.0
+  visual: void_implosion

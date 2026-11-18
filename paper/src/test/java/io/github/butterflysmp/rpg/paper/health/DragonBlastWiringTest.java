@@ -95,32 +95,62 @@ class DragonBlastWiringTest {
     }
 
     /**
-     * ONLY THE VICTIMS ARE PUSHED (the follow-up of 2026-11-17; PLAN-dragon-mobs.md section 7 F-B). Every
-     * {@code setVelocity(} in the blaster sits inside the victims' loop, which ends before the particle, so a spared
-     * creature (a mob, a creative player) is never pushed. The push is vanilla's: the strength from
-     * {@code blast.knockbackAt} with the victim's EXPLOSION knockback resistance, the direction from the blast's centre
-     * to the victim's EYE ({@code MobBlast.pushVector}). The spared list is read only by the line, never by a loop.
+     * ONLY THE VICTIMS ARE PULLED, BY THE SHAPE, AND NOTHING IS PUSHED (the void implosion, 2026-11-17: Ben, "swap the
+     * push for the pull"). Every {@code setVelocity(} in the blaster sits inside the victims' loop, which ends before the
+     * visual, so a spared creature (a mob, a creative player) is never pulled. The pull is the blast's implosion's,
+     * asked with the victim's own footing, the explosion resistance named by the shape. The push's vector and vanilla's
+     * explosion emitter and sound are gone; the content visual is drawn at the blast's reach in their place.
      */
     @Test
-    void onlyTheVictimsArePushedAndThePushIsVanillas() throws IOException {
+    void onlyTheVictimsArePulledByTheShapeAndTheVisualIsTheContents() throws IOException {
         List<String> code = codeLines(MAIN.resolve(Path.of("health", "MobBlaster.java")));
         int loop = indexOf(code, "for (MobBlast.Hit hit : reach.victims()) {");
-        int particle = indexOf(code, "world.spawnParticle(Particle.EXPLOSION_EMITTER, at, 1);");
-        assertTrue(loop > 0 && loop < particle, "the victims' loop, then the particle: " + loop + " " + particle);
-        int pushes = 0;
+        int visual = indexOf(code, "new PaperCombatWorld(world, adapters).present(vec(at), blast.visual(), r);");
+        assertTrue(loop > 0 && loop < visual, "the victims' loop, then the visual: " + loop + " " + visual);
+        int pulls = 0;
         for (int i = 0; i < code.size(); i++) {
             if (!code.get(i).contains("setVelocity(")) continue;
-            pushes++;
-            assertTrue(i > loop && i < particle, "a push outside the victims' loop, line " + i + ": " + code.get(i));
+            pulls++;
+            assertTrue(i > loop && i < visual, "a pull outside the victims' loop, line " + i + ": " + code.get(i));
         }
-        assertTrue(pushes >= 1, "the blaster pushes at all: " + pushes);
-        assertTrue(code.stream().anyMatch(l -> l.contains("Attribute.EXPLOSION_KNOCKBACK_RESISTANCE")), "the resistance");
-        assertTrue(code.stream().anyMatch(l -> l.contains("double strength = blast.knockbackAt(hit.distance(), resistance);")),
-                "the strength, with the resistance read from the victim (anchored at both ends: a constant in its place is red)");
-        assertTrue(code.stream().anyMatch(l -> l.contains("MobBlast.pushVector(vec(at), vec(victim.getEyeLocation()), ")),
-                "the direction: the blast's centre to the victim's eye");
+        assertTrue(pulls >= 1, "the blaster pulls at all: " + pulls);
+        assertTrue(code.stream().anyMatch(l -> l.contains("Implosion shape = blast.implosion(stage, def.stages());")),
+                "the blast's shape AT ITS STAGE (the void implosion's Part C)");
+        assertTrue(code.stream().anyMatch(l -> l.contains(
+                        "Implosion.Pull pull = shape.pull(vec(at), ImplosionFooting.of(victim, shape.resistance()))")),
+                "each victim's pull, from its own footing and the shape's resistance");
+        for (String gone : List.of("pushVector", "knockbackAt", "EXPLOSION_EMITTER", "ENTITY_GENERIC_EXPLODE")) {
+            assertFalse(code.stream().anyMatch(l -> l.contains(gone)), "gone from the blaster: " + gone);
+        }
+        assertTrue(code.stream().anyMatch(l -> l.contains("double r = blast.reachAt(stage, def.stages());")),
+                "the stage's reach: the sphere, the shape and the swirl's width");
+        assertTrue(code.stream().anyMatch(l -> l.contains("if (safe) adapters.safeLandings().arm(victim, adapters.scheduler());")),
+                "the lift's high landings get the dash's mark (ruling 2: the lift is never scaled)");
         assertTrue(code.stream().noneMatch(l -> l.contains("for (MobBlast.Hit") && l.contains("spared")),
                 "no loop over the spared");
+    }
+
+    /**
+     * THE HANDLE'S PULL (an ability's use of the shape) never moves a shot's carrier, nor a creative or spectator
+     * player, and asks the same shape with the same footing reader the blast uses. Each guard comes BEFORE the one
+     * {@code setVelocity} in the method, and the method ends at the next {@code @Override}.
+     */
+    @Test
+    void theHandlesPullExemptsAShotACreativeAndASpectatorAndUsesTheSameFooting() throws IOException {
+        List<String> code = codeLines(MAIN.resolve(Path.of("adapter", "BukkitCombatant.java")));
+        int method = indexOf(code, "@Override public void applyPull(Vec3 origin, Implosion shape) {");
+        int end = indexAfter(code, method, "@Override");
+        int shot = indexAfter(code, method, "if (entity.getPersistentDataContainer().has(ctx.keys().mobShot)) return;");
+        int mode = indexAfter(code, method, "if (ImplosionFooting.exempt(entity)) return;");
+        int ask = indexAfter(code, method,
+                "Implosion.Pull pull = shape.pull(origin, ImplosionFooting.of(entity, shape.resistance())).orElse(null);");
+        int move = indexAfter(code, method, "entity.setVelocity(entity.getVelocity().add(");
+        assertTrue(method > 0 && method < shot && shot < mode && mode < ask && ask < move && move < end,
+                "method < shot < mode < ask < move < end: " + method + " " + shot + " " + mode + " " + ask + " " + move
+                        + " " + end);
+        List<String> footing = codeLines(MAIN.resolve(Path.of("adapter", "ImplosionFooting.java")));
+        assertTrue(footing.stream().anyMatch(l -> l.contains("GameMode.CREATIVE")), "creative is exempt");
+        assertTrue(footing.stream().anyMatch(l -> l.contains("GameMode.SPECTATOR")), "spectator is exempt");
     }
 
     private static int indexOf(List<String> code, String needle) {

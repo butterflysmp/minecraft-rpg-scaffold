@@ -1,0 +1,21 @@
+# TEST-ONLY FIXTURE. NOT SHIPPED: it lives under src/test/resources, which is never packaged into the plugin jar.
+#
+# The void implosion's SECOND USE (PLAN-dragon-mobs.md, the 2026-11-17 brief, Part D 1): proof that an ability can
+# name the same shape the Phage's blast uses, from content alone. It pulls MOBS toward where the cast lands and deals
+# NO damage (no `damage:` key). AbilityLoaderTest loads it with the real loader.
+
+id: void_pull_fixture
+display_name: "<dark_purple>Void Pull (fixture)</dark_purple>"
+element: void
+cooldown_ticks: 40
+cast:
+  type: self
+on_hit:
+  - type: implosion
+    reach: 5                      # BLOCKS, origin to feet, inclusive
+    falloff: vanilla_explosion    # the share of `damage` at distance d; inert here, no damage is authored
+    pull: 1.0                     # a MULTIPLIER of vanilla's explosion push, toward the origin
+    resistance: knockback         # the attribute that cuts it: explosion_knockback | knockback | none
+    affects: mobs                 # or players
+    lift: 0                       # a multiplier of the push's lift: 0 keeps them on the ground
+    visual: void_implosion        # drawn at the reach
