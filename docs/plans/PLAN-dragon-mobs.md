@@ -868,6 +868,55 @@ Ben ruled the blink (*the boot of `ef770b8a`*, above):
 **240 ticks, his number.** **The seat told him it counts from a blink that LANDS and a failed attempt does not spend it;
 he did not object.**
 
+### Ben, 2026-11-17, VERBATIM, BY THE SELFTEST'S ASK STEP: the Skreel and the cooldown (the boot of `45bc33ce`)
+
+*PQ1, after 30 seconds beside a live Skreel pair that wound up ONCE (THE BAND EDGE, F22):*
+
+> "Could you see the Skreel wind up before it leapt?" — **"yes"**
+>
+> "Could you get out of the way in time?" — **"I didn't try to"**
+>
+> "Did the landing hit feel right for a pounce?" — **"yes"**
+
+*PQ2, after 40 seconds with a live Phalanx, which he killed inside its first cooldown:*
+
+> "Does the Phalanx's blink feel right with the 12-second cooldown?" — **"yes, but it needs to have a longer teleport
+> range. Say 12-24 blocks"**
+
+**What they confirm, and what they do not.** The wind-up is seen and the hit feels right (one landing, at 55). **The
+second answer is NOT a reading of the dodge:** he did not try. The cooldown was read by PB1 only; in PQ2 the Phalanx made
+one blink of its own before he killed it.
+
+**RULED BY BEN: THE PHALANX'S BLINK LANDS 12 TO 24 BLOCKS AWAY** ("Say 12-24 blocks"), replacing X5's starting 6 to 16.
+`phalanx.yml` `blink.near: 12`, `blink.far: 24`.
+
+**WHAT HIS 24 DOES, AND WHAT IS BUILT FOR IT (CHOSEN, put to him; not his ruling).** A blink is triggered by a body within
+5 of the Phalanx's feet; after a landing 24 out, that body's eye can be up to **33.1** from the Phalanx's eye
+(`MobBlinkRangeTest`, the geometry), **past the shot's acquire range of 30**. At X5's 16 it was at most 25.6, so this is
+new. **So from a blink that lands until its next shot, a Phalanx chooses whom to fire at out to the shot's re-acquire
+range, 35** (`MobShot#chooseRange`); its first shot puts it back on 30. Its vanilla target is a separate thing: a wither
+skeleton's follow range is 16 (READ: `AbstractSkeleton#createAttributes` adds nothing over `Mob#createMobAttributes`'
+`FOLLOW_RANGE 16.0`, and `TargetGoal#canContinueToUse` drops a target past it), so after most blinks of 12 to 24 its
+vanilla target drops, as it often did at 16; the shot's own choice is what keeps it fighting.
+
+### THE SEAT'S RULINGS AFTER THE BOOT OF `45bc33ce`, 2026-11-17 (the seat's, stated in this file's words)
+
+- **THE BAND EDGE (F22) IS A DEFECT; THE STAND-OFF POINT IS THE MIDDLE OF THE BAND,** (near + far) / 2 from the target,
+  10 at today's numbers, never an edge. A pair nearer than the band's near edge moves OUT to the same point; inside the
+  band it holds.
+- **THE CANNOT-REACH RULE (CHOSEN, for Ben):** a pair that cannot reach its band winds up FROM WHERE IT STANDS once it has
+  a target within its acquire range and has waited one full period ready. As built: ready 120 ticks after the last
+  wind-up began, so it winds up at 240 (`PounceCycle`). A tick with no target or no AI starts the wait again.
+- **"The pathfinder stops short" stays INFERRED until read; READ in this step** (`MobPounceTest`,
+  `theBandsHalfWidthExceedsTheMountsStopOnAnAxisAndNotOnADiagonal`): a path is done with the mob under (width / 2 + 0.5)
+  from its goal on each axis: **1.55 for the 2.1-wide mount, so up to 2.19 on a diagonal**, which the band's half-width
+  of 2 does NOT exceed. The cannot-reach rule is the backstop.
+- **R3's anchor on floor(feet.y) is ACCEPTED,** with its cost recorded (a slab's top is never a landing). **F19 is a
+  carried DEFECT**, first into the next branch that touches the Knell. **R5 as one hit raising two events is ACCEPTED**,
+  "a sprint hit" marked INFERRED. **The pounce on plain KNOCKBACK_RESISTANCE is ACCEPTED** (a pounce is not an explosion).
+  **"No leap" read as no pounce is ACCEPTED as the seat's reading**, put to Ben. **Cancelling a paired mob's target
+  events and removing no goals is ACCEPTED.** **F21 is recorded as a finding.**
+
 ---
 
 ## THE cfde822 SURVEY, 2026-11-06 — ITS ORIGINAL HEADER, KEPT AS THE RECORD
@@ -2261,6 +2310,18 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   as the blast's are. Accepted on Paper, like F3, F9 and F13.
 - **F21, 2026-11-17, step R8: THE BLINK'S COOLDOWN IS NOT SAVED.** It lives on the Phalanx's loop, so a Phalanx that
   unloads and loads mid-cooldown may blink at once, as its shot clock restarts. The seat's to rule if it should persist.
+- **F22, 2026-11-17, THE BAND EDGE (found by PS6 and PQ1 at the boot of `45bc33ce`), A DEFECT, FIXED IN STEP R8's
+  SECOND ROUND.** (Not `PLAN-mob-scaling.md`'s F22, which this file cites as M27 / F22.) `MobPounce.standOff` sent the
+  mount to EXACTLY the band's far edge (12), and the band counts only distances at or inside 12, so a mount that stopped
+  past its goal parked outside the band and never wound up: PS6's died 12.4459 from him after 180 ticks with no second
+  wind-up, and PQ1's pair wound up once in 599 ticks, at d=11.935, 473 ticks after it appeared. Fixed: the goal is the
+  band's middle, and the cannot-reach rule ends any wait at one period.
+- **F23, 2026-11-17, THE PROBE LAG (found by DB6R3 at the boot of `45bc33ce`), AN INSTRUMENT DEFECT, FIXED IN STEP R8's
+  SECOND ROUND.** `probe_pair` and `probe_shot` read their mob on its own scheduler, a tick after the step; a kill in the
+  next step runs first, and DB6R3's PAIR lines read a dead pair (`stage=none`). The reads stay on the mob's thread (every
+  reading already taken keeps its tick); the loader now REFUSES a row that kills within 2 ticks of such a probe
+  (`SelfTestStaging.probeLag`), and every shipped row that did so has a `wait: 2` before its kill: eight in
+  `GATE-dragon-shot.yml`, two in `GATE-dragon-blink.yml`, and the Skreel gate's own.
 - **F17, RESTATED 2026-11-17 (the boot of `ef770b8a`):** the calibrated offset reads `0.000 0.600 -0.400`, the derived
   0.375 × 1.6, not the 0.450 predicted. The 0.45 SH1R2 read was the shape's displacement under the old one-time
   calibration; why it was 0.45 is still unexplained. Not closed.
