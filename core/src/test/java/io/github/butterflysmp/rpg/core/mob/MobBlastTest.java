@@ -23,7 +23,8 @@ class MobBlastTest {
 
     private static final MobStages STAGES =
             new MobStages(5, new StageBody(1.0, 1.5, 80), new StageBody(3.0, 0.5, 160));
-    private static final MobBlast BLAST = new MobBlast(6.0, 20.0, 50.0, 30, 1.25, "void_implosion");
+    private static final MobBlast BLAST = new MobBlast(StagedDistance.byHeight(6), StagedDistance.byHeight(3),
+            StagedDistance.byHeight(7), 30, 20.0, 50.0, 1.25, 1.0, "void_implosion");
     private static final Vec3 AT = new Vec3(0, 64, 0);
     private static final UUID SELF = UUID.randomUUID();
 
@@ -96,17 +97,17 @@ class MobBlastTest {
     /** INCLUSIVE at exactly the reach, as vanilla's {@code d / f > 1} skip is; not just beyond. FEET to FEET. */
     @Test
     void exactlyTheReachIsInsideAndJustBeyondIsNot() {
-        assertTrue(BLAST.inReach(AT, new Vec3(6.0, 64, 0)));
-        assertFalse(BLAST.inReach(AT, new Vec3(6.0001, 64, 0)));
-        assertFalse(BLAST.inReach(AT, new Vec3(6.05, 64, 0)));
+        assertTrue(MobBlast.inReach(AT, new Vec3(6.0, 64, 0), 6.0));
+        assertFalse(MobBlast.inReach(AT, new Vec3(6.0001, 64, 0), 6.0));
+        assertFalse(MobBlast.inReach(AT, new Vec3(6.05, 64, 0), 6.0));
     }
 
     /** A sphere, not a cube: (4, 4, 4) is 6.93 away. Height counts like any axis. */
     @Test
     void theReachIsASphere() {
-        assertFalse(BLAST.inReach(AT, new Vec3(4, 68, 4)));
-        assertTrue(BLAST.inReach(AT, new Vec3(0, 70, 0)));
-        assertFalse(BLAST.inReach(AT, new Vec3(0, 70.01, 0)));
+        assertFalse(MobBlast.inReach(AT, new Vec3(4, 68, 4), 6.0));
+        assertTrue(MobBlast.inReach(AT, new Vec3(0, 70, 0), 6.0));
+        assertFalse(MobBlast.inReach(AT, new Vec3(0, 70.01, 0), 6.0));
     }
 
     // --- the predicate (N3) ----------------------------------------------------------------------------------------
@@ -137,7 +138,7 @@ class MobBlastTest {
                 "world_nether", AT);
         MobBlast.Bystander itself = new MobBlast.Bystander(SELF, MobHostility.Side.MOB, false, "world", AT);
 
-        MobBlast.Reach reach = BLAST.reach(SELF, "world", AT,
+        MobBlast.Reach reach = MobBlast.reach(SELF, "world", AT, 6.0,
                 List.of(near, mob, edge, beyond, creative, nether, itself));
 
         assertEquals(List.of(new MobBlast.Hit(near, 3.0, 0.375), new MobBlast.Hit(edge, 6.0, 0.0)), reach.victims(),
@@ -149,25 +150,35 @@ class MobBlastTest {
 
     @Test
     void anEmptyReachReachesNobody() {
-        MobBlast.Reach reach = BLAST.reach(SELF, "world", AT, List.of(player(7.0)));
+        MobBlast.Reach reach = MobBlast.reach(SELF, "world", AT, 6.0, List.of(player(7.0)));
         assertTrue(reach.victims().isEmpty());
         assertTrue(reach.spared().isEmpty());
     }
 
     // --- the numbers are content -----------------------------------------------------------------------------------
+    /** A blast with the Phage's distances (6, 3, 7 at the last stage, each earlier stage's by its height). */
+    private static MobBlast blast(double reach, double first, double last, int fuse, double pull, double lift,
+                                  String visual) {
+        return new MobBlast(StagedDistance.byHeight(reach), StagedDistance.byHeight(3), StagedDistance.byHeight(7),
+                fuse, first, last, pull, lift, visual);
+    }
 
     @Test
     void aBadBlastIsRefusedByName() {
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(0, 20, 50, 30, 1.0, "v"), "reach 0");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(Double.NaN, 20, 50, 30, 1.0, "v"), "reach NaN");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, -1, 50, 30, 1.0, "v"), "negative damage");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, Double.POSITIVE_INFINITY, 30, 1.0, "v"));
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, 50, 0, 1.0, "v"), "a fuse of 0 ticks");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, 50, 30, -0.5, "v"), "a negative pull");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, 50, 30, Double.NaN, "v"), "pull NaN");
-        assertEquals(0.0, new MobBlast(6, 20, 50, 30, 0.0, "v").pull(), 0.0, "0 is allowed: it turns the pull off");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, 50, 30, 1.0, null), "no visual");
-        assertThrows(IllegalArgumentException.class, () -> new MobBlast(6, 20, 50, 30, 1.0, " "), "a blank visual");
+        assertThrows(IllegalArgumentException.class, () -> blast(0, 20, 50, 30, 1.0, 1, "v"), "reach 0");
+        assertThrows(IllegalArgumentException.class, () -> blast(Double.NaN, 20, 50, 30, 1.0, 1, "v"), "reach NaN");
+        assertThrows(IllegalArgumentException.class, () -> blast(6, -1, 50, 30, 1.0, 1, "v"), "negative damage");
+        assertThrows(IllegalArgumentException.class, () -> blast(6, 20, Double.POSITIVE_INFINITY, 30, 1.0, 1, "v"));
+        assertThrows(IllegalArgumentException.class, () -> blast(6, 20, 50, 0, 1.0, 1, "v"), "a fuse of 0 ticks");
+        assertThrows(IllegalArgumentException.class, () -> blast(6, 20, 50, 30, -0.5, 1, "v"), "a negative pull");
+        assertThrows(IllegalArgumentException.class, () -> blast(6, 20, 50, 30, Double.NaN, 1, "v"), "pull NaN");
+        assertThrows(IllegalArgumentException.class, () -> blast(6, 20, 50, 30, 1.0, -1, "v"), "a negative lift");
+        assertEquals(0.0, blast(6, 20, 50, 30, 0.0, 1, "v").pull(), 0.0, "0 is allowed: it turns the pull off");
+        assertEquals(0.0, blast(6, 20, 50, 30, 1.0, 0, "v").lift(), 0.0, "0 is allowed: it keeps them grounded");
+        assertThrows(IllegalArgumentException.class, () -> blast(6, 20, 50, 30, 1.0, 1, null), "no visual");
+        assertThrows(IllegalArgumentException.class, () -> blast(6, 20, 50, 30, 1.0, 1, " "), "a blank visual");
+        assertThrows(IllegalArgumentException.class, () -> new MobBlast(StagedDistance.byHeight(6), null,
+                StagedDistance.byHeight(7), 30, 60, 150, 1.25, 1, "v"), "no trigger");
     }
 
     /** A blast prices by STAGE, so it needs stages, as a split does. */
@@ -181,39 +192,61 @@ class MobBlastTest {
         assertEquals(null, new MobDefinition("k", "wither_skeleton", "K", 360).blast(), "absent by default");
     }
 
-    // --- the PULL, the void implosion (Ben, 2026-11-17: "swap the push for the pull"; core.shape.Implosion) --------
-
-    /**
-     * THE BLAST IS ONE USE OF THE SHAPE: its reach, vanilla's explosion falloff, its pull multiplier, and the explosion
-     * knockback resistance (the brief, Part D 2: "the Phage keeps the explosion one"). The push it replaced is gone.
-     */
+    /** A cancel that is not beyond its trigger at some stage would reset the tick it starts: refused at the definition. */
     @Test
-    void theBlastsImplosionCarriesItsReachVanillasFalloffItsPullAndTheExplosionResistance() {
-        Implosion i = new MobBlast(6.0, 60, 150, 30, 1.25, "void_implosion").implosion();
-        assertEquals(6.0, i.reach(), 0.0);
-        assertEquals(Implosion.Falloff.VANILLA_EXPLOSION, i.falloff());
-        assertEquals(1.25, i.pull(), 0.0);
-        assertEquals(Implosion.Resistance.EXPLOSION_KNOCKBACK, i.resistance());
-        Implosion other = new MobBlast(4.0, 60, 150, 30, 0.5, "void_implosion").implosion();
-        assertEquals(4.0, other.reach(), 0.0, "its OWN reach, not a constant");
-        assertEquals(0.5, other.pull(), 0.0, "its OWN pull, not a constant");
+    void aCancelNotBeyondTheTriggerAtAnyStageIsRefused() {
+        MobBlast inverted = new MobBlast(StagedDistance.byHeight(6), StagedDistance.byHeight(7),
+                StagedDistance.byHeight(3), 30, 60, 150, 1.25, 1, "v");
+        assertThrows(IllegalArgumentException.class, () -> new MobDefinition("p", "creeper", "P", 80,
+                MobBody.VANILLA, "void", STAGES, null, null, inverted));
+        // Beyond at the last stage but not the first: a tuned first stage (cancel 1, trigger 1.5) is caught too.
+        MobBlast tuned = new MobBlast(StagedDistance.byHeight(6), new StagedDistance(1.5, 3.0),
+                new StagedDistance(1.0, 7.0), 30, 60, 150, 1.25, 1, "v");
+        assertThrows(IllegalArgumentException.class, () -> new MobDefinition("p", "creeper", "P", 80,
+                MobBody.VANILLA, "void", STAGES, null, null, tuned));
     }
 
+    // --- the distances by stage (the seat's ruling 1 on #204; StagedDistanceTest holds the rule) -----------------------
+
+    @Test
+    void theReachTriggerAndCancelFollowTheStageHeight() {
+        MobBlast b = blast(6, 60, 150, 30, 1.25, 1, "void_implosion");
+        double[][] want = {{2, 1, 7.0 / 3}, {3, 1.5, 3.5}, {4, 2, 14.0 / 3}, {5, 2.5, 35.0 / 6}, {6, 3, 7}};
+        for (int s = 1; s <= 5; s++) {
+            assertEquals(want[s - 1][0], b.reachAt(s, STAGES), 1e-12, "reach at stage " + s);
+            assertEquals(want[s - 1][1], b.triggerAt(s, STAGES), 1e-12, "trigger at stage " + s);
+            assertEquals(want[s - 1][2], b.cancelAt(s, STAGES), 1e-12, "cancel at stage " + s);
+        }
+    }
+
+    // --- the PULL, the void implosion (core.shape.Implosion) --------------------------------------------------------
+
     /**
-     * VANILLA'S PUSH CURVE IS STILL THE PULL'S, AT MULTIPLIER 1: the grid this test held for the push, EXECUTED in
-     * jshell from {@code ServerExplosion#hurtEntities}' {@code (1 - r) * exposure * multiplier * (1 - resistance)},
-     * {@code f = 6}. LINEAR: the damage's curve would give 0.555556 at 2 and 0.375 at 3, so a mix-up is red.
+     * THE BLAST IS ONE USE OF THE SHAPE, AT ITS STAGE: the stage's reach, vanilla's explosion falloff, the pull, the
+     * lift, and the explosion knockback resistance. A stage-1 blast's implosion reaches 2; a stage 5's, 6.
      */
     @Test
-    void thePullsStrengthIsVanillasLinearShareOfTheReachTimesTheMultiplier() {
-        Implosion one = new MobBlast(6.0, 60, 150, 30, 1.0, "v").implosion();
-        double[][] grid = {{0, 1.0}, {1.5, 0.75}, {2, 0.666666667}, {3, 0.5}, {4.5, 0.25}, {5.9, 0.016666667},
-                {6, 0.0}};
-        for (double[] row : grid) {
-            assertEquals(row[1], one.strength(row[0], 0.0), 1e-9, "d=" + row[0]);
-            assertEquals(row[1] * 1.25, BLAST.implosion().strength(row[0], 0.0), 1e-9, "x 1.25 at d=" + row[0]);
-        }
-        assertEquals(0.333333333, one.strength(2, 0.5), 1e-9, "resistance 0.5");
+    void theBlastsImplosionIsTheStagesReachWithThePullTheLiftAndTheExplosionResistance() {
+        MobBlast b = blast(6, 60, 150, 30, 1.25, 1, "void_implosion");
+        Implosion five = b.implosion(5, STAGES);
+        assertEquals(6.0, five.reach(), 1e-12);
+        assertEquals(Implosion.Falloff.VANILLA_EXPLOSION, five.falloff());
+        assertEquals(1.25, five.pull(), 0.0);
+        assertEquals(1.0, five.lift(), 0.0);
+        assertEquals(Implosion.Resistance.EXPLOSION_KNOCKBACK, five.resistance());
+        assertEquals(2.0, b.implosion(1, STAGES).reach(), 1e-12, "stage 1's reach, its own");
+        assertEquals(0.5, blast(6, 60, 150, 30, 0.5, 0, "v").implosion(5, STAGES).pull(), 0.0, "its OWN pull");
+        assertEquals(0.0, blast(6, 60, 150, 30, 0.5, 0, "v").implosion(5, STAGES).lift(), 0.0, "its OWN lift");
+    }
+
+    /** The reach rule takes the stage's reach: a stage-1 Phage's sphere is 2 blocks. */
+    @Test
+    void aStageOnesBlastReachesTwo() {
+        MobBlast.Reach two = MobBlast.reach(SELF, "world", AT, BLAST.reachAt(1, STAGES), List.of(player(2.0)));
+        assertEquals(1, two.victims().size());
+        assertEquals(0.0, two.victims().get(0).factor(), 0.0, "at the reach: listed for nothing");
+        assertTrue(MobBlast.reach(SELF, "world", AT, BLAST.reachAt(1, STAGES), List.of(player(2.05))).victims()
+                .isEmpty());
     }
 
     /** The falloff the BLAST line prints is the shape's, one home. */

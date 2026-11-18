@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.content;
 import io.github.butterflysmp.rpg.core.mob.BeamSound;
 import io.github.butterflysmp.rpg.core.mob.MobBeam;
 import io.github.butterflysmp.rpg.core.mob.MobBlast;
+import io.github.butterflysmp.rpg.core.mob.StagedDistance;
 import io.github.butterflysmp.rpg.core.mob.MobBody;
 import io.github.butterflysmp.rpg.core.mob.MobDefinition;
 import io.github.butterflysmp.rpg.core.mob.MobGrowth;
@@ -434,11 +435,32 @@ public final class MobLoader {
             throw new IllegalArgumentException("blast.knockback is retired: the blast PULLS since 2026-11-17 (blast.pull);"
                     + " this file is a stale copy, refresh it from the jar");
         }
-        for (String key : List.of("reach", "damage.first", "damage.last", "fuse_ticks", "pull", "visual")) {
+        for (String key : List.of("reach", "trigger", "cancel", "damage.first", "damage.last", "fuse_ticks", "pull",
+                "lift", "visual")) {
             if (!b.contains(key)) throw new IllegalArgumentException("blast." + key + " is required");
         }
-        return new MobBlast(b.getDouble("reach"), b.getDouble("damage.first"), b.getDouble("damage.last"),
-                b.getInt("fuse_ticks"), b.getDouble("pull"), b.getString("visual"));
+        return new MobBlast(staged(b, "reach"), staged(b, "trigger"), staged(b, "cancel"), b.getInt("fuse_ticks"),
+                b.getDouble("damage.first"), b.getDouble("damage.last"), b.getDouble("pull"), b.getDouble("lift"),
+                b.getString("visual"));
+    }
+
+    /**
+     * A distance that follows the stage (the void implosion's Part C): a NUMBER is the LAST stage's, every earlier
+     * stage's by its height ({@link StagedDistance#byHeight}); a SECTION {@code { first: <n>, last: <n> }} steps
+     * linearly between the two, the content-only way to tune the small one apart.
+     */
+    private static StagedDistance staged(ConfigurationSection b, String key) {
+        if (b.isConfigurationSection(key)) {
+            ConfigurationSection s = b.getConfigurationSection(key);
+            for (String k : List.of("first", "last")) {
+                if (!s.contains(k)) throw new IllegalArgumentException("blast." + key + "." + k + " is required");
+            }
+            return new StagedDistance(s.getDouble("first"), s.getDouble("last"));
+        }
+        if (!b.isDouble(key) && !b.isInt(key)) {
+            throw new IllegalArgumentException("blast." + key + " must be a number of blocks or { first, last }");
+        }
+        return StagedDistance.byHeight(b.getDouble(key));
     }
 
     /** One stage's body: height in blocks, a speed multiplier, and the authored health. All three required. */

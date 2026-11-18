@@ -1004,7 +1004,14 @@ public final class PaperCombatWorld implements CombatWorld {
                     case VisualSpec.Particles p -> particles(p, loc);
                     case VisualSpec.Sound s ->
                             world.playSound(loc, s.key(), s.volume(), s.pitch());
-                    case VisualSpec.Spiral sp -> spiral(sp, loc, Double.isNaN(radius) ? sp.radius() : radius, 0);
+                    case VisualSpec.Spiral sp -> {
+                        double r = Double.isNaN(radius) ? sp.radius() : radius;
+                        // The swirl's width AS THE SERVER DRAWS IT, for a gate (the void implosion: a stage's reach).
+                        ctx.log().info(String.format(java.util.Locale.ROOT,
+                                "SWIRL visual=%s radius=%.3f arms=%d ticks=%d at=%.2f %.2f %.2f", visualId, r,
+                                sp.shape().arms(), sp.shape().durationTicks(), loc.getX(), loc.getY(), loc.getZ()));
+                        spiral(sp, loc, r, 0);
+                    }
                 }
             }
         });

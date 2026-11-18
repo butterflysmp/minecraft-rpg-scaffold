@@ -26,6 +26,11 @@ package io.github.butterflysmp.rpg.paper.health;
  *       charged look into R3, where our explosion would not honour it.</li>
  * </ul>
  *
+ * <p><b>SINCE THE VOID IMPLOSION'S PART C (2026-11-17), THE SWELL BULLET ABOVE IS HISTORY.</b> Vanilla's
+ * {@code SwellGoal} is removed at every appearance and OUR fuse ({@code PhageFuser}) lights, resets and blows; a Phage
+ * blows only by a prime {@code PhageFuser.detonate} raised and marked, and the prime handler REFUSES any other, with a
+ * {@code CREEPERGUARD prime refused} line. The cancel stays first: still the backstop for every route.
+ *
  * <p>Keyed on the {@code mob_id} TAG, not on the registry: a creeper that is ours stays ours even if its file is later
  * removed. A vanilla creeper is untouched.
  */

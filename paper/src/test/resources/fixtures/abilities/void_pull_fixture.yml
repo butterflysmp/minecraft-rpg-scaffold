@@ -17,4 +17,5 @@ on_hit:
     pull: 1.0                     # a MULTIPLIER of vanilla's explosion push, toward the origin
     resistance: knockback         # the attribute that cuts it: explosion_knockback | knockback | none
     affects: mobs                 # or players
+    lift: 0                       # a multiplier of the push's lift: 0 keeps them on the ground
     visual: void_implosion        # drawn at the reach

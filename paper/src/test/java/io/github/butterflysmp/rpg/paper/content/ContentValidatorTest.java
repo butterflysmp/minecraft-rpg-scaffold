@@ -912,7 +912,7 @@ class ContentValidatorTest {
 
     private static final io.github.butterflysmp.rpg.core.shape.Implosion SHAPE =
             new io.github.butterflysmp.rpg.core.shape.Implosion(5, io.github.butterflysmp.rpg.core.shape.Implosion.Falloff.FLAT,
-                    1, io.github.butterflysmp.rpg.core.shape.Implosion.Resistance.NONE);
+                    1, 0, io.github.butterflysmp.rpg.core.shape.Implosion.Resistance.NONE);
 
     @Test
     void anImplosionNamingAMissingVisualOrABadElementIsReported() {
@@ -939,7 +939,10 @@ class ContentValidatorTest {
         java.util.function.Function<String, List<io.github.butterflysmp.rpg.core.mob.MobDefinition>> phage =
                 visual -> List.of(new io.github.butterflysmp.rpg.core.mob.MobDefinition("phage", "wither_skeleton", "P",
                         80, io.github.butterflysmp.rpg.core.mob.MobBody.VANILLA, "void", stages, null, null,
-                        new io.github.butterflysmp.rpg.core.mob.MobBlast(6, 60, 150, 30, 1.25, visual)));
+                        new io.github.butterflysmp.rpg.core.mob.MobBlast(
+                                io.github.butterflysmp.rpg.core.mob.StagedDistance.byHeight(6),
+                                io.github.butterflysmp.rpg.core.mob.StagedDistance.byHeight(3),
+                                io.github.butterflysmp.rpg.core.mob.StagedDistance.byHeight(7), 30, 60, 150, 1.25, 1.0, visual)));
         var problems = validator(visualsWith("void_implosion"), statusesWith())
                 .validateMobs(phage.apply("void_implosin"), EXISTS, LIVING);
         assertEquals(1, problems.size(), problems.toString());

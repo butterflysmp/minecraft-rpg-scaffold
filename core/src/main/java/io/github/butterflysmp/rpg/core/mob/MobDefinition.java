@@ -151,6 +151,9 @@ public record MobDefinition(
         if (blast != null && stages == null) {
             throw new IllegalArgumentException("mob '" + id + "' authors a blast but no stages; its damage is per stage");
         }
+        // The void implosion's Part C (2026-11-17): a fuse whose cancel is not beyond its trigger at some stage would
+        // reset the tick it starts. Its distances are per stage, so the check is here, where the stages are.
+        if (blast != null) blast.checkStages(stages);
         // Step R2: a split names a child STAGE, so it needs stages, and the child stage must be one of them.
         if (split != null && stages == null) {
             throw new IllegalArgumentException("mob '" + id + "' authors a split but no stages; a split names a"

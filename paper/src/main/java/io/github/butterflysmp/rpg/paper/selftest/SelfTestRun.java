@@ -366,14 +366,16 @@ final class SelfTestRun {
             advance();
             return;
         }
-        if (c.getFuseTicks() >= a.minFuse()) {
-            log(SelfTestBlast.fuseLine(a.tag(), c.getUniqueId(), c.getFuseTicks(), c.getMaxFuseTicks(), c.isIgnited())
+        java.util.Optional<int[]> fuse = fuser().state(c.getUniqueId());
+        int swell = fuse.map(s -> s[0]).orElse(0);
+        if (swell >= a.minFuse()) {
+            log(SelfTestBlast.fuseLine(a.tag(), c.getUniqueId(), fuse, c.isIgnited())
                     + " waited=" + waited);
             advance();
             return;
         }
         if (waited >= a.timeoutTicks()) {
-            log(SelfTestBlast.fuseLine(a.tag(), c.getUniqueId(), c.getFuseTicks(), c.getMaxFuseTicks(), c.isIgnited())
+            log(SelfTestBlast.fuseLine(a.tag(), c.getUniqueId(), fuse, c.isIgnited())
                     + " waited=" + waited + " under " + a.minFuse() + " at the timeout");
             advance();
             return;
@@ -539,4 +541,5 @@ final class SelfTestRun {
     io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports() { return service.teleports(); }
     io.github.butterflysmp.rpg.paper.health.MobShooter shots() { return service.shots(); }
     io.github.butterflysmp.rpg.paper.health.MobPouncer pounces() { return service.pounces(); }
+    io.github.butterflysmp.rpg.paper.health.PhageFuser fuser() { return service.fuser(); }
 }

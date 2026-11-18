@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 class ImplosionEffectTest {
 
-    private static final Implosion SHAPE = new Implosion(6.0, Implosion.Falloff.VANILLA_EXPLOSION, 1.0,
+    private static final Implosion SHAPE = new Implosion(6.0, Implosion.Falloff.VANILLA_EXPLOSION, 1.0, 0.0,
             Implosion.Resistance.KNOCKBACK);
     private static final Vec3 POINT = new Vec3(0, 64, 0);
 

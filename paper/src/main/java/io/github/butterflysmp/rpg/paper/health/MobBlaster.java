@@ -113,7 +113,8 @@ public final class MobBlaster {
         World world = phage.getWorld();
         Location at = phage.getLocation();
         UUID phageId = phage.getUniqueId();
-        double r = blast.reach();
+        // THE STAGE'S REACH (the void implosion's Part C): stage 5's 6 blocks, stage 1's 2, by height.
+        double r = blast.reachAt(stage, def.stages());
         List<MobBlast.Bystander> bystanders = new ArrayList<>();
         Map<UUID, LivingEntity> bodies = new HashMap<>();
         for (Entity e : world.getNearbyEntities(at, r, r, r)) {
@@ -126,36 +127,37 @@ public final class MobBlaster {
                     living.getWorld().getName(), vec(living.getLocation())));
             bodies.put(living.getUniqueId(), living);
         }
-        MobBlast.Reach reach = blast.reach(phageId, world.getName(), vec(at), bystanders);
+        MobBlast.Reach reach = MobBlast.reach(phageId, world.getName(), vec(at), r, bystanders);
 
-        Implosion shape = blast.implosion();
+        Implosion shape = blast.implosion(stage, def.stages());
         Map<UUID, Implosion.Pull> pulls = new HashMap<>();   // victim -> its pull, for the line
         for (MobBlast.Hit hit : reach.victims()) {
             double dealt = base * hit.factor();
             if (!(dealt > 0)) continue;   // exactly at the reach: listed, and nothing to deal (and nothing to pull)
             LivingEntity victim = bodies.get(hit.who().id());
-            // THE PULL, the shape's: computed HERE, at the blast, from the victim's footing at the blast (feet, ground,
-            // the block's friction, its explosion knockback resistance), toward the Phage's feet, capped so it is never
-            // carried past them. Applied with setVelocity, the plugin route that reaches a player's client.
+            // THE PULL, the shape's: computed HERE, at the blast, from the victim's footing at the blast (feet, eye
+            // height, ground, the block's friction, its explosion knockback resistance): the push's own lift, and
+            // 1.25 x its horizontal toward the Phage, scaled down so the modelled rest point stops half a block short.
             Implosion.Pull pull = shape.pull(vec(at), ImplosionFooting.of(victim, shape.resistance())).orElse(null);
             if (pull != null) pulls.put(victim.getUniqueId(), pull);
             Vec3 i = pull == null ? Vec3.ZERO : pull.impulse();
             Vector velocity = new Vector(i.x(), i.y(), i.z());
-            boolean moves = pull != null && pull.applied() > 0;
-            if (Bukkit.isOwnedByCurrentRegion(victim)) {
+            boolean moves = i.x() != 0 || i.y() != 0 || i.z() != 0;
+            boolean safe = pull != null && pull.safeLanding();
+            Runnable land = () -> {
                 BukkitCombatant.of(victim, adapters).handle().applyDamage(dealt, phageId);
+                // Near the Phage the lift carries a player above the safe fall: the dash's mark (ruling 31) covers
+                // the landing, armed BEFORE the take-off, on the victim's own thread.
+                if (safe) adapters.safeLandings().arm(victim, adapters.scheduler());
                 if (moves) victim.setVelocity(victim.getVelocity().add(velocity));
-            } else {
-                adapters.scheduler().onEntity(victim, () -> {
-                    BukkitCombatant.of(victim, adapters).handle().applyDamage(dealt, phageId);
-                    if (moves) victim.setVelocity(victim.getVelocity().add(velocity));
-                });
-            }
+            };
+            if (Bukkit.isOwnedByCurrentRegion(victim)) land.run();
+            else adapters.scheduler().onEntity(victim, land);
         }
 
         new PaperCombatWorld(world, adapters).present(vec(at), blast.visual(), r);
 
-        adapters.log().info(head(mobId, phageId, stage, gs, base, r, blast.pull(), blast.visual())
+        adapters.log().info(head(mobId, phageId, stage, gs, base, r, blast.pull(), blast.lift(), blast.visual())
                 + " victims=" + reach.victims().size() + " " + names(reach.victims(), bodies, base, pulls, r, adapters)
                 + " spared=" + reach.spared().size() + " "
                 + names(reach.spared(), bodies, Double.NaN, Map.of(), r, adapters));
@@ -179,42 +181,48 @@ public final class MobBlaster {
             String id = e.getPersistentDataContainer().get(adapters.keys().mobId, PersistentDataType.STRING);
             String kind = e.getType().getKey().getKey() + (id == null ? "" : "/" + id);
             if (Double.isNaN(base)) {
-                out.add(entry(kind, hit.who().id(), hit.distance(), hit.factor(), Double.NaN, Double.NaN, Double.NaN,
-                        Double.NaN, false, Double.NaN, Double.NaN, Double.NaN, Double.NaN, false));
+                out.add(spared(kind, hit.who().id(), hit.distance(), hit.factor()));
             } else {
-                Implosion.Pull p = pulls.get(hit.who().id());
                 out.add(entry(kind, hit.who().id(), hit.distance(), hit.factor(), base * hit.factor(),
-                        Implosion.factor(hit.distance(), reach), p == null ? 0.0 : p.resistance(),
-                        p == null ? 0.0 : p.horizontal(), p != null && p.onGround(),
-                        p == null ? 0.0 : p.tickMultiplier(), p == null ? 0.0 : p.strength(),
-                        p == null ? 0.0 : p.capSpeed(), p == null ? 0.0 : p.applied(), p != null && p.capped()));
+                        Implosion.factor(hit.distance(), reach), pulls.get(hit.who().id())));
             }
         }
         return out.toString();
     }
 
-    /** The BLAST line's head: the mob, its stage and gear score, the zero-distance damage, the reach, the pull, the look. */
-    static String head(String mobId, UUID id, int stage, int gs, double base, double reach, double pull, String visual) {
+    /**
+     * The BLAST line's head: the mob, its stage and gear score, the zero-distance damage, the stage's reach, the pull
+     * and the lift, the look.
+     */
+    static String head(String mobId, UUID id, int stage, int gs, double base, double reach, double pull, double lift,
+                       String visual) {
         return "BLAST mob=" + mobId + " id=" + id + " stage=" + stage + " gs=" + gs
-                + String.format(Locale.ROOT, " base=%.3f reach=%.2f pull=%.2f", base, reach, pull)
+                + String.format(Locale.ROOT, " base=%.3f reach=%.2f pull=%.2f lift=%.2f", base, reach, pull, lift)
                 + " visual=" + visual;
     }
 
+    /** A SPARED creature's entry: {@code <type>[/<mob id>] <uuid> d=<feet to feet> factor=<damage share>}, no more. */
+    static String spared(String kind, UUID id, double distance, double factor) {
+        return kind + " " + id + String.format(Locale.ROOT, " d=%.3f factor=%.6f", distance, factor);
+    }
+
     /**
-     * One creature's entry: {@code <type>[/<mob id>] <uuid> d=<feet to feet> factor=<damage share>}, and for a victim
-     * {@code dealt=<before defence> knock=<1 - d/reach> res=<explosion knockback resistance> h=<horizontal distance,
-     * the cap's> ground=<on the ground> m=<per-tick multiplier> strength=<uncapped> cap=<cap speed> pull=<speed applied>
-     * capped=<the cap bound>}.
-     * {@code dealt} NaN marks a spared creature, and then nothing after the factor is printed.
+     * A VICTIM's entry: {@link #spared}'s, then {@code dealt=<before defence> knock=<1 - d/reach> res=<resistance>
+     * h=<horizontal distance, the cap's> ground=<on the ground> tf=<the model's blocks of rest per unit of horizontal
+     * speed> strength=<the uncapped horizontal> cap=<cap speed> pull=<horizontal applied> capped=<the cap bound>
+     * lift=<the vertical applied> apex=<its height> rest=<the modelled rest point, blocks> safe=<the mark armed>}.
+     * {@code p} null (a victim exactly at the reach) prints every pull field as 0.
      */
     static String entry(String kind, UUID id, double distance, double factor, double dealt, double knock,
-                        double resistance, double horizontal, boolean ground, double m, double strength, double cap,
-                        double applied, boolean capped) {
-        String s = kind + " " + id + String.format(Locale.ROOT, " d=%.3f factor=%.6f", distance, factor);
-        if (Double.isNaN(dealt)) return s;
-        return s + String.format(Locale.ROOT,
-                " dealt=%.3f knock=%.6f res=%.3f h=%.3f ground=%b m=%.6f strength=%.6f cap=%.6f pull=%.6f capped=%b",
-                dealt, knock, resistance, horizontal, ground, m, strength, cap, applied, capped);
+                        Implosion.Pull p) {
+        return spared(kind, id, distance, factor) + String.format(Locale.ROOT,
+                " dealt=%.3f knock=%.6f res=%.3f h=%.3f ground=%b tf=%.6f strength=%.6f cap=%.6f pull=%.6f capped=%b"
+                        + " lift=%.6f apex=%.3f rest=%.3f safe=%b",
+                dealt, knock, p == null ? 0.0 : p.resistance(), p == null ? 0.0 : p.horizontal(),
+                p != null && p.onGround(), p == null ? 0.0 : p.travelFactor(), p == null ? 0.0 : p.strength(),
+                p == null ? 0.0 : p.capSpeed(), p == null ? 0.0 : p.applied(), p != null && p.capped(),
+                p == null ? 0.0 : p.vertical(), p == null ? 0.0 : p.apex(), p == null ? 0.0 : p.travel(),
+                p != null && p.safeLanding());
     }
 
     private static Vec3 vec(Location l) {

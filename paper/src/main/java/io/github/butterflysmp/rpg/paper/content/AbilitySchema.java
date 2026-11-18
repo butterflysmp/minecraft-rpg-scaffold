@@ -395,7 +395,8 @@ final class AbilitySchema {
 
     /**
      * {@code type: implosion}: {@code reach} and {@code pull} required, {@code affects} required ({@code mobs} or
-     * {@code players}); {@code falloff} ({@code vanilla_explosion}, the default, or {@code flat}), {@code resistance}
+     * {@code players}); {@code falloff} ({@code vanilla_explosion}, the default, or {@code flat}), {@code lift} (a
+     * multiplier of the push's lift; 0, the default, keeps them on the ground), {@code resistance}
      * ({@code explosion_knockback}, {@code knockback} or {@code none}, the default), {@code visual} and {@code damage}
      * ({@code { amount, element }}) optional. An unknown word in any of the three enums is refused by name.
      */
@@ -404,6 +405,7 @@ final class AbilitySchema {
                 num(m, type, "reach"),
                 word(m, type, "falloff", "vanilla_explosion", io.github.butterflysmp.rpg.core.shape.Implosion.Falloff.class),
                 num(m, type, "pull"),
+                numOr(m, type, "lift", 0.0),
                 word(m, type, "resistance", "none", io.github.butterflysmp.rpg.core.shape.Implosion.Resistance.class));
         EffectSpec.Affects affects = word(m, type, "affects", null, EffectSpec.Affects.class);
         EffectSpec.Damage damage = null;

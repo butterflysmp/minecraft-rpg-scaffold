@@ -117,10 +117,12 @@ final class SelfTestDrivers {
             case DIFFICULTY -> difficulty(p, a);
             case PROBE_TARGET -> probeTarget(p, a);
             case RETURN -> returnToStart(p);
-            case DETONATE -> creepers(p, a, "detonate", c -> c.explode());
+            // Through the fuser's one detonation path (the void implosion's Part C): the prime it raises is marked as
+            // ours, so the backstop does not refuse it.
+            case DETONATE -> creepers(p, a, "detonate", c -> run.fuser().detonate(c));
             case IGNITE -> creepers(p, a, "ignite", c -> c.ignite());
             case PROBE_FUSE -> creepers(p, a, null, c -> run.log(SelfTestBlast.fuseLine(a, c.getUniqueId(),
-                    c.getFuseTicks(), c.getMaxFuseTicks(), c.isIgnited())));
+                    run.fuser().state(c.getUniqueId()), c.isIgnited())));
             case AWAIT_FUSE -> Optional.empty();   // the run polls it; it never reaches a driver
             case THAW -> tagged(p, a, "thaw", e -> {
                 if (e instanceof org.bukkit.entity.Mob m) m.setAI(true);

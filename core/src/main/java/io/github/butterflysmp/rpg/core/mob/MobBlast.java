@@ -10,62 +10,90 @@ import java.util.UUID;
 /**
  * A staged mob's SELF-DESTRUCT: the Phage's blast (PLAN-dragon-mobs.md step R3). Authored in the mob file's
  * {@code blast:} block. Ben: "for the explosion keep vanilla creeper numbers for everything except the damage", and
- * on its shape, "keep vanillas shap". The damage is 60 at stage 1 and 150 at stage 5 since 2026-11-17 (the seat's
- * reading of Ben's "increase 3x", CONFIRMED BY PLAY); the gear-score pricing is still the seat's provisional P-b.
+ * on its shape, "keep vanillas shap". The damage is 60 at stage 1 and 150 at stage 5 (CONFIRMED BY PLAY 2026-11-17);
+ * the gear-score pricing is still the seat's provisional P-b.
  *
- * <p><b>SINCE 2026-11-17 (feat/void-implosion) IT PULLS, NEVER PUSHES.</b> Ben: "A void explosion that pulls things
- * toward the origin with black and dark purple swirling particles ... when the phage explodes", and "swap the push for
- * the pull". The blast is ONE USE of the reusable shape {@link Implosion} ({@link #implosion}); the push vector,
- * {@code knockbackAt} and {@code pushVector} it replaced are gone.
+ * <p><b>SINCE 2026-11-17 IT PULLS</b> (Ben: "swap the push for the pull"): the blast is ONE USE of the reusable shape
+ * {@link Implosion} ({@link #implosion}). <b>AND ITS DISTANCES FOLLOW THE PHAGE'S SIZE</b> (Ben: "make the size of the
+ * Phage affect the Fuse radius, explosion radius, etc. The Large phage being the current distances"; the seat's
+ * ruling 1 on #204): the reach, the fuse's trigger and its cancel are {@link StagedDistance}s, the LAST stage's authored.
  *
  * <p><b>NAME THE QUANTITY:</b>
  * <ul>
- *   <li>{@code reach}: BLOCKS, how far the blast hurts AND pulls: the straight-line distance between the Phage's FEET
- *       and the victim's FEET, INCLUSIVE, same world. A sphere. The Phage's is 6, vanilla's reach for a creeper: its
- *       power 3 doubled ({@code ServerExplosion.hurtEntities}, {@code radius * 2}).</li>
- *   <li>{@code firstDamage} / {@code lastDamage}: the AUTHORED damage at the first and last stage, linear between
- *       (G3), before gear score, at ZERO distance. The Phage's are 60 and 150.</li>
- *   <li>{@code fuseTicks}: TICKS from the swell's start to the blast, vanilla's {@code maxSwell}. The Phage's is 30
- *       (1.5 seconds). Paper applies it with {@code Creeper#setMaxFuseTicks}.</li>
- *   <li>{@code pull}: a MULTIPLIER of vanilla's explosion push for the same distance, directed TOWARD the Phage, never
- *       an absolute speed (see {@link Implosion}). The Phage's is 1.25: the seat's number for Ben's "A little bit
- *       stronger than the push today". 0 turns the pull off.</li>
- *   <li>{@code visual}: the content visual id played at the detonation in place of vanilla's explosion emitter and
- *       sound, drawn at the blast's reach ({@code void_implosion}).</li>
+ *   <li>{@code reach}: BLOCKS, how far the blast hurts AND pulls, feet to feet, inclusive, a sphere; and the width the
+ *       swirl is drawn at. Stage 5's is 6, vanilla's reach for a creeper (its power 3 doubled); stage 1's, 2.</li>
+ *   <li>{@code trigger}: BLOCKS, feet to feet, STRICTLY inside which a target in sight starts the fuse. Stage 5's is 3,
+ *       vanilla's {@code SwellGoal} {@code distanceToSqr < 9.0}; stage 1's, 1.</li>
+ *   <li>{@code cancel}: BLOCKS, feet to feet, STRICTLY beyond which a fusing Phage resets. Stage 5's is 7, vanilla's
+ *       {@code distanceToSqr > 49.0}; stage 1's, 7/3.</li>
+ *   <li>{@code fuseTicks}: TICKS from the fuse's start to the blast, vanilla's {@code maxSwell}, 30, at every stage
+ *       (the seat's reading: "etc." is distances only).</li>
+ *   <li>{@code firstDamage} / {@code lastDamage}: the AUTHORED damage at the first and last stage, at ZERO distance,
+ *       linear between, before gear score. 60 and 150.</li>
+ *   <li>{@code pull}: a MULTIPLIER of the old push's HORIZONTAL part, toward the Phage: 1.25.</li>
+ *   <li>{@code lift}: a MULTIPLIER of the old push's VERTICAL part: 1, the push's own lift (the seat's ruling 2).</li>
+ *   <li>{@code visual}: the content visual drawn at the stage's reach in place of vanilla's puff ({@code void_implosion}).</li>
  * </ul>
- * A victim at distance d takes the priced damage x {@link #falloff}(d, reach): vanilla's curve, normalised. No cover
- * check (vanilla's exposure): left out knowingly, and Ben's question (Q34).
  */
-public record MobBlast(double reach, double firstDamage, double lastDamage, int fuseTicks, double pull,
-                       String visual) {
+public record MobBlast(StagedDistance reach, StagedDistance trigger, StagedDistance cancel, int fuseTicks,
+                       double firstDamage, double lastDamage, double pull, double lift, String visual) {
 
     public MobBlast {
-        if (!(reach > 0 && Double.isFinite(reach))) {
-            throw new IllegalArgumentException("blast.reach must be a positive number of blocks, was " + reach);
-        }
+        if (reach == null) throw new IllegalArgumentException("blast.reach is required");
+        if (trigger == null) throw new IllegalArgumentException("blast.trigger is required");
+        if (cancel == null) throw new IllegalArgumentException("blast.cancel is required");
+        if (fuseTicks < 1) throw new IllegalArgumentException("blast.fuse_ticks must be at least 1, was " + fuseTicks);
         requireDamage("blast.damage.first", firstDamage);
         requireDamage("blast.damage.last", lastDamage);
-        if (fuseTicks < 1) throw new IllegalArgumentException("blast.fuse_ticks must be at least 1, was " + fuseTicks);
         if (!(pull >= 0 && Double.isFinite(pull))) {
             throw new IllegalArgumentException("blast.pull must be 0 or more (a multiplier of vanilla's push), was "
                     + pull);
         }
+        if (!(lift >= 0 && Double.isFinite(lift))) {
+            throw new IllegalArgumentException("blast.lift must be 0 or more (a multiplier of the push's lift), was "
+                    + lift);
+        }
         if (visual == null || visual.isBlank()) throw new IllegalArgumentException("blast.visual is required");
-    }
-
-    /**
-     * THE BLAST'S IMPLOSION: this blast's reach, vanilla's explosion falloff, its pull, and the explosion knockback
-     * resistance (the brief: "the Phage keeps the explosion one"). The victims are the blast's ({@link #reach(UUID,
-     * String, Vec3, List)}); the shape says how hard each is pulled and how much damage share it takes.
-     */
-    public Implosion implosion() {
-        return new Implosion(reach, Implosion.Falloff.VANILLA_EXPLOSION, pull, Implosion.Resistance.EXPLOSION_KNOCKBACK);
     }
 
     private static void requireDamage(String name, double value) {
         if (!(value >= 0 && Double.isFinite(value))) {
             throw new IllegalArgumentException(name + " must be 0 or more, was " + value);
         }
+    }
+
+    /**
+     * Refused at load when any stage's cancel is not beyond its trigger: such a fuse would reset the tick it starts.
+     * Called by {@link MobDefinition}, which holds the stages.
+     */
+    public void checkStages(MobStages stages) {
+        for (int s = 1; s <= stages.count(); s++) {
+            if (!(cancelAt(s, stages) > triggerAt(s, stages))) {
+                throw new IllegalArgumentException("blast.cancel must be beyond blast.trigger at every stage; at stage "
+                        + s + " it is " + cancelAt(s, stages) + " against " + triggerAt(s, stages));
+            }
+        }
+    }
+
+    public double reachAt(int stage, MobStages stages) {
+        return reach.at(stage, stages);
+    }
+
+    public double triggerAt(int stage, MobStages stages) {
+        return trigger.at(stage, stages);
+    }
+
+    public double cancelAt(int stage, MobStages stages) {
+        return cancel.at(stage, stages);
+    }
+
+    /**
+     * THE BLAST'S IMPLOSION AT {@code stage}: the stage's reach, vanilla's explosion falloff, the pull and the lift,
+     * and the explosion knockback resistance (the brief: "the Phage keeps the explosion one").
+     */
+    public Implosion implosion(int stage, MobStages stages) {
+        return new Implosion(reachAt(stage, stages), Implosion.Falloff.VANILLA_EXPLOSION, pull, lift,
+                Implosion.Resistance.EXPLOSION_KNOCKBACK);
     }
 
     /** The AUTHORED damage at {@code stage}, before gear score: linear from the first stage's to the last's. */
@@ -85,18 +113,13 @@ public record MobBlast(double reach, double firstDamage, double lastDamage, int 
         return MobScaling.attackDamage(damageAt(stage, stages), true, hostile, gearScore);
     }
 
-    /**
-     * VANILLA'S DISTANCE CURVE, NORMALISED: the share of the zero-distance damage a victim takes at {@code distance}.
-     * 1 at zero, 0 at the reach and beyond, never negative. Read from the server jar (build 74),
-     * {@code ExplosionDamageCalculator#getEntityDamageAmount}; only the SHAPE is kept (seat's ruling 28). Its home is
-     * the shape since 2026-11-17, {@link Implosion#vanillaShare}; this name stays for the BLAST line's readers.
-     */
+    /** VANILLA'S DISTANCE CURVE, NORMALISED ({@link Implosion#vanillaShare}); this name stays for the line's readers. */
     public static double falloff(double distance, double reach) {
         return Implosion.vanillaShare(distance, reach);
     }
 
-    /** Inside the reach, feet to feet, INCLUSIVE, as vanilla's skip is ({@code d / f > 1} skips). */
-    public boolean inReach(Vec3 at, Vec3 other) {
+    /** Inside {@code reach}, feet to feet, INCLUSIVE, as vanilla's skip is ({@code d / f > 1} skips). */
+    public static boolean inReach(Vec3 at, Vec3 other, double reach) {
         return at.distanceSquared(other) <= reach * reach;
     }
 
@@ -108,20 +131,20 @@ public record MobBlast(double reach, double firstDamage, double lastDamage, int 
 
     /**
      * Who the blast reaches. {@code victims} are hurt, each by the priced damage x its factor; {@code spared} were
-     * inside the reach and are NOT hurt (a mob, a creative player), named so a gate can see the blast knew they were
-     * there. A victim exactly at the reach is listed with factor 0. Both keep the order given.
+     * inside the reach and are NOT hurt (a mob, a creative player). A victim exactly at the reach is listed with factor
+     * 0. Both keep the order given.
      */
     public record Reach(List<Hit> victims, List<Hit> spared) {}
 
     /**
-     * THE RULE for one blast at {@code at} in {@code world}. The exploding mob ({@code self}) is never in either
-     * list; another world is in neither. The caller's search may be any shape that contains the sphere.
+     * THE RULE for one blast at {@code at} in {@code world}, with the stage's {@code reach}. The exploding mob
+     * ({@code self}) is never in either list; another world is in neither.
      */
-    public Reach reach(UUID self, String world, Vec3 at, List<Bystander> bystanders) {
+    public static Reach reach(UUID self, String world, Vec3 at, double reach, List<Bystander> bystanders) {
         List<Hit> victims = new ArrayList<>();
         List<Hit> spared = new ArrayList<>();
         for (Bystander b : bystanders) {
-            if (b.id().equals(self) || !b.world().equals(world) || !inReach(at, b.at())) continue;
+            if (b.id().equals(self) || !b.world().equals(world) || !inReach(at, b.at(), reach)) continue;
             double d = Math.sqrt(at.distanceSquared(b.at()));
             Hit hit = new Hit(b, d, falloff(d, reach));
             if (MobHostility.hostileTo(b.side(), b.exemptMode())) victims.add(hit);

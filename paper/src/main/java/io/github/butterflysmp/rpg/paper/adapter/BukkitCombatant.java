@@ -431,11 +431,16 @@ public final class BukkitCombatant {
                 Implosion.Pull pull = shape.pull(origin, ImplosionFooting.of(entity, shape.resistance())).orElse(null);
                 if (pull == null) return;   // beyond the reach by now
                 ctx.log().info(String.format(java.util.Locale.ROOT,
-                        "PULL id=%s d=%.3f ground=%b m=%.6f strength=%.6f cap=%.6f pull=%.6f capped=%b",
-                        entity.getUniqueId(), pull.distance(), pull.onGround(), pull.tickMultiplier(), pull.strength(),
-                        pull.capSpeed(), pull.applied(), pull.capped()));
-                if (pull.applied() <= 0) return;
+                        "PULL id=%s d=%.3f h=%.3f ground=%b tf=%.6f strength=%.6f cap=%.6f pull=%.6f capped=%b"
+                                + " lift=%.6f apex=%.3f rest=%.3f safe=%b",
+                        entity.getUniqueId(), pull.distance(), pull.horizontal(), pull.onGround(), pull.travelFactor(),
+                        pull.strength(), pull.capSpeed(), pull.applied(), pull.capped(), pull.vertical(), pull.apex(),
+                        pull.travel(), pull.safeLanding()));
                 Vec3 i = pull.impulse();
+                if (i.x() == 0 && i.y() == 0 && i.z() == 0) return;
+                // The lift can carry a victim near the origin above the safe fall (Implosion.SAFE_FALL_MARGIN): the
+                // dash's mark (ruling 31) covers that landing, armed in the same task, before the take-off.
+                if (pull.safeLanding()) ctx.safeLandings().arm(entity, ctx.scheduler());
                 entity.setVelocity(entity.getVelocity().add(new Vector(i.x(), i.y(), i.z())));
             });
         }

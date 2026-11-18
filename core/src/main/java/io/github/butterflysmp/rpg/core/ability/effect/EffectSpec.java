@@ -123,7 +123,8 @@ public sealed interface EffectSpec permits EffectSpec.Targeted, EffectSpec.Untar
      *   - type: implosion
      *     reach: 5                       # BLOCKS, origin to feet, inclusive
      *     falloff: vanilla_explosion     # or flat: the share of `damage` taken at distance d
-     *     pull: 1.0                      # a MULTIPLIER of vanilla's explosion push, toward the origin
+     *     pull: 1.0                      # a MULTIPLIER of the push's horizontal part, toward the origin
+     *     lift: 0                        # optional, default 0: a MULTIPLIER of the push's lift (0 stays grounded)
      *     resistance: knockback          # explosion_knockback | knockback | none: the attribute that cuts it
      *     affects: mobs                  # or players
      *     visual: void_implosion         # optional, drawn at the reach

@@ -1224,7 +1224,7 @@ class AbilityLoaderTest {
 
         var im = (EffectSpec.Implosion) load().find("void_pull_fixture").orElseThrow().onHit().get(0);
 
-        assertEquals(new Implosion(5.0, Implosion.Falloff.VANILLA_EXPLOSION, 1.0, Implosion.Resistance.KNOCKBACK),
+        assertEquals(new Implosion(5.0, Implosion.Falloff.VANILLA_EXPLOSION, 1.0, 0.0, Implosion.Resistance.KNOCKBACK),
                 im.shape());
         assertEquals(EffectSpec.Affects.MOBS, im.affects());
         assertEquals("void_implosion", im.visual());
@@ -1248,7 +1248,7 @@ class AbilityLoaderTest {
 
         var im = (EffectSpec.Implosion) load().find("pull").orElseThrow().onHit().get(0);
 
-        assertEquals(new Implosion(3.0, Implosion.Falloff.VANILLA_EXPLOSION, 0.5, Implosion.Resistance.NONE), im.shape());
+        assertEquals(new Implosion(3.0, Implosion.Falloff.VANILLA_EXPLOSION, 0.5, 0.0, Implosion.Resistance.NONE), im.shape());
         assertEquals(EffectSpec.Affects.PLAYERS, im.affects());
         assertNull(im.visual());
         assertEquals(new EffectSpec.Damage(6, "void"), im.damage());

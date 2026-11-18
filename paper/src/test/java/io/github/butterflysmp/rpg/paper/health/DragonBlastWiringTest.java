@@ -114,13 +114,18 @@ class DragonBlastWiringTest {
             assertTrue(i > loop && i < visual, "a pull outside the victims' loop, line " + i + ": " + code.get(i));
         }
         assertTrue(pulls >= 1, "the blaster pulls at all: " + pulls);
-        assertTrue(code.stream().anyMatch(l -> l.contains("Implosion shape = blast.implosion();")), "the blast's shape");
+        assertTrue(code.stream().anyMatch(l -> l.contains("Implosion shape = blast.implosion(stage, def.stages());")),
+                "the blast's shape AT ITS STAGE (the void implosion's Part C)");
         assertTrue(code.stream().anyMatch(l -> l.contains(
                         "Implosion.Pull pull = shape.pull(vec(at), ImplosionFooting.of(victim, shape.resistance()))")),
                 "each victim's pull, from its own footing and the shape's resistance");
         for (String gone : List.of("pushVector", "knockbackAt", "EXPLOSION_EMITTER", "ENTITY_GENERIC_EXPLODE")) {
             assertFalse(code.stream().anyMatch(l -> l.contains(gone)), "gone from the blaster: " + gone);
         }
+        assertTrue(code.stream().anyMatch(l -> l.contains("double r = blast.reachAt(stage, def.stages());")),
+                "the stage's reach: the sphere, the shape and the swirl's width");
+        assertTrue(code.stream().anyMatch(l -> l.contains("if (safe) adapters.safeLandings().arm(victim, adapters.scheduler());")),
+                "the lift's high landings get the dash's mark (ruling 2: the lift is never scaled)");
         assertTrue(code.stream().noneMatch(l -> l.contains("for (MobBlast.Hit") && l.contains("spared")),
                 "no loop over the spared");
     }
