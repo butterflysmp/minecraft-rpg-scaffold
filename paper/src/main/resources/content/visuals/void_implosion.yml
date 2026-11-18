@@ -8,11 +8,15 @@
 #
 # EVERY NUMBER BELOW IS CHOSEN (2026-11-17), not Ben's and not read: listed for him in the gate.
 #
+# SINCE 2026-11-18 THE SWIRL LASTS THE DRAG'S SECOND (Ben's 1: "the swirl lasting the same second"): duration_ticks
+# 10 -> 20 on both spirals, CHOSEN; nothing else changed. So the same curve is drawn twice as slowly, the same 6
+# points per arm per tick, now 720 particles over 20 ticks.
+#
 # A `spiral` step: `arms` curves, each from `radius` (BLOCKS; the caller's reach replaces it) to the centre, turning
 # `turns` full turns on the way, drawn over `duration_ticks` TICKS with `points_per_tick` particles per arm per tick,
 # `height` BLOCKS above the feet, every arm turned by `phase_degrees`. One DUST particle per point, no spread.
 #
-#   two colours x 3 arms x 6 points x 10 ticks = 360 particles over 10 ticks (half a second)
+#   two colours x 3 arms x 6 points x 20 ticks = 720 particles over 20 ticks (one second)
 
 steps:
   # Black. DUST, not SMOKE: a dust particle holds still where it is drawn, so the arms read as curves.
@@ -20,7 +24,7 @@ steps:
     particle: DUST
     color: [16, 16, 16]
     size: 1.5
-    duration_ticks: 10
+    duration_ticks: 20
     arms: 3
     turns: 1.5
     points_per_tick: 6
@@ -32,7 +36,7 @@ steps:
     particle: DUST
     color: [88, 24, 140]
     size: 1.5
-    duration_ticks: 10
+    duration_ticks: 20
     arms: 3
     turns: 1.5
     points_per_tick: 6

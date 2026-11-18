@@ -399,14 +399,24 @@ final class AbilitySchema {
      * multiplier of the push's lift; 0, the default, keeps them on the ground), {@code resistance}
      * ({@code explosion_knockback}, {@code knockback} or {@code none}, the default), {@code visual} and {@code damage}
      * ({@code { amount, element }}) optional. An unknown word in any of the three enums is refused by name.
+     * Since 2026-11-18, {@code duration_ticks} (a whole number of ticks, default 1: a single pull) and {@code drag}
+     * (blocks per tick, default 0) optional; a duration above 1 is a drag, and the shape refuses one with a pull or a
+     * lift, or with no drag, by name.
      */
     private static EffectSpec.Implosion parseImplosion(Map<?, ?> m, String type) {
+        double duration = numOr(m, type, "duration_ticks", 1.0);
+        if (duration != Math.rint(duration)) {
+            throw new IllegalArgumentException("Effect '" + type + "' field 'duration_ticks' must be a whole number of"
+                    + " ticks, got: " + m.get("duration_ticks"));
+        }
         var shape = new io.github.butterflysmp.rpg.core.shape.Implosion(
                 num(m, type, "reach"),
                 word(m, type, "falloff", "vanilla_explosion", io.github.butterflysmp.rpg.core.shape.Implosion.Falloff.class),
                 num(m, type, "pull"),
                 numOr(m, type, "lift", 0.0),
-                word(m, type, "resistance", "none", io.github.butterflysmp.rpg.core.shape.Implosion.Resistance.class));
+                word(m, type, "resistance", "none", io.github.butterflysmp.rpg.core.shape.Implosion.Resistance.class),
+                (int) duration,
+                numOr(m, type, "drag", 0.0));
         EffectSpec.Affects affects = word(m, type, "affects", null, EffectSpec.Affects.class);
         EffectSpec.Damage damage = null;
         if (m.get("damage") != null) {

@@ -520,6 +520,32 @@ class VisualLoaderTest {
         assertTrue(warnings.isEmpty(), warningText());
     }
 
+    /**
+     * THE SWIRL LASTS THE DRAG'S SECOND (Ben's 1, 2026-11-18: "the swirl lasting the same second"): both of the shipped
+     * void_implosion's spirals are drawn over exactly the ticks the shipped Phage drags for. Two files, one number:
+     * reading phage.yml's own duration_ticks here makes a change to either alone red.
+     */
+    @Test
+    void theShippedSwirlLastsAsLongAsTheShippedPhageDrags() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/visuals/void_implosion.yml")) {
+            assertNotNull(in);
+            Files.write(dir.resolve("void_implosion.yml"), in.readAllBytes());
+        }
+        int phageDrag;
+        try (var in = getClass().getResourceAsStream("/content/mobs/phage.yml")) {
+            assertNotNull(in);
+            var yaml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
+                    new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8));
+            phageDrag = yaml.getInt("blast.duration_ticks");
+        }
+        assertEquals(20, phageDrag, "the Phage drags for 20 ticks");
+        var spirals = load().find("void_implosion").orElseThrow().steps().stream()
+                .filter(s -> s instanceof VisualSpec.Spiral).map(s -> (VisualSpec.Spiral) s).toList();
+        assertEquals(2, spirals.size(), "black and dark purple");
+        for (VisualSpec.Spiral s : spirals) assertEquals(phageDrag, s.shape().durationTicks());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
     /** The optional fields default: no phase, a radius of 1 block, a height of 0.5. */
     @Test
     void aSpiralsOptionalFieldsDefault() throws IOException {
@@ -570,7 +596,10 @@ class VisualLoaderTest {
         assertTrue(warningText().contains("onetick.yml"), warningText());
     }
 
-    /** THE BUNDLED void_implosion: black and dark purple DUST, inward over 10 ticks (CHOSEN, listed for Ben). */
+    /**
+     * THE BUNDLED void_implosion: black and dark purple DUST, inward over 20 ticks since 2026-11-18 (was 10; CHOSEN,
+     * listed for Ben), and a deep sound. The 20 is the Phage's drag ({@link #theShippedSwirlLastsAsLongAsTheShippedPhageDrags}).
+     */
     @Test
     void theBundledVoidImplosionIsABlackAndADarkPurpleSpiralAndADeepSound() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/visuals/void_implosion.yml")) {
@@ -582,8 +611,8 @@ class VisualLoaderTest {
         var purple = (VisualSpec.Spiral) steps.get(1);
         assertEquals(Color.fromRGB(16, 16, 16), black.dust().getColor());
         assertEquals(Color.fromRGB(88, 24, 140), purple.dust().getColor());
-        assertEquals(10, black.shape().durationTicks());
-        assertEquals(10, purple.shape().durationTicks());
+        assertEquals(20, black.shape().durationTicks());
+        assertEquals(20, purple.shape().durationTicks());
         assertEquals(60.0, purple.shape().phaseDegrees(), 0.0, "purple's arms sit between black's");
         assertTrue(steps.stream().anyMatch(s -> s instanceof VisualSpec.Sound), "a deep sound");
         assertTrue(warnings.isEmpty(), warningText());

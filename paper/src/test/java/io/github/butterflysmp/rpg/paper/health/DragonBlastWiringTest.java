@@ -153,6 +153,29 @@ class DragonBlastWiringTest {
         assertTrue(footing.stream().anyMatch(l -> l.contains("GameMode.SPECTATOR")), "spectator is exempt");
     }
 
+    /**
+     * THE DRAG IS STARTED BY THE BLAST (2026-11-18): only for a shape that drags, after the BLAST line is logged and
+     * before the Phage is removed, through the one runner, on players the Phage is hostile to. And an ability's drag
+     * goes through the same runner. The runner's own rules are core's (ImplosionDragTest); this is the wiring no server
+     * runs in a unit test. The gate's DRAG lines are its witness in game.
+     */
+    @Test
+    void theBlastStartsTheDragAfterItsLineAndBeforeThePhageGoes() throws IOException {
+        List<String> code = codeLines(MAIN.resolve(Path.of("health", "MobBlaster.java")));
+        int line = indexOf(code, "adapters.log().info(head(mobId, phageId, stage, gs, base, r,");
+        int gate = indexAfter(code, line, "if (shape.drags()) {");
+        int start = indexAfter(code, gate, "ImplosionDrags.start(adapters, world, vec(at), shape,");
+        int remove = indexAfter(code, start, "phage.remove();");
+        assertTrue(line > 0 && line < gate && gate < start && start < remove && start <= gate + 1,
+                "line < gate < start < remove: " + line + " " + gate + " " + start + " " + remove);
+        assertTrue(code.get(start + 1).contains("MobHostility.hostileTo(") || code.get(start + 2).contains(
+                "MobHostility.hostileTo("), "the Phage's own predicate: " + code.get(start + 1));
+        List<String> world = codeLines(MAIN.resolve(Path.of("adapter", "PaperCombatWorld.java")));
+        int method = indexOf(world, "public void startDrag(");
+        assertTrue(method > 0 && indexAfter(world, method, "ImplosionDrags.start(ctx, world, origin, shape,") > method,
+                "an ability's drag goes through the same runner");
+    }
+
     private static int indexOf(List<String> code, String needle) {
         return indexAfter(code, -1, needle);
     }

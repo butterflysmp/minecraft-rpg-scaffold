@@ -301,6 +301,19 @@ public final class FakeWorld implements CombatWorld {
         landings.add(new TracedLanding(casterId, source, how, feet));
     }
 
+    /** Each drag handed to the world (the implosion's drag, 2026-11-18), as it was handed. */
+    public record StartedDrag(Vec3 origin, io.github.butterflysmp.rpg.core.shape.Implosion shape,
+                              io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Affects affects,
+                              UUID casterId) {}
+
+    public final List<StartedDrag> drags = new ArrayList<>();
+
+    @Override public void startDrag(Vec3 origin, io.github.butterflysmp.rpg.core.shape.Implosion shape,
+                                    io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Affects affects,
+                                    UUID casterId) {
+        drags.add(new StartedDrag(origin, shape, affects, casterId));
+    }
+
     /** The radius each scaled presentation was handed (the void implosion's spiral); unscaled ones add nothing. */
     public final List<Double> presentedRadius = new ArrayList<>();
 

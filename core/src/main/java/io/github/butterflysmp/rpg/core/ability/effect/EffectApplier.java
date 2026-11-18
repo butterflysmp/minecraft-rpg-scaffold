@@ -252,6 +252,10 @@ public final class EffectApplier {
      * names, never the caster: the authored damage (if any) x the shape's falloff at its feet-to-feet distance, through
      * the same Damage arm every literal takes; then the pull, handed to its own handle, which reads its footing on its own
      * thread and asks the shape for the capped impulse. A creative or spectator player is exempted there.
+     *
+     * <p><b>A SHAPE THAT DRAGS</b> (2026-11-18, {@code duration_ticks} above 1) deals its damage here, once, exactly
+     * as above, and is not pulled here at all: the drag is handed to the world ({@link CombatWorld#startDrag}), which
+     * finds the victims afresh every tick of its duration, so one who walks in during it is dragged too.
      */
     private void implode(EffectSpec.Implosion im, Caster caster, Vec3 origin) {
         double reach = im.shape().reach();
@@ -268,8 +272,9 @@ public final class EffectApplier {
                             caster, c, origin);
                 }
             }
-            c.handle().applyPull(origin, im.shape());
+            if (!im.shape().drags()) c.handle().applyPull(origin, im.shape());
         }
+        if (im.shape().drags()) world.startDrag(origin, im.shape(), im.affects(), caster.id());
     }
 
     private void throwEmbers(EffectSpec.ThrowEmbers te, Caster caster, Vec3 origin, Vec3 facing) {

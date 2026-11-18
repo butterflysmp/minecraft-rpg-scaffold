@@ -45,6 +45,7 @@ public final class MobFuse {
             }
             return Event.NONE;
         }
+        if (forced) return Event.NONE;   // the instrument's light holds to the blast
         if (distance.isEmpty() || distance.getAsDouble() > cancel || !sight) {
             direction = -1;
             return Event.RESET;
@@ -64,5 +65,24 @@ public final class MobFuse {
 
     public boolean fusing() {
         return direction > 0;
+    }
+
+    private boolean forced;
+
+    /**
+     * THE INSTRUMENT'S LIGHT (2026-11-18, GATE-implosion-drag.md's Part D row): turn the fuse UP now, wherever its target
+     * is, and HOLD it up to the blast: no distance, sight or absence resets it after this. The selftest's only; no game
+     * path calls it. Returns true when it was down (a new start, for the caller to show), false when it was already lit.
+     */
+    public boolean light() {
+        forced = true;
+        if (direction > 0) return false;
+        direction = 1;
+        return true;
+    }
+
+    /** True once {@link #light} has held this fuse lit. */
+    public boolean forced() {
+        return forced;
     }
 }
