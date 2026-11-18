@@ -13,7 +13,7 @@ import org.bukkit.Particle;
  *
  * Lives in paper, not core, because Particle and NamespacedKey are Bukkit types.
  */
-public sealed interface VisualSpec permits VisualSpec.Particles, VisualSpec.Sound {
+public sealed interface VisualSpec permits VisualSpec.Particles, VisualSpec.Sound, VisualSpec.Spiral {
 
     /**
      * Particle is a plain enum, so it is resolved here at load time. A typo
@@ -75,4 +75,15 @@ public sealed interface VisualSpec permits VisualSpec.Particles, VisualSpec.Soun
      */
     record Sound(String key, NamespacedKey namespacedKey, float volume, float pitch)
             implements VisualSpec {}
+
+    /**
+     * AN INWARD SPIRAL DRAWN OVER TICKS (the void implosion, 2026-11-17; PLAN-dragon-mobs.md, the brief's Part D 5).
+     * {@code shape} is core's pure geometry ({@link io.github.butterflysmp.rpg.core.shape.Spiral}): its arms, turns,
+     * points per tick, phase and duration. One particle per point, no spread, {@code extra} 0, carrying {@code dust}
+     * when the particle is DUST (null otherwise). Drawn at the radius the CALLER names (an implosion's reach, through
+     * {@code CombatWorld#present(Vec3, String, double)}), else at {@code radius}, BLOCKS; {@code height} BLOCKS above
+     * the point it is presented at. Step type {@code spiral}.
+     */
+    record Spiral(io.github.butterflysmp.rpg.core.shape.Spiral shape, Particle particle, Particle.DustOptions dust,
+                  double radius, double height) implements VisualSpec {}
 }

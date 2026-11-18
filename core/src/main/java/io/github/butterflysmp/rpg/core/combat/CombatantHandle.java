@@ -171,6 +171,15 @@ public interface CombatantHandle {
     void applyImpulse(Vec3 velocity);
 
     /**
+     * THE VOID IMPLOSION'S PULL on this combatant (PLAN-dragon-mobs.md, 2026-11-17): read its own footing ON ITS OWN
+     * THREAD (its feet, whether it is on the ground, the friction of the block that moves it, and the value of
+     * {@code shape.resistance()}'s attribute), ask {@code shape.pull(origin, footing)} for the capped impulse, and ADD it to
+     * its velocity. Never moves a shot's carrier, a creative or spectator player, or anything else our hostility rules
+     * exempt. Abstract on purpose, like {@link #armSafeLanding}: a new implementation must decide.
+     */
+    void applyPull(Vec3 origin, io.github.butterflysmp.rpg.core.shape.Implosion shape);
+
+    /**
      * NO FALL DAMAGE FROM THE NEXT LANDING (ruling 31; PLAN-build-system.md section 7.6). Called by a dash with
      * {@code safeLanding}, straight after {@link #applyImpulse}. One mark per combatant: a second call re-arms it.
      * Abstract on purpose -- a new implementation must decide, rather than inherit a silent no-op.

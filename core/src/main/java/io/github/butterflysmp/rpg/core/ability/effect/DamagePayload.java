@@ -117,6 +117,8 @@ public final class DamagePayload {
                     Optional.of(new TriggerDamage(d.amount(), d.element(), DamageSource.ABILITY_LITERAL));
             case EffectSpec.Burst b        -> firstDamage(b.effects(), weaponAttackDamage);
             case EffectSpec.Area a         -> firstDamage(a.effects(), weaponAttackDamage);
+            // Its authored damage is the zero-distance figure, as a burst's nested damage is; none authored, none.
+            case EffectSpec.Implosion i    -> i.damage() == null ? Optional.empty() : damageOf(i.damage(), weaponAttackDamage);
             case EffectSpec.Heal h         -> Optional.empty();
             case EffectSpec.Knockback k    -> Optional.empty();
             case EffectSpec.Status s       -> Optional.empty();

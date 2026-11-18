@@ -170,6 +170,16 @@ public interface CombatWorld {
     void present(Vec3 at, String visualId);
 
     /**
+     * {@link #present} SCALED TO A RADIUS (the void implosion, 2026-11-17): a visual step that is drawn over an area, the
+     * implosion's inward spiral, is drawn at {@code radius} blocks rather than at its authored default, so a stage-1
+     * Phage's swirl is its own reach wide. Every other step is presented exactly as {@link #present} does. The default
+     * ignores the radius, so a port that draws no areas need not answer it.
+     */
+    default void present(Vec3 at, String visualId, double radius) {
+        present(at, visualId);
+    }
+
+    /**
      * Draw a named visual ALONG the segment from {@code from} to {@code to}, rather than at a
      * point. A beam.
      *

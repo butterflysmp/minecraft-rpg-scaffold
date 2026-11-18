@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
 import io.github.butterflysmp.rpg.core.ability.AbilityRegistry;
 import io.github.butterflysmp.rpg.core.ability.CastSpec;
 import io.github.butterflysmp.rpg.core.ability.effect.EffectSpec;
+import io.github.butterflysmp.rpg.core.shape.Implosion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -1205,5 +1206,71 @@ class AbilityLoaderTest {
         assertEquals(1, warnings.size(), "ONE warning: " + warningText());
         assertTrue(warningText().contains("arc_surge.yml"), warningText());
         assertFalse(warningText().contains("clean.yml"), "the control file is not named: " + warningText());
+    }
+
+    // ---- the void implosion, named from content (PLAN-dragon-mobs.md, the 2026-11-17 brief, Part D 1) ----
+
+    /**
+     * THE SHAPE'S SECOND USE, FROM CONTENT ALONE: the test-only fixture {@code void_pull_fixture.yml} (never shipped)
+     * names the void implosion, pulls MOBS and deals no damage. Every key arrives as the shape and the use.
+     */
+    @Test
+    void theTestOnlyFixtureNamesTheImplosionPullsMobsAndDealsNoDamage() throws IOException {
+        try (var in = getClass().getResourceAsStream("/fixtures/abilities/void_pull_fixture.yml")) {
+            assertNotNull(in, "the fixture is on the TEST classpath");
+            Files.write(dir.resolve("void_pull_fixture.yml"), in.readAllBytes());
+        }
+        assertNull(getClass().getResource("/content/abilities/void_pull_fixture.yml"), "and it does not ship");
+
+        var im = (EffectSpec.Implosion) load().find("void_pull_fixture").orElseThrow().onHit().get(0);
+
+        assertEquals(new Implosion(5.0, Implosion.Falloff.VANILLA_EXPLOSION, 1.0, Implosion.Resistance.KNOCKBACK),
+                im.shape());
+        assertEquals(EffectSpec.Affects.MOBS, im.affects());
+        assertEquals("void_implosion", im.visual());
+        assertNull(im.damage(), "no damage authored, none dealt");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** The optional damage arrives; the defaults are flat-free: falloff vanilla_explosion, resistance none, no visual. */
+    @Test
+    void anImplosionsDamageArrivesAndItsOptionalKeysDefault() throws IOException {
+        write("pull.yml", """
+                id: pull
+                element: void
+                on_hit:
+                  - type: implosion
+                    reach: 3
+                    pull: 0.5
+                    affects: players
+                    damage: { amount: 6, element: void }
+                """);
+
+        var im = (EffectSpec.Implosion) load().find("pull").orElseThrow().onHit().get(0);
+
+        assertEquals(new Implosion(3.0, Implosion.Falloff.VANILLA_EXPLOSION, 0.5, Implosion.Resistance.NONE), im.shape());
+        assertEquals(EffectSpec.Affects.PLAYERS, im.affects());
+        assertNull(im.visual());
+        assertEquals(new EffectSpec.Damage(6, "void"), im.damage());
+    }
+
+    /** Each bad key is a named, skipped file: an unknown predicate, falloff or resistance, and a missing reach. */
+    @Test
+    void aMalformedImplosionIsRefusedByName() throws IOException {
+        String head = "element: void\non_hit:\n  - type: implosion\n";
+        write("badaffects.yml", "id: badaffects\n" + head + "    reach: 3\n    pull: 1\n    affects: everyone\n");
+        write("badfalloff.yml", "id: badfalloff\n" + head
+                + "    reach: 3\n    pull: 1\n    affects: mobs\n    falloff: cubic\n");
+        write("badres.yml", "id: badres\n" + head
+                + "    reach: 3\n    pull: 1\n    affects: mobs\n    resistance: armour\n");
+        write("noreach.yml", "id: noreach\n" + head + "    pull: 1\n    affects: mobs\n");
+        write("noaffects.yml", "id: noaffects\n" + head + "    reach: 3\n    pull: 1\n");
+
+        AbilityRegistry abilities = load();
+
+        for (String id : List.of("badaffects", "badfalloff", "badres", "noreach", "noaffects")) {
+            assertTrue(abilities.find(id).isEmpty(), id);
+            assertTrue(warningText().contains(id + ".yml"), id + ": " + warningText());
+        }
     }
 }

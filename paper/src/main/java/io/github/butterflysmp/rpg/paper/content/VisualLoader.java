@@ -125,6 +125,23 @@ public final class VisualLoader {
                         (float) numOr(m, type, "volume", 1.0),
                         (float) numOr(m, type, "pitch", 1.0));
             }
+            case "spiral" -> {
+                // The void implosion's swirl (2026-11-17). The geometry is core's and refuses a bad shape by name;
+                // the particle passes the same data-object gate a `particle` step does (DUST takes color and size).
+                Particle p = particle(str(m, type, "particle"));
+                yield new VisualSpec.Spiral(
+                        new io.github.butterflysmp.rpg.core.shape.Spiral(
+                                (int) num(m, type, "duration_ticks"),
+                                (int) num(m, type, "arms"),
+                                num(m, type, "turns"),
+                                (int) num(m, type, "points_per_tick"),
+                                numOr(m, type, "phase_degrees", 0.0)),
+                        p,
+                        dust(m, type, p),
+                        // 1.0: the radius drawn when the caller names none (a plain present). An implosion names its reach.
+                        numOr(m, type, "radius", 1.0),
+                        numOr(m, type, "height", 0.5));
+            }
             default -> throw new IllegalArgumentException("Unknown visual step type: " + type);
         };
     }

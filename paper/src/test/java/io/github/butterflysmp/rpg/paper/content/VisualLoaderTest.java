@@ -489,4 +489,103 @@ class VisualLoaderTest {
         assertTrue(warningText().contains("arc_surge.yml"), warningText());
         assertFalse(warningText().contains("clean.yml"), warningText());
     }
+
+    // ---- the void implosion's spiral (PLAN-dragon-mobs.md, the 2026-11-17 brief, Part D 5) ----
+
+    /** Every authored field arrives: the geometry, the DUST colour and size, the default radius and the height. */
+    @Test
+    void aSpiralStepArrivesWithItsGeometryColourRadiusAndHeight() throws IOException {
+        write("swirl.yml", """
+                steps:
+                  - type: spiral
+                    particle: DUST
+                    color: [75, 0, 110]
+                    size: 1.4
+                    duration_ticks: 12
+                    arms: 4
+                    turns: 1.25
+                    points_per_tick: 5
+                    phase_degrees: 45
+                    radius: 2.5
+                    height: 0.75
+                """);
+
+        var spiral = (VisualSpec.Spiral) load().find("swirl").orElseThrow().steps().get(0);
+
+        assertEquals(new io.github.butterflysmp.rpg.core.shape.Spiral(12, 4, 1.25, 5, 45.0), spiral.shape());
+        assertEquals(Color.fromRGB(75, 0, 110), spiral.dust().getColor());
+        assertEquals(1.4f, spiral.dust().getSize(), 1e-6);
+        assertEquals(2.5, spiral.radius(), 0.0, "the radius used when the caller names none");
+        assertEquals(0.75, spiral.height(), 0.0);
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /** The optional fields default: no phase, a radius of 1 block, a height of 0.5. */
+    @Test
+    void aSpiralsOptionalFieldsDefault() throws IOException {
+        write("swirl.yml", """
+                steps:
+                  - type: spiral
+                    particle: SMOKE
+                    duration_ticks: 10
+                    arms: 3
+                    turns: 1.5
+                    points_per_tick: 6
+                """);
+
+        var spiral = (VisualSpec.Spiral) load().find("swirl").orElseThrow().steps().get(0);
+
+        assertEquals(0.0, spiral.shape().phaseDegrees(), 0.0);
+        assertEquals(1.0, spiral.radius(), 0.0);
+        assertEquals(0.5, spiral.height(), 0.0);
+        assertNull(spiral.dust(), "a particle without data carries none");
+    }
+
+    /** A spiral missing its geometry, or with a geometry core refuses, is a named, skipped file. */
+    @Test
+    void aMalformedSpiralIsRefusedByName() throws IOException {
+        write("noarms.yml", """
+                steps:
+                  - type: spiral
+                    particle: SMOKE
+                    duration_ticks: 10
+                    turns: 1.5
+                    points_per_tick: 6
+                """);
+        write("onetick.yml", """
+                steps:
+                  - type: spiral
+                    particle: SMOKE
+                    duration_ticks: 1
+                    arms: 3
+                    turns: 1.5
+                    points_per_tick: 6
+                """);
+
+        VisualRegistry visuals = load();
+
+        assertTrue(visuals.find("noarms").isEmpty());
+        assertTrue(visuals.find("onetick").isEmpty());
+        assertTrue(warningText().contains("noarms.yml"), warningText());
+        assertTrue(warningText().contains("onetick.yml"), warningText());
+    }
+
+    /** THE BUNDLED void_implosion: black and dark purple DUST, inward over 10 ticks (CHOSEN, listed for Ben). */
+    @Test
+    void theBundledVoidImplosionIsABlackAndADarkPurpleSpiralAndADeepSound() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/visuals/void_implosion.yml")) {
+            assertNotNull(in, "void_implosion.yml must ship");
+            java.nio.file.Files.write(dir.resolve("void_implosion.yml"), in.readAllBytes());
+        }
+        var steps = load().find("void_implosion").orElseThrow().steps();
+        var black = (VisualSpec.Spiral) steps.get(0);
+        var purple = (VisualSpec.Spiral) steps.get(1);
+        assertEquals(Color.fromRGB(16, 16, 16), black.dust().getColor());
+        assertEquals(Color.fromRGB(88, 24, 140), purple.dust().getColor());
+        assertEquals(10, black.shape().durationTicks());
+        assertEquals(10, purple.shape().durationTicks());
+        assertEquals(60.0, purple.shape().phaseDegrees(), 0.0, "purple's arms sit between black's");
+        assertTrue(steps.stream().anyMatch(s -> s instanceof VisualSpec.Sound), "a deep sound");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
 }

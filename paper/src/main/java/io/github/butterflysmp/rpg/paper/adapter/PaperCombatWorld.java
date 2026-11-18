@@ -982,6 +982,16 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     @Override
     public void present(Vec3 at, String visualId) {
+        present(at, visualId, Double.NaN);
+    }
+
+    /**
+     * {@link #present}, with a {@code spiral} step drawn at {@code radius} (NaN: at its own authored radius). The void
+     * implosion (2026-11-17) passes its reach, so a stage's swirl is its own reach wide. Every other step is drawn as
+     * {@link #present} always drew it, on the same region hop, so the sound lands with the swirl's first tick.
+     */
+    @Override
+    public void present(Vec3 at, String visualId, double radius) {
         VisualDefinition visual = ctx.visuals().find(visualId).orElse(null);
         if (visual == null) {
             ctx.warnOnce("Unknown visual_id '" + visualId + "'; nothing presented");
@@ -994,9 +1004,34 @@ public final class PaperCombatWorld implements CombatWorld {
                     case VisualSpec.Particles p -> particles(p, loc);
                     case VisualSpec.Sound s ->
                             world.playSound(loc, s.key(), s.volume(), s.pitch());
+                    case VisualSpec.Spiral sp -> spiral(sp, loc, Double.isNaN(radius) ? sp.radius() : radius, 0);
                 }
             }
         });
+    }
+
+    /**
+     * ONE TICK OF A SPIRAL, then the next a tick later on the same region, until its last tick (core's
+     * {@link io.github.butterflysmp.rpg.core.shape.Spiral#arm} decides every point). One particle per point, no spread,
+     * {@code extra} 0, so a DUST particle sits where it is drawn. The origin's region owns every point only while the
+     * radius stays inside one region; an implosion's 2 to 6 blocks do on Paper, where every entity and block is on the
+     * main thread (on Folia a swirl across a region edge would draw off-thread there: the same note as F3).
+     */
+    private void spiral(VisualSpec.Spiral sp, Location origin, double radius, int tick) {
+        io.github.butterflysmp.rpg.core.shape.Spiral shape = sp.shape();
+        double y = origin.getY() + sp.height();
+        for (int arm = 0; arm < shape.arms(); arm++) {
+            for (Vec3 off : shape.arm(radius, tick, arm)) {
+                world.spawnParticle(sp.particle(), origin.getX() + off.x(), y, origin.getZ() + off.z(), 1,
+                        0.0, 0.0, 0.0, 0.0, sp.dust());
+            }
+        }
+        if (tick + 1 < shape.durationTicks()) {
+            // Through schedule(), the world's ONE point-scheduling site (C2): registered with its point, so the
+            // selftest's LINGER counts a swirl still drawing and a row-start clean ends it.
+            schedule(new Vec3(origin.getX(), origin.getY(), origin.getZ()), 1,
+                    () -> spiral(sp, origin, radius, tick + 1));
+        }
     }
 
     /**

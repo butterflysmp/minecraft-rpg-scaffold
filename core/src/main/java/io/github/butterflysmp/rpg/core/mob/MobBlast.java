@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.core.mob;
 
 import io.github.butterflysmp.rpg.core.Vec3;
+import io.github.butterflysmp.rpg.core.shape.Implosion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,27 +11,33 @@ import java.util.UUID;
  * A staged mob's SELF-DESTRUCT: the Phage's blast (PLAN-dragon-mobs.md step R3). Authored in the mob file's
  * {@code blast:} block. Ben: "for the explosion keep vanilla creeper numbers for everything except the damage", and
  * on its shape, "keep vanillas shap". The damage is 60 at stage 1 and 150 at stage 5 since 2026-11-17 (the seat's
- * reading of Ben's "increase 3x", replacing P-a); the gear-score pricing is still the seat's provisional P-b. Since
- * the same day it PUSHES its victims as vanilla's does (Ben: "knockback sounds like a good addition").
+ * reading of Ben's "increase 3x", CONFIRMED BY PLAY); the gear-score pricing is still the seat's provisional P-b.
+ *
+ * <p><b>SINCE 2026-11-17 (feat/void-implosion) IT PULLS, NEVER PUSHES.</b> Ben: "A void explosion that pulls things
+ * toward the origin with black and dark purple swirling particles ... when the phage explodes", and "swap the push for
+ * the pull". The blast is ONE USE of the reusable shape {@link Implosion} ({@link #implosion}); the push vector,
+ * {@code knockbackAt} and {@code pushVector} it replaced are gone.
  *
  * <p><b>NAME THE QUANTITY:</b>
  * <ul>
- *   <li>{@code reach}: BLOCKS, how far the blast hurts: the straight-line distance between the Phage's FEET and the
- *       victim's FEET, INCLUSIVE, same world. A sphere. The Phage's is 6, vanilla's reach for a creeper: its power 3
- *       doubled ({@code ServerExplosion.hurtEntities}, {@code radius * 2}), measured between the same two points
- *       ({@code Entity.distanceToSqr(center)} is the entity's position, and the creeper explodes at its own).</li>
+ *   <li>{@code reach}: BLOCKS, how far the blast hurts AND pulls: the straight-line distance between the Phage's FEET
+ *       and the victim's FEET, INCLUSIVE, same world. A sphere. The Phage's is 6, vanilla's reach for a creeper: its
+ *       power 3 doubled ({@code ServerExplosion.hurtEntities}, {@code radius * 2}).</li>
  *   <li>{@code firstDamage} / {@code lastDamage}: the AUTHORED damage at the first and last stage, linear between
  *       (G3), before gear score, at ZERO distance. The Phage's are 60 and 150.</li>
  *   <li>{@code fuseTicks}: TICKS from the swell's start to the blast, vanilla's {@code maxSwell}. The Phage's is 30
  *       (1.5 seconds). Paper applies it with {@code Creeper#setMaxFuseTicks}.</li>
- *   <li>{@code knockback}: a MULTIPLIER of vanilla's push for the same distance, never an absolute push. 1 is
- *       vanilla's own; 0 turns the push off. The Phage's is 1. See {@link #knockbackStrength}.</li>
+ *   <li>{@code pull}: a MULTIPLIER of vanilla's explosion push for the same distance, directed TOWARD the Phage, never
+ *       an absolute speed (see {@link Implosion}). The Phage's is 1.25: the seat's number for Ben's "A little bit
+ *       stronger than the push today". 0 turns the pull off.</li>
+ *   <li>{@code visual}: the content visual id played at the detonation in place of vanilla's explosion emitter and
+ *       sound, drawn at the blast's reach ({@code void_implosion}).</li>
  * </ul>
- * A victim at distance d takes the priced damage x {@link #falloff}(d, reach): vanilla's curve, normalised, and is
- * pushed by {@link #knockbackStrength}: vanilla's linear share. No cover check (vanilla's exposure): left out
- * knowingly, and Ben's question (Q34). Exposure is 1 in both.
+ * A victim at distance d takes the priced damage x {@link #falloff}(d, reach): vanilla's curve, normalised. No cover
+ * check (vanilla's exposure): left out knowingly, and Ben's question (Q34).
  */
-public record MobBlast(double reach, double firstDamage, double lastDamage, int fuseTicks, double knockback) {
+public record MobBlast(double reach, double firstDamage, double lastDamage, int fuseTicks, double pull,
+                       String visual) {
 
     public MobBlast {
         if (!(reach > 0 && Double.isFinite(reach))) {
@@ -39,10 +46,20 @@ public record MobBlast(double reach, double firstDamage, double lastDamage, int 
         requireDamage("blast.damage.first", firstDamage);
         requireDamage("blast.damage.last", lastDamage);
         if (fuseTicks < 1) throw new IllegalArgumentException("blast.fuse_ticks must be at least 1, was " + fuseTicks);
-        if (!(knockback >= 0 && Double.isFinite(knockback))) {
-            throw new IllegalArgumentException("blast.knockback must be 0 or more (a multiplier of vanilla's push), was "
-                    + knockback);
+        if (!(pull >= 0 && Double.isFinite(pull))) {
+            throw new IllegalArgumentException("blast.pull must be 0 or more (a multiplier of vanilla's push), was "
+                    + pull);
         }
+        if (visual == null || visual.isBlank()) throw new IllegalArgumentException("blast.visual is required");
+    }
+
+    /**
+     * THE BLAST'S IMPLOSION: this blast's reach, vanilla's explosion falloff, its pull, and the explosion knockback
+     * resistance (the brief: "the Phage keeps the explosion one"). The victims are the blast's ({@link #reach(UUID,
+     * String, Vec3, List)}); the shape says how hard each is pulled and how much damage share it takes.
+     */
+    public Implosion implosion() {
+        return new Implosion(reach, Implosion.Falloff.VANILLA_EXPLOSION, pull, Implosion.Resistance.EXPLOSION_KNOCKBACK);
     }
 
     private static void requireDamage(String name, double value) {
@@ -70,60 +87,12 @@ public record MobBlast(double reach, double firstDamage, double lastDamage, int 
 
     /**
      * VANILLA'S DISTANCE CURVE, NORMALISED: the share of the zero-distance damage a victim takes at {@code distance}.
-     * 1 at zero, 0 at the reach and beyond, never negative.
-     *
-     * <p>Read from the server jar (build 74), {@code ExplosionDamageCalculator#getEntityDamageAmount}: vanilla deals
-     * {@code (x*x + x) / 2 * 7 * f + 1} with {@code x = (1 - d / f) * exposure} and {@code f} the reach. Only the SHAPE
-     * is kept (seat's ruling 28): exposure is 1 (no cover), and the {@code * 7 * f} and the {@code + 1} are vanilla's
-     * damage constants, which our authored damage replaces. What is left, {@code (x*x + x) / 2}, is already 1 at
-     * {@code x = 1} and 0 at {@code x = 0}. Half the reach is {@code x = 0.5}: three eighths.
+     * 1 at zero, 0 at the reach and beyond, never negative. Read from the server jar (build 74),
+     * {@code ExplosionDamageCalculator#getEntityDamageAmount}; only the SHAPE is kept (seat's ruling 28). Its home is
+     * the shape since 2026-11-17, {@link Implosion#vanillaShare}; this name stays for the BLAST line's readers.
      */
     public static double falloff(double distance, double reach) {
-        // BEYOND the reach x is negative and (x*x + x) / 2 would be too: this guard is what keeps it 0. Written ">", as
-        // vanilla's skip is; ">=" is an EQUIVALENT mutant (at exactly the reach x = 0, so the share is 0 either way),
-        // measured 2026-11-16: it survived the suite. Its real job is pinned by deleting the line, which reddens.
-        if (distance > reach) return 0.0;
-        double x = 1.0 - distance / reach;
-        return (x * x + x) / 2.0;
-    }
-
-    /**
-     * VANILLA'S PUSH FACTOR: {@code 1 - d / reach} inside the reach, 0 beyond. LINEAR, unlike the damage's
-     * {@link #falloff}: 1 at the blast, a half at half the reach, 0 at the reach. Read from the server jar,
-     * {@code ServerExplosion#hurtEntities}: {@code (1 - r)} with {@code r = d / f}, the damage's own {@code r}.
-     */
-    public static double knockbackFactor(double distance, double reach) {
-        if (distance > reach) return 0.0;
-        return 1.0 - distance / reach;
-    }
-
-    /**
-     * THE PUSH STRENGTH, vanilla's expression with exposure fixed at 1 (no cover, Q34):
-     * {@code (1 - d / reach) * multiplier * (1 - resistance)}. In the jar it is
-     * {@code (1 - r) * exposure * knockbackMultiplier * (1 - resistance)}, where {@code knockbackMultiplier} is the
-     * default calculator's 1 and {@code resistance} the victim's {@code EXPLOSION_KNOCKBACK_RESISTANCE}
-     * (PLAN-dragon-mobs.md section 7 F-B, READ). Our {@code multiplier} is content's {@link #knockback}. No clamp on
-     * the resistance, as vanilla has none. 0 beyond the reach, never negative.
-     */
-    public static double knockbackStrength(double distance, double reach, double multiplier, double resistance) {
-        return knockbackFactor(distance, reach) * multiplier * (1.0 - resistance);
-    }
-
-    /** This blast's push at {@code distance} on a victim with {@code resistance}: its own reach and multiplier. */
-    public double knockbackAt(double distance, double resistance) {
-        return knockbackStrength(distance, reach, knockback, resistance);
-    }
-
-    /**
-     * THE PUSH VECTOR, vanilla's: from the blast's {@code center} to the victim's {@code eye}, normalised, times
-     * {@code strength}. ZERO when the two are closer than {@code 1.0E-5F}, as {@code net.minecraft.world.phys.Vec3
-     * #normalize} returns (it compares against that float), never a NaN.
-     */
-    public static Vec3 pushVector(Vec3 center, Vec3 eye, double strength) {
-        Vec3 d = eye.subtract(center);
-        double len = d.length();
-        if (len < 1.0E-5F) return Vec3.ZERO;
-        return d.scale(strength / len);
+        return Implosion.vanillaShare(distance, reach);
     }
 
     /** Inside the reach, feet to feet, INCLUSIVE, as vanilla's skip is ({@code d / f > 1} skips). */

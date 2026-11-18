@@ -12,6 +12,7 @@ import io.github.butterflysmp.rpg.core.combat.Ignite;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.Scorch;
 import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
+import io.github.butterflysmp.rpg.core.shape.Implosion;
 import io.github.butterflysmp.rpg.paper.content.StatusDefinition;
 import io.github.butterflysmp.rpg.paper.scheduler.RepeatingTaskTarget;
 import org.bukkit.Bukkit;
@@ -412,6 +413,30 @@ public final class BukkitCombatant {
                 if (ctx.shots().strike(entity, "ability impulse")) return;   // step R7a: a shot is never moved by us
                 if (ctx.shields().suppressRider(entity, "impulse")) return;   // step R7b: nothing rides an absorbed hit
                 entity.setVelocity(new Vector(velocity.x(), velocity.y(), velocity.z()));
+            });
+        }
+
+        /**
+         * THE VOID IMPLOSION'S PULL, an ability's use of the shape (2026-11-17). On this entity's own thread: a shot's
+         * carrier is never moved (a pull is not an attack, so unlike a knockback it does not destroy the shot either), a
+         * creative or spectator player is exempt, and everyone else is asked of core's shape with its own footing
+         * ({@link ImplosionFooting}, the reader the Phage's blast uses) and the capped impulse ADDED to its velocity.
+         * One {@code PULL} line per victim: the footing is readable only here, on the victim's thread, so an ability's
+         * implosion cannot print one line for all its victims as the Phage's blast does.
+         */
+        @Override public void applyPull(Vec3 origin, Implosion shape) {
+            ctx.scheduler().onEntity(entity, () -> {
+                if (entity.getPersistentDataContainer().has(ctx.keys().mobShot)) return;
+                if (ImplosionFooting.exempt(entity)) return;
+                Implosion.Pull pull = shape.pull(origin, ImplosionFooting.of(entity, shape.resistance())).orElse(null);
+                if (pull == null) return;   // beyond the reach by now
+                ctx.log().info(String.format(java.util.Locale.ROOT,
+                        "PULL id=%s d=%.3f ground=%b m=%.6f strength=%.6f cap=%.6f pull=%.6f capped=%b",
+                        entity.getUniqueId(), pull.distance(), pull.onGround(), pull.tickMultiplier(), pull.strength(),
+                        pull.capSpeed(), pull.applied(), pull.capped()));
+                if (pull.applied() <= 0) return;
+                Vec3 i = pull.impulse();
+                entity.setVelocity(entity.getVelocity().add(new Vector(i.x(), i.y(), i.z())));
             });
         }
 

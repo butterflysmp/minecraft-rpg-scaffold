@@ -356,60 +356,70 @@ class MobLoaderTest {
 
     // ---- dragon-mobs step R3: the blast ----
 
-    /** The blast's five numbers ARRIVE from content (the knockback multiplier since the follow-up of 2026-11-17), and a file without the block has none. */
+    /** The blast's six fields ARRIVE from content (the pull and the visual since the void implosion, 2026-11-17), and a file without the block has none. */
     @Test
     void theBlastBlockArrives() throws IOException {
         write("phage.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 4.5\n  damage: { first: 11, last: 77 }\n  fuse_ticks: 44\n  knockback: 0.75\n");
+                + "blast:\n  reach: 4.5\n  damage: { first: 11, last: 77 }\n  fuse_ticks: 44\n  pull: 0.75\n"
+                + "  visual: void_implosion\n");
         write("plain.yml", "base_entity: creeper\n" + STAGES);
 
         MobRegistry mobs = load();
 
-        assertEquals(new MobBlast(4.5, 11, 77, 44, 0.75), mobs.find("phage").orElseThrow().blast());
+        assertEquals(new MobBlast(4.5, 11, 77, 44, 0.75, "void_implosion"), mobs.find("phage").orElseThrow().blast());
         assertNull(mobs.find("plain").orElseThrow().blast(), "no blast block, no blast");
         assertTrue(warnings.isEmpty(), warningText());
     }
 
     /**
-     * A blast on an unstaged mob, a missing key, a zero fuse, a missing knockback and a negative one are each a named,
-     * skipped file. Every file but the one under test carries {@code knockback: 1}, so each is refused for its own key.
+     * A blast on an unstaged mob, a missing key, a zero fuse, a missing pull and a negative one, a missing visual, and
+     * a STALE {@code knockback:} key (the push the pull replaced, as a data folder copied before 2026-11-17 still has
+     * it) are each a named, skipped file. Every file but the one under test carries {@code pull: 1} and a visual, so
+     * each is refused for its own key.
      */
     @Test
     void aMalformedBlastIsRefused() throws IOException {
+        String ok = "  pull: 1\n  visual: v\n";
         write("unstaged.yml", "base_entity: creeper\nmax_health: 80\n"
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: 1\n");
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n" + ok);
         write("nolast.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20 }\n  fuse_ticks: 30\n  knockback: 1\n");
+                + "blast:\n  reach: 3\n  damage: { first: 20 }\n  fuse_ticks: 30\n" + ok);
         write("noreach.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: 1\n");
+                + "blast:\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n" + ok);
         write("nofuse.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 0\n  knockback: 1\n");
-        write("noknock.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n");
-        write("negknock.yml", "base_entity: creeper\n" + STAGES
-                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: -1\n");
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 0\n" + ok);
+        write("nopull.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  visual: v\n");
+        write("negpull.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  pull: -1\n  visual: v\n");
+        write("novisual.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  pull: 1\n");
+        write("staleknock.yml", "base_entity: creeper\n" + STAGES
+                + "blast:\n  reach: 3\n  damage: { first: 20, last: 50 }\n  fuse_ticks: 30\n  knockback: 1\n" + ok);
 
         MobRegistry mobs = load();
 
         assertEquals(0, mobs.size());
-        for (String f : List.of("unstaged.yml", "nolast.yml", "noreach.yml", "nofuse.yml", "noknock.yml",
-                "negknock.yml")) {
+        for (String f : List.of("unstaged.yml", "nolast.yml", "noreach.yml", "nofuse.yml", "nopull.yml",
+                "negpull.yml", "novisual.yml", "staleknock.yml")) {
             assertTrue(warningText().contains(f), f + ": " + warningText());
         }
     }
 
     /**
      * THE PHAGE WE SHIP: vanilla's creeper numbers for everything but the damage (Ben), its shape ("keep vanillas
-     * shap"), the 60 and 150 (the seat's reading of Ben's "increase 3x", replacing P-a, 2026-11-17), and vanilla's push at a multiplier of 1 (Q35 answered yes). The reach is 6 blocks: vanilla's power 3 doubled
+     * shap"), the 60 and 150 (the seat's reading of Ben's "increase 3x", replacing P-a, 2026-11-17), and, since the void
+     * implosion (2026-11-17), a PULL at 1.25 times vanilla's push (Ben: "swap the push for the pull ... A little bit
+     * stronger than the push today"; 1.25 is the seat's number) drawn as void_implosion. The reach is 6 blocks: vanilla's power 3 doubled
      * ({@code ServerExplosion.hurtEntities}, {@code radius * 2}); the fuse is 30 ticks, vanilla's {@code maxSwell}.
      */
     @Test
-    void theBundledPhageBlastsForSixtyToOneFiftyOutToSixBlocksAndPushesAsVanilla() throws IOException {
+    void theBundledPhageBlastsForSixtyToOneFiftyOutToSixBlocksAndPullsAtOnePointTwoFive() throws IOException {
         try (var in = getClass().getResourceAsStream("/content/mobs/phage.yml")) {
             assertNotNull(in);
             Files.write(dir.resolve("phage.yml"), in.readAllBytes());
         }
-        assertEquals(new MobBlast(6.0, 60.0, 150.0, 30, 1.0), load().find("phage").orElseThrow().blast());
+        assertEquals(new MobBlast(6.0, 60.0, 150.0, 30, 1.25, "void_implosion"), load().find("phage").orElseThrow().blast());
         assertTrue(warnings.isEmpty(), warningText());
     }
 

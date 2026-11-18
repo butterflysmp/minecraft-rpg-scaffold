@@ -81,46 +81,58 @@ growth:
 
 # THE BLAST (dragon-mobs step R3). Ben: "for the explosion keep vanilla creeper numbers for everything except the
 # damage", and on its shape, "keep vanillas shap". The damage is 60 and 150 since 2026-11-17: the seat's reading of
-# Ben's "increase 3x" (said twice), which he did not correct when it was put to him; not a number he typed. It
-# replaced the provisional 20 and 50. The gear-score pricing below (P-b) is still the seat's provisional proposal.
-# Since the same day it pushes its victims back, as a vanilla blast does (Ben: "knockback sounds like a good
-# addition").
+# Ben's "increase 3x", CONFIRMED BY PLAY the same day. The gear-score pricing below (P-b) is still the seat's
+# provisional proposal.
+#
+# IT PULLS, SINCE 2026-11-17: A VOID IMPLOSION. Ben: "A void explosion that pulls things toward the origin with black
+# and dark purple swirling particles. I want this to happen when the phage explodes", and on the seat's points: "Yes,
+# swap the push for the pull", "A little bit stronger than the push today". The push it replaced is gone.
 #
 #   stage:   1      2      3      4      5
 #   damage:  60     82.5   105    127.5  150    at ZERO distance, before gear score; linear between first and last
 #
 #   distance:     0      1.5     3 (half)   4.5      6 (the reach)    beyond 6
 #   share taken:  all    65.6%   37.5%      15.6%    nothing          nothing
+#   pull:         1.25   0.9375  0.625      0.3125   0                0                blocks per tick, before the cap
 #
 # NAME THE QUANTITY:
-#   reach        BLOCKS, how far the blast hurts: the straight-line distance between the Phage's FEET and the victim's
-#                FEET, same world, a sphere. 6 is vanilla's own reach for a creeper: its explosion power 3, doubled
-#                (ServerExplosion.hurtEntities, radius * 2; PLAN-dragon-mobs.md section 7 F-B). Vanilla measures between
-#                the same two points: the victim's position (its feet) and the creeper's position, where it explodes.
+#   reach        BLOCKS, how far the blast hurts AND pulls: the straight-line distance between the Phage's FEET and the
+#                victim's FEET, same world, a sphere. 6 is vanilla's own reach for a creeper: its explosion power 3,
+#                doubled (ServerExplosion.hurtEntities, radius * 2; PLAN-dragon-mobs.md section 7 F-B). Vanilla measures
+#                between the same two points: the victim's position (its feet) and the creeper's position.
+#                NOT YET BY STAGE: Ben asked for the small Phage's distances to scale with its size; that waits on the
+#                seat's ruling about the fuse (PLAN-dragon-mobs.md, the 2026-11-17 brief's Part C, STOPPED at the jar).
 #   falloff      NOT a number in this file: vanilla's own curve, normalised (Ben: "keep vanillas shap"). A victim at
 #                distance d takes the damage below times (x*x + x) / 2, where x = 1 - d / reach: ALL of it at the
 #                Phage's feet, THREE EIGHTHS of it at half the reach (3 blocks), and nothing at the reach.
 #                Vanilla also weakens a blast by the blocks in the way. That is NOT done here: the blast goes
-#                through walls (Ben's question, Q34). It does push (below).
+#                through walls (Ben's question, Q34). It pulls (below).
 #   damage       AUTHORED damage at the first and last stage, at zero distance, x gear score / 100 as the Phage's
 #                health is (P-b), never x5. It lands on the same path a mob's melee hit takes, so the player's defence
 #                cuts it as it cuts a melee hit. It wears NO element today (whether it is Void damage is Q31).
 #   fuse_ticks   TICKS from the swell's start to the blast, vanilla's 30 (1.5 seconds), written to the creeper with
 #                Creeper#setMaxFuseTicks at spawn. The swell starts within 3 blocks of a target and cancels past 7 or
 #                out of sight: those two distances are vanilla's own and are NOT authored here (they cannot be until
-#                the swell is replaced; the seat's ruling 20).
-#   knockback    a MULTIPLIER of vanilla's own push for the same distance; never an absolute push. 1.0 is vanilla's:
-#                at the Phage's FEET a victim's velocity gains 1.0 (blocks per tick) away from the blast, pointing
-#                from the Phage's feet to the victim's eyes, so a little upward; at HALF the reach (3 blocks) it gains
-#                0.5; at the reach, nothing. The push falls off in a STRAIGHT LINE with distance (1 - distance /
-#                reach), not along the damage's curve. A victim's explosion knockback resistance cuts it as vanilla's
-#                does. 0 turns the push off; 2.0 would push twice as hard. Only the blast's victims are pushed: a mob or
-#                a creative player inside the reach is not. (PLAN-dragon-mobs.md section 7 F-B, read from the jar.)
+#                the swell is replaced; the seat's ruling 20, REOPENED 2026-11-17 and waiting on the seat).
+#   pull         a MULTIPLIER of vanilla's own explosion push for the same distance, pointed the OTHER way: toward the
+#                Phage's feet. 1.25 is the seat's number for "a little bit stronger than the push today". At distance d
+#                a victim's velocity gains (1 - d / reach) x 1.25 x (1 - its explosion knockback resistance) blocks per
+#                tick, HORIZONTALLY (no lift, so nothing it pulls can take fall damage from the pull itself), and
+#                NEVER PAST THE PHAGE: the speed is capped so the slide the server's friction gives it stops half a
+#                block short of the Phage's feet. On stone (friction 0.6, so 0.546 a tick) that cap is the distance
+#                less half a block, times 0.454: at 2 blocks it is 0.681 (the 0.833 is cut), at 3 it is 1.135 (the
+#                0.625 passes whole). A victim within half a block is not moved. A victim in the air is capped harder
+#                (its slide is longer). 0 turns the pull off. Only the blast's victims are pulled: a mob or a creative
+#                player inside the reach is not. (core.shape.Implosion; the friction READ from the jar.)
+#   visual       the content visual drawn at the blast's reach in place of vanilla's explosion puff and bang:
+#                void_implosion (content/visuals), a black and a dark purple spiral coming in over half a second, and a
+#                deep sound.
 #
-# VICTIMS: players only, today (Ben: "Only players and Summons"). No mob is hurt or pushed, a Phage included. A
-# creative or spectator player is not hurt or pushed.
+# VICTIMS: players only, today (Ben: "Only players and Summons"). No mob is hurt or pulled, a Phage included. A
+# creative or spectator player is not hurt or pulled.
 blast:
   reach: 6
   damage: { first: 60, last: 150 }
   fuse_ticks: 30
-  knockback: 1.0
+  pull: 1.25
+  visual: void_implosion
