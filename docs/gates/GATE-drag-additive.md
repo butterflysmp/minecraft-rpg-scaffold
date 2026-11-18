@@ -11,6 +11,14 @@ ends read 1.056, all five: spread 0.000. BQ3's six answers: "yes", "not sure", "
 want for walking", "yes", "no", "feels good". Readings beside each prediction; the account under THE BOOT at the end. No
 prediction was edited.**
 
+**2026-11-18: approved to merge by the review seat after the boot of 5ee0587a.**
+
+**WHAT THIS BOOT DID NOT READ (the seat's reading, 2026-11-18):** every DRAGTICK line showed one move packet a tick and
+`ping=0`, so **batching and latency were NOT exercised.** That the additive drag is independent of them rests on its
+design (the server never uses his momentum) and on the core sweep over lags 0 to 2 and jitter
+(`aStillVictimIsNeverCarriedPastTheMarginAtAnyLagWithinTheAllowance`). **It is UNREAD on an uneven or remote
+connection.**
+
 **What it gates.** The seat's ruling of 2026-11-18 (PLAN-dragon-mobs.md, *THE DRAG MUST NOT DEPEND ON PACKET TIMING*):
 no design may need the server to know the client's momentum. Each tick of the Phage's one-second drag, a PLAYER's own
 client is sent an ADD, which it adds to whatever momentum he carries; the add is a function of his distance and his

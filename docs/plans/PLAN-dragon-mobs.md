@@ -17,6 +17,11 @@
 >   Phalanx's in `GATE-dragon-shot.md` and `GATE-dragon-blink.md`; the Skreel's in `GATE-dragon-skreel.md`. **What
 >   remains** is in the carried list (§8 FINDINGS, *CARRIED AT THE MERGE OF #203*), the open QUESTIONS FOR BEN, and
 >   §3.R.5 *Numbers for Ben*.
+> - **STATUS, 2026-11-18: THE PHAGE'S VOID IMPLOSION IS COMPLETE AS BEN DESIGNED IT:** the fuse and the reach scaled by
+>   its size, the swirl, and the one-second drag (#204, #205, #206; read in `GATE-void-implosion.md`,
+>   `GATE-implosion-drag.md` and `GATE-drag-additive.md`). **The `Implosion` shape is available to abilities and
+>   weapons from content** (`type: implosion`); **none ships yet.** What remains is in §8, *CARRIED AT THE MERGE OF
+>   #206*.
 
 ## RULINGS
 
@@ -1323,6 +1328,26 @@ momentum is acceptable."* The diagnostic boot proposed was NOT run on its own; i
 **THE SEAT'S NUMBER, TOLD TO BEN AS THE SEAT'S:** `drag` **0.28 → 0.33**, because he answered "not quite" after the run
 in which the drag worked as modelled, and "i think it needs to be a little bit stronger" after the second. **Sprinting
 out will then work only from nearer the edge.**
+
+### Ben, 2026-11-18, VERBATIM, BY THE SELFTEST'S ASK STEP: the additive drag (the boot of `5ee0587a`, `GATE-drag-additive.md` BQ3)
+
+1. *"Standing still, did it drag you in toward where it stood, for about a second?"*
+   > "yes"
+2. *"Did that drag feel the same as the first one?"*
+   > "not sure"
+3. *"Walking away, did the drag slow you down without stopping you, so you still went back toward it?"*
+   > "it basically stopped me which is what I want for walking"
+4. *"Sprinting away from the edge, did you get out of the drag?"*
+   > "yes"
+5. *"During any of those drags, did you feel a stutter, or get snapped back to where you were?"*
+   > "no"
+6. *"Does the pull feel right now?"*
+   > "feels good"
+
+**CONFIRMED BY PLAY:** the drag pulls him in for about a second; walking away is "basically stopped", which he says is
+what he wants; sprinting from the edge gets him out; no stutter or snap back; the pull **"feels good" at drag 0.33**
+(the seat's number, now confirmed by play). **NOT STATED:** whether two drags felt the same ("not sure"; the server read
+them identically, `start=4.000 end=1.056` each).
 
 ### THE ADDITIVE DRAG AS BUILT (`feat/drag-additive`, 2026-11-18). THE ACCOUNT IS `GATE-drag-additive.md`
 
@@ -2826,6 +2851,21 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
       sent nothing after he left).
     - **Whether he was sprinting in BQ2's question 4, UNREAD:** INFERRED from its DRAG line against the model; no line
       reads his speed before the blast.
+- **CARRIED AT THE MERGE OF #206** (the seat's ruling, 2026-11-18, after the boot of `5ee0587a`):
+  - **CLOSED: the run-to-run variation** (#205's DEFECT), **for a clean connection, by CS1** (`GATE-drag-additive.md`):
+    five stagings from 4 read `end=1.056` five times, spread 0.000, on the lag-0 model's own figure.
+  - **CLOSED: the question-4 sprint** (#205's UNREAD): BQ3's DRAGTICK lines read `keys=forward,sprint` for all 21
+    ticks, out of the reach in 8.
+  - **CLOSED BY BUILD: DR1's 0.39 drift** (the old send's carried momentum): DR1R2 read +0.10.
+  - **STILL CARRIED:**
+    - **The drag UNREAD on an uneven or remote connection:** every DRAGTICK read one move packet a tick and `ping=0`;
+      batching and latency were not exercised. Its independence of them rests on its design and the core sweep.
+    - **The 2-tick lag allowance (`Implosion.LAG_ALLOWANCE_TICKS`), the builder's and UNRULED,** and what lies beyond
+      it: at a lag of 3 or more a still player can be carried past the MARGIN (from 3 at lag 4, rests 0.379 from the
+      feet), not past the origin.
+    - **A jumping player barely dragged while airborne, UNRULED** (the air gain 0.00195, a twentieth of stone's).
+    - **Two drags inside one margin, UNRULED** (DS1R7: X's drag carried him 0.402 from Y's feet).
+    - **The fixture's drag on a mob, and the dropped-mid-drag cases, UNREAD on a server.**
 
 ## QUESTIONS FOR BEN
 
