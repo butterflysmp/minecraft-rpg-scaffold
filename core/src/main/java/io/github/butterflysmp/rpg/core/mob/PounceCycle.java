@@ -13,13 +13,13 @@ import java.util.OptionalDouble;
  *       inside it) but may not begin a wind-up. It becomes HOLD the first tick the period has run since the last wind-up
  *       began (or since the loop began).</li>
  *   <li><b>HOLD</b>: as RECOVER, and a wind-up begins the first tick the target is in the band. <b>THE CANNOT-REACH
- *       RULE</b> (the seat's ruling, 2026-11-17, after THE BAND EDGE; CHOSEN, put to Ben): a pair that stays in HOLD with
- *       its AI and a target (one within the acquire range: paper passes no distance for any other) but outside the band
- *       for a full {@code periodTicks} winds up from WHERE IT STANDS, at whatever distance, on the tick that completes
- *       the wait. HOLD begins {@code periodTicks} after the last wind-up began, so a pair that never reaches the band
- *       winds up every 2 x {@code periodTicks} (240). A tick in HOLD with no target or no AI starts the wait again; a
- *       wall, a pit, a body too slow or a pathfinder that stops short (the mount's stop exceeds the band's half-width on
- *       a diagonal) all end here instead of waiting forever.</li>
+ *       RULE</b> (the seat's ruling, 2026-11-17, after THE BAND EDGE; CHOSEN, put to Ben), for terrain that truly bars
+ *       the band: a pair with its AI and a target (one within the acquire range: paper passes no distance for any other)
+ *       that is outside the band and has not come {@link MobPounce#PROGRESS_BLOCKS} nearer the band ({@link
+ *       MobPounce#bandGap}) for a full {@code periodTicks} is not getting there; once ready (in HOLD) it winds up from
+ *       WHERE IT STANDS. "Cannot reach" is measured by that PROGRESS, not by time outside the band, so a pair walking to
+ *       its band in good faith never counts (the seat's second diff). A tick in the band, with no target or with no AI
+ *       starts the wait again, and so does a wind-up. A pair stuck from its first tick winds up on its 121st.</li>
  *   <li><b>WINDUP</b>: rooted. Begun on tick 0; ROOT on ticks 1 to {@code windupTicks - 1}; the LAUNCH on tick
  *       {@code windupTicks}. <b>Once begun it always leaps</b>: the target leaving the band, dying or vanishing changes
  *       nothing, because the aim was fixed when it began (the Knell's beam fires along its locked line the same way).</li>
@@ -62,8 +62,9 @@ public final class PounceCycle {
     private int sinceWindup;
     private boolean left;
     private boolean forced;
-    /** HOLD ticks in a row with AI and a target and outside the band: the cannot-reach rule's wait. */
-    private int stranded;
+    /** The cannot-reach rule: the smallest band gap since its wait last started, and the ticks since it last improved. */
+    private double bestGap = Double.POSITIVE_INFINITY;
+    private int stuck;
 
     public PounceCycle(MobPounce pounce) {
         this.pounce = pounce;
@@ -109,22 +110,31 @@ public final class PounceCycle {
             default -> {
                 if (stage == Stage.RECOVER && sinceWindup >= pounce.periodTicks()) stage = Stage.HOLD;
                 boolean inBand = distance.isPresent() && pounce.inBand(distance.getAsDouble());
-                // THE CANNOT-REACH RULE: ready, able, a target, and still outside the band. The first such tick reads 0;
-                // the tick that reads a full period winds up from where it stands. Anything else starts it again.
-                boolean cannotReach = false;
-                if (stage == Stage.HOLD && canAct && distance.isPresent() && !inBand) {
-                    cannotReach = stranded >= pounce.periodTicks();
-                    stranded++;
+                // THE CANNOT-REACH RULE, MEASURED BY PROGRESS: with its AI and a target, outside the band, each tick either
+                // comes PROGRESS_BLOCKS nearer the band than its best (the wait starts again) or does not (one more tick
+                // of the wait). In the band, no target or no AI: no wait. It winds up, ready, after a full period of it.
+                if (canAct && distance.isPresent() && !inBand) {
+                    double gap = pounce.bandGap(distance.getAsDouble());
+                    if (gap <= bestGap - MobPounce.PROGRESS_BLOCKS) {
+                        bestGap = gap;
+                        stuck = 0;
+                    } else {
+                        stuck++;
+                    }
                 } else {
-                    stranded = 0;
+                    bestGap = Double.POSITIVE_INFINITY;
+                    stuck = 0;
                 }
+                boolean cannotReach = stuck >= pounce.periodTicks();
                 if (forced || (stage == Stage.HOLD && canAct && (inBand || cannotReach))) {
                     forced = false;
                     stage = Stage.WINDUP;
                     inStage = 0;
-                    // stranded needs no reset here: the next tick in this branch is RECOVER's, which resets it (MUTSTRANDBEGIN,
-                    // a reset here, survived every row: it was a second copy of that one).
                     sinceWindup = 0;
+                    // Its best gap is forgotten here: a pair that lands outside its band has a target and its AI, so nothing
+                    // else would. The first tick after the landing then sets a new best and zeroes stuck (a reset of stuck
+                    // here too, MUTBEGINSTUCK, survived every row: it was a second copy of that one).
+                    bestGap = Double.POSITIVE_INFINITY;
                     return Step.BEGIN;
                 }
                 if (!canAct || distance.isEmpty() || inBand) return Step.STAND;

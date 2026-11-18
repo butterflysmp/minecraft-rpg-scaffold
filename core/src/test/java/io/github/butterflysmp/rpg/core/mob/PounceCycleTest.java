@@ -59,7 +59,8 @@ class PounceCycleTest {
     @Test
     void readyButOutOfTheBandItHoldsAndBeginsTheTickTheTargetIsInIt() {
         PounceCycle c = new PounceCycle(MobPounceTest.pounce());
-        run(c, 200, true, at(20), true);
+        // Walking in from 40 at 0.1 a tick (a block every 10 ticks: progress, so the cannot-reach rule never counts).
+        for (int k = 1; k <= 200; k++) c.tick(true, at(40 - 0.1 * k), true);
         assertEquals(PounceCycle.Stage.HOLD, c.stage(), "the clock ran out while it was still closing in");
         assertEquals(PounceCycle.Step.CLOSE_IN, c.tick(true, at(13), true));
         assertEquals(PounceCycle.Step.BEGIN, c.tick(true, at(12), true));
@@ -153,55 +154,108 @@ class PounceCycleTest {
 
     /**
      * THE DEFECT, REPRODUCED. PS6's mount parked at 12.4459 (the old goal, the far edge, overshot): no wind-up in the band
-     * EVER; only the cannot-reach rule's, from where it stands, at 240. With the new goal it parks at 10.4459 and winds
-     * up on the 120th tick.
+     * EVER; only the cannot-reach rule's, from where it stands, at 121 (it has made no progress toward the band since its
+     * first tick). With the new goal it parks at 10.4459 and winds up on the 120th tick.
      */
     @Test
     void parkedWherePs6ParkedItNeverWindsUpInTheBandAndAtTheNewGoalItDoesAtOneTwenty() {
         PounceCycle old = new PounceCycle(MobPounceTest.pounce());
-        assertEquals(List.of(240), begins(old, 240, true, at(12.4459)), "only the cannot-reach wind-up, at 240");
+        assertEquals(List.of(121), begins(old, 240, true, at(12.4459)), "only the cannot-reach wind-up");
         PounceCycle fixed = new PounceCycle(MobPounceTest.pounce());
         assertEquals(List.of(120), begins(fixed, 120, true, at(10.4459)));
     }
 
     /**
-     * THE CANNOT-REACH RULE (the seat's ruling; CHOSEN, for Ben): a pair that has been ready a full period (120 ticks)
-     * with a target in its acquire range and still not in the band winds up from where it stands. Ready at 120, so the
-     * wind-up is at 240 after the loop began, or 240 after the last wind-up began. At 20, at 5 (too near, a wall at its
-     * back), at 31.
+     * THE CANNOT-REACH RULE (the seat's ruling; CHOSEN, for Ben), MEASURED BY PROGRESS (the seat's second diff): a pair
+     * with its AI and a target, outside the band, that has not come {@link MobPounce#PROGRESS_BLOCKS} (1) nearer the band
+     * for a full period (120 ticks), and is ready, winds up from where it stands. A pair stuck from its first tick: its
+     * first tick sets its best, so the 121st is the one that has waited 120. At 20, at 5 (a wall at its back), at 31.
      */
     @Test
-    void aPairThatCannotReachTheBandWindsUpFromWhereItStandsAPeriodAfterItWasReady() {
+    void aPairThatMakesNoProgressTowardTheBandForAPeriodWindsUpFromWhereItStands() {
         for (double d : new double[] {20, 5, 31}) {
             PounceCycle c = new PounceCycle(MobPounceTest.pounce());
-            List<PounceCycle.Step> waiting = run(c, 239, true, at(d), true);
+            List<PounceCycle.Step> waiting = run(c, 120, true, at(d), true);
             assertTrue(waiting.stream().allMatch(s -> s == PounceCycle.Step.CLOSE_IN), d + ": " + waiting.stream().distinct().toList());
-            assertEquals(PounceCycle.Step.BEGIN, c.tick(true, at(d), true), d + ": tick 240");
+            assertEquals(PounceCycle.Step.BEGIN, c.tick(true, at(d), true), d + ": tick 121");
         }
     }
 
-    /** The wait is a full period of READY ticks with a target: a tick with no target, or no AI, starts it again. */
+    /**
+     * ITS WAIT NEVER COUNTS WHILE THE PAIR WALKS TO THE BAND IN GOOD FAITH. From 40, closing 0.05 a tick (a block every 20
+     * ticks, far slower than a walking mount): no wind-up until it is in the band, and that one is the band's.
+     */
+    @Test
+    void aPairWalkingToTheBandInGoodFaithNeverTriggersIt() {
+        PounceCycle c = new PounceCycle(MobPounceTest.pounce());
+        int first = -1;
+        double at = 0;
+        for (int k = 1; k <= 1000 && first < 0; k++) {
+            double d = 40 - 0.05 * k;
+            if (c.tick(true, at(d), true) == PounceCycle.Step.BEGIN) {
+                first = k;
+                at = d;
+            }
+        }
+        assertTrue(first > 0 && at <= 12 && at >= 8, "its first wind-up is in the band: tick " + first + " at " + at);
+    }
+
+    /**
+     * A PAIR THAT STALLS: from 30, closing 0.125 a tick to 14, then held there (a wall 2 short of the band). Its best gap
+     * last came a whole block nearer on tick 121 (the gap 2.875); 120 ticks without another, it winds up, on tick 241.
+     */
+    @Test
+    void aPairThatStallsShortOfTheBandWindsUpAPeriodAfterItsLastProgress() {
+        PounceCycle c = new PounceCycle(MobPounceTest.pounce());
+        List<Integer> begun = new ArrayList<>();
+        for (int k = 1; k <= 400; k++) {
+            double d = Math.max(14, 30 - 0.125 * k);
+            if (c.tick(true, at(d), true) == PounceCycle.Step.BEGIN) begun.add(k);
+            if (!begun.isEmpty()) break;
+        }
+        assertEquals(List.of(241), begun);
+    }
+
+    /** The wait starts again on a tick with no target or no AI; a frozen pair never winds up. */
     @Test
     void theCannotReachWaitStartsAgainWhenTheTargetIsLostOrTheAiIsOff() {
         PounceCycle c = new PounceCycle(MobPounceTest.pounce());
-        run(c, 200, true, at(20), true);                            // ready from 120: 80 ticks waited
+        run(c, 100, true, at(20), true);                            // 99 ticks without progress
         assertEquals(PounceCycle.Step.STAND, c.tick(true, NONE, true));
         assertEquals(List.of(121), begins(c, 121, true, at(20)), "a full period again after the lost target");
         PounceCycle f = new PounceCycle(MobPounceTest.pounce());
-        run(f, 200, true, at(20), true);
+        run(f, 100, true, at(20), true);
         f.tick(false, at(20), true);
         assertEquals(List.of(121), begins(f, 121, true, at(20)), "and after a tick with no AI");
         PounceCycle frozen = new PounceCycle(MobPounceTest.pounce());
         assertEquals(List.of(), begins(frozen, 1000, false, at(20)), "a frozen pair never");
     }
 
-    /** After a wind-up the clock is the period from ITS start: ready 120 after it began, stranded wind-up 240 after. */
+    /**
+     * After a wind-up its wait starts afresh: a pair that lands 20 out on its tick 26 sets its best on 27, and waits a
+     * period from there, on 147 after the begin (ready since 120): the 121st tick after the landing.
+     */
     @Test
-    void afterAWindUpTheNextStrandedOneIsTwoFortyAfterItBegan() {
+    void afterAWindUpTheWaitStartsAfreshFromTheLanding() {
         PounceCycle c = leaping();                                   // began at its tick 0, launched at 20
         run(c, 5, true, at(20), false);                              // 21..25 in the air
         assertEquals(PounceCycle.Step.LANDED, c.tick(true, at(20), true));   // 26
-        assertEquals(List.of(214), begins(c, 214, true, at(20)), "26 + 214 = 240 after the begin");
+        assertEquals(List.of(121), begins(c, 214, true, at(20)), "26 + 121 = 147 after the begin");
+    }
+
+    /**
+     * A wind-up starts the wait afresh even when the pair was stuck before it: one that wound up by the cannot-reach rule
+     * at 20 and lands at 20 again waits a full period from its landing (the 121st tick after it), not the 94th, when it is
+     * ready.
+     */
+    @Test
+    void aCannotReachWindUpStartsTheWaitAfresh() {
+        PounceCycle c = new PounceCycle(MobPounceTest.pounce());
+        assertEquals(List.of(121), begins(c, 121, true, at(20)));
+        run(c, 20, true, at(20), true);                              // 19 ROOT, then the LAUNCH
+        run(c, 5, true, at(20), false);                              // in the air
+        assertEquals(PounceCycle.Step.LANDED, c.tick(true, at(20), true));
+        assertEquals(List.of(121), begins(c, 121, true, at(20)));
     }
 
     /** A pair inside the band holds; nearer than it, it moves out (the same CLOSE_IN, to the middle). */

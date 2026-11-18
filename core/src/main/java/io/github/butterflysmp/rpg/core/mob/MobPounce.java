@@ -116,9 +116,10 @@ public record MobPounce(double acquireRange, double bandNear, double bandFar, do
     }
 
     /**
-     * Where the pair paths to when it is outside the band, nearer or farther: the point {@link #standOffDistance} from
-     * the target's feet, horizontally, toward the mount, at the target's height. A mount straight above or below the
-     * target has no axis; +x is taken.
+     * The IDEAL point for a pair outside the band, nearer or farther: {@link #standOffDistance} from the target's feet,
+     * horizontally, toward the mount, at the target's height. A mount straight above or below the target has no axis; +x
+     * is taken. The pair is never sent here as it stands: {@link #goal} picks the block near it that the pathfinder's
+     * stopping rule cannot leave outside the band.
      */
     public Vec3 standOff(Vec3 targetFeet, Vec3 mountFeet) {
         double r = standOffDistance();
@@ -127,6 +128,88 @@ public record MobPounce(double acquireRange, double bandNear, double bandFar, do
         double h = Math.hypot(dx, dz);
         if (h == 0) return new Vec3(targetFeet.x() + r, targetFeet.y(), targetFeet.z());
         return new Vec3(targetFeet.x() + dx / h * r, targetFeet.y(), targetFeet.z() + dz / h * r);
+    }
+
+    /**
+     * THE STOPPING RULE'S TOLERANCE, READ ({@code PathNavigation#followThePath}, {@code javap -c -p -cp
+     * run/versions/26.1.2/paper-26.1.2.jar net.minecraft.world.entity.ai.navigation.PathNavigation}): BLOCKS, how near a
+     * node's block centre a mob of this width must be, on x and on z, to have reached it. Width / 2 over 0.75 wide, else
+     * 0.75 - width / 2. The mount (a spider, 1.4 wide, at scale 1.5): 1.05.
+     */
+    public static double waypointTolerance(double width) {
+        return width > 0.75 ? width / 2 : 0.75 - width / 2;
+    }
+
+    /**
+     * THE STOPPING RULE, READ: a path to {@code goal} is done for a mob at {@code at} when it is under {@code tolerance}
+     * from the goal BLOCK's centre on x and on z, and under 1 from the block's floor on y. Paper's {@code moveTo(Location)}
+     * builds the path with {@code createPath(x, y, z, 0)}, to the goal's own block, and the last node is never passed early
+     * ({@code shouldTargetNextNodeInDirection} returns false on it).
+     */
+    public static boolean pathDone(Vec3 at, Vec3 goal, double tolerance) {
+        return Math.abs(at.x() - (Math.floor(goal.x()) + 0.5)) < tolerance
+                && Math.abs(at.z() - (Math.floor(goal.z()) + 0.5)) < tolerance
+                && Math.abs(at.y() - Math.floor(goal.y())) < 1;
+    }
+
+    /** BLOCKS outside the band a feet-to-feet distance is: near - d below it, d - far above it, 0 inside. */
+    public double bandGap(double distance) {
+        if (distance < bandNear) return bandNear - distance;
+        if (distance > bandFar) return distance - bandFar;
+        return 0;
+    }
+
+    /**
+     * BLOCKS nearer the band a pair must come for its walk to count as progress (the cannot-reach rule, {@link PounceCycle}).
+     * CHOSEN: one block; a walking mount covers it in about two ticks (PS3 read 0.65 a tick), so only a pair that is not
+     * getting there goes a whole period without it.
+     */
+    public static final double PROGRESS_BLOCKS = 1.0;
+
+    /**
+     * BLOCKS, CHOSEN: the band is required to hold the goal block's stopping box GROWN by this on every side, for what the
+     * model does not see (a path's nodes are not a straight line; a mob slides on after its path ends).
+     */
+    public static final double GOAL_MARGIN = 0.25;
+
+    /**
+     * WHERE THE PAIR WALKS WHEN IT IS OUTSIDE ITS BAND (the seat's ruling after its second diff: the pair must come to rest
+     * inside the band from ANY bearing). The ideal point is {@link #standOff}, the band's middle along the target-to-mount
+     * line; but the pathfinder walks to a BLOCK and stops anywhere under {@code tolerance} from its centre on each axis
+     * ({@link #pathDone}), so the middle's own block can leave the mount stopped outside the band on a diagonal (1.55 x
+     * sqrt 2 = 2.19 against the band's half-width of 2). So this chooses, among the blocks within 3 of the ideal point's,
+     * the one nearest the ideal point whose stopping box, grown by {@link #GOAL_MARGIN}, lies wholly inside the band
+     * (horizontally, on open ground). Then the walk crosses into the band before its path can end, and the cycle stands it
+     * there; and a path that did end would end inside the band. Returns that block's centre at the target's height; the
+     * ideal point's block when no block qualifies (a band too narrow for the body: none at the shipped numbers, the sweep
+     * in MobPounceTest).
+     */
+    public Vec3 goal(Vec3 targetFeet, Vec3 mountFeet, double tolerance) {
+        Vec3 ideal = standOff(targetFeet, mountFeet);
+        int ix = (int) Math.floor(ideal.x());
+        int iz = (int) Math.floor(ideal.z());
+        double h = tolerance + GOAL_MARGIN;
+        double bestX = ix + 0.5;
+        double bestZ = iz + 0.5;
+        double best = Double.POSITIVE_INFINITY;
+        for (int bx = ix - 3; bx <= ix + 3; bx++) {
+            for (int bz = iz - 3; bz <= iz + 3; bz++) {
+                double cx = bx + 0.5;
+                double cz = bz + 0.5;
+                double ax = Math.abs(cx - targetFeet.x());
+                double az = Math.abs(cz - targetFeet.z());
+                double farthest = Math.hypot(ax + h, az + h);
+                double nearest = Math.hypot(Math.max(ax - h, 0), Math.max(az - h, 0));
+                if (farthest > bandFar || nearest < bandNear) continue;
+                double off = Math.hypot(cx - ideal.x(), cz - ideal.z());
+                if (off < best) {
+                    best = off;
+                    bestX = cx;
+                    bestZ = cz;
+                }
+            }
+        }
+        return new Vec3(bestX, targetFeet.y(), bestZ);
     }
 
     /** What the landing deals BEFORE the victim's defence: the authored damage, priced as every custom mob's hit is. */

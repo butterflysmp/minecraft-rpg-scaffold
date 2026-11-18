@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.core.mob;
 import io.github.butterflysmp.rpg.core.Vec3;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -183,6 +184,182 @@ class MobPounceTest {
         assertTrue(halfWidth < diagonal, "on a diagonal it does not: " + diagonal);
         // The rider alone (a wither skeleton, 0.7 wide, READ: EntityType) would stop under 0.9 on an axis.
         assertEquals(0.9, (0.7 > 0.75 ? 0.35 : 0.75 - 0.35) + 0.5, EPS);
+    }
+
+    // --- the pair ends INSIDE its band from any bearing (step R8, the seat's ruling after its second diff) -----------
+
+    /** The mount: a spider (1.4 wide, READ: EntityType) at scale 1.5. */
+    private static final double MOUNT_WIDTH = 1.4 * 1.5;
+
+    /**
+     * THE STOPPING RULE, READ, AS PURE FUNCTIONS: {@code PathNavigation#followThePath}'s tolerance (width / 2 over 0.75
+     * wide, else 0.75 - width / 2), and a path to a goal done when the mob is under it from the goal BLOCK's centre on x
+     * and on z, and under 1 from the block's floor on y.
+     */
+    @Test
+    void theStoppingRuleIsPerAxisFromTheGoalBlocksCentre() {
+        assertEquals(1.05, MobPounce.waypointTolerance(MOUNT_WIDTH), EPS);
+        assertEquals(0.4, MobPounce.waypointTolerance(0.7), EPS, "a wither skeleton: 0.75 - 0.35");
+        Vec3 goal = new Vec3(10.2, 64, 3.9);                                  // its block's centre is (10.5, 3.5)
+        assertTrue(MobPounce.pathDone(new Vec3(11.54, 64, 4.54), goal, 1.05), "1.04 off on both axes: done");
+        assertTrue(!MobPounce.pathDone(new Vec3(11.55, 64, 3.5), goal, 1.05), "1.05 off on x: not yet (strictly under)");
+        assertTrue(!MobPounce.pathDone(new Vec3(10.5, 65, 3.5), goal, 1.05), "a block up: not done");
+    }
+
+    /** How far a walking mount moves in a tick and slides after it stops (the sweep's two allowances). */
+    private static final double STEP = 0.65;
+    private static final double SLIDE = STEP * 0.546 / (1 - 0.546);
+
+    /**
+     * WHERE THE PAIR COMES TO REST, walking from {@code start} at the goal the pair chooses, along the straight line to
+     * the goal block's centre (open ground). The cycle stands it the tick it is in the band, so it rests where it first
+     * enters the band plus up to a tick's walk and a slide; or, if its path ends first (inside the goal's box), there plus
+     * a slide. STEP is READ from PS3 at 45bc33ce (the mount moved 7.2 blocks in the 11 ticks after its landing: 0.65 a
+     * tick); the slide is that speed carried under ground friction 0.6 x 0.91f (the 0.91f READ in
+     * {@code LivingEntity#travelInAir}; the 0.6, a block's default friction, INFERRED), v x f / (1 - f) = 0.78. This model
+     * gives about 12.27 for the OLD goal on PS6's axis (read: 12.4459). Returns the {min, max} distance at rest.
+     */
+    private static double[] rest(MobPounce p, Vec3 target, Vec3 start) {
+        double tol = MobPounce.waypointTolerance(MOUNT_WIDTH);
+        Vec3 goal = p.goal(target, start, tol);
+        Vec3 c = new Vec3(Math.floor(goal.x()) + 0.5, goal.y(), Math.floor(goal.z()) + 0.5);
+        double dx = c.x() - start.x();
+        double dz = c.z() - start.z();
+        double len = Math.hypot(dx, dz);
+        double ux = len == 0 ? 0 : dx / len;
+        double uz = len == 0 ? 0 : dz / len;
+        double ds = 0.005;
+        double cross = -1;
+        double box = -1;
+        for (double s = 0; s <= len + 3; s += ds) {
+            Vec3 at = new Vec3(start.x() + ux * s, start.y(), start.z() + uz * s);
+            if (cross < 0 && p.inBand(dist(at, target))) cross = s;
+            if (box < 0 && MobPounce.pathDone(at, goal, tol)) box = s;
+            if (cross >= 0 && box >= 0) break;
+        }
+        double from;
+        double to;
+        if (cross >= 0 && (box < 0 || cross <= box)) {
+            from = cross;
+            to = cross == 0 ? 0 : (box < 0 ? cross + STEP + SLIDE : Math.min(cross + STEP + SLIDE, box + SLIDE));
+        } else {
+            from = box;
+            to = box + SLIDE;
+        }
+        double min = Double.MAX_VALUE;
+        double max = 0;
+        for (double s = from; s <= to + 1e-9; s += ds) {
+            double d = dist(new Vec3(start.x() + ux * s, start.y(), start.z() + uz * s), target);
+            min = Math.min(min, d);
+            max = Math.max(max, d);
+        }
+        return new double[] {min, max};
+    }
+
+    private static double dist(Vec3 a, Vec3 b) {
+        return Math.hypot(a.x() - b.x(), a.z() - b.z());
+    }
+
+    /**
+     * THE PROPERTY THE SEAT RULED: from any bearing (every 5 degrees) and any start distance within the acquire range,
+     * inside and outside the band, for a target on a whole block and at fractional positions, the pair comes to rest
+     * INSIDE 8 to 12. {@link MobPounce#goal} chooses the goal block so that its stopping box lies in the band, so the walk
+     * crosses into the band before its path can end.
+     */
+    @Test
+    void fromEveryBearingAndDistanceThePairRestsInsideTheBand() {
+        MobPounce p = pounce();
+        double worstMin = Double.MAX_VALUE;
+        double worstMax = 0;
+        String worstAt = "";
+        List<String> outside = new ArrayList<>();
+        int cases = 0;
+        for (Vec3 t : TARGETS) {
+            for (int deg = 0; deg < 360; deg += 5) {
+                double a = Math.toRadians(deg);
+                for (double r : STARTS) {
+                    Vec3 start = new Vec3(t.x() + Math.cos(a) * r, 64, t.z() + Math.sin(a) * r);
+                    double[] mm = rest(p, t, start);
+                    cases++;
+                    if (mm[0] < worstMin || mm[1] > worstMax) worstAt = t + " " + deg + " deg from " + r;
+                    worstMin = Math.min(worstMin, mm[0]);
+                    worstMax = Math.max(worstMax, mm[1]);
+                    if (mm[0] < p.bandNear() || mm[1] > p.bandFar()) {
+                        outside.add(String.format(java.util.Locale.ROOT, "%s %d deg from %s: %.4f to %.4f", t, deg, r, mm[0], mm[1]));
+                    }
+                }
+            }
+        }
+        System.out.printf("SWEEP cases=%d rest min=%.4f max=%.4f worst at %s%n", cases, worstMin, worstMax, worstAt);
+        assertEquals(4 * 72 * 12, cases);
+        assertEquals(List.of(), outside.stream().limit(6).toList(), outside.size() + " of " + cases + " rest outside the band");
+    }
+
+    /** The targets the sweep stands at: on a whole block's corner, at a block centre, and at two fractional points. */
+    private static final List<Vec3> TARGETS = List.of(new Vec3(0, 64, 0), new Vec3(0.5, 64, 0.5), new Vec3(0.3, 64, 0.77),
+            new Vec3(-7.91, 64, 12.12));
+
+    /** The start distances: inside the near edge, inside the band, and out to the acquire range. */
+    private static final double[] STARTS = {0.5, 3, 6, 7.9, 9, 11, 12.1, 12.5, 14, 18, 24, 31.9};
+
+    /**
+     * And the reason it holds: in every one of those cases the chosen block's stopping box, grown by the margin, lies
+     * inside the band, so the fallback (the ideal point's own block) is never taken. Also: how far the chosen block's
+     * centre lies from the ideal point, the price of the choice (the pair circles a little off its bearing).
+     */
+    @Test
+    void inEverySweptCaseTheChosenBlocksStoppingBoxLiesInsideTheBand() {
+        MobPounce p = pounce();
+        double tol = MobPounce.waypointTolerance(MOUNT_WIDTH);
+        double h = tol + MobPounce.GOAL_MARGIN;
+        double worstOff = 0;
+        for (Vec3 t : TARGETS) {
+            for (int deg = 0; deg < 360; deg += 5) {
+                double a = Math.toRadians(deg);
+                for (double r : STARTS) {
+                    Vec3 start = new Vec3(t.x() + Math.cos(a) * r, 64, t.z() + Math.sin(a) * r);
+                    Vec3 g = p.goal(t, start, tol);
+                    double ax = Math.abs(g.x() - t.x());
+                    double az = Math.abs(g.z() - t.z());
+                    assertTrue(Math.hypot(ax + h, az + h) <= p.bandFar()
+                            && Math.hypot(Math.max(ax - h, 0), Math.max(az - h, 0)) >= p.bandNear(), "a qualifying block: " + g);
+                    worstOff = Math.max(worstOff, dist(g, p.standOff(t, start)));
+                }
+            }
+        }
+        System.out.printf("GOAL at most %.4f from the ideal point%n", worstOff);
+        assertTrue(worstOff < 4, "within the 3-block search round the ideal point's block: " + worstOff);
+    }
+
+    /**
+     * THE DEFECT, IN THE MODEL: the OLD goal (the far edge, 12, the ideal point's block) rests OUTSIDE the band from PS6's
+     * axis, about 12.27 against the read 12.4459; the model is not kinder than the server.
+     */
+    @Test
+    void theOldFarEdgeGoalRestsOutsideTheBandInTheModel() {
+        MobPounce old = pounce();
+        double tol = MobPounce.waypointTolerance(MOUNT_WIDTH);
+        // The far edge's block on +x from a target at a block centre: (12.5, z) centre; the walk from 20 east enters its
+        // box at x = 12.5 + 1.05 = 13.55, 13.05 from him, and slides 0.78: about 12.27, outside.
+        Vec3 t = new Vec3(0.5, 64, 0.5);
+        Vec3 goal = new Vec3(12.5, 64, 0.5);
+        double entry = 0;
+        for (double x = 20.5; x > 0; x -= 0.005) {
+            if (MobPounce.pathDone(new Vec3(x, 64, 0.5), goal, tol)) { entry = x; break; }
+        }
+        double restAt = entry - SLIDE - t.x();
+        assertTrue(restAt > old.bandFar(), "the old goal rests at " + restAt);
+    }
+
+    /** The band's gap: how far outside 8 to 12 a distance is; 0 inside. The cannot-reach rule measures progress by it. */
+    @Test
+    void theBandGapIsTheDistanceOutsideTheBand() {
+        MobPounce p = pounce();
+        assertEquals(0.0, p.bandGap(10), EPS);
+        assertEquals(0.0, p.bandGap(8), EPS);
+        assertEquals(0.0, p.bandGap(12), EPS);
+        assertEquals(3.0, p.bandGap(5), EPS);
+        assertEquals(0.4459, p.bandGap(12.4459), 1e-12);
     }
 
     // --- the landing: who it reaches --------------------------------------------------------------------------------
