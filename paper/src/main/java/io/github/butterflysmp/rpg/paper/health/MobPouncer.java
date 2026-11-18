@@ -341,7 +341,7 @@ public final class MobPouncer {
         switch (s) {
             case STAND -> mount.getPathfinder().stopPathfinding();
             case CLOSE_IN -> {
-                Vec3 to = p.pounce.standOff(vec(target.getLocation()), feet);
+                Vec3 to = p.pounce.goal(vec(target.getLocation()), feet, MobPounce.waypointTolerance(mount.getWidth()));
                 mount.getPathfinder().moveTo(new Location(mount.getWorld(), to.x(), to.y(), to.z()), p.pounce.pathSpeed());
             }
             case BEGIN -> begin(p, forced, target, feet);

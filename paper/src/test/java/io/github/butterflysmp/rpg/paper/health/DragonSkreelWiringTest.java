@@ -111,6 +111,23 @@ class DragonSkreelWiringTest {
         assertTrue(indexAfter(code, stop, "paired.remove(p.rider.getUniqueId());") == stop + 3, "and released at its end");
     }
 
+    /**
+     * THE PAIR ENDS IN ITS BAND FROM ANY BEARING (step R8, the seat's ruling after its second diff): every tick it is
+     * outside the band (CLOSE_IN), its goal is recomputed from where he stands NOW by {@code MobPounce.goal}, with the
+     * stopping tolerance of the mount's own width, and handed to the pathfinder. Never the bare stand-off point.
+     */
+    @Test
+    void outsideTheBandEveryTickItPathsToTheBlockWhoseStopLiesInTheBand() throws IOException {
+        List<String> code = file("health", "MobPouncer.java");
+        int c = indexOf(code, "case CLOSE_IN -> {");
+        assertTrue(c > 0 && code.get(c + 1).trim().equals(
+                "Vec3 to = p.pounce.goal(vec(target.getLocation()), feet, MobPounce.waypointTolerance(mount.getWidth()));"),
+                "the goal, from his feet now and the mount's width: " + c);
+        assertTrue(code.get(c + 2).contains("mount.getPathfinder().moveTo(new Location(mount.getWorld(), to.x(), to.y(), to.z()), p.pounce.pathSpeed());"),
+                "handed to the pathfinder the same tick");
+        assertTrue(code.stream().noneMatch(l -> l.contains(".standOff(")), "the bare stand-off point is never a goal");
+    }
+
     // --- the hit: the shared final call and the blast's push ------------------------------------------------------------
 
     @Test
