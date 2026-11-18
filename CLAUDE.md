@@ -158,6 +158,7 @@ so it is greppable** — and none of them is reproduced here, because two accoun
 | **THE CREATIVE-DIVERGENCE REGISTER — THE BENCH IS NOT THE GAME** | you are writing or reading a `GATE-*.md` at all: R0, the declared game mode, the standing debt |
 | **THREE THINGS THAT DO NOT ANNOUNCE THEIR OWN ABSENCE** | a planned guard silently failed to land, or a comment names a hazard and is being read as a guard against it |
 | **AN AUTO READING IS A READING OF THE SERVER, NEVER OF THE CLIENT** | a row was read by `/rpg selftest`, or you are amending a gate's witness so that it can be |
+| **PREDICT DAMAGE AGAINST THE HURT LINE, NEVER AGAINST A HEALTH FIGURE THAT REGENERATION CAN MOVE** | a gate row predicts what a hit does to a player |
 
 **MERGING, DELETING A BRANCH, OR WRITING A SQUASH BODY: `.claude/skills/merge-procedure`.**
 `git branch --merged` prints NOTHING for a fully merged branch here and two-dot `git diff` inverts

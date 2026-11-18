@@ -314,7 +314,9 @@ the fuse length (vanilla 1.5 seconds), the blast radius (vanilla 3), and the dam
     (`GATE-dragon-fix.md`, D4). **§4.2 N4's "replace the goal" is NOT built.** What that defers: the trigger and cancel
     distances are vanilla LITERALS, so they cannot be tuned, per stage or at all, until the goal is replaced; nor do
     they follow the Phage's scale. **Ben's "Yes but I might change my mind in testing" (F) is the ruling that would
-    reopen it.**
+    reopen it.** **SUPERSEDED 2026-11-17** by Ben's side note asking that the Phage's size scale its fuse radius
+    (RULINGS, *the Knell's slab bug, and a void explosion that pulls*): N4 is REOPENED. Its build STOPPED at the jar
+    (*PART C STOPPED AT THE JAR*), so vanilla's swell is still the fuse until the seat rules the route.
 21. **The detonation is ours, at the prime.** When one of our creepers' `ExplosionPrimeEvent` fires, the event is still
     cancelled (no vanilla explosion, no block damage, ever), and in its place our detonation runs: damage to the
     victims, an explosion's sight and sound with no block effect, and the Phage **REMOVED WITHOUT A DEATH**. The
@@ -957,6 +959,105 @@ wind-ups, each 120 ticks after the last). The Phalanx's blink at 12 to 24 blocks
 **THE SEAT'S AND OURS, PUT TO BEN AND UNRULED:** the Skreel's K1-K29 choices (`GATE-dragon-skreel.md`, *THE SKREEL,
 INHERITED OR CHOSEN*); the cannot-reach rule, and that a player who outruns the pair triggers it; the Phalanx looking
 out to the re-acquire range, 35, from a landed blink until its next shot.
+
+### Ben, 2026-11-17, VERBATIM: the Knell's slab bug, and a void explosion that pulls (`feat/void-implosion`)
+
+> "We can fix the knells slab bug, but i also want to add more. A void explosion that pulls things toward the origin
+> with black and dark purple swirling particles. I want this to happen when the phage explodes but I also want to be
+> able to use this shape elsewhere (potential future abilities and weapons)."
+
+*The seat then proposed five points:* (1) the pull REPLACES the blast's outward push; (2) the pull happens at the moment
+of the explosion, not during the fuse; (3) the same 6-block reach, about as strong as the push is today, reversed; (4)
+the Phage's implosion pulls only what it damages, players and later summons, not other mobs; (5) the look replaces the
+vanilla explosion puff: black and dark purple particles spiralling inward over about half a second, with a deep sound.
+**Ben, VERBATIM:**
+
+> "1. Yes, swap the push for the pull. Also side note, can we make the size of the Phage affect the Fuse radius,
+> explosion radius, etc. The Large phage being the current distances and scaling everything down to the small phage.
+> 2. Yes
+> 3. Yes but view 1's answer. A little bit stronger than the push today.
+> 4. Yes
+> 5. Yes"
+
+### THE SEAT'S READINGS OF THAT, 2026-11-17 — PUT TO BEN IN THESE TERMS, MARKED AS THE SEAT'S
+
+- **Distances scale with the stage's HEIGHT over the last stage's** (1/3 at stage 1 to 1 at stage 5): the fuse's trigger
+  1 to 3 blocks, its cancel 2.33 to 7, the blast's and the pull's reach 2 to 6.
+- **"etc." covers distances only**, so the fuse stays 30 ticks and damage stays 60 to 150.
+- **The pull's strength is 1.25 x today's push**: the seat's number for "a little bit stronger".
+- **The pull never carries a victim past the origin** (the seat's rule).
+- The seat also told him **a stage-1 Phage will rarely finish a fuse on a moving player**.
+
+**This REOPENS N4: the seat's R3 ruling 20 (vanilla's swell is the fuse) is SUPERSEDED.** Ruling 20 named Ben's F
+("Yes but I might change my mind in testing") as the ruling that would reopen it; it is Ben's side note above that does.
+
+### PART C STOPPED AT THE JAR, 2026-11-17: THE API CANNOT SHOW A SWELL THAT RESETS AT OUR OWN DISTANCES
+
+The brief: read the jar first; if the API cannot drive the swell so that the CLIENT still shows the swelling and its
+reset, STOP and tell the seat what it can do, before building anything else in Part C. **It cannot, and nothing of Part
+C is built** (no fuse state machine, no per-stage distances; the reach stays 6 at every stage). Every line READ with
+`C:\Users\Neb91\.jdks\openjdk-26.0.1\bin\javap.exe -c -p -cp run/versions/26.1.2/paper-26.1.2.jar <class>`, the API in the
+pinned `paper-api-26.1.2.build.74-stable-sources.jar`:
+
+- **The client animates from the swell DIRECTION, never the swell value** (READ, `net.minecraft.world.entity.monster.
+  Creeper#tick`, `#getSwelling`, `#defineSynchedData`): `DATA_SWELL_DIR` is synched data defaulting to −1; `tick` adds
+  the direction to `swell` each tick (both sides run it), and `getSwelling` interpolates `oldSwell`→`swell`. `swell`
+  itself is a plain field, never synched. **INFERRED:** the client's swell comes only from the direction (and
+  `DATA_IS_IGNITED`, which forces +1 in `tick`).
+- **Only `SwellGoal.tick` ever sets the direction back to −1** (READ, `SwellGoal#tick`): with no target or a dying one,
+  `distanceToSqr > 49.0` (the literal 7), a creative or spectator target, or no line of sight. `Creeper#setSwellDir` is
+  called from `Creeper#tick` (+1 when ignited) and from `SwellGoal` only. `canUse` starts it at `distanceToSqr < 9.0`
+  (the literal 3) or when the direction is already up. Its flags are `MOVE` (`setFlags(EnumSet.of(Flag.MOVE))`) and
+  `start` calls `getNavigation().stop()`: **that is "stands still while fusing"**.
+- **The API has no swell-direction setter** (READ, `org.bukkit.entity.Creeper` source: `setMaxFuseTicks`,
+  `setFuseTicks` (writes `swell`), `setExplosionRadius`, `explode`, `ignite`, `setIgnited`, `isIgnited`;
+  `CraftCreeper`'s bytecode adds nothing else). **`setIgnited(false)` clears `DATA_IS_IGNITED` and leaves the direction
+  at +1** (READ, `Creeper#setIgnited`: it writes `DATA_IS_IGNITED` only), so with vanilla's goal gone a creeper once
+  ignited swells to the end; with it present, the reset happens only at vanilla's 7. **A cancelled prime does not reset
+  the direction either** (READ, `Creeper#explodeCreeper`'s cancelled branch: `swell = 0`, `DATA_IS_IGNITED` false).
+- **What the API DOES offer** (READ, `com.destroystokyo.paper.entity.ai.MobGoals`, `VanillaGoal`, `Goal`):
+  `removeGoal(mob, VanillaGoal.CREEPER_SWELL)`, and `addGoal(mob, priority, Goal)` with a custom goal whose
+  `getTypes()` can claim `MOVE`, which would hold the Phage still exactly as `SwellGoal` does. NMS is not needed for
+  either; **it is the client's swell animation that has no API route.**
+
+**What can be built, put to the seat (none built):**
+
+1. **Our fuse, no client swell.** Remove `CREEPER_SWELL`; a custom `MOVE` goal holds the Phage still and runs core's
+   state machine at our distances; `setFuseTicks` keeps the server's `swell` for anyone reading it; **the client shows
+   no swelling**, so a replacement telegraph (our particles and the `entity.creeper.primed` sound, both API) stands in.
+2. **Our fuse, a client swell sent by packet.** As 1, plus PacketEvents' `WrapperPlayServerEntityMetadata` (the
+   nameplate senders already use it) carrying the creeper's swell-direction index to each viewer, +1 at the start and
+   −1 at the reset, and re-sent to a viewer who starts tracking mid-fuse. The metadata INDEX is a protocol fact
+   (UNVERIFIED, not read) that breaks on protocol changes: CLAUDE.md's invariant 4 allows packets only where the API
+   cannot express the effect, which this is.
+3. **Vanilla's swell kept (3 and 7 at every stage), and only the blast's and the pull's reach scaled by stage.** The
+   reach is ours and needs no swell; the trigger and cancel stay vanilla's literals.
+4. **A one-way swell.** `setIgnited(true)` at our start shows the swell; a reset cannot be shown, and the server's own
+   `tick` keeps swelling unless we rewrite `swell` every tick. Not recommended.
+
+### THE PULL TRAVELS LESS THAN THE PUSH DID — A CONSEQUENCE OF THE SEAT'S RULE, PUT BACK TO THE SEAT (2026-11-17)
+
+Built as briefed: 1.25 x the push's strength, HORIZONTAL (the seat's lean), capped so the modelled slide stops half a
+block short of the Phage. **Executed in jshell** (scratch `push.jsh`, the model only, no player input: the old push
+along the eye direction with vanilla's 0.08 gravity, 0.98f vertical drag, 0.91f air and 0.546f stone friction; the new
+pull horizontal on stone, capped):
+
+| d (blocks) | old push: speed (horizontal, up) | old push: travel | new pull: speed applied | new pull: travel | capped |
+|---|---|---|---|---|---|
+| 1 | 0.438, 0.709 | 4.150 | 0.227000 | 0.500 | yes |
+| 2 | 0.518, 0.420 | 4.121 | 0.681000 | 1.500 | yes |
+| 3 | 0.440, 0.238 | 2.663 | 0.625000 | 1.377 | no |
+| 4 | 0.309, 0.125 | 1.545 | 0.416667 | 0.918 | no |
+| 5 | 0.159, 0.051 | 0.592 | 0.208333 | 0.459 | no |
+
+**The push's lift put the player in the air, where the horizontal drag is 0.91 a tick, not 0.546; the pull, flat and
+capped, slides on the ground.** On stone the cap binds inside d = 2.229995 (bisected in the same jshell). So in TRAVEL the pull is weaker than the
+push at every distance, though 1.25x in STRENGTH. **Ben's "a little bit stronger" is asked by BQ1R3 (ASK 3), and the
+seat should expect a "no".** What would change it is the seat's: a lift (and a cap that models the flight), a larger
+multiplier where the cap does not bind, or a smaller margin.
+
+**THE SEAT'S RULINGS STILL OWED BEFORE ANY BOOT:** Part C's route (1-4 above); the pull's travel against "a little bit
+stronger".
 
 ---
 
@@ -2345,6 +2446,15 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   on a slab) when the move falls due makes every candidate NO_FOOTING, and the Knell does not move. INFERRED from the code,
   never read on a server; the Knell's 13 merged gates staged their targets standing on whole blocks. The fix is the
   blink's (`MobBlink.anchor`), the seat's to schedule.
+  **2026-11-17, `feat/void-implosion`: FIXED, NOT READ.** Reproduced first in core
+  (`BeamTeleportTest.aTargetOnASlabStillGivesALandingOnTheFloorBesideIt`, a target at y + 0.5, and
+  `aTargetMidJumpStillGivesALandingOnTheFloorBelowIt`, at y + 0.83: both found no landing before the fix). Fixed in the
+  ONE shared place, the landing check `BeamTeleport.foot`, which now anchors every column on `BeamTeleport.anchor`
+  (floor(y), with the blink's snap; `MobBlink.anchor` delegates to it), so the teleport and the blink cannot diverge.
+  **Its cost, stated and pinned** (`theCostOfTheAnchorASlabTopIsNeverTried`): a landing on a slab's top, or on any floor
+  whose top is not a whole number, is never tried; a Knell in a field made only of slab tops does not move. The blink's
+  two R3 rows were restated: a fractional anchor can no longer reach the search. `GATE-void-implosion.md` KS1 reads a
+  hit on a player standing on a slab, then a landing.
 - **F20, 2026-11-17, step R8: THE PAIR'S LOOP ASSUMES ITS TWO HALVES SHARE A THREAD.** It runs on the mount's scheduler
   and reads and moves the rider (a passenger) and the landing's victims inline when the region owns them. Correct on Paper;
   on Folia a passenger rides in its vehicle's region (INFERRED), and a victim outside it is struck on its own scheduler,
@@ -2386,7 +2496,8 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   - **CLOSED: THE PROBE LAG (F23),** by DB6R4: both PAIR lines read `stage=RECOVER` before the kill.
   - **STILL CARRIED:**
     - **F19, A DEFECT:** the Knell's teleport anchors its level search on its target's fractional feet, so a target on a
-      slab or mid-jump can fail every landing. First into the next branch that touches the Knell.
+      slab or mid-jump can fail every landing. First into the next branch that touches the Knell. **FIXED 2026-11-17
+      in `feat/void-implosion`, NOT READ** (F19 above; `GATE-void-implosion.md` KS1).
     - **F21:** the blink cooldown is not saved across an unload.
     - **The limits of the band proof:** it is horizontal, on open ground, and its slide is modelled (the 0.6 friction
       INFERRED).
@@ -2396,7 +2507,9 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
     - **The 13 closed manual gates that spawn live dragon mobs.**
     - **A rule owed to `.claude/rules`, where gate predictions are described, in the next branch that touches the
       rules** (the seat, 2026-11-17): predict damage against the HURT line, never a health figure regeneration can
-      move. PS10's and PS11's SELF lines read 302 against a predicted 300, as DB10R2 did on 2026-11-16.
+      move. PS10's and PS11's SELF lines read 302 against a predicted 300, as DB10R2 did on 2026-11-16. **PAID
+      2026-11-17 in `feat/void-implosion`:** `.claude/rules/verification.md`, *PREDICT DAMAGE AGAINST THE HURT LINE*,
+      indexed in `CLAUDE.md`.
 
 ## QUESTIONS FOR BEN
 

@@ -1912,3 +1912,24 @@ is `**PASS**`. A reader sees which instrument read the row without opening the l
 
 **Each of those is a thing a real click does and the instrument does not**, so a row that depends on one is not
 witnessed by the instrument, however clean its lines.
+
+### PREDICT DAMAGE AGAINST THE HURT LINE, NEVER AGAINST A HEALTH FIGURE THAT REGENERATION CAN MOVE
+
+**This is the account. The pointer is `CLAUDE.md`'s VERIFICATION index.** Owed by the seat's ruling of 2026-11-17, at
+the merge of #203; written in `feat/void-implosion`.
+
+**The rule:** a gate row that predicts what a hit does to a PLAYER predicts it in the selftest's `HURT before=<x>
+after=<a> defense=<Dp> …` line, which is written at the hit by the store itself: `before` the damage the hit carried,
+`after` what his defence let through. **Never in a later `SELF customHP=` or `Custom HP:` figure**, and never as a
+difference of two of them: between the hit and the read, survival's natural regeneration (and anything else that heals)
+moves his health, so a health figure answers a question about the hit AND everything since it.
+
+**Missed three times, the same way:**
+
+- **DB10R2, 2026-11-15** (`GATE-dragon-fix.md`): predicted "equal" where it meant "did not fall"; his custom health
+  rose from 166 to 176 over the row, with no damage line. The cause, regeneration, INFERRED.
+- **PS10 and PS11, 2026-11-17** (`GATE-dragon-skreel.md`): their SELF lines read **302** against a predicted **300**.
+
+**What a health figure IS still good for:** the floor a survival row needs (that a heal reached his maximum, read
+from the heal's own `Custom HP: <M>/<M>` reply), and a death that did not happen. **A health figure can witness that he
+is alive. Only the HURT line can witness what the hit did.**
