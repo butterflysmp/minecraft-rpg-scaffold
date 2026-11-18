@@ -154,6 +154,33 @@ class DragonSkreelWiringTest {
         assertTrue(a > 0 && d == a + 1, "the anchor, then the decision from it: " + a + " " + d);
     }
 
+    /**
+     * BEN'S 12-24 BLINK (step R8, after the boot of 45bc33ce): from a blink that LANDS until its next shot, whom the
+     * Phalanx may fire at is measured by {@code MobShot.inChooseRange(…, blinked)}, out to the re-acquire range; its
+     * vanilla target and its own search alike. Set at the landing, beside the cooldown; cleared by the fire.
+     */
+    @Test
+    void aBlinkedPhalanxChoosesOutToTheReacquireRangeUntilItsNextShot() throws IOException {
+        List<String> code = file("health", "MobShooter.java");
+        assertTrue(indexOf(code, "LivingEntity target = choose(mob, o.shot, eye, o.blinked);") > 0, "the attempt passes it");
+        int c = indexOf(code, "private LivingEntity choose(Mob mob, MobShot shot, Vec3 eye, boolean blinked) {");
+        assertTrue(c > 0 && code.get(c + 2).contains("shot.inChooseRange(eye, vec(vanilla.getEyeLocation()), blinked)"),
+                "the vanilla target, by the same range: " + c);
+        int r = indexAfter(code, c, "double r = shot.chooseRange(blinked);");
+        assertTrue(r == c + 5, "the search's radius: " + r);
+        assertTrue(indexAfter(code, r, "shot.inChooseRange(eye, vec(l.getEyeLocation()), blinked)") <= r + 3, "and its test");
+        assertTrue(code.stream().noneMatch(l -> l.contains("inAcquireRange(")), "no fire site left on the bare acquire range");
+        int landed = indexOf(code, "o.cooldown.landed();");
+        assertTrue(code.get(landed + 1).contains("o.blinked = true;"), "set where the cooldown starts: a blink that LANDS");
+        int added = indexOf(code, "o.shots.add(s);");
+        assertTrue(code.get(added + 1).contains("o.blinked = false;"), "cleared by the fire");
+        assertTrue(code.stream().filter(l -> l.contains("o.blinked = ")).count() == 2, "and nowhere else");
+        // The SHOT none line names the range it searched (PB4's second shot reads range=30.0; PNONERANGE survived until
+        // this needle).
+        int none = indexOf(code, "if (forced) adapters.log().info(MobShotLines.none(o.mobId, mob.getUniqueId(), Bukkit.getCurrentTick(),");
+        assertTrue(none > 0 && code.get(none + 1).trim().equals("o.shot.chooseRange(o.blinked)));"), "the none line's range: " + none);
+    }
+
     // --- helpers --------------------------------------------------------------------------------------------------------
 
     private static List<String> file(String... parts) throws IOException {

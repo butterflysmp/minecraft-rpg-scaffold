@@ -140,6 +140,12 @@ public final class MobShooter implements ShotSink {
          * clock starts fresh (X-o's sibling; the seat's to rule if it should persist).
          */
         final MobBlink.Cooldown cooldown;
+        /**
+         * A blink has LANDED since its last shot (step R8): until it fires, it chooses whom to fire at out to the
+         * re-acquire range ({@code MobShot#chooseRange}), because Ben's 24-block blink can leave its trigger past the
+         * acquire range. Live state, as the cooldown is.
+         */
+        boolean blinked;
         Owner(Mob mob, String mobId, MobShot shot, MobBlink blink) {
             this.mob = mob;
             this.mobId = mobId;
@@ -315,25 +321,26 @@ public final class MobShooter implements ShotSink {
     private void attempt(Owner o, boolean forced) {
         Mob mob = o.mob;
         Vec3 eye = vec(mob.getEyeLocation());
-        LivingEntity target = choose(mob, o.shot, eye);
+        LivingEntity target = choose(mob, o.shot, eye, o.blinked);
         if (target == null) {
             if (forced) adapters.log().info(MobShotLines.none(o.mobId, mob.getUniqueId(), Bukkit.getCurrentTick(),
-                    o.shot.acquireRange()));
+                    o.shot.chooseRange(o.blinked)));
             return;
         }
         fire(o, forced, eye, target);
     }
 
-    /** X8: its vanilla target if the predicate names it and it is in range; else the nearest such in range. */
-    private LivingEntity choose(Mob mob, MobShot shot, Vec3 eye) {
+    /** X8: its vanilla target if the predicate names it and it is in range; else the nearest such in range. The range is
+     * the acquire range, or the re-acquire range from a landed blink until the next shot (MobShot#chooseRange, step R8). */
+    private LivingEntity choose(Mob mob, MobShot shot, Vec3 eye, boolean blinked) {
         LivingEntity vanilla = mob.getTarget();
-        if (vanilla != null && eligible(mob, vanilla) && shot.inAcquireRange(eye, vec(vanilla.getEyeLocation()))) {
+        if (vanilla != null && eligible(mob, vanilla) && shot.inChooseRange(eye, vec(vanilla.getEyeLocation()), blinked)) {
             return vanilla;
         }
-        double r = shot.acquireRange();
+        double r = shot.chooseRange(blinked);
         List<LivingEntity> found = new ArrayList<>();
         for (Entity e : mob.getWorld().getNearbyEntities(mob.getEyeLocation(), r, r, r)) {
-            if (e instanceof LivingEntity l && eligible(mob, l) && shot.inAcquireRange(eye, vec(l.getEyeLocation()))) {
+            if (e instanceof LivingEntity l && eligible(mob, l) && shot.inChooseRange(eye, vec(l.getEyeLocation()), blinked)) {
                 found.add(l);
             }
         }
@@ -399,6 +406,7 @@ public final class MobShooter implements ShotSink {
         carrier.addPassenger(s.display);
         shotTeam().addEntry(carrier.getUniqueId().toString());   // C4: it never pushes and is never pushed
         o.shots.add(s);
+        o.blinked = false;   // its first shot after a blink puts it back on the acquire range
         // cfde822: "Firing clears invisibility" (READ, section 3.4), so it may blink again.
         if (mob.isInvisible()) {
             mob.setInvisible(false);
@@ -482,6 +490,7 @@ public final class MobShooter implements ShotSink {
         puff(o.blink, to);
         // THE COOLDOWN STARTS HERE, at a blink that LANDS (forced or not), and nowhere else.
         o.cooldown.landed();
+        o.blinked = true;
         // READ BACK, after the act: where it stands and whether it is invisible, never the decision restated.
         Location now = mob.getLocation();
         adapters.log().info(String.format(java.util.Locale.ROOT,

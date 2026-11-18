@@ -146,7 +146,7 @@ class MobLoaderBlinkTest {
 
     /**
      * The shipped Phalanx: cfde822's blink (X4-X6, Ben left unchanged), the Knell's tolerance, its shield; and since step
-     * R8, Ben's cooldown, "Say 12 seconds": 240 ticks.
+     * R8, Ben's cooldown, "Say 12 seconds": 240 ticks, and his range, "Say 12-24 blocks": near 12, far 24.
      */
     @Test
     void theBundledPhalanxBlinksAndShieldsWithTheRecordsNumbers() throws IOException {
@@ -159,7 +159,7 @@ class MobLoaderBlinkTest {
                         "item.shield.break")::contains, MATERIALS::contains);
         MobDefinition def = l.loadAll(new File(dir.toString())).find("phalanx").orElseThrow();
         assertTrue(warnings.isEmpty(), warningText());
-        assertEquals(new MobBlink(5, 6, 16, 8, 3, List.of(new BeamSound("entity.enderman.teleport", 1.0, 1.0)),
+        assertEquals(new MobBlink(5, 12, 24, 8, 3, List.of(new BeamSound("entity.enderman.teleport", 1.0, 1.0)),
                 "squid_ink", 12, 240), def.blink());
         assertEquals(new MobShield("shield", List.of(new BeamSound("item.shield.break", 1.0, 1.0)), "crit", 16),
                 def.shield());
