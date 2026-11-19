@@ -89,6 +89,8 @@ were then spot-checked against `git show master:`.
   - **SEAT READING, flagged:** a rarity that lands with an EMPTY pool for that source FALLS THROUGH. It counts as a miss
     and the next tier is rolled as usual, rather than giving nothing, and the result lists each rarity that fell
     through. (The alternative reading, "the next tier is given outright", is not built.)
+    - **The seat, 2026-11-19:** it stays as built and stays FLAGGED. Ben has been asked which reading he wants; the
+      other is built only on his word.
 
 ## 3. THE CONTENT (`content/loot/*.yml`, `LootLoader`)
 
@@ -102,6 +104,8 @@ were then spot-checked against `git show master:`.
   - tiers out of rarity order or repeated;
   - a guaranteed tier above another;
   - an unknown item id (one no gear registry has);
+  - **an item under a pool whose rarity is not that item's own** (the seat's mechanism ruling, 2026-11-19: a pool holds
+    only items of its own rarity; added in `51798a1b`);
   - a missing `default:`.
 - **The Loaded line** prints each default tier's written chance and its true odds, and nothing's:
   `Loaded loot 'cascade': default exotic 1.00% (truly 1.000%), legendary 3.00% (truly 2.970%), …; 0 sources []`.
@@ -128,14 +132,26 @@ were then spot-checked against `git show master:`.
 - a test of the hook;
 - a gate.
 
-**And every source needs its pools written in content**, an item listed under its own rarity. Whether the loader
-should REFUSE an item listed under another rarity's pool is open for Ben; it is not checked today.
+**And every source needs its pools written in content**, each item listed under its own rarity: the loader refuses
+any other (the seat's ruling, 2026-11-19).
+
+**NO CONTENT IS EPIC TODAY** (READ, section 1.a). A pool holds only items of its own rarity, so every source's epic
+pool is empty, and **an epic that lands falls through at EVERY source, until an epic item exists.** Under Ben's
+placeholders that is the 7.682% of rolls that land epic. Under the empty-pool reading as built, they go on to roll
+rare and below.
 
 ## 5. OPEN, FOR BEN
 
-- The two SEAT READINGS above: the guaranteed last tier only, and the empty-pool fall-through.
-- The uniform pick within a rarity, a SEAT PLACEHOLDER.
-- The tiers below rare (uncommon 20%, common 40%), SEAT PLACEHOLDERS.
-- The content layout.
-- The wiring order in section 4.
-- **No content is EPIC today**, so a source's epic pool would be empty, and an epic that lands falls through.
+**Asked by the seat, 2026-11-19:**
+- the empty-pool reading;
+- an equal chance, or weights, within a rarity;
+- the tiers below rare (uncommon 20%, common 40% are the seat's);
+- what to wire first.
+
+**Still open:** the guaranteed-last-tier reading; the content layout.
+
+**Recorded:** no content is EPIC today, so an epic that lands falls through at every source until an epic item exists
+(section 4).
+
+**Not merging yet** (the seat, 2026-11-19): #219 waits until the fight stack (#216, #217, #218) is merged. Then it is
+rebased onto master, and the next gate's R0c predicts its Loaded line.
