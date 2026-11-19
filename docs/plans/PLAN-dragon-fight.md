@@ -191,6 +191,34 @@ slowly; (4) keep the Mage as a glowing wither skeleton.*
 Paper WARN lines saying 26.1.2 is "4 release(s) behind the latest stable release (26.3)". The upgrade procedure
 (`CLAUDE.md`, *Upgrade procedure*) is his to start, PacketEvents first.
 
+### Eleventh: Ben's answers at the F8 boots (`GATE-fight-site.md` at `7630e37c`, `GATE-fight-arena.md` at `b70dc88e`), 2026-11-18
+
+*Each question as the selftest asked it, then Ben's answer, verbatim from the gates' ASK lines.*
+
+1. "With the wall chasing you, did the fast close's speed feel right?" — **"yes"** *(MQ1R2, boot of `7630e37c`)*
+2. "The arena stand-in, its floor size and its pillars: is there anything that must change before waves are built?"
+   — **"no it's good for testing"** *(BA1R2, boot of `b70dc88e`)*
+3. "The night sky: is it fine as a stand-in?" — **"It's fine for now but I wonder if it's possible to have it be like
+   in the end"** *(BA1R2)*
+4. "The six-row wall, alternate rows turning opposite ways: is it right?" — **"yes"** *(BA2R2)*
+5. "For one player, is the Mage's 6,000 health right?" — **"yes"** *(BA3R2)*
+6. "Twelve seconds a crystal: is that right?" — **"yes"** *(BA3R2)*
+
+*The seat asked whether, in BA3R2, he reached the Mage late or was hitting him without his health dropping:*
+
+> "I reached him late"
+
+**Confirmed by these answers:** `v_fast` 3.8; the six-row wall, turning alternately; the Mage at 6000; 240 ticks a
+crystal.
+
+**SEAT READING of "I reached him late", marked as the seat's:** no defect. The landed-hit line of F9 part 1 is still
+built, so that the log can say it next time.
+
+**Still open for Ben:**
+- keep-inventory and immediate-respawn in a fight world;
+- entering at the arena's centre;
+- the sky (answer 3; the options are §6.8).
+
 ---
 
 ## 2. SEAT READINGS
