@@ -313,6 +313,33 @@ question as the selftest asked it, then Ben's answer, verbatim from its ASK line
 - `contact_hit_interval_ticks` 20 is now **BEN'S**: the question named it ("at most one of them a second").
 - The 20,000 "yes" was given with 27 mana refills.
 
+*h. Ben's answers to the seat's six questions (2026-11-19): waves and Endermen, what "cascading" loot means, the
+dialogue, the boss bar, how a group gets in, scaling by group size. Verbatim:*
+
+> "Before I answer any of these questions I want to clarify, Finer tuning of the fight as a whole requires all of it's
+> systems made and in order. Changing the health of the dragon before waves is pointless because waves inherently make
+> the fight harder.
+>
+> 1. Endermen should spawn frequently throughout the fight but only agro the players inside either via normal vanilla
+> agro or when the mage is channeling. For mob spawning I suggest a random wave roll system. We will design several
+> different groups of mobs with a mixture of endermen, knells, skreels, phages, and phalanx, and when the previous group
+> is basically defeated, say 25% of them left, the next group spawns in spread out throughout the arena.
+> 2. A Cascading loot system is used for deciding the rarity of drops given out to players. It works like this. First
+> the rarest rarity is rolled. then if that doesn't land, the next rarest rarity is rolled and so on. In our world today,
+> that would look something like this: Exotic 1% then Legendary 3% then Epic 8% then Rare 12% and so on. Numbers are place
+> holders. We can tune these numbers to specific drop sources but this is the over arching system.
+> 3. We will save this for later as a general polish
+> 4. General polish we'll get to it later
+> 5. We'll get to this later
+> 6. I don't think so"
+
+**SEAT READINGS, each the seat's (2026-11-19):**
+- No more "does this number feel right" questions to Ben until the fight's systems all exist. A boot's Ben rows ask
+  whether a thing WORKS and is CLEAR, not whether it is tuned.
+- No scaling by group size.
+- Dialogue, the boss bar and entry are deferred by Ben.
+- Waves and Endermen are not built yet: the seat is settling three questions with Ben.
+
 ---
 
 ## 2. SEAT READINGS
