@@ -1,6 +1,6 @@
 # GATE — STEP F9b: THE FIGHT'S RULES AFTER THE DRAGON BOOT
 
-**Status: THE SECOND BOOT IS NOT RUN** (RA3R2, RA4R2, RA5R2 and RB1, in *THE SECOND BOOT* at the end, committed before it; its R0 and run sheet are in `GATE-fight-end.md`). **The first boot: READ AT THE ONE BOOT OF 2026-11-19, on `feat/fight-end`'s head `e15cf9ee` (`GATE-fight-end.md` carries its R0, all as predicted, and its checklist).** RA1 and RA2 as predicted; **RA3, RA4 and RA5 NOT as predicted** (see *THE BOOT OF 2026-11-19* at the end). Every prediction below was written **before** any boot of `feat/fight-rules`, and this file was
+**Status: THE SECOND BOOT IS READ, 2026-11-19, at `e772f8b5`** (R0 passed, in `GATE-fight-end.md`; RA3R2, RA4R2, RA5R2 and RB1 as predicted, RA4R2 and RB1 on their second branches; *THE SECOND BOOT, READ*, at the end). **The first boot: READ AT THE ONE BOOT OF 2026-11-19, on `feat/fight-end`'s head `e15cf9ee` (`GATE-fight-end.md` carries its R0, all as predicted, and its checklist).** RA1 and RA2 as predicted; **RA3, RA4 and RA5 NOT as predicted** (see *THE BOOT OF 2026-11-19* at the end). Every prediction below was written **before** any boot of `feat/fight-rules`, and this file was
 committed before the boot.
 - Readings go **beside** a prediction, never over it.
 - A prediction is not edited once its row has been read; a correction is a dated note.
@@ -188,7 +188,7 @@ ran in an END world checked inert. **No prediction above was edited.**
 
 ## THE SECOND BOOT (the seat's fix brief and its addendum, 2026-11-19): THE FIXES, AND RA3R2, RA4R2, RA5R2, RB1
 
-**Status of this section: NOT RUN.** Written before the second boot; `GATE-fight-end.md` carries its one R0 and run
+**Status of this section: READ at the second boot, 2026-11-19, at `e772f8b5`.** Written before it; `GATE-fight-end.md` carries its one R0 and run
 sheet. **RA1 and RA2 are not re-run** (read as predicted). The first boot's readings above stand as read.
 
 > **THE SEAT'S OWN MISS, RECORDED AT ITS RULING (2026-11-19).** RA3's prediction said the head "hurts … each tick".
@@ -311,22 +311,48 @@ The largest hit after armour at defence 0 is the hit itself.
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) **`DRAGON touch t=<T> part=head at=<x y z> phase=HOVER box=<his> attack_box=<the head's, inflated 1> inside=true`**. (2) **Exactly ONE `DRAGONATTACK t=<t> attack=bite player=BaronVonYeetus base=80.000 gs=100 amount=80.000 vanilla=10.000 phase=HOVER`** and **exactly one `HURT before=80.000 after=72.727 defense=10.000 dealer=<the dragon's id> dealerType=ender_dragon/ender_dragon attack=bite`**: after = 80 x 100 / (100 + D) at his defence D, which read 10. (3) At the window's close or the fight's end, **`DRAGONATTACK suppressed player=BaronVonYeetus count=<k> window=<t>..<t+19>`** with k at least 1: the neck's call in the same tick, and later ticks while he stayed in the box. (4) No `FIGHTDAMAGE refused` (he is inside throughout). (5) The end. **If `inside=false`, the touch missed the box and the row says so** | `ContactHitWindowTest`, `DragonAttacksTest`, `FightRulesSourceTest` *aContactHitInsideTheWindow…* | |
+| (1) **`DRAGON touch t=<T> part=head at=<x y z> phase=HOVER box=<his> attack_box=<the head's, inflated 1> inside=true`**. (2) **Exactly ONE `DRAGONATTACK t=<t> attack=bite player=BaronVonYeetus base=80.000 gs=100 amount=80.000 vanilla=10.000 phase=HOVER`** and **exactly one `HURT before=80.000 after=72.727 defense=10.000 dealer=<the dragon's id> dealerType=ender_dragon/ender_dragon attack=bite`**: after = 80 x 100 / (100 + D) at his defence D, which read 10. (3) At the window's close or the fight's end, **`DRAGONATTACK suppressed player=BaronVonYeetus count=<k> window=<t>..<t+19>`** with k at least 1: the neck's call in the same tick, and later ticks while he stayed in the box. (4) No `FIGHTDAMAGE refused` (he is inside throughout). (5) The end. **If `inside=false`, the touch missed the box and the row says so** | `ContactHitWindowTest`, `DragonAttacksTest`, `FightRulesSourceTest` *aContactHitInsideTheWindow…* | **AS PREDICTED (second boot, 2026-11-19, at `e772f8b5`).** (1) **`DRAGON touch t=41 part=head at=-2.23 18.50 -6.27 phase=HOVER box=-2.03,83.50,-6.07..-1.43,85.30,-5.47 attack_box=-3.23,83.00,-7.27..-0.23,86.00,-4.27 inside=true`**. (2) **Exactly one `DRAGONATTACK t=41 attack=bite player=BaronVonYeetus base=80.000 gs=100 amount=80.000 vanilla=10.000 phase=HOVER`** and exactly one **`HURT before=80.000 after=72.727 defense=10.000 dealer=d37ad7eb-… dealerType=ender_dragon/ender_dragon attack=bite`**. (3) **`DRAGONATTACK suppressed player=BaronVonYeetus count=7 window=41..60`**, printed at the fight's end. (4) No `FIGHTDAMAGE refused`. (5) The end: `FIGHTWORLD left … why=leave`, `returned … why=left`, `ARENAPROBE when=end … environment=THE_END centre_top=END_STONE bedrock_in_column=0 fire=0 (y 65..79) crystals=0 dragons=0`, `deleted … entries=17`. No contact hit before the touch |
 
 ### RA4R2 — the wing, at most once (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) **`DRAGON touch t=<T> part=wing … box=<his> attack_box=<the wing's, inflated (4,2,4), moved down 2> inside=true`**. (2) **At most ONE contact hit**, and if it lands: **`DRAGONATTACK … attack=wing … amount=40.000 vanilla=5.000 phase=HOVER`**, `HURT before=40.000 after=36.364 … attack=wing`; any further hit in the window counted in a `DRAGONATTACK suppressed` line. **PREDICTED TOO, AND NOT A FAILURE OF THE FIX: NO WING HIT AT ALL**, if vanilla's own condition (his last-hurt-by-mob time against his tick count) is not met; that cannot be read on a server, and the wing's witness is then Ben's fight. (3) The end | as RA3R2 | |
+| (1) **`DRAGON touch t=<T> part=wing … box=<his> attack_box=<the wing's, inflated (4,2,4), moved down 2> inside=true`**. (2) **At most ONE contact hit**, and if it lands: **`DRAGONATTACK … attack=wing … amount=40.000 vanilla=5.000 phase=HOVER`**, `HURT before=40.000 after=36.364 … attack=wing`; any further hit in the window counted in a `DRAGONATTACK suppressed` line. **PREDICTED TOO, AND NOT A FAILURE OF THE FIX: NO WING HIT AT ALL**, if vanilla's own condition (his last-hurt-by-mob time against his tick count) is not met; that cannot be read on a server, and the wing's witness is then Ben's fight. (3) The end | as RA3R2 | **AS PREDICTED, ON ITS SECOND BRANCH: NO WING HIT.** (1) **`DRAGON touch t=41 part=wing at=4.31 19.02 0.99 phase=HOVER box=4.51,84.02,1.19..5.11,85.82,1.79 attack_box=-1.19,83.02,-4.51..10.81,89.02,7.49 inside=true`**: his box inside the wing's attack box. (2) **No `DRAGONATTACK` line in the row at all, and no `suppressed` line**, so vanilla raised no damage event on him. Why is not readable on a server (vanilla's own condition, READ, has no API). (3) The end as RA3R2's, `entries=17` |
 
 ### RA5R2 — the breath: its applications 20 ticks apart, 30 each; no push (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `DRAGON phase-set … phase=BREATH_ATTACK now=BREATH_ATTACK`; `DRAGON to-breath t=<t> cloud=<c> … radius=5.00 interval=20`. (2) **Each application: `DRAGONBREATH apply t=<t> cloud=<c> age=<a> radius=<r> affected=[BaronVonYeetus] players=[BaronVonYeetus(xz=<d> dy=<h>)]`**, a at least 20, and the next 20 later. (3) For each, **`DRAGONATTACK … attack=breath … base=30.000 gs=100 amount=30.000 vanilla=3.000 phase=BREATH_ATTACK`**, `HURT before=30.000 after=27.273 … attack=breath`: **one or two**, 20 ticks apart. (4) For each, `DRAGONBREATH velocity t=<t> … at_hit=<v> next_tick=<v>`: **no horizontal push** (INFERRED reading; his eyes confirm in EB4R2). (5) **If `DRAGONBREATH apply` lines appear with `affected=[]`, the cloud found him and took him off its list, and the line's distances say why; if no apply line appears at all, the cloud never applied.** (6) The end | `DragonAttacksTest` *theBreathCosts…*, `FightRulesSourceTest` *theBreathIsCancelled…* | |
+| (1) `DRAGON phase-set … phase=BREATH_ATTACK now=BREATH_ATTACK`; `DRAGON to-breath t=<t> cloud=<c> … radius=5.00 interval=20`. (2) **Each application: `DRAGONBREATH apply t=<t> cloud=<c> age=<a> radius=<r> affected=[BaronVonYeetus] players=[BaronVonYeetus(xz=<d> dy=<h>)]`**, a at least 20, and the next 20 later. (3) For each, **`DRAGONATTACK … attack=breath … base=30.000 gs=100 amount=30.000 vanilla=3.000 phase=BREATH_ATTACK`**, `HURT before=30.000 after=27.273 … attack=breath`: **one or two**, 20 ticks apart. (4) For each, `DRAGONBREATH velocity t=<t> … at_hit=<v> next_tick=<v>`: **no horizontal push** (INFERRED reading; his eyes confirm in EB4R2). (5) **If `DRAGONBREATH apply` lines appear with `affected=[]`, the cloud found him and took him off its list, and the line's distances say why; if no apply line appears at all, the cloud never applied.** (6) The end | `DragonAttacksTest` *theBreathCosts…*, `FightRulesSourceTest` *theBreathIsCancelled…* | **AS PREDICTED.** (1) `DRAGON phase-set t=18 phase=BREATH_ATTACK now=BREATH_ATTACK`; `DRAGON to-breath t=33 cloud=49ae4292-… at=-1.24 0.00 -9.71 radius=5.00 interval=20`. (2) **`DRAGONBREATH apply t=47 … age=20 radius=5.00 affected=[BaronVonYeetus] players=[BaronVonYeetus(xz=0.00 dy=0.00)]`** and **`t=67 … age=40 … affected=[BaronVonYeetus]`**, 20 ticks apart. Between them its checks at ages 25, 30 and 35 read `affected=[]` (its reapplication delay). (3) **Two `DRAGONATTACK … attack=breath … base=30.000 gs=100 amount=30.000 vanilla=3.000 phase=BREATH_ATTACK`** (t=47, t=67) and two **`HURT before=30.000 after=27.273 … attack=breath`**. (4) **`DRAGONBREATH velocity t=47 … at_hit=0.000 -0.078 0.000 next_tick=0.000 -0.078 0.000`** and **`t=67 … at_hit=0.000 -0.078 0.000 next_tick=0.000 0.000 0.000`**: no horizontal motion on the server. (5) Apply lines appeared, each naming him. (6) The end, `entries=17`. No contact hit on the cloud |
 
 ### RB1 — a bite priced in the fight never lands after his return (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `DRAGON touch t=<T> part=head … inside=true`, then a tick later `FIGHTWORLD left … why=leave` and **`FIGHTWORLD returned … why=left`**. (2) ONE of two, the order of the dragon's tick and the command within that tick not being predicted: **either** one `DRAGONATTACK … attack=bite` and one `HURT … attack=bite` BEFORE the `returned` line, **or** a `DRAGONATTACK … attack=bite` and then **`FIGHTDAMAGE refused t=<t> player=BaronVonYeetus source=dragon-contact amount=<a> why=not-in-this-fight`** (or `why=fight-gone`). (3) **IN EITHER CASE: NO `HURT` LINE AFTER `FIGHTWORLD returned`.** (4) The end | `ApplyDamageIfTest`, `FightRulesSourceTest` *everyFightDamageIsApplied…*, *theAdapterAsksTheCondition…* | |
+| (1) `DRAGON touch t=<T> part=head … inside=true`, then a tick later `FIGHTWORLD left … why=leave` and **`FIGHTWORLD returned … why=left`**. (2) ONE of two, the order of the dragon's tick and the command within that tick not being predicted: **either** one `DRAGONATTACK … attack=bite` and one `HURT … attack=bite` BEFORE the `returned` line, **or** a `DRAGONATTACK … attack=bite` and then **`FIGHTDAMAGE refused t=<t> player=BaronVonYeetus source=dragon-contact amount=<a> why=not-in-this-fight`** (or `why=fight-gone`). (3) **IN EITHER CASE: NO `HURT` LINE AFTER `FIGHTWORLD returned`.** (4) The end | `ApplyDamageIfTest`, `FightRulesSourceTest` *everyFightDamageIsApplied…*, *theAdapterAsksTheCondition…* | **AS PREDICTED, ON ITS SECOND BRANCH.** (1) `DRAGON touch t=41 part=head at=-0.85 18.50 -7.24 … inside=true`; then `FIGHTWORLD left … why=leave` and **`FIGHTWORLD returned … why=left`**, the same second. (2) **`DRAGONATTACK t=41 attack=bite … amount=80.000 vanilla=10.000 phase=HOVER`**, then, after the `returned` line, **`FIGHTDAMAGE refused t=42 player=BaronVonYeetus source=dragon-contact amount=80.000 why=not-in-this-fight`**. (3) **No `HURT` line in the row at all**, before or after his return. `DRAGONATTACK suppressed player=BaronVonYeetus count=3 window=41..60`; the end, `entries=17` |
+
+### THE SECOND BOOT, READ (2026-11-19, 14:30 to 14:37, at `e772f8b5`)
+
+**R0 passed** (`GATE-fight-end.md`, *R0 (SECOND BOOT)*), read at 14:30:54, before Ben joined at 14:31:16. The four rows
+ran 14:31:52 to 14:32:19, each to `DONE`. Every reading is in its row's cell above. **What the cells do not say:**
+
+- **THE WINDOW'S PROOF, over the whole log (both gates):**
+  - in every fight, the most priced contact hits (bite or wing) on him inside any 20 ticks is **1**;
+  - counted from every `DRAGONATTACK … attack=bite` and `attack=wing` line's tick, per fight;
+  - the fight with the most, EB5R2, had four: t=826, 846, 1495, 4090.
+- **THE STAGED WING CANNOT BE STAGED BY `touch wing`, SAID PLAINLY.**
+  - At this boot, RA4R2 and `GATE-fight-end.md`'s EB3R2 each printed `inside=true`, and **vanilla raised no event for
+    either.**
+  - In play the wing lands: four times in EB5R2, at `vanilla=5.000`.
+  - **Not read:** why. Vanilla's own condition (READ: his last-hurt-by-mob time against his tick count) has no API.
+    RA4R2 followed no death (RA3R2 bit him once, and he lived), and EB3R2's wing came 44 ticks after a bite in the same
+    fight. So the INFERRED cause of the first boot's miss (a death just before) explains neither.
+- **The arithmetic's premises held:**
+  - no contact hit before any row's staging;
+  - none on the breath cloud (RA5R2, and EB4R2 there).
+- **His health is 350, not 100** (every heal's reply: `Custom HP: 350/350`). The arithmetic's 100 was the seat's figure,
+  and it held with more margin. The seat, at the boot approval: "safe at his 350".
+- **The breath's velocity line:** his server-side motion at each hit and a tick later is `0.000 -0.078 0.000` or zero,
+  with no horizontal part.
+  - INFERRED that a push would show there; his eyes are the witness.
+  - Ben, EB4R2's question 8, "Did the breath push you at all?": **"no"**.
