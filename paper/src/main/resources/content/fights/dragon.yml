@@ -66,6 +66,20 @@ mage:
   refused_volume: 1.0
   refused_pitch: 0.8
 
+# THE DRAGON (step F9). The arena's fight only: an ordinary-world fight has none.
+dragon:
+  # The mob file it is spawned from (content/mobs/), at gear score 100.
+  mob: ender_dragon
+  # Ben's, 2026-11-18 ("let's do 80 60 40 and 20 percent"): each fraction of its maximum it falls STRICTLY BELOW lands
+  # one Mage. One hit across two lands two, one after the other: the next only once no Mage is alive and the ring is
+  # home (the seat's mechanism ruling). Strictly falling, each strictly between 0 and 1.
+  mage_thresholds: [0.80, 0.60, 0.40, 0.20]
+  # Its death is the win: the participants are told at once, and this many ticks later the arena's normal end returns
+  # them (SEAT PLACEHOLDER, the brief's 200).
+  win_return_ticks: 200
+  # The boss bar every participant sees, titled with its name and tracking our store (SEAT PLACEHOLDER: purple).
+  boss_bar_color: purple
+
 # THE CRYSTALS (step F7). SEAT PLACEHOLDER spots, standing in for the pillars until the arena exists: crystal_count
 # spots evenly round a circle about C.
 crystals:

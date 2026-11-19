@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
+import org.bukkit.entity.ComplexEntityPart;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -34,13 +35,33 @@ public final class LiveTargets {
         return entity instanceof LivingEntity living && !living.isDead() && living.isValid();
     }
 
-    /** {@code castRay}'s filter: any live body except the caster. */
+    /**
+     * THE BODY AN ENTITY STANDS FOR (step F9). A part of a complex entity, an Ender Dragon's head, wing or tail, is a
+     * plain {@code Entity} (READ, the pinned server jar: {@code EnderDragonPart extends Entity}, {@code isPickable}
+     * true), and a hit on it is the dragon's ({@code EnderDragonPart.hurtServer} calls {@code parentMob.hurt}). So a part
+     * stands for its parent; anything else stands for itself. Null for null.
+     */
+    public static Entity body(Entity entity) {
+        return entity instanceof ComplexEntityPart part ? part.getParent() : entity;
+    }
+
+    /** The live body an entity's hit lands on: its {@link #body}, if that is live (see {@link #isLive}); else null. */
+    public static LivingEntity resolve(Entity entity) {
+        Entity body = body(entity);
+        return isLive(body) ? (LivingEntity) body : null;
+    }
+
+    /** {@code castRay}'s filter: any live body, or a part of one, except the caster. */
     public static Predicate<Entity> except(UUID casterId) {
-        return entity -> isLive(entity) && !entity.getUniqueId().equals(casterId);
+        return entity -> {
+            LivingEntity body = resolve(entity);
+            return body != null && !body.getUniqueId().equals(casterId);
+        };
     }
 
     /** The dev look-rays' filter ({@code /rpg apply}, {@code /rpg mobdamage}, {@code /rpg mobinfo}): any live body that is not a player. */
     public static boolean isLiveMob(Entity entity) {
-        return isLive(entity) && !(entity instanceof Player);
+        LivingEntity body = resolve(entity);
+        return body != null && !(body instanceof Player);
     }
 }

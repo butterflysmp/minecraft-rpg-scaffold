@@ -34,7 +34,7 @@ class FightLoaderTest {
     private final Logger log = capturing();
 
     /** The mobs and sounds a server would know; the refusal rows use names outside these. */
-    private static final Set<String> MOBS = Set.of("dark_mage", "knell");
+    private static final Set<String> MOBS = Set.of("dark_mage", "knell", "ender_dragon");
     private static final Set<String> SOUNDS = Set.of("item.shield.block", "block.beacon.power_select");
 
     private Logger capturing() {
@@ -98,6 +98,11 @@ class FightLoaderTest {
               entry_offset_blocks: [0.0, 0.0]
             fixture:
               participant_radius_blocks: 128.0
+            dragon:
+              mob: ender_dragon
+              mage_thresholds: [0.80, 0.60, 0.40, 0.20]
+              win_return_ticks: 200
+              boss_bar_color: purple
             """;
 
     private Map<String, FightContent> load(String yaml) throws IOException {
@@ -135,7 +140,42 @@ class FightLoaderTest {
                 + "alternating, every 4 ticks; "
                 + "mage 'dark_mage' refused item.shield.block; crystals at 40.0, 12.0 up, lit block.beacon.power_select;"
                 + " participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to"
-                + " +12, time 18000, entry (0.0, 0.0)"), lines);
+                + " +12, time 18000, entry (0.0, 0.0); dragon 'ender_dragon' Mages below [0.8, 0.6, 0.4, 0.2], win"
+                + " return 200 ticks, bar purple"), lines);
+        assertEquals(new FightContent.Dragon("ender_dragon", List.of(0.80, 0.60, 0.40, 0.20), 200, "purple"),
+                d.dragon(), "Ben: \"let's do 80 60 40 and 20 percent\"; the win's 200 and purple are SEAT PLACEHOLDERS");
+    }
+
+    @Test
+    void aMissingDragonSectionIsRefusedByName() throws IOException {
+        refusedNaming(GOOD.substring(0, GOOD.indexOf("dragon:\n")), "no 'dragon:' section");
+    }
+
+    @Test
+    void anUnknownDragonMobIsRefused() throws IOException {
+        refusedNaming(GOOD.replace("mob: ender_dragon", "mob: wyvern"), "dragon.mob 'wyvern' names no loaded mob file");
+    }
+
+    @Test
+    void thresholdsThatRiseAreRefusedWithTheQueuesOwnReason() throws IOException {
+        refusedNaming(GOOD.replace("[0.80, 0.60, 0.40, 0.20]", "[0.60, 0.80]"), "dragon.mage_thresholds",
+                "must fall strictly");
+    }
+
+    @Test
+    void aThresholdOfOneIsRefused() throws IOException {
+        refusedNaming(GOOD.replace("[0.80, 0.60, 0.40, 0.20]", "[1.0, 0.5]"), "dragon.mage_thresholds",
+                "strictly between 0 and 1");
+    }
+
+    @Test
+    void aNegativeWinDelayIsRefused() throws IOException {
+        refusedNaming(GOOD.replace("win_return_ticks: 200", "win_return_ticks: -1"), "win_return_ticks must be 0 or more");
+    }
+
+    @Test
+    void anUnknownBossBarColourIsRefused() throws IOException {
+        refusedNaming(GOOD.replace("boss_bar_color: purple", "boss_bar_color: mauve"), "boss_bar_color", "'mauve'");
     }
 
     @Test

@@ -115,6 +115,15 @@ public final class FightFixtures {
      * be saved (his profile is not loaded) he is not taken in.
      */
     public String enter(Player p) {
+        return enter(p, true);
+    }
+
+    /**
+     * {@code enter} or {@code enter nodragon}. A NEW arena fight spawns the dragon unless {@code withDragon} is false
+     * (step F9). {@code nodragon} exists so the F8b gate's arena rows, which predate the dragon, still read the fight
+     * they were predicted against. Joining a fight that already runs ignores it.
+     */
+    public String enter(Player p, boolean withDragon) {
         Optional<FightContent> content = fight.get();
         if (content.isEmpty()) return "No fight '" + FIGHT_ID + "' is loaded (see the startup log).";
         if (FightWorlds.isFightWorld(p.getWorld())) return "You are already in a fight world.";
@@ -129,7 +138,8 @@ public final class FightFixtures {
             worlds.build(w, f.arena().shape());
             ArenaSite site = new ArenaSite(w, f.arena().shape());
             site.addEntrant(p.getUniqueId());
-            FightInstance started = new FightInstance(adapters, f, mobs.get(), site, p.getName(), this::forget);
+            FightInstance started = new FightInstance(adapters, f, mobs.get(), site, p.getName(), withDragon,
+                    this::forget);
             a = new ArenaFight(started, site, w, FightWorlds.folderOf(w));
             fights.put(started.id(), started);
             arenas.put(started.id(), a);
@@ -310,6 +320,40 @@ public final class FightFixtures {
 
     public String play(double minDistanceBlocks, boolean safe) {
         return running() ? current.play(minDistanceBlocks, safe) : "No fight fixture is running.";
+    }
+
+    // --- the dragon (step F9) ------------------------------------------------------------------------------------------
+
+    public String dragonHit(Player by, double amount) {
+        return running() ? current.dragonHit(by, amount) : "No fight fixture is running.";
+    }
+
+    public String dragonStrike(Player by, String part) {
+        return running() ? current.dragonStrike(by, part) : "No fight fixture is running.";
+    }
+
+    public String dragonPhase(String phase) {
+        return running() ? current.dragonPhase(phase) : "No fight fixture is running.";
+    }
+
+    public String dragonKill() {
+        return running() ? current.dragonKill() : "No fight fixture is running.";
+    }
+
+    public String dragonProbe() {
+        return running() ? current.dragonProbe() : "No fight fixture is running.";
+    }
+
+    /** Every write to the store: each fight logs the landed hits on its own Mage and dragon (step F9). */
+    public void onHealthChange(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
+        for (FightInstance f : new ArrayList<>(fights.values())) f.onHealthChange(change);
+    }
+
+    /** A dragon is about to shoot a fireball: cancelled if it is any fight's dragon (step F9); others are untouched. */
+    public void onFireball(com.destroystokyo.paper.event.entity.EnderDragonShootFireballEvent event) {
+        for (FightInstance f : new ArrayList<>(fights.values())) {
+            if (f.onFireball(event)) return;
+        }
     }
 
     public String mageDie() {

@@ -1,0 +1,13 @@
+# THE ENDER DRAGON OF THE DRAGON FIGHT (PLAN-dragon-fight.md step F9). Spawned at the arena fight's start, its podium
+# the arena's centre floor, not persisted, and removed with the fight. Its health is our custom store's, not vanilla's;
+# vanilla's health only mirrors the store's fraction. Every rule of the fight (the gate while a Mage lives, the Mage at
+# each threshold, no fireball, the win) is the fight's, not this file's: see content/fights/dragon.yml, dragon:.
+
+# The vanilla Ender Dragon: its flight, its perch, its melee, its wings and its perched breath stay vanilla.
+base_entity: ender_dragon
+# The brief's (2026-11-18).
+display_name: "Ender Dragon"
+# Ben's, 2026-11-18 (the tenth message, "2. 20,000"). The fight spawns it at gear score 100, so its maximum is this.
+max_health: 20000
+# The fight is Void (PLAN-dragon-mobs.md section 6 C6).
+element: void

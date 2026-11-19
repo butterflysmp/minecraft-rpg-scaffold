@@ -213,6 +213,9 @@ public final class RpgPlugin extends JavaPlugin {
     /** The selftest's HURT line (dragon-mobs R3): in the store's composite from the start, bound to the service later. */
     private final io.github.butterflysmp.rpg.paper.selftest.SelfTestDamageTap selfTestDamage =
             new io.github.butterflysmp.rpg.paper.selftest.SelfTestDamageTap();
+    /** The fight's landed-hit line (step F9): in the store's composite from the start, bound to the fights later. */
+    private final io.github.butterflysmp.rpg.paper.fight.FightHealthTap fightHits =
+            new io.github.butterflysmp.rpg.paper.fight.FightHealthTap();
     /** The Phalanx's shot (dragon-mobs step R7a), kept for onDisable: a stop ends every live shot. */
     private io.github.butterflysmp.rpg.paper.health.MobShooter shooter;
 
@@ -570,7 +573,7 @@ public final class RpgPlugin extends JavaPlugin {
         // Before mobDeath, though order does not matter for correctness: the mirror skips the killing
         // change, so it can never revive what mobDeath is about to kill.
         this.stats = new CombatantStats(new CompositeHealthListener(
-                healthSystem, nameplates, popups, new MobVanillaMirror(), selfTestDamage, mobDeath));
+                healthSystem, nameplates, popups, new MobVanillaMirror(), selfTestDamage, fightHits, mobDeath));
         this.healthSystem.bind(stats);
         this.nameplates.bind(stats);
 
@@ -759,6 +762,7 @@ public final class RpgPlugin extends JavaPlugin {
                         io.github.butterflysmp.rpg.paper.fight.FightFixtures.FIGHT_ID)),
                 () -> this.mobs, profiles,
                 new io.github.butterflysmp.rpg.paper.fight.FightWorlds(adapters.scheduler(), getLogger()));
+        fightHits.bind(fightFixtures::onHealthChange);
         // THE ORPHAN SWEEP (step F8b): a fight world a crash left behind is deleted, if and only if it passes all four
         // of FightFolders' tests; every refusal is logged and the folder left alone. It must never stop the enable.
         try {

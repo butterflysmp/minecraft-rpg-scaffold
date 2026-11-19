@@ -65,7 +65,8 @@ public final class FightLoader {
                         + "%d crystals every %d ticks, a strike every %d ticks from %.1f; ring %s (%d,%d,%d) size %.2f "
                         + "every %.2f blocks at %s, row shift %.2f, turn %.2f/s %s, every %d ticks; mage '%s' refused %s; "
                         + "crystals at %.1f, %.1f up, lit %s; participants within %.1f; arena at (%d, %d) floor y %d, "
-                        + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f)",
+                        + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f); dragon '%s' "
+                        + "Mages below %s, win return %d ticks, bar %s",
                 f.id(), s.borderRadiusBlocks(), s.mageRingRadiusBlocks(), s.fastCloseBlocksPerSecond(),
                 s.slowCloseBlocksPerSecond(), s.killExpansionBlocks(), s.crystalCount(), s.crystalIntervalTicks(),
                 s.strikeIntervalTicks(), s.firstStrikeDamage(), l.particleKey(), l.red(), l.green(), l.blue(),
@@ -77,7 +78,8 @@ public final class FightLoader {
                 f.arena().shape().discRadius(), f.arena().shape().discThickness(), f.arena().shape().pillarCount(),
                 f.arena().shape().pillarWidth(), f.arena().shape().pillarRingRadius(),
                 f.arena().shape().pillarTopAboveFloor(), f.arena().timeOfDayTicks(), f.arena().entryDxBlocks(),
-                f.arena().entryDzBlocks());
+                f.arena().entryDzBlocks(), f.dragon().mob(), f.dragon().mageThresholds(), f.dragon().winReturnTicks(),
+                f.dragon().bossBarColor());
     }
 
     FightContent parse(String id, ConfigurationSection root) {
@@ -136,7 +138,39 @@ public final class FightLoader {
         ConfigurationSection fx = section(root, "fixture");
         double reach = positive(fx, "participant_radius_blocks");
         return new FightContent(id, settings, look, mob, refused, crystalRadius, crystalHeight, lit, reach,
-                arena(section(root, "arena"), settings));
+                arena(section(root, "arena"), settings), dragon(section(root, "dragon")));
+    }
+
+    /**
+     * {@code dragon:}, the arena fight's dragon (step F9). Its mob must be a loaded mob file; its thresholds are checked
+     * by the queue that will run them ({@code DragonCrossings}), so the file and the fight cannot disagree about what is
+     * legal; the win's delay is a whole number of ticks, 0 or more; the boss bar's colour an Adventure colour name.
+     */
+    private FightContent.Dragon dragon(ConfigurationSection d) {
+        String mob = d.getString("mob");
+        if (mob == null) throw new IllegalArgumentException("dragon has no 'mob:'");
+        if (!mobKnown.test(mob)) {
+            throw new IllegalArgumentException("dragon.mob '" + mob + "' names no loaded mob file (content/mobs/)");
+        }
+        List<?> raw = d.getList("mage_thresholds");
+        if (raw == null || !raw.stream().allMatch(t -> t instanceof Number)) {
+            throw new IllegalArgumentException("dragon needs 'mage_thresholds:' as a list of numbers"
+                    + (d.contains("mage_thresholds") ? ", got '" + d.get("mage_thresholds") + "'" : ", and it is missing"));
+        }
+        List<Double> thresholds = raw.stream().map(t -> ((Number) t).doubleValue()).toList();
+        try {
+            new io.github.butterflysmp.rpg.core.fight.DragonCrossings(thresholds);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("dragon.mage_thresholds " + thresholds + ": " + ex.getMessage());
+        }
+        int win = whole(d, "win_return_ticks");
+        if (win < 0) throw new IllegalArgumentException("dragon.win_return_ticks must be 0 or more: " + win);
+        String colour = d.getString("boss_bar_color");
+        if (colour == null || net.kyori.adventure.bossbar.BossBar.Color.NAMES.value(colour) == null) {
+            throw new IllegalArgumentException("dragon.boss_bar_color must be one of "
+                    + net.kyori.adventure.bossbar.BossBar.Color.NAMES.keys() + ", got '" + colour + "'");
+        }
+        return new FightContent.Dragon(mob, thresholds, win, colour);
     }
 
     /**

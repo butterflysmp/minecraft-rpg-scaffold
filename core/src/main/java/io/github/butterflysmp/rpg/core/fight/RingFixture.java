@@ -220,6 +220,26 @@ public final class RingFixture {
         return !stopped && lastSnapshot != null && lastSnapshot.mageDamageable();
     }
 
+    /**
+     * Whether a Mage is alive, channelling or landed and held (step F9: the dragon's gate refuses every hit while this
+     * is true). False before the first tick and once the fixture has stopped.
+     */
+    public boolean mageAlive() {
+        return !stopped && lastSnapshot != null && lastSnapshot.mageAlive();
+    }
+
+    /** Where the cycle is as of the last tick or input; IDLE before the first. IDLE means no Mage and the ring home. */
+    public MageCycle.Phase phase() {
+        return lastSnapshot == null ? MageCycle.Phase.IDLE : lastSnapshot.phase();
+    }
+
+    /** A hit on the DRAGON was refused by the gate (step F9): its own DRAGONGATE line, and the Mage's cue. */
+    public void dragonRefused(double amount, String source) {
+        port.log(String.format(Locale.ROOT, "DRAGONGATE t=%d phase=%s amount=%.3f source=%s refused",
+                fightTick, phase(), amount, source));
+        port.refusedCue();
+    }
+
     /** A hit on the Mage was refused by the gate: the MAGEGATE line and the cue. */
     public void refused(double amount, String source) {
         port.log(String.format(Locale.ROOT, "MAGEGATE t=%d phase=%s amount=%.3f source=%s refused",
