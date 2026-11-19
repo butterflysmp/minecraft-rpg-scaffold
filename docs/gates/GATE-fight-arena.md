@@ -235,6 +235,14 @@ $zip.Dispose()
 |---|---|---|
 | In this order, during the enable: (1) **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=2`**; (2) **`FIGHTWORLD deleting path=<abs>\fight_r0e_orphan`**, then **`FIGHTWORLD orphan swept path=<abs>\fight_r0e_orphan entries=2`** (its marker and its file); (3) **`FIGHTWORLD orphan refused path=<abs>\fight_r0e_lookalike reason=NO_MARKER`**. (4) After the boot, `Test-Path run\world\dimensions\rpgfight\fight_r0e_lookalike` is **True** and `...\fight_r0e_orphan` is **False** | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'`, then the two `Test-Path` | **NOT AS PREDICTED, ON THE ORDER OF THE LINES ONLY.** Read, in this order: (1) `FIGHTWORLD sweep path=C:\Users\Neb91\IdeaProjects\minecraft-rpg-scaffold\run\world\dimensions\rpgfight folders=2`; (2) **`FIGHTWORLD orphan refused path=…\rpgfight\fight_r0e_lookalike reason=NO_MARKER`**; (3) **`FIGHTWORLD deleting path=…\rpgfight\fight_r0e_orphan`**, then **`FIGHTWORLD orphan swept path=…\rpgfight\fight_r0e_orphan entries=2`**. (4) After the boot `Test-Path …\fight_r0e_lookalike` **True**, `…\fight_r0e_orphan` **False**. The sweep sorts the folders by name and `lookalike` sorts before `orphan`; the prediction's "in this order" was CC's, written without reading that sort. Every line's content, the one `deleting` line and both Test-Path results are as predicted. CC stopped here and asked the seat; Ben logged in and ran the sheet before a ruling |
 
+> **SEAT RULING, 2026-11-18, ON R0e:** NOT AS PREDICTED on the ORDER of its lines only. The sweep sorts by name; the
+> prediction said otherwise. Its substance read true:
+> - one `deleting` line, `fight_r0e_orphan`;
+> - the look-alike refused `NO_MARKER` and still present.
+>
+> **And on the whole boot: Ben ran the sheet before R0 was cleared, and the seat ruled the readings stand.** R0a to R0d,
+> as predicted, bound the boot to `7630e37c`.
+
 ---
 
 ## THE AUTO ROWS — SERVER ONLY, SURVIVAL, DIFFICULTY NORMAL
@@ -330,6 +338,125 @@ FIGHTPROBE. **A log-line row passes on the VERBATIM line** (`<…>` as the row s
 | prediction | READING |
 |---|---|
 | (1) `FIGHT land …` at a random spot at least 15 from C; **`FIGHT play on t=<t> unsafe`** (no heal, no strike limit). (2) It ends ONE of these ways, and the log says which: **the Mage's death** (`FIGHT die … ticks_in_slow_close=<the time to kill>` then `FIGHT play ended … reason=mage-died`), **his death** (`FIGHTWORLD died-inside`, then `FIGHT nobody inside … outcome=<o>`), a **failure** (FAILED_CLOSED or FAILED_POWERED, then his death by it), or the **three-minute ceiling** (`AWAIT fight ceiling ticks=3600 still running`, then `rpg fight stop`). Reported: the Mage's time to kill, every STRIKE and HURT, every death. (3) ASK 5 (`yesno`) "For one player, is the Mage's 6,000 health right?" and ASK 6 (`yesno`) "Twelve seconds a crystal: is that right?" answered | **NOT READ** (the run aborted in AE1; no play, questions 5 and 6 not asked) |
+
+---
+
+## THE SECOND BOOT (the seat's ruling 2, 2026-11-18): THE ARENA ROWS ONLY — NOT RUN
+
+**Status: NOT RUN.** Written before the second boot, committed before it. **NO BOOT until the seat has diffed the fix
+and this gate from origin and Ben says "ready" in his own words. Then only CC boots.**
+
+**What changed:**
+- **The guard:** `SelfTestStaging.invalid`, asked by `SelfTestRun.invalidated`. It now accepts the run's world OR a
+  fight world (`FightWorlds.isFightWorld`), and still refuses any other.
+- **`save_blocks` is refused, by name, inside a fight world:** its restore would write into a deleted world.
+- **The audit of every step and end routine** for a fight world and for a death is PLAN-dragon-fight.md §6.7.
+- **`SelfTestArenaGuardTest`** walks AE1R2's and AE4R2's real shipped steps through the guard, with the world change
+  and the death. The old guard on the same walk aborts at the enter: that is the control.
+
+**WHICH ROWS MOVED, AND WHY.** The fix itself changes no predicted line: it removes an abort. **What moves every row**
+is the second boot's staging: **R0eR2 stages no folder**, so the namespace folder is empty.
+- Every row's end now reads **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** (it was `folders=1`).
+- AE1's and AE7's inside line now reads **`loaded=1 folders=1 marked=1`** (it was `folders=2`).
+
+So **all ten arena rows are re-predicted** under their old names with `R2`; their scenarios are re-keyed to match.
+**Nothing else in any row moves.**
+- **R0a to R0d keep their predictions**, bound to the new head.
+- **R0e is re-predicted as R0eR2.**
+- **AQ1 is not re-run (read).** Neither is `GATE-fight-site.md`: read, and MG5R3 and MG7R3 are unread by the seat's
+  ruling.
+
+### R0eR2 — THE SWEEP WITH NOTHING STAGED
+
+| prediction | instrument | READING |
+|---|---|---|
+| During the enable, exactly one **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=0`** (the namespace folder exists, empty since the first boot's carried state step 8), and **no `FIGHTWORLD deleting` line and no `orphan` line at all** | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'` | |
+
+### CARRIED STATE FOR THE SECOND BOOT (CC, in this order)
+
+1. **No JVM:** `Get-Process java -ErrorAction SilentlyContinue` prints nothing.
+2. **A fresh dated backup:** the command in CARRIED STATE step 2 above, with `-2` appended to the folder name if
+   `…-pre-fight-arena` exists. Report the counts, `diff -rq lines: 0` for each, the `ls` of `world/dimensions`, and the
+   overworld's file count.
+3. `grep -n "dev-pack-on-join" run/plugins/Rpg/config.yml` prints `12:  dev-pack-on-join: true`.
+4. **NO R0e folders.** `find run/world/dimensions/rpgfight -mindepth 1` prints nothing.
+5. Announce **"booting now"** and tell Ben again that he must not log in until told R0 passed. Then
+   `./scripts/dev-server.sh --refresh-content`. The three REQUIRED deployed lines, as in step 5 above.
+6. R0a to R0d and R0eR2 read on this boot's log; **tell Ben R0 passed before he logs in.** Any R0 not as predicted:
+   STOP and tell the seat, and tell Ben NOT to log in.
+7. *(After the run.)* `find run/world/dimensions/rpgfight -mindepth 1` prints nothing, and the overworld's file count
+   is reported against step 2's.
+
+### THE RUN SHEET FOR THE SECOND BOOT — BEN TYPES THESE, IN THIS ORDER
+
+0. **DO NOT LOG IN UNTIL CC HAS TOLD YOU R0 PASSED. IF YOU ARE TOLD NOTHING, DO NOT LOG IN.**
+1. `/gamemode survival` — **alone, the first line after login.**
+2. Stand on flat open ground with room all round, and hold the weapon you want to fight with.
+3. `/rpg selftest fight-arena` — **ONCE.** About fifteen minutes, plus your answers and up to three minutes of fighting.
+   - **AE4R2, AE5R2 and AE6R2 kill you on purpose, and BA3R2 can. You reappear at once where you entered.**
+   - Questions 2 to 6; each says yes or no, or your own words.
+   - Stand still and touch nothing unless gold text tells you to.
+4. `/stop`
+
+### AE1R2 — enter, the world, the arena's blocks; leave, the end (SURVIVAL) — supersedes AE1
+
+| prediction | stands on | READING |
+|---|---|---|
+| AE1's predictions (1) to (4), unchanged, except **`FIGHTWORLDS loaded=1 folders=1 marked=1 you=<n>`** inside and **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** at the end. **No `SELFTEST RUN ABORTED` line anywhere in the run** | `SelfTestArenaGuardTest`, `ArenaShapeTest` | |
+
+### AE2R2 — the ring, the Mage at 6000, a crystal on pillar 1 (SURVIVAL) — supersedes AE2
+
+| prediction | stands on | READING |
+|---|---|---|
+| AE2's predictions (1) to (6), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `ArenaShapeTest` | |
+
+### AE3R2 — the border lightning from the first tick (SURVIVAL) — supersedes AE3
+
+| prediction | stands on | READING |
+|---|---|---|
+| AE3's predictions (1) to (3), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `RingFixtureTest` | |
+
+### AE4R2 — CLOSED kills him; home; the fight fails and ends (SURVIVAL; DIES ON PURPOSE) — supersedes AE4
+
+| prediction | stands on | READING |
+|---|---|---|
+| AE4's predictions (1) to (5), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`**. No ABORTED: his death happens inside the `await_fight`, which goes to the respawn wait | `SelfTestArenaGuardTest` *ae4R2s…*, `SelfTestFightStepsTest` | |
+
+### AE5R2 — POWERED kills every participant and ends the fight (SURVIVAL; DIES ON PURPOSE) — supersedes AE5
+
+| prediction | stands on | READING |
+|---|---|---|
+| AE5's predictions (1) to (6), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `MageCycleTest`, `FightArenaSourceTest` | |
+
+### AE6R2 — falling off the disc (SURVIVAL; DIES ON PURPOSE) — supersedes AE6
+
+| prediction | stands on | READING |
+|---|---|---|
+| AE6's predictions (1) to (3), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `FightArenaSourceTest` | |
+
+### AE7R2 — entering while inside is refused (SURVIVAL) — supersedes AE7
+
+| prediction | stands on | READING |
+|---|---|---|
+| AE7's predictions (1) to (3), unchanged, except **`FIGHTWORLDS loaded=1 folders=1 marked=1 you=<n>`** inside and **`loaded=0 folders=0 marked=0 you=world`** at the end | `FightArenaSourceTest` | |
+
+### BA1R2 — the arena stand-in and the night sky (SURVIVAL) — supersedes BA1
+
+| prediction | READING |
+|---|---|
+| BA1's prediction, unchanged (ASK 2 `words`, ASK 3 `yesno`); the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | |
+
+### BA2R2 — the six-row wall, alternating (SURVIVAL) — supersedes BA2
+
+| prediction | READING |
+|---|---|
+| BA2's prediction, unchanged (ASK 4 `yesno`); the end as BA1R2 | |
+
+### BA3R2 — THE PLAY ROW WITHOUT A DRAGON, NO SAFETY (SURVIVAL; he may die) — supersedes BA3
+
+| prediction | READING |
+|---|---|
+| BA3's predictions (1) to (3), unchanged (ASK 5 and ASK 6 `yesno`); the end as BA1R2 | |
 
 ---
 
