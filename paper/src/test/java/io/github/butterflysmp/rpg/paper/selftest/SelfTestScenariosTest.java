@@ -223,7 +223,9 @@ class SelfTestScenariosTest {
         // Then THE TEMPLATE-FILE ARENA SOURCE (GATE-fight-template.md, the seat's queue item 2, 2026-11-19), a new gate,
         // RECOUNTED the same way on this branch's tree: 29 gates, 258 keys, 29 setups, so 229: TA1 added. The control:
         // 256 + 2 = 258. 228 was this line's value.
-        assertEquals(229, loaded.rows());
+        // Then EB4R3 (GATE-fight-end.md, the seat's queue item 4, 2026-11-19), RECOUNTED: 29 gates, 259 keys, 29 setups,
+        // so 230. The control: 258 + 1 = 259. 229 was this line's value.
+        assertEquals(230, loaded.rows());
     }
 
     /**

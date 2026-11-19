@@ -770,3 +770,21 @@ then `deleted … entries=<e>`.
 
 **FOR THE RECORD (CC, 2026-11-19):** the approval called the plan section 1 entry owed. It was not: it had been
 committed in `bde06c28` and was on the wire. CC's report before the approval had said it was owed, wrongly.
+
+---
+
+## EB4R3 — EB4R2 WITH ITS MARGIN (added 2026-11-19, the seat's queue item 4; NOT RUN, and not re-run unless a later boot wants it)
+
+**Why:**
+- The cloud applies at most once every 20 ticks (READ at F9b), so its applications in a stay starting at s fall at s,
+  s+20, s+40 and s+60.
+- EB4R2 stood him on it for 55 ticks: three breaths (90 before armour, under 100), with a fourth (120, over it) only 5
+  ticks past the stay.
+- EB4R3's stay is **50 ticks**, so a fourth needs **10 ticks more than the row gives**.
+- `SelfTestBreathMarginTest` reads the shipped row and holds that margin.
+
+### EB4R3 — the breath with no push, 50 ticks on the cloud: questions 5 and 8 (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| As EB4R2's (1) to (5), with this difference: **at most THREE `DRAGONBREATH apply … affected=[BaronVonYeetus]` lines, and at most two if the first comes more than 10 ticks into the stay** (EB4R2's first came 14 ticks in, at age 20). So: two or three `DRAGONATTACK … attack=breath … amount=30.000` and `HURT before=30.000 after=27.273 …`, 20 apart. **The arithmetic: at most 3 x 30 = 90 against 100** (and his 350), with a fourth 10 ticks out of reach. No contact `DRAGONATTACK`. His answers to 5 and 8, verbatim | `SelfTestBreathMarginTest`; EB4R2 | |
