@@ -1,6 +1,6 @@
 # GATE — STEP F8b: THE FIGHT'S OWN WORLD AND ITS GENERATED ARENA (AND THE ONE BOOT FOR F8a's GATE TOO)
 
-**Status: NOT RUN.** Every prediction below was written **before** any boot of `feat/fight-arena`, and this file is
+**Status: NOT RUN.** Seat approval 2026-11-18: code and gate diffed at `b70dc88e`, readings at `fce1f48a`. Merge on Ben's words. Every prediction below was written **before** any boot of `feat/fight-arena`, and this file is
 committed before the boot. Readings go **beside** a prediction, never over it; a prediction is not edited once its row
 has been read; a correction is a dated note. **NO BOOT until the seat has diffed both branches' code and both gates
 from origin and Ben says "ready" in his own words. Then only CC boots.**
