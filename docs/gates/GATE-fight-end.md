@@ -323,3 +323,126 @@ end-check WARN (the fallback never fired).
    likely dropped there. He gave himself a new cursed emerald during EB1, and wrote in EB5 that it "isn't working".
    Whether these are connected is not in the log.
 4. **The fight itself (EB5) was not read:** no crossing, no Mage, no hit. Questions 6 and 7 are owed.
+
+---
+
+## THE SECOND RUN, 2026-11-19, 13:09 to 13:14 — BEN'S OWN BOOT, NOT CC'S
+
+**Recorded as read; no prediction above is edited and the first boot's readings stand beside them.**
+
+**HOW IT WAS RUN, AND WHAT THAT LEAVES OUT.**
+- Ben booted the server himself (`latest.log` from 13:09:01). The rule is that only CC boots.
+- **None of the carried state was taken:** no backup, no "booting now", no "R0 passed" word.
+- He ran `/rpg selftest fight-end` once (`fight-rules` was not re-run), then `/stop`.
+
+**R0, read on that log afterwards:**
+- `[Rpg] Build: 61ce1271`, `feat/fight-end`'s head (the readings commit; its code is byte-identical to the booted
+  `e15cf9ee`), not `-dirty`.
+- The fight's Loaded line as R0c.
+- `221 scenarios across 26 gates`.
+- `FIGHTWORLD sweep … folders=0`.
+- Only `volley_stone`'s `[Rpg]` WARN pair.
+- The jar scanned afterwards (built 13:09:00): `environment: end` PRESENT, `environment: normal` ABSENT,
+  `DRAGONATTACK` PRESENT, `NoSuchTextControl` ABSENT.
+
+**Every fight world:** six, every one `environment=THE_END` and `end-check … inert=true`. `Scanning for legacy world
+dragon fight...` appears 0 times. Each deleted, `entries=17`: `fight_145423d9`, `fight_9ea2af44`, `fight_f893923b`,
+`fight_27e8224d`, `fight_3451074d`, `fight_ece4e8fc`.
+
+**After his `/stop` (13:14:37):** `All dimensions are saved` at 13:14:38; no `java` process; `rpgfight` empty; the
+overworld 106 files (the 12:49 backup's figure).
+
+### HIS WORDS IN THE SECOND RUN, VERBATIM
+
+1. "The End world: is the sky what you wanted?" — **"yes"**
+2. "Is anything about the End world wrong (the music, the light, fire, the edge)? Say what, or say none." —
+   **"good"**
+3. "The lightning at the Mage's landing: is it right?" — **"yes"**
+4. "The dragon's bite (80) and wing (40): do they feel right?" — **"pass"**
+5. "The breath, 30 a second: does it feel right?" — **"remove the knock back from it"**
+6. "For one player, is the dragon's 20,000 health right, now that every phase has its Mage?" — **"yes"**
+7. "What most needs to change before waves are built?" — **"nothing right now"**
+
+### THE ROWS, AS READ
+
+- **EA1:** the inert branch again, as the first boot.
+- **EB3, THE BITE KILLED HIM INSIDE THE FIGHT, BEFORE THE WING WAS STAGED.**
+  - `DRAGON touch t=76 part=head at=-2.23 18.50 -6.27 phase=HOVER`.
+  - Then **two `DRAGONATTACK … attack=bite … amount=80.000 vanilla=10.000` lines at each of t=76, 77, 78 and 79**,
+    and ten `HURT before=80.000 after=72.727 … attack=bite`.
+  - **`FIGHTWORLD died-inside`**, `BaronVonYeetus was slain by Ender Dragon`, `returned … why=died`. In the fight
+    world, so its keep-inventory held.
+  - The wing step then read `No fight fixture is running.`: the fight had ended at his death.
+  - So **the first boot's RA3 is reproduced** (`GATE-fight-rules.md`, finding 1), and the first boot's EB3 (no bite)
+    is NOT.
+- **EB4, THE BREATH HIT, AS RA5 PREDICTED.**
+  - `DRAGON to-breath t=91 cloud=ea365e93-… at=-3.10 0.00 -8.62 radius=5.00 interval=20`.
+  - Then three `DRAGONATTACK t=105, 125, 145 attack=breath … base=30.000 gs=100 amount=30.000 vanilla=3.000
+    phase=BREATH_ATTACK`, **20 ticks apart**, each with `HURT before=30.000 after=27.273 defense=10.000 … attack=breath`.
+  - **`vanilla=3.000` READ** (INFERRED 3.000 before).
+  - The first boot's RA5 and EB4 (no hit) are NOT reproduced. Why they missed is still not in the log.
+- **EB5, THE FIGHT: READ IN FULL, ENDED BY HIS DEATH.**
+  - `DEATH_RULES keep_inventory=false->true immediate_respawn=false->true`.
+  - **Crossings:**
+    - `DRAGONCROSS t=679 threshold=0.80 health=15915.000/20000.000 pending=1`;
+    - `DRAGONCROSS t=1533 threshold=0.60 health=11830.000/20000.000 pending=1`.
+  - **Mage 1:**
+    - landed t=680 at (6.929, −28.240), **29.078** from the centre, with `FIGHT lightning t=680 … effect=true`;
+    - slow close t=1023, killed t=1239 (`ticks_in_slow_close=216`), **559 ticks after landing**;
+    - trail 6000 → 5795.750 (t=1023) … 185.250 (t=1236) → 0 (t=1239): 26 hits;
+    - **one of the 26, at t=1070, was `amount=300.000 … dealer=<the Mage's own id> element=null`**, a self-attributed
+      environmental hit whose cause is not in the log. INFERRED: the dragon's push, which is not an event and is not
+      cancelled.
+  - **Mage 2:**
+    - landed t=1798 at (26.393, 5.559), **26.972** from the centre, with its lightning;
+    - slow close t=2130; at the fight's end `health=4570.250/6000.000` (6 hits).
+  - **Mages landed: two.** The fight ended at 59.15% (11830 of 20000), so a third was not yet owed.
+  - **`DRAGONGATE`:**
+    - five `why=mage-alive` (t=681 to 689, Mage 1 alive);
+    - **seventeen `why=mage-owed` (t=1534 to 1667, the ring RETURNING after Mage 1's death, 0.60 crossed)**: the F9b
+      rule, in play.
+  - **`MAGEGATE`:** seventeen refused, during Mage 1's fast close.
+  - **The dragon's attacks:**
+    - **eight wing hits**, at t=850, 1044, 1047, 1050, 1053, 1056, 1529 and 1532. Each was `amount=40.000
+      vanilla=5.000`, with HURT `after=36.364 … attack=wing`. Five of them came within 12 ticks (1044 to 1056), three
+      apart.
+    - **the bite at t=2214, 2215 and 2216**: seven `DRAGONATTACK … attack=bite`, **one of them `vanilla=5.000`**, a
+      wing's vanilla hit called a bite because he was in both boxes. Then HURT `after=72.727 … attack=bite`.
+    - **`FIGHTWORLD died-inside` at t=2216.**
+  - **`DRAGONMAGE`:** thirty-eight `cancelled (the dragon's vanilla hit on its Mage)`, t=1032 to 1057 and t=2208 to
+    2217. Twice a tick at times. The fix of section 7 is firing.
+  - **Other lines:**
+    - `DRAGONHEAL`: none (no crystal lit: each slow close was under 240 ticks);
+    - `FIGHT fireballs`: none, the count never changed from 0;
+    - `FIGHT fireball-cancelled`: t=201 and t=426;
+    - crystal-fire: none.
+  - **The ending:**
+    - `FIGHT nobody inside t=2218 outcome=RUNNING`, `FIGHT mage-health … at=end health=4570.250/6000.000`;
+    - `dragon removed … was_valid=true`, the world deleted;
+    - `AWAIT fight ended ticks=2202`.
+  - **Dragon hits:** 35 FIGHTHITs on the dragon by phase:
+    - FLY_TO_PORTAL 12;
+    - LAND_ON_PORTAL 11;
+    - CIRCLING 6;
+    - STRAFING 6.
+  - **`/rpg mana refill`, twelve times** (wall clock, and the last fight tick logged before it):
+    - 13:12:42 (t=364), 13:12:52 (t=576), 13:13:02 (t=780), 13:13:13 (t=980);
+    - 13:13:15 (t=1035), 13:13:20 (t=1120), 13:13:24 (t=1204), 13:13:30 (t=1332);
+    - 13:13:33 (t=1396), 13:13:39 (t=1500), 13:13:43 (t=1596), 13:13:48 (t=1688).
+  - **Off the sheet:** `/rpg selftest fight-end`, typed at 13:12:49 and 13:13:00 during the run. Each was refused:
+    `Refusing: you are not in the dev world (the server's first world).`.
+
+### WHAT THE TWO RUNS TOGETHER SAY
+
+1. **The bite is lethal in four ticks, every time it lands.**
+   - Three readings agree: the first boot's RA3, and the second run's EB3 and EB5.
+   - It lands twice a tick, the head's and the neck's boxes both holding him, with no invulnerability window.
+   - **A per-player window on the dragon's hits is owed before any further fight.**
+2. **The wing lands in play, and too often.**
+   - Five hits in 12 ticks in EB5.
+   - It never landed when staged (the first boot's RA4 and EB3).
+3. **The breath lands as built** (the second run's EB4: 30 a second, `vanilla=3.000`).
+   - The first boot's two misses are unexplained.
+   - **Ben: "remove the knock back from it".**
+4. **The owed-Mage immunity works in play:** seventeen `why=mage-owed` during a return.
+5. **The End world:** eighteen of eighteen worlds over two runs read inert; Ben said yes twice.
