@@ -872,6 +872,39 @@ step:*
 
 If deleting cannot be shown safe, STOP.
 
+### 6.5 F8a AS BUILT (`feat/fight-site`, 2026-11-18): WHAT THE CODE SHOWED
+
+*The gate is `docs/gates/GATE-fight-site.md`, NOT RUN at this writing; read at F8b's one boot.*
+
+- **One runtime, one site so far.**
+  - `FightInstance` holds one fight's whole state and is the only place in `paper/` that builds the core fight
+    (`new RingFixture(`) and its port (`FightSiteSourceTest`).
+  - It takes a `FightSite`: world, C and its ground y, crystal spots, where the Mage may stand, who takes part.
+  - `OrdinaryWorldSite` is the dev fixture's site.
+  - `FightFixtures` holds fights by id, offers a death to every fight, and ends every fight at disable. The dev command
+    drives one.
+- **The wall at six rows costs 9060 packets a second per player at r = 48**, under the brief's 9,500 line by 440.
+  **A seventh row would pass it** (10,570).
+- **240 ticks a crystal against a 400-tick slow close means at most ONE crystal without kills.**
+  - So ten crystals, POWERED, needs the ring held open for 2400 ticks: in the gate, 68 kills 35 ticks apart.
+  - In play it means a group that does not kill sees at most one crystal before the ring closes on them.
+  - **That is a design consequence of Ben's two numbers taken together, for him to see, not a defect.**
+- **MG2's driven attack was the instrument, not the gate.**
+  - READ: `Player.attack` raises no damage event when the attacker's attack damage and enchanted bonus are both 0.
+  - READ: `WeaponItems` pins a non-melee weapon's attack damage to 0.
+  - INFERRED: Ben held his staff at MG2.
+  - ATTACK now logs `attack_damage=` and names a zero; MG2R2 holds `emberblade`.
+- **The crystal listener is reachable, but only past the invulnerable flag.**
+  - READ: `EndCrystal.hurtServer` returns on `isInvulnerableToBase` before the event.
+  - Only `out_of_world`, `generic_kill` (build 74's `bypasses_invulnerability` tag) or a creative player's hit reach it.
+  - It is KEPT for those, and MG7R2 reaches it.
+  - **`/kill` removes a fight crystal anyway** (READ, `EndCrystal.kill` → `Entity.kill`, no damage event). That is an
+    op command, recorded rather than guarded.
+- **The entity probe counted dying bodies.** READ: a dead mob stays in the world for 20 ticks. It now leaves them out
+  and says how many (`dying=`).
+- **`/rpg mobdamage` printed an estimate made before the hit landed.** It now replies from the store 2 ticks later.
+- **AWAIT_FIGHT** ends a wait when the dev command's fight ends, with a ceiling.
+
 ## 7. OPEN, FOR BEN
 
 *Listed, not answered.*

@@ -37,9 +37,10 @@ class SelfTestScenariosTest {
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
-                        "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-mage"),
+                        "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-two gates, in boot order (fight-mage LAST, steps F6 + F7, 2026-11-18, in fight-ring's place:"
+                "the twenty-two gates, in boot order (fight-site LAST, step F8a, 2026-11-18, in fight-mage's place: it"
+                        + " re-predicts every row there; fight-mage LAST before it, steps F6 + F7, 2026-11-18, in fight-ring's place:"
                         + " it re-predicts every FR row; fight-ring before it, steps F4 + F5 of the dragon fight, 2026-11-18;"
                         + " drag-additive before it, the additive drag, 2026-11-18, in"
                         + " implosion-drag's place: it re-predicts every one of its rows; implosion-drag LAST before it, the drag, 2026-11-18; before it dragon-skreel, step R8, 2026-11-17; before it dragon-blink, step R7b, after dragon-shot, step R7a, 2026-11-17); nexus-back after mining-auto (2026-11-14), then dragon-bodies,"
@@ -184,7 +185,10 @@ class SelfTestScenariosTest {
         // Then THE MAGE (GATE-fight-mage.md, steps F6 + F7, 2026-11-18), RECOUNTED the same way: 22 gates, 215 keys,
         // 22 setups, so 193: fight-ring's 15 rows retired and fight-mage's 24 in their place (FR1R2-FR9R2, MG1-MG8,
         // MQ1-MQ7). At master 8c9a41b6 the same commands print 22, 206, 22: 184, this line's old value.
-        assertEquals(193, loaded.rows());
+        // Then ONE RUNTIME AT A SITE (GATE-fight-site.md, step F8a, 2026-11-18), RECOUNTED the same way on this branch's
+        // tree: 22 gates, 212 keys, 22 setups, so 190: fight-mage's 24 rows retired and fight-site's 21 in their place
+        // (FR1R3-FR9R3, WS1, IP1, IA1, MG1R2-MG8R2, MQ1R2). The control: 215 - 25 + 22 = 212. 193 was this line's value.
+        assertEquals(190, loaded.rows());
     }
 
     /**
