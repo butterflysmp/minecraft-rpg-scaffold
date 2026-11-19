@@ -1440,3 +1440,149 @@ pointer). `FightEndSourceTest` asserts one call in all of `paper`'s main code, t
     now the main fodder enemy".
 17. *(Seat-added, 2026-11-18.)* **Paper 26.3**, a separate decision: the upgrade procedure is Ben's to start
     (§1, tenth message).
+
+---
+
+## 8. THREE READ-ONLY REPORTS (the seat's queue, item 3, 2026-11-19; written on `feat/fight-template`; no code)
+
+Each is a decision paper. **Nothing in this section is built.** Every jar fact is marked READ (javap on the pinned
+`paper-api` 26.1.2 build 74, or the server jar under `run/versions`), INFERRED, or an estimate (est.).
+
+### 8.a A SECOND PLAYER FOR TESTING
+
+**What is unread on a server, because every boot so far had one player:**
+- reviving a real player (F9e);
+- ALL DOWN with two or more (F9d);
+- a group's entry and ring;
+- anything one player does to another.
+
+The selftest's guard aborts any run with `onlinePlayers != 1` (READ, `SelfTestStaging.invalid`).
+
+| option | what it can witness | what it cannot | cost |
+|---|---|---|---|
+| **1. A second real account on Ben's LAN** (a second Minecraft licence, a second machine or client) | everything a player does: a real client's sneak, its screen, its packets, its rendering | nothing on the server side is out of reach | a second licence. Someone has to drive it, so it is a two-person boot or Ben alternating windows. The server stays online-mode |
+| **2. A headless bot client** (a scripted client process, e.g. a Node or Python Minecraft client library, outside this repo) | the server path end to end: it joins, enters, sneaks and moves by script, so a revive and all-down are read from real packets | what a person sees and feels. The bot must speak 26.1's protocol (INFERRED: these libraries lag new versions, as PacketEvents does) | **a new tool and a new language, and it needs `online-mode=false` or a second licence.** Offline mode on a LAN-only dev server is a security change to say aloud, not to slip in |
+| **3. A stand-in the server drives** | — | **READ: build 74 has no fake-player API.** `org.bukkit.entity.NPC` is an empty marker interface, and no class matches fake or bot. A `Mannequin` is not a `Player`, so it can never be a participant (`takesPart` takes a `Player`) | a new dependency (an NPC plugin that makes a server-side player) and its own fake-player model, which our code would treat as real in some places and not others. **Not recommended** |
+| **4. Core tests only** (today) | the rules, with two and three players (`DownRosterTest`, `ReviveTrackerTest`) | the wiring on a server | nothing more |
+
+**What the guard would need, for options 1 and 2:**
+- `invalid(...)`'s `onlinePlayers != 1` becomes "exactly the run's player plus the declared second, by name", taken
+  from a new run argument (`/rpg selftest <gate> with <name>`);
+- a row's steps name which player they drive (`cmd_as <name>`, or the bot's own script).
+
+That is one PR of selftest work, and a gate of its own.
+
+**Recommendation: option 1, a second real account, for the first multiplayer boot.** It witnesses everything with no
+new tool and no security change, and the selftest work is the same for either.
+- Option 2 is worth it only if multiplayer rows become routine. Whether it is then is Ben's call.
+- **Open for Ben:** whether a second account exists, or can.
+
+### 8.b THE RING'S COST WITH A GROUP
+
+**Today (the content's numbers):**
+- 6 rows of 302 points = **1,812 particles a redraw**;
+- a redraw every 4 ticks, so 5 a second: **9,060 particle packets a second per player**;
+- each sent with force (READ, `BukkitFightPort.draw`, one `spawnParticle` per point per viewer).
+
+**Per viewer, the ring is the same packets, so the cost is linear in viewers** (one ring, every viewer sent every
+point):
+
+| players | packets a second | bytes a second (est.: about 40 bytes a particle packet before compression) |
+|---|---|---|
+| 1 | 9,060 | about 362 KB/s |
+| 2 | 18,120 | about 725 KB/s |
+| 4 | 36,240 | about 1.45 MB/s |
+| 8 | 72,480 | about 2.9 MB/s |
+
+The packet counts are arithmetic on the content's numbers. **The byte figures are estimates, not measured**; a boot
+reading the network (or Paper's own packet stats) would replace them.
+
+**What is cheaper for the same look (options; none built):**
+- **A bundle** (READ: `ClientboundBundlePacket` exists in the server jar). It groups one redraw's packets so the client
+  handles them in one tick. INFERRED that it saves framing and ordering, not bytes: each particle is still its own
+  packet inside it. Small win.
+- **One packet with a count and a spread** (READ: `spawnParticle(…, count, offsetX, offsetY, offsetZ, extra, data,
+  force)` and `ParticleBuilder`). INFERRED from vanilla: the spread is a random offset about one point, so it cannot
+  draw a ring's exact points. **It changes the look**; not the same ring.
+- **A different redraw rule for a ring that is not moving.** In IDLE and between closes the ring does not change, so it
+  needs redrawing only as fast as a dust particle fades. INFERRED: a dust particle lives several ticks, so its
+  lifetime would need a READ. Redrawing every 8 ticks instead of 4 while still would halve the cost then; a moving ring
+  keeps 4.
+- **Display entities instead of particles** (a ring of block or item displays). A still ring costs nothing per tick
+  once sent; a moving one is a teleport per point.
+  - That is a different look, and entities to clean up: the copy's exclusion work, again.
+  - The biggest saving, and the most work.
+- **Fewer points:** spacing 1.0 becomes 1.5, a third fewer. A look change, and Ben's.
+
+**Recommendation: none yet.** The first group boot should measure first (a packet count per second at 2 players).
+**Open for Ben:** whether any change to the look is acceptable.
+
+### 8.c PAPER 26.3: WHAT MOVING FROM 26.1.2 BUILD 74 WOULD INVOLVE
+
+**A decision paper, not a recommendation to do it now.**
+
+**What Paper says about 26.3** (its announcement post, found by a web search on 2026-11-19; the full changelog was not
+in the search results and **must be read from the post itself before deciding**):
+- Most of the data component API is no longer marked experimental. That includes `ResolvableProfile`, which the copy
+  uses.
+- There are new events, `EntityBreakEvent` and `EntityBreakByEntityEvent`, and a new `Player#postEffects`.
+- A config merge (Bukkit, Spigot and Paper options together) is deferred to 26.4.
+- **Paper's own download page keeps 26.3 behind an "experimental builds" switch**, and its javadoc lists release
+  candidates (26.3-rc-3).
+- **Nothing found in it touches worlds, the dragon, mannequins, particles or the damage path specifically.** That is
+  "not found in the summary", NOT "unchanged". Each needs reading in the full notes and in 26.3's jar.
+
+**The jar facts this project rests on, which would each need re-reading on 26.3's jar.** By area, from this plan and
+`PLAN-dragon-mobs.md`. `READ` appears 130 times in this plan and 147 in that one, so the list is by subject, not one
+by one:
+- **The dragon:**
+  - `EnderDragon`'s parts, its `aiStep` hurts (head and neck every tick), `knockBack` and the wing condition;
+  - its phases and `setPodium`;
+  - the fireball;
+  - `DragonSittingFlamingPhase`'s cloud;
+  - `AreaEffectCloud.serverTick` and its apply event.
+- **The fight world:**
+  - the per-world `paper-world.yml` switch `scan-for-legacy-ender-dragon`;
+  - `getEnderDragonBattle`;
+  - an END-type world's fixed time and void line;
+  - `WorldCreator`;
+  - `unloadWorld` closing region files;
+  - an API world at `dimensions/<ns>/<name>`.
+- **Damage:**
+  - `LivingEntity.hurtServer`'s invulnerability window and `lastHurt`;
+  - `Player.hurtServer`'s difficulty scaling and its invulnerable check;
+  - the `bypasses_invulnerability` tag;
+  - knockback only after a successful hurt;
+  - the death path (`ServerPlayer.die` on a cancelled `PlayerDeathEvent`).
+- **End crystals:** `EndCrystal.tick`'s fire through `CraftEventFactory`, and the crystal heal.
+- **Mannequins and structures:**
+  - `Mannequin`'s API and `VALID_POSES` (SLEEPING);
+  - `CraftStructure.fill` and `place`;
+  - the structure block's 48 limit.
+- **Particles and the HUD:** forced particles; the action bar and its holds.
+- **Earlier slices' facts:** the selftest drivers (`Player#attack`, synthetic interact events, `performCommand`); the
+  creative-divergence register; the Phage, the Knell, the Phalanx and the Skreel.
+
+**The upgrade procedure** (`.claude/rules/upgrade-procedure.md`, the account):
+0. Notice the release.
+1. Check that PacketEvents supports 26.3; it is the gate, and it typically lags.
+2. Bump `packetevents.version` first and build.
+3. Bump `paper.version`, an exact build.
+4. `./mvnw -pl core test`.
+5. Boot and smoke-test one ability.
+
+Then, for this project: re-read every fact above on the new jar, and re-boot every merged gate whose rows rest on one.
+**That is most of the fight's gates.**
+
+**What cannot be undone:**
+- **A world opened on 26.3 is upgraded, and 26.1 will not load it again** (INFERRED: Minecraft's world format only
+  goes forward). The backup before the first 26.3 boot is the only way back, so it must be taken and its counts read
+  first.
+- Player data upgraded the same way.
+- Our own files (profiles, `arenas/*.nbt`) are ours. INFERRED unaffected, but a structure file saved on 26.3 carries a
+  newer data version, which 26.1 may refuse.
+
+**What it costs:** the PacketEvents wait (unknown), a build, and a re-read and re-boot cycle across the fight's gates.
+Days of booting, not hours. **Open for Ben:** when, and whether before or after the fight's waves.
+
+Sources (8.c): [papermc.io/news/26-3](https://papermc.io/news/26-3), [jd.papermc.io/paper/26.3](https://jd.papermc.io/paper/26.3/index.html).
