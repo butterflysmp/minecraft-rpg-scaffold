@@ -1,0 +1,130 @@
+# GATE-fight-rules.md: STEP F9b, THE FIGHT'S RULES AFTER THE DRAGON BOOT (feat/fight-rules, 2026-11-19).
+# `/rpg selftest fight-rules`. NO BOOT OF ITS OWN: GATE-fight-end.md carries the one R0 and the one run sheet.
+#
+# THE FIXTURE is the arena's (`/rpg fight enter`, which spawns the dragon) and its dev handles, plus F9b's:
+# `/rpg fight dragon touch <head|wing> | to-breath | move <dx> <dy> <dz>`. Its new lines: DRAGONGATE ... why=<reason>,
+# FIGHTHIT ... phase=<P> (on the dragon), DRAGONHEAL, DRAGONATTACK, DRAGON touch, DRAGON to-breath, DRAGON moved,
+# FIGHT lightning, FIGHT fireballs, DRAGONMAGE; and HURT ... attack=<a> for the dragon's hits on him.
+#
+# Every row holds the dragon in HOVER first, 20 above the centre, and ends back in the world he started in with
+# `rpg fight worlds` reading loaded=0 folders=0 marked=0, and the end probes. NO ROW KILLS HIM: the attack rows put him
+# in the dragon's way for a few ticks, at full health, under slow falling, and take him out.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# RA1: IMMUNE WHILE A MAGE IS OWED (Ben: "No it can't be hurt while a mage is owed"). A Mage landed and killed, so the
+# ring is RETURNING; a hit crossing 80% then lands whole; the next is refused mage-owed; once the ring is home the owed
+# Mage lands (with the landing's lightning) and a hit is refused mage-alive; his death, and a hit lands.
+RA1:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight land 0 0"
+  - wait: 40
+  - cmd: "rpg fight mage-die"
+  - wait: 2
+  - cmd: "rpg fight dragon hit 4000.5"
+  - wait: 2
+  - cmd: "rpg fight dragon hit 100"
+  - wait: 2
+  - cmd: "rpg fight dragon probe"
+  - wait: 60
+  - cmd: "rpg fight dragon hit 100"
+  - wait: 2
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight mage-die"
+  - wait: 2
+  - cmd: "rpg fight dragon hit 100"
+  - wait: 2
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# RA2: NO CRYSTAL HEALS THE DRAGON (Ben: "No crystals should not heal the dragon"). The dragon wounded and moved beside
+# crystal 1's pillar; a Mage at the centre; the slow close lights crystal 1; its health does not rise, and the refused
+# heal is logged once.
+RA2:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight dragon hit 1000"
+  - wait: 2
+  - cmd: "rpg fight dragon move 30 15 0"
+  - wait: 2
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight land 0 0"
+  - wait: 500
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# RA3: THE BITE (80, "Yes those numbers are fine to start with"): put in the head's box, he is bitten for 80 before his
+# armour; the HURT line names it.
+RA3:
+  - cmd: "effect give @s minecraft:slow_falling 40 0 true"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 25
+  - cmd: "rpg fight dragon touch head"
+  - wait: 4
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# RA4: THE WING (40): put in a wing's box, he is struck for 40 before his armour, and pushed (vanilla's push).
+RA4:
+  - cmd: "effect give @s minecraft:slow_falling 40 0 true"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 25
+  - cmd: "rpg fight dragon touch wing"
+  - wait: 4
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - cmd: "effect clear @s minecraft:slow_falling"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# RA5: THE BREATH (30 a second): the breath phase set by the API, he stands on its cloud for about two of its hits; each
+# hit is 30 x the cloud's interval / 20 before his armour.
+RA5:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight dragon phase breath_attack"
+  - wait: 15
+  - cmd: "rpg fight dragon to-breath"
+  - wait: 45
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
