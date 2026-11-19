@@ -57,3 +57,6 @@ gates:
 # fight-end (step F9c, 2026-11-19, stacked on fight-rules) is paired with docs/gates/GATE-fight-end.md: the END-type
 # fight world. It carries the ONE R0 and run sheet for itself and fight-rules, and Ben's rows for both.
   - fight-end
+# fight-down (step F9d, 2026-11-19) is paired with docs/gates/GATE-fight-down.md: DOWN, ALL DOWN and the entry mode. It
+# has no boot of its own: GATE-fight-revive.md (F9e, stacked on it) carries the one R0 and run sheet.
+  - fight-down
