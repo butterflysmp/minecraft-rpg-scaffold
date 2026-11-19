@@ -988,6 +988,98 @@ or a living player, read in `SelfTestRun`, `SelfTestSnapshot`, `SelfTestDrivers`
 | **the HURT line** | the damage tap; the dealer looked up in HIS world | finds a dealer in the fight world | n/a | none |
 | **the run's end while he is inside** | `end` → restore → `stopFight` | he ends at his return location, and the world goes | n/a | none |
 
+### 6.8 F9 AS BUILT (`feat/fight-dragon`, 2026-11-18): THE DRAGON, WHAT THE CODE AND THE JAR SHOWED
+
+**Every server fact is from the pinned server jar, build 74 (`Implementation-Version: 26.1.2-74-e4e17fc`, matching
+`pom.xml`'s `26.1.2.build.74-stable`), by `javap -c -p`, or from its data files.** Each is marked READ, INFERRED or
+UNVERIFIED. The research agent's full notes, with the quoted instructions, were the session's working file. The
+decisive lines are quoted here.
+
+**WHAT THE CODE SHOWED THE BRIEF HAD WRONG, OR DID NOT SAY:**
+
+1. **A plugin-spawned dragon never moves.**
+   - READ: `EnderDragonPhaseManager.<init>` sets `HOVERING`, and `EnderDragon.aiStep` skips all movement while the
+     phase is `HOVERING` (`getstatic EnderDragonPhase.HOVERING` / `if_acmpeq` past the movement block). Only vanilla's
+     own `EnderDragonFight` moves a new dragon on.
+   - So the fight sets `CIRCLING` (Bukkit's name for `HOLDING_PATTERN`) at the spawn. Without it, "fly and perch" would
+     have read as a dragon hanging still.
+2. **The fireball row cannot be staged by the API.**
+   - READ: only `DragonStrafePlayerPhase` raises `EnderDragonShootFireballEvent`. Its `begin()` nulls the target, and only
+     the holding pattern sets one.
+   - With no target, the next tick logs `Skipping player strafe phase because no player was found` (a vanilla `warn`)
+     and returns to the holding pattern.
+   - DA6 reads that. The cancel is witnessed only by fireballs the dragon shoots on its own (DB1, DB2).
+3. **A hit on a part only reaches the dragon from a player, or from a damage type in
+   `always_hurts_ender_dragons`.** READ: `EnderDragon.hurt(level, part, source, amount)` calls `reallyHurt` only if
+   `source.getEntity() instanceof Player` or the type is in that tag; anything else is dropped with no event. Our
+   abilities never take this path (they write the store directly); a player's melee does.
+4. **Melee on a part landed nothing before this step.** READ, our source: `onPrePlayerAttack` returned on
+   `!(getAttacked() instanceof LivingEntity)`, and a part is not one. The damage event that follows is raised on the
+   dragon, found no recorded swing, and landed only the 0.01 token. Fixed: `LiveTargets.body`.
+5. **Our ray could miss a part outside the dragon's own box.** INFERRED from READ geometry:
+   - while sitting, the head's box is y−1 to y, wholly below the dragon's box (y to y+8);
+   - tail3's edge can reach 8.5 along an axis, against the dragon box's 8.0.
+
+   READ: Bukkit's `rayTraceEntities` and `getNearbyEntities` include the parts (`Level.getEntities` adds them through
+   `PaperHooks.addToGetEntities`), each tested against its own box. Our filters dropped them as not living. Fixed:
+   the filters and the hit resolve a part to its dragon.
+6. **Vanilla's per-part scaling never reaches our number.**
+   - READ: on any part but the head, the amount becomes `amount/4 + min(amount, 1)`.
+   - It acts on the amount vanilla passes to `reallyHurt`. Our melee sets that to the 0.01 token, and lands its own
+     figure in the store; abilities never call it.
+   - A plain vanilla arrow, which none of our weapons fires, is rerouted from vanilla's `event.getDamage()`, already
+     scaled, so the scaling is applied once, by vanilla.
+   - **Nothing is bypassed: the scaling is not applied twice anywhere.** The seat's rule, "our store's number is the
+     number", holds for every weapon we ship.
+7. **A perched dragon takes 0 from an arrow.** READ: `AbstractDragonSittingPhase.onHurt` zeroes damage whose direct
+   entity is an arrow or a wind charge, and sets an arrow alight. Our ranged weapons are rays and marker bodies, so
+   this does not reach them. Recorded for Ben's DB rows.
+8. **The XP.** READ: `getExpReward` is 500 with no vanilla fight and `mob_drops` on. READ (agent):
+   `tickDeath` spends the `expToDrop` set from the death event's dropped XP, so `setDroppedExp(0)` suppresses it. Our
+   death path is `setHealth(0)`, so vanilla's 200-tick death animation still plays; the fight removes the dragon at
+   the win's return.
+9. **The crystals heal the dragon's VANILLA health only.**
+   - READ: any End Crystal within 32 of the dragon heals 1 every 10 ticks, raising `EntityRegainHealthEvent`
+     `ENDER_CRYSTAL`.
+   - READ, our source: `VanillaHealPolicy` acts only on tracked players.
+   - So the store is never healed, and the vanilla mirror resets vanilla's health at the next store write.
+   - INFERRED: the client draws a beam from a crystal to the dragon when it is near one.
+10. **The fight world does not grief.** READ: `checkWalls` breaks blocks only with `mob_griefing` on, and the fight
+    world sets it off.
+
+**WHAT THE DRAGON'S ATTACKS DO TO A PLAYER TODAY, THROUGH OUR PIPELINE (the brief's 3 g; NOTHING CHANGED):**
+
+| attack | vanilla (READ) | through our pipeline |
+|---|---|---|
+| head and neck | 10, `mob_attack`, damager the dragon, when the dragon's `hurtTime` is 0 | **0 to custom health** (INFERRED). READ: the dragon has no `ATTACK_DAMAGE` attribute (`EnderDragon.createAttributes` adds only `MAX_HEALTH 200` and `CAMERA_DISTANCE 16` to the mob defaults), and our seed is 0.0 without one. Vanilla's 10 is tokened by the mob-melee rider |
+| wings | 5, the same source, only while not sitting and not hit by a mob in the last 2 ticks; push `dx/d·4, 0.2, dz/d·4` | **0 to custom health** (INFERRED, as above); **the push is vanilla's** |
+| perched breath | a cloud of radius 5 for about 190 ticks, Instant Damage level 0 (3 a hit, every 20 ticks), `indirect_magic`, direct entity the cloud, causing entity the dragon | **UNKNOWN, to be read in DB1 and DB2.** INFERRED: Bukkit names it `ENTITY_ATTACK` with the cloud as damager, so our mob rider (damager not living) does not take it, and `VanillaDamagePolicy` passes `ENTITY_ATTACK` |
+| charge | no damage of its own | nothing |
+| fireball | its cloud: radius 3 growing to 7, Instant Damage level 1 (6 a hit) | **never shot**: cancelled for the fight's dragon |
+
+**THE SKY (the brief's section 2; READ ONLY, NOTHING BUILT). Ben: "I wonder if it's possible to have it be like in
+the end".**
+- READ: in 26.1 a dimension type carries `skybox` (`none`, `overworld`, `end`) and visual `attributes`. There is no
+  `effects` field.
+  - `the_end.json` reads `"skybox": "end"`, `"has_ender_dragon_fight": true`, sky `#000000`, fog `#181318`.
+  - The login and respawn packets name the type by registry id; its fields reach the client through registry sync.
+    No packet sets them live.
+- READ: `WorldCreator`'s environment chooses one of the three vanilla stems and nothing else.
+- READ: `ServerLevel.<init>` builds vanilla's `EnderDragonFight` exactly when the type's `has_ender_dragon_fight` is
+  true.
+- READ: the Paper API has no runtime registry for dimension types; a datapack dimension is loaded as a world at
+  startup.
+
+| option | what Ben would see | what it costs | marks |
+|---|---|---|---|
+| **(a)** the fight's world made an END world | the real End sky | vanilla's own dragon fight starts there: its boss bar, a bedrock exit portal at the centre, and it adopts our dragon or spawns a second. The world is 0 to 256 high | the trigger, the height and the sky READ; what is drawn INFERRED |
+| **(b)** a datapack world type with the End's sky and no fight | the End sky, no vanilla fight | **a server restart** to add or change it; the arena becomes ONE permanent world loaded at startup, not made and deleted per fight; our world creation cannot reach it | the loader and the API READ; the restart and the loss of per-fight worlds INFERRED |
+| **(c)** each player's view changed by packet | possibly the End sky | high risk: the End is 256 high and the world 384, so his chunks would be misread; against the project's packet rule | the packet READ; the breakage INFERRED |
+| **(d)** night forced and a dark biome, through the API | a dark sky, **not** the End's | cheap | UNVERIFIED |
+
+**CC's reading, for Ben to decide:** (b) is the only one that gives the End's sky without vanilla's fight. It
+changes how the arena exists: one world kept, not one made per fight. So it is a design decision, not a build step.
+
 ## 7. OPEN, FOR BEN
 
 *Listed, not answered.*
