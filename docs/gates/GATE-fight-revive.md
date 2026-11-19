@@ -113,6 +113,14 @@ The booter's checklist is `.claude/rules/booting.md`; this list is its instance 
    - **RV4 and RVB3 put you down on purpose**, and nothing else hurts you.
    - RVB2 asks you to sneak on a practice copy.
    - Each question says whether it wants yes or no, or your own words.
+4b. **Two owed rows from `GATE-fight-site.md`** (added 2026-11-19, the seat's queue, item 4; both UNREAD since F8b):
+    - `/rpg selftest fight-site MG5R3`, then `/rpg selftest fight-site MG7R3`. Each is ONCE and runs its gate's setup
+      first. In the ordinary world, about a minute each.
+    - **Neither can hurt you.** You stand 1 west of the Mage, inside every ring, so every strike reads `k=0
+      damage=0.000 inside` (the rows' own prediction). An ordinary-world fight never kills anyone. MG7R3's two
+      `damage` commands hit the crystal, not you; were both refusals to fail, the crystal stands on its 40-block circle,
+      beyond an explosion's reach (INFERRED). **The arithmetic: 0 against your 350.**
+    - Their predictions are `GATE-fight-site.md`'s MG5R3 and MG7R3, unchanged; their readings go there.
 5. **THE MANUAL ROW (FDM1, `GATE-fight-down.md`):**
    - Type `/rpg fight enter nodragon`.
    - Walk off the edge of the floor into the void.
