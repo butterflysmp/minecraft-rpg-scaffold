@@ -1,6 +1,6 @@
 # GATE — STEP F9c: AN END-TYPE FIGHT WORLD (AND THE ONE BOOT FOR F9b's GATE TOO)
 
-**Status: THE SECOND BOOT IS NOT RUN** (its section, *THE SECOND BOOT*, is at the end, committed before it). **The first boot: READ, 2026-11-19, at `e15cf9ee`** (the seat's boot approval of 2026-11-19; Ben's "ready"). R0 passed. EA1 read the INERT branch, as predicted; EB1 to EB4 read with Ben's five answers; **EB5 ABORTED** (he disconnected 32 seconds in), so questions 6 and 7 were not asked. The checklist, the after-run and the findings are in *THE BOOT OF 2026-11-19* at the end. Every prediction below was written **before** any boot of `feat/fight-end`, and this file is
+**Status: THE SECOND BOOT IS READ, 2026-11-19, at `e772f8b5`** (R0 passed; EB3R2, EB4R2 and EB5R2 read with Ben's five answers; he won the fight; *THE SECOND BOOT, READ*, at the end). **The first boot: READ, 2026-11-19, at `e15cf9ee`** (the seat's boot approval of 2026-11-19; Ben's "ready"). R0 passed. EA1 read the INERT branch, as predicted; EB1 to EB4 read with Ben's five answers; **EB5 ABORTED** (he disconnected 32 seconds in), so questions 6 and 7 were not asked. The checklist, the after-run and the findings are in *THE BOOT OF 2026-11-19* at the end. Every prediction below was written **before** any boot of `feat/fight-end`, and this file is
 committed before the boot.
 - Readings go **beside** a prediction, never over it.
 - A prediction is not edited once its row has been read; a correction is a dated note.
@@ -451,7 +451,7 @@ overworld 106 files (the 12:49 backup's figure).
 
 ## THE SECOND BOOT (the seat's fix brief and its addendum, 2026-11-19) — ITS R0, CARRIED STATE, RUN SHEET, AND EB3R2, EB4R2, EB5R2
 
-**Status of this section: NOT RUN.** Written before the second boot, and committed before it. It is the one R0 and run
+**Status of this section: READ at the second boot, 2026-11-19, at `e772f8b5`.** Written before it, and committed before it. It is the one R0 and run
 sheet for both gates: `GATE-fight-rules.md`'s RA3R2, RA4R2, RA5R2 and RB1, and this file's EB3R2, EB4R2 and EB5R2.
 **Not re-run:** RA1, RA2, EA1, EB1, EB2. Everything above this section stands as read.
 
@@ -576,13 +576,13 @@ Nothing else this boot.
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`: `feat/fight-end`'s head as `git ls-remote origin refs/heads/feat/fight-end` prints it, shortened. Not `-dirty`, not `unknown`. **Not `e15cf9ee`, not `61ce1271`** (the two earlier builds) | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`: `feat/fight-end`'s head as `git ls-remote origin refs/heads/feat/fight-end` prints it, shortened. Not `-dirty`, not `unknown`. **Not `e15cf9ee`, not `61ce1271`** (the two earlier builds) | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **AS PREDICTED (2026-11-19, 14:30:19).** `[Rpg] Build: e772f8b5`; `git ls-remote --heads origin feat/fight-end` printed `e772f8b55ec5f189aaaf9720c726e1fcef2f250b`, the head the seat diffed. Not `-dirty`, not `unknown`, not `e15cf9ee`, not `61ce1271` |
 
 ### R0b-R2 — the jar carries the fix
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: `dragon.yml` lines `  contact_hit_interval_ticks: 20`, `  environment: end`; `FightInstance.class` carrying `DRAGONATTACK suppressed` and `FIGHTDAMAGE refused`; `FightFixtures.class` carrying `FIGHTCAST` and `ARENAPROBE when=`; the entry `io/github/butterflysmp/rpg/core/fight/ContactHitWindow.class`; `GATE-fight-end.yml` carrying `EB5R2:`; `GATE-fight-rules.yml` carrying `RB1:`. ABSENT: `dragon.yml` line `  environment: normal`, `NoSuchTextControl` in `FightInstance.class`, and **`GATE-fight-rules.yml` carrying `RA5:`** (the first boot's row, retired) | the PowerShell below, from the repo root | |
+| PRESENT: `dragon.yml` lines `  contact_hit_interval_ticks: 20`, `  environment: end`; `FightInstance.class` carrying `DRAGONATTACK suppressed` and `FIGHTDAMAGE refused`; `FightFixtures.class` carrying `FIGHTCAST` and `ARENAPROBE when=`; the entry `io/github/butterflysmp/rpg/core/fight/ContactHitWindow.class`; `GATE-fight-end.yml` carrying `EB5R2:`; `GATE-fight-rules.yml` carrying `RB1:`. ABSENT: `dragon.yml` line `  environment: normal`, `NoSuchTextControl` in `FightInstance.class`, and **`GATE-fight-rules.yml` carrying `RA5:`** (the first boot's row, retired) | the PowerShell below, from the repo root | **AS PREDICTED.** `PRESENT dragon.yml '  contact_hit_interval_ticks: 20'`, `'  environment: end'`; `ABSENT  dragon.yml '  environment: normal'`; `PRESENT …/FightInstance.class 'DRAGONATTACK suppressed'`, `'FIGHTDAMAGE refused'`; `ABSENT  …/FightInstance.class 'NoSuchTextControl'`; `PRESENT …/FightFixtures.class 'FIGHTCAST'`, `'ARENAPROBE when='`; `PRESENT entry ContactHitWindow.class`; `PRESENT GATE-fight-end.yml EB5R2:`; `PRESENT GATE-fight-rules.yml RB1:`; `ABSENT  GATE-fight-rules.yml RA5:` |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -611,13 +611,13 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| **`[Rpg] Loaded 11 abilities, 30 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`** (unchanged). AND exactly one **`[Rpg] Loaded fight 'dragon': border 48.0, mage ring 12.0, v_fast 3.80, v_slow 0.60, e_kill 1.00, 10 crystals every 240 ticks, a strike every 40 ticks from 20.0; ring dust (170,0,255) size 1.60 every 1.00 blocks at [0.2, 1.7, 3.2, 4.7, 6.2, 7.7], row shift 0.25, turn 1.00/s alternating, every 4 ticks; mage 'dark_mage' refused item.shield.block, landing lightning on; crystals at 40.0, 12.0 up, lit block.beacon.power_select; participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to +12, time 18000, entry (0.0, 0.0), environment end; dragon 'ender_dragon' Mages below [0.8, 0.6, 0.4, 0.2], win return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s, one contact hit per 20 ticks`** (`FightLoaderTest` asserts it verbatim). No `Refusing`, `Skipping`, `SEVERE` or `Exception`. **No `[Rpg]` WARN beyond `volley_stone`'s known pair.** No `No fights loaded` | `Select-String run\logs\latest.log -Pattern 'Loaded\|Refusing\|Skipping\|SEVERE\|WARN\|Exception\|No fights loaded'` (up to the first `joined the game`) | |
+| **`[Rpg] Loaded 11 abilities, 30 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`** (unchanged). AND exactly one **`[Rpg] Loaded fight 'dragon': border 48.0, mage ring 12.0, v_fast 3.80, v_slow 0.60, e_kill 1.00, 10 crystals every 240 ticks, a strike every 40 ticks from 20.0; ring dust (170,0,255) size 1.60 every 1.00 blocks at [0.2, 1.7, 3.2, 4.7, 6.2, 7.7], row shift 0.25, turn 1.00/s alternating, every 4 ticks; mage 'dark_mage' refused item.shield.block, landing lightning on; crystals at 40.0, 12.0 up, lit block.beacon.power_select; participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to +12, time 18000, entry (0.0, 0.0), environment end; dragon 'ender_dragon' Mages below [0.8, 0.6, 0.4, 0.2], win return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s, one contact hit per 20 ticks`** (`FightLoaderTest` asserts it verbatim). No `Refusing`, `Skipping`, `SEVERE` or `Exception`. **No `[Rpg]` WARN beyond `volley_stone`'s known pair.** No `No fights loaded` | `Select-String run\logs\latest.log -Pattern 'Loaded\|Refusing\|Skipping\|SEVERE\|WARN\|Exception\|No fights loaded'` (up to the first `joined the game`) | **AS PREDICTED.** Both Loaded lines verbatim at 14:30:20 (compared byte for byte against the predicted text), and exactly one fight line, ending `breath 30.0/s, one contact hit per 20 ticks`. `[Rpg]` WARN: `volley_stone`'s pair only. No `Refusing`, `Skipping`, `SEVERE`, `Exception` or `No fights loaded` before the join (14:31:16) |
 
 ### R0d-R2 — every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one **`[Rpg] Selftest: dev server, 217 scenarios across 26 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot, dragon-blink, dragon-skreel, drag-additive, fight-site, fight-arena, fight-dragon, fight-rules, fight-end]`**, no refusal after it. **The control:** the first boot's `221 scenarios across 26 gates` is ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+| Exactly one **`[Rpg] Selftest: dev server, 217 scenarios across 26 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot, dragon-blink, dragon-skreel, drag-additive, fight-site, fight-arena, fight-dragon, fight-rules, fight-end]`**, no refusal after it. **The control:** the first boot's `221 scenarios across 26 gates` is ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | **AS PREDICTED.** Exactly one `[Rpg] Selftest: dev server, 217 scenarios across 26 gates [melee-cell, … fight-rules, fight-end]`; `221 scenarios across 26 gates` ABSENT |
 
 **RECOUNTED** (2026-11-19, this branch's tree; `SelfTestScenariosTest` asserts 217):
 - the gates in `index.yml`: **26**;
@@ -632,7 +632,7 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| During the enable, exactly one **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=0`**, and no `deleting` and no `orphan` line | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'` | |
+| During the enable, exactly one **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=0`**, and no `deleting` and no `orphan` line | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'` | **AS PREDICTED.** Exactly one `FIGHTWORLD sweep path=C:\Users\Neb91\IdeaProjects\minecraft-rpg-scaffold\run\world\dimensions\rpgfight folders=0`; no `deleting` and no `orphan` line during the enable |
 
 ## THE ROWS (SECOND BOOT) — SURVIVAL, DIFFICULTY NORMAL. BEN'S ANSWERS VERBATIM; "not sure" IS NOT STATED; NO PASS OR FAIL ON BEN'S HALF
 
@@ -646,22 +646,127 @@ then `deleted … entries=<e>`.
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `DRAGON phase-set … now=HOVER`; the `tp` to the floor; **no `DRAGONATTACK` for him before the touch**. (2) `DRAGON touch t=<T> part=head … inside=true`; **at most ONE contact `DRAGONATTACK`** for him before the heal: if it lands, **`… attack=bite … amount=80.000 vanilla=10.000 phase=HOVER`** and `HURT before=80.000 after=72.727 … attack=bite`; any further in **`DRAGONATTACK suppressed player=BaronVonYeetus count=<k> window=<T'>..<T'+19>`**. (3) `DRAGON touch … part=wing … inside=true`; **at most ONE**: if it lands, `… attack=wing … amount=40.000 vanilla=5.000 …` and `HURT before=40.000 after=36.364 … attack=wing`. **None is also predicted** (vanilla's own condition; unreadable). (4) No contact `DRAGONATTACK` in the 30 ticks on the floor after. (5) Ben's answer to **4**, verbatim | `GATE-fight-rules.md` RA3R2 and RA4R2 | |
+| (1) `DRAGON phase-set … now=HOVER`; the `tp` to the floor; **no `DRAGONATTACK` for him before the touch**. (2) `DRAGON touch t=<T> part=head … inside=true`; **at most ONE contact `DRAGONATTACK`** for him before the heal: if it lands, **`… attack=bite … amount=80.000 vanilla=10.000 phase=HOVER`** and `HURT before=80.000 after=72.727 … attack=bite`; any further in **`DRAGONATTACK suppressed player=BaronVonYeetus count=<k> window=<T'>..<T'+19>`**. (3) `DRAGON touch … part=wing … inside=true`; **at most ONE**: if it lands, `… attack=wing … amount=40.000 vanilla=5.000 …` and `HURT before=40.000 after=36.364 … attack=wing`. **None is also predicted** (vanilla's own condition; unreadable). (4) No contact `DRAGONATTACK` in the 30 ticks on the floor after. (5) Ben's answer to **4**, verbatim | `GATE-fight-rules.md` RA3R2 and RA4R2 | **AS PREDICTED; THE WING ON ITS "NONE" BRANCH.** (1) `DRAGON phase-set t=16 phase=HOVER now=HOVER`; no `DRAGONATTACK` before the touch. (2) **`DRAGON touch t=76 part=head at=-0.85 18.52 -7.24 phase=HOVER box=-0.65,83.52,-7.04..-0.05,85.32,-6.44 attack_box=-1.85,83.02,-8.24..1.15,86.02,-5.24 inside=true`**; **one `DRAGONATTACK t=76 attack=bite … amount=80.000 vanilla=10.000 phase=HOVER`** and **`HURT before=80.000 after=72.727 defense=10.000 … attack=bite`**; **`DRAGONATTACK suppressed player=BaronVonYeetus count=7 window=76..95`** (printed at the fight's end). (3) **`DRAGON touch t=120 part=wing at=4.19 19.02 1.17 phase=HOVER box=4.39,84.02,1.37..4.99,85.82,1.97 attack_box=-1.31,83.02,-4.33..10.69,89.02,7.67 inside=true`**, 44 ticks after the bite, the window long closed: **no `DRAGONATTACK`**, so vanilla raised no event (as RA4R2). (4) No contact hit on the floor after. The end: `ARENAPROBE when=end … fire=0 … dragons=0`, `entries=17`. (5) Ben, to **4** ("The dragon's bite (80) and wing (40), at most one of them a second: do they feel right?"): **"yes"**. **The wing he answered about did not hit him in this row** |
 
 ### EB4R2 — the breath with no push: questions 5 and 8 (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) `DRAGON phase-set … phase=BREATH_ATTACK`; `DRAGON to-breath t=<t> cloud=<c> … radius=5.00 interval=20`. (2) **One to three `DRAGONBREATH apply … affected=[BaronVonYeetus] …` lines, 20 ticks apart**, each with **`DRAGONATTACK … attack=breath … amount=30.000 vanilla=3.000 phase=BREATH_ATTACK`** and `HURT before=30.000 after=27.273 … attack=breath`. (3) **No contact `DRAGONATTACK` (bite or wing) in the row.** (4) Each hit's `DRAGONBREATH velocity … at_hit=<v> next_tick=<v>`. **How it is read:** a vanilla knockback sets his server-side motion, which this line would show as a horizontal jump at `next_tick` (INFERRED). **A player's motion is driven by his own client, so the server's figure is not the witness.** Ben's answer to **8** is. (5) Ben's answers to **5** and **8**, verbatim | `FightRulesSourceTest` *theBreathIsCancelled…*; `GATE-fight-rules.md` RA5R2 | |
+| (1) `DRAGON phase-set … phase=BREATH_ATTACK`; `DRAGON to-breath t=<t> cloud=<c> … radius=5.00 interval=20`. (2) **One to three `DRAGONBREATH apply … affected=[BaronVonYeetus] …` lines, 20 ticks apart**, each with **`DRAGONATTACK … attack=breath … amount=30.000 vanilla=3.000 phase=BREATH_ATTACK`** and `HURT before=30.000 after=27.273 … attack=breath`. (3) **No contact `DRAGONATTACK` (bite or wing) in the row.** (4) Each hit's `DRAGONBREATH velocity … at_hit=<v> next_tick=<v>`. **How it is read:** a vanilla knockback sets his server-side motion, which this line would show as a horizontal jump at `next_tick` (INFERRED). **A player's motion is driven by his own client, so the server's figure is not the witness.** Ben's answer to **8** is. (5) Ben's answers to **5** and **8**, verbatim | `FightRulesSourceTest` *theBreathIsCancelled…*; `GATE-fight-rules.md` RA5R2 | **AS PREDICTED.** (1) `DRAGON phase-set t=76 phase=BREATH_ATTACK now=BREATH_ATTACK`; `DRAGON to-breath t=91 cloud=bb5c6a81-… at=-1.24 0.00 -9.71 radius=5.00 interval=20`. (2) **Three `DRAGONBREATH apply … affected=[BaronVonYeetus] players=[BaronVonYeetus(xz=0.00 dy=0.00)]`, at t=105 (age 20), t=125 (age 40) and t=145 (age 60), 20 ticks apart**; the checks between read `affected=[]`. Each had **`DRAGONATTACK … attack=breath … base=30.000 gs=100 amount=30.000 vanilla=3.000 phase=BREATH_ATTACK`** and **`HURT before=30.000 after=27.273 defense=10.000 … attack=breath`**. **The third landed at t=145; the `tp` is 55 ticks after `to-breath` (t=91), so about t=146, and its tick is not logged**: three, as the arithmetic allowed (90). (3) **No contact `DRAGONATTACK` in the row.** (4) **`DRAGONBREATH velocity t=105 at_hit=0.000 -0.078 0.000 next_tick=0.000 -0.078 0.000`**, **t=125 the same**, **t=145 `at_hit=0.000 -0.078 0.000 next_tick=0.000 0.000 0.000`**: no horizontal motion on the server (INFERRED reading). (5) Ben, to **5** ("The breath, 30 a second, with no push: does it feel right?"): **"yes"**; to **8** ("Did the breath push you at all?"): **"no"** |
 
 ### EB5R2 — THE FIGHT, NO SAFETY: questions 6 and 7 (SURVIVAL; he may die)
 
 | prediction | stands on | READING |
 |---|---|---|
-| (1) The fight's lines as the first boot's EB5 predicted them: rings, crystals, a Mage at each of 80, 60, 40 and 20 percent, the dragon's immunity while one is owed, `STRIKE` lines, and its end (`FIGHT won` or `FIGHT stopped`). (2) **Any two contact `DRAGONATTACK` lines for one player are at least 20 ticks apart** (the window); suppressed ones counted in `DRAGONATTACK suppressed` lines. (3) **No `HURT` line on him while he is outside the fight world**; any priced then is a `FIGHTDAMAGE refused` line. (4) A `FIGHTCAST … result=<r>` line for each of his right-clicks; any `FIGHTCAST … dealt=nothing within=40` is read as it stands. (5) **`ARENAPROBE when=end …`** once, at the end. (6) Every `mana refill` in the log, counted. (7) Ben's answers to **6** and **7**, verbatim | `ContactHitWindowTest`; `FightRulesSourceTest` *everyFightDamageIsApplied…* | |
+| (1) The fight's lines as the first boot's EB5 predicted them: rings, crystals, a Mage at each of 80, 60, 40 and 20 percent, the dragon's immunity while one is owed, `STRIKE` lines, and its end (`FIGHT won` or `FIGHT stopped`). (2) **Any two contact `DRAGONATTACK` lines for one player are at least 20 ticks apart** (the window); suppressed ones counted in `DRAGONATTACK suppressed` lines. (3) **No `HURT` line on him while he is outside the fight world**; any priced then is a `FIGHTDAMAGE refused` line. (4) A `FIGHTCAST … result=<r>` line for each of his right-clicks; any `FIGHTCAST … dealt=nothing within=40` is read as it stands. (5) **`ARENAPROBE when=end …`** once, at the end. (6) Every `mana refill` in the log, counted. (7) Ben's answers to **6** and **7**, verbatim | `ContactHitWindowTest`; `FightRulesSourceTest` *everyFightDamageIsApplied…* | **READ: HE WON. FOUR MAGES LANDED; HE DID NOT DIE.** (1) Born at t=0 (`end-check … inert=true`, `arena built … ms=98`, `dragon spawned t=0 … at=0.00 20.00 0.00 phase=CIRCLING`). **Crossings:** `DRAGONCROSS t=349 threshold=0.80 health=15915.000`, `t=1469 0.60 11830.000`, `t=2257 0.40 7949.250`, `t=3560 0.20 3864.250`. **The Mages** (distance from the centre computed from the `land` offsets): t=350 at (-8.10, 30.37), 31.4; t=1568 at (20.61, 5.66), 21.4; t=2522 at (-1.81, -26.20), 26.3; t=3586 at (26.28, -5.43), 26.8. **Each Mage's health:** 6000/6000 at the slow close, first hit 5795.750 (t=745, 1897, 2925, 3949), 0.000 at `FIGHT die` t=959, 2045, 3054, 4064. From landing that is 609, 477, 532 and 478 ticks; from the slow close 254, 175, 204 and 147; 27, 23, 24 and 24 hits. **MAGEGATE:** 7 refusals, all `phase=FAST_CLOSE … source=hit/kinetic`. **DRAGONGATE:** 34 refusals, `why=mage-owed` 24, `why=mage-alive` 10. **The end:** `FIGHT win t=4235 … exp_suppressed=500 drops_suppressed=0 return_in=200`, the dragon dead at t=4235, `win-return … after=200`, `FIGHTWORLD returned … why=end`. (2) **Four contact hits, all wings at `vanilla=5.000`, 40.000 each, `HURT … after=36.364`:** t=826 (CHARGE_PLAYER), t=846 (CIRCLING), t=1495 (LAND_ON_PORTAL), t=4090 (CHARGE_PLAYER). **No two closer than 20 ticks (826 to 846 is exactly 20). The most in any 20 ticks: 1.** Suppressed: `count=17 window=826..845`, `count=2 window=846..865`, `count=2 window=1495..1514`, `count=9 window=4090..4109`. No bite and no breath hit on him in the fight. (3) **No `HURT` after `FIGHTWORLD returned`; no `FIGHTDAMAGE refused` in the row.** (4) **110 `FIGHTCAST` lines:** 48 `result=Success`, 41 `OnCooldown`, 5 `InsufficientResource` (all `held=EMERALD`), 5 `no-weapon` (`held=COOKED_BEEF`), and **11 `dealt=nothing within=40`, all `held=EMERALD`**. (5) **`ARENAPROBE when=end … environment=THE_END centre_top=END_STONE bedrock_in_column=0 fire=0 (y 65..79) crystals=0 dragons=0`**, once. (6) **27 `/rpg mana refill`** (times and ticks in *THE SECOND BOOT, READ*). (7) Ben, to **6** ("For one player, is the dragon's 20,000 health right, now that every phase has its Mage?"): **"yes"**; to **7** ("What most needs to change before waves are built?"): **"nothing"** |
 
 ### OPEN FOR BEN, NOT ASKED BY ANY ROW (the seat's brief)
 
 - **`contact_hit_interval_ticks`:** 20 is the seat's placeholder, and his to change.
 - **Whether his player file is restored** from `2026-11-19-pre-fight-end`.
 - **What happened to his cursed emerald.**
+
+### THE SECOND BOOT, READ (2026-11-19, 14:30 to 14:37, at `e772f8b5`)
+
+**The booter's checklist (`.claude/rules/booting.md`), ticked:**
+
+1. **The seat's word and Ben's:** the seat's SECOND BOOT APPROVED (2026-11-19, from origin `95277db4` and `e772f8b5`);
+   Ben's "ready", in his own words.
+2. **The heads:** `git ls-remote` printed `feat/fight-end` `e772f8b55ec5f189aaaf9720c726e1fcef2f250b` and
+   `feat/fight-rules` `95277db4a1cacf5727ebc918cd026688a83c9f02`, the two the seat diffed. The plan entry the approval
+   called owed was already in `bde06c28`, so nothing was committed and the head did not move.
+3. **Carried state:**
+   - no JVM (`no java process`);
+   - backup `../rpg-run-backups/2026-11-19-pre-fight-end-2`: `Rpg` 133 files, 24 dirs, `diff -rq lines: 0`; `world` 193
+     files, 32 dirs, `diff -rq lines: 0`; `world/dimensions`: `minecraft`, `rpgfight`; the overworld **106** files;
+     nothing restored;
+   - `12:  dev-pack-on-join: true`;
+   - `rpgfight` empty.
+4. **"Booting now"**, with "Ben: do NOT log in until I tell you R0 passed", in its own message; the boot command in
+   the next turn, after Ben's "ok".
+5. `./scripts/dev-server.sh --refresh-content`. The jar was deployed at 14:30:14. Deployed: `dragon.yml`
+   `  contact_hit_interval_ticks: 20`, `  environment: end`, `  bite: 80.0` (one each); `ender_dragon.yml`
+   `max_health: 20000`.
+6. R0a-R2 to R0e-R2 read on this boot's log, **all as predicted** (their cells). `[Rpg] Build: e772f8b5` at 14:30:19,
+   `Done (5.813s)` at 14:30:20.
+7. **"R0 passed"**, in its own message, at **14:30:54**, with no `joined the game` line in the log.
+8. **His login: `BaronVonYeetus joined the game` at 14:31:16, after R0 was read (14:30:54).** `/gamemode survival` at
+   14:31:40 was his first command; `/rpg selftest fight-rules` at 14:31:52 and `/rpg selftest fight-end` at 14:33:03,
+   each once.
+9. **After his `/stop` (14:37:40):**
+   - `ThreadedAnvilChunkStorage: All dimensions are saved` at 14:37:41;
+   - `rpgfight` empty; the overworld **106** files, as backed up;
+   - `no java process`.
+
+**Every fight world of the boot: seven, each END, each checked inert, each probed and deleted.**
+- Each has `FIGHTWORLD end-check … inert=true fight=present bar_visible=false fight_dragon=none portal=none
+  bedrock_at_centre=0 dragons=0` and `ARENAPROBE when=end … environment=THE_END centre_top=END_STONE
+  bedrock_in_column=0 fire=0 (y 65..79) crystals=0 dragons=0`.
+- Deleted, each `entries=17`, in boot order: `fight_0fa88a45` (RA3R2), `fight_2215e04d` (RA4R2), `fight_458201f2`
+  (RA5R2), `fight_b6d8fe9f` (RB1), `fight_d721c6d4` (EB3R2), `fight_1cc79869` (EB4R2), `fight_0575b512` (EB5R2). Each
+  is a `FIGHTWORLD deleting path=<abs>\run\world\dimensions\rpgfight\<n>` line, then its `deleted`.
+- EB5R2's world first logged **`FIGHTWORLD unload-retry name=rpgfight_fight_0575b512 players=1 attempt=1`**: he was
+  still in it on the first try, returned the same tick. `unloaded` followed a second later.
+- `Scanning for legacy world dragon fight...`: **0** lines.
+
+**The log's warnings:** no `[Rpg]` line matching `Refusing`, `Skipping`, `SEVERE`, `WARN` or `Exception` beyond
+`volley_stone`'s known pair; no `Exception` or `SEVERE` anywhere.
+
+**What the seat's list asks, beyond the cells:**
+
+- **Every `DRAGONATTACK`, with its tick, name, `vanilla=` and amount:**
+
+  | row | t | name | vanilla | amount |
+  |---|---|---|---|---|
+  | RA3R2 | 41 | bite | 10.000 | 80.000 |
+  | RA5R2 | 47, 67 | breath | 3.000 | 30.000 |
+  | RB1 | 41 | bite | 10.000 | 80.000 (then refused) |
+  | EB3R2 | 76 | bite | 10.000 | 80.000 |
+  | EB4R2 | 105, 125, 145 | breath | 3.000 | 30.000 |
+  | EB5R2 | 826, 846, 1495, 4090 | wing | 5.000 | 40.000 |
+
+- **Every `suppressed` line:**
+  - RA3R2: `count=7 window=41..60`;
+  - RB1: `count=3 window=41..60`;
+  - EB3R2: `count=7 window=76..95`;
+  - EB5R2: `count=17 window=826..845`, `count=2 window=846..865`, `count=2 window=1495..1514`, `count=9 window=4090..4109`.
+- **THE LARGEST NUMBER OF PRICED CONTACT HITS ON HIM INSIDE ANY 20 TICKS, THE WHOLE LOG: 1.** Counted per fight from
+  every bite and wing `DRAGONATTACK` tick.
+- **Every `HURT` he took, by `attack=`:**
+  - bite 2 (RA3R2, EB3R2), each `80.000 -> 72.727`;
+  - breath 5 (RA5R2 two, EB4R2 three), each `30.000 -> 27.273`;
+  - wing 4 (EB5R2), each `40.000 -> 36.364`;
+  - and 4 lines with `dealer=self dealerType=self`, each beside a ring strike while he stood outside the ring:
+    `STRIKE t=1080 k=1 damage=20.000 outside`, `t=1200 k=1 20.000`, `t=1720 k=1 20.000`, `t=1760 k=2 40.000`
+    (`HURT 20.000 -> 18.182` three times, `40.000 -> 36.364` once).
+- **His lowest health: NOT READ.** No line carries his health inside a row; every heal reply reads `Custom HP: 350/350`.
+  The arithmetic, not a reading: EB5R2's `HURT after` total is 236.366 against his 350.
+- **`FIGHTDAMAGE refused`:** one, RB1's (`t=42 … source=dragon-contact amount=80.000 why=not-in-this-fight`). **No
+  `HURT` after any `FIGHTWORLD returned` line.**
+- **Every `DRAGON touch`:**
+  - RA3R2 head `inside=true`;
+  - RA4R2 wing `inside=true` (no event);
+  - RB1 head `inside=true`;
+  - EB3R2 head `inside=true`, and wing `inside=true` (no event).
+- **Every `DRAGONBREATH apply` and velocity line:**
+  - the staged rows' are in RA5R2's and EB4R2's cells;
+  - every application that named him had `xz=0.00 dy=0.00`;
+  - every velocity line is `0.000 -0.078 0.000` or `0.000 0.000 0.000`.
+  - EB5R2 has 136 `apply` lines and no breath hit on him.
+- **EB5R2:**
+  - crossings, each Mage's distance, health trail and time to kill, every `DRAGONGATE` `why=`, the four landings and
+    the ending: its cell;
+  - **he did not die;**
+  - **every `/rpg mana refill`, 27:** 14:33:49 (t≈128), 14:33:56 (≈272), 14:34:01 (≈372), 14:34:23 (≈796),
+    14:34:27 (≈880), 14:34:31 (≈968), 14:34:50 (≈1352), 14:34:55 (≈1440), 14:34:59 (≈1532), 14:35:21 (≈1976),
+    14:35:25 (≈2044), 14:35:34 (≈2220), 14:35:39 (≈2320), 14:35:52 (≈2585), 14:35:56 (≈2676), 14:36:11 (≈2974),
+    14:36:15 (≈3040), 14:36:17 (≈3084), 14:36:21 (≈3172), 14:36:26 (≈3260), 14:36:33 (≈3404), 14:36:39 (≈3528),
+    14:36:43 (≈3616), 14:37:02 (≈3980), 14:37:06 (≈4060), 14:37:12 (≈4192), 14:37:16 (≈4235). Each tick is the nearest
+    earlier fight-tick line's, not the command's own; the command logs none.
+  - **Every cast-refused line, with its reason:** `OnCooldown` 41, `InsufficientResource` 5 (each the emerald),
+    `no-weapon` 5 (cooked beef in hand); and 11 `dealt=nothing within=40` after a success, all the emerald. **No
+    refusal names the world.**
+  - Also in the row: 16 `DRAGONMAGE … cancelled` (t=830 to 845); 5 `FIGHT fireball-cancelled`, each `phase=STRAFING`.
+
+**FOR THE RECORD (CC, 2026-11-19):** the approval called the plan section 1 entry owed. It was not: it had been
+committed in `bde06c28` and was on the wire. CC's report before the approval had said it was owed, wrongly.
