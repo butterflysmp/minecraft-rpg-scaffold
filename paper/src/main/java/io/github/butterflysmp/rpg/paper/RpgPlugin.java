@@ -253,6 +253,11 @@ public final class RpgPlugin extends JavaPlugin {
         // Every NamespacedKey in the plugin, built once. Never inline at a call site.
         this.keys = new Keys(this);
 
+        // The dev-server marker, read ONCE: the selftest's guard, /rpg mining's (the seat's ruling, 2026-11-14), and the
+        // loot's dev-only sources and /rpg loot (the seat's queue, item 6) all take this value, so none can disagree
+        // about what kind of server this is. Read here, before the content, because the loot load needs it.
+        boolean devServer = Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY);
+
         // Content: YAML -> definitions. Nothing here is hardcoded in Java.
         saveDefaultContent();
 
@@ -308,7 +313,7 @@ public final class RpgPlugin extends JavaPlugin {
             if (g.isEmpty()) g = tools.find(id);
             if (g.isEmpty()) g = accessoryRegistry.find(id);
             return g.map(io.github.butterflysmp.rpg.core.weapon.GearDefinition::rarity);
-        }).loadAll(new File(contentDir, "loot"));
+        }, devServer).loadAll(new File(contentDir, "loot"));
         // A mob's element must name a loaded element, so elements load first (above) and the mob loader asks.
         this.mobs = new MobLoader(getLogger(), id -> elements.find(id).isPresent(),
                 RpgPlugin::soundKnown, k -> org.bukkit.Material.matchMaterial(k) != null)
@@ -740,9 +745,8 @@ public final class RpgPlugin extends JavaPlugin {
         // /rpg selftest (PLAN-selftest.md). Built before the listeners, which hand it the quit. Its one line
         // says whether the dev marker reached this JVM and how many scenarios the jar carries; GATE-selftest.md
         // R0d reads it, and a refused scenario follows it as a WARN, by name.
-        // The dev-server marker, read ONCE: the selftest's guard and /rpg mining's (the seat's ruling, 2026-11-14)
-        // both take this value, so the two can never disagree about what kind of server this is.
-        boolean devServer = Boolean.getBoolean(SelfTestGuard.DEV_PROPERTY);
+        // The dev-server marker was read ONCE, before the content (see there); the selftest's guard and /rpg mining's
+        // take that value.
         // THE KNELL'S BEAM (dragon-mobs step R5): one loop per beam mob, started and stopped by RpgListeners' add and
         // remove handlers. this.mobs is read at each mob's appearance (reloadable). java.util.Random is thread-safe,
         // so one instance serves every Knell's own thread.
@@ -855,6 +859,9 @@ public final class RpgPlugin extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             var rpg = RpgCommand.build(abilities, abilityService, adapters, profiles, weapons, shields, armor, tools, mobs, nameplates, resources, fireCadence, vaults, mining, devServer);
             rpg.addChild(SelfTestCommand.build(selfTest));   // /rpg selftest, without growing build()'s signature
+            // /rpg loot roll|odds (PLAN-loot.md, the wiring order's first step): dev only, and it gives nothing.
+            rpg.addChild(io.github.butterflysmp.rpg.paper.command.LootDevCommand.build(() -> this.loot, getLogger(),
+                    devServer));
             rpg.addChild(io.github.butterflysmp.rpg.paper.fight.FightCommand.build(fightFixtures, devServer)); // /rpg fight
             event.registrar().register(rpg, "RPG commands");
             // /menu, NOT /rpg menu -- Ben's ruling, for reach. It is the door to the hub and the

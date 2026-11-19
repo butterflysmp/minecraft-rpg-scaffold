@@ -39,14 +39,17 @@ public final class LootLoader {
 
     private final Logger log;
     private final Function<String, Optional<Rarity>> itemRarity;
+    /** Item 6: whether {@code dev_sources:} loads (a dev server only). */
+    private final boolean dev;
 
     /**
      * @param itemRarity an item id's own rarity, when it names a loaded weapon, shield, armour piece, tool or accessory;
      *                   empty for an unknown id
      */
-    public LootLoader(Logger log, Function<String, Optional<Rarity>> itemRarity) {
+    public LootLoader(Logger log, Function<String, Optional<Rarity>> itemRarity, boolean dev) {
         this.log = log;
         this.itemRarity = itemRarity;
+        this.dev = dev;
     }
 
     public Map<String, LootContent> loadAll(File dir) {
@@ -89,13 +92,35 @@ public final class LootLoader {
         ConfigurationSection s = root.getConfigurationSection("sources");
         if (s != null) {
             for (String sid : s.getKeys(false)) {
-                ConfigurationSection one = s.getConfigurationSection(sid);
-                if (one == null) throw new IllegalArgumentException("source '" + sid + "' is not a section");
-                CascadeTable t = one.contains("tiers") ? table("source '" + sid + "'", one) : def;
-                sources.put(sid, new LootContent.Source(t, pools(sid, one.getConfigurationSection("pools"))));
+                if (sid.startsWith(DEV_PREFIX)) {
+                    throw new IllegalArgumentException("source '" + sid + "' starts '" + DEV_PREFIX
+                            + "', which only dev_sources may: a real source must not look like a dev one");
+                }
+                sources.put(sid, source(sid, s, def));
+            }
+        }
+        // Item 6: the dev-only example sources, loaded ONLY on a dev server, each named dev_..., used by nothing in the
+        // game (the dev roll command reads them).
+        ConfigurationSection ds = root.getConfigurationSection("dev_sources");
+        if (ds != null && dev) {
+            for (String sid : ds.getKeys(false)) {
+                if (!sid.startsWith(DEV_PREFIX)) {
+                    throw new IllegalArgumentException("dev source '" + sid + "' must start '" + DEV_PREFIX + "'");
+                }
+                sources.put(sid, source(sid, ds, def));
             }
         }
         return new LootContent(id, def, java.util.Collections.unmodifiableMap(sources));
+    }
+
+    /** What every dev-only source's id starts with, and no real source's may. */
+    static final String DEV_PREFIX = "dev_";
+
+    private LootContent.Source source(String sid, ConfigurationSection parent, CascadeTable def) {
+        ConfigurationSection one = parent.getConfigurationSection(sid);
+        if (one == null) throw new IllegalArgumentException("source '" + sid + "' is not a section");
+        CascadeTable t = one.contains("tiers") ? table("source '" + sid + "'", one) : def;
+        return new LootContent.Source(t, pools(sid, one.getConfigurationSection("pools")));
     }
 
     private static CascadeTable table(String where, ConfigurationSection s) {

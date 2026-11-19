@@ -80,7 +80,7 @@ class LootLoaderTest {
 
     private Map<String, LootContent> load(String yaml) throws IOException {
         Files.writeString(dir.resolve("test.yml"), yaml, StandardCharsets.UTF_8);
-        return new LootLoader(log, LootLoaderTest::rarityOf).loadAll(dir.toFile());
+        return new LootLoader(log, LootLoaderTest::rarityOf, false).loadAll(dir.toFile());
     }
 
     @Test
@@ -151,7 +151,7 @@ class LootLoaderTest {
     void theShippedTableLoadsWithNoSource() throws IOException {
         Path shipped = Path.of("src/main/resources/content/loot/cascade.yml");
         Files.copy(shipped, dir.resolve("cascade.yml"));
-        Map<String, LootContent> got = new LootLoader(log, LootLoaderTest::rarityOf).loadAll(dir.toFile());
+        Map<String, LootContent> got = new LootLoader(log, LootLoaderTest::rarityOf, false).loadAll(dir.toFile());
         LootContent c = got.get("cascade");
         assertEquals(List.of(Rarity.EXOTIC, Rarity.LEGENDARY, Rarity.EPIC, Rarity.RARE, Rarity.UNCOMMON, Rarity.COMMON),
                 c.defaultTable().tiers().stream().map(t -> t.rarity()).toList(), lines.toString());
@@ -162,9 +162,67 @@ class LootLoaderTest {
         assertEquals(Map.of(), c.sources(), "NO source is wired");
     }
 
+    /**
+     * Item 6: THE DEV-ONLY EXAMPLE SOURCE lives under {@code dev_sources:}, loaded ONLY on a dev server, and every id
+     * there starts {@code dev_}. A real source may not start {@code dev_}, so the two cannot be mistaken.
+     */
+    @Test
+    void devSourcesLoadOnlyOnADevServerAndAreNamedSo() throws IOException {
+        String yaml = GOOD + """
+                dev_sources:
+                  dev_try_me:
+                    pools:
+                      rare: [locust]
+                """;
+        Files.writeString(dir.resolve("test.yml"), yaml, StandardCharsets.UTF_8);
+        LootContent off = new LootLoader(log, LootLoaderTest::rarityOf, false).loadAll(dir.toFile()).get("test");
+        assertTrue(!off.sources().containsKey("dev_try_me"), "not on an ordinary server");
+        LootContent on = new LootLoader(log, LootLoaderTest::rarityOf, true).loadAll(dir.toFile()).get("test");
+        assertEquals(List.of("locust"), on.sources().get("dev_try_me").pools().get(Rarity.RARE), "on a dev server");
+        lines.clear();
+        Files.writeString(dir.resolve("test.yml"), yaml.replace("dev_try_me:", "try_me:"), StandardCharsets.UTF_8);
+        assertTrue(new LootLoader(log, LootLoaderTest::rarityOf, true).loadAll(dir.toFile()).isEmpty());
+        assertTrue(lines.get(0).contains("dev source 'try_me'") && lines.get(0).contains("dev_"), lines.get(0));
+        lines.clear();
+        assertTrue(load(GOOD.replace("test_source:", "dev_sneaky:")).isEmpty(), "a real source named dev_");
+        assertTrue(lines.get(0).contains("source 'dev_sneaky'") && lines.get(0).contains("dev_sources"), lines.get(0));
+    }
+
+    /** The shipped example, against the shipped content's own rarities (every weapon and accessory file). */
+    @Test
+    void theShippedDevExampleNamesRealItemsOfTheirOwnRarityAndNoEpic() throws IOException {
+        Map<String, Rarity> real = new java.util.HashMap<>();
+        for (String kind : List.of("weapons", "accessories")) {
+            try (var files = Files.list(Path.of("src/main/resources/content", kind))) {
+                for (Path f : files.toList()) {
+                    String id = f.getFileName().toString().replace(".yml", "");
+                    String r = Files.readAllLines(f).stream().filter(l -> l.startsWith("rarity:")).findFirst()
+                            .map(l -> l.substring("rarity:".length()).trim()).orElse("common");
+                    real.put(id, Rarity.fromName(r));
+                }
+            }
+        }
+        Files.copy(Path.of("src/main/resources/content/loot/cascade.yml"), dir.resolve("cascade.yml"));
+        LootContent c = new LootLoader(log, id -> java.util.Optional.ofNullable(real.get(id)), true)
+                .loadAll(dir.toFile()).get("cascade");
+        LootContent.Source ex = c.sources().get("dev_example_not_a_drop");
+        assertTrue(ex != null, lines.toString());
+        // GATE-loot-roll.md R0c predicts this line verbatim, on a dev server.
+        assertEquals("INFO Loaded loot 'cascade': default exotic 1.00% (truly 1.000%), legendary 3.00% (truly 2.970%),"
+                + " epic 8.00% (truly 7.682%), rare 12.00% (truly 10.602%), uncommon 20.00% (truly 15.549%),"
+                + " common 40.00% (truly 24.879%), nothing truly 37.318%; 1 sources [dev_example_not_a_drop]", lines.get(0));
+        assertTrue(!ex.pools().containsKey(Rarity.EPIC) || ex.pools().get(Rarity.EPIC).isEmpty(), "no epic, so the skip shows");
+        for (Rarity r : List.of(Rarity.EXOTIC, Rarity.LEGENDARY, Rarity.RARE, Rarity.UNCOMMON, Rarity.COMMON)) {
+            assertTrue(!ex.pools().getOrDefault(r, List.of()).isEmpty(), "a pool for " + r);
+        }
+        for (String banned : List.of("hunters_bow", "ironblade", "quiver_stone")) {
+            assertTrue(ex.pools().values().stream().noneMatch(p -> p.contains(banned)), "no deletion-set item: " + banned);
+        }
+    }
+
     @Test
     void noFilesIsNoTables() {
         File empty = dir.resolve("none").toFile();
-        assertTrue(new LootLoader(log, LootLoaderTest::rarityOf).loadAll(empty).isEmpty());
+        assertTrue(new LootLoader(log, LootLoaderTest::rarityOf, false).loadAll(empty).isEmpty());
     }
 }

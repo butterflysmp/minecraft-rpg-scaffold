@@ -29,3 +29,18 @@ default:
     - rarity: common
       chance: 0.40
 sources: {}
+
+# DEV ONLY (the seat's queue, item 6): an EXAMPLE source for `/rpg loot roll`, loaded ONLY on a dev server and used by
+# nothing in the game. It is named so it cannot be mistaken for a drop source: every dev source starts dev_, and no real
+# source may. Its pools are existing items, each under its own rarity, for every rarity that has any. There is NO EPIC
+# pool, because no content is epic today, so an epic that lands is SKIPPED and the roll goes on (Ben, 2026-11-19:
+# "general skip that rarity"), where the command's counts show it. The deletion set's dev weapons (hunters_bow,
+# ironblade, quiver_stone) are left out. volley_stone is the only exotic left, and is on its way out by another route.
+dev_sources:
+  dev_example_not_a_drop:
+    pools:
+      exotic: [volley_stone]
+      legendary: [blaze_kings_staff, dragons_breath, dragons_plume]
+      rare: [ember_staff, emberblade, locust, brawlers_gauntlet, fletchers_quiver, sages_scroll]
+      uncommon: [boltor, cursed_emerald, lapis_staff, withered_shortbow, keen_charm, mending_charm, ward_charm]
+      common: [flint_staff, short_bow]
