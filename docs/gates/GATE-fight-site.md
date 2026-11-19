@@ -33,6 +33,13 @@ row has been read; a correction is a dated note.
 > **Unpredicted, and Ben's own act:**
 > - **FR4R3's six refused MAGEGATE lines.** Ben hit the Mage during an auto row.
 
+> **SEAT RULING, 2026-11-18: THE READINGS STAND.**
+> - Ben ran this sheet before R0 was cleared. R0a to R0d, as predicted, bound the boot to `7630e37c`, and R0e's miss
+>   was on the order of its lines only (`GATE-fight-arena.md`, R0e's note).
+> - MG5R2 and MG7R2 stay NOT AS PREDICTED (staging: he stood 6 from the Mage while the ring went below 6). They are
+>   re-staged as MG5R3 and MG7R3 on `feat/fight-arena`, and are unread there.
+> - FR4R3's six refused hits are Ben's own act, recorded.
+
 **What it gates.** PLAN-dragon-fight.md §6.4, step F8a (the F8 + F9 brief's §0 to §3), in an ordinary world through
 the dev fixture `/rpg fight …`:
 - Ben's second-boot tuning:
