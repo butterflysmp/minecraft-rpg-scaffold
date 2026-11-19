@@ -1,0 +1,31 @@
+# THE CASCADING LOOT TABLE (PLAN-loot.md; Ben, 2026-11-19: "First the rarest rarity is rolled. then if that doesn't
+# land, the next rarest rarity is rolled and so on. In our world today, that would look something like this: Exotic 1%
+# then Legendary 3% then Epic 8% then Rare 12% and so on. Numbers are place holders.").
+#
+# NOTHING IN THE GAME ROLLS THIS YET: no mob, chest, fight or command is wired to it. The Loaded line prints each tier's
+# written chance and its TRUE odds (its chance times every miss above it), so the written 3% and the real 2.97% are both
+# visible.
+#
+# Layout (CC's proposal, flagged):
+#   default:  the one cascade, rarest to commonest, each a rarity and a chance in [0, 1]. Only the last tier may be
+#             guaranteed (chance 1.0).
+#   sources:  each drop source by id. Its own `tiers:` override the default's chances (absent: the default's), and its
+#             `pools:` name, per rarity, the item ids it can give. A rarity that lands with no pool falls through to the
+#             next tier.
+default:
+  tiers:
+    # Ben's placeholders.
+    - rarity: exotic
+      chance: 0.01
+    - rarity: legendary
+      chance: 0.03
+    - rarity: epic
+      chance: 0.08
+    - rarity: rare
+      chance: 0.12
+    # SEAT PLACEHOLDERS (Ben's "and so on"), not Ben's.
+    - rarity: uncommon
+      chance: 0.20
+    - rarity: common
+      chance: 0.40
+sources: {}

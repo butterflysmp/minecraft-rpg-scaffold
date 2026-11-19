@@ -199,6 +199,8 @@ public final class RpgPlugin extends JavaPlugin {
     private io.github.butterflysmp.rpg.paper.fight.FightFixtures fightFixtures;
     private VeinSizeRegistry veinSizes;
     private AccessoryRegistry accessoryRegistry;
+    /** The cascading loot tables, content/loot/ (PLAN-loot.md). Loaded and logged; nothing rolls them yet. */
+    private java.util.Map<String, io.github.butterflysmp.rpg.paper.content.LootContent> loot;
     private MobRegistry mobs;
     private MobElementResolver mobElements;
     private RecipeRegistry recipes;
@@ -296,6 +298,12 @@ public final class RpgPlugin extends JavaPlugin {
                 new File(contentDir, "accessories"),
                 id -> weapons.find(id).isPresent() || shields.find(id).isPresent()
                         || armor.find(id).isPresent() || tools.find(id).isPresent());
+        // The cascading loot tables (PLAN-loot.md): AFTER every gear kind, because a pool's item id must name one. Loaded
+        // and logged only; NOTHING in the game rolls them yet.
+        this.loot = new io.github.butterflysmp.rpg.paper.content.LootLoader(getLogger(),
+                id -> weapons.find(id).isPresent() || shields.find(id).isPresent() || armor.find(id).isPresent()
+                        || tools.find(id).isPresent() || accessoryRegistry.find(id).isPresent())
+                .loadAll(new File(contentDir, "loot"));
         // A mob's element must name a loaded element, so elements load first (above) and the mob loader asks.
         this.mobs = new MobLoader(getLogger(), id -> elements.find(id).isPresent(),
                 RpgPlugin::soundKnown, k -> org.bukkit.Material.matchMaterial(k) != null)
