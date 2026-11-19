@@ -61,6 +61,14 @@ public final class RingFixture {
 
         /** The cue for a refused hit on the Mage (step F6). */
         void refusedCue();
+
+        /**
+         * Whether a failure kills here (the arena, step F8b) or kills nobody (the ordinary-world dev fixture). Only the
+         * participants' message differs; what a failure does is the paper side's.
+         */
+        default boolean failureKills() {
+            return false;
+        }
     }
 
     /** One participant, read on the tick: who and where his FEET are, blocks. */
@@ -119,7 +127,8 @@ public final class RingFixture {
         if (snap.outcome() != MageCycle.Outcome.RUNNING && !failureReported) {
             failureReported = true;
             port.log("FIGHT " + snap.outcome() + " t=" + fightTick);
-            port.tell("The fight has failed: " + snap.outcome() + " (fixture: nobody is killed).");
+            port.tell(port.failureKills() ? "The fight has failed: " + snap.outcome() + "."
+                    : "The fight has failed: " + snap.outcome() + " (fixture: nobody is killed).");
         }
         List<Participant> present = port.participants();
         dropAbsent(present);

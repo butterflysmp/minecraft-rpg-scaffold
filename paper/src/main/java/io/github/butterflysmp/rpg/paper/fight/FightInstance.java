@@ -83,7 +83,10 @@ public final class FightInstance {
     private LivingEntity mage;
     private Location magePin;
     private boolean play;
+    /** The play row's safety (heal, strike limit); off for the arena's play row, which has none (the brief's row 8). */
+    private boolean safe = true;
     private boolean finished;
+    private boolean poweredKilled;
 
     /**
      * Builds the fight at the site and starts its loop on C's region thread. {@code onFinished} is told once, when
@@ -108,12 +111,29 @@ public final class FightInstance {
         loop = RepeatingTask.start(new RegionTarget(centre, ring), 1, "fight-fixture", () -> {
             ring.tick();
             pinMage();
-            if (play) keepAlive();
+            if (play && safe) keepAlive();
+            if (site.failureKills()) {
+                // FAILURE IS REAL HERE (the F8 brief, section 5 i). POWERED kills every participant through the store,
+                // once; CLOSED leaves the lightning to do it; and the fight fails once nobody who entered is left in it
+                // (every death, leave and quit takes one out).
+                if (!poweredKilled && ring.outcome() == MageCycle.Outcome.FAILED_POWERED) {
+                    poweredKilled = true;
+                    killParticipants(ring);
+                }
+                if (site.nobodyInside()) {
+                    adapters.log().info("FIGHT nobody inside t=" + ring.fightTick() + " outcome=" + ring.outcome());
+                    ring.stop();
+                    finish("nobody-inside-" + ring.outcome());
+                    return false;
+                }
+            }
             if (ring.stopped()) {
                 finish("the fixture stopped itself");
                 return false;
             }
-            if (play && ring.outcome() != MageCycle.Outcome.RUNNING) {
+            // Where failure kills, a failure ends the fight through "nobody inside" instead: the kill lands a tick
+            // later (applyDamage is deferred), and ending here would return the players before it, to die at home.
+            if (play && !site.failureKills() && ring.outcome() != MageCycle.Outcome.RUNNING) {
                 adapters.log().info("FIGHT play ended t=" + ring.fightTick() + " reason=" + ring.outcome());
                 probe();
                 finish("play-" + ring.outcome());
@@ -161,14 +181,40 @@ public final class FightInstance {
      * then the keep-alive heal, the strike limit and the self-ending (see {@link #play}).
      */
     public String play(double minDistanceBlocks) {
+        return play(minDistanceBlocks, true);
+    }
+
+    /**
+     * {@code play <min> [unsafe]}. With {@code safe} false (the arena's play row: "no safety"), there is no heal and no
+     * strike limit: a death is a death, and he is returned to where he entered.
+     */
+    public String play(double minDistanceBlocks, boolean safe) {
         if (!running()) return "No fight fixture is running.";
         String landed = landRandom(minDistanceBlocks);
         if (mage == null) return landed;
         play = true;
-        fixture.strikeLimit(PLAY_STRIKE_LIMIT);
-        adapters.log().info("FIGHT play on t=" + fixture.fightTick() + " keepalive=" + KEEP_ALIVE_TICKS
-                + " strike_limit=" + PLAY_STRIKE_LIMIT);
+        this.safe = safe;
+        if (safe) fixture.strikeLimit(PLAY_STRIKE_LIMIT);
+        adapters.log().info("FIGHT play on t=" + fixture.fightTick() + (safe ? " keepalive=" + KEEP_ALIVE_TICKS
+                + " strike_limit=" + PLAY_STRIKE_LIMIT : " unsafe"));
         return landed + " PLAY: fight him with your own weapon.";
+    }
+
+    /**
+     * POWERED in a site where failure is real: every participant is killed through the store's one entry (the same
+     * entry the lightning uses), his defence bypassed, by ten times his maximum. Each is logged.
+     */
+    private void killParticipants(RingFixture ring) {
+        for (RingFixture.Participant p : port.participants()) {
+            Player player = org.bukkit.Bukkit.getPlayer(p.id());
+            if (player == null) continue;
+            double max = adapters.stats().tracks(p.id()) ? adapters.stats().max(p.id()) : 20.0;
+            adapters.log().info(String.format(Locale.ROOT, "FIGHT powered-kill t=%d player=%s amount=%.3f",
+                    ring.fightTick(), p.name(), max * 10.0));
+            BukkitCombatant.of(player, adapters).handle().applyDamage(max * 10.0, p.id(),
+                    io.github.butterflysmp.rpg.core.combat.CritState.NORMAL,
+                    io.github.butterflysmp.rpg.core.combat.DefenseRule.BYPASSED, null);
+        }
     }
 
     private String landRandom(double minDistanceBlocks) {

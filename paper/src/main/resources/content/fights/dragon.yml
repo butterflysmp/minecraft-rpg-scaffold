@@ -76,7 +76,32 @@ crystals:
   lit_volume: 1.0
   lit_pitch: 1.0
 
-# The dev fixture's own rule (GATE-fight-ring.md): who takes part.
+# THE FIGHT'S OWN WORLD AND ITS GENERATED STAND-IN ARENA (step F8b; Ben, 2026-11-18: "Yes that's fine for now"). One
+# temporary world per fight, deleted at its end; replaceable later by a file Ben builds (the template source is not built
+# yet). EVERY NUMBER HERE IS A SEAT PLACEHOLDER. The world's namespace, folder prefix and marker are in Java on purpose:
+# a typo here must never be able to point a delete at another namespace.
+arena:
+  # The arena's centre column: (0, 0) of its world, because the dragon orbits (0, 0) whatever we set (PLAN section 4 c).
+  centre_x: 0
+  centre_z: 0
+  # The floor's TOP block. A player stands at 65.
+  floor_y: 64
+  # An end-stone disc: every column with dx^2 + dz^2 <= radius^2, this many blocks thick.
+  disc_radius_blocks: 56
+  disc_thickness_blocks: 3
+  # Obsidian pillars, square, this wide (odd), their centres round this circle, pillar 1 due east; crystal n on pillar n,
+  # so the count must equal settings.crystal_count.
+  pillar_count: 10
+  pillar_ring_radius_blocks: 40.0
+  pillar_width_blocks: 3
+  # Their top block this far above the floor's top.
+  pillar_top_above_floor_blocks: 12
+  # The sky: fixed at midnight, weather clear.
+  time_of_day_ticks: 18000
+  # Where an entering player stands, blocks from the centre [dx, dz].
+  entry_offset_blocks: [0.0, 0.0]
+
+# The dev fixture's own rule (GATE-fight-ring.md): who takes part in an ORDINARY world.
 fixture:
   # Players in C's world within this many blocks of C, in survival or adventure.
   participant_radius_blocks: 128.0

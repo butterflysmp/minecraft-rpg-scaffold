@@ -700,6 +700,11 @@ public final class RpgListeners implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
+        // THE FIGHT'S STALE LOGIN (step F8b): once his profile has settled, a pending fight return sends him home. The
+        // settle callback may run off his thread (ProfileService.whenSettled), so it hops onto his own scheduler.
+        Player fightJoiner = event.getPlayer();
+        profiles.whenSettled(fightJoiner.getUniqueId(), settled -> adapters.scheduler().onEntity(fightJoiner,
+                () -> fights.onJoinSettled(fightJoiner)));
         // Rebuild every carried weapon's display from current content. FIRST, so nothing downstream
         // reads a stale item -- though nothing does today: the stat reconcile loop sources attack
         // damage from the DEFINITION, not the item, which is why only the display was ever stale.
@@ -1984,6 +1989,8 @@ public final class RpgListeners implements Listener {
         // BEFORE EVERYTHING: a running selftest restores the inventory, XP and position it changed, and
         // the restore must write while the inventory can still be written (PLAN-selftest.md §4).
         selfTest.onQuit(event.getPlayer());
+        // A quit inside a fight's world: he is out of it, his return kept for the next login (step F8b).
+        fights.onQuit(event.getPlayer());
 
         // FIRST, ahead of the clears: a menu holding this player's weapon must give it back while
         // their inventory can still be written. Writes during PlayerQuitEvent persist -- the save
@@ -2033,6 +2040,8 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        // A death inside a fight's world: he is out of the fight (step F8b). His respawn sends him back.
+        fights.onPlayerDeath(event);
         // FIRST: return anything a menu is holding while the inventory still exists. The drops list
         // is already populated by the time this event fires, so a returned weapon cannot leak into
         // it -- and setKeepInventory below means it survives the death either way. Caused here
@@ -2059,6 +2068,8 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
+        // A death inside a fight's world: he respawns at his return location (step F8b).
+        fights.onPlayerRespawn(event);
         healthSystem.onRespawn(event.getPlayer());     // reset to base 100, render, restart the reconcile loop
         // The join note's mechanism, arriving through the other door: ServerPlayer.restoreFrom never
         // mentions ItemCooldowns, so respawning also drops the overlay while the item's deadline runs

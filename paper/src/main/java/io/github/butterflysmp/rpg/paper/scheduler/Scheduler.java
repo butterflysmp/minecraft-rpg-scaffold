@@ -36,6 +36,13 @@ public interface Scheduler {
     /** Global state not tied to a region: scoreboards, plugin-wide counters. */
     void onGlobal(Runnable task);
 
+    /**
+     * Global work {@code delayTicks} from now: a world's unload and its folder's delete, tried again later when a player
+     * is still in it or a file is still held (the fight's worlds, step F8b). Not tied to a region, because the world
+     * being unloaded has none to own it.
+     */
+    void onGlobalLater(Runnable task, long delayTicks);
+
     /** Off-thread work: database, HTTP. Never touch the Bukkit API from here. */
     void async(Runnable task);
 }

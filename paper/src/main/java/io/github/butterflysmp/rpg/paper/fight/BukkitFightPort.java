@@ -109,6 +109,12 @@ final class BukkitFightPort implements RingFixture.Port {
         log.info(line);
     }
 
+    /** The site's answer: a failure kills in the arena, and kills nobody in the ordinary world. */
+    @Override
+    public boolean failureKills() {
+        return site.failureKills();
+    }
+
     @Override
     public void tell(String line) {
         Component text = Component.text(line, NamedTextColor.GOLD);
@@ -153,6 +159,9 @@ final class BukkitFightPort implements RingFixture.Port {
             if (target != null && target.isValid()) c.setBeamTarget(target.getLocation());
         });
         crystals.add(crystal);
+        // The witness that crystal n stands at spot n (on pillar n in the arena): its spot, in the world's coordinates.
+        log.info(String.format(java.util.Locale.ROOT, "CRYSTALSPOT index=%d at=%.2f %.2f %.2f world=%s", index,
+                spot.getX(), spot.getY(), spot.getZ(), world.getName()));
         FightContent.Cue cue = fight.litCue();
         for (RingFixture.Participant p : participants()) {
             Player player = Bukkit.getPlayer(p.id());

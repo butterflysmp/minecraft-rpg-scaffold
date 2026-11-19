@@ -257,18 +257,27 @@ final class SelfTestRun {
     }
 
     /**
-     * AWAIT_FIGHT ({@link SelfTestAwaitFight}): polls once a tick on the player's own scheduler until the dev command's
-     * fight is no longer running, or the ceiling; logs which, with the ticks waited, and goes on.
+     * AWAIT_FIGHT ({@link SelfTestAwaitFight}): polls once a tick until the dev command's fight is no longer running,
+     * or the ceiling; logs which, with the ticks waited, and goes on.
+     *
+     * <p><b>On the GLOBAL scheduler, never the player's own:</b> in the arena he may die while this waits (a death is
+     * the fight's failure), and a death retires his own tasks, so a poll there would simply stop ({@link #awaitRespawn}'s
+     * note). A player found dead when the wait ends goes to the respawn wait; a live one goes on, on his own thread.
      */
     private void awaitFight(int ceiling, int waited) {
         if (ended) return;
         boolean running = service.fightRunning();
         if (SelfTestAwaitFight.done(running, waited, ceiling)) {
             log(SelfTestAwaitFight.line(running, waited, ceiling));
-            advance();
+            if (player.isDead() && player.isOnline()) {
+                // Polled at the run's start, a world that stays loaded: he died in a fight world that may be unloading.
+                awaitRespawn(snapshot.start(), 0);
+            } else {
+                service.scheduler().onEntity(player, this::advance);
+            }
             return;
         }
-        service.scheduler().onEntityLater(player, () -> awaitFight(ceiling, waited + 1), 1);
+        service.scheduler().onGlobalLater(() -> awaitFight(ceiling, waited + 1), 1);
     }
 
     /**

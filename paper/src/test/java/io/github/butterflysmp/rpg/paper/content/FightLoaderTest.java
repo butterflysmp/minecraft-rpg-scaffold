@@ -84,6 +84,18 @@ class FightLoaderTest {
               lit_sound: block.beacon.power_select
               lit_volume: 1.0
               lit_pitch: 1.0
+            arena:
+              centre_x: 0
+              centre_z: 0
+              floor_y: 64
+              disc_radius_blocks: 56
+              disc_thickness_blocks: 3
+              pillar_count: 10
+              pillar_ring_radius_blocks: 40.0
+              pillar_width_blocks: 3
+              pillar_top_above_floor_blocks: 12
+              time_of_day_ticks: 18000
+              entry_offset_blocks: [0.0, 0.0]
             fixture:
               participant_radius_blocks: 128.0
             """;
@@ -107,6 +119,11 @@ class FightLoaderTest {
         assertTrue(d.look().alternateTurns(), "Ben: \"maybe alternate twists on every other row\"");
         assertEquals(240, d.settings().crystalIntervalTicks(), "Ben: \"no make it 12 seconds each crystal\"");
         assertEquals(10, d.settings().crystalCount());
+        assertEquals(new io.github.butterflysmp.rpg.core.fight.ArenaShape(0, 0, 64, 56, 3, 10, 40.0, 3, 12),
+                d.arena().shape(), "the brief's generated stand-in arena (SEAT PLACEHOLDERS)");
+        assertEquals(18000L, d.arena().timeOfDayTicks(), "midnight (SEAT PLACEHOLDER: the sky)");
+        assertEquals(0.0, d.arena().entryDxBlocks(), 0.0);
+        assertEquals(0.0, d.arena().entryDzBlocks(), 0.0);
         assertEquals("dark_mage", d.mageMob());
         assertEquals(new FightContent.Cue("item.shield.block", 1.0f, 0.8f), d.refusedCue());
         assertEquals(40.0, d.crystalRingRadiusBlocks(), 0.0);
@@ -117,7 +134,8 @@ class FightLoaderTest {
                 + "size 1.60 every 1.00 blocks at [0.2, 1.7, 3.2, 4.7, 6.2, 7.7], row shift 0.25, turn 1.00/s "
                 + "alternating, every 4 ticks; "
                 + "mage 'dark_mage' refused item.shield.block; crystals at 40.0, 12.0 up, lit block.beacon.power_select;"
-                + " participants within 128.0"), lines);
+                + " participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to"
+                + " +12, time 18000, entry (0.0, 0.0)"), lines);
     }
 
     @Test
@@ -162,6 +180,22 @@ class FightLoaderTest {
     @Test
     void aMissingRowShiftIsRefused() throws IOException {
         refusedNaming(GOOD.replace("  row_shift_blocks: 0.25\n", ""), "'row_shift_blocks:'");
+    }
+
+    @Test
+    void aMissingArenaNumberIsRefusedByName() throws IOException {
+        refusedNaming(GOOD.replace("  disc_radius_blocks: 56\n", ""), "'disc_radius_blocks:'", "missing");
+    }
+
+    /** Crystal spot n stands on pillar n (the brief): a count that disagrees has a crystal with nowhere to stand. */
+    @Test
+    void aCrystalCountThatIsNotThePillarCountIsRefused() throws IOException {
+        refusedNaming(GOOD.replace("pillar_count: 10", "pillar_count: 8"), "crystal_count 10", "pillar_count 8");
+    }
+
+    @Test
+    void anArenaWhosePillarsHangOffTheDiscIsRefusedWithTheShapesReason() throws IOException {
+        refusedNaming(GOOD.replace("disc_radius_blocks: 56", "disc_radius_blocks: 40"), "hangs off a disc");
     }
 
     @Test

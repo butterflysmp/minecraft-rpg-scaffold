@@ -63,6 +63,7 @@ class SafeLandingsTest {
         @Override public void onRegion(Location location, Runnable task) { task.run(); }
         @Override public void onRegionLater(Location location, Runnable task, long delayTicks) { next.add(task); }
         @Override public void onGlobal(Runnable task) { task.run(); }
+        @Override public void onGlobalLater(Runnable task, long delayTicks) { next.add(task); }
         @Override public void async(Runnable task) { task.run(); }
     }
 

@@ -39,10 +39,15 @@ public final class FightCommand {
                 .then(Commands.literal("start").executes(ctx -> reply(ctx, devServer,
                         p -> fixtures.start(p, ctx.getSource().getLocation()))))
                 .then(Commands.literal("probe").executes(ctx -> reply(ctx, devServer, p -> fixtures.probe())))
+                .then(Commands.literal("enter").executes(ctx -> reply(ctx, devServer, fixtures::enter)))
+                .then(Commands.literal("leave").executes(ctx -> reply(ctx, devServer, fixtures::leave)))
+                .then(Commands.literal("worlds").executes(ctx -> reply(ctx, devServer, fixtures::worldsLine)))
                 .then(Commands.literal("play")
                         .then(Commands.argument("min", DoubleArgumentType.doubleArg(0.0, 36.0))
                                 .executes(ctx -> reply(ctx, devServer,
-                                        p -> fixtures.play(DoubleArgumentType.getDouble(ctx, "min"))))))
+                                        p -> fixtures.play(DoubleArgumentType.getDouble(ctx, "min"), true)))
+                                .then(Commands.literal("unsafe").executes(ctx -> reply(ctx, devServer,
+                                        p -> fixtures.play(DoubleArgumentType.getDouble(ctx, "min"), false))))))
                 .then(Commands.literal("land")
                         .then(Commands.literal("random").executes(ctx -> reply(ctx, devServer,
                                 p -> fixtures.landRandom())))

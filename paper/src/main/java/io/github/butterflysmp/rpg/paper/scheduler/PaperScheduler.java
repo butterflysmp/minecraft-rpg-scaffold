@@ -45,6 +45,12 @@ public final class PaperScheduler implements Scheduler {
     }
 
     @Override
+    public void onGlobalLater(Runnable task, long delayTicks) {
+        // The global region scheduler rejects a delay of 0, as the region scheduler does; clamp to 1 tick.
+        Bukkit.getGlobalRegionScheduler().runDelayed(plugin, t -> task.run(), Math.max(1L, delayTicks));
+    }
+
+    @Override
     public void async(Runnable task) {
         Bukkit.getAsyncScheduler().runNow(plugin, t -> task.run());
     }

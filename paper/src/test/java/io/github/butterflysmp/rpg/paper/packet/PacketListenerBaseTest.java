@@ -42,6 +42,9 @@ class PacketListenerBaseTest {
         @Override public void onRegionLater(Location location, Runnable task, long delayTicks) {
             throw new AssertionError("unexpected onRegionLater");
         }
+        @Override public void onGlobalLater(Runnable task, long delayTicks) {
+            throw new AssertionError("unexpected onGlobalLater");
+        }
         @Override public void onGlobal(Runnable task) {
             throw new AssertionError("unexpected onGlobal");
         }
