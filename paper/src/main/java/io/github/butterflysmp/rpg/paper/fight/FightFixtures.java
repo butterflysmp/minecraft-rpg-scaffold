@@ -339,6 +339,7 @@ public final class FightFixtures {
      * unload and delete once, leaving any failure for the next startup's sweep.
      */
     private void endArena(ArenaFight a, boolean now) {
+        probeArena(a, now ? "end-disable" : "end");
         for (Player p : new ArrayList<>(a.world().getPlayers())) {
             boolean entrant = a.site().removeEntrant(p.getUniqueId());
             if (!p.isOnline()) {
@@ -541,6 +542,14 @@ public final class FightFixtures {
     public String arenaProbe() {
         ArenaFight a = runningArena();
         if (a == null) return "No arena fight is running.";
+        return probeArena(a, "command");
+    }
+
+    /**
+     * The arena's probe (F9c, section 3 e): its environment, its centre column, any fire, its crystals and dragons. Run by
+     * the command, and (F9b fix D, the seat's brief of 2026-11-19) at EVERY arena fight's end, before anyone is moved.
+     */
+    private String probeArena(ArenaFight a, String when) {
         World w = a.world();
         io.github.butterflysmp.rpg.core.fight.ArenaShape s = a.site().shape();
         int bedrock = 0;
@@ -562,8 +571,8 @@ public final class FightFixtures {
         }
         int crystals = w.getEntitiesByClass(org.bukkit.entity.EnderCrystal.class).size();
         int dragons = w.getEntitiesByClass(org.bukkit.entity.EnderDragon.class).size();
-        String line = String.format(Locale.ROOT, "ARENAPROBE world=%s environment=%s centre_top=%s bedrock_in_column=%d"
-                        + " fire=%d (y %d..%d) crystals=%d dragons=%d", w.getName(), w.getEnvironment(), top, bedrock,
+        String line = String.format(Locale.ROOT, "ARENAPROBE when=%s world=%s environment=%s centre_top=%s bedrock_in_column=%d"
+                        + " fire=%d (y %d..%d) crystals=%d dragons=%d", when, w.getName(), w.getEnvironment(), top, bedrock,
                 fire, fromY, toY, crystals, dragons);
         adapters.log().info(line);
         return line;

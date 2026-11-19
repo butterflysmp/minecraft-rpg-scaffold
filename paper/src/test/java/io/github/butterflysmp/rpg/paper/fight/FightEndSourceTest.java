@@ -108,4 +108,15 @@ class FightEndSourceTest {
         int cancel = l.indexOf("event.setCancelled(true);");
         assertTrue(crystal > 0 && world > crystal && cancel > world, l);
     }
+
+    /** F9b fix D (the seat's brief of 2026-11-19): the arena is probed at EVERY arena fight's end, before anyone moves. */
+    @Test
+    void theArenaIsProbedAtEveryFightsEnd() throws IOException {
+        String e = body(code("fight/FightFixtures.java"), "private void endArena(ArenaFight a, boolean now)");
+        int probe = e.indexOf("probeArena(a, now ? \"end-disable\" : \"end\");");
+        int loop = e.indexOf("for (Player p : new ArrayList<>(a.world().getPlayers()))");
+        assertTrue(probe > 0 && loop > probe, "probed first: " + e);
+        assertTrue(body(code("fight/FightFixtures.java"), "public String arenaProbe()")
+                .contains("return probeArena(a, \"command\");"), "the command probes the same way");
+    }
 }
