@@ -12,6 +12,11 @@ committed before the boot.
 > **`docs/gates/GATE-fight-end.md`**, and that file's boot, on `feat/fight-end`'s head, reads this file's rows. Ben's
 > rows for both steps (the brief's 1 to 5 and 9) are there too.
 
+> **NOTE, 2026-11-19, written on `feat/fight-end` (F9c) before any boot:** at this boot every row below runs in an
+> **END** world. Each row's birth lines gain F9c's `FIGHTWORLD end-config …`, ` environment=THE_END` on the created
+> line, and `FIGHTWORLD end-check … inert=true …` before the arena is built (`GATE-fight-end.md`, *WHICH MERGED ROWS
+> THIS BRANCH MOVES*). **No prediction below is edited; its own lines are unchanged.**
+
 **The step** (the seat's F9b brief, 2026-11-19; plan section 1, *Twelfth*): sections 0, 1, 2, 4, 6 and 7.
 - **1:** the dragon is immune while a Mage is OWED, not only while one is alive.
 - **2:** the fight's crystals do not heal the dragon.

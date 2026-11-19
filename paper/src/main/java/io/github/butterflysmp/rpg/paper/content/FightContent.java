@@ -50,5 +50,18 @@ public record FightContent(String id, FightSettings settings, RingLook look, Str
      * @param entryDxBlocks  where an entering player stands, blocks from the arena's centre, x
      * @param entryDzBlocks  and z
      */
-    public record Arena(ArenaShape shape, long timeOfDayTicks, double entryDxBlocks, double entryDzBlocks) {}
+    /**
+     * @param environment F9c (Ben, 2026-11-19: "yes let's try it", plan 6.9 option a): the fight world's environment.
+     *                    END gives the End's sky; vanilla's own dragon fight is made inert by a per-world Paper switch
+     *                    and checked after creation. NORMAL is the night-sky arena of F8b.
+     */
+    public record Arena(ArenaShape shape, long timeOfDayTicks, double entryDxBlocks, double entryDzBlocks,
+                        Environment environment) {}
+
+    /** The fight world's environment: {@code end} or {@code normal} in the file. */
+    public enum Environment {
+        END, NORMAL;
+
+        public String fileName() { return name().toLowerCase(java.util.Locale.ROOT); }
+    }
 }

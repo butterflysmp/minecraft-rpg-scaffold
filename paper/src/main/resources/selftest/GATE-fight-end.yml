@@ -1,0 +1,89 @@
+# GATE-fight-end.md: STEP F9c, AN END-TYPE FIGHT WORLD (feat/fight-end, 2026-11-19). `/rpg selftest fight-end`.
+# THE SECOND BOOT (the seat's fix brief of 2026-11-19), for this gate and GATE-fight-rules.md: the run sheet runs
+# `fight-rules` first, then this. EA1, EB1 and EB2 were read at the first boot and are NOT re-run; EB3, EB4 and EB5 are
+# re-run as EB3R2, EB4R2 and EB5R2, with F9b's fixes in place (one contact hit per 20 ticks; no breath push).
+#
+# SAFETY (F9b fix E): every row that can hurt him sets death_rules (a death cannot drop his inventory) and heals him
+# first; GATE-fight-end.md carries each row's arithmetic at defence 0 against 100 health. EB3R2 and EB4R2 cannot kill
+# him while he stays where he is put. EB5R2 is the fight with no safety, and it can, by design.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# EB3R2: THE BITE AND THE WING, WITH THE WINDOW (question 4, re-asked): 4 ticks in the head's box, then the floor 20
+# blocks south; healed; 4 ticks in a wing's box, then the floor again. Slow falling, so no drop hurts.
+EB3R2:
+  - death_rules: ""
+  - cmd: "effect give @s minecraft:slow_falling 60 0 true"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
+  - tell: "QUESTION 4 IS COMING AGAIN. The dragon now lands at most ONE bite or wing hit on you a second. You will be put in its mouth for a moment (a bite, 80 before your armour) and moved out, healed, then put under its wing (40, and a push) and moved out. You will float down slowly."
+  - wait: 60
+  - cmd: "rpg fight dragon touch head"
+  - wait: 4
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight dragon touch wing"
+  - wait: 4
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 30
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - cmd: "effect clear @s minecraft:slow_falling"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "4 2400 yesno The dragon's bite (80) and wing (40), at most one of them a second: do they feel right?"
+
+# EB4R2: THE BREATH WITH NO PUSH (questions 5 and 8): put on the breath cloud for 55 ticks (at most three of its hits,
+# 20 apart), then the floor 20 blocks south.
+EB4R2:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
+  - tell: "QUESTION 5 IS COMING AGAIN, AND A NEW ONE. The dragon will breathe on the floor and you will be put in the cloud for about three seconds (30 a second before your armour). STAND STILL where you are put and do not walk toward the dragon. The breath should no longer push you."
+  - wait: 60
+  - cmd: "rpg fight dragon phase breath_attack"
+  - wait: 15
+  - cmd: "rpg fight dragon to-breath"
+  - wait: 55
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 5
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "5 2400 yesno The breath, 30 a second, with no push: does it feel right?"
+  - ask: "8 2400 yesno Did the breath push you at all?"
+
+# EB5R2: THE FIGHT, NO SAFETY (questions 6 and 7): the dragon and the Mages, every phase with its Mage, up to ten
+# minutes or until it ends. A death is real: he reappears where he entered, with everything he carried.
+EB5R2:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - tell: "QUESTIONS 6 AND 7 ARE COMING: THE FIGHT, WITH NO SAFETY, IN THE END WORLD. Kill the Ender Dragon with your own weapon. At 80, 60, 40 and 20 percent a Mage lands, and the dragon cannot be hurt from that moment until that Mage is dead. Its bite and wing now land at most once a second between them, and its breath no longer pushes. Stay inside the ring: the lightning is real, and if you die you reappear where you entered. Up to ten minutes. /rpg mana refill is yours to use or not; the log records it."
+  - await_fight: 12000
+  - cmd: "rpg fight stop"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "6 2400 yesno For one player, is the dragon's 20,000 health right, now that every phase has its Mage?"
+  - ask: "7 2400 words What most needs to change before waves are built?"

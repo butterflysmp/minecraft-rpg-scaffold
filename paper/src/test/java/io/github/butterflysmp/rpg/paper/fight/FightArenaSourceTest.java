@@ -74,7 +74,9 @@ class FightArenaSourceTest {
 
     @Test
     void theWorldIsNormalEmptyForcedSpawnNoSpawningNoGriefingFixedSkyAndMarked() throws IOException {
-        String create = body(code(FIGHT.resolve("FightWorlds.java")), "public World create(FightContent.Arena arena)");
+        // F9c: create(arena) delegates to create(arena, environment), which does the work; NORMAL is one of its two.
+        String create = body(code(FIGHT.resolve("FightWorlds.java")),
+                "public World create(FightContent.Arena arena, FightContent.Environment environment)");
         for (String needle : new String[] {"World.Environment.NORMAL", "new EmptyGenerator()", ".forcedSpawnPosition(",
                 "GameRules.SPAWN_MOBS, false", "GameRules.MOB_GRIEFING, false", "GameRules.ADVANCE_TIME, false",
                 "GameRules.ADVANCE_WEATHER, false", "world.setTime(arena.timeOfDayTicks())", "world.setStorm(false)",
@@ -86,8 +88,9 @@ class FightArenaSourceTest {
     @Test
     void theReturnIsSavedBeforeHeGoesInAndClearedWhenHeComesBack() throws IOException {
         String fixtures = code(FIGHT.resolve("FightFixtures.java"));
-        // F9: enter(Player) now delegates to enter(Player, boolean withDragon), which does the work.
-        String enter = body(fixtures, "public String enter(Player p, boolean withDragon)");
+        // F9: enter(Player) now delegates to enter(Player, boolean withDragon); F9c: which ends in join(), where the
+        // return is saved and he is sent in (an END world's first entrant reaches join() after its self-check).
+        String enter = body(fixtures, "private String join(Player p, ArenaFight a, FightContent f)");
         int save = enter.indexOf("profiles.setFightReturn(");
         int go = enter.indexOf("p.teleportAsync(entry)");
         assertTrue(save > 0 && go > save, "saved through the profile BEFORE the teleport: " + enter);

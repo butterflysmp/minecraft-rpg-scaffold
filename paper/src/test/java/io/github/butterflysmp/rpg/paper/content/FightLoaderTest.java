@@ -97,6 +97,7 @@ class FightLoaderTest {
               pillar_top_above_floor_blocks: 12
               time_of_day_ticks: 18000
               entry_offset_blocks: [0.0, 0.0]
+              environment: end
             fixture:
               participant_radius_blocks: 128.0
             dragon:
@@ -145,13 +146,15 @@ class FightLoaderTest {
                 + "alternating, every 4 ticks; "
                 + "mage 'dark_mage' refused item.shield.block, landing lightning on; crystals at 40.0, 12.0 up, lit block.beacon.power_select;"
                 + " participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to"
-                + " +12, time 18000, entry (0.0, 0.0); dragon 'ender_dragon' Mages below [0.8, 0.6, 0.4, 0.2], win"
+                + " +12, time 18000, entry (0.0, 0.0), environment end; dragon 'ender_dragon' Mages below"
+                + " [0.8, 0.6, 0.4, 0.2], win"
                 + " return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s, one contact hit per 20 ticks"), lines);
         assertEquals(new FightContent.Dragon("ender_dragon", List.of(0.80, 0.60, 0.40, 0.20), 200, "purple",
                 new io.github.butterflysmp.rpg.core.fight.DragonAttacks(80.0, 40.0, 30.0, 20)),
                 d.dragon(), "Ben: \"let's do 80 60 40 and 20 percent\"; the win's 200 and purple are SEAT PLACEHOLDERS;"
                         + " bite 80, wing 40, breath 30 a second: \"Yes those numbers are fine to start with\"");
         assertTrue(d.mageLandingLightning(), "Ben: \"Add a lightning strike to the mage landing\"");
+        assertEquals(FightContent.Environment.END, d.arena().environment(), "Ben: \"yes let's try it\" (F9c)");
     }
 
     @Test
@@ -292,6 +295,22 @@ class FightLoaderTest {
     @Test
     void aNegativeAttackNumberIsRefusedWithCoresReason() throws IOException {
         refusedNaming(GOOD.replace("bite: 81.0", "bite: -1.0"), "dragon attacks", "bite", "0 or more");
+    }
+
+    /** F9c, section 3 a: the fight world's environment arrives as written, both ways (a round trip). */
+    @Test
+    void theEnvironmentArrivesAsWrittenEitherWay() throws IOException {
+        assertEquals(FightContent.Environment.END, load(GOOD).get("test").arena().environment());
+        lines.clear();
+        assertEquals(FightContent.Environment.NORMAL, load(GOOD.replace("environment: end", "environment: normal"))
+                .get("test").arena().environment(), lines.toString());
+    }
+
+    @Test
+    void anUnknownOrMissingEnvironmentIsRefusedByName() throws IOException {
+        refusedNaming(GOOD.replace("environment: end", "environment: nether"), "arena.environment", "'nether'");
+        lines.clear();
+        refusedNaming(GOOD.replace("  environment: end\n", ""), "arena.environment", "missing");
     }
 
     /** F9b, section 6: the landing's lightning is a content switch, and both answers arrive (a round trip). */

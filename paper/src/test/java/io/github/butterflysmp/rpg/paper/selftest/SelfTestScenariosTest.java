@@ -38,9 +38,10 @@ class SelfTestScenariosTest {
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
-                        "fight-dragon", "fight-rules"),
+                        "fight-dragon", "fight-rules", "fight-end"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-five gates, in boot order (fight-rules LAST, step F9b, 2026-11-19, a NEW gate after fight-dragon;"
+                "the twenty-six gates, in boot order (fight-end LAST, step F9c, 2026-11-19, a NEW gate after fight-rules;"
+                        + " fight-rules before it, step F9b, 2026-11-19, a NEW gate after fight-dragon;"
                         + " fight-dragon before it, step F9, 2026-11-18, a NEW gate after fight-arena;"
                         + " fight-arena before it, step F8b, 2026-11-18, a NEW gate after"
                         + " fight-site; fight-site before it, step F8a, 2026-11-18, in fight-mage's place: it"
@@ -204,7 +205,13 @@ class SelfTestScenariosTest {
         // Then THE SECOND BOOT'S fight-rules (the seat's fix brief of 2026-11-19), RECOUNTED the same way on this branch's
         // tree: 25 gates, 239 keys, 25 setups, so 214: RA1-RA5 retired (read), RA3R2, RA4R2, RA5R2 and RB1 in their
         // place. The control: 240 - 5 + 4 = 239. 215 was this line's value.
-        assertEquals(214, loaded.rows());
+        // Then AN END-TYPE FIGHT WORLD (GATE-fight-end.md, step F9c, 2026-11-19, stacked on fight-rules), a new gate,
+        // RECOUNTED the same way on this branch's tree after its rebase onto the fix: 26 gates, 246 keys, 26 setups, so
+        // 220: fight-end's 6 rows (EA1, EB1-EB5) added. The control: 239 + 7 = 246. 214 was this line's value.
+        // Then THE SECOND BOOT'S fight-end (the seat's fix brief of 2026-11-19), RECOUNTED the same way on this branch's
+        // tree: 26 gates, 243 keys, 26 setups, so 217: EA1 and EB1-EB5 retired (read or aborted), EB3R2, EB4R2 and EB5R2
+        // in their place. The control: 246 - 7 + 4 = 243. 220 was this line's value.
+        assertEquals(217, loaded.rows());
     }
 
     /**

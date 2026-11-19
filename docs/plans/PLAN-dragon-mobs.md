@@ -2348,6 +2348,9 @@ Each constraint below says what it forbids in practice, and what cfde822 did ins
 mobs above do not need the fight to exist, but **every mob capability must be built so the fight can own it.**
 
 - **C1 — ONE TEMPORARY WORLD PER GROUP.**
+  - **ONE EXCEPTION, the seat's ruling of 2026-11-19:** `World.getEnderDragonBattle()` may be read on the fight's own
+    END world, in its self-check only, to confirm vanilla's fight is inert; never to find, drive or identify our fight.
+    The account is `PLAN-dragon-fight.md` §6.10.
   - **Forbids:** finding the fight by dimension or by a fixed world (`Environment.THE_END`, `getEnderDragonBattle()`,
     `getServer().getWorlds()` scans); fixed coordinates as fight geometry ((0, 0), the radius-15 anchor ring, the
     ±200 Enderman box); one fight per world assumed by a map keyed on world UUID shared across fights; a mob behaviour
