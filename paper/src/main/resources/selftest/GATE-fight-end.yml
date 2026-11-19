@@ -1,0 +1,134 @@
+# GATE-fight-end.md: STEP F9c, AN END-TYPE FIGHT WORLD (feat/fight-end, 2026-11-19). `/rpg selftest fight-end`.
+# THE ONE BOOT for this gate and GATE-fight-rules.md: the run sheet runs `fight-rules` first, then this.
+#
+# `rpg fight enter` now makes an END world (content: arena.environment end): its Paper switch written first, then the
+# world, then 4 ticks later its self-check (FIGHTWORLD end-check ... inert=true), and only then the arena and his
+# entry. So every row waits 20 ticks after `enter` before it touches the fight. If the check fails, the world is ended
+# and a NORMAL one made instead; the rows run there just the same.
+#
+# New dev handle: `rpg fight arena-probe` (ARENAPROBE: environment, the centre column, fire, crystals, dragons).
+#
+# Ben's rows (EB1 to EB5) are the brief's questions 1 to 5 and 9. ONE ROW CAN KILL HIM (EB5, the fight): a death is
+# real there and he reappears where he entered, as on master (deaths change in F9d).
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# EA1: AN END WORLD, ITS SELF-CHECK, THE ARENA IN IT, AND NO CRYSTAL FIRE. Enter: the switch written, an END world
+# made, checked inert; the arena built; one dragon; the centre end stone with no bedrock under it. A Mage at the
+# centre; the slow close lights crystal 1; no fire anywhere a crystal could set it.
+EA1:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight arena-probe"
+  - cmd: "rpg fight land 0 0"
+  - wait: 450
+  - cmd: "rpg fight arena-probe"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# EB1: THE END WORLD, LOOKED AT (questions 1 and 2). The dragon held in HOVER, so he can look round in peace.
+EB1:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - tell: "QUESTIONS 1 AND 2 ARE COMING. This arena is now in an End world. Look at the sky and the light, listen, and walk to the edge of the floor if you like (do not fall off). The dragon is held still above the middle. About a minute."
+  - wait: 1200
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "1 2400 yesno The End world: is the sky what you wanted?"
+  - ask: "2 2400 words Is anything about the End world wrong (the music, the light, fire, the edge)? Say what, or say none."
+
+# EB2: THE LANDING'S LIGHTNING (question 3): a Mage lands 10 blocks east of the middle, where he can see it.
+EB2:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - tell: "QUESTION 3 IS COMING. Face east (positive X on your F3 screen). In a few seconds a Mage lands 10 blocks east of you, with a lightning strike."
+  - wait: 100
+  - cmd: "rpg fight land 10 0"
+  - wait: 60
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "3 2400 yesno The lightning at the Mage's landing: is it right?"
+
+# EB3: THE BITE AND THE WING (question 4): he is put in the dragon's head (bitten, 80), healed, then under a wing
+# (struck, 40). Slow falling, so the drop does not hurt.
+EB3:
+  - cmd: "effect give @s minecraft:slow_falling 60 0 true"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - tell: "QUESTION 4 IS COMING. You will be put in the dragon's mouth (a bite, 80 before your armour), then under its wing (40, and a push). You will float down slowly."
+  - wait: 60
+  - cmd: "rpg fight dragon touch head"
+  - wait: 4
+  - cmd: "rpg heal 1000000"
+  - wait: 60
+  - cmd: "rpg fight dragon touch wing"
+  - wait: 4
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - cmd: "effect clear @s minecraft:slow_falling"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "4 2400 yesno The dragon's bite (80) and wing (40): do they feel right?"
+
+# EB4: THE BREATH (question 5): the dragon breathes, and he is put in the cloud for about three of its hits.
+EB4:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - tell: "QUESTION 5 IS COMING. The dragon will breathe on the floor and you will be put in the cloud for about three seconds (30 a second before your armour)."
+  - wait: 60
+  - cmd: "rpg fight dragon phase breath_attack"
+  - wait: 15
+  - cmd: "rpg fight dragon to-breath"
+  - wait: 65
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "5 2400 yesno The breath, 30 a second: does it feel right?"
+
+# EB5: THE FIGHT, NO SAFETY (questions 6 and 7): the dragon and the Mages, every phase with its Mage, up to ten
+# minutes or until it ends. A death is real: he reappears where he entered.
+EB5:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - tell: "QUESTIONS 6 AND 7 ARE COMING: THE FIGHT, WITH NO SAFETY, IN THE END WORLD. Kill the Ender Dragon with your own weapon. At 80, 60, 40 and 20 percent a Mage lands, and now the dragon cannot be hurt from that moment until that Mage is dead. Its bite, wing and breath hurt now. Stay inside the ring: the lightning is real, and if you die you reappear where you entered. Up to ten minutes. /rpg mana refill is yours to use or not; the log records it."
+  - await_fight: 12000
+  - cmd: "rpg fight stop"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "6 2400 yesno For one player, is the dragon's 20,000 health right, now that every phase has its Mage?"
+  - ask: "7 2400 words What most needs to change before waves are built?"

@@ -1305,6 +1305,81 @@ a boot.**
 on the log: `Scanning for legacy world dragon fight...`, or a second dragon, or a pink bar. Without the file, it falls
 back to rank 5's behaviour, not to anything worse. Rank 4 is cheaper in code, but the data says it shows nothing.
 
+### 6.10 F9b AND F9c AS BUILT (`feat/fight-rules`, `feat/fight-end`, 2026-11-19): WHAT THE CODE AND THE JAR SHOWED
+
+The seat's split ruling of 2026-11-19: four PRs, two boots. F9b (sections 0, 1, 2, 4, 6, 7) and F9c (section 3) share
+boot 1, whose one R0 and run sheet are `GATE-fight-end.md`'s. F9d and F9e (the respawn rules) are boot 2.
+
+**THE C1 EXCEPTION, RECORDED (the seat's ruling, 2026-11-19).** `World.getEnderDragonBattle()` MAY be read:
+- on the fight's own world handle;
+- in the END world's self-check only (`FightWorlds.endSelfCheck`);
+- to confirm vanilla's fight is inert.
+
+It is never used to find, drive or identify our fight; C1 otherwise stands (`PLAN-dragon-mobs.md` §6, C1, carries a
+pointer). `FightEndSourceTest` asserts one call in all of `paper`'s main code, there.
+
+**What the code showed the brief got wrong or left open:**
+1. **"Before the Mage lands" has no window in a fresh fight.** A crossing in IDLE lands its Mage on the next loop tick,
+   so a hit between the two cannot be staged. RA1 stages the owed window where it really occurs: during the ring's
+   return (Ben's DB2 case).
+2. **Nothing could tell a bite from a wing by cause.** READ: both are `mobAttack(dragon)`. Which attack it was is read
+   from the dragon's own part boxes, as the server chose its victims.
+3. **The breath never reached our pipeline.** READ:
+   - Bukkit names the cloud's hit `ENTITY_ATTACK` with the CLOUD as the damager;
+   - the mob rider needs a living damager;
+   - `VanillaDamagePolicy` passes `ENTITY_ATTACK`.
+
+   So vanilla's own number landed and our store took nothing: F9's "the breath: NOT READ" had no HURT line to read.
+4. **The Mage's death message credited the dragon because the dragon really hit him in vanilla.** Ours to fix,
+   and fixed: the fight's dragon no longer hurts its own Mage in vanilla.
+5. **An END world's self-check cannot be synchronous.** No API read distinguishes an inert fight from a live one
+   until the fight has ticked once. So an END fight's first entrant enters 4 ticks after the world is made, not on
+   `enter`'s tick.
+6. **The marker is now written before the END world exists** (with the Paper file); the same file and the same text.
+   The sweep's four tests are unchanged.
+
+**Jar facts, each marked** (the pinned server jar, build 74, by `javap`):
+- READ: `EnderDragon.aiStep`:
+  - the wings' boxes, inflated (4, 2, 4) and moved down 2, push, and (not sitting) hurt for 5;
+  - the head's and the neck's boxes, inflated 1, hurt for 10;
+  - all of it only when the dragon's `hurtTime` is 0.
+- READ: `EnderDragon.checkCrystals`:
+  - searches its box inflated by 32 for crystals;
+  - tries a heal every 10 ticks through `EntityRegainHealthEvent(ENDER_CRYSTAL)`;
+  - calls `setHealth` only if that event is not cancelled.
+- READ: `DragonSittingFlamingPhase`:
+  - at its 10th tick, a cloud owned by the dragon on the floor below a point 5 ahead of the head;
+  - radius 5, 200 ticks, Instant Damage, potion duration scale 0.25;
+  - Paper's `EnderDragonFlameEvent`.
+- READ: `AreaEffectCloud`'s defaults are a reapplication delay of 20 and a wait of 20.
+- READ: `CraftEventFactory.handleEntityDamageEvent` names a hit with a damager and no mapped type `ENTITY_ATTACK`.
+  That the breath's type is indirect magic is INFERRED.
+- READ: the API's `EnderDragon.Phase` maps to vanilla's by order. `BREATH_ATTACK` is `SITTING_FLAMING`.
+- READ: `CraftWorld.strikeLightningEffect` makes a visual-only bolt; `LightningBolt.tick` and `spawnFire` skip a
+  visual-only bolt's damage and fire.
+- READ: `AABB.intersects` is strict.
+- READ: `ServerLevel.<init>`:
+  - the world's Paper config is made in the `Level` constructor (offset 155);
+  - vanilla's fight is built at offset 921, only if the type's `has_ender_dragon_fight`.
+- READ: `EnderDragonFight`:
+  - `init` takes Paper's branch on a fresh (dirty) record with `scan-for-legacy-ender-dragon` false, setting
+    `dragonKilled` true and `needsStateScanning` false;
+  - `tick` first sets its bar visible as `!dragonKilled`.
+- READ: `SavedDataStorage.computeIfAbsent` marks a fresh record dirty.
+- READ: `ServerLevel.tick` ticks the fight while `emptyTime` is under 300. A new world's chunk source has no tickets,
+  so it ticks from the start.
+- READ: `CraftDragonBattle`:
+  - `getEnderDragon` looks up the fight's `dragonUUID`;
+  - `getEndPortalLocation` returns its `exitPortalLocation`;
+  - `getBossBar` wraps its `dragonEvent`.
+  - What `getEntity(null)` does is not READ, so a throw there reads as not inert.
+- READ: `EndCrystal.tick` sets fire on its block in a level with a fight object, after a `BlockIgniteEvent` naming
+  the crystal.
+- READ: `DimensionType.getStorageFolder` is `<level>/dimensions/<ns>/<path>`.
+- READ: `PaperConfigurations` reads `<that>/paper-world.yml`. **UNVERIFIED until the boot's `end-check` line: that it
+  reads OUR file for OUR world.**
+- INFERRED: a fight dragon's hit reaches the event at Normal difficulty unscaled (10 and 5). The boot reads `vanilla=`.
+
 ## 7. OPEN, FOR BEN
 
 *Listed, not answered.*

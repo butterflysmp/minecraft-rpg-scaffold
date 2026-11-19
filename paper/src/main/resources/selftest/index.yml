@@ -54,3 +54,6 @@ gates:
 # fight-rules (step F9b, 2026-11-19) is paired with docs/gates/GATE-fight-rules.md: immune while a Mage is owed, no
 # crystal heal, the dragon's damage, the landing's lightning. Its R0 and run sheet are GATE-fight-end.md's.
   - fight-rules
+# fight-end (step F9c, 2026-11-19, stacked on fight-rules) is paired with docs/gates/GATE-fight-end.md: the END-type
+# fight world. It carries the ONE R0 and run sheet for itself and fight-rules, and Ben's rows for both.
+  - fight-end
