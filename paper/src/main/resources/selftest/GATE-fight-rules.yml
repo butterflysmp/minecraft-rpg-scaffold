@@ -6,7 +6,8 @@
 # SAFETY (fix E): every row that can hurt him sets death_rules (a death cannot drop his inventory) and heals him first,
 # and the gate carries the arithmetic that he survives it at defence 0 against 100 health. Each exposure to the
 # dragon is 4 ticks or less, then `tp @s 0.5 65 20.5` puts him on the floor 20 blocks south of the centre, out of
-# the hovering dragon's reach.
+# the hovering dragon's reach. He is put there first too, as soon as the dragon is held in HOVER, so he waits out of
+# reach rather than under it.
 
 setup:
   - difficulty: normal
@@ -24,6 +25,7 @@ RA3R2:
   - cmd: "rpg fight enter"
   - wait: 20
   - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
   - wait: 25
   - cmd: "rpg fight dragon touch head"
   - wait: 4
@@ -45,6 +47,7 @@ RA4R2:
   - cmd: "rpg fight enter"
   - wait: 20
   - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
   - wait: 25
   - cmd: "rpg fight dragon touch wing"
   - wait: 4
@@ -65,6 +68,7 @@ RA5R2:
   - cmd: "rpg fight enter"
   - wait: 20
   - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
   - wait: 2
   - cmd: "rpg fight dragon phase breath_attack"
   - wait: 15
@@ -88,6 +92,7 @@ RB1:
   - cmd: "rpg fight enter"
   - wait: 20
   - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
   - wait: 25
   - cmd: "rpg fight dragon touch head"
   - wait: 1

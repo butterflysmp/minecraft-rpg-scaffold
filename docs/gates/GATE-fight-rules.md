@@ -281,6 +281,32 @@ The largest hit after armour at defence 0 is the hit itself.
 - No fall: slow falling, and the `tp` is to the floor.
 - **Every row sets `death_rules` and heals first**, so even a death could not drop his inventory.
 
+> **AMENDED 2026-11-19, BEFORE ANY BOOT OF THESE ROWS: THE TABLE ABOVE COUNTS ONLY THE STAGED EXPOSURE, AND TWO
+> PREMISES ARE NAMED HERE.**
+>
+> **(a) While he waits, out of reach.**
+> - The rows as first committed left him at the entry, the centre, for 25 ticks under the hovering dragon before each
+>   touch. **The window caps contact hits at one per 20 ticks; it does not cap them at zero.**
+> - Each row now puts him on the floor 20 blocks south (`tp @s 0.5 65 20.5`) the moment the dragon is held in HOVER.
+>   The next exposure is the staged one.
+> - **The premise:** that spot is out of every attack box of a dragon hovering over the centre. INFERRED, from the
+>   first boot and Ben's rerun: in their **seven staged rows** (RA3, RA4, RA5, EB3, EB4 at the first boot; EB3, EB4 in the rerun) he waited AT the centre,
+>   closer than 20 blocks, and **no contact hit landed before any row's staging** (read from both logs: every
+>   `DRAGONATTACK` before a row's `DRAGON touch` or `to-breath` line; only EB5, the fight, had any).
+>
+> **(b) On the breath cloud: no contact hit at the spot he is put.**
+> - READ (F9b): the cloud lies on the floor below a point 5 blocks ahead of the head, and `to-breath` puts him at its
+>   centre.
+> - The head's attack box reaches 1.5 blocks from the head's centre (its box, inflated 1); his half-width is 0.3. So
+>   1.8 against 5: out of reach.
+> - The neck is further back. A sitting dragon's wing pushes but does not hurt (READ, `EnderDragon.knockBack`).
+> - **The premise:** he stands where he is put. **If he walked into the head, one bite (80) could land on top of the
+>   breath, and 80 + 30 > 100.** RA5R2 is a selftest row that Ben does not drive; the run sheet tells him to stand still.
+> - In all three breath rows read so far (RA5 and EB4 at the first boot, EB4 in the rerun), no contact hit landed.
+>
+> **Each premise is witnessed in the row's own lines:** every contact hit is a `DRAGONATTACK … attack=bite|wing` line
+> with its tick. So a premise that failed is visible, and the row says so.
+
 ### RA3R2 — the bite, ONCE in a 4-tick touch (SURVIVAL)
 
 | prediction | stands on | READING |
