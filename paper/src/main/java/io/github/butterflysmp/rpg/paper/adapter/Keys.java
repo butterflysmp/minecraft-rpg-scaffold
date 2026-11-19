@@ -223,6 +223,12 @@ public final class Keys {
     public final NamespacedKey mobShot;
 
     /**
+     * F21 (the seat's queue, item 4, 2026-11-19): THE SERVER TICK THE PHALANX'S BLINK COOLDOWN ENDS, a LONG on the live
+     * mob, written when a blink lands. A Phalanx loaded again resumes what is left of it ({@code MobShooter}).
+     */
+    public final NamespacedKey blinkReadyAt;
+
+    /**
      * THE PHALANX'S ONE-HIT SHIELD IS UP (dragon-mobs step R7b): a BYTE on the live mob, set at its spawn when its file
      * authors a shield, removed when the shield absorbs. In the PDC, so it survives a chunk unload and a restart.
      */
@@ -480,6 +486,7 @@ public final class Keys {
         this.mobGrowthFed = new NamespacedKey(plugin, "mob_growth_fed");
         this.beamRoot = new NamespacedKey(plugin, "beam_root");
         this.mobShot = new NamespacedKey(plugin, "mob_shot");
+        this.blinkReadyAt = new NamespacedKey(plugin, "blink_ready_at");
         this.mobShield = new NamespacedKey(plugin, "mob_shield");
         this.mobStationary = new NamespacedKey(plugin, "mob_stationary");
         this.fightCrystal = new NamespacedKey(plugin, "fight_crystal");
