@@ -45,3 +45,6 @@ gates:
 # It RETIRES fight-mage: every row there is re-predicted (FR1R3 ... FR9R3, MG1R2 ... MG8R2, MQ1R2); MQ2-MQ7 were
 # answered and are retired. GATE-fight-mage.yml no longer ships; GATE-fight-mage.md keeps every reading.
   - fight-site
+# fight-arena (step F8b, 2026-11-18) is paired with docs/gates/GATE-fight-arena.md; its R0 and run sheet cover
+# fight-site too (the seat: one boot for both).
+  - fight-arena

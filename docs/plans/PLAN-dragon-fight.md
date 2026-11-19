@@ -905,6 +905,35 @@ If deleting cannot be shown safe, STOP.
 - **`/rpg mobdamage` printed an estimate made before the hit landed.** It now replies from the store 2 ticks later.
 - **AWAIT_FIGHT** ends a wait when the dev command's fight ends, with a ceiling.
 
+### 6.6 F8b AS BUILT (`feat/fight-arena`, stacked on F8a, 2026-11-18): WHAT THE CODE SHOWED
+
+*The gate is `docs/gates/GATE-fight-arena.md`, NOT RUN at this writing. It carries the one R0 and run sheet for F8a's
+gate too.*
+
+- **Deleting a fight world was shown safe BEFORE any delete code was written** (the seat's condition). Each answer is
+  marked in the gate:
+  - The world's data lives in its own folder, `dimensions/rpgfight/fight_<hex>`.
+  - The boot loads only the stem registry's worlds.
+  - `unloadWorld` closes every region file synchronously.
+- **Every delete passes one judge, `FightFolders` (core), with four refusals**, and logs its absolute path first. The
+  symlink arm of the fourth is skipped on this machine: this Windows account cannot make a symbolic link.
+- **The return location is a nullable `FightReturn` on `PlayerProfile`** (C5), with no schema bump, for
+  `lifetimeXp`'s reason. A reflection test pins that every `with…` keeps it.
+- **CC'S CHOICES, FOR BEN** (not in the brief):
+  - **KEEP_INVENTORY in a fight world:** its drops would be deleted with it.
+  - **IMMEDIATE_RESPAWN:** a death sends him home with no death screen.
+  - **Entry at the centre.**
+- **A death retires a player's own scheduled tasks.** So the selftest's `await_fight` now polls on the global scheduler,
+  and the arena rows that kill him die inside one. `Scheduler` gained `onGlobalLater`: Bukkit's scheduler is banned, and
+  an unload has no region to own it.
+- **POWERED's kill lands a tick after it is dealt** (`applyDamage` is deferred). So where failure kills, the fight ends
+  through "nobody inside", never at the outcome, or he would be returned home and die there.
+- **The stale login is caught once his profile settles.** Where vanilla puts a player whose saved world is gone is
+  UNVERIFIED in the jar read here, and **AQ1's `at=` is its first reading.**
+- **The template-file arena (C3) is not built:** there is no file to test it. That is a deviation from C3, owed when
+  Ben builds an arena.
+- **The border lightning already strikes from the fight's first tick** (as the F4 fixture always did). AE3 reads it.
+
 ## 7. OPEN, FOR BEN
 
 *Listed, not answered.*
