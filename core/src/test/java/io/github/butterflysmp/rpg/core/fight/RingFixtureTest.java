@@ -38,9 +38,12 @@ class RingFixtureTest {
         }
 
         @Override public List<RingFixture.Participant> participants() { return List.copyOf(present); }
+        List<double[]> lastPoints = List.of();
+
         @Override public void draw(List<UUID> viewers, List<double[]> points) {
             draws++;
             lastDrawPoints = points.size();
+            lastPoints = points;
             lastViewers = viewers;
         }
         @Override public void strikeEffect(UUID player, double x, double y, double z) {
@@ -69,6 +72,37 @@ class RingFixtureTest {
 
     private static void run(RingFixture f, int ticks) {
         for (int i = 0; i < ticks; i++) f.tick();
+    }
+
+    /**
+     * THE WALL'S WITNESS (GATE-fight-site.md): each row's first point, as an arc from angle 0, is what was DRAWN on that
+     * tick, and two readings 20 ticks apart show rows 0, 2, 4 turning +1.0 block and rows 1, 3, 5 turning -1.0.
+     */
+    @Test
+    void theWallWitnessReadsTheDrawnPointsAndAlternateRowsTurnOppositeWays() {
+        FakePort port = new FakePort();
+        port.place(ANA, "ana", CX, CZ);
+        RingFixture f = new RingFixture(S, RingPointsTest.sixRowWall(), CX, CY, CZ, port);
+        assertEquals(List.of(), f.wallStartArcs(), "nothing before the first tick");
+        run(f, 20);
+        List<Double> first = f.wallStartArcs();
+        assertEquals(6, first.size());
+        double r = S.borderRadiusBlocks();
+        int per = RingPoints.pointsPerHeight(r, RingPointsTest.sixRowWall());
+        for (int row = 0; row < 6; row++) {
+            double[] drawn = port.lastPoints.get(row * per);
+            double a = Math.atan2(drawn[2] - CZ, drawn[0] - CX);
+            if (a < 0) a += 2 * Math.PI;
+            assertEquals(a * r, first.get(row), 1e-9, "row " + row + " witness = the point drawn at tick 20");
+        }
+        run(f, 20);
+        List<Double> second = f.wallStartArcs();
+        double c = 2 * Math.PI * r;
+        for (int row = 0; row < 6; row++) {
+            double d = (((second.get(row) - first.get(row)) % c) + c) % c;
+            if (d > c / 2) d -= c;
+            assertEquals(row % 2 == 0 ? 1.0 : -1.0, d, 1e-9, "row " + row + " in 20 ticks");
+        }
     }
 
     @Test

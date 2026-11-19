@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RingPointsTest {
 
     static RingLook look() {
-        return new RingLook("dust", 170, 0, 255, 1.6, 1.0, List.of(0.2, 1.2, 2.2), 0.0, 0.0, 4);
+        return new RingLook("dust", 170, 0, 255, 1.6, 1.0, List.of(0.2, 1.2, 2.2), 0.0, 0.0, false, 4);
     }
 
     @Test
@@ -49,7 +49,43 @@ class RingPointsTest {
 
     /** The wall Ben said yes to (eighth message): four rows 1.5 apart, each shifted round, turning. */
     static RingLook wall() {
-        return new RingLook("dust", 170, 0, 255, 1.6, 1.0, List.of(0.2, 1.7, 3.2, 4.7), 0.25, 1.0, 4);
+        return new RingLook("dust", 170, 0, 255, 1.6, 1.0, List.of(0.2, 1.7, 3.2, 4.7), 0.25, 1.0, false, 4);
+    }
+
+    /**
+     * The wall after the second boot: six rows 1.5 apart (Ben: "yes, maybe another row or 2"), every other row turning
+     * the opposite way (Ben: "maybe alternate twists on every other row").
+     */
+    static RingLook sixRowWall() {
+        return new RingLook("dust", 170, 0, 255, 1.6, 1.0, List.of(0.2, 1.7, 3.2, 4.7, 6.2, 7.7), 0.25, 1.0, true, 4);
+    }
+
+    @Test
+    void theSixRowWallIs1812PointsAtRadius48() {
+        assertEquals(1812, RingPoints.pointsPerRedraw(48.0, sixRowWall()), "302 a row, 6 rows");
+        assertEquals(1812, RingPoints.points(new Ring(0, 0, 48.0), 64.0, sixRowWall(), 0L).size());
+    }
+
+    /** The signed arc a row's first point moved between two redraws, blocks, wrapped into (-C/2, C/2]. */
+    private static double movedAlong(double[] before, double[] after, double r) {
+        double c = 2 * Math.PI * r;
+        double d = arcOf(after, r) - arcOf(before, r);
+        d = ((d % c) + c) % c;
+        return d > c / 2 ? d - c : d;
+    }
+
+    @Test
+    void rowsZeroTwoAndFourTurnOneWayAndRowsOneThreeAndFiveTheOther() {
+        int per = RingPoints.pointsPerHeight(48.0, sixRowWall());
+        List<double[]> start = RingPoints.points(new Ring(0, 0, 48.0), 64.0, sixRowWall(), 0L);
+        List<double[]> later = RingPoints.points(new Ring(0, 0, 48.0), 64.0, sixRowWall(), 20L);
+        for (int row = 0; row < 6; row++) {
+            double expected = row % 2 == 0 ? 1.0 : -1.0;
+            assertEquals(expected, movedAlong(start.get(row * per), later.get(row * per), 48.0), 1e-9,
+                    "row " + row + " turned " + expected + " block in 20 ticks");
+            // The shift is not alternated: each row still starts its shift further round at tick 0.
+            assertEquals(row * 0.25, arcOf(start.get(row * per), 48.0), 1e-9, "row " + row + "'s shift");
+        }
     }
 
     @Test
@@ -94,9 +130,9 @@ class RingPointsTest {
     @Test
     void theLookRefusesANonFiniteShiftOrTurn() {
         assertThrows(IllegalArgumentException.class,
-                () -> new RingLook("dust", 1, 0, 0, 1.6, 1.0, List.of(0.2), Double.NaN, 0.0, 4));
+                () -> new RingLook("dust", 1, 0, 0, 1.6, 1.0, List.of(0.2), Double.NaN, 0.0, false, 4));
         assertThrows(IllegalArgumentException.class,
-                () -> new RingLook("dust", 1, 0, 0, 1.6, 1.0, List.of(0.2), 0.0, Double.POSITIVE_INFINITY, 4));
+                () -> new RingLook("dust", 1, 0, 0, 1.6, 1.0, List.of(0.2), 0.0, Double.POSITIVE_INFINITY, false, 4));
     }
 
     @Test
@@ -108,12 +144,12 @@ class RingPointsTest {
     @Test
     void theLookRefusesNonsense() {
         assertThrows(IllegalArgumentException.class,
-                () -> new RingLook("dust", 256, 0, 0, 1.6, 1.0, List.of(0.2), 0.0, 0.0, 4), "a colour channel past 255");
+                () -> new RingLook("dust", 256, 0, 0, 1.6, 1.0, List.of(0.2), 0.0, 0.0, false, 4), "a colour channel past 255");
         assertThrows(IllegalArgumentException.class,
-                () -> new RingLook("dust", 1, 0, 0, 1.6, 0.0, List.of(0.2), 0.0, 0.0, 4), "a zero spacing");
+                () -> new RingLook("dust", 1, 0, 0, 1.6, 0.0, List.of(0.2), 0.0, 0.0, false, 4), "a zero spacing");
         assertThrows(IllegalArgumentException.class,
-                () -> new RingLook("dust", 1, 0, 0, 1.6, 1.0, List.of(), 0.0, 0.0, 4), "no height at all");
+                () -> new RingLook("dust", 1, 0, 0, 1.6, 1.0, List.of(), 0.0, 0.0, false, 4), "no height at all");
         assertThrows(IllegalArgumentException.class,
-                () -> new RingLook("dust", 1, 0, 0, 1.6, 1.0, List.of(0.2), 0.0, 0.0, 0), "a zero redraw period");
+                () -> new RingLook("dust", 1, 0, 0, 1.6, 1.0, List.of(0.2), 0.0, 0.0, false, 0), "a zero redraw period");
     }
 }

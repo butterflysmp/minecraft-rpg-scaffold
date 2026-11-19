@@ -63,13 +63,14 @@ public final class FightLoader {
         return String.format(Locale.ROOT,
                 "Loaded fight '%s': border %.1f, mage ring %.1f, v_fast %.2f, v_slow %.2f, e_kill %.2f, "
                         + "%d crystals every %d ticks, a strike every %d ticks from %.1f; ring %s (%d,%d,%d) size %.2f "
-                        + "every %.2f blocks at %s, row shift %.2f, turn %.2f/s, every %d ticks; mage '%s' refused %s; "
+                        + "every %.2f blocks at %s, row shift %.2f, turn %.2f/s %s, every %d ticks; mage '%s' refused %s; "
                         + "crystals at %.1f, %.1f up, lit %s; participants within %.1f",
                 f.id(), s.borderRadiusBlocks(), s.mageRingRadiusBlocks(), s.fastCloseBlocksPerSecond(),
                 s.slowCloseBlocksPerSecond(), s.killExpansionBlocks(), s.crystalCount(), s.crystalIntervalTicks(),
                 s.strikeIntervalTicks(), s.firstStrikeDamage(), l.particleKey(), l.red(), l.green(), l.blue(),
                 l.dustSize(), l.pointSpacingBlocks(), l.heightOffsetsBlocks(), l.rowShiftBlocks(),
-                l.turnBlocksPerSecond(), l.redrawPeriodTicks(), f.mageMob(), f.refusedCue().sound(),
+                l.turnBlocksPerSecond(), l.alternateTurns() ? "alternating" : "together", l.redrawPeriodTicks(),
+                f.mageMob(), f.refusedCue().sound(),
                 f.crystalRingRadiusBlocks(), f.crystalHeightBlocks(), f.litCue().sound(), f.participantRadiusBlocks());
     }
 
@@ -110,6 +111,7 @@ public final class FightLoader {
                 heights.stream().map(h -> ((Number) h).doubleValue()).toList(),
                 number(r, "row_shift_blocks"),
                 number(r, "turn_blocks_per_second"),
+                flag(r, "alternate_turns"),
                 whole(r, "redraw_period_ticks"));
         ConfigurationSection m = section(root, "mage");
         String mob = m.getString("mob");
@@ -167,6 +169,15 @@ public final class FightLoader {
                     + (s.contains(key) ? ", got '" + v + "'" : ", and it is missing"));
         }
         return n.doubleValue();
+    }
+
+    /** A required {@code true} or {@code false}; refused by name when missing or anything else. */
+    private static boolean flag(ConfigurationSection s, String key) {
+        if (!s.isBoolean(key)) {
+            throw new IllegalArgumentException(s.getName() + " needs 'true' or 'false' for '" + key + ":'"
+                    + (s.contains(key) ? ", got '" + s.get(key) + "'" : ", and it is missing"));
+        }
+        return s.getBoolean(key);
     }
 
     /** A required whole number; refused by name when missing or not an integer. */

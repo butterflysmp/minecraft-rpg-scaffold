@@ -3017,9 +3017,24 @@ public final class RpgListeners implements Listener {
     }
 
     /**
-     * THE FIGHT'S OWN CRYSTALS ARE UNBREAKABLE (step F7): any damage to one, from any source, is cancelled. Cancelling
-     * stops {@code EndCrystal.hurtServer} before its removal and its explosion (READ, PLAN-dragon-fight.md section 4 e).
-     * Only crystals carrying the fight's byte; a player's own crystal is untouched.
+     * THE FIGHT'S OWN CRYSTALS ARE UNBREAKABLE (step F7). Cancelling stops {@code EndCrystal.hurtServer} before its
+     * removal and its explosion (READ, PLAN-dragon-fight.md section 4 e). Only crystals carrying the fight's byte; a
+     * player's own crystal is untouched.
+     *
+     * <p><b>WHAT REACHES THIS, AND IT IS NOT MOST HITS (GATE-fight-mage.md MG7; GATE-fight-site.md).</b> Each crystal is
+     * also {@code setInvulnerable(true)}, and READ from the pinned server jar, {@code EndCrystal.hurtServer} returns on
+     * {@code isInvulnerableToBase} BEFORE it raises the Bukkit event. So a player's hit and a blast never reach this
+     * handler: the invulnerable flag refuses them first. {@code Entity.isInvulnerableToBase} lets a source through an
+     * invulnerable entity only if either:
+     * <ul>
+     *   <li>the source is in {@code DamageTypeTags.BYPASSES_INVULNERABILITY}, which build 74's data lists as
+     *       {@code minecraft:out_of_world} and {@code minecraft:generic_kill}
+     *       ({@code data/minecraft/tags/damage_type/bypasses_invulnerability.json}); or</li>
+     *   <li>the source is {@code isCreativePlayer()}.</li>
+     * </ul>
+     * Those are what this handler stops, and the row that reaches it is a {@code /damage ... minecraft:out_of_world}.
+     * <b>{@code /kill} is out of reach of both:</b> READ, {@code EndCrystal.kill} calls {@code Entity.kill}, which
+     * removes the crystal with no damage event.
      */
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onFightCrystalDamage(EntityDamageEvent event) {

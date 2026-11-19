@@ -184,6 +184,9 @@ final class SelfTestStaging {
                     : java.util.Optional.of("watch_swings takes on or off, got '" + arg + "'");
             case TELL -> arg.isBlank() ? java.util.Optional.of("tell takes the text to show, got nothing")
                     : java.util.Optional.empty();
+            case AWAIT_FIGHT -> SelfTestAwaitFight.parse(arg).isPresent() ? java.util.Optional.empty()
+                    : java.util.Optional.of("await_fight takes '<ceiling ticks>', a whole number of at least 1, got '"
+                            + arg + "'");
             case DETONATE, IGNITE, PROBE_FUSE, THAW, PROBE_MOTION, BEAM, PROBE_AT, SHOT, PROBE_SHOT, AIM_SHAPE, STRIKE_LOOK,
                     SHOOT_ARROW, PROBE_SHIELD, POUNCE, PROBE_PAIR, LIGHT -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes one tag, got '"

@@ -48,31 +48,33 @@ import java.util.logging.Logger;
  */
 final class BukkitFightPort implements RingFixture.Port {
 
+    private final FightSite site;
     private final World world;
-    private final Location centre;
     private final FightContent fight;
     private final AdapterContext adapters;
     private final Logger log;
     private final Particle.DustOptions dust;
 
-    BukkitFightPort(World world, Location centre, FightContent fight, AdapterContext adapters, Logger log) {
-        this.world = world;
-        this.centre = centre;
+    /** The site says where (its world, its crystal spots) and who takes part; the fight content says how it looks. */
+    BukkitFightPort(FightSite site, FightContent fight, AdapterContext adapters, Logger log) {
+        this.site = site;
+        this.world = site.world();
         this.fight = fight;
         this.adapters = adapters;
         this.log = log;
         this.dust = new Particle.DustOptions(
                 Color.fromRGB(fight.look().red(), fight.look().green(), fight.look().blue()),
                 (float) fight.look().dustSize());
+        this.crystalSpots = site.crystalSpots();
     }
 
+    /** Every player in the site's world whom the SITE says takes part (its rule, not the port's). */
     @Override
     public List<RingFixture.Participant> participants() {
         List<RingFixture.Participant> out = new ArrayList<>();
         for (Player p : world.getPlayers()) {
+            if (!site.takesPart(p)) continue;
             Location feet = p.getLocation();
-            if (!FightParticipants.takesPart(feet.getWorld() == world, feet.distance(centre), p.getGameMode(),
-                    fight.participantRadiusBlocks())) continue;
             out.add(new RingFixture.Participant(p.getUniqueId(), p.getName(), feet.getX(), feet.getY(), feet.getZ()));
         }
         return out;
@@ -121,12 +123,12 @@ final class BukkitFightPort implements RingFixture.Port {
     /** The crystals this fixture lit, in order; the port owns them, so a stop removes every one. */
     private final List<org.bukkit.entity.EnderCrystal> crystals = new ArrayList<>();
     private java.util.function.Supplier<org.bukkit.entity.LivingEntity> mage = () -> null;
-    private List<Location> crystalSpots = List.of();
+    /** The site's crystal spots (spot n is index n - 1), read once at construction. */
+    private final List<Location> crystalSpots;
 
-    /** Bound by FightFixtures at the start: where the Mage is now, and the crystals' spots (spot n is index n - 1). */
-    void bind(java.util.function.Supplier<org.bukkit.entity.LivingEntity> mage, List<Location> spots) {
+    /** Bound by the instance at the start: where its Mage is now. */
+    void bind(java.util.function.Supplier<org.bukkit.entity.LivingEntity> mage) {
         this.mage = mage;
-        this.crystalSpots = List.copyOf(spots);
     }
 
     /**

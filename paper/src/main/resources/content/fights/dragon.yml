@@ -5,8 +5,10 @@
 #
 # WHOSE EACH NUMBER IS, as of 2026-11-18:
 #   Ben's:                  border 48, mage ring 12, v_fast 3.8, v_slow 0.6, a strike every 40 ticks, first strike 20
-#                           (then doubling), the strike through armour, the wall's four rows 1.5 apart.
-#   SEAT PLACEHOLDERS:      e_kill, the crystals' count and pace, the crystals' spots, the cues. Not Ben's.
+#                           (then doubling), the strike through armour, the wall's six rows 1.5 apart with alternate
+#                           rows turning the other way, a crystal every 12 seconds, the refused-hit cue.
+#   THE BRIEF'S READING:    the crystal count stays 10 (Ben changed only their pace).
+#   SEAT PLACEHOLDERS:      e_kill, the crystals' spots, the lit cue. Not Ben's.
 #   The seat's starting look: the colour, size, spacing, the row shift and the turn. Ben judges them at the boot.
 
 settings:
@@ -21,10 +23,10 @@ settings:
   slow_close_blocks_per_second: 0.6
   # SEAT PLACEHOLDER, not Ben's. Radius one counted kill adds back, blocks (Ben kept the jump: "the jump is fine").
   kill_expansion_blocks: 1.0
-  # SEAT PLACEHOLDER, not Ben's. How many crystals power the Mage.
+  # The brief's reading (2026-11-18: Ben changed the pace, not the count). How many crystals power the Mage.
   crystal_count: 10
-  # SEAT PLACEHOLDER, not Ben's. Ticks between crystals, from the slow close's start.
-  crystal_interval_ticks: 80
+  # Ben's, 2026-11-18: "no make it 12 seconds each crystal". Ticks between crystals, from the slow close's start.
+  crystal_interval_ticks: 240
   # Ben's ("Yes", every 2 s, as cfde822's storm struck).
   strike_interval_ticks: 40
   # Ben's ("start at 20, 40, 80 and keeps doubling"). Reduced by armour (Ben, 2026-11-18: "yes"). It wears no element:
@@ -32,9 +34,9 @@ settings:
   first_strike_damage: 20.0
 
 # THE WALL. Particles sent with force (Ben: "I would like to keep particles. We can try forced particles if that
-# helps. I don't care about the minimal particle setting."). Four rows 1.5 apart, each shifted round from the one
-# below, the whole wall turning slowly (Ben, 2026-11-18: "yes"; he asked for "Higher wall and a larger gap between each
-# row. Adding a slight twist to the particles would be cool").
+# helps. I don't care about the minimal particle setting."). Six rows 1.5 apart (Ben, 2026-11-18: "yes, maybe another
+# row or 2"), each shifted round from the one below, every other row turning the other way (Ben: "maybe alternate
+# twists on every other row"). At radius 48: 302 points a row, 1812 a redraw, 9060 packets a second per player.
 ring_look:
   # Only dust is supported.
   particle: dust
@@ -43,12 +45,15 @@ ring_look:
   dust_size: 1.6
   # The largest gap between neighbouring points round the ring, blocks. At radius 48 that is 302 points a row.
   point_spacing_blocks: 1.0
-  # Heights above the ground at C (C's block y), blocks: one row of points at each. Ben's four rows 1.5 apart.
-  height_offsets_blocks: [0.2, 1.7, 3.2, 4.7]
+  # Heights above the ground at C (C's block y), blocks: one row of points at each. Six rows 1.5 apart (Ben).
+  height_offsets_blocks: [0.2, 1.7, 3.2, 4.7, 6.2, 7.7]
   # The seat's starting value: each row starts this far further round the ring than the row below, blocks.
   row_shift_blocks: 0.25
   # The seat's starting value: the whole wall turns at this speed along the circumference, blocks per second.
   turn_blocks_per_second: 1.0
+  # Ben's, 2026-11-18 ("maybe alternate twists on every other row"): rows 1, 3, 5 (the lowest is 0) turn the opposite
+  # way at the same speed. The shift is not alternated.
+  alternate_turns: true
   # Ticks between redraws.
   redraw_period_ticks: 4
 

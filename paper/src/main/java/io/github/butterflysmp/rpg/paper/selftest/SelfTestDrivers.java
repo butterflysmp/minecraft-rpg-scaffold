@@ -141,6 +141,7 @@ final class SelfTestDrivers {
             case PROBE_FUSE -> creepers(p, a, null, c -> run.log(SelfTestBlast.fuseLine(a, c.getUniqueId(),
                     run.fuser().state(c.getUniqueId()), c.isIgnited())));
             case AWAIT_FUSE -> Optional.empty();   // the run polls it; it never reaches a driver
+            case AWAIT_FIGHT -> Optional.empty();  // the run polls it; it never reaches a driver
             case THAW -> tagged(p, a, "thaw", e -> {
                 if (e instanceof org.bukkit.entity.Mob m) m.setAI(true);
                 run.log(SelfTestBlast.thawLine(a, e.getUniqueId(), e.hasAI()));   // READ BACK, after the act
@@ -520,8 +521,19 @@ final class SelfTestDrivers {
         Optional<Entity> target = nearestTagged(p, tag);
         if (target.isEmpty()) return Optional.of("no entity tagged '" + tag + "' within " + (int) REACH + " blocks");
         Entity e = target.get();
+        var attr = p.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE);
+        double attackDamage = attr == null ? 0.0 : attr.getValue();
         run.log("DRIVE attack Player#attack target=" + e.getUniqueId() + " " + e.getType().getKey().getKey()
-                + " d=" + fmt(p.getLocation().distance(e.getLocation())) + " charge=" + fmt(p.getAttackCooldown()));
+                + " d=" + fmt(p.getLocation().distance(e.getLocation())) + " charge=" + fmt(p.getAttackCooldown())
+                + " attack_damage=" + fmt(attackDamage));
+        // WHAT THIS INSTRUMENT CANNOT DO (GATE-fight-mage.md MG2): with no attack damage, Player.attack raises NO damage
+        // event at all. READ, Player.attack: it hurts only if the base or the enchanted damage is above 0. And a held
+        // weapon with no melee of ours (a staff, a bow) pins ATTACK_DAMAGE to 0 (WeaponItems' melee suppressor). So the
+        // zero is said out loud: a row that means a melee hit must hold a melee weapon first.
+        if (!(attackDamage > 0.0)) {
+            run.log("DRIVE attack NO_DAMAGE_EVENT attack_damage=" + fmt(attackDamage)
+                    + ": Player.attack raises no damage event with no attack damage; hold a melee weapon");
+        }
         p.attack(e);
         return Optional.empty();
     }
@@ -771,8 +783,17 @@ final class SelfTestDrivers {
         try { type = EntityType.valueOf(f[0].toUpperCase(Locale.ROOT)); }
         catch (IllegalArgumentException e) { return Optional.of("unknown entity type " + f[0]); }
         double r = Double.parseDouble(f[1]);
-        long count = p.getNearbyEntities(r, r, r).stream().filter(e -> e.getType() == type).count();
-        run.log("ENTITIES " + type + " count=" + count + " radius=" + f[1]);
+        // A body in its 20 death ticks is still in the world (READ: LivingEntity.tickDeath removes it only at deathTime
+        // 20; CraftEntity.isDead is !isAlive, and isAlive is health > 0). GATE-fight-mage.md's FR7R2 and MG4 counted
+        // one. So a dying body is LEFT OUT of the count, by the settle step's own test, and the line says how many were.
+        long count = 0;
+        long dying = 0;
+        for (Entity e : p.getNearbyEntities(r, r, r)) {
+            if (e.getType() != type) continue;
+            if (SelfTestStaging.dying(e instanceof LivingEntity, e instanceof LivingEntity l && l.isDead())) dying++;
+            else count++;
+        }
+        run.log("ENTITIES " + type + " count=" + count + " radius=" + f[1] + " dying=" + dying);
         return Optional.empty();
     }
 
