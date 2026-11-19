@@ -1,6 +1,6 @@
 # GATE — STEP F9b: THE FIGHT'S RULES AFTER THE DRAGON BOOT
 
-**Status: THE SECOND BOOT IS READ, 2026-11-19, at `e772f8b5`** (R0 passed, in `GATE-fight-end.md`; RA3R2, RA4R2, RA5R2 and RB1 as predicted, RA4R2 and RB1 on their second branches; *THE SECOND BOOT, READ*, at the end). **The first boot: READ AT THE ONE BOOT OF 2026-11-19, on `feat/fight-end`'s head `e15cf9ee` (`GATE-fight-end.md` carries its R0, all as predicted, and its checklist).** RA1 and RA2 as predicted; **RA3, RA4 and RA5 NOT as predicted** (see *THE BOOT OF 2026-11-19* at the end). Every prediction below was written **before** any boot of `feat/fight-rules`, and this file was
+**Seat approval 2026-11-19: code and gate diffed at 95277db4, readings at 268c69ef. Merge on Ben's words.** **Status: THE SECOND BOOT IS READ, 2026-11-19, at `e772f8b5`** (R0 passed, in `GATE-fight-end.md`; RA3R2, RA4R2, RA5R2 and RB1 as predicted, RA4R2 and RB1 on their second branches; *THE SECOND BOOT, READ*, at the end). **The first boot: READ AT THE ONE BOOT OF 2026-11-19, on `feat/fight-end`'s head `e15cf9ee` (`GATE-fight-end.md` carries its R0, all as predicted, and its checklist).** RA1 and RA2 as predicted; **RA3, RA4 and RA5 NOT as predicted** (see *THE BOOT OF 2026-11-19* at the end). Every prediction below was written **before** any boot of `feat/fight-rules`, and this file was
 committed before the boot.
 - Readings go **beside** a prediction, never over it.
 - A prediction is not edited once its row has been read; a correction is a dated note.
