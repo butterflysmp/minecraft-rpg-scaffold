@@ -18,10 +18,14 @@ import java.util.List;
  * @param dustSize            dust size, as the particle takes it
  * @param pointSpacingBlocks  the largest distance between neighbouring points round the ring, blocks
  * @param heightOffsetsBlocks the heights to draw at, blocks above the ground at C; one ring of points per height
+ * @param rowShiftBlocks      each row starts this far further round the ring than the row below, blocks along the
+ *                            circumference (the twist; Ben, 2026-11-18: "yes")
+ * @param turnBlocksPerSecond the whole wall turns at this speed along the circumference, blocks per second
  * @param redrawPeriodTicks   ticks between redraws
  */
 public record RingLook(String particleKey, int red, int green, int blue, double dustSize,
-                       double pointSpacingBlocks, List<Double> heightOffsetsBlocks, int redrawPeriodTicks) {
+                       double pointSpacingBlocks, List<Double> heightOffsetsBlocks, double rowShiftBlocks,
+                       double turnBlocksPerSecond, int redrawPeriodTicks) {
 
     public RingLook {
         if (particleKey == null || particleKey.isBlank()) throw new IllegalArgumentException("no particle key");
@@ -38,6 +42,12 @@ public record RingLook(String particleKey, int red, int green, int blue, double 
         if (heightOffsetsBlocks.isEmpty()) throw new IllegalArgumentException("heightOffsetsBlocks is empty");
         for (double h : heightOffsetsBlocks) {
             if (!Double.isFinite(h)) throw new IllegalArgumentException("a height offset is not finite: " + h);
+        }
+        if (!Double.isFinite(rowShiftBlocks)) {
+            throw new IllegalArgumentException("rowShiftBlocks must be finite: " + rowShiftBlocks);
+        }
+        if (!Double.isFinite(turnBlocksPerSecond)) {
+            throw new IllegalArgumentException("turnBlocksPerSecond must be finite: " + turnBlocksPerSecond);
         }
         if (redrawPeriodTicks < 1) {
             throw new IllegalArgumentException("redrawPeriodTicks must be >= 1: " + redrawPeriodTicks);

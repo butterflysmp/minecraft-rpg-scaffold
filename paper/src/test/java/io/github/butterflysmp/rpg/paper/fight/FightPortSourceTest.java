@@ -44,10 +44,11 @@ class FightPortSourceTest {
     }
 
     @Test
-    void theDamageIsTheStoresEntryWithDefenceBypassedAndNoElement() throws IOException {
+    void theDamageIsTheStoresEntryThroughArmourAndNoElement() throws IOException {
         String code = code();
         assertEquals(1, count(code,
-                "\\.applyDamage\\(amount, player, CritState\\.NORMAL, DefenseRule\\.BYPASSED, null\\);"));
+                "\\.applyDamage\\(amount, player, CritState\\.NORMAL, DefenseRule\\.APPLIES, null\\);"));
+        assertEquals(0, count(code, "DefenseRule\\.BYPASSED"), "armour is not skipped (Ben, 2026-11-18: \"yes\")");
     }
 
     @Test

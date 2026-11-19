@@ -76,7 +76,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              BooleanSupplier mobTrace, ShotSink shots,
                              ShieldSink shields, PendingWork work,
                              io.github.butterflysmp.rpg.core.shape.DragMotion dragMotion,
-                             DragTrace dragTrace) {
+                             DragTrace dragTrace,
+                             io.github.butterflysmp.rpg.core.fight.DamageGate gate) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
@@ -100,7 +101,9 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                 // THE ONE TALLY OF EVERY DRAG (2026-11-18): two implosions on one body in one tick add to one velocity.
                 new io.github.butterflysmp.rpg.core.shape.DragMotion(),
                 // THE DRAG'S PER-TICK INSTRUMENT (feat/drag-additive): off until the selftest turns it on.
-                new DragTrace());
+                new DragTrace(),
+                // THE MAGE'S DAMAGE GATE (the dragon fight's step F6): asked at BukkitCombatant's one choke point.
+                new io.github.butterflysmp.rpg.core.fight.DamageGate());
     }
 
     /**

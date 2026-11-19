@@ -28,6 +28,18 @@ public final class MobSpawner {
         // The BODY and the stage, here for the same reason as the tag: before the add event seeds health from the
         // stage (MobBodyApplier's javadoc).
         MobBodyApplier.apply(entity, def, stage, keys);
+        // THE STANCE (the dragon fight's step F6): glowing, and stationary. A stationary mob loses every goal, so it never
+        // moves, attacks or chooses a target of its own (Paper's MobGoals API, read: removeAllGoals(Mob)); knockback
+        // resistance 1 stops vanilla pushes; the byte lets RpgListeners refuse any target set on it. Its AI stays ON, so
+        // gravity still acts and it stands on the floor. Pushes by our own setVelocity ignore the attribute: the fight
+        // that owns a stationary mob pins it (FightFixtures).
+        if (def.stance().glowing()) entity.setGlowing(true);
+        if (def.stance().stationary()) {
+            entity.getPersistentDataContainer().set(keys.mobStationary, PersistentDataType.BYTE, (byte) 1);
+            var kb = entity.getAttribute(org.bukkit.attribute.Attribute.KNOCKBACK_RESISTANCE);
+            if (kb != null) kb.setBaseValue(1.0);
+            if (entity instanceof org.bukkit.entity.Mob mob) org.bukkit.Bukkit.getMobGoals().removeAllGoals(mob);
+        }
         // THE FUSE, from content (dragon-mobs step R3): vanilla's swell is the Phage's fuse (the seat's ruling 20), and
         // its length is the server's maxSwell, which Creeper#setMaxFuseTicks writes (CraftCreeper, javap build 74:
         // putfield maxSwell) and the creeper saves as "Fuse", so it survives an unload. Growth never changes it.

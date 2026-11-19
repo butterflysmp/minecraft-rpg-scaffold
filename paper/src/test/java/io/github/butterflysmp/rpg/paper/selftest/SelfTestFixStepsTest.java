@@ -77,6 +77,20 @@ class SelfTestFixStepsTest {
                 SelfTestAsk.prompt(a));
     }
 
+    /** The scenario names the prompt (GATE-fight-mage.md, 2026-11-18): an open question is not told to answer yes or no. */
+    @Test
+    void theScenarioNamesWhichPromptAQuestionGets() {
+        SelfTestAsk.Ask open = SelfTestAsk.parse("3 2400 words The wall now: what would you change?").orElseThrow();
+        assertEquals("The wall now: what would you change?", open.question(), "the mode word is not part of it");
+        assertEquals("Selftest question 3: The wall now: what would you change? Answer in your own words in chat.",
+                SelfTestAsk.prompt(open));
+        SelfTestAsk.Ask yesNo = SelfTestAsk.parse("4 2400 yesno Is 3.8 right?").orElseThrow();
+        assertEquals("Selftest question 4: Is 3.8 right? Answer yes or no in chat.", SelfTestAsk.prompt(yesNo));
+        assertEquals("ASK 3 question=\"The wall now: what would you change?\" answer=\"taller\" ticks=9",
+                SelfTestAsk.answered(open, "taller", 9), "the answer line carries the question alone");
+        assertTrue(SelfTestAsk.parse("5 2400 words").isEmpty(), "a mode word with no question is refused");
+    }
+
     // --- LEFTOVER: what the row-start clean left in the row's radius ---
 
     @Test

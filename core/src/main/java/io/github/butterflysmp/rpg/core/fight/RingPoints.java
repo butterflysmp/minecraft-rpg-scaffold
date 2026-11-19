@@ -25,14 +25,24 @@ public final class RingPoints {
         return pointsPerHeight(radiusBlocks, look) * look.heightOffsetsBlocks().size();
     }
 
-    /** Every point of one redraw, height by height, each height going once round from angle 0. */
-    public static List<double[]> points(Ring ring, double groundYBlocks, RingLook look) {
+    /**
+     * Every point of one redraw at the fight's {@code fightTick}, height by height. Row {@code j} (0 the lowest) starts
+     * {@code j x rowShiftBlocks + turnBlocksPerSecond x seconds} along the circumference from angle 0, and goes once
+     * round: the shift twists the wall, the turn rotates all of it. Both are lengths ALONG the ring, so a smaller ring
+     * turns through a larger angle at the same speed.
+     */
+    public static List<double[]> points(Ring ring, double groundYBlocks, RingLook look, long fightTick) {
         int n = pointsPerHeight(ring.radiusBlocks(), look);
         List<double[]> out = new ArrayList<>(n * look.heightOffsetsBlocks().size());
+        if (n == 0) return out;
+        double turnedBlocks = look.turnBlocksPerSecond() * fightTick / FightSettings.TICKS_PER_SECOND;
+        int row = 0;
         for (double offset : look.heightOffsetsBlocks()) {
             double y = groundYBlocks + offset;
+            double startAngle = (row * look.rowShiftBlocks() + turnedBlocks) / ring.radiusBlocks();
+            row++;
             for (int i = 0; i < n; i++) {
-                double a = 2.0 * Math.PI * i / n;
+                double a = startAngle + 2.0 * Math.PI * i / n;
                 out.add(new double[] {
                         ring.centreXBlocks() + ring.radiusBlocks() * Math.cos(a),
                         y,

@@ -15,8 +15,28 @@ public final class SelfTestAsk {
 
     private SelfTestAsk() {}
 
-    /** {@code "<n> <timeout ticks> <question>"}; the question is everything after the second word. */
-    public record Ask(int number, int timeoutTicks, String question) {}
+    /**
+     * Which answer the question asks for (GATE-fight-ring.md's finding, 2026-11-18: appending "Answer yes or no" to an
+     * open or two-part question made an answer that could not be read). The scenario says which.
+     */
+    public enum Prompt {
+        /** A yes/no question: " Answer yes or no in chat." */
+        YESNO(" Answer yes or no in chat."),
+        /** An open question: " Answer in your own words in chat." */
+        WORDS(" Answer in your own words in chat.");
+
+        private final String tail;
+
+        Prompt(String tail) {
+            this.tail = tail;
+        }
+    }
+
+    /**
+     * {@code "<n> <timeout ticks> [yesno|words] <question>"}. The mode word is optional and defaults to {@code yesno},
+     * so every row written before it was added asks exactly what it asked when it was read.
+     */
+    public record Ask(int number, int timeoutTicks, Prompt prompt, String question) {}
 
     public static Optional<Ask> parse(String arg) {
         String[] w = arg.trim().split("\\s+", 3);
@@ -25,15 +45,23 @@ public final class SelfTestAsk {
             int n = Integer.parseInt(w[0]);
             int ticks = Integer.parseInt(w[1]);
             if (n < 1 || ticks < 1) return Optional.empty();
-            return Optional.of(new Ask(n, ticks, w[2].trim()));
+            String rest = w[2].trim();
+            Prompt mode = Prompt.YESNO;
+            String[] r = rest.split("\\s+", 2);
+            if (r[0].equals("yesno") || r[0].equals("words")) {
+                if (r.length < 2 || r[1].isBlank()) return Optional.empty();
+                mode = r[0].equals("words") ? Prompt.WORDS : Prompt.YESNO;
+                rest = r[1].trim();
+            }
+            return Optional.of(new Ask(n, ticks, mode, rest));
         } catch (NumberFormatException e) {
             return Optional.empty();
         }
     }
 
-    /** What the player sees. */
+    /** What the player sees: the question and the tail its mode names. */
     public static String prompt(Ask a) {
-        return "Selftest question " + a.number() + ": " + a.question() + " Answer yes or no in chat.";
+        return "Selftest question " + a.number() + ": " + a.question() + a.prompt().tail;
     }
 
     /** The log line for an answer, as typed. {@code ticks} is how long the question waited. */

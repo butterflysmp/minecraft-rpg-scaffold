@@ -52,6 +52,15 @@ public final class RingFixture {
 
         /** A line in the participants' chat. */
         void tell(String line);
+
+        /** Crystal {@code index} (1-based) lights: it appears at its spot, its beam on the Mage (step F7). */
+        void lightCrystal(int index);
+
+        /** Every lit crystal goes out (the Mage died, or the cycle no longer shows any). */
+        void clearCrystals();
+
+        /** The cue for a refused hit on the Mage (step F6). */
+        void refusedCue();
     }
 
     /** One participant, read on the tick: who and where his FEET are, blocks. */
@@ -71,6 +80,19 @@ public final class RingFixture {
     private boolean stopped;
     private boolean failureReported;
     private MageCycle.Phase lastPhase = MageCycle.Phase.IDLE;
+    private int lastCrystals;
+    private MageCycle.Snapshot lastSnapshot;
+    private long slowStartTick = -1;
+    private int strikeLimit;
+
+    /**
+     * THE PLAY ROW'S SAFETY (GATE-fight-mage.md, MQ8): when any participant's consecutive strikes reach {@code limit},
+     * the fixture stops after that strike, so a player healed between strikes is never handed one larger than the
+     * {@code limit}-th. 0 means no limit (every other use).
+     */
+    public void strikeLimit(int limit) {
+        this.strikeLimit = Math.max(0, limit);
+    }
 
     public RingFixture(FightSettings settings, RingLook look, double centreXBlocks, double groundYBlocks,
                        double centreZBlocks, Port port) {
@@ -102,7 +124,7 @@ public final class RingFixture {
         List<Participant> present = port.participants();
         dropAbsent(present);
         if (fightTick % look.redrawPeriodTicks() == 0) {
-            List<double[]> points = RingPoints.points(snap.ring(), groundYBlocks, look);
+            List<double[]> points = RingPoints.points(snap.ring(), groundYBlocks, look, fightTick);
             port.draw(present.stream().map(Participant::id).toList(), points);
             port.log(String.format(Locale.ROOT,
                     "RINGTICK t=%d phase=%s centre=%.3f %.3f r=%.3f crystals=%d points=%d viewers=%d",
@@ -112,6 +134,16 @@ public final class RingFixture {
         }
         if (ramp.isStrikeTick(fightTick) && snap.outcome() != MageCycle.Outcome.FAILED_POWERED) {
             for (Participant p : present) strike(p, snap.ring());
+            if (strikeLimit > 0) {
+                for (Participant p : present) {
+                    if (ramp.consecutiveStrikes(p.id()) >= strikeLimit) {
+                        port.log("FIGHT strike-limit t=" + fightTick + " player=" + p.name() + " k="
+                                + ramp.consecutiveStrikes(p.id()));
+                        stop();
+                        return;
+                    }
+                }
+            }
         }
     }
 
@@ -120,9 +152,49 @@ public final class RingFixture {
      * from the input itself for one an input causes (a landing, a death), so the line names the input's tick.
      */
     private void notePhase(MageCycle.Snapshot snap) {
-        if (snap.phase() == lastPhase) return;
-        port.log("FIGHTPHASE t=" + fightTick + " " + lastPhase + "->" + snap.phase());
-        lastPhase = snap.phase();
+        lastSnapshot = snap;
+        if (snap.phase() != lastPhase) {
+            port.log("FIGHTPHASE t=" + fightTick + " " + lastPhase + "->" + snap.phase());
+            if (snap.phase() == MageCycle.Phase.SLOW_CLOSE) slowStartTick = fightTick;
+            if (snap.phase() == MageCycle.Phase.FAST_CLOSE) slowStartTick = -1;
+            lastPhase = snap.phase();
+        }
+        syncCrystals(snap);
+    }
+
+    /**
+     * The crystals follow the cycle's count on the tick it changes (step F7): each newly lit one lights, in order; a
+     * fall (the Mage's death, or a closed ring, whose snapshot shows none) puts every lit one out. POWERED keeps all.
+     */
+    private void syncCrystals(MageCycle.Snapshot snap) {
+        int now = snap.crystalsLit();
+        if (now > lastCrystals) {
+            for (int i = lastCrystals + 1; i <= now; i++) {
+                port.log("CRYSTAL t=" + fightTick + " lit index=" + i);
+                port.lightCrystal(i);
+            }
+        } else if (now < lastCrystals) {
+            for (int i = 1; i <= lastCrystals; i++) port.log("CRYSTAL t=" + fightTick + " removed index=" + i);
+            port.clearCrystals();
+        }
+        lastCrystals = now;
+    }
+
+    /** The cycle's outcome as of the last tick: RUNNING, or how the fight failed. */
+    public MageCycle.Outcome outcome() {
+        return lastSnapshot == null ? MageCycle.Outcome.RUNNING : lastSnapshot.outcome();
+    }
+
+    /** Whether a hit on the Mage lands now: the cycle's own flag, true exactly in the slow close (step F6). */
+    public boolean mageDamageable() {
+        return !stopped && lastSnapshot != null && lastSnapshot.mageDamageable();
+    }
+
+    /** A hit on the Mage was refused by the gate: the MAGEGATE line and the cue. */
+    public void refused(double amount, String source) {
+        port.log(String.format(Locale.ROOT, "MAGEGATE t=%d phase=%s amount=%.3f source=%s refused",
+                fightTick, lastSnapshot == null ? MageCycle.Phase.IDLE : lastSnapshot.phase(), amount, source));
+        port.refusedCue();
     }
 
     private void strike(Participant p, Ring ring) {
@@ -163,7 +235,9 @@ public final class RingFixture {
         if (stopped) return;
         cycle.mageDied(fightTick);
         MageCycle.Snapshot snap = cycle.tick(fightTick);
-        port.log("FIGHT die t=" + fightTick + " phase=" + snap.phase());
+        port.log("FIGHT die t=" + fightTick + " phase=" + snap.phase() + " slow_close_started="
+                + (slowStartTick < 0 ? "never" : "t=" + slowStartTick)
+                + (slowStartTick < 0 ? "" : " ticks_in_slow_close=" + (fightTick - slowStartTick)));
         notePhase(snap);
     }
 

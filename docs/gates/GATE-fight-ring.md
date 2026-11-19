@@ -30,6 +30,12 @@ origin, and Ben says ready. Then only CC boots.**
 - **ASK 2's "no" does not say which of its two questions it answers.** The selftest's ASK prompt adds "Answer yes or no
   in chat" to every question, open and two-part ones included: an instrument finding.
 
+> **NOTE, 2026-11-18 (`feat/fight-mage`): THIS GATE'S ROWS ARE SUPERSEDED.** Every FR row is RE-PREDICTED in
+> `GATE-fight-mage.md` with the next suffix (FR1R2 … FR9R2) for Ben's tuning: `v_fast` 3.8, `v_slow` 0.6, the strike
+> through armour, and the four-row wall. **BQ1–BQ6 are retired**, their questions answered above and their subjects
+> asked again with the new numbers as MQ1–MQ7 there. `selftest/GATE-fight-ring.yml` no longer ships. Every prediction
+> and reading here is kept as written.
+
 **Clean stop:**
 - `Stopping server` at 17:52:27, then the region files saved.
 - No FIGHT, RINGTICK or STRIKE line after the stop.

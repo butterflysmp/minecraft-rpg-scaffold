@@ -126,7 +126,7 @@ public final class MobLoader {
             return new MobDefinition(id, s.getString("base_entity"), s.getString("display_name", id),
                     stages.first().maxHealth(), MobBody.VANILLA, element, stages, split(s), growth(s), blast(s),
                     beam(s), teleport(s), shot(s), mainHand(s), blink(s), shield(s), mount(s), pounce(s),
-                    riddenSpeed(s));
+                    riddenSpeed(s), stance(s));
         }
         if (s.contains("blast")) {
             throw new IllegalArgumentException("'blast' needs 'stages': its damage is authored per stage");
@@ -146,7 +146,7 @@ public final class MobLoader {
                 element,
                 null, null, null, null,
                 beam(s), teleport(s), shot(s), mainHand(s), blink(s), shield(s), mount(s), pounce(s),
-                    riddenSpeed(s));
+                    riddenSpeed(s), stance(s));
     }
 
     /**
@@ -173,6 +173,22 @@ public final class MobLoader {
     /** The optional {@code mount:} (step R8): the id of the mob file this one is spawned riding, or null. */
     private static String mount(ConfigurationSection s) {
         return s.getString("mount");
+    }
+
+    /**
+     * The optional {@code glowing:} and {@code stationary:} (the dragon fight's step F6): each {@code true} or
+     * {@code false}, absent meaning false. Anything else is refused by name, never read as false.
+     */
+    private static io.github.butterflysmp.rpg.core.mob.MobStance stance(ConfigurationSection s) {
+        return new io.github.butterflysmp.rpg.core.mob.MobStance(flag(s, "glowing"), flag(s, "stationary"));
+    }
+
+    private static boolean flag(ConfigurationSection s, String key) {
+        if (!s.contains(key)) return false;
+        if (!s.isBoolean(key)) {
+            throw new IllegalArgumentException("'" + key + "' must be true or false, got '" + s.get(key) + "'");
+        }
+        return s.getBoolean(key);
     }
 
     /** The optional {@code ridden_speed:} (step R8): a multiplier MobDefinition refuses unless above 0, or null. */

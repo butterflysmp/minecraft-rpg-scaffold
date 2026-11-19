@@ -305,7 +305,8 @@ public final class RpgPlugin extends JavaPlugin {
         this.veinSizes = miningLoader.loadVeinSizes(new File(contentDir, "vein_sizes"));
         this.ores = miningLoader.loadOres(new File(contentDir, "ores"));
         // The dragon fight (PLAN-dragon-fight.md step F4): one Loaded line per fight file, or a Refusing line naming why.
-        this.fights = new io.github.butterflysmp.rpg.paper.content.FightLoader(getLogger())
+        this.fights = new io.github.butterflysmp.rpg.paper.content.FightLoader(getLogger(),
+                id -> mobs.find(id).isPresent(), RpgPlugin::soundKnown)
                 .loadAll(new File(contentDir, "fights"));
         if (fights.isEmpty()) {
             getLogger().warning("No fights loaded from content/fights -- /rpg fight has nothing to run. "
@@ -755,7 +756,8 @@ public final class RpgPlugin extends JavaPlugin {
         // The dev fight fixture (GATE-fight-ring.md). The fight file is read at each start, so a reload is picked up.
         fightFixtures = new io.github.butterflysmp.rpg.paper.fight.FightFixtures(adapters,
                 () -> java.util.Optional.ofNullable(this.fights.get(
-                        io.github.butterflysmp.rpg.paper.fight.FightFixtures.FIGHT_ID)));
+                        io.github.butterflysmp.rpg.paper.fight.FightFixtures.FIGHT_ID)),
+                () -> this.mobs);
         // Every selftest run's end stops a fixture a row left running, so an aborted row cannot leave him struck.
         selfTest.bindFightStop(() -> fightFixtures.running() ? fightFixtures.stop("selftest-run-end") : null);
         getLogger().info(selfTest.enableLine());

@@ -83,6 +83,41 @@ do the crystals go out, does the dragon become hurtable; (8) one Mage per phase;
 - §6's build order is **RULED**.
 - A player's **k-th consecutive strike deals 20 × 2^(k−1)**, with **no cap**.
 
+### Seventh: Ben's answers at the first boot (`GATE-fight-ring.md`, booted at `f85280ee`)
+
+*Each question as the selftest asked it, then Ben's answer, verbatim from the gate's ASK lines.*
+
+1. "Standing here, can you see the whole ring clearly, all the way round?" — **"yes"**
+2. "Sprinting east, did the ring's west edge catch you? And did its speed feel slightly slower than a player
+   sprinting?" — **"no"** *(the answer does not say which of the two questions it answers)*
+3. "The slow close (after it reached 12 blocks): is its pace right?" — **"I think it should be a little faster. Maybe
+   .6 blocks per second"**
+4. "When the mob died the ring jumped out one block at once. Is that fine, or should it glide out?" — **"the jump is
+   fine"**
+5. "Do 20, then 40, then 80 feel right for lightning outside the ring?" — **"yes"**
+6. "Should armour reduce the lightning's damage?" — **"yes"**
+7. "The ring's look: is the colour, the height and the density right? Say what you would change." — **"Higher wall and
+   a larger gap between each row. Adding a slight twist to the particles would be cool"**
+
+### Eighth message: the fast close, the Mage's health, the wall, the Mage's body
+
+*The seat asked (1) whether 5 blocks a second felt right for the fast close; (2) the Mage's starting health, suggesting
+1,500; (3) the wall as four rows 1.5 blocks apart, each row shifted round from the one below, the whole wall turning
+slowly; (4) keep the Mage as a glowing wither skeleton.*
+
+> "1. Let's lower it to 3.8 blocks a second to allow players to react and catch up when struct
+> 2. 1500 works for now
+> 3. yes
+> 4. yes for now"
+
+**So, Ben's from here on:**
+- `v_fast` **3.8** and `v_slow` **0.6** (seventh, answer 3).
+- The Mage's health **1500** ("for now").
+- **Armour reduces the lightning** (seventh, answer 6).
+- **A kill's pop stays a jump** (seventh, answer 4).
+- **The wall:** four rows 1.5 apart, shifted and turning.
+- **The Mage:** a glowing wither skeleton ("for now").
+
 ---
 
 ## 2. SEAT READINGS
@@ -130,6 +165,15 @@ clock, it returns a centre and a radius. No Bukkit. Everything that draws the ri
 | the return's speeds | how fast the ring returns after the Mage's death | **the same as the close**: the slow part at `v_slow`, the fast part capped at `v_fast`; *seat placeholder, not Ben's; he sets it at the first boot* |
 | strike damage | the k-th consecutive strike outside the ring | **20 × 2^(k−1), no cap** (Ben, sixth message; the seat's reading of "start at 20, 40, 80 and keeps doubling"). **Whether it is also multiplied by gear score stays OPEN** (`PLAN-dragon-mobs.md` Q3); F2 does not scale. |
 | `r(t)` | the ring's radius at time `t` | follows |
+| **SINCE 2026-11-18 (eighth message): `v_fast`** | | **3.8, Ben's** ("Let's lower it to 3.8 blocks a second"). The 5.0 above was the seat's placeholder |
+| **`v_slow`** | | **0.6, Ben's** ("Maybe .6 blocks per second"). The 0.4 above was the seat's placeholder |
+| **strike mitigation** | | **armour reduces it, Ben's** (seventh, answer 6: "yes"); **no element, OPEN** (whether Void resistance or any element applies) |
+| **the Mage's health** | | **1500, Ben's** ("1500 works for now"), at gear score 100 |
+| the Mage's name | | "Withered Dark Mage", *seat placeholder (cfde822's name)* |
+| the refused-hit cue | | `item.shield.block` at the Mage, volume 1.0, pitch 0.8, *seat placeholder* |
+| crystal spots | | `crystal_count` spots evenly round a circle about C, radius 40, 12 above C's ground, *seat placeholder until the arena* |
+| the crystal cue | | `block.beacon.power_select` at the crystal, *seat placeholder* |
+| the wall | | rows at +0.2, +1.7, +3.2, +4.7 (Ben's "yes" to four rows 1.5 apart); `row_shift_blocks` 0.25 and `turn_blocks_per_second` 1.0, *seat starting values* |
 
 **The fast close** (*seat derivation, to be pinned by a `core/` unit test before anything draws it*). The ring moves
 from (`C`, 48) to (`M`, 12) along one straight interpolation: at progress `s` from 0 to 1, the centre is
@@ -696,6 +740,41 @@ writing.*
 - **Every selftest run's end stops a fixture a row left running** (one `SELFTEST RUN fight-fixture …` line), so an
   aborted row cannot leave lightning striking the player; plugin disable stops it too.
 
+### 6.3 F6 + F7 AS BUILT (`feat/fight-mage`, 2026-11-18): WHAT THE CODE SHOWED
+
+*The Mage is `content/mobs/dark_mage.yml`, his gate core's `DamageGate`, the crystals the fixture's port. The gate is
+`docs/gates/GATE-fight-mage.md`, NOT RUN at this writing.*
+
+- **The gate has ONE custom choke point and ONE vanilla one, and both are needed.**
+  - The custom one: every route to a mob's custom health ends in `BukkitCombatant.Handle.applyDamage` (a read-only
+    survey of every caller), and the gate is asked there before the store.
+  - Why the vanilla one too: `/kill`, the void and **mob-on-mob melee never reach the store** (`VanillaDamagePolicy`
+    passes `KILL` and `VOID`; no handler reroutes a mob's melee on a mob). So `RpgListeners.onGatedDamage` cancels any
+    vanilla damage on him at LOWEST.
+  - **While he IS damageable, a mob's melee on him lands on vanilla health, not the store.** That is UNVERIFIED in game
+    and a hazard for when the fight has mobs near him.
+- **Knockback cannot be stopped by the attribute alone.** Our own pushes (`applyKnockback`, `applyImpulse`, pulls) set
+  a velocity and ignore knockback resistance. So the fixture **pins** the Mage's x and z each tick. The real fight
+  needs the same pin, or an "anchored" check at every push site.
+- **"Stationary" removes every goal** (Paper's `MobGoals.removeAllGoals`, read) and keeps AI on, so gravity acts.
+  `NoAI` was not used: it would have to be READ whether it stops gravity, and goals-off needs no such question.
+- **Non-persistence, READ:** `CraftEntity.setPersistent` writes `Entity.persist`, and `Entity.saveAsPassenger` writes
+  nothing when it is false (its force flag aside). The Mage and every crystal are not persisted.
+- **A closed ring puts its crystals out.** `MageCycle`'s CLOSED snapshot reports 0 crystals, and the fixture follows
+  the snapshot. POWERED keeps them. **A seat choice; the brief named only POWERED.**
+- **LINGER cannot see a crystal**, which is not a projectile, a cloud or a marker. The gate's witness is a
+  PROBE_ENTITIES of `end_crystal` within 48 at each row's end; a spot is 41.8 from C.
+- **The selftest's ATTACK reaches only 16 blocks**, and every crystal is further. MG7 hits one with vanilla's
+  `/damage … player_attack by @s` instead.
+- **POWERED needs fifteen spaced kills at Ben's numbers.** The slow close lasts 400 ticks against 800 for ten crystals,
+  so the ring must gain 12 blocks or more. MG8 stages it and shows the arithmetic.
+- **The play row cannot promise "cannot die" by healing alone.** A sixth consecutive strike (640 before armour)
+  outruns any heal. So the fixture's play mode stops after a third consecutive strike: 80 at most, each on a bar
+  healed within 10 ticks.
+- **The wall at Ben's four rows costs 6040 packets a second per player** at radius 48, under the 6500 line.
+- **The armour path's overflow is guarded in the ramp** (`StrikeRamp.CEILING_DAMAGE` = `MAX_VALUE / 200`, executed
+  finite at defences 0 to `MAX_VALUE`). `Defense.applyDefense` is not reordered.
+
 ---
 
 ## 7. OPEN, FOR BEN
@@ -704,11 +783,15 @@ writing.*
 
 1. **Crystals as an immunity gate** on the dragon, separate from the Mage (Ben: "Not sure yet").
 2. **Crystal count and pace** during the slow close.
-3. **Fast-close speed** `v_fast` in blocks per second ("Slightly slower than a player sprinting").
-4. **Slow-close speed** `v_slow`.
+3. **ANSWERED 2026-11-18** (eighth message): "Let's lower it to 3.8 blocks a second to allow players to react and
+   catch up when struct". *(Asked as:)* **Fast-close speed** `v_fast` in blocks per second ("Slightly slower than a
+   player sprinting").
+4. **ANSWERED 2026-11-18** (seventh, answer 3): "I think it should be a little faster. Maybe .6 blocks per second".
+   *(Asked as:)* **Slow-close speed** `v_slow`.
 5. **ANSWERED 2026-11-18** (sixth message): "Lightning ramping damage numbers can start at 20, 40, 80 and keeps
    doubling". *(Asked as:)* **The lightning ramp's numbers**: the first strike's damage, the step, any cap.
-6. **The Mage's health**, and **where he may land** (the seat's nesting bound, §2: no more than 36 blocks from the
+6. **The Mage's health: ANSWERED "for now" 2026-11-18** (eighth message): "1500 works for now". **Still open: where
+   he may land** (the seat's nesting bound, §2: no more than 36 blocks from the
    centre, or the ring sweeps outward over a standing player).
 7. **Expansion per kill** `e_kill`. *(Seat-added: which deaths count, any mob or the fight's own, and a summon's kill
    for its owner, as cfde822 did, §3 fact 21.)*
