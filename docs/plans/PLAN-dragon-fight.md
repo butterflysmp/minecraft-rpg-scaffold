@@ -191,6 +191,34 @@ slowly; (4) keep the Mage as a glowing wither skeleton.*
 Paper WARN lines saying 26.1.2 is "4 release(s) behind the latest stable release (26.3)". The upgrade procedure
 (`CLAUDE.md`, *Upgrade procedure*) is his to start, PacketEvents first.
 
+### Eleventh: Ben's answers at the F8 boots (`GATE-fight-site.md` at `7630e37c`, `GATE-fight-arena.md` at `b70dc88e`), 2026-11-18
+
+*Each question as the selftest asked it, then Ben's answer, verbatim from the gates' ASK lines.*
+
+1. "With the wall chasing you, did the fast close's speed feel right?" — **"yes"** *(MQ1R2, boot of `7630e37c`)*
+2. "The arena stand-in, its floor size and its pillars: is there anything that must change before waves are built?"
+   — **"no it's good for testing"** *(BA1R2, boot of `b70dc88e`)*
+3. "The night sky: is it fine as a stand-in?" — **"It's fine for now but I wonder if it's possible to have it be like
+   in the end"** *(BA1R2)*
+4. "The six-row wall, alternate rows turning opposite ways: is it right?" — **"yes"** *(BA2R2)*
+5. "For one player, is the Mage's 6,000 health right?" — **"yes"** *(BA3R2)*
+6. "Twelve seconds a crystal: is that right?" — **"yes"** *(BA3R2)*
+
+*The seat asked whether, in BA3R2, he reached the Mage late or was hitting him without his health dropping:*
+
+> "I reached him late"
+
+**Confirmed by these answers:** `v_fast` 3.8; the six-row wall, turning alternately; the Mage at 6000; 240 ticks a
+crystal.
+
+**SEAT READING of "I reached him late", marked as the seat's:** no defect. The landed-hit line of F9 part 1 is still
+built, so that the log can say it next time.
+
+**Still open for Ben:**
+- keep-inventory and immediate-respawn in a fight world;
+- entering at the arena's centre;
+- the sky (answer 3; the options are §6.8).
+
 ---
 
 ## 2. SEAT READINGS
@@ -959,6 +987,242 @@ or a living player, read in `SelfTestRun`, `SelfTestSnapshot`, `SelfTestDrivers`
 | **`ask`** | chat; a timeout on his own scheduler | runs | n/a (the BA rows ask before or after the fight, alive) | none |
 | **the HURT line** | the damage tap; the dealer looked up in HIS world | finds a dealer in the fight world | n/a | none |
 | **the run's end while he is inside** | `end` → restore → `stopFight` | he ends at his return location, and the world goes | n/a | none |
+
+### 6.8 F9 AS BUILT (`feat/fight-dragon`, 2026-11-18): THE DRAGON, WHAT THE CODE AND THE JAR SHOWED
+
+**Every server fact is from the pinned server jar, build 74 (`Implementation-Version: 26.1.2-74-e4e17fc`, matching
+`pom.xml`'s `26.1.2.build.74-stable`), by `javap -c -p`, or from its data files.** Each is marked READ, INFERRED or
+UNVERIFIED. The research agent's full notes, with the quoted instructions, were the session's working file. The
+decisive lines are quoted here.
+
+**WHAT THE CODE SHOWED THE BRIEF HAD WRONG, OR DID NOT SAY:**
+
+1. **A plugin-spawned dragon never moves.**
+   - READ: `EnderDragonPhaseManager.<init>` sets `HOVERING`, and `EnderDragon.aiStep` skips all movement while the
+     phase is `HOVERING` (`getstatic EnderDragonPhase.HOVERING` / `if_acmpeq` past the movement block). Only vanilla's
+     own `EnderDragonFight` moves a new dragon on.
+   - So the fight sets `CIRCLING` (Bukkit's name for `HOLDING_PATTERN`) at the spawn. Without it, "fly and perch" would
+     have read as a dragon hanging still.
+2. **The fireball row cannot be staged by the API.**
+   - READ: only `DragonStrafePlayerPhase` raises `EnderDragonShootFireballEvent`. Its `begin()` nulls the target, and only
+     the holding pattern sets one.
+   - With no target, the next tick logs `Skipping player strafe phase because no player was found` (a vanilla `warn`)
+     and returns to the holding pattern.
+   - DA6 reads that. The cancel is witnessed only by fireballs the dragon shoots on its own (DB1, DB2).
+3. **A hit on a part only reaches the dragon from a player, or from a damage type in
+   `always_hurts_ender_dragons`.** READ: `EnderDragon.hurt(level, part, source, amount)` calls `reallyHurt` only if
+   `source.getEntity() instanceof Player` or the type is in that tag; anything else is dropped with no event. Our
+   abilities never take this path (they write the store directly); a player's melee does.
+4. **Melee on a part landed nothing before this step.** READ, our source: `onPrePlayerAttack` returned on
+   `!(getAttacked() instanceof LivingEntity)`, and a part is not one. The damage event that follows is raised on the
+   dragon, found no recorded swing, and landed only the 0.01 token. Fixed: `LiveTargets.body`.
+5. **Our ray could miss a part outside the dragon's own box.** INFERRED from READ geometry:
+   - while sitting, the head's box is y−1 to y, wholly below the dragon's box (y to y+8);
+   - tail3's edge can reach 8.5 along an axis, against the dragon box's 8.0.
+
+   READ: Bukkit's `rayTraceEntities` and `getNearbyEntities` include the parts (`Level.getEntities` adds them through
+   `PaperHooks.addToGetEntities`), each tested against its own box. Our filters dropped them as not living. Fixed:
+   the filters and the hit resolve a part to its dragon.
+6. **Vanilla's per-part scaling never reaches our number.**
+   - READ: on any part but the head, the amount becomes `amount/4 + min(amount, 1)`.
+   - It acts on the amount vanilla passes to `reallyHurt`. Our melee sets that to the 0.01 token, and lands its own
+     figure in the store; abilities never call it.
+   - A plain vanilla arrow, which none of our weapons fires, is rerouted from vanilla's `event.getDamage()`, already
+     scaled, so the scaling is applied once, by vanilla.
+   - **Nothing is bypassed: the scaling is not applied twice anywhere.** The seat's rule, "our store's number is the
+     number", holds for every weapon we ship.
+7. **A perched dragon takes 0 from an arrow.** READ: `AbstractDragonSittingPhase.onHurt` zeroes damage whose direct
+   entity is an arrow or a wind charge, and sets an arrow alight. Our ranged weapons are rays and marker bodies, so
+   this does not reach them. Recorded for Ben's DB rows.
+8. **The XP.** READ: `getExpReward` is 500 with no vanilla fight and `mob_drops` on. READ (agent):
+   `tickDeath` spends the `expToDrop` set from the death event's dropped XP, so `setDroppedExp(0)` suppresses it. Our
+   death path is `setHealth(0)`, so vanilla's 200-tick death animation still plays; the fight removes the dragon at
+   the win's return.
+9. **The crystals heal the dragon's VANILLA health only.**
+   - READ: any End Crystal within 32 of the dragon heals 1 every 10 ticks, raising `EntityRegainHealthEvent`
+     `ENDER_CRYSTAL`.
+   - READ, our source: `VanillaHealPolicy` acts only on tracked players.
+   - So the store is never healed, and the vanilla mirror resets vanilla's health at the next store write.
+   - INFERRED: the client draws a beam from a crystal to the dragon when it is near one.
+
+   > **CORRECTED 2026-11-19, BY THE BOOT (`GATE-fight-dragon.md`, findings 1): ITEM 9 IS WRONG.** The store IS healed.
+   > `VanillaHealPolicy` is the player arm; the mob arm, `MobHealPolicy` (M15), maps `ENDER_CRYSTAL` to REROUTE, and
+   > `healTrackedMob` heals the store by `DamageScale.toCustom`: 1 / 200 × 20000 = 100 a heal. Read at the boot:
+   > +1400 in DB1, and +100 and +300 in DB2, each while the fight's own crystal was lit. The item is left as written.
+   > The miss was reading one of two arms.
+10. **The fight world does not grief.** READ: `checkWalls` breaks blocks only with `mob_griefing` on, and the fight
+    world sets it off.
+
+**WHAT THE DRAGON'S ATTACKS DO TO A PLAYER TODAY, THROUGH OUR PIPELINE (the brief's 3 g; NOTHING CHANGED):**
+
+| attack | vanilla (READ) | through our pipeline |
+|---|---|---|
+| head and neck | 10, `mob_attack`, damager the dragon, when the dragon's `hurtTime` is 0 | **0 to custom health** (INFERRED). READ: the dragon has no `ATTACK_DAMAGE` attribute (`EnderDragon.createAttributes` adds only `MAX_HEALTH 200` and `CAMERA_DISTANCE 16` to the mob defaults), and our seed is 0.0 without one. Vanilla's 10 is tokened by the mob-melee rider |
+| wings | 5, the same source, only while not sitting and not hit by a mob in the last 2 ticks; push `dx/d·4, 0.2, dz/d·4` | **0 to custom health** (INFERRED, as above); **the push is vanilla's** |
+| perched breath | a cloud of radius 5 for about 190 ticks, Instant Damage level 0 (3 a hit, every 20 ticks), `indirect_magic`, direct entity the cloud, causing entity the dragon | **UNKNOWN, to be read in DB1 and DB2.** INFERRED: Bukkit names it `ENTITY_ATTACK` with the cloud as damager, so our mob rider (damager not living) does not take it, and `VanillaDamagePolicy` passes `ENTITY_ATTACK` |
+| charge | no damage of its own | nothing |
+| fireball | its cloud: radius 3 growing to 7, Instant Damage level 1 (6 a hit) | **never shot**: cancelled for the fight's dragon |
+
+**THE SKY (the brief's section 2; READ ONLY, NOTHING BUILT). Ben: "I wonder if it's possible to have it be like in
+the end".**
+- READ: in 26.1 a dimension type carries `skybox` (`none`, `overworld`, `end`) and visual `attributes`. There is no
+  `effects` field.
+  - `the_end.json` reads `"skybox": "end"`, `"has_ender_dragon_fight": true`, sky `#000000`, fog `#181318`.
+  - The login and respawn packets name the type by registry id; its fields reach the client through registry sync.
+    No packet sets them live.
+- READ: `WorldCreator`'s environment chooses one of the three vanilla stems and nothing else.
+- READ: `ServerLevel.<init>` builds vanilla's `EnderDragonFight` exactly when the type's `has_ender_dragon_fight` is
+  true.
+- READ: the Paper API has no runtime registry for dimension types; a datapack dimension is loaded as a world at
+  startup.
+
+| option | what Ben would see | what it costs | marks |
+|---|---|---|---|
+| **(a)** the fight's world made an END world | the real End sky | vanilla's own dragon fight starts there: its boss bar, a bedrock exit portal at the centre, and it adopts our dragon or spawns a second. The world is 0 to 256 high | the trigger, the height and the sky READ; what is drawn INFERRED |
+| **(b)** a datapack world type with the End's sky and no fight | the End sky, no vanilla fight | **a server restart** to add or change it; the arena becomes ONE permanent world loaded at startup, not made and deleted per fight; our world creation cannot reach it | the loader and the API READ; the restart and the loss of per-fight worlds INFERRED |
+| **(c)** each player's view changed by packet | possibly the End sky | high risk: the End is 256 high and the world 384, so his chunks would be misread; against the project's packet rule | the packet READ; the breakage INFERRED |
+| **(d)** night forced and a dark biome, through the API | a dark sky, **not** the End's | cheap | UNVERIFIED |
+
+**CC's reading, for Ben to decide:** (b) is the only one that gives the End's sky without vanilla's fight. It
+changes how the arena exists: one world kept, not one made per fight. So it is a design decision, not a build step.
+
+> **SUPERSEDED IN PART 2026-11-19 by §6.9:** a per-world Paper switch makes (a)'s vanilla fight inert, so (b) is no
+> longer the only way to the End's sky without vanilla's fight. Left as written.
+
+### 6.9 "CAN WE NOT JUST SET THE ARENA TO BE IN THE END?" — THE END OPTIONS, READ (the seat's brief, 2026-11-19; NOTHING BUILT)
+
+Ben, verbatim: **"Can we not just set the arena to be in the end?"** and **"I mean a temp world of the end type, and If
+that doesn't work, could we set the biome of the temp world to the end biome?"** Read from the pinned server jar
+(`paper-26.1.2.jar`, build 74) and the data it ships. Each fact is marked. **No look is CONFIRMED until Ben sees it at
+a boot.**
+
+**1. What vanilla's fight does in an API-created END world, and when.**
+- **On creation.**
+  - READ: `CraftServer.createWorld` maps `Environment.THE_END` to `LevelStem.END`, so the world gets the `the_end`
+    dimension type (`has_ender_dragon_fight: true`, `skybox: end`, `min_y 0`, `height 256`).
+  - READ: `ServerLevel.<init>` checks `hasEnderDragonFight()` and then
+    `getDataStorage().computeIfAbsent(EnderDragonFight.TYPE)` (a saved record in the world's data). It calls
+    `init(level, seed, BlockPos.ZERO)`.
+  - READ: a fresh record is `createDefault()`, which gives `needsStateScanning=true`, `dragonKilled=false` and
+    `previouslyKilled=false`. `SavedDataStorage.set` marks it dirty.
+  - READ: `init` builds a PINK boss bar ("Ender Dragon", boss music, world fog). It makes players within 192 of
+    (0, 128, 0) valid, and shuffles 20 gateway slots.
+  - READ: Paper's step inside `init`: when the record is dirty and `entities.spawning.scan-for-legacy-ender-dragon` is
+    **false**, it sets `needsStateScanning=false` and **`dragonKilled=true`**. The default is `true`
+    (`paper-world-defaults.yml` line 188).
+- **Each tick** (`EnderDragonFight.tick`, READ):
+  - It sets the bar visible as `!dragonKilled`, and every 20 ticks puts valid players on the bar.
+  - While the bar has players:
+    - it holds a radius-9 chunk ticket at chunk (0, 0);
+    - once the arena is loaded, it runs `scanState` (if `needsStateScanning`) and the respawn stage (if any);
+    - if `!dragonKilled`, it calls `findOrCreateDragon` when it knows no dragon or has not seen it for 1200 ticks, and
+      counts crystals every 100 ticks.
+- **On the first player's arrival** (`scanState`, READ; it logs `Scanning for legacy world dragon fight...`):
+  - With no exit portal it **builds one**: `spawnExitPortal(false)`, at the top block over (0, 0). That is our arena's
+    centre.
+  - If a dragon exists it **takes that dragon's UUID** (`Found that there's a dragon still alive`). If none exists, the
+    next tick `createNewDragon` spawns one at (0, 128, 0) in HOLDING_PATTERN and resets the spike crystals.
+- **Respawn sequence:** only through `tryRespawn` (crystals placed on an exit portal), or the API's
+  `initiateRespawn`. Not on its own (READ).
+
+**2. Every way to make it inert or absent, and what each leaves behind.**
+
+| way | does it work | what it leaves | marks |
+|---|---|---|---|
+| **A per-world `paper-world.yml` with `entities.spawning.scan-for-legacy-ender-dragon: false`**, written into the new world's folder before `createWorld` | **Inert.** `dragonKilled=true` from `init`: no scan, no exit portal, no dragon created, nothing adopted (`dragonUUID` stays null), the bar invisible | the record (deleted with the world); an INVISIBLE bar that still collects players; the radius-9 ticket at chunk (0, 0) while players are near (our arena is there anyway); **our End crystals set fire on their own block** (READ: `EndCrystal.tick` places fire whenever the level has a fight object) | the `init` branch READ. Paper loads `<the world's dimension path>/paper-world.yml` (READ, `PaperConfigurations`), but that it is read for our worlds at creation is **UNVERIFIED**. The witness: no `Scanning for legacy world dragon fight...` line in the log |
+| **Paper's `DragonBattle` API** | **No.** It has no disable. `setPreviouslyKilled(true)` stops only the egg. The bar is reset every tick (`setVisible(!dragonKilled)`) and re-filled every 20 | everything in section 1 | READ (API listing; `tick`) |
+| **The global `paper-world-defaults.yml` switch** | works, but for **every** world, the survival End included | the survival End's own fight would stop scanning | READ |
+| **`entities.behavior.should-remove-dragon: true`** | **No:** it *discards a found dragon* when there is no portal. **That would be OUR dragon** | a removed dragon | READ (`scanState`) |
+| **A generator choice** | **No:** the fight is decided by the dimension type, not the generator | everything in section 1 | READ |
+| **A datapack dimension type** with `has_ender_dragon_fight: false` | **Absent:** no fight object at all | nothing, but see (b) in §6.8: a restart, one permanent world | READ |
+| `ServerLevel.setDragonFight(null)` | would remove it | **NMS, banned** | READ, not proposed |
+
+**3. Is OUR dragon adopted?**
+- **Yes, without the switch:** `scanState` or `findOrCreateDragon` takes our dragon's UUID. Our dragon's `aiStep` then
+  attaches the level's fight to itself, because the UUIDs match (READ). From then on:
+  - `updateDragon` drives the PINK bar from the dragon's **vanilla** health, a second bar beside our purple one;
+  - its death runs `setDragonKilled`. INFERRED from vanilla: the exit portal is activated, the egg placed on the first
+    kill, a gateway built;
+  - `getExpReward` reads the fight (READ the call); our `setDroppedExp(0)` should still zero it (INFERRED).
+  - Our CIRCLING and podium are left alone; the bar and the portal are what change.
+- **With the switch: no** (`dragonUUID` null, so no match).
+
+**4. What else the End changes that we rely on** (data READ from `the_end.json`, behaviour INFERRED unless marked).
+- **The void:** `min_y 0` against the overworld's `-64`. Paper's `void-damage-min-build-height-offset: -64.0` puts void
+  damage below **y −64**, not y −128: a fall off the disc (floor y 64) reaches the void about 64 blocks sooner.
+- **Light:** `ambient_light 0.25`, `sky_light_factor 0`, sky-light colour `#ac60cd`: the End's flat, dim light.
+  `has_fixed_time: true`, so the arena's `time 18000` does nothing.
+- **Weather:** the End biome has no precipitation; the fight world already stops the weather.
+- **Respawn rules:** `bed_rule` never sets a spawn and explodes. Respawn anchors don't work. Our fight world sets
+  keep-inventory and immediate-respawn itself (`FightWorlds`, READ), and the return is ours, so nothing we use moves.
+- **Endermen:** the End biome spawns them (`the_end.json`, weight 10). Our `spawn_mobs` / `spawn_monsters` off stop
+  natural spawns.
+- **Music:** `music.end` with `replace_current_music: true`.
+- **NEW, NOT IN THE BRIEF: gear score.** READ: `MobOrigin.dimensionOf` maps `THE_END` to the End curve, measured from
+  (0, 0). The dragon and the Mage are stamped GS 100 by the fight, so they don't move. Any unstamped mob in the fight
+  world would (later waves: name it before they are built).
+- **Height:** 0 to 256. The arena (floor 64, pillars to 76, crystals at 77, dragon at 85) fits.
+
+**5. The real End (`world_the_end`) as the arena: what collides with C1 to C4** (`PLAN-dragon-mobs.md` §6).
+- **C1, one temporary world per group:**
+  - it is one shared, permanent world;
+  - every group would fight in it at once;
+  - it can't be made or deleted per fight, so the folder lifecycle, the orphan sweep and the leave and return go;
+  - C1 forbids finding the fight by `THE_END` or by `getEnderDragonBattle()`, and fixed (0, 0) geometry.
+- **C2, the fight doesn't care where it runs:**
+  - the survival End is per-server shared state that players visit for progression;
+  - its vanilla fight, exit portal, gateways and egg are theirs.
+- **C3, the arena is a template:**
+  - (0, 0) holds vanilla's main island, obsidian spikes, crystals and exit portal;
+  - C3 forbids vanilla End generation as the arena;
+  - building our 30,615 blocks there would overwrite survival terrain.
+- **C4, fight state lives in the fight:**
+  - its cleanup would have to sweep a world it does not own;
+  - turning off its game rules (`spawn_mobs`, `mob_griefing`) changes them for every survival player.
+- Also: the End's gear-score curve applies to everything there, and vanilla's real fight would adopt or fight beside
+  ours. **The seat doesn't recommend it, and nothing here argues for it.**
+
+**6. Ben's fallback: a NORMAL temporary world with the End biome.**
+- **What decides the sky, the fog, the sun, moon and stars (READ):**
+  - **the dimension type's `skybox`** (`none`, `overworld`, `end`) chooses the sky model: the End's textured sky
+    against the overworld's sun, moon and stars;
+  - it is a field of the dimension type only, and no biome carries it;
+  - the colours and angles are **environment attributes**: `visual/sky_color`, `fog_color`, `star_brightness`,
+    `sun_angle`, `moon_angle`, `sky_light_color`, `sky_light_factor`, `cloud_color` and others;
+  - they are positional, so a biome may set them over the dimension's (READ: `plains.json` sets `sky_color`; each of
+    these is built without `notPositional`).
+- **The vanilla `the_end` biome sets NO attributes** (READ: `the_end.json` has no `attributes` block). In a NORMAL
+  world it would change:
+  - no rain or snow drawn;
+  - its spawn list (Endermen, off for us);
+  - **nothing in the sky: the overworld skybox, the overworld's colours, sun, moon, stars and clouds.**
+  - INFERRED from the data. The client's renderer is not in the server jar, so how it draws is **UNVERIFIED**.
+- **What it costs:**
+  - the API call is `WorldCreator.biomeProvider(BiomeProvider)`, a provider returning `Biome.THE_END` at creation (READ
+    the method). Our empty generator takes it, and a world made per fight needs **no chunk resend**;
+  - setting a biome over an existing arena (`World.setBiome` per block, then `refreshChunk`) would need the resend
+    (INFERRED). We never need it.
+- **A CUSTOM datapack biome could carry End-like attributes:** sky `#000000`, fog `#181318`, `star_brightness 0`, the
+  End's light colour.
+  - That gives the End's colours over the overworld sky model: dark sky, no stars. The sun and moon are drawn unless
+    their angles are moved (INFERRED).
+  - It needs a datapack and **a restart** (the biome registry is loaded and synced at startup), but keeps one world per
+    fight.
+
+**THE RANKING FOR BEN** (closest to the End's look first; every look UNVERIFIED until his eyes):
+
+| rank | option | how close | cost | risk |
+|---|---|---|---|---|
+| 1 | **A temporary END world plus the per-world switch** | **The real thing:** the End's sky model, colours, light and music | small. `environment(THE_END)` and one YAML file written before creation; no restart; still one world per fight | the switch's load for our worlds is UNVERIFIED (one log line witnesses it); crystal fire; void 64 higher; leftover invisible bar and ticket; unstamped mobs read the End curve |
+| 2 | (b) a datapack dimension type (End sky, no fight) | the same look, no fight object at all | **a restart**; ONE permanent arena world, not one per fight | changes how the arena exists |
+| 3 | a custom datapack biome with End colours, NORMAL world | the colours, not the sky model | a datapack and a restart; keeps one world per fight | the sun and moon still drawn |
+| 4 | **Ben's fallback: the vanilla End biome** | **likely no visible change** | cheapest code: one `BiomeProvider` | it is likely to show nothing |
+| 5 | (a) a temporary END world, no switch | the real look | `environment(THE_END)` only | vanilla adopts our dragon: a second (pink) bar, an exit portal built at the centre, the egg and a gateway at its death |
+| — | (c) packets; the real End | — | — | refused: §6.8 (c), and section 5 |
+
+**Cheapest to try first: rank 1.** It is the same `environment` change as rank 5 plus one file. Its failure is readable
+on the log: `Scanning for legacy world dragon fight...`, or a second dragon, or a pink bar. Without the file, it falls
+back to rank 5's behaviour, not to anything worse. Rank 4 is cheaper in code, but the data says it shows nothing.
 
 ## 7. OPEN, FOR BEN
 

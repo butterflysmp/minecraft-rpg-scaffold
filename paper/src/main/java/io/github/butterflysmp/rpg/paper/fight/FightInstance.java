@@ -1,6 +1,8 @@
 package io.github.butterflysmp.rpg.paper.fight;
 
 import io.github.butterflysmp.rpg.core.fight.DamageGate;
+import io.github.butterflysmp.rpg.core.fight.DragonCrossings;
+import io.github.butterflysmp.rpg.core.fight.DragonParts;
 import io.github.butterflysmp.rpg.core.fight.MageCycle;
 import io.github.butterflysmp.rpg.core.fight.RandomLanding;
 import io.github.butterflysmp.rpg.core.fight.RingFixture;
@@ -79,9 +81,21 @@ public final class FightInstance {
     private final Consumer<FightInstance> onFinished;
     private final Random random = new Random();
 
+    /** The dragon is spawned this far above the arena's floor at its centre, blocks (CC's choice; recorded in the gate). */
+    static final double DRAGON_SPAWN_HEIGHT_BLOCKS = 20.0;
+
     private RepeatingTask loop;
     private LivingEntity mage;
     private Location magePin;
+    /** The arena fight's dragon (step F9); null in an ordinary-world fight, before its spawn and after its removal. */
+    private org.bukkit.entity.EnderDragon dragon;
+    /** Ben's thresholds, queued (core's {@link DragonCrossings}); null without a dragon. */
+    private DragonCrossings crossings;
+    private net.kyori.adventure.bossbar.BossBar bossBar;
+    private final java.util.Set<UUID> barViewers = new java.util.HashSet<>();
+    /** The dragon died: the fight is won, and ends {@code win_return_ticks} later. */
+    private boolean won;
+    private MageCycle.Phase lastPhase = MageCycle.Phase.IDLE;
     private boolean play;
     /** The play row's safety (heal, strike limit); off for the arena's play row, which has none (the brief's row 8). */
     private boolean safe = true;
@@ -94,6 +108,12 @@ public final class FightInstance {
      */
     FightInstance(AdapterContext adapters, FightContent fight, MobRegistry mobs, FightSite site, String startedBy,
                   Consumer<FightInstance> onFinished) {
+        this(adapters, fight, mobs, site, startedBy, false, onFinished);
+    }
+
+    /** As above; {@code withDragon} spawns the fight's dragon at its start (step F9: the arena fight only). */
+    FightInstance(AdapterContext adapters, FightContent fight, MobRegistry mobs, FightSite site, String startedBy,
+                  boolean withDragon, Consumer<FightInstance> onFinished) {
         this.adapters = adapters;
         this.fight = fight;
         this.mobs = mobs;
@@ -108,9 +128,16 @@ public final class FightInstance {
         adapters.log().info(String.format(Locale.ROOT, "FIGHT start world=%s centre=%.1f %.1f %.1f by=%s site=%s",
                 world.getName(), centre.getX(), centre.getY(), centre.getZ(), startedBy, site.kind()));
         RingFixture ring = fixture;
+        if (withDragon) spawnDragon();
         loop = RepeatingTask.start(new RegionTarget(centre, ring), 1, "fight-fixture", () -> {
+            if (won) return true; // the win's wait: the ring is stopped, the return is scheduled (onDragonDeath)
             ring.tick();
+            notePhaseForMage(ring);
             pinMage();
+            if (dragon != null) {
+                trackBossBar();
+                releaseQueuedMage(ring);
+            }
             if (play && safe) keepAlive();
             if (site.failureKills()) {
                 // FAILURE IS REAL HERE (the F8 brief, section 5 i). POWERED kills every participant through the store,
@@ -147,8 +174,9 @@ public final class FightInstance {
 
     public FightSite site() { return site; }
 
+    /** Running until it finishes. A won fight still runs through the win's wait, until its return (step F9). */
     public boolean running() {
-        return !finished && !fixture.stopped();
+        return !finished && (won || !fixture.stopped());
     }
 
     /** C, as the fight's lines measure from it. */
@@ -295,7 +323,9 @@ public final class FightInstance {
     private void finish(String why) {
         if (finished) return;
         finished = true;
+        logMageHealth("end");
         removeMage();
+        removeDragon(why);
         port.clearCrystals();
         adapters.log().info("FIGHT ended reason=" + why);
         play = false;
@@ -322,6 +352,10 @@ public final class FightInstance {
         if (!running()) return;
         LivingEntity dead = event.getEntity();
         if (dead instanceof Player) return;
+        if (dragon != null && dead.getUniqueId().equals(dragon.getUniqueId())) {
+            onDragonDeath(event);
+            return;
+        }
         if (mage != null && dead.getUniqueId().equals(mage.getUniqueId())) {
             adapters.gate().release(mage.getUniqueId());
             mage = null;
@@ -339,6 +373,301 @@ public final class FightInstance {
         if (killer == null || killer.getWorld() != world) return;
         Location feet = killer.getLocation();
         fixture.kill(killer.getUniqueId(), feet.getX(), feet.getZ());
+    }
+
+    // --- the landed hit, the Mage's health ----------------------------------------------------------------------------
+
+    /**
+     * EVERY HIT THAT LANDS on this fight's Mage or dragon (the F9 brief, section 1: BA3R2 could not say whether Ben
+     * damaged the Mage). Fed from the store's one change seam, so every damage path is here without being named: one
+     * {@code FIGHTHIT} line with the tick, what landed after defence, what it carried before, and the health after. A
+     * landed hit on the dragon is also told to the crossing queue. A refused hit never reaches the store, so it is the
+     * gate's line ({@code MAGEGATE} or {@code DRAGONGATE}), never this one.
+     */
+    public void onHealthChange(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
+        if (finished || change.kind() != io.github.butterflysmp.rpg.core.combat.stat.HealthChange.Kind.DAMAGE) return;
+        String target;
+        if (dragon != null && change.target().equals(dragon.getUniqueId())) target = "dragon";
+        else if (mage != null && change.target().equals(mage.getUniqueId())) target = "mage";
+        else return;
+        adapters.log().info(String.format(Locale.ROOT,
+                "FIGHTHIT t=%d target=%s amount=%.3f before_defense=%.3f health=%.3f/%.3f dealer=%s element=%s",
+                fixture.fightTick(), target, change.amount(), change.beforeDefense(), change.newCurrent(), change.max(),
+                change.dealer(), change.element()));
+        if (target.equals("dragon") && crossings != null && change.max() > 0.0) {
+            for (double t : crossings.observe(change.newCurrent() / change.max())) {
+                adapters.log().info(String.format(Locale.ROOT,
+                        "DRAGONCROSS t=%d threshold=%.2f health=%.3f/%.3f pending=%d", fixture.fightTick(), t,
+                        change.newCurrent(), change.max(), crossings.pending()));
+            }
+        }
+    }
+
+    /** The Mage's health at each phase change, on the loop tick that sees it, and at the fight's end. */
+    private void notePhaseForMage(RingFixture ring) {
+        MageCycle.Phase now = ring.phase();
+        if (now == lastPhase) return;
+        logMageHealth(lastPhase + "->" + now);
+        lastPhase = now;
+    }
+
+    private void logMageHealth(String when) {
+        StringBuilder line = new StringBuilder("FIGHT mage-health t=" + fixture.fightTick() + " at=" + when);
+        if (mage != null && mage.isValid() && adapters.stats().tracks(mage.getUniqueId())) {
+            line.append(String.format(Locale.ROOT, " health=%.3f/%.3f", adapters.stats().current(mage.getUniqueId()),
+                    adapters.stats().max(mage.getUniqueId())));
+        } else {
+            line.append(" mage=none");
+        }
+        adapters.log().info(line.toString());
+    }
+
+    // --- the dragon (step F9) ------------------------------------------------------------------------------------------
+
+    /**
+     * The dragon, made ours in the spawn's own pre-add step as the Mage is: the mob file stamped, gear score 100 (so its
+     * maximum is the file's {@code max_health}), tagged, NOT PERSISTED, its podium the arena's centre floor. Guarded at
+     * once: while a Mage is alive every hit on it is refused. Its boss bar is made here and shown from the first tick.
+     */
+    private void spawnDragon() {
+        FightContent.Dragon d = fight.dragon();
+        MobDefinition def = mobs.find(d.mob()).orElse(null);
+        if (def == null) {
+            adapters.log().warning("FIGHT dragon file '" + d.mob() + "' is not loaded; no dragon spawned");
+            return;
+        }
+        if (!"ender_dragon".equalsIgnoreCase(def.baseEntity())) {
+            adapters.log().warning("FIGHT dragon file '" + d.mob() + "' is not an ender_dragon (" + def.baseEntity()
+                    + "); no dragon spawned");
+            return;
+        }
+        Location podium = new Location(world, centre.getX(), centre.getY(), centre.getZ());
+        Location at = podium.clone().add(0.0, DRAGON_SPAWN_HEIGHT_BLOCKS, 0.0);
+        dragon = world.spawn(at, org.bukkit.entity.EnderDragon.class, CreatureSpawnEvent.SpawnReason.CUSTOM, false, e -> {
+            MobSpawner.stampCustom(e, def, 1, adapters.keys());
+            e.getPersistentDataContainer().set(adapters.keys().mobGearScore, PersistentDataType.INTEGER,
+                    MAGE_GEAR_SCORE);
+            e.addScoreboardTag("fight_dragon");
+            e.setPersistent(false);
+            e.setRemoveWhenFarAway(false);
+            e.setPodium(podium);
+        });
+        // IT MUST BE TOLD TO FLY. READ, the pinned server jar: EnderDragonPhaseManager's constructor sets HOVERING, and
+        // EnderDragon.aiStep skips all movement while the phase is HOVERING; only vanilla's own fight moves a new dragon
+        // on. Ours has none, so without this it hangs where it spawned for the whole fight. CIRCLING is vanilla's
+        // holding pattern (Bukkit's name for HOLDING_PATTERN), from which it strafes, charges and lands by itself.
+        dragon.setPhase(org.bukkit.entity.EnderDragon.Phase.CIRCLING);
+        crossings = new DragonCrossings(d.mageThresholds());
+        RingFixture ring = fixture;
+        adapters.gate().guard(dragon.getUniqueId(), new DamageGate.Rule() {
+            @Override public boolean damageable() { return !ring.mageAlive(); }
+            @Override public void refused(double amount, String source) { ring.dragonRefused(amount, source); }
+        });
+        bossBar = net.kyori.adventure.bossbar.BossBar.bossBar(
+                net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(def.displayName()), 1.0f,
+                java.util.Objects.requireNonNull(net.kyori.adventure.bossbar.BossBar.Color.NAMES.value(d.bossBarColor())),
+                net.kyori.adventure.bossbar.BossBar.Overlay.PROGRESS);
+        Location p = dragon.getPodium();
+        adapters.log().info(String.format(Locale.ROOT,
+                "FIGHT dragon spawned t=%d id=%s at=%.2f %.2f %.2f podium=%s phase=" + dragon.getPhase()
+                        + " mob=%s thresholds=%s",
+                fixture.fightTick(), dragon.getUniqueId(), at.getX() - centre.getX(), at.getY() - centre.getY(),
+                at.getZ() - centre.getZ(), p == null ? "none" : String.format(Locale.ROOT, "%.2f %.2f %.2f",
+                        p.getX() - centre.getX(), p.getY() - centre.getY(), p.getZ() - centre.getZ()),
+                d.mob(), d.mageThresholds()));
+    }
+
+    /**
+     * The boss bar follows the participants each tick: shown to whoever is in the fight, hidden from whoever has left,
+     * its progress the store's fraction (the custom health, not vanilla's). Each show and hide is logged once.
+     */
+    private void trackBossBar() {
+        if (bossBar == null) return;
+        UUID id = dragon.getUniqueId();
+        if (adapters.stats().tracks(id) && adapters.stats().max(id) > 0.0) {
+            float progress = (float) Math.max(0.0, Math.min(1.0, adapters.stats().current(id) / adapters.stats().max(id)));
+            if (bossBar.progress() != progress) bossBar.progress(progress);
+        }
+        java.util.Set<UUID> now = new java.util.HashSet<>();
+        for (RingFixture.Participant p : port.participants()) now.add(p.id());
+        for (UUID v : now) {
+            if (barViewers.add(v)) {
+                Player pl = org.bukkit.Bukkit.getPlayer(v);
+                if (pl != null) pl.showBossBar(bossBar);
+                adapters.log().info("BOSSBAR shown t=" + fixture.fightTick() + " player=" + (pl == null ? v : pl.getName()));
+            }
+        }
+        for (UUID v : new java.util.ArrayList<>(barViewers)) {
+            if (now.contains(v)) continue;
+            hideBar(v, "left");
+        }
+    }
+
+    private void hideBar(UUID v, String why) {
+        barViewers.remove(v);
+        Player pl = org.bukkit.Bukkit.getPlayer(v);
+        if (pl != null) pl.hideBossBar(bossBar);
+        adapters.log().info("BOSSBAR hidden t=" + fixture.fightTick() + " player=" + (pl == null ? v : pl.getName())
+                + " why=" + why);
+    }
+
+    /**
+     * THE QUEUE'S RELEASE (the seat's mechanism ruling): a Mage owed by a crossing lands only when the cycle is IDLE, no
+     * Mage alive and the ring home, at a random standable spot within the maximum landing distance. It is paid only if
+     * it actually landed (the fast close began); a landing refused for want of ground stays owed.
+     */
+    private void releaseQueuedMage(RingFixture ring) {
+        if (crossings == null || won || !dragon.isValid()) return;
+        if (!crossings.due(ring.phase() == MageCycle.Phase.IDLE && !ring.mageAlive())) return;
+        adapters.log().info("DRAGON mage-due t=" + ring.fightTick() + " pending=" + crossings.pending());
+        landRandom(0.0);
+        if (ring.phase() == MageCycle.Phase.FAST_CLOSE) {
+            crossings.landed();
+            adapters.log().info("DRAGON mage-landed t=" + ring.fightTick() + " pending=" + crossings.pending());
+        }
+    }
+
+    /**
+     * ITS DEATH IS THE WIN (the F9 brief, section 3 h). The participants are told at once; the ring stops (no strike, no
+     * Mage, no crystal after it); the Mage, if one is alive, is removed; vanilla's drops and experience are suppressed
+     * (SEAT PLACEHOLDER); and {@code win_return_ticks} later the arena's normal end: everyone returned, the world
+     * unloaded, its folder deleted.
+     */
+    private void onDragonDeath(EntityDeathEvent event) {
+        if (won) return;
+        won = true;
+        int dropped = event.getDroppedExp();
+        int drops = event.getDrops().size();
+        event.setDroppedExp(0);
+        event.getDrops().clear();
+        adapters.gate().release(dragon.getUniqueId());
+        int after = fight.dragon().winReturnTicks();
+        adapters.log().info(String.format(Locale.ROOT, "FIGHT win t=%d dragon=%s exp_suppressed=%d drops_suppressed=%d"
+                + " return_in=%d", fixture.fightTick(), dragon.getUniqueId(), dropped, drops, after));
+        port.tell("The Ender Dragon is dead. You win.");
+        logMageHealth("win");
+        removeMage();
+        port.clearCrystals();
+        fixture.stop();
+        adapters.scheduler().onRegionLater(centre, () -> {
+            adapters.log().info("FIGHT win-return t=" + fixture.fightTick() + " after=" + after);
+            finish("win");
+        }, Math.max(1, after));
+    }
+
+    /**
+     * NO FIREBALL (the F9 brief, section 3 e; Ben: "Only the fireball"). The event is cancelled for THIS fight's dragon
+     * only, and each cancel is logged. The perched breath is not a fireball and stays vanilla.
+     *
+     * @return whether the event was this fight's dragon's
+     */
+    public boolean onFireball(com.destroystokyo.paper.event.entity.EnderDragonShootFireballEvent event) {
+        if (dragon == null || !event.getEntity().getUniqueId().equals(dragon.getUniqueId())) return false;
+        event.setCancelled(true);
+        adapters.log().info("FIGHT fireball-cancelled t=" + fixture.fightTick() + " dragon=" + dragon.getUniqueId()
+                + " phase=" + dragon.getPhase());
+        return true;
+    }
+
+    /** The dragon is gone with its fight, at every ending: the gate released, the boss bar hidden from all, removed. */
+    private void removeDragon(String why) {
+        if (bossBar != null) {
+            for (UUID v : new java.util.ArrayList<>(barViewers)) hideBar(v, "fight-ended");
+        }
+        if (dragon == null) return;
+        adapters.gate().release(dragon.getUniqueId());
+        boolean was = dragon.isValid();
+        if (was) dragon.remove();
+        adapters.log().info("FIGHT dragon removed reason=" + why + " was_valid=" + was + " id=" + dragon.getUniqueId());
+        dragon = null;
+    }
+
+    // --- the dragon's dev handles (the gate's AUTO rows) ---------------------------------------------------------------
+
+    /** {@code dragon hit <amount>}: one store hit on the dragon from {@code by}, through the pipeline (defence applies). */
+    public String dragonHit(Player by, double amount) {
+        if (!running() || dragon == null || !dragon.isValid()) return "There is no dragon.";
+        BukkitCombatant.of(dragon, adapters).handle().applyDamage(amount, by.getUniqueId(),
+                io.github.butterflysmp.rpg.core.combat.CritState.NORMAL,
+                io.github.butterflysmp.rpg.core.combat.DefenseRule.APPLIES, null);
+        return String.format(Locale.ROOT, "Dragon hit for %.3f.", amount);
+    }
+
+    /** {@code dragon strike <part>}: {@code by} attacks the named part with the held weapon (the melee path). */
+    public String dragonStrike(Player by, String partName) {
+        if (!running() || dragon == null || !dragon.isValid()) return "There is no dragon.";
+        org.bukkit.entity.ComplexEntityPart chosen = null;
+        java.util.List<String> names = new java.util.ArrayList<>();
+        for (org.bukkit.entity.ComplexEntityPart part : dragon.getParts()) {
+            String n = partName(part);
+            names.add(n);
+            if (n.equalsIgnoreCase(partName)) chosen = part;
+        }
+        if (chosen == null) return "No part '" + partName + "'; the parts are " + names + ".";
+        adapters.log().info("DRAGON strike t=" + fixture.fightTick() + " part=" + partName(chosen) + " part_id="
+                + chosen.getUniqueId() + " by=" + by.getName());
+        by.attack(chosen);
+        return "Struck the dragon's " + partName(chosen) + ".";
+    }
+
+    /** A part's name, read from its box through the API alone ({@link DragonParts}); "part" when the box is no known size. */
+    private static String partName(org.bukkit.entity.ComplexEntityPart part) {
+        org.bukkit.util.BoundingBox box = part.getBoundingBox();
+        return DragonParts.nameOf(box.getWidthX(), box.getHeight());
+    }
+
+    /** {@code dragon phase <name>}: sets the dragon's vanilla phase by the API (the fireball row's staging). */
+    public String dragonPhase(String phase) {
+        if (!running() || dragon == null || !dragon.isValid()) return "There is no dragon.";
+        org.bukkit.entity.EnderDragon.Phase p;
+        try {
+            p = org.bukkit.entity.EnderDragon.Phase.valueOf(phase.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return "No phase '" + phase + "'; one of " + java.util.Arrays.toString(org.bukkit.entity.EnderDragon.Phase.values());
+        }
+        dragon.setPhase(p);
+        adapters.log().info("DRAGON phase-set t=" + fixture.fightTick() + " phase=" + p + " now=" + dragon.getPhase());
+        return "Dragon phase " + dragon.getPhase() + ".";
+    }
+
+    /** {@code dragon kill}: the dragon is killed through the store (the gate lets this one hit through). */
+    public String dragonKill() {
+        if (!running() || dragon == null || !dragon.isValid()) return "There is no dragon.";
+        adapters.gate().allowNext(dragon.getUniqueId());
+        double max = adapters.stats().tracks(dragon.getUniqueId()) ? adapters.stats().max(dragon.getUniqueId()) : 1.0;
+        BukkitCombatant.of(dragon, adapters).handle().applyDamage(max * 10.0, dragon.getUniqueId(),
+                io.github.butterflysmp.rpg.core.combat.CritState.NORMAL,
+                io.github.butterflysmp.rpg.core.combat.DefenseRule.BYPASSED, null);
+        return "The dragon is killed.";
+    }
+
+    /**
+     * {@code dragon probe}: one DRAGONPROBE line, the dragon's store health, its vanilla phase, the podium, the boss
+     * bar's colour, progress and viewers, the queue, and how many dragons and fireballs are in the fight's world.
+     */
+    public String dragonProbe() {
+        StringBuilder line = new StringBuilder("DRAGONPROBE t=" + fixture.fightTick());
+        int dragons = world.getEntitiesByClass(org.bukkit.entity.EnderDragon.class).size();
+        int fireballs = world.getEntitiesByClass(org.bukkit.entity.DragonFireball.class).size();
+        if (dragon != null && dragon.isValid()) {
+            UUID id = dragon.getUniqueId();
+            boolean tracked = adapters.stats().tracks(id);
+            Location p = dragon.getPodium();
+            line.append(String.format(Locale.ROOT,
+                    " dragon=%s health=%.3f/%.3f defense=%.3f phase=%s podium=%s immune=%s",
+                    id, tracked ? adapters.stats().current(id) : -1.0, tracked ? adapters.stats().max(id) : -1.0,
+                    tracked ? adapters.stats().defenseValue(id) : -1.0, dragon.getPhase(),
+                    p == null ? "none" : String.format(Locale.ROOT, "%.2f %.2f %.2f", p.getX() - centre.getX(),
+                            p.getY() - centre.getY(), p.getZ() - centre.getZ()), fixture.mageAlive()));
+        } else {
+            line.append(" dragon=none");
+        }
+        line.append(bossBar == null ? " bar=none" : String.format(Locale.ROOT, " bar=%s progress=%.4f viewers=%d",
+                bossBar.color(), bossBar.progress(), barViewers.size()));
+        line.append(crossings == null ? "" : " crossed=" + crossings.crossed() + " pending=" + crossings.pending());
+        line.append(" dragons_in_world=").append(dragons).append(" fireballs_in_world=").append(fireballs);
+        adapters.log().info(line.toString());
+        return line.toString();
     }
 
     // --- the Mage ----------------------------------------------------------------------------------------------------

@@ -19,10 +19,22 @@ import io.github.butterflysmp.rpg.core.fight.RingLook;
  * @param litCue                   the sound at a crystal as it lights
  * @param participantRadiusBlocks  the ordinary-world fixture's reach about C, blocks
  * @param arena                    the fight's own world and its generated arena (step F8b)
+ * @param dragon                   the arena fight's dragon (step F9)
  */
 public record FightContent(String id, FightSettings settings, RingLook look, String mageMob, Cue refusedCue,
                            double crystalRingRadiusBlocks, double crystalHeightBlocks, Cue litCue,
-                           double participantRadiusBlocks, Arena arena) {
+                           double participantRadiusBlocks, Arena arena, Dragon dragon) {
+
+    /**
+     * THE ARENA FIGHT'S DRAGON (step F9).
+     *
+     * @param mob             the mob file it is spawned from ({@code content/mobs/<id>.yml}), at gear score 100
+     * @param mageThresholds  Ben's fractions of its maximum, strictly falling: each one it falls strictly below lands a
+     *                        Mage (the queue is core's {@code DragonCrossings})
+     * @param winReturnTicks  its death is the win; the arena's normal end follows this many ticks later
+     * @param bossBarColor    the boss bar's colour, an Adventure colour name ({@code purple})
+     */
+    public record Dragon(String mob, java.util.List<Double> mageThresholds, int winReturnTicks, String bossBarColor) {}
 
     /** A sound: its key ({@code item.shield.block}), volume and pitch. */
     public record Cue(String sound, float volume, float pitch) {}

@@ -715,7 +715,8 @@ public final class RpgCommand {
             RayTraceResult hit = player.getWorld().rayTraceEntities(
                     eye, eye.getDirection(), TARGET_RANGE, TARGET_LENIENCE,
                     LiveTargets::isLiveMob);
-            if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
+            LivingEntity target = hit == null ? null : LiveTargets.resolve(hit.getHitEntity());
+            if (target == null) {
                 player.sendMessage(Component.text("Look at a mob.", NamedTextColor.RED));
                 return;
             }
@@ -992,7 +993,8 @@ public final class RpgCommand {
             RayTraceResult hit = player.getWorld().rayTraceEntities(
                     eye, eye.getDirection(), TARGET_RANGE, TARGET_LENIENCE,
                     LiveTargets::isLiveMob);
-            if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
+            LivingEntity target = hit == null ? null : LiveTargets.resolve(hit.getHitEntity());
+            if (target == null) {
                 player.sendMessage(Component.text("Look at a mob.", NamedTextColor.RED));
                 return;
             }
@@ -1550,7 +1552,8 @@ public final class RpgCommand {
             RayTraceResult hit = player.getWorld().rayTraceEntities(
                     eye, eye.getDirection(), TARGET_RANGE, TARGET_LENIENCE,
                     LiveTargets::isLiveMob);
-            if (hit == null || !(hit.getHitEntity() instanceof LivingEntity target)) {
+            LivingEntity target = hit == null ? null : LiveTargets.resolve(hit.getHitEntity());
+            if (target == null) {
                 player.sendMessage(Component.text("Look at a mob to apply a status.", NamedTextColor.RED));
                 return;
             }

@@ -48,3 +48,6 @@ gates:
 # fight-arena (step F8b, 2026-11-18) is paired with docs/gates/GATE-fight-arena.md; its R0 and run sheet cover
 # fight-site too (the seat: one boot for both).
   - fight-arena
+# fight-dragon (step F9, 2026-11-18) is paired with docs/gates/GATE-fight-dragon.md: the arena fight's dragon. The
+# fight-arena rows now enter with `nodragon`, so none of their predicted lines moves.
+  - fight-dragon

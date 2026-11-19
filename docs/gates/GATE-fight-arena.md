@@ -490,6 +490,21 @@ So **all ten arena rows are re-predicted** under their old names with `R2`; thei
 
 ---
 
+## STEP F9 (`feat/fight-dragon`, 2026-11-18): THE ARENA ROWS NOW ENTER WITH `nodragon` — A DATED NOTE, NO ROW RE-PREDICTED
+
+From F9, a new arena fight spawns the Ender Dragon. That would have moved every row above.
+
+**So every arena scenario in `GATE-fight-arena.yml` now enters with `rpg fight enter nodragon`** (12 lines, the two
+refused second enters included; their reply is the same). No dragon is spawned, and **no predicted line above
+moves**.
+
+**Two new lines appear in every fight from F9, and no prediction above names their absence:**
+- `FIGHT mage-health t=<t> at=<from>-><to> …` on the loop tick after each phase change, and `… at=end …` at the end;
+- a `FIGHTHIT …` line for every hit that lands on a Mage.
+
+**These rows are not re-predicted and not re-run at F9's boot.** R0c and R0d above (the Loaded fight line, the mob
+count, the scenario count) are superseded at that boot by `GATE-fight-dragon.md`'s own R0.
+
 ## WHAT THIS GATE DOES NOT READ
 
 - **The template-file arena (C3):** not built (no file exists to test it). A deviation from C3, owed when Ben builds an

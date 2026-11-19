@@ -37,9 +37,11 @@ class SelfTestScenariosTest {
         assertEquals(List.of("melee-cell", "level", "nexus-polish", "legacy-a", "legacy-b", "wither-status",
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
-                        "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena"),
+                        "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
+                        "fight-dragon"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-three gates, in boot order (fight-arena LAST, step F8b, 2026-11-18, a NEW gate after"
+                "the twenty-four gates, in boot order (fight-dragon LAST, step F9, 2026-11-18, a NEW gate after fight-arena;"
+                        + " fight-arena before it, step F8b, 2026-11-18, a NEW gate after"
                         + " fight-site; fight-site before it, step F8a, 2026-11-18, in fight-mage's place: it"
                         + " re-predicts every row there; fight-mage LAST before it, steps F6 + F7, 2026-11-18, in fight-ring's place:"
                         + " it re-predicts every FR row; fight-ring before it, steps F4 + F5 of the dragon fight, 2026-11-18;"
@@ -192,7 +194,10 @@ class SelfTestScenariosTest {
         // Then THE ARENA (GATE-fight-arena.md, step F8b, 2026-11-18), a new gate, RECOUNTED the same way on this branch's
         // tree: 23 gates, 223 keys, 23 setups, so 200: fight-arena's 10 rows (AE1-AE7, BA1-BA3) added. The control:
         // 212 + 11 = 223. 190 was this line's value.
-        assertEquals(200, loaded.rows());
+        // Then THE DRAGON (GATE-fight-dragon.md, step F9, 2026-11-18), a new gate, RECOUNTED the same way on this
+        // branch's tree: 24 gates, 234 keys, 24 setups, so 210: fight-dragon's 10 rows (DA1, DA2, DA3, DA5-DA9, DB1, DB2)
+        // added. The control: 223 + 11 = 234. 200 was this line's value.
+        assertEquals(210, loaded.rows());
     }
 
     /**

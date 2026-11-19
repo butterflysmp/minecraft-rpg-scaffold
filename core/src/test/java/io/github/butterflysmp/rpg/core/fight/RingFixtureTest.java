@@ -374,6 +374,61 @@ class RingFixtureTest {
                 port.last("FIGHT die"));
     }
 
+    /**
+     * F9, THE DRAGON'S GATE (the F9 brief, section 3 d): the dragon cannot be hurt while a Mage is alive. Alive from his
+     * landing to his death; after it, while the ring is still returning, the dragon can be hurt again, and the cycle is
+     * IDLE (a queued Mage may land) only once the ring is home.
+     */
+    @Test
+    void aMageIsAliveFromHisLandingToHisDeathAndTheCycleIsIdleOnlyOnceTheRingIsHome() {
+        FakePort port = new FakePort();
+        RingFixture f = fixture(port);
+        assertFalse(f.mageAlive(), "before the first tick, no Mage");
+        assertEquals(MageCycle.Phase.IDLE, f.phase());
+        run(f, 5);
+        assertFalse(f.mageAlive());
+        f.land(0.0, 0.0);
+        assertTrue(f.mageAlive(), "the landing tick");
+        assertEquals(MageCycle.Phase.FAST_CLOSE, f.phase());
+        run(f, 195); // the slow close from 149
+        assertTrue(f.mageAlive());
+        assertEquals(MageCycle.Phase.SLOW_CLOSE, f.phase());
+        f.mageDie();
+        assertFalse(f.mageAlive(), "his death: the dragon can be hurt again at once");
+        assertEquals(MageCycle.Phase.RETURNING, f.phase(), "but the ring is still on its way home");
+        int ticks = 0;
+        while (f.phase() == MageCycle.Phase.RETURNING && ticks < 2000) {
+            f.tick();
+            ticks++;
+        }
+        assertEquals(MageCycle.Phase.IDLE, f.phase(), "home");
+        assertFalse(f.mageAlive());
+    }
+
+    @Test
+    void aRefusedHitOnTheDragonLogsItsOwnLineAndPlaysTheSameCue() {
+        FakePort port = new FakePort();
+        RingFixture f = fixture(port);
+        run(f, 3);
+        f.land(0.0, 0.0);
+        f.dragonRefused(250.5, "hit/kinetic");
+        assertEquals("DRAGONGATE t=3 phase=FAST_CLOSE amount=250.500 source=hit/kinetic refused",
+                port.last("DRAGONGATE"));
+        assertEquals(1, port.cues, "the Mage's refused cue");
+        assertEquals(0, port.count("MAGEGATE"), "and not the Mage's line");
+    }
+
+    @Test
+    void aStoppedFixtureHasNoMageAlive() {
+        FakePort port = new FakePort();
+        RingFixture f = fixture(port);
+        f.land(0.0, 0.0);
+        f.tick();
+        assertTrue(f.mageAlive());
+        f.stop();
+        assertFalse(f.mageAlive());
+    }
+
     @Test
     void aLandingIsLoggedWithItsResult() {
         FakePort port = new FakePort();

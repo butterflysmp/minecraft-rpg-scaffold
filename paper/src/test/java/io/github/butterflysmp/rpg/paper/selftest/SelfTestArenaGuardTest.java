@@ -67,7 +67,7 @@ class SelfTestArenaGuardTest {
         for (Scenario.Step step : s.steps()) {
             String arg = step.arg().trim();
             if (step.verb() == Scenario.Verb.DEATH_RULES) deathExpected = true;
-            if (step.verb() == Scenario.Verb.CMD && arg.equals("rpg fight enter")) place = Place.FIGHT;
+            if (step.verb() == Scenario.Verb.CMD && arg.startsWith("rpg fight enter")) place = Place.FIGHT;
             if (step.verb() == Scenario.Verb.CMD && arg.equals("rpg fight leave")) place = Place.RUN;
             if (step.verb() == Scenario.Verb.AWAIT_FIGHT && deathExpected && place == Place.FIGHT) {
                 dead = true;   // AE4R2: the closed ring's lightning kills him while the run waits for the fight to end

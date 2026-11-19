@@ -1,0 +1,211 @@
+# GATE-fight-dragon.md: STEP F9, THE DRAGON (feat/fight-dragon, 2026-11-18). `/rpg selftest fight-dragon`.
+#
+# THE FIXTURE, the arena's (`/rpg fight enter`, which now spawns the dragon) plus its dev handles:
+# `/rpg fight dragon probe | hit <amount> | strike <part> | phase <name> | kill`. Its lines: FIGHT dragon spawned,
+# DRAGONPROBE, BOSSBAR (shown, hidden), FIGHTHIT (every hit that LANDS on the Mage or the dragon), DRAGONCROSS,
+# DRAGONGATE (a refused hit on the dragon), DRAGON (mage-due, mage-landed, strike, phase-set), FIGHT mage-health,
+# FIGHT win, FIGHT win-return, FIGHT fireball-cancelled, FIGHT dragon removed; and every line of the arena's.
+#
+# Every AUTO row holds the dragon in HOVER first (`dragon phase hover`), 20 blocks above the floor's centre, so that
+# its flight cannot reach him while a row reads the store. Ben's rows leave it free.
+#
+# Every row ends back in the world he started in, with `rpg fight worlds` reading loaded=0 folders=0 marked=0, and
+# the end probes.
+#
+# TWO ROWS KILL HIM ON PURPOSE (DA8; and DB2, the fight, can). Each is a death_rules row, and each death happens inside
+# an await_fight, which survives a death: he reappears where he entered.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# DA1: enter: one dragon at 20000/20000, its podium the floor's centre, its boss bar shown to him; leave: the bar hidden,
+# the dragon removed with the fight, the folder gone.
+DA1:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight worlds"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - cmd: "rpg fight dragon probe"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# DA2: a store hit on the dragon with no Mage alive lands by the pipeline's exact figure, and logs the landed-hit line.
+DA2:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight dragon hit 1234.5"
+  - wait: 2
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# DA3 + DA4, ONE FIGHT: a hit taking it below 80% lands one Mage; a hit on the dragon while he lives is refused; the Mage
+# killed, the dragon can be hurt again, and the ring returns home.
+DA3:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight dragon hit 4000.5"
+  - wait: 5
+  - cmd: "rpg fight dragon hit 100"
+  - wait: 2
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight probe"
+  - cmd: "rpg fight mage-die"
+  - wait: 2
+  - cmd: "rpg fight dragon hit 100"
+  - wait: 2
+  - cmd: "rpg fight dragon probe"
+  - wait: 100
+  - cmd: "rpg fight probe"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# DA5: one hit across two thresholds: two Mages owed, the first lands, the second waits; the first killed and the ring
+# home, the second lands on that tick. Never two together.
+DA5:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight dragon hit 8000.5"
+  - wait: 40
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight mage-die"
+  - wait: 100
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight probe"
+  - cmd: "rpg fight mage-die"
+  - wait: 5
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# DA6: the fireball. The shooting phase (STRAFING) set by the API: vanilla's strafe needs a target only its holding
+# pattern sets, so it is expected to drop straight back with no fireball. What the row reads is whether it could be staged.
+DA6:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase strafing"
+  - wait: 5
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# DA7: the dragon's death is the WIN: the line and the message at once, and 200 ticks later the arena's normal end: he is
+# returned, the world unloaded, its folder gone; no dragon and no boss bar left.
+DA7:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 2
+  - cmd: "rpg fight dragon kill"
+  - await_fight: 400
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - cmd: "rpg fight dragon probe"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# DA8: a failure with the dragon alive (DIES ON PURPOSE): the Mage at the centre, the ring closes, the lightning kills
+# him; the fight fails and ends, the dragon removed, the folder gone.
+DA8:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 10
+  - cmd: "rpg fight land 0 0"
+  - await_fight: 1400
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# DA9: a melee hit on a PART (the head, then a wing) reaches the dragon through the melee path: the swing is recorded
+# against the dragon, and the store takes the weapon's figure.
+DA9:
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - cmd: "rpg fight dragon phase hover"
+  - wait: 25
+  - cmd: "rpg fight dragon strike head"
+  - wait: 25
+  - cmd: "rpg fight dragon strike wing"
+  - wait: 2
+  - cmd: "rpg fight dragon probe"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# DB1: THE DRAGON, WATCHED AND HIT (questions 1 to 4). It is free: it flies and perches as vanilla does, its fireball
+# cancelled. He hits it with his own weapon in the air and when perched. Nothing else lands unless he takes it below 80%.
+DB1:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 10
+  - tell: "QUESTIONS 1 TO 4 ARE COMING. The Ender Dragon is flying round the arena. Watch it fly and land on the middle, and hit it with your own weapon, in the air and when it lands. Its health bar is at the top of your screen. Stay within 48 blocks of the middle. If you take it below 80%, a Mage lands and the dragon cannot be hurt until he dies."
+  - wait: 3600
+  - ask: "1 2400 yesno The dragon: did it fly and land as you expect, with no fireball?"
+  - ask: "2 2400 yesno Could you hit it with your own weapon while it was in the air?"
+  - ask: "3 2400 yesno Could you hit it with your own weapon while it had landed?"
+  - ask: "4 2400 yesno The boss bar at the top of the screen: is it right?"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# DB2: THE FIGHT, NO SAFETY (questions 5 and 6): the dragon and the Mages, with his own weapon, up to ten minutes or
+# until it ends. A death is real: he reappears where he entered.
+DB2:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - tell: "QUESTIONS 5 AND 6 ARE COMING: THE FIGHT, WITH NO SAFETY. Kill the Ender Dragon with your own weapon. At 80, 60, 40 and 20 percent a Mage lands and the dragon cannot be hurt until you kill him (the same Mage as before: he can be hurt once the ring is slow). Stay inside the ring: the lightning is real, and if you die you reappear where you entered. Up to ten minutes."
+  - await_fight: 12000
+  - cmd: "rpg fight stop"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "5 2400 yesno For one player, is the dragon's 20,000 health right?"
+  - ask: "6 2400 words What most needs to change before waves are built?"

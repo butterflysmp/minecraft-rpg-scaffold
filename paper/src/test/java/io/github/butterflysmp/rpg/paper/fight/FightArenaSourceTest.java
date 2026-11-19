@@ -86,7 +86,8 @@ class FightArenaSourceTest {
     @Test
     void theReturnIsSavedBeforeHeGoesInAndClearedWhenHeComesBack() throws IOException {
         String fixtures = code(FIGHT.resolve("FightFixtures.java"));
-        String enter = body(fixtures, "public String enter(Player p)");
+        // F9: enter(Player) now delegates to enter(Player, boolean withDragon), which does the work.
+        String enter = body(fixtures, "public String enter(Player p, boolean withDragon)");
         int save = enter.indexOf("profiles.setFightReturn(");
         int go = enter.indexOf("p.teleportAsync(entry)");
         assertTrue(save > 0 && go > save, "saved through the profile BEFORE the teleport: " + enter);

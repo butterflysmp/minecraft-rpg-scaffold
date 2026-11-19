@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.fight;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.github.butterflysmp.rpg.paper.command.Permissions;
@@ -39,7 +40,24 @@ public final class FightCommand {
                 .then(Commands.literal("start").executes(ctx -> reply(ctx, devServer,
                         p -> fixtures.start(p, ctx.getSource().getLocation()))))
                 .then(Commands.literal("probe").executes(ctx -> reply(ctx, devServer, p -> fixtures.probe())))
-                .then(Commands.literal("enter").executes(ctx -> reply(ctx, devServer, fixtures::enter)))
+                .then(Commands.literal("enter").executes(ctx -> reply(ctx, devServer, p -> fixtures.enter(p, true)))
+                        .then(Commands.literal("nodragon").executes(ctx -> reply(ctx, devServer,
+                                p -> fixtures.enter(p, false)))))
+                .then(Commands.literal("dragon")
+                        .then(Commands.literal("probe").executes(ctx -> reply(ctx, devServer, p -> fixtures.dragonProbe())))
+                        .then(Commands.literal("kill").executes(ctx -> reply(ctx, devServer, p -> fixtures.dragonKill())))
+                        .then(Commands.literal("hit")
+                                .then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0, 1.0e7))
+                                        .executes(ctx -> reply(ctx, devServer, p -> fixtures.dragonHit(p,
+                                                DoubleArgumentType.getDouble(ctx, "amount"))))))
+                        .then(Commands.literal("strike")
+                                .then(Commands.argument("part", StringArgumentType.word())
+                                        .executes(ctx -> reply(ctx, devServer, p -> fixtures.dragonStrike(p,
+                                                StringArgumentType.getString(ctx, "part"))))))
+                        .then(Commands.literal("phase")
+                                .then(Commands.argument("phase", StringArgumentType.word())
+                                        .executes(ctx -> reply(ctx, devServer, p -> fixtures.dragonPhase(
+                                                StringArgumentType.getString(ctx, "phase")))))))
                 .then(Commands.literal("leave").executes(ctx -> reply(ctx, devServer, fixtures::leave)))
                 .then(Commands.literal("worlds").executes(ctx -> reply(ctx, devServer, fixtures::worldsLine)))
                 .then(Commands.literal("play")

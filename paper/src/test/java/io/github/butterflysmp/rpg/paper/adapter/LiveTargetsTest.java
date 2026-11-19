@@ -111,6 +111,75 @@ class LiveTargetsTest {
         assertFalse(LiveTargets.except(CASTER).test(dropped));
     }
 
+    // --- the dragon's parts (step F9): a part is not a LivingEntity, its parent is ---
+
+    /** A part of {@code parent}: an Entity whose only live answers are getParent, getUniqueId and identity. */
+    private static org.bukkit.entity.ComplexEntityPart part(org.bukkit.entity.EnderDragon parent) {
+        UUID own = UUID.randomUUID();
+        return (org.bukkit.entity.ComplexEntityPart) Proxy.newProxyInstance(LiveTargetsTest.class.getClassLoader(),
+                new Class<?>[]{org.bukkit.entity.ComplexEntityPart.class},
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "getParent" -> parent;
+                    case "getUniqueId" -> own;
+                    case "isValid" -> true;
+                    case "toString" -> "part-of-" + parent;
+                    case "hashCode" -> System.identityHashCode(proxy);
+                    case "equals" -> proxy == (args == null ? null : args[0]);
+                    default -> method.getReturnType() == boolean.class ? false : null;
+                });
+    }
+
+    @Test
+    void aPartOfALiveDragonResolvesToTheDragonAtEverySelectionFilter() {
+        org.bukkit.entity.EnderDragon dragon = stub(org.bukkit.entity.EnderDragon.class, UUID.randomUUID(), false, true);
+        org.bukkit.entity.ComplexEntityPart head = part(dragon);
+        assertFalse(head instanceof org.bukkit.entity.LivingEntity, "the control: a part is not a LivingEntity");
+        assertSame(dragon, LiveTargets.resolve(head), "the part is the dragon");
+        assertSame(dragon, LiveTargets.body(head));
+        assertTrue(LiveTargets.except(CASTER).test(head), "castRay's filter admits it, so the ray can stop on it");
+        assertTrue(LiveTargets.isLiveMob(head), "and the look-rays");
+        assertSame(dragon, LiveTargets.resolve(dragon), "the dragon itself resolves to itself");
+    }
+
+    @Test
+    void aPartOfADyingDragonIsNotATarget() {
+        org.bukkit.entity.EnderDragon dying = stub(org.bukkit.entity.EnderDragon.class, UUID.randomUUID(), true, true);
+        org.bukkit.entity.ComplexEntityPart wing = part(dying);
+        assertNull(LiveTargets.resolve(wing));
+        assertFalse(LiveTargets.except(CASTER).test(wing));
+        assertSame(dying, LiveTargets.body(wing), "body() is the parent whatever its state; resolve() asks if it lives");
+    }
+
+    @Test
+    void anEntityThatIsNeitherAPartNorLivingResolvesToNothing() {
+        Item dropped = stub(Item.class, UUID.randomUUID(), false, true);
+        assertNull(LiveTargets.resolve(dropped));
+        assertSame(dropped, LiveTargets.body(dropped));
+        assertNull(LiveTargets.resolve(null));
+        assertNull(LiveTargets.body(null));
+    }
+
+    @Test
+    void everyHitSiteResolvesAPartToItsDragon() throws IOException {
+        String world = Files.readString(WORLD, StandardCharsets.UTF_8);
+        assertTrue(member(world, "public Optional<RayHit> castRay(").contains("LiveTargets.resolve(result.getHitEntity())"),
+                "castRay's hit is resolved: a ray that stops on a part hits the dragon");
+        assertTrue(member(world, "public Collection<Combatant> combatantsNear(").contains("LiveTargets::resolve"),
+                "a nearby search that finds a part finds the dragon");
+        String command = Files.readString(COMMAND, StandardCharsets.UTF_8);
+        assertEquals(3, command.split("LiveTargets.resolve\\(hit.getHitEntity\\(\\)\\)", -1).length - 1,
+                "each of the three look-rays resolves its hit");
+        assertEquals(0, command.split("hit.getHitEntity\\(\\) instanceof LivingEntity", -1).length - 1,
+                "and none reads a part as nothing");
+        String listeners = Files.readString(Path.of(
+                "src/main/java/io/github/butterflysmp/rpg/paper/listener/RpgListeners.java"), StandardCharsets.UTF_8)
+                .replace("\r\n", "\n"); // the working tree is CRLF here; the bound below is a newline
+        int pre = listeners.indexOf("public void onPrePlayerAttack(PrePlayerAttackEntityEvent event)");
+        String preBody = listeners.substring(pre, listeners.indexOf("\n    }\n", pre));
+        assertTrue(preBody.contains("LiveTargets.body(event.getAttacked()) instanceof LivingEntity victim"),
+                "the melee pre-attack records the swing against the DRAGON, whose damage event follows: " + preBody);
+    }
+
     // --- the wiring: every selection site passes this filter ---
 
     private static final Path WORLD = Path.of("src/main/java/io/github/butterflysmp/rpg/paper/adapter/PaperCombatWorld.java");
@@ -130,7 +199,8 @@ class LiveTargetsTest {
         String world = Files.readString(WORLD, StandardCharsets.UTF_8);
         assertTrue(member(world, "public Optional<RayHit> castRay(").contains("LiveTargets.except(ignoreId)"),
                 "castRay's entity filter must be LiveTargets.except: a dying body ends the flight otherwise");
-        assertTrue(member(world, "public Collection<Combatant> combatantsNear(").contains("LiveTargets::isLive"),
+        // F9: LiveTargets::resolve, which is LiveTargets.isLive applied to the body a part stands for.
+        assertTrue(member(world, "public Collection<Combatant> combatantsNear(").contains("LiveTargets::resolve"),
                 "combatantsNear feeds melee, the dash's swept line, bursts and homing: live bodies only");
 
         String command = Files.readString(COMMAND, StandardCharsets.UTF_8);

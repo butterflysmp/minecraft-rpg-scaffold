@@ -23,7 +23,7 @@ setup:
 # is in the fight's world. Then leave: returned; with nobody inside the fight ends; the world unloaded; its folder gone.
 AE1R2:
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - wait: 10
   - cmd: "rpg fight worlds"
   - probe_blocks: "END_STONE 0 -1 0 0 -1 0"
@@ -45,7 +45,7 @@ AE1R2:
   - probe_blocks: "OBSIDIAN -12 11 -38 -12 11 -38"
   - probe_blocks: "OBSIDIAN 12 11 -38 12 11 -38"
   - probe_blocks: "OBSIDIAN 32 11 -24 32 11 -24"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - cmd: "rpg fight leave"
   - wait: 60
   - cmd: "rpg fight worlds"
@@ -55,7 +55,7 @@ AE1R2:
 # AE2: the ring, the Mage at 6000 and a crystal ON ITS PILLAR in the arena. He stands 1 west of the Mage.
 AE2R2:
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - wait: 20
   - cmd: "rpg fight land 6 0"
   - cmd: "tp @s ~5 ~ ~ -90 0"
@@ -72,7 +72,7 @@ AE2R2:
 # AE3: the border lightning from the fight's FIRST tick, before any landing: 50 from C at t=40 is struck (k=1, 20).
 AE3R2:
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - wait: 5
   - cmd: "tp @s ~50 ~ ~ -90 0"
   - wait: 40
@@ -90,7 +90,7 @@ AE3R2:
 AE4R2:
   - death_rules: ""
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - wait: 20
   - cmd: "rpg fight land 0 0"
   - await_fight: 1400
@@ -105,7 +105,7 @@ AE4R2:
 AE6R2:
   - death_rules: ""
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - wait: 10
   - cmd: "tp @s ~60 -130 ~"
   - await_fight: 400
@@ -122,7 +122,7 @@ AE6R2:
 AE5R2:
   - death_rules: ""
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - wait: 5
   - cmd: "tp @s ~-2 ~ ~ -90 0"
   - wait: 15
@@ -681,9 +681,9 @@ AE5R2:
 # AE7: entering while already inside is refused, and changes nothing (the dev command's one fight).
 AE7R2:
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - wait: 10
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - cmd: "rpg fight worlds"
   - cmd: "rpg fight leave"
   - wait: 60
@@ -696,7 +696,7 @@ AE7R2:
 # BA1: the arena stand-in and the night sky, seen from inside.
 BA1R2:
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - wait: 10
   - tell: "QUESTIONS 2 AND 3 ARE COMING. You are in the fight's own world, on the stand-in arena: an end-stone floor 56 blocks out and ten obsidian pillars. Walk about and look at it, and at the sky. Nothing will hurt you while you stay within 48 blocks of the middle."
   - wait: 400
@@ -711,7 +711,7 @@ BA1R2:
 # BA2: the six-row wall, alternate rows turning opposite ways, seen from inside the arena.
 BA2R2:
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - wait: 10
   - tell: "QUESTION 4 IS COMING. The purple wall is 48 blocks around you: six rows now, every other row turning the other way. Stay inside it and look at it."
   - wait: 300
@@ -727,7 +727,7 @@ BA2R2:
 BA3R2:
   - death_rules: ""
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg fight enter"
+  - cmd: "rpg fight enter nodragon"
   - tell: "QUESTIONS 5 AND 6 ARE COMING: THE FIGHT, WITH NO SAFETY. A Mage is about to land at least 15 blocks away. He cannot be hurt until the ring has closed to 12 blocks around him; then kill him with your own weapon. Stay inside the ring: the lightning is real, and if you die you reappear where you entered. Crystals light one every 12 seconds once the ring is slow. Up to three minutes."
   - wait: 100
   - cmd: "rpg fight play 15 unsafe"

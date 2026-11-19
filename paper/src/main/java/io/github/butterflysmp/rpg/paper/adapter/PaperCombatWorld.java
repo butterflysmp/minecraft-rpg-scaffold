@@ -86,10 +86,19 @@ public final class PaperCombatWorld implements CombatWorld {
         return world.getNearbyEntities(toLocation(center), radius, radius, radius).stream()
                 // Live bodies only (LiveTargets): melee, the dash's swept line, bursts and homing all pick from here,
                 // and a mob in its death animation must not take a hit meant for a live one.
-                .filter(LiveTargets::isLive)
-                .map(LivingEntity.class::cast)
+                // A part (an Ender Dragon's) stands for its dragon (step F9); a dragon found by its box AND its parts
+                // is one combatant, not several.
+                .map(LiveTargets::resolve)
+                .filter(java.util.Objects::nonNull)
+                .filter(onePerBody())
                 .map(e -> BukkitCombatant.of(e, ctx)) // snapshot taken here, on this thread
                 .toList();
+    }
+
+    /** A filter that passes each body once: the first time its UUID is seen. One per search; not thread-safe. */
+    static java.util.function.Predicate<LivingEntity> onePerBody() {
+        java.util.Set<UUID> seen = new java.util.HashSet<>();
+        return e -> seen.add(e.getUniqueId());
     }
 
     /**
@@ -135,7 +144,9 @@ public final class PaperCombatWorld implements CombatWorld {
         Vector hit = result.getHitPosition();
         Vec3 point = new Vec3(hit.getX(), hit.getY(), hit.getZ());
 
-        if (result.getHitEntity() instanceof LivingEntity living) {
+        // A ray that stops on a part (an Ender Dragon's head, wing or tail) hits the dragon (step F9; LiveTargets.body).
+        LivingEntity living = LiveTargets.resolve(result.getHitEntity());
+        if (living != null) {
             return Optional.of(RayHit.ofCombatant(point, BukkitCombatant.of(living, ctx)));
         }
         return Optional.of(RayHit.ofBlock(point));

@@ -2151,7 +2151,11 @@ public final class RpgListeners implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (!(event.getAttacked() instanceof LivingEntity victim) || victim instanceof Player) return;
+        // A swing at a PART (an Ender Dragon's head, wing or tail; the dragon itself is not pickable) is a swing at the
+        // dragon: the damage event that follows is raised on the dragon (EnderDragonPart.hurtServer -> parentMob.hurt),
+        // so the swing is recorded against the dragon's id, or onPlayerMeleeAttack finds no swing and lands nothing.
+        if (!(io.github.butterflysmp.rpg.paper.adapter.LiveTargets.body(event.getAttacked()) instanceof LivingEntity victim)
+                || victim instanceof Player) return;
         meleeHits.record(event.getPlayer().getUniqueId(), victim.getUniqueId(),
                 event.getPlayer().getAttackCooldown());
     }
@@ -3057,6 +3061,16 @@ public final class RpgListeners implements Listener {
             adapters.log().info(String.format(java.util.Locale.ROOT, "FIGHTCRYSTAL damage refused cause=%s amount=%.3f",
                     event.getCause().name().toLowerCase(java.util.Locale.ROOT), event.getDamage()));
         }
+    }
+
+    /**
+     * NO FIREBALL FROM THE FIGHT'S DRAGON (step F9; Ben: "Only the fireball"). Cancelled, and logged, for a fight's own
+     * dragon only ({@code FightFixtures.onFireball}); any other dragon is left alone. The perched breath is not this
+     * event and stays vanilla.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onFightDragonFireball(com.destroystokyo.paper.event.entity.EnderDragonShootFireballEvent event) {
+        fights.onFireball(event);
     }
 
     /** A STATIONARY MOB TARGETS NOTHING (step F6, {@code stationary: true}): any target set on it is refused. */
