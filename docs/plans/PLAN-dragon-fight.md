@@ -1044,6 +1044,12 @@ decisive lines are quoted here.
    - READ, our source: `VanillaHealPolicy` acts only on tracked players.
    - So the store is never healed, and the vanilla mirror resets vanilla's health at the next store write.
    - INFERRED: the client draws a beam from a crystal to the dragon when it is near one.
+
+   > **CORRECTED 2026-11-19, BY THE BOOT (`GATE-fight-dragon.md`, findings 1): ITEM 9 IS WRONG.** The store IS healed.
+   > `VanillaHealPolicy` is the player arm; the mob arm, `MobHealPolicy` (M15), maps `ENDER_CRYSTAL` to REROUTE, and
+   > `healTrackedMob` heals the store by `DamageScale.toCustom`: 1 / 200 × 20000 = 100 a heal. Read at the boot:
+   > +1400 in DB1, and +100 and +300 in DB2, each while the fight's own crystal was lit. The item is left as written.
+   > The miss was reading one of two arms.
 10. **The fight world does not grief.** READ: `checkWalls` breaks blocks only with `mob_griefing` on, and the fight
     world sets it off.
 
