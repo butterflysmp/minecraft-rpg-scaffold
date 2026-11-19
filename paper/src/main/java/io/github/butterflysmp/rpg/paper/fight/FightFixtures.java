@@ -190,7 +190,7 @@ public final class FightFixtures {
     /** Builds the arena in {@code w} and starts its fight with {@code p} its first entrant. */
     private ArenaFight startArena(Player p, FightContent f, World w, boolean withDragon) {
         worlds.build(w, f.arena().shape());
-        ArenaSite site = new ArenaSite(w, f.arena().shape());
+        ArenaSite site = new ArenaSite(w, f.arena().shape(), f.arena().allDownSeconds() * 20);
         site.addEntrant(p.getUniqueId());
         FightInstance started = new FightInstance(adapters, f, mobs.get(), site, p.getName(), withDragon,
                 this::forget);
@@ -205,8 +205,9 @@ public final class FightFixtures {
     /** Saves his way back and sends him in. */
     private String join(Player p, ArenaFight a, FightContent f) {
         Location from = p.getLocation();
+        // F9d d: the mode he entered in travels with his way back.
         FightReturn back = new FightReturn(from.getWorld().getName(), from.getX(), from.getY(), from.getZ(),
-                from.getYaw(), from.getPitch());
+                from.getYaw(), from.getPitch(), p.getGameMode().name());
         if (!profiles.setFightReturn(p.getUniqueId(), back)) {
             a.site().removeEntrant(p.getUniqueId());
             return "Your way back could not be saved; not entering.";
@@ -214,8 +215,8 @@ public final class FightFixtures {
         Location entry = new Location(a.world(), a.site().centre().getX() + f.arena().entryDxBlocks(),
                 a.site().centre().getY(), a.site().centre().getZ() + f.arena().entryDzBlocks());
         p.teleportAsync(entry);
-        adapters.log().info(String.format(Locale.ROOT, "FIGHTWORLD entered player=%s world=%s return=%s",
-                p.getName(), a.world().getName(), where(back)));
+        adapters.log().info(String.format(Locale.ROOT, "FIGHTWORLD entered player=%s world=%s return=%s mode=%s",
+                p.getName(), a.world().getName(), where(back), back.entryMode()));
         return "Entered the fight in " + a.world().getName() + ".";
     }
 
@@ -229,13 +230,76 @@ public final class FightFixtures {
         return "You left the fight.";
     }
 
-    /** A death inside: he is out of the fight (his respawn sends him back: {@link #onPlayerRespawn}). */
-    public void onPlayerDeath(PlayerDeathEvent event) {
+    /**
+     * F9d a: A DEATH INSIDE MAKES HIM DOWN, NOT OUT. The death is CANCELLED (READ, {@code ServerPlayer.die}: a cancelled
+     * {@code PlayerDeathEvent} restores his health to the event's revive health and returns before the death game event,
+     * the drops and the death screen), so he keeps his inventory and has no screen to click through. On his own thread
+     * a tick later he is put in SPECTATOR for the rest of the fight (until revived, step F9e), his effects and fire
+     * cleared, and lifted above the floor if he died below it (READ: {@code out_of_world} bypasses a spectator's
+     * invulnerability, so he would be hurt there). He stays an ENTRANT, so the fight returns him at its end, but is no
+     * participant ({@code ArenaSite.takesPart}).
+     *
+     * @return true when the death was inside an arena fight (and refused); the caller then resets his combat state as
+     *         a respawn would
+     */
+    public boolean onPlayerDeath(PlayerDeathEvent event) {
         Player p = event.getPlayer();
         ArenaFight a = arenaHolding(p.getUniqueId());
-        if (a == null || p.getWorld() != a.world()) return;
-        a.site().removeEntrant(p.getUniqueId());
-        adapters.log().info("FIGHTWORLD died-inside player=" + p.getName() + " world=" + a.world().getName());
+        if (a == null || p.getWorld() != a.world()) return false;
+        event.setCancelled(true);
+        org.bukkit.attribute.AttributeInstance max = p.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+        event.setReviveHealth(max == null ? 20.0 : max.getValue());
+        if (!a.site().markDown(p.getUniqueId())) return true; // already down: the death is refused again, nothing more
+        Location at = p.getLocation();
+        org.bukkit.event.entity.EntityDamageEvent last = p.getLastDamageCause();
+        adapters.log().info(String.format(Locale.ROOT, "FIGHT down player=%s t=%d cause=%s at=%.2f %.2f %.2f",
+                p.getName(), a.fight().fightTick(), last == null ? "none" : last.getCause().name(),
+                at.getX() - a.site().centre().getX(), at.getY() - a.site().centre().getY(),
+                at.getZ() - a.site().centre().getZ()));
+        adapters.scheduler().onEntity(p, () -> spectate(p, a));
+        return true;
+    }
+
+    /** F9d a: the down player's view: spectator, no effects, no fire, above the floor. */
+    private void spectate(Player p, ArenaFight a) {
+        if (!p.isOnline() || p.getWorld() != a.world() || !a.site().isDown(p.getUniqueId())) return;
+        p.setGameMode(org.bukkit.GameMode.SPECTATOR);
+        for (org.bukkit.potion.PotionEffect e : new ArrayList<>(p.getActivePotionEffects())) {
+            p.removePotionEffect(e.getType());
+        }
+        p.setFireTicks(0);
+        p.setFallDistance(0f);
+        if (p.getLocation().getY() < a.site().centre().getY() - 1.0) {
+            Location up = a.site().centre().add(0.0, DOWN_LIFT_BLOCKS, 0.0);
+            p.teleport(up);
+            adapters.log().info("FIGHT down lifted player=" + p.getName() + " (below the floor) to C +"
+                    + DOWN_LIFT_BLOCKS);
+        }
+        adapters.log().info("FIGHT down spectating player=" + p.getName() + " mode=" + p.getGameMode());
+    }
+
+    /** F9d a: how far above C a player who went down below the floor is put (CC's choice, SEAT PLACEHOLDER). */
+    static final double DOWN_LIFT_BLOCKS = 8.0;
+
+    /** F9d: whether he is DOWN in an arena fight that runs (every damage on him is then refused). */
+    public boolean isDown(Player p) {
+        ArenaFight a = arenaHolding(p.getUniqueId());
+        return a != null && a.site().isDown(p.getUniqueId());
+    }
+
+    /**
+     * F9d e: A DOWN SPECTATOR WHO LEAVES THE FIGHT WORLD BY ANY MEANS (a spectator teleport, a command) is out of the
+     * fight and is returned, in the mode he entered in. A living entrant's world change is not this rule's.
+     */
+    public void onWorldChange(Player p, World from) {
+        for (ArenaFight a : arenas.values()) {
+            if (a.world() != from || !a.fight().running() || !a.site().isDown(p.getUniqueId())) continue;
+            a.site().removeEntrant(p.getUniqueId());
+            adapters.log().info("FIGHTWORLD left player=" + p.getName() + " world=" + from.getName()
+                    + " why=spectator-left to=" + p.getWorld().getName());
+            returnPlayer(p, "spectator-left");
+            return;
+        }
     }
 
     /** A respawn with a return pending and no fight holding him: he respawns at his return location. */
@@ -246,6 +310,7 @@ public final class FightFixtures {
         if (back.isEmpty()) return;
         Location to = locationOf(back.get());
         event.setRespawnLocation(to);
+        restoreMode(p, back, "died");
         profiles.clearFightReturn(p.getUniqueId());
         adapters.log().info("FIGHTWORLD returned player=" + p.getName() + " to=" + where(back.get()) + " why=died");
     }
@@ -281,10 +346,27 @@ public final class FightFixtures {
     private void returnPlayer(Player p, String why) {
         Optional<FightReturn> back = profiles.fightReturn(p.getUniqueId());
         Location to = back.map(this::locationOf).orElse(Bukkit.getWorlds().getFirst().getSpawnLocation());
+        restoreMode(p, back, why);
         p.teleportAsync(to);
         profiles.clearFightReturn(p.getUniqueId());
         adapters.log().info("FIGHTWORLD returned player=" + p.getName() + " to="
                 + back.map(FightFixtures::where).orElse("spawn (no return saved)") + " why=" + why);
+    }
+
+    /**
+     * F9d d: HIS MODE ON THE WAY HOME. With a return saved, the mode he entered in ({@link FightReturn#restoreMode}:
+     * never spectator, and survival when none was saved). With none saved, only a spectator is changed, to survival: he
+     * must never be left in spectator in the normal world. Logged when it changes anything.
+     */
+    private void restoreMode(Player p, Optional<FightReturn> back, String why) {
+        org.bukkit.GameMode want;
+        if (back.isPresent()) want = org.bukkit.GameMode.valueOf(back.get().restoreMode());
+        else if (p.getGameMode() == org.bukkit.GameMode.SPECTATOR) want = org.bukkit.GameMode.SURVIVAL;
+        else return;
+        org.bukkit.GameMode was = p.getGameMode();
+        if (was == want) return;
+        p.setGameMode(want);
+        adapters.log().info("FIGHTWORLD mode player=" + p.getName() + " from=" + was + " to=" + want + " why=" + why);
     }
 
     private Location locationOf(FightReturn r) {
@@ -353,12 +435,14 @@ public final class FightFixtures {
             }
             if (now) {
                 Optional<FightReturn> back = profiles.fightReturn(p.getUniqueId());
+                restoreMode(p, back, "end-disable"); // F9d d: a server stop sends him home in his entry mode too
                 p.teleport(back.map(this::locationOf).orElse(Bukkit.getWorlds().getFirst().getSpawnLocation()));
                 profiles.clearFightReturn(p.getUniqueId());
                 adapters.log().info("FIGHTWORLD returned player=" + p.getName() + " why=end-disable");
             } else if (entrant || profiles.fightReturn(p.getUniqueId()).isPresent()) {
                 returnPlayer(p, "end");
             } else {
+                restoreMode(p, Optional.empty(), "end-not-entrant"); // F9d d: never left in spectator at home
                 p.teleportAsync(Bukkit.getWorlds().getFirst().getSpawnLocation());
                 adapters.log().info("FIGHTWORLD returned player=" + p.getName() + " to=spawn why=end-not-entrant");
             }

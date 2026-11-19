@@ -82,7 +82,10 @@ final class BukkitFightPort implements RingFixture.Port {
 
     @Override
     public void draw(List<UUID> viewers, List<double[]> points) {
-        for (UUID id : viewers) {
+        // F9d b: a down player still sees the ring.
+        java.util.Set<UUID> all = new java.util.LinkedHashSet<>(viewers);
+        all.addAll(downWatchers());
+        for (UUID id : all) {
             Player p = Bukkit.getPlayer(id);
             if (p == null) continue;
             for (double[] pt : points) {
@@ -122,10 +125,23 @@ final class BukkitFightPort implements RingFixture.Port {
     @Override
     public void tell(String line) {
         Component text = Component.text(line, NamedTextColor.GOLD);
-        for (RingFixture.Participant p : participants()) {
-            Player player = Bukkit.getPlayer(p.id());
+        java.util.Set<UUID> all = new java.util.LinkedHashSet<>();
+        for (RingFixture.Participant p : participants()) all.add(p.id());
+        all.addAll(downWatchers()); // F9d b: a down player still reads the fight's chat
+        for (UUID id : all) {
+            Player player = Bukkit.getPlayer(id);
             if (player != null) player.sendMessage(text);
         }
+    }
+
+    /** F9d b: the down players still in this fight's world, who watch the ring, the bar and the chat. */
+    public List<UUID> downWatchers() {
+        List<UUID> out = new ArrayList<>();
+        for (UUID id : site.downed()) {
+            Player p = Bukkit.getPlayer(id);
+            if (p != null && p.getWorld() == world) out.add(id);
+        }
+        return out;
     }
 
     // --- step F7: the crystals --------------------------------------------------------------------------------------

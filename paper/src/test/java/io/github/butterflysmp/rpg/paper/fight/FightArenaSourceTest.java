@@ -80,9 +80,11 @@ class FightArenaSourceTest {
         for (String needle : new String[] {"World.Environment.NORMAL", "new EmptyGenerator()", ".forcedSpawnPosition(",
                 "GameRules.SPAWN_MOBS, false", "GameRules.MOB_GRIEFING, false", "GameRules.ADVANCE_TIME, false",
                 "GameRules.ADVANCE_WEATHER, false", "world.setTime(arena.timeOfDayTicks())", "world.setStorm(false)",
-                "GameRules.KEEP_INVENTORY, true", "GameRules.IMMEDIATE_RESPAWN, true", "folder.resolve(MARKER)"}) {
+                "GameRules.KEEP_INVENTORY, true", "folder.resolve(MARKER)"}) {
             assertTrue(create.contains(needle), "create sets " + needle);
         }
+        // F9d c: a death inside is cancelled and he goes down, so the immediate respawn is no longer set.
+        assertTrue(!create.contains("GameRules.IMMEDIATE_RESPAWN"), "IMMEDIATE_RESPAWN is not set: " + create);
     }
 
     @Test
@@ -139,7 +141,8 @@ class FightArenaSourceTest {
     @Test
     void theListenersHandOverDeathRespawnAndQuit() throws IOException {
         String l = code(LISTENERS);
-        assertTrue(body(l, "public void onPlayerDeath(PlayerDeathEvent event)").contains("fights.onPlayerDeath(event);"));
+        assertTrue(body(l, "public void onPlayerDeath(PlayerDeathEvent event)")
+                .contains("if (fights.onPlayerDeath(event)) onDowned(event.getPlayer());"));
         assertTrue(body(l, "public void onPlayerRespawn(PlayerRespawnEvent event)").contains("fights.onPlayerRespawn(event);"));
         assertTrue(body(l, "public void onQuit(PlayerQuitEvent event)").contains("fights.onQuit(event.getPlayer());"));
     }

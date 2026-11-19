@@ -66,7 +66,7 @@ public final class FightLoader {
                         + "every %.2f blocks at %s, row shift %.2f, turn %.2f/s %s, every %d ticks; mage '%s' refused %s, "
                         + "landing lightning %s; "
                         + "crystals at %.1f, %.1f up, lit %s; participants within %.1f; arena at (%d, %d) floor y %d, "
-                        + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f), environment %s; "
+                        + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f), environment %s, all down %d s; "
                         + "dragon '%s' "
                         + "Mages below %s, win return %d ticks, bar %s, bite %.1f, wing %.1f, breath %.1f/s, one contact hit per %d ticks",
                 f.id(), s.borderRadiusBlocks(), s.mageRingRadiusBlocks(), s.fastCloseBlocksPerSecond(),
@@ -80,7 +80,7 @@ public final class FightLoader {
                 f.arena().shape().discRadius(), f.arena().shape().discThickness(), f.arena().shape().pillarCount(),
                 f.arena().shape().pillarWidth(), f.arena().shape().pillarRingRadius(),
                 f.arena().shape().pillarTopAboveFloor(), f.arena().timeOfDayTicks(), f.arena().entryDxBlocks(),
-                f.arena().entryDzBlocks(), f.arena().environment().fileName(), f.dragon().mob(), f.dragon().mageThresholds(), f.dragon().winReturnTicks(),
+                f.arena().entryDzBlocks(), f.arena().environment().fileName(), f.arena().allDownSeconds(), f.dragon().mob(), f.dragon().mageThresholds(), f.dragon().winReturnTicks(),
                 f.dragon().bossBarColor(), f.dragon().attacks().bite(), f.dragon().attacks().wing(),
                 f.dragon().attacks().breathPerSecond(), f.dragon().attacks().contactHitIntervalTicks());
     }
@@ -220,7 +220,9 @@ public final class FightLoader {
         else if ("normal".equals(env)) environment = FightContent.Environment.NORMAL;
         else throw new IllegalArgumentException("arena.environment must be 'end' or 'normal'"
                 + (env == null ? ", and it is missing" : ", got '" + env + "'"));
-        return new FightContent.Arena(shape, time, dx, dz, environment);
+        int allDown = whole(a, "all_down_seconds");
+        if (allDown < 0) throw new IllegalArgumentException("arena.all_down_seconds must be 0 or more, got " + allDown);
+        return new FightContent.Arena(shape, time, dx, dz, environment, allDown);
     }
 
     /** {@code <prefix>_sound}, {@code <prefix>_volume}, {@code <prefix>_pitch}; the sound must be known. */

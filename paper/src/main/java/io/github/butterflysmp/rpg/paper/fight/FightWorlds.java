@@ -168,12 +168,11 @@ public final class FightWorlds {
         world.setGameRule(org.bukkit.GameRules.MOB_GRIEFING, false);
         world.setGameRule(org.bukkit.GameRules.ADVANCE_TIME, false);
         world.setGameRule(org.bukkit.GameRules.ADVANCE_WEATHER, false);
-        // CC's choices for Ben (not in the brief), flagged in GATE-fight-arena.md. KEEP_INVENTORY: what a death here
-        // drops would be deleted with the world, so nothing is dropped. IMMEDIATE_RESPAWN: a death here sends him
-        // straight back to where he entered (his respawn is set there), with no death screen in a world that may be
-        // unloading.
+        // CC's choice for Ben (not in the brief), flagged in GATE-fight-arena.md. KEEP_INVENTORY: what a death here
+        // drops would be deleted with the world, so nothing is dropped. (Step F9d: an entrant's death is cancelled and
+        // he goes DOWN instead, so there is no death screen to skip; IMMEDIATE_RESPAWN, which skipped it, is no longer
+        // set. The rule stays at vanilla's default, false, in a fight world.)
         world.setGameRule(org.bukkit.GameRules.KEEP_INVENTORY, true);
-        world.setGameRule(org.bukkit.GameRules.IMMEDIATE_RESPAWN, true);
         // An END world's time is fixed by its type (READ: the_end's has_fixed_time), so the hour is a NORMAL world's only.
         if (!end) world.setTime(arena.timeOfDayTicks());
         world.setStorm(false);
