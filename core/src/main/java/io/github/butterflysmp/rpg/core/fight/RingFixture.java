@@ -82,6 +82,17 @@ public final class RingFixture {
     private MageCycle.Phase lastPhase = MageCycle.Phase.IDLE;
     private int lastCrystals;
     private MageCycle.Snapshot lastSnapshot;
+    private long slowStartTick = -1;
+    private int strikeLimit;
+
+    /**
+     * THE PLAY ROW'S SAFETY (GATE-fight-mage.md, MQ8): when any participant's consecutive strikes reach {@code limit},
+     * the fixture stops after that strike, so a player healed between strikes is never handed one larger than the
+     * {@code limit}-th. 0 means no limit (every other use).
+     */
+    public void strikeLimit(int limit) {
+        this.strikeLimit = Math.max(0, limit);
+    }
 
     public RingFixture(FightSettings settings, RingLook look, double centreXBlocks, double groundYBlocks,
                        double centreZBlocks, Port port) {
@@ -123,6 +134,16 @@ public final class RingFixture {
         }
         if (ramp.isStrikeTick(fightTick) && snap.outcome() != MageCycle.Outcome.FAILED_POWERED) {
             for (Participant p : present) strike(p, snap.ring());
+            if (strikeLimit > 0) {
+                for (Participant p : present) {
+                    if (ramp.consecutiveStrikes(p.id()) >= strikeLimit) {
+                        port.log("FIGHT strike-limit t=" + fightTick + " player=" + p.name() + " k="
+                                + ramp.consecutiveStrikes(p.id()));
+                        stop();
+                        return;
+                    }
+                }
+            }
         }
     }
 
@@ -134,6 +155,8 @@ public final class RingFixture {
         lastSnapshot = snap;
         if (snap.phase() != lastPhase) {
             port.log("FIGHTPHASE t=" + fightTick + " " + lastPhase + "->" + snap.phase());
+            if (snap.phase() == MageCycle.Phase.SLOW_CLOSE) slowStartTick = fightTick;
+            if (snap.phase() == MageCycle.Phase.FAST_CLOSE) slowStartTick = -1;
             lastPhase = snap.phase();
         }
         syncCrystals(snap);
@@ -155,6 +178,11 @@ public final class RingFixture {
             port.clearCrystals();
         }
         lastCrystals = now;
+    }
+
+    /** The cycle's outcome as of the last tick: RUNNING, or how the fight failed. */
+    public MageCycle.Outcome outcome() {
+        return lastSnapshot == null ? MageCycle.Outcome.RUNNING : lastSnapshot.outcome();
     }
 
     /** Whether a hit on the Mage lands now: the cycle's own flag, true exactly in the slow close (step F6). */
@@ -207,7 +235,9 @@ public final class RingFixture {
         if (stopped) return;
         cycle.mageDied(fightTick);
         MageCycle.Snapshot snap = cycle.tick(fightTick);
-        port.log("FIGHT die t=" + fightTick + " phase=" + snap.phase());
+        port.log("FIGHT die t=" + fightTick + " phase=" + snap.phase() + " slow_close_started="
+                + (slowStartTick < 0 ? "never" : "t=" + slowStartTick)
+                + (slowStartTick < 0 ? "" : " ticks_in_slow_close=" + (fightTick - slowStartTick)));
         notePhase(snap);
     }
 

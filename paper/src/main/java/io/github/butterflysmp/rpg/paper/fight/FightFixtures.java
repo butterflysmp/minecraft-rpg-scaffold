@@ -80,6 +80,19 @@ public final class FightFixtures {
     private LivingEntity mage;
     private Location magePin;
 
+    /**
+     * THE PLAY ROW (GATE-fight-mage.md, MQ8): Ben fights the Mage with his own weapon. While on, every participant is
+     * healed to full every {@link #KEEP_ALIVE_TICKS} through the store, the core fixture stops after any participant's
+     * {@link #PLAY_STRIKE_LIMIT}-th consecutive strike, and the fixture ends itself at the Mage's death or a failure.
+     */
+    private boolean play;
+
+    /** Heal every this many ticks in play (the brief's 10). */
+    static final int KEEP_ALIVE_TICKS = 10;
+
+    /** In play the fixture stops after a third consecutive strike: 20, 40, 80 before armour, each under a 100 maximum. */
+    static final int PLAY_STRIKE_LIMIT = 3;
+
     /** {@code fight} and {@code mobs} are read at each start, so a content reload is picked up by the next fixture. */
     public FightFixtures(AdapterContext adapters, Supplier<Optional<FightContent>> fight, Supplier<MobRegistry> mobs) {
         this.adapters = adapters;
@@ -118,10 +131,22 @@ public final class FightFixtures {
         fixture = ring;
         adapters.log().info(String.format(Locale.ROOT, "FIGHT start world=%s centre=%.1f %.1f %.1f by=%s",
                 world.getName(), cx, groundY, cz, caller.getName()));
+        play = false;
         loop = RepeatingTask.start(new RegionTarget(centre, ring), 1, "fight-fixture", () -> {
             ring.tick();
             pinMage();
-            return !ring.stopped();
+            if (play) keepAlive(ring);
+            if (ring.stopped()) {
+                finish("the fixture stopped itself");
+                return false;
+            }
+            if (play && ring.outcome() != MageCycle.Outcome.RUNNING) {
+                adapters.log().info("FIGHT play ended t=" + ring.fightTick() + " reason=" + ring.outcome());
+                probe();
+                finish("play-" + ring.outcome());
+                return false;
+            }
+            return true;
         }, () -> { });
         return String.format(Locale.ROOT, "Fight fixture started at %.1f %.1f %.1f (ring 48 about you).",
                 cx, groundY, cz);
@@ -146,10 +171,30 @@ public final class FightFixtures {
 
     /** {@code land random}: a uniformly random standable spot within the maximum landing distance. */
     public String landRandom() {
+        return landRandom(0.0);
+    }
+
+    /**
+     * {@code play <min>}: the play row. The Mage lands at a random standable spot at least {@code min} blocks from C;
+     * then the keep-alive heal, the strike limit and the self-ending (see {@link #play}).
+     */
+    public String play(double minDistanceBlocks) {
+        if (!running()) return "No fight fixture is running.";
+        String landed = landRandom(minDistanceBlocks);
+        if (mage == null) return landed;
+        play = true;
+        fixture.strikeLimit(PLAY_STRIKE_LIMIT);
+        adapters.log().info("FIGHT play on t=" + fixture.fightTick() + " keepalive=" + KEEP_ALIVE_TICKS
+                + " strike_limit=" + PLAY_STRIKE_LIMIT);
+        return landed + " PLAY: fight him with your own weapon.";
+    }
+
+    private String landRandom(double minDistanceBlocks) {
         if (!running()) return "No fight fixture is running.";
         double max = fight.get().map(f -> f.settings().maxLandingDistanceBlocks()).orElse(0.0);
         for (int i = 0; i < RANDOM_TRIES; i++) {
             double[] p = RandomLanding.pick(max, random);
+            if (Math.hypot(p[0], p[1]) < minDistanceBlocks) continue;
             if (floorAt(centre.getX() + p[0], centre.getZ() + p[1]).isPresent()) return land(p[0], p[1]);
         }
         adapters.log().info("FIGHT land t=" + fixture.fightTick() + " random result=REFUSED_NO_GROUND after "
@@ -175,11 +220,14 @@ public final class FightFixtures {
         if (mage != null && mage.isValid()) {
             at = mage.getLocation();
             var id = mage.getUniqueId();
-            line.append(String.format(Locale.ROOT, " mage=%s at=%.2f %.2f %.2f glowing=%s ai=%s health=%.3f/%.3f",
+            boolean tracked = adapters.stats().tracks(id);
+            line.append(String.format(Locale.ROOT,
+                    " mage=%s at=%.2f %.2f %.2f glowing=%s ai=%s health=%.3f/%.3f defense=%.3f",
                     id, at.getX() - centre.getX(), at.getY() - centre.getY(), at.getZ() - centre.getZ(),
                     mage.isGlowing(), mage.hasAI(),
-                    adapters.stats().tracks(id) ? adapters.stats().current(id) : -1.0,
-                    adapters.stats().tracks(id) ? adapters.stats().max(id) : -1.0));
+                    tracked ? adapters.stats().current(id) : -1.0,
+                    tracked ? adapters.stats().max(id) : -1.0,
+                    tracked ? adapters.stats().defenseValue(id) : -1.0));
         } else {
             line.append(" mage=none");
         }
@@ -198,8 +246,16 @@ public final class FightFixtures {
     /** Ends the running fixture, if any, removing the Mage and every crystal. Returns what it did. */
     public String stop(String why) {
         if (!running()) return "No fight fixture is running.";
+        if (play) probe();
         fixture.stop();
         if (loop != null) loop.cancel();
+        finish(why);
+        return "Fight fixture stopped.";
+    }
+
+    /** The one cleanup every ending shares: the Mage and every crystal removed, the state forgotten. */
+    private void finish(String why) {
+        if (fixture == null) return;
         removeMage();
         if (port != null) port.clearCrystals();
         adapters.log().info("FIGHT ended reason=" + why);
@@ -208,7 +264,17 @@ public final class FightFixtures {
         loop = null;
         world = null;
         centre = null;
-        return "Fight fixture stopped.";
+        play = false;
+    }
+
+    /** Every participant healed to full through the store (the play row's keep-alive). */
+    private void keepAlive(RingFixture ring) {
+        if (ring.fightTick() % KEEP_ALIVE_TICKS != 0 || port == null) return;
+        for (RingFixture.Participant p : port.participants()) {
+            if (adapters.stats().tracks(p.id())) {
+                adapters.stats().heal(p.id(), adapters.stats().max(p.id()), p.id(), true);
+            }
+        }
     }
 
     /**
@@ -225,6 +291,12 @@ public final class FightFixtures {
             mage = null;
             magePin = null;
             fixture.mageDie();
+            if (play) {
+                adapters.log().info("FIGHT play ended t=" + fixture.fightTick() + " reason=mage-died");
+                fixture.stop();
+                if (loop != null) loop.cancel();
+                finish("play-mage-died");
+            }
             return;
         }
         Player killer = dead.getKiller();

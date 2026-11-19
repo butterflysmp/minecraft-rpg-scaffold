@@ -3026,6 +3026,10 @@ public final class RpgListeners implements Listener {
         if (event.getEntity() instanceof org.bukkit.entity.EnderCrystal crystal
                 && crystal.getPersistentDataContainer().has(adapters.keys().fightCrystal)) {
             event.setCancelled(true);
+            // The witness that a hit or a blast REACHED the crystal (GATE-fight-mage.md MG7): without it, "the crystal
+            // is still there" reads the same whether the blast hit it or fell short.
+            adapters.log().info(String.format(java.util.Locale.ROOT, "FIGHTCRYSTAL damage refused cause=%s amount=%.3f",
+                    event.getCause().name().toLowerCase(java.util.Locale.ROOT), event.getDamage()));
         }
     }
 

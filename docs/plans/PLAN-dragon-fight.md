@@ -740,6 +740,41 @@ writing.*
 - **Every selftest run's end stops a fixture a row left running** (one `SELFTEST RUN fight-fixture …` line), so an
   aborted row cannot leave lightning striking the player; plugin disable stops it too.
 
+### 6.3 F6 + F7 AS BUILT (`feat/fight-mage`, 2026-11-18): WHAT THE CODE SHOWED
+
+*The Mage is `content/mobs/dark_mage.yml`, his gate core's `DamageGate`, the crystals the fixture's port. The gate is
+`docs/gates/GATE-fight-mage.md`, NOT RUN at this writing.*
+
+- **The gate has ONE custom choke point and ONE vanilla one, and both are needed.**
+  - The custom one: every route to a mob's custom health ends in `BukkitCombatant.Handle.applyDamage` (a read-only
+    survey of every caller), and the gate is asked there before the store.
+  - Why the vanilla one too: `/kill`, the void and **mob-on-mob melee never reach the store** (`VanillaDamagePolicy`
+    passes `KILL` and `VOID`; no handler reroutes a mob's melee on a mob). So `RpgListeners.onGatedDamage` cancels any
+    vanilla damage on him at LOWEST.
+  - **While he IS damageable, a mob's melee on him lands on vanilla health, not the store.** That is UNVERIFIED in game
+    and a hazard for when the fight has mobs near him.
+- **Knockback cannot be stopped by the attribute alone.** Our own pushes (`applyKnockback`, `applyImpulse`, pulls) set
+  a velocity and ignore knockback resistance. So the fixture **pins** the Mage's x and z each tick. The real fight
+  needs the same pin, or an "anchored" check at every push site.
+- **"Stationary" removes every goal** (Paper's `MobGoals.removeAllGoals`, read) and keeps AI on, so gravity acts.
+  `NoAI` was not used: it would have to be READ whether it stops gravity, and goals-off needs no such question.
+- **Non-persistence, READ:** `CraftEntity.setPersistent` writes `Entity.persist`, and `Entity.saveAsPassenger` writes
+  nothing when it is false (its force flag aside). The Mage and every crystal are not persisted.
+- **A closed ring puts its crystals out.** `MageCycle`'s CLOSED snapshot reports 0 crystals, and the fixture follows
+  the snapshot. POWERED keeps them. **A seat choice; the brief named only POWERED.**
+- **LINGER cannot see a crystal**, which is not a projectile, a cloud or a marker. The gate's witness is a
+  PROBE_ENTITIES of `end_crystal` within 48 at each row's end; a spot is 41.8 from C.
+- **The selftest's ATTACK reaches only 16 blocks**, and every crystal is further. MG7 hits one with vanilla's
+  `/damage … player_attack by @s` instead.
+- **POWERED needs fifteen spaced kills at Ben's numbers.** The slow close lasts 400 ticks against 800 for ten crystals,
+  so the ring must gain 12 blocks or more. MG8 stages it and shows the arithmetic.
+- **The play row cannot promise "cannot die" by healing alone.** A sixth consecutive strike (640 before armour)
+  outruns any heal. So the fixture's play mode stops after a third consecutive strike: 80 at most, each on a bar
+  healed within 10 ticks.
+- **The wall at Ben's four rows costs 6040 packets a second per player** at radius 48, under the 6500 line.
+- **The armour path's overflow is guarded in the ramp** (`StrikeRamp.CEILING_DAMAGE` = `MAX_VALUE / 200`, executed
+  finite at defences 0 to `MAX_VALUE`). `Defense.applyDefense` is not reordered.
+
 ---
 
 ## 7. OPEN, FOR BEN

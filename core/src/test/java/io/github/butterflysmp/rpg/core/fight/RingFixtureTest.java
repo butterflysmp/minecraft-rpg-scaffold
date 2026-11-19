@@ -292,6 +292,32 @@ class RingFixtureTest {
     }
 
     @Test
+    void theStrikeLimitStopsTheFixtureAfterTheLimitthStrike() {
+        FakePort port = new FakePort();
+        port.place(ANA, "ana", CX + 60.0, CZ);
+        RingFixture f = fixture(port);
+        f.strikeLimit(3);
+        run(f, 119);
+        assertFalse(f.stopped(), "two strikes: still running");
+        f.tick(); // t = 120, his third
+        assertEquals("STRIKE t=120 player=ana k=3 damage=80.000 outside", port.last("STRIKE"));
+        assertEquals("FIGHT strike-limit t=120 player=ana k=3", port.last("FIGHT strike-limit"));
+        assertTrue(f.stopped(), "stopped after the third");
+        assertEquals(3, port.damage.size(), "and no fourth is ever dealt");
+    }
+
+    @Test
+    void theDeathLineCarriesTheTicksSinceTheSlowCloseStarted() {
+        FakePort port = new FakePort();
+        RingFixture f = fixture(port);
+        f.land(0.0, 0.0);
+        run(f, 200); // slow close from 144
+        f.mageDie();
+        assertEquals("FIGHT die t=200 phase=RETURNING slow_close_started=t=144 ticks_in_slow_close=56",
+                port.last("FIGHT die"));
+    }
+
+    @Test
     void aLandingIsLoggedWithItsResult() {
         FakePort port = new FakePort();
         RingFixture f = fixture(port);
