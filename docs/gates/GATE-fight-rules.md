@@ -183,3 +183,124 @@ ran in an END world checked inert. **No prediction above was edited.**
    - Instrument to add: the cloud's apply event (`AreaEffectCloudApplyEvent`), naming who it applied to.
 5. **AND THE BITE DID NOT LAND IN EB3** (`GATE-fight-end.md`), whose touch read `part=head at=-0.85 18.49 -7.24`: the
    same staging as RA3, and none of RA3's eight hits. Item 3's instrument answers both.
+
+---
+
+## THE SECOND BOOT (the seat's fix brief and its addendum, 2026-11-19): THE FIXES, AND RA3R2, RA4R2, RA5R2, RB1
+
+**Status of this section: NOT RUN.** Written before the second boot; `GATE-fight-end.md` carries its one R0 and run
+sheet. **RA1 and RA2 are not re-run** (read as predicted). The first boot's readings above stand as read.
+
+> **THE SEAT'S OWN MISS, RECORDED AT ITS RULING (2026-11-19).** RA3's prediction said the head "hurts … each tick".
+> The seat read it, did not do the arithmetic against his health, approved the boot, and told Ben nothing in that run
+> would kill him. CC wrote the same sentence and did not do it either. **Fix E below is the arithmetic, for every row
+> that can hurt him.**
+
+> **BEN'S OWN BOOT, 13:09 (the seat's ruling, 2026-11-19).**
+> - It ran `fight-end` only, not this file's rows.
+> - Its readings stand, recorded in `GATE-fight-end.md` as a boot OUTSIDE the procedure: no backup, no "booting
+>   now", no R0 word; R0 read afterwards.
+> - It is not the second boot. That boot is still owed, by the checklist.
+
+### WHAT WAS READ FOR THE FIXES, EACH MARKED
+
+- **A. Why two bites landed in one tick** (READ, the pinned server jar):
+  - `EnderDragon.aiStep` calls `hurt` for the head's box and again for the neck's every tick the dragon is not
+    flinching: **two calls, not one event raised twice**.
+  - `LivingEntity.hurtServer`'s invulnerability window refuses a hit only if it is no greater than `lastHurt`, and
+    then sets `lastHurt` from the event's FINAL damage. **Our melee rider's 0.01 token is that final damage**, so
+    every later 10 passes it.
+  - Every mob's melee rider tokens this way. It shows on the dragon because the dragon calls every tick.
+  - **The fix holds either way:** one contact hit, bite or wing, per `contact_hit_interval_ticks` (content, 20, the
+    seat's placeholder, Ben's to change) per player (core's `ContactHitWindow`). A hit inside the window is not priced
+    and its vanilla event is CANCELLED (no vanilla damage). The wing's push is not an event (READ: `knockBack` pushes
+    before it hurts) and stays. The suppressed ones are counted: one `DRAGONATTACK suppressed player=<n> count=<k>
+    window=<from>..<to>` per window that suppressed any.
+- **The name follows the part that DEALT it** (the addendum). READ:
+  - the head and the neck hurt for 10, a wing for 5;
+  - `Player.hurtServer` scales a mob attack by difficulty: Easy `min(f/2 + 1, f)`, Normal `f`, Hard `f x 3/2`.
+
+  So vanilla's own amount names the attack first, and the boxes only if it names neither. The rerun's `vanilla=5.000`
+  "bite" was a wing that he was also in the head's box for.
+- **B. Where the damage defers** (READ, our source):
+  - `BukkitCombatant.applyDamage` queues the hit on the victim's own scheduler (`onEntity`), so it is applied on a
+    later tick than it was priced. That is how RA3's last two bites landed at home.
+  - **The fix:** `CombatantHandle.applyDamageIf(condition, refused, …)`, whose Paper adapter asks the condition INSIDE
+    the deferral, in the same task as the damage.
+  - Every fight source passes "a participant of THIS fight, in its world" (`ArenaSite.takesPart`): the dragon's
+    contact hit, its breath, the ring's strike, the powered kill.
+  - A refusal logs `FIGHTDAMAGE refused t=<t> player=<n> source=<s> amount=<a> why=not-in-this-fight`.
+- **C. The staged wing that missed:**
+  - READ, `EnderDragon.knockBack`: a wing always pushes. It hurts (5) only when the dragon is not sitting **and** the
+    victim's last-hurt-by-mob timestamp is less than his own tick count minus 2.
+  - RA4's touch put him at the wing's box's centre, 3 below its bottom: inside the attack box by the READ geometry.
+  - **No API reads the timestamp**, so whether the condition failed (INFERRED possible: RA4 followed RA3's death,
+    after which his entity is new) cannot be read on a server. The wing lands in play (the rerun: eight times).
+  - **The touch line now prints his box, the attack box and whether they overlap.**
+- **C. The staged breath that missed (RA5, the first EB4):**
+  - READ, `AreaEffectCloud.serverTick`: it does nothing while its age is under its wait (20). After that, every 5
+    ticks of age, it takes the living things in its bounding box. It skips one already in its victims map, one not
+    affected by potions, and one beyond its radius horizontally; then it raises `AreaEffectCloudApplyEvent`.
+  - Bukkit raises the hit as `ENTITY_ATTACK` with the cloud as damager (READ at F9b).
+  - So a player put onto it is applied to at the first multiple of 5 of its age past 20, then at most every 20 (its
+    reapplication delay). By that path both first-boot stagings should have been hit.
+  - **Why they were not is not in the first boot's log.** The rerun's EB4 was hit three times.
+  - **The new `DRAGONBREATH apply …` line prints each application, whom it took, and every player's distance from
+    it.**
+- **F. The breath's push** (READ, `LivingEntity.hurtServer`):
+  - the knockback is applied only after `actuallyHurt` succeeds, and the rider's token is a hurt that succeeds;
+  - **the breath's vanilla event is now CANCELLED instead of tokened**, so no push. Our hit lands with the store's own
+    hurt flash.
+  - The bite's and the wing's pushes are untouched.
+  - **Witness:** `DRAGONBREATH velocity t=<t> player=<n> at_hit=<v> next_tick=<v>`, his server-side velocity. INFERRED
+    that a vanilla knockback shows there; his eyes confirm.
+- **G. The first Mage's "self-attributed environmental 300" at t=1070 (the rerun's EB5):**
+  - It was our store's reroute of a VANILLA environmental hit on him. The dealer is his own id and the element null:
+    `RpgListeners.onEnvironmentalDamage`, proportional to his maximum (`DamageScale.toCustom`).
+  - 300 of his 6000 is 5%. INFERRED: one vanilla point of fall damage on a vanilla bar of 20.
+  - Its cause: INFERRED, the dragon's wing push (not an event, not cancelled by the `DRAGONMAGE` fix, which cancels
+    only the dragon's damage event). It threw him and he took fall damage landing; `FIGHT mage` pins his x and z, not
+    y. The 38 `DRAGONMAGE` lines that tick range show the dragon was on him.
+  - **Not ours to fix in this step:** the reroute is the designed mob rule. Whether the dragon may push its own Mage
+    is a question for Ben.
+
+### E. THE ARITHMETIC: EVERY ROW THAT CAN HURT HIM, AT DEFENCE 0, AGAINST 100 HEALTH
+
+The largest hit after armour at defence 0 is the hit itself.
+
+| row | what can land in it | the most that can land | against 100 |
+|---|---|---|---|
+| RA3R2 | contact hits for the 4 ticks he is in the head's box; the window is 20 | ONE contact hit, at most 80 (a bite) | **80 < 100** |
+| RA4R2 | the same, in a wing's box | ONE contact hit, at most 80 | **80 < 100** |
+| RA5R2 | the breath for the 35 ticks he is on it, every 20 at most | TWO applications, 2 x 30 = 60 | **60 < 100** |
+| RB1 | contact hits for the 1 tick before he leaves; after it, fix B refuses all | ONE contact hit, at most 80 | **80 < 100** |
+
+**Also checked for each row:**
+- No ring strike: no Mage lands, so every strike is `k=0 damage=0.000 inside`, and the floor spot is 20 from the
+  centre, inside the 48 border.
+- No fall: slow falling, and the `tp` is to the floor.
+- **Every row sets `death_rules` and heals first**, so even a death could not drop his inventory.
+
+### RA3R2 — the bite, ONCE in a 4-tick touch (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) **`DRAGON touch t=<T> part=head at=<x y z> phase=HOVER box=<his> attack_box=<the head's, inflated 1> inside=true`**. (2) **Exactly ONE `DRAGONATTACK t=<t> attack=bite player=BaronVonYeetus base=80.000 gs=100 amount=80.000 vanilla=10.000 phase=HOVER`** and **exactly one `HURT before=80.000 after=72.727 defense=10.000 dealer=<the dragon's id> dealerType=ender_dragon/ender_dragon attack=bite`**: after = 80 x 100 / (100 + D) at his defence D, which read 10. (3) At the window's close or the fight's end, **`DRAGONATTACK suppressed player=BaronVonYeetus count=<k> window=<t>..<t+19>`** with k at least 1: the neck's call in the same tick, and later ticks while he stayed in the box. (4) No `FIGHTDAMAGE refused` (he is inside throughout). (5) The end. **If `inside=false`, the touch missed the box and the row says so** | `ContactHitWindowTest`, `DragonAttacksTest`, `FightRulesSourceTest` *aContactHitInsideTheWindow…* | |
+
+### RA4R2 — the wing, at most once (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) **`DRAGON touch t=<T> part=wing … box=<his> attack_box=<the wing's, inflated (4,2,4), moved down 2> inside=true`**. (2) **At most ONE contact hit**, and if it lands: **`DRAGONATTACK … attack=wing … amount=40.000 vanilla=5.000 phase=HOVER`**, `HURT before=40.000 after=36.364 … attack=wing`; any further hit in the window counted in a `DRAGONATTACK suppressed` line. **PREDICTED TOO, AND NOT A FAILURE OF THE FIX: NO WING HIT AT ALL**, if vanilla's own condition (his last-hurt-by-mob time against his tick count) is not met; that cannot be read on a server, and the wing's witness is then Ben's fight. (3) The end | as RA3R2 | |
+
+### RA5R2 — the breath: its applications 20 ticks apart, 30 each; no push (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) `DRAGON phase-set … phase=BREATH_ATTACK now=BREATH_ATTACK`; `DRAGON to-breath t=<t> cloud=<c> … radius=5.00 interval=20`. (2) **Each application: `DRAGONBREATH apply t=<t> cloud=<c> age=<a> radius=<r> affected=[BaronVonYeetus] players=[BaronVonYeetus(xz=<d> dy=<h>)]`**, a at least 20, and the next 20 later. (3) For each, **`DRAGONATTACK … attack=breath … base=30.000 gs=100 amount=30.000 vanilla=3.000 phase=BREATH_ATTACK`**, `HURT before=30.000 after=27.273 … attack=breath`: **one or two**, 20 ticks apart. (4) For each, `DRAGONBREATH velocity t=<t> … at_hit=<v> next_tick=<v>`: **no horizontal push** (INFERRED reading; his eyes confirm in EB4R2). (5) **If `DRAGONBREATH apply` lines appear with `affected=[]`, the cloud found him and took him off its list, and the line's distances say why; if no apply line appears at all, the cloud never applied.** (6) The end | `DragonAttacksTest` *theBreathCosts…*, `FightRulesSourceTest` *theBreathIsCancelled…* | |
+
+### RB1 — a bite priced in the fight never lands after his return (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) `DRAGON touch t=<T> part=head … inside=true`, then a tick later `FIGHTWORLD left … why=leave` and **`FIGHTWORLD returned … why=left`**. (2) ONE of two, the order of the dragon's tick and the command within that tick not being predicted: **either** one `DRAGONATTACK … attack=bite` and one `HURT … attack=bite` BEFORE the `returned` line, **or** a `DRAGONATTACK … attack=bite` and then **`FIGHTDAMAGE refused t=<t> player=BaronVonYeetus source=dragon-contact amount=<a> why=not-in-this-fight`** (or `why=fight-gone`). (3) **IN EITHER CASE: NO `HURT` LINE AFTER `FIGHTWORLD returned`.** (4) The end | `ApplyDamageIfTest`, `FightRulesSourceTest` *everyFightDamageIsApplied…*, *theAdapterAsksTheCondition…* | |

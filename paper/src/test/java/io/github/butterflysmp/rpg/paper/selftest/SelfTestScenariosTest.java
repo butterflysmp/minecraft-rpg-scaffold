@@ -201,7 +201,10 @@ class SelfTestScenariosTest {
         // Then THE FIGHT'S RULES (GATE-fight-rules.md, step F9b, 2026-11-19), a new gate, RECOUNTED the same way on this
         // branch's tree: 25 gates, 240 keys, 25 setups, so 215: fight-rules' 5 rows (RA1-RA5) added. The control:
         // 234 + 6 = 240. 210 was this line's value.
-        assertEquals(215, loaded.rows());
+        // Then THE SECOND BOOT'S fight-rules (the seat's fix brief of 2026-11-19), RECOUNTED the same way on this branch's
+        // tree: 25 gates, 239 keys, 25 setups, so 214: RA1-RA5 retired (read), RA3R2, RA4R2, RA5R2 and RB1 in their
+        // place. The control: 240 - 5 + 4 = 239. 215 was this line's value.
+        assertEquals(214, loaded.rows());
     }
 
     /**

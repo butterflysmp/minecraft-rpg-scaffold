@@ -284,6 +284,22 @@ back with; (3) whether a hit interrupts the reviver; (4) any limit on revives. B
 - F9d and F9e: the respawn rules of d and e (down, the copy, the revive, all down).
 - Until F9d, deaths stay as they are on master.
 
+*f. Ben's own rerun of `GATE-fight-end.md` (2026-11-19, 13:09, a boot OUTSIDE the procedure; the seat: its readings
+stand). Each question as the selftest asked it, then Ben's answer, verbatim from its ASK lines:*
+
+1. "The End world: is the sky what you wanted?" — **"yes"** *(EB1)*
+2. "Is anything about the End world wrong (the music, the light, fire, the edge)? Say what, or say none." —
+   **"good"** *(EB1)*
+3. "The lightning at the Mage's landing: is it right?" — **"yes"** *(EB2)*
+4. "The dragon's bite (80) and wing (40): do they feel right?" — **"pass"** *(EB3)*
+5. "The breath, 30 a second: does it feel right?" — **"remove the knock back from it"** *(EB4)*
+6. "For one player, is the dragon's 20,000 health right, now that every phase has its Mage?" — **"yes"** *(EB5)*
+7. "What most needs to change before waves are built?" — **"nothing right now"** *(EB5)*
+
+**SEAT READINGS, each the seat's (2026-11-19):**
+- "pass" on the bite and wing is NOT STATED.
+- The 20,000 "yes" was given with 12 mana refills, in a fight that ended at 59% by his death.
+
 ---
 
 ## 2. SEAT READINGS
