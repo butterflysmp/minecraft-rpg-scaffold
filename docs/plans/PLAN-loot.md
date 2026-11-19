@@ -141,6 +141,12 @@ were then spot-checked against `git show master:`.
 
 1. **A dev command first** (`/rpg loot roll <source> [n]`): roll a source n times and print the tier counts against
    the true odds. It reads the system on a server with no gameplay change.
+   - **BUILT 2026-11-19 (the seat's queue, item 6), NOT BOOTED.** `/rpg loot roll <source|default> [count]` (at most
+     100,000) and `/rpg loot odds <source|default>` are dev only, and give nothing. The tally is pure in core
+     (`LootTally`, `LootRolls`).
+   - A dev-only example source, `dev_example_not_a_drop`, sits under `dev_sources:` and loads only on a dev server.
+     Every dev source starts `dev_`, and no real one may.
+   - Its gate is `GATE-loot-roll.md`, which boots with a later stack after #219's rebase.
 2. **A mob drop**: the next hostile mob to drop gear. It needs an `EntityDeathEvent` hook that adds an item, minted
    then rolled (enchants, gear score) as `/rpg give` is, and an answer to "which mobs, and does vanilla's drop stay".
 3. **The dragon fight's win**: today it suppresses vanilla's drops and gives nothing. It needs a source per fight

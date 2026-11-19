@@ -38,9 +38,12 @@ class SelfTestScenariosTest {
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
-                        "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template"),
+                        "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
+                        "loot-roll"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-nine gates, in boot order (fight-template LAST, the seat's queue item 2, 2026-11-19, a NEW gate"
+                "the thirty gates, in boot order (loot-roll LAST, the seat's queue item 6, 2026-11-19, a NEW gate after"
+                        + " fight-template, rebased onto it by the seat's part 2; fight-template before it, the seat's queue"
+                        + " item 2, 2026-11-19, a NEW gate"
                         + " after fight-revive; fight-revive before it, step F9e, 2026-11-19, a NEW gate after fight-down;"
                         + " fight-down before it, step F9d, 2026-11-19, a NEW gate after fight-end;"
                         + " fight-end before it, step F9c, 2026-11-19, a NEW gate after fight-rules;"
@@ -228,7 +231,10 @@ class SelfTestScenariosTest {
         // Then FD2R2 (GATE-fight-down.md, Ben's void ruling and the seat's part 2, 2026-11-19): FD2 retired (read at
         // cb821675) and FD2R2 in its place, RECOUNTED: 29 gates, 259 keys, 29 setups, so 230. The control: 259 - 1 + 1 =
         // 259. 230 was this line's value, unchanged.
-        assertEquals(230, loaded.rows());
+        // Then THE DEV ROLL COMMAND (GATE-loot-roll.md, the seat's queue item 6, 2026-11-19), a new gate, rebased onto
+        // fight-template by the seat's part 2 and RECOUNTED on this branch's tree: 30 gates, 265 keys, 30 setups, so 235:
+        // LR1 to LR5 added. The control: 259 + 6 = 265. 230 was this line's value.
+        assertEquals(235, loaded.rows());
     }
 
     /**
