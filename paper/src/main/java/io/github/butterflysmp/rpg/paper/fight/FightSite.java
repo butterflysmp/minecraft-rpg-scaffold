@@ -70,6 +70,11 @@ public interface FightSite {
         return java.util.Set.of();
     }
 
+    /** F9e e: how many times he has been revived in this fight (only the arena revives). */
+    default int revives(java.util.UUID id) {
+        return 0;
+    }
+
     /**
      * F9d c: ALL DOWN, asked once a tick with how many participants are alive inside. Only the arena can fail this way.
      */

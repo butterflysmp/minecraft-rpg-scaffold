@@ -161,6 +161,9 @@ public final class MobNameplateManager implements HealthListener {
         // it is never in the store, MobDeathSystem can never kill it, and nothing a death pays can ever be paid for it.
         // Every caller (the add event, the melee rider, /rpg mobdamage) comes through here.
         if (mob.getPersistentDataContainer().has(keys.mobShot)) return null;
+        // F9e a: a down player's copy is never seeded either, for the same reasons: no custom health, no gear score, no
+        // nameplate, so nothing that reads the store can ever see it.
+        if (io.github.butterflysmp.rpg.paper.fight.FightCopies.isCopy(mob)) return null;
         String mobId = mob.getPersistentDataContainer().get(keys.mobId, PersistentDataType.STRING);
         boolean custom = MobSeeding.isCustom(mobs, mobId);
         boolean hostile = MobClassifier.isHostile(mob);

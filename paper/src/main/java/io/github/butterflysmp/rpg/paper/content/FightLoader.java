@@ -68,7 +68,8 @@ public final class FightLoader {
                         + "crystals at %.1f, %.1f up, lit %s; participants within %.1f; arena at (%d, %d) floor y %d, "
                         + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f), environment %s, all down %d s; "
                         + "dragon '%s' "
-                        + "Mages below %s, win return %d ticks, bar %s, bite %.1f, wing %.1f, breath %.1f/s, one contact hit per %d ticks",
+                        + "Mages below %s, win return %d ticks, bar %s, bite %.1f, wing %.1f, breath %.1f/s, one contact hit per %d ticks; "
+                        + "revive within %.2f blocks for %d s at %.2f of max, %s, label '%s'",
                 f.id(), s.borderRadiusBlocks(), s.mageRingRadiusBlocks(), s.fastCloseBlocksPerSecond(),
                 s.slowCloseBlocksPerSecond(), s.killExpansionBlocks(), s.crystalCount(), s.crystalIntervalTicks(),
                 s.strikeIntervalTicks(), s.firstStrikeDamage(), l.particleKey(), l.red(), l.green(), l.blue(),
@@ -82,7 +83,10 @@ public final class FightLoader {
                 f.arena().shape().pillarTopAboveFloor(), f.arena().timeOfDayTicks(), f.arena().entryDxBlocks(),
                 f.arena().entryDzBlocks(), f.arena().environment().fileName(), f.arena().allDownSeconds(), f.dragon().mob(), f.dragon().mageThresholds(), f.dragon().winReturnTicks(),
                 f.dragon().bossBarColor(), f.dragon().attacks().bite(), f.dragon().attacks().wing(),
-                f.dragon().attacks().breathPerSecond(), f.dragon().attacks().contactHitIntervalTicks());
+                f.dragon().attacks().breathPerSecond(), f.dragon().attacks().contactHitIntervalTicks(),
+                f.revive().radiusBlocks(), f.revive().seconds(), f.revive().healthFraction(),
+                f.revive().maxRevives().isEmpty() ? "no limit" : "at most " + f.revive().maxRevives().getAsInt(),
+                f.revive().label());
     }
 
     FightContent parse(String id, ConfigurationSection root) {
@@ -142,7 +146,36 @@ public final class FightLoader {
         ConfigurationSection fx = section(root, "fixture");
         double reach = positive(fx, "participant_radius_blocks");
         return new FightContent(id, settings, look, mob, refused, crystalRadius, crystalHeight, lit, reach,
-                arena(section(root, "arena"), settings), dragon(section(root, "dragon")), landingLightning);
+                arena(section(root, "arena"), settings), dragon(section(root, "dragon")), landingLightning,
+                revive(section(root, "revive")));
+    }
+
+    /**
+     * {@code revive:} (step F9e). The radius above 0; the seconds a whole number of at least 1; the fraction above 0
+     * and at most 1; {@code max_revives} optional (absent is unlimited), a whole number of 0 or more when present; the
+     * label a non-blank string.
+     */
+    private FightContent.Revive revive(ConfigurationSection r) {
+        double radius = positive(r, "revive_radius_blocks");
+        int seconds = whole(r, "revive_seconds");
+        if (seconds < 1) throw new IllegalArgumentException("revive.revive_seconds must be 1 or more, got " + seconds);
+        double fraction = number(r, "revive_health_fraction");
+        if (!(fraction > 0.0) || fraction > 1.0) {
+            throw new IllegalArgumentException("revive.revive_health_fraction must be above 0 and at most 1, got "
+                    + fraction);
+        }
+        java.util.OptionalInt max = java.util.OptionalInt.empty();
+        if (r.contains("max_revives")) {
+            int m = whole(r, "max_revives");
+            if (m < 0) throw new IllegalArgumentException("revive.max_revives must be 0 or more, got " + m);
+            max = java.util.OptionalInt.of(m);
+        }
+        String label = r.getString("label");
+        if (label == null || label.isBlank()) {
+            throw new IllegalArgumentException("revive needs a 'label:'" + (r.contains("label") ? ", got a blank one"
+                    : ", and it is missing"));
+        }
+        return new FightContent.Revive(radius, seconds, fraction, max, label);
     }
 
     /**

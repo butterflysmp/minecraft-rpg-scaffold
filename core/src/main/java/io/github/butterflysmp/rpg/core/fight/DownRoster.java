@@ -29,6 +29,8 @@ public final class DownRoster {
     }
 
     private final Set<UUID> down = new LinkedHashSet<>();
+    /** F9e e: revives per player in this fight (read by {@code ReviveRules.mayRevive}). */
+    private final java.util.Map<UUID, Integer> revives = new java.util.HashMap<>();
     private final int delayTicks;
     private long failedAt = -1;
 
@@ -55,9 +57,16 @@ public final class DownRoster {
         return down.contains(id);
     }
 
-    /** He was revived (step F9e). True when he was down. */
+    /** He was revived (step F9e). True when he was down; his count of revives in this fight rises by one. */
     public boolean revive(UUID id) {
-        return down.remove(id);
+        if (!down.remove(id)) return false;
+        revives.merge(id, 1, Integer::sum);
+        return true;
+    }
+
+    /** How many times he has been revived in this fight. */
+    public int revives(UUID id) {
+        return revives.getOrDefault(id, 0);
     }
 
     /** He is out of the fight (quit, or left the fight world). */

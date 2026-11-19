@@ -90,6 +90,14 @@ public final class FightCommand {
                                         .executes(ctx -> reply(ctx, devServer, p -> fixtures.land(
                                                 DoubleArgumentType.getDouble(ctx, "dx"),
                                                 DoubleArgumentType.getDouble(ctx, "dz")))))))
+                .then(Commands.literal("copy") // F9e f: a practice copy of a named stand-in at C + (dx, dz)
+                        .then(Commands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                .then(Commands.argument("dx", DoubleArgumentType.doubleArg(-1000.0, 1000.0))
+                                        .then(Commands.argument("dz", DoubleArgumentType.doubleArg(-1000.0, 1000.0))
+                                                .executes(ctx -> reply(ctx, devServer, p -> fixtures.practiceCopy(
+                                                        com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "name"),
+                                                        DoubleArgumentType.getDouble(ctx, "dx"),
+                                                        DoubleArgumentType.getDouble(ctx, "dz"))))))))
                 .then(Commands.literal("mage-die").executes(ctx -> reply(ctx, devServer, p -> fixtures.mageDie())))
                 .then(Commands.literal("stop").executes(ctx -> reply(ctx, devServer, p -> fixtures.stop("command"))))
                 .build();

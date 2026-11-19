@@ -139,6 +139,7 @@ public final class FightInstance {
         loop = RepeatingTask.start(new RegionTarget(centre, ring), 1, "fight-fixture", () -> {
             if (won) return true; // the win's wait: the ring is stopped, the return is scheduled (onDragonDeath)
             ring.tick();
+            tickCopies(); // F9e: each copy against this tick's ring, and the revive
             notePhaseForMage(ring);
             pinMage();
             if (dragon != null) {
@@ -200,6 +201,213 @@ public final class FightInstance {
 
     /** The fight's own tick, as its lines print it. */
     public long fightTick() { return fixture.fightTick(); }
+
+    // --- step F9e: the copies and the revive --------------------------------------------------------------------------
+
+    /** What the holder does when a copy is revived, and how it shows a reviver his progress. */
+    public interface ReviveHook {
+        /** Restore the down player at {@code at}; false when he cannot be (offline, gone, no longer down). */
+        boolean revive(UUID down, Player by, Location at);
+
+        /** Show {@code who} one line of progress (SEAT PLACEHOLDER: the action bar). */
+        void bar(Player who, String text);
+    }
+
+    /** A copy on the floor: a down player's ({@code player} set) or a practice one ({@code player} null). */
+    private static final class Copy {
+        final UUID player;
+        final String name;
+        final org.bukkit.entity.Mannequin body;
+        boolean revivable;
+
+        Copy(UUID player, String name, org.bukkit.entity.Mannequin body, boolean revivable) {
+            this.player = player;
+            this.name = name;
+            this.body = body;
+            this.revivable = revivable;
+        }
+    }
+
+    /** Every copy this fight laid, keyed by its body's id, in the order laid. */
+    private final java.util.Map<UUID, Copy> copies = new java.util.LinkedHashMap<>();
+    private io.github.butterflysmp.rpg.core.fight.ReviveTracker revives;
+    private ReviveHook reviveHook;
+
+    /** The holder's revive (FightFixtures, which owns the way home and the store's player). */
+    void reviveHook(ReviveHook hook) { this.reviveHook = hook; }
+
+    private io.github.butterflysmp.rpg.core.fight.ReviveTracker revives() {
+        if (revives == null) {
+            revives = new io.github.butterflysmp.rpg.core.fight.ReviveTracker(fight.revive().seconds() * 20,
+                    fight.revive().radiusBlocks());
+        }
+        return revives;
+    }
+
+    /** The ring now; before the first tick, the border about C. */
+    private io.github.butterflysmp.rpg.core.fight.Ring ringNow() {
+        io.github.butterflysmp.rpg.core.fight.Ring r = fixture.ring();
+        return r != null ? r : new io.github.butterflysmp.rpg.core.fight.Ring(centre.getX(), centre.getZ(),
+                fight.settings().borderRadiusBlocks());
+    }
+
+    /**
+     * F9e a and b: HE WENT DOWN, SO HIS COPY LIES ON THE FLOOR. Where he died if that is one block inside the ring, else
+     * the nearest point one block inside its edge ({@code CopyPlace}); always on the floor (C's ground), so a death in
+     * the air or the void comes down to it.
+     */
+    public void layCopy(Player p, Location died) {
+        if (!running() || copyOf(p.getUniqueId()) != null) return;
+        io.github.butterflysmp.rpg.core.fight.CopyPlace.Place at =
+                io.github.butterflysmp.rpg.core.fight.CopyPlace.place(died.getX(), died.getZ(), ringNow());
+        org.bukkit.entity.Mannequin body = spawnCopy(p.getName(),
+                io.papermc.paper.datacomponent.item.ResolvableProfile.resolvableProfile(p.getPlayerProfile()),
+                at.xBlocks(), at.zBlocks());
+        copies.put(body.getUniqueId(), new Copy(p.getUniqueId(), p.getName(), body, at.revivable()));
+        adapters.log().info(String.format(Locale.ROOT, "FIGHT copy laid player=%s t=%d at=%.2f %.2f %.2f"
+                        + " died=%.2f %.2f %.2f moved=%s revivable=%s", p.getName(), fixture.fightTick(),
+                at.xBlocks() - centre.getX(), 0.0, at.zBlocks() - centre.getZ(), died.getX() - centre.getX(),
+                died.getY() - centre.getY(), died.getZ() - centre.getZ(), at.moved(), at.revivable()));
+    }
+
+    /**
+     * F9e f: A PRACTICE COPY (dev only): a copy of a named stand-in at C + (dx, dz), placed by the same rule, revivable by
+     * the same code path up to restoring a player. Reviving it logs {@code FIGHT revived practice} and removes it.
+     */
+    public String layPractice(String name, double dxBlocks, double dzBlocks) {
+        if (!running()) return "No fight fixture is running.";
+        io.github.butterflysmp.rpg.core.fight.CopyPlace.Place at = io.github.butterflysmp.rpg.core.fight.CopyPlace.place(
+                centre.getX() + dxBlocks, centre.getZ() + dzBlocks, ringNow());
+        org.bukkit.entity.Mannequin body = spawnCopy(name,
+                io.papermc.paper.datacomponent.item.ResolvableProfile.resolvableProfile().name(name).build(),
+                at.xBlocks(), at.zBlocks());
+        copies.put(body.getUniqueId(), new Copy(null, name, body, at.revivable()));
+        String line = String.format(Locale.ROOT, "FIGHT copy laid practice name=%s t=%d at=%.2f %.2f %.2f asked=%.2f %.2f"
+                        + " moved=%s revivable=%s", name, fixture.fightTick(), at.xBlocks() - centre.getX(), 0.0,
+                at.zBlocks() - centre.getZ(), dxBlocks, dzBlocks, at.moved(), at.revivable());
+        adapters.log().info(line);
+        return line;
+    }
+
+    /** The copy's body: his look and name, lying down, immovable, invulnerable, silent, not saved, tagged. */
+    private org.bukkit.entity.Mannequin spawnCopy(String name, io.papermc.paper.datacomponent.item.ResolvableProfile profile,
+                                                  double x, double z) {
+        Location loc = new Location(world, x, centre.getY(), z);
+        String label = fight.revive().label().replace("{player}", name)
+                .replace("{seconds}", Integer.toString(fight.revive().seconds()));
+        return world.spawn(loc, org.bukkit.entity.Mannequin.class, m -> {
+            m.setProfile(profile);
+            m.setImmovable(true);
+            m.setInvulnerable(true);
+            m.setPersistent(false);
+            m.setGravity(false);
+            m.setSilent(true);
+            m.setCollidable(false);
+            m.setPose(org.bukkit.entity.Pose.SLEEPING, true);
+            m.customName(net.kyori.adventure.text.Component.text(name));
+            m.setCustomNameVisible(true);
+            m.setDescription(net.kyori.adventure.text.Component.text(label));
+            m.addScoreboardTag(FightCopies.TAG);
+        });
+    }
+
+    private Copy copyOf(UUID player) {
+        for (Copy c : copies.values()) if (player.equals(c.player)) return c;
+        return null;
+    }
+
+    /** His copy goes (he is out: quit or left), if he has one. */
+    public void removeCopyOf(UUID player, String why) {
+        Copy c = copyOf(player);
+        if (c != null) removeCopy(c, why);
+    }
+
+    private void removeCopy(Copy c, String why) {
+        copies.remove(c.body.getUniqueId());
+        if (revives != null) revives.forget(c.body.getUniqueId());
+        if (c.body.isValid()) c.body.remove();
+        adapters.log().info("FIGHT copy removed " + (c.player == null ? "practice name=" : "player=") + c.name
+                + " t=" + fixture.fightTick() + " why=" + why);
+    }
+
+    /**
+     * Once a tick (F9e b and c): each copy is placed again against this tick's ring (a closing or moving edge carries it,
+     * one block inside; a closed ring leaves it, unrevivable), and every LIVING PARTICIPANT sneaking near it is offered
+     * to the revive. A {@code COPYTICK} line at each ring redraw says where each copy lies against the ring.
+     */
+    private void tickCopies() {
+        if (copies.isEmpty()) return;
+        io.github.butterflysmp.rpg.core.fight.Ring ring = ringNow();
+        boolean drawTick = fixture.fightTick() % fight.look().redrawPeriodTicks() == 0;
+        for (Copy c : new java.util.ArrayList<>(copies.values())) {
+            if (!c.body.isValid()) {
+                copies.remove(c.body.getUniqueId());
+                continue;
+            }
+            Location l = c.body.getLocation();
+            io.github.butterflysmp.rpg.core.fight.CopyPlace.Place p =
+                    io.github.butterflysmp.rpg.core.fight.CopyPlace.place(l.getX(), l.getZ(), ring);
+            if (p.moved()) {
+                c.body.teleport(new Location(world, p.xBlocks(), centre.getY(), p.zBlocks(), l.getYaw(), l.getPitch()));
+                l = c.body.getLocation();
+            }
+            c.revivable = p.revivable() && (c.player == null || io.github.butterflysmp.rpg.core.fight.ReviveRules
+                    .mayRevive(site.revives(c.player), fight.revive().maxRevives()));
+            if (drawTick) {
+                double inside = ring.radiusBlocks() - Math.hypot(l.getX() - ring.centreXBlocks(), l.getZ() - ring.centreZBlocks());
+                adapters.log().info(String.format(Locale.ROOT, "COPYTICK t=%d copy=%s at=%.3f %.3f r=%.3f centre=%.3f %.3f"
+                                + " inside_by=%.3f revivable=%s", fixture.fightTick(), c.name, l.getX() - centre.getX(),
+                        l.getZ() - centre.getZ(), ring.radiusBlocks(), ring.centreXBlocks() - centre.getX(),
+                        ring.centreZBlocks() - centre.getZ(), inside, c.revivable));
+            }
+            if (!c.revivable) {
+                if (revives != null) revives.forget(c.body.getUniqueId());
+                continue;
+            }
+            offerRevive(c, l);
+        }
+    }
+
+    /** F9e c: the living participants offered to this copy's revive, and what came of it. */
+    private void offerRevive(Copy c, Location at) {
+        java.util.List<io.github.butterflysmp.rpg.core.fight.ReviveTracker.Attempt> attempts = new java.util.ArrayList<>();
+        java.util.Map<UUID, Player> who = new java.util.HashMap<>();
+        for (RingFixture.Participant part : port.participants()) {
+            Player pl = org.bukkit.Bukkit.getPlayer(part.id());
+            if (pl == null || pl.getUniqueId().equals(c.player)) continue;
+            who.put(pl.getUniqueId(), pl);
+            attempts.add(new io.github.butterflysmp.rpg.core.fight.ReviveTracker.Attempt(pl.getUniqueId(),
+                    pl.getLocation().distance(at), pl.isSneaking()));
+        }
+        io.github.butterflysmp.rpg.core.fight.ReviveTracker.Result r = revives().tick(c.body.getUniqueId(), attempts);
+        int need = revives().needTicks();
+        for (UUID b : r.broken()) {
+            Player pl = who.containsKey(b) ? who.get(b) : org.bukkit.Bukkit.getPlayer(b);
+            adapters.log().info("FIGHT revive broken by=" + (pl == null ? b : pl.getName()) + " copy=" + c.name
+                    + " t=" + fixture.fightTick());
+            if (pl != null && reviveHook != null) reviveHook.bar(pl, "Revive of " + c.name + " interrupted");
+        }
+        for (java.util.Map.Entry<UUID, Integer> e : r.progress().entrySet()) {
+            Player pl = who.get(e.getKey());
+            if (pl == null || reviveHook == null) continue;
+            if (e.getValue() == 1) {
+                adapters.log().info("FIGHT revive started by=" + pl.getName() + " copy=" + c.name + " t="
+                        + fixture.fightTick());
+            }
+            reviveHook.bar(pl, String.format(Locale.ROOT, "Reviving %s: %.1f / %d s", c.name, e.getValue() / 20.0,
+                    need / 20));
+        }
+        if (r.outcome() != io.github.butterflysmp.rpg.core.fight.ReviveTracker.Outcome.DONE) return;
+        Player by = who.get(r.reviver());
+        if (c.player == null) {
+            adapters.log().info(String.format(Locale.ROOT, "FIGHT revived practice name=%s by=%s t=%d at=%.2f %.2f %.2f",
+                    c.name, by.getName(), fixture.fightTick(), at.getX() - centre.getX(), at.getY() - centre.getY(),
+                    at.getZ() - centre.getZ()));
+            removeCopy(c, "revived");
+            return;
+        }
+        if (reviveHook != null && reviveHook.revive(c.player, by, at.clone())) removeCopy(c, "revived");
+    }
 
     /** Players' names (an id when he is offline), in the set's order, for a line. */
     private static String names(java.util.Set<UUID> ids) {
@@ -388,6 +596,7 @@ public final class FightInstance {
         }
         removeMage();
         removeDragon(why);
+        for (Copy c : new java.util.ArrayList<>(copies.values())) removeCopy(c, "end"); // F9e a: no copy outlives the fight
         port.clearCrystals();
         adapters.log().info("FIGHT ended reason=" + why);
         play = false;
@@ -413,7 +622,7 @@ public final class FightInstance {
     public void onDeath(EntityDeathEvent event) {
         if (!running()) return;
         LivingEntity dead = event.getEntity();
-        if (dead instanceof Player) return;
+        if (dead instanceof Player || FightCopies.isCopy(dead)) return; // F9e a: a copy is never a kill
         if (dragon != null && dead.getUniqueId().equals(dragon.getUniqueId())) {
             onDragonDeath(event);
             return;

@@ -151,6 +151,8 @@ final class SelfTestRun {
         int r = SelfTestStaging.LEFTOVER_RADIUS;
         return player.getNearbyEntities(r, r, r).stream()
                 .filter(e -> e.getLocation().distanceSquared(player.getLocation()) <= (double) r * r)
+                // F9e a: a fight's copy is not a leftover mob (the fight removes it at its end).
+                .filter(e -> !io.github.butterflysmp.rpg.paper.fight.FightCopies.isCopy(e))
                 .filter(e -> SelfTestStaging.leftover(e instanceof LivingEntity, e instanceof Player,
                         e instanceof org.bukkit.entity.ArmorStand, e instanceof LivingEntity l && l.isDead()))
                 .sorted(java.util.Comparator.comparingDouble(e -> e.getLocation().distanceSquared(player.getLocation())))

@@ -25,7 +25,22 @@ import io.github.butterflysmp.rpg.core.fight.RingLook;
  */
 public record FightContent(String id, FightSettings settings, RingLook look, String mageMob, Cue refusedCue,
                            double crystalRingRadiusBlocks, double crystalHeightBlocks, Cue litCue,
-                           double participantRadiusBlocks, Arena arena, Dragon dragon, boolean mageLandingLightning) {
+                           double participantRadiusBlocks, Arena arena, Dragon dragon, boolean mageLandingLightning,
+                           Revive revive) {
+
+    /**
+     * THE REVIVE (step F9e; Ben, PLAN-dragon-fight.md section 1, 0d and 0e).
+     *
+     * @param radiusBlocks   how near his copy a reviver must sneak ({@code revive_radius_blocks}; SEAT PLACEHOLDER 1.5,
+     *                       Ben's "on top of")
+     * @param seconds        how long, without a break ({@code revive_seconds}; Ben's "3 seconds")
+     * @param healthFraction his health on revive, of his maximum ({@code revive_health_fraction}; Ben's "50% health")
+     * @param maxRevives     revives per player per fight; empty (the key absent) is unlimited (Ben: "No")
+     * @param label          the line above the copy (SEAT PLACEHOLDER wording); {@code {player}} and {@code {seconds}}
+     *                       are filled in
+     */
+    public record Revive(double radiusBlocks, int seconds, double healthFraction, java.util.OptionalInt maxRevives,
+                         String label) {}
 
     /**
      * THE ARENA FIGHT'S DRAGON (step F9).

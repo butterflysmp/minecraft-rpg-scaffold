@@ -30,6 +30,41 @@ class CombatantStatsTest {
         HealthChange last() { return seen.get(seen.size() - 1); }
     }
 
+    /**
+     * F9e d: A REVIVE SETS HIS HEALTH (Ben: "50% health"), wherever it stood. Up is a HEAL change and down a DAMAGE change
+     * dealt by himself, so every listener keeps the kinds it knows; neither can reach zero, and nothing is emitted when
+     * nothing moves. Clamped to [0, max]; untracked is a no-op.
+     */
+    @Test
+    void setCurrentSetsTheHealthAndEmitsTheDirectionItMoved() {
+        var recorder = new Recorder();
+        var stats = new CombatantStats(recorder);
+        UUID p = UUID.randomUUID();
+        UUID by = UUID.randomUUID();
+        stats.register(p, CombatantStats.DEFAULT_PLAYER_BASE, true); // 100/100
+        stats.damage(p, 100, by, true);                                 // 0, reached zero
+        int before = recorder.seen.size();
+        stats.setCurrent(p, 50, by, true);
+        assertEquals(50, stats.current(p), EPS);
+        assertEquals(HealthChange.Kind.HEAL, recorder.last().kind(), "up from zero is a heal");
+        assertEquals(50, recorder.last().amount(), EPS);
+        assertEquals(by, recorder.last().dealer());
+        stats.heal(p, 1000, p, true);                                   // 100
+        stats.setCurrent(p, 50, by, true);
+        assertEquals(50, stats.current(p), EPS);
+        assertEquals(HealthChange.Kind.DAMAGE, recorder.last().kind(), "down from full is a change dealt by himself");
+        assertEquals(p, recorder.last().dealer());
+        assertEquals(50, recorder.last().amount(), EPS);
+        assertFalse(recorder.last().reachedZero());
+        int n = recorder.seen.size();
+        stats.setCurrent(p, 50, by, true);
+        assertEquals(n, recorder.seen.size(), "nothing moved: nothing emitted");
+        stats.setCurrent(p, 500, by, true);
+        assertEquals(100, stats.current(p), EPS, "clamped to the max");
+        stats.setCurrent(UUID.randomUUID(), 5, by, true);               // untracked: no-op, no throw
+        assertTrue(recorder.seen.size() > before);
+    }
+
     @Test
     void damageReducesCustomHealthAndTheEventCarriesIt() {
         var recorder = new Recorder();
