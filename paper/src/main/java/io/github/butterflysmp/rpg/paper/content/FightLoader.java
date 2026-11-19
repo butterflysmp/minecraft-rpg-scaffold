@@ -63,23 +63,25 @@ public final class FightLoader {
         return String.format(Locale.ROOT,
                 "Loaded fight '%s': border %.1f, mage ring %.1f, v_fast %.2f, v_slow %.2f, e_kill %.2f, "
                         + "%d crystals every %d ticks, a strike every %d ticks from %.1f; ring %s (%d,%d,%d) size %.2f "
-                        + "every %.2f blocks at %s, row shift %.2f, turn %.2f/s %s, every %d ticks; mage '%s' refused %s; "
+                        + "every %.2f blocks at %s, row shift %.2f, turn %.2f/s %s, every %d ticks; mage '%s' refused %s, "
+                        + "landing lightning %s; "
                         + "crystals at %.1f, %.1f up, lit %s; participants within %.1f; arena at (%d, %d) floor y %d, "
                         + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f); dragon '%s' "
-                        + "Mages below %s, win return %d ticks, bar %s",
+                        + "Mages below %s, win return %d ticks, bar %s, bite %.1f, wing %.1f, breath %.1f/s",
                 f.id(), s.borderRadiusBlocks(), s.mageRingRadiusBlocks(), s.fastCloseBlocksPerSecond(),
                 s.slowCloseBlocksPerSecond(), s.killExpansionBlocks(), s.crystalCount(), s.crystalIntervalTicks(),
                 s.strikeIntervalTicks(), s.firstStrikeDamage(), l.particleKey(), l.red(), l.green(), l.blue(),
                 l.dustSize(), l.pointSpacingBlocks(), l.heightOffsetsBlocks(), l.rowShiftBlocks(),
                 l.turnBlocksPerSecond(), l.alternateTurns() ? "alternating" : "together", l.redrawPeriodTicks(),
-                f.mageMob(), f.refusedCue().sound(),
+                f.mageMob(), f.refusedCue().sound(), f.mageLandingLightning() ? "on" : "off",
                 f.crystalRingRadiusBlocks(), f.crystalHeightBlocks(), f.litCue().sound(), f.participantRadiusBlocks(),
                 f.arena().shape().centreX(), f.arena().shape().centreZ(), f.arena().shape().floorY(),
                 f.arena().shape().discRadius(), f.arena().shape().discThickness(), f.arena().shape().pillarCount(),
                 f.arena().shape().pillarWidth(), f.arena().shape().pillarRingRadius(),
                 f.arena().shape().pillarTopAboveFloor(), f.arena().timeOfDayTicks(), f.arena().entryDxBlocks(),
                 f.arena().entryDzBlocks(), f.dragon().mob(), f.dragon().mageThresholds(), f.dragon().winReturnTicks(),
-                f.dragon().bossBarColor());
+                f.dragon().bossBarColor(), f.dragon().attacks().bite(), f.dragon().attacks().wing(),
+                f.dragon().attacks().breathPerSecond());
     }
 
     FightContent parse(String id, ConfigurationSection root) {
@@ -128,6 +130,7 @@ public final class FightLoader {
             throw new IllegalArgumentException("mage.mob '" + mob + "' names no loaded mob file (content/mobs/)");
         }
         FightContent.Cue refused = cue(m, "refused");
+        boolean landingLightning = flag(m, "landing_lightning");
         ConfigurationSection c = section(root, "crystals");
         double crystalRadius = positive(c, "ring_radius_blocks");
         double crystalHeight = number(c, "height_above_ground_blocks");
@@ -138,7 +141,7 @@ public final class FightLoader {
         ConfigurationSection fx = section(root, "fixture");
         double reach = positive(fx, "participant_radius_blocks");
         return new FightContent(id, settings, look, mob, refused, crystalRadius, crystalHeight, lit, reach,
-                arena(section(root, "arena"), settings), dragon(section(root, "dragon")));
+                arena(section(root, "arena"), settings), dragon(section(root, "dragon")), landingLightning);
     }
 
     /**
@@ -170,7 +173,14 @@ public final class FightLoader {
             throw new IllegalArgumentException("dragon.boss_bar_color must be one of "
                     + net.kyori.adventure.bossbar.BossBar.Color.NAMES.keys() + ", got '" + colour + "'");
         }
-        return new FightContent.Dragon(mob, thresholds, win, colour);
+        io.github.butterflysmp.rpg.core.fight.DragonAttacks attacks;
+        try {
+            attacks = new io.github.butterflysmp.rpg.core.fight.DragonAttacks(
+                    number(d, "bite"), number(d, "wing"), number(d, "breath_per_second"));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("dragon attacks: " + ex.getMessage());
+        }
+        return new FightContent.Dragon(mob, thresholds, win, colour, attacks);
     }
 
     /**

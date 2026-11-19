@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -75,17 +76,22 @@ class FightDragonSourceTest {
         assertTrue(body(instance(), "public void onDeath(EntityDeathEvent event)").contains("onDragonDeath(event);"));
     }
 
-    /** IMMUNE while a Mage is alive: the dragon's gate rule is the fixture's own flag. */
+    /**
+     * IMMUNE while a Mage is alive OR OWED (F9b, section 1; Ben: "No it can't be hurt while a mage is owed"): the gate
+     * asks core's one rule, {@code DragonCrossings.refusal}, and names its reason in the refused line.
+     */
     @Test
-    void theDragonsGateRuleIsNoMageAlive() throws IOException {
+    void theDragonsGateRuleIsNoMageAliveAndNoneOwed() throws IOException {
         // Bounded by the NEXT METHOD, not by body(): the rule is an anonymous class whose @Override would end body() early.
         String i = instance();
         int from = i.indexOf("private void spawnDragon()");
         int to = i.indexOf("private void trackBossBar()");
         assertTrue(from > 0 && to > from, "spawnDragon, then trackBossBar");
         String s = i.substring(from, to);
-        assertTrue(s.contains("public boolean damageable() { return !ring.mageAlive(); }"), s);
-        assertTrue(s.contains("ring.dragonRefused(amount, source);"), "its own refused line, the Mage's cue");
+        assertTrue(s.contains("return queue.refusal(ring.mageAlive()) == DragonCrossings.Refusal.NONE;"), s);
+        assertTrue(s.contains("ring.dragonRefused(amount, source, queue.refusal(ring.mageAlive()).logName());"),
+                "its own refused line with the reason, the Mage's cue");
+        assertFalse(s.contains("return !ring.mageAlive();"), "the F9 rule (alive only) is gone");
         assertTrue(s.contains("e.setPersistent(false);") && s.contains("e.setPodium(podium);"),
                 "not persisted, its podium the centre floor");
         assertTrue(s.contains("dragon.setPhase(org.bukkit.entity.EnderDragon.Phase.CIRCLING);"),
@@ -128,5 +134,15 @@ class FightDragonSourceTest {
         assertTrue(plugin.contains("fightHits.bind(fightFixtures::onHealthChange);"), "and bound to the fights");
         String h = body(instance(), "public void onHealthChange(");
         assertTrue(h.contains("FIGHTHIT t=%d target=%s") && h.contains("crossings.observe("), h);
+    }
+
+    /**
+     * F9b, section 7: a landed hit on the DRAGON names its vanilla phase at the hit (DB1 could not say whether a hit
+     * landed in the air or perched). A hit on the Mage carries no phase: it is not the dragon's.
+     */
+    @Test
+    void aLandedHitOnTheDragonNamesItsPhase() throws IOException {
+        String h = body(instance(), "public void onHealthChange(");
+        assertTrue(h.contains("target.equals(\"dragon\") ? \" phase=\" + dragon.getPhase() : \"\""), h);
     }
 }

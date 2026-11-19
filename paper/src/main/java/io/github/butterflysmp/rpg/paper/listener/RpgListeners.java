@@ -2413,7 +2413,11 @@ public final class RpgListeners implements Listener {
         // fraction of THIS, so a heavily armored player reflects more than the hit did to them.
         // final, and never reassigned -- ShieldExchange derives both numbers from it below, so no
         // reduced local exists here that could be passed to the reflect by mistake.
-        final double preMitigation = adapters.stats().attackValue(attacker.getUniqueId());
+        // F9b, section 4: a FIGHT'S DRAGON prices its bite or wing from content (scaled by gear score as any mob's
+        // seed is); every other mob reads its seeded stat as before. The dragon's seed is 0: it has no ATTACK_DAMAGE.
+        java.util.OptionalDouble dragonBlow = fights.dragonMelee(attacker, victim, event.getDamage());
+        final double preMitigation = dragonBlow.isPresent() ? dragonBlow.getAsDouble()
+                : adapters.stats().attackValue(attacker.getUniqueId());
         if (nameplates.tracing()) {
             // G8's witness: the seeded attack over the vanilla attribute it was scaled from (M16).
             var attackAttr = attacker.getAttribute(Attribute.ATTACK_DAMAGE);
@@ -2471,6 +2475,40 @@ public final class RpgListeners implements Listener {
         if (Thorns.reflects(exchange.reflected())) {
             BukkitCombatant.of(attacker, adapters).handle()
                     .applyDamage(exchange.reflected(), victim.getUniqueId());
+        }
+    }
+
+    /**
+     * F9b, section 4: THE PERCHED BREATH of a fight's dragon. READ, the pinned server jar: the sitting dragon's cloud
+     * carries Instant Damage, and {@code CraftEventFactory.handleEntityDamageEvent} names any hit with a damager and no
+     * specially mapped type {@code ENTITY_ATTACK}, the damager being the CLOUD (that its type is indirect magic, which is
+     * not one of the mapped ones, is INFERRED; the gate reads the cause). So
+     * {@link #onMobMeleeAttack} never took it (the damager is not living) and {@code VanillaDamagePolicy} passes
+     * {@code ENTITY_ATTACK}: before this, vanilla's own number landed and our store took nothing.
+     *
+     * <p>Ridden as a mob's melee is: vanilla's damage tokened (flash, sound, i-frames), and the fight's price dealt
+     * through armour, blamed on the dragon. Any other cloud (a lingering potion, another dragon's) is left alone.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onFightDragonBreath(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+        if (!(event.getDamager() instanceof org.bukkit.entity.AreaEffectCloud cloud)) return;
+        java.util.OptionalDouble hit = fights.dragonBreath(cloud, victim, event.getDamage());
+        if (hit.isEmpty()) return;
+        UUID dragonId = ((org.bukkit.entity.Entity) cloud.getSource()).getUniqueId();
+        event.setDamage(TOKEN_DAMAGE);
+        BukkitCombatant.of(victim, adapters).handle().applyDamage(hit.getAsDouble(), dragonId);
+    }
+
+    /**
+     * F9b, section 7: a fight's dragon does not hurt that fight's own Mage in vanilla ({@code
+     * FightInstance.refusesDragonOnMage} says why his death message credited the dragon). Earliest, so nothing prices it.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onFightDragonHitsItsMage(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof org.bukkit.entity.EnderDragon
+                && fights.refusesDragonOnMage(event.getDamager(), event.getEntity())) {
+            event.setCancelled(true);
         }
     }
 
@@ -2923,6 +2961,14 @@ public final class RpgListeners implements Listener {
      */
     private void healTrackedMob(EntityRegainHealthEvent event, LivingEntity mob) {
         UUID id = mob.getUniqueId();
+        // F9b, section 2 (Ben: "No crystals should not heal the dragon"): a crystal's heal on a FIGHT'S dragon is
+        // cancelled here, before the reroute, which stops vanilla's setHealth AND the store's heal. Every other mob,
+        // and every other reason, falls through to M15 unchanged.
+        if (event.getRegainReason() == EntityRegainHealthEvent.RegainReason.ENDER_CRYSTAL
+                && fights.refusesCrystalHeal(id, event.getAmount())) {
+            event.setCancelled(true);
+            return;
+        }
         if (!adapters.stats().tracks(id)) return;
         if (MobHealPolicy.forReason(event.getRegainReason()) == MobHealPolicy.Action.PASS) return;
 

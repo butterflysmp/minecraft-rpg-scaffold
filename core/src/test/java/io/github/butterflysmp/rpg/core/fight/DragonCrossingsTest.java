@@ -109,4 +109,67 @@ class DragonCrossingsTest {
         DragonCrossings c = new DragonCrossings(BENS);
         assertThrows(IllegalArgumentException.class, () -> c.observe(Double.NaN));
     }
+
+    // --- F9b, section 1: Ben, "No it can't be hurt while a mage is owed" ---------------------------------------------
+
+    @Test
+    void withNoMageAliveAndNoneOwedTheDragonTakesHits() {
+        DragonCrossings c = new DragonCrossings(BENS);
+        assertEquals(DragonCrossings.Refusal.NONE, c.refusal(false));
+        c.observe(0.85);
+        assertEquals(DragonCrossings.Refusal.NONE, c.refusal(false), "above every threshold nothing is owed");
+    }
+
+    @Test
+    void theHitThatCrossesIsJudgedBeforeItAndEveryHitAfterItIsRefusedAsOwed() {
+        DragonCrossings c = new DragonCrossings(BENS);
+        // The gate asks BEFORE the hit: nothing is owed yet, so the crossing hit lands whole.
+        assertEquals(DragonCrossings.Refusal.NONE, c.refusal(false));
+        c.observe(0.7999);
+        assertEquals(DragonCrossings.Refusal.MAGE_OWED, c.refusal(false), "owed, not yet landed: the next hit is refused");
+    }
+
+    @Test
+    void aLivingMageIsTheReasonWhileHeLivesAndOwedIsTheReasonDuringTheReturn() {
+        DragonCrossings c = new DragonCrossings(BENS);
+        c.observe(0.7999);
+        c.landed();
+        assertEquals(DragonCrossings.Refusal.MAGE_ALIVE, c.refusal(true));
+        assertEquals(DragonCrossings.Refusal.NONE, c.refusal(false), "his death, nothing else owed: hits land");
+        c.observe(0.5999);                      // crossed during the ring's return
+        assertEquals(DragonCrossings.Refusal.MAGE_OWED, c.refusal(false), "DB2's case: owed while the ring returns");
+    }
+
+    @Test
+    void aLivingMageOutranksAnOwedOneInTheReason() {
+        DragonCrossings c = new DragonCrossings(BENS);
+        c.observe(0.5999);                      // two owed
+        c.landed();                             // the first has landed and lives; the second is still owed
+        assertEquals(DragonCrossings.Refusal.MAGE_ALIVE, c.refusal(true));
+        assertEquals(DragonCrossings.Refusal.MAGE_OWED, c.refusal(false));
+    }
+
+    @Test
+    void theRefusalsLogNamesAreTheGatesWords() {
+        assertEquals("mage-alive", DragonCrossings.Refusal.MAGE_ALIVE.logName());
+        assertEquals("mage-owed", DragonCrossings.Refusal.MAGE_OWED.logName());
+        assertEquals("none", DragonCrossings.Refusal.NONE.logName());
+    }
+
+    @Test
+    void aFightReachingTwentyPercentOwesFourMagesAndIsRefusedUntilEachIsDead() {
+        DragonCrossings c = new DragonCrossings(BENS);
+        int refusedWhileOwed = 0;
+        double[] hits = {0.79, 0.59, 0.39, 0.19};
+        for (double fraction : hits) {
+            assertEquals(DragonCrossings.Refusal.NONE, c.refusal(false));
+            c.observe(fraction);
+            if (c.refusal(false) == DragonCrossings.Refusal.MAGE_OWED) refusedWhileOwed++;
+            c.landed();
+            assertEquals(DragonCrossings.Refusal.MAGE_ALIVE, c.refusal(true));
+        }
+        assertEquals(4, refusedWhileOwed);
+        assertEquals(4, c.crossed());
+        assertEquals(DragonCrossings.Refusal.NONE, c.refusal(false));
+    }
 }

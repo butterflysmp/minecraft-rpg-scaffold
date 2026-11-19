@@ -20,10 +20,12 @@ import io.github.butterflysmp.rpg.core.fight.RingLook;
  * @param participantRadiusBlocks  the ordinary-world fixture's reach about C, blocks
  * @param arena                    the fight's own world and its generated arena (step F8b)
  * @param dragon                   the arena fight's dragon (step F9)
+ * @param mageLandingLightning     a lightning EFFECT at the Mage's landing spot on the landing tick (F9b, section 6;
+ *                                 Ben: "Add a lightning strike to the mage landing"), both sites
  */
 public record FightContent(String id, FightSettings settings, RingLook look, String mageMob, Cue refusedCue,
                            double crystalRingRadiusBlocks, double crystalHeightBlocks, Cue litCue,
-                           double participantRadiusBlocks, Arena arena, Dragon dragon) {
+                           double participantRadiusBlocks, Arena arena, Dragon dragon, boolean mageLandingLightning) {
 
     /**
      * THE ARENA FIGHT'S DRAGON (step F9).
@@ -34,7 +36,8 @@ public record FightContent(String id, FightSettings settings, RingLook look, Str
      * @param winReturnTicks  its death is the win; the arena's normal end follows this many ticks later
      * @param bossBarColor    the boss bar's colour, an Adventure colour name ({@code purple})
      */
-    public record Dragon(String mob, java.util.List<Double> mageThresholds, int winReturnTicks, String bossBarColor) {}
+    public record Dragon(String mob, java.util.List<Double> mageThresholds, int winReturnTicks, String bossBarColor,
+                         io.github.butterflysmp.rpg.core.fight.DragonAttacks attacks) {}
 
     /** A sound: its key ({@code item.shield.block}), volume and pitch. */
     public record Cue(String sound, float volume, float pitch) {}

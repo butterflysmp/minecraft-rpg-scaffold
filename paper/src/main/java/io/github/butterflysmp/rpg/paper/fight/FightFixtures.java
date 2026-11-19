@@ -336,6 +336,18 @@ public final class FightFixtures {
         return running() ? current.dragonPhase(phase) : "No fight fixture is running.";
     }
 
+    public String dragonTouch(Player p, String which) {
+        return running() ? current.dragonTouch(p, which) : "No fight fixture is running.";
+    }
+
+    public String dragonMove(double dx, double dy, double dz) {
+        return running() ? current.dragonMove(dx, dy, dz) : "No fight fixture is running.";
+    }
+
+    public String dragonToBreath(Player p) {
+        return running() ? current.dragonToBreath(p) : "No fight fixture is running.";
+    }
+
     public String dragonKill() {
         return running() ? current.dragonKill() : "No fight fixture is running.";
     }
@@ -354,6 +366,54 @@ public final class FightFixtures {
         for (FightInstance f : new ArrayList<>(fights.values())) {
             if (f.onFireball(event)) return;
         }
+    }
+
+    /** A mob's melee hit on a player: priced if it is any fight's dragon (F9b, section 4); empty for any other mob. */
+    public java.util.OptionalDouble dragonMelee(org.bukkit.entity.LivingEntity attacker, Player victim,
+                                                 double vanillaAmount) {
+        for (FightInstance f : new ArrayList<>(fights.values())) {
+            java.util.OptionalDouble hit = f.dragonMelee(attacker, victim, vanillaAmount);
+            if (hit.isPresent()) return hit;
+        }
+        return java.util.OptionalDouble.empty();
+    }
+
+    /** A cloud's hit on a player: priced if it is any fight's dragon's breath (F9b, section 4); empty otherwise. */
+    public java.util.OptionalDouble dragonBreath(org.bukkit.entity.AreaEffectCloud cloud, Player victim,
+                                                  double vanillaAmount) {
+        for (FightInstance f : new ArrayList<>(fights.values())) {
+            java.util.OptionalDouble hit = f.dragonBreath(cloud, victim, vanillaAmount);
+            if (hit.isPresent()) return hit;
+        }
+        return java.util.OptionalDouble.empty();
+    }
+
+    /**
+     * The name of the dragon's attack behind a HURT on {@code victim} dealt by {@code dealer}, or null when the dealer is
+     * no fight's dragon (F9b, section 4: "HURT lines must name which attack"). Each name is given once, oldest first.
+     */
+    public String attackNameFor(UUID victim, UUID dealer) {
+        if (dealer == null) return null;
+        for (FightInstance f : new ArrayList<>(fights.values())) {
+            if (dealer.equals(f.dragonId())) return f.takeAttackName(victim);
+        }
+        return null;
+    }
+
+    /** A vanilla hit: refused if it is a fight's dragon hitting that fight's own Mage (F9b, section 7). */
+    public boolean refusesDragonOnMage(org.bukkit.entity.Entity damager, org.bukkit.entity.Entity victim) {
+        for (FightInstance f : new ArrayList<>(fights.values())) {
+            if (f.refusesDragonOnMage(damager, victim)) return true;
+        }
+        return false;
+    }
+
+    /** A crystal heal on a mob: refused if it is any fight's dragon (F9b, section 2); any other mob's is untouched. */
+    public boolean refusesCrystalHeal(UUID healed, double vanillaAmount) {
+        for (FightInstance f : new ArrayList<>(fights.values())) {
+            if (f.refusesCrystalHeal(healed, vanillaAmount)) return true;
+        }
+        return false;
     }
 
     public String mageDie() {

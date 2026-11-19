@@ -65,6 +65,34 @@ public final class DragonCrossings {
         landed++;
     }
 
+    /**
+     * Why a hit on the dragon is refused, or {@link Refusal#NONE} (F9b, section 1; Ben: "No it can't be hurt while a
+     * mage is owed"). A living Mage refuses it, and so does a Mage that is owed and has not yet landed: from the
+     * crossing until that phase's Mage is dead. The gate asks BEFORE a hit, so the hit that crosses a threshold is
+     * judged with nothing owed and lands whole; every hit after it waits for the Mage.
+     *
+     * @param mageAlive whether a Mage is alive now (channelling, landed or held)
+     */
+    public Refusal refusal(boolean mageAlive) {
+        if (mageAlive) return Refusal.MAGE_ALIVE;
+        if (pending() > 0) return Refusal.MAGE_OWED;
+        return Refusal.NONE;
+    }
+
+    /** Why the dragon's gate refuses a hit. A living Mage is named first, since he is what the player must kill. */
+    public enum Refusal {
+        NONE("none"),
+        MAGE_ALIVE("mage-alive"),
+        MAGE_OWED("mage-owed");
+
+        private final String logName;
+
+        Refusal(String logName) { this.logName = logName; }
+
+        /** The word in the gate's DRAGONGATE line. */
+        public String logName() { return logName; }
+    }
+
     /** Mages owed and not yet landed. */
     public int pending() {
         return crossed - landed;

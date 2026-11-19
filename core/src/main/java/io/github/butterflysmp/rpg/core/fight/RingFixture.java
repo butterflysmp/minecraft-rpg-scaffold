@@ -228,15 +228,23 @@ public final class RingFixture {
         return !stopped && lastSnapshot != null && lastSnapshot.mageAlive();
     }
 
+    /** How many of the fight's crystals are lit as of the last tick (F9b: names the crystal a refused heal came under). */
+    public int crystalsLit() {
+        return lastCrystals;
+    }
+
     /** Where the cycle is as of the last tick or input; IDLE before the first. IDLE means no Mage and the ring home. */
     public MageCycle.Phase phase() {
         return lastSnapshot == null ? MageCycle.Phase.IDLE : lastSnapshot.phase();
     }
 
-    /** A hit on the DRAGON was refused by the gate (step F9): its own DRAGONGATE line, and the Mage's cue. */
-    public void dragonRefused(double amount, String source) {
-        port.log(String.format(Locale.ROOT, "DRAGONGATE t=%d phase=%s amount=%.3f source=%s refused",
-                fightTick, phase(), amount, source));
+    /**
+     * A hit on the DRAGON was refused by the gate (step F9): its own DRAGONGATE line, ending with why (F9b:
+     * {@code mage-alive} or {@code mage-owed}, {@link DragonCrossings.Refusal#logName}), and the Mage's cue.
+     */
+    public void dragonRefused(double amount, String source, String why) {
+        port.log(String.format(Locale.ROOT, "DRAGONGATE t=%d phase=%s amount=%.3f source=%s refused why=%s",
+                fightTick, phase(), amount, source, why));
         port.refusedCue();
     }
 

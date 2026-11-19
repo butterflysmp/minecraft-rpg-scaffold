@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.fight;
 
 import io.github.butterflysmp.rpg.core.fight.DamageGate;
+import io.github.butterflysmp.rpg.core.fight.DragonAttacks;
 import io.github.butterflysmp.rpg.core.fight.DragonCrossings;
 import io.github.butterflysmp.rpg.core.fight.DragonParts;
 import io.github.butterflysmp.rpg.core.fight.MageCycle;
@@ -93,6 +94,9 @@ public final class FightInstance {
     private DragonCrossings crossings;
     private net.kyori.adventure.bossbar.BossBar bossBar;
     private final java.util.Set<UUID> barViewers = new java.util.HashSet<>();
+    /** F9b, section 2: when a refused crystal heal on the dragon is logged (once per crystal lit). */
+    private final io.github.butterflysmp.rpg.core.fight.CrystalHealLog healLog =
+            new io.github.butterflysmp.rpg.core.fight.CrystalHealLog();
     /** The dragon died: the fight is won, and ends {@code win_return_ticks} later. */
     private boolean won;
     private MageCycle.Phase lastPhase = MageCycle.Phase.IDLE;
@@ -137,6 +141,8 @@ public final class FightInstance {
             if (dragon != null) {
                 trackBossBar();
                 releaseQueuedMage(ring);
+                healLog.crystalsNow(ring.crystalsLit());
+                noteFireballs();
             }
             if (play && safe) keepAlive();
             if (site.failureKills()) {
@@ -195,8 +201,21 @@ public final class FightInstance {
         MageCycle.LandingResult r = fixture.land(dxBlocks, dzBlocks);
         if (r == MageCycle.LandingResult.STARTED || r == MageCycle.LandingResult.HELD) {
             spawnMage(centre.getX() + dxBlocks, floor.getAsInt() + 1, centre.getZ() + dzBlocks);
+            if (fight.mageLandingLightning()) landingLightning(dxBlocks, floor.getAsInt() + 1, dzBlocks);
         }
         return String.format(Locale.ROOT, "Mage lands at C + (%.2f, %.2f): %s", dxBlocks, dzBlocks, r);
+    }
+
+    /**
+     * THE LANDING'S LIGHTNING (F9b, section 6; Ben: "Add a lightning strike to the mage landing"). An EFFECT ONLY:
+     * {@code World.strikeLightningEffect}, which the API documents as doing no damage and lighting nothing (the SEAT
+     * READING: effect only), at the spot he lands on, on the landing's own tick. Both sites; a content switch.
+     */
+    private void landingLightning(double dxBlocks, double yBlocks, double dzBlocks) {
+        Location at = new Location(world, centre.getX() + dxBlocks, yBlocks, centre.getZ() + dzBlocks);
+        org.bukkit.entity.LightningStrike bolt = world.strikeLightningEffect(at);
+        adapters.log().info(String.format(Locale.ROOT, "FIGHT lightning t=%d at=%.2f %.2f %.2f effect=%s",
+                fixture.fightTick(), dxBlocks, yBlocks - centre.getY(), dzBlocks, bolt != null && bolt.isEffect()));
     }
 
     /** {@code land random}: a uniformly random standable spot within the maximum landing distance. */
@@ -391,9 +410,11 @@ public final class FightInstance {
         else if (mage != null && change.target().equals(mage.getUniqueId())) target = "mage";
         else return;
         adapters.log().info(String.format(Locale.ROOT,
-                "FIGHTHIT t=%d target=%s amount=%.3f before_defense=%.3f health=%.3f/%.3f dealer=%s element=%s",
+                "FIGHTHIT t=%d target=%s amount=%.3f before_defense=%.3f health=%.3f/%.3f dealer=%s element=%s%s",
                 fixture.fightTick(), target, change.amount(), change.beforeDefense(), change.newCurrent(), change.max(),
-                change.dealer(), change.element()));
+                change.dealer(), change.element(),
+                // F9b, section 7: the dragon's vanilla phase at the hit, appended so the Mage's line is unchanged.
+                target.equals("dragon") ? " phase=" + dragon.getPhase() : ""));
         if (target.equals("dragon") && crossings != null && change.max() > 0.0) {
             for (double t : crossings.observe(change.newCurrent() / change.max())) {
                 adapters.log().info(String.format(Locale.ROOT,
@@ -459,9 +480,16 @@ public final class FightInstance {
         dragon.setPhase(org.bukkit.entity.EnderDragon.Phase.CIRCLING);
         crossings = new DragonCrossings(d.mageThresholds());
         RingFixture ring = fixture;
+        DragonCrossings queue = crossings;
+        // F9b, section 1 (Ben: "No it can't be hurt while a mage is owed"): refused while a Mage is alive OR owed. The
+        // gate asks before the hit, so the hit that crosses lands whole; core's one rule names the reason.
         adapters.gate().guard(dragon.getUniqueId(), new DamageGate.Rule() {
-            @Override public boolean damageable() { return !ring.mageAlive(); }
-            @Override public void refused(double amount, String source) { ring.dragonRefused(amount, source); }
+            @Override public boolean damageable() {
+                return queue.refusal(ring.mageAlive()) == DragonCrossings.Refusal.NONE;
+            }
+            @Override public void refused(double amount, String source) {
+                ring.dragonRefused(amount, source, queue.refusal(ring.mageAlive()).logName());
+            }
         });
         bossBar = net.kyori.adventure.bossbar.BossBar.bossBar(
                 net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(def.displayName()), 1.0f,
@@ -569,6 +597,25 @@ public final class FightInstance {
         return true;
     }
 
+    /**
+     * NO CRYSTAL HEALS THE FIGHT'S DRAGON (F9b, section 2; Ben: "No crystals should not heal the dragon"). READ, the
+     * pinned server jar: {@code EnderDragon.checkCrystals} raises {@code EntityRegainHealthEvent} with
+     * {@code ENDER_CRYSTAL} every ten ticks near a crystal and calls {@code setHealth} only if it is not cancelled; our
+     * {@code MobHealPolicy} would also reroute it into the store (100 a heal, read at the F9 boot). The listener cancels
+     * the event when this says so, which stops BOTH. Only THIS fight's dragon: every other mob's heal is untouched.
+     *
+     * @return whether the heal was this fight's dragon's (and is to be refused)
+     */
+    public boolean refusesCrystalHeal(UUID healed, double vanillaAmount) {
+        if (dragon == null || !healed.equals(dragon.getUniqueId())) return false;
+        int lit = fixture.crystalsLit();
+        if (healLog.shouldLog(lit)) {
+            adapters.log().info(String.format(Locale.ROOT, "DRAGONHEAL t=%d refused reason=ENDER_CRYSTAL vanilla=%.3f"
+                    + " crystals_lit=%d (once per crystal lit)", fixture.fightTick(), vanillaAmount, lit));
+        }
+        return true;
+    }
+
     /** The dragon is gone with its fight, at every ending: the gate released, the boss bar hidden from all, removed. */
     private void removeDragon(String why) {
         if (bossBar != null) {
@@ -608,6 +655,192 @@ public final class FightInstance {
                 + chosen.getUniqueId() + " by=" + by.getName());
         by.attack(chosen);
         return "Struck the dragon's " + partName(chosen) + ".";
+    }
+
+    // --- the dragon's damage (F9b, section 4) -------------------------------------------------------------------------
+
+    /** The attack names priced on each player, oldest first, for the HURT line to name (bounded; gone with the fight). */
+    private final java.util.Map<UUID, java.util.ArrayDeque<String>> attackNames = new java.util.HashMap<>();
+    private static final int ATTACK_NAMES_KEPT = 8;
+
+    /**
+     * A MELEE HIT FROM THIS FIGHT'S DRAGON on a player (Ben: "Yes those numbers are fine to start with"). Which attack it
+     * was is read from the dragon's part boxes as the server chose ({@link DragonAttacks#classify}); its content number
+     * is scaled by the dragon's gear score as any mob's hit is ({@code MobScaling.attackDamage}), and the caller deals it
+     * through armour. Today's seed is 0, because the dragon has no {@code ATTACK_DAMAGE} attribute (READ at F9).
+     *
+     * @return the hit to deal, or empty when the attacker is not this fight's dragon
+     */
+    public java.util.OptionalDouble dragonMelee(LivingEntity attacker, Player victim, double vanillaAmount) {
+        if (dragon == null || !attacker.getUniqueId().equals(dragon.getUniqueId())) return java.util.OptionalDouble.empty();
+        DragonAttacks.Box head = null;
+        DragonAttacks.Box neck = null;
+        java.util.List<DragonAttacks.Box> wings = new java.util.ArrayList<>();
+        for (org.bukkit.entity.ComplexEntityPart part : dragon.getParts()) {
+            DragonAttacks.Box b = box(part.getBoundingBox());
+            switch (partName(part)) {
+                case "head" -> head = b;
+                case "neck" -> neck = b;
+                case "wing" -> wings.add(b);
+                default -> { }
+            }
+        }
+        java.util.Optional<DragonAttacks.Attack> read = head == null || neck == null
+                ? java.util.Optional.empty()
+                : DragonAttacks.classify(box(victim.getBoundingBox()), head, neck, wings);
+        // A hit in no box (INFERRED rare: the parts moved between the server's choice and this read) is priced as the
+        // lesser attack, and its line says so, so a gate can count them.
+        DragonAttacks.Attack attack = read.orElse(DragonAttacks.Attack.WING);
+        return java.util.OptionalDouble.of(priceAttack(attack, fight.dragon().attacks().base(attack), victim,
+                read.isPresent() ? attack.logName() : "unknown->wing", vanillaAmount));
+    }
+
+    /**
+     * ONE HIT OF THE PERCHED BREATH from this fight's dragon. READ: the sitting dragon's cloud ({@code
+     * DragonSittingFlamingPhase}) is owned by the dragon, radius 5, 200 ticks, Instant Damage; Bukkit raises its hit as
+     * {@code ENTITY_ATTACK} with the CLOUD as the damager, which no rider took before (the cloud is not living, and
+     * {@code VanillaDamagePolicy} passes {@code ENTITY_ATTACK}). Each hit costs the content's figure a second times the
+     * cloud's interval over 20, so standing in it costs that a second. The cloud's size and life are not touched.
+     *
+     * @return the hit to deal, or empty when the cloud is not this fight's dragon's
+     */
+    public java.util.OptionalDouble dragonBreath(org.bukkit.entity.AreaEffectCloud cloud, Player victim,
+                                                  double vanillaAmount) {
+        if (dragon == null || !(cloud.getSource() instanceof org.bukkit.entity.EnderDragon source)
+                || !source.getUniqueId().equals(dragon.getUniqueId())) {
+            return java.util.OptionalDouble.empty();
+        }
+        double each = DragonAttacks.breathPerApplication(fight.dragon().attacks().breathPerSecond(),
+                cloud.getReapplicationDelay());
+        return java.util.OptionalDouble.of(priceAttack(DragonAttacks.Attack.BREATH, each, victim,
+                DragonAttacks.Attack.BREATH.logName(), vanillaAmount));
+    }
+
+    /**
+     * THE DRAGON DOES NOT HURT ITS OWN MAGE IN VANILLA (F9b, section 7). WHY the Mage's death message credited the
+     * dragon at the F9 boot ("Withered Dark Mage was slain by Ender Dragon", while our store credited Ben): READ, the
+     * pinned server jar, the dragon's wings and bite hurt EVERY living thing in their boxes ({@code EnderDragon.knockBack}
+     * and {@code hurt}), our Mage included; that vanilla hit lands on his vanilla health, which our store ignores, and
+     * vanilla's combat record keeps it. Our kill is {@code setKiller} then {@code setHealth(0)} ({@code MobDeathSystem}),
+     * which raises no damage event, so the message is built from that record: the dragon's last hit. Ours to fix: the
+     * event is cancelled for this fight's dragon on this fight's Mage. The wing's push is not an event and stays.
+     *
+     * @return whether it was (and is to be cancelled)
+     */
+    public boolean refusesDragonOnMage(org.bukkit.entity.Entity damager, org.bukkit.entity.Entity victim) {
+        if (dragon == null || mage == null) return false;
+        if (!damager.getUniqueId().equals(dragon.getUniqueId()) || !victim.getUniqueId().equals(mage.getUniqueId())) {
+            return false;
+        }
+        adapters.log().info("DRAGONMAGE t=" + fixture.fightTick() + " cancelled (the dragon's vanilla hit on its Mage)");
+        return true;
+    }
+
+    /**
+     * THE FIREBALL PROBE IN THE PLAY ROWS (F9b, section 7): DB1 could not say whether a fireball entity ever existed.
+     * Each loop tick counts dragon fireballs in the fight's world and logs the count whenever it changes.
+     */
+    private void noteFireballs() {
+        int now = world.getEntitiesByClass(org.bukkit.entity.DragonFireball.class).size();
+        if (now == lastFireballs) return;
+        adapters.log().info("FIGHT fireballs t=" + fixture.fightTick() + " count=" + now);
+        lastFireballs = now;
+    }
+
+    private int lastFireballs;
+
+    /** The dragon's uuid, while it lives; the HURT line asks whose hit it was. */
+    UUID dragonId() {
+        return dragon == null ? null : dragon.getUniqueId();
+    }
+
+    /** The oldest attack name priced on this player and not yet named, or null. */
+    String takeAttackName(UUID victim) {
+        java.util.ArrayDeque<String> q = attackNames.get(victim);
+        return q == null ? null : q.pollFirst();
+    }
+
+    private double priceAttack(DragonAttacks.Attack attack, double base, Player victim, String name,
+                               double vanillaAmount) {
+        Integer gs = dragon.getPersistentDataContainer().get(adapters.keys().mobGearScore, PersistentDataType.INTEGER);
+        int score = gs == null ? MAGE_GEAR_SCORE : gs;
+        double amount = io.github.butterflysmp.rpg.core.mob.MobScaling.attackDamage(base, true,
+                dragon instanceof org.bukkit.entity.Enemy, score);
+        java.util.ArrayDeque<String> q = attackNames.computeIfAbsent(victim.getUniqueId(), k -> new java.util.ArrayDeque<>());
+        if (q.size() >= ATTACK_NAMES_KEPT) q.pollFirst();
+        q.addLast(name);
+        adapters.log().info(String.format(Locale.ROOT, "DRAGONATTACK t=%d attack=%s player=%s base=%.3f gs=%d"
+                + " amount=%.3f vanilla=%.3f phase=%s", fixture.fightTick(), name, victim.getName(), base, score, amount,
+                vanillaAmount, dragon.getPhase()));
+        return amount;
+    }
+
+    private static DragonAttacks.Box box(org.bukkit.util.BoundingBox b) {
+        return new DragonAttacks.Box(b.getMinX(), b.getMinY(), b.getMinZ(), b.getMaxX(), b.getMaxY(), b.getMaxZ());
+    }
+
+    /**
+     * {@code dragon touch <head|wing>} (dev; F9b's staging of the dragon's attacks): puts the sender inside that part's
+     * ATTACK box as the server builds it (READ: head inflated by 1; a wing inflated by (4, 2, 4) and moved down 2), so
+     * the dragon's next tick bites or strikes him. The rows hold the dragon in HOVER, which is not a sitting phase, so
+     * the wing hurts (READ: {@code knockBack} hurts only when the phase is not sitting).
+     */
+    public String dragonTouch(Player p, String which) {
+        if (!running() || dragon == null || !dragon.isValid()) return "There is no dragon.";
+        org.bukkit.entity.ComplexEntityPart chosen = null;
+        for (org.bukkit.entity.ComplexEntityPart part : dragon.getParts()) {
+            if (partName(part).equalsIgnoreCase(which)) {
+                chosen = part;
+                break;
+            }
+        }
+        if (chosen == null || !("head".equalsIgnoreCase(which) || "wing".equalsIgnoreCase(which))) {
+            return "Touch 'head' or 'wing'.";
+        }
+        org.bukkit.util.BoundingBox b = chosen.getBoundingBox();
+        // Feet below the part's box: inside the head's box inflated by 1 (from minY - 1), or a wing's moved down 2 and
+        // inflated by 2 (from minY - 4).
+        double feetY = "head".equalsIgnoreCase(which) ? b.getMinY() - 0.5 : b.getMinY() - 3.0;
+        Location to = new Location(world, b.getCenterX(), feetY, b.getCenterZ(), p.getLocation().getYaw(), 0.0f);
+        p.teleport(to);
+        adapters.log().info(String.format(Locale.ROOT, "DRAGON touch t=%d part=%s at=%.2f %.2f %.2f phase=%s",
+                fixture.fightTick(), partName(chosen), to.getX() - centre.getX(), to.getY() - centre.getY(),
+                to.getZ() - centre.getZ(), dragon.getPhase()));
+        return "In the dragon's " + partName(chosen) + ".";
+    }
+
+    /**
+     * {@code dragon move <dx> <dy> <dz>} (dev; F9b's crystal row): moves the dragon to C + (dx, dy, dz). READ: vanilla
+     * looks for a crystal within its box inflated by 32 ({@code EnderDragon.checkCrystals}); hovering over the centre, a
+     * crystal on the 40-block pillar ring sits at the search's very edge, so the row moves the dragon beside one.
+     */
+    public String dragonMove(double dx, double dy, double dz) {
+        if (!running() || dragon == null || !dragon.isValid()) return "There is no dragon.";
+        Location to = new Location(world, centre.getX() + dx, centre.getY() + dy, centre.getZ() + dz);
+        boolean moved = dragon.teleport(to);
+        adapters.log().info(String.format(Locale.ROOT, "DRAGON moved t=%d to=%.2f %.2f %.2f ok=%s phase=%s",
+                fixture.fightTick(), dx, dy, dz, moved, dragon.getPhase()));
+        return "Dragon moved: " + moved + ".";
+    }
+
+    /**
+     * {@code dragon to-breath} (dev): puts the sender on this fight's dragon's breath cloud, if one exists. READ: the
+     * cloud spawns 10 ticks into the sitting-flaming phase, on the floor below a point 5 blocks ahead of the head.
+     */
+    public String dragonToBreath(Player p) {
+        if (!running() || dragon == null || !dragon.isValid()) return "There is no dragon.";
+        for (org.bukkit.entity.AreaEffectCloud c : world.getEntitiesByClass(org.bukkit.entity.AreaEffectCloud.class)) {
+            if (c.getSource() instanceof org.bukkit.entity.EnderDragon d && d.getUniqueId().equals(dragon.getUniqueId())) {
+                Location at = c.getLocation();
+                p.teleport(at.clone().add(0.0, 0.1, 0.0));
+                adapters.log().info(String.format(Locale.ROOT, "DRAGON to-breath t=%d cloud=%s at=%.2f %.2f %.2f"
+                                + " radius=%.2f interval=%d", fixture.fightTick(), c.getUniqueId(), at.getX() - centre.getX(),
+                        at.getY() - centre.getY(), at.getZ() - centre.getZ(), c.getRadius(), c.getReapplicationDelay()));
+                return "On the dragon's breath.";
+            }
+        }
+        adapters.log().info("DRAGON to-breath t=" + fixture.fightTick() + " cloud=none phase=" + dragon.getPhase());
+        return "The dragon has no breath cloud.";
     }
 
     /** A part's name, read from its box through the API alone ({@link DragonParts}); "part" when the box is no known size. */
@@ -658,7 +891,9 @@ public final class FightInstance {
                     id, tracked ? adapters.stats().current(id) : -1.0, tracked ? adapters.stats().max(id) : -1.0,
                     tracked ? adapters.stats().defenseValue(id) : -1.0, dragon.getPhase(),
                     p == null ? "none" : String.format(Locale.ROOT, "%.2f %.2f %.2f", p.getX() - centre.getX(),
-                            p.getY() - centre.getY(), p.getZ() - centre.getZ()), fixture.mageAlive()));
+                            p.getY() - centre.getY(), p.getZ() - centre.getZ()),
+                    crossings == null ? fixture.mageAlive()
+                            : crossings.refusal(fixture.mageAlive()) != DragonCrossings.Refusal.NONE));
         } else {
             line.append(" dragon=none");
         }
