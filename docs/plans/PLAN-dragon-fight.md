@@ -219,6 +219,71 @@ built, so that the log can say it next time.
 - entering at the arena's centre;
 - the sky (answer 3; the options are §6.8).
 
+### Twelfth: Ben's answers at the F9 boot (`GATE-fight-dragon.md` at `7e2ebfa8`), and his rulings on the fight's rules, 2026-11-19
+
+*a. Each question as the selftest asked it, then Ben's answer, verbatim from the gate's ASK lines.*
+
+1. "The dragon: did it fly and land as you expect, with no fireball?" — **"yes"** *(DB1)*
+2. "Could you hit it with your own weapon while it was in the air?" — **"yes"** *(DB1)*
+3. "Could you hit it with your own weapon while it had landed?" — **"yes"** *(DB1)*
+4. "The boss bar at the top of the screen: is it right?" — **"not we'll get to that"** *(DB1)*
+5. "For one player, is the dragon's 20,000 health right?" — **"yes"** *(DB2; he used `/rpg mana refill` 35 times
+   in his fights, so this is read with that)*
+6. "What most needs to change before waves are built?" — **"not much if anything"** *(DB2)*
+
+*b. The seat asked five things: (1) the dragon hurt while a Mage is owed: immune from the crossing until that phase's
+Mage is dead, or land the queued Mage at once; (2) should the fight's crystals heal the dragon; (3) try a temporary
+End-type world with the Paper switch, falling back to the night sky; (4) what a bite and a wing hit should do; (5)
+keep-inventory, immediate respawn, entering at the centre. Ben:*
+
+> "1. No it can't be hurt while a mage is owed
+> 2. No crystals should not heal the dragon
+> 3. yes let's try it
+> 4. Suggest some
+> 5. Keep inventory yes. The real fight will have multiple players and when they die, should be set to spectator mode until respawned. Players will respawn once the mage has been defeated. It's important that they spawn inside of the storm ring so they don't take storm damage. When all players are defeated at once they are all in spectator mode for a few seconds and get sent back to the normal world and put back to survival.
+>
+> A few extra changes
+>
+> 1. Add a lightning strike to the mage landing"
+
+*c. The seat suggested bite 80, wing 40, breath 30 a second, through armour, and asked what happens to a player who
+dies when no Mage is alive. Ben:*
+
+> "1. Yes those numbers are fine to start with
+> 2. You know what, replace the respawn system with a 60s timer and then they respawn."
+
+*then:*
+
+> "actually, a 60s timer when the mage is not up, when the mage is up, wait until it's defeated"
+
+*d. THEN BEN REPLACED THE RESPAWN RULES. This SUPERSEDES the respawn parts of b and c:*
+
+> "Before I send this, I want to change respawns again. Forget the 60s timer and the blocked while the mage is alive. When a player dies, they are thrown into spectator for the remainder of the fight or until they are respawned by another player. When they die, a copy of them is on the floor. Another player has to hold shift/crouch on top of that players copy for 3 seconds to respawn them."
+
+*e. The seat asked: (1) where the copy lies if he died outside the ring or fell into the void; (2) the health he comes
+back with; (3) whether a hit interrupts the reviver; (4) any limit on revives. Ben:*
+
+> "1. The copy should be placed just inside the ring in both cases
+> 2. 50% health
+> 3. No
+> 4. No but we will add modifiers to change that later"
+
+**SEAT READINGS, each the seat's and FLAGGED FOR BEN:**
+- the copy is KEPT just inside a moving ring;
+- "on top of" means within 1.5 blocks;
+- a progress bar for the reviver;
+- two revivers do not stack;
+- "a few seconds" for all down is 5;
+- the landing's lightning is effect only.
+
+**Entering at the centre:** unanswered; it stands as CC's choice.
+
+**Where each ruling is built (the seat's split ruling, 2026-11-19):**
+- F9b (`feat/fight-rules`): 1, 2 and 4 (bite, wing, breath), and the lightning;
+- F9c (`feat/fight-end`): 3;
+- F9d and F9e: the respawn rules of d and e (down, the copy, the revive, all down).
+- Until F9d, deaths stay as they are on master.
+
 ---
 
 ## 2. SEAT READINGS
