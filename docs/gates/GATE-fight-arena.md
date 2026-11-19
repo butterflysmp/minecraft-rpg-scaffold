@@ -346,6 +346,19 @@ FIGHTPROBE. **A log-line row passes on the VERBATIM line** (`<…>` as the row s
 **Status: NOT RUN.** Written before the second boot, committed before it. **NO BOOT until the seat has diffed the fix
 and this gate from origin and Ben says "ready" in his own words. Then only CC boots.**
 
+**READ, 2026-11-18, on the boot of `b70dc88e`** (the seat's approval, Ben's "ready"; one boot, 22:08:46 to his
+`/stop` at 22:17:13). **No `SELFTEST RUN ABORTED` line; every row ran.** The readings:
+- **R0a to R0d and R0eR2: as predicted.** *But carried-state steps 5 and 6 were not followed* (see under R0eR2).
+- **Rows:**
+  - **AE1R2, AE2R2, AE7R2: as predicted.**
+  - **AE4R2, AE5R2, AE6R2: as predicted except one predicted line,** `RESPAWNED`, which this path never writes.
+  - **AE3R2: not as predicted on (2),** a hollow prediction in TIME.
+  - **BA1R2 to BA3R2:** Ben's five answers verbatim.
+- **Carried state step 7:**
+  - `find run/world/dimensions/rpgfight -mindepth 1` printed nothing.
+  - The overworld holds **106** files, as the backup `2026-11-18-pre-fight-arena-2` did.
+  - Ten `FIGHTWORLD created`, ten `deleted … entries=16`, each the fight's own folder.
+
 **What changed:**
 - **The guard:** `SelfTestStaging.invalid`, asked by `SelfTestRun.invalidated`. It now accepts the run's world OR a
   fight world (`FightWorlds.isFightWorld`), and still refuses any other.
@@ -370,7 +383,24 @@ So **all ten arena rows are re-predicted** under their old names with `R2`; thei
 
 | prediction | instrument | READING |
 |---|---|---|
-| During the enable, exactly one **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=0`** (the namespace folder exists, empty since the first boot's carried state step 8), and **no `FIGHTWORLD deleting` line and no `orphan` line at all** | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'` | |
+| During the enable, exactly one **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=0`** (the namespace folder exists, empty since the first boot's carried state step 8), and **no `FIGHTWORLD deleting` line and no `orphan` line at all** | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'` | **AS PREDICTED (2026-11-18, boot of `b70dc88e`).** The pattern printed exactly one line before any player joined: `[22:08:47] [Rpg] FIGHTWORLD sweep path=C:\Users\Neb91\IdeaProjects\minecraft-rpg-scaffold\run\world\dimensions\rpgfight folders=0`. It printed no `deleting` line and no `orphan` line |
+
+**R0a TO R0d ON THE SECOND BOOT (2026-11-18, `b70dc88e`), each against its prediction above:**
+- **R0a: AS PREDICTED.** `[Rpg] Build: b70dc88e`, not dirty. `git ls-remote` gave `b70dc88e8eac783bc8791aa1a22210acf490ec11` for `feat/fight-arena` and `c1ca1613fb85…` for `feat/fight-site`, both before the boot, unmoved since the seat's diff.
+- **R0b: AS PREDICTED.** Read from the deployed jar:
+  - `PRESENT` for `alternate_turns: true`, `floor_y: 64` and `max_health: 6000`;
+  - `PRESENT` for `FIGHTWORLD orphan swept`, `ESCAPES`, `FIGHT powered-kill` and `AWAIT fight ended`;
+  - `PRESENT` for the scenario keys `AE5R2:` and `MG8R2:`.
+  - **Controls, all `ABSENT`:** `crystal_interval_ticks: 80`, `NoSuchTextControl` and the entry `GATE-fight-mage.yml`.
+- **R0c: AS PREDICTED.** `Loaded fight 'dragon': border 48.0, … 10 crystals every 240 ticks, …`, and `Loaded 11 abilities, …, 6 mobs, …`. The only `[Rpg]` WARN is `volley_stone`'s pair. No `Refusing` or `Skipping` line; no SEVERE or Exception anywhere in the log.
+- **R0d: AS PREDICTED.** `Selftest: dev server, 200 scenarios across 23 gates [… fight-site, fight-arena]`.
+- ***CARRIED STATE STEPS 5 AND 6 WERE NOT FOLLOWED, AND THE FAULT IS CC'S.*** CC ran
+  `./scripts/dev-server.sh --refresh-content` without first announcing "booting now" and the instruction not to log in.
+  The reminder not to log in reached the chat only after the script had started, in the same turn. **CC never told Ben
+  that R0 passed.** Ben's one `joined the game` line is at **22:08:55**; the server's `Done` was at about 22:08:48. CC's
+  R0 read already showed the join, so **Ben logged in before R0 was read.** The R0 readings above were taken from lines
+  logged before his join (R0c's lines up to 22:08:47; the sweep at 22:08:47), so his login cannot have moved them. The
+  login itself is the breach of the run sheet's line 0, and it is CC's, not Ben's: he was never told to wait.
 
 ### CARRIED STATE FOR THE SECOND BOOT (CC, in this order)
 
@@ -402,61 +432,61 @@ So **all ten arena rows are re-predicted** under their old names with `R2`; thei
 
 | prediction | stands on | READING |
 |---|---|---|
-| AE1's predictions (1) to (4), unchanged, except **`FIGHTWORLDS loaded=1 folders=1 marked=1 you=<n>`** inside and **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** at the end. **No `SELFTEST RUN ABORTED` line anywhere in the run** | `SelfTestArenaGuardTest`, `ArenaShapeTest` | |
+| AE1's predictions (1) to (4), unchanged, except **`FIGHTWORLDS loaded=1 folders=1 marked=1 you=<n>`** inside and **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** at the end. **No `SELFTEST RUN ABORTED` line anywhere in the run** | `SelfTestArenaGuardTest`, `ArenaShapeTest` | **AS PREDICTED.** (1) `FIGHTWORLD created name=rpgfight_fight_ea767d42 … ms=54`, `arena built … blocks=30615 end_stone=29535 obsidian=1080 ms=1217`, `FIGHT start … site=arena`, `FIGHTWORLD entered … return=world -100.78 63.00 21.03`; inside **`FIGHTWORLDS loaded=1 folders=1 marked=1 you=rpgfight_fight_ea767d42`**. (2) `END_STONE count=1` at `0 -1 0`, `0 -3 0`, `56 -1 0`, `0 -1 -56`; `AIR count=1` at `0 -4 0`, `57 -1 0`, `0 -1 -57`, `40 12 0`; **`OBSIDIAN count=108`** in `39 0 -1 41 11 1`; `OBSIDIAN count=1` at all ten tops. (3) `"You are already in a fight world."` (4) `FIGHTWORLD left … why=leave`, `returned … why=left`, `FIGHT nobody inside t=11 outcome=RUNNING`, `FIGHT ended reason=nobody-inside-RUNNING`, `unloaded`, `deleting`, `deleted … entries=16`; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`**. **No `SELFTEST RUN ABORTED` line anywhere in the log** (count 0); the run ended `SELFTEST RUN FINISHED` at 22:15:27 |
 
 ### AE2R2 — the ring, the Mage at 6000, a crystal on pillar 1 (SURVIVAL) — supersedes AE2
 
 | prediction | stands on | READING |
 |---|---|---|
-| AE2's predictions (1) to (6), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `ArenaShapeTest` | |
+| AE2's predictions (1) to (6), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `ArenaShapeTest` | **AS PREDICTED.** (1) `FIGHT land t=20 dx=6.000 dz=0.000 result=STARTED` (L = 20); `FIGHT mage spawned t=20 … at=6.00 0.00 0.00`. (2) `FIGHTPROBE t=22 … health=6000.000/6000.000 … crystals=0 beamsOnMage=0`. (3) **`FIGHTPHASE t=242 FAST_CLOSE->SLOW_CLOSE`** (L+222); **`CRYSTAL t=482 lit index=1`** (L+462); **`CRYSTALSPOT index=1 at=40.50 77.00 0.50 world=rpgfight_fight_bfc8fed0`**. (4) `FIGHTPROBE t=492 … crystals=1 beamsOnMage=1`. (5) 12 STRIKEs, 0 outside. RINGTICK: 123 lines, every `viewers=1`, every `points=` 6 × ceil(2π r). (6) `FIGHT nobody inside t=493 outcome=RUNNING`, the end lines, **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** |
 
 ### AE3R2 — the border lightning from the first tick (SURVIVAL) — supersedes AE3
 
 | prediction | stands on | READING |
 |---|---|---|
-| AE3's predictions (1) to (3), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `RingFixtureTest` | |
+| AE3's predictions (1) to (3), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `RingFixtureTest` | **NOT AS PREDICTED on (2) ONLY, AND THE ROW CANNOT PRESENT IT.** (1) **`STRIKE t=40 player=BaronVonYeetus k=1 damage=20.000 outside`**, `HURT before=20.000 after=18.182 defense=10.000 dealer=self dealerType=self`. (2) **No strike at t=80**: the row's waits (5 + 40 + 5) leave at t=51 (`FIGHT nobody inside t=51 outcome=RUNNING`), so a t=80 strike cannot fall inside this row. The prediction was carried unchanged from AE3 and never checked against the row's length; CC's error, a hollow prediction in TIME. The flag (strikes from the first tick, SEAT PLACEHOLDER) is READ by (1). (3) The end lines, `outcome=RUNNING`, **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** |
 
 ### AE4R2 — CLOSED kills him; home; the fight fails and ends (SURVIVAL; DIES ON PURPOSE) — supersedes AE4
 
 | prediction | stands on | READING |
 |---|---|---|
-| AE4's predictions (1) to (5), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`**. No ABORTED: his death happens inside the `await_fight`, which goes to the respawn wait | `SelfTestArenaGuardTest` *ae4R2s…*, `SelfTestFightStepsTest` | |
+| AE4's predictions (1) to (5), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`**. No ABORTED: his death happens inside the `await_fight`, which goes to the respawn wait | `SelfTestArenaGuardTest` *ae4R2s…*, `SelfTestFightStepsTest` | **AS PREDICTED, EXCEPT THE `RESPAWNED` LINE, WHICH IS ABSENT.** (1) `DEATH_RULES keep_inventory=false->true immediate_respawn=false->true`; L = 20 (`FIGHT land t=20 dx=0.000 dz=0.000`); `FIGHTPHASE t=210 FAST_CLOSE->SLOW_CLOSE` (S = 210 = L+190); `CRYSTAL t=450 lit index=1` (S+240). (2) **`FIGHTPHASE t=610 SLOW_CLOSE->CLOSED`** (L+590), `CRYSTAL t=610 removed index=1`, `FIGHT FAILED_CLOSED t=610`, the chat `"The fight has failed: FAILED_CLOSED."`. (3) `STRIKE … outside` **k=1 t=640 20.000 → HURT 18.182; k=2 t=680 40.000 → 36.364; k=3 t=720 80.000 → 72.727; k=4 t=760 160.000 → 145.455; k=5 t=800 320.000 → 290.909**: **k = 5 killed him**. (4) **`FIGHTWORLD died-inside player=BaronVonYeetus world=rpgfight_fight_922eec90`**, **`FIGHTWORLD returned … why=died`** the same tick, `FIGHT nobody inside t=802 outcome=FAILED_CLOSED`, `FIGHT ended reason=nobody-inside-FAILED_CLOSED`, `unloaded`, `deleting`, `deleted … entries=16`; chat `"BaronVonYeetus died"`. **No `RESPAWNED ticks=` line, in this row or anywhere in the log (count 0).** The fight world's immediate respawn and the died-inside return put him home alive on the death's tick, so `await_fight` found him alive and took the live branch, which logs no RESPAWNED. The prediction was CC's and named a line this path never writes. (5) **`AWAIT fight ended ticks=782`**. No ABORTED. `RULES restored keep_inventory=false immediate_respawn=false`; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** |
 
 ### AE5R2 — POWERED kills every participant and ends the fight (SURVIVAL; DIES ON PURPOSE) — supersedes AE5
 
 | prediction | stands on | READING |
 |---|---|---|
-| AE5's predictions (1) to (6), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `MageCycleTest`, `FightArenaSourceTest` | |
+| AE5's predictions (1) to (6), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `MageCycleTest`, `FightArenaSourceTest` | **AS PREDICTED, EXCEPT THE `RESPAWNED` LINE, ABSENT AS IN AE4R2 and for the same reason.** (1) `DEATH_RULES …`; `FIGHT land t=20 dx=0.000 dz=0.000`; S = 210 (`FIGHTPHASE t=210 FAST_CLOSE->SLOW_CLOSE`). (2) **68 `FIGHTKILL … counted=true`**, 0 `counted=false`; every `r_after` = `r_before` + 1.000 and every `r_before` ≤ 11.000 (0 of 68 off; the first `r_before=10.950`, the last `7.600`). (3) `CRYSTAL t=450, 690, 930, 1170, 1410, 1650, 1890, 2130, 2370, 2610 lit index=1…10` (S+240n), `CRYSTALSPOT index=n` at `40.50 77.00 0.50`, `32.50 77.00 24.50`, `12.50 77.00 38.50`, `-11.50 77.00 38.50`, `-31.50 77.00 24.50`, `-39.50 77.00 0.50`, `-31.50 77.00 -23.50`, `-11.50 77.00 -37.50`, `12.50 77.00 -37.50`, `32.50 77.00 -23.50` (each pillar + 0.5). (4) **`FIGHTPHASE t=2610 SLOW_CLOSE->POWERED`** (S+2400), `FIGHT FAILED_POWERED t=2610`, chat `"The fight has failed: FAILED_POWERED."`, **`FIGHT powered-kill t=2610 player=BaronVonYeetus amount=3500.000`**, exactly one. (5) **`HURT before=3500.000 after=3500.000 defense=10.000`** (defence bypassed), **`FIGHTWORLD died-inside`**, **`FIGHTWORLD returned … why=died`**, `FIGHT nobody inside t=2612 outcome=FAILED_POWERED`, the end lines; no `RESPAWNED`. No STRIKE outside in the row. (6) **`AWAIT fight ended ticks=23`**. The end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** |
 
 ### AE6R2 — falling off the disc (SURVIVAL; DIES ON PURPOSE) — supersedes AE6
 
 | prediction | stands on | READING |
 |---|---|---|
-| AE6's predictions (1) to (3), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `FightArenaSourceTest` | |
+| AE6's predictions (1) to (3), unchanged; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | `FightArenaSourceTest` | **AS PREDICTED, EXCEPT THE `RESPAWNED` LINE, ABSENT AS IN AE4R2.** (1) `DEATH_RULES …`; `Teleported BaronVonYeetus to 60.500000, -130.000000, 0.500000`. Unpredicted, and consistent with AE3R2: 60 from C is outside the 48 border, so while he fell he took `STRIKE … outside` k=1 to 4 at t=40, 80, 120, 160 (HURT 18.182, 36.364, 72.727, 145.455). The chat `"BaronVonYeetus fell out of the world"` says the void killed him, not k=4. (2) **`FIGHTWORLD died-inside player=BaronVonYeetus world=rpgfight_fight_2f0b74d8`**, **`returned … why=died`**, `FIGHT nobody inside t=191 outcome=RUNNING`, the end lines. (3) **`AWAIT fight ended ticks=181`**. The end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** |
 
 ### AE7R2 — entering while inside is refused (SURVIVAL) — supersedes AE7
 
 | prediction | stands on | READING |
 |---|---|---|
-| AE7's predictions (1) to (3), unchanged, except **`FIGHTWORLDS loaded=1 folders=1 marked=1 you=<n>`** inside and **`loaded=0 folders=0 marked=0 you=world`** at the end | `FightArenaSourceTest` | |
+| AE7's predictions (1) to (3), unchanged, except **`FIGHTWORLDS loaded=1 folders=1 marked=1 you=<n>`** inside and **`loaded=0 folders=0 marked=0 you=world`** at the end | `FightArenaSourceTest` | **AS PREDICTED.** (1) One `FIGHTWORLD created name=rpgfight_fight_f3c4e60f … ms=37` and no second; the second enter **`"You are already in a fight world."`**. (2) **`FIGHTWORLDS loaded=1 folders=1 marked=1 you=rpgfight_fight_f3c4e60f`**. (3) `left … why=leave`, `returned … why=left`, `FIGHT nobody inside t=11 outcome=RUNNING`, the end lines, `deleted … entries=16`; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** |
 
 ### BA1R2 — the arena stand-in and the night sky (SURVIVAL) — supersedes BA1
 
 | prediction | READING |
 |---|---|
-| BA1's prediction, unchanged (ASK 2 `words`, ASK 3 `yesno`); the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | |
+| BA1's prediction, unchanged (ASK 2 `words`, ASK 3 `yesno`); the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** | Question 2: **"no it's good for testing"** (ticks=250). Question 3: **"It's fine for now but I wonder if it's possible to have it be like in the end"** (ticks=384). Auto, as predicted: `FIGHTWORLD created name=rpgfight_fight_64918632 … ms=35`, `FIGHT start … site=arena`; 261 RINGTICKs, all `phase=IDLE r=48.000 points=1812 viewers=1`; `left … why=leave`, `FIGHT nobody inside t=1045 outcome=RUNNING`, `deleted … entries=16`; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** |
 
 ### BA2R2 — the six-row wall, alternating (SURVIVAL) — supersedes BA2
 
 | prediction | READING |
 |---|---|
-| BA2's prediction, unchanged (ASK 4 `yesno`); the end as BA1R2 | |
+| BA2's prediction, unchanged (ASK 4 `yesno`); the end as BA1R2 | Question 4: **"yes"** (ticks=186). Auto, as predicted: `FIGHTWORLD created name=rpgfight_fight_e51fd7c5 … ms=33`; 124 RINGTICKs, all `phase=IDLE r=48.000 points=1812 viewers=1`; `FIGHT nobody inside t=497 outcome=RUNNING`, `deleted … entries=16`; the end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** |
 
 ### BA3R2 — THE PLAY ROW WITHOUT A DRAGON, NO SAFETY (SURVIVAL; he may die) — supersedes BA3
 
 | prediction | READING |
 |---|---|
-| BA3's predictions (1) to (3), unchanged (ASK 5 and ASK 6 `yesno`); the end as BA1R2 | |
+| BA3's predictions (1) to (3), unchanged (ASK 5 and ASK 6 `yesno`); the end as BA1R2 | Question 5: **"yes"** (ticks=67). Question 6: **"yes"** (ticks=49). Auto, as predicted. (1) `FIGHT land t=100 dx=27.861 dz=-9.414 result=STARTED` (29.4 from C); **`FIGHT play on t=100 unsafe`**. (2) **Ended by a failure, then his death by it:** `FIGHTPHASE t=445 FAST_CLOSE->SLOW_CLOSE`; `CRYSTAL t=685 lit index=1`; **`FIGHTPHASE t=845 SLOW_CLOSE->CLOSED`**, `FIGHT FAILED_CLOSED t=845`; `FIGHTWORLD died-inside`, `returned … why=died`, `FIGHT nobody inside t=962 outcome=FAILED_CLOSED`; `AWAIT fight ended ticks=862`. **The Mage was not killed, so there is no time to kill.** No line records damage dealt to the Mage before CLOSED. In CLOSED, 11 `MAGEGATE … phase=CLOSED amount=204.250 source=hit/kinetic refused` (one at 408.500), t=845 to 889. **His deaths: one**, at t≈961. **Every STRIKE outside and its HURT:** t=680 k=1 20.000 → 18.182 (during SLOW_CLOSE); t=800 k=1 20.000 → 18.182; t=840 k=2 40.000 → 36.364; t=880 k=3 80.000 → 72.727; t=920 k=4 160.000 → 145.455; t=960 k=5 320.000 → 290.909, the last before his death. The other 18 STRIKEs were `k=0 … inside`. The k reset between t=680 and t=800 says he was back inside in between. Chat: `"Not enough mana: 40 needed, 2x available"` eight times, `"On cooldown for 1.3s"` once, and `"Mana refilled to 100."` three times, the last after the failure. (3) Questions 5 and 6 answered. The end **`FIGHTWORLDS loaded=0 folders=0 marked=0 you=world`** |
 
 ---
 
