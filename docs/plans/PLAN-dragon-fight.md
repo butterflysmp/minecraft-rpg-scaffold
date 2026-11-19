@@ -905,6 +905,61 @@ If deleting cannot be shown safe, STOP.
 - **`/rpg mobdamage` printed an estimate made before the hit landed.** It now replies from the store 2 ticks later.
 - **AWAIT_FIGHT** ends a wait when the dev command's fight ends, with a ceiling.
 
+### 6.6 F8b AS BUILT (`feat/fight-arena`, stacked on F8a, 2026-11-18): WHAT THE CODE SHOWED
+
+*The gate is `docs/gates/GATE-fight-arena.md`, NOT RUN at this writing. It carries the one R0 and run sheet for F8a's
+gate too.*
+
+- **Deleting a fight world was shown safe BEFORE any delete code was written** (the seat's condition). Each answer is
+  marked in the gate:
+  - The world's data lives in its own folder, `dimensions/rpgfight/fight_<hex>`.
+  - The boot loads only the stem registry's worlds.
+  - `unloadWorld` closes every region file synchronously.
+- **Every delete passes one judge, `FightFolders` (core), with four refusals**, and logs its absolute path first. The
+  symlink arm of the fourth is skipped on this machine: this Windows account cannot make a symbolic link.
+- **The return location is a nullable `FightReturn` on `PlayerProfile`** (C5), with no schema bump, for
+  `lifetimeXp`'s reason. A reflection test pins that every `with…` keeps it.
+- **CC'S CHOICES, FOR BEN** (not in the brief):
+  - **KEEP_INVENTORY in a fight world:** its drops would be deleted with it.
+  - **IMMEDIATE_RESPAWN:** a death sends him home with no death screen.
+  - **Entry at the centre.**
+- **A death retires a player's own scheduled tasks.** So the selftest's `await_fight` now polls on the global scheduler,
+  and the arena rows that kill him die inside one. `Scheduler` gained `onGlobalLater`: Bukkit's scheduler is banned, and
+  an unload has no region to own it.
+- **POWERED's kill lands a tick after it is dealt** (`applyDamage` is deferred). So where failure kills, the fight ends
+  through "nobody inside", never at the outcome, or he would be returned home and die there.
+- **The stale login is caught once his profile settles.** Where vanilla puts a player whose saved world is gone is
+  UNVERIFIED in the jar read here, and **AQ1's `at=` is its first reading.**
+- **The template-file arena (C3) is not built:** there is no file to test it. That is a deviation from C3, owed when
+  Ben builds an arena.
+- **The border lightning already strikes from the fight's first tick** (as the F4 fixture always did). AE3 reads it.
+
+### 6.7 THE SELFTEST IN A FIGHT WORLD AND THROUGH A DEATH (the seat's ruling 2b, 2026-11-18): EVERY STEP, READ
+
+*The first boot's arena run aborted inside AE1 three times: "the player left the dev world". The seat ruled: fix the
+guard, and do not stop at the guard. Below is every selftest step and end-of-row routine that assumes the run's world
+or a living player, read in `SelfTestRun`, `SelfTestSnapshot`, `SelfTestDrivers` and `SelfTestStaging` on
+`feat/fight-arena`.*
+
+| step or routine | what it reads or assumes | when he is in a fight world | when he has just died and respawned | done |
+|---|---|---|---|---|
+| **the guard**, `invalidated` before every pass | online, alive, in the run's world, one player online | **ABORTED the run** ("left the dev world") | "the player died", unless the row is `death_rules`: `advance` goes to the respawn wait first | **FIXED:** `SelfTestStaging.invalid` accepts the run's world OR a fight world, and still refuses any other; walked by `SelfTestArenaGuardTest` |
+| **the "player died" check** (AE4, AE5, AE6, BA3) | `advance`: `waitForRespawn(death_rules, dead)`, then `awaitRespawn` on the region scheduler at a location | n/a | `awaitRespawn` polled at the DEAD PLAYER'S location, a fight world that may be unloading | **FIXED:** both respawn waits (`advance` and `awaitFight`) poll at the run's start |
+| **`wait`** | `onEntityLater(player)` | runs | **a death retires his own tasks: a death DURING a wait would hang the run** | **Staged around:** every arena death happens inside `await_fight`, which polls on the global scheduler (F8b). No arena row dies during a `wait` |
+| **`await_fight`** | the global scheduler; dead at the end → the respawn wait | runs | handled | already F8b's |
+| **`save_blocks` and its restore** | blocks round his feet, in HIS world; written back at the next row's clean and at the run's end | would save fight-world blocks, and the restore would write them into a deleted world | n/a | **FIXED:** refused by name in a fight world (the row SKIPs); no arena row uses it |
+| **CLEAN** (row start) | `teleportAsync` to the run's start, then the saved blocks back, the tagged mobs removed near him, the inventory at a gate boundary | he is home: every arena row ends with the fight over, and the teleport runs FIRST anyway | his respawn put him at his return location, beside the start | none |
+| **LEFTOVER** | `player.getNearbyEntities`, after the CLEAN's teleport | reads the run's world | the same | none |
+| **LINGER** | `start.getWorld()`, round the start | the run's world | the same | none |
+| **RESTORED** (the run's end) | the snapshot: inventory, XP, cell, game mode, held slot, mana, his position (the start), and the RUN's world's rules and difficulty | if he is still inside: restored to the start, then `stopFight` ends the arena fight, which returns him to his return location, unloads and deletes | n/a | none |
+| **the difficulty restore** | the run's world only | the fight world has its own difficulty and rules (`FightWorlds.create` sets the fight's own) and is deleted at the end | n/a | none; recorded |
+| **`death_rules`** | KEEP_INVENTORY and IMMEDIATE_RESPAWN on the RUN's world | **does not reach the fight world**: the fight world sets both itself (`FightWorlds.create`, CC's choice for Ben) | which world's IMMEDIATE_RESPAWN a death reads is INFERRED to be the death's world | none |
+| **`probe_entities`** | `player.getNearbyEntities`, in HIS world | reads the fight world | after the respawn, the run's world | none: every arena row's end probes run after he is home |
+| **`probe_blocks`** | a box round his block, in HIS world | reads the fight world (AE1R2's floor and pillar probes: intended) | n/a | none |
+| **`ask`** | chat; a timeout on his own scheduler | runs | n/a (the BA rows ask before or after the fight, alive) | none |
+| **the HURT line** | the damage tap; the dealer looked up in HIS world | finds a dealer in the fight world | n/a | none |
+| **the run's end while he is inside** | `end` → restore → `stopFight` | he ends at his return location, and the world goes | n/a | none |
+
 ## 7. OPEN, FOR BEN
 
 *Listed, not answered.*

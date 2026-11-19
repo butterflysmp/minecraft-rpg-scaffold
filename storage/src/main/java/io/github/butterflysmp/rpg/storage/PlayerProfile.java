@@ -80,8 +80,51 @@ public record PlayerProfile(
         Integer stoneSlotOrNull,
         /** Is the Ability Stone switched on? {@code null} means never touched, which reads as ON (ruling 13). */
         @com.google.gson.annotations.SerializedName("stoneEnabled")
-        Boolean stoneEnabledOrNull
+        Boolean stoneEnabledOrNull,
+        /**
+         * Where to send this player when he leaves a fight's own world (the F8 brief, section 4 c), or {@code null} when
+         * no return is pending. Written on entry, cleared on the way out; a crash or a quit inside leaves it for the
+         * next login to read. See {@link #fightReturn()}.
+         */
+        @com.google.gson.annotations.SerializedName("fightReturn")
+        FightReturn fightReturnOrNull
 ) {
+    /**
+     * The v5 shape before the fight's return: every field up to {@code stoneEnabled}, with no return pending.
+     *
+     * <p><b>NO SCHEMA BUMP, AND THE REASON IS {@code lifetimeXp}'S:</b> absent reads as {@code null}, "no return
+     * pending", which is the correct reading for every profile written before the field existed, so there is nothing
+     * for a migration to fix up. A newer file read by an older build loses only a pending return, and Gson ignores the
+     * unknown key; that build has no fight worlds to return anyone from.
+     */
+    public PlayerProfile(int schemaVersion, UUID playerId, String archetypeId, String elementId, int level,
+                         long experience, List<String> unlockedAbilities, long lastSeenEpochMillis,
+                         int nexusSlot, long lifetimeXp, Boolean starEnabledOrNull, boolean vaultMigrated,
+                         Integer stoneSlotOrNull, Boolean stoneEnabledOrNull) {
+        this(schemaVersion, playerId, archetypeId, elementId, level, experience, unlockedAbilities,
+                lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated, stoneSlotOrNull,
+                stoneEnabledOrNull, null);
+    }
+
+    /** The pending fight return, if any. */
+    public java.util.Optional<FightReturn> fightReturn() {
+        return java.util.Optional.ofNullable(fightReturnOrNull);
+    }
+
+    /** Save where this player goes back to when he leaves a fight's world. */
+    public PlayerProfile withFightReturn(FightReturn back) {
+        if (back == null) throw new IllegalArgumentException("a return to set is never null; use withoutFightReturn");
+        return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                stoneSlotOrNull, stoneEnabledOrNull, back);
+    }
+
+    /** He has been returned: no return pending. */
+    public PlayerProfile withoutFightReturn() {
+        return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                stoneSlotOrNull, stoneEnabledOrNull, null);
+    }
     /**
      * Bump when the on-disk shape changes, and add a ProfileMigrations step.
      *
@@ -280,14 +323,14 @@ public record PlayerProfile(
     public PlayerProfile withStoneEnabled(boolean enabled) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, enabled);
+                stoneSlotOrNull, enabled, fightReturnOrNull);
     }
 
     /** Move the Ability Stone. Unvalidated here, for {@link #withNexusSlot}'s reason: {@code LockedSlots} bounds it. */
     public PlayerProfile withStoneSlot(int slot) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                slot, stoneEnabledOrNull);
+                slot, stoneEnabledOrNull, fightReturnOrNull);
     }
 
     public static PlayerProfile fresh(UUID id) {
@@ -295,7 +338,7 @@ public record PlayerProfile(
         // no key either -- which keeps a brand-new file byte-identical in shape to every existing
         // one, and keeps the absent-means-enabled path the ONE path rather than a fallback.
         return new PlayerProfile(CURRENT_SCHEMA_VERSION, id, NONE, NONE, 1, 0, List.of(),
-                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT, 0L, null, false, null, null);
+                System.currentTimeMillis(), DEFAULT_NEXUS_SLOT, 0L, null, false, null, null, null);
     }
 
     /**
@@ -308,19 +351,19 @@ public record PlayerProfile(
     public PlayerProfile withStarEnabled(boolean enabled) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, enabled, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
     }
 
     public PlayerProfile withSchemaVersion(int version) {
         return new PlayerProfile(version, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
     }
 
     public PlayerProfile withLastSeen(long epochMillis) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, epochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
     }
 
     /**
@@ -335,7 +378,7 @@ public record PlayerProfile(
     public PlayerProfile withNexusSlot(int slot) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, slot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
     }
 
     /**
@@ -352,7 +395,7 @@ public record PlayerProfile(
     public PlayerProfile withLifetimeXp(long xp) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, xp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
     }
 
     /**
@@ -373,7 +416,7 @@ public record PlayerProfile(
     public PlayerProfile withVaultMigrated(boolean migrated) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull,
-                migrated, stoneSlotOrNull, stoneEnabledOrNull);
+                migrated, stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
     }
 
     /**
@@ -389,6 +432,6 @@ public record PlayerProfile(
     public PlayerProfile withCell(String classId, String elementId) {
         return new PlayerProfile(schemaVersion, playerId, classId, elementId, level, experience,
                 List.of(), lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
     }
 }

@@ -22,7 +22,7 @@ class RingFixtureTest {
     private static final UUID BO = UUID.fromString("00000000-0000-0000-0000-00000000000b");
 
     /** The fake world: who is in the fight and where, and every call the fixture made. */
-    static final class FakePort implements RingFixture.Port {
+    static class FakePort implements RingFixture.Port {
         final List<RingFixture.Participant> present = new ArrayList<>();
         final List<String> lines = new ArrayList<>();
         final List<String> told = new ArrayList<>();
@@ -103,6 +103,29 @@ class RingFixtureTest {
             if (d > c / 2) d -= c;
             assertEquals(row % 2 == 0 ? 1.0 : -1.0, d, 1e-9, "row " + row + " in 20 ticks");
         }
+    }
+
+    /** The arena (failure kills) and the ordinary-world fixture (nobody is killed) tell the participants different things. */
+    @Test
+    void theFailureMessageSaysWhetherItKills() {
+        FakePort ordinary = new FakePort();
+        ordinary.place(ANA, "ana", CX, CZ);
+        RingFixture a = fixture(ordinary);
+        run(a, 5);
+        a.land(0.0, 0.0);
+        run(a, 900);
+        assertTrue(ordinary.told.contains("The fight has failed: FAILED_CLOSED (fixture: nobody is killed)."),
+                ordinary.told.toString());
+
+        FakePort arena = new FakePort() {
+            @Override public boolean failureKills() { return true; }
+        };
+        arena.place(ANA, "ana", CX, CZ);
+        RingFixture b = fixture(arena);
+        run(b, 5);
+        b.land(0.0, 0.0);
+        run(b, 900);
+        assertTrue(arena.told.contains("The fight has failed: FAILED_CLOSED."), arena.told.toString());
     }
 
     @Test

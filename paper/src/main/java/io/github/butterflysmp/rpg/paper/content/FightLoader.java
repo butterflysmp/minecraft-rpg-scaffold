@@ -64,14 +64,20 @@ public final class FightLoader {
                 "Loaded fight '%s': border %.1f, mage ring %.1f, v_fast %.2f, v_slow %.2f, e_kill %.2f, "
                         + "%d crystals every %d ticks, a strike every %d ticks from %.1f; ring %s (%d,%d,%d) size %.2f "
                         + "every %.2f blocks at %s, row shift %.2f, turn %.2f/s %s, every %d ticks; mage '%s' refused %s; "
-                        + "crystals at %.1f, %.1f up, lit %s; participants within %.1f",
+                        + "crystals at %.1f, %.1f up, lit %s; participants within %.1f; arena at (%d, %d) floor y %d, "
+                        + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f)",
                 f.id(), s.borderRadiusBlocks(), s.mageRingRadiusBlocks(), s.fastCloseBlocksPerSecond(),
                 s.slowCloseBlocksPerSecond(), s.killExpansionBlocks(), s.crystalCount(), s.crystalIntervalTicks(),
                 s.strikeIntervalTicks(), s.firstStrikeDamage(), l.particleKey(), l.red(), l.green(), l.blue(),
                 l.dustSize(), l.pointSpacingBlocks(), l.heightOffsetsBlocks(), l.rowShiftBlocks(),
                 l.turnBlocksPerSecond(), l.alternateTurns() ? "alternating" : "together", l.redrawPeriodTicks(),
                 f.mageMob(), f.refusedCue().sound(),
-                f.crystalRingRadiusBlocks(), f.crystalHeightBlocks(), f.litCue().sound(), f.participantRadiusBlocks());
+                f.crystalRingRadiusBlocks(), f.crystalHeightBlocks(), f.litCue().sound(), f.participantRadiusBlocks(),
+                f.arena().shape().centreX(), f.arena().shape().centreZ(), f.arena().shape().floorY(),
+                f.arena().shape().discRadius(), f.arena().shape().discThickness(), f.arena().shape().pillarCount(),
+                f.arena().shape().pillarWidth(), f.arena().shape().pillarRingRadius(),
+                f.arena().shape().pillarTopAboveFloor(), f.arena().timeOfDayTicks(), f.arena().entryDxBlocks(),
+                f.arena().entryDzBlocks());
     }
 
     FightContent parse(String id, ConfigurationSection root) {
@@ -129,7 +135,41 @@ public final class FightLoader {
         FightContent.Cue lit = cue(c, "lit");
         ConfigurationSection fx = section(root, "fixture");
         double reach = positive(fx, "participant_radius_blocks");
-        return new FightContent(id, settings, look, mob, refused, crystalRadius, crystalHeight, lit, reach);
+        return new FightContent(id, settings, look, mob, refused, crystalRadius, crystalHeight, lit, reach,
+                arena(section(root, "arena"), settings));
+    }
+
+    /**
+     * {@code arena:}, the fight's own world and its generated stand-in arena (step F8b). The shape's own checks are the
+     * range checks (a pillar off the disc is refused with its reason). Crystal spot n stands on pillar n, so the
+     * crystal count must be the pillar count.
+     */
+    private static FightContent.Arena arena(ConfigurationSection a, FightSettings settings) {
+        io.github.butterflysmp.rpg.core.fight.ArenaShape shape = new io.github.butterflysmp.rpg.core.fight.ArenaShape(
+                whole(a, "centre_x"), whole(a, "centre_z"), whole(a, "floor_y"),
+                whole(a, "disc_radius_blocks"), whole(a, "disc_thickness_blocks"), whole(a, "pillar_count"),
+                positive(a, "pillar_ring_radius_blocks"), whole(a, "pillar_width_blocks"),
+                whole(a, "pillar_top_above_floor_blocks"));
+        if (shape.pillarCount() != settings.crystalCount()) {
+            throw new IllegalArgumentException("arena: crystal spot n stands on pillar n, but crystal_count "
+                    + settings.crystalCount() + " is not pillar_count " + shape.pillarCount());
+        }
+        int time = whole(a, "time_of_day_ticks");
+        if (time < 0 || time >= 24000) {
+            throw new IllegalArgumentException("arena.time_of_day_ticks must be 0 to 23999: " + time);
+        }
+        List<?> entry = a.getList("entry_offset_blocks");
+        if (entry == null || entry.size() != 2 || !entry.stream().allMatch(e -> e instanceof Number)) {
+            throw new IllegalArgumentException("arena needs 'entry_offset_blocks:' as [dx, dz]"
+                    + (a.contains("entry_offset_blocks") ? ", got '" + a.get("entry_offset_blocks") + "'"
+                    : ", and it is missing"));
+        }
+        double dx = ((Number) entry.get(0)).doubleValue();
+        double dz = ((Number) entry.get(1)).doubleValue();
+        if (!shape.isFloorColumn(shape.centreX() + (int) Math.floor(dx), shape.centreZ() + (int) Math.floor(dz))) {
+            throw new IllegalArgumentException("arena.entry_offset_blocks [" + dx + ", " + dz + "] is off the disc");
+        }
+        return new FightContent.Arena(shape, time, dx, dz);
     }
 
     /** {@code <prefix>_sound}, {@code <prefix>_volume}, {@code <prefix>_pitch}; the sound must be known. */

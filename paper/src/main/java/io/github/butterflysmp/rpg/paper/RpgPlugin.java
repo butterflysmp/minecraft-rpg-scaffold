@@ -757,7 +757,15 @@ public final class RpgPlugin extends JavaPlugin {
         fightFixtures = new io.github.butterflysmp.rpg.paper.fight.FightFixtures(adapters,
                 () -> java.util.Optional.ofNullable(this.fights.get(
                         io.github.butterflysmp.rpg.paper.fight.FightFixtures.FIGHT_ID)),
-                () -> this.mobs);
+                () -> this.mobs, profiles,
+                new io.github.butterflysmp.rpg.paper.fight.FightWorlds(adapters.scheduler(), getLogger()));
+        // THE ORPHAN SWEEP (step F8b): a fight world a crash left behind is deleted, if and only if it passes all four
+        // of FightFolders' tests; every refusal is logged and the folder left alone. It must never stop the enable.
+        try {
+            fightFixtures.sweepOrphans();
+        } catch (RuntimeException e) {
+            getLogger().warning("FIGHTWORLD sweep failed and was skipped: " + e);
+        }
         // Every selftest run's end stops a fixture a row left running, so an aborted row cannot leave him struck.
         selfTest.bindFightStop(() -> fightFixtures.running() ? fightFixtures.stop("selftest-run-end") : null);
         selfTest.bindFightRunning(fightFixtures::running);

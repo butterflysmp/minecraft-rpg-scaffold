@@ -195,7 +195,9 @@ final class SelfTestRun {
         if (ended) return;
         // A death_rules row may lose its player (SU8): wait for the respawn instead of aborting.
         if (SelfTestStaging.waitForRespawn(deathExpected, player.isDead()) && player.isOnline()) {
-            awaitRespawn(player.getLocation(), 0);
+            // Polled at the run's start, a world that stays loaded: a death in a fight world is in a world that may be
+            // unloading by the next tick (the seat's ruling 2b; awaitFight does the same).
+            awaitRespawn(snapshot.start(), 0);
             return;
         }
         Optional<String> invalid = invalidated();
@@ -257,18 +259,27 @@ final class SelfTestRun {
     }
 
     /**
-     * AWAIT_FIGHT ({@link SelfTestAwaitFight}): polls once a tick on the player's own scheduler until the dev command's
-     * fight is no longer running, or the ceiling; logs which, with the ticks waited, and goes on.
+     * AWAIT_FIGHT ({@link SelfTestAwaitFight}): polls once a tick until the dev command's fight is no longer running,
+     * or the ceiling; logs which, with the ticks waited, and goes on.
+     *
+     * <p><b>On the GLOBAL scheduler, never the player's own:</b> in the arena he may die while this waits (a death is
+     * the fight's failure), and a death retires his own tasks, so a poll there would simply stop ({@link #awaitRespawn}'s
+     * note). A player found dead when the wait ends goes to the respawn wait; a live one goes on, on his own thread.
      */
     private void awaitFight(int ceiling, int waited) {
         if (ended) return;
         boolean running = service.fightRunning();
         if (SelfTestAwaitFight.done(running, waited, ceiling)) {
             log(SelfTestAwaitFight.line(running, waited, ceiling));
-            advance();
+            if (player.isDead() && player.isOnline()) {
+                // Polled at the run's start, a world that stays loaded: he died in a fight world that may be unloading.
+                awaitRespawn(snapshot.start(), 0);
+            } else {
+                service.scheduler().onEntity(player, this::advance);
+            }
             return;
         }
-        service.scheduler().onEntityLater(player, () -> awaitFight(ceiling, waited + 1), 1);
+        service.scheduler().onGlobalLater(() -> awaitFight(ceiling, waited + 1), 1);
     }
 
     /**
@@ -490,12 +501,11 @@ final class SelfTestRun {
 
     /** Why the run may not continue, re-checked before every pass: the guard's conditions can change mid-run. */
     private Optional<String> invalidated() {
-        if (!player.isOnline()) return Optional.of("the player left");
-        if (player.isDead()) return Optional.of("the player died");
-        if (!player.getWorld().equals(world)) return Optional.of("the player left the dev world");
-        int online = Bukkit.getOnlinePlayers().size();
-        if (online != 1) return Optional.of(online + " players are online");
-        return Optional.empty();
+        // The rule is SelfTestStaging.invalid's, pure and walked by SelfTestArenaGuardTest: a fight's own world counts
+        // as the run's (GATE-fight-arena.md, the seat's ruling 2a); any other world still aborts.
+        return SelfTestStaging.invalid(player.isOnline(), player.isDead(), player.getWorld().equals(world),
+                io.github.butterflysmp.rpg.paper.fight.FightWorlds.isFightWorld(player.getWorld()),
+                Bukkit.getOnlinePlayers().size());
     }
 
     /** Stop, quit and finish all come here. Idempotent: the second caller finds it ended. */

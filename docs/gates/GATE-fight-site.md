@@ -274,6 +274,21 @@ A non-zero LEFTOVER or LINGER, or a live crystal or skeleton left, makes its row
 |---|---|---|
 | (1) S = L + 222; **`CRYSTAL t=S+240 lit index=1`**. (2) `rpg mobdamage 1000000` at about S+250 is allowed (no MAGEGATE); **`FIGHTPHASE t=D SLOW_CLOSE->RETURNING`**, **`CRYSTAL t=D removed index=1`**, `FIGHT die t=D …` on that tick; REPLY **`"WITHER_SKELETON damaged: 0/6000 custom HP"`**. (3) No FIGHTKILL. (4) `FIGHTPROBE … mage=none crystals=0 beamsOnMage=0 …`. (5) **`FIGHTPHASE t=H RETURNING->IDLE` with H − D = (D − S) + 222** | `RingFixtureTest`, `MageCycleTest` | **AS PREDICTED in every predicted line; NOT AS PREDICTED on the common STRIKE rule.** S=232; `CRYSTAL t=472 lit index=1`; the kill allowed; **`FIGHTPHASE t=483 SLOW_CLOSE->RETURNING`**, `CRYSTAL t=483 removed index=1`, `FIGHT die t=483 … ticks_in_slow_close=251`; REPLY **`"WITHER_SKELETON damaged: 0/6000 custom HP"`**; `FIGHTPROBE t=485 mage=none crystals=0 beamsOnMage=0`; **`FIGHTPHASE t=956 RETURNING->IDLE`**: 956 − 483 = 473 = 251 + 222. **But three STRIKEs `outside`: `t=440 k=1 20.000` (HURT after=18.182), `t=480 k=2 40.000` (36.364), `t=520 k=3 80.000` (72.727).** He stood at C, 6 from M, and the slow ring fell below 6 at S+200: the gate's "6 from M while the ring is at least 6" was false for a row that waits past S+200 (staging error, CC's; not lethal) |
 
+### MG5R3 — MG5R2 re-staged so he stands inside every ring (SURVIVAL) — supersedes MG5R2 — UNREAD
+
+*The seat's ruling 2d, 2026-11-18: re-staged on `feat/fight-arena` and NOT re-run at the second boot; recorded as
+unread.*
+
+| prediction | stands on | READING |
+|---|---|---|
+| MG5R2's predictions (1) to (5), unchanged. He now stands **1 west of M** from the landing, inside every ring this row draws (the slow ring is 4.5 or more until the death at about S+251), so **every STRIKE is `k=0 damage=0.000 inside`, with no HURT** | MG5R2's | **UNREAD** (not re-run, by the seat's ruling) |
+
+### MG7R3 — MG7R2 re-staged so he stands inside every ring (SURVIVAL) — supersedes MG7R2 — UNREAD
+
+| prediction | stands on | READING |
+|---|---|---|
+| MG7R2's predictions (1) to (5), unchanged; he stands **1 west of M**, so **every STRIKE is inside, with no HURT** | MG7R2's | **UNREAD** (not re-run, by the seat's ruling) |
+
 ## THE CRYSTALS (F7), one every 240 ticks
 
 ### MG6R2 — a crystal every 240 ticks, held open by a kill train; counts and beams (SURVIVAL) — supersedes MG6

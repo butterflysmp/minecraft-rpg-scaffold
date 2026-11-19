@@ -31,5 +31,6 @@ public final class InlineScheduler implements Scheduler {
 
     @Override public void onEntityLater(Entity entity, Runnable task, long delayTicks) { refused.accept("onEntityLater " + delayTicks); }
     @Override public void onRegionLater(Location location, Runnable task, long delayTicks) { refused.accept("onRegionLater " + delayTicks); }
+    @Override public void onGlobalLater(Runnable task, long delayTicks) { refused.accept("onGlobalLater " + delayTicks); }
     @Override public void async(Runnable task) { refused.accept("async"); }
 }

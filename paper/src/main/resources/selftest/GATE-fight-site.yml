@@ -359,8 +359,8 @@ MG4R2:
   - probe_entities: "end_crystal 48"
   - probe_entities: "wither_skeleton 16"
 
-# MG5R2: his death in SLOW_CLOSE with ONE crystal lit (240 in): RETURNING on that tick, the crystal out, the ring home.
-MG5R2:
+# MG5R3 (re-staged: he stands 1 west of M, inside every ring): his death in SLOW_CLOSE with ONE crystal lit (240 in): RETURNING on that tick, the crystal out, the ring home.
+MG5R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-1 -1 -1 8 3 1"
   - cmd: "fill ~-1 ~-1 ~-1 ~8 ~-1 ~1 stone"
@@ -369,6 +369,7 @@ MG5R2:
   - cmd: "rpg fight start"
   - wait: 10
   - cmd: "rpg fight land 6 0"
+  - cmd: "tp @s ~5 ~ ~ -90 0"
   - wait: 470
   - aim: "fight_mage"
   - wait: 2
@@ -383,9 +384,9 @@ MG5R2:
 
 # ===== THE CRYSTALS (F7), one every 240 ticks =====
 
-# MG7R2: a crystal hit by the player (player_attack) is refused by its invulnerable flag before any event; a VOID-type
+# MG7R3 (re-staged: he stands 1 west of M, inside every ring): a crystal hit by the player (player_attack) is refused by its invulnerable flag before any event; a VOID-type
 # hit (out_of_world, which bypasses invulnerability: READ) reaches the listener, is refused and logged. It stays.
-MG7R2:
+MG7R3:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-1 -1 -1 8 3 1"
   - cmd: "fill ~-1 ~-1 ~-1 ~8 ~-1 ~1 stone"
@@ -394,6 +395,7 @@ MG7R2:
   - cmd: "rpg fight start"
   - wait: 10
   - cmd: "rpg fight land 6 0"
+  - cmd: "tp @s ~5 ~ ~ -90 0"
   - wait: 480
   - cmd: "rpg fight probe"
   - cmd: "damage @e[tag=fight_crystal,limit=1] 5 minecraft:player_attack by @s"

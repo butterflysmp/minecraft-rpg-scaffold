@@ -47,4 +47,18 @@ public interface FightSite {
 
     /** Whether this player takes part right now: drawn to, struck, and healed in the play row. */
     boolean takesPart(Player player);
+
+    /**
+     * Whether a failure is REAL here (the F8 brief, section 5 i; Ben: "the players die and the fight ends"): POWERED
+     * kills every participant through the store, and the fight fails once nobody is alive inside. The ordinary-world
+     * dev fixture keeps "nobody is killed".
+     */
+    default boolean failureKills() {
+        return false;
+    }
+
+    /** Whether nobody who entered is still in the fight. Only a site with entrants can say yes. */
+    default boolean nobodyInside() {
+        return false;
+    }
 }

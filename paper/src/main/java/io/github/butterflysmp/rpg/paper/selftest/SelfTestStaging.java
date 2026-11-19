@@ -195,6 +195,22 @@ final class SelfTestStaging {
         };
     }
 
+    /**
+     * Why the run may not go on, or empty ({@code SelfTestRun.invalidated}, asked before every pass).
+     *
+     * <p><b>A FIGHT'S OWN WORLD COUNTS AS THE RUN'S</b> (GATE-fight-arena.md; the seat's ruling 2a, 2026-11-18). The
+     * arena run aborted inside AE1 three times ("the player left the dev world"), because every arena row takes him
+     * into the fight's world. A run a row took there must not abort; any OTHER world still does.
+     */
+    static java.util.Optional<String> invalid(boolean online, boolean dead, boolean inRunWorld, boolean inFightWorld,
+                                              int onlinePlayers) {
+        if (!online) return java.util.Optional.of("the player left");
+        if (dead) return java.util.Optional.of("the player died");
+        if (!inRunWorld && !inFightWorld) return java.util.Optional.of("the player left the dev world");
+        if (onlinePlayers != 1) return java.util.Optional.of(onlinePlayers + " players are online");
+        return java.util.Optional.empty();
+    }
+
     /** The longest a {@code death_rules} row waits for its player to respawn before the run aborts. */
     static final int RESPAWN_CAP_TICKS = 200;
 

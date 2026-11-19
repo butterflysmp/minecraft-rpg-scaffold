@@ -432,6 +432,25 @@ public final class ProfileService {
         return profile(playerId).map(PlayerProfile::stoneEnabled).orElse(true);
     }
 
+    /**
+     * Save where this player goes back to when he leaves a fight's own world (the F8 brief, section 4 c; C5: through
+     * {@code PlayerRepository}, never a file of the fight's own). {@link #setStarEnabled}'s contract: refused (false)
+     * while the profile is loading, unreadable or untracked, and the fight refuses entry then.
+     */
+    public boolean setFightReturn(UUID playerId, io.github.butterflysmp.rpg.storage.FightReturn back) {
+        return update(playerId, current -> current.withFightReturn(back), "fight return");
+    }
+
+    /** He has been returned: clear the pending return. */
+    public boolean clearFightReturn(UUID playerId) {
+        return update(playerId, PlayerProfile::withoutFightReturn, "fight return clear");
+    }
+
+    /** The pending fight return, if the profile is loaded and has one. */
+    public Optional<io.github.butterflysmp.rpg.storage.FightReturn> fightReturn(UUID playerId) {
+        return profile(playerId).flatMap(PlayerProfile::fightReturn);
+    }
+
     /** The shared body of the two stone setters: the same shape as every setter above, written once. */
     private boolean update(UUID playerId, java.util.function.UnaryOperator<PlayerProfile> change, String what) {
         CompletableFuture<PlayerProfile> loading = profiles.get(playerId);

@@ -48,6 +48,24 @@ class SelfTestFightStepsTest {
         assertEquals("AWAIT fight ceiling ticks=1800 still running", SelfTestAwaitFight.line(true, 1800, 1800));
     }
 
+    /**
+     * A DEATH RETIRES THE PLAYER'S OWN TASKS (SelfTestRun's awaitRespawn note: a retired task never runs). In the arena he
+     * may die while the run waits for the fight to end, so the wait polls on the GLOBAL scheduler, and a player found
+     * dead when it ends goes to the respawn wait, never to his own scheduler.
+     */
+    @Test
+    void theFightWaitSurvivesADeathDuringIt() throws IOException {
+        String run = Files.readString(Path.of("src/main/java/io/github/butterflysmp/rpg/paper/selftest/SelfTestRun.java"))
+                .replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
+        int from = run.indexOf("private void awaitFight(int ceiling, int waited)");
+        assertTrue(from >= 0);
+        String body = run.substring(from, run.indexOf("\n    private ", from + 10));
+        assertTrue(body.contains("onGlobalLater("), "polls on the global scheduler: " + body);
+        assertTrue(!body.contains("onEntityLater("), "never on his own: " + body);
+        assertTrue(body.contains("player.isDead()") && body.contains("awaitRespawn("), "a dead player waits to respawn: "
+                + body);
+    }
+
     private static String driver(String signature) throws IOException {
         String src = Files.readString(DRIVERS).replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\\n]*", "");
         int from = src.indexOf(signature);
