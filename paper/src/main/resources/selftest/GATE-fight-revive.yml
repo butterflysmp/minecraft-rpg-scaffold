@@ -1,0 +1,112 @@
+# GATE-fight-revive.md: STEP F9e, THE COPY AND THE REVIVE (feat/fight-revive, 2026-11-19). `/rpg selftest fight-revive`.
+# THE ONE BOOT for this gate and GATE-fight-down.md: the run sheet runs `fight-down` first, then this.
+#
+# A down player's copy (a Mannequin, his look and name, lying down) lies on the floor one block inside the ring; a
+# living participant sneaking on it for 3 seconds revives him. On a server only the solo paths and the PRACTICE copy can
+# be read (`rpg fight copy <name> <dx> <dz>`): reviving a REAL second player is UNREAD until one exists.
+#
+# RV4 AND RVB3 PUT HIM DOWN ON PURPOSE. Every row that can hurt him sets death_rules and heals first; nothing else here
+# can hurt him (no dragon; the Mage never attacks; he stands inside the ring).
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# RV1: A PRACTICE COPY INSIDE THE RING lies where it was asked; a typed probe sees it (the positive control); the fight's
+# end removes it.
+RV1:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "rpg fight copy Practice 5 0"
+  - wait: 10
+  - probe_entities: "mannequin 16"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+  - probe_entities: "mannequin 64"
+
+# RV2: A PRACTICE COPY ASKED FOR OUTSIDE THE RING (60 east, the border is 48) lies one block inside its edge.
+RV2:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "rpg fight copy Outside 60 0"
+  - wait: 10
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+
+# RV3: DURING A FAST CLOSE the copy's logged place stays one block inside the ring at every ring tick: a Mage at the
+# centre (he never attacks), a copy at 40 east, the ring closing from 48 to the Mage's 12 about him.
+RV3:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - cmd: "rpg fight land 0 0"
+  - cmd: "rpg fight copy Edge 40 0"
+  - wait: 240
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"
+
+# RV4: THE RING CLOSED (DOWN ON PURPOSE): a Mage at the centre and nobody kills him; the ring shuts at S+400 and the
+# lightning puts him down. With no place inside, his copy stays where he went down and cannot be revived; ALL DOWN.
+RV4:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - cmd: "rpg fight land 0 0"
+  - await_fight: 1400
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+
+# RVB1: THE PRACTICE COPY'S LOOK (Ben; questions 1 and 2).
+RVB1:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "rpg fight copy Practice 3 0"
+  - tell: "QUESTIONS 1 AND 2 ARE COMING. Three blocks east of you (positive X) lies a practice copy: what a fallen player leaves on the floor. Walk round it and look at it, and at the line above it. About thirty seconds."
+  - wait: 600
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - ask: "1 2400 yesno Does the copy look like a player lying on the floor, with a name and a line above it?"
+  - ask: "2 2400 words What, if anything, looks wrong with the copy? Say what, or say none."
+
+# RVB2: THE REVIVE (Ben; questions 3, 4 and 5): he sneaks on a practice copy for three seconds.
+RVB2:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "rpg fight copy Practice 3 0"
+  - tell: "QUESTIONS 3, 4 AND 5 ARE COMING. Walk onto the copy three blocks east and hold sneak (shift). Let go once about halfway, to see it reset, then hold it for the full three seconds. The bar at the bottom of your screen shows the progress. About forty-five seconds."
+  - wait: 900
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - ask: "3 2400 yesno Did three seconds of holding sneak feel right?"
+  - ask: "4 2400 yesno Did you have to be on top of the copy (not just near it) for it to count?"
+  - ask: "5 2400 yesno Was the progress at the bottom of the screen clear?"
+
+# RVB3: GOING DOWN HIMSELF (Ben; questions 6 and 7; DOWN ON PURPOSE): /kill in the arena, then five seconds of
+# spectating before he is sent home.
+RVB3:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - tell: "QUESTIONS 6 AND 7 ARE COMING. In five seconds you will be put down on purpose (killed in the fight). Watch what you see. You keep everything, and you are sent home a few seconds later."
+  - wait: 100
+  - cmd: "kill @s"
+  - await_fight: 400
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - ask: "6 2400 yesno When you went down, was it clear what had happened to you?"
+  - ask: "7 2400 words What, if anything, about going down or spectating was unclear? Say what, or say none."

@@ -38,9 +38,10 @@ class SelfTestScenariosTest {
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
-                        "fight-dragon", "fight-rules", "fight-end", "fight-down"),
+                        "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-seven gates, in boot order (fight-down LAST, step F9d, 2026-11-19, a NEW gate after fight-end;"
+                "the twenty-eight gates, in boot order (fight-revive LAST, step F9e, 2026-11-19, a NEW gate after fight-down;"
+                        + " fight-down before it, step F9d, 2026-11-19, a NEW gate after fight-end;"
                         + " fight-end before it, step F9c, 2026-11-19, a NEW gate after fight-rules;"
                         + " fight-rules before it, step F9b, 2026-11-19, a NEW gate after fight-dragon;"
                         + " fight-dragon before it, step F9, 2026-11-18, a NEW gate after fight-arena;"
@@ -215,7 +216,10 @@ class SelfTestScenariosTest {
         // Then DOWN, ALL DOWN AND THE ENTRY MODE (GATE-fight-down.md, step F9d, 2026-11-19), a new gate, RECOUNTED the
         // same way on this branch's tree: 27 gates, 248 keys, 27 setups, so 221: FD1, FD2, FD3, FD4 added. The control:
         // 243 + 5 = 248. 217 was this line's value.
-        assertEquals(221, loaded.rows());
+        // Then THE COPY AND THE REVIVE (GATE-fight-revive.md, step F9e, 2026-11-19, stacked on fight-down), a new gate,
+        // RECOUNTED the same way on this branch's tree: 28 gates, 256 keys, 28 setups, so 228: RV1-RV4 and RVB1-RVB3
+        // added. The control: 248 + 8 = 256. 221 was this line's value.
+        assertEquals(228, loaded.rows());
     }
 
     /**

@@ -60,3 +60,6 @@ gates:
 # fight-down (step F9d, 2026-11-19) is paired with docs/gates/GATE-fight-down.md: DOWN, ALL DOWN and the entry mode. It
 # has no boot of its own: GATE-fight-revive.md (F9e, stacked on it) carries the one R0 and run sheet.
   - fight-down
+# fight-revive (step F9e, 2026-11-19, stacked on fight-down) is paired with docs/gates/GATE-fight-revive.md: the copy and
+# the revive. It carries the ONE R0 and run sheet for itself and fight-down, and Ben's rows for both.
+  - fight-revive
