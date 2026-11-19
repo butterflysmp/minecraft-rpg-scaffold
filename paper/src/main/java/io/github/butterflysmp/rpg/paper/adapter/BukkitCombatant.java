@@ -196,7 +196,30 @@ public final class BukkitCombatant {
         @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
                                           DefenseRule defense, String element,
                                           HitAccrual accrual) {
+            ctx.scheduler().onEntity(entity, () -> applyNow(amount, sourceId, crit, defense, element, accrual));
+        }
+
+        /**
+         * F9b, fix B: the condition is asked HERE, inside the deferral, on the entity's own thread, and the damage is
+         * applied in the same task: no tick lies between the question and the damage.
+         */
+        @Override public void applyDamageIf(java.util.function.BooleanSupplier applies, Runnable refused,
+                                            double amount, UUID sourceId, CritState crit, DefenseRule defense) {
             ctx.scheduler().onEntity(entity, () -> {
+                if (!applies.getAsBoolean()) {
+                    refused.run();
+                    return;
+                }
+                applyNow(amount, sourceId, crit, defense, null, HitAccrual.weapon());
+            });
+        }
+
+        /**
+         * The damage itself, on the entity's own thread (F9b fix B: split out of {@link #applyDamage} so that
+         * {@link #applyDamageIf} can ask its condition and apply in the SAME task, with no tick between).
+         */
+        private void applyNow(double amount, UUID sourceId, CritState crit, DefenseRule defense, String element,
+                              HitAccrual accrual) {
                 // THE PHALANX'S SHOT (dragon-mobs step R7a, the seat's ruling 2): ANY damage that reaches a shot
                 // destroys it, whatever the amount, and nothing below runs for it: no store, no status, no accrual,
                 // no Ignite, no aggro, no flash. FIRST, so no later line can be reached by a shot.
@@ -357,7 +380,6 @@ public final class BukkitCombatant {
                 if (entity.getNoDamageTicks() == 0) {
                     entity.playHurtAnimation(0f);
                 }
-            });
         }
 
         /**

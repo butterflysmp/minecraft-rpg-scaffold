@@ -158,6 +158,24 @@ public interface CombatantHandle {
      * this is what a heal-credit feature -- a support archetype's contribution, a heal popup -- would
      * have to start with.
      */
+    /**
+     * F9b, fix B: as {@link #applyDamage(double, UUID, CritState, DefenseRule)}, but only if {@code applies} still holds
+     * AT THE MOMENT THE DAMAGE IS APPLIED; otherwise nothing is dealt and {@code refused} runs. A fight passes "the victim
+     * is a participant of this fight and in its world", so a hit priced inside the fight never lands outside it.
+     *
+     * <p>This default asks at once, which is right for a handle that applies at once. An adapter that defers the damage
+     * (the Paper one, to the victim's own thread) MUST ask inside its deferral, with no tick between the question and the
+     * damage, or the condition is asked about a moment that has passed.
+     */
+    default void applyDamageIf(java.util.function.BooleanSupplier applies, Runnable refused, double amount,
+                               UUID sourceId, CritState crit, DefenseRule defense) {
+        if (applies.getAsBoolean()) {
+            applyDamage(amount, sourceId, crit, defense);
+        } else {
+            refused.run();
+        }
+    }
+
     void applyHeal(double amount);
 
     void applyKnockback(Vec3 direction, double strength);

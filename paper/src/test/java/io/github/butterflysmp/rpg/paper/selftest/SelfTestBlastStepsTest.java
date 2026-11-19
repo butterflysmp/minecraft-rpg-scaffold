@@ -24,6 +24,19 @@ class SelfTestBlastStepsTest {
                 SelfTestBlast.hurtLine(4.0, 4.0, 0.0, "self", "self"));
     }
 
+    /**
+     * F9b, section 4 ("HURT lines must name which attack"): a fight dragon's hit appends {@code attack=<a>}; every
+     * other HURT line is word for word as before (no attack, no suffix), so no merged prediction moves.
+     */
+    @Test
+    void aDragonsHurtLineNamesItsAttackAndEveryOtherIsUnchanged() {
+        assertEquals("HURT before=80.000 after=72.727 defense=10.000 dealer=" + PHAGE
+                        + " dealerType=ender_dragon/ender_dragon attack=bite",
+                SelfTestBlast.hurtLine(80.0, 800.0 / 11.0, 10.0, PHAGE.toString(), "ender_dragon/ender_dragon", "bite"));
+        assertEquals("HURT before=4.000 after=4.000 defense=0.000 dealer=self dealerType=self",
+                SelfTestBlast.hurtLine(4.0, 4.0, 0.0, "self", "self", null));
+    }
+
     @Test
     void theFuseLineNamesTheSwellAndTheIgnitedFlag() {
         assertEquals("FUSE tag=bl5 " + PHAGE + " fuse=10/30 ignited=false",

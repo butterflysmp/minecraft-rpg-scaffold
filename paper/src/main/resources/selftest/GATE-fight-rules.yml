@@ -1,0 +1,105 @@
+# GATE-fight-rules.md: STEP F9b, THE FIGHT'S RULES (feat/fight-rules). `/rpg selftest fight-rules`.
+# THE SECOND BOOT (the seat's fix brief of 2026-11-19). NO BOOT OF ITS OWN: GATE-fight-end.md carries the one R0 and
+# run sheet. RA1 and RA2 were read as predicted at the first boot and are NOT re-run; RA3, RA4 and RA5 are re-predicted
+# as RA3R2, RA4R2 and RA5R2 with fix A's window; RB1 is fix B's row.
+#
+# SAFETY (fix E): every row that can hurt him sets death_rules (a death cannot drop his inventory) and heals him first,
+# and the gate carries the arithmetic that he survives it at defence 0 against 100 health. Each exposure to the
+# dragon is 4 ticks or less, then `tp @s 0.5 65 20.5` puts him on the floor 20 blocks south of the centre, out of
+# the hovering dragon's reach. He is put there first too, as soon as the dragon is held in HOVER, so he waits out of
+# reach rather than under it.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# RA3R2: THE BITE, ONCE (fix A): put in the head's box for 4 ticks, he is bitten exactly once (80 before armour); every
+# other call in the window is suppressed and counted.
+RA3R2:
+  - death_rules: ""
+  - cmd: "effect give @s minecraft:slow_falling 30 0 true"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 25
+  - cmd: "rpg fight dragon touch head"
+  - wait: 4
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 30
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - cmd: "effect clear @s minecraft:slow_falling"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# RA4R2: THE WING, AT MOST ONCE (fix A, bite and wing together): put in a wing's box for 4 ticks.
+RA4R2:
+  - death_rules: ""
+  - cmd: "effect give @s minecraft:slow_falling 30 0 true"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 25
+  - cmd: "rpg fight dragon touch wing"
+  - wait: 4
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 30
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - cmd: "effect clear @s minecraft:slow_falling"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# RA5R2: THE BREATH, 35 TICKS ON ITS CLOUD: its applications 20 ticks apart, 30 each before armour, no push (fix F).
+RA5R2:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 2
+  - cmd: "rpg fight dragon phase breath_attack"
+  - wait: 15
+  - cmd: "rpg fight dragon to-breath"
+  - wait: 35
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 5
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# RB1: NO FIGHT DAMAGE OUTSIDE THE FIGHT (fix B): put in the head's box and taken out of the fight a tick later; a bite
+# priced in the fight never lands after his return.
+RB1:
+  - death_rules: ""
+  - cmd: "effect give @s minecraft:slow_falling 30 0 true"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 25
+  - cmd: "rpg fight dragon touch head"
+  - wait: 1
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - cmd: "effect clear @s minecraft:slow_falling"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"

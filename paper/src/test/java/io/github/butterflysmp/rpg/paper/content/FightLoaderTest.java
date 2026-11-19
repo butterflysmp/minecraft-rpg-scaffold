@@ -78,6 +78,7 @@ class FightLoaderTest {
               refused_sound: item.shield.block
               refused_volume: 1.0
               refused_pitch: 0.8
+              landing_lightning: true
             crystals:
               ring_radius_blocks: 40.0
               height_above_ground_blocks: 12.0
@@ -103,6 +104,10 @@ class FightLoaderTest {
               mage_thresholds: [0.80, 0.60, 0.40, 0.20]
               win_return_ticks: 200
               boss_bar_color: purple
+              bite: 81.0
+              wing: 41.0
+              breath_per_second: 31.0
+              contact_hit_interval_ticks: 21
             """;
 
     private Map<String, FightContent> load(String yaml) throws IOException {
@@ -138,12 +143,15 @@ class FightLoaderTest {
                 + "e_kill 1.00, 10 crystals every 240 ticks, a strike every 40 ticks from 20.0; ring dust (170,0,255) "
                 + "size 1.60 every 1.00 blocks at [0.2, 1.7, 3.2, 4.7, 6.2, 7.7], row shift 0.25, turn 1.00/s "
                 + "alternating, every 4 ticks; "
-                + "mage 'dark_mage' refused item.shield.block; crystals at 40.0, 12.0 up, lit block.beacon.power_select;"
+                + "mage 'dark_mage' refused item.shield.block, landing lightning on; crystals at 40.0, 12.0 up, lit block.beacon.power_select;"
                 + " participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to"
                 + " +12, time 18000, entry (0.0, 0.0); dragon 'ender_dragon' Mages below [0.8, 0.6, 0.4, 0.2], win"
-                + " return 200 ticks, bar purple"), lines);
-        assertEquals(new FightContent.Dragon("ender_dragon", List.of(0.80, 0.60, 0.40, 0.20), 200, "purple"),
-                d.dragon(), "Ben: \"let's do 80 60 40 and 20 percent\"; the win's 200 and purple are SEAT PLACEHOLDERS");
+                + " return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s, one contact hit per 20 ticks"), lines);
+        assertEquals(new FightContent.Dragon("ender_dragon", List.of(0.80, 0.60, 0.40, 0.20), 200, "purple",
+                new io.github.butterflysmp.rpg.core.fight.DragonAttacks(80.0, 40.0, 30.0, 20)),
+                d.dragon(), "Ben: \"let's do 80 60 40 and 20 percent\"; the win's 200 and purple are SEAT PLACEHOLDERS;"
+                        + " bite 80, wing 40, breath 30 a second: \"Yes those numbers are fine to start with\"");
+        assertTrue(d.mageLandingLightning(), "Ben: \"Add a lightning strike to the mage landing\"");
     }
 
     @Test
@@ -256,6 +264,48 @@ class FightLoaderTest {
         lines.clear();
         assertFalse(load(GOOD.replace("alternate_turns: true", "alternate_turns: false")).get("test").look()
                 .alternateTurns(), lines.toString());
+    }
+
+    /** F9b, section 4: each attack number arrives as written, each distinct, so a swap between two cannot pass. */
+    @Test
+    void theDragonsAttackNumbersArriveAsWritten() throws IOException {
+        var a = load(GOOD).get("test").dragon().attacks();
+        assertEquals(81.0, a.bite(), 0.0);
+        assertEquals(41.0, a.wing(), 0.0);
+        assertEquals(31.0, a.breathPerSecond(), 0.0);
+        assertEquals(21, a.contactHitIntervalTicks(), "F9b fix A: the window, as written");
+    }
+
+    @Test
+    void aMissingOrZeroContactWindowIsRefused() throws IOException {
+        refusedNaming(GOOD.replace("  contact_hit_interval_ticks: 21\n", ""), "'contact_hit_interval_ticks:'");
+        lines.clear();
+        refusedNaming(GOOD.replace("contact_hit_interval_ticks: 21", "contact_hit_interval_ticks: 0"),
+                "contact_hit_interval_ticks must be at least 1");
+    }
+
+    @Test
+    void aMissingAttackNumberIsRefusedByName() throws IOException {
+        refusedNaming(GOOD.replace("  wing: 41.0\n", ""), "'wing:'");
+    }
+
+    @Test
+    void aNegativeAttackNumberIsRefusedWithCoresReason() throws IOException {
+        refusedNaming(GOOD.replace("bite: 81.0", "bite: -1.0"), "dragon attacks", "bite", "0 or more");
+    }
+
+    /** F9b, section 6: the landing's lightning is a content switch, and both answers arrive (a round trip). */
+    @Test
+    void theLandingLightningSwitchArrivesAsWrittenEitherWay() throws IOException {
+        assertTrue(load(GOOD).get("test").mageLandingLightning());
+        lines.clear();
+        assertFalse(load(GOOD.replace("landing_lightning: true", "landing_lightning: false")).get("test")
+                .mageLandingLightning(), lines.toString());
+    }
+
+    @Test
+    void aMissingLandingLightningSwitchIsRefusedByName() throws IOException {
+        refusedNaming(GOOD.replace("  landing_lightning: true\n", ""), "'landing_lightning:'", "missing");
     }
 
     @Test

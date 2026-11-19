@@ -100,8 +100,12 @@ final class BukkitFightPort implements RingFixture.Port {
     public void damage(UUID player, double amount) {
         Player p = Bukkit.getPlayer(player);
         if (p == null) return;
-        BukkitCombatant.of(p, adapters).handle()
-                .applyDamage(amount, player, CritState.NORMAL, DefenseRule.APPLIES, null);
+        // F9b fix B: the strike lands only if, WHEN IT IS APPLIED (a tick later, on his own thread), he still takes part
+        // in THIS fight, in its world. A strike priced as he leaves does not follow him home.
+        BukkitCombatant.of(p, adapters).handle().applyDamageIf(() -> site.takesPart(p),
+                () -> log.info(String.format(java.util.Locale.ROOT, "FIGHTDAMAGE refused player=%s source=strike"
+                        + " amount=%.3f why=not-in-this-fight", p.getName(), amount)),
+                amount, player, CritState.NORMAL, DefenseRule.APPLIES);
     }
 
     @Override

@@ -1231,9 +1231,12 @@ public final class RpgListeners implements Listener {
             return;
         }
 
-        WeaponFire.attempt(event.getPlayer(), "right_click", weapons, weaponService, adapters,
-                        cooldowns, fireCadence)
-                .ifPresent(result -> {
+        java.util.Optional<CastResult> attempted = WeaponFire.attempt(event.getPlayer(), "right_click", weapons,
+                weaponService, adapters, cooldowns, fireCadence);
+        // F9b fix D: in a fight world every right-click is logged with its result (or no-weapon), and a cast that lands
+        // no hit within 40 ticks says so, so "my cursed emerald isn't working" can be read next time. Reads only.
+        fights.noteCast(event.getPlayer(), "right_click", attempted.orElse(null));
+        attempted.ifPresent(result -> {
                     // Present == this weapon binds right_click. Suppress the vanilla interaction
                     // whether the special fired or was refused -- the player pressed the special.
                     event.setCancelled(true);
@@ -2413,7 +2416,18 @@ public final class RpgListeners implements Listener {
         // fraction of THIS, so a heavily armored player reflects more than the hit did to them.
         // final, and never reassigned -- ShieldExchange derives both numbers from it below, so no
         // reduced local exists here that could be passed to the reflect by mistake.
-        final double preMitigation = adapters.stats().attackValue(attacker.getUniqueId());
+        // F9b, section 4: a FIGHT'S DRAGON prices its bite or wing from content (scaled by gear score as any mob's
+        // seed is); every other mob reads its seeded stat as before. The dragon's seed is 0: it has no ATTACK_DAMAGE.
+        io.github.butterflysmp.rpg.paper.fight.FightInstance.Contact dragonBlow =
+                fights.dragonMelee(attacker, victim, event.getDamage());
+        // F9b fix A: a contact hit inside the window lands NOTHING: not priced, and vanilla's event cancelled, so no
+        // vanilla damage either. The wing's push is not part of the event and stays (READ: knockBack pushes first).
+        if (dragonBlow.ours() && !dragonBlow.lands()) {
+            event.setCancelled(true);
+            return;
+        }
+        final double preMitigation = dragonBlow.ours() ? dragonBlow.amount()
+                : adapters.stats().attackValue(attacker.getUniqueId());
         if (nameplates.tracing()) {
             // G8's witness: the seeded attack over the vanilla attribute it was scaled from (M16).
             var attackAttr = attacker.getAttribute(Attribute.ATTACK_DAMAGE);
@@ -2445,8 +2459,20 @@ public final class RpgListeners implements Listener {
         }
 
         event.setDamage(TOKEN_DAMAGE);                // ride: keep flash/sound/i-frames, no double, can't kill
-        BukkitCombatant.of(victim, adapters).handle()
-                .applyDamage(exchange.applied(), attacker.getUniqueId());
+        if (dragonBlow.ours()) {
+            // F9b fix B: a fight dragon's hit lands only if he still takes part in that fight WHEN IT IS APPLIED; the
+            // first boot's RA3 died at home of two bites priced in the fight and applied after his return.
+            UUID dragonId = attacker.getUniqueId();
+            double applied = exchange.applied();
+            BukkitCombatant.of(victim, adapters).handle().applyDamageIf(
+                    () -> fights.dragonVictimInside(dragonId, victim),
+                    () -> fights.dragonHitRefused(dragonId, victim, "dragon-contact", applied),
+                    applied, dragonId, io.github.butterflysmp.rpg.core.combat.CritState.NORMAL,
+                    io.github.butterflysmp.rpg.core.combat.DefenseRule.APPLIES);
+        } else {
+            BukkitCombatant.of(victim, adapters).handle()
+                    .applyDamage(exchange.applied(), attacker.getUniqueId());
+        }
 
         // THE THORNS, and it is LAST for a reason that is NOT tick ordering.
         //
@@ -2471,6 +2497,55 @@ public final class RpgListeners implements Listener {
         if (Thorns.reflects(exchange.reflected())) {
             BukkitCombatant.of(attacker, adapters).handle()
                     .applyDamage(exchange.reflected(), victim.getUniqueId());
+        }
+    }
+
+    /**
+     * F9b, section 4: THE PERCHED BREATH of a fight's dragon. READ, the pinned server jar: the sitting dragon's cloud
+     * carries Instant Damage, and {@code CraftEventFactory.handleEntityDamageEvent} names any hit with a damager and no
+     * specially mapped type {@code ENTITY_ATTACK}, the damager being the CLOUD (that its type is indirect magic, which is
+     * not one of the mapped ones, is INFERRED; the gate reads the cause). So
+     * {@link #onMobMeleeAttack} never took it (the damager is not living) and {@code VanillaDamagePolicy} passes
+     * {@code ENTITY_ATTACK}: before this, vanilla's own number landed and our store took nothing.
+     *
+     * <p>Ridden as a mob's melee is: vanilla's damage tokened (flash, sound, i-frames), and the fight's price dealt
+     * through armour, blamed on the dragon. Any other cloud (a lingering potion, another dragon's) is left alone.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onFightDragonBreath(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player victim)) return;
+        if (!(event.getDamager() instanceof org.bukkit.entity.AreaEffectCloud cloud)) return;
+        java.util.OptionalDouble hit = fights.dragonBreath(cloud, victim, event.getDamage());
+        if (hit.isEmpty()) return;
+        UUID dragonId = ((org.bukkit.entity.Entity) cloud.getSource()).getUniqueId();
+        // F9b fix F (Ben: "remove the knock back from it"): the breath's vanilla hit is CANCELLED, not tokened. READ,
+        // LivingEntity.hurtServer: the knockback is applied only after actuallyHurt succeeds, and a cancelled event makes
+        // it fail, so no push. Our hit still lands, with the store's own hurt flash (BukkitCombatant). The bite's and
+        // the wing's pushes are untouched.
+        event.setCancelled(true);
+        double each = hit.getAsDouble();
+        BukkitCombatant.of(victim, adapters).handle().applyDamageIf(
+                () -> fights.dragonVictimInside(dragonId, victim),
+                () -> fights.dragonHitRefused(dragonId, victim, "breath", each),
+                each, dragonId, io.github.butterflysmp.rpg.core.combat.CritState.NORMAL,
+                io.github.butterflysmp.rpg.core.combat.DefenseRule.APPLIES);
+    }
+
+    /** F9b fix D: a breath cloud's application, handed to the fights (each logs only its own dragon's). Reads only. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onFightBreathApply(org.bukkit.event.entity.AreaEffectCloudApplyEvent event) {
+        fights.onCloudApply(event.getEntity(), event.getAffectedEntities());
+    }
+
+    /**
+     * F9b, section 7: a fight's dragon does not hurt that fight's own Mage in vanilla ({@code
+     * FightInstance.refusesDragonOnMage} says why his death message credited the dragon). Earliest, so nothing prices it.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onFightDragonHitsItsMage(EntityDamageByEntityEvent event) {
+        if (event.getDamager() instanceof org.bukkit.entity.EnderDragon
+                && fights.refusesDragonOnMage(event.getDamager(), event.getEntity())) {
+            event.setCancelled(true);
         }
     }
 
@@ -2923,6 +2998,14 @@ public final class RpgListeners implements Listener {
      */
     private void healTrackedMob(EntityRegainHealthEvent event, LivingEntity mob) {
         UUID id = mob.getUniqueId();
+        // F9b, section 2 (Ben: "No crystals should not heal the dragon"): a crystal's heal on a FIGHT'S dragon is
+        // cancelled here, before the reroute, which stops vanilla's setHealth AND the store's heal. Every other mob,
+        // and every other reason, falls through to M15 unchanged.
+        if (event.getRegainReason() == EntityRegainHealthEvent.RegainReason.ENDER_CRYSTAL
+                && fights.refusesCrystalHeal(id, event.getAmount())) {
+            event.setCancelled(true);
+            return;
+        }
         if (!adapters.stats().tracks(id)) return;
         if (MobHealPolicy.forReason(event.getRegainReason()) == MobHealPolicy.Action.PASS) return;
 

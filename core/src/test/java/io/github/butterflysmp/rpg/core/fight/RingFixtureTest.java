@@ -411,8 +411,8 @@ class RingFixtureTest {
         RingFixture f = fixture(port);
         run(f, 3);
         f.land(0.0, 0.0);
-        f.dragonRefused(250.5, "hit/kinetic");
-        assertEquals("DRAGONGATE t=3 phase=FAST_CLOSE amount=250.500 source=hit/kinetic refused",
+        f.dragonRefused(250.5, "hit/kinetic", "mage-alive");
+        assertEquals("DRAGONGATE t=3 phase=FAST_CLOSE amount=250.500 source=hit/kinetic refused why=mage-alive",
                 port.last("DRAGONGATE"));
         assertEquals(1, port.cues, "the Mage's refused cue");
         assertEquals(0, port.count("MAGEGATE"), "and not the Mage's line");

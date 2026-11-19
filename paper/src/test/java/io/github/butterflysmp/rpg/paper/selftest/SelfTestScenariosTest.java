@@ -38,9 +38,10 @@ class SelfTestScenariosTest {
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
-                        "fight-dragon"),
+                        "fight-dragon", "fight-rules"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-four gates, in boot order (fight-dragon LAST, step F9, 2026-11-18, a NEW gate after fight-arena;"
+                "the twenty-five gates, in boot order (fight-rules LAST, step F9b, 2026-11-19, a NEW gate after fight-dragon;"
+                        + " fight-dragon before it, step F9, 2026-11-18, a NEW gate after fight-arena;"
                         + " fight-arena before it, step F8b, 2026-11-18, a NEW gate after"
                         + " fight-site; fight-site before it, step F8a, 2026-11-18, in fight-mage's place: it"
                         + " re-predicts every row there; fight-mage LAST before it, steps F6 + F7, 2026-11-18, in fight-ring's place:"
@@ -197,7 +198,13 @@ class SelfTestScenariosTest {
         // Then THE DRAGON (GATE-fight-dragon.md, step F9, 2026-11-18), a new gate, RECOUNTED the same way on this
         // branch's tree: 24 gates, 234 keys, 24 setups, so 210: fight-dragon's 10 rows (DA1, DA2, DA3, DA5-DA9, DB1, DB2)
         // added. The control: 223 + 11 = 234. 200 was this line's value.
-        assertEquals(210, loaded.rows());
+        // Then THE FIGHT'S RULES (GATE-fight-rules.md, step F9b, 2026-11-19), a new gate, RECOUNTED the same way on this
+        // branch's tree: 25 gates, 240 keys, 25 setups, so 215: fight-rules' 5 rows (RA1-RA5) added. The control:
+        // 234 + 6 = 240. 210 was this line's value.
+        // Then THE SECOND BOOT'S fight-rules (the seat's fix brief of 2026-11-19), RECOUNTED the same way on this branch's
+        // tree: 25 gates, 239 keys, 25 setups, so 214: RA1-RA5 retired (read), RA3R2, RA4R2, RA5R2 and RB1 in their
+        // place. The control: 240 - 5 + 4 = 239. 215 was this line's value.
+        assertEquals(214, loaded.rows());
     }
 
     /**

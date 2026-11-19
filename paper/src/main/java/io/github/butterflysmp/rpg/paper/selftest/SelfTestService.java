@@ -46,6 +46,18 @@ public final class SelfTestService {
     private final io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports;
     private final Spawner spawner;
     private SelfTestRun active;
+    /** F9b: names a fight dragon's attack behind a HURT; bound late, by the plugin, to the fights. None until then. */
+    private java.util.function.BiFunction<java.util.UUID, java.util.UUID, String> attackNames = (victim, dealer) -> null;
+
+    /** Binds the lookup the HURT line names a dragon's attack by ({@code FightFixtures.attackNameFor}). */
+    public void bindAttackNames(java.util.function.BiFunction<java.util.UUID, java.util.UUID, String> lookup) {
+        this.attackNames = java.util.Objects.requireNonNull(lookup);
+    }
+
+    /** The attack behind a HURT on {@code victim} from {@code dealer}, or null when it was no fight dragon's. */
+    String attackNameFor(java.util.UUID victim, java.util.UUID dealer) {
+        return attackNames.apply(victim, dealer);
+    }
 
     /**
      * {@code /rpg spawn}'s own path with a pre-spawn hook, for the SPAWN step (GATE-dragon-fix.md, C2). RpgPlugin binds

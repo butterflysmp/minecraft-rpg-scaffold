@@ -57,7 +57,22 @@ public final class FightCommand {
                         .then(Commands.literal("phase")
                                 .then(Commands.argument("phase", StringArgumentType.word())
                                         .executes(ctx -> reply(ctx, devServer, p -> fixtures.dragonPhase(
-                                                StringArgumentType.getString(ctx, "phase")))))))
+                                                StringArgumentType.getString(ctx, "phase"))))))
+                        // F9b: stage the dragon's attacks (bite, wing, breath) on the sender.
+                        .then(Commands.literal("touch")
+                                .then(Commands.argument("part", StringArgumentType.word())
+                                        .executes(ctx -> reply(ctx, devServer, p -> fixtures.dragonTouch(p,
+                                                StringArgumentType.getString(ctx, "part"))))))
+                        .then(Commands.literal("to-breath").executes(ctx -> reply(ctx, devServer,
+                                fixtures::dragonToBreath)))
+                        .then(Commands.literal("move")
+                                .then(Commands.argument("dx", DoubleArgumentType.doubleArg(-64.0, 64.0))
+                                        .then(Commands.argument("dy", DoubleArgumentType.doubleArg(0.0, 64.0))
+                                                .then(Commands.argument("dz", DoubleArgumentType.doubleArg(-64.0, 64.0))
+                                                        .executes(ctx -> reply(ctx, devServer, p -> fixtures.dragonMove(
+                                                                DoubleArgumentType.getDouble(ctx, "dx"),
+                                                                DoubleArgumentType.getDouble(ctx, "dy"),
+                                                                DoubleArgumentType.getDouble(ctx, "dz")))))))))
                 .then(Commands.literal("leave").executes(ctx -> reply(ctx, devServer, fixtures::leave)))
                 .then(Commands.literal("worlds").executes(ctx -> reply(ctx, devServer, fixtures::worldsLine)))
                 .then(Commands.literal("play")

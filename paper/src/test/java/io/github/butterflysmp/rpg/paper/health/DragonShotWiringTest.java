@@ -36,7 +36,16 @@ class DragonShotWiringTest {
     @Test
     void everyHandleCallAsksTheSinkBeforeItActs() throws IOException {
         List<String> code = file("adapter", "BukkitCombatant.java");
-        int dmg = indexOf(code, "@Override public void applyDamage(double amount, UUID sourceId, CritState crit,");
+        // F9b fix B: applyDamage's body moved, unchanged, into applyNow, which applyDamage AND applyDamageIf both run (the
+        // second after its condition); so the strike is asked first on either path.
+        int outer = indexOf(code, "@Override public void applyDamage(double amount, UUID sourceId, CritState crit,");
+        assertTrue(outer > 0 && code.get(outer + 3).contains(
+                "ctx.scheduler().onEntity(entity, () -> applyNow(amount, sourceId, crit, defense, element, accrual));"),
+                "applyDamage runs applyNow: " + code.get(outer + 3));
+        int cond = indexOf(code, "@Override public void applyDamageIf(java.util.function.BooleanSupplier applies, Runnable refused,");
+        assertTrue(cond > 0 && indexAfter(code, cond, "applyNow(amount, sourceId, crit, defense, null, HitAccrual.weapon());")
+                < cond + 10, "and so does applyDamageIf");
+        int dmg = indexOf(code, "private void applyNow(double amount, UUID sourceId, CritState crit, DefenseRule defense, String element,");
         int dmgStrike = indexAfter(code, dmg, "if (ctx.shots().strike(entity,");
         int store = indexAfter(code, dmg, "ctx.stats().damage(entity.getUniqueId(), amount, sourceId,");
         assertTrue(dmg > 0 && dmgStrike > dmg && dmgStrike < store && dmgStrike <= dmg + 5,
