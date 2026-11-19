@@ -6,6 +6,24 @@
 > this: Exotic 1% then Legendary 3% then Epic 8% then Rare 12% and so on. Numbers are place holders. We can tune these
 > numbers to specific drop sources but this is the over arching system."
 
+> **Ben, 2026-11-19, answering the seat's four questions** (1: a rarity that lands with no item at that source, a miss
+> and keep rolling, or give the next rarity down outright; 2: equal chance or weights within a rarity; 3: uncommon 20%
+> and common 40% below rare; 4: the wiring order, a dev roll command, then mob drops, then the fight's reward, then
+> chests), verbatim:
+>
+> "1. If a rarity lands but that source has no item general skip that rarity. We can dive into the possibilities here
+> later.
+> 2. Yes equally likely across every item. I might want to add a way to favor your odds towards a specific item though.
+> 3. That's fine
+> 4. That's fine"
+>
+> **SEAT READINGS, each the seat's (2026-11-19):**
+> - (1) is the rule as built (a miss; the next tier is rolled as usual). It is now **BEN'S**, no longer flagged.
+> - (2) the uniform pick is **BEN'S**. A way to favour one item is a **FUTURE** feature, recorded and not built:
+>   `PoolPick` stays the one place it would go.
+> - (3) uncommon 20% and common 40% are accepted "for now".
+> - (4) the wiring order is **RULED**.
+
 **Status:** the core rule and its content loader are BUILT on `feat/loot-cascade` (branched from master `868df417`).
 **Nothing in the game uses it.** No boot, no gate. Written 2026-11-19 from the seat's queue, item 5.
 
@@ -86,11 +104,15 @@ were then spot-checked against `git show master:`.
 - **The item** (`CascadeLoot.roll`): a source gives, per rarity, a pool of item ids.
   - **SEAT PLACEHOLDER, flagged for Ben:** the pick within a rarity is UNIFORM. `PoolPick.UNIFORM` is one rule, so
     weights replace it in one place.
+    - **BEN'S, 2026-11-19:** "Yes equally likely across every item". A way to favour one item is a FUTURE feature, and
+      `PoolPick` is where it would go.
   - **SEAT READING, flagged:** a rarity that lands with an EMPTY pool for that source FALLS THROUGH. It counts as a miss
     and the next tier is rolled as usual, rather than giving nothing, and the result lists each rarity that fell
     through. (The alternative reading, "the next tier is given outright", is not built.)
     - **The seat, 2026-11-19:** it stays as built and stays FLAGGED. Ben has been asked which reading he wants; the
       other is built only on his word.
+    - **BEN'S, 2026-11-19:** "If a rarity lands but that source has no item general skip that rarity". This is the rule
+      as built. **No longer flagged.**
 
 ## 3. THE CONTENT (`content/loot/*.yml`, `LootLoader`)
 
@@ -142,11 +164,11 @@ rare and below.
 
 ## 5. OPEN, FOR BEN
 
-**Asked by the seat, 2026-11-19:**
-- the empty-pool reading;
-- an equal chance, or weights, within a rarity;
-- the tiers below rare (uncommon 20%, common 40% are the seat's);
-- what to wire first.
+**Asked by the seat, 2026-11-19, and ANSWERED by Ben the same day** (his words at this file's head):
+- the empty-pool reading: a skip, as built, now Ben's;
+- equal chance within a rarity: Ben's. Favouring one item is a future feature;
+- the tiers below rare, uncommon 20% and common 40%: accepted "for now";
+- what to wire first: the order in section 4 is RULED, a dev roll command first.
 
 **Still open:** the guaranteed-last-tier reading; the content layout.
 
