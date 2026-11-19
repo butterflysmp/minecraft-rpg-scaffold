@@ -99,6 +99,7 @@ class FightLoaderTest {
               entry_offset_blocks: [0.0, 0.0]
               environment: end
               all_down_seconds: 7
+              source: generated
             fixture:
               participant_radius_blocks: 128.0
             dragon:
@@ -312,6 +313,33 @@ class FightLoaderTest {
         lines.clear();
         assertEquals(FightContent.Environment.NORMAL, load(GOOD.replace("environment: end", "environment: normal"))
                 .get("test").arena().environment(), lines.toString());
+    }
+
+    /** Item 2 (C3): the arena's source arrives as written either way, and a template's file name with it. */
+    @Test
+    void theArenaSourceArrivesAsWrittenEitherWay() throws IOException {
+        FightContent.Arena g = load(GOOD).get("test").arena();
+        assertEquals(FightContent.Source.GENERATED, g.source(), lines.toString());
+        assertEquals(null, g.templateFile());
+        lines.clear();
+        FightContent.Arena t = load(GOOD.replace("  source: generated\n", "  source: template\n  template_file: ring_one\n"))
+                .get("test").arena();
+        assertEquals(FightContent.Source.TEMPLATE, t.source(), lines.toString());
+        assertEquals("ring_one", t.templateFile());
+        assertTrue(lines.stream().anyMatch(l -> l.contains("environment end, all down 7 s, template 'ring_one'; dragon")),
+                "a template is named in the loaded line: " + lines);
+    }
+
+    @Test
+    void aBadArenaSourceIsRefusedByName() throws IOException {
+        refusedNaming(GOOD.replace("source: generated", "source: vanilla"), "arena.source", "'vanilla'");
+        lines.clear();
+        refusedNaming(GOOD.replace("  source: generated\n", ""), "arena.source", "missing");
+        lines.clear();
+        refusedNaming(GOOD.replace("source: generated", "source: template"), "template_file", "missing");
+        lines.clear();
+        refusedNaming(GOOD.replace("  source: generated\n", "  source: template\n  template_file: ../evil\n"),
+                "template_file", "'../evil'");
     }
 
     /** F9e: the revive's numbers arrive as written (each differs from the shipped one), and no limit is the default. */

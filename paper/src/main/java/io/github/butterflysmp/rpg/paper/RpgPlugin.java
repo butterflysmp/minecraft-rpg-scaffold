@@ -762,7 +762,7 @@ public final class RpgPlugin extends JavaPlugin {
                         io.github.butterflysmp.rpg.paper.fight.FightFixtures.FIGHT_ID)),
                 () -> this.mobs, profiles,
                 new io.github.butterflysmp.rpg.paper.fight.FightWorlds(adapters.scheduler(), getLogger()),
-                actionBarHolds);
+                actionBarHolds, new File(getDataFolder(), "arenas").toPath());
         fightHits.bind(fightFixtures::onHealthChange);
         selfTest.bindAttackNames(fightFixtures::attackNameFor); // F9b: a HURT from a fight's dragon names its attack
         // THE ORPHAN SWEEP (step F8b): a fight world a crash left behind is deleted, if and only if it passes all four

@@ -105,7 +105,7 @@ class FightDownSourceTest {
         int due = f.indexOf("finish(\"all-down-FAILED\");");
         assertTrue(nobody > 0 && check > nobody && failed > check && due > failed, "the order");
         assertTrue(code("fight/FightFixtures.java").contains(
-                "new ArenaSite(w, f.arena().shape(), f.arena().allDownSeconds() * 20);"), "the wait from content");
+                "new ArenaSite(w, buildArena(w, f), f.arena().allDownSeconds() * 20);"), "the wait from content");
     }
 
     /** d: the mode he entered in is saved with his return and restored on every route home. */

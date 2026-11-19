@@ -66,7 +66,7 @@ public final class FightLoader {
                         + "every %.2f blocks at %s, row shift %.2f, turn %.2f/s %s, every %d ticks; mage '%s' refused %s, "
                         + "landing lightning %s; "
                         + "crystals at %.1f, %.1f up, lit %s; participants within %.1f; arena at (%d, %d) floor y %d, "
-                        + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f), environment %s, all down %d s; "
+                        + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f), environment %s, all down %s; "
                         + "dragon '%s' "
                         + "Mages below %s, win return %d ticks, bar %s, bite %.1f, wing %.1f, breath %.1f/s, one contact hit per %d ticks; "
                         + "revive within %.2f blocks for %d s at %.2f of max, %s, label '%s'",
@@ -81,7 +81,9 @@ public final class FightLoader {
                 f.arena().shape().discRadius(), f.arena().shape().discThickness(), f.arena().shape().pillarCount(),
                 f.arena().shape().pillarWidth(), f.arena().shape().pillarRingRadius(),
                 f.arena().shape().pillarTopAboveFloor(), f.arena().timeOfDayTicks(), f.arena().entryDxBlocks(),
-                f.arena().entryDzBlocks(), f.arena().environment().fileName(), f.arena().allDownSeconds(), f.dragon().mob(), f.dragon().mageThresholds(), f.dragon().winReturnTicks(),
+                f.arena().entryDzBlocks(), f.arena().environment().fileName(),
+                f.arena().allDownSeconds() + (f.arena().source() == FightContent.Source.TEMPLATE
+                        ? " s, template '" + f.arena().templateFile() + "'" : " s"), f.dragon().mob(), f.dragon().mageThresholds(), f.dragon().winReturnTicks(),
                 f.dragon().bossBarColor(), f.dragon().attacks().bite(), f.dragon().attacks().wing(),
                 f.dragon().attacks().breathPerSecond(), f.dragon().attacks().contactHitIntervalTicks(),
                 f.revive().radiusBlocks(), f.revive().seconds(), f.revive().healthFraction(),
@@ -255,7 +257,21 @@ public final class FightLoader {
                 + (env == null ? ", and it is missing" : ", got '" + env + "'"));
         int allDown = whole(a, "all_down_seconds");
         if (allDown < 0) throw new IllegalArgumentException("arena.all_down_seconds must be 0 or more, got " + allDown);
-        return new FightContent.Arena(shape, time, dx, dz, environment, allDown);
+        String src = a.getString("source");
+        FightContent.Source source;
+        if ("generated".equals(src)) source = FightContent.Source.GENERATED;
+        else if ("template".equals(src)) source = FightContent.Source.TEMPLATE;
+        else throw new IllegalArgumentException("arena.source must be 'generated' or 'template'"
+                + (src == null ? ", and it is missing" : ", got '" + src + "'"));
+        String template = null;
+        if (source == FightContent.Source.TEMPLATE) {
+            template = a.getString("template_file");
+            if (template == null || !template.matches("[a-z0-9_]{1,64}")) {
+                throw new IllegalArgumentException("arena.source template needs 'template_file:' a name of a-z, 0-9 and _"
+                        + (template == null ? ", and it is missing" : ", got '" + template + "'"));
+            }
+        }
+        return new FightContent.Arena(shape, time, dx, dz, environment, allDown, source, template);
     }
 
     /** {@code <prefix>_sound}, {@code <prefix>_volume}, {@code <prefix>_pitch}; the sound must be known. */
