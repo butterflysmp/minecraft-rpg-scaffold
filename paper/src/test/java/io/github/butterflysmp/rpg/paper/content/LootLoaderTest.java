@@ -33,7 +33,13 @@ class LootLoaderTest {
     private final List<String> lines = new ArrayList<>();
     private final Logger log = capturing();
 
-    private static final Set<String> ITEMS = Set.of("emberblade", "locust", "dragons_plume", "volley_stone");
+    /** Each fixture item and its own rarity, as the content gives them (weapons/*.yml). */
+    private static final Map<String, Rarity> ITEMS = Map.of("emberblade", Rarity.RARE, "locust", Rarity.RARE,
+            "dragons_plume", Rarity.LEGENDARY, "volley_stone", Rarity.EXOTIC);
+
+    private static java.util.Optional<Rarity> rarityOf(String id) {
+        return java.util.Optional.ofNullable(ITEMS.get(id));
+    }
 
     private Logger capturing() {
         Logger l = Logger.getAnonymousLogger();
@@ -74,7 +80,7 @@ class LootLoaderTest {
 
     private Map<String, LootContent> load(String yaml) throws IOException {
         Files.writeString(dir.resolve("test.yml"), yaml, StandardCharsets.UTF_8);
-        return new LootLoader(log, ITEMS::contains).loadAll(dir.toFile());
+        return new LootLoader(log, LootLoaderTest::rarityOf).loadAll(dir.toFile());
     }
 
     @Test
@@ -129,6 +135,13 @@ class LootLoaderTest {
         refusedNaming(GOOD.replace("rare: [locust]", "rare: [no_such_item]"), "'no_such_item'", "pools_only");
     }
 
+    /** The seat's mechanism ruling (2026-11-19): a pool holds only items of its own rarity. */
+    @Test
+    void anItemUnderAnotherRaritysPoolIsRefusedByName() throws IOException {
+        refusedNaming(GOOD.replace("legendary: [dragons_plume]", "legendary: [emberblade]"), "'emberblade'", "rare",
+                "legendary", "test_source");
+    }
+
     @Test
     void aMissingDefaultIsRefusedByName() throws IOException {
         refusedNaming(GOOD.replace("default:", "fallback:"), "'default:'");
@@ -138,7 +151,7 @@ class LootLoaderTest {
     void theShippedTableLoadsWithNoSource() throws IOException {
         Path shipped = Path.of("src/main/resources/content/loot/cascade.yml");
         Files.copy(shipped, dir.resolve("cascade.yml"));
-        Map<String, LootContent> got = new LootLoader(log, ITEMS::contains).loadAll(dir.toFile());
+        Map<String, LootContent> got = new LootLoader(log, LootLoaderTest::rarityOf).loadAll(dir.toFile());
         LootContent c = got.get("cascade");
         assertEquals(List.of(Rarity.EXOTIC, Rarity.LEGENDARY, Rarity.EPIC, Rarity.RARE, Rarity.UNCOMMON, Rarity.COMMON),
                 c.defaultTable().tiers().stream().map(t -> t.rarity()).toList(), lines.toString());
@@ -152,6 +165,6 @@ class LootLoaderTest {
     @Test
     void noFilesIsNoTables() {
         File empty = dir.resolve("none").toFile();
-        assertTrue(new LootLoader(log, ITEMS::contains).loadAll(empty).isEmpty());
+        assertTrue(new LootLoader(log, LootLoaderTest::rarityOf).loadAll(empty).isEmpty());
     }
 }

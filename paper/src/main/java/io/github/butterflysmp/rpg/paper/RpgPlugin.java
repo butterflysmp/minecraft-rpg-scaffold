@@ -300,10 +300,15 @@ public final class RpgPlugin extends JavaPlugin {
                         || armor.find(id).isPresent() || tools.find(id).isPresent());
         // The cascading loot tables (PLAN-loot.md): AFTER every gear kind, because a pool's item id must name one. Loaded
         // and logged only; NOTHING in the game rolls them yet.
-        this.loot = new io.github.butterflysmp.rpg.paper.content.LootLoader(getLogger(),
-                id -> weapons.find(id).isPresent() || shields.find(id).isPresent() || armor.find(id).isPresent()
-                        || tools.find(id).isPresent() || accessoryRegistry.find(id).isPresent())
-                .loadAll(new File(contentDir, "loot"));
+        // A pool holds only items of its own rarity (the seat's ruling, 2026-11-19), so the loader asks each item's.
+        this.loot = new io.github.butterflysmp.rpg.paper.content.LootLoader(getLogger(), id -> {
+            java.util.Optional<? extends io.github.butterflysmp.rpg.core.weapon.GearDefinition> g = weapons.find(id);
+            if (g.isEmpty()) g = shields.find(id);
+            if (g.isEmpty()) g = armor.find(id);
+            if (g.isEmpty()) g = tools.find(id);
+            if (g.isEmpty()) g = accessoryRegistry.find(id);
+            return g.map(io.github.butterflysmp.rpg.core.weapon.GearDefinition::rarity);
+        }).loadAll(new File(contentDir, "loot"));
         // A mob's element must name a loaded element, so elements load first (above) and the mob loader asks.
         this.mobs = new MobLoader(getLogger(), id -> elements.find(id).isPresent(),
                 RpgPlugin::soundKnown, k -> org.bukkit.Material.matchMaterial(k) != null)

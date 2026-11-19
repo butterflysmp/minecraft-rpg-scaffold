@@ -13,7 +13,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Predicate;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 /**
@@ -30,18 +31,22 @@ import java.util.logging.Logger;
  *       rare: [emberblade, locust]
  * </pre>
  * A file is refused WHOLE, by name and reason, for a chance outside [0, 1], an unknown rarity, tiers out of rarity
- * order or a guaranteed tier above another (core's {@code CascadeTable}), or an unknown item id. Its Loaded line prints
+ * order or a guaranteed tier above another (core's {@code CascadeTable}), an unknown item id, or an item under a pool
+ * of another rarity (the seat's ruling, 2026-11-19: a pool holds only items of its own rarity). Its Loaded line prints
  * each default tier's written chance and its TRUE odds, and nothing's.
  */
 public final class LootLoader {
 
     private final Logger log;
-    private final Predicate<String> itemKnown;
+    private final Function<String, Optional<Rarity>> itemRarity;
 
-    /** @param itemKnown whether an item id names a loaded weapon, shield, armour piece, tool or accessory */
-    public LootLoader(Logger log, Predicate<String> itemKnown) {
+    /**
+     * @param itemRarity an item id's own rarity, when it names a loaded weapon, shield, armour piece, tool or accessory;
+     *                   empty for an unknown id
+     */
+    public LootLoader(Logger log, Function<String, Optional<Rarity>> itemRarity) {
         this.log = log;
-        this.itemKnown = itemKnown;
+        this.itemRarity = itemRarity;
     }
 
     public Map<String, LootContent> loadAll(File dir) {
@@ -129,9 +134,16 @@ public final class LootLoader {
             Rarity r = rarity("source '" + sid + "' pools", key);
             List<String> items = p.getStringList(key);
             for (String item : items) {
-                if (!itemKnown.test(item)) {
+                Optional<Rarity> own = itemRarity.apply(item);
+                if (own.isEmpty()) {
                     throw new IllegalArgumentException("source '" + sid + "' pool " + key + " names an unknown item '"
                             + item + "'");
+                }
+                // The seat's mechanism ruling (2026-11-19): a pool holds only items of its own rarity.
+                if (own.get() != r) {
+                    throw new IllegalArgumentException("source '" + sid + "' pool " + key + " names '" + item + "', whose"
+                            + " own rarity is " + own.get().name().toLowerCase(Locale.ROOT) + ", not "
+                            + r.name().toLowerCase(Locale.ROOT) + ": a pool holds only items of its rarity");
                 }
             }
             out.put(r, List.copyOf(items));
