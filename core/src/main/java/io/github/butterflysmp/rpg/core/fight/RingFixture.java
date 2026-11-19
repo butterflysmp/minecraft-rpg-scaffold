@@ -181,6 +181,27 @@ public final class RingFixture {
     }
 
     /** The cycle's outcome as of the last tick: RUNNING, or how the fight failed. */
+    /**
+     * THE WALL'S WITNESS (GATE-fight-site.md): for each row, lowest first, the arc along the ring from angle 0 to that
+     * row's first point at this tick, blocks, in [0, 2 pi r): the same points {@link #tick} draws. Two readings a few
+     * ticks apart show which way each row turns. Empty before the first tick, or once the ring has closed.
+     */
+    public List<Double> wallStartArcs() {
+        if (lastSnapshot == null) return List.of();
+        Ring ring = lastSnapshot.ring();
+        List<double[]> pts = RingPoints.points(ring, groundYBlocks, look, fightTick);
+        if (pts.isEmpty()) return List.of();
+        int per = RingPoints.pointsPerHeight(ring.radiusBlocks(), look);
+        List<Double> out = new java.util.ArrayList<>();
+        for (int row = 0; row < look.heightOffsetsBlocks().size(); row++) {
+            double[] p = pts.get(row * per);
+            double a = Math.atan2(p[2] - ring.centreZBlocks(), p[0] - ring.centreXBlocks());
+            if (a < 0) a += 2.0 * Math.PI;
+            out.add(a * ring.radiusBlocks());
+        }
+        return out;
+    }
+
     public MageCycle.Outcome outcome() {
         return lastSnapshot == null ? MageCycle.Outcome.RUNNING : lastSnapshot.outcome();
     }

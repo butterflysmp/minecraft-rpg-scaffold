@@ -56,11 +56,11 @@ class MobLoaderStanceTest {
     }
 
     @Test
-    void theShippedDarkMageGlowsIsStationaryAndHas1500() {
+    void theShippedDarkMageGlowsIsStationaryAndHas6000() {
         MobDefinition mage = load(new File("src/main/resources/content/mobs")).find("dark_mage").orElseThrow();
         assertEquals("wither_skeleton", mage.baseEntity());
         assertEquals("Withered Dark Mage", mage.displayName());
-        assertEquals(1500.0, mage.maxHealth(), 0.0);
+        assertEquals(6000.0, mage.maxHealth(), 0.0, "Ben, 2026-11-18: \"Change the Mage health to 6,000\"");
         assertEquals("void", mage.element());
         assertEquals(new MobStance(true, true), mage.stance());
         assertTrue(warnings.isEmpty(), "no warning loading the shipped mobs: " + warnings.size());

@@ -732,24 +732,29 @@ public final class RpgCommand {
                 player.sendMessage(Component.text("That mob is not tracked.", NamedTextColor.RED));
                 return;
             }
-            double displayCurrent;
             if (heal) {
                 stats.heal(id, amount, player.getUniqueId(), true);   // seam directly, to CREDIT the player
-                displayCurrent = stats.current(id);
-            } else {
-                // applyDamage defers to the next tick, so compute the expected result now for the
-                // message -- an estimate (clamps at 0, as HealthState.damage does). The nameplate,
-                // updated when applyDamage lands, is the source of truth.
-                displayCurrent = Math.max(0.0, stats.current(id) - amount);
-                BukkitCombatant.of(target, adapters).handle().applyDamage(amount, player.getUniqueId());
+                player.sendMessage(Component.text("%s healed: %.0f/%.0f custom HP".formatted(
+                        target.getType().name(), stats.current(id), stats.max(id)), NamedTextColor.GREEN));
+                return;
             }
-            player.sendMessage(Component.text(
-                    "%s %s: %.0f/%.0f custom HP".formatted(target.getType().name(),
-                            heal ? "healed" : "damaged", displayCurrent, stats.max(id)),
-                    NamedTextColor.GREEN));
+            // THE REPLY IS THE STORE'S READING, NOT AN ESTIMATE (GATE-fight-site.md). applyDamage lands a tick later and
+            // may be refused by a gate (the fight's Mage) or reduced by a defence, so a figure computed here, before it,
+            // printed 1450/1500 for a hit the Mage's gate refused (GATE-fight-mage.md MG2, MG4). The reply waits until
+            // the hit has landed and reads the store; a target the hit killed is no longer tracked, and says so.
+            BukkitCombatant.of(target, adapters).handle().applyDamage(amount, player.getUniqueId());
+            String type = target.getType().name();
+            adapters.scheduler().onRegionLater(target.getLocation(), () -> player.sendMessage(Component.text(
+                    stats.tracks(id)
+                            ? "%s damaged: %.0f/%.0f custom HP".formatted(type, stats.current(id), stats.max(id))
+                            : "%s damaged: no longer tracked (it died)".formatted(type),
+                    NamedTextColor.GREEN)), MOB_DAMAGE_REPLY_DELAY_TICKS);
         });
         return 1;
     }
+
+    /** The mobdamage reply waits this long: the hit lands on the next tick, and the reply reads the store after it. */
+    static final int MOB_DAMAGE_REPLY_DELAY_TICKS = 2;
 
     /** Damage the calling player's OWN custom health, through the observable store path. Heart bar follows. */
     private static int damageSelf(CommandContext<CommandSourceStack> ctx, AdapterContext adapters) {

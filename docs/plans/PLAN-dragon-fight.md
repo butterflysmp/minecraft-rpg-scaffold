@@ -118,6 +118,79 @@ slowly; (4) keep the Mage as a glowing wither skeleton.*
 - **The wall:** four rows 1.5 apart, shifted and turning.
 - **The Mage:** a glowing wither skeleton ("for now").
 
+### Ninth: Ben's answers at the second boot (`GATE-fight-mage.md`, booted at `65482e4c`), 2026-11-18
+
+*Each question as the selftest asked it, then Ben's answer, verbatim from the gate's ASK lines.*
+
+1. "Did the fast close's speed feel right?" — **"Needs to be faster. Try 4.5 blocks/s"** *(MQ1's ring did not move
+   in that row: its landing was `REFUSED_NO_GROUND`. SUPERSEDED by the tenth message, note 2.)*
+2. "Is the slow close's pace right now?" — **"yes"**
+3. "Is the wall's height right?" — **"yes, maybe another row or 2"**
+4. "Are the gaps between the rows right?" — **"yes"**
+5. "Is the twist right?" — **"maybe alternate twists on every other row"**
+6. "When you hit him, was it clear that the hit did not count?" — **"yes"**
+7. "What should a hit that does not count look or sound like?" — **"that was good"**
+8. "Could you see a beam from each crystal to the Mage?" — **"yes"**
+9. "Ten crystals, one every four seconds: is that pace right?" — **"no make it 12 seconds each crystal"**
+10. "His name is "Withered Dark Mage". Keep it?" — **"for now"**
+11. "For one player, is 1500 health right for the Mage?" — **"for now"**
+
+### Tenth message: the arena, the dragon's health, the Mages, entry; the Mage at 6,000 (2026-11-18)
+
+*The seat asked:*
+1. Start from a generated stand-in arena, a flat end-stone disc with ten obsidian pillars, replaceable later by a file
+   Ben builds.
+2. The dragon's starting health, the old fight's being 18,000 plus 6,000 per player beyond three.
+3. Keep a Mage at 80%, 60% and 40%.
+4. As a stand-in: a dev command to enter; a death returns you to where you entered; the fight fails once nobody is
+   alive inside.
+
+> "1. Yes that's fine for now
+> 2. 20,000
+> 3. let's do 80 60 40 and 20 percent
+> 4. yes
+>
+> Some additional notes
+>
+> 1. Change the Mage health to 6,000
+> 2. leave the fast close as 3.8"
+
+**So, Ben's from here on:**
+- The generated arena, "for now".
+- The dragon at **20,000**.
+- A Mage at **80, 60, 40 and 20 percent**.
+- The dev entry, with death returning you to where you entered.
+- The Mage at **6,000**.
+- **`v_fast` stays 3.8.**
+- One crystal every **12 seconds**, ten of them.
+- The wall gets **another row or 2**, with **alternate twists on every other row**.
+- The refused-hit cue stays ("that was good"; no longer a seat placeholder).
+- The Mage's name stays "for now".
+
+**SEAT READINGS of the tenth message, marked as the seat's, not Ben's:**
+- **Four Mages, one per crossing** of 80, 60, 40 and 20 percent.
+- **No per-player scaling** of the dragon or the Mage yet. That stays OPEN.
+- **"leave the fast close as 3.8" SUPERSEDES the ninth's answer 1** ("Try 4.5 blocks/s"). MQ1's ring did not move in
+  the row that asked it, so the fast close is re-asked with the wall actually chasing him.
+
+**SEAT PLACEHOLDERS named in the F8 + F9 brief (2026-11-18), each replaceable by Ben:**
+- **The sky:** the fight's world fixed at midnight, weather clear.
+- **The generated arena:**
+  - centre (0, 0) of its world (§4 c: the dragon orbits it; recorded against C1);
+  - floor y 64;
+  - an end-stone disc of radius 56, 3 thick;
+  - ten 3×3 obsidian pillars on a circle of radius 40, tops 12 above the floor;
+  - crystal spot n on pillar n.
+- **Entry:** `/rpg fight enter` (create or join) and `/rpg fight leave`, dev only.
+- **The boss bar:** purple, titled with the dragon's name, tracking the custom store.
+- **The win:** vanilla's drops and XP suppressed.
+- **The border lightning outside 48:** applies from the fight's first tick (cfde822 waited for the first crossing).
+  Flagged.
+
+**A SEPARATE DECISION FOR BEN, not acted on:** Paper **26.3** is out. The `GATE-fight-mage.md` boot printed six
+Paper WARN lines saying 26.1.2 is "4 release(s) behind the latest stable release (26.3)". The upgrade procedure
+(`CLAUDE.md`, *Upgrade procedure*) is his to start, PacketEvents first.
+
 ---
 
 ## 2. SEAT READINGS
@@ -777,12 +850,68 @@ writing.*
 
 ---
 
+### 6.4 F8 + F9 SPLIT (SEAT RULING, 2026-11-18): THREE PRs, TWO BOOTS
+
+*The F8 + F9 brief stays the specification. CC measured, from the pinned jar, two facts that made it larger than one
+step:*
+- *A hit on a dragon PART reaches the dragon's own damage event, but the melee pre-attack event and vanilla projectiles
+  hand our code the part, which is not a `LivingEntity`.*
+- *In build 74, an API-created world is a DIMENSION inside the main save (`PaperWorldLoader.dimensionKey`). Its folder
+  is therefore under `run/world/dimensions/`, so deleting one deletes inside the live save.*
+
+| step | branch | what | boot |
+|---|---|---|---|
+| **F8a** | `feat/fight-site` | the brief's §0 docs, §1 tuning, §2 instrument fixes, §3 one runtime taking a SITE (the ordinary world its only site); the fast close re-asked with a floor staged | none of its own |
+| **F8b** | `feat/fight-arena`, stacked on F8a | §4 the fight world, the generated arena, enter and leave, the return location, death, quit, the stale login, every ending, the orphan sweep (four refusals: the brief's three plus a real-path containment in the fight's own namespace), R0e; §5 i and j; ring, Mage and crystals, no dragon | **ONE boot, on F8b's head, covering BOTH gates** |
+| **F9** | after both merge | §5 a to h, the dragon; Ben rows 5 to 8 | the second boot, confirmed by the seat first |
+
+**Before any delete code in F8b,** READ from the jar:
+- whether the main save records an API dimension outside its own folder;
+- what the next boot does when that folder is missing;
+- whether `unloadWorld` releases the region files.
+
+If deleting cannot be shown safe, STOP.
+
+### 6.5 F8a AS BUILT (`feat/fight-site`, 2026-11-18): WHAT THE CODE SHOWED
+
+*The gate is `docs/gates/GATE-fight-site.md`, NOT RUN at this writing; read at F8b's one boot.*
+
+- **One runtime, one site so far.**
+  - `FightInstance` holds one fight's whole state and is the only place in `paper/` that builds the core fight
+    (`new RingFixture(`) and its port (`FightSiteSourceTest`).
+  - It takes a `FightSite`: world, C and its ground y, crystal spots, where the Mage may stand, who takes part.
+  - `OrdinaryWorldSite` is the dev fixture's site.
+  - `FightFixtures` holds fights by id, offers a death to every fight, and ends every fight at disable. The dev command
+    drives one.
+- **The wall at six rows costs 9060 packets a second per player at r = 48**, under the brief's 9,500 line by 440.
+  **A seventh row would pass it** (10,570).
+- **240 ticks a crystal against a 400-tick slow close means at most ONE crystal without kills.**
+  - So ten crystals, POWERED, needs the ring held open for 2400 ticks: in the gate, 68 kills 35 ticks apart.
+  - In play it means a group that does not kill sees at most one crystal before the ring closes on them.
+  - **That is a design consequence of Ben's two numbers taken together, for him to see, not a defect.**
+- **MG2's driven attack was the instrument, not the gate.**
+  - READ: `Player.attack` raises no damage event when the attacker's attack damage and enchanted bonus are both 0.
+  - READ: `WeaponItems` pins a non-melee weapon's attack damage to 0.
+  - INFERRED: Ben held his staff at MG2.
+  - ATTACK now logs `attack_damage=` and names a zero; MG2R2 holds `emberblade`.
+- **The crystal listener is reachable, but only past the invulnerable flag.**
+  - READ: `EndCrystal.hurtServer` returns on `isInvulnerableToBase` before the event.
+  - Only `out_of_world`, `generic_kill` (build 74's `bypasses_invulnerability` tag) or a creative player's hit reach it.
+  - It is KEPT for those, and MG7R2 reaches it.
+  - **`/kill` removes a fight crystal anyway** (READ, `EndCrystal.kill` → `Entity.kill`, no damage event). That is an
+    op command, recorded rather than guarded.
+- **The entity probe counted dying bodies.** READ: a dead mob stays in the world for 20 ticks. It now leaves them out
+  and says how many (`dying=`).
+- **`/rpg mobdamage` printed an estimate made before the hit landed.** It now replies from the store 2 ticks later.
+- **AWAIT_FIGHT** ends a wait when the dev command's fight ends, with a ceiling.
+
 ## 7. OPEN, FOR BEN
 
 *Listed, not answered.*
 
 1. **Crystals as an immunity gate** on the dragon, separate from the Mage (Ben: "Not sure yet").
-2. **Crystal count and pace** during the slow close.
+2. **Crystal pace ANSWERED 2026-11-18** (ninth, answer 9): "no make it 12 seconds each crystal". The count stays 10.
+   *(Asked as:)* **Crystal count and pace** during the slow close.
 3. **ANSWERED 2026-11-18** (eighth message): "Let's lower it to 3.8 blocks a second to allow players to react and
    catch up when struct". *(Asked as:)* **Fast-close speed** `v_fast` in blocks per second ("Slightly slower than a
    player sprinting").
@@ -790,15 +919,19 @@ writing.*
    *(Asked as:)* **Slow-close speed** `v_slow`.
 5. **ANSWERED 2026-11-18** (sixth message): "Lightning ramping damage numbers can start at 20, 40, 80 and keeps
    doubling". *(Asked as:)* **The lightning ramp's numbers**: the first strike's damage, the step, any cap.
-6. **The Mage's health: ANSWERED "for now" 2026-11-18** (eighth message): "1500 works for now". **Still open: where
+6. **The Mage's health: ANSWERED again 2026-11-18** (tenth message, note 1): "Change the Mage health to 6,000",
+   replacing the eighth's "1500 works for now". **Still open: where
    he may land** (the seat's nesting bound, §2: no more than 36 blocks from the
    centre, or the ring sweeps outward over a standing player).
 7. **Expansion per kill** `e_kill`. *(Seat-added: which deaths count, any mob or the fight's own, and a summon's kill
    for its owner, as cfde822 did, §3 fact 21.)*
 8. **The wave tables** (Ben: "we will rework it entirely").
 9. **Endermen growing Phages** (§2 f): intended or not.
-10. **Entry, group size, and death mid-fight** (Ben: "not sure yet").
-11. **The dragon's health** ("for now it stays vanilla with increased health": how much).
+10. **Entry, group size, and death mid-fight** (Ben: "not sure yet"). **The dev stand-in ANSWERED 2026-11-18**
+    (tenth, answer 4): "yes". A dev command enters; a death returns you to where you entered; the fight fails once
+    nobody is alive inside. The real entry rules and group size are still open.
+11. **The dragon's health ANSWERED 2026-11-18** (tenth, answer 2): "20,000". *(Asked as:)* "for now it stays vanilla
+    with increased health": how much. **Per-player scaling is still OPEN.**
 12. **Dialogue** ("Likely keep it": as is, or rewritten).
 13. *(Seat-added.)* **The return's slow part:** does it run back at `v_slow`, or faster? *(A seat placeholder runs it
     at `v_slow` until Ben sets it.)*
@@ -817,3 +950,5 @@ writing.*
     block the blast), **Q34** (does cover protect from the blast).
     **Q10 (the mobs against Endermen) is ANSWERED by the first message, answer 6:** "drop the war, the enderman are
     now the main fodder enemy".
+17. *(Seat-added, 2026-11-18.)* **Paper 26.3**, a separate decision: the upgrade procedure is Ben's to start
+    (§1, tenth message).

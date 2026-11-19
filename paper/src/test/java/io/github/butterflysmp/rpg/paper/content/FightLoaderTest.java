@@ -17,6 +17,7 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -70,6 +71,7 @@ class FightLoaderTest {
               height_offsets_blocks: [0.2, 1.7, 3.2, 4.7]
               row_shift_blocks: 0.25
               turn_blocks_per_second: 1.0
+              alternate_turns: true
               redraw_period_ticks: 4
             mage:
               mob: dark_mage
@@ -98,17 +100,22 @@ class FightLoaderTest {
         FightContent d = fights.get("dragon");
         assertEquals(3.8, d.settings().fastCloseBlocksPerSecond(), 0.0, "Ben's");
         assertEquals(0.6, d.settings().slowCloseBlocksPerSecond(), 0.0, "Ben's");
-        assertEquals(List.of(0.2, 1.7, 3.2, 4.7), d.look().heightOffsetsBlocks(), "Ben's four rows 1.5 apart");
+        assertEquals(List.of(0.2, 1.7, 3.2, 4.7, 6.2, 7.7), d.look().heightOffsetsBlocks(),
+                "six rows 1.5 apart (Ben: \"yes, maybe another row or 2\")");
         assertEquals(0.25, d.look().rowShiftBlocks(), 0.0);
         assertEquals(1.0, d.look().turnBlocksPerSecond(), 0.0);
+        assertTrue(d.look().alternateTurns(), "Ben: \"maybe alternate twists on every other row\"");
+        assertEquals(240, d.settings().crystalIntervalTicks(), "Ben: \"no make it 12 seconds each crystal\"");
+        assertEquals(10, d.settings().crystalCount());
         assertEquals("dark_mage", d.mageMob());
         assertEquals(new FightContent.Cue("item.shield.block", 1.0f, 0.8f), d.refusedCue());
         assertEquals(40.0, d.crystalRingRadiusBlocks(), 0.0);
         assertEquals(12.0, d.crystalHeightBlocks(), 0.0);
         assertEquals(new FightContent.Cue("block.beacon.power_select", 1.0f, 1.0f), d.litCue());
         assertEquals(List.of("INFO Loaded fight 'dragon': border 48.0, mage ring 12.0, v_fast 3.80, v_slow 0.60, "
-                + "e_kill 1.00, 10 crystals every 80 ticks, a strike every 40 ticks from 20.0; ring dust (170,0,255) "
-                + "size 1.60 every 1.00 blocks at [0.2, 1.7, 3.2, 4.7], row shift 0.25, turn 1.00/s, every 4 ticks; "
+                + "e_kill 1.00, 10 crystals every 240 ticks, a strike every 40 ticks from 20.0; ring dust (170,0,255) "
+                + "size 1.60 every 1.00 blocks at [0.2, 1.7, 3.2, 4.7, 6.2, 7.7], row shift 0.25, turn 1.00/s "
+                + "alternating, every 4 ticks; "
                 + "mage 'dark_mage' refused item.shield.block; crystals at 40.0, 12.0 up, lit block.beacon.power_select;"
                 + " participants within 128.0"), lines);
     }
@@ -155,6 +162,26 @@ class FightLoaderTest {
     @Test
     void aMissingRowShiftIsRefused() throws IOException {
         refusedNaming(GOOD.replace("  row_shift_blocks: 0.25\n", ""), "'row_shift_blocks:'");
+    }
+
+    @Test
+    void aMissingAlternateTurnsIsRefused() throws IOException {
+        refusedNaming(GOOD.replace("  alternate_turns: true\n", ""), "'alternate_turns:'", "missing");
+    }
+
+    @Test
+    void aNonBooleanAlternateTurnsIsRefused() throws IOException {
+        refusedNaming(GOOD.replace("alternate_turns: true", "alternate_turns: sometimes"), "'alternate_turns:'",
+                "'sometimes'");
+    }
+
+    /** A round trip needs BOTH answers: a true-only row passes on a loader that hardcoded true. */
+    @Test
+    void alternateTurnsArrivesAsWrittenEitherWay() throws IOException {
+        assertTrue(load(GOOD).get("test").look().alternateTurns());
+        lines.clear();
+        assertFalse(load(GOOD.replace("alternate_turns: true", "alternate_turns: false")).get("test").look()
+                .alternateTurns(), lines.toString());
     }
 
     @Test

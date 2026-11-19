@@ -66,6 +66,20 @@ No arena, no dragon, no waves.
 
 `GATE-fight-ring.md` keeps every prediction and reading, with a dated note naming these rows.
 
+> **NOTE, 2026-11-18 (`feat/fight-site`): THIS GATE'S ROWS ARE SUPERSEDED.** Every auto row is RE-PREDICTED in
+> `GATE-fight-site.md` under its old name with the next suffix: FR1R2 … FR9R2 → FR1R3 … FR9R3, MG1 … MG8 → MG1R2 …
+> MG8R2. Why they move:
+> - Ben's second-boot tuning: six rows with alternating turns, 240 ticks a crystal, the Mage at 6,000.
+> - The instrument fixes this file's readings called for:
+>   - the probe's `dying=`;
+>   - ATTACK's `attack_damage=`;
+>   - MG2's held melee weapon;
+>   - MG7's `out_of_world`;
+>   - mobdamage replying from the store.
+>
+> **MQ1 is re-asked as MQ1R2**, its landing staged on a pad. **MQ2–MQ7 are retired**, answered. `selftest/GATE-fight-mage.yml`
+> no longer ships. Every prediction and reading here is kept as written.
+
 ## GAME MODE, DIFFICULTY
 
 - **SURVIVAL on every row.** `/rpg selftest` refuses outside SURVIVAL, and the fixture's participants are survival or

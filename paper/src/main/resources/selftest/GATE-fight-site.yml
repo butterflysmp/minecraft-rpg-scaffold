@@ -1,0 +1,1154 @@
+# GATE-fight-site.md: STEP F8a, ONE RUNTIME AT A SITE, BEN'S SECOND-BOOT TUNING, AND THE INSTRUMENT FIXES
+# (feat/fight-site, 2026-11-18). `/rpg selftest fight-site`. NO BOOT OF ITS OWN: run at the one boot of feat/fight-arena
+# (GATE-fight-arena.md carries the R0 and the run sheet).
+#
+# It RETIRES selftest/GATE-fight-mage.yml. Every row there MOVES and is RE-PREDICTED here under its old name with the
+# next suffix (FR1R2 -> FR1R3 ... FR9R2 -> FR9R3; MG1 -> MG1R2 ... MG8 -> MG8R2; MQ1 -> MQ1R2):
+#   - the wall is six rows now: every RINGTICK reads 1812 points at r=48, not 1208;
+#   - a crystal every 240 ticks: FR6, FR9, MG5, MG6, MG7, MG8 move in their crystal lines;
+#   - the Mage at 6000: MG1 to MG4 move in their health figures;
+#   - the instrument: the ENTITIES line carries dying=, ATTACK carries attack_damage=, mobdamage replies from the store.
+# MQ2-MQ7 are RETIRED, not re-predicted: Ben answered them at the second boot. MQ1 is re-asked as MQ1R2, because its
+# ring never moved (REFUSED_NO_GROUND): this time the landing has a floor.
+#
+# New rows: WS1 (the six-row wall turning, read from its points), IP1 (the entity probe leaves a dying body out),
+# IA1 (AWAIT_FIGHT's two endings).
+#
+# THE PLAYER CANNOT DIE IN ANY ROW (GATE-fight-site.md, THE ARITHMETIC). Every row ends with `rpg fight stop`, then a
+# probe of end crystals within 48 (the crystals stand 41.8 from C) and of wither skeletons within 16.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# ===== THE RE-PREDICTED RING ROWS (six rows, alternating; 240 a crystal) =====
+
+# FR1R3: start; the border at C, IDLE, now 1812 points a redraw.
+FR1R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 9
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FR2R3: land 0 0; 48 to 12 in 190 ticks at 3.8; SLOW_CLOSE on that tick; the slow close at 0.6.
+FR2R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 0 0"
+  - wait: 210
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FR3R3: land 18 0; 285 ticks, the centre on the straight line. He stands 1 west of M.
+FR3R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 19 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~19 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~19 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 18 0"
+  - cmd: "tp @s ~17 ~ ~ -90 0"
+  - wait: 300
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FR4R3: land 36 0; 379 ticks, the centre on the straight line. He stands 1 west of M.
+FR4R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 37 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~37 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~37 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 36 0"
+  - cmd: "tp @s ~35 ~ ~ -90 0"
+  - wait: 395
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FR5R3: land 36.01 0 is REFUSED_TOO_FAR (the ground there exists, so the refusal is the distance's), ring unchanged.
+FR5R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 38 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~38 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~38 ~3 ~1 air"
+  - cmd: "rpg fight start"
+  - wait: 6
+  - cmd: "rpg fight land 36.01 0"
+  - wait: 6
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FR6R3: no kills: CLOSED 400 ticks after the slow close starts; ONE crystal lit (at 240) and out at the close.
+FR6R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 40
+  - cmd: "rpg fight land 0 0"
+  - wait: 594
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FR7R3: kills in the slow close, west of the Mage: two from inside (+1.0 each), one capped at 12, one from outside.
+FR7R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-22 -1 -2 1 3 2"
+  - cmd: "fill ~-22 ~-1 ~-2 ~1 ~-1 ~2 stone"
+  - cmd: "fill ~-22 ~ ~-2 ~1 ~3 ~2 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 20
+  - cmd: "rpg fight land 0 0"
+  - wait: 260
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "fk1 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "fk1"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 2
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "fk2 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "fk2"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 2
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "fk3 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "fk3"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 2
+  - cmd: "tp @s ~-14 ~ ~ 90 0"
+  - wait: 2
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "fk4 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "fk4"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 2
+  - cmd: "tp @s ~14 ~ ~ -90 0"
+  - wait: 4
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FR8R3: the strikes THROUGH ARMOUR, SURVIVAL. C is 60 east: 20, 40, 80 before defence (healed before each); 45 from C
+# for one strike tick (reset); outside again: 20.
+FR8R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 17 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~17 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~17 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "execute positioned ~60 ~ ~ run rpg fight start"
+  - wait: 30
+  - cmd: "rpg heal 1000000"
+  - wait: 20
+  - cmd: "rpg heal 1000000"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - cmd: "tp @s ~15 ~ ~ -90 0"
+  - wait: 40
+  - cmd: "tp @s ~-15 ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - wait: 40
+  - cmd: "rpg fight stop"
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FR9R3: mage-die in the slow close AFTER the first crystal (240 in): it goes out, the radius rises to 12 at 0.6, the
+# fast close reversed; IDLE.
+FR9R3:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight land 0 0"
+  - wait: 440
+  - cmd: "rpg fight mage-die"
+  - wait: 470
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# ===== THE WALL, THE PROBE, THE WAIT (new) =====
+
+# WS1: the six-row wall, read from its own points: two probes 20 ticks apart; rows 0, 2, 4 turn one way, 1, 3, 5 the other.
+WS1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 20
+  - cmd: "rpg fight probe"
+  - wait: 20
+  - cmd: "rpg fight probe"
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# IP1: the entity probe leaves a dying body out. A Knell, counted alive; killed through the store; probed 3 ticks later,
+# inside its 20 death ticks: count 0, dying 1. No fight runs.
+IP1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-4 -1 -2 1 3 2"
+  - cmd: "fill ~-4 ~-1 ~-2 ~1 ~-1 ~2 stone"
+  - cmd: "fill ~-4 ~ ~-2 ~1 ~3 ~2 air"
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ip1 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - probe_entities: "wither_skeleton 16"
+  - aim: "ip1"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 3
+  - probe_entities: "wither_skeleton 16"
+  - wait: 30
+  - probe_entities: "wither_skeleton 16"
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# IA1: AWAIT_FIGHT's two endings: its ceiling while a fight runs, and at once when none does.
+IA1:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - await_fight: 40
+  - cmd: "rpg fight stop"
+  - await_fight: 100
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# ===== THE MAGE (F6), at 6000 =====
+
+# MG1R2: land 6 0 spawns one tagged Mage at M, glowing, 6000 at gear score 100.
+MG1R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 8 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~8 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~8 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 10
+  - cmd: "rpg fight land 6 0"
+  - wait: 2
+  - cmd: "rpg fight probe"
+  - probe_entities: "wither_skeleton 16"
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# MG2R2: in FAST_CLOSE a MELEE hit with a held melee weapon (emberblade) and a store hit are both REFUSED; his health is
+# unchanged. The weapon is the fix: MG2's driven attack held Ben's staff, whose attack damage is 0, so Player.attack
+# raised no damage event at all (READ).
+MG2R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 8 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~8 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~8 ~3 ~1 air"
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 10
+  - cmd: "rpg fight land 6 0"
+  - wait: 5
+  - cmd: "tp @s ~4 ~ ~ -90 0"
+  - wait: 2
+  - aim: "fight_mage"
+  - wait: 25
+  - attack: "fight_mage"
+  - wait: 2
+  - cmd: "rpg mobdamage 50"
+  - wait: 3
+  - cmd: "rpg fight probe"
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# MG3R2: in SLOW_CLOSE a store hit of 100 LANDS: his health falls by 100 x 100 / (100 + his defence).
+MG3R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 8 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~8 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~8 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 10
+  - cmd: "rpg fight land 6 0"
+  - wait: 240
+  - aim: "fight_mage"
+  - wait: 2
+  - cmd: "rpg fight probe"
+  - wait: 2
+  - cmd: "rpg mobdamage 100"
+  - wait: 3
+  - cmd: "rpg fight probe"
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# MG4R2: a Mage HELD while the ring returns appears at once and cannot be hurt. The first one's body is waited out
+# before the end probe (it was counted at GATE-fight-mage's boot; the probe now leaves it out anyway).
+MG4R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 8 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~8 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~8 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 10
+  - cmd: "rpg fight land 6 0"
+  - wait: 240
+  - cmd: "rpg fight mage-die"
+  - wait: 3
+  - cmd: "rpg fight land 6 0"
+  - wait: 3
+  - aim: "fight_mage"
+  - wait: 2
+  - cmd: "rpg mobdamage 50"
+  - wait: 3
+  - cmd: "rpg fight probe"
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# MG5R2: his death in SLOW_CLOSE with ONE crystal lit (240 in): RETURNING on that tick, the crystal out, the ring home.
+MG5R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 8 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~8 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~8 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 10
+  - cmd: "rpg fight land 6 0"
+  - wait: 470
+  - aim: "fight_mage"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 3
+  - cmd: "rpg fight probe"
+  - wait: 500
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# ===== THE CRYSTALS (F7), one every 240 ticks =====
+
+# MG7R2: a crystal hit by the player (player_attack) is refused by its invulnerable flag before any event; a VOID-type
+# hit (out_of_world, which bypasses invulnerability: READ) reaches the listener, is refused and logged. It stays.
+MG7R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-1 -1 -1 8 3 1"
+  - cmd: "fill ~-1 ~-1 ~-1 ~8 ~-1 ~1 stone"
+  - cmd: "fill ~-1 ~ ~-1 ~8 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - wait: 10
+  - cmd: "rpg fight land 6 0"
+  - wait: 480
+  - cmd: "rpg fight probe"
+  - cmd: "damage @e[tag=fight_crystal,limit=1] 5 minecraft:player_attack by @s"
+  - wait: 2
+  - cmd: "damage @e[tag=fight_crystal,limit=1] 5 minecraft:out_of_world"
+  - wait: 2
+  - cmd: "rpg fight probe"
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# MG6R2: one crystal every 240 ticks from the slow close; the live count equals RINGTICK's; every beam on the Mage.
+# Fourteen kills from inside, one every 35 ticks from 35 into the slow close, hold the ring open past 480 ticks so a
+# SECOND crystal can light (without them it closes at 400). Probes 10 ticks after each crystal.
+MG6R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-6 -1 -2 1 3 2"
+  - cmd: "fill ~-6 ~-1 ~-2 ~1 ~-1 ~2 stone"
+  - cmd: "fill ~-6 ~ ~-2 ~1 ~3 ~2 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 20
+  - cmd: "rpg fight land 0 0"
+  - wait: 220
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk1 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk1"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk2 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk2"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk3 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk3"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk4 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk4"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk5 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk5"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk6 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk6"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk7 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk7"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 5
+  - cmd: "rpg fight probe"
+  - wait: 26
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk8 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk8"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk9 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk9"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk10 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk10"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk11 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk11"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk12 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk12"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk13 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk13"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "gk14 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "gk14"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 5
+  - cmd: "rpg fight probe"
+  - wait: 26
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# MG8R2: POWERED on a server at 240 a crystal. Sixty-eight kills from inside, one every 35 ticks from 35 into the slow
+# close, hold the ring open past 2400 ticks (each kill finds it at 11 - 0.05n, never capped; after the last, 8.0): the
+# tenth crystal powers the Mage on its exact tick; the crystals stay until stop.
+MG8R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "-6 -1 -2 1 3 2"
+  - cmd: "fill ~-6 ~-1 ~-2 ~1 ~-1 ~2 stone"
+  - cmd: "fill ~-6 ~ ~-2 ~1 ~3 ~2 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight start"
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 20
+  - cmd: "rpg fight land 0 0"
+  - wait: 220
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk1 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk1"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk2 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk2"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk3 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk3"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk4 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk4"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk5 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk5"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk6 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk6"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk7 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk7"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk8 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk8"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk9 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk9"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk10 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk10"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk11 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk11"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk12 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk12"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk13 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk13"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk14 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk14"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk15 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk15"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk16 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk16"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk17 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk17"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk18 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk18"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk19 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk19"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk20 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk20"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk21 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk21"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk22 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk22"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk23 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk23"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk24 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk24"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk25 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk25"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk26 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk26"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk27 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk27"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk28 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk28"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk29 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk29"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk30 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk30"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk31 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk31"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk32 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk32"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk33 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk33"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk34 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk34"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk35 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk35"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk36 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk36"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk37 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk37"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk38 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk38"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk39 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk39"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk40 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk40"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk41 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk41"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk42 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk42"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk43 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk43"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk44 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk44"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk45 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk45"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk46 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk46"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk47 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk47"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk48 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk48"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk49 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk49"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk50 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk50"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk51 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk51"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk52 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk52"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk53 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk53"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk54 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk54"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk55 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk55"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk56 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk56"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk57 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk57"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk58 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk58"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk59 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk59"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk60 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk60"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk61 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk61"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk62 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk62"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk63 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk63"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk64 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk64"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk65 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk65"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk66 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk66"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk67 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk67"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "pk68 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "pk68"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - wait: 30
+  - cmd: "rpg fight probe"
+  - cmd: "rpg fight stop"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# ===== BEN'S ROW: HIS OWN WORDS, ONE THING PER QUESTION =====
+
+# MQ1R2: the fast close at 3.8 with the wall ACTUALLY CHASING HIM. C is 44 east (its west edge 4 behind him); the Mage
+# lands 36 east of C, 80 east of him, on a 3x3 stone pad staged there (MQ1's landing found no ground and the ring never
+# moved). He sprints east for six seconds; healed every 10 ticks.
+MQ1R2:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "79 -1 -1 81 3 1"
+  - cmd: "fill ~79 ~-1 ~-1 ~81 ~-1 ~1 stone"
+  - cmd: "fill ~79 ~ ~-1 ~81 ~3 ~1 air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "execute positioned ~44 ~ ~ run rpg fight start"
+  - tell: "QUESTION 1 IS COMING. Face EAST. The ring's WEST edge is 4 blocks behind you and is about to chase you. When the next gold line says GO, sprint EAST and try to stay ahead of that edge for six seconds."
+  - wait: 100
+  - cmd: "rpg fight land 36 0"
+  - tell: "GO"
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg heal 1000000"
+  - wait: 10
+  - cmd: "rpg fight stop"
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "1 2400 yesno With the wall chasing you, did the fast close's speed feel right?"

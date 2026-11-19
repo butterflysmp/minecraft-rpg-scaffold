@@ -78,7 +78,7 @@ class FightWiringSourceTest {
     void theMageAndEveryCrystalAreNotPersisted() throws IOException {
         assertTrue(body(code("fight/BukkitFightPort.java"), "public void lightCrystal(int index)")
                 .contains("c.setPersistent(false);"), "each crystal");
-        assertTrue(body(code("fight/FightFixtures.java"), "private void spawnMage(double x, double y, double z)")
+        assertTrue(body(code("fight/FightInstance.java"), "private void spawnMage(double x, double y, double z)")
                 .contains("e.setPersistent(false);"), "the Mage");
     }
 }

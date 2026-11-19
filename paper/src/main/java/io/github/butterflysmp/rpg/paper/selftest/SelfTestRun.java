@@ -226,6 +226,11 @@ final class SelfTestRun {
                             () -> new IllegalStateException("await_fuse: the loader admitted '" + step.arg() + "'")), 0);
                     return;   // resumes when the swell reaches the threshold, or at the timeout
                 }
+                if (step.verb() == Scenario.Verb.AWAIT_FIGHT) {
+                    awaitFight(SelfTestAwaitFight.parse(step.arg()).orElseThrow(
+                            () -> new IllegalStateException("await_fight: the loader admitted '" + step.arg() + "'")), 0);
+                    return;   // resumes when the fight ends, or at the ceiling
+                }
                 Optional<String> skip = drivers.execute(player, step);
                 drainReplies();
                 if (skip.isPresent()) {
@@ -249,6 +254,21 @@ final class SelfTestRun {
         }
         // Two ticks for the last step's replies to come back through the reader, then DONE.
         service.scheduler().onEntityLater(player, this::rowDone, 2);
+    }
+
+    /**
+     * AWAIT_FIGHT ({@link SelfTestAwaitFight}): polls once a tick on the player's own scheduler until the dev command's
+     * fight is no longer running, or the ceiling; logs which, with the ticks waited, and goes on.
+     */
+    private void awaitFight(int ceiling, int waited) {
+        if (ended) return;
+        boolean running = service.fightRunning();
+        if (SelfTestAwaitFight.done(running, waited, ceiling)) {
+            log(SelfTestAwaitFight.line(running, waited, ceiling));
+            advance();
+            return;
+        }
+        service.scheduler().onEntityLater(player, () -> awaitFight(ceiling, waited + 1), 1);
     }
 
     /**

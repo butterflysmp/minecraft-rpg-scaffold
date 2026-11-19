@@ -21,11 +21,14 @@ import java.util.List;
  * @param rowShiftBlocks      each row starts this far further round the ring than the row below, blocks along the
  *                            circumference (the twist; Ben, 2026-11-18: "yes")
  * @param turnBlocksPerSecond the whole wall turns at this speed along the circumference, blocks per second
+ * @param alternateTurns      when true, rows 1, 3, 5, ... (counting the lowest as 0) turn the OPPOSITE way at the same
+ *                            speed (Ben, 2026-11-18: "maybe alternate twists on every other row"); the shift is not
+ *                            alternated
  * @param redrawPeriodTicks   ticks between redraws
  */
 public record RingLook(String particleKey, int red, int green, int blue, double dustSize,
                        double pointSpacingBlocks, List<Double> heightOffsetsBlocks, double rowShiftBlocks,
-                       double turnBlocksPerSecond, int redrawPeriodTicks) {
+                       double turnBlocksPerSecond, boolean alternateTurns, int redrawPeriodTicks) {
 
     public RingLook {
         if (particleKey == null || particleKey.isBlank()) throw new IllegalArgumentException("no particle key");

@@ -182,6 +182,17 @@ public final class SelfTestService {
         return fightStop.get();
     }
 
+    /** Whether the dev command's fight runs, for AWAIT_FIGHT (GATE-fight-site.md). Bound late, like the stop. */
+    private volatile java.util.function.BooleanSupplier fightRunning = () -> false;
+
+    public void bindFightRunning(java.util.function.BooleanSupplier running) {
+        this.fightRunning = running;
+    }
+
+    boolean fightRunning() {
+        return fightRunning.getAsBoolean();
+    }
+
     void onPlayerHurt(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
         SelfTestRun run = active;
         if (run != null) run.hurt(change);

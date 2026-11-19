@@ -7,10 +7,11 @@
 
 # Ben's ("yes for now": a glowing wither skeleton).
 base_entity: wither_skeleton
-# SEAT PLACEHOLDER: cfde822's name.
+# Ben's "for now" (2026-11-18, asked: His name is "Withered Dark Mage". Keep it?). cfde822's name.
 display_name: "Withered Dark Mage"
-# Ben's ("1500 works for now"), at gear score 100: a custom hostile mob's maximum is this x GS / 100.
-max_health: 1500
+# Ben's, 2026-11-18: "Change the Mage health to 6,000" (his "for now" covers it). At gear score 100: a custom
+# hostile mob's maximum is this x GS / 100.
+max_health: 6000
 # The fight is Void (PLAN-dragon-mobs.md section 6 C6).
 element: void
 # Seen through walls (cfde822's Mage glowed).

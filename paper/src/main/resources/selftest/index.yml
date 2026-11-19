@@ -41,7 +41,7 @@ gates:
   - dragon-blink
   - dragon-skreel
   - drag-additive
-# fight-mage (steps F6 + F7, 2026-11-18) is paired with its OWN gate file, docs/gates/GATE-fight-mage.md, by the rule.
-# It RETIRES fight-ring: every FR row is re-predicted there (FR1R2 ... FR9R2); BQ1-BQ6 were answered and are superseded.
-# GATE-fight-ring.yml no longer ships; GATE-fight-ring.md keeps every prediction and reading with a dated note.
-  - fight-mage
+# fight-site (step F8a, 2026-11-18) is paired with its OWN gate file, docs/gates/GATE-fight-site.md, by the rule.
+# It RETIRES fight-mage: every row there is re-predicted (FR1R3 ... FR9R3, MG1R2 ... MG8R2, MQ1R2); MQ2-MQ7 were
+# answered and are retired. GATE-fight-mage.yml no longer ships; GATE-fight-mage.md keeps every reading.
+  - fight-site

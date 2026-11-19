@@ -760,6 +760,7 @@ public final class RpgPlugin extends JavaPlugin {
                 () -> this.mobs);
         // Every selftest run's end stops a fixture a row left running, so an aborted row cannot leave him struck.
         selfTest.bindFightStop(() -> fightFixtures.running() ? fightFixtures.stop("selftest-run-end") : null);
+        selfTest.bindFightRunning(fightFixtures::running);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,

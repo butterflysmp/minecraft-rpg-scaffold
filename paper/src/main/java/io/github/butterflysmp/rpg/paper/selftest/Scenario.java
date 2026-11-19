@@ -245,6 +245,12 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * {@code DRIVE drag_tick on=true}.
          */
         DRAG_TICK,
+        /**
+         * {@code "<ceiling ticks>"}: wait, a tick at a time, until the dev command's fight is no longer running, or the
+         * ceiling; logs {@code AWAIT fight ended ticks=<n>} or {@code AWAIT fight ceiling ticks=<c> still running}
+         * ({@link SelfTestAwaitFight}; GATE-fight-site.md).
+         */
+        AWAIT_FIGHT,
         /** A line for the reader. Changes nothing. */
         NOTE
     }
