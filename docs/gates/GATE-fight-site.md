@@ -1,6 +1,6 @@
 # GATE — STEP F8a: ONE RUNTIME AT A SITE, BEN'S SECOND-BOOT TUNING, AND THE INSTRUMENT FIXES
 
-**Status: NOT RUN.** Every prediction below was written **before** any boot of `feat/fight-site`. This file is
+**Status: NOT RUN.** Seat approval 2026-11-18: code and gate diffed at `7630e37c`, readings at `ef7ccb85`. Merge on Ben's words. Every prediction below was written **before** any boot of `feat/fight-site`. This file is
 committed before the boot. Readings go **beside** a prediction, never over it, and a prediction is not edited once its
 row has been read; a correction is a dated note.
 
