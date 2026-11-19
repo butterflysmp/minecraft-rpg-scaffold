@@ -6,8 +6,8 @@
 # orphan refused, stale login caught), FIGHTWORLDS (the instrument's count), CRYSTALSPOT (where a crystal stood), and
 # the fight's own RINGTICK, FIGHTPHASE, STRIKE, FIGHTKILL, MAGEGATE, CRYSTAL, FIGHTPROBE, FIGHT.
 #
-# Every row ends back in the world he started in, with `rpg fight worlds` reading loaded=0, the fight's folder gone
-# (R0e's look-alike, which has no marker, stays: folders=1 marked=0), and the end probes.
+# Every row ends back in the world he started in, with `rpg fight worlds` reading loaded=0 folders=0 marked=0 (the
+# second boot stages no R0e folder), and the end probes.
 #
 # THREE ROWS KILL HIM ON PURPOSE (AE4, AE5, AE6). Each is a death_rules row, and each death happens inside an
 # await_fight, which survives a death: he reappears where he entered.
@@ -21,7 +21,7 @@ setup:
 
 # AE1: enter: the world created, the arena built; the floor, its edge, beyond it, its thickness, every pillar's top; he
 # is in the fight's world. Then leave: returned; with nobody inside the fight ends; the world unloaded; its folder gone.
-AE1:
+AE1R2:
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
   - wait: 10
@@ -53,7 +53,7 @@ AE1:
   - probe_entities: "wither_skeleton 16"
 
 # AE2: the ring, the Mage at 6000 and a crystal ON ITS PILLAR in the arena. He stands 1 west of the Mage.
-AE2:
+AE2R2:
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
   - wait: 20
@@ -70,7 +70,7 @@ AE2:
   - probe_entities: "wither_skeleton 16"
 
 # AE3: the border lightning from the fight's FIRST tick, before any landing: 50 from C at t=40 is struck (k=1, 20).
-AE3:
+AE3R2:
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
   - wait: 5
@@ -87,7 +87,7 @@ AE3:
 
 # AE4: CLOSED in the arena: nobody kills, the ring shuts at S+400, and the lightning kills him (DIES ON PURPOSE). He is
 # returned where he entered; nobody is inside; the fight fails and ends; the world unloaded; its folder gone.
-AE4:
+AE4R2:
   - death_rules: ""
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
@@ -102,7 +102,7 @@ AE4:
 
 # AE6: falling off the disc is a death like any other (DIES ON PURPOSE): into the void beyond the edge. Returned; the
 # fight ends; its folder gone.
-AE6:
+AE6R2:
   - death_rules: ""
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
@@ -119,7 +119,7 @@ AE6:
 # eight kills from inside, one every 35 ticks from 35 into the slow close (each finds the ring at 11 - 0.05n), hold it
 # open to S+2400; the tenth crystal powers the Mage; he is killed; returned where he entered; the fight ends; the
 # folder gone. The last kill goes straight into the await, because his death comes one tick after POWERED.
-AE5:
+AE5R2:
   - death_rules: ""
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
@@ -679,7 +679,7 @@ AE5:
   - probe_entities: "wither_skeleton 16"
 
 # AE7: entering while already inside is refused, and changes nothing (the dev command's one fight).
-AE7:
+AE7R2:
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
   - wait: 10
@@ -694,7 +694,7 @@ AE7:
 # ===== BEN'S ROWS: HIS OWN WORDS, ONE THING PER QUESTION (questions 2 to 6; question 1 is GATE-fight-site's) =====
 
 # BA1: the arena stand-in and the night sky, seen from inside.
-BA1:
+BA1R2:
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
   - wait: 10
@@ -709,7 +709,7 @@ BA1:
   - probe_entities: "wither_skeleton 16"
 
 # BA2: the six-row wall, alternate rows turning opposite ways, seen from inside the arena.
-BA2:
+BA2R2:
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
   - wait: 10
@@ -724,7 +724,7 @@ BA2:
 
 # BA3: THE PLAY ROW WITHOUT A DRAGON (the seat's ruling): NO SAFETY. He enters, a Mage lands at least 15 away, and he
 # fights it with his own weapon for up to three minutes or until it ends. A death is real: he reappears where he entered.
-BA3:
+BA3R2:
   - death_rules: ""
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"

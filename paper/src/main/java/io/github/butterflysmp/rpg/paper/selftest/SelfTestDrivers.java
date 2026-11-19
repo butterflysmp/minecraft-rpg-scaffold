@@ -829,6 +829,11 @@ final class SelfTestDrivers {
     private Optional<String> saveBlocks(Player p, String arg) {
         String[] f = ("x " + arg).split("\\s+");
         if (f.length != 7) return Optional.of("SAVE_BLOCKS wants 'dx1 dy1 dz1 dx2 dy2 dz2', got '" + arg + "'");
+        // A fight's own world is deleted at the fight's end, so a block saved there could never be put back: the run's
+        // restore would write into a world that no longer exists (the seat's ruling 2b). Refused by name, row skipped.
+        if (io.github.butterflysmp.rpg.paper.fight.FightWorlds.isFightWorld(p.getWorld())) {
+            return Optional.of("SAVE_BLOCKS refused in a fight world: it is deleted at the fight's end");
+        }
         int n = 0;
         for (Block b : box(p, f, 1)) { run.snapshot().saveBlock(b.getState()); n++; }
         run.log("STAGE saved " + n + " blocks for the restore, box=" + arg);
