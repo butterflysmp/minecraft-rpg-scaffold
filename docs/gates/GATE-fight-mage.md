@@ -1,6 +1,6 @@
 # GATE — THE DARK MAGE AND THE CRYSTALS (STEPS F6 + F7), AND BEN'S TUNING FROM THE FIRST BOOT
 
-**Status: NOT RUN.** Every prediction below was written **before** any boot of `feat/fight-mage`, and this file is
+**Status: NOT RUN.** **Seat approval 2026-11-18: code and gate diffed at 65482e4c, readings at fb060bc1. Merge on Ben's words.** Every prediction below was written **before** any boot of `feat/fight-mage`, and this file is
 **committed before the boot**. Readings go **beside** a prediction, never over it, and a prediction is not edited once
 its row has been read; a correction is a dated note. **NO BOOT until the seat has diffed the code AND this gate from
 origin, and Ben says ready. Then only CC boots.**
