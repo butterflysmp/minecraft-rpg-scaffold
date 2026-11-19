@@ -124,8 +124,13 @@ arena:
   pillar_width_blocks: 3
   # Their top block this far above the floor's top.
   pillar_top_above_floor_blocks: 12
-  # The sky: fixed at midnight, weather clear.
+  # The sky, in a NORMAL world: fixed at midnight, weather clear. An END world's time is fixed by its type (READ:
+  # the_end has has_fixed_time), so this is not applied there.
   time_of_day_ticks: 18000
+  # F9c (Ben, 2026-11-19: "yes let's try it"): the fight world's environment. end gives the End's sky; vanilla's own
+  # dragon fight is made inert by a per-world Paper switch written before the world is made, checked after it, and if
+  # the check fails the fight runs in a normal world instead. normal is the night-sky arena.
+  environment: end
   # Where an entering player stands, blocks from the centre [dx, dz].
   entry_offset_blocks: [0.0, 0.0]
 

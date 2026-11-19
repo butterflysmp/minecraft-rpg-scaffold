@@ -109,11 +109,47 @@ public final class FightWorlds {
      * Returns null, logged, if the server refused.
      */
     public World create(FightContent.Arena arena) {
+        return create(arena, arena.environment());
+    }
+
+    /**
+     * As above, in this environment (F9c, section 3). For END, BEFORE the world is made, its folder gets our marker (the
+     * same file, the same text: the sweep's four tests are unchanged) and a Paper per-world file switching
+     * {@code entities.spawning.scan-for-legacy-ender-dragon} off. READ, the pinned server jar:
+     * <ul>
+     *   <li>the folder is {@code <level>/dimensions/<namespace>/<name>} ({@code DimensionType.getStorageFolder}), so it
+     *       is known before {@code createWorld} ({@link #namespaceDir});</li>
+     *   <li>Paper reads {@code <that folder>/paper-world.yml} ({@code PaperConfigurations}, {@code getDimensionPath}),
+     *       and the world's config is made in the {@code Level} constructor, before {@code ServerLevel} builds vanilla's
+     *       fight (offset 155 against 921);</li>
+     *   <li>with the switch off, {@code EnderDragonFight.init} on a fresh record sets {@code needsStateScanning} false and
+     *       {@code dragonKilled} true: no scan, no exit portal, no dragon made or adopted.</li>
+     * </ul>
+     * That Paper reads OUR file for OUR world is UNVERIFIED until {@link #endSelfCheck} reads it. The folder existing
+     * before {@code createWorld} is the one change to what {@code createWorld} meets; INFERRED harmless (a dimension's
+     * folder holds nothing it must find), and the created line and the arena's build are the witness.
+     */
+    public World create(FightContent.Arena arena, FightContent.Environment environment) {
         String name = PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         NamespacedKey key = new NamespacedKey(NAMESPACE, name);
         ArenaShape s = arena.shape();
+        boolean end = environment == FightContent.Environment.END;
+        if (end) {
+            Path pre = namespaceDir().resolve(name).toAbsolutePath().normalize();
+            try {
+                Files.createDirectories(pre);
+                Files.writeString(pre.resolve(MARKER), "rpg fight world " + key + "\n", StandardCharsets.UTF_8);
+                Files.writeString(pre.resolve(WORLD_CONFIG), INERT_CONFIG, StandardCharsets.UTF_8);
+                log.info("FIGHTWORLD end-config path=" + pre + " file=" + WORLD_CONFIG
+                        + " scan-for-legacy-ender-dragon=false");
+            } catch (IOException e) {
+                log.warning("FIGHTWORLD end-config NOT written path=" + pre + ": " + e + "; making a NORMAL world instead"
+                        + " (the folder, marked, is left for the sweep)");
+                return create(arena, FightContent.Environment.NORMAL);
+            }
+        }
         WorldCreator creator = WorldCreator.ofKey(key)
-                .environment(World.Environment.NORMAL)
+                .environment(end ? World.Environment.THE_END : World.Environment.NORMAL)
                 .generator(new EmptyGenerator())
                 .generateStructures(false)
                 .forcedSpawnPosition(Position.block(s.centreX(), (int) s.groundY(), s.centreZ()), 0.0f, 0.0f);
@@ -138,7 +174,8 @@ public final class FightWorlds {
         // unloading.
         world.setGameRule(org.bukkit.GameRules.KEEP_INVENTORY, true);
         world.setGameRule(org.bukkit.GameRules.IMMEDIATE_RESPAWN, true);
-        world.setTime(arena.timeOfDayTicks());
+        // An END world's time is fixed by its type (READ: the_end's has_fixed_time), so the hour is a NORMAL world's only.
+        if (!end) world.setTime(arena.timeOfDayTicks());
         world.setStorm(false);
         world.setThundering(false);
         world.setAutoSave(false);
@@ -150,9 +187,55 @@ public final class FightWorlds {
             log.warning("FIGHTWORLD marker NOT written path=" + folder + ": " + e
                     + " (the sweep will refuse this folder; delete it by hand)");
         }
-        log.info(String.format(Locale.ROOT, "FIGHTWORLD created name=%s key=%s folder=%s ms=%d", world.getName(), key,
-                folder, ms));
+        log.info(String.format(Locale.ROOT, "FIGHTWORLD created name=%s key=%s folder=%s ms=%d environment=%s",
+                world.getName(), key, folder, ms, world.getEnvironment()));
         return world;
+    }
+
+    /** Paper's per-world file name (READ: {@code PaperConfigurations.WORLD_CONFIG_FILE_NAME}). */
+    static final String WORLD_CONFIG = "paper-world.yml";
+
+    /** The per-world file an END fight world gets; the version is the one this build's own per-world files carry. */
+    static final String INERT_CONFIG = """
+            # Written by the RPG plugin (F9c) for a temporary fight world: vanilla's own dragon fight is made inert.
+            _version: 31
+            entities:
+              spawning:
+                scan-for-legacy-ender-dragon: false
+            """;
+
+    /**
+     * THE SELF-CHECK of an END fight world (F9c, section 3 c), read a couple of ticks after it is made (READ: an empty
+     * new world ticks its fight while {@code emptyTime} is under 300, and the fight's tick sets its bar's visibility
+     * first). The ONE place that may read {@code World.getEnderDragonBattle()} (the seat's ruling of 2026-11-19, an
+     * exception to C1): on the fight's own world handle, to confirm vanilla's fight is inert, never to find, drive or
+     * identify our fight. A read that throws is a check that cannot be trusted, and reads as NOT inert.
+     */
+    public io.github.butterflysmp.rpg.core.fight.EndFightCheck.Reading endSelfCheck(World world, ArenaShape shape) {
+        boolean present;
+        boolean barVisible;
+        boolean ownDragon;
+        boolean portal;
+        try {
+            org.bukkit.boss.DragonBattle battle = world.getEnderDragonBattle();
+            present = battle != null;
+            barVisible = present && battle.getBossBar().isVisible();
+            ownDragon = present && battle.getEnderDragon() != null;
+            portal = present && battle.getEndPortalLocation() != null;
+        } catch (RuntimeException e) {
+            log.warning("FIGHTWORLD end-check could not read vanilla's fight in " + world.getName() + ": " + e);
+            present = true;
+            barVisible = true;
+            ownDragon = true;
+            portal = true;
+        }
+        int bedrock = 0;
+        for (int y = world.getMinHeight(); y < world.getMaxHeight(); y++) {
+            if (world.getBlockAt(shape.centreX(), y, shape.centreZ()).getType() == Material.BEDROCK) bedrock++;
+        }
+        int dragons = world.getEntitiesByClass(org.bukkit.entity.EnderDragon.class).size();
+        return new io.github.butterflysmp.rpg.core.fight.EndFightCheck.Reading(present, barVisible, ownDragon, portal,
+                bedrock, dragons);
     }
 
     /** Places the generated arena's blocks (the brief's section 4 b), on the main thread. Returns the count placed. */

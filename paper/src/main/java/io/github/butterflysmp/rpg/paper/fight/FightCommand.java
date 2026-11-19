@@ -73,6 +73,7 @@ public final class FightCommand {
                                                                 DoubleArgumentType.getDouble(ctx, "dx"),
                                                                 DoubleArgumentType.getDouble(ctx, "dy"),
                                                                 DoubleArgumentType.getDouble(ctx, "dz")))))))))
+                .then(Commands.literal("arena-probe").executes(ctx -> reply(ctx, devServer, p -> fixtures.arenaProbe())))
                 .then(Commands.literal("leave").executes(ctx -> reply(ctx, devServer, fixtures::leave)))
                 .then(Commands.literal("worlds").executes(ctx -> reply(ctx, devServer, fixtures::worldsLine)))
                 .then(Commands.literal("play")

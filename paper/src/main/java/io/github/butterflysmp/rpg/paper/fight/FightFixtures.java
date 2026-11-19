@@ -133,21 +133,77 @@ public final class FightFixtures {
         FightContent f = content.get();
         ArenaFight a = runningArena();
         if (a == null) {
+            if (preparing != null) return "The fight's world is being prepared; try again in a moment.";
             World w = worlds.create(f.arena());
             if (w == null) return "The fight's world could not be created (see the log).";
-            worlds.build(w, f.arena().shape());
-            ArenaSite site = new ArenaSite(w, f.arena().shape());
-            site.addEntrant(p.getUniqueId());
-            FightInstance started = new FightInstance(adapters, f, mobs.get(), site, p.getName(), withDragon,
-                    this::forget);
-            a = new ArenaFight(started, site, w, FightWorlds.folderOf(w));
-            fights.put(started.id(), started);
-            arenas.put(started.id(), a);
-            if (running()) current.stop("replaced by an arena fight");
-            current = started;
+            if (w.getEnvironment() == World.Environment.THE_END) {
+                // F9c: an END world is checked before anything is built in it or anyone enters it (section 3 c).
+                preparing = w;
+                UUID who = p.getUniqueId();
+                adapters.scheduler().onGlobalLater(() -> finishEndStart(who, f, w, withDragon), END_CHECK_DELAY_TICKS);
+                return "Preparing an End world for the fight; you enter once vanilla's dragon fight is checked inert.";
+            }
+            a = startArena(p, f, w, withDragon);
         } else {
             a.site().addEntrant(p.getUniqueId());
         }
+        return join(p, a, f);
+    }
+
+    /** F9c: ticks between an END world's creation and its self-check (READ: its fight ticks from the first tick). */
+    static final int END_CHECK_DELAY_TICKS = 4;
+
+    /** F9c: an END world made and not yet checked; no second arena is started meanwhile. */
+    private World preparing;
+
+    /**
+     * F9c, section 3 c: THE END WORLD'S SELF-CHECK, then the fight. Inert: logged, and the arena is built and he
+     * enters. NOT inert: a loud line, that world ended through the normal unload-and-delete, and a NORMAL world made
+     * instead, so a fight never runs beside vanilla's. Gone or already fighting meanwhile: the world is ended unused.
+     */
+    private void finishEndStart(UUID who, FightContent f, World w, boolean withDragon) {
+        preparing = null;
+        io.github.butterflysmp.rpg.core.fight.EndFightCheck.Reading r = worlds.endSelfCheck(w, f.arena().shape());
+        String line = io.github.butterflysmp.rpg.core.fight.EndFightCheck.line(w.getName(), r);
+        World use = w;
+        if (io.github.butterflysmp.rpg.core.fight.EndFightCheck.inert(r)) {
+            adapters.log().info(line);
+        } else {
+            adapters.log().warning(line + " -- vanilla's fight is NOT inert: this world is ended and a NORMAL world made"
+                    + " instead, so the fight never runs beside vanilla's");
+            worlds.unloadAndDeleteNow(w, FightWorlds.folderOf(w));
+            use = worlds.create(f.arena(), FightContent.Environment.NORMAL);
+            if (use == null) return;
+        }
+        Player p = Bukkit.getPlayer(who);
+        if (p == null || !p.isOnline() || runningArena() != null || FightWorlds.isFightWorld(p.getWorld())) {
+            adapters.log().info("FIGHTWORLD prepared but unused name=" + use.getName()
+                    + " (the player left or a fight began meanwhile)");
+            worlds.unloadAndDeleteNow(use, FightWorlds.folderOf(use));
+            return;
+        }
+        ArenaFight a = startArena(p, f, use, withDragon);
+        p.sendMessage(net.kyori.adventure.text.Component.text(join(p, a, f),
+                net.kyori.adventure.text.format.NamedTextColor.GRAY));
+    }
+
+    /** Builds the arena in {@code w} and starts its fight with {@code p} its first entrant. */
+    private ArenaFight startArena(Player p, FightContent f, World w, boolean withDragon) {
+        worlds.build(w, f.arena().shape());
+        ArenaSite site = new ArenaSite(w, f.arena().shape());
+        site.addEntrant(p.getUniqueId());
+        FightInstance started = new FightInstance(adapters, f, mobs.get(), site, p.getName(), withDragon,
+                this::forget);
+        ArenaFight a = new ArenaFight(started, site, w, FightWorlds.folderOf(w));
+        fights.put(started.id(), started);
+        arenas.put(started.id(), a);
+        if (running()) current.stop("replaced by an arena fight");
+        current = started;
+        return a;
+    }
+
+    /** Saves his way back and sends him in. */
+    private String join(Player p, ArenaFight a, FightContent f) {
         Location from = p.getLocation();
         FightReturn back = new FightReturn(from.getWorld().getName(), from.getX(), from.getY(), from.getZ(),
                 from.getYaw(), from.getPitch());
@@ -463,6 +519,56 @@ public final class FightFixtures {
         for (FightInstance f : new ArrayList<>(fights.values())) f.onCloudApply(cloud, affected);
     }
 
+    /** F9c: the crystals whose fire was cancelled, so each is logged once (bounded). */
+    private final java.util.Set<UUID> crystalFireLogged = new java.util.LinkedHashSet<>();
+
+    /**
+     * F9c, section 3 d: an End crystal's fire in a fight world was cancelled. READ: {@code EndCrystal.tick} sets fire on
+     * its own block whenever its level has a dragon fight object (which an END world has, inert or not), through
+     * {@code CraftEventFactory.callBlockIgniteEvent} with the crystal as the igniting entity. Logged once per crystal.
+     */
+    public void noteCrystalFire(UUID crystal, org.bukkit.block.Block at) {
+        if (!crystalFireLogged.add(crystal)) return;
+        if (crystalFireLogged.size() > 64) crystalFireLogged.remove(crystalFireLogged.iterator().next());
+        adapters.log().info(String.format(Locale.ROOT, "FIGHT crystal-fire cancelled crystal=%s at=%d %d %d world=%s",
+                crystal, at.getX(), at.getY(), at.getZ(), at.getWorld().getName()));
+    }
+
+    /**
+     * {@code arena-probe} (dev; F9c): the running arena's world, its environment, the centre column's top block and its
+     * bedrock (vanilla's exit portal is bedrock), fire anywhere a crystal could have set it, crystals and dragons.
+     */
+    public String arenaProbe() {
+        ArenaFight a = runningArena();
+        if (a == null) return "No arena fight is running.";
+        World w = a.world();
+        io.github.butterflysmp.rpg.core.fight.ArenaShape s = a.site().shape();
+        int bedrock = 0;
+        for (int y = w.getMinHeight(); y < w.getMaxHeight(); y++) {
+            if (w.getBlockAt(s.centreX(), y, s.centreZ()).getType() == org.bukkit.Material.BEDROCK) bedrock++;
+        }
+        org.bukkit.Material top = w.getBlockAt(s.centreX(), s.floorY(), s.centreZ()).getType();
+        int fire = 0;
+        int r = s.discRadius();
+        int fromY = s.floorY() + 1;
+        int toY = s.floorY() + s.pillarTopAboveFloor() + 3;
+        for (int x = s.centreX() - r; x <= s.centreX() + r; x++) {
+            for (int z = s.centreZ() - r; z <= s.centreZ() + r; z++) {
+                for (int y = fromY; y <= toY; y++) {
+                    org.bukkit.Material m = w.getBlockAt(x, y, z).getType();
+                    if (m == org.bukkit.Material.FIRE || m == org.bukkit.Material.SOUL_FIRE) fire++;
+                }
+            }
+        }
+        int crystals = w.getEntitiesByClass(org.bukkit.entity.EnderCrystal.class).size();
+        int dragons = w.getEntitiesByClass(org.bukkit.entity.EnderDragon.class).size();
+        String line = String.format(Locale.ROOT, "ARENAPROBE world=%s environment=%s centre_top=%s bedrock_in_column=%d"
+                        + " fire=%d (y %d..%d) crystals=%d dragons=%d", w.getName(), w.getEnvironment(), top, bedrock,
+                fire, fromY, toY, crystals, dragons);
+        adapters.log().info(line);
+        return line;
+    }
+
     /** A vanilla hit: refused if it is a fight's dragon hitting that fight's own Mage (F9b, section 7). */
     public boolean refusesDragonOnMage(org.bukkit.entity.Entity damager, org.bukkit.entity.Entity victim) {
         for (FightInstance f : new ArrayList<>(fights.values())) {
@@ -501,6 +607,11 @@ public final class FightFixtures {
 
     /** Plugin disable or server stop: every fight ends cleanly; an arena's people go home at once. */
     public void onDisable() {
+        if (preparing != null) {
+            // F9c: an END world made and not yet checked has nobody in it: ended at once.
+            worlds.unloadAndDeleteNow(preparing, FightWorlds.folderOf(preparing));
+            preparing = null;
+        }
         for (ArenaFight a : new ArrayList<>(arenas.values())) {
             arenas.remove(a.fight().id());
             endArena(a, true);

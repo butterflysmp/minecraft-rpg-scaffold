@@ -2538,6 +2538,20 @@ public final class RpgListeners implements Listener {
     }
 
     /**
+     * F9c, section 3 d: OUR CRYSTALS SET NO FIRE IN A FIGHT WORLD. READ, the pinned server jar: {@code EndCrystal.tick}
+     * sets fire on its own block whenever its level has a dragon fight object, which an END world has even with that
+     * fight inert, and it asks {@code CraftEventFactory.callBlockIgniteEvent} first, with the crystal as the igniting
+     * entity. Cancelled for every crystal in a fight world (every crystal there is the fight's); logged once each.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onFightCrystalFire(org.bukkit.event.block.BlockIgniteEvent event) {
+        if (!(event.getIgnitingEntity() instanceof org.bukkit.entity.EnderCrystal crystal)) return;
+        if (!io.github.butterflysmp.rpg.paper.fight.FightWorlds.isFightWorld(event.getBlock().getWorld())) return;
+        event.setCancelled(true);
+        fights.noteCrystalFire(crystal.getUniqueId(), event.getBlock());
+    }
+
+    /**
      * F9b, section 7: a fight's dragon does not hurt that fight's own Mage in vanilla ({@code
      * FightInstance.refusesDragonOnMage} says why his death message credited the dragon). Earliest, so nothing prices it.
      */
