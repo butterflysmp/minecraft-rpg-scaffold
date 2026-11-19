@@ -1,6 +1,6 @@
 # GATE — STEP F9: THE DRAGON
 
-**Status: READ, ONE BOOT, 2026-11-19, at `7e2ebfa8`** (the seat's boot approval of 2026-11-19; Ben's "ready"). R0
+**Status: READ, ONE BOOT, 2026-11-19, at `7e2ebfa8`** Seat approval 2026-11-19: code and gate diffed at `7e2ebfa8`, readings at `ff9cf9ef`, plan 6.9 at `9d1023a7`. Merge on Ben's words. (the seat's boot approval of 2026-11-19; Ben's "ready"). R0
 passed; every AUTO row ran; no ABORTED line; Ben's six answers are in DB1 and DB2. The readings, the checklist and the
 findings are in *THE BOOT OF 2026-11-19* at the end. Every prediction below was written **before** any boot of
 `feat/fight-dragon`, and this file was committed before the boot (at `7e2ebfa8`, NOT RUN).
