@@ -208,7 +208,10 @@ class SelfTestScenariosTest {
         // Then AN END-TYPE FIGHT WORLD (GATE-fight-end.md, step F9c, 2026-11-19, stacked on fight-rules), a new gate,
         // RECOUNTED the same way on this branch's tree after its rebase onto the fix: 26 gates, 246 keys, 26 setups, so
         // 220: fight-end's 6 rows (EA1, EB1-EB5) added. The control: 239 + 7 = 246. 214 was this line's value.
-        assertEquals(220, loaded.rows());
+        // Then THE SECOND BOOT'S fight-end (the seat's fix brief of 2026-11-19), RECOUNTED the same way on this branch's
+        // tree: 26 gates, 243 keys, 26 setups, so 217: EA1 and EB1-EB5 retired (read or aborted), EB3R2, EB4R2 and EB5R2
+        // in their place. The control: 246 - 7 + 4 = 243. 220 was this line's value.
+        assertEquals(217, loaded.rows());
     }
 
     /**

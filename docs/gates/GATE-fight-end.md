@@ -1,6 +1,6 @@
 # GATE — STEP F9c: AN END-TYPE FIGHT WORLD (AND THE ONE BOOT FOR F9b's GATE TOO)
 
-**Status: READ, ONE BOOT, 2026-11-19, at `e15cf9ee`** (the seat's boot approval of 2026-11-19; Ben's "ready"). R0 passed. EA1 read the INERT branch, as predicted; EB1 to EB4 read with Ben's five answers; **EB5 ABORTED** (he disconnected 32 seconds in), so questions 6 and 7 were not asked. The checklist, the after-run and the findings are in *THE BOOT OF 2026-11-19* at the end. Every prediction below was written **before** any boot of `feat/fight-end`, and this file is
+**Status: THE SECOND BOOT IS NOT RUN** (its section, *THE SECOND BOOT*, is at the end, committed before it). **The first boot: READ, 2026-11-19, at `e15cf9ee`** (the seat's boot approval of 2026-11-19; Ben's "ready"). R0 passed. EA1 read the INERT branch, as predicted; EB1 to EB4 read with Ben's five answers; **EB5 ABORTED** (he disconnected 32 seconds in), so questions 6 and 7 were not asked. The checklist, the after-run and the findings are in *THE BOOT OF 2026-11-19* at the end. Every prediction below was written **before** any boot of `feat/fight-end`, and this file is
 committed before the boot.
 - Readings go **beside** a prediction, never over it.
 - A prediction is not edited once its row has been read; a correction is a dated note.
@@ -446,3 +446,222 @@ overworld 106 files (the 12:49 backup's figure).
    - **Ben: "remove the knock back from it".**
 4. **The owed-Mage immunity works in play:** seventeen `why=mage-owed` during a return.
 5. **The End world:** eighteen of eighteen worlds over two runs read inert; Ben said yes twice.
+
+---
+
+## THE SECOND BOOT (the seat's fix brief and its addendum, 2026-11-19) — ITS R0, CARRIED STATE, RUN SHEET, AND EB3R2, EB4R2, EB5R2
+
+**Status of this section: NOT RUN.** Written before the second boot, and committed before it. It is the one R0 and run
+sheet for both gates: `GATE-fight-rules.md`'s RA3R2, RA4R2, RA5R2 and RB1, and this file's EB3R2, EB4R2 and EB5R2.
+**Not re-run:** RA1, RA2, EA1, EB1, EB2. Everything above this section stands as read.
+
+> **BEN'S OWN BOOT AT 13:09 (build `61ce1271`) IS A BOOT OUTSIDE THE PROCEDURE** (the seat's ruling, 2026-11-19).
+> - Its readings stand, in *THE SECOND RUN* above.
+> - It had no backup, no "booting now" and no R0 word before he logged in.
+> - **It is not the second boot.** This is.
+
+> **FOR THE RECORD, A CORRECTION CC MADE TO THE SEAT (2026-11-19):** at the first boot only questions 6 and 7 went
+> unasked (EB5 aborted). CC's earlier "four ASKs" was wrong.
+
+### WHAT CHANGED SINCE THE FIRST BOOT, IN THE LINES THE ROWS READ
+
+- **One contact hit per window** (F9b fix A):
+  - At most one bite or wing `DRAGONATTACK` per player per 20 ticks.
+  - Those suppressed are counted in **`DRAGONATTACK suppressed player=<n> count=<k> window=<a>..<b>`**.
+  - **The name follows vanilla's amount:** a `vanilla=10.000` hit is a bite, `vanilla=5.000` a wing (at Normal).
+- **No fight damage outside the fight** (fix B): a refusal is **`FIGHTDAMAGE refused t=<t> player=<n> source=<s>
+  amount=<a> why=not-in-this-fight`** (or `why=fight-gone`).
+- **The breath:**
+  - its vanilla event is cancelled (fix F), so no push;
+  - **`DRAGONBREATH apply t=… cloud=… age=… radius=… affected=[…] players=[…]`** at each of its applications;
+  - **`DRAGONBREATH velocity t=… player=… at_hit=… next_tick=…`** at each hit.
+- **The touch** now ends `box=<his> attack_box=<the part's> inside=<true|false>` (fix D).
+- **Every right-click in a fight world** logs **`FIGHTCAST player=<n> trigger=right_click result=<r> held=<item>`**, and
+  `FIGHTCAST … dealt=nothing within=40` when a successful cast lands no hit in 40 ticks (fix D).
+  - READ first, on this tree: no weapon, mana or cast code reads the world's environment or asks whether it is a fight
+    world.
+    - `git grep -nE "getEnvironment\(\)|World\.Environment|Environment\.(THE_END|NORMAL|NETHER)" -- paper/src/main`
+      names only `FightLoader`, `FightFixtures`, `FightWorlds` and `MobOrigin`. The control: it hits `FightWorlds`'
+      `.environment(` line, as it must.
+    - `isFightWorld(` is called only by `FightFixtures` (including this new line), the crystal-fire listener and the
+      selftest.
+    - **A bare `Environment` needle is the wrong instrument:** it matches "environmental damage" in eight unrelated
+      classes.
+    - So nothing of ours is known to stop a weapon in an End world. What happened to the cursed emerald stays Ben's to
+      say.
+- **The arena is probed at every arena fight's end:** **`ARENAPROBE when=end world=… environment=… centre_top=…
+  bedrock_in_column=… fire=… crystals=… dragons=…`**. The command's probe now reads `when=command`.
+
+### THE ARITHMETIC (F9b fix E): EVERY ROW THAT CAN HURT HIM, AT DEFENCE 0, AGAINST 100 HEALTH
+
+The largest hit after armour at defence 0 is the hit itself.
+
+| row | what can land in it | the most that can land between heals | against 100 |
+|---|---|---|---|
+| `fight-rules` RA3R2 | one 4-tick touch of the head; window 20 | ONE contact hit, 80 | **80 < 100** |
+| `fight-rules` RA4R2 | one 4-tick touch of a wing | ONE contact hit, at most 80 | **80 < 100** |
+| `fight-rules` RA5R2 | 35 ticks on the breath, at most one application per 20 | TWO, 60 | **60 < 100** |
+| `fight-rules` RB1 | one tick in the head's box, then he leaves; fix B refuses all after | ONE contact hit, 80 | **80 < 100** |
+| EB3R2 | a 4-tick head touch; healed; a 4-tick wing touch (44 ticks later, so the window may allow it) | ONE contact hit before each heal, 80 | **80 < 100** |
+| EB4R2 | 55 ticks on the breath: a fourth application would need 60 | THREE, 90 | **90 < 100** |
+| **EB5R2** | **the fight, no safety** | **not bounded, by design** | **CAN KILL HIM** |
+
+- **The premises, named in `GATE-fight-rules.md` under its arithmetic, and the same here.**
+  - (a) Each staged row puts him on the floor 20 blocks south (`tp @s 0.5 65 20.5`) as soon as the dragon is held in
+    HOVER, and back there after each touch. That spot is out of reach (INFERRED: in seven staged rows over two boots
+    he waited at the centre, nearer, and no contact hit landed before any staging).
+  - (b) On the cloud: no contact hit at the spot he is put (READ: 5 blocks ahead of the head, against the head's
+    reach of 1.8; a sitting dragon's wing does not hurt). **It holds while he stands still; a bite on top of the breath
+    would be 80 + 30 > 100.**
+- **Each premise is witnessed** by the row's own `DRAGONATTACK … attack=bite|wing` lines, with their ticks.
+- **Every row sets `death_rules` and heals first**, so even a death in one keeps his inventory. EB5R2 sets it too: a
+  death there is real, he reappears where he entered, and he keeps everything he carried.
+
+## CARRIED STATE (CC, IN THIS ORDER) — A CHECKLIST, EACH LINE TICKED IN THE REPORT, NOT REMEMBERED
+
+The booter's checklist is `.claude/rules/booting.md`; this list is its instance for the second boot.
+
+1. **No JVM:** `Get-Process java -ErrorAction SilentlyContinue` prints nothing.
+2. **A fresh dated backup:** `run/plugins/Rpg` and `run/world` copied, as they are, to
+   `../rpg-run-backups/2026-11-19-pre-fight-end-2` (`2026-11-19-pre-fight-end` exists). Report:
+   - the file and directory counts;
+   - `diff -rq lines: 0` for each;
+   - the `ls` of `world/dimensions`;
+   - the overworld's file count.
+
+   **Nothing is restored, moved or touched in `run/world` or `run/plugins/Rpg`.** Whether his player file is restored
+   from `2026-11-19-pre-fight-end` is Ben's decision; **without his words it is not, and the boot runs on the world as
+   it is.**
+3. `grep -n "dev-pack-on-join" run/plugins/Rpg/config.yml` prints `12:  dev-pack-on-join: true`.
+4. **No fight folders:** `find run/world/dimensions/rpgfight -mindepth 1` prints nothing.
+5. **The world's saved difficulty** (it wins over `server.properties`): both gates' setups set `difficulty: normal`
+   before any row, so a saved PEACEFUL cannot void a row. The fight worlds are new each row.
+6. **IN ITS OWN MESSAGE, BEFORE THE BOOT COMMAND IS SENT:** "booting now", and Ben told **NOT to log in until told R0
+   passed.**
+7. `./scripts/dev-server.sh --refresh-content`. **The REQUIRED deployed lines:**
+   - `content/fights/dragon.yml` reads `  contact_hit_interval_ticks: 20`, `  environment: end`, `  bite: 80.0`;
+   - `content/mobs/ender_dragon.yml` reads `max_health: 20000`.
+8. R0a-R2 to R0e-R2 read on **this boot's** log (its `[Rpg] Build:` names `feat/fight-end`'s head).
+9. **IN ITS OWN MESSAGE: Ben told R0 passed.** Any R0 not as predicted: STOP, tell the seat, tell Ben NOT to log in.
+10. *(After his `/stop`.)* Report:
+    - `rpgfight` empty;
+    - the overworld's file count against step 2's;
+    - `All dimensions are saved`;
+    - no `java` process left.
+
+## THE RUN SHEET — BEN TYPES THESE, IN THIS ORDER. EVERY LINE IS LITERAL
+
+0. **DO NOT LOG IN UNTIL CC HAS TOLD YOU R0 PASSED. IF YOU ARE TOLD NOTHING, DO NOT LOG IN.**
+1. `/gamemode survival` — **alone, the first line after login.**
+2. Stand on flat open ground with room all round, and hold the weapon you want to fight with.
+3. `/rpg selftest fight-rules` — **ONCE.** Four rows, about two minutes, and **all four hurt you**: RA3R2 (a bite),
+   RA4R2 (a wing), RA5R2 (the breath), RB1 (a bite as you leave).
+   - **None can kill you:** the most any of them can do is 80 (one bite) against your 100, before your armour. The
+     arithmetic is in the table above.
+   - **Do not move while it runs.** You are moved for every row, and you float down slowly.
+4. `/rpg selftest fight-end` — **ONCE.** Three rows and five questions, and up to **ten minutes** of fighting at the
+   end.
+   - **EB3R2 and EB4R2 hurt you and cannot kill you:** 80 at most between heals, then 90 at most (three breaths).
+   - **In EB4R2, stand still where you are put.** Walking into the dragon's head is the one way it could kill you.
+   - **EB5R2, the fight, CAN kill you:** you reappear at once where you entered, with everything you carried.
+   - Each question says whether it wants yes or no, or your own words.
+   - **`/rpg mana refill` is yours to use or not; the log records it.**
+5. `/stop`
+
+Nothing else this boot.
+
+## R0 (SECOND BOOT) — THE BUILD. READ IT FIRST. IF ANY R0 FAILS, STOP
+
+### R0a-R2 — the build line names THIS branch's head
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <sha>`: `feat/fight-end`'s head as `git ls-remote origin refs/heads/feat/fight-end` prints it, shortened. Not `-dirty`, not `unknown`. **Not `e15cf9ee`, not `61ce1271`** (the two earlier builds) | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+
+### R0b-R2 — the jar carries the fix
+
+| prediction | instrument | READING |
+|---|---|---|
+| PRESENT: `dragon.yml` lines `  contact_hit_interval_ticks: 20`, `  environment: end`; `FightInstance.class` carrying `DRAGONATTACK suppressed` and `FIGHTDAMAGE refused`; `FightFixtures.class` carrying `FIGHTCAST` and `ARENAPROBE when=`; the entry `io/github/butterflysmp/rpg/core/fight/ContactHitWindow.class`; `GATE-fight-end.yml` carrying `EB5R2:`; `GATE-fight-rules.yml` carrying `RB1:`. ABSENT: `dragon.yml` line `  environment: normal`, `NoSuchTextControl` in `FightInstance.class`, and **`GATE-fight-rules.yml` carrying `RA5:`** (the first boot's row, retired) | the PowerShell below, from the repo root | |
+
+```powershell
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+function Line($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + "\s*$")) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+$d = Bytes 'content/fights/dragon.yml'
+Line $d '  contact_hit_interval_ticks: 20' 'dragon.yml'; Line $d '  environment: end' 'dragon.yml'; Line $d '  environment: normal' 'dragon.yml'
+function Has($entry, $needle) { $b = Bytes $entry; if ($b -ne $null -and $b.Contains($needle)) { "PRESENT $entry '$needle'" } else { "ABSENT  $entry '$needle'" } }
+Has 'io/github/butterflysmp/rpg/paper/fight/FightInstance.class' 'DRAGONATTACK suppressed'
+Has 'io/github/butterflysmp/rpg/paper/fight/FightInstance.class' 'FIGHTDAMAGE refused'
+Has 'io/github/butterflysmp/rpg/paper/fight/FightInstance.class' 'NoSuchTextControl'
+Has 'io/github/butterflysmp/rpg/paper/fight/FightFixtures.class' 'FIGHTCAST'
+Has 'io/github/butterflysmp/rpg/paper/fight/FightFixtures.class' 'ARENAPROBE when='
+if ($zip.GetEntry('io/github/butterflysmp/rpg/core/fight/ContactHitWindow.class') -ne $null) { "PRESENT entry ContactHitWindow.class" } else { "ABSENT  entry ContactHitWindow.class" }
+$e = Bytes 'selftest/GATE-fight-end.yml'; if ($e -ne $null -and $e -match "(?m)^EB5R2:\s*$") { "PRESENT GATE-fight-end.yml EB5R2:" } else { "ABSENT  GATE-fight-end.yml EB5R2:" }
+$r = Bytes 'selftest/GATE-fight-rules.yml'
+if ($r -ne $null -and $r -match "(?m)^RB1:\s*$") { "PRESENT GATE-fight-rules.yml RB1:" } else { "ABSENT  GATE-fight-rules.yml RB1:" }
+if ($r -ne $null -and $r -match "(?m)^RA5:\s*$") { "PRESENT GATE-fight-rules.yml RA5:" } else { "ABSENT  GATE-fight-rules.yml RA5:" }
+$zip.Dispose()
+```
+
+**The first boot's jar (`e15cf9ee`) reads ABSENT on every PRESENT line but `environment: end`, and PRESENT on `RA5:`.**
+
+### R0c-R2 — the Loaded lines, and nothing refused
+
+| prediction | instrument | READING |
+|---|---|---|
+| **`[Rpg] Loaded 11 abilities, 30 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`** (unchanged). AND exactly one **`[Rpg] Loaded fight 'dragon': border 48.0, mage ring 12.0, v_fast 3.80, v_slow 0.60, e_kill 1.00, 10 crystals every 240 ticks, a strike every 40 ticks from 20.0; ring dust (170,0,255) size 1.60 every 1.00 blocks at [0.2, 1.7, 3.2, 4.7, 6.2, 7.7], row shift 0.25, turn 1.00/s alternating, every 4 ticks; mage 'dark_mage' refused item.shield.block, landing lightning on; crystals at 40.0, 12.0 up, lit block.beacon.power_select; participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to +12, time 18000, entry (0.0, 0.0), environment end; dragon 'ender_dragon' Mages below [0.8, 0.6, 0.4, 0.2], win return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s, one contact hit per 20 ticks`** (`FightLoaderTest` asserts it verbatim). No `Refusing`, `Skipping`, `SEVERE` or `Exception`. **No `[Rpg]` WARN beyond `volley_stone`'s known pair.** No `No fights loaded` | `Select-String run\logs\latest.log -Pattern 'Loaded\|Refusing\|Skipping\|SEVERE\|WARN\|Exception\|No fights loaded'` (up to the first `joined the game`) | |
+
+### R0d-R2 — every scenario loaded
+
+| prediction | instrument | READING |
+|---|---|---|
+| Exactly one **`[Rpg] Selftest: dev server, 217 scenarios across 26 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot, dragon-blink, dragon-skreel, drag-additive, fight-site, fight-arena, fight-dragon, fight-rules, fight-end]`**, no refusal after it. **The control:** the first boot's `221 scenarios across 26 gates` is ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+
+**RECOUNTED** (2026-11-19, this branch's tree; `SelfTestScenariosTest` asserts 217):
+- the gates in `index.yml`: **26**;
+- `^[A-Za-z0-9_-]+:` over them: **243**;
+- `^setup:`: **26**;
+- so **217**.
+
+**Control:** 247 (the first boot) − fight-rules' RA1-RA5 (5) + its four (4) − fight-end's EA1, EB1-EB5 (6) + its three
+(3) = 243.
+
+### R0e-R2 — THE ORPHAN SWEEP WITH NOTHING STAGED
+
+| prediction | instrument | READING |
+|---|---|---|
+| During the enable, exactly one **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=0`**, and no `deleting` and no `orphan` line | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'` | |
+
+## THE ROWS (SECOND BOOT) — SURVIVAL, DIFFICULTY NORMAL. BEN'S ANSWERS VERBATIM; "not sure" IS NOT STATED; NO PASS OR FAIL ON BEN'S HALF
+
+Every row is born as before: `FIGHTWORLD end-config …`, `FIGHTWORLD created … environment=THE_END`, `FIGHTWORLD
+end-check … inert=true …`, `arena built`, `FIGHT start … site=arena`, `FIGHT dragon spawned`, `FIGHTWORLD entered`.
+
+It ends as before, now with **`ARENAPROBE when=end … environment=THE_END … fire=0 …`** before `FIGHTWORLD returned`,
+then `deleted … entries=<e>`.
+
+### EB3R2 — the bite and the wing, with the window: question 4, re-asked (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) `DRAGON phase-set … now=HOVER`; the `tp` to the floor; **no `DRAGONATTACK` for him before the touch**. (2) `DRAGON touch t=<T> part=head … inside=true`; **at most ONE contact `DRAGONATTACK`** for him before the heal: if it lands, **`… attack=bite … amount=80.000 vanilla=10.000 phase=HOVER`** and `HURT before=80.000 after=72.727 … attack=bite`; any further in **`DRAGONATTACK suppressed player=BaronVonYeetus count=<k> window=<T'>..<T'+19>`**. (3) `DRAGON touch … part=wing … inside=true`; **at most ONE**: if it lands, `… attack=wing … amount=40.000 vanilla=5.000 …` and `HURT before=40.000 after=36.364 … attack=wing`. **None is also predicted** (vanilla's own condition; unreadable). (4) No contact `DRAGONATTACK` in the 30 ticks on the floor after. (5) Ben's answer to **4**, verbatim | `GATE-fight-rules.md` RA3R2 and RA4R2 | |
+
+### EB4R2 — the breath with no push: questions 5 and 8 (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) `DRAGON phase-set … phase=BREATH_ATTACK`; `DRAGON to-breath t=<t> cloud=<c> … radius=5.00 interval=20`. (2) **One to three `DRAGONBREATH apply … affected=[BaronVonYeetus] …` lines, 20 ticks apart**, each with **`DRAGONATTACK … attack=breath … amount=30.000 vanilla=3.000 phase=BREATH_ATTACK`** and `HURT before=30.000 after=27.273 … attack=breath`. (3) **No contact `DRAGONATTACK` (bite or wing) in the row.** (4) Each hit's `DRAGONBREATH velocity … at_hit=<v> next_tick=<v>`. **How it is read:** a vanilla knockback sets his server-side motion, which this line would show as a horizontal jump at `next_tick` (INFERRED). **A player's motion is driven by his own client, so the server's figure is not the witness.** Ben's answer to **8** is. (5) Ben's answers to **5** and **8**, verbatim | `FightRulesSourceTest` *theBreathIsCancelled…*; `GATE-fight-rules.md` RA5R2 | |
+
+### EB5R2 — THE FIGHT, NO SAFETY: questions 6 and 7 (SURVIVAL; he may die)
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) The fight's lines as the first boot's EB5 predicted them: rings, crystals, a Mage at each of 80, 60, 40 and 20 percent, the dragon's immunity while one is owed, `STRIKE` lines, and its end (`FIGHT won` or `FIGHT stopped`). (2) **Any two contact `DRAGONATTACK` lines for one player are at least 20 ticks apart** (the window); suppressed ones counted in `DRAGONATTACK suppressed` lines. (3) **No `HURT` line on him while he is outside the fight world**; any priced then is a `FIGHTDAMAGE refused` line. (4) A `FIGHTCAST … result=<r>` line for each of his right-clicks; any `FIGHTCAST … dealt=nothing within=40` is read as it stands. (5) **`ARENAPROBE when=end …`** once, at the end. (6) Every `mana refill` in the log, counted. (7) Ben's answers to **6** and **7**, verbatim | `ContactHitWindowTest`; `FightRulesSourceTest` *everyFightDamageIsApplied…* | |
+
+### OPEN FOR BEN, NOT ASKED BY ANY ROW (the seat's brief)
+
+- **`contact_hit_interval_ticks`:** 20 is the seat's placeholder, and his to change.
+- **Whether his player file is restored** from `2026-11-19-pre-fight-end`.
+- **What happened to his cursed emerald.**
