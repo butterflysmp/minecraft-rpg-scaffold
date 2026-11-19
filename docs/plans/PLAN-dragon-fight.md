@@ -300,6 +300,19 @@ stand). Each question as the selftest asked it, then Ben's answer, verbatim from
 - "pass" on the bite and wing is NOT STATED.
 - The 20,000 "yes" was given with 12 mana refills, in a fight that ended at 59% by his death.
 
+*g. Ben's answers at the second boot of `GATE-fight-end.md` (2026-11-19, 14:30 to 14:37, at `e772f8b5`). Each
+question as the selftest asked it, then Ben's answer, verbatim from its ASK lines:*
+
+- **Question 4:** "The dragon's bite (80) and wing (40), at most one of them a second: do they feel right?" — **"yes"** *(EB3R2)*
+- **Question 5:** "The breath, 30 a second, with no push: does it feel right?" — **"yes"** *(EB4R2)*
+- **Question 8:** "Did the breath push you at all?" — **"no"** *(EB4R2)*
+- **Question 6:** "For one player, is the dragon's 20,000 health right, now that every phase has its Mage?" — **"yes"** *(EB5R2)*
+- **Question 7:** "What most needs to change before waves are built?" — **"nothing"** *(EB5R2)*
+
+**SEAT READINGS, each the seat's (2026-11-19):**
+- `contact_hit_interval_ticks` 20 is now **BEN'S**: the question named it ("at most one of them a second").
+- The 20,000 "yes" was given with 27 mana refills.
+
 ---
 
 ## 2. SEAT READINGS
