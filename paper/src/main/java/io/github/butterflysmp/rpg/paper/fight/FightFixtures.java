@@ -358,6 +358,10 @@ public final class FightFixtures {
 
     /** Every write to the store: each fight logs the landed hits on its own Mage and dragon (step F9). */
     public void onHealthChange(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
+        if (change.kind() == io.github.butterflysmp.rpg.core.combat.stat.HealthChange.Kind.DAMAGE && change.dealerIsPlayer()
+                && change.dealer() != null && !fights.isEmpty()) {
+            lastDealtTick.put(change.dealer(), Bukkit.getCurrentTick()); // F9b fix D: the cast's "dealt nothing" line
+        }
         for (FightInstance f : new ArrayList<>(fights.values())) f.onHealthChange(change);
     }
 
@@ -369,13 +373,36 @@ public final class FightFixtures {
     }
 
     /** A mob's melee hit on a player: priced if it is any fight's dragon (F9b, section 4); empty for any other mob. */
-    public java.util.OptionalDouble dragonMelee(org.bukkit.entity.LivingEntity attacker, Player victim,
-                                                 double vanillaAmount) {
+    public FightInstance.Contact dragonMelee(org.bukkit.entity.LivingEntity attacker, Player victim,
+                                             double vanillaAmount) {
         for (FightInstance f : new ArrayList<>(fights.values())) {
-            java.util.OptionalDouble hit = f.dragonMelee(attacker, victim, vanillaAmount);
-            if (hit.isPresent()) return hit;
+            FightInstance.Contact c = f.dragonMelee(attacker, victim, vanillaAmount);
+            if (c.ours()) return c;
         }
-        return java.util.OptionalDouble.empty();
+        return FightInstance.Contact.NOT_OURS;
+    }
+
+    /**
+     * F9b fix B: whether {@code victim} still takes part in the fight whose dragon is {@code dragonId}, asked when the
+     * dragon's priced hit is APPLIED. False once that fight has ended, or he has left it.
+     */
+    public boolean dragonVictimInside(UUID dragonId, Player victim) {
+        for (FightInstance f : new ArrayList<>(fights.values())) {
+            if (dragonId.equals(f.dragonId())) return f.running() && f.holds(victim);
+        }
+        return false;
+    }
+
+    /** F9b fix B: the refusal's line, for the fight whose dragon priced the hit (or a bare line, the fight gone). */
+    public void dragonHitRefused(UUID dragonId, Player victim, String source, double amount) {
+        for (FightInstance f : new ArrayList<>(fights.values())) {
+            if (dragonId.equals(f.dragonId())) {
+                f.refusedOutside(victim, source, amount);
+                return;
+            }
+        }
+        adapters.log().info(String.format(Locale.ROOT, "FIGHTDAMAGE refused player=%s source=%s amount=%.3f"
+                + " why=fight-gone", victim.getName(), source, amount));
     }
 
     /** A cloud's hit on a player: priced if it is any fight's dragon's breath (F9b, section 4); empty otherwise. */
@@ -398,6 +425,42 @@ public final class FightFixtures {
             if (dealer.equals(f.dragonId())) return f.takeAttackName(victim);
         }
         return null;
+    }
+
+    /** F9b fix D: the server tick of each player's last landed hit (any target), to say when a cast dealt nothing. */
+    private final Map<UUID, Integer> lastDealtTick = new java.util.HashMap<>();
+
+    /** Ticks a cast is given to land a hit before its line says it dealt nothing. */
+    static final int CAST_DEALT_WITHIN_TICKS = 40;
+
+    /**
+     * F9b fix D: A WEAPON'S RIGHT-CLICK IN A FIGHT WORLD (the seat's brief: "my cursed emerald isn't working").
+     * READ first, our code: nothing in weapons, mana or casting reads a world's environment or whether it is a fight
+     * world (the only readers are {@code MobOrigin}, gear score, and the selftest's guard). So the line is how a
+     * refusal or a silent cast is read: its result ({@code no-weapon} if the held item binds no right-click), the item
+     * held, and, for a cast that went off, a second line if no hit of his landed within 40 ticks.
+     */
+    public void noteCast(Player p, String trigger, io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult result) {
+        if (!FightWorlds.isFightWorld(p.getWorld())) return;
+        String held = p.getInventory().getItemInMainHand().getType().name();
+        String r = result == null ? "no-weapon" : result.getClass().getSimpleName();
+        adapters.log().info(String.format(Locale.ROOT, "FIGHTCAST player=%s trigger=%s result=%s held=%s", p.getName(),
+                trigger, r, held));
+        if (!(result instanceof io.github.butterflysmp.rpg.core.ability.AbilityService.CastResult.Success)) return;
+        int castTick = Bukkit.getCurrentTick();
+        UUID id = p.getUniqueId();
+        adapters.scheduler().onGlobalLater(() -> {
+            Integer last = lastDealtTick.get(id);
+            if (last == null || last < castTick) {
+                adapters.log().info(String.format(Locale.ROOT, "FIGHTCAST player=%s trigger=%s dealt=nothing within=%d"
+                        + " held=%s", p.getName(), trigger, CAST_DEALT_WITHIN_TICKS, held));
+            }
+        }, CAST_DEALT_WITHIN_TICKS);
+    }
+
+    /** F9b fix D: a breath cloud applied; each fight logs it if the cloud is its dragon's. */
+    public void onCloudApply(org.bukkit.entity.AreaEffectCloud cloud, java.util.List<org.bukkit.entity.LivingEntity> affected) {
+        for (FightInstance f : new ArrayList<>(fights.values())) f.onCloudApply(cloud, affected);
     }
 
     /** A vanilla hit: refused if it is a fight's dragon hitting that fight's own Mage (F9b, section 7). */

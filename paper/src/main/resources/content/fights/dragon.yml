@@ -89,6 +89,10 @@ dragon:
   wing: 40.0
   # The perched breath, per second of standing in it: each of the cloud's hits is this x its interval / 20.
   breath_per_second: 30.0
+  # F9b fix A (the seat's brief of 2026-11-19; SEAT PLACEHOLDER, FLAGGED FOR BEN, his to change): a player takes at
+  # most ONE bite or wing hit (together) from the dragon per this many ticks. The first boot's bite landed twice a tick
+  # and killed him in four. The breath is not counted here: it keeps its cloud's own cadence.
+  contact_hit_interval_ticks: 20
 
 # THE CRYSTALS (step F7). SEAT PLACEHOLDER spots, standing in for the pillars until the arena exists: crystal_count
 # spots evenly round a circle about C.

@@ -107,6 +107,7 @@ class FightLoaderTest {
               bite: 81.0
               wing: 41.0
               breath_per_second: 31.0
+              contact_hit_interval_ticks: 21
             """;
 
     private Map<String, FightContent> load(String yaml) throws IOException {
@@ -145,9 +146,9 @@ class FightLoaderTest {
                 + "mage 'dark_mage' refused item.shield.block, landing lightning on; crystals at 40.0, 12.0 up, lit block.beacon.power_select;"
                 + " participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to"
                 + " +12, time 18000, entry (0.0, 0.0); dragon 'ender_dragon' Mages below [0.8, 0.6, 0.4, 0.2], win"
-                + " return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s"), lines);
+                + " return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s, one contact hit per 20 ticks"), lines);
         assertEquals(new FightContent.Dragon("ender_dragon", List.of(0.80, 0.60, 0.40, 0.20), 200, "purple",
-                new io.github.butterflysmp.rpg.core.fight.DragonAttacks(80.0, 40.0, 30.0)),
+                new io.github.butterflysmp.rpg.core.fight.DragonAttacks(80.0, 40.0, 30.0, 20)),
                 d.dragon(), "Ben: \"let's do 80 60 40 and 20 percent\"; the win's 200 and purple are SEAT PLACEHOLDERS;"
                         + " bite 80, wing 40, breath 30 a second: \"Yes those numbers are fine to start with\"");
         assertTrue(d.mageLandingLightning(), "Ben: \"Add a lightning strike to the mage landing\"");
@@ -272,6 +273,15 @@ class FightLoaderTest {
         assertEquals(81.0, a.bite(), 0.0);
         assertEquals(41.0, a.wing(), 0.0);
         assertEquals(31.0, a.breathPerSecond(), 0.0);
+        assertEquals(21, a.contactHitIntervalTicks(), "F9b fix A: the window, as written");
+    }
+
+    @Test
+    void aMissingOrZeroContactWindowIsRefused() throws IOException {
+        refusedNaming(GOOD.replace("  contact_hit_interval_ticks: 21\n", ""), "'contact_hit_interval_ticks:'");
+        lines.clear();
+        refusedNaming(GOOD.replace("contact_hit_interval_ticks: 21", "contact_hit_interval_ticks: 0"),
+                "contact_hit_interval_ticks must be at least 1");
     }
 
     @Test

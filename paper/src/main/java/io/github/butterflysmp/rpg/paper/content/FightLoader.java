@@ -67,7 +67,7 @@ public final class FightLoader {
                         + "landing lightning %s; "
                         + "crystals at %.1f, %.1f up, lit %s; participants within %.1f; arena at (%d, %d) floor y %d, "
                         + "disc %d x %d, %d pillars %d wide on %.1f to +%d, time %d, entry (%.1f, %.1f); dragon '%s' "
-                        + "Mages below %s, win return %d ticks, bar %s, bite %.1f, wing %.1f, breath %.1f/s",
+                        + "Mages below %s, win return %d ticks, bar %s, bite %.1f, wing %.1f, breath %.1f/s, one contact hit per %d ticks",
                 f.id(), s.borderRadiusBlocks(), s.mageRingRadiusBlocks(), s.fastCloseBlocksPerSecond(),
                 s.slowCloseBlocksPerSecond(), s.killExpansionBlocks(), s.crystalCount(), s.crystalIntervalTicks(),
                 s.strikeIntervalTicks(), s.firstStrikeDamage(), l.particleKey(), l.red(), l.green(), l.blue(),
@@ -81,7 +81,7 @@ public final class FightLoader {
                 f.arena().shape().pillarTopAboveFloor(), f.arena().timeOfDayTicks(), f.arena().entryDxBlocks(),
                 f.arena().entryDzBlocks(), f.dragon().mob(), f.dragon().mageThresholds(), f.dragon().winReturnTicks(),
                 f.dragon().bossBarColor(), f.dragon().attacks().bite(), f.dragon().attacks().wing(),
-                f.dragon().attacks().breathPerSecond());
+                f.dragon().attacks().breathPerSecond(), f.dragon().attacks().contactHitIntervalTicks());
     }
 
     FightContent parse(String id, ConfigurationSection root) {
@@ -176,7 +176,7 @@ public final class FightLoader {
         io.github.butterflysmp.rpg.core.fight.DragonAttacks attacks;
         try {
             attacks = new io.github.butterflysmp.rpg.core.fight.DragonAttacks(
-                    number(d, "bite"), number(d, "wing"), number(d, "breath_per_second"));
+                    number(d, "bite"), number(d, "wing"), number(d, "breath_per_second"), whole(d, "contact_hit_interval_ticks"));
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException("dragon attacks: " + ex.getMessage());
         }

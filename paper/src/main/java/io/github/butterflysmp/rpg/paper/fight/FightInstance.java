@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.fight;
 
+import io.github.butterflysmp.rpg.core.fight.ContactHitWindow;
 import io.github.butterflysmp.rpg.core.fight.DamageGate;
 import io.github.butterflysmp.rpg.core.fight.DragonAttacks;
 import io.github.butterflysmp.rpg.core.fight.DragonCrossings;
@@ -97,6 +98,8 @@ public final class FightInstance {
     /** F9b, section 2: when a refused crystal heal on the dragon is logged (once per crystal lit). */
     private final io.github.butterflysmp.rpg.core.fight.CrystalHealLog healLog =
             new io.github.butterflysmp.rpg.core.fight.CrystalHealLog();
+    /** F9b fix A: one contact hit (bite or wing) per player per window; made with the dragon. */
+    private ContactHitWindow contacts;
     /** The dragon died: the fight is won, and ends {@code win_return_ticks} later. */
     private boolean won;
     private MageCycle.Phase lastPhase = MageCycle.Phase.IDLE;
@@ -258,9 +261,11 @@ public final class FightInstance {
             double max = adapters.stats().tracks(p.id()) ? adapters.stats().max(p.id()) : 20.0;
             adapters.log().info(String.format(Locale.ROOT, "FIGHT powered-kill t=%d player=%s amount=%.3f",
                     ring.fightTick(), p.name(), max * 10.0));
-            BukkitCombatant.of(player, adapters).handle().applyDamage(max * 10.0, p.id(),
+            // F9b fix B: applied only if he still takes part in this fight when the kill lands.
+            BukkitCombatant.of(player, adapters).handle().applyDamageIf(() -> site.takesPart(player),
+                    () -> refusedOutside(player, "powered-kill", max * 10.0), max * 10.0, p.id(),
                     io.github.butterflysmp.rpg.core.combat.CritState.NORMAL,
-                    io.github.butterflysmp.rpg.core.combat.DefenseRule.BYPASSED, null);
+                    io.github.butterflysmp.rpg.core.combat.DefenseRule.BYPASSED);
         }
     }
 
@@ -343,6 +348,16 @@ public final class FightInstance {
         if (finished) return;
         finished = true;
         logMageHealth("end");
+        if (contacts != null) {
+            // F9b fix A: an open window's suppressed count is told once, at the end, as every closed one was.
+            for (UUID p : contacts.players()) {
+                ContactHitWindow.Result w = contacts.flush(p);
+                if (w.suppressedBefore() > 0) {
+                    Player pl = org.bukkit.Bukkit.getPlayer(p);
+                    logSuppressed(pl == null ? p.toString() : pl.getName(), w);
+                }
+            }
+        }
         removeMage();
         removeDragon(why);
         port.clearCrystals();
@@ -479,6 +494,7 @@ public final class FightInstance {
         // holding pattern (Bukkit's name for HOLDING_PATTERN), from which it strafes, charges and lands by itself.
         dragon.setPhase(org.bukkit.entity.EnderDragon.Phase.CIRCLING);
         crossings = new DragonCrossings(d.mageThresholds());
+        contacts = new ContactHitWindow(d.attacks().contactHitIntervalTicks());
         RingFixture ring = fixture;
         DragonCrossings queue = crossings;
         // F9b, section 1 (Ben: "No it can't be hurt while a mage is owed"): refused while a Mage is alive OR owed. The
@@ -664,15 +680,25 @@ public final class FightInstance {
     private static final int ATTACK_NAMES_KEPT = 8;
 
     /**
-     * A MELEE HIT FROM THIS FIGHT'S DRAGON on a player (Ben: "Yes those numbers are fine to start with"). Which attack it
-     * was is read from the dragon's part boxes as the server chose ({@link DragonAttacks#classify}); its content number
-     * is scaled by the dragon's gear score as any mob's hit is ({@code MobScaling.attackDamage}), and the caller deals it
-     * through armour. Today's seed is 0, because the dragon has no {@code ATTACK_DAMAGE} attribute (READ at F9).
+     * A MELEE HIT FROM THIS FIGHT'S DRAGON on a player (Ben: "Yes those numbers are fine to start with").
+     * <ul>
+     *   <li><b>ONE CONTACT HIT PER WINDOW (F9b fix A):</b> the bite and the wing together land at most once per
+     *       {@code contact_hit_interval_ticks} for each player ({@link ContactHitWindow}). A hit inside the window is
+     *       not priced and the caller CANCELS vanilla's event, so it does no vanilla damage either; the wing's push is
+     *       not an event and stays. READ why it is needed: the head's and the neck's hurt are two calls a tick, and our
+     *       token's 0.01 is what {@code lastHurt} then holds, so vanilla's own window passes every later hit.</li>
+     *   <li><b>THE NAME FOLLOWS THE PART THAT DEALT IT (the addendum):</b> vanilla's own amount first (READ: 10 for the
+     *       head and the neck, 5 for a wing, scaled by difficulty), then the boxes he is in only if it names neither.</li>
+     *   <li>Its content number is scaled by the dragon's gear score as any mob's hit is ({@code MobScaling}).</li>
+     * </ul>
      *
-     * @return the hit to deal, or empty when the attacker is not this fight's dragon
+     * @return whether it was this fight's dragon's, and if so whether it lands and for how much
      */
-    public java.util.OptionalDouble dragonMelee(LivingEntity attacker, Player victim, double vanillaAmount) {
-        if (dragon == null || !attacker.getUniqueId().equals(dragon.getUniqueId())) return java.util.OptionalDouble.empty();
+    public Contact dragonMelee(LivingEntity attacker, Player victim, double vanillaAmount) {
+        if (dragon == null || !attacker.getUniqueId().equals(dragon.getUniqueId())) return Contact.NOT_OURS;
+        ContactHitWindow.Result w = contacts.hit(victim.getUniqueId(), fixture.fightTick());
+        if (w.suppressedBefore() > 0) logSuppressed(victim.getName(), w);
+        if (!w.lands()) return Contact.SUPPRESSED;
         DragonAttacks.Box head = null;
         DragonAttacks.Box neck = null;
         java.util.List<DragonAttacks.Box> wings = new java.util.ArrayList<>();
@@ -685,14 +711,44 @@ public final class FightInstance {
                 default -> { }
             }
         }
+        DragonAttacks.Difficulty difficulty = DragonAttacks.Difficulty.valueOf(world.getDifficulty().name());
         java.util.Optional<DragonAttacks.Attack> read = head == null || neck == null
-                ? java.util.Optional.empty()
-                : DragonAttacks.classify(box(victim.getBoundingBox()), head, neck, wings);
-        // A hit in no box (INFERRED rare: the parts moved between the server's choice and this read) is priced as the
-        // lesser attack, and its line says so, so a gate can count them.
+                ? DragonAttacks.byVanilla(vanillaAmount, difficulty)
+                : DragonAttacks.name(vanillaAmount, difficulty, box(victim.getBoundingBox()), head, neck, wings);
+        // A hit named by neither its amount nor a box (INFERRED rare) is priced as the lesser attack, and its line says
+        // so, so a gate can count them.
         DragonAttacks.Attack attack = read.orElse(DragonAttacks.Attack.WING);
-        return java.util.OptionalDouble.of(priceAttack(attack, fight.dragon().attacks().base(attack), victim,
+        return new Contact(true, true, priceAttack(attack, fight.dragon().attacks().base(attack), victim,
                 read.isPresent() ? attack.logName() : "unknown->wing", vanillaAmount));
+    }
+
+    /**
+     * What the fight says of a dragon's contact hit: not its dragon ({@link #NOT_OURS}); its dragon, inside the window
+     * ({@link #SUPPRESSED}: cancel vanilla's event, deal nothing); or its dragon, landing for {@code amount}.
+     */
+    public record Contact(boolean ours, boolean lands, double amount) {
+        public static final Contact NOT_OURS = new Contact(false, false, 0.0);
+        public static final Contact SUPPRESSED = new Contact(true, false, 0.0);
+    }
+
+    /** One line per window that suppressed anything: how many, and the window. */
+    private void logSuppressed(String player, ContactHitWindow.Result w) {
+        adapters.log().info(String.format(Locale.ROOT, "DRAGONATTACK suppressed player=%s count=%d window=%d..%d",
+                player, w.suppressedBefore(), w.windowFrom(), w.windowFrom() + contacts.intervalTicks() - 1));
+    }
+
+    /**
+     * F9b fix B: the fight's damage lands only on a participant of THIS fight, in its world, at the moment it is
+     * applied ({@code ArenaSite.takesPart}: an entrant, in this world, alive, in survival or adventure).
+     */
+    public boolean holds(Player victim) {
+        return site.takesPart(victim);
+    }
+
+    /** The refusal's line: a fight's damage priced for him, not applied, because he was no longer in the fight. */
+    void refusedOutside(Player victim, String source, double amount) {
+        adapters.log().info(String.format(Locale.ROOT, "FIGHTDAMAGE refused t=%d player=%s source=%s amount=%.3f"
+                + " why=not-in-this-fight", fixture.fightTick(), victim.getName(), source, amount));
     }
 
     /**
@@ -712,8 +768,19 @@ public final class FightInstance {
         }
         double each = DragonAttacks.breathPerApplication(fight.dragon().attacks().breathPerSecond(),
                 cloud.getReapplicationDelay());
-        return java.util.OptionalDouble.of(priceAttack(DragonAttacks.Attack.BREATH, each, victim,
-                DragonAttacks.Attack.BREATH.logName(), vanillaAmount));
+        double priced = priceAttack(DragonAttacks.Attack.BREATH, each, victim, DragonAttacks.Attack.BREATH.logName(),
+                vanillaAmount);
+        // F9b fix F's witness: his server-side velocity at the hit and a tick later. INFERRED: a vanilla knockback sets
+        // the server's velocity for him, so with the push removed the two should not show one. His eyes confirm it.
+        org.bukkit.util.Vector at = victim.getVelocity();
+        long hitTick = fixture.fightTick();
+        adapters.scheduler().onEntityLater(victim, () -> {
+            org.bukkit.util.Vector later = victim.getVelocity();
+            adapters.log().info(String.format(Locale.ROOT, "DRAGONBREATH velocity t=%d player=%s at_hit=%.3f %.3f %.3f"
+                            + " next_tick=%.3f %.3f %.3f", hitTick, victim.getName(), at.getX(), at.getY(), at.getZ(),
+                    later.getX(), later.getY(), later.getZ()));
+        }, 1);
+        return java.util.OptionalDouble.of(priced);
     }
 
     /**
@@ -775,6 +842,36 @@ public final class FightInstance {
         return amount;
     }
 
+    /** A box as the log prints it, relative to nothing: min x y z .. max x y z, two places. */
+    private static String boxText(DragonAttacks.Box b) {
+        return String.format(Locale.ROOT, "%.2f,%.2f,%.2f..%.2f,%.2f,%.2f", b.minX(), b.minY(), b.minZ(), b.maxX(),
+                b.maxY(), b.maxZ());
+    }
+
+    /**
+     * F9b fix D: THE BREATH CLOUD APPLIED (READ: {@code AreaEffectCloud.serverTick} raises
+     * {@code AreaEffectCloudApplyEvent} at each application, every 5 ticks of its age past its wait). For THIS fight's
+     * dragon's cloud only: its age, whom it applied to, and every entrant in this world with his distance from it, so a
+     * miss can be read.
+     */
+    public void onCloudApply(org.bukkit.entity.AreaEffectCloud cloud, java.util.List<LivingEntity> affected) {
+        if (dragon == null || !(cloud.getSource() instanceof org.bukkit.entity.EnderDragon d)
+                || !d.getUniqueId().equals(dragon.getUniqueId())) {
+            return;
+        }
+        StringBuilder near = new StringBuilder();
+        for (Player p : world.getPlayers()) {
+            Location c = cloud.getLocation();
+            Location at = p.getLocation();
+            near.append(String.format(Locale.ROOT, "%s%s(xz=%.2f dy=%.2f)", near.length() == 0 ? "" : " ", p.getName(),
+                    Math.hypot(at.getX() - c.getX(), at.getZ() - c.getZ()), at.getY() - c.getY()));
+        }
+        adapters.log().info(String.format(Locale.ROOT, "DRAGONBREATH apply t=%d cloud=%s age=%d radius=%.2f"
+                        + " affected=%s players=[%s]", fixture.fightTick(), cloud.getUniqueId(), cloud.getTicksLived(),
+                cloud.getRadius(), affected.stream().map(e -> e instanceof Player pl ? pl.getName() : e.getType().name())
+                        .toList(), near));
+    }
+
     private static DragonAttacks.Box box(org.bukkit.util.BoundingBox b) {
         return new DragonAttacks.Box(b.getMinX(), b.getMinY(), b.getMinZ(), b.getMaxX(), b.getMaxY(), b.getMaxZ());
     }
@@ -803,9 +900,16 @@ public final class FightInstance {
         double feetY = "head".equalsIgnoreCase(which) ? b.getMinY() - 0.5 : b.getMinY() - 3.0;
         Location to = new Location(world, b.getCenterX(), feetY, b.getCenterZ(), p.getLocation().getYaw(), 0.0f);
         p.teleport(to);
-        adapters.log().info(String.format(Locale.ROOT, "DRAGON touch t=%d part=%s at=%.2f %.2f %.2f phase=%s",
-                fixture.fightTick(), partName(chosen), to.getX() - centre.getX(), to.getY() - centre.getY(),
-                to.getZ() - centre.getZ(), dragon.getPhase()));
+        // F9b fix D: his box and the part's ATTACK box as the server builds it (READ: head inflated by 1; a wing inflated
+        // by (4, 2, 4) and moved down 2), and whether they overlap, so a missed staging can be read.
+        DragonAttacks.Box attackBox = "head".equalsIgnoreCase(which)
+                ? box(b).inflate(1.0, 1.0, 1.0)
+                : box(b).inflate(4.0, 2.0, 4.0).down(2.0);
+        DragonAttacks.Box his = box(p.getBoundingBox());
+        adapters.log().info(String.format(Locale.ROOT, "DRAGON touch t=%d part=%s at=%.2f %.2f %.2f phase=%s box=%s"
+                        + " attack_box=%s inside=%s", fixture.fightTick(), partName(chosen), to.getX() - centre.getX(),
+                to.getY() - centre.getY(), to.getZ() - centre.getZ(), dragon.getPhase(), boxText(his),
+                boxText(attackBox), his.intersects(attackBox)));
         return "In the dragon's " + partName(chosen) + ".";
     }
 

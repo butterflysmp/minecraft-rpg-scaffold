@@ -103,16 +103,48 @@ class DragonAttacksTest {
 
     @Test
     void theContentNumbersAreHeldAsWrittenAndPickedByAttack() {
-        DragonAttacks a = new DragonAttacks(80.0, 40.0, 30.0);
+        DragonAttacks a = new DragonAttacks(80.0, 40.0, 30.0, 20);
         assertEquals(80.0, a.base(Attack.BITE), 0.0);
         assertEquals(40.0, a.base(Attack.WING), 0.0);
         assertEquals(30.0, a.base(Attack.BREATH), 0.0, "the breath's base is its figure a second");
+        assertEquals(20, a.contactHitIntervalTicks());
     }
 
     @Test
     void negativeOrMissingNumbersAreRefused() {
-        assertThrows(IllegalArgumentException.class, () -> new DragonAttacks(-1.0, 40.0, 30.0));
-        assertThrows(IllegalArgumentException.class, () -> new DragonAttacks(80.0, Double.NaN, 30.0));
-        assertThrows(IllegalArgumentException.class, () -> new DragonAttacks(80.0, 40.0, Double.POSITIVE_INFINITY));
+        assertThrows(IllegalArgumentException.class, () -> new DragonAttacks(-1.0, 40.0, 30.0, 20));
+        assertThrows(IllegalArgumentException.class, () -> new DragonAttacks(80.0, Double.NaN, 30.0, 20));
+        assertThrows(IllegalArgumentException.class, () -> new DragonAttacks(80.0, 40.0, Double.POSITIVE_INFINITY, 20));
+        assertThrows(IllegalArgumentException.class, () -> new DragonAttacks(80.0, 40.0, 30.0, 0),
+                "a contact window under one tick");
+    }
+
+    // --- the addendum: the name follows the part that DEALT it, read from vanilla's own amount ---------------------
+
+    /**
+     * READ, the pinned server jar: the head and the neck hurt for 10, a wing for 5 ({@code EnderDragon.hurt},
+     * {@code knockBack}); {@code Player.hurtServer} then scales a mob attack by difficulty: Easy min(f / 2 + 1, f),
+     * Normal f, Hard f x 3 / 2. The rerun's EB5 named a 5 a bite because he was in both boxes.
+     */
+    @Test
+    void vanillasOwnAmountNamesTheAttackAtEveryDifficulty() {
+        assertEquals(java.util.Optional.of(Attack.BITE), DragonAttacks.byVanilla(10.0, DragonAttacks.Difficulty.NORMAL));
+        assertEquals(java.util.Optional.of(Attack.WING), DragonAttacks.byVanilla(5.0, DragonAttacks.Difficulty.NORMAL));
+        assertEquals(java.util.Optional.of(Attack.BITE), DragonAttacks.byVanilla(6.0, DragonAttacks.Difficulty.EASY));
+        assertEquals(java.util.Optional.of(Attack.WING), DragonAttacks.byVanilla(3.5, DragonAttacks.Difficulty.EASY));
+        assertEquals(java.util.Optional.of(Attack.BITE), DragonAttacks.byVanilla(15.0, DragonAttacks.Difficulty.HARD));
+        assertEquals(java.util.Optional.of(Attack.WING), DragonAttacks.byVanilla(7.5, DragonAttacks.Difficulty.HARD));
+    }
+
+    @Test
+    void anAmountThatIsNeitherNamesNothingAndTheBoxesDecide() {
+        assertEquals(java.util.Optional.empty(), DragonAttacks.byVanilla(9.99, DragonAttacks.Difficulty.NORMAL));
+        assertEquals(java.util.Optional.empty(), DragonAttacks.byVanilla(0.0, DragonAttacks.Difficulty.PEACEFUL));
+        // A 5 in a bite box AND a wing box is the wing: the amount wins over the boxes.
+        Box headAndWing = Box.centred(10.0, 21.0, 0.0, 4.0, 2.0);
+        assertEquals(java.util.Optional.of(Attack.WING), DragonAttacks.name(5.0, DragonAttacks.Difficulty.NORMAL,
+                player(10.0, 19.0, 0.0), HEAD, NECK, List.of(headAndWing)));
+        assertEquals(java.util.Optional.of(Attack.BITE), DragonAttacks.name(9.99, DragonAttacks.Difficulty.NORMAL,
+                player(10.0, 19.0, 0.0), HEAD, NECK, List.of(headAndWing)), "no match: the boxes, as before");
     }
 }

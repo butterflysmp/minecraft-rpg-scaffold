@@ -46,8 +46,10 @@ class FightPortSourceTest {
     @Test
     void theDamageIsTheStoresEntryThroughArmourAndNoElement() throws IOException {
         String code = code();
-        assertEquals(1, count(code,
-                "\\.applyDamage\\(amount, player, CritState\\.NORMAL, DefenseRule\\.APPLIES, null\\);"));
+        // F9b fix B: the strike is the store's conditional entry now (applied only if he still takes part), through
+        // armour, no element (the four-argument form's element is null).
+        assertEquals(1, count(code, "amount, player, CritState\\.NORMAL, DefenseRule\\.APPLIES\\);"));
+        assertEquals(1, count(code, "\\.applyDamageIf\\(\\(\\) -> site\\.takesPart\\(p\\),"));
         assertEquals(0, count(code, "DefenseRule\\.BYPASSED"), "armour is not skipped (Ben, 2026-11-18: \"yes\")");
     }
 

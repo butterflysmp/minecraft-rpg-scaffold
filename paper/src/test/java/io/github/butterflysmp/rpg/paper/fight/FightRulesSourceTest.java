@@ -75,8 +75,68 @@ class FightRulesSourceTest {
     void theMobRiderAsksTheFightsForADragonsHitFirst() throws IOException {
         String m = body(listeners(), "public void onMobMeleeAttack(");
         assertTrue(m.contains("fights.dragonMelee(attacker, victim, event.getDamage());"), m);
-        assertTrue(m.contains("dragonBlow.isPresent() ? dragonBlow.getAsDouble()"), m);
+        assertTrue(m.contains("dragonBlow.ours() ? dragonBlow.amount()"), m);
         assertTrue(m.contains(": adapters.stats().attackValue(attacker.getUniqueId());"), "every other mob as before");
+    }
+
+    /**
+     * F9b fix A: a contact hit inside the window is CANCELLED (no price, no vanilla damage) before anything else the rider
+     * does, and the window is asked before the dragon's boxes are read.
+     */
+    @Test
+    void aContactHitInsideTheWindowIsCancelledAndPricesNothing() throws IOException {
+        String m = body(listeners(), "public void onMobMeleeAttack(");
+        int ask = m.indexOf("fights.dragonMelee(attacker, victim, event.getDamage());");
+        int cancel = m.indexOf("if (dragonBlow.ours() && !dragonBlow.lands()) {\n            event.setCancelled(true);\n"
+                + "            return;");
+        int shield = m.indexOf("ShieldBlock.resolve(");
+        assertTrue(ask > 0 && cancel > ask && shield > cancel, "cancelled before the block or the price: " + m);
+        String melee = body(instance(), "public Contact dragonMelee(");
+        int window = melee.indexOf("ContactHitWindow.Result w = contacts.hit(victim.getUniqueId(), fixture.fightTick());");
+        int suppressed = melee.indexOf("if (!w.lands()) return Contact.SUPPRESSED;");
+        int price = melee.indexOf("priceAttack(");
+        assertTrue(window > 0 && suppressed > window && price > suppressed, melee);
+        assertTrue(instance().contains("contacts = new ContactHitWindow(d.attacks().contactHitIntervalTicks());"),
+                "the window's length from content");
+    }
+
+    /** The addendum: the name follows the part that DEALT it, vanilla's own amount first. */
+    @Test
+    void theAttacksNameIsReadFromVanillasAmountFirst() throws IOException {
+        String melee = body(instance(), "public Contact dragonMelee(");
+        assertTrue(melee.contains("DragonAttacks.name(vanillaAmount, difficulty, box(victim.getBoundingBox()), head, neck,"
+                + " wings)"), melee);
+        assertTrue(melee.contains("DragonAttacks.Difficulty.valueOf(world.getDifficulty().name())"), melee);
+    }
+
+    /**
+     * F9b fix B: EVERY fight damage is applied only on a participant of that fight, asked WHEN IT IS APPLIED: the
+     * dragon's contact hit and its breath, the ring's strike, and the powered kill.
+     */
+    @Test
+    void everyFightDamageIsAppliedOnlyOnAParticipantOfThatFight() throws IOException {
+        String m = body(listeners(), "public void onMobMeleeAttack(");
+        assertTrue(m.contains(".applyDamageIf(\n                    () -> fights.dragonVictimInside(dragonId, victim),"), m);
+        String b = body(listeners(), "public void onFightDragonBreath(");
+        assertTrue(b.contains(".applyDamageIf(\n                () -> fights.dragonVictimInside(dragonId, victim),"), b);
+        String strike = body(code("fight/BukkitFightPort.java"), "public void damage(UUID player, double amount)");
+        assertTrue(strike.contains(".applyDamageIf(() -> site.takesPart(p),"), strike);
+        assertTrue(!strike.contains(".applyDamage(amount"), "no unconditional strike left: " + strike);
+        String kill = body(instance(), "private void killParticipants(RingFixture ring)");
+        assertTrue(kill.contains(".applyDamageIf(() -> site.takesPart(player),"), kill);
+        String inside = body(code("fight/FightFixtures.java"), "public boolean dragonVictimInside(");
+        assertTrue(inside.contains("return f.running() && f.holds(victim);"), inside);
+        assertTrue(body(instance(), "public boolean holds(Player victim)").contains("return site.takesPart(victim);"));
+    }
+
+    /** ...and the Paper adapter asks the condition INSIDE its deferral, applying in the same task. */
+    @Test
+    void theAdapterAsksTheConditionInsideItsDeferral() throws IOException {
+        String a = body(code("adapter/BukkitCombatant.java"), "@Override public void applyDamageIf(");
+        int defer = a.indexOf("ctx.scheduler().onEntity(entity, () -> {");
+        int ask = a.indexOf("if (!applies.getAsBoolean()) {");
+        int apply = a.indexOf("applyNow(amount, sourceId, crit, defense, null, HitAccrual.weapon());");
+        assertTrue(defer > 0 && ask > defer && apply > ask, "the question and the damage in one task: " + a);
     }
 
     /** Each attack's content number is scaled by gear score as any mob's seed is, and named in its own line. */
@@ -85,9 +145,8 @@ class FightRulesSourceTest {
         String p = body(instance(), "private double priceAttack(");
         assertTrue(p.contains("io.github.butterflysmp.rpg.core.mob.MobScaling.attackDamage(base, true,"), p);
         assertTrue(p.contains("DRAGONATTACK t=%d attack=%s"), p);
-        String melee = body(instance(), "public java.util.OptionalDouble dragonMelee(");
+        String melee = body(instance(), "public Contact dragonMelee(");
         assertTrue(melee.contains("fight.dragon().attacks().base(attack)"), "the bite or wing number, from content");
-        assertTrue(melee.contains("DragonAttacks.classify("), "which attack, from the dragon's boxes");
         String breath = body(instance(), "public java.util.OptionalDouble dragonBreath(");
         assertTrue(breath.contains("DragonAttacks.breathPerApplication(fight.dragon().attacks().breathPerSecond(),")
                 && breath.contains("cloud.getReapplicationDelay()"), "30 x interval / 20: " + breath);
@@ -96,22 +155,44 @@ class FightRulesSourceTest {
     /** Only this fight's dragon is priced: the id check comes before any price. */
     @Test
     void onlyThisFightsDragonIsPriced() throws IOException {
-        String melee = body(instance(), "public java.util.OptionalDouble dragonMelee(");
+        String melee = body(instance(), "public Contact dragonMelee(");
         assertTrue(melee.indexOf("!attacker.getUniqueId().equals(dragon.getUniqueId())")
-                < melee.indexOf("priceAttack("), melee);
+                < melee.indexOf("contacts.hit("), "not ours: no window is touched either: " + melee);
         String breath = body(instance(), "public java.util.OptionalDouble dragonBreath(");
         assertTrue(breath.indexOf("!source.getUniqueId().equals(dragon.getUniqueId())")
                 < breath.indexOf("priceAttack("), breath);
     }
 
-    /** The breath is ridden as a mob's melee: a cloud's hit, tokened, the fight's price dealt through armour. */
+    /**
+     * The breath: a cloud's hit, its vanilla event CANCELLED (F9b fix F, Ben: "remove the knock back from it"; READ: the
+     * knockback follows only a hurt that succeeded), the fight's price dealt through armour.
+     */
     @Test
-    void theBreathIsRiddenTokenedAndDealtThroughArmour() throws IOException {
+    void theBreathIsCancelledNotTokenedAndDealtThroughArmour() throws IOException {
         String b = body(listeners(), "public void onFightDragonBreath(");
         assertTrue(b.contains("event.getDamager() instanceof org.bukkit.entity.AreaEffectCloud cloud"), b);
-        int token = b.indexOf("event.setDamage(TOKEN_DAMAGE);");
-        int deal = b.indexOf(".applyDamage(hit.getAsDouble(), dragonId);");
-        assertTrue(token > 0 && deal > token, "tokened, then dealt by the two-argument form (DefenseRule.APPLIES)");
+        int cancel = b.indexOf("event.setCancelled(true);");
+        int deal = b.indexOf("each, dragonId, io.github.butterflysmp.rpg.core.combat.CritState.NORMAL,\n"
+                + "                io.github.butterflysmp.rpg.core.combat.DefenseRule.APPLIES);");
+        assertTrue(cancel > 0 && deal > cancel, "cancelled, then dealt through armour: " + b);
+        assertTrue(!b.contains("event.setDamage(TOKEN_DAMAGE);"), "not tokened: a token is a hurt, and a hurt pushes");
+        String m = body(listeners(), "public void onMobMeleeAttack(");
+        assertTrue(m.contains("event.setDamage(TOKEN_DAMAGE);"), "the bite and the wing keep vanilla's push");
+    }
+
+    /** F9b fix D: the instruments are wired: the touch's boxes, the breath's apply, every cast in a fight world. */
+    @Test
+    void theInstrumentsAreWired() throws IOException {
+        assertTrue(body(instance(), "public String dragonTouch(").contains("attack_box=%s inside=%s"));
+        assertTrue(body(listeners(), "public void onFightBreathApply(")
+                .contains("fights.onCloudApply(event.getEntity(), event.getAffectedEntities());"));
+        String cast = listeners();
+        int attempt = cast.indexOf("java.util.Optional<CastResult> attempted = WeaponFire.attempt(event.getPlayer(),"
+                + " \"right_click\"");
+        int note = cast.indexOf("fights.noteCast(event.getPlayer(), \"right_click\", attempted.orElse(null));");
+        assertTrue(attempt > 0 && note > attempt, "every right-click's result is offered to the fights");
+        String n = body(code("fight/FightFixtures.java"), "public void noteCast(");
+        assertTrue(n.contains("if (!FightWorlds.isFightWorld(p.getWorld())) return;") && n.contains("dealt=nothing"), n);
     }
 
     /** The HURT line names the attack through the late-bound lookup, bound in the plugin. */

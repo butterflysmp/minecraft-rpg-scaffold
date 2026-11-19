@@ -18,7 +18,44 @@ import java.util.Optional;
  * @param wing            a hit from a wing
  * @param breathPerSecond the perched breath, per second of standing in it
  */
-public record DragonAttacks(double bite, double wing, double breathPerSecond) {
+public record DragonAttacks(double bite, double wing, double breathPerSecond, int contactHitIntervalTicks) {
+
+    /** The server's difficulty, as {@code Player.hurtServer} scales a mob attack by it (READ). */
+    public enum Difficulty { PEACEFUL, EASY, NORMAL, HARD }
+
+    /** READ: the head's and the neck's vanilla hurt, and a wing's. */
+    static final float VANILLA_BITE = 10.0f;
+    static final float VANILLA_WING = 5.0f;
+    private static final double SAME = 1.0e-4;
+
+    /**
+     * The attack a vanilla hit of {@code amount} was, from the part that dealt it (the addendum of 2026-11-19): READ, the
+     * head and the neck hurt for 10, a wing for 5, and a player's hit is then scaled by difficulty (Easy
+     * {@code min(f / 2 + 1, f)}, Normal {@code f}, Hard {@code f * 3 / 2}). Empty when the amount is neither.
+     */
+    public static Optional<Attack> byVanilla(double amount, Difficulty difficulty) {
+        if (difficulty == Difficulty.PEACEFUL) return Optional.empty();
+        if (Math.abs(amount - scaled(VANILLA_BITE, difficulty)) < SAME) return Optional.of(Attack.BITE);
+        if (Math.abs(amount - scaled(VANILLA_WING, difficulty)) < SAME) return Optional.of(Attack.WING);
+        return Optional.empty();
+    }
+
+    /** The attack's name: vanilla's own amount first; only if it names neither, the boxes he is in. */
+    public static Optional<Attack> name(double vanillaAmount, Difficulty difficulty, Box victim, Box head, Box neck,
+                                        List<Box> wings) {
+        Optional<Attack> byAmount = byVanilla(vanillaAmount, difficulty);
+        return byAmount.isPresent() ? byAmount : classify(victim, head, neck, wings);
+    }
+
+    /** {@code Player.hurtServer}'s scaling, in float, as the server does it (READ). */
+    static float scaled(float f, Difficulty d) {
+        return switch (d) {
+            case PEACEFUL -> 0.0f;
+            case EASY -> Math.min(f / 2.0f + 1.0f, f);
+            case NORMAL -> f;
+            case HARD -> f * 3.0f / 2.0f;
+        };
+    }
 
     /** How far the server inflates the head's and the neck's boxes before hurting what is inside, blocks (READ). */
     static final double BITE_INFLATE = 1.0;
@@ -32,6 +69,10 @@ public record DragonAttacks(double bite, double wing, double breathPerSecond) {
         check("bite", bite);
         check("wing", wing);
         check("breath_per_second", breathPerSecond);
+        if (contactHitIntervalTicks < 1) {
+            throw new IllegalArgumentException("dragon contact_hit_interval_ticks must be at least 1: "
+                    + contactHitIntervalTicks);
+        }
     }
 
     private static void check(String name, double v) {
