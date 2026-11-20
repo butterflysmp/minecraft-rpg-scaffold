@@ -286,6 +286,76 @@ public final class RpgListeners implements Listener {
     private io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades smithing =
             new io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades(java.util.List.of());
 
+    /** Convert on arrival (the seat's ruling, 2026-11-20): the materials weapons claim when a plain item arrives. */
+    private io.github.butterflysmp.rpg.core.weapon.ArrivalClaims arrivals = io.github.butterflysmp.rpg.core.weapon.ArrivalClaims
+            .build(java.util.List.of(), io.github.butterflysmp.rpg.core.weapon.CraftResultIndex.build(java.util.List.of(),
+                    java.util.List.of(), p -> { }), new io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades(java.util.List.of()),
+                    p -> { });
+
+    /** Binds the arrival claims. Until bound, nothing converts. */
+    public void bindArrivals(io.github.butterflysmp.rpg.core.weapon.ArrivalClaims claims) {
+        this.arrivals = java.util.Objects.requireNonNull(claims);
+    }
+
+    /**
+     * CONVERT ON ARRIVAL, EVERY LIVE ROUTE (the seat's brief, part h). READ, the pinned server jar:
+     * {@code ServerPlayer$2.slotChanged} is the {@code ContainerListener} that {@code ServerPlayer.initMenu} attaches to
+     * EVERY menu the player has (from {@code initInventoryMenu}, {@code openMenu}, {@code openHorseInventory} and one more
+     * call site). It fires {@code PlayerInventorySlotChangeEvent} for any changed slot whose container IS the player's own
+     * {@code Inventory}, result slots excepted. So a ground pickup, a chest or container take, a trade result, {@code /give},
+     * creative and a picked-up mob drop all arrive here, under any open screen.
+     *
+     * <p>The event fires inside the menu's broadcast, so the slot is converted on the player's next scheduled tick, and
+     * only if it still holds an untagged item the same weapon claims.
+     */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onInventorySlotChange(io.papermc.paper.event.player.PlayerInventorySlotChangeEvent event) {
+        ItemStack now = event.getNewItemStack();
+        if (now == null || now.getType().isAir()) return;
+        var decision = arrivals.decide(io.github.butterflysmp.rpg.paper.weapon.ArrivalConverter.tagged(now, adapters.keys()),
+                materialTokenOf(now));
+        if (decision.kind() != io.github.butterflysmp.rpg.core.weapon.ArrivalClaims.Kind.MINT) return;
+        Player player = event.getPlayer();
+        int slot = event.getSlot();
+        adapters.scheduler().onEntity(player, () -> convertArrival(player, slot, decision.weaponId(), "slot-change"));
+    }
+
+    /** Convert the item in {@code slot} if it is still an untagged item {@code weaponId} claims; one ARRIVAL line each. */
+    private void convertArrival(Player player, int slot, String weaponId, String via) {
+        ItemStack current = player.getInventory().getItem(slot);
+        if (current == null || current.getType().isAir()) return;
+        var again = arrivals.decide(io.github.butterflysmp.rpg.paper.weapon.ArrivalConverter.tagged(current, adapters.keys()),
+                materialTokenOf(current));
+        if (again.kind() != io.github.butterflysmp.rpg.core.weapon.ArrivalClaims.Kind.MINT || !weaponId.equals(again.weaponId())) {
+            return;
+        }
+        weapons.find(weaponId).ifPresent(weapon -> {
+            int wear = current.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable d ? d.getDamage() : 0;
+            int vanillaEnchants = current.getEnchantments().size();
+            ItemStack minted = io.github.butterflysmp.rpg.paper.weapon.ArrivalConverter.convert(current, weapon, player, adapters);
+            player.getInventory().setItem(slot, minted);
+            plugin.getLogger().info("ARRIVAL minted player=" + player.getName() + " slot=" + slot + " material="
+                    + materialTokenOf(current) + " weapon=" + weaponId + " wear=" + wear + " vanilla_enchants="
+                    + vanillaEnchants + " score=" + minted.getItemMeta().getPersistentDataContainer().get(
+                            adapters.keys().gearScore, org.bukkit.persistence.PersistentDataType.INTEGER)
+                    + " via=" + via);
+        });
+    }
+
+    /** THE BACKSTOP: on join, every plain claimed item already in his inventory converts (part h: "converts on join"). */
+    private void convertArrivalsOnJoin(Player player) {
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int slot = 0; slot < contents.length; slot++) {
+            ItemStack item = contents[slot];
+            if (item == null || item.getType().isAir()) continue;
+            var decision = arrivals.decide(io.github.butterflysmp.rpg.paper.weapon.ArrivalConverter.tagged(item, adapters.keys()),
+                    materialTokenOf(item));
+            if (decision.kind() == io.github.butterflysmp.rpg.core.weapon.ArrivalClaims.Kind.MINT) {
+                convertArrival(player, slot, decision.weaponId(), "join");
+            }
+        }
+    }
+
     /** Binds the smithing upgrades. Until bound, every minted weapon is refused at the table (never silently lost). */
     public void bindSmithing(io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades upgrades) {
         this.smithing = java.util.Objects.requireNonNull(upgrades);
@@ -788,6 +858,9 @@ public final class RpgListeners implements Listener {
         // covers both the stale emberblade you come back to and the live player logging in after
         // a content update. Already on the joining player's own thread; no scheduler hop needed.
         GearRefresher.refresh(event.getPlayer(), weapons, shields, armor, tools, adapters);
+        // CONVERT ON ARRIVAL'S BACKSTOP (the seat's brief, part h): a plain claimed sword already held converts here. After
+        // the refresh, which leaves untagged items alone, so the two never touch one item.
+        convertArrivalsOnJoin(event.getPlayer());
         // AFTER the refresh and not before, because the refresh RE-MINTS every carried weapon --
         // a fresh ItemStack each time -- and the sweep is read off the item that ends up in the hand.
         //
