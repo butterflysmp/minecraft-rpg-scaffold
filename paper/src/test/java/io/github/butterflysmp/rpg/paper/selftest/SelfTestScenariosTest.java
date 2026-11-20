@@ -39,9 +39,11 @@ class SelfTestScenariosTest {
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
-                        "loot-roll", "sword-tiers", "sword-smithing"),
+                        "loot-roll", "sword-tiers", "sword-smithing",
+                        "sword-convert"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty-two gates, in boot order (sword-smithing LAST, the sword ladder part g, 2026-11-20, a NEW gate"
+                "the thirty-three gates, in boot order (sword-convert LAST, the sword ladder part h, 2026-11-20, a NEW gate"
+                        + " after sword-smithing; sword-smithing before it, the sword ladder part g, 2026-11-20, a NEW gate"
                         + " after sword-tiers; sword-tiers before it, the sword ladder, 2026-11-20, a NEW gate after"
                         + " loot-roll; loot-roll before it, the seat's queue item 6, 2026-11-19, a NEW gate after"
                         + " fight-template, rebased onto it by the seat's part 2; fight-template before it, the seat's queue"
@@ -242,7 +244,10 @@ class SelfTestScenariosTest {
         // Then NETHERITE AT THE SMITHING TABLE (GATE-sword-smithing.md, feat/sword-smithing, 2026-11-20), a new gate,
         // RECOUNTED from index.yml: 32 gates, 274 keys, 32 setups, so 242: SSA1 and SSA2 added. The control: 271 + 3 = 274.
         // 240 was this line's value.
-        assertEquals(242, loaded.rows());
+        // Then CONVERT ON ARRIVAL (GATE-sword-convert.md, feat/sword-convert, 2026-11-20), a new gate, RECOUNTED from
+        // index.yml: 33 gates, 283 keys, 33 setups, so 250: SCA1-SCA5 and SCB1-SCB3 added. The control: 274 + 9 = 283.
+        // 242 was this line's value.
+        assertEquals(250, loaded.rows());
     }
 
     /**

@@ -75,3 +75,6 @@ gates:
 # sword-smithing (the sword ladder, 2026-11-20, feat/sword-smithing on feat/sword-tiers) is paired with
 # docs/gates/GATE-sword-smithing.md: netherite at the smithing table. No boot of its own.
   - sword-smithing
+# sword-convert (the sword ladder, 2026-11-20, feat/sword-convert on feat/sword-smithing) is paired with
+# docs/gates/GATE-sword-convert.md: convert on arrival. It carries the ONE R0 and run sheet for the three sword PRs.
+  - sword-convert
