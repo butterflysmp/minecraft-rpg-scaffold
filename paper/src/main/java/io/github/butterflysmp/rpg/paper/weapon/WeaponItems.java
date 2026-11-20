@@ -353,6 +353,19 @@ public final class WeaponItems {
      * instance data over is the only shape that covers every baked field, which is exactly why the
      * carry-forward has to be explicit rather than incidental.
      */
+    /**
+     * THE SMITHING UPGRADE (the seat's brief, part g): {@code base} re-minted AS {@code into}, a different weapon. It is
+     * {@link #remint}, so the base's instance data is carried by {@link GearItems#carryInstanceData}: its enchants, its
+     * gear score, its quiver, and its wear, clamped to {@code into}'s material's maximum (the fresh item's type). Then the
+     * id is re-stamped, because the carry copied the BASE's id and the item is now {@code into}.
+     */
+    public static ItemStack upgrade(ItemStack base, WeaponDefinition into, AdapterContext adapters) {
+        ItemStack fresh = remint(base, into, adapters);
+        fresh.editMeta(meta -> meta.getPersistentDataContainer().set(adapters.keys().weaponId,
+                org.bukkit.persistence.PersistentDataType.STRING, into.id()));
+        return fresh;
+    }
+
     public static ItemStack remint(ItemStack old, WeaponDefinition current, AdapterContext adapters) {
         ItemStack fresh = mint(current, adapters);
         ItemMeta oldMeta = old.getItemMeta();

@@ -1,0 +1,14 @@
+# THE SMITHING TABLE'S UPGRADES OF MINTED WEAPONS (PLAN-weapon-tiers.md; the seat's brief, part g). Read by
+# SmithingLoader; one "Loaded smithing" line names every upgrade, and a bad row is refused by name.
+#
+# Ben, 2026-11-19 (PLAN-weapon-tiers.md 1.2, answer 4), asked whether netherite comes from a smithing-table upgrade of a
+# diamond sword and keeps its enchantments: "Yes".
+#
+# A minted base with no upgrade here is REFUSED at the table: no result, so nothing is taken and no ingot is spent.
+# An unminted (plain) item is vanilla's own smith.
+
+upgrades:
+  - base: diamond_sword
+    template: netherite_upgrade_smithing_template
+    addition: netherite_ingot
+    result: netherite_sword
