@@ -1,6 +1,13 @@
 # GATE — THE SWORD LADDER, PR 1: THE SEVEN SWORDS AS CONTENT (feat/sword-tiers)
 
-**Status: NOT RUN, and no boot of its own.** Written 2026-11-20 on `feat/sword-tiers` (on master `70cbab66`), before any
+**Seat approval 2026-11-20: code and gate diffed at e3e0440f, booted at 90ea1517, readings at 2cf5abfd. Merge on Ben's words.** **Status: READ, 2026-11-20, at `90ea1517`; STA5 and STM1 UNREAD, carried** (was: NOT RUN, and no boot of its own).
+
+> **UNREAD, CARRIED (2026-11-20, the seat's merge approval):**
+> - **STA5 (ironblade and emberblade unchanged):** skipped twice for a full hotbar. Owed on the next branch that boots:
+>   a row that hands and selects an item must make room in the hotbar first, and STA5 re-staged so it can run.
+> - **STM1 (the crafted Iron Sword):** no server witness beyond Ben's "yes". Owed: a server line for a craft that mints.
+
+Written 2026-11-20 on `feat/sword-tiers` (on master `70cbab66`), before any
 boot. **Every prediction below was written before the boot.**
 
 > **SUPERSEDED IN PART, 2026-11-20 (the seat's split ruling): THE R0 AND THE RUN SHEET ARE NOT HERE.** Three PRs are
