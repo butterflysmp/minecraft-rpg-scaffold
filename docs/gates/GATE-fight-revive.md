@@ -178,6 +178,33 @@ $zip.Dispose()
 |---|---|---|
 | During the enable, exactly one **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=0`**, and no `deleting` and no `orphan` line | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'` | |
 
+## THE FIRST START, 22:19: R0 ONLY (2026-11-19, recorded on the seat's ruling of 22:30)
+
+**A boot of `72e11477` in which ONLY R0 was read, after the fact. No row ran.** The R0 cells above stay empty: they
+belong to the boot that runs the rows. These readings are that first start's, read by a fresh session from its
+`run/logs/latest.log` and the jar it deployed, after the server had stopped.
+
+**The boot, from its log:** `[Rpg] Build: 72e11477` and `Done (6.228s)` at 22:19:36. Ben joined at 22:19:40 and left
+at 22:20:01. A second `lost connection` came at 22:21:43, with no join before it. He joined again at 22:21:50, and
+typed `/stop` at 22:21:56 (the only command in the log). No `/gamemode`, no `SELFTEST RUN` line, no `FIGHT` line.
+Clean stop: `Saving worlds`, then `All dimensions are saved`. The backup before it was
+`2026-11-19-pre-fight-revive` (21:57:18). Overworld files: 106 in that backup, 106 after the stop. `rpgfight` was empty.
+
+| row | READING (22:19 start, read after the fact) |
+|---|---|
+| R0a | `[Rpg] Build: 72e11477`, `feat/fight-revive`'s head then; not `-dirty` |
+| R0b | the jar (written 22:19:30): all ten PRESENT lines PRESENT; `environment: normal` and `NoSuchTextControl` ABSENT |
+| R0c | both Loaded lines once each, equal to the predicted text by a scripted string comparison; `[Rpg]` WARN only `volley_stone`'s pair; no `Refusing`, `Skipping`, `SEVERE`, `Exception` or `No fights loaded` |
+| R0d | `228 scenarios across 28 gates [...]` once, equal to the predicted text by a scripted comparison; `217 scenarios across 26 gates` ABSENT |
+| R0e | one `FIGHTWORLD sweep ... rpgfight folders=0`; no `deleting`, no `orphan` |
+
+**The dated note booting.md step 8 asks for.** Ben joined **4 seconds** after `Done`. Every R0 line predates his join.
+**Whether "booting now" and "R0 passed" were given before he joined cannot be confirmed**, because the session that
+booted lost its context. **The omission is recorded as UNKNOWN, not assigned.**
+
+**Ben's own words about what happened, verbatim:** none were given. His only words relayed with the ruling were
+"ready".
+
 ## WHAT THIS BRANCH ADDS TO `GATE-fight-down.md`'s ROWS (they run on this boot, on this code)
 
 **Each FD row's prediction there stands, PLUS these lines** (written here, before the boot, because this branch's
