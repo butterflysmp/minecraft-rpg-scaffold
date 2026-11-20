@@ -508,8 +508,19 @@ public final class RpgPlugin extends JavaPlugin {
         allGear.addAll(shields.all());
         allGear.addAll(armor.all());
         allGear.addAll(tools.all());
+        // FAIL CLOSED (the seat's ruling, 2026-11-20): a claim that is not a material, is not the definition's own
+        // material, or has no durability is REFUSED by name here and never indexed; a contested claim is the index's
+        // own refusal (neither mints). Shipped content has none of either, and the boot's R0c predicts no Refusing line.
+        java.util.Map<String, String> refusedClaims = new ContentValidator(null, null, null, key -> true, key -> true)
+                .refusedCraftResults(allGear,
+                        name -> Material.matchMaterial(name) != null,
+                        name -> {
+                            Material material = Material.matchMaterial(name);
+                            return material != null && material.getMaxDurability() > 0;
+                        });
+        refusedClaims.forEach((id, why) -> getLogger().warning("Refusing craft_result on gear '" + id + "': " + why));
         this.craftResults = CraftResultIndex.build(allGear, recipes.all(),
-                problem -> getLogger().warning("Content: " + problem));
+                problem -> getLogger().warning(problem), definition -> refusedClaims.containsKey(definition.id()));
 
         // THE POSITIVE CONTROL, and it matters as much as the collision warning above. An index that
         // built EMPTY -- a renamed key, a load-order slip, registries not yet populated -- produces
@@ -528,7 +539,9 @@ public final class RpgPlugin extends JavaPlugin {
         getLogger().info("Mint-on-craft: " + craftResults.size() + " indexed, "
                 + craftResults.claimed() + " claiming, of " + allGear.size() + " gear definitions"
                 + (craftResults.contested() > 0
-                        ? ", " + craftResults.contested() + " dropped as contested" : ""));
+                        ? ", " + craftResults.contested() + " dropped as contested" : "")
+                + (craftResults.refused() > 0
+                        ? ", " + craftResults.refused() + " refused" : ""));
 
         // ZERO IS A DEFECT, NOT A QUIET NO-OP -- the same rule the loader counts above follow. Zero
         // here means no crafted item will ever become RPG gear, which in play is indistinguishable
@@ -1069,17 +1082,8 @@ OLD
         //
         // getMaxDurability() is why this is a predicate rather than a direct call: it throws
         // ExceptionInInitializerError with no server, which is what keeps the walk unit-testable.
-        List<GearDefinition> claimants = new ArrayList<>();
-        claimants.addAll(weapons.all());
-        claimants.addAll(shields.all());
-        claimants.addAll(armor.all());
-        claimants.addAll(tools.all());
-        problems.addAll(validator.validateCraftResults(claimants,
-                name -> Material.matchMaterial(name) != null,
-                name -> {
-                    Material material = Material.matchMaterial(name);
-                    return material != null && material.getMaxDurability() > 0;
-                }));
+        // SINCE 2026-11-20 these refusals are made where the index is built (FAIL CLOSED: refused by name, never
+        // indexed), so they are not also warned here; see "WHICH CRAFTED ITEM BECOMES WHICH GEAR" below.
         // An ore's sizes must have loaded, its payout must be an ITEM, and its two sounds must
         // resolve (PLAN-mining.md 5.3). The same resolver and the same sound seam as above.
         problems.addAll(validator.validateMining(ores.all(), veinSizes,

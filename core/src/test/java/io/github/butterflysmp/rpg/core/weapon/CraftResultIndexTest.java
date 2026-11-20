@@ -81,6 +81,49 @@ class CraftResultIndexTest {
         // That is the alphabetical-order-decides-the-economy bug.
     }
 
+    // ------------------------------------------------------------- FAIL CLOSED (the seat's ruling, 2026-11-20)
+
+    @Test
+    void aRefusedClaimIsNotIndexedAndIsCounted() {
+        // The validator (the server's registry) refused it by name; the index must not mint it.
+        CraftResultIndex index = CraftResultIndex.build(
+                List.of(shield("bad", "shield"), armor("good", "iron_chestplate", "iron_chestplate")), List.of(),
+                problem -> fail("the caller logs the refusal, not the index: " + problem),
+                definition -> definition.id().equals("bad"));
+
+        assertTrue(index.forResult("shield").isEmpty(), "a refused claim mints nothing");
+        assertEquals("good", index.forResult("iron_chestplate").orElseThrow().id(), "the control: a sound claim mints");
+        assertEquals(1, index.size());
+        assertEquals(2, index.claimed(), "both made a claim");
+        assertEquals(1, index.refused());
+        assertEquals(0, index.contested());
+    }
+
+    @Test
+    void aRefusedClaimStillContestsASoundOneSoNeitherMints() {
+        // Fail closed: two claims on one item are a contest whatever else is wrong with one of them.
+        List<String> problems = new ArrayList<>();
+        CraftResultIndex index = CraftResultIndex.build(
+                List.of(shield("bad", "shield"), shield("good", "shield")), List.of(), problems::add,
+                definition -> definition.id().equals("bad"));
+
+        assertTrue(index.forResult("shield").isEmpty(), "a contested pair mints NEITHER");
+        assertEquals(1, index.contested());
+        assertEquals(0, index.refused(), "counted once, as the contest it is");
+        assertEquals(1, problems.size());
+        assertTrue(problems.get(0).startsWith("Refusing craft_result 'shield'"), problems.get(0));
+    }
+
+    @Test
+    void aContestIsLoggedAsARefusalNamingBoth() {
+        List<String> problems = new ArrayList<>();
+        CraftResultIndex.build(List.of(shield("first", "shield"), shield("second", "shield")), List.of(), problems::add);
+        assertEquals(1, problems.size());
+        assertTrue(problems.get(0).startsWith("Refusing craft_result 'shield'"), problems.get(0));
+        assertTrue(problems.get(0).contains("'first'") && problems.get(0).contains("'second'"), problems.get(0));
+        assertTrue(problems.get(0).contains("neither"), problems.get(0));
+    }
+
     @Test
     void aCollisionIsReportedOnceAndNamesEveryClaimant() {
         List<String> problems = new ArrayList<>();

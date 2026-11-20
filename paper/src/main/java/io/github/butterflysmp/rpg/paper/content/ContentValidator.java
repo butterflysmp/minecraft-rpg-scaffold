@@ -232,14 +232,43 @@ public final class ContentValidator {
                                              Predicate<String> materialIsDurable) {
         List<String> problems = new ArrayList<>();
         for (GearDefinition definition : gear) {
+            problems.addAll(craftResultProblems(definition, materialExists, materialIsDurable));
+        }
+        return problems;
+    }
+
+    /**
+     * FAIL CLOSED (the seat's ruling, 2026-11-20): every definition whose claim is REFUSED, with why. The same three
+     * checks as {@link #validateCraftResults}, keyed by gear id, so the boot can log one {@code Refusing craft_result}
+     * line per definition and keep the claim out of {@code CraftResultIndex}. A contested claim is the index's own
+     * refusal; this map holds the three a single claim can fail on its own.
+     *
+     * @return gear id to its reasons (joined with {@code "; "}), in walk order. Empty is good, and shipped content
+     *         must leave it empty.
+     */
+    public java.util.Map<String, String> refusedCraftResults(Collection<? extends GearDefinition> gear,
+                                                             Predicate<String> materialExists,
+                                                             Predicate<String> materialIsDurable) {
+        java.util.Map<String, String> refused = new java.util.LinkedHashMap<>();
+        for (GearDefinition definition : gear) {
+            List<String> reasons = craftResultProblems(definition, materialExists, materialIsDurable);
+            if (!reasons.isEmpty()) refused.put(definition.id(), String.join("; ", reasons));
+        }
+        return refused;
+    }
+
+    private static List<String> craftResultProblems(GearDefinition definition, Predicate<String> materialExists,
+                                                    Predicate<String> materialIsDurable) {
+        List<String> problems = new ArrayList<>();
+        {
             Optional<String> claim = definition.craftResult();
-            if (claim.isEmpty()) continue;
+            if (claim.isEmpty()) return problems;
             String result = claim.get();
 
             if (!materialExists.test(result)) {
                 problems.add("gear '" + definition.id() + "' claims craft_result '" + result
                         + "', which is not a material; it can never be crafted and will never mint");
-                continue;   // the two checks below cannot mean anything for a name that resolves to nothing
+                return problems;   // the two checks below cannot mean anything for a name that resolves to nothing
             }
 
             // Compared on the NORMALISED token, so a claim spelled 'minecraft:IRON_CHESTPLATE'
