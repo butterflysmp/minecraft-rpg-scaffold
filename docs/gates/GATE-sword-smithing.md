@@ -1,6 +1,12 @@
 # GATE — THE SWORD LADDER, PR 2: NETHERITE AT THE SMITHING TABLE (feat/sword-smithing)
 
-**Status: NOT RUN, and no boot of its own.** Written 2026-11-20 on `feat/sword-smithing`, stacked on `feat/sword-tiers`,
+**Seat approval 2026-11-20: code and gate diffed at b1276d10, booted at 90ea1517, readings at 882318ac. Merge on Ben's words.** **Status: READ, 2026-11-20, at `90ea1517`; wear carried through smithing UNREAD, carried** (was: NOT RUN, and no boot of its own).
+
+> **UNREAD, CARRIED (2026-11-20, the seat's merge approval):** wear carried through the smithing upgrade. He smithed a
+> diamond sword from the creative menu (wear 0), not SSA1's (wear 100), so the clamp-and-carry of a worn sword is read
+> only in `SmithingSourceTest`.
+
+Written 2026-11-20 on `feat/sword-smithing`, stacked on `feat/sword-tiers`,
 before any boot. **Every prediction below was written before the boot.**
 
 > **SUPERSEDED IN PART, 2026-11-20 (the seat's split ruling): THE R0 AND THE RUN SHEET ARE NOT HERE.**
