@@ -13,6 +13,11 @@ paths:
   `NEXT.md`). Every citation of one written between now and then is a comment that will point at a
   file that does not exist.
 
+  > **A FOURTH MEMBER, 2026-11-19: `emberblade`.** Ben, verbatim (`PLAN-weapon-tiers.md` 1.1): *"Just a quick
+  > note, the emberblade should also be slated for deletion."* The measurements below were taken before it joined
+  > and cover the three; none is extended to it. It is not deleted yet: the sword ladder ships beside it, and it
+  > stays untouched until the deletion's own slice.
+
   > **THE SET HAD FOUR MEMBERS UNTIL 2026-09-25, AND THE FOURTH LEFT BY BEING DELETED, NOT RELEASED.**
   > `ability_stone` was deleted in the Ability Stone slice (PLAN-build-system.md section 1.4), in the
   > same commit that shipped the new Ability Stone item, so the name never referred to two things. Its

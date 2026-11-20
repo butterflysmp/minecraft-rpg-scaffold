@@ -127,6 +127,51 @@ Ben:
 
 **Still open** is section 5.
 
+### 1.4 Ben, 2026-11-20, VERBATIM: the seven numbers, the sweep, the names
+
+The seat asked:
+- which vanilla number is tripled;
+- golden and copper at 16, or 16 and 17;
+- whether Ironblade's sweep goes on every tier sword;
+- plain vanilla names or his own.
+
+His first line answers a separate question, about the void, and is recorded in `PLAN-world-damage.md`. Ben:
+
+> "1. The void: no it should not stop healing/regen
+>  2. Here's the damage I want from each sword:
+>
+>  Wood - 11
+>  Stone - 14
+>  Copper - 17
+>  Gold - 20
+>  Iron - 23
+>  Diamond - 27
+>  Netherite - 31
+>
+>  3. Yes all swords should have the built in sweep
+>  4. Names plan vanilla names with the rarity color"
+
+**The seat's readings (the seat's, not Ben's, 2026-11-20):**
+- **His seven numbers SUPERSEDE "vanilla x 3" and the 16/17 placeholder.** The x3-base question (2i) is moot.
+- **"The built in sweep" is ironblade's sweep value (0.5)** and its vanilla-driven left click.
+- **Names are vanilla's English names**, coloured by rarity as every weapon's display name already is.
+- **Attack speed 1.6; reach and durability stay vanilla's.**
+- **Diamond and netherite are uncommon; the rest common. All kinetic, all class melee.**
+
+**The seat's two rulings on the survey's questions for it (2026-11-20):**
+- **"Any route" (Ben's answer 5) is built as CONVERT ON ARRIVAL** (4.2's option b), not per source.
+- **A contested or mismatched `craft_result` FAILS CLOSED at boot:** refused by name, not warned.
+
+**Now RULED, added to 1.3's table:**
+
+| question | ruling | source |
+|---|---|---|
+| Damage, all seven | wooden 11, stone 14, copper 17, golden 20, iron 23, diamond 27, netherite 31 | 1.4 answer 2 |
+| Sweep | every tier sword has ironblade's 0.5 | 1.4 answer 3 |
+| Names | vanilla's, in the rarity colour | 1.4 answer 4 |
+| Any route | convert on arrival | the seat, 1.4 |
+| A bad `craft_result` | refused at boot | the seat, 1.4 |
+
 ---
 
 ## 2. WHAT EXISTS TODAY

@@ -22,6 +22,13 @@ is a set distance below the floor, suggesting 10 blocks:*
 
 (Recorded in `PLAN-dragon-fight.md` section 1 too, as its entry j, because the fight is where it was asked.)
 
+*b. Ben, 2026-11-20, verbatim, the first line of his answer to the seat's sword questions (the rest is
+`PLAN-weapon-tiers.md` 1.4):*
+
+> "1. The void: no it should not stop healing/regen"
+
+**So the void does NOT stop natural regeneration. The rule stays as built, and the question in section 5 is CLOSED.**
+
 ## 2. WHAT WAS READ, EACH MARKED (2026-11-19; the pinned server jar `run/versions/26.1.2/paper-26.1.2.jar`, its manifest
 `Implementation-Version: 26.1.2-74-e4e17fc`, the build every boot log names)
 
@@ -86,6 +93,8 @@ is a set distance below the floor, suggesting 10 blocks:*
   ELEVENTH tick takes the rest.** The seat's reading "the tenth tick takes the last of a full bar" holds for a bar that
   does not regenerate; in play he goes down on the eleventh. **For the seat:** whether that matters, or whether the void
   should suppress regeneration (not built; no ruling).
+  - **CLOSED, 2026-11-20 (Ben, section 1 b):** the void does not stop regeneration. The eleventh tick is the rule as
+    ruled. FD2R2 read it at `5c2dee2c`: ten hits of 35.000 and an eleventh of 10.000.
 - **Every merged row that falls into the void is re-predicted** in `GATE-fight-down.md`: FD2 as FD2R2 (restaged inside the
   ring), AE6 as AE6R4.
 - **The ring and the void are now both rules of ours.** Outside the ring, a falling player takes the ring's strikes and
