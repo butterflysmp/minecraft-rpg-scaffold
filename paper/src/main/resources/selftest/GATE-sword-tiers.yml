@@ -73,6 +73,8 @@ STA2:
   - cmd: 'summon zombie ~2 ~ ~1 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["u","selftest"]}'
   - wait: 40
   - probe: u
+  - wait: 5
+  - probe: u
   - attack: t
   - wait: 5
   - probe: u

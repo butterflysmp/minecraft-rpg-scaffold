@@ -68,6 +68,22 @@ health figure.**
 |---|---|---|
 | The iron sword hits `t` (STA1's iron line: `sent=23.000` at T=100). `u`, one block to its side, is swept. **`u`'s PROBE custom HP falls between the two PROBEs, by no more than 11.500 (half of the primary's 23.000) and by more than 0.** The sweep is applied straight to the store with ironblade's share, 0.5 (`SweepShare.of`, READ), and the zombie's defence then cuts it; the exact landed figure is INFERRED, not predicted. **No PLAYERHIT names `u`** (the sweep is not traced; INFERRED) | `RpgListeners.onPlayerSweepAttack` (READ); `WeaponLoaderTest` (sweep 0.5) | |
 
+> **A CONTROL ADDED BEFORE ANY BOOT (2026-11-20, the seat's boot approval).** As first written, STA2 read `u`'s health
+> before and after the swing and predicted a fall. Nothing showed that `u`'s health holds still WITHOUT a swing: the
+> row runs at time 6000 with a NoAI zombie in the open. The scenario now reads `probe: u`, `wait: 5`, `probe: u`, then
+> the attack and the third `probe: u`.
+>
+> - **The added prediction: the first two PROBEs read the SAME custom HP.** If they differ, something other than the
+>   sweep moves `u`'s health, and the after-swing fall is not read as the sweep's.
+> - **What the jar says, marked; the row does not rely on it:**
+>   - READ, the pinned server jar: `Mob.aiStep` calls `burnUndead()` for any mob in `EntityTypeTags.BURN_IN_DAYLIGHT`,
+>     with no NoAI check on that path. INFERRED: `aiStep` runs for a NoAI mob (`LivingEntity.tick` calls it).
+>   - READ, our source: `FIRE_TICK` is REROUTE in `VanillaDamagePolicy`, so a burning zombie's fire reaches its custom
+>     HP.
+>   - **So at time 6000 under open sky the control may well read UNEQUAL**: the zombie burning. That is the control
+>     doing its job, and the row then says so.
+> - The table above is not edited.
+
 ### STA3 — wear: ten hits wear the sword by exactly ten (SURVIVAL)
 
 | prediction | stands on | READING |
