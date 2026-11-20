@@ -1,17 +1,28 @@
-# GATE — THE DEV ROLL COMMAND (PLAN-loot.md, THE WIRING ORDER'S FIRST STEP; THE SEAT'S QUEUE, ITEM 6)
+# GATE — THE DEV ROLL COMMAND (PLAN-loot.md, THE WIRING ORDER'S FIRST STEP; THE SEAT'S QUEUE, ITEM 6), AND THE STACK'S ONE BOOT
 
-**Status: NOT RUN, and NO BOOT NOW.** Written 2026-11-19 on `feat/loot-cascade` (on master `868df417`), before any
-boot. **It boots with a later stack, after #219 is rebased onto master** (the seat's ruling: #219 waits for #216, #217
-and #218). At that boot its R0 rows join that boot's R0, and the recount is redone on that tree.
+**Status: NOT RUN.** Written 2026-11-19 on `feat/loot-cascade`, before any boot of it. **This file carries the ONE R0 and
+the ONE run sheet for the whole stack** (the seat's part 2, 2026-11-19): `feat/fight-template` (#218) on master
+`cf3547e3`, and this branch (#219) rebased onto it. #219's hold is lifted: it rides the stack and merges after #218. The
+boot is on this branch's head. **NO BOOT until the seat has diffed the stack and this gate from origin and Ben says
+"ready"**; then only CC boots, by `.claude/rules/booting.md`.
 
-**Game mode:** SURVIVAL. **Difficulty:** any (nothing here fights). **Nothing here can hurt him or give him anything:**
-`/rpg loot` rolls and tells, and gives nothing.
+The rows it boots, each predicted in its own gate:
+- **FDM1** and **FD2R2** — `GATE-fight-down.md`;
+- **MG5R3** and **MG7R3** — `GATE-fight-site.md`, unchanged;
+- **TA1** — `GATE-fight-template.md`;
+- **LR1-LR5** — this file, below.
+
+**Game mode:** SURVIVAL for every row. **Difficulty:** normal (every selftest setup sets it). **FDM1 and FD2R2 put him
+down on purpose; nothing else can hurt him** (the arithmetic below).
 
 **Ben's rulings it stands on** (PLAN-loot.md, its head, verbatim):
 - "First the rarest rarity is rolled. then if that doesn't land, the next rarest rarity is rolled and so on";
 - "If a rarity lands but that source has no item general skip that rarity";
 - "Yes equally likely across every item";
 - the wiring order, "That's fine".
+
+And for FD2R2, the void (PLAN-world-damage.md, verbatim): "A player should lose 10% of their health each damage tick
+(0.5s) to the void regardless of their max health."
 
 ## WHAT IT IS
 
@@ -30,19 +41,164 @@ and #218). At that boot its R0 rows join that boot's R0, and the recount is redo
   - **No epic pool** (no content is epic), so an epic that lands is skipped. The deletion set's dev weapons are left
     out.
 
-## R0 (WITH THE LATER BOOT'S)
+## CARRIED STATE (CC, IN THIS ORDER) — A CHECKLIST, EACH LINE TICKED IN THE REPORT, NOT REMEMBERED
 
-### R0c-L — the loot Loaded line
+The booter's checklist is `.claude/rules/booting.md`; this list is its instance for this boot.
+
+1. **No JVM:** `Get-Process java -ErrorAction SilentlyContinue` prints nothing.
+2. **A fresh dated backup:** `run/plugins/Rpg` and `run/world` copied, as they are, to a NEW folder
+   `../rpg-run-backups/<yyyy-mm-dd>-pre-loot-stack`. Report:
+   - the file and directory counts;
+   - `diff -rq lines: 0` for each;
+   - the `ls` of `world/dimensions`;
+   - the overworld's file count (`world/dimensions/minecraft/overworld`).
+
+   Nothing is restored (Ben's word only).
+3. `grep -n "dev-pack-on-join" run/plugins/Rpg/config.yml` prints `12:  dev-pack-on-join: true`.
+4. **No fight folders:** `find run/world/dimensions/rpgfight -mindepth 1` prints nothing.
+5. **No arena files yet:** `ls run/plugins/Rpg/arenas` reports no such folder, or an empty one; any file in it is listed
+   by name. TA1 writes `ta_one.nbt` there.
+6. **IN ITS OWN MESSAGE, BEFORE THE BOOT COMMAND IS SENT:** "booting now", and Ben told **NOT to log in until told R0
+   passed.** The boot command goes in the next turn.
+7. `./scripts/dev-server.sh --refresh-content`. **The REQUIRED deployed lines** (under `run/plugins/Rpg/content`):
+   - `fights/dragon.yml` reads `  source: generated`, `  all_down_seconds: 5` and `  revive_seconds: 3`;
+   - `world_damage.yml` reads `  share_of_max_per_tick: 0.10`;
+   - `loot/cascade.yml` reads `  dev_example_not_a_drop:`.
+8. R0a to R0e read on **this boot's** log (its `[Rpg] Build:` names this branch's head).
+9. **IN ITS OWN MESSAGE: Ben told R0 passed.** Any R0 not as predicted: STOP, tell the seat, tell Ben NOT to log in.
+10. *(After his `/stop`.)* Report:
+    - `rpgfight` empty;
+    - the overworld's file count against step 2's;
+    - `run/plugins/Rpg/arenas/ta_one.nbt` present, with its size in bytes;
+    - `All dimensions are saved`;
+    - no `java` process left.
+
+## THE RUN SHEET — BEN TYPES THESE, IN THIS ORDER. EVERY LINE IS LITERAL
+
+0. **DO NOT LOG IN UNTIL CC HAS TOLD YOU R0 PASSED. IF YOU ARE TOLD NOTHING, DO NOT LOG IN.**
+1. `/gamemode survival` — **alone, the first line after login.**
+2. **THE MANUAL ROW FIRST (FDM1, `GATE-fight-down.md`). IT PUTS YOU DOWN ON PURPOSE:**
+   - Type `/rpg fight enter nodragon`.
+   - Walk off the edge of the floor into the void.
+   - **As soon as you are spectating, disconnect.**
+   - Wait ten seconds, reconnect, and say where you are and whether you are in survival.
+3. Stand on flat open ground with room all round.
+4. `/rpg selftest fight-down FD2R2` — **ONCE. It puts you down on purpose** (the void, a tenth of your health each half
+   second), then sends you home in survival with everything you carried. About fifteen seconds. Do not move.
+5. `/rpg selftest fight-site MG5R3`, then `/rpg selftest fight-site MG7R3` — once each, about a minute each. **Nothing
+   hurts you.**
+6. `/rpg selftest fight-template` — **ONCE.** One row, TA1: the arena is exported to a file. **Nothing hurts you.**
+7. `/rpg selftest loot-roll` — **ONCE.** Five rows: rolls and odds in chat. **Nothing hurts you and nothing is given.**
+8. `/stop`
+
+Nothing else this boot. If a row stalls or aborts, do not intervene. If his reconnect fails or he is left in spectator
+anywhere: CC STOPS, reports the log lines, and touches nothing in `run/world`.
+
+### WHY TB1-TB6 ARE NOT ON THIS SHEET (the seat asked how the file gets to the loader)
+
+- **The file needs no moving.** READ, `RpgPlugin`: `/rpg fight export <name>` (and TA1) writes
+  `run/plugins/Rpg/arenas/<name>.nbt`. `ArenaTemplates` is built on that same folder (`new File(getDataFolder(),
+  "arenas")`), and `source: template` reads `arenas/<template_file>.nbt` from it. So after TA1, `ta_one.nbt` is already
+  where the loader reads.
+- **But the source is chosen at enable and cannot be switched inside one start.** READ, `FightLoader`: `arena.source`
+  and `template_file` are read from `content/fights/dragon.yml` when the plugin enables, and nothing re-reads it while
+  the server runs.
+  - TB1-TB3 need the deployed `dragon.yml` to say `source: template` and `template_file: ta_one`;
+  - TB4 needs `template_file: no_such`;
+  - TB5 needs a malformed file.
+  - **That is three more starts, each with an edit under `run/plugins/Rpg`**, which the standing rules forbid except by
+    the checklist.
+- **For the seat to choose** (neither is built):
+  - (a) a second start with the deployed `dragon.yml` edited by CC under a ruling, for TB1-TB3, with TB4 and TB5 later;
+  - (b) a dev-only override, e.g. `/rpg fight enter template <file>`, so TB1-TB5 run in one start with no content
+    edit.
+- **TB6** waits for Ben's own arena either way.
+
+## THE ARITHMETIC (SELFTEST SAFETY): AT DEFENCE 0, AGAINST 100, AND WHERE EACH ROW PUTS HIM
+
+**Against 100, the base maximum with no gear.** His real maximum was 350 at the last boot; each row's heal prints it.
+The ring is 48 blocks about C; the disc is 56.
+
+| row | where he is | what can hurt him | the most it does, at defence 0 against 100 | puts him down? |
+|---|---|---|---|---|
+| FDM1 | walks from C over the ring (48) to the disc's edge (56), then falls past the End void line (y -64) | the ring's strikes once outside (20, then doubling, every 40 ticks); then the void (10 a tick, every 10 ticks) | **lethal, on purpose.** Two strikes (60) before he falls are likely, and the third (80) would finish 100. So **he may go down to the LIGHTNING before the void.** FDM1's `cause=VOID` (its prediction, unchanged on the seat's word) may read `cause=KILL` instead, as RV4.s strike-down did at `cb821675`: flagged, not re-predicted | **YES, on purpose** |
+| FD2R2 | straight down from C to y -130: inside the ring's footprint, below the void line | the void only; every strike finds him inside and deals 0 | **lethal, on purpose:** ten ticks of 10, then what regeneration paid | **YES, on purpose** |
+| MG5R3 | the ordinary world, 1 west of the Mage, inside every ring | strikes, which find him inside | 0 (every `STRIKE … k=0 damage=0.000 inside`, the rows' own prediction) | no |
+| MG7R3 | the same | strikes; the two `damage` commands hit the crystal, not him | 0 | no |
+| TA1 | C, no dragon, no Mage | strikes, which find him inside | 0 | no |
+| LR1-LR5 | wherever he stands; no fight | nothing | 0 | no |
+
+**The rows that put him down: FDM1 and FD2R2.** Both set or need no `death_rules` of their own beyond what they have:
+FD2R2's scenario sets `death_rules` and heals first; FDM1 is manual, and a down is not a death (F9d), so nothing is
+dropped either way.
+
+## R0 — THE BUILD, FOR THE WHOLE STACK. READ IT FIRST. IF ANY R0 FAILS, STOP
+
+### R0a — the build line names THIS branch's head
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one **`[Rpg] Loaded loot 'cascade': default exotic 1.00% (truly 1.000%), legendary 3.00% (truly 2.970%), epic 8.00% (truly 7.682%), rare 12.00% (truly 10.602%), uncommon 20.00% (truly 15.549%), common 40.00% (truly 24.879%), nothing truly 37.318%; 1 sources [dev_example_not_a_drop]`** (a dev server; `LootLoaderTest` asserts it verbatim). No `Refusing loot` | `Select-String run\logs\latest.log -Pattern 'Loaded loot\|Refusing loot'` | |
+| `[Rpg] Build: <sha>`, `feat/loot-cascade`'s head as `git ls-remote origin refs/heads/feat/loot-cascade` prints it, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
 
-### R0b-L — the jar carries it
+### R0b — the jar carries every step of the stack
 
 | prediction | instrument | READING |
 |---|---|---|
-| PRESENT: `content/loot/cascade.yml` line `  dev_example_not_a_drop:`; the entries `io/github/butterflysmp/rpg/core/loot/CascadeTable.class` and `…/LootRolls.class`; `io/github/butterflysmp/rpg/paper/command/LootDevCommand.class` carrying `LOOTROLL`; `GATE-loot-roll.yml` carrying `LR2:`. ABSENT (the control): `cascade.yml` line `  dev_try_me:` | the later boot's R0b PowerShell, with these lines added | |
+| PRESENT: F9d and F9e as `GATE-fight-revive.md`'s R0b (`dragon.yml` `  all_down_seconds: 5`, `  revive_seconds: 3`; `FIGHT copy laid`; `FIGHT down player=`; `FIGHT revived player=`; `DownRoster`, `CopyPlace`, `ReviveTracker`); the template (`TemplateLayout.class`, `ArenaTemplates.class` carrying `template exported`, `dragon.yml` `  source: generated`); the void (`VoidShare.class`, `WorldDamageLoader.class` carrying `Loaded world damage`, `world_damage.yml` `  share_of_max_per_tick: 0.10`); the loot (`CascadeTable.class`, `LootRolls.class`, `LootDevCommand.class` carrying `LOOTROLL`, `cascade.yml` `  dev_example_not_a_drop:`); the scenarios `GATE-fight-down.yml` `FD2R2:`, `GATE-fight-template.yml` `TA1:`, `GATE-loot-roll.yml` `LR2:`. ABSENT (the controls): `dragon.yml` `  environment: normal`; `NoSuchTextControl` in `FightInstance.class`; `cascade.yml` `  dev_try_me:`; `GATE-fight-down.yml` `FD2:` (retired) | the PowerShell below, from the repo root | |
+
+```powershell
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+function Line($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + "\s*$")) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+function Has($entry, $needle) { $b = Bytes $entry; if ($b -ne $null -and $b.Contains($needle)) { "PRESENT $entry '$needle'" } else { "ABSENT  $entry '$needle'" } }
+function Entry($entry) { if ($zip.GetEntry($entry) -ne $null) { "PRESENT entry $entry" } else { "ABSENT  entry $entry" } }
+$d = Bytes 'content/fights/dragon.yml'
+Line $d '  all_down_seconds: 5' 'dragon.yml'; Line $d '  revive_seconds: 3' 'dragon.yml'; Line $d '  source: generated' 'dragon.yml'; Line $d '  environment: normal' 'dragon.yml'
+$w = Bytes 'content/world_damage.yml'; Line $w '  share_of_max_per_tick: 0.10' 'world_damage.yml'
+$c = Bytes 'content/loot/cascade.yml'; Line $c '  dev_example_not_a_drop:' 'cascade.yml'; Line $c '  dev_try_me:' 'cascade.yml'
+$p = 'io/github/butterflysmp/rpg/'
+Has ($p + 'paper/fight/FightInstance.class') 'FIGHT copy laid'; Has ($p + 'paper/fight/FightInstance.class') 'NoSuchTextControl'
+Has ($p + 'paper/fight/FightFixtures.class') 'FIGHT down player='; Has ($p + 'paper/fight/FightFixtures.class') 'FIGHT revived player='
+foreach ($c2 in 'DownRoster', 'CopyPlace', 'ReviveTracker', 'TemplateLayout') { Entry ($p + "core/fight/$c2.class") }
+Has ($p + 'paper/fight/ArenaTemplates.class') 'template exported'
+Entry ($p + 'core/combat/VoidShare.class'); Has ($p + 'paper/content/WorldDamageLoader.class') 'Loaded world damage'
+Entry ($p + 'core/loot/CascadeTable.class'); Entry ($p + 'core/loot/LootRolls.class'); Has ($p + 'paper/command/LootDevCommand.class') 'LOOTROLL'
+$f = Bytes 'selftest/GATE-fight-down.yml'; Line $f 'FD2R2:' 'GATE-fight-down.yml'; Line $f 'FD2:' 'GATE-fight-down.yml'
+Line (Bytes 'selftest/GATE-fight-template.yml') 'TA1:' 'GATE-fight-template.yml'
+Line (Bytes 'selftest/GATE-loot-roll.yml') 'LR2:' 'GATE-loot-roll.yml'
+$zip.Dispose()
+```
+
+**A jar from master reads ABSENT on the template, void and loot lines**, and the four controls read ABSENT on either jar.
+
+### R0c — every Loaded line, and nothing refused
+
+| prediction | instrument | READING |
+|---|---|---|
+| Exactly one of each, up to the first `joined the game`: **`[Rpg] Loaded 11 abilities, 30 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 16 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`** (unchanged); **`GATE-fight-revive.md`'s R0c fight line, word for word** (unchanged on `source: generated`; `FightLoaderTest` asserts it verbatim); **`[Rpg] Loaded world damage: void takes 0.10 of a player's maximum health per void tick, defence bypassed; mobs unchanged`** (`WorldDamageLoaderTest` asserts it verbatim); **`[Rpg] Loaded loot 'cascade': default exotic 1.00% (truly 1.000%), legendary 3.00% (truly 2.970%), epic 8.00% (truly 7.682%), rare 12.00% (truly 10.602%), uncommon 20.00% (truly 15.549%), common 40.00% (truly 24.879%), nothing truly 37.318%; 1 sources [dev_example_not_a_drop]`** (`LootLoaderTest` asserts it verbatim). No `Refusing`, `Skipping`, `SEVERE` or `Exception`. **No `[Rpg]` WARN beyond `volley_stone`'s known pair.** No `No fights loaded` | `Select-String run\logs\latest.log -Pattern 'Loaded\|Refusing\|Skipping\|SEVERE\|WARN\|Exception\|No fights loaded'` | |
+
+### R0d — every scenario loaded
+
+| prediction | instrument | READING |
+|---|---|---|
+| Exactly one **`[Rpg] Selftest: dev server, 235 scenarios across 30 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot, dragon-blink, dragon-skreel, drag-additive, fight-site, fight-arena, fight-dragon, fight-rules, fight-end, fight-down, fight-revive, fight-template, loot-roll]`**, no refusal after it. **The control:** the last boot's `228 scenarios across 28 gates` is ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+
+**RECOUNTED** (2026-11-19, this branch's tree, from `index.yml` and every gate file it names; `SelfTestScenariosTest`
+asserts 235):
+- the gates in `index.yml`: **30**;
+- `^[A-Za-z0-9_-]+:` over them: **265**;
+- `^setup:`: **30**;
+- so **235**.
+
+**Control:** 256 (the last boot) + fight-template's 2 (setup, TA1) + EB4R3's 1 − FD2's 1 + FD2R2's 1 + loot-roll's 6
+(setup, LR1-LR5) = 265.
+
+### R0e — THE ORPHAN SWEEP WITH NOTHING STAGED
+
+| prediction | instrument | READING |
+|---|---|---|
+| During the enable, exactly one **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=0`**, and no `deleting` and no `orphan` line | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'` | |
 
 ## THE ROWS
 
