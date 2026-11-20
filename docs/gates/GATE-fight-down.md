@@ -110,6 +110,52 @@ spectating**, then reconnects after ten seconds. Like AQ1 (GATE-fight-arena.md).
 |---|---|---|
 | (1) `FIGHT down … cause=VOID …`, `lifted`, `spectating … mode=SPECTATOR`; `FIGHT all-down …` the next tick. (2) His quit: **`FIGHTWORLD left player=BaronVonYeetus world=<n> why=quit return=kept`**; then **`FIGHT nobody inside …`**, `FIGHT ended reason=nobody-inside-<outcome>` (or, if he took longer than five seconds, `all-down-FAILED` with him already home: then the row is not read as designed, and says so); the world unloaded and deleted, him offline. (3) His login: vanilla puts him at the same x, y, z of the overworld (READ at AQ1), **still in spectator** (his saved mode). **`FIGHTWORLD stale login caught player=BaronVonYeetus at=world <x y z> to=world <his return>`**, **`FIGHTWORLD mode player=BaronVonYeetus from=SPECTATOR to=SURVIVAL why=login`**, `FIGHTWORLD returned … why=login`. (4) He stands at his return location in survival | `FightDownSourceTest` *theEntryMode…* (the login route) | **NOT RUN** (2026-11-19, the boot at `cb821675`). Ben typed `/stop` at 22:42:40, 24 s after `SELFTEST RUN FINISHED` for fight-revive (22:42:16). He typed no `/rpg fight enter nodragon`, and there was no quit and no login before it. No reading |
 
+> **FDM1'S CAUSE, RE-PREDICTED BEFORE ITS FIRST READING (2026-11-20, the seat's ruling 3 at the stack's boot
+> approval).** FDM1 has never been read, so its cause may be rewritten, and only its cause is. **The text above is not
+> edited**; this note replaces clause (1)'s `cause=VOID` and nothing else.
+>
+> - **Why:** walking from C to the disc's edge (56) takes him over the ring (48). Outside it, the ring's strikes find him
+>   (20, then doubling, every 40 ticks; READ at FD2, `cb821675`) before and while he falls. Below the End void line
+>   (y -64), Ben's void rule takes a tenth of his maximum every 10 ticks. **Whichever lands the last of his bar puts him
+>   down.**
+> - **The prediction:** `FIGHT down player=BaronVonYeetus t=<t> cause=<VOID or KILL> at=<x y z>`. KILL is how a ring
+>   strike's down read at RV4 (`cause=KILL`). Read as `VOID` if the last HURT before the down ends `cause=void`, as
+>   `KILL` if it was a strike's.
+> - **Where his copy lies follows from it, by `CopyPlace`:**
+>   - down outside the ring, on the disc or over the void: one block inside the edge, `at=<about 47 along his line> 0.00
+>     <…> moved=true revivable=true`;
+>   - down inside it: where he went down, `moved=false`.
+> - **Everything else in (1) to (4) stands as written.** That includes the quit, the stale login's `mode … from=SPECTATOR
+>   to=SURVIVAL why=login`, and him home in survival.
+> - **The reading of this boot goes beside this note**, in the boot's after-run section of `GATE-loot-roll.md` and in a
+>   dated line here.
+
+> **FDM1, READ 2026-11-20 at the stack's boot (`5c2dee2c`, 10:43:16 to 10:43:46): (1) TO (4) AS PREDICTED, cause VOID,
+> after three strikes outside.** It is manual, so no HURT line exists (they are written only inside a selftest run).
+>
+> - **His first command was `/gamemode spectator` (10:42:44), then `/gamemode survival` (10:42:48)**, both before the
+>   row. He entered from survival: `FIGHTWORLD entered … return=world -105.05 63.00 21.68 mode=SURVIVAL`.
+> - **Strikes while he walked out:** t=40 to t=160 read `k=0 damage=0.000 inside`. Then three landed outside: `STRIKE
+>   t=200 k=1 damage=20.000 outside`, `t=240 k=2 40.000`, `t=280 k=3 80.000`.
+> - **(1)** `FIGHT down player=BaronVonYeetus t=293 cause=VOID at=-2.56 -233.41 -61.49`. **The void took the last of
+>   his bar after the three strikes, so the cause is VOID**, as the old text and the note's first branch said.
+>   - `FIGHT copy laid … at=-1.95 0.00 -46.96 died=-2.56 -233.41 -61.49 moved=true revivable=true`: one block inside the
+>     ring along his line, by `CopyPlace`, as the note predicts. COPYTICK `inside_by=1.000`.
+>   - Then `all-down t=294 … RUNNING returns_in=100`, `lifted … to C +8.0`, `spectating … mode=SPECTATOR`.
+> - **(2)** He disconnected at 10:43:32, about a second after spectating, within the five seconds:
+>   - `FIGHT copy removed … t=308 why=out`;
+>   - **`FIGHTWORLD left player=BaronVonYeetus world=rpgfight_fight_abb5a8c9 why=quit return=kept`**;
+>   - `FIGHT nobody inside t=309 outcome=RUNNING`, `FIGHT ended reason=nobody-inside-RUNNING`;
+>   - `unloaded`, and `deleted …fight_abb5a8c9 entries=17`.
+> - **(3)** He reconnected at 10:43:46, 14 s after the quit:
+>   - **`FIGHTWORLD stale login caught player=BaronVonYeetus at=world 0.50 73.00 0.50 to=world -105.05 63.00 21.68`**;
+>   - **`FIGHTWORLD mode player=BaronVonYeetus from=SPECTATOR to=SURVIVAL why=login`**;
+>   - `FIGHTWORLD returned … why=login`.
+> - **(4) His game mode after the reconnect: SURVIVAL.** Read by the server, twice:
+>   - the `mode … to=SURVIVAL why=login` line, which the plugin writes as it sets it;
+>   - FD2R2's next `FIGHTWORLD entered … mode=SURVIVAL` (10:44:27), his mode as the server read it.
+> - **His words, verbatim (10:44:05):** "I am where I was and in survival".
+
 ## THE MERGED DEATH ROWS, RE-PREDICTED (the brief's g): NOT RE-RUN; FD1 TO FD4 STAND FOR THEM
 
 **Every arena row that killed him now puts him DOWN.** Each one's death line, respawn and "returned … why=died" become

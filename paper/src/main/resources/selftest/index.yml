@@ -66,3 +66,6 @@ gates:
 # fight-template (the seat's queue item 2, 2026-11-19, stacked on fight-revive) is paired with
 # docs/gates/GATE-fight-template.md: the template-file arena source. No boot of its own; written for a later boot.
   - fight-template
+# loot-roll (the seat's queue item 6, 2026-11-19, feat/loot-cascade, stacked on fight-template) is paired with
+# docs/gates/GATE-loot-roll.md: the dev roll command. It carries the ONE R0 and run sheet for the whole stack.
+  - loot-roll
