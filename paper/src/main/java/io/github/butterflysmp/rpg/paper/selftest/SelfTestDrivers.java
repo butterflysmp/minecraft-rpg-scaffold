@@ -258,7 +258,8 @@ final class SelfTestDrivers {
         var range = p.getAttribute(org.bukkit.attribute.Attribute.ENTITY_INTERACTION_RANGE);
         double reach = range == null ? 3.0 : range.getValue();
         org.bukkit.util.RayTraceResult hit = p.getWorld().rayTrace(eye, dir.clone().normalize(), reach,
-                org.bukkit.FluidCollisionMode.NEVER, true, 0.0, e -> e instanceof LivingEntity && !e.equals(p));
+                org.bukkit.FluidCollisionMode.NEVER, true, 0.0, e -> e instanceof LivingEntity && !e.equals(p)
+                        && !io.github.butterflysmp.rpg.paper.fight.FightCopies.isCopy(e)); // F9e a: never aim at a copy
         Entity picked = hit == null ? null : hit.getHitEntity();
         String at = hit == null ? "none" : fmt(hit.getHitPosition().distance(eye.toVector()));
         run.log("DRIVE " + what + " tag=" + tag + " reach=" + fmt(reach) + " picked="

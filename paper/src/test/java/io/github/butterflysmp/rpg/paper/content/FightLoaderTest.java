@@ -110,6 +110,11 @@ class FightLoaderTest {
               wing: 41.0
               breath_per_second: 31.0
               contact_hit_interval_ticks: 21
+            revive:
+              revive_radius_blocks: 1.6
+              revive_seconds: 4
+              revive_health_fraction: 0.6
+              label: "test {player} {seconds}"
             """;
 
     private Map<String, FightContent> load(String yaml) throws IOException {
@@ -149,7 +154,9 @@ class FightLoaderTest {
                 + " participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to"
                 + " +12, time 18000, entry (0.0, 0.0), environment end, all down 5 s; dragon 'ender_dragon' Mages below"
                 + " [0.8, 0.6, 0.4, 0.2], win"
-                + " return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s, one contact hit per 20 ticks"), lines);
+                + " return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s, one contact hit per 20 ticks;"
+                + " revive within 1.50 blocks for 3 s at 0.50 of max, no limit,"
+                + " label '{player} is down: sneak on them for {seconds} seconds to revive'"), lines);
         assertEquals(new FightContent.Dragon("ender_dragon", List.of(0.80, 0.60, 0.40, 0.20), 200, "purple",
                 new io.github.butterflysmp.rpg.core.fight.DragonAttacks(80.0, 40.0, 30.0, 20)),
                 d.dragon(), "Ben: \"let's do 80 60 40 and 20 percent\"; the win's 200 and purple are SEAT PLACEHOLDERS;"
@@ -305,6 +312,33 @@ class FightLoaderTest {
         lines.clear();
         assertEquals(FightContent.Environment.NORMAL, load(GOOD.replace("environment: end", "environment: normal"))
                 .get("test").arena().environment(), lines.toString());
+    }
+
+    /** F9e: the revive's numbers arrive as written (each differs from the shipped one), and no limit is the default. */
+    @Test
+    void theReviveArrivesAsWrittenAndUnlimitedByDefault() throws IOException {
+        FightContent.Revive r = load(GOOD).get("test").revive();
+        assertEquals(1.6, r.radiusBlocks(), 1e-9, lines.toString());
+        assertEquals(4, r.seconds());
+        assertEquals(0.6, r.healthFraction(), 1e-9);
+        assertEquals(java.util.OptionalInt.empty(), r.maxRevives(), "absent is unlimited");
+        assertEquals("test {player} {seconds}", r.label());
+        lines.clear();
+        assertEquals(java.util.OptionalInt.of(2), load(GOOD.replace("  revive_seconds: 4\n",
+                "  revive_seconds: 4\n  max_revives: 2\n")).get("test").revive().maxRevives(), lines.toString());
+    }
+
+    @Test
+    void aBadReviveValueIsRefusedByName() throws IOException {
+        refusedNaming(GOOD.replace("revive_seconds: 4", "revive_seconds: 0"), "revive_seconds", "1 or more");
+        lines.clear();
+        refusedNaming(GOOD.replace("revive_health_fraction: 0.6", "revive_health_fraction: 1.5"),
+                "revive_health_fraction", "at most 1");
+        lines.clear();
+        refusedNaming(GOOD.replace("  revive_seconds: 4\n", "  revive_seconds: 4\n  max_revives: -1\n"),
+                "max_revives", "0 or more");
+        lines.clear();
+        refusedNaming(GOOD.replace("  label: \"test {player} {seconds}\"\n", ""), "label", "missing");
     }
 
     /** F9d c: how long ALL DOWN waits before everyone goes home arrives as written (7 here, 5 shipped). */

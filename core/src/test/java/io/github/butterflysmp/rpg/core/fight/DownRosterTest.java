@@ -82,6 +82,23 @@ class DownRosterTest {
         assertEquals(DownRoster.Check.RETURN_DUE, r.check(8, 0));
     }
 
+    /** F9e e: revives are counted per player per fight; a revive that finds him not down counts nothing. */
+    @Test
+    void revivesAreCountedPerPlayer() {
+        DownRoster r = new DownRoster(100);
+        assertEquals(0, r.revives(A));
+        r.down(A);
+        r.revive(A);
+        r.down(A);
+        r.revive(A);
+        r.down(B);
+        r.revive(B);
+        assertFalse(r.revive(C), "never down");
+        assertEquals(2, r.revives(A));
+        assertEquals(1, r.revives(B));
+        assertEquals(0, r.revives(C));
+    }
+
     @Test
     void aNegativeDelayIsRefused() {
         assertThrows(IllegalArgumentException.class, () -> new DownRoster(-1));

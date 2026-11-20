@@ -5,6 +5,11 @@ sheet are in `GATE-fight-revive.md` (F9e, stacked on this branch), and its boot 
 is for THIS branch's code. Where F9e changes a line these rows read (the copy, the revive), `GATE-fight-revive.md`
 re-predicts the row.
 
+> **SUPERSEDED IN PART, 2026-11-19 (written on `feat/fight-revive`, before any boot).** The boot of these rows is on
+> F9e's head, whose code also lays his COPY. So every FD row's prediction here stands, **plus** the copy's lines listed
+> in `GATE-fight-revive.md`, section *WHAT THIS BRANCH ADDS TO `GATE-fight-down.md`'s ROWS*. The R0 and the run sheet are
+> `GATE-fight-revive.md`'s. The readings go in this file's cells, as each row's own.
+
 **Game mode:** every row is **SURVIVAL**; each row's DOWN puts him in SPECTATOR on purpose, and each row ends with him
 home in survival. **Difficulty normal** (each setup sets it).
 

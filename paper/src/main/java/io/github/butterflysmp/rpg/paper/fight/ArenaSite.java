@@ -104,6 +104,11 @@ public final class ArenaSite implements FightSite {
 
     boolean isDown(UUID id) { return roster.isDown(id); }
 
+    /** F9e d: he was revived; a participant again (if he is in the world, alive, in survival or adventure). */
+    boolean revive(UUID id) { return roster.revive(id); }
+
+    @Override public int revives(UUID id) { return roster.revives(id); }
+
      public Set<UUID> downed() { return roster.downed(); }
 
     

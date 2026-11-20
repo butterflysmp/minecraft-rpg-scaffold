@@ -32,7 +32,10 @@ public final class LiveTargets {
 
     /** A body that can still take a hit: a {@code LivingEntity} that is neither dying nor removed. */
     public static boolean isLive(Entity entity) {
-        return entity instanceof LivingEntity living && !living.isDead() && living.isValid();
+        // F9e a: a down player's copy (a Mannequin, a LivingEntity) is never a live body: no area, ray, drag, beam, shot,
+        // pounce or blast can pick it.
+        return entity instanceof LivingEntity living && !living.isDead() && living.isValid()
+                && !io.github.butterflysmp.rpg.paper.fight.FightCopies.isCopy(entity);
     }
 
     /**

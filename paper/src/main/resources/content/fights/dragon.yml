@@ -138,6 +138,21 @@ arena:
   # Where an entering player stands, blocks from the centre [dx, dz].
   entry_offset_blocks: [0.0, 0.0]
 
+# THE REVIVE (step F9e). Ben, 2026-11-18 (PLAN-dragon-fight.md section 1, 0d and 0e): "When they die, a copy of them is
+# on the floor. Another player has to hold shift/crouch on top of that players copy for 3 seconds to respawn them."
+# "2. 50% health / 3. No / 4. No but we will add modifiers to change that later".
+revive:
+  # SEAT PLACEHOLDER (Ben's "on top of"): how near the copy a reviver must sneak, blocks.
+  revive_radius_blocks: 1.5
+  # Ben's "3 seconds": unbroken sneaking that revives. Taking damage is not a break (Ben: "No").
+  revive_seconds: 3
+  # Ben's "50% health": his health on revive, of his maximum.
+  revive_health_fraction: 0.5
+  # Ben's "No" (no limit yet): max_revives is absent, so a player may be revived any number of times. A whole number
+  # here would be the most revives per player per fight.
+  # SEAT PLACEHOLDER wording: the line above his copy. {player} and {seconds} are filled in.
+  label: "{player} is down: sneak on them for {seconds} seconds to revive"
+
 # The dev fixture's own rule (GATE-fight-ring.md): who takes part in an ORDINARY world.
 fixture:
   # Players in C's world within this many blocks of C, in survival or adventure.

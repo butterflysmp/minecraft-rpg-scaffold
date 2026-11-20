@@ -71,13 +71,21 @@ public final class FightFixtures {
 
     /** {@code fight} and {@code mobs} are read at each start, so a content reload is picked up by the next fight. */
     public FightFixtures(AdapterContext adapters, Supplier<Optional<FightContent>> fight, Supplier<MobRegistry> mobs,
-                         ProfileService profiles, FightWorlds worlds) {
+                         ProfileService profiles, FightWorlds worlds,
+                         io.github.butterflysmp.rpg.core.hud.ActionBarHolds<net.kyori.adventure.text.Component> bars) {
         this.adapters = adapters;
         this.fight = fight;
         this.mobs = mobs;
         this.profiles = profiles;
         this.worlds = worlds;
+        this.bars = bars;
     }
+
+    /** F9e c: the shared action-bar holds, so a reviver's progress is not drawn over by the stats bar. */
+    private final io.github.butterflysmp.rpg.core.hud.ActionBarHolds<net.kyori.adventure.text.Component> bars;
+
+    /** How long one progress line holds the bar, ticks (the stats bar redraws every 10). */
+    static final int REVIVE_BAR_HOLD_TICKS = 10;
 
     /** Whether the dev command's fight runs. */
     public boolean running() {
@@ -195,6 +203,18 @@ public final class FightFixtures {
         FightInstance started = new FightInstance(adapters, f, mobs.get(), site, p.getName(), withDragon,
                 this::forget);
         ArenaFight a = new ArenaFight(started, site, w, FightWorlds.folderOf(w));
+        started.reviveHook(new FightInstance.ReviveHook() {
+            @Override public boolean revive(UUID down, Player by, Location at) {
+                return FightFixtures.this.revive(a, f, down, by, at);
+            }
+
+            @Override public void bar(Player who, String text) {
+                net.kyori.adventure.text.Component line = net.kyori.adventure.text.Component.text(text,
+                        net.kyori.adventure.text.format.NamedTextColor.GREEN);
+                bars.hold(who.getUniqueId(), line, "revive", Bukkit.getCurrentTick(), REVIVE_BAR_HOLD_TICKS, false);
+                who.sendActionBar(line);
+            }
+        });
         fights.put(started.id(), started);
         arenas.put(started.id(), a);
         if (running()) current.stop("replaced by an arena fight");
@@ -257,7 +277,43 @@ public final class FightFixtures {
                 at.getX() - a.site().centre().getX(), at.getY() - a.site().centre().getY(),
                 at.getZ() - a.site().centre().getZ()));
         adapters.scheduler().onEntity(p, () -> spectate(p, a));
+        a.fight().layCopy(p, at); // F9e a: his copy lies on the floor
         return true;
+    }
+
+    /**
+     * F9e d: REVIVED. The mode he entered in, at the copy's place, his health at {@code revive_health_fraction} of his
+     * maximum (Ben: "50% health"), and a participant again on this tick (he is off the down list). Refused (logged) when
+     * he is offline, out of the fight's world, or no longer down.
+     */
+    private boolean revive(ArenaFight a, FightContent f, UUID downId, Player by, Location at) {
+        Player p = Bukkit.getPlayer(downId);
+        if (p == null || !p.isOnline() || p.getWorld() != a.world() || !a.site().isDown(downId)) {
+            adapters.log().info("FIGHT revive refused player=" + downId + " by=" + by.getName()
+                    + " why=not-down-here");
+            return false;
+        }
+        a.site().revive(downId);
+        Optional<FightReturn> back = profiles.fightReturn(downId);
+        p.setGameMode(org.bukkit.GameMode.valueOf(back.map(FightReturn::restoreMode).orElse("SURVIVAL")));
+        p.teleport(at.clone().add(0.0, 0.1, 0.0));
+        double max = adapters.stats().tracks(downId) ? adapters.stats().max(downId) : 0.0;
+        double health = io.github.butterflysmp.rpg.core.fight.ReviveRules.revivedHealth(max,
+                f.revive().healthFraction());
+        adapters.stats().setCurrent(downId, health, by.getUniqueId(), true);
+        Location c = a.site().centre();
+        adapters.log().info(String.format(Locale.ROOT, "FIGHT revived player=%s by=%s t=%d at=%.2f %.2f %.2f"
+                        + " health=%.3f/%.3f revives=%d mode=%s", p.getName(), by.getName(), a.fight().fightTick(),
+                at.getX() - c.getX(), at.getY() - c.getY(), at.getZ() - c.getZ(), adapters.stats().current(downId), max,
+                a.site().revives(downId), p.getGameMode()));
+        return true;
+    }
+
+    /** F9e f: {@code copy <name> <dx> <dz>} (dev): a practice copy in the running arena fight. */
+    public String practiceCopy(String name, double dxBlocks, double dzBlocks) {
+        ArenaFight a = runningArena();
+        if (a == null) return "No arena fight is running.";
+        return a.fight().layPractice(name, dxBlocks, dzBlocks);
     }
 
     /** F9d a: the down player's view: spectator, no effects, no fire, above the floor. */
@@ -295,6 +351,7 @@ public final class FightFixtures {
         for (ArenaFight a : arenas.values()) {
             if (a.world() != from || !a.fight().running() || !a.site().isDown(p.getUniqueId())) continue;
             a.site().removeEntrant(p.getUniqueId());
+            a.fight().removeCopyOf(p.getUniqueId(), "out");
             adapters.log().info("FIGHTWORLD left player=" + p.getName() + " world=" + from.getName()
                     + " why=spectator-left to=" + p.getWorld().getName());
             returnPlayer(p, "spectator-left");
@@ -320,6 +377,7 @@ public final class FightFixtures {
         ArenaFight a = arenaHolding(p.getUniqueId());
         if (a == null) return;
         a.site().removeEntrant(p.getUniqueId());
+        a.fight().removeCopyOf(p.getUniqueId(), "out"); // F9e: a down player who quits is out, and so is his copy
         adapters.log().info("FIGHTWORLD left player=" + p.getName() + " world=" + a.world().getName()
                 + " why=quit return=kept");
     }

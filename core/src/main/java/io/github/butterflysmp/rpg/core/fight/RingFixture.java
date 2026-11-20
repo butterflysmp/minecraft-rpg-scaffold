@@ -116,6 +116,9 @@ public final class RingFixture {
 
     public long fightTick() { return fightTick; }
 
+    /** The ring at the last tick, or null before the first (step F9e: where a copy lies against it). */
+    public Ring ring() { return lastSnapshot == null ? null : lastSnapshot.ring(); }
+
     public boolean stopped() { return stopped; }
 
     /** One game tick of the fight. */

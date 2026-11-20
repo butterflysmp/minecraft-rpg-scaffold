@@ -2179,6 +2179,12 @@ public final class RpgListeners implements Listener {
      *
      * <p>Scoped to mob victims: player victims are a PvP rules decision, deferred with the rider's.
      */
+    /** F9e a: a down player's copy cannot be hit by anyone: the attack is refused before any damage logic. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onCopyAttacked(PrePlayerAttackEntityEvent event) {
+        if (io.github.butterflysmp.rpg.paper.fight.FightCopies.isCopy(event.getAttacked())) event.setCancelled(true);
+    }
+
     @EventHandler(ignoreCancelled = true)
     public void onPrePlayerAttack(PrePlayerAttackEntityEvent event) {
         // THE ABILITY STONE DOES NOT HIT. Its left click is Active 1, cast from the swing

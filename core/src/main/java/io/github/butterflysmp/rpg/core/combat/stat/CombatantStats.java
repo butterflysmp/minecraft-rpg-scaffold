@@ -333,6 +333,28 @@ public final class CombatantStats {
         ModifierReconciler.reconcile(state.critDamageTarget(), desired);
     }
 
+    /**
+     * F9e d: SET {@code id}'s current health to {@code value}, clamped to [0, max] (a revive: Ben's "50% health"). A
+     * rise is emitted as a HEAL by {@code dealer}; a fall as a DAMAGE dealt by himself, never reaching zero here unless
+     * {@code value} is 0. Nothing moved, nothing emitted. No-op on an untracked combatant.
+     */
+    public void setCurrent(UUID id, double value, UUID dealer, boolean dealerIsPlayer) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        double before = state.current();
+        double target = Math.max(0.0, Math.min(state.max(), value));
+        if (target == before) return;
+        if (target > before) {
+            state.heal(target - before);
+            listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.HEAL, target - before,
+                    dealer, dealerIsPlayer, state.current(), state.max(), false));
+        } else {
+            boolean zero = state.damage(before - target);
+            listener.onChange(new HealthChange(id, state.player(), HealthChange.Kind.DAMAGE, before - target,
+                    id, state.player(), state.current(), state.max(), zero));
+        }
+    }
+
     /** Heal {@code id} by {@code amount}, capped at max. No-op on an untracked combatant. */
     public void heal(UUID id, double amount, UUID dealer, boolean dealerIsPlayer) {
         HealthState state = states.get(id);
