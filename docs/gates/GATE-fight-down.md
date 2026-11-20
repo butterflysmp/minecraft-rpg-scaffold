@@ -110,6 +110,26 @@ spectating**, then reconnects after ten seconds. Like AQ1 (GATE-fight-arena.md).
 |---|---|---|
 | (1) `FIGHT down … cause=VOID …`, `lifted`, `spectating … mode=SPECTATOR`; `FIGHT all-down …` the next tick. (2) His quit: **`FIGHTWORLD left player=BaronVonYeetus world=<n> why=quit return=kept`**; then **`FIGHT nobody inside …`**, `FIGHT ended reason=nobody-inside-<outcome>` (or, if he took longer than five seconds, `all-down-FAILED` with him already home: then the row is not read as designed, and says so); the world unloaded and deleted, him offline. (3) His login: vanilla puts him at the same x, y, z of the overworld (READ at AQ1), **still in spectator** (his saved mode). **`FIGHTWORLD stale login caught player=BaronVonYeetus at=world <x y z> to=world <his return>`**, **`FIGHTWORLD mode player=BaronVonYeetus from=SPECTATOR to=SURVIVAL why=login`**, `FIGHTWORLD returned … why=login`. (4) He stands at his return location in survival | `FightDownSourceTest` *theEntryMode…* (the login route) | **NOT RUN** (2026-11-19, the boot at `cb821675`). Ben typed `/stop` at 22:42:40, 24 s after `SELFTEST RUN FINISHED` for fight-revive (22:42:16). He typed no `/rpg fight enter nodragon`, and there was no quit and no login before it. No reading |
 
+> **FDM1'S CAUSE, RE-PREDICTED BEFORE ITS FIRST READING (2026-11-20, the seat's ruling 3 at the stack's boot
+> approval).** FDM1 has never been read, so its cause may be rewritten, and only its cause is. **The text above is not
+> edited**; this note replaces clause (1)'s `cause=VOID` and nothing else.
+>
+> - **Why:** walking from C to the disc's edge (56) takes him over the ring (48). Outside it, the ring's strikes find him
+>   (20, then doubling, every 40 ticks; READ at FD2, `cb821675`) before and while he falls. Below the End void line
+>   (y -64), Ben's void rule takes a tenth of his maximum every 10 ticks. **Whichever lands the last of his bar puts him
+>   down.**
+> - **The prediction:** `FIGHT down player=BaronVonYeetus t=<t> cause=<VOID or KILL> at=<x y z>`. KILL is how a ring
+>   strike's down read at RV4 (`cause=KILL`). Read as `VOID` if the last HURT before the down ends `cause=void`, as
+>   `KILL` if it was a strike's.
+> - **Where his copy lies follows from it, by `CopyPlace`:**
+>   - down outside the ring, on the disc or over the void: one block inside the edge, `at=<about 47 along his line> 0.00
+>     <…> moved=true revivable=true`;
+>   - down inside it: where he went down, `moved=false`.
+> - **Everything else in (1) to (4) stands as written.** That includes the quit, the stale login's `mode … from=SPECTATOR
+>   to=SURVIVAL why=login`, and him home in survival.
+> - **The reading of this boot goes beside this note**, in the boot's after-run section of `GATE-loot-roll.md` and in a
+>   dated line here.
+
 ## THE MERGED DEATH ROWS, RE-PREDICTED (the brief's g): NOT RE-RUN; FD1 TO FD4 STAND FOR THEM
 
 **Every arena row that killed him now puts him DOWN.** Each one's death line, respawn and "returned … why=died" become
