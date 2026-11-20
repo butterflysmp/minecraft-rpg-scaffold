@@ -48,7 +48,7 @@ diamond sword and keeps its enchantments: **"Yes"**.
 
 | prediction | stands on | READING |
 |---|---|---|
-| `rpg give diamond_sword`, held; `rpg durability set 100`: REPLY `<u>/1561 uses left (damage 100)` (1561 is diamond's maximum, the survey's 2i, READ). `rpg enchant show`: REPLY naming its rolled candidates, each `sharpness` or `unbreaking` (recorded, to compare with SSA2). `give … netherite_upgrade_smithing_template 1` and `give … netherite_ingot 1` succeed | `/rpg durability` (READ); PR 1's pool | |
+| `rpg give diamond_sword`, held; `rpg durability set 100`: REPLY `<u>/1561 uses left (damage 100)` (1561 is diamond's maximum, the survey's 2i, READ). `rpg enchant show`: REPLY naming its rolled candidates, each `sharpness` or `unbreaking` (recorded, to compare with SSA2). `give … netherite_upgrade_smithing_template 1` and `give … netherite_ingot 1` succeed | `/rpg durability` (READ); PR 1's pool | **AS PREDICTED (2026-11-20, 14:00:00).** `Given Diamond Sword` (uncommon green); **`1461/1561 uses left (damage 100)`**; `rpg enchant show`: "Diamond Sword -- 3 slot(s)", every slot `[unbreaking locked, sharpness locked]`, raw `v1;unbreaking=0,sharpness=0:-1;unbreaking=0,sharpness=0:-1;unbreaking=0,sharpness=0:-1`; "Gave 1 [Netherite Upgrade]", "Gave 1 [Netherite Ingot]". **He typed `/rpg selftest sword-smithing` with no row named, so SSA2 ran straight after it, before any smith, and SKIPPED (`no hotbar slot holds netherite_sword`)** |
 
 ### SSM1 — the smith (SURVIVAL; Ben's hands)
 
@@ -56,19 +56,19 @@ No selftest verb drives a smithing table (the verbs are READ), so:
 
 | prediction | stands on | READING |
 |---|---|---|
-| **The line Ben does:** "At a smithing table, put the template, the Diamond Sword and the ingot in, and take the Netherite Sword." The result slot shows **Netherite Sword** before he takes it. On the take: **`SMITH took player=BaronVonYeetus from=diamond_sword to=netherite_sword material=netherite_sword wear=100/2031 enchant_data=<the same raw blob SSA1's sword carried> score=<T>`**. 2031 is netherite's maximum; the wear of 100 carries, under the new maximum | `SmithingSourceTest`; `GearItems.carryInstanceData` (READ) | |
+| **The line Ben does:** "At a smithing table, put the template, the Diamond Sword and the ingot in, and take the Netherite Sword." The result slot shows **Netherite Sword** before he takes it. On the take: **`SMITH took player=BaronVonYeetus from=diamond_sword to=netherite_sword material=netherite_sword wear=100/2031 enchant_data=<the same raw blob SSA1's sword carried> score=<T>`**. 2031 is netherite's maximum; the wear of 100 carries, under the new maximum | `SmithingSourceTest`; `GearItems.carryInstanceData` (READ) | **THE UPGRADE IS READ; IT WAS NOT SSA1's SWORD.** At 14:45:34: **`SMITH took player=BaronVonYeetus from=diamond_sword to=netherite_sword material=netherite_sword wear=0/2031 enchant_data=v1;unbreaking=0,sharpness=0:-1;sharpness=0,unbreaking=0:-1;sharpness=0:-1 score=100`**. **SSA1's sword had wear 100 and another blob**: this one is the diamond sword that converted from the CREATIVE menu at 14:45:11 (`ARRIVAL minted … slot=1 material=diamond_sword … wear=0 … score=100`). He was in creative from 14:45:08 to 14:45:20 and from 14:45:24 to 14:45:30. So: **a minted diamond sword was upgraded to the minted netherite sword, its enchant blob and score carried (equal to SSA2's read below)**. The prediction's "wear 100 carried under 2031" is **UNREAD**: the smithed sword had none to carry |
 
 ### SSA2 — the netherite sword kept its enchants and its wear (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `hold: netherite_sword` finds it. `dump: held`: **"Netherite Sword"** in the uncommon colour, `Melee Damage: <31 x T/100>`, `Uncommon Melee Weapon`. `rpg enchant show`: **the same candidates, levels and active choice as SSA1's.** `rpg durability damage 1`: REPLY **`… /2031 uses left (damage 101)`**: the carried 100 plus the read's 1 | the same | |
+| `hold: netherite_sword` finds it. `dump: held`: **"Netherite Sword"** in the uncommon colour, `Melee Damage: <31 x T/100>`, `Uncommon Melee Weapon`. `rpg enchant show`: **the same candidates, levels and active choice as SSA1's.** `rpg durability damage 1`: REPLY **`… /2031 uses left (damage 101)`**: the carried 100 plus the read's 1 | the same | **AS PREDICTED FOR THE SWORD HE SMITHED (14:45:46, the row run on its own).** `HELD netherite_sword … name="Netherite Sword" [white, green]`, lore `Kinetic`, `Gear Score: 100`, `Melee Damage: 31`, `Attack Speed: 1.6`, `Uncommon Melee Weapon`. `rpg enchant show`: raw **`v1;unbreaking=0,sharpness=0:-1;sharpness=0,unbreaking=0:-1;sharpness=0:-1`: byte for byte the SMITH line's `enchant_data`**. `rpg durability damage 1`: **`2030/2031 uses left (damage 1)`**: the carried wear (0 on this sword) plus the read's 1. The predicted "damage 101" was for SSA1's sword, which was not the one smithed |
 
 ### SSB1 — question 2 (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| His answer, verbatim, to **"Did the smithed Netherite Sword keep its enchantments, as far as you can see?"** No PASS or FAIL; "not sure" is NOT STATED | SSM1, SSA2 | |
+| His answer, verbatim, to **"Did the smithed Netherite Sword keep its enchantments, as far as you can see?"** No PASS or FAIL; "not sure" is NOT STATED | SSM1, SSA2 | His answer, verbatim, asked as `GATE-sword-convert.md` SCB2 (14:46:36): **"yes"** |
 
 ### SSU1 — the mapping (UNIT, not a boot row)
 
