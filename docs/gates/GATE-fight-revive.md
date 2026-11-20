@@ -1,6 +1,6 @@
 # GATE — STEP F9e: THE COPY AND THE REVIVE (AND THE ONE BOOT FOR F9d's GATE TOO)
 
-**Status: NOT RUN.** Every prediction below was written **before** any boot of `feat/fight-revive`, and this file is
+**Seat approval 2026-11-19: code and gate diffed at 72e11477, booted at cb821675, readings at 8aaea741. Merge on Ben's words.** **Status: READ, 2026-11-19, at `cb821675`; FDM1 NOT RUN, carried** (was: NOT RUN). Every prediction below was written **before** any boot of `feat/fight-revive`, and this file is
 committed before the boot. **It carries the ONE R0 and the ONE run sheet** for this gate and `GATE-fight-down.md`
 (F9d, the branch this one is stacked on). The boot is on THIS branch's head.
 
