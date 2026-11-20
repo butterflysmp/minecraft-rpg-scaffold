@@ -340,6 +340,34 @@ dialogue, the boss bar, how a group gets in, scaling by group size. Verbatim:*
 - Dialogue, the boss bar and entry are deferred by Ben.
 - Waves and Endermen are not built yet: the seat is settling three questions with Ben.
 
+*i. Ben's answers at the second start of `GATE-fight-revive.md` (2026-11-19, 22:38 to 22:42, at `cb821675`). Each
+question as the selftest asked it, then Ben's answer, verbatim from its ASK lines:*
+
+- **Question 1:** "Does the copy look like a player lying on the floor, with a name and a line above it?" — **"yes"** *(RVB1)*
+- **Question 2:** "What, if anything, looks wrong with the copy? Say what, or say none." — **"nothing"** *(RVB1)*
+- **Question 3:** "Did three seconds of holding sneak feel right?" — **"yes"** *(RVB2)*
+- **Question 4:** "Did you have to be on top of the copy (not just near it) for it to count?" — **"yea"** *(RVB2)*
+- **Question 5:** "Was the progress at the bottom of the screen clear?" — **"yes"** *(RVB2)*
+- **Question 6:** "When you went down, was it clear what had happened to you?" — **"yea"** *(RVB3)*
+- **Question 7:** "What, if anything, about going down or spectating was unclear? Say what, or say none." — **"its good"** *(RVB3)*
+
+**SEAT READING, the seat's (2026-11-19):** that the copy draws lying down is now CONFIRMED by Ben's eyes.
+
+*j. Ben's ruling on the void (2026-11-19). The seat had asked whether a player should go down as soon as he is a set
+distance below the floor, suggesting 10 blocks. Ben, verbatim:*
+
+> "A player should lose 10% of their health each damage tick (0.5s) to the void regardless of their max health."
+
+**SEAT READINGS, each the seat's (2026-11-19):**
+- Each void damage tick takes 10% of the player's MAXIMUM health in our store, so the tenth tick takes the last of a
+  full bar.
+- It ignores defence and every mitigation (a share of maximum, not a hit). It has no element.
+- It applies to PLAYERS in EVERY world, not only fight worlds. Mobs are unchanged.
+- Where the void begins and how often it ticks stay the server's own.
+- A DOWN player still takes nothing (F9d), and fix B's rule still holds.
+
+The game-wide account is `PLAN-world-damage.md`.
+
 ---
 
 ## 2. SEAT READINGS
