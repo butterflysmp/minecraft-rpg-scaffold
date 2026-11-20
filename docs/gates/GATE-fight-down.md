@@ -165,3 +165,61 @@ sheet.
   the fight's world; only leaving it takes him out.
 - **What he sees:** that a down player sees the ring, the bar and the chat is wired (`FightDownSourceTest`) and is
   not read by any row here. GATE-fight-revive.md's Ben rows ask.
+
+## THE NEXT BOOT'S ROWS: FD2R2, AE6R4 AND THE PREDICTION FIXES (THE SEAT'S PART 2 AND BEN'S VOID RULING, 2026-11-19)
+
+**Status: NOT RUN.** Written on `feat/fight-template` before any boot of it. The boot is the stack's one boot, whose R0
+and run sheet are in `GATE-loot-roll.md`. **No prediction above is edited.** FD2 was read at `cb821675` and is retired
+from the scenario file; FD2R2 is in its place. FDM1's prediction above is unchanged; it moves to the first line of the
+next run sheet.
+
+**Ben's void ruling** (PLAN-world-damage.md section 1, verbatim): "A player should lose 10% of their health each damage
+tick (0.5s) to the void regardless of their max health." Built on this branch (`VoidShare`, `world_damage.yml`, the
+player arm of `onEnvironmentalDamage`). The account, with the READ marks, is `PLAN-world-damage.md`.
+
+### FD2R2 — A DEATH IN THE VOID UNDER BEN'S RULE, INSIDE THE RING'S FOOTPRINT (SURVIVAL; DOWN ON PURPOSE)
+
+**Restaged from FD2:** `tp @s ~ -130 ~` from C, straight down, so he is at x 0, z 0, inside the 48-block ring, and no ring
+strike can reach him. FD2's `~60` put him outside it (the seat's own miss, the note under *THE ARITHMETIC*). **FD2R2 is
+also the row that reads Ben's rule on a server.**
+
+**His maximum at the row is M**, read from the heal's reply `Custom HP: M/M` (350 at the last boot). Every figure below
+is stated as a share of M, then at 350.
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) The birth as FD1's, `FIGHTWORLD entered … mode=SURVIVAL`. (2) After the `tp`, he is already below the End world's void line (y -64, READ, PLAN-world-damage.md section 2). **One `HURT before=<M/10> after=<M/10> defense=<his> dealer=self dealerType=self cause=void` per void tick: 35.000 at 350, `before` equal to `after` (defence bypassed).** The ticks are 10 server ticks apart (READ). The HURT line carries no tick, so the spacing is read as the count between the `tp` and the down. (3) **TEN such lines of exactly M/10, then an ELEVENTH, `before=<r> after=<r> … cause=void`, where r is what regeneration paid between the first and the eleventh tick** (a few points; INFERRED from `HealthRegen`: about four or five payments of 1.0 when saturated, 0.2 when not, plus his regeneration stat). **DOWN on the ELEVENTH, not the tenth:** see the finding in PLAN-world-damage.md section 5. (4) **`FIGHT down player=BaronVonYeetus t=<d> cause=VOID at=0.00 <below -129> 0.00`**, d about 100 ticks after the first void tick. (5) **`FIGHT copy laid player=BaronVonYeetus t=<d> at=0.00 0.00 0.00 died=0.00 <y> 0.00 moved=false revivable=true`**: a death inside the ring lays the copy where he died, on the floor (READ, `CopyPlace`: `moved` is horizontal only). The seat's "one block inside the ring" is the rule for a death OUTSIDE it (FD2's). Then COPYTICK `inside_by=48.000`. (6) In this order, as read at the last boot (the fix below): `FIGHT all-down t=<d+1> … outcome=RUNNING returns_in=100`, `FIGHT down lifted … to C +8.0`, `FIGHT down spectating … mode=SPECTATOR`. **No HURT after the down line.** (7) The ending as FD1's, the copy removed `why=end`, `FIGHTWORLD mode … from=SPECTATOR to=SURVIVAL why=end`, and an `unload-retry … players=1 attempt=1` before `unloaded`. (8) Every `STRIKE … k=0 damage=0.000 inside` | `VoidShareTest`, `VoidRuleSourceTest`, `WorldDamageLoaderTest`; FD2's reading (the lift, the copy) | |
+
+**The arithmetic (at defence 0, against 100, and where he is):** inside the ring, so every strike deals 0. The void
+takes 10 a tick, defence bypassed, so it is **lethal on purpose** at the eleventh tick (ten of 10, then what regeneration
+paid). **Down, not dead.** Nothing else can reach him at y -130.
+
+### AE6R4 — the void (was AE6R3; AE6R2's staging, `GATE-fight-arena.yml`)
+
+AE6R2 put him at x 60, y -130: **outside the ring, below the void line.** Under Ben's rule, two clocks of ours now
+hurt him there:
+- the void's M/10 every 10 ticks, defence bypassed;
+- the ring's strikes from t=40 (20 then doubling, every 40), defence applied.
+
+The first to take the last of his bar puts him down, with `cause=` the cause of that hit. INFERRED for M=350, at defence
+10 and with the first void tick at the `tp`:
+- eight void ticks (280) and the strikes at t=40 and t=80 (18.182 + 36.364) leave him about 15 short by t=87;
+- the ninth void tick takes the rest.
+
+So he is down about 80 ticks after the `tp`, near half FD2's 166, and `cause=VOID`. Both are lethal on purpose. **Not re-run:** FD2R2 reads the void and FD2's reading stands
+for the strikes outside.
+
+### THE PREDICTION FIXES (the seat's item b): no behaviour change, each read at the last boot
+
+1. **`FIGHT all-down` is logged before `lifted` and `spectating`, in every down** (all six at `cb821675`, each on the
+   same tick). FD1 (3)/(4) and FD2 (3) wrote the other order. From the next boot every prediction reads: `down`,
+   `copy laid`, `all-down`, `lifted` (if below the floor), `spectating`.
+2. **`FIGHTWORLD unload-retry name=<n> players=1 attempt=1` is predicted on every ALL-DOWN ending.**
+   - READ, `FightWorlds.unloadAttempt`: if the world still lists a player, it does not unload; it logs `unload-retry`
+     and tries again a moment later (`later(...)`), up to `MAX_ATTEMPTS`. After that, the next startup's sweep gets the
+     folder.
+   - On an all-down ending the return teleport and the unload run in the same tick. So the world still lists him once
+     (INFERRED: the cross-world move is not yet reflected in `World.getPlayers()`).
+   - **Harmless, READ from the log:** all five such endings at `cb821675` were followed within a second by `unloaded`,
+     `deleting` and `deleted … entries=17`.
+   - An ending where he has already left (FD4, RV1-RV3) has no retry.

@@ -225,6 +225,9 @@ class SelfTestScenariosTest {
         // 256 + 2 = 258. 228 was this line's value.
         // Then EB4R3 (GATE-fight-end.md, the seat's queue item 4, 2026-11-19), RECOUNTED: 29 gates, 259 keys, 29 setups,
         // so 230. The control: 258 + 1 = 259. 229 was this line's value.
+        // Then FD2R2 (GATE-fight-down.md, Ben's void ruling and the seat's part 2, 2026-11-19): FD2 retired (read at
+        // cb821675) and FD2R2 in its place, RECOUNTED: 29 gates, 259 keys, 29 setups, so 230. The control: 259 - 1 + 1 =
+        // 259. 230 was this line's value, unchanged.
         assertEquals(230, loaded.rows());
     }
 

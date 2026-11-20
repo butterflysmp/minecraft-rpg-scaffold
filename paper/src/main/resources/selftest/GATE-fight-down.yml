@@ -31,14 +31,16 @@ FD1:
   - probe_entities: "end_crystal 48"
   - probe_entities: "wither_skeleton 16"
 
-# FD2: A DEATH IN THE VOID (DOWN ON PURPOSE): 60 east and down to y -130, below the End world's void line. Down, lifted
-# above the floor (the void would hurt a spectator), ALL DOWN, returned.
-FD2:
+# FD2R2: A DEATH IN THE VOID UNDER BEN'S RULE (DOWN ON PURPOSE; the seat's part 2, 2026-11-19; FD2 was read at cb821675
+# and is retired). STRAIGHT DOWN from C to y -130, INSIDE the ring's footprint, so no ring strike can reach him (FD2's
+# x 60 was outside the 48-block ring and took four). Below the End world's void line (-64) at once: a tenth of his
+# MAXIMUM each void tick, every 10 ticks, defence bypassed. Down, lifted above the floor, ALL DOWN, returned.
+FD2R2:
   - death_rules: ""
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter nodragon"
   - wait: 20
-  - cmd: "tp @s ~60 -130 ~"
+  - cmd: "tp @s ~ -130 ~"
   - await_fight: 400
   - wait: 60
   - cmd: "rpg heal 1000000"
