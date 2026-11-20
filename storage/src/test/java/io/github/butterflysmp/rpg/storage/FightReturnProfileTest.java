@@ -91,6 +91,49 @@ class FightReturnProfileTest {
         assertEquals(Optional.empty(), repo.load(plain.playerId()).join().orElseThrow().fightReturn());
     }
 
+    /**
+     * F9d d: THE MODE HE ENTERED IN travels with his way back, through the same repository. Survival, adventure and
+     * creative come back as saved; anything else (spectator, a typo, nothing at all) comes back as survival, because he
+     * must never be left in spectator in the normal world.
+     */
+    @Test
+    void theEntryModeRoundTripsAndOnlyAPlayableModeIsRestored() {
+        FilePlayerRepository repo = new FilePlayerRepository(dir, DIRECT);
+        FightReturn adventure = new FightReturn("world", 1, 64, 2, 0f, 0f, "ADVENTURE");
+        PlayerProfile set = profile().withFightReturn(adventure);
+        repo.save(set).join();
+        FightReturn back = repo.load(set.playerId()).join().orElseThrow().fightReturn().orElseThrow();
+        assertEquals("ADVENTURE", back.entryMode());
+        assertEquals("ADVENTURE", back.restoreMode());
+        assertEquals("CREATIVE", new FightReturn("world", 0, 64, 0, 0f, 0f, "CREATIVE").restoreMode());
+        assertEquals("SURVIVAL", new FightReturn("world", 0, 64, 0, 0f, 0f, "SURVIVAL").restoreMode());
+        assertEquals("SURVIVAL", new FightReturn("world", 0, 64, 0, 0f, 0f, "SPECTATOR").restoreMode(), "never spectator");
+        assertEquals("SURVIVAL", new FightReturn("world", 0, 64, 0, 0f, 0f, "survival-ish").restoreMode());
+        assertEquals("SURVIVAL", new FightReturn("world", 0, 64, 0, 0f, 0f, null).restoreMode(), "missing is survival");
+        assertEquals("SURVIVAL", HOME.restoreMode(), "the six-number form is a return with no mode saved");
+    }
+
+    /**
+     * THE MIGRATION: a return written before the entry mode existed (the six-field JSON of F8b) loads with no mode, and is
+     * restored as survival.
+     */
+    @Test
+    void aReturnWrittenBeforeTheEntryModeLoadsAsSurvival() throws Exception {
+        FilePlayerRepository repo = new FilePlayerRepository(dir, DIRECT);
+        PlayerProfile set = profile().withFightReturn(HOME);
+        repo.save(set).join();
+        Path file = dir.resolve(set.playerId() + ".json");
+        String json = Files.readString(file);
+        assertTrue(json.contains("\"fightReturn\""), json);
+        String old = json.replaceAll(",\\s*\"entryMode\"\\s*:\\s*null", "");
+        assertFalse(old.contains("entryMode"), "the F8b shape has no entryMode key: " + old);
+        Files.writeString(file, old);
+        FightReturn back = repo.load(set.playerId()).join().orElseThrow().fightReturn().orElseThrow();
+        assertEquals(null, back.entryMode());
+        assertEquals("SURVIVAL", back.restoreMode());
+        assertEquals("world", back.worldName());
+    }
+
     @Test
     void aReturnRefusesNonsense() {
         assertThrows(IllegalArgumentException.class, () -> new FightReturn(" ", 0, 64, 0, 0, 0), "no world");

@@ -131,6 +131,10 @@ arena:
   # dragon fight is made inert by a per-world Paper switch written before the world is made, checked after it, and if
   # the check fails the fight runs in a normal world instead. normal is the night-sky arena.
   environment: end
+  # F9d c (the seat's brief of 2026-11-19; SEAT PLACEHOLDER): when no participant is alive inside and at least one
+  # is down, the fight has FAILED, and this many seconds later everyone is sent home in the mode he entered in (Ben:
+  # "they are all in spectator mode for a few seconds and get sent back to the normal world").
+  all_down_seconds: 5
   # Where an entering player stands, blocks from the centre [dx, dz].
   entry_offset_blocks: [0.0, 0.0]
 

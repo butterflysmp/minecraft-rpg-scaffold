@@ -54,9 +54,11 @@ public record FightContent(String id, FightSettings settings, RingLook look, Str
      * @param environment F9c (Ben, 2026-11-19: "yes let's try it", plan 6.9 option a): the fight world's environment.
      *                    END gives the End's sky; vanilla's own dragon fight is made inert by a per-world Paper switch
      *                    and checked after creation. NORMAL is the night-sky arena of F8b.
+     * @param allDownSeconds F9d c (SEAT PLACEHOLDER): seconds between ALL DOWN (no participant alive inside, at least
+     *                    one down) and everyone's return home; 0 or more
      */
     public record Arena(ArenaShape shape, long timeOfDayTicks, double entryDxBlocks, double entryDzBlocks,
-                        Environment environment) {}
+                        Environment environment, int allDownSeconds) {}
 
     /** The fight world's environment: {@code end} or {@code normal} in the file. */
     public enum Environment {

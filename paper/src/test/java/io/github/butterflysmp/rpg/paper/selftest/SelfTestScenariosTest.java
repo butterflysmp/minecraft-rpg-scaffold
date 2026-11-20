@@ -38,9 +38,10 @@ class SelfTestScenariosTest {
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
-                        "fight-dragon", "fight-rules", "fight-end"),
+                        "fight-dragon", "fight-rules", "fight-end", "fight-down"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-six gates, in boot order (fight-end LAST, step F9c, 2026-11-19, a NEW gate after fight-rules;"
+                "the twenty-seven gates, in boot order (fight-down LAST, step F9d, 2026-11-19, a NEW gate after fight-end;"
+                        + " fight-end before it, step F9c, 2026-11-19, a NEW gate after fight-rules;"
                         + " fight-rules before it, step F9b, 2026-11-19, a NEW gate after fight-dragon;"
                         + " fight-dragon before it, step F9, 2026-11-18, a NEW gate after fight-arena;"
                         + " fight-arena before it, step F8b, 2026-11-18, a NEW gate after"
@@ -211,7 +212,10 @@ class SelfTestScenariosTest {
         // Then THE SECOND BOOT'S fight-end (the seat's fix brief of 2026-11-19), RECOUNTED the same way on this branch's
         // tree: 26 gates, 243 keys, 26 setups, so 217: EA1 and EB1-EB5 retired (read or aborted), EB3R2, EB4R2 and EB5R2
         // in their place. The control: 246 - 7 + 4 = 243. 220 was this line's value.
-        assertEquals(217, loaded.rows());
+        // Then DOWN, ALL DOWN AND THE ENTRY MODE (GATE-fight-down.md, step F9d, 2026-11-19), a new gate, RECOUNTED the
+        // same way on this branch's tree: 27 gates, 248 keys, 27 setups, so 221: FD1, FD2, FD3, FD4 added. The control:
+        // 243 + 5 = 248. 217 was this line's value.
+        assertEquals(221, loaded.rows());
     }
 
     /**

@@ -98,6 +98,7 @@ class FightLoaderTest {
               time_of_day_ticks: 18000
               entry_offset_blocks: [0.0, 0.0]
               environment: end
+              all_down_seconds: 7
             fixture:
               participant_radius_blocks: 128.0
             dragon:
@@ -146,7 +147,7 @@ class FightLoaderTest {
                 + "alternating, every 4 ticks; "
                 + "mage 'dark_mage' refused item.shield.block, landing lightning on; crystals at 40.0, 12.0 up, lit block.beacon.power_select;"
                 + " participants within 128.0; arena at (0, 0) floor y 64, disc 56 x 3, 10 pillars 3 wide on 40.0 to"
-                + " +12, time 18000, entry (0.0, 0.0), environment end; dragon 'ender_dragon' Mages below"
+                + " +12, time 18000, entry (0.0, 0.0), environment end, all down 5 s; dragon 'ender_dragon' Mages below"
                 + " [0.8, 0.6, 0.4, 0.2], win"
                 + " return 200 ticks, bar purple, bite 80.0, wing 40.0, breath 30.0/s, one contact hit per 20 ticks"), lines);
         assertEquals(new FightContent.Dragon("ender_dragon", List.of(0.80, 0.60, 0.40, 0.20), 200, "purple",
@@ -304,6 +305,22 @@ class FightLoaderTest {
         lines.clear();
         assertEquals(FightContent.Environment.NORMAL, load(GOOD.replace("environment: end", "environment: normal"))
                 .get("test").arena().environment(), lines.toString());
+    }
+
+    /** F9d c: how long ALL DOWN waits before everyone goes home arrives as written (7 here, 5 shipped). */
+    @Test
+    void theAllDownWaitArrivesAsWritten() throws IOException {
+        assertEquals(7, load(GOOD).get("test").arena().allDownSeconds(), lines.toString());
+        lines.clear();
+        assertEquals(0, load(GOOD.replace("all_down_seconds: 7", "all_down_seconds: 0")).get("test").arena()
+                .allDownSeconds(), "0 is allowed: home on the next tick");
+    }
+
+    @Test
+    void aMissingOrNegativeAllDownWaitIsRefusedByName() throws IOException {
+        refusedNaming(GOOD.replace("  all_down_seconds: 7\n", ""), "all_down_seconds", "missing");
+        lines.clear();
+        refusedNaming(GOOD.replace("all_down_seconds: 7", "all_down_seconds: -1"), "all_down_seconds", "0 or more");
     }
 
     @Test

@@ -2043,8 +2043,9 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
-        // A death inside a fight's world: he is out of the fight (step F8b). His respawn sends him back.
-        fights.onPlayerDeath(event);
+        // A death inside an arena fight: it is CANCELLED and he goes DOWN (step F9d). His combat state is reset here
+        // as a respawn would reset it, because no respawn follows.
+        if (fights.onPlayerDeath(event)) onDowned(event.getPlayer());
         // FIRST: return anything a menu is holding while the inventory still exists. The drops list
         // is already populated by the time this event fires, so a returned weapon cannot leak into
         // it -- and setKeepInventory below means it survives the death either way. Caused here
@@ -2061,6 +2062,40 @@ public final class RpgListeners implements Listener {
         // leap a safe landing was armed for.
         stoneCaster.onDeath(event.getPlayer().getUniqueId());
         adapters.safeLandings().forget(event.getPlayer().getUniqueId());
+    }
+
+    /**
+     * F9d a: HE WENT DOWN INSTEAD OF DYING, so no respawn follows. What a respawn resets is reset here, minus what a
+     * respawn restarts (his loops never stopped: he was never dead):
+     * <ul>
+     *   <li>custom HP to his maximum (the store reached zero, which is what killed him; a down player takes no damage,
+     *       and a revive sets its own fraction, step F9e);</li>
+     *   <li>the damage window, scorch, wither and its potion, the Recall window and the safe landing, as on respawn.</li>
+     * </ul>
+     */
+    private void onDowned(Player p) {
+        UUID id = p.getUniqueId();
+        if (adapters.stats().tracks(id)) adapters.stats().heal(id, adapters.stats().max(id), id, true);
+        damageWindow.forget(id);
+        adapters.scorch().forget(id);
+        WitherPotion.forgetAndStrip(adapters.wither(), p);
+        stoneCaster.onDeath(id);
+        adapters.safeLandings().forget(id);
+    }
+
+    /**
+     * F9d b: A DOWN PLAYER TAKES NO DAMAGE AT ALL, of any kind, first of anything (every pricing handler here ignores a
+     * cancelled event). READ: the void's {@code out_of_world} bypasses a spectator's invulnerability.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onDownPlayerDamaged(EntityDamageEvent event) {
+        if (event.getEntity() instanceof Player p && fights.isDown(p)) event.setCancelled(true);
+    }
+
+    /** F9d e: a down spectator who leaves the fight's world by any means is out, and returned. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onFightWorldLeft(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        fights.onWorldChange(event.getPlayer(), event.getFrom());
     }
 
     /**

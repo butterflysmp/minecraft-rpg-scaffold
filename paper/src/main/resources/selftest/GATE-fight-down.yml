@@ -1,0 +1,626 @@
+# GATE-fight-down.md: STEP F9d, DOWN, ALL DOWN AND THE ENTRY MODE (feat/fight-down, 2026-11-19). `/rpg selftest fight-down`.
+# NO BOOT OF ITS OWN: GATE-fight-revive.md (F9e, stacked on this branch) carries the one R0 and run sheet.
+#
+# A death inside an arena fight is CANCELLED and he goes DOWN: spectator, inventory kept, no death screen, not a
+# participant. When nobody is alive inside and at least one is down, the fight has FAILED (FIGHT all-down), and
+# all_down_seconds (5) later everyone is returned in the mode he entered in.
+#
+# EVERY ROW HERE PUTS HIM DOWN ON PURPOSE (FD1 /kill, FD2 the void, FD3 POWERED, FD4 /kill then a teleport out). Each is a
+# death_rules row and heals him first; a down player takes no damage at all. Each row ends with him home, in survival,
+# healed.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# FD1: A SOLO DEATH INSIDE (DOWN ON PURPOSE): /kill in the arena. Down, spectator, ALL DOWN, FAILED, five seconds, returned
+# in survival where he entered, the world unloaded, its folder gone.
+FD1:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "kill @s"
+  - await_fight: 400
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FD2: A DEATH IN THE VOID (DOWN ON PURPOSE): 60 east and down to y -130, below the End world's void line. Down, lifted
+# above the floor (the void would hurt a spectator), ALL DOWN, returned.
+FD2:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "tp @s ~60 -130 ~"
+  - await_fight: 400
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FD4: A DOWN SPECTATOR LEAVES THE FIGHT WORLD (DOWN ON PURPOSE): /kill, then, while he spectates, a teleport into the
+# overworld. He is out and returned at once, in survival; with nobody inside, the fight ends.
+FD4:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "kill @s"
+  - wait: 20
+  - cmd: "execute in minecraft:overworld run tp @s ~ 200 ~"
+  - await_fight: 200
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+
+# FD3: POWERED (DOWN ON PURPOSE): AE5R2's staging (GATE-fight-arena.md), its first wait 20 rather than 5 because an End
+# world is checked before he enters (F9c). Sixty-eight kills hold the ring open; the tenth crystal powers the Mage; the
+# powered kill lands; he goes down; ALL DOWN; returned. Every step after the landing is AE5R2's, relative to it.
+FD3:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "tp @s ~-2 ~ ~ -90 0"
+  - wait: 15
+  - cmd: "rpg fight land 0 0"
+  - wait: 220
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak1 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak1"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak2 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak2"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak3 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak3"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak4 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak4"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak5 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak5"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak6 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak6"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak7 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak7"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak8 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak8"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak9 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak9"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak10 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak10"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak11 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak11"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak12 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak12"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak13 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak13"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak14 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak14"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak15 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak15"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak16 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak16"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak17 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak17"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak18 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak18"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak19 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak19"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak20 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak20"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak21 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak21"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak22 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak22"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak23 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak23"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak24 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak24"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak25 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak25"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak26 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak26"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak27 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak27"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak28 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak28"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak29 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak29"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak30 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak30"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak31 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak31"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak32 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak32"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak33 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak33"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak34 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak34"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak35 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak35"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak36 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak36"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak37 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak37"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak38 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak38"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak39 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak39"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak40 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak40"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak41 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak41"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak42 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak42"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak43 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak43"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak44 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak44"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak45 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak45"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak46 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak46"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak47 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak47"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak48 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak48"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak49 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak49"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak50 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak50"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak51 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak51"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak52 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak52"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak53 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak53"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak54 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak54"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak55 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak55"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak56 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak56"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak57 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak57"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak58 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak58"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak59 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak59"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak60 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak60"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak61 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak61"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak62 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak62"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak63 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak63"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak64 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak64"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak65 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak65"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak66 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak66"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak67 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak67"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - wait: 31
+  - cmd: "tp @s ~-3 ~ ~"
+  - spawn: "ak68 frozen knell 100"
+  - cmd: "tp @s ~3 ~ ~ 90 0"
+  - wait: 2
+  - aim: "ak68"
+  - wait: 2
+  - cmd: "rpg mobdamage 1000000"
+  - await_fight: 600
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"

@@ -162,6 +162,21 @@ public final class FightInstance {
                     finish("nobody-inside-" + ring.outcome());
                     return false;
                 }
+                // F9d c: ALL DOWN. Nobody alive inside and at least one down: the fight has FAILED, and everyone goes
+                // home all_down_seconds later (POWERED, which downs every participant, ends here too).
+                io.github.butterflysmp.rpg.core.fight.DownRoster.Check down =
+                        site.allDownCheck(ring.fightTick(), port.participants().size());
+                if (down == io.github.butterflysmp.rpg.core.fight.DownRoster.Check.FAILED) {
+                    adapters.log().info(String.format(Locale.ROOT, "FIGHT all-down t=%d down=%s outcome=%s returns_in=%d",
+                            ring.fightTick(), names(site.downed()), ring.outcome(), fight.arena().allDownSeconds() * 20));
+                    port.tell("Everyone is down. The fight has failed; you go home in "
+                            + fight.arena().allDownSeconds() + " seconds.");
+                } else if (down == io.github.butterflysmp.rpg.core.fight.DownRoster.Check.RETURN_DUE) {
+                    adapters.log().info("FIGHT all-down return t=" + ring.fightTick() + " outcome=" + ring.outcome());
+                    ring.stop();
+                    finish("all-down-FAILED");
+                    return false;
+                }
             }
             if (ring.stopped()) {
                 finish("the fixture stopped itself");
@@ -182,6 +197,19 @@ public final class FightInstance {
     public UUID id() { return id; }
 
     public FightSite site() { return site; }
+
+    /** The fight's own tick, as its lines print it. */
+    public long fightTick() { return fixture.fightTick(); }
+
+    /** Players' names (an id when he is offline), in the set's order, for a line. */
+    private static String names(java.util.Set<UUID> ids) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (UUID id : ids) {
+            Player p = org.bukkit.Bukkit.getPlayer(id);
+            out.add(p == null ? id.toString() : p.getName());
+        }
+        return out.toString();
+    }
 
     /** Running until it finishes. A won fight still runs through the win's wait, until its return (step F9). */
     public boolean running() {
@@ -404,7 +432,8 @@ public final class FightInstance {
             return;
         }
         Player killer = dead.getKiller();
-        if (killer == null || killer.getWorld() != world) return;
+        // F9d b: a kill counts only for a participant (a down player's kills are impossible).
+        if (killer == null || killer.getWorld() != world || !site.takesPart(killer)) return;
         Location feet = killer.getLocation();
         fixture.kill(killer.getUniqueId(), feet.getX(), feet.getZ());
     }
@@ -534,6 +563,7 @@ public final class FightInstance {
         }
         java.util.Set<UUID> now = new java.util.HashSet<>();
         for (RingFixture.Participant p : port.participants()) now.add(p.id());
+        now.addAll(port.downWatchers()); // F9d b: a down player still sees the bar
         for (UUID v : now) {
             if (barViewers.add(v)) {
                 Player pl = org.bukkit.Bukkit.getPlayer(v);

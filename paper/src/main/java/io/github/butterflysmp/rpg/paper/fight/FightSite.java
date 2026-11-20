@@ -61,4 +61,19 @@ public interface FightSite {
     default boolean nobodyInside() {
         return false;
     }
+
+    /**
+     * F9d: who is DOWN (died inside, spectating, not a participant), in the order they went down. Only the arena has
+     * anyone down; they still see the ring, the bar and the fight's chat.
+     */
+    default java.util.Set<java.util.UUID> downed() {
+        return java.util.Set.of();
+    }
+
+    /**
+     * F9d c: ALL DOWN, asked once a tick with how many participants are alive inside. Only the arena can fail this way.
+     */
+    default io.github.butterflysmp.rpg.core.fight.DownRoster.Check allDownCheck(long tick, int aliveInside) {
+        return io.github.butterflysmp.rpg.core.fight.DownRoster.Check.NONE;
+    }
 }
