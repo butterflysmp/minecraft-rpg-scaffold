@@ -89,7 +89,23 @@ Ben:
 - Every tier sword is **kinetic**.
 - Netherite is made at the smithing table from a diamond sword and **carries its enchantments**.
 - A sword obtained by **ANY** route is minted.
-- "Sideways" is **OPEN**.
+- "Sideways" is **OPEN**. *(Answered for the swords in 1.2b, below.)*
+
+### 1.2b Ben, 2026-11-19, VERBATIM: golden and copper
+
+> "For more clarification on Gold and Copper, the swords specifically should do slightly more damage than stone and less than iron. The armor sets are where the tier is a side step in progression. We will get to armor later"
+
+**The seat's readings (the seat's, not Ben's):**
+- **This ANSWERS "sideways" for the swords.** The golden sword and the copper sword each deal **more than the stone
+  sword and less than the iron sword.**
+- They are **the two exceptions to "vanilla × 3"**.
+- The golden and copper swords keep **vanilla's attack speed and durability**.
+- **The sideways step belongs to the ARMOUR sets.** Ben has deferred them ("We will get to armor later"). This is
+  recorded as a **pointer for a later armour plan**, and nothing for it is designed here.
+
+> **SEAT PLACEHOLDER, FLAGGED FOR BEN. IT IS NOT HIS.** **16 for both**, if stone reads 15 and iron 18. The seat has
+> asked him to choose between **both at 16** or **copper 16 and golden 17**. 2j shows that the placeholder holds only
+> under one of 2i's two ×3 readings.
 
 ### 1.3 What is now RULED (moved here from the open list)
 
@@ -98,7 +114,10 @@ Ben:
 | Which swords | wooden, stone, iron, diamond, netherite as the ladder; copper and golden as side tiers | 1.1 |
 | Melee weapons are swords | yes, "just simply swords" | 1.1 |
 | Minted and enchantable | yes | 1.1 |
-| Damage | vanilla × 3. **Which vanilla number is multiplied is flagged in 2i** | 1.2 answer 2 |
+| Damage | vanilla × 3, **except golden and copper**. **Which vanilla number is multiplied is flagged in 2i** | 1.2 answer 2 |
+| Golden and copper sword damage | **more than stone, less than iron**. The exact figures are OPEN (2j, section 5) | 1.2b |
+| "Sideways" | **for the swords, answered by the row above.** The sideways step is the ARMOUR sets', deferred | 1.2b |
+| Golden and copper attack speed and durability | vanilla's (seat reading) | 1.2b |
 | Attack speed | vanilla (1.6 for all seven, 2i) | 1.2 answer 2 |
 | Rarity | diamond and netherite uncommon, the other five common | 1.2 answer 3 |
 | Element | kinetic, all seven | 1.2 answer 3 |
@@ -467,8 +486,33 @@ Neither column does anything on our side today (INFERRED from READ code):
 - **enchantmentValue** feeds the vanilla table, and our table is replaced. Our rolls key on class alone (2f).
 - **Durability** has no repair in play (2g), so golden's 32 makes it strictly worse than wooden, not sideways.
 
-**"Sideways" therefore has to come from something other than damage or speed.** That is Ben's open question 1, and
-this survey does not propose an answer.
+**At plain "vanilla × 3", "sideways" would have had to come from something other than damage or speed.** Ben's 1.2b
+answers it for the swords by taking golden and copper OFF vanilla × 3. They deal more than stone and less than iron.
+
+**The whole numbers strictly between stone and iron, with the jar's real numbers (2i).** These are integers between
+two integers, so they are exact:
+
+| ×3 base (2i) | stone × 3 | iron × 3 | whole numbers strictly between |
+|---|---|---|---|
+| **total** (player base 1 + modifier) | 15 | 18 | **16, 17** |
+| **modifier** (3 + attackDamageBonus) | 12 | 15 | **13, 14** |
+
+- **There are two in either case**, because the gap is 3 under both bases: iron's bonus is 1 above stone's, and ×3
+  makes the gap 3.
+- **But the base changes WHICH numbers they are, and that breaks the placeholder.**
+  - **The seat's placeholder of 16 holds only under the total reading.**
+  - Under the modifier reading, 16 is above iron's 15. It would break Ben's "less than iron", and "copper 16, golden
+    17" would break it for both swords.
+- **FLAG FOR BEN:**
+  - rule 2i's base first;
+  - then pick the golden and copper numbers from that row;
+  - "both at 16 / copper 16 and golden 17" becomes "both at 13 / copper 13 and golden 14" if the modifier reading wins.
+- **Only two values exist between them,** so "both the same" or "one each" are the only shapes available. A wider choice
+  would need a fractional `attack_damage`. The schema reads it as a double (`s.getDouble("attack_damage", 0.0)`,
+  `P/content/WeaponLoader.java:293`, READ), and no shipped melee weapon authors one.
+
+Golden and copper keep **vanilla's attack speed (1.6) and durability (32 golden, 190 copper)** (seat reading, 1.2b).
+2g's no-repair note still applies: **the golden sword has 32 durability and nothing in play repairs it.**
 
 ### 2k. Existing ranger and mage weapons that could sit on a ladder
 
@@ -597,7 +641,8 @@ rarity: common              # RULED: common for wooden/stone/copper/iron/golden;
 class: melee
 material: iron_sword        # one of the seven, 2h
 craft_result: iron_sword    # the same material; exactly one file may claim it (2d). Omitted on netherite (4.2 step 4)
-attack_damage: ___          # vanilla x 3 (2i): 18 (total) or 15 (modifier) for iron. Ben rules which
+attack_damage: ___          # vanilla x 3 (2i): 18 (total) or 15 (modifier) for iron. Ben rules which.
+                            # golden and copper are NOT x 3: strictly between stone and iron (1.2b, 2j)
 attack_speed: 1.6           # vanilla, all seven (2i)
 sweep: ___                  # OPEN: see the note below
 triggers:
@@ -708,14 +753,20 @@ triggers:
 
 ## 5. OPEN, FOR BEN (listed, not answered)
 
-1. **What "sideways" means** for copper (beside stone) and golden (beside iron). At vanilla × 3 each matches its
-   neighbour in damage and speed (2j). Ben: *"We'll get back to that."*
+1. **The exact golden and copper sword numbers**, strictly between stone and iron (1.2b).
+   - The seat's placeholder, not Ben's: both at 16, or copper 16 and golden 17.
+   - **They depend on item 2.** Under the total reading the choices are 16 and 17; under the modifier reading they are
+     13 and 14 (2j).
 2. **Which vanilla number the ×3 multiplies:** the total with the player's base 1 (iron 18), or the item's modifier
    (iron 15). The schema's `attack_damage` is the total (2i).
 3. **Sweep per tier.** Vanilla's sweep is not a fraction, and ours is (4.1).
 4. **The ranger and mage ladders:** which existing weapons sit on which tier (2k), and what is new. Ben:
    *"Somewhat, some of them are already in the game."*
 5. **Names** of the seven swords.
+6. **The armour sets: LATER, by Ben's word** (1.2b). This is where the sideways step lives. It is a pointer for a
+   future armour plan, and nothing is designed here.
+
+*"What sideways means" left this list on 2026-11-19. For the swords it is answered by 1.2b.*
 
 **Also for the seat, not Ben's design:**
 - convert-on-arrival vs per-source (4.2 step 5);
