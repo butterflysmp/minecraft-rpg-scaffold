@@ -130,6 +130,32 @@ spectating**, then reconnects after ten seconds. Like AQ1 (GATE-fight-arena.md).
 > - **The reading of this boot goes beside this note**, in the boot's after-run section of `GATE-loot-roll.md` and in a
 >   dated line here.
 
+> **FDM1, READ 2026-11-20 at the stack's boot (`5c2dee2c`, 10:43:16 to 10:43:46): (1) TO (4) AS PREDICTED, cause VOID,
+> after three strikes outside.** It is manual, so no HURT line exists (they are written only inside a selftest run).
+>
+> - **His first command was `/gamemode spectator` (10:42:44), then `/gamemode survival` (10:42:48)**, both before the
+>   row. He entered from survival: `FIGHTWORLD entered … return=world -105.05 63.00 21.68 mode=SURVIVAL`.
+> - **Strikes while he walked out:** t=40 to t=160 read `k=0 damage=0.000 inside`. Then three landed outside: `STRIKE
+>   t=200 k=1 damage=20.000 outside`, `t=240 k=2 40.000`, `t=280 k=3 80.000`.
+> - **(1)** `FIGHT down player=BaronVonYeetus t=293 cause=VOID at=-2.56 -233.41 -61.49`. **The void took the last of
+>   his bar after the three strikes, so the cause is VOID**, as the old text and the note's first branch said.
+>   - `FIGHT copy laid … at=-1.95 0.00 -46.96 died=-2.56 -233.41 -61.49 moved=true revivable=true`: one block inside the
+>     ring along his line, by `CopyPlace`, as the note predicts. COPYTICK `inside_by=1.000`.
+>   - Then `all-down t=294 … RUNNING returns_in=100`, `lifted … to C +8.0`, `spectating … mode=SPECTATOR`.
+> - **(2)** He disconnected at 10:43:32, about a second after spectating, within the five seconds:
+>   - `FIGHT copy removed … t=308 why=out`;
+>   - **`FIGHTWORLD left player=BaronVonYeetus world=rpgfight_fight_abb5a8c9 why=quit return=kept`**;
+>   - `FIGHT nobody inside t=309 outcome=RUNNING`, `FIGHT ended reason=nobody-inside-RUNNING`;
+>   - `unloaded`, and `deleted …fight_abb5a8c9 entries=17`.
+> - **(3)** He reconnected at 10:43:46, 14 s after the quit:
+>   - **`FIGHTWORLD stale login caught player=BaronVonYeetus at=world 0.50 73.00 0.50 to=world -105.05 63.00 21.68`**;
+>   - **`FIGHTWORLD mode player=BaronVonYeetus from=SPECTATOR to=SURVIVAL why=login`**;
+>   - `FIGHTWORLD returned … why=login`.
+> - **(4) His game mode after the reconnect: SURVIVAL.** Read by the server, twice:
+>   - the `mode … to=SURVIVAL why=login` line, which the plugin writes as it sets it;
+>   - FD2R2's next `FIGHTWORLD entered … mode=SURVIVAL` (10:44:27), his mode as the server read it.
+> - **His words, verbatim (10:44:05):** "I am where I was and in survival".
+
 ## THE MERGED DEATH ROWS, RE-PREDICTED (the brief's g): NOT RE-RUN; FD1 TO FD4 STAND FOR THEM
 
 **Every arena row that killed him now puts him DOWN.** Each one's death line, respawn and "returned … why=died" become
