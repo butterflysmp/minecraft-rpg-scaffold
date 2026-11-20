@@ -145,4 +145,61 @@ class CraftResultValidationTest {
         assertTrue(problems.toString().contains("bad_two"), problems.toString());
         // Mutation: `break` after the first problem -> reddens at 1 != 2.
     }
+
+    // ------------------------------------------------------------------ the WEAPON case, and FAIL CLOSED (2026-11-20)
+
+    /** A sword-shaped weapon: material and claim are the only fields the walk reads. */
+    private static io.github.butterflysmp.rpg.core.weapon.WeaponDefinition weapon(String id, String material,
+                                                                                  String craftResult) {
+        return new io.github.butterflysmp.rpg.core.weapon.WeaponDefinition(id, id, "kinetic", Rarity.COMMON,
+                io.github.butterflysmp.rpg.core.weapon.WeaponClass.MELEE, material, 23.0, 1.6, 0.0, 0, 0,
+                List.of(new io.github.butterflysmp.rpg.core.weapon.TriggerBinding("left_click",
+                        new io.github.butterflysmp.rpg.core.ability.AbilityDefinition(id + "/left_click", id, "kinetic", 0,
+                                null, null, List.of(), List.of()))),
+                List.of(), Optional.ofNullable(craftResult), false);
+    }
+
+    private static final Set<String> SWORDS = Set.of("iron_sword", "diamond_sword");
+
+    private static java.util.Map<String, String> refuse(GearDefinition... gear) {
+        return VALIDATOR.refusedCraftResults(List.of(gear), name -> SWORDS.contains(name) || EXISTS.test(name),
+                name -> SWORDS.contains(name) || IS_DURABLE.test(name));
+    }
+
+    @Test
+    void aWeaponClaimingItsOwnSwordIsNotRefused() {
+        assertEquals(java.util.Map.of(), refuse(weapon("iron_sword", "iron_sword", "iron_sword")));
+    }
+
+    @Test
+    void aWeaponClaimingAnotherSwordIsREFUSEDByName() {
+        // The weapon case the class lacked: claims iron_sword, mints as diamond_sword, so a player crafting iron
+        // would be handed diamond.
+        var refused = refuse(weapon("cheat", "diamond_sword", "iron_sword"));
+        assertEquals(java.util.Set.of("cheat"), refused.keySet());
+        assertTrue(refused.get("cheat").contains("mints as material 'diamond_sword'"), refused.get("cheat"));
+        // Mutation: skip weapons in the walk -> reddens at {} != {cheat}.
+    }
+
+    @Test
+    void everyKindOfBadClaimIsRefusedAndASoundOneBesideThemIsNot() {
+        var refused = refuse(
+                weapon("good", "iron_sword", "iron_sword"),
+                weapon("no_such", "iron_sword", "no_such_item"),
+                shield("not_durable", "amethyst_shard", "amethyst_shard"),
+                armor("mismatch", "iron_chestplate", "shield"));
+        assertEquals(List.of("no_such", "not_durable", "mismatch"), List.copyOf(refused.keySet()),
+                "each refused by name, in walk order; the sound one is absent");
+        assertTrue(refused.get("no_such").contains("not a material"), refused.get("no_such"));
+        assertTrue(refused.get("not_durable").contains("no durability"), refused.get("not_durable"));
+        // Mutation: return an empty map -> reddens; refuse 'good' too -> reddens on the key list.
+    }
+
+    @Test
+    void aClaimWithNoProblemsIsAbsentEvenWhenOthersFail() {
+        var refused = refuse(armor("chest", "iron_chestplate", "iron_chestplate"),
+                shield("bad", "amethyst_shard", "amethyst_shard"));
+        assertFalse(refused.containsKey("chest"));
+        assertTrue(refused.containsKey("bad"));
+    }
 }

@@ -74,16 +74,18 @@ public final class CraftResultIndex {
     private final Map<String, GearDefinition> byRecipe;
     private final int claimed;
     private final int contested;
+    private final int refused;
     private final int recipesIndexed;
     private final int recipesDropped;
 
     private CraftResultIndex(Map<String, GearDefinition> byResult,
                              Map<String, GearDefinition> byRecipe,
-                             int claimed, int contested, int recipesIndexed, int recipesDropped) {
+                             int claimed, int contested, int refused, int recipesIndexed, int recipesDropped) {
         this.byResult = byResult;
         this.byRecipe = byRecipe;
         this.claimed = claimed;
         this.contested = contested;
+        this.refused = refused;
         this.recipesIndexed = recipesIndexed;
         this.recipesDropped = recipesDropped;
     }
@@ -107,6 +109,21 @@ public final class CraftResultIndex {
     public static CraftResultIndex build(Collection<? extends GearDefinition> gear,
                                          Collection<RecipeDefinition> recipes,
                                          Consumer<String> onProblem) {
+        return build(gear, recipes, onProblem, definition -> false);
+    }
+
+    /**
+     * As above, FAILING CLOSED (the seat's ruling, 2026-11-20). A definition whose claim the boot's validator REFUSED (not
+     * a material, not its own material, or no durability: {@code ContentValidator.refusedCraftResults}) is not indexed,
+     * and is counted in {@link #refused()}. The caller logs each refusal by name; this class only obeys it.
+     *
+     * <p><b>A refused claim still CONTESTS.</b> Two claims on one item are a contest whatever else is wrong with one of
+     * them, so a refused claimant beside a sound one mints NEITHER: the closed side of the two readings.
+     */
+    public static CraftResultIndex build(Collection<? extends GearDefinition> gear,
+                                         Collection<RecipeDefinition> recipes,
+                                         Consumer<String> onProblem,
+                                         java.util.function.Predicate<GearDefinition> refusedClaim) {
         // LinkedHashMap so two boots agree on order, exactly as GearRegistry does and for the same
         // reason: the messages below are read in a log, and an order that shuffles per boot makes
         // two runs impossible to compare.
@@ -122,10 +139,15 @@ public final class CraftResultIndex {
 
         Map<String, GearDefinition> resolved = new LinkedHashMap<>();
         int contested = 0;
+        int refused = 0;
 
         for (Map.Entry<String, List<GearDefinition>> entry : claimants.entrySet()) {
             List<GearDefinition> claiming = entry.getValue();
             if (claiming.size() == 1) {
+                if (refusedClaim.test(claiming.get(0))) {
+                    refused++;   // refused by name by the caller, and never indexed
+                    continue;
+                }
                 resolved.put(entry.getKey(), claiming.get(0));
                 continue;
             }
@@ -136,9 +158,9 @@ public final class CraftResultIndex {
                 if (!ids.isEmpty()) ids.append(", ");
                 ids.append('\'').append(definition.id()).append('\'');
             }
-            onProblem.accept("Gear " + ids + " all claim craft_result '" + entry.getKey()
-                    + "'. None of them will be minted on craft, because there is no way to tell "
-                    + "which was meant. Give the key to exactly one of them.");
+            onProblem.accept("Refusing craft_result '" + entry.getKey() + "': gear " + ids + " all claim it, so neither"
+                    + " of them will be minted on craft, because there is no way to tell which was meant. Give the key"
+                    + " to exactly one of them.");
         }
 
         // ---- the recipe axis ------------------------------------------------------------------
@@ -170,7 +192,7 @@ public final class CraftResultIndex {
             byRecipe.put(recipe.id(), minted);
         }
 
-        return new CraftResultIndex(resolved, byRecipe, claimed, contested, byRecipe.size(),
+        return new CraftResultIndex(resolved, byRecipe, claimed, contested, refused, byRecipe.size(),
                 recipesDropped);
     }
 
@@ -200,6 +222,11 @@ public final class CraftResultIndex {
     /** How many results were dropped for being claimed twice. */
     public int contested() {
         return contested;
+    }
+
+    /** How many sole claims the boot's validator refused (fail closed, 2026-11-20). Shipped content has none. */
+    public int refused() {
+        return refused;
     }
 
     /**
