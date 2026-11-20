@@ -192,6 +192,8 @@ public final class RpgPlugin extends JavaPlugin {
     private OreRegistry ores;
     /** The fight files, content/fights/ (PLAN-dragon-fight.md step F4). */
     private java.util.Map<String, io.github.butterflysmp.rpg.paper.content.FightContent> fights = java.util.Map.of();
+    /** Convert on arrival: which materials weapons claim (the seat's ruling, 2026-11-20; the brief, part h). */
+    private io.github.butterflysmp.rpg.core.weapon.ArrivalClaims arrivals;
     /** The smithing table's upgrades of minted weapons, content/smithing.yml (the seat's brief, part g). */
     private io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades smithing =
             new io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades(java.util.List.of());
@@ -551,6 +553,14 @@ public final class RpgPlugin extends JavaPlugin {
                 + (craftResults.refused() > 0
                         ? ", " + craftResults.refused() + " refused" : ""));
 
+        // CONVERT ON ARRIVAL (the seat's ruling, 2026-11-20): the materials weapons claim when a plain item reaches a
+        // player, from the craft index (its contests applied) and the smithing upgrades' results (the netherite sword).
+        // A material two weapons claim is refused by name and claims nothing.
+        this.arrivals = io.github.butterflysmp.rpg.core.weapon.ArrivalClaims.build(weapons.all(), craftResults, smithing,
+                problem -> getLogger().warning(problem));
+        getLogger().info("Convert-on-arrival: " + arrivals.size() + " materials "
+                + new java.util.TreeMap<>(arrivals.all()));
+
         // ZERO IS A DEFECT, NOT A QUIET NO-OP -- the same rule the loader counts above follow. Zero
         // here means no crafted item will ever become RPG gear, which in play is indistinguishable
         // from the feature not existing.
@@ -831,6 +841,7 @@ public final class RpgPlugin extends JavaPlugin {
         io.github.butterflysmp.rpg.paper.health.VoidHits voidHits = new io.github.butterflysmp.rpg.paper.health.VoidHits();
         listeners.bindVoidRule(worldDamage.voidShare(), voidHits);
         listeners.bindSmithing(smithing);   // the seat's brief, part g: the smithing table's upgrades
+        listeners.bindArrivals(arrivals);   // the seat's brief, part h: convert on arrival
         selfTest.bindVoidHits(voidHits);
         getServer().getPluginManager().registerEvents(listeners, this);
 
