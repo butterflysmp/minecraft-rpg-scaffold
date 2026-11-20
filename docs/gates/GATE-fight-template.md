@@ -1,6 +1,6 @@
 # GATE — THE TEMPLATE-FILE ARENA SOURCE (PLAN-dragon-mobs.md C3, OWED SINCE F8b; THE SEAT'S QUEUE, ITEM 2)
 
-**Status: NOT RUN, and no boot of its own.** Written 2026-11-19 on `feat/fight-template`, stacked on
+**Seat approval 2026-11-20: code and gate diffed at 114b109b, booted at 5c2dee2c, readings at 071e6700. Merge on Ben's words.** **Status: TA1 READ, 2026-11-20, at `5c2dee2c`; TB1-TB6 carried** (was: NOT RUN, and no boot of its own). Written 2026-11-19 on `feat/fight-template`, stacked on
 `feat/fight-revive`, **for a later boot**, before any boot of this branch. A boot of this branch carries
 `GATE-fight-revive.md`'s R0 with three changes:
 - R0d reads **229 scenarios across 29 gates**, with `fight-template` last;
