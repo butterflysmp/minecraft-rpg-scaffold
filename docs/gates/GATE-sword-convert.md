@@ -1,6 +1,11 @@
 # GATE — THE SWORD LADDER, PR 3: CONVERT ON ARRIVAL (feat/sword-convert), AND THE ONE BOOT FOR ALL THREE
 
-**Status: NOT RUN.** Written 2026-11-20 on `feat/sword-convert`, stacked on `feat/sword-smithing` (#222), which is
+**Seat approval 2026-11-20: code and gate diffed at 3538f2f7, booted at 90ea1517, readings at b24bf8f3. Merge on Ben's words.** **Status: READ, 2026-11-20, at `90ea1517`; SCJ1 UNREAD, carried** (was: NOT RUN).
+
+> **UNREAD, CARRIED (2026-11-20, the seat's merge approval):** SCJ1, the join sweep, on a server. He held no plain
+> claimed sword at either join, so the arm stands on `ArrivalSourceTest` only.
+
+Written 2026-11-20 on `feat/sword-convert`, stacked on `feat/sword-smithing` (#222), which is
 stacked on `feat/sword-tiers` (#221) on master `70cbab66`. Written before any boot. **This file carries the ONE R0 and
 the ONE run sheet for all three PRs** (the seat's split ruling, 2026-11-20). The rows it boots:
 - STA1-STA5 and STM1 — `GATE-sword-tiers.md`;
