@@ -39,9 +39,10 @@ class SelfTestScenariosTest {
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
-                        "loot-roll", "sword-tiers"),
+                        "loot-roll", "sword-tiers", "sword-smithing"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty-one gates, in boot order (sword-tiers LAST, the sword ladder, 2026-11-20, a NEW gate after"
+                "the thirty-two gates, in boot order (sword-smithing LAST, the sword ladder part g, 2026-11-20, a NEW gate"
+                        + " after sword-tiers; sword-tiers before it, the sword ladder, 2026-11-20, a NEW gate after"
                         + " loot-roll; loot-roll before it, the seat's queue item 6, 2026-11-19, a NEW gate after"
                         + " fight-template, rebased onto it by the seat's part 2; fight-template before it, the seat's queue"
                         + " item 2, 2026-11-19, a NEW gate"
@@ -238,7 +239,10 @@ class SelfTestScenariosTest {
         // Then THE SEVEN SWORDS AS CONTENT (GATE-sword-tiers.md, feat/sword-tiers, 2026-11-20), a new gate, RECOUNTED from
         // index.yml and every gate file it names: 31 gates, 271 keys, 31 setups, so 240: STA1 to STA5 added. The control:
         // 265 + 6 = 271. 235 was this line's value.
-        assertEquals(240, loaded.rows());
+        // Then NETHERITE AT THE SMITHING TABLE (GATE-sword-smithing.md, feat/sword-smithing, 2026-11-20), a new gate,
+        // RECOUNTED from index.yml: 32 gates, 274 keys, 32 setups, so 242: SSA1 and SSA2 added. The control: 271 + 3 = 274.
+        // 240 was this line's value.
+        assertEquals(242, loaded.rows());
     }
 
     /**

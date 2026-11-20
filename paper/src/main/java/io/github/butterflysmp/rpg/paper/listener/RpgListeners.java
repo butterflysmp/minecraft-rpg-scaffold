@@ -282,6 +282,66 @@ public final class RpgListeners implements Listener {
     /** Which store hit was the void's, for the selftest's HURT line ({@code cause=void}). */
     private io.github.butterflysmp.rpg.paper.health.VoidHits voidHits = new io.github.butterflysmp.rpg.paper.health.VoidHits();
 
+    /** The smithing table's upgrades of minted weapons ({@code content/smithing.yml}; the seat's brief, part g). */
+    private io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades smithing =
+            new io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades(java.util.List.of());
+
+    /** Binds the smithing upgrades. Until bound, every minted weapon is refused at the table (never silently lost). */
+    public void bindSmithing(io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades upgrades) {
+        this.smithing = java.util.Objects.requireNonNull(upgrades);
+    }
+
+    /** The weapon id of a minted item, or null for a plain one. */
+    private String weaponIdOf(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return null;
+        return item.getItemMeta().getPersistentDataContainer().get(adapters.keys().weaponId,
+                org.bukkit.persistence.PersistentDataType.STRING);
+    }
+
+    private static String materialTokenOf(ItemStack item) {
+        return item == null || item.getType().isAir() ? null : item.getType().getKey().getKey();
+    }
+
+    /**
+     * NETHERITE AT THE SMITHING TABLE (the seat's brief, part g; Ben: "Yes"). READ, the pinned paper-api:
+     * {@code PrepareSmithingEvent} extends {@code PrepareResultEvent} and carries the result; {@code SmithingInventory}
+     * exposes {@code getInputTemplate}, {@code getInputEquipment} and {@code getInputMineral}. Core decides:
+     * <ul>
+     *   <li>UPGRADE: the result is the base re-minted as the upgrade, carrying enchants, wear (clamped) and gear score;</li>
+     *   <li>REFUSE: a minted weapon with no declared upgrade has NO result, so nothing can be taken and no ingot is
+     *       spent (the survey's 2e: it used to lose its identity silently);</li>
+     *   <li>NOT_OURS: a plain item, left to vanilla.</li>
+     * </ul>
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPrepareSmithing(org.bukkit.event.inventory.PrepareSmithingEvent event) {
+        org.bukkit.inventory.SmithingInventory inv = event.getInventory();
+        ItemStack base = inv.getInputEquipment();
+        io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades.Decision decision = smithing.decide(weaponIdOf(base),
+                materialTokenOf(inv.getInputTemplate()), materialTokenOf(inv.getInputMineral()));
+        switch (decision.kind()) {
+            case NOT_OURS -> { }
+            case REFUSE -> event.setResult(null);
+            case UPGRADE -> event.setResult(weapons.find(decision.result())
+                    .map(into -> WeaponItems.upgrade(base, into, adapters)).orElse(null));
+        }
+    }
+
+    /** The witness for the smith row: one SMITH line when an upgraded weapon is taken from the table. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSmithItem(org.bukkit.event.inventory.SmithItemEvent event) {
+        ItemStack result = event.getInventory().getResult();
+        String from = weaponIdOf(event.getInventory().getInputEquipment());
+        String to = weaponIdOf(result);
+        if (from == null || to == null) return;
+        var pdc = result.getItemMeta().getPersistentDataContainer();
+        int wear = result.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable d ? d.getDamage() : -1;
+        plugin.getLogger().info("SMITH took player=" + event.getWhoClicked().getName() + " from=" + from + " to=" + to
+                + " material=" + result.getType().getKey().getKey() + " wear=" + wear + "/" + result.getType().getMaxDurability()
+                + " enchant_data=" + pdc.get(adapters.keys().enchantData, org.bukkit.persistence.PersistentDataType.STRING)
+                + " score=" + pdc.get(adapters.keys().gearScore, org.bukkit.persistence.PersistentDataType.INTEGER));
+    }
+
     /** Binds the void rule and the hit marks the HURT line reads. */
     public void bindVoidRule(java.util.OptionalDouble share, io.github.butterflysmp.rpg.paper.health.VoidHits hits) {
         this.voidShare = java.util.Objects.requireNonNull(share);

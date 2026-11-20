@@ -192,6 +192,9 @@ public final class RpgPlugin extends JavaPlugin {
     private OreRegistry ores;
     /** The fight files, content/fights/ (PLAN-dragon-fight.md step F4). */
     private java.util.Map<String, io.github.butterflysmp.rpg.paper.content.FightContent> fights = java.util.Map.of();
+    /** The smithing table's upgrades of minted weapons, content/smithing.yml (the seat's brief, part g). */
+    private io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades smithing =
+            new io.github.butterflysmp.rpg.core.weapon.SmithingUpgrades(java.util.List.of());
     /** The game-wide damage rules, content/world_damage.yml (PLAN-world-damage.md): Ben's void share. */
     private io.github.butterflysmp.rpg.paper.content.WorldDamageLoader.Rules worldDamage =
             new io.github.butterflysmp.rpg.paper.content.WorldDamageLoader.Rules(java.util.OptionalDouble.empty());
@@ -340,6 +343,11 @@ public final class RpgPlugin extends JavaPlugin {
         // which the void stays the server's own.
         this.worldDamage = new io.github.butterflysmp.rpg.paper.content.WorldDamageLoader(getLogger())
                 .load(new File(contentDir, "world_damage.yml"));
+        // The smithing table's upgrades of minted weapons (the seat's brief, part g). One Loaded line, or a Refusing line
+        // per bad row; a minted weapon with no upgrade is refused at the table rather than silently lost.
+        this.smithing = new io.github.butterflysmp.rpg.paper.content.SmithingLoader(getLogger(),
+                id -> weapons.find(id).isPresent(), name -> Material.matchMaterial(name) != null)
+                .load(new File(contentDir, "smithing.yml"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
@@ -822,6 +830,7 @@ public final class RpgPlugin extends JavaPlugin {
         // takes, so a selftest row's void tick reads cause=void.
         io.github.butterflysmp.rpg.paper.health.VoidHits voidHits = new io.github.butterflysmp.rpg.paper.health.VoidHits();
         listeners.bindVoidRule(worldDamage.voidShare(), voidHits);
+        listeners.bindSmithing(smithing);   // the seat's brief, part g: the smithing table's upgrades
         selfTest.bindVoidHits(voidHits);
         getServer().getPluginManager().registerEvents(listeners, this);
 
