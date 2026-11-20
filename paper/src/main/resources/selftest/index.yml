@@ -69,3 +69,6 @@ gates:
 # loot-roll (the seat's queue item 6, 2026-11-19, feat/loot-cascade, stacked on fight-template) is paired with
 # docs/gates/GATE-loot-roll.md: the dev roll command. It carries the ONE R0 and run sheet for the whole stack.
   - loot-roll
+# sword-tiers (the sword ladder, 2026-11-20, feat/sword-tiers on master) is paired with docs/gates/GATE-sword-tiers.md:
+# the seven swords as content. No boot of its own; GATE-sword-convert.md (the stack's top) carries the one R0 and run sheet.
+  - sword-tiers

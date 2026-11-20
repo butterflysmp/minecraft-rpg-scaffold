@@ -1,0 +1,164 @@
+# GATE-sword-tiers.md: THE SEVEN SWORDS AS CONTENT (feat/sword-tiers, 2026-11-20). `/rpg selftest sword-tiers`.
+# NO BOOT OF ITS OWN: GATE-sword-convert.md (on feat/sword-convert, at the stack's top) carries the one R0 and run sheet.
+# Nothing here can hurt him: every mob is a NoAI zombie that never swings. Every swing is a full charge (40 ticks).
+setup:
+  - trace: on
+  - difficulty: normal
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - close: ""
+
+# STA1: each tier sword in hand, one full-charge hit on a fresh frozen zombie at ~2. PLAYERHIT reads what it sent.
+STA1:
+  - cmd: "rpg give wooden_sword"
+  - hold: wooden_sword
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "rpg give stone_sword"
+  - hold: stone_sword
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "rpg give copper_sword"
+  - hold: copper_sword
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "rpg give golden_sword"
+  - hold: golden_sword
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "rpg give diamond_sword"
+  - hold: diamond_sword
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "rpg give netherite_sword"
+  - hold: netherite_sword
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+
+# STA2: the sweep. Two frozen zombies side by side at ~2; the iron sword hits the first; the second takes the sweep.
+STA2:
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
+  - cmd: "kill @e[tag=t]"
+  - cmd: "kill @e[tag=u]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~2 ~ ~1 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["u","selftest"]}'
+  - wait: 40
+  - probe: u
+  - attack: t
+  - wait: 5
+  - probe: u
+  - cmd: "kill @e[tag=t]"
+  - cmd: "kill @e[tag=u]"
+
+# STA3: wear. A fresh iron sword, its enchants cleared (no Unbreaking can skip a wear), its damage set to 0; ten full-charge
+# hits, each on a fresh zombie; then one +1 read. Single wear reads damage 11; double wear would read 21.
+STA3:
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg durability set 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "kill @e[tag=t]"
+  - cmd: "rpg durability damage 1"
+
+# STA4: the enchants a tier sword is offered. A minted iron and a minted netherite sword each show their rolled candidates.
+STA4:
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
+  - cmd: "rpg enchant show"
+  - cmd: "rpg give netherite_sword"
+  - hold: netherite_sword
+  - cmd: "rpg enchant show"
+
+# STA5: ironblade and emberblade are UNTOUCHED (part f): each held, its tooltip dumped, one full-charge hit on a fresh zombie.
+STA5:
+  - cmd: "rpg give ironblade"
+  - hold: ironblade
+  - dump: held
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - attack: t
+  - wait: 5
+  - cmd: "rpg give emberblade"
+  - hold: emberblade
+  - dump: held
+  - cmd: "kill @e[tag=t]"

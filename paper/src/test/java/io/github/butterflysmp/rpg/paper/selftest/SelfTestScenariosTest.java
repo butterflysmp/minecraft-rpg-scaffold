@@ -39,9 +39,10 @@ class SelfTestScenariosTest {
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
-                        "loot-roll"),
+                        "loot-roll", "sword-tiers"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty gates, in boot order (loot-roll LAST, the seat's queue item 6, 2026-11-19, a NEW gate after"
+                "the thirty-one gates, in boot order (sword-tiers LAST, the sword ladder, 2026-11-20, a NEW gate after"
+                        + " loot-roll; loot-roll before it, the seat's queue item 6, 2026-11-19, a NEW gate after"
                         + " fight-template, rebased onto it by the seat's part 2; fight-template before it, the seat's queue"
                         + " item 2, 2026-11-19, a NEW gate"
                         + " after fight-revive; fight-revive before it, step F9e, 2026-11-19, a NEW gate after fight-down;"
@@ -234,7 +235,10 @@ class SelfTestScenariosTest {
         // Then THE DEV ROLL COMMAND (GATE-loot-roll.md, the seat's queue item 6, 2026-11-19), a new gate, rebased onto
         // fight-template by the seat's part 2 and RECOUNTED on this branch's tree: 30 gates, 265 keys, 30 setups, so 235:
         // LR1 to LR5 added. The control: 259 + 6 = 265. 230 was this line's value.
-        assertEquals(235, loaded.rows());
+        // Then THE SEVEN SWORDS AS CONTENT (GATE-sword-tiers.md, feat/sword-tiers, 2026-11-20), a new gate, RECOUNTED from
+        // index.yml and every gate file it names: 31 gates, 271 keys, 31 setups, so 240: STA1 to STA5 added. The control:
+        // 265 + 6 = 271. 235 was this line's value.
+        assertEquals(240, loaded.rows());
     }
 
     /**
