@@ -192,6 +192,9 @@ public final class RpgPlugin extends JavaPlugin {
     private OreRegistry ores;
     /** The fight files, content/fights/ (PLAN-dragon-fight.md step F4). */
     private java.util.Map<String, io.github.butterflysmp.rpg.paper.content.FightContent> fights = java.util.Map.of();
+    /** The game-wide damage rules, content/world_damage.yml (PLAN-world-damage.md): Ben's void share. */
+    private io.github.butterflysmp.rpg.paper.content.WorldDamageLoader.Rules worldDamage =
+            new io.github.butterflysmp.rpg.paper.content.WorldDamageLoader.Rules(java.util.OptionalDouble.empty());
     /** The dev fixture of steps F4 + F5 (GATE-fight-ring.md), kept for onDisable and the selftest run end. */
     private io.github.butterflysmp.rpg.paper.fight.FightFixtures fightFixtures;
     private VeinSizeRegistry veinSizes;
@@ -315,6 +318,10 @@ public final class RpgPlugin extends JavaPlugin {
             getLogger().warning("No fights loaded from content/fights -- /rpg fight has nothing to run. "
                     + "Expected 1 (dragon) from dragon.yml.");
         }
+        // The game-wide damage rules (PLAN-world-damage.md): Ben's void share. One Loaded line, or a Refusing line under
+        // which the void stays the server's own.
+        this.worldDamage = new io.github.butterflysmp.rpg.paper.content.WorldDamageLoader(getLogger())
+                .load(new File(contentDir, "world_damage.yml"));
         getLogger().info("Loaded " + abilities.size() + " abilities, "
                 + visuals.size() + " visuals, " + statuses.size() + " statuses, "
                 + elements.size() + " elements, " + enchants.size() + " enchants, "
@@ -781,6 +788,11 @@ public final class RpgPlugin extends JavaPlugin {
                 healthSystem, nameplates, statsBar, healthRegen,
                 this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams, shooter, pouncer, fuser,
                 fightFixtures);
+        // Ben's void ruling (PLAN-world-damage.md): one VoidHits shared by the handler that marks and the HURT line that
+        // takes, so a selftest row's void tick reads cause=void.
+        io.github.butterflysmp.rpg.paper.health.VoidHits voidHits = new io.github.butterflysmp.rpg.paper.health.VoidHits();
+        listeners.bindVoidRule(worldDamage.voidShare(), voidHits);
+        selfTest.bindVoidHits(voidHits);
         getServer().getPluginManager().registerEvents(listeners, this);
 
         // MOBS ALREADY LOADED BEFORE THE LISTENER ABOVE EXISTED GET SEEDED TOO (PLAN-mob-scaling.md

@@ -65,6 +65,16 @@ final class SelfTestBlast {
         return attack == null ? line : line + " attack=" + attack;
     }
 
+    /**
+     * As above, naming the CAUSE where the store's hit came from a rule rather than a dealer (Ben's void ruling,
+     * 2026-11-19: {@code cause=void}). With no cause the line is the one above, word for word.
+     */
+    static String hurtLine(double before, double after, double defense, String dealer, String dealerType,
+                           String attack, String cause) {
+        String line = hurtLine(before, after, defense, dealer, dealerType, attack);
+        return cause == null ? line : line + " cause=" + cause;
+    }
+
     static String fuseLine(String tag, UUID id, int fuse, int max, boolean ignited) {
         return "FUSE tag=" + tag + " " + id + " fuse=" + fuse + "/" + max + " ignited=" + ignited;
     }
