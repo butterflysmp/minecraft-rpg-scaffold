@@ -1,6 +1,6 @@
 # GATE — STEP F9d: DOWN, ALL DOWN, AND THE MODE HE ENTERED IN
 
-**Status: NOT RUN.** Written before any boot of `feat/fight-down`, which has **no boot of its own**. The one R0 and run
+**Seat approval 2026-11-19: code and gate diffed at 5c8d8a9e, booted at cb821675, readings at 453e5c9a. Merge on Ben's words.** **Status: READ, 2026-11-19, at `cb821675`; FDM1 NOT RUN, carried** (was: NOT RUN). Written before any boot of `feat/fight-down`, which has **no boot of its own**. The one R0 and run
 sheet are in `GATE-fight-revive.md` (F9e, stacked on this branch), and its boot is on F9e's head. Every prediction below
 is for THIS branch's code. Where F9e changes a line these rows read (the copy, the revive), `GATE-fight-revive.md`
 re-predicts the row.
@@ -68,6 +68,9 @@ home in survival. **Difficulty normal** (each setup sets it).
 >
 > The line above is not edited; this note corrects it. The full account is under *WHAT IT FOUND* in
 > `GATE-fight-revive.md`.
+
+> **THE SEAT'S OWN MISS, 2026-11-19 (the seat's words, recorded at its request).** The seat accepted "nothing else
+> hurts him" for FD2 without checking that x 60 is outside the 48-block ring. Four strikes dealt 273 of his 350.
 
 ### FD1 — A SOLO DEATH INSIDE: DOWN, SPECTATOR, ALL DOWN, FAILED, FIVE SECONDS, HOME IN SURVIVAL (SURVIVAL)
 
