@@ -1,0 +1,22 @@
+# GATE-sword-smithing.md: NETHERITE AT THE SMITHING TABLE (feat/sword-smithing, 2026-11-20). `/rpg selftest sword-smithing <row>`.
+# NO BOOT OF ITS OWN: GATE-sword-convert.md (the stack's top) carries the one R0 and run sheet. Nothing here can hurt him.
+setup:
+  - cmd: "time set 6000"
+  - close: ""
+
+# SSA1: hands him a minted Diamond Sword (wear set to 100, its rolled enchants shown), one netherite upgrade template
+# and one netherite ingot. Ben then smiths by hand (SSM1).
+SSA1:
+  - cmd: "rpg give diamond_sword"
+  - hold: diamond_sword
+  - cmd: "rpg durability set 100"
+  - cmd: "rpg enchant show"
+  - cmd: "give @s minecraft:netherite_upgrade_smithing_template 1"
+  - cmd: "give @s minecraft:netherite_ingot 1"
+
+# SSA2: AFTER he has smithed: the netherite sword he holds, its enchants and its carried wear (one +1 read).
+SSA2:
+  - hold: netherite_sword
+  - dump: held
+  - cmd: "rpg enchant show"
+  - cmd: "rpg durability damage 1"

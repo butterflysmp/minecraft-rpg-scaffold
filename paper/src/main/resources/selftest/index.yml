@@ -72,3 +72,6 @@ gates:
 # sword-tiers (the sword ladder, 2026-11-20, feat/sword-tiers on master) is paired with docs/gates/GATE-sword-tiers.md:
 # the seven swords as content. No boot of its own; GATE-sword-convert.md (the stack's top) carries the one R0 and run sheet.
   - sword-tiers
+# sword-smithing (the sword ladder, 2026-11-20, feat/sword-smithing on feat/sword-tiers) is paired with
+# docs/gates/GATE-sword-smithing.md: netherite at the smithing table. No boot of its own.
+  - sword-smithing
