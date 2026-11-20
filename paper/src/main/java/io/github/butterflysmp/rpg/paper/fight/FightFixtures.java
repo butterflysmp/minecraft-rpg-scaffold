@@ -72,14 +72,19 @@ public final class FightFixtures {
     /** {@code fight} and {@code mobs} are read at each start, so a content reload is picked up by the next fight. */
     public FightFixtures(AdapterContext adapters, Supplier<Optional<FightContent>> fight, Supplier<MobRegistry> mobs,
                          ProfileService profiles, FightWorlds worlds,
-                         io.github.butterflysmp.rpg.core.hud.ActionBarHolds<net.kyori.adventure.text.Component> bars) {
+                         io.github.butterflysmp.rpg.core.hud.ActionBarHolds<net.kyori.adventure.text.Component> bars,
+                         java.nio.file.Path arenasDir) {
         this.adapters = adapters;
         this.fight = fight;
         this.mobs = mobs;
         this.profiles = profiles;
         this.worlds = worlds;
         this.bars = bars;
+        this.templates = new ArenaTemplates(arenasDir, adapters.log());
     }
+
+    /** Item 2 (C3): the template-file arena source, and the export. */
+    private final ArenaTemplates templates;
 
     /** F9e c: the shared action-bar holds, so a reviver's progress is not drawn over by the stats bar. */
     private final io.github.butterflysmp.rpg.core.hud.ActionBarHolds<net.kyori.adventure.text.Component> bars;
@@ -197,8 +202,7 @@ public final class FightFixtures {
 
     /** Builds the arena in {@code w} and starts its fight with {@code p} its first entrant. */
     private ArenaFight startArena(Player p, FightContent f, World w, boolean withDragon) {
-        worlds.build(w, f.arena().shape());
-        ArenaSite site = new ArenaSite(w, f.arena().shape(), f.arena().allDownSeconds() * 20);
+        ArenaSite site = new ArenaSite(w, buildArena(w, f), f.arena().allDownSeconds() * 20);
         site.addEntrant(p.getUniqueId());
         FightInstance started = new FightInstance(adapters, f, mobs.get(), site, p.getName(), withDragon,
                 this::forget);
@@ -220,6 +224,32 @@ public final class FightFixtures {
         if (running()) current.stop("replaced by an arena fight");
         current = started;
         return a;
+    }
+
+    /**
+     * Item 2 (C3): THE ARENA, FROM ITS SOURCE. {@code generated}: the stand-in, as before. {@code template}: the file
+     * placed and its markers removed. A template that is missing or malformed is refused by name, and the generated
+     * arena is built instead, so a fight always has its floor. Returns what the fight reads.
+     */
+    private io.github.butterflysmp.rpg.core.fight.ArenaLayout buildArena(World w, FightContent f) {
+        FightContent.Arena arena = f.arena();
+        if (arena.source() == FightContent.Source.TEMPLATE) {
+            Object t = templates.load(arena.templateFile(), arena.shape().floorY(), f.settings().crystalCount());
+            if (t instanceof ArenaTemplates.Loaded loaded) return templates.place(w, loaded);
+            adapters.log().warning("FIGHTWORLD template refused name=" + arena.templateFile() + " why=" + t
+                    + " -- the generated arena is built instead");
+        }
+        worlds.build(w, arena.shape());
+        return arena.shape().layout();
+    }
+
+    /** Item 2 (dev): {@code export <name>}: the running arena saved as a template, its markers in place. */
+    public String exportArena(String name) {
+        ArenaFight a = runningArena();
+        if (a == null) return "No arena fight is running.";
+        Optional<FightContent> content = fight.get();
+        if (content.isEmpty()) return "No fight is loaded.";
+        return templates.export(a.world(), content.get().arena().shape(), a.site().layout(), name);
     }
 
     /** Saves his way back and sends him in. */
@@ -693,16 +723,16 @@ public final class FightFixtures {
      */
     private String probeArena(ArenaFight a, String when) {
         World w = a.world();
-        io.github.butterflysmp.rpg.core.fight.ArenaShape s = a.site().shape();
+        io.github.butterflysmp.rpg.core.fight.ArenaLayout s = a.site().layout();
         int bedrock = 0;
         for (int y = w.getMinHeight(); y < w.getMaxHeight(); y++) {
             if (w.getBlockAt(s.centreX(), y, s.centreZ()).getType() == org.bukkit.Material.BEDROCK) bedrock++;
         }
         org.bukkit.Material top = w.getBlockAt(s.centreX(), s.floorY(), s.centreZ()).getType();
         int fire = 0;
-        int r = s.discRadius();
+        int r = s.scanRadius();
         int fromY = s.floorY() + 1;
-        int toY = s.floorY() + s.pillarTopAboveFloor() + 3;
+        int toY = s.floorY() + s.scanTopAboveFloor();
         for (int x = s.centreX() - r; x <= s.centreX() + r; x++) {
             for (int z = s.centreZ() - r; z <= s.centreZ() + r; z++) {
                 for (int y = fromY; y <= toY; y++) {

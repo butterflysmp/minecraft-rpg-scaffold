@@ -178,6 +178,15 @@ public record MobBlink(double triggerRange, double near, double far, int attempt
             remaining = length;
         }
 
+        /** F21: resume a cooldown saved on the mob, clamped to [0, length] (a stale end cannot hold it longer). */
+        public void resume(int remainingTicks) {
+            remaining = Math.max(0, Math.min(length, remainingTicks));
+        }
+
+        public int length() {
+            return length;
+        }
+
         public boolean running() {
             return remaining > 0;
         }

@@ -198,8 +198,11 @@ class FightRulesSourceTest {
     /** The HURT line names the attack through the late-bound lookup, bound in the plugin. */
     @Test
     void theHurtLineNamesTheAttack() throws IOException {
-        assertTrue(code("selftest/SelfTestRun.java")
-                .contains("dealer, type, service.attackNameFor(player.getUniqueId(), change.dealer())));"));
+        // Widened 2026-11-19 by Ben's void ruling: the line also names its cause (cause=void). Both arguments, each
+        // anchored at its own terminator so a further widening cannot slide past either needle.
+        String run = code("selftest/SelfTestRun.java");
+        assertTrue(run.contains("dealer, type, service.attackNameFor(player.getUniqueId(), change.dealer()),"));
+        assertTrue(run.contains("service.hurtCauseFor(player.getUniqueId())));"));
         assertTrue(code("RpgPlugin.java").contains("selfTest.bindAttackNames(fightFixtures::attackNameFor);"));
     }
 

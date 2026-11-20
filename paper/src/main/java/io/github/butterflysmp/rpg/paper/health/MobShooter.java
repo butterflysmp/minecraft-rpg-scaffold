@@ -135,9 +135,9 @@ public final class MobShooter implements ShotSink {
         /** The instrument's fixed draw for the NEXT blink, which it forces on the next tick; null otherwise. */
         MobBlink.Draw forced;
         /**
-         * Its blink's cooldown (step R8), or null with no blink: STATE ON THE LIVE MOB, held by its loop and dying with
-         * it. NOT in the PDC: a Phalanx that unloads and loads again starts a fresh loop with no cooldown, as its shot
-         * clock starts fresh (X-o's sibling; the seat's to rule if it should persist).
+         * Its blink's cooldown (step R8), or null with no blink: held by its loop. F21 (the seat's queue, item 4,
+         * 2026-11-19): its END is also saved in the mob's PDC ({@code Keys.blinkReadyAt}) when a blink lands, and a loop
+         * that starts again resumes it ({@code resumeCooldown}). The shot clock still starts fresh (X-o).
          */
         final MobBlink.Cooldown cooldown;
         /**
@@ -153,6 +153,24 @@ public final class MobShooter implements ShotSink {
             this.blink = blink;
             this.clock = new MobShot.Clock(shot.periodTicks());
             this.cooldown = blink == null ? null : blink.cooldown();
+        }
+    }
+
+    /**
+     * F21 (the seat's queue, item 4, 2026-11-19): a Phalanx whose loop starts again (an unload and a load) resumes its
+     * blink cooldown from the end saved on it, clamped to one length (a server tick from an earlier run may lie past now).
+     * Logged when anything is resumed.
+     */
+    private void resumeCooldown(Owner o) {
+        if (o.cooldown == null) return;
+        Long readyAt = o.mob.getPersistentDataContainer().get(adapters.keys().blinkReadyAt,
+                org.bukkit.persistence.PersistentDataType.LONG);
+        if (readyAt == null) return;
+        long left = readyAt - Bukkit.getCurrentTick();
+        o.cooldown.resume((int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, left)));
+        if (o.cooldown.running()) {
+            adapters.log().info("BLINK cooldown resumed mob=" + o.mobId + " id=" + o.mob.getUniqueId()
+                    + " remaining=" + o.cooldown.remaining());
         }
     }
 
@@ -241,6 +259,7 @@ public final class MobShooter implements ShotSink {
         Owner running = owners.get(mob.getUniqueId());
         if (running != null && running.task.isRunning()) return;
         Owner o = new Owner(mob, mobId, def.shot(), def.blink());
+        resumeCooldown(o);
         o.task = RepeatingTask.start(new EntityTaskTarget(mob, adapters.scheduler(), adapters.log()), 1, "phalanx-shot",
                 () -> {
                     step(o);
@@ -491,6 +510,9 @@ public final class MobShooter implements ShotSink {
         // THE COOLDOWN STARTS HERE, at a blink that LANDS (forced or not), and nowhere else.
         o.cooldown.landed();
         o.blinked = true;
+        // F21: and the cooldown's end is saved on the mob, so an unload and a load do not reset it.
+        mob.getPersistentDataContainer().set(adapters.keys().blinkReadyAt,
+                org.bukkit.persistence.PersistentDataType.LONG, (long) Bukkit.getCurrentTick() + o.cooldown.length());
         // READ BACK, after the act: where it stands and whether it is invisible, never the decision restated.
         Location now = mob.getLocation();
         adapters.log().info(String.format(java.util.Locale.ROOT,

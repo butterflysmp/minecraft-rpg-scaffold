@@ -53,8 +53,8 @@ class SelfTestDownWalkTest {
             String arg = step.arg().trim();
             if (step.verb() == Scenario.Verb.CMD && arg.startsWith("rpg fight enter")) place = Place.FIGHT;
             if (step.verb() == Scenario.Verb.CMD && place == Place.FIGHT
-                    && (arg.equals("kill @s") || arg.equals("tp @s ~60 -130 ~"))) {
-                down = true; // FD1, FD2, FD4: his death is cancelled; he spectates, alive, in the fight's world
+                    && (arg.equals("kill @s") || arg.equals("tp @s ~ -130 ~"))) {
+                down = true; // FD1, FD2R2, FD4: his death is cancelled; he spectates, alive, in the fight's world
             }
             if (step.verb() == Scenario.Verb.CMD && arg.startsWith("execute in minecraft:overworld run tp")) {
                 place = Place.RUN; // FD4: a down spectator leaving the world is returned at once
@@ -75,7 +75,7 @@ class SelfTestDownWalkTest {
 
     @Test
     void everyFightDownRowWalksThroughTheGuardWhileHeIsDown() {
-        for (String row : List.of("FD1", "FD2", "FD3", "FD4")) {
+        for (String row : List.of("FD1", "FD2R2", "FD3", "FD4")) {
             List<String> trace = new ArrayList<>();
             assertEquals(Optional.empty(), walk(row, REAL, trace), row + " aborted: " + trace);
             assertTrue(trace.stream().anyMatch(t -> t.contains(" down")), row + " went down in the walk: " + trace);

@@ -73,7 +73,19 @@ public record FightContent(String id, FightSettings settings, RingLook look, Str
      *                    one down) and everyone's return home; 0 or more
      */
     public record Arena(ArenaShape shape, long timeOfDayTicks, double entryDxBlocks, double entryDzBlocks,
-                        Environment environment, int allDownSeconds) {}
+                        Environment environment, int allDownSeconds, Source source, String templateFile) {}
+
+    /**
+     * Where the arena comes from (PLAN-dragon-mobs.md C3; the seat's queue, item 2): {@code generated} (the stand-in,
+     * the shipped choice) or {@code template} with {@code template_file: <name>}, a saved structure in the plugin's
+     * {@code arenas/<name>.nbt}. A missing or malformed template is refused by name when the fight starts, and the
+     * generated arena is built instead.
+     */
+    public enum Source {
+        GENERATED, TEMPLATE;
+
+        public String fileName() { return name().toLowerCase(java.util.Locale.ROOT); }
+    }
 
     /** The fight world's environment: {@code end} or {@code normal} in the file. */
     public enum Environment {

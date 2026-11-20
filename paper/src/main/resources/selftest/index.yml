@@ -63,3 +63,6 @@ gates:
 # fight-revive (step F9e, 2026-11-19, stacked on fight-down) is paired with docs/gates/GATE-fight-revive.md: the copy and
 # the revive. It carries the ONE R0 and run sheet for itself and fight-down, and Ben's rows for both.
   - fight-revive
+# fight-template (the seat's queue item 2, 2026-11-19, stacked on fight-revive) is paired with
+# docs/gates/GATE-fight-template.md: the template-file arena source. No boot of its own; written for a later boot.
+  - fight-template

@@ -32,7 +32,8 @@ import java.util.UUID;
 public final class ArenaSite implements FightSite {
 
     private final World world;
-    private final ArenaShape shape;
+    /** What the fight reads from its arena, generated or a template (the seat's queue, item 2). */
+    private final io.github.butterflysmp.rpg.core.fight.ArenaLayout layout;
     private final Location centre;
     private final List<Location> crystalSpots;
 
@@ -42,16 +43,13 @@ public final class ArenaSite implements FightSite {
     /** F9d: who is down, and the ALL-DOWN clock. */
     private final DownRoster roster;
 
-    ArenaSite(World world, ArenaShape shape, int allDownDelayTicks) {
+    ArenaSite(World world, io.github.butterflysmp.rpg.core.fight.ArenaLayout layout, int allDownDelayTicks) {
         this.roster = new DownRoster(allDownDelayTicks);
         this.world = world;
-        this.shape = shape;
-        this.centre = new Location(world, shape.centreX() + 0.5, shape.groundY(), shape.centreZ() + 0.5);
+        this.layout = layout;
+        this.centre = new Location(world, layout.centreX() + 0.5, layout.groundY(), layout.centreZ() + 0.5);
         List<Location> spots = new ArrayList<>();
-        for (int n = 1; n <= shape.pillarCount(); n++) {
-            double[] s = shape.crystalSpot(n);
-            spots.add(new Location(world, s[0], s[1], s[2]));
-        }
+        for (double[] s : layout.crystalSpots()) spots.add(new Location(world, s[0], s[1], s[2]));
         this.crystalSpots = List.copyOf(spots);
     }
 
@@ -85,7 +83,7 @@ public final class ArenaSite implements FightSite {
 
     @Override public boolean nobodyInside() { return entrants.isEmpty(); }
 
-    ArenaShape shape() { return shape; }
+    io.github.butterflysmp.rpg.core.fight.ArenaLayout layout() { return layout; }
 
     boolean isEntrant(UUID id) { return entrants.contains(id); }
 

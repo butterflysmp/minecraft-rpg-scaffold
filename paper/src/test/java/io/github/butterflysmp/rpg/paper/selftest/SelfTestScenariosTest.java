@@ -38,9 +38,10 @@ class SelfTestScenariosTest {
                 "withered-shortbow", "sunder", "deft-hands", "mining-auto", "nexus-back", "dragon-bodies",
                 "dragon-split", "dragon-growth", "dragon-blast", "dragon-beam", "dragon-teleport",
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
-                        "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive"),
+                        "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template"),
                 List.copyOf(loaded.gates().keySet()),
-                "the twenty-eight gates, in boot order (fight-revive LAST, step F9e, 2026-11-19, a NEW gate after fight-down;"
+                "the twenty-nine gates, in boot order (fight-template LAST, the seat's queue item 2, 2026-11-19, a NEW gate"
+                        + " after fight-revive; fight-revive before it, step F9e, 2026-11-19, a NEW gate after fight-down;"
                         + " fight-down before it, step F9d, 2026-11-19, a NEW gate after fight-end;"
                         + " fight-end before it, step F9c, 2026-11-19, a NEW gate after fight-rules;"
                         + " fight-rules before it, step F9b, 2026-11-19, a NEW gate after fight-dragon;"
@@ -219,7 +220,15 @@ class SelfTestScenariosTest {
         // Then THE COPY AND THE REVIVE (GATE-fight-revive.md, step F9e, 2026-11-19, stacked on fight-down), a new gate,
         // RECOUNTED the same way on this branch's tree: 28 gates, 256 keys, 28 setups, so 228: RV1-RV4 and RVB1-RVB3
         // added. The control: 248 + 8 = 256. 221 was this line's value.
-        assertEquals(228, loaded.rows());
+        // Then THE TEMPLATE-FILE ARENA SOURCE (GATE-fight-template.md, the seat's queue item 2, 2026-11-19), a new gate,
+        // RECOUNTED the same way on this branch's tree: 29 gates, 258 keys, 29 setups, so 229: TA1 added. The control:
+        // 256 + 2 = 258. 228 was this line's value.
+        // Then EB4R3 (GATE-fight-end.md, the seat's queue item 4, 2026-11-19), RECOUNTED: 29 gates, 259 keys, 29 setups,
+        // so 230. The control: 258 + 1 = 259. 229 was this line's value.
+        // Then FD2R2 (GATE-fight-down.md, Ben's void ruling and the seat's part 2, 2026-11-19): FD2 retired (read at
+        // cb821675) and FD2R2 in its place, RECOUNTED: 29 gates, 259 keys, 29 setups, so 230. The control: 259 - 1 + 1 =
+        // 259. 230 was this line's value, unchanged.
+        assertEquals(230, loaded.rows());
     }
 
     /**

@@ -75,6 +75,12 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
  * would turn the void into a fall whose duration SCALES WITH MAX HP -- "kills eventually" is not the
  * same as "kills", and the stat it scales with is designed to grow.
  *
+ * <p><b>FOR A PLAYER, VOID NO LONGER REACHES THIS TABLE (Ben's ruling, 2026-11-19; PLAN-world-damage.md).</b> "A player
+ * should lose 10% of their health each damage tick (0.5s) to the void regardless of their max health": that is a share
+ * of his MAXIMUM, defence bypassed, so it scales with max HP BY DESIGN rather than by accident, and it reaches zero on the
+ * tenth tick. {@code RpgListeners.onEnvironmentalDamage} takes a player's VOID before this table is asked. The PASS arm
+ * below stays for MOBS (unchanged, by the ruling) and for a player when the rule did not load.
+ *
  * <p><b>Consequence to know, because a later slice depends on it:</b> a combatant removed this way
  * never reaches zero CUSTOM HP, so it does not run the custom death path ({@code MobDeathSystem} and
  * {@code PlayerHealthSystem} both consume {@code reachedZero}). Nothing leaks -- cleanup rides

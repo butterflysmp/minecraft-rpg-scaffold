@@ -1,0 +1,12 @@
+# THE GAME-WIDE DAMAGE RULES (PLAN-world-damage.md). Read by WorldDamageLoader; one "Loaded world damage" line at
+# enable, or a "Refusing the void rule" line naming why, in which case the void is the server's own.
+
+void:
+  # Ben, 2026-11-19 (PLAN-dragon-fight.md section 1 j), verbatim: "A player should lose 10% of their health each damage
+  # tick (0.5s) to the void regardless of their max health."
+  #
+  # The share of a PLAYER'S MAXIMUM health in our store that one void tick takes, defence and every mitigation bypassed
+  # (a share of the bar, not a hit), no element. So the tenth tick takes the last of a full bar (core's VoidShare snaps
+  # floating residue so that is true for every maximum). Mobs are unchanged. Where the void begins and how often it ticks
+  # stay the server's own: READ, every 10 ticks (PLAN-world-damage.md section 2).
+  share_of_max_per_tick: 0.10

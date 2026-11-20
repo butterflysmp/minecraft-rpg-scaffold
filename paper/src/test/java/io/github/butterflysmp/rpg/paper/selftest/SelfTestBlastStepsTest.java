@@ -37,6 +37,20 @@ class SelfTestBlastStepsTest {
                 SelfTestBlast.hurtLine(4.0, 4.0, 0.0, "self", "self", null));
     }
 
+    /**
+     * Ben's void ruling (2026-11-19): a void tick's HURT appends {@code cause=void}; with no cause the line is word for
+     * word the attack form above, so no merged prediction moves.
+     */
+    @Test
+    void aVoidTicksHurtLineNamesItsCauseAndEveryOtherIsUnchanged() {
+        assertEquals("HURT before=35.000 after=35.000 defense=10.000 dealer=self dealerType=self cause=void",
+                SelfTestBlast.hurtLine(35.0, 35.0, 10.0, "self", "self", null, "void"));
+        assertEquals("HURT before=80.000 after=72.727 defense=10.000 dealer=" + PHAGE
+                        + " dealerType=ender_dragon/ender_dragon attack=bite",
+                SelfTestBlast.hurtLine(80.0, 800.0 / 11.0, 10.0, PHAGE.toString(), "ender_dragon/ender_dragon", "bite",
+                        null));
+    }
+
     @Test
     void theFuseLineNamesTheSwellAndTheIgnitedFlag() {
         assertEquals("FUSE tag=bl5 " + PHAGE + " fuse=10/30 ignited=false",

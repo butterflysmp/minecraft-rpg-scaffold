@@ -1,0 +1,26 @@
+# GATE-fight-template.md: THE TEMPLATE-FILE ARENA SOURCE (feat/fight-template, the seat's queue item 2, 2026-11-19).
+# `/rpg selftest fight-template`. NO BOOT OF ITS OWN, and written for a later boot.
+#
+# TA1 runs on the shipped content (source: generated): it EXPORTS the generated arena to arenas/ta_one.nbt, a real
+# template for the later boot's rows (TB1 to TB5, GATE-fight-template.md), which need a build whose dragon.yml says
+# `source: template`. Nothing here can hurt him: no dragon, no Mage, he stands at the centre.
+
+setup:
+  - difficulty: normal
+  - wait: 2
+  - cmd: "time set 6000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+
+# TA1: EXPORT THE GENERATED ARENA as a template: the box of the disc and the pillars, a podium marker at C and a crystal
+# marker on each pillar, put back after the fill.
+TA1:
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter nodragon"
+  - wait: 20
+  - cmd: "rpg fight export ta_one"
+  - wait: 5
+  - cmd: "rpg fight arena-probe"
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg fight worlds"

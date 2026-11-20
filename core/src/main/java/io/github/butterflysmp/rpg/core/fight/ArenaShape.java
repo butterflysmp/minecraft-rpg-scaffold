@@ -89,6 +89,17 @@ public record ArenaShape(int centreX, int centreZ, int floorY, int discRadius, i
     /** C's ground for the ring and the Mage: the block a player's feet stand in on the floor. */
     public double groundY() { return floorY + 1; }
 
+    /**
+     * The layout the fight reads from this GENERATED arena (the seat's queue, item 2): exactly the numbers it read from
+     * the shape before, so no row predicted against the generated arena moves. The probe scans the disc, up to three
+     * blocks above the pillars' top.
+     */
+    public ArenaLayout layout() {
+        List<double[]> spots = new ArrayList<>(pillarCount);
+        for (int n = 1; n <= pillarCount; n++) spots.add(crystalSpot(n));
+        return new ArenaLayout(centreX, centreZ, floorY, spots, discRadius, pillarTopAboveFloor + 3);
+    }
+
     /** The pillars' centre columns, world block x and z, pillar 1 first. */
     public List<int[]> pillarCentres() {
         List<int[]> out = new ArrayList<>(pillarCount);

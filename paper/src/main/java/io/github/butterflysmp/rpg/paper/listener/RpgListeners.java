@@ -273,6 +273,22 @@ public final class RpgListeners implements Listener {
     private final DamageWindow damageWindow = new DamageWindow(Bukkit::getCurrentTick);
 
     /**
+     * BEN'S VOID RULING (2026-11-19; PLAN-world-damage.md): the share of a player's MAXIMUM one void tick takes, from
+     * {@code content/world_damage.yml}. Empty, until bound or when the loader refused it: the void is then the server's
+     * own, as before (VOID is PASS). Bound by {@code RpgPlugin} beside the selftest's binders.
+     */
+    private java.util.OptionalDouble voidShare = java.util.OptionalDouble.empty();
+
+    /** Which store hit was the void's, for the selftest's HURT line ({@code cause=void}). */
+    private io.github.butterflysmp.rpg.paper.health.VoidHits voidHits = new io.github.butterflysmp.rpg.paper.health.VoidHits();
+
+    /** Binds the void rule and the hit marks the HURT line reads. */
+    public void bindVoidRule(java.util.OptionalDouble share, io.github.butterflysmp.rpg.paper.health.VoidHits hits) {
+        this.voidShare = java.util.Objects.requireNonNull(share);
+        this.voidHits = java.util.Objects.requireNonNull(hits);
+    }
+
+    /**
      * The blocks whose vanilla screen we replace outright, and what opens INSTEAD.
      *
      * <p><b>A table rather than a second hand-written if-block, because this rule has a documented
@@ -2008,6 +2024,7 @@ public final class RpgListeners implements Listener {
         adapters.safeLandings().forget(playerId);   // a leap's fall-damage mark (section 7.6)
         meleeHits.forgetAttacker(playerId);   // drop any swing that never landed
         damageWindow.forget(playerId);        // and their environmental window, or the map grows
+        voidHits.forget(playerId);            // and any void mark the HURT line never took
         adapters.scorch().forget(playerId);   // and their burn
         WitherPotion.forgetAndStrip(adapters.wither(), event.getPlayer());   // their wither, and its potion
         resources.clear(playerId);
@@ -2671,6 +2688,15 @@ public final class RpgListeners implements Listener {
             return;
         }
         if (!adapters.stats().tracks(id)) return;
+
+        // BEN'S VOID RULING (2026-11-19; PLAN-world-damage.md): a PLAYER below the void loses a share of his MAXIMUM
+        // each void tick, defence bypassed, in every world. Mobs fall through to VOID's PASS below, unchanged. A DOWN
+        // player never reaches here: F9d cancels his damage at LOWEST and this handler ignores cancelled events.
+        if (event.getCause() == EntityDamageEvent.DamageCause.VOID && target instanceof Player player
+                && voidShare.isPresent()) {
+            onPlayerVoidTick(event, player);
+            return;
+        }
         if (VanillaDamagePolicy.forCause(event.getCause()) == VanillaDamagePolicy.Action.PASS) return;
 
         // A SCORCHED VICTIM'S FIRE TICK IS OURS, AND LETTING IT THROUGH IS A DOUBLE-DIP.
@@ -2941,6 +2967,34 @@ public final class RpgListeners implements Listener {
      * hundred times the token -- so a player needs no floor here and adding one would be a second
      * mechanism competing with the first.
      */
+    /**
+     * ONE VOID TICK ON A PLAYER (Ben, 2026-11-19: "A player should lose 10% of their health each damage tick (0.5s) to
+     * the void regardless of their max health"). The account, with the READ marks, is PLAN-world-damage.md.
+     *
+     * <ul>
+     *   <li><b>The cadence is the server's.</b> READ: {@code LivingEntity.onBelowWorld} calls {@code hurt} EVERY tick
+     *       below the void line, and a full hit lands only once {@code invulnerableTime <= invulnerableDuration / 2}
+     *       (20 / 2), so every 10 ticks. Our token becomes vanilla's {@code lastHurt}, which lets the in-between ticks
+     *       through as events (the ratchet's {@code amount > lastHurt}), so the claim on {@link #damageWindow} (10
+     *       ticks, vanilla units, the same window every rerouted cause rides) is what keeps it one hit per 0.5 s.</li>
+     *   <li><b>The amount is ours:</b> core's {@code VoidShare}, a share of his MAXIMUM, defence bypassed, no element,
+     *       the tenth tick of a full bar taking the last of it.</li>
+     *   <li><b>Tokened, not cancelled</b>, for the cadence above, and so vanilla's own 4 never reaches the display
+     *       bar (which is how the void used to kill: PLAN-world-damage.md section 3).</li>
+     * </ul>
+     */
+    private void onPlayerVoidTick(EntityDamageEvent event, Player player) {
+        UUID id = player.getUniqueId();
+        double toDeal = damageWindow.claim(id, event.getDamage(), false);
+        event.setDamage(TOKEN_DAMAGE);
+        if (toDeal <= 0.0) return;   // inside the window: absorbed, as every rerouted cause is
+        io.github.butterflysmp.rpg.core.combat.VoidShare.Hit hit = io.github.butterflysmp.rpg.core.combat.VoidShare.hitFor(
+                adapters.stats().max(id), adapters.stats().current(id), voidShare.getAsDouble());
+        voidHits.mark(id, Bukkit.getCurrentTick());
+        BukkitCombatant.of(player, adapters).handle().applyDamage(hit.amount(), id,
+                io.github.butterflysmp.rpg.core.combat.CritState.NORMAL, hit.defense());
+    }
+
     private void floorSoTokenCannotKill(LivingEntity victim) {
         if (victim instanceof Player) return;
         if (!adapters.stats().tracks(victim.getUniqueId())) return;

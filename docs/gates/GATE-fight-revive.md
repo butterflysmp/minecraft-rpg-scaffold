@@ -113,6 +113,14 @@ The booter's checklist is `.claude/rules/booting.md`; this list is its instance 
    - **RV4 and RVB3 put you down on purpose**, and nothing else hurts you.
    - RVB2 asks you to sneak on a practice copy.
    - Each question says whether it wants yes or no, or your own words.
+4b. **Two owed rows from `GATE-fight-site.md`** (added 2026-11-19, the seat's queue, item 4; both UNREAD since F8b):
+    - `/rpg selftest fight-site MG5R3`, then `/rpg selftest fight-site MG7R3`. Each is ONCE and runs its gate's setup
+      first. In the ordinary world, about a minute each.
+    - **Neither can hurt you.** You stand 1 west of the Mage, inside every ring, so every strike reads `k=0
+      damage=0.000 inside` (the rows' own prediction). An ordinary-world fight never kills anyone. MG7R3's two
+      `damage` commands hit the crystal, not you; were both refusals to fail, the crystal stands on its 40-block circle,
+      beyond an explosion's reach (INFERRED). **The arithmetic: 0 against your 350.**
+    - Their predictions are `GATE-fight-site.md`'s MG5R3 and MG7R3, unchanged; their readings go there.
 5. **THE MANUAL ROW (FDM1, `GATE-fight-down.md`):**
    - Type `/rpg fight enter nodragon`.
    - Walk off the edge of the floor into the void.
@@ -401,3 +409,17 @@ by `SELFTEST RUN RESTORED … gamemode=SURVIVAL`, the mode the run's end set.
 7. **FD2's fall: about 166 ticks below the void line before the down.** The `tp` to y -130 is between t=16 and t=20,
    and the down is at t=186, at y -671.72. **Neither predicted nor explained here.**
 8. **FDM1 was not run.** The stale-login route on a server, and his mode after a reconnect, are still owed.
+
+## THE PREDICTION FIXES FROM THE SECOND START (THE SEAT'S PART 2, ITEM b, 2026-11-19): NO BEHAVIOUR CHANGE
+
+Written on `feat/fight-template`. **No prediction or reading above is edited.**
+
+- **RV3, the Mage's removal: no line could read it.** READ, `FightInstance.removeMage`, called from `stop`: it releases
+  the gate and calls `mage.remove()`, **with no log line**. The only Mage line at an end is `FIGHT mage-health … at=end`,
+  and the world is then unloaded and deleted with everything in it. **From the next boot, a row that predicts the Mage
+  removed must name a probe:** `ENTITIES WITHER_SKELETON count=0 radius=16 dying=0` once he is home (the probe FD1-FD4
+  already run). Or it predicts the world's deletion and says that is all it reads.
+- **RV4, the first two strikes came before the close.** READ at `cb821675`: `STRIKE … k=1` at t=560 (r 1.380) and `k=2`
+  at t=600 (r 0.180), then `FAILED_CLOSED t=606`. A strike finds a player outside once the ring's radius is under his
+  distance from its centre (2 here), and the slow close crosses that before it reaches zero. **From the next boot, a
+  closed-ring row predicts the strikes from the tick r falls under his distance**, not from `FAILED_CLOSED`.

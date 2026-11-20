@@ -440,7 +440,8 @@ final class SelfTestRun {
             type = e == null ? "gone" : e.getType().getKey().getKey() + (mobId == null ? "" : "/" + mobId);
         }
         log(SelfTestBlast.hurtLine(change.beforeDefense(), change.amount(), service.stats().defenseValue(player.getUniqueId()),
-                dealer, type, service.attackNameFor(player.getUniqueId(), change.dealer())));
+                dealer, type, service.attackNameFor(player.getUniqueId(), change.dealer()),
+                service.hurtCauseFor(player.getUniqueId())));
     }
 
     private void awaitRespawn(Location where, int waited) {

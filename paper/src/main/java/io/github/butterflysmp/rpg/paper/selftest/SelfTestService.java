@@ -49,6 +49,18 @@ public final class SelfTestService {
     /** F9b: names a fight dragon's attack behind a HURT; bound late, by the plugin, to the fights. None until then. */
     private java.util.function.BiFunction<java.util.UUID, java.util.UUID, String> attackNames = (victim, dealer) -> null;
 
+    private io.github.butterflysmp.rpg.paper.health.VoidHits voidHits = new io.github.butterflysmp.rpg.paper.health.VoidHits();
+
+    /** Binds the marks the void handler makes, so a HURT from a void tick reads {@code cause=void} (PLAN-world-damage.md). */
+    public void bindVoidHits(io.github.butterflysmp.rpg.paper.health.VoidHits hits) {
+        this.voidHits = java.util.Objects.requireNonNull(hits);
+    }
+
+    /** The cause the HURT line names: {@code void} for a void tick priced within two ticks, else null. */
+    String hurtCauseFor(java.util.UUID victim) {
+        return voidHits.take(victim, org.bukkit.Bukkit.getCurrentTick()) ? "void" : null;
+    }
+
     /** Binds the lookup the HURT line names a dragon's attack by ({@code FightFixtures.attackNameFor}). */
     public void bindAttackNames(java.util.function.BiFunction<java.util.UUID, java.util.UUID, String> lookup) {
         this.attackNames = java.util.Objects.requireNonNull(lookup);

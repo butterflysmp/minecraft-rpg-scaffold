@@ -70,6 +70,32 @@ EB4R2:
   - ask: "5 2400 yesno The breath, 30 a second, with no push: does it feel right?"
   - ask: "8 2400 yesno Did the breath push you at all?"
 
+# EB4R3: EB4R2 WITH ITS MARGIN (the seat's queue, item 4, 2026-11-19): 50 ticks on the cloud, not 55, so a fourth breath
+# (at 60) is 10 ticks past the stay. Not re-run unless a later boot wants it.
+EB4R3:
+  - death_rules: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight enter"
+  - wait: 20
+  - cmd: "rpg fight dragon phase hover"
+  - cmd: "tp @s 0.5 65 20.5"
+  - tell: "QUESTION 5 IS COMING AGAIN, AND A NEW ONE. The dragon will breathe on the floor and you will be put in the cloud for about two and a half seconds (30 a second before your armour). STAND STILL where you are put and do not walk toward the dragon. The breath should not push you."
+  - wait: 60
+  - cmd: "rpg fight dragon phase breath_attack"
+  - wait: 15
+  - cmd: "rpg fight dragon to-breath"
+  - wait: 50
+  - cmd: "tp @s 0.5 65 20.5"
+  - wait: 5
+  - cmd: "rpg fight leave"
+  - wait: 60
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg fight worlds"
+  - probe_entities: "end_crystal 48"
+  - probe_entities: "wither_skeleton 16"
+  - ask: "5 2400 yesno The breath, 30 a second, with no push: does it feel right?"
+  - ask: "8 2400 yesno Did the breath push you at all?"
+
 # EB5R2: THE FIGHT, NO SAFETY (questions 6 and 7): the dragon and the Mages, every phase with its Mage, up to ten
 # minutes or until it ends. A death is real: he reappears where he entered, with everything he carried.
 EB5R2:

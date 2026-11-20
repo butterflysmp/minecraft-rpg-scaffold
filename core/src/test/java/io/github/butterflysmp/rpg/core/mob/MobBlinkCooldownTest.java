@@ -17,6 +17,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class MobBlinkCooldownTest {
 
+    /**
+     * F21 (the seat's queue, item 4, 2026-11-19): A COOLDOWN RESUMES ACROSS AN UNLOAD. A Phalanx loaded again mid-cooldown
+     * resumes what was left, clamped to [0, length]: a stale value from a past server run cannot hold it past one length.
+     */
+    @Test
+    void aCooldownResumesWhatWasLeftClampedToItsLength() {
+        MobBlink.Cooldown c = blink(240).cooldown();
+        c.resume(100);
+        assertEquals(100, c.remaining());
+        assertTrue(c.running());
+        c.tick();
+        assertEquals(99, c.remaining());
+        MobBlink.Cooldown big = blink(240).cooldown();
+        big.resume(10_000);
+        assertEquals(240, big.remaining(), "never more than one length");
+        MobBlink.Cooldown done = blink(240).cooldown();
+        done.resume(-5);
+        assertEquals(0, done.remaining(), "an end already passed: no cooldown");
+        assertFalse(done.running());
+    }
+
     private static MobBlink blink(int cooldown) {
         return new MobBlink(5, 6, 16, 8, 3, List.of(), "squid_ink", 12, cooldown);
     }

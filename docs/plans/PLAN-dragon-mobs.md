@@ -2780,6 +2780,12 @@ run/versions/26.1.2/paper-26.1.2.jar <class>`.
   as the blast's are. Accepted on Paper, like F3, F9 and F13.
 - **F21, 2026-11-17, step R8: THE BLINK'S COOLDOWN IS NOT SAVED.** It lives on the Phalanx's loop, so a Phalanx that
   unloads and loads mid-cooldown may blink at once, as its shot clock restarts. The seat's to rule if it should persist.
+  - **FIXED 2026-11-19 (the seat's queue, item 4: "Fix it or say why not"), on `feat/fight-template`, NOT YET BOOTED.**
+    - When a blink lands, the server tick its cooldown ends is saved in the mob's PDC (`Keys.blinkReadyAt`, a LONG).
+    - A loop that starts again resumes what is left (`MobBlink.Cooldown.resume`), clamped to one length, so an end
+      from an earlier server run cannot hold it longer. It logs `BLINK cooldown resumed mob=… remaining=…`.
+    - The shot clock still starts fresh (X-o, unchanged).
+    - Witnessed by `MobBlinkCooldownTest` and `BlinkCooldownPersistTest`. An unload and load on a server is UNREAD.
 - **F22, 2026-11-17, THE BAND EDGE (found by PS6 and PQ1 at the boot of `45bc33ce`), A DEFECT, FIXED IN STEP R8's
   SECOND ROUND.** (Not `PLAN-mob-scaling.md`'s F22, which this file cites as M27 / F22.) `MobPounce.standOff` sent the
   mount to EXACTLY the band's far edge (12), and the band counts only distances at or inside 12, so a mount that stopped

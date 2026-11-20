@@ -90,6 +90,10 @@ public final class FightCommand {
                                         .executes(ctx -> reply(ctx, devServer, p -> fixtures.land(
                                                 DoubleArgumentType.getDouble(ctx, "dx"),
                                                 DoubleArgumentType.getDouble(ctx, "dz")))))))
+                .then(Commands.literal("export") // item 2 (C3): the running arena saved as a template
+                        .then(Commands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                .executes(ctx -> reply(ctx, devServer, p -> fixtures.exportArena(
+                                        com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "name"))))))
                 .then(Commands.literal("copy") // F9e f: a practice copy of a named stand-in at C + (dx, dz)
                         .then(Commands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word())
                                 .then(Commands.argument("dx", DoubleArgumentType.doubleArg(-1000.0, 1000.0))

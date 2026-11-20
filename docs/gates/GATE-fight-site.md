@@ -283,11 +283,43 @@ unread.*
 |---|---|---|
 | MG5R2's predictions (1) to (5), unchanged. He now stands **1 west of M** from the landing, inside every ring this row draws (the slow ring is 4.5 or more until the death at about S+251), so **every STRIKE is `k=0 damage=0.000 inside`, with no HURT** | MG5R2's | **UNREAD** (not re-run, by the seat's ruling) |
 
+> **READ, 2026-11-20, the stack's boot at `5c2dee2c` (`/rpg selftest fight-site MG5R3`, 10:58:35 to 10:59:25): AS
+> PREDICTED.** The cell above is not edited.
+>
+> - **The landing:** `FIGHT land t=10 dx=6.000 dz=0.000 result=STARTED`, so L=10 and M at 6.00 0.00 0.00.
+> - **(1)** `FIGHTPHASE t=232 FAST_CLOSE->SLOW_CLOSE`, so S=232 = L+222. **`CRYSTAL t=472 lit index=1`**, which is S+240.
+> - **(2)** `rpg mobdamage 1000000` was allowed, with no MAGEGATE line:
+>   - `FIGHT die t=483 phase=RETURNING slow_close_started=t=232 ticks_in_slow_close=251`;
+>   - **`FIGHTPHASE t=483 SLOW_CLOSE->RETURNING`** and **`CRYSTAL t=483 removed index=1`** on that tick, so D=483;
+>   - REPLY **`"WITHER_SKELETON damaged: 0/6000 custom HP"`**.
+> - **(3)** No FIGHTKILL.
+> - **(4)** `FIGHTPROBE t=485 mage=none crystals=0 beamsOnMage=0 …`.
+> - **(5)** **`FIGHTPHASE t=956 RETURNING->IDLE`**: H − D = 473 = (D − S) + 222 = 251 + 222.
+> - **Every one of the 24 STRIKE lines is `k=0 damage=0.000 inside`, and there is no HURT line.**
+> - RESTORED `gamemode=SURVIVAL`.
+
 ### MG7R3 — MG7R2 re-staged so he stands inside every ring (SURVIVAL) — supersedes MG7R2 — UNREAD
 
 | prediction | stands on | READING |
 |---|---|---|
 | MG7R2's predictions (1) to (5), unchanged; he stands **1 west of M**, so **every STRIKE is inside, with no HURT** | MG7R2's | **UNREAD** (not re-run, by the seat's ruling) |
+
+> **READ, 2026-11-20, the stack's boot at `5c2dee2c` (`/rpg selftest fight-site MG7R3`, 11:00:16 to 11:00:42): AS
+> PREDICTED.** The cell above is not edited.
+>
+> - **The landing:** `FIGHT land t=10 dx=6.000 dz=0.000 result=STARTED`, then `FAST_CLOSE->SLOW_CLOSE` at t=232 (S) and
+>   `CRYSTAL t=472 lit index=1`.
+> - **(1)** The first FIGHTPROBE at t=490, which is S+258: **`crystals=1 beamsOnMage=1`**, the Mage at 6.00 0.00 0.00 at
+>   6000.000/6000.000.
+> - **(2)** `/damage @e[tag=fight_crystal,limit=1] 5 minecraft:player_attack by @s`: REPLY **`"Target is invulnerable
+>   to the given damage type"`**, with no FIGHTCRYSTAL line before the next command.
+> - **(3)** `/damage … 5 minecraft:out_of_world`: **exactly one `FIGHTCRYSTAL damage refused cause=void amount=5.000`**,
+>   so c is `void`. This command's REPLY also read `"Target is invulnerable to the given damage type"`; the
+>   prediction was silent on that reply.
+> - **(4)** The second FIGHTPROBE, at t=494: **`crystals=1 beamsOnMage=1`**.
+> - **(5)** No `CRYSTAL … removed` before `FIGHT stop t=494` and `FIGHT ended reason=command`.
+> - **Every one of the 12 STRIKE lines is `k=0 damage=0.000 inside`, and there is no HURT line.**
+> - RESTORED `gamemode=SURVIVAL`.
 
 ## THE CRYSTALS (F7), one every 240 ticks
 

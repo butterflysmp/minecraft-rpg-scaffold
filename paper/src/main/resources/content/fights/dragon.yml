@@ -135,6 +135,11 @@ arena:
   # is down, the fight has FAILED, and this many seconds later everyone is sent home in the mode he entered in (Ben:
   # "they are all in spectator mode for a few seconds and get sent back to the normal world").
   all_down_seconds: 5
+  # PLAN-dragon-mobs.md C3 (the seat's queue, item 2): where the arena comes from. generated is the stand-in above (the
+  # shipped choice). template builds a saved structure instead: `source: template` with `template_file: <name>`, the
+  # file the plugin's arenas/<name>.nbt (made by `/rpg fight export <name>`). A missing or malformed file is refused by
+  # name when the fight starts, and the generated arena is built instead.
+  source: generated
   # Where an entering player stands, blocks from the centre [dx, dz].
   entry_offset_blocks: [0.0, 0.0]
 
