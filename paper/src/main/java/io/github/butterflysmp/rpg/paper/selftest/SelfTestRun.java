@@ -575,6 +575,7 @@ final class SelfTestRun {
     io.github.butterflysmp.rpg.paper.adapter.DragTrace dragTrace() { return service.dragTrace(); }
     ProfileService profiles() { return service.profiles(); }
     CombatantStats stats() { return service.stats(); }
+    io.github.butterflysmp.rpg.core.combat.ResourcePool resources() { return service.resources(); }
     SelfTestService.Spawner spawner() { return service.spawner(); }
     io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler() { return service.scheduler(); }
     io.github.butterflysmp.rpg.paper.health.MobBeamer beams() { return service.beams(); }

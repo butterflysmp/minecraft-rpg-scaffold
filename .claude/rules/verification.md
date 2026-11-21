@@ -1964,3 +1964,38 @@ figures) with the mob under open sky in daylight must do ONE of three things, an
 **`time set 6000` is in 22 of the selftest scenario files** (`grep -l 'time set 6000'
 paper/src/main/resources/selftest/*.yml | wc -l`, 2026-11-21), so this is the default staging, not a corner case. Which
 mobs the tag holds was not read here; a frozen (NoAI) mob is not exempt.
+
+### A DAMAGE PREDICTION NAMES EVERY TERM OF THE SUM
+
+**This is the account. The pointer is `CLAUDE.md`'s VERIFICATION index.** Owed by the seat's brief of 2026-11-21;
+written in `feat/knell-owed-fixes`.
+
+**The rule:** a gate row that predicts what a player's hit deals (a `PLAYERHIT`'s `sent=`) writes the sum out, every
+term with its staged value beside it, and stages each term it can. READ in `EffectApplier` (the `Damage` and
+`WeaponDamage` arms) and `HitDamage`:
+
+```
+sent = hitBase x chargeScale x critMultiplier
+hitBase = (amount x score/100) x enchantMultiplier + classDamageBonus + weaponLevelDamage
+          (amount: a literal damage's authored figure, or the weapon's attack_damage for weapon_damage)
+```
+
+- **amount x score/100**: stage the score in the row (`rpg gearscore set 100`).
+- **enchantMultiplier**: 1.0 with no damage enchant active; say which enchant could roll and that none is active.
+- **classDamageBonus**: 0 unless something grants class damage; say so.
+- **weaponLevelDamage**: the player's level bonus on EVERY weapon hit (`Caster.weaponLevelDamage`,
+  `LevelBonus.weaponDamage`). **Stage the level** (`rpg playerxp set @s 1 levels`, then a wait for the stats to
+  reconcile: `GATE-level.md` WD1 waits 40) and write the value beside the prediction.
+- **chargeScale** (1.0 off a melee charge) and **critMultiplier** (the crit arm, `x 2.0`, predicted as the second
+  allowed reading).
+
+**THE WORKED EXAMPLE, AND WHO APPROVED IT: `GATE-crystal-shard-staff.md` CS2 and CS3, 2026-11-21.** The gate predicted
+`sent=16.000` (16 x his score / 100) and read **`sent=65.000`**, twice. The missing term was his level bonus: executed,
+`LevelBonus.forLifetimeXp(712667)` is level 50, `weaponDamage 49.0`, and 16 + 49 = 65. **The seat diffed the gate and
+approved the boot with the term missing**, and had seen `GATE-level.md`'s WD1 read 7.000 and 56.000 on one weapon (the
+same 49) that same day without doing the sum. The code did what its source says; **the prediction was the defect, and
+two parties wrote and approved it.**
+
+**Why naming every term is the remedy, not care:** a sum with an unnamed term is not wrong-looking. 16 at score 100
+reads as complete, and every term that happens to be zero or one in the author's head is invisible on the page. Written
+out, a term with no staged value is a blank a reviewer can see.

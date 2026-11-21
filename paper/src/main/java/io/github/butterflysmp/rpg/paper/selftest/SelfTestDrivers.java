@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.selftest;
 
+import io.github.butterflysmp.rpg.core.ability.ResourceCost;
 import io.github.butterflysmp.rpg.core.mob.MobElementResolver;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.build.StoneItems;
@@ -100,6 +101,12 @@ final class SelfTestDrivers {
             case PROBE_ENTITIES -> probeEntities(p, a);
             case PROBE_POSITIONS -> probePositions(p, a);
             case PROBE_SELF -> probeSelf(p);
+            case PROBE_MANA -> {
+                var pool = run.resources();
+                run.log(manaLine(pool.current(p.getUniqueId(), ResourceCost.DEFAULT_RESOURCE),
+                        pool.max(p.getUniqueId(), ResourceCost.DEFAULT_RESOURCE)));
+                yield Optional.empty();
+            }
             case PROBE_BODY -> probeBody(p, a);
             case DEATH_RULES -> { run.deathRules(); yield Optional.empty(); }
             case SAVE_BLOCKS -> saveBlocks(p, a);
@@ -1006,5 +1013,10 @@ final class SelfTestDrivers {
 
     private static String fmt(double v) {
         return String.format(Locale.ROOT, "%.3f", v);
+    }
+
+    /** {@code probe_mana}'s line (SelfTestManaProbeTest pins it word for word). */
+    static String manaLine(double current, double max) {
+        return "MANA current=" + fmt(current) + " max=" + fmt(max);
     }
 }
