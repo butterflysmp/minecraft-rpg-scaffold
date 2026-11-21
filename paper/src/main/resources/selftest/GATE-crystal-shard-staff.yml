@@ -62,3 +62,12 @@ CS4:
   - wait: 10
   - probe: t
   - cmd: "kill @e[tag=t]"
+
+# ES1 (PR B, feat/ember-staff-deleted): ember_staff is DELETED. A copy he holds is probed (read beside the login's
+# "unknown gear id 'ember_staff'" WARN: one if he holds one, none if not); the give is refused by name; the probe again,
+# unchanged. SelfTestWeaponIdsTest allows this row, and only these three steps, to name the deleted id.
+ES1:
+  - probe_inventory: ember_staff
+  - cmd: "rpg give ember_staff"
+  - wait: 5
+  - probe_inventory: ember_staff

@@ -48,7 +48,7 @@ final class AbilitySchema {
             // ContentValidator resolves the id at boot, so a typo is named rather than silent.
             case "ray"        -> new CastSpec.Ray(s.getDouble("range", 30), s.getString("beam"));
             // `trail` is OPTIONAL and absent means null -- a bare projectile that leaves nothing,
-            // which is what hunters_bow (deleted 2026-11) and ember_staff get and what they have always had. The
+            // which is what hunters_bow (deleted 2026-11) and ember_staff (deleted 2026-11) get and what they have always had. The
             // flight loop has always presented a trail every tick; until this line there was no
             // way for a file to name one.
             // `item` is the material rendered as the bolt's BODY, likewise optional. Independent of
@@ -149,7 +149,7 @@ final class AbilitySchema {
      * this grammar to map onto {@link CastSpec.Homing}.
      *
      * <p><b>ABSENT MEANS NULL, AND THAT IS WHAT MAKES THIS NOT A CHANGE TO ANY SHIPPED WEAPON.</b>
-     * {@code hunters_bow} (deleted 2026-11), {@code ember_staff}, {@code flint_staff}, {@code emberblade} (deleted 2026-11) and
+     * {@code hunters_bow} (deleted 2026-11), {@code ember_staff} (deleted 2026-11), {@code flint_staff}, {@code emberblade} (deleted 2026-11) and
      * {@code volley_stone}'s inner projectile all author no such block, get null, and behave
      * byte-identically to before this line existed. Slice F built the core shape and the flight's
      * homing branch; <b>until now nothing could put a number into it from a file</b>, so

@@ -15,7 +15,7 @@ package io.github.butterflysmp.rpg.core.weapon;
  * to wait for a boot to be checked.
  *
  * <p><b>A non-damageable material ({@code maxDurability <= 0}) is handled HERE, in every entry
- * point, not by convention at each call site.</b> {@code ember_staff} (blaze_rod) and the Flint
+ * point, not by convention at each call site.</b> {@code ember_staff} (deleted 2026-11) (blaze_rod) and the Flint
  * Staff (a stick) have no vanilla durability, and they are exactly the
  * weapons that should not have any -- so the exemption is free, and making it structural is what
  * stops a future caller forgetting it. Without the guard {@code maxDurability - MIN_USES} is

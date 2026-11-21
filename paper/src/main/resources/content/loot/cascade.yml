@@ -37,12 +37,14 @@ sources: {}
 # "general skip that rarity"), where the command's counts show it. The four dev weapons (hunters_bow, ironblade,
 # quiver_stone and emberblade) were deleted 2026-11-21 and are not in any pool: emberblade was in the rare pool until
 # then, and LootLoader refuses the WHOLE file for an item id that does not ship. volley_stone is the only exotic left,
-# and is on its way out by another route.
+# and is on its way out by another route. ember_staff, a dev weapon too, was deleted the same day on Ben's word ("The
+# Ember staff is also a dev weapon and should be slated for deletion", feat/ember-staff-deleted) and left the rare
+# pool, which holds four.
 dev_sources:
   dev_example_not_a_drop:
     pools:
       exotic: [volley_stone]
       legendary: [blaze_kings_staff, dragons_breath, dragons_plume]
-      rare: [ember_staff, locust, brawlers_gauntlet, fletchers_quiver, sages_scroll]
+      rare: [locust, brawlers_gauntlet, fletchers_quiver, sages_scroll]
       uncommon: [boltor, cursed_emerald, lapis_staff, withered_shortbow, keen_charm, mending_charm, ward_charm]
       common: [flint_staff, short_bow]

@@ -10,7 +10,7 @@ import java.util.Map;
  *
  * This is the class-typed gate, and it keys on the HELD WEAPON'S CLASS -- deliberately not on
  * {@code DamagePayload.isBasicAttack}. Keying on the payload would mean a class bonus reached only
- * stat-reading basic attacks, which is exactly the dead end recorded in NEXT.md: {@code ember_staff}
+ * stat-reading basic attacks, which is exactly the dead end recorded in NEXT.md: {@code ember_staff} (deleted 2026-11)
  * carries a LITERAL damage and declares {@code attack_damage: 0}, so a payload-keyed
  * {@code +Magic Damage} would have had nothing to grip and would have shipped silently doing
  * nothing. Keying on the held weapon lets the bonus reach every direct damage effect the caster

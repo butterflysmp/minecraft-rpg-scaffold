@@ -275,9 +275,13 @@ class WeaponLoreTest {
     // sword; withered_shortbow is the bow and keeps hunters_bow's colour case (an element colour, wither's dark gray, at
     // a rarity whose colour differs, uncommon's green). emberblade's shape (a basic swing AND a costed special on one
     // weapon) has no shipped successor, so that rendering left with it.
+    // REPOINTED AGAIN 2026-11-21 (feat/ember-staff-deleted): ember_staff, a dev weapon, deleted that day on Ben's word.
+    // flint_staff is the staff now and keeps ember_staff's one job here: the only LITERAL-damage weapon of the three, so
+    // the only one on which "no class-labelled damage line and no Attack Speed without a basic attack" can fail. Fire
+    // (red) at common (white) keeps an element colour that differs from its rarity's, as ember_staff's (at rare) did.
     @Test
     void everyShippedWeaponRendersAgainstTheShippedElements(@TempDir Path dir) throws IOException {
-        String[] weaponIds = {"iron_sword", "withered_shortbow", "ember_staff"};
+        String[] weaponIds = {"iron_sword", "withered_shortbow", "flint_staff"};
         String[] elementIds = {"fire", "water", "nature", "undead", "void", "wither", "kinetic"};
 
         Path weaponsDir = Files.createDirectory(dir.resolve("weapons"));

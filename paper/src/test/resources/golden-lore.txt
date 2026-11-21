@@ -95,16 +95,6 @@
    "what it cannot see, it lets pass." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Legendary Ranged Weapon" color=#FFAA00 O=. B=. S=. U=. I=F
--- ember_staff
-   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Ember Bolt" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "A costed burst of fire —" color=#AAAAAA O=. B=. S=. U=. I=F
-   "commit your mana to cast." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["16" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Cooldown: 1.0s | Mana Cost: 30" color=#555555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Rare Magic Weapon" color=#5555FF O=. B=. S=. U=. I=F
 -- flint_staff
    "Fire" color=#FF5555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -593,4 +583,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 99 renderings ===
+=== 98 renderings ===

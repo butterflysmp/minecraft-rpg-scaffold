@@ -71,7 +71,7 @@ import java.util.UUID;
  * ATTACK_DAMAGE (or in the literal), so the bonus adds on top rather than replacing, and the
  * emberblade's (deleted 2026-11) fireball can take +Melee without inheriting the swing's 8. And it is not gated on
  * whether the payload is a basic attack: the gate is the HELD WEAPON'S CLASS, which is what lets the
- * bonus reach a literal-damage weapon like {@code ember_staff} that reads no stat at all.
+ * bonus reach a literal-damage weapon like {@code ember_staff} (deleted 2026-11) that reads no stat at all.
  */
 public record Caster(UUID id, double attackDamage, double classDamageBonus,
                      double enchantDamagePercent, double chargeScale, double critMultiplier,

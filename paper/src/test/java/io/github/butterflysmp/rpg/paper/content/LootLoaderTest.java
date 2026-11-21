@@ -219,8 +219,11 @@ class LootLoaderTest {
         for (String banned : List.of("hunters_bow", "ironblade", "quiver_stone", "emberblade")) {
             assertTrue(ex.pools().values().stream().noneMatch(p -> p.contains(banned)), "no deleted dev weapon: " + banned);
         }
-        assertEquals(List.of("ember_staff", "locust", "brawlers_gauntlet", "fletchers_quiver", "sages_scroll"),
-                ex.pools().get(Rarity.RARE), "the rare pool, five entries, as written");
+        // And ember_staff, a dev weapon deleted 2026-11-21 on Ben's word (feat/ember-staff-deleted): the rare pool's
+        // first entry until then, so the pool went from five to four.
+        assertTrue(ex.pools().values().stream().noneMatch(p -> p.contains("ember_staff")), "no deleted dev weapon: ember_staff");
+        assertEquals(List.of("locust", "brawlers_gauntlet", "fletchers_quiver", "sages_scroll"),
+                ex.pools().get(Rarity.RARE), "the rare pool, four entries, as written");
     }
 
     @Test

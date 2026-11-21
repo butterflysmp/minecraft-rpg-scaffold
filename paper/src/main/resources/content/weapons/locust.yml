@@ -83,7 +83,7 @@ element: nature
 #   ruling 2    .                         Locust rare                  ORDERED -- stronger, higher
 #
 # So the stronger weapon now sits a tier ABOVE the weaker one, which is what the inversion flag asked
-# for. THE TIER DOES NOT SHRINK: `rare` held boltor, ember_staff and emberblade (deleted 2026-11); the Boltor leaves and
+# for. THE TIER DOES NOT SHRINK: `rare` held boltor, ember_staff (deleted 2026-11) and emberblade (deleted 2026-11); the Boltor leaves and
 # this weapon arrives, so it stays at three. An earlier note predicting it would fall to two was true
 # of ruling 1 alone and is falsified by ruling 2.
 rarity: rare

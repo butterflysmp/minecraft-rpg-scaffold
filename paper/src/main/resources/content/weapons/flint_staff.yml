@@ -27,7 +27,7 @@ class: mage
 #    false` under a javadoc naming it THE STAFF-AND-STONE EXEMPTION. So this weapon never wears and
 #    never breaks.
 #
-#    IT IS NOT THE FIRST INDESTRUCTIBLE GEAR -- it is the first CRAFTABLE one. ember_staff
+#    IT IS NOT THE FIRST INDESTRUCTIBLE GEAR -- it is the first CRAFTABLE one. ember_staff (deleted 2026-11)
 #    (blaze_rod) and the old ability_stone dev weapon (amethyst_shard, since deleted) were already non-durable and already
 #    never break; the exemption is named for them. What is new is that indestructible gear can now
 #    reach a player through the ECONOMY rather than only through /rpg give or a kit, which is the

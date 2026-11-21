@@ -123,8 +123,13 @@ class ScorchContentInvariantTest {
      * two (its swing's weapon_damage and its Fireball's burst damage) and {@code hunters_bow} one (its shot's
      * weapon_damage); {@code ironblade} and {@code quiver_stone} were kinetic. The run after the deletion reddened with
      * "expected 21 ... found 18"; at the base, an indented {@code element: fire} grep reads emberblade 2, hunters_bow 1.
+     *
+     * <p><b>18 -> 17 on 2026-11-21: {@code ember_staff} deleted</b> (feat/ember-staff-deleted, Ben: "The Ember staff is
+     * also a dev weapon and should be slated for deletion"). One site: its Ember Bolt's burst {@code damage}, element
+     * fire. The run after the deletion reddened with "expected 18 fire damage sites in content, found 17". The new
+     * {@code crystal_shard_staff} is kinetic and adds none.
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 18;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 17;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare

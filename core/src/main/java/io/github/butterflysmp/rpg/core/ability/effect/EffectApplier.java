@@ -110,7 +110,7 @@ public final class EffectApplier {
             // Note the gate is the HELD WEAPON'S CLASS, resolved when the desired modifier set was
             // built -- NOT DamagePayload.isBasicAttack. Keying on the payload would have reached only
             // stat-reading effects, which is precisely why a "+Magic Damage" modifier used to have
-            // nothing to grip: ember_staff carries a LITERAL amount and declares attack_damage 0.
+            // nothing to grip: ember_staff (deleted 2026-11) carries a LITERAL amount and declares attack_damage 0.
             //
             // Both arms also MULTIPLY their base by the caster's enchant-damage percent -- the damage
             // enchants (Sharpness/Power/Attunement) active on the weapon they hold, gated on that

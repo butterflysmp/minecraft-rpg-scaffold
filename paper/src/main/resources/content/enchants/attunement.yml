@@ -1,6 +1,6 @@
 # The Mage damage enchant, and the one the boot gate leans on hardest.
 #
-# ember_staff carries a LITERAL damage payload (amount: 16) and declares no attack_damage at all, so
+# ember_staff (deleted 2026-11) carries a LITERAL damage payload (amount: 16) and declares no attack_damage at all, so
 # it reads no stat -- which is exactly the shape that made a payload-keyed "+Magic Damage" inert in
 # the class-modifier pass, and exactly why the multiplier is applied AT THE DAMAGE ARM rather than
 # pre-baked onto the caster's attack damage. An authored literal is not known until the effect fires.

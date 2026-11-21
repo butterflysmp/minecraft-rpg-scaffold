@@ -34,6 +34,36 @@ the daylight rule). **Nothing in the selftest can hurt him; CR2 and HF1 are manu
 - **Docs**: Ben's words and the mage tiers in `PLAN-weapon-tiers.md` 1.6; the waves note in `PLAN-dragon-fight.md` §7,
   item 18 ("Channelling is when the slow close starts but I don't want to start waves yet"). Waves are NOT started.
 
+## WHAT PR B ADDS (`feat/ember-staff-deleted`, stacked on PR A; appended before any boot)
+
+- **Deletes** `content/weapons/ember_staff.yml`, by the four dev weapons' rulings (`GATE-remove-dev-weapons.md`,
+  `standing-decisions.md`). Weapons 20 -> 19. **The loot table:** `ember_staff` leaves `cascade.yml`'s dev source rare
+  pool, which now holds four: `locust, brawlers_gauntlet, fletchers_quiver, sages_scroll`.
+- **No Java behaviour changes.** Every surviving mention in main code and content is marked `(deleted 2026-11)`: 29
+  sites in 24 files; in main Java, 20 lines at the base, 20 comments, 20 marked. Two javadoc texts the marker broke
+  were rewritten by hand (`LootLoader`'s YAML example, `WeaponItems`' quoted command).
+- **Nothing lost its last shipped user** (READ, content grep): its `type: burst` is authored by six abilities and
+  `searing_lance`; its `solar_detonation` by six; a projectile with no body and no trail still ships in
+  `solar_grenade` (that last one by a 14-line window after each `type: projectile`, INFERRED complete).
+- **The selftest:** no scenario named `ember_staff` before this branch. **ES1** below names it on purpose, and
+  `SelfTestWeaponIdsTest` pins its three steps as the guard's second exception.
+- `CLAUDE.md` and `standing-decisions.md` name it with the four, with Ben's words; the pointer also names the two
+  weapons that ship off the 4-tick grid (`cursed_emerald` 30, this staff 14).
+
+### THE COVERAGE LEDGER: every test that loaded the real `ember_staff.yml`, and where its rule went
+
+| test | the rule it carried | now | mutation (run on PR B) |
+|---|---|---|---|
+| `WeaponLoaderTest.bundledEmberStaffContentLoads` | a shipped staff is a costed (mana) right-click projectile on a mage weapon | **repointed** to `flint_staff`, renamed `bundledFlintStaffContentLoads` | MB1 |
+| `WeaponLoaderTest.onlyTheBowsRightClickIsABasicAttack` | a staff's right-click is NOT a basic attack, so a refused press keeps its feedback | **repointed** to `flint_staff` | MB2 |
+| `WeaponLoreTest.everyShippedWeaponRendersAgainstTheShippedElements` | the one LITERAL-damage weapon of the three: no class-labelled damage line and no Attack Speed without a basic attack; an element colour unlike its rarity's | **repointed** to `flint_staff` (fire, common) | MB3 |
+| `LootLoaderTest.theShippedDevExampleNamesRealItemsOfTheirOwnRarityAndNoEpic` | the rare pool, as written | **updated**: four entries, and `ember_staff` named as banned | MB4 |
+| `ScorchContentInvariantTest.theFireDamageSitesAreALLDISCOVERED` | the discovered count of fire damage sites | **18 -> 17** (its burst's fire damage); the deletion run reddened with "expected 18 … found 17" | MB5 |
+| `GoldenLoreTest` (`golden-lore.txt`) | every shipped tooltip | its block removed: predicted **1 / 11**, read **1 / 11** | the deletion run |
+
+**In-memory fixtures that only use the name are left** (`DurabilityTest`, `EffectApplierTest`, `ProjectileFlightTest`,
+`DamageEnchantsTest`, `AbilityLoaderTest`, `WeaponItemsTest`): they build their own definitions and load no file.
+
 ## THE SEAT PLACEHOLDERS, FOR BEN (each marked `SEAT PLACEHOLDER 2026-11-21` in the file)
 
 | placeholder | value | why |
@@ -119,8 +149,9 @@ The booter's checklist is `.claude/rules/booting.md`; this list is its instance 
    shard on top, cobblestone in the middle, stick at the bottom, one column). Take it, hover it, and **type in chat
    the Gear Score its tooltip shows**, e.g. `gear score 100`.
 4. **ASK (type the answer in chat):** "Is the staff's name and tooltip what you expect?"
-5. `/rpg selftest crystal-shard-staff` — **ONCE.** Four rows, under a minute. Frozen zombies appear in front of you
-   and are shot by the staff; they cannot move or hit you. Your items are put back at the end.
+5. `/rpg selftest crystal-shard-staff` — **ONCE.** Five rows, under a minute. Frozen zombies appear in front of you
+   and are shot by the staff; they cannot move or hit you. The last row tries to give you the deleted Ember Staff and
+   is refused. Your items are put back at the end.
 6. **ASK (type the answer in chat):** "In the selftest, did the shard find the zombie it was roughly aimed at?"
 7. **HF1, THE HELD-FIRE READING.** Stand somewhere open with no mobs in front of you (the shard chases any mob it can
    see within 18 blocks). Hold the staff you crafted in step 3. Then:
@@ -140,6 +171,7 @@ Nothing else this boot. If a row stalls or aborts, do not intervene. An answer o
 |---|---|---|---|---|
 | CS1 | where he stands, overworld | nothing | 0 | no / no |
 | CS2, CS3, CS4 | teleported to the centre of the block he stands on, facing east; one NoAI zombie 8 to 10 blocks east | a NoAI zombie does not move or attack; the shard skips its caster (`castRay`'s ignore id) | 0 x 0 = 0 | no / no |
+| ES1 | where he stands | nothing: a probe and a refused give | 0 | no / no |
 | CR2 | where he chooses, open overworld, in SURVIVAL, manual; the time set to 1000 (morning) by the run sheet's line 1a | **natural overworld mobs, as in ordinary play**; his own shards cannot hit him | **not bounded**: ordinary play. A zombie's hit at defence 0 is about **15** (3 x 5, UNVERIFIED vanilla 3), so **7 hits** at 100 (105) and **24** at 350 (360). A creeper at point blank is about **215** (43 x 5, UNVERIFIED) | **at 100: yes** (7 zombie hits, or one close creeper) **/ at 350: yes** (24 zombie hits), **not by one creeper** |
 | HF1 | the same; **his mana at ZERO when the burst ends**, so the staff cannot answer a mob until it regenerates (about 1 a second, so 8 seconds a cast) | the same | the same | the same |
 
@@ -213,6 +245,10 @@ $zip.Dispose()
 255): 35 gates; `^[A-Za-z0-9_-]+:` over them **290**; `^setup:` **35**; so **255**. Control: 285 (the last boot) +
 this gate's 5 (setup, CS1-CS4) = 290.
 
+**RECOUNTED AGAIN on PR B's tree** (2026-11-21, the same three commands; `SelfTestScenariosTest` asserts 256): 35
+gates, **291** keys, 35 setups, so **256**. Control: 290 + ES1 = 291. **This is the figure R0d reads**, since the boot
+is of the stack top: `256 scenarios across 35 gates`.
+
 ### R0e — THE ORPHAN SWEEP WITH NOTHING STAGED
 
 | prediction | instrument | READING |
@@ -250,6 +286,12 @@ this gate's 5 (setup, CS1-CS4) = 290.
 | prediction | stands on | READING |
 |---|---|---|
 | **RE-STAGED 2026-11-21 for the turn 0.45.** The same staging, the zombie at **`~9.40 ~ ~3.42`**, **20 degrees** to the right (10 cos 20 = 9.397, 10 sin 20 = 3.420): more than twice the 9.5 the core test reports, and the fake finds no hit beyond 9.5 out to 90. **0 PLAYERHIT** in the row; the probe shows the zombie at its full custom health. **If it is hit**, the server's catch is wider than the fake's by at least 10 degrees, and CS3 then proves nothing about homing: both rows are reported together | the same | |
+
+### ES1 — ember_staff is deleted: a held copy probed, the give refused (SURVIVAL) — PR B
+
+| prediction | stands on | READING |
+|---|---|---|
+| `INVENTORY ember_staff slots=<A>`. **If `<A>` is not empty, exactly one login WARN `[Rpg] Refresh: item carries unknown gear id 'ember_staff' -- left untouched; its content file is missing or renamed`** (R0c); if empty, none, and the Dangling arm is UNREAD on a server again. Then REPLY **`Unknown weapon, shield, armor, tool or accessory: ember_staff`**, then REPLY **`Available: …`** naming `crystal_shard_staff` and `flint_staff` and NOT `ember_staff`. Then `INVENTORY ember_staff slots=<A>` again, the same list: nothing was given | `RpgCommand.give`, `GearRefresher` and `warnOnce` (READ in `GATE-remove-dev-weapons.md`, unchanged since) | |
 
 ### HF1 — THE OWED READING: held fire on a 14-tick cooldown (SURVIVAL, MANUAL)
 
