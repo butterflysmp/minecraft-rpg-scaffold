@@ -183,6 +183,36 @@ public final class FakeWorld implements CombatWorld {
         return Optional.of(RayHit.ofCombatant(nearest.position(), pair(nearest)));
     }
 
+    /** The start of every sweepRay -- a sweeping ray's segments, in order. */
+    public final List<Vec3> sweepFrom = new ArrayList<>();
+
+    /**
+     * The piercing / tolerant ray's port (2026-11-21, the Knell Beam). Every live dummy, the ignored one excluded, whose
+     * standing box (its {@code width} x {@code height}) grown by {@code reach} plus a block of slack comes near the
+     * segment -- deliberately WITHOUT the column filter castRay uses, so a body near a chunk plane is reported by BOTH
+     * segments, which is what the struck-once set across a hop must survive. And where the segment meets the shared wall
+     * model, if it does.
+     */
+    @Override public io.github.butterflysmp.rpg.core.combat.RaySweep sweepRay(Vec3 from, Vec3 to, UUID ignoreId,
+                                                                             double reach) {
+        sweepFrom.add(from);
+        Vec3 along = to.subtract(from);
+        double length = along.length();
+        if (length == 0) return new io.github.butterflysmp.rpg.core.combat.RaySweep(List.of(), Optional.empty());
+        Vec3 direction = along.scale(1 / length);
+        var line = new io.github.butterflysmp.rpg.core.mob.BeamLine(from, direction, length);
+        List<io.github.butterflysmp.rpg.core.combat.RaySweep.Body> near = new ArrayList<>();
+        for (Dummy d : entities) {
+            if (d.id().equals(ignoreId) || d.health <= 0) continue;
+            var box = io.github.butterflysmp.rpg.core.mob.BeamBox.standing(d.position(), d.width, d.height);
+            if (!line.meets(box, reach + 1.0)) continue;
+            near.add(new io.github.butterflysmp.rpg.core.combat.RaySweep.Body(pair(d), box));
+        }
+        double wallAt = wallDistanceAlong(from, direction);
+        Optional<Vec3> blockAt = wallAt < length ? Optional.of(from.add(direction.scale(wallAt))) : Optional.empty();
+        return new io.github.butterflysmp.rpg.core.combat.RaySweep(near, blockAt);
+    }
+
     /**
      * How far along {@code direction} from {@code from} this segment meets a wall, or
      * infinity for open sky. The shared block model behind both castRay and
@@ -634,6 +664,9 @@ public final class FakeWorld implements CombatWorld {
          *  the value CastExecutorTest already uses for an eye. Non-zero on purpose: the snapshot's
          *  compact constructor rejects 0, since a 0 here would silently trace sight to the feet. */
         public double eyeHeight = 1.62;
+        /** A zombie's box, for sweepRay (2026-11-21): 0.6 wide, 1.95 tall. castRay keeps its own hitRadius model. */
+        public double width = 0.6;
+        public double height = 1.95;
 
         /**
          * Which way this dummy is LOOKING -- the direction half of {@link FakeWorld#aimOf}.

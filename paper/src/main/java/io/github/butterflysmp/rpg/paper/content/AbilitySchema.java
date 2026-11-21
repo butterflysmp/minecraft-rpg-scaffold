@@ -46,7 +46,11 @@ final class AbilitySchema {
             // muzzle and the impact, which is what solar_lance is and what every ray was before
             // this line. Mirrors `trail` on projectile below, and is validated the same way:
             // ContentValidator resolves the id at boot, so a typo is named rather than silent.
-            case "ray"        -> new CastSpec.Ray(s.getDouble("range", 30), s.getString("beam"));
+            // `pierce` and `tolerance` (2026-11-21, the Knell Beam): both OPTIONAL and default OFF, so every ray
+            // authored before them parses to the ray it always was. tolerance is in BLOCKS; CastSpec.Ray refuses a
+            // negative one by name. See CastSpec.Ray for what each does.
+            case "ray"        -> new CastSpec.Ray(s.getDouble("range", 30), s.getString("beam"),
+                    s.getBoolean("pierce", false), s.getDouble("tolerance", 0.0));
             // `trail` is OPTIONAL and absent means null -- a bare projectile that leaves nothing,
             // which is what hunters_bow (deleted 2026-11) and ember_staff (deleted 2026-11) get and what they have always had. The
             // flight loop has always presented a trail every tick; until this line there was no
@@ -90,9 +94,13 @@ final class AbilitySchema {
                     parseOnLand(s.getMapList("on_land")));
             // A cast that REPEATS another cast on a clock. `of` is required and is a whitelist:
             // see innerCast below. windup_ticks 0 means the first shot fires on the cast frame.
+            // `locked_aim` and `warning:` (2026-11-21, the Knell Beam): both OPTIONAL and default OFF. A warning
+            // without locked_aim, or on a volley of anything but a ray, is refused by CastSpec.Volley, by name, so the
+            // weapon file is skipped and named rather than drawing a line the shot will not take.
             case "volley"     -> new CastSpec.Volley(
                     s.getInt("windup_ticks", 0), s.getInt("shots", 1), s.getInt("interval_ticks", 1),
-                    innerCast(s.getConfigurationSection("of")));
+                    innerCast(s.getConfigurationSection("of")),
+                    s.getBoolean("locked_aim", false), parseWarning(s.getConfigurationSection("warning")));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
         };
     }
@@ -120,6 +128,17 @@ final class AbilitySchema {
      * {@link #parseCast} does for an absent {@code cast:}. A cast section that is missing entirely
      * has a sensible reading; a volley of nothing does not.
      */
+    /**
+     * A volley's warning line, {@code warning: { beam: <visual id>, flash_at: [ticks] }}, or null when absent. The
+     * keys are the Knell mob's own names for the same thing ({@code flash_at}) and the ray's for a drawn line
+     * ({@code beam}). A section with a key missing is refused by {@code CastSpec.Volley.Warning}, by name.
+     */
+    static CastSpec.Volley.Warning parseWarning(ConfigurationSection s) {
+        if (s == null) return null;
+        // getIntegerList, as MobLoader reads the Knell mob's own flash_at.
+        return new CastSpec.Volley.Warning(s.getString("beam"), s.getIntegerList("flash_at"));
+    }
+
     private static CastSpec innerCast(ConfigurationSection s) {
         if (s == null) {
             throw new IllegalArgumentException("a volley needs an 'of:' section naming the cast it"

@@ -643,8 +643,15 @@ public final class ContentValidator {
             //
             // A nested volley cannot arrive: CastSpec.Volley's compact constructor refuses one at
             // construction, so this recursion is one level deep by the type, not by luck.
-            case CastSpec.Volley volley ->
-                    checkCast(volley.of(), ownerLabel + " volley inner cast", problems);
+            case CastSpec.Volley volley -> {
+                checkCast(volley.of(), ownerLabel + " volley inner cast", problems);
+                // The warning line (2026-11-21, the Knell Beam) is a beam drawn along a line, so it takes the ray
+                // beam's check, unchanged: the id must name a visual, and that visual may hold no sound step. Checked
+                // through the ray arm rather than a second copy of it.
+                if (volley.warning() != null) {
+                    checkCast(new CastSpec.Ray(1, volley.warning().beam()), ownerLabel + " volley warning", problems);
+                }
+            }
             // A DASH NAMES NO VISUAL ITSELF, BUT ITS on_land IS AN EFFECT LIST (Sunder's slam), and it
             // dangles a visual_id, status_id or element exactly as on_hit does. This arm was `{ }`
             // until Sunder shipped the first non-empty on_land: the volley hazard above, realised.
