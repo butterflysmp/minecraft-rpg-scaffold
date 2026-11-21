@@ -1495,6 +1495,9 @@ pointer). `FightEndSourceTest` asserts one call in all of `paper`'s main code, t
     now the main fodder enemy".
 17. *(Seat-added, 2026-11-18.)* **Paper 26.3**, a separate decision: the upgrade procedure is Ben's to start
     (§1, tenth message).
+18. **When waves start, PARTLY ANSWERED 2026-11-21, and waves are NOT started.** Ben, verbatim: "Channelling is when
+    the slow close starts but I don't want to start waves yet". Recorded on `feat/crystal-shard-staff` from the
+    seat's brief of that day; nothing is built from it. The wave tables (item 8) stay open.
 
 ---
 

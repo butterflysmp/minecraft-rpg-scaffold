@@ -119,6 +119,15 @@ paths:
     > fixture with an off-grid cooldown can be authored for one boot. **THE TRIGGER: no weapon may ship a held
     > right-click cooldown that is not a multiple of 4 until that reading is taken on such a fixture.** Until then
     > `ceil(n/4) x 4` is an UNTESTED EMPIRICAL FIT, and is to be called that. The readings are restated in `NEXT.md`.
+    >
+    > **CORRECTED 2026-11-21 (the seat's brief for the Crystal Shard Staff): REASON (a) IS WITHDRAWN AS FALSE.**
+    > `cursed_emerald.yml` authors `cooldown_ticks: 30` on its `right_click`, off the grid; the seat had repeated a
+    > statement about the two measured survivors as if it covered every weapon. **The `INPUTS min` reading is NO
+    > LONGER DROPPED: it is OWED on the boot of `feat/crystal-shard-staff`, on the Crystal Shard Staff
+    > (`cooldown_ticks: 14`).** Every shipped weapon trigger cooldown at `e2ae5f6f`, by the command recorded in
+    > `NEXT.md`: blaze_kings_staff 8, boltor 16, cursed_emerald **30**, dragons_breath 32, dragons_plume 8 (three tap
+    > bands), ember_staff 20, flint_staff 24, lapis_staff 20, locust 12, short_bow 12, volley_stone 40 (right) and 0
+    > (left), withered_shortbow 16. **One off the grid: `cursed_emerald`.** The trigger and reason (b) stand.
 
 ### NAME THE QUANTITY, AND NAME THE SET OF THINGS THAT HAVE IT
 

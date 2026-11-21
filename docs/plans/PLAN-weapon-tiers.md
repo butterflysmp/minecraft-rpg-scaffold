@@ -183,6 +183,36 @@ here 2026-11-21 (`feat/dev-weapons-owed`), copied from that gate's READING colum
 | 14:46:36 | "Did the smithed Netherite Sword keep its enchantments, as far as you can see?" | "yes" | yes |
 | 14:46:59 | "When the plain sword you were given turned into an Iron Sword in your inventory, was it clear what happened?" | "not sure" | **NOT STATED** |
 
+### 1.6 Ben, 2026-11-21, VERBATIM: the mage ladder, the Crystal Shard Staff, and the Ember Staff
+
+Relayed by the seat's brief of 2026-11-21 and recorded here on `feat/crystal-shard-staff`, spelling as typed:
+
+> "First a side note: The Ember staff is also a dev weapon and should be slated for deletion."
+>
+> "Let's finish fleshing out the Mage progression tree. The wood tier weapon is already there, the flint staff, so we
+> need a stone tier weapon now. The Lapis Staff and Emerald Beam are Diamond/Netherite tier weapons."
+>
+> "Let's grab the Crystal shard staff from the old repo and rework it a bit."
+>
+> "The old version was a slow traveling homing shot. I want this one to be fast hitting. keep the homing but not too
+> much damage. Say 16 to start. Kinetic damage type keep the 8 mana cost with a 0.7s cooldown"
+>
+> "Keep the item and recipe delete the ember staff this pass"
+
+**The mage tier placements, as his words:**
+
+| tier | weapon | source |
+|---|---|---|
+| wood | `flint_staff` | "The wood tier weapon is already there, the flint staff" |
+| stone | `crystal_shard_staff` (new, this branch) | "we need a stone tier weapon now" |
+| diamond / netherite | `lapis_staff` and "Emerald Beam" | "The Lapis Staff and Emerald Beam are Diamond/Netherite tier weapons" |
+
+- **"Emerald Beam" is READ BY THE SEAT AS `cursed_emerald`**, whose file says ray and beam. **Ben has been asked to
+  confirm; UNCONFIRMED.** Which of the two is diamond and which netherite is NOT stated.
+- **No existing weapon's numbers or rarity change** (the seat's brief): `lapis_staff` stays uncommon at 21,
+  `cursed_emerald` uncommon at 27, `flint_staff` common at 20. Placing them on a tier is a record, not a retune.
+- **The `ember_staff` deletion is the stacked PR B** (`feat/ember-staff-deleted`), by the four dev weapons' rulings.
+
 ---
 
 ## 2. WHAT EXISTS TODAY

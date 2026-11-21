@@ -1,0 +1,84 @@
+# THE CRYSTAL SHARD STAFF: the Mage's STONE tier (feat/crystal-shard-staff, 2026-11-21).
+#
+# Ben, 2026-11-21, verbatim (PLAN-weapon-tiers.md 1.6): "Let's grab the Crystal shard staff from the old repo and rework
+# it a bit." / "The old version was a slow traveling homing shot. I want this one to be fast hitting. keep the homing
+# but not too much damage. Say 16 to start. Kinetic damage type keep the 8 mana cost with a 0.7s cooldown" / "Keep the
+# item and recipe". The wood tier is the flint_staff; lapis_staff and (read by the seat as) cursed_emerald sit at
+# diamond/netherite.
+#
+# BEN'S NUMBERS: 16 kinetic, 8 mana, 14 ticks (0.7 s), homing kept, amethyst_shard, the old recipe.
+# SEAT PLACEHOLDERS 2026-11-21, each marked where it sits: the ability name, speed 3.0, gravity 0, the 7-tick lifetime,
+# the homing block's mapping, the description, and the three visuals.
+#
+# The old weapon (github.com/CreaperCrusher/Butterfly-SMP at cfde822, StaffListener.launchCrystalShardBolt): Common, an
+# amethyst_shard; one gravity-less shard item at 1.1 blocks a tick, steering at the nearest hostile mob (turn 0.18 a
+# tick, search radius 18), range 20, at most 60 ticks; 22 magic damage to the first living thing it touched; 8 mana,
+# 1000 ms. NOTHING HERE IS TAKEN FROM A DELETED DEV WEAPON OR FROM ember_staff.
+#
+# NOT DURABLE, LIKE THE FLINT STAFF: an amethyst_shard has no vanilla durability, so this staff never wears and never
+# breaks (Durability.isBroken's staff-and-stone exemption). And Unbreaking can still roll on it and does nothing: the
+# eligibility half of NAME THE QUANTITY fails here as it does on the flint staff (CrystalShardStaffContentTest pins the
+# pool; the debt is reported to the seat, not fixed here).
+
+id: crystal_shard_staff
+display_name: "Crystal Shard Staff"
+element: kinetic
+rarity: common
+class: mage
+material: amethyst_shard
+
+triggers:
+  right_click:
+    name: "Crystal Shard"             # SEAT PLACEHOLDER 2026-11-21: the old "Crystal Volley" fired ONE shard; Ben asked
+    description:                       # SEAT PLACEHOLDER 2026-11-21: the old tooltip's two lines, reworded
+      - "Fires a homing crystal shard"
+      - "at the nearest enemy."
+    # 14 IS BEN'S 0.7 s, EXACTLY, AND IT IS OFF THE 4-TICK GRID ON PURPOSE. Do not round it. Under held fire the
+    # untested empirical fit ceil(n/4) x 4 predicts it fires every 16 (0.8 s) while the tooltip prints "Cooldown: 0.7s"
+    # (WeaponLoader's cooldown_ticks section). This staff IS the fixture the owed INPUTS min reading is taken on
+    # (NEXT.md, the 2026-11-21 correction; GATE-crystal-shard-staff.md). Its reading decides what 14 delivers.
+    cooldown_ticks: 14
+    cost:
+      resource: mana
+      amount: 8
+    on_cast:
+      - type: visual
+        visual_id: crystal_cast        # SEAT PLACEHOLDER 2026-11-21: the old cast's chime and cluster break
+    cast:
+      type: projectile
+      # SEAT PLACEHOLDER 2026-11-21: "fast hitting". The old shard flew 1.1 blocks a tick. At 3.0 a shard cannot pass
+      # through a mob between ticks: ProjectileFlight.step traces the whole segment it travelled each tick
+      # (PaperCombatWorld.castRay is one World#rayTrace over that segment's length), READ, our source.
+      speed: 3.0
+      gravity: 0                       # SEAT PLACEHOLDER 2026-11-21: the old shard was gravity-less
+      # SEAT PLACEHOLDER 2026-11-21: the old range was 20 blocks. There is no range key, only a lifetime: 7 ticks at
+      # 3.0 is 21 blocks of path, the first lifetime that reaches 20. A shard that reaches it unspent resolves in the air
+      # (ProjectileFlight: "It still lands"), so the impact visual plays there and the damage finds no target.
+      max_lifetime_ticks: 7
+      item: amethyst_shard             # Ben: "Keep the item". The old body was a dropped amethyst_shard
+      trail: crystal_trail             # SEAT PLACEHOLDER 2026-11-21: the old end_rod and violet dust trail
+      # HOMING KEPT (Ben). SEAT PLACEHOLDER 2026-11-21, the old numbers mapped onto CastSpec.Homing's fields (READ):
+      #   lerp              how far the direction turns toward the target each tick. The old shard blended its velocity
+      #                     0.82 old + 0.18 toward-target, both at its own speed: the same direction as this blend.
+      #   activation_blocks how far from the spawn point it flies straight before steering. The old shard had none (it
+      #                     steered from its first tick), so 0.
+      #   search_radius     how far it looks, re-chosen every tick. The old search was a box of 18 but kept only mobs
+      #                     nearer than 18, so a sphere of 18, which is what this is.
+      # Differences kept, READ: ours chases any non-player mob it can SEE (the old one: hostiles only, no sight check),
+      # and aims at the mob's feet (the old one: its middle).
+      # WHAT THE TURN BUYS AT 3.0, from CrystalShardCatchAngleTest: at 10 blocks the old 0.18 caught a mob only 3.0 degrees
+      # off the aim line (1.5 unsteered; 9.0 for the old 1.1 speed), so fast and homing pulled against each other. 0.45
+      # catches 9.5, about the old staff's 9.
+      homing:
+        lerp: 0.45                     # SEAT PLACEHOLDER 2026-11-21: at speed 3.0 the old 0.18 caught 3.0 degrees at 10 blocks; 0.45 catches about the old staff's 9; Ben has been asked
+        activation_blocks: 0
+        search_radius: 18
+    on_hit:
+      - type: visual
+        visual_id: crystal_impact      # SEAT PLACEHOLDER 2026-11-21: the old hit burst and amethyst break
+      - type: damage                   # Ben: 16, kinetic. A literal damage effect, as the other staves
+        amount: 16
+        element: kinetic
+
+# NO craft_result, as on the flint staff: it would claim every vanilla amethyst_shard, and ContentValidator refuses a
+# craft_result on a material with no durability anyway. The recipe claims this weapon: content/recipes/crystal_shard_staff.yml.

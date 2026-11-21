@@ -1,0 +1,15 @@
+# The Crystal Shard Staff's recipe (feat/crystal-shard-staff, 2026-11-21). Ben: "Keep the item and recipe".
+# The old repo's, unchanged (RecipeRegistry.registerCrystalShardStaff, cfde822): a column of an amethyst shard over
+# cobblestone over a stick. Three rows, so it cannot be made in the 2x2 player grid.
+
+mints: crystal_shard_staff
+
+shape:
+  - "A"
+  - "C"
+  - "S"
+
+ingredients:
+  A: amethyst_shard
+  C: cobblestone
+  S: stick
