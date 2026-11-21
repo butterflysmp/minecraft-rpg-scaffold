@@ -41,7 +41,7 @@ public sealed interface CastSpec {
      * that leaves nothing.
      *
      * <p>{@code trail} is OPTIONAL and defaults to absent, which is what makes it not a change to
-     * the weapons that do not ask for one: {@code hunters_bow} (deleted 2026-11) and {@code ember_staff} specify no
+     * the weapons that do not ask for one: {@code hunters_bow} (deleted 2026-11) and {@code ember_staff} (deleted 2026-11) specify no
      * trail, get null, and behave byte-identically to before this field existed. The field is here
      * because {@link io.github.butterflysmp.rpg.core.combat.ProjectileFlight} has ALWAYS presented
      * a trail every step -- there was simply no way for the schema to produce anything but null,

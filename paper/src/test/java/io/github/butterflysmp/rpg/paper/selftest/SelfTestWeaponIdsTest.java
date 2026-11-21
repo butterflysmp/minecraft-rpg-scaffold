@@ -142,6 +142,16 @@ class SelfTestWeaponIdsTest {
             "remove-dev-weapons#DW2 CMD ironblade", "remove-dev-weapons#DW2 CMD emberblade",
             "remove-dev-weapons#DW2 CMD hunters_bow", "remove-dev-weapons#DW2 CMD quiver_stone");
 
+    /**
+     * THE SECOND, ADDED 2026-11-21 (feat/ember-staff-deleted): GATE-crystal-shard-staff.md's ES1 reads what the deleted
+     * {@code ember_staff} does, exactly as DW1 and DW2 did for the four: a held copy probed, a give refused, the probe
+     * again. Pinned EXACTLY, step by step, like the first.
+     */
+    static final String EMBER_STAFF_GATE = "crystal-shard-staff";
+    static final List<String> EMBER_STAFF_GATE_STEPS = List.of(
+            "crystal-shard-staff#ES1 PROBE_INVENTORY ember_staff", "crystal-shard-staff#ES1 CMD ember_staff",
+            "crystal-shard-staff#ES1 PROBE_INVENTORY ember_staff");
+
     @Test
     void everyWeaponIdAScenarioNamesShips() {
         Set<String> weapons = weaponIds();
@@ -149,14 +159,19 @@ class SelfTestWeaponIdsTest {
         List<String> seen = new ArrayList<>();
         List<String> bad = new ArrayList<>();
         List<String> deletionGate = new ArrayList<>();
+        List<String> emberStaffGate = new ArrayList<>();
         for (var gate : shipped().gates().entrySet()) {
             List<String> found = unresolved(gate.getValue(), weapons, other, seen);
-            if (gate.getKey().equals(DELETION_GATE)) deletionGate.addAll(found); else bad.addAll(found);
+            if (gate.getKey().equals(DELETION_GATE)) deletionGate.addAll(found);
+            else if (gate.getKey().equals(EMBER_STAFF_GATE)) emberStaffGate.addAll(found);
+            else bad.addAll(found);
         }
         assertEquals(List.of(), bad, "scenario steps naming a weapon that does not ship; each would fail on a server, "
                 + "not in the build");
         assertEquals(DELETION_GATE_STEPS, deletionGate,
                 "the deletion gate names the four deleted ids in exactly its two reading rows, and nothing else unresolved");
+        assertEquals(EMBER_STAFF_GATE_STEPS, emberStaffGate,
+                "the crystal staff gate names ember_staff in exactly its one reading row, and nothing else unresolved");
         // THE POSITIVE CONTROL: the scan saw the steps. Every GIVE, HOLD (not stone/empty), PROBE_INVENTORY and
         // SHIFT_CLICK in the shipped scenarios, counted from the files on 2026-11-21 after the deletion:
         // grep -hE '^\s*- (hold|probe_inventory|shift_click):|rpg give ' paper/src/main/resources/selftest/*.yml

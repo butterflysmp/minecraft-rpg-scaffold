@@ -157,7 +157,7 @@ public final class Ignite {
      * <p><b>ADOPTED 2026-09-10</b>, on the gate. Chosen to sit IN FAMILY with the blasts that already ship rather than to
      * invent a feel: {@code solar_grenade}'s burst is 4.0,
      * {@code rekindle}'s thrown embers are 4.0 (Rekindle, since renamed Recall; those embers are now
-     * {@code fragment_ember_cache}'s, still 4.0), {@code ember_staff} is 3.5 and
+     * {@code fragment_ember_cache}'s, still 4.0), {@code ember_staff} (deleted 2026-11) is 3.5 and
      * {@code emberblade} (deleted 2026-11) is 3.0. Reusing the prevailing number means a player who has felt a grenade
      * has already felt this.
      */
@@ -183,7 +183,7 @@ public final class Ignite {
      *
      * <p><b>ITS OWN VISUAL, AND THE POINT IS TO REMOVE A COUPLING RATHER THAN TO ADD POLISH.</b> This
      * pointed at {@code solar_detonation}, which is authored for {@code solar_grenade} and already
-     * shared with {@code emberblade} (deleted 2026-11) and {@code ember_staff} -- so tuning the cascade's bang would
+     * shared with {@code emberblade} (deleted 2026-11) and {@code ember_staff} (deleted 2026-11) -- so tuning the cascade's bang would
      * have re-tuned three weapons' fireballs, and tuning theirs would have re-tuned the cascade. A
      * shared visual is a coupling this repo names; this one is now cut.
      *

@@ -312,7 +312,7 @@ public final class EnchantMenu extends Menu {
             return false;
         }
 
-        // Two shipped weapons mint on STACKABLE materials -- ember_staff is a blaze_rod, and two
+        // Two shipped weapons mint on STACKABLE materials -- ember_staff (deleted 2026-11) is a blaze_rod, and two
         // fresh mints share identical meta, so a stack of 2 is constructible with /rpg give alone.
         // One write would enchant both, and the re-mint would then collapse the stack to one.
         if (cursor.getAmount() != 1) {

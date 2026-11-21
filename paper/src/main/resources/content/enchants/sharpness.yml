@@ -21,7 +21,7 @@
 #
 # So at these values Sharpness I is INVISIBLE on a sword: it renders exactly what an unenchanted
 # swing renders. That is a property of 5% of 8 being less than half a point, not a bug, and it is
-# why the boot gate reads level discrimination off the ember_staff (base 16, where I is 17 and III
+# why the boot gate reads level discrimination off the ember_staff (deleted 2026-11) (base 16, where I is 17 and III
 # is 18) and reads only the III-versus-plain step off the sword. The curve is proven exactly, at
 # full precision and without rounding, in core's DamageEnchantsTest.
 display_name: "Sharpness"

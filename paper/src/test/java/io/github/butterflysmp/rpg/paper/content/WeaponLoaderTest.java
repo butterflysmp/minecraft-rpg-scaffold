@@ -768,19 +768,24 @@ class WeaponLoaderTest {
         assertFalse(weapon.flavor().isEmpty(), "the bow authors flavour");
     }
 
-    /** The shipped staff: a costed right-click projectile -- the Mage's commit primary. */
+    /**
+     * The shipped staff: a costed right-click projectile -- the Mage's commit primary.
+     *
+     * <p>REPOINTED 2026-11-21: this was ember_staff (a blaze_rod), a dev weapon deleted that day on Ben's word. flint_staff
+     * is the costed fire staff now, on a stick.
+     */
     @Test
-    void bundledEmberStaffContentLoads() throws IOException {
-        try (var in = getClass().getResourceAsStream("/content/weapons/ember_staff.yml")) {
-            assertNotNull(in, "bundled ember_staff is missing from the classpath");
-            Files.write(dir.resolve("ember_staff.yml"), in.readAllBytes());
+    void bundledFlintStaffContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/weapons/flint_staff.yml")) {
+            assertNotNull(in, "bundled flint_staff is missing from the classpath");
+            Files.write(dir.resolve("flint_staff.yml"), in.readAllBytes());
         }
 
         WeaponRegistry registry = load();
 
         assertTrue(warnings.isEmpty(), warningText());
-        WeaponDefinition weapon = registry.find("ember_staff").orElseThrow();
-        assertEquals("blaze_rod", weapon.material(), "a staff, not a sword or a bow");
+        WeaponDefinition weapon = registry.find("flint_staff").orElseThrow();
+        assertEquals("stick", weapon.material(), "a staff, not a sword or a bow");
         assertEquals(WeaponClass.MAGE, weapon.weaponClass(), "the staff is a mage weapon");
 
         // COSTED, unlike the bow's free shot -- the Mage spends mana to deal damage.
@@ -805,10 +810,13 @@ class WeaponLoaderTest {
      *
      * REPOINTED 2026-11-21: the bow was hunters_bow and is now short_bow; emberblade's Fireball (a costed right-click on
      * a MELEE weapon) left with emberblade, a dev weapon deleted that day. The staff carries the costed half alone.
+     * And the staff was ember_staff (deleted 2026-11) until feat/ember-staff-deleted the same day; it is flint_staff now,
+     * whose Fire Bolt is the same shape (a costed literal damage, not a weapon_damage basic attack). The sentence above
+     * about converting "ember_staff" now applies to flint_staff.
      */
     @Test
     void onlyTheBowsRightClickIsABasicAttack() throws IOException {
-        for (String id : List.of("short_bow", "ember_staff")) {
+        for (String id : List.of("short_bow", "flint_staff")) {
             try (var in = getClass().getResourceAsStream("/content/weapons/" + id + ".yml")) {
                 assertNotNull(in, "bundled " + id + " is missing from the classpath");
                 Files.write(dir.resolve(id + ".yml"), in.readAllBytes());
@@ -821,7 +829,7 @@ class WeaponLoaderTest {
 
         assertTrue(isBasicAttackOnRightClick(registry, "short_bow"),
                 "the bow's shot is a basic attack -- a refused shot must be silent");
-        assertFalse(isBasicAttackOnRightClick(registry, "ember_staff"),
+        assertFalse(isBasicAttackOnRightClick(registry, "flint_staff"),
                 "the staff's Bolt is a costed ability -- it keeps its feedback");
     }
 

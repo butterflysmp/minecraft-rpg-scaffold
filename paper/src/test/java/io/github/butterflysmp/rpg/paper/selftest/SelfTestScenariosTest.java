@@ -258,7 +258,9 @@ class SelfTestScenariosTest {
         // 34 setups, so 251. The control: 284 + 1 = 285. 250 was this line's value.
         // Then GATE-crystal-shard-staff.md (feat/crystal-shard-staff, 2026-11-21), RECOUNTED: 35 gates, 290 keys, 35
         // setups, so 255. The control: 285 + 5 (setup, CS1-CS4) = 290. 251 was this line's value.
-        assertEquals(255, loaded.rows());
+        // Then ES1 (feat/ember-staff-deleted, PR B, 2026-11-21: ember_staff refused), RECOUNTED: 35 gates, 291 keys, 35
+        // setups, so 256. The control: 290 + 1 = 291. 255 was this line's value.
+        assertEquals(256, loaded.rows());
     }
 
     /**

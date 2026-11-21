@@ -1747,7 +1747,7 @@ public final class RpgCommand {
                 return;
             }
 
-            // A non-Damageable material reports rather than erroring: ember_staff (blaze_rod) and
+            // A non-Damageable material reports rather than erroring: ember_staff (deleted 2026-11) (blaze_rod) and
             // the Flint Staff (a stick) have no durability by design, and "no durability" is
             // the correct answer, not a failure.
             OptionalInt max = WeaponDurability.maxOf(held);

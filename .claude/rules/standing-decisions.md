@@ -21,6 +21,16 @@ paths:
   > `NEXT.md`. **Everything below is KEPT as the record** of how the set was ruled and measured, in the present
   > tense it was written in.
 
+  > **A FIFTH, THE SAME DAY: `ember_staff` WAS DELETED 2026-11-21** (`feat/ember-staff-deleted`, stacked on
+  > `feat/crystal-shard-staff`; Ben, verbatim: *"First a side note: The Ember staff is also a dev weapon and should be
+  > slated for deletion."* and *"Keep the item and recipe delete the ember staff this pass"*). By the same rulings: never
+  > cited for a new number; every surviving mention in main code and content marked `(deleted 2026-11)`; no code
+  > deleted. **Measured the same way:** `git grep -h ember_staff -- '*/src/main/java/*'` returned **20** lines at the
+  > base `dc855fda`, **all 20 comments**; on the branch **20, all comments, all 20 marked** (the same `grep -cE` and
+  > code-line control as above). **No code path or visual lost its last shipped user** (its `burst`, its
+  > `solar_detonation` and its body-less projectile all have ability users); `flint_staff` is the costed fire staff
+  > the tests that loaded the file now load.
+
   Those **three** are **in a deletion set**, parked on *enough shipped weapons to replace them* (see
   `NEXT.md`). Every citation of one written between now and then is a comment that will point at a
   file that does not exist.
@@ -225,7 +235,7 @@ meant to have no push.
 
 > **SCOPE, STATED BECAUSE THE OBVIOUS SWEEP IS WRONG.** The ruling is about **ranged** weapons.
 > Measured 2026-09-13: three shipped weapons are `type: projectile` and author no knockback —
-> `ember_staff` and `flint_staff` (mage) and `emberblade` (melee). **This rule does not reach them.**
+> `ember_staff` (deleted 2026-11) and `flint_staff` (mage) and `emberblade` (melee, deleted 2026-11). **This rule does not reach them.**
 > Do not "fix" them, and do not cite this rule at a staff.
 >
 > **AND THEY ARE UNRULED, NOT EXCLUDED — THE TWO ARE ONE KEYSTROKE APART AND ONLY ONE IS TRUE.**

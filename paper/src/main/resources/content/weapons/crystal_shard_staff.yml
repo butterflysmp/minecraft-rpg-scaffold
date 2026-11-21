@@ -13,7 +13,7 @@
 # The old weapon (github.com/CreaperCrusher/Butterfly-SMP at cfde822, StaffListener.launchCrystalShardBolt): Common, an
 # amethyst_shard; one gravity-less shard item at 1.1 blocks a tick, steering at the nearest hostile mob (turn 0.18 a
 # tick, search radius 18), range 20, at most 60 ticks; 22 magic damage to the first living thing it touched; 8 mana,
-# 1000 ms. NOTHING HERE IS TAKEN FROM A DELETED DEV WEAPON OR FROM ember_staff.
+# 1000 ms. NOTHING HERE IS TAKEN FROM A DELETED DEV WEAPON OR FROM ember_staff (deleted 2026-11).
 #
 # NOT DURABLE, LIKE THE FLINT STAFF: an amethyst_shard has no vanilla durability, so this staff never wears and never
 # breaks (Durability.isBroken's staff-and-stone exemption). And Unbreaking can still roll on it and does nothing: the

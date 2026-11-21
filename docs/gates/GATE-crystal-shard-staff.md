@@ -1,5 +1,12 @@
 # GATE — THE CRYSTAL SHARD STAFF (feat/crystal-shard-staff), THE EMBER STAFF DELETED, AND THE OWED INPUTS MIN READING
 
+**Seat approval 2026-11-21: code and gate diffed at 4d275653, booted at 4d275653, readings at 1f501ae8. Merge on Ben's
+words.** Ben, 2026-11-21: "go ahead and merge".
+
+**Status: READ, 2026-11-21, booted at `4d275653`.** The readings are under **READINGS**, at the foot; nothing above
+them is edited, and the status line below is the one written before the boot. **CS2 and CS3 read `sent=65.000`
+against a predicted 16 (the prediction left out his level bonus); HF1 has NO WITNESS** (see READINGS).
+
 **Status: NOT RUN.** Written 2026-11-21 on `feat/crystal-shard-staff` (PR A), on master `e2ae5f6f` (the squash of
 #225), before any boot. **This file carries the ONE R0 and the ONE run sheet for the stack**: PR A (this branch) and
 PR B, `ember_staff` deleted, stacked on it, which appends its own rows here before the boot.
@@ -33,6 +40,36 @@ the daylight rule). **Nothing in the selftest can hurt him; CR2 and HF1 are manu
   every shipped item to be listed (READ, `theShippedDevExampleNamesRealItemsOfTheirOwnRarityAndNoEpic`).
 - **Docs**: Ben's words and the mage tiers in `PLAN-weapon-tiers.md` 1.6; the waves note in `PLAN-dragon-fight.md` §7,
   item 18 ("Channelling is when the slow close starts but I don't want to start waves yet"). Waves are NOT started.
+
+## WHAT PR B ADDS (`feat/ember-staff-deleted`, stacked on PR A; appended before any boot)
+
+- **Deletes** `content/weapons/ember_staff.yml`, by the four dev weapons' rulings (`GATE-remove-dev-weapons.md`,
+  `standing-decisions.md`). Weapons 20 -> 19. **The loot table:** `ember_staff` leaves `cascade.yml`'s dev source rare
+  pool, which now holds four: `locust, brawlers_gauntlet, fletchers_quiver, sages_scroll`.
+- **No Java behaviour changes.** Every surviving mention in main code and content is marked `(deleted 2026-11)`: 29
+  sites in 24 files; in main Java, 20 lines at the base, 20 comments, 20 marked. Two javadoc texts the marker broke
+  were rewritten by hand (`LootLoader`'s YAML example, `WeaponItems`' quoted command).
+- **Nothing lost its last shipped user** (READ, content grep): its `type: burst` is authored by six abilities and
+  `searing_lance`; its `solar_detonation` by six; a projectile with no body and no trail still ships in
+  `solar_grenade` (that last one by a 14-line window after each `type: projectile`, INFERRED complete).
+- **The selftest:** no scenario named `ember_staff` before this branch. **ES1** below names it on purpose, and
+  `SelfTestWeaponIdsTest` pins its three steps as the guard's second exception.
+- `CLAUDE.md` and `standing-decisions.md` name it with the four, with Ben's words; the pointer also names the two
+  weapons that ship off the 4-tick grid (`cursed_emerald` 30, this staff 14).
+
+### THE COVERAGE LEDGER: every test that loaded the real `ember_staff.yml`, and where its rule went
+
+| test | the rule it carried | now | mutation (run on PR B) |
+|---|---|---|---|
+| `WeaponLoaderTest.bundledEmberStaffContentLoads` | a shipped staff is a costed (mana) right-click projectile on a mage weapon | **repointed** to `flint_staff`, renamed `bundledFlintStaffContentLoads` | MB1 |
+| `WeaponLoaderTest.onlyTheBowsRightClickIsABasicAttack` | a staff's right-click is NOT a basic attack, so a refused press keeps its feedback | **repointed** to `flint_staff` | MB2 |
+| `WeaponLoreTest.everyShippedWeaponRendersAgainstTheShippedElements` | the one LITERAL-damage weapon of the three: no class-labelled damage line and no Attack Speed without a basic attack; an element colour unlike its rarity's | **repointed** to `flint_staff` (fire, common) | MB3 |
+| `LootLoaderTest.theShippedDevExampleNamesRealItemsOfTheirOwnRarityAndNoEpic` | the rare pool, as written | **updated**: four entries, and `ember_staff` named as banned | MB4 |
+| `ScorchContentInvariantTest.theFireDamageSitesAreALLDISCOVERED` | the discovered count of fire damage sites | **18 -> 17** (its burst's fire damage); the deletion run reddened with "expected 18 … found 17" | MB5 |
+| `GoldenLoreTest` (`golden-lore.txt`) | every shipped tooltip | its block removed: predicted **1 / 11**, read **1 / 11** | the deletion run |
+
+**In-memory fixtures that only use the name are left** (`DurabilityTest`, `EffectApplierTest`, `ProjectileFlightTest`,
+`DamageEnchantsTest`, `AbilityLoaderTest`, `WeaponItemsTest`): they build their own definitions and load no file.
 
 ## THE SEAT PLACEHOLDERS, FOR BEN (each marked `SEAT PLACEHOLDER 2026-11-21` in the file)
 
@@ -119,8 +156,9 @@ The booter's checklist is `.claude/rules/booting.md`; this list is its instance 
    shard on top, cobblestone in the middle, stick at the bottom, one column). Take it, hover it, and **type in chat
    the Gear Score its tooltip shows**, e.g. `gear score 100`.
 4. **ASK (type the answer in chat):** "Is the staff's name and tooltip what you expect?"
-5. `/rpg selftest crystal-shard-staff` — **ONCE.** Four rows, under a minute. Frozen zombies appear in front of you
-   and are shot by the staff; they cannot move or hit you. Your items are put back at the end.
+5. `/rpg selftest crystal-shard-staff` — **ONCE.** Five rows, under a minute. Frozen zombies appear in front of you
+   and are shot by the staff; they cannot move or hit you. The last row tries to give you the deleted Ember Staff and
+   is refused. Your items are put back at the end.
 6. **ASK (type the answer in chat):** "In the selftest, did the shard find the zombie it was roughly aimed at?"
 7. **HF1, THE HELD-FIRE READING.** Stand somewhere open with no mobs in front of you (the shard chases any mob it can
    see within 18 blocks). Hold the staff you crafted in step 3. Then:
@@ -140,6 +178,7 @@ Nothing else this boot. If a row stalls or aborts, do not intervene. An answer o
 |---|---|---|---|---|
 | CS1 | where he stands, overworld | nothing | 0 | no / no |
 | CS2, CS3, CS4 | teleported to the centre of the block he stands on, facing east; one NoAI zombie 8 to 10 blocks east | a NoAI zombie does not move or attack; the shard skips its caster (`castRay`'s ignore id) | 0 x 0 = 0 | no / no |
+| ES1 | where he stands | nothing: a probe and a refused give | 0 | no / no |
 | CR2 | where he chooses, open overworld, in SURVIVAL, manual; the time set to 1000 (morning) by the run sheet's line 1a | **natural overworld mobs, as in ordinary play**; his own shards cannot hit him | **not bounded**: ordinary play. A zombie's hit at defence 0 is about **15** (3 x 5, UNVERIFIED vanilla 3), so **7 hits** at 100 (105) and **24** at 350 (360). A creeper at point blank is about **215** (43 x 5, UNVERIFIED) | **at 100: yes** (7 zombie hits, or one close creeper) **/ at 350: yes** (24 zombie hits), **not by one creeper** |
 | HF1 | the same; **his mana at ZERO when the burst ends**, so the staff cannot answer a mob until it regenerates (about 1 a second, so 8 seconds a cast) | the same | the same | the same |
 
@@ -213,6 +252,10 @@ $zip.Dispose()
 255): 35 gates; `^[A-Za-z0-9_-]+:` over them **290**; `^setup:` **35**; so **255**. Control: 285 (the last boot) +
 this gate's 5 (setup, CS1-CS4) = 290.
 
+**RECOUNTED AGAIN on PR B's tree** (2026-11-21, the same three commands; `SelfTestScenariosTest` asserts 256): 35
+gates, **291** keys, 35 setups, so **256**. Control: 290 + ES1 = 291. **This is the figure R0d reads**, since the boot
+is of the stack top: `256 scenarios across 35 gates`.
+
 ### R0e — THE ORPHAN SWEEP WITH NOTHING STAGED
 
 | prediction | instrument | READING |
@@ -251,6 +294,12 @@ this gate's 5 (setup, CS1-CS4) = 290.
 |---|---|---|
 | **RE-STAGED 2026-11-21 for the turn 0.45.** The same staging, the zombie at **`~9.40 ~ ~3.42`**, **20 degrees** to the right (10 cos 20 = 9.397, 10 sin 20 = 3.420): more than twice the 9.5 the core test reports, and the fake finds no hit beyond 9.5 out to 90. **0 PLAYERHIT** in the row; the probe shows the zombie at its full custom health. **If it is hit**, the server's catch is wider than the fake's by at least 10 degrees, and CS3 then proves nothing about homing: both rows are reported together | the same | |
 
+### ES1 — ember_staff is deleted: a held copy probed, the give refused (SURVIVAL) — PR B
+
+| prediction | stands on | READING |
+|---|---|---|
+| `INVENTORY ember_staff slots=<A>`. **If `<A>` is not empty, exactly one login WARN `[Rpg] Refresh: item carries unknown gear id 'ember_staff' -- left untouched; its content file is missing or renamed`** (R0c); if empty, none, and the Dangling arm is UNREAD on a server again. Then REPLY **`Unknown weapon, shield, armor, tool or accessory: ember_staff`**, then REPLY **`Available: …`** naming `crystal_shard_staff` and `flint_staff` and NOT `ember_staff`. Then `INVENTORY ember_staff slots=<A>` again, the same list: nothing was given | `RpgCommand.give`, `GearRefresher` and `warnOnce` (READ in `GATE-remove-dev-weapons.md`, unchanged since) | |
+
 ### HF1 — THE OWED READING: held fire on a 14-tick cooldown (SURVIVAL, MANUAL)
 
 | prediction | stands on | READING |
@@ -271,3 +320,179 @@ this gate's 5 (setup, CS1-CS4) = 290.
   the client. Only his answers speak to it.
 - **Unbreaking granting nothing on the staff**: pinned in a test, not read on a server.
 - **The shard chasing a mob behind a wall, or a passive mob**: READ from source only.
+
+## READINGS — 2026-11-21, THE BOOT OF `4d275653` (ADDED AFTER HIS `/stop`; NOTHING ABOVE IS EDITED)
+
+Instrument for every line: `run/logs/latest.log` of this boot, read after the stop. Its first `[Rpg] Build:` is
+`4d275653`, and it holds exactly one `Done (` line, this boot's own (16:16:46). **Every row below is read from lines
+AFTER his login at 16:17:44.** L-numbers are lines of that log.
+
+### The boot, by `.claude/rules/booting.md`
+
+1. **Words:** the seat's BOOT APPROVED for `4d275653`, and Ben's own "ready", both in hand.
+2. **Heads:** `git ls-remote --heads origin feat/ember-staff-deleted` printed
+   `4d2756532796ebaae0f28f676863768dc93e82f8`. Checks before the boot: #226 at `2655ca81` CLEAN, `build COMPLETED
+   SUCCESS` twice; #227 at `4d275653` CLEAN, `build COMPLETED SUCCESS` twice.
+3. **Carried state:** no java process; backup `../rpg-run-backups/2026-11-21-pre-crystal-staff` (Rpg 140 files / 26
+   dirs, world 193 files / 32 dirs, each equal to its source, `diff -rq lines: 0` each); `world/dimensions` =
+   `minecraft rpgfight`; overworld files 13 (`run/world` without `dimensions`); `12:  dev-pack-on-join: true`;
+   `rpgfight` 0 entries.
+4. **"booting now"** sent in its own message, with "Ben: do NOT log in until I tell you R0 passed".
+5. **The boot:** `./scripts/dev-server.sh --refresh-content`, in the next turn. Deployed lines: `weapons/
+   crystal_shard_staff.yml` line 40 `    cooldown_ticks: 14`; `recipes/` 4 files; no `weapons/ember_staff.yml`; 19
+   weapon files; `rare: [locust, brawlers_gauntlet, fletchers_quiver, sages_scroll]`; `lerp: 0.45`.
+6. **R0 read on this boot's log** (below).
+7. **"R0 passed"** sent in its own message before he logged in.
+8. **His login:** `16:17:44 BaronVonYeetus joined the game`, after every R0 line (the last at 16:16:46) and after the
+   R0-passed message.
+9. **After his `/stop` (16:22:16):** `rpgfight` 0 entries; overworld files 13, equal to step 3's;
+   `16:22:17 … All dimensions are saved`; no `java.exe` left.
+
+### Every command he issued, in order, against the sheet
+
+| time | command or chat line | sheet |
+|---|---|---|
+| 16:17:49 | `/gamemode creative` | **NOT ON THE SHEET**, before line 1 |
+| 16:17:56 | `/gamemode survival` | line 1 |
+| 16:18:01 | `/time set 1000` | line 1a |
+| 16:18:05 | `/give BaronVonYeetus minecraft:crafting_table` | line 2 |
+| 16:18:11 | chat: `minecraft:amethyst_shard 1, then minecraft:cobblestone 1` | line 2's text typed into chat, not a command |
+| 16:18:15 | chat: `minecraft:stick 1` | the same |
+| 16:18:33 | `/give BaronVonYeetus minecraft:amethyst_shard 1` | line 2 |
+| 16:18:38 | `/give BaronVonYeetus minecraft:stick 1` | line 2 |
+| 16:18:47 | `/give BaronVonYeetus minecraft:cobblestone 1` | line 2 |
+| 16:19:28 | chat: `name and lore and tool tips look good` | line 4, the first ASK |
+| 16:19:36 | `/rpg selftest crystal-shard-staff` | line 5, once |
+| 16:19:55 | chat: `yes` | line 6, the second ASK |
+| 16:20:13 | `/rpg mana refill` | line 7 |
+| 16:20:17 | `/rpg firerate` | line 7 |
+| 16:20:38 | `/rpg firerate` | line 7 |
+| 16:21:12 | chat: `i'm not typing the lines in chat just read them` | line 7's last bullet |
+| 16:21:49 | chat: `these self tests have lost a lot of their automatic components since the handoff` | not a sheet line |
+| 16:22:16 | `/stop` | line 9 |
+
+**Skipped:** line 3's "type the Gear Score" (no chat line names one) and line 8, the third ASK (no answer).
+**Extra:** `/gamemode creative` at 16:17:49, seven seconds before `/gamemode survival`. Every row below ran after
+16:17:56, in survival (the selftest's RESTORED line reads `gamemode=SURVIVAL`).
+
+### R0a
+
+**AS PREDICTED.** `[16:16:45] [Rpg] Build: 4d275653`. Not `-dirty`, not `unknown`.
+
+### R0b
+
+**AS PREDICTED: all thirteen lines.** PRESENT: the staff, its recipe and its three visuals; `    cooldown_ticks: 14`;
+`mints: crystal_shard_staff`; `CS4:`; `  - crystal-shard-staff`; the four-entry rare pool. ABSENT: `ember_staff.yml`
+and the old five-entry pool. The control `flint_staff.yml`: PRESENT.
+
+### R0c
+
+**AS PREDICTED.**
+- **`[Rpg] Loaded 11 abilities, 33 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 19
+  weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 4 recipes, 1 ores, 4 vein sizes`**.
+- The fight line and the loot line are each EQUAL, by scripted string comparison, to `GATE-fight-revive.md`'s and
+  `GATE-loot-roll.md`'s R0c lines (the loot gate's full 275-character line; its other match is a wrapped fragment).
+- The world-damage line; `Loaded smithing: 1 upgrades […]`; **`Mint-on-craft: 36 indexed, 36 claiming, of 49 gear
+  definitions`**; `Convert-on-arrival: 7 materials {…}`. Each exactly once.
+- 0 lines of `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Recipe '` or `No fights loaded`.
+- `[Rpg]` WARN: 2, `volley_stone`'s pair, both at 16:16:46, before his login. **The 14-tick cooldown logged nothing.**
+- **After his login: 0 `[Rpg]` WARN lines, and 0 `unknown gear id` lines** (ES1 explains why).
+- The six `***` WARN lines are Paper's version notice, not ours.
+
+### R0d
+
+**AS PREDICTED.** Once: `[Rpg] Selftest: dev server, 256 scenarios across 35 gates [melee-cell, … remove-dev-weapons,
+crystal-shard-staff]`. `251 scenarios across 34 gates`: ABSENT (0).
+
+### R0e
+
+**AS PREDICTED.** One `FIGHTWORLD sweep path=…\run\world\dimensions\rpgfight folders=0`; no `deleting`, no `orphan`.
+
+### CR2
+
+**THE LOG HALF AS PREDICTED; THE TOOLTIP HALF UNREAD.** At 16:18:52, after his three gives, exactly one
+**`[Rpg] CRAFT minted player=BaronVonYeetus weapon=crystal_shard_staff material=amethyst_shard score=100`**. No
+`ARRIVAL` line in the log (0). **He typed no Gear Score**, so the equality with his tooltip is UNREAD. **CR1's carried
+tooltip half is still UNREAD** after two boots. The craft itself, a recipe mint through the table, is witnessed.
+
+### CS1
+
+**AS PREDICTED in every lore line; the name's style NOT PREDICTED.**
+- REPLY `"Given Crystal Shard Staff" [aqua, white]`; `INVENTORY crystal_shard_staff slots=[0x1, 1x1]` (slot 0: the
+  staff he crafted; slot 1: the one given); `DRIVE hold … 0->0`; REPLY `"Set Gear Score: 100"`.
+- `HELD crystal_shard_staff AMETHYST_SHARD x1 name="Crystal Shard Staff" [white] italic lore=["Kinetic" [white];
+  "Gear Score: 100" [gray, aqua]; "" []; "Crystal Shard  Right-Click" [gold, yellow]; "Fires a homing crystal shard"
+  [gray]; "at the nearest enemy." [gray]; "Kinetic Damage: 16" [gray, red]; "Cooldown: 0.7s | Mana Cost: 8"
+  [dark_gray]; "" []; "Common Magic Weapon" [white]]`. **All ten lines, in order, as predicted.**
+- **NOT PREDICTED: `italic` on the name.** The dump prints it only when the name component says ITALIC explicitly
+  (`SelfTestLines.styled`, READ), and it reads `effectiveName()`. Why the name carries it is UNVERIFIED (INFERRED: Paper
+  styles a custom name as vanilla does). **Ben's answer to the first ASK: "name and lore and tool tips look good".**
+
+### CS2
+
+**NOT AS PREDICTED IN `sent`: 65.000, NOT 16.000 (OR 32.000 ON A CRIT). THE PREDICTION WAS WRONG, NOT THE CODE.**
+- `MOBSEED b91dd947… zombie gs=100 source=rolled max=100`; the aim `d=8.000 yaw=-90.000 pitch=-0.859`; `DRIVE use …
+  item=crystal_shard_staff`; then exactly one
+  **`PLAYERHIT caster=b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5 source=crystal_shard_staff/right_click target=b91dd947-4178-4283-a62a-d27edea4c706 zombie element=kinetic sent=65.000 crit=false triggerScore=100`**.
+  `element=kinetic`, `crit=false` and `triggerScore=100` are as predicted. The probe read `customHP=35.000/100.000`
+  (context only).
+- **Why 65** (READ, `EffectApplier`'s Damage arm): `sent = 16 x score/100 x (enchant multiplier) + classDamageBonus +
+  weaponLevelDamage`, and `Caster.weaponLevelDamage` is the player's level bonus on every weapon hit. **Executed**,
+  with the real classes (`core/target/classes`, jshell): `LevelBonus.forLifetimeXp(712667)` = **level 50,
+  weaponDamage 49.0** (his profile's `lifetimeXp` is 712667; control: xp 0 gives 0.0). **16 + 49 = 65 exactly**, so
+  no enchant multiplier was active and the class bonus was 0. **The gate predicted 16 x his score / 100 and left out
+  the flat level term.** (`GATE-withered-shortbow.md` WB2 read 16 on 2026-11-14 at an earlier level; not re-derived
+  here.)
+- **Mana:** REPLY `"Mana refilled to 100."` before the cast; the fall by 8 is READ from source only (no probe).
+
+### CS3
+
+**THE HIT AS PREDICTED; `sent` NOT, FOR CS2's REASON.** Teleported to `-111.5 63 23.5` facing `-90 0`; the zombie
+summoned at `~9.96 ~ ~0.87` (`MOBSEED 74fb90a3… gs=100`); `DRIVE use … yaw=-90.000 pitch=0.000`; then exactly one
+**`PLAYERHIT caster=b6ae27e9-… source=crystal_shard_staff/right_click target=74fb90a3-1f02-4871-9eea-1b93d01ac45d zombie element=kinetic sent=65.000 crit=false triggerScore=100`**.
+The probe read `d=9.998 dy=0.000`, `customHP=35.000/100.000`. **A shard fired level along the line hit a zombie 0.87
+blocks off it at 10 blocks**, which an unsteered shard misses (`CrystalShardCatchAngleTest`). **The homing is
+witnessed on a server.** Ben's answer to the second ASK ("did the shard find the zombie it was roughly aimed at?"):
+**"yes"**.
+
+### CS4
+
+**AS PREDICTED.** The zombie at `~9.40 ~ ~3.42` (`MOBSEED 595f7bd2… gs=100`); `DRIVE use … yaw=-90.000
+pitch=0.000`; **0 PLAYERHIT in the row**; the probe read `customHP=100.000/100.000`, `d=10.003`. Then `Killed Zombie`.
+So the catch on the server lies between CS3's 5 degrees (hit) and CS4's 20 (miss), as the fake's 9.5 does.
+
+### ES1
+
+**AS PREDICTED, ON THE EMPTY ARM.** `INVENTORY ember_staff slots=[]`; REPLY `"Unknown weapon, shield, armor, tool or
+accessory: ember_staff" [red]`; REPLY `"Available: …"`: by grep on the full line, `crystal_shard_staff` 1,
+`flint_staff` 1, `ember_staff` 0; then `INVENTORY ember_staff slots=[]` again. No `unknown gear id` WARN anywhere (0),
+which an empty list predicts. **He held no ember_staff, so the Dangling arm is UNREAD on a server again.**
+
+The run ended `SELFTEST RUN FINISHED`, then `SELFTEST RUN RESTORED … gamemode=SURVIVAL … spawn_mobs=false time=1000
+…`: his time and game mode were put back.
+
+### HF1 — THE OWED READING: NO WITNESS
+
+**UNREAD.** He ran `/rpg mana refill` (16:20:13), `/rpg firerate` (16:20:17) and, after the burst, `/rpg firerate`
+(16:20:38). **The command's replies are NOT in the log**: `Fire cadence`, `INPUTS` and `FIRES` each occur 0 times
+in `latest.log`. `RpgCommand.fireRate` sends them to the player with `sendMessage` (READ), and only the selftest's
+reply reader logs replies. **He did not type them**: at 16:21:12, verbatim, "i'm not typing the lines in chat just
+read them". No screenshot was received. **So the `INPUTS min` reading is NOT TAKEN, and the table's verdict cannot be
+applied: `ceil(n/4) x 4` remains an UNTESTED EMPIRICAL FIT.** No shard cast is logged either (no mob was hit, so no
+PLAYERHIT), so the server holds nothing on the held burst at all.
+
+**The third ASK** ("Did holding right-click feel like 0.7 seconds between shots, or slower?"): **no answer, NOT
+STATED.**
+
+### BEN'S REMARK, VERBATIM, FOR THE SEAT
+
+At 16:21:49: **"these self tests have lost a lot of their automatic components since the handoff"**. Recorded here,
+not answered here.
+
+### UNREAD ARMS, IN ONE PLACE
+
+- **HF1**: the INPUTS min and FIRES min readings (the reply is not logged; not typed).
+- **CR2's tooltip half** (CR1's, carried for a second boot): no Gear Score typed.
+- **The third ASK.**
+- **ES1's Dangling arm**: he held no `ember_staff`.
+- **Unbreaking granting nothing**, and the shard chasing a non-hostile or walled mob: source only, as stated above.
