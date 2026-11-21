@@ -9,7 +9,7 @@ only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words
 
 **Game mode:** SURVIVAL, every row. **Difficulty:** whatever the world holds; the zombies are NoAI and frozen, and no
 row reads a hit on him. **Time:** the selftest sets night (18000), so no zombie burns (`.claude/rules/verification.md`,
-the daylight rule). **Nothing on this boot can hurt him** (the arithmetic, below).
+the daylight rule). **Nothing in the selftest can hurt him; CR2 and HF1 are manual rows in ordinary survival play, where natural mobs can** (the arithmetic, below, amended 2026-11-21 by the seat's follow-up c).
 
 **Ben's words, verbatim (2026-11-21, spelling as typed):**
 - "First a side note: The Ember staff is also a dev weapon and should be slated for deletion."
@@ -42,10 +42,11 @@ the daylight rule). **Nothing on this boot can hurt him** (the arithmetic, below
 | speed | **3.0** blocks a tick | "fast hitting"; the old one was 1.1. It cannot pass through a mob between ticks (READ, below) |
 | gravity | **0** | the old shard was gravity-less |
 | lifetime | **7** ticks | the old range was 20 blocks; there is no range key, and 7 x 3.0 = 21 is the first lifetime that reaches 20 |
-| homing | **lerp 0.18, activation_blocks 0, search_radius 18** | the old turn and radius, mapped (below); activation 0 because the old shard steered from its first tick |
+| homing | **lerp 0.45, activation_blocks 0, search_radius 18** | the old radius, mapped (below); activation 0 because the old shard steered from its first tick. **The turn is the seat's, 2026-11-21: at speed 3.0 the old 0.18 caught 3.0 degrees at 10 blocks; 0.45 catches 9.5, about the old staff's 9. Ben has been asked** |
 | description | "Fires a homing crystal shard" / "at the nearest enemy." | the old tooltip's two lines, reworded |
 | flavour | **none** | the old weapon had no flavour line |
 | visuals | `crystal_cast`, `crystal_trail`, `crystal_impact` | the old sounds and particles, unchanged in value |
+| **OPEN FOR BEN** (the seat's ruling 4, 2026-11-21) | the shard chases ANY non-player mob it can see, while the tooltip says "nearest enemy" | left as built, as `dragons_plume` does; Ben has been told |
 
 ## WHAT WAS READ, EACH MARKED
 
@@ -56,14 +57,15 @@ the daylight rule). **Nothing on this boot can hurt him** (the arithmetic, below
 - **The homing fields** (READ, `CastSpec.Homing` and `ProjectileFlight.steer`): `lerp` blends the direction that far
   toward the target each tick, then keeps the bolt's current speed; `activation_blocks` is how far from the spawn point
   it flies straight first; `search_radius` is a sphere, re-searched every tick. **The old blend** (cfde822,
-  `launchCrystalShardBolt`): `velocity x 0.82 + toTarget x 0.18`, both at 1.1, which is the same direction. **The old
+  `launchCrystalShardBolt`): `velocity x 0.82 + toTarget x 0.18`, both at 1.1, which is the same direction (the shipped turn is now 0.45, the seat's). **The old
   search** was a box of 18 that kept only mobs nearer than 18, so a sphere of 18. **Two differences kept** (READ): ours
   chases ANY non-player mob it can SEE (`nearestMob`: no hostile filter, a sight trace from the bolt), and aims at the
   mob's FEET (`position()`); the old one chased hostiles only, without sight, at the mob's middle.
 - **The catch** (`CrystalShardCatchAngleTest`, core, in the fake world's geometry: a sphere of 0.3 around the mob's
-  feet, level with the aim): **at 10 blocks the shard hits up to 3.0 degrees off the aim line, and misses at 3.5. An
-  unsteered shard hits to 1.5. The old speed (1.1) with the same turn hits to 9.0.** At speed 3.0, a turn of 0.30 hits
-  to 4.5, 0.45 to 9.5, 0.65 to 37.5. **REPORTED, NOT A PASS OR FAIL.** On a server the shard leaves the eye, steers
+  feet, level with the aim): **at turn 0.45, at 10 blocks the shard hits up to 9.5 degrees off the aim line, and misses at 10.0**
+  (re-taken 2026-11-21 after the seat raised the turn; no hit beyond that edge out to 90). **An unsteered shard hits to
+  1.5. The old turn 0.18 at this speed hit to 3.0; the old speed (1.1) with 0.18 hit to 9.0.** At speed 3.0, a turn of
+  0.30 hits to 4.5, 0.65 to 37.5. **REPORTED, NOT A PASS OR FAIL.** On a server the shard leaves the eye, steers
   toward the feet and meets a 0.6 x 1.95 box: the real edge is INFERRED to be near this one, so CS3 and CS4 stand
   well inside and well outside it.
 - **The tooltip for 14 ticks** (READ, `WeaponLoreLines.cooldownLabel`: `"%.1fs"` of ticks / 20, the AUTHORED value):
@@ -110,6 +112,7 @@ The booter's checklist is `.claude/rules/booting.md`; this list is its instance 
 
 0. **DO NOT LOG IN UNTIL CC HAS TOLD YOU R0 PASSED. IF YOU ARE TOLD NOTHING, DO NOT LOG IN.**
 1. `/gamemode survival` — **alone, the first line after login.**
+1a. `/time set 1000` — the line straight after it (morning: the seat's follow-up c, 2026-11-21).
 2. `/give BaronVonYeetus minecraft:crafting_table`, then `/give BaronVonYeetus minecraft:amethyst_shard 1`, then
    `/give BaronVonYeetus minecraft:cobblestone 1`, then `/give BaronVonYeetus minecraft:stick 1`.
 3. **CR2 (FIRST, the carried tooltip half):** place the crafting table and craft ONE Crystal Shard Staff (amethyst
@@ -137,10 +140,29 @@ Nothing else this boot. If a row stalls or aborts, do not intervene. An answer o
 |---|---|---|---|---|
 | CS1 | where he stands, overworld | nothing | 0 | no / no |
 | CS2, CS3, CS4 | teleported to the centre of the block he stands on, facing east; one NoAI zombie 8 to 10 blocks east | a NoAI zombie does not move or attack; the shard skips its caster (`castRay`'s ignore id) | 0 x 0 = 0 | no / no |
-| CR2, HF1 | where he chooses, overworld | nothing; his own shards cannot hit him | 0 | no / no |
+| CR2 | where he chooses, open overworld, in SURVIVAL, manual; the time set to 1000 (morning) by the run sheet's line 1a | **natural overworld mobs, as in ordinary play**; his own shards cannot hit him | **not bounded**: ordinary play. A zombie's hit at defence 0 is about **15** (3 x 5, UNVERIFIED vanilla 3), so **7 hits** at 100 (105) and **24** at 350 (360). A creeper at point blank is about **215** (43 x 5, UNVERIFIED) | **at 100: yes** (7 zombie hits, or one close creeper) **/ at 350: yes** (24 zombie hits), **not by one creeper** |
+| HF1 | the same; **his mana at ZERO when the burst ends**, so the staff cannot answer a mob until it regenerates (about 1 a second, so 8 seconds a cast) | the same | the same | the same |
 
-**No row puts him down.** No row sets `death_rules`, enters the fight world or deals damage to him. Each zombie is
-killed at the start of the next row and at the end of CS4.
+**THE MOB SUM, AND WHERE EACH FIGURE COMES FROM (the seat's follow-up c, 2026-11-21):**
+- **READ, our source:** a natural hostile mob's hit on a player is priced `MobScaling.attackDamage` = **5 x (gs / 100)
+  x the vanilla amount** (`VANILLA_FACTOR 5`, `GS_BASELINE 100`), the vanilla amount being the event's own with
+  vanilla's difficulty scaling undone (`traceMobHit`'s javadoc). **Every overworld hostile rolls gs 100**
+  (`DimensionGearScore.OVERWORLD`), so in the overworld a hit is **5 x vanilla**. A mob CONVERTED from another keeps
+  its score (`MobNameplateManager`), so one carried over from the Nether would be gs 200 and hit 10 x vanilla: not
+  expected here.
+- **UNVERIFIED, vanilla, not read from the jar:** the vanilla amounts. A zombie's melee 3, so 15 here; a skeleton's
+  arrow up to about 4 or 5, so 20 to 25; a creeper's blast at point blank about 43, so about **215**: **the biggest
+  single hit an ordinary overworld mob is expected to land**. A warden (30, so 150) lives only in the deep dark. That
+  a creeper's blast is priced as mob-sourced at all is INFERRED (`mobSourceOf` reads the damage source's direct and
+  causing entity; the creeper is both).
+- **At 100 health and defence 0:** one close creeper blast (about 215) puts him down; zombies take **7** hits (7 x 15 =
+  105). **At 350:** a creeper blast (about 215) does not; zombies take **24** hits (24 x 15 = 360). His armour lowers
+  all of these; the table is at defence 0.
+- **Time 1000** is morning: undead under open sky burn, creepers and spiders do not (UNVERIFIED which mobs the burn
+  tag holds; the daylight rule's account did not read it). So **CR2 and HF1 carry the risk of ordinary survival play and nothing more.**
+
+**No SELFTEST row puts him down.** No row sets `death_rules`, enters the fight world or deals damage to him. Each
+zombie is killed at the start of the next row and at the end of CS4. **CR2 and HF1 can, as ordinary play can.**
 
 ## R0 — THE BUILD, FOR THE WHOLE STACK. READ IT FIRST. IF ANY R0 FAILS, STOP
 
@@ -221,13 +243,13 @@ this gate's 5 (setup, CS1-CS4) = 290.
 
 | prediction | stands on | READING |
 |---|---|---|
-| Facing due east, level (`tp … -90 0`, no aim step); the zombie at `~9.99 ~ ~0.44`, 2.5 degrees to the right of the line at 10 blocks. **Exactly one PLAYERHIT** on it, `element=kinetic`, `sent=16.000 crit=false` or `sent=32.000 crit=true`. **Without homing this is a miss** (0.44 blocks off the line against a 0.3 half-width; `CrystalShardCatchAngleTest`), so the hit is the homing's | `CrystalShardCatchAngleTest` (hits to 3.0 degrees in the fake) | |
+| **RE-STAGED 2026-11-21 for the turn 0.45 (the seat's follow-up b; NOT RUN, so rewritten before the boot).** Facing due east, level (`tp … -90 0`, no aim step); the zombie at **`~9.96 ~ ~0.87`**, **5 degrees** to the right of the line at 10 blocks (10 cos 5 = 9.962, 10 sin 5 = 0.872): well inside the 9.5 catch and well outside the unsteered 1.5. **Exactly one PLAYERHIT** on it, `element=kinetic`, `sent=16.000 crit=false` or `sent=32.000 crit=true`. **Without homing this is a miss** (0.87 blocks off the line against a 0.3 half-width; `CrystalShardCatchAngleTest.homingTurnsAMissIntoAHit` stages this very angle), so the hit is the homing's | `CrystalShardCatchAngleTest` (hits to 9.5 degrees in the fake at turn 0.45) | |
 
 ### CS4 — the control: outside the catch, no hit (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The same staging, the zombie at `~9.95 ~ ~1.05`, 6 degrees to the right: twice the 3.0 the core test reports. **0 PLAYERHIT** in the row; the probe shows the zombie at its full custom health. **If it is hit**, the server's catch is wider than the fake's by at least 3 degrees, and CS3 then proves nothing about homing: both rows are reported together | the same | |
+| **RE-STAGED 2026-11-21 for the turn 0.45.** The same staging, the zombie at **`~9.40 ~ ~3.42`**, **20 degrees** to the right (10 cos 20 = 9.397, 10 sin 20 = 3.420): more than twice the 9.5 the core test reports, and the fake finds no hit beyond 9.5 out to 90. **0 PLAYERHIT** in the row; the probe shows the zombie at its full custom health. **If it is hit**, the server's catch is wider than the fake's by at least 10 degrees, and CS3 then proves nothing about homing: both rows are reported together | the same | |
 
 ### HF1 — THE OWED READING: held fire on a 14-tick cooldown (SURVIVAL, MANUAL)
 

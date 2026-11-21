@@ -66,10 +66,11 @@ triggers:
       #                     nearer than 18, so a sphere of 18, which is what this is.
       # Differences kept, READ: ours chases any non-player mob it can SEE (the old one: hostiles only, no sight check),
       # and aims at the mob's feet (the old one: its middle).
-      # WHAT 0.18 BUYS AT 3.0, from CrystalShardCatchAngleTest: at 10 blocks the shard catches a mob up to 3.0 degrees
-      # off the aim line, against 1.5 unsteered and 9.0 for the old 1.1 speed. Fast and homing pull against each other.
+      # WHAT THE TURN BUYS AT 3.0, from CrystalShardCatchAngleTest: at 10 blocks the old 0.18 caught a mob only 3.0 degrees
+      # off the aim line (1.5 unsteered; 9.0 for the old 1.1 speed), so fast and homing pulled against each other. 0.45
+      # catches 9.5, about the old staff's 9.
       homing:
-        lerp: 0.18
+        lerp: 0.45                     # SEAT PLACEHOLDER 2026-11-21: at speed 3.0 the old 0.18 caught 3.0 degrees at 10 blocks; 0.45 catches about the old staff's 9; Ben has been asked
         activation_blocks: 0
         search_radius: 18
     on_hit:

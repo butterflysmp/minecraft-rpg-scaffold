@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * cooldown", and "Keep the item and recipe". So: 16 kinetic, 8 mana, 14 ticks (0.7 s, NOT rounded to the 4-tick grid),
  * homing kept, an amethyst shard, the old recipe (amethyst shard over cobblestone over stick).
  *
- * <p>The SEAT PLACEHOLDERS (speed 3.0, gravity 0, lifetime 7, the homing block 0.18 / 0 / 18, the name "Crystal Shard")
+ * <p>The SEAT PLACEHOLDERS (speed 3.0, gravity 0, lifetime 7, the homing block 0.45 / 0 / 18, the name "Crystal Shard")
  * are pinned too, so that a retune is a deliberate edit to this file as well as to the content. The same flight numbers
  * are carried by {@code CrystalShardCatchAngleTest} in core, which cannot read YAML; {@link #theFlightIsTheSeatsPlaceholders}
  * is what keeps the two in step.
@@ -45,7 +45,7 @@ class CrystalShardStaffContentTest {
     static final double SPEED = 3.0;
     static final double GRAVITY = 0.0;
     static final int LIFETIME = 7;
-    static final double LERP = 0.18;
+    static final double LERP = 0.45;   // SEAT PLACEHOLDER 2026-11-21, raised from the old 0.18
     static final double ACTIVATION = 0.0;
     static final double SEARCH_RADIUS = 18.0;
 

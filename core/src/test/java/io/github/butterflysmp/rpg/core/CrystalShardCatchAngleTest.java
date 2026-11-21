@@ -26,8 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p><b>THE NUMBERS ARE THE STAFF'S, CARRIED HERE BY HAND</b> because core cannot read YAML.
  * {@code CrystalShardStaffContentTest.theFlightIsTheSeatsPlaceholders} pins the shipped file to the same six values;
- * change one and change both. Speed 3.0, gravity 0 and lifetime 7 are SEAT PLACEHOLDERS; lerp 0.18 and search radius
- * 18 are the old repo's {@code CRYSTAL_SHARD_STAFF_HOMING_TURN} and {@code _RADIUS} (cfde822); activation 0 is the
+ * change one and change both. Speed 3.0, gravity 0 and lifetime 7 are SEAT PLACEHOLDERS; search radius 18 is the old
+ * repo's {@code CRYSTAL_SHARD_STAFF_HOMING_RADIUS} (cfde822); lerp 0.45 is a SEAT PLACEHOLDER (2026-11-21), raised from
+ * the old {@code CRYSTAL_SHARD_STAFF_HOMING_TURN} 0.18, which caught only 3.0 degrees at 10 blocks at this speed;
+ * activation 0 is the
  * seat's choice for a field the old weapon had no number for (it steered from its first tick).
  *
  * <p><b>THE GEOMETRY IS THE FAKE'S, AND IT IS NOT A ZOMBIE.</b> {@code FakeWorld.castRay} hits a combatant whose FEET
@@ -42,7 +44,9 @@ class CrystalShardCatchAngleTest {
     static final double SPEED = 3.0;
     static final double GRAVITY = 0.0;
     static final int LIFETIME = 7;
-    static final double LERP = 0.18;
+    static final double LERP = 0.45;
+    /** The old repo's turn, which this staff carried until the seat's follow-up of 2026-11-21. */
+    static final double OLD_LERP = 0.18;
     static final double ACTIVATION = 0.0;
     static final double SEARCH_RADIUS = 18.0;
 
@@ -73,18 +77,20 @@ class CrystalShardCatchAngleTest {
     }
 
     /**
-     * The cause: 2.5 degrees off, homing hits and the same shard without homing misses.
+     * The cause: 5 degrees off (GATE-crystal-shard-staff.md CS3's angle), homing hits and the same shard without
+     * homing misses.
      *
-     * <p><b>2.5, NOT 10, AND THAT IS A FINDING.</b> This row was first written at 10 degrees and went red: at speed 3.0
+     * <p><b>IT WAS 2.5 UNTIL THE SEAT'S FOLLOW-UP OF 2026-11-21 RAISED THE TURN TO 0.45, AND 2.5 WAS ITSELF A
+     * FINDING.</b> This row was first written at 10 degrees and went red: at speed 3.0
      * the shard is 10 blocks out by its fourth tick, and a turn of 0.18 a tick cannot bend it that far in time. The
      * band homing adds at 10 blocks is reported by the row below, and it is narrow.
      */
     @Test
     void homingTurnsAMissIntoAHit() {
         assertTrue(hits(0, false), "CONTROL: dead ahead, even an unsteered shard hits");
-        assertTrue(!hits(2.5, false), "2.5 degrees off, an unsteered shard passes "
-                + String.format(Locale.ROOT, "%.2f", DISTANCE * Math.sin(Math.toRadians(2.5))) + " blocks wide");
-        assertTrue(hits(2.5, true), "2.5 degrees off, the homing shard finds it");
+        assertTrue(!hits(5, false), "5 degrees off, an unsteered shard passes "
+                + String.format(Locale.ROOT, "%.2f", DISTANCE * Math.sin(Math.toRadians(5))) + " blocks wide");
+        assertTrue(hits(5, true), "5 degrees off, the homing shard finds it");
     }
 
     /** The widest contiguous hitting angle, 0.5-degree steps, for any speed, lifetime and lerp. */
@@ -121,14 +127,17 @@ class CrystalShardCatchAngleTest {
     @Test
     void reportsWhatSpeedCostsTheHoming() {
         double now = widest(SPEED, LIFETIME, LERP);
-        double old = widest(1.1, 19, LERP);
+        double fastOldTurn = widest(SPEED, LIFETIME, OLD_LERP);
+        double old = widest(1.1, 19, OLD_LERP);
         StringBuilder lerps = new StringBuilder();
         for (double l : new double[] {0.18, 0.3, 0.45, 0.65, 1.0}) {
             lerps.append(String.format(Locale.ROOT, " lerp %.2f -> %.1f deg;", l, widest(SPEED, LIFETIME, l)));
         }
-        System.out.printf(Locale.ROOT, "CATCH-COMPARE at %.0f blocks: speed 3.0 lerp 0.18 -> %.1f deg; old speed 1.1"
-                + " lerp 0.18 -> %.1f deg; at speed 3.0:%s%n", DISTANCE, now, old, lerps);
-        assertTrue(old > now, "the slow shard has more ticks to turn: " + old + " vs " + now);
+        System.out.printf(Locale.ROOT, "CATCH-COMPARE at %.0f blocks: speed 3.0 lerp %.2f -> %.1f deg; speed 3.0 old"
+                + " lerp 0.18 -> %.1f deg; old speed 1.1 lerp 0.18 -> %.1f deg; at speed 3.0:%s%n", DISTANCE, LERP, now,
+                fastOldTurn, old, lerps);
+        assertTrue(old > fastOldTurn, "the slow shard has more ticks to turn: " + old + " vs " + fastOldTurn);
+        assertTrue(now > fastOldTurn, "the raised turn widens the catch: " + now + " vs " + fastOldTurn);
     }
 
     /**

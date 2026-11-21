@@ -32,8 +32,8 @@ CS2:
   - wait: 10
   - probe: t
 
-# CS3: OFF THE AIM LINE, INSIDE THE CATCH. Facing due east, level; the zombie 10 blocks out and 2.5 degrees to the
-# right (z +0.44). CrystalShardCatchAngleTest: an unsteered shard misses at 2.5, the homing one hits to 3.0. One hit.
+# CS3: OFF THE AIM LINE, INSIDE THE CATCH. Facing due east, level; the zombie 10 blocks out and 5 degrees to the
+# right (z +0.87). CrystalShardCatchAngleTest: an unsteered shard misses at 5, the homing one (turn 0.45) hits to 9.5.
 CS3:
   - cmd: "rpg give crystal_shard_staff"
   - hold: crystal_shard_staff
@@ -41,13 +41,13 @@ CS3:
   - cmd: "rpg mana refill"
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=t]"
-  - cmd: 'summon zombie ~9.99 ~ ~0.44 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~9.96 ~ ~0.87 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
   - wait: 20
   - use: right_click
   - wait: 10
   - probe: t
 
-# CS4: THE CONTROL, OUTSIDE THE CATCH. The same, 6 degrees to the right (z +1.05), twice the catch the core test
+# CS4: THE CONTROL, OUTSIDE THE CATCH. The same, 20 degrees to the right (z +3.42), over twice the 9.5 the core test
 # reports. No hit: the shard flies on and ends in the air at 21 blocks.
 CS4:
   - cmd: "rpg give crystal_shard_staff"
@@ -56,7 +56,7 @@ CS4:
   - cmd: "rpg mana refill"
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=t]"
-  - cmd: 'summon zombie ~9.95 ~ ~1.05 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~9.40 ~ ~3.42 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
   - wait: 20
   - use: right_click
   - wait: 10
