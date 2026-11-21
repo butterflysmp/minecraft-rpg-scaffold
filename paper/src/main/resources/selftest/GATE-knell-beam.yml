@@ -1,0 +1,178 @@
+# GATE-knell-beam.md: THE KNELL BEAM, AND THE OWED ROWS (feat/knell-owed-fixes, feat/knell-mechanisms, feat/knell-beam).
+# `/rpg selftest knell-beam`. Every row is AUTO; he types nothing but his answer to the one question at the end. Night
+# (18000) and no natural spawns, both put back by the run's restore; every mob a frozen NoAI zombie; no fight world.
+# His level is staged at 1 here (the restore puts it back), so the level term of every damage sum is 0.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+
+# KB1: given, held, scored 100, its tooltip as the server built it.
+KB1:
+  - cmd: "rpg give knell_beam"
+  - probe_inventory: knell_beam
+  - hold: knell_beam
+  - cmd: "rpg gearscore set 100"
+  - dump: held
+
+# KB2: one cast straight ahead at a zombie 10 out. Mana read before and after the press; the zombie read 23 ticks
+# after the press (not yet struck) and 25 after (struck): the shot lands on tick 24.
+KB2:
+  - cmd: "rpg give knell_beam"
+  - hold: knell_beam
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant show"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 5
+  - aim: t
+  - wait: 2
+  - probe_mana: ""
+  - use: right_click
+  - probe_mana: ""
+  - wait: 23
+  - probe: t
+  - wait: 2
+  - probe: t
+
+# KB3: PIERCE. Three zombies on the line at 6, 10 and 14. One press: three PLAYERHITs, nearest first.
+KB3:
+  - cmd: "rpg give knell_beam"
+  - hold: knell_beam
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~14 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 60
+  - use: right_click
+  - wait: 30
+  - probe: t
+
+# KB4: ACCURACY. Facing due east, level. Three zombies whose BOXES are 0.2, 0.5 and 0.9 blocks off the line (their
+# feet 0.5, 0.8 and 1.2 to the right: a zombie is 0.6 wide). Tolerance 0.3: the first is struck, the others are not.
+KB4:
+  - cmd: "rpg give knell_beam"
+  - hold: knell_beam
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~8 ~ ~0.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~11 ~ ~0.8 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~14 ~ ~1.2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 60
+  - use: right_click
+  - wait: 30
+  - probe: t
+
+# KB5: LOCKED AIM. Zombie A due east at 10, zombie B due south at 10. Facing A, press; 5 ticks later turn to face B.
+# The shot goes down the line to A.
+KB5:
+  - cmd: "rpg give knell_beam"
+  - hold: knell_beam
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~0 ~ ~10 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 60
+  - use: right_click
+  - wait: 5
+  - cmd: "tp @s ~ ~ ~ 0 0"
+  - wait: 30
+  - probe: t
+
+# KB6: A WALL. Two stone blocks (feet and eye height) 5 east, a zombie 10 east behind them. No hit. The blocks are
+# saved first, so the run's restore puts them back.
+KB6:
+  - cmd: "rpg give knell_beam"
+  - hold: knell_beam
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - save_blocks: "5 0 0 5 1 0"
+  - cmd: "fill ~5 ~ ~ ~5 ~1 ~ minecraft:stone"
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 60
+  - use: right_click
+  - wait: 30
+  - probe: t
+
+# KB7: COOLDOWN. Press; 40 ticks later press again (refused: 8 ticks left); 8 ticks after that press again (fires).
+KB7:
+  - cmd: "rpg give knell_beam"
+  - hold: knell_beam
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 60
+  - probe_mana: ""
+  - use: right_click
+  - wait: 40
+  - use: right_click
+  - probe_mana: ""
+  - wait: 8
+  - use: right_click
+  - probe_mana: ""
+  - wait: 30
+  - probe: t
+
+# CS2R2 (owed, GATE-crystal-shard-staff.md CS2): the Crystal Shard Staff straight ahead at level 1. sent=16.000.
+CS2R2:
+  - cmd: "rpg give crystal_shard_staff"
+  - hold: crystal_shard_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~8 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 5
+  - aim: t
+  - wait: 2
+  - use: right_click
+  - wait: 10
+  - probe: t
+  - cmd: "kill @e[tag=t]"
+
+# HF1R2 (owed, GATE-crystal-shard-staff.md HF1): held fire on the 14-tick staff. Cleared, then 15 seconds for him to
+# HOLD right-click until his mana runs out, then /rpg firerate run BY THE ROW, so its lines land in the log.
+HF1R2:
+  - cmd: "rpg give crystal_shard_staff"
+  - hold: crystal_shard_staff
+  - cmd: "rpg mana refill"
+  - cmd: "rpg firerate"
+  - tell: "HOLD RIGHT-CLICK NOW and keep holding until your mana runs out (about 12 shots). You have 15 seconds."
+  - wait: 300
+  - cmd: "rpg firerate"
+
+# KB8: A FREE GO, THEN THE ONE QUESTION. Six frozen zombies at mixed distances and offsets, the Knell Beam in hand,
+# 30 seconds; then the zombies go and the question is put. He types his answer in chat; no answer in 60 seconds is
+# logged NOT STATED.
+KB8:
+  - cmd: "rpg give knell_beam"
+  - hold: knell_beam
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~8 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~12 ~ ~1.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~16 ~ ~-1 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~20 ~ ~3 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~10 ~ ~-4 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~25 ~ ~0.6 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - tell: "30 seconds with the Knell Beam: aim at the zombies and right-click. A question follows."
+  - wait: 600
+  - cmd: "kill @e[tag=t]"
+  - ask: "1 1200 words Could you tell where the beam would land, and did it need a careful aim?"

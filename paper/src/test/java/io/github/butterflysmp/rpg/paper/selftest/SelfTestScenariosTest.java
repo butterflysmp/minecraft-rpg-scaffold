@@ -40,9 +40,10 @@ class SelfTestScenariosTest {
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
-                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff"),
+                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty-five gates, in boot order (crystal-shard-staff LAST, the Crystal Shard Staff, 2026-11-21, a NEW gate after"
+                "the thirty-six gates, in boot order (knell-beam LAST, the Knell Beam, 2026-11-21, a NEW gate after"
+                        + " crystal-shard-staff; crystal-shard-staff before it, the Crystal Shard Staff, 2026-11-21, a NEW gate after"
                         + " remove-dev-weapons; remove-dev-weapons before it, the four dev weapons deleted, 2026-11-21, a"
                         + " NEW gate after sword-convert; sword-convert before it, the sword ladder part h, 2026-11-20, a NEW gate"
                         + " after sword-smithing; sword-smithing before it, the sword ladder part g, 2026-11-20, a NEW gate"
@@ -260,7 +261,9 @@ class SelfTestScenariosTest {
         // setups, so 255. The control: 285 + 5 (setup, CS1-CS4) = 290. 251 was this line's value.
         // Then ES1 (feat/ember-staff-deleted, PR B, 2026-11-21: ember_staff refused), RECOUNTED: 35 gates, 291 keys, 35
         // setups, so 256. The control: 290 + 1 = 291. 255 was this line's value.
-        assertEquals(256, loaded.rows());
+        // Then GATE-knell-beam.md (feat/knell-beam, 2026-11-21), RECOUNTED: 36 gates, 302 keys, 36 setups, so 266. The
+        // control: 291 + 11 (setup, KB1-KB8, CS2R2, HF1R2) = 302. 256 was this line's value.
+        assertEquals(266, loaded.rows());
     }
 
     /**
