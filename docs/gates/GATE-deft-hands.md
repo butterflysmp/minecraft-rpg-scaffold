@@ -508,3 +508,12 @@ are the seat's to rule.**
    half, SU11's popup.
 6. Every name in the carried list matches a HAND half or a HAND row in the gates: DH2, DH4, SU3, DH7, DH8, ST7's
    refusal text, ST1's restore half (the `RUN RESTORED xp=` line needs Ben's baseline), WS-C's no-blast half.
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: DH3's `quiver_stone` steps and all of DH6 are RETIRED**, their
+> weapon deleted that day. DH3's Boltor and `dragons_breath` steps are unchanged. The one-tick reload floor DH6 read is
+> pinned by `ReloadTimeTest.theResolvedDurationGoesDownToTheOneTickFloorAndNoFurther` (core). **Every prediction and
+> reading above was taken with the old weapon** and none is edited. **A re-run of DH3 needs a re-prediction under the
+> next suffix.** NOT RE-READ on a server.

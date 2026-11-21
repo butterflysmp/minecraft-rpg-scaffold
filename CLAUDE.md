@@ -217,10 +217,10 @@ the opposite because the material suggests it.**
   > day it landed. It shipped in one PR and was copied into `lapis_staff.yml` in the next. Only a
   > gate row that physically stacked two staves caught it.
 
-- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade`, `quiver_stone` OR `emberblade`.**
-  Those four are in a deletion set (`emberblade` added by Ben, 2026-11-19; `ability_stone` was
-  DELETED in the Ability Stone slice). If a dev weapon is truly the only precedent, cite it AND MARK the
-  citation as standing on the deletion set, so the sweep finds it by grep. **Never derive a new
+- **NEW CONTENT CITES THE BOLTOR, NEVER `hunters_bow`, `ironblade`, `quiver_stone` OR `emberblade`.**
+  Those four dev weapons were **DELETED on 2026-11-21** (#224), as `ability_stone` was before them. **Never cite
+  one for a new number.** A surviving mention in code or content says so (`(deleted 2026-11)`), and a
+  measurement taken on one is marked a preserved reading. **Never derive a new
   weapon's numbers from a dev weapon's.** The Boltor's numbers are RULED (`quiver_size 8`,
   `cooldown_ticks 16`, `range 96`, `reload_ticks 60`, `attack_damage 19`). Held right-click inputs
   land on a 4-tick grid, so a cooldown of `13` or `14` IS `16`, and the tooltip will not say so.

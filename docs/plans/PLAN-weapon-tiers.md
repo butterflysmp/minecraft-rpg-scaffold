@@ -588,6 +588,41 @@ says *"mage is as good as any here"* (`:34`).
 
 ## 3. THE DELETION SET: ironblade, emberblade, hunters_bow, quiver_stone
 
+> **STATUS, 2026-11-21: ALL FOUR DELETED** (#224, `feat/remove-dev-weapons`; Ben, verbatim, 2026-11-21: *"removing dev
+> weapons is a good place to start"*). The survey below is KEPT as taken at `868df417`; it was RE-TAKEN at the
+> deletion's base `988f82d8`, the same patterns and the same matching-LINES unit, with `git grep -h -i -E <pattern>
+> 988f82d8 -- <scope> | wc -l` (control: `boltor` in `boltor.yml` = 19, as before). Gate: `GATE-remove-dev-weapons.md`.
+>
+> | id | content (own + other) | main Java | tests | selftest scenarios | gates | plans | other docs |
+> |---|---|---|---|---|---|---|---|
+> | ironblade | 30 (3 + 27 in 15 files) | 9 | 78 | 6 lines in 2 files | 19 in 7 files | 65 | 38 |
+> | emberblade | 15 (3 + 12 in 10 files) | 13 | 86 | 35 lines in 9 files | 51 in 21 files | 75 | 44 |
+> | hunters_bow | 18 (2 + 16 in 9 files) | 24 | 56 | 0 | 32 in 10 files | 65 | 45 |
+> | quiver_stone | 21 (3 + 18 in 7 files) | 19 | 25 | 5 lines in 1 file | 40 in 8 files | 71 | 30 |
+>
+> **What loaded at the base:** one content line only, `loot/cascade.yml` line 44, `emberblade` in the dev source's rare
+> pool; every other content and main-Java hit was a comment. **Selftest steps:** 14 give/hold pairs of `emberblade` in
+> 8 files (13 repointed to `iron_sword`, STA5's retired); `ironblade` in STA5 (retired) and SCA4 (now `wooden_sword`);
+> `quiver_stone` in DH3 (its steps retired) and DH6 (retired). `GATE-dragon-split.yml` names emberblade in a comment only.
+>
+> **WHAT A COPY ALREADY HELD DOES** (the seat's default, ruling 8: no new code; READ from our source at `988f82d8`):
+> - **At login** `GearRefresher.refresh` finds no weapon for its `weapon_id`, takes `RefreshVerdict.Dangling`, and leaves
+>   the item exactly as it is, name, lore and tag. One `Refresh: item carries unknown gear id '<id>' -- left untouched;
+>   its content file is missing or renamed` WARN per id, once per server run (`AdapterContext.warnOnce`).
+> - **Swung at a mob** (left click): `RpgListeners.onPlayerMeleeAttack` cancels the hit if the item reads broken;
+>   otherwise it sets the vanilla damage to the 0.01 token (with the floor that stops a token killing), and then
+>   `WeaponFire.landVanillaMelee` finds no weapon for the id and lands NOTHING: no custom damage, no element, no wear.
+>   The swing packet's path (`WeaponSwingListener` -> `WeaponFire.attempt("left_click")`) also returns empty.
+>   **So a held dead sword deals a 0.01 flinch and nothing else.**
+> - **Right-clicked:** `WeaponFire.attempt("right_click")` returns empty, so `RpgListeners` does NOT cancel the vanilla
+>   interaction. The item then does whatever its vanilla material does. For `ironblade` and `emberblade` (an
+>   `iron_sword`) that is nothing (INFERRED). For `hunters_bow` (a `bow`) it is the vanilla draw, and for
+>   `quiver_stone` (a `crossbow`) the vanilla load, each needing arrows in his inventory (INFERRED). **What a vanilla
+>   arrow from such a draw does to a mob of ours is UNVERIFIED.**
+> - **Convert on arrival leaves it alone:** it is tagged, so `ArrivalClaims` returns `LEAVE_TAGGED` (READ). A dead
+>   `ironblade` never turns into an Iron Sword.
+> - Ben has been asked whether held copies should instead be converted or removed; until he rules, this stands.
+
 **Nothing is removed by this survey.**
 - **What the counts are.** Matching LINES, from case-insensitive `rg` over the patterns `ironblade`, `emberblade`,
   `hunters_bow|hunter'?s.?bow`, `quiver_stone|quiver.?stone`.

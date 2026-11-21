@@ -581,3 +581,10 @@ the staging puts him 0.047 outside it.** Not a defect: the drag did not move him
 sound or sight of it reported). **Ben's own words on walking:** the drag "basically stopped" his walk, "which is what I
 want for walking"; the seat had put "slows without cancelling" to him, and this is his answer to it, recorded and not
 ruled here. **"feels good"** is his answer on the pull at 0.33.
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: DS1R7 now gives and holds `iron_sword`**, where it gave and
+> held `emberblade`, a dev weapon deleted that day. **Every prediction and reading above was taken with the old weapon**
+> and none is edited. **A re-run of DS1R7 needs a re-prediction under the next suffix.** NOT RE-READ on a server.

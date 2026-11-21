@@ -375,3 +375,13 @@ Ten fights, ten `deleting`/`deleted` pairs, each `entries=16`, each under
    any hit is not in the log.
 7. **A kill crosses every threshold at once** (DA7: four DRAGONCROSS, `pending=4`); the fight stops the same tick, so
    no Mage lands. Not predicted; as the code says.
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: DA9 now gives and holds `iron_sword`**, where it gave and held
+> `emberblade`, a dev weapon deleted that day. **Every prediction and reading above was taken with the old weapon** and
+> none is edited. **DA9's prediction names the FIRE element** (`element=fire` on each FIGHTHIT, and a later fire
+> FIGHTHIT as the emberblade's Scorch burn): the sword is kinetic, so that text cannot hold as written, and the row is
+> LISTED FOR THE SEAT rather than judged here. **A re-run of DA9 needs a re-prediction under the next suffix.** NOT
+> RE-READ on a server.

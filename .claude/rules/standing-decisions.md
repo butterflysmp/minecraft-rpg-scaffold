@@ -8,7 +8,19 @@ paths:
 
 ## Standing decisions — the accounts. The pointers are in CLAUDE.md, under the heading of the same name
 
-- **NEW CONTENT CITES THE BOLTOR, NOT `hunters_bow`, `ironblade` OR `quiver_stone`.**
+- **NEW CONTENT CITES THE BOLTOR, NEVER `hunters_bow`, `ironblade`, `quiver_stone` OR `emberblade`.**
+
+  > **ALL FOUR WERE DELETED ON 2026-11-21** (#224, `feat/remove-dev-weapons`; Ben, verbatim, that day: *"removing dev
+  > weapons is a good place to start"*). They are never cited for a new number. The precedent was `ability_stone`'s
+  > (below): every surviving mention in main code and content is a comment that says the weapon is deleted, marked
+  > `(deleted 2026-11)`, and a measurement taken on one is marked `preserved reading`. **Measured the
+  > `ability_stone` way:** `git grep -h -iE 'ironblade|emberblade|hunters_bow|quiver_stone' -- '*/src/main/java/*'`
+  > returned **60** lines at the base `988f82d8`, **all 60 comments**; on the branch it returns **57, all comments,
+  > all 57 marked** (three javadoc examples were rewritten to shipped ids). The control: `grep -cE
+  > '^[[:space:]]*(\*|//|/\*)'` counts a code line as 0. The held-fire readings taken on two of them are restated in
+  > `NEXT.md`. **Everything below is KEPT as the record** of how the set was ruled and measured, in the present
+  > tense it was written in.
+
   Those **three** are **in a deletion set**, parked on *enough shipped weapons to replace them* (see
   `NEXT.md`). Every citation of one written between now and then is a comment that will point at a
   file that does not exist.

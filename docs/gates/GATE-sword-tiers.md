@@ -131,3 +131,11 @@ No selftest handle drives a crafting table (the verbs are READ: no craft verb ex
   are unit tests.
 - **The netherite sword's source:** the smithing table (`GATE-sword-smithing.md`) and conversion on arrival
   (`GATE-sword-convert.md`).
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: STA5 is RETIRED.** It held `ironblade` and `emberblade`, both
+> deleted that day, to show them untouched by the ladder; its subject is gone, and its owed re-staging (a full hotbar
+> skipped it twice) is dissolved with it. **Every prediction and reading above stays as written.** NOT RE-READ on a
+> server.

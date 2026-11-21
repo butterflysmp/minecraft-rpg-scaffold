@@ -429,3 +429,11 @@ ASK step's record is quoted as it logged; this paragraph is the reading of it, a
     the premise, and this read did not reopen it;
   - UNREAD: zero damage not spending the shield (core test only); the shield byte surviving an unload. BS2's and BS3's
     push halves are not VOID: their positive controls read `vx=0.4000` and `vx=0.0170`.
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: BC3, BS2 and BQ1 now give and hold `iron_sword`**, where they
+> gave and held `emberblade`, a dev weapon deleted that day. **Every prediction and reading above was taken with the old
+> weapon** and none is edited (BS2's reading names `element=fire`, the emberblade's element; the sword's is kinetic).
+> **A re-run of any of them needs a re-prediction under the next suffix.** NOT RE-READ on a server.

@@ -363,3 +363,11 @@ auto parts are read by the rules above.
 - **A creative player's hit on a crystal** (`isCreativePlayer()` passes the flag, READ): `/rpg selftest` runs in
   SURVIVAL only, so no row stages it.
 - **Two fights at once:** possible in the code (`FightSiteSourceTest`), never staged. The dev command runs one.
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: MG2R2 now gives and holds `iron_sword`**, where it gave and
+> held `emberblade`, a dev weapon deleted that day. **Every prediction and reading above was taken with the old weapon**
+> and none is edited (its reading's `attack_damage=7.000` was the emberblade's). **A re-run of MG2R2 needs a
+> re-prediction under the next suffix.** NOT RE-READ on a server.

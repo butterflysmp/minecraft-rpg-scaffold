@@ -10212,6 +10212,27 @@ not exist and cannot tell a preserved measurement from a stale one. **Before eit
 removed, restate all three readings in one place**, each carrying the weapon it was taken on, the
 date, and the note that the weapon was subsequently deleted.
 
+> **THE RESTATEMENT, 2026-11-21 (`feat/remove-dev-weapons`), AS `HeldFireQuantisationPinTest` INSTRUCTS ON ITS
+> FAILURE.** The four held-fire readings the model rests on, each with its fixture. **PRESERVED READINGS: two of the
+> four fixtures were DELETED on 2026-11-21**, with `ironblade` and `emberblade`, on Ben's word (*"removing dev weapons
+> is a good place to start"*). The readings stay true of the system; only the weapons are gone.
+>
+> ```
+> fire interval = ceil(effective_cooldown / 4) x 4     (FIRES min, held right-click, AttackSpeed.BASE)
+>
+>   11 -> 12   quiver_stone   2026-09-12, GATE-q7.md            fixture DELETED 2026-11-21
+>   15 -> 16   hunters_bow    2026-09-12, GATE-q7.md            fixture DELETED 2026-11-21
+>   16 -> 16   boltor         2026-09-12, GATE-boltor.md row 1  ships
+>   12 -> 12   locust         2026-09-13, GATE-locust.md row 1  ships
+> ```
+>
+> The pin's two deleted rows were then dropped from `READINGS`; the two surviving rows still run.
+> **What the deletion costs, from the table above the case that separates mechanism from fit: the grid now has
+> ZERO informative shipped points** (both survivors are multiples of 4, where the prediction equals the cooldown).
+> **The `INPUTS min` re-take this file asks for before either weapon is deleted (*"Do not delete `quiver_stone` or
+> `hunters_bow` without this reading or an explicit ruling to drop it"*) is NOT recorded as taken**, and no explicit
+> ruling to drop it is recorded either. Flagged to the seat in the deletion's report, not decided here.
+
 #### OPEN — BEN'S TO RULE, NOT MINE
 
 **Is `quiver_stone` in the deletion set?** It is a fixture rather than a weapon a player holds, it

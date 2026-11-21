@@ -372,3 +372,12 @@ own gate (`GATE-sword-tiers.md`, `GATE-sword-smithing.md`).
    "wear 100 carried" is unread.
 6. **STM1 has no server witness.** A craft writes no log line, and a player's own command reply is not logged.
 7. **His answer to question 3 was "not sure"**: NOT STATED. Whether the conversion was clear to him is open.
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: SCA4 now gives and probes the minted `wooden_sword`**, where it
+> gave and probed `ironblade`, a dev weapon deleted that day. Its meaning is kept: a minted item on a material a weapon
+> claims is left alone because it is tagged. Wooden, because no other row in the file gives or converts one. **Every
+> prediction and reading above was taken with the old weapon** and none is edited. **A re-run of SCA4 needs a
+> re-prediction under the next suffix.** NOT RE-READ on a server.
