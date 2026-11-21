@@ -1,0 +1,22 @@
+# The Knell Beam's toll where it lands (SEAT PLACEHOLDER 2026-11-21): the Knell mob's fire sounds
+# (content/mobs/knell.yml, beam.sounds.fire: the bell at pitch 1.5 and the amethyst chime), and the old weapon's
+# bell resonance on each body struck (cfde822). Played at EACH body the beam strikes, and once where it ends if it
+# strikes none.
+#
+# THERE IS NO "AT THE FIRE, AT THE CASTER" SOUND, AND IT IS A GAP, NOT A CHOICE: a volley has no hook that presents a
+# visual when its shot fires, only on_cast (the click) and on_hit (each landing). So the mob's fire sounds play where
+# the beam lands rather than at the staff. Adding the hook is Java, and is named for the seat, not built here.
+# All three keys READ in the pinned 26.1.2 server jar's SoundEvents.class.
+steps:
+  - type: sound
+    key: block.bell.use
+    volume: 1.0
+    pitch: 1.5
+  - type: sound
+    key: block.amethyst_block.chime
+    volume: 1.0
+    pitch: 1.0
+  - type: sound
+    key: block.bell.resonate
+    volume: 1.0
+    pitch: 1.0

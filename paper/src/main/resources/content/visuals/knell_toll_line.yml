@@ -1,0 +1,12 @@
+# The Knell Beam's beam, drawn when it fires (SEAT PLACEHOLDER 2026-11-21): the Knell mob's own beam dust,
+# Color.fromRGB(40, 230, 235) at size 1.4 every 0.5 blocks (MobBeamer's BEAM and PARTICLE_STEP, READ), which is the old
+# weapon's cyan. Clipped at the first block, as the ray is. No sound step (a beam visual may hold none).
+steps:
+  - type: particle
+    particle: DUST
+    color: [40, 230, 235]
+    size: 1.4
+    count: 1
+    spread: 0.0
+    speed: 0.0             # inert for DUST
+    samples_per_block: 2

@@ -211,7 +211,7 @@ class LootLoaderTest {
         assertEquals("INFO Loaded loot 'cascade': default exotic 1.00% (truly 1.000%), legendary 3.00% (truly 2.970%),"
                 + " epic 8.00% (truly 7.682%), rare 12.00% (truly 10.602%), uncommon 20.00% (truly 15.549%),"
                 + " common 40.00% (truly 24.879%), nothing truly 37.318%; 1 sources [dev_example_not_a_drop]", lines.get(0));
-        assertTrue(!ex.pools().containsKey(Rarity.EPIC) || ex.pools().get(Rarity.EPIC).isEmpty(), "no epic, so the skip shows");
+        assertTrue(!ex.pools().containsKey(Rarity.EPIC) || ex.pools().get(Rarity.EPIC).isEmpty(), "no epic pool, so the skip shows (2026-11-21: knell_beam is epic, but joins no pool)");
         for (Rarity r : List.of(Rarity.EXOTIC, Rarity.LEGENDARY, Rarity.RARE, Rarity.UNCOMMON, Rarity.COMMON)) {
             assertTrue(!ex.pools().getOrDefault(r, List.of()).isEmpty(), "a pool for " + r);
         }

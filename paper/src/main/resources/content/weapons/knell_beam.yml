@@ -1,0 +1,72 @@
+# THE KNELL BEAM: a void mage weapon from the old game (feat/knell-beam, 2026-11-21). The FIRST EPIC ITEM.
+#
+# Ben, 2026-11-21, verbatim (PLAN-weapon-tiers.md 1.7): "slight detour in that the next weapon isn't apart of our
+# current progress tree focus. Let's bring the Knell Beam from the old repo into the new one" / "Slight rework, I want
+# the windup time to match the Knell mob in our repo and the cooldown to be double the wind up time. Also I want it to
+# require more accuracy. The old beam was very forgiving and because of that, very over powered. I still want it to
+# have decent coverage because of stuff like lag and desync but it shouldn't be a "Kill everything in that direction"
+# weapon" / "Void Weapon" / "Nothing right now, It will be a dragon drop later" (no recipe, no loot pool: /rpg give
+# only) / "ignore the crystals for now" / "yes" (keep the locked aim).
+#
+# BEN'S NUMBERS: windup = the Knell mob's telegraph, 24 ticks (content/mobs/knell.yml, beam.telegraph_ticks: READ);
+# cooldown = double the windup = 48 ticks, stamped at the click; element void; aim locked at the click; more accurate
+# than the old 1.0.
+# SEAT PLACEHOLDERS 2026-11-21, each marked where it sits: the tolerance, damage, mana, range, rarity, material, the
+# names, the description, the single flash at the click, the visuals and sounds, and piercing every body.
+#
+# The old weapon (github.com/CreaperCrusher/Butterfly-SMP at cfde822, KnellBeamListener): Epic, echo_shard, "Knell's
+# Toll"; aim frozen at the click; a dark purple line at tick 0 and 3 ticks before the fire; after 12 ticks a cyan beam
+# 40 blocks along the frozen line, stopped by the first solid block; every living thing whose box grown by 1.0 the line
+# crosses took 63 magic damage, no falloff, no knockback; 13 mana at the click; 1200 ms cooldown at the click. NOTHING
+# HERE IS TAKEN FROM A DELETED DEV WEAPON.
+#
+# NOT DURABLE: an echo_shard has no vanilla durability, so the staff never wears or breaks, and Unbreaking can roll on
+# it and grants nothing (NAME THE QUANTITY's eligibility half fails, as on the flint and crystal staves; pinned in
+# KnellBeamContentTest, carried open).
+#
+# NOT IN ANY LOOT POOL, AND NO RECIPE (Ben: "It will be a dragon drop later"). It is the first epic item, and cascade.yml's
+# dev source still has no epic pool: an epic that lands is still skipped there.
+
+id: knell_beam
+display_name: "Knell Beam"                 # SEAT PLACEHOLDER 2026-11-21: the old weapon's name
+element: void
+rarity: epic                               # SEAT PLACEHOLDER 2026-11-21: the old weapon's
+class: mage
+material: echo_shard                       # SEAT PLACEHOLDER 2026-11-21: the old weapon's item
+
+triggers:
+  right_click:
+    name: "Knell's Toll"                   # SEAT PLACEHOLDER 2026-11-21: the old ability's name
+    description:                           # SEAT PLACEHOLDER 2026-11-21: the old tooltip, reworded to state the windup
+      - "Locks a line where you look,"
+      - "then tolls a beam down it 1.2s later."
+    # BEN: double the windup (24), stamped at the click. 48 is on the 4-tick grid. The volley's own floor is its
+    # windup, 24 (CastSpec.Volley.minimumCooldownTicks), so 48 is above it and draws no boot warning.
+    cooldown_ticks: 48
+    cost:
+      resource: mana
+      amount: 13                           # SEAT PLACEHOLDER 2026-11-21: the old weapon's
+    on_cast:
+      - type: visual
+        visual_id: knell_toll_cast         # SEAT PLACEHOLDER 2026-11-21: the Knell mob's telegraph sounds
+    cast:
+      type: volley
+      windup_ticks: 24                     # BEN: the Knell mob's telegraph_ticks
+      shots: 1
+      interval_ticks: 1
+      locked_aim: true                     # BEN: "yes", keep the locked aim
+      warning:
+        beam: knell_warning                # SEAT PLACEHOLDER 2026-11-21: the old purple, the mob's warning dust
+        flash_at: [0]                      # SEAT PLACEHOLDER 2026-11-21: ONE flash, at the click, as Ben ruled the mob's
+      of:
+        type: ray
+        range: 40                          # SEAT PLACEHOLDER 2026-11-21: the old weapon's, and the mob's
+        beam: knell_toll_line              # SEAT PLACEHOLDER 2026-11-21: the old cyan, the mob's beam dust
+        pierce: true                       # SEAT PLACEHOLDER 2026-11-21: it strikes every body the line crosses; a cap is Ben's
+        tolerance: 0.3                     # SEAT PLACEHOLDER 2026-11-21: BEN wants more accuracy than the old 1.0; no number given
+    on_hit:
+      - type: visual
+        visual_id: knell_toll_hit          # SEAT PLACEHOLDER 2026-11-21: the mob's fire sounds and the old per-target bell
+      - type: damage                       # a literal damage effect, as the other staves
+        amount: 63                         # SEAT PLACEHOLDER 2026-11-21: the old weapon's
+        element: void

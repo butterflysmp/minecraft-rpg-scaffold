@@ -39,7 +39,9 @@ sources: {}
 # then, and LootLoader refuses the WHOLE file for an item id that does not ship. volley_stone is the only exotic left,
 # and is on its way out by another route. ember_staff, a dev weapon too, was deleted the same day on Ben's word ("The
 # Ember staff is also a dev weapon and should be slated for deletion", feat/ember-staff-deleted) and left the rare
-# pool, which holds four.
+# pool, which holds four. knell_beam (2026-11-21, feat/knell-beam) is the first EPIC item, so "no content is epic
+# today" above is no longer true; it joins NO pool (Ben: "It will be a dragon drop later"), so this source still has no
+# epic pool and an epic that lands is still skipped.
 dev_sources:
   dev_example_not_a_drop:
     pools:
