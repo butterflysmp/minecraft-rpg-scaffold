@@ -1,5 +1,8 @@
 # GATE — THE FOUR DEV WEAPONS DELETED (feat/remove-dev-weapons), AND THE ONE BOOT FOR THE DELETION STACK
 
+**Seat approval 2026-11-21: code and gate diffed at 38e6e62e, booted at 38e6e62e, readings at 95dc3411. Merge on Ben's
+words.** Ben, 2026-11-21: "merge both".
+
 **Status: READ, 2026-11-21, booted at `38e6e62e`.** The readings are under **READINGS**, at the foot; nothing above
 them is edited, and the status line below is the one written before the boot.
 
