@@ -716,7 +716,10 @@ class WeaponLoaderTest {
      * <p>REPOINTED 2026-11-21 from {@code hunters_bow} (a dev weapon, deleted that day) to {@code short_bow}, the shipped
      * bow with the same three properties (right_click, free, a projectile weapon_damage basic). Two things hunters_bow
      * had and short_bow does not are no longer pinned here: NO quiver (short_bow authors quiver_size 8), and a
-     * weapon_damage BEHIND a leading visual (short_bow's is first; dragons_plume's draw trigger is now the shipped case).
+     * weapon_damage BEHIND a leading visual (short_bow's is first). CORRECTED 2026-11-21: this said "dragons_plume's draw
+     * trigger is now the shipped case", and that is FALSE. The Plume's draw puts its visual in on_cast, and its on_hit
+     * opens with weapon_damage. No shipped weapon has the shape now; it is pinned in memory only, by core's
+     * DamagePayloadTest.aVisualAheadOfAWeaponDamageDoesNotShadowIt.
      */
     @Test
     void bundledShortBowContentLoads() throws IOException {

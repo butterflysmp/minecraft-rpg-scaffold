@@ -385,3 +385,8 @@ Ten fights, ten `deleting`/`deleted` pairs, each `entries=16`, each under
 > FIGHTHIT as the emberblade's Scorch burn): the sword is kinetic, so that text cannot hold as written, and the row is
 > LISTED FOR THE SEAT rather than judged here. **A re-run of DA9 needs a re-prediction under the next suffix.** NOT
 > RE-READ on a server.
+>
+> **2026-11-21, THE SEAT RULED ON DA9: KEEP IT REPOINTED to `iron_sword`.** Its subject is that a melee hit on a dragon
+> PART reaches the dragon by the melee path and the store takes the weapon's figure; fire was the weapon's, not the
+> row's. **A re-run is DA9R2**, predicting `element=kinetic` and no Scorch carve-out. BS2, MG2R2 and WD1 (in their own
+> gates) stand the same way.

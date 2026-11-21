@@ -111,6 +111,15 @@ paths:
     > 1.6-second shot. **Clean halving, attack-speed headroom and a fast weapon are jointly
     > unsatisfiable.** Full argument in `PLAN-locust.md`.
 
+    > **THE GRID IS AN UNTESTED EMPIRICAL FIT, RULED 2026-11-21 (the seat).** The two fixtures that could test it,
+    > `quiver_stone` (11) and `hunters_bow` (15), were deleted that day without the `INPUTS min` re-take `NEXT.md` had
+    > asked for, and the seat DROPPED that reading explicitly. Its reasons: (a) every shipped held right-click cooldown
+    > is a multiple of 4, as this rule requires, and at a multiple of 4 the prediction equals the cooldown under either
+    > account, so no shipped behaviour depends on which is true; (b) the instrument is not lost, since a throwaway
+    > fixture with an off-grid cooldown can be authored for one boot. **THE TRIGGER: no weapon may ship a held
+    > right-click cooldown that is not a multiple of 4 until that reading is taken on such a fixture.** Until then
+    > `ceil(n/4) x 4` is an UNTESTED EMPIRICAL FIT, and is to be called that. The readings are restated in `NEXT.md`.
+
 ### NAME THE QUANTITY, AND NAME THE SET OF THINGS THAT HAVE IT
 
 **Before writing any `value_by_level`: name the quantity the curve moves, and answer BOTH halves.**
