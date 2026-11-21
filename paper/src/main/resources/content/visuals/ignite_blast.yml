@@ -2,7 +2,7 @@
 # The id of this visual is its filename: ignite_blast.
 #
 # WHY THIS IS NOT solar_detonation, which Ignite used to fire. That id is authored for
-# solar_grenade and already shared with emberblade and ember_staff -- so tuning the cascade's
+# solar_grenade and already shared with emberblade (deleted 2026-11) and ember_staff -- so tuning the cascade's
 # bang would have re-tuned three weapons' fireballs, and tuning theirs would have re-tuned the
 # cascade. Ignite is the one effect on the fire kit a player does not aim, so it wants to read
 # as a different KIND of event, not as another fireball. A shared visual is a coupling and this

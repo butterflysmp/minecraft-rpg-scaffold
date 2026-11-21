@@ -431,11 +431,13 @@ FZ5R3:
 
 # --- THE SPLIT ROW WITH TWO BLASTS ----------------------------------------------------------------------------------
 
-# DS1R7: split by his emberblade at GS 60; thawed; each child walks in, lights and blows, and each drags him toward its
+# DS1R7: split by his emberblade (deleted 2026-11) at GS 60; thawed; each child walks in, lights and blows, and each drags him toward its
 # own feet. The two-origin case stays UNRULED: its ends are recorded, not judged.
 DS1R7:
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-12 -1 -4 8 5 4"
   - cmd: "fill ~-12 ~-1 ~-4 ~8 ~-1 ~4 stone"

@@ -24,7 +24,7 @@ import org.bukkit.entity.Player;
  *
  * <p><b>Every wait is a real wait</b>: a {@code wait: n} step ends this pass, and {@code onEntityLater(player, …, n)}
  * resumes it n ticks later. Nothing sleeps, nothing runs async, and every step runs on the thread that owns the player,
- * so the run is Folia-shaped as written. The reconcile (5 t), a full emberblade charge (~12.5 t) and a DOT period
+ * so the run is Folia-shaped as written. The reconcile (5 t), a full emberblade (deleted 2026-11) charge (~12.5 t) and a DOT period
  * (40 t) are waited for, not assumed.
  *
  * <p><b>Lines.</b> Each row is bracketed {@code START … DONE} (or {@code SKIPPED <why>}); between them sit the

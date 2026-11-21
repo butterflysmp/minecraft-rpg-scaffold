@@ -1,7 +1,7 @@
 # THE SWORD LADDER (PLAN-weapon-tiers.md 1.4). Ben, 2026-11-20, verbatim: "Copper - 17".
 #
-# The ladder's shape is ironblade's basic attack (the vanilla-driven left click, weapon_damage, kinetic), with no
-# special. Attack speed 1.6, reach and durability are vanilla's; the sweep 0.5 is ironblade's (Ben: "Yes all swords
+# The ladder's shape is ironblade's (deleted 2026-11) basic attack (the vanilla-driven left click, weapon_damage, kinetic), with no
+# special. Attack speed 1.6, reach and durability are vanilla's; the sweep 0.5 is ironblade's (deleted 2026-11) (Ben: "Yes all swords
 # should have the built in sweep"). The name is vanilla's, coloured by rarity (Ben: "vanilla names with the rarity
 # color"). No flavor: Ben has given none, and a weapon loads cleanly without it (SwordTiersContentTest).
 #

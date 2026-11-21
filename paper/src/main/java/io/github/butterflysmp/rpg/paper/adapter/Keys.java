@@ -134,7 +134,7 @@ public final class Keys {
      * fixture above it is scaffolding that a real enchant retires. A2 ships no quiver enchant, so
      * after this slice this item is THE ONLY THING THAT CAN MOVE QUIVER SIZE -- deleting it removes
      * the ability to re-gate the stat at all. Owning it is more honest than adding a third entry to
-     * a removal debt nobody discharges. Same call, same reasoning, as {@code quiver_stone} in A1.
+     * a removal debt nobody discharges. Same call, same reasoning, as {@code quiver_stone} (deleted 2026-11) in A1.
      *
      * <p>A DOUBLE, matching every other boost key, even though the stat means whole arrows:
      * {@code Stat} sums doubles, and {@code QuiverSize.arrows} owns the single conversion back.

@@ -113,7 +113,7 @@ public record WeaponDefinition(
         }
         // THE INPUT COLLISION. A quiver weapon spends left-click on its reload, so a left_click
         // trigger on the same weapon would have two owners for one press and whichever ran first
-        // would win silently. hunters_bow.yml reserves left-click for "a future melee/special"; a
+        // would win silently. hunters_bow.yml (deleted 2026-11) reserves left-click for "a future melee/special"; a
         // quiver weapon is the case that spends it, and that has to be a refusal rather than a race.
         if (quiverSize > 0 && bindsInput(triggers, "left_click")) {
             throw new IllegalArgumentException("weapon '" + id
@@ -240,7 +240,7 @@ public record WeaponDefinition(
      * weapon and then fail to resolve one at hit time, or the reverse.
      *
      * <p>FIRST-WINS across the trigger list rather than keyed on {@code "left_click"}: the input a
-     * melee basic is bound to is content's business, and {@code hunters_bow} already proves a basic
+     * melee basic is bound to is content's business, and {@code hunters_bow} (deleted 2026-11) already proves a basic
      * attack need not live on the obvious input. No shipped weapon declares two.
      */
     public Optional<AbilityDefinition> vanillaMeleeTrigger() {

@@ -263,8 +263,10 @@ PQ4:
   - cmd: "fill ~-30 ~-1 ~-30 ~30 ~-1 ~30 stone"
   - cmd: "fill ~-30 ~ ~-30 ~30 ~6 ~30 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "tp @s ~12 ~ ~"
   - spawn: "pq4 live phalanx 100"
   - cmd: "tp @s ~-12 ~ ~ -90 0"

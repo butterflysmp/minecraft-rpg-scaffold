@@ -271,9 +271,13 @@ class WeaponLoreTest {
      * zero weapons, or a resource stream that silently yields nothing on a shaded jar, would
      * otherwise read as a pass having checked no weapon at all.
      */
+    // REPOINTED 2026-11-21: ironblade, emberblade and hunters_bow were dev weapons, deleted that day. iron_sword is the
+    // sword; withered_shortbow is the bow and keeps hunters_bow's colour case (an element colour, wither's dark gray, at
+    // a rarity whose colour differs, uncommon's green). emberblade's shape (a basic swing AND a costed special on one
+    // weapon) has no shipped successor, so that rendering left with it.
     @Test
     void everyShippedWeaponRendersAgainstTheShippedElements(@TempDir Path dir) throws IOException {
-        String[] weaponIds = {"ironblade", "emberblade", "hunters_bow", "ember_staff"};
+        String[] weaponIds = {"iron_sword", "withered_shortbow", "ember_staff"};
         String[] elementIds = {"fire", "water", "nature", "undead", "void", "wither", "kinetic"};
 
         Path weaponsDir = Files.createDirectory(dir.resolve("weapons"));
@@ -299,8 +303,8 @@ class WeaponLoreTest {
             assertFalse(lore.isEmpty(), () -> "empty lore for " + weapon.id());
 
             // The element line must carry the element's OWN declared colour, for every shipped
-            // weapon -- not the rarity's. hunters_bow is the case that used to be wrong: fire
-            // element (red) at uncommon rarity (green).
+            // weapon -- not the rarity's. hunters_bow (deleted 2026-11) was the case that used to be wrong: fire
+            // element (red) at uncommon rarity (green). withered_shortbow is that case now: wither (dark gray) at uncommon.
             ElementDefinition element = elements.find(weapon.element()).orElseThrow(
                     () -> new AssertionError(weapon.id() + " names an element that does not ship"));
             TextColor expected = colorOf(MiniMessage.miniMessage().deserialize(element.displayName()));
@@ -336,15 +340,15 @@ class WeaponLoreTest {
                     () -> weapon.id() + ": attack speed must appear iff it has a basic attack; got " + lines);
         }
 
-        // Ironblade, Emberblade and now Hunter's Bow are the weapon_damage weapons in shipped
-        // content. If that ever stops being true this test has quietly stopped covering the stat
-        // block. The bow joining them is the point of the cast-time-snapshot pass: a projectile
-        // basic attack was impossible while WeaponDamage resolved its amount at hit time.
-        assertEquals(3, weapons.all().stream().filter(w -> w.triggers().stream().anyMatch(t ->
+        // Of the weapons this test loads, the sword and the bow are the weapon_damage ones. If that ever stops being
+        // true this test has quietly stopped covering the stat block. A bow among them is the point of the
+        // cast-time-snapshot pass: a projectile basic attack was impossible while WeaponDamage resolved its amount at
+        // hit time. (Until 2026-11-21 the three were ironblade, emberblade and hunters_bow, dev weapons since deleted.)
+        assertEquals(2, weapons.all().stream().filter(w -> w.triggers().stream().anyMatch(t ->
                         DamagePayload.of(t.ability().onHit(), w.attackDamage())
                                 .map(d -> d.source() == DamagePayload.DamageSource.WEAPON_STAT)
                                 .orElse(false))).count(),
-                "exactly three shipped weapons have a basic attack (ironblade, emberblade, hunters_bow)");
+                "exactly two of the loaded weapons have a basic attack (iron_sword, withered_shortbow)");
     }
 
     private static void copyBundled(String resource, Path target) throws IOException {

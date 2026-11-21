@@ -855,7 +855,7 @@ public final class RpgListeners implements Listener {
         // reads a stale item -- though nothing does today: the stat reconcile loop sources attack
         // damage from the DEFINITION, not the item, which is why only the display was ever stale.
         // Content reloads only on restart and a dev restart reconnects you, so this one handler
-        // covers both the stale emberblade you come back to and the live player logging in after
+        // covers both the stale emberblade (deleted 2026-11) you come back to and the live player logging in after
         // a content update. Already on the joining player's own thread; no scheduler hop needed.
         GearRefresher.refresh(event.getPlayer(), weapons, shields, armor, tools, adapters);
         // CONVERT ON ARRIVAL'S BACKSTOP (the seat's brief, part h): a plain claimed sword already held converts here. After
@@ -1248,7 +1248,7 @@ public final class RpgListeners implements Listener {
      * handler would spend mana twice for one press.
      *
      * Vanilla is cancelled when the held weapon actually binds right_click (attempt returns
-     * present). ironblade has no right_click, so its right-click passes through and doors and
+     * present). ironblade (deleted 2026-11) has no right_click, so its right-click passes through and doors and
      * chests still work with it in hand; only a weapon that uses the input consumes it.
      *
      * There are now TWO exceptions to that fall-through, and they are cancelled for different
@@ -1391,7 +1391,7 @@ public final class RpgListeners implements Listener {
                     event.setCancelled(true);
 
                     // BROKEN is handled BEFORE the basic-attack silence below, and that ordering is
-                    // the whole reason the bow reports at all: hunters_bow's shot is a
+                    // the whole reason the bow reports at all: hunters_bow's (deleted 2026-11) shot is a
                     // weapon_damage basic attack, so firesABasicAttack returns early and the switch
                     // is never reached. A broken weapon must always say so -- doing nothing without
                     // an explanation reads as a bug -- so it bypasses the silence and relies on
@@ -1422,7 +1422,7 @@ public final class RpgListeners implements Listener {
                     // it is a swing, and a player holding down fire is spamming an attack, not
                     // repeatedly deciding to cast something. Chatting at them once per rejected
                     // shot is the spam WeaponSwingListener.onSwing already refuses to produce for
-                    // exactly the same reason. A costed special (emberblade's Fireball, the staff's
+                    // exactly the same reason. A costed special (emberblade's (deleted 2026-11) Fireball, the staff's
                     // bolt) is a real decision and keeps its feedback.
                     //
                     // The discriminator is DamagePayload.isBasicAttack -- the same question the
@@ -1458,7 +1458,7 @@ public final class RpgListeners implements Listener {
         // Unconditional on purpose: PlumeDraw.onDrawStarted gates on the ITEM, and its gate excludes
         // every weapon whose vanilla interaction the block above just cancelled. A weapon that binds
         // right_click never reaches BowItem.use, so its draw never starts and there is nothing to
-        // watch -- which is why hunters_bow, the only bow shipped today, is not a draw weapon.
+        // watch -- which is why hunters_bow (deleted 2026-11), the only bow shipped today, is not a draw weapon.
         //
         // AFTER the attempt rather than before it, so that if a weapon ever binds both, the special
         // is dispatched first and the draw watcher declines on its own terms rather than racing it.
@@ -2467,7 +2467,7 @@ public final class RpgListeners implements Listener {
                 // ACCRUES, AND IT IS A REAL DECISION RATHER THAN A DEFAULT. INERT is the reflexive
                 // choice here -- "a derived hit, half the primary's damage, not a real one" -- and it
                 // would be wrong: a0eee2b exists so a fire sweep burns what it caught, and
-                // emberblade's flavour was rewritten for it.
+                // emberblade's (deleted 2026-11) flavour was rewritten for it.
                 //
                 // NO GATE ROW CAN SEE THIS. The share is half the primary, so a bystander takes 3,
                 // buys one stack, and on a 20-HP mob its burn reads 1 -- indistinguishable from

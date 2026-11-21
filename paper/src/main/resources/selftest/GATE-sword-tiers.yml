@@ -150,17 +150,7 @@ STA4:
   - hold: netherite_sword
   - cmd: "rpg enchant show"
 
-# STA5: ironblade and emberblade are UNTOUCHED (part f): each held, its tooltip dumped, one full-charge hit on a fresh zombie.
-STA5:
-  - cmd: "rpg give ironblade"
-  - hold: ironblade
-  - dump: held
-  - cmd: "kill @e[tag=t]"
-  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
-  - wait: 40
-  - attack: t
-  - wait: 5
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
-  - dump: held
-  - cmd: "kill @e[tag=t]"
+# STA5 RETIRED, 2026-11-21 (the seat's brief, ruling 1). It held ironblade and then emberblade, dumped each tooltip and
+# hit a fresh zombie with each, to show the two dev weapons UNTOUCHED by the sword ladder (part f). Both were deleted that
+# day, so the row's subject is gone; its owed re-staging (a full hotbar skipped it twice) is dissolved with it. Its
+# predictions and readings stay in GATE-sword-tiers.md. NOT RE-READ on a server.

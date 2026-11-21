@@ -14,7 +14,7 @@
 # ================== EVERY NUMBER IS PROVISIONAL (Ben, 2026-09-30: "everything else is fine", 9.1's column) ==========
 #
 # "To be tuned later." Cited from short_bow.yml (an instant-fire projectile bow) and the Boltor (the ruled ranger
-# numbers), NEVER from hunters_bow (NEW CONTENT CITES THE BOLTOR).
+# numbers), NEVER from hunters_bow (deleted 2026-11) (NEW CONTENT CITES THE BOLTOR).
 #
 #   attack_damage   16    the Short Bow's: the Wither ticks are what make it Uncommon.
 #   cooldown_ticks  16    one step slower than the Short Bow's 12, to pay for the DoT. A multiple of 4, as the

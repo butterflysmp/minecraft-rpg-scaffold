@@ -141,7 +141,7 @@ public final class WeaponItems {
                         keys.meleeSuppressor, attackDamageModifier(weapon.attackDamage()),
                         AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
             } else {
-                // No melee hit of ours to deliver (ember_staff, hunters_bow), so
+                // No melee hit of ours to deliver (ember_staff, hunters_bow (deleted 2026-11)), so
                 // vanilla's swing stays suppressed to a flat 0 and a staff still cannot melee.
                 meta.addAttributeModifier(attackDamage, new AttributeModifier(
                         keys.meleeSuppressor, VANILLA_MELEE_SUPPRESSION,
@@ -279,7 +279,7 @@ public final class WeaponItems {
      * A weapon's item name: the authored text, in its RARITY's colour, always. Rarity owns this
      * colour outright -- an authored colour in the content no longer wins, because "the name is
      * the tier" is only readable if it is true every time. It was previously
-     * {@code colorIfAbsent(...)}, under which Hunter's Bow (authored gold, rarity uncommon) and
+     * {@code colorIfAbsent(...)}, under which Hunter's Bow (deleted 2026-11) (authored gold, rarity uncommon) and
      * Ember Staff (authored gold, rarity rare) both rendered gold, and the two weapons that DID
      * look right did so by coincidence.
      *
@@ -287,7 +287,7 @@ public final class WeaponItems {
      * server, but this is pure Adventure. Same reason the suppressor constants above are constants.
      *
      * The plain-text round trip is not a detour: it is what makes this hold for EVERY authored
-     * string, not just the easy ones. Where a tag wraps the whole name ("<gold>Hunter's Bow</gold>")
+     * string, not just the easy ones. Where a tag wraps the whole name ("<gold>Hunter's Bow</gold>", a dev weapon deleted 2026-11)
      * MiniMessage compacts the colour onto the root, and a plain {@code .color(rarity)} would in
      * fact override it. But a PARTIAL tag ("Hunter's <gold>Bow</gold>"), a nested tag, or a gradient
      * puts colour on CHILD components that a root-level {@code .color} does not touch -- so that

@@ -19,7 +19,7 @@ import org.bukkit.entity.Player;
  *       because you are mid-cooldown or out of mana does not deserve chat spam". Holding
  *       left-click is one swing per tick.</li>
  *   <li>{@code RpgListeners.onRightClick} silences refusals when the press IS a basic attack, which
- *       the hunters_bow's shot is. Holding fire is attacking, not repeatedly deciding to cast.</li>
+ *       the hunters_bow's (deleted 2026-11) shot is. Holding fire is attacking, not repeatedly deciding to cast.</li>
  * </ul>
  *
  * Broken has to speak on both -- a weapon that does nothing with no explanation is

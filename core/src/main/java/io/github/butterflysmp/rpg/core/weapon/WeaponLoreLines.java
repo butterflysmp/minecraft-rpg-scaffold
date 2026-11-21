@@ -130,7 +130,7 @@ public final class WeaponLoreLines {
      *
      * <p><b>THE FIRST TOOLTIP LINE IN THIS FILE THAT IS PER-ITEM RATHER THAN PER-DEFINITION.</b>
      * Every other line here is a function of the weapon's content, so two copies of the same weapon
-     * render identically forever. This one is not: two Quiver Stones in one inventory show different
+     * render identically forever. This one is not: two Quiver Stones (deleted 2026-11) in one inventory show different
      * numbers, and the same stack changes as it is fired. That is why {@code loaded} arrives as a
      * parameter read off the ITEM rather than off {@code weapon} -- and why the stamp has to precede
      * {@code applyLore} at the mint, which was a free ordering until this line existed and is

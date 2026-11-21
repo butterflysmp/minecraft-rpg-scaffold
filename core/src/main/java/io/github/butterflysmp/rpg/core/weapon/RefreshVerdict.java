@@ -5,7 +5,7 @@ package io.github.butterflysmp.rpg.core.weapon;
  *
  * The Lore Refresher rebuilds an old item's DISPLAY -- name, lore, material, the melee
  * suppressor -- from the weapon's current definition. Its behaviour was never stale: swinging
- * an emberblade reads weapon_id off the item and looks up the CURRENT WeaponDefinition, so
+ * an emberblade (deleted 2026-11) reads weapon_id off the item and looks up the CURRENT WeaponDefinition, so
  * triggers and attack damage are already current. Only what mint() baked can drift. An item is
  * therefore weapon_id (persistent) plus a display derived from content (a cache), and a refresh
  * rebuilds the cache.

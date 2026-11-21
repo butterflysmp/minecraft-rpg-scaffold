@@ -83,7 +83,7 @@ element: nature
 #   ruling 2    .                         Locust rare                  ORDERED -- stronger, higher
 #
 # So the stronger weapon now sits a tier ABOVE the weaker one, which is what the inversion flag asked
-# for. THE TIER DOES NOT SHRINK: `rare` held boltor, ember_staff and emberblade; the Boltor leaves and
+# for. THE TIER DOES NOT SHRINK: `rare` held boltor, ember_staff and emberblade (deleted 2026-11); the Boltor leaves and
 # this weapon arrives, so it stays at three. An earlier note predicting it would fall to two was true
 # of ruling 1 alone and is falsified by ruling 2.
 rarity: rare
@@ -97,11 +97,11 @@ rarity: rare
 #
 #   plain 26    I 27.3 -> "27"    II 28.6 -> "29"    III 29.9 -> "30"
 #
-# Four distinguishable values, as on the Boltor (19/20/21/22). On hunters_bow (6) the same curve reads
+# Four distinguishable values, as on the Boltor (19/20/21/22). On hunters_bow (deleted 2026-11) (6) the same curve reads
 # 6/6/7/7 and level I is invisible.
 class: ranger
 
-# NOT RULED. CROSSBOW, the same material the Boltor and quiver_stone use, and the reason is that Q7's
+# NOT RULED. CROSSBOW, the same material the Boltor and quiver_stone (deleted 2026-11) use, and the reason is that Q7's
 # held-input reading was taken on a crossbow that binds right_click and therefore cancels vanilla
 # exactly as this file does. That is what makes the 4-tick input floor transfer to this weapon rather
 # than being a fact about some other one.
@@ -133,7 +133,7 @@ attack_damage: 26
 # gets, and what a craft preview or recipe icon shows, since neither has a wielder to resolve against.
 # A GATE ROW MUST READ WHAT IS ON SCREEN, NEVER THIS LINE.
 #
-# 12 IS DELIBERATELY NOT THE BOLTOR'S 8 OR quiver_stone's 9, and the separation is not cosmetic: two
+# 12 IS DELIBERATELY NOT THE BOLTOR'S 8 OR quiver_stone's (deleted 2026-11) 9, and the separation is not cosmetic: two
 # equal quantities in one gate row means at least one of them is measuring the fixture rather than the
 # stat.
 quiver_size: 12
@@ -181,7 +181,7 @@ triggers:
     #   here. This adds a >= point and NOT an INPUT_FLOOR_TICKS point. Do not let it be cited as one.
     #
     # THE CADENCE IS PREDICTED AND NOT YET MEASURED. GATE-locust.md row 1 predicts FIRES min 12,
-    # mean 12.00, zero variance -- the quiver_stone signature -- and that row is NOT RUN. No pin row
+    # mean 12.00, zero variance -- the quiver_stone (deleted 2026-11; preserved reading) signature -- and that row is NOT RUN. No pin row
     # is added to HeldFireQuantisationPinTest until it is: those READINGS are boot measurements, and a
     # predicted value in a table headed MEASURED, NOT DERIVED is the provenance-mixing that file
     # exists to prevent.

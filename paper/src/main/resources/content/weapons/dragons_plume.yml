@@ -124,13 +124,13 @@ quiver_size: 25
 #                              is at reload_ticks = -4.32 -- see PLAN 7.3.
 #   2. TICKS PER ROUND         OVERTURNED BY THE OPERATOR, with the consequence in front of him.
 #                              This file used to argue 3.60 was "deliberately just UNDER
-#                              quiver_stone's 3.78" and that "at the 60 first proposed it would have
+#                              quiver_stone's (deleted 2026-11) 3.78" and that "at the 60 first proposed it would have
 #                              been 2.40, cheapest by 36%". 60 IS THAT VALUE. The Plume is now the
 #                              cheapest ammunition in the project by 36.5%, and that is chosen.
 #   3. PACING                  "Longer than anything shipped, but not punishing." A FEEL JUDGEMENT,
 #                              and the only support 60 has.
 #
-#   ticks per round:  boltor 7.50   locust 5.00   quiver_stone 3.78   PLUME 2.40
+#   ticks per round:  boltor 7.50   locust 5.00   quiver_stone (deleted 2026-11) 3.78   PLUME 2.40
 #
 # *** SO DO NOT RE-DERIVE THIS NUMBER FROM THE AMMUNITION COMPARISON. *** That comparison was the
 # argument for 90 and it was heard and overruled. Anyone who recomputes it will find 2.40 sitting
@@ -187,7 +187,7 @@ flavor:
 # KNOWN WORKAROUND WITH NO TRIGGER: a better solution is wanted and nobody has designed one.
 #
 #   IT IS NOT A FLAVOUR LINE, FOR THE REASON THE FLAVOUR BLOCK ABOVE GIVES. This file will outlive the
-#   workaround. emberblade.yml shipped "Swing to cut; loose to burn", which became false the day melee
+#   workaround. emberblade.yml (deleted 2026-11) shipped "Swing to cut; loose to burn", which became false the day melee
 #   started accruing scorch, and nothing but a person reading it would ever have said so. A mechanical
 #   instruction that is TEMPORARY BY DESIGN is the worst possible candidate for permanent italic text.
 #
@@ -258,7 +258,7 @@ triggers:
     # ================== THE CHARGED SHOT: 1, 3 OR 5 ARROWS THAT SEEK ==================
     #
     # R11 ruled the reach at ~300 blocks: speed 2.5 over max_lifetime_ticks 120. R12 ruled the arrow
-    # drops like a normal one -- gravity 0.05, which is hunters_bow's value and the only BOW
+    # drops like a normal one -- gravity 0.05, which is hunters_bow's (deleted 2026-11) value and the only BOW
     # precedent in the project; the 0.03 figures belong to staves.
     cast:
       type: projectile
@@ -404,7 +404,7 @@ triggers:
   # "Tap3" -- the WEAPON's display name beside the input, which is what WeaponLoader falls back to.
   #
   # *** THAT IS CHOSEN, NOT LEFT OVER. *** It went to Ben as the third item of the three-question
-  # dialog in PLAN-dragons-plume.md 7.1, with quiver_stone's "Loose" in front of him as the worked
+  # dialog in PLAN-dragons-plume.md 7.1, with quiver_stone's (deleted 2026-11) "Loose" in front of him as the worked
   # alternative -- every other ability block in the project carries a name of its own. HE CHOSE THE
   # PLAIN LABEL.
   #

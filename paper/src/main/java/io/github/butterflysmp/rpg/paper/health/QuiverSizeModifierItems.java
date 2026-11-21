@@ -26,7 +26,7 @@ import java.util.Map;
  * item is the sole source of a quiver-size modifier, and deleting it would remove the ability to
  * re-gate the stat rather than tidying scaffolding away. {@code MEMORY} already tracks two
  * undischarged {@code _TEMP} debts; adding a third that is not actually temporary would be a label
- * that lies. Same call, same reasoning, as {@code quiver_stone}'s carrier in A1.
+ * that lies. Same call, same reasoning, as {@code quiver_stone}'s (deleted 2026-11) carrier in A1.
  *
  * <h2>WHY THIS IS A SEPARATE SCANNER FROM THE RELOAD-TIME ONE, AND WHAT THE PAIR BUYS</h2>
  *
@@ -45,7 +45,7 @@ import java.util.Map;
  *
  * <h2>The number</h2>
  *
- * <p>{@link #DEFAULT_BOOST} is <b>+19</b> on {@code quiver_stone}'s authored 9, resolving to
+ * <p>{@link #DEFAULT_BOOST} is <b>+19</b> on {@code quiver_stone}'s (deleted 2026-11) authored 9, resolving to
  * <b>28</b>. Both were swept against every authored value in {@code content/} and both are free --
  * <b>and the swept quantity is the RESOLVED one</b>, because a gate row reads what is on screen, not
  * what the modifier says. 9, 19 and 28 are pairwise different, so no reading can be confused for
@@ -79,7 +79,7 @@ public final class QuiverSizeModifierItems {
     /** The prefix that keeps these sources disjoint from every other all-slot scanner's. */
     static final String SOURCE_PREFIX = "quiversize:";
 
-    /** +19 arrows on {@code quiver_stone}'s authored 9, resolving to 28. All three numbers differ. */
+    /** +19 arrows on {@code quiver_stone}'s (deleted 2026-11) authored 9, resolving to 28. All three numbers differ. */
     public static final double DEFAULT_BOOST = 19.0;
 
     /**

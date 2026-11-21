@@ -1,7 +1,7 @@
 # The Ranger damage enchant. Same mechanism as sharpness.yml, different gate and nothing else --
 # which is the entire argument for the numbers living in content rather than in three Java classes.
 #
-# On the shipped bow (hunters_bow, attack_damage 6) the popup reads:
+# On the shipped bow (hunters_bow (deleted 2026-11), attack_damage 6) the popup reads:
 #
 #   I 6.3 -> "6"   II 6.6 -> "7"   III 6.9 -> "7"
 #
