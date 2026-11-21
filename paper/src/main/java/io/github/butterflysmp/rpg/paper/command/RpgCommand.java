@@ -605,7 +605,7 @@ public final class RpgCommand {
                 // slice this instrument is the ONLY thing that can move quiver size, and deleting it
                 // would remove the ability to re-gate the stat. See QuiverSizeModifierItems.
                 //
-                // The boot row it exists for: hold quiver_stone, read "Quiver: 9/9", pick this up,
+                // The boot row it exists for: hold quiver_stone (deleted 2026-11), read "Quiver: 9/9", pick this up,
                 // FIRE ONCE -- the tooltip must read 8/28, not 8/9 and not 9/28. Capacity re-resolves
                 // at a WRITE, so the shot is what re-packs it; equipping alone changes nothing, which
                 // is the endorsed "capacity is as of your last shot or reload".
@@ -1333,7 +1333,7 @@ public final class RpgCommand {
      * Q7'S READING: how often a held right-click ARRIVES, and how often it becomes a shot.
      *
      * <p><b>Two counters, because one number cannot say which of two mechanisms produced it.</b> A
-     * fires-only reading is {@code min(input rate, cooldown)} -- 15 on {@code hunters_bow} is
+     * fires-only reading is {@code min(input rate, cooldown)} -- 15 on {@code hunters_bow} (deleted 2026-11) is
      * indistinguishable between <i>the input floor is 15</i> and <i>the cooldown is 15 and the floor
      * is lower</i>, two different facts with different consequences for slice C's 7-tick halving.
      *
@@ -1415,8 +1415,8 @@ public final class RpgCommand {
      *
      * <p>They differ exactly when the trigger is a basic attack: {@code AbilityService:203-209}
      * scales it by the caster's attack speed for a {@code weapon_damage} on_hit, and uses the
-     * authored number verbatim otherwise. {@code hunters_bow} is the first case and
-     * {@code quiver_stone} the second, so printing one figure would look wrong on one of them.
+     * authored number verbatim otherwise. {@code hunters_bow} (deleted 2026-11) is the first case and
+     * {@code quiver_stone} (deleted 2026-11) the second, so printing one figure would look wrong on one of them.
      *
      * <p>Composed through {@code AttackSpeed.effectiveCooldownTicks} -- the same core function the
      * gate path uses, not a second expression of the rule.
@@ -1469,7 +1469,7 @@ public final class RpgCommand {
      * produce. Registered with the other dormant findings in {@code NEXT.md}.
      *
      * <p><b>THE FIGURE IS NOT WRITTEN DOWN, AND THAT IS THE FIX RATHER THAN AN OMISSION.</b> This
-     * said <i>"Measured — only {@code boltor} (8) and {@code quiver_stone} (9) carry
+     * said <i>"Measured — only {@code boltor} (8) and {@code quiver_stone} (deleted 2026-11) (9) carry
      * {@code quiver_size} at all"</i>, which was true when written and went stale twice without
      * anyone touching this file: {@code locust} (12), {@code dragons_plume} (25) and
      * {@code dragons_breath} (4) have shipped since. <b>A list of instances maintained by hand in the

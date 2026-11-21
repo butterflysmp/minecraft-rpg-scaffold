@@ -2,7 +2,7 @@
 # kinetic, not elementless.
 #
 # It declares no applies_status, and that omission is doing real work: kinetic is the CONTROL for
-# every element feature. An ironblade swing does not burn, on the same code path as an emberblade
+# every element feature. An ironblade (deleted 2026-11) swing does not burn, on the same code path as an emberblade (deleted 2026-11)
 # swing that does -- which is what shows the behaviour is driven by content rather than hardcoded
 # to fire.
 display_name: "<white>Kinetic</white>"
@@ -21,6 +21,6 @@ display_name: "<white>Kinetic</white>"
 # Every number in the game would have been marked, and the glyph would have stopped meaning
 # "elemental" and started meaning "a number".
 #
-# THE CONTROL SURVIVES, AND IS SHARPER FOR IT. An ironblade swing now reads as a bare number beside
-# an emberblade's marked one, so the glyph itself is the observation rather than which glyph.
+# THE CONTROL SURVIVES, AND IS SHARPER FOR IT. An ironblade (deleted 2026-11) swing now reads as a bare number beside
+# an emberblade's (deleted 2026-11) marked one, so the glyph itself is the observation rather than which glyph.
 damage_symbol: ""

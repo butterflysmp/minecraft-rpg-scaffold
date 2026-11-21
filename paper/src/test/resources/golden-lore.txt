@@ -95,22 +95,6 @@
    "Cooldown: 1.0s | Mana Cost: 30" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Rare Magic Weapon" color=#5555FF O=. B=. S=. U=. I=F
--- emberblade
-   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "" color=- O=. B=. S=. U=. I=F
-   "Fireball" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "Hurl a bursting ember" color=#AAAAAA O=. B=. S=. U=. I=F
-   "that scorches all it catches." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["12" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Cooldown: 3.0s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Its edge remembers the forge-fire." color=#AAAAAA O=. B=. S=. U=. I=T
-   "Swing or loose -- both leave embers." color=#AAAAAA O=. B=. S=. U=. I=T
-   "" color=- O=. B=. S=. U=. I=F
-   "Rare Melee Weapon" color=#5555FF O=. B=. S=. U=. I=F
 -- flint_staff
    "Fire" color=#FF5555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -130,30 +114,11 @@
    "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
--- hunters_bow
-   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["6" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.3" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "" color=- O=. B=. S=. U=. I=F
-   "A swift arrow wreathed in flame." color=#AAAAAA O=. B=. S=. U=. I=T
-   "" color=- O=. B=. S=. U=. I=F
-   "Uncommon Ranged Weapon" color=#55FF55 O=. B=. S=. U=. I=F
 -- iron_sword
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["23" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "" color=- O=. B=. S=. U=. I=F
-   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
--- ironblade
-   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "" color=- O=. B=. S=. U=. I=F
-   "Forged plain and true." color=#AAAAAA O=. B=. S=. U=. I=T
-   "The first blade any recruit is handed." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- lapis_staff
@@ -186,20 +151,6 @@
    "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Melee Weapon" color=#55FF55 O=. B=. S=. U=. I=F
--- quiver_stone
-   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
-   "Quiver: --/9" color=#AAAAAA O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Loose" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "One bolt, and one fewer" color=#AAAAAA O=. B=. S=. U=. I=F
-   "than you had a moment ago." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["13" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Cooldown: 0.6s" color=#555555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "An instrument, not a weapon." color=#AAAAAA O=. B=. S=. U=. I=T
-   "It measures how long you spend not shooting." color=#AAAAAA O=. B=. S=. U=. I=T
-   "" color=- O=. B=. S=. U=. I=F
-   "Exotic Ranged Weapon" color=#55FFFF O=. B=. S=. U=. I=F
 -- short_bow
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
@@ -632,4 +583,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 102 renderings ===
+=== 98 renderings ===

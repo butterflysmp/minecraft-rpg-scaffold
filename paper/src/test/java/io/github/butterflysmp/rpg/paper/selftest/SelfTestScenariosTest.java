@@ -40,9 +40,10 @@ class SelfTestScenariosTest {
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
-                        "sword-convert"),
+                        "sword-convert", "remove-dev-weapons"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty-three gates, in boot order (sword-convert LAST, the sword ladder part h, 2026-11-20, a NEW gate"
+                "the thirty-four gates, in boot order (remove-dev-weapons LAST, the four dev weapons deleted, 2026-11-21, a"
+                        + " NEW gate after sword-convert; sword-convert before it, the sword ladder part h, 2026-11-20, a NEW gate"
                         + " after sword-smithing; sword-smithing before it, the sword ladder part g, 2026-11-20, a NEW gate"
                         + " after sword-tiers; sword-tiers before it, the sword ladder, 2026-11-20, a NEW gate after"
                         + " loot-roll; loot-roll before it, the seat's queue item 6, 2026-11-19, a NEW gate after"
@@ -75,7 +76,8 @@ class SelfTestScenariosTest {
                 "wither-status", List.of("WS-C", "WS1", "WS2b", "WS2c", "WS3"),
                 "withered-shortbow", List.of("WB1", "WB2", "WB3"),
                 "sunder", List.of("SU1", "SU2", "SU4", "SU5", "SU6", "SU7", "SU8", "SU9", "SU10", "SU11", "SU12"),
-                "deft-hands", List.of("DH1", "DH3", "DH6"),
+                // DH6 RETIRED 2026-11-21: its weapon, quiver_stone, was deleted (the seat's brief, ruling 1).
+                "deft-hands", List.of("DH1", "DH3"),
                 "mining-auto", List.of("A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12")));
         expected.put("nexus-back", List.of("NB1", "NB2", "NB3", "NB4", "NB5", "NB6", "NB7"));
         // The three dragon gates' rows are GATE-dragon-fix.md's since the 2026-11-15 boot: each re-predicts the old
@@ -247,6 +249,10 @@ class SelfTestScenariosTest {
         // Then CONVERT ON ARRIVAL (GATE-sword-convert.md, feat/sword-convert, 2026-11-20), a new gate, RECOUNTED from
         // index.yml: 33 gates, 283 keys, 33 setups, so 250: SCA1-SCA5 and SCB1-SCB3 added. The control: 274 + 9 = 283.
         // 242 was this line's value.
+        // Then THE FOUR DEV WEAPONS DELETED (feat/remove-dev-weapons, 2026-11-21): STA5 and DH6 RETIRED (their weapons
+        // are gone), and GATE-remove-dev-weapons.md a NEW gate (setup, DW1, DW2), RECOUNTED from index.yml and every
+        // gate file it names: 34 gates, 284 keys, 34 setups, so 250. The control: 283 - 2 + 3 = 284.
+        // 250 was this line's value too, by coincidence (two retired, two added): the gate list above tells them apart.
         assertEquals(250, loaded.rows());
     }
 

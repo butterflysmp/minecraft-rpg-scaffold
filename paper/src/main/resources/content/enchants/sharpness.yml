@@ -17,7 +17,7 @@
 # WHAT THESE NUMBERS DO, on the shipped weapons -- worth reading before tuning them, because the
 # damage popup ROUNDS to a whole number and that hides small changes:
 #
-#   ironblade  (8)  ->  I 8.4 -> "8"   II 8.8 -> "9"   III 9.2 -> "9"
+#   ironblade (deleted 2026-11)  (8)  ->  I 8.4 -> "8"   II 8.8 -> "9"   III 9.2 -> "9"
 #
 # So at these values Sharpness I is INVISIBLE on a sword: it renders exactly what an unenchanted
 # swing renders. That is a property of 5% of 8 being less than half a point, not a bug, and it is

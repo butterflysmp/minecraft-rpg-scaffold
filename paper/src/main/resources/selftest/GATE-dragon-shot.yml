@@ -46,15 +46,17 @@ SH1R2:
   - wait: 5
 
 # SH2R2: supersedes SH2 (its DRIVE line names the carrier, now a frog). Player#attack on the known shot, with the
-# emberblade: destroyed by=vanilla cause=ENTITY_ATTACK.
+# emberblade (deleted 2026-11): destroyed by=vanilla cause=ENTITY_ATTACK.
 SH2R2:
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - save_blocks: "-4 -1 -4 10 6 4"
   - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
   - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "tp @s ~8 ~ ~"
   - spawn: "sh2r2 frozen phalanx 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
@@ -142,8 +144,10 @@ SH9R2:
   - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
   - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "tp @s ~4 ~ ~-1"
   - spawn: "sh9r2p frozen phage stage 1 100"
   - cmd: "tp @s ~4 ~ ~1"
@@ -235,8 +239,10 @@ SH15:
   - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
   - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "tp @s ~8 ~ ~"
   - spawn: "sh15 frozen phalanx 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
@@ -259,8 +265,10 @@ SH16:
   - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
   - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "tp @s ~8 ~ ~"
   - spawn: "sh16 frozen phalanx 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
@@ -287,8 +295,10 @@ SQ1R2:
   - cmd: "fill ~-4 ~-1 ~-6 ~17 ~-1 ~6 stone"
   - cmd: "fill ~-4 ~ ~-6 ~17 ~6 ~6 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "tp @s ~15 ~ ~"
   - spawn: "sq1r2 frozen phalanx 100"
   - cmd: "tp @s ~-15 ~ ~ -90 0"

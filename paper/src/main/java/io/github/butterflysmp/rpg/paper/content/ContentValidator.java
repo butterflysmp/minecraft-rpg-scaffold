@@ -141,7 +141,7 @@ public final class ContentValidator {
      * triggers are ability bodies, so their on_hit effects can dangle a visual_id or
      * status_id exactly the way an ability can, and are checked the identical way. The
      * owner label names the weapon AND the trigger, so the warning points at the file and
-     * the input, not just "somewhere in ironblade".
+     * the input, not just "somewhere in ironblade (deleted 2026-11)".
      *
      * @return every problem found, each naming the weapon and trigger at fault. Empty is good.
      */

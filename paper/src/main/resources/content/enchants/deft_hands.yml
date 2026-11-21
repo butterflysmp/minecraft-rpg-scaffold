@@ -12,13 +12,13 @@
 #
 #   reload_ticks 60 (boltor, locust, dragons_plume, short_bow, withered_shortbow)   54 / 48 / 42
 #   reload_ticks 40 (dragons_breath)                                                 36 / 32 / 28
-#   reload_ticks 34 (quiver_stone, a dev weapon)                                     30 / 27 / 23
+#   reload_ticks 34 (quiver_stone (deleted 2026-11), a dev weapon)                                     30 / 27 / 23
 #
 # NEVER AN INSTANT RELOAD: the resolved reload stops at ReloadTime.MIN_TICKS (1 tick), the seat's ruling. Content
 # alone never gets there; stacking the dev reload instrument can, and the floor holds.
 #
 # `class: ranger`, and the loader refuses `universal` (Gate.RANGER_ONLY): a universal reload enchant would enter
-# every sword's pool and grant nothing. hunters_bow is ranger and has NO reload, so it can roll this and gain
+# every sword's pool and grant nothing. hunters_bow (deleted 2026-11) is ranger and has NO reload, so it can roll this and gain
 # nothing -- a finding, accepted as for expanded_quiver, because it is a dev weapon in the deletion set.
 # DeftHandsContentInvariantTest is the gate on every OTHER ranger weapon.
 #

@@ -50,7 +50,7 @@ import java.util.Map;
  *
  * <h2>The number, and why the default ADDS when the useful direction SUBTRACTS</h2>
  *
- * <p>{@link #DEFAULT_BOOST} is <b>+14</b> on {@code quiver_stone}'s authored 34, resolving to
+ * <p>{@link #DEFAULT_BOOST} is <b>+14</b> on {@code quiver_stone}'s (deleted 2026-11) authored 34, resolving to
  * <b>48</b>; 14, 34 and 48 are pairwise different and none is authored anywhere in {@code content/}.
  *
  * <p><b>A reducing default has no collision-free value at base 34</b> -- exhaustively:
@@ -78,7 +78,7 @@ public final class ReloadTimeModifierItems {
     /** The prefix that keeps these sources disjoint from every other all-slot scanner's. */
     static final String SOURCE_PREFIX = "reloadtime:";
 
-    /** +14 ticks on {@code quiver_stone}'s authored 34, resolving to 48. All three numbers differ. */
+    /** +14 ticks on {@code quiver_stone}'s (deleted 2026-11) authored 34, resolving to 48. All three numbers differ. */
     public static final double DEFAULT_BOOST = 14.0;
 
     /** Mint a reload_time_boost granting {@code amount} ticks while held or worn. Signed. */

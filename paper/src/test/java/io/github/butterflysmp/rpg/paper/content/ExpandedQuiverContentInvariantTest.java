@@ -61,8 +61,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ExpandedQuiverContentInvariantTest {
 
     /**
-     * Ranger weapons in shipped content: {@code boltor}, {@code dragons_plume}, {@code locust},
-     * {@code quiver_stone}, {@code dragons_breath}, {@code hunters_bow}. <b>Asserted rather than
+     * Ranger weapons in shipped content, as first written: {@code boltor}, {@code dragons_plume}, {@code locust},
+     * {@code quiver_stone}, {@code dragons_breath}, {@code hunters_bow} ({@code quiver_stone} and {@code hunters_bow} are dev
+     * weapons, deleted 2026-11; the current six are listed at the foot of this comment). <b>Asserted rather than
      * logged</b>, so a regex that stops matching the schema reddens instead of reporting a clean
      * verdict over an empty set.
      *
@@ -72,7 +73,7 @@ class ExpandedQuiverContentInvariantTest {
      * <p><b>4 -> 5 when {@code dragons_plume.yml} landed, and this row is what noticed.</b> It is a
      * deliberate edit to a named count rather than a relaxation: the Plume is a REAL ranger weapon
      * that authors {@code quiver_size: 25}, so
-     * {@link #everyRangerWeaponAuthorsAMagazineOrIsAnExemptDevWeapon} passes on it unchanged and
+     * {@link #everyRangerWeaponAuthorsAMagazine} passes on it unchanged and
      * Expanded Quiver rolling onto it grants ACTUAL arrows -- the opposite of {@code hunters_bow},
      * which is exempt by name precisely because it has no magazine for the enchant to enlarge.
      *
@@ -95,27 +96,17 @@ class ExpandedQuiverContentInvariantTest {
      * <p><b>7 -> 8 on 2026-10-01, WITHERED-SHORTBOW: {@code withered_shortbow}</b> (PLAN-wither.md 9). This test's
      * own discovery found it ("expected 7 ranger weapons, found [..., withered_shortbow]"). It authors
      * {@code quiver_size: 8} (provisional), so the invariant below passed on it unedited.
+     *
+     * <p><b>8 -> 6 on 2026-11-21: {@code hunters_bow} and {@code quiver_stone} deleted</b> with the other dev weapons.
+     * Recounted: {@code grep -lE '^class:\s*ranger\s*$' paper/src/main/resources/content/weapons/*.yml} lists boltor,
+     * dragons_breath, dragons_plume, locust, short_bow and withered_shortbow.
      */
-    private static final int KNOWN_RANGER_WEAPONS = 8;
+    private static final int KNOWN_RANGER_WEAPONS = 6;
 
-    /**
-     * THE ONE EXEMPTION, AND IT IS A DEV WEAPON IN THE DELETION SET.
-     *
-     * <p>{@code hunters_bow} is {@code class: ranger} and authors no {@code quiver_size}. It is
-     * exempt rather than fixed because it is already scheduled for deletion (ruled 2026-09-12, parked
-     * on <i>enough shipped weapons to replace them</i>), and authoring a magazine onto a weapon that
-     * is leaving would be work whose only product is deleted with it.
-     *
-     * <p><b>THIS IS AN EXEMPTION FOR A NAMED WEAPON, NOT A HOLE IN THE RULE.</b> The set is a
-     * literal, so the day a NEW ranger weapon ships without a magazine this test reddens and the
-     * author has to decide deliberately -- which is the whole point. Adding a name here is a visible
-     * edit in a file whose javadoc says why; forgetting a {@code quiver_size} is not.
-     *
-     * <p><b>When the dev weapons go, this set goes with them</b> -- grep for
-     * {@code DELETION-SET-CITATION} to find every site that must move in that sweep.
-     */
-    // DELETION-SET-CITATION: hunters_bow
-    private static final List<String> EXEMPT_DEV_WEAPONS = List.of("hunters_bow");
+    // THE ONE EXEMPTION WENT WITH ITS WEAPON, 2026-11-21. EXEMPT_DEV_WEAPONS held only hunters_bow (class: ranger, no
+    // quiver_size), exempt because it was scheduled for deletion (ruled 2026-09-12). It was deleted that day, so every
+    // ranger weapon now authors a magazine and the invariant below has no exception. A new exemption would be a new,
+    // reviewed list, never a quiet append.
 
     /** {@code class: ranger} at column 0 -- the weapon's OWN class, never a nested one. */
     private static final Pattern RANGER_CLASS = Pattern.compile("(?m)^class:\\s*ranger\\s*$");
@@ -174,7 +165,8 @@ class ExpandedQuiverContentInvariantTest {
     }
 
     /**
-     * THE INVARIANT. Every ranger weapon authors a magazine, or is a named dev weapon on its way out.
+     * THE INVARIANT. Every ranger weapon authors a magazine (until 2026-11-21: "or is a named dev weapon on its way
+     * out"; that one weapon was deleted).
      *
      * <p>Reddens the day someone ships a ranger weapon with no {@code quiver_size} while
      * {@code expanded_quiver.yml} is {@code class: ranger}. The fix is then a deliberate choice
@@ -182,14 +174,12 @@ class ExpandedQuiverContentInvariantTest {
      * the point is that it is a CHOICE rather than a silent tooltip.
      */
     @Test
-    void everyRangerWeaponAuthorsAMagazineOrIsAnExemptDevWeapon() {
+    void everyRangerWeaponAuthorsAMagazine() {
         List<String> offenders = new ArrayList<>();
         for (Path p : weaponYaml()) {
             String body = read(p);
             if (!RANGER_CLASS.matcher(body).find()) continue;
-            String id = idOf(p);
-            if (EXEMPT_DEV_WEAPONS.contains(id)) continue;
-            if (!QUIVER_SIZE.matcher(body).find()) offenders.add(id);
+            if (!QUIVER_SIZE.matcher(body).find()) offenders.add(idOf(p));
         }
 
         assertTrue(offenders.isEmpty(),
@@ -199,17 +189,6 @@ class ExpandedQuiverContentInvariantTest {
                         + "decide deliberately that this weapon is an exception and say so here.");
     }
 
-    /**
-     * THE EXEMPTION LIST IS NOT ALLOWED TO ROT INTO A BLANKET.
-     *
-     * <p>An exemption set that grows silently stops being an exemption and becomes the rule. Pinning
-     * its size means adding a name is a visible, reviewed edit -- the same discipline
-     * {@link #KNOWN_RANGER_WEAPONS} applies to the population it is drawn from.
-     */
-    @Test
-    void theExemptionSetHoldsExactlyTheOneDevWeaponItWasWrittenFor() {
-        assertEquals(List.of("hunters_bow"), EXEMPT_DEV_WEAPONS,
-                "the exemption is for ONE named dev weapon in the deletion set. Adding another is a "
-                        + "decision that belongs in review, not a quiet append.");
-    }
+    // theExemptionSetHoldsExactlyTheOneDevWeaponItWasWrittenFor DELETED 2026-11-21 with the set it pinned (hunters_bow
+    // only, deleted that day).
 }

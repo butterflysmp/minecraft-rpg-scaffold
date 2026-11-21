@@ -14,7 +14,7 @@ package io.github.butterflysmp.rpg.core.combat;
  * player's base is {@link #VANILLA_BASE} (4.0, a bare fist), and the weapon contributes nothing of
  * its own: a minted weapon carries an explicit attack-damage modifier, which replaces the item's
  * whole default block including whatever speed its material would have given. That was measured on
- * the 2026-08-28 boot -- a minted ironblade read 4.0 where a plain iron sword read 1.6 -- and it is
+ * the 2026-08-28 boot -- a minted ironblade (deleted 2026-11; preserved reading) read 4.0 where a plain iron sword read 1.6 -- and it is
  * what makes this a single modifier owning the entire value rather than a delta on the item's.
  *
  * <p><b>Why multiply and not add.</b> The stat is a MULTIPLIER basing at 1.0 (see
@@ -22,7 +22,7 @@ package io.github.butterflysmp.rpg.core.combat;
  * the weapon's own cadence. Adding it instead would make a boost worth the same on a fast weapon as
  * on a slow one, which is not what a percentage means.
  *
- * <p>Worked, for an ironblade at 1.6 with the dev boost's resolved 2.0:
+ * <p>Worked, for an ironblade (deleted 2026-11) at 1.6 with the dev boost's resolved 2.0:
  * {@code desiredSpeed(1.6, 1.0) -> 1.6}; {@code modifier(1.6, 1.0) -> -2.4};
  * {@code desiredSpeed(1.6, 2.0) -> 3.2}; {@code modifier(1.6, 2.0) -> -0.8}.
  */
@@ -57,7 +57,7 @@ public final class AttackSpeedAttribute {
      * The {@code ADD_NUMBER} modifier amount that drives the attribute to {@link #desiredSpeed}.
      *
      * Normally NEGATIVE, and that is not a bug to be "fixed": every real weapon is slower than a
-     * bare fist, so an ironblade at 1.6 pins -2.4. A positive result means the wielder is swinging
+     * bare fist, so an ironblade (deleted 2026-11) at 1.6 pins -2.4. A positive result means the wielder is swinging
      * faster than an empty hand, which a large enough boost legitimately produces.
      */
     public static double modifier(double weaponBaseSpeed, double statMultiplier) {

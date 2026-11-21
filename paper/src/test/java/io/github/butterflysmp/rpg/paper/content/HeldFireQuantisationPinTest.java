@@ -193,10 +193,17 @@ class HeldFireQuantisationPinTest {
      * {@code FIRES mean} well above {@code min} (14.55 and 13.45 against 12) on a non-periodic input
      * stream. <b>This record holds the measured MINIMUM</b>, which was 12 in both — the quantity the
      * model predicts and the one the mean cannot move.
+     *
+     * <p><b>DELETION DAY, 2026-11-21: TWO ROWS DROPPED, AS THIS FILE INSTRUCTS.</b> {@code quiver_stone} (11 -> 12) and
+     * {@code hunters_bow} (15 -> 16), both GATE-q7.md 2026-09-12, were deleted with the other dev weapons. Their
+     * readings are restated in {@code NEXT.md} (the restatement under <i>THE COST THAT IS NOT A LINE COUNT</i>), each
+     * with its fixture, its date and the note that the fixture was deleted; then they were dropped here. <b>With them
+     * went the only two points that sat ABOVE their cooldown</b> (11 and 15, not multiples of 4), so the two rows left
+     * are both multiples of 4: the composition's ceil is now guarded by
+     * {@link #theAttackSpeedDeadZoneOnTheBoltorRunsToOnePointTwoEight} alone (its 1.20 row, effective 13), as the grid
+     * constant already was. Measured by mutation on that day: see the deletion's report.
      */
     private static final List<Reading> READINGS = List.of(
-            new Reading("quiver_stone", 11, 12, "GATE-q7.md", true),
-            new Reading("hunters_bow", 15, 16, "GATE-q7.md", true),
             new Reading("boltor", 16, 16, "GATE-boltor.md row 1", false),
             new Reading("locust", 12, 12, "GATE-locust.md row 1", false));
 

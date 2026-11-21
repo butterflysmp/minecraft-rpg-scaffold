@@ -652,3 +652,11 @@ order; every line is literal:**
 3. `/stop`
 
 **Nothing else is run in this boot.**
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: SH2R2, SH9R2, SH15, SH16 and SQ1R2 now give and hold
+> `iron_sword`**, where they gave and held `emberblade`, a dev weapon deleted that day. **Every prediction and reading
+> above was taken with the old weapon** and none is edited. **A re-run of any of them needs a re-prediction under the
+> next suffix.** NOT RE-READ on a server.

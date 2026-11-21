@@ -26,7 +26,7 @@ element: kinetic          # neutral: declares no applies_status, so nothing accr
                           # competes with the damage numbers a gate row has to count
 
 # Exotic for VISIBILITY, the same spend the old ability_stone.yml (since deleted) made, and for the same reason: the name's
-# colour is the rarity tier's, so a `common` dev tool mints plain white and reads as an Ironblade in
+# colour is the rarity tier's, so a `common` dev tool mints plain white and reads as an Ironblade (deleted 2026-11) in
 # a crowded hotbar. TWO dev tools shared the tier then -- ability_stone's note was narrowed to
 # say so rather than left claiming it is alone there. Neither is in any kit or loot roll, so the
 # tier is not cheapened anywhere a player can reach.

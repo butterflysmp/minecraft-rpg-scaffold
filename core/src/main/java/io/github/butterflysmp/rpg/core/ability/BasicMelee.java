@@ -15,7 +15,7 @@ import io.github.butterflysmp.rpg.core.ability.effect.DamagePayload;
  *
  * <p><b>Both halves of the conjunction are load-bearing, and shipped content proves each.</b>
  * <ul>
- *   <li>{@code hunters_bow}'s shot IS a basic attack (a {@code weapon_damage} payload) but its cast
+ *   <li>{@code hunters_bow}'s (deleted 2026-11) shot IS a basic attack (a {@code weapon_damage} payload) but its cast
  *       is a {@code Projectile}. Vanilla's melee attack cannot fire it, so dropping the cast check
  *       would silently stop the bow from ever shooting.</li>
  *   <li>{@code void_slash} IS a {@code Melee} cast but carries a LITERAL damage payload -- it is an

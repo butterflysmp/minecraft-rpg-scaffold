@@ -25,11 +25,13 @@ BN1:
   - wait: 20
   - cmd: "rpg stats"
 
-# WD1: the same emberblade at L1 and L50, a full charge each, a fresh zombie at ~2 for every swing. Two swings per
+# WD1: the same emberblade (deleted 2026-11) at L1 and L50, a full charge each, a fresh zombie at ~2 for every swing. Two swings per
 # level, so a crit=true line has a comparable spare.
 WD1:
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "rpg playerxp set @s 1 levels"
   - cmd: "kill @e[tag=t]"

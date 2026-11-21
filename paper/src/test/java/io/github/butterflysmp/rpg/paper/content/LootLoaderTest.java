@@ -215,9 +215,12 @@ class LootLoaderTest {
         for (Rarity r : List.of(Rarity.EXOTIC, Rarity.LEGENDARY, Rarity.RARE, Rarity.UNCOMMON, Rarity.COMMON)) {
             assertTrue(!ex.pools().getOrDefault(r, List.of()).isEmpty(), "a pool for " + r);
         }
-        for (String banned : List.of("hunters_bow", "ironblade", "quiver_stone")) {
-            assertTrue(ex.pools().values().stream().noneMatch(p -> p.contains(banned)), "no deletion-set item: " + banned);
+        // The four dev weapons, deleted 2026-11-21 (emberblade was in the rare pool until then).
+        for (String banned : List.of("hunters_bow", "ironblade", "quiver_stone", "emberblade")) {
+            assertTrue(ex.pools().values().stream().noneMatch(p -> p.contains(banned)), "no deleted dev weapon: " + banned);
         }
+        assertEquals(List.of("ember_staff", "locust", "brawlers_gauntlet", "fletchers_quiver", "sages_scroll"),
+                ex.pools().get(Rarity.RARE), "the rare pool, five entries, as written");
     }
 
     @Test

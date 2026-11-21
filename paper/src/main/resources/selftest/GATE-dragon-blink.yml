@@ -100,8 +100,10 @@ BC3:
   - cmd: "fill ~-4 ~-1 ~-4 ~10 ~-1 ~4 stone"
   - cmd: "fill ~-4 ~ ~-4 ~10 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "tp @s ~8 ~ ~"
   - spawn: "bc3 frozen phalanx 100"
   - cmd: "tp @s ~-8 ~ ~ -90 0"
@@ -276,7 +278,7 @@ BS1:
   - cmd: "kill @e[tag=bs1]"
   - wait: 5
 
-# BS2: a melee hit's push goes with it. One emberblade hit: the vanilla knockback is cancelled while the shield is up,
+# BS2: a melee hit's push goes with it. One emberblade (deleted 2026-11) hit: the vanilla knockback is cancelled while the shield is up,
 # the hit absorbed a tick later, the Phalanx's VELOCITY still zero (a frozen mob never travels, so its position cannot
 # show a push; a knockback sets its velocity whether or not it moves); a second hit lands, and its velocity is a push:
 # the row's positive control.
@@ -286,8 +288,10 @@ BS2:
   - cmd: "fill ~-4 ~-1 ~-4 ~8 ~-1 ~4 stone"
   - cmd: "fill ~-4 ~ ~-4 ~8 ~6 ~4 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "tp @s ~2 ~ ~"
   - spawn: "bs2 frozen phalanx 100"
   - cmd: "tp @s ~-2 ~ ~ -90 0"
@@ -359,8 +363,10 @@ BQ1:
   - cmd: "fill ~-6 ~-1 ~-18 ~30 ~-1 ~18 stone"
   - cmd: "fill ~-6 ~ ~-18 ~30 ~6 ~18 air"
   - cmd: "rpg heal 1000000"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "tp @s ~12 ~ ~"
   - spawn: "bq1 live phalanx 100"
   - cmd: "tp @s ~-12 ~ ~ -90 0"

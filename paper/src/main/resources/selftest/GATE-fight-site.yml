@@ -281,7 +281,7 @@ MG1R2:
   - probe_entities: "end_crystal 48"
   - probe_entities: "wither_skeleton 16"
 
-# MG2R2: in FAST_CLOSE a MELEE hit with a held melee weapon (emberblade) and a store hit are both REFUSED; his health is
+# MG2R2: in FAST_CLOSE a MELEE hit with a held melee weapon (emberblade (deleted 2026-11)) and a store hit are both REFUSED; his health is
 # unchanged. The weapon is the fix: MG2's driven attack held Ben's staff, whose attack damage is 0, so Player.attack
 # raised no damage event at all (READ).
 MG2R2:
@@ -289,8 +289,10 @@ MG2R2:
   - save_blocks: "-1 -1 -1 8 3 1"
   - cmd: "fill ~-1 ~-1 ~-1 ~8 ~-1 ~1 stone"
   - cmd: "fill ~-1 ~ ~-1 ~8 ~3 ~1 air"
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight start"
   - wait: 10

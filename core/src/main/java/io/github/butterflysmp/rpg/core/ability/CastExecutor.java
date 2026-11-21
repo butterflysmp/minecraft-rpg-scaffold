@@ -153,7 +153,7 @@ public final class CastExecutor {
      * <p>Only a BASIC ATTACK charges: an ability already spends mana, and charging it as well would
      * bill one press twice. The gate is structural for the same reason {@code Durability}'s
      * {@code maxDurability <= 0} guard is -- it is the ONLY thing separating the two shipped
-     * projectiles from each other. {@code hunters_bow}'s shot and {@code emberblade}'s Fireball are
+     * projectiles from each other. {@code hunters_bow}'s (deleted 2026-11) shot and {@code emberblade}'s (deleted 2026-11) Fireball are
      * both {@code type: projectile}; nothing about the cast shape tells them apart, so a check left
      * to the wiring is a check a future call site can forget.
      *

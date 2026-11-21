@@ -157,8 +157,10 @@ DA8:
 # DA9: a melee hit on a PART (the head, then a wing) reaches the dragon through the melee path: the swing is recorded
 # against the dragon, and the store takes the weapon's figure.
 DA9:
-  - cmd: "rpg give emberblade"
-  - hold: emberblade
+  # 2026-11-21: this row held emberblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now holds
+  # iron_sword, and the words above that name emberblade describe the row as it was read. NOT RE-READ on a server.
+  - cmd: "rpg give iron_sword"
+  - hold: iron_sword
   - cmd: "rpg heal 1000000"
   - cmd: "rpg fight enter"
   - wait: 10

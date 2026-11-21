@@ -10,7 +10,7 @@
 #
 # WHAT CHANGED (GATE-dragon-fix.md, D2, D3): every Phage is spawned by the SPAWN step, tagged and frozen inside its
 # pre-spawn consumer, never by a nearest-mob selector afterwards; the setup declares the difficulty; every row-start
-# clean is followed by a LEFTOVER line. DS1R2 kills with the EMBERBLADE, one of our weapons: a vanilla iron sword deals
+# clean is followed by a LEFTOVER line. DS1R2 kills with the EMBERBLADE (deleted 2026-11), one of our weapons: a vanilla iron sword deals
 # NO custom damage to a custom mob by design (RpgListeners.onPlayerMeleeAttack tokens the vanilla hit to 0.01, and
 # WeaponFire.landVanillaMelee deals nothing for an item with no weapon id), which is why DS1 did not kill on
 # 2026-11-15. DS1R2 also reads S1 and S2 on the server: the two children exist, and each targets the player.

@@ -78,3 +78,6 @@ gates:
 # sword-convert (the sword ladder, 2026-11-20, feat/sword-convert on feat/sword-smithing) is paired with
 # docs/gates/GATE-sword-convert.md: convert on arrival. It carries the ONE R0 and run sheet for the three sword PRs.
   - sword-convert
+# remove-dev-weapons (2026-11-21, feat/remove-dev-weapons on master) is paired with docs/gates/GATE-remove-dev-weapons.md:
+# the four dev weapons deleted. It carries the ONE R0 and run sheet for the deletion stack (PR A and the owed fixes, PR B).
+  - remove-dev-weapons

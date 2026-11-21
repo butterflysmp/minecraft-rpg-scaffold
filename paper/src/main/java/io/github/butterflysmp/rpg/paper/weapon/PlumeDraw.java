@@ -237,12 +237,12 @@ public final class PlumeDraw {
      *
      * <p><b>The second half is what makes the gate exact rather than approximate.</b> A bow-material
      * weapon that BINDS right-click has its vanilla interaction cancelled by {@code RpgListeners}
-     * before {@code BowItem.use} ever runs -- {@code hunters_bow} is exactly that -- so its draw
+     * before {@code BowItem.use} ever runs -- {@code hunters_bow} (deleted 2026-11) is exactly that -- so its draw
      * never starts and this class has nothing to read. Including such a weapon in the gate would be
      * harmless but untrue; excluding it says what the gate MEANS.
      *
      * <p><b>NO SHIPPED CONTENT REACHES THIS TODAY.</b> The only bow in the project is
-     * {@code hunters_bow}, which binds {@code right_click}. The first weapon that matches is the
+     * {@code hunters_bow} (deleted 2026-11), which binds {@code right_click}. The first weapon that matches is the
      * Dragon's Plume, whose file is the content chat's seat -- so H1's boot rows are written and
      * NOT RUN, exactly as {@code GATE-locust.md} row 1 was.
      */

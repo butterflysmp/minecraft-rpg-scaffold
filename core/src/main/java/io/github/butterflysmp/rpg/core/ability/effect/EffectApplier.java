@@ -105,7 +105,7 @@ public final class EffectApplier {
             // "+N <Class> Damage" gear whose class matches the class of the weapon they hold, frozen
             // at cast time on the Caster. The bonus is SEPARATE from the weapon's inherent damage: the
             // sword's 8 and the bow's 6 stay where they are, and this adds on top. That is why the
-            // emberblade's fireball can take +Melee without inheriting the swing's 8.
+            // emberblade's (deleted 2026-11) fireball can take +Melee without inheriting the swing's 8.
             //
             // Note the gate is the HELD WEAPON'S CLASS, resolved when the desired modifier set was
             // built -- NOT DamagePayload.isBasicAttack. Keying on the payload would have reached only

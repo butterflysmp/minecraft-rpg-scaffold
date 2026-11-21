@@ -64,7 +64,7 @@ element: kinetic
 #
 # SO THIS WEAPON'S MOVE TO `uncommon` IS NOT REVERSED BY THE LOCUST'S MOVE TO `rare`. Both stand.
 #
-# THE `rare` TIER DOES NOT SHRINK. It held boltor, ember_staff and emberblade; this weapon leaves and
+# THE `rare` TIER DOES NOT SHRINK. It held boltor, ember_staff and emberblade (deleted 2026-11); this weapon leaves and
 # the Locust arrives, so it stays at THREE. A note written after ruling 1 predicted it would fall to
 # two -- true of that ruling alone, and falsified by ruling 2.
 #
@@ -74,14 +74,14 @@ element: kinetic
 rarity: uncommon
 
 # The quiver is the Ranger's brake, and this is the first SHIPPED weapon to carry one --
-# quiver_stone is a fixture. It also means Power (enchants/power.yml, effect: damage, class: ranger)
+# quiver_stone (deleted 2026-11) is a fixture. It also means Power (enchants/power.yml, effect: damage, class: ranger)
 # can reach this weapon's attack_damage; see the note there.
 class: ranger
 
-# CROSSBOW, and quiver_stone was built on this material FOR THIS WEAPON. Q7's held-input reading was
+# CROSSBOW, and quiver_stone (deleted 2026-11) was built on this material FOR THIS WEAPON. Q7's held-input reading was
 # taken on a crossbow that binds right_click and therefore cancels vanilla exactly as this file
 # does, which is the whole reason that reading transfers here rather than being a fact about a
-# fixture. Verified present in the pinned 26.1.2 jar -- the check is recorded in quiver_stone.yml.
+# fixture. Verified present in the pinned 26.1.2 jar -- the check is recorded in quiver_stone.yml (deleted 2026-11).
 #
 # A CROSSBOW HAS VANILLA DURABILITY, SO THIS WEAPON WEARS AS WELL AS EMPTIES. Two independent
 # per-item counters decrement per shot, and BOTH route to a notice, so one press can meet either of
@@ -100,8 +100,8 @@ material: crossbow
 # be read as claiming it is.
 #
 # THE REASON THAT SENTENCE IS HERE RATHER THAN OMITTED: both weapons an author would reach for as an
-# anchor are DEV WEAPONS. `ironblade` ("The first weapon. A plain sword.") and `hunters_bow` are
-# both placeholders by the operator's ruling, and NOTHING IN EITHER FILE SAYS SO -- ironblade's
+# anchor are DEV WEAPONS. `ironblade (deleted 2026-11)` ("The first weapon. A plain sword.") and `hunters_bow (deleted 2026-11)` are
+# both placeholders by the operator's ruling, and NOTHING IN EITHER FILE SAYS SO -- ironblade's (deleted 2026-11)
 # attack_damage: 8 even carries a comment describing it as a source of truth for the tooltip, which
 # reads as authority rather than as scaffolding. Anchoring on either is anchoring on a placeholder,
 # and the mistake is available to anyone who greps for a comparable number. It was made during this
@@ -120,7 +120,7 @@ material: crossbow
 #
 #   plain 19    I 19.95 -> "20"    II 20.90 -> "21"    III 21.85 -> "22"
 #
-# Four distinguishable values. On hunters_bow (6) the same curve reads 6 / 6 / 7 / 7 and level I is
+# Four distinguishable values. On hunters_bow (deleted 2026-11) (6) the same curve reads 6 / 6 / 7 / 7 and level I is
 # invisible -- power.yml records exactly that, and says the boot gate therefore uses the bow for the
 # CLASS-MISMATCH step because it cannot use it for the level step. THIS WEAPON CAN SERVE THE LEVEL
 # STEP. Executed, not estimated: the bow figures were reproduced from the same expression and match
@@ -139,7 +139,7 @@ attack_damage: 19
 # gear gets -- and what a craft preview or a recipe-browser icon shows, since neither has a wielder
 # to resolve against. A gate row must read what is ON SCREEN, never this line.
 #
-# 8 is the operator's original brief, and it is DELIBERATELY NOT quiver_stone's 9. The fixture was
+# 8 is the operator's original brief, and it is DELIBERATELY NOT quiver_stone's (deleted 2026-11) 9. The fixture was
 # moved off 8 so a gate row staging "fires N then refuses" can tell the stat from the constant; two
 # equal quantities in one row means at least one of them is measuring the fixture.
 quiver_size: 8
@@ -244,7 +244,7 @@ triggers:
     # C's printf rounds half-to-even, and 20.0 / 16 is exactly 1.25.
     #
     #   authored 16 -> tooltip "1.3"    delivers 1.25/s   MEASURED, so "1.3" is TRUE here
-    #   authored 15 -> tooltip "1.3"    hunters_bow, delivering 1.25/s (measured)
+    #   authored 15 -> tooltip "1.3"    hunters_bow (deleted 2026-11; preserved reading), delivering 1.25/s (measured)
     #
     # So THE TOOLTIP CANNOT TELL A 15-TICK WEAPON FROM A 16-TICK ONE. The 30% overstatement was the
     # `>` branch and DID NOT OCCUR -- the reading put this weapon on `>=`.
@@ -271,7 +271,7 @@ triggers:
     #   s >= 1.89   -> effective 8      -> fires  8t (2.50/s)   (exact crossing s > 16/8.5 = 1.8824)
     #
     # So every ranged attack-speed buff below about +29% buys this weapon NOTHING, and the first one
-    # that does anything gives +33% at once. hunters_bow at 15 breaks at +21% (15/12.5 = 1.20), so
+    # that does anything gives +33% at once. hunters_bow (deleted 2026-11) at 15 breaks at +21% (15/12.5 = 1.20), so
     # THE BOLTOR'S DEAD ZONE IS THE WIDER OF THE TWO. The honest cooldowns for attack-speed response
     # and the honest cooldowns for dual-wield halving are NOT the same set; that tension is slice C's.
     #
@@ -295,7 +295,7 @@ triggers:
     # on the 8t row, clean past the dead zone. The dead zone is reachable now by authoring any bonus
     # in 0.0..0.28, which the command permits.
     #
-    # This is hunters_bow's finding arriving on a balanced weapon, and it is BEN'S TO RULE. Nothing
+    # This is hunters_bow's (deleted 2026-11) finding arriving on a balanced weapon, and it is BEN'S TO RULE. Nothing
     # here is a fix: no number is changed by the commit that recorded it.
     #
     # There is no weapon-level `attack_speed:` key here. That key writes the VANILLA attribute and
@@ -338,14 +338,14 @@ triggers:
       range: 96
       beam: boltor_beam
     on_hit:
-      # weapon_damage, NOT a literal -- the opposite of quiver_stone's choice, and deliberate on both
+      # weapon_damage, NOT a literal -- the opposite of quiver_stone's (deleted 2026-11) choice, and deliberate on both
       # sides.
       #
-      # quiver_stone.yml carries a loud "DO NOT CHANGE THIS TO weapon_damage" warning. IT IS ABOUT
+      # quiver_stone.yml (deleted 2026-11) carries a loud "DO NOT CHANGE THIS TO weapon_damage" warning. IT IS ABOUT
       # THE FIXTURE, NOT ABOUT THIS KEY. Its argument is that making the FIXTURE a basic attack would
       # silence the "On cooldown for ..." string that GATE-quiver row V2 uses to tell a correct gate
       # ordering from a broken one. That is a fact about what V2 measures, and V2 is staged on
-      # quiver_stone, which this commit leaves alone.
+      # quiver_stone (deleted 2026-11), which this commit leaves alone.
       #
       # THE SILENCE IS REAL, AND IT WAS CHECKED HERE RATHER THAN ASSUMED HARMLESS.
       # RpgListeners:529 returns early for a basic attack, so this weapon will NEVER print

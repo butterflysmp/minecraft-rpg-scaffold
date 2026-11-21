@@ -284,3 +284,11 @@ Run with a pristine copy per file, a marker grep and a line delta against that c
 | `MUTLVL-WIRING` | defense's `fromLevel.sources(…)` → an empty map | 1 / 1 | 1: `LevelWiringSignatureTest` |
 | `MUTLVL-SHEET` | the sheet's level term → `0.0` | 1 / 1 | **NONE** — BN2 is its only witness |
 | `MUTLVL-DASHAIM` | the carry → `false` | 1 / 1 | **NONE** — unreachable from shipped content (WD3's note) |
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: WD1 now gives and holds `iron_sword`**, where it gave and held
+> `emberblade`, a dev weapon deleted that day. **Every prediction and reading above was taken with the old weapon** and
+> none is edited. **A re-run of WD1 needs a re-prediction under the next suffix** (its swings will read the
+> sword's 23, not the emberblade's 7). NOT RE-READ on a server.

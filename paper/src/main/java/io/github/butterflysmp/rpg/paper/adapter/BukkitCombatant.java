@@ -180,7 +180,7 @@ public final class BukkitCombatant {
          * suppressor brought a held weapon's vanilla attack damage to a flat 0, vanilla skipped its
          * whole attack path, so a weapon swing fired NO vanilla event, set NO i-frames, and every
          * melee hit reached the manual flash below with {@code noDamageTicks == 0} -- the gate never
-         * gated anything. Measured: nine ironblade swings across three Step 0 sessions produced zero
+         * gated anything. Measured: nine ironblade (deleted 2026-11; preserved reading) swings across three Step 0 sessions produced zero
          * EntityDamageByEntityEvents, against a bare fist that produced one per swing. Stage 1 made
          * vanilla attack for real, which is the first time this gate has had a double to prevent.
          *

@@ -728,3 +728,10 @@ three answers: "yes", "yes", "yes".
   push has a direction. The fall arithmetic is unchanged (the 0.4 up is the same), and no fall damage was read.
 - **RECORDED AS LIMITS, by the seat's ruling, not as defects:** the proof that the pair rests inside its band is
   horizontal, on open ground; the slide in its model is that, with the 0.6 friction INFERRED.
+
+---
+
+> **2026-11-21, THE FOUR DEV WEAPONS DELETED** (`feat/remove-dev-weapons`, `GATE-remove-dev-weapons.md`; the seat's
+> brief, rulings 1 and 2). **This gate's scenario changed: PQ4 now gives and holds `iron_sword`**, where it gave and held
+> `emberblade`, a dev weapon deleted that day. **Every prediction and reading above was taken with the old weapon** and
+> none is edited. **A re-run of PQ4 needs a re-prediction under the next suffix.** NOT RE-READ on a server.

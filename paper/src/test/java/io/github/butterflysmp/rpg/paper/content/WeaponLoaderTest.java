@@ -664,23 +664,28 @@ class WeaponLoaderTest {
         assertEquals(0, registry.size());
     }
 
-    /** The content we actually ship, parsed by the loader we actually run. */
+    /**
+     * The content we actually ship, parsed by the loader we actually run.
+     *
+     * <p>REPOINTED 2026-11-21 from {@code ironblade} (a dev weapon, deleted that day) to {@code iron_sword}, the shipped
+     * sword whose shape is ironblade's basic attack (iron_sword.yml's header). Every assertion is unchanged but the id.
+     */
     @Test
-    void bundledIronbladeContentLoads() throws IOException {
-        try (var in = getClass().getResourceAsStream("/content/weapons/ironblade.yml")) {
-            assertNotNull(in, "bundled ironblade is missing from the classpath");
-            Files.write(dir.resolve("ironblade.yml"), in.readAllBytes());
+    void bundledIronSwordContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/weapons/iron_sword.yml")) {
+            assertNotNull(in, "bundled iron_sword is missing from the classpath");
+            Files.write(dir.resolve("iron_sword.yml"), in.readAllBytes());
         }
 
         WeaponRegistry registry = load();
 
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(1, registry.size());
-        WeaponDefinition weapon = registry.find("ironblade").orElseThrow();
+        WeaponDefinition weapon = registry.find("iron_sword").orElseThrow();
         assertEquals("kinetic", weapon.element());
         assertEquals(Rarity.COMMON, weapon.rarity());
-        assertEquals(WeaponClass.MELEE, weapon.weaponClass(), "ironblade declares class melee");
-        assertEquals("ironblade/left_click", weapon.trigger("left_click").orElseThrow().ability().id());
+        assertEquals(WeaponClass.MELEE, weapon.weaponClass(), "iron_sword declares class melee");
+        assertEquals("iron_sword/left_click", weapon.trigger("left_click").orElseThrow().ability().id());
 
         // The melee damage is a STAT: a top-level attack_damage, and a weapon_damage on_hit that
         // reads it (no literal amount buried in the effect). This locks the SHAPE of that promotion
@@ -688,7 +693,7 @@ class WeaponLoaderTest {
         // decorative: the WeaponDamage check below holds for attack_damage: 0 too, which would be a
         // sword that reads as a basic attack and deals nothing.
         assertTrue(weapon.attackDamage() > 0,
-                "ironblade declares a melee damage stat for its weapon_damage swing to read");
+                "iron_sword declares a melee damage stat for its weapon_damage swing to read");
         var swing = weapon.trigger("left_click").orElseThrow().ability().onHit().get(0);
         var weaponDamage = assertInstanceOf(EffectSpec.WeaponDamage.class, swing,
                 "the swing deals weapon_damage (the caster's stat), not a literal Damage");
@@ -697,64 +702,35 @@ class WeaponLoaderTest {
         // The SWEEP fraction is authored on the shipped blade. Half, so a bystander takes half of
         // whatever the primary took -- the number the boot gate reads as "a real reward for a big
         // swing, not an instant clear".
-        assertEquals(0.5, weapon.sweep(), 1e-9, "ironblade declares a sweep fraction");
+        assertEquals(0.5, weapon.sweep(), 1e-9, "iron_sword declares a sweep fraction");
         // Mutation: revert the swing to `type: damage` / drop attack_damage -> reddens.
     }
 
-    /** The shipped emberblade: a free left-click and a costed right-click on one weapon. */
+    // bundledEmberbladeContentLoads DELETED 2026-11-21 with emberblade (a dev weapon). It pinned, on a SHIPPED file, a
+    // free melee left-click and a costed (mana) right-click projectile on ONE weapon. No shipped weapon has that shape
+    // now, so that rule died with the weapon; the shape in memory is still exercised by core's WeaponServiceTest.
+
+    /**
+     * The shipped bow: a non-sword material, and a free right-click projectile shot.
+     *
+     * <p>REPOINTED 2026-11-21 from {@code hunters_bow} (a dev weapon, deleted that day) to {@code short_bow}, the shipped
+     * bow with the same three properties (right_click, free, a projectile weapon_damage basic). Two things hunters_bow
+     * had and short_bow does not are no longer pinned here: NO quiver (short_bow authors quiver_size 8), and a
+     * weapon_damage BEHIND a leading visual (short_bow's is first; dragons_plume's draw trigger is now the shipped case).
+     */
     @Test
-    void bundledEmberbladeContentLoads() throws IOException {
-        try (var in = getClass().getResourceAsStream("/content/weapons/emberblade.yml")) {
-            assertNotNull(in, "bundled emberblade is missing from the classpath");
-            Files.write(dir.resolve("emberblade.yml"), in.readAllBytes());
+    void bundledShortBowContentLoads() throws IOException {
+        try (var in = getClass().getResourceAsStream("/content/weapons/short_bow.yml")) {
+            assertNotNull(in, "bundled short_bow is missing from the classpath");
+            Files.write(dir.resolve("short_bow.yml"), in.readAllBytes());
         }
 
         WeaponRegistry registry = load();
 
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(1, registry.size());
-        WeaponDefinition weapon = registry.find("emberblade").orElseThrow();
-        assertEquals("fire", weapon.element());
-        assertEquals(Rarity.RARE, weapon.rarity());
-
-        // Free left-click swing -- weapon_damage reading the weapon's attack_damage stat.
-        var left = weapon.trigger("left_click").orElseThrow().ability();
-        assertEquals(ResourceCost.FREE, left.cost(), "the left-click swing is free");
-        assertInstanceOf(CastSpec.Melee.class, left.cast());
-        assertTrue(weapon.attackDamage() > 0,
-                "emberblade declares a melee damage stat for its weapon_damage swing to read");
-        assertInstanceOf(EffectSpec.WeaponDamage.class, left.onHit().get(0),
-                "the swing deals weapon_damage; the costed special below keeps a literal");
-
-        // Costed right-click special -- the shared-mana proof, at the content level.
-        var right = weapon.trigger("right_click").orElseThrow().ability();
-        assertEquals("mana", right.cost().resourceId());
-        // The amount is bounded, not pinned: 40 is balance. But it must be > 0, because
-        // ResourceCost.FREE is new ResourceCost("none", 0) -- a plain record, not a sentinel -- so a
-        // degenerate `mana: 0` is NOT equal to FREE and would slip past the resourceId check above.
-        assertTrue(right.cost().amount() > 0, "the special is costed, not free");
-        assertInstanceOf(CastSpec.Projectile.class, right.cast());
-
-        // The sweep fraction, authored on this blade too -- both shipped swords sweep, and the
-        // emberblade's lower attack_damage means it sweeps for less, which is the trade it already
-        // makes on the primary hit.
-        assertEquals(0.5, weapon.sweep(), 1e-9, "emberblade declares a sweep fraction");
-    }
-
-    /** The shipped bow: a non-sword material, and a free right-click projectile shot. */
-    @Test
-    void bundledHuntersBowContentLoads() throws IOException {
-        try (var in = getClass().getResourceAsStream("/content/weapons/hunters_bow.yml")) {
-            assertNotNull(in, "bundled hunters_bow is missing from the classpath");
-            Files.write(dir.resolve("hunters_bow.yml"), in.readAllBytes());
-        }
-
-        WeaponRegistry registry = load();
-
-        assertTrue(warnings.isEmpty(), warningText());
-        assertEquals(1, registry.size());
-        WeaponDefinition weapon = registry.find("hunters_bow").orElseThrow();
-        assertEquals("bow", weapon.material(), "the bow is the first non-sword weapon");
+        WeaponDefinition weapon = registry.find("short_bow").orElseThrow();
+        assertEquals("bow", weapon.material(), "a non-sword weapon");
         assertEquals(WeaponClass.RANGER, weapon.weaponClass(), "the bow is a ranger weapon");
 
         // NO SWEEP, and this is how a non-blade has none: by omitting the key, not by appearing on
@@ -780,14 +756,13 @@ class WeaponLoaderTest {
         // WeaponDamage effect to WEAPON_STAT regardless of the number (isBasicAttack passes 0.0
         // outright), so the two assertions below would BOTH still pass on attack_damage: 0 -- a bow
         // that renders as a basic attack, gets attack-speed scaled, and deals nothing.
-        assertTrue(weapon.attackDamage() > 0, "hunters_bow declares a ranged damage stat to read");
+        assertTrue(weapon.attackDamage() > 0, "short_bow declares a ranged damage stat to read");
         assertTrue(DamagePayload.isBasicAttack(shot.onHit()),
-                "the bow's shot must be a basic attack, behind its leading visual");
+                "the bow's shot must be a basic attack");
         assertEquals(DamagePayload.DamageSource.WEAPON_STAT,
                 DamagePayload.of(shot.onHit(), weapon.attackDamage()).orElseThrow().source(),
                 "the amount comes from the stat, not a literal amount: in content");
-        assertFalse(weapon.flavor().isEmpty(),
-                "the trigger's old description now renders as weapon flavour");
+        assertFalse(weapon.flavor().isEmpty(), "the bow authors flavour");
     }
 
     /** The shipped staff: a costed right-click projectile -- the Mage's commit primary. */
@@ -818,16 +793,19 @@ class WeaponLoaderTest {
      *
      * The bow's shot is a basic attack, so a rejected shot is SILENT: it is bound to right_click
      * only so that binding suppresses the vanilla draw, and spamming fire is attacking, not casting.
-     * The emberblade's Fireball and the staff's Bolt are costed abilities, so a rejected press still
-     * says "On cooldown for Xs" -- a deliberate special deserves an answer.
+     * The staff's Bolt is a costed ability, so a rejected press still says "On cooldown for Xs" --
+     * a deliberate special deserves an answer.
      *
      * Pinned here because the listener itself is boot-witnessed. If someone later converts
      * ember_staff to a weapon_damage basic attack (the open Mage decision in NEXT.md), this reddens
      * and makes them notice they have also just silenced the staff's feedback.
+     *
+     * REPOINTED 2026-11-21: the bow was hunters_bow and is now short_bow; emberblade's Fireball (a costed right-click on
+     * a MELEE weapon) left with emberblade, a dev weapon deleted that day. The staff carries the costed half alone.
      */
     @Test
     void onlyTheBowsRightClickIsABasicAttack() throws IOException {
-        for (String id : List.of("hunters_bow", "emberblade", "ember_staff")) {
+        for (String id : List.of("short_bow", "ember_staff")) {
             try (var in = getClass().getResourceAsStream("/content/weapons/" + id + ".yml")) {
                 assertNotNull(in, "bundled " + id + " is missing from the classpath");
                 Files.write(dir.resolve(id + ".yml"), in.readAllBytes());
@@ -836,12 +814,10 @@ class WeaponLoaderTest {
 
         WeaponRegistry registry = load();
         assertTrue(warnings.isEmpty(), warningText());
-        assertEquals(3, registry.size(), "all three weapons must load, or the rest of this proves nothing");
+        assertEquals(2, registry.size(), "both weapons must load, or the rest of this proves nothing");
 
-        assertTrue(isBasicAttackOnRightClick(registry, "hunters_bow"),
+        assertTrue(isBasicAttackOnRightClick(registry, "short_bow"),
                 "the bow's shot is a basic attack -- a refused shot must be silent");
-        assertFalse(isBasicAttackOnRightClick(registry, "emberblade"),
-                "the emberblade's Fireball is a costed ability -- it keeps its feedback");
         assertFalse(isBasicAttackOnRightClick(registry, "ember_staff"),
                 "the staff's Bolt is a costed ability -- it keeps its feedback");
     }

@@ -153,17 +153,10 @@ class SwordTiersContentTest {
         }
     }
 
-    /** ironblade and emberblade are UNTOUCHED: still iron_sword, and claiming nothing (so crafting iron mints Iron Sword). */
-    @Test
-    void ironbladeAndEmberbladeClaimNothing() {
-        WeaponRegistry weapons = shippedWeapons(new ArrayList<>());
-        // DELETION-SET-CITATION: ironblade, emberblade (both kept untouched by the seat's brief, part f)
-        for (String id : List.of("ironblade", "emberblade")) {
-            WeaponDefinition w = weapons.find(id).orElseThrow();
-            assertEquals(Optional.empty(), w.craftResult(), id);
-            assertEquals("iron_sword", w.material(), id);
-        }
-    }
+    // ironbladeAndEmberbladeClaimNothing DELETED 2026-11-21 with both weapons (dev weapons, deleted that day). It pinned
+    // that the two were untouched by the ladder: still on iron_sword, claiming nothing. That half died with them; the
+    // other half, "crafting iron mints Iron Sword", is pinned by exactlyOneGearClaimsEachCraftedSwordAndNoneClaimsNetherite
+    // above (index.forResult("iron_sword") is iron_sword, across ALL shipped gear).
 
     /**
      * Part e: what a MINTED tier sword's tooltip reads. A minted weapon carries a gear score, and its damage line is the

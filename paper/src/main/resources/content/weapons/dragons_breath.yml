@@ -67,7 +67,7 @@ display_name: "Dragon's Breath"
 #
 #   weapon             per-payload   cap    per tick   total over the 120-tick window
 #   Dragon's Breath         9        4.5       4.5              27
-#   Emberblade              7        3.5       3.5              21
+#   Emberblade (deleted 2026-11)              7        3.5       3.5              21
 #   Flint Staff            20       10.0      10.0              60
 #
 # *** SO THIS WEAPON'S BURN IS THE WEAKEST OF THE THREE, BY MORE THAN A FACTOR OF TWO AGAINST THE
@@ -108,7 +108,7 @@ rarity: legendary
 # reading as though the range were still 8..12. A finding this weapon CREATES.
 class: ranger
 
-# NOT RULED. crossbow, which is ALREADY boltor's, locust's AND quiver_stone's -- so four crossbows
+# NOT RULED. crossbow, which is ALREADY boltor's, locust's AND quiver_stone's (deleted 2026-11) -- so four crossbows
 # now sit indistinguishable in a hotbar, and this file is the fourth offender rather than the first.
 # Flagged rather than solved: custom model data is not in this slice.
 #
@@ -151,7 +151,7 @@ quiver_size: 5
 #   boltor           60       8          7.50
 #   locust           60      12          5.00
 #   dragons_plume    60      25          2.40
-#   quiver_stone     34       9          3.78
+#   quiver_stone (deleted 2026-11)     34       9          3.78
 #   THIS at 60       60       5         12.00     188t = 9.40s       33.51 DPS
 #   THIS at 40       40       5          8.00     168t = 8.40s       37.50 DPS   <- proposed
 #   THIS at 32       32       5          6.40     160t = 8.00s       39.38 DPS
@@ -219,7 +219,7 @@ triggers:
 
       # THE SAME FLIGHT AS THE PLUME'S ARROWS, AND THAT IS A DERIVATION RATHER THAN A RULING.
       # speed 2.5 / gravity 0.05 / max_lifetime_ticks 120 are the Plume's, which are in turn
-      # hunters_bow's gravity and the only BOW precedents in the project -- the 0.03 figures belong
+      # hunters_bow's (deleted 2026-11) gravity and the only BOW precedents in the project -- the 0.03 figures belong
       # to staves. Labelled a derivation so nobody later cites it as a decision Ben made.
       speed: 2.5
       gravity: 0.05

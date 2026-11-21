@@ -16,7 +16,7 @@ import io.github.butterflysmp.rpg.core.weapon.QuiverState;
  * callers to pass whole numbers, which is the shape this slice has spent six commits removing.
  *
  * <p><b>Percentages were considered and declined, and the number is why.</b> At
- * {@code quiver_stone}'s 9 rounds, ONE ARROW IS 11%. Any percentage under that floors to zero, so a
+ * {@code quiver_stone}'s (deleted 2026-11) 9 rounds, ONE ARROW IS 11%. Any percentage under that floors to zero, so a
  * tooltip would advertise a buff that grants nothing -- {@link Quiver#applyPercent} exists and stays
  * tested, but it is the rule for a percentage REACHING an integer stat, not this stat's design.
  * Flat summands are also what {@code classDamage} uses, for the same reason.

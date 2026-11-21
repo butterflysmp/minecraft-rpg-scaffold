@@ -26,7 +26,7 @@ import java.util.function.LongSupplier;
  * <h2>TWO COUNTERS, BECAUSE ONE NUMBER CANNOT SAY WHICH MECHANISM PRODUCED IT</h2>
  *
  * <p>A fires-only reading reports {@code min(input rate, cooldown)}. A reading of 15 on
- * {@code hunters_bow} is indistinguishable between <i>the input floor is 15</i> and <i>the cooldown
+ * {@code hunters_bow} (deleted 2026-11) is indistinguishable between <i>the input floor is 15</i> and <i>the cooldown
  * is 15 and the floor is lower</i> — two different facts with different consequences for slice C's
  * 7-tick dual-wield halving. <b>The remedy for one observation that cannot separate two mechanisms
  * is a second observation</b>, which is the same answer A2's gate reached for its two tooltip
@@ -38,7 +38,7 @@ import java.util.function.LongSupplier;
  * <h2>NO CONTENT FILE IS EDITED TO TAKE THIS READING, AND THAT IS THE POINT</h2>
  *
  * <p>Q7's recipe also said to set {@code cooldown_ticks} to 1 and {@code quiver_size} to 60 so the
- * cooldown could not be the limiter. <b>Struck.</b> {@code quiver_stone}'s numbers were chosen by an
+ * cooldown could not be the limiter. <b>Struck.</b> {@code quiver_stone}'s (deleted 2026-11) numbers were chosen by an
  * exhaustive collision sweep and eight other gate rows read bare values that depend on it; mutating
  * a swept fixture to take one reading spends a guarantee those rows stand on.
  *
@@ -84,8 +84,8 @@ public final class FireCadence {
          * {@code WeaponFire.attempt}'s own order: durability ({@code Broken}, :90), the magazine
          * ({@code Empty}/{@code Reloading}, :106-116) and the cooldown ({@code AbilityService:203}).
          * <b>Only a weapon with no magazine and undamaged durability isolates the cooldown</b> —
-         * {@code hunters_bow} has no {@code quiver_size}, which is why the gate row reads it there
-         * first and {@code quiver_stone} second.
+         * {@code hunters_bow} (deleted 2026-11) has no {@code quiver_size}, which is why the gate row reads it there
+         * first and {@code quiver_stone} (deleted 2026-11) second.
          */
         COOLDOWN_LIMITED,
 

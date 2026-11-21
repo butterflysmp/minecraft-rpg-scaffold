@@ -28,7 +28,7 @@ import java.util.logging.Logger;
  *   some_source:
  *     tiers: [...]               # optional: this source's own chances; absent, the default's
  *     pools:                     # per rarity, the item ids it can give
- *       rare: [emberblade, locust]
+ *       rare: [ember_staff, locust]
  * </pre>
  * A file is refused WHOLE, by name and reason, for a chance outside [0, 1], an unknown rarity, tiers out of rarity
  * order or a guaranteed tier above another (core's {@code CascadeTable}), an unknown item id, or an item under a pool

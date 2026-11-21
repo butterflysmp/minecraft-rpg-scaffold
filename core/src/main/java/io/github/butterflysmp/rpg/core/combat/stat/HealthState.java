@@ -43,7 +43,7 @@ public final class HealthState {
      * load-bearing. The held weapon already contributes its declared attack_damage as a MAIN_HAND
      * modifier on the attack stat; folding the class bonus in there too would double-count it
      * through the same source. Keeping them apart also keeps the weapon's INHERENT damage (the bow's
-     * 6, the sword's 8) distinct from the gear bonus added on top -- which is why the emberblade's
+     * 6, the sword's 8) distinct from the gear bonus added on top -- which is why the emberblade's (deleted 2026-11)
      * fireball can take +Melee without inheriting the swing's 8.
      */
     private final Stat classDamage = new Stat(0.0);

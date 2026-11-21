@@ -65,7 +65,7 @@ public final class WeaponLoader {
         return registry;
     }
 
-    /** The id is the filename: ironblade.yml -> ironblade. */
+    /** The id is the filename: iron_sword.yml -> iron_sword. */
     private static String idOf(File f) {
         String name = f.getName();
         return name.substring(0, name.length() - ".yml".length());
@@ -75,7 +75,7 @@ public final class WeaponLoader {
      * Every key a weapon file may author, which is every key {@link #parse} reads, plus {@code id}.
      *
      * <p><b>{@code id} is in the set and is NOT read.</b> The id comes from the filename
-     * ({@code ironblade.yml -> ironblade}); every shipped file also writes {@code id:} redundantly,
+     * ({@code iron_sword.yml -> iron_sword}); every shipped file also writes {@code id:} redundantly,
      * and without it here the loader would warn about all of them.
      *
      * <h2>Why an unknown key is worth warning about at all</h2>
@@ -166,8 +166,8 @@ public final class WeaponLoader {
      * real interval is the cooldown <b>rounded UP to the next input</b>:
      *
      * <pre>
-     * ceil(11 / 4) x 4 = 12      quiver_stone measured min 12   EXACT
-     * ceil(15 / 4) x 4 = 16      hunters_bow  measured min 16   EXACT
+     * ceil(11 / 4) x 4 = 12      quiver_stone (deleted 2026-11; preserved reading) measured min 12   EXACT
+     * ceil(15 / 4) x 4 = 16      hunters_bow (deleted 2026-11; preserved reading)  measured min 16   EXACT
      * </pre>
      *
      * <p><b>So 9, 10, 11 and 12 all produce 12.</b> An author who writes 11 has written 12, and
@@ -176,7 +176,7 @@ public final class WeaponLoader {
      *
      * <p><b>AND THE SAME QUANTISATION SWALLOWS ATTACK SPEED, WHICH REACHES A SHIPPED STAT.</b>
      * {@code AttackSpeed.effectiveCooldownTicks} divides and rounds, and the result is then rounded
-     * up to the next input. On {@code hunters_bow} (authored 15): <b>1.1x and 1.2x both still fire
+     * up to the next input. On {@code hunters_bow} (deleted 2026-11) (authored 15): <b>1.1x and 1.2x both still fire
      * at 16</b>; only 1.3x reaches 12. A player equipping a +10% attack-speed piece sees the stat
      * sheet move and the weapon not move. <b>A falsified number shown to a player is the class this
      * project treats as worst</b>, and it is recorded here rather than left for the first person who
@@ -190,7 +190,7 @@ public final class WeaponLoader {
      * delivering 8t = 2.5/s, a 60% overstatement</b>; 9 prints "2.2" against 12t = "1.7".
      *
      * <p><b>It is right on both weapons that ship it today, and on one of them BY COINCIDENCE.</b>
-     * The Boltor's 16 is on the grid, so "1.3" is true by construction. {@code hunters_bow}'s 15
+     * The Boltor's 16 is on the grid, so "1.3" is true by construction. {@code hunters_bow}'s (deleted 2026-11) 15
      * computes 20/15 = 1.333 -> "1.3" while delivering 16t = 1.25/s -> "1.3": <b>the same digit for
      * two different reasons</b>. So the identical line the two render in {@code golden-lore.txt} is
      * not evidence the formula is sound -- it is the one case where being wrong and being right
@@ -204,7 +204,7 @@ public final class WeaponLoader {
      * because this is where the quantisation that falsifies it is documented.
      *
      * <p>The nearest edit that would surface it is one someone has already been warned they might
-     * make, for an unrelated reason. {@code quiver_stone} is authored at <b>11</b> and renders no
+     * make, for an unrelated reason. {@code quiver_stone} (deleted 2026-11) is authored at <b>11</b> and renders no
      * Attack Speed line only because its {@code on_hit} is a literal {@code damage} payload rather
      * than {@code weapon_damage}; its file carries a loud <i>"DO NOT CHANGE THIS TO weapon_damage
      * WITHOUT RE-CHECKING GATE-quiver.md V2"</i>. Make that change and the weapon begins printing
@@ -220,8 +220,8 @@ public final class WeaponLoader {
      * <pre>
      * fire interval = ceil(effective_cooldown / 4) x 4
      *
-     *   11 -> 12   quiver_stone   measured   PRESERVED READING -- fixture in the deletion set
-     *   15 -> 16   hunters_bow    measured   PRESERVED READING -- fixture in the deletion set
+     *   11 -> 12   quiver_stone    measured   PRESERVED READING -- fixture DELETED 2026-11-21
+     *   15 -> 16   hunters_bow     measured   PRESERVED READING -- fixture DELETED 2026-11-21
      *   16 -> 16   boltor         measured -- the only cooldown that could distinguish >= from >
      * </pre>
      *
@@ -238,7 +238,7 @@ public final class WeaponLoader {
      * sweep that edits this javadoc will not be caught by that test</b> — the two protect different
      * things, which is why this warning is here rather than delegated to it.
      *
-     * <p>A cooldown already on the grid fires on its own tick. {@code hunters_bow} could never have
+     * <p>A cooldown already on the grid fires on its own tick. {@code hunters_bow} (deleted 2026-11) could never have
      * answered this: 15 quantises to 16 under <b>both</b> comparisons.
      *
      * <p>So on a HELD-FIRE QUIVER WEAPON -- a ray or a projectile, which is exactly what the Boltor

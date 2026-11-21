@@ -19,7 +19,7 @@ DH1:
   - cmd: "rpg reloadtime 0"
   - wait: 2
 
-# DH3: levels I and II on that Boltor; level I on dragons_breath (40) and on quiver_stone (34).
+# DH3: levels I and II on that Boltor; level I on dragons_breath (40) and on quiver_stone (deleted 2026-11) (34).
 DH3:
   - after: DH1
   - hold: boltor
@@ -40,23 +40,11 @@ DH3:
   - wait: 40
   - cmd: "rpg reloadtime 0"
   - wait: 2
-  - cmd: "rpg give quiver_stone"
-  - hold: quiver_stone
-  - cmd: "rpg enchant clear"
-  - cmd: "rpg enchant candidate 0 deft_hands"
-  - cmd: "rpg enchant level 0 0 1"
-  - cmd: "rpg enchant active 0 0"
-  - wait: 40
-  - cmd: "rpg reloadtime 0"
-  - wait: 2
+  # 2026-11-21: quiver_stone's steps RETIRED from this row (the seat's brief, ruling 1). They gave and held quiver_stone,
+  # a dev weapon deleted that day, put Deft Hands I on it and read its reload (34). The Boltor and dragons_breath steps
+  # above are unchanged. NOT RE-READ on a server.
 
-# DH6: quiver_stone at III, then the dev instrument's -30 quoted on top: 34 - 11 - 30 stops at the one-tick floor.
-DH6:
-  - after: DH3
-  - hold: quiver_stone
-  - cmd: "rpg enchant level 0 0 3"
-  - wait: 40
-  - cmd: "rpg reloadtime 0"
-  - wait: 2
-  - cmd: "rpg reloadtime -30"
-  - wait: 2
+# DH6 RETIRED, 2026-11-21 (the seat's brief, ruling 1). It held quiver_stone at Deft Hands III and quoted the dev
+# instrument's -30 on top: 34 - 11 - 30 stops at the one-tick floor. Its weapon was deleted that day. The floor itself is
+# pinned by a unit test: core's ReloadTimeTest.theResolvedDurationGoesDownToTheOneTickFloorAndNoFurther (34 - 34 resolves
+# to ReloadTime.MIN_TICKS, 1). NOT RE-READ on a server.

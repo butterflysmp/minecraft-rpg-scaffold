@@ -1,0 +1,26 @@
+# GATE-remove-dev-weapons.md: THE FOUR DEV WEAPONS DELETED (feat/remove-dev-weapons, 2026-11-21).
+# `/rpg selftest remove-dev-weapons`. Nothing here can hurt him: no mob is spawned, the fight world is not entered and no
+# row deals damage. This file names the four DELETED ids on purpose, in DW1 and DW2 only: SelfTestWeaponIdsTest allows
+# this gate, and these two rows, as its one exception and pins the exact steps.
+setup:
+  - close: ""
+
+# DW1: a copy he already holds. Each of the four ids probed in his inventory: the slots that still carry it. Read beside
+# the login's "unknown gear id" WARN lines: one per id found, none for an id not found.
+DW1:
+  - probe_inventory: ironblade
+  - probe_inventory: emberblade
+  - probe_inventory: hunters_bow
+  - probe_inventory: quiver_stone
+
+# DW2: none can be given. Each of the four refused by name; then the control, iron_sword, given, and found one more time
+# in his inventory than before it.
+DW2:
+  - cmd: "rpg give ironblade"
+  - cmd: "rpg give emberblade"
+  - cmd: "rpg give hunters_bow"
+  - cmd: "rpg give quiver_stone"
+  - probe_inventory: iron_sword
+  - cmd: "rpg give iron_sword"
+  - wait: 5
+  - probe_inventory: iron_sword

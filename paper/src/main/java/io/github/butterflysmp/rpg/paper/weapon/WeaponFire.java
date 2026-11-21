@@ -124,7 +124,7 @@ public final class WeaponFire {
         if (held.isEmpty()) return Optional.empty();
         WeaponDefinition weapon = held.get();
 
-        // Only a trigger this weapon actually BINDS may be gated below. Without this an ironblade,
+        // Only a trigger this weapon actually BINDS may be gated below. Without this an ironblade (deleted 2026-11),
         // which binds no right_click, would return present on right-click once broken and the
         // interact handler would cancel vanilla -- doors and chests would stop working with it in
         // hand. weaponService.fire answers the same question a few lines down; asking it early is
@@ -222,7 +222,7 @@ public final class WeaponFire {
                 // HERE rather than on CastExecutor's use listener, and the reason is a measurement
                 // rather than a preference: that listener fires for BASIC ATTACKS only
                 // (DamagePayload.isBasicAttack), so a quiver weapon whose shot is a plain `damage`
-                // effect -- which quiver_stone's is, exactly as volley_stone's is -- would fire
+                // effect -- which quiver_stone's (deleted 2026-11) is, exactly as volley_stone's is -- would fire
                 // forever without ever spending a round. Durability can ride that seam because
                 // "what costs a use" is genuinely the basic-attack question; "what costs a round"
                 // is not.

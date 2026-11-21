@@ -42,11 +42,16 @@ SCA3:
   - cmd: "rpg enchant show"
   - cmd: "rpg durability damage 1"
 
-# SCA4: a MINTED sword (ironblade, on iron_sword) arriving is left alone: no ARRIVAL line names it.
+# SCA4: a MINTED sword (ironblade (deleted 2026-11), on iron_sword) arriving is left alone: no ARRIVAL line names it.
+# 2026-11-21: this row gave ironblade, a dev weapon deleted that day (the seat's brief, ruling 1). It now gives the minted
+# wooden_sword. Its meaning is kept: a minted item on a material a weapon CLAIMS (wooden_sword claims wooden_sword, as
+# iron_sword claimed ironblade's material) is left alone because it is tagged, not because it is unclaimed. Wooden, because
+# no other row in this file gives or converts one (SCA1 iron, SCA2 netherite, SCA3 diamond), so the probe can find only
+# this row's item and an ARRIVAL line naming wooden_sword could only be about it. NOT RE-READ on a server.
 SCA4:
-  - cmd: "rpg give ironblade"
+  - cmd: "rpg give wooden_sword"
   - wait: 5
-  - probe_inventory: ironblade
+  - probe_inventory: wooden_sword
 
 # SCA5: an unclaimed item (a stick) is left alone.
 SCA5:
