@@ -1,5 +1,8 @@
 # GATE — THE CRYSTAL SHARD STAFF (feat/crystal-shard-staff), THE EMBER STAFF DELETED, AND THE OWED INPUTS MIN READING
 
+**Seat approval 2026-11-21: code and gate diffed at 4d275653, booted at 4d275653, readings at 1f501ae8. Merge on Ben's
+words.** Ben, 2026-11-21: "go ahead and merge".
+
 **Status: READ, 2026-11-21, booted at `4d275653`.** The readings are under **READINGS**, at the foot; nothing above
 them is edited, and the status line below is the one written before the boot. **CS2 and CS3 read `sent=65.000`
 against a predicted 16 (the prediction left out his level bonus); HF1 has NO WITNESS** (see READINGS).
