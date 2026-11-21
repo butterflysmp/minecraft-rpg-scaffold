@@ -10240,6 +10240,31 @@ date, and the note that the weapon was subsequently deleted.
 >
 > **THE NEW TRIGGER: no weapon may ship a held right-click cooldown that is not a multiple of 4 until that reading is
 > taken on such a fixture.** Until then `ceil(n/4) x 4` is an **UNTESTED EMPIRICAL FIT**, and is to be called that.
+>
+> **CORRECTED 2026-11-21, THE SEAT'S OWN BRIEF (the Crystal Shard Staff): REASON (a) ABOVE IS WITHDRAWN AS FALSE.**
+> `content/weapons/cursed_emerald.yml` authors `cooldown_ticks: 30` on its `right_click`, and 30 is not a multiple of 4.
+> The seat repeated a statement about the two measured survivors (`boltor` 16, `locust` 12) as if it covered every
+> weapon, and did not check. **The `INPUTS min` reading is NO LONGER DROPPED. It is OWED on the boot of
+> `feat/crystal-shard-staff`, on the Crystal Shard Staff (`cooldown_ticks: 14`, off the grid)**, read by that branch's
+> gate. Reason (b) and the trigger are untouched; the staff ships with the reading owed on its own boot, by the seat's
+> brief. Every shipped weapon trigger cooldown, listed 2026-11-21 at `e2ae5f6f` by
+> `for f in paper/src/main/resources/content/weapons/*.yml; do awk -v F="$(basename $f .yml)" '/^triggers:/{t=1;next}
+> t&&/^[a-z]/{t=0} t&&/^  [a-z_]+:/{k=$1} /^[[:space:]]*cooldown_ticks:/{print F, k, $2}' $f; done`:
+>
+> ```
+> blaze_kings_staff  right_click  8        flint_staff        right_click  24
+> boltor             right_click  16       lapis_staff        right_click  20
+> cursed_emerald     right_click  30  <--  locust             right_click  12
+> dragons_breath     right_click  32       short_bow          right_click  12
+> dragons_plume      draw         8 (x3)   volley_stone       right_click  40
+> ember_staff        right_click  20       volley_stone       left_click   0
+>                                          withered_shortbow  right_click  16
+> ```
+>
+> **One off the grid: `cursed_emerald` 30.** (`dragons_plume`'s three are its tap bands, which the script files under
+> the binding above them; `ember_staff` is deleted on the stacked branch.) The Cursed Emerald is a VOLLEY, whose
+> `AbilityService` floor is also 30 (`WeaponLoader`'s `cooldown_ticks` section), so it is not a clean instrument either:
+> the staff is.
 
 #### OPEN — BEN'S TO RULE, NOT MINE
 
