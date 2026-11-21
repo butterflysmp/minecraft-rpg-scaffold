@@ -133,6 +133,26 @@ class CrystalShardStaffContentTest {
         assertTrue(warnings.stream().noneMatch(m -> m.contains("crystal_")), warnings.toString());
     }
 
+    /**
+     * What a MINTED staff's tooltip reads (the gate's CS1 predicts this, word for word): its damage line is the authored
+     * 16 x score / 100, so 16 at 100 and 24 at 150. And the cooldown prints Ben's 0.7 s: the line formats the AUTHORED
+     * 14 ({@code WeaponLoreLines.cooldownLabel}), never what held fire delivers.
+     */
+    @Test
+    void aMintedStaffsTooltipReads() {
+        WeaponDefinition w = staff(new ArrayList<>());
+        ElementRegistry elements = new ElementLoader(collecting(new ArrayList<>())).loadAll(dir("elements"));
+        java.util.function.IntFunction<List<String>> lore = score ->
+                io.github.butterflysmp.rpg.paper.weapon.WeaponLore.build(w, elements, java.util.OptionalInt.empty(),
+                                java.util.OptionalInt.empty(), java.util.OptionalInt.of(score)).stream()
+                        .map(c -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+                                .serialize(c)).toList();
+        assertEquals(List.of("Kinetic", "Gear Score: 100", "", "Crystal Shard  Right-Click",
+                "Fires a homing crystal shard", "at the nearest enemy.", "Kinetic Damage: 16",
+                "Cooldown: 0.7s | Mana Cost: 8", "", "Common Magic Weapon"), lore.apply(100));
+        assertEquals("Kinetic Damage: 24", lore.apply(150).get(6), "the literal scales with the score");
+    }
+
     /** Ben: "Keep the item and recipe". The old repo's shape: A over C over S (RecipeRegistry, cfde822). */
     @Test
     void theOldRecipeMintsIt() {

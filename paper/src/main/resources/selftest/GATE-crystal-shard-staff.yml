@@ -1,0 +1,64 @@
+# GATE-crystal-shard-staff.md: THE CRYSTAL SHARD STAFF (feat/crystal-shard-staff, 2026-11-21).
+# `/rpg selftest crystal-shard-staff`. Night (18000), so no zombie here burns; every zombie is NoAI and frozen, so none
+# can hit him. Each row kills the last row's zombie first, because the shard chases ANY mob it can see within 18 blocks.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+  - wait: 20
+
+# CS1: given, held, scored 100, its tooltip as the server built it.
+CS1:
+  - cmd: "rpg give crystal_shard_staff"
+  - probe_inventory: crystal_shard_staff
+  - hold: crystal_shard_staff
+  - cmd: "rpg gearscore set 100"
+  - dump: held
+
+# CS2: one cast at a frozen zombie straight ahead, 8 blocks out, aimed eye to eye. One PLAYERHIT, kinetic, 16 at GS 100.
+CS2:
+  - cmd: "rpg give crystal_shard_staff"
+  - hold: crystal_shard_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~8 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 5
+  - aim: t
+  - wait: 2
+  - use: right_click
+  - wait: 10
+  - probe: t
+
+# CS3: OFF THE AIM LINE, INSIDE THE CATCH. Facing due east, level; the zombie 10 blocks out and 2.5 degrees to the
+# right (z +0.44). CrystalShardCatchAngleTest: an unsteered shard misses at 2.5, the homing one hits to 3.0. One hit.
+CS3:
+  - cmd: "rpg give crystal_shard_staff"
+  - hold: crystal_shard_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~9.99 ~ ~0.44 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 20
+  - use: right_click
+  - wait: 10
+  - probe: t
+
+# CS4: THE CONTROL, OUTSIDE THE CATCH. The same, 6 degrees to the right (z +1.05), twice the catch the core test
+# reports. No hit: the shard flies on and ends in the air at 21 blocks.
+CS4:
+  - cmd: "rpg give crystal_shard_staff"
+  - hold: crystal_shard_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~9.95 ~ ~1.05 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 20
+  - use: right_click
+  - wait: 10
+  - probe: t
+  - cmd: "kill @e[tag=t]"

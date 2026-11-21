@@ -40,9 +40,10 @@ class SelfTestScenariosTest {
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
-                        "sword-convert", "remove-dev-weapons"),
+                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty-four gates, in boot order (remove-dev-weapons LAST, the four dev weapons deleted, 2026-11-21, a"
+                "the thirty-five gates, in boot order (crystal-shard-staff LAST, the Crystal Shard Staff, 2026-11-21, a NEW gate after"
+                        + " remove-dev-weapons; remove-dev-weapons before it, the four dev weapons deleted, 2026-11-21, a"
                         + " NEW gate after sword-convert; sword-convert before it, the sword ladder part h, 2026-11-20, a NEW gate"
                         + " after sword-smithing; sword-smithing before it, the sword ladder part g, 2026-11-20, a NEW gate"
                         + " after sword-tiers; sword-tiers before it, the sword ladder, 2026-11-20, a NEW gate after"
@@ -255,7 +256,9 @@ class SelfTestScenariosTest {
         // 250 was this line's value too, by coincidence (two retired, two added): the gate list above tells them apart.
         // Then HS1 (feat/dev-weapons-owed, PR B, 2026-11-21: the full-hotbar staging row), RECOUNTED: 34 gates, 285 keys,
         // 34 setups, so 251. The control: 284 + 1 = 285. 250 was this line's value.
-        assertEquals(251, loaded.rows());
+        // Then GATE-crystal-shard-staff.md (feat/crystal-shard-staff, 2026-11-21), RECOUNTED: 35 gates, 290 keys, 35
+        // setups, so 255. The control: 285 + 5 (setup, CS1-CS4) = 290. 251 was this line's value.
+        assertEquals(255, loaded.rows());
     }
 
     /**
