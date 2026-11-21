@@ -10232,6 +10232,14 @@ date, and the note that the weapon was subsequently deleted.
 > **The `INPUTS min` re-take this file asks for before either weapon is deleted (*"Do not delete `quiver_stone` or
 > `hunters_bow` without this reading or an explicit ruling to drop it"*) is NOT recorded as taken**, and no explicit
 > ruling to drop it is recorded either. Flagged to the seat in the deletion's report, not decided here.
+>
+> **RULED 2026-11-21, THE SEAT: THE `INPUTS min` READING IS DROPPED, explicitly.** Its reasons, as given:
+> - **(a)** Every shipped held right-click cooldown is a multiple of 4, and the standing rule requires it. At a multiple
+>   of 4 the prediction equals the cooldown under either account, so **no shipped behaviour depends on which is true.**
+> - **(b)** The instrument is not lost: a throwaway fixture with an off-grid cooldown can be authored for one boot.
+>
+> **THE NEW TRIGGER: no weapon may ship a held right-click cooldown that is not a multiple of 4 until that reading is
+> taken on such a fixture.** Until then `ceil(n/4) x 4` is an **UNTESTED EMPIRICAL FIT**, and is to be called that.
 
 #### OPEN — BEN'S TO RULE, NOT MINE
 

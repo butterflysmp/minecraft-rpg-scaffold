@@ -582,7 +582,10 @@ final class SelfTestDrivers {
 
     /**
      * Select a hotbar slot holding {@code what}. A weapon outside the hotbar is MOVED into an empty hotbar slot first
-     * (staging, logged as STAGE); the stone is never moved, because its slot is the player's choice. The slot change
+     * (staging, logged as STAGE); the stone is never moved, because its slot is the player's choice. WITH NO EMPTY
+     * HOTBAR SLOT (2026-11-21, PR B item 3), the weapon is SWAPPED with the first hotbar slot that is not the stone
+     * ({@link SelfTestStaging#hotbarPlan}): the displaced item takes the weapon's old slot, nothing is dropped or
+     * destroyed, and the run's inventory restore puts both back. Before this, a full hotbar skipped the row. The slot change
      * is the client's order: {@code PlayerItemHeldEvent} first, then the slot only if no listener cancelled it
      * ({@code ServerGamePacketListenerImpl.handleSetCarriedItem}, read from the jar). The charge reset that follows
      * is vanilla's own, in {@code Player.tick}, whatever changed the slot.
@@ -599,13 +602,27 @@ final class SelfTestDrivers {
         if (slot < 0 && !what.equals("empty") && !what.equals("stone")) {
             int from = -1;
             for (int i = 9; i < 36 && from < 0; i++) if (match.test(inv.getItem(i))) from = i;
-            int to = -1;
-            for (int i = 0; i < 9 && to < 0; i++) { ItemStack it = inv.getItem(i); if (it == null || it.isEmpty()) to = i; }
-            if (from >= 0 && to >= 0) {
-                inv.setItem(to, inv.getItem(from));
-                inv.setItem(from, null);
-                run.log("STAGE moved " + what + " from slot " + from + " to hotbar " + to);
-                slot = to;
+            boolean[] empty = new boolean[9];
+            boolean[] stone = new boolean[9];
+            for (int i = 0; i < 9; i++) {
+                ItemStack it = inv.getItem(i);
+                empty[i] = it == null || it.isEmpty();
+                stone[i] = it != null && StoneItems.isStone(it, keys);
+            }
+            SelfTestStaging.HotbarPlan plan = SelfTestStaging.hotbarPlan(from, empty, stone);
+            if (plan.kind() == SelfTestStaging.HotbarPlan.Kind.MOVE) {
+                inv.setItem(plan.to(), inv.getItem(plan.from()));
+                inv.setItem(plan.from(), null);
+                run.log("STAGE moved " + what + " from slot " + plan.from() + " to hotbar " + plan.to());
+                slot = plan.to();
+            } else if (plan.kind() == SelfTestStaging.HotbarPlan.Kind.SWAP) {
+                // An EXCHANGE of the two slots, never a drop: the displaced item takes the weapon's old slot.
+                ItemStack displaced = inv.getItem(plan.to());
+                inv.setItem(plan.to(), inv.getItem(plan.from()));
+                inv.setItem(plan.from(), displaced);
+                run.log("STAGE swapped " + what + " from slot " + plan.from() + " with hotbar " + plan.to()
+                        + ", which held " + itemId(displaced) + " (now in slot " + plan.from() + ")");
+                slot = plan.to();
             }
         }
         if (slot < 0) return Optional.of("no hotbar slot holds " + what);

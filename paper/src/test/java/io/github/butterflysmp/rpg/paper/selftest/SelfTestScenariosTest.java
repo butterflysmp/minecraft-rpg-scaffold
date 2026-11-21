@@ -253,7 +253,9 @@ class SelfTestScenariosTest {
         // are gone), and GATE-remove-dev-weapons.md a NEW gate (setup, DW1, DW2), RECOUNTED from index.yml and every
         // gate file it names: 34 gates, 284 keys, 34 setups, so 250. The control: 283 - 2 + 3 = 284.
         // 250 was this line's value too, by coincidence (two retired, two added): the gate list above tells them apart.
-        assertEquals(250, loaded.rows());
+        // Then HS1 (feat/dev-weapons-owed, PR B, 2026-11-21: the full-hotbar staging row), RECOUNTED: 34 gates, 285 keys,
+        // 34 setups, so 251. The control: 284 + 1 = 285. 250 was this line's value.
+        assertEquals(251, loaded.rows());
     }
 
     /**

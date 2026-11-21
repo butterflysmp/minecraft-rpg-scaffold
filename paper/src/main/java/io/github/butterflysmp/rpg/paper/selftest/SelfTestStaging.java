@@ -29,6 +29,33 @@ final class SelfTestStaging {
 
     private SelfTestStaging() {}
 
+    /**
+     * WHERE {@code hold:} STAGES A WEAPON THAT IS NOT IN THE HOTBAR (2026-11-21, the seat's brief, PR B item 3).
+     *
+     * <p>A {@code record} is a small immutable value class: its fields, {@code equals} and {@code toString} come free.
+     * {@code from} is the weapon's slot (9-35), {@code to} the hotbar slot (0-8); both are -1 for {@link Kind#NONE}.
+     */
+    record HotbarPlan(Kind kind, int from, int to) {
+        /** MOVE into an empty hotbar slot; SWAP with an occupied one that is not the stone; NONE, nothing to do. */
+        enum Kind { MOVE, SWAP, NONE }
+    }
+
+    /**
+     * The hotbar slot a weapon at {@code from} is staged into. An EMPTY slot first, as before, so nothing is displaced
+     * when it need not be. With none empty, the first slot that does NOT hold the Ability Stone is SWAPPED: the stone's
+     * slot is the player's choice and is never given up. NONE when the weapon is not in the inventory ({@code from < 0})
+     * or every hotbar slot holds a stone.
+     *
+     * @param hotbarEmpty  the nine hotbar slots, true where empty
+     * @param hotbarStone  the nine hotbar slots, true where the Ability Stone is
+     */
+    static HotbarPlan hotbarPlan(int from, boolean[] hotbarEmpty, boolean[] hotbarStone) {
+        if (from < 0) return new HotbarPlan(HotbarPlan.Kind.NONE, -1, -1);
+        for (int i = 0; i < 9; i++) if (hotbarEmpty[i]) return new HotbarPlan(HotbarPlan.Kind.MOVE, from, i);
+        for (int i = 0; i < 9; i++) if (!hotbarStone[i]) return new HotbarPlan(HotbarPlan.Kind.SWAP, from, i);
+        return new HotbarPlan(HotbarPlan.Kind.NONE, -1, -1);
+    }
+
     /** The longest the run waits for a killed body to leave; vanilla's death animation is 20 ticks. */
     static final int SETTLE_CAP_TICKS = 40;
 

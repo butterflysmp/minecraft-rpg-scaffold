@@ -1940,3 +1940,27 @@ moves his health, so a health figure answers a question about the hit AND everyt
 **What a health figure IS still good for:** the floor a survival row needs (that a heal reached his maximum, read
 from the heal's own `Custom HP: <M>/<M>` reply), and a death that did not happen. **A health figure can witness that he
 is alive. Only the HURT line can witness what the hit did.**
+
+### A ROW THAT READS A MOB'S HEALTH IN DAYLIGHT NEEDS NIGHT, A HELMET, OR A CONTROL
+
+**This is the account. The pointer is `CLAUDE.md`'s VERIFICATION index.** Owed by the seat's handoff of 2026-11-21;
+written in `feat/dev-weapons-owed`.
+
+**The rule:** a gate row that reads a mob's health (a `PROBE`'s custom HP, a `FIGHTPROBE`, a damage taken read off two
+figures) with the mob under open sky in daylight must do ONE of three things, and say which:
+- **night**: the scenario sets a night time (not the common `time set 6000`, which is noon);
+- **a helmet** on the mob (the seat's listing; that a helmet stops the burn is vanilla behaviour, UNVERIFIED here);
+- **a control**: two reads of the same mob over a few ticks BEFORE the hit, predicted EQUAL. If they differ, something
+  other than the hit moved the health, and the row says so instead of reading the fall as the hit's.
+
+**Why it bites: a NoAI zombie burns at noon.**
+- READ, the pinned server jar (`GATE-sword-tiers.md` STA2's amendment): `Mob.aiStep` calls `burnUndead()` for any mob in
+  `EntityTypeTags.BURN_IN_DAYLIGHT`, with no NoAI check on that path. INFERRED: `aiStep` runs for a NoAI mob.
+- READ, our source: `FIRE_TICK` is REROUTE in `VanillaDamagePolicy`, so the burn reaches the mob's CUSTOM health.
+- **Seen, 2026-11-20, the sword boot** (`GATE-sword-convert.md`, WHAT IT FOUND, 4): STA2's zombie was burning at time
+  6000, as its `fireTicks` showed. The row survived only because STA2 had been given the control pair just before the
+  boot.
+
+**`time set 6000` is in 22 of the selftest scenario files** (`grep -l 'time set 6000'
+paper/src/main/resources/selftest/*.yml | wc -l`, 2026-11-21), so this is the default staging, not a corner case. Which
+mobs the tag holds was not read here; a frozen (NoAI) mob is not exempt.

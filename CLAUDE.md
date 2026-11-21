@@ -159,6 +159,7 @@ so it is greppable** — and none of them is reproduced here, because two accoun
 | **THREE THINGS THAT DO NOT ANNOUNCE THEIR OWN ABSENCE** | a planned guard silently failed to land, or a comment names a hazard and is being read as a guard against it |
 | **AN AUTO READING IS A READING OF THE SERVER, NEVER OF THE CLIENT** | a row was read by `/rpg selftest`, or you are amending a gate's witness so that it can be |
 | **PREDICT DAMAGE AGAINST THE HURT LINE, NEVER AGAINST A HEALTH FIGURE THAT REGENERATION CAN MOVE** | a gate row predicts what a hit does to a player |
+| **A ROW THAT READS A MOB'S HEALTH IN DAYLIGHT NEEDS NIGHT, A HELMET, OR A CONTROL** | a gate row reads a mob's health under open sky (a NoAI zombie burns at noon) |
 
 **BOOTING A GATE: `.claude/rules/booting.md`, a checklist ticked line by line in the boot's report.** "Booting now"
 goes in its own message BEFORE the boot command, and "R0 passed" in its own message BEFORE Ben logs in.
