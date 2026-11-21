@@ -1,5 +1,8 @@
 # GATE — THE FOUR DEV WEAPONS DELETED (feat/remove-dev-weapons), AND THE ONE BOOT FOR THE DELETION STACK
 
+**Status: READ, 2026-11-21, booted at `38e6e62e`.** The readings are under **READINGS**, at the foot; nothing above
+them is edited, and the status line below is the one written before the boot.
+
 **Status: NOT RUN.** Written 2026-11-21 on `feat/remove-dev-weapons` (PR A), on master `988f82d8` (the squash of
 #223), before any boot. **This file carries the ONE R0 and the ONE run sheet for the stack**: PR A (this branch) and
 PR B, the owed fixes, stacked on it, which appends its own rows here before the boot.
@@ -231,3 +234,157 @@ the stack top.
   3's status note); no row swings or fires one.
 - **The `INPUTS min` re-take** that `NEXT.md` asks for before `quiver_stone` or `hunters_bow` is deleted: it cannot be
   taken on this boot, because the weapons are gone from it. Flagged to the seat.
+
+## READINGS — 2026-11-21, THE BOOT OF `38e6e62e` (ADDED AFTER HIS `/stop`; NOTHING ABOVE IS EDITED)
+
+Instrument for every line: `run/logs/latest.log` of this boot, read after the stop. Its first `[Rpg] Build:` is
+`38e6e62e`. **Every row below is read from lines AFTER his login at 13:37:46.**
+
+### The boot, by `.claude/rules/booting.md`
+
+1. The seat's approval (BOOT APPROVED for #224 + #225) and **Ben's own word, "ready"**, both in hand.
+2. Heads: `git ls-remote --heads origin feat/dev-weapons-owed` printed `38e6e62e2bb71d84f6a3f35cd07b614158a64469`, the
+   head the seat diffed. Both PRs' checks: `build COMPLETED SUCCESS` twice each, #224 at `a375ee6a`, #225 at `38e6e62e`.
+3. Carried state:
+   - no `java` process;
+   - the backup `../rpg-run-backups/2026-11-21-pre-dev-weapons`: Rpg 144 files and 26 dirs, `diff -rq lines: 0`;
+     world 193 files and 32 dirs, `diff -rq lines: 0`; `world/dimensions` = `minecraft`, `rpgfight`; the overworld
+     (`dimensions/minecraft/overworld`) 106 files;
+   - `12:  dev-pack-on-join: true`;
+   - `rpgfight` empty.
+4. "Booting now", with "Ben: do NOT log in until I tell you R0 passed", in its own message; the boot command in the
+   next turn.
+5. `./scripts/dev-server.sh --refresh-content`; `Done (7.515s)` at 13:37:27. The deployed lines:
+   - `weapons/` holds 19 files, none of the four;
+   - `iron_sword.yml` line 17 `attack_damage: 23`;
+   - `cascade.yml` line 46 is the five-entry rare pool.
+
+   (A first `Done` match, 13:56:28, was the PREVIOUS boot's line in the old `latest.log`, and was discarded: this boot's
+   own output was read instead.)
+6. R0 read on this boot's log, with **0 `joined the game` lines at the time**; every R0 line is stamped 13:37:28 or
+   earlier.
+7. "R0 passed" in its own message. **His first `joined the game`: 13:37:46**, after every R0 line.
+8. After his `/stop`, at 13:39:10:
+   - `Disabling Rpg`, then `Saving players` and `Saving worlds`, then `All dimensions are saved` (13:39:11);
+   - `rpgfight` empty;
+   - the overworld 106 files, the same as step 3's;
+   - **no server `java` process**. One `javaw` was running: PID 35660, started 13:37:10, and its command line is the
+     Minecraft launcher's `java-runtime-epsilon` (his CLIENT), not the server.
+
+### What he typed, in order, against the run sheet
+
+| time | issued server command | the sheet |
+|---|---|---|
+| 13:38:00 | `/gamemode survival` | step 1, as written |
+| 13:38:15 | `/rpg selftest remove-dev-weapons` | step 2 |
+| 13:38:22 | `/rpg selftest remove-dev-weapons` | **NOT ON THE SHEET: a second run.** The sheet says ONCE. Both runs read the same lines; the rows below are read from the FIRST run, and the second is used only where it witnesses the first run's restore |
+| 13:38:39 | `/give BaronVonYeetus minecraft:crafting_table` | step 3 |
+| 13:38:43 | `/give BaronVonYeetus minecraft:iron_ingot 2` | step 3 |
+| 13:38:47 | `/give BaronVonYeetus minecraft:stick 1` | step 3 |
+| 13:39:10 | `/stop` | step 5 |
+
+**Skipped:** nothing typed was skipped. **Not reported:** the Gear Score on the crafted sword's tooltip (step 4's
+"note it"); he did not say it in chat, so CR1's screen half is UNREAD and goes first on the next sheet if wanted.
+
+### R0a
+
+**AS PREDICTED.** `[13:37:27] [Rpg] Build: 38e6e62e`. Not `-dirty`, not `unknown`.
+
+### R0b
+
+**AS PREDICTED: all thirteen lines.**
+- ABSENT: the entries `ironblade`, `emberblade`, `hunters_bow` and `quiver_stone`.
+- PRESENT: `iron_sword.yml` and its `attack_damage: 23`.
+- `cascade.yml`: the new rare pool PRESENT, the old one ABSENT.
+- PRESENT: `GATE-remove-dev-weapons.yml` `DW1:` and `HS1:`; `index.yml` `  - remove-dev-weapons`;
+  `SelfTestDrivers.class` `STAGE swapped `; `InventoryCraft.class` `CRAFT minted player=`.
+
+### R0c
+
+**AS PREDICTED.**
+- **`[Rpg] Loaded 11 abilities, 30 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 19
+  weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 3 recipes, 1 ores, 4 vein sizes`**.
+- The fight line and the loot line are each EQUAL, by scripted string comparison, to `GATE-fight-revive.md`'s and
+  `GATE-loot-roll.md`'s R0c lines.
+- The world-damage line; `Loaded smithing: 1 upgrades […]`.
+- **`Mint-on-craft: 36 indexed, 36 claiming, of 49 gear definitions`**.
+- `Convert-on-arrival: 7 materials {…}`.
+- Each of those exactly once.
+- 0 lines of `Refusing`, `Skipping`, `SEVERE`, `Exception` or `No fights loaded`.
+- `[Rpg]` WARN: 2 lines, `volley_stone`'s pair, both at 13:37:27, before his login.
+- **After his login: 0 `unknown gear id` lines** (DW1 explains why).
+- The six `***` WARN lines at 13:37:28 are Paper's version notice ("4 release(s) behind … 26.3"), not ours.
+
+### R0d
+
+**AS PREDICTED.** Once:
+`[Rpg] Selftest: dev server, 251 scenarios across 34 gates [melee-cell, … sword-convert, remove-dev-weapons]`.
+`250 scenarios across 33 gates`: ABSENT (0).
+
+### R0e
+
+**AS PREDICTED.** One `FIGHTWORLD sweep path=…\run\world\dimensions\rpgfight folders=0`, and no `deleting` and no
+`orphan` line.
+
+### DW1
+
+**AS PREDICTED, ON THE EMPTY ARM.** At 13:38:16:
+- `INVENTORY ironblade slots=[]`;
+- `INVENTORY emberblade slots=[]`;
+- `INVENTORY hunters_bow slots=[]`;
+- `INVENTORY quiver_stone slots=[]`.
+
+No `unknown gear id` WARN anywhere in the log (0), which is what an empty list predicts. **He held no copy of any of
+the four, so the Dangling arm is UNREAD on a server**: it stands on `RefreshVerdict`'s tests and the source read only.
+
+### DW2
+
+**AS PREDICTED.** For each of the four, in order:
+- REPLY `"Unknown weapon, shield, armor, tool or accessory: <id>" [red]`;
+- then REPLY `"Available: blaze_kings_staff, boltor, copper_sword, …"` [gray]. By grep on the full line, it names 0
+  of the four and names `iron_sword` once.
+
+Then the control:
+- `INVENTORY iron_sword slots=[]` (A);
+- REPLY `"Given Iron Sword" [aqua, white]`;
+- no `ARRIVAL` line anywhere in the log (0);
+- `INVENTORY iron_sword slots=[0x1]` (B): A plus one slot.
+
+**The full-inventory arm was not taken: UNREAD.** In the second run, the REPLY lines interleave with the later CMD
+lines (each reply is logged when the command's own task answers); the content is the same.
+
+### HS1
+
+**AS PREDICTED in (1)-(6), except the restore line's form; (7) is partly UNREAD.**
+- (1) `INVENTORY boltor slots=[]`: not in the hotbar, so the row is not void.
+- (2) REPLY `"Gave 9 [Wooden Shovel] to BaronVonYeetus"`.
+- (3) REPLY `"Given Boltor" [aqua, green]`.
+- (4) `INVENTORY boltor slots=[12x1]`: one new slot, and it is 9 or above.
+- (5) **`STAGE swapped boltor from slot 12 with hotbar 0, which held iron_sword (now in slot 12)`**:
+  - `<t>` = 0, the first hotbar slot not holding the stone (his held slot was 4, which the restore line names);
+  - `<x>` = `iron_sword`, DW2's control, neither `stone` nor `empty`;
+  - then `DRIVE hold PlayerItemHeldEvent+setHeldItemSlot 4->0 item=boltor`.
+  - **The SWAP arm is READ on a server.**
+- (6) `INVENTORY boltor slots=[0x1]`.
+- **NOT AS PREDICTED IN FORM: the run's end prints no `CLEAN … inventory=restored` line.** A one-gate run ends with
+  `SELFTEST RUN RESTORED xp=… held=4 …`, which names no inventory field. **The restore is witnessed instead by the
+  second run**, 6 seconds later:
+  - its DW2 reads `INVENTORY iron_sword slots=[]` before its give, so the first run's sword was gone;
+  - its HS1 reads `INVENTORY boltor slots=[]`, so the first run's Boltor was gone.
+- (7) Whether any of the nine shovels was dropped on the ground: **UNREAD** (no row probes item entities, and the give
+  REPLY reads "Gave 9" either way, INFERRED). Neither run reports a drop.
+
+### CR1
+
+**AS PREDICTED, the log half.** At 13:38:56, after his three gives, exactly one:
+**`[Rpg] CRAFT minted player=BaronVonYeetus weapon=iron_sword material=iron_sword score=100`**. No `ARRIVAL` line (0
+in the log). **`<T>` = 100. The tooltip half is UNREAD**: he did not report the Gear Score he saw. The carried STM1 (a
+crafted iron sword mints, `GATE-sword-tiers.md`) is witnessed by this line on a server.
+
+### UNREAD ARMS, IN ONE PLACE
+
+- DW1's Dangling arm: he held none of the four.
+- DW2's full-inventory arm.
+- HS1's dropped-shovel case.
+- CR1's tooltip half.
+- The 13 repointed rows and SCA4 (not run, by design).
