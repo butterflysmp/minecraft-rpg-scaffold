@@ -1,0 +1,20 @@
+# The Crystal Shard Staff's hit (SEAT PLACEHOLDER 2026-11-21): the old shard's burst on contact (cfde822), unchanged.
+# The sound key READ in the pinned 26.1.2 server jar's SoundEvents.class. It also plays where an unspent shard ends
+# its 7 ticks in the air (ProjectileFlight resolves a spent flight at its last point).
+steps:
+  - type: particle
+    particle: DUST
+    color: [180, 110, 230]
+    size: 1.4
+    count: 16
+    spread: 0.3
+    speed: 0.0    # inert for DUST
+  - type: particle
+    particle: END_ROD
+    count: 6
+    spread: 0.2
+    speed: 0.05
+  - type: sound
+    key: block.amethyst_block.break
+    volume: 0.8
+    pitch: 1.4

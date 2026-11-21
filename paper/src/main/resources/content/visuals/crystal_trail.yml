@@ -1,0 +1,15 @@
+# The Crystal Shard Staff's trail, drawn each tick of flight (SEAT PLACEHOLDER 2026-11-21): the old shard's per-tick
+# end_rod and violet dust (cfde822, launchCrystalShardBolt), unchanged.
+steps:
+  - type: particle
+    particle: END_ROD
+    count: 1
+    spread: 0.02
+    speed: 0.0
+  - type: particle
+    particle: DUST
+    color: [180, 110, 230]
+    size: 1.0
+    count: 2
+    spread: 0.05
+    speed: 0.0    # inert for DUST

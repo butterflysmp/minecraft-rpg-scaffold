@@ -1,0 +1,11 @@
+# The Crystal Shard Staff's cast (SEAT PLACEHOLDER 2026-11-21): the old onCrystalShardStaffInteract's two sounds
+# (cfde822), unchanged. Both keys READ in the pinned 26.1.2 server jar's SoundEvents.class.
+steps:
+  - type: sound
+    key: block.amethyst_block.chime
+    volume: 1.0
+    pitch: 1.4
+  - type: sound
+    key: block.amethyst_cluster.break
+    volume: 0.5
+    pitch: 1.6
