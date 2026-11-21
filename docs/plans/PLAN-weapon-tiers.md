@@ -172,6 +172,17 @@ His first line answers a separate question, about the void, and is recorded in `
 | Any route | convert on arrival | the seat, 1.4 |
 | A bad `craft_result` | refused at boot | the seat, 1.4 |
 
+### 1.5 Ben, 2026-11-20, VERBATIM: the sword boot's three answers
+
+Asked at the end of the sword boot (`GATE-sword-convert.md`, SCB1-SCB3, read at `90ea1517`), each in chat. Recorded
+here 2026-11-21 (`feat/dev-weapons-owed`), copied from that gate's READING column:
+
+| time | the question | his answer, verbatim | recorded as |
+|---|---|---|---|
+| 14:46:30 | "Is the crafted Iron Sword's name, colour and tooltip what you expect?" | "yes" | yes |
+| 14:46:36 | "Did the smithed Netherite Sword keep its enchantments, as far as you can see?" | "yes" | yes |
+| 14:46:59 | "When the plain sword you were given turned into an Iron Sword in your inventory, was it clear what happened?" | "not sure" | **NOT STATED** |
+
 ---
 
 ## 2. WHAT EXISTS TODAY

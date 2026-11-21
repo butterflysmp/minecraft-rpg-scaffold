@@ -27,6 +27,18 @@ only CC boots, by `.claude/rules/booting.md`.
   is its one exception (DW1 and DW2 name the four on purpose), pinned step by step.
 - **No Java behaviour changes.** Comments only, in main code.
 
+## WHAT PR B ADDS (`feat/dev-weapons-owed`, stacked on PR A; appended before any boot)
+
+- **Selftest staging makes room** (`SelfTestDrivers.hold`, `SelfTestStaging.hotbarPlan`): with no empty hotbar slot, a
+  weapon outside the hotbar is SWAPPED with the first hotbar slot that is not the Ability Stone, logged
+  **`STAGE swapped <id> from slot <f> with hotbar <t>, which held <x> (now in slot <f>)`**. Nothing is dropped or
+  destroyed. Read by **HS1**.
+- **A craft that mints a weapon logs it** (`InventoryCraft.commitCraft`): **`CRAFT minted player=<name> weapon=<id>
+  material=<material> score=<score>`**. Read by **CR1**, Ben's craft, which also witnesses the carried STM1
+  (`GATE-sword-tiers.md`).
+- Docs only: Ben's three sword-boot answers in `PLAN-weapon-tiers.md`; a checks step in `merge-procedure`; the
+  daylight rule in `.claude/rules/verification.md`.
+
 ## WHAT WAS READ, EACH MARKED
 
 - **A held copy of a deleted weapon** (READ, our source): at login `RpgListeners.onJoin` calls `GearRefresher.refresh`
@@ -47,6 +59,15 @@ only CC boots, by `.claude/rules/booting.md`.
   `LootLoaderTest.theShippedDevExampleNamesRealItemsOfTheirOwnRarityAndNoEpic` instead.
 - **`--refresh-content`** (READ, `scripts/dev-server.sh`): `rm -rf "$CONTENT_DIR"` before the boot, so the deployed
   copies of the four files under `run/plugins/Rpg/content/weapons/` go and are not re-copied.
+- **`/rpg give` into a FULL inventory** (READ, `RpgCommand.give`): `firstEmpty() == -1` replies `Your inventory is
+  full -- make room and try again.` and gives nothing; otherwise `addItem` puts the item in a free slot, which is in the
+  main inventory when the hotbar is full (INFERRED: Bukkit fills the first empty slot, hotbar first). So a give into a
+  full hotbar lands outside it, which is exactly the case `hold`'s swap now covers; a give into a full INVENTORY gives
+  nothing, and the following `hold` still reports `no hotbar slot holds <id>`.
+- **The run's inventory restore** (READ, `SelfTestSnapshot`): the contents and held slot captured at run start are
+  written back at every gate boundary (`restoreInventory`) and at the run's end (`restore`). A swap is therefore undone.
+- **The crafting table is ours** (READ): `RpgListeners`' hijack table opens `CraftingMenu` for `CRAFTING_TABLE`, and its
+  craft click calls `InventoryCraft.commitCraft`, where the mint and the new line are.
 - **What the loaded lines were at the last boot** (READ, `GATE-sword-convert.md` R0c, read AS PREDICTED 2026-11-20 at
   `90ea1517`): `… 23 weapons …` and `Mint-on-craft: 36 indexed, 36 claiming, of 53 gear definitions`. **No content
   file differs between `90ea1517` and this branch's base** (`git diff --stat 90ea1517 988f82d8 --
@@ -88,9 +109,13 @@ The booter's checklist is `.claude/rules/booting.md`; this list is its instance 
 
 0. **DO NOT LOG IN UNTIL CC HAS TOLD YOU R0 PASSED. IF YOU ARE TOLD NOTHING, DO NOT LOG IN.**
 1. `/gamemode survival` — **alone, the first line after login.**
-2. `/rpg selftest remove-dev-weapons` — **ONCE.** Two rows, a few seconds. You are given one Iron Sword. **Nothing hurts
-   you.**
-3. `/stop`
+2. `/rpg selftest remove-dev-weapons` — **ONCE.** Three rows, a few seconds. You are given an Iron Sword, nine wooden
+   shovels and a Boltor; all of it is taken back at the end and your own items are put back. **Nothing hurts you.**
+3. `/give BaronVonYeetus minecraft:crafting_table`, then `/give BaronVonYeetus minecraft:iron_ingot 2`, then
+   `/give BaronVonYeetus minecraft:stick 1`.
+4. **CR1:** place the crafting table, craft ONE iron sword (two iron ingots and a stick) and take it. Hover it and note
+   the Gear Score its tooltip shows.
+5. `/stop`
 
 Nothing else this boot. If a row stalls or aborts, do not intervene.
 
@@ -98,7 +123,8 @@ Nothing else this boot. If a row stalls or aborts, do not intervene.
 
 | row | where he is | what can hurt him | the most it does | puts him down? |
 |---|---|---|---|---|
-| DW1, DW2 | wherever he stands, in the overworld; commands and probes only. No mob, no fight world, no storm ring | nothing | 0 | no |
+| DW1, DW2, HS1 | wherever he stands, in the overworld; commands, gives, probes and a hotbar selection only. No mob, no fight world, no storm ring | nothing | 0 | no |
+| CR1 | at a crafting table he places | nothing | 0 | no |
 
 **No row puts him down.** No row sets `death_rules`, spawns a mob, enters the fight world or deals damage, so there is
 no hit to multiply against 100 or 350, and no row puts him near the storm ring.
@@ -109,13 +135,13 @@ no hit to multiply against 100 or 350, and no row puts him near the storm ring.
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, the stack top's head as `git ls-remote origin` prints it for that branch, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, the stack top's head, `feat/dev-weapons-owed` (PR B), as `git ls-remote origin refs/heads/feat/dev-weapons-owed` prints it, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
 
 ### R0b — the jar carries the deletion
 
 | prediction | instrument | READING |
 |---|---|---|
-| ABSENT: the entries `content/weapons/ironblade.yml`, `content/weapons/emberblade.yml`, `content/weapons/hunters_bow.yml`, `content/weapons/quiver_stone.yml`. PRESENT (the control): `content/weapons/iron_sword.yml` line `attack_damage: 23`. PRESENT: `content/loot/cascade.yml` line `      rare: [ember_staff, locust, brawlers_gauntlet, fletchers_quiver, sages_scroll]`; `selftest/GATE-remove-dev-weapons.yml` line `DW1:`; `selftest/index.yml` line `  - remove-dev-weapons`. ABSENT (the old pool): `cascade.yml` line `      rare: [ember_staff, emberblade, locust, brawlers_gauntlet, fletchers_quiver, sages_scroll]` | the scan below | |
+| ABSENT: the entries `content/weapons/ironblade.yml`, `content/weapons/emberblade.yml`, `content/weapons/hunters_bow.yml`, `content/weapons/quiver_stone.yml`. PRESENT (the control): `content/weapons/iron_sword.yml` line `attack_damage: 23`. PRESENT: `content/loot/cascade.yml` line `      rare: [ember_staff, locust, brawlers_gauntlet, fletchers_quiver, sages_scroll]`; `selftest/GATE-remove-dev-weapons.yml` line `DW1:`; `selftest/index.yml` line `  - remove-dev-weapons`. ABSENT (the old pool): `cascade.yml` line `      rare: [ember_staff, emberblade, locust, brawlers_gauntlet, fletchers_quiver, sages_scroll]`. **PR B:** PRESENT `selftest/GATE-remove-dev-weapons.yml` line `HS1:`; `paper/selftest/SelfTestDrivers.class` carrying `STAGE swapped `; `paper/menu/InventoryCraft.class` carrying `CRAFT minted player=` | the scan below | |
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -130,6 +156,11 @@ Line $c '      rare: [ember_staff, locust, brawlers_gauntlet, fletchers_quiver, 
 Line $c '      rare: [ember_staff, emberblade, locust, brawlers_gauntlet, fletchers_quiver, sages_scroll]' 'cascade.yml'
 Line (Bytes 'selftest/GATE-remove-dev-weapons.yml') 'DW1:' 'GATE-remove-dev-weapons.yml'
 Line (Bytes 'selftest/index.yml') '  - remove-dev-weapons' 'index.yml'
+Line (Bytes 'selftest/GATE-remove-dev-weapons.yml') 'HS1:' 'GATE-remove-dev-weapons.yml'
+$p = 'io/github/butterflysmp/rpg/'
+function Has($entry, $needle) { $b = Bytes $entry; if ($b -ne $null -and $b.Contains($needle)) { "PRESENT $entry '$needle'" } else { "ABSENT  $entry '$needle'" } }
+Has ($p + 'paper/selftest/SelfTestDrivers.class') 'STAGE swapped '
+Has ($p + 'paper/menu/InventoryCraft.class') 'CRAFT minted player='
 $zip.Dispose()
 ```
 
@@ -143,7 +174,7 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one **`[Rpg] Selftest: dev server, <N> scenarios across 34 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot, dragon-blink, dragon-skreel, drag-additive, fight-site, fight-arena, fight-dragon, fight-rules, fight-end, fight-down, fight-revive, fight-template, loot-roll, sword-tiers, sword-smithing, sword-convert, remove-dev-weapons]`**, no refusal after it. `<N>` is the stack top's count, which PR B states; on PR A alone it is **250**. **The control:** the last boot's `250 scenarios across 33 gates` is ABSENT. **The scenario count alone cannot tell PR A from the last boot** (two rows retired, two added), so the gate count and the list are what bind it | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+| Exactly one **`[Rpg] Selftest: dev server, <N> scenarios across 34 gates [melee-cell, level, nexus-polish, legacy-a, legacy-b, wither-status, withered-shortbow, sunder, deft-hands, mining-auto, nexus-back, dragon-bodies, dragon-split, dragon-growth, dragon-blast, dragon-beam, dragon-teleport, dragon-shot, dragon-blink, dragon-skreel, drag-additive, fight-site, fight-arena, fight-dragon, fight-rules, fight-end, fight-down, fight-revive, fight-template, loot-roll, sword-tiers, sword-smithing, sword-convert, remove-dev-weapons]`**, no refusal after it. `<N>` is the stack top's count: **251** on PR B (PR A alone: 250). **The control:** the last boot's `250 scenarios across 33 gates` is ABSENT. **The scenario count alone cannot tell PR A from the last boot** (two rows retired, two added), so the gate count and the list are what bind it | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
 
 **RECOUNTED** (2026-11-21, PR A's tree, from `index.yml` and every gate file it names; `SelfTestScenariosTest` asserts
 250 on PR A):
@@ -153,6 +184,10 @@ $zip.Dispose()
 - so **250**.
 
 **Control:** 283 (the last boot) − STA5 − DH6 (retired) + this gate's 3 (setup, DW1, DW2) = 284.
+
+**RECOUNTED AGAIN on PR B's tree** (2026-11-21, the same three commands; `SelfTestScenariosTest` asserts 251): 34 gates,
+**285** keys, 34 setups, so **251**. Control: 284 + HS1 = 285. **This is the figure R0d reads**, since the boot is of
+the stack top.
 
 ### R0e — THE ORPHAN SWEEP WITH NOTHING STAGED
 
@@ -173,6 +208,18 @@ $zip.Dispose()
 | prediction | stands on | READING |
 |---|---|---|
 | For each of `ironblade`, `emberblade`, `hunters_bow`, `quiver_stone`, in that order: REPLY **`Unknown weapon, shield, armor, tool or accessory: <id>`**, then REPLY **`Available: …`** naming none of the four and naming `iron_sword`. Then `INVENTORY iron_sword slots=<A>`; REPLY **`Given Iron Sword`**; no ARRIVAL line (it is minted); `INVENTORY iron_sword slots=<B>`, **B is A plus one slot** | `RpgCommand.give` (above) | |
+
+### HS1 — a full hotbar: the weapon is swapped in, nothing dropped (SURVIVAL) — PR B
+
+| prediction | stands on | READING |
+|---|---|---|
+| (1) `INVENTORY boltor slots=<B0>`. **If `<B0>` names a hotbar slot (0-8), the row is VOID**: `hold` needs no staging and the swap is unread. (2) The shovels: the `give` REPLY. (3) REPLY **`Given Boltor`**, or **`Your inventory is full -- make room and try again.`**, in which case the hold reports `no hotbar slot holds boltor`, and the row reads that and nothing else. (4) `INVENTORY boltor slots=<B1>`: one more slot than `<B0>`, the new one **9 or above** (the hotbar was full). (5) Exactly one **`STAGE swapped boltor from slot <f> with hotbar <t>, which held <x> (now in slot <f>)`**: `<f>` the new slot from (4); `<t>` the first hotbar slot that does not hold the Ability Stone; `<x>` neither `stone` nor `empty`. **If a hotbar slot was still empty after the shovels, the line is `STAGE moved boltor from slot <f> to hotbar <t>` instead, and the SWAP arm is UNREAD.** Then `DRIVE hold … -><t> item=boltor`. (6) `INVENTORY boltor slots=<B2>` includes `<t>`. **No item is dropped**: no item entity appears (not probed; the code has no drop path, `SelfTestHotbarStagingTest`). At the run's end, `CLEAN … inventory=restored` | `SelfTestStaging.hotbarPlan` (`SelfTestHotbarStagingTest`); `SelfTestDrivers.hold`; the give's fill order (INFERRED) | |
+
+### CR1 — Ben crafts one iron sword: the craft's log line (SURVIVAL, MANUAL) — PR B; witnesses the carried STM1
+
+| prediction | stands on | READING |
+|---|---|---|
+| When he takes the crafted sword, exactly one **`[Rpg] CRAFT minted player=BaronVonYeetus weapon=iron_sword material=iron_sword score=<T>`**, word for word, where `<T>` is the Gear Score on the sword's tooltip (the one field set by his gear, banded on his average). No `ARRIVAL` line for it (it is minted at the table, so it arrives tagged). **No PASS or FAIL: the line is read beside his tooltip** | `CraftMintLineTest` (the text, word for word; the wiring after the stamp) | |
 
 ## WHAT THIS GATE DOES NOT READ
 

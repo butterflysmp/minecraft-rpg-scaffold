@@ -3,6 +3,7 @@ package io.github.butterflysmp.rpg.paper.menu;
 import io.github.butterflysmp.rpg.core.weapon.CollectPlan;
 import io.github.butterflysmp.rpg.core.weapon.CraftCount;
 import io.github.butterflysmp.rpg.core.weapon.GearDefinition;
+import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems;
 import io.github.butterflysmp.rpg.paper.weapon.GearItems;
@@ -321,6 +322,12 @@ final class InventoryCraft {
         // below -- so it cannot be in its own average, which is the same property the give path buys by
         // stamping before addItem.
         GearScoreItems.stampOnAcquire(minted, definition, viewer, adapters);
+        // THE WITNESS LINE (2026-11-21, PR B item 5): a minted WEAPON says so in the server log, as an arrival does.
+        // After the stamp, so it carries the score the item was given. Weapons only: that is what the gate row reads.
+        if (definition instanceof WeaponDefinition) {
+            adapters.log().info(craftMintLine(viewer.getName(), definition.id(), minted.getType().getKey().getKey(),
+                    GearScoreItems.read(minted, adapters.keys())));
+        }
         return new CraftOutcome(minted, result.getResultingMatrix());
     }
 
@@ -340,6 +347,15 @@ final class InventoryCraft {
      *                        by hand instead -- that is what destroys them.
      */
     record CraftOutcome(ItemStack crafted, ItemStack[] resultingMatrix) {}
+
+    /**
+     * The craft mint's log line, word for word ({@code CraftMintLineTest}): {@code CRAFT minted player=<name>
+     * weapon=<id> material=<vanilla material> score=<score|none>}. Pure, so the exact text is pinned without a server.
+     */
+    static String craftMintLine(String player, String weaponId, String material, java.util.OptionalInt score) {
+        return "CRAFT minted player=" + player + " weapon=" + weaponId + " material=" + material + " score="
+                + (score.isPresent() ? String.valueOf(score.getAsInt()) : "none");
+    }
 
     /**
      * Which gear definition, if any, this vanilla result should be replaced by.

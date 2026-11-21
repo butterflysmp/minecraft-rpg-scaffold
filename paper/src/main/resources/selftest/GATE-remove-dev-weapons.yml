@@ -24,3 +24,16 @@ DW2:
   - cmd: "rpg give iron_sword"
   - wait: 5
   - probe_inventory: iron_sword
+
+# HS1 (PR B, the owed staging fix): A FULL HOTBAR. Nine wooden shovels (they do not stack) fill every empty hotbar slot,
+# then the Boltor is given, landing in the main inventory, and held: hold must SWAP it with the first hotbar slot that is
+# not the Ability Stone, log a STAGE line, and drop nothing. The run's restore at the gate's end puts everything back.
+HS1:
+  - probe_inventory: boltor
+  - cmd: "give @s minecraft:wooden_shovel 9"
+  - wait: 2
+  - cmd: "rpg give boltor"
+  - wait: 2
+  - probe_inventory: boltor
+  - hold: boltor
+  - probe_inventory: boltor

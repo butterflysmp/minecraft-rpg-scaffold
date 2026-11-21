@@ -3,6 +3,29 @@ name: merge-procedure
 description: Merging a PR, deleting a branch, or writing a squash body on this repo. Use when a branch is being cleaned up, absorbed, or squashed -- `git branch --merged` and two-dot `git diff` both LIE here, because every PR is squash-merged.
 ---
 
+## Before each squash: READ THE PR'S CHECKS, AND STATE THEM. A TICKED STEP, NOT A REMEMBERED ONE
+
+**Immediately before `gh pr merge` for each PR, read that PR's checks for the head you are about to squash, and put
+the result in the report.** Every check `COMPLETED` with conclusion `SUCCESS`, on that head. **A check that failed, or
+is still queued or running, is a STOP**: no squash, and the report says which check and what state.
+
+```bash
+gh pr view <n> --json headRefOid,mergeStateStatus,statusCheckRollup \
+  --jq '.headRefOid, .mergeStateStatus, (.statusCheckRollup[] | "\(.name) \(.status) \(.conclusion)")'
+```
+
+- **Bind it to the head**: `headRefOid` must equal the head you are squashing (`--match-head-commit`). A check read
+  before a push is a reading of a commit that is no longer the PR (the wrong-CI-run binding failure in
+  `.claude/rules/verification.md`).
+- **The report line is generated, never written:** each check's name, status and conclusion, as printed, beside the
+  head sha.
+- **`mergeStateStatus` is not the check.** `UNSTABLE` means a check is not green yet; `CLEAN` is not read as proof that
+  any check ran.
+
+> **WHY, 2026-11-20: #222 WAS SQUASHED WHILE GITHUB SHOWED IT `UNSTABLE`.** Its checks passed afterwards, so nothing
+> broke. But a squash taken on a red or unfinished check is decided by luck, and on #222 nobody had looked. Recorded by
+> the seat's handoff of 2026-11-21 and added here in `feat/dev-weapons-owed`.
+
 ## Squash-merge bodies — the squash outlives everything it was made from
 
 A squash body is the only durable account of a branch. The commits are gone, and once the branch is
