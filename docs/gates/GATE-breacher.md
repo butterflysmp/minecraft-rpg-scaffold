@@ -4,6 +4,12 @@
 `feat/breacher-queued-items` (PR 1), on master `90482c94` (the squash of #233), before any boot. **This file carries the
 ONE R0 and the ONE run sheet for the three.**
 
+**Status, 2026-11-22, 16:15-16:18: BOOTED ONCE at `7a5e9286`, R0 PASSED, ALL 14 ROWS RAN** (BR10's tooltip half SKIPPED:
+he crafted, then the Breacher left his inventory). **NOT AS PREDICTED: BR0's `WATER` count (86, not 0); the action-bar
+notices predicted as `REPLY actionbar` lines in BR6, BR7 and BR8 (the instrument captures none); BR6's first press refused
+by the cooldown BR5 left (so its third press fired and the empty refusal was not read); BR9's two health probes (`none
+within 16 blocks`: the probe's radius).** Readings in *READINGS, 2026-11-22* at the end. No prediction above was edited.
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
@@ -394,3 +400,139 @@ the scan was run, where, and what it printed, in the commit that carries the gat
   `WeaponLoaderTest.anAmmoNoItemAnswersToIsNamedAtBoot`.
 - **The two-row recipe in the TOP two rows:** the gold line asks for Ben's own layout (top two, bottom empty); the other
   placement is vanilla's slide, INFERRED.
+
+## READINGS, 2026-11-22 (the boot of `7a5e9286`)
+
+Boot approved by the seat's message of 2026-11-22 on Ben's own "ready". Read from `run/logs/latest.log` of this boot; the
+jar read in place (`run\plugins\rpg-0.1.0-SNAPSHOT.jar`). **Readings count only after his login (16:15:45).**
+
+### NOT AS PREDICTED (first)
+
+- **BR0 `WATER`: `BLOCKS WATER count=86 box=1 -1 -4 30 -1 3`** against the predicted 0. The FLOOR of the corridor holds 86
+  water blocks; `BLOCKS AIR count=0` for the floor (as predicted) and `BLOCKS AIR count=480` for the corridor (as
+  predicted). **Its effect on the rows: none read.** Water under his feet' level is below every pellet's, shard's and
+  bolt's path (all leave his eye, 1.62 up, level or near level), and every hit row read as predicted. Recorded as the
+  spot, not the build.
+- **The action-bar notices are NOT captured by the instrument.** The gate predicted `REPLY actionbar "Your quiver is
+  empty -- left-click to reload."` (BR6), `REPLY actionbar "Reloading..."` (BR6, BR8) and `REPLY actionbar "You have no
+  cobblestone -- Cobblestone loads this weapon."` (BR7). **No action-bar REPLY appears anywhere in the run.**
+  The cause, READ in our source: `ReplyReader` returns on any packet but `SYSTEM_CHAT_MESSAGE`; that `Player#sendActionBar`
+  goes out as the separate action-bar packet is INFERRED (Paper not read). **So the notice text is UNREAD on a server**; the REFUSAL itself
+  is read (BR7: no `RELOAD` line, the arrows untouched, `Quiver: 0/2`), and the wording is `PerWeaponAmmoTest`'s.
+- **BR6's first press was refused by the cooldown BR5 left:** `REPLY "On cooldown for 0.5s" [gray]` (BR5's third press
+  fired about 10 ticks before; the cooldown is per player and ability, not per item). So BR6's second and third presses
+  fired (`Quiver: 0/2` at the dump, as predicted), and **the empty-magazine refusal on a third press was NOT READ.** The
+  gate's prediction missed the carried cooldown.
+- **BR9's health probes: `PROBE tag=n none within 16 blocks`, `PROBE tag=f none within 16 blocks`.** `PROBE` reads within
+  16 blocks (its own javadoc); the zombies stood at 25 and 33. **The hit and the miss are still read** by the PLAYERHIT
+  lines (below); the `84.000` and `100.000` figures are UNREAD.
+
+### R0 (read before he logged in)
+
+- **R0a — AS PREDICTED.** `[Rpg] Build: 7a5e9286`.
+- **R0b — AS PREDICTED.** The scan as committed, on the deployed jar: all 19 PRESENT (the two comment-carrying lines
+  `quiver_size: 2` and `ammo: cobblestone` included); the controls `CONTROL-PREFIX '    cooldown_ticks: 2'`,
+  `CONTROL-PREFIX '      max_lifetime_ticks: 1'` and `CONTROL-OTHER 'quiver_size: 2'` (boltor.yml) ABSENT.
+- **R0c — AS PREDICTED.** `[Rpg] Loaded 11 abilities, 43 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6
+  fragments, 6 aspects, 22 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 6 recipes, 1
+  ores, 4 vein sizes`; `Mint-on-craft: 36 indexed, 36 claiming, of 52 gear definitions`; the loot, fight, world-damage,
+  smithing and convert-on-arrival lines word for word those of the previous boot's archived log
+  (`2026-11-22-3.log.gz`); `[Rpg]` WARN only `volley_stone`'s known pair; no `Refusing`, `Skipping`, `SEVERE`,
+  `Exception`, `Recipe '`.
+- **R0d — AS PREDICTED.** `[Rpg] Selftest: dev server, 293 scenarios across 38 gates [… living-lantern, breacher]`; the
+  control `280 scenarios across 37 gates` ABSENT.
+- **R0e — AS PREDICTED.** `FIGHTWORLD sweep path=…\run\world\dimensions\rpgfight folders=0`; no `deleting`, no `orphan`.
+- Carried state: `Done` at 16:15:03; the deployed `breacher.yml` line 58 `    cooldown_ticks: 20`; 22 weapon files;
+  `recipes/breacher.yml` and `visuals/breacher_hit.yml` present. **His login, 16:15:45, after R0 was read.**
+
+### HIS COMMANDS, AGAINST THE SHEET
+
+`/gamemode survival` (16:15:53), `/rpg selftest breacher` (16:15:58), **`/rpg give crystal_shard_staff` (16:17:33, NOT
+ON THE SHEET**, inside BR10's window; HF2's `clear @s minecraft:amethyst_shard` then removed one item, and the run's
+restore put his RUN START inventory back), `/stop` (16:18:38). And his one chat line, the answer below.
+
+### THE ROWS
+
+- **setup — AS PREDICTED.** `SELF customHP=126.000/350.000`, then after the staging `SELF customHP=100.000/100.000`:
+  `350 - 100 = 250`, `100 = min(126, 100)`. `Set 1 level(s) for BaronVonYeetus (now level 1, 0/1000 into it, 0
+  lifetime).` [green].
+- **BR0 — AIR as predicted; WATER NOT AS PREDICTED** (above). `LEFTOVER living=0 radius=16`.
+- **BR1 — AS PREDICTED.** `HELD breacher CROSSBOW x1 name="Breacher" [white] italic lore=["Kinetic" [white]; "Gear
+  Score: 100" [gray, aqua]; "Quiver: 2/2" [gray]; "" []; "Breacher  Right-Click" [gold, yellow]; "Seven chunks of
+  cobblestone" [gray]; "in a blast 25 degrees wide." [gray]; "Kinetic Damage: 6 x 7" [gray, red]; "Cooldown: 1.0s"
+  [dark_gray]; "" []; "Iron, gunpowder, string," [gray] italic; "and whatever was lying around." [gray] italic; "" [];
+  "Common Ranged Weapon" [white]]`. `rpg stats`: `⚔ Damage 0.00`, `Crit Chance 15%`, `Quiver 2`, `Reload 60t (3.00s)`:
+  **the class-bonus term is 0.**
+- **BR2 — AS PREDICTED.** `rpg enchant show`: `raw: v1;power=0,deft_hands=0,expanded_quiver=0:-1;power=0:-1;power=0:-1`
+  (every active choice -1). Probe before: `100.000/100.000`. **Exactly seven `PLAYERHIT … source=breacher/right_click
+  target=9a33ff37… zombie element=kinetic sent=6.000 crit=false triggerScore=100`.** Probe at press + 6: **`58.000/100.000`**.
+  The dump: **`"Quiver: 1/2"`**.
+- **BR3 — AS PREDICTED.** `POSITIONS ZOMBIE n=3 at=[4.00 0.00 0.00; 3.91 0.00 0.87; 3.63 0.00 -1.69]`. Exactly two
+  PLAYERHITs, on C (`2a41764c`, the first MOBSEED) and R (`87e654fe`, the second), each `sent=6.000`; none on O. Probes:
+  C `94.000`, R `94.000`, O (`e6a5a320`) `100.000`.
+- **BR4 — AS PREDICTED.** Press 1: one PLAYERHIT on `n` (`3d7b0dcd`), `sent=6.000`; `n` `94.000/100.000` d=10.000. Press 2:
+  no PLAYERHIT; `f` (`97586ff3`) `100.000/100.000` d=14.000.
+- **BR5 — AS PREDICTED.** `The game time is 20387150`, then `REPLY "On cooldown for 0.2s" [gray]` and `20387166`, then
+  `20387170`: **16 and 20**. Exactly two PLAYERHITs on `92b64a41`, each `6.000`. Probe at press 3 + 6: **`88.000/100.000`**.
+  The dump: **`"Quiver: 0/2"`**.
+- **BR6 — the reload AS PREDICTED; the presses NOT AS PREDICTED** (above). `On cooldown for 0.5s` on press 1; the dump
+  `"Quiver: 0/2"`. `Gave 5 [Cobblestone] to BaronVonYeetus`; **`ITEMS material=cobblestone count=5 gear=0 slots=[2:5]`**;
+  `DRIVE reload held=breacher`; **`RELOAD player=b6ae27e9… weapon=breacher authored=60 resolved=60 start=1486
+  completesAt=1546`**; **`ITEMS material=cobblestone count=3 gear=0 slots=[2:3]`** (exactly 2 taken, at the start).
+  Dump at reload + 30: **`"Quiver: 0/2"`**; at reload + 65: **`"Quiver: 2/2"`**. No action-bar REPLY (above).
+- **BR7 — AS PREDICTED, except the notice's text (UNREAD, above).** Both presses fired. `Gave 16 [Arrow] to
+  BaronVonYeetus`; **`ITEMS material=arrow count=16 gear=0 slots=[2:16]`**, **`ITEMS material=cobblestone count=0 gear=0
+  slots=[]`**; `DRIVE reload held=breacher`; **no `RELOAD` line**; **`ITEMS material=arrow count=16 gear=0 slots=[2:16]`**,
+  **`ITEMS material=cobblestone count=0 gear=0 slots=[]`**: the arrows untouched. The dump: **`"Quiver: 0/2"`**.
+- **BR8 — AS PREDICTED, except `Reloading...` (UNREAD, above).** `Given Boltor`; one press, no PLAYERHIT; **`ITEMS
+  material=arrow count=16 gear=0 slots=[2:16]`**, **`ITEMS material=cobblestone count=5 gear=0 slots=[1:5]`**;
+  `DRIVE reload held=boltor`; **`RELOAD … weapon=boltor authored=60 resolved=60 start=1609 completesAt=1669`**; **`ITEMS
+  material=arrow count=15 gear=0 slots=[2:15]`**, **`ITEMS material=cobblestone count=5 gear=0 slots=[1:5]`**. Dump at
+  reload + 65: **`"Quiver: 8/8"`**.
+- **BR9 — the hit and the miss AS PREDICTED; the health probes NOT AS PREDICTED** (above). The dump: `"Kinetic Damage:
+  16"`, **`"Cooldown: 0.8s | Mana Cost: 8"`**. Press 1: **one `PLAYERHIT … source=crystal_shard_staff/right_click
+  target=be364f4d… zombie element=kinetic sent=16.000 crit=false`** (the zombie at 25). Press 2: **no PLAYERHIT** (the
+  zombie at 33, `370f675b`).
+- **BR10 — the CRAFT AS PREDICTED; the tooltip half UNREAD.** `clear` removed 1 (the rows' last Breacher);
+  `INVENTORY breacher slots=[]`; four `Gave` REPLYs; the TELL at 16:16:33. **`CRAFT minted player=BaronVonYeetus
+  weapon=breacher material=crossbow score=100`** at 16:16:38. **Then, recorded:** three `RELOAD … weapon=breacher` lines
+  (16:16:44, :49, :58: he fired the crafted Breacher and reloaded it from BR8's leftover cobblestone), four `On cooldown`
+  REPLYs, and his off-sheet `/rpg give crystal_shard_staff` (16:17:33). At the 60 s: **`INVENTORY breacher slots=[]`**
+  (searched over every slot) and **`SKIPPED no hotbar slot holds breacher`**: **the crafted Breacher was no longer in his
+  inventory; where it went is NOT in the log** (no drop line is logged). So the dump's `Gear Score` is UNREAD; the
+  CRAFT line's `score=100` is read. **Where he placed the table was not recorded** (no row probes it); no reading in HF2 or
+  BR11 is a miss, so none depends on it.
+- **HF2 — AS PREDICTED.** Four `clear` REPLYs (one amethyst shard: his own staff from 16:17:33); `STAGE hold_only moved
+  living_lantern from hotbar 1 to slot 9`, `… stone from hotbar 7 to slot 10`, `… nether_star from hotbar 8 to slot 11`,
+  **`STAGE hold_only hotbar items=1 offhand=empty`**, `DRIVE hold … 1->0 item=living_lantern`. The first `rpg firerate`
+  (the arm "he fired weapons of his own"): `2 weapons sampled, one reading each: living_lantern, breacher`, **`(28
+  selftest-driven records kept out of every sample)`** (as predicted, 28), his own `living_lantern` `INPUTS count 9 …
+  min 28t`, `FIRES count 9 … min 28t`, and `breacher` `INPUTS count 14 … min 3t`, `FIRES count 7 … min 20t`, `Sample
+  cleared.`. **`HELDID slot=0 item=living_lantern offhand=empty`** at both ends. The second: **`Fire cadence --
+  living_lantern, right_click`**, **`INPUTS count 44 window 172t mean 4.00t min 4t`**, **`FIRES count 9 window 164t mean
+  20.50t min 16t`**, `cooldown_ticks 16 authored, 16 effective (…)`, `COOLDOWN-LIMITED …`, `Sample cleared.`.
+  **By the prediction: `FIRES min 16` with `INPUTS min 4`: the lantern's held inputs arrive on the 4-tick grid and its
+  16 delivers 16.** The mean 20.50 is the mana running out (nine `Not enough mana: 12 needed, 10-12 available` REPLYs).
+  **Not `FIRES min 18 / INPUTS min 6`.**
+- **BR11 — AS PREDICTED.** Six MOBSEED; `Gave 64 [Cobblestone]`; the TELL; his 30 seconds (six `RELOAD … weapon=breacher`
+  lines, his left-clicks; three zombies removed by his fire before the row's kill, which killed 3). **`ASK 1
+  question="Did the blast spread about as wide as you expected?" answer="Yes but i want to change it" ticks=260`.**
+  **His answer, verbatim: "Yes but i want to change it".** How he wants to change it is NOT STATED: OPEN FOR BEN.
+- **The END — AS PREDICTED.** `SELFTEST RUN FINISHED`; `SELFTEST RUN RESTORED xp=712672 cell=mage/fire gamemode=SURVIVAL
+  … spawn_mobs=false time=1000 … health=126.000`; **`SELFTEST RUN HEALTH saved=126.000 customHP=126.000/350.000
+  wrote=126.000`** (the snapshot's figure).
+
+### AFTER HIS `/stop`
+
+`rpgfight` holds 0 entries; the overworld holds **106** files, the same 106 as the backup's (the file lists compared: no
+difference, so his table's chunk was already on disk); `ThreadedAnvilChunkStorage: All dimensions are saved` (16:18:39);
+no `java` process left.
+
+### UNREAD, BY ARM
+
+- The empty-magazine refusal (BR6's third press fired; see above).
+- Every action-bar notice's text (BR6, BR7, BR8): the instrument does not capture the action bar.
+- BR9's two health figures (the probe's 16-block radius).
+- BR10's tooltip half and `Gear Score` (the crafted Breacher left his inventory).
+- BR2-BR5's crit arms (no crit rolled), and HF2's "did not hold" and `INPUTS min 6` arms.
+- The off-hand crossbow guard, the client, knockback, durability, creative (*WHAT THIS GATE DOES NOT READ*).
