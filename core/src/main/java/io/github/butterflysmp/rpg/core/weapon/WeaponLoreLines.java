@@ -340,6 +340,9 @@ public final class WeaponLoreLines {
             case CastSpec.Melee ignored -> 1;
             case CastSpec.Ray ignored -> 1;
             case CastSpec.Dash ignored -> 1;
+            // One payload per body it reaches, like a burst: the tooltip's "x N" counts deliveries from one press, and a
+            // cone delivers its on_hit once to each body, never N times to one.
+            case CastSpec.Cone ignored -> 1;
         };
     }
 

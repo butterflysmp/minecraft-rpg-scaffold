@@ -101,6 +101,13 @@ final class AbilitySchema {
                     s.getInt("windup_ticks", 0), s.getInt("shots", 1), s.getInt("interval_ticks", 1),
                     innerCast(s.getConfigurationSection("of")),
                     s.getBoolean("locked_aim", false), parseWarning(s.getConfigurationSection("warning")));
+            // THE CONE (2026-11-22, the Living Lantern). The keys are the schema's own words: `range` as a ray's,
+            // `arc_degrees` as melee's (the full angle), `travel_ticks` (0 = instant), and `front`, a visual id drawn
+            // each tick as `beam` and `trail` are (optional; ContentValidator resolves it). The three numbers are
+            // REQUIRED: a default would be a number nobody ruled, arriving silently in a file that omitted the key.
+            // CastSpec.Cone judges the values, by name.
+            case "cone"       -> new CastSpec.Cone(reqDouble(s, "range"), reqDouble(s, "arc_degrees"),
+                    reqInt(s, "travel_ticks"), s.getString("front"));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
         };
     }
@@ -159,6 +166,9 @@ final class AbilitySchema {
                             + " OUTER dash, so a repeated one would go the wrong way rather than fail");
             case CastSpec.Volley ignored -> throw notRepeatable("volley",
                     "each shot would start its own burst and the count would multiply every interval");
+            case CastSpec.Cone ignored -> throw notRepeatable("cone",
+                    "a cone already travels over ticks from a line captured at the click; repeating it is a volley of"
+                            + " fronts nobody has ruled");
         }
         return inner;
     }
