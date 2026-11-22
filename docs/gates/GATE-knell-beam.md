@@ -615,6 +615,22 @@ row held (slot 0).** How the hand moved to slot 1 is NOT READ: no instrument log
 beam (48 authored, a multiple of 4), `INPUTS min 4`, `FIRES min 48` and `mean 48.00`. It cannot tell the
 `ceil(n/4) x 4` question apart, because 48 is already on the grid.
 
+> **HF1R2, BEN'S ANSWERS, 2026-11-22 (appended after the run, on `feat/lantern-owed-fixes`; no word above removed, no
+> prediction edited).** The seat asked Ben two questions, relayed verbatim:
+> (1) "Before you ran the selftest, did you fire the Crystal Shard Staff by holding right-click?"
+> (2) "During 'hold right-click', did you switch to the Knell Beam yourself, or was it already in your hand?"
+> **Ben, verbatim, 2026-11-22:** "1. Yes I fired the Crystal shard staff by i was spamming right click not holding
+> 2. Yes I Did I thought the test wanted the knell beam not the crystal shard staff"
+> - **The seat's count:** 9 `use:` steps precede HF1R2 (KB2 1, KB3 1, KB4 1, KB5 1, KB6 1, KB7 3, CS2R2 1), so the
+>   cleared sample's 22 fires were not the selftest's; by answer 1 they were his own CLICKED presses before the run,
+>   mixed with later presses.
+> - **The seat's reading:** that sample (`crystal_shard_staff`, `INPUTS min 3t`, `FIRES min 14t`, `MIXED`) is **clicked
+>   input, not held; no verdict on ceil(n/4) x 4.** It is NOT the owed held-fire reading. Recorded as an observation:
+>   the 14-tick cooldown permits fires 14 ticks apart under clicked input.
+> - **By answer 2, HF1R2's cause is the gold line not naming the weapon.** The owed fixes are carried into
+>   `feat/lantern-owed-fixes` (a per-weapon sample, a hotbar holding only the named weapon, the gold line naming it),
+>   and the reading is owed as HF1R3 in `GATE-living-lantern.md`.
+
 **KB8 — AS PREDICTED.** Six MOBSEEDs (`21d83494` 8,0; `69caa519` 12,1.5; `f86b6a30` 16,-1; `9ad01c42` 20,3;
 `990397ef` 10,-4; `eeb1eef5` 25,0.6); the TELL. **12 PLAYERHIT lines, all `source=knell_beam/right_click
 element=void`: 11 at `sent=63.000 crit=false`, 1 at `sent=126.000 crit=true` (on `990397ef`, 10:44:31); every one
