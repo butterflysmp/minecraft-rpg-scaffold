@@ -9,7 +9,9 @@ only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words
 
 **Game mode:** SURVIVAL, every row. **Every row is AUTO** (`/rpg selftest knell-beam`); **Ben types three lines**, and
 his answer to the one question when the selftest asks it. **Time:** the scenario's setup sets night (18000) and
-`spawn_mobs false`; the run's restore puts both back. **Every mob is a frozen NoAI zombie; no fight world.**
+`spawn_mobs false`; the run's restore puts both back. **Every mob is a frozen NoAI zombie; no fight world.** The setup
+also kills the natural hostiles within 64 blocks by named type, and stages his level at 1, **which lowers his health
+for the run and leaves it low after** (*THE SEAT'S FOLLOW-UP*, below).
 
 **Ben's words, verbatim (2026-11-21, spelling as typed),** recorded in `PLAN-weapon-tiers.md` 1.7:
 - "slight detour in that the next weapon isn't apart of our current progress tree focus. Let's bring the Knell Beam
@@ -118,6 +120,125 @@ loot pool and has NO recipe. Every "no content is epic" site carries a dated not
 - **His level is staged at 1** in the setup (`rpg playerxp set @s 1 levels`, then 40 ticks), and **executed**:
   `LevelBonus.at(1).weaponDamage()` = **0.0** (`at(50)` = 49.0).
 
+## THE SEAT'S FOLLOW-UP, 2026-11-21: HIS HEALTH, THE NATURAL MOBS, THE SPOT, A ZOMBIE'S WIDTH, KB7'S TICKS
+
+Written after the seat's rulings on PR 1 to 3, before any boot. Gate files only; nothing under `src/main/java`.
+
+**a) HIS HEALTH AT LEVEL 1 (READ, our source, unless marked).**
+- **What level grants** (`LevelBonus.at`): max health `5 x (level - 1)` to level 49, and +10 more at 50, so **+250 at
+  50, 0 at 1**; defence `level / 5`, so **10 at 50, 0 at 1**; health regen `(level - 10) / 5 + 1` steps of 0.2 HP a
+  second from level 10, so **1.8 at 50, 0 at 1**; crit chance `(level / 10) / 100`, so **0.05 at 50, 0 at 1**. **Mana:
+  nothing** (`LevelBonus.sources` answers 0.0 for `MAX_MANA` and `MANA_REGEN`). His mana pool is the same at either
+  level.
+- **His own level: 50** (READ, the crystal-shard-staff boot of 2026-11-21: CS2's `sent=65.000` is 16 + 49, and
+  an archived run's `REPLY "Set 50 level(s) for BaronVonYeetus (now level 50, MAX into it, 712580 lifetime)."` in
+`run/logs/*.log.gz`).
+  **So his maximum is `100 + 250 + G` at his level and `100 + G` at level 1** (`CombatantStats.DEFAULT_PLAYER_BASE` is
+  100; G is his worn gear's, accessories' and fragments' max health).
+- **What the staging does to his CURRENT health:** the reconcile loop (every 5 ticks, `PlayerHealthSystem`) applies the
+  level's max-health modifier through `reconcileMaxModifiers`, and **a fall in max CLAMPS current to the new max**
+  (`HealthState`: "increase is headroom, decrease clamps"). The setup waits 40 ticks. **So at full health he goes from
+  `350 + G` to `100 + G`.**
+- **What the restore does:** `SelfTestSnapshot.restore` puts back his lifetime XP (`setLifetimeXp`), so the next pass
+  raises his max by 250 again, **and a rise is headroom: current is UNCHANGED.** The snapshot holds no health at all.
+  **So he ends the run at his level-1 health, out of `350 + G`, and regains the rest by regeneration** (his level's 1.8
+  a second plus whatever else he has). Not read by any row: the run has ended by then.
+- **The run sheet says it in one plain line** (step 0). **The safety table is redone against `100 + G`** (above).
+- **The rows read it:** the setup's first `SELF customHP=<c0>/<m0>` (his own level) and last `SELF customHP=<c1>/<m1>`
+  (level 1). **Predicted: `m0 - m1 = 250.000`, and `c1 = min(c0, m1)`.** The `SELF` figures witness that he is alive and
+  what his maximum is; no row reads a hit on him (`.claude/rules/verification.md`, *PREDICT DAMAGE AGAINST THE HURT
+  LINE*).
+
+**b) THE NATURAL MOBS (the setup's 27 kills).**
+- **The list**, each one `kill @e[type=minecraft:<t>,distance=..64,tag=!selftest]`: zombie, zombie_villager, husk,
+  drowned, skeleton, stray, bogged, parched, spider, cave_spider, creeper, witch, enderman, slime, phantom, silverfish,
+  endermite, pillager, vindicator, evoker, ravager, vex, guardian, elder_guardian, breeze, creaking, warden. **Every
+  name READ** as a `MobCategory.MONSTER` registration in the pinned server jar (`net.minecraft.world.entity.EntityType`,
+  build 74), so none is an unknown type that would make its command fail.
+- **Left off, on purpose:** every animal, villager, pet and item (not MONSTER, or not a living type); **the three
+  MONSTER mounts `zombie_horse`, `camel_husk`, `zombie_nautilus`** (a mount may be his); and the nether and end ones
+  (blaze, ghast, magma_cube, the piglins, hoglin, zoglin, wither_skeleton, zombified_piglin, shulker, the dragon,
+  the wither), plus giant and illusioner (no natural spawn). `tag=!selftest` spares anything the instrument made.
+  **A hostile he has NAME-TAGGED is on the list by type and would be killed**; the selector cannot tell. Named, not
+  guarded.
+- **What each kill prints** (READ: the pinned jar's `en_us.json`, and the archived logs' REPLY lines): `CMD /kill …`,
+  then **`REPLY "No entity was found" [red]`** (none), **`REPLY "Killed <name>" []`** (one, by its display name, e.g.
+  `"Killed Zombie"`), or **`REPLY "Killed <n> entities" []`** (more). Then one **`SETTLED dying=0 ticks=<t> first=<f>`**:
+  the run waits until no killed body within 48 is still dying (READ, `SelfTestRun.settle`). Recorded, not predicted:
+  how many he has near him is the world's.
+- **The first LEFTOVER after the kills is KB0's**, and it is predicted: **`LEFTOVER living=0 radius=16`, or a list
+  naming only types NOT on the kill list** (an animal, a villager, a pet, a mount). **A listed type in it is NOT AS
+  PREDICTED.** (The setup's own LEFTOVER comes before the kills and is recorded as the baseline.)
+- **Follow ranges, READ in the jar** (`createAttributes`, `FOLLOW_RANGE`): zombie (and its kin) 35; pillager, ravager,
+  creaking 32; breeze, warden 24; vindicator, evoker 12; enderman 64; every other listed type the `Mob` default, 16.
+  Our source sets no follow range (READ: no `FOLLOW_RANGE` under `paper/src/main`). The "every row" line above stands on
+  these.
+- **What still spawns** (READ): natural monster spawning needs `spawn_mobs` (`ServerLevel.isSpawningMonsters`), which
+  the setup turns off. Spawner blocks have their own rule, `spawner_blocks_work`; phantoms and patrols read
+  `spawn_phantoms` and `spawn_patrols` (`PhantomSpawner`, `PatrolSpawner`). **Whether `spawn_mobs` also gates those
+  two: UNVERIFIED** (their call site was not read). The run touches none of them.
+
+**c) WHERE HE STANDS.**
+- **Every row stages from the same spot: where he stood when he typed the command.** At each row's start the run
+  teleports him back there (READ, `SelfTestRun.nextScenario`: `player.teleportAsync(snapshot.start())`), and each row
+  then turns him to face east (`yaw -90`). So one bad spot spoils every row the same way.
+- **The run sheet's precondition** (step 0): open, flat ground with a clear view for about 30 blocks.
+- **KB0, a cheap auto row at the start, reads the spot:** a `SELF` line (feet, `onGround`), then three block counts
+  relative to his block, east being +x: the corridor the zombies stand in, **`BLOCKS AIR count=480 box=1 0 -4 30 1 3`**
+  (30 east x 2 high x 8 across, from 4 north to 3 south, covering every zombie of KB2-KB8 but KB5's B); the floor
+  under it, **`BLOCKS AIR count=0 box=1 -1 -4 30 -1 3`** and **`BLOCKS WATER count=0 box=1 -1 -4 30 -1 3`**; and KB5's
+  B, **`BLOCKS AIR count=2 box=0 0 10 0 1 10`**. It reads, never judges. **A corridor count under 480 is something
+  standing in it**: a block, but also grass, a flower or a snow layer, which the beam ignores (passable blocks are
+  ignored by `rayTraceBlocks`, READ) and this count does not. **So a low count is read beside KB2-KB8's hits, not as a
+  failure by itself.** A floor `AIR` above 0 is a drop; `WATER` above 0 is water.
+- **How a bad spot shows in each row, so it is not read as a defect** (the zombies are summoned at his own feet height;
+  a NoAI mob does not fall, INFERRED from the frozen Knell's reading in `GATE-dragon-teleport.md`):
+  - **MOBSEED carries no position** (READ, `MobNameplateManager.onMobAppear`), and **a `PROBE`'s `dy` is the mob's
+    feet minus his, so it reads 0.000 for every zombie summoned at `~`** whatever the ground does. **Neither can see
+    the spot; KB0 is the witness.**
+  - **Ground higher than his feet** puts a zombie inside a block: KB0's corridor count is low, and that zombie can
+    lose health before the shot (in-wall damage, INFERRED vanilla), so **KB2's tick-23 probe reads under 100**.
+  - **A block on the line** clips the beam: **KB2 and KB7 read no PLAYERHIT; KB3 reads fewer than three, stopping at
+    the block; CS2R2 reads none.**
+  - **A block beside the line, between it and a body struck only in its margin**: KB4's first zombie (0.2 off) is such a
+    body, and the sweep refuses it without a clear sight line (READ, `CastExecutor.stepSweep`), so **KB4 reads no
+    PLAYERHIT where one is predicted.**
+  - **KB5's B inside a block** reads under 100 on its probe without being struck.
+  - **KB6 cannot show a bad spot**: it predicts no hit, and a bad spot also gives none. **KB2 is its control**: the
+    same zombie at the same 10 blocks, no wall, and a hit.
+
+**d) A ZOMBIE'S WIDTH: READ, AND PRINTED BY THE ROW.**
+- **READ in the pinned server jar** (build 74, `Implementation-Version: 26.1.2-74-e4e17fc`): `EntityType`'s `zombie`
+  is `Builder.of(…, MobCategory.MONSTER).sized(0.6f, 1.95f).eyeHeight(1.74f)`. **An adult zombie is 0.6 wide and 1.95
+  tall.** The rows summon `IsBaby:0b`.
+- **And KB4 prints its own:** `probe_body: t` logs each zombie's `scale=` and `height=` (READ, the `PROBE_BODY` driver),
+  predicted **`scale=1.000 height=1.950`** for all three (our `MobBodyApplier` puts a body only on a custom mob, READ in
+  its javadoc; a summoned zombie is not one, INFERRED). **The width is 0.6 x scale**, so the reading carries it; and
+  `probe_positions: "zombie 16"` logs their feet relative to his, predicted **`8.00 0.00 0.50`, `11.00 0.00 0.80` and
+  `14.00 0.00 1.20`** in any order, which carries the offsets.
+- KB4's "UNVERIFIED" is withdrawn (the prediction cell keeps its words and gains a dated note).
+
+**e) KB7'S PRESSES AT 40 AND 48.**
+- **Can a step land a tick late? Not by the run's own clock (READ).** A `wait:` is `onEntityLater`, which is
+  `EntityScheduler.runDelayed` on his own scheduler (`PaperScheduler`); the server runs every live entity scheduler's
+  `executeTick` once per tick from `MinecraftServer.tickChildren` (READ in the jar), and `runDelayed` counts those
+  ticks. The cooldown's clock is `Bukkit.getCurrentTick` (`RpgPlugin` builds `CooldownTracker` with it), the server's
+  tick counter. **Both count server ticks, so lag slows both alike.** Between press 1 and press 2 the row has one
+  `time query` and the 40-tick wait; between press 2 and press 3, one `time query`, one `probe_mana` and the 8. None of
+  those waits. **The one way a press lands late is his scheduler not being ticked (he left or died), and then the run
+  aborts.** INFERRED: the synthetic click reaches `AbilityService` in the same tick (the refusal REPLY is sent from it).
+- **The row now carries its own spacing:** each press is followed, in the same tick, by `time query gametime`, whose
+  REPLY is **`"The time is <g>"`** (READ: `TimeCommand.queryGameTime` sends `ServerLevel.getGameTime`; the text is
+  `commands.time.query` in `en_us.json`, and that this is the key it uses is INFERRED). **Predicted: `g2 - g1 = 40` and
+  `g3 - g1 = 48`.** (INFERRED: game time advances one a tick; nothing here freezes ticking.)
+- **What the presses read if one is off by one** (the REPLY text EXECUTED in jshell, `"On cooldown for %.1fs"` over
+  `ticksRemaining / 20.0`; `ticksRemaining` is `ready - now`, `isReady` is `now >= ready`, READ):
+  - **press 3 at 47**: REFUSED, `REPLY "On cooldown for 0.1s"` (1 tick left), its `MANA` unchanged, and **one
+    PLAYERHIT in the row, not two**;
+  - **press 3 at 49**: it fires exactly as at 48. **The presses cannot tell 49 from 48; the game-time lines can**;
+  - **press 2 at 41** reads `"On cooldown for 0.4s"` (7 left), **the same text as at 40**, and at 39 `"0.5s"`. **So the
+    refusal's text cannot tell 40 from 41 either; again the game-time lines can.**
+
 ## CARRIED STATE (CC, IN THIS ORDER) — A CHECKLIST, EACH LINE TICKED IN THE REPORT, NOT REMEMBERED
 
 1. **No JVM:** `Get-Process java -ErrorAction SilentlyContinue` prints nothing.
@@ -137,6 +258,10 @@ loot pool and has NO recipe. Every "no content is epic" site carries a dated not
 ## THE RUN SHEET — BEN TYPES EXACTLY THESE THREE LINES
 
 0. **DO NOT LOG IN UNTIL CC HAS TOLD YOU R0 PASSED.**
+   **Stand on open, flat ground with a clear view for about 30 blocks, and face any way you like** (the rows turn you
+   east and put you back on the same spot each time).
+   **For the run your level is set to 1, so your health drops to about 100 (from about 350) and stays there after the
+   run until it regenerates.**
 1. `/gamemode survival`
 2. `/rpg selftest knell-beam` — **ONCE.** About two minutes. Frozen zombies appear; they cannot move or hit you. **Two
    rows ask something of you, in gold chat:** one says **HOLD RIGHT-CLICK** (hold it until your mana runs out, then let
@@ -147,15 +272,44 @@ loot pool and has NO recipe. Every "no content is epic" site carries a dated not
 Nothing else. If a row stalls or aborts, do not intervene. **His chat answer to the one question is the only line he
 types beyond these three**, and it is the selftest's own ASK step, logged verbatim; "not sure" is NOT STATED.
 
-## THE ARITHMETIC (SAFETY): THE MOST HITS THAT CAN LAND ON BEN TIMES THE BIGGEST HIT, AT DEFENCE 0, AGAINST 100 AND 350
+## THE ARITHMETIC (SAFETY): THE MOST HITS THAT CAN LAND ON BEN TIMES THE BIGGEST HIT, AGAINST THE HEALTH HE HAS IN THE RUN
 
-| row | where he is | what can hurt him | most hits x biggest hit | puts him down at 100? at 350? |
+**The health he has during the run is `100 + G`, not his own `350 + G`** (G: what his worn gear, accessories and
+fragments add to max health; unknown here, and printed by the setup's two `SELF` lines). His defence is his gear's
+alone (level 1 grants 0). Below, G = 0 and defence 0: the worst case. *(This table read "against 100 and 350" until the
+seat's follow-up of 2026-11-21; the run never has him at 350.)*
+
+| row | where he is | what can hurt him | most hits x biggest hit | puts him down at 100 + G? |
 |---|---|---|---|---|
-| KB1 | where he stands | nothing | 0 | no / no |
-| KB2-KB7, CS2R2 | teleported to his block's centre, facing east; NoAI zombies 6 to 14 blocks away | a NoAI zombie does not move or attack; **his own beam cannot strike him** (the sweep excludes the caster by id, READ) and his shard skips him (`castRay`'s ignore id) | 0 x 0 = 0 | no / no |
-| HF1R2 | where KB2-CS2R2 left him | the same; his shards skip him | 0 | no / no |
-| KB8 | the same; six NoAI zombies, 30 seconds of free play | the same; **walking into his own locked beam's line does nothing to him** (excluded by id, READ) | 0 | no / no |
-| every row | the overworld at night | **natural mobs ALREADY ALIVE nearby**: `spawn_mobs false` stops new spawns, but kills none. Each row's `LEFTOVER living=<n> radius=16` line counts what is near him | at gs 100 (every overworld hostile, READ), 5 x vanilla (READ, `MobScaling`); vanilla UNVERIFIED: a zombie 3 -> 15 a hit, a creeper at point blank about 43 -> about 215 | **at 100:** 7 zombie hits, or one close creeper. **At 350:** 24 zombie hits; not one creeper. Ordinary night play, nothing more |
+| setup, KB0, KB1 | the spot he chose | nothing the run makes | 0 | no |
+| KB2-KB7, CS2R2 | the run's start, his block's centre, facing east; NoAI zombies 6 to 14 blocks away | a NoAI zombie does not move or attack; **his own beam cannot strike him** (the sweep excludes the caster by id, READ) and his shard skips him (`castRay`'s ignore id) | 0 x 0 = 0 | no |
+| HF1R2 | the run's start | the same; his shards skip him | 0 | no |
+| KB8 | the run's start; six NoAI zombies, 30 seconds in which he may walk | the same; **walking into his own locked beam's line does nothing to him** (excluded by id, READ) | 0 | no |
+| every row | the overworld at night, **after the setup's kills** | **a natural hostile that was BEYOND 64 blocks at the kill and closes in during the run.** None has him as a target from there: the longest follow range among the listed types is the enderman's 64, which attacks when provoked or stared at (vanilla, INFERRED); every other is 35 or less (READ, below). New natural spawns are off (`spawn_mobs false`, READ). **Not off: a spawner block, and phantoms and patrols if `spawn_mobs` does not gate them (UNVERIFIED).** Each row's `LEFTOVER … radius=16` line names any living body near the start, 12 times in the run | at gs 100 (every overworld hostile, READ), 5 x vanilla (READ, `MobScaling`); vanilla UNVERIFIED: a zombie 3 -> 15 a hit, a creeper at point blank about 43 -> about 215 | **at 100:** 7 zombie hits, or one close creeper. The run is at most 4,232 ticks (about 3 min 32 s; below), and a mob from beyond 64 must first wander inside its follow range. Possible, not likely; a death aborts the run (INFERRED: `SelfTestStaging.invalid` takes `isDead`) and costs no items (keep-inventory is forced, READ in `PlayerHealthSystem`'s note on `RpgListeners`) |
+
+**The run's length, from the scenario's own waits** (`wait:` steps, summed per row; recount with
+`grep -E '^\s+- wait:' paper/src/main/resources/selftest/GATE-knell-beam.yml`):
+
+| row | waits | ticks |
+|---|---|---|
+| setup | 40 | 40 |
+| KB0, KB1 | none | 0 |
+| KB2 | 5 + 2 + 23 + 2 | 32 |
+| KB3 | 60 + 30 | 90 |
+| KB4 | 5 + 55 + 30 | 90 |
+| KB5 | 60 + 5 + 30 | 95 |
+| KB6 | 60 + 30 | 90 |
+| KB7 | 60 + 40 + 8 + 30 | 138 |
+| CS2R2 | 5 + 2 + 10 | 17 |
+| HF1R2 | 300 | 300 |
+| KB8 | 600, then the ASK's up to 1,200 | 600 to 1,800 |
+| **sum** | | **1,492, plus the ASK's 0 to 1,200** |
+
+On top of that: about 5 ticks per row for the row-start clean (READ, an archived run: `setup DONE ticks=5` with no
+waits), so about 60 for 12 rows; and each `kill` step waits for the bodies it killed to finish dying, up to 40 ticks
+(`SelfTestStaging.SETTLE_CAP_TICKS`, READ). **Worst case: 1,492 + 1,200 + 60 + 37 kill steps x 40 = 4,232 ticks**
+(37: `grep -cE '^\s+- cmd: "kill '` on the scenario, 27 in the setup and 10 in the rows). With
+nothing to kill and a prompt answer it is about 1,600 ticks (80 seconds) plus his answer.
 
 ## R0 — THE BUILD, FOR THE WHOLE STACK. READ IT FIRST. IF ANY R0 FAILS, STOP
 
@@ -199,11 +353,13 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one **`[Rpg] Selftest: dev server, 266 scenarios across 36 gates [melee-cell, …, crystal-shard-staff, knell-beam]`**. The control: the last boot's `256 scenarios across 35 gates` is ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+| Exactly one **`[Rpg] Selftest: dev server, 267 scenarios across 36 gates [melee-cell, …, crystal-shard-staff, knell-beam]`** (266 until the seat's follow-up added KB0, 2026-11-21). The control: the last boot's `256 scenarios across 35 gates` is ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
 
 **RECOUNTED** (2026-11-21, PR 3's tree, from `index.yml` and every gate file it names; `SelfTestScenariosTest` asserts
 266): 36 gates, `^[A-Za-z0-9_-]+:` **302**, `^setup:` **36**, so **266**. Control: 291 + 11 (setup, KB1-KB8, CS2R2,
 HF1R2) = 302.
+**RECOUNTED AGAIN** (2026-11-21, after the seat's follow-up, by the same method; `SelfTestScenariosTest` asserts 267):
+36 gates, `^[A-Za-z0-9_-]+:` **303**, `^setup:` **36**, so **267**. Control: 302 + 1 (KB0) = 303.
 
 ### R0e — THE ORPHAN SWEEP WITH NOTHING STAGED
 
@@ -221,6 +377,22 @@ or `sent=126.000 crit=true`**. Terms: amount 63 (the file); score 100 (`rpg gear
 level bonus 0 (level 1, staged; executed 0.0); charge 1.0 (not a melee charge).
 **For the Crystal Shard Staff (CS2R2):** `(16 x 100/100) x 1.0 + 0 + 0 = 16`: **`sent=16.000 crit=false` or
 `sent=32.000 crit=true`**. Any other `sent` is a FAIL. A zombie here has `max=100` (`MOBSEED … gs=100 … max=100`).
+
+### setup — night, no spawns, the natural hostiles killed, his level at 1 (SURVIVAL)
+
+*(Added by the seat's follow-up, 2026-11-21, before any boot.)*
+
+| prediction | stands on | READING |
+|---|---|---|
+| Its own `LEFTOVER … radius=16` first (recorded: the world's, before the kills). The `time set` and `gamerule` REPLYs. **`SELF customHP=<c0>/<m0> at=… onGround=true fall=0.000`** (his own level: `m0 = 350 + G`). **27 kill lines**, each `CMD /kill @e[type=minecraft:<t>,distance=..64,tag=!selftest]` then one of `REPLY "No entity was found" [red]`, `REPLY "Killed <name>" []`, `REPLY "Killed <n> entities" []`, then `SETTLED dying=0 ticks=<t> first=<f>` (recorded, not predicted). `REPLY "Set 1 level(s) for BaronVonYeetus (now level 1, 0/1000 into it, 0 lifetime)." [green]` (as archived runs read it). After the 40 ticks, **`SELF customHP=<c1>/<m1> …` with `m0 - m1 = 250.000` and `c1 = min(c0, m1)`** | *THE SEAT'S FOLLOW-UP* a) and b) | |
+
+### KB0 — THE SPOT: open and flat for 30 blocks? (SURVIVAL)
+
+*(Added by the seat's follow-up, 2026-11-21, before any boot.)*
+
+| prediction | stands on | READING |
+|---|---|---|
+| **`LEFTOVER living=0 radius=16`**, or a list naming only types NOT on the setup's kill list (a listed type is NOT AS PREDICTED). The teleport's REPLY, facing east. **`SELF customHP=<c1>/<m1> …`** (its `onGround` recorded, not predicted: it is read in the teleport's own tick). **`BLOCKS AIR count=480 box=1 0 -4 30 1 3`**; **`BLOCKS AIR count=0 box=1 -1 -4 30 -1 3`**; **`BLOCKS WATER count=0 box=1 -1 -4 30 -1 3`**; **`BLOCKS AIR count=2 box=0 0 10 0 1 10`**. **Any other count is not a defect of the build: it is the spot**, and KB2-KB8 are read beside it (*THE SEAT'S FOLLOW-UP* c) says how each row shows it). A corridor count under 480 from grass or flowers alone does not touch the beam | `SelfTestDrivers.probeBlocks` (a box relative to his block); passable blocks ignored by the beam (READ) | |
 
 ### KB1 — given, held, and its tooltip (SURVIVAL)
 
@@ -244,7 +416,7 @@ level bonus 0 (level 1, staged; executed 0.0); charge 1.0 (not a melee charge).
 
 | prediction | stands on | READING |
 |---|---|---|
-| Facing due east, level; the line runs along his eye at z = 0. The zombies' FEET at z +0.5, +0.8 and +1.2 (at 8, 11 and 14 east). **A zombie is 0.6 wide (UNVERIFIED in the jar)**, so its box's near side is 0.3 nearer the line: **gaps 0.2, 0.5 and 0.9**. Tolerance 0.3: **0.2 < 0.3 struck; 0.5 > 0.3 not; 0.9 > 0.3 not, though 0.9 < 1.0, the old weapon's.** Exactly **one** PLAYERHIT, on the first `MOBSEED`'s uuid, `sent=63.000` (or 126.000 crit). The probe: the first at `37.000/100.000`, the other two at `100.000/100.000` | `KnellBeamMechanismsTest.aBodyInsideTheToleranceIsStruckAndOneOutsideIsNot` and its 1.0 control | |
+| Facing due east, level; the line runs along his eye at z = 0. The zombies' FEET at z +0.5, +0.8 and +1.2 (at 8, 11 and 14 east). **A zombie is 0.6 wide (UNVERIFIED in the jar)**, so its box's near side is 0.3 nearer the line: **gaps 0.2, 0.5 and 0.9**. Tolerance 0.3: **0.2 < 0.3 struck; 0.5 > 0.3 not; 0.9 > 0.3 not, though 0.9 < 1.0, the old weapon's.** Exactly **one** PLAYERHIT, on the first `MOBSEED`'s uuid, `sent=63.000` (or 126.000 crit). The probe: the first at `37.000/100.000`, the other two at `100.000/100.000`. **Added 2026-11-21 (the seat's follow-up d), before any boot: the width is now READ in the jar (`sized(0.6f, 1.95f)`), and the row prints its own.** Five ticks after the summons: **`POSITIONS ZOMBIE n=3 at=[…] radius=16`** holding `8.00 0.00 0.50`, `11.00 0.00 0.80` and `14.00 0.00 1.20` in any order; then three **`BODY tag=t <uuid> type=zombie … scale=1.000 height=1.950 …`** lines. **If a scale reads other than 1.000, that zombie's width is 0.6 x scale and its gap is recomputed from it before the hit is judged** | `KnellBeamMechanismsTest.aBodyInsideTheToleranceIsStruckAndOneOutsideIsNot` and its 1.0 control; *THE SEAT'S FOLLOW-UP* d) | |
 
 ### KB5 — LOCKED AIM: he turns, the shot goes down the old line (SURVIVAL)
 
@@ -262,7 +434,7 @@ level bonus 0 (level 1, staged; executed 0.0); charge 1.0 (not a melee charge).
 
 | prediction | stands on | READING |
 |---|---|---|
-| `MANA current=<M>`; press 1 (fires 24 ticks later); press 2, **40 ticks after press 1**: REPLY **`On cooldown for 0.4s`** [gray] (8 ticks left of 48, READ: `RpgListeners`' OnCooldown arm), then `MANA current=<x>` with **x = M - 13 plus 40 ticks of regeneration** (the refused press spent nothing); press 3, **48 ticks after press 1**: fires (no refusal REPLY), then `MANA current=<x - 13>` (to within the regeneration of the same tick: none). **Exactly two PLAYERHITs** (press 1 and press 3), each `sent=63.000` (or 126.000); the second kills the zombie (37 left after the first), so the probe finds it dead or gone | `AbilityService` stamps the cooldown at the click, `isReady` is `>=` (READ) | |
+| `MANA current=<M>`; press 1 (fires 24 ticks later); press 2, **40 ticks after press 1**: REPLY **`On cooldown for 0.4s`** [gray] (8 ticks left of 48, READ: `RpgListeners`' OnCooldown arm), then `MANA current=<x>` with **x = M - 13 plus 40 ticks of regeneration** (the refused press spent nothing); press 3, **48 ticks after press 1**: fires (no refusal REPLY), then `MANA current=<x - 13>` (to within the regeneration of the same tick: none). **Exactly two PLAYERHITs** (press 1 and press 3), each `sent=63.000` (or 126.000); the second kills the zombie (37 left after the first), so the probe finds it dead or gone. **Added 2026-11-21 (the seat's follow-up e), before any boot:** after each press, in the same tick, **`REPLY "The time is <g1>"`**, **`<g2>`**, **`<g3>`**, with **`g2 - g1 = 40` and `g3 - g1 = 48`**. Off by one, the row reads: press 3 at 47, `REPLY "On cooldown for 0.1s"`, mana unchanged, ONE PLAYERHIT; at 49, the same as 48; press 2 at 41, the same `0.4s` text as at 40. **Only the game-time lines tell those apart** | `AbilityService` stamps the cooldown at the click, `isReady` is `>=` (READ); *THE SEAT'S FOLLOW-UP* e) | |
 
 ### CS2R2 — OWED: the Crystal Shard Staff at level 1 (SURVIVAL)
 

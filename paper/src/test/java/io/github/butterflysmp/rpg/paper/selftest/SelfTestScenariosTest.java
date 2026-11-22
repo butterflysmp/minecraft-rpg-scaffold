@@ -263,7 +263,9 @@ class SelfTestScenariosTest {
         // setups, so 256. The control: 290 + 1 = 291. 255 was this line's value.
         // Then GATE-knell-beam.md (feat/knell-beam, 2026-11-21), RECOUNTED: 36 gates, 302 keys, 36 setups, so 266. The
         // control: 291 + 11 (setup, KB1-KB8, CS2R2, HF1R2) = 302. 256 was this line's value.
-        assertEquals(266, loaded.rows());
+        // Then KB0, the spot check (the seat's follow-up, 2026-11-21), RECOUNTED: 36 gates, 303 keys, 36 setups, so 267.
+        // The control: 302 + 1 = 303. 266 was this line's value.
+        assertEquals(267, loaded.rows());
     }
 
     /**

@@ -1,14 +1,60 @@
 # GATE-knell-beam.md: THE KNELL BEAM, AND THE OWED ROWS (feat/knell-owed-fixes, feat/knell-mechanisms, feat/knell-beam).
 # `/rpg selftest knell-beam`. Every row is AUTO; he types nothing but his answer to the one question at the end. Night
 # (18000) and no natural spawns, both put back by the run's restore; every mob a frozen NoAI zombie; no fight world.
-# His level is staged at 1 here (the restore puts it back), so the level term of every damage sum is 0.
+# His level is staged at 1 here (the restore puts it back), so the level term of every damage sum is 0. Level 1 also
+# takes his level's +250 max health, +10 defence and regen away for the run; the restore gives back the maximum but
+# NOT the health (a rise is headroom), so he ends the run at his level-1 health and regenerates (GATE-knell-beam.md).
+# The natural hostiles within 64 blocks are killed by NAMED TYPE, never one tagged selftest; animals, villagers,
+# pets, mounts and items are not on the list. Each kill prints "Killed <name>", "Killed <n> entities" or "No entity
+# was found", and a SETTLED line.
 setup:
   - trace: on
   - cmd: "time set 18000"
   - cmd: "gamerule spawn_mobs false"
   - close: ""
+  - probe_self: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:zombie_villager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:husk,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:drowned,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:stray,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:bogged,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:parched,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:cave_spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:witch,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:enderman,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:slime,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:silverfish,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:endermite,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:pillager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:vindicator,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:evoker,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:ravager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:vex,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:guardian,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:elder_guardian,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:breeze,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creaking,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:warden,distance=..64,tag=!selftest]"
   - cmd: "rpg playerxp set @s 1 levels"
   - wait: 40
+  - probe_self: ""
+
+# KB0: THE SPOT. Every row stages from where the run began, facing east. Is the ground open and flat for 30 blocks?
+# The corridor the zombies stand in (1..30 east, feet and head height, 4 north to 3 south) should be all AIR (480);
+# the floor under it (one block down) should hold no AIR and no WATER (0 and 0); KB5's zombie B (10 south) should
+# stand in AIR (2).
+KB0:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - probe_self: ""
+  - probe_blocks: "AIR 1 0 -4 30 1 3"
+  - probe_blocks: "AIR 1 -1 -4 30 -1 3"
+  - probe_blocks: "WATER 1 -1 -4 30 -1 3"
+  - probe_blocks: "AIR 0 0 10 0 1 10"
 
 # KB1: given, held, scored 100, its tooltip as the server built it.
 KB1:
@@ -57,7 +103,8 @@ KB3:
   - probe: t
 
 # KB4: ACCURACY. Facing due east, level. Three zombies whose BOXES are 0.2, 0.5 and 0.9 blocks off the line (their
-# feet 0.5, 0.8 and 1.2 to the right: a zombie is 0.6 wide). Tolerance 0.3: the first is struck, the others are not.
+# feet 0.5, 0.8 and 1.2 to the right: a zombie is 0.6 wide, READ in the jar). Tolerance 0.3: the first is struck, the
+# others are not. probe_body prints each zombie's scale and height, so the reading carries its own size.
 KB4:
   - cmd: "rpg give knell_beam"
   - hold: knell_beam
@@ -68,7 +115,10 @@ KB4:
   - cmd: 'summon zombie ~8 ~ ~0.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
   - cmd: 'summon zombie ~11 ~ ~0.8 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
   - cmd: 'summon zombie ~14 ~ ~1.2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
-  - wait: 60
+  - wait: 5
+  - probe_positions: "zombie 16"
+  - probe_body: t
+  - wait: 55
   - use: right_click
   - wait: 30
   - probe: t
@@ -109,6 +159,7 @@ KB6:
   - probe: t
 
 # KB7: COOLDOWN. Press; 40 ticks later press again (refused: 8 ticks left); 8 ticks after that press again (fires).
+# Each press is followed, in the same tick, by the world's game time, so the reading carries its own spacing.
 KB7:
   - cmd: "rpg give knell_beam"
   - hold: knell_beam
@@ -120,11 +171,14 @@ KB7:
   - wait: 60
   - probe_mana: ""
   - use: right_click
+  - cmd: "time query gametime"
   - wait: 40
   - use: right_click
+  - cmd: "time query gametime"
   - probe_mana: ""
   - wait: 8
   - use: right_click
+  - cmd: "time query gametime"
   - probe_mana: ""
   - wait: 30
   - probe: t
