@@ -172,12 +172,14 @@ public final class QuiverAmmo {
      * that changed underneath is a reason to take nothing rather than to take the wrong thing. <b>"What was planned" is
      * the weapon's ammo</b>: a slot that now holds arrows is never debited for a cobblestone plan.
      */
-    public static void consume(Player player, Material ammo, List<CollectPlan.Draw> draws) {
+    public static void consume(Player player, Keys keys, Material ammo, List<CollectPlan.Draw> draws) {
         PlayerInventory inventory = player.getInventory();
         for (CollectPlan.Draw draw : draws) {
             int slot = draw.source().slot();
             ItemStack stack = inventory.getItem(slot);
             if (stack == null) continue;
+            // The Nexus mirror is never ammunition, even if it moved into a planned slot after the plan (ruling 3).
+            if (io.github.butterflysmp.rpg.paper.nexus.NexusItems.isNexus(stack, keys)) continue;
             OptionalInt left = remaining(stack.getType(), stack.getAmount(), ammo, draw.amount());
             if (left.isEmpty()) continue;
             if (left.getAsInt() <= 0) {
@@ -263,7 +265,10 @@ public final class QuiverAmmo {
             // Only THIS ammo's slots, BEFORE the gear read: supply runs ahead of the verdict on every left-click packet
             // (about twenty a second while held), and the PDC read stays where it was, on the ammo stacks alone.
             if (item == null || item.getType() != ammo || item.getAmount() <= 0) continue;
-            cells.add(new Cell(slot, item.getType(), item.getAmount(), CraftMatrixScreen.isGear(item, keys)));
+            // THE NEXUS MIRROR IS NEVER AMMUNITION (2026-11-22): the star's slot shows the held weapon's rounds AS ARROWS,
+            // tagged as the Nexus item. Counted with gear through the one predicate the crafting walk uses (the seat's
+            // ruling A: never an ingredient, in any material it wears), so it is never planned and never debited.
+            cells.add(new Cell(slot, item.getType(), item.getAmount(), CraftMatrixScreen.neverAnIngredient(item, keys)));
         }
         return cells;
     }

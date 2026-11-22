@@ -78,6 +78,11 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * counted and marked {@code gear=<n>}. Added 2026-11-22 (the Breacher's brief, PR 2): what a reload took.
          */
         PROBE_ITEMS,
+        /**
+         * Log the Nexus item, found by its TAG anywhere in his inventory: {@code NEXUS slot=<i> material=<m> amount=<n>},
+         * or {@code NEXUS none}. The star or its quiver MIRROR (2026-11-22, GATE-vanilla-bows): which, and how many.
+         */
+        PROBE_NEXUS,
         /** A synthetic left {@code InventoryClickEvent} on the open menu's first slot whose name starts with this text. */
         CLICK,
         /** The same, on the first slot of this material. */

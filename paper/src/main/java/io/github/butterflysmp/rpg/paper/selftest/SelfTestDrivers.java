@@ -103,6 +103,20 @@ final class SelfTestDrivers {
                 yield Optional.empty();
             }
             case PROBE_ITEMS -> probeItems(p, a);
+            case PROBE_NEXUS -> {
+                var inv = p.getInventory();
+                String line = "NEXUS none";
+                for (int i = 0; i < inv.getSize(); i++) {
+                    ItemStack it = inv.getItem(i);
+                    if (io.github.butterflysmp.rpg.paper.nexus.NexusItems.isNexus(it, keys)) {
+                        line = "NEXUS slot=" + i + " material=" + it.getType().name().toLowerCase(java.util.Locale.ROOT)
+                                + " amount=" + it.getAmount();
+                        break;
+                    }
+                }
+                run.log(line);
+                yield Optional.empty();
+            }
             case CLICK -> click(p, a, item -> plain(item.effectiveName()).startsWith(a), "name^=\"" + a + "\"");
             case CLICK_MATERIAL -> click(p, a, item -> item.getType().name().equalsIgnoreCase(a), "material=" + a);
             case SHIFT_CLICK -> shiftClick(p, a);

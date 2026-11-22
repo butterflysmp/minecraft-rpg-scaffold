@@ -335,6 +335,8 @@ public final class Quivers {
         // same reasons, as WeaponDurability.applyWearOnUse.
         player.getInventory().setItemInMainHand(held);
         player.updateInventory();
+        // THE MIRROR (2026-11-22): the Nexus slot re-drawn from the count just written. A shot.
+        io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, keys);
     }
 
     /**
@@ -426,7 +428,7 @@ public final class Quivers {
         // every one of them.
         //
         // A no-op in creative: supply() returns no draws there, so no second mode check is needed.
-        QuiverAmmo.consume(player, ammo, supply.draws());
+        QuiverAmmo.consume(player, keys, ammo, supply.draws());
 
         // ONE DEADLINE, COMPUTED ONCE. It is stamped on the item AND handed to the cue task, and the
         // two must be the same number: the task's only question at fire time is whether the item still
@@ -476,6 +478,9 @@ public final class Quivers {
         // AFTER the item is back in the hand, for the same reason the sweep is: the task will read the
         // main hand when it fires, and the stamped copy has to be the one sitting there.
         QuiverReloadCue.schedule(player, weapon, adapters, completesAt, reloadTicks);
+        // THE MIRROR (2026-11-22): a reload began (the count is unchanged until it completes; re-drawn so the slot
+        // and the stamp cannot disagree whatever happened before).
+        io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, keys);
         return true;
     }
 
@@ -565,6 +570,8 @@ public final class Quivers {
         // EARLY on this path (finishReload is also called when a reload is settled at the start of
         // another one), and an overlay that outlives its reload is the exact failure the brief named.
         QuiverSweep.clear(player, weapon.id(), adapters.keys());
+        // THE MIRROR (2026-11-22): a reload completed (here or through settleMaturedReload); the slot re-drawn.
+        io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, keys);
     }
 
     /** The rounds a running reload will deliver, or 0 if the item carries no pending count. */

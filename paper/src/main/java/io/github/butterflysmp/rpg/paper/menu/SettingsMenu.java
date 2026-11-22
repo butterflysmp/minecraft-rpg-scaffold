@@ -219,6 +219,8 @@ public final class SettingsMenu extends Menu {
             // The profile is written first, so converge and the lock read the new value -- the same
             // write-then-place ordering the picker uses.
             NexusSlots.converge(viewer, adapters.keys(), slot);
+            // THE MIRROR (2026-11-22): the star back on, drawn from the held weapon at once.
+            io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(viewer, adapters.keys());
             viewer.sendMessage(Component.text(
                     "The Nexus is back, in " + NexusSlotPickerLayout.slotName(slot) + ".",
                     NamedTextColor.AQUA));
