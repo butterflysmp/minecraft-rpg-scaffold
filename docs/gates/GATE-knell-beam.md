@@ -8,6 +8,9 @@ ONE R0 and the ONE run sheet for the three.**
 name colours, KB2's after-hit probe, KB7's last mana line, and HF1R2 sampled the wrong weapon, so it is UNREAD).**
 Every reading is in *READINGS, 2026-11-22* at the end of this file. No prediction above was edited.
 
+**Seat approval 2026-11-22: code and gate diffed at 61b617ef, booted at 61b617ef, readings at 911de62f. Merge on Ben's
+words.** Ben's words, 2026-11-22, verbatim: "go ahead with the merge".
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
