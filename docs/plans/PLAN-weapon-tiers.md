@@ -285,6 +285,35 @@ and, to the seat's offer of 30 blocks in half a second:
   measured the held 14 firing every 16) **and `max_lifetime_ticks` 7 -> 10** (30 blocks of path at the unchanged speed
   3.0, in 0.5 s). Each is marked BEN with his words in the file. Nothing else in the file changes.
 
+### 1.10 Ben, 2026-11-22, VERBATIM: the Breacher (the Ranger's IRON tier)
+
+Relayed by the seat's brief of 2026-11-22 and recorded here on `feat/breacher`, spelling as typed:
+
+> "Let's design the Iron tier ranger weapon, The Breacher
+> 1. Common Rarity
+> 2. Kinetic
+> 3. Quiver Size 2
+> 4. Instead of Arrows it uses cobblestone as ammunition
+> 5. It fires like a shotgun with a 25 degree and 1s cooldown between shots.
+> 6. Crafted like this:
+> I = Iron Ingot
+> G = Gunpowder
+> S = String
+> S G I
+> S G I
+> X X X"
+
+To the seat's suggestions: *"1. fine"* (7 pellets at 6 each), *"2. Fine"* (one cobblestone from his inventory per shot
+loaded, a full reload costs 2; with none he cannot reload and a message says why), *"3. 3 seconds"* (the reload),
+*"4. Fine"* (the item is a crossbow, like the Boltor), *"5. Fine"* (fast flying cobblestone chunks, about 12 blocks),
+*"6. Name should just be "Breacher""*. The seat read "25 degree" as the FULL width (12.5 either side of the aim) and
+"X" as an empty slot; he did not object.
+
+**The ranger ladder's IRON tier is `breacher`.** Ben's numbers: common, kinetic, a crossbow, quiver 2, reload 60 ticks,
+cooldown 20 ticks, seven pellets of 6 kinetic each (a literal damage effect), cobblestone ammunition one a round (the
+`ammo:` key, `feat/breacher-ammo`), his recipe (3x2). The seat's placeholders (the spread's 12.5, the pellets' flight,
+the words, the visuals) are each marked in `breacher.yml`. **It joins no loot pool.** Gate: `GATE-breacher.md`.
+
 ---
 
 ## 2. WHAT EXISTS TODAY

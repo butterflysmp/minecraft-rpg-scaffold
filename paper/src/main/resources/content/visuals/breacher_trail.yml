@@ -1,0 +1,10 @@
+# The Breacher's pellet trail (feat/breacher, 2026-11-22). SEAT PLACEHOLDER: one grey dust a tick behind each
+# cobblestone chunk. SEVEN trails at once, so the density is one particle, as dragons_breath_trail's is for its seven.
+steps:
+  - type: particle
+    particle: DUST
+    color: [128, 128, 128]
+    size: 0.9
+    count: 1
+    spread: 0.02
+    speed: 0.0    # inert for DUST

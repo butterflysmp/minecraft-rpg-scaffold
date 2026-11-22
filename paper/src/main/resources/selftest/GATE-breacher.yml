@@ -1,0 +1,287 @@
+# GATE-breacher.md: THE BREACHER, PER-WEAPON AMMUNITION AND THE QUEUED ITEMS (feat/breacher-queued-items,
+# feat/breacher-ammo, feat/breacher). `/rpg selftest breacher`. Every row is AUTO; he types nothing but his answer to the
+# one question at the end, and does two things the gold lines ask (craft one Breacher; hold right-click). Night (18000)
+# and no natural spawns, both put back by the run's restore; every mob a frozen NoAI zombie; no fight world. His level is
+# staged at 1, so the level term of every damage sum is 0; the run's end puts his HEALTH back (SELFTEST RUN HEALTH).
+# The natural hostiles within 64 blocks are killed by NAMED TYPE, as GATE-living-lantern's setup does.
+# Every row that reads cobblestone or arrows CLEARS both first: the run's restore puts back any of his own.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+  - probe_self: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:zombie_villager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:husk,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:drowned,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:stray,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:bogged,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:parched,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:cave_spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:witch,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:enderman,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:slime,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:silverfish,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:endermite,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:pillager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:vindicator,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:evoker,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:ravager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:vex,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:guardian,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:elder_guardian,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:breeze,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creaking,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:warden,distance=..64,tag=!selftest]"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# BR0: THE SPOT, as GATE-living-lantern's LL0: the corridor 1..30 east (feet and head, 4 north to 3 south) all AIR (480),
+# the floor under it no AIR and no WATER (0 and 0).
+BR0:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - probe_self: ""
+  - probe_blocks: "AIR 1 0 -4 30 1 3"
+  - probe_blocks: "AIR 1 -1 -4 30 -1 3"
+  - probe_blocks: "WATER 1 -1 -4 30 -1 3"
+
+# BR1: given, held, scored 100, its tooltip as the server built it; and his stats with it held (the class-bonus term).
+BR1:
+  - cmd: "rpg give breacher"
+  - probe_inventory: breacher
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - wait: 10
+  - dump: held
+  - cmd: "rpg stats"
+
+# BR2: ONE SHOT at a zombie 1 block ahead: all seven pellets land (EXECUTED), each 6 kinetic. The quiver 2 -> 1.
+BR2:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~1 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - probe: t
+  - use: right_click
+  - wait: 6
+  - probe: t
+  - dump: held
+
+# BR3: THE PATTERN, at 4 blocks: C on the aim, R on the horizontal ring pellet's line (12.5 degrees), O 25 degrees off on
+# the other side. C and R each struck ONCE, O not. (At the brief's 3 blocks C would also take the two lower diagonal
+# pellets, 0.0007 inside its half-width, EXECUTED: so 4.)
+BR3:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~4 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~3.9052 ~ ~0.8658 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~3.6252 ~ ~-1.6905 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - probe_positions: "zombie 16"
+  - use: right_click
+  - wait: 6
+  - probe: t
+
+# BR4: THE REACH: a zombie at 10 struck by the centre pellet (on its 4th tick); then, alone, a zombie at 14 not struck.
+# Two presses 25 ticks apart (the cooldown is 20); the magazine's two rounds.
+BR4:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=n]"
+  - cmd: "kill @e[tag=f]"
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"]}'
+  - wait: 40
+  - use: right_click
+  - wait: 8
+  - probe: n
+  - cmd: "kill @e[tag=n]"
+  - cmd: 'summon zombie ~14 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"]}'
+  - wait: 17
+  - use: right_click
+  - wait: 8
+  - probe: f
+
+# BR5: THE COOLDOWN: press; 16 ticks later press (refused, 4 of 20 left); 4 after that press (fires). The game time
+# with each press. A zombie at 4 takes the centre pellet twice.
+BR5:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~4 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - use: right_click
+  - cmd: "time query gametime"
+  - wait: 16
+  - use: right_click
+  - cmd: "time query gametime"
+  - wait: 4
+  - use: right_click
+  - cmd: "time query gametime"
+  - wait: 6
+  - probe: t
+  - dump: held
+
+# BR6: EMPTY AND RELOAD: two shots, a third press does not fire; then 5 cobblestone given, one reload takes exactly 2
+# (5 then 3) and the quiver reads 2 after the 60 ticks.
+BR6:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:cobblestone"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "kill @e[tag=t]"
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - dump: held
+  - cmd: "give @s minecraft:cobblestone 5"
+  - probe_items: cobblestone
+  - reload: ""
+  - probe_items: cobblestone
+  - wait: 30
+  - dump: held
+  - wait: 35
+  - dump: held
+
+# BR7: NO AMMO: an empty Breacher, no cobblestone, sixteen arrows: the reload is refused, the notice names cobblestone,
+# and the arrows are untouched.
+BR7:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:cobblestone"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 22
+  - cmd: "give @s minecraft:arrow 16"
+  - probe_items: arrow
+  - probe_items: cobblestone
+  - reload: ""
+  - wait: 2
+  - probe_items: arrow
+  - probe_items: cobblestone
+  - dump: held
+
+# BR8: THE CONTROL: the Boltor, with 5 cobblestone AND 16 arrows: one shot, one reload, and it takes ONE ARROW and leaves
+# the cobblestone.
+BR8:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:cobblestone"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "give @s minecraft:cobblestone 5"
+  - cmd: "give @s minecraft:arrow 16"
+  - cmd: "rpg give boltor"
+  - hold: boltor
+  - use: right_click
+  - wait: 2
+  - probe_items: arrow
+  - probe_items: cobblestone
+  - reload: ""
+  - probe_items: arrow
+  - probe_items: cobblestone
+  - wait: 65
+  - dump: held
+
+# BR9: THE STAFF: its tooltip reads 0.8s; a zombie 25 straight ahead is struck; alone, one at 33 is not. Two presses,
+# 30 ticks apart (the cooldown is 16).
+BR9:
+  - cmd: "rpg give crystal_shard_staff"
+  - hold: crystal_shard_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - wait: 10
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=n]"
+  - cmd: "kill @e[tag=f]"
+  - cmd: 'summon zombie ~25 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"]}'
+  - wait: 40
+  - use: right_click
+  - wait: 15
+  - probe: n
+  - cmd: "kill @e[tag=n]"
+  - cmd: 'summon zombie ~33 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"]}'
+  - wait: 15
+  - use: right_click
+  - wait: 15
+  - probe: f
+
+# BR10: THE CRAFT, as GATE-living-lantern's CR3: a crafting table, 2 string, 2 gunpowder, 2 iron ingots; he places the
+# table BESIDE OR BEHIND him and crafts ONE Breacher; then the row finds it, holds it and dumps it. EVERY CROSSBOW IN HIS
+# INVENTORY IS CLEARED FIRST (the rows above gave Breachers and a Boltor), so the one the row finds is the one he made.
+BR10:
+  - cmd: "clear @s minecraft:crossbow"
+  - probe_inventory: breacher
+  - cmd: "give @s minecraft:crafting_table 1"
+  - cmd: "give @s minecraft:string 2"
+  - cmd: "give @s minecraft:gunpowder 2"
+  - cmd: "give @s minecraft:iron_ingot 2"
+  - tell: "PLACE THE CRAFTING TABLE BESIDE OR BEHIND YOU and craft ONE Breacher: string, gunpowder, iron ingot across the top row, the same across the second row, the bottom row empty. You have 60 seconds."
+  - wait: 1200
+  - probe_inventory: breacher
+  - hold: breacher
+  - dump: held
+
+# HF2: HELD FIRE ON THE LIVING LANTERN, built as GATE-living-lantern's HF1R3: ONLY the lantern in his hotbar, the held
+# item logged at both ends, the row's own /rpg firerate before and after. Every weapon the rows gave him is cleared
+# first, to free slots for HOLD_ONLY's moves (the run's restore puts back anything of his own those clears took).
+HF2:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:amethyst_shard"
+  - cmd: "clear @s minecraft:cobblestone"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give living_lantern"
+  - hold_only: living_lantern
+  - cmd: "rpg mana refill"
+  - cmd: "rpg firerate"
+  - probe_held: ""
+  - tell: "HOLD RIGHT-CLICK with the Living Lantern until your mana runs out (about 8 casts). It is the only thing in your hotbar: do not scroll. You have 15 seconds."
+  - wait: 300
+  - probe_held: ""
+  - cmd: "rpg firerate"
+
+# BR11: A FREE GO, THEN THE ONE QUESTION. The Breacher and a stack of cobblestone, six frozen zombies 2 to 7 blocks out,
+# 30 seconds; then the zombies go and the question is put. No answer in 60 seconds is logged NOT STATED.
+BR11:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:lantern"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "give @s minecraft:cobblestone 64"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~4 ~ ~1.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~4 ~ ~-2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~5.5 ~ ~0.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~6.5 ~ ~-1 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~3 ~ ~-4 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - tell: "30 seconds with the Breacher: face the zombies and right-click; LEFT-click to reload (it takes cobblestone). A question follows."
+  - wait: 600
+  - cmd: "kill @e[tag=t]"
+  - ask: "1 1200 words Did the blast spread about as wide as you expected?"

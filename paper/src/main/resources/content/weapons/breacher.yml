@@ -1,0 +1,98 @@
+# THE BREACHER: the Ranger's IRON tier (feat/breacher, 2026-11-22). A crossbow that fires seven cobblestone chunks in
+# one blast, and reloads from cobblestone, never arrows (feat/breacher-ammo: the `ammo:` key).
+#
+# Ben, 2026-11-22, verbatim (PLAN-weapon-tiers.md 1.10): "Let's design the Iron tier ranger weapon, The Breacher /
+# 1. Common Rarity / 2. Kinetic / 3. Quiver Size 2 / 4. Instead of Arrows it uses cobblestone as ammunition / 5. It fires
+# like a shotgun with a 25 degree and 1s cooldown between shots." To the seat's questions: "1. fine" (7 pellets at 6
+# each), "2. Fine" (one cobblestone per shot loaded), "3. 3 seconds" (the reload), "4. Fine" (a crossbow, like the
+# Boltor), "5. Fine" (fast cobblestone chunks, about 12 blocks), "6. Name should just be "Breacher"".
+#
+# BEN'S NUMBERS: common, kinetic, quiver 2, cobblestone ammo one per round, 20 ticks (1 s), 60 ticks of reload (3 s),
+# seven pellets of 6 kinetic each, a crossbow, his recipe (recipes/breacher.yml). SEAT PLACEHOLDERS 2026-11-22, each
+# marked where it sits: the spread block's angle, the pellets' flight (item body, speed, gravity, lifetime), the
+# description and flavour, the three visuals and their sounds.
+#
+# NEW CONTENT CITES THE BOLTOR for anything not listed (CLAUDE.md). Nothing here is taken from a deleted dev weapon.
+#
+# A CROSSBOW HAS VANILLA DURABILITY (READ: WeaponDurability.maxOf reads Material.getMaxDurability), so this wears one
+# point a use (WeaponDurability.WEAR_PER_USE) exactly as the Boltor does, and Unbreaking can roll on it and acts. The
+# vanilla crossbow's own use never runs: in the main hand RpgListeners.onRightClick cancels a right_click weapon's
+# interaction (the item use is denied, READ), and in either hand RpgListeners.onWeaponCrossbowLoad refuses the load
+# (feat/breacher-ammo). So it never loads or fires a vanilla arrow.
+#
+# NAME THE QUANTITY, for every enchant that can roll here (EnchantRoll.poolFor gates by class only, READ: a ranger
+# weapon's pool is Power, Deft Hands, Expanded Quiver and Unbreaking):
+#   Power (effect damage, 5/10/15%): moves each pellet's hitBase, 6 x score/100 (EffectApplier's Damage arm,
+#     HitDamage.hitBase). Non-zero and continuous; every Breacher has it. At score 100 a pellet reads 6.3 / 6.6 / 6.9,
+#     and the damage popup ROUNDS (Math.round): "6" / "7" / "7", so level I is invisible on one pellet, as it was on
+#     hunters_bow (deleted 2026-11) and as power.yml records. It is real in the sum (7 x 0.3 = 2.1 more a full blast).
+#   Deft Hands (effect reload_time, 10/20/30%): moves reload_ticks 60 -> 54 / 48 / 42 (ReloadTime.resolve, as on the
+#     Boltor's 60). Non-zero; every Breacher has a reload.
+#   Expanded Quiver (effect quiver_size, +1/+2/+3 rounds, FLAT): moves quiver_size 2 -> 3 / 4 / 5. Every Breacher has a
+#     magazine. It is the LARGEST relative effect it has on any shipped weapon (+50% / +100% / +150%, against the
+#     Boltor's +12.5% / +25% / +37.5%), the counter-example expanded_quiver.yml's uniformity argument already has in
+#     Dragon's Breath, made larger. Recorded, not changed: OPEN FOR BEN. Each added round costs one more cobblestone.
+#   Unbreaking (effect durability): a crossbow is durable (above). Real.
+#   Punch is PARKED (no weapon can take it), so it cannot roll here.
+
+id: breacher
+display_name: "Breacher"                   # BEN: "Name should just be "Breacher""
+element: kinetic                           # BEN. Kinetic accrues nothing (no burn): only fire.yml applies a status
+rarity: common                             # BEN
+class: ranger                              # BEN: the Iron tier ranger weapon
+material: crossbow                         # BEN: "Fine" to a crossbow, like the Boltor
+quiver_size: 2                             # BEN
+reload_ticks: 60                           # BEN: "3 seconds"
+ammo: cobblestone                          # BEN: "Instead of Arrows it uses cobblestone as ammunition". One per round
+
+flavor:                                    # SEAT PLACEHOLDER 2026-11-22
+  - "Iron, gunpowder, string,"
+  - "and whatever was lying around."
+
+triggers:
+  right_click:
+    description:                           # SEAT PLACEHOLDER 2026-11-22 (no `name:`: the header reads the weapon's)
+      - "Seven chunks of cobblestone"
+      - "in a blast 25 degrees wide."
+    # BEN: "1s cooldown between shots". 20 is ON the 4-tick grid, so held fire delivers the tooltip's 1.0s.
+    cooldown_ticks: 20
+    on_cast:
+      - type: visual
+        visual_id: breacher_cast           # SEAT PLACEHOLDER 2026-11-22
+    cast:
+      type: projectile
+      # SEAT PLACEHOLDER 2026-11-22: "fast flying cobblestone chunks". At 3.0 a pellet cannot pass through a body
+      # between ticks: ProjectileFlight.step traces the whole 3-block segment each tick (PaperCombatWorld.castRay, one
+      # World#rayTrace over the segment, RAY_SIZE 0, exact boxes), READ, as for the Crystal Shard Staff.
+      speed: 3.0
+      gravity: 0                           # SEAT PLACEHOLDER 2026-11-22
+      # SEAT PLACEHOLDER 2026-11-22: "a short reach of about 12 blocks". 4 ticks x 3.0 = 12 blocks of path from his
+      # eye: the first step runs inline at the press, and the flight ends when the 4th tick's segment finds nothing
+      # (ProjectileFlight.step, READ). A pellet that reaches it unspent lands in the air: the hit visual plays, no damage.
+      max_lifetime_ticks: 4
+      item: cobblestone                    # SEAT PLACEHOLDER 2026-11-22: an ITEM body of cobblestone, one per pellet
+      trail: breacher_trail                # SEAT PLACEHOLDER 2026-11-22
+      # THE SPREAD. count is the TOTAL: one pellet down the aim and six on a ring (SpreadPattern.directionsFor, READ).
+      # angle_degrees IS THE RING'S OFFSET FROM THE AIM (each ring direction makes exactly that angle with it), so
+      # BEN'S "25 degree" FULL WIDTH (the seat's reading, 12.5 either side) is 12.5 here: the two horizontal ring
+      # pellets fly 12.5 degrees left and right of the aim, 25 apart. SEAT PLACEHOLDER 2026-11-22 for the reading.
+      #
+      # THE TOOLTIP: WeaponLoreLines.deliveredShots prints the spread's count, so the line reads "6 x 7" (READ). The
+      # rule that allowed Dragon's Breath its "x 7" was that a full seven-pellet hit EXISTS (dragons_breath.yml: out to
+      # 5.72 blocks at 3 degrees). At 12.5 the whole pattern fits a 0.6-wide body only inside 0.6 / (2 tan 12.5) = 1.35
+      # blocks. NO RULE IS CHANGED: under the existing rule the full hit exists, so "x 7" prints. OPEN FOR BEN.
+      spread:
+        count: 7                           # BEN: "1. fine" to seven pellets
+        angle_degrees: 12.5
+    on_hit:
+      - type: visual
+        visual_id: breacher_hit            # SEAT PLACEHOLDER 2026-11-22
+      - type: damage                       # BEN: 6 kinetic a pellet. A literal, as dragons_breath authors its 9
+        amount: 6
+        element: kinetic
+      # A TRAVELLING RANGED WEAPON AUTHORS KNOCKBACK (Ben's standing ruling, 2026-09-13; CLAUDE.md and
+      # standing-decisions.md). The seat's brief listed "no knockback" as a placeholder; the standing ruling is Ben's
+      # and is followed here, and the difference is reported to the seat. The strength is a placeholder at Dragon's
+      # Breath's 0.1 a pellet (itself not ruled). OPEN FOR BEN: the rule, the strength, or both.
+      - type: knockback
+        strength: 0.1

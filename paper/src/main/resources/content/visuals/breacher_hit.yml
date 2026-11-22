@@ -1,0 +1,13 @@
+# The Breacher's pellet hit (feat/breacher, 2026-11-22). SEAT PLACEHOLDER: a few crit sparks and a stone knock. It
+# plays ONCE PER PELLET that lands (on_hit), so up to seven at once at point blank: the sound is quiet for that reason.
+# The sound READ in the pinned paper-api (Sound.BLOCK_STONE_HIT).
+steps:
+  - type: particle
+    particle: CRIT
+    count: 4
+    spread: 0.2
+    speed: 0.1
+  - type: sound
+    key: block.stone.hit
+    volume: 0.5
+    pitch: 1.2
