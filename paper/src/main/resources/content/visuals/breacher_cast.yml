@@ -1,0 +1,18 @@
+# The Breacher's press (feat/breacher, 2026-11-22). SEAT PLACEHOLDER: the crossbow's own shot with a low blast under it,
+# and a puff at the muzzle. Both sounds READ in the pinned paper-api (Sound.ITEM_CROSSBOW_SHOOT,
+# Sound.ENTITY_GENERIC_EXPLODE); nothing taken from a deleted dev weapon. on_cast fires ONCE per press, not per pellet
+# (CastExecutor.commit runs once; the spread expands in launch()).
+steps:
+  - type: sound
+    key: item.crossbow.shoot
+    volume: 1.0
+    pitch: 0.8
+  - type: sound
+    key: entity.generic.explode
+    volume: 0.3
+    pitch: 1.8
+  - type: particle
+    particle: SMOKE
+    count: 6
+    spread: 0.15
+    speed: 0.02

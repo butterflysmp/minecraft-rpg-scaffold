@@ -1,0 +1,24 @@
+# The Breacher's recipe (feat/breacher, 2026-11-22). BEN's, verbatim: "Crafted like this: / I = Iron Ingot / G =
+# Gunpowder / S = String / S G I / S G I / X X X". The seat read "X" as an EMPTY slot; Ben did not object.
+#
+# A 3x2 SHAPE (READ): RecipeDefinition takes 1 to 3 rows of equal width (the Crystal Shard Staff ships a 1x3), and
+# RecipeRegistrar registers it as a Bukkit ShapedRecipe whose result is a plain crossbow; our crafting table mints the
+# Breacher at commit (InventoryCraft.commitCraft, the CRAFT minted line), the staves' route. NO NEW CODE: that route
+# mints whatever material the weapon names, and a crossbow is durable, so the crafted Breacher wears like the Boltor.
+# A two-row shape matches with its rows in the TOP two or the BOTTOM two rows of the grid (vanilla's shaped matching
+# slides a smaller pattern; INFERRED, not read in the jar), so Ben's empty third row is one of two placements that
+# work. Three columns wide, so it never fits the 2x2 player grid (RecipeRegistrar's two-by-two warning does not fire).
+#
+# NO VANILLA CLASH (READ, the pinned 26.1.2 server jar's 1,515 recipe files): no vanilla recipe uses gunpowder with an
+# iron ingot, or gunpowder with string. Vanilla's crossbow is sticks, iron, string and a tripwire hook.
+
+mints: breacher
+
+shape:
+  - "SGI"
+  - "SGI"
+
+ingredients:
+  S: string
+  G: gunpowder
+  I: iron_ingot

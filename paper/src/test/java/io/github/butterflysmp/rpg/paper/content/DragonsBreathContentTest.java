@@ -149,6 +149,8 @@ class DragonsBreathContentTest {
         for (WeaponDefinition weapon : shippedWeapons().all()) {
             for (TriggerBinding binding : weapon.triggers()) {
                 if (weapon.id().equals("dragons_breath")) continue;
+                // The Breacher (feat/breacher, 2026-11-22) is the second spread; BreacherContentTest pins its 7 at 12.5.
+                if (weapon.id().equals("breacher")) continue;
                 if (binding.ability().cast() instanceof CastSpec.Projectile projectile) {
                     assertNull(projectile.spread(),
                             weapon.id() + "/" + binding.input() + " grew a spread block");

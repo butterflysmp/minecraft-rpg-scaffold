@@ -40,9 +40,10 @@ class SelfTestScenariosTest {
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
-                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern"),
+                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty-seven gates, in boot order (living-lantern LAST, the Living Lantern, 2026-11-22, a NEW gate after"
+                "the thirty-eight gates, in boot order (breacher LAST, the Breacher, 2026-11-22, a NEW gate after living-lantern;"
+                        + " living-lantern before it, the Living Lantern, 2026-11-22, a NEW gate after"
                         + " knell-beam; knell-beam before it, the Knell Beam, 2026-11-21, a NEW gate after"
                         + " crystal-shard-staff; crystal-shard-staff before it, the Crystal Shard Staff, 2026-11-21, a NEW gate after"
                         + " remove-dev-weapons; remove-dev-weapons before it, the four dev weapons deleted, 2026-11-21, a"
@@ -268,7 +269,9 @@ class SelfTestScenariosTest {
         // The control: 302 + 1 = 303. 266 was this line's value.
         // Then GATE-living-lantern.md (feat/living-lantern, 2026-11-22), RECOUNTED: 37 gates, 317 keys, 37 setups, so 280.
         // The control: 303 + 14 (setup, LL0-LL9, KB2R2, CR3, HF1R3) = 317. 267 was this line's value.
-        assertEquals(280, loaded.rows());
+        // Then GATE-breacher.md (feat/breacher, 2026-11-22), RECOUNTED: 38 gates, 331 keys, 38 setups, so 293. The
+        // control: 317 + 14 (setup, BR0-BR11, HF2) = 331. 280 was this line's value.
+        assertEquals(293, loaded.rows());
     }
 
     /**
