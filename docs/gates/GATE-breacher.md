@@ -13,6 +13,12 @@ within 16 blocks`: the probe's radius).** Readings in *READINGS, 2026-11-22* at 
 **Seat approval 2026-11-22: code and gate diffed at 7a5e9286, booted at 7a5e9286, readings at 58515ca7. Merge on Ben's
 words.** Ben's words, verbatim: "good to merge". Merge order: #234, then #235, then #236.
 
+**Note, 2026-11-22, after the merge: BR10's missing Breacher is CLOSED.** Asked by the seat where the crafted Breacher
+went, Ben answered, verbatim: **"2. I dropped it"**. So there is no missing-item defect, and the read of the held-stack
+write-back (`Quivers`' `setItemInMainHand` when the held slot changes) that the seat's ruling 7 would have owed is NOT
+owed. BR10's reading above is unchanged: the CRAFT line read `score=100`; the tooltip half stays UNREAD and was already
+closed by `GATE-living-lantern.md`'s CR3.
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 

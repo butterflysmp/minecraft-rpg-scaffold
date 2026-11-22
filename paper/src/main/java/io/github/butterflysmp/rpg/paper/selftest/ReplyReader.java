@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerActionBar;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
 import java.util.Queue;
 import java.util.UUID;
@@ -24,6 +25,11 @@ import net.kyori.adventure.text.Component;
  * <p><b>Registered only while a run is active, and only for the test player</b>: {@link SelfTestRun} registers it
  * at start and unregisters it at finish, stop and quit; packets to anyone else are ignored here by UUID.
  * {@code isOverlay()} separates the action bar (a stone's refusal) from chat.
+ *
+ * <p><b>AND THE ACTION-BAR PACKET ITSELF</b> (2026-11-22, the seat's ruling 3 on GATE-breacher's boot): the quiver's
+ * notices ({@code QuiverNotice}, {@code Player#sendActionBar}) reached no REPLY line there, because only system
+ * chat was read. {@code ACTION_BAR} is copied too, and logged as an action-bar line exactly as an overlay one is
+ * ({@code REPLY actionbar …}), so a row reads either route with one prediction.
  */
 final class ReplyReader extends PacketListenerAbstract {
 
@@ -42,9 +48,15 @@ final class ReplyReader extends PacketListenerAbstract {
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
-        if (event.getPacketType() != PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) return;
+        boolean actionBar = event.getPacketType() == PacketType.Play.Server.ACTION_BAR;
+        if (!actionBar && event.getPacketType() != PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) return;
         if (event.isCancelled()) return;   // not sent, so not a reply
         if (event.getUser() == null || !player.equals(event.getUser().getUUID())) return;
+        if (actionBar) {
+            // Marked as action-bar text: overlay true, the flag SelfTestRun prints as "REPLY actionbar".
+            sink.add(new Reply(new WrapperPlayServerActionBar(event).getActionBarText(), true));
+            return;
+        }
         WrapperPlayServerSystemChatMessage chat = new WrapperPlayServerSystemChatMessage(event);
         sink.add(new Reply(chat.getMessage(), chat.isOverlay()));
     }

@@ -1999,3 +1999,22 @@ two parties wrote and approved it.**
 **Why naming every term is the remedy, not care:** a sum with an unnamed term is not wrong-looking. 16 at score 100
 reads as complete, and every term that happens to be zero or one in the author's head is invisible on the page. Written
 out, a term with no staged value is a blank a reviewer can see.
+
+### A ROW BEGINS FROM A CLEARED COOLDOWN, OR SAYS WHY NOT
+
+**This is the account. The pointer is `CLAUDE.md`'s VERIFICATION index.** Owed by the seat's ruling 4 on
+`GATE-breacher.md`'s boot (2026-11-22); written in `feat/breacher-rework-owed`.
+
+**The rule:** a gate row that presses a weapon begins from a cleared cooldown: a `wait:` at least the weapon's
+`cooldown_ticks` after the last press of that ability by the previous row, written in the row and counted in its
+prediction. **Or the row says, in its own prediction, why it does not** (it means to read the carried cooldown).
+
+**Why it bites: the cooldown is PER PLAYER AND ABILITY, not per item, and nothing resets it at a row boundary.**
+`AbilityService` keys it by the player and the ability id, so a fresh item given by `rpg give` carries the previous
+row's cooldown with it, and the row-start clean (blocks, mobs, the return) does not touch it.
+
+**Missed once, by two parties:** `GATE-breacher.md` BR6, 2026-11-22. BR5's last press fired about 10 ticks before BR6's
+first, so BR6's first press read `On cooldown for 0.5s`, its second and third fired, and the empty-magazine refusal the
+row existed to read (a THIRD press on an empty magazine) was never reached. **The gate missed it, and the seat read
+both rows without seeing it** (the seat's own words in the ruling). Nothing in either row was wrong on its own; the
+fault was in the seam between them, which is where a row-by-row read does not look.
