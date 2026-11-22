@@ -4,6 +4,9 @@
 on `feat/lantern-owed-fixes` (PR 1), on master `e487ade5` (the squash of #230), before any boot. **This file carries the
 ONE R0 and the ONE run sheet for the three.**
 
+**Status, 2026-11-22: BOOTED ONCE at `d98c28bb`; R0 NOT AS PREDICTED (R0b, one line: the gate's instrument); NO ROW RUN.**
+Readings in *READINGS, 2026-11-22* at the end of this file. No prediction above was edited.
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
@@ -372,3 +375,54 @@ Carried since `GATE-remove-dev-weapons.md` (CR1's tooltip half) and `GATE-crysta
 - **The cone against another player**: there is one player. Source only (ruling 4).
 - **Unbreaking granting nothing on the lantern** (no durability): source only, carried open with the other staves.
 - **The vanilla crafter making a lantern**: the existing `CrafterCraftEvent` handler, not re-read here.
+
+## READINGS, 2026-11-22 — ONE BOOT AT `d98c28bb`, READ FROM `run/logs/latest.log` BY CC. R0 NOT AS PREDICTED; NO ROW RUN
+
+**Written after the boot. No prediction above was edited.** This boot's own lines: `[Rpg] Build: d98c28bb` (13:12:07),
+`Done (7.123s)!` (13:12:08).
+
+### THE BOOT, BY `booting.md` AND THE CARRIED STATE
+
+| step | read |
+|---|---|
+| 1. the seat's word and Ben's | the seat's boot approval (2026-11-22, relayed); Ben's own word, verbatim: **"ready"**, then **"go ahead"** before the boot command |
+| 2. the heads | `git ls-remote`: `feat/living-lantern` `d98c28bba6a574de31d9ab9578edaa6ecbe3d88e`, as the seat diffed; #231, #232 and #233: OPEN, MERGEABLE, both `build` checks `pass` on each current head |
+| CS 1. no JVM | `no java process` |
+| CS 2. backup | `../rpg-run-backups/2026-11-22-pre-living-lantern` (new): Rpg 149 files / 26 dirs both sides, `diff -rq lines: 0`; world 193 files / 32 dirs both sides, `diff -rq lines: 0`; `world/dimensions`: `minecraft rpgfight`; overworld 106 files |
+| CS 3. config | `12:  dev-pack-on-join: true` |
+| CS 4. fight folders | `rpgfight` entries: 0 |
+| CS 5. "booting now" | sent in its own message, with "Ben: do NOT log in until I tell you R0 passed"; the boot command in the next turn, after Ben's "go ahead" |
+| CS 6. boot, deployed lines | `==> Building d98c28bb`; `weapons/living_lantern.yml:42:    cooldown_ticks: 16                     # BEN: 0.8 s. …` (the predicted text, followed by its comment); `weapons/` 21 `.yml`; `recipes/living_lantern.yml` and `visuals/lantern_front.yml` present. The boot's build runs no unit tests (0 `Tests run:` lines) |
+| CS 7. R0a to R0e | below: **R0b NOT AS PREDICTED**, the rest as predicted |
+| CS 8. "R0 passed" | **NOT SENT.** CC sent "R0 did NOT pass. Ben: do NOT log in", and stopped for the seat |
+| login | **His `joined the game`: 13:13:29**, after R0 was read (13:12-13:13) and NOT passed. **Dated note, 2026-11-22: he logged in while R0 stood failed and the instruction was not to log in; whose omission is for the seat to record** (CC's STOP message was sent before 13:13:29; its exact time is not in the log). He issued ONE command, `/stop`, at 13:14:19. **0 `SELFTEST` lines: no row ran, so no reading below a row exists** |
+| CS 9. after `/stop` | `rpgfight` entries: 0; overworld **106** files (step 2: 106); `[13:14:20] … All dimensions are saved`; `no java process` |
+
+### R0
+
+- **R0a — AS PREDICTED.** `[13:12:07] [Server thread/INFO]: [Rpg] Build: d98c28bb`. Not `-dirty`, not `unknown`.
+- **R0b — NOT AS PREDICTED, ONE LINE OF THIRTEEN.** The scan as written printed PRESENT for twelve (the six content
+  entries including the `knell_beam.yml` control, `HF1R3:`, `  - living-lantern`, `ConeShell.class`, `onWeaponPlace`,
+  `HELDID slot=`, `HEALTH saved=`) and **`ABSENT  living_lantern.yml '    cooldown_ticks: 16'`**.
+  - **What the jar holds (read after the STOP, as a test of the explanation, not as a pass):** exactly ONE
+    `cooldown_ticks` line in `content/weapons/living_lantern.yml`, start-anchored:
+    `    cooldown_ticks: 16                     # BEN: 0.8 s. On the 4-tick grid; not a basic attack, so no scaling`.
+    The scan's `Line` check requires the line to END after `16` (`\s*$`), which a trailing comment defeats. **Control:**
+    the same end-anchored check on `knell_beam.yml`'s comment-free `    cooldown_ticks: 48` returns True in this jar.
+  - **So the value deployed is 16 and the miss is the gate's instrument**, written for a comment-free line and copied to
+    a line that carries a comment. It stays NOT AS PREDICTED until the seat rules.
+- **R0c — AS PREDICTED.** `[Rpg] Loaded 11 abilities, 40 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6
+  fragments, 6 aspects, 21 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 5 recipes, 1
+  ores, 4 vein sizes`, once; `Mint-on-craft: 36 indexed, 36 claiming, of 51 gear definitions`; `Convert-on-arrival: 7
+  materials {…}`. The loot, fight, world-damage and smithing lines are **byte-identical** (timestamps stripped, 4 lines)
+  to the last boot's (`run/logs/2026-11-22-1.log.gz`, `Build: 61b617ef`). No `Refusing`, `Skipping`, `SEVERE`,
+  `Exception`, `Recipe '`, `No fights loaded`. `[Rpg]` WARN: only `volley_stone`'s pair. Paper's "4 release(s) behind"
+  block is not `[Rpg]`.
+- **R0d — AS PREDICTED.** `[Rpg] Selftest: dev server, 280 scenarios across 37 gates [melee-cell, …, knell-beam,
+  living-lantern]`. Control `267 scenarios across 36 gates`: 0 occurrences.
+- **R0e — AS PREDICTED.** `[Rpg] FIGHTWORLD sweep path=C:\…\run\world\dimensions\rpgfight folders=0`, once; no
+  `deleting`, no `orphan`.
+
+### WHAT IS UNREAD AFTER THIS BOOT
+
+**Every row**: setup, LL0-LL9, KB2R2, CR3, HF1R3 and the end-of-run HEALTH line. No `/rpg selftest` was issued.
