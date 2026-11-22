@@ -4,6 +4,10 @@
 on `feat/knell-owed-fixes` (PR 1), on master `141308e1` (the squash of #227), before any boot. **This file carries the
 ONE R0 and the ONE run sheet for the three.**
 
+**Status, 2026-11-22: RUN ONCE, at `61b617ef`. R0 AS PREDICTED; FIVE READINGS NOT AS PREDICTED (KB0's floor water, KB1's
+name colours, KB2's after-hit probe, KB7's last mana line, and HF1R2 sampled the wrong weapon, so it is UNREAD).**
+Every reading is in *READINGS, 2026-11-22* at the end of this file. No prediction above was edited.
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
@@ -461,3 +465,173 @@ level bonus 0 (level 1, staged; executed 0.0); charge 1.0 (not a melee charge).
 - **The crafted item's tooltip Gear Score** (CR1, carried twice): it rides on the next boot that has a craft in it for
   another reason, read from a selftest dump after that craft. No craft is asked of Ben here.
 - **Unbreaking granting nothing on the beam**, and **the shard or beam against a player**: source only.
+
+## READINGS, 2026-11-22 — ONE RUN AT `61b617ef`, READ FROM `run/logs/latest.log` BY CC
+
+**Written after the run. No prediction above was edited; where a reading differs, it says so here.** Every line quoted is
+from this boot's log (`[Rpg] Build: 61b617ef`, the one `Done` at 10:39:54). Readings count only after his LOGIN line
+(10:42:51).
+
+### THE BOOT, BY `booting.md` AND THE CARRIED STATE
+
+| step | read |
+|---|---|
+| 1. the seat's word and Ben's | the seat's boot approval (relayed 2026-11-22); Ben's own reply to "say ready in your own words", verbatim: **"ok"** |
+| 2. the heads | `git ls-remote`: `feat/knell-beam` `61b617ef11083634224f3290e959d89875afd51b`, `feat/knell-mechanisms` `7a3e46db…`, `feat/knell-owed-fixes` `4df507f4…`, `master` `141308e1…`, as the seat diffed. Checks on all three heads: `build COMPLETED SUCCESS` x2, `CLEAN` |
+| CS 1. no JVM | `no java process` |
+| CS 2. backup | `../rpg-run-backups/2026-11-22-pre-knell-beam` (new): Rpg 144 files / 26 dirs both sides, `diff -rq lines: 0`; world 193 files / 32 dirs both sides, `diff -rq lines: 0`; `world/dimensions`: `minecraft rpgfight`; overworld 106 files |
+| CS 3. config | `12:  dev-pack-on-join: true` |
+| CS 4. fight folders | `find run/world/dimensions/rpgfight -mindepth 1`: nothing |
+| CS 5. "booting now" | sent in its own message, with "Ben: do NOT log in until I tell you R0 passed"; the boot command in the next turn |
+| CS 6. boot, deployed lines | `==> Building 61b617ef`; `weapons/knell_beam.yml:45:    cooldown_ticks: 48`; `weapons/` 20 `.yml`; `visuals/knell_warning.yml` present. **The boot's build runs no unit tests** (no `Tests run:` line in its output); the three PRs' CI is the test witness |
+| CS 7. R0a to R0e | below, all AS PREDICTED |
+| CS 8. "R0 passed" | sent in its own message before he logged in. **His first `joined the game`: 10:42:51**, after R0 was read (Done 10:39:54) |
+| CS 9. after `/stop` | `rpgfight` empty; overworld **106** files (step 2: 106); `[10:46:05] … All dimensions are saved`; `no java process` |
+
+### R0 — AS PREDICTED, EVERY ROW
+
+- **R0a:** `[10:39:53] [Server thread/INFO]: [Rpg] Build: 61b617ef`. Not `-dirty`, not `unknown`.
+- **R0b:** the scan printed PRESENT for all twelve predicted items (the six content entries including the `flint_staff`
+  control, `    cooldown_ticks: 48`, `HF1R2:`, `  - knell-beam`, `RaySweep.class`, `FIRERATE player=`, `MANA current=`).
+  An extra control, not in the gate: `content/weapons/ember_staff.yml` ABSENT.
+- **R0c:** `[Rpg] Loaded 11 abilities, 37 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects,
+  20 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 4 recipes, 1 ores, 4 vein sizes`,
+  exactly once; `Mint-on-craft: 36 indexed, 36 claiming, of 50 gear definitions`; `Convert-on-arrival: 7 materials {…}`.
+  The loot, fight, world-damage and smithing lines are **byte-identical** (timestamp stripped) to the last boot's
+  (`run/logs/2026-11-21-2.log.gz`, `Build: 4d275653`, the crystal-shard-staff boot). No `Refusing`, `Skipping`, `SEVERE`,
+  `Exception`, `Recipe '`, `No fights loaded`. `[Rpg]` WARN: only `volley_stone`'s pair. Paper's own "4 release(s)
+  behind" WARN block is not `[Rpg]`.
+- **R0d:** `[Rpg] Selftest: dev server, 267 scenarios across 36 gates [melee-cell, …, crystal-shard-staff, knell-beam]`.
+  Control `256 scenarios across 35 gates`: 0 occurrences.
+- **R0e:** `[Rpg] FIGHTWORLD sweep path=C:\…\run\world\dimensions\rpgfight folders=0`, once; no `deleting`, no `orphan`.
+
+### WHAT BEN TYPED, AGAINST THE SHEET
+
+| time | command | on the sheet? |
+|---|---|---|
+| 10:43:13 | `/gamemode survival` | yes (1) |
+| 10:43:18 | `/rpg mana refill` | **EXTRA**, before the run. Touches mana only; KB2 to KB8 each refill their own |
+| 10:43:21 | `/rpg selftest knell-beam` | yes (2), once |
+| 10:44:50 | chat `yes` | the ASK answer |
+| 10:44:59 | `/rpg give knell_beam` | **EXTRA**, after `SELFTEST RUN FINISHED` (10:44:50) |
+| 10:45:19 | `/rpg spawn knell` | **EXTRA**, after the run. The Knell mob telegraphed and fired at him once (`BEAM fire … gap=4.791 miss] dealt=none`) and died at 10:45:33. Not a gate row |
+| 10:46:04 | `/stop` | yes (3) |
+
+No `/rpg heal`.
+
+### THE ROWS
+
+**setup — AS PREDICTED.** Baseline `LEFTOVER living=0 radius=16`. `time set 18000` and `spawn_mobs false` REPLYs.
+**`SELF customHP=160.000/350.000 at=-109.89 63.00 21.00 onGround=true fall=0.000`**: so `m0 = 350`, **G = 0**, and he
+was NOT at full health (160). 27 kill lines; **27 `REPLY "No entity was found" [red]` and 0 `Killed`
+lines in the setup** (counted: `sed -n '97,194p' run/logs/latest.log | grep -c 'setup REPLY "No entity was found"'`
+and the same for `"Killed`; the REPLYs interleave with the next CMD, so they are counted, not paired); every
+`SETTLED dying=0 ticks=0 first=0`. Nothing listed was within 64. `REPLY "Set 1 level(s) for
+BaronVonYeetus (now level 1, 0/1000 into it, 0 lifetime)." [green]`. **`SELF customHP=100.000/100.000`**:
+`m0 - m1 = 350 - 100 = 250.000` as predicted, and `c1 = min(160, 100) = 100` as predicted. `setup DONE ticks=45`.
+
+**KB0 — NOT AS PREDICTED, ONE COUNT.** `LEFTOVER living=0 radius=16` (as predicted). Teleport to `-109.500000,
+63.000000, 21.500000`, facing east. `SELF customHP=100.000/100.000 at=-109.50 63.00 21.50 onGround=true`.
+`BLOCKS AIR count=480 box=1 0 -4 30 1 3` (as predicted); `BLOCKS AIR count=0 box=1 -1 -4 30 -1 3` (as predicted);
+**`BLOCKS WATER count=26 box=1 -1 -4 30 -1 3`** (predicted 0); `BLOCKS AIR count=2 box=0 0 10 0 1 10` (as predicted).
+**So the spot had 26 water blocks in the 240-block floor under the corridor.** The corridor itself was clear (480 of
+480). By the gate's own c): a NoAI zombie does not fall (INFERRED), the beam ignores fluids, and every row below landed
+its hits where predicted, so **no row reads as spoiled by it**. Recorded, not explained further.
+
+**KB1 — TEXT AS PREDICTED; THE NAME'S COLOUR LIST NOT AS PREDICTED.**
+`HELD knell_beam ECHO_SHARD x1 name="Knell Beam" [yellow, dark_purple] italic lore=["Void" [dark_purple]; "Gear Score:
+100" [gray, aqua]; "" []; "Knell's Toll  Right-Click" [gold, yellow]; "Locks a line where you look," [gray]; "then tolls
+a beam down it 1.2s later." [gray]; "Void Damage: 63" [gray, red]; "Cooldown: 2.4s | Mana Cost: 13" [dark_gray]; "" [];
+"Epic Magic Weapon" [dark_purple]]`. All ten lore lines are word for word the prediction. **The name printed
+`[yellow, dark_purple]` against a predicted `[dark_purple]`.** The dump lists every colour in the name's component tree
+(`SelfTestLines.styled`, as the gate's CS1 note says for `italic`). INFERRED, NOT READ: the outer `yellow` is the
+wrapper `effectiveName()` puts round a custom name, in `ECHO_SHARD`'s vanilla item rarity, and the inner `dark_purple`
+is ours and is what renders. What the client shows is not an AUTO reading.
+
+**KB2 — NOT AS PREDICTED, ONE LINE: THE PROBE AFTER THE HIT.** `REPLY "  raw:
+v1;unbreaking=0:-1;attunement=0:-1;unbreaking=0,attunement=0:-1"`, so every slot's active choice is `-1` (as
+predicted). `MOBSEED 2e1303ea-… zombie gs=100 source=rolled max=100`; `DRIVE aim … d=10.000`; **`MANA
+current=100.000`, the press, `MANA current=87.000`** (13 less, as predicted). The probe 23 ticks after the press:
+`customHP=100.000/100.000` (as predicted). Then exactly one `PLAYERHIT … source=knell_beam/right_click
+target=2e1303ea-… zombie element=void sent=63.000 crit=false triggerScore=100` (as predicted). **Then the probe 25
+ticks after the press: `customHP=100.000/100.000 … dead=false`, predicted `37.000/100.000`.** The zombie was cleared
+by KB3's CLEAN (`MOBREMOVE 2e1303ea-…`) with no later probe, so **whether the 63 reached its health is UNREAD on this
+row.** INFERRED, NOT READ: `EffectApplier.trace` writes the `PLAYERHIT` line after `applyDamage`, and
+`CombatantHandle` only dispatches, so the health write may land a tick or more after the line, after the tick-25
+probe. KB3, KB4 and KB5 probe 25 to 30 ticks later and do read the 63, so the hit lands by then. **Owed: read the
+dispatch path, and whether the shot lands on tick 24 or 25.**
+
+**KB3 — AS PREDICTED.** MOBSEEDs `e90247c3` (6), `04f95ba5` (10), `a948a6e4` (14). Three `PLAYERHIT … element=void
+sent=63.000 crit=false triggerScore=100`, targets `e90247c3`, `04f95ba5`, `a948a6e4`: **nearest first, in MOBSEED
+order**. Probes: all three `customHP=37.000/100.000`.
+
+**KB4 — AS PREDICTED.** `POSITIONS ZOMBIE n=3 at=[8.00 0.00 0.50; 11.00 0.00 0.80; 14.00 0.00 1.20] radius=16`; three
+`BODY … type=zombie … scale=1.000 height=1.950 …`. Exactly one `PLAYERHIT`, on the first MOBSEED (`b93f5d05`),
+`sent=63.000 crit=false`. Probes: `b93f5d05` `37.000/100.000`, `74e4fabf` `100.000/100.000`, `8d761895`
+`100.000/100.000`. **So 0.2 off was struck and 0.5 and 0.9 off were not, at tolerance 0.3.**
+
+**KB5 — AS PREDICTED.** A = `eef9bb61` (east 10), B = `08b662b6` (south 10). Press facing east, then `tp @s ~ ~ ~ 0 0`.
+One `PLAYERHIT`, on A. Probes: A `37.000/100.000`, B `100.000/100.000`.
+
+**KB6 — AS PREDICTED.** `STAGE saved 2 blocks for the restore, box=5 0 0 5 1 0`; `Successfully filled 2 block(s)`;
+zombie `beb75a8b` at 10. **0 PLAYERHIT** in the row; probe `100.000/100.000`. The next row's `CLEAN blocks=2` put the
+two blocks back.
+
+**KB7 — NOT AS PREDICTED, ONE LINE: THE LAST MANA READING.** `MANA current=100.000`; press 1; `REPLY "The game time is
+20375405 tick(s)"`; `PLAYERHIT … sent=63.000 crit=false`; press 2; **`REPLY "On cooldown for 0.4s" [gray]`**;
+`MANA current=89.000`; `REPLY "The game time is 20375445 tick(s)"`; press 3, no refusal; `MANA current=76.400`;
+`PLAYERHIT … sent=63.000 crit=false`; `REPLY "The game time is 20375453 tick(s)"`; probe `customHP=0.000/100.000 …
+dead=true`.
+- **`g2 - g1 = 40` and `g3 - g1 = 48`, as predicted.** The refusal at 40, its `0.4s`, two PLAYERHITs, and the dead
+  zombie: as predicted. (The REPLY's text reads "The game time is <g> tick(s)", not the predicted "The time is <g>";
+  the predicted figures are what the row is judged on, and they match.)
+- **`x = 89.000` = 100 - 13 + 2.0**: as predicted ("M - 13 plus 40 ticks of regeneration"; the 40 ticks gave 2.0).
+- **After press 3: `76.400`, predicted `x - 13` = `76.000` "to within the regeneration of the same tick: none".** The
+  `89.000` was read at press 2 and press 3 came 8 ticks later, so 8 ticks of regeneration sit between the two
+  readings: at the rate the 40 ticks show (2.0 per 40), that is **0.4, exactly the difference**. **The prediction left
+  out that term; the reading is consistent with the mechanism.** Not a defect of the build.
+
+**CS2R2 — AS PREDICTED.** `PLAYERHIT … source=crystal_shard_staff/right_click target=fd93a336-… zombie element=kinetic
+sent=16.000 crit=false triggerScore=100`; probe `customHP=84.000/100.000`. Against CS2's 65.000 at level 50, the 49
+was the level bonus, as the seat ruled.
+
+**HF1R2 — UNREAD: THE HELD-FIRE SAMPLE IS THE KNELL BEAM'S, NOT THE STAFF'S.** The row gave and held the staff (`DRIVE
+hold PlayerItemHeldEvent+setHeldItemSlot 0->0 item=crystal_shard_staff`). The row's first `rpg firerate` printed and
+cleared an earlier sample (`crystal_shard_staff … INPUTS count 57 … min 3t`, `FIRES count 22 … min 14t`, `MIXED -- the
+weapon changed mid-sample`), the selftest's own presses across rows, mixed, so not a reading. **He held right-click
+(the run's chat shows a stream of `On cooldown for 2.2s` … `0.2s` refusals, the Knell Beam's 48-tick cooldown), but the
+second `rpg firerate` reads:**
+`FIRERATE player=BaronVonYeetus Fire cadence -- knell_beam, right_click`;
+`  INPUTS  count 59   window 232t   mean 4.00t    min 4t`;
+`  FIRES   count 5    window 192t   mean 48.00t   min 48t`;
+`  cooldown_ticks 48 authored, 48 effective (not a basic attack -- attack speed does not scale it)`;
+`  COOLDOWN-LIMITED -- fires slower. …`; `Sample cleared.` Both copies of each line are in the log (`FIRERATE
+player=…` and the selftest REPLY), as PR 1 predicts. **So the sample is on the Knell Beam (slot 1), not the staff the
+row held (slot 0).** How the hand moved to slot 1 is NOT READ: no instrument logs a player's own slot change. Ask Ben.
+**By the gate's table, which is for the 14-tick staff: UNREAD.** HF1 is owed again. **Recorded, not judged:** on the
+beam (48 authored, a multiple of 4), `INPUTS min 4`, `FIRES min 48` and `mean 48.00`. It cannot tell the
+`ceil(n/4) x 4` question apart, because 48 is already on the grid.
+
+**KB8 — AS PREDICTED.** Six MOBSEEDs (`21d83494` 8,0; `69caa519` 12,1.5; `f86b6a30` 16,-1; `9ad01c42` 20,3;
+`990397ef` 10,-4; `eeb1eef5` 25,0.6); the TELL. **12 PLAYERHIT lines, all `source=knell_beam/right_click
+element=void`: 11 at `sent=63.000 crit=false`, 1 at `sent=126.000 crit=true` (on `990397ef`, 10:44:31); every one
+`triggerScore=100`.** Pairs in the same second (`21d83494` + `eeb1eef5`, `69caa519` + `9ad01c42` twice) are one shot
+piercing two bodies (INFERRED from the timestamps; the log has no tick). All six zombies were removed (`MOBREMOVE`
+x6). Two `Not enough mana: 13 needed, 6 available` refusals near the end. **`ASK 1 question="Could you tell where the
+beam would land, and did it need a careful aim?" answer="yes" ticks=210`**: his answer, verbatim, **`yes`**. It is
+STATED. It is one word to a two-part question, so which half it answers is not read.
+
+**The restore:** `SELFTEST RUN RESTORED xp=712667 cell=mage/fire gamemode=SURVIVAL held=0 mana=100.0 trace=false
+spawn_mobs=false time=1000 blocks=2 mobsRemoved=0 orbsRemoved=21 keep_inventory=false immediate_respawn=false
+difficulty=NORMAL drag_tick=false`. `xp=712667` is his lifetime XP back (level 50). `spawn_mobs=false` and
+`time=1000` are what the last run's restore also printed (`2026-11-21-2.log.gz`, 16:19:44), so they are the world's
+values before this run (INFERRED from the two restore lines). His health after the restore is not read (the gate
+predicts it stays at its level-1 figure).
+
+### WHAT IS UNREAD AFTER THIS RUN
+
+- **HF1R2**, the staff's held fire: the sample was on the beam. **HF1 is owed a third time.**
+- **KB2's after-hit health**, and on which tick (24 or 25) the shot's damage reaches a mob's health.
+- **Everything the client renders**: the warning line, the beam, the sounds (AUTO never reads them). His `yes` is the
+  only word on it.
+- KB7's off-by-one arms (47, 49, 41) were not presented: the run's spacing was exact, as predicted.
