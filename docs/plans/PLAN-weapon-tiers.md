@@ -238,6 +238,34 @@ it?". On the self tests: *"these self tests have lost a lot of their automatic c
 1.0) and the seat's placeholders (tolerance 0.3, damage 63, mana 13, range 40, epic, echo_shard, the names, one flash
 at the click, piercing every body), each marked in the file. **It is the first EPIC item**, and it joins no loot pool.
 
+### 1.8 Ben, 2026-11-22, VERBATIM: the Living Lantern (the Mage's IRON tier)
+
+Relayed by the seat's brief of 2026-11-22 and recorded here on `feat/living-lantern`, spelling as typed:
+
+> "I think we'll take the Living Lantern and rework it for the iron tier weapon."
+>
+> "1. The rework: I'm thinking of an almost Flamethrower-like weapon. An area of effect arc in front of the player that
+> travels for about 6 blocks dealing a decent bit of damage.
+> 2. Fire element
+> 3. 12 mana 0.8s second cooldown 14 damage 60 degree arc
+> 4. Keep the lantern item, what was the old recipe?"
+
+Then, having seen the old recipe (seven iron nuggets round blaze powder, bone meal bottom-middle; NOT used):
+
+> "Before I sent this I would like to change the recipe
+> I = Iron Nugget
+> F = Fire Charge
+> I I I
+> I F I
+> I I I"
+
+**The mage ladder now reads:** wood `flint_staff`, stone `crystal_shard_staff`, **iron `living_lantern`** (this entry),
+diamond/netherite `lapis_staff` and (read by the seat as) `cursed_emerald`. Ben's numbers: fire, 12 mana, 16 ticks
+(0.8 s, on the 4-tick grid), 14 damage (a literal damage effect), a 60-degree arc travelling about 6 blocks, the lantern
+item, his recipe. Its shape is a new cast, `type: cone` (`CastSpec.Cone`, `feat/lantern-cone`). The seat's placeholders
+(the names, common, mage, range 6.0, 6 ticks of travel, 60 as the FULL angle, one strike per body, blocks stop it, the
+old look and sounds) are each marked in `living_lantern.yml`. **It joins no loot pool.** Gate: `GATE-living-lantern.md`.
+
 ---
 
 ## 2. WHAT EXISTS TODAY

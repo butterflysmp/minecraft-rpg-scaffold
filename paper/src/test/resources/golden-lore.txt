@@ -143,6 +143,16 @@
    "It does not travel. It arrives." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- living_lantern
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Lantern's Breath" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Breathes a cone of flame" color=#AAAAAA O=. B=. S=. U=. I=F
+   "that rolls 6 blocks ahead." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["14" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.8s | Mana Cost: 12" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- locust
    "Nature" color=#55FF55 O=. B=. S=. U=. I=F
    "Quiver: --/12" color=#AAAAAA O=. B=. S=. U=. I=F
@@ -593,4 +603,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 99 renderings ===
+=== 100 renderings ===

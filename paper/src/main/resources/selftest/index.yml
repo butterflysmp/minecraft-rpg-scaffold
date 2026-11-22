@@ -87,3 +87,6 @@ gates:
 # knell-beam (2026-11-21, feat/knell-owed-fixes, feat/knell-mechanisms and feat/knell-beam on 141308e1): the Knell Beam,
 # CS2R2 and HF1R2 owed by GATE-crystal-shard-staff.md. It carries the ONE R0 and run sheet: docs/gates/GATE-knell-beam.md.
   - knell-beam
+# living-lantern (2026-11-22, feat/lantern-owed-fixes, feat/lantern-cone and feat/living-lantern on e487ade5): the Living
+# Lantern, KB2R2, CR3 and HF1R3. It carries the ONE R0 and run sheet: docs/gates/GATE-living-lantern.md.
+  - living-lantern

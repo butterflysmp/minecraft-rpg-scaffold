@@ -1,0 +1,12 @@
+# The Living Lantern's cast (SEAT PLACEHOLDER 2026-11-22): the old weapon's two sounds on cast (cfde822,
+# LivingLanternWeapon), a lantern placed and an allay holding an item. Volumes and pitches are the seat's. Both keys READ
+# in the pinned 26.1.2 server jar's SoundEvents.class.
+steps:
+  - type: sound
+    key: block.lantern.place
+    volume: 1.0
+    pitch: 1.0
+  - type: sound
+    key: entity.allay.ambient_with_item
+    volume: 0.8
+    pitch: 1.2

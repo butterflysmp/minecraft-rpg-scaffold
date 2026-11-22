@@ -1,0 +1,18 @@
+# The Living Lantern's recipe (feat/living-lantern, 2026-11-22). BEN's, verbatim: "Before I sent this I would like to
+# change the recipe / I = Iron Nugget / F = Fire Charge / I I I / I F I / I I I". So eight iron nuggets round one fire
+# charge. (The old recipe, seven iron nuggets round blaze powder with bone meal bottom-middle, is NOT used.)
+#
+# NO VANILLA CLASH (READ, the pinned 26.1.2 server jar's recipe data): vanilla's lantern is eight iron nuggets round a
+# TORCH, and no vanilla recipe uses an iron nugget with a fire charge. A full 3x3, so it cannot be made in the 2x2
+# player grid; each slot gives one item per craft (the server's resulting matrix, InventoryCraft).
+
+mints: living_lantern
+
+shape:
+  - "III"
+  - "IFI"
+  - "III"
+
+ingredients:
+  I: iron_nugget
+  F: fire_charge

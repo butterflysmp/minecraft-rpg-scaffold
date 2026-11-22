@@ -1466,6 +1466,26 @@ public final class RpgListeners implements Listener {
     }
 
     /**
+     * A MINTED WEAPON IS NEVER PLACED AS A BLOCK (the seat's brief of 2026-11-22, ruling 7: "A Living Lantern must never
+     * be placed as a block by its own right-click"). The Living Lantern is the first weapon whose material places
+     * ({@code lantern}); every earlier one is a stick, a shard, a sword or a bow.
+     *
+     * <p><b>Why here as well as in {@link #onRightClick}.</b> The main hand is already safe there: a held weapon that
+     * binds {@code right_click} gets {@code event.setCancelled(true)}, which in the pinned paper-api denies both the
+     * block interaction and the item use (READ). But the OFF HAND is handed back to vanilla ({@code getHand() !=
+     * HAND -> return}), and the only off-hand cancel is the stone's, so a lantern in the off hand would be placed by
+     * a right-click on a block (READ). This refuses the PLACEMENT itself, keyed by the weapon id (never the material:
+     * a vanilla lantern still places), whichever hand or path produced it.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onWeaponPlace(org.bukkit.event.block.BlockPlaceEvent event) {
+        if (io.github.butterflysmp.rpg.paper.weapon.WeaponItems.weaponId(event.getItemInHand(), adapters.keys())
+                .isPresent()) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
      * THE RELEASE OF A DRAWN PLUME -- and the event fires for EVERY item release on the server.
      *
      * <p>Eating, drinking, shields, crossbows, tridents, spyglasses: all of them arrive here. The
