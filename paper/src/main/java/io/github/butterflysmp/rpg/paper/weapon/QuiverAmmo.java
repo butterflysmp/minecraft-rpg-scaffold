@@ -1,6 +1,7 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.weapon.CollectPlan;
+import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen;
 import org.bukkit.GameMode;
@@ -11,6 +12,7 @@ import org.bukkit.inventory.PlayerInventory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 
 /**
  * The arrows a player can put into a quiver, and the debit that takes them.
@@ -78,7 +80,7 @@ public final class QuiverAmmo {
 
     private QuiverAmmo() {}
 
-    /** Ruling 2: vanilla {@code ARROW}, exactly. Not spectral, not tipped. */
+    /** Ruling 2: vanilla {@code ARROW}, exactly. Not spectral, not tipped. Since 2026-11-22 the DEFAULT: a weapon naming no {@code ammo:} loads this ({@link #ammoOf}). */
     public static final Material AMMO = Material.ARROW;
 
     /**
@@ -128,71 +130,141 @@ public final class QuiverAmmo {
      * conservative one. A throw would convert a wrong assumption into a crash; consuming costs a
      * spectator nothing <b>precisely because they cannot reach it</b> — so the safe answer is free.
      */
-    public static Supply supply(Player player, Keys keys, int needed) {
+    public static Supply supply(Player player, Keys keys, Material ammo, int needed) {
+        return plan(consumes(player.getGameMode()), cells(player.getInventory(), keys, ammo), ammo, needed);
+    }
+
+    /**
+     * THE DECISION, PURE, and it is the whole of {@link #supply} but the reads. Split out on the Breacher's branch
+     * (the seat's brief of 2026-11-22: tests that CAUSE each ruling) because no unit test here can build a
+     * {@code Player} or an {@code ItemStack}; a {@link Cell} is what the walk reads off a slot, and nothing else.
+     *
+     * @param consumes {@link #consumes} of the player's game mode: false is creative, which supplies exactly what the
+     *                 reload needs and no draws (the javadoc above, unchanged)
+     * @param ammo     THIS WEAPON's ammunition ({@link #ammoOf}). Only cells of exactly this material count
+     */
+    static Supply plan(boolean consumes, List<Cell> cells, Material ammo, int needed) {
         if (needed <= 0) return new Supply(0, List.of());
-
-        boolean consumes = switch (player.getGameMode()) {
-            case SURVIVAL, ADVENTURE, SPECTATOR -> true;
-            case CREATIVE -> false;
-        };
         if (!consumes) return new Supply(needed, List.of());
-
-        List<CollectPlan.Draw> draws =
-                CollectPlan.plan(sources(player.getInventory(), keys), 0, needed);
+        List<CollectPlan.Draw> draws = CollectPlan.plan(sources(cells, ammo), 0, needed);
         return new Supply(CollectPlan.total(draws), draws);
     }
 
     /**
-     * Take the planned draws, <b>by recorded slot</b>.
+     * Does this game mode pay for a reload? The ONE {@code GameMode} read, as before: the {@code switch} with no
+     * default, so a fifth mode is a compile error. Arms and reasons unchanged (the javadoc on {@link #supply}).
+     */
+    static boolean consumes(GameMode mode) {
+        return switch (mode) {
+            case SURVIVAL, ADVENTURE, SPECTATOR -> true;
+            case CREATIVE -> false;
+        };
+    }
+
+    /**
+     * Take the planned draws, <b>by recorded slot</b>, of THIS weapon's ammunition.
      *
      * <p>A no-op on an empty plan, which is what creative produces — so creative needs no second
      * check here.
      *
      * <p>Re-reads each slot and skips one that no longer holds what was planned, rather than trusting
      * the plan blindly: the walk and the take are separated by a verdict and a stat read, and a slot
-     * that changed underneath is a reason to take nothing rather than to take the wrong thing.
+     * that changed underneath is a reason to take nothing rather than to take the wrong thing. <b>"What was planned" is
+     * the weapon's ammo</b>: a slot that now holds arrows is never debited for a cobblestone plan.
      */
-    public static void consume(Player player, List<CollectPlan.Draw> draws) {
+    public static void consume(Player player, Material ammo, List<CollectPlan.Draw> draws) {
         PlayerInventory inventory = player.getInventory();
         for (CollectPlan.Draw draw : draws) {
             int slot = draw.source().slot();
             ItemStack stack = inventory.getItem(slot);
-            if (stack == null || stack.getType() != AMMO) continue;
-            int left = stack.getAmount() - draw.amount();
-            if (left <= 0) {
+            if (stack == null) continue;
+            OptionalInt left = remaining(stack.getType(), stack.getAmount(), ammo, draw.amount());
+            if (left.isEmpty()) continue;
+            if (left.getAsInt() <= 0) {
                 inventory.setItem(slot, null);
             } else {
                 ItemStack reduced = stack.clone();
-                reduced.setAmount(left);
+                reduced.setAmount(left.getAsInt());
                 inventory.setItem(slot, reduced);
             }
         }
     }
 
     /**
-     * Every plain-arrow stack the player is carrying, as {@link CollectPlan.Source}s keyed by slot.
-     *
-     * <p>{@code getStorageContents()} rather than {@code getContents()}, so armour and the off-hand
-     * are out of scope: those slots are addressed by different indices, and a draw planned against
-     * one would debit the wrong slot. The same choice {@code RecipeProbe} and {@code MenuSafety} make.
+     * What a slot holds after one draw, or EMPTY if the slot must be left alone (it no longer holds this ammo). Pure,
+     * so the material re-check {@link #consume} makes is a unit row rather than a boot-only claim.
      */
-    private static List<CollectPlan.Source> sources(PlayerInventory inventory, Keys keys) {
+    static OptionalInt remaining(Material inSlot, int amount, Material ammo, int drawn) {
+        if (inSlot != ammo) return OptionalInt.empty();
+        return OptionalInt.of(amount - drawn);
+    }
+
+    /**
+     * The weapon's ammunition, resolved from its {@code ammo} token ({@code WeaponDefinition.ammo()}; arrow when the file
+     * names none). <b>EMPTY when the token names no item a player can carry</b>, and the reload then FAILS CLOSED: no
+     * stack matches, so the supply is zero rounds and the refusal is the no-ammo notice naming the token. Never a
+     * fallback to arrows, which would load a cobblestone weapon with arrows on a typo. {@code ContentValidator.validateAmmo}
+     * names the same token at boot, so the author sees it before a player does.
+     */
+    public static java.util.Optional<Material> ammoOf(WeaponDefinition weapon) {
+        return resolve(weapon.ammo(), QuiverAmmo::carriable);
+    }
+
+    /** Pure: the token through a lookup that answers null for anything not carriable. Unit rows pass the enum's own. */
+    static java.util.Optional<Material> resolve(String token, java.util.function.Function<String, Material> lookup) {
+        return java.util.Optional.ofNullable(token == null ? null : lookup.apply(token));
+    }
+
+    /** The server's answer (the registry is live here): a real material, not air, and an ITEM, so a player can hold it. */
+    public static Material carriable(String token) {
+        Material m = Material.matchMaterial(token);
+        return m != null && !m.isAir() && m.isItem() ? m : null;
+    }
+
+    /**
+     * One storage slot as the walk sees it: its index, its material, its count, and whether it holds GEAR (a minted
+     * item, {@code CraftMatrixScreen.isGear}: never a material, so never counted, planned or debited).
+     */
+    record Cell(int slot, Material type, int amount, boolean gear) {}
+
+    /**
+     * Every stack of THIS weapon's ammunition the player is carrying, as {@link CollectPlan.Source}s keyed by slot.
+     *
+     * <p>Exact material, never a family: the spectral trap above holds for any ammo, and a weapon that loads
+     * cobblestone is never fed arrows, nor a Boltor cobblestone (the seat's ruling 2).
+     */
+    static List<CollectPlan.Source> sources(List<Cell> cells, Material ammo) {
         List<CollectPlan.Source> sources = new ArrayList<>();
-        ItemStack[] contents = inventory.getStorageContents();
-        for (int slot = 0; slot < contents.length; slot++) {
-            ItemStack item = contents[slot];
-            if (item == null || item.getType() != AMMO || item.getAmount() <= 0) continue;
+        for (Cell cell : cells) {
+            if (cell.type() != ammo || cell.amount() <= 0) continue;
             // THE INVARIANT, and it is the same CALL RecipeProbe.groups makes rather than a second
             // opinion about what gear is: a minted item is never a material -- not counted, and
             // therefore never planned and never debited.
             //
-            // UNREACHABLE TODAY and implemented anyway: no minted item is Material.ARROW, so nothing
-            // in shipped content gets here. It is the line that must already exist on the day one
-            // does, because the alternative is a player's minted item being eaten as ammunition --
-            // and nothing would report it.
-            if (CraftMatrixScreen.isGear(item, keys)) continue;
-            sources.add(new CollectPlan.Source(CollectPlan.TIER_INVENTORY, slot, item.getAmount()));
+            // UNREACHABLE TODAY and implemented anyway: no minted item is an arrow or a cobblestone, so nothing in
+            // shipped content gets here. It is the line that must already exist on the day one does, because the
+            // alternative is a player's minted item being eaten as ammunition -- and nothing would report it.
+            if (cell.gear()) continue;
+            sources.add(new CollectPlan.Source(CollectPlan.TIER_INVENTORY, cell.slot(), cell.amount()));
         }
         return sources;
+    }
+
+    /**
+     * The storage slots, read once. {@code getStorageContents()} rather than {@code getContents()}, so armour and the
+     * off-hand are out of scope: those slots are addressed by different indices, and a draw planned against one would
+     * debit the wrong slot. The same choice {@code RecipeProbe} and {@code MenuSafety} make.
+     */
+    private static List<Cell> cells(PlayerInventory inventory, Keys keys, Material ammo) {
+        List<Cell> cells = new ArrayList<>();
+        ItemStack[] contents = inventory.getStorageContents();
+        for (int slot = 0; slot < contents.length; slot++) {
+            ItemStack item = contents[slot];
+            // Only THIS ammo's slots, BEFORE the gear read: supply runs ahead of the verdict on every left-click packet
+            // (about twenty a second while held), and the PDC read stays where it was, on the ammo stacks alone.
+            if (item == null || item.getType() != ammo || item.getAmount() <= 0) continue;
+            cells.add(new Cell(slot, item.getType(), item.getAmount(), CraftMatrixScreen.isGear(item, keys)));
+        }
+        return cells;
     }
 }

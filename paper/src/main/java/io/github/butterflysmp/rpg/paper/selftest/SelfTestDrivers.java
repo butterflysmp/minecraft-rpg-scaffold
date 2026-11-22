@@ -97,6 +97,12 @@ final class SelfTestDrivers {
                         + " offhand=" + itemId(inv.getItemInOffHand()));
                 yield Optional.empty();
             }
+            case RELOAD -> {
+                run.log("DRIVE reload held=" + itemId(p.getInventory().getItemInMainHand()));
+                run.leftClick().accept(p);
+                yield Optional.empty();
+            }
+            case PROBE_ITEMS -> probeItems(p, a);
             case CLICK -> click(p, a, item -> plain(item.effectiveName()).startsWith(a), "name^=\"" + a + "\"");
             case CLICK_MATERIAL -> click(p, a, item -> item.getType().name().equalsIgnoreCase(a), "material=" + a);
             case SHIFT_CLICK -> shiftClick(p, a);
@@ -841,6 +847,26 @@ final class SelfTestDrivers {
             }
         }
         run.log("INVENTORY " + weaponId + " slots=" + slots);
+        return Optional.empty();
+    }
+
+    /** PROBE_ITEMS: one vanilla material, counted over the STORAGE slots a reload draws from (Scenario's javadoc). */
+    private Optional<String> probeItems(Player p, String arg) {
+        Material material = Material.matchMaterial(arg);
+        if (material == null) return Optional.of("unknown material " + arg);
+        int count = 0;
+        int gear = 0;
+        List<String> slots = new ArrayList<>();
+        ItemStack[] contents = p.getInventory().getStorageContents();
+        for (int i = 0; i < contents.length; i++) {
+            ItemStack item = contents[i];
+            if (item == null || item.getType() != material || item.getAmount() <= 0) continue;
+            count += item.getAmount();
+            if (io.github.butterflysmp.rpg.paper.menu.CraftMatrixScreen.isGear(item, keys)) gear += item.getAmount();
+            slots.add(i + ":" + item.getAmount());
+        }
+        run.log("ITEMS material=" + material.name().toLowerCase(java.util.Locale.ROOT) + " count=" + count
+                + " gear=" + gear + " slots=" + slots);
         return Optional.empty();
     }
 

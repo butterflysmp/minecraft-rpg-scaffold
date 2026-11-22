@@ -195,6 +195,28 @@ public final class ContentValidator {
 
 
     /**
+     * A weapon's {@code ammo} must name an item a player can CARRY (the seat's ruling 1, 2026-11-22). A token that
+     * names nothing loads nothing: the reload fails closed with a notice naming the token ({@code QuiverAmmo.ammoOf}),
+     * which a player would read as a broken weapon. Named here, at boot, so the author reads it first. A predicate
+     * seam for the registry, as every material check in this class takes. The default, arrow, is checked too: it is
+     * the one token every shipped quiver weapon names, so a registry that could not answer it would be blind.
+     *
+     * @param isCarriableItem does this token resolve to a material that is an ITEM and not air
+     * @return every problem found, each naming the weapon at fault. Empty is good.
+     */
+    public static List<String> validateAmmo(Collection<WeaponDefinition> weapons, Predicate<String> isCarriableItem) {
+        List<String> problems = new ArrayList<>();
+        for (WeaponDefinition weapon : weapons) {
+            if (!weapon.hasQuiver()) continue;
+            if (!isCarriableItem.test(weapon.ammo())) {
+                problems.add("weapon '" + weapon.id() + "' names ammo '" + weapon.ammo()
+                        + "', which is not an item a player can carry; every reload of it will be refused");
+            }
+        }
+        return problems;
+    }
+
+    /**
      * A {@code craft_result} must name a real, DURABLE material, and must equal its own
      * {@code material}.
      *

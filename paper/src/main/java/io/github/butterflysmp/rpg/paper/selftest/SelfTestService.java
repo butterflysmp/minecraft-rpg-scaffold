@@ -64,6 +64,17 @@ public final class SelfTestService {
     }
 
     /** Binds the lookup the HURT line names a dragon's attack by ({@code FightFixtures.attackNameFor}). */
+    /**
+     * RELOAD's route, bound late by {@code RpgPlugin} once {@code WeaponSwingListener} exists: the shipped left-click
+     * handler's own method. Unbound, a RELOAD logs that it drove nothing, never a silent no-op.
+     */
+    private java.util.function.Consumer<org.bukkit.entity.Player> leftClick =
+            p -> log("SELFTEST RELOAD UNBOUND -- the left-click handler was never bound; nothing was driven");
+
+    public void bindLeftClick(java.util.function.Consumer<org.bukkit.entity.Player> handler) {
+        this.leftClick = java.util.Objects.requireNonNull(handler);
+    }
+
     public void bindAttackNames(java.util.function.BiFunction<java.util.UUID, java.util.UUID, String> lookup) {
         this.attackNames = java.util.Objects.requireNonNull(lookup);
     }
@@ -289,6 +300,7 @@ public final class SelfTestService {
     io.github.butterflysmp.rpg.paper.health.MobPouncer pounces() { return pounces; }
     io.github.butterflysmp.rpg.paper.health.PhageFuser fuser() { return fuser; }
     io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence() { return fireCadence; }
+    java.util.function.Consumer<org.bukkit.entity.Player> leftClick() { return leftClick; }
     Spawner spawner() { return spawner; }
     Scheduler scheduler() { return adapters.scheduler(); }
     CombatantStats stats() { return adapters.stats(); }

@@ -356,7 +356,11 @@ public final class Quivers {
         // The DECISION is core's and takes an int; the READ is here. That is the same split
         // QuiverSize.resolve's javadoc argues for, and it is why no ItemStack goes near core.
         QuiverState state = stateOf(held, keys, weapon);
-        QuiverAmmo.Supply supply = QuiverAmmo.supply(player, keys, state.roundsNeeded());
+        // THE WEAPON'S OWN AMMUNITION (the seat's ruling 1, 2026-11-22): arrow unless its file names another. NULL when
+        // the token names no carriable item: nothing matches, the supply is zero, and the reload FAILS CLOSED with the
+        // no-ammo notice naming the token (QuiverAmmo.ammoOf). Creative still reloads free, as it always has.
+        org.bukkit.Material ammo = QuiverAmmo.ammoOf(weapon).orElse(null);
+        QuiverAmmo.Supply supply = QuiverAmmo.supply(player, keys, ammo, state.roundsNeeded());
 
         // Same split as resolveForShot: the verdict is core's, and each arm below is a core row.
         // ALREADY_RELOADING is the held-input case -- ~20 arm-swing packets a second, every one of
@@ -378,7 +382,7 @@ public final class Quivers {
                 // "already full" or "out of ammo" on a weapon reading 7/8 is the kind of thing a
                 // player screenshots. QuiverNotice keys it separately so two refusals cannot silence
                 // each other through one throttle.
-                QuiverNotice.noAmmo(player, cooldowns);
+                QuiverNotice.noAmmo(player, cooldowns, weapon.ammo());
                 return false;
             }
             case BEGIN -> { /* fall through to the write below */ }
@@ -422,7 +426,7 @@ public final class Quivers {
         // every one of them.
         //
         // A no-op in creative: supply() returns no draws there, so no second mode check is needed.
-        QuiverAmmo.consume(player, supply.draws());
+        QuiverAmmo.consume(player, ammo, supply.draws());
 
         // ONE DEADLINE, COMPUTED ONCE. It is stamped on the item AND handed to the cue task, and the
         // two must be the same number: the task's only question at fire time is whether the item still

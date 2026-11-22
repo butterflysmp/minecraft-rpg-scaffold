@@ -137,7 +137,7 @@ public final class WeaponLoader {
     static final java.util.Set<String> KNOWN_KEYS = java.util.Set.of(
             "id", "display_name", "element", "rarity", "class", "material",
             "attack_damage", "attack_speed", "sweep", "quiver_size", "reload_ticks",
-            "flavor", "triggers", "craft_result", "unscored");
+            "flavor", "triggers", "craft_result", "unscored", "ammo");
 
     /**
      * Every key a single {@code triggers:} entry may author -- a SEPARATE namespace from
@@ -393,9 +393,15 @@ public final class WeaponLoader {
         // norm; a blank value is refused by the record and named as a skipped file.
         Optional<String> craftResult = Optional.ofNullable(s.getString("craft_result"));
 
+        // THE AMMUNITION (the seat's ruling 1, 2026-11-22): the vanilla item a reload takes, one per round. Absent ->
+        // null -> the record's DEFAULT_AMMO, arrow, so every file written before the key reloads exactly as it did. A
+        // TOKEN here: resolving it to a Material needs the Bukkit registry, so whether it names an item a player can
+        // carry is ContentValidator.validateAmmo's, at boot, as every material check in this tree is.
+        String ammo = s.getString("ammo");
+
         return new WeaponDefinition(id, displayName, element, rarity, weaponClass, material,
                 attackDamage, attackSpeed, sweep, quiverSize, reloadTicks, bindings, flavor,
-                craftResult, unscored);
+                craftResult, unscored, ammo);
     }
 
     private static Rarity rarity(String raw) {

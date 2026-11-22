@@ -1486,6 +1486,29 @@ public final class RpgListeners implements Listener {
     }
 
     /**
+     * A MINTED CROSSBOW NEVER LOADS A VANILLA PROJECTILE (the seat's brief of 2026-11-22, ruling 5: "the Breacher must
+     * never load or fire a vanilla arrow"). The Boltor, the Locust, Dragon's Breath and the Breacher are crossbows.
+     *
+     * <p><b>The main hand was already safe (READ):</b> {@link #onRightClick} cancels a held weapon's right-click, which
+     * in the pinned paper-api denies the item use, so vanilla's crossbow never starts charging. <b>The OFF hand was
+     * not:</b> that event is handed back to vanilla ({@code getHand() != HAND -> return}) and only a stone is
+     * cancelled there, and nothing else in the tree cancelled a crossbow's load ({@code onManagedBowShot} covers the
+     * Plume's draw only). What vanilla then does with an off-hand crossbow (charge, load an arrow from the inventory,
+     * fire it on the next use) is INFERRED from the vanilla item, not read in the jar.
+     *
+     * <p>This refuses the LOAD itself ({@code EntityLoadCrossbowEvent}, cancellable, READ in the pinned paper-api by
+     * {@code javap}), keyed by the weapon id, never the material: a vanilla crossbow still loads. A crossbow that never
+     * loads never fires a vanilla projectile, so no shot guard is needed behind it.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onWeaponCrossbowLoad(io.papermc.paper.event.entity.EntityLoadCrossbowEvent event) {
+        if (io.github.butterflysmp.rpg.paper.weapon.WeaponItems.weaponId(event.getCrossbow(), adapters.keys())
+                .isPresent()) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
      * THE RELEASE OF A DRAWN PLUME -- and the event fires for EVERY item release on the server.
      *
      * <p>Eating, drinking, shields, crossbows, tridents, spyglasses: all of them arrive here. The

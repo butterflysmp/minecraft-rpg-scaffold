@@ -1113,4 +1113,42 @@ class WeaponLoaderTest {
                 "AND ABSENT MUST MEAN SCORED. If this reads true the default inverted and every"
                         + " weapon in the game silently stopped carrying a score.");
     }
+
+    // --- THE AMMUNITION KEY (the seat's ruling 1, 2026-11-22, the Breacher's brief) ------------------------------------
+
+    private static String quiverWeapon(String id, String ammoLine) {
+        return "id: " + id + "\nelement: kinetic\nrarity: common\nclass: ranger\nmaterial: crossbow\n"
+                + "quiver_size: 2\nreload_ticks: 60\n" + ammoLine
+                + "triggers:\n  right_click:\n    cooldown_ticks: 20\n    cast:\n      type: ray\n      range: 12\n"
+                + "    on_hit:\n      - type: damage\n        amount: 6\n        element: kinetic\n";
+    }
+
+    /** {@code ammo:} round-trips, BOTH answers: a named item arrives, and an absent key is the arrow. */
+    @Test
+    void theAmmoKeyArrivesAndItsAbsenceIsTheArrow() throws IOException {
+        write("named.yml", quiverWeapon("named", "ammo: cobblestone\n"));
+        write("absent.yml", quiverWeapon("absent", ""));
+        WeaponRegistry registry = load();
+        assertEquals("cobblestone", registry.find("named").orElseThrow().ammo());
+        assertEquals("arrow", registry.find("absent").orElseThrow().ammo());
+        assertTrue(warnings.isEmpty(), "ammo is a known key: " + warningText());
+    }
+
+    /**
+     * {@code ContentValidator.validateAmmo} names, at boot, a token no carriable item answers to, and passes the rest.
+     * The predicate stands in for the registry ({@code QuiverAmmo.carriable} on a server), which no unit test can reach.
+     */
+    @Test
+    void anAmmoNoItemAnswersToIsNamedAtBoot() throws IOException {
+        write("named.yml", quiverWeapon("named", "ammo: cobblestone\n"));
+        write("bogus.yml", quiverWeapon("bogus", "ammo: not_a_thing\n"));
+        write("absent.yml", quiverWeapon("absent", ""));
+        WeaponRegistry registry = load();
+        List<String> problems = ContentValidator.validateAmmo(registry.all(),
+                name -> name.equals("cobblestone") || name.equals("arrow"));
+        assertEquals(List.of("weapon 'bogus' names ammo 'not_a_thing', which is not an item a player can carry; "
+                + "every reload of it will be refused"), problems);
+        assertEquals(3, ContentValidator.validateAmmo(registry.all(), name -> false).size(),
+                "every quiver weapon's ammo is asked, the default arrow included: the check is not blind");
+    }
 }
