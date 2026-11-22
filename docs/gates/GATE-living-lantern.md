@@ -685,3 +685,48 @@ end; say so if the crafting table was placed in the corridor east of the start b
 - **The END's `wrote=none` arm** (he began above 100 + G).
 - **LL9's `NOT STATED` arm** (he answered).
 - **The client, everywhere** (*WHAT THIS GATE DOES NOT READ*): his one word "yes" is the only reading of what he saw.
+
+## THE BURN, READ (2026-11-22, `feat/breacher-queued-items`): LL9's `cap=3.000` LINES, OUR SOURCE, NO FIX
+
+**Owed by the seat's ruling at the merge** (*LL9's `cap=3.000` lines owed as a source read, not fixed here*). Read on
+master `90482c94`. **Nothing is changed by this section or by its branch.** Each fact READ in our source unless marked.
+
+1. **Ignite fires on two routes.** A SCORCHED mob that dies: `RpgListeners`' Ignite route (`Ignite.detonate`, the
+   listener the `applyNow` comment says "owns this death"). An UNSCORCHED mob killed by a fire hit:
+   `BukkitCombatant.applyNow`'s second clause (`!wasScorched && dealt > 0 && newCurrent <= 0 && accruesScorch`).
+2. **The blast strikes every non-player combatant within 4 of the body except the body itself**, 20 ticks later,
+   for `Ignite.DAMAGE` 6, element `fire`. **It does NOT skip a body that is already scorched**: the only two skips in
+   `Ignite.detonate`'s loop are `c.id().equals(victimId)` and `c.state().player()`.
+3. **The blast's hit ACCRUES** (`HitAccrual.chained(depth)`, `ACCRUES`, below `MAX_CHAIN_DEPTH` 4; `terminal()`,
+   `INERT`, at it). So on a body it does not kill, `applyNow` runs `ElementAccrual.forHit`, which builds a Scorch
+   accrual with **cap = declared magnitude x `CAP_FRACTION` = 6 x 0.5 = 3.000** (`ElementAccrual`'s
+   `declaredMagnitude * rates.capFraction()`). That is the `cap=3.000` LL9 logged: **no longer INFERRED, READ.**
+4. **On a body already burning, that application REPLACES the cap, whatever it was.** `DotStatus.apply`'s refresh arm
+   assigns `a.cap = cap;` unconditionally, under the comment *"most recent applier owns the cap"*, together with
+   `applierId`, `element` and `remaining` (the whole 120-tick window). **So a weaker burn lowers a stronger one's cap**:
+   the Living Lantern's 14 buys cap 7.000; an Ignite 6 landing on the same body lowers it to 3.000, and it stays 3.000
+   until the next Lantern hit raises it again. That is `cca65717`'s sequence above (cap 7 at tick 3644, cap 3 from 3664
+   to 3704).
+5. **What the burn deals is `min(5% of the victim's max, cap)`** (`Scorch.damagePerTick`). On a 100-max zombie, 5% is
+   5.000, so cap 7 burns 5.000 and cap 3 burns **3.000**: a 40% cut on every burn left in the window. On a body whose
+   5% is under 3 nothing changes, so **the lowering is visible only where a stronger fire hit's cap was binding or
+   above the 5% arm**: here, on every 100-max mob.
+
+**Is it a defect? The seat's to rule, and the record points both ways.** *"Most recent applier owns the cap"* is
+written as a rule, not an accident (`DotStatus`, quoted in `scorch.yml` and `PLAN-dragons-breath.md`), and for seven
+IDENTICAL arrows it is harmless. But it was written for the credit, and the same comment block argues that
+`remaining` and `depth` must never be lowered by a later write (`depth` is already deepest-wins in
+`ScorchStatus.apply`); **the cap was never discussed there.** `scorch.yml`'s own sentence, *"a stronger fire weapon
+buys a stronger burn"*, is what a chained 6 breaks.
+
+**PROPOSED, NOT BUILT, AND WAITING FOR THE SEAT:**
+- **The fix:** in `DotStatus.apply`'s refresh arm, `a.cap = Math.max(a.cap, cap);`, *a burn's cap is never lowered by
+  a later application*. The credit (`applierId`) and the mark (`element`) stay most-recent-wins. **It touches wither
+  too** (`DotStatus` is shared): withering's cap would also become highest-wins. Say whether that is wanted, or scope
+  it to scorch (`ScorchStatus` overriding the arm).
+- **Its unit row:** `DotStatus` with a cap-7 burn, then a cap-3 application inside the window; the next tick's
+  `DotTick.cap` reads 7.000 (today 3.000). And the mirror: cap 3 then cap 7 reads 7.000 (both rules agree, so that
+  row is the control that the test is not blind to the order).
+- **Its gate row:** two frozen zombies 2 blocks apart, A struck by the Living Lantern (cap 7), B struck and killed
+  so it ignites beside A; A's `DOTTICK` lines after the blast read `cap=7.000 sent=5.000` (today `cap=3.000
+  sent=3.000`).

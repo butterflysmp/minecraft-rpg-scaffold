@@ -266,6 +266,25 @@ item, his recipe. Its shape is a new cast, `type: cone` (`CastSpec.Cone`, `feat/
 (the names, common, mage, range 6.0, 6 ticks of travel, 60 as the FULL angle, one strike per body, blocks stop it, the
 old look and sounds) are each marked in `living_lantern.yml`. **It joins no loot pool.** Gate: `GATE-living-lantern.md`.
 
+### 1.9 Ben, 2026-11-22, VERBATIM: the Emerald Beam, and the Crystal Shard Staff's cooldown and range
+
+Relayed by the seat's brief of 2026-11-22 (the Breacher's) and recorded here on `feat/breacher-queued-items`, spelling as
+typed:
+
+> "Emerald beam meant cursed emerald, yeah we can set the cooldown of the crystal shard staff to 0.8s. Can we also
+> increase the range of it"
+
+and, to the seat's offer of 30 blocks in half a second:
+
+> "half a second is fine"
+
+- **"Emerald Beam" IS `cursed_emerald`: CONFIRMED by Ben.** 1.6's *"READ BY THE SEAT AS `cursed_emerald`"* and its
+  *"UNCONFIRMED"* are kept above as the record of the question; this is its answer. **Which of `lapis_staff` and
+  `cursed_emerald` is diamond and which netherite is still NOT stated.**
+- **`crystal_shard_staff`: `cooldown_ticks` 14 -> 16** (0.8 s, on the 4-tick grid; HF1R3 in `GATE-living-lantern.md`
+  measured the held 14 firing every 16) **and `max_lifetime_ticks` 7 -> 10** (30 blocks of path at the unchanged speed
+  3.0, in 0.5 s). Each is marked BEN with his words in the file. Nothing else in the file changes.
+
 ---
 
 ## 2. WHAT EXISTS TODAY

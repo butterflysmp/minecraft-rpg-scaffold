@@ -37,7 +37,10 @@ triggers:
     # untested empirical fit ceil(n/4) x 4 predicts it fires every 16 (0.8 s) while the tooltip prints "Cooldown: 0.7s"
     # (WeaponLoader's cooldown_ticks section). This staff IS the fixture the owed INPUTS min reading is taken on
     # (NEXT.md, the 2026-11-21 correction; GATE-crystal-shard-staff.md). Its reading decides what 14 delivers.
-    cooldown_ticks: 14
+    # BEN, 2026-11-22, verbatim: "yeah we can set the cooldown of the crystal shard staff to 0.8s". 14 -> 16, ON the
+    # 4-tick grid. The paragraph above is kept as the record of why it was 14: GATE-living-lantern.md HF1R3 measured a
+    # held 14 firing every 16 (FIRES min 16t), so the tooltip now says what holding the button delivers.
+    cooldown_ticks: 16
     cost:
       resource: mana
       amount: 8
@@ -54,7 +57,10 @@ triggers:
       # SEAT PLACEHOLDER 2026-11-21: the old range was 20 blocks. There is no range key, only a lifetime: 7 ticks at
       # 3.0 is 21 blocks of path, the first lifetime that reaches 20. A shard that reaches it unspent resolves in the air
       # (ProjectileFlight: "It still lands"), so the impact visual plays there and the damage finds no target.
-      max_lifetime_ticks: 7
+      # BEN, 2026-11-22, verbatim: "Can we also increase the range of it", and to the seat's offer of 30 blocks in half
+      # a second, "half a second is fine". 7 -> 10: 10 ticks at 3.0 is 30 blocks of path (one 3-block ray a tick,
+      # ProjectileFlight.step), 0.5 s. The speed is unchanged; the paragraph above is kept as the record of the 7.
+      max_lifetime_ticks: 10
       item: amethyst_shard             # Ben: "Keep the item". The old body was a dropped amethyst_shard
       trail: crystal_trail             # SEAT PLACEHOLDER 2026-11-21: the old end_rod and violet dust trail
       # HOMING KEPT (Ben). SEAT PLACEHOLDER 2026-11-21, the old numbers mapped onto CastSpec.Homing's fields (READ):

@@ -44,7 +44,7 @@ class CrystalShardStaffContentTest {
     /** The flight numbers {@code CrystalShardCatchAngleTest} also carries. Change one, change both. */
     static final double SPEED = 3.0;
     static final double GRAVITY = 0.0;
-    static final int LIFETIME = 7;
+    static final int LIFETIME = 10;   // Ben, 2026-11-22: 30 blocks in half a second (was the seat's 7)
     static final double LERP = 0.45;   // SEAT PLACEHOLDER 2026-11-21, raised from the old 0.18
     static final double ACTIVATION = 0.0;
     static final double SEARCH_RADIUS = 18.0;
@@ -97,7 +97,7 @@ class CrystalShardStaffContentTest {
         assertEquals(List.of("right_click"), w.triggers().stream().map(t -> t.input()).toList(), "one cast, no left");
 
         AbilityDefinition a = shard(w);
-        assertEquals(14, a.cooldownTicks(), "Ben: 0.7 s, exactly as he said, NOT rounded to the grid");
+        assertEquals(16, a.cooldownTicks(), "Ben, 2026-11-22: 0.8 s (\"set the cooldown of the crystal shard staff to 0.8s\"), on the grid; it was his 0.7 s, 14");
         assertEquals("mana", a.cost().resourceId());
         assertEquals(8.0, a.cost().amount(), 0.0, "Ben: keep the 8 mana cost");
         List<EffectSpec.Damage> damage = a.onHit().stream()
@@ -149,7 +149,7 @@ class CrystalShardStaffContentTest {
                                 .serialize(c)).toList();
         assertEquals(List.of("Kinetic", "Gear Score: 100", "", "Crystal Shard  Right-Click",
                 "Fires a homing crystal shard", "at the nearest enemy.", "Kinetic Damage: 16",
-                "Cooldown: 0.7s | Mana Cost: 8", "", "Common Magic Weapon"), lore.apply(100));
+                "Cooldown: 0.8s | Mana Cost: 8", "", "Common Magic Weapon"), lore.apply(100));
         assertEquals("Kinetic Damage: 24", lore.apply(150).get(6), "the literal scales with the score");
     }
 

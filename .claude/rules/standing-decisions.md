@@ -144,6 +144,14 @@ paths:
     > merged at Ben's 14 ticks. **`ceil(n/4) x 4` stays an UNTESTED EMPIRICAL FIT; the reading is OWED on the next boot,
     > after `/rpg firerate` also logs its lines** (`feat/knell-owed-fixes`). The account is in `NEXT.md`.
 
+    > **MEASURED 2026-11-22 (GATE-living-lantern HF1R3): a held right-click cooldown of 14 ticks fires every 16. Under
+    > CLICKED input the same staff was observed 14 ticks apart (GATE-knell-beam, a mixed sample, not a reading). Author
+    > held right-click cooldowns as multiples of 4, or the tooltip will promise a rate that holding the button does not
+    > deliver.** (The seat's text, recorded verbatim on `feat/breacher-queued-items`. The same branch moves the Crystal
+    > Shard Staff to **16** on Ben's word, *"yeah we can set the cooldown of the crystal shard staff to 0.8s"*, so the
+    > shipped off-grid held right-click cooldown is `cursed_emerald`'s 30 alone. The entries above are kept as the
+    > record.)
+
 ### NAME THE QUANTITY, AND NAME THE SET OF THINGS THAT HAVE IT
 
 **Before writing any `value_by_level`: name the quantity the curve moves, and answer BOTH halves.**

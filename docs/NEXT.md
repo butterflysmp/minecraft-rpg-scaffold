@@ -10275,6 +10275,14 @@ date, and the note that the weapon was subsequently deleted.
 > `feat/knell-owed-fixes` and the two PRs stacked on it), **after `/rpg firerate` also writes its lines to the server
 > log**, which that branch adds (`FIRERATE player=<name> <line>`), and inside the selftest, with the command run by the
 > row so its lines land in the log (HF1R2).
+>
+> **MEASURED 2026-11-22 (GATE-living-lantern HF1R3): a held right-click cooldown of 14 ticks fires every 16. Under
+> CLICKED input the same staff was observed 14 ticks apart (GATE-knell-beam, a mixed sample, not a reading). Author
+> held right-click cooldowns as multiples of 4, or the tooltip will promise a rate that holding the button does not
+> deliver.** The seat's text, verbatim, recorded on `feat/breacher-queued-items`. The reading behind it: HF1R3, with
+> `hold_only` leaving the staff alone in his hotbar, `INPUTS count 55 min 4t`, `FIRES count 13 mean 16.00t min 16t`;
+> by that gate's table INCONCLUSIVE between the two accounts, and closed by the seat as a measurement. The staff moves
+> to 16 on the same branch (Ben: *"yeah we can set the cooldown of the crystal shard staff to 0.8s"*).
 
 #### OPEN — BEN'S TO RULE, NOT MINE
 
