@@ -230,6 +230,50 @@ so **303**. Control: 331 + 11 (setup, RW0-RW5, BR6R2, BR7R2, LL9R2, RW9) = 342.
 |---|---|---|
 | During the enable, exactly one **`FIGHTWORLD sweep path=<abs>\run\world\dimensions\rpgfight folders=0`**, no `deleting`, no `orphan` | `Select-String run\logs\latest.log -Pattern 'FIGHTWORLD (sweep\|deleting\|orphan)'` | |
 
+## ADDED 2026-11-22, BEFORE ANY BOOT: THE STATS BAR IN THE LOG (the seat's follow-up; the gate is NOT RUN)
+
+**The gap the seat found, and it is real.** PR 1's reader copies EVERY `ACTION_BAR` packet sent to him for the whole
+run, and the HUD's stats bar is one. Nothing above predicted it. Nothing above is edited; this section extends the
+predictions before the boot.
+
+**What the stats bar is (READ, `StatsBarSystem.start` and `StatsBarText.of`):**
+- A per-player `RepeatingTask` every **`BAR_PERIOD_TICKS = 10`** ticks, started at his join, sends
+  `player.sendActionBar(StatsBarText.of(…))`: **health, then the quiver (only while the main hand holds a weapon with a
+  magazine), then defence (only when it rounds to 1 or more), then mana**, joined by four spaces, each field `<icon>
+  <current>/<max>` with the icons `❤`, `➹`, `⛨`, `✦`. So in the log, **`REPLY actionbar "❤ <h>/<H>    ➹ <r>/<c>    ✦
+  <m>/<M>" [red, aqua, blue]`** (the `➹` field and its colour only with a Breacher held; a `⛨` field only with defence).
+  It skips a beat while his health is not yet tracked, which in a run it always is.
+- **It leaves by the `ACTION_BAR` packet (INFERRED, and the inference has a reading behind it):** `GATE-breacher.md`'s boot
+  ran with the bar sending every 10 ticks and its log held **no** `REPLY actionbar` line at all, when the reader then
+  copied only `SYSTEM_CHAT_MESSAGE` (overlay included). So it is not system chat; Paper's `sendActionBar` was not read.
+- **A HOLD** (`ActionBarHolds`, READ): while a hold is live, each beat RE-SENDS the held message in the bar's place
+  (`StatsBarSystem` line 126, `held.hold().message()`), and the first beat after its end draws the stats line again.
+  **Only two things start a hold: `MiningService`'s DENIED notice and the fight fixtures** (READ, every `holds.hold`
+  call in main). **No row here mines or starts a fight**, so no hold is live in this run.
+- **The quiver's notices are NOT held** (READ, `QuiverNotice`): `empty`, `noAmmo` and `reloadStarted` call
+  `player.sendActionBar` once, behind a 40-tick throttle per notice. The next bar beat (within 10 ticks) overwrites it
+  on his screen; in the log it is **one line**.
+
+**PREDICTED, for the whole run: the stats-bar lines are EXPECTED and NOT COUNTED.** About **one per 10 ticks** for every
+tick of the run after his join, so roughly 110 to 390 lines over the 1,133 to 3,908 ticks above (a rate, not a count to
+check). **The pattern that sets them aside:** a `REPLY actionbar` line whose text begins **`"❤ `** (the heart and a
+space). Every notice this gate predicts begins otherwise (`"Your quiver`, `"You have no`, `"Reloading`). A reader
+filters with `Select-String -NotMatch 'REPLY actionbar "❤ '`, or reads them as a record of his health, quiver and mana.
+**They do not make the log or any row unreadable**: at two lines a second they sit between the row's own lines, and
+no prediction above is a count of `REPLY` lines.
+
+**Row by row, the REPLY predictions this touches:**
+
+| row | effect |
+|---|---|
+| setup, RW0 | stats-bar lines only (no quiver field: nothing with a magazine is held) |
+| RW1-RW5 | stats-bar lines with a `➹ <r>/2` field while the Breacher is held; their PLAYERHIT and PROBE predictions are untouched |
+| **BR6R2** | **`REPLY actionbar "Your quiver is empty -- left-click to reload." [gray]` EXACTLY ONCE** (not held; one press on an empty magazine; the throttle fresh), among the stats lines; the stats line after it reads `➹ 0/2` |
+| **BR7R2** | **`REPLY actionbar "You have no cobblestone -- Cobblestone loads this weapon." [gray]` EXACTLY ONCE** (not held; one `reload:`; the throttle fresh); the stats lines read `➹ 0/2` |
+| LL9R2 | stats-bar lines with no quiver field (the Lantern has no magazine) and the mana dropping by 12 on the cast |
+| RW9 | stats-bar lines throughout his 30 seconds; any `"Reloading..."`, `"Your quiver is empty…"` or `"You have no cobblestone…"` lines are his own presses, recorded and not predicted |
+| the END | stats-bar lines until the run's reader is unregistered at its finish (READ, `SelfTestRun.end`, on every exit path) |
+
 ## THE ROWS (`/rpg selftest breacher-rework`) — SURVIVAL, ALL AUTO
 
 **EVERY DAMAGE PREDICTION NAMES EVERY TERM** (`.claude/rules/verification.md`), per pellet:
