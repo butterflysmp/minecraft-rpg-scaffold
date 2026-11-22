@@ -60,7 +60,7 @@ class FireCadenceTest {
     }
 
     private FireCadence.Sample inputs() {
-        return cadence.sample(player, RIGHT, FireCadence.Kind.INPUT).orElseThrow();
+        return cadence.sample(player, RIGHT, FireCadence.Kind.INPUT, BOW).orElseThrow();
     }
 
     /**
@@ -168,17 +168,17 @@ class FireCadenceTest {
      */
     @Test
     void nothingRecordedIsEmptyAndClearMakesItEmptyAgain() {
-        assertTrue(cadence.sample(player, RIGHT, FireCadence.Kind.INPUT).isEmpty(),
+        assertTrue(cadence.sample(player, RIGHT, FireCadence.Kind.INPUT, BOW).isEmpty(),
                 "before anything is recorded");
         assertEquals(0, cadence.trackedPlayers());
 
         input(100);
         input(104);
-        assertTrue(cadence.sample(player, RIGHT, FireCadence.Kind.INPUT).isPresent());
+        assertTrue(cadence.sample(player, RIGHT, FireCadence.Kind.INPUT, BOW).isPresent());
         assertEquals(1, cadence.trackedPlayers());
 
         cadence.clear(player);
-        assertTrue(cadence.sample(player, RIGHT, FireCadence.Kind.INPUT).isEmpty(),
+        assertTrue(cadence.sample(player, RIGHT, FireCadence.Kind.INPUT, BOW).isEmpty(),
                 "print and clear means the next call has nothing, and says so");
         assertEquals(0, cadence.trackedPlayers());
     }
@@ -200,30 +200,70 @@ class FireCadenceTest {
         cadence.record(player, "left_click", FireCadence.Kind.INPUT, BOW);
 
         assertEquals(2, inputs().count(), "two right-click inputs");
-        assertEquals(1, cadence.sample(player, RIGHT, FireCadence.Kind.FIRE).orElseThrow().count());
-        assertEquals(1, cadence.sample(player, "left_click", FireCadence.Kind.INPUT)
+        assertEquals(1, cadence.sample(player, RIGHT, FireCadence.Kind.FIRE, BOW).orElseThrow().count());
+        assertEquals(1, cadence.sample(player, "left_click", FireCadence.Kind.INPUT, BOW)
                 .orElseThrow().count(), "and left-click is its own sample");
     }
 
     /**
-     * A SAMPLE SPANNING TWO WEAPONS IS NOT A READING.
+     * A SAMPLE IS KEPT PER WEAPON (2026-11-22, the seat's brief, PR 1). This row replaced the MIXED row: a weapon
+     * change mid-hold used to flag the one sample as MIXED and spoil it ({@code GATE-knell-beam.md} HF1R2). Now the
+     * second weapon starts its OWN sample and neither spoils the other.
      *
-     * <p>"Two weapons disagreeing about the input floor is a finding" cannot BE a finding if one
-     * sample silently averages both. The flag is what lets the readout refuse to print a number.
+     * <p>The staging keeps every figure distinct so a transposition cannot hide: the staff's three inputs are 4 apart
+     * (min 4), the beam's two are 7 apart (min 7), and the counts are 3 and 2.
      *
-     * <p>Forces red: dropping the weapon comparison; comparing with {@code ==} on the id.
+     * <p>Forces red: dropping {@code weaponId} from the key (one pooled sample of 5, min 3 at the 103-to-106 join).
      */
     @Test
-    void aWeaponChangeMidSampleIsFlaggedRatherThanAveraged() {
+    void twoWeaponsAreTwoSamplesAndNeitherSpoilsTheOther() {
+        final String staff = "crystal_shard_staff";
+        final String beam = "knell_beam";
+        at(100); cadence.record(player, RIGHT, FireCadence.Kind.INPUT, staff);
+        at(103); cadence.record(player, RIGHT, FireCadence.Kind.INPUT, beam);
+        at(104); cadence.record(player, RIGHT, FireCadence.Kind.INPUT, staff);
+        at(108); cadence.record(player, RIGHT, FireCadence.Kind.INPUT, staff);
+        at(110); cadence.record(player, RIGHT, FireCadence.Kind.INPUT, beam);
+
+        FireCadence.Sample s = cadence.sample(player, RIGHT, FireCadence.Kind.INPUT, staff).orElseThrow();
+        FireCadence.Sample b = cadence.sample(player, RIGHT, FireCadence.Kind.INPUT, beam).orElseThrow();
+        assertEquals(3, s.count());
+        assertEquals(4L, s.minIntervalTicks().orElseThrow());
+        assertEquals(staff, s.weaponId());
+        assertEquals(2, b.count());
+        assertEquals(7L, b.minIntervalTicks().orElseThrow());
+        assertEquals(beam, b.weaponId());
+        assertEquals(java.util.List.of(staff, beam), cadence.weapons(player, RIGHT),
+                "both weapons, the one first used first");
+        assertEquals(java.util.List.of(), cadence.weapons(player, "left_click"), "nothing on another input");
+    }
+
+    /**
+     * THE SELFTEST'S OWN PRESSES ARE KEPT OUT (2026-11-22, the seat's brief, PR 1). A record made inside
+     * {@code excluding} is counted, never sampled; a real one on either side of it is sampled as before, and
+     * {@code clear} resets the count.
+     *
+     * <p>Forces red: not consulting the mark in {@code record} (the sample counts 3, not 2); not clearing the mark in a
+     * {@code finally} (the later real press is lost).
+     */
+    @Test
+    void aSyntheticPressIsCountedAndKeptOutOfTheSample() {
         input(100);
-        assertFalse(inputs().mixedWeapons(), "one weapon so far");
-        assertEquals(BOW, inputs().weaponId());
+        at(102);
+        cadence.excluding(player, () -> {
+            cadence.record(player, RIGHT, FireCadence.Kind.INPUT, BOW);
+            cadence.record(player, RIGHT, FireCadence.Kind.FIRE, BOW);
+        });
+        input(109);
 
-        at(104);
-        cadence.record(player, RIGHT, FireCadence.Kind.INPUT, "quiver_stone");
+        assertEquals(2, inputs().count(), "the two real presses only");
+        assertEquals(9L, inputs().minIntervalTicks().orElseThrow(), "100 to 109: the synthetic 102 is not a gap");
+        assertTrue(cadence.sample(player, RIGHT, FireCadence.Kind.FIRE, BOW).isEmpty(), "the synthetic fire is out");
+        assertEquals(2, cadence.excluded(player), "both synthetic records, counted");
+        assertFalse(cadence.excluded(UUID.randomUUID()) > 0, "another player has none");
 
-        assertTrue(inputs().mixedWeapons(),
-                "the sample now spans two weapons and must not be printed as a reading");
+        cadence.clear(player);
+        assertEquals(0, cadence.excluded(player), "clear resets the count");
     }
 
     /**
@@ -267,7 +307,7 @@ class FireCadenceTest {
     /** A sample with only its count set -- the verdict reads nothing else, deliberately. */
     private static FireCadence.Sample countOnly(int count) {
         return new FireCadence.Sample(count, 0L, java.util.OptionalDouble.empty(),
-                java.util.OptionalLong.empty(), java.util.OptionalLong.empty(), BOW, false);
+                java.util.OptionalLong.empty(), java.util.OptionalLong.empty(), BOW);
     }
 
     /**
@@ -349,7 +389,7 @@ class FireCadenceTest {
     /** Absent samples never reach the verdict: the caller has both or prints neither. */
     @Test
     void anAbsentSampleNeverReachesTheVerdict() {
-        Optional<FireCadence.Sample> none = cadence.sample(player, RIGHT, FireCadence.Kind.FIRE);
+        Optional<FireCadence.Sample> none = cadence.sample(player, RIGHT, FireCadence.Kind.FIRE, BOW);
         assertTrue(none.isEmpty(),
                 "the command must check presence and say so in words -- there is no verdict over a "
                         + "measurement that did not happen");

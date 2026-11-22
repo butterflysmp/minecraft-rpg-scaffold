@@ -42,6 +42,8 @@ public final class SelfTestService {
     private final io.github.butterflysmp.rpg.paper.health.MobPouncer pounces;
     /** The Phage's own fuse, for the DETONATE, PROBE_FUSE and AWAIT_FUSE steps (the void implosion's Part C). */
     private final io.github.butterflysmp.rpg.paper.health.PhageFuser fuser;
+    /** The fire-cadence counters: the USE step's synthetic press runs inside {@code excluding} (2026-11-22, PR 1). */
+    private final io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence;
     /** The Knell's teleport, for the TELEPORT_DRAW step (dragon-mobs step R6). */
     private final io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports;
     private final Spawner spawner;
@@ -88,7 +90,9 @@ public final class SelfTestService {
                            io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports,
                            io.github.butterflysmp.rpg.paper.health.MobShooter shots,
                            io.github.butterflysmp.rpg.paper.health.MobPouncer pounces,
-                           io.github.butterflysmp.rpg.paper.health.PhageFuser fuser) {
+                           io.github.butterflysmp.rpg.paper.health.PhageFuser fuser,
+                           io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence) {
+        this.fireCadence = java.util.Objects.requireNonNull(fireCadence, "fireCadence");
         this.fuser = fuser;
         this.pounces = pounces;
         this.shots = shots;
@@ -284,6 +288,7 @@ public final class SelfTestService {
     io.github.butterflysmp.rpg.paper.health.MobShooter shots() { return shots; }
     io.github.butterflysmp.rpg.paper.health.MobPouncer pounces() { return pounces; }
     io.github.butterflysmp.rpg.paper.health.PhageFuser fuser() { return fuser; }
+    io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence() { return fireCadence; }
     Spawner spawner() { return spawner; }
     Scheduler scheduler() { return adapters.scheduler(); }
     CombatantStats stats() { return adapters.stats(); }
