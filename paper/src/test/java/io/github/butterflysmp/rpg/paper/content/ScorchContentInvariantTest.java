@@ -128,8 +128,12 @@ class ScorchContentInvariantTest {
      * also a dev weapon and should be slated for deletion"). One site: its Ember Bolt's burst {@code damage}, element
      * fire. The run after the deletion reddened with "expected 18 fire damage sites in content, found 17". The new
      * {@code crystal_shard_staff} is kinetic and adds none.
+     *
+     * <p><b>17 -> 18 on 2026-11-22: {@code living_lantern} added</b> (feat/living-lantern), one site: its Lantern's
+     * Breath {@code damage}, element fire (Ben: "Fire element"). Its visuals carry no element. The run before this edit
+     * reddened with "expected 17 fire damage sites in content, found 18".
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 17;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 18;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare

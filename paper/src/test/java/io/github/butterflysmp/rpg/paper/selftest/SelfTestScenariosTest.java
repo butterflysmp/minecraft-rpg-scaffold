@@ -40,9 +40,10 @@ class SelfTestScenariosTest {
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
-                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam"),
+                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty-six gates, in boot order (knell-beam LAST, the Knell Beam, 2026-11-21, a NEW gate after"
+                "the thirty-seven gates, in boot order (living-lantern LAST, the Living Lantern, 2026-11-22, a NEW gate after"
+                        + " knell-beam; knell-beam before it, the Knell Beam, 2026-11-21, a NEW gate after"
                         + " crystal-shard-staff; crystal-shard-staff before it, the Crystal Shard Staff, 2026-11-21, a NEW gate after"
                         + " remove-dev-weapons; remove-dev-weapons before it, the four dev weapons deleted, 2026-11-21, a"
                         + " NEW gate after sword-convert; sword-convert before it, the sword ladder part h, 2026-11-20, a NEW gate"
@@ -265,7 +266,9 @@ class SelfTestScenariosTest {
         // control: 291 + 11 (setup, KB1-KB8, CS2R2, HF1R2) = 302. 256 was this line's value.
         // Then KB0, the spot check (the seat's follow-up, 2026-11-21), RECOUNTED: 36 gates, 303 keys, 36 setups, so 267.
         // The control: 302 + 1 = 303. 266 was this line's value.
-        assertEquals(267, loaded.rows());
+        // Then GATE-living-lantern.md (feat/living-lantern, 2026-11-22), RECOUNTED: 37 gates, 317 keys, 37 setups, so 280.
+        // The control: 303 + 14 (setup, LL0-LL9, KB2R2, CR3, HF1R3) = 317. 267 was this line's value.
+        assertEquals(280, loaded.rows());
     }
 
     /**

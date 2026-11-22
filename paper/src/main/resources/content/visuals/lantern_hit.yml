@@ -1,0 +1,20 @@
+# The Living Lantern's hit (SEAT PLACEHOLDER 2026-11-22): a burst of the old FLAME and orange dust, and the old lantern
+# break on hit (cfde822). Played at each struck body's feet. The key READ in the pinned 26.1.2 server jar's
+# SoundEvents.class.
+steps:
+  - type: particle
+    particle: FLAME
+    count: 8
+    spread: 0.3
+    speed: 0.02
+  - type: particle
+    particle: DUST
+    color: [255, 140, 0]
+    size: 1.3
+    count: 6
+    spread: 0.3
+    speed: 0.0    # inert for DUST
+  - type: sound
+    key: block.lantern.break
+    volume: 0.8
+    pitch: 1.0
