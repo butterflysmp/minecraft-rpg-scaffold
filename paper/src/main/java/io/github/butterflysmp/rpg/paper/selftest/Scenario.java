@@ -87,6 +87,11 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * player): custom HP, feet, on-ground, fall distance. GATE-sunder.md's fall-damage and landing rows read it.
          */
         PROBE_SELF,
+        /**
+         * Log the PLAYER'S mana, {@code MANA current=<c> max=<m>}, from the pool every cast spends from. Added
+         * 2026-11-21 (the seat's brief, PR 1): a cast's price is READ from two of these, not inferred from source.
+         */
+        PROBE_MANA,
         PROBE_BODY,
         /**
          * For THIS ROW ONLY, sets {@code keep_inventory} and {@code immediate_respawn} true, and lets the player die

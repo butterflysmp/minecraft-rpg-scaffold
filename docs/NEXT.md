@@ -10265,6 +10265,16 @@ date, and the note that the weapon was subsequently deleted.
 > the binding above them; `ember_staff` is deleted on the stacked branch.) The Cursed Emerald is a VOLLEY, whose
 > `AbilityService` floor is also 30 (`WeaponLoader`'s `cooldown_ticks` section), so it is not a clean instrument either:
 > the staff is.
+>
+> **RULED 2026-11-21, THE SEAT, AFTER THE STAFF'S BOOT (`GATE-crystal-shard-staff.md`, HF1): THE READING WAS NOT
+> TAKEN, AND THE CAUSE IS THE SEAT'S BRIEF.** HF1 is UNREAD because the brief asked Ben to type into chat what the server
+> could have logged: `/rpg firerate`'s lines went to his chat only. Ben, verbatim: *"i'm not typing the lines in chat
+> just read them"* and *"these self tests have lost a lot of their automatic components since the handoff"*. The seat:
+> *"He is right."* **The Crystal Shard Staff merged at Ben's 14 ticks** (#226, `be9d5ec0`). **`ceil(n/4) x 4` stays an
+> UNTESTED EMPIRICAL FIT.** The trigger above is amended: **the reading is OWED on the next boot** (the Knell Beam's,
+> `feat/knell-owed-fixes` and the two PRs stacked on it), **after `/rpg firerate` also writes its lines to the server
+> log**, which that branch adds (`FIRERATE player=<name> <line>`), and inside the selftest, with the command run by the
+> row so its lines land in the log (HF1R2).
 
 #### OPEN — BEN'S TO RULE, NOT MINE
 

@@ -653,7 +653,7 @@ public final class RpgCommand {
                 // PRINT AND CLEAR, so a second run cannot silently report the first run's numbers.
                 .then(Commands.literal("firerate")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
-                        .executes(ctx -> fireRate(ctx, weapons, fireCadence)))
+                        .executes(ctx -> fireRate(ctx, weapons, fireCadence, adapters.log())))
                 // Mint a class_damage_boost_TEMP. The class-damage stat bases at 0 and no content
                 // grants it yet, so without this the feature is invisible at boot: hold a MATCHING
                 // weapon and every direct damage effect gains the bonus (the staff's literal bolt
@@ -1350,21 +1350,39 @@ public final class RpgCommand {
      * <p><b>The verdict is PRINTED, never left to be inferred</b> -- {@code /rpg reloadtime}'s
      * discipline, which prints SLOWER or FASTER rather than leaving a sign to be read.
      */
+    /**
+     * One line of {@code /rpg firerate}: shown to the player AND written to the server log as
+     * {@code FIRERATE player=<name> <text>}, the same text.
+     *
+     * <p><b>WHY THE LOG, 2026-11-21.</b> {@code GATE-crystal-shard-staff.md}'s HF1 went UNREAD: these lines reached
+     * Ben's chat and nowhere else, and the gate asked him to type them. Ben, verbatim: "i'm not typing the lines in chat
+     * just read them". The seat ruled the brief at fault; now a gate reads them from {@code latest.log}. Every line
+     * {@link #fireRate} shows goes through here ({@code FireRateLogTest} scans that it holds no bare
+     * {@code player.sendMessage}).
+     */
+    static void say(java.util.function.Consumer<Component> chat, java.util.function.Consumer<String> log,
+                    String playerName, String text, NamedTextColor colour) {
+        chat.accept(Component.text(text, colour));
+        log.accept("FIRERATE player=" + playerName + " " + text);
+    }
+
     private static int fireRate(CommandContext<CommandSourceStack> ctx, WeaponRegistry weapons,
-                                FireCadence cadence) {
+                                FireCadence cadence, java.util.logging.Logger logger) {
         if (!(ctx.getSource().getExecutor() instanceof Player player)) {
             ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
             return 0;
         }
+        java.util.function.Consumer<Component> chat = player::sendMessage;
+        java.util.function.Consumer<String> log = logger::info;
+        String name = player.getName();
         UUID id = player.getUniqueId();
         Optional<FireCadence.Sample> inputs = cadence.sample(id, RIGHT_CLICK, FireCadence.Kind.INPUT);
 
         // ABSENCE IN WORDS, NOT AS A ZERO ROW. Run twice and the second call has nothing; printing
         // figures for a measurement that did not happen is the failure this branch exists for.
         if (inputs.isEmpty()) {
-            player.sendMessage(Component.text(
-                    "No fire-cadence sample. Hold right-click on a weapon that binds it, release, "
-                            + "then run this again.", NamedTextColor.YELLOW));
+            say(chat, log, name, "No fire-cadence sample. Hold right-click on a weapon that binds it, release, "
+                    + "then run this again.", NamedTextColor.YELLOW);
             return 0;
         }
         FireCadence.Sample in = inputs.get();
@@ -1374,26 +1392,24 @@ public final class RpgCommand {
                 .orElse(new FireCadence.Sample(0, 0L, OptionalDouble.empty(), OptionalLong.empty(),
                         OptionalLong.empty(), in.weaponId(), false));
 
-        player.sendMessage(Component.text("Fire cadence -- " + in.weaponId() + ", right_click",
-                NamedTextColor.GOLD));
-        player.sendMessage(Component.text("  INPUTS  " + line(in), NamedTextColor.GREEN));
-        player.sendMessage(Component.text("  FIRES   " + line(fire), NamedTextColor.GREEN));
+        say(chat, log, name, "Fire cadence -- " + in.weaponId() + ", right_click", NamedTextColor.GOLD);
+        say(chat, log, name, "  INPUTS  " + line(in), NamedTextColor.GREEN);
+        say(chat, log, name, "  FIRES   " + line(fire), NamedTextColor.GREEN);
 
         // A SAMPLE SPANNING TWO WEAPONS IS NOT A READING. "Two weapons disagreeing about the input
         // floor is a finding" cannot BE a finding if one sample silently averages both.
         if (in.mixedWeapons() || fire.mixedWeapons()) {
-            player.sendMessage(Component.text(
-                    "  MIXED -- the weapon changed mid-sample. Retake it on one weapon.",
-                    NamedTextColor.RED));
+            say(chat, log, name, "  MIXED -- the weapon changed mid-sample. Retake it on one weapon.",
+                    NamedTextColor.RED);
         } else {
             weapons.find(in.weaponId())
                     .flatMap(w -> w.trigger(RIGHT_CLICK).map(b -> cooldownLine(w, b)))
-                    .ifPresent(text -> player.sendMessage(Component.text("  " + text, NamedTextColor.GRAY)));
-            player.sendMessage(Component.text("  " + verdictLine(in, fire), NamedTextColor.AQUA));
+                    .ifPresent(text -> say(chat, log, name, "  " + text, NamedTextColor.GRAY));
+            say(chat, log, name, "  " + verdictLine(in, fire), NamedTextColor.AQUA);
         }
 
         cadence.clear(id);
-        player.sendMessage(Component.text("Sample cleared.", NamedTextColor.GRAY));
+        say(chat, log, name, "Sample cleared.", NamedTextColor.GRAY);
         return 1;
     }
 

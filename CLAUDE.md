@@ -160,6 +160,7 @@ so it is greppable** — and none of them is reproduced here, because two accoun
 | **AN AUTO READING IS A READING OF THE SERVER, NEVER OF THE CLIENT** | a row was read by `/rpg selftest`, or you are amending a gate's witness so that it can be |
 | **PREDICT DAMAGE AGAINST THE HURT LINE, NEVER AGAINST A HEALTH FIGURE THAT REGENERATION CAN MOVE** | a gate row predicts what a hit does to a player |
 | **A ROW THAT READS A MOB'S HEALTH IN DAYLIGHT NEEDS NIGHT, A HELMET, OR A CONTROL** | a gate row reads a mob's health under open sky (a NoAI zombie burns at noon) |
+| **A DAMAGE PREDICTION NAMES EVERY TERM OF THE SUM** | a gate row predicts a player's hit (`sent=`): score, enchant, class bonus, LEVEL bonus, charge, crit |
 
 **BOOTING A GATE: `.claude/rules/booting.md`, a checklist ticked line by line in the boot's report.** "Booting now"
 goes in its own message BEFORE the boot command, and "R0 passed" in its own message BEFORE Ben logs in.

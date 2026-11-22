@@ -138,6 +138,11 @@ paths:
     > `NEXT.md`: blaze_kings_staff 8, boltor 16, cursed_emerald **30**, dragons_breath 32, dragons_plume 8 (three tap
     > bands), ember_staff 20, flint_staff 24, lapis_staff 20, locust 12, short_bow 12, volley_stone 40 (right) and 0
     > (left), withered_shortbow 16. **One off the grid: `cursed_emerald`.** The trigger and reason (b) stand.
+    >
+    > **RULED 2026-11-21, after the staff's boot: HF1 went UNREAD, and the cause is the seat's brief**, which asked Ben
+    > to type what the server could have logged (Ben: *"i'm not typing the lines in chat just read them"*). The staff
+    > merged at Ben's 14 ticks. **`ceil(n/4) x 4` stays an UNTESTED EMPIRICAL FIT; the reading is OWED on the next boot,
+    > after `/rpg firerate` also logs its lines** (`feat/knell-owed-fixes`). The account is in `NEXT.md`.
 
 ### NAME THE QUANTITY, AND NAME THE SET OF THINGS THAT HAVE IT
 
