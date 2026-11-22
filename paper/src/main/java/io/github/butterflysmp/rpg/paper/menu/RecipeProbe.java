@@ -439,7 +439,8 @@ public final class RecipeProbe {
 
             // THE INVARIANT. A minted item is never a material -- not counted, and therefore never
             // assembled into a matrix and never debited. Third surface for this chain.
-            if (CraftMatrixScreen.isGear(item, keys)) continue;
+            // Gear AND the Nexus item (the star, or its quiver mirror) are never ingredients (the seat's ruling A, 2026-11-22).
+            if (CraftMatrixScreen.neverAnIngredient(item, keys)) continue;
 
             int found = -1;
             for (int index = 0; index < representatives.size(); index++) {

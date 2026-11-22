@@ -115,6 +115,26 @@ public final class CraftMatrixScreen {
      * tags, and a loop over all of them would let a future ability or status key silently start
      * protecting items it has nothing to do with. One named call per gear kind.
      */
+    /**
+     * NEVER AN INGREDIENT (the seat's ruling A, 2026-11-22): a minted item, AND THE NEXUS ITEM IN ANY MATERIAL IT WEARS
+     * (the star; and, from the quiver mirror on, its arrows). Read by every walk that pays for something out of his
+     * storage ({@code RecipeProbe.groups}).
+     *
+     * <p><b>THE DEFECT IT CLOSES IS MASTER'S OWN</b>: the ingredient walk skipped only gear, and the Nexus star is a
+     * NETHER_STAR, which a beacon takes, so our crafting menu could spend it (re-minted at his next join). Keyed on the
+     * TAG, never the material, so the mirror's arrows are covered by the same line.
+     */
+    public static boolean neverAnIngredient(ItemStack item, Keys keys) {
+        if (item == null) return false;
+        return refusedAsIngredient(isGear(item, keys),
+                io.github.butterflysmp.rpg.paper.nexus.NexusItems.isNexus(item, keys));
+    }
+
+    /** The decision, pure: gear or the Nexus item (whatever its material) is never paid as an ingredient. */
+    static boolean refusedAsIngredient(boolean gear, boolean nexus) {
+        return gear || nexus;
+    }
+
     public static boolean isGear(ItemStack item, Keys keys) {
         if (item == null) return false;
         return WeaponItems.weaponId(item, keys).isPresent()
