@@ -253,7 +253,10 @@ final class AbilitySchema {
      */
     private static CastSpec.Spread parseSpread(ConfigurationSection s) {
         if (s == null) return null;
-        return new CastSpec.Spread(reqInt(s, "count"), reqDouble(s, "angle_degrees"));
+        // rotation_degrees is OPTIONAL (2026-11-22, the seat's ruling 1): absent is 0, today's ring, so every file written
+        // before it is byte-identical in behaviour. Present, it must be a number (reqDouble), never silently 0.
+        double rotation = s.contains("rotation_degrees") ? reqDouble(s, "rotation_degrees") : 0.0;
+        return new CastSpec.Spread(reqInt(s, "count"), reqDouble(s, "angle_degrees"), rotation);
     }
 
     /**

@@ -27,9 +27,9 @@
    "Quiver: --/2" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Breacher" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "Seven chunks of cobblestone" color=#AAAAAA O=. B=. S=. U=. I=F
-   "in a blast 25 degrees wide." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["6 x 7" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Four chunks of cobblestone," color=#AAAAAA O=. B=. S=. U=. I=F
+   "a tight triangle 6 degrees wide." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["40 x 4" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Cooldown: 1.0s" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Iron, gunpowder, string," color=#AAAAAA O=. B=. S=. U=. I=T

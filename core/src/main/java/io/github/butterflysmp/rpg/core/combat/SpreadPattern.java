@@ -122,7 +122,9 @@ public final class SpreadPattern {
 
         int ring = spread.ringCount();
         for (int i = 0; i < ring; i++) {
-            double phi = 2 * Math.PI * i / ring;
+            // The ring's rotation (CastSpec.Spread.rotationDegrees, default 0): counter-clockwise from his right toward his up,
+            // the direction phi already runs, so 90 puts the first ring body straight above the aim.
+            double phi = 2 * Math.PI * i / ring + Math.toRadians(spread.rotationDegrees());
             Vec3 lateral = r.scale(Math.cos(phi) * offset).add(up.scale(Math.sin(phi) * offset));
             directions.add(f.add(lateral).normalize());
         }

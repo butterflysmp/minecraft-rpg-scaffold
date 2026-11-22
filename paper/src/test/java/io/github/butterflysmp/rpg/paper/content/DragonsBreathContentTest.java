@@ -130,6 +130,8 @@ class DragonsBreathContentTest {
         assertEquals(7, spread.count(), "count 7, NOT the angle 3");
         assertEquals(3.0, spread.angleDegrees(), 1e-9, "angle 3, NOT the count 7");
         assertEquals(6, spread.ringCount(), "one down the aim vector and SIX on the ring");
+        assertEquals(0.0, spread.rotationDegrees(), 0.0,
+                "no rotation_degrees authored, so 0: the ring as it always was (2026-11-22, the Breacher rework's option)");
     }
 
     /**

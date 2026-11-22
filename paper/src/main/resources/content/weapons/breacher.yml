@@ -33,6 +33,9 @@
 #     Boltor's +12.5% / +25% / +37.5%), the counter-example expanded_quiver.yml's uniformity argument already has in
 #     Dragon's Breath, made larger. Recorded, not changed: OPEN FOR BEN. Each added round costs one more cobblestone.
 #   Unbreaking (effect durability): a crossbow is durable (above). Real.
+#   THE REWORK (2026-11-22) MOVES ONE FIGURE: Power's multiplicand is now 40 a pellet, so levels I/II/III read 42 /
+#     44 / 46 on one pellet's popup, all legible (the "6" / "7" / "7" above was the old 6). Every other quantity is
+#     unchanged (quiver 2, reload 60, durability). The four enchants and both halves of the rule still pass.
 #   Punch is PARKED (no weapon can take it), so it cannot roll here.
 
 id: breacher
@@ -51,9 +54,9 @@ flavor:                                    # SEAT PLACEHOLDER 2026-11-22
 
 triggers:
   right_click:
-    description:                           # SEAT PLACEHOLDER 2026-11-22 (no `name:`: the header reads the weapon's)
-      - "Seven chunks of cobblestone"
-      - "in a blast 25 degrees wide."
+    description:                           # SEAT PLACEHOLDER 2026-11-22, reworded for the rework (no `name:`)
+      - "Four chunks of cobblestone,"
+      - "a tight triangle 6 degrees wide."
     # BEN: "1s cooldown between shots". 20 is ON the 4-tick grid, so held fire delivers the tooltip's 1.0s.
     cooldown_ticks: 20
     on_cast:
@@ -81,14 +84,34 @@ triggers:
       # rule that allowed Dragon's Breath its "x 7" was that a full seven-pellet hit EXISTS (dragons_breath.yml: out to
       # 5.72 blocks at 3 degrees). At 12.5 the whole pattern fits a 0.6-wide body only inside 0.6 / (2 tan 12.5) = 1.35
       # blocks. NO RULE IS CHANGED: under the existing rule the full hit exists, so "x 7" prints. OPEN FOR BEN.
+      #
+      # ================== THE REWORK, 2026-11-22 (feat/breacher-rework): BEN, AFTER THE FIRST BOOT ==================
+      #
+      # Ben, verbatim: "First the damage is way to low, you should be able to easily kill a 100hp mob with one shot.
+      # Second I want to change the pellets from 7 to 3 and up the damage to 40 per pellet. Third tighten the spread to
+      # let's say 8 degrees total. I want the pellets to be in a triangle shape with the point up". Then, told that with
+      # no centre pellet a dead-centre aim misses with all three beyond about 5 blocks: "drop the degree to 6 and add a
+      # fourth pellet to the center". The paragraph above is kept as the record of the 7 at 12.5.
+      #
+      # So: FOUR pellets, one on the aim and a ring of three; "6 degrees total" is 3 off the aim for each ring pellet
+      # (the seat's reading of "total", as for the 25, undisputed); rotation_degrees 90 turns the ring so its first
+      # pellet is straight UP (SpreadPattern: phi from the shooter's right toward his up; 0 points right, READ), the
+      # other two at 210 and 330, below and either side: POINT UP. "Up" is his own up vector, so it tilts with his pitch.
+      #
+      # WHERE ALL FOUR LAND (EXECUTED: an awk model of SpreadPattern and castRay's exact boxes; a 0.6 x 1.95 zombie aimed
+      # dead centre at his eye height, 1.62): all four out to 6.60 blocks (the top pellet clears the head beyond: 0.33 /
+      # tan 3 = 6.30 to the front face); three, 6.60 to 6.91 (the lower pair leaves the body's width: 0.3 / (cos 30 tan 3)
+      # = 6.61); the centre pellet alone beyond 6.91, out to the 12-block reach. At 40 a pellet: 160, 120, 40.
+      # THE TOOLTIP: "x 4" (deliveredShots prints the count); the full hit exists out to 6.60 blocks. OPEN FOR BEN.
       spread:
-        count: 7                           # BEN: "1. fine" to seven pellets
-        angle_degrees: 12.5
+        count: 4                           # BEN: "add a fourth pellet to the center" (three round it, one on the aim)
+        angle_degrees: 3                   # BEN: "drop the degree to 6" total; 3 off the aim each (the seat's reading)
+        rotation_degrees: 90               # BEN: "a triangle shape with the point up"
     on_hit:
       - type: visual
         visual_id: breacher_hit            # SEAT PLACEHOLDER 2026-11-22
-      - type: damage                       # BEN: 6 kinetic a pellet. A literal, as dragons_breath authors its 9
-        amount: 6
+      - type: damage                       # BEN: 40 kinetic a pellet ("up the damage to 40 per pellet"). Was 6. A literal
+        amount: 40
         element: kinetic
       # A TRAVELLING RANGED WEAPON AUTHORS KNOCKBACK (Ben's standing ruling, 2026-09-13; CLAUDE.md and
       # standing-decisions.md). The seat's brief listed "no knockback" as a placeholder; the standing ruling is Ben's
