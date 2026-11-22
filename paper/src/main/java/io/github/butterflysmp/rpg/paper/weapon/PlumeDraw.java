@@ -249,8 +249,17 @@ public final class PlumeDraw {
     private Optional<WeaponDefinition> drawWeapon(ItemStack item) {
         return WeaponItems.weaponId(item, adapters.keys())
                 .flatMap(weapons::find)
-                .filter(weapon -> DRAW_MATERIAL.equalsIgnoreCase(weapon.material()))
-                .filter(weapon -> weapon.trigger("right_click").isEmpty());
+                .filter(PlumeDraw::drawManaged);
+    }
+
+    /**
+     * IS THIS A WEAPON WHOSE DRAW WE MANAGE? A bow that binds the {@code draw} trigger (the seat's ruling 11, exemption
+     * 3, 2026-11-22). It read "a bow that binds no right_click" until then, which would have captured the vanilla-driven
+     * Bow (it binds no right_click either) and cleared its draw. Keyed on the weapon's OWN draw trigger, so a bow that
+     * vanilla draws is never taken over.
+     */
+    public static boolean drawManaged(WeaponDefinition weapon) {
+        return DRAW_MATERIAL.equalsIgnoreCase(weapon.material()) && weapon.trigger(CHARGED_INPUT).isPresent();
     }
 
     /**

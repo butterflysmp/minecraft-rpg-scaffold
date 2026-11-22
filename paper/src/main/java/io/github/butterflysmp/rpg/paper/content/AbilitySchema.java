@@ -42,6 +42,9 @@ final class AbilitySchema {
         return switch (type) {
             case "self"       -> new CastSpec.Self();
             case "melee"      -> new CastSpec.Melee(s.getDouble("reach", 3.0), s.getDouble("arc_degrees", 90));
+            // VANILLA'S OWN SHOT (2026-11-22): no keys; vanilla draws, loads and shoots. Legal only under a weapon's shot
+            // trigger (WeaponDefinition refuses it elsewhere). Its on_hit lands where vanilla's arrow lands.
+            case "vanilla"    -> new CastSpec.Vanilla();
             // `beam` is OPTIONAL and absent means null -- a ray that draws nothing between the
             // muzzle and the impact, which is what solar_lance is and what every ray was before
             // this line. Mirrors `trail` on projectile below, and is validated the same way:
@@ -161,6 +164,9 @@ final class AbilitySchema {
             case CastSpec.Melee ignored -> throw notRepeatable("melee",
                     "it lands where the caster already is, so repeating it is a sound with no"
                             + " mechanism behind it");
+            case CastSpec.Vanilla ignored -> throw notRepeatable("vanilla",
+                    "it is vanilla's own bow or crossbow shot, which we never cast; it belongs only under a weapon's"
+                            + " shot trigger");
             case CastSpec.Dash ignored -> throw notRepeatable("dash",
                     "a dash's direction is resolved before the cast is dispatched and only for an"
                             + " OUTER dash, so a repeated one would go the wrong way rather than fail");
