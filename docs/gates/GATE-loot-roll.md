@@ -374,3 +374,7 @@ own gate:
 4. **Two commands were off the sheet:** `/gamemode spectator` first, corrected four seconds later before any row, and
    `/weather clear` between MG7R3 and TA1. Neither touched a row's reading.
 5. **TB1-TB6 are carried**, by the seat's ruling 2.
+
+**2026-11-21, a dated note (feat/knell-beam): "no content is epic" in this gate is no longer true.** `knell_beam` is the
+first epic item. It joins NO pool (Ben: "It will be a dragon drop later"), so the dev example source still has no
+epic pool, an epic that lands is still skipped, and LR2's prediction would still hold on a re-run. Nothing above is edited.

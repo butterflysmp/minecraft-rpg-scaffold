@@ -54,7 +54,7 @@ were then spot-checked against `git show master:`.
   - **the shield, and every tool:** common.
   - **accessories:** keen, mending and ward charms uncommon; brawler's gauntlet, fletcher's quiver and sage's scroll
     rare.
-- **No content is EPIC today.** Mobs have no rarity.
+- **No content is EPIC today.** Mobs have no rarity. *(2026-11-21: `knell_beam` is the first epic item, feat/knell-beam. It joins NO pool, by Ben's word "It will be a dragon drop later", so every pool's epic tier is still empty.)*
 
 ### 1.b Every place a player is given an item, or something drops
 
@@ -168,6 +168,8 @@ pool is empty, and **an epic that lands falls through at EVERY source, until an 
 placeholders that is the 7.682% of rolls that land epic. Under the empty-pool reading as built, they go on to roll
 rare and below.
 
+*(2026-11-21, feat/knell-beam: "no content is epic today" is no longer true. `knell_beam` is epic. It joins no pool, so the fall-through above is unchanged until an epic item is put in a pool.)*
+
 ## 5. OPEN, FOR BEN
 
 **Asked by the seat, 2026-11-19, and ANSWERED by Ben the same day** (his words at this file's head):
@@ -179,7 +181,7 @@ rare and below.
 **Still open:** the guaranteed-last-tier reading; the content layout.
 
 **Recorded:** no content is EPIC today, so an epic that lands falls through at every source until an epic item exists
-(section 4).
+(section 4). *(2026-11-21: an epic item now exists, `knell_beam`, and is in no pool; the fall-through still holds at every source.)*
 
 **Not merging yet** (the seat, 2026-11-19): #219 waits until the fight stack (#216, #217, #218) is merged. Then it is
 rebased onto master, and the next gate's R0c predicts its Loaded line.

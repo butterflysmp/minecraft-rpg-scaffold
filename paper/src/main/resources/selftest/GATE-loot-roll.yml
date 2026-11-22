@@ -13,6 +13,7 @@ LR1:
 
 # LR2: 10,000 ROLLS OF THE DEV EXAMPLE SOURCE: each tier's count near its true odds, epic always skipped (no epic item
 # exists), and his inventory the same before and after (it gives nothing).
+# (2026-11-21: an epic item now exists, knell_beam, but the dev source has no epic pool, so an epic is still skipped.)
 LR2:
   - probe_inventory: "volley_stone"
   - probe_inventory: "locust"

@@ -121,6 +121,16 @@
    "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- knell_beam
+   "Void" color=#AA00AA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Knell's Toll" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Locks a line where you look," color=#AAAAAA O=. B=. S=. U=. I=F
+   "then tolls a beam down it 1.2s later." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Void Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["63" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 2.4s | Mana Cost: 13" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Epic Magic Weapon" color=#AA00AA O=. B=. S=. U=. I=F
 -- lapis_staff
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -583,4 +593,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 98 renderings ===
+=== 99 renderings ===

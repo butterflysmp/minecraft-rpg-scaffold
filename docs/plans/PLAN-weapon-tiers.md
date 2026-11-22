@@ -213,6 +213,31 @@ Relayed by the seat's brief of 2026-11-21 and recorded here on `feat/crystal-sha
   `cursed_emerald` uncommon at 27, `flint_staff` common at 20. Placing them on a tier is a record, not a retune.
 - **The `ember_staff` deletion is the stacked PR B** (`feat/ember-staff-deleted`), by the four dev weapons' rulings.
 
+### 1.7 Ben, 2026-11-21, VERBATIM: the Knell Beam (off the progression tree)
+
+Relayed by the seat's brief of 2026-11-21 and recorded here on `feat/knell-beam`, spelling as typed:
+
+> "slight detour in that the next weapon isn't apart of our current progress tree focus. Let's bring the Knell Beam
+> from the old repo into the new one"
+>
+> "1. Slight rework, I want the windup time to match the Knell mob in our repo and the cooldown to be double the wind
+> up time. Also I want it to require more accuracy. The old beam was very forgiving and because of that, very over
+> powered. I still want it to have decent coverage because of stuff like lag and desync but it shouldn't be a "Kill
+> everything in that direction" weapon
+> 2. Void Weapon
+> 3. Nothing right now, It will be a dragon drop later
+> 4. ignore the crystals for now
+> 5. yes"
+
+His 3 answers "How do you get it?" (no recipe, no drop, no loot pool: `/rpg give` only); his 5 answers "Locked aim: keep
+it?". On the self tests: *"these self tests have lost a lot of their automatic components since the handoff"* and
+*"i'm not typing the lines in chat just read them"*; the Knell Beam's gate is all AUTO, and he types three lines.
+
+**Not on a tier.** It is off the progression tree, by his first line. Its numbers are in `knell_beam.yml`: Ben's (a
+24-tick windup, the Knell mob's telegraph; a 48-tick cooldown, double it; void; locked aim; more accurate than the old
+1.0) and the seat's placeholders (tolerance 0.3, damage 63, mana 13, range 40, epic, echo_shard, the names, one flash
+at the click, piercing every body), each marked in the file. **It is the first EPIC item**, and it joins no loot pool.
+
 ---
 
 ## 2. WHAT EXISTS TODAY

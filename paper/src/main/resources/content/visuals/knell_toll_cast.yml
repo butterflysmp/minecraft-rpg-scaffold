@@ -1,0 +1,12 @@
+# The Knell Beam's cast, on the click (SEAT PLACEHOLDER 2026-11-21): the Knell mob's own telegraph sounds, the ones it
+# plays when it locks its line (content/mobs/knell.yml, beam.sounds.telegraph). Both keys READ in the pinned 26.1.2
+# server jar's SoundEvents.class (control: a made-up bell key reads 0).
+steps:
+  - type: sound
+    key: block.bell.use
+    volume: 1.0
+    pitch: 1.0
+  - type: sound
+    key: block.bell.resonate
+    volume: 1.4
+    pitch: 1.0

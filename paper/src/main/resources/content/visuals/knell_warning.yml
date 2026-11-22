@@ -1,0 +1,13 @@
+# The Knell Beam's warning line, drawn along the locked line on the click (SEAT PLACEHOLDER 2026-11-21): the Knell
+# mob's own warning dust, Color.fromRGB(95, 35, 165) at size 0.8 every 0.5 blocks (MobBeamer's WARNING and
+# PARTICLE_STEP, READ), which is the old weapon's dark purple. A beam visual: no sound step may live here
+# (ContentValidator refuses one, since a beam is drawn once per chunk-column segment).
+steps:
+  - type: particle
+    particle: DUST
+    color: [95, 35, 165]
+    size: 0.8
+    count: 1
+    spread: 0.0
+    speed: 0.0             # inert for DUST
+    samples_per_block: 2

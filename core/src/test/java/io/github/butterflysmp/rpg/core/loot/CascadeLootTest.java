@@ -39,7 +39,7 @@ class CascadeLootTest {
         p.put(Rarity.EXOTIC, List.of("volley_stone"));
         p.put(Rarity.LEGENDARY, List.of("dragons_breath", "dragons_plume", "blaze_kings_staff"));
         p.put(Rarity.RARE, List.of("emberblade", "locust"));
-        return p; // no EPIC pool: no content has an epic item today
+        return p; // no EPIC pool: no content has an epic item today (2026-11-21: knell_beam is epic and joins no pool, so this fixture still holds; it is in-memory)
     }
 
     @Test
