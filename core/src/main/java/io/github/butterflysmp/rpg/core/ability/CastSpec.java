@@ -537,6 +537,57 @@ public sealed interface CastSpec {
     }
 
     /**
+     * A SPELL THAT SWEEPS A CONE IN FRONT OF THE CASTER (the seat's brief of 2026-11-22, the Living Lantern, ruling 1):
+     * every body inside a cone of FULL angle {@code arcDegrees} about the aim, out to {@code range} blocks, with a clear
+     * line of sight from the eye, takes the {@code on_hit} once.
+     *
+     * <ul>
+     *   <li>{@code range}, in BLOCKS, from the eye to a body's SIGHT POINT ({@code CombatantSnapshot.sightPoint}), the
+     *       point the line of sight is traced to (ruling 3).</li>
+     *   <li>{@code arcDegrees}, the FULL angle: 60 is 30 either side, up and down as well as left and right. The angle
+     *       test is the melee swing's, {@code Aim.withinArc}, reused (one copy). In (0, 180).</li>
+     *   <li>{@code travelTicks}: 0 strikes every body on the cast's own tick. N &gt; 0 sends a FRONT out from the eye,
+     *       {@code range / N} blocks a tick, from the origin and direction captured AT THE CLICK, as values (ruling 2); a
+     *       body is struck on the tick the front first reaches it, once per cast, nearest first within a tick. A body
+     *       that walks into the cone BEHIND the front is not struck.</li>
+     *   <li>{@code front}, a visual id drawn each tick as a ring at the front's distance, the cone's width there, and its
+     *       centre; or null to draw nothing.</li>
+     * </ul>
+     *
+     * <p><b>IT IS NOT THE MELEE CAST, AND THAT IS WHY IT IS A MEMBER RATHER THAN MELEE'S FIELDS.</b> A melee cast picks
+     * ONE nearest body, and a weapon whose melee on_hit is a {@code weapon_damage} is a basic attack: vanilla drives it,
+     * attack speed scales its cooldown, a charge scales its hit, and the sweep rider splashes it. A cone strikes EVERY
+     * body in it and drives none of that: nothing in {@code BasicMelee}, the attack-speed scaling or the sweep reads a
+     * cone (each keys on {@code Melee} or on a {@code weapon_damage} on_hit). It reuses the swing's ANGLE TEST, not the
+     * swing.
+     *
+     * <p><b>WHO IT STRIKES (ruling 4, READ 2026-11-22, and KEPT as every spell has it):</b> every live body in it but
+     * the caster. ANOTHER PLAYER in the cone IS struck: {@code EffectApplier}'s {@code Damage} arm filters no player and
+     * the ability path has no PvP gate, and no {@code PLAYERHIT} line is written for a player target
+     * ({@code EffectApplier.trace}). The CASTER never is: a spell's selector leaves him out by id (a ray by
+     * {@code castRay}'s ignore id, the swing by {@code casterId}), and the cone does the same in
+     * {@code ConeShell.reached}; nothing in the {@code Damage} arm itself would spare him.
+     *
+     * <p>No bundled content reaches the refusals below; {@code CastSpecConeTest} causes each.
+     */
+    record Cone(double range, double arcDegrees, int travelTicks, String front) implements CastSpec {
+        public Cone {
+            if (!(range > 0 && Double.isFinite(range))) {
+                throw new IllegalArgumentException("a cone's range must be more than 0 blocks, was " + range);
+            }
+            if (!(arcDegrees > 0 && arcDegrees < 180)) {
+                throw new IllegalArgumentException("a cone's arc_degrees must be in (0, 180), was " + arcDegrees
+                        + ": at 0 it strikes nothing, and at 180 or more it reaches beside and behind the caster and"
+                        + " has no front ring to draw");
+            }
+            if (travelTicks < 0) {
+                throw new IllegalArgumentException("a cone's travel_ticks must be 0 (instant) or more, was "
+                        + travelTicks);
+            }
+        }
+    }
+
+    /**
      * The shortest cooldown this cast shape may be given, whatever its file authored.
      *
      * <p><b>THIS EXISTS BECAUSE A DERIVATION THAT LIVES IN A PLAN DOCUMENT IS NOT A MECHANISM.</b>
@@ -578,6 +629,9 @@ public sealed interface CastSpec {
             case Ray ignored -> 0;
             case Projectile ignored -> 0;
             case Dash ignored -> 0;
+            // A cone in flight when the next is cast is two casts, each with its own struck set: nothing doubles up
+            // within one, and two overlapping cones are two presses the cooldown already priced. No floor.
+            case Cone ignored -> 0;
         };
     }
 }

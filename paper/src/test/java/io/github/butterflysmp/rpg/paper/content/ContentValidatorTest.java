@@ -542,6 +542,37 @@ class ContentValidatorTest {
                 "a sound is only a problem in a BEAM, not in the visual itself");
     }
 
+    private static AbilityRegistry coneNaming(String front) {
+        var registry = new AbilityRegistry();
+        registry.register(new AbilityDefinition("breath", "Breath", "fire",
+                16, new ResourceCost("mana", 12), new CastSpec.Cone(6, 60, 6, front), List.of()));
+        return registry;
+    }
+
+    /**
+     * A CONE'S FRONT (2026-11-22, the Living Lantern) is checked as a beam is: a dangling id is named, and a front
+     * visual holding a sound is named with its own reason. A front naming a sound-free visual, and a cone with no front,
+     * are not problems. Mutation: an empty {@code Cone} arm in checkCast -> the first two halves redden.
+     */
+    @Test
+    void aConeFrontIsCheckedAsABeamIs() {
+        var dangling = validator(visualsWith("something_else"), statusesWith()).validate(coneNaming("lantern_front"));
+        assertEquals(1, dangling.size(), dangling.toString());
+        assertTrue(dangling.get(0).contains("cone front visual 'lantern_front'"), dangling.toString());
+
+        var withSound = visualWithSteps("lantern_front", anyDust(),
+                new VisualSpec.Sound("block.fire.ambient", NamespacedKey.fromString("block.fire.ambient"), 1.0f, 1.0f));
+        var sound = validator(withSound, statusesWith()).validate(coneNaming("lantern_front"));
+        assertEquals(1, sound.size(), sound.toString());
+        assertTrue(sound.get(0).contains("sound step") && sound.get(0).contains("every tick of its travel"),
+                sound.toString());
+
+        assertTrue(validator(visualWithSteps("lantern_front", anyDust()), statusesWith())
+                .validate(coneNaming("lantern_front")).isEmpty(), "CONTROL: a sound-free front is fine");
+        assertTrue(validator(visualsWith(), statusesWith()).validate(coneNaming(null)).isEmpty(),
+                "no front is the default and is never reported");
+    }
+
     /** A ray naming no beam is not a problem -- solar_lance's shape, and every ray before this. */
     @Test
     void aRayNamingNoBeamIsNotAProblem() {

@@ -8,6 +8,7 @@ import io.github.butterflysmp.rpg.core.build.Touchdown;
 import io.github.butterflysmp.rpg.core.combat.Aim;
 import io.github.butterflysmp.rpg.core.combat.Caster;
 import io.github.butterflysmp.rpg.core.combat.ChunkTraversal;
+import io.github.butterflysmp.rpg.core.combat.ConeShell;
 import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
@@ -269,7 +270,73 @@ public final class CastExecutor {
             // cast-frame projection above reaches no shot at all -- see volley(). `aim` IS passed, since
             // 2026-11-21, and is read ONLY by a locked-aim volley: the line captured at the cast.
             case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley, source.weaponHit(), aim);
+
+            case CastSpec.Cone cone -> beginCone(ability, source, aim, cone);
         }
+    }
+
+    /**
+     * How far past the front the cone's world query reaches. {@code combatantsNear} finds bodies by their position (in
+     * production, a box about it), and the cone judges the SIGHT POINT, which can stand an eye height above the feet; so
+     * the query is padded and {@link ConeShell#reached} judges the exact distance. Covers any body whose sight point is
+     * within 4 blocks of its position.
+     */
+    private static final double CONE_QUERY_PAD = 4.0;
+
+    /**
+     * START A CONE (the seat's brief of 2026-11-22, the Living Lantern, rulings 1 to 4). {@code aim} is the line captured
+     * at the click, a pair of values; it is the only aim the cone ever reads (ruling 2), so the caster turning or
+     * walking afterwards moves nothing. Instant ({@code travel_ticks 0}) runs its one pass inline, on the cast frame;
+     * otherwise the first pass is a tick later, with the front at {@code range / N}.
+     */
+    private void beginCone(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Cone cone) {
+        if (cone.travelTicks() == 0) {
+            conePass(ability, caster, aim, cone, 0, Set.of());
+            return;
+        }
+        world.schedule(aim.origin(), 1, () -> conePass(ability, caster, aim, cone, 1, Set.of()));
+    }
+
+    /**
+     * ONE TICK OF THE FRONT. It draws the front, then strikes, nearest first, every body {@link ConeShell#reached}
+     * finds in this tick's shell that the eye can SEE ({@code lineOfSightClear} from the origin to the body's sight
+     * point, ruling 3: a block stops it; a body behind another body does not). Each struck body takes the
+     * {@code on_hit} at its feet, as the melee swing's target does. {@code struck} carries the ids already struck
+     * across ticks, as values (the Knell Beam's rule 7), so a body is struck once per cast.
+     *
+     * <p><b>A MISS LANDS NOTHING.</b> Unlike a ray, which goes off at its end, a cone that reaches nobody detonates
+     * nowhere: its front IS its presentation, and an {@code on_hit} visual at the range's end would be a puff at a
+     * point the cone never singles out.
+     *
+     * <p><b>THREADING.</b> Every pass after the first is {@code world.schedule} at the ORIGIN, so it runs on the region
+     * owning the eye's point. The query reaches {@code range + CONE_QUERY_PAD} from there (10 blocks for a range of 6),
+     * which on Folia can read a neighbouring region's chunks: the same standing as the defect the adapter documents on
+     * {@code combatantsNear} for a ray's walk, and the reason a long cone would need chunk-column hops. Paper runs one
+     * thread, so it does not bite there. Recorded, not guarded.
+     */
+    private void conePass(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Cone cone, int tick,
+                          Set<UUID> struck) {
+        int n = cone.travelTicks();
+        double outer = n == 0 ? cone.range() : cone.range() * tick / n;
+        double inner = n == 0 || tick <= 1 ? Double.NEGATIVE_INFINITY : cone.range() * (tick - 1) / n;
+
+        if (cone.front() != null) {
+            for (Vec3 point : ConeShell.frontPoints(aim, outer, cone.arcDegrees())) world.present(point, cone.front());
+        }
+
+        Set<UUID> struckNow = new HashSet<>(struck);
+        var candidates = world.combatantsNear(aim.origin(), outer + CONE_QUERY_PAD);
+        for (ConeShell.Reached reached : ConeShell.reached(aim, cone.arcDegrees(), inner, outer, candidates,
+                caster.id(), struck)) {
+            Combatant body = reached.combatant();
+            if (!world.lineOfSightClear(aim.origin(), body.state().sightPoint())) continue;
+            struckNow.add(body.id());
+            detonate(ability, caster, body, body.state().position());
+        }
+
+        if (n == 0 || tick >= n) return;
+        Set<UUID> carried = Set.copyOf(struckNow);
+        world.schedule(aim.origin(), 1, () -> conePass(ability, caster, aim, cone, tick + 1, carried));
     }
 
     /**
@@ -731,7 +798,6 @@ public final class CastExecutor {
      * as does a Dash sweep. Deliberately out of scope here; do not read this as covering them.
      */
     private Combatant meleeTarget(CombatantSnapshot caster, Aim aim, CastSpec.Melee melee) {
-        double minimumDot = Math.cos(Math.toRadians(melee.arcDegrees() / 2.0));
         UUID casterId = caster.id();
 
         Combatant nearest = null;
@@ -740,11 +806,10 @@ public final class CastExecutor {
         for (Combatant candidate : world.combatantsNear(aim.origin(), melee.reach())) {
             if (candidate.id().equals(casterId)) continue;
 
-            Vec3 toCandidate = candidate.state().position().subtract(aim.origin());
-            // Both are unit vectors, so the dot product is the cosine of the
-            // angle between them: larger means closer to straight ahead.
-            if (toCandidate.normalize().dot(aim.direction()) < minimumDot) continue;
+            // The angle test is Aim.withinArc, shared with the cone cast (2026-11-22): the swing tests the FEET.
+            if (!aim.withinArc(candidate.state().position(), melee.arcDegrees())) continue;
 
+            Vec3 toCandidate = candidate.state().position().subtract(aim.origin());
             double distanceSquared = toCandidate.lengthSquared();
             if (distanceSquared >= nearestDistanceSquared) continue;
             if (!world.lineOfSightClear(aim.origin(), candidate.state().sightPoint())) continue;
@@ -900,6 +965,7 @@ public final class CastExecutor {
             case CastSpec.Melee ignored -> throw new IllegalStateException(notRepeatable("melee"));
             case CastSpec.Dash ignored -> throw new IllegalStateException(notRepeatable("dash"));
             case CastSpec.Volley ignored -> throw new IllegalStateException(notRepeatable("volley"));
+            case CastSpec.Cone ignored -> throw new IllegalStateException(notRepeatable("cone"));
         }
     }
 

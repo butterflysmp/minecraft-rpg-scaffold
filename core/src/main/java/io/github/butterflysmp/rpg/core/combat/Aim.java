@@ -60,6 +60,22 @@ public record Aim(Vec3 origin, Vec3 direction, Vec3 right) {
         this(origin, direction, horizontalRight(direction));
     }
 
+    /**
+     * Whether {@code point} lies inside a cone of FULL angle {@code arcDegrees} about this aim, apexed at the origin:
+     * so a 90-degree swing reaches 45 either side. The angle test both the melee swing ({@code CastExecutor.meleeTarget})
+     * and the cone cast use (the seat's brief of 2026-11-22, ruling 1: one copy of the test, not two). Both vectors are
+     * unit, so the dot is the cosine of the angle between them. A point AT the origin has no direction
+     * ({@code Vec3.normalize} gives ZERO), so its dot is 0 and it is inside only an arc of 180 or more.
+     *
+     * <p>Extracted unchanged from {@code meleeTarget}, which skipped a candidate when {@code dot < cos(arc / 2)}; this
+     * is that test's negation, and with no NaN reachable ({@code normalize} never divides by zero) the two agree on every
+     * input. Which POINT of a body is tested is the caller's: the swing tests the FEET, the cone the sight point.
+     */
+    public boolean withinArc(Vec3 point, double arcDegrees) {
+        double minimumDot = Math.cos(Math.toRadians(arcDegrees / 2.0));
+        return point.subtract(origin).normalize().dot(direction) >= minimumDot;
+    }
+
     /** The point {@code distance} blocks along the aim. */
     public Vec3 pointAt(double distance) {
         return origin.add(direction.scale(distance));

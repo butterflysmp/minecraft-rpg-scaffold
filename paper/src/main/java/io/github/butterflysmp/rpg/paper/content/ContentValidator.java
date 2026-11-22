@@ -662,6 +662,25 @@ public final class ContentValidator {
             }
             case CastSpec.Self ignored -> { }
             case CastSpec.Melee ignored -> { }
+            // A cone's front (2026-11-22, the Living Lantern): the id must name a visual, and that visual may hold no
+            // sound. The ray beam's rule, with its own reason: the ray arm's message names chunk-column segments, which
+            // is not why a front may not carry a sound.
+            case CastSpec.Cone cone -> {
+                if (cone.front() == null) return;
+                VisualDefinition front = visuals.find(cone.front()).orElse(null);
+                if (front == null) {
+                    problems.add(ownerLabel + " names cone front visual '" + cone.front()
+                            + "', which no visual defines");
+                    return;
+                }
+                if (front.steps().stream().anyMatch(s -> s instanceof VisualSpec.Sound)) {
+                    problems.add(ownerLabel + " names cone front visual '" + cone.front()
+                            + "', which contains a sound step. A front is drawn at "
+                            + (1 + io.github.butterflysmp.rpg.core.combat.ConeShell.FRONT_RING_POINTS)
+                            + " points on every tick of its travel, so the sound would play that many times a tick."
+                            + " Put the sound in on_cast or on_hit instead");
+                }
+            }
         }
     }
 
