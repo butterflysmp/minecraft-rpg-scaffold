@@ -98,24 +98,6 @@ public final class CraftMatrixScreen {
     }
 
     /**
-     * Is this one item ours?
-     *
-     * <p>Asks EVERY gear key through the same wrappers {@code EnchantMenu.acceptsInput} uses, so
-     * the two places that decide "is this ours" cannot drift into disagreeing.
-     *
-     * <p><b>A KEY MISSING FROM THIS CHAIN IS A HOLE IN THE CONTAINS_GEAR INVARIANT, and it is
-     * silent.</b> This is the whitelist that stops a vanilla recipe consuming a minted item: an
-     * unlisted kind is not "not gear", it is gear that the crafting surface will happily eat. The
-     * tool arm was added with the fourth kind and this note with it, because nothing here fails to
-     * compile when the chain falls behind {@code GearDefinition} -- there is no switch, no sealed
-     * type and no test that can see the omission. It has to be remembered, so it is written down at
-     * the place that has to remember it.
-     *
-     * <p>Deliberately NOT rewritten as a loop over the keys: {@code Keys} holds far more than gear
-     * tags, and a loop over all of them would let a future ability or status key silently start
-     * protecting items it has nothing to do with. One named call per gear kind.
-     */
-    /**
      * NEVER AN INGREDIENT (the seat's ruling A, 2026-11-22): a minted item, AND THE NEXUS ITEM IN ANY MATERIAL IT WEARS
      * (the star; and, from the quiver mirror on, its arrows). Read by every walk that pays for something out of his
      * storage ({@code RecipeProbe.groups}).
@@ -135,6 +117,24 @@ public final class CraftMatrixScreen {
         return gear || nexus;
     }
 
+    /**
+     * Is this one item ours?
+     *
+     * <p>Asks EVERY gear key through the same wrappers {@code EnchantMenu.acceptsInput} uses, so
+     * the two places that decide "is this ours" cannot drift into disagreeing.
+     *
+     * <p><b>A KEY MISSING FROM THIS CHAIN IS A HOLE IN THE CONTAINS_GEAR INVARIANT, and it is
+     * silent.</b> This is the whitelist that stops a vanilla recipe consuming a minted item: an
+     * unlisted kind is not "not gear", it is gear that the crafting surface will happily eat. The
+     * tool arm was added with the fourth kind and this note with it, because nothing here fails to
+     * compile when the chain falls behind {@code GearDefinition} -- there is no switch, no sealed
+     * type and no test that can see the omission. It has to be remembered, so it is written down at
+     * the place that has to remember it.
+     *
+     * <p>Deliberately NOT rewritten as a loop over the keys: {@code Keys} holds far more than gear
+     * tags, and a loop over all of them would let a future ability or status key silently start
+     * protecting items it has nothing to do with. One named call per gear kind.
+     */
     public static boolean isGear(ItemStack item, Keys keys) {
         if (item == null) return false;
         return WeaponItems.weaponId(item, keys).isPresent()
