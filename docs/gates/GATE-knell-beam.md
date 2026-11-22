@@ -551,6 +551,21 @@ a beam down it 1.2s later." [gray]; "Void Damage: 63" [gray, red]; "Cooldown: 2.
 wrapper `effectiveName()` puts round a custom name, in `ECHO_SHARD`'s vanilla item rarity, and the inner `dark_purple`
 is ours and is what renders. What the client shows is not an AUTO reading.
 
+> **KB1's YELLOW, READ 2026-11-22 (`feat/lantern-owed-fixes`, no boot; the INFERRED above is now READ where marked).**
+> - **READ, our source:** `SelfTestLines.styled` lists every colour in the component tree it is handed, and the dump
+>   hands it `ItemStack#effectiveName()`.
+> - **READ, the pinned server jar:** `CraftItemStack.effectiveName()` returns vanilla `ItemStack.getStyledHoverName()`,
+>   which appends the hover name (our custom name) to an EMPTY outer component, sets that outer component's colour
+>   to the item's `Rarity.color()`, and sets ITALIC on it when the stack has a `CUSTOM_NAME`. `Items.ECHO_SHARD` is
+>   registered `Rarity.UNCOMMON`, whose colour is YELLOW. So **the yellow is vanilla's rarity colour on the wrapper**,
+>   and the `italic` every dump prints is the same wrapper's custom-name flag (CS1's "INFERRED" is now READ).
+>   `getRarity` raises the rarity when the stack carries VANILLA enchantments (READ); ours are not vanilla's.
+> - **What the client shows: dark purple, upright (INFERRED, not an AUTO reading).** Our inner component sets
+>   `dark_purple` and `ITALIC false` explicitly, and an explicit child style overrides the inherited one (Adventure
+>   and vanilla style inheritance). Ben read the staff's name as "look good" (CS1).
+> - **Fixed: nothing.** A `lantern` is registered with default properties, COMMON (READ), whose colour is WHITE, so the
+>   Living Lantern's dump will read `[white, <ours>]`.
+
 **KB2 — NOT AS PREDICTED, ONE LINE: THE PROBE AFTER THE HIT.** `REPLY "  raw:
 v1;unbreaking=0:-1;attunement=0:-1;unbreaking=0,attunement=0:-1"`, so every slot's active choice is `-1` (as
 predicted). `MOBSEED 2e1303ea-… zombie gs=100 source=rolled max=100`; `DRIVE aim … d=10.000`; **`MANA
@@ -563,6 +578,31 @@ row.** INFERRED, NOT READ: `EffectApplier.trace` writes the `PLAYERHIT` line aft
 `CombatantHandle` only dispatches, so the health write may land a tick or more after the line, after the tick-25
 probe. KB3, KB4 and KB5 probe 25 to 30 ticks later and do read the 63, so the hit lands by then. **Owed: read the
 dispatch path, and whether the shot lands on tick 24 or 25.**
+
+> **KB2's TICK, READ 2026-11-22 (`feat/lantern-owed-fixes`, no boot). Each step marked.** T is the press's tick.
+> 1. **The press, tick T (READ, our source):** the `use:` step's synthetic click reaches `WeaponFire.attempt`, which runs
+>    `AbilityService` inline (mana spent, cooldown stamped at T), then hops with `adapters.scheduler().onRegion(eye, …)`.
+> 2. **The cast executes on T+1, in the GLOBAL tick (READ, the pinned jar):** on Paper, `onRegion` is
+>    `FallbackRegionScheduler.execute` → the global region scheduler's `run`, delay 1; `MinecraftServer` ticks the
+>    global region scheduler first, then each entity scheduler's `executeTick`.
+> 3. **The shot fires in his entity tick at T+24 (READ):** the volley's `scheduleOn(caster, 24)`, made from the global
+>    tick of T+1 before his scheduler has ticked that tick, keys the task at his scheduler's `tickCount + 24`. The
+>    `PLAYERHIT` line is written there, by `EffectApplier.trace`, after `applyDamage` returns.
+> 4. **The health write is NOT inline (READ, our source):** `BukkitCombatant.applyDamage` is
+>    `ctx.scheduler().onEntity(entity, () -> applyNow(…))`, and `PaperScheduler.onEntity` is
+>    `entity.getScheduler().run(…)`, which is `runDelayed(…, 1)` (READ, the jar). The store write is inside `applyNow`.
+> 5. **So the zombie's health moves on T+25 (READ path; the result INFERRED):** the entity schedulers to run in a tick
+>    are copied before any runs (READ, `getAllSchedulers`), so the zombie's write, queued at T+24, lands at T+25.
+>    Whether his tick-25 probe step runs BEFORE or AFTER the zombie's write within T+25 is their order in the server's
+>    scheduler list: **INFERRED player first** (registered earlier), which is what KB2's `100.000` at tick 25 shows.
+> - **Predicted for KB2R2 (probes on ticks 24, 25 and 26 after the press):** **24 `100.000/100.000`** (READ: the shot
+>   task was queued ahead of the probe on his scheduler, so the PLAYERHIT line precedes it, and the write is a tick
+>   later); **25 `100.000/100.000`** (INFERRED, from the order; `37.000` if the order is the other way); **26
+>   `37.000/100.000`**, or dead on a crit (READ). Carried as a row in `GATE-living-lantern.md`.
+> - **What it means for any cast whose hit is made from the GLOBAL tick** (the cast frame itself, and anything deferred
+>   with `CombatWorld.schedule`, which is `onRegionLater`, READ): the zombie's write is queued before that tick's
+>   entity-scheduler copy, so it lands in the SAME server tick as the hit (READ path, INFERRED result). A hit made on
+>   `scheduleOn(caster, …)` lands one tick later.
 
 **KB3 — AS PREDICTED.** MOBSEEDs `e90247c3` (6), `04f95ba5` (10), `a948a6e4` (14). Three `PLAYERHIT … element=void
 sent=63.000 crit=false triggerScore=100`, targets `e90247c3`, `04f95ba5`, `a948a6e4`: **nearest first, in MOBSEED

@@ -56,6 +56,33 @@ final class SelfTestStaging {
         return new HotbarPlan(HotbarPlan.Kind.NONE, -1, -1);
     }
 
+    /**
+     * {@code HOLD_ONLY}'s plan (2026-11-22, the seat's brief, PR 1): where each hotbar item that is NOT the kept weapon
+     * goes, so the weapon is the only thing left in the hotbar. Pure, so it is a unit row.
+     *
+     * @param hotbarOccupied which of hotbar slots 0-8 hold anything
+     * @param keep           the hotbar slot holding the weapon, which stays; {@code -1} when the weapon is in the main
+     *                       inventory (it is then moved into slot 0 by the caller, after this plan has emptied slot 0)
+     * @param mainEmpty      which of the 27 main-inventory slots (index 0 is inventory slot 9) are empty. The weapon's own
+     *                       main slot, if it is there, is NOT empty and is not used
+     * @return {@code dest[i]}, the inventory slot (9-35) hotbar slot {@code i} moves to, or {@code -1} when it stays
+     *         (empty, or the weapon); EMPTY when there are fewer empty main slots than items to move, so nothing at all is
+     *         moved and nothing is ever dropped
+     */
+    static java.util.Optional<int[]> hotbarOnlyPlan(boolean[] hotbarOccupied, int keep, boolean[] mainEmpty) {
+        int[] dest = new int[9];
+        java.util.Arrays.fill(dest, -1);
+        int next = 0;
+        for (int i = 0; i < 9; i++) {
+            if (!hotbarOccupied[i] || i == keep) continue;
+            while (next < mainEmpty.length && !mainEmpty[next]) next++;
+            if (next >= mainEmpty.length) return java.util.Optional.empty();
+            dest[i] = 9 + next;
+            next++;
+        }
+        return java.util.Optional.of(dest);
+    }
+
     /** The longest the run waits for a killed body to leave; vanilla's death animation is 20 ticks. */
     static final int SETTLE_CAP_TICKS = 40;
 

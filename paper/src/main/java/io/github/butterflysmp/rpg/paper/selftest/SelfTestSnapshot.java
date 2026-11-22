@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.paper.scheduler.Scheduler;
 import java.util.List;
 import java.util.UUID;
 import io.github.butterflysmp.rpg.core.combat.ResourcePool;
+import io.github.butterflysmp.rpg.core.combat.stat.CombatantStats;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import org.bukkit.GameMode;
 import org.bukkit.GameRules;
@@ -103,6 +104,12 @@ final class SelfTestSnapshot {
     private final long time;
     private final boolean trace;
     private final double mana;
+    /**
+     * His CUSTOM health at run start, or NaN when the store did not track him (2026-11-22, the seat's brief, PR 1).
+     * Before this, a run that staged his level at 1 left him at his level-1 health out of his own maximum
+     * ({@code GATE-knell-beam.md}, THE SEAT'S FOLLOW-UP a): the snapshot held no health at all.
+     */
+    private final double health;
     private final String classId;
     private final String elementId;
     /**
@@ -112,8 +119,10 @@ final class SelfTestSnapshot {
      */
     private final SelfTestStaging.RowBlocks<Location, BlockState> blocks = new SelfTestStaging.RowBlocks<>();
 
-    private SelfTestSnapshot(Player p, ProfileService profiles, ResourcePool resources, MobNameplateManager nameplates) {
+    private SelfTestSnapshot(Player p, ProfileService profiles, ResourcePool resources, MobNameplateManager nameplates,
+                             CombatantStats stats) {
         this.id = p.getUniqueId();
+        this.health = stats.tracks(id) ? stats.current(id) : Double.NaN;
         PlayerProfile profile = profiles.profile(id).orElse(null);
         this.lifetimeXp = profile == null ? -1 : profile.lifetimeXp();
         this.classId = profile == null ? null : profile.archetypeId();
@@ -134,8 +143,52 @@ final class SelfTestSnapshot {
         this.mana = resources.current(id, ResourceCost.DEFAULT_RESOURCE);
     }
 
-    static SelfTestSnapshot take(Player p, ProfileService profiles, ResourcePool resources, MobNameplateManager nameplates) {
-        return new SelfTestSnapshot(p, profiles, resources, nameplates);
+    static SelfTestSnapshot take(Player p, ProfileService profiles, ResourcePool resources, MobNameplateManager nameplates,
+                                 CombatantStats stats) {
+        return new SelfTestSnapshot(p, profiles, resources, nameplates, stats);
+    }
+
+    /**
+     * How long after the restore his health is put back. <b>Two passes of {@code PlayerHealthSystem}'s reconcile loop
+     * (5 ticks each)</b>: the XP restore raises his max only on the loop's next pass, and a rise is HEADROOM (current
+     * unchanged), so a write before that pass would be clamped to his level-1 max. One pass lands within 5 ticks;
+     * the second is the margin. The HEALTH line the write logs carries the max it saw, so a write that came too soon
+     * reads as {@code customHP=<m1>/<m1>} rather than passing as a restore.
+     */
+    static final int HEALTH_RESTORE_DELAY_TICKS = 10;
+
+    /**
+     * The health to write back, or NaN for no write. Pure, so it is a unit row. It puts back {@code min(saved, max)}
+     * and only ever RAISES him: if regeneration (or anything else) has already put him at or above that, it writes
+     * nothing, so the restore never deals him damage. NaN when nothing was saved (he was untracked at run start).
+     */
+    static double healthToRestore(double saved, double current, double max) {
+        if (Double.isNaN(saved)) return Double.NaN;
+        double target = Math.min(saved, max);
+        return target > current ? target : Double.NaN;
+    }
+
+    /**
+     * Put his custom health back, {@link #HEALTH_RESTORE_DELAY_TICKS} after the restore, on his own thread, and log
+     * {@code HEALTH saved=<s> customHP=<c>/<m> wrote=<w|none>} through {@code log}. At a server stop (the inline
+     * scheduler) the delayed task is REFUSED and named by the caller's NOT-RESTORED line: his health is not saved with
+     * him (a join registers him at full, {@code PlayerHealthSystem.onJoin}), so nothing is lost.
+     */
+    void restoreHealthLater(Player p, CombatantStats stats, Scheduler scheduler, java.util.function.Consumer<String> log) {
+        scheduler.onEntityLater(p, () -> {
+            if (!stats.tracks(id)) {
+                log.accept("HEALTH saved=" + fmtHealth(health) + " untracked: nothing written");
+                return;
+            }
+            double target = healthToRestore(health, stats.current(id), stats.max(id));
+            if (!Double.isNaN(target)) stats.setCurrent(id, target, id, true);
+            log.accept("HEALTH saved=" + fmtHealth(health) + " customHP=" + fmtHealth(stats.current(id)) + "/"
+                    + fmtHealth(stats.max(id)) + " wrote=" + (Double.isNaN(target) ? "none" : fmtHealth(target)));
+        }, HEALTH_RESTORE_DELAY_TICKS);
+    }
+
+    private static String fmtHealth(double v) {
+        return Double.isNaN(v) ? "none" : String.format(java.util.Locale.ROOT, "%.3f", v);
     }
 
     boolean profileLoaded() {
@@ -222,6 +275,6 @@ final class SelfTestSnapshot {
                 + " trace=" + nameplates.tracing() + " spawn_mobs=" + spawnMobs + " time=" + time
                 + " blocks=" + blocks.total() + " mobsRemoved=" + mobs + " orbsRemoved=" + orbs
                 + " keep_inventory=" + keepInventory + " immediate_respawn=" + immediateRespawn
-                + " difficulty=" + difficulty;
+                + " difficulty=" + difficulty + " health=" + fmtHealth(health);
     }
 }

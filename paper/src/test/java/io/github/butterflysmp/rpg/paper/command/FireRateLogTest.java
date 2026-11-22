@@ -41,7 +41,7 @@ class FireRateLogTest {
 
     /**
      * Every line {@code fireRate} shows goes through {@code say}: the method holds no bare {@code player.sendMessage},
-     * and at least the eight lines it can print (the empty arm, the header, INPUTS, FIRES, MIXED, the cooldown line,
+     * and at least the eight lines it can print (the empty arm, the several-weapons line, the excluded line, the header, INPUTS, FIRES, the cooldown line,
      * the verdict, "Sample cleared") are {@code say} calls. Bounded STRUCTURALLY, at the next member declaration, never
      * by a line count.
      */
@@ -59,6 +59,34 @@ class FireRateLogTest {
         assertTrue(body.contains("cadence.clear(id);"), "CONTROL: the bound holds fireRate's own body");
         assertEquals(0, count(body, "player.sendMessage("), "a line shown to the player but not logged");
         assertTrue(count(body, "say(") >= 8, "fewer than eight lines go through say: " + count(body, "say("));
+    }
+
+    /**
+     * The excluded count in words (2026-11-22, the seat's brief, PR 1): nothing for none, singular for one, plural
+     * beyond. Forces red: printing "(0 ... kept out)" on a real sample, which reads as a figure about the sample.
+     */
+    @Test
+    void theExcludedNoteIsWordsAndSilentAtZero() {
+        assertEquals("", RpgCommand.excludedNote(0));
+        assertEquals(" (1 selftest-driven record kept out of every sample)", RpgCommand.excludedNote(1));
+        assertEquals(" (9 selftest-driven records kept out of every sample)", RpgCommand.excludedNote(9));
+    }
+
+    /**
+     * The selftest's USE step fires its synthetic click INSIDE {@code FireCadence.excluding}, so the instrument's own
+     * presses never reach a sample (2026-11-22, PR 1). Bounded at the {@code use(} driver's body.
+     */
+    @Test
+    void theSelftestUseStepIsKeptOutOfTheCadence() throws IOException {
+        String src = Files.readString(Path.of("src/main/java/io/github/butterflysmp/rpg/paper/selftest/SelfTestDrivers.java"),
+                StandardCharsets.UTF_8).replace("\r", "");
+        int start = src.indexOf("private Optional<String> use(Player p)");
+        int end = src.indexOf("\n    private ", start + 1);
+        assertTrue(start > 0 && end > start, "use( is not found: the scan is blind");
+        String body = src.substring(start, end);
+        assertTrue(body.contains("run.fireCadence().excluding(p.getUniqueId(), () -> Bukkit.getPluginManager().callEvent(event));"),
+                "the synthetic click is wrapped");
+        assertEquals(1, count(body, "callEvent("), "and it is the only call of the event, so none escapes the wrap");
     }
 
     private static int count(String s, String needle) {

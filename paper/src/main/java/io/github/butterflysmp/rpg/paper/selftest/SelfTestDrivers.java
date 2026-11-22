@@ -90,6 +90,13 @@ final class SelfTestDrivers {
             case SWING -> swing(p);
             case DROP -> drop(p);
             case HOLD -> hold(p, a);
+            case HOLD_ONLY -> holdOnly(p, a);
+            case PROBE_HELD -> {
+                PlayerInventory inv = p.getInventory();
+                run.log("HELDID slot=" + inv.getHeldItemSlot() + " item=" + itemId(inv.getItemInMainHand())
+                        + " offhand=" + itemId(inv.getItemInOffHand()));
+                yield Optional.empty();
+            }
             case CLICK -> click(p, a, item -> plain(item.effectiveName()).startsWith(a), "name^=\"" + a + "\"");
             case CLICK_MATERIAL -> click(p, a, item -> item.getType().name().equalsIgnoreCase(a), "material=" + a);
             case SHIFT_CLICK -> shiftClick(p, a);
@@ -568,8 +575,12 @@ final class SelfTestDrivers {
         PlayerInteractEvent event = new PlayerInteractEvent(p, Action.RIGHT_CLICK_AIR,
                 held.isEmpty() ? null : held, null, BlockFace.SELF, EquipmentSlot.HAND);
         run.log("DRIVE use PlayerInteractEvent RIGHT_CLICK_AIR HAND item=" + itemId(held)
-                + " yaw=" + fmt(p.getLocation().getYaw()) + " pitch=" + fmt(p.getLocation().getPitch()));
-        Bukkit.getPluginManager().callEvent(event);
+                + " yaw=" + fmt(p.getLocation().getYaw()) + " pitch=" + fmt(p.getLocation().getPitch())
+                + " cadence=excluded");
+        // THE INSTRUMENT'S OWN PRESS IS KEPT OUT OF THE FIRE-CADENCE SAMPLE (2026-11-22, the seat's brief, PR 1): the
+        // event is synchronous, and WeaponFire.attempt records inside it, so the mark covers exactly this press.
+        // GATE-knell-beam.md HF1R2's cleared sample mixed presses like this one with Ben's own.
+        run.fireCadence().excluding(p.getUniqueId(), () -> Bukkit.getPluginManager().callEvent(event));
         return Optional.empty();
     }
 
@@ -642,6 +653,49 @@ final class SelfTestDrivers {
         }
         run.log("DRIVE hold PlayerItemHeldEvent+setHeldItemSlot " + previous + "->" + slot + " item=" + itemId(inv.getItem(slot)));
         return Optional.empty();
+    }
+
+    /**
+     * HOLD_ONLY (2026-11-22, the seat's brief, PR 1): leave ONLY {@code weaponId} in the hotbar and hold it. The plan is
+     * {@link SelfTestStaging#hotbarOnlyPlan}: every other hotbar item, the stone included, MOVES to an empty main slot;
+     * with too few, nothing moves and the row is skipped. The weapon, if it was in the main inventory, goes to hotbar
+     * slot 0. Then {@link #hold} selects it, through {@code PlayerItemHeldEvent}, and logs its usual line. The gate-boundary
+     * and run restores put the inventory back as it was. Each move is logged as a STAGE line; the off hand is logged and
+     * left alone (an off-hand right-click is vanilla's, never a weapon fire: {@code RpgListeners.onRightClick}).
+     */
+    private Optional<String> holdOnly(Player p, String weaponId) {
+        PlayerInventory inv = p.getInventory();
+        Predicate<ItemStack> isWeapon = item -> item != null
+                && WeaponItems.weaponId(item, keys).filter(weaponId::equals).isPresent();
+        int keep = -1;
+        int fromMain = -1;
+        for (int i = 0; i < 9 && keep < 0; i++) if (isWeapon.test(inv.getItem(i))) keep = i;
+        if (keep < 0) for (int i = 9; i < 36 && fromMain < 0; i++) if (isWeapon.test(inv.getItem(i))) fromMain = i;
+        if (keep < 0 && fromMain < 0) return Optional.of("no inventory slot holds " + weaponId);
+
+        boolean[] occupied = new boolean[9];
+        for (int i = 0; i < 9; i++) occupied[i] = inv.getItem(i) != null && !inv.getItem(i).isEmpty();
+        boolean[] mainEmpty = new boolean[27];
+        for (int i = 0; i < 27; i++) mainEmpty[i] = inv.getItem(9 + i) == null || inv.getItem(9 + i).isEmpty();
+        Optional<int[]> plan = SelfTestStaging.hotbarOnlyPlan(occupied, keep, mainEmpty);
+        if (plan.isEmpty()) return Optional.of("too few empty inventory slots to clear the hotbar for " + weaponId);
+        int[] dest = plan.get();
+        for (int i = 0; i < 9; i++) {
+            if (dest[i] < 0) continue;
+            ItemStack moved = inv.getItem(i);
+            inv.setItem(dest[i], moved);
+            inv.setItem(i, null);
+            run.log("STAGE hold_only moved " + itemId(moved) + " from hotbar " + i + " to slot " + dest[i]);
+        }
+        if (fromMain >= 0) {
+            inv.setItem(0, inv.getItem(fromMain));
+            inv.setItem(fromMain, null);
+            run.log("STAGE hold_only moved " + weaponId + " from slot " + fromMain + " to hotbar 0");
+        }
+        int left = 0;
+        for (int i = 0; i < 9; i++) if (inv.getItem(i) != null && !inv.getItem(i).isEmpty()) left++;
+        run.log("STAGE hold_only hotbar items=" + left + " offhand=" + itemId(inv.getItemInOffHand()));
+        return hold(p, weaponId);
     }
 
     /** A plain left click, routed exactly as the client's is: {@code RpgListeners.onMenuClick} → {@code Menu.handleClick}. */

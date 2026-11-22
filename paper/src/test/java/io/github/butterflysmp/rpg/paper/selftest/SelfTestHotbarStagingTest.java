@@ -80,4 +80,42 @@ class SelfTestHotbarStagingTest {
                 "a SWAP writes the displaced item into the weapon's old slot: nothing is dropped or destroyed");
         assertTrue(!hold.contains("dropItem"), "hold never drops an item");
     }
+
+    private static boolean[] mainEmpty(int... indices) {
+        boolean[] b = new boolean[27];
+        for (int i : indices) b[i] = true;
+        return b;
+    }
+
+    /**
+     * HOLD_ONLY (2026-11-22, the seat's brief, PR 1): every occupied hotbar slot but the weapon's goes to the next EMPTY
+     * main slot, in order, skipping the occupied ones. The fixture puts the weapon at 4 (not 0), occupied slots on both
+     * sides of it, and an occupied main slot (index 1) between two empty ones, so a plan that moved the weapon, kept a
+     * neighbour, or wrote into an occupied main slot could not pass.
+     *
+     * <p>Forces red: dropping {@code i == keep} (slot 4 gets moved); dropping the {@code !mainEmpty} skip (slot 2 lands
+     * on inventory slot 10, which is full).
+     */
+    @Test
+    void holdOnlyMovesEveryOtherHotbarItemIntoEmptyMainSlotsInOrder() {
+        int[] dest = SelfTestStaging.hotbarOnlyPlan(only(0, 2, 4, 8), 4, mainEmpty(0, 2, 3, 20)).orElseThrow();
+        assertEquals("[9, -1, 11, -1, -1, -1, -1, -1, 12]", java.util.Arrays.toString(dest));
+    }
+
+    /** A weapon from the main inventory ({@code keep -1}): slot 0 is emptied with the rest, so the caller can put it there. */
+    @Test
+    void holdOnlyWithTheWeaponInTheMainInventoryEmptiesSlotZeroToo() {
+        int[] dest = SelfTestStaging.hotbarOnlyPlan(only(0, 3), -1, mainEmpty(5, 6)).orElseThrow();
+        assertEquals("[14, -1, -1, 15, -1, -1, -1, -1, -1]", java.util.Arrays.toString(dest));
+    }
+
+    /**
+     * Too few empty main slots: NOTHING is moved (empty plan), never a partial clear and never a drop. Three items, two
+     * empty slots. Forces red: returning the partial plan.
+     */
+    @Test
+    void holdOnlyRefusesWholeWhenTheMainInventoryCannotTakeEverything() {
+        assertTrue(SelfTestStaging.hotbarOnlyPlan(only(1, 2, 3), -1, mainEmpty(0, 26)).isEmpty());
+        assertTrue(SelfTestStaging.hotbarOnlyPlan(only(1, 2), -1, mainEmpty(0, 26)).isPresent(), "CONTROL: two fit");
+    }
 }

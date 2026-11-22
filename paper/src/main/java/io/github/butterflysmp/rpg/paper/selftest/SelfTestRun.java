@@ -65,7 +65,8 @@ final class SelfTestRun {
     }
 
     void start(String what) {
-        snapshot = SelfTestSnapshot.take(player, service.profiles(), service.resources(), service.nameplates());
+        snapshot = SelfTestSnapshot.take(player, service.profiles(), service.resources(), service.nameplates(),
+                service.stats());
         long rows = queue.stream().filter(s -> !s.row().equals(Scenario.SETUP)).count();
         service.log("SELFTEST RUN START " + what + " rows=" + rows + " selftest=" + service.build()
                 + " player=" + player.getUniqueId() + (snapshot.profileLoaded() ? "" : " PROFILE-NOT-LOADED"));
@@ -538,6 +539,9 @@ final class SelfTestRun {
         restoreRowRules(scheduler);   // a row that ended mid-way; the snapshot below puts the RUN START values back too
         String restored = snapshot.restore(player, service.profiles(), service.resources(), service.nameplates(),
                 scheduler, now);
+        // HIS HEALTH, last and later (2026-11-22, the seat's brief, PR 1): after the XP restore above has had two
+        // reconcile passes to raise his max. Logged as "SELFTEST RUN HEALTH ...", after the RESTORED line.
+        snapshot.restoreHealthLater(player, service.stats(), scheduler, line -> service.log("SELFTEST RUN " + line));
         // The drag's per-tick instrument is a scenario step's, never the server's: off at every run's end (it starts off).
         service.dragTrace().set(false);
         restored += " drag_tick=" + service.dragTrace().on();
@@ -583,4 +587,5 @@ final class SelfTestRun {
     io.github.butterflysmp.rpg.paper.health.MobShooter shots() { return service.shots(); }
     io.github.butterflysmp.rpg.paper.health.MobPouncer pounces() { return service.pounces(); }
     io.github.butterflysmp.rpg.paper.health.PhageFuser fuser() { return service.fuser(); }
+    io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence() { return service.fireCadence(); }
 }

@@ -1,7 +1,12 @@
 package io.github.butterflysmp.rpg.core.combat;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
@@ -155,12 +160,13 @@ public final class FireCadence {
      *                          for and what prices slice C's halving
      * @param sinceLastEventTicks LAST counted event to <b>now</b> — the reading moment. Absent only
      *                          on a synthetic zero-count sample, where there is no last event
-     * @param weaponId          the weapon the sample was taken on
-     * @param mixedWeapons      true if the weapon changed mid-sample — <b>then it is not a reading</b>
+     * @param weaponId          the weapon the sample was taken on. <b>Since 2026-11-22 a sample is
+     *                          KEYED by its weapon</b> ({@link #record}), so it can never span two; the
+     *                          {@code mixedWeapons} flag that marked one that did is gone with the case
      */
     public record Sample(int count, long windowTicks, OptionalDouble meanIntervalTicks,
                          OptionalLong minIntervalTicks, OptionalLong sinceLastEventTicks,
-                         String weaponId, boolean mixedWeapons) {
+                         String weaponId) {
 
         /** Gaps between consecutive events: one fewer than the events themselves. */
         public int intervals() {
@@ -168,7 +174,13 @@ public final class FireCadence {
         }
     }
 
-    private record Key(String input, Kind kind) {}
+    /**
+     * <b>THE WEAPON IS PART OF THE KEY (2026-11-22, the seat's brief, PR 1).</b> Before, one sample per input and kind
+     * ran across every weapon and was flagged MIXED when the weapon changed. {@code GATE-knell-beam.md} HF1R2 read a
+     * sample that was the Knell Beam's when the row wanted the Crystal Shard Staff's, and a mixed earlier one. Keyed per
+     * weapon, a switch mid-hold starts a SECOND sample instead of spoiling the first, and the command prints each.
+     */
+    private record Key(String input, Kind kind, String weaponId) {}
 
     /**
      * Live state for one {@link Key}. Mutated only on the player's own thread — every call site is
@@ -180,12 +192,17 @@ public final class FireCadence {
         private long firstTick;
         private long lastTick;
         private long minInterval = Long.MAX_VALUE;
-        private String weaponId;
-        private boolean mixedWeapons;
     }
 
     private final LongSupplier currentTick;
     private final Map<UUID, Map<Key, Running>> samples = new ConcurrentHashMap<>();
+
+    /**
+     * Players whose press is the SELFTEST'S OWN, right now ({@link #excluding}). A record for one of them is not a
+     * sample: it is counted in {@link #excluded} and kept out. Written and read on the player's own thread.
+     */
+    private final Set<UUID> synthetic = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Integer> excludedCounts = new ConcurrentHashMap<>();
 
     /**
      * @param currentTick the server tick, injected so tests drive a fake clock — the same shape
@@ -203,27 +220,67 @@ public final class FireCadence {
      * event of a sample contributes a timestamp and no interval.
      */
     public void record(UUID player, String input, Kind kind, String weaponId) {
+        if (synthetic.contains(player)) {
+            // The selftest's own press: counted, never sampled (see excluding).
+            excludedCounts.merge(player, 1, Integer::sum);
+            return;
+        }
         Map<Key, Running> perKey = samples.computeIfAbsent(player, id -> new ConcurrentHashMap<>());
-        Running running = perKey.computeIfAbsent(new Key(input, kind), k -> new Running());
+        Running running = perKey.computeIfAbsent(new Key(input, kind, weaponId), k -> new Running());
         long now = currentTick.getAsLong();
 
         if (running.count == 0) {
             running.firstTick = now;
-            running.weaponId = weaponId;
         } else {
             long gap = now - running.lastTick;
             if (gap < running.minInterval) running.minInterval = gap;
-            if (!Objects.equals(running.weaponId, weaponId)) running.mixedWeapons = true;
         }
         running.lastTick = now;
         running.count++;
     }
 
-    /** The reading for one player, input and kind, or empty when nothing was recorded. */
-    public Optional<Sample> sample(UUID player, String input, Kind kind) {
+    /**
+     * Run {@code press} as a SYNTHETIC press for {@code player}: every {@link #record} it makes for that player is kept
+     * out of the samples and counted in {@link #excluded} instead (2026-11-22, the seat's brief, PR 1: "the selftest's own
+     * synthetic presses are kept out of it"). The selftest's {@code use:} driver wraps its synthetic click in this. A
+     * press is synchronous on the player's own thread (the driver calls the event, the listener records inside it), so
+     * the mark is set and cleared around exactly that press, and a real click on another tick is untouched.
+     */
+    public void excluding(UUID player, Runnable press) {
+        synthetic.add(player);
+        try {
+            press.run();
+        } finally {
+            synthetic.remove(player);
+        }
+    }
+
+    /** How many records {@link #excluding} kept out for this player since the last {@link #clear}. */
+    public int excluded(UUID player) {
+        return excludedCounts.getOrDefault(player, 0);
+    }
+
+    /**
+     * The weapons this player has a sample for on {@code input} (either kind), the one first used first. The command
+     * prints one reading per weapon.
+     */
+    public List<String> weapons(UUID player, String input) {
+        Map<Key, Running> perKey = samples.get(player);
+        if (perKey == null) return List.of();
+        Map<String, Long> first = new HashMap<>();
+        perKey.forEach((key, running) -> {
+            if (key.input().equals(input) && running.count > 0) first.merge(key.weaponId(), running.firstTick, Math::min);
+        });
+        List<String> out = new ArrayList<>(first.keySet());
+        out.sort(Comparator.comparingLong((String w) -> first.get(w)).thenComparing(Comparator.naturalOrder()));
+        return List.copyOf(out);
+    }
+
+    /** The reading for one player, input, kind and weapon, or empty when nothing was recorded. */
+    public Optional<Sample> sample(UUID player, String input, Kind kind, String weaponId) {
         Map<Key, Running> perKey = samples.get(player);
         if (perKey == null) return Optional.empty();
-        Running running = perKey.get(new Key(input, kind));
+        Running running = perKey.get(new Key(input, kind, weaponId));
         if (running == null || running.count == 0) return Optional.empty();
 
         long window = running.lastTick - running.firstTick;
@@ -238,13 +295,13 @@ public final class FireCadence {
                             : OptionalDouble.empty(),
                 hasInterval ? OptionalLong.of(running.minInterval) : OptionalLong.empty(),
                 OptionalLong.of(sinceLast),
-                running.weaponId,
-                running.mixedWeapons));
+                weaponId));
     }
 
-    /** Drop everything recorded for a player — the command's "print and clear". */
+    /** Drop everything recorded for a player — the command's "print and clear" — and the excluded count with it. */
     public void clear(UUID player) {
         samples.remove(player);
+        excludedCounts.remove(player);
     }
 
     /** Players holding a sample. Bounds check for tests. */

@@ -809,7 +809,8 @@ public final class RpgPlugin extends JavaPlugin {
                 buildCommit(), devServer, ScenarioLoader.load(this::getResource), mobElements,
                 // The SPAWN step spawns through /rpg spawn's own path; this.mobs is read at call time (reloadable).
                 (p, mob, stage, gs, preAdd) -> io.github.butterflysmp.rpg.paper.command.RpgCommand.spawnFor(
-                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports, shooter, pouncer, fuser);
+                        p, mob, this.mobs, adapters, gs, stage, preAdd), beams, teleports, shooter, pouncer, fuser,
+                fireCadence);
         selfTestDamage.bind(selfTest);
         // The dev fight fixture (GATE-fight-ring.md). The fight file is read at each start, so a reload is picked up.
         fightFixtures = new io.github.butterflysmp.rpg.paper.fight.FightFixtures(adapters,

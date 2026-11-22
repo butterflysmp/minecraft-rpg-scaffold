@@ -53,6 +53,17 @@ public record Scenario(String gate, String row, List<Step> steps) {
         DROP,
         /** Select a hotbar slot holding this ({@code stone}, {@code empty} or a weapon id), firing {@code PlayerItemHeldEvent}. */
         HOLD,
+        /**
+         * A weapon id: leave ONLY that weapon in the hotbar, held. Every other hotbar item is MOVED into an empty slot of
+         * the main inventory (9-35), never dropped or destroyed; the weapon is found anywhere in the inventory, put in
+         * hotbar slot 0 and selected through {@code PlayerItemHeldEvent}, as {@link #HOLD} does. With too few empty
+         * slots the row is SKIPPED by name. The gate-boundary restore and the run's restore put the whole inventory
+         * back. Added 2026-11-22 (the seat's brief, PR 1): {@code GATE-knell-beam.md} HF1R2 sampled the Knell Beam
+         * from slot 1 when the row meant the staff in slot 0.
+         */
+        HOLD_ONLY,
+        /** Log the held slot and the held item's weapon id, {@code HELDID slot=<n> item=<id>}: cheap, for a long wait's ends. */
+        PROBE_HELD,
         /** A synthetic left {@code InventoryClickEvent} on the open menu's first slot whose name starts with this text. */
         CLICK,
         /** The same, on the first slot of this material. */
