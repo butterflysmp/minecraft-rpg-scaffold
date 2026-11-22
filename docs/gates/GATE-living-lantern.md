@@ -7,6 +7,9 @@ ONE R0 and the ONE run sheet for the three.**
 **Status, 2026-11-22: BOOTED ONCE at `d98c28bb`; R0 NOT AS PREDICTED (R0b, one line: the gate's instrument); NO ROW RUN.**
 Readings in *READINGS, 2026-11-22* at the end of this file. No prediction above was edited.
 
+**Status, 2026-11-22, later: the seat ruled R0b's miss the gate's instrument; R0b is re-predicted as R0bR2** (*THE SEAT'S
+RULINGS ON THE FIRST BOOT, AND R0bR2*, at the end). **The next boot reads R0a, R0bR2, R0c, R0d and R0e afresh.**
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
@@ -197,6 +200,9 @@ with nothing to kill, a prompt craft and a prompt answer, about 2,800 (2 min 20 
 | `[Rpg] Build: <sha>`, `feat/living-lantern`'s head as `git ls-remote` prints it, shortened. Not `-dirty`, not `unknown` | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
 
 ### R0b — the jar carries all three PRs
+
+**SUPERSEDED for the next boot by R0bR2** (at the end of this file): its cooldown-line check cannot match a line that
+carries a comment. Kept as written, with its reading.
 
 | prediction | instrument | READING |
 |---|---|---|
@@ -426,3 +432,102 @@ Carried since `GATE-remove-dev-weapons.md` (CR1's tooltip half) and `GATE-crysta
 ### WHAT IS UNREAD AFTER THIS BOOT
 
 **Every row**: setup, LL0-LL9, KB2R2, CR3, HF1R3 and the end-of-run HEALTH line. No `/rpg selftest` was issued.
+
+## THE SEAT'S RULINGS ON THE FIRST BOOT, AND R0bR2 — 2026-11-22, WRITTEN AFTER THE READINGS
+
+**Written on the seat's rulings of 2026-11-22, relayed by Ben, before any second boot.** No prediction and no reading
+above is edited; **R0b's reading stays NOT AS PREDICTED.** Gate files only; nothing under `src/` changes.
+
+### THE SEAT'S RULINGS, RECORDED
+
+1. **R0b's miss is THE GATE'S INSTRUMENT, not the build**, on CC's evidence in the readings: the jar holds exactly one
+   `cooldown_ticks` line in `living_lantern.yml`, `    cooldown_ticks: 16` followed by a comment, and the same
+   end-anchored check passes on `knell_beam.yml`'s comment-free line.
+2. **The seat approved this gate without reading its R0b section.** Recorded at the seat's instruction.
+3. **Ben's login at 13:13:29** came after CC's STOP message and before any "R0 passed". **He logged in early, issued only
+   `/stop`, and nothing followed from it.** The seat has reminded him. (This is the seat's record for the login row in
+   the readings above, which left it to the seat.)
+4. CC's STOP was right: **a failed R0 is a STOP even when the cause looks harmless.**
+
+### R0bR2 — the jar carries all three PRs (R0b re-predicted: the cooldown line may carry a comment)
+
+| prediction | instrument | READING |
+|---|---|---|
+| The thirteen of R0b, each PRESENT: the six content entries (`living_lantern.yml`, `recipes/living_lantern.yml`, `lantern_cast`, `lantern_front`, `lantern_hit`, and the control `knell_beam.yml`); `living_lantern.yml '    cooldown_ticks: 16'`; `GATE-living-lantern.yml 'HF1R3:'`; `index.yml '  - living-lantern'`; `ConeShell.class`; `onWeaponPlace`; `HELDID slot=`; `HEALTH saved=`. **And the two controls: `ABSENT  living_lantern.yml CONTROL-1 '    cooldown_ticks: 1'`; `PRESENT knell_beam.yml CONTROL-EOL '    cooldown_ticks: 48'`** | the scan below | |
+
+```powershell
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path 'run\plugins\rpg-0.1.0-SNAPSHOT.jar'))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+function Line($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + "\s*$")) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+function ValueLine($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + '([ \t]*\r?$|[ \t]+#)')) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+function Entry($name) { if ($zip.GetEntry($name) -eq $null) { "ABSENT  entry $name" } else { "PRESENT entry $name" } }
+function Has($entry, $needle) { $b = Bytes $entry; if ($b -ne $null -and $b.Contains($needle)) { "PRESENT $entry '$needle'" } else { "ABSENT  $entry '$needle'" } }
+foreach ($e in @('weapons/living_lantern.yml', 'recipes/living_lantern.yml', 'visuals/lantern_cast.yml', 'visuals/lantern_front.yml', 'visuals/lantern_hit.yml', 'weapons/knell_beam.yml')) { Entry ('content/' + $e) }
+ValueLine (Bytes 'content/weapons/living_lantern.yml') '    cooldown_ticks: 16' 'living_lantern.yml'
+Line (Bytes 'selftest/GATE-living-lantern.yml') 'HF1R3:' 'GATE-living-lantern.yml'
+Line (Bytes 'selftest/index.yml') '  - living-lantern' 'index.yml'
+$p = 'io/github/butterflysmp/rpg/'
+Entry ($p + 'core/combat/ConeShell.class')
+Has ($p + 'paper/listener/RpgListeners.class') 'onWeaponPlace'
+Has ($p + 'paper/selftest/SelfTestDrivers.class') 'HELDID slot='
+Has ($p + 'paper/selftest/SelfTestSnapshot.class') 'HEALTH saved='
+'--- controls'
+ValueLine (Bytes 'content/weapons/living_lantern.yml') '    cooldown_ticks: 1' 'living_lantern.yml CONTROL-1'
+ValueLine (Bytes 'content/weapons/knell_beam.yml') '    cooldown_ticks: 48' 'knell_beam.yml CONTROL-EOL'
+$zip.Dispose()
+```
+
+**What changed from R0b: one function, `ValueLine`, used for the cooldown line only.** Everything else is R0b's scan
+unchanged. `ValueLine` requires the given line from the start of a line, then EITHER the end of the line
+(`[ \t]*\r?$`) OR whitespace and a `#` (`[ \t]+#`).
+- **Tabs and spaces only, never `\s`**, so neither branch can run on into the next line.
+- **The `\r?` is needed, not a precaution. MEASURED against the `d98c28bb` jar:** its content files are CRLF
+  (`living_lantern.yml` CR=65 LF=65, `knell_beam.yml` CR=72 LF=72; Maven packs the working tree, which is CRLF
+  here), and .NET's multiline `$` matches only before `\n`. The same pattern without `\r?` returned **False** on
+  `knell_beam.yml`'s line, and with it **True**. R0b's `\s*$` absorbed the CR by accident of `\s`.
+
+**The controls, and what each proves:**
+- **CONTROL-1, `    cooldown_ticks: 1` against the same file: must read ABSENT.** The character after `1` is `6`, which
+  neither branch accepts. So the check cannot match a value as the prefix of a longer number, and `16` is accepted only
+  when followed by the end of the line or by ` #`.
+- **CONTROL-EOL, `knell_beam.yml`'s comment-free `    cooldown_ticks: 48`: must read PRESENT.** This proves the
+  end-of-line branch, with its `\r?`, still matches a CRLF line. Without it, a check that only accepts a comment
+  would pass CONTROL-1 and the lantern line and could no longer read a bare line.
+
+**THE INSTRUMENT, RUN ONCE BEFORE THE BOOT, AGAINST THE `d98c28bb` JAR (`build-id.properties`: `commit=d98c28bb`,
+deployed 13:12:00).** This is a check that the new scan can pass and can fail. **It is NOT R0bR2's reading**, which
+belongs to the next boot's own jar. It printed the thirteen PRESENT, then `ABSENT  living_lantern.yml CONTROL-1
+'    cooldown_ticks: 1'` and `PRESENT knell_beam.yml CONTROL-EOL '    cooldown_ticks: 48'`.
+
+### EVERY OTHER R0 CHECK, FOR THE SAME FAULT
+
+The fault: an end anchor, or an exact-line match, against a line that carries a comment or trailing text in the file as
+committed. Lines read at `3e3c81ea` with `git show … | grep -n | cat -A`.
+
+| check | what it reads | exposed? |
+|---|---|---|
+| R0a, `Select-String '\[Rpg\] Build:'` | the log line `[Rpg] Build: <sha>` | **NO.** Unanchored substring; the prediction compares the sha. A log line, not a committed file |
+| R0b `Entry` x7 (six content files, `ConeShell.class`) | the jar's entry names | **NO.** Compares a whole entry name, not a line |
+| R0b `Line`, `living_lantern.yml '    cooldown_ticks: 16'` | `paper/src/main/resources/content/weapons/living_lantern.yml:42`, `    cooldown_ticks: 16                     # BEN: 0.8 s. …` | **YES: the fault.** Fixed as R0bR2 |
+| R0b `Line`, `GATE-living-lantern.yml 'HF1R3:'` | `selftest/GATE-living-lantern.yml:247`, `HF1R3:` and nothing after (line 242, a comment, contains `HF1R3` but does not start with it) | **NO.** Read PRESENT at `d98c28bb`. Exposed only if a comment is ever added to that line |
+| R0b `Line`, `index.yml '  - living-lantern'` | `selftest/index.yml:92`, `  - living-lantern` and nothing after | **NO.** Read PRESENT at `d98c28bb`. Same caveat |
+| R0b `Has` x3 (`onWeaponPlace`, `HELDID slot=`, `HEALTH saved=`) | class bytes, `String.Contains` | **NO.** Unanchored at both ends, so trailing text cannot defeat it |
+| R0c, `Select-String 'Loaded\|Mint-on-craft\|…'` | log lines; the Loaded and Mint-on-craft lines compared word for word | **NO.** Unanchored pattern over log lines, not committed files. The compared lines end at their last figure; read AS PREDICTED |
+| R0d, `Select-String 'Selftest:'` | the log line | **NO.** Unanchored; read AS PREDICTED |
+| R0e, `Select-String 'FIGHTWORLD (sweep\|deleting\|orphan)'` | the log line | **NO.** Unanchored; read AS PREDICTED |
+
+**Only one check is exposed, so R0bR2 is the only R2 row.** **Outside R0, the same text:** CARRIED STATE step 6's
+required line, `weapons/living_lantern.yml` reads `    cooldown_ticks: 16`, names no instrument. At the first boot it
+was read with `grep -n` (unanchored) and recorded with its comment (CS 6 in the readings). Not changed here. **It is
+read as the line BEGINNING with that text**, the same reading R0bR2 now writes down.
+
+### THE NEXT BOOT
+
+- **It reads R0a, R0bR2, R0c, R0d and R0e afresh**, on its own log and its own jar. R0b's scan is not run again.
+- **R0a's `Build:` line will name this commit's head**, not `d98c28bb`: this commit moves `feat/living-lantern`, and the
+  jar is built from the head.
+- **The rows (setup, LL0-LL9, KB2R2, CR3, HF1R3, the end of the run) and the run sheet are unchanged.**
+- **One thing for the seat, not changed here: CARRIED STATE step 2's backup folder already exists.**
+  `../rpg-run-backups/2026-11-22-pre-living-lantern` is the first boot's (`Test-Path`: True), and the step asks for a
+  NEW folder. A second boot today needs another name. CC proposes `2026-11-22-pre-living-lantern-2`.
