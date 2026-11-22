@@ -10,6 +10,9 @@ notices predicted as `REPLY actionbar` lines in BR6, BR7 and BR8 (the instrument
 by the cooldown BR5 left (so its third press fired and the empty refusal was not read); BR9's two health probes (`none
 within 16 blocks`: the probe's radius).** Readings in *READINGS, 2026-11-22* at the end. No prediction above was edited.
 
+**Seat approval 2026-11-22: code and gate diffed at 7a5e9286, booted at 7a5e9286, readings at 58515ca7. Merge on Ben's
+words.** Ben's words, verbatim: "good to merge". Merge order: #234, then #235, then #236.
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
