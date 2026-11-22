@@ -96,6 +96,15 @@ public final class WeaponSwingListener extends PacketListenerBase {
      * swinging a sword that does nothing with no explanation. Every other outcome stays silent,
      * which is what preserves the swing-silence above.
      */
+    /**
+     * THE SELFTEST'S RELOAD (2026-11-22, the Breacher's brief, PR 2): exactly {@link #onSwing}, for a caller ALREADY on
+     * the player's own thread (a scenario step runs there). Nothing is duplicated, so the step drives what a real
+     * left-click drives, minus the packet and its main-hand check. Never call it from a Netty thread.
+     */
+    public void swing(Player player) {
+        onSwing(player);
+    }
+
     private void onSwing(Player player) {
         // THE RELOAD, AND IT IS TRIED BEFORE THE SWING. Left-click is the reload input for a quiver
         // weapon, and WeaponDefinition refuses a weapon that declares both a quiver and a left_click

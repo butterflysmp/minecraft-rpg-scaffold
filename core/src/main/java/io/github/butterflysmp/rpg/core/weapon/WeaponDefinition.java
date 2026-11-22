@@ -36,7 +36,8 @@ public record WeaponDefinition(
         List<TriggerBinding> triggers,
         List<String> flavor,
         Optional<String> craftResult,
-        boolean unscored
+        boolean unscored,
+        String ammo
 ) implements GearDefinition {
     /** The item a weapon renders as when its content does not say otherwise: a sword. */
     public static final String DEFAULT_MATERIAL = "iron_sword";
@@ -49,6 +50,15 @@ public record WeaponDefinition(
      * {@code attack_damage}, {@code attack_speed} and {@code sweep} already use on this record.
      */
     public static final int NO_QUIVER = 0;
+
+    /**
+     * The item a reload takes from the inventory when the content names none: a plain arrow.
+     *
+     * <p>THE AMMUNITION IS PER WEAPON (the seat's ruling 1, 2026-11-22, the Breacher's brief). One key, {@code ammo:},
+     * naming a vanilla item; absent, this default, so every weapon file shipped before the key existed reloads exactly
+     * as it did. A token, like {@link #material}: core never resolves it, paper does ({@code QuiverAmmo.ammoOf}).
+     */
+    public static final String DEFAULT_AMMO = "arrow";
 
     public WeaponDefinition {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("weapon id required");
@@ -120,10 +130,35 @@ public record WeaponDefinition(
                     + "' declares a quiver, which binds left_click to the reload, so it may not also"
                     + " declare a left_click trigger");
         }
+        // THE AMMUNITION: absent (null) is the arrow, as every shipped file had it. Normalised like a material token
+        // (lower case, "minecraft:" dropped). An item to load with and NOTHING to load it into is the reload_ticks
+        // refusal above in another key: an authored mechanical value that could never act, so it is named.
+        String ammoToken = CraftResultToken.token(ammo);
+        if (ammoToken != null && ammoToken.isEmpty()) {
+            throw new IllegalArgumentException("weapon '" + id + "' declares a blank ammo; name an item or remove the key");
+        }
+        if (ammoToken != null && quiverSize == 0 && !ammoToken.equals(DEFAULT_AMMO)) {
+            throw new IllegalArgumentException("weapon '" + id + "' declares ammo '" + ammoToken
+                    + "' but no quiver_size, so nothing ever loads it");
+        }
+        ammo = ammoToken == null ? DEFAULT_AMMO : ammoToken;
         triggers = List.copyOf(triggers);
         // Optional authored prose for the tooltip -- absent is empty, never null.
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
         craftResult = CraftResultToken.normalise(craftResult, "weapon", id);
+    }
+
+    /**
+     * The canonical shape WITHOUT the {@code ammo} key (2026-11-22): every caller written before per-weapon ammunition,
+     * which reloads from arrows exactly as it did. The loader is the one caller that passes an ammo.
+     */
+    public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
+                            WeaponClass weaponClass, String material, double attackDamage,
+                            double attackSpeed, double sweep, int quiverSize, int reloadTicks,
+                            List<TriggerBinding> triggers, List<String> flavor,
+                            Optional<String> craftResult, boolean unscored) {
+        this(id, displayName, element, rarity, weaponClass, material, attackDamage, attackSpeed,
+                sweep, quiverSize, reloadTicks, triggers, flavor, craftResult, unscored, null);
     }
 
     /**
@@ -135,7 +170,7 @@ public record WeaponDefinition(
                             double attackSpeed, double sweep, List<TriggerBinding> triggers,
                             List<String> flavor) {
         this(id, displayName, element, rarity, weaponClass, material, attackDamage, attackSpeed,
-                sweep, NO_QUIVER, 0, triggers, flavor, Optional.empty(), false);
+                sweep, NO_QUIVER, 0, triggers, flavor, Optional.empty(), false, DEFAULT_AMMO);
     }
 
     /**
@@ -151,7 +186,7 @@ public record WeaponDefinition(
                             double attackSpeed, double sweep, int quiverSize, int reloadTicks,
                             List<TriggerBinding> triggers, List<String> flavor) {
         this(id, displayName, element, rarity, weaponClass, material, attackDamage, attackSpeed,
-                sweep, quiverSize, reloadTicks, triggers, flavor, Optional.empty(), false);
+                sweep, quiverSize, reloadTicks, triggers, flavor, Optional.empty(), false, DEFAULT_AMMO);
     }
 
     /** A sword-shaped MELEE weapon with no declared attack damage: the shape older tests use. */

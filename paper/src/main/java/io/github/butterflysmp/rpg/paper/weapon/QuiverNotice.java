@@ -101,11 +101,25 @@ public final class QuiverNotice {
      * the item exactly, because <b>plain arrows only</b> — a player holding a stack of spectral arrows
      * and being told "you need arrows" would reasonably think the feature was broken.
      */
-    public static void noAmmo(Player player, CooldownTracker cooldowns) {
+    public static void noAmmo(Player player, CooldownTracker cooldowns, String ammo) {
         if (!throttled(player, cooldowns, NO_AMMO_KEY)) return;
-        player.sendActionBar(Component.text(
-                "You have no arrows -- plain Arrows load a quiver.", NamedTextColor.GRAY));
+        player.sendActionBar(Component.text(noAmmoText(ammo), NamedTextColor.GRAY));
         player.playSound(player.getLocation(), EMPTY_SOUND, SOUND_VOLUME, SOUND_PITCH);
+    }
+
+    /**
+     * THE REFUSAL NAMES THE WEAPON'S OWN AMMUNITION (the seat's ruling 2, 2026-11-22). Arrows keep their sentence,
+     * word for word, so every arrow weapon's notice is byte-identical to what it was; any other item is named by its
+     * own token, the weapon's {@code ammo} ({@code cobblestone} for the Breacher), so even a token no item answers to is named.
+     * Pure, so the wording is a unit row.
+     */
+    static String noAmmoText(String ammo) {
+        if (io.github.butterflysmp.rpg.core.weapon.WeaponDefinition.DEFAULT_AMMO.equals(ammo)) {
+            return "You have no arrows -- plain Arrows load a quiver.";
+        }
+        String name = ammo.replace('_', ' ');
+        String title = Character.toUpperCase(name.charAt(0)) + name.substring(1);
+        return "You have no " + name + " -- " + title + " loads this weapon.";
     }
 
     /**

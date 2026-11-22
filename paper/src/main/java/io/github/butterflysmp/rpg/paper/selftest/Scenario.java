@@ -64,6 +64,20 @@ public record Scenario(String gate, String row, List<Step> steps) {
         HOLD_ONLY,
         /** Log the held slot and the held item's weapon id, {@code HELDID slot=<n> item=<id>}: cheap, for a long wait's ends. */
         PROBE_HELD,
+        /**
+         * One LEFT-CLICK as the shipped left-click handler takes it: {@code WeaponSwingListener.swing}, the same method the
+         * {@code ANIMATION} packet hops to, on the player's own thread. So a quiver weapon RELOADS (or refuses, with its
+         * notice) on the shipped path. It SKIPS the packet, its main-hand check and the arm-swing animation (an AUTO
+         * reading of the server, never the client). Logged {@code DRIVE reload}. Added 2026-11-22 (the Breacher's brief,
+         * PR 2): a reload was only Ben's input before (GATE-deft-hands.md DH2, DH4).
+         */
+        RELOAD,
+        /**
+         * {@code <material>}: count that vanilla item in the player's STORAGE slots (the slots a reload draws from,
+         * {@code getStorageContents()}), {@code ITEMS material=<m> count=<n> slots=<i:n,...>}. Gear of that material is
+         * counted and marked {@code gear=<n>}. Added 2026-11-22 (the Breacher's brief, PR 2): what a reload took.
+         */
+        PROBE_ITEMS,
         /** A synthetic left {@code InventoryClickEvent} on the open menu's first slot whose name starts with this text. */
         CLICK,
         /** The same, on the first slot of this material. */

@@ -588,4 +588,6 @@ final class SelfTestRun {
     io.github.butterflysmp.rpg.paper.health.MobPouncer pounces() { return service.pounces(); }
     io.github.butterflysmp.rpg.paper.health.PhageFuser fuser() { return service.fuser(); }
     io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence() { return service.fireCadence(); }
+    /** RELOAD's route: the shipped left-click handler, bound by RpgPlugin ({@link SelfTestService#bindLeftClick}). */
+    java.util.function.Consumer<org.bukkit.entity.Player> leftClick() { return service.leftClick(); }
 }

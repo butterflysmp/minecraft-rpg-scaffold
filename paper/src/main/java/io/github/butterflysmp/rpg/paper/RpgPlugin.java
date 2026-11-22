@@ -876,8 +876,12 @@ public final class RpgPlugin extends JavaPlugin {
         // touching anything Bukkit -- the one piece of Phase 1 that must not race.
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new ExampleTelegraphListener(scheduler));
+        WeaponSwingListener swingListener =
+                new WeaponSwingListener(adapters, weapons, weaponService, cooldowns, fireCadence);
         PacketEvents.getAPI().getEventManager()
-                .registerListener(new WeaponSwingListener(adapters, weapons, weaponService, cooldowns, fireCadence));
+                .registerListener(swingListener);
+        // The selftest's RELOAD drives this same listener's left-click method (SelfTestService.bindLeftClick).
+        selfTest.bindLeftClick(swingListener::swing);
         // Suppress vanilla's own crit particles, so a burst means OUR roll. Pure cancel on the
         // Netty thread -- no hop, no Bukkit. See the class for why a packet is justified here and
         // why it cannot eat our own spawnParticle burst.
@@ -1075,6 +1079,10 @@ OLD
         // ability's can, and is checked the same walk. Naming the file at boot beats a
         // silent no-visual the first time someone swings it.
         problems.addAll(validator.validateWeapons(weapons.all()));
+        // A weapon's ammo must name an item a player can carry (the seat's ruling 1, 2026-11-22). The same resolver the
+        // reload uses, QuiverAmmo.carriable, so the warning and the reload cannot disagree.
+        problems.addAll(io.github.butterflysmp.rpg.paper.content.ContentValidator.validateAmmo(weapons.all(),
+                name -> io.github.butterflysmp.rpg.paper.weapon.QuiverAmmo.carriable(name) != null));
 
         // An element name resolving is checked per REFERENCE by checkElement; this checks each
         // element against ITSELF -- the status it accrues and the glyph it marks its numbers with.
