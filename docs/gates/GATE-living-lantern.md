@@ -14,6 +14,10 @@ RULINGS ON THE FIRST BOOT, AND R0bR2*, at the end). **The next boot reads R0a, R
 of the run's `health=`, 124 against the predicted 126; the prediction named the wrong instant** (*READINGS, SECOND BOOT*,
 at the end).
 
+**Seat approval 2026-11-22: code diffed at d98c28bb, gate diffed at 42ef53c8, booted at 42ef53c8, readings at 85e27e32.
+Merge on Ben's words.** Ben's words, verbatim: "good to merge". The seat ruled 124 the right figure (the prediction
+compared two instants); HF1 closed as a measurement; LL9's `cap=3.000` lines owed as a source read, not fixed here.
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
