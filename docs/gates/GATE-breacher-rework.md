@@ -4,6 +4,11 @@
 (PR 1), on master `13a31174` (the squash of #236), before any boot. **This file carries the ONE R0 and the ONE run sheet
 for the two.**
 
+**Status, 2026-11-22, 17:11-17:17: BOOTED ONCE at `426392e1`, R0 PASSED, AND NO ROW OF THIS GATE RAN.** Ben typed
+`/rpg selftest breacher` (GATE-breacher's scenario, the previous gate) where the sheet says `/rpg selftest
+breacher-rework`. **Every row below is UNREAD; this gate needs another boot.** Readings in *READINGS, 2026-11-22* at the
+end. No prediction above was edited.
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
@@ -398,3 +403,62 @@ printed lines are in the commit body that carries this gate.
 - **Point-up at a pitch other than 0:** every row shoots level; the tilt with his pitch is `SpreadPattern`'s basis, READ.
 - **Knockback** (frozen zombies), **durability**, **creative**, **the off-hand crossbow guard** (as `GATE-breacher.md`).
 - **The Breacher's crit arm, unless one rolls.**
+
+## READINGS, 2026-11-22 (the boot of `426392e1`): R0 PASSED; THIS GATE'S ROWS DID NOT RUN
+
+Boot approved by the seat's message on Ben's own "ready". Read from `run/logs/latest.log` of this boot and the jar in
+place.
+
+### R0 (read before he logged in) — AS PREDICTED
+
+- **R0a:** `[Rpg] Build: 426392e1`.
+- **R0b:** the scan as committed, on the deployed jar: all 9 PRESENT (three comment-carrying lines included); the
+  controls `count: 7`, `amount: 4`, `rotation_degrees: 9` and `dragons_breath.yml` `rotation_degrees: 90` ABSENT.
+- **R0c:** `Loaded 11 abilities, 43 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 22
+  weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 6 recipes, 1 ores, 4 vein sizes`;
+  `Mint-on-craft: 36 indexed, 36 claiming, of 52 gear definitions`; the loot, fight, world-damage, smithing and
+  convert-on-arrival lines word for word those of `GATE-breacher.md`'s boot (`2026-11-22-4.log.gz`); `[Rpg]` WARN only
+  `volley_stone`'s pair; no `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Recipe '`.
+- **R0d:** `Selftest: dev server, 303 scenarios across 39 gates [… breacher, breacher-rework]`; `293 … 38` ABSENT.
+- **R0e:** `FIGHTWORLD sweep path=…\rpgfight folders=0`; no `deleting`, no `orphan`.
+- Carried state: `Done` at 17:11:18; the deployed `breacher.yml` line 114 `        amount: 40`; 22 weapon files.
+  **His login 17:14:33, after R0 was read.**
+
+### HIS COMMANDS, AGAINST THE SHEET — NOT AS THE SHEET
+
+The sheet: `/gamemode survival`, `/rpg selftest breacher-rework`, `/stop`. He issued, in order: **`/weather clear`**
+(17:14:39), **`/give BaronVonYeetus minecraft:cooked_beef 64`** (17:15:02), **`/rpg selftest breacher`** (17:15:22: the
+PREVIOUS gate's scenario, `SELFTEST RUN START breacher rows=13`), and inside that run **`/rpg spawn knell`** (17:16:23: a
+live Knell, whose beam then telegraphed and fired at him; no `HURT` line is logged) and **`/give BaronVonYeetus
+minecraft:cobblestone 64`** (17:16:52); then `/stop` (17:17:47). **`/gamemode survival` was not typed**; the run's
+restore line reads `gamemode=SURVIVAL`, so he was already in survival (INFERRED from that line). **`/rpg selftest
+breacher-rework` was never issued, so EVERY ROW OF THIS GATE IS UNREAD.**
+
+### INCIDENTAL, ON THIS BUILD, FROM GATE-breacher's SCENARIO — RECORDED, NOT THIS GATE'S READINGS
+
+These lines come from rows written for the previous gate and run on the reworked build. They witness PR 1's reader on a
+server; they read no row of this gate.
+
+- **The action-bar reader works (PR 1):** **305** `REPLY actionbar` lines. **286** are the stats bar
+  (`grep -c 'REPLY actionbar "❤ '`), over the run's 17:15:22 to 17:17:45 (about 2,860 ticks): **about one per 10
+  ticks**, as the added section predicted. Their form: `REPLY actionbar "❤ 278/350    ⛨ 10    ✦ 100/100" [red, green,
+  blue]` before the staging, `"❤ 100/100    ✦ 100/100" [red, blue]` after it.
+- **The quiver's notices, each once per firing:** `BR6 REPLY actionbar "Reloading..." [gray]` (1), `BR7 REPLY actionbar
+  "You have no cobblestone -- Cobblestone loads this weapon." [gray]` (**exactly 1**), `BR8 REPLY actionbar
+  "Reloading..." [gray]` (1); in BR10's window, his own presses produced `"Your quiver is empty -- left-click to
+  reload."`, `"Reloading..."` and `"Reloading -- 0.1s"`.
+- The old scenario's question was answered: `ASK 1 question="Did the blast spread about as wide as you expected?"
+  answer="yes"`. **It is GATE-breacher's question asked of the reworked Breacher, not this gate's ("Is the Breacher's
+  blast what you wanted now?"), which is NOT STATED.**
+- **The end:** `SELFTEST RUN RESTORED … gamemode=SURVIVAL …`; **`SELFTEST RUN HEALTH saved=278.000
+  customHP=278.000/350.000 wrote=278.000`**.
+
+### AFTER HIS `/stop`
+
+`rpgfight` holds 0 entries; the overworld holds 106 files, the same list as the backup's; `All dimensions are saved`
+(17:17:48); no `java` process left.
+
+### UNREAD
+
+**Every row of this gate:** RW0-RW5, BR6R2, BR7R2, LL9R2, RW9, and its setup's SELF lines. The next boot runs
+`/rpg selftest breacher-rework` on the same jar.
