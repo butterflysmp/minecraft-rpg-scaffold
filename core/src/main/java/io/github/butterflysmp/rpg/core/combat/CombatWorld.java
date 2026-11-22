@@ -50,6 +50,19 @@ public interface CombatWorld {
     Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId);
 
     /**
+     * Every live body near the segment from {@code from} to {@code to} (any whose box, grown by {@code reach}, could
+     * meet it), the {@code ignoreId} body excluded, each with its box; and where the segment first meets a block with a
+     * collision box. NOT judged: {@link RaySweep#struck} decides who is struck, in core, on the Knell mob's geometry.
+     *
+     * <p>Only a PIERCING or TOLERANT ray asks this (the seat's brief of 2026-11-21, the Knell Beam); every other ray
+     * stays on {@link #castRay}. The same body filter as {@code castRay}: live living bodies, the caster excluded.
+     *
+     * <p>Like {@code castRay}, only legal on the thread that owns the region containing the segment. Abstract rather than
+     * {@code default}, so an implementor that has not answered it does not compile.
+     */
+    RaySweep sweepRay(Vec3 from, Vec3 to, UUID ignoreId, double reach);
+
+    /**
      * Whether the segment from {@code from} to {@code to} is clear of BLOCKS. Nothing else
      * stops it: an entity standing in the way does not.
      *

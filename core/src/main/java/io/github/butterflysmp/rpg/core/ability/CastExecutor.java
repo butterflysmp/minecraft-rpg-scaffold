@@ -13,11 +13,15 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CombatantSnapshot;
 import io.github.butterflysmp.rpg.core.combat.ProjectileFlight;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
+import io.github.butterflysmp.rpg.core.combat.RaySweep;
+import io.github.butterflysmp.rpg.core.mob.BeamLine;
 import io.github.butterflysmp.rpg.core.combat.SpreadPattern;
 import io.github.butterflysmp.rpg.core.combat.SweptLine;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import io.github.butterflysmp.rpg.core.ability.effect.DirectDamage;
 
@@ -255,15 +259,16 @@ public final class CastExecutor {
                 if (charges && target != null) onBasicAttackUse.run();
             }
 
-            case CastSpec.Ray ray -> launchRay(ability, source, aim, ray.range(), ray.beam());
+            case CastSpec.Ray ray -> launchRay(ability, source, aim, ray);
 
             case CastSpec.Projectile projectile -> launch(ability, source, aim, projectile);
 
             case CastSpec.Dash dash -> dash(ability, caster, source, aim, dash);
 
-            // NOTE WHAT IS NOT PASSED: `source`, nor `aim`. A volley re-projects its caster before
-            // EVERY shot, so the cast-frame projection above reaches no shot at all -- see volley().
-            case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley, source.weaponHit());
+            // NOTE WHAT IS NOT PASSED: `source`. A volley re-projects its caster before EVERY shot, so the
+            // cast-frame projection above reaches no shot at all -- see volley(). `aim` IS passed, since
+            // 2026-11-21, and is read ONLY by a locked-aim volley: the line captured at the cast.
+            case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley, source.weaponHit(), aim);
         }
     }
 
@@ -503,9 +508,15 @@ public final class CastExecutor {
      */
     private static final double BEAM_ORIGIN_GAP = 1.0;
 
-    private void launchRay(AbilityDefinition ability, Caster caster, Aim aim, double range,
-                           String beam) {
-        List<Vec3> endpoints = ChunkTraversal.segmentEndpoints(aim.origin(), aim.direction(), range);
+    private void launchRay(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Ray ray) {
+        String beam = ray.beam();
+        List<Vec3> endpoints = ChunkTraversal.segmentEndpoints(aim.origin(), aim.direction(), ray.range());
+        if (ray.sweeps()) {
+            // The Knell Beam's ray (pierce or tolerance, 2026-11-21): its own walk, below. Every other ray goes on to
+            // stepRay, unchanged: the first body or block ends it, on castRay.
+            stepSweep(ability, caster, ray, aim.origin(), aim.pointAt(BEAM_ORIGIN_GAP), endpoints, 0, Set.of());
+            return;
+        }
         // THE GAP BOUNDARY IS COMPUTED ONCE, HERE, AND THREADED UNCHANGED. This is the whole of the
         // origin-relative property: `aim` dies at the end of this method -- neither origin nor
         // direction is available to stepRay -- so a gap derived per segment would be derived from a
@@ -640,6 +651,67 @@ public final class CastExecutor {
     }
 
     /**
+     * One chunk column of a PIERCING or TOLERANT ray (the seat's brief of 2026-11-21, the Knell Beam, rulings 1 and 2).
+     * Mirrors {@link #stepRay}: trace, act, or hand the next segment to the region that owns it.
+     *
+     * <ul>
+     *   <li>The segment is clipped at the first block; nothing beyond it is struck.</li>
+     *   <li>Who the clipped line strikes is {@link RaySweep#struck}: the Knell mob's {@code BeamLine.meets} on each
+     *       body's box grown by the tolerance, nearest first. A body struck only in its MARGIN (not on its box) is
+     *       refused unless the line can see it ({@code lineOfSightClear} from the struck point to the body's sight
+     *       point), so a tolerance never reaches round a wall.</li>
+     *   <li>{@code struck} is the set of ids already struck, carried across chunk-column hops as VALUES (ruling 7):
+     *       a body met by two segments takes the {@code on_hit} once.</li>
+     *   <li>Without {@code pierce} the first body struck ends the walk, as a plain ray's does. With it, the walk goes
+     *       on to the range or the first block.</li>
+     *   <li>The walk detonates at its END (the block or the range) only if it struck nobody, as a plain ray detonates
+     *       once: a miss still lands, and a hit is not followed by a second, empty landing.</li>
+     * </ul>
+     */
+    private void stepSweep(AbilityDefinition ability, Caster caster, CastSpec.Ray ray, Vec3 from, Vec3 beamStart,
+                           List<Vec3> endpoints, int index, Set<UUID> struck) {
+        Vec3 to = endpoints.get(index);
+        RaySweep sweep = world.sweepRay(from, to, caster.id(), ray.tolerance());
+        Vec3 segmentEnd = sweep.blockAt().orElse(to);
+
+        Set<UUID> struckNow = new HashSet<>(struck);
+        Vec3 drawTo = segmentEnd;
+        boolean stopped = sweep.blockAt().isPresent();
+        double length = segmentEnd.subtract(from).length();
+        if (length > 0) {
+            BeamLine line = new BeamLine(from, segmentEnd.subtract(from).normalize(), length);
+            for (RaySweep.Struck s : RaySweep.struck(line, ray.tolerance(), sweep.bodies())) {
+                UUID id = s.combatant().id();
+                if (struckNow.contains(id)) continue;
+                if (!s.exact() && !world.lineOfSightClear(s.point(), s.combatant().state().sightPoint())) continue;
+                struckNow.add(id);
+                detonate(ability, caster, s.combatant(), s.point());
+                if (!ray.pierce()) {
+                    drawTo = s.point();
+                    stopped = true;
+                    break;
+                }
+            }
+        }
+
+        Vec3 alongSegment = to.subtract(from);
+        boolean gapEndsAhead = beamStart.subtract(from).dot(alongSegment) > 0;
+        Vec3 drawFrom = gapEndsAhead ? beamStart : from;
+        if (ray.beam() != null) {
+            if (drawTo.subtract(drawFrom).dot(alongSegment) > 0) world.presentAlong(drawFrom, drawTo, ray.beam());
+            else world.presentAlong(from, from, ray.beam());
+        }
+
+        boolean lastSegment = index == endpoints.size() - 1;
+        if (stopped || lastSegment) {
+            if (struckNow.isEmpty()) detonate(ability, caster, null, segmentEnd);
+            return;
+        }
+        Set<UUID> carried = Set.copyOf(struckNow);
+        world.schedule(to, 1, () -> stepSweep(ability, caster, ray, to, beamStart, endpoints, index + 1, carried));
+    }
+
+    /**
      * The nearest living thing inside the swing. arcDegrees is the full width of
      * the cone, so a 90-degree swing reaches 45 degrees either side of the aim.
      *
@@ -697,12 +769,43 @@ public final class CastExecutor {
      * reason -- the scheduler cannot defer by less than a tick, so deferring a zero wind-up would
      * quietly make it 1 and a "no wind-up" volley would be indistinguishable from a 1-tick one.
      */
-    private void beginVolley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec, boolean weaponHit) {
+    private void beginVolley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec, boolean weaponHit,
+                             Aim castAim) {
+        // LOCKED AIM (2026-11-21, the Knell Beam, ruling 3): the line captured HERE, at the cast, as values -- an origin
+        // and a direction, never a handle (ruling 7). Null for a volley that re-aims every shot, as every volley did.
+        Aim locked = spec.lockedAim() ? castAim : null;
+        if (spec.warning() != null) warn(spec, locked, casterId);
         if (spec.windupTicks() == 0) {
-            volley(ability, casterId, spec, 0, weaponHit);
+            volley(ability, casterId, spec, 0, weaponHit, locked);
             return;
         }
-        world.scheduleOn(casterId, spec.windupTicks(), () -> volley(ability, casterId, spec, 0, weaponHit));
+        world.scheduleOn(casterId, spec.windupTicks(), () -> volley(ability, casterId, spec, 0, weaponHit, locked));
+    }
+
+    /**
+     * THE WARNING LINE (2026-11-21, the Knell Beam, ruling 4): the warning beam visual drawn along the LOCKED line, on
+     * each windup tick in {@code flash_at} (0 now, on the cast frame). The volley's constructor guarantees a locked aim
+     * and a ray to take the length from.
+     *
+     * <p><b>NOT CLIPPED AT BLOCKS, AS THE KNELL MOB'S IS NOT</b> (READ: {@code MobBeamer} draws its warning on the
+     * locked full line and clips only the fired beam). Drawn per chunk-column segment, each {@code presentAlong} hopping
+     * to its own region, as a ray's beam is drawn. A flash is skipped if the caster is gone by its tick.
+     */
+    private void warn(CastSpec.Volley spec, Aim locked, UUID casterId) {
+        CastSpec.Ray ray = (CastSpec.Ray) spec.of();
+        List<Vec3> endpoints = ChunkTraversal.segmentEndpoints(locked.origin(), locked.direction(), ray.range());
+        Runnable draw = () -> {
+            Vec3 from = locked.pointAt(BEAM_ORIGIN_GAP);
+            for (Vec3 to : endpoints) {
+                if (to.subtract(locked.origin()).length() <= BEAM_ORIGIN_GAP) continue;
+                world.presentAlong(from, to, spec.warning().beam());
+                from = to;
+            }
+        };
+        for (int tick : spec.warning().flashAt()) {
+            if (tick == 0) draw.run();
+            else world.scheduleOn(casterId, tick, draw);
+        }
     }
 
     /**
@@ -737,10 +840,12 @@ public final class CastExecutor {
      * them.
      */
     private void volley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec, int shotIndex,
-                        boolean weaponHit) {
+                        boolean weaponHit, Aim locked) {
         Combatant self = world.combatant(casterId).orElse(null);
         if (self == null || !self.state().alive()) return;   // gone, or dead: the volley stops
-        Aim live = world.aimOf(casterId).orElse(null);
+        // A LOCKED volley fires down the line captured at the cast, wherever the caster now stands or looks. An
+        // unlocked one re-reads the live aim, and an unreadable aim stops it, as before.
+        Aim live = locked != null ? locked : world.aimOf(casterId).orElse(null);
         if (live == null) return;                            // same condition, same answer
 
         // *** THIS IS WHERE A VOLLEY RE-PRICES, AND IT IS THIS LOOP THAT DOES IT -- NOT A LIVE FIELD.
@@ -766,7 +871,7 @@ public final class CastExecutor {
 
         if (shotIndex + 1 >= spec.shots()) return;
         world.scheduleOn(casterId, spec.intervalTicks(),
-                () -> volley(ability, casterId, spec, shotIndex + 1, weaponHit));
+                () -> volley(ability, casterId, spec, shotIndex + 1, weaponHit, locked));
     }
 
     /**
@@ -789,7 +894,7 @@ public final class CastExecutor {
      */
     private void fireInner(AbilityDefinition ability, Caster source, Aim aim, CastSpec inner) {
         switch (inner) {
-            case CastSpec.Ray ray -> launchRay(ability, source, aim, ray.range(), ray.beam());
+            case CastSpec.Ray ray -> launchRay(ability, source, aim, ray);
             case CastSpec.Projectile projectile -> launch(ability, source, aim, projectile);
             case CastSpec.Self ignored -> throw new IllegalStateException(notRepeatable("self"));
             case CastSpec.Melee ignored -> throw new IllegalStateException(notRepeatable("melee"));

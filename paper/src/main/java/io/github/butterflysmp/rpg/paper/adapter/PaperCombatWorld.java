@@ -153,6 +153,55 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * The piercing / tolerant ray's segment (2026-11-21, the Knell Beam, rulings 1, 2, 5, 6): every live body near it,
+     * each with its own bounding box, and where it first meets a block. Judged in core ({@code RaySweep.struck}), on the
+     * Knell mob's geometry.
+     *
+     * <p><b>THE SAME TWO FILTERS AS {@link #castRay}, ON PURPOSE (READ):</b>
+     * <ul>
+     *   <li>blocks: {@code rayTraceBlocks} with {@code FluidCollisionMode.NEVER} and passable blocks ignored, the
+     *       configuration {@code castRay}'s one trace and the Knell mob's {@code fire} both use;</li>
+     *   <li>bodies: {@link LiveTargets#except}, live living bodies only, the caster excluded by id, a part (a dragon's
+     *       head or wing) resolved to its body and reported once. <b>So an END CRYSTAL is never a body</b> (it is not
+     *       a living entity), and the beam passes through one and does nothing to it, as a plain ray does. <b>Another
+     *       player IS a body</b>, as for {@code castRay}; <b>the caster never is</b>, so a player walking into his own
+     *       locked beam's line is not struck. None of that is changed here.</li>
+     * </ul>
+     *
+     * <p>Only legal on the thread owning the segment's region, exactly as {@code castRay}: the chunk-column walk keeps
+     * each segment inside one region and hops between them.
+     */
+    @Override
+    public io.github.butterflysmp.rpg.core.combat.RaySweep sweepRay(Vec3 from, Vec3 to, UUID ignoreId, double reach) {
+        Vec3 along = to.subtract(from);
+        double distance = along.length();
+        if (distance <= 0) return new io.github.butterflysmp.rpg.core.combat.RaySweep(java.util.List.of(), Optional.empty());
+
+        Vector direction = new Vector(along.x(), along.y(), along.z()).normalize();
+        RayTraceResult blocks = world.rayTraceBlocks(toLocation(from), direction, distance,
+                FluidCollisionMode.NEVER, /* ignorePassableBlocks */ true);
+        Optional<Vec3> blockAt = blocks == null ? Optional.empty()
+                : Optional.of(new Vec3(blocks.getHitPosition().getX(), blocks.getHitPosition().getY(),
+                        blocks.getHitPosition().getZ()));
+
+        org.bukkit.util.BoundingBox around = new org.bukkit.util.BoundingBox(from.x(), from.y(), from.z(),
+                to.x(), to.y(), to.z()).expand(reach + 1.0);
+        java.util.function.Predicate<Entity> live = LiveTargets.except(ignoreId);
+        java.util.Map<UUID, io.github.butterflysmp.rpg.core.combat.RaySweep.Body> bodies = new java.util.LinkedHashMap<>();
+        for (Entity e : world.getNearbyEntities(around)) {
+            if (!live.test(e)) continue;
+            LivingEntity body = LiveTargets.resolve(e);
+            if (body == null || bodies.containsKey(body.getUniqueId())) continue;
+            org.bukkit.util.BoundingBox b = body.getBoundingBox();
+            bodies.put(body.getUniqueId(), new io.github.butterflysmp.rpg.core.combat.RaySweep.Body(
+                    BukkitCombatant.of(body, ctx),
+                    new io.github.butterflysmp.rpg.core.mob.BeamBox(new Vec3(b.getMinX(), b.getMinY(), b.getMinZ()),
+                            new Vec3(b.getMaxX(), b.getMaxY(), b.getMaxZ()))));
+        }
+        return new io.github.butterflysmp.rpg.core.combat.RaySweep(new java.util.ArrayList<>(bodies.values()), blockAt);
+    }
+
+    /**
      * MUST run on the thread owning the segment's region, like castRay -- World#rayTraceBlocks
      * reads blocks along the whole length, and the javadoc warns it may load chunks to do it.
      *

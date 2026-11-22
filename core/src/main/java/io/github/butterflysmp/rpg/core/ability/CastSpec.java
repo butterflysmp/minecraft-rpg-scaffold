@@ -25,7 +25,33 @@ public sealed interface CastSpec {
      * Flint Staff hit: the closest available mechanism has the wrong GEOMETRY, and reaching for it
      * produces something that looks like a bug rather than failing loudly.
      */
-    record Ray(double range, String beam) implements CastSpec {
+    record Ray(double range, String beam, boolean pierce, double tolerance) implements CastSpec {
+
+        /**
+         * <b>{@code pierce} AND {@code tolerance}, 2026-11-21 (the seat's brief, the Knell Beam, rulings 1 and 2).</b>
+         * Both default OFF, and a ray with both off walks exactly as every ray did before them (on
+         * {@code CombatWorld.castRay}, stopping at the first body or block it meets).
+         *
+         * <ul>
+         *   <li>{@code pierce}: the walk goes on past a body, to the range or the first block. Every body it strikes
+         *       is struck ONCE (a set of struck ids carried across chunk-column hops) and takes the same {@code on_hit},
+         *       nearest first.</li>
+         *   <li>{@code tolerance}, in BLOCKS: a body is struck when the line meets its box grown by this much on every
+         *       side, the Knell mob's geometry ({@code BeamLine.meets}). 0 is the exact box, as the default ray tests.
+         *       A margin hit behind a block is refused: the line is clipped at the first block, and a body struck only
+         *       in its margin needs a clear sight line from the line to it.</li>
+         * </ul>
+         */
+        public Ray {
+            if (!(tolerance >= 0 && Double.isFinite(tolerance))) {
+                throw new IllegalArgumentException("a ray's tolerance must be 0 or more blocks, was " + tolerance);
+            }
+        }
+
+        /** A ray that stops at the first body, tested on its exact box: every ray before the Knell Beam. */
+        public Ray(double range, String beam) {
+            this(range, beam, false, 0.0);
+        }
 
         /**
          * A ray that draws nothing between muzzle and impact -- what {@code solar_lance} is, and
@@ -33,6 +59,11 @@ public sealed interface CastSpec {
          */
         public Ray(double range) {
             this(range, null);
+        }
+
+        /** Whether this ray walks the sweep (pierce or tolerance) rather than the plain first-hit trace. */
+        public boolean sweeps() {
+            return pierce || tolerance > 0;
         }
     }
     /**
@@ -414,8 +445,41 @@ public sealed interface CastSpec {
      * refused HERE as well, in the compact constructor, because a volley of volleys is a fork bomb
      * and that is a representability question rather than a content one.
      */
-    record Volley(int windupTicks, int shots, int intervalTicks, CastSpec of) implements CastSpec {
+    record Volley(int windupTicks, int shots, int intervalTicks, CastSpec of, boolean lockedAim, Warning warning)
+            implements CastSpec {
 
+        /**
+         * <b>THE WARNING LINE, 2026-11-21 (the seat's brief, the Knell Beam, ruling 4).</b> A beam visual drawn along the
+         * LOCKED line, on each windup tick in {@code flashAt} (0 is the cast frame), the way the Knell mob flashes its
+         * line before it fires. Null for a volley that draws nothing before its shot.
+         */
+        public record Warning(String beam, List<Integer> flashAt) {
+            public Warning {
+                if (beam == null || beam.isBlank()) {
+                    throw new IllegalArgumentException("a volley warning needs a 'beam:' visual id to draw");
+                }
+                if (flashAt == null || flashAt.isEmpty()) {
+                    throw new IllegalArgumentException("a volley warning needs 'flash_at:', the windup ticks it is"
+                            + " drawn on; with none it draws nothing");
+                }
+                flashAt = List.copyOf(flashAt);
+            }
+        }
+
+        /** A volley that re-aims every shot and draws no warning: every volley before the Knell Beam. */
+        public Volley(int windupTicks, int shots, int intervalTicks, CastSpec of) {
+            this(windupTicks, shots, intervalTicks, of, false, null);
+        }
+
+        /**
+         * <p><b>{@code lockedAim} (ruling 3):</b> off, each shot re-reads where the caster looks NOW (the burst a player
+         * steers). On, the origin and direction are captured AT THE CAST and every shot fires down that line, wherever
+         * the caster has moved or turned: values, not a handle, so nothing about an entity is held across ticks.
+         *
+         * <p><b>{@code warning} (ruling 4) is REFUSED without {@code lockedAim}</b>: a line drawn along an aim the shot
+         * will not use is a lie. It is refused unless {@code of} is a ray (a warning line has the ray's range for its
+         * length), and every flash tick must fall inside the windup (a flash at or after the shot warns of nothing).
+         */
         public Volley {
             if (windupTicks < 0) {
                 throw new IllegalArgumentException("volley windup_ticks must be >= 0, got " + windupTicks
@@ -439,6 +503,22 @@ public sealed interface CastSpec {
             if (of instanceof Volley) {
                 throw new IllegalArgumentException("a volley cannot repeat a volley: each shot would"
                         + " start its own burst, and the count multiplies every interval");
+            }
+            if (warning != null) {
+                if (!lockedAim) {
+                    throw new IllegalArgumentException("a volley 'warning:' needs 'locked_aim: true': a line drawn"
+                            + " along an aim the shot will not use is a lie");
+                }
+                if (!(of instanceof Ray)) {
+                    throw new IllegalArgumentException("a volley 'warning:' needs its 'of:' to be a ray: the line is"
+                            + " drawn to the ray's range");
+                }
+                for (int t : warning.flashAt()) {
+                    if (t < 0 || t >= windupTicks) {
+                        throw new IllegalArgumentException("a volley warning flash_at tick must be in [0, windup_ticks "
+                                + windupTicks + "), was " + t + ": a flash at or after the shot warns of nothing");
+                    }
+                }
             }
         }
 
