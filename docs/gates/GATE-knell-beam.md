@@ -595,9 +595,10 @@ dispatch path, and whether the shot lands on tick 24 or 25.**
 >    are copied before any runs (READ, `getAllSchedulers`), so the zombie's write, queued at T+24, lands at T+25.
 >    Whether his tick-25 probe step runs BEFORE or AFTER the zombie's write within T+25 is their order in the server's
 >    scheduler list: **INFERRED player first** (registered earlier), which is what KB2's `100.000` at tick 25 shows.
-> - **Predicted for KB2R2 (probes on ticks 24, 25 and 26 after the press):** **24 `100.000/100.000`** (READ: the shot
->   task was queued ahead of the probe on his scheduler, so the PLAYERHIT line precedes it, and the write is a tick
->   later); **25 `100.000/100.000`** (INFERRED, from the order; `37.000` if the order is the other way); **26
+> - **Predicted for KB2R2 (probes on ticks 24, 25 and 26 after the press):** **24 `100.000/100.000`** (READ: the write is a
+>   tick after the hit at the earliest. Which of the probe's line and the PLAYERHIT line comes first in tick 24 is NOT
+>   predicted: both are due in his entity tick, the probe's wait queued at the press and the shot at the press + 1, so
+>   INFERRED the probe first); **25 `100.000/100.000`** (INFERRED, from the order; `37.000` if the order is the other way); **26
 >   `37.000/100.000`**, or dead on a crit (READ). Carried as a row in `GATE-living-lantern.md`.
 > - **What it means for any cast whose hit is made from the GLOBAL tick** (the cast frame itself, and anything deferred
 >   with `CombatWorld.schedule`, which is `onRegionLater`, READ): the zombie's write is queued before that tick's
