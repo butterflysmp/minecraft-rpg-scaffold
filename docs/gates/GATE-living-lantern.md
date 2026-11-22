@@ -10,6 +10,10 @@ Readings in *READINGS, 2026-11-22* at the end of this file. No prediction above 
 **Status, 2026-11-22, later: the seat ruled R0b's miss the gate's instrument; R0b is re-predicted as R0bR2** (*THE SEAT'S
 RULINGS ON THE FIRST BOOT, AND R0bR2*, at the end). **The next boot reads R0a, R0bR2, R0c, R0d and R0e afresh.**
 
+**Status, 2026-11-22, 14:04: SECOND BOOT at `42ef53c8`, R0 PASSED, ALL 13 ROWS RAN. ONE READING NOT AS PREDICTED: the end
+of the run's `health=`, 124 against the predicted 126; the prediction named the wrong instant** (*READINGS, SECOND BOOT*,
+at the end).
+
 **NO BOOT until the seat has diffed the code AND this gate from origin, and Ben says "ready" in his own words**; then
 only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
@@ -531,3 +535,149 @@ read as the line BEGINNING with that text**, the same reading R0bR2 now writes d
 - **One thing for the seat, not changed here: CARRIED STATE step 2's backup folder already exists.**
   `../rpg-run-backups/2026-11-22-pre-living-lantern` is the first boot's (`Test-Path`: True), and the step asks for a
   NEW folder. A second boot today needs another name. CC proposes `2026-11-22-pre-living-lantern-2`.
+
+## READINGS, SECOND BOOT, 2026-11-22 — `42ef53c8`, READ FROM `run/logs/latest.log` BY CC. R0 PASSED; ALL 13 ROWS RAN
+
+**Written after the boot. No prediction above was edited.** This boot's own lines: `[Rpg] Build: 42ef53c8` (13:59:41),
+`Done (6.266s)!` (13:59:42). **Every row reading below is from after his `joined the game` at 14:00:30.** The seat's
+second approval (2026-11-22) ruled: R0bR2 and the list for c accepted; the backup folder is
+`2026-11-22-pre-living-lantern-2`; the first approval's rulings 5 and 6 stand (the HEALTH line lands 10 ticks after the
+end; say so if the crafting table was placed in the corridor east of the start before calling an HF1R3 or LL9 miss).
+
+### NOT AS PREDICTED (FIRST, AS THE SEAT ASKED)
+
+- **THE END OF THE RUN: `health=124.000`, predicted `<c0>` = 126.000.** `SELFTEST RUN RESTORED xp=712672 cell=mage/fire
+  gamemode=SURVIVAL held=3 mana=100.0 … difficulty=NORMAL health=124.000 drag_tick=false`, then 1 s later `SELFTEST RUN
+  HEALTH saved=124.000 customHP=124.000/350.000 wrote=124.000`. The setup's first `SELF` read `customHP=126.000/350.000`.
+  - **The prediction named the wrong instant (READ, source):** `SelfTestRun.start` takes the snapshot
+    (`SelfTestSnapshot.take`) BEFORE it logs `RUN START`, so before the setup's first `SELF`. *HIS HEALTH* equated the
+    two. The 2 between them is INFERRED to be survival regeneration in the ticks between (no line records it). The
+    `PREDICT DAMAGE AGAINST THE HURT LINE` rule's lesson, on a restore: two health figures at two instants.
+  - **What the line does show:** the max is `350.000` = `m0`, so the write came after the reconcile raised it (the
+    defect arm *HIS HEALTH* names is NOT seen), and `wrote=124.000` = `saved`. **The restore restored the snapshot.**
+    Whether 124 or 126 is the right figure to restore is the seat's; the code was not changed.
+
+**Nothing else read NOT AS PREDICTED.**
+
+### THE BOOT, BY `booting.md` AND THE CARRIED STATE
+
+| step | read |
+|---|---|
+| 1. the seat's word and Ben's | the seat's second boot approval (2026-11-22, relayed); Ben's own word, verbatim: **"ready"**, then **"go ahead"** before the boot command |
+| 2. the heads | `git ls-remote`: `feat/living-lantern` `42ef53c8bc54f0b1d17abf2f56a6195a92cee709`, as the seat diffed, read before the backup and again before "booting now"; #231 `9e29c621`, #232 `ad96c460`, #233 `42ef53c8`: OPEN, MERGEABLE, both `build` checks `pass` on each |
+| CS 1. no JVM | 0 `java.exe` |
+| CS 2. backup | `../rpg-run-backups/2026-11-22-pre-living-lantern-2` (new; the first boot's folder untouched): Rpg 154 files / 26 dirs both sides, `diff -rq lines: 0`; world 193 files / 32 dirs both sides, `diff -rq lines: 0`; `world/dimensions`: `minecraft rpgfight`; overworld (`dimensions/minecraft/overworld`) 106 files |
+| CS 3. config | `12:  dev-pack-on-join: true` |
+| CS 4. fight folders | `rpgfight` entries: 0 |
+| CS 5. "booting now" | sent in its own message, with "Ben: do NOT log in until I tell you R0 passed"; the boot command in the next turn, after Ben's "go ahead" |
+| CS 6. boot, deployed lines | `==> Building 42ef53c8`; `weapons/living_lantern.yml:42:    cooldown_ticks: 16                     # BEN: 0.8 s. …`; `weapons/` 21 `.yml`; `recipes/living_lantern.yml` and `visuals/lantern_front.yml` present. The boot's build ran no unit tests (0 `Tests run:` lines) |
+| CS 7. R0 | below, all five AS PREDICTED, read 13:59:42 to 14:00:01 |
+| CS 8. "R0 passed" | sent in its own message after a `joined the game` count of **0** at 14:00:01 |
+| login | **`joined the game` 14:00:30, after "R0 passed".** Commands, all his: `/gamemode survival` 14:00:36; `/rpg selftest living-lantern` 14:00:43; **`/rpg give living_lantern` 14:03:29, NOT on the sheet** (after the HEALTH line, so after every reading); `/stop` 14:03:51. Chat: `yes` (14:03:08, the ASK) |
+| CS 9. after `/stop` | `rpgfight` entries: 0; overworld **106** files (step 2: 106; the crafting table's chunk added none); `[14:03:52] … All dimensions are saved`; 0 `java.exe` |
+
+### R0 — ALL AS PREDICTED
+
+- **R0a.** `[13:59:41] [Server thread/INFO]: [Rpg] Build: 42ef53c8`. Not `-dirty`, not `unknown`. The jar's
+  `build-id.properties`: `commit=42ef53c8`.
+- **R0bR2.** The scan as written, on this boot's jar (deployed 13:59:35): **thirteen PRESENT**, then **`ABSENT
+  living_lantern.yml CONTROL-1 '    cooldown_ticks: 1'`** and **`PRESENT knell_beam.yml CONTROL-EOL '    cooldown_ticks:
+  48'`**.
+- **R0c.** The Loaded line word for word, once; `Mint-on-craft: 36 indexed, 36 claiming, of 51 gear definitions`;
+  `Convert-on-arrival: 7 materials {…}`. The loot, fight, world-damage and smithing lines **byte-identical** (timestamps
+  stripped, 4 lines, `cmp`) to the first boot's (`run/logs/2026-11-22-2.log.gz`, `Build: d98c28bb`). No `Refusing`,
+  `Skipping`, `SEVERE`, `Exception`, `Recipe '`, `No fights loaded`; `[Rpg]` WARN only `volley_stone`'s pair; Paper's
+  "4 release(s) behind" block is not `[Rpg]`.
+- **R0d.** `[Rpg] Selftest: dev server, 280 scenarios across 37 gates [melee-cell, …, knell-beam, living-lantern]`, once;
+  control `267 scenarios across 36 gates`: 0.
+- **R0e.** `[Rpg] FIGHTWORLD sweep path=C:\…\run\world\dimensions\rpgfight folders=0`, once; no `deleting`, no `orphan`.
+
+### THE ROWS — `SELFTEST RUN START living-lantern rows=13 selftest=42ef53c8`, 14:00:43; `RUN FINISHED` 14:03:08
+
+**Each row's lines are between its `START` and `DONE` in `run/logs/latest.log`; quoted here by their witness values.**
+
+- **setup — AUTO PASS (selftest 42ef53c8).** `LEFTOVER living=0 radius=16`; the `time set 18000` and `spawn_mobs false`
+  REPLYs; **`SELF customHP=126.000/350.000`** (c0 = 126, m0 = 350); 27 `CMD /kill` lines, each with a `SETTLED dying=0`
+  line and every REPLY `"No entity was found" [red]`; `REPLY "Set 1 level(s) for BaronVonYeetus (now level 1, 0/1000
+  into it, 0 lifetime)." [green]`; **`SELF customHP=100.000/100.000`**: m0 - m1 = 250, c1 = min(126, 100) = 100.
+- **LL0 — AUTO PASS.** `LEFTOVER living=0`; `Teleported BaronVonYeetus to -114.500000, 63.000000, 16.500000`; `SELF
+  customHP=100.000/100.000`; **`BLOCKS AIR count=480`**, **`BLOCKS AIR count=0`**, **`BLOCKS WATER count=0`**. The spot was
+  open and flat.
+- **LL1 — AUTO PASS (server half).** `Given Living Lantern`; `INVENTORY living_lantern slots=[0x1]`; `DRIVE hold … 3->0`;
+  `Set Gear Score: 100`; the **`HELD` line word for word as predicted**, `Cooldown: 0.8s | Mana Cost: 12`. What he sees is
+  the client's (*WHAT THIS GATE DOES NOT READ*).
+- **LL2 — AUTO PASS.** `rpg enchant show`: three slots, `raw: v1;…:-1;…:-1;…:-1` (every active choice -1); `MOBSEED …
+  gs=100 … max=100`; **`MANA current=100.000` → `DRIVE use … cadence=excluded` → `MANA current=88.000`**; probe at
+  press + 3 **`100.000/100.000`**; one **`PLAYERHIT … element=fire sent=14.000 crit=false triggerScore=100`**; probe at
+  + 8 **`86.000/100.000`**; one **`DOTTICK … sent=5.000 cap=7.000`**; probe at + 30 **`81.000/100.000`**.
+- **LL3 — AUTO PASS (the crit arm).** `POSITIONS ZOMBIE n=2 at=[2.30 0.00 1.93; 2.82 0.00 1.03]`; one PLAYERHIT, on the
+  FIRST `MOBSEED` (A, `c076aede`), **`sent=28.000 crit=true`**; **A `72.000/100.000`**, **B `100.000/100.000`**.
+- **LL4 — AUTO PASS.** One PLAYERHIT on the first `MOBSEED` (at 5, `afd6a9ad`), `sent=14.000 crit=false`; **first
+  `86.000/100.000` (d=5.000)**, **second `100.000/100.000` (d=7.500)**.
+- **LL5 — AUTO PASS.** Three PLAYERHITs, each target once, in the order **`3d89e1e2` (2nd MOBSEED, Z2), `5e253602` (3rd,
+  Z3), `8db8e7d4` (1st, Z1)**, all `sent=14.000 crit=false`; first probe **all three `86.000/100.000`**; three `DOTTICK`s
+  at ticks **1609, 1610, 1612** (offsets 0, 1, 3: the predicted + 24, 25, 27); second probe **all three `81.000`**.
+- **LL6 — AUTO PASS.** `The game time is 20382431 tick(s)`; **`n` `100.000` then PLAYERHIT then `86.000`**; **`f`
+  `100.000` then PLAYERHIT then `86.000`**; two PLAYERHITs, `n`'s first, both 14.000. The probes bracket each hit on the
+  predicted ticks, so **`n` was struck at press + 4 or 5, `f` at + 7 or 8**.
+- **LL7 — AUTO PASS.** `STAGE saved 2 blocks for the restore, box=2 0 0 2 1 0`; `Successfully filled 2 block(s)`; **0
+  PLAYERHIT**; probe **`100.000/100.000`** (d=4.000). LL8's `CLEAN blocks=2` put the stone back.
+- **LL8 — AUTO PASS.** `MANA current=100.000`; press 1, **`g1` = 20382582**; press 2, **`MANA current=88.600`**, **`"On
+  cooldown for 0.2s" [gray]`**, **`g2` = 20382594**; press 3, **`MANA current=76.800`**, **`g3` = 20382598**. **`g2 - g1 =
+  12`, `g3 - g1 = 16`.** Two PLAYERHITs, both 14.000; **`72.000/100.000`**, one `DOTTICK` (5.000), **`67.000/100.000`**.
+- **KB2R2 — AUTO PASS.** `The game time is 20382624 tick(s)`; probe at + 24 **`100.000/100.000`**, logged BEFORE the
+  PLAYERHIT line (the order the gate did not predict; INFERRED "probe first" holds); **`PLAYERHIT …
+  source=knell_beam/right_click … element=void sent=63.000 crit=false`**; probe at + 25 **`100.000/100.000`**; probe at
+  + 26 **`37.000/100.000`**. **KB2 is now READ: the health write lands on press + 26, not + 25.**
+- **CR3 — AUTO PASS (the "he crafts" arm).** `Removed 8 item(s)` (the rows' eight lanterns); `INVENTORY living_lantern
+  slots=[]`; three `Gave` REPLYs; the TELL. **`CRAFT minted player=BaronVonYeetus weapon=living_lantern material=lantern
+  score=100`** (14:01:25, 8 s after the TELL). After the 60 s: `INVENTORY living_lantern slots=[1x1]`; `DRIVE hold …
+  3->1`; the `HELD` line with **`"Gear Score: 100"`, EQUAL to the CRAFT line's `score=100`**, and `"Fire Damage: 14"`
+  (14 x 100/100). Recorded beside it: in the 60 s he right-clicked the lantern (one `"On cooldown for 0.2s"`, seven
+  `"Not enough mana: 12 needed, …"`), **0 PLAYERHIT** in the row. Two endermen (`gs=109`, `111`, `source=stored`) and
+  three turtles were seeded at 14:02:13 as chunks loaded, and removed at 14:02:24: no line records them near him, and
+  no hurt line exists in this log. **Where he placed the table was not read.**
+- **HF1R3 — AUTO PASS; THE VERDICT BY THE TABLE: INCONCLUSIVE.** `Removed 1 item(s)` (lantern); `Removed 2 item(s)`
+  (echo shard: the row's Knell Beam and one of his own, which the run's restore puts back by `restoreInventory`, READ
+  source, not seen in the log); `Given Crystal Shard Staff`; **`STAGE hold_only moved crystal_shard_staff from hotbar 2
+  to slot 9`**, **`moved nether_star from hotbar 8 to slot 10`**, **`STAGE hold_only hotbar items=1 offhand=empty`**;
+  `DRIVE hold … 1->0 item=crystal_shard_staff`.
+  - **The first `rpg firerate`: the arm for weapons of his own.** `Fire cadence -- 2 weapons sampled, one reading
+    each: living_lantern, crystal_shard_staff`; **`(19 selftest-driven records kept out of every sample)`**;
+    living_lantern `INPUTS count 19 … min 6t`, `FIRES count 11 … min 18t`, `cooldown_ticks 16 authored, 16 effective`;
+    crystal_shard_staff one input and one fire, `NO REPEAT … 68t elapsed` (his own, in CR3's window); `Sample cleared.`
+  - **`HELDID slot=0 item=crystal_shard_staff offhand=empty`** at the start and **the same** at the end of the 15 s.
+  - **The second `rpg firerate`:** `Fire cadence -- crystal_shard_staff, right_click`; **`INPUTS count 55 window 216t
+    mean 4.00t min 4t`**; **`FIRES count 13 window 192t mean 16.00t min 16t`**; `cooldown_ticks 14 authored, 14
+    effective (not a basic attack -- attack speed does not scale it)`; the verdict line `COOLDOWN-LIMITED …`; `Sample
+    cleared.`; no `weapons sampled` line, no excluded line.
+  - **By `GATE-crystal-shard-staff.md`'s table: `FIRES min 16`, `INPUTS min 4`: INCONCLUSIVE.** HF1 is read, held
+    correctly, on the right staff, and cannot tell the `ceil(n/4) x 4` fit from a coincidence at 16. **Held fire on a
+    14-tick cooldown fires every 16 ticks** (FIRES mean = min = 16, 13 fires): that much is measured.
+- **LL9 — AUTO PASS (server half); ASK READ.** Six `MOBSEED` lines; the TELL; **19 PLAYERHITs, his own: 12 at
+  `sent=14.000 crit=false`, 7 at `sent=28.000 crit=true`**, none other; all six zombies removed (14:02:43 to 14:02:51);
+  then **`ASK 1 question="Did the flames reach as far and as wide as they looked?" answer="yes"`**, verbatim (his chat
+  line: `<BaronVonYeetus> yes`).
+  - **RECORDED, NOT PREDICTED, FOR THE SEAT: six `DOTTICK` lines at `sent=3.000 cap=3.000`** (on `bfed67cc`,
+    `126cacaf`, `cca65717`), the first at tick 3630, in the second (14:02:43) the first two zombies' removals are logged;
+    the tick each died is not logged, so the gap from a death is NOT measured. Every scorch line
+    before it read `cap=7.000`. `3 = 6 x 0.5` fits Ignite's authored 6 (INFERRED; no line names the ignite or its hits).
+    **Two things follow if that is Ignite, both NOT READ:** (a) ruling 5 above says Ignite detonates on killing an
+    UNSCORCHED body, and every zombie that died here was burning (each had `DOTTICK`s before its death); (b) on
+    `cca65717` a `cap=7.000` burn (tick 3644) was followed by `cap=3.000` burns (3664 to 3704) until his next hit put it
+    back to 7 (3724): **a weaker hit LOWERED a burning body's cap.** Neither is a prediction of this gate, and no
+    code is changed.
+  - Ruling 6: where he placed the crafting table was not read, and **nothing in HF1R3 or LL9 is called a miss**.
+- **THE END OF THE RUN — NOT AS PREDICTED** (first section above). The HEALTH line did land, 1 s after `RESTORED`; he
+  issued `/stop` 42 s after it.
+
+### WHICH ARMS ARE UNREAD
+
+- **The crit arm** of LL2, LL4, LL5, LL6, LL8 and KB2R2 (each read non-crit); **the non-crit arm** of LL3 (read crit).
+- **CR3's "he does not craft" arm** (he crafted).
+- **HF1R3:** the `too few empty inventory slots` arm; the first `rpg firerate`'s `No fire-cadence sample` arm (he had
+  fired his own); the "did not hold" arm; and **every conclusive arm of the table** (`INPUTS min 3`, `FIRES min 14/15`,
+  below 14): the outcome was the inconclusive one.
+- **The END's `wrote=none` arm** (he began above 100 + G).
+- **LL9's `NOT STATED` arm** (he answered).
+- **The client, everywhere** (*WHAT THIS GATE DOES NOT READ*): his one word "yes" is the only reading of what he saw.
