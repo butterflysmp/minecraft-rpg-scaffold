@@ -36,7 +36,7 @@
    "Fires a homing crystal shard" color=#AAAAAA O=. B=. S=. U=. I=F
    "at the nearest enemy." color=#AAAAAA O=. B=. S=. U=. I=F
    "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["16" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Cooldown: 0.7s | Mana Cost: 8" color=#555555 O=. B=. S=. U=. I=F
+   "Cooldown: 0.8s | Mana Cost: 8" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- cursed_emerald

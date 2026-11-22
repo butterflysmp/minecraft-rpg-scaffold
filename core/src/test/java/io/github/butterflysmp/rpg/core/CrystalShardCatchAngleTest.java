@@ -43,7 +43,7 @@ class CrystalShardCatchAngleTest {
 
     static final double SPEED = 3.0;
     static final double GRAVITY = 0.0;
-    static final int LIFETIME = 7;
+    static final int LIFETIME = 10;   // Ben, 2026-11-22 (was the seat's 7): CrystalShardStaffContentTest pins the same
     static final double LERP = 0.45;
     /** The old repo's turn, which this staff carried until the seat's follow-up of 2026-11-21. */
     static final double OLD_LERP = 0.18;

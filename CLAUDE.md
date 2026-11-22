@@ -230,6 +230,8 @@ the opposite because the material suggests it.**
   **Author multiples of 4.** The "multiples of 8 if dual-wielded" clause is withdrawn, so the
   `locust`'s `12` is correct. **Two ship off the grid, knowingly:** `cursed_emerald` (30, a volley) and the
   `crystal_shard_staff` (14, Ben's 0.7 s, 2026-11-21), on which the owed `INPUTS min` reading is taken.
+  **2026-11-22: that reading was taken (a held 14 fires every 16), and the staff moved to 16 on Ben's word, so
+  `cursed_emerald` is now the one shipped off the grid.**
   *This is the pointer. The account (the two ruling dates, the loop that grows the deletion's cost,
   the measurements, and why the clause was withdrawn) is `.claude/rules/standing-decisions.md`, under
   its top heading: the entry beginning **NEW CONTENT CITES THE BOLTOR**.*
