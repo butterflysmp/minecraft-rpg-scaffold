@@ -278,6 +278,8 @@ public final class CastExecutor {
             case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley, source.weaponHit(), aim);
 
             case CastSpec.Cone cone -> beginCone(ability, source, aim, cone);
+
+            case CastSpec.Orb orb -> throwOrb(ability, source, aim, orb);
         }
     }
 
@@ -559,6 +561,69 @@ public final class CastExecutor {
                 new ProjectileFlight.Look(spec.trail(), spec.item(), spec.body()),
                 seekOf(spec),
                 (target, point) -> detonate(ability, caster, target, point));
+    }
+
+    /**
+     * HOW FAR SHORT OF A SOLID BLOCK AN ORB STOPS, in blocks (SEAT PLACEHOLDER 2026-11-23): its centre rests this far back
+     * along the throw from the block's face, so its body is never inside the block.
+     */
+    static final double ORB_STANDOFF = 0.5;
+
+    /**
+     * THE THROWN ORB (Lapis Crystal's D2; Ben, 2026-11-23: "throws an orb out about 12 blocks in the direction the player
+     * is looking and it floats there for 15s" / "One orb at a time"). Its rest point is the aim's {@code range} or, short
+     * of that, {@link #ORB_STANDOFF} before the first solid block ({@code sweepRay}'s {@code blockAt}; bodies do not stop
+     * it). A standing orb of his is removed first (cause {@code replaced}). The body flies there over
+     * {@code flightTicks}, driven a step a tick as a projectile's marker is; on arrival the orb RESTS ({@code ORB rest}
+     * line) and its {@code lifeTicks} start; at their end it is removed (cause {@code expired}), unless a newer throw or a
+     * removal already took it (the generation).
+     *
+     * <p>The orb remembers the GRANT that threw it (the active behaviour whose ability this is): its weapon, enchant and
+     * level, for D3's beam and shots. An orb no grant threw remembers none.
+     */
+    private void throwOrb(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Orb orb) {
+        Vec3 direction = aim.direction().normalize();
+        Vec3 end = aim.origin().add(direction.scale(orb.range()));
+        Optional<Vec3> block = world.sweepRay(aim.origin(), end, caster.id(), 0.0).blockAt();
+        Vec3 rest = io.github.butterflysmp.rpg.core.combat.OrbPath.restPoint(aim.origin(), direction, orb.range(),
+                block, ORB_STANDOFF);
+
+        String weaponId = null, enchantId = null;
+        int level = 0;
+        for (io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active : caster.behaviours()) {
+            if (active.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g
+                    && g.ability().id().equals(ability.id())) {
+                weaponId = g.weaponId();
+                enchantId = active.enchantId();
+                level = active.level();
+            }
+        }
+
+        io.github.butterflysmp.rpg.core.combat.Orbs orbs = world.orbs();
+        UUID marker = world.spawnOrbMarker(aim.origin(), orb.item(), orb.flightTicks() + orb.lifeTicks());
+        io.github.butterflysmp.rpg.core.combat.Orbs.PlaceResult placed = orbs.place(caster.id(), marker, rest,
+                orb.radius(), orb.lifeTicks(), weaponId, enchantId, level);
+        placed.replaced().ifPresent(old -> {
+            world.removeMarker(old.markerId());
+            world.traceOrb(caster.id(), "removed", old.restPoint(), "replaced");
+        });
+
+        long generation = placed.placed().generation();
+        Vec3 step = rest.subtract(aim.origin()).scale(1.0 / orb.flightTicks());
+        world.driveMarker(marker, step);
+        for (int tick = 1; tick < orb.flightTicks(); tick++) {
+            world.schedule(aim.origin(), tick, () -> world.driveMarker(marker, step));
+        }
+        world.schedule(rest, orb.flightTicks(), () -> {
+            world.driveMarker(marker, Vec3.ZERO);
+            orbs.arrive(caster.id(), generation, world.currentTick()).ifPresent(arrived -> {
+                world.traceOrb(caster.id(), "rest", arrived.restPoint(), "");
+                world.schedule(rest, orb.lifeTicks(), () -> orbs.removeIf(caster.id(), generation).ifPresent(gone -> {
+                    world.removeMarker(gone.markerId());
+                    world.traceOrb(caster.id(), "removed", gone.restPoint(), "expired");
+                }));
+            });
+        });
     }
 
     /**
@@ -1079,6 +1144,7 @@ public final class CastExecutor {
             case CastSpec.Dash ignored -> throw new IllegalStateException(notRepeatable("dash"));
             case CastSpec.Volley ignored -> throw new IllegalStateException(notRepeatable("volley"));
             case CastSpec.Cone ignored -> throw new IllegalStateException(notRepeatable("cone"));
+            case CastSpec.Orb ignored -> throw new IllegalStateException(notRepeatable("orb"));
         }
     }
 

@@ -702,6 +702,7 @@ public final class ContentValidator {
             case CastSpec.Self ignored -> { }
             case CastSpec.Melee ignored -> { }
             case CastSpec.Vanilla ignored -> { }   // names no visual; its placement is WeaponDefinition's to refuse
+            case CastSpec.Orb ignored -> { }       // names no visual; its item is a marker material, resolved at spawn as any marker's
             // A cone's front (2026-11-22, the Living Lantern): the id must name a visual, and that visual may hold no
             // sound. The ray beam's rule, with its own reason: the ray arm's message names chunk-column segments, which
             // is not why a front may not carry a sound.

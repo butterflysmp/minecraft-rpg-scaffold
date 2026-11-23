@@ -111,6 +111,9 @@ final class AbilitySchema {
             // CastSpec.Cone judges the values, by name.
             case "cone"       -> new CastSpec.Cone(reqDouble(s, "range"), reqDouble(s, "arc_degrees"),
                     reqInt(s, "travel_ticks"), s.getString("front"));
+            // THE THROWN ORB (Lapis Crystal's D2, 2026-11-23): every key required, CastSpec.Orb refuses a bad value by name.
+            case "orb"        -> new CastSpec.Orb(reqDouble(s, "range"), reqInt(s, "flight_ticks"), reqInt(s, "life_ticks"),
+                    reqDouble(s, "radius"), req(s, "item"));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
         };
     }
@@ -172,6 +175,7 @@ final class AbilitySchema {
                             + " OUTER dash, so a repeated one would go the wrong way rather than fail");
             case CastSpec.Volley ignored -> throw notRepeatable("volley",
                     "each shot would start its own burst and the count would multiply every interval");
+            case CastSpec.Orb ignored -> throw notRepeatable("orb", "one orb per caster: a repeated throw replaces itself");
             case CastSpec.Cone ignored -> throw notRepeatable("cone",
                     "a cone already travels over ticks from a line captured at the click; repeating it is a volley of"
                             + " fronts nobody has ruled");

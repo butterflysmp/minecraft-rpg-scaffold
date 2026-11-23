@@ -76,6 +76,8 @@ class LapisCrystalContentTest {
         assertEquals(30.0, g.ability().cost().amount(), 0.0, "Ben: 30 mana");
         assertEquals("kinetic", g.ability().element(), "the staff's element");
         assertEquals("lapis_staff", g.weaponId());
+        assertEquals(new io.github.butterflysmp.rpg.core.ability.CastSpec.Orb(12, 10, 300, 0.6, "heart_of_the_sea"),
+                g.ability().cast(), "D2: Ben's 12 blocks and 300 ticks; the seat's 10-tick flight, 0.6 radius and look");
     }
 
     /** The tooltip (B5): the granted ability renders as any ability does while active, and not at all otherwise. */

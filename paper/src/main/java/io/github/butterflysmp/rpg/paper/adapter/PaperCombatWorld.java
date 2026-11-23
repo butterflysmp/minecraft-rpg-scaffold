@@ -372,6 +372,41 @@ public final class PaperCombatWorld implements CombatWorld {
         ctx.log().info(splitLine(casterId, source, at, bursts, org.bukkit.Bukkit.getCurrentTick()));
     }
 
+    @Override
+    public io.github.butterflysmp.rpg.core.combat.Orbs orbs() {
+        return ctx.orbs();
+    }
+
+    /**
+     * D2: a marker exactly as {@link #spawnMarker} makes one ({@code setPersistent(false)}: never saved; pickup refused;
+     * gravity off; vanilla's despawn armed after the expected life), TAGGED {@code Keys.orb} so the sweep can find a body
+     * no live orb owns.
+     */
+    @Override
+    public UUID spawnOrbMarker(io.github.butterflysmp.rpg.core.Vec3 at, String itemId, int expectedLifetimeTicks) {
+        UUID id = spawnMarker(at, itemId, expectedLifetimeTicks);
+        org.bukkit.entity.Entity body = world.getEntity(id);
+        if (body != null) {
+            body.getPersistentDataContainer().set(ctx.keys().orb, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+        }
+        return id;
+    }
+
+    @Override
+    public void traceOrb(UUID ownerId, String event, io.github.butterflysmp.rpg.core.Vec3 at, String cause) {
+        ctx.log().info(orbLine(ownerId, event, at, cause, org.bukkit.Bukkit.getCurrentTick()));
+    }
+
+    /**
+     * {@code ORB rest owner=<uuid> at=<x>,<y>,<z> tick=<n>} or {@code ORB removed owner=<uuid> at=<x>,<y>,<z>
+     * cause=<cause> tick=<n>}, three places (pinned by {@code OrbLineTest}).
+     */
+    public static String orbLine(UUID ownerId, String event, io.github.butterflysmp.rpg.core.Vec3 at, String cause, long tick) {
+        String where = String.format(java.util.Locale.ROOT, "%.3f,%.3f,%.3f", at.x(), at.y(), at.z());
+        return "ORB " + event + " owner=" + ownerId + " at=" + where
+                + (cause == null || cause.isEmpty() ? "" : " cause=" + cause) + " tick=" + tick;
+    }
+
     static String splitLine(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 at, int bursts, long tick) {
         return String.format(java.util.Locale.ROOT, "SPLIT caster=%s source=%s at=%.3f,%.3f,%.3f bursts=%d tick=%d",
                 casterId, source, at.x(), at.y(), at.z(), bursts, tick);

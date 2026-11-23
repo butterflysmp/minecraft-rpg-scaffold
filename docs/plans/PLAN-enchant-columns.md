@@ -453,3 +453,64 @@ pool is `[lapis_crystal]`. **Mutations, each `marker present: 1  original gone: 
 byte-identical, each red:** MUTGRANTWEAPON (the weapon-id check: the other-weapon row), MUTOWNFIRST (own binding first: 2
 rows), MUTGRANTQUIVER, MUTGRANTBOUND (each its refusal row), MUTGRANTLORE (the tooltip row). **UNMUTATED:**
 `WeaponFire`'s use of the resolver (server-side; the gate's throw row is its witness).
+
+## 10. PR D2 — THE ORB (`feat/lapis-crystal-orb`, on D1)
+
+**The cast:** `CastSpec.Orb(range, flightTicks, lifeTicks, radius, item)`, YAML `type: orb`, every key required
+(`AbilitySchema`). A new member of the sealed cast type, so every exhaustive switch answers for it: `CastExecutor`'s
+dispatch (`throwOrb`) and its volley refusal, `AbilitySchema`'s inner-cast refusal ("one orb per caster"),
+`WeaponLoreLines.deliveredShots` (1), `CastSpec.minimumCooldownTicks` (0: a second throw REPLACES), and
+`ContentValidator`'s visual walk (it names no visual).
+
+**The throw (`CastExecutor.throwOrb`):** the rest point is `range` along the aim, or 0.5 short of the first solid block
+(`OrbPath.restPoint`, over `sweepRay`'s `blockAt`, READ: bodies do not stop it). A standing orb of his is removed first
+(`ORB removed … cause=replaced`). The body spawns at his eye and is driven a step a tick to the rest point over
+`flight_ticks`, as a projectile's marker is; on arrival it RESTS (`ORB rest owner=… at=… tick=…`) and `life_ticks` start;
+at their end it is removed (`cause=expired`) unless a newer throw or a removal took it first (the generation, `Orbs`).
+The orb remembers the GRANT that threw it (weapon, enchant, level), for D3.
+
+**THE STATE: `core Orbs`, one per server** (on `AdapterContext`; the fake world holds its own), one orb per player,
+synchronized.
+
+**B6, EVERY REMOVAL, EACH NAMED:**
+
+| cause | where | witness |
+|---|---|---|
+| expiry, 300 ticks from arrival | `CastExecutor.throwOrb` | `OrbThrowTest` |
+| a new throw | `CastExecutor.throwOrb` | `OrbThrowTest` |
+| his quit | `RpgListeners.onQuit` -> `OrbRemovals.remove(…, "quit")` | `OrbRemovalWiringTest` (source) |
+| his death | `RpgListeners.onOrbOwnerDeath` | the same |
+| a world change | `RpgListeners.onOrbOwnerChangedWorld` | the same |
+| server stop | `RpgPlugin.onDisable`, right after the selftest's restore, before the worlds save | the same |
+| never saved with the world | the body is a marker: `setPersistent(false)` (READ, `configureMarker`), so a save writes it nowhere | READ |
+| the sweep | a body tagged `Keys.orb` that no live orb owns is removed where it appears (`onOrbBodyAppear`) and in the enable-time walk of every entity, with `ORB removed … cause=orphan` | `OrbRemovalWiringTest` (source) |
+
+**The look** is an ITEM MARKER (a heart of the sea), not a display entity as the brief's placeholder said: the marker
+already carries every B6 property above (never saved, never picked up by a player, a mob or a hopper, gravity off,
+vanilla's despawn armed as a backstop) and needs no new entity path. SEAT PLACEHOLDER, OPEN FOR BEN.
+
+**The trace lines** (`PaperCombatWorld.orbLine`, pinned by `OrbLineTest`), logged ALWAYS, not only under mobtrace (one
+per throw and per removal; the boot's after-stop check reads `cause=stop`): `ORB rest owner=<uuid> at=<x>,<y>,<z>
+tick=<n>` and `ORB removed owner=<uuid> at=<x>,<y>,<z> cause=<cause> tick=<n>`.
+
+**The YAML as committed (D2: the cast only changed), comments stripped:**
+
+```yaml
+    cast:
+      type: orb
+      range: 12
+      flight_ticks: 10
+      life_ticks: 300
+      radius: 0.6
+      item: heart_of_the_sea
+```
+
+**Tests:** `core/.../OrbThrowTest` (5: rests 12 out at tick 10 and is gone 300 after arriving; a wall 8 out rests it at
+7.5; a new throw replaces the old and the old's expiry does nothing; an orb no grant threw remembers no weapon; the
+registry owns only live bodies); `paper/.../OrbRemovalWiringTest` (2), `paper/.../adapter/OrbLineTest` (2),
+`LapisCrystalContentTest` (the cast pinned). **Mutations, each red, each restored and `cmp` byte-identical:** MUTORBLIFE
+(life counted from the throw: 2 rows), MUTORBREPLACE (the old body kept), MUTORBWALL (the wall ignored), MUTORBGEN
+(`removeIf` ignores the generation; its check also stands in `arrive`, so this one was applied to the SECOND occurrence
+by an occurrence counter, marker 1, the other occurrence left, line delta 0), MUTORBDEATH (the death removal unwired).
+**UNMUTATED, said so:** the body's per-tick drive (visual only; the logged rest point is core's), and paper's entity
+removal inside `OrbRemovals` (server-side; the gate reads its lines).

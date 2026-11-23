@@ -344,6 +344,7 @@ public final class WeaponLoreLines {
             // One payload per body it reaches, like a burst: the tooltip's "x N" counts deliveries from one press, and a
             // cone delivers its on_hit once to each body, never N times to one.
             case CastSpec.Cone ignored -> 1;
+            case CastSpec.Orb ignored -> 1;
         };
     }
 

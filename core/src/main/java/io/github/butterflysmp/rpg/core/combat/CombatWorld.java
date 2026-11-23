@@ -189,6 +189,23 @@ public interface CombatWorld {
      */
     void traceSplit(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 at, int bursts);
 
+    /** The server's one {@link Orbs} (Lapis Crystal's D2, 2026-11-23): every standing orb, one per player. */
+    Orbs orbs();
+
+    /**
+     * An orb's body: a marker exactly as {@link #spawnMarker} spawns one (never saved, never picked up, gravity off, an
+     * armed despawn after {@code expectedLifetimeTicks}), TAGGED as an orb, so a body no live orb owns is swept where it
+     * appears. Returns its id.
+     */
+    UUID spawnOrbMarker(io.github.butterflysmp.rpg.core.Vec3 at, String itemId, int expectedLifetimeTicks);
+
+    /**
+     * {@code ORB} trace lines (D2): {@code event} is {@code rest} (it came to rest at {@code at}) or {@code removed} (with
+     * {@code cause}: expired, replaced, quit, death, world_change, stop, orphan). Logged always, not only under mobtrace:
+     * one line per throw and per removal, and the boot's after-stop check reads them.
+     */
+    void traceOrb(UUID ownerId, String event, io.github.butterflysmp.rpg.core.Vec3 at, String cause);
+
     /**
      * A dev trace: {@code EffectApplier} reports every direct ability or weapon hit it lands on a
      * non-player target, and the adapter logs it as {@code PLAYERHIT} while {@code /rpg mobtrace} is on.

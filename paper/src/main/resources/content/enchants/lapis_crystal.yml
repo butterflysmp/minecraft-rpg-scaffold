@@ -28,10 +28,14 @@ grant_trigger:
     cost:
       resource: mana
       amount: 30                           # BEN: "Costs 30 mana"
-    # D1'S STUB: a body-less projectile that ends at 12 blocks (speed 1.2 x lifetime 10) and lands nothing. D2 replaces
-    # it with the orb's own cast.
+    # D2: THE ORB (CastSpec.Orb, CastExecutor.throwOrb). Thrown along his aim to 12 blocks, stopping 0.5 short of the
+    # first solid block (a mob does not stop it); it flies 10 ticks, then rests 300 ticks counted from its arrival; one
+    # per player, a new throw removing the old. Its body is an item marker (never saved, never picked up); removed on
+    # expiry, his quit, his death, a world change and server stop, and swept where it appears if no live orb owns it.
     cast:
-      type: projectile
-      speed: 1.2
-      gravity: 0
-      max_lifetime_ticks: 10
+      type: orb
+      range: 12                            # BEN: "throws an orb out about 12 blocks"
+      flight_ticks: 10                     # SEAT PLACEHOLDER 2026-11-23: "about 10 ticks"
+      life_ticks: 300                      # BEN: "it floats there for 15s", counted from arrival (SEAT PLACEHOLDER: from arrival)
+      radius: 0.6                          # SEAT PLACEHOLDER 2026-11-23: how close a beam must pass to meet it (D3)
+      item: heart_of_the_sea               # SEAT PLACEHOLDER 2026-11-23: its look
