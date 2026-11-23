@@ -462,3 +462,39 @@ server; they read no row of this gate.
 
 **Every row of this gate:** RW0-RW5, BR6R2, BR7R2, LL9R2, RW9, and its setup's SELF lines. The next boot runs
 `/rpg selftest breacher-rework` on the same jar.
+
+## READINGS, 2026-11-22, THE SECOND BOOT (`52579e8a`, THE STACK OF NINE): EVERY ROW READ, EVERY ROW AS PREDICTED
+
+Boot approved by the seat's message of 2026-11-22 (the stack of nine) on Ben's own "ready", by `.claude/rules/booting.md`.
+**This gate's R0 was carried into `GATE-vanilla-bows.md`'s R0 (R0a, R0bR2, R0c, R0dR2, R0e), read there, all as
+predicted**; its own R0a-R0e above name the older build and were not read. Read from `run/logs/latest.log` of this boot.
+No prediction above was edited. Recorded on `feat/vanilla-bows-content` (the stack top that was booted), not on this
+gate's own branch, so no approved head below it moved.
+
+- **Carried state and his login:** `Done` 20:59:15; R0 read by 20:59:44; **his login 21:00:01, after R0.** His commands
+  for this run were exactly the sheet's: `/gamemode survival` (21:00:08), `/rpg selftest breacher-rework` (21:00:16),
+  `SELFTEST RUN START breacher-rework rows=10 selftest=52579e8a`. The run FINISHED at 21:01:19.
+- **The stats bar:** `REPLY actionbar "❤ …"` lines throughout, as the added section predicts; set aside, not counted.
+
+| row | READING |
+|---|---|
+| setup | **AS PREDICTED.** 27 kill lines; `SELF customHP=130.000/350.000`; `REPLY "Set 1 level(s) for BaronVonYeetus (now level 1, 0/1000 into it, 0 lifetime)." [green]`; `SELF customHP=100.000/100.000` (m0 - m1 = 250.000; c1 = min(130, 100) = 100) |
+| RW0 | **RECORDED:** `LEFTOVER living=0 radius=16`; `BLOCKS AIR count=240 box=1 0 -4 15 1 3`, `BLOCKS AIR count=0 box=1 -1 -4 15 -1 3`, `BLOCKS WATER count=6 box=1 -1 -4 15 -1 3` |
+| RW1 | **AS PREDICTED:** the HELD line word for word the prediction (`"Quiver: 2/2"`, `"Kinetic Damage: 40 x 4"`, `"Cooldown: 1.0s"`) |
+| RW2 | **AS PREDICTED:** `rpg enchant show` every slot `-1` (`raw: v1;deft_hands=0:-1;unbreaking=0:-1;expanded_quiver=0:-1`); `MOBSEED … max=100`; probe `100.000/100.000`; **four `PLAYERHIT … element=kinetic sent=40.000 crit=false triggerScore=100`**; probe `customHP=0.000/100.000 … dead=true`; `MOBREMOVE` after |
+| RW3 | **AS PREDICTED, THE CRIT READING:** `MOBSEED … max=200`; probe `200.000/200.000`; **four `PLAYERHIT … sent=80.000 crit=true`** (the spread crit as a unit); probe `0.000/200.000 dead=true` (320 > 200) |
+| RW4 | **AS PREDICTED (POINT UP):** `MOBSEED … max=200`; **exactly ONE `PLAYERHIT … sent=40.000`**; probe `160.000/200.000` at d=9.000 |
+| RW5 | **AS PREDICTED:** press 1, **four `PLAYERHIT … sent=40.000` on `n`**, probe `n` `40.000/200.000` (d=4.000); press 2, **exactly ONE `PLAYERHIT … sent=40.000` on `f`**, probe `f` `160.000/200.000` (d=10.000) |
+| BR6R2 | **AS PREDICTED:** three presses; no PLAYERHIT; **`REPLY actionbar "Your quiver is empty -- left-click to reload." [gray]` exactly once in the row**; the dump `"Quiver: 0/2"` |
+| BR7R2 | **AS PREDICTED:** two presses; `ITEMS material=arrow count=16 gear=0 slots=[2:16]`, `ITEMS material=cobblestone count=0 gear=0 slots=[]`; `DRIVE reload held=breacher`; **`REPLY actionbar "You have no cobblestone -- Cobblestone loads this weapon." [gray]` exactly once**; **no `RELOAD` line in the row**; then the same two ITEMS lines; the dump `"Quiver: 0/2"` |
+| LL9R2 | **AS PREDICTED, AND IT READS THE FIX:** S `100.000/100.000`; two `PLAYERHIT … living_lantern/right_click … element=fire sent=14.000 crit=false`, on W (`max=10`) and S (`max=100`); W `MOBREMOVE`; **S at P+40 `75.000/100.000`** (100 - 14 - 5 - 6: the burst reached S, so the row is READ for the fix); **S at P+80 `65.000/100.000`**; **three `DOTTICK … status=scorch … sent=5.000 cap=7.000`** (ticks 1761, 1781, 1801), none at cap 3 |
+| RW9 | **AS PREDICTED:** `Given Breacher`; `Gave 64 [Cobblestone]`; six `MOBSEED … max=100`; the TELL; his 30 seconds: 17 PLAYERHITs (counted), 12 `sent=40.000 crit=false` and 5 `sent=80.000 crit=true`, none other, and four `RELOAD … weapon=breacher authored=60 resolved=60` (his, recorded); then **`ASK 1 question="Is the Breacher's blast what you wanted now?" answer="yes"`** |
+| the END | `SELFTEST RUN FINISHED`; `SELFTEST RUN RESTORED … gamemode=SURVIVAL … time=1000 …`; **`SELFTEST RUN HEALTH saved=130.000 customHP=130.000/350.000 wrote=130.000`** |
+
+**Ben's answer, verbatim:** "yes".
+
+**Also recorded:** no `NEXUSHEAL`, `NEXUSRESTORE` or `ARRIVAL` line in this run; no `ARRIVAL` line at his join.
+
+**UNREAD:** only what *WHAT THIS GATE DOES NOT READ* lists (the client's view of the triangle, the 6.60 to 6.91 band,
+a pitch other than 0, knockback, durability, creative, the off-hand guard). The crit arm WAS read (RW3, and his own
+RW9 presses).
