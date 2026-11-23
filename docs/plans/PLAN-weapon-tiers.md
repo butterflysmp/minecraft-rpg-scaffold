@@ -336,6 +336,36 @@ height): all four out to 6.60 blocks (160), three to 6.91 (120), the centre pell
 12-block reach. The seat's "about 6 blocks, then the centre pellet only" is corrected to that. "2. I dropped it" closes
 `GATE-breacher.md`'s BR10 question.
 
+### 1.12 Ben, 2026-11-22, VERBATIM: the vanilla Bow and Crossbow (the Ranger's WOOD/STONE tier), and the quiver in the Nexus slot
+
+Relayed by the seat's brief of 2026-11-22 ("THE QUIVER IN THE NEXUS SLOT, THE VANILLA BOW AND THE VANILLA CROSSBOW") and
+its rulings on two STOPs that day; recorded here on `feat/vanilla-bows-content`. The later overrule the earlier.
+
+> "The vanilla bow and cross bow are the wood/stone tier weapons"
+> "3. Bow at 14 and crossbow at 37" / "4. Both common and kinetic" / "5. Vanilla crafting recipe and vanilla mob
+> drops convert" / "6. Leave short bow alone for now" / "2. The vanilla reload time" (the crossbow) / "1. Fine" (a 1
+> second full draw; a partial draw doing proportionally less)
+> "I'm concerned we're owning too much of the action of the Bow and crossbow. I want it to be as Vanilla as possible"
+> "I want to own the Quiver for the bow but not the crossbow."
+
+His idea, and his answers to the seat's three questions on it:
+
+> "on hypixel's skyblock they use a similar system, they also have a hub menu item. Any time a bow is in the players
+> hand, the menu item (our nexus menu) turns into arrows of a stack size equal to the remaining Quiver shots. Would that
+> work?"
+> "1. Any weapon with a Quiver" / "2. Yes, all that changes is the item material" / "3. Fall back and add a warning
+> message that shows only to the player. Only show the message when the player have a quiver-based weapon in their
+> inventory and their nexus menu is off. This will let players that don't use Ranger Weapons to turn it off while
+> still maintaining the usage of the Nexus menu for Ranger players"
+
+And on the seat's ruling I (the vanilla-shot weapons wear by our rule):
+
+> "I'd rather have our unbreaking work on the two"
+
+**THE TIER PLACEMENT.** The Bow and the Crossbow are the Ranger's wood/stone tier (Ben's first line). The Boltor and the
+Breacher stand above them (1.10). `short_bow` is left alone (his answer 6). Section 6 carries the mechanism, the reads it
+rests on and every ruling of that day.
+
 ---
 
 ## 2. WHAT EXISTS TODAY
@@ -1016,3 +1046,103 @@ triggers:
 - convert-on-arrival vs per-source (4.2 step 5);
 - whether a contested `craft_result` should fail closed;
 - the CLAUDE.md / standing-decisions update adding emberblade to the deletion set (1.1).
+
+---
+
+## 6. THE VANILLA BOW AND CROSSBOW: THE NINE READS OF 2026-11-22, THE RULINGS, AND WHAT IS OPEN
+
+Ben's words are 1.12. This section is the seat's ruling 14 ("commit your nine READ answers of today as a marked section
+of PLAN-weapon-tiers.md"), plus the rulings that built the stack (#239 to the content PR, on #238). Every server fact is
+marked READ (javap on `run/versions/26.1.2/paper-26.1.2.jar`, or our source), INFERRED, or UNVERIFIED.
+
+### 6.1 THE NINE READS (the first STOP report of 2026-11-22, as reported; kept verbatim in substance)
+
+1. **A plain vanilla arrow from a player on one of our mobs (READ):** `RpgListeners.onEnvironmentalDamage` (HIGH)
+   handles it; `PROJECTILE` maps to `VanillaDamagePolicy` REROUTE: vanilla's arrow damage scaled by the mob's custom max
+   over its vanilla max (`DamageScale.toCustom`), into custom health, credited to the shooter, no PLAYERHIT line.
+   Vanilla's arrow numbers themselves UNVERIFIED. (A STAMPED shot now bypasses this; an unstamped arrow keeps it.)
+2. **The sword pattern (READ):** `onPlayerMeleeAttack` takes `ENTITY_ATTACK` from a player, sets token damage (vanilla's
+   flash and i-frames), then `WeaponFire.landVanillaMelee` runs our sum and its PLAYERHIT.
+3. **The shot event (READ):** `EntityShootBowEvent` carries `getBow`, `getForce`, `getProjectile`, `getConsumable` and
+   `getHand`, for bow and crossbow, from `ProjectileWeaponItem.shoot`. `setConsumeItem` has no effect on a bow: the only
+   reader of `shouldConsumeItem` is `CrossbowItem` (all 10,178 classes searched, with a control). An arrow entity is a
+   `PersistentDataHolder`, so values stamped at the shot reach the hit.
+4. **Vanilla's crossbow charge (READ):** `getChargeDuration` = floor(1.25 x 20) = **25 ticks**, Quick Charge shortens
+   it. That is Ben's "vanilla reload time".
+5. **The Plume (READ):** a vanilla draw is its input; `PlayerStopUsingItemEvent` clears his active item, so
+   `releaseUsing` never runs `draw()` and vanilla never shoots; we fire our own projectile.
+6. **The gates the two had to pass (READ):** the main-hand right-click cancels only a weapon that binds `right_click`
+   (`WeaponFire.attempt` returns empty for an unbound input); `onWeaponCrossbowLoad` cancelled every minted crossbow's
+   load; `PlumeDraw.drawWeapon` took any minted `bow` binding no `right_click`, so it would have captured the Bow.
+7. **Vanilla enchantments (READ, `ArrivalConverter`):** a converted item is a fresh mint with our roll; its vanilla
+   enchantments are dropped and counted in the ARRIVAL line. Later, the enchanting table and the three anvils open our
+   menus, so no vanilla enchantment reaches a minted item (that last part INFERRED: villagers and loot not traced).
+8. **A mob's bow (READ):** `onMobProjectileLaunch` handles skeleton and illusioner shooters and `stampProjectile` for
+   hostile ones; a mob's hit on a player is priced by the mob path. A player-shot stamp does not touch it.
+9. **A loaded quiver with no arrow in his inventory (READ):** `BowItem.use` FAILS when `Player.getProjectile` finds
+   nothing outside creative, so no draw starts. The mirror (6.3) is what lets him draw with no arrow of his own.
+
+**Read after the nine, the same day (READ unless marked):** `BowItem.releaseUsing` calls `useAmmo` BEFORE `shoot`, so
+vanilla has taken the projectile when the event fires, and no flag gives it back. `Player.getProjectile` looks in the
+OFF HAND, then the MAIN HAND, then inventory slots 0 upward. A bow's `getForce()` is its draw power, 0.1 to 1
+(`getPowerForTime`; under 0.1 nothing shoots); a crossbow's is the constant 1 (`performShooting`). `getBow()` and
+`getConsumable()` are `asCraftMirror`s of vanilla's stacks. `shoot` calls `hurtAndBreak` on its own bow reference AFTER
+the event, and that durability path fires a cancellable `PlayerItemDamageEvent`. `CraftMetaItem.setMaxStackSize` is
+`requireRange(1, 99)`.
+
+### 6.2 THE MECHANISM (as built; the seat diffs the stack)
+
+- **The `shot` trigger, `cast: type: vanilla`** (ruling J, accepted): the hit lives in content; no input names `shot`;
+  the loader refuses every misuse by name.
+- **The shot** (`VanillaShots`, core's `VanillaShot`): off hand cancelled and given back (ruling C); the Crossbow left
+  to vanilla; an empty quiver cancelled, given back, the empty notice; a quiver with rounds spends one, gives back a
+  plain arrow of his own, never a tipped or spectral one (SEAT PLACEHOLDER), and its arrow cannot be picked up (ruling
+  B, SEAT PLACEHOLDER OPEN FOR BEN). Every shot that leaves is stamped (`ShotStamp`).
+- **The hit:** a stamped arrow on a mob lands the weapon's `shot` on_hit through the same sum and PLAYERHIT line, the
+  force as the charge term: **"14 x force" is SEAT PLACEHOLDER**; the Crossbow's force is always 1, so its 37 is flat.
+- **WEAR, BEN'S (ruling I): "I'd rather have our unbreaking work on the two".** Vanilla's wear on a weapon vanilla shoots
+  is cancelled; each shot that leaves costs one use by our rule, so our Unbreaking is consulted; a broken one refuses
+  to shoot (what vanilla took is given back) and is never destroyed. Marked BEN, not SEAT PLACEHOLDER.
+- **The exemptions (ruling 11, J):** the crossbow-load cancel skips a weapon that binds `shot` (narrower than the
+  seat's wording, so the Dragon's Plume matches the base); the Plume's gate keys on its own `draw` trigger.
+
+### 6.3 THE QUIVER IN THE NEXUS SLOT
+
+While his main hand holds a minted quiver weapon and the star is on, the Nexus item shows as arrows equal to the rounds
+loaded (at most 99, READ); otherwise the star. The weapon's count is the truth; the slot is redrawn from it. With the
+star off, a chat warning (wording and timing SEAT PLACEHOLDERS, OPEN FOR BEN). No mirror arrow is ever an ingredient,
+ammunition for a reload, or a retrievable arrow (rulings A and B). The Breacher's mirror shows arrows too (ruling 4,
+SEAT PLACEHOLDER). The Dragon's Plume now draws on the mirror with no arrow of his own (ruling D, accepted).
+
+### 6.4 RULING H: AN ENCHANT ROLLS ONLY ON A WEAPON THAT HAS ITS QUANTITY
+
+`deft_hands.yml` declares `requires: reload` and `expanded_quiver.yml` `requires: quiver`; `EnchantRoll`'s pool applies
+the requirement after the class filter. No exemption list. **The only shipped pool it changes is the Crossbow's**,
+which loses both and rolls from power and unbreaking.
+
+**CARRIED, NOT FIXED: our Unbreaking on a weapon with no durability (the staves) is the same defect**, and fixing it
+changes shipped pools. **Ruling H's mechanism is where it goes** (a `requires: durability`), when it is ruled.
+
+### 6.5 THE ENCHANTMENT TABLE, OPEN FOR BEN (NAME THE QUANTITY, both halves)
+
+| enchant | quantity it moves | Bow | Crossbow |
+|---|---|---|---|
+| power [5, 10, 15]% | the shot's damage (enchant term of the sum, stamped at the shot) | has it | has it |
+| deft_hands [10, 20, 30]% | reload_ticks | has it (60: 54 / 48 / 42) | cannot roll (none) |
+| expanded_quiver +[1, 2, 3] | quiver_size | has it (8: 9 / 10 / 11) | cannot roll (none) |
+| unbreaking | durability, by our rule (ruling I) | has it | has it |
+
+Vanilla's Power, Punch, Flame, Infinity, Multishot, Piercing and Quick Charge are dropped at conversion and counted.
+
+### 6.6 OPEN, FOR BEN
+
+1. **Knockback (ruling K):** neither weapon authors knockback of ours; whatever vanilla's arrow does rides the token
+   hit, on Ben's "as Vanilla as possible". This stands beside his ruling of 2026-09-13 that a travelling ranged weapon
+   authors knockback. What vanilla's knockback does on the token hit is UNVERIFIED (the boot reads it).
+2. "14 x force" (linear in the draw), and the Bow's reload_ticks 60 (short_bow's).
+3. A quiver-paid arrow that cannot be picked up (ruling B), and a tipped or spectral arrow not given back.
+4. The warning's wording and timing; the Breacher's mirror showing arrows.
+5. The enchantment table above.
+
+**A known leftover (ruling L):** a crash followed by removing the plugin before he rejoins leaves mirror arrows in a
+saved inventory; at the next join with the plugin, `converge` finds them by their tag and the redraw corrects them.

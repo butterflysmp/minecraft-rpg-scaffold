@@ -22,6 +22,13 @@
    "of being a person holding a crossbow." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Ranged Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- bow
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["14" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Ranged Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- breacher
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "Quiver: --/2" color=#AAAAAA O=. B=. S=. U=. I=F
@@ -43,6 +50,12 @@
    "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- crossbow
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["37" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Ranged Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- crystal_shard_staff
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -617,4 +630,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 101 renderings ===
+=== 103 renderings ===

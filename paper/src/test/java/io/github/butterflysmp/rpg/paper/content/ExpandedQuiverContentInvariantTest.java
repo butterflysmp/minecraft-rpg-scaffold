@@ -100,8 +100,11 @@ class ExpandedQuiverContentInvariantTest {
      * <p><b>8 -> 6 on 2026-11-21: {@code hunters_bow} and {@code quiver_stone} deleted</b> with the other dev weapons.
      * Recounted: {@code grep -lE '^class:\s*ranger\s*$' paper/src/main/resources/content/weapons/*.yml} lists boltor,
      * dragons_breath, dragons_plume, locust, short_bow and withered_shortbow.
+     *
+     * <p><b>6 -&gt; 8 on 2026-11-22: bow and crossbow added</b> (the same grep). It does not see breacher, whose class
+     * line carries a trailing "# BEN" comment: a pre-existing blind spot of this row; the pool rows load real definitions.
      */
-    private static final int KNOWN_RANGER_WEAPONS = 6;
+    private static final int KNOWN_RANGER_WEAPONS = 8;
 
     // THE ONE EXEMPTION WENT WITH ITS WEAPON, 2026-11-21. EXEMPT_DEV_WEAPONS held only hunters_bow (class: ranger, no
     // quiver_size), exempt because it was scheduled for deletion (ruled 2026-09-12). It was deleted that day, so every

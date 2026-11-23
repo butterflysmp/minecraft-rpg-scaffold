@@ -81,7 +81,7 @@ public final class EnchantRollItems {
         if (EnchantItems.isRolled(item, adapters.keys())) return;
 
         EnchantState rolled = EnchantRoll.roll(has(definition), gearClass, roster(adapters),
-                () -> ThreadLocalRandom.current().nextDouble());
+                () -> ThreadLocalRandom.current().nextDouble());   // its pool is poolFor's, below
 
         // *** WRITE AND RE-RENDER IN ONE editMeta, for the reason GearScoreItems.stampOnAcquire
         // states at length: a per-item value that is RENDERED has to be re-rendered wherever it is
@@ -117,6 +117,18 @@ public final class EnchantRollItems {
      */
     private static List<Rollable> roster(AdapterContext adapters) {
         return roster(adapters.enchants().all());
+    }
+
+    /**
+     * THE IDS THIS GEAR'S ROLL DRAWS FROM, in roster order: EnchantRoll's pool with this gear's quantities, exactly as
+     * {@link #rollOnAcquire} builds it (an accessory's is empty). Read by {@code /rpg enchant pool}, so a gate reads the
+     * pool the roll uses rather than one random roll of it.
+     */
+    public static List<String> poolFor(GearDefinition definition, AdapterContext adapters) {
+        GearClass gearClass = GearItems.gearClassOf(definition);
+        if (gearClass == null) return List.of();
+        return EnchantRoll.poolFor(has(definition), gearClass, roster(adapters)).stream()
+                .map(Rollable::enchantId).toList();
     }
 
     /** The roll's roster: each enchant's id, class and quantity requirement (ruling H). Tests build it here too. */

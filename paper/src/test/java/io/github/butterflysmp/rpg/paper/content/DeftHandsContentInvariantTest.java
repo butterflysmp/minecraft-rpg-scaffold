@@ -42,8 +42,15 @@ class DeftHandsContentInvariantTest {
      * The ranger weapons: boltor, dragons_breath, dragons_plume, locust, short_bow, withered_shortbow. 8 -> 6 on
      * 2026-11-21, when hunters_bow and quiver_stone were deleted (recounted: grep -lE '^class:\s*ranger\s*$'
      * paper/src/main/resources/content/weapons/*.yml).
+     *
+     * <p><b>6 -&gt; 8 on 2026-11-22: bow and crossbow added</b> (recounted with the same grep). THE PATTERN DOES NOT SEE
+     * breacher, whose class and reload_ticks lines carry a trailing "# BEN" comment: a pre-existing blind spot of this
+     * row (it read 6 without breacher on the base too). The pool rows below load real definitions and include it.
      */
-    private static final int KNOWN_RANGER_WEAPONS = 6;
+    private static final int KNOWN_RANGER_WEAPONS = 8;
+
+    /** The weapons the reload pattern matches: the ranger weapons above but the Crossbow, which has no reload. */
+    private static final int KNOWN_RELOADING_WEAPONS = 7;
 
     /** {@code class: ranger} at column 0 -- the weapon's OWN class, never a nested one. */
     private static final Pattern RANGER_CLASS = Pattern.compile("(?m)^class:\\s*ranger\\s*$");
@@ -95,7 +102,7 @@ class DeftHandsContentInvariantTest {
             if (RELOAD_TICKS.matcher(body).find()) reloading.add(idOf(p));
         }
         assertEquals(KNOWN_RANGER_WEAPONS, ranger.size(), "ranger weapons found: " + ranger);
-        assertEquals(KNOWN_RANGER_WEAPONS, reloading.size(),
+        assertEquals(KNOWN_RELOADING_WEAPONS, reloading.size(),
                 "weapons the reload pattern matched: " + reloading + " -- if it matches none, the gate below "
                         + "is measuring nothing");
         assertTrue(reloading.contains("boltor"), "the control: the Boltor authors reload_ticks 60");
