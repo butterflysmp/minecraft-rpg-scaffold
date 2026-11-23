@@ -602,7 +602,7 @@ public final class CastExecutor {
         io.github.butterflysmp.rpg.core.combat.Orbs orbs = world.orbs();
         UUID marker = world.spawnOrbMarker(aim.origin(), orb.item(), orb.flightTicks() + orb.lifeTicks());
         io.github.butterflysmp.rpg.core.combat.Orbs.PlaceResult placed = orbs.place(caster.id(), marker, rest,
-                orb.radius(), orb.lifeTicks(), weaponId, enchantId, level);
+                orb.radius(), orb.lifeTicks(), weaponId, enchantId, level, shotOf(orb));
         placed.replaced().ifPresent(old -> {
             world.removeMarker(old.markerId());
             world.traceOrb(caster.id(), "removed", old.restPoint(), "replaced");
@@ -624,6 +624,63 @@ public final class CastExecutor {
                 }));
             });
         });
+    }
+
+    /** The orb cast's shot, in {@code Orbs}' own terms; null for an orb with none. */
+    private static io.github.butterflysmp.rpg.core.combat.Orbs.Shot shotOf(CastSpec.Orb orb) {
+        CastSpec.OrbShot s = orb.shot();
+        return s == null ? null
+                : new io.github.butterflysmp.rpg.core.combat.Orbs.Shot(s.radius(), s.percentByLevel(), s.element(), s.visual());
+    }
+
+    /**
+     * WHICH ORB THIS BEAM MAY MEET (D3; Ben: "Shooting this crystal with the Right Click ability"): HIS OWN orb only (the
+     * orb is looked up by the beam's caster), RESTING, with a shot, and only when the beam is a trigger of the weapon that
+     * GRANTED the orb (the ability's id is {@code <that weapon>/<input>}: the Lapis Staff's beam is
+     * {@code lapis_staff/right_click}). No weapon or enchant id is written here; the orb remembers its grant.
+     */
+    private Optional<io.github.butterflysmp.rpg.core.combat.Orbs.Orb> meetsOrb(AbilityDefinition ability, Caster caster) {
+        return world.orbs().of(caster.id())
+                .filter(io.github.butterflysmp.rpg.core.combat.Orbs.Orb::resting)
+                .filter(o -> o.shot() != null && o.weaponId() != null)
+                .filter(o -> ability.id().startsWith(o.weaponId() + "/"));
+    }
+
+    /**
+     * THE CRYSTAL'S SHOTS (D3; Ben: "the crystal to shoot all enemies within a 8 block range for 20/30/40% of the damage
+     * of the right click"; "The orb stays for the entire duration": it is not used up). Every living MOB whose feet are
+     * within the shot's radius of the orb's centre (a true sphere, as the shockwave's) and to whose sight point the orb has
+     * a clear line, each struck once for {@code beam's authored damage x percent / 100}: the beam's FIRST Damage effect,
+     * read from the beam's own ability NOW (never copied into the enchant). SECONDARY damage (B4): its own source
+     * {@code <enchant>/crystal}, never a hit (so Kinetic Tremors never counts it), no behaviour, never himself, never a
+     * player. It carries every term of the BEAM that set it off, exactly as a shockwave carries its hit's (ruling 2): the
+     * beam's gear score, damage enchant, class and level bonus, charge and crit.
+     */
+    private void orbShots(AbilityDefinition beam, Caster caster, io.github.butterflysmp.rpg.core.combat.Orbs.Orb orb) {
+        Optional<Double> beamAmount = beam.onHit().stream()
+                .filter(e -> e instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage)
+                .map(e -> ((io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage) e).amount())
+                .findFirst();
+        io.github.butterflysmp.rpg.core.combat.Orbs.Shot shot = orb.shot();
+        if (beamAmount.isEmpty()) return;
+        double percent = shot.percentByLevel().get(Math.max(1, Math.min(orb.level(), shot.percentByLevel().size())) - 1);
+        double amount = beamAmount.get() * percent / 100.0;
+        Vec3 centre = orb.restPoint();
+        List<Combatant> struck = new java.util.ArrayList<>();
+        for (Combatant c : world.combatantsNear(centre, shot.radius())) {
+            if (c.id().equals(caster.id())) continue;                     // never himself
+            if (c.state().player()) continue;                             // never a player
+            if (!c.state().alive()) continue;
+            if (c.state().position().distanceSquared(centre) > shot.radius() * shot.radius()) continue;   // the sphere
+            if (!world.lineOfSightClear(centre, c.state().sightPoint())) continue;                        // a clear line
+            struck.add(c);
+        }
+        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> specs = new java.util.ArrayList<>();
+        if (shot.visual() != null) specs.add(new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Visual(shot.visual()));
+        specs.add(new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(amount, shot.element()));
+        // A plain applier, as the shockwave's: secondary damage reports to no direct-damage listener (the melee sweep's).
+        new io.github.butterflysmp.rpg.core.ability.effect.EffectApplier(world)
+                .applyToSet(specs, caster.asSecondary(orb.enchantId() + "/crystal"), struck, centre, Vec3.ZERO);
     }
 
     /**
@@ -781,6 +838,11 @@ public final class CastExecutor {
         Vec3 to = endpoints.get(index);
 
         Optional<RayHit> hit = world.castRay(from, to, caster.id());
+        // LAPIS CRYSTAL'S SEAM (D3, 2026-11-23): his own staff's beam that passes his resting orb BEFORE it reaches what it
+        // struck stops AT the orb, and the orb fires (orbShots) instead of the beam detonating. See meetsOrb.
+        Optional<io.github.butterflysmp.rpg.core.combat.Orbs.Orb> orb = meetsOrb(ability, caster);
+        Optional<Vec3> atOrb = orb.flatMap(o -> io.github.butterflysmp.rpg.core.combat.OrbIntercept.along(from,
+                hit.map(RayHit::point).orElse(to), o.restPoint(), o.radius()));
 
         // THE BEAM IS DRAWN AS THE RAY WALKS -- one segment per tick, not hitscan and not deferred
         // to the impact point. The operator's reasoning, recorded here because someone will
@@ -825,7 +887,7 @@ public final class CastExecutor {
         // Both fail BY WHERE THE CASTER HAPPENS TO STAND, and a boot gate is one observation from
         // one spot -- a control that succeeds for the wrong reason. Comparing against a fixed world
         // point cannot fail that way: no segment boundary enters the comparison.
-        Vec3 beamEnd = hit.map(RayHit::point).orElse(to);
+        Vec3 beamEnd = atOrb.orElse(hit.map(RayHit::point).orElse(to));
         Vec3 alongSegment = to.subtract(from);
         boolean gapEndsAhead = beamStart.subtract(from).dot(alongSegment) > 0;
         Vec3 drawFrom = gapEndsAhead ? beamStart : from;
@@ -875,6 +937,10 @@ public final class CastExecutor {
             else world.presentAlong(from, from, beam);
         }
 
+        if (atOrb.isPresent()) {
+            orbShots(ability, caster, orb.get());
+            return;
+        }
         if (hit.isPresent()) {
             detonate(ability, caster, hit.get().combatant(), hit.get().point());
             return;

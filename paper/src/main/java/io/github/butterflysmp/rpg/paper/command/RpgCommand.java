@@ -2348,7 +2348,7 @@ public final class RpgCommand {
             player.sendMessage(Component.text("  active: " + active.enchantId() + " "
                     + EnchantLoreLines.romanNumeral(active.level())
                     + EnchantEffectLine.of(adapters.enchants().find(active.enchantId()).orElse(null),
-                            active.level(), gear.gearClass()), NamedTextColor.GRAY));
+                            active.level(), gear.gearClass(), adapters.weapons()::find), NamedTextColor.GRAY));
         }
         player.sendMessage(Component.text("  raw: " + raw, NamedTextColor.DARK_GRAY));
     }

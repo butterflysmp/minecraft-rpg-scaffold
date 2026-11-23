@@ -29,23 +29,30 @@ public final class Orbs {
      * tell his own staff's beam and price the crystal's shots.
      */
     public record Orb(UUID owner, UUID markerId, long generation, Vec3 restPoint, double radius, int lifeTicks,
-                      long arrivedTick, String weaponId, String enchantId, int level) {
+                      long arrivedTick, String weaponId, String enchantId, int level, Shot shot) {
         public boolean resting() {
             return arrivedTick >= 0;
         }
 
         Orb arrived(long tick) {
-            return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, tick, weaponId, enchantId, level);
+            return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, tick, weaponId, enchantId, level, shot);
         }
     }
+
+    /**
+     * D3: what the orb does when his own beam meets it (the orb cast's {@code shot:}), in this package's own terms
+     * ({@code core.combat} imports nothing from {@code core.ability}). Null: it does nothing.
+     */
+    public record Shot(double radius, List<Double> percentByLevel, String element, String visual) {}
 
     private final Map<UUID, Orb> byOwner = new HashMap<>();
     private long nextGeneration = 1;
 
     /** A new orb for {@code owner}, flying; returns the one it REPLACES, if any (one per player). */
     public synchronized PlaceResult place(UUID owner, UUID markerId, Vec3 restPoint, double radius, int lifeTicks,
-                                          String weaponId, String enchantId, int level) {
-        Orb placed = new Orb(owner, markerId, nextGeneration++, restPoint, radius, lifeTicks, -1, weaponId, enchantId, level);
+                                          String weaponId, String enchantId, int level, Shot shot) {
+        Orb placed = new Orb(owner, markerId, nextGeneration++, restPoint, radius, lifeTicks, -1, weaponId, enchantId, level,
+                shot);
         Orb previous = byOwner.put(owner, placed);
         return new PlaceResult(placed, Optional.ofNullable(previous));
     }

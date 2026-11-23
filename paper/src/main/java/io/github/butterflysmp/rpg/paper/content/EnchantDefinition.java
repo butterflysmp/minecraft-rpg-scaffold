@@ -402,8 +402,10 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                     ? a.levels() : -1;
             // A granted trigger has no per-level list of its own: any max_level fits it. It must be WEAPON-SPECIFIC (it is granted
             // to ONE weapon), refused by name below.
-            case GRANT_TRIGGER -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger
-                    ? maxLevel : -1;
+            case GRANT_TRIGGER -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g
+                    ? (g.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Orb o && o.shot() != null
+                            ? o.shot().percentByLevel().size() : maxLevel)   // D3: an orb's shot has one percent per level
+                    : -1;
             case DURABILITY, DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> null;
         };
         if (levels == null) {

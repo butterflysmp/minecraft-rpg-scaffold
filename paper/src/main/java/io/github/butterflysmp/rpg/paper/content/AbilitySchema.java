@@ -36,6 +36,27 @@ final class AbilitySchema {
         return new ResourceCost(s.getString("resource", ResourceCost.DEFAULT_RESOURCE), s.getDouble("amount", 0));
     }
 
+    /**
+     * THE ORB'S SHOT (Lapis Crystal's D3, 2026-11-23): OPTIONAL (absent: an orb that only stands). Present, every key
+     * but {@code visual} is required, and {@code CastSpec.OrbShot} refuses a bad value by name.
+     *
+     * <pre>
+     * shot:
+     *   radius: 8
+     *   percent_by_level: [20, 30, 40]
+     *   element: kinetic
+     *   visual: crystal_shot      # optional
+     * </pre>
+     */
+    static CastSpec.OrbShot parseOrbShot(ConfigurationSection s) {
+        if (s == null) return null;
+        if (!s.isList("percent_by_level")) {
+            throw new IllegalArgumentException("orb shot: is missing the list 'percent_by_level' (one per level)");
+        }
+        return new CastSpec.OrbShot(reqDouble(s, "radius"), s.getDoubleList("percent_by_level"), req(s, "element"),
+                s.getString("visual"));
+    }
+
     static CastSpec parseCast(ConfigurationSection s) {
         if (s == null) return new CastSpec.Self();
         String type = s.getString("type", "self").toLowerCase(Locale.ROOT);
@@ -113,7 +134,7 @@ final class AbilitySchema {
                     reqInt(s, "travel_ticks"), s.getString("front"));
             // THE THROWN ORB (Lapis Crystal's D2, 2026-11-23): every key required, CastSpec.Orb refuses a bad value by name.
             case "orb"        -> new CastSpec.Orb(reqDouble(s, "range"), reqInt(s, "flight_ticks"), reqInt(s, "life_ticks"),
-                    reqDouble(s, "radius"), req(s, "item"));
+                    reqDouble(s, "radius"), req(s, "item"), parseOrbShot(s.getConfigurationSection("shot")));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
         };
     }

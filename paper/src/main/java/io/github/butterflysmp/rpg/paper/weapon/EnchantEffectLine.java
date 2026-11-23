@@ -52,7 +52,13 @@ public final class EnchantEffectLine {
      *                   refusals existed rather than fixing a bug they were hiding.
      */
     public static String of(EnchantDefinition definition, int level, GearClass heldClass) {
-        return " (" + bare(definition, level, heldClass) + ")";
+        return of(definition, level, heldClass, id -> java.util.Optional.empty());
+    }
+
+    /** The same, able to read the WEAPONS (D3: an orb's shot is shown as the number off its weapon's own beam). */
+    public static String of(EnchantDefinition definition, int level, GearClass heldClass,
+            java.util.function.Function<String, java.util.Optional<io.github.butterflysmp.rpg.core.weapon.WeaponDefinition>> weapons) {
+        return " (" + bare(definition, level, heldClass, weapons) + ")";
     }
 
     /**
@@ -70,6 +76,12 @@ public final class EnchantEffectLine {
      * {@code Math.max(1, level)} and says "Click to unlock at I" beneath, so the two agree.
      */
     public static String bare(EnchantDefinition definition, int level, GearClass heldClass) {
+        return bare(definition, level, heldClass, id -> java.util.Optional.empty());
+    }
+
+    /** The same, able to read the WEAPONS (D3). */
+    public static String bare(EnchantDefinition definition, int level, GearClass heldClass,
+            java.util.function.Function<String, java.util.Optional<io.github.butterflysmp.rpg.core.weapon.WeaponDefinition>> weapons) {
         if (definition == null) return "unknown enchant -- grants nothing";
 
         // No default arm, deliberately -- the same discipline as WeaponClassLabel.of. A third
@@ -217,7 +229,7 @@ public final class EnchantEffectLine {
                 String cadence = io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines.cadenceLine(
                         g.ability().cooldownTicks(), g.ability().cost());
                 yield "grants " + io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines.inputLabel(g.input()) + ": "
-                        + g.ability().displayName() + (cadence.isBlank() ? "" : " (" + cadence + ")");
+                        + g.ability().displayName() + (cadence.isBlank() ? "" : " (" + cadence + ")") + orbShotClause(g, level, weapons);
             }
             // AN AIRBURST (B5): the level's burst damage and the two distances, as authored. WORDING: SEAT PLACEHOLDER
             // 2026-11-23, OPEN FOR BEN.
@@ -229,6 +241,30 @@ public final class EnchantEffectLine {
                         + number(a.damageAt(level)) + " damage";
             }
         };
+    }
+
+    /**
+     * THE ORB'S SHOT, AS THE NUMBER (D3; Ben: "That number should be displayed in the actual number not the percentage").
+     * The weapon's OWN right-click damage, read from its loaded definition now (never copied into the enchant file), times
+     * the level's percent: at the Lapis Staff's 21, 4.2 / 6.3 / 8.4 (EXECUTED: 21 x 20 / 100.0 and its siblings are exact
+     * in doubles, so {@link #number} prints them as they are, with no rounding rule needed). A renderer that cannot see the
+     * weapons shows the percent instead, and says so. The authored amount, as every line here shows; the gear score scales
+     * it in play. WORDING: SEAT PLACEHOLDER 2026-11-23.
+     */
+    static String orbShotClause(io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g, int level,
+            java.util.function.Function<String, java.util.Optional<io.github.butterflysmp.rpg.core.weapon.WeaponDefinition>> weapons) {
+        if (!(g.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Orb orb) || orb.shot() == null) {
+            return "";
+        }
+        java.util.Optional<Double> beam = weapons.apply(g.weaponId())
+                .flatMap(w -> w.trigger("right_click"))
+                .flatMap(t -> t.ability().onHit().stream()
+                        .filter(e -> e instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage)
+                        .map(e -> ((io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage) e).amount())
+                        .findFirst());
+        String each = beam.map(amount -> number(orb.shot().amountFor(amount, level)) + " damage")
+                .orElse(number(orb.shot().percentAt(level)) + "% of the beam");
+        return "; a beam into it strikes each foe within " + number(orb.shot().radius()) + " for " + each;
     }
 
     /** A whole number without a point (15.0 -> "15"); otherwise as Java prints it (22.5 -> "22.5"). */
