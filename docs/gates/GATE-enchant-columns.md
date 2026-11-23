@@ -97,6 +97,8 @@ His health at level 1 is 100 + G (G: his worn gear's health, unchanged by the ru
    files, **none** starting `dev_`, among them `kinetic_tremors.yml` and `airburst_flames.yml`;
    `content/enchant_candidates.yml` holds `    chance: 0.10`; `content/weapons/living_lantern.yml` holds
    `      speed: 0.35`.
+   > **DATED NOTE, 2026-11-23 (the boot of `004ba1cc`): the stack top ships 14, not 13** (Lapis Crystal, D1-D3): the
+   > required line is `content/enchants/` holds **14** `.yml` files, none `dev_`, among them `lapis_crystal.yml`.
 7. R0a to R0e on **this boot's** log, matched to this boot's own `Done` line.
 8. **IN ITS OWN MESSAGE: Ben told R0 passed.** Any R0 not as predicted: STOP, tell the seat, tell Ben NOT to log in.
 9. *(After his `/stop`.)* `rpgfight` empty; the overworld's file count against step 2's; `All dimensions are saved`; no
@@ -370,6 +372,44 @@ WARN); **no `ORB removed … cause=orphan`** during the enable (no body can surv
 
 **RECOUNTED** (`SelfTestScenariosTest` asserts 355): `cat GATE-*.yml | tr -d '\r' | grep -cE '^[A-Za-z0-9_-]+:'` = **398**,
 `^setup:` **43**, so **355**. The control: 394 + 4 (LC1-LC4) = 398 (EC1 -> EC1R2 is a rename).
+
+### THE VOID BOOT OF `004ba1cc-dirty`, 2026-11-23: R0a MISSED, NO ROW RAN, NOTHING FROM IT CARRIES
+
+**Booted** by `./scripts/dev-server.sh --refresh-content` on `feat/lapis-crystal-gate` at `004ba1cc`; the deployed jar
+`run/plugins/rpg-0.1.0-SNAPSHOT.jar`, 2,453,564 bytes, 17:26:59, sha256 `706c098f…41cae8d0`; this boot's `Done (6.991s)`
+at 17:27:07.
+
+**R0a: A MISS.** `[17:27:06] [Server thread/INFO]: [Rpg] Build: 004ba1cc-dirty`; R0a predicts no `-dirty`. **The cause:
+one uncommitted change in the working tree, carried-state step 6's dated note (14, not 13) in this file, written at the
+seat's instruction, which did not say to commit it before the boot (the omission is the seat's, in its own words).**
+`dev-server.sh` appends `-dirty` when `git diff --quiet HEAD` fails. **The boot is VOID.**
+
+**The other R0 rows of that boot, recorded as THAT BOOT'S and NOT carried to the next.** Re-read after the stop from the
+same `run/logs/latest.log`, and R0bR2 from a copy of the deployed jar (the sha256 above), the block extracted verbatim and
+run with `powershell -File`: **R0bR2** 49 `PRESENT`, 0 `ABSENT`, 1 `ABSENT-ENTRY`, then 13 `ABSENT`, 0 `PRESENT`.
+**R0cR2** `Loaded 11 abilities, 45 visuals, 5 statuses, 7 elements, 14 enchants, …` and the candidates line as predicted;
+`volley_stone`'s pair the only `[Rpg]` WARN; no `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Dev-only`; no `ORB` line.
+**R0dR2** one `Selftest: dev server, 355 scenarios across 43 gates [melee-cell, …, unique-enchant-slot,
+enchant-columns]`. **R0e** one `FIGHTWORLD sweep path=…\run\world\dimensions\rpgfight folders=0`, no `deleting`, no
+`orphan`.
+
+**Ben was told NOT to log in, and no row ran.** CC could not type into the server console, so Ben logged in ONLY to stop
+it. The log: `BaronVonYeetus joined the game` 17:48:06; `issued server command: /stop` 17:48:12, **the one command in the
+log**; `Stopping server` 17:48:12; `All dimensions are saved` 17:48:13. **His join belongs to the void boot.** After the
+stop: no `java` process; `find run/world/dimensions/rpgfight -mindepth 1` printed nothing; the overworld 106 files, the
+backup's (`../rpg-run-backups/2026-11-23-pre-enchant-columns`) 106; no `ORB` line (none stood).
+
+**The next boot reads every R0 again on its own log: R0a as R0aR2, below; R0bR2, R0cR2, R0dR2 and R0e as written.**
+
+### R0aR2 — the build line names the NEW head, clean (2026-11-23, after the void boot)
+
+> **DATED NOTE, 2026-11-23: R0a's text stands above, unedited, as the prediction the void boot missed.** R0aR2 supersedes
+> it for the next boot, because the commit that records the void boot moves the stack top. A commit cannot name its own
+> hash, so the head is read from the wire at boot time.
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <sha>`, `<sha>` being `feat/lapis-crystal-gate`'s head as `git ls-remote --heads origin feat/lapis-crystal-gate` prints it, shortened as `git rev-parse --short HEAD` prints it. **Not `004ba1cc`, not `-dirty`, not `unknown`.** Its precondition, read before the boot command: `git status --porcelain` prints nothing, and `git rev-parse HEAD` equals the `ls-remote` line | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
 
 ## THE ROWS
 
