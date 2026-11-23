@@ -80,7 +80,7 @@ public final class EnchantRollItems {
         if (gearClass == GearClass.ACCESSORY) return;
         if (EnchantItems.isRolled(item, adapters.keys())) return;
 
-        EnchantState rolled = EnchantRoll.roll(gearClass, roster(adapters),
+        EnchantState rolled = EnchantRoll.roll(has(definition), gearClass, roster(adapters),
                 () -> ThreadLocalRandom.current().nextDouble());
 
         // *** WRITE AND RE-RENDER IN ONE editMeta, for the reason GearScoreItems.stampOnAcquire
@@ -116,10 +116,27 @@ public final class EnchantRollItems {
      * carries. One convention, read the same way on both sides.
      */
     private static List<Rollable> roster(AdapterContext adapters) {
+        return roster(adapters.enchants().all());
+    }
+
+    /** The roll's roster: each enchant's id, class and quantity requirement (ruling H). Tests build it here too. */
+    public static List<Rollable> roster(java.util.Collection<EnchantDefinition> enchants) {
         List<Rollable> roster = new ArrayList<>();
-        for (EnchantDefinition definition : adapters.enchants().all()) {
-            roster.add(new Rollable(definition.id(), definition.gearClass()));
+        for (EnchantDefinition definition : enchants) {
+            roster.add(new Rollable(definition.id(), definition.gearClass(), definition.requires()));
         }
         return roster;
+    }
+
+    /**
+     * THE QUANTITIES THIS GEAR HAS (the seat's ruling H, 2026-11-22): a reload when reload_ticks is above 0, a quiver when
+     * quiver_size is. Only a weapon can have either; every other kind has NOTHING, which no shipped requirement needs
+     * because deft_hands and expanded_quiver are ranger enchants.
+     */
+    public static EnchantRoll.Has has(GearDefinition definition) {
+        if (definition instanceof io.github.butterflysmp.rpg.core.weapon.WeaponDefinition weapon) {
+            return new EnchantRoll.Has(weapon.hasReload(), weapon.hasQuiver());
+        }
+        return EnchantRoll.Has.NOTHING;
     }
 }

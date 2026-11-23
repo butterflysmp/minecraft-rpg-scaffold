@@ -308,6 +308,14 @@ public record WeaponDefinition(
         return quiverSize > NO_QUIVER;
     }
 
+    /**
+     * Does this weapon reload at all? The QUANTITY deft_hands reads exists (the seat's ruling H, 2026-11-22). A presence
+     * question, not the duration: the duration is read only where {@code QuiversSignatureTest} lists.
+     */
+    public boolean hasReload() {
+        return reloadTicks > 0;
+    }
+
     /** The binding fired by this input, if the weapon has one. */
     public Optional<TriggerBinding> trigger(String input) {
         for (TriggerBinding binding : triggers) {

@@ -70,7 +70,18 @@ import java.util.List;
  */
 public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 EnchantEffect effect, GearClass gearClass,
-                                List<Integer> valueByLevel, String icon) {
+                                List<Integer> valueByLevel, String icon,
+                                io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires) {
+
+    /**
+     * An enchant with no quantity requirement (YAML {@code requires:} absent). The seat's ruling H, 2026-11-22, added
+     * {@code requires}; every enchant but deft_hands and expanded_quiver needs none.
+     */
+    public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect, GearClass gearClass,
+                             List<Integer> valueByLevel, String icon) {
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, icon,
+                io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires.NONE);
+    }
 
     /**
      * The item an enchant renders as in the enchant table when its file names none.
@@ -86,6 +97,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("enchant id required");
         }
+        if (requires == null) requires = io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires.NONE;
         if (displayName == null || displayName.isBlank()) {
             throw new IllegalArgumentException("enchant '" + id + "' requires display_name");
         }

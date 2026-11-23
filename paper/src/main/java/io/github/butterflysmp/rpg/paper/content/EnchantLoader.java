@@ -77,7 +77,24 @@ public final class EnchantLoader {
                 // working enchant, which is what skipping the file would do. A name that does not
                 // resolve to a Material is caught at boot by ContentValidator, which can reach the
                 // Bukkit registry that this loader deliberately cannot.
-                s.getString("icon", EnchantDefinition.DEFAULT_ICON));
+                s.getString("icon", EnchantDefinition.DEFAULT_ICON),
+                requires(s.getString("requires"), id));
+    }
+
+    /**
+     * THE QUANTITY THE ENCHANT NEEDS THE HELD WEAPON TO HAVE (the seat's ruling H, 2026-11-22): absent is none;
+     * {@code reload} (reload_ticks above 0) or {@code quiver} (quiver_size above 0). A MECHANICAL GATE, so an unknown value
+     * is REFUSED by name, never defaulted: a misspelt requirement that fell back to none would roll the enchant onto the
+     * weapons it was written to keep it off.
+     */
+    static io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires(String raw, String id) {
+        if (raw == null) return io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires.NONE;
+        return switch (raw.trim().toLowerCase(java.util.Locale.ROOT)) {
+            case "reload" -> io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires.RELOAD;
+            case "quiver" -> io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires.QUIVER;
+            default -> throw new IllegalArgumentException("enchant '" + id + "' declares requires: '" + raw
+                    + "'; it must be reload or quiver, or absent");
+        };
     }
 
     /**

@@ -59,12 +59,48 @@ public final class EnchantRoll {
      * same null-means-no-gate convention {@code DamageEnchants.Grant} uses, read from the same
      * {@code EnchantDefinition.isUniversal()}.
      */
-    public record Rollable(String enchantId, GearClass gearClass) {
+    public record Rollable(String enchantId, GearClass gearClass, Requires requires) {
         public Rollable {
             if (enchantId == null || enchantId.isBlank()) {
                 throw new IllegalArgumentException("a rollable enchant needs an id");
             }
+            if (requires == null) requires = Requires.NONE;
         }
+
+        /** An enchant with no quantity requirement: every enchant but the two ruling H names. */
+        public Rollable(String enchantId, GearClass gearClass) {
+            this(enchantId, gearClass, Requires.NONE);
+        }
+    }
+
+    /**
+     * THE QUANTITY AN ENCHANT NEEDS THE HELD WEAPON TO HAVE (the seat's ruling H, 2026-11-22): AN ENCHANT ROLLS ONLY ON A
+     * WEAPON THAT HAS ITS QUANTITY. Declared beside the enchant (its file's {@code requires:}), never as a list of weapon
+     * ids, so the next weapon needs no edit. NAME THE QUANTITY's eligibility half, made a filter.
+     */
+    public enum Requires {
+        /** No requirement beyond the class. */
+        NONE,
+        /** A reload: {@code reload_ticks} above 0 ({@code deft_hands}). */
+        RELOAD,
+        /** A quiver: {@code quiver_size} above 0 ({@code expanded_quiver}). */
+        QUIVER;
+
+        public boolean metBy(Has held) {
+            return switch (this) {
+                case NONE -> true;
+                case RELOAD -> held.reload();
+                case QUIVER -> held.quiver();
+            };
+        }
+    }
+
+    /** The quantities the held gear has, as {@link Requires} reads them. */
+    public record Has(boolean reload, boolean quiver) {
+        /** Every quantity: the pool is the class filter alone (how every pool was built before ruling H). */
+        public static final Has EVERY = new Has(true, true);
+        /** No quantity: armour, shields, tools, and a weapon with no magazine and no reload. */
+        public static final Has NOTHING = new Has(false, false);
     }
 
     /**
@@ -80,7 +116,7 @@ public final class EnchantRoll {
      * total either way. Note this is NOT the shield case: a shield presents
      * {@link GearClass#SHIELD}, a real value, not the absence of one.
      */
-    public static List<Rollable> poolFor(GearClass heldClass, List<Rollable> roster) {
+    public static List<Rollable> poolFor(Has held, GearClass heldClass, List<Rollable> roster) {
         List<Rollable> pool = new ArrayList<>();
         if (roster == null) return pool;
         // Ruling A4, EXPLICIT: accessories take no part in enchanting, so their pool is EMPTY -- not
@@ -92,6 +128,8 @@ public final class EnchantRoll {
             if (rollable == null) continue;
             // null class == universal: no gate, valid on whatever it is offered for.
             if (rollable.gearClass() != null && rollable.gearClass() != heldClass) continue;
+            // RULING H: AFTER the class filter, the quantity the enchant reads must exist on the held weapon.
+            if (!rollable.requires().metBy(held)) continue;
             pool.add(rollable);
         }
         return pool;
@@ -188,8 +226,8 @@ public final class EnchantRoll {
      * slot through {@code EnchantSlot}'s constructor, so a distinctness slip throws here rather than
      * reaching an item.
      */
-    public static EnchantState roll(GearClass heldClass, List<Rollable> roster, DoubleSupplier draws) {
-        List<Rollable> pool = poolFor(heldClass, roster);
+    public static EnchantState roll(Has held, GearClass heldClass, List<Rollable> roster, DoubleSupplier draws) {
+        List<Rollable> pool = poolFor(held, heldClass, roster);
         List<EnchantSlot> slots = new ArrayList<>(SLOTS);
         for (int slot = 0; slot < SLOTS; slot++) {
             List<Rollable> remaining = new ArrayList<>(pool);

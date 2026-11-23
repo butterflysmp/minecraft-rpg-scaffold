@@ -101,19 +101,35 @@ class DeftHandsContentInvariantTest {
         assertTrue(reloading.contains("boltor"), "the control: the Boltor authors reload_ticks 60");
     }
 
+    /**
+     * WHAT THIS ASSERTS SINCE THE SEAT'S RULING H (2026-11-22): every ranger weapon whose REAL roll pool can hold
+     * deft_hands authors a reload, and every one that authors a reload still has it in its pool. It asserted "every ranger
+     * weapon authors a reload" until then, because the pool filtered on class alone. Now the pool itself applies the
+     * enchant's declared requirement ({@code requires: reload}), so a ranger weapon with no reload (the Crossbow) passes
+     * BECAUSE THE ENCHANT CANNOT REACH IT, not because it is excused. NO exemption list exists or may be added.
+     */
     @Test
-    void everyRangerWeaponAuthorsAReload() {
+    void everyRangerWeaponThatCanRollDeftHandsAuthorsAReload() {
+        var roll = RollPools.load();
         List<String> offenders = new ArrayList<>();
-        for (Path p : weaponYaml()) {
-            String body = read(p);
-            if (!RANGER_CLASS.matcher(body).find()) continue;
-            if (!RELOAD_TICKS.matcher(body).find()) offenders.add(idOf(p));
+        List<String> reached = new ArrayList<>();
+        for (var w : roll.weapons().all()) {
+            if (w.weaponClass() != io.github.butterflysmp.rpg.core.weapon.WeaponClass.RANGER) continue;
+            boolean rolls = roll.after(w).contains("deft_hands");
+            if (rolls) reached.add(w.id());
+            if (rolls != (w.reloadTicks() > 0)) offenders.add(w.id() + " reload_ticks=" + w.reloadTicks() + " rolls=" + rolls);
         }
         assertTrue(offenders.isEmpty(),
-                "ranger weapons with no reload_ticks: " + offenders
-                        + " -- deft_hands.yml is class: ranger, so it will roll onto these and render "
-                        + "\"-N% Reload Time\" while granting ZERO. Author a reload, or decide deliberately that "
-                        + "this weapon is an exception and say so here.");
+                "deft_hands' pool and the reload disagree: " + offenders + " -- on a weapon with no reload it would "
+                        + "render \"-N% Reload Time\" while granting ZERO; on one with a reload it was lost");
+        assertTrue(reached.contains("boltor"), "CONTROL: the Boltor's pool holds deft_hands, so the row can see a hit");
+    }
+
+    /** The requirement is declared BESIDE THE ENCHANT, so the pool's filter is not silently absent. */
+    @Test
+    void deftHandsDeclaresTheQuantityItReads() {
+        assertEquals(io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires.RELOAD,
+                RollPools.load().enchants().find("deft_hands").orElseThrow().requires());
     }
 
     // theExemptionSetHoldsExactlyTheOneDevWeaponItWasWrittenFor DELETED 2026-11-21: the exemption set it pinned held only
