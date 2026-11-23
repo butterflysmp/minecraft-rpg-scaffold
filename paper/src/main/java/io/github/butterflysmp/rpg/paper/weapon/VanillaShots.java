@@ -12,8 +12,13 @@ import io.github.butterflysmp.rpg.paper.adapter.AdapterContext;
 import io.github.butterflysmp.rpg.paper.adapter.BukkitCombatant;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld;
+import io.github.butterflysmp.rpg.paper.nexus.NexusHealing;
 import io.github.butterflysmp.rpg.paper.nexus.NexusItems;
+import io.github.butterflysmp.rpg.paper.nexus.NexusLock;
 import io.github.butterflysmp.rpg.paper.nexus.NexusMirror;
+import io.github.butterflysmp.rpg.paper.nexus.NexusSlots;
+import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import org.bukkit.Material;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
@@ -23,6 +28,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.CrossbowMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Locale;
@@ -49,11 +55,15 @@ public final class VanillaShots {
     private final AdapterContext adapters;
     private final WeaponRegistry weapons;
     private final CooldownTracker cooldowns;
+    /** For his locked slot only, when the shot took the mirror's last arrow (the seat's follow-up 2). */
+    private final ProfileService profiles;
 
-    public VanillaShots(AdapterContext adapters, WeaponRegistry weapons, CooldownTracker cooldowns) {
+    public VanillaShots(AdapterContext adapters, WeaponRegistry weapons, CooldownTracker cooldowns,
+                        ProfileService profiles) {
         this.adapters = adapters;
         this.weapons = weapons;
         this.cooldowns = cooldowns;
+        this.profiles = profiles;
     }
 
     /**
@@ -133,8 +143,18 @@ public final class VanillaShots {
             }
             stamp(player, weapon, event.getForce(), projectile);
         }
+        // THE MIRROR'S LAST ARROW (the seat's follow-up 2): put back here, before the redraw below draws it.
+        restoreTakenNexus(player, kind, keys, profiles, adapters.log());
         // A cancelled shot or one that took the mirror: the slot drawn again from the weapon's count (ruling 1).
         if (plan.cancel() || kind == VanillaShot.Consumable.MIRROR) NexusMirror.redraw(player, keys);
+        // THE CROSSBOW'S CHARGE AFTER THE SHOT (the seat's follow-up 3), its own line so VANILLASHOT's committed form is
+        // unchanged. READ, the pinned jar: CrossbowItem.performShooting sets CHARGED_PROJECTILES to EMPTY BEFORE shoot
+        // fires the event, and a cancelled event only removes the projectile and returns, so a refused shot leaves it
+        // UNLOADED and the arrow given back is the one its load took: no arrow is made. getBow() is the live stack.
+        if (bow.getItemMeta() instanceof CrossbowMeta crossbow) {
+            adapters.log().info("CROSSBOWCHARGE " + player.getName() + " weapon=" + weapon.id()
+                    + " charged=" + crossbow.hasChargedProjectiles());
+        }
 
         adapters.log().info(String.format(Locale.ROOT,
                 "VANILLASHOT %s weapon=%s hand=%s took=%s rounds=%d->%d force=%.3f cancel=%b refund=%b paid=%b",
@@ -144,6 +164,25 @@ public final class VanillaShots {
     }
 
     /** One of what vanilla took, back into his inventory; what does not fit is dropped at his feet. */
+    /**
+     * THE MIRROR'S LAST ARROW (the seat's follow-up 2, 2026-11-22; the decision is core's {@link VanillaShot#restoresNexus}).
+     * Vanilla took the Nexus item itself (READ, {@code useAmmo} removes an emptied stack), so the shot path puts it back,
+     * in the same tick, by the heal's own converge call into his locked slot (the slot it was taken from is not in the
+     * event). Its own line, {@code NEXUSRESTORE}, never the heal's: NEXUSHEAL keeps meaning "something else removed it".
+     *
+     * <p>Two callers, both on the shot event: {@link #onShot} (every vanilla-driven shot, a cancelled one included) and
+     * {@code RpgListeners.onMirrorShot} (any other bow whose shot took the mirror, which it cancels; it ignores an event
+     * already cancelled, hence the first caller). Whichever runs second finds the item and does nothing.
+     */
+    public static void restoreTakenNexus(Player player, VanillaShot.Consumable taken, Keys keys, ProfileService profiles,
+                                         java.util.logging.Logger log) {
+        if (!VanillaShot.restoresNexus(taken, NexusHealing.countNexus(player.getInventory(), keys))) return;
+        int slot = profiles.profile(player.getUniqueId()).map(PlayerProfile::nexusSlot)
+                .orElse(NexusLock.DEFAULT_LOCKED_SLOT);
+        NexusSlots.converge(player, keys, slot);
+        log.info("NEXUSRESTORE player=" + player.getName() + " slot=" + slot + " cause=shot");
+    }
+
     private static void giveBack(Player player, ItemStack taken) {
         if (taken == null || taken.getType().isAir()) return;
         ItemStack one = taken.clone();

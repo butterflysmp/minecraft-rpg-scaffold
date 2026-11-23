@@ -72,6 +72,7 @@ import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.vault.VaultDevCommand;
 import io.github.butterflysmp.rpg.paper.vault.VaultService;
 import io.github.butterflysmp.rpg.paper.mining.MiningDevCommand;
+import io.github.butterflysmp.rpg.paper.weapon.QuiverItems;
 import io.github.butterflysmp.rpg.paper.mining.MiningService;
 import io.github.butterflysmp.rpg.paper.weapon.AttackSpeedModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
@@ -618,6 +619,16 @@ public final class RpgCommand {
                         .then(Commands.argument("bonus", DoubleArgumentType.doubleArg(0.0, 200.0))
                                 .executes(ctx -> quiverSizeBoost(ctx, adapters, weapons,
                                         DoubleArgumentType.getDouble(ctx, "bonus")))))
+                // SET THE HELD QUIVER WEAPON'S LOADED ROUNDS (the seat's follow-up 2(c), 2026-11-22). Dev server only,
+                // as /rpg mining is: a player-facing build must not hand out rounds. It exists so a gate can stage a
+                // quiver at 1 round (the mirror's LAST arrow) or at 0 (the empty quiver) without prompting a shot per
+                // round. The write is QuiverItems.setLoaded, the one door that writes AND re-renders, so it clamps to
+                // the capacity; the mirror is redrawn from it at once.
+                .then(Commands.literal("rounds")
+                        .requires(source -> MiningDevCommand.permitted(source.getSender().hasPermission(Permissions.DEV), devServer))
+                        .then(Commands.argument("count", IntegerArgumentType.integer(0, 99))
+                                .executes(ctx -> setRounds(ctx, adapters, weapons,
+                                        IntegerArgumentType.getInteger(ctx, "count")))))
                 // Mint a reload_time_boost. NOT a _TEMP, same reason as quiversize.
                 //
                 // THE RANGE IS SIGNED, AND THAT IS THE POINT. Positive ticks mean a SLOWER reload,
@@ -1278,6 +1289,35 @@ public final class RpgCommand {
                 String.format("Gave quiver_size_boost (+%d arrows: %s). Capacity re-resolves at your "
                         + "next SHOT or RELOAD, not on pickup.", (int) amount, outcome),
                 NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * {@code /rpg rounds <count>} (the seat's follow-up 2(c), 2026-11-22; dev server only): set the held quiver weapon's
+     * loaded rounds through {@link QuiverItems#setLoaded}, which clamps to the capacity and re-renders the tooltip, then
+     * redraw the Nexus mirror. A reload in progress is left as it is. The reply reads the item back, so a gate row sees the
+     * value that was stored rather than the one typed: {@code Rounds: <loaded>/<capacity> (<weapon>)}.
+     */
+    private static int setRounds(CommandContext<CommandSourceStack> ctx, AdapterContext adapters,
+                                 WeaponRegistry weapons, int count) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        Optional<WeaponDefinition> weapon = WeaponItems.heldWeaponId(player, adapters.keys())
+                .flatMap(weapons::find)
+                .filter(WeaponDefinition::hasQuiver);
+        if (weapon.isEmpty()) {
+            player.sendMessage(Component.text("Hold a quiver weapon.", NamedTextColor.RED));
+            return 0;
+        }
+        ItemStack held = player.getInventory().getItemInMainHand();
+        held.editMeta(meta -> QuiverItems.setLoaded(meta, weapon.get(), adapters, player.getUniqueId(), count));
+        player.updateInventory();
+        io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, adapters.keys());
+        player.sendMessage(Component.text(String.format("Rounds: %d/%d (%s)",
+                QuiverItems.loadedIn(held, adapters.keys()).orElse(-1),
+                QuiverItems.capacityIn(held, adapters.keys()).orElse(-1), weapon.get().id()), NamedTextColor.GREEN));
         return 1;
     }
 
