@@ -595,3 +595,106 @@ skipped):** the scan, extracted verbatim from this file's R0bR2 block and run wi
 PRESENT and 0 ABSENT** before `'--- controls'` and **12 ABSENT, 0 PRESENT** after it. 39 is the corrected prediction (the
 note above); the first-written 40 was not met, and that is how the miscount was found. The boot's reading is taken again
 on the deployed jar.
+
+## READINGS, 2026-11-22: THE BOOT OF `52579e8a` (THE STACK OF NINE)
+
+Boot approved by the seat's message of 2026-11-22 (the stack of nine, superseding its approval of `7f32aba5`) on Ben's
+own "ready", by `.claude/rules/booting.md`. Read from `run/logs/latest.log` of this boot (a copy kept in the session's
+scratchpad) and the jar in place. **No prediction above was edited**; each miss is recorded beside its row, dated.
+
+### CARRIED STATE AND R0 (read before he logged in): ALL AS PREDICTED
+
+- **Before the boot:** heads equal the seat's nine by `git ls-remote`; CI green on #243 (`e00c6324`), #245 (`91b6ceb5`)
+  and #244 (`52579e8a`), each run's `head_sha` read; no `java` process; the backup in a NEW folder
+  `rpg-run-backups/2026-11-22-pre-vanilla-bows` (`Rpg` 159 files / 26 dirs, `world` 193 files / 32 dirs, `diff -rq`
+  lines 0 each; `world/dimensions` = `minecraft`, `rpgfight`; overworld 106 files); config `12:  dev-pack-on-join: true`;
+  no fight folders; "booting now" in its own message, Ben told not to log in. Not on the checklist, read and recorded:
+  the previous boot's log carried `difficulty=NORMAL`, and this run's restore line reads `difficulty=NORMAL`.
+- **The boot:** `./scripts/dev-server.sh --refresh-content`; `Done (7.152s)` at 20:59:15. Deployed `bow.yml` line 33
+  `attack_damage: 14`, `crossbow.yml` line 30 `attack_damage: 37`, 24 weapon files.
+- **R0a:** `[Rpg] Build: 52579e8a`.
+- **R0bR2**, on the deployed jar (2,363,333 bytes): **39 PRESENT, 0 ABSENT; the 12 controls ABSENT, 0 PRESENT.**
+- **R0c:** `Loaded 11 abilities, 43 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 24
+  weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 6 recipes, 1 ores, 4 vein sizes`;
+  **`Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions`** (as MEASURED); **`Convert-on-arrival: 9 materials
+  {bow=bow, copper_sword=copper_sword, crossbow=crossbow, diamond_sword=diamond_sword, golden_sword=golden_sword,
+  iron_sword=iron_sword, netherite_sword=netherite_sword, stone_sword=stone_sword, wooden_sword=wooden_sword}`**; the
+  loot, fight, world-damage and smithing lines identical to `GATE-breacher-rework.md`'s boot (`2026-11-22-5.log.gz`,
+  `diff` of the four, 0 lines); `[Rpg]` WARN only `volley_stone`'s pair; no `Refusing`, `Skipping`, `SEVERE`,
+  `Exception`, `Recipe '`.
+- **R0dR2:** `Selftest: dev server, 326 scenarios across 40 gates [… breacher, breacher-rework, vanilla-bows]`; `325`
+  ABSENT. (R0b and R0d, superseded, not read.)
+- **R0e:** `FIGHTWORLD sweep path=…\run\world\dimensions\rpgfight folders=0`; no `deleting`, no `orphan`.
+- **R0 read by 20:59:44; "R0 passed" sent in its own message; his login 21:00:01, after it.**
+
+### HIS COMMANDS, AGAINST THE SHEET
+
+`/gamemode survival` 21:00:08; `/rpg selftest breacher-rework` 21:00:16 (FINISHED 21:01:19); `/rpg selftest
+vanilla-bows` 21:01:28 (`RUN START vanilla-bows rows=23 selftest=52579e8a`, FINISHED 21:06:20); `/stop` 21:06:22. **One
+command off the sheet: `/give BaronVonYeetus arrow 63` at 21:02:55, inside VX3.** In the prompted rows he fired more
+than once wherever he had the chance (counts per row below).
+
+### THE MISSES FIRST
+
+| row | predicted | READING |
+|---|---|---|
+| **VB3** | three `Pool:` lines: the Crossbow's `power, unbreaking`, then the Boltor's and the Bow's four | **NOT AS PREDICTED: `REPLY "Pool: deft_hands, expanded_quiver, power, unbreaking" [gray]` THREE times.** CAUSE, READ in source with the order INFERRED: `RpgCommand.enchant` reads the held item inside `adapters.scheduler().onEntity(player, …)`, a deferred task, and the scenario issues its three `pool` commands with holds between them in ONE tick (all 21:01:33), so all three read the hand after the last hold (the Bow). **The instrument's staging, not ruling H; the Crossbow's pool is UNREAD on a server.** `EnchantQuantityGateTest` and `VanillaBowsContentTest` still hold it. A re-staged row needs a `wait:` after each hold |
+| **VM8**, the ITEMS half | after 5 real arrows `ITEMS … count=13 … slots=[1:5, m:8]`; the clear's REPLY counts 13 | **NOT AS PREDICTED: `ITEMS material=arrow count=28 gear=0 slots=[10:20, 13:8]`; `Removed 28 item(s)`.** VM5's 15 real arrows were still carried (hold_only moved them to slot 10) and the 5 merged with them; the prediction left them out. **The heal half AS PREDICTED:** `NEXUS slot=13 material=arrow amount=8` (m = 13) before; **exactly one `NEXUSHEAL player=BaronVonYeetus slot=8`**; `NEXUS slot=8 material=arrow amount=8`; `ITEMS … count=8 gear=0 slots=[8:8]`; `HELD bow … "Quiver: 8/8"` |
+| **VX1** | exactly one shot | **THREE shots.** Each as predicted for one: `CROSSBOWCHARGE … charged=false` (a shot that left), `VANILLASHOT … weapon=crossbow hand=main took=plain_arrow rounds=0->0 force=1.000 cancel=false refund=false paid=false damage=0->1` (then `1->2`, `2->3`), `PLAYERHIT … source=crossbow/shot … sent=37.000 crit=false`. Probe `200.000` before, **`89.000/200.000`** after (200 - 3 x 37); `ITEMS … count=1 … slots=[1:1]` (4 - 3); **`REPLY "461/465 uses left (damage 4)"`**: one of OUR wear per shot and one for the read, **ruling I as predicted (vanilla's wear never landed); M = 465, READ** |
+| **VX2** | exactly one shot at full draw; probe `200.000` before | **EIGHT shots, the first before the prompt**: `took=mirror rounds=8->7 force=0.417 … damage=0->1`, `PLAYERHIT … sent=5.833` (14 x 0.41667), so the "before" probe read **`194.167/200.000`**. Then seven at force 1.000: one `sent=28.000 crit=true`, six `sent=14.000`; wear one per shot (`damage=0->1` through `7->8`). **The eighth took the mirror's LAST arrow: `NEXUSRESTORE player=BaronVonYeetus slot=8 cause=shot`, then `VANILLASHOT … took=mirror rounds=1->0 … damage=7->8`**, then `NEXUS slot=8 material=nether_star amount=1`, `HELD bow … "Quiver: 0/8"`, **no NEXUSHEAL** (#245's restore, read here unplanned); probe `82.167/200.000`; **`REPLY "375/384 uses left (damage 9)"`** (8 shots + the read: ruling I) |
+| **VX3** | one short-draw shot, `rounds=7->6` | Began at **0 rounds** (VX2 emptied it). After his `/give … arrow 63`: **`VANILLASHOT … took=plain_arrow rounds=0->0 force=0.230 cancel=true refund=true paid=false damage=9->9`** and `REPLY actionbar "Your quiver is empty -- left-click to reload." [gray]` once (**the empty quiver's refusal, read here**); his reload (`RELOAD … weapon=bow authored=60`); then **two short draws, each 14 x f**: `rounds=8->7 force=0.320 … refund=true paid=true`, `PLAYERHIT … sent=4.480`; `rounds=7->6 force=0.688`, `PLAYERHIT … sent=9.625` (14 x 0.6875; logged just after the row's DONE). Probe `195.520/200.000`; `NEXUS slot=10 material=arrow amount=6` |
+| **VX5R2**, the notice | `REPLY actionbar "Your weapon is broken -- repair it before using it."` | **The notice arrives as CHAT, not the action bar: `REPLY "Your weapon is broken -- repair it before using it." [gray]`** (10 in the row, throttled). Every other line of the row, below, as predicted |
+| **VX5R2**, the Crossbow's ITEMS | `ITEMS … count=2` | **`ITEMS material=arrow count=1 gear=0 slots=[0:1]`.** He tried TEN times (nine in the row, the tenth logged at 21:04:05 just after the probe), so a load was in progress when it was read: one arrow in the crossbow, one in his inventory (INFERRED from the tenth try's timing). **Every try read `CROSSBOWCHARGE … charged=false` then `cancel=true refund=true … damage=464->464`: no try left it loaded, no `charged=true` in the whole run** |
+| **VX6** | `HELD bow …` as VB1's, Quiver 8/8 | **`"Quiver: 2/8"`**: he fired the crafted Bow eight times and reloaded once in his 60 seconds (`VANILLASHOT … damage=0->1` to `7->8`). The craft itself AS PREDICTED (below) |
+| **VX10**, the second prompt | the refusal at 0 rounds: `cancel=true refund=true`, the empty notice once, ITEMS still 1 | **NOT READ: he LEFT-CLICKED first** (`RELOAD … weapon=bow` 21:05:36), loading his one arrow as a round, so his shot took the mirror's last arrow again: **a second `NEXUSRESTORE player=BaronVonYeetus slot=8 cause=shot`**, `VANILLASHOT … took=mirror rounds=1->0 … damage=1->2`, `PLAYERHIT … sent=28.000 crit=true`; then `ITEMS … count=0`, `NEXUS slot=8 material=nether_star amount=1`, `"Quiver: 0/8"`. The empty quiver's refusal was read in VX3 instead |
+
+### THE ROWS AS PREDICTED
+
+| row | READING |
+|---|---|
+| setup | `SELF customHP=146.000/350.000`, then `SELF customHP=100.000/100.000` (m0 - m1 = 250.000; c1 = min(146, 100)); `DRIVE hold … item=empty`; **`NEXUS slot=8 material=nether_star amount=1`** (L = 8). 27 kill lines |
+| VB0 | recorded: `SELF … at=-98.50 63.00 23.50`; `BLOCKS AIR count=240`, `BLOCKS AIR count=0`, `BLOCKS WATER count=6` |
+| VB1 | **both HELD lines word for word the prediction** (Bow: `"Quiver: 8/8"`, `"Ranged Damage: 14"`; Crossbow: no Quiver line, `"Ranged Damage: 37"`) |
+| VB2 | **`ARRIVAL minted player=BaronVonYeetus slot=0 material=bow weapon=bow wear=0 vanilla_enchants=0 score=100 via=slot-change`**; **`ARRIVAL minted … slot=1 material=crossbow weapon=crossbow wear=0 vanilla_enchants=2 score=100 via=slot-change`**; no ARRIVAL for the short_bow; `INVENTORY bow slots=[0x1]`, `crossbow slots=[1x1]`, `short_bow slots=[2x1]` |
+| VM1 | `NEXUS slot=8 material=arrow amount=8` |
+| VM2 | `NEXUS slot=8 material=arrow amount=7`; `HELD boltor … "Quiver: 7/8"` |
+| VM3 | `NEXUS slot=8 material=nether_star amount=1` |
+| VM4 | `ITEMS material=arrow count=7 gear=0 slots=[8:7]`; `DRIVE reload`; `REPLY actionbar "You have no arrows -- plain Arrows load a quiver." [gray]` once; `NEXUS … amount=7`; ITEMS unchanged |
+| VM5 | `ITEMS … count=23 gear=0 slots=[2:16, 8:7]`; `NEXUS … amount=7`; `RELOAD … weapon=boltor authored=60`; after: `NEXUS … amount=8`, `ITEMS … count=23 gear=0 slots=[2:15, 8:8]` |
+| VM6 | eight presses; `NEXUS slot=8 material=nether_star amount=1`; `HELD boltor … "Quiver: 0/8"` |
+| VM7 | `NEXUS slot=8 material=arrow amount=2` |
+| VM9 | the toggle clicked (`"Nexus Star: ON"`); `NEXUS none`; **exactly one `REPLY "Your Nexus menu is off, so your quiver's rounds are not shown in its slot. Turn it back on in /menu, Settings." [yellow]`**; `NEXUS none` again; no second warning |
+| VM10 | (a) the clear with the star off: `NEXUS none`, **no NEXUSHEAL**; (b) bows and crossbows cleared: no warning; (c) `rpg give boltor`: **exactly one warning**; the toggle (`"Nexus Star: OFF"`): `NEXUS slot=8 material=nether_star amount=1` |
+| VX4 | R = 6, m = 10: `ITEMS … count=22 gear=0 slots=[1:16, 10:6]`; **`VANILLASHOT … took=plain_arrow rounds=6->5 force=0.808 cancel=false refund=true paid=true damage=11->12`**, `PLAYERHIT … sent=11.305` (14 x 0.8075); `ITEMS … slots=[1:16, 10:5]`; `NEXUS … amount=5`; reload: `NEXUS … amount=8`, **`ITEMS … slots=[1:13, 10:8]`** (16 - 3) |
+| VX5R2, the rest | Bow: `REPLY "1/384 uses left (damage 383) -- BROKEN"`; `NEXUS slot=10 … amount=8`; six tries, each **`VANILLASHOT … weapon=bow … took=mirror rounds=8->8 force=1.000 cancel=true refund=false paid=false damage=383->383`**; `NEXUS … amount=8`; `HELD bow …`; **no CROSSBOWCHARGE for the Bow, no NEXUSRESTORE.** Crossbow: **`REPLY "1/465 uses left (damage 464) -- BROKEN"`**; each try one `CROSSBOWCHARGE BaronVonYeetus weapon=crossbow charged=false` then one VANILLASHOT, as above; `HELD crossbow …` |
+| VX6 | `INVENTORY bow slots=[]` before; **`CRAFT minted player=BaronVonYeetus weapon=bow material=bow score=100`**; `INVENTORY bow slots=[2x1]` |
+| VX7 | probe `200.000`; **one `PLAYERHIT … source=short_bow/right_click … sent=16.000 crit=false`**, no VANILLASHOT in the row; probe `184.000/200.000`; `NEXUS slot=10 material=arrow amount=7` |
+| VX10, the first prompt | **every line as predicted:** `REPLY "Rounds: 1/8 (bow)" [green]`; `ITEMS material=arrow count=1 gear=0 slots=[10:1]` (m = 10); `NEXUS slot=10 material=arrow amount=1`; `MOBSEED … max=200`; probe `200.000/200.000`; **`NEXUSRESTORE player=BaronVonYeetus slot=8 cause=shot`**, then **`VANILLASHOT BaronVonYeetus weapon=bow hand=main took=mirror rounds=1->0 force=1.000 cancel=false refund=false paid=true damage=0->1`**; **`PLAYERHIT … source=bow/shot … element=kinetic sent=14.000 crit=false`** (14 x 100/100 x 1.0 + 0 + 0, x 1.000 x 1); probe **`186.000/200.000`**; **`NEXUS slot=8 material=nether_star amount=1`**; `ITEMS material=arrow count=0 gear=0 slots=[]`; `HELD bow … "Quiver: 0/8"`; **no NEXUSHEAL in the row**. The arrow give: `ITEMS … count=1 gear=0 slots=[1:1]` |
+| VX9 | his 30 seconds: 13 Crossbow shots, each `CROSSBOWCHARGE … charged=false` and `cancel=false … paid=false`, wear `0->1` to `12->13`; 9 PLAYERHITs, 8 `sent=37.000`, 1 `sent=74.000 crit=true`; then **`ASK 1 question="Did the Bow and Crossbow feel like vanilla to use?" answer="yes"`** |
+| the END | `SELFTEST RUN FINISHED`; `RESTORED … gamemode=SURVIVAL … time=1000 … difficulty=NORMAL health=146.000`; **`SELFTEST RUN HEALTH saved=146.000 customHP=146.000/350.000 wrote=146.000`** |
+
+### ALSO RECORDED (the seat's list)
+
+- **Ben's answers, verbatim:** breacher-rework RW9 "yes"; vanilla-bows VX9 "yes".
+- **NEXUSHEAL and NEXUSRESTORE in the whole log:** one `NEXUSHEAL` (VM8's, 21:01:48, predicted); three `NEXUSRESTORE`
+  (VX2 21:02:33, **not predicted by VX2**; VX10 21:05:16 and 21:05:41, the second outside its prediction). None other.
+- **ARRIVAL at his join:** none (0 lines between his login and the first run). The only ARRIVAL lines are VB2's two.
+- **His Nexus toggle at the end: ON** (`"starEnabled": true` in his profile file after the stop; the last NEXUS reads
+  were the star at slot 8).
+- **Off the rows:** 33 `MOBSEED … enderman gs=300 source=stored` at 21:04:11 (during VX6's craft) and nether mobs
+  (`zombified_piglin`, `piglin`, `hoglin`, `strider`) at 21:06:15 (during VX9), each a chunk load, removed or unloaded
+  after; no MOBHIT or HURT line on him from them. Their cause was not read.
+- **The stats bar:** 584 `REPLY actionbar "❤ …"` lines in this run, set aside.
+
+### AFTER HIS `/stop` (CHECKLIST STEP 9)
+
+`rpgfight` holds 0 entries; the overworld holds **106** files, **the same file list as the backup's** (`diff` 0 lines);
+`ThreadedAnvilChunkStorage: All dimensions are saved` at 21:06:23; **no `java.exe` left.**
+
+### UNREAD, AND WHY
+
+- **The Crossbow's roll pool on a server** (VB3's staging; above).
+- **The refusal at 0 rounds inside VX10** (he reloaded first). It WAS read in VX3, off its prompt.
+- **What the gate already lists:** the client's view, a fired arrow's pickup, tipped and spectral arrows, creative, the
+  off hand, death with the mirror showing, the Dragon's Plume on the mirror, vanilla's knockback on the token hit, and
+  the GATE-nexus rows 4 and 5.
