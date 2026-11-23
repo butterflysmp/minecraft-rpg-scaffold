@@ -310,6 +310,11 @@ triggers:
     # CooldownTracker. WeaponLore branches on the same predicate (BasicMelee.isVanillaDriven), so the
     # displayed cadence and the real one cannot diverge.
     cooldown_ticks: 16
+    # THE SHOT'S SOUND (BEN, 2026-11-23: "use the old one"): item.crossbow.shoot at 1.0, 1.3, once per shot that
+    # leaves. The visual's file carries the old repo's call, the jar read and why a refused press stays silent.
+    on_cast:
+      - type: visual
+        visual_id: boltor_cast
     cast:
       type: ray
       # 96 -- RULED, and the longest range in this project by half again. The authored set is

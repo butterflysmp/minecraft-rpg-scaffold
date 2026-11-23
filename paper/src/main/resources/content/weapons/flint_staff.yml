@@ -53,15 +53,23 @@ class: mage
 #    the same wrong answer from the same sound reasoning.
 material: stick
 
+# BEN, 2026-11-23, verbatim: "Replace the current description with this: "Prehistoric magicians learned you could
+# create fire by slamming mana into flint."" Every word and the full stop are his. A tooltip line is one lore entry and
+# is not wrapped for us (WeaponLore emits each flavor entry as its own line), so the sentence is broken in two without
+# changing a word: THE BREAK IS A SEAT PLACEHOLDER 2026-11-23, OPEN FOR BEN (39 and 40 characters; the shipped flavor
+# lines run 27 to 52, with no written width). Was "A shard of flint, lashed and lit." / "Cheap enough to lose. Hot
+# enough to matter."
 flavor:
-  - "A shard of flint, lashed and lit."
-  - "Cheap enough to lose. Hot enough to matter."
+  - "Prehistoric magicians learned you could"
+  - "create fire by slamming mana into flint."
 
 triggers:
   right_click:
     name: "Fire Bolt"
     description:
-      - "Hurls a mote of burning flint."
+      # BEN, 2026-11-23, verbatim: "Change the Ability description to: "Hurls a fragment of burning mana"". NO full stop,
+      # as he typed it. Was "Hurls a mote of burning flint."
+      - "Hurls a fragment of burning mana"
     cooldown_ticks: 24
     cost:
       resource: mana

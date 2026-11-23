@@ -404,6 +404,39 @@ place in `loot/cascade.yml` all stand.
 **FLAGGED, NOT A QUESTION NOW:** its 19 a shot sits below the stone-tier Crossbow's 37 (per shot; the Boltor fires every
 16 ticks from a quiver of 8, the Crossbow once per 25-tick charge).
 
+### 1.14 Ben, 2026-11-23, VERBATIM: the Boltor's shot sound, and the Flint Staff's text
+
+Relayed by the seat's brief of 2026-11-23 ("THE BOLTOR'S SHOT SOUND AND THE FLINT STAFF'S TEXT"), recorded on
+`feat/boltor-sound-flint-text` (stacked on `feat/info-top-right`, #250):
+
+> "1. Add a sound to the Boltor's shots. Tell me what the old repo uses and give me a recomendation"
+
+Told the old repo's sound (READ by the seat, CreaperCrusher/Butterfly-SMP at `cfde822`,
+`weapon/ranged/BoltorWeapon.java` line 173: `world.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 1.0f,
+1.3f)`, once per shot) and the seat's recommendation to reuse it:
+
+> "use the old one"
+
+> "2. A change to the lore of the Flint staff. Replace the current description with this: "Prehistoric magicians learned
+> you could create fire by slamming mana into flint.""
+> "3. Change the Ability description to: "Hurls a fragment of burning mana""
+
+**AS BUILT:**
+- **The Boltor (BEN):** `visuals/boltor_cast.yml`, ONE sound step, `item.crossbow.shoot`, volume 1.0, pitch 1.3, bound as
+  the `right_click`'s `on_cast`. The key READ in the pinned jar (`SoundEvents.class` declares `CROSSBOW_SHOOT`). It plays
+  only when a shot leaves (READ: a press on cooldown, or on an empty or reloading quiver, never reaches
+  `CastExecutor.commit()`). Nothing else in `boltor.yml` changed.
+- **The Flint Staff's flavor (BEN's words):** "Prehistoric magicians learned you could create fire by slamming mana into
+  flint." A lore entry is one tooltip line, not wrapped for us, so it is broken into two without changing a word:
+  `"Prehistoric magicians learned you could"` / `"create fire by slamming mana into flint."` **THE BREAK IS A SEAT
+  PLACEHOLDER 2026-11-23, OPEN FOR BEN.** No width is written anywhere; the shipped weapon flavor lines run 27 to 52
+  characters (measured over all 22 at `1ee718b6`), and these are 39 and 40.
+- **The ability description (BEN's words):** `"Hurls a fragment of burning mana"`, with NO full stop, as he typed it. "Fire
+  Bolt" and every number unchanged.
+
+**OPEN FOR BEN:** the line break above. **READ for the record, not a question:** the Boltor's empty-quiver press still plays
+the quiver notice's own click (`block.dispenser.fail`), as it always has; it is not the shot sound.
+
 ---
 
 ## 2. WHAT EXISTS TODAY

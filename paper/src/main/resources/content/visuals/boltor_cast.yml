@@ -1,0 +1,24 @@
+# The Boltor firing: what you hear the instant a shot leaves. Id is the filename: boltor_cast.
+#
+# BEN'S, 2026-11-23 (the seat's brief, "THE BOLTOR'S SHOT SOUND"), verbatim: "Add a sound to the Boltor's shots. Tell me
+# what the old repo uses and give me a recomendation"; told the old repo's sound and the seat's recommendation to reuse
+# it: "use the old one". The old repo (CreaperCrusher/Butterfly-SMP at cfde822, weapon/ranged/BoltorWeapon.java, line
+# 173, READ by the seat): world.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 1.0f, 1.3f), once per shot.
+# Key, volume and pitch are that call's.
+#
+# A SOUND STEP ONLY, in the manner of breacher_cast.yml; no particle is added (the ray is boltor_beam's).
+#
+# ONLY WHEN A SHOT LEAVES (READ, our source): on_cast plays inside CastExecutor.commit(), which runs only after
+# AbilityService returns Success. A press ON COOLDOWN returns CastResult.OnCooldown before that (AbilityService, the
+# isReady check), and a press with an EMPTY or RELOADING quiver returns Quivers.resolveForShot's refusal in
+# WeaponFire.attempt BEFORE weaponService.fire is called. Neither reaches commit(), so neither plays this.
+#
+# THE KEY VERIFIED AGAINST THE PINNED JAR, not recalled: net/minecraft/sounds/SoundEvents.class in
+# run/versions/26.1.2/paper-26.1.2.jar declares CROSSBOW_SHOOT and carries the string item.crossbow.shoot (2026-11-23).
+# soundKey() resolves at LOAD, so a bad key would be a named boot failure, not a silent shot.
+
+steps:
+  - type: sound
+    key: item.crossbow.shoot      # BEN'S ("use the old one"): Sound.ITEM_CROSSBOW_SHOOT
+    volume: 1.0
+    pitch: 1.3

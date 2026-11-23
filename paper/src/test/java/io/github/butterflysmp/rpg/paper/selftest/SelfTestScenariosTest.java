@@ -287,7 +287,9 @@ class SelfTestScenariosTest {
         // control: 366 + 5 (setup, BR1-BR4) = 371; VB3 became VB3R2 on feat/vb3r2, a rename. 326 was this line's value.
         // Then GATE-unique-enchant-slot.md (feat/info-top-right, 2026-11-23), RECOUNTED: 42 gates, 380 keys, 42 setups, so
         // 338. The control: 371 + 9 (setup, US1-US8) = 380. 330 was this line's value.
-        assertEquals(338, loaded.rows());
+        // Then BX1 and BX2 (feat/boltor-sound-flint-text, 2026-11-23, in the same gate), RECOUNTED: 42 gates, 382 keys,
+        // 42 setups, so 340. The control: 380 + 2 = 382. 338 was this line's value.
+        assertEquals(340, loaded.rows());
     }
 
     /**
