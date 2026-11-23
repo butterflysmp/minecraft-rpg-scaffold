@@ -714,3 +714,20 @@ than once wherever he had the chance (counts per row below).
 - **What the gate already lists:** the client's view, a fired arrow's pickup, tipped and spectral arrows, creative, the
   off hand, death with the mirror showing, the Dragon's Plume on the mirror, vanilla's knockback on the token hit, and
   the GATE-nexus rows 4 and 5.
+
+## READINGS, 2026-11-22: VB3R2 ON THE BOOT OF `ac46c838` (#247, the stack top over #246)
+
+Boot approved by the seat's message of 2026-11-22 (#246 and #247) on Ben's own "ready", by `.claude/rules/booting.md`.
+R0 is `GATE-boltor-recipe.md`'s, read there before his login (all as predicted). **Only the setup and VB3R2 ran**
+(`/rpg selftest vanilla-bows VB3R2`, `SELFTEST RUN START vanilla-bows VB3R2 rows=1 selftest=ac46c838`). His login
+22:45:23, after R0 (22:41:14). No prediction above was edited.
+
+| row | READING |
+|---|---|
+| setup | **AS PREDICTED:** `SELF customHP=160.000/350.000`, then `REPLY "Set 1 level(s) for BaronVonYeetus (now level 1, 0/1000 into it, 0 lifetime)." [green]` and `SELF customHP=100.000/100.000` (m0 - m1 = 250.000; c1 = min(160, 100)); `DRIVE hold … item=empty`; **`NEXUS slot=8 material=nether_star amount=1`** |
+| **VB3R2** | **AS PREDICTED, each line in its own pass (each REPLY follows its own `CMD /rpg enchant pool`):** the Crossbow held, **`REPLY "Pool: power, unbreaking" [gray]`**; the Boltor held, **`REPLY "Pool: deft_hands, expanded_quiver, power, unbreaking" [gray]`**; the Bow held, **the same four**. **Ruling H read on a server: the Crossbow's pool has neither deft_hands nor expanded_quiver.** VB3's miss was the staging, as its dated note said |
+| the END | `SELFTEST RUN FINISHED`; `RESTORED … gamemode=SURVIVAL … time=1000 …`; **`SELFTEST RUN HEALTH saved=160.000 customHP=160.000/350.000 wrote=160.000`** |
+
+**His commands before it, recorded:** `/weather clear` (22:45:29), `/gamemode survival` (22:45:32), and `/rpg selftest
+vanilla-bows vb3r2` in lower case (22:45:47), which started no run (no `RUN START` line; the reply he was shown is not
+in the server log), then `/rpg selftest vanilla-bows VB3R2` (22:45:53).

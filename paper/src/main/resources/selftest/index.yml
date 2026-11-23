@@ -102,3 +102,6 @@ gates:
 # Nexus slot, the vanilla-driven Bow and Crossbow, ruling H's pools and ruling M's heal. It carries the ONE R0 and run
 # sheet for the stack: docs/gates/GATE-vanilla-bows.md.
   - vanilla-bows
+# boltor-recipe (2026-11-22, feat/boltor-recipe on feat/vb3r2): the Boltor's recipe, the Ranger's netherite tier. It
+# carries the ONE R0 for itself and #246 (VB3R2): docs/gates/GATE-boltor-recipe.md.
+  - boltor-recipe

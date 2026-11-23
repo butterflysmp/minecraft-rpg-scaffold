@@ -366,6 +366,32 @@ And on the seat's ruling I (the vanilla-shot weapons wear by our rule):
 Breacher stand above them (1.10). `short_bow` is left alone (his answer 6). Section 6 carries the mechanism, the reads it
 rests on and every ruling of that day.
 
+### 1.13 Ben, 2026-11-22, VERBATIM: the Boltor is the Ranger's NETHERITE tier, with its old recipe
+
+Relayed by the seat's brief of 2026-11-22 ("THE BOLTOR IS THE RANGER'S NETHERITE TIER AND GETS ITS OLD RECIPE"),
+recorded on `feat/boltor-recipe`:
+
+> "The Boltor is Netherite tier. What is the crafting recipe for it from the old repo?"
+
+Shown the old recipe:
+
+> "keep the old recipe"
+
+**THE TIER PLACEMENT.** The Ranger's ladder is now the Bow and the Crossbow (wood/stone, 1.12), the Breacher (iron, 1.10)
+and the Boltor (netherite). **THE RECIPE** (READ by the seat in the old repo, CreaperCrusher/Butterfly-SMP at `cfde822`,
+`crafting/RecipeRegistry.java`, `registerBoltor`), shipped exactly as `content/recipes/boltor.yml`: shape `"SNS"`,
+`"GHG"`, `" S "`; S stick, N netherite ingot, G string, H tripwire hook. Vanilla's crossbow is the same shape with an iron
+ingot where this has netherite; the two grids differ in that one cell (READ, the pinned jar's `crossbow.json`).
+**No value in `boltor.yml` changes:** rarity uncommon, `attack_damage` 19, the quiver, the reload, the cooldown, and its
+place in `loot/cascade.yml` all stand.
+
+**OPEN FOR BEN (asked, not answered, so NOT STATED):**
+1. Whether the Boltor stays in the cascade loot pool now that it is craftable.
+2. Whether it stays uncommon when every other ladder weapon is common.
+
+**FLAGGED, NOT A QUESTION NOW:** its 19 a shot sits below the stone-tier Crossbow's 37 (per shot; the Boltor fires every
+16 ticks from a quiver of 8, the Crossbow once per 25-tick charge).
+
 ---
 
 ## 2. WHAT EXISTS TODAY

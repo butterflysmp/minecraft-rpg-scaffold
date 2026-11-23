@@ -1,6 +1,13 @@
 # THE BOLTOR -- the Ranger's identity weapon, and the first weapon in this project whose damage is a
 # BALANCED number rather than a placeholder.
 #
+# BEN, 2026-11-22: THE RANGER'S NETHERITE TIER. Verbatim: "The Boltor is Netherite tier." Its recipe is the old repo's,
+# on his "keep the old recipe": content/recipes/boltor.yml. NO VALUE IN THIS FILE CHANGED WITH IT: the rarity
+# (uncommon), attack_damage 19, the quiver, the reload, the cooldown and its place in loot/cascade.yml all stand. OPEN
+# FOR BEN, not answered: whether it stays in the cascade now that it is craftable, and whether it stays uncommon when
+# every other ladder weapon is common. Flagged, not asked: its 19 a shot sits below the stone-tier Crossbow's 37.
+# PLAN-weapon-tiers.md 1.13.
+#
 # Slice B ships it SINGLE-WIELD. Dual-wield, alternation and the off-hand ruling are slice C's and
 # are stated there rather than falling out of this file by omission -- see the MAIN-HAND note at the
 # bottom, which is a live constraint today and not a forward reference.

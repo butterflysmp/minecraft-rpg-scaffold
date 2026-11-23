@@ -1,0 +1,126 @@
+# GATE-boltor-recipe (docs/gates/GATE-boltor-recipe.md): the Boltor's recipe, the Ranger's netherite tier (Ben,
+# 2026-11-22: "keep the old recipe"). Stacked on feat/vb3r2 (#246). SURVIVAL, every row; no mob; ALL AUTO.
+#
+# THE ROUTE (READ): /recipes opens the Recipe Book (RecipeBrowserMenu): what he can craft NOW, out of his inventory,
+# weapons first (SuggestionTier.WEAPON is the first tier, 45 entries a page). A click on an entry crafts it through
+# InventoryCraft.craft -> commitCraft: the SERVER matches the grid (Bukkit.getCraftingRecipe), the match must equal the
+# clicked recipe's key, and the claimed weapon is minted, logged as CRAFT minted. `click` matches an icon by its plain
+# name's prefix (SelfTestDrivers). The Crafting screens unlock at level 3 (NexusStationGate.CRAFTING): the setup stages it.
+#
+# EACH ROW clears the seven materials it works with, and every crossbow-material item (his own Boltors, Breachers and
+# Crossbows included), so its ingredients are exactly the ones it gives. The run's restore returns all of it.
+
+setup:
+  - close: ""
+  - cmd: "rpg playerxp set @s 3 levels"
+  - wait: 20
+  - hold: empty
+
+# BR1: THE BOLTOR'S GRID MINTS A BOLTOR. Stick x3, netherite ingot, string x2, tripwire hook: the Boltor is offered, the
+# Crossbow is not (no iron). One click; the CRAFT minted line; then held, every tooltip line.
+BR1:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:stick"
+  - cmd: "clear @s minecraft:string"
+  - cmd: "clear @s minecraft:tripwire_hook"
+  - cmd: "clear @s minecraft:netherite_ingot"
+  - cmd: "clear @s minecraft:iron_ingot"
+  - cmd: "clear @s minecraft:gunpowder"
+  - cmd: "give @s minecraft:stick 3"
+  - cmd: "give @s minecraft:netherite_ingot 1"
+  - cmd: "give @s minecraft:string 2"
+  - cmd: "give @s minecraft:tripwire_hook 1"
+  - wait: 2
+  - probe_inventory: boltor
+  - cmd: "recipes"
+  - wait: 3
+  - dump: menu
+  - click: "Boltor"
+  - wait: 3
+  - close: ""
+  - wait: 2
+  - probe_inventory: boltor
+  - hold: boltor
+  - wait: 2
+  - dump: held
+
+# BR2: THE BREACHER'S GRID STILL MINTS A BREACHER (the control for the claim order). String x2, gunpowder x2, iron x2.
+BR2:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:stick"
+  - cmd: "clear @s minecraft:string"
+  - cmd: "clear @s minecraft:tripwire_hook"
+  - cmd: "clear @s minecraft:netherite_ingot"
+  - cmd: "clear @s minecraft:iron_ingot"
+  - cmd: "clear @s minecraft:gunpowder"
+  - cmd: "give @s minecraft:string 2"
+  - cmd: "give @s minecraft:gunpowder 2"
+  - cmd: "give @s minecraft:iron_ingot 2"
+  - wait: 2
+  - cmd: "recipes"
+  - wait: 3
+  - dump: menu
+  - click: "Breacher"
+  - wait: 3
+  - close: ""
+  - wait: 2
+  - probe_inventory: breacher
+
+# BR3: VANILLA'S CROSSBOW GRID MINTS THE CROSSBOW, AND IT IS THE BOLTOR'S GRID WITH IRON FOR NETHERITE (READ:
+# BoltorRecipeTest), so it is also the row that reads "the iron variant does NOT mint a Boltor". Stick x3, iron, string
+# x2, tripwire hook: the Crossbow is offered, the Boltor is not.
+BR3:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:stick"
+  - cmd: "clear @s minecraft:string"
+  - cmd: "clear @s minecraft:tripwire_hook"
+  - cmd: "clear @s minecraft:netherite_ingot"
+  - cmd: "clear @s minecraft:iron_ingot"
+  - cmd: "clear @s minecraft:gunpowder"
+  - cmd: "give @s minecraft:stick 3"
+  - cmd: "give @s minecraft:iron_ingot 1"
+  - cmd: "give @s minecraft:string 2"
+  - cmd: "give @s minecraft:tripwire_hook 1"
+  - wait: 2
+  - cmd: "recipes"
+  - wait: 3
+  - dump: menu
+  - click: "Crossbow"
+  - wait: 3
+  - close: ""
+  - wait: 2
+  - probe_inventory: crossbow
+  - probe_inventory: boltor
+
+# BR4: BOTH GRIDS AFFORDABLE AT ONCE: each click mints its own weapon and never the other's. Stick x6, iron, netherite,
+# string x4, tripwire hook x2: both offered. The Crossbow first, then the Boltor.
+BR4:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:stick"
+  - cmd: "clear @s minecraft:string"
+  - cmd: "clear @s minecraft:tripwire_hook"
+  - cmd: "clear @s minecraft:netherite_ingot"
+  - cmd: "clear @s minecraft:iron_ingot"
+  - cmd: "clear @s minecraft:gunpowder"
+  - cmd: "give @s minecraft:stick 6"
+  - cmd: "give @s minecraft:iron_ingot 1"
+  - cmd: "give @s minecraft:netherite_ingot 1"
+  - cmd: "give @s minecraft:string 4"
+  - cmd: "give @s minecraft:tripwire_hook 2"
+  - wait: 2
+  - cmd: "recipes"
+  - wait: 3
+  - dump: menu
+  - click: "Crossbow"
+  - wait: 3
+  - dump: menu
+  - click: "Boltor"
+  - wait: 3
+  - close: ""
+  - wait: 2
+  - probe_inventory: crossbow
+  - probe_inventory: boltor

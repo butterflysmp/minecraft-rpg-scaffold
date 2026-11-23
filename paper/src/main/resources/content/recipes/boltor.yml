@@ -1,0 +1,27 @@
+# The Boltor's recipe (feat/boltor-recipe, 2026-11-22). BEN's, verbatim: "The Boltor is Netherite tier. What is the
+# crafting recipe for it from the old repo?" and, shown it, "keep the old recipe". The old repo's registerBoltor
+# (CreaperCrusher/Butterfly-SMP at cfde822, crafting/RecipeRegistry.java, READ by the seat): "SNS", "GHG", " S ";
+# S stick, N netherite ingot, G string, H tripwire hook. The bottom row's spaces are empty cells (RecipeDefinition).
+#
+# A 3x3 SHAPE, registered by RecipeRegistrar as a Bukkit ShapedRecipe whose result is a plain crossbow; our crafting
+# table mints the Boltor at commit (InventoryCraft.commitCraft, the CRAFT minted line), the Breacher's route. NO NEW
+# CODE. WHICH WEAPON A CRAFT MINTS (READ, RecipeProbe.claimedBy): a matched recipe of OURS by its id first, so this grid
+# mints the Boltor and never the Crossbow that crossbow.yml's craft_result claims for vanilla's own crossbow recipe.
+#
+# NO VANILLA CLASH (READ, the pinned 26.1.2 server jar's 1,515 recipe files and 207 item tags): vanilla's crossbow is
+# "#&#", "~$~", " # " with an IRON ingot (&) where this has netherite, so the two grids differ in that one cell. Only
+# three vanilla recipes name netherite_ingot (the block and the two ingot conversions) and three name tripwire_hook
+# (crossbow, trapped_chest, tripwire_hook); the four item tags that hold either are used only by smithing recipes.
+
+mints: boltor
+
+shape:
+  - "SNS"
+  - "GHG"
+  - " S "
+
+ingredients:
+  S: stick
+  N: netherite_ingot
+  G: string
+  H: tripwire_hook
