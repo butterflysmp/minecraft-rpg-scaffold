@@ -146,7 +146,7 @@ class KnellBeamContentTest {
         assertTrue(roster.size() >= 10, "CONTROL: the whole roster loaded, " + roster.size());
         var gearClass = io.github.butterflysmp.rpg.paper.weapon.GearItems.gearClassOf(beam(new ArrayList<>()));
         assertEquals(List.of("attunement", "unbreaking"),
-                EnchantRoll.poolFor(EnchantRoll.Has.EVERY, gearClass, roster).stream().map(EnchantRoll.Rollable::enchantId).sorted().toList());
+                EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, gearClass, roster).stream().map(EnchantRoll.Rollable::enchantId).sorted().toList());
     }
 
     /** What a minted beam's tooltip reads at score 100 (the gate's tooltip row predicts these lines). */

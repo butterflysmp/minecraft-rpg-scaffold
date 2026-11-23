@@ -129,4 +129,10 @@ public record AccessoryDefinition(
     public Optional<String> craftResult() {
         return Optional.empty();
     }
+
+    /** U5: this kind declares no element (2026-11-23), so its unique slot rolls nothing. */
+    @Override
+    public Optional<String> gearElement() {
+        return Optional.empty();
+    }
 }

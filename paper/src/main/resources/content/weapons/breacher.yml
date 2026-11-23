@@ -20,7 +20,7 @@
 # interaction (the item use is denied, READ), and in either hand RpgListeners.onWeaponCrossbowLoad refuses the load
 # (feat/breacher-ammo). So it never loads or fires a vanilla arrow.
 #
-# NAME THE QUANTITY, for every enchant that can roll here (EnchantRoll.poolFor gates by class only, READ: a ranger
+# NAME THE QUANTITY, for every enchant that can roll here (EnchantRoll.poolFor, normalPoolFor since 2026-11-23, gates by class only, READ: a ranger
 # weapon's pool is Power, Deft Hands, Expanded Quiver and Unbreaking):
 #   Power (effect damage, 5/10/15%): moves each pellet's hitBase, 6 x score/100 (EffectApplier's Damage arm,
 #     HitDamage.hitBase). Non-zero and continuous; every Breacher has it. At score 100 a pellet reads 6.3 / 6.6 / 6.9,

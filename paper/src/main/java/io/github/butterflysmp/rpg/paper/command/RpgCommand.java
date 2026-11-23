@@ -301,6 +301,11 @@ public final class RpgCommand {
                                 .executes(ctx -> enchant(ctx, adapters, weapons, shields, armor, tools, EnchantOp.SHOW, 0, 0, 0, null)))
                         .then(Commands.literal("pool")
                                 .executes(ctx -> enchant(ctx, adapters, weapons, shields, armor, tools, EnchantOp.POOL, 0, 0, 0, null)))
+                        // Dev tally of the held gear's roll (2026-11-23): <count> rolls, each slot's 0..4 counts. 1..10000.
+                        .then(Commands.literal("rollstats")
+                                .then(Commands.argument("count", IntegerArgumentType.integer(1, 10000))
+                                        .executes(ctx -> enchant(ctx, adapters, weapons, shields, armor, tools, EnchantOp.ROLLSTATS,
+                                                0, 0, IntegerArgumentType.getInteger(ctx, "count"), null))))
                         .then(Commands.literal("clear")
                                 .executes(ctx -> enchant(ctx, adapters, weapons, shields, armor, tools, EnchantOp.CLEAR, 0, 0, 0, null)))
                         .then(Commands.literal("candidate")
@@ -315,7 +320,7 @@ public final class RpgCommand {
                                                         StringArgumentType.getString(ctx, "enchant"))))))
                         .then(Commands.literal("level")
                                 .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
-                                        .then(Commands.argument("candidate", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
+                                        .then(Commands.argument("candidate", IntegerArgumentType.integer(0, MAX_DEV_CANDIDATE))
                                                 .then(Commands.argument("level", IntegerArgumentType.integer(0, EnchantState.MAX_LEVEL))
                                                         .executes(ctx -> enchant(ctx, adapters, weapons, shields, armor, tools, EnchantOp.LEVEL,
                                                                 IntegerArgumentType.getInteger(ctx, "slot"),
@@ -323,7 +328,7 @@ public final class RpgCommand {
                                                                 IntegerArgumentType.getInteger(ctx, "level"), null))))))
                         .then(Commands.literal("active")
                                 .then(Commands.argument("slot", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
-                                        .then(Commands.argument("candidate", IntegerArgumentType.integer(0, MAX_DEV_SLOT))
+                                        .then(Commands.argument("candidate", IntegerArgumentType.integer(0, MAX_DEV_CANDIDATE))
                                                 .executes(ctx -> enchant(ctx, adapters, weapons, shields, armor, tools, EnchantOp.ACTIVE,
                                                         IntegerArgumentType.getInteger(ctx, "slot"),
                                                         IntegerArgumentType.getInteger(ctx, "candidate"), 0, null)))))
@@ -1867,11 +1872,18 @@ public final class RpgCommand {
      * fixed-3-versus-rolled-1-3 is the roster pass's decision and a cap written now would be a
      * number invented before the question was asked. This exists so a dev cannot mint a 400-slot
      * item by typo, which is guarding at the reachable surface rather than in the kernel.
+     *
+     * <p><b>WAS the literal 2, and it bounded the CANDIDATE index too.</b> On 2026-11-23 the roll grew to four slots and
+     * four candidates (the seat's rulings V1 and V2), so both bounds are now read off {@code EnchantRoll}'s constants and
+     * cannot drift from what the roll and the table hold.
      */
-    private static final int MAX_DEV_SLOT = 2;
+    private static final int MAX_DEV_SLOT = io.github.butterflysmp.rpg.core.enchant.EnchantRoll.SLOTS - 1;
+
+    /** The highest candidate index {@code /rpg enchant} will address: the roll's and the table's bound, less one. */
+    private static final int MAX_DEV_CANDIDATE = io.github.butterflysmp.rpg.core.enchant.EnchantRoll.MAX_CANDIDATES - 1;
 
     /** Which edit {@link #enchant} makes to the held weapon's enchant state. */
-    private enum EnchantOp { CANDIDATE, LEVEL, ACTIVE, DEACTIVATE, CLEAR, SHOW, POOL }
+    private enum EnchantOp { CANDIDATE, LEVEL, ACTIVE, DEACTIVATE, CLEAR, SHOW, POOL, ROLLSTATS }
 
     /**
      * Edit the held weapon's enchant state, for testing. The stand-in for both of the things that
@@ -1915,10 +1927,23 @@ public final class RpgCommand {
 
             // THE ROLL POOL (2026-11-22, GATE-vanilla-bows: the seat's ruling H read on the server). The SAME list
             // rollOnAcquire draws from (EnchantRollItems.poolFor): the class filter, then each enchant's requires:.
+            // 2026-11-23: "Pool:" is the NORMAL pool (slots 1-3), unchanged in shape; "Unique pool:" is slot 0's, by the
+            // gear's element (empty prints nothing after the colon).
             if (op == EnchantOp.POOL) {
                 player.sendMessage(Component.text("Pool: " + String.join(", ",
-                        io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.poolFor(gear.gear(), adapters)),
+                        io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.normalPoolFor(gear.gear(), adapters)),
                         NamedTextColor.GRAY));
+                player.sendMessage(Component.text("Unique pool: " + String.join(", ",
+                        io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.uniquePoolFor(gear.gear(), adapters)),
+                        NamedTextColor.GRAY));
+                return;
+            }
+
+            // THE DEV TALLY (2026-11-23, the seat's amendment): `level` carries the roll count. Writes nothing.
+            if (op == EnchantOp.ROLLSTATS) {
+                for (String line : io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.rollStats(gear.gear(), adapters, level)) {
+                    player.sendMessage(Component.text(line, NamedTextColor.GRAY));
+                }
                 return;
             }
 
@@ -2017,7 +2042,7 @@ public final class RpgCommand {
                     case ACTIVE -> before.withActive(slot, candidate);
                     case DEACTIVATE -> before.withoutActive(slot);
                     // Handled above and returned; listed so the switch stays exhaustive.
-                    case CLEAR, SHOW, POOL -> before;   // POOL returned above, before any state was read
+                    case CLEAR, SHOW, POOL, ROLLSTATS -> before;   // POOL and ROLLSTATS returned above, before any state was read
                 };
             } catch (IllegalArgumentException ex) {
                 // The model's own refusals, surfaced verbatim. Reachable for the cases the

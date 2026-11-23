@@ -71,7 +71,18 @@ import java.util.List;
 public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 EnchantEffect effect, GearClass gearClass,
                                 List<Integer> valueByLevel, String icon,
-                                io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires) {
+                                io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires,
+                                String element) {
+
+    /**
+     * A NORMAL enchant (no {@code element:}) with a quantity requirement: every enchant shipped before 2026-11-23. The
+     * seat's ruling U1 added {@code element}: non-null makes the enchant UNIQUE to gear of that element.
+     */
+    public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect, GearClass gearClass,
+                             List<Integer> valueByLevel, String icon,
+                             io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires) {
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, icon, requires, null);
+    }
 
     /**
      * An enchant with no quantity requirement (YAML {@code requires:} absent). The seat's ruling H, 2026-11-22, added
@@ -98,6 +109,11 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             throw new IllegalArgumentException("enchant id required");
         }
         if (requires == null) requires = io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires.NONE;
+        // U1: absent is NORMAL. A blank one is a typo, refused rather than read as normal (the loader has already
+        // refused, by name, an element that names no loaded element).
+        if (element != null && element.isBlank()) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares a blank element; leave it out for a normal enchant");
+        }
         if (displayName == null || displayName.isBlank()) {
             throw new IllegalArgumentException("enchant '" + id + "' requires display_name");
         }
@@ -352,5 +368,10 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
     /** True when this enchant is gated on no class at all and applies to whatever it sits on. */
     public boolean isUniversal() {
         return gearClass == null;
+    }
+
+    /** True when this enchant is UNIQUE (U1): it rolls only in slot 0, only on gear of its {@code element}. */
+    public boolean isUnique() {
+        return element != null;
     }
 }

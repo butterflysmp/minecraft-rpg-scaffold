@@ -99,4 +99,15 @@ public sealed interface GearDefinition
      * @return the material token, never blank when present. Never null.
      */
     Optional<String> craftResult();
+
+    /**
+     * THE ELEMENT THIS GEAR ROLLS ITS UNIQUE SLOT FROM (the seat's ruling U5, 2026-11-23): the gear's own element id, or
+     * {@code Optional.empty()} for gear that declares none. {@code EnchantRoll.uniquePoolFor} reads it through
+     * {@code EnchantRollItems}, so a kind that starts declaring an element takes part with no change to the roll.
+     *
+     * <p>ABSTRACT, not a default, so every kind answers in its own file and a new kind cannot compile without
+     * answering. At 2026-11-23 only a weapon has one (its {@code element}, required, "use kinetic, never absent");
+     * shields, armour, tools and accessories return empty.
+     */
+    Optional<String> gearElement();
 }

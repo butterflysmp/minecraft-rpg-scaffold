@@ -1,16 +1,17 @@
 package io.github.butterflysmp.rpg.core.enchant;
 
+import io.github.butterflysmp.rpg.core.enchant.CandidateCascade.Tier;
 import io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Rollable;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,30 +20,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The shippable bugs this guards, in the order they would hurt:
  *
  * <ul>
- *   <li>A roll offering an enchant the weapon can never use -- Power on a sword. The class gate is
- *       the only thing between a player and a candidate that is inert the moment they buy it.
- *   <li>A roll producing a slot count the table cannot render, which {@code EnchantMenuLayout}
- *       refuses at the door: the weapon would become un-enchantable rather than mis-rendered.
- *   <li>A candidate arriving UNLOCKED, which hands out for free the thing the whole economy pass
- *       exists to charge for.
- *   <li>A slot offering the same enchant twice, which {@code EnchantSlot} throws on -- from inside
- *       a mint, where an exception loses the item rather than the roll.
+ *   <li>A roll offering an enchant the weapon can never use -- Power on a sword.
+ *   <li>A roll producing a slot count the table cannot render, which {@code EnchantMenuLayout} refuses at the door.
+ *   <li>A candidate arriving UNLOCKED, which hands out for free the thing the economy exists to charge for.
+ *   <li>A slot offering the same enchant twice, which {@code EnchantSlot} throws on -- from inside a mint.
  * </ul>
  *
- * <p>The draws are fed as literal doubles, the way {@code UnbreakingTest} feeds
- * {@code Unbreaking.consumes}: the reason the draw was left at the call site is so these numbers can
- * be exact. The per-decision tests own the boundaries; the one end-to-end test owns the shape, so no
- * boundary assertion depends on the draw ORDER.
+ * <p><b>REWRITTEN 2026-11-23 for the unique slot and Ben's cascade</b> (the seat's rulings U3 and V1-V3). The roll is
+ * now four slots, slot 0 unique and slots 1-3 normal, and the count is {@link CandidateCascade}'s. The rows that pinned
+ * {@code candidateCount}'s even 1..3 split were deleted with it; the cascade's boundaries are {@code CandidateCascadeTest}'s,
+ * the unique slot's {@code EnchantRollUniqueTest}'s. The pool and {@code pick} rows are unchanged but for the rename
+ * {@code poolFor} -> {@code normalPoolFor}. Every roll here passes NO element, so slot 0 is empty and the normal slots
+ * are the ones read.
  */
 class EnchantRollTest {
 
-    // The shipped roster, id for id and class for class, IN THE ORDER THE LOADER PRODUCES --
-    // Arrays.sort over the filenames, so alphabetical. `unbreaking` is universal == null class.
-    //
-    // IT WAS STALE FOR TWO SLICES. It carried six entries against eight shipped files: protection
-    // and growth landed with armor and were never added, so the file guarding the roll had never
-    // once exercised ARMOR -- the class that goes past the candidate cap in this slice. Nothing
-    // pins this list against content/enchants/*.yml; it is hand-written and can drift again.
+    // The shipped roster, IN THE ORDER THE LOADER PRODUCES (alphabetical by filename). `unbreaking` is universal. Nothing
+    // pins this list against content/enchants/*.yml; the paper content tests read the real files.
     private static final Rollable SHARPNESS = new Rollable("sharpness", GearClass.MELEE);
     private static final Rollable POWER = new Rollable("power", GearClass.RANGER);
     private static final Rollable ATTUNEMENT = new Rollable("attunement", GearClass.MAGE);
@@ -56,19 +50,28 @@ class EnchantRollTest {
             List.of(ATTUNEMENT, BULWARK, GROWTH, MANA_BANK, POWER, PROTECTION, SHARPNESS, THORNS,
                     UNBREAKING);
 
-    /**
-     * Literal draws, consumed in order. Running off the end throws
-     * {@code ArrayIndexOutOfBoundsException} on purpose: a roll that asked for more draws than the
-     * test accounted for has changed its arity, and that should be loud rather than absorbed.
-     */
+    /** Ben's cascade as a fixture (his numbers live in content; the paper test reads the file). */
+    private static final CandidateCascade BENS = new CandidateCascade(List.of(
+            new Tier(4, 0.10), new Tier(3, 0.40), new Tier(2, 0.70), new Tier(1, 1.0)));
+
+    /** Literal draws in order; running off the end throws, so a change in arity is loud. */
     private static DoubleSupplier draws(double... values) {
         int[] cursor = {0};
         return () -> values[cursor[0]++];
     }
 
-    /** Every draw the same value. For the tests that assert a property over any draw at all. */
+    /** Every draw the same value. Under BENS, 0.0 rolls FOUR (then capped) and 0.99 rolls ONE. */
     private static DoubleSupplier always(double value) {
         return () -> value;
+    }
+
+    private static EnchantState roll(GearClass c, List<Rollable> roster, DoubleSupplier d) {
+        return EnchantRoll.roll(Optional.empty(), EnchantRoll.Has.EVERY, c, roster, BENS, d);
+    }
+
+    /** Slots 1..3: the normal ones. */
+    private static List<EnchantSlot> normal(EnchantState state) {
+        return state.slots().subList(1, state.slots().size());
     }
 
     private static int distinctCount(List<String> ids) {
@@ -84,18 +87,19 @@ class EnchantRollTest {
     // ---- the shape ------------------------------------------------------------------------
 
     @Test
-    void everyRolledWeaponGetsExactlyThreeSlots() {
-        // Fixed, not tier-varied, and equal to what the table renders. A weapon with four would be
-        // refused by EnchantMenuLayout.overflow and could never be enchanted at all.
-        assertEquals(3, EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER, always(0.0)).slots().size());
-        assertEquals(3, EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MAGE, ROSTER, always(0.99)).slots().size());
-        assertEquals(3, EnchantRoll.SLOTS);
-        // Mutation: SLOTS 3 -> 2, or the loop bound -> reddens.
+    void everyRolledPieceGetsExactlyFourSlots() {
+        // V1: the unique slot and three normal ones. A fifth would be refused by EnchantMenuLayout.overflow.
+        assertEquals(4, roll(GearClass.MELEE, ROSTER, always(0.0)).slots().size());
+        assertEquals(4, roll(GearClass.MAGE, ROSTER, always(0.99)).slots().size());
+        assertEquals(4, EnchantRoll.SLOTS);
+        assertEquals(0, EnchantRoll.UNIQUE_SLOT);
+        // Mutation: SLOTS 4 -> 3, or the loop bound -> reddens.
     }
 
     @Test
     void everyRolledCandidateIsLockedAndNothingIsActive() {
-        EnchantState state = EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER, always(0.99));
+        EnchantState state = roll(GearClass.ARMOR, ROSTER, always(0.0));
+        assertTrue(state.slots().stream().mapToInt(s -> s.candidates().size()).sum() > 0, "control: something rolled");
         for (EnchantSlot slot : state.slots()) {
             assertEquals(EnchantSlot.NONE, slot.activeIndex(), "a fresh roll activates nothing");
             for (EnchantCandidate candidate : slot.candidates()) {
@@ -103,209 +107,93 @@ class EnchantRollTest {
                 assertTrue(candidate.isLocked());
             }
         }
-        // The consequence that matters: a freshly rolled weapon is mechanically unenchanted.
         assertTrue(state.effective().isEmpty(), "nothing takes effect until the player unlocks");
-        // Mutation: `new EnchantCandidate(id, 0)` -> `1` -> reddens on all three.
+        // Mutation: `new EnchantCandidate(id, 0)` -> `1` -> reddens.
     }
 
     @Test
     void withinASlotTheCandidatesAreDistinct() {
-        // Draws chosen to ask for two candidates in every slot from a pool of exactly two, which is
-        // the case a non-shrinking pool would fill with the same id twice.
-        EnchantState state = EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER, always(0.99));
-        for (EnchantSlot slot : state.slots()) {
-            List<String> ids = idsIn(slot);
-            assertEquals(ids.size(), distinctCount(ids), "a slot offers an enchant twice: " + ids);
+        // always(0.0) asks for FOUR in every slot from a pool of two (melee) and four (armor): the case a non-shrinking
+        // pool would fill with the same id twice.
+        for (GearClass c : List.of(GearClass.MELEE, GearClass.ARMOR, GearClass.SHIELD)) {
+            for (EnchantSlot slot : roll(c, ROSTER, always(0.0)).slots()) {
+                List<String> ids = idsIn(slot);
+                assertEquals(ids.size(), distinctCount(ids), "a slot offers an enchant twice: " + ids);
+            }
         }
-        // Mutation: drop `remaining.remove(picked)` -> RUN 2026-08-26, reddened 7 tests with
-        // "slot offers 'unbreaking' twice; a slot's candidates must be distinct". EnchantSlot's own
-        // constructor throws BEFORE the assertion below runs, so this case guards by erroring, not
-        // by asserting. The assertion stays as defence in depth against that rule moving.
+        // Mutation: drop `remaining.remove(picked)` -> EnchantSlot's constructor throws -> reddens by erroring.
     }
 
     @Test
     void theSameEnchantMayBeOfferedInMoreThanOneSlot() {
-        // No mutual exclusion across slots: EnchantState.effective() resolves a duplicate to the
-        // HIGHEST level either slot holds it at, never the sum, so offering it twice is legal.
-        EnchantState state = EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER, always(0.0));
-        for (EnchantSlot slot : state.slots()) {
-            assertEquals(List.of("sharpness"), idsIn(slot));
+        // No mutual exclusion across slots. always(0.99) rolls ONE per slot and picks the LAST of the pool: unbreaking.
+        for (EnchantSlot slot : normal(roll(GearClass.MELEE, ROSTER, always(0.99)))) {
+            assertEquals(List.of("unbreaking"), idsIn(slot));
         }
-        // Mutation: hoist `remaining` out of the slot loop (one shrinking pool for the whole
-        // weapon) -> slots 1 and 2 can no longer repeat sharpness -> reddens.
+        // Mutation: hoist `remaining` out of the slot loop -> slots 2 and 3 cannot repeat it -> reddens.
     }
 
     // ---- the class gate -------------------------------------------------------------------
 
     @Test
     void aMeleeWeaponIsNeverOfferedPowerOrAttunement() {
-        EnchantState state = EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER, always(0.99));
-        for (EnchantSlot slot : state.slots()) {
+        for (EnchantSlot slot : roll(GearClass.MELEE, ROSTER, always(0.0)).slots()) {
             for (String id : idsIn(slot)) {
-                assertTrue(id.equals("sharpness") || id.equals("unbreaking"),
-                        "a melee weapon was offered '" + id + "'");
+                assertTrue(id.equals("sharpness") || id.equals("unbreaking"), "a melee weapon was offered '" + id + "'");
             }
         }
-        // Mutation: drop the class comparison in poolFor -> reddens.
+        // Mutation: drop the class comparison in normalPoolFor -> reddens.
     }
 
     @Test
     void aShieldIsNeverOfferedAWeaponEnchantAndNoWeaponIsEverOfferedBulwark() {
-        // The gate in BOTH directions, and the second half is the one nothing guarded before Slice 2.
-        // A shield offered Sharpness would sell a player a damage multiplier that DamageEnchantItems
-        // never reads (it looks at the main hand's weapon); a sword offered Bulwark would sell a
-        // block bonus read off a stack that cannot block.
-        for (String id : idsIn(EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.SHIELD, ROSTER, always(0.99)).slots().get(0))) {
+        for (String id : idsIn(roll(GearClass.SHIELD, ROSTER, always(0.0)).slots().get(1))) {
             assertTrue(id.equals("bulwark") || id.equals("thorns") || id.equals("unbreaking"),
                     "a shield was offered '" + id + "'");
         }
-        // BOTH shield enchants must stay off every weapon. Asserted per enchant rather than by
-        // counting, because this roster is hand-written and can drift from the yml files
-        // independently -- a Rollable declared with the wrong GearClass here would otherwise only
-        // show up on a server.
         for (GearClass weapon : List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE)) {
-            assertFalse(EnchantRoll.poolFor(EnchantRoll.Has.EVERY, weapon, ROSTER).contains(BULWARK),
+            assertFalse(EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, weapon, ROSTER).contains(BULWARK),
                     weapon + " was offered Bulwark -- a block enchant on a weapon");
-            assertFalse(EnchantRoll.poolFor(EnchantRoll.Has.EVERY, weapon, ROSTER).contains(THORNS),
+            assertFalse(EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, weapon, ROSTER).contains(THORNS),
                     weapon + " was offered Thorns -- a reflect read off a stack that cannot block");
         }
     }
 
+    /**
+     * The pool sizes the cap meets: shield THREE, armor FOUR, every weapon TWO. A slot rolled at four fills exactly the
+     * pool, and armor is now the one shipped pool that fills all FOUR cells (the cap was three until 2026-11-23, and
+     * armor's four was clamped to three).
+     */
     @Test
-    void aShieldsPoolIsTHREEAndArmorsIsFOURSoBothCanFillASlot() {
-        // Bulwark + Thorns + Unbreaking. Every WEAPON class is still two (its own damage enchant
-        // plus Unbreaking), so the shield is the only gear whose slot can hold three candidates.
-        //
-        // This is the moment EnchantMenuLayout.CANDIDATES == 3 stops being a constant pinned against
-        // another constant and starts being exercised by a real roll of real content. Slice 2a
-        // predicted it here by name, in the test this one replaces.
-        assertEquals(3, EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.SHIELD, ROSTER).size());
-        assertEquals(2, EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER).size());
-
-        // == 3, not <= 3. At always(0.99) candidateCount(3, 0.99) IS 3, so a <= assertion would be
-        // vacuous -- it would pass just as happily on a pool that had silently stayed at two.
-        for (EnchantSlot slot : EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.SHIELD, ROSTER, always(0.99)).slots()) {
-            assertEquals(3, slot.candidates().size(),
-                    "a full draw on a pool of three must fill all three cells of the slot");
+    void aRollOfFourFillsExactlyThePool() {
+        assertEquals(3, EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.SHIELD, ROSTER).size());
+        assertEquals(4, EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.ARMOR, ROSTER).size());
+        assertEquals(2, EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER).size());
+        for (EnchantSlot slot : normal(roll(GearClass.SHIELD, ROSTER, always(0.0)))) assertEquals(3, slot.candidates().size());
+        for (EnchantSlot slot : normal(roll(GearClass.ARMOR, ROSTER, always(0.0)))) {
+            assertEquals(4, slot.candidates().size(), "armor's four now fit the four cells");
+            assertEquals(4, distinctCount(idsIn(slot)));
         }
-
-        // And the distinctness rule finally runs at pool size 3: the third pick comes from a pool
-        // that has already been shrunk TWICE, which no shipped roster could reach before.
-        for (EnchantSlot slot : EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.SHIELD, ROSTER, always(0.99)).slots()) {
-            assertEquals(3, distinctCount(idsIn(slot)),
-                    "a slot offered the same enchant twice: " + idsIn(slot));
-        }
-    }
-
-    @Test
-    void theArmorPoolIsTheFirstToEXCEEDTheCandidateCapAndTheClampIsTheAnswer() {
-        // Protection + Growth + Mana Bank + Unbreaking. The first shipped pool ever larger than
-        // MAX_CANDIDATES, and the cap doing the job it was written for rather than a defect: a slot
-        // offers a random THREE of the four, and which three varies per slot.
-        assertEquals(4, EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.ARMOR, ROSTER).size());
-        assertEquals(3, EnchantRoll.candidateCount(4, 0.9999999),
-                "clamped by the layout, not by the pool");
-
-        // Raising the cap to 4 was considered and rejected. It would not let a player run all four
-        // anyway -- three slots with one active each means three, forced by SLOTS, not by the
-        // candidate cap -- and EnchantMenuLayout.rawSlotFor(1, 3) is 49, which is INPUT_SLOT.
-        assertEquals(3, EnchantRoll.MAX_CANDIDATES);
-
-        // A full draw fills three of the four cells, distinctly, on every slot.
-        for (EnchantSlot slot : EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.ARMOR, ROSTER, always(0.99)).slots()) {
-            assertEquals(3, slot.candidates().size(),
-                    "a pool of four still fills exactly the three cells the table shows");
-            assertEquals(3, distinctCount(idsIn(slot)),
-                    "and a slot offered the same enchant twice: " + idsIn(slot));
-        }
-        // Mutation: change the clamp to `MAX_CANDIDATES` alone rather than min(poolSize, cap) -> a
-        // pool of four still reads 3 here, but a pool of TWO asks for three, pick runs it dry and
-        // the roll silently shorts -- which aPoolOfTwoNeverProducesAThreeCandidateSlot catches.
+        for (EnchantSlot slot : normal(roll(GearClass.MELEE, ROSTER, always(0.0)))) assertEquals(2, slot.candidates().size());
+        assertEquals(4, EnchantRoll.MAX_CANDIDATES);
+        // Mutation: drop the cap in CandidateCascade.count -> a pool of two asks for four, pick runs dry -> the melee
+        // row still reads 2 (the null-break), so the cap's own guard is CandidateCascadeTest.theCountIsCappedAtThePoolsSize.
     }
 
     @Test
     void thePoolIsTheClassEnchantPlusTheUniversalOne() {
-        assertEquals(List.of(SHARPNESS, UNBREAKING), EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER));
-        assertEquals(List.of(POWER, UNBREAKING), EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.RANGER, ROSTER));
-        assertEquals(List.of(ATTUNEMENT, UNBREAKING), EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.MAGE, ROSTER));
-        // Roster ORDER is preserved here too: bulwark precedes unbreaking in the roster, so it
-        // precedes it in the pool. That is what makes a fixed set of draws reproduce a fixed roll.
-        assertEquals(List.of(BULWARK, THORNS, UNBREAKING), EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.SHIELD, ROSTER));
+        assertEquals(List.of(SHARPNESS, UNBREAKING), EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER));
+        assertEquals(List.of(POWER, UNBREAKING), EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.RANGER, ROSTER));
+        assertEquals(List.of(ATTUNEMENT, UNBREAKING), EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.MAGE, ROSTER));
+        assertEquals(List.of(BULWARK, THORNS, UNBREAKING), EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.SHIELD, ROSTER));
         assertEquals(List.of(GROWTH, MANA_BANK, PROTECTION, UNBREAKING),
-                EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.ARMOR, ROSTER));
-        // Roster order is preserved, so the pool is a deterministic function of the registry.
-        // Mutation: drop the `weaponClass() != null` arm (universal stops matching) -> UNBREAKING
-        // disappears from all three -> reddens.
+                EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.ARMOR, ROSTER));
+        // Mutation: drop the `gearClass() != null` arm (universal stops matching) -> UNBREAKING disappears -> reddens.
     }
 
     @Test
     void aNullHeldClassLeavesOnlyTheUniversalEnchants() {
-        // Unreachable today -- `class` is required on a weapon -- but total either way, and it must
-        // not be the arm that grants a class enchant to a classless item.
-        assertEquals(List.of(UNBREAKING), EnchantRoll.poolFor(EnchantRoll.Has.EVERY, null, ROSTER));
-    }
-
-    // ---- candidateCount: the boundaries ----------------------------------------------------
-
-    @Test
-    void aPoolOfTwoCutsBetweenOneAndTwoCandidatesAtAHalf() {
-        // THE boundary of the count decision, at the pool size every class actually has today.
-        assertEquals(1, EnchantRoll.candidateCount(2, 0.0));
-        assertEquals(1, EnchantRoll.candidateCount(2, 0.4999999));
-        assertEquals(2, EnchantRoll.candidateCount(2, 0.5), "0.5 is the first draw that offers two");
-        assertEquals(2, EnchantRoll.candidateCount(2, 0.9999999));
-        // Mutation: drop the `1 +` -> RUN 2026-08-26, reddened 3 tests. Note what it does NOT do:
-        // Math.max(1, ..) absorbs the zero, so no slot goes empty -- every count collapses to 1
-        // instead. Observed here: "0.5 is the first draw that offers two ==> expected: <2> but
-        // was: <1>". The two guards are not redundant, they bound different ends.
-    }
-
-    @Test
-    void aPoolOfTwoNeverProducesAThreeCandidateSlot() {
-        // The accepted sparseness: with two valid enchants per class, a third candidate is
-        // unreachable however the draw lands. It becomes reachable when the roster grows.
-        for (double roll = 0.0; roll < 1.0; roll += 0.01) {
-            int count = EnchantRoll.candidateCount(2, roll);
-            assertTrue(count == 1 || count == 2, "count " + count + " from a pool of two");
-        }
-        // And the same, read off a whole roll rather than the decision in isolation.
-        for (EnchantSlot slot : EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER, always(0.99)).slots()) {
-            assertTrue(slot.candidates().size() <= 2);
-        }
-        // Mutation: cap `MAX_CANDIDATES` instead of `min(poolSize, MAX_CANDIDATES)` -> a count of 3
-        // is asked for, pick runs the pool dry and returns null -> the roll would silently short --
-        // which is why the roll assertion above is here beside the arithmetic one.
-    }
-
-    @Test
-    void aThreeCandidateSlotIsReachableOnceThePoolIsBigEnough() {
-        // Proves the 1..3 range is real in isolation, from literal pool sizes rather than from any
-        // roster. It was written when NO shipped gear could reach a pool of three; the shield does
-        // now (Bulwark + Thorns + Unbreaking), and aShieldsPoolIsTHREE... is where that is asserted
-        // end to end. This one stays because it pins the decision independently of what ships --
-        // the day a fourth melee enchant lands, nothing here has to change either.
-        assertEquals(3, EnchantRoll.candidateCount(3, 0.9999999));
-        assertEquals(3, EnchantRoll.candidateCount(9, 0.9999999), "capped by the layout, not the pool");
-        assertEquals(1, EnchantRoll.candidateCount(3, 0.0));
-        assertEquals(2, EnchantRoll.candidateCount(3, 0.34));
-        assertEquals(3, EnchantRoll.MAX_CANDIDATES);
-    }
-
-    @Test
-    void anEmptyPoolOffersNothingRatherThanOne() {
-        assertEquals(0, EnchantRoll.candidateCount(0, 0.0));
-        assertEquals(0, EnchantRoll.candidateCount(0, 0.9999999));
-        // Mutation: drop the `cap <= 0` arm -> returns 1 -> the roll asks pick for a candidate the
-        // pool cannot supply -> reddens.
-    }
-
-    @Test
-    void aDrawAtOrPastTheEndsCannotAskForMoreThanThePoolHolds() {
-        // ThreadLocalRandom is half-open [0,1) so 1.0 never arrives from the shipped call site.
-        // A hand-fed one must still not return a count pick cannot fill.
-        assertEquals(2, EnchantRoll.candidateCount(2, 1.0));
-        assertEquals(2, EnchantRoll.candidateCount(2, 7.5));
-        assertEquals(1, EnchantRoll.candidateCount(2, -0.5));
+        assertEquals(List.of(UNBREAKING), EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, null, ROSTER));
     }
 
     // ---- pick: the boundaries --------------------------------------------------------------
@@ -322,9 +210,6 @@ class EnchantRollTest {
 
     @Test
     void pickAddressesTheShrunkenPoolNotTheOriginal() {
-        // The case distinctness creates: after one pick the pool is SHORTER, and the same draw must
-        // now mean a different index. A pick written against the original size would run off the end
-        // or skew every draw after the first.
         List<Rollable> shrunk = List.of(UNBREAKING);
         assertEquals(UNBREAKING, EnchantRoll.pick(shrunk, 0.0));
         assertEquals(UNBREAKING, EnchantRoll.pick(shrunk, 0.9999999), "a one-entry pool has one answer");
@@ -346,49 +231,23 @@ class EnchantRollTest {
     // ---- the whole roll --------------------------------------------------------------------
 
     @Test
-    void aFullRollReadsSlotBySlotFromItsDraws() {
-        // The ONE test that depends on draw order, and it is here so nothing else has to be.
-        // Pool for MELEE is [sharpness, unbreaking], so cap is 2.
-        //   slot 0: count 0.0 -> 1;  pick 0.0 -> sharpness
-        //   slot 1: count 0.9 -> 2;  pick 0.0 -> sharpness, then 0.0 of [unbreaking] -> unbreaking
-        //   slot 2: count 0.9 -> 2;  pick 0.9 -> unbreaking, then 0.0 of [sharpness] -> sharpness
-        EnchantState state = EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MELEE, ROSTER,
-                draws(0.0, 0.0,   0.9, 0.0, 0.0,   0.9, 0.9, 0.0));
-
-        assertEquals(3, state.slots().size());
-        assertEquals(List.of("sharpness"), idsIn(state.slots().get(0)));
-        assertEquals(List.of("sharpness", "unbreaking"), idsIn(state.slots().get(1)));
-        assertEquals(List.of("unbreaking", "sharpness"), idsIn(state.slots().get(2)));
-
-        // Counts genuinely vary within one weapon, which is the thing a fixed count would hide.
-        assertNotEquals(state.slots().get(0).candidates().size(),
-                state.slots().get(1).candidates().size(),
-                "every slot rolled the same count -- the count draw is being ignored");
-    }
-
-    @Test
-    void anEmptyPoolStillProducesThreeSlotsOfferingNothing() {
-        // Unreachable while Unbreaking is universal. It must not throw from inside a mint, and it
-        // must still produce a rolled item -- "decided, and it came to nothing" is a real outcome
-        // the enchant_rolled flag exists to record separately from the state.
-        EnchantState state = EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MELEE, List.of(), always(0.5));
-        assertEquals(3, state.slots().size());
+    void anEmptyRosterStillProducesFourSlotsOfferingNothing() {
+        EnchantState state = roll(GearClass.MELEE, List.of(), draws());
+        assertEquals(4, state.slots().size());
         for (EnchantSlot slot : state.slots()) {
             assertTrue(slot.candidates().isEmpty());
             assertEquals(EnchantSlot.NONE, slot.activeIndex());
         }
-        assertFalse(state.isEmpty(), "three empty slots is not the same value as no slots");
+        assertFalse(state.isEmpty(), "four empty slots is not the same value as no slots");
     }
 
     @Test
     void aRolledStateSurvivesTheWireGrammar() {
-        // The roll's output has to be storable: paper encodes it straight into the PDC, and a state
-        // that did not round-trip would lose candidates the moment the item was re-minted.
-        EnchantState rolled = EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.MAGE, ROSTER,
-                draws(0.0, 0.0,   0.9, 0.0, 0.0,   0.0, 0.9));
+        // Slot 0 empty, slots 1-3 filled: the empty slot round-trips as ":-1".
+        EnchantState rolled = roll(GearClass.ARMOR, ROSTER, always(0.0));
         EnchantState decoded = EnchantCodec.decode(EnchantCodec.encode(rolled));
         assertEquals(rolled, decoded);
-        // Records give exact equality, so this is the whole state and not a spot check.
+        assertTrue(EnchantCodec.encode(rolled).startsWith("v1;:-1;"), EnchantCodec.encode(rolled));
     }
 
     @Test
@@ -397,36 +256,44 @@ class EnchantRollTest {
         assertThrows(IllegalArgumentException.class, () -> new Rollable("  ", GearClass.MELEE));
     }
 
-    /**
-     * Ruling A4: an accessory's pool is EMPTY -- not the universal enchants the null-gate rule would
-     * give any other kind. The roster carries UNBREAKING (universal) precisely so this row can see it.
-     */
+    /** Ruling A4: an accessory's pool is EMPTY -- not the universal enchants the null-gate rule would give any other kind. */
     @Test
     void anAccessoryRollsNothing_notEvenAUniversalEnchant() {
-        assertTrue(EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.TOOL, ROSTER).contains(UNBREAKING),
+        assertTrue(EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.TOOL, ROSTER).contains(UNBREAKING),
                 "control: the universal enchant IS in a non-accessory pool, so the row below can fail");
-        assertTrue(EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.ACCESSORY, ROSTER).isEmpty(), "A4");
-        EnchantRoll.roll(EnchantRoll.Has.EVERY, GearClass.ACCESSORY, ROSTER, always(0.0)).slots()
+        assertTrue(EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.ACCESSORY, ROSTER).isEmpty(), "A4");
+        roll(GearClass.ACCESSORY, ROSTER, always(0.0)).slots()
                 .forEach(slot -> assertTrue(slot.candidates().isEmpty(), "no candidate on any slot"));
-        // Mutation: delete the ACCESSORY return in EnchantRoll.poolFor -> reddens.
+        // Mutation: delete the ACCESSORY return in EnchantRoll.normalPoolFor -> reddens.
     }
 
-    /**
-     * DEFT HANDS (GATE-deft-hands.md DH5): a class: ranger enchant enters EVERY ranger pool and no other, beside the
-     * ranger's other enchant and the universals. Pool membership by CLASS is the whole runtime gate -- the roster
-     * carries no weapon -- so a no-reload ranger weapon (hunters_bow) gets it too, which DeftHandsContentInvariantTest
-     * bounds to the one named dev weapon.
-     */
+    /** DEFT HANDS (GATE-deft-hands.md DH5): a class: ranger enchant enters EVERY ranger pool and no other. */
     @Test
     void deftHandsEntersTheRangerPoolAndNoOther() {
         List<Rollable> roster = List.of(new Rollable("expanded_quiver", GearClass.RANGER),
                 new Rollable("deft_hands", GearClass.RANGER), new Rollable("unbreaking", null),
                 new Rollable("sharpness", GearClass.MELEE));
         assertEquals(List.of(new Rollable("expanded_quiver", GearClass.RANGER), new Rollable("deft_hands", GearClass.RANGER),
-                new Rollable("unbreaking", null)), EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.RANGER, roster));
+                new Rollable("unbreaking", null)), EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.RANGER, roster));
         for (GearClass other : List.of(GearClass.MAGE, GearClass.MELEE, GearClass.SHIELD, GearClass.ARMOR)) {
-            assertFalse(EnchantRoll.poolFor(EnchantRoll.Has.EVERY, other, roster).contains(new Rollable("deft_hands", GearClass.RANGER)),
+            assertFalse(EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, other, roster).contains(new Rollable("deft_hands", GearClass.RANGER)),
                     other.name());
         }
+    }
+
+    /**
+     * V4: AN ITEM ROLLED UNDER THE OLD THREE-SLOT SHAPE (three normal slots, up to three candidates) still decodes, and
+     * every one of its slots is a legal state. Ben: "we don't care about existing items"; the duty is only that it never
+     * throws. The table side is EnchantMenuLayoutTest's.
+     */
+    @Test
+    void anOldThreeNormalSlotItemStillDecodes() {
+        String old = "v1;sharpness=2,unbreaking=0:0;unbreaking=1:-1;sharpness=0,unbreaking=3:1";
+        EnchantState state = EnchantCodec.decode(old);
+        assertEquals(3, state.slots().size());
+        assertEquals(List.of("sharpness", "unbreaking"), idsIn(state.slots().get(0)), "slot 0 keeps its NORMAL enchants");
+        assertEquals(old, EnchantCodec.encode(state), "and writes back unchanged");
+        assertEquals(2, state.activeLevel("sharpness"));
+        assertEquals(3, state.activeLevel("unbreaking"));
     }
 }

@@ -111,4 +111,10 @@ public record ToolDefinition(
                           ToolKind kind, List<String> flavor) {
         this(id, displayName, rarity, material, kind, flavor, Optional.empty());
     }
+
+    /** U5: this kind declares no element (2026-11-23), so its unique slot rolls nothing. */
+    @Override
+    public Optional<String> gearElement() {
+        return Optional.empty();
+    }
 }

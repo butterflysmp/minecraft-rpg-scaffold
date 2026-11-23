@@ -30,10 +30,36 @@ import java.util.logging.Logger;
 public final class EnchantLoader {
 
     private final Logger log;
+    /** U1: whether an element id names a LOADED element. An enchant's {@code element:} that does not is refused. */
+    private final java.util.function.Predicate<String> elementExists;
+    /** Whether this is a dev server: only then does a {@code dev_} enchant load (the dev-only example, 2026-11-23). */
+    private final boolean dev;
 
-    public EnchantLoader(Logger log) {
+    /**
+     * @param elementExists whether an element id is loaded (elements load first, in {@code RpgPlugin})
+     * @param dev           {@code SelfTestGuard.DEV_PROPERTY}, the one dev-server marker the loot's dev sources also read
+     */
+    public EnchantLoader(Logger log, java.util.function.Predicate<String> elementExists, boolean dev) {
         this.log = log;
+        this.elementExists = elementExists;
+        this.dev = dev;
     }
+
+    /**
+     * Not a dev server, and NO element is known, so a file declaring {@code element:} is refused. The shape every test
+     * that loads the NORMAL roster uses; {@code RpgPlugin} uses the three-argument form.
+     */
+    public EnchantLoader(Logger log) {
+        this(log, id -> false, false);
+    }
+
+    /**
+     * WHAT EVERY DEV-ONLY ENCHANT'S ID STARTS WITH (the seat's brief, 2026-11-23, "in the manner of loot/cascade.yml's
+     * dev_sources"). A file named {@code dev_*.yml} loads ONLY on a dev server; on any other server it is not registered
+     * at all, so it cannot roll, be granted, or be named. The prefix IS the marker: no real enchant may start with it,
+     * because any file that does is dev-only by construction.
+     */
+    static final String DEV_PREFIX = "dev_";
 
     public EnchantRegistry loadAll(File enchantsDir) {
         EnchantRegistry registry = new EnchantRegistry();
@@ -42,7 +68,12 @@ public final class EnchantLoader {
 
         Arrays.sort(files); // deterministic load order across filesystems
         int skipped = 0;
+        java.util.List<String> devOnly = new java.util.ArrayList<>();
         for (File f : files) {
+            if (idOf(f).startsWith(DEV_PREFIX) && !dev) {
+                devOnly.add(idOf(f));
+                continue;
+            }
             try {
                 YamlConfiguration yaml = YamlConfiguration.loadConfiguration(f);
                 registry.register(parse(idOf(f), yaml));
@@ -54,6 +85,10 @@ public final class EnchantLoader {
         if (skipped > 0) {
             log.warning(skipped + " enchant file(s) were skipped. The server is still running, "
                     + "but that enchant will render as its raw id and cannot be granted.");
+        }
+        // INFO, not a warning, and not the word the R0c scan searches for: on a real server this is the expected case.
+        if (!devOnly.isEmpty()) {
+            log.info("Dev-only enchants not loaded (not a dev server): " + devOnly);
         }
         return registry;
     }
@@ -78,7 +113,22 @@ public final class EnchantLoader {
                 // resolve to a Material is caught at boot by ContentValidator, which can reach the
                 // Bukkit registry that this loader deliberately cannot.
                 s.getString("icon", EnchantDefinition.DEFAULT_ICON),
-                requires(s.getString("requires"), id));
+                requires(s.getString("requires"), id),
+                element(s.getString("element"), id));
+    }
+
+    /**
+     * U1: absent is a NORMAL enchant; present makes it UNIQUE to gear of that element, and must name a LOADED element.
+     * Refused by name otherwise: a misspelt element would make a unique enchant that no gear can ever roll, silently.
+     */
+    private String element(String raw, String id) {
+        if (raw == null) return null;
+        String element = raw.trim().toLowerCase(java.util.Locale.ROOT);
+        if (element.isEmpty() || !elementExists.test(element)) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares element: '" + raw
+                    + "', which is not a loaded element");
+        }
+        return element;
     }
 
     /**

@@ -4,72 +4,91 @@ import io.github.butterflysmp.rpg.core.weapon.GearClass;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
 
 /**
  * The per-instance enchant roll: which candidates a piece of GEAR is born offering.
  *
- * <p>Gear gets {@link #SLOTS} slots, always, and each slot offers 1..{@link #MAX_CANDIDATES}
- * distinct candidates drawn from the enchants VALID for it -- one whose {@link GearClass} matches
- * the gear's, or a universal one. Every candidate arrives LOCKED at level 0 with nothing active:
- * the roll decides what is on offer, and the player decides what to buy.
+ * <h2>THE SHAPE, 2026-11-23: ONE UNIQUE SLOT AND THREE NORMAL ONES</h2>
  *
- * <p><b>Gear, not weapons, since Slice 2.</b> The axis is {@link GearClass}, so a shield rolls from
- * the shield pool exactly as a sword rolls from the melee one. Nothing about the decisions here
- * changed for that -- the filter was already total over a class it did not recognise -- but the
- * SHAPE of the shipped roster did: see {@link #candidateCount}.
+ * Ben, verbatim: <i>"the first enchantment is a "Unique" enchantment in that the enchantments in that slot are tied to
+ * the element more. The second and third enchantments are still from the normal pool"</i>; then, the same day, <i>"Instead
+ * of 2 normal enchantment slots, I want 3 in addition to the unique enchantment."</i> and <i>"I want to allow a chance for 4
+ * enchantments in each instead of 3"</i>. The seat's rulings U1-U6 and V1-V3.
  *
- * <p><b>Decomposed by decision KIND, not by draw.</b> {@link #candidateCount} and {@link #pick} each
- * take one already-drawn double, the same split {@code Unbreaking.consumes} uses and for the same
- * payoff -- each real boundary (the 1-versus-2 cut, the first and last index of a pool that shrinks
- * as distinctness removes what is already picked) is pinned at an exact value, in isolation, with no
- * random source and no seeded fake. {@link #roll} is a thin orchestrator over them so ONE readable
- * end-to-end test can assert the shape; the draw ORDER is deliberately not what any boundary
- * assertion depends on, because a flat array of draws couples a test's meaning to index arithmetic
- * nobody can see.
+ * <ul>
+ *   <li><b>{@link #SLOTS} = 4</b>, always. {@link #UNIQUE_SLOT} (0) draws ONLY from {@link #uniquePoolFor}: the enchants
+ *       whose {@code element} is the gear's, then the class filter, then {@code requires}. Slots 1, 2 and 3 draw ONLY from
+ *       {@link #normalPoolFor}: the enchants with NO element, by class then {@code requires}. A unique enchant never
+ *       reaches slots 1-3, and a normal one never reaches slot 0.</li>
+ *   <li><b>No element, or an empty unique pool, gives slot 0 NO candidates</b> (Ben's "A": "make it possible that an item
+ *       has none if there are none in the pool"). No gear loses a normal slot.</li>
+ *   <li><b>Each slot offers up to {@link #MAX_CANDIDATES} (4) distinct candidates</b>, unique and normal alike, counted by
+ *       {@link CandidateCascade} (Ben's cascade, authored in content) and capped at the pool's size.</li>
+ * </ul>
  *
- * <p>The actual {@code ThreadLocalRandom} draw and the PDC write stay in paper
- * ({@code EnchantRollItems}), which is also where the once-per-item guard lives. Nothing here knows
- * which enchants exist: the roster arrives as {@link Rollable}s that paper builds from
- * {@code EnchantDefinition}, the same way {@code DamageEnchants.Grant} does.
+ * <p>Every candidate arrives LOCKED at level 0 with nothing active: the roll decides what is on offer, the player decides
+ * what to buy.
+ *
+ * <p><b>Decomposed by decision KIND, not by draw.</b> {@link CandidateCascade#lands} and {@link #pick} each take one
+ * already-drawn double, so each real boundary is pinned at an exact value with no random source. {@link #roll} is a thin
+ * orchestrator over them.
+ *
+ * <p>The {@code ThreadLocalRandom} draw and the PDC write stay in paper ({@code EnchantRollItems}), with the
+ * once-per-item guard. Nothing here knows which enchants exist: the roster arrives as {@link Rollable}s that paper builds
+ * from {@code EnchantDefinition}.
  */
 public final class EnchantRoll {
 
     private EnchantRoll() {}
 
     /**
-     * Every rollable weapon gets exactly this many slots. Not tier-varied: three is what the table
-     * renders, and tiering it would be a new decision needing a layout change to go with it. See
-     * {@code Rarity}, whose reserved per-tier meaning is the CANDIDATE axis for that reason.
-     *
-     * <p>Held equal to {@code EnchantMenuLayout.SLOTS} by a test in paper. They stay separate
-     * constants -- the layout's is a UI-side bound that also has to refuse a hand-edited item -- but
-     * a roll the table cannot show would be refused at the door, so the pin catches the drift at
-     * build time instead of in front of a player.
+     * Every rollable piece of gear gets exactly this many slots: the unique slot and three normal ones (Ben, 2026-11-23,
+     * V1). WAS 3 until then. Held equal to {@code EnchantMenuLayout.SLOTS} by a test in paper, so a roll the table cannot
+     * show is caught at build time and not refused at the door in front of a player.
      */
-    public static final int SLOTS = 3;
+    public static final int SLOTS = 4;
 
-    /** The most candidates one slot may offer. Held equal to {@code EnchantMenuLayout.CANDIDATES}. */
-    public static final int MAX_CANDIDATES = 3;
+    /** The unique slot's index. The other slots are normal. */
+    public static final int UNIQUE_SLOT = 0;
 
     /**
-     * One enchant, as the roll needs to see it: its id, and the class it is valid on.
-     *
-     * <p>{@code gearClass} is null for a {@code universal} enchant, valid on everything -- the
-     * same null-means-no-gate convention {@code DamageEnchants.Grant} uses, read from the same
-     * {@code EnchantDefinition.isUniversal()}.
+     * The most candidates one slot may offer (Ben's "a chance for 4 enchantments in each instead of 3", V2). WAS 3. Held
+     * equal to {@code EnchantMenuLayout.CANDIDATES}; {@link CandidateCascade} refuses a tier above it.
      */
-    public record Rollable(String enchantId, GearClass gearClass, Requires requires) {
+    public static final int MAX_CANDIDATES = 4;
+
+    /**
+     * One enchant, as the roll needs to see it: its id, the class it is valid on, the quantity it needs, and the element
+     * that makes it UNIQUE.
+     *
+     * <p>{@code gearClass} is null for a {@code universal} enchant, valid on everything. {@code element} is null for a
+     * NORMAL enchant, which every enchant was until 2026-11-23; non-null makes it unique to gear of that element (U1).
+     */
+    public record Rollable(String enchantId, GearClass gearClass, Requires requires, String element) {
         public Rollable {
             if (enchantId == null || enchantId.isBlank()) {
                 throw new IllegalArgumentException("a rollable enchant needs an id");
             }
             if (requires == null) requires = Requires.NONE;
+            if (element != null && element.isBlank()) {
+                throw new IllegalArgumentException("enchant '" + enchantId + "': a blank element; absent means normal");
+            }
         }
 
-        /** An enchant with no quantity requirement: every enchant but the two ruling H names. */
+        /** A NORMAL enchant (no element), with a quantity requirement. */
+        public Rollable(String enchantId, GearClass gearClass, Requires requires) {
+            this(enchantId, gearClass, requires, null);
+        }
+
+        /** A NORMAL enchant with no quantity requirement. */
         public Rollable(String enchantId, GearClass gearClass) {
-            this(enchantId, gearClass, Requires.NONE);
+            this(enchantId, gearClass, Requires.NONE, null);
+        }
+
+        public boolean isUnique() {
+            return element != null;
         }
     }
 
@@ -104,28 +123,25 @@ public final class EnchantRoll {
     }
 
     /**
-     * The enchants that may be offered on gear of class {@code heldClass}, in roster order.
+     * THE NORMAL POOL: the enchants slots 1-3 may offer on gear of class {@code heldClass}, in roster order. Named
+     * {@code poolFor} until 2026-11-23, when it was the only pool; renamed so no caller reads it as "every enchant".
      *
-     * <p>Order is preserved rather than shuffled here, so the pool is a deterministic function of
-     * the registry (a {@code LinkedHashMap} filled from files the loader sorts). All the randomness
-     * lives in the draws, which is what lets a fixed set of draws reproduce a fixed roll.
+     * <p>A unique enchant (one with an element) is never in it. Order is preserved, so the pool is a deterministic
+     * function of the registry and a fixed set of draws reproduces a fixed roll.
      *
-     * <p>A null {@code heldClass} yields the universal enchants and nothing else, which falls out of
-     * the filter rather than needing an arm of its own. Still unreachable -- {@code class} is
-     * required on both a weapon and a shield file, and the loader skips a file without it -- but
-     * total either way. Note this is NOT the shield case: a shield presents
-     * {@link GearClass#SHIELD}, a real value, not the absence of one.
+     * <p>A null {@code heldClass} yields the universal normal enchants and nothing else (unreachable: {@code class} is
+     * required on a weapon and a shield). An ACCESSORY's pool is EMPTY (ruling A4), not "every universal enchant".
      */
-    public static List<Rollable> poolFor(Has held, GearClass heldClass, List<Rollable> roster) {
+    public static List<Rollable> normalPoolFor(Has held, GearClass heldClass, List<Rollable> roster) {
         List<Rollable> pool = new ArrayList<>();
         if (roster == null) return pool;
-        // Ruling A4, EXPLICIT: accessories take no part in enchanting, so their pool is EMPTY -- not
-        // "every universal enchant", which is what the null-gate rule below would otherwise give them.
-        // EnchantRollItems.rollOnAcquire also refuses an accessory before it writes anything; this is
-        // the half a unit test can see.
+        // Ruling A4, EXPLICIT: accessories take no part in enchanting. EnchantRollItems.rollOnAcquire also refuses an
+        // accessory before it writes anything; this is the half a unit test can see.
         if (heldClass == GearClass.ACCESSORY) return pool;
         for (Rollable rollable : roster) {
             if (rollable == null) continue;
+            // U3: a unique enchant is slot 0's alone.
+            if (rollable.isUnique()) continue;
             // null class == universal: no gate, valid on whatever it is offered for.
             if (rollable.gearClass() != null && rollable.gearClass() != heldClass) continue;
             // RULING H: AFTER the class filter, the quantity the enchant reads must exist on the held weapon.
@@ -136,71 +152,36 @@ public final class EnchantRoll {
     }
 
     /**
-     * How many candidates one slot offers: uniform over {@code 1..min(poolSize, MAX_CANDIDATES)}.
+     * THE UNIQUE POOL: the enchants slot 0 may offer, in roster order. Three filters, in this order (U2): the element must
+     * be the gear's, then the class (or universal), then {@code requires}.
      *
-     * <p>Uniform and unweighted, named as a starting point rather than a tuned curve.
-     *
-     * <p>It is NOT sized by rarity: with a pool of exactly two per class (its own class enchant,
-     * plus Unbreaking), a tier curve is unobservable -- you cannot tell a legendary from a common by
-     * a 1-versus-2 count without a sample far larger than a boot gate -- and it would ship
-     * unwitnessable. That is the roster pass's decision, on this axis.
-     *
-     * <p><b>That argument stopped covering the non-weapon classes, and this paragraph was wrong for
-     * two slices before anyone noticed.</b> A shield's pool is Bulwark plus Thorns plus Unbreaking --
-     * THREE -- and ARMOR reached three the moment Protection and Growth shipped, which this text
-     * kept denying. Every weapon class is still two. So a 1..3 count is genuinely observable on
-     * TWO kinds of gear, and {@code EnchantMenuLayout.CANDIDATES == 3} is exercised by real rolls
-     * rather than only by {@link #candidateCount} in isolation.
-     *
-     * <p><b>And armor is the first shipped pool ever to EXCEED the cap.</b> Mana Bank takes it to
-     * four. Nothing breaks: the {@code min(poolSize, MAX_CANDIDATES)} below clamps it, so a slot
-     * offers a random three of the four and which three varies per slot. That is the clamp doing the
-     * job it was written for, not a defect -- and raising the cap would not let a player run four
-     * anyway, because {@link #SLOTS} times one active candidate each is three regardless.
-     *
-     * <p><b>TOOLS ARE THE OPPOSITE EXTREME, AND THE THIRD TIME THIS PARAGRAPH HAS NEEDED CORRECTING.
-     * A tool's pool is ONE.</b> No shipped enchant is gated on tools, so {@code poolFor(TOOL, ..)}
-     * returns the universal set and nothing else -- which is Unbreaking, alone. {@code candidateCount}
-     * then computes {@code min(1, 3) = 1}, so every slot offers exactly one candidate and it is the
-     * same book in all three.
-     *
-     * <p>Nothing throws and nothing is red; the table simply shows a player one enchant three times.
-     * That is a CONTENT gap, not a defect in this file -- the clamp and the count are behaving
-     * exactly as written -- but it is recorded here because the two sentences above make claims
-     * ("a 1..3 count is genuinely observable", "one class with a big enough pool") that a
-     * one-enchant pool quietly falsifies. The observability argument now holds for shields and armor
-     * and fails for tools, and the fix is a tool-gated enchant rather than a change here.
-     *
-     * <p>Rarity-weighting stays deferred anyway: one class with a big enough pool is not a reason to
-     * design a tier curve for all of them. But it is now deferred BY CHOICE rather than by
-     * impossibility, and that distinction is the thing worth re-reading before the next roster pass.
-     *
-     * <p><b>An empty pool offers nothing, and that is a real arm.</b> It returns 0 rather than 1, so
-     * the slot is offered empty instead of the caller being asked for a candidate that cannot exist.
-     * Unreachable while Unbreaking is universal, and written anyway because the alternative is an
-     * exception thrown from inside a mint.
-     *
-     * <p>{@code roll} is half-open {@code [0, 1)}, matching {@code ThreadLocalRandom.nextDouble()}.
-     * The clamps are for a hand-fed value at or past the ends, so this cannot return a count the
-     * pool is unable to fill.
+     * @param element the gear's element, {@code Optional.empty()} for gear with none; NEVER null (U6: a caller cannot skip
+     *                it by passing nothing). Empty gives an empty pool.
      */
-    public static int candidateCount(int poolSize, double roll) {
-        int cap = Math.min(poolSize, MAX_CANDIDATES);
-        if (cap <= 0) return 0;
-        int count = 1 + (int) (roll * cap);
-        return Math.max(1, Math.min(count, cap));
+    public static List<Rollable> uniquePoolFor(Optional<String> element, Has held, GearClass heldClass,
+                                               List<Rollable> roster) {
+        if (element == null) {
+            throw new IllegalArgumentException("the gear's element is required: Optional.empty() for gear with none");
+        }
+        List<Rollable> pool = new ArrayList<>();
+        if (roster == null || element.isEmpty()) return pool;
+        if (heldClass == GearClass.ACCESSORY) return pool;   // ruling A4, as above
+        for (Rollable rollable : roster) {
+            if (rollable == null) continue;
+            if (!element.get().equals(rollable.element())) continue;                                    // 1. element
+            if (rollable.gearClass() != null && rollable.gearClass() != heldClass) continue;            // 2. class
+            if (!rollable.requires().metBy(held)) continue;                                             // 3. requires
+            pool.add(rollable);
+        }
+        return pool;
     }
 
     /**
      * The candidate a single draw selects from {@code remaining}: uniform over its indices.
      *
-     * <p>Takes the pool it draws from rather than a fixed one, because the caller REMOVES each pick
-     * before drawing again -- that shrinking is what makes a slot's candidates distinct by
-     * construction rather than by a retry loop that could spin. So the boundaries worth pinning are
-     * per-pool-size: {@code 0.0} is always the first entry, and a draw just under 1 always the last,
-     * whatever the pool has shrunk to.
-     *
-     * <p>Null on an empty pool. The caller stops; it does not substitute anything.
+     * <p>Takes the pool it draws from rather than a fixed one, because the caller REMOVES each pick before drawing again,
+     * which makes a slot's candidates distinct by construction rather than by a retry loop. {@code 0.0} is always the
+     * first entry and a draw just under 1 always the last, whatever the pool has shrunk to. Null on an empty pool.
      */
     public static Rollable pick(List<Rollable> remaining, double roll) {
         if (remaining == null || remaining.isEmpty()) return null;
@@ -209,29 +190,31 @@ public final class EnchantRoll {
     }
 
     /**
-     * A whole piece of gear's opening state: {@link #SLOTS} slots of locked, class-valid candidates.
+     * A whole piece of gear's opening state: {@link #SLOTS} slots of locked candidates, slot 0 from the unique pool and
+     * slots 1-3 from the normal pool.
      *
-     * <p>Each slot draws from a FRESH copy of the pool, and that is the whole of the
-     * same-enchant-across-slots rule: distinctness is a within-slot property (enforced by
-     * {@code EnchantSlot}'s own constructor, so this is not the only thing holding it), and two
-     * slots may perfectly well both offer Sharpness. {@code EnchantState.effective()} then resolves
-     * that to the highest level either holds it at, never the sum.
+     * <p>Each slot draws from a FRESH copy of its pool: distinctness is within a slot (and {@code EnchantSlot}'s own
+     * constructor enforces it), so two normal slots may both offer Sharpness, and {@code EnchantState.effective()}
+     * resolves that to the highest level, never the sum.
      *
-     * <p>Draw arity is {@link #SLOTS} draws for the counts plus one per candidate for the picks,
-     * interleaved slot by slot. Stated for the end-to-end test's benefit only -- no boundary
-     * assertion depends on it.
+     * <p>Draws, slot by slot: the cascade's (one per tier rolled, none for an empty pool or the guaranteed tier), then one
+     * per candidate picked. Stated for the end-to-end test only.
      *
-     * <p>Builds the slots directly rather than through {@code EnchantState.addCandidate}, because
-     * that route cannot append an EMPTY slot and the empty-pool arm needs one. It also puts every
-     * slot through {@code EnchantSlot}'s constructor, so a distinctness slip throws here rather than
-     * reaching an item.
+     * @param element the gear's element (U5: {@code GearDefinition.gearElement()}); {@code Optional.empty()} for none;
+     *                never null (U6)
      */
-    public static EnchantState roll(Has held, GearClass heldClass, List<Rollable> roster, DoubleSupplier draws) {
-        List<Rollable> pool = poolFor(held, heldClass, roster);
+    public static EnchantState roll(Optional<String> element, Has held, GearClass heldClass, List<Rollable> roster,
+                                    CandidateCascade cascade, DoubleSupplier draws) {
+        if (element == null) {
+            throw new IllegalArgumentException("the gear's element is required: Optional.empty() for gear with none");
+        }
+        if (cascade == null) throw new IllegalArgumentException("the candidate cascade is required");
+        List<Rollable> unique = uniquePoolFor(element, held, heldClass, roster);
+        List<Rollable> normal = normalPoolFor(held, heldClass, roster);
         List<EnchantSlot> slots = new ArrayList<>(SLOTS);
         for (int slot = 0; slot < SLOTS; slot++) {
-            List<Rollable> remaining = new ArrayList<>(pool);
-            int count = candidateCount(remaining.size(), draws.getAsDouble());
+            List<Rollable> remaining = new ArrayList<>(slot == UNIQUE_SLOT ? unique : normal);
+            int count = cascade.count(remaining.size(), draws);
             List<EnchantCandidate> candidates = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
                 Rollable picked = pick(remaining, draws.getAsDouble());
@@ -242,5 +225,21 @@ public final class EnchantRoll {
             slots.add(new EnchantSlot(candidates, EnchantSlot.NONE));
         }
         return new EnchantState(slots);
+    }
+
+    /**
+     * THE DEV TALLY ({@code /rpg enchant rollstats}): for each slot index 0..{@link #SLOTS}-1, how many of {@code states}
+     * offered 0..{@link #MAX_CANDIDATES} candidates there. A slot a state lacks counts as 0; a count past the bound is
+     * clamped into the last column (no shipped roll makes one).
+     */
+    public static int[][] tally(List<EnchantState> states) {
+        int[][] out = new int[SLOTS][MAX_CANDIDATES + 1];
+        for (EnchantState state : states) {
+            for (int slot = 0; slot < SLOTS; slot++) {
+                int n = slot < state.slots().size() ? state.slots().get(slot).candidates().size() : 0;
+                out[slot][Math.min(n, MAX_CANDIDATES)]++;
+            }
+        }
+        return out;
     }
 }

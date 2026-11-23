@@ -38,6 +38,8 @@
 # EnchantRoll.MAX_CANDIDATES = 3 -- the first shipped pool ever to exceed the cap. That is the cap
 # doing its designed job, not a defect: each slot offers a random 3 of the 4, and three slots with
 # one active each means a player runs 3 regardless. See EnchantRollTest.
+# (2026-11-23: the cap is now 4 and there are three normal slots, so armor's four fit; the paragraph above is the
+# record of the three-slot shape.)
 display_name: "Mana Bank"
 # Cosmetic, and it DEFAULTS to enchanted_book when absent, so it is never a reason a working enchant
 # fails to load. Do not make it required.
