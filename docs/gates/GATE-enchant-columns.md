@@ -104,9 +104,10 @@ His health at level 1 is 100 + G (G: his worn gear's health, unchanged by the ru
 
 ## THE RUN SHEET — BEN TYPES EXACTLY THESE FIVE LINES
 
-**IN PLAIN WORDS, BEFORE YOU TYPE ANYTHING (2026-11-23, for D's rows too):** find **flat, open ground**: a clear strip
-**33 blocks long running EAST from where you stand, and 13 blocks wide** (6 either side of you), with **nothing in it but
-air** at your feet and head height: no trees, walls, water or mobs. The run turns you to face east and puts still
+**IN PLAIN WORDS, BEFORE YOU TYPE ANYTHING (2026-11-23, corrected the same day for LC1's zombie F):** find **flat, open
+ground**: a clear area **33 blocks long running EAST from where you stand, 6 blocks to your LEFT (north) and 10 blocks to
+your RIGHT (south) as you face east**, with **nothing in it but air** at your feet and head height: no trees, walls,
+water or mobs. *(This said "6 either side" until the seat found that LC1 puts a zombie 9 blocks to your right.)* The run turns you to face east and puts still
 zombies in that strip, 1 to 30 blocks out; your weapons fire along it, and a floating lapis crystal is thrown 12 blocks
 east. EC0 measures the strip; **a block in it spoils only the rows whose line it crosses**. The three selftest commands
 are lines 2, 3 and 4 below, each typed once.
@@ -390,6 +391,13 @@ slots 2-3 are predicted OVER THE SET (each candidate in the gear's normal pool, 
 
 ### EC0 — THE SPOT (SURVIVAL)
 
+> **EC0R2, 2026-11-23 (the seat's fix, before any boot): three probe lines ADDED to EC0's scenario, the first three
+> unchanged.** The prediction below stands for them; EC0R2 is the added lines':
+>
+> | prediction | stands on | READING |
+> |---|---|---|
+> | `probe_blocks: "AIR 1 0 7 32 1 10"`: AIR at feet and head over 1..32 east, 7..10 SOUTH (his right as he faces east), **256** if all clear (32 x 4 x 2); `probe_blocks: "AIR 1 -1 7 32 -1 10"` and `"WATER 1 -1 7 32 -1 10"`: **0** each (a floor). **A short AIR count, or any AIR or WATER in that floor, VOIDS LC2's F half** (F's "nothing" is then not read: a block between the orb and F would refuse it for want of a clear line, the wrong reason). The counts describe the spot, not pass or fail | LC1's F at 12 east, 9 south | |
+
 | prediction | stands on | READING |
 |---|---|---|
 | The counts describe the spot: AIR at feet and head over 1..32 east, 6 either side (**832** if all clear: 32 x 13 x 2), no AIR and no WATER in the floor. **A short count is not a failure; it voids the rows whose line it blocks** (EC8's 30 and EC14/EC16's 22 and 28) | the corridor | |
@@ -539,7 +547,7 @@ slot holds.
 
 | prediction | stands on | READING |
 |---|---|---|
-| `DRIVE use … item=lapis_staff`. **NO `lapis_staff/right_click` PLAYERHIT** (the beam stops at the orb: it passes the orb's centre exactly, 0 from it, inside 0.6, before reaching T 22 east). **Exactly one PLAYERHIT `source=lapis_crystal/crystal target=<N> zombie element=kinetic sent=6.300 crit=false triggerScore=100`**, or **`sent=12.600 crit=true`** (the second allowed reading: the BEAM's crit). **The sum (D2):** `(21 x 30 / 100 = 6.3) x 100/100 x 1.0 + 0 + 0 = 6.3`, x charge 1.0, x the beam's crit: amount 21 (the staff's right click, read when it met the orb), percent 30 (level II), score 100 (staged), enchant 1.0 (Lapis Crystal and Kinetic Tremors are behaviours, not damage enchants), class 0, level 0 (level 1). **Nothing on F** (its feet 9.14 from the orb's centre: sqrt(9² + 1.62²), outside 8) **or T** (10.13: beyond 8, and behind the orb). N's feet are 5.26 from it (sqrt(5² + 1.62²)). Probes: N `993.700` (or `987.400`), F `1000.000`, T `1000.000` | D3; `OrbBeamTest` | |
+| `DRIVE use … item=lapis_staff`. **NO `lapis_staff/right_click` PLAYERHIT** (the beam stops at the orb: it passes the orb's centre exactly, 0 from it, inside 0.6, before reaching T 22 east). **Exactly one PLAYERHIT `source=lapis_crystal/crystal target=<N> zombie element=kinetic sent=6.300 crit=false triggerScore=100`**, or **`sent=12.600 crit=true`** (the second allowed reading: the BEAM's crit). **The sum (D2):** `(21 x 30 / 100 = 6.3) x 100/100 x 1.0 + 0 + 0 = 6.3`, x charge 1.0, x the beam's crit: amount 21 (the staff's right click, read when it met the orb), percent 30 (level II), score 100 (staged), enchant 1.0 (Lapis Crystal and Kinetic Tremors are behaviours, not damage enchants), class 0, level 0 (level 1). **Nothing on F** (its feet 9.14 from the orb's centre: sqrt(9² + 1.62²), outside 8) **or T** (10.13: beyond 8, and behind the orb). N's feet are 5.26 from it (sqrt(5² + 1.62²)). Probes: N `993.700` (or `987.400`), F `1000.000`, T `1000.000`. **ADDED 2026-11-23 (the seat's fix):** (a) **F's half is VOID, not read, if EC0R2's added probes are short** (a block in 7..10 south could refuse F for want of a clear line). (b) **What F's "nothing" proves, and what it does not:** F stands 0 east and 9 south of the orb's centre, so it is OUTSIDE the server's BOX of 8 as well as the sphere (|dz| 9 > 8): the server never even offers F to the cut, and F proves only that the 8 is not exceeded. **No mob in this gate stands inside a box but outside its sphere** (EC9's C: dz 4 against a box of 3; EC13's K: dz 6 against 5; F: dz 9 against 8; all outside their boxes too), **so the box-to-sphere cut is UNREAD ON A SERVER**: it is held only in the unit loop (`BehaviourHitsTest.theRadiusIsCutToASphereWhenTheWorldAnswersWithABox`, `OrbBeamTest.theEightIsCutToASphereWhenTheWorldAnswersWithABox`, each with `FakeWorld.boxSearch`) | D3; `OrbBeamTest` | |
 
 ### LC3 — A SECOND AND A THIRD BEAM FIRE IT AGAIN, AND NO SHOCKWAVE FROM CRYSTAL SHOTS ALONE (SURVIVAL)
 
@@ -599,3 +607,10 @@ extracted verbatim from this file (`awk` from its heading to the fence) and run 
 `PRESENT`, 0 `ABSENT` and 1 `ABSENT-ENTRY`** before `'--- controls'` and **13 `ABSENT`, 0 `PRESENT`** after it, exactly
 as predicted. R0dR2's 355 is `SelfTestScenariosTest`'s assertion in that same build (green). The boot reads both again
 on the deployed jar.
+
+**R0bR2 RE-RUN AFTER THE SEAT'S FIX (2026-11-23, EC0R2's probes, the run sheet's words, LC2's notes):** against
+`paper\target\rpg-0.1.0-SNAPSHOT.jar` (2,453,555 bytes, 17:20), built by `./mvnw -B clean verify` from the working tree of
+`feat/lapis-crystal-gate` with this fix (the suite in the same build: core 2,411, storage 99, paper 1,858, 0 failures, 1
+skipped), R0bR2's block re-extracted verbatim and run with `powershell -File`: **49 `PRESENT`, 0 `ABSENT`, 1
+`ABSENT-ENTRY`**, then **13 `ABSENT`, 0 `PRESENT`**, as predicted. R0dR2 unmoved: 398 keys, 43 setups, 355 (the fix adds
+probe lines, not rows).

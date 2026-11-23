@@ -36,6 +36,11 @@ EC0:
   - probe_blocks: "AIR 1 0 -6 32 1 6"
   - probe_blocks: "AIR 1 -1 -6 32 -1 6"
   - probe_blocks: "WATER 1 -1 -6 32 -1 6"
+  # EC0R2 (2026-11-23, the seat's fix): the ground LC1's F stands on, 7..10 SOUTH (his right as he faces east), measured
+  # too; added, the three lines above unchanged.
+  - probe_blocks: "AIR 1 0 7 32 1 10"
+  - probe_blocks: "AIR 1 -1 7 32 -1 10"
+  - probe_blocks: "WATER 1 -1 7 32 -1 10"
 
 # EC1R2 (was EC1, 2026-11-23: Lapis Crystal is built, D1-D3): THE LAPIS STAFF'S COLUMNS, ROLLED (the proof of W2: a fresh
 # roll, never the dev command): slot 0 Lapis Crystal alone, slot 1 Kinetic Tremors alone, slots 2-3 its normal pool.
