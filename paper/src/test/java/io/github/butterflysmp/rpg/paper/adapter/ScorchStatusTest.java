@@ -201,7 +201,10 @@ class ScorchStatusTest {
     }
 
     @Test
-    void aNewApplierTakesOverBOTHTheCapAndTheCredit() {
+    void aNewApplierTakesTheCreditButNeverLowersTheCap() {
+        // THE SEAT'S RULING, 2026-11-22 (GATE-living-lantern.md, THE BURN, READ): a weaker burn never lowers a stronger
+        // one. This row was aNewApplierTakesOverBOTHTheCapAndTheCredit and asserted the NEWEST cap of 8 took over;
+        // the CREDIT half below is unchanged.
         // Two operator rules point the same way -- newest applier gets ignite kill credit, and each
         // new stack refreshes the whole timer -- so this is ONE rule, not two.
         var scorch = new ScorchStatus();
@@ -224,8 +227,8 @@ class ScorchStatusTest {
         // read this row used to make: it shows the new cap and credit survive into the clock rather
         // than only into the call that set them.
         clock.advance(20);
-        assertEquals(8.0, sink.burns.get(1).amount(), EPS, "the NEWEST applier's cap of 8 takes over");
-        assertEquals(second, sink.burns.get(1).applierId(), "and so does the credit");
+        assertEquals(20.0, sink.burns.get(1).amount(), EPS, "the STANDING cap of 20 stands against the later 8");
+        assertEquals(second, sink.burns.get(1).applierId(), "while the credit is the newest applier's");
         assertEquals(40L, sink.burns.get(1).atTick(),
                 "and it landed on the clock, at t=40 -- the SECOND scheduled edge, since the first "
                         + "already burned under the original applier");

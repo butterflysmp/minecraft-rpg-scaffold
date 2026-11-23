@@ -110,11 +110,12 @@ class DotStatusTest {
     }
 
     /**
-     * THE NEWEST APPLIER OWNS THE CREDIT AND THE CAP (Q-W4's "as Scorch"; WS4's death message names the
-     * applier).
+     * THE NEWEST APPLIER OWNS THE CREDIT (Q-W4's "as Scorch"; WS4's death message names the applier), AND THE LARGER
+     * CAP STANDS (the seat's ruling, 2026-11-22: a weaker burn never lowers a stronger one; withering too, on purpose).
+     * This row asserted "at the newest cap", 2.0, until that ruling.
      */
     @Test
-    void theNewestApplierOwnsTheCreditAndTheCap() {
+    void theNewestApplierOwnsTheCreditAndTheLargerCapStands() {
         var wither = new DotStatus(Wither.RATES, "wither");
         var clock = new FakeTickTarget();
         var sink = new FakeScorchSink(clock, 100.0);
@@ -129,6 +130,7 @@ class DotStatusTest {
 
         assertEquals(second, wither.applier(id));
         assertEquals(second, sink.burns.get(0).applierId(), "the tick credits the newest applier");
-        assertEquals(2.0, sink.burns.get(0).amount(), EPS, "at the newest cap");
+        assertEquals(5.0, sink.burns.get(0).amount(), EPS,
+                "the 8.0 cap stands against the later 2.0, so the burn is min(the 5.0 percent arm on 100, 8.0)");
     }
 }

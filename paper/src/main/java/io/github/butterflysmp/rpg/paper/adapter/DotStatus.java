@@ -233,8 +233,15 @@ public class DotStatus {
             // Reachable today only through the dev apply command, which takes an operator-chosen
             // duration. Deferred on THAT reason -- not on "no second duration exists", which was the
             // false one it was first deferred on.
-            a.cap = cap;                   // most recent applier owns the cap...
-            a.applierId = applierId;       // ...and the credit. One rule, not two.
+            // THE LARGER CAP STANDS (the seat's ruling, 2026-11-22, GATE-living-lantern.md THE BURN, READ): a weaker
+            // burn never lowers a stronger one. This line read `a.cap = cap; // most recent applier owns the cap...`,
+            // and an Ignite blast (cap 6 x 0.5 = 3) landing on a Living Lantern burn (cap 7) cut every remaining tick
+            // from 5 to 3 (LL9, cca65717). It applies to withering too, ON PURPOSE: one store, one rule. The CREDIT
+            // below stays most-recent-wins: who owns the burn for the kill is a different question from how hard it
+            // burns, and the comment block above already names `remaining` and `depth` as the fields a later write
+            // must not destroy -- the cap joins them.
+            a.cap = Math.max(a.cap, cap);
+            a.applierId = applierId;       // the most recent applier owns the credit...
             a.element = element;          // ...and the mark. One rule, not three.
             // AND IT DOES NOT BURN -- which is now the same rule the first-application arm follows
             // rather than an exception to it. A burn here would be damage outside the clock this
