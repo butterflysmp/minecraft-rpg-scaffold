@@ -7,12 +7,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * THE HEAL'S WIRING, READ FROM SOURCE (the seat's ruling M, 2026-11-22). The decision is core's {@code NexusHeal}; what no
  * unit test can drive is the beat and the inventory, so the paper half is pinned here: it runs BEFORE the mirror's
- * redraw, with the join path's guard (an absent profile reads as on) and the join path's converge call.
+ * redraw, with the join path's converge call, and only on a LOADED profile (the seat's correction, 2026-11-22: the join
+ * path's "absent reads as on" holds only after the load settles, and the beat can run before it).
  */
 class NexusHealWiringTest {
 
@@ -34,13 +36,15 @@ class NexusHealWiringTest {
     }
 
     @Test
-    void theHealUsesTheJoinPathsGuardAndCall() throws IOException {
+    void theHealUsesTheJoinPathsCallOnALoadedProfileOnly() throws IOException {
         String healing = source("nexus/NexusHealing.java");
         int at = healing.indexOf("public static void healIfMissing(");
         assertTrue(at > 0, "healIfMissing is not found");
         String body = healing.substring(at, healing.indexOf("\n    }\n", at));
-        assertTrue(body.contains("profile.map(PlayerProfile::starEnabled).orElse(true);"), "absent reads as on");
-        assertTrue(body.contains("if (!NexusHeal.heals(starOn, found, !player.isDead())) return;"), body);
+        assertTrue(body.contains("boolean loaded = profile.isPresent();"), "loaded is the profile being present");
+        assertTrue(body.contains("profile.map(PlayerProfile::starEnabled).orElse(false);"), "absent never reads as on here");
+        assertFalse(body.contains(".orElse(true)"), "THE SEAT'S ERROR: an absent profile read as on, before the load");
+        assertTrue(body.contains("if (!NexusHeal.heals(loaded, starOn, found, !player.isDead())) return;"), body);
         assertTrue(body.contains("profile.map(PlayerProfile::nexusSlot).orElse(NexusLock.DEFAULT_LOCKED_SLOT);"), body);
         assertTrue(body.contains("NexusSlots.converge(player, keys, slot);"), body);
 
