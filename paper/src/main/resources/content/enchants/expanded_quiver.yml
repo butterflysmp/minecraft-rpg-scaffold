@@ -63,4 +63,7 @@ icon: spectral_arrow
 max_level: 3
 effect: quiver_size
 class: ranger
+# RULING H (the seat, 2026-11-22): this enchant rolls only on a weapon that has its quantity, quiver_size above 0, so a
+# ranger weapon with none (the Crossbow) never offers it. Declared HERE, beside the enchant, never as a weapon list.
+requires: quiver
 value_by_level: [1, 2, 3]

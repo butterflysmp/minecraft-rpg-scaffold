@@ -30,4 +30,7 @@ icon: feather
 max_level: 3
 effect: reload_time
 class: ranger
+# RULING H (the seat, 2026-11-22): this enchant rolls only on a weapon that has its quantity, reload_ticks above 0, so a
+# ranger weapon with none (the Crossbow) never offers it. Declared HERE, beside the enchant, never as a weapon list.
+requires: reload
 value_by_level: [10, 20, 30]

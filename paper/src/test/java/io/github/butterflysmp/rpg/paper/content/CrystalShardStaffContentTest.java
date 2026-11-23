@@ -179,6 +179,6 @@ class CrystalShardStaffContentTest {
         assertTrue(roster.size() >= 10, "CONTROL: the whole roster loaded, " + roster.size());
         var gearClass = io.github.butterflysmp.rpg.paper.weapon.GearItems.gearClassOf(staff(new ArrayList<>()));
         assertEquals(List.of("attunement", "unbreaking"),
-                EnchantRoll.poolFor(gearClass, roster).stream().map(EnchantRoll.Rollable::enchantId).sorted().toList());
+                EnchantRoll.poolFor(EnchantRoll.Has.EVERY, gearClass, roster).stream().map(EnchantRoll.Rollable::enchantId).sorted().toList());
     }
 }

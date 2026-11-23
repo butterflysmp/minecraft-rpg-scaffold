@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <ul>
  *   <li><b>The roll</b> keys purely on {@link io.github.butterflysmp.rpg.core.weapon.GearClass} --
- *       {@code EnchantRoll.roll(gearClass, roster, rng)} is handed {@code (id, gearClass)} pairs and
+ *       {@code EnchantRoll.roll(EnchantRoll.Has.EVERY, gearClass, roster, rng)} is handed {@code (id, gearClass)} pairs and
  *       no weapon at all, so it cannot ask whether a magazine exists.
  *   <li><b>The tooltip</b> ({@code EnchantEffectLine}) receives a {@code GearClass}, not a
  *       {@code WeaponDefinition}, so it cannot render an {@code inert:} line for this case the way it
@@ -173,20 +173,35 @@ class ExpandedQuiverContentInvariantTest {
      * between authoring a magazine, narrowing the enchant's gate, or teaching the roll to ask -- and
      * the point is that it is a CHOICE rather than a silent tooltip.
      */
+    /**
+     * WHAT THIS ASSERTS SINCE THE SEAT'S RULING H (2026-11-22): every ranger weapon whose REAL roll pool can hold
+     * expanded_quiver authors a magazine, and every one that authors a magazine still has it in its pool. It asserted
+     * "every ranger weapon authors a magazine" until then, because the pool filtered on class alone. Now the pool applies
+     * the enchant's declared requirement ({@code requires: quiver}), so a ranger weapon with no magazine (the Crossbow)
+     * passes BECAUSE THE ENCHANT CANNOT REACH IT, not because it is excused. NO exemption list exists or may be added.
+     */
     @Test
-    void everyRangerWeaponAuthorsAMagazine() {
+    void everyRangerWeaponThatCanRollExpandedQuiverAuthorsAMagazine() {
+        var roll = RollPools.load();
         List<String> offenders = new ArrayList<>();
-        for (Path p : weaponYaml()) {
-            String body = read(p);
-            if (!RANGER_CLASS.matcher(body).find()) continue;
-            if (!QUIVER_SIZE.matcher(body).find()) offenders.add(idOf(p));
+        List<String> reached = new ArrayList<>();
+        for (var w : roll.weapons().all()) {
+            if (w.weaponClass() != io.github.butterflysmp.rpg.core.weapon.WeaponClass.RANGER) continue;
+            boolean rolls = roll.after(w).contains("expanded_quiver");
+            if (rolls) reached.add(w.id());
+            if (rolls != w.hasQuiver()) offenders.add(w.id() + " quiver_size=" + w.quiverSize() + " rolls=" + rolls);
         }
-
         assertTrue(offenders.isEmpty(),
-                "ranger weapons with no quiver_size: " + offenders
-                        + " -- expanded_quiver.yml is class: ranger, so it will roll onto these and "
-                        + "render \"+N Quiver Arrows\" while granting ZERO. Author a quiver_size, or "
-                        + "decide deliberately that this weapon is an exception and say so here.");
+                "expanded_quiver's pool and the magazine disagree: " + offenders + " -- on a weapon with no magazine "
+                        + "it would render \"+N Quiver Arrows\" while granting ZERO; on one with a magazine it was lost");
+        assertTrue(reached.contains("boltor"), "CONTROL: the Boltor's pool holds expanded_quiver");
+    }
+
+    /** The requirement is declared BESIDE THE ENCHANT, so the pool's filter is not silently absent. */
+    @Test
+    void expandedQuiverDeclaresTheQuantityItReads() {
+        assertEquals(io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires.QUIVER,
+                RollPools.load().enchants().find("expanded_quiver").orElseThrow().requires());
     }
 
     // theExemptionSetHoldsExactlyTheOneDevWeaponItWasWrittenFor DELETED 2026-11-21 with the set it pinned (hunters_bow

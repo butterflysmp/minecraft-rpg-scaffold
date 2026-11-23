@@ -199,7 +199,7 @@ class BreacherContentTest {
         WeaponDefinition w = breacher(new ArrayList<>());
         var gearClass = io.github.butterflysmp.rpg.paper.weapon.GearItems.gearClassOf(w);
         assertEquals(List.of("deft_hands", "expanded_quiver", "power", "unbreaking"),
-                EnchantRoll.poolFor(gearClass, roster).stream().map(EnchantRoll.Rollable::enchantId).sorted().toList());
+                EnchantRoll.poolFor(EnchantRoll.Has.EVERY, gearClass, roster).stream().map(EnchantRoll.Rollable::enchantId).sorted().toList());
         // Each quantity the pool moves exists on this weapon, non-zero:
         assertTrue(w.hasQuiver() && w.quiverSize() == 2, "expanded_quiver's magazine");
         assertEquals(60, w.reloadTicks(), "deft_hands' reload");
