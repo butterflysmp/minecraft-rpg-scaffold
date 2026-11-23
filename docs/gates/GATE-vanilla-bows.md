@@ -425,6 +425,22 @@ says how its first press clears it. **"Clears arrows while the mirror shows":** 
 |---|---|---|
 | Three `REPLY` lines in gray, in this order: **`Pool: power, unbreaking`** (the Crossbow); **`Pool: deft_hands, expanded_quiver, power, unbreaking`** (the Boltor, the control); **the same four** (the Bow). The order is the roster's (the loader sorts the files, READ). Clears no arrows | `EnchantRollItems.poolFor`, `VanillaBowsContentTest`, `EnchantQuantityGateTest` | |
 
+### VB3R2 — VB3 RE-STAGED, 2026-11-22, AFTER THE BOOT OF `52579e8a` (SURVIVAL)
+
+> **Why (the seat's ruling after that boot):** VB3 read `Pool: deft_hands, expanded_quiver, power, unbreaking` three
+> times. READ in source: `RpgCommand.enchant` reads his main hand inside `adapters.scheduler().onEntity(player, …)`, a
+> DEFERRED task, and the selftest runs every step of a pass synchronously until a `wait:` (or an ask, an await, or a
+> kill) ends it (`SelfTestRun`'s step loop); VB3 held the Crossbow, the Boltor and the Bow in ONE pass, so all three
+> tasks read the last hold. VB3R2 puts a `wait: 2` after each hold and after each pool command. VB3's committed text
+> above stands and is not read again. Not yet read on a server: on the next boot of this gate.
+
+| prediction | stands on | READING |
+|---|---|---|
+| Three `REPLY` lines in gray, each in its own pass, in this order: **`Pool: power, unbreaking`** (the Crossbow: ruling H removes both); **`Pool: deft_hands, expanded_quiver, power, unbreaking`** (the Boltor, the control); **the same four** (the Bow). **Three identical lines would mean the deferred read still saw one hand: the staging failed again, not ruling H.** Clears no arrows | `RpgCommand.enchant` (READ), `EnchantRollItems.poolFor`, `EnchantQuantityGateTest`, `VanillaBowsContentTest` | |
+
+> **The run's length with VB3R2 (the gate's own command):** VB3R2 12 ticks where VB3 had 0, so **5,646**, and the worst
+> case **8,361 ticks (6 min 58 s)**. R0dR2's count does not move (a rename, not a row: 326).
+
 ### VM1 — THE BOLTOR AT 8 ROUNDS: ARROW x 8 (SURVIVAL)
 
 | prediction | stands on | READING |

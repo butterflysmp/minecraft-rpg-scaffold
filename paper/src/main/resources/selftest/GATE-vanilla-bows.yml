@@ -87,21 +87,30 @@ VB2:
   - probe_inventory: crossbow
   - probe_inventory: short_bow
 
-# VB3: THE POOLS (ruling H): the Crossbow's has neither deft_hands nor expanded_quiver; the Boltor (the control) and the
-# Bow have both. Clears no arrows.
-VB3:
+# VB3R2 (2026-11-22, after the boot of 52579e8a; VB3 re-staged): THE POOLS (ruling H): the Crossbow's has neither
+# deft_hands nor expanded_quiver; the Boltor (the control) and the Bow have both. VB3 read the Bow's pool three times:
+# `rpg enchant pool` reads the hand in a DEFERRED task (RpgCommand.enchant, scheduler().onEntity), and VB3 held all
+# three items in one pass, so every task ran after the last hold. A wait after each hold and each pool command ends the
+# pass, so each task reads the item it names. Clears no arrows.
+VB3R2:
   - hold: empty
   - cmd: "clear @s minecraft:bow"
   - cmd: "clear @s minecraft:crossbow"
   - cmd: "rpg give crossbow"
   - hold: crossbow
+  - wait: 2
   - cmd: "rpg enchant pool"
+  - wait: 2
   - cmd: "rpg give boltor"
   - hold: boltor
+  - wait: 2
   - cmd: "rpg enchant pool"
+  - wait: 2
   - cmd: "rpg give bow"
   - hold: bow
+  - wait: 2
   - cmd: "rpg enchant pool"
+  - wait: 2
 
 # VM1: the Boltor at 8 rounds: the slot shows ARROW x 8. Clears arrows with the slot showing the star (hold: empty).
 VM1:
