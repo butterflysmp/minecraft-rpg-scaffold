@@ -1194,3 +1194,33 @@ VM10 its control with the star off.
   `CrossbowItem.use` or our code re-charges it. The refused Crossbow is UNLOADED and the refund returns the arrow its load
   took. `getConsumable` on a crossbow's shot is the charged projectile's item copy (`ChargedProjectiles.itemCopies`, the
   list `shoot` iterates). No code change; a `CROSSBOWCHARGE` line witnesses it (VX5R2).
+
+### 6.9 CARRIED AFTER THE MERGE OF THE STACK OF NINE (2026-11-22, master `d7c6d659`): RECORDED, NOT FIXED
+
+The stack (#237 to #245, then #244) was squash-merged on the seat's approval and Ben's words "merge it", after the boot
+of `52579e8a` (`GATE-vanilla-bows.md` and `GATE-breacher-rework.md`, READINGS). These are carried from that boot:
+
+1. **OPEN FOR BEN: should the broken notice match the quiver notices?** The broken weapon's notice ("Your weapon is
+   broken -- repair it before using it.") is a CHAT line; the quiver's ("Your quiver is empty...", "You have no
+   arrows...", "Reloading...") are the ACTION BAR. VX5R2 predicted the action bar and read chat: a prediction error,
+   not a defect. Nothing changes until he rules.
+2. **Mobs loaded off the rows, no hit on him.** 33 `MOBSEED … enderman gs=300 source=stored` at 21:04:11 (during VX6)
+   and zombified piglins, piglins, hoglins and striders at 21:06:15 (during VX9), each unloaded within seconds; 0 MOBHIT
+   and 0 HURT lines in the whole log. **What the log says:** each load fell in the same second as one of his shots (a
+   Bow shot at 21:04:11, a Crossbow shot at 21:06:15); the nether saved 49 chunks at the stop where the boot loaded 0
+   persistent chunks, and the End saved 0. **What it does not say:** `MOBSEED` names no world. **INFERRED, not read:**
+   his arrows passed through a nether portal ahead of the spot and loaded nether chunks (endermen are common in a
+   warped forest). Read on the next boot from that spot, if it matters.
+3. **GATE-mining-auto's held slot** (6.7's carried note, restated so it is not lost in the merge): with the heal, its
+   rows lose the pickaxe from his hand when his held slot at run start is the star's. Fixed when that gate next runs.
+4. **Unbreaking rolls on weapons with no durability** (the staves; 6.4's carried note): the same defect as ruling H
+   fixed, and ruling H's mechanism (`requires: durability`) is where it goes when it is ruled.
+5. **A deferred command in the same pass as a later hand change** (READ after VB3's miss): `rpg durability`, `rpg
+   repair` and every `rpg enchant` op read his main hand inside `scheduler().onEntity`, and a scenario pass runs every
+   step synchronously until a `wait:`, ask, await or kill. A scan of every committed `GATE-*.yml` on `d7c6d659` for such
+   a command followed, before the pass ends, by a `hold`, `hold_only`, `drop`, `clear` or `item replace` (its positive
+   control: it finds VB3's two) finds ONE other: **`GATE-sword-tiers.yml` STA4**, whose first `rpg enchant show` (meant
+   for the iron sword) shares its pass with `hold: netherite_sword`, so it would read the netherite sword (INFERRED from the scenario; that
+   gate's log was not read for it). Not fixed here.
+   Four `give` steps after such a command (SSA1, VX1, VX5R2) cannot land in his hand: it holds a sword or a crossbow.
+   VB3 itself is re-staged as VB3R2.
