@@ -20,8 +20,12 @@ public final class GrindstoneMenuLayout {
     public static final int ROWS = 6;
     private static final int COLUMNS = 9;
 
-    /** The hint line, top-centre, where a screen is read from. Matches every other screen. */
-    public static final int INFO_SLOT = 4;
+    /**
+     * The info item: row 1, column 9, the TOP RIGHT CORNER. Was 4, top-centre, until 2026-11-23 (Ben: "Move the
+     * Enchantment Table info item to the top right corner ... Make the rest of the nexus menu sub menus and our custom
+     * UIs consistent with that too"). Index 8 was filler here. {@code InfoTopRightTest} holds every moved screen at 8.
+     */
+    public static final int INFO_SLOT = 8;
 
     /**
      * The tray: rows 2, 3 and 4, columns 2-8. <b>Twenty-one cells.</b> Ben's ruling.
@@ -114,6 +118,10 @@ public final class GrindstoneMenuLayout {
      *       which is what the first draft of this note claimed.</b>)
      *       <br><b>Reusing it for an ACTION would make one cell mean two things</b>, and a player
      *       who has learned "4 is the hint" would learn otherwise by pressing it.
+     *       <br><b>2026-11-23: the info cell moved to 8, the top right</b>, on the anvil, the grindstone, crafting and
+     *       the enchanting table (Ben; {@code InfoTopRightTest}), and slot 4 became the enchanting table's INPUT slot
+     *       (Ben: "where the Enchantment table info item was"). The constraint moves with the cell: the info cell is
+     *       8 now, and it is never an action. Confirm stays where it is.
      * </ul>
      *
      * <p><b>IT IS NOT AN INPUT SLOT, AND THAT IS LOAD-BEARING RATHER THAN INCIDENTAL.</b> The arming

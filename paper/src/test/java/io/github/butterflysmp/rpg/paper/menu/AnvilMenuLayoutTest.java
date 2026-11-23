@@ -25,9 +25,11 @@ class AnvilMenuLayoutTest {
         // symbolically is a constant with no guard at all: a mutation moves the code and every
         // expectation together and bites nothing.
         assertEquals(54, AnvilMenuLayout.SIZE, "six rows, like every other station screen");
-        assertEquals(4, AnvilMenuLayout.INFO_SLOT,
-                "the hint is top-centre -- slot 4 is INFORMATION on every screen that uses it, and "
-                        + "reusing it for an action would make one cell mean two things");
+        // Was 4, top-centre, until 2026-11-23: Ben's "Move the Enchantment Table info item to the top right corner ...
+        // Make the rest of the nexus menu sub menus and our custom UIs consistent with that too".
+        assertEquals(8, AnvilMenuLayout.INFO_SLOT,
+                "the info item is the top right corner (row 1, column 9) -- INFORMATION on every screen that has one, "
+                        + "and reusing it for an action would make one cell mean two things");
 
         // BEN'S RULING: 20 / 22 / 24, centred on 22, the screen's midline, one gap between each.
         assertEquals(20, AnvilMenuLayout.TARGET_SLOT, "the item being upgraded");

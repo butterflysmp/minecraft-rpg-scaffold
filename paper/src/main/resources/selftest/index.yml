@@ -105,3 +105,7 @@ gates:
 # boltor-recipe (2026-11-22, feat/boltor-recipe on feat/vb3r2): the Boltor's recipe, the Ranger's netherite tier. It
 # carries the ONE R0 for itself and #246 (VB3R2): docs/gates/GATE-boltor-recipe.md.
   - boltor-recipe
+# unique-enchant-slot (2026-11-23, feat/info-top-right on feat/unique-enchant-slot #249 on feat/selftest-row-case #248):
+# the unique enchant slot, Ben's cascade, the table's layout and the info item at the top right. It carries the ONE R0
+# for all three PRs: docs/gates/GATE-unique-enchant-slot.md.
+  - unique-enchant-slot

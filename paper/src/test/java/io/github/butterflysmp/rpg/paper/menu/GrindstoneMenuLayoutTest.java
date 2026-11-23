@@ -66,7 +66,7 @@ class GrindstoneMenuLayoutTest {
 
     @Test
     void theButtonSlotsArePINNEDToTheirLITERALS() {
-        assertEquals(4, GrindstoneMenuLayout.INFO_SLOT, "the hint reads top-centre");
+        assertEquals(8, GrindstoneMenuLayout.INFO_SLOT, "the info item is the top right corner (was 4 until 2026-11-23, Ben)");
         assertEquals(40, GrindstoneMenuLayout.CONFIRM_SLOT, "row 5 centre -- under the tray");
         assertEquals(48, GrindstoneMenuLayout.BACK_SLOT, "beside Close");
         assertEquals(49, GrindstoneMenuLayout.CLOSE_SLOT, "like every other screen");
@@ -215,10 +215,11 @@ class GrindstoneMenuLayoutTest {
 
     @Test
     void theCHROMESetForksWithTheBar_andTheTwoAreCOMPLEMENTSInTheBottomRow() {
-        assertEquals(List.of(4, 40, 48, 49),
+        // The info cell is 8, the top right, since 2026-11-23 (Ben); it was 4.
+        assertEquals(List.of(8, 40, 48, 49),
                 GrindstoneMenuLayout.chromeSlots(true).stream().sorted().toList(),
                 "from the HUB: the hint, the button, Back and Close");
-        assertEquals(List.of(4, 40, 49),
+        assertEquals(List.of(8, 40, 49),
                 GrindstoneMenuLayout.chromeSlots(false).stream().sorted().toList(),
                 "from a BLOCK: no Back, so 48 is not chrome -- it is a bar cell");
 

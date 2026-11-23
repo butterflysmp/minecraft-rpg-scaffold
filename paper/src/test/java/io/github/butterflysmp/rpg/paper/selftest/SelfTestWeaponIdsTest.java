@@ -32,8 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <ul>
  *   <li>{@code cmd: "rpg give <id>"}: a weapon id, or a shield or accessory id. Shields and accessories take their id
  *       from the FILE NAME ({@code ShieldLoader} and {@code AccessoryLoader}'s {@code idOf}, READ), weapons from their
- *       {@code id:} key. Armor and tools are NOT resolved here, and no shipped scenario gives one: one that does
- *       reddens this test, and the resolver must be widened then, deliberately.</li>
+ *       {@code id:} key. Armor and tools were NOT resolved here until 2026-11-23, when GATE-unique-enchant-slot gave
+ *       iron_chestplate and the resolver was widened, deliberately, through ArmorLoader and ToolLoader.</li>
  *   <li>{@code hold: <id>}: a weapon id, except {@code stone} and {@code empty} ({@code SelfTestDrivers.hold}'s two
  *       non-weapon arms).</li>
  *   <li>{@code probe_inventory: <id>}: a weapon id ({@code SelfTestDrivers} matches it with
@@ -78,7 +78,13 @@ class SelfTestWeaponIdsTest {
         return ids;
     }
 
-    /** Shields and accessories: the file name is the id. */
+    /**
+     * Shields and accessories: the file name is the id. AND, since 2026-11-23, ARMOR AND TOOLS, WIDENED DELIBERATELY as
+     * this class's javadoc required the first time a scenario gave one (GATE-unique-enchant-slot US3 and US4 give
+     * {@code iron_chestplate}). An armor file holds several pieces, each with its own id, so those ids are read through
+     * the real {@code ArmorLoader} and {@code ToolLoader} rather than parsed here; {@link #armorAndToolIdsLoad} has the
+     * control.
+     */
     static Set<String> fileNamedGearIds() {
         Set<String> ids = new TreeSet<>();
         for (String kind : List.of("shields", "accessories")) {
@@ -87,7 +93,30 @@ class SelfTestWeaponIdsTest {
                 ids.add(name.substring(0, name.length() - ".yml".length()));
             }
         }
+        ids.addAll(armorAndToolIds());
         return ids;
+    }
+
+    /** Every shipped armor piece's and tool's id, by the loaders the server uses. */
+    static Set<String> armorAndToolIds() {
+        java.util.logging.Logger quiet = java.util.logging.Logger.getLogger("SelfTestWeaponIdsTest-" + System.nanoTime());
+        quiet.setUseParentHandlers(false);
+        java.io.File content = Path.of("src", "main", "resources", "content").toFile();
+        Set<String> ids = new TreeSet<>();
+        new io.github.butterflysmp.rpg.paper.content.ArmorLoader(quiet).loadAll(new java.io.File(content, "armor"))
+                .all().forEach(a -> ids.add(a.id()));
+        new io.github.butterflysmp.rpg.paper.content.ToolLoader(quiet).loadAll(new java.io.File(content, "tools"))
+                .all().forEach(t -> ids.add(t.id()));
+        return ids;
+    }
+
+    /** The control for the widening: 24 armor pieces and 5 tools, and iron_chestplate among them. */
+    @org.junit.jupiter.api.Test
+    void armorAndToolIdsLoad() {
+        Set<String> ids = armorAndToolIds();
+        org.junit.jupiter.api.Assertions.assertEquals(29, ids.size(), ids.toString());
+        org.junit.jupiter.api.Assertions.assertTrue(ids.contains("iron_chestplate"));
+        org.junit.jupiter.api.Assertions.assertTrue(ids.contains("iron_pickaxe"));
     }
 
     /**
