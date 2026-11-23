@@ -262,3 +262,104 @@ mutations, each `marker present: 1  original gone: 0  line delta: 0`, each resto
 **UNMUTATED, said so:** the two forgets in `RpgListeners` (a listener; their logic is `ShockwaveStreaksTest`'s); the
 paper `behavioursOf` read of the held item and `VanillaShots`' stamp-and-resolve (server-side; the gate's Breacher and bow
 rows are their witness); `asSecondary` dropping the behaviours (a second guard beside `countsAsHit`, which bites first).
+
+## 4. PR D — LAPIS CRYSTAL: STOPPED, WITH A PROPOSED SPLIT (no branch)
+
+**The brief's own rule: "If any one of C, D or E is bigger than it reads or needs an engine change beyond its own hook,
+STOP on that one with a proposed split and carry on with the others that do not depend on it."** D needs THREE engine
+changes beyond its own hook, each READ:
+
+1. **A trigger the weapon's file does not declare.** `WeaponFire.attempt` resolves `weapon.trigger(input)`, and a weapon
+   with no binding for the input is left to vanilla (READ: today a left click with the Lapis Staff swings the breeze rod,
+   with no ability). Granting one means a trigger binding that comes from an ENCHANT, through `WeaponFire` and
+   `AbilityService` (its cooldown and mana), with its ability registered in the `AbilityRegistry` at load. **READ: it
+   collides with nothing.** The quiver's reload is left-click on ranger weapons only (`WeaponFire`'s `hasQuiver` arms),
+   and `lapis_staff` is mage with no quiver.
+2. **A persistent world object.** The orb is a display entity that outlives the cast by 300 ticks; B6 then needs its
+   removal on expiry, his quit, his death, a world change and server stop, and the orphan sweep. Nothing an enchant
+   spawned existed before; every hook is new.
+3. **A hook inside the ray's walk.** `CastExecutor.stepRay` asks `world.castRay` for bodies and blocks only. Stopping a
+   Lapis Beam AT the orb means testing each segment against his orb's position before the hit, from region threads.
+
+**Proposed split, each its own PR on the stack:**
+
+- **D1, enchant-granted triggers:** a behaviour `grant_trigger` whose block names an input and declares an ability in
+  the existing ability grammar (`AbilitySchema`), so the 30 mana and the 600-tick cooldown are content. The throw is
+  stubbed (a projectile that ends at 12 blocks). Tests: the trigger exists only while the enchant is active at level 1 or
+  more; it binds no input the weapon already binds; the quiver's left click is untouched.
+- **D2, the orb:** the throw's flight (12 blocks along the aim, stopping short at a solid block, about 10 ticks), the
+  display entity, one per player, 300 ticks from arrival, and every B6 removal and the sweep. A `CRYSTAL placed at=` log
+  line for the gate.
+- **D3, the crystal's shots:** the `stepRay` hook (his own beam only, within 0.6 of the orb, before the beam's target), and
+  the shots: every mob within 8 of the orb with a clear line, `pct x` the beam's AUTHORED damage read from the staff's
+  `right_click` at run time, secondary (B4), so they never feed Kinetic Tremors. The line shows the number (B5).
+
+**What E did NOT need from D:** nothing. E stands on B (the lantern's shot) and C (the engine), so it was built on C.
+
+## 5. PR E — AIRBURST FLAMES (`feat/airburst-flames`, on PR C)
+
+### Ben's words, verbatim, 2026-11-23
+
+> "The enchant is called Air Burst Flames. It splits into three faster not homing projectiles after 12 blocks of travel."
+> then: "I want air burst flames to go to 14 blocks instead then. ... The Air Burst Flames projectile goes the 14 blocks
+> and then those projectiles go an additional 14 blocks." / "3. 25/30/35 damage each burst" / "5. Doesn't split if it
+> hits something first" / "Also side note: The name of the enchantment is Airburst Flames"
+
+### Its own hook, and nothing else
+
+`ProjectileFlight.Impact` gains `expired(point, velocity)`: the flight RAN OUT of lifetime having struck nothing. Its
+default is what every flight did before (`at(null, point)`), so no other caller changed. A block hit is still
+`at(null, point)`: "something" first, so no split. `CastExecutor.launchOne` asks the cast's frozen behaviours (C's
+engine) for an airburst; with one, and with the split distance inside the authored lifetime, it flies the AUTHORED shot,
+homing and all, cut to `ticksToTravel(14, 0.35)` = **40 steps** (EXECUTED: 14 / 0.35 = 40.0 exactly), and on `expired`
+splits. **The split happens 39 ticks after the press** (the first step runs on the press's own tick), at exactly 14.0
+blocks of travel (`AirburstTest`, executed).
+
+**The bursts:** `count` 3 from that point, `SpreadPattern` with `Spread(3, 12, 0)`: the centre straight on and one 12
+degrees either side, **sideways = horizontal and perpendicular to the direction of travel at the split** (`SplitBasis`:
+`(0 - z, 0, x)`, the same right-hand convention as `Aim`), so travelling east the side bursts go 12 degrees south and
+north. **Straight up or down there is no horizontal perpendicular, so sideways is the right of the aim he fired with**
+(the brief's question). Each flies `ticksToTravel(14, 0.7)` = 20 steps, never homing, and lands the lantern's on_hit with
+its Damage replaced by the level's 25 / 30 / 35 fire: a PRIMARY hit (its caster is the shot's, its payload the burst's
+own amount, so scorch's cap is the burst's x 0.5), with the hit visual and fire's burn. Bursts are launched directly,
+never through `launchOne`, so they never split again. A `SPLIT caster=… source=… at=x,y,z bursts=3 tick=…` line is
+logged while `/rpg mobtrace` is on (`CombatWorld.traceSplit`; shape pinned by `SplitLineTest`).
+
+**The YAML as committed:** `content/enchants/airburst_flames.yml` (weapon-specific, `weapon: living_lantern`,
+`class: universal`, `effect: airburst`, block `travel_blocks 14, count 3, angle_degrees 12, speed 0.7,
+burst_travel_blocks 14, damage_by_level [25, 30, 35], element fire`). The loader's `BEHAVIOUR_BLOCKS` now names two
+blocks and refuses a file that declares both.
+
+**FOR THE GATE, A HOMING FACT THAT MOVES A ROW:** the shot seeks any mob within 7 of ITSELF (`ProjectileFlight.steer`,
+READ), so a mob 20 out on the aim line is sought from 13 blocks, and the shot bends toward its FEET (`position()`, READ)
+before the split. A mob 22 out is never inside 7 before 14 blocks, so its row is exact.
+
+### OPEN FOR BEN (SEAT PLACEHOLDER 2026-11-23)
+
+1. **The bursts' speed, 0.7 a tick:** "faster" read as double the lantern's 0.35.
+2. **The fan, 12 degrees apart, sideways:** the old repo's spread.
+3. **The icon:** a fire charge.
+4. **The line:** `splits after 14 blocks into 3 bursts of 30 damage` (level II's).
+5. **The bursts' look:** the lantern's own trail and hit visual, reused.
+
+### Tests and mutations
+
+New: `core/.../AirburstTest` (9), `paper/.../AirburstFlamesContentTest` (3), `paper/.../adapter/SplitLineTest` (1);
+`UniqueSlotContentTest` (the lantern's weapon pool is `[airburst_flames]`, every other gear's empty, now with a control
+that the loader knew the weapons), `EnchantLoaderTest` (its shipped loads know the shipped weapons), and
+`ScorchContentInvariantTest` (fire damage sites 18 -> 19, with its dated note). Seven mutations, each `marker present: 1
+original gone: 0  line delta: 0`, each restored and `cmp` byte-identical, each red:
+
+| mutation | the edit | reddened |
+|---|---|---|
+| MUTSPLITTICKS | the shot is not cut at 14 blocks | 4 rows |
+| MUTEXPIRE | the flight's expiry reported as a miss | 4 rows |
+| MUTSPLITDMG | the bursts keep the 45 | 3 rows |
+| MUTSIDEWAYS | sideways always the aim's right | the `SplitBasis` row |
+| MUTEPS | the travel ticks' epsilon removed | the 2.1 / 0.7 row (green until that row existed: see below) |
+| MUTREQDOUBLE | a missing `speed` defaults | the malformed-block row |
+| MUTABLINE | the line shows level I's damage | the line row |
+
+**A FALSE CLAIM, CAUGHT BY A MUTATION, CORRECTED:** `ticksToTravel`'s javadoc first said 14 / 0.35 lands a hair above 40
+in doubles. MUTEPS stayed GREEN; jshell then printed `40.0`. The javadoc now carries the executed case (2.1 / 0.7 =
+3.0000000000000004) and its own row, which MUTEPS reddens.

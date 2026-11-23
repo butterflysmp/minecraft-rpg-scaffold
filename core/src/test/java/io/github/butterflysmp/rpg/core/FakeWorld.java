@@ -349,6 +349,14 @@ public final class FakeWorld implements CombatWorld {
         return now;
     }
 
+    /** Every split the cast path reported, in order. */
+    public record Split(UUID casterId, String source, Vec3 at, int bursts, long tick) {}
+    public final List<Split> splits = new ArrayList<>();
+
+    @Override public void traceSplit(UUID casterId, String source, Vec3 at, int bursts) {
+        splits.add(new Split(casterId, source, at, bursts, now));
+    }
+
     /** Every hit the applier reported to the PLAYERHIT trace, in order. */
     public final List<io.github.butterflysmp.rpg.core.combat.TracedHit> traced = new ArrayList<>();
 

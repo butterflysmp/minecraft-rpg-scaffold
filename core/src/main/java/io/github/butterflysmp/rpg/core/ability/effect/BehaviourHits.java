@@ -53,6 +53,8 @@ public final class BehaviourHits {
                         shockwave(world, caster, active, shockwave, target.state().position());
                     }
                 }
+                // An airburst acts on the FLIGHT (CastExecutor.launchToSplit), never on a hit.
+                case EnchantBehaviour.Airburst ignored -> { }
             }
         }
     }
