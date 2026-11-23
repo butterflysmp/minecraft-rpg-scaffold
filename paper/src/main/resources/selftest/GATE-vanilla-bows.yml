@@ -332,9 +332,11 @@ VX4:
   - probe_items: arrow
   - probe_nexus: ""
 
-# VX5: A BROKEN BOW AND A BROKEN CROSSBOW REFUSE (ruling I), prompted: one try each; each stays in his hand, nothing spent.
+# VX5R2 (2026-11-22, the seat's follow-up 3; VX5 re-predicted, its steps unchanged): A BROKEN BOW AND A BROKEN CROSSBOW
+# REFUSE (ruling I), prompted: one try each; each stays in his hand, nothing spent. The refused Crossbow is now read UNLOADED
+# (its CROSSBOWCHARGE line), so the arrow given back is the one its load took and no arrow is made.
 # Clears arrows with the slot showing the star (hold: empty).
-VX5:
+VX5R2:
   - hold_only: bow
   - cmd: "rpg durability set 999"
   - wait: 2
@@ -384,6 +386,43 @@ VX7:
   - wait: 10
   - probe: t
   - probe_nexus: ""
+
+# VX10 (2026-11-22, the seat's follow-up 2): THE BOW'S LAST ROUND, prompted twice. /rpg rounds stages 1 round with no
+# arrow of his own, so vanilla takes the mirror's LAST arrow; the shot path puts the star back in the same tick
+# (NEXUSRESTORE, never NEXUSHEAL). Then one real arrow and a try at 0 rounds: the empty quiver refuses and gives it back.
+# Clears arrows with the slot showing the star (hold: empty).
+VX10:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give bow"
+  - hold_only: bow
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg durability set 0"
+  - cmd: "rpg rounds 1"
+  - wait: 2
+  - probe_items: arrow
+  - probe_nexus: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 40
+  - probe: t
+  - tell: "THE BOW'S LAST ROUND: draw it ALL THE WAY (hold right-click for at least one second), then let go to shoot the zombie in front of you. ONE shot. You have no arrows of your own. 20 seconds."
+  - wait: 400
+  - probe: t
+  - probe_nexus: ""
+  - probe_items: arrow
+  - dump: held
+  - cmd: "give @s minecraft:arrow 1"
+  - wait: 2
+  - probe_items: arrow
+  - tell: "THE BOW IS NOW EMPTY and you have ONE arrow of your own: draw and shoot ONCE. It should refuse and keep your arrow. 15 seconds."
+  - wait: 300
+  - probe_items: arrow
+  - probe_nexus: ""
+  - dump: held
 
 # VX9: A FREE GO, THEN THE ONE QUESTION. Clears arrows with the slot showing the star (hold: empty).
 VX9:

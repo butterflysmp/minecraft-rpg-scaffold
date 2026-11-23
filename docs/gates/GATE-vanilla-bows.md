@@ -7,11 +7,18 @@ carries the ONE R0 and the ONE run sheet for the whole stack of EIGHT PRs:** #23
 `13a31174`. **`GATE-breacher-rework.md`'s rows are read on this same boot** (its own selftest command, first on the run
 sheet); its R0 lines are carried into this R0.
 
+> **2026-11-22, LATER: THE STACK IS NINE PRs.** The seat's follow-ups put a commit on #243 (`e00c6324`, the heal waits for
+> the profile) and a new PR between #243 and the content PR: **#245 `feat/vanilla-shot-owed`** (the mirror's last arrow
+> put back by the shot, `NEXUSRESTORE`; the refused Crossbow's charge logged, `CROSSBOWCHARGE`; `/rpg rounds`). This
+> file's R0 covers all nine through **R0bR2** and **R0dR2** below; R0a names the content PR's new head. New and changed
+> rows: **VX5R2** (VX5 re-predicted) and **VX10** (new, prompted twice). The text above and below is kept as committed.
+
 **NO BOOT until the seat has diffed the whole stack AND this gate from origin, and Ben says "ready" in his own words**;
 then only CC boots, by `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
 **Game mode:** SURVIVAL, every row. **The rows VB0-VB3, VM1-VM10 and VX7 are AUTO; VX1-VX6 PROMPT him in gold and read
-the log; VX9 is a free go and the ONE question.** **Time:** the setup sets night (18000) and `spawn_mobs false`; the
+the log; VX9 is a free go and the ONE question.** *(2026-11-22, later: VX5 is read as VX5R2, and VX10, after VX7, PROMPTS twice.)*
+**Time:** the setup sets night (18000) and `spawn_mobs false`; the
 run's restore puts both back. **Every mob is a frozen NoAI zombie; no fight world.** The setup kills the natural
 hostiles within 64 blocks by named type, stages his level at 1, and logs where his Nexus item is.
 
@@ -34,7 +41,8 @@ hostiles within 64 blocks by named type, stages his level at 1, and logs where h
 | #240 | the quiver in the Nexus slot; no mirror arrow ever real (rulings B to G) |
 | #241 | the vanilla-driven shot (`shot` trigger, `cast: type: vanilla`), the stamp and the hit; ruling I's wear |
 | #242 | ruling H: an enchant rolls only on a weapon that has its quantity |
-| #243 | ruling M: the Nexus item heals on the beat |
+| #243 | ruling M: the Nexus item heals on the beat (and, from `e00c6324`, only on a LOADED profile) |
+| #245 | the mirror's last arrow put back by the shot (`NEXUSRESTORE`); `CROSSBOWCHARGE`; `/rpg rounds` (2026-11-22, later) |
 | content | `bow.yml`, `crossbow.yml`, the claims, `/rpg enchant pool`, the PLAN entry, this gate |
 
 ## OPEN FOR BEN (SEAT PLACEHOLDERS unless marked)
@@ -132,7 +140,8 @@ then `SELFTEST RUN HEALTH saved=<s> customHP=<s>/<m0> wrote=<s>`.
 3. `/rpg selftest vanilla-bows` — **ONCE.** About a minute of automatic rows, then **gold messages ask you to shoot**:
    the Crossbow once, the Bow at full draw once, the Bow on a short draw once, the Bow once more, a broken Bow and a
    broken Crossbow once each, then **craft one Bow** at a crafting table it gives you (place it beside or behind you),
-   then 30 seconds with both and **one question: type your answer in chat.** Your items, time, level and health are put
+   then **the Bow on its last round once, at full draw, and once more after it gives you one arrow** (that one should
+   refuse and keep your arrow), then 30 seconds with both and **one question: type your answer in chat.** Your items, time, level and health are put
    back at the end.
 4. `/stop`
 
@@ -146,6 +155,7 @@ Nothing else. If a row stalls or aborts, do not intervene. "not sure" is NOT STA
 |---|---|---|---|
 | setup, VB0-VB3, VM1-VM10 | nothing the run makes: the Boltor's ray and the short_bow's bolt exclude their caster (READ, as every ranged gate); the Breacher is not fired | 0 | no |
 | VX1-VX5, VX9 | **his own vanilla arrow falling on him** if he shoots upward: a player victim keeps today's REROUTE path (READ, `VanillaShots.stamped` is player-to-mob only): vanilla's arrow, about 6 to 11 at full draw (vanilla, UNVERIFIED), scaled into his custom health about x5 (INFERRED: 100 over vanilla 20): **about 30 to 55 a hit** | 2 x 55 = 110 | **yes, two arrows straight up could.** The run sheet's plain line: never shoot straight up. A death aborts the run and costs no items (keepInventory, READ) |
+| VX10 (2026-11-22, later) | as VX1-VX5: his own vanilla arrow if he shoots upward; two prompted shots, the second refused (cancelled, nothing leaves) | 1 x 55 | no |
 | VX1-VX9 | frozen NoAI zombies do not move or attack (INFERRED vanilla) | 0 | no |
 | every row | **a natural hostile from beyond 64 blocks** (spawns off) | as `GATE-breacher-rework.md`: 7 zombie hits or one close creeper at 100 | possible, not likely |
 
@@ -162,6 +172,10 @@ END{for (r in w) print r, w[r]}'`): setup 40, VB0 0, VB1 20, VB2 15, VB3 0, VM1 
 plus the ASK's 0 to 1,200, about 5 ticks per row-start clean (22: 110) and up to 40 per `kill` step (34: 1,360).
 **Worst case 7,560 ticks (6 min 18 s).**
 
+> **RECOUNTED 2026-11-22, LATER (VX10 added, VX5 renamed VX5R2, its waits unchanged), by the same command:** VX5R2 702,
+> VX10 744, the rest as above: **5,634**, plus the ASK's 0 to 1,200, about 5 per row-start clean (23: 115) and up to 40 per
+> `kill` step (35: 1,400). **Worst case 8,349 ticks (6 min 57 s).**
+
 ## THE SNAPSHOT, THE RESTORE AND THE MIRROR (READ)
 
 The run's snapshot is taken in `SelfTestRun.start`, before `RUN START`: whatever his Nexus item is then (the star, or the
@@ -170,7 +184,9 @@ mirror if he held a quiver weapon) is in it. **On finish and stop**, `SelfTestRu
 `onQuit` restores the inventory and `NexusMirror.restoreStar` puts the star back before the save. **On server stop**,
 `onDisable` restores (the selftest's `now` path) and then puts the star back for every online player. **At every gate
 boundary** `restoreInventory` writes RUN START's inventory; the next beat redraws. The heal (ruling M) only ever acts
-when no Nexus item is found and his star is on.
+when no Nexus item is found and his star is on. *(2026-11-22, later: and only on a LOADED profile, `e00c6324`; the run
+starts long after his load, so no row's heal changes. The shot that takes the mirror's last arrow puts it back itself,
+`NEXUSRESTORE`, #245: VX10.)*
 
 ## R0 — THE BUILD, FOR THE WHOLE STACK OF EIGHT. READ IT FIRST. IF ANY R0 FAILS, STOP
 
@@ -245,11 +261,103 @@ ValueLine (Bytes 'content/weapons/boltor.yml') '      type: vanilla' 'boltor.yml
 $zip.Dispose()
 ```
 
+### R0bR2 — the jar carries all NINE PRs (2026-11-22, later; R0b re-predicted, its text above kept)
+
+> **R0b'S "32" IS A MISCOUNT, FOUND BY THIS ROW'S OWN RUN BEFORE COMMIT.** R0b's row says "PRESENT, 32" and its recorded
+> reading says the scan "printed 32 PRESENT". Its committed script holds **31** checks before `'--- controls'`
+> (counted from `ada7c809`'s file by its `Has`/`ValueLine` lines: the breacher-rework nine, #239's 1, #240's 4, #241's 5,
+> #242's 3, #243's 2, the content's 7), and this row's run of the same 31 printed 31 PRESENT. So either R0b's reading was
+> taken on a different script or it was miscounted; which is not knowable from the record. This row was first written
+> "R0b's 32 ... 40", inheriting the error, and corrected to 39 BEFORE commit, when the run read 39. R0b's text is kept.
+
+| prediction | instrument | READING |
+|---|---|---|
+| **PRESENT, 39:** R0b's script's 31, and these 8: #243's fix `NexusHeal.class` `(ZZIZ)Z` (the four-input rule); #245 `VanillaShot.class` `restoresNexus`, `VanillaShots.class` `NEXUSRESTORE player=`, `VanillaShots.class` `CROSSBOWCHARGE `, `RpgCommand.class` `Rounds: %d/%d (%s)`; content `BootLines.class` `Convert-on-arrival: `, `GATE-vanilla-bows.yml` `VX10:` and `VX5R2:`. **The controls, ABSENT, 12:** R0b's 9, and these 3: `NexusHeal.class` `(ZIZ)Z` (the three-input rule the fix replaced; not a substring of the new one), `VanillaShots.class` `NEXUSHEAL` (the restore never writes the heal's line), `GATE-vanilla-bows.yml` `VX5:` (renamed VX5R2) | the scan below, `-JarPath run\plugins\rpg-0.1.0-SNAPSHOT.jar` | |
+
+```powershell
+param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $JarPath))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+function ValueLine($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + '([ \t]*\r?$|[ \t]+#)')) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+function Has($entry, $needle) { $b = Bytes $entry; if ($b -ne $null -and $b.Contains($needle)) { "PRESENT $entry '$needle'" } else { "ABSENT  $entry '$needle'" } }
+$p = 'io/github/butterflysmp/rpg/'
+$b = Bytes 'content/weapons/breacher.yml'
+ValueLine $b '        count: 4' 'breacher.yml'
+ValueLine $b '        angle_degrees: 3' 'breacher.yml'
+ValueLine $b '        rotation_degrees: 90' 'breacher.yml'
+ValueLine $b '        amount: 40' 'breacher.yml'
+ValueLine (Bytes 'selftest/GATE-breacher-rework.yml') 'LL9R2:' 'GATE-breacher-rework.yml'
+ValueLine (Bytes 'selftest/index.yml') '  - breacher-rework' 'index.yml'
+Has ($p + 'paper/selftest/ReplyReader.class') 'WrapperPlayServerActionBar'
+Has ($p + 'core/ability/CastSpec$Spread.class') 'spread rotation_degrees must be finite'
+Has ($p + 'paper/content/AbilitySchema.class') 'rotation_degrees'
+Has ($p + 'paper/menu/CraftMatrixScreen.class') 'neverAnIngredient'
+Has ($p + 'core/weapon/QuiverMirror.class') 'warnNow'
+Has ($p + 'paper/nexus/NexusMirror.class') 'restoreStar'
+Has ($p + 'paper/nexus/QuiverWarning.class') 'Your Nexus menu is off'
+Has ($p + 'core/weapon/MirrorShot.class') 'NO_PICKUP'
+Has ($p + 'paper/weapon/VanillaShots.class') 'VANILLASHOT'
+Has ($p + 'core/weapon/ShotStamp.class') 'applyTo'
+Has ($p + 'core/ability/CastSpec$Vanilla.class') 'Vanilla'
+Has ($p + 'paper/weapon/WeaponDurability.class') 'applyWearOnShot'
+Has ($p + 'paper/listener/RpgListeners.class') 'onVanillaShotWeaponWear'
+Has ($p + 'core/enchant/EnchantRoll$Requires.class') 'QUIVER'
+ValueLine (Bytes 'content/enchants/deft_hands.yml') 'requires: reload' 'deft_hands.yml'
+ValueLine (Bytes 'content/enchants/expanded_quiver.yml') 'requires: quiver' 'expanded_quiver.yml'
+Has ($p + 'paper/nexus/NexusHealing.class') 'NEXUSHEAL'
+Has ($p + 'core/build/NexusHeal.class') 'heals'
+$bow = Bytes 'content/weapons/bow.yml'
+$xb = Bytes 'content/weapons/crossbow.yml'
+ValueLine $bow 'attack_damage: 14' 'bow.yml'
+ValueLine $bow 'quiver_size: 8' 'bow.yml'
+ValueLine $bow '      type: vanilla' 'bow.yml'
+ValueLine $xb 'attack_damage: 37' 'crossbow.yml'
+$g = Bytes 'selftest/GATE-vanilla-bows.yml'
+ValueLine $g 'VM8:' 'GATE-vanilla-bows.yml'
+ValueLine (Bytes 'selftest/index.yml') '  - vanilla-bows' 'index.yml'
+Has ($p + 'paper/command/RpgCommand.class') 'Pool: '
+'--- R0bR2: the nine-PR additions'
+Has ($p + 'core/build/NexusHeal.class') '(ZZIZ)Z'
+Has ($p + 'core/weapon/VanillaShot.class') 'restoresNexus'
+Has ($p + 'paper/weapon/VanillaShots.class') 'NEXUSRESTORE player='
+Has ($p + 'paper/weapon/VanillaShots.class') 'CROSSBOWCHARGE '
+Has ($p + 'paper/command/RpgCommand.class') 'Rounds: %d/%d (%s)'
+Has ($p + 'paper/content/BootLines.class') 'Convert-on-arrival: '
+ValueLine $g 'VX10:' 'GATE-vanilla-bows.yml'
+ValueLine $g 'VX5R2:' 'GATE-vanilla-bows.yml'
+'--- controls'
+ValueLine $b '        count: 7' 'breacher.yml CONTROL-OLD'
+ValueLine $b '        amount: 4' 'breacher.yml CONTROL-PREFIX'
+ValueLine $b '        rotation_degrees: 9' 'breacher.yml CONTROL-PREFIX'
+ValueLine (Bytes 'content/weapons/dragons_breath.yml') '        rotation_degrees: 90' 'dragons_breath.yml CONTROL-NONE'
+ValueLine $bow 'attack_damage: 1' 'bow.yml CONTROL-PREFIX'
+ValueLine $xb 'attack_damage: 3' 'crossbow.yml CONTROL-PREFIX'
+ValueLine $xb 'quiver_size: 8' 'crossbow.yml CONTROL-NONE'
+ValueLine (Bytes 'content/enchants/deft_hands.yml') 'requires: quiver' 'deft_hands.yml CONTROL-WRONG'
+ValueLine (Bytes 'content/weapons/boltor.yml') '      type: vanilla' 'boltor.yml CONTROL-NONE'
+Has ($p + 'core/build/NexusHeal.class') '(ZIZ)Z'
+Has ($p + 'paper/weapon/VanillaShots.class') 'NEXUSHEAL'
+ValueLine $g 'VX5:' 'GATE-vanilla-bows.yml CONTROL-RENAMED'
+$zip.Dispose()
+```
+
 ### R0c — every Loaded line, and nothing refused
 
 | prediction | instrument | READING |
 |---|---|---|
 | Exactly one of each, up to the first `joined the game`: **`[Rpg] Loaded 11 abilities, 43 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 24 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 6 recipes, 1 ores, 4 vein sizes`** (`GATE-breacher-rework.md`'s reading with **22 -> 24 weapons**); **`Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions`** (36 / 36 / 52 + the two claims; derived, not measured); **`Convert-on-arrival: 9 materials {bow=bow, copper_sword=copper_sword, crossbow=crossbow, diamond_sword=diamond_sword, golden_sword=golden_sword, iron_sword=iron_sword, netherite_sword=netherite_sword, stone_sword=stone_sword, wooden_sword=wooden_sword}`** (a TreeMap, READ); the loot, fight, world-damage and smithing lines word for word `GATE-breacher-rework.md`'s boot. **No `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Recipe '`; no `[Rpg]` WARN beyond `volley_stone`'s known pair** | `Select-String run\logs\latest.log -Pattern 'Loaded\|Mint-on-craft\|Convert-on-arrival\|Refusing\|Skipping\|SEVERE\|WARN\|Exception\|No fights loaded\|Recipe '''` | |
+
+> **2026-11-22, LATER (the seat's follow-up 4): R0c's two derived lines are now MEASURED, and their numbers did not
+> change.** `BootCountLinesTest` (content PR) runs the plugin's own counting steps over the real `content/`, in
+> `RpgPlugin.onEnable`'s order (the four gear loaders, the recipe and smithing loaders, `CraftResultIndex.build`,
+> `ArrivalClaims.build`), and prints both lines through `BootLines`, the methods the plugin now logs them with. It
+> asserts the two lines above verbatim and passes; its positive control (the Bow's `craft_result` removed) read `37
+> indexed, 37 claiming, of 54` and `8 materials`, as predicted. **What it cannot run without a server, measured:** the
+> refusal pre-pass asks `Material.getMaxDurability`, which throws `No RegistryAccess implementation found` with no server,
+> so both lines are measured GIVEN that nothing is refused; that premise is this row's own "no `Refusing`", read on the
+> boot. **So R0c still fails on any line not as predicted**: the two lines as MEASURED, "nothing refused" and the Loaded
+> line.
 
 ### R0d — every scenario loaded
 
@@ -259,6 +367,16 @@ $zip.Dispose()
 
 **RECOUNTED** (`SelfTestScenariosTest` asserts 325): 40 gates, `^[A-Za-z0-9_-]+:` **365**, `^setup:` **40**, so **325**.
 Control: 342 + 23 (setup, VB0-VB3, VM1-VM10, VX1-VX7, VX9) = 365.
+
+### R0dR2 — every scenario loaded (2026-11-22, later; R0d re-predicted for VX10, its text above kept)
+
+| prediction | instrument | READING |
+|---|---|---|
+| Exactly one **`[Rpg] Selftest: dev server, 326 scenarios across 40 gates [melee-cell, …, breacher-rework, vanilla-bows]`**. The control: R0d's `325 scenarios across 40 gates` is ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+
+**RECOUNTED** (`SelfTestScenariosTest` asserts 326): 40 gates, `^[A-Za-z0-9_-]+:` over the `GATE-*.yml` files **366**,
+`^setup:` **40**, so **326**. Control: 365 + 1 (VX10; VX5 became VX5R2, a rename, not a row) = 366; the vanilla-bows file
+alone counts 23 at `ada7c809` and 24 now.
 
 ### R0e — THE ORPHAN SWEEP WITH NOTHING STAGED
 
@@ -397,6 +515,19 @@ says how its first press clears it. **"Clears arrows while the mirror shows":** 
 |---|---|---|
 | **`REPLY "1/384 uses left (damage 383) -- BROKEN"`** (our floor is max - 1, READ); **`NEXUS … amount=8`**. His try: **exactly one `VANILLASHOT … weapon=bow … rounds=8->8 cancel=true … paid=false damage=383->383`**; **`REPLY actionbar "Your weapon is broken -- repair it before using it."`**; **`NEXUS … amount=8`** (nothing spent); `HELD bow …` (still in his hand). The Crossbow: **`REPLY "1/<M> uses left (damage <M-1>) -- BROKEN"`**; his try: **one `VANILLASHOT … weapon=crossbow … took=plain_arrow … cancel=true refund=true … damage=<M-1>-><M-1>`**, the broken notice; **`ITEMS … count=2`** (the loaded arrow given back); `HELD crossbow …`. No VANILLASHOT: that half UNREAD. Clears arrows with the slot showing the star | ruling I | |
 
+### VX5R2 — VX5 RE-PREDICTED, 2026-11-22, LATER: THE REFUSED CROSSBOW READ UNLOADED (SURVIVAL)
+
+> **Why re-predicted (the seat's follow-up 3):** VX5 predicted `refund=true` and `count=2` for the broken Crossbow, which
+> would make an arrow per try if the refusal left it charged. READ (javap, the pinned server jar):
+> `CrossbowItem.performShooting` sets `CHARGED_PROJECTILES` to EMPTY BEFORE `shoot` fires the event, and a cancelled event
+> only removes the projectile and returns; so the refusal leaves it UNLOADED and the arrow given back is the one its load
+> took. No code change; the row now reads the charge, on #245's `CROSSBOWCHARGE` line (written just before VANILLASHOT).
+> The scenario's steps are VX5's, renamed. VX5's committed text above stands and is not read.
+
+| prediction | stands on | READING |
+|---|---|---|
+| **The Bow, VX5's half unchanged:** **`REPLY "1/384 uses left (damage 383) -- BROKEN"`**; **`NEXUS … amount=8`**. His try: **exactly one `VANILLASHOT … weapon=bow … rounds=8->8 cancel=true … paid=false damage=383->383`**; **`REPLY actionbar "Your weapon is broken -- repair it before using it."`**; **`NEXUS … amount=8`**; `HELD bow …`. **No `CROSSBOWCHARGE` line for the Bow** (written only for a crossbow's meta) and **no `NEXUSRESTORE`** (the mirror held 8: vanilla took one of eight, the item stayed). **The Crossbow:** **`REPLY "1/<M> uses left (damage <M-1>) -- BROKEN"`**; his try: **exactly one `CROSSBOWCHARGE <n> weapon=crossbow charged=false`**, then **one `VANILLASHOT … weapon=crossbow … took=plain_arrow … cancel=true refund=true … damage=<M-1>-><M-1>`**, the broken notice; **`ITEMS … count=2`** (the arrow his load took, given back); `HELD crossbow …`. **`charged=true` would mean the refusal left it loaded, and every further try would make an arrow: the hazard this row exists for.** If he tries more than once, each try is one CROSSBOWCHARGE and one VANILLASHOT, and ITEMS still reads 2 (each load takes one, each refusal gives one back). No VANILLASHOT: that half UNREAD. Clears arrows with the slot showing the star | ruling I; `CrossbowItem.performShooting` (READ) | |
+
 ### VX6 — THE CRAFT, PROMPTED (SURVIVAL)
 
 | prediction | stands on | READING |
@@ -408,6 +539,19 @@ says how its first press clears it. **"Clears arrows while the mirror shows":** 
 | prediction | stands on | READING |
 |---|---|---|
 | The run's first short_bow press, 40 ticks after the row starts (cooldown 12). Probe `200.000/200.000`; **one `PLAYERHIT … source=short_bow/right_click … sent=16.000`** (or `32.000`), **no `VANILLASHOT` line** (it binds right_click: vanilla never shoots it, READ); probe **`184.000/200.000`**; **`NEXUS … material=arrow amount=7`** (the short_bow's quiver, 8 -> 7). Clears nothing | ruling 11 | |
+
+### VX10 — THE BOW'S LAST ROUND, THEN THE EMPTY QUIVER, PROMPTED TWICE (2026-11-22, later; the seat's follow-up 2) (SURVIVAL)
+
+> **Why (READ, javap on the pinned server jar):** with no arrow of his own, vanilla takes the mirror, and
+> `ProjectileWeaponItem.useAmmo` splits one from it and, once the stack is empty, `Inventory.removeItem` takes it out. So
+> the last round's shot leaves no Nexus item when the event fires. #245 puts it back in the same tick (`NEXUSRESTORE`, into
+> his locked slot L by the heal's converge; the event does not carry the slot it was taken from). Staged by `/rpg rounds
+> 1` (#245, dev server only), so no eight shots are prompted. The row runs after VX7 and before VX9; `L` as everywhere,
+> `m` the slot hold_only moved the Nexus item to (m >= 9, ruling G), `s` the slot the arrow give uses.
+
+| prediction | stands on | READING |
+|---|---|---|
+| **Staged:** **`REPLY "Rounds: 1/8 (bow)" [green]`**; **`ITEMS material=arrow count=1 gear=0 slots=[m:1]`** (the mirror alone, which the probe counts); **`NEXUS slot=m material=arrow amount=1`**; `MOBSEED … zombie … max=200`; probe **`customHP=200.000/200.000`**. **First prompt, one shot at full draw:** exactly one **`NEXUSRESTORE player=<n> slot=L cause=shot`**, then exactly one **`VANILLASHOT <n> weapon=bow hand=main took=mirror rounds=1->0 force=<f> cancel=false refund=false paid=true damage=0->1`** (f = 1.000 at the full draw asked for); exactly one **`PLAYERHIT … source=bow/shot … element=kinetic sent=<s>`** with **s = 14 (attack_damage) x 100/100 (score, staged) x 1.0 (enchant: none active) + 0 (class: nothing grants it) + 0 (level bonus at level 1), x f (force), x 1 (crit) = `14.000` at f = 1.000**, or `28.000` (crit x 2, the second allowed reading), to within 0.007 for f < 1; probe **`186.000/200.000`** at f = 1 (or `172.000`); **`NEXUS slot=L material=nether_star amount=1`** (the star at 0 rounds, in L, not m); **`ITEMS material=arrow count=0 gear=0 slots=[]`**; `HELD bow …` with **`"Quiver: 0/8"`**; **and NO `NEXUSHEAL` line anywhere in the row.** **Second prompt** (one arrow given: **`ITEMS material=arrow count=1 gear=0 slots=[s:1]`**), one try at 0 rounds: exactly one **`VANILLASHOT … weapon=bow hand=main took=plain_arrow rounds=0->0 force=<f> cancel=true refund=true paid=false damage=1->1`**; **exactly one `REPLY actionbar "Your quiver is empty -- left-click to reload." [gray]`** in the row; **`ITEMS material=arrow count=1 gear=0 slots=[s:1]`** (his arrow given back, ITEMS still 1); **`NEXUS slot=L material=nether_star amount=1`**; `HELD bow … "Quiver: 0/8"`. No VANILLASHOT line for a prompt: that half UNREAD. Clears arrows with the slot showing the star | follow-up 2 (#245); ruling 8; `QuiverNotice` (READ) | |
 
 ### VX9 — A FREE GO, THEN THE ONE QUESTION (SURVIVAL)
 
@@ -426,10 +570,16 @@ says how its first press clears it. **"Clears arrows while the mirror shows":** 
 
 A fired arrow's pickup; tipped and spectral arrows; creative; a mob's drop; dropping or moving the mirror by hand;
 death with the mirror showing; the off hand (the selftest cannot drive it; a minted Bow or Crossbow fired from it is
-cancelled and given back, READ); a craft that would take the star (`NexusNeverAnIngredientTest` is its witness); the
-empty quiver (READ: no dev command sets loaded rounds, so staging 0 takes eight prompted shots); the Dragon's Plume
+cancelled and given back, READ); a craft that would take the star (`NexusNeverAnIngredientTest` is its witness); the Dragon's Plume
 drawing on the mirror with no arrow of his own (ruling D, a behaviour change listed for Ben; its draw cannot be driven);
 **vanilla's knockback on the token hit; that invulnerability frames gate the hit.**
+
+> **2026-11-22, later: the empty quiver is TAKEN OFF this list** (the seat's follow-up 2(d)). It read "the empty quiver
+> (READ: no dev command sets loaded rounds, so staging 0 takes eight prompted shots)"; `/rpg rounds` (#245) now stages it,
+> and VX10's second prompt reads it. **Also listed, not read:** a Crossbow in the OFF hand LOADING from the mirror's last
+> arrow while a quiver weapon is held (a load, not a shot, so no `NEXUSRESTORE`: the heal puts the item back on the next
+> beat with a `NEXUSHEAL` line), and VX9's free go, where the mirror may be taken before his own arrows if its slot is
+> lower than theirs (a `NEXUSRESTORE` there is his play, not predicted).
 
 ## R0b, RUN BEFORE COMMIT
 
@@ -437,3 +587,11 @@ drawing on the mirror with no arrow of his own (ruling D, a behaviour change lis
 of `feat/vanilla-bows-content` at `50628a74` plus this gate's scenario, index line and test count (2026-11-22, 20:13):**
 the scan above printed **32 PRESENT** (every line the R0b row names) and **the 9 controls ABSENT**, exactly as
 predicted. The boot's reading is taken again on the deployed jar.
+
+**R0bR2, against `paper\target\rpg-0.1.0-SNAPSHOT.jar` (2,363,324 bytes), built by `./mvnw -B clean verify` from the
+working tree of `feat/vanilla-bows-content` at `ff83c373` plus this commit's scenario (VX10, VX5R2) and test count
+(2026-11-22, 20:53; the suite in the same build: core 2,325, storage 99, paper 1,794, total 4,218, 0 failures, 1
+skipped):** the scan, extracted verbatim from this file's R0bR2 block and run with `powershell -File`, printed **39
+PRESENT and 0 ABSENT** before `'--- controls'` and **12 ABSENT, 0 PRESENT** after it. 39 is the corrected prediction (the
+note above); the first-written 40 was not met, and that is how the miscount was found. The boot's reading is taken again
+on the deployed jar.

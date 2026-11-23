@@ -279,7 +279,9 @@ class SelfTestScenariosTest {
         // The control: 331 + 11 (setup, RW0-RW5, BR6R2, BR7R2, LL9R2, RW9) = 342. 293 was this line's value.
         // Then GATE-vanilla-bows.md (feat/vanilla-bows-content, 2026-11-22), RECOUNTED: 40 gates, 365 keys, 40 setups, so
         // 325. The control: 342 + 23 (setup, VB0-VB3, VM1-VM10, VX1-VX7, VX9) = 365. 303 was this line's value.
-        assertEquals(325, loaded.rows());
+        // Then the seat's follow-ups 2 and 3 (their rows on feat/vanilla-bows-content, 2026-11-22), RECOUNTED: 40 gates, 366 keys, 40
+        // setups, so 326. The control: 365 + 1 (VX10; VX5 became VX5R2, a rename, not a row) = 366. 325 was this line's value.
+        assertEquals(326, loaded.rows());
     }
 
     /**
