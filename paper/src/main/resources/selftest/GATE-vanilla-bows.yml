@@ -1,0 +1,405 @@
+# GATE-vanilla-bows (docs/gates/GATE-vanilla-bows.md): the quiver in the Nexus slot, the vanilla-driven Bow and Crossbow,
+# ruling H's pools and ruling M's heal. Stacked: #239 to the content PR, on #238. SURVIVAL, every row.
+#
+# THE MIRROR AND /clear (the seat's ruling M): a clear of arrows while the mirror shows removes the Nexus item. So every
+# row that clears arrows first selects an EMPTY hotbar slot ("hold: empty"): the held-change redraw then shows the star,
+# and the clear takes his real arrows only. Two rows clear WHILE the mirror shows, on purpose: VM8 (the heal) and VM10's
+# first half (its control, with the star off). Each row's comment says which it is.
+#
+# THE LOCKED SLOT is the one the setup's NEXUS line names (8 unless his settings moved it); call it L.
+
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+  - probe_self: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:zombie_villager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:husk,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:drowned,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:stray,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:bogged,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:parched,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:cave_spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:witch,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:enderman,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:slime,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:silverfish,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:endermite,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:pillager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:vindicator,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:evoker,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:ravager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:vex,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:guardian,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:elder_guardian,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:breeze,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creaking,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:warden,distance=..64,tag=!selftest]"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+  - hold: empty
+  - probe_nexus: ""
+
+# VB0: THE SPOT (counts describe it; not pass or fail). Clears nothing.
+VB0:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - probe_self: ""
+  - probe_blocks: "AIR 1 0 -4 15 1 3"
+  - probe_blocks: "AIR 1 -1 -4 15 -1 3"
+  - probe_blocks: "WATER 1 -1 -4 15 -1 3"
+
+# VB1: BOTH TOOLTIPS, every line. Clears no arrows.
+VB1:
+  - hold: empty
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give bow"
+  - hold: bow
+  - cmd: "rpg gearscore set 100"
+  - wait: 10
+  - dump: held
+  - cmd: "rpg give crossbow"
+  - hold: crossbow
+  - cmd: "rpg gearscore set 100"
+  - wait: 10
+  - dump: held
+
+# VB2: CONVERSION (ruling 12): a plain bow, a plain crossbow carrying two vanilla enchantments, and a minted short_bow (the
+# control, left alone). Clears no arrows.
+VB2:
+  - hold: empty
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "give @s minecraft:bow 1"
+  - wait: 5
+  - cmd: "give @s minecraft:crossbow[minecraft:enchantments={'minecraft:quick_charge':3,'minecraft:multishot':1}] 1"
+  - wait: 5
+  - cmd: "rpg give short_bow"
+  - wait: 5
+  - probe_inventory: bow
+  - probe_inventory: crossbow
+  - probe_inventory: short_bow
+
+# VB3: THE POOLS (ruling H): the Crossbow's has neither deft_hands nor expanded_quiver; the Boltor (the control) and the
+# Bow have both. Clears no arrows.
+VB3:
+  - hold: empty
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give crossbow"
+  - hold: crossbow
+  - cmd: "rpg enchant pool"
+  - cmd: "rpg give boltor"
+  - hold: boltor
+  - cmd: "rpg enchant pool"
+  - cmd: "rpg give bow"
+  - hold: bow
+  - cmd: "rpg enchant pool"
+
+# VM1: the Boltor at 8 rounds: the slot shows ARROW x 8. Clears arrows with the slot showing the star (hold: empty).
+VM1:
+  - hold: empty
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give boltor"
+  - hold: boltor
+  - wait: 2
+  - probe_nexus: ""
+
+# VM2: one Boltor shot: ARROW x 7. Its first Boltor press of the run (cooldown clear). Clears nothing.
+VM2:
+  - hold: boltor
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 20
+  - use: right_click
+  - wait: 4
+  - probe_nexus: ""
+  - dump: held
+
+# VM3: holding a sword: the star. Clears nothing.
+VM3:
+  - cmd: "rpg give wooden_sword"
+  - hold: wooden_sword
+  - wait: 2
+  - probe_nexus: ""
+
+# VM4: no real arrow, the mirror showing ARROW x 7: a Boltor reload is REFUSED (the mirror is not ammunition), the no-ammo
+# notice once. Clears nothing.
+VM4:
+  - hold: boltor
+  - wait: 2
+  - probe_items: arrow
+  - reload: ""
+  - wait: 4
+  - probe_nexus: ""
+  - probe_items: arrow
+
+# VM5: 16 real arrows given: their own stack, the mirror unchanged; then the reload takes exactly the one round missing.
+# Clears nothing.
+VM5:
+  - hold: boltor
+  - cmd: "give @s minecraft:arrow 16"
+  - wait: 2
+  - probe_items: arrow
+  - probe_nexus: ""
+  - reload: ""
+  - wait: 70
+  - probe_nexus: ""
+  - probe_items: arrow
+
+# VM6: the Boltor emptied (8 presses, 18 ticks apart against its 16): the star at 0 rounds. Clears nothing.
+VM6:
+  - hold: boltor
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 20
+  - use: right_click
+  - wait: 18
+  - use: right_click
+  - wait: 18
+  - use: right_click
+  - wait: 18
+  - use: right_click
+  - wait: 18
+  - use: right_click
+  - wait: 18
+  - use: right_click
+  - wait: 18
+  - use: right_click
+  - wait: 18
+  - use: right_click
+  - wait: 4
+  - probe_nexus: ""
+  - dump: held
+
+# VM7: the Breacher (ruling 4): ARROW x 2. Clears nothing.
+VM7:
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - wait: 2
+  - probe_nexus: ""
+
+# VM8: RULING M, THE HEAL. hold_only the Bow (the Nexus item moves out of the hotbar, ruling G); 5 real arrows given; then
+# "clear @s minecraft:arrow" WHILE THE MIRROR SHOWS: it takes his 5 AND the Nexus item. Within 20 ticks the beat heals:
+# the star minted into L and redrawn as ARROW x 8; the Bow's rounds unchanged. The run's restore returns his own arrows.
+VM8:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "rpg give bow"
+  - hold_only: bow
+  - wait: 2
+  - probe_nexus: ""
+  - cmd: "give @s minecraft:arrow 5"
+  - wait: 2
+  - probe_items: arrow
+  - cmd: "clear @s minecraft:arrow"
+  - wait: 20
+  - probe_nexus: ""
+  - probe_items: arrow
+  - dump: held
+
+# VM9: THE STAR OFF (ruling 5), through the shipped Settings menu: no Nexus item, and the warning once while he carries a
+# quiver weapon (the Bow, held). Clears nothing.
+VM9:
+  - cmd: "menu"
+  - wait: 3
+  - click: "Settings"
+  - wait: 3
+  - click_material: LIME_DYE
+  - wait: 3
+  - close: ""
+  - wait: 12
+  - probe_nexus: ""
+  - wait: 40
+  - probe_nexus: ""
+
+# VM10: THE CONTROLS, the star still off. (a) The same clear as VM8 with the star off: no Nexus item and none minted (no
+# NEXUSHEAL). (b) No quiver weapon in his inventory: no warning. (c) A quiver weapon arriving: the warning once. Then the
+# star back ON through Settings. Clears arrows with NO Nexus item to take (the star is off).
+VM10:
+  - cmd: "give @s minecraft:arrow 3"
+  - cmd: "clear @s minecraft:arrow"
+  - wait: 20
+  - probe_nexus: ""
+  - hold: empty
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "clear @s minecraft:crossbow"
+  - wait: 30
+  - cmd: "rpg give boltor"
+  - wait: 15
+  - hold: empty
+  - cmd: "menu"
+  - wait: 3
+  - click: "Settings"
+  - wait: 3
+  - click_material: GRAY_DYE
+  - wait: 3
+  - close: ""
+  - wait: 12
+  - probe_nexus: ""
+
+# VX1: THE CROSSBOW, prompted: one charged shot at a zombie of 200. His arrows fall by one. Ruling I's wear: damage 0, the
+# shot's own damage=0->1, then the read adds one: damage 2. Clears arrows with the slot showing the star (hold: empty).
+VX1:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give crossbow"
+  - hold_only: crossbow
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg durability set 0"
+  - cmd: "give @s minecraft:arrow 4"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 40
+  - probe: t
+  - probe_items: arrow
+  - tell: "THE CROSSBOW: hold right-click until it is charged, then right-click again to shoot the zombie in front of you. ONE shot. You have 20 seconds."
+  - wait: 400
+  - probe: t
+  - probe_items: arrow
+  - cmd: "rpg durability damage 1"
+
+# VX2: THE BOW AT FULL DRAW WITH NO ARROW OF HIS OWN (Ben's idea read): he draws on the mirror alone. 8 -> 7, the mirror
+# ARROW x 7; ruling I's wear as VX1. Clears arrows with the slot showing the star (hold: empty).
+VX2:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give bow"
+  - hold_only: bow
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg durability set 0"
+  - wait: 2
+  - probe_nexus: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 40
+  - probe: t
+  - tell: "THE BOW: draw it ALL THE WAY (hold right-click for at least one second), then let go to shoot the zombie in front of you. ONE shot. You have no arrows of your own: the Bow draws on your quiver. 20 seconds."
+  - wait: 400
+  - probe: t
+  - probe_nexus: ""
+  - dump: held
+  - cmd: "rpg durability damage 1"
+
+# VX3: THE BOW ON A SHORT DRAW, prompted: sent = 14 x the logged force. Clears nothing.
+VX3:
+  - hold_only: bow
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 40
+  - probe: t
+  - tell: "THE BOW, A SHORT DRAW: tap right-click and let go after about a quarter of a second, aimed at the zombie. ONE shot. 20 seconds."
+  - wait: 400
+  - probe: t
+  - probe_nexus: ""
+
+# VX4: THE BACKSTOP, prompted, then THE BOW'S RELOAD, auto. 16 real arrows in hotbar slot 1, which vanilla picks before
+# the mirror (off hand, main hand, then slots 0 upward; hold_only puts the Bow in 0 and the Nexus item at 9 or later).
+# Clears arrows with the slot showing the star (hold: empty).
+VX4:
+  - hold: empty
+  - cmd: "clear @s minecraft:arrow"
+  - hold_only: bow
+  - cmd: "give @s minecraft:arrow 16"
+  - wait: 2
+  - probe_items: arrow
+  - probe_nexus: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 40
+  - tell: "THE BOW AGAIN: shoot the zombie ONCE, any draw. You now carry 16 arrows of your own. 20 seconds."
+  - wait: 400
+  - probe_items: arrow
+  - probe_nexus: ""
+  - reload: ""
+  - wait: 70
+  - probe_items: arrow
+  - probe_nexus: ""
+
+# VX5: A BROKEN BOW AND A BROKEN CROSSBOW REFUSE (ruling I), prompted: one try each; each stays in his hand, nothing spent.
+# Clears arrows with the slot showing the star (hold: empty).
+VX5:
+  - hold_only: bow
+  - cmd: "rpg durability set 999"
+  - wait: 2
+  - probe_nexus: ""
+  - tell: "THE BOW IS BROKEN: try to draw and shoot it ONCE. It should refuse. 15 seconds."
+  - wait: 300
+  - probe_nexus: ""
+  - dump: held
+  - hold: empty
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give crossbow"
+  - hold_only: crossbow
+  - cmd: "rpg durability set 999"
+  - cmd: "give @s minecraft:arrow 2"
+  - tell: "THE CROSSBOW IS BROKEN: charge it and try to shoot ONCE. It should refuse. 20 seconds."
+  - wait: 400
+  - probe_items: arrow
+  - dump: held
+
+# VX6: THE CRAFT, prompted as GATE-breacher's BR10: a table, 3 sticks, 3 string; ONE Bow. Clears no arrows.
+VX6:
+  - hold: empty
+  - cmd: "clear @s minecraft:bow"
+  - probe_inventory: bow
+  - cmd: "give @s minecraft:crafting_table 1"
+  - cmd: "give @s minecraft:stick 3"
+  - cmd: "give @s minecraft:string 3"
+  - tell: "PLACE THE CRAFTING TABLE BESIDE OR BEHIND YOU and craft ONE Bow: string down the right column, sticks in a curve on the left (the vanilla bow recipe). You have 60 seconds."
+  - wait: 1200
+  - probe_inventory: bow
+  - hold: bow
+  - dump: held
+
+# VX7: THE CONTROL, auto: a short_bow press still fires OUR projectile (it binds right_click, so vanilla never shoots it).
+# Its first press of the run. Clears nothing.
+VX7:
+  - hold: empty
+  - cmd: "rpg give short_bow"
+  - hold: short_bow
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~4 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 40
+  - probe: t
+  - use: right_click
+  - wait: 10
+  - probe: t
+  - probe_nexus: ""
+
+# VX9: A FREE GO, THEN THE ONE QUESTION. Clears arrows with the slot showing the star (hold: empty).
+VX9:
+  - hold: empty
+  - cmd: "clear @s minecraft:bow"
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give bow"
+  - cmd: "rpg give crossbow"
+  - cmd: "give @s minecraft:arrow 32"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~7 ~ ~2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~9 ~ ~-2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - tell: "30 seconds with the Bow and the Crossbow: shoot the zombies any way you like. A question follows."
+  - wait: 600
+  - cmd: "kill @e[tag=t]"
+  - ask: "1 1200 words Did the Bow and Crossbow feel like vanilla to use?"

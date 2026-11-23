@@ -40,9 +40,12 @@ class SelfTestScenariosTest {
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
-                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework"),
+                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
+                        "vanilla-bows"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty-nine gates, in boot order (breacher-rework LAST, the Breacher reworked, 2026-11-22, a NEW gate after"
+                "the forty gates, in boot order (vanilla-bows LAST, the vanilla Bow and Crossbow and the quiver in the Nexus"
+                        + " slot, 2026-11-22, a NEW gate after breacher-rework;"
+                        + " breacher-rework before it, the Breacher reworked, 2026-11-22, a NEW gate after"
                         + " breacher; breacher before it, the Breacher, 2026-11-22, a NEW gate after living-lantern;"
                         + " living-lantern before it, the Living Lantern, 2026-11-22, a NEW gate after"
                         + " knell-beam; knell-beam before it, the Knell Beam, 2026-11-21, a NEW gate after"
@@ -274,7 +277,9 @@ class SelfTestScenariosTest {
         // control: 317 + 14 (setup, BR0-BR11, HF2) = 331. 280 was this line's value.
         // Then GATE-breacher-rework.md (feat/breacher-rework, 2026-11-22), RECOUNTED: 39 gates, 342 keys, 39 setups, so 303.
         // The control: 331 + 11 (setup, RW0-RW5, BR6R2, BR7R2, LL9R2, RW9) = 342. 293 was this line's value.
-        assertEquals(303, loaded.rows());
+        // Then GATE-vanilla-bows.md (feat/vanilla-bows-content, 2026-11-22), RECOUNTED: 40 gates, 365 keys, 40 setups, so
+        // 325. The control: 342 + 23 (setup, VB0-VB3, VM1-VM10, VX1-VX7, VX9) = 365. 303 was this line's value.
+        assertEquals(325, loaded.rows());
     }
 
     /**

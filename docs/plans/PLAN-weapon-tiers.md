@@ -1146,3 +1146,13 @@ Vanilla's Power, Punch, Flame, Infinity, Multishot, Piercing and Quick Charge ar
 
 **A known leftover (ruling L):** a crash followed by removing the plugin before he rejoins leaves mirror arrows in a
 saved inventory; at the next join with the plugin, `converge` finds them by their tag and the redraw corrects them.
+
+### 6.7 RULING M: THE NEXUS ITEM HEALS ON THE BEAT (the seat's, 2026-11-22, #243)
+
+**WHY:** the mirror makes the Nexus item sometimes an ARROW, so any path that removes arrows by type can now remove it.
+An operator's `/clear @s minecraft:arrow` is the one found (INFERRED: vanilla's clear matches the item type); the heal
+covers the ones not found. On each 10-tick stats beat, BEFORE the mirror's redraw, if his star is switched on and NO item
+carrying the Nexus tag is anywhere in his inventory, the star is converged to his locked slot by the join path's own
+call and guard; the redraw then draws the mirror in the same beat. A star found in another slot is not moved (ruling
+G); duplicates are not its business; a dead player is left to the respawn path. `GATE-vanilla-bows.md` VM8 reads it,
+VM10 its control with the star off.
