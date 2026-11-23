@@ -231,3 +231,62 @@ tree of `feat/boltor-recipe` at `ec367430` plus this commit's gate, scenario, in
 skipped):** the scan above, extracted verbatim from this file and run with `powershell -File`, printed **15 PRESENT and
 0 ABSENT** before `'--- controls'` and **6 ABSENT, 0 PRESENT** after it, exactly as predicted. The boot's reading is
 taken again on the deployed jar.
+
+## READINGS, 2026-11-22: THE BOOT OF `ac46c838`. R0 AS PREDICTED; EVERY ROW AS PREDICTED
+
+Boot approved by the seat's message of 2026-11-22 (#246 and #247) on Ben's own "ready", by `.claude/rules/booting.md`.
+Read from `run/logs/latest.log` of this boot (a copy kept in the session's scratchpad) and the jar in place. No
+prediction above was edited.
+
+### CARRIED STATE AND R0 (read before he logged in)
+
+- **Before the boot:** `git ls-remote` master `d7c6d659`, #246 `c3a5d2a0`, #247 `ac46c838`, as the seat diffed; both
+  PRs' two `build` checks `COMPLETED SUCCESS` on those heads; no `java` process; the backup in a NEW folder
+  `rpg-run-backups/2026-11-22-pre-boltor-recipe` (`Rpg` 161 files / 26 dirs, `world` 193 / 32, `diff -rq` lines 0 each;
+  `world/dimensions` = `minecraft`, `rpgfight`; overworld 106 files); `12:  dev-pack-on-join: true`; no fight folders;
+  "booting now" in its own message. The last log carried `difficulty=NORMAL`.
+- **The boot:** `Done (7.613s)` at 22:40:53. Deployed `recipes/boltor.yml` line 16 `mints: boltor`; 7 recipe files; 24
+  weapon files.
+- **R0a:** `[Rpg] Build: ac46c838`.
+- **R0b**, on the deployed jar (2,366,291 bytes): **15 PRESENT, 0 ABSENT; the 6 controls ABSENT, 0 PRESENT.**
+- **R0c:** `Loaded 11 abilities, 43 visuals, 5 statuses, 7 elements, 11 enchants, 3 pools, 6 fragments, 6 aspects, 24
+  weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 7 recipes, 1 ores, 4 vein sizes`;
+  **`Custom recipes: 7 registered, 0 replaced, 0 refused, of 7 authored (7 minting gear)`** (the derived line, as
+  predicted); **`Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions`**; **`Convert-on-arrival: 9 materials
+  {bow=bow, …, wooden_sword=wooden_sword}`** word for word; the loot, fight, world-damage and smithing lines identical to
+  the boot of `52579e8a` (`diff`, 0 lines); `[Rpg]` WARN only `volley_stone`'s pair; no `Refusing`, `Skipping`,
+  `SEVERE`, `Exception`, `Recipe '`.
+- **R0d:** `Selftest: dev server, 330 scenarios across 41 gates [… vanilla-bows, boltor-recipe]`; `326` ABSENT.
+- **R0e:** `FIGHTWORLD sweep path=…\run\world\dimensions\rpgfight folders=0`; no `deleting`, no `orphan`.
+- **R0 read by 22:41:14; "R0 passed" sent in its own message; his login 22:45:23, after it.**
+
+### HIS COMMANDS, AGAINST THE SHEET
+
+`/weather clear` 22:45:29 (off the sheet); `/gamemode survival` 22:45:32; `/rpg selftest vanilla-bows vb3r2` 22:45:47
+(lower case: no run started, off the sheet); `/rpg selftest vanilla-bows VB3R2` 22:45:53 (FINISHED 22:45:56; read in
+`GATE-vanilla-bows.md`); `/rpg selftest boltor-recipe` 22:46:07 (`RUN START boltor-recipe rows=4 selftest=ac46c838`,
+FINISHED 22:46:12); `/stop` 22:46:18.
+
+### THE ROWS: ALL AS PREDICTED (no miss)
+
+| row | READING |
+|---|---|
+| setup | `REPLY "Set 3 level(s) for BaronVonYeetus (now level 3, 0/1190 into it, 2090 lifetime)." [green]`; `DRIVE hold … item=empty` |
+| BR1 | `INVENTORY boltor slots=[]`; **`SCREEN RecipeBrowserMenu title="Recipes" [dark_gray]`** with **`SLOT 0 CROSSBOW name="Boltor" [white, green] italic …`** and `SLOT 1 FISHING_ROD name="Fishing Rod"`, **no `"Crossbow"`, no `"Breacher"`**; the click: **exactly one `CRAFT minted player=BaronVonYeetus weapon=boltor material=crossbow score=100`** (T = 100); `INVENTORY boltor slots=[0x1]`; **`HELD boltor CROSSBOW x1 name="Boltor" [white, green] italic lore=["Kinetic" [white]; "Gear Score: 100" [gray, aqua]; "Quiver: 8/8" [gray]; "" []; "Ranged Damage: 19" [gray, red]; "Attack Speed: 1.3" [gray, red]; "" []; "Eight bolts, then three seconds" [gray] italic; "of being a person holding a crossbow." [gray] italic; "" []; "Uncommon Ranged Weapon" [green]]`**, every line as predicted |
+| BR2 | **`SLOT 0 CROSSBOW name="Breacher" [white] italic …`** (with Shears, Heavy Weighted Pressure Plate, Iron Nugget), **no `"Boltor"`, no `"Crossbow"`**; **exactly one `CRAFT minted … weapon=breacher material=crossbow score=100`**; `INVENTORY breacher slots=[0x1]`. **The claim order holds on a server: the Breacher's grid mints the Breacher** |
+| BR3 | **`SLOT 0 CROSSBOW name="Crossbow" [white] italic …`** (with Iron Shovel, Fishing Rod, Iron Nugget, Iron Spear), **no `"Boltor"`, no `"Breacher"`**; **exactly one `CRAFT minted … weapon=crossbow material=crossbow score=100`**; `INVENTORY crossbow slots=[0x1]`; **`INVENTORY boltor slots=[]`**. The iron variant offers no Boltor and mints the Crossbow |
+| BR4 | the first menu: **`SLOT 1 CROSSBOW name="Crossbow"` and `SLOT 2 CROSSBOW name="Boltor"`** (with `SLOT 0 BOW name="Bow"`: 3 sticks and 3 of the 4 strings make one, not predicted, allowed); click Crossbow: **exactly one `CRAFT minted … weapon=crossbow …`**; the second menu: **`SLOT 0 CROSSBOW name="Boltor"`**, no `"Crossbow"`; click Boltor: **exactly one `CRAFT minted … weapon=boltor …`**; `INVENTORY crossbow slots=[1x1]`, `INVENTORY boltor slots=[0x1]`. **Two CRAFT lines, one of each, in that order** |
+| the END | `SELFTEST RUN FINISHED`; `RESTORED … gamemode=SURVIVAL … difficulty=NORMAL health=182.000 …`; **`SELFTEST RUN HEALTH saved=182.000 customHP=182.000/350.000 wrote=182.000`** |
+
+**Also recorded:** exactly 5 `CRAFT minted` lines in the whole log, all in these rows; no `NEXUSHEAL`, `NEXUSRESTORE` or
+`ARRIVAL` line.
+
+### AFTER HIS `/stop` (CHECKLIST STEP 9)
+
+`rpgfight` holds 0 entries; the overworld holds **106** files, **the same file list as the backup's** (`diff` 0 lines);
+`ThreadedAnvilChunkStorage: All dimensions are saved` at 22:46:18; **no `java.exe` left.**
+
+### UNREAD, AND WHY
+
+Only what *UNREAD BY DESIGN* lists: a grid placed by hand, mirrored, or in a world crafting table's own 3x3 (no verb
+places items into grid cells); the Crafter block; what he sees.
