@@ -935,6 +935,8 @@ public final class RpgListeners implements Listener {
                         profile.map(PlayerProfile::nexusSlot).orElse(NexusLock.DEFAULT_LOCKED_SLOT));
             }
             convergeStone(joined, profile);
+            // THE MIRROR (2026-11-22): drawn from the held weapon once the star is in place.
+            io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(joined, adapters.keys());
         }));
     }
 
@@ -1541,6 +1543,42 @@ public final class RpgListeners implements Listener {
         if (plumeDraw.suppressManagedBowShot(player, event.getBow())) {
             event.setCancelled(true);
         }
+    }
+
+    /**
+     * NO MIRROR ARROW EVER LEAVES AS A REAL ONE (the seat's rulings B and C, 2026-11-22; the decision is core's
+     * {@code MirrorShot}). Vanilla picks a bow's projectile off hand, main hand, then inventory slots 0 upward (READ,
+     * {@code Player.getProjectile}), so any bow can find the Nexus mirror; and it splits the arrow off BEFORE this event
+     * (READ, {@code BowItem.releaseUsing} -> {@code draw} -> {@code useAmmo}). So:
+     * <ul>
+     *   <li>a shot whose consumable is the mirror and that no quiver round paid is CANCELLED (a plain bow in the off hand
+     *       gets no free shot); the slot is then re-drawn from the held weapon's count, so nothing is lost or made;</li>
+     *   <li>a quiver-paid shot's arrow cannot be picked up (ruling B; the vanilla-driven Bow marks its paid shots, from
+     *       the next PR).</li>
+     * </ul>
+     * HIGHEST, after any handler that pays a round at this shot, and before MONITOR, which may not change the event.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onMirrorShot(EntityShootBowEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        boolean nexus = NexusItems.isNexus(event.getConsumable(), adapters.keys());
+        boolean paid = quiverPaidShot(event.getProjectile());
+        switch (io.github.butterflysmp.rpg.core.weapon.MirrorShot.of(nexus, paid)) {
+            case CANCEL -> event.setCancelled(true);
+            case NO_PICKUP -> {
+                if (event.getProjectile() instanceof org.bukkit.entity.AbstractArrow arrow) {
+                    arrow.setPickupStatus(org.bukkit.entity.AbstractArrow.PickupStatus.DISALLOWED);
+                }
+            }
+            case LEAVE -> { }
+        }
+        if (nexus) io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, adapters.keys());
+    }
+
+    /** Was a quiver round spent for this shot? Marked on the projectile by the paying handler (the vanilla-driven Bow). */
+    private boolean quiverPaidShot(org.bukkit.entity.Entity projectile) {
+        return projectile != null && projectile.getPersistentDataContainer()
+                .has(adapters.keys().quiverPaidShot, org.bukkit.persistence.PersistentDataType.BYTE);
     }
 
     /**
@@ -2165,6 +2203,10 @@ public final class RpgListeners implements Listener {
                 inventory.getItem(event.getPreviousSlot()),
                 inventory.getItem(event.getNewSlot()),
                 weapons, adapters, Bukkit.getCurrentTick());
+        // THE MIRROR (2026-11-22): the event fires BEFORE the slot switches, so it is drawn from the item ABOUT to be
+        // held -- the new slot's -- not from getItemInMainHand(), which is still the old one here.
+        io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(event.getPlayer(), adapters.keys(),
+                inventory.getItem(event.getNewSlot()));
     }
 
     /**
@@ -2184,6 +2226,9 @@ public final class RpgListeners implements Listener {
         // BEFORE EVERYTHING: a running selftest restores the inventory, XP and position it changed, and
         // the restore must write while the inventory can still be written (PLAN-selftest.md §4).
         selfTest.onQuit(event.getPlayer());
+        // THE MIRROR IS NEVER SAVED (2026-11-22): the star goes back before the inventory is written to disk, so no saved
+        // inventory holds arrows where the star was. After the selftest's restore, which may itself have put a mirror back.
+        io.github.butterflysmp.rpg.paper.nexus.NexusMirror.restoreStar(event.getPlayer(), adapters.keys());
         // A quit inside a fight's world: he is out of it, his return kept for the next login (step F8b).
         fights.onQuit(event.getPlayer());
 
@@ -2339,6 +2384,8 @@ public final class RpgListeners implements Listener {
         }
         // The stone second, for onJoin's reasons; the profile is already in memory, as above.
         convergeStone(event.getPlayer(), profiles.profile(event.getPlayer().getUniqueId()));
+        // THE MIRROR (2026-11-22): after a death and respawn, drawn from the held weapon.
+        io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(event.getPlayer(), adapters.keys());
     }
 
     // --- Freeze's attack-suppression. Each handler is a thin gate: if the attacking mob is

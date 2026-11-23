@@ -539,6 +539,9 @@ final class SelfTestRun {
         restoreRowRules(scheduler);   // a row that ended mid-way; the snapshot below puts the RUN START values back too
         String restored = snapshot.restore(player, service.profiles(), service.resources(), service.nameplates(),
                 scheduler, now);
+        // THE MIRROR (2026-11-22): the restore may have put back a mirror from RUN START; drawn again from what he holds
+        // now, so no restore leaves arrows where his star should be. The quit and disable paths then put the star back.
+        io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, service.adapters().keys());
         // HIS HEALTH, last and later (2026-11-22, the seat's brief, PR 1): after the XP restore above has had two
         // reconcile passes to raise his max. Logged as "SELFTEST RUN HEALTH ...", after the RESTORED line.
         snapshot.restoreHealthLater(player, service.stats(), scheduler, line -> service.log("SELFTEST RUN " + line));

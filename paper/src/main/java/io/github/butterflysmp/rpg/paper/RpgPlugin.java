@@ -741,6 +741,14 @@ public final class RpgPlugin extends JavaPlugin {
         this.repository = new FilePlayerRepository(
                 new File(getDataFolder(), "players").toPath(), storageIo);
         this.profiles = new ProfileService(repository, getLogger(), System::currentTimeMillis);
+        // THE NEXUS MIRROR AND THE STAR-OFF WARNING (2026-11-22): both run on the stats bar's beat, on the player's thread.
+        io.github.butterflysmp.rpg.paper.nexus.QuiverWarning quiverWarning = new io.github.butterflysmp.rpg.paper.nexus.QuiverWarning(
+                adapters.keys(), id -> profiles.starEnabled(id));
+        this.statsBar.bindBeat(player -> {
+            io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, adapters.keys());
+            quiverWarning.observe(player);
+        });
+        this.statsBar.bindQuit(quiverWarning::forget);
         // The reconcile loop reads each player's accessories and their PROFILE class (ruling A1), and
         // both exist only from here -- the same late-bind the store and the pool already use.
         this.healthSystem.bindAccessories(accessories, profiles);
@@ -1144,6 +1152,13 @@ OLD
         // listeners are gone, so nothing else restores the run. It restores here, synchronously, before the profile
         // flush below, which must carry the lifetime XP and cell the restore writes back.
         if (selfTest != null) selfTest.onDisable();
+        // THE MIRROR IS NEVER SAVED (2026-11-22): after the selftest's own restore, every online player's Nexus slot goes back
+        // to the star before the server writes the inventories.
+        if (adapters != null) {
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                io.github.butterflysmp.rpg.paper.nexus.NexusMirror.restoreStar(online, adapters.keys());
+            }
+        }
         // The dev fight fixture ends cleanly on a stop or a disable (GATE-fight-ring.md). It changed no blocks.
         if (fightFixtures != null) fightFixtures.onDisable();
 

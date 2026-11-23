@@ -301,6 +301,8 @@ public final class SelfTestService {
     io.github.butterflysmp.rpg.paper.health.PhageFuser fuser() { return fuser; }
     io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence() { return fireCadence; }
     java.util.function.Consumer<org.bukkit.entity.Player> leftClick() { return leftClick; }
+    /** The adapters, for the run's end (the Nexus mirror's redraw after the restore, 2026-11-22). */
+    AdapterContext adapters() { return adapters; }
     Spawner spawner() { return spawner; }
     Scheduler scheduler() { return adapters.scheduler(); }
     CombatantStats stats() { return adapters.stats(); }

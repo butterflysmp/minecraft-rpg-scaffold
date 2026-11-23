@@ -82,6 +82,21 @@ public final class NexusItems {
      * {@code Inventory#getContents()} is mostly nulls -- the same reason {@code GearItems.idOf}
      * is. Presence only: the stored byte's value is never consulted.
      */
+    /**
+     * THE MIRROR (2026-11-22, Ben: "all that changes is the item material"): the SAME Nexus item -- its name, its tag
+     * ({@code keys.nexus}, which every lock, drop, swap and click guard reads), its click opening the hub -- as
+     * {@code count} ARROWS. Its max stack size is raised from the star's 1 to {@code QuiverMirror.MAX_SHOWN} (99, the
+     * ceiling READ in the pinned jar) so the amount can show. Built from {@link #mint} so the two cannot drift apart.
+     */
+    public static ItemStack mirror(Keys keys, int count) {
+        ItemStack star = mint(keys);
+        ItemStack arrows = new ItemStack(Material.ARROW);
+        arrows.setItemMeta(star.getItemMeta());
+        arrows.editMeta(meta -> meta.setMaxStackSize(io.github.butterflysmp.rpg.core.weapon.QuiverMirror.MAX_SHOWN));
+        arrows.setAmount(count);
+        return arrows;
+    }
+
     public static boolean isNexus(ItemStack item, Keys keys) {
         if (item == null || !item.hasItemMeta()) return false;
         return item.getItemMeta().getPersistentDataContainer()

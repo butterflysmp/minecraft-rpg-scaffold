@@ -73,6 +73,22 @@ public final class StatsBarSystem {
      * {@code MiningService}'s DENIED notice -- and read here on each beat. See {@link ActionBarHolds}.
      */
     private final ActionBarHolds<Component> holds;
+    /**
+     * THE NEXUS MIRROR'S BACKSTOP AND THE STAR-OFF WARNING (2026-11-22): run first on every beat, on the player's own
+     * thread. Bound late by RpgPlugin ({@link #bindBeat}); a no-op until then.
+     */
+    private volatile java.util.function.Consumer<Player> beatHook = player -> { };
+
+    private volatile java.util.function.Consumer<UUID> quitHook = id -> { };
+
+    /** The beat hook's quit half: per-player state it keeps is forgotten at quit (the warning's, 2026-11-22). */
+    public void bindQuit(java.util.function.Consumer<UUID> hook) {
+        this.quitHook = java.util.Objects.requireNonNull(hook);
+    }
+
+    public void bindBeat(java.util.function.Consumer<Player> hook) {
+        this.beatHook = java.util.Objects.requireNonNull(hook);
+    }
     /** The current server tick, for the hold's end. {@code Bukkit::getCurrentTick} in the plugin. */
     private final LongSupplier now;
 
@@ -105,6 +121,7 @@ public final class StatsBarSystem {
         TaskHandle task = tasks.remove(playerId);
         if (task != null) task.cancel();
         holds.clear(playerId);   // a hold ends on quit (the seat's ruling 2); none is ever persisted
+        quitHook.accept(playerId);   // the beat hook's per-player state (the star-off warning's), 2026-11-22
     }
 
     private void start(Player player) {
@@ -120,6 +137,7 @@ public final class StatsBarSystem {
             // after its end draws the stats line again, and logs the end if the hold was traced.
             // Checked BEFORE the bootstrap guard: a held message needs no stats. A frame skipped by a
             // hold also skips the magazine settle below, which only matters to a readout not shown.
+            beatHook.accept(player);   // the Nexus mirror's redraw and the star-off warning, every beat (2026-11-22)
             long tick = now.getAsLong();
             switch (holds.beat(id, tick)) {
                 case ActionBarHolds.Beat.Held<Component> held -> {

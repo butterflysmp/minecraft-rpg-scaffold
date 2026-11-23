@@ -384,6 +384,8 @@ public final class Keys {
      * maturity path, where the two stamps have already established that a reload was running.
      */
     public final NamespacedKey quiverReloadPending;
+    /** On a PROJECTILE: a quiver round was spent for this shot, so its arrow is never picked up (2026-11-22, ruling B). */
+    public final NamespacedKey quiverPaidShot;
 
     /**
      * The armor-bar override: an entity-side {@code armor} modifier that cancels worn armor's
@@ -503,6 +505,7 @@ public final class Keys {
         this.quiverReloadStartedAt = new NamespacedKey(plugin, "quiver_reload_started_at");
         this.quiverReloadCompletesAt = new NamespacedKey(plugin, "quiver_reload_completes_at");
         this.quiverReloadPending = new NamespacedKey(plugin, "quiver_reload_pending");
+        this.quiverPaidShot = new NamespacedKey(plugin, "quiver_paid_shot");
         this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");
         this.attackSpeedOverride = new NamespacedKey(plugin, "attack_speed_override");
         this.nexus = new NamespacedKey(plugin, "nexus");
