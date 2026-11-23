@@ -386,6 +386,8 @@ public final class Keys {
     public final NamespacedKey quiverReloadPending;
     /** On a PROJECTILE: a quiver round was spent for this shot, so its arrow is never picked up (2026-11-22, ruling B). */
     public final NamespacedKey quiverPaidShot;
+    /** On a PROJECTILE: the ShotStamp of a vanilla-driven Bow or Crossbow shot, carried to its hit (2026-11-22, ruling 10). */
+    public final NamespacedKey vanillaShot;
 
     /**
      * The armor-bar override: an entity-side {@code armor} modifier that cancels worn armor's
@@ -506,6 +508,7 @@ public final class Keys {
         this.quiverReloadCompletesAt = new NamespacedKey(plugin, "quiver_reload_completes_at");
         this.quiverReloadPending = new NamespacedKey(plugin, "quiver_reload_pending");
         this.quiverPaidShot = new NamespacedKey(plugin, "quiver_paid_shot");
+        this.vanillaShot = new NamespacedKey(plugin, "vanilla_shot");
         this.armorBarOverride = new NamespacedKey(plugin, "armor_bar_override");
         this.attackSpeedOverride = new NamespacedKey(plugin, "attack_speed_override");
         this.nexus = new NamespacedKey(plugin, "nexus");

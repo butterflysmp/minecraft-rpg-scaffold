@@ -9,6 +9,13 @@ public sealed interface CastSpec {
     record Self() implements CastSpec {}
     record Melee(double reach, double arcDegrees) implements CastSpec {}
     /**
+     * VANILLA'S OWN SHOT (YAML {@code type: vanilla}, 2026-11-22): the item's bow or crossbow shot, which vanilla draws,
+     * loads and shoots. We NEVER cast it -- it is bound only to the {@code shot} trigger, which no input names -- and its
+     * on_hit lands where vanilla's arrow lands ({@code CastExecutor.landVanillaShot}). {@code WeaponDefinition} refuses it
+     * anywhere else.
+     */
+    record Vanilla() implements CastSpec {}
+    /**
      * A straight line to the first thing in the way. {@code beam} is a visual id drawn ALONG each
      * chunk-column segment as the ray walks it, or null for a bare ray that draws nothing between
      * the muzzle and the impact.
@@ -640,6 +647,7 @@ public sealed interface CastSpec {
             case Volley volley -> volley.minimumCooldownTicks();
             case Self ignored -> 0;
             case Melee ignored -> 0;
+            case Vanilla ignored -> 0;   // never cast by us; vanilla's draw and load are the cadence
             case Ray ignored -> 0;
             case Projectile ignored -> 0;
             case Dash ignored -> 0;

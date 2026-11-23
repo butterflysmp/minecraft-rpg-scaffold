@@ -260,6 +260,10 @@ public final class CastExecutor {
                 if (charges && target != null) onBasicAttackUse.run();
             }
 
+            // NEVER CAST BY US: bound only to the shot trigger, which no input names (WeaponDefinition refuses it elsewhere),
+            // so dispatch cannot be reached with it. Its hit is landVanillaShot, from where vanilla's arrow lands.
+            case CastSpec.Vanilla ignored -> { }
+
             case CastSpec.Ray ray -> launchRay(ability, source, aim, ray);
 
             case CastSpec.Projectile projectile -> launch(ability, source, aim, projectile);
@@ -384,6 +388,26 @@ public final class CastExecutor {
                 .withWeaponHit(),
                 target, target.state().position());
         if (DamagePayload.isBasicAttack(ability.onHit())) onBasicAttackUse.run();
+    }
+
+    /**
+     * THE HIT OF A VANILLA-DRIVEN SHOT (the seat's ruling 10, 2026-11-22): the weapon's {@code shot} on_hit lands on the
+     * target vanilla's arrow struck, through the same sum and the same PLAYERHIT line as every weapon hit. Unlike
+     * {@link #landBasicMelee}, the SCORE is the one stamped at the shot, never the world's at the hit (he may hold another
+     * weapon by then), and the basic-attack wear hook does NOT run: vanilla wore the bow at the shot.
+     *
+     * @param caster       the live shooter carrying the damage terms stamped at the shot ({@code ShotStamp.applyTo})
+     * @param triggerScore the held weapon's gear score at the shot
+     * @param chargeScale  the shot's force, clamped to 1 ({@code VanillaShot.chargeScale})
+     */
+    public void landVanillaShot(AbilityDefinition ability, CombatantSnapshot caster, int triggerScore,
+                                Combatant target, double chargeScale) {
+        detonate(ability, Caster.of(caster, chargeScale)
+                .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()))
+                .withTriggerScore(triggerScore)
+                .withSource(ability.id())
+                .withWeaponHit(),
+                target, target.state().position());
     }
 
     /**
@@ -963,6 +987,7 @@ public final class CastExecutor {
             case CastSpec.Projectile projectile -> launch(ability, source, aim, projectile);
             case CastSpec.Self ignored -> throw new IllegalStateException(notRepeatable("self"));
             case CastSpec.Melee ignored -> throw new IllegalStateException(notRepeatable("melee"));
+            case CastSpec.Vanilla ignored -> throw new IllegalStateException(notRepeatable("vanilla"));
             case CastSpec.Dash ignored -> throw new IllegalStateException(notRepeatable("dash"));
             case CastSpec.Volley ignored -> throw new IllegalStateException(notRepeatable("volley"));
             case CastSpec.Cone ignored -> throw new IllegalStateException(notRepeatable("cone"));

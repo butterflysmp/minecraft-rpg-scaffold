@@ -338,6 +338,7 @@ public final class WeaponLoreLines {
                     projectile.spread() == null ? 1 : projectile.spread().count();
             case CastSpec.Self ignored -> 1;
             case CastSpec.Melee ignored -> 1;
+            case CastSpec.Vanilla ignored -> 1;   // one arrow per shot
             case CastSpec.Ray ignored -> 1;
             case CastSpec.Dash ignored -> 1;
             // One payload per body it reaches, like a burst: the tooltip's "x N" counts deliveries from one press, and a

@@ -60,6 +60,9 @@ public record WeaponDefinition(
      */
     public static final String DEFAULT_AMMO = "arrow";
 
+    /** The trigger a vanilla-driven bow or crossbow binds its hit to (see {@link #validateShot}). No input names it. */
+    public static final String SHOT_TRIGGER = "shot";
+
     public WeaponDefinition {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("weapon id required");
         if (element == null || element.isBlank()) throw new IllegalArgumentException("weapon element required (use kinetic, never absent)");
@@ -130,6 +133,7 @@ public record WeaponDefinition(
                     + "' declares a quiver, which binds left_click to the reload, so it may not also"
                     + " declare a left_click trigger");
         }
+        validateShot(id, material, triggers);
         // THE AMMUNITION: absent (null) is the arrow, as every shipped file had it. Normalised like a material token
         // (lower case, "minecraft:" dropped). An item to load with and NOTHING to load it into is the reload_ticks
         // refusal above in another key: an authored mechanical value that could never act, so it is named.
@@ -239,6 +243,52 @@ public record WeaponDefinition(
      * Static and list-taking for {@link #hasVanillaMeleeTrigger}'s reason: the compact constructor
      * needs it before the components are assigned, so {@link #trigger(String)} cannot be called.
      */
+    /**
+     * THE {@code shot} TRIGGER (2026-11-22, the seat's Part 2): the hit of a weapon vanilla draws or loads and shoots. No
+     * input names it, so nothing of ours ever casts it; its on_hit lands where vanilla's arrow lands. Every shape that
+     * would bind it to nothing, or let it fight vanilla's own use of the item, is refused by name:
+     * <ul>
+     *   <li>a {@code type: vanilla} cast anywhere but under {@code shot} (an input would cast a shot that never comes);</li>
+     *   <li>{@code shot} with any other cast (its hit would never land: no arrow of ours carries it);</li>
+     *   <li>{@code shot} on a material vanilla does not shoot ({@code bow}, {@code crossbow});</li>
+     *   <li>{@code shot} beside {@code right_click} (our right-click cancels vanilla's use, so the bow would never draw)
+     *       or beside {@code draw} (PlumeDraw would take the draw over).</li>
+     * </ul>
+     */
+    private static void validateShot(String id, String material, List<TriggerBinding> triggers) {
+        boolean shot = false;
+        for (TriggerBinding binding : triggers) {
+            boolean vanilla = binding.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Vanilla;
+            boolean named = binding.input().equals(SHOT_TRIGGER);
+            if (vanilla && !named) {
+                throw new IllegalArgumentException("weapon '" + id + "' binds a 'type: vanilla' cast to '"
+                        + binding.input() + "'; it belongs only under the '" + SHOT_TRIGGER + "' trigger");
+            }
+            if (named && !vanilla) {
+                throw new IllegalArgumentException("weapon '" + id + "' declares a '" + SHOT_TRIGGER
+                        + "' trigger whose cast is not cast type vanilla, so its hit could never land");
+            }
+            shot |= named;
+        }
+        if (!shot) return;
+        String token = CraftResultToken.token(material);
+        if (!"bow".equals(token) && !"crossbow".equals(token)) {
+            throw new IllegalArgumentException("weapon '" + id + "' declares a '" + SHOT_TRIGGER
+                    + "' trigger on material '" + material + "'; only a bow or crossbow is shot by vanilla");
+        }
+        for (String forbidden : List.of("right_click", "draw")) {
+            if (bindsInput(triggers, forbidden)) {
+                throw new IllegalArgumentException("weapon '" + id + "' declares a '" + SHOT_TRIGGER
+                        + "' trigger beside a '" + forbidden + "' trigger, which would take vanilla's own draw away");
+            }
+        }
+    }
+
+    /** The {@code shot} trigger's ability, when this weapon is one vanilla draws or loads and shoots. */
+    public Optional<AbilityDefinition> vanillaShotTrigger() {
+        return trigger(SHOT_TRIGGER).map(TriggerBinding::ability);
+    }
+
     private static boolean bindsInput(List<TriggerBinding> triggers, String input) {
         for (TriggerBinding binding : triggers) {
             if (binding.input().equals(input)) return true;

@@ -265,6 +265,8 @@ public final class RpgListeners implements Listener {
      * read before the constructor body assigns them.
      */
     private final PlumeDraw plumeDraw;
+    /** The vanilla-driven Bow and Crossbow: their shot and their hit (2026-11-22, the seat's rulings 7 to 10). */
+    private final io.github.butterflysmp.rpg.paper.weapon.VanillaShots vanillaShots;
 
     /**
      * The cadence for environmental damage, owned because the token destroys vanilla's ratchet.
@@ -497,6 +499,7 @@ public final class RpgListeners implements Listener {
         this.weaponService = weaponService;
         this.adapters = adapters;
         this.plumeDraw = new PlumeDraw(weapons, adapters, weaponService, cooldowns, fireCadence);
+        this.vanillaShots = new io.github.butterflysmp.rpg.paper.weapon.VanillaShots(adapters, weapons, cooldowns);
         this.recipeCatalogue = new RecipeCatalogue(adapters);
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;
@@ -1504,8 +1507,9 @@ public final class RpgListeners implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onWeaponCrossbowLoad(io.papermc.paper.event.entity.EntityLoadCrossbowEvent event) {
-        if (io.github.butterflysmp.rpg.paper.weapon.WeaponItems.weaponId(event.getCrossbow(), adapters.keys())
-                .isPresent()) {
+        var id = io.github.butterflysmp.rpg.paper.weapon.WeaponItems.weaponId(event.getCrossbow(), adapters.keys());
+        if (id.isEmpty()) return;
+        if (io.github.butterflysmp.rpg.paper.weapon.VanillaShots.crossbowLoadCancelled(id.flatMap(weapons::find))) {
             event.setCancelled(true);
         }
     }
@@ -1573,6 +1577,44 @@ public final class RpgListeners implements Listener {
             case LEAVE -> { }
         }
         if (nexus) io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, adapters.keys());
+    }
+
+    /**
+     * THE VANILLA-DRIVEN BOW AND CROSSBOW'S SHOT (the seat's rulings 7 to 9, B and C, 2026-11-22): give back, spend, stamp,
+     * or cancel, per core's {@code VanillaShot}. HIGH: before {@link #onMirrorShot} at HIGHEST, which reads the
+     * quiver-paid mark this writes.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onVanillaShot(EntityShootBowEvent event) {
+        vanillaShots.onShot(event);
+    }
+
+    /**
+     * THE VANILLA-DRIVEN SHOT'S HIT (ruling 10): ours replaces vanilla's, as the swords' does. Vanilla's number becomes
+     * the token (its hurt flash and i-frames, no double hit), the token cannot kill, and the weapon's {@code shot} on_hit
+     * lands through the same sum and PLAYERHIT line. {@link #onEnvironmentalDamage} returns early on exactly these
+     * ({@code VanillaShots.stamped} is the one predicate both ask).
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onVanillaShotHit(EntityDamageByEntityEvent event) {
+        vanillaShots.stamped(event).ifPresent(hit -> {
+            event.setDamage(TOKEN_DAMAGE);
+            floorSoTokenCannotKill(hit.victim());
+            vanillaShots.land(hit);
+        });
+    }
+
+    /**
+     * VANILLA'S WEAR ON A WEAPON VANILLA SHOOTS IS CANCELLED (the seat's ruling I, Ben's: "I'd rather have our unbreaking
+     * work on the two"); ours is charged at the shot. Scoped by {@code VanillaShots.cancelsVanillaWear}: a sword and a
+     * shield are untouched (the shield has its own cancel, {@link #onShieldItemDamage}).
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onVanillaShotWeaponWear(PlayerItemDamageEvent event) {
+        if (io.github.butterflysmp.rpg.paper.weapon.VanillaShots.cancelsVanillaWear(
+                vanillaShots.mintedWeapon(event.getItem()))) {
+            event.setCancelled(true);
+        }
     }
 
     /** Was a quiver round spent for this shot? Marked on the projectile by the paying handler (the vanilla-driven Bow). */
@@ -2900,6 +2942,8 @@ public final class RpgListeners implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEnvironmentalDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof LivingEntity target)) return;
+        // A STAMPED VANILLA SHOT is onVanillaShotHit's, never also REROUTEd here (ruling 10, 2026-11-22). Same predicate.
+        if (vanillaShots.stamped(event).isPresent()) return;
         UUID id = target.getUniqueId();
 
         // RULING 31 (PLAN-build-system.md section 7.6): the landing right after a leap deals no fall damage. FIRST,

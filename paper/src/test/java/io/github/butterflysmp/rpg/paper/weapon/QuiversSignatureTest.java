@@ -630,6 +630,13 @@ class QuiversSignatureTest {
      * rather than absorbed, and the plural turns out to be the honest name -- <b>a method called
      * {@code spendRound} taking a count would read as spending one round of a particular kind.</b>
      *
+     * <blockquote><b>6 -&gt; 7 on 2026-11-22, for {@code spendRoundOnShot}, and AGAIN THE ROW FIRED FIRST.</b>
+     * The vanilla-driven Bow's shot spends one round through the shot event's own bow (vanilla wears that stack
+     * after the event, so {@code spendRounds}' replaced main-hand stack would orphan the wear). Read before this list
+     * was edited: <i>"expected: &lt;[beginReload, resolveForShot, settleMaturedReload, spendRounds, stateOf,
+     * tryReloadHeldWeapon]&gt; but was: &lt;[beginReload, resolveForShot, settleMaturedReload, spendRoundOnShot,
+     * spendRounds, stateOf, tryReloadHeldWeapon]&gt;"</i>. It commits, and its verb says so.</blockquote>
+     *
      * <p>Pinned as a SET rather than a count, because a count over an unnamed set cannot be checked
      * by the reader -- which is the same rule this slice's reports are held to.
      */
@@ -643,8 +650,8 @@ class QuiversSignatureTest {
                 .toList();
 
         assertEquals(
-                List.of("beginReload", "resolveForShot", "settleMaturedReload", "spendRounds",
-                        "stateOf", "tryReloadHeldWeapon"),
+                List.of("beginReload", "resolveForShot", "settleMaturedReload", "spendRoundOnShot",
+                        "spendRounds", "stateOf", "tryReloadHeldWeapon"),
                 publicMethods,
                 "Quivers' public surface changed. Every member but stateOf commits, so a new one "
                         + "needs a verb name that says so -- and a new PURE one belongs beside "

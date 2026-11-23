@@ -340,6 +340,24 @@ public final class Quivers {
     }
 
     /**
+     * ONE ROUND SPENT BY A VANILLA SHOT (the seat's ruling 7, 2026-11-22), written THROUGH {@code liveBow}, the shot
+     * event's own bow: READ, {@code CraftEventFactory.callEntityShootBowEvent} builds it with {@code asCraftMirror}, so it
+     * IS vanilla's stack. Never {@link #spendRounds}' {@code setItemInMainHand}: READ, {@code ProjectileWeaponItem.shoot}
+     * calls {@code hurtAndBreak} on its own reference AFTER the event, so a replaced stack would take the count and lose
+     * the bow's wear to an orphan.
+     */
+    public static void spendRoundOnShot(Player player, WeaponDefinition weapon, AdapterContext adapters,
+                                        ItemStack liveBow) {
+        Keys keys = adapters.keys();
+        OptionalInt loaded = QuiverItems.loadedIn(liveBow, keys);
+        if (loaded.isEmpty()) return;
+        int spent = Quiver.spend(loaded.getAsInt(), 1);
+        liveBow.editMeta(meta -> QuiverItems.setLoaded(meta, weapon, adapters, player.getUniqueId(), spent));
+        player.updateInventory();
+        io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, keys);
+    }
+
+    /**
      * Begin a reload on the held weapon, if one is warranted.
      *
      * @return true if a reload actually started -- so the caller can speak only on a real transition
