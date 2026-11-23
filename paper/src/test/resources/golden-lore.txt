@@ -174,9 +174,9 @@
    "Fire" color=#FF5555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Lantern's Breath" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "Breathes a cone of flame" color=#AAAAAA O=. B=. S=. U=. I=F
-   "that rolls 6 blocks ahead." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["14" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Looses a slow, seeking flame" color=#AAAAAA O=. B=. S=. U=. I=F
+   "that hunts within 7 blocks." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["45" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Cooldown: 0.8s | Mana Cost: 12" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
