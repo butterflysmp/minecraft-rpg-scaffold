@@ -293,7 +293,9 @@ class SelfTestScenariosTest {
         // Then GATE-enchant-columns.md (feat/enchant-columns-gate, 2026-11-23), RECOUNTED (cat GATE-*.yml | tr -d CR |
         // grep -cE '^[A-Za-z0-9_-]+:', and '^setup:'): 43 gates, 394 keys, 43 setups, so 351. The control: 382 - 7 (US1-US7
         // retired from unique-enchant-slot, never run) + 19 (setup, EC0-EC17) = 394. 340 was this line's value.
-        assertEquals(351, loaded.rows());
+        // Then LC1-LC4 (feat/lapis-crystal-gate, 2026-11-23, the same gate; EC1 renamed EC1R2), RECOUNTED the same way: 43 gates,
+        // 398 keys, 43 setups, so 355. The control: 394 + 4 = 398 (a rename adds none). 351 was this line's value.
+        assertEquals(355, loaded.rows());
     }
 
     /**
