@@ -332,7 +332,15 @@ public sealed interface CastSpec {
      * which causes them through a real YAML walk and reads the named, skipped file back out of the
      * log.
      */
-    record Spread(int count, double angleDegrees) {
+    record Spread(int count, double angleDegrees, double rotationDegrees) {
+
+        /**
+         * The shape every file had before {@code rotation_degrees} (2026-11-22): the ring unrotated, its first body at the
+         * shooter's RIGHT. Every caller written before the option keeps this constructor and its pattern.
+         */
+        public Spread(int count, double angleDegrees) {
+            this(count, angleDegrees, 0.0);
+        }
 
         public Spread {
             if (count < 2) {
@@ -350,6 +358,12 @@ public sealed interface CastSpec {
                 throw new IllegalArgumentException("spread angle_degrees must be < 90 -- got "
                         + angleDegrees + ". At 90 the ring is perpendicular to the aim and its"
                         + " bodies travel sideways forever; past 90 they fly behind the shooter.");
+            }
+            // THE RING'S ROTATION (the seat's ruling 1, 2026-11-22): degrees counter-clockwise from the shooter's RIGHT
+            // toward his UP, as phi already runs in SpreadPattern; 0 is today's ring. Any finite value (90 turns a ring of
+            // three to point up, the Breacher's); NaN or infinite would place every ring body at an undefined angle.
+            if (!Double.isFinite(rotationDegrees)) {
+                throw new IllegalArgumentException("spread rotation_degrees must be finite -- got " + rotationDegrees);
             }
         }
 

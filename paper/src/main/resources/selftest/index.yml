@@ -94,3 +94,7 @@ gates:
 # per-weapon ammunition, the Crystal Shard Staff at 16 and 30 blocks, HF2 (held fire on the Living Lantern). It carries
 # the ONE R0 and run sheet: docs/gates/GATE-breacher.md.
   - breacher
+# breacher-rework (2026-11-22, feat/breacher-rework-owed and feat/breacher-rework on 13a31174): the Breacher reworked
+# (four pellets of 40, point up), BR6R2, BR7R2 and LL9R2 (the burn). It carries the ONE R0 and run sheet:
+# docs/gates/GATE-breacher-rework.md.
+  - breacher-rework

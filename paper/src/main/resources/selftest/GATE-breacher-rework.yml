@@ -1,0 +1,215 @@
+# GATE-breacher-rework.md: THE BREACHER REWORKED, THE BURN FIX, AND THE OWED RE-RUNS (feat/breacher-rework-owed,
+# feat/breacher-rework). `/rpg selftest breacher-rework`. Every row is AUTO; he types nothing but his answer to the
+# one question at the end. Night (18000) and no natural spawns, both put back by the run's restore; every mob a frozen
+# NoAI zombie; no fight world. His level is staged at 1, so the level term of every damage sum is 0; the run's end puts
+# his HEALTH back. Every row that presses a weapon begins from a cleared cooldown (verification.md). The run clears his
+# crossbows, cobblestone, arrows and lanterns as rows need; the run's restore puts back his own.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+  - probe_self: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:zombie_villager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:husk,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:drowned,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:stray,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:bogged,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:parched,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:cave_spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:witch,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:enderman,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:slime,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:silverfish,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:endermite,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:pillager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:vindicator,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:evoker,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:ravager,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:vex,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:guardian,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:elder_guardian,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:breeze,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creaking,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:warden,distance=..64,tag=!selftest]"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+
+# RW0: THE SPOT (its counts describe the spot, not pass or fail): the corridor 1..15 east (feet and head, 4 north to 3
+# south) AIR (240), the floor under it no AIR and no WATER.
+RW0:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - probe_self: ""
+  - probe_blocks: "AIR 1 0 -4 15 1 3"
+  - probe_blocks: "AIR 1 -1 -4 15 -1 3"
+  - probe_blocks: "WATER 1 -1 -4 15 -1 3"
+
+# RW1: THE TOOLTIP: given, held, scored 100, dumped.
+RW1:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - wait: 10
+  - dump: held
+
+# RW2: ONE SHOT KILLS: a 100-health zombie 1 block ahead takes all four pellets (EXECUTED). Its health runs out on the
+# third; the fourth's PLAYERHIT is written anyway (each pellet's target is a snapshot taken at its ray; the health write
+# is deferred, READ). The wait before the press clears the Breacher's 20-tick cooldown.
+RW2:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~1 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - wait: 40
+  - probe: t
+  - use: right_click
+  - wait: 6
+  - probe: t
+
+# RW3: FOUR HITS COUNTED: a zombie whose vanilla max health is 40 (seeded at 40 x 5 x 100/100 = 200, READ MobScaling)
+# survives the 160, so all four hits are read on its health as well as its PLAYERHITs.
+RW3:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~1 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 40
+  - probe: t
+  - use: right_click
+  - wait: 6
+  - probe: t
+
+# RW4: POINT UP: a 200-health zombie on the aim 9 blocks out takes EXACTLY ONE pellet with the triangle pointing up;
+# pointing right (rotation 0) it would take two, pointing down (270) two (EXECUTED, the gate's arithmetic).
+RW4:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~9 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 8
+  - probe: t
+
+# RW5: THE FULL HIT'S REACH: a 200-health zombie at 4 takes all four; then, alone, one at 10 takes exactly one. Nothing
+# is staged between 6.60 and 6.91 (too thin to read on a server). The second press is 33 ticks after the first.
+RW5:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=n]"
+  - cmd: "kill @e[tag=f]"
+  - cmd: 'summon zombie ~4 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 8
+  - probe: n
+  - cmd: "kill @e[tag=n]"
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"],attributes:[{id:"minecraft:max_health",base:40.0}],Health:40.0f}'
+  - wait: 25
+  - use: right_click
+  - wait: 8
+  - probe: f
+
+# BR6R2 (owed, GATE-breacher.md BR6): the cooldown cleared first (25 ticks), two shots 22 apart, a third press 22 later
+# on an empty magazine: no fire, and the empty notice read as an action-bar REPLY.
+BR6R2:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "kill @e[tag=t]"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - wait: 25
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 2
+  - dump: held
+
+# BR7R2 (owed, GATE-breacher.md BR7): the cooldown cleared, two shots, no cobblestone and sixteen arrows; the reload is
+# refused, the arrows untouched, and the no-ammo notice read as an action-bar REPLY.
+BR7R2:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "clear @s minecraft:cobblestone"
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - wait: 25
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 22
+  - cmd: "give @s minecraft:arrow 16"
+  - probe_items: arrow
+  - probe_items: cobblestone
+  - reload: ""
+  - wait: 2
+  - probe_items: arrow
+  - probe_items: cobblestone
+  - dump: held
+
+# LL9R2 (owed, GATE-living-lantern.md LL9 and THE BURN, READ): one Living Lantern cast scorches S (100 health) and kills
+# W (vanilla max 2, seeded at 10), whose ignite burst, 20 ticks later, reaches S 1.30 blocks away. S's burns after it
+# keep the Lantern's cap 7.000 and sent 5.000. S is probed at press + 40 and press + 80. The Lantern has not been
+# pressed in this run, so its cooldown is clear.
+LL9R2:
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give living_lantern"
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=s]"
+  - cmd: "kill @e[tag=w]"
+  - cmd: 'summon zombie ~3.5 ~ ~1.2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["s","selftest"]}'
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["w","selftest"],attributes:[{id:"minecraft:max_health",base:2.0}],Health:2.0f}'
+  - wait: 40
+  - probe: s
+  - use: right_click
+  - cmd: "time query gametime"
+  - wait: 40
+  - probe: s
+  - wait: 40
+  - probe: s
+
+# RW9: A FREE GO, THEN THE ONE QUESTION. The Breacher and a stack of cobblestone, six frozen zombies 2 to 7 blocks out,
+# 30 seconds; then the zombies go and the question is put. No answer in 60 seconds is logged NOT STATED.
+RW9:
+  - cmd: "clear @s minecraft:lantern"
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - hold: breacher
+  - cmd: "give @s minecraft:cobblestone 64"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=t]"
+  - cmd: 'summon zombie ~2.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~4 ~ ~1.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~4 ~ ~-2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~5.5 ~ ~0.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~6.5 ~ ~-1 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - cmd: 'summon zombie ~3 ~ ~-4 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"]}'
+  - tell: "30 seconds with the Breacher: face the zombies and RIGHT-click to fire; LEFT-click to reload (it takes cobblestone). A question follows."
+  - wait: 600
+  - cmd: "kill @e[tag=t]"
+  - ask: "1 1200 words Is the Breacher's blast what you wanted now?"

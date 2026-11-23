@@ -40,9 +40,10 @@ class SelfTestScenariosTest {
                         "dragon-shot", "dragon-blink", "dragon-skreel", "drag-additive", "fight-site", "fight-arena",
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
-                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher"),
+                        "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework"),
                 List.copyOf(loaded.gates().keySet()),
-                "the thirty-eight gates, in boot order (breacher LAST, the Breacher, 2026-11-22, a NEW gate after living-lantern;"
+                "the thirty-nine gates, in boot order (breacher-rework LAST, the Breacher reworked, 2026-11-22, a NEW gate after"
+                        + " breacher; breacher before it, the Breacher, 2026-11-22, a NEW gate after living-lantern;"
                         + " living-lantern before it, the Living Lantern, 2026-11-22, a NEW gate after"
                         + " knell-beam; knell-beam before it, the Knell Beam, 2026-11-21, a NEW gate after"
                         + " crystal-shard-staff; crystal-shard-staff before it, the Crystal Shard Staff, 2026-11-21, a NEW gate after"
@@ -271,7 +272,9 @@ class SelfTestScenariosTest {
         // The control: 303 + 14 (setup, LL0-LL9, KB2R2, CR3, HF1R3) = 317. 267 was this line's value.
         // Then GATE-breacher.md (feat/breacher, 2026-11-22), RECOUNTED: 38 gates, 331 keys, 38 setups, so 293. The
         // control: 317 + 14 (setup, BR0-BR11, HF2) = 331. 280 was this line's value.
-        assertEquals(293, loaded.rows());
+        // Then GATE-breacher-rework.md (feat/breacher-rework, 2026-11-22), RECOUNTED: 39 gates, 342 keys, 39 setups, so 303.
+        // The control: 331 + 11 (setup, RW0-RW5, BR6R2, BR7R2, LL9R2, RW9) = 342. 293 was this line's value.
+        assertEquals(303, loaded.rows());
     }
 
     /**

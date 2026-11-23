@@ -97,29 +97,33 @@ class BreacherContentTest {
         assertTrue(a.cost().amount() == 0, "no mana: a ranger weapon pays in ammunition");
         List<EffectSpec.Damage> damage = a.onHit().stream()
                 .filter(e -> e instanceof EffectSpec.Damage).map(e -> (EffectSpec.Damage) e).toList();
-        assertEquals(List.of(new EffectSpec.Damage(6, "kinetic")), damage, "Ben: 6 a pellet, kinetic, a literal");
+        assertEquals(List.of(new EffectSpec.Damage(40, "kinetic")), damage,
+                "Ben, the rework: \"up the damage to 40 per pellet\", kinetic, a literal");
         CastSpec.Projectile p = assertInstanceOf(CastSpec.Projectile.class, a.cast(), "Ben: like a shotgun");
-        assertEquals(7, p.spread().count(), "Ben: \"fine\" to seven pellets");
+        assertEquals(4, p.spread().count(), "Ben, the rework: three in a triangle and \"a fourth pellet to the center\"");
+        assertEquals(3.0, p.spread().angleDegrees(), 0.0, "Ben: \"drop the degree to 6\" total, 3 off the aim each");
+        assertEquals(90.0, p.spread().rotationDegrees(), 0.0, "Ben: \"a triangle shape with the point up\"");
         assertTrue(warnings.stream().noneMatch(m -> m.contains("breacher")), "no loader warning: " + warnings);
     }
 
     /**
      * Each SEAT PLACEHOLDER 2026-11-22, pinned. The angle is the ring's OFFSET from the aim
-     * ({@code SpreadPattern.directionsFor}), so Ben's 25-degree full width is 12.5.
+     * ({@code SpreadPattern.directionsFor}): Ben's rework, "6 degrees total", is 3, turned 90 so the triangle points up.
      */
     @Test
     void theSeatsPlaceholders() {
         WeaponDefinition w = breacher(new ArrayList<>());
         AbilityDefinition a = blast(w);
         assertEquals(new CastSpec.Projectile(3.0, 0.0, 4, "breacher_trail", "cobblestone", null, null,
-                        new CastSpec.Spread(7, 12.5)), a.cast(),
-                "speed 3.0, no gravity, 4 ticks (12 blocks), a cobblestone ITEM body, no homing, 7 at 12.5 off the aim");
+                        new CastSpec.Spread(4, 3.0, 90.0)), a.cast(),
+                "speed 3.0, no gravity, 4 ticks (12 blocks), a cobblestone ITEM body, no homing; 4 at 3 off the aim, point up");
         assertEquals(List.of(new EffectSpec.Visual("breacher_cast")), a.onCast());
-        assertEquals(List.of(new EffectSpec.Visual("breacher_hit"), new EffectSpec.Damage(6, "kinetic"),
+        assertEquals(List.of(new EffectSpec.Visual("breacher_hit"), new EffectSpec.Damage(40, "kinetic"),
                 new EffectSpec.Knockback(0.1)), a.onHit(),
-                "the hit visual, 6 kinetic, and knockback 0.1 (Ben's standing ruling: a travelling ranged weapon "
+                "the hit visual, 40 kinetic, and knockback 0.1 (Ben's standing ruling: a travelling ranged weapon "
                         + "authors knockback; the strength is a placeholder)");
-        assertEquals(List.of("Seven chunks of cobblestone", "in a blast 25 degrees wide."), a.description());
+        assertEquals(List.of("Four chunks of cobblestone,", "a tight triangle 6 degrees wide."), a.description(),
+                "SEAT PLACEHOLDER 2026-11-22, reworded for the rework");
         assertEquals(List.of("Iron, gunpowder, string,", "and whatever was lying around."), w.flavor());
         assertEquals("Breacher", a.displayName(), "no ability name: the header reads the weapon's");
     }
@@ -145,7 +149,7 @@ class BreacherContentTest {
     /**
      * What a MINTED Breacher's tooltip reads (the gate's BR1 predicts this, word for word). The mint stamps a full
      * magazine ({@code WeaponItems.mint}: {@code QuiverItems.stampFull}), so a given one reads "Quiver: 2/2". The
-     * damage line is the spread's count after the per-pellet 6 x score / 100 (WeaponLoreLines.deliveredShots): "6 x 7".
+     * damage line is the spread's count after the per-pellet 40 x score / 100 (WeaponLoreLines.deliveredShots): "40 x 4".
      */
     @Test
     void aMintedBreachersTooltipReads() {
@@ -157,10 +161,10 @@ class BreacherContentTest {
                         .map(c -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
                                 .serialize(c)).toList();
         assertEquals(List.of("Kinetic", "Gear Score: 100", "Quiver: 2/2", "", "Breacher  Right-Click",
-                "Seven chunks of cobblestone", "in a blast 25 degrees wide.", "Kinetic Damage: 6 x 7",
+                "Four chunks of cobblestone,", "a tight triangle 6 degrees wide.", "Kinetic Damage: 40 x 4",
                 "Cooldown: 1.0s", "", "Iron, gunpowder, string,", "and whatever was lying around.", "",
                 "Common Ranged Weapon"), lore.apply(100));
-        assertEquals("Kinetic Damage: 9 x 7", lore.apply(150).get(7), "the literal scales with the score");
+        assertEquals("Kinetic Damage: 60 x 4", lore.apply(150).get(7), "the literal scales with the score");
     }
 
     /** BEN's recipe: S G I over S G I, the third row empty. A 3x2 shape; it mints the Breacher. */
@@ -199,7 +203,7 @@ class BreacherContentTest {
         // Each quantity the pool moves exists on this weapon, non-zero:
         assertTrue(w.hasQuiver() && w.quiverSize() == 2, "expanded_quiver's magazine");
         assertEquals(60, w.reloadTicks(), "deft_hands' reload");
-        assertTrue(blast(w).onHit().contains(new EffectSpec.Damage(6, "kinetic")), "power's per-pellet literal");
+        assertTrue(blast(w).onHit().contains(new EffectSpec.Damage(40, "kinetic")), "power's per-pellet literal, 40 since the rework");
     }
 
     /** It joins NO loot pool: no file under content/loot names it. */

@@ -314,6 +314,28 @@ cooldown 20 ticks, seven pellets of 6 kinetic each (a literal damage effect), co
 `ammo:` key, `feat/breacher-ammo`), his recipe (3x2). The seat's placeholders (the spread's 12.5, the pellets' flight,
 the words, the visuals) are each marked in `breacher.yml`. **It joins no loot pool.** Gate: `GATE-breacher.md`.
 
+### 1.11 Ben, 2026-11-22, VERBATIM: the Breacher reworked
+
+Relayed by the seat's brief of 2026-11-22 and recorded here on `feat/breacher-rework`. To `GATE-breacher.md`'s question
+"Did the blast spread about as wide as you expected?", Ben answered "Yes but i want to change it", and asked what:
+
+> "1. First the damage is way to low, you should be able to easily kill a 100hp mob with one shot. Second I want to
+> change the pellets from 7 to 3 and up the damage to 40 per pellet. Third tighten the spread to let's say 8 degrees
+> total. I want the pellets to be in a triangle shape with the point up
+> 2. I dropped it"
+
+Told by the seat that with no centre pellet a dead-centre aim misses with all three beyond about 5 blocks:
+
+> "drop the degree to 6 and add a fourth pellet to the center"
+
+**The Breacher now fires FOUR pellets of 40 kinetic**: one on the aim and three in a triangle round it, point up, each
+3 degrees off the aim ("6 degrees total", the seat's reading). A new spread option, `rotation_degrees` (default 0),
+turns the ring; the Breacher authors 90. Everything else (quiver 2, cooldown 20, reload 60, cobblestone, the flight,
+knockback, the recipe) is unchanged. **Where the pellets land, EXECUTED** (a zombie aimed dead centre at his eye
+height): all four out to 6.60 blocks (160), three to 6.91 (120), the centre pellet alone beyond it (40) out to the
+12-block reach. The seat's "about 6 blocks, then the centre pellet only" is corrected to that. "2. I dropped it" closes
+`GATE-breacher.md`'s BR10 question.
+
 ---
 
 ## 2. WHAT EXISTS TODAY
