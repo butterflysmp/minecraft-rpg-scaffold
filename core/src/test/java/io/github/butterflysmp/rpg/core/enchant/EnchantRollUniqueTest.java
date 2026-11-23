@@ -97,62 +97,66 @@ class EnchantRollUniqueTest {
                 "the control: the normal pool is not simply empty");
     }
 
-    // ---- U3 / V1: slot 0 is unique, slots 1-3 normal, on every roll -----------------------------------------------
+    // ---- W2 (was U3 / V1): slot 1 is unique, slots 2-3 normal, slot 0 the weapon's, on every roll ------------------
+    // (Slot 0 is EMPTY in every row of this file: no Rollable here names a weapon. EnchantRollWeaponTest fills it.)
 
     @Test
-    void fourSlotsSlotZeroUniqueAndTheOtherThreeNormal() {
-        EnchantState state = EnchantRoll.roll(Optional.of("kinetic"), Has.EVERY, GearClass.MELEE, ROSTER, ALWAYS_FOUR,
+    void fourSlotsSlotOneUniqueAndTheLastTwoNormal() {
+        EnchantState state = EnchantRoll.roll("g", Optional.of("kinetic"), Has.EVERY, GearClass.MELEE, ROSTER, ALWAYS_FOUR,
                 () -> 0.0);
         assertEquals(4, state.slots().size());
-        assertEquals(List.of("k_any", "k_melee"), ids(state.slots().get(0)));
-        for (int s = 1; s < 4; s++) assertEquals(List.of("sharpness", "unbreaking"), ids(state.slots().get(s)), "slot " + s);
+        assertEquals(List.of(), ids(state.slots().get(EnchantRoll.WEAPON_SLOT)), "no enchant names weapon g");
+        assertEquals(List.of("k_any", "k_melee"), ids(state.slots().get(1)));
+        for (int s = 2; s < 4; s++) assertEquals(List.of("sharpness", "unbreaking"), ids(state.slots().get(s)), "slot " + s);
     }
 
-    /** Over 2,000 seeded rolls of every class and both elements: no unique id outside slot 0, no normal id in it. */
+    /** Over 2,000 seeded rolls of every class and both elements: no unique id outside slot 1, no normal id in it. */
     @Test
-    void overManyRollsSlotZeroNeverHoldsANormalAndTheOthersNeverAUnique() {
+    void overManyRollsSlotOneNeverHoldsANormalAndTheOthersNeverAUnique() {
         Random random = new Random(20261123L);
-        int slotZeroFilled = 0;
+        int uniqueFilled = 0;
         for (int i = 0; i < 2000; i++) {
             GearClass c = List.of(GearClass.MELEE, GearClass.RANGER, GearClass.MAGE).get(i % 3);
             Optional<String> element = Optional.of(i % 2 == 0 ? "kinetic" : "fire");
-            EnchantState state = EnchantRoll.roll(element, Has.EVERY, c, ROSTER, BENS, random::nextDouble);
-            for (EnchantCandidate cand : state.slots().get(0).candidates()) {
+            EnchantState state = EnchantRoll.roll("g", element, Has.EVERY, c, ROSTER, BENS, random::nextDouble);
+            for (EnchantCandidate cand : state.slots().get(EnchantRoll.UNIQUE_SLOT).candidates()) {
                 assertTrue(cand.enchantId().startsWith("k_") || cand.enchantId().startsWith("f_"), cand.enchantId());
-                slotZeroFilled++;
+                uniqueFilled++;
             }
-            for (int s = 1; s < 4; s++) {
+            for (int s = 0; s < 4; s++) {
+                if (s == EnchantRoll.UNIQUE_SLOT) continue;
                 for (EnchantCandidate cand : state.slots().get(s).candidates()) {
                     assertTrue(!cand.enchantId().startsWith("k_") && !cand.enchantId().startsWith("f_"),
                             "slot " + s + " holds unique " + cand.enchantId());
                 }
             }
         }
-        assertTrue(slotZeroFilled > 0, "the control: slot 0 was filled at all");
+        assertTrue(uniqueFilled > 0, "the control: the unique slot was filled at all");
     }
 
-    // ---- Ben's "A": no element, or an empty unique pool, gives slot 0 nothing -------------------------------------
+    // ---- Ben's "A": no element, or an empty unique pool, gives the unique slot nothing -----------------------------
 
     @Test
-    void noElementGivesSlotZeroNoCandidates() {
-        EnchantState state = EnchantRoll.roll(Optional.empty(), Has.EVERY, GearClass.ARMOR, ROSTER, ALWAYS_FOUR, () -> 0.0);
+    void noElementGivesTheUniqueSlotNoCandidates() {
+        EnchantState state = EnchantRoll.roll("g", Optional.empty(), Has.EVERY, GearClass.ARMOR, ROSTER, ALWAYS_FOUR, () -> 0.0);
         assertEquals(4, state.slots().size(), "no gear loses a slot");
-        assertEquals(List.of(), state.slots().get(0).candidates());
-        assertEquals(List.of("unbreaking"), ids(state.slots().get(1)), "the control: the normal slots still roll");
+        assertEquals(List.of(), state.slots().get(1).candidates());
+        assertEquals(List.of("unbreaking"), ids(state.slots().get(2)), "the control: the normal slots still roll");
     }
 
     @Test
-    void anEmptyUniquePoolGivesSlotZeroNoCandidates() {
-        EnchantState state = EnchantRoll.roll(Optional.of("water"), Has.EVERY, GearClass.MAGE, ROSTER, ALWAYS_FOUR, () -> 0.0);
-        assertEquals(List.of(), state.slots().get(0).candidates());
-        assertEquals(EnchantSlot.NONE, state.slots().get(0).activeIndex());
+    void anEmptyUniquePoolGivesTheUniqueSlotNoCandidates() {
+        EnchantState state = EnchantRoll.roll("g", Optional.of("water"), Has.EVERY, GearClass.MAGE, ROSTER, ALWAYS_FOUR, () -> 0.0);
+        assertEquals(List.of(), state.slots().get(1).candidates());
+        assertEquals(EnchantSlot.NONE, state.slots().get(1).activeIndex());
+        assertEquals(List.of("unbreaking"), ids(state.slots().get(2)), "the control: the normal slots still roll");
     }
 
-    /** With one unique in the pool, slot 0 offers that one (U4), however many the cascade rolled. */
+    /** With one unique in the pool, the unique slot offers that one (U4), however many the cascade rolled. */
     @Test
     void aUniquePoolOfOneOffersThatOne() {
-        EnchantState state = EnchantRoll.roll(Optional.of("fire"), Has.EVERY, GearClass.MAGE, ROSTER, ALWAYS_FOUR, () -> 0.0);
-        assertEquals(List.of("f_any"), ids(state.slots().get(0)));
+        EnchantState state = EnchantRoll.roll("g", Optional.of("fire"), Has.EVERY, GearClass.MAGE, ROSTER, ALWAYS_FOUR, () -> 0.0);
+        assertEquals(List.of("f_any"), ids(state.slots().get(1)));
     }
 
     // ---- U6: the element cannot be skipped -------------------------------------------------------------------------
@@ -160,7 +164,7 @@ class EnchantRollUniqueTest {
     @Test
     void aNullElementIsRefused_theCallerMustSayEmpty() {
         assertThrows(IllegalArgumentException.class,
-                () -> EnchantRoll.roll(null, Has.EVERY, GearClass.MELEE, ROSTER, BENS, () -> 0.0));
+                () -> EnchantRoll.roll("g", null, Has.EVERY, GearClass.MELEE, ROSTER, BENS, () -> 0.0));
         assertThrows(IllegalArgumentException.class,
                 () -> EnchantRoll.uniquePoolFor(null, Has.EVERY, GearClass.MELEE, ROSTER));
     }
@@ -173,21 +177,22 @@ class EnchantRollUniqueTest {
     // ---- the cascade drives every slot, unique and normal alike (V2, V3) ------------------------------------------
 
     /**
-     * The one draw-order row. Kinetic MELEE: unique pool [k_any, k_melee], normal [sharpness, unbreaking].
-     * slot 0: 0.05 lands the 10% -> 4, capped 2; picks 0.0 -> k_any, 0.0 -> k_melee.
-     * slot 1: 0.5 misses 10% and 40%, 0.6 lands 70% -> 2; picks 0.9 -> unbreaking, 0.0 -> sharpness.
-     * slot 2: 0.2 misses 10%, 0.3 lands 40% -> 3, capped 2; picks 0.0 -> sharpness, 0.0 -> unbreaking.
+     * The one draw-order row. Kinetic MELEE gear "g": weapon pool [] (no draw at all), unique [k_any, k_melee], normal
+     * [sharpness, unbreaking].
+     * slot 0: an empty pool, so NO draw (CandidateCascade.count returns 0 for a pool of 0 before drawing).
+     * slot 1: 0.05 lands the 10% -> 4, capped 2; picks 0.0 -> k_any, 0.0 -> k_melee.
+     * slot 2: 0.5 misses 10% and 40%, 0.6 lands 70% -> 2; picks 0.9 -> unbreaking, 0.0 -> sharpness.
      * slot 3: 0.9, 0.9, 0.9 miss all three -> 1 (no draw for the guaranteed tier); pick 0.0 -> sharpness.
      */
     @Test
     void aFullRollReadsSlotBySlot() {
-        double[] d = {0.05, 0.0, 0.0,   0.5, 0.5, 0.6, 0.9, 0.0,   0.2, 0.3, 0.0, 0.0,   0.9, 0.9, 0.9, 0.0};
+        double[] d = {0.05, 0.0, 0.0,   0.5, 0.5, 0.6, 0.9, 0.0,   0.9, 0.9, 0.9, 0.0};
         int[] cursor = {0};
-        EnchantState state = EnchantRoll.roll(Optional.of("kinetic"), Has.EVERY, GearClass.MELEE, ROSTER, BENS,
+        EnchantState state = EnchantRoll.roll("g", Optional.of("kinetic"), Has.EVERY, GearClass.MELEE, ROSTER, BENS,
                 () -> d[cursor[0]++]);
-        assertEquals(List.of("k_any", "k_melee"), ids(state.slots().get(0)));
-        assertEquals(List.of("unbreaking", "sharpness"), ids(state.slots().get(1)));
-        assertEquals(List.of("sharpness", "unbreaking"), ids(state.slots().get(2)));
+        assertEquals(List.of(), ids(state.slots().get(0)));
+        assertEquals(List.of("k_any", "k_melee"), ids(state.slots().get(1)));
+        assertEquals(List.of("unbreaking", "sharpness"), ids(state.slots().get(2)));
         assertEquals(List.of("sharpness"), ids(state.slots().get(3)));
         assertEquals(d.length, cursor[0], "every draw consumed, none extra");
     }

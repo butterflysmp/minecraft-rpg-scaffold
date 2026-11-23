@@ -48,7 +48,6 @@ class EnchantMenuLayoutTest {
         assertEquals(8, EnchantMenuLayout.INFO_SLOT, "Ben: the info item in the top right corner (row 1, column 9)");
         assertEquals(7, EnchantMenuLayout.BOOKSHELF_SLOT, "Ben: the bookshelf to the left of it (row 1, column 8)");
         assertEquals(4, EnchantMenuLayout.INPUT_SLOT, "Ben: the input where the info item was (row 1, column 5)");
-        assertEquals(1, EnchantMenuLayout.UNIQUE_LABEL_SLOT, "the seat's placeholder: over column 2");
         assertEquals(48, EnchantMenuLayout.BACK_SLOT, "Back does not move");
         assertEquals(49, EnchantMenuLayout.CLOSE_SLOT, "Close does not move");
         assertEquals(54, EnchantMenuLayout.SIZE);
@@ -56,7 +55,24 @@ class EnchantMenuLayoutTest {
         assertEquals(4, EnchantMenuLayout.CANDIDATES);
     }
 
-    /** No two things share an index: sixteen cells and six fixtures, twenty-two distinct indices. */
+    /**
+     * W3 (2026-11-23): the two columns that can be empty each have their marker, with its own words; a normal column has
+     * none. The wordings are SEAT PLACEHOLDERS (the unique one is #249's, unchanged).
+     */
+    @Test
+    void theWeaponAndUniqueColumnsHaveEmptyMarkersAndTheNormalOnesDoNot() {
+        assertEquals(Optional.of(new EnchantMenuLayout.EmptyMarker("No weapon enchant", "Nothing is tied to this weapon yet.")),
+                EnchantMenuLayout.emptyMarkerFor(0));
+        assertEquals(Optional.of(new EnchantMenuLayout.EmptyMarker("No unique enchant",
+                "Nothing unique is tied to this item's element yet.")), EnchantMenuLayout.emptyMarkerFor(1));
+        assertEquals(Optional.empty(), EnchantMenuLayout.emptyMarkerFor(2));
+        assertEquals(Optional.empty(), EnchantMenuLayout.emptyMarkerFor(3));
+        // Each marker sits in its column's first cell, which is where the seat's W3 says the cells did not move.
+        assertEquals(10, EnchantMenuLayout.rawSlotFor(0, 0), "column 2, the weapon slot's first cell");
+        assertEquals(12, EnchantMenuLayout.rawSlotFor(1, 0), "column 4, the unique slot's first cell");
+    }
+
+    /** No two things share an index:sixteen cells and five fixtures, twenty-one distinct indices (the "Unique" label at 1 was removed, W3). */
     @Test
     void noTwoThingsShareAnIndex() {
         Set<Integer> seen = new HashSet<>();
@@ -66,10 +82,10 @@ class EnchantMenuLayoutTest {
             }
         }
         for (int fixture : List.of(EnchantMenuLayout.INFO_SLOT, EnchantMenuLayout.BOOKSHELF_SLOT, EnchantMenuLayout.INPUT_SLOT,
-                EnchantMenuLayout.UNIQUE_LABEL_SLOT, EnchantMenuLayout.BACK_SLOT, EnchantMenuLayout.CLOSE_SLOT)) {
+                EnchantMenuLayout.BACK_SLOT, EnchantMenuLayout.CLOSE_SLOT)) {
             assertTrue(seen.add(fixture), "fixture " + fixture + " collides");
         }
-        assertEquals(22, seen.size());
+        assertEquals(21, seen.size());
     }
 
     @Test
@@ -99,7 +115,7 @@ class EnchantMenuLayoutTest {
     @Test
     void chromeFillerAndGapsAddressNoCell() {
         for (int fixture : List.of(EnchantMenuLayout.INFO_SLOT, EnchantMenuLayout.BOOKSHELF_SLOT, EnchantMenuLayout.INPUT_SLOT,
-                EnchantMenuLayout.UNIQUE_LABEL_SLOT, EnchantMenuLayout.BACK_SLOT, EnchantMenuLayout.CLOSE_SLOT)) {
+                EnchantMenuLayout.BACK_SLOT, EnchantMenuLayout.CLOSE_SLOT)) {
             assertTrue(EnchantMenuLayout.cellAt(fixture).isEmpty(), "fixture " + fixture);
         }
         assertTrue(EnchantMenuLayout.cellAt(11).isEmpty(), "the gap between columns 2 and 4");

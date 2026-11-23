@@ -1936,6 +1936,11 @@ public final class RpgCommand {
                 player.sendMessage(Component.text("Unique pool: " + String.join(", ",
                         io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.uniquePoolFor(gear.gear(), adapters)),
                         NamedTextColor.GRAY));
+                // The columns re-cut (W2, 2026-11-23): slot 0's pool, the enchants naming this gear's id. "Pool:" is now
+                // slots 2-3's and "Unique pool:" slot 1's; their wording is unchanged so no older row's line moved.
+                player.sendMessage(Component.text("Weapon pool: " + String.join(", ",
+                        io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.weaponPoolFor(gear.gear(), adapters)),
+                        NamedTextColor.GRAY));
                 return;
             }
 

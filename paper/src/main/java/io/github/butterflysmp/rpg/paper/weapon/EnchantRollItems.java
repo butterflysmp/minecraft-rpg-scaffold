@@ -82,7 +82,7 @@ public final class EnchantRollItems {
 
         // THE UNIQUE SLOT (2026-11-23): the gear's element through U5's one accessor, GearDefinition.gearElement();
         // the count by Ben's cascade, which the registry carries beside the roster. Its pools are the two below.
-        EnchantState rolled = EnchantRoll.roll(definition.gearElement(), has(definition), gearClass, roster(adapters),
+        EnchantState rolled = EnchantRoll.roll(definition.id(), definition.gearElement(), has(definition), gearClass, roster(adapters),
                 adapters.enchants().candidates(), () -> ThreadLocalRandom.current().nextDouble());
 
         // *** WRITE AND RE-RENDER IN ONE editMeta, for the reason GearScoreItems.stampOnAcquire
@@ -139,6 +139,16 @@ public final class EnchantRollItems {
         return ids(EnchantRoll.uniquePoolFor(definition.gearElement(), has(definition), gearClass, roster(adapters)));
     }
 
+    /**
+     * THE WEAPON POOL (W2, 2026-11-23): slot 0's, the enchants naming this gear's id. {@code /rpg enchant pool}'s
+     * {@code Weapon pool:} line.
+     */
+    public static List<String> weaponPoolFor(GearDefinition definition, AdapterContext adapters) {
+        GearClass gearClass = GearItems.gearClassOf(definition);
+        if (gearClass == null) return List.of();
+        return ids(EnchantRoll.weaponPoolFor(definition.id(), has(definition), gearClass, roster(adapters)));
+    }
+
     private static List<String> ids(List<Rollable> pool) {
         return pool.stream().map(Rollable::enchantId).toList();
     }
@@ -153,23 +163,23 @@ public final class EnchantRollItems {
         if (gearClass == null || gearClass == GearClass.ACCESSORY) return List.of("This gear rolls no enchants.");
         List<EnchantState> rolls = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            rolls.add(EnchantRoll.roll(definition.gearElement(), has(definition), gearClass, roster(adapters),
+            rolls.add(EnchantRoll.roll(definition.id(), definition.gearElement(), has(definition), gearClass, roster(adapters),
                     adapters.enchants().candidates(), () -> ThreadLocalRandom.current().nextDouble()));
         }
         return rollStatsLines(definition.id(), definition.gearElement(), n, EnchantRoll.tally(rolls),
-                adapters.enchants().candidates(), uniquePoolFor(definition, adapters).size(),
-                normalPoolFor(definition, adapters).size());
+                adapters.enchants().candidates(), weaponPoolFor(definition, adapters).size(),
+                uniquePoolFor(definition, adapters).size(), normalPoolFor(definition, adapters).size());
     }
 
     /** The lines, pure, so a test pins their exact shape. */
     static List<String> rollStatsLines(String id, java.util.Optional<String> element, int n, int[][] tally,
                                        io.github.butterflysmp.rpg.core.enchant.CandidateCascade cascade,
-                                       int uniquePool, int normalPool) {
+                                       int weaponPool, int uniquePool, int normalPool) {
         List<String> out = new ArrayList<>();
-        out.add("ROLLSTATS " + id + " element=" + element.orElse("none") + " rolls=" + n + " uniquePool=" + uniquePool
-                + " normalPool=" + normalPool);
+        out.add("ROLLSTATS " + id + " element=" + element.orElse("none") + " rolls=" + n + " weaponPool=" + weaponPool
+                + " uniquePool=" + uniquePool + " normalPool=" + normalPool);
         for (int slot = 0; slot < tally.length; slot++) {
-            StringBuilder b = new StringBuilder("ROLLSTATS slot " + slot + (slot == EnchantRoll.UNIQUE_SLOT ? " (unique):" : ":"));
+            StringBuilder b = new StringBuilder("ROLLSTATS slot " + slot + slotLabel(slot));
             for (int c = 0; c < tally[slot].length; c++) b.append(' ').append(c).append('=').append(tally[slot][c]);
             out.add(b.toString());
         }
@@ -183,11 +193,21 @@ public final class EnchantRollItems {
         return out;
     }
 
+    /** {@code " (weapon):"}, {@code " (unique):"} or {@code ":"}, by {@link EnchantRoll#kindOf}. */
+    static String slotLabel(int slot) {
+        return switch (EnchantRoll.kindOf(slot)) {
+            case WEAPON -> " (weapon):";
+            case UNIQUE -> " (unique):";
+            case NORMAL -> ":";
+        };
+    }
+
     /** The roll's roster: each enchant's id, class, quantity requirement (ruling H) and element (U1). Tests build it here too. */
     public static List<Rollable> roster(java.util.Collection<EnchantDefinition> enchants) {
         List<Rollable> roster = new ArrayList<>();
         for (EnchantDefinition definition : enchants) {
-            roster.add(new Rollable(definition.id(), definition.gearClass(), definition.requires(), definition.element()));
+            roster.add(new Rollable(definition.id(), definition.gearClass(), definition.requires(), definition.element(),
+                    definition.weapon()));
         }
         return roster;
     }

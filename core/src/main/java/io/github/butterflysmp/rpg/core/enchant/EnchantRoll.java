@@ -18,7 +18,7 @@ import java.util.function.DoubleSupplier;
  * enchantments in each instead of 3"</i>. The seat's rulings U1-U6 and V1-V3.
  *
  * <ul>
- *   <li><b>{@link #SLOTS} = 4</b>, always. {@link #UNIQUE_SLOT} (0) draws ONLY from {@link #uniquePoolFor}: the enchants
+ *   <li><b>{@link #SLOTS} = 4</b>, always. {@link #UNIQUE_SLOT} (index 0 then; 1 since the re-cut below) draws ONLY from {@link #uniquePoolFor}: the enchants
  *       whose {@code element} is the gear's, then the class filter, then {@code requires}. Slots 1, 2 and 3 draw ONLY from
  *       {@link #normalPoolFor}: the enchants with NO element, by class then {@code requires}. A unique enchant never
  *       reaches slots 1-3, and a normal one never reaches slot 0.</li>
@@ -27,6 +27,26 @@ import java.util.function.DoubleSupplier;
  *   <li><b>Each slot offers up to {@link #MAX_CANDIDATES} (4) distinct candidates</b>, unique and normal alike, counted by
  *       {@link CandidateCascade} (Ben's cascade, authored in content) and capped at the pool's size.</li>
  * </ul>
+ *
+ * <h2>THE COLUMNS RE-CUT, 2026-11-23 (later the same day): A WEAPON SLOT, A UNIQUE SLOT, TWO NORMAL ONES</h2>
+ *
+ * Ben, verbatim: <i>"The first column will be weapon specific enchantments that fundamentally change how the weapons
+ * work. The second column will be our unique enchantments we just made and the 3rd and 4th columns will be the normal
+ * enchantments"</i>, and asked whether normal drops to two or the table grows to five: <i>"Three back to 2 (A)"</i>. The
+ * seat's rulings W1-W4. <b>Still {@link #SLOTS} = 4; what each index holds moved:</b>
+ *
+ * <ul>
+ *   <li><b>{@link #WEAPON_SLOT} (0)</b> draws ONLY from {@link #weaponPoolFor}: the enchants whose {@code weapon} names
+ *       this gear's id, then the class filter, then {@code requires}. Gear that is not a weapon, and a weapon no enchant
+ *       names, rolls it EMPTY.</li>
+ *   <li><b>{@link #UNIQUE_SLOT} (1)</b> draws ONLY from {@link #uniquePoolFor}, unchanged (element, class, requires). It
+ *       was index 0 until this change.</li>
+ *   <li><b>Slots 2 and 3</b> draw ONLY from {@link #normalPoolFor}, unchanged. Slot 1 was normal until this change.</li>
+ * </ul>
+ *
+ * <p>The three pools are disjoint by construction: a weapon-specific enchant has no element (the loader refuses both), so
+ * it is never unique, and {@link #normalPoolFor} skips both other kinds. {@link #kindOf} names each index's kind, and it
+ * is the one place that does.
  *
  * <p>Every candidate arrives LOCKED at level 0 with nothing active: the roll decides what is on offer, the player decides
  * what to buy.
@@ -50,8 +70,21 @@ public final class EnchantRoll {
      */
     public static final int SLOTS = 4;
 
-    /** The unique slot's index. The other slots are normal. */
-    public static final int UNIQUE_SLOT = 0;
+    /** The weapon-specific slot's index (W2, 2026-11-23). The table's column 2. */
+    public static final int WEAPON_SLOT = 0;
+
+    /** The unique slot's index. WAS 0 until the columns were re-cut (W2, 2026-11-23); the table's column 4. */
+    public static final int UNIQUE_SLOT = 1;
+
+    /** What each slot index draws from. */
+    public enum Kind { WEAPON, UNIQUE, NORMAL }
+
+    /** The kind of slot {@code slot} is: 0 weapon-specific, 1 unique, 2 and 3 normal (W2). The one place that says so. */
+    public static Kind kindOf(int slot) {
+        if (slot == WEAPON_SLOT) return Kind.WEAPON;
+        if (slot == UNIQUE_SLOT) return Kind.UNIQUE;
+        return Kind.NORMAL;
+    }
 
     /**
      * The most candidates one slot may offer (Ben's "a chance for 4 enchantments in each instead of 3", V2). WAS 3. Held
@@ -65,8 +98,10 @@ public final class EnchantRoll {
      *
      * <p>{@code gearClass} is null for a {@code universal} enchant, valid on everything. {@code element} is null for a
      * NORMAL enchant, which every enchant was until 2026-11-23; non-null makes it unique to gear of that element (U1).
+     * {@code weapon} is null except on a WEAPON-SPECIFIC enchant, where it is the one weapon id it belongs to (W1); an
+     * enchant may not be both, here as in the loader.
      */
-    public record Rollable(String enchantId, GearClass gearClass, Requires requires, String element) {
+    public record Rollable(String enchantId, GearClass gearClass, Requires requires, String element, String weapon) {
         public Rollable {
             if (enchantId == null || enchantId.isBlank()) {
                 throw new IllegalArgumentException("a rollable enchant needs an id");
@@ -75,20 +110,49 @@ public final class EnchantRoll {
             if (element != null && element.isBlank()) {
                 throw new IllegalArgumentException("enchant '" + enchantId + "': a blank element; absent means normal");
             }
+            if (weapon != null && weapon.isBlank()) {
+                throw new IllegalArgumentException("enchant '" + enchantId + "': a blank weapon; absent means not weapon-specific");
+            }
+            if (element != null && weapon != null) {
+                throw new IllegalArgumentException("enchant '" + enchantId + "' is both unique (element " + element
+                        + ") and weapon-specific (weapon " + weapon + "); it may be one or neither");
+            }
+        }
+
+        /** A UNIQUE enchant (an element) or a NORMAL one (null), never weapon-specific. */
+        public Rollable(String enchantId, GearClass gearClass, Requires requires, String element) {
+            this(enchantId, gearClass, requires, element, null);
         }
 
         /** A NORMAL enchant (no element), with a quantity requirement. */
         public Rollable(String enchantId, GearClass gearClass, Requires requires) {
-            this(enchantId, gearClass, requires, null);
+            this(enchantId, gearClass, requires, null, null);
         }
 
         /** A NORMAL enchant with no quantity requirement. */
         public Rollable(String enchantId, GearClass gearClass) {
-            this(enchantId, gearClass, Requires.NONE, null);
+            this(enchantId, gearClass, Requires.NONE, null, null);
+        }
+
+        /** A WEAPON-SPECIFIC enchant belonging to {@code weaponId} (W1). */
+        public static Rollable forWeapon(String enchantId, GearClass gearClass, Requires requires, String weaponId) {
+            if (weaponId == null) throw new IllegalArgumentException("enchant '" + enchantId + "': a weapon id is required");
+            return new Rollable(enchantId, gearClass, requires, null, weaponId);
         }
 
         public boolean isUnique() {
             return element != null;
+        }
+
+        public boolean isWeaponSpecific() {
+            return weapon != null;
+        }
+
+        /** The kind of slot this enchant may be offered in. */
+        public Kind kind() {
+            if (weapon != null) return Kind.WEAPON;
+            if (element != null) return Kind.UNIQUE;
+            return Kind.NORMAL;
         }
     }
 
@@ -140,8 +204,8 @@ public final class EnchantRoll {
         if (heldClass == GearClass.ACCESSORY) return pool;
         for (Rollable rollable : roster) {
             if (rollable == null) continue;
-            // U3: a unique enchant is slot 0's alone.
-            if (rollable.isUnique()) continue;
+            // U3 and W2: a unique enchant is the unique slot's alone, a weapon-specific one the weapon slot's alone.
+            if (rollable.kind() != Kind.NORMAL) continue;
             // null class == universal: no gate, valid on whatever it is offered for.
             if (rollable.gearClass() != null && rollable.gearClass() != heldClass) continue;
             // RULING H: AFTER the class filter, the quantity the enchant reads must exist on the held weapon.
@@ -177,6 +241,45 @@ public final class EnchantRoll {
     }
 
     /**
+     * THE WEAPON POOL (W2, 2026-11-23): the enchants the weapon slot may offer, in roster order. Three filters, in this
+     * order: the enchant's {@code weapon} must be {@code gearId}, then the class (or universal), then {@code requires}.
+     *
+     * @param gearId the gear's own id; NEVER null or blank (W4: as unskippable as the element). Gear that is not a weapon
+     *               passes its own id and gets an empty pool, because no enchant can name it (the loader refuses a
+     *               {@code weapon:} that is not a loaded weapon).
+     */
+    public static List<Rollable> weaponPoolFor(String gearId, Has held, GearClass heldClass, List<Rollable> roster) {
+        requireGearId(gearId);
+        List<Rollable> pool = new ArrayList<>();
+        if (roster == null) return pool;
+        if (heldClass == GearClass.ACCESSORY) return pool;   // ruling A4, as above
+        for (Rollable rollable : roster) {
+            if (rollable == null) continue;
+            if (!gearId.equals(rollable.weapon())) continue;                                            // 1. this weapon
+            if (rollable.gearClass() != null && rollable.gearClass() != heldClass) continue;            // 2. class
+            if (!rollable.requires().metBy(held)) continue;                                             // 3. requires
+            pool.add(rollable);
+        }
+        return pool;
+    }
+
+    private static void requireGearId(String gearId) {
+        if (gearId == null || gearId.isBlank()) {
+            throw new IllegalArgumentException("the gear's id is required: the weapon slot is drawn by it (W4)");
+        }
+    }
+
+    /** The pool slot {@code slot} draws from: {@link #kindOf} decides which of the three. */
+    public static List<Rollable> poolForSlot(int slot, String gearId, Optional<String> element, Has held,
+                                             GearClass heldClass, List<Rollable> roster) {
+        return switch (kindOf(slot)) {
+            case WEAPON -> weaponPoolFor(gearId, held, heldClass, roster);
+            case UNIQUE -> uniquePoolFor(element, held, heldClass, roster);
+            case NORMAL -> normalPoolFor(held, heldClass, roster);
+        };
+    }
+
+    /**
      * The candidate a single draw selects from {@code remaining}: uniform over its indices.
      *
      * <p>Takes the pool it draws from rather than a fixed one, because the caller REMOVES each pick before drawing again,
@@ -190,8 +293,8 @@ public final class EnchantRoll {
     }
 
     /**
-     * A whole piece of gear's opening state: {@link #SLOTS} slots of locked candidates, slot 0 from the unique pool and
-     * slots 1-3 from the normal pool.
+     * A whole piece of gear's opening state: {@link #SLOTS} slots of locked candidates, slot 0 from the weapon pool, slot
+     * 1 from the unique pool and slots 2-3 from the normal pool ({@link #kindOf}).
      *
      * <p>Each slot draws from a FRESH copy of its pool: distinctness is within a slot (and {@code EnchantSlot}'s own
      * constructor enforces it), so two normal slots may both offer Sharpness, and {@code EnchantState.effective()}
@@ -200,20 +303,20 @@ public final class EnchantRoll {
      * <p>Draws, slot by slot: the cascade's (one per tier rolled, none for an empty pool or the guaranteed tier), then one
      * per candidate picked. Stated for the end-to-end test only.
      *
+     * @param gearId  the gear's own id ({@code GearDefinition.id()}); never null or blank (W4)
      * @param element the gear's element (U5: {@code GearDefinition.gearElement()}); {@code Optional.empty()} for none;
      *                never null (U6)
      */
-    public static EnchantState roll(Optional<String> element, Has held, GearClass heldClass, List<Rollable> roster,
-                                    CandidateCascade cascade, DoubleSupplier draws) {
+    public static EnchantState roll(String gearId, Optional<String> element, Has held, GearClass heldClass,
+                                    List<Rollable> roster, CandidateCascade cascade, DoubleSupplier draws) {
+        requireGearId(gearId);
         if (element == null) {
             throw new IllegalArgumentException("the gear's element is required: Optional.empty() for gear with none");
         }
         if (cascade == null) throw new IllegalArgumentException("the candidate cascade is required");
-        List<Rollable> unique = uniquePoolFor(element, held, heldClass, roster);
-        List<Rollable> normal = normalPoolFor(held, heldClass, roster);
         List<EnchantSlot> slots = new ArrayList<>(SLOTS);
         for (int slot = 0; slot < SLOTS; slot++) {
-            List<Rollable> remaining = new ArrayList<>(slot == UNIQUE_SLOT ? unique : normal);
+            List<Rollable> remaining = new ArrayList<>(poolForSlot(slot, gearId, element, held, heldClass, roster));
             int count = cascade.count(remaining.size(), draws);
             List<EnchantCandidate> candidates = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {

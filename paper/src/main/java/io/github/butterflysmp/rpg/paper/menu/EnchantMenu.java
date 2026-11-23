@@ -424,26 +424,24 @@ public final class EnchantMenu extends Menu {
     }
 
     /**
-     * THE UNIQUE SLOT'S LABEL AND ITS EMPTY STATE (2026-11-23). Ben asked for the word "Unique" on the first slot; the
-     * item, colour, lore and the empty slot's item are SEAT PLACEHOLDERS 2026-11-23, OPEN FOR BEN.
+     * THE EMPTY-SLOT MARKERS (2026-11-23; the columns re-cut the same day, the seat's W3). One in the FIRST cell of each
+     * of the two columns that can be empty, the weapon column (slot 0) and the unique column (slot 1), when that slot has
+     * no candidate. Their wordings are {@link EnchantMenuLayout#emptyMarkerFor}'s, SEAT PLACEHOLDERS, OPEN FOR BEN. The
+     * "Unique" name tag that sat at index 1 was REMOVED (Ben: "We can remove the placeholder names/labels above the
+     * columns."); nothing replaces it.
      *
-     * <p>The empty item sits in the unique column's FIRST cell. A click there resolves to (slot 0, candidate 0), which
-     * {@link #applyCandidateClick} returns from at its "filler, not a refusal" line before anything is read, priced or
-     * written: the slot has no candidate 0. So it changes nothing and charges nothing, by the same line every empty cell
-     * already took.
+     * <p>A click on a marker resolves to (slot, candidate 0), which {@link #applyCandidateClick} returns from at its
+     * "filler, not a refusal" line before anything is read, priced or written: the slot has no candidate 0. So it changes
+     * nothing and charges nothing, by the same line every empty cell already took.
      */
-    private void renderUniqueChrome(EnchantState state) {
-        getInventory().setItem(EnchantMenuLayout.UNIQUE_LABEL_SLOT, MenuIcons.icon(Material.NAME_TAG,
-                MenuIcons.line("Unique", NamedTextColor.LIGHT_PURPLE),
-                List.of(MenuIcons.line("Enchants tied to this item's element.", NamedTextColor.GRAY))));
-        boolean emptyUnique = state.slots().size() > io.github.butterflysmp.rpg.core.enchant.EnchantRoll.UNIQUE_SLOT
-                && state.slots().get(io.github.butterflysmp.rpg.core.enchant.EnchantRoll.UNIQUE_SLOT).candidates().isEmpty();
-        if (emptyUnique) {
-            getInventory().setItem(EnchantMenuLayout.rawSlotFor(io.github.butterflysmp.rpg.core.enchant.EnchantRoll.UNIQUE_SLOT, 0),
-                    MenuIcons.icon(Material.GRAY_DYE,
-                            MenuIcons.line("No unique enchant", NamedTextColor.DARK_GRAY),
-                            List.of(MenuIcons.line("Nothing unique is tied to this item's element yet.",
-                                    NamedTextColor.DARK_GRAY))));
+    private void renderEmptyMarkers(EnchantState state) {
+        for (int slot = 0; slot < EnchantMenuLayout.SLOTS && slot < state.slots().size(); slot++) {
+            if (!state.slots().get(slot).candidates().isEmpty()) continue;
+            int at = slot;
+            EnchantMenuLayout.emptyMarkerFor(slot).ifPresent(marker ->
+                    getInventory().setItem(EnchantMenuLayout.rawSlotFor(at, 0), MenuIcons.icon(Material.GRAY_DYE,
+                            MenuIcons.line(marker.name(), NamedTextColor.DARK_GRAY),
+                            List.of(MenuIcons.line(marker.lore(), NamedTextColor.DARK_GRAY)))));
         }
     }
 
@@ -490,10 +488,10 @@ public final class EnchantMenu extends Menu {
 
     /**
      * The four columns (three until 2026-11-23). A slot that rolled fewer than four candidates leaves filler behind; an
-     * EMPTY unique slot shows {@link #renderUniqueChrome}'s item instead of filler in its first cell.
+     * EMPTY weapon or unique slot shows {@link #renderEmptyMarkers}'s item instead of filler in its first cell.
      */
     private void renderCandidates(EnchantState state, GearClass heldClass) {
-        renderUniqueChrome(state);
+        renderEmptyMarkers(state);
         for (int slot = 0; slot < EnchantMenuLayout.SLOTS && slot < state.slots().size(); slot++) {
             EnchantSlot enchantSlot = state.slots().get(slot);
             for (int index = 0; index < EnchantMenuLayout.CANDIDATES
