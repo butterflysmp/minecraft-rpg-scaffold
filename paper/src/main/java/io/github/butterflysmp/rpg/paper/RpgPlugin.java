@@ -745,6 +745,9 @@ public final class RpgPlugin extends JavaPlugin {
         io.github.butterflysmp.rpg.paper.nexus.QuiverWarning quiverWarning = new io.github.butterflysmp.rpg.paper.nexus.QuiverWarning(
                 adapters.keys(), id -> profiles.starEnabled(id));
         this.statsBar.bindBeat(player -> {
+            // RULING M (2026-11-22): the Nexus item heals FIRST, so the redraw below draws the mirror on it this beat.
+            io.github.butterflysmp.rpg.paper.nexus.NexusHealing.healIfMissing(player, adapters.keys(), profiles,
+                    line -> getLogger().info(line));
             io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, adapters.keys());
             quiverWarning.observe(player);
         });

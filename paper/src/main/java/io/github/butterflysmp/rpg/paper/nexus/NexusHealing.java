@@ -1,0 +1,46 @@
+package io.github.butterflysmp.rpg.paper.nexus;
+
+import io.github.butterflysmp.rpg.core.build.NexusHeal;
+import io.github.butterflysmp.rpg.paper.adapter.Keys;
+import io.github.butterflysmp.rpg.paper.profile.ProfileService;
+import io.github.butterflysmp.rpg.storage.PlayerProfile;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.PlayerInventory;
+
+import java.util.Optional;
+import java.util.function.Consumer;
+
+/**
+ * THE NEXUS ITEM HEALS ON THE BEAT (the seat's ruling M, 2026-11-22): the paper half, which only EXECUTES core's
+ * {@link NexusHeal}. Run on the stats bar's 10-tick beat, BEFORE {@link NexusMirror#redraw}, so the mirror is drawn on the
+ * healed star in the same beat.
+ *
+ * <p>The guard and the call are the JOIN PATH's ({@code RpgListeners.onJoin}): the star is on when the profile says so,
+ * and an ABSENT profile reads as on; the star is converged to his locked slot by {@link NexusSlots#converge}. That call
+ * clears no star here (none was found) and mints one into the locked slot; whatever already sat in that slot is handed
+ * to {@code MenuSafety.give} (READ): his inventory first, dropped at his feet with a chat line only if it is full.
+ */
+public final class NexusHealing {
+
+    private NexusHealing() {}
+
+    /** Heal when core says so; {@code log} receives one line per heal (the gate's witness). */
+    public static void healIfMissing(Player player, Keys keys, ProfileService profiles, Consumer<String> log) {
+        Optional<PlayerProfile> profile = profiles.profile(player.getUniqueId());
+        boolean starOn = profile.map(PlayerProfile::starEnabled).orElse(true);
+        int found = countNexus(player.getInventory(), keys);
+        if (!NexusHeal.heals(starOn, found, !player.isDead())) return;
+        int slot = profile.map(PlayerProfile::nexusSlot).orElse(NexusLock.DEFAULT_LOCKED_SLOT);
+        NexusSlots.converge(player, keys, slot);
+        log.accept("NEXUSHEAL player=" + player.getName() + " slot=" + slot);
+    }
+
+    /** Every item carrying the Nexus tag, in any slot (armour and the off hand included). */
+    static int countNexus(PlayerInventory inventory, Keys keys) {
+        int found = 0;
+        for (int index = 0; index < inventory.getSize(); index++) {
+            if (NexusItems.isNexus(inventory.getItem(index), keys)) found++;
+        }
+        return found;
+    }
+}
