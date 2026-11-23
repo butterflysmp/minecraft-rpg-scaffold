@@ -1156,3 +1156,41 @@ carrying the Nexus tag is anywhere in his inventory, the star is converged to hi
 call and guard; the redraw then draws the mirror in the same beat. A star found in another slot is not moved (ruling
 G); duplicates are not its business; a dead player is left to the respawn path. `GATE-vanilla-bows.md` VM8 reads it,
 VM10 its control with the star off.
+
+> **CORRECTED 2026-11-22, THE SEAT'S ERROR (its follow-up 1): "his star is switched on" MUST MEAN A LOADED PROFILE SAYS
+> SO.** The ruling as first given said an absent profile reads as on, the join path's guard. That holds on the join path
+> only because it reads the profile inside `profiles.whenSettled`, where absent means "unreadable, permanently". The beat
+> is not ordered after the load (READ: `StatsBarSystem.onJoin` starts the loop, and `RepeatingTask.start` arms its first
+> beat one period, 10 ticks, later; nothing waits for the load), so on the beat absent can mean "not yet". A beat that
+> landed first minted a star at the default slot for a player who had switched his star OFF, and the join path's converge
+> then kept it. **Fixed on #243 (`e00c6324`):** `NexusHeal.heals` takes a fourth input, `loaded`, and the heal acts only
+> on a LOADED profile that says the star is on; not loaded, the join path owns the case. A profile that FAILED to load is
+> never loaded, so it is never healed; the join path's default places his star at join. Whether the first beat precedes
+> the load in practice depends on the disk (UNVERIFIED); nothing in the code prevents it.
+>
+> **`QuiverWarning` READ for the same hole: it does not have it.** Its star read is `ProfileService.starEnabled`, absent
+> reads as ON, and the warning fires only when the star is OFF (`QuiverMirror.warnNow`). Before the load a star-off player
+> is therefore read as on and NOT warned; when the load lands the observation turns on -> off and he is warned once, as
+> for a star turned off. No warning reaches a star-on player, and a star-off player still gets exactly one. No change.
+>
+> **Carried: GATE-mining-auto.** With the heal, that gate's rows lose the pickaxe from his hand when his held slot at run
+> start is the star's (the heal re-mints the star into that slot and hands the pickaxe to `MenuSafety.give`). To be fixed
+> when that gate is next run.
+
+### 6.8 THE SEAT'S FOLLOW-UPS 2 AND 3 (2026-11-22, `feat/vanilla-shot-owed`, #245, between #243 and the content PR)
+
+- **The Bow's last round (READ, javap on `run/versions/26.1.2/paper-26.1.2.jar`):** `ProjectileWeaponItem.useAmmo` does
+  `split(1)` on the live stack and, once it is empty, `Inventory.removeItem`. So a shot that takes a mirror of ARROW x 1
+  leaves NO Nexus item when the shot event fires, on a shot that leaves and on one we cancel alike, and
+  `Quivers.spendRoundOnShot`'s redraw found nothing to draw on. **Built:** the shot path puts it back itself, in the same
+  tick, before its redraw (core `VanillaShot.restoresNexus`, `VanillaShots.restoreTakenNexus`), by the heal's own converge
+  into his locked slot (the event does not carry the source slot), with its own line `NEXUSRESTORE player=<n> slot=<s>
+  cause=shot`, so `NEXUSHEAL` keeps meaning "something else removed it". Called from `onShot` and from `onMirrorShot`.
+  `/rpg rounds <count>` (dev server only) stages the rounds. `GATE-vanilla-bows.md` VX10 reads it.
+- **NOT covered, listed:** a CROSSBOW in the off hand LOADING from the mirror's last arrow while a quiver weapon is held
+  (a load, not a shot): the item is gone until the next beat, and the heal puts it back with a `NEXUSHEAL` line.
+- **A refused crossbow shot makes no arrow (READ):** `CrossbowItem.performShooting` sets `CHARGED_PROJECTILES` to EMPTY
+  BEFORE `shoot` fires the event, a cancelled event only removes the projectile and returns, and nothing in
+  `CrossbowItem.use` or our code re-charges it. The refused Crossbow is UNLOADED and the refund returns the arrow its load
+  took. `getConsumable` on a crossbow's shot is the charged projectile's item copy (`ChargedProjectiles.itemCopies`, the
+  list `shoot` iterates). No code change; a `CROSSBOWCHARGE` line witnesses it (VX5R2).
