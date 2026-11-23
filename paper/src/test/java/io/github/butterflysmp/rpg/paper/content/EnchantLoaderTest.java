@@ -32,6 +32,15 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class EnchantLoaderTest {
 
+    /**
+     * A loader that knows the SHIPPED elements, as the server's does (it loads them first). Since 2026-11-23 the shipped
+     * roster holds a UNIQUE enchant (kinetic_tremors, element kinetic), which a loader that knows no element refuses.
+     */
+    private static EnchantLoader shippedElementsLoader() {
+        return new EnchantLoader(quietLogger(), Set.of("fire", "kinetic", "nature", "undead", "void", "water", "wither")::contains,
+                false);
+    }
+
     private static Logger quietLogger() {
         return Logger.getLogger("EnchantLoaderTest-" + System.nanoTime());
     }
@@ -116,25 +125,79 @@ class EnchantLoaderTest {
 
     // ---- THE UNIQUE SLOT (2026-11-23): element: and the dev-only example -------------------------------------------
 
-    /** The dev-only example is ABSENT on a real server and PRESENT on a dev one; the normal roster is the same on both. */
+    /**
+     * W5 (2026-11-23): the dev-only example was DELETED with Kinetic Tremors' arrival, and NO dev enchant ships. The dev
+     * mechanism stays (a dev_ file loads only on a dev server), so it is held here on a written file: ABSENT on a real
+     * server, PRESENT on a dev one. And the shipped roster is the same on both, with exactly one unique enchant: Ben's.
+     */
     @Test
-    void theDevEnchantIsAbsentWithoutTheDevMarker() throws IOException {
-        assertEquals(List.of("dev_kinetic_example"), devIds(), "the one dev-only file ships");
+    void noDevEnchantShipsAndTheDevMechanismStillGatesAWrittenOne(@TempDir Path dir) throws IOException {
+        assertEquals(List.of(), devIds(), "W5: no dev enchant remains");
         Logger quiet = quietLogger();
         Set<String> elements = Set.of("fire", "kinetic", "nature", "undead", "void", "water", "wither");
         EnchantRegistry real = new EnchantLoader(quiet, elements::contains, false).loadAll(shippedEnchantsDir());
         EnchantRegistry dev = new EnchantLoader(quiet, elements::contains, true).loadAll(shippedEnchantsDir());
-        assertTrue(real.find("dev_kinetic_example").isEmpty(), "a real server never registers it");
-        assertTrue(dev.find("dev_kinetic_example").isPresent(), "the control: a dev server does");
         assertEquals(shippedIds().size(), real.size());
-        assertEquals(shippedIds().size() + 1, dev.size());
-        EnchantDefinition example = dev.find("dev_kinetic_example").orElseThrow();
-        assertEquals("kinetic", example.element());
-        assertTrue(example.isUnique());
-        assertTrue(example.isUniversal(), "universal class");
-        assertEquals(io.github.butterflysmp.rpg.core.enchant.EnchantEffect.DAMAGE, example.effect(), "an existing effect");
-        // No REAL (non-dev) enchant is unique yet: Ben's come later.
-        assertTrue(real.all().stream().noneMatch(EnchantDefinition::isUnique), "no shipped real enchant declares element:");
+        assertEquals(shippedIds().size(), dev.size(), "a dev server loads the same shipped roster");
+        assertEquals(List.of("kinetic_tremors"), real.all().stream().filter(EnchantDefinition::isUnique)
+                .map(EnchantDefinition::id).toList(), "the one shipped unique enchant is Ben's");
+
+        Files.writeString(dir.resolve("dev_probe.yml"), "display_name: \"P\"\nmax_level: 1\neffect: durability\n"
+                + "class: universal\n");
+        Files.writeString(dir.resolve("normal.yml"), "display_name: \"N\"\nmax_level: 1\neffect: durability\n"
+                + "class: universal\n");
+        assertTrue(new EnchantLoader(quiet, elements::contains, false).loadAll(dir.toFile()).find("dev_probe").isEmpty(),
+                "a real server never registers a dev_ file");
+        assertTrue(new EnchantLoader(quiet, elements::contains, true).loadAll(dir.toFile()).find("dev_probe").isPresent(),
+                "the control: a dev server does");
+    }
+
+    /** Kinetic Tremors as shipped: Ben's numbers and the seat's placeholders, read through the real loader. */
+    @Test
+    void theShippedKineticTremorsLoadsAsBuilt() throws IOException {
+        EnchantDefinition t = shippedElementsLoader().loadAll(shippedEnchantsDir()).find("kinetic_tremors").orElseThrow();
+        assertEquals("Kinetic Tremors", t.displayName(), "Ben's name");
+        assertEquals("kinetic", t.element(), "Ben: any kinetic weapon");
+        assertTrue(t.isUniversal(), "of all three classes");
+        assertEquals(io.github.butterflysmp.rpg.core.enchant.EnchantEffect.SHOCKWAVE, t.effect());
+        assertEquals(new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shockwave(3, 60, 5,
+                List.of(10.0, 15.0, 20.0), List.of(3.0, 4.0, 5.0), "kinetic", "tremor_wave"), t.behaviour(),
+                "Ben's 3 hits, 3 s and 0.25 s; the seat's 10/15/20 and 3/4/5");
+        assertEquals(3, t.maxLevel());
+        assertEquals(List.of(), t.valueByLevel(), "a behaviour declares no value_by_level");
+    }
+
+    /** B1: a malformed shockwave block is refused BY THE KEY'S NAME, and so is a block on a stat effect. */
+    @Test
+    void aMalformedShockwaveIsRefusedByName(@TempDir Path dir) throws IOException {
+        String head = "display_name: \"S\"\nmax_level: 3\neffect: shockwave\nclass: universal\n";
+        String good = "shockwave:\n  hits: 3\n  window_ticks: 60\n  cooldown_ticks: 5\n  damage_by_level: [10, 15, 20]\n"
+                + "  radius_by_level: [3, 4, 5]\n  element: kinetic\n";
+        Files.writeString(dir.resolve("good.yml"), head + good);
+        Files.writeString(dir.resolve("no_block.yml"), head);
+        Files.writeString(dir.resolve("no_hits.yml"), head + good.replace("  hits: 3\n", ""));
+        Files.writeString(dir.resolve("short_list.yml"), head + good.replace("[10, 15, 20]", "[10, 15]"));
+        Files.writeString(dir.resolve("word.yml"), head + good.replace("[3, 4, 5]", "[3, four, 5]"));
+        Files.writeString(dir.resolve("bad_element.yml"), head + good.replace("element: kinetic", "element: kinetik"));
+        Files.writeString(dir.resolve("stat_with_block.yml"), "display_name: \"X\"\nmax_level: 3\neffect: durability\n"
+                + "class: universal\n" + good);
+        Files.writeString(dir.resolve("levels.yml"), head.replace("max_level: 3", "max_level: 2") + good);
+        List<String> warnings = new java.util.ArrayList<>();
+        EnchantRegistry r = new EnchantLoader(capturing(warnings), Set.of("kinetic")::contains, false).loadAll(dir.toFile());
+        assertTrue(r.find("good").isPresent(), "the control: a well-formed block loads " + warnings);
+        for (String bad : List.of("no_block", "no_hits", "short_list", "word", "bad_element", "stat_with_block", "levels")) {
+            assertTrue(r.find(bad).isEmpty(), bad + " loaded");
+        }
+        java.util.function.Predicate<String> warned = s -> warnings.stream().anyMatch(w -> w.contains(s));
+        assertTrue(warned.test("'no_block' has effect: shockwave and so requires its shockwave: block"), warnings.toString());
+        assertTrue(warned.test("'no_hits' shockwave: is missing a whole-number 'hits'"), warnings.toString());
+        assertTrue(warned.test("'short_list' shockwave: shockwave damage_by_level has 2 entries and radius_by_level 3"),
+                warnings.toString());
+        assertTrue(warned.test("'word' shockwave: 'radius_by_level' holds 'four'"), warnings.toString());
+        assertTrue(warned.test("'bad_element' shockwave: element 'kinetik' is not a loaded element"), warnings.toString());
+        assertTrue(warned.test("'stat_with_block' has effect: durability, which is a stat, and must not declare a behaviour"),
+                warnings.toString());
+        assertTrue(warned.test("'levels' declares max_level 2 but its shockwave: block has 3 levels"), warnings.toString());
     }
 
     /** U1: element: names a LOADED element, or the file is refused by name. */
@@ -205,12 +268,13 @@ class EnchantLoaderTest {
         assertTrue(r.find("n").isPresent(), "the control");
     }
 
-    /** No element key: a NORMAL enchant, as all eleven are. */
+    /** No element key: a NORMAL enchant, as eleven of the twelve shipped are (Kinetic Tremors is the unique one). */
     @Test
     void noElementKeyIsANormalEnchant() throws IOException {
-        EnchantRegistry r = new EnchantLoader(quietLogger()).loadAll(shippedEnchantsDir());
-        assertEquals(11, r.size(), "the eleven real enchants (recounted: the files minus dev_)");
-        assertTrue(r.all().stream().allMatch(e -> e.element() == null));
+        EnchantRegistry r = shippedElementsLoader().loadAll(shippedEnchantsDir());
+        assertEquals(12, r.size(), "the twelve shipped enchants (recounted: ls content/enchants/*.yml | wc -l)");
+        assertEquals(11, r.all().stream().filter(e -> e.element() == null).count(), "eleven are normal");
+        assertTrue(r.all().stream().filter(e -> e.element() == null).noneMatch(EnchantDefinition::isUnique));
     }
 
     private static Logger capturing(List<String> into) {
@@ -247,7 +311,7 @@ class EnchantLoaderTest {
 
     @Test
     void theShippedUnbreakingFileLoadsAndSaysWhatTheTooltipNeeds(@TempDir Path dir) throws IOException {
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(bundledEnchants(dir).toFile());
 
         // The WHOLE discovered roster, not merely non-empty. A discovery that finds nothing -- or
         // finds something unexpected -- is a defect, not a quiet no-op, and "non-empty" would pass
@@ -282,7 +346,7 @@ class EnchantLoaderTest {
      */
     @Test
     void everyShippedEnchantFileLoadsRatherThanOnlyTheOnesWeRemembered(@TempDir Path dir) throws IOException {
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(bundledEnchants(dir).toFile());
 
         Set<String> loaded = enchants.all().stream()
                 .map(EnchantDefinition::id).collect(Collectors.toSet());
@@ -303,7 +367,7 @@ class EnchantLoaderTest {
      */
     @Test
     void theThreeShippedDamageEnchantsCarryTheirClassAndCurve(@TempDir Path dir) throws IOException {
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(bundledEnchants(dir).toFile());
 
         assertEquals(GearClass.MELEE, enchants.find("sharpness").orElseThrow().gearClass());
         assertEquals(GearClass.RANGER, enchants.find("power").orElseThrow().gearClass());
@@ -335,7 +399,7 @@ class EnchantLoaderTest {
      */
     @Test
     void theShippedBulwarkCarriesItsShieldGateAndCurve(@TempDir Path dir) throws IOException {
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(bundledEnchants(dir).toFile());
 
         EnchantDefinition bulwark = enchants.find("bulwark").orElseThrow(
                 () -> new AssertionError("bulwark.yml did not load -- shields would roll only Unbreaking"));
@@ -368,7 +432,7 @@ class EnchantLoaderTest {
      */
     @Test
     void theShippedThornsCarriesItsShieldGateAndCurve(@TempDir Path dir) throws IOException {
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(bundledEnchants(dir).toFile());
 
         EnchantDefinition thorns = enchants.find("thorns").orElseThrow(
                 () -> new AssertionError("thorns.yml did not load -- shields would roll no reflect"));
@@ -408,7 +472,7 @@ class EnchantLoaderTest {
         Files.writeString(enchantsDir.resolve("noeffect.yml"),
                 "display_name: \"No Effect\"\nmax_level: 3\nclass: universal\n");
 
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(enchantsDir.toFile());
 
         assertEquals(shippedIds().size(), enchants.size(), "the malformed file is skipped");
         assertTrue(enchants.find("noeffect").isEmpty(),
@@ -421,7 +485,7 @@ class EnchantLoaderTest {
     /** DEFT HANDS as shipped (PLAN-deft-hands.md; Ben's ruling (a), the seat's rulings 2026-11-06). */
     @Test
     void theShippedDeftHandsLoadsAsRuled(@TempDir Path dir) throws IOException {
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(bundledEnchants(dir).toFile());
         EnchantDefinition deft = enchants.find("deft_hands").orElseThrow(() -> new AssertionError("deft_hands did not load"));
         assertEquals("Deft Hands", deft.displayName());
         assertEquals(EnchantEffect.RELOAD_TIME, deft.effect());
@@ -444,7 +508,7 @@ class EnchantLoaderTest {
         // THE CONTROL: the same body as class: ranger LOADS, so the three refusals are the gate's, not a bad body's.
         Files.writeString(enchantsDir.resolve("ranger_reload.yml"), body + "class: ranger\n");
 
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(enchantsDir.toFile());
 
         assertTrue(enchants.find("ranger_reload").isPresent(), "the control: a ranger reload_time enchant loads");
         assertEquals(shippedIds().size() + 1, enchants.size(), "three refused, the control and the shipped roster loaded");
@@ -462,7 +526,7 @@ class EnchantLoaderTest {
         // it must fail loudly rather than load as some default class.
         Files.writeString(enchantsDir.resolve("mistoken.yml"), damageYml("3", "ranged", "[5, 10, 15]"));
 
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(enchantsDir.toFile());
 
         assertEquals(shippedIds().size(), enchants.size(),
                 "both malformed files are skipped, the whole shipped roster remains");
@@ -478,7 +542,7 @@ class EnchantLoaderTest {
         Files.writeString(enchantsDir.resolve("nocurve.yml"),
                 "display_name: \"No Curve\"\nmax_level: 3\neffect: damage\nclass: melee\n");
 
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(enchantsDir.toFile());
 
         assertEquals(shippedIds().size(), enchants.size());
         assertTrue(enchants.find("nocurve").isEmpty());
@@ -499,7 +563,7 @@ class EnchantLoaderTest {
 
         Path enchantsDir = bundledEnchants(dir);
         Files.writeString(enchantsDir.resolve("short.yml"), damageYml("3", "melee", "[5, 10]"));
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(enchantsDir.toFile());
         assertEquals(shippedIds().size(), enchants.size(),
                 "and the loader skips it by name rather than crashing");
     }
@@ -704,7 +768,7 @@ class EnchantLoaderTest {
         // THE DRIFT GUARD. Unbreaking.ID is what WeaponDurability compares against; this file's
         // name is what the registry keys on. Nothing at runtime checks they match -- a rename of
         // either leaves an enchant that renders but never skips wear, or skips wear under a raw id.
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(bundledEnchants(dir).toFile());
 
         assertTrue(enchants.find(Unbreaking.ID).isPresent(),
                 "no shipped content file is named after Unbreaking.ID (" + Unbreaking.ID + ")");
@@ -722,7 +786,7 @@ class EnchantLoaderTest {
                 "id: \"something_else\"\ndisplay_name: \"Swiftness\"\nmax_level: 2\n"
                         + "effect: durability\nclass: universal\n");
 
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(enchantsDir.toFile());
 
         assertTrue(enchants.find("swiftness").isPresent(), "swiftness.yml -> id swiftness");
         assertTrue(enchants.find("something_else").isEmpty(),
@@ -740,7 +804,7 @@ class EnchantLoaderTest {
         // logs it, names it, and moves on.
         Files.writeString(enchantsDir.resolve("overpowered.yml"), "display_name: \"Overpowered\"\nmax_level: 9\n");
 
-        EnchantRegistry enchants = new EnchantLoader(quietLogger()).loadAll(enchantsDir.toFile());
+        EnchantRegistry enchants = shippedElementsLoader().loadAll(enchantsDir.toFile());
 
         assertEquals(shippedIds().size(), enchants.size(), "the malformed file is skipped");
         assertTrue(enchants.find("unbreaking").isPresent(), "and the good ones still loaded");
@@ -768,9 +832,9 @@ class EnchantLoaderTest {
         // this. Here we only pin that the loader itself survives, so that warning is what a
         // missing content folder produces rather than a stack trace on boot.
         Path empty = Files.createDirectory(dir.resolve("enchants"));
-        assertEquals(0, new EnchantLoader(quietLogger()).loadAll(empty.toFile()).size());
+        assertEquals(0, shippedElementsLoader().loadAll(empty.toFile()).size());
 
-        assertEquals(0, new EnchantLoader(quietLogger())
+        assertEquals(0, shippedElementsLoader()
                 .loadAll(dir.resolve("does-not-exist").toFile()).size());
     }
 
@@ -779,7 +843,7 @@ class EnchantLoaderTest {
         // The shipped VALUES, not merely that the key parses. The enchant table renders one icon
         // per candidate and three columns of identical books is most of what the layout exists to
         // avoid, so which material each file names is the thing worth pinning.
-        EnchantRegistry registry = new EnchantLoader(quietLogger()).loadAll(bundledEnchants(dir).toFile());
+        EnchantRegistry registry = shippedElementsLoader().loadAll(bundledEnchants(dir).toFile());
 
         assertEquals("iron_sword", registry.find("sharpness").orElseThrow().icon());
         assertEquals("bow", registry.find("power").orElseThrow().icon());
@@ -804,7 +868,7 @@ class EnchantLoaderTest {
         Files.writeString(enchants.resolve("nameless.yml"),
                 "display_name: \"Nameless\"\nmax_level: 3\neffect: durability\nclass: universal\n");
 
-        EnchantRegistry registry = new EnchantLoader(quietLogger()).loadAll(enchants.toFile());
+        EnchantRegistry registry = shippedElementsLoader().loadAll(enchants.toFile());
 
         assertEquals(1, registry.size(), "an enchant without an icon must still LOAD");
         assertEquals(EnchantDefinition.DEFAULT_ICON, registry.find("nameless").orElseThrow().icon());
@@ -820,7 +884,7 @@ class EnchantLoaderTest {
         Files.writeString(enchants.resolve("blank.yml"),
                 "display_name: \"Blank\"\nicon: \"\"\nmax_level: 3\neffect: durability\nclass: universal\n");
 
-        EnchantRegistry registry = new EnchantLoader(quietLogger()).loadAll(enchants.toFile());
+        EnchantRegistry registry = shippedElementsLoader().loadAll(enchants.toFile());
 
         assertEquals(EnchantDefinition.DEFAULT_ICON, registry.find("blank").orElseThrow().icon());
         // Mutation: drop the isBlank() arm of the record's normalisation -> "" survives -> reddens.

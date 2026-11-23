@@ -175,6 +175,7 @@ public final class EffectApplier {
                             DefenseRule.APPLIES, d.element());
                     onDirectDamage.accept(amount, d.element());   // inside the gate: a refused hit reports nothing
                     trace(caster, target, amount, d.element());
+                    world.primaryHit(caster, target);   // B2-B4: a HIT a behavioural enchant may count; the port decides
                 }
             }
             case EffectSpec.WeaponDamage wd -> {
@@ -200,6 +201,7 @@ public final class EffectApplier {
                             DefenseRule.APPLIES, wd.element());
                     onDirectDamage.accept(amount, wd.element());   // inside the gate: a refused hit reports nothing
                     trace(caster, target, amount, wd.element());
+                    world.primaryHit(caster, target);   // the same, for the stat-reading arm
                 }
             }
             case EffectSpec.Heal h -> target.handle().applyHeal(h.amount());
@@ -386,7 +388,8 @@ public final class EffectApplier {
     }
 
     private void tickArea(EffectSpec.Area area, Caster caster, Vec3 origin, int elapsed) {
-        applyToNearby(area.effects(), caster, origin, area.radius());
+        // A LINGERING AREA'S TICK IS DAMAGE OVER TIME, NOT A HIT (the seat's rule for Kinetic Tremors, 2026-11-23).
+        applyToNearby(area.effects(), caster.asNotAHit(), origin, area.radius());
 
         int next = elapsed + area.tickInterval();
         if (next <= area.durationTicks()) {

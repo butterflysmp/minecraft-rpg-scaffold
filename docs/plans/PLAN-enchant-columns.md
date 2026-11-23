@@ -145,3 +145,120 @@ anywhere); `golden-lore.txt`'s three lantern lines; new `core/.../LivingLanternF
 each `marker present: 1  original gone: 0  line delta: 0`, each restored and `cmp` byte-identical: MUTSPEED (0.36: 3
 rows red), MUTLIFE (81: 2), MUTSEARCH (8: 2), MUTDMG (44: 3), MUTNOSEEK (`ProjectileFlight.steer` never turns: the
 off-the-line flight row red).
+
+## 3. PR C — KINETIC TREMORS (`feat/kinetic-tremors`), AND THE BEHAVIOUR ENGINE IT NEEDS FIRST
+
+### Ben's words, verbatim, 2026-11-23
+
+> "The first: Kinetic Tremors  Any kinetic weapon from Melee, Ranger, and Mage.  multiple consecutive hits within 3
+> seconds emits a damaging shockwave"
+
+Asked how many hits; same target or any; where it comes from; whether the count resets; what levels improve: **"1. 3 hits
+rolling 2. Same target 3. The mob that was hit 4. No 5. The damage and size"**. **"Extra notes: 1. Damage will scale with
+the gear score 2. Multiple pellets count so one shot triggering it is fine"** / **"one more note, there is a .25s cooldown
+on shockwaves"**.
+
+### WHAT THIS PR IS BIGGER THAN IT READS BY, STATED FIRST
+
+Kinetic Tremors' own hook is small (a primary-hit call in the two damage arms). **But B2 ("the weapon stamped on the
+cast") had no carrier: `Caster` held no weapon and no enchant (READ).** So this PR also builds the behaviour engine that
+Lapis Crystal and Airburst Flames stand on:
+
+- **`Caster` gains two components.** `behaviours` (`List<ActiveBehaviour>`): the active behavioural enchants of the weapon
+  that MADE the cast, frozen at `CastExecutor.commit` for a WEAPON trigger only (a stone cast carries none), at a basic
+  swing (`landBasicMelee`), at a vanilla shot's release (the stamp, below), and per shot of a weapon-pressed volley.
+  `countsAsHit`: false on an area's tick (`asNotAHit`) and on every secondary damage (`asSecondary`, which also drops the
+  behaviours and sets the PLAYERHIT source).
+- **`CombatWorld` gains three abstract methods:** `behavioursOf(id)` (read where `triggerScoreOf` is read),
+  `primaryHit(caster, target)` (called by both damage arms inside the same gate as the PLAYERHIT trace), `currentTick()`.
+- **`BehaviourHits`** (core), ONE per server on `AdapterContext`, decides and executes; **`ShockwaveStreaks`** (core) is
+  the pure decision.
+- **`ShotStamp` v2** carries the bow's behavioural enchants (`id:level;...`) as a tenth field; a v1 arrow still decodes,
+  carrying none.
+- **The schema:** `EnchantEffect.SHOCKWAVE`; `EnchantDefinition` gains `behaviour`; `EnchantLoader` reads a `shockwave:`
+  block and refuses a malformed one BY THE KEY'S NAME; a stat effect with a block, a behavioural one without, and levels
+  that disagree with `max_level` are refused by the record. `ContentValidator.validateBehaviourVisuals` names, at boot, a
+  shockwave visual that is not loaded.
+
+**The volley rule, flagged, not decided:** a weapon-pressed volley re-reads the held weapon's behaviours PER SHOT, exactly
+as it already re-reads the gear score per shot (the inherited, UNRULED volley re-pricing that `cursed_emerald.yml`
+documents). B2's "the weapon stamped on the cast" would freeze them at the press instead. **The seat's to rule.**
+
+### The rule, as built (`ShockwaveStreaks`, `BehaviourHits`)
+
+- **A HIT** is a damage `EffectApplier` actually applied (inside the `amount > 0 && alive` gate), by a caster that
+  `countsAsHit` and carries a behaviour, on a target that is not a player. Each pellet is its own damage, so its own hit.
+  An `Area`'s tick is not a hit; a shockwave is not a hit. Scorch, wither and Ignite never pass through `EffectApplier`
+  (READ: `DotStatus`, `Ignite.detonate`), so they never reach the hook at all.
+- **Per player, enchant and target**, the times of his hits. A hit fires when it makes 3 or more on that target with
+  `now - t < 60` (a hit 59 ticks old counts, 60 does not: SEAT PLACEHOLDER for the boundary tick) AND `now - lastFired >=
+  5` (per PLAYER). The count is not cleared. Four pellets in one tick fire exactly one.
+- **The shockwave** leaves the struck mob's position and strikes every living MOB whose feet are within the level's radius
+  of it, CENTRE TO CENTRE, the struck one included (SEAT PLACEHOLDER), never himself, never a player.
+  **READ, AND IT CHANGED THE CODE:** the server's `PaperCombatWorld.combatantsNear` is `World#getNearbyEntities(center, r,
+  r, r)`, a BOX; `BehaviourHits` cuts it to a sphere, and `FakeWorld.boxSearch` lets a test answer as the server does.
+- **Every term of its damage** (the Damage arm, READ): `GearScore.scaledDamage(amount, score)` = amount x score / 100
+  (Ben's gear-score scaling), x `DamageEnchants.multiplier(enchantDamagePercent)` (Sharpness, Power or Attunement on the
+  same weapon), + `classDamageBonus` + `weaponLevelDamage` (his class gear; his level's bonus on a weapon hit), x
+  `chargeScale` (a basic swing's charge; 1 for a trigger), x `critMultiplier` (the HIT's crit, drawn once at its cast).
+  **All of the hit's, which the seat may want narrower** (a half-charged swing halves its shockwave; a crit hit crits it).
+- **Forgotten** when the target dies (`RpgListeners.onBehaviourTargetDeath`), when its newest hit is a window old (pruned
+  on his next hit), and on his quit (`RpgListeners.onQuit`). **B6: it spawns nothing** (one visual, particles and a
+  sound); the state is memory, gone at stop.
+- **Threading:** a hit lands on the thread that owns the struck mob; `ShockwaveStreaks` is `synchronized`.
+
+### Eligibility under U2 (the brief's "say how the file declares that")
+
+`element: kinetic` with `class: universal`. Universal admits every class; the element admits only gear whose element is
+kinetic, which is only weapons (U5: shields, armour, tools and accessories declare none), and every shipped weapon is
+melee, ranger or mage. **So it reaches every kinetic weapon of the three classes and nothing else**
+(`UniqueSlotContentTest`: the unique pool of all 16 kinetic weapons is `[kinetic_tremors]`, of every other gear empty, on
+a real server as well as a dev one).
+
+### W5
+
+`content/enchants/dev_kinetic_example.yml` is DELETED; no dev enchant remains. The `dev_` mechanism stays (held by
+`EnchantLoaderTest.noDevEnchantShipsAndTheDevMechanismStillGatesAWrittenOne` on a written file). The roster is 12 on
+every server (11 normal and Tremors).
+
+### OPEN FOR BEN (SEAT PLACEHOLDER 2026-11-23)
+
+1. **Damage 10 / 15 / 20 and radius 3 / 4 / 5 blocks by level** (Ben: levels improve "the damage and size").
+2. **The struck mob takes the shockwave too.**
+3. **The boundary tick:** a hit exactly 60 ticks old has left the window.
+4. **Three levels.**
+5. **The icon:** a piston.
+6. **The look and sound** (`visuals/tremor_wave.yml`): sweep and crit particles with a grey dust ring, a low
+   `entity.generic.explode` at volume 0.5, pitch 1.6.
+7. **The line in the table and the tooltip:** `3 hits on one foe in 3s: a 15 damage shockwave, 4 blocks` (level II's).
+
+### Tests and mutations
+
+New: `core/.../enchant/ShockwaveStreaksTest` (9), `core/.../BehaviourHitsTest` (9), `paper/.../KineticTremorsContentTest`
+(3); new rows in `ShotStampTest` (1) and `EnchantLoaderTest` (2, and one rewritten for W5); `EnchantLoaderTest`'s shipped
+loads now know the shipped elements (`shippedElementsLoader`); `UniqueSlotContentTest` re-pinned to Tremors. Eighteen
+mutations, each `marker present: 1  original gone: 0  line delta: 0`, each restored and `cmp` byte-identical, each red:
+
+| mutation | the edit | reddened |
+|---|---|---|
+| MUTWINDOW | `>=` to `>` on the window | the boundary row |
+| MUTCOOL | `>=` to `>` on the cooldown | the cooldown row |
+| MUTHITS | `>=` to `>` on the count | 8 rows |
+| MUTTARGET | hits keyed by player, not target | the split-target row and two more |
+| MUTPLAYERSKIP | the shockwave's player skip removed | "never a player" |
+| MUTCOUNTS | `countsAsHit` ignored | `anAreasTickIsNotAHit` (its only guard: a shockwave also carries no behaviour) |
+| MUTFROZEN | behaviours read from the world at the hit | the frozen-at-cast row |
+| MUTSTAMP | commit stamps no behaviour | 5 rows |
+| MUTSTONE | a stone cast stamped too | `aCastNotMadeByTheWeaponCarriesNoBehaviour` |
+| MUTHOOK, MUTHOOKWD | the Damage, then the WeaponDamage, arm's hook removed | 5 rows; the stat-reading row |
+| MUTAREA | the area's tick counts | `anAreasTickIsNotAHit` |
+| MUTSHOTENC | the stamp's tenth field empty | 2 `ShotStampTest` rows |
+| MUTSPHERE | the sphere cut removed | the box row |
+| MUTREQINT | a missing `hits` defaults | the malformed-block row |
+| MUTSTATBLOCK | a stat effect may carry a block | the malformed-block row |
+| MUTACTIVEOF | every active enchant becomes a behaviour | the B2 row, by `ActiveBehaviour`'s own refusal (an error, not an assertion) |
+| MUTLINE | the line shows level I's damage | the line row |
+
+**UNMUTATED, said so:** the two forgets in `RpgListeners` (a listener; their logic is `ShockwaveStreaksTest`'s); the
+paper `behavioursOf` read of the held item and `VanillaShots`' stamp-and-resolve (server-side; the gate's Breacher and bow
+rows are their witness); `asSecondary` dropping the behaviours (a second guard beside `countsAsHit`, which bites first).

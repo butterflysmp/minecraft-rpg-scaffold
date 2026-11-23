@@ -76,7 +76,8 @@ import java.util.UUID;
 public record Caster(UUID id, double attackDamage, double classDamageBonus,
                      double enchantDamagePercent, double chargeScale, double critMultiplier,
                      double payloadDamage, int triggerScore, String source,
-                     double levelDamageBonus, boolean weaponHit) {
+                     double levelDamageBonus, boolean weaponHit,
+                     java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behaviours, boolean countsAsHit) {
 
     /**
      * This cast marked as a WEAPON HIT: a weapon trigger, a basic melee swing, a shot. <b>The only way the
@@ -101,7 +102,7 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withWeaponHit() {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, true);
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, true, behaviours, countsAsHit);
     }
 
     /**
@@ -133,7 +134,7 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withPayloadDamage(double payloadDamage) {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit);
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit, behaviours, countsAsHit);
     }
 
     /**
@@ -172,7 +173,7 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withTriggerScore(int triggerScore) {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit);
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit, behaviours, countsAsHit);
     }
 
     /**
@@ -189,7 +190,7 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      */
     public Caster withSource(String source) {
         return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
-                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit);
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit, behaviours, countsAsHit);
     }
 
     /**
@@ -202,6 +203,46 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
      * colour a number -- there is no hit to celebrate. A negative bonus is refused by the same
      * comparison rather than by a second guard.
      */
+    /**
+     * THE TWO COMPONENTS THE BEHAVIOURAL ENCHANTS ADDED (the seat's B2 and B4, 2026-11-23).
+     *
+     * <p>{@code behaviours}: the ACTIVE behavioural enchants (level 1 or more, the active candidate of their slot) on the
+     * WEAPON THAT MADE THIS CAST OR HIT, frozen when it was made: at a weapon trigger's commit, at a basic swing, at a
+     * vanilla shot's release (its stamp). Never the weapon in hand when a slow body lands. EMPTY from {@link #of}, so a
+     * stone cast, a dev cast and a mob carry none by construction.
+     *
+     * <p>{@code countsAsHit}: whether a damage this caster lands is a HIT that a behavioural enchant may count. TRUE from
+     * {@link #of}; false on a damage-over-time tick ({@link #asNotAHit}) and on every SECONDARY damage
+     * ({@link #asSecondary}), so a shockwave never feeds a shockwave and a crystal's shot never feeds anything.
+     */
+    public Caster {
+        behaviours = behaviours == null ? java.util.List.of() : java.util.List.copyOf(behaviours);
+    }
+
+    /** The behaviours of the weapon that made this cast, frozen now (B2). */
+    public Caster withBehaviours(java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behaviours) {
+        return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit,
+                behaviours, countsAsHit);
+    }
+
+    /** The same caster, whose damage is NOT a hit (a damage-over-time tick). Its source and terms are unchanged. */
+    public Caster asNotAHit() {
+        return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit,
+                behaviours, false);
+    }
+
+    /**
+     * SECONDARY DAMAGE (B4): the same caster and every damage term it carries, under its OWN source on the PLAYERHIT
+     * line, never a hit, and carrying NO behaviours, so nothing it lands can trigger anything.
+     */
+    public Caster asSecondary(String source) {
+        return new Caster(id, attackDamage, classDamageBonus, enchantDamagePercent,
+                chargeScale, critMultiplier, payloadDamage, triggerScore, source, levelDamageBonus, weaponHit,
+                java.util.List.of(), false);
+    }
+
     public boolean crit() {
         return critMultiplier > Crit.NO_CRIT;
     }
@@ -243,6 +284,6 @@ public record Caster(UUID id, double attackDamage, double classDamageBonus,
         // with withWeaponHit. The level bonus is copied regardless -- it is inert until that flag is set.
         return new Caster(snapshot.id(), snapshot.attackDamage(), snapshot.classDamageBonus(),
                 snapshot.enchantDamagePercent(), chargeScale, snapshot.critMultiplier(), 0.0,
-                GearScore.BASELINE, null, snapshot.levelDamageBonus(), false);
+                GearScore.BASELINE, null, snapshot.levelDamageBonus(), false, java.util.List.of(), true);
     }
 }

@@ -1,0 +1,27 @@
+# KINETIC TREMORS' SHOCKWAVE (the seat's brief of 2026-11-23, PR C): presented ONCE at the struck mob's position when a
+# shockwave leaves it (BehaviourHits). EVERY STEP IS A SEAT PLACEHOLDER 2026-11-23, OPEN FOR BEN: a burst of sweep and
+# crit with a stone-grey ring, and a low thump. Both particles and the sound key are already shipped by other visuals
+# (SWEEP_ATTACK in a sweep, CRIT in breacher_hit, DUST everywhere; entity.generic.explode in two), so none is new to the
+# loader's checks.
+steps:
+  - type: particle
+    particle: SWEEP_ATTACK
+    count: 6
+    spread: 1.2
+    speed: 0.0
+  - type: particle
+    particle: CRIT
+    count: 12
+    spread: 1.0
+    speed: 0.2
+  - type: particle
+    particle: DUST
+    color: [150, 150, 150]
+    size: 1.5
+    count: 16
+    spread: 1.5
+    speed: 0.0    # inert for DUST
+  - type: sound
+    key: entity.generic.explode
+    volume: 0.5
+    pitch: 1.6

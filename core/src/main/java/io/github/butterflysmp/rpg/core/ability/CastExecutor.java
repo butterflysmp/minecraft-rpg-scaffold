@@ -201,7 +201,9 @@ public final class CastExecutor {
         // (Caster.withWeaponHit; PLAN-level-bonuses.md, seat ruling L1). A stone cast arrives here with
         // weaponTrigger false and leaves with it false. Frozen with everything else, so a staff's bolt
         // lands as the weapon hit it was fired as.
-        if (weaponTrigger) source = source.withWeaponHit();
+        // B2 (2026-11-23): a weapon trigger also carries the behaviours of the weapon that made it, frozen here. A stone cast
+        // carries none (it is not made by the held weapon).
+        if (weaponTrigger) source = source.withWeaponHit().withBehaviours(world.behavioursOf(caster.id()));
 
         // WHAT YOU HEAR WHEN YOU PRESS THE BUTTON. Fired here, before the switch, so it is
         // independent of cast shape and lands on the frame the cast was committed -- a projectile
@@ -385,7 +387,9 @@ public final class CastExecutor {
                 .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()))
                 .withTriggerScore(world.triggerScoreOf(caster.id()))
                 .withSource(ability.id())
-                .withWeaponHit(),
+                .withWeaponHit()
+                // B2: the swing is made by the weapon in hand NOW, so its behaviours are read now.
+                .withBehaviours(world.behavioursOf(caster.id())),
                 target, target.state().position());
         if (DamagePayload.isBasicAttack(ability.onHit())) onBasicAttackUse.run();
     }
@@ -402,11 +406,22 @@ public final class CastExecutor {
      */
     public void landVanillaShot(AbilityDefinition ability, CombatantSnapshot caster, int triggerScore,
                                 Combatant target, double chargeScale) {
+        landVanillaShot(ability, caster, triggerScore, List.of(), target, chargeScale);
+    }
+
+    /**
+     * The same, with the BEHAVIOURS of the bow that released it (B2, 2026-11-23): stamped at the shot with the score,
+     * never read at the hit.
+     */
+    public void landVanillaShot(AbilityDefinition ability, CombatantSnapshot caster, int triggerScore,
+                                List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behaviours,
+                                Combatant target, double chargeScale) {
         detonate(ability, Caster.of(caster, chargeScale)
                 .withPayloadDamage(DamagePayload.headlineDamage(ability.onHit(), caster.attackDamage()))
                 .withTriggerScore(triggerScore)
                 .withSource(ability.id())
-                .withWeaponHit(),
+                .withWeaponHit()
+                .withBehaviours(behaviours),
                 target, target.state().position());
     }
 
@@ -954,7 +969,9 @@ public final class CastExecutor {
                 .withSource(ability.id());
         // The flag is NOT re-read per shot -- there is nothing to re-read it from. It is how the volley
         // was PRESSED (a weapon trigger or a stone), carried down from commit's Caster by dispatch.
-        if (weaponHit) source = source.withWeaponHit();
+        // B2: a weapon-pressed volley reads the held weapon's behaviours per shot, exactly as it re-reads the gear score per
+        // shot above (the inherited, UNRULED volley re-pricing; flagged in PLAN-enchant-columns.md, not decided here).
+        if (weaponHit) source = source.withWeaponHit().withBehaviours(world.behavioursOf(casterId));
 
         fireInner(ability, source, live, spec.of());
 

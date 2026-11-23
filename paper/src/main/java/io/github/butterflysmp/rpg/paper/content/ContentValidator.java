@@ -193,6 +193,23 @@ public final class ContentValidator {
         return problems;
     }
 
+    /**
+     * A BEHAVIOUR'S VISUAL MUST NAME A LOADED VISUAL (B1, 2026-11-23). An unknown id would present nothing where the
+     * shockwave lands, silently: the player sees damage numbers with no wave. Warned at boot, by the enchant and the id.
+     */
+    public static List<String> validateBehaviourVisuals(Collection<EnchantDefinition> enchants,
+                                                        Predicate<String> visualExists) {
+        List<String> problems = new ArrayList<>();
+        for (EnchantDefinition enchant : enchants) {
+            if (enchant.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shockwave w
+                    && w.visual() != null && !visualExists.test(w.visual())) {
+                problems.add("enchant '" + enchant.id() + "' names shockwave visual '" + w.visual()
+                        + "', which is not a loaded visual; the shockwave will land unseen");
+            }
+        }
+        return problems;
+    }
+
 
     /**
      * A weapon's {@code ammo} must name an item a player can CARRY (the seat's ruling 1, 2026-11-22). A token that

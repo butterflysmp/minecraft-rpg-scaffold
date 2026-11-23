@@ -1213,6 +1213,17 @@ public final class RpgListeners implements Listener {
                 shots.mobIdOf(event.getEntity()), event.getEntity().getUniqueId(), org.bukkit.Bukkit.getCurrentTick()));
     }
 
+    /**
+     * A SHOCKWAVE'S RECORDS ON A DEAD MOB ARE FORGOTTEN (the seat's Kinetic Tremors rule, 2026-11-23: "Records forgotten
+     * when the target dies"). Every player's hits on it go; nothing else is touched. Its own handler, not a line inside
+     * the scorch handler below, which returns early for an unscorched mob.
+     */
+    @EventHandler
+    public void onBehaviourTargetDeath(EntityDeathEvent event) {
+        if (event.getEntity() instanceof Player) return;
+        adapters.behaviourHits().streaks().forgetTarget(event.getEntity().getUniqueId());
+    }
+
     @EventHandler
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity mob = event.getEntity();
@@ -2276,6 +2287,8 @@ public final class RpgListeners implements Listener {
         io.github.butterflysmp.rpg.paper.nexus.NexusMirror.restoreStar(event.getPlayer(), adapters.keys());
         // A quit inside a fight's world: he is out of it, his return kept for the next login (step F8b).
         fights.onQuit(event.getPlayer());
+        // His behavioural enchants' records go with him (Kinetic Tremors: "forgotten ... on his quit", 2026-11-23).
+        adapters.behaviourHits().streaks().forgetPlayer(event.getPlayer().getUniqueId());
 
         // FIRST, ahead of the clears: a menu holding this player's weapon must give it back while
         // their inventory can still be written. Writes during PlayerQuitEvent persist -- the save

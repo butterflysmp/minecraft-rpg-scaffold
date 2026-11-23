@@ -198,6 +198,21 @@ public final class EnchantEffectLine {
                 double percent = EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield String.format("-%.0f%% Reload Time", percent);
             }
+            // A SHOCKWAVE (B5, 2026-11-23): the REAL numbers for the level shown, read from the file's block. The damage is
+            // the authored amount, which the gear score then scales as it scales every literal (the weapon's own damage
+            // line does the same). WORDING: SEAT PLACEHOLDER 2026-11-23, OPEN FOR BEN.
+            case SHOCKWAVE -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shockwave w)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                yield w.hits() + " hits on one foe in " + number(w.windowTicks() / 20.0) + "s: a "
+                        + number(w.damageAt(level)) + " damage shockwave, " + number(w.radiusAt(level)) + " blocks";
+            }
         };
+    }
+
+    /** A whole number without a point (15.0 -> "15"); otherwise as Java prints it (22.5 -> "22.5"). */
+    static String number(double v) {
+        return v == Math.rint(v) && Math.abs(v) < 1e15 ? Long.toString((long) v) : Double.toString(v);
     }
 }
