@@ -25,9 +25,10 @@ class EnchantQuantityGateTest {
 
     /**
      * THE WEAPONS WHOSE POOL RULING H CHANGES, and what each loses. Empty on the branch that introduces the gate: every
-     * shipped ranger weapon has both quantities. The Crossbow joins it in the content PR.
+     * shipped ranger weapon has both quantities. The Crossbow joins it in the content PR (2026-11-22): no reload and no
+     * quiver, so it loses both, and its pool is power and unbreaking. The Bow has both and is unchanged.
      */
-    private static final Map<String, String> CHANGED = Map.of();
+    private static final Map<String, String> CHANGED = Map.of("crossbow", "deft_hands,expanded_quiver");
 
     /** Before (class alone) against after (the weapon's quantities), for EVERY shipped weapon. */
     @Test
@@ -77,6 +78,24 @@ class EnchantQuantityGateTest {
                 io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.has(roll.weapons().find("boltor").orElseThrow()));
         assertEquals(EnchantRoll.Has.NOTHING,
                 io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.has(roll.weapons().find("wooden_sword").orElseThrow()));
+    }
+
+    /**
+     * {@code /rpg enchant pool} (GATE-vanilla-bows' instrument) prints the pool the ROLL uses: EnchantRollItems.poolFor,
+     * which builds it with the same has(definition) and roster(adapters) as rollOnAcquire.
+     */
+    @Test
+    void thePoolCommandPrintsTheRollsOwnPool() throws IOException {
+        String items = Files.readString(Path.of("src/main/java/io/github/butterflysmp/rpg/paper/weapon/EnchantRollItems.java"),
+                StandardCharsets.UTF_8).replace("\r", "");
+        int at = items.indexOf("public static List<String> poolFor(GearDefinition definition, AdapterContext adapters) {");
+        assertTrue(at > 0, "poolFor is not found");
+        String body = items.substring(at, items.indexOf("\n    }\n", at));
+        assertTrue(body.contains("EnchantRoll.poolFor(has(definition), gearClass, roster(adapters))"), body);
+        String cmd = Files.readString(Path.of("src/main/java/io/github/butterflysmp/rpg/paper/command/RpgCommand.java"),
+                StandardCharsets.UTF_8).replace("\r", "");
+        assertTrue(cmd.contains("io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.poolFor(gear.gear(), adapters)"));
+        assertTrue(cmd.contains(".then(Commands.literal(\"pool\")"));
     }
 
     @Test

@@ -546,20 +546,15 @@ public final class RpgPlugin extends JavaPlugin {
         //
         // Same shape as a grep with no positive control: a self-consistent pair proves nothing, and
         // only a number from outside the thing being checked tells a working parse from a dead one.
-        getLogger().info("Mint-on-craft: " + craftResults.size() + " indexed, "
-                + craftResults.claimed() + " claiming, of " + allGear.size() + " gear definitions"
-                + (craftResults.contested() > 0
-                        ? ", " + craftResults.contested() + " dropped as contested" : "")
-                + (craftResults.refused() > 0
-                        ? ", " + craftResults.refused() + " refused" : ""));
+        // Built by BootLines (the seat's follow-up 4, 2026-11-22), so BootCountLinesTest measures this line before a boot.
+        getLogger().info(io.github.butterflysmp.rpg.paper.content.BootLines.mintOnCraft(craftResults, allGear.size()));
 
         // CONVERT ON ARRIVAL (the seat's ruling, 2026-11-20): the materials weapons claim when a plain item reaches a
         // player, from the craft index (its contests applied) and the smithing upgrades' results (the netherite sword).
         // A material two weapons claim is refused by name and claims nothing.
         this.arrivals = io.github.butterflysmp.rpg.core.weapon.ArrivalClaims.build(weapons.all(), craftResults, smithing,
                 problem -> getLogger().warning(problem));
-        getLogger().info("Convert-on-arrival: " + arrivals.size() + " materials "
-                + new java.util.TreeMap<>(arrivals.all()));
+        getLogger().info(io.github.butterflysmp.rpg.paper.content.BootLines.convertOnArrival(arrivals));
 
         // ZERO IS A DEFECT, NOT A QUIET NO-OP -- the same rule the loader counts above follow. Zero
         // here means no crafted item will ever become RPG gear, which in play is indistinguishable

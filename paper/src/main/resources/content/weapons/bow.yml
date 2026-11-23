@@ -1,0 +1,44 @@
+# THE BOW (PLAN-weapon-tiers.md, the vanilla bows). Ben, 2026-11-22, verbatim: "The vanilla bow and cross bow are the
+# wood/stone tier weapons"; "3. Bow at 14 and crossbow at 37"; "4. Both common and kinetic"; "5. Vanilla crafting
+# recipe and vanilla mob drops convert"; "1. Fine" (a 1 second full draw, a partial draw doing proportionally less);
+# "I want it to be as Vanilla as possible"; "I want to own the Quiver for the bow but not the crossbow."
+#
+# VANILLA DRAWS AND SHOOTS IT. It binds no right_click of ours (a right_click binding cancels vanilla's use, so the bow
+# would never draw; WeaponDefinition refuses one beside 'shot'). Its hit is the 'shot' trigger: no input names it, and
+# its on_hit lands where vanilla's arrow lands (VanillaShots), through the same sum as every weapon hit:
+#   sent = 14 x score/100 x enchant + class bonus + level bonus, x force (the draw, 0.1 to 1), x crit
+# "14 x force" is linear in EntityShootBowEvent's force: SEAT PLACEHOLDER 2026-11-22.
+#
+# THE QUIVER IS OURS (Ben). quiver_size 8, reload_ticks 60: reload_ticks is SEAT PLACEHOLDER 2026-11-22, short_bow's.
+# With the star on, the Nexus slot shows the loaded rounds as arrows and vanilla draws on them (Ben's idea); with his own
+# arrows in a slot vanilla picks first, each one taken is given back and a round spent. A round spent is gone: its
+# arrow cannot be picked up (the seat's ruling B, SEAT PLACEHOLDER OPEN FOR BEN).
+#
+# WEAR, BEN: "I'd rather have our unbreaking work on the two" (2026-11-22, the seat's ruling I). Vanilla's own wear
+# on it is cancelled; each shot that leaves costs one use by OUR rule, so our Unbreaking is consulted; a broken Bow
+# refuses to shoot (what vanilla took is given back) and is never destroyed.
+#
+# NO KNOCKBACK OF OURS (the seat's ruling K, on Ben's "as Vanilla as possible"): whatever vanilla's arrow does rides
+# the hit. OPEN FOR BEN beside his standing ruling of 2026-09-13 that a travelling ranged weapon authors knockback.
+#
+# craft_result: crafting a vanilla bow mints this weapon, and a plain bow reaching his inventory (a craft, a mob's drop)
+# converts on arrival with its vanilla enchantments dropped and counted (ArrivalClaims, the swords' route).
+
+id: bow
+display_name: "Bow"
+element: kinetic
+rarity: common
+class: ranger
+material: bow
+attack_damage: 14
+quiver_size: 8
+reload_ticks: 60
+ammo: arrow
+craft_result: bow
+triggers:
+  shot:
+    cast:
+      type: vanilla
+    on_hit:
+      - type: weapon_damage
+        element: kinetic

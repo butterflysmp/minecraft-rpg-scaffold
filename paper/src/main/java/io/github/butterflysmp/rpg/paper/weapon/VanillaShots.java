@@ -124,6 +124,7 @@ public final class VanillaShots {
 
         boolean offHand = event.getHand() == EquipmentSlot.OFF_HAND;
         int before = QuiverItems.loadedIn(bow, keys).orElse(0);
+        int damageBefore = WeaponDurability.damageOf(bow);   // OUR wear, read inline: vanilla's would land after the event
         ItemStack taken = event.getConsumable();
         VanillaShot.Consumable kind = consumableOf(taken, keys);
         boolean broken = WeaponDurability.isBroken(bow);
@@ -157,10 +158,10 @@ public final class VanillaShots {
         }
 
         adapters.log().info(String.format(Locale.ROOT,
-                "VANILLASHOT %s weapon=%s hand=%s took=%s rounds=%d->%d force=%.3f cancel=%b refund=%b paid=%b",
+                "VANILLASHOT %s weapon=%s hand=%s took=%s rounds=%d->%d force=%.3f cancel=%b refund=%b paid=%b damage=%d->%d",
                 player.getName(), weapon.id(), offHand ? "off" : "main", kind.name().toLowerCase(Locale.ROOT),
                 before, QuiverItems.loadedIn(bow, keys).orElse(0), event.getForce(), plan.cancel(), plan.refund(),
-                plan.quiverPaid()));
+                plan.quiverPaid(), damageBefore, WeaponDurability.damageOf(bow)));
     }
 
     /** One of what vanilla took, back into his inventory; what does not fit is dropped at his feet. */

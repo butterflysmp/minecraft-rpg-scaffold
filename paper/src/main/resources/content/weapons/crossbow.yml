@@ -1,0 +1,38 @@
+# THE CROSSBOW (PLAN-weapon-tiers.md, the vanilla bows). Ben, 2026-11-22, verbatim: "The vanilla bow and cross bow are
+# the wood/stone tier weapons"; "3. Bow at 14 and crossbow at 37"; "4. Both common and kinetic"; "5. Vanilla crafting
+# recipe and vanilla mob drops convert"; "2. The vanilla reload time"; "I want to own the Quiver for the bow but not the
+# crossbow."
+#
+# VANILLA CHARGES, LOADS AND SHOOTS IT (25 ticks, READ: floor(1.25 x 20)), from his own arrows. No quiver and no ammo
+# key: it never shows the Nexus mirror. It binds no right_click of ours, so onWeaponCrossbowLoad lets vanilla load it.
+# Its hit is the 'shot' trigger (VanillaShots), through the same sum as every weapon hit:
+#   sent = 37 x score/100 x enchant + class bonus + level bonus, x force (READ: a crossbow's is the constant 1), x crit
+# Its arrow's pickup is left as vanilla set it.
+#
+# WEAR, BEN: "I'd rather have our unbreaking work on the two" (2026-11-22, the seat's ruling I). Vanilla's own wear
+# on it is cancelled; each shot costs one use by OUR rule, so our Unbreaking is consulted; a broken Crossbow refuses
+# to shoot (its loaded arrow is given back) and is never destroyed.
+#
+# NO KNOCKBACK OF OURS (the seat's ruling K): left as vanilla's arrow does it. OPEN FOR BEN (see bow.yml).
+#
+# ITS ENCHANT POOL (the seat's ruling H): power and unbreaking only. deft_hands (requires: reload) and expanded_quiver
+# (requires: quiver) cannot reach it: it has neither quantity.
+#
+# craft_result: crafting a vanilla crossbow mints this weapon; a plain crossbow reaching his inventory converts on
+# arrival, its vanilla enchantments dropped and counted (ArrivalClaims, the swords' route).
+
+id: crossbow
+display_name: "Crossbow"
+element: kinetic
+rarity: common
+class: ranger
+material: crossbow
+attack_damage: 37
+craft_result: crossbow
+triggers:
+  shot:
+    cast:
+      type: vanilla
+    on_hit:
+      - type: weapon_damage
+        element: kinetic

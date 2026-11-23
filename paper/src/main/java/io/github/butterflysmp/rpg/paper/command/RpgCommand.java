@@ -299,6 +299,8 @@ public final class RpgCommand {
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .then(Commands.literal("show")
                                 .executes(ctx -> enchant(ctx, adapters, weapons, shields, armor, tools, EnchantOp.SHOW, 0, 0, 0, null)))
+                        .then(Commands.literal("pool")
+                                .executes(ctx -> enchant(ctx, adapters, weapons, shields, armor, tools, EnchantOp.POOL, 0, 0, 0, null)))
                         .then(Commands.literal("clear")
                                 .executes(ctx -> enchant(ctx, adapters, weapons, shields, armor, tools, EnchantOp.CLEAR, 0, 0, 0, null)))
                         .then(Commands.literal("candidate")
@@ -1869,7 +1871,7 @@ public final class RpgCommand {
     private static final int MAX_DEV_SLOT = 2;
 
     /** Which edit {@link #enchant} makes to the held weapon's enchant state. */
-    private enum EnchantOp { CANDIDATE, LEVEL, ACTIVE, DEACTIVATE, CLEAR, SHOW }
+    private enum EnchantOp { CANDIDATE, LEVEL, ACTIVE, DEACTIVATE, CLEAR, SHOW, POOL }
 
     /**
      * Edit the held weapon's enchant state, for testing. The stand-in for both of the things that
@@ -1910,6 +1912,15 @@ public final class RpgCommand {
             // has a single call site for the re-mint; see HeldGear.
             HeldGear gear = resolveHeldGear(player, held, weapons, shields, armor, tools, adapters);
             if (gear == null) return;   // resolveHeldGear has already said why
+
+            // THE ROLL POOL (2026-11-22, GATE-vanilla-bows: the seat's ruling H read on the server). The SAME list
+            // rollOnAcquire draws from (EnchantRollItems.poolFor): the class filter, then each enchant's requires:.
+            if (op == EnchantOp.POOL) {
+                player.sendMessage(Component.text("Pool: " + String.join(", ",
+                        io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.poolFor(gear.gear(), adapters)),
+                        NamedTextColor.GRAY));
+                return;
+            }
 
             EnchantState before = EnchantItems.read(held, adapters.keys());
 
@@ -2006,7 +2017,7 @@ public final class RpgCommand {
                     case ACTIVE -> before.withActive(slot, candidate);
                     case DEACTIVATE -> before.withoutActive(slot);
                     // Handled above and returned; listed so the switch stays exhaustive.
-                    case CLEAR, SHOW -> before;
+                    case CLEAR, SHOW, POOL -> before;   // POOL returned above, before any state was read
                 };
             } catch (IllegalArgumentException ex) {
                 // The model's own refusals, surfaced verbatim. Reachable for the cases the

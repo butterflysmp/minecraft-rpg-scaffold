@@ -98,3 +98,7 @@ gates:
 # (four pellets of 40, point up), BR6R2, BR7R2 and LL9R2 (the burn). It carries the ONE R0 and run sheet:
 # docs/gates/GATE-breacher-rework.md.
   - breacher-rework
+# vanilla-bows (2026-11-22, feat/nexus-never-ingredient to feat/vanilla-bows-content on 7f32aba5): the quiver in the
+# Nexus slot, the vanilla-driven Bow and Crossbow, ruling H's pools and ruling M's heal. It carries the ONE R0 and run
+# sheet for the stack: docs/gates/GATE-vanilla-bows.md.
+  - vanilla-bows
