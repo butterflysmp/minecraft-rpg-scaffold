@@ -194,11 +194,11 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             // (WeaponDefinition), so it is exactly the set QUIVER_SIZE reaches. Same gate, same refusal of universal.
             case RELOAD_TIME -> Gate.RANGER_ONLY;
             // A BEHAVIOUR acts on the hits of the weapon in the MAIN HAND that made them (B2), so a fighting class or universal.
-            case SHOCKWAVE, AIRBURST -> Gate.MAIN_HAND_ONLY;
+            case SHOCKWAVE, AIRBURST, GRANT_TRIGGER -> Gate.MAIN_HAND_ONLY;
         };
         boolean curved = switch (effect) {
             case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> true;
-            case DURABILITY, SHOCKWAVE, AIRBURST                                                            -> false;
+            case DURABILITY, SHOCKWAVE, AIRBURST, GRANT_TRIGGER                                                            -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
@@ -210,6 +210,18 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         }
         requireGate(id, effect, gearClass, gate);
         requireBehaviour(id, effect, maxLevel, behaviour);
+        // D1 (2026-11-23): a trigger is granted to ONE weapon, so the enchant must name it (weapon:), and the grant must
+        // name the same one.
+        if (behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger grant) {
+            if (weapon == null) {
+                throw new IllegalArgumentException("enchant '" + id + "' has effect: grant_trigger and so must be"
+                        + " weapon-specific (weapon: <id>): a trigger is granted to one weapon");
+            }
+            if (!grant.weaponId().equals(weapon)) {
+                throw new IllegalArgumentException("enchant '" + id + "' grants to '" + grant.weaponId()
+                        + "' but declares weapon: " + weapon);
+            }
+        }
     }
 
     /** Which gates an effect's mechanism can actually be read through. See {@link #requireGate}. */
@@ -388,6 +400,10 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                     ? s.levels() : -1;
             case AIRBURST -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst a
                     ? a.levels() : -1;
+            // A granted trigger has no per-level list of its own: any max_level fits it. It must be WEAPON-SPECIFIC (it is granted
+            // to ONE weapon), refused by name below.
+            case GRANT_TRIGGER -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger
+                    ? maxLevel : -1;
             case DURABILITY, DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> null;
         };
         if (levels == null) {

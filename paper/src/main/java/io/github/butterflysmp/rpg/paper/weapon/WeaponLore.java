@@ -78,6 +78,16 @@ public final class WeaponLore {
     public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements,
                                         OptionalInt loaded, OptionalInt stampedCapacity,
                                         OptionalInt score) {
+        return build(weapon, elements, loaded, stampedCapacity, score, List.of());
+    }
+
+    /**
+     * The same, with the triggers the item's ACTIVE enchants GRANT it (Lapis Crystal's D1, 2026-11-23, B5): rendered
+     * after the weapon's own, as any ability block is, and only while active ({@code GrantedTriggers.granted}).
+     */
+    public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements,
+                                        OptionalInt loaded, OptionalInt stampedCapacity,
+                                        OptionalInt score, List<TriggerBinding> granted) {
         List<Component> lore = new ArrayList<>();
 
         // *** THE COMPOSED DOOR, ASKED ONCE AND USED THREE TIMES: the score line, the class-damage
@@ -146,7 +156,9 @@ public final class WeaponLore {
         // The split is by DamagePayload, never by input name -- and it is the SAME call the cooldown
         // scaler makes, so a weapon cannot render as one thing and behave as the other.
         boolean statBlockPlaced = false;
-        for (TriggerBinding binding : weapon.triggers()) {
+        List<TriggerBinding> triggers = new ArrayList<>(weapon.triggers());
+        triggers.addAll(granted);
+        for (TriggerBinding binding : triggers) {
             AbilityDefinition ability = binding.ability();
             var damage = WeaponLoreLines.triggerDamage(ability.onHit(), weapon.attackDamage());
             boolean isBasicAttack = DamagePayload.isBasicAttack(ability.onHit());

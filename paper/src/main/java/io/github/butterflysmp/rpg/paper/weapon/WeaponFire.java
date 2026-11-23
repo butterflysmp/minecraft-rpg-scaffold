@@ -129,7 +129,11 @@ public final class WeaponFire {
         // interact handler would cancel vanilla -- doors and chests would stop working with it in
         // hand. weaponService.fire answers the same question a few lines down; asking it early is
         // what keeps the broken gate from widening the set of inputs this weapon consumes.
-        Optional<TriggerBinding> binding = weapon.trigger(input);
+        // THE WEAPON'S OWN TRIGGER, OR ONE AN ACTIVE ENCHANT GRANTS IT (Lapis Crystal's D1, 2026-11-23). One resolver
+        // (GrantedTriggers) for this path and the tooltip; the held weapon's behaviours are read as every cast reads them.
+        Optional<TriggerBinding> binding = io.github.butterflysmp.rpg.core.weapon.GrantedTriggers.resolve(weapon, input,
+                new io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld(player.getWorld(), adapters)
+                        .behavioursOf(player.getUniqueId()));
         if (binding.isEmpty()) return Optional.empty();
 
         // Q7's INPUT COUNTER. The click arrived and this weapon binds it -- BEFORE the broken gate,
@@ -209,7 +213,7 @@ public final class WeaponFire {
         // and reading the store after the hop would be the cross-thread read this split prevents.
         CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats());
 
-        Optional<CastResult> result = weaponService.fire(caster, weapon, input, aim);
+        Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim));
         result.ifPresent(r -> {
             if (r instanceof CastResult.Success success) {
                 // Q7's FIRE COUNTER, the other half of the pair. Reached only on a real Success --

@@ -1,0 +1,37 @@
+# LAPIS CRYSTAL -- the Lapis Staff's weapon-specific enchant (the seat's brief of 2026-11-23, PR D; split D1/D2/D3 approved
+# the same day). Ben, verbatim: "I have a weapon specific enchant for the Lapis Staff: Lapis Crystal. This adds a new left
+# click ability to the lapis staff that throws an orb out about 12 blocks in the direction the player is looking and it
+# floats there for 15s. Shooting this crystal with the Right Click ability will cause the crystal to shoot all enemies
+# within a 8 block range for 20/30/40% of the damage of the right click. That number should be displayed in the actual
+# number not the percentage." / "1. The orb stays for the entire duration 2. One orb at a time cooldown of 30s 3. Costs 30
+# mana"
+#
+# D1, THIS FILE'S FIRST SHAPE: THE GRANTED TRIGGER. While Lapis Crystal is the ACTIVE candidate of the staff's weapon slot
+# at level 1 or more, a LEFT CLICK with the staff casts the ability below (GrantedTriggers, WeaponFire). lapis_staff.yml
+# declares no left_click and is not edited (READ: a left click with the staff did nothing of ours; WeaponFire returned
+# empty and vanilla swung the breeze rod). The ability's id is lapis_crystal/left_click, so its 600-tick cooldown is its
+# own, apart from the Lapis Beam's 20.
+display_name: "Lapis Crystal"              # BEN
+icon: heart_of_the_sea                     # SEAT PLACEHOLDER 2026-11-23 (B7)
+max_level: 3                               # BEN: three percentages, so three levels
+effect: grant_trigger
+class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
+weapon: lapis_staff                        # W1: weapon-specific, the Lapis Staff's slot 0
+grant_trigger:
+  input: left_click                        # BEN: "a new left click ability"
+  ability:
+    name: "Lapis Crystal"                  # SEAT PLACEHOLDER 2026-11-23: the enchant's name
+    description:                           # SEAT PLACEHOLDER 2026-11-23
+      - "Throws a lapis crystal"
+      - "that floats where it lands."
+    cooldown_ticks: 600                    # BEN: "One orb at a time cooldown of 30s" = 600 ticks
+    cost:
+      resource: mana
+      amount: 30                           # BEN: "Costs 30 mana"
+    # D1'S STUB: a body-less projectile that ends at 12 blocks (speed 1.2 x lifetime 10) and lands nothing. D2 replaces
+    # it with the orb's own cast.
+    cast:
+      type: projectile
+      speed: 1.2
+      gravity: 0
+      max_lifetime_ticks: 10

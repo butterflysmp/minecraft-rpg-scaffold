@@ -121,10 +121,10 @@ class UniqueSlotContentTest {
         gear.addAll(a.all());
         gear.addAll(t.all());
         gear.addAll(x.all());
-        EnchantRegistry real = new EnchantLoader(q, id -> elements.find(id).isPresent(),
-                id -> w.find(id).map(GearItems::gearClassOf), false).loadAll(new File(c, "enchants"));
-        EnchantRegistry dev = new EnchantLoader(q, id -> elements.find(id).isPresent(),
-                id -> w.find(id).map(GearItems::gearClassOf), true).loadAll(new File(c, "enchants"));
+        EnchantRegistry real = EnchantLoader.withWeapons(q, id -> elements.find(id).isPresent(),
+                w::find, false).loadAll(new File(c, "enchants"));
+        EnchantRegistry dev = EnchantLoader.withWeapons(q, id -> elements.find(id).isPresent(),
+                w::find, true).loadAll(new File(c, "enchants"));
         CandidateCascade cascade = new EnchantCandidatesLoader(q).load(new File(c, "enchant_candidates.yml"));
         return new Loaded(gear, real, dev, cascade, w.size(), s.size(), a.size(), t.size(), x.size());
     }
@@ -143,8 +143,8 @@ class UniqueSlotContentTest {
         assertEquals(6, l.accessories());
         assertEquals(60, l.gear().size());
         assertEquals(60, MASTER_POOLS.size(), "the snapshot covers the same 60");
-        assertEquals(13, l.real().size(), "a real server: the eleven, Kinetic Tremors and Airburst Flames");
-        assertEquals(13, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
+        assertEquals(14, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames and Lapis Crystal");
+        assertEquals(14, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
@@ -221,7 +221,8 @@ class UniqueSlotContentTest {
         for (GearDefinition g : l.gear()) {
             var cls = GearItems.gearClassOf(g);
             if (cls == null) continue;
-            assertEquals(g.id().equals("living_lantern") ? List.of("airburst_flames") : List.of(),
+            assertEquals(g.id().equals("living_lantern") ? List.of("airburst_flames")
+                            : g.id().equals("lapis_staff") ? List.of("lapis_crystal") : List.of(),
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }

@@ -372,3 +372,84 @@ lines). It supersedes `GATE-unique-enchant-slot.md`'s R0 and its US1-US7 (never 
 dated note in both files); that gate's R1, setup, US8, BX1 and BX2 ride along unchanged. The scenario count is 351 across
 43 gates (`SelfTestScenariosTest`, recounted from the files). R0b was run before the commit against a jar built from the
 working tree: see the gate's last section.
+
+## 7. THE SEAT'S RULINGS ON THE FOUR QUESTIONS (its message of 2026-11-23, after reading A, B, C, E and the gate)
+
+1. **VOLLEYS (beside B2, section 3): ACCEPTED, ONE RULE FOR BOTH.** A weapon-pressed volley re-reads the held weapon's
+   behaviours PER SHOT exactly as it re-reads the gear score per shot (`CastExecutor.volley`). "The weapon stamped on the
+   cast" means, for a volley, the weapon in hand at each shot. One rule, not two.
+2. **WHAT A SHOCKWAVE INHERITS: ACCEPTED AS BUILT, OPEN FOR BEN** (section 10's list, in plain words). Every gate row
+   that predicts a shockwave names each inherited term and gives the crit reading as the second allowed one.
+3. **W1's extra refusal** (a `class:` that could never match the named weapon): ACCEPTED.
+4. **THE DEV COMMAND staging any enchant in any slot: ACCEPTED for a dev command.** No row uses it as the proof of W2;
+   the ROLLED items of the gate's column rows are that proof (the gate says so beside them).
+5. **An area's tick not counting as a hit (`asNotAHit`): ACCEPTED, OPEN FOR BEN.**
+
+## 8. A CORRECTION: LL9R2 WAS READ, NOT OWED (section 2's "FOR THE SEAT" was wrong)
+
+Section 2 said `GATE-breacher-rework.md`'s LL9R2 was "OWED, never run: that gate booted once and no row ran". **That is
+false.** The file's own *READINGS, 2026-11-22, THE SECOND BOOT (`52579e8a`)* records LL9R2 **AS PREDICTED** (S at P+40
+`75.000/100.000`, at P+80 `65.000/100.000`, three `DOTTICK … sent=5.000 cap=7.000`). I read the first boot's status line
+(which ran no row) and the row's heading ("OWED", written before either boot) and never reached the readings section.
+The seat's record was right. The row's purpose was therefore READ on the cone; what PR B changes is only that the row
+**cannot be re-run as written**, and that is the dated note added to that file on this branch. Section 2 is kept as
+written; this is its correction.
+
+## 9. PR D1 — THE ENCHANT-GRANTED TRIGGER (`feat/lapis-crystal-trigger`, on #256)
+
+**The engine:** `EnchantBehaviour.GrantTrigger(weaponId, input, ability)`, `effect: grant_trigger`. The block's
+`ability:` is the EXISTING grammar (`AbilitySchema`: name, description, cooldown_ticks, cost, on_cast, cast, on_hit); the
+ability's id is `<enchant>/<input>` (`lapis_crystal/left_click`), so its cooldown is its OWN, apart from the Lapis Beam's
+(`AbilityService` keys cooldowns by ability id, READ). **One resolver, `core GrantedTriggers`,** for the firing path
+(`WeaponFire.attempt`, which now fires `WeaponService.fire(caster, binding, aim)`) and the tooltip (`WeaponItems.applyLore`
+-> `WeaponLore.build(…, granted)`): the weapon's own binding wins; otherwise an ACTIVE grant (B2: the active candidate at
+level 1 or more, read by `behavioursOf`) whose `weaponId` is THIS weapon. A granted trigger is a weapon trigger: it
+carries the level bonus and the weapon's behaviours, as the beam does.
+
+**The loader** (`EnchantLoader.withWeapons`, now the server's: it is handed the weapons themselves, their class for W1 and
+their gestures and quiver for a grant) refuses by name: an enchant that is not weapon-specific; a weapon it cannot see;
+an input other than left_click or right_click; a weapon that already binds the gesture; a weapon with a quiver; an
+ability with no whole-number `cooldown_ticks`. The record refuses a grant whose weapon is not the enchant's `weapon:`.
+
+**READ, AND IT COLLIDES WITH NOTHING:** `lapis_staff.yml` binds only `right_click`; a left click reaches
+`WeaponFire.attempt` (`WeaponSwingListener.onSwing`, after the quiver's reload, which only a quiver weapon takes) and,
+with no binding, returned empty, so vanilla swung the breeze rod. `lapis_staff.yml` is not edited.
+
+**D1's cast is a STUB** (a body-less projectile at 1.2 a tick for 10 ticks, landing nothing); D2 replaces it with the orb.
+
+**The YAML as committed (D1), comments stripped:**
+
+```yaml
+display_name: "Lapis Crystal"
+icon: heart_of_the_sea
+max_level: 3
+effect: grant_trigger
+class: universal
+weapon: lapis_staff
+grant_trigger:
+  input: left_click
+  ability:
+    name: "Lapis Crystal"
+    description:
+      - "Throws a lapis crystal"
+      - "that floats where it lands."
+    cooldown_ticks: 600
+    cost:
+      resource: mana
+      amount: 30
+    cast:
+      type: projectile
+      speed: 1.2
+      gravity: 0
+      max_lifetime_ticks: 10
+```
+
+**Tests:** `core/.../weapon/GrantedTriggersTest` (5: granted when active; absent when not; absent on another weapon
+carrying the same state, as the dev command can stage it; a weapon's own trigger never replaced; its own id);
+`paper/.../LapisCrystalContentTest` (3: Ben's numbers as content; the tooltip shows the grant only while active; six
+refusals by name and a loader that cannot see the weapons). The shipped-roster loads in `EnchantLoaderTest`,
+`UniqueSlotContentTest` and `AirburstFlamesContentTest` now use `withWeapons`; the roster is 14; the Lapis Staff's weapon
+pool is `[lapis_crystal]`. **Mutations, each `marker present: 1  original gone: 0  line delta: 0`, restored and `cmp`
+byte-identical, each red:** MUTGRANTWEAPON (the weapon-id check: the other-weapon row), MUTOWNFIRST (own binding first: 2
+rows), MUTGRANTQUIVER, MUTGRANTBOUND (each its refusal row), MUTGRANTLORE (the tooltip row). **UNMUTATED:**
+`WeaponFire`'s use of the resolver (server-side; the gate's throw row is its witness).

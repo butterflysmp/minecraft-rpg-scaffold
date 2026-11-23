@@ -50,6 +50,26 @@ public final class EnchantLoader {
     private final java.util.function.Function<String, java.util.Optional<GearClass>> weaponClass;
 
     /**
+     * D1 (2026-11-23): a loaded weapon's whole definition by id, so a granted trigger can be checked against the weapon's
+     * own gestures and quiver. Empty from the class-only constructor, which therefore refuses every grant_trigger by name.
+     */
+    private java.util.function.Function<String, java.util.Optional<io.github.butterflysmp.rpg.core.weapon.WeaponDefinition>>
+            weaponDefinition = id -> java.util.Optional.empty();
+
+    /**
+     * THE LOADER THE SERVER USES (since D1): elements, and the WEAPONS themselves, from which each weapon's class is
+     * read ({@code GearClass.of}) for W1 and its gestures and quiver for a granted trigger.
+     */
+    public static EnchantLoader withWeapons(Logger log, java.util.function.Predicate<String> elementExists,
+            java.util.function.Function<String, java.util.Optional<io.github.butterflysmp.rpg.core.weapon.WeaponDefinition>> weapons,
+            boolean dev) {
+        EnchantLoader loader = new EnchantLoader(log, elementExists,
+                id -> weapons.apply(id).map(w -> GearClass.of(w.weaponClass())), dev);
+        loader.weaponDefinition = weapons;
+        return loader;
+    }
+
+    /**
      * @param weaponClass a loaded weapon's class by id, empty when the id is not a loaded weapon (weapons load first, in
      *                    {@code RpgPlugin}, since the columns were re-cut)
      */
@@ -134,7 +154,7 @@ public final class EnchantLoader {
                 // Bukkit registry that this loader deliberately cannot.
                 s.getString("icon", EnchantDefinition.DEFAULT_ICON),
                 requires(s.getString("requires"), id),
-                element, weapon, behaviour(s, id));
+                element, weapon, behaviour(s, id, weapon));
     }
 
     /**
@@ -155,7 +175,7 @@ public final class EnchantLoader {
      *   visual: tremor_wave           # optional: presented once at the origin
      * </pre>
      */
-    private io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour(ConfigurationSection s, String id) {
+    private io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour(ConfigurationSection s, String id, String weapon) {
         java.util.List<String> present = new java.util.ArrayList<>();
         for (String key : BEHAVIOUR_BLOCKS) if (s.contains(key)) present.add(key);
         if (present.isEmpty()) return null;
@@ -165,6 +185,7 @@ public final class EnchantLoader {
         String name = present.get(0);
         ConfigurationSection b = s.getConfigurationSection(name);
         if (b == null) throw new IllegalArgumentException("enchant '" + id + "': " + name + ": must be a block of keys");
+        if (name.equals("grant_trigger")) return grantTrigger(b, id, weapon);
         String element = requiredString(b, "element", id);
         if (!elementExists.test(element)) {
             throw new IllegalArgumentException("enchant '" + id + "' " + name + ": element '" + element
@@ -189,8 +210,72 @@ public final class EnchantLoader {
         }
     }
 
+    /**
+     * THE GRANTED TRIGGER (Lapis Crystal's D1, 2026-11-23). The block is an {@code input} and an {@code ability:} in the
+     * SAME grammar a weapon's trigger uses ({@code AbilitySchema}): name, description, cooldown_ticks, cost, on_cast, cast,
+     * on_hit. Its id is {@code <enchant id>/<input>} (its own cooldown); its element is the weapon's. Refused by name:
+     * an enchant that is not weapon-specific; a weapon this loader cannot see; an input that is not left_click or
+     * right_click; a weapon that already binds that gesture; a weapon with a QUIVER (left click is its reload, and its
+     * right click its shot).
+     *
+     * <pre>
+     * grant_trigger:
+     *   input: left_click
+     *   ability:
+     *     name: "Lapis Crystal"
+     *     cooldown_ticks: 600
+     *     cost: { resource: mana, amount: 30 }
+     *     cast: { type: ... }
+     * </pre>
+     */
+    private io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour grantTrigger(ConfigurationSection b, String id,
+                                                                                   String weaponId) {
+        if (weaponId == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' grant_trigger: is granted to one weapon, so the"
+                    + " enchant must declare weapon: <id>");
+        }
+        io.github.butterflysmp.rpg.core.weapon.WeaponDefinition weapon = weaponDefinition.apply(weaponId).orElseThrow(() ->
+                new IllegalArgumentException("enchant '" + id + "' grant_trigger: weapon '" + weaponId
+                        + "' is not a weapon this loader can see, so its gestures cannot be checked"));
+        String input = requiredString(b, "input", id);
+        if (!GRANTABLE_INPUTS.contains(input)) {
+            throw new IllegalArgumentException("enchant '" + id + "' grant_trigger: input '" + input + "' must be one of "
+                    + GRANTABLE_INPUTS);
+        }
+        if (weapon.trigger(input).isPresent()) {
+            throw new IllegalArgumentException("enchant '" + id + "' grant_trigger: weapon '" + weaponId
+                    + "' already binds " + input);
+        }
+        if (weapon.hasQuiver()) {
+            throw new IllegalArgumentException("enchant '" + id + "' grant_trigger: weapon '" + weaponId
+                    + "' has a quiver (left click is its reload), so no trigger may be granted to it");
+        }
+        ConfigurationSection a = b.getConfigurationSection("ability");
+        if (a == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' grant_trigger: is missing its ability: block");
+        }
+        if (!a.isInt("cooldown_ticks")) {
+            throw new IllegalArgumentException("enchant '" + id + "' grant_trigger: ability is missing a whole-number"
+                    + " 'cooldown_ticks'");
+        }
+        io.github.butterflysmp.rpg.core.ability.AbilityDefinition ability = new io.github.butterflysmp.rpg.core.ability.AbilityDefinition(
+                id + "/" + input,
+                a.getString("name", id),
+                weapon.element(),
+                a.getInt("cooldown_ticks"),
+                AbilitySchema.parseCost(a.getConfigurationSection("cost")),
+                AbilitySchema.parseCast(a.getConfigurationSection("cast")),
+                AbilitySchema.parseEffects(a.getMapList("on_hit")),
+                a.getStringList("description"),
+                AbilitySchema.parseCastVisuals(a.getMapList("on_cast")));
+        return new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger(weaponId, input, ability);
+    }
+
+    /** The gestures an enchant may grant (D1). */
+    static final java.util.List<String> GRANTABLE_INPUTS = java.util.List.of("left_click", "right_click");
+
     /** Every behaviour block a file may declare, one at most (B1). */
-    private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst");
+    private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst", "grant_trigger");
 
     private static int requiredInt(ConfigurationSection b, String key, String id) {
         if (!b.isInt(key)) {

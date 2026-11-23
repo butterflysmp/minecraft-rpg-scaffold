@@ -208,6 +208,17 @@ public final class EnchantEffectLine {
                 yield w.hits() + " hits on one foe in " + number(w.windowTicks() / 20.0) + "s: a "
                         + number(w.damageAt(level)) + " damage shockwave, " + number(w.radiusAt(level)) + " blocks";
             }
+            // A GRANTED TRIGGER (D1, B5): the gesture and the ability's name, its cost and cooldown as the tooltip's own
+            // cadence line prints them. WORDING: SEAT PLACEHOLDER 2026-11-23, OPEN FOR BEN.
+            case GRANT_TRIGGER -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                String cadence = io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines.cadenceLine(
+                        g.ability().cooldownTicks(), g.ability().cost());
+                yield "grants " + io.github.butterflysmp.rpg.core.weapon.WeaponLoreLines.inputLabel(g.input()) + ": "
+                        + g.ability().displayName() + (cadence.isBlank() ? "" : " (" + cadence + ")");
+            }
             // AN AIRBURST (B5): the level's burst damage and the two distances, as authored. WORDING: SEAT PLACEHOLDER
             // 2026-11-23, OPEN FOR BEN.
             case AIRBURST -> {

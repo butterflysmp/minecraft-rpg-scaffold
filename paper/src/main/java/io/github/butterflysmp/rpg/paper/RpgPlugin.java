@@ -303,8 +303,9 @@ public final class RpgPlugin extends JavaPlugin {
         // a loaded weapon, and its class must be able to match it. Nothing between the elements and here reads the
         // enchants. A dev_ enchant loads only on a dev server. Then Ben's candidate cascade (ruling V3), carried on the
         // registry beside the roster the roll draws from.
-        this.enchants = new EnchantLoader(getLogger(), id -> elements.find(id).isPresent(),
-                id -> weapons.find(id).map(io.github.butterflysmp.rpg.paper.weapon.GearItems::gearClassOf), devServer)
+        // Since D1 (2026-11-23) the loader is handed the weapons themselves (withWeapons): their class for W1, and their
+        // own gestures and quiver for a granted trigger.
+        this.enchants = EnchantLoader.withWeapons(getLogger(), id -> elements.find(id).isPresent(), weapons::find, devServer)
                 .loadAll(new File(contentDir, "enchants"));
         this.enchants.setCandidates(new io.github.butterflysmp.rpg.paper.content.EnchantCandidatesLoader(getLogger())
                 .load(new File(contentDir, "enchant_candidates.yml")));

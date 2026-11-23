@@ -253,11 +253,16 @@ public final class WeaponItems {
         // THE COUNT COMES OFF THE META BEING BUILT, which is why the stamp must already have
         // happened -- see the ordering note in mint(). At a re-mint carryInstanceData has run first,
         // so this reads the CARRIED count and not the freshly minted full one.
+        EnchantState state = EnchantItems.read(meta, adapters.keys());
+        // D1 (2026-11-23, B5): a trigger an ACTIVE enchant grants this weapon shows as any ability does, and only while
+        // active. The same resolver the firing path asks (GrantedTriggers), over the same behaviour reading.
+        List<io.github.butterflysmp.rpg.core.weapon.TriggerBinding> granted =
+                io.github.butterflysmp.rpg.core.weapon.GrantedTriggers.granted(weapon,
+                        BehaviourItems.activeOf(state, adapters.enchants()::find));
         List<Component> base = WeaponLore.build(weapon, adapters.elements(),
                 QuiverItems.loadedInMeta(meta, adapters.keys()),
                 QuiverItems.capacityInMeta(meta, adapters.keys()),
-                GearScoreItems.readMeta(meta, adapters.keys()));
-        EnchantState state = EnchantItems.read(meta, adapters.keys());
+                GearScoreItems.readMeta(meta, adapters.keys()), granted);
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
 
         // THE GLINT. Our enchants live in the PDC, not in the item's vanilla enchantment list, so
