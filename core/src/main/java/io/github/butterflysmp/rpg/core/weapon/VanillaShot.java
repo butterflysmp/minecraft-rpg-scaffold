@@ -61,6 +61,22 @@ public final class VanillaShot {
     }
 
     /**
+     * THE MIRROR'S LAST ARROW (the seat's follow-up 2, 2026-11-22): does the shot path put the Nexus item back itself?
+     * Only when the shot took the MIRROR and no Nexus item is left. READ, the pinned jar: {@code
+     * ProjectileWeaponItem.useAmmo} splits one from the live stack and, once it is empty, {@code Inventory.removeItem}
+     * takes it out, so a mirror of ARROW x 1 is gone when the shot event fires, on a shot that leaves and on one we
+     * cancel alike. The caller converges the star into his locked slot (the slot it was taken from is not in the event)
+     * and the redraw then draws the star at 0 rounds or the mirror at its count on a cancel. Its own log line, never the
+     * heal's: NEXUSHEAL keeps meaning "something else removed it".
+     *
+     * @param taken      what vanilla took for this shot
+     * @param nexusFound how many items carrying the Nexus tag are left in his inventory after vanilla took it
+     */
+    public static boolean restoresNexus(Consumable taken, int nexusFound) {
+        return taken == Consumable.MIRROR && nexusFound == 0;
+    }
+
+    /**
      * The charge term of the hit's sum: the shot's force, never above 1. READ: a bow's force is its draw power, 0.1 to 1
      * ({@code BowItem.getPowerForTime}, passed through {@code shoot} to the event); a crossbow's is the constant 1
      * ({@code CrossbowItem.performShooting}). So "14 x force" (SEAT PLACEHOLDER) and the Crossbow's flat 37 are one rule.

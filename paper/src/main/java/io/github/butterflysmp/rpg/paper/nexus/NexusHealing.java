@@ -43,7 +43,7 @@ public final class NexusHealing {
     }
 
     /** Every item carrying the Nexus tag, in any slot (armour and the off hand included). */
-    static int countNexus(PlayerInventory inventory, Keys keys) {
+    public static int countNexus(PlayerInventory inventory, Keys keys) {
         int found = 0;
         for (int index = 0; index < inventory.getSize(); index++) {
             if (NexusItems.isNexus(inventory.getItem(index), keys)) found++;

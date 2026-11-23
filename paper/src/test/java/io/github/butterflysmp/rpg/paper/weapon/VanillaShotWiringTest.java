@@ -135,4 +135,63 @@ class VanillaShotWiringTest {
         assertTrue(body("weapon/PlumeDraw.java", "private Optional<WeaponDefinition> drawWeapon(ItemStack item) {")
                 .contains(".filter(PlumeDraw::drawManaged);"));
     }
+
+    // ------------------------------------------------------------------ the seat's follow-ups 2 and 3, 2026-11-22
+
+    private static final String SHOT = "public void onShot(EntityShootBowEvent event) {";
+
+    /**
+     * THE MIRROR'S LAST ARROW: put back by the shot path BEFORE the redraw that draws it, so the redraw finds an item to
+     * draw on. The decision is core's (VanillaShotTest); the order is pinned here, since redraw returns at once when it
+     * finds no Nexus item.
+     */
+    @Test
+    void theShotRestoresTheTakenNexusItemBeforeItRedraws() throws IOException {
+        String shot = body("weapon/VanillaShots.java", SHOT);
+        int restore = shot.indexOf("restoreTakenNexus(player, kind, keys, profiles, adapters.log());");
+        int redraw = shot.indexOf("if (plan.cancel() || kind == VanillaShot.Consumable.MIRROR) NexusMirror.redraw(player, keys);");
+        assertTrue(restore > 0 && redraw > restore, "restore at " + restore + ", redraw at " + redraw);
+
+        String mirror = body("listener/RpgListeners.java", "public void onMirrorShot(EntityShootBowEvent event) {");
+        int restoreM = mirror.indexOf("VanillaShots.restoreTakenNexus(player,");
+        int redrawM = mirror.indexOf("if (nexus) io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, adapters.keys());");
+        assertTrue(restoreM > 0 && redrawM > restoreM, "onMirrorShot: restore at " + restoreM + ", redraw at " + redrawM);
+    }
+
+    /** The heal's own converge call, into his locked slot, and its OWN line: NEXUSHEAL keeps meaning "something else". */
+    @Test
+    void theRestoreUsesTheHealsConvergeAndItsOwnLine() throws IOException {
+        String restore = body("weapon/VanillaShots.java", "public static void restoreTakenNexus(");
+        assertTrue(restore.contains(
+                "if (!VanillaShot.restoresNexus(taken, NexusHealing.countNexus(player.getInventory(), keys))) return;"), restore);
+        assertTrue(restore.contains(".orElse(NexusLock.DEFAULT_LOCKED_SLOT);"), restore);
+        assertTrue(restore.contains("NexusSlots.converge(player, keys, slot);"), restore);
+        assertTrue(restore.contains("log.info(\"NEXUSRESTORE player=\" + player.getName() + \" slot=\" + slot + \" cause=shot\");"),
+                restore);
+        assertFalse(restore.contains("NEXUSHEAL"), "the restore must not write the heal's line");
+    }
+
+    /** THE CROSSBOW'S CHARGE AFTER THE SHOT (follow-up 3): its own line, so the committed VANILLASHOT form is unchanged. */
+    @Test
+    void theShotLogsTheCrossbowsChargeOnItsOwnLine() throws IOException {
+        String shot = body("weapon/VanillaShots.java", SHOT);
+        assertTrue(shot.contains("if (bow.getItemMeta() instanceof CrossbowMeta crossbow) {"), shot);
+        assertTrue(shot.contains("\"CROSSBOWCHARGE \" + player.getName() + \" weapon=\" + weapon.id()"), shot);
+        assertTrue(shot.contains("\" charged=\" + crossbow.hasChargedProjectiles()"), shot);
+    }
+
+    /** /rpg rounds (follow-up 2(c)): dev server only, as /rpg mining is, and through setLoaded, the write-and-render door. */
+    @Test
+    void theRoundsCommandIsDevServerOnlyAndWritesThroughSetLoaded() throws IOException {
+        String command = source("command/RpgCommand.java");
+        int literal = command.indexOf(".then(Commands.literal(\"rounds\")");
+        assertTrue(literal > 0, "the rounds literal is not found");
+        String next = command.substring(literal, command.indexOf('\n', command.indexOf('\n', literal) + 1));
+        assertTrue(next.contains(
+                ".requires(source -> MiningDevCommand.permitted(source.getSender().hasPermission(Permissions.DEV), devServer))"),
+                "the line after the literal must gate it: " + next);
+        String set = body("command/RpgCommand.java", "private static int setRounds(");
+        assertTrue(set.contains("QuiverItems.setLoaded(meta, weapon.get(), adapters, player.getUniqueId(), count)"), set);
+        assertTrue(set.contains("NexusMirror.redraw(player, adapters.keys());"), set);
+    }
 }

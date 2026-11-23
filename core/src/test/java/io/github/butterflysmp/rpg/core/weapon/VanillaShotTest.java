@@ -15,6 +15,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class VanillaShotTest {
 
+    // ------------------------------------------------------------------ the mirror's last arrow (the seat's follow-up 2)
+
+    /**
+     * THE SHOT TOOK THE MIRROR'S LAST ARROW: the shot path puts the Nexus item back itself, in the same tick. READ, the
+     * pinned jar: {@code ProjectileWeaponItem.useAmmo} splits one from the live stack and, once it is empty, calls
+     * {@code Inventory.removeItem}, so at ARROW x 1 the slot holds nothing when the shot event fires. Without this the star
+     * was absent until the next beat's heal, and the heal's line would have claimed that something else removed it.
+     */
+    @Test
+    void theMirrorTakenAndNoneLeftIsRestored() {
+        assertTrue(VanillaShot.restoresNexus(Consumable.MIRROR, 0));
+    }
+
+    /** The mirror taken from a stack of more than one: the item is still there, and the redraw alone draws the count. */
+    @Test
+    void theMirrorTakenWithTheItemStillThereIsLeftToTheRedraw() {
+        assertFalse(VanillaShot.restoresNexus(Consumable.MIRROR, 1));
+    }
+
+    /**
+     * His own arrow taken and no Nexus item found: NOT this path's business. The shot did not remove it (a star switched
+     * off has none, and anything else that removed it is the heal's to report, NEXUSHEAL meaning "something removed it").
+     */
+    @Test
+    void anotherConsumableTakenWithNoneFoundIsNotRestoredByTheShot() {
+        assertFalse(VanillaShot.restoresNexus(Consumable.PLAIN_ARROW, 0));
+        assertFalse(VanillaShot.restoresNexus(Consumable.OTHER, 0));
+    }
+
     // ------------------------------------------------------------------ the Bow (a quiver), main hand
 
     /** Ruling 7: the mirror paid; a round spent, nothing given back (the slot is re-drawn), the arrow unretrievable. */

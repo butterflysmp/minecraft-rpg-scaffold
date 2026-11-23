@@ -499,7 +499,7 @@ public final class RpgListeners implements Listener {
         this.weaponService = weaponService;
         this.adapters = adapters;
         this.plumeDraw = new PlumeDraw(weapons, adapters, weaponService, cooldowns, fireCadence);
-        this.vanillaShots = new io.github.butterflysmp.rpg.paper.weapon.VanillaShots(adapters, weapons, cooldowns);
+        this.vanillaShots = new io.github.butterflysmp.rpg.paper.weapon.VanillaShots(adapters, weapons, cooldowns, profiles);
         this.recipeCatalogue = new RecipeCatalogue(adapters);
         this.healthSystem = healthSystem;
         this.nameplates = nameplates;
@@ -1576,6 +1576,9 @@ public final class RpgListeners implements Listener {
             }
             case LEAVE -> { }
         }
+        // THE MIRROR'S LAST ARROW (the seat's follow-up 2): a shot that took it leaves no Nexus item; put back first.
+        if (nexus) io.github.butterflysmp.rpg.paper.weapon.VanillaShots.restoreTakenNexus(player,
+                io.github.butterflysmp.rpg.core.weapon.VanillaShot.Consumable.MIRROR, adapters.keys(), profiles, adapters.log());
         if (nexus) io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, adapters.keys());
     }
 
