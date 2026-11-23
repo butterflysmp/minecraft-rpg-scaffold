@@ -74,6 +74,21 @@ class VanillaShotTest {
         }
     }
 
+    // ------------------------------------------------------------------ a broken weapon (ruling I, Ben's)
+
+    /** A broken Bow or Crossbow refuses: cancelled, what vanilla took given back, nothing spent, never left to vanilla. */
+    @Test
+    void aBrokenWeaponRefusesAndGivesBackWhatVanillaTook() {
+        for (boolean quiver : new boolean[] {true, false}) {
+            assertEquals(new Plan(true, true, false, false, false), VanillaShot.of(true, false, quiver, 5, Consumable.PLAIN_ARROW));
+            assertEquals(new Plan(true, true, false, false, false), VanillaShot.of(true, false, quiver, 5, Consumable.OTHER));
+            assertEquals(new Plan(true, false, false, false, false), VanillaShot.of(true, false, quiver, 5, Consumable.MIRROR));
+        }
+        // CONTROL: the same shot, not broken, leaves the bow and spends a round
+        assertEquals(new Plan(false, true, true, true, false), VanillaShot.of(false, false, true, 5, Consumable.PLAIN_ARROW));
+        assertEquals(VanillaShot.of(false, true, 5, Consumable.OTHER), VanillaShot.of(false, false, true, 5, Consumable.OTHER));
+    }
+
     // ------------------------------------------------------------------ the force
 
     /** READ: a bow's force is its draw power, 0.1 to 1 (BowItem.getPowerForTime); a crossbow's is the constant 1. */

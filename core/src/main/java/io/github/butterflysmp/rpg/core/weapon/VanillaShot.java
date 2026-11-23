@@ -40,6 +40,16 @@ public final class VanillaShot {
 
     private static final Plan LEAVE = new Plan(false, false, false, false, false);
 
+    /**
+     * With the weapon's durability (the seat's ruling I, Ben's: "I'd rather have our unbreaking work on the two"). A
+     * BROKEN weapon refuses to shoot: cancelled, and what vanilla took is given back, as for the empty quiver. Nothing is
+     * spent. The caller sends the broken notice, and the weapon is never destroyed: vanilla's own wear on it is cancelled.
+     */
+    public static Plan of(boolean broken, boolean offHand, boolean hasQuiver, int roundsLoaded, Consumable taken) {
+        if (broken) return new Plan(true, taken != Consumable.MIRROR, false, false, false);
+        return of(offHand, hasQuiver, roundsLoaded, taken);
+    }
+
     public static Plan of(boolean offHand, boolean hasQuiver, int roundsLoaded, Consumable taken) {
         boolean givesBack = taken != Consumable.MIRROR;
         if (offHand) return new Plan(true, givesBack, false, false, false);

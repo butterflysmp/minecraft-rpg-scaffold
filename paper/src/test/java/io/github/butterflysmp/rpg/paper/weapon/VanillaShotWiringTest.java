@@ -79,7 +79,9 @@ class VanillaShotWiringTest {
     void theShotPerformsEveryPartOfThePlan() throws IOException {
         String shot = body("weapon/VanillaShots.java", "public void onShot(EntityShootBowEvent event) {");
         assertTrue(shot.contains("if (!(event.getEntity() instanceof Player player)) return;"), "ruling 13: a mob's bow");
-        assertTrue(shot.contains("VanillaShot.of(offHand, weapon.hasQuiver(), before, kind);"), shot);
+        assertTrue(shot.contains("boolean broken = WeaponDurability.isBroken(bow);"), shot);
+        assertTrue(shot.contains("VanillaShot.of(broken, offHand, weapon.hasQuiver(), before, kind);"), shot);
+        assertTrue(shot.contains("if (broken) BrokenNotice.notify(player, cooldowns);"), shot);
         assertTrue(shot.contains("if (plan.refund()) giveBack(player, taken);"), shot);
         assertTrue(shot.contains("if (plan.cancel()) event.setCancelled(true);"), shot);
         assertTrue(shot.contains("if (plan.spendRound()) Quivers.spendRoundOnShot(player, weapon, adapters, bow);"), shot);
@@ -98,6 +100,31 @@ class VanillaShotWiringTest {
         String spend = body("weapon/Quivers.java", "public static void spendRoundOnShot(");
         assertTrue(spend.contains("liveBow.editMeta("), spend);
         assertFalse(spend.contains("setItemInMainHand"), "a replaced stack loses the bow's wear to an orphan");
+    }
+
+    /**
+     * RULING I (Ben's: "I'd rather have our unbreaking work on the two"): a shot that leaves wears by OUR rule, through the
+     * one wear path that consults our Unbreaking, written through the live bow; vanilla's wear on the weapon is cancelled.
+     */
+    @Test
+    void aShotThatLeavesWearsByOurRuleAndVanillasWearIsCancelled() throws IOException {
+        String shot = body("weapon/VanillaShots.java", "public void onShot(EntityShootBowEvent event) {");
+        int leaves = shot.indexOf("if (!plan.cancel()) {");
+        int wear = shot.indexOf("WeaponDurability.applyWearOnShot(player, keys, cooldowns, bow);");
+        assertTrue(leaves > 0 && wear > leaves, "the wear is charged only on a shot that leaves: " + leaves + " / " + wear);
+
+        String d = "weapon/WeaponDurability.java";
+        assertTrue(body(d, "public static void applyWearOnShot(").contains("wearOnce(player, keys, cooldowns, liveBow, false);"));
+        assertTrue(body(d, "public static void applyWearOnUse(")
+                .contains("wearOnce(player, keys, cooldowns, player.getInventory().getItemInMainHand(), true);"));
+        String once = body(d, "private static void wearOnce(");
+        assertTrue(once.contains("if (!Unbreaking.consumes(unbreaking, ThreadLocalRandom.current().nextDouble())) return;"),
+                "our Unbreaking is consulted on the one path");
+        assertTrue(once.contains("if (writeBackToMainHand) player.getInventory().setItemInMainHand(held);"), once);
+
+        String cancel = body("listener/RpgListeners.java", "public void onVanillaShotWeaponWear(PlayerItemDamageEvent event) {");
+        assertTrue(cancel.contains("VanillaShots.cancelsVanillaWear("), cancel);
+        assertTrue(cancel.contains("event.setCancelled(true);"), cancel);
     }
 
     /** Exemptions 2 and 3 are wired through the named gates the exemption test pins. */

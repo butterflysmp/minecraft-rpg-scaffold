@@ -100,6 +100,23 @@ class VanillaShotExemptionsTest {
         assertFalse(PlumeDraw.drawManaged(bow));
     }
 
+    /**
+     * RULING I's CANCEL IS SCOPED (Ben's: "I'd rather have our unbreaking work on the two"): vanilla's wear is cancelled on
+     * a weapon vanilla shoots, and on nothing else -- not a sword, not a shield (no weapon id), not the seven.
+     */
+    @Test
+    void vanillasWearIsCancelledOnlyOnAWeaponVanillaShoots() {
+        assertTrue(VanillaShots.cancelsVanillaWear(Optional.of(vanillaDriven("bow"))));
+        assertTrue(VanillaShots.cancelsVanillaWear(Optional.of(vanillaDriven("crossbow"))));
+        WeaponRegistry weapons = shipped();
+        assertFalse(VanillaShots.cancelsVanillaWear(weapons.find("wooden_sword")), "a sword keeps its wear path");
+        assertTrue(weapons.find("wooden_sword").isPresent(), "CONTROL: the sword is loaded, so the row is not hollow");
+        assertFalse(VanillaShots.cancelsVanillaWear(Optional.empty()), "a shield carries no weapon id");
+        for (String id : SEVEN) {
+            assertFalse(VanillaShots.cancelsVanillaWear(weapons.find(id)), id);
+        }
+    }
+
     @Test
     void theVanillaCrossbowIsLoadedByVanilla() {
         assertFalse(VanillaShots.crossbowLoadCancelled(Optional.of(vanillaDriven("crossbow"))));

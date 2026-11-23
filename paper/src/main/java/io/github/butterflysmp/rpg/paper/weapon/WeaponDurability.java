@@ -103,7 +103,23 @@ public final class WeaponDurability {
      * threading note on {@code CastExecutor}'s two-arg constructor, which is what guarantees it.
      */
     public static void applyWearOnUse(Player player, Keys keys, CooldownTracker cooldowns) {
-        ItemStack held = player.getInventory().getItemInMainHand();
+        wearOnce(player, keys, cooldowns, player.getInventory().getItemInMainHand(), true);
+    }
+
+    /**
+     * ONE USE CHARGED AT A VANILLA SHOT (the seat's ruling I, Ben's: "I'd rather have our unbreaking work on the two"),
+     * written THROUGH {@code liveBow}, the shot event's own bow (READ: an {@code asCraftMirror} of vanilla's stack). The
+     * same path as {@link #applyWearOnUse}, so the same cost and the same Unbreaking roll; never a replaced main-hand
+     * stack, the rule {@code Quivers.spendRoundOnShot} keeps at the shot. Vanilla's own wear on this weapon is cancelled
+     * ({@code RpgListeners.onVanillaShotWeaponWear}), so this is its only wear and vanilla never destroys it.
+     */
+    public static void applyWearOnShot(Player player, Keys keys, CooldownTracker cooldowns, ItemStack liveBow) {
+        wearOnce(player, keys, cooldowns, liveBow, false);
+    }
+
+    /** The one wear path. {@code writeBackToMainHand} is false only at a vanilla shot, which writes through the live bow. */
+    private static void wearOnce(Player player, Keys keys, CooldownTracker cooldowns, ItemStack held,
+                                 boolean writeBackToMainHand) {
 
         OptionalInt max = maxOf(held);
         if (max.isEmpty()) return;
@@ -138,7 +154,7 @@ public final class WeaponDurability {
         // Write the stack back explicitly rather than trusting the main-hand read to be a live
         // mirror, and updateInventory so the bar moves on this swing rather than at the client's
         // next sync -- the same pair, for the same reasons, as RpgCommand's /rpg durability.
-        player.getInventory().setItemInMainHand(held);
+        if (writeBackToMainHand) player.getInventory().setItemInMainHand(held);
         player.updateInventory();
 
         // THE JUST-BROKE SIGNAL. This use is what took the weapon from usable to inert, so say so

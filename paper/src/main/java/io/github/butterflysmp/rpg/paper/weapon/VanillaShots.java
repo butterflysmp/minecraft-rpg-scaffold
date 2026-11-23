@@ -73,6 +73,22 @@ public final class VanillaShots {
         return weapon.map(w -> w.vanillaShotTrigger().isEmpty()).orElse(true);
     }
 
+    /**
+     * IS VANILLA'S OWN WEAR CANCELLED ON THIS ITEM? Only on a weapon vanilla shoots (the seat's ruling I, Ben's: "I'd
+     * rather have our unbreaking work on the two"). READ: vanilla charges it through {@code ItemStack}'s durability path,
+     * which fires a cancellable {@code PlayerItemDamageEvent}; uncancelled, our Unbreaking is never consulted and a worn-out
+     * Bow is destroyed. Our wear is charged at the shot instead ({@code WeaponDurability.applyWearOnShot}). A sword (no
+     * {@code shot}) and a shield (no weapon id; ShieldDurability owns it) are untouched by this cancel.
+     */
+    public static boolean cancelsVanillaWear(Optional<WeaponDefinition> weapon) {
+        return weapon.filter(w -> w.vanillaShotTrigger().isPresent()).isPresent();
+    }
+
+    /** The minted weapon on this item, as {@link #cancelsVanillaWear} asks it: any minted weapon, or empty. */
+    public Optional<WeaponDefinition> mintedWeapon(ItemStack item) {
+        return WeaponItems.weaponId(item, adapters.keys()).flatMap(weapons::find);
+    }
+
     /** The minted weapon on this item, if it is one vanilla shoots (it binds {@code shot}). */
     public Optional<WeaponDefinition> vanillaDriven(ItemStack item) {
         return WeaponItems.weaponId(item, adapters.keys()).flatMap(weapons::find)
@@ -100,13 +116,17 @@ public final class VanillaShots {
         int before = QuiverItems.loadedIn(bow, keys).orElse(0);
         ItemStack taken = event.getConsumable();
         VanillaShot.Consumable kind = consumableOf(taken, keys);
-        VanillaShot.Plan plan = VanillaShot.of(offHand, weapon.hasQuiver(), before, kind);
+        boolean broken = WeaponDurability.isBroken(bow);
+        VanillaShot.Plan plan = VanillaShot.of(broken, offHand, weapon.hasQuiver(), before, kind);
 
         if (plan.refund()) giveBack(player, taken);
         if (plan.cancel()) event.setCancelled(true);
+        if (broken) BrokenNotice.notify(player, cooldowns);   // refused, still in his hand: vanilla never wears it
         if (plan.spendRound()) Quivers.spendRoundOnShot(player, weapon, adapters, bow);
         if (plan.emptyNotice()) QuiverNotice.empty(player, cooldowns);
         if (!plan.cancel()) {
+            // OUR WEAR, BY OUR RULE (the seat's ruling I, Ben's): one use, our Unbreaking consulted, through the live bow.
+            WeaponDurability.applyWearOnShot(player, keys, cooldowns, bow);
             Entity projectile = event.getProjectile();
             if (plan.quiverPaid()) {
                 projectile.getPersistentDataContainer().set(keys.quiverPaidShot, PersistentDataType.BYTE, (byte) 1);

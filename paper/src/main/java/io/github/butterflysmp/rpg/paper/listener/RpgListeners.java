@@ -1604,6 +1604,19 @@ public final class RpgListeners implements Listener {
         });
     }
 
+    /**
+     * VANILLA'S WEAR ON A WEAPON VANILLA SHOOTS IS CANCELLED (the seat's ruling I, Ben's: "I'd rather have our unbreaking
+     * work on the two"); ours is charged at the shot. Scoped by {@code VanillaShots.cancelsVanillaWear}: a sword and a
+     * shield are untouched (the shield has its own cancel, {@link #onShieldItemDamage}).
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onVanillaShotWeaponWear(PlayerItemDamageEvent event) {
+        if (io.github.butterflysmp.rpg.paper.weapon.VanillaShots.cancelsVanillaWear(
+                vanillaShots.mintedWeapon(event.getItem()))) {
+            event.setCancelled(true);
+        }
+    }
+
     /** Was a quiver round spent for this shot? Marked on the projectile by the paying handler (the vanilla-driven Bow). */
     private boolean quiverPaidShot(org.bukkit.entity.Entity projectile) {
         return projectile != null && projectile.getPersistentDataContainer()
