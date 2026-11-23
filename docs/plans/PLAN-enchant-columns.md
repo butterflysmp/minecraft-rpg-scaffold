@@ -363,3 +363,12 @@ original gone: 0  line delta: 0`, each restored and `cmp` byte-identical, each r
 **A FALSE CLAIM, CAUGHT BY A MUTATION, CORRECTED:** `ticksToTravel`'s javadoc first said 14 / 0.35 lands a hair above 40
 in doubles. MUTEPS stayed GREEN; jshell then printed `40.0`. The javadoc now carries the executed case (2.1 / 0.7 =
 3.0000000000000004) and its own row, which MUTEPS reddens.
+
+## 6. THE GATE (`feat/enchant-columns-gate`, on PR E)
+
+`docs/gates/GATE-enchant-columns.md` and `selftest/GATE-enchant-columns.yml` (`/rpg selftest enchant-columns`, setup and
+EC0-EC17, every row AUTO and SURVIVAL). It carries THE ONE R0 for the stack from #248 up and the one run sheet (five
+lines). It supersedes `GATE-unique-enchant-slot.md`'s R0 and its US1-US7 (never run; removed from that scenario with a
+dated note in both files); that gate's R1, setup, US8, BX1 and BX2 ride along unchanged. The scenario count is 351 across
+43 gates (`SelfTestScenariosTest`, recounted from the files). R0b was run before the commit against a jar built from the
+working tree: see the gate's last section.
