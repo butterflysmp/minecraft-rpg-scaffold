@@ -1563,3 +1563,28 @@ READ: `grep -l '^element: fire' content/weapons/*.yml` gives those four, classes
 **Mutations** (marker 1, lines changed 1, restored `cmp`-identical, markers left 0): `MUTMBCLASS` (`class: universal`:
 Dragon's Breath joins the pool), `MUTMBLEVELS` (`[10, 20, 40]`), `MUTMBLINE` (the line drops "and Ignite"),
 `MUTMBLOADER` (the loader ignores the file's list). All red.
+
+## 31. THE GATE EXTENDED (`feat/mage-guaranteed-gate-2`, on F3)
+
+**The seat's rulings of 2026-11-24:** "THE GATE FIX … READ which XP the table charges, stage exactly that in the row by
+the command that sets it (the snapshot restores it), and predict the price and the wallet before and after as numbers. If
+the table reads vanilla levels, say what "rpg playerxp" was doing in the row and remove it if it does nothing there." And
+"THEN EXTEND GATE-mage-guaranteed".
+
+- **MG2's READ:** the table charges the VANILLA bar (`EnchantMenu`: `XpCurve.totalPoints(viewer.getLevel(),
+  viewer.getExp())`). `rpg playerxp` writes only the RPG profile's lifetime XP; nothing mirrors it onto the vanilla bar. So
+  in MG2 it set his RPG level to 30, which MG2 reads nowhere, and did nothing for the wallet. **And MG2's `probe_self`
+  reads printed no wallet** (a second defect of the first draft). **MG2 is REPLACED by MG2R**: `xp set @s 30 levels`, `xp
+  set @s 0 points`, read by `xp query` (READ by javap); wallet **1395 → 1043 (level 26, 46 into it) → 1043**, the price
+  **352**, every figure EXECUTED. No `rpg playerxp` in it.
+- **R1a to R1e** re-predict the build for the new stack top: R1b's jar scan (PR B's "no `volley_stone` in the jar", by a
+  whole-jar sweep with a positive control) and R1c's **WARN count, 0**. Run before the commit: as predicted (the gate's
+  *R1b, RUN BEFORE COMMIT*).
+- **MB1 to MB5:** the pools (slot 1 of the three fire mage weapons; Dragon's Breath empty); a scorch tick on a 100-health
+  mob without and with Mana Burn III (**5.000 against 6.500, the cap 10.000 both**); one Ignite from a mob that dies
+  scorched with the stamp and one without, on a bystander 2 blocks from it (**7.8 against 6**, and its burn's cap **3.900
+  against 3.000**); an unenchanted hit clearing the stamp (the ticks fall from 13.000 to 10.000; the Ignite is 6). Every
+  mob that can die scorched stands 6 east of him or further; Ignite skips players (READ).
+- **The run sheet is one typed command** (`/rpg mobtrace on` dropped: the setup's `trace: on` flips the same switch,
+  READ). **The waits sum to 2713 ticks (135.65 s); about 2.5 to 3 minutes in all (est.).**
+- `SelfTestScenariosTest`: 396 scenarios (443 keys less 47 setups; the control 437 - 1 + 7).
