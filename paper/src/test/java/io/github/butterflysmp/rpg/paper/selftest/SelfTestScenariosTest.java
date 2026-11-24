@@ -41,9 +41,11 @@ class SelfTestScenariosTest {
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
-                        "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns"),
+                        "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes"),
                 List.copyOf(loaded.gates().keySet()),
-                "the forty-three gates, in boot order (enchant-columns LAST, the enchant columns re-cut, 2026-11-23, a NEW gate after"
+                "the forty-four gates, in boot order (enchant-changes LAST, Ben's five changes to Airburst Flames and Lapis"
+                        + " Crystal, 2026-11-23, a NEW gate after enchant-columns; enchant-columns before it, the enchant columns"
+                        + " re-cut, 2026-11-23, a NEW gate after"
                         + " unique-enchant-slot; unique-enchant-slot before it, the unique enchant slot, 2026-11-23, a NEW gate"
                         + " after boltor-recipe; boltor-recipe before it, the Boltor's recipe, 2026-11-22, a NEW gate after"
                         + " vanilla-bows; vanilla-bows before it, the vanilla Bow and Crossbow and the quiver in the Nexus"
@@ -299,7 +301,10 @@ class SelfTestScenariosTest {
         // that ran there (EC0, EC1R2, EC2-EC17, LC1-LC4) left the scenario and 18 self-contained rows came in (EC3R2-EC16R2,
         // LC1R2-LC4R2; EC0's counts, EC1R2, EC2 and EC17's counts read as predicted and are not re-run), RECOUNTED the same
         // way: 43 gates, 394 keys, 43 setups, so 351. The control: 398 - 22 + 18 = 394. 355 was this line's value.
-        assertEquals(351, loaded.rows());
+        // Then GATE-enchant-changes.md (feat/lapis-crystal-block, 2026-11-23, Ben's five changes), RECOUNTED the same way:
+        // 44 gates, 403 keys, 44 setups, so 359. The control: 394 + 9 (its setup and AF1-AF4, LB1-LB4) = 403. 351 was this
+        // line's value.
+        assertEquals(359, loaded.rows());
     }
 
     /**
@@ -566,6 +571,8 @@ class SelfTestScenariosTest {
 
         assertEquals(List.of(), byGate.get("enchant-columns").stream().map(ScenarioLint.Finding::line).toList(),
                 "GATE-enchant-columns.yml must lint clean");
+        assertEquals(List.of(), byGate.get("enchant-changes").stream().map(ScenarioLint.Finding::line).toList(),
+                "GATE-enchant-changes.yml must lint clean (2026-11-23, written under the same rules)");
         assertTrue(byGate.get("deft-hands").stream().anyMatch(f -> f.row().equals("DH3")
                         && f.rule() == ScenarioLint.Rule.SELF_STAGED && f.detail().startsWith("chains on DH1")),
                 "the control: DH3's chain on DH1 is found, so the lint reads the shipped files: " + byGate.get("deft-hands"));
@@ -587,7 +594,11 @@ class SelfTestScenariosTest {
                 for (Scenario.Step st : s.steps()) if (st.verb() == Scenario.Verb.PAD) padGates.add(gate.getKey() + "#" + s.row());
             }
         }
-        assertEquals(List.of("enchant-columns#setup"), padGates, "only enchant-columns opts in, in its setup");
+        assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup"), padGates,
+                "only enchant-columns and (2026-11-23) enchant-changes opt in, each in its setup");
+        Scenario changes = shipped().gates().get("enchant-changes").getFirst();
+        assertEquals(Scenario.Verb.PAD, changes.steps().get(0).verb(), changes.steps().toString());
+        assertEquals(Scenario.Verb.PREFLIGHT, changes.steps().get(1).verb(), changes.steps().toString());
     }
 
     @Test

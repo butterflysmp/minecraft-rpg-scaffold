@@ -1,0 +1,246 @@
+# GATE-enchant-changes (docs/gates/GATE-enchant-changes.md): Ben's five changes to Airburst Flames and Lapis Crystal,
+# 2026-11-23 (PR 1 feat/enchant-changes, PR 2 feat/lapis-crystal-block). `/rpg selftest enchant-changes`. SURVIVAL, every
+# row; ALL AUTO; he types nothing and answers one question. On the pad (Ben's ruling A): the setup's FIRST step stands him
+# on it facing east, the SECOND measures the ground every summon stands on. Night (18000), no natural spawns, no phantoms,
+# difficulty normal (a peaceful world would despawn the zombies), each put back by the run's restore. Every mob a frozen
+# NoAI zombie staged at vanilla max 200 (so 1000 health; nothing here dies). Every row is self-contained under
+# GATE-enchant-columns' four rules (ScenarioLint): it empties his storage before it gives, sets his level, the weapon,
+# its score, its enchant state, mana, a cleared cooldown and a fresh record, turns him east and waits before it presses,
+# and probes only its own mobs, inside reach.
+setup:
+  - pad: ""
+  - preflight: "0 -6 32 10"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:enderman,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:witch,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:slime,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 2
+  - probe_self: ""
+
+# AF1: THE SPLIT AT 6, NO MOB ANYWHERE: Airburst Flames II; one press east; the shot splits at X+6.300 and the bursts
+# fly 14 on, seeking nothing.
+AF1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 airburst_flames"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 40
+  - probe_self: ""
+  - use: right_click
+  - wait: 60
+
+# AF2: THE BURSTS SEEK, LEVEL II: H stands 16 east and 4 south, where no burst's straight line meets it and nothing is
+# within 7 of the shot before it splits; read with a probe of 18.
+AF2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 airburst_flames"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~16 ~ ~4 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["h","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 80
+  - probe: "h 18"
+
+# AF3: LEVEL I AGAINST LEVEL III, AF2's GEOMETRY: one press at I, one at III, 82 ticks apart; a probe of 18.
+AF3:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 airburst_flames"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~16 ~ ~4 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["h","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 80
+  - cmd: "rpg enchant level 0 0 3"
+  - wait: 2
+  - use: right_click
+  - wait: 80
+  - probe: "h 18"
+
+# AF4: A HIT BEFORE 6: N stands 3 east on his aim line. Airburst II active; the 45 lands and nothing splits.
+AF4:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 airburst_flames"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 40
+  - probe: n
+
+# LB1: THE THROW AND ITS BODY: Lapis Crystal II; the left click (driven by `reload`) throws it; its ORBBODY line names
+# what was spawned; it rests 12 out; the row's end removes it (clear_state), and the next row's clean finds nothing.
+LB1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give lapis_staff"
+  - wait: 2
+  - hold: lapis_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 lapis_crystal"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 40
+  - probe_self: ""
+  - reload: ""
+  - wait: 20
+  - clear_state: ""
+
+# LB4: GONE AFTER ITS LIFE, AND NOTHING LEFT: its own throw, then 330 ticks (the flight's 10, the life's 300, and 20
+# more); the orb expires; the next row's clean reads no task and no body.
+LB4:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give lapis_staff"
+  - wait: 2
+  - hold: lapis_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 lapis_crystal"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 40
+  - reload: ""
+  - wait: 330
+
+# LB2: A BEAM INTO THE ORB AT LEVEL II: its own throw, then 20 ticks, then his beam east through the orb's centre stops
+# there; the orb strikes N (within 8) for 10.5, draws ONE line to N, and strikes neither F nor T. THE ONE ASK is this row.
+LB2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give lapis_staff"
+  - wait: 2
+  - hold: lapis_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 lapis_crystal"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~12 ~ ~5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~12 ~ ~9 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~22 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - reload: ""
+  - wait: 20
+  - use: right_click
+  - wait: 40
+  - probe: n
+  - probe: f
+  - probe: "t 24"
+  - clear_state: ""
+
+# LB3: LEVELS I AND III: a throw at I and a beam (6.3), then clear_state (the orb removed, the 600-tick cooldown
+# cleared), the level set to III, a second throw and a beam (14.7); one mob, N, read once at the end.
+LB3:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give lapis_staff"
+  - wait: 2
+  - hold: lapis_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 lapis_crystal"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~12 ~ ~5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - reload: ""
+  - wait: 20
+  - use: right_click
+  - wait: 20
+  - clear_state: ""
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - reload: ""
+  - wait: 20
+  - use: right_click
+  - wait: 20
+  - probe: n
+  - clear_state: ""

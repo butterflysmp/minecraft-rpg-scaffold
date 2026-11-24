@@ -113,3 +113,6 @@ gates:
 # re-cut, the Living Lantern's homing shot, Kinetic Tremors and Airburst Flames. It carries the ONE R0 for the whole
 # stack from #248 up: docs/gates/GATE-enchant-columns.md, which supersedes GATE-unique-enchant-slot's R0 and US1-US7.
   - enchant-columns
+# enchant-changes (2026-11-23, feat/lapis-crystal-block on feat/enchant-changes): Ben's five changes to Airburst
+# Flames and Lapis Crystal, on the pad. docs/gates/GATE-enchant-changes.md carries its R0.
+  - enchant-changes
