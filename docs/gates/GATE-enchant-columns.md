@@ -16,6 +16,13 @@ has no branch and no row** (`PLAN-enchant-columns.md` section 4).
 > which is now THE STACK TOP. Where this file says "PR D was STOPPED" it records the state before that; the R0 rows that
 > name the older top (R0b, R0c, R0d) are superseded by their R2 rows and kept as the record of the jar they were run on.
 
+> **DATED NOTE, 2026-11-23 (`feat/enchant-changes`, Ben's five changes): EC14R2 TO EC16R2 AND LC1R2 TO LC4R2 CANNOT BE
+> RE-RUN AS WRITTEN.** Since that branch Airburst Flames splits at 6 blocks (the 18th step, 6.3) and its bursts seek, and
+> Lapis Crystal strikes for 30/50/70% of the beam and draws a line to each mob it strikes; their predictions here (a
+> split at X+14.000; 30 on M from the centre burst alone; 25/35 on P; 6.3 at level II) describe the content they were read
+> on (`efa38636`), where they read as predicted. They stand as that record. The changed behaviour is read by
+> `GATE-enchant-changes.md`. Nothing else in this file changes.
+
 **THIS FILE CARRIES THE ONE R0 FOR THE WHOLE STACK FROM #248 UP, AND THE ONE RUN SHEET.** It supersedes
 `GATE-unique-enchant-slot.md`'s R0 and its rows US1-US7 (never run; retired from its scenario, which now holds setup, US8,
 BX1 and BX2). R1 (PR 1's lower-case row), US8, BX1 and BX2 ride along unchanged and are read under that file's own
