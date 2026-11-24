@@ -5,9 +5,9 @@
 # Doesn't split if it hits something first" / "Also side note: The name of the enchantment is Airburst Flames".
 #
 # WHAT IT DOES (core CastExecutor.launchToSplit, while it is the ACTIVE candidate of the lantern's weapon slot at level 1
-# or more): the lantern's shot homes as it always does (living_lantern.yml) until it has TRAVELLED 14 blocks, which at
-# its 0.35 a tick is 40 steps (EnchantBehaviour.Airburst.ticksToTravel, executed). If it has hit nothing -- no mob, no
-# block -- it ends there and three bursts leave that point: never homing, each a further 14 blocks at 0.7 a tick (20
+# or more): the lantern's shot homes as it always does (living_lantern.yml) until it has TRAVELLED 6 blocks (BEN, 2026-11-23; was 14), which at
+# its 0.35 a tick is 18 steps, 6.3 blocks (EnchantBehaviour.Airburst.ticksToTravel, executed). If it has hit nothing -- no mob, no
+# block -- it ends there and three bursts leave that point, each seeking for itself (BEN, 2026-11-23; was never homing), each a further 14 blocks at 0.7 a tick (20
 # steps), each a PRIMARY hit of the level's damage in fire IN PLACE of the 45, with the shot's other on_hit effects (its
 # hit visual) and fire's burn. A shot that hits anything first lands its 45 and never splits. The bursts never split.
 #
