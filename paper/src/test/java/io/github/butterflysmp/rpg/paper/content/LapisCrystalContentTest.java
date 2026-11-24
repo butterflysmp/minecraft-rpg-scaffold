@@ -76,10 +76,12 @@ class LapisCrystalContentTest {
         assertEquals(30.0, g.ability().cost().amount(), 0.0, "Ben: 30 mana");
         assertEquals("kinetic", g.ability().element(), "the staff's element");
         assertEquals("lapis_staff", g.weaponId());
-        assertEquals(new io.github.butterflysmp.rpg.core.ability.CastSpec.Orb(12, 10, 300, 0.6, "heart_of_the_sea",
-                        new io.github.butterflysmp.rpg.core.ability.CastSpec.OrbShot(8, List.of(30.0, 50.0, 70.0), "kinetic", null)),
+        assertEquals(new io.github.butterflysmp.rpg.core.ability.CastSpec.Orb(12, 10, 300, 0.6, null,
+                        new io.github.butterflysmp.rpg.core.ability.CastSpec.OrbShot(8, List.of(30.0, 50.0, 70.0), "kinetic", null),
+                        new io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock("lapis_block", 0.5, "#2A5CFF")),
                 g.ability().cast(), "D2: Ben's 12 blocks and 300 ticks; D3: Ben's 8 blocks, and his 30/50/70 (2026-11-23:"
-                        + " \"Increase the damage of the crystal to 30/50/70%\"); the seat's flight, radius, look and element");
+                        + " \"Increase the damage of the crystal to 30/50/70%\"); the seat's flight, radius and element; Ben's"
+                        + " lapis block (2026-11-23), at the seat's placeholder scale and glow");
     }
 
     /**

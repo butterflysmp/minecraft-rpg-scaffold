@@ -376,6 +376,26 @@ public final class FakeWorld implements CombatWorld {
         return id;
     }
 
+    /** Block-display orb bodies spawned (Ben's item 3), id -> the look it was given; also in {@link #orbMarkers}. */
+    public final Map<UUID, io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock> orbBlocks = new HashMap<>();
+
+    @Override public UUID spawnOrbBlock(UUID ownerId, Vec3 at, io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock look) {
+        UUID id = spawnMarker(at, "block:" + look.block(), 0);
+        orbMarkers.add(id);
+        orbBlocks.put(id, look);
+        return id;
+    }
+
+    /** Every placement handed to {@link #placeOrbBody}, id -> the points in order. */
+    public final Map<UUID, List<Vec3>> orbBodyPlacements = new HashMap<>();
+
+    @Override public void placeOrbBody(UUID bodyId, Vec3 at) {
+        // Absent is a no-op, as in production (a removed display is not found by its id).
+        if (!markerPositions.containsKey(bodyId)) return;
+        orbBodyPlacements.computeIfAbsent(bodyId, k -> new ArrayList<>()).add(at);
+        markerPositions.put(bodyId, at);
+    }
+
     /** Every ORB trace line, in order. */
     public record OrbLine(UUID owner, String event, Vec3 at, String cause, long tick) {}
     public final List<OrbLine> orbLines = new ArrayList<>();

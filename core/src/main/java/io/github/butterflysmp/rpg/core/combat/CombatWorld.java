@@ -210,6 +210,21 @@ public interface CombatWorld {
     UUID spawnOrbMarker(io.github.butterflysmp.rpg.core.Vec3 at, String itemId, int expectedLifetimeTicks);
 
     /**
+     * A BLOCK-DISPLAY ORB BODY at {@code at} (Ben's item 3, 2026-11-23): the block {@code look} names, scaled and centred
+     * on its position, glowing in its colour; never saved; TAGGED as an orb AND as a marker, so the sweep finds it where
+     * it appears and {@link #removeMarker} removes it. It has no physics: {@link #placeOrbBody} moves it. Prints one
+     * {@code ORBBODY} line read back off the body itself. Returns its id.
+     */
+    UUID spawnOrbBlock(UUID ownerId, io.github.butterflysmp.rpg.core.Vec3 at,
+                       io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock look);
+
+    /**
+     * Put an orb body spawned by {@link #spawnOrbBlock} at {@code at} (a teleport, smoothed by the client over one tick).
+     * A body that is gone is a no-op.
+     */
+    void placeOrbBody(UUID bodyId, io.github.butterflysmp.rpg.core.Vec3 at);
+
+    /**
      * {@code ORB} trace lines (D2): {@code event} is {@code rest} (it came to rest at {@code at}) or {@code removed} (with
      * {@code cause}: expired, replaced, quit, death, world_change, stop, orphan). Logged always, not only under mobtrace:
      * one line per throw and per removal, and the boot's after-stop check reads them.

@@ -12,22 +12,53 @@ public sealed interface CastSpec {
      * THE THROWN ORB (YAML {@code type: orb}; Lapis Crystal's D2, 2026-11-23). A body thrown along the aim to
      * {@code range} blocks, stopping short of the first solid block, arriving in {@code flightTicks}, then resting
      * {@code lifeTicks} counted from arrival. ONE per caster: a new throw removes the standing one. {@code radius} is how
-     * close a beam must pass to be stopped by it (D3). {@code item} is its look (a non-saved item marker).
-     * {@code CastExecutor.throwOrb} flies it; {@code Orbs} holds it.
+     * close a beam must pass to be stopped by it (D3). {@code CastExecutor.throwOrb} flies it; {@code Orbs} holds it.
+     *
+     * <p>ITS BODY, ONE OF TWO KINDS (YAML {@code body:}, {@code item} when absent; Ben's item 3, 2026-11-23, PR 2):
+     * {@code item} names a non-saved item marker, driven by velocity, the body D2 shipped; {@code block}, when not null,
+     * is a floating block display ({@link OrbBlock}), placed on the same path one step a tick (it has no physics). With a
+     * block body {@code item} may be null.
      */
-    record Orb(double range, int flightTicks, int lifeTicks, double radius, String item, OrbShot shot)
+    record Orb(double range, int flightTicks, int lifeTicks, double radius, String item, OrbShot shot, OrbBlock block)
             implements CastSpec {
         public Orb {
             if (!(range > 0)) throw new IllegalArgumentException("orb range must be above 0, was " + range);
             if (flightTicks < 1) throw new IllegalArgumentException("orb flight_ticks must be 1 or more, was " + flightTicks);
             if (lifeTicks < 1) throw new IllegalArgumentException("orb life_ticks must be 1 or more, was " + lifeTicks);
             if (!(radius > 0)) throw new IllegalArgumentException("orb radius must be above 0, was " + radius);
-            if (item == null || item.isBlank()) throw new IllegalArgumentException("orb item is required");
+            if (item != null && item.isBlank()) item = null;
+            if (block == null && item == null) throw new IllegalArgumentException("orb item is required for an item body");
+        }
+
+        /** An item-bodied orb with a shot (D3's shape, before PR 2). */
+        public Orb(double range, int flightTicks, int lifeTicks, double radius, String item, OrbShot shot) {
+            this(range, flightTicks, lifeTicks, radius, item, shot, null);
         }
 
         /** An orb with no shot: it stands, and a beam into it does nothing (D2's shape). */
         public Orb(double range, int flightTicks, int lifeTicks, double radius, String item) {
-            this(range, flightTicks, lifeTicks, radius, item, null);
+            this(range, flightTicks, lifeTicks, radius, item, null, null);
+        }
+    }
+
+    /**
+     * A BLOCK-DISPLAY ORB BODY (YAML the orb's {@code body: block} with its {@code block:} section; Ben: "a Floating Lapis
+     * block with glowing", 2026-11-23). {@code block} is a block id ({@code lapis_block}; the paper loader refuses one that
+     * is not a block); {@code scale} its edge in blocks, centred on the body's position; {@code glow} the glow outline's
+     * colour as {@code #RRGGBB}. Scale and colour are SEAT PLACEHOLDERS in the content.
+     */
+    record OrbBlock(String block, double scale, String glow) {
+        public OrbBlock {
+            if (block == null || block.isBlank()) throw new IllegalArgumentException("orb block is required for a block body");
+            if (!(scale > 0) || Double.isInfinite(scale)) throw new IllegalArgumentException("orb block scale must be above 0, was " + scale);
+            if (glow == null || !glow.matches("#[0-9a-fA-F]{6}")) {
+                throw new IllegalArgumentException("orb block glow must be a colour #RRGGBB, was " + glow);
+            }
+        }
+
+        /** The glow colour as 0xRRGGBB. */
+        public int glowRgb() {
+            return Integer.parseInt(glow.substring(1), 16);
         }
     }
 

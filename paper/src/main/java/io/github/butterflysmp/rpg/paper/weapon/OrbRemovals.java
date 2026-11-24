@@ -46,6 +46,8 @@ public final class OrbRemovals {
         // Every removal cancels the orb's expiry (the seat's item 6, 2026-11-23): the LINGER work=1 that opened LC2R2-LC4R2
         // on efa38636 was that task, left scheduled here. It could not act (its generation is gone); now it is not left.
         if (orb.expiryTask() >= 0) ctx.work().take(orb.expiryTask());
+        // And a block body's backstop (the seat's ruling (b), 2026-11-23): a proper removal leaves it nothing to do.
+        if (orb.backstopTask() >= 0) ctx.work().take(orb.backstopTask());
         Entity body = Bukkit.getEntity(orb.markerId());
         if (body != null) body.remove();
         ctx.log().info(PaperCombatWorld.orbLine(orb.owner(), "removed", orb.restPoint(), cause, Bukkit.getCurrentTick()));

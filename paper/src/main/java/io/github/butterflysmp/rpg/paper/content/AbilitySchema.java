@@ -133,9 +133,45 @@ final class AbilitySchema {
             case "cone"       -> new CastSpec.Cone(reqDouble(s, "range"), reqDouble(s, "arc_degrees"),
                     reqInt(s, "travel_ticks"), s.getString("front"));
             // THE THROWN ORB (Lapis Crystal's D2, 2026-11-23): every key required, CastSpec.Orb refuses a bad value by name.
-            case "orb"        -> new CastSpec.Orb(reqDouble(s, "range"), reqInt(s, "flight_ticks"), reqInt(s, "life_ticks"),
-                    reqDouble(s, "radius"), req(s, "item"), parseOrbShot(s.getConfigurationSection("shot")));
+            case "orb"        -> parseOrb(s);
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
+        };
+    }
+
+    /**
+     * THE ORB'S BODY KIND (Ben's item 3, 2026-11-23, PR 2): {@code body: item} (the default, D2's shape) needs {@code item:};
+     * {@code body: block} needs a {@code block:} section and takes no {@code item:}. Each refuses the other's key, so a file
+     * cannot carry a look it does not use. Whether {@code block.id} names a block is the load check's
+     * ({@code ContentValidator.validateOrbBodies}), because it needs the server's material registry.
+     *
+     * <pre>
+     * body: block
+     * block:
+     *   id: lapis_block
+     *   scale: 0.5          # its edge in blocks, centred on the orb's position
+     *   glow: "#2A5CFF"     # the glow outline's colour
+     * </pre>
+     */
+    static CastSpec.Orb parseOrb(ConfigurationSection s) {
+        double range = reqDouble(s, "range");
+        int flight = reqInt(s, "flight_ticks");
+        int life = reqInt(s, "life_ticks");
+        double radius = reqDouble(s, "radius");
+        CastSpec.OrbShot shot = parseOrbShot(s.getConfigurationSection("shot"));
+        String body = s.getString("body", "item");
+        return switch (body) {
+            case "item" -> {
+                if (s.contains("block")) throw new IllegalArgumentException("orb body: item takes no 'block:' section");
+                yield new CastSpec.Orb(range, flight, life, radius, req(s, "item"), shot, null);
+            }
+            case "block" -> {
+                if (s.contains("item")) throw new IllegalArgumentException("orb body: block takes no 'item:'");
+                ConfigurationSection b = s.getConfigurationSection("block");
+                if (b == null) throw new IllegalArgumentException("orb body: block needs a 'block:' section (id, scale, glow)");
+                yield new CastSpec.Orb(range, flight, life, radius, null, shot,
+                        new CastSpec.OrbBlock(req(b, "id"), reqDouble(b, "scale"), req(b, "glow")));
+            }
+            default -> throw new IllegalArgumentException("orb body must be 'item' or 'block', was '" + body + "'");
         };
     }
 

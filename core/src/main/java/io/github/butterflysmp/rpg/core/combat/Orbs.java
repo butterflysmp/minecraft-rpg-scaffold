@@ -31,21 +31,26 @@ public final class Orbs {
      * <p>{@code expiryTask} is the handle of the expiry {@code throwOrb} scheduled on arrival ({@code
      * CombatWorld#scheduleCancellable}), or -1 while it flies (2026-11-23, the seat's item 6): every removal cancels it, so
      * a removed or replaced orb leaves nothing scheduled.
+     *
+     * <p>{@code backstopTask} is the handle of the body's BACKSTOP, or -1 for none (Ben's item 3, the seat's ruling (b),
+     * 2026-11-23): scheduled at the throw, it removes the body by its id whatever this store says. Only a block-display
+     * body has one (a display has no vanilla despawn; an item marker does). Every proper removal cancels it.
      */
     public record Orb(UUID owner, UUID markerId, long generation, Vec3 restPoint, double radius, int lifeTicks,
-                      long arrivedTick, String weaponId, String enchantId, int level, Shot shot, long expiryTask) {
+                      long arrivedTick, String weaponId, String enchantId, int level, Shot shot, long expiryTask,
+                      long backstopTask) {
         public boolean resting() {
             return arrivedTick >= 0;
         }
 
         Orb arrived(long tick) {
             return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, tick, weaponId, enchantId, level, shot,
-                    expiryTask);
+                    expiryTask, backstopTask);
         }
 
         Orb expiring(long task) {
             return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, arrivedTick, weaponId, enchantId, level,
-                    shot, task);
+                    shot, task, backstopTask);
         }
     }
 
@@ -61,8 +66,14 @@ public final class Orbs {
     /** A new orb for {@code owner}, flying; returns the one it REPLACES, if any (one per player). */
     public synchronized PlaceResult place(UUID owner, UUID markerId, Vec3 restPoint, double radius, int lifeTicks,
                                           String weaponId, String enchantId, int level, Shot shot) {
+        return place(owner, markerId, restPoint, radius, lifeTicks, weaponId, enchantId, level, shot, -1);
+    }
+
+    /** {@link #place}, carrying the body's backstop handle ({@code backstopTask}, -1 for none). */
+    public synchronized PlaceResult place(UUID owner, UUID markerId, Vec3 restPoint, double radius, int lifeTicks,
+                                          String weaponId, String enchantId, int level, Shot shot, long backstopTask) {
         Orb placed = new Orb(owner, markerId, nextGeneration++, restPoint, radius, lifeTicks, -1, weaponId, enchantId, level,
-                shot, -1);
+                shot, -1, backstopTask);
         Orb previous = byOwner.put(owner, placed);
         return new PlaceResult(placed, Optional.ofNullable(previous));
     }
