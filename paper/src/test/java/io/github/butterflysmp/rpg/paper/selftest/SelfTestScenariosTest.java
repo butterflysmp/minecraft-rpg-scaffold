@@ -42,9 +42,10 @@ class SelfTestScenariosTest {
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
                         "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes", "shatter-caps",
-                        "focused-beam"),
+                        "focused-beam", "mage-guaranteed"),
                 List.copyOf(loaded.gates().keySet()),
-                "the forty-six gates, in boot order (focused-beam LAST, the weapon filter and Focused Beam, 2026-11-24, a NEW gate"
+                "the forty-seven gates, in boot order (mage-guaranteed LAST, the seat's brief of 2026-11-24, a NEW gate after focused-beam;"
+                        + " focused-beam before it, the weapon filter and Focused Beam, 2026-11-24, a NEW gate"
                         + " after shatter-caps; shatter-caps before it, the Breacher's reach and Shatter Caps, 2026-11-24, a NEW gate"
                         + " after enchant-changes; enchant-changes before it, Ben's five changes to Airburst Flames and Lapis"
                         + " Crystal, 2026-11-23, a NEW gate after enchant-columns; enchant-columns before it, the enchant columns"
@@ -317,7 +318,10 @@ class SelfTestScenariosTest {
         // `cat GATE-*.yml | tr -d '\r' | grep -cE '^[A-Za-z0-9_-]+:'`; the same for '^setup:'): 46 gates, 421 keys, 46
         // setups, so 375. The control: 410 + 11 (its setup and FB0, FB1, FB2, FB3, FBP, FBR, FBR0, FBT, AFR, CSS) = 421.
         // 365 was this line's value.
-        assertEquals(375, loaded.rows());
+        // Then GATE-mage-guaranteed.md (feat/mage-guaranteed-gate, 2026-11-24), RECOUNTED the same way: 47 gates, 437 keys,
+        // 47 setups, so 390. The control: 421 + 16 (its setup and MG1-MG4, MG5, MG5C, MG6, MG7a-c, MG8, MG9a-b, MG10, MG11)
+        // = 437. 375 was this line's value.
+        assertEquals(390, loaded.rows());
     }
 
     /**
@@ -590,6 +594,8 @@ class SelfTestScenariosTest {
                 "GATE-shatter-caps.yml must lint clean (2026-11-24, written under the same rules)");
         assertEquals(List.of(), byGate.get("focused-beam").stream().map(ScenarioLint.Finding::line).toList(),
                 "GATE-focused-beam.yml must lint clean (2026-11-24, written under the same rules)");
+        assertEquals(List.of(), byGate.get("mage-guaranteed").stream().map(ScenarioLint.Finding::line).toList(),
+                "GATE-mage-guaranteed.yml must lint clean (2026-11-24, written under the same rules)");
         assertTrue(byGate.get("deft-hands").stream().anyMatch(f -> f.row().equals("DH3")
                         && f.rule() == ScenarioLint.Rule.SELF_STAGED && f.detail().startsWith("chains on DH1")),
                 "the control: DH3's chain on DH1 is found, so the lint reads the shipped files: " + byGate.get("deft-hands"));
@@ -611,9 +617,10 @@ class SelfTestScenariosTest {
                 for (Scenario.Step st : s.steps()) if (st.verb() == Scenario.Verb.PAD) padGates.add(gate.getKey() + "#" + s.row());
             }
         }
-        assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup", "focused-beam#setup"),
+        assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup", "focused-beam#setup",
+                        "mage-guaranteed#setup"),
                 padGates, "only enchant-columns, (2026-11-23) enchant-changes, (2026-11-24) shatter-caps and (2026-11-24)"
-                        + " focused-beam opt in, each in its setup");
+                        + " focused-beam and (2026-11-24) mage-guaranteed opt in, each in its setup");
         Scenario changes = shipped().gates().get("enchant-changes").getFirst();
         assertEquals(Scenario.Verb.PAD, changes.steps().get(0).verb(), changes.steps().toString());
         assertEquals(Scenario.Verb.PREFLIGHT, changes.steps().get(1).verb(), changes.steps().toString());

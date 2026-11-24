@@ -1389,3 +1389,13 @@ the path every fire hit and every Ignite takes.
   '^element: fire'` over the weapons with `class: mage`), and on no other gear (the unique pool's element + class filters).
 
 **Nothing built.** The gate on top therefore carries no Mana Burn row.
+
+## 26. THE GATE (`feat/mage-guaranteed-gate`, on PR E)
+
+`docs/gates/GATE-mage-guaranteed.md`, `selftest/GATE-mage-guaranteed.yml` (`/rpg selftest mage-guaranteed`; setup and
+MG1-MG11 with MG5C, MG7a-c, MG9a-b: 15 rows, ALL AUTO, SURVIVAL, on the pad), its R0b scan as a committed script
+(`GATE-mage-guaranteed-r0b.ps1`), ONE R0 for the stack. Registered in `selftest/index.yml`; `SelfTestScenariosTest`
+re-pinned (47 gates; 390 scenarios recounted from the files, 437 keys less 47 setups; the gate lints clean, with a planted
+violation as its control). **`clear_state` now also forgets Wildfire's chains** (`SelfTestDrivers`; server-side, UNMUTATED:
+MG10 is its first reader). R0b was run before the commit against a jar built from this tree: see the gate's last section.
+Rows for PR B and PR F: none (STOPPED).

@@ -122,3 +122,6 @@ gates:
 # focused-beam (2026-11-24, feat/focused-beam on feat/behaviour-weapon-filter): the owed weapon filter and Focused Beam,
 # on the pad. docs/gates/GATE-focused-beam.md carries its R0.
   - focused-beam
+# mage-guaranteed (2026-11-24, feat/mage-guaranteed-gate on feat/wildfire): the press tick, the content changes, the
+# guaranteed candidate and its five cast tunes, and Wildfire, on the pad. docs/gates/GATE-mage-guaranteed.md carries its R0.
+  - mage-guaranteed

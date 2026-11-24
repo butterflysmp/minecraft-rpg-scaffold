@@ -827,9 +827,11 @@ final class SelfTestDrivers {
         cooldowns.clear(id);
         var adapters = run.adapters();
         adapters.behaviourHits().streaks().forgetPlayer(id);
+        // Wildfire's chains too (2026-11-24): a row must not inherit the previous row's chain on a mob of the same id.
+        adapters.behaviourHits().chains().forgetPlayer(id);
         boolean orb = adapters.orbs().of(id).isPresent();
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, id, "selftest");
-        run.log("STAGE clear_state cooldowns=cleared streaks=forgotten orb=" + (orb ? "removed" : "none"));
+        run.log("STAGE clear_state cooldowns=cleared streaks=forgotten chains=forgotten orb=" + (orb ? "removed" : "none"));
         return Optional.empty();
     }
 
