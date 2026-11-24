@@ -69,10 +69,11 @@ triggers:
       # World#rayTrace over the segment, RAY_SIZE 0, exact boxes), READ, as for the Crystal Shard Staff.
       speed: 3.0
       gravity: 0                           # SEAT PLACEHOLDER 2026-11-22
-      # SEAT PLACEHOLDER 2026-11-22: "a short reach of about 12 blocks". 4 ticks x 3.0 = 12 blocks of path from his
-      # eye: the first step runs inline at the press, and the flight ends when the 4th tick's segment finds nothing
-      # (ProjectileFlight.step, READ). A pellet that reaches it unspent lands in the air: the hit visual plays, no damage.
-      max_lifetime_ticks: 4
+      # BEN, 2026-11-24: "I want to increase the range that the cobble travels normally to 18 blocks" (was 4 ticks, the
+      # seat's "about 12"). 6 ticks x 3.0 = 18 blocks of path from his eye: the first step runs inline at the press, and
+      # the flight ends when the 6th tick's segment finds nothing (ProjectileFlight.step, READ). A pellet that reaches it
+      # unspent lands in the air: the hit visual plays, no damage.
+      max_lifetime_ticks: 6
       item: cobblestone                    # SEAT PLACEHOLDER 2026-11-22: an ITEM body of cobblestone, one per pellet
       trail: breacher_trail                # SEAT PLACEHOLDER 2026-11-22
       # THE SPREAD. count is the TOTAL: one pellet down the aim and six on a ring (SpreadPattern.directionsFor, READ).
