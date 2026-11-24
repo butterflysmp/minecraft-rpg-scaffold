@@ -386,8 +386,20 @@ ingot where this has netherite; the two grids differ in that one cell (READ, the
 place in `loot/cascade.yml` all stand.
 
 **OPEN FOR BEN (asked, not answered, so NOT STATED):**
-1. Whether the Boltor stays in the cascade loot pool now that it is craftable.
-2. Whether it stays uncommon when every other ladder weapon is common.
+1. ~~Whether the Boltor stays in the cascade loot pool now that it is craftable.~~ **DROPPED 2026-11-23, the seat's
+   error** (see the correction below): there is no cascade pool in the game for it to stay in. Raised again when real
+   drop sources are designed.
+2. ~~Whether it stays uncommon when every other ladder weapon is common.~~ **ANSWERED BEN 2026-11-23** (below).
+
+> **BEN, 2026-11-23, VERBATIM, on the Boltor's rarity** (relayed by the seat's brief of 2026-11-23): *"Yes it is uncommon
+> lining up with the Netherite Sword"*. **The rarity line is BEN:** `boltor.yml`'s `rarity: uncommon` is his ruling,
+> no longer a value merely left standing.
+
+> **CORRECTED 2026-11-23, THE SEAT'S ERROR: THE BOLTOR IS IN NO DROP SOURCE.** "Its place in `loot/cascade.yml`" above
+> and open question 1 both assumed a drop pool. READ at `383ded19`: `loot/cascade.yml`'s real `sources:` is `{}`; its
+> only mention of `boltor` is the `uncommon` pool of `dev_example_not_a_drop`, under `dev_sources:`, which `LootLoader`
+> loads only on a dev server and which only the dev command `/rpg loot` reads; nothing in the game rolls the table
+> (`RpgPlugin`'s `loot` field: "Loaded and logged; nothing rolls them yet"). Nothing changes in content.
 
 **FLAGGED, NOT A QUESTION NOW:** its 19 a shot sits below the stone-tier Crossbow's 37 (per shot; the Boltor fires every
 16 ticks from a quiver of 8, the Crossbow once per 25-tick charge).

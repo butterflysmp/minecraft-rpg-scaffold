@@ -153,18 +153,45 @@ public final class SelfTestService {
         } else {
             List<Scenario> scenarios = loaded.gates().get(gate);
             if (scenarios == null) return "No selftest gate '" + gate + "'. Gates: " + loaded.gates().keySet();
-            for (Scenario s : scenarios) {
-                // A single row still runs its gate's setup first: the row was written against that setup.
-                if (row == null || s.row().equals(row) || s.row().equals(Scenario.SETUP)) queue.add(s);
+            if (row != null) {
+                // ANY LETTER CASE (the seat's brief, 2026-11-23): Ben's "vb3r2" started no run. From here on the
+                // row is spelled as the gate spells it, so the START line and the reply name the real row.
+                Optional<String> matched = matchRow(scenarios, row);
+                if (matched.isEmpty()) return noRow(row, gate);
+                row = matched.get();
             }
-            if (row != null && queue.stream().noneMatch(s -> s.row().equals(row))) {
-                return "No row '" + row + "' in selftest gate '" + gate + "'.";
-            }
+            queue.addAll(queueFor(scenarios, row));
         }
         active = new SelfTestRun(this, player, queue);
         active.start(gate + (row == null ? "" : " " + row));
         return "Selftest started: " + gate + (row == null ? "" : " " + row)
                 + ". The log carries every reading; this prints none. /rpg selftest stop ends it and restores.";
+    }
+
+    /**
+     * The row he typed, as the gate spells it, matched IGNORING CASE; empty when no row matches. An exact spelling wins
+     * first, so a gate holding two rows that differ only in case (none ships one: {@code SelfTestRowMatchTest}) still
+     * reaches each by its own spelling, and a spelling matching neither exactly refuses rather than picking one.
+     */
+    static Optional<String> matchRow(List<Scenario> scenarios, String typed) {
+        for (Scenario s : scenarios) if (s.row().equals(typed)) return Optional.of(s.row());
+        List<String> folded = scenarios.stream().map(Scenario::row).filter(r -> r.equalsIgnoreCase(typed)).toList();
+        return folded.size() == 1 ? Optional.of(folded.getFirst()) : Optional.empty();
+    }
+
+    /** One gate's queue: every scenario when {@code row} is null, else its setup and that row (spelled exactly). */
+    static List<Scenario> queueFor(List<Scenario> scenarios, String row) {
+        List<Scenario> queue = new ArrayList<>();
+        for (Scenario s : scenarios) {
+            // A single row still runs its gate's setup first: the row was written against that setup.
+            if (row == null || s.row().equals(row) || s.row().equals(Scenario.SETUP)) queue.add(s);
+        }
+        return queue;
+    }
+
+    /** What he is told when no row matches: what he typed, unchanged, and the gate. */
+    static String noRow(String typed, String gate) {
+        return "No row '" + typed + "' in selftest gate '" + gate + "'.";
     }
 
     public String stop(Player player) {
