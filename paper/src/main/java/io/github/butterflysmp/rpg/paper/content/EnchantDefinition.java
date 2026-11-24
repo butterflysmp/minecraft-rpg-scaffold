@@ -72,7 +72,8 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 EnchantEffect effect, GearClass gearClass,
                                 List<Integer> valueByLevel, String icon,
                                 io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires,
-                                String element, String weapon) {
+                                String element, String weapon,
+                                io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour) {
 
     /**
      * A UNIQUE (an {@code element}) or NORMAL enchant, never weapon-specific: every enchant shipped before the columns
@@ -82,7 +83,15 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
     public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect, GearClass gearClass,
                              List<Integer> valueByLevel, String icon,
                              io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires, String element) {
-        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, icon, requires, element, null);
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, icon, requires, element, null, null);
+    }
+
+    /** With a {@code weapon} (W1), and no behaviour: every stat enchant. */
+    public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect, GearClass gearClass,
+                             List<Integer> valueByLevel, String icon,
+                             io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires, String element,
+                             String weapon) {
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, icon, requires, element, weapon, null);
     }
 
     /**
@@ -184,10 +193,12 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             // DEFT HANDS: the RELOAD is the thing this effect modifies, and magazine <=> reload is enforced both ways
             // (WeaponDefinition), so it is exactly the set QUIVER_SIZE reaches. Same gate, same refusal of universal.
             case RELOAD_TIME -> Gate.RANGER_ONLY;
+            // A BEHAVIOUR acts on the hits of the weapon in the MAIN HAND that made them (B2), so a fighting class or universal.
+            case SHOCKWAVE -> Gate.MAIN_HAND_ONLY;
         };
         boolean curved = switch (effect) {
             case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> true;
-            case DURABILITY                                                            -> false;
+            case DURABILITY, SHOCKWAVE                                                            -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
@@ -198,6 +209,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             requireNoCurve(id, effect, valueByLevel);
         }
         requireGate(id, effect, gearClass, gate);
+        requireBehaviour(id, effect, maxLevel, behaviour);
     }
 
     /** Which gates an effect's mechanism can actually be read through. See {@link #requireGate}. */
@@ -361,6 +373,36 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                         + " content decision rather than a negative here");
             }
         }
+    }
+
+    /**
+     * B1 (2026-11-23): a BEHAVIOURAL effect carries exactly its own behaviour, with one entry per level in every per-level
+     * list; a stat effect carries none. Refused by name either way, so a file cannot declare a block nothing reads, nor a
+     * behaviour whose levels disagree with {@code max_level}.
+     */
+    private static void requireBehaviour(String id, EnchantEffect effect,
+                                         int maxLevel, io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour) {
+        boolean wants = effect == EnchantEffect.SHOCKWAVE;
+        if (!wants) {
+            if (behaviour != null) {
+                throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
+                        + ", which is a stat, and must not declare a behaviour block");
+            }
+            return;
+        }
+        if (!(behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shockwave shockwave)) {
+            throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
+                    + " and so requires its " + token(effect) + ": block");
+        }
+        if (shockwave.levels() != maxLevel) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares max_level " + maxLevel + " but its "
+                    + token(effect) + ": block has " + shockwave.levels() + " levels; they must match");
+        }
+    }
+
+    /** True when this enchant DOES something on a hit or cast (B1) rather than adding to a stat. */
+    public boolean isBehavioural() {
+        return behaviour != null;
     }
 
     /** The other half of the same rule: an effect with no curve may not author one. */

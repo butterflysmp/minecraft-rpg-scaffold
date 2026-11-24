@@ -1,0 +1,35 @@
+# KINETIC TREMORS -- Ben's first UNIQUE enchant (the seat's brief of 2026-11-23, PR C). Ben, verbatim: "The first:
+# Kinetic Tremors  Any kinetic weapon from Melee, Ranger, and Mage.  multiple consecutive hits within 3 seconds emits a
+# damaging shockwave". Asked how many hits; same target or any; where it comes from; whether the count resets; what
+# levels improve: "1. 3 hits rolling 2. Same target 3. The mob that was hit 4. No 5. The damage and size". "Extra notes:
+# 1. Damage will scale with the gear score 2. Multiple pellets count so one shot triggering it is fine" / "one more note,
+# there is a .25s cooldown on shockwaves".
+#
+# WHAT IT DOES (core BehaviourHits and ShockwaveStreaks): per player and target, the times of his hits by the weapon
+# carrying it are kept. When a hit makes it 3 on that target within the last 60 ticks AND his own shockwave cooldown
+# (5 ticks, per PLAYER) is clear, a shockwave leaves that mob's position and damages every mob within the level's radius,
+# the struck one included, as SECONDARY damage (its own PLAYERHIT source `kinetic_tremors/shockwave`, never a hit itself,
+# never himself, never a player), through the same damage path as an ability hit: amount x gear score / 100, then the hit's
+# damage enchant, class and level bonus, charge and crit. The count is NOT cleared. A damage-over-time tick is not a hit.
+#
+# ELIGIBILITY, UNDER U2 (element, then class, then requires): `element: kinetic` and `class: universal`. Universal admits
+# every class, and the element admits only gear whose element is kinetic, which is only weapons (shields, armour, tools
+# and accessories declare no element, U5), and every shipped weapon is melee, ranger or mage. So it reaches EVERY KINETIC
+# WEAPON OF THE THREE CLASSES and nothing else (UniqueSlotContentTest pins all 16 and every other gear's empty pool).
+#
+# NAME THE QUANTITY: it moves no stat, so neither half can grant zero by arithmetic; the damage is a literal amount
+# scaled by the score, and every kinetic weapon lands hits, so eligibility holds on all 16.
+display_name: "Kinetic Tremors"            # BEN
+icon: piston                               # SEAT PLACEHOLDER 2026-11-23 (B7)
+max_level: 3                               # SEAT PLACEHOLDER 2026-11-23: three levels, as every shipped enchant
+effect: shockwave
+class: universal                           # with the element below: every kinetic weapon of the three classes (BEN)
+element: kinetic                           # BEN: "Any kinetic weapon"; makes it UNIQUE (slot 1)
+shockwave:
+  hits: 3                                  # BEN: "3 hits rolling"
+  window_ticks: 60                         # BEN: "within 3 seconds". A hit 59 ticks old counts, 60 does not (SEAT PLACEHOLDER: the boundary)
+  cooldown_ticks: 5                        # BEN: ".25s cooldown on shockwaves", per player
+  damage_by_level: [10, 15, 20]            # SEAT PLACEHOLDER 2026-11-23 (Ben: levels improve "the damage and size")
+  radius_by_level: [3, 4, 5]               # SEAT PLACEHOLDER 2026-11-23, blocks, centre to centre
+  element: kinetic
+  visual: tremor_wave                      # SEAT PLACEHOLDER 2026-11-23

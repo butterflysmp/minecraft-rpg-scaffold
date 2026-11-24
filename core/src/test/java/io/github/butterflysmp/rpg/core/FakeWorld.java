@@ -95,10 +95,21 @@ public final class FakeWorld implements CombatWorld {
         return new Combatant(dummy.snapshot(), dummy);
     }
 
+    /**
+     * When true, {@link #combatantsNear} answers as the SERVER does: a BOX of half-extent {@code radius} on every axis
+     * (READ: {@code PaperCombatWorld.combatantsNear} is {@code World#getNearbyEntities(center, r, r, r)}), not the sphere
+     * this fixture uses by default. A caller that needs a sphere must cut one itself, and only this mode can show it does.
+     */
+    public boolean boxSearch = false;
+
     @Override public Collection<Combatant> combatantsNear(Vec3 center, double radius) {
         double r2 = radius * radius;
         return entities.stream()
-                .filter(c -> c.position().distanceSquared(center) <= r2)
+                .filter(c -> boxSearch
+                        ? Math.abs(c.position().x() - center.x()) <= radius
+                                && Math.abs(c.position().y() - center.y()) <= radius
+                                && Math.abs(c.position().z() - center.z()) <= radius
+                        : c.position().distanceSquared(center) <= r2)
                 .map(FakeWorld::pair)
                 .toList();
     }
@@ -310,6 +321,32 @@ public final class FakeWorld implements CombatWorld {
                 .findFirst()
                 .map(d -> d.triggerScore)
                 .orElse(GearScore.BASELINE);
+    }
+
+    /** The held weapon's active behaviours, read LIVE off the dummy, as {@link #triggerScoreOf} reads its score. */
+    @Override public List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behavioursOf(UUID combatantId) {
+        return entities.stream()
+                .filter(d -> d.id().equals(combatantId))
+                .findFirst()
+                .map(d -> d.behaviours)
+                .orElse(List.of());
+    }
+
+    /** This world's one long-lived behaviour executor, as paper keeps one per server. */
+    public final io.github.butterflysmp.rpg.core.ability.effect.BehaviourHits behaviourHits =
+            new io.github.butterflysmp.rpg.core.ability.effect.BehaviourHits();
+
+    /** Every primary hit the applier reported, in order: who struck, and whether it counted. */
+    public record PrimaryHit(io.github.butterflysmp.rpg.core.combat.Caster caster, UUID targetId) {}
+    public final List<PrimaryHit> primaryHits = new ArrayList<>();
+
+    @Override public void primaryHit(io.github.butterflysmp.rpg.core.combat.Caster caster, Combatant target) {
+        primaryHits.add(new PrimaryHit(caster, target.id()));
+        behaviourHits.onHit(this, caster, target);
+    }
+
+    @Override public long currentTick() {
+        return now;
     }
 
     /** Every hit the applier reported to the PLAYERHIT trace, in order. */
@@ -585,6 +622,9 @@ public final class FakeWorld implements CombatWorld {
          * projectile still lands the value frozen at launch.
          */
         public int triggerScore = GearScore.BASELINE;
+
+        /** The held weapon's active behaviours (B2); on the dummy so a test can change them mid-flight. */
+        public List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behaviours = List.of();
 
         /** Whether the last applyDamage was flagged a crit. The seam bit, as the port delivered it. */
         public boolean lastDamageWasCrit = false;

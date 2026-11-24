@@ -159,6 +159,30 @@ public interface CombatWorld {
     int triggerScoreOf(UUID combatantId);
 
     /**
+     * THE BEHAVIOURAL ENCHANTS ACTIVE ON THE WEAPON {@code combatantId} HOLDS NOW (the seat's B2, 2026-11-23): each
+     * enchant that is the active candidate of its slot at level 1 or more and whose file declares a behaviour. Empty for
+     * an empty hand, a non-weapon, a mob, and an id this world does not know. Read where {@link #triggerScoreOf} is read,
+     * and frozen onto the {@code Caster} the same way, so a slow body lands with the behaviours it was MADE with.
+     *
+     * <p><b>Abstract</b>, for {@link #triggerScoreOf}'s reason: a default empty list would let a fixture compile while
+     * never presenting a behaviour, and no row could see the stamp.
+     */
+    java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behavioursOf(UUID combatantId);
+
+    /**
+     * ONE PRIMARY HIT LANDED (B2-B4, 2026-11-23): {@code EffectApplier}'s two damage arms report every damage they
+     * actually apply, inside the same gate as {@link #traceHit}. The adapter hands it to the server's one long-lived
+     * {@code BehaviourHits}, which ignores a caster that is not a hit ({@code Caster.countsAsHit}) or carries no
+     * behaviour, and decides the rest. Called on the thread that owns the TARGET.
+     *
+     * <p><b>Abstract</b>, so the fixture must say what it does with a hit.
+     */
+    void primaryHit(Caster caster, Combatant target);
+
+    /** The server's tick now: the clock a behaviour's window and cooldown are counted on. */
+    long currentTick();
+
+    /**
      * A dev trace: {@code EffectApplier} reports every direct ability or weapon hit it lands on a
      * non-player target, and the adapter logs it as {@code PLAYERHIT} while {@code /rpg mobtrace} is on.
      * See {@link TracedHit} for what is and is not reported, and why its amount is the pre-Defense one.

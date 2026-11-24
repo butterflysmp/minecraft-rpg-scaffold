@@ -195,12 +195,31 @@ public final class VanillaShots {
     /** The stamp (ruling 10): the weapon, the force, and his terms and score snapshotted NOW, as a cast does. */
     private void stamp(Player player, WeaponDefinition weapon, double force, Entity projectile) {
         CombatantSnapshot atShot = BukkitCombatant.snapshot(player, adapters.stats());
-        int score = new PaperCombatWorld(player.getWorld(), adapters).triggerScoreOf(player.getUniqueId());
+        PaperCombatWorld at = new PaperCombatWorld(player.getWorld(), adapters);
+        int score = at.triggerScoreOf(player.getUniqueId());
+        // B2 (2026-11-23): the bow's behavioural enchants at the RELEASE, as id and level, stamped beside the score.
+        java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveEnchant> behaviours = at.behavioursOf(player.getUniqueId())
+                .stream().map(b -> new io.github.butterflysmp.rpg.core.enchant.ActiveEnchant(b.enchantId(), b.level())).toList();
         projectile.getPersistentDataContainer().set(adapters.keys().vanillaShot, PersistentDataType.STRING,
-                ShotStamp.of(weapon.id(), force, atShot, score).encode());
+                ShotStamp.of(weapon.id(), force, atShot, score, behaviours).encode());
     }
 
     // ------------------------------------------------------------------------------------------ the hit
+
+    /**
+     * B2: the stamp's behavioural enchants, resolved against the registry at the hit. An id no longer loaded, or one that
+     * is no longer behavioural, gives nothing (fail closed).
+     */
+    private java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behavioursOf(ShotStamp stamp) {
+        java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> out = new java.util.ArrayList<>();
+        for (var e : stamp.behaviourEnchants()) {
+            adapters.enchants().find(e.enchantId())
+                    .filter(io.github.butterflysmp.rpg.paper.content.EnchantDefinition::isBehavioural)
+                    .ifPresent(def -> out.add(new io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour(
+                            def.id(), e.level(), def.behaviour())));
+        }
+        return out;
+    }
 
     /** A stamped arrow, shot by an online player, striking a mob. */
     public record Stamped(Player shooter, LivingEntity victim, ShotStamp stamp) {}
@@ -233,7 +252,7 @@ public final class VanillaShots {
         }
         CombatantSnapshot caster = hit.stamp().applyTo(BukkitCombatant.snapshot(hit.shooter(), adapters.stats()));
         new CastExecutor(new PaperCombatWorld(hit.victim().getWorld(), adapters), () -> { })
-                .landVanillaShot(trigger.get(), caster, hit.stamp().triggerScore(),
+                .landVanillaShot(trigger.get(), caster, hit.stamp().triggerScore(), behavioursOf(hit.stamp()),
                         BukkitCombatant.of(hit.victim(), adapters), VanillaShot.chargeScale(hit.stamp().force()));
     }
 }

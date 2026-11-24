@@ -148,7 +148,14 @@ public enum EnchantEffect {
      * <p><b>Its contribution is NEGATIVE</b>, so its gate is {@code ReloadTime.declares} ({@code != NONE}). The
      * {@code > NONE} of {@link #QUIVER_SIZE}'s {@code QuiverSize.boosts} would declare nothing, silently.
      */
-    RELOAD_TIME;
+    RELOAD_TIME,
+
+    /**
+     * A BEHAVIOUR, not a stat (the seat's B1, 2026-11-23): {@link EnchantBehaviour.Shockwave}, its parameters declared in
+     * the file's {@code shockwave:} block, the per-level ones as lists. No {@code value_by_level}: the block owns its
+     * numbers. Executed by {@code BehaviourHits} on a primary hit by the weapon carrying it.
+     */
+    SHOCKWAVE;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

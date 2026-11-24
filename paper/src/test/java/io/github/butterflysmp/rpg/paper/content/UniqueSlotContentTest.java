@@ -141,8 +141,8 @@ class UniqueSlotContentTest {
         assertEquals(6, l.accessories());
         assertEquals(60, l.gear().size());
         assertEquals(60, MASTER_POOLS.size(), "the snapshot covers the same 60");
-        assertEquals(11, l.real().size(), "a real server: the eleven");
-        assertEquals(12, l.dev().size(), "the control: a dev server adds the one dev_ example");
+        assertEquals(12, l.real().size(), "a real server: the eleven and Kinetic Tremors");
+        assertEquals(12, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
@@ -177,9 +177,9 @@ class UniqueSlotContentTest {
         assertEquals(24, withElement);
     }
 
-    /** The unique pool: the dev example on every KINETIC weapon (16 of them), nothing anywhere else. */
+    /** The unique pool: Kinetic Tremors on every KINETIC weapon (16 of them, all three classes), nothing anywhere else. */
     @Test
-    void theUniquePoolIsTheDevExampleOnKineticWeaponsAndEmptyElsewhere() {
+    void theUniquePoolIsKineticTremorsOnEveryKineticWeaponAndEmptyElsewhere() {
         Loaded l = load();
         var roster = EnchantRollItems.roster(l.dev().all());
         int kinetic = 0;
@@ -188,19 +188,20 @@ class UniqueSlotContentTest {
             List<String> pool = cls == null ? List.of()
                     : ids(EnchantRoll.uniquePoolFor(g.gearElement(), EnchantRollItems.has(g), cls, roster));
             if (g.gearElement().equals(Optional.of("kinetic"))) {
-                assertEquals(List.of("dev_kinetic_example"), pool, g.id());
+                assertEquals(List.of("kinetic_tremors"), pool, g.id());
                 kinetic++;
             } else {
                 assertEquals(List.of(), pool, g.id());
             }
         }
         assertEquals(16, kinetic, "the kinetic weapons: grep -l '^element: kinetic' content/weapons/*.yml | wc -l");
-        // And on a REAL server no gear has a unique pool at all (no real enchant declares element: yet).
+        // And on a REAL server the same: Tremors is real content, not a dev fixture.
         var realRoster = EnchantRollItems.roster(l.real().all());
         for (GearDefinition g : l.gear()) {
             var cls = GearItems.gearClassOf(g);
             if (cls == null) continue;
-            assertEquals(List.of(), EnchantRoll.uniquePoolFor(g.gearElement(), EnchantRollItems.has(g), cls, realRoster), g.id());
+            assertEquals(g.gearElement().equals(Optional.of("kinetic")) ? List.of("kinetic_tremors") : List.of(),
+                    ids(EnchantRoll.uniquePoolFor(g.gearElement(), EnchantRollItems.has(g), cls, realRoster)), g.id());
         }
     }
 

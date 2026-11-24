@@ -332,6 +332,36 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * B2 (2026-11-23): the behaviours of the MINTED WEAPON in his main hand, read where {@link #triggerScoreOf} reads the
+     * score, on his own thread. Anything that is not a minted weapon (an empty hand, a shield, a tool) gives none.
+     */
+    @Override
+    public java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behavioursOf(UUID combatantId) {
+        if (!(world.getEntity(combatantId) instanceof Player player)) return java.util.List.of();
+        Regions.requireOwned(player);
+        if (io.github.butterflysmp.rpg.paper.weapon.WeaponItems.heldWeaponId(player, ctx.keys()).isEmpty()) {
+            return java.util.List.of();
+        }
+        return io.github.butterflysmp.rpg.paper.weapon.BehaviourItems.activeOf(
+                io.github.butterflysmp.rpg.paper.weapon.EnchantItems.read(player.getInventory().getItemInMainHand(),
+                        ctx.keys()),
+                ctx.enchants()::find);
+    }
+
+    /** B2-B4: every primary hit goes to the server's one {@code BehaviourHits}, on the target's thread. */
+    @Override
+    public void primaryHit(io.github.butterflysmp.rpg.core.combat.Caster caster,
+                           io.github.butterflysmp.rpg.core.combat.Combatant target) {
+        ctx.behaviourHits().onHit(this, caster, target);
+    }
+
+    /** The server's tick ({@code Bukkit.getCurrentTick}), the clock every cooldown here is already on. */
+    @Override
+    public long currentTick() {
+        return org.bukkit.Bukkit.getCurrentTick();
+    }
+
+    /**
      * {@code PLAYERHIT}: one log line per traced hit while {@code /rpg mobtrace} is on, beside
      * {@code MOBHIT} (mob-to-player) on the same switch. The target's type is read here because core
      * has no entity types; the lookup is the {@code Attribution} shape, and a target this thread does

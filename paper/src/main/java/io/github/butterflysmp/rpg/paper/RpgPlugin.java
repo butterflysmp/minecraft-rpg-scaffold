@@ -1108,6 +1108,7 @@ OLD
         // cannot disagree about what counts as a material.
         problems.addAll(validator.validateEnchants(enchants.all(),
                 name -> Material.matchMaterial(name) != null));
+        problems.addAll(ContentValidator.validateBehaviourVisuals(enchants.all(), id -> visuals.find(id).isPresent()));
         // A mob's base_entity must name a real LIVING entity. Resolving that needs the Bukkit registry,
         // which is only reachable here -- so it arrives as predicates, like the potion/sound checks.
         // "arrow" is a real EntityType and would pass a mere existence check, then ClassCastException

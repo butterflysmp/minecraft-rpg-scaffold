@@ -134,7 +134,80 @@ public final class EnchantLoader {
                 // Bukkit registry that this loader deliberately cannot.
                 s.getString("icon", EnchantDefinition.DEFAULT_ICON),
                 requires(s.getString("requires"), id),
-                element, weapon);
+                element, weapon, behaviour(s, id));
+    }
+
+    /**
+     * THE BEHAVIOUR BLOCK (the seat's B1, 2026-11-23), read for the effect that names it: today {@code shockwave:}. The
+     * record ({@code EnchantDefinition.requireBehaviour}) refuses a behavioural effect without its block, a stat effect
+     * with one, and levels that disagree with {@code max_level}; this method refuses a block whose own keys are missing
+     * or malformed, BY THE KEY'S NAME (a misspelt key must never fall back to a default and act at a number nobody
+     * wrote). The block's shape:
+     *
+     * <pre>
+     * shockwave:
+     *   hits: 3                       # hits on ONE target within the window
+     *   window_ticks: 60
+     *   cooldown_ticks: 5             # per player
+     *   damage_by_level: [10, 15, 20] # one per level
+     *   radius_by_level: [3, 4, 5]    # blocks, one per level
+     *   element: kinetic              # the damage's element
+     *   visual: tremor_wave           # optional: presented once at the origin
+     * </pre>
+     */
+    private io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour(ConfigurationSection s, String id) {
+        ConfigurationSection b = s.getConfigurationSection("shockwave");
+        if (b == null) {
+            if (s.contains("shockwave")) {
+                throw new IllegalArgumentException("enchant '" + id + "': shockwave: must be a block of keys");
+            }
+            return null;
+        }
+        String element = requiredString(b, "element", id);
+        if (!elementExists.test(element)) {
+            throw new IllegalArgumentException("enchant '" + id + "' shockwave: element '" + element
+                    + "' is not a loaded element");
+        }
+        try {
+            return new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shockwave(
+                    requiredInt(b, "hits", id), requiredInt(b, "window_ticks", id), requiredInt(b, "cooldown_ticks", id),
+                    requiredDoubles(b, "damage_by_level", id), requiredDoubles(b, "radius_by_level", id),
+                    requiredString(b, "element", id), b.getString("visual"));
+        } catch (IllegalArgumentException ex) {
+            throw ex.getMessage().startsWith("enchant '") ? ex
+                    : new IllegalArgumentException("enchant '" + id + "' shockwave: " + ex.getMessage(), ex);
+        }
+    }
+
+    private static int requiredInt(ConfigurationSection b, String key, String id) {
+        if (!b.isInt(key)) {
+            throw new IllegalArgumentException("enchant '" + id + "' shockwave: is missing a whole-number '" + key + "'");
+        }
+        return b.getInt(key);
+    }
+
+    private static java.util.List<Double> requiredDoubles(ConfigurationSection b, String key, String id) {
+        if (!b.isList(key)) {
+            throw new IllegalArgumentException("enchant '" + id + "' shockwave: is missing the list '" + key
+                    + "' (one value per level)");
+        }
+        java.util.List<Double> out = new java.util.ArrayList<>();
+        for (Object o : b.getList(key)) {
+            if (!(o instanceof Number n)) {
+                throw new IllegalArgumentException("enchant '" + id + "' shockwave: '" + key + "' holds '" + o
+                        + "', which is not a number");
+            }
+            out.add(n.doubleValue());
+        }
+        return out;
+    }
+
+    private static String requiredString(ConfigurationSection b, String key, String id) {
+        String v = b.getString(key);
+        if (v == null || v.isBlank()) {
+            throw new IllegalArgumentException("enchant '" + id + "' shockwave: is missing '" + key + "'");
+        }
+        return v.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     /**
