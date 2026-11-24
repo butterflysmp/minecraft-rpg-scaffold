@@ -1252,12 +1252,15 @@ public final class CastExecutor {
         // LOCKED AIM (2026-11-21, the Knell Beam, ruling 3): the line captured HERE, at the cast, as values -- an origin
         // and a direction, never a handle (ruling 7). Null for a volley that re-aims every shot, as every volley did.
         Aim locked = spec.lockedAim() ? castAim : null;
+        // The press's tick, carried as a value for the FOCUSED trace only (Focused Beam, 2026-11-24): nothing decides on it.
+        long pressTick = world.currentTick();
         if (spec.warning() != null) warn(spec, locked, casterId);
         if (spec.windupTicks() == 0) {
-            volley(ability, casterId, spec, 0, weaponHit, locked);
+            volley(ability, casterId, spec, 0, weaponHit, locked, pressTick);
             return;
         }
-        world.scheduleOn(casterId, spec.windupTicks(), () -> volley(ability, casterId, spec, 0, weaponHit, locked));
+        world.scheduleOn(casterId, spec.windupTicks(),
+                () -> volley(ability, casterId, spec, 0, weaponHit, locked, pressTick));
     }
 
     /**
@@ -1318,7 +1321,7 @@ public final class CastExecutor {
      * them.
      */
     private void volley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec, int shotIndex,
-                        boolean weaponHit, Aim locked) {
+                        boolean weaponHit, Aim locked, long pressTick) {
         Combatant self = world.combatant(casterId).orElse(null);
         if (self == null || !self.state().alive()) return;   // gone, or dead: the volley stops
         // A LOCKED volley fires down the line captured at the cast, wherever the caster now stands or looks. An
@@ -1347,11 +1350,51 @@ public final class CastExecutor {
         // shot above (the inherited, UNRULED volley re-pricing; flagged in PLAN-enchant-columns.md, not decided here).
         if (weaponHit) source = source.withWeaponHit().withBehaviours(world.behavioursOf(casterId));
 
+        // FOCUSED BEAM (2026-11-24): at the FIRST shot, which is the wind-up's end, a focused beam active on the weapon
+        // that pressed this volley (its ability id is <weapon>/...; the swap case is EnchantBehaviour.FocusedBeam's
+        // javadoc) fires ONE ray in place of every shot, and no further shot is scheduled. The behaviours, the aim and
+        // the Caster are the ones this shot just read, so the beam is aimed and priced exactly as the first bolt would be.
+        if (shotIndex == 0 && spec.of() instanceof CastSpec.Ray ray) {
+            for (io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active : source.behaviours()) {
+                if (active.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.FocusedBeam beam
+                        && ability.id().startsWith(beam.weaponId() + "/")) {
+                    focusedBeam(ability, source, live, ray, active, beam, pressTick);
+                    return;
+                }
+            }
+        }
+
         fireInner(ability, source, live, spec.of());
 
         if (shotIndex + 1 >= spec.shots()) return;
         world.scheduleOn(casterId, spec.intervalTicks(),
-                () -> volley(ability, casterId, spec, shotIndex + 1, weaponHit, locked));
+                () -> volley(ability, casterId, spec, shotIndex + 1, weaponHit, locked, pressTick));
+    }
+
+    /**
+     * FOCUSED BEAM'S ONE RAY (Ben, 2026-11-24: "Fires one stronger beam after the wind up." / "108/162/216" / "No piece" /
+     * "increase the range to 48 blocks" / "Yes", where he looks when the wind-up ends). The volley's OWN inner ray, read
+     * here from the weapon's spec and never copied: its beam visual and tolerance as authored, its range replaced by the
+     * enchant's, and pierce OFF (Ben: no pierce; it stops at the first body, as every bolt does). Its hit is the weapon's
+     * own on_hit with every damage replaced by the level's amount in the enchant's element, landed by {@link #launchRay}
+     * on a derived ability that keeps the weapon's id (so the PLAYERHIT source is the weapon's), through the same applier
+     * as every hit: the gear score scales it, the hit visual rides as authored, and it is one primary hit.
+     */
+    private void focusedBeam(AbilityDefinition ability, Caster source, Aim aim, CastSpec.Ray ray,
+                             io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active,
+                             io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.FocusedBeam beam, long pressTick) {
+        double amount = beam.damageAt(active.level());
+        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> onHit = new java.util.ArrayList<>();
+        for (io.github.butterflysmp.rpg.core.ability.effect.EffectSpec effect : ability.onHit()) {
+            onHit.add(effect instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage
+                    ? new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(amount, beam.element())
+                    : effect);
+        }
+        AbilityDefinition focused = new AbilityDefinition(ability.id(), ability.displayName(), ability.element(),
+                ability.cooldownTicks(), ability.cost(), ability.cast(), onHit, ability.description(), ability.onCast());
+        world.traceFocusedBeam(source.id(), ability.id(), aim.origin(), beam.range(), pressTick);
+        launchRay(focused, source.withPayloadDamage(amount), aim,
+                new CastSpec.Ray(beam.range(), ray.beam(), false, ray.tolerance()));
     }
 
     /**

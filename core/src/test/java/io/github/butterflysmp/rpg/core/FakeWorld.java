@@ -454,6 +454,14 @@ public final class FakeWorld implements CombatWorld {
     public record Split(UUID casterId, String source, Vec3 at, int bursts, long tick) {}
     public final List<Split> splits = new ArrayList<>();
 
+    /** Every Focused Beam fired (2026-11-24): who, what, from where, how far, when pressed and when fired. */
+    public record FocusedBeamTrace(UUID casterId, String source, Vec3 from, double range, long pressedTick, long tick) {}
+    public final List<FocusedBeamTrace> focusedBeams = new ArrayList<>();
+
+    @Override public void traceFocusedBeam(UUID casterId, String source, Vec3 from, double range, long pressedTick) {
+        focusedBeams.add(new FocusedBeamTrace(casterId, source, from, range, pressedTick, now));
+    }
+
     @Override public void traceSplit(UUID casterId, String source, Vec3 at, int bursts) {
         splits.add(new Split(casterId, source, at, bursts, now));
     }

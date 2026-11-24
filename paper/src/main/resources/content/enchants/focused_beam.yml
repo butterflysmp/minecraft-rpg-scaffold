@@ -1,0 +1,29 @@
+# FOCUSED BEAM -- the Cursed Emerald's WEAPON-SPECIFIC enchant (the seat's brief of 2026-11-24, PR 2 on the weapon filter).
+# Ben, verbatim: "I'd like to scope the next enchantment for the Cursed Emerald: Focused Beam. Fires one stronger beam after
+# the wind up." / asked the beam's damage by level, whether it pierces, whether the wind-up, mana, cooldown or range
+# change, and whether it fires where he is looking when the wind-up ends: "1. 108/162/216 2. No piece 3. Everything the
+# same except increase the range to 48 blocks. 4. Yes"
+# (The seat reads "No piece" as no pierce, and 3 as THIS beam's range being 48 while the plain volley keeps its 32: the
+# 48's scope is THE SEAT'S READING, OPEN FOR BEN.)
+#
+# WHAT IT DOES (core CastExecutor.focusedBeam, while it is the ACTIVE candidate of the Cursed Emerald's weapon slot at level
+# 1 or more): a press costs the volley's 40 mana and its 30-tick cooldown and plays its 20-tick wind-up, all as authored in
+# cursed_emerald.yml and none copied here; then, IN PLACE of the six bolts, ONE ray leaves along his aim as it is at the
+# wind-up's end (the same read the plain volley's first bolt makes). That ray is the volley's own inner ray, read from the
+# weapon at run time (its beam, emerald_beam), with its range replaced by 48 and never piercing: it stops at the first
+# mob. It carries the weapon's own on_hit with its damage replaced by the level's 108 / 162 / 216 kinetic (a primary hit:
+# the gear score scales it, the hit visual rides as authored, and it counts once for Kinetic Tremors).
+#
+# NAME THE QUANTITY: it reads the Cursed Emerald's VOLLEY OF RAYS (wind-up 20, inner ray range 32: authored, present) and
+# replaces its shots, its range and its damage; the eligibility half is `weapon: cursed_emerald`, the one weapon whose
+# volley it was designed for (W1). The loader refuses it, by name, on a weapon whose right click is not a volley of rays.
+display_name: "Focused Beam"               # BEN: "Focused Beam"
+icon: ender_eye                            # SEAT PLACEHOLDER 2026-11-24 (B7)
+max_level: 3                               # BEN: three damages, so three levels
+effect: focused_beam
+class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
+weapon: cursed_emerald                     # W1: weapon-specific, the Cursed Emerald's slot 0
+focused_beam:
+  range: 48                                # BEN: "increase the range to 48 blocks" (its scope, this beam only: SEAT'S READING, OPEN FOR BEN)
+  damage_by_level: [108, 162, 216]         # BEN: "1. 108/162/216"
+  element: kinetic                         # the Cursed Emerald's element

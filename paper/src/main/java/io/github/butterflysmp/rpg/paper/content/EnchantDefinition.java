@@ -194,11 +194,11 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             // (WeaponDefinition), so it is exactly the set QUIVER_SIZE reaches. Same gate, same refusal of universal.
             case RELOAD_TIME -> Gate.RANGER_ONLY;
             // A BEHAVIOUR acts on the hits of the weapon in the MAIN HAND that made them (B2), so a fighting class or universal.
-            case SHOCKWAVE, AIRBURST, SHATTER, GRANT_TRIGGER -> Gate.MAIN_HAND_ONLY;
+            case SHOCKWAVE, AIRBURST, SHATTER, FOCUSED_BEAM, GRANT_TRIGGER -> Gate.MAIN_HAND_ONLY;
         };
         boolean curved = switch (effect) {
             case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> true;
-            case DURABILITY, SHOCKWAVE, AIRBURST, SHATTER, GRANT_TRIGGER                                                            -> false;
+            case DURABILITY, SHOCKWAVE, AIRBURST, SHATTER, FOCUSED_BEAM, GRANT_TRIGGER                                                -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
@@ -402,6 +402,8 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                     ? a.levels() : -1;
             case SHATTER -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shatter s
                     ? s.levels() : -1;
+            case FOCUSED_BEAM -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.FocusedBeam f
+                    ? f.levels() : -1;
             // A granted trigger has no per-level list of its own: any max_level fits it. It must be WEAPON-SPECIFIC (it is granted
             // to ONE weapon), refused by name below.
             case GRANT_TRIGGER -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g

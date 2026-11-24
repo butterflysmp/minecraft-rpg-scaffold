@@ -199,6 +199,15 @@ public interface CombatWorld {
      */
     void traceSplit(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 at, int bursts);
 
+    /**
+     * A dev trace (2026-11-24, Focused Beam): {@code casterId}'s cast of {@code source}, PRESSED at {@code pressedTick},
+     * fired its one focused ray from {@code from} with {@code range}, on this tick. The adapter logs it as {@code FOCUSED}
+     * while {@code /rpg mobtrace} is on, beside PLAYERHIT: the one line that carries both the press's tick and the beam's,
+     * since PLAYERHIT carries none. It must not throw and must not change anything. Abstract, so the fixture records it.
+     */
+    void traceFocusedBeam(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 from, double range,
+                          long pressedTick);
+
     /** The server's one {@link Orbs} (Lapis Crystal's D2, 2026-11-23): every standing orb, one per player. */
     Orbs orbs();
 
