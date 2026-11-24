@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class BoltorSoundFlintTextTest {
 
-    private static final String BENS_FLAVOR = "Prehistoric magicians learned you could create fire by slamming mana into flint.";
+    private static final String BENS_FLAVOR = "Prehistoric magicians learned you could create fire by flinging mana into flint."; // Ben, 2026-11-24: "slamming" became "flinging"
     private static final String BENS_DESCRIPTION = "Hurls a fragment of burning mana";
 
     private static Logger quiet() {
@@ -74,7 +74,7 @@ class BoltorSoundFlintTextTest {
     void theFlintStaffsFlavorIsBensSentence() {
         WeaponDefinition staff = weapons().find("flint_staff").orElseThrow();
         assertEquals(BENS_FLAVOR, String.join(" ", staff.flavor()));
-        assertEquals(List.of("Prehistoric magicians learned you could", "create fire by slamming mana into flint."),
+        assertEquals(List.of("Prehistoric magicians learned you could", "create fire by flinging mana into flint."),
                 staff.flavor(), "the seat's break (SEAT PLACEHOLDER 2026-11-23)");
     }
 

@@ -92,8 +92,10 @@ flavor:
 triggers:
   right_click:
     name: "Cursed Volley"
+    # 2026-11-24: "six" became "three" with the volley (BEN: shots 3); every other word unchanged. The wording is a SEAT
+    # PLACEHOLDER 2026-11-24, OPEN FOR BEN.
     description:
-      - "Channel, then loose six"
+      - "Channel, then loose three"
       - "bolts down your line of sight."
 
     # AUTHORED 30, AND IT IS EXACTLY THE DERIVED FLOOR: windup 20 + (shots 6 - 1) x interval 2.
@@ -114,6 +116,12 @@ triggers:
     #    deliberately, because it is a TEST INSTRUMENT and that warning is its witness. SHIPPED
     #    CONTENT MUST NOT CARRY A PERMANENT EXPECTED WARNING -- a warning nobody is meant to act on
     #    is how a console stops being read.
+    #
+    # > DATED NOTE, 2026-11-24 (BEN: "decrease the normal volley count to 3"; the seat's brief, PR C): `shots` is now 3,
+    # > so the derived floor is 20 + (3 - 1) x 2 = 24, and the authored 30 is no longer exactly it. 30 is KEPT: Ben
+    # > named no cooldown change, 30 is above the floor (no boot warning), and max(30, 24) = 30 is what the tooltip
+    # > says, so it does not lie. Echo Beam (the guaranteed enchant, 4 / 5 / 6 shots) raises the floor to 26 / 28 / 30,
+    # > never above 30. The paragraph above is kept as the record of the 6-shot weapon.
     #
     # SO: IF YOU RETUNE windup_ticks, shots OR interval_ticks, RETUNE THIS IN THE SAME EDIT. The
     # mechanism will not break -- max() keeps you safe -- but the tooltip will start lying, and
@@ -141,7 +149,7 @@ triggers:
     cast:
       type: volley
       windup_ticks: 20
-      shots: 6
+      shots: 3
       interval_ticks: 2
       of:
         type: ray
@@ -182,7 +190,7 @@ triggers:
         range: 32
         beam: emerald_beam
 
-    # on_hit FIRES PER SHOT, so this is six impacts and six damage numbers, not one.
+    # on_hit FIRES PER SHOT, so this is six impacts and six damage numbers, not one. (Three of each since 2026-11-24.)
     #
     # AND IT PLAYS ON A MISS TOO. stepRay detonates at the end of the aim when nothing is struck,
     # so a missed volley bursts in mid-air at the end of its range -- inherited behaviour, shared by

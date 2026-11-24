@@ -1064,3 +1064,80 @@ original gone 0, lines changed 1 against a pristine copy; that row red; restored
 dated note on `GATE-focused-beam.md` (its six misses stand). **Carried as UNREAD, not audited** (the seat's word: only
 when a second timing surprise appears): where a REAL client's right click is handled (INFERRED: the same phase as the
 selftest's press), and whether any paper caller files a delay from the Bukkit heartbeat.
+
+### Ben's words of 2026-11-24, VERBATIM (the brief's; recorded once here for sections 20 to 26)
+
+> "There is a fundamental flaw with the weapon enchantments that we need to fix. If you pick it, it cannot be unpicked if
+> there's only one. There's a few ways we could go about this. What we're going to do is add one that comes with every
+> weapon guaranteed. This will just be the normal attack of the weapon and will slightly increase the stats."
+> "Let's start with the mage weapons."
+> "Flint Staff - Large Sparks - Increases the damage by +4/8/12
+>  Crystal Shard Staff - Sharp Crystals - Increases the damage by +3/6/9
+>  Living Lantern - Hot Potato - Consecutive hits increase damage by +5/10/15% each hit (+60% cap)
+>  Lapis Staff - Polished Scepter - Increases range by 4/8/12 blocks
+>  Cursed Emerald - Increases volley count to 4/5/6 (Side note decrease the normal volley count to 3)
+>  Knell Beam - Early Toll - Decreases wind-up time by 0.1/0.2/0.4
+>  Blaze King's Staff - leave as is for now, this weapon is due for a massive rework
+>  Volley Stone - Dev weapon slated for deletion"
+> "1. In the lore of the Flint staff, change the word "Slamming" to "Flinging"
+>  2. Delete the volley stone in this pass
+>  3. A Fire Element enchantment for the Flint staff and Living Lantern (Fire/Mage weapon specific, goes in the second
+>  slot) Mana Burn, Increases Scorch and Ignite damage by 10/20/30%"
+> Asked the Cursed Emerald enchant's name; Hot Potato's rules; whether these cost XP or come already active; whether Mana
+> Burn may also reach Blaze King's Staff; and the same trap in the second column: "1. Echo Beam 2. Same Target, 3s
+> rolling just like Kinetic Tremors, no 3. Yes they cost XP, no they don't come with these 4. Yes, BKS can take it too
+> 5. We'll cover that later, the difference is the second column doesn't have trade off like the first column does so
+> it's not as big of a deal"
+> Asked whether the streak counts only hits of the last 3 seconds (A) or is a chain kept alive while each hit lands
+> within 3 seconds of the one before, climbing to the cap (B): "B, also side note, change the name of Hot Potato to
+> Wildfire"
+
+## 21. PR B, THE VOLLEY STONE DELETED: STOPPED (no branch), WITH WHAT HANGS ON IT
+
+**The brief's rule: "If anything real hangs on it (a mechanism only it exercises, an item class, a stone of the build
+system), STOP ON THIS PR ALONE, say what, and carry on with the others."** READ at `c1ebabab`, three things only it
+exercises in shipped content, each checked by a command:
+
+1. **The per-definition `unscored: true` declaration.** `git grep -n 'unscored: true' -- paper/src/main/resources/content`
+   returns `volley_stone.yml:70` alone (and `WeaponLoader`'s `unscored` section says "Only volley_stone declares it").
+   Deleted, the instance-level exclusion (`WeaponLoader` reads it; `GearScore.carriesScore`, `PaperCombatWorld.heldScore`,
+   `GearScoreItems`, `WeaponLore`, `AnvilMenu`, `Side` compose or render it) keeps its code and loses its only shipped
+   user; `WeaponLoaderTest.theUnscoredDeclarationReachesTheDefinitionAndOnlyVolleyStoneCarriesIt` reads the shipped file
+   and goes red. Whether the mechanism is kept with a test-only fixture or deleted with it is a ruling.
+2. **A volley whose inner cast is a PROJECTILE** (Scatter). Every other shipped volley's inner cast is a ray
+   (`cursed_emerald`, `knell_beam`; READ by `grep -A3 'of:'` over the weapon files). `AbilitySchema` says projectile was
+   "admitted on day one and exercised by volley_stone". Deleted, `CastExecutor.fireInner`'s projectile arm has no
+   shipped user (core tests still build one).
+3. **The only EXOTIC item.** `grep -l 'rarity: exotic'` returns `volley_stone.yml` alone; it is the dev loot source's only
+   exotic pool (`cascade.yml` `dev_sources`), and `LootLoader` refuses the WHOLE file for an id that does not ship;
+   `GATE-loot-roll.yml` probes it twice.
+
+**Its other names, which would be prose or tests, not behaviour:** comments in core `Side` and `GearScore`, paper
+`Keys` (two), `PaperCombatWorld`, `StoneItems`, `AbilitySchema` (two), `WeaponLoader`, `AnvilMenu`, `GearScoreItems`
+(two), `QuiverItems`, `WeaponFire`, `WeaponLore`, `boltor.yml`, `cursed_emerald.yml` (two), `visuals/volley_beam.yml` and
+`visuals/volley_cast.yml` (its only users); tests `WeaponLoreLinesTest`, `CascadeLootTest`, `LootTallyTest`,
+`GearScoreTest` (core, own fixtures), and paper `VolleyFixtureTest` (whole class), `WeaponLoaderTest`,
+`GearScoreWiringSignatureTest`, `WeaponLoreTest` (own fixture), `CursedEmeraldContentTest`, `LootLoaderTest`,
+`UniqueSlotContentTest`, `StoneIdentityTest`, `AbilityLoaderTest`, `golden-lore.txt`; and `verification.md`'s R0c
+clause ("no `[Rpg]` WARN beyond `volley_stone`'s known pair", which goes in the same commit as the deletion).
+
+**NOT done, so: every gate on this stack keeps R0c's carve-out, and the "no volley_stone anywhere" row is not run.**
+Nothing else in the stack depends on it.
+
+## 22. PR C, TWO CONTENT CHANGES (`feat/mage-content-changes`, on PR A)
+
+- **`flint_staff.yml`:** "slamming" becomes "flinging" (BEN). The flavor now reads "Prehistoric magicians learned you
+  could" / "create fire by flinging mana into flint."; the break is where it was.
+- **`cursed_emerald.yml`:** `shots: 6` becomes `3` (BEN: "decrease the normal volley count to 3"); its description's
+  "six" becomes "three", every other word unchanged (SEAT PLACEHOLDER 2026-11-24 for the wording, OPEN FOR BEN). The
+  derived cooldown floor is now 20 + (3 - 1) x 2 = 24; the authored 30 is KEPT (Ben named no cooldown change; it boots
+  with no warning; the tooltip's 1.5 s is the real cooldown, max(30, 24)), with a dated note in the file. **Focused Beam
+  is untouched.** The plain volley is now **3 x 27 = 81** at score 100 against Focused Beam's **108 / 162 / 216**, a
+  comparison Ben has been shown.
+
+**Tests:** the pins moved to Ben's values (`BoltorSoundFlintTextTest` 2 lines, `CursedEmeraldContentTest` 4,
+`FocusedBeamContentTest` 3); `golden-lore.txt` regenerated, predicted and read **3 insertions / 3 deletions** (the flint
+line, "loose three", "27 x 3"); `FocusedBeamTest`'s fixture, which says it is copied from the file, moved to 3 shots (7
+lines). **Mutations, each marker present 1, original gone 0, lines changed 1, restored `cmp` identical, markers left
+0:** MUTSHOTS (`shots: 4`: 4 rows red across `CursedEmeraldContentTest`, `FocusedBeamContentTest`, `GoldenLoreTest`);
+MUTFLING ("slamming" back: `BoltorSoundFlintTextTest` and `GoldenLoreTest` red).
