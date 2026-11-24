@@ -70,21 +70,21 @@ class KineticTremorsContentTest {
                 new EnchantSlot(List.of(new EnchantCandidate("kinetic_tremors", 2)), 0),
                 new EnchantSlot(List.of(new EnchantCandidate("sharpness", 3)), 0),
                 EnchantSlot.empty()));
-        assertEquals(List.of(new ActiveBehaviour("kinetic_tremors", 2, t.behaviour())), BehaviourItems.activeOf(active, r::find),
+        assertEquals(List.of(new ActiveBehaviour("kinetic_tremors", 2, t.behaviour())), BehaviourItems.activeOf(active, "boltor", r::find),
                 "Tremors at II; Sharpness is a stat, not a behaviour");
 
         EnchantState notActive = new EnchantState(List.of(EnchantSlot.empty(),
                 new EnchantSlot(List.of(new EnchantCandidate("kinetic_tremors", 2)), EnchantSlot.NONE),
                 EnchantSlot.empty(), EnchantSlot.empty()));
-        assertEquals(List.of(), BehaviourItems.activeOf(notActive, r::find), "bought but not the active candidate");
+        assertEquals(List.of(), BehaviourItems.activeOf(notActive, "boltor", r::find), "bought but not the active candidate");
 
         EnchantState locked = new EnchantState(List.of(EnchantSlot.empty(),
                 new EnchantSlot(List.of(new EnchantCandidate("kinetic_tremors", 0)), EnchantSlot.NONE),
                 EnchantSlot.empty(), EnchantSlot.empty()));
-        assertEquals(List.of(), BehaviourItems.activeOf(locked, r::find), "a locked candidate");
+        assertEquals(List.of(), BehaviourItems.activeOf(locked, "boltor", r::find), "a locked candidate");
 
         EnchantState unknown = new EnchantState(List.of(EnchantSlot.empty(),
                 new EnchantSlot(List.of(new EnchantCandidate("gone_enchant", 1)), 0), EnchantSlot.empty(), EnchantSlot.empty()));
-        assertEquals(List.of(), BehaviourItems.activeOf(unknown, id -> Optional.empty()), "an id no longer loaded");
+        assertEquals(List.of(), BehaviourItems.activeOf(unknown, "boltor", id -> Optional.empty()), "an id no longer loaded");
     }
 }

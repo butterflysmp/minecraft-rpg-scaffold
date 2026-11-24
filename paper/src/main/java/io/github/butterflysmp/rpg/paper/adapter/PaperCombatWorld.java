@@ -355,13 +355,14 @@ public final class PaperCombatWorld implements CombatWorld {
     public java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behavioursOf(UUID combatantId) {
         if (!(world.getEntity(combatantId) instanceof Player player)) return java.util.List.of();
         Regions.requireOwned(player);
-        if (io.github.butterflysmp.rpg.paper.weapon.WeaponItems.heldWeaponId(player, ctx.keys()).isEmpty()) {
-            return java.util.List.of();
-        }
+        java.util.Optional<String> held = io.github.butterflysmp.rpg.paper.weapon.WeaponItems.heldWeaponId(player, ctx.keys());
+        if (held.isEmpty()) return java.util.List.of();
+        // The weapon filter (2026-11-24): the held weapon's id goes with its state, so a weapon-specific behaviour on
+        // any other weapon is dropped where it is read (BehaviourItems.activeOf).
         return io.github.butterflysmp.rpg.paper.weapon.BehaviourItems.activeOf(
                 io.github.butterflysmp.rpg.paper.weapon.EnchantItems.read(player.getInventory().getItemInMainHand(),
                         ctx.keys()),
-                ctx.enchants()::find);
+                held.get(), ctx.enchants()::find);
     }
 
     /** B2-B4: every primary hit goes to the server's one {@code BehaviourHits}, on the target's thread. */

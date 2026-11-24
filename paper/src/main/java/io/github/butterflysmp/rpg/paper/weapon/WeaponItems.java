@@ -258,7 +258,7 @@ public final class WeaponItems {
         // active. The same resolver the firing path asks (GrantedTriggers), over the same behaviour reading.
         List<io.github.butterflysmp.rpg.core.weapon.TriggerBinding> granted =
                 io.github.butterflysmp.rpg.core.weapon.GrantedTriggers.granted(weapon,
-                        BehaviourItems.activeOf(state, adapters.enchants()::find));
+                        BehaviourItems.activeOf(state, weapon.id(), adapters.enchants()::find));
         List<Component> base = WeaponLore.build(weapon, adapters.elements(),
                 QuiverItems.loadedInMeta(meta, adapters.keys()),
                 QuiverItems.capacityInMeta(meta, adapters.keys()),
