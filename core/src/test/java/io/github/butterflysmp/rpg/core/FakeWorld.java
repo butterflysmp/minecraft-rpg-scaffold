@@ -279,6 +279,17 @@ public final class FakeWorld implements CombatWorld {
         queue.add(new Scheduled(now + delayTicks, seq++, task));
     }
 
+    /** {@link #schedule} with a handle: its sequence number, which {@link #cancelScheduled} takes OUT of the queue. */
+    @Override public long scheduleCancellable(Vec3 near, int delayTicks, Runnable task) {
+        long handle = seq;
+        schedule(near, delayTicks, task);
+        return handle;
+    }
+
+    @Override public void cancelScheduled(long handle) {
+        queue.removeIf(s -> s.seq() == handle);
+    }
+
     /**
      * The entity twin of {@link #schedule}, faked at the SAME fidelity and with one extra rule.
      *
@@ -371,6 +382,14 @@ public final class FakeWorld implements CombatWorld {
 
     @Override public void traceOrb(UUID ownerId, String event, Vec3 at, String cause) {
         orbLines.add(new OrbLine(ownerId, event, at, cause, now));
+    }
+
+    /** Every ORBSHOT line, in order: one per line drawn from an orb to a struck mob. */
+    public record OrbShot(UUID owner, Vec3 from, Vec3 to, String visual) {}
+    public final List<OrbShot> orbShots = new ArrayList<>();
+
+    @Override public void traceOrbShot(UUID ownerId, Vec3 from, Vec3 to, String visual) {
+        orbShots.add(new OrbShot(ownerId, from, to, visual));
     }
 
     /** Every split the cast path reported, in order. */

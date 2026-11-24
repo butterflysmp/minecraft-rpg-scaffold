@@ -47,5 +47,5 @@ grant_trigger:
       # player; it carries every term of the beam that set it off. The orb is not used up.
       shot:
         radius: 8                          # BEN: "all enemies within a 8 block range"
-        percent_by_level: [20, 30, 40]     # BEN: "20/30/40% of the damage of the right click"
+        percent_by_level: [30, 50, 70]     # BEN, 2026-11-23: "Increase the damage of the crystal to 30/50/70%" (was 20/30/40)
         element: kinetic                   # the beam's element (the seat's ruling)

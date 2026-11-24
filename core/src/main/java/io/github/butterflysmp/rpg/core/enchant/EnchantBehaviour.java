@@ -57,14 +57,18 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, Enc
 
     /**
      * {@code effect: airburst} (Airburst Flames, 2026-11-23): the weapon's projectile, while it has hit nothing, ENDS
-     * once it has TRAVELLED {@code travelBlocks}, and {@code count} unguided bursts leave that point, fanned
+     * once it has TRAVELLED {@code travelBlocks}, and {@code count} bursts leave that point, fanned
      * {@code angleDegrees} apart sideways about its direction of travel ({@code SpreadPattern}: the centre one straight
      * on, the others {@code angleDegrees} either side), each at {@code speed} a tick for a further {@code burstTravelBlocks},
      * each a primary hit of the level's {@code damageByLevel} in {@code element} IN PLACE of the projectile's own damage.
      * A projectile that strikes anything before {@code travelBlocks} lands as authored and never splits.
+     *
+     * <p>{@code homing} (Ben, 2026-11-23: "I want the Airburst Flames to seek as well"): the bursts' OWN homing block, in
+     * the projectile grammar's terms, each burst seeking for itself; null, and they fly straight, as before it.
      */
     record Airburst(double travelBlocks, int count, double angleDegrees, double speed, double burstTravelBlocks,
-                    List<Double> damageByLevel, String element) implements EnchantBehaviour {
+                    List<Double> damageByLevel, String element,
+                    io.github.butterflysmp.rpg.core.ability.CastSpec.Homing homing) implements EnchantBehaviour {
         public Airburst {
             if (!(travelBlocks > 0) || Double.isInfinite(travelBlocks)) {
                 throw new IllegalArgumentException("airburst travel_blocks must be above 0, was " + travelBlocks);

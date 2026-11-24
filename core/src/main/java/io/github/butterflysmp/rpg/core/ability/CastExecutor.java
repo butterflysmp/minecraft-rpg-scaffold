@@ -604,6 +604,9 @@ public final class CastExecutor {
         io.github.butterflysmp.rpg.core.combat.Orbs.PlaceResult placed = orbs.place(caster.id(), marker, rest,
                 orb.radius(), orb.lifeTicks(), weaponId, enchantId, level, shotOf(orb));
         placed.replaced().ifPresent(old -> {
+            // Every removal cancels the old orb's expiry (the seat's item 6): its generation guard already made it
+            // harmless, and now nothing of it stays scheduled either.
+            if (old.expiryTask() >= 0) world.cancelScheduled(old.expiryTask());
             world.removeMarker(old.markerId());
             world.traceOrb(caster.id(), "removed", old.restPoint(), "replaced");
         });
@@ -618,10 +621,15 @@ public final class CastExecutor {
             world.driveMarker(marker, Vec3.ZERO);
             orbs.arrive(caster.id(), generation, world.currentTick()).ifPresent(arrived -> {
                 world.traceOrb(caster.id(), "rest", arrived.restPoint(), "");
-                world.schedule(rest, orb.lifeTicks(), () -> orbs.removeIf(caster.id(), generation).ifPresent(gone -> {
-                    world.removeMarker(gone.markerId());
-                    world.traceOrb(caster.id(), "removed", gone.restPoint(), "expired");
-                }));
+                // THE EXPIRY, by handle (the seat's item 6, 2026-11-23): the LINGER work=1 that opened LC2R2-LC4R2 on
+                // efa38636 was this task, left scheduled by OrbRemovals.remove. It could not act (removeIf matches only
+                // its own generation); the orb now carries its handle, and every removal cancels it.
+                long expiry = world.scheduleCancellable(rest, orb.lifeTicks(),
+                        () -> orbs.removeIf(caster.id(), generation).ifPresent(gone -> {
+                            world.removeMarker(gone.markerId());
+                            world.traceOrb(caster.id(), "removed", gone.restPoint(), "expired");
+                        }));
+                orbs.expiring(caster.id(), generation, expiry);
             });
         });
     }
@@ -655,8 +663,15 @@ public final class CastExecutor {
      * {@code <enchant>/crystal}, never a hit (so Kinetic Tremors never counts it), no behaviour, never himself, never a
      * player. It carries every term of the BEAM that set it off, exactly as a shockwave carries its hit's (ruling 2): the
      * beam's gear score, damage enchant, class and level bonus, charge and crit.
+     *
+     * <p><b>EACH SHOT IS DRAWN</b> (Ben, 2026-11-23: "Draw a line with particles from the crystal to the target with the
+     * same particles the right click uses"): {@code beamVisual} is the RAY that met the orb's own {@code beam}, passed in
+     * at the moment it fires (never copied into the enchant). One line from the rest point to each struck mob's sight
+     * point, and an {@code ORBSHOT} trace line for each; a ray that names no beam draws and traces nothing (the loader
+     * warns about such a weapon).
      */
-    private void orbShots(AbilityDefinition beam, Caster caster, io.github.butterflysmp.rpg.core.combat.Orbs.Orb orb) {
+    private void orbShots(AbilityDefinition beam, String beamVisual, Caster caster,
+                          io.github.butterflysmp.rpg.core.combat.Orbs.Orb orb) {
         Optional<Double> beamAmount = beam.onHit().stream()
                 .filter(e -> e instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage)
                 .map(e -> ((io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage) e).amount())
@@ -674,6 +689,13 @@ public final class CastExecutor {
             if (c.state().position().distanceSquared(centre) > shot.radius() * shot.radius()) continue;   // the sphere
             if (!world.lineOfSightClear(centre, c.state().sightPoint())) continue;                        // a clear line
             struck.add(c);
+        }
+        if (beamVisual != null) {
+            for (Combatant c : struck) {
+                Vec3 to = c.state().sightPoint();
+                world.presentAlong(centre, to, beamVisual);
+                world.traceOrbShot(caster.id(), centre, to, beamVisual);
+            }
         }
         List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> specs = new java.util.ArrayList<>();
         if (shot.visual() != null) specs.add(new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Visual(shot.visual()));
@@ -710,7 +732,9 @@ public final class CastExecutor {
 
     /**
      * The split: {@code count} bursts from {@code point}, fanned about the shot's direction of travel there
-     * ({@link io.github.butterflysmp.rpg.core.combat.SplitBasis#sidewaysOf} for "sideways"), never homing, each landing
+     * ({@link io.github.butterflysmp.rpg.core.combat.SplitBasis#sidewaysOf} for "sideways"), each seeking for itself when
+     * the enchant declares the bursts' own homing block (Ben, 2026-11-23: "I want the Airburst Flames to seek as well";
+     * none, and they fly straight), each landing
      * the ability's on_hit with every Damage replaced by the level's amount in the burst's element. They are PRIMARY hits
      * (the same caster; they count for any behaviour that counts hits), and they never split again: they are launched
      * here, not through {@link #launchOne}.
@@ -734,9 +758,14 @@ public final class CastExecutor {
         int burstTicks = io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst
                 .ticksToTravel(burst.burstTravelBlocks(), burst.speed());
         world.traceSplit(caster.id(), caster.source(), point, directions.size());
+        // The bursts' OWN homing block (the enchant's), never the shot's: each burst re-chooses the nearest visible live
+        // mob every tick (ProjectileFlight.steer), so two may choose the same one. Null: straight, as before.
+        ProjectileFlight.Seek seek = burst.homing() == null ? null
+                : new ProjectileFlight.Seek(burst.homing().lerp(), burst.homing().activationBlocks(),
+                        burst.homing().searchRadius());
         for (Vec3 direction : directions) {
             ProjectileFlight.launch(world, burstCaster, point, direction.scale(burst.speed()), spec.gravity(), burstTicks,
-                    new ProjectileFlight.Look(spec.trail(), spec.item(), spec.body()), null,
+                    new ProjectileFlight.Look(spec.trail(), spec.item(), spec.body()), seek,
                     (target, at) -> effects.applyAll(onHit, burstCaster, target, at));
         }
     }
@@ -938,7 +967,7 @@ public final class CastExecutor {
         }
 
         if (atOrb.isPresent()) {
-            orbShots(ability, caster, orb.get());
+            orbShots(ability, beam, caster, orb.get());
             return;
         }
         if (hit.isPresent()) {

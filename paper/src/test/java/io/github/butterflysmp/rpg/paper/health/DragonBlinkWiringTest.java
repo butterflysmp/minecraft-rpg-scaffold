@@ -132,13 +132,22 @@ class DragonBlinkWiringTest {
         assertEquals(1, code.stream().filter(l -> l.contains("calibrate(s);")).count(), "calibrated at one place");
     }
 
-    /** C2: every point task core schedules is registered with its point, and runs only if it is still pending. */
+    /**
+     * C2: every point task core schedules is registered with its point, and runs only if it is still pending.
+     *
+     * <p>SINCE 2026-11-23 (the seat's item 6: the orb's expiry is cancelled by handle) the one registering site is
+     * {@code scheduleCancellable}, which returns the {@link PendingWork} id; {@code schedule} calls it and discards the
+     * handle. The property is unchanged, and so is its guard: still ONE {@code onRegionLater} in the world, the registered
+     * one. This test pinned {@code schedule}'s own body until then.
+     */
     @Test
     void c2EveryPointTaskIsRegistered() throws IOException {
         List<String> code = file("adapter", "PaperCombatWorld.java");
         int sch = indexOf(code, "public void schedule(Vec3 near, int delayTicks, Runnable task) {");
-        assertTrue(code.get(sch + 1).contains("long id = ctx.work().add(world.getUID(), near.x(), near.y(), near.z());"), code.get(sch + 1));
-        assertTrue(code.get(sch + 3).contains("if (ctx.work().take(id)) task.run();"), code.get(sch + 3));
+        assertTrue(code.get(sch + 1).contains("scheduleCancellable(near, delayTicks, task);"), code.get(sch + 1));
+        int reg = indexOf(code, "public long scheduleCancellable(Vec3 near, int delayTicks, Runnable task) {");
+        assertTrue(code.get(reg + 1).contains("long id = ctx.work().add(world.getUID(), near.x(), near.y(), near.z());"), code.get(reg + 1));
+        assertTrue(code.get(reg + 3).contains("if (ctx.work().take(id)) task.run();"), code.get(reg + 3));
         assertEquals(1, code.stream().filter(l -> l.contains("onRegionLater(")).count(), "one point-scheduling site in the world");
     }
 

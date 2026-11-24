@@ -24,10 +24,14 @@ effect: airburst
 class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
 weapon: living_lantern                     # W1: weapon-specific, the Living Lantern's slot 0
 airburst:
-  travel_blocks: 14                        # BEN: "go to 14 blocks"
+  travel_blocks: 6                         # BEN, 2026-11-23: "B" -- "Split after 6 blocks into 3 pieces; pieces keep their 14." (was 14)
   count: 3                                 # BEN: "three ... projectiles"
   angle_degrees: 12                        # SEAT PLACEHOLDER 2026-11-23: the old repo's spread, 12 degrees apart
   speed: 0.7                               # SEAT PLACEHOLDER 2026-11-23: "faster" (BEN) read as double the lantern's 0.35
   burst_travel_blocks: 14                  # BEN: "an additional 14 blocks"
   damage_by_level: [25, 30, 35]            # BEN: "25/30/35 damage each burst"
   element: fire                            # the lantern's element
+  homing:                                  # BEN, 2026-11-23: "I want the Airburst Flames to seek as well." Each burst seeks for itself
+    lerp: 0.45                             # SEAT PLACEHOLDER 2026-11-23: the Living Lantern's own
+    activation_blocks: 0                   # SEAT PLACEHOLDER 2026-11-23: the Living Lantern's own (from the split point)
+    search_radius: 7                       # SEAT PLACEHOLDER 2026-11-23: the Living Lantern's own

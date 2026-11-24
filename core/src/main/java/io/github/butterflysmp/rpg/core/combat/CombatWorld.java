@@ -93,6 +93,16 @@ public interface CombatWorld {
     void schedule(Vec3 near, int delayTicks, Runnable task);
 
     /**
+     * {@link #schedule}, returning a HANDLE that {@link #cancelScheduled} ends it by (2026-11-23, the seat's item 6: the
+     * orb's expiry, which every removal must leave nothing behind of). The same rules: {@code delayTicks >= 1}, the thread
+     * owning {@code near}'s region.
+     */
+    long scheduleCancellable(Vec3 near, int delayTicks, Runnable task);
+
+    /** End a task {@link #scheduleCancellable} returned, if it has not run. Unknown or spent handles are a no-op. */
+    void cancelScheduled(long handle);
+
+    /**
      * Defer {@code task} by at least {@code delayTicks}, on the thread that owns this COMBATANT --
      * the entity twin of {@link #schedule}. A no-op if the combatant is not here, and if it goes
      * before the delay elapses the task simply never runs.
@@ -205,6 +215,14 @@ public interface CombatWorld {
      * one line per throw and per removal, and the boot's after-stop check reads them.
      */
     void traceOrb(UUID ownerId, String event, io.github.butterflysmp.rpg.core.Vec3 at, String cause);
+
+    /**
+     * {@code ORBSHOT} trace line (Ben, 2026-11-23: "Draw a line with particles from the crystal to the target"): one per
+     * line DRAWN from an orb to a mob it struck, {@code from} the orb's rest point, {@code to} the mob's sight point, in
+     * the beam's {@code visual}. Under mobtrace only, as {@code SPLIT} is, so a gate row can read it.
+     */
+    void traceOrbShot(UUID ownerId, io.github.butterflysmp.rpg.core.Vec3 from, io.github.butterflysmp.rpg.core.Vec3 to,
+                      String visual);
 
     /**
      * A dev trace: {@code EffectApplier} reports every direct ability or weapon hit it lands on a

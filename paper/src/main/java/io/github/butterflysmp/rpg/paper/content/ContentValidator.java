@@ -210,6 +210,43 @@ public final class ContentValidator {
         return problems;
     }
 
+    /**
+     * THE CRYSTAL'S DRAWN LINE NEEDS A BEAM (the seat's ruling on Ben's item 4, 2026-11-23): an orb's shots are drawn with
+     * the beam of the RAY that meets the orb ({@code CastExecutor.orbShots}), so every enchant granting an orb WITH a shot
+     * is checked against its weapon's ray triggers, and one that names no beam is warned: its shots would land undrawn.
+     */
+    public static List<String> validateOrbBeams(Collection<EnchantDefinition> enchants,
+                                                java.util.function.Function<String, java.util.Optional<
+                                                        io.github.butterflysmp.rpg.core.weapon.WeaponDefinition>> weapons) {
+        List<String> problems = new ArrayList<>();
+        for (EnchantDefinition enchant : enchants) {
+            if (enchant.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g) {
+                problems.addAll(orbBeamProblems(enchant.id(), g, weapons));
+            }
+        }
+        return problems;
+    }
+
+    /** One grant's half of {@link #validateOrbBeams}: pure, so it is a unit row. */
+    static List<String> orbBeamProblems(String enchantId, io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g,
+                                        java.util.function.Function<String, java.util.Optional<
+                                                io.github.butterflysmp.rpg.core.weapon.WeaponDefinition>> weapons) {
+        if (!(g.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Orb orb) || orb.shot() == null) {
+            return List.of();
+        }
+        var weapon = weapons.apply(g.weaponId());
+        if (weapon.isEmpty()) return List.of();   // the loader's refusal, not this check's
+        List<String> problems = new ArrayList<>();
+        for (io.github.butterflysmp.rpg.core.weapon.TriggerBinding t : weapon.get().triggers()) {
+            if (t.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Ray ray && ray.beam() == null) {
+                problems.add("enchant '" + enchantId + "' grants an orb whose shots are drawn with the beam of the ray that"
+                        + " meets it, but weapon '" + g.weaponId() + "' trigger '" + t.input() + "' is a ray that names no"
+                        + " beam: its shots there will land undrawn");
+            }
+        }
+        return problems;
+    }
+
 
     /**
      * A weapon's {@code ammo} must name an item a player can CARRY (the seat's ruling 1, 2026-11-22). A token that

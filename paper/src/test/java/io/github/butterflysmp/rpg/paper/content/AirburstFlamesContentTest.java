@@ -63,8 +63,10 @@ class AirburstFlamesContentTest {
         assertTrue(a.isWeaponSpecific());
         assertEquals(null, a.element(), "weapon-specific, never also unique");
         assertEquals(EnchantEffect.AIRBURST, a.effect());
-        assertEquals(new EnchantBehaviour.Airburst(14, 3, 12, 0.7, 14, List.of(25.0, 30.0, 35.0), "fire"), a.behaviour(),
-                "Ben's 14, three, 14 more and 25/30/35; the seat's 12 degrees and 0.7");
+        assertEquals(new EnchantBehaviour.Airburst(6, 3, 12, 0.7, 14, List.of(25.0, 30.0, 35.0), "fire",
+                        new io.github.butterflysmp.rpg.core.ability.CastSpec.Homing(0.45, 0, 7)), a.behaviour(),
+                "Ben's 6 (2026-11-23, \"B\"), three, 14 more and 25/30/35; the bursts seek (Ben: \"seek as well\"), on the"
+                        + " seat's placeholder 0.45 / 0 / 7, the lantern's own; the seat's 12 degrees and 0.7");
         assertEquals(3, a.maxLevel());
         assertEquals("fire_charge", a.icon(), "SEAT PLACEHOLDER (B7)");
     }
@@ -73,9 +75,9 @@ class AirburstFlamesContentTest {
     @Test
     void itsLineShowsEachLevelsBurstDamage() {
         EnchantDefinition a = shipped();
-        assertEquals("splits after 14 blocks into 3 bursts of 25 damage", EnchantEffectLine.bare(a, 1, GearClass.MAGE));
-        assertEquals("splits after 14 blocks into 3 bursts of 30 damage", EnchantEffectLine.bare(a, 2, GearClass.MAGE));
-        assertEquals("splits after 14 blocks into 3 bursts of 35 damage", EnchantEffectLine.bare(a, 3, GearClass.MAGE));
+        assertEquals("splits after 6 blocks into 3 bursts of 25 damage", EnchantEffectLine.bare(a, 1, GearClass.MAGE));
+        assertEquals("splits after 6 blocks into 3 bursts of 30 damage", EnchantEffectLine.bare(a, 2, GearClass.MAGE));
+        assertEquals("splits after 6 blocks into 3 bursts of 35 damage", EnchantEffectLine.bare(a, 3, GearClass.MAGE));
     }
 
     /** B1: a malformed airburst block is refused by the key's name; one file may not declare two behaviour blocks. */
