@@ -254,16 +254,29 @@ public final class ContentValidator {
      * {@code ORBBODY none} line), and the orb stands, and shoots, unseen. Checked over every enchant's granted ability,
      * the one place an orb is authored today.
      *
+     * <p>AND ITS PARTICLES MUST NAME A LOADED VISUAL (Ben, 2026-11-23: "Add a few particles around the lapis crystal"),
+     * named by id here, as every visual reference in this class is ({@link #validateBehaviourVisuals}): an unknown one
+     * would present nothing each beat.
+     *
      * @param isBlock does this id resolve to a material that is a block
+     * @param isVisual is this a loaded visual's id
      */
-    public static List<String> validateOrbBodies(Collection<EnchantDefinition> enchants, Predicate<String> isBlock) {
+    public static List<String> validateOrbBodies(Collection<EnchantDefinition> enchants, Predicate<String> isBlock,
+                                                 Predicate<String> isVisual) {
         List<String> problems = new ArrayList<>();
         for (EnchantDefinition enchant : enchants) {
             if (enchant.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g
                     && g.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Orb orb
-                    && orb.block() != null && !isBlock.test(orb.block().block())) {
-                problems.add("enchant '" + enchant.id() + "' grants an orb whose body block '" + orb.block().block()
-                        + "' is not a block: its throw will spawn no body");
+                    && orb.block() != null) {
+                if (!isBlock.test(orb.block().block())) {
+                    problems.add("enchant '" + enchant.id() + "' grants an orb whose body block '" + orb.block().block()
+                            + "' is not a block: its throw will spawn no body");
+                }
+                String particles = orb.block().particles();
+                if (particles != null && !isVisual.test(particles)) {
+                    problems.add("enchant '" + enchant.id() + "' grants an orb whose particles '" + particles
+                            + "' is not a loaded visual: it will present nothing at rest");
+                }
             }
         }
         return problems;

@@ -609,6 +609,10 @@ public final class CastExecutor {
         // removal cancels it; it acts only when every other removal was skipped.
         long backstop = !blockBody ? -1 : world.scheduleCancellable(aim.origin(),
                 orb.flightTicks() + orb.lifeTicks() + ORB_BACKSTOP_MARGIN_TICKS, () -> {
+                    // And the body's look beat, if the store still holds its orb (Ben's changes, 2026-11-23): the
+                    // backstop ends every task that animates the body it removes.
+                    orbs.of(caster.id()).filter(o -> o.markerId().equals(marker)).filter(o -> o.lookTask() >= 0)
+                            .ifPresent(o -> world.cancelScheduled(o.lookTask()));
                     world.removeMarker(marker);
                     world.traceOrb(caster.id(), "removed", rest, "backstop");
                 });
@@ -647,11 +651,16 @@ public final class CastExecutor {
                 // its own generation); the orb now carries its handle, and every removal cancels it.
                 long expiry = world.scheduleCancellable(rest, orb.lifeTicks(),
                         () -> orbs.removeIf(caster.id(), generation).ifPresent(gone -> {
-                            if (gone.backstopTask() >= 0) world.cancelScheduled(gone.backstopTask());
+                            cancelOrbTasks(gone);   // its backstop and its look beat; its own handle is spent
                             world.removeMarker(gone.markerId());
                             world.traceOrb(caster.id(), "removed", gone.restPoint(), "expired");
                         }));
                 orbs.expiring(caster.id(), generation, expiry);
+                // ITS LOOK AT REST (Ben's changes, 2026-11-23): the bob, the turn and the particles, on a beat, about
+                // the rest point, which does not move. A still body (no beat) has none.
+                if (blockBody && orb.block().animated()) {
+                    orbBeat(caster.id(), generation, marker, orb.block(), rest, arrived.arrivedTick());
+                }
             });
         });
     }
@@ -680,6 +689,27 @@ public final class CastExecutor {
     private void cancelOrbTasks(io.github.butterflysmp.rpg.core.combat.Orbs.Orb orb) {
         if (orb.expiryTask() >= 0) world.cancelScheduled(orb.expiryTask());
         if (orb.backstopTask() >= 0) world.cancelScheduled(orb.backstopTask());
+        if (orb.lookTask() >= 0) world.cancelScheduled(orb.lookTask());
+    }
+
+    /**
+     * ONE BEAT OF A RESTING BODY'S LOOK (Ben, 2026-11-23: "Make it float up and down and spin slightly similar to a dropped
+     * item"; "Add a few particles around the lapis crystal"). Scheduled {@code beatTicks} ahead at the rest point and
+     * recorded on the orb ({@code Orbs.looking}), so every removal cancels it; when it runs it sets the display's
+     * transformation to {@code look.pose(t)} interpolated over the beat, presents the particles at the rest point, and
+     * schedules the next. It stops by itself if the orb is gone or replaced, or its body is gone. The ONE task does both
+     * the motion and the particles. The rest point, what the beam meets and where the shots start, never moves.
+     */
+    private void orbBeat(UUID owner, long generation, UUID body, CastSpec.OrbBlock look, Vec3 rest, long restTick) {
+        io.github.butterflysmp.rpg.core.combat.Orbs orbs = world.orbs();
+        long handle = world.scheduleCancellable(rest, look.beatTicks(), () -> {
+            boolean live = orbs.of(owner).filter(o -> o.generation() == generation).isPresent();
+            if (!live || world.markerLocation(body).isEmpty()) return;
+            world.poseOrbBody(body, look.pose(world.currentTick() - restTick), look.beatTicks());
+            if (look.particles() != null) world.present(rest, look.particles());
+            orbBeat(owner, generation, body, look, rest, restTick);
+        });
+        orbs.looking(owner, generation, handle);
     }
 
     private static io.github.butterflysmp.rpg.core.combat.Orbs.Shot shotOf(CastSpec.Orb orb) {

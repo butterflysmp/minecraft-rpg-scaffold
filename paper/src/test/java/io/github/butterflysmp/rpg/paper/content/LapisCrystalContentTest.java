@@ -77,11 +77,13 @@ class LapisCrystalContentTest {
         assertEquals("kinetic", g.ability().element(), "the staff's element");
         assertEquals("lapis_staff", g.weaponId());
         assertEquals(new io.github.butterflysmp.rpg.core.ability.CastSpec.Orb(12, 10, 300, 0.6, null,
-                        new io.github.butterflysmp.rpg.core.ability.CastSpec.OrbShot(8, List.of(30.0, 50.0, 70.0), "kinetic", null),
-                        new io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock("lapis_block", 0.5, "#2A5CFF")),
-                g.ability().cast(), "D2: Ben's 12 blocks and 300 ticks; D3: Ben's 8 blocks, and his 30/50/70 (2026-11-23:"
-                        + " \"Increase the damage of the crystal to 30/50/70%\"); the seat's flight, radius and element; Ben's"
-                        + " lapis block (2026-11-23), at the seat's placeholder scale and glow");
+                        new io.github.butterflysmp.rpg.core.ability.CastSpec.OrbShot(15, List.of(30.0, 50.0, 70.0), "kinetic", null),
+                        new io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock("lapis_block", 0.5, null, 0.1, 60, 120, 10,
+                                "crystal_motes")),
+                g.ability().cast(), "D2: Ben's 12 blocks and 300 ticks; D3: his 30/50/70 (2026-11-23: \"Increase the damage of"
+                        + " the crystal to 30/50/70%\") and his 15 blocks (2026-11-23: \"Increase the range of the shots from the"
+                        + " lapis crystal to 15 blocks.\", was 8); the seat's flight, radius and element; Ben's lapis block, with no"
+                        + " glow (\"Remove the glow, it is excessive\"), bobbing, turning and with motes at the seat's placeholders");
     }
 
     /**
@@ -94,7 +96,7 @@ class LapisCrystalContentTest {
         WeaponRegistry w = weapons();
         EnchantDefinition c = shipped(w);
         String head = "grants Left-Click: Lapis Crystal (Cooldown: 30.0s | Mana Cost: 30); a beam into it strikes each foe"
-                + " within 8 for ";
+                + " within 15 for ";
         var gear = io.github.butterflysmp.rpg.core.weapon.GearClass.MAGE;
         assertEquals(head + "6.3 damage", io.github.butterflysmp.rpg.paper.weapon.EnchantEffectLine.bare(c, 1, gear, w::find));
         assertEquals(head + "10.5 damage", io.github.butterflysmp.rpg.paper.weapon.EnchantEffectLine.bare(c, 2, gear, w::find));

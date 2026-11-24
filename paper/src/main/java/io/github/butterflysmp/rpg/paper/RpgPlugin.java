@@ -1120,7 +1120,8 @@ OLD
         problems.addAll(ContentValidator.validateOrbBeams(enchants.all(), weapons::find));
         // A block-display orb body must name a block: the resolver the spawn uses, so the warning and the body agree.
         problems.addAll(ContentValidator.validateOrbBodies(enchants.all(),
-                id -> io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld.orbBlockMaterial(id) != null));
+                id -> io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld.orbBlockMaterial(id) != null,
+                id -> visuals.find(id).isPresent()));
         // A mob's base_entity must name a real LIVING entity. Resolving that needs the Bukkit registry,
         // which is only reachable here -- so it arrives as predicates, like the potion/sound checks.
         // "arrow" is a real EntityType and would pass a mere existence check, then ClassCastException

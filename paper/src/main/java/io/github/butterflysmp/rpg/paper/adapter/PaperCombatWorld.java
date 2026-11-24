@@ -453,8 +453,12 @@ public final class PaperCombatWorld implements CombatWorld {
             d.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(-s / 2, -s / 2, -s / 2),
                     new org.joml.AxisAngle4f(), new org.joml.Vector3f(s, s, s), new org.joml.AxisAngle4f()));
             d.setTeleportDuration(1);
-            d.setGlowing(true);
-            d.setGlowColorOverride(org.bukkit.Color.fromRGB(look.glowRgb()));
+            // OPTIONAL (Ben, 2026-11-23: "Remove the glow, it is excessive"): a look with no colour does not glow. The
+            // mechanism stays for a later orb.
+            if (look.glow() != null) {
+                d.setGlowing(true);
+                d.setGlowColorOverride(org.bukkit.Color.fromRGB(look.glowRgb()));
+            }
             d.setPersistent(false);
         });
         // NO TAG INSIDE THE SPAWN (the seat's fix of #265, 2026-11-23). READ, CraftRegionAccessor.addEntity: the consumer
@@ -488,6 +492,27 @@ public final class PaperCombatWorld implements CombatWorld {
                 "ORBBODY owner=%s id=%s type=%s block=%s glowing=%s glow=%s scale=%.3f teleport_duration=%d persistent=%s tick=%d",
                 ownerId, bodyId, type, block, glowing, glowRgb < 0 ? "none" : String.format("#%06X", glowRgb), scale,
                 teleportDuration, persistent, tick);
+    }
+
+    /**
+     * THE BODY'S LOOK AT REST (Ben's changes to the crystal, 2026-11-23): its transformation set to {@code pose} (a
+     * translation, and a turn about the vertical as the LEFT rotation), at its content scale, interpolated over
+     * {@code interpolationTicks} starting now. READ: {@code CraftDisplay.setInterpolationDelay} and
+     * {@code setInterpolationDuration} write the synced entity data {@code DATA_TRANSFORMATION_INTERPOLATION_START_DELTA_TICKS_ID}
+     * and {@code DATA_TRANSFORMATION_INTERPOLATION_DURATION_ID}; that the CLIENT eases the old transformation into the new
+     * one over that duration is INFERRED (the easing is client code, not in the server jar). The entity's position, the
+     * rest point, is not touched. The scale is read back off the body, so the pose and the spawn agree.
+     */
+    @Override
+    public void poseOrbBody(UUID bodyId, io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock.Pose pose,
+                            int interpolationTicks) {
+        if (!(markerOf(bodyId) instanceof org.bukkit.entity.Display d)) return;
+        org.joml.Vector3f scale = d.getTransformation().getScale();
+        d.setInterpolationDelay(0);
+        d.setInterpolationDuration(interpolationTicks);
+        d.setTransformation(new org.bukkit.util.Transformation(
+                new org.joml.Vector3f((float) pose.tx(), (float) pose.ty(), (float) pose.tz()),
+                new org.joml.AxisAngle4f((float) pose.yaw(), 0, 1, 0), scale, new org.joml.AxisAngle4f()));
     }
 
     /** Teleport the block body (ruling (a)); gone is a no-op, through {@link #markerOf}, as every marker call is. */
