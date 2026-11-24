@@ -15,13 +15,53 @@ public sealed interface CastSpec {
      * close a beam must pass to be stopped by it (D3). {@code item} is its look (a non-saved item marker).
      * {@code CastExecutor.throwOrb} flies it; {@code Orbs} holds it.
      */
-    record Orb(double range, int flightTicks, int lifeTicks, double radius, String item) implements CastSpec {
+    record Orb(double range, int flightTicks, int lifeTicks, double radius, String item, OrbShot shot)
+            implements CastSpec {
         public Orb {
             if (!(range > 0)) throw new IllegalArgumentException("orb range must be above 0, was " + range);
             if (flightTicks < 1) throw new IllegalArgumentException("orb flight_ticks must be 1 or more, was " + flightTicks);
             if (lifeTicks < 1) throw new IllegalArgumentException("orb life_ticks must be 1 or more, was " + lifeTicks);
             if (!(radius > 0)) throw new IllegalArgumentException("orb radius must be above 0, was " + radius);
             if (item == null || item.isBlank()) throw new IllegalArgumentException("orb item is required");
+        }
+
+        /** An orb with no shot: it stands, and a beam into it does nothing (D2's shape). */
+        public Orb(double range, int flightTicks, int lifeTicks, double radius, String item) {
+            this(range, flightTicks, lifeTicks, radius, item, null);
+        }
+    }
+
+    /**
+     * WHAT AN ORB DOES WHEN HIS OWN BEAM MEETS IT (Lapis Crystal's D3, 2026-11-23; YAML the orb cast's {@code shot:}
+     * block): it strikes every mob within {@code radius} of itself that it has a clear line to, each for
+     * {@code percentByLevel} (by the throwing enchant's level) of the beam's AUTHORED damage, read from the beam's own
+     * ability when it meets the orb, in {@code element}; {@code visual} (optional) is presented once at the orb.
+     */
+    record OrbShot(double radius, java.util.List<Double> percentByLevel, String element, String visual) {
+        public OrbShot {
+            if (!(radius > 0)) throw new IllegalArgumentException("orb shot radius must be above 0, was " + radius);
+            if (percentByLevel == null || percentByLevel.isEmpty()) {
+                throw new IllegalArgumentException("orb shot percent_by_level is required: one per level");
+            }
+            for (int i = 0; i < percentByLevel.size(); i++) {
+                Double p = percentByLevel.get(i);
+                if (p == null || !(p > 0) || p.isInfinite()) {
+                    throw new IllegalArgumentException("orb shot percent_by_level at level " + (i + 1) + " must be above 0, was " + p);
+                }
+            }
+            percentByLevel = java.util.List.copyOf(percentByLevel);
+            if (element == null || element.isBlank()) throw new IllegalArgumentException("orb shot element is required");
+            if (visual != null && visual.isBlank()) visual = null;
+        }
+
+        /** The percentage at {@code level} (1-based), clamped into the authored levels. */
+        public double percentAt(int level) {
+            return percentByLevel.get(Math.max(1, Math.min(level, percentByLevel.size())) - 1);
+        }
+
+        /** The damage one shot deals off a beam whose authored damage is {@code beamAmount}: amount x percent / 100. */
+        public double amountFor(double beamAmount, int level) {
+            return beamAmount * percentAt(level) / 100.0;
         }
     }
     record Melee(double reach, double arcDegrees) implements CastSpec {}

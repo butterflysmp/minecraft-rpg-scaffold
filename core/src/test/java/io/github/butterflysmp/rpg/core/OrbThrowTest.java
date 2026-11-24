@@ -110,7 +110,7 @@ class OrbThrowTest {
     void theRegistryOwnsOnlyLiveBodies() {
         Orbs orbs = new Orbs();
         UUID owner = new UUID(0, 1), body = new UUID(0, 2);
-        var placed = orbs.place(owner, body, Vec3.ZERO, 0.6, 300, null, null, 0);
+        var placed = orbs.place(owner, body, Vec3.ZERO, 0.6, 300, null, null, 0, null);
         assertTrue(orbs.ownsMarker(body));
         assertTrue(orbs.removeIf(owner, placed.placed().generation() + 1).isEmpty(), "a stale generation removes nothing");
         assertEquals(1, orbs.removeAll().size());

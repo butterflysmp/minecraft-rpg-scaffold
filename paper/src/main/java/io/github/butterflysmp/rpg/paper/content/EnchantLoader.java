@@ -268,6 +268,12 @@ public final class EnchantLoader {
                 AbilitySchema.parseEffects(a.getMapList("on_hit")),
                 a.getStringList("description"),
                 AbilitySchema.parseCastVisuals(a.getMapList("on_cast")));
+        // D3: an orb's shot must name a LOADED element, by name, as every behaviour's element must.
+        if (ability.cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Orb orb && orb.shot() != null
+                && !elementExists.test(orb.shot().element())) {
+            throw new IllegalArgumentException("enchant '" + id + "' grant_trigger: the orb's shot element '"
+                    + orb.shot().element() + "' is not a loaded element");
+        }
         return new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger(weaponId, input, ability);
     }
 

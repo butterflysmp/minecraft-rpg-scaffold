@@ -514,3 +514,51 @@ registry owns only live bodies); `paper/.../OrbRemovalWiringTest` (2), `paper/..
 by an occurrence counter, marker 1, the other occurrence left, line delta 0), MUTORBDEATH (the death removal unwired).
 **UNMUTATED, said so:** the body's per-tick drive (visual only; the logged rest point is core's), and paper's entity
 removal inside `OrbRemovals` (server-side; the gate reads its lines).
+
+## 11. PR D3 — THE BEAM AND THE CRYSTAL'S SHOTS (`feat/lapis-crystal-shots`, on D2)
+
+**THE SEAM, AND IT IS ITS OWN (so D3 did not stop):** two insertions in `CastExecutor.stepRay`, the plain (non-sweeping)
+ray's walk, which the Lapis Beam uses. After the segment's `castRay`, `meetsOrb` asks for HIS OWN orb (looked up by the
+beam's caster), RESTING, with a shot, and only when the beam's ability is a trigger of the weapon that GRANTED the orb (its
+id is `<that weapon>/<input>`; the orb remembers the grant). `OrbIntercept.along` (pure) tests the segment ONLY AS FAR AS
+THE BEAM REACHES (its first body or block): the nearest point to the orb's centre within the orb's 0.6. If it meets: the
+beam is drawn to that point, nothing is detonated, and `orbShots` fires. So the beam's own target BEHIND the orb is
+untouched, and a target IN FRONT of the orb is struck as before. No other cast path changed.
+
+**The shots (`CastExecutor.orbShots`):** every living MOB whose feet are within 8 of the orb's centre (a TRUE SPHERE, cut
+from the server's box as the shockwave's is; `FakeWorld.boxSearch` shows it) and to whose sight point the orb has a clear
+line (`lineOfSightClear`), each once for **beam's authored damage x percent / 100**, the beam's FIRST Damage effect read
+from the beam's own ability when it meets the orb (21 today; never copied into the enchant). Kinetic. SECONDARY (B4):
+source `lapis_crystal/crystal`, never a hit (so Kinetic Tremors never counts it), no behaviour, never himself, never a
+player; a plain `EffectApplier`, so no direct-damage listener hears it. **It carries every term of the BEAM that set it
+off, exactly as a shockwave carries its hit's (ruling 2):** `(21 x percent / 100) x score / 100` (the beam's gear score),
+`x DamageEnchants.multiplier(enchant %)` (Attunement active on the staff), `+ class bonus + level bonus` (the flat terms,
+added to every mob it strikes), `x charge` (1 for a trigger), `x crit` (the beam's crit). The orb is not used up: every
+beam into it fires again.
+
+**Shown as the number (B5):** the line in the table and the dev command reads the staff's OWN right-click damage off its
+loaded definition (`EnchantEffectLine.orbShotClause`, handed the weapons): **4.2 / 6.3 / 8.4** at levels I / II / III.
+EXECUTED (jshell): `21 * 20 / 100.0` = 4.2, `21 * 30 / 100.0` = 6.3, `21 * 40 / 100.0` = 8.4, each exact in doubles, so
+`number` prints them as they are; no rounding rule is needed or applied. A renderer with no weapons (the `ACTIVE` reply's
+suffix) shows `30% of the beam`.
+
+**The YAML as committed (D3: the orb cast gained its `shot:`), comments stripped:**
+
+```yaml
+      shot:
+        radius: 8
+        percent_by_level: [20, 30, 40]
+        element: kinetic
+```
+
+**Tests:** `core/.../OrbBeamTest` (10: each mob within 8 with a clear line struck for 6.3, none beyond, no player, none
+behind a wall, the beam's own target behind the orb untouched; the no-orb control 21; a second beam fires again; levels I
+and III, 4.2 and 8.4; the beam's score 150 makes 9.45 (EXECUTED); an orb in flight, another player's orb and another
+weapon's beam each pass; the box cut to a sphere; three crystal shots with Tremors active fire no shockwave);
+`LapisCrystalContentTest` (+2: the line's number at each level and its fallback; a shot refused by name for its level
+count and its element). **Mutations, each red, restored, `cmp` byte-identical:** MUTORBOWNER (`Orbs.of` answers any
+owner's orb: the other-player row), MUTORBRESTING (the in-flight row), MUTORBWEAPON (the other-weapon row), MUTORBSTOP
+(the beam continues past the orb: 2 rows; applied by line number, the search spanning two lines), MUTORBLOS (3 rows),
+MUTORBSPHERE (the box row; it was GREEN before that row existed, the fixture searching a sphere already, and the row was
+added for it), MUTORBSECONDARY (the shots counted as hits: the Tremors row), MUTORBINTERCEPT (never meets: 5 rows),
+MUTORBLINE (the percent shown: the line row), MUTORBLEVELS (the level count unchecked: the refusal row).

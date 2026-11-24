@@ -535,7 +535,7 @@ public final class EnchantMenu extends Menu {
         int describedLevel = Math.max(1, candidate.level());
 
         List<Component> lore = new ArrayList<>();
-        lore.add(MenuIcons.line(EnchantEffectLine.bare(definition, describedLevel, heldClass),
+        lore.add(MenuIcons.line(EnchantEffectLine.bare(definition, describedLevel, heldClass, adapters.weapons()::find),
                 NamedTextColor.GRAY));
         lore.add(MenuIcons.blank());
         if (locked) {
@@ -763,7 +763,7 @@ public final class EnchantMenu extends Menu {
                                String enchantId, GearClass heldClass, int cost) {
         EnchantDefinition enchant = adapters.enchants().find(enchantId).orElse(null);
         int level = after.activeLevel(enchantId);
-        String effect = EnchantEffectLine.of(enchant, Math.max(1, level), heldClass);
+        String effect = EnchantEffectLine.of(enchant, Math.max(1, level), heldClass, adapters.weapons()::find);
 
         return switch (intent) {
             // The spend is named on the two arms that spend, and NOT on ACTIVATE -- whose silence
