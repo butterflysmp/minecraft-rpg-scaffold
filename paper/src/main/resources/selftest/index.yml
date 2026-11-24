@@ -116,3 +116,6 @@ gates:
 # enchant-changes (2026-11-23, feat/lapis-crystal-block on feat/enchant-changes): Ben's five changes to Airburst
 # Flames and Lapis Crystal, on the pad. docs/gates/GATE-enchant-changes.md carries its R0.
   - enchant-changes
+# shatter-caps (2026-11-24, feat/shatter-caps on feat/breacher-reach): the Breacher's reach of 18 and Shatter Caps,
+# on the pad. docs/gates/GATE-shatter-caps.md carries its R0.
+  - shatter-caps
