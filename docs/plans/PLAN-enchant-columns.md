@@ -780,3 +780,11 @@ stated flight is now 6 ticks); `PLAN-weapon-tiers.md` 1.15.
 **OPEN FOR BEN (SEAT PLACEHOLDERS 2026-11-24):** the stone's speed (2.5 a tick, so the split is exactly the 2nd step) and
 its look (`stone`); the enchant's icon (`cobblestone`); its line's wording; **the Breacher's own description, NOT EDITED,
 which still reads "Four chunks of cobblestone," / "a tight triangle 6 degrees wide." with the enchant active.**
+
+**OWED, RECORDED 2026-11-24 (the seat's ruling on the finding of section 16, item 5): A BEHAVIOUR THAT NAMES A WEAPON ACTS
+ONLY ON THAT WEAPON, ENFORCED ONCE WHERE BEHAVIOURS ARE READ FROM THE ITEM.** Today `BehaviourItems.activeOf` hands every
+behaviour on the held item's enchant state to the cast with no weapon filter, so Airburst Flames staged by the dev command
+on another projectile weapon would split that weapon's shot (no roll can produce that state: W1). Shatter Caps and the
+Lapis Crystal's grant each check their own weapon at the cast; Airburst does not. **The fix belongs in one place, where
+behaviours are read from the item, and when it is done `GATE-enchant-changes.md`'s Airburst rows (AF1-AF4) are re-read.**
+Not done in `feat/shatter-caps`, by the seat's ruling: Airburst's path stays as `GATE-enchant-changes` read it.
