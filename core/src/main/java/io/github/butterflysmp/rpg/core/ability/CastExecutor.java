@@ -89,11 +89,22 @@ public final class CastExecutor {
         this.onBasicAttackUse = onBasicAttackUse;
     }
 
+    /** A cast whose press is THIS tick: every caller with no hop between the press and the cast (a test, a dev cast). */
     public void execute(AbilityService.CastResult.Success success) {
+        execute(success, world.currentTick());
+    }
+
+    /**
+     * A cast PRESSED at {@code pressTick} (PLAN-enchant-columns.md section 19, the seat's ruling (c), 2026-11-24). READ:
+     * {@code WeaponFire} charges at the press on tick T and hops the cast to the region scheduler, which runs it at T + 1,
+     * so a tick read here is the CAST's, one after the press. The press's tick is stamped before the hop and carried in.
+     * It reaches only the volley's trace ({@code FOCUSED pressed=}); nothing decides on it.
+     */
+    public void execute(AbilityService.CastResult.Success success, long pressTick) {
         AbilityDefinition ability = success.ability();
         boolean charges = charges(ability);
         Caster source = commit(ability, success.caster(), success.aim(), charges, success.weaponTrigger());
-        dispatch(ability, success.caster(), source, success.aim(), charges);
+        dispatch(ability, success.caster(), source, success.aim(), charges, pressTick);
     }
 
     /**
@@ -132,6 +143,11 @@ public final class CastExecutor {
      * billing the bow for it would be charging for an arrow nobody got.
      */
     public void executeFan(AbilityService.CastResult.Success success, double[] yawOffsets) {
+        executeFan(success, yawOffsets, world.currentTick());
+    }
+
+    /** {@link #executeFan(AbilityService.CastResult.Success, double[])} PRESSED at {@code pressTick}: see {@link #execute(AbilityService.CastResult.Success, long)}. */
+    public void executeFan(AbilityService.CastResult.Success success, double[] yawOffsets, long pressTick) {
         if (yawOffsets.length == 0) return;
 
         AbilityDefinition ability = success.ability();
@@ -147,7 +163,7 @@ public final class CastExecutor {
             // does not care -- a yaw rotation needs no basis -- so this is carrying a field
             // across rather than fixing a live bug, and it is what stops a fanned SPREAD from
             // inheriting a basis that was quietly rebuilt from the wrong vector.
-            dispatch(ability, caster, source, aim.pointing(aim.direction().rotateAboutY(yaw)), charges);
+            dispatch(ability, caster, source, aim.pointing(aim.direction().rotateAboutY(yaw)), charges, pressTick);
         }
     }
 
@@ -243,7 +259,7 @@ public final class CastExecutor {
      * starts billing five uses or playing five sounds.</b>
      */
     private void dispatch(AbilityDefinition ability, CombatantSnapshot caster, Caster source,
-                          Aim aim, boolean charges) {
+                          Aim aim, boolean charges, long pressTick) {
         switch (ability.cast()) {
             // The caster is their own target: heals, buffs, self-detonations. Their handle
             // is fetched here rather than carried in the Success, which holds a snapshot.
@@ -275,7 +291,7 @@ public final class CastExecutor {
             // NOTE WHAT IS NOT PASSED: `source`. A volley re-projects its caster before EVERY shot, so the
             // cast-frame projection above reaches no shot at all -- see volley(). `aim` IS passed, since
             // 2026-11-21, and is read ONLY by a locked-aim volley: the line captured at the cast.
-            case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley, source.weaponHit(), aim);
+            case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley, source.weaponHit(), aim, pressTick);
 
             case CastSpec.Cone cone -> beginCone(ability, source, aim, cone);
 
@@ -1248,12 +1264,13 @@ public final class CastExecutor {
      * quietly make it 1 and a "no wind-up" volley would be indistinguishable from a 1-tick one.
      */
     private void beginVolley(AbilityDefinition ability, UUID casterId, CastSpec.Volley spec, boolean weaponHit,
-                             Aim castAim) {
+                             Aim castAim, long pressTick) {
         // LOCKED AIM (2026-11-21, the Knell Beam, ruling 3): the line captured HERE, at the cast, as values -- an origin
         // and a direction, never a handle (ruling 7). Null for a volley that re-aims every shot, as every volley did.
         Aim locked = spec.lockedAim() ? castAim : null;
         // The press's tick, carried as a value for the FOCUSED trace only (Focused Beam, 2026-11-24): nothing decides on it.
-        long pressTick = world.currentTick();
+        // STAMPED AT THE PRESS, before WeaponFire's hop, and handed in (section 19): read here it was the CAST's tick,
+        // one after the press on the server, which is why every FOCUSED line read tick - pressed = 19.
         if (spec.warning() != null) warn(spec, locked, casterId);
         if (spec.windupTicks() == 0) {
             volley(ability, casterId, spec, 0, weaponHit, locked, pressTick);
