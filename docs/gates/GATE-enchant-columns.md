@@ -715,25 +715,25 @@ enchant; a cleared item has none), class bonus 0, level bonus 0 (level 1, the ro
 
 | prediction | stands on | READING |
 |---|---|---|
-| EC3's prediction, unchanged: `REPLY "Iron Sword -- 4 slot(s)" [aqua]`; **`Slot 0: []`**; **`Slot 1: [kinetic_tremors locked]`**; `Slot 2:`/`Slot 3:` over `sharpness`/`unbreaking`; `raw: v1;:-1;kinetic_tremors=0:-1;…`. **`Pool: sharpness, unbreaking`**, **`Unique pool: kinetic_tremors`**, **`Weapon pool: `**. `DRIVE hold … item=iron_sword` | W2 | |
+| EC3's prediction, unchanged: `REPLY "Iron Sword -- 4 slot(s)" [aqua]`; **`Slot 0: []`**; **`Slot 1: [kinetic_tremors locked]`**; `Slot 2:`/`Slot 3:` over `sharpness`/`unbreaking`; `raw: v1;:-1;kinetic_tremors=0:-1;…`. **`Pool: sharpness, unbreaking`**, **`Unique pool: kinetic_tremors`**, **`Weapon pool: `**. `DRIVE hold … item=iron_sword` | W2 | **READ AS PREDICTED (20:38:27):** `STAGE clear_inventory cleared=11 kept=nexus@8`; `hold … 2->0 item=iron_sword`; `"Iron Sword -- 4 slot(s)"`; `"  Slot 0: []"`; `"  Slot 1: [kinetic_tremors locked]"`; `"  Slot 2: [unbreaking locked, sharpness locked]"`, `"  Slot 3: [unbreaking locked, sharpness locked]"`; `raw: v1;:-1;kinetic_tremors=0:-1;unbreaking=0,sharpness=0:-1;unbreaking=0,sharpness=0:-1`; `Pool: sharpness, unbreaking`, `Unique pool: kinetic_tremors`, `Weapon pool: ` |
 
 ### EC4R2 — A PIECE OF ARMOR'S COLUMNS (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| EC4's prediction, unchanged: **`HELDID slot=<n> item=iron_chestplate`** (anything else VOIDS the row); `REPLY "Iron Chestplate -- 4 slot(s)" [aqua]`; **`Slot 0: []`**, **`Slot 1: []`**; `Slot 2:`/`Slot 3:` each 1 to 4 of `growth`/`mana_bank`/`protection`/`unbreaking`, distinct; `raw: v1;:-1;:-1;…`. **`Pool: growth, mana_bank, protection, unbreaking`**, **`Unique pool: `**, **`Weapon pool: `** | W2; U5 | |
+| EC4's prediction, unchanged: **`HELDID slot=<n> item=iron_chestplate`** (anything else VOIDS the row); `REPLY "Iron Chestplate -- 4 slot(s)" [aqua]`; **`Slot 0: []`**, **`Slot 1: []`**; `Slot 2:`/`Slot 3:` each 1 to 4 of `growth`/`mana_bank`/`protection`/`unbreaking`, distinct; `raw: v1;:-1;:-1;…`. **`Pool: growth, mana_bank, protection, unbreaking`**, **`Unique pool: `**, **`Weapon pool: `** | W2; U5 | **READ AS PREDICTED (20:38:27):** `STAGE clear_inventory cleared=1 kept=nexus@8`; `hold … 0->0 item=empty`; **`HELDID slot=0 item=iron_chestplate offhand=empty`**; `"Iron Chestplate -- 4 slot(s)"`; `Slot 0: []`, `Slot 1: []`; `"  Slot 2: [growth locked, unbreaking locked, mana_bank locked, protection locked]"`, `"  Slot 3: [protection locked, mana_bank locked]"`; `raw: v1;:-1;:-1;growth=0,unbreaking=0,mana_bank=0,protection=0:-1;protection=0,mana_bank=0:-1`; `Pool: growth, mana_bank, protection, unbreaking`, `Unique pool: `, `Weapon pool: ` |
 
 ### EC5R2 — THE TABLE ON AN IRON SWORD, AT LEVEL 13 (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `REPLY "Set 13 level(s) for <him> (now level 13, 0/2770 into it, 19980 lifetime)." [green]`; then EC5's prediction, unchanged (`SCREEN EnchantMenu`, no `SLOT 1`, `SLOT 10 GRAY_DYE "No weapon enchant"`, `SLOT 12 PISTON "Kinetic Tremors"` with its three lore lines, no `SLOT` at 19 or 21, the normal columns, 48, 49) | W3; `EnchantMenuLayoutTest` | |
+| `REPLY "Set 13 level(s) for <him> (now level 13, 0/2770 into it, 19980 lifetime)." [green]`; then EC5's prediction, unchanged (`SCREEN EnchantMenu`, no `SLOT 1`, `SLOT 10 GRAY_DYE "No weapon enchant"`, `SLOT 12 PISTON "Kinetic Tremors"` with its three lore lines, no `SLOT` at 19 or 21, the normal columns, 48, 49) | W3; `EnchantMenuLayoutTest` | **READ AS PREDICTED (20:38:28-30):** `REPLY "Set 13 level(s) for BaronVonYeetus (now level 13, 0/2770 into it, 19980 lifetime)." [green]`; `SCREEN EnchantMenu title="Enchantments" [dark_gray]`; `SLOT 4 IRON_SWORD name="Iron Sword" …`, `SLOT 7 BOOKSHELF …`, `SLOT 8 ENCHANTING_TABLE …`; **no `SLOT 1`**, none at 0, 2, 3, 5, 6, 9, 19, 21; **`SLOT 10 GRAY_DYE name="No weapon enchant" [white, dark_gray] italic lore=["Nothing is tied to this weapon yet." [dark_gray]]`**; **`SLOT 12 PISTON name="Kinetic Tremors" [white, dark_gray] italic lore=["3 hits on one foe in 3s: a 10 damage shockwave, 3 blocks" [gray]; "" []; "Locked. Click to unlock at I -- 352 XP." [dark_gray]]`**; both normal slots rolled two: `14`/`16` `ANVIL "Unbreaking"` (`"consumes durability on 50% of uses"`), `23`/`25` `IRON_SWORD "Sharpness"` (`"+5% damage, x1.05"`), each `"Locked. Click to unlock at I -- 352 XP."`; `SLOT 48 ARROW`, `SLOT 49 BARRIER`. Names in the dump's `[white, <colour>] italic` form |
 
 ### EC6R2 — THE TABLE ON A LIVING LANTERN, AT LEVEL 13 (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The level REPLY as EC5R2's; then EC6's prediction, unchanged (no `SLOT 1`; `SLOT 4 LANTERN`; `SLOT 10 FIRE_CHARGE "Airburst Flames"` with its three lore lines; `SLOT 12 GRAY_DYE "No unique enchant"`; no `SLOT` at 19 or 21; the normal columns; 48, 49) | W3; `AirburstFlamesContentTest` | |
+| The level REPLY as EC5R2's; then EC6's prediction, unchanged (no `SLOT 1`; `SLOT 4 LANTERN`; `SLOT 10 FIRE_CHARGE "Airburst Flames"` with its three lore lines; `SLOT 12 GRAY_DYE "No unique enchant"`; no `SLOT` at 19 or 21; the normal columns; 48, 49) | W3; `AirburstFlamesContentTest` | **READ AS PREDICTED (20:38:30-33):** the level REPLY as EC5R2's; no `SLOT 1`; `SLOT 4 LANTERN name="Living Lantern" …`; **`SLOT 10 FIRE_CHARGE name="Airburst Flames" [white, dark_gray] italic lore=["splits after 14 blocks into 3 bursts of 25 damage" [gray]; "" []; "Locked. Click to unlock at I -- 352 XP." [dark_gray]]`**; **`SLOT 12 GRAY_DYE name="No unique enchant" [white, dark_gray] italic lore=["Nothing unique is tied to this item's element yet." [dark_gray]]`**; no `SLOT` at 19 or 21; `SLOT 14 BLAZE_ROD "Attunement"` (`"+5% damage, x1.05"`), `SLOT 16 ANVIL "Unbreaking"` (each slot rolled one, so no 23/25); 48, 49 |
 
 ### EC7R2 — THE LANTERN'S SHOT: ONE HIT OF 45 ON A MOB OFF HIS AIM LINE (SURVIVAL)
 
@@ -741,89 +741,94 @@ enchant; a cleared item has none), class bonus 0, level bonus 0 (level 1, the ro
 
 | prediction | stands on | READING |
 |---|---|---|
-| `REPLY "Set 1 level(s) for <him> (now level 1, 0/1000 into it, 0 lifetime)." [green]`; `REPLY "Enchant data cleared -- both keys removed." [green]`; **`REPLY "This weapon carries no enchant data." [yellow]`** (the `show`). Probe L before: **`1000.000/1000.000`**. `DRIVE use … item=living_lantern yaw=-90.000 pitch=0.000`. **Exactly one PLAYERHIT `source=living_lantern/right_click target=<L> zombie element=fire sent=45.000 crit=false triggerScore=100`** (or `sent=90.000 crit=true`). **The sum:** `(45 x 100/100) x 1.0 + 0 + 0 = 45`, x charge 1.0, x crit 1.0 (2.0). Probe L at +60 recorded. **WHAT it lands is exact; WHETHER it lands is a READING** (F) | B; `LivingLanternFlightTest`; D | |
+| `REPLY "Set 1 level(s) for <him> (now level 1, 0/1000 into it, 0 lifetime)." [green]`; `REPLY "Enchant data cleared -- both keys removed." [green]`; **`REPLY "This weapon carries no enchant data." [yellow]`** (the `show`). Probe L before: **`1000.000/1000.000`**. `DRIVE use … item=living_lantern yaw=-90.000 pitch=0.000`. **Exactly one PLAYERHIT `source=living_lantern/right_click target=<L> zombie element=fire sent=45.000 crit=false triggerScore=100`** (or `sent=90.000 crit=true`). **The sum:** `(45 x 100/100) x 1.0 + 0 + 0 = 45`, x charge 1.0, x crit 1.0 (2.0). Probe L at +60 recorded. **WHAT it lands is exact; WHETHER it lands is a READING** (F) | B; `LivingLanternFlightTest`; D | **READ AS PREDICTED (20:38:33-38):** `STAGE clear_state cooldowns=cleared streaks=forgotten orb=none`; `"Set 1 level(s) … (now level 1, 0/1000 into it, 0 lifetime)."`; `"Enchant data cleared -- both keys removed." [green]`; **`"This weapon carries no enchant data." [yellow]`**; probe L **`1000.000/1000.000`** (d 10.440); `DRIVE use … item=living_lantern yaw=-90.000 pitch=0.000`; **exactly one `PLAYERHIT source=living_lantern/right_click target=<L> zombie element=fire sent=45.000 crit=false triggerScore=100`**: **the homing shot LANDED**; probe L at +60 `932.500/1000.000` (45 and one burn of 22.5) |
 
 ### EC8R2 — BEYOND 28 BLOCKS: NOTHING, AND F'S HEALTH READ (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| The level, clear and `show` REPLYs as EC7R2's. **`PROBE tag=f <uuid> zombie customHP=1000.000/1000.000 … d=30.000 dy=0.000`** before and after (the reach of 32 sees it). `DRIVE use … item=living_lantern yaw=-90.000 pitch=0.000`; **NO PLAYERHIT**, no `DOTTICK` (F 30 east; the shot ends at 28.0 of travel). **Exact** | B; `LivingLanternContentTest.theReachIsTwentyEightBlocksOfTravel` | |
+| The level, clear and `show` REPLYs as EC7R2's. **`PROBE tag=f <uuid> zombie customHP=1000.000/1000.000 … d=30.000 dy=0.000`** before and after (the reach of 32 sees it). `DRIVE use … item=living_lantern yaw=-90.000 pitch=0.000`; **NO PLAYERHIT**, no `DOTTICK` (F 30 east; the shot ends at 28.0 of travel). **Exact** | B; `LivingLanternContentTest.theReachIsTwentyEightBlocksOfTravel` | **READ AS PREDICTED (20:38:39-46):** **`PROBE tag=f <uuid> zombie customHP=1000.000/1000.000 fireTicks=0 dead=false d=30.000 dy=0.000`** before and after (the reach of 32 read it); `use … item=living_lantern yaw=-90.000 pitch=0.000`; **no PLAYERHIT, no DOTTICK** in the row |
 
 ### EC9R2 — KINETIC TREMORS AT LEVEL I: THREE HITS, ONE SHOCKWAVE, ITS RADIUS (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `REPLY "Lapis Staff -- 1 slot(s)" [aqua]`, **`REPLY "  Slot 0: [*kinetic_tremors I]" [gray]`**, **`REPLY "  active: kinetic_tremors I (3 hits on one foe in 3s: a 10 damage shockwave, 3 blocks)" [gray]`**, the `raw:` line recorded. **Three PLAYERHITs `source=lapis_staff/right_click target=<A> zombie element=kinetic sent=21.000`** (each `42.000 crit=true` on its own crit): `(21 x 100/100) x 1.0 + 0 + 0`. **After the third, exactly TWO `kinetic_tremors/shockwave` PLAYERHITs, on A and on B, each `sent=10.000`** (`20.000` if the THIRD beam crit; both equal): `(10 x 100/100) x 1.0 + 0 + 0 = 10`, x 1.0, x that beam's crit. **None on C.** None after the first or second beam. Probes: A **`927.000`** (more on crits, by the crits named), B **`990.000`** (or `980.000`), C **`1000.000`** | C's rule; `BehaviourHitsTest`; E | |
+| `REPLY "Lapis Staff -- 1 slot(s)" [aqua]`, **`REPLY "  Slot 0: [*kinetic_tremors I]" [gray]`**, **`REPLY "  active: kinetic_tremors I (3 hits on one foe in 3s: a 10 damage shockwave, 3 blocks)" [gray]`**, the `raw:` line recorded. **Three PLAYERHITs `source=lapis_staff/right_click target=<A> zombie element=kinetic sent=21.000`** (each `42.000 crit=true` on its own crit): `(21 x 100/100) x 1.0 + 0 + 0`. **After the third, exactly TWO `kinetic_tremors/shockwave` PLAYERHITs, on A and on B, each `sent=10.000`** (`20.000` if the THIRD beam crit; both equal): `(10 x 100/100) x 1.0 + 0 + 0 = 10`, x 1.0, x that beam's crit. **None on C.** None after the first or second beam. Probes: A **`927.000`** (more on crits, by the crits named), B **`990.000`** (or `980.000`), C **`1000.000`** | C's rule; `BehaviourHitsTest`; E | **READ AS PREDICTED (20:38:46-52):** `"Lapis Staff -- 1 slot(s)"`, `"  Slot 0: [*kinetic_tremors I]"`, `"  active: kinetic_tremors I (3 hits on one foe in 3s: a 10 damage shockwave, 3 blocks)"`, `raw: v1;kinetic_tremors=1:0`; three `lapis_staff/right_click` on A `sent=21.000 crit=false`; after the third, **two `kinetic_tremors/shockwave`, on A and on B, `sent=10.000 crit=false`**, none on C, none before the third; probes A **`927.000`**, B **`990.000`**, C **`1000.000`** |
 
 ### EC10R2 — TWO HITS, 61 TICKS, ONE HIT: NO SHOCKWAVE (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| EC9R2's `show` lines. **Three PLAYERHITs `source=lapis_staff/right_click target=<D>` `sent=21.000`** (or `42.000`) and **NO `kinetic_tremors/shockwave`** (the third press is 83 and 61 ticks after the first two, both outside the 60). Probe D **`937.000`** (no crit) | `ShockwaveStreaksTest.twoHitsThenSixtyOneTicksThenOneFiresNothing` | |
+| EC9R2's `show` lines. **Three PLAYERHITs `source=lapis_staff/right_click target=<D>` `sent=21.000`** (or `42.000`) and **NO `kinetic_tremors/shockwave`** (the third press is 83 and 61 ticks after the first two, both outside the 60). Probe D **`937.000`** (no crit) | `ShockwaveStreaksTest.twoHitsThenSixtyOneTicksThenOneFiresNothing` | **READ AS PREDICTED (20:38:52-59):** EC9R2's `show` lines; three `lapis_staff/right_click` on D `sent=21.000 crit=false` (20:38:54, :55, :58); **no shockwave**; probe D **`937.000`** |
 
 ### EC11R2 — ONE BREACHER SHOT ON ONE MOB: EXACTLY ONE SHOCKWAVE (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `REPLY "Breacher -- 1 slot(s)" [aqua]`, `"  Slot 0: [*kinetic_tremors I]"`, `"  active: kinetic_tremors I (…)"`. **Four PLAYERHITs `source=breacher/right_click target=<E> zombie element=kinetic sent=40.000 crit=false`** (all four `80.000 crit=true` on the crit). **Exactly ONE `kinetic_tremors/shockwave` PLAYERHIT, on E, `sent=10.000`** (`20.000` on the crit): `(10 x 100/100) x 1.0 + 0 + 0 = 10`. Probe E **`830.000`** (`1000 - 160 - 10`), or **`660.000`** on the crit | Ben's "Multiple pellets count"; `ShockwaveStreaksTest.fourPelletsInOneTickFireExactlyOne` | |
+| `REPLY "Breacher -- 1 slot(s)" [aqua]`, `"  Slot 0: [*kinetic_tremors I]"`, `"  active: kinetic_tremors I (…)"`. **Four PLAYERHITs `source=breacher/right_click target=<E> zombie element=kinetic sent=40.000 crit=false`** (all four `80.000 crit=true` on the crit). **Exactly ONE `kinetic_tremors/shockwave` PLAYERHIT, on E, `sent=10.000`** (`20.000` on the crit): `(10 x 100/100) x 1.0 + 0 + 0 = 10`. Probe E **`830.000`** (`1000 - 160 - 10`), or **`660.000`** on the crit | Ben's "Multiple pellets count"; `ShockwaveStreaksTest.fourPelletsInOneTickFireExactlyOne` | **READ AS PREDICTED (20:38:59-39:03):** `"Breacher -- 1 slot(s)"`, `"  Slot 0: [*kinetic_tremors I]"`, its active line; **four `breacher/right_click` on E `sent=40.000 crit=false`**, and **exactly one `kinetic_tremors/shockwave` on E `sent=10.000`**, logged after the third pellet and before the fourth; probe E **`830.000`** |
 
 ### EC12R2 — HITS SPLIT ACROSS TWO MOBS: NONE, EACH PRESS ON ITS OWN AIM (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| EC9R2's `show` lines. `DRIVE aim … target=<G> … yaw=-108.435 pitch=-2.173`, then (2 ticks later) **`DRIVE use … yaw=-108.435 pitch=-2.173`**; `aim … <H> yaw=-71.565`, then **`use … yaw=-71.565 pitch=-2.173`**; `aim … <G>`, then **`use … yaw=-108.435`** (the angles `e774d4b8`'s aims read). Three PLAYERHITs `lapis_staff/right_click`: on G, on H, on G (each `21.000` or `42.000`). **NO shockwave** (G two, H one). Probes G **`958.000`**, H **`979.000`** (no crit). **A press whose yaw is not its own aim's, or a beam on the wrong mob, VOIDS the row** | C's rule ("Same target"); rule 3 | |
+| EC9R2's `show` lines. `DRIVE aim … target=<G> … yaw=-108.435 pitch=-2.173`, then (2 ticks later) **`DRIVE use … yaw=-108.435 pitch=-2.173`**; `aim … <H> yaw=-71.565`, then **`use … yaw=-71.565 pitch=-2.173`**; `aim … <G>`, then **`use … yaw=-108.435`** (the angles `e774d4b8`'s aims read). Three PLAYERHITs `lapis_staff/right_click`: on G, on H, on G (each `21.000` or `42.000`). **NO shockwave** (G two, H one). Probes G **`958.000`**, H **`979.000`** (no crit). **A press whose yaw is not its own aim's, or a beam on the wrong mob, VOIDS the row** | C's rule ("Same target"); rule 3 | **READ AS PREDICTED (20:39:03-08):** `aim … <G> yaw=-108.435 pitch=-2.173`, then **`use … yaw=-108.435 pitch=-2.173`**; `aim … <H> yaw=-71.565`, then **`use … yaw=-71.565 pitch=-2.173`**; `aim … <G>`, then **`use … yaw=-108.435`**: each press on its own aim; `lapis_staff/right_click` on G, H, G, each `sent=21.000 crit=false`; **no shockwave**; probes G **`958.000`**, H **`979.000`** |
 
 ### EC13R2 — KINETIC TREMORS AT LEVEL III: DAMAGE 20, RADIUS 5 (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `"  Slot 0: [*kinetic_tremors III]"`, **`"  active: kinetic_tremors III (3 hits on one foe in 3s: a 20 damage shockwave, 5 blocks)"`**. Three beams on A as EC9R2. **Exactly THREE shockwave PLAYERHITs, on A, B and C, each `sent=20.000`** (`40.000` on the third beam's crit): `(20 x 100/100) x 1.0 + 0 + 0 = 20`. **None on K.** Probes: A **`917.000`**, B **`980.000`**, C **`980.000`**, K **`1000.000`** (no crit) | C's rule | |
+| `"  Slot 0: [*kinetic_tremors III]"`, **`"  active: kinetic_tremors III (3 hits on one foe in 3s: a 20 damage shockwave, 5 blocks)"`**. Three beams on A as EC9R2. **Exactly THREE shockwave PLAYERHITs, on A, B and C, each `sent=20.000`** (`40.000` on the third beam's crit): `(20 x 100/100) x 1.0 + 0 + 0 = 20`. **None on K.** Probes: A **`917.000`**, B **`980.000`**, C **`980.000`**, K **`1000.000`** (no crit) | C's rule | **READ AS PREDICTED, THE SECOND BEAM'S CRIT THE ALLOWED READING (20:39:08-14):** `"  Slot 0: [*kinetic_tremors III]"`, `"  active: kinetic_tremors III (3 hits on one foe in 3s: a 20 damage shockwave, 5 blocks)"`, `raw: v1;kinetic_tremors=3:0`; beams on A `sent=21.000 crit=false`, **`sent=42.000 crit=true`**, `sent=21.000 crit=false`; after the third (no crit), **three shockwaves, on A, B and C, each `sent=20.000 crit=false`**, none on K; probes A **`896.000`** (= 917 less the second beam's crit's extra 21: `1000 - 21 - 42 - 21 - 20`), B **`980.000`**, C **`980.000`**, K **`1000.000`** |
 
 ### EC14R2 — AIRBURST FLAMES AT LEVEL II: NO 45, A SPLIT AT 14, THE CENTRE BURST'S 30 (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `REPLY "Living Lantern -- 1 slot(s)" [aqua]`, **`"  Slot 0: [*airburst_flames II]"`**, **`"  active: airburst_flames II (splits after 14 blocks into 3 bursts of 30 damage)"`**. `PROBE self` gives his feet `<X, Y, Z>`. **Exactly one `SPLIT caster=<him> source=living_lantern/right_click at=<X+14.000>,<Y+1.620>,<Z> bursts=3 tick=<t>`** (EXACT, as EC14). **Exactly one PLAYERHIT, on M: `source=living_lantern/right_click … element=fire sent=30.000`** (`60.000 crit=true`). **NO `sent=45.000`.** Probe M (reach 24): `1000 - 30 = 970.000` less its burns (recorded) | E's rule; `AirburstTest` | |
+| `REPLY "Living Lantern -- 1 slot(s)" [aqua]`, **`"  Slot 0: [*airburst_flames II]"`**, **`"  active: airburst_flames II (splits after 14 blocks into 3 bursts of 30 damage)"`**. `PROBE self` gives his feet `<X, Y, Z>`. **Exactly one `SPLIT caster=<him> source=living_lantern/right_click at=<X+14.000>,<Y+1.620>,<Z> bursts=3 tick=<t>`** (EXACT, as EC14). **Exactly one PLAYERHIT, on M: `source=living_lantern/right_click … element=fire sent=30.000`** (`60.000 crit=true`). **NO `sent=45.000`.** Probe M (reach 24): `1000 - 30 = 970.000` less its burns (recorded) | E's rule; `AirburstTest` | **READ AS PREDICTED (20:39:14-20):** `"Living Lantern -- 1 slot(s)"`, `"  Slot 0: [*airburst_flames II]"`, `"  active: airburst_flames II (splits after 14 blocks into 3 bursts of 30 damage)"`; `SELF … at=104.50 201.00 -3.50`; **exactly one `SPLIT source=living_lantern/right_click at=118.500,202.620,-3.500 bursts=3 tick=6176`** (X+14.000, Y+1.620, Z: exact); **exactly one PLAYERHIT on M `element=fire sent=30.000 crit=false`, no 45**; probe M **`955.000`** (30 and one burn of 15.000, recorded), d 22.000 |
 
 ### EC15R2 — A HIT BEFORE 14 BLOCKS: THE 45, NO SPLIT (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| EC14R2's `show` lines. **One PLAYERHIT on N `sent=45.000`** (`90.000`), **NO `SPLIT`**. Probe N recorded. **WHETHER it lands is a READING** (N within 7 of the muzzle, so the shot homes at its feet); a miss that flies on and splits at 14 VOIDS the row | Ben's "Doesn't split if it hits something first" | |
+| EC14R2's `show` lines. **One PLAYERHIT on N `sent=45.000`** (`90.000`), **NO `SPLIT`**. Probe N recorded. **WHETHER it lands is a READING** (N within 7 of the muzzle, so the shot homes at its feet); a miss that flies on and splits at 14 VOIDS the row | Ben's "Doesn't split if it hits something first" | **READ AS PREDICTED, ITS CRIT THE ALLOWED READING (20:39:20-25):** EC14R2's `show` lines; **one PLAYERHIT on N `sent=90.000 crit=true`**: **the homing shot LANDED**; **no `SPLIT`** in the row; probe N `887.500` (90 and one burn of 22.5, recorded) |
 
 ### EC16R2 — LEVEL I AGAINST LEVEL III (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `"  Slot 0: [*airburst_flames I]"` and `"  active: airburst_flames I (splits after 14 blocks into 3 bursts of 25 damage)"`; later `REPLY "Slot 0: Airburst Flames unlocked to III." [green]` (recorded). Two `SPLIT … bursts=3` lines, each at `<X+14.000>,<Y+1.620>,<Z>`. **The first press's PLAYERHIT on P `sent=25.000`, the second's `sent=35.000`** (each doubled on its own crit). Probe P (reach 24): `1000 - 25 - 35 = 940.000` less the burns (recorded) | Ben's 25/30/35 | |
+| `"  Slot 0: [*airburst_flames I]"` and `"  active: airburst_flames I (splits after 14 blocks into 3 bursts of 25 damage)"`; later `REPLY "Slot 0: Airburst Flames unlocked to III." [green]` (recorded). Two `SPLIT … bursts=3` lines, each at `<X+14.000>,<Y+1.620>,<Z>`. **The first press's PLAYERHIT on P `sent=25.000`, the second's `sent=35.000`** (each doubled on its own crit). Probe P (reach 24): `1000 - 25 - 35 = 940.000` less the burns (recorded) | Ben's 25/30/35 | **READ AS PREDICTED (20:39:25-35):** `"  Slot 0: [*airburst_flames I]"`, `"  active: airburst_flames I (splits after 14 blocks into 3 bursts of 25 damage)"`; **two `SPLIT … at=118.500,202.620,-3.500 bursts=3`** (ticks 6394, 6476); **P `sent=25.000`** after the first, **`sent=35.000`** after the second, neither a crit; probe P **`872.500`** (`1000 - 60 - 67.5`: burns of 12.5 x 4 and 17.5, recorded), d 22.000 |
 
 ### LC1R2 — LAPIS CRYSTAL'S THROW: 30 MANA, ITS 600-TICK COOLDOWN, AT REST 12 OUT, GONE AT THE ROW'S END (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| `REPLY "Lapis Staff -- 2 slot(s)" [aqua]`, **`"  Slot 0: [*lapis_crystal II]"`**, **`"  Slot 1: [*kinetic_tremors I]"`**, **`"  active: lapis_crystal II (grants Left-Click: Lapis Crystal (Cooldown: 30.0s \| Mana Cost: 30); a beam into it strikes each foe within 8 for 6.3 damage)"`** and `"  active: kinetic_tremors I (…)"`, each `[gray]`. The tooltip as LC1 predicted it. `PROBE self` gives `<X, Y, Z>`. **`MANA current=<m>`, `DRIVE reload held=lapis_staff`, `MANA current=<m - 30.000>`**; the second `reload`: nothing thrown, nothing spent; the third `MANA` reads the second plus 20 ticks' regeneration only. **Exactly one `ORB rest owner=<him> at=<X+12.000>,<Y+1.620>,<Z> tick=<t>`**, 10 ticks after the first press. **At the row's end: `ORB removed owner=<him> at=<the same point> cause=selftest tick=<t'>`, then `STAGE clear_state … orb=removed`** | D1, D2; `OrbThrowTest` | |
+| `REPLY "Lapis Staff -- 2 slot(s)" [aqua]`, **`"  Slot 0: [*lapis_crystal II]"`**, **`"  Slot 1: [*kinetic_tremors I]"`**, **`"  active: lapis_crystal II (grants Left-Click: Lapis Crystal (Cooldown: 30.0s \| Mana Cost: 30); a beam into it strikes each foe within 8 for 6.3 damage)"`** and `"  active: kinetic_tremors I (…)"`, each `[gray]`. The tooltip as LC1 predicted it. `PROBE self` gives `<X, Y, Z>`. **`MANA current=<m>`, `DRIVE reload held=lapis_staff`, `MANA current=<m - 30.000>`**; the second `reload`: nothing thrown, nothing spent; the third `MANA` reads the second plus 20 ticks' regeneration only. **Exactly one `ORB rest owner=<him> at=<X+12.000>,<Y+1.620>,<Z> tick=<t>`**, 10 ticks after the first press. **At the row's end: `ORB removed owner=<him> at=<the same point> cause=selftest tick=<t'>`, then `STAGE clear_state … orb=removed`** | D1, D2; `OrbThrowTest` | **READ AS PREDICTED (20:39:35-40):** `"Lapis Staff -- 2 slot(s)"`, `"  Slot 0: [*lapis_crystal II]"`, `"  Slot 1: [*kinetic_tremors I]"`, both active lines word for word, `raw: v1;lapis_crystal=2:0;kinetic_tremors=1:0`; the tooltip (`HELD lapis_staff BREEZE_ROD … lore=["Lapis Crystal II" [gray]; "Kinetic Tremors I" [gray]; …]`, recorded); `SELF … at=104.50 201.00 -3.50`; **`MANA current=100.000 max=100.000`, `DRIVE reload held=lapis_staff`, `MANA current=70.000`**; the second `reload`: nothing thrown, `MANA current=71.000` (one of regeneration); **exactly one `ORB rest owner=<him> at=116.500,202.620,-3.500 tick=6576`** (X+12.000, Y+1.620, Z); at the end **`ORB removed … at=116.500,202.620,-3.500 cause=selftest tick=6605`**, then `STAGE clear_state … orb=removed`. The 10-tick flight is not read: the press's tick is not logged |
 
 ### LC2R2 — ITS OWN ORB; A BEAM INTO IT: N TAKES 6.3, F AND T NOTHING, THE BEAM NOTHING (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| LC1R2's `show` lines. `ORB rest owner=<him> at=<X+12.000>,<Y+1.620>,<Z> …` after the `reload`. `DRIVE use … item=lapis_staff yaw=-90.000 pitch=0.000`. **NO `lapis_staff/right_click` PLAYERHIT.** **Exactly one PLAYERHIT `source=lapis_crystal/crystal target=<N> zombie element=kinetic sent=6.300 crit=false triggerScore=100`**, or **`sent=12.600 crit=true`** (the beam's crit). **The sum (D2):** `(21 x 30 / 100 = 6.3) x 100/100 x 1.0 + 0 + 0 = 6.3`, x 1.0, x the beam's crit. **Nothing on F** (9.14 from the orb's centre) **or T** (10.13, behind it). Probes N **`993.700`** (or `987.400`), F **`1000.000`**, T (reach 24) **`1000.000`**. LC2's note (b) stands: the box-to-sphere cut stays UNREAD on a server. **Its note (a) is retired: the preflight refuses a wet floor, so F's half can no longer be voided by water.** At the row's end: `ORB removed … cause=selftest`, `orb=removed` | D3; `OrbBeamTest` | |
+| LC1R2's `show` lines. `ORB rest owner=<him> at=<X+12.000>,<Y+1.620>,<Z> …` after the `reload`. `DRIVE use … item=lapis_staff yaw=-90.000 pitch=0.000`. **NO `lapis_staff/right_click` PLAYERHIT.** **Exactly one PLAYERHIT `source=lapis_crystal/crystal target=<N> zombie element=kinetic sent=6.300 crit=false triggerScore=100`**, or **`sent=12.600 crit=true`** (the beam's crit). **The sum (D2):** `(21 x 30 / 100 = 6.3) x 100/100 x 1.0 + 0 + 0 = 6.3`, x 1.0, x the beam's crit. **Nothing on F** (9.14 from the orb's centre) **or T** (10.13, behind it). Probes N **`993.700`** (or `987.400`), F **`1000.000`**, T (reach 24) **`1000.000`**. LC2's note (b) stands: the box-to-sphere cut stays UNREAD on a server. **Its note (a) is retired: the preflight refuses a wet floor, so F's half can no longer be voided by water.** At the row's end: `ORB removed … cause=selftest`, `orb=removed` | D3; `OrbBeamTest` | **READ AS PREDICTED (20:39:40-44):** LC1R2's `show` lines; `ORB rest … at=116.500,202.620,-3.500 tick=6665`; `use … yaw=-90.000 pitch=0.000`; **no `lapis_staff/right_click`**; **exactly one `lapis_crystal/crystal` on N `sent=6.300 crit=false triggerScore=100`**; nothing on F or T; probes N **`993.700`** (d 13.000), F **`1000.000`** (d 15.000), T **`1000.000`** (d 22.000, reach 24); `ORB removed … cause=selftest tick=6684`, `orb=removed`. The row-start clean read **`LINGER work=1 entities=0`** (see *THE RUN OF `efa38636`*) |
 
 ### LC3R2 — ITS OWN ORB, THREE BEAMS: THREE CRYSTAL SHOTS, NO SHOCKWAVE (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| LC1R2's `show` lines; `ORB rest …`. **Three `lapis_crystal/crystal` PLAYERHITs on N**, each `sent=6.300` (or `12.600` on its own beam's crit): the orb is not used up. **NO `kinetic_tremors/shockwave`** although Kinetic Tremors I is active and N took three inside 60 ticks: crystal shots are never hits (B4). **No `lapis_staff/right_click` PLAYERHIT.** Probe N **`981.100`** (`1000 - 3 x 6.3`, no crit). At the row's end: `ORB removed … cause=selftest`, `orb=removed` | D3, B4; `OrbBeamTest.crystalShotsAloneNeverFireAShockwave` | |
+| LC1R2's `show` lines; `ORB rest …`. **Three `lapis_crystal/crystal` PLAYERHITs on N**, each `sent=6.300` (or `12.600` on its own beam's crit): the orb is not used up. **NO `kinetic_tremors/shockwave`** although Kinetic Tremors I is active and N took three inside 60 ticks: crystal shots are never hits (B4). **No `lapis_staff/right_click` PLAYERHIT.** Probe N **`981.100`** (`1000 - 3 x 6.3`, no crit). At the row's end: `ORB removed … cause=selftest`, `orb=removed` | D3, B4; `OrbBeamTest.crystalShotsAloneNeverFireAShockwave` | **READ AS PREDICTED (20:39:44-50):** `ORB rest … tick=6744`; **three `lapis_crystal/crystal` on N, each `sent=6.300 crit=false`**; **no shockwave**, no `lapis_staff/right_click`; probe N **`981.100`**; `ORB removed … cause=selftest tick=6807`, `orb=removed`. Its clean read `LINGER work=1` |
 
 ### LC4R2 — ITS OWN ORB, GONE 300 TICKS FROM ARRIVAL, AND THEN THE BEAM PASSES (SURVIVAL)
 
 | prediction | stands on | READING |
 |---|---|---|
-| LC1R2's `show` lines. **`ORB rest owner=<him> at=<X+12.000>,<Y+1.620>,<Z> tick=<t>`**, then **exactly one `ORB removed owner=<him> at=<that point> cause=expired tick=<t + 300>`**. Then **one PLAYERHIT `source=lapis_staff/right_click target=<T> zombie element=kinetic sent=21.000`** (or `42.000`), **no `lapis_crystal/crystal`**, no shockwave (T took one hit). Probe T (reach 24) **`979.000`** (or `958.000`). At the row's end **`STAGE clear_state … orb=none`** (it expired) | D2; `OrbThrowTest` | |
+| LC1R2's `show` lines. **`ORB rest owner=<him> at=<X+12.000>,<Y+1.620>,<Z> tick=<t>`**, then **exactly one `ORB removed owner=<him> at=<that point> cause=expired tick=<t + 300>`**. Then **one PLAYERHIT `source=lapis_staff/right_click target=<T> zombie element=kinetic sent=21.000`** (or `42.000`), **no `lapis_crystal/crystal`**, no shockwave (T took one hit). Probe T (reach 24) **`979.000`** (or `958.000`). At the row's end **`STAGE clear_state … orb=none`** (it expired) | D2; `OrbThrowTest` | **READ AS PREDICTED (20:39:50-40:09):** **`ORB rest … at=116.500,202.620,-3.500 tick=6867`**, then **`ORB removed … cause=expired tick=7167`** (6867 + 300, exact); then **one `lapis_staff/right_click` on T `sent=21.000 crit=false`**, no `lapis_crystal/crystal`, no shockwave; probe T **`979.000`** (d 22.000, reach 24); `STAGE clear_state … orb=none`. Its clean read `LINGER work=1` |
 
 **THE RUN'S `ORB` LINES, ALL OF THEM (EC17's D2 extension, read here):** LC1R2, LC2R2 and LC3R2 each one `rest` and one
 `removed … cause=selftest`; LC4R2 one `rest` and one `removed … cause=expired`; **and no other.** After `/stop`: no
 `cause=stop`; at the next enable, no `cause=orphan`.
+
+> **READING, THE RUN OF `efa38636`: READ AS PREDICTED.** `grep -c 'ORB ' run/logs/latest.log` = **8**: LC1R2 `rest` 6576
+> and `removed … cause=selftest` 6605; LC2R2 `rest` 6665, `selftest` 6684; LC3R2 `rest` 6744, `selftest` 6807; LC4R2
+> `rest` 6867 and `removed … cause=expired` 7167; every one at `116.500,202.620,-3.500`; no other. After `/stop`:
+> `grep -c 'cause=stop'` = **0**. The next enable's `cause=orphan` is unread (no boot followed).
 
 ## THE THIRD FORM, 2026-11-23: THE PAD. THE SELFTEST BUILDS ITS OWN GROUND
 
@@ -914,7 +919,7 @@ off) **0**; the void below is behind a floor and a rim. **Sum: 0.**
 
 | prediction | instrument | READING |
 |---|---|---|
-| `[Rpg] Build: <sha>`, `<sha>` being `feat/selftest-pad`'s head as `git ls-remote --heads origin feat/selftest-pad` prints it, shortened as `git rev-parse --short HEAD` prints it. **Not `030f30b6`, not `e774d4b8`, not `-dirty`, not `unknown`.** Its precondition: `git status --porcelain` prints nothing and `git rev-parse HEAD` equals the `ls-remote` line | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+| `[Rpg] Build: <sha>`, `<sha>` being `feat/selftest-pad`'s head as `git ls-remote --heads origin feat/selftest-pad` prints it, shortened as `git rev-parse --short HEAD` prints it. **Not `030f30b6`, not `e774d4b8`, not `-dirty`, not `unknown`.** Its precondition: `git status --porcelain` prints nothing and `git rev-parse HEAD` equals the `ls-remote` line | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | **AS PREDICTED, the boot of `efa38636`:** `[20:34:09] [Server thread/INFO]: [Rpg] Build: efa38636`. Before the boot command: `git status --porcelain` printed nothing; `HEAD` and `ls-remote` both `efa38636ad45063623b1e65553f4896c1e82e626` |
 
 #### R0bR4 — the jar carries the pad
 
@@ -1021,16 +1026,29 @@ $zip.Dispose()
 **The prediction, line for line:** before `'--- controls'`, **53 `PRESENT`, 0 `ABSENT`, and one `ABSENT-ENTRY`**; after it,
 **18 `ABSENT`, 0 `PRESENT`**. Run before the commit: see *R0bR4, RUN BEFORE COMMIT* at the end.
 
+**READING, THE BOOT OF `efa38636`: AS PREDICTED.** Against the deployed `run\plugins\rpg-0.1.0-SNAPSHOT.jar` (2,491,100
+bytes, sha256 `FB97BF5C…770160C7`), this block extracted from the committed file (`git show HEAD:…`, `cmp` IDENTICAL to
+the copy run before the commit) and run with `powershell -File`: **53 `PRESENT`, 0 `ABSENT`, 1 `ABSENT-ENTRY`**, then **18
+`ABSENT`, 0 `PRESENT`**.
+
 #### R0cR4 — every Loaded line, and nothing refused
 
 R0cR3's prediction unchanged (no content file moved), and **no `Refusing selftest/…` line**: `pad` is admitted by the
 loader, or the setup would be refused whole and R0dR4 would still read 351 but the run would have no setup.
 
+**READING, THE BOOT OF `efa38636`: AS PREDICTED** (every line at 20:34:09): `[Rpg] Loaded 11 abilities, 45 visuals, 5
+statuses, 7 elements, 14 enchants, …`; the candidates line word for word; `Mint-on-craft: 38 indexed, 38 claiming, of 54
+gear definitions`; `Custom recipes: 7 registered, 0 replaced, 0 refused, of 7 authored (7 minting gear)`; the only `[Rpg]`
+WARN `volley_stone`'s pair; no `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Dev-only`; no `ORB` line. R0e: one
+`FIGHTWORLD sweep path=…\rpgfight folders=0`, no `deleting`, no `orphan`. The deployed folder: `content/enchants/` 14
+`.yml`, 0 `dev_`, among them `airburst_flames.yml`, `kinetic_tremors.yml`, `lapis_crystal.yml`;
+`enchant_candidates.yml:17:    chance: 0.10`; `living_lantern.yml:58:      speed: 0.35`.
+
 #### R0dR4 — every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one **`[Rpg] Selftest: dev server, 351 scenarios across 43 gates [melee-cell, …, unique-enchant-slot, enchant-columns]`** (the pad adds a setup step, not a row). The controls: `355 scenarios` and `350 scenarios` ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+| Exactly one **`[Rpg] Selftest: dev server, 351 scenarios across 43 gates [melee-cell, …, unique-enchant-slot, enchant-columns]`** (the pad adds a setup step, not a row). The controls: `355 scenarios` and `350 scenarios` ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | **AS PREDICTED, the boot of `efa38636`:** exactly one, `[20:34:09] … [Rpg] Selftest: dev server, 351 scenarios across 43 gates [melee-cell, …, unique-enchant-slot, enchant-columns]` |
 
 ### THE SETUP'S LINES, PREDICTED EXACTLY, FOR A FIRST RUN AND A SECOND
 
@@ -1039,11 +1057,69 @@ loader, or the setup would be refused whole and R0dR4 would still read 351 but t
 
 | run | prediction | READING |
 |---|---|---|
-| the FIRST run on a world with no pad | **`PAD world=world stand=<sx>,201,<sz> floorY=200 interior=-2..45 east -13..13 south cells=7250 placed=2066 repaired=0 ok=5184`** (1296 floor + 770 rim placed into air; the 5184 air cells already air: INFERRED for open sky at Y 200-204, and a reading if a peak or a tree reaches it, which would show as `repaired`), then **`PAD stood at=<sx>.50 201.00 <sz>.50 yaw=-90.000 pitch=0.000`**, then **`PREFLIGHT ok box=0..32 east -6..10 south air=1122/1122 floor solid=561/561`**; every row's `CLEAN … return=<sx>.50 201.00 <sz>.50` | |
+| the FIRST run on a world with no pad | **`PAD world=world stand=<sx>,201,<sz> floorY=200 interior=-2..45 east -13..13 south cells=7250 placed=2066 repaired=0 ok=5184`** (1296 floor + 770 rim placed into air; the 5184 air cells already air: INFERRED for open sky at Y 200-204, and a reading if a peak or a tree reaches it, which would show as `repaired`), then **`PAD stood at=<sx>.50 201.00 <sz>.50 yaw=-90.000 pitch=0.000`**, then **`PREFLIGHT ok box=0..32 east -6..10 south air=1122/1122 floor solid=561/561`**; every row's `CLEAN … return=<sx>.50 201.00 <sz>.50` | **AS PREDICTED, the run of `efa38636` (20:38:26):** `PAD world=world stand=104,201,-4 floorY=200 interior=-2..45 east -13..13 south cells=7250 placed=2066 repaired=0 ok=5184`; `PAD stood at=104.50 201.00 -3.50 yaw=-90.000 pitch=0.000`; `PREFLIGHT ok box=0..32 east -6..10 south air=1122/1122 floor solid=561/561`; every row's `CLEAN … return=104.50 201.00 -3.50` (the setup's own, before the pad, `return=-98.48 63.00 24.06`). So world spawn's block is x -96, z -4 (READ from the stand: 104 - 200, -4) |
 | a SECOND run (the pad left standing) | **`PAD world=world stand=<sx>,201,<sz> … cells=7250 placed=0 repaired=0 ok=7250`**, the same `PAD stood` line and the same `PREFLIGHT ok` line | |
 
 **After the run:** the RESTORED line ends `… spawn_phantoms=<his world's value at RUN START>`, and he stands where he
 typed the command (his eyes: the RESTORED line names no position, so where the restore put him is NOT AUTO-READ).
+
+## THE RUN OF `efa38636`, 2026-11-23: EVERY ROW RAN, AND EVERY ROW READ AS PREDICTED
+
+**The boot.** `./scripts/dev-server.sh --refresh-content` printed `==> Building efa38636`; the deployed jar 2,491,100
+bytes, mtime 20:34:02, sha256 `FB97BF5C…770160C7`; this boot's log begins `[20:34:03]`, after the deploy; `Done (7.171s)`
+at 20:34:09. The backup `../rpg-run-backups/2026-11-23-pre-enchant-columns-3`, a new folder: `Rpg` 168 files and `world`
+193, each `diff -rq lines: 0`; the overworld 106. Every R0 line is stamped 20:34:09.
+
+> **DATED NOTE, 2026-11-23 (`booting.md` step 8): HE JOINED BEFORE R0 WAS READ.** "BOOTING NOW" and "do NOT log in" went
+> in their own message before the boot command (step 4, ticked). `BaronVonYeetus joined the game` at **20:34:11**, two
+> seconds after `Done`, before R0 was read and before "R0 passed" was sent; he typed nothing, and left at 20:34:42. He
+> joined again at **20:38:22**, after "R0 passed", and typed `/rpg selftest enchant-columns` at 20:38:26. **Every R0
+> line predates the first join** (all at 20:34:09), the shape of the seat's ruling at `GATE-fight-arena.md`'s second
+> boot. Every reading below is from after the second join.
+
+**What he typed:** `/rpg selftest enchant-columns` (20:38:26) and `/stop` (20:40:13), and nothing else. **He did not type
+`/gamemode survival`**: the guard admits only SURVIVAL, so he was in it already. One run, `SELFTEST RUN START
+enchant-columns rows=18 selftest=efa38636` to `SELFTEST RUN FINISHED` at 20:40:09.
+
+**The pad step's length:** `RUN START` and `PAD stood` are both stamped 20:38:26, and the whole setup (its clean, the
+pad, the preflight, the commands, the kills) is `setup DONE ticks=9`. So the pad took **under 9 ticks** (its own ticks
+are not logged).
+
+**Every STAGE line, once per row:**
+- `clear_inventory`: `cleared=11 kept=nexus@8` at EC3R2 (his own items), then `cleared=1 kept=nexus@8` at every later row
+  (the last row's item).
+- `clear_state`: `cooldowns=cleared streaks=forgotten orb=none` at the start of every firing row; at the end of LC1R2,
+  LC2R2 and LC3R2 `orb=removed`, and at the end of LC4R2 `orb=none`.
+
+**The lines outside the rows' predictions, every one:**
+- **`LINGER work=1 entities=0 radius=48`** at the clean of LC2R2, LC3R2 and LC4R2: the row-start clean ended ONE
+  point-scheduled chain round the stand point, after each row that threw an orb. Not predicted (every row predicts
+  `LINGER work=0`). INFERRED: the removed orb's own scheduled work (its expiry or its shots' chain) outlives
+  `OrbRemovals.remove`, and the clean ends it. **No reading moved by it.** A finding for the seat: what that chain is, and
+  whether a removal should end it, is NOT READ.
+- `MOBSEED e3ea719e-… drowned gs=111 source=stored max=111` (20:38:29, during EC5R2): a stored mob seeded where a chunk
+  loaded. Every `LEFTOVER` line in the run reads `living=0`, so it was never within 16 of him.
+- **Seventeen `MOBREMOVE` lines at 20:38:36** (during EC7R2) for mobs no row summoned. INFERRED: the chunks round where he
+  typed the command unloading once he stood on the pad.
+- **`SPLIT`: 3** (EC14R2's one, EC16R2's two). **`NEXUSHEAL`: 0. `SKIPPED`: 0. `LEFTOVER living=` above 0: none.**
+- **Homing:** the lantern's shot LANDED in EC7R2 (on L) and in EC15R2 (on N); EC8R2's met nothing, as predicted; EC14R2's
+  and EC16R2's flew straight and split.
+
+**The RESTORED line, whole:** `SELFTEST RUN RESTORED xp=712697 cell=mage/fire gamemode=SURVIVAL held=2 mana=100.0
+trace=false spawn_mobs=false time=1000 blocks=0 mobsRemoved=1 orbsRemoved=0 keep_inventory=false immediate_respawn=false
+difficulty=NORMAL health=108.000 vanilla_xp=190+0.236 spawn_phantoms=true drag_tick=false`; then `SELFTEST RUN HEALTH
+saved=108.000 customHP=108.000/350.000 wrote=108.000`. `spawn_phantoms=true` is his world's own value, put back. The log
+names no position for him after the run.
+
+**After his `/stop`:** `Stopping server` 20:40:13; `All dimensions are saved` 20:40:13; no `java` process; `find
+run/world/dimensions/rpgfight -mindepth 1` printed nothing; the overworld 106 files, the same names as the backup's 106;
+**no `cause=stop`**. **HE WAS NOT SAVED ON THE PAD, READ from his saved player file**
+(`run/world/players/data/b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5.dat`, written 20:40:13): gunzipped, its `Pos` list reads
+**`-98.4842527511075, 63, 24.0554157002669`**, exactly the position his login line gives and the run's first clean
+returned him to (`return=-98.48 63.00 24.06`): where he typed the command, not the stand point `104.50 201.00 -3.50`.
+
+**IN THREE CLASSES:** **READ AS PREDICTED: all eighteen** (EC3R2 to EC16R2, LC1R2 to LC4R2), and EC17's ORB-line
+extension; EC13R2 and EC15R2 each on its allowed crit reading. **MISS: none. DID NOT TEST WHAT IT WAS MEANT TO: none.**
 
 ## THE ROWS
 
