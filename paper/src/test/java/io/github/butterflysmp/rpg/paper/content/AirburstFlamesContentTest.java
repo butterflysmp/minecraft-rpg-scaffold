@@ -41,17 +41,17 @@ class AirburstFlamesContentTest {
         return log;
     }
 
-    private static java.util.function.Function<String, java.util.Optional<GearClass>> shippedWeapons() {
+    private static java.util.function.Function<String, java.util.Optional<io.github.butterflysmp.rpg.core.weapon.WeaponDefinition>> shippedWeapons() {
         var weapons = new WeaponLoader(capturing(new ArrayList<>()))
                 .loadAll(Path.of("src", "main", "resources", "content", "weapons").toFile());
         assertTrue(weapons.find("living_lantern").isPresent(), "CONTROL: the lantern loaded");
-        return id -> weapons.find(id).map(GearItems::gearClassOf);
+        return weapons::find;
     }
 
     private static EnchantDefinition shipped() {
         File dir = Path.of("src", "main", "resources", "content", "enchants").toFile();
         List<String> warnings = new ArrayList<>();
-        EnchantRegistry r = new EnchantLoader(capturing(warnings), ELEMENTS::contains, shippedWeapons(), false).loadAll(dir);
+        EnchantRegistry r = EnchantLoader.withWeapons(capturing(warnings), ELEMENTS::contains, shippedWeapons(), false).loadAll(dir);
         return r.find("airburst_flames").orElseThrow(() -> new AssertionError("airburst_flames did not load: " + warnings));
     }
 
@@ -91,7 +91,7 @@ class AirburstFlamesContentTest {
                 + "shockwave:\n  hits: 3\n  window_ticks: 60\n  cooldown_ticks: 5\n  damage_by_level: [1, 2, 3]\n"
                 + "  radius_by_level: [1, 2, 3]\n  element: fire\n");
         List<String> warnings = new ArrayList<>();
-        EnchantRegistry r = new EnchantLoader(capturing(warnings), ELEMENTS::contains, shippedWeapons(), false)
+        EnchantRegistry r = EnchantLoader.withWeapons(capturing(warnings), ELEMENTS::contains, shippedWeapons(), false)
                 .loadAll(dir.toFile());
         assertTrue(r.find("good").isPresent(), "the control: " + warnings);
         for (String bad : List.of("no_speed", "one_burst", "two_blocks")) assertTrue(r.find(bad).isEmpty(), bad);

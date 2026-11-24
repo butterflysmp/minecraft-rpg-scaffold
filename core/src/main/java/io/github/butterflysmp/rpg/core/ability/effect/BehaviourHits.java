@@ -55,6 +55,8 @@ public final class BehaviourHits {
                 }
                 // An airburst acts on the FLIGHT (CastExecutor.launchToSplit), never on a hit.
                 case EnchantBehaviour.Airburst ignored -> { }
+                // A granted trigger acts when its gesture is pressed (GrantedTriggers), never on a hit.
+                case EnchantBehaviour.GrantTrigger ignored -> { }
             }
         }
     }

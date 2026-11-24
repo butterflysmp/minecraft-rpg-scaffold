@@ -23,13 +23,14 @@ class EnchantLoadOrderTest {
         String src = Files.readString(Path.of("src/main/java/io/github/butterflysmp/rpg/paper/RpgPlugin.java"),
                 StandardCharsets.UTF_8).replace("\r", "");
         int weapons = src.indexOf("this.weapons = new WeaponLoader(getLogger())");
-        int enchants = src.indexOf("this.enchants = new EnchantLoader(getLogger()");
+        int enchants = src.indexOf("this.enchants = EnchantLoader.withWeapons(getLogger()");
         assertTrue(weapons > 0, "the weapon load is not found");
         assertTrue(enchants > 0, "the enchant load is not found");
         assertTrue(weapons < enchants, "the weapons must load first: " + weapons + " / " + enchants);
-        assertEquals(1, count(src, "new EnchantLoader("), "exactly one enchant load in the enable");
-        assertTrue(src.contains("id -> weapons.find(id).map(io.github.butterflysmp.rpg.paper.weapon.GearItems::gearClassOf)"),
-                "the loader is handed the weapon registry's class lookup");
+        assertEquals(1, count(src, "EnchantLoader.withWeapons("), "exactly one enchant load in the enable");
+        assertEquals(0, count(src, "new EnchantLoader("), "and no loader that cannot see the weapons (D1)");
+        assertTrue(src.contains("EnchantLoader.withWeapons(getLogger(), id -> elements.find(id).isPresent(), weapons::find, devServer)"),
+                "the loader is handed the weapon registry itself (D1)");
     }
 
     private static int count(String haystack, String needle) {

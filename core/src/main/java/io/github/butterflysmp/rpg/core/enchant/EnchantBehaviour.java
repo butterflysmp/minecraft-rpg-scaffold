@@ -10,7 +10,8 @@ import java.util.List;
  * <p>A {@code sealed} interface: only the records listed in {@code permits} may implement it, so a {@code switch} over
  * it must answer for every kind (one line for a reader rusty at Java: the compiler checks the list is complete).
  */
-public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst {
+public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst,
+        EnchantBehaviour.GrantTrigger {
 
     /**
      * {@code effect: shockwave}: when the weapon carrying it lands {@code hits} hits on ONE target within the last
@@ -97,6 +98,23 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, Enc
          */
         public static int ticksToTravel(double blocks, double speedPerTick) {
             return Math.max(1, (int) Math.ceil(blocks / speedPerTick - 1e-9));
+        }
+    }
+
+    /**
+     * {@code effect: grant_trigger} (Lapis Crystal's D1, 2026-11-23): while the enchant is the ACTIVE candidate of its
+     * slot at level 1 or more (B2), the weapon {@code weaponId} gains a trigger on {@code input} that casts
+     * {@code ability}, an ability authored in the EXISTING grammar (its cost, cooldown, cast and effects are content).
+     * The ability's id is {@code <enchant id>/<input>}, so its cooldown is its own, apart from the weapon's triggers'.
+     * Only on that weapon: the same state staged on another weapon by the dev command grants nothing
+     * ({@code GrantedTriggers}).
+     */
+    record GrantTrigger(String weaponId, String input,
+                        io.github.butterflysmp.rpg.core.ability.AbilityDefinition ability) implements EnchantBehaviour {
+        public GrantTrigger {
+            if (weaponId == null || weaponId.isBlank()) throw new IllegalArgumentException("grant_trigger needs its weapon");
+            if (input == null || input.isBlank()) throw new IllegalArgumentException("grant_trigger input is required");
+            if (ability == null) throw new IllegalArgumentException("grant_trigger ability is required");
         }
     }
 

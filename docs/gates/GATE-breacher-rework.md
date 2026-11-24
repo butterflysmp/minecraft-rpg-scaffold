@@ -366,6 +366,11 @@ least 33 before this row's first, against the 20).
 
 ### LL9R2 — OWED: THE BURN KEEPS ITS CAP WHEN AN IGNITE BURST LANDS ON IT (SURVIVAL)
 
+> **DATED NOTE, 2026-11-23 (`feat/lapis-crystal-trigger`): THIS ROW CANNOT BE RE-RUN AS WRITTEN.** It was READ, as
+> predicted, on the second boot (`52579e8a`; *READINGS* below). Since PR B of the enchant-columns stack (#253) the Living
+> Lantern fires ONE homing shot of 45, not a 60-degree cone of 14, so this staging would strike one zombie for 45 (cap
+> 22.5) and every number below would move. Nothing above or below is edited.
+
 **S** at `~3.5 ~ ~1.2` (100 health; 3.70 from his eye, 18.9 degrees off the aim) and **W** at `~3 ~ ~0` (vanilla max 2,
 seeded at **10**; 3.00 from his eye, on the aim): both inside the Living Lantern's cone (range 6.0, 30 degrees either
 side, READ `living_lantern.yml`), both reached on the front's 4th tick (**press + 5**, as `GATE-living-lantern.md`'s LL2

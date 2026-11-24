@@ -38,6 +38,15 @@ public final class WeaponService {
      *         or Locked -- those are ability-registry and archetype concepts a weapon
      *         does not touch.
      */
+    /**
+     * Fire an already-resolved binding ({@code GrantedTriggers.resolve}): the weapon's own trigger or one an active
+     * enchant grants it (Lapis Crystal's D1, 2026-11-23). A weapon trigger either way: it carries the level bonus and
+     * the weapon's behaviours (B2), and its cooldown is keyed by its own ability id.
+     */
+    public CastResult fire(CombatantSnapshot caster, TriggerBinding binding, Aim aim) {
+        return abilities.fireTrigger(caster, binding.ability(), aim);
+    }
+
     public Optional<CastResult> fire(CombatantSnapshot caster, WeaponDefinition weapon,
                                      String input, Aim aim) {
         return weapon.trigger(input)

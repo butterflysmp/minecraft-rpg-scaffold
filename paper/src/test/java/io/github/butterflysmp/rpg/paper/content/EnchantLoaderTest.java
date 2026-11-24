@@ -37,8 +37,8 @@ class EnchantLoaderTest {
      * roster holds a UNIQUE enchant (kinetic_tremors, element kinetic), which a loader that knows no element refuses.
      */
     private static EnchantLoader shippedElementsLoader() {
-        return new EnchantLoader(quietLogger(), Set.of("fire", "kinetic", "nature", "undead", "void", "water", "wither")::contains,
-                shippedWeaponClass(), false);
+        return EnchantLoader.withWeapons(quietLogger(), Set.of("fire", "kinetic", "nature", "undead", "void", "water", "wither")::contains,
+                shippedWeapons(), false);
     }
 
     /** The SHIPPED WEAPONS' classes by id, as the server's loader knows them (it loads the weapons first, since W1). */
@@ -48,6 +48,14 @@ class EnchantLoaderTest {
         io.github.butterflysmp.rpg.core.weapon.WeaponRegistry weapons = new WeaponLoader(quietLogger())
                 .loadAll(Path.of("src", "main", "resources", "content", "weapons").toFile());
         return id -> weapons.find(id).map(io.github.butterflysmp.rpg.paper.weapon.GearItems::gearClassOf);
+    }
+
+    /** The SHIPPED WEAPONS themselves, as the server's loader is handed them since D1 (withWeapons). */
+    private static java.util.function.Function<String, java.util.Optional<io.github.butterflysmp.rpg.core.weapon.WeaponDefinition>>
+            shippedWeapons() {
+        io.github.butterflysmp.rpg.core.weapon.WeaponRegistry weapons = new WeaponLoader(quietLogger())
+                .loadAll(Path.of("src", "main", "resources", "content", "weapons").toFile());
+        return weapons::find;
     }
 
     private static Logger quietLogger() {
@@ -144,8 +152,8 @@ class EnchantLoaderTest {
         assertEquals(List.of(), devIds(), "W5: no dev enchant remains");
         Logger quiet = quietLogger();
         Set<String> elements = Set.of("fire", "kinetic", "nature", "undead", "void", "water", "wither");
-        EnchantRegistry real = new EnchantLoader(quiet, elements::contains, shippedWeaponClass(), false).loadAll(shippedEnchantsDir());
-        EnchantRegistry dev = new EnchantLoader(quiet, elements::contains, shippedWeaponClass(), true).loadAll(shippedEnchantsDir());
+        EnchantRegistry real = EnchantLoader.withWeapons(quiet, elements::contains, shippedWeapons(), false).loadAll(shippedEnchantsDir());
+        EnchantRegistry dev = EnchantLoader.withWeapons(quiet, elements::contains, shippedWeapons(), true).loadAll(shippedEnchantsDir());
         assertEquals(shippedIds().size(), real.size());
         assertEquals(shippedIds().size(), dev.size(), "a dev server loads the same shipped roster");
         assertEquals(List.of("kinetic_tremors"), real.all().stream().filter(EnchantDefinition::isUnique)
@@ -284,10 +292,10 @@ class EnchantLoaderTest {
     @Test
     void noElementKeyIsANormalEnchant() throws IOException {
         EnchantRegistry r = shippedElementsLoader().loadAll(shippedEnchantsDir());
-        assertEquals(13, r.size(), "the thirteen shipped enchants (recounted: ls content/enchants/*.yml | wc -l)");
+        assertEquals(14, r.size(), "the fourteen shipped enchants (recounted: ls content/enchants/*.yml | wc -l)");
         assertEquals(11, r.all().stream().filter(e -> e.element() == null && e.weapon() == null).count(), "eleven are normal");
-        assertEquals(List.of("airburst_flames"), r.all().stream().filter(EnchantDefinition::isWeaponSpecific)
-                .map(EnchantDefinition::id).toList(), "the one weapon-specific enchant");
+        assertEquals(List.of("airburst_flames", "lapis_crystal"), r.all().stream().filter(EnchantDefinition::isWeaponSpecific)
+                .map(EnchantDefinition::id).sorted().toList(), "the two weapon-specific enchants");
         assertEquals("living_lantern", r.find("airburst_flames").orElseThrow().weapon());
     }
 

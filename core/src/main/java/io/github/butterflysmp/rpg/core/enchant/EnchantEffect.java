@@ -162,7 +162,13 @@ public enum EnchantEffect {
      * the FLIGHT of the weapon's projectile ({@code CastExecutor.launchToSplit}), never on a hit. No
      * {@code value_by_level}.
      */
-    AIRBURST;
+    AIRBURST,
+
+    /**
+     * A BEHAVIOUR (B1): {@link EnchantBehaviour.GrantTrigger}, the file's {@code grant_trigger:} block: a trigger the
+     * weapon gains while the enchant is active, its ability in the existing ability grammar. No {@code value_by_level}.
+     */
+    GRANT_TRIGGER;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides
