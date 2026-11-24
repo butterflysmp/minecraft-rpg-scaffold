@@ -1141,3 +1141,134 @@ line, "loose three", "27 x 3"); `FocusedBeamTest`'s fixture, which says it is co
 lines). **Mutations, each marker present 1, original gone 0, lines changed 1, restored `cmp` identical, markers left
 0:** MUTSHOTS (`shots: 4`: 4 rows red across `CursedEmeraldContentTest`, `FocusedBeamContentTest`, `GoldenLoreTest`);
 MUTFLING ("slamming" back: `BoltorSoundFlintTextTest` and `GoldenLoreTest` red).
+
+## 23. PR D, THE GUARANTEED CANDIDATE AND FIVE TUNES OF A WEAPON'S OWN CAST (`feat/guaranteed-cast-tunes`, on PR C)
+
+**THE FLAW (READ by the seat at `c1ebabab`):** `EnchantMenu` only calls `withActive`; nothing in the table calls
+`withoutActive`, so a weapon whose slot 0 offers ONE behavioural enchant cannot go back to its plain attack once it is
+active. **Ben's fix is content: a guaranteed candidate beside it. No deactivate click is added.**
+
+### G1 to G3, AS BUILT
+
+- **`guaranteed: true`** on an enchant file (`EnchantLoader`'s `guaranteed` section: a YAML boolean or refused by name),
+  carried on `EnchantDefinition.guaranteed` and `EnchantRoll.Rollable.guaranteed`. The record refuses it on an enchant that
+  names no weapon (both records, by name).
+- **The roll (`EnchantRoll.roll`):** each slot's pool is split; its guaranteed enchants are its FIRST candidates, in roster
+  order, with no draw; the cascade then counts the REST, `cascade.count(min(rest, MAX_CANDIDATES - guaranteed), draws)`, and
+  picks as before. An empty rest takes no draw (`CandidateCascade.count` takes none for a pool of 0, READ). A weapon no
+  guaranteed enchant names rolls exactly as before (draw for draw: `aWeaponNoGuaranteedEnchantNamesRollsAsToday`).
+- **The loader** refuses, by name and for every one of them, more guaranteed enchants for one weapon than
+  `MAX_CANDIDATES` (a cross-file rule, checked after every file is parsed and before any is registered).
+- **G2: nothing else is special.** Locked at level 0, priced by the same curve, three levels, activated by the same click
+  (`EnchantMenu` is NOT edited): activating the guaranteed one makes it the slot's active candidate and the behavioural one
+  beside it stops acting, which is the fix. **G3:** no migration; items already rolled keep their slot 0.
+
+### G4: THE ONE SEAM, AND ITS SCHEMA
+
+`EnchantBehaviour.CastTune(weaponId, quantity, valueByLevel)`, `effect: cast_tune`, applied by ONE pure function,
+`core CastTunes.tune(ability, behaviours)`, to the ability whose id is `<weapon>/right_click` only (a stone cast, another
+gesture, another weapon's cast, a granted trigger come back the same instance). **Where it is applied (`CastExecutor`):**
+at the commit, over the behaviours the commit froze (every shape is dispatched with the tuned ability; the Caster's
+headline damage is re-read off the tuned on_hit, so scorch's cap basis is the tuned hit); and **at each volley shot, off
+the behaviours THAT SHOT reads (ruling 1)**, for its damage, range and the count the volley runs to. **A volley's wind-up
+is the press's**: the tuned spec times it in `beginVolley`, since nothing can re-read a wind-up already running.
+
+```yaml
+cast_tune:
+  quantity: damage              # damage | range | shots | windup
+  value_by_level: [4, 8, 12]    # one per level
+```
+
+| quantity | what it does | the right click must have | refused values |
+|---|---|---|---|
+| `damage` | ADDED to the authored `amount` of every literal `damage` in on_hit, before every other term (G5) | a literal damage | not above 0 |
+| `range` | ADDED to a ray's range (a volley's inner ray's too) | a ray, or a volley of rays | not above 0 |
+| `shots` | SETS a volley's shot count | a volley | not a whole number, below 1 |
+| `windup` | SUBTRACTED from a volley's wind-up, in ticks | a volley | not a whole number, below 1 |
+
+**The loader refuses, by name (ruling H's spirit):** no `weapon:`; a weapon it cannot see; a weapon with no right click; a
+quantity that is not one of the four; a quantity the right click does not have; and **any level that would make the cast
+itself invalid, found by BUILDING the tuned cast for every level at load** (`CastSpec.Volley`'s own refusals: a wind-up
+below 0, a warning flash at or after the shortened wind-up). The level count against `max_level` is the record's.
+
+**G5, every sum names the term:** `sent = (((amount + TUNE) x score / 100) x enchantMultiplier + classDamageBonus +
+weaponLevelDamage) x chargeScale x critMultiplier`. EXECUTED in `CastTuneTest`: at score 150, Large Sparks III reads
+(20 + 12) x 1.5 = 48, where the addition after the score would read 42 and no enchant 30.
+
+### THE FIVE FILES, AS COMMITTED (comments stripped)
+
+```yaml
+# large_sparks.yml
+display_name: "Large Sparks"
+icon: flint
+max_level: 3
+effect: cast_tune
+class: universal
+weapon: flint_staff
+guaranteed: true
+cast_tune:
+  quantity: damage
+  value_by_level: [4, 8, 12]
+# sharp_crystals.yml: "Sharp Crystals", icon amethyst_cluster, weapon crystal_shard_staff, damage [3, 6, 9]
+# polished_scepter.yml: "Polished Scepter", icon lapis_lazuli, weapon lapis_staff, range [4, 8, 12]
+# echo_beam.yml: "Echo Beam", icon prismarine_crystals, weapon cursed_emerald, shots [4, 5, 6]
+# early_toll.yml: "Early Toll", icon bell, weapon knell_beam, windup [2, 4, 8]
+```
+
+Every other key of the four is the first's (`max_level: 3`, `effect: cast_tune`, `class: universal`, `guaranteed: true`).
+Early Toll's arithmetic, in its file: Ben's 0.1 / 0.2 / 0.4 s x 20 ticks = 2 / 4 / 8.
+
+### READ: THE KNELL BEAM'S WIND-UP, AND WHAT HANGS ON IT (`knell_beam.yml`, `CastExecutor.beginVolley`/`warn`)
+
+- **The locked aim** is captured AT THE CAST (`beginVolley`: `locked = castAim`), as values; the wind-up's length does not
+  touch it. At 22, 20 and 16 the bolt still fires down the line he faced at the cast.
+- **The warning flashes:** `flash_at: [0]`, ONE flash, drawn inline on the cast frame (`warn`: tick 0 runs `draw.run()`), so
+  there is no spacing to move. `CastSpec.Volley` refuses a flash at or after the wind-up; 0 is inside 22, 20 and 16. A
+  cut to 24 would put it AT the shot and is refused at load (`windup_too_long`).
+- **The cooldown stays 48** (told to Ben); the derived floor is the wind-up plus nothing (one shot), 22 / 20 / 16, all below.
+- **The clock (section 19, with PR A):** the press on tick T, the cast at T + 1 (the hop), the first shot filed by
+  `scheduleOn(…, windup)` from the global phase and run at **T + windup**: so the new `VOLLEYSHOT … shot=0 pressed=T tick=…`
+  line (under mobtrace, `CombatWorld.traceVolleyShot`) reads `tick - pressed` = **16** at Early Toll III and **24** with none.
+
+**Polished Scepter beside Lapis Crystal:** only one acts at a time (one slot). With Polished Scepter NOT active the beam
+is 26 and the crystal's shots read the beam's authored 21, unchanged. With it active, an orb thrown BEFORE the swap still
+rests out its life; a beam into it fires the crystal's shots at the same authored 21 (the tune changes the range only).
+
+### OPEN FOR BEN (SEAT PLACEHOLDERS 2026-11-24)
+
+1. The five icons: `flint`, `amethyst_cluster`, `lapis_lazuli`, `prismarine_crystals`, `bell`.
+2. The five lines (`EnchantEffectLine`, the `CAST_TUNE` arm): `+12 damage`; `+6 damage`; `+12 blocks of range`;
+   `volleys of 6 shots`; `-0.4s wind-up` (each level's own number).
+3. **The weapons' own tooltips are NOT edited with a tune active:** the Flint Staff still reads its authored 20 (the
+   enchant's line says +12), the Cursed Emerald "27 x 3".
+4. Which of the two weapon-specific candidates should LEAD the slot: built with the guaranteed one first (the brief's).
+
+### Tests and mutations
+
+New: `core/.../enchant/EnchantRollGuaranteedTest` (5), `core/.../CastTuneTest` (10), `paper/.../CastTuneContentTest` (6), a
+`VOLLEYSHOT` row in `FocusedLineTest`; re-pinned: `EnchantLoaderTest` (21 enchants; nine weapon-specific) and
+`UniqueSlotContentTest` (21; the five weapons' pools). **Seventeen mutations, each marker present 1, original gone 0,
+lines changed 1 against a pristine copy, each red, restored `cmp` identical, markers left 0:**
+
+| mutation | the edit | reddened |
+|---|---|---|
+| MUTGUARFIRST | no candidate treated as guaranteed | 3 `EnchantRollGuaranteedTest` rows |
+| MUTGUARCAP | the cascade counts the rest uncapped | `theSlotNeverHoldsMoreThanTheTable` (by `EnchantSlot`'s own refusal, an error) |
+| MUTTUNEWEAPON | the `<weapon>/right_click` check removed | `anotherWeaponsCastIsUntouched` |
+| MUTTUNEDMG | the damage addition is + 0 | 3 rows |
+| MUTTUNERANGE | the range addition is + 0 | `aRangeTuneLengthensTheRay` |
+| MUTTUNESHOTS | the shot count kept | `aShotsTuneSetsTheVolleyCount` |
+| MUTTUNEWINDUP | the wind-up cut is 0 | 2 rows |
+| MUTPERSHOT | the count read at the press, not each shot | `theShotCountIsReadAtEachShot` |
+| MUTPAYLOAD | the headline never re-read | `aStatusTheTunedCastAppliesCarriesTheTunedHeadline` |
+| MUTLOADERHAS | the "has the quantity" refusal disabled | the refusal row |
+| MUTLOADERBUILD | no level built at load | the refusal row (`windup_too_long`, `zero_shots`... its first miss) |
+| MUTGUARREAD | `guaranteed` always read false | 4 `CastTuneContentTest` rows |
+| MUTOVERFLOW | the per-weapon cap 99 | the overflow row |
+| MUTWINDUPLINE | the line's seconds / 10 | `theLines` |
+| MUTROSTERG | the roster drops `guaranteed` | `slotZeroOverManyRolls` |
+| MUTSPARKS | `large_sparks.yml` 12 -> 13 | 3 content rows |
+| MUTVOLLEYLINE | `pressed` and `tick` swapped in the line | the `VOLLEYSHOT` row |
+
+**UNMUTATED, said so:** paper's `traceVolleyShot` gate on mobtrace (server-side; the gate's `VOLLEYSHOT` lines are its
+witness); `executeFan`'s tuning (no fanned weapon has a tune; it is the same two calls as `execute`).

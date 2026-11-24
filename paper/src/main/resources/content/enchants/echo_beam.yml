@@ -1,0 +1,22 @@
+# ECHO BEAM -- the Cursed Emerald's GUARANTEED weapon enchant (the seat's brief of 2026-11-24, PR D; G1 to G5).
+# Ben, verbatim: "Cursed Emerald - Increases volley count to 4/5/6 (Side note decrease the normal volley count to 3)" and,
+# asked its name: "1. Echo Beam"
+#
+# WHAT IT DOES (core CastTunes): the Cursed Volley fires 4 / 5 / 6 bolts of 27 in place of its authored 3 (shots is SET, not
+# added). The count is read at each shot from the weapon in hand (ruling 1), as the volley reads everything else. Wind-up,
+# interval, mana and the 30-tick cooldown are cursed_emerald.yml's; at 6 shots the derived floor is 20 + 5 x 2 = 30, the
+# authored cooldown, so no level raises it.
+#
+# IT SHARES SLOT 0 WITH FOCUSED BEAM, so only one acts at a time. Its bolts at 27 each: 108 / 135 / 162 at score 100,
+# against the plain 81 and Focused Beam's 108 / 162 / 216.
+# GUARANTEED (G1): every freshly rolled Cursed Emerald offers it in slot 0, FIRST, with Focused Beam beside it.
+display_name: "Echo Beam"                  # BEN
+icon: prismarine_crystals                  # SEAT PLACEHOLDER 2026-11-24
+max_level: 3                               # BEN: three values
+effect: cast_tune
+class: universal
+weapon: cursed_emerald                     # W1
+guaranteed: true                           # G1
+cast_tune:
+  quantity: shots                          # SETS the volley's shot count
+  value_by_level: [4, 5, 6]                # BEN: "4/5/6"

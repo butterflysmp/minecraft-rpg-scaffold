@@ -61,6 +61,8 @@ public final class BehaviourHits {
                 case EnchantBehaviour.FocusedBeam ignored -> { }
                 // A granted trigger acts when its gesture is pressed (GrantedTriggers), never on a hit.
                 case EnchantBehaviour.GrantTrigger ignored -> { }
+                // A cast tune changes the weapon's OWN cast before it fires (CastTunes, at the commit), never a hit.
+                case EnchantBehaviour.CastTune ignored -> { }
             }
         }
     }

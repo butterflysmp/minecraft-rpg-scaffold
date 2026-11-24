@@ -11,7 +11,67 @@ import java.util.List;
  * it must answer for every kind (one line for a reader rusty at Java: the compiler checks the list is complete).
  */
 public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst,
-        EnchantBehaviour.Shatter, EnchantBehaviour.FocusedBeam, EnchantBehaviour.GrantTrigger {
+        EnchantBehaviour.Shatter, EnchantBehaviour.FocusedBeam, EnchantBehaviour.GrantTrigger, EnchantBehaviour.CastTune {
+
+    /**
+     * {@code effect: cast_tune} (the seat's G4, 2026-11-24; Ben: "This will just be the normal attack of the weapon and will
+     * slightly increase the stats."). THE ONE SEAM FOR A NUMERIC CHANGE TO A WEAPON'S OWN RIGHT CLICK, not one behaviour
+     * type per enchant: the file names WHICH QUANTITY of the cast it moves and the value per level, and
+     * {@code CastTunes.tune} applies it when the weapon {@code weaponId} makes that cast (the weapon in hand at each shot,
+     * ruling 1). Four quantities, each the brief's:
+     *
+     * <ul>
+     *   <li>{@link Quantity#DAMAGE}: ADDED to the authored amount of every literal damage in the cast's on_hit, before
+     *       every other term (G5), so the gear score scales it exactly as it scales the base.</li>
+     *   <li>{@link Quantity#RANGE}: ADDED to a ray's range (a volley's inner ray's too), in blocks.</li>
+     *   <li>{@link Quantity#SHOTS}: a volley's shot count, SET to the value (Ben: "Increases volley count to 4/5/6").</li>
+     *   <li>{@link Quantity#WINDUP}: SUBTRACTED from a volley's wind-up, in whole ticks.</li>
+     * </ul>
+     *
+     * <p>The record refuses what it can see: a blank weapon, no levels, a damage or range addition not above 0, a shot count
+     * that is not a whole number of 1 or more, a wind-up cut that is not a whole number of ticks of 1 or more. Whether the
+     * named weapon's cast HAS the quantity, and whether a level would make it invalid, are the loader's (it can see the
+     * weapon) and the cast records' own (a wind-up below 0 throws where {@code CastTunes} builds it).
+     */
+    record CastTune(String weaponId, Quantity quantity, List<Double> valueByLevel) implements EnchantBehaviour {
+
+        /** Which quantity of the weapon's right click it moves. */
+        public enum Quantity { DAMAGE, RANGE, SHOTS, WINDUP }
+
+        public CastTune {
+            if (weaponId == null || weaponId.isBlank()) throw new IllegalArgumentException("cast_tune needs its weapon id");
+            if (quantity == null) throw new IllegalArgumentException("cast_tune quantity is required");
+            if (valueByLevel == null || valueByLevel.isEmpty()) {
+                throw new IllegalArgumentException("cast_tune value_by_level is required: one value per level");
+            }
+            for (int i = 0; i < valueByLevel.size(); i++) {
+                Double v = valueByLevel.get(i);
+                boolean whole = v != null && v == Math.rint(v);
+                boolean ok = switch (quantity) {
+                    case DAMAGE, RANGE -> v != null && v > 0 && Double.isFinite(v);
+                    case SHOTS, WINDUP -> whole && v >= 1 && v <= 10_000;
+                };
+                if (!ok) {
+                    throw new IllegalArgumentException("cast_tune " + quantity.name().toLowerCase(java.util.Locale.ROOT)
+                            + " at level " + (i + 1) + " was " + v + "; " + switch (quantity) {
+                                case DAMAGE, RANGE -> "it must be above 0";
+                                case SHOTS -> "a shot count is a whole number of 1 or more";
+                                case WINDUP -> "a wind-up cut is a whole number of ticks, 1 or more";
+                            });
+                }
+            }
+            valueByLevel = List.copyOf(valueByLevel);
+        }
+
+        /** The value at {@code level} (1-based), clamped into the authored levels. */
+        public double valueAt(int level) {
+            return valueByLevel.get(clamp(level, valueByLevel.size()) - 1);
+        }
+
+        public int levels() {
+            return valueByLevel.size();
+        }
+    }
 
     /**
      * {@code effect: shockwave}: when the weapon carrying it lands {@code hits} hits on ONE target within the last

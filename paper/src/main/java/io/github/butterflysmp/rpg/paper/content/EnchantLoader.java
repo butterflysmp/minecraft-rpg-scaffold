@@ -105,6 +105,7 @@ public final class EnchantLoader {
         Arrays.sort(files); // deterministic load order across filesystems
         int skipped = 0;
         java.util.List<String> devOnly = new java.util.ArrayList<>();
+        java.util.List<EnchantDefinition> parsed = new java.util.ArrayList<>();
         for (File f : files) {
             if (idOf(f).startsWith(DEV_PREFIX) && !dev) {
                 devOnly.add(idOf(f));
@@ -112,11 +113,29 @@ public final class EnchantLoader {
             }
             try {
                 YamlConfiguration yaml = YamlConfiguration.loadConfiguration(f);
-                registry.register(parse(idOf(f), yaml));
+                parsed.add(parse(idOf(f), yaml));
             } catch (RuntimeException ex) {
                 skipped++;
                 log.warning("Skipping malformed enchant '" + f.getName() + "': " + ex.getMessage());
             }
+        }
+        // G1 (2026-11-24): more guaranteed enchants for ONE weapon than the slot can show (MAX_CANDIDATES) is refused, by
+        // name, for every one of them: a slot that guaranteed five could show only four, and which four is no rule anyone
+        // wrote. A cross-file rule, so it is checked here, after every file is parsed and before any is registered.
+        java.util.Map<String, java.util.List<String>> guaranteedByWeapon = new java.util.TreeMap<>();
+        for (EnchantDefinition def : parsed) {
+            if (def.guaranteed()) guaranteedByWeapon.computeIfAbsent(def.weapon(), w -> new java.util.ArrayList<>()).add(def.id());
+        }
+        for (EnchantDefinition def : parsed) {
+            java.util.List<String> same = def.guaranteed() ? guaranteedByWeapon.get(def.weapon()) : null;
+            if (same != null && same.size() > io.github.butterflysmp.rpg.core.enchant.EnchantRoll.MAX_CANDIDATES) {
+                skipped++;
+                log.warning("Skipping malformed enchant '" + def.id() + ".yml': weapon '" + def.weapon() + "' has "
+                        + same.size() + " guaranteed enchants " + same + "; its slot shows at most "
+                        + io.github.butterflysmp.rpg.core.enchant.EnchantRoll.MAX_CANDIDATES);
+                continue;
+            }
+            registry.register(def);
         }
         if (skipped > 0) {
             log.warning(skipped + " enchant file(s) were skipped. The server is still running, "
@@ -154,7 +173,21 @@ public final class EnchantLoader {
                 // Bukkit registry that this loader deliberately cannot.
                 s.getString("icon", EnchantDefinition.DEFAULT_ICON),
                 requires(s.getString("requires"), id),
-                element, weapon, behaviour(s, id, weapon));
+                element, weapon, behaviour(s, id, weapon), guaranteed(s, id));
+    }
+
+    /**
+     * G1 (2026-11-24): {@code guaranteed: true} or absent (false). A MECHANICAL key, so anything but a YAML boolean is
+     * refused by name: {@code guaranteed: yes-please} must not quietly read as false. The record refuses it on an enchant
+     * that names no weapon.
+     */
+    private static boolean guaranteed(ConfigurationSection s, String id) {
+        if (!s.contains("guaranteed")) return false;
+        if (!s.isBoolean("guaranteed")) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares guaranteed: '" + s.get("guaranteed")
+                    + "'; it must be true or false");
+        }
+        return s.getBoolean("guaranteed");
     }
 
     /**
@@ -186,6 +219,7 @@ public final class EnchantLoader {
         ConfigurationSection b = s.getConfigurationSection(name);
         if (b == null) throw new IllegalArgumentException("enchant '" + id + "': " + name + ": must be a block of keys");
         if (name.equals("grant_trigger")) return grantTrigger(b, id, weapon);
+        if (name.equals("cast_tune")) return castTune(b, id, weapon);
         String element = requiredString(b, "element", id);
         if (!elementExists.test(element)) {
             throw new IllegalArgumentException("enchant '" + id + "' " + name + ": element '" + element
@@ -293,12 +327,80 @@ public final class EnchantLoader {
         return new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger(weaponId, input, ability);
     }
 
+    /**
+     * THE CAST TUNE (the seat's G4, 2026-11-24): the one seam for a numeric change to the weapon's OWN right click. The
+     * block:
+     *
+     * <pre>
+     * cast_tune:
+     *   quantity: damage              # damage | range | shots | windup
+     *   value_by_level: [4, 8, 12]    # one per level; damage and range ADD, shots SETS, windup SUBTRACTS (ticks)
+     * </pre>
+     *
+     * Refused BY NAME (ruling H's spirit: a tune must never advertise a number the cast cannot receive): an enchant that
+     * is not weapon-specific; a weapon this loader cannot see; a weapon with no right click; a quantity that is not one of
+     * the four; a quantity the right click does not HAVE (damage: no literal damage in its on_hit; range: neither a ray nor
+     * a volley of rays; shots and windup: not a volley); a value the record refuses (a shot count below 1, a fraction of a
+     * tick); and any level that would make the cast itself invalid, found by BUILDING the tuned cast for every level here
+     * (a wind-up below 0, a warning flash at or after the shortened wind-up: {@code CastSpec.Volley}'s own refusals). The
+     * level count against {@code max_level} is the record's.
+     */
+    private io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour castTune(ConfigurationSection b, String id,
+                                                                               String weaponId) {
+        if (weaponId == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' cast_tune: tunes one weapon's cast, so the enchant"
+                    + " must declare weapon: <id>");
+        }
+        io.github.butterflysmp.rpg.core.weapon.WeaponDefinition weapon = weaponDefinition.apply(weaponId).orElseThrow(() ->
+                new IllegalArgumentException("enchant '" + id + "' cast_tune: weapon '" + weaponId
+                        + "' is not a weapon this loader can see, so its cast cannot be checked"));
+        io.github.butterflysmp.rpg.core.ability.AbilityDefinition cast = weapon.trigger("right_click")
+                .map(t -> t.ability())
+                .orElseThrow(() -> new IllegalArgumentException("enchant '" + id + "' cast_tune: weapon '" + weaponId
+                        + "' has no right click to tune"));
+        String raw = requiredString(b, "quantity", id);
+        io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.CastTune.Quantity quantity;
+        try {
+            quantity = io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.CastTune.Quantity.valueOf(
+                    raw.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("enchant '" + id + "' cast_tune: quantity '" + raw
+                    + "' must be one of damage, range, shots, windup");
+        }
+        io.github.butterflysmp.rpg.core.ability.CastSpec spec = cast.cast();
+        boolean has = switch (quantity) {
+            case DAMAGE -> cast.onHit().stream()
+                    .anyMatch(e -> e instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage);
+            case RANGE -> spec instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Ray
+                    || (spec instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Volley v
+                        && v.of() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Ray);
+            case SHOTS, WINDUP -> spec instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Volley;
+        };
+        if (!has) {
+            throw new IllegalArgumentException("enchant '" + id + "' cast_tune: weapon '" + weaponId + "''s right click has"
+                    + " no " + raw + " to tune");
+        }
+        io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.CastTune tune;
+        try {
+            tune = new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.CastTune(weaponId, quantity,
+                    requiredDoubles(b, "value_by_level", id));
+            for (int level = 1; level <= tune.levels(); level++) {
+                io.github.butterflysmp.rpg.core.ability.CastTunes.tune(cast, java.util.List.of(
+                        new io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour(id, level, tune)));
+            }
+        } catch (IllegalArgumentException ex) {
+            throw ex.getMessage().startsWith("enchant '") ? ex
+                    : new IllegalArgumentException("enchant '" + id + "' cast_tune: " + ex.getMessage(), ex);
+        }
+        return tune;
+    }
+
     /** The gestures an enchant may grant (D1). */
     static final java.util.List<String> GRANTABLE_INPUTS = java.util.List.of("left_click", "right_click");
 
     /** Every behaviour block a file may declare, one at most (B1). */
     private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst", "shatter",
-            "focused_beam", "grant_trigger");
+            "focused_beam", "grant_trigger", "cast_tune");
 
     /**
      * FOCUSED BEAM'S WEAPON, refused by name (the seat's brief of 2026-11-24): the enchant must be weapon-specific, its

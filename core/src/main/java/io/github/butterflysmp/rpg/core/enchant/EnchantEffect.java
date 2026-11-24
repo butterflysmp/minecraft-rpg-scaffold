@@ -182,7 +182,14 @@ public enum EnchantEffect {
      * A BEHAVIOUR (B1): {@link EnchantBehaviour.GrantTrigger}, the file's {@code grant_trigger:} block: a trigger the
      * weapon gains while the enchant is active, its ability in the existing ability grammar. No {@code value_by_level}.
      */
-    GRANT_TRIGGER;
+    GRANT_TRIGGER,
+
+    /**
+     * A BEHAVIOUR (B1): {@link EnchantBehaviour.CastTune}, the file's {@code cast_tune:} block (the seat's G4, 2026-11-24):
+     * a number of the weapon's OWN right click moved per level ({@code CastTunes}, at the commit and each volley shot),
+     * never a hit. No {@code value_by_level} at the top level: the block owns its numbers.
+     */
+    CAST_TUNE;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

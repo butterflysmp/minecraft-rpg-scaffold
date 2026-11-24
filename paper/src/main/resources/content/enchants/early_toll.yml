@@ -1,0 +1,19 @@
+# EARLY TOLL -- the Knell Beam's GUARANTEED weapon enchant (the seat's brief of 2026-11-24, PR D; G1 to G5).
+# Ben, verbatim: "Knell Beam - Early Toll - Decreases wind-up time by 0.1/0.2/0.4"
+#
+# BEN'S UNIT IS SECONDS; THE FILE'S IS TICKS: 0.1 s x 20 = 2, 0.2 s x 20 = 4, 0.4 s x 20 = 8. The Knell's Toll's authored
+# wind-up of 24 ticks becomes 22 / 20 / 16 (1.1 / 1.0 / 0.8 s), counted from the PRESS (PLAN-enchant-columns.md section
+# 19: the press is stamped before WeaponFire's hop). The cooldown stays 48 (told to Ben). The locked aim is still captured
+# at the cast, and the one warning flash is still at tick 0 of the wind-up (knell_beam.yml's flash_at [0]), so neither
+# moves; the loader builds the tuned volley for every level and refuses one whose flash would fall at or after the shot.
+# GUARANTEED (G1): every freshly rolled Knell Beam offers it in slot 0, locked.
+display_name: "Early Toll"                 # BEN
+icon: bell                                 # SEAT PLACEHOLDER 2026-11-24
+max_level: 3                               # BEN: three values
+effect: cast_tune
+class: universal
+weapon: knell_beam                         # W1
+guaranteed: true                           # G1
+cast_tune:
+  quantity: windup                         # SUBTRACTED from the volley's windup_ticks
+  value_by_level: [2, 4, 8]                # BEN: 0.1 / 0.2 / 0.4 s, x 20 ticks a second

@@ -104,7 +104,28 @@ public final class CastExecutor {
         AbilityDefinition ability = success.ability();
         boolean charges = charges(ability);
         Caster source = commit(ability, success.caster(), success.aim(), charges, success.weaponTrigger());
-        dispatch(ability, success.caster(), source, success.aim(), charges, pressTick);
+        AbilityDefinition tuned = tuned(ability, success.caster(), source);
+        dispatch(ability, tuned, success.caster(), tunedSource(ability, tuned, success.caster(), source), success.aim(),
+                charges, pressTick);
+    }
+
+    /**
+     * THE WEAPON'S OWN CAST WITH ITS ACTIVE TUNES APPLIED (the seat's G4, 2026-11-24): {@link CastTunes}, over the
+     * behaviours the commit just froze. A cast no tune touches comes back the same instance.
+     */
+    private static AbilityDefinition tuned(AbilityDefinition ability, CombatantSnapshot caster, Caster source) {
+        return CastTunes.tune(ability, source.behaviours());
+    }
+
+    /**
+     * The Caster for a tuned cast: its headline damage re-read off the TUNED on_hit, so a status capped by the hit (scorch's
+     * cap is half of it) is capped by the damage the cast now deals, Large Sparks' +12 included. Unchanged when no tune
+     * applied.
+     */
+    private static Caster tunedSource(AbilityDefinition ability, AbilityDefinition tuned, CombatantSnapshot caster,
+                                      Caster source) {
+        return tuned == ability ? source
+                : source.withPayloadDamage(DamagePayload.headlineDamage(tuned.onHit(), caster.attackDamage()));
     }
 
     /**
@@ -155,7 +176,9 @@ public final class CastExecutor {
         Aim aim = success.aim();
         boolean charges = charges(ability);
 
-        Caster source = commit(ability, caster, aim, charges, success.weaponTrigger());
+        Caster committed = commit(ability, caster, aim, charges, success.weaponTrigger());
+        AbilityDefinition tuned = tuned(ability, caster, committed);
+        Caster source = tunedSource(ability, tuned, caster, committed);
         for (double yaw : yawOffsets) {
             // `pointing` rather than `new Aim(origin, rotated)`: the two-argument constructor would
             // RE-DERIVE the shooter's right from the rotated direction and discard the real one,
@@ -163,7 +186,7 @@ public final class CastExecutor {
             // does not care -- a yaw rotation needs no basis -- so this is carrying a field
             // across rather than fixing a live bug, and it is what stops a fanned SPREAD from
             // inheriting a basis that was quietly rebuilt from the wrong vector.
-            dispatch(ability, caster, source, aim.pointing(aim.direction().rotateAboutY(yaw)), charges, pressTick);
+            dispatch(ability, tuned, caster, source, aim.pointing(aim.direction().rotateAboutY(yaw)), charges, pressTick);
         }
     }
 
@@ -258,8 +281,10 @@ public final class CastExecutor {
      * only rule this split encodes, and getting a line on the wrong side of it is how a release
      * starts billing five uses or playing five sounds.</b>
      */
-    private void dispatch(AbilityDefinition ability, CombatantSnapshot caster, Caster source,
+    private void dispatch(AbilityDefinition base, AbilityDefinition ability, CombatantSnapshot caster, Caster source,
                           Aim aim, boolean charges, long pressTick) {
+        // `ability` is the TUNED cast (G4); `base` the weapon's own, which only a volley needs: it re-tunes at each shot
+        // off the behaviours that shot reads (ruling 1), so it must start from the untuned one.
         switch (ability.cast()) {
             // The caster is their own target: heals, buffs, self-detonations. Their handle
             // is fetched here rather than carried in the Success, which holds a snapshot.
@@ -291,7 +316,9 @@ public final class CastExecutor {
             // NOTE WHAT IS NOT PASSED: `source`. A volley re-projects its caster before EVERY shot, so the
             // cast-frame projection above reaches no shot at all -- see volley(). `aim` IS passed, since
             // 2026-11-21, and is read ONLY by a locked-aim volley: the line captured at the cast.
-            case CastSpec.Volley volley -> beginVolley(ability, caster.id(), volley, source.weaponHit(), aim, pressTick);
+            // The TUNED spec times the wind-up and its warning (read at the press: nothing can re-read a wind-up already
+            // running); the BASE ability is what each shot re-tunes.
+            case CastSpec.Volley volley -> beginVolley(base, caster.id(), volley, source.weaponHit(), aim, pressTick);
 
             case CastSpec.Cone cone -> beginCone(ability, source, aim, cone);
 
@@ -1367,24 +1394,35 @@ public final class CastExecutor {
         // shot above (the inherited, UNRULED volley re-pricing; flagged in PLAN-enchant-columns.md, not decided here).
         if (weaponHit) source = source.withWeaponHit().withBehaviours(world.behavioursOf(casterId));
 
+        // THE CAST TUNES OF THIS SHOT (G4, 2026-11-24): `ability` is the weapon's own, re-tuned here off the behaviours
+        // this shot just read (ruling 1), so a weapon swapped in or out mid-volley moves this shot's damage and range and
+        // the count the volley runs to. The wind-up was the press's (beginVolley).
+        AbilityDefinition shot = CastTunes.tune(ability, source.behaviours());
+        if (shot != ability) {
+            source = source.withPayloadDamage(DamagePayload.headlineDamage(shot.onHit(), self.state().attackDamage()));
+        }
+        CastSpec.Volley shotSpec = shot.cast() instanceof CastSpec.Volley v ? v : spec;
+        // VOLLEYSHOT (the Early Toll row, 2026-11-24): this shot's tick beside the press's, under mobtrace.
+        world.traceVolleyShot(casterId, ability.id(), shotIndex, pressTick);
+
         // FOCUSED BEAM (2026-11-24): at the FIRST shot, which is the wind-up's end, a focused beam active on the weapon
         // that pressed this volley (its ability id is <weapon>/...; the swap case is EnchantBehaviour.FocusedBeam's
         // javadoc) fires ONE ray in place of every shot, and no further shot is scheduled. The behaviours, the aim and
         // the Caster are the ones this shot just read, so the beam is aimed and priced exactly as the first bolt would be.
-        if (shotIndex == 0 && spec.of() instanceof CastSpec.Ray ray) {
+        if (shotIndex == 0 && shotSpec.of() instanceof CastSpec.Ray ray) {
             for (io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active : source.behaviours()) {
                 if (active.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.FocusedBeam beam
                         && ability.id().startsWith(beam.weaponId() + "/")) {
-                    focusedBeam(ability, source, live, ray, active, beam, pressTick);
+                    focusedBeam(shot, source, live, ray, active, beam, pressTick);
                     return;
                 }
             }
         }
 
-        fireInner(ability, source, live, spec.of());
+        fireInner(shot, source, live, shotSpec.of());
 
-        if (shotIndex + 1 >= spec.shots()) return;
-        world.scheduleOn(casterId, spec.intervalTicks(),
+        if (shotIndex + 1 >= shotSpec.shots()) return;
+        world.scheduleOn(casterId, shotSpec.intervalTicks(),
                 () -> volley(ability, casterId, spec, shotIndex + 1, weaponHit, locked, pressTick));
     }
 

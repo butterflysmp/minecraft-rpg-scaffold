@@ -1,0 +1,16 @@
+# SHARP CRYSTALS -- the Crystal Shard Staff's GUARANTEED weapon enchant (the seat's brief of 2026-11-24, PR D; G1 to G5).
+# Ben, verbatim: "Crystal Shard Staff - Sharp Crystals - Increases the damage by +3/6/9"
+#
+# WHAT IT DOES (core CastTunes): the staff's own Crystal Shard, with +3 / +6 / +9 ADDED to its authored 16 before every other
+# term (G5): ((16 + 6) x score / 100) x enchant multiplier + class bonus + level bonus, x charge x crit at level II.
+# GUARANTEED (G1): every freshly rolled Crystal Shard Staff offers it in slot 0, locked; the table buys it (G2).
+display_name: "Sharp Crystals"             # BEN
+icon: amethyst_cluster                     # SEAT PLACEHOLDER 2026-11-24
+max_level: 3                               # BEN: three values
+effect: cast_tune
+class: universal
+weapon: crystal_shard_staff                # W1
+guaranteed: true                           # G1
+cast_tune:
+  quantity: damage                         # G5
+  value_by_level: [3, 6, 9]                # BEN: "+3/6/9"

@@ -462,6 +462,14 @@ public final class FakeWorld implements CombatWorld {
         focusedBeams.add(new FocusedBeamTrace(casterId, source, from, range, pressedTick, now));
     }
 
+    /** Every volley shot fired (2026-11-24, Early Toll): who, what, which shot, when pressed and when fired. */
+    public record VolleyShotTrace(UUID casterId, String source, int shotIndex, long pressedTick, long tick) {}
+    public final List<VolleyShotTrace> volleyShots = new ArrayList<>();
+
+    @Override public void traceVolleyShot(UUID casterId, String source, int shotIndex, long pressedTick) {
+        volleyShots.add(new VolleyShotTrace(casterId, source, shotIndex, pressedTick, now));
+    }
+
     @Override public void traceSplit(UUID casterId, String source, Vec3 at, int bursts) {
         splits.add(new Split(casterId, source, at, bursts, now));
     }

@@ -562,6 +562,22 @@ public final class PaperCombatWorld implements CombatWorld {
         ctx.log().info(focusedLine(casterId, source, from, range, pressedTick, org.bukkit.Bukkit.getCurrentTick()));
     }
 
+    @Override
+    public void traceVolleyShot(UUID casterId, String source, int shotIndex, long pressedTick) {
+        if (!ctx.mobTrace().getAsBoolean()) return;
+        ctx.log().info(volleyShotLine(casterId, source, shotIndex, pressedTick, org.bukkit.Bukkit.getCurrentTick()));
+    }
+
+    /**
+     * {@code VOLLEYSHOT} (Early Toll, 2026-11-24): one line per volley shot, the shot's tick beside the PRESS's (stamped in
+     * {@code WeaponFire} before its hop, so {@code tick - pressed} of shot 0 is the wind-up from the press). Shape pinned by
+     * {@code FocusedLineTest}.
+     */
+    static String volleyShotLine(UUID casterId, String source, int shotIndex, long pressedTick, long tick) {
+        return String.format(java.util.Locale.ROOT, "VOLLEYSHOT caster=%s source=%s shot=%d pressed=%d tick=%d",
+                casterId, source, shotIndex, pressedTick, tick);
+    }
+
     /** {@code FOCUSED} (Focused Beam, 2026-11-24): the press's tick and the beam's, on one line ({@code FocusedLineTest}). */
     static String focusedLine(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 from, double range,
                               long pressedTick, long tick) {
