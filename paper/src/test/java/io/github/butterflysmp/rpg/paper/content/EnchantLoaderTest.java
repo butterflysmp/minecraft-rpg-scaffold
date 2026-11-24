@@ -156,8 +156,8 @@ class EnchantLoaderTest {
         EnchantRegistry dev = EnchantLoader.withWeapons(quiet, elements::contains, shippedWeapons(), true).loadAll(shippedEnchantsDir());
         assertEquals(shippedIds().size(), real.size());
         assertEquals(shippedIds().size(), dev.size(), "a dev server loads the same shipped roster");
-        assertEquals(List.of("kinetic_tremors"), real.all().stream().filter(EnchantDefinition::isUnique)
-                .map(EnchantDefinition::id).toList(), "the one shipped unique enchant is Ben's");
+        assertEquals(List.of("kinetic_tremors", "mana_burn"), real.all().stream().filter(EnchantDefinition::isUnique)
+                .map(EnchantDefinition::id).toList(), "the two shipped unique enchants are Ben's (mana_burn: 2026-11-24, F3)");
 
         Files.writeString(dir.resolve("dev_probe.yml"), "display_name: \"P\"\nmax_level: 1\neffect: durability\n"
                 + "class: universal\n");
@@ -292,7 +292,7 @@ class EnchantLoaderTest {
     @Test
     void noElementKeyIsANormalEnchant() throws IOException {
         EnchantRegistry r = shippedElementsLoader().loadAll(shippedEnchantsDir());
-        assertEquals(22, r.size(), "the twenty-two shipped enchants (recounted: ls content/enchants/*.yml | wc -l; 21 before wildfire, 16 before the five cast tunes, 2026-11-24)");
+        assertEquals(23, r.size(), "the twenty-three shipped enchants (recounted: ls content/enchants/*.yml | wc -l; 22 before mana_burn, 21 before wildfire, 16 before the five cast tunes, 2026-11-24)");
         assertEquals(11, r.all().stream().filter(e -> e.element() == null && e.weapon() == null).count(), "eleven are normal");
         assertEquals(List.of("airburst_flames", "early_toll", "echo_beam", "focused_beam", "lapis_crystal", "large_sparks", "polished_scepter", "sharp_crystals", "shatter_caps", "wildfire"), r.all().stream().filter(EnchantDefinition::isWeaponSpecific)
                 .map(EnchantDefinition::id).sorted().toList(), "the ten weapon-specific enchants (six of them guaranteed, 2026-11-24)");

@@ -196,7 +196,14 @@ public enum EnchantEffect {
      * weapon's own consecutive hits on one mob deal more, to a cap ({@code BehaviourHits.chainFactor}, asked by the damage
      * arms). No {@code value_by_level} at the top level.
      */
-    HIT_CHAIN;
+    HIT_CHAIN,
+
+    /**
+     * A BEHAVIOUR (B1): {@link EnchantBehaviour.ScorchBoost}, the file's {@code scorch_boost:} block (Mana Burn, 2026-11-24): a hit
+     * by the weapon carrying it stamps the scorch it applies, whose tick and Ignite are multiplied (F1, F2). No
+     * {@code value_by_level} at the top level.
+     */
+    SCORCH_BOOST;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

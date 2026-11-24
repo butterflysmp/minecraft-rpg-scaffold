@@ -1526,3 +1526,40 @@ itself is not changed."
 the stamp), `MUTIGNITECAP` (`/ 10`), `MUTTICKFACTOR` (the tick ignores the factor), `MUTTICKCAP` (the factor moved onto
 the CAP: reddens the 100-health rows, where a raised cap cannot show, which is the seat's reason for the ruling),
 `MUTSCORCHFACTOR` (`ScorchStatus` answers 1), `MUTDEATHSTAMP` (the listener hands Ignite 0). All red.
+
+## 30. PR F3, MANA BURN'S CONTENT (`feat/mana-burn-content`, on F2)
+
+**The seat's ruling, 2026-11-24:** "Eligible: element fire, class mage (Flint Staff, Living Lantern, Blaze King's Staff;
+BEN: "Yes, BKS can take it too"), slot 1, NOT guaranteed. Show its pool on each and on no other gear."
+
+**`mana_burn.yml`, as committed** (its header comment is in the file):
+
+```yaml
+display_name: "Mana Burn"                  # BEN
+icon: fire_charge                          # SEAT PLACEHOLDER 2026-11-24
+max_level: 3                               # BEN: three values
+effect: scorch_boost
+class: mage                                # BEN (the brief): "class mage"
+element: fire                              # makes it UNIQUE (slot 1); with the class, the three fire mage weapons
+scorch_boost:
+  percent_by_level: [10, 20, 30]           # BEN: "by 10/20/30%"
+```
+
+- `EnchantEffect.SCORCH_BOOST` (gate MAIN_HAND_ONLY, not curved, like every behaviour); `EnchantDefinition` checks its
+  `max_level` against the block's levels; `EnchantLoader` builds `ScorchBoost` from `percent_by_level` and refuses by
+  name a missing block, a missing list, a value not above 0 and a level count that is not `max_level`.
+- `EnchantEffectLine`: **`+10% Scorch and Ignite damage`** / `+20%` / `+30%` (WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN
+  FOR BEN).
+
+**ITS POOL** (`ManaBurnContentTest.itsPoolIsTheThreeFireMageWeaponsAndNoOtherGear`, every shipped weapon asked; and
+`UniqueSlotContentTest`, every shipped gear): slot 1 (the unique pool) of **`blaze_kings_staff`, `flint_staff` and
+`living_lantern`** is exactly `[mana_burn]`; **`dragons_breath` is fire but ranger, and its unique pool is EMPTY** (the
+class filter's control); no other gear's unique pool, and no gear's weapon or normal pool, holds it. The fire weapons,
+READ: `grep -l '^element: fire' content/weapons/*.yml` gives those four, classes mage, mage, mage, ranger.
+
+**Recounted:** shipped enchants **22 → 23** (`ls content/enchants/*.yml | wc -l`); shipped unique enchants
+`[kinetic_tremors, mana_burn]`.
+
+**Mutations** (marker 1, lines changed 1, restored `cmp`-identical, markers left 0): `MUTMBCLASS` (`class: universal`:
+Dragon's Breath joins the pool), `MUTMBLEVELS` (`[10, 20, 40]`), `MUTMBLINE` (the line drops "and Ignite"),
+`MUTMBLOADER` (the loader ignores the file's list). All red.
