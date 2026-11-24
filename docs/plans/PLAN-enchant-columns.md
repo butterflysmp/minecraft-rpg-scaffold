@@ -575,3 +575,33 @@ arriving with `cause=expired` and then the beam passing to T); **EC17 extended**
 beside the column rows; SAFETY for LC1-LC4 (0); and the run sheet's plain-words paragraph on the open ground (a strip 33
 east by 13 wide, air at feet and head) and the three selftest lines Ben types. R0bR2 was run before this commit against a
 jar built from this tree: see the gate's last section.
+
+## 13. MERGED, 2026-11-23, AND WHAT IS OWED (NOTES ONLY: NO CODE UNTIL THE SEAT'S BRIEF OF BEN'S FIVE CHANGES)
+
+**The stack #248-#262 is MERGED** (master `caa95043`, its tree `4382b8e1…` equal to the tree of `7d0457d1`, the readings'
+head), every row of `GATE-enchant-columns.md` and `GATE-unique-enchant-slot.md` read. The seat's merge approval of
+2026-11-23 stands on Ben's words, verbatim: "merge it". **The next PR waits for the seat's one message briefing Ben's five
+changes to the enchants.** Until then, these are owed and recorded here, and nothing is built:
+
+1. **THE `LINGER work=1` AT THE START OF LC2R2, LC3R2 AND LC4R2 IS TO BE READ AND EXPLAINED IN THE NEXT PR.** On the run
+   of `efa38636`, the row-start clean after each row whose orb `OrbRemovals.remove` had removed (cause `selftest`) ended
+   ONE point-scheduled chain round the stand point. Owed: WHAT task it is (READ from `CastExecutor`'s orb scheduling and
+   `PendingWork`, not inferred), and that `OrbRemovals.remove` leaves nothing scheduled that can ACT (strike, re-spawn a
+   body, or log) once the orb is gone, with a unit row that holds it.
+2. **A DATED NOTE ON `GATE-breacher.md`: BR9's probes stood beyond 16.** `ScenarioLint` (PROBE_REACH): `probe n: 25 out`
+   and `probe f: 33 out`, each against a reach of 16, so those probes could never read their mob. Recorded against the
+   gate's readings, which stand as read; no row is re-run by the note.
+3. **A DATED NOTE ON `GATE-dragon-blink.md`: BS3 presses in the same pass as its turn** (`ScenarioLint`, TURN_THEN_PRESS,
+   twice): each `use` there reads the facing before its turn. The same: a note against the readings, no re-run.
+4. **THE CARRIED LIST FROM THE BOOT APPROVAL (the seat's, 2026-11-23), still open:**
+   - `clear_inventory` rests on the in-memory snapshot: a JVM killed mid-run after a player save could save a cleared
+     inventory (the pre-boot backup is the recovery; Ben has been told).
+   - The pad holds no chunk tickets (the adapter context carries no plugin handle): a chunk that unloads between its load
+     and the build fails the run and touches nothing.
+   - `ScenarioLint` does not yet enforce score, mana, enchant and cooldown staging (its SELF_STAGED rule reads facing,
+     the held weapon and the mobs only).
+   - The box-to-sphere cut (`BehaviourHits` and the orb's 8) is UNREAD on a server: no mob in either gate stands inside a
+     search box but outside its sphere.
+   - `breacher#BR9` and `dragon-blink#BS3`, items 2 and 3 above.
+5. **For Ben, from the gate's third form (seat placeholders, still open):** the pad's place (200 east of world spawn, at
+   spawn's z; it stands at x 104, floor Y 200, z -4 in the dev world) and that it is plain stone.
