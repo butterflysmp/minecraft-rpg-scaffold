@@ -704,15 +704,23 @@ shot) and comes off the carried list.
 
 ### THE CARRIED LIST, AS IT NOW STANDS
 
-1. **The selftest's snapshot lives in memory.** A server crash mid-run leaves his inventory, position and the world's
+> **UPDATED 2026-11-24, after the merge of #267 to #269 (`ee46a493`): the owed weapon filter for behaviours now heads
+> this list** (section 16's finding, the seat's ruling recorded at its end), and the items below it are renumbered by
+> one; their text is unchanged.
+
+1. **OWED: A BEHAVIOUR THAT NAMES A WEAPON ACTS ONLY ON THAT WEAPON, ENFORCED ONCE WHERE BEHAVIOURS ARE READ FROM THE
+   ITEM.** `BehaviourItems.activeOf` has no weapon filter, so Airburst Flames staged by the dev command on another
+   projectile weapon would split it (no roll can produce that). Shatter Caps and the Lapis Crystal's grant check their own
+   weapon at the cast; Airburst does not. When it is done, `GATE-enchant-changes.md`'s AF1-AF4 are re-read.
+2. **The selftest's snapshot lives in memory.** A server crash mid-run leaves his inventory, position and the world's
    rules as the run left them; the restore runs on every END path the plugin sees (finish, stop, exception, quit, server
    stop), not on a crash.
-2. **The pad holds no chunk tickets** (the adapter context carries no plugin handle): a chunk that unloads between its
+3. **The pad holds no chunk tickets** (the adapter context carries no plugin handle): a chunk that unloads between its
    load and the build fails the run and touches nothing (section 13's account, unchanged).
-3. **The scenario lint does not yet enforce the staging of the gear score, mana, the enchant state and a cleared
+4. **The scenario lint does not yet enforce the staging of the gear score, mana, the enchant state and a cleared
    cooldown.** It enforces the inventory, the turn-then-wait, probe reach, self-staging and the ground; a row that
    forgets `rpg gearscore set`, `rpg mana refill`, `rpg enchant clear` or `clear_state` is not caught.
-4. **Unread on a server, by design:** a REAL orphan's removal one tick after it appears (no row stages an orphan; the
+5. **Unread on a server, by design:** a REAL orphan's removal one tick after it appears (no row stages an orphan; the
    path is read by `OrbClaimTest`, `OrbBlockBodyLoadTest`'s pins and five mutations), and the BACKSTOP's firing (it acts
    only when every other removal was skipped; `OrbBlockBodyTest` and `OrbLookTest`).
 
@@ -735,6 +743,11 @@ shot) and comes off the carried list.
 | The two empty-column markers | weapon: "No weapon enchant" / "Nothing is tied to this weapon yet."; unique: "No unique enchant" / "Nothing unique is tied to this item's element yet." | `EnchantMenuLayout.emptyMarkerFor` |
 | The pad's place | 200 east of world spawn at spawn's z: stand x 104, floor Y 200, z -4 in the dev world; plain stone | `SelfTestPadShape` |
 | The four screens whose info item was left alone | Level (its item at 4 is a readout), Build picker (its item at 4 titles the pick), Vault (no info item; 8 is NEXT), Recipe book (no info item; 8 is an entry) | `PLAN-unique-enchant-slot.md` section 8 |
+| Shatter Caps' stone speed (added 2026-11-24) | 2.5 a tick, so the split is exactly the 2nd step at 5.0 | `shatter_caps.yml` `speed` |
+| Shatter Caps' stone look | `stone` (Ben: "1 stone") | `shatter_caps.yml` `item` |
+| Shatter Caps' icon | `cobblestone` | `shatter_caps.yml` `icon` |
+| Shatter Caps' line | "fires one stone of 35 damage that shatters after 5 blocks into the usual chunks" (35 / 60 / 85 by level) | `EnchantEffectLine`, the `SHATTER` arm |
+| The Breacher's own description with Shatter Caps active | NOT EDITED: still "Four chunks of cobblestone," / "a tight triangle 6 degrees wide." | `breacher.yml` `description:` |
 
 **No code is owed by this section.** The next stack opens from `89253ed4`.
 
