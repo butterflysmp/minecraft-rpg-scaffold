@@ -136,3 +136,24 @@ to Ben:** each column runs down rows 2-5: unique **10, 19, 28, 37**; normal **12
 5. **Rows 2-5 for the four candidates** (the seat's, above).
 6. **The dev example's name, icon and numbers** are a dev fixture's (`Dev Kinetic Example`, amethyst shard, 1/2/3%) and
    go with the file when his first unique enchants land.
+
+## 8. PR 3 (`feat/info-top-right`): THE INFO ITEM AT THE TOP RIGHT ON EVERY SCREEN (Ben's 2, second sentence)
+
+READ first, every screen this plugin opens (all are 54-slot chests, nine wide); the full table is
+`GATE-unique-enchant-slot.md`, *PR 3: EVERY SCREEN, READ*. **Moved to index 8 (row 1, column 9)**, each from 4 with 8
+filler before: the **anvil** (`AnvilMenuLayout.INFO_SLOT`), the **grindstone** (`GrindstoneMenuLayout.INFO_SLOT`) and
+**crafting** (`CraftingMenuLayout.INDICATOR_SLOT`, the screen's icon); the enchanting table moved in PR 2. Back and Close
+unchanged everywhere (`InfoTopRightTest`).
+
+**OPEN FOR BEN, LEFT AS THEY ARE (the seat's "DO NOT GUESS"):**
+1. **Level**: its item at 4 is a READOUT ("Level N", his XP and bonuses), not a hint. Is it the screen's info item?
+2. **Build picker**: its item at 4 TITLES what is being picked. Info item or not?
+3. **Vault**: no info item, and 8 is its NEXT page arrow.
+4. **Recipe book**: no info item, and 8 is a recipe entry (entries fill indices 0-44).
+5. **Nexus hub, Build, Equipment, slot picker, Settings**: no info item at all. Should they get one?
+
+**AN INSTRUMENT CHANGE ON THE SAME PR, STATED SO IT IS NOT MISSED:** `SelfTestSnapshot` now captures and restores his
+VANILLA level and progress (the wallet the table and the anvil charge), and its RESTORED line ends
+`vanilla_xp=<level>+<progress>`. Needed by the gate's purchase row (US7); without it a run that buys a candidate leaves
+his vanilla XP changed. `SelfTestWeaponIdsTest` was widened to armor and tool ids, as its own javadoc required the first
+time a scenario gave one.

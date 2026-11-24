@@ -50,13 +50,16 @@ final class AnvilMenuLayout {
     private static final int COLUMNS = 9;
 
     /**
-     * The screen's own icon, top-centre, where a screen is read from.
+     * The screen's own icon: row 1, column 9, the TOP RIGHT CORNER.
      *
      * <p><b>INFORMATION, never an action</b> -- the constraint {@code GrindstoneMenuLayout.CONFIRM_SLOT}
-     * records at length. Slot 4 is a named constant on three other layouts and all three use it for
-     * a hint; reusing it for a button would make one cell mean two things across the plugin.
+     * records at length; reusing the info cell for a button would make one cell mean two things across the plugin.
+     *
+     * <p><b>WAS 4, top-centre, "where a screen is read from", until 2026-11-23.</b> Ben, verbatim: <i>"Move the Enchantment
+     * Table info item to the top right corner ... Make the rest of the nexus menu sub menus and our custom UIs consistent
+     * with that too"</i>. Index 8 was filler here. {@code InfoTopRightTest} holds every moved screen at 8.
      */
-    static final int INFO_SLOT = 4;
+    static final int INFO_SLOT = 8;
 
     /** The item being upgraded. <b>Its rarity prices the transfer</b>, and its score is replaced. */
     static final int TARGET_SLOT = 20;

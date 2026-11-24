@@ -93,14 +93,18 @@ public final class CraftingMenuLayout {
     // quietly extending into column 4.
 
     /**
-     * The screen's own icon, row 0 column 4: a crafting table, so the menu says what it is.
+     * The screen's own icon, the screen's INFO ITEM: row 1, column 9 (0-based row 0, column 8), the TOP RIGHT CORNER --
+     * a crafting table, so the menu says what it is.
      *
-     * <p>Pure decoration, painted once. It is centred over the grid rather than over the whole
-     * window because it labels the crafting half, not the suggestion column. Like everything else
-     * in the chrome it must never change with the recipe -- see {@code CraftStatus} for why the bar
-     * is the only thing that does.
+     * <p>Pure decoration, painted once. Like everything else in the chrome it must never change with the recipe -- see
+     * {@code CraftStatus} for why the bar is the only thing that does.
+     *
+     * <p><b>WAS 4 (row 0, column 4) until 2026-11-23</b>, "centred over the grid rather than over the whole window because
+     * it labels the crafting half, not the suggestion column". Ben overruled the placement for every screen: <i>"Move the
+     * Enchantment Table info item to the top right corner ... Make the rest of the nexus menu sub menus and our custom
+     * UIs consistent with that too"</i>. Index 8 was filler here (the suggestion column is 16/25/34, the browser 26).
      */
-    public static final int INDICATOR_SLOT = 4;
+    public static final int INDICATOR_SLOT = 8;
 
     /**
      * The nine grid slots.

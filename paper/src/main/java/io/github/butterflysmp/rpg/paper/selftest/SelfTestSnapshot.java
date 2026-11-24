@@ -110,6 +110,13 @@ final class SelfTestSnapshot {
      * ({@code GATE-knell-beam.md}, THE SEAT'S FOLLOW-UP a): the snapshot held no health at all.
      */
     private final double health;
+    /**
+     * His VANILLA experience at run start: level and progress (2026-11-23, GATE-unique-enchant-slot). The enchanting
+     * table and the anvil charge THIS wallet ({@code XpCurve} over {@code getLevel}/{@code getExp}), and it is not the
+     * Lifetime XP above. Before this, a row that staged vanilla XP to buy a candidate left his bar changed after the run.
+     */
+    private final int vanillaLevel;
+    private final float vanillaProgress;
     private final String classId;
     private final String elementId;
     /**
@@ -123,6 +130,8 @@ final class SelfTestSnapshot {
                              CombatantStats stats) {
         this.id = p.getUniqueId();
         this.health = stats.tracks(id) ? stats.current(id) : Double.NaN;
+        this.vanillaLevel = p.getLevel();
+        this.vanillaProgress = p.getExp();
         PlayerProfile profile = profiles.profile(id).orElse(null);
         this.lifetimeXp = profile == null ? -1 : profile.lifetimeXp();
         this.classId = profile == null ? null : profile.archetypeId();
@@ -257,6 +266,9 @@ final class SelfTestSnapshot {
         if (now) p.teleport(location); else p.teleportAsync(location);
 
         boolean xp = profileLoaded() && profiles.setLifetimeXp(id, lifetimeXp);
+        // The vanilla wallet, written back as the table writes it (setLevel then setExp), never through giveExp.
+        p.setLevel(vanillaLevel);
+        p.setExp(vanillaProgress);
         boolean cell = classId == null || profiles.setCell(id, classId, elementId);
         resources.setCurrent(id, ResourceCost.DEFAULT_RESOURCE, mana);
         // No setter for the trace: toggle until it reads what it read before (at most once).
@@ -275,6 +287,7 @@ final class SelfTestSnapshot {
                 + " trace=" + nameplates.tracing() + " spawn_mobs=" + spawnMobs + " time=" + time
                 + " blocks=" + blocks.total() + " mobsRemoved=" + mobs + " orbsRemoved=" + orbs
                 + " keep_inventory=" + keepInventory + " immediate_respawn=" + immediateRespawn
-                + " difficulty=" + difficulty + " health=" + fmtHealth(health);
+                + " difficulty=" + difficulty + " health=" + fmtHealth(health)
+                + " vanilla_xp=" + vanillaLevel + "+" + String.format(java.util.Locale.ROOT, "%.3f", vanillaProgress);
     }
 }

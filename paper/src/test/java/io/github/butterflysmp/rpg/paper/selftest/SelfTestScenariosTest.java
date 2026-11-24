@@ -41,9 +41,10 @@ class SelfTestScenariosTest {
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
-                        "vanilla-bows", "boltor-recipe"),
+                        "vanilla-bows", "boltor-recipe", "unique-enchant-slot"),
                 List.copyOf(loaded.gates().keySet()),
-                "the forty-one gates, in boot order (boltor-recipe LAST, the Boltor's recipe, 2026-11-22, a NEW gate after"
+                "the forty-two gates, in boot order (unique-enchant-slot LAST, the unique enchant slot, 2026-11-23, a NEW gate"
+                        + " after boltor-recipe; boltor-recipe before it, the Boltor's recipe, 2026-11-22, a NEW gate after"
                         + " vanilla-bows; vanilla-bows before it, the vanilla Bow and Crossbow and the quiver in the Nexus"
                         + " slot, 2026-11-22, a NEW gate after breacher-rework;"
                         + " breacher-rework before it, the Breacher reworked, 2026-11-22, a NEW gate after"
@@ -284,7 +285,9 @@ class SelfTestScenariosTest {
         // setups, so 326. The control: 365 + 1 (VX10; VX5 became VX5R2, a rename, not a row) = 366. 325 was this line's value.
         // Then GATE-boltor-recipe.md (feat/boltor-recipe, 2026-11-22), RECOUNTED: 41 gates, 371 keys, 41 setups, so 330. The
         // control: 366 + 5 (setup, BR1-BR4) = 371; VB3 became VB3R2 on feat/vb3r2, a rename. 326 was this line's value.
-        assertEquals(330, loaded.rows());
+        // Then GATE-unique-enchant-slot.md (feat/info-top-right, 2026-11-23), RECOUNTED: 42 gates, 380 keys, 42 setups, so
+        // 338. The control: 371 + 9 (setup, US1-US8) = 380. 330 was this line's value.
+        assertEquals(338, loaded.rows());
     }
 
     /**
