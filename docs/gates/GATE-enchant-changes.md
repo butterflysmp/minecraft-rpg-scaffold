@@ -468,3 +468,240 @@ stop); **his saved position `-98.56 63.00 34.60`** (READ off his player file's `
 > `!isRemoved()`, READ). Tests: `OrbClaimTest` (the fake now runs the sweep's own test at the add, both kinds, with a
 > control), `OrbBlockBodyLoadTest` (the pin that held the fault is corrected; the sweep's deferral and its honest line).
 > Five mutations, each killed. The LB rows are re-predicted on the branch above this one.
+
+## THE SECOND FORM, 2026-11-23: THE FIXED BODY AND BEN'S FOUR CHANGES TO THE CRYSTAL. NOT RUN
+
+> **DATED NOTE, 2026-11-23, written after the run of `78826389`; no prediction above is edited.** Ben's answer on
+> `78826389` is **NOT STATED**. What he TOLD THE SEAT afterwards, after seeing the crystal and throwing two of his own, is
+> recorded here as told, NOT as a reading: *"1. Make it float up and down and spin slightly similar to a dropped item"*
+> / *"2. Remove the glow, it is excessive"* / *"3. Increase the range of the shots from the lapis crystal to 15 blocks."*
+> / *"4. Add a few particles around the lapis crystal"*. Built on `feat/lapis-crystal-look`, on `feat/lapis-crystal-block`
+> (the fix, above). **AF1-AF4 read as predicted on `78826389` and are not re-run**: they left the scenario. LB1-LB4 are
+> re-predicted below as LB1R2, LB4R2, LB2R2, LB3R2; LB5 is new. **This form's R0 supersedes R0a-R0e.**
+
+### WHAT WAS READ OR EXECUTED FOR THIS FORM, EACH MARKED
+
+- **The fix's order (READ), in the dated note above:** the spawn's consumer, the add (`EntityAddToWorldEvent` inside
+  `updatingSectionStatus`), the spawn's return, `Orbs.place`, then `claimOrbBody` (the orb tag). The sweep at the add
+  defers a tick and logs only a removal that happened.
+- **The motion is the body's look only (the seat's ruling).** Every `beat_ticks` (10) while the orb rests, ONE task
+  (`CastExecutor.orbBeat`) sets the display's TRANSFORMATION to `OrbBlock.pose(t)` and presents `crystal_motes` at the
+  rest point, then schedules the next beat and records its handle on the orb (`Orbs.looking`). **The pose:** a bob of
+  `0.1 x sin(2 pi t / 60)` and a turn of `2 pi t / 120` about the vertical, with the translation chosen so the block's
+  centre stays at `(0, bob, 0)` over the display's position: checked through the server's own arithmetic
+  (`OrbBlockBodyLoadTest`: `new Matrix4f().translation(t).rotate(left).scale(s)`, as `Transformation.compose`, READ,
+  puts the model centre there at every tick of a turn). **The interpolation:** `setInterpolationDelay(0)` and
+  `setInterpolationDuration(10)` before each `setTransformation` (READ: they write the synced
+  `DATA_TRANSFORMATION_INTERPOLATION_START_DELTA_TICKS_ID` and `…_DURATION_ID`); **that the client eases one pose into
+  the next over the 10 ticks is INFERRED** (client code). **The display's position is never touched after the arrival:**
+  the rest point, what the beam meets (`meetsOrb` reads `restPoint`) and where the shots start, does not move
+  (`OrbLookTest`). In flight it is still (SEAT PLACEHOLDER: at rest only).
+- **Every task that animates it ends with the orb:** the expiry, the replacement and every paper removal
+  (`OrbRemovals.discard`) cancel the look beat, and so does the backstop; the beat also stops itself if its orb or body
+  is gone. `OrbLookTest` checks each path CANCELS the beat pending at that moment (a pending count alone cannot tell a
+  cancel from a beat that stopped itself).
+- **The packet cost (INFERRED where marked):** per beat, per player in range, one entity-data update (the
+  transformation and its two interpolation fields) and one particle packet (`crystal_motes` is ONE `spawnParticle` call
+  with count 3, READ in `PaperCombatWorld`; one packet per player, INFERRED): **four packets a second per orb per
+  player**.
+- **No glow (Ben):** the glow key is optional; `lapis_crystal.yml` carries none; the spawn sets no glow
+  (`setGlowing` only when a colour is given); ORBBODY reads `glowing=false glow=none` off the body.
+- **The radius (Ben): `shot: radius: 15`.** The shot keeps its rule: every mob whose FEET are within 15 of the orb's
+  centre (a true sphere), with a clear line from the centre to its sight point. **NOTE FOR THE SEAT: the brief said
+  "centre to centre"; the code measures the orb's centre to the mob's FEET (`CastExecutor.orbShots`, unchanged since D3;
+  its comment says so), and this form predicts by that.** The server's query is a BOX (`combatantsNear`:
+  `getNearbyEntities(centre, 15, 15, 15)`, READ), so a mob inside the box and outside the sphere is the cut the sphere
+  makes: LB5's X.
+- **The particles (Ben):** `particles: crystal_motes` (new, `visuals/crystal_motes.yml`: DUST, rgb(40, 90, 240) as
+  `lapis_beam`, size 0.6, count 3, spread 0.3; every figure a SEAT PLACEHOLDER). The load check names an unknown
+  visual by id (`ContentValidator.validateOrbBodies`), **as a WARN line, as every visual reference in that class is
+  warned; it is not a refusal of the file** (stated, since the brief said "refuses").
+- **LB5's geometry (EXECUTED), the orb at `<X+12>,<Y+1.62>,<Z>`:** I at `~12 ~ ~-13`: **13.101** from the orb, inside
+  the sphere by 1.899, and 17.692 from his feet (a probe of 19); B at `~28 ~ ~0`: **16.082**, outside the sphere AND the
+  box (its box face is at 12 + 15 = 27; B's body spans 27.7 to 28.3 east of his feet); X at `~24 ~ ~10`: **15.704**,
+  **outside the sphere by 0.704 and inside the server's box** (its body spans 11.7 to 12.3 east and 9.7 to 10.3 south of
+  the orb, so the box's faces at 15 are 2.7 and 4.7 beyond it), 26.000 from his feet (a probe of 28). Every summon is
+  inside the pad's interior and the preflight's box, now `0 -13 32 13`; the lint is green (0 findings).
+
+### SAFETY, SECOND FORM: THE MOST HITS THE RUN CAN LAND ON HIM, TIMES THE BIGGEST, AGAINST HIS HEALTH
+
+The first form's table, less the lantern (no AF row runs): the Lapis Beam **0 x 0**, the crystal's shots (never a
+player) **0 x 0**, the frozen zombies **0 x 0**, the natural hostiles **0 x 0**, the fall **0**. **Sum: 0.** Every row's
+clean returns him to the pad's stand point (`104.50 201.00 -3.50` on `78826389`) and every row that fires turns him east
+and waits 40 before its first press. **The ask holds the run at LB2R2 for up to 240 ticks**, standing at the stand point.
+
+### THE RUN SHEET, SECOND FORM — BEN TYPES THESE THREE LINES, AND ANSWERS ONE QUESTION IN THE RUN
+
+**IN PLAIN WORDS:** **stand anywhere in the dev world.** The selftest lifts you onto its platform, runs, and puts you back.
+Your inventory is emptied during the run and given back at the end. Do nothing while it runs, **except: about 20 seconds
+in, a gold question appears in chat while a lapis block floats in front of you. Look at it, then answer yes or no in
+chat.** If you do not answer within 12 seconds, the run goes on without your answer.
+
+0. **DO NOT LOG IN UNTIL CC HAS TOLD YOU R0 PASSED.**
+1. `/gamemode survival`
+2. `/rpg selftest enchant-changes` — **ONCE.** About **40 to 52 seconds**: you throw a floating, bobbing, turning lapis
+   block five times; blue beams fire into it; one gold question in chat.
+3. `/stop`
+
+**This run's length:** the waits are **766 ticks** (recount: `tr -d '\r' < <the scenario> | awk '/- wait: /{t+=$3}
+END{print t}'`), up to **240** for the ask, and about 5 per row for the cleans (5 rows: 25): **791 to 1031 ticks, 40 to
+52 s**, plus the pad's check.
+
+### R0, SECOND FORM: R0aR2, R0bR2, R0cR2, R0dR2, R0eR2. THEY SUPERSEDE R0a-R0e
+
+#### R0aR2 — the build line names `feat/lapis-crystal-look`'s head, clean
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <sha>`, `<sha>` being `feat/lapis-crystal-look`'s head as `git ls-remote --heads origin feat/lapis-crystal-look` prints it, shortened. **Not `78826389`, not `-dirty`, not `unknown`.** | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+
+#### R0bR2 — the jar carries the fix and the four changes
+
+Counted: `awk '/^.--- controls.$/{exit} /^(ValueLine\|Has) /' <the block> | wc -l` prints **36**, and **10** after the
+controls line.
+
+```powershell
+param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $JarPath))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+function ValueLine($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + '([ \t]*\r?$|[ \t]+#)')) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+function Has($text, $s, $label) { if ($text -ne $null -and $text.Contains($s)) { "PRESENT $label '$s'" } else { "ABSENT  $label '$s'" } }
+$a = Bytes 'content/enchants/airburst_flames.yml'
+$lc = Bytes 'content/enchants/lapis_crystal.yml'
+$cm = Bytes 'content/visuals/crystal_motes.yml'
+$g = Bytes 'selftest/GATE-enchant-changes.yml'
+$i = Bytes 'selftest/index.yml'
+$ce = Bytes 'io/github/butterflysmp/rpg/core/ability/CastExecutor.class'
+$cs = Bytes 'io/github/butterflysmp/rpg/core/ability/CastSpec$OrbBlock.class'
+$pcw = Bytes 'io/github/butterflysmp/rpg/paper/adapter/PaperCombatWorld.class'
+$cv = Bytes 'io/github/butterflysmp/rpg/paper/content/ContentValidator.class'
+$or = Bytes 'io/github/butterflysmp/rpg/paper/weapon/OrbRemovals.class'
+ValueLine $a '  travel_blocks: 6' 'airburst_flames.yml'
+ValueLine $a '    search_radius: 7' 'airburst_flames.yml'
+ValueLine $lc '        percent_by_level: [30, 50, 70]' 'lapis_crystal.yml'
+ValueLine $lc '        radius: 15' 'lapis_crystal.yml'
+ValueLine $lc '      body: block' 'lapis_crystal.yml'
+ValueLine $lc '        id: lapis_block' 'lapis_crystal.yml'
+ValueLine $lc '        scale: 0.5' 'lapis_crystal.yml'
+ValueLine $lc '        bob_blocks: 0.1' 'lapis_crystal.yml'
+ValueLine $lc '        bob_period_ticks: 60' 'lapis_crystal.yml'
+ValueLine $lc '        turn_ticks: 120' 'lapis_crystal.yml'
+ValueLine $lc '        beat_ticks: 10' 'lapis_crystal.yml'
+ValueLine $lc '        particles: crystal_motes' 'lapis_crystal.yml'
+ValueLine $cm '    particle: DUST' 'crystal_motes.yml'
+ValueLine $cm '    count: 3' 'crystal_motes.yml'
+ValueLine $g '  - preflight: "0 -13 32 13"' 'GATE-enchant-changes.yml'
+ValueLine $g 'LB1R2:' 'GATE-enchant-changes.yml'
+ValueLine $g 'LB4R2:' 'GATE-enchant-changes.yml'
+ValueLine $g 'LB2R2:' 'GATE-enchant-changes.yml'
+ValueLine $g 'LB3R2:' 'GATE-enchant-changes.yml'
+ValueLine $g 'LB5:' 'GATE-enchant-changes.yml'
+ValueLine $g '  - ask: "1 240 Did a blue beam line run from the floating lapis block to the zombie it hit?"' 'GATE-enchant-changes.yml'
+ValueLine $i '  - enchant-changes' 'index.yml'
+Has $ce 'claimOrbBody' 'CastExecutor.class'
+Has $ce 'orbBeat' 'CastExecutor.class'
+Has $ce 'poseOrbBody' 'CastExecutor.class'
+Has $cs 'beatTicks' 'CastSpec$OrbBlock.class'
+Has $pcw 'claimOrbBody' 'PaperCombatWorld.class'
+Has $pcw 'setInterpolationDuration' 'PaperCombatWorld.class'
+Has $pcw 'ORBBODY owner=%s id=%s type=%s block=%s glowing=%s glow=%s scale=%.3f teleport_duration=%d persistent=%s tick=%d' 'PaperCombatWorld.class'
+Has $cv "' is not a loaded visual: it will present nothing at rest" 'ContentValidator.class'
+Has $cv "' is not a block: its throw will spawn no body" 'ContentValidator.class'
+Has $or 'sweepAppeared' 'OrbRemovals.class'
+Has $or 'lookTask' 'OrbRemovals.class'
+Has $or 'isValid' 'OrbRemovals.class'
+Has $or 'onEntityLater' 'OrbRemovals.class'
+Has $or 'backstopTask' 'OrbRemovals.class'
+'--- controls'
+ValueLine $lc '        radius: 8' 'lapis_crystal.yml CONTROL-THE-OLD-8'
+ValueLine $lc '        radius: 1' 'lapis_crystal.yml CONTROL-PREFIX'
+ValueLine $lc '        glow: "#2A5CFF"' 'lapis_crystal.yml CONTROL-THE-OLD-GLOW'
+ValueLine $lc '      item: heart_of_the_sea' 'lapis_crystal.yml CONTROL-THE-OLD-BODY'
+ValueLine $g 'AF1:' 'GATE-enchant-changes.yml CONTROL-LEFT'
+ValueLine $g 'LB1:' 'GATE-enchant-changes.yml CONTROL-LEFT'
+ValueLine $g 'LB6:' 'GATE-enchant-changes.yml CONTROL-NONE'
+ValueLine $g '  - preflight: "0 -6 32 10"' 'GATE-enchant-changes.yml CONTROL-THE-OLD-BOX'
+Has $pcw 'ctx.keys().orb' 'PaperCombatWorld.class CONTROL-SOURCE-TEXT'
+Has $or 'crystal_motes' 'OrbRemovals.class CONTROL-NONE'
+$zip.Dispose()
+```
+
+**The prediction, line for line:** before `'--- controls'`, **36 `PRESENT`, 0 `ABSENT`**; after it, **10 `ABSENT`, 0
+`PRESENT`**. Run before the commit: see *R0bR2, RUN BEFORE COMMIT* at the end.
+
+#### R0cR2 — every Loaded line, and nothing refused
+
+`[Rpg] Loaded 11 abilities, 46 visuals, 5 statuses, 7 elements, 14 enchants, …` (**46 visuals: `crystal_motes` added**;
+every other count as on `78826389`), the candidates, `Mint-on-craft` and `Custom recipes` lines as there. **No `[Rpg]`
+WARN beyond `volley_stone`'s known pair**, in particular none naming `lapis_crystal`. No `Refusing`, `Skipping`,
+`SEVERE`, `Exception`, `Dev-only`; no `ORB`, `ORBBODY` or `ORBSHOT` line at boot; **no `is currently prevented from being
+removed` WARN anywhere in the log, boot or run.**
+
+#### R0dR2 — every scenario loaded
+
+| prediction | instrument | READING |
+|---|---|---|
+| Exactly one **`[Rpg] Selftest: dev server, 356 scenarios across 44 gates [melee-cell, …, enchant-columns, enchant-changes]`** (recount: 44 files, 400 keys, 44 setups; `SelfTestScenariosTest`). The controls: `359 scenarios` and `357 scenarios` ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+
+#### R0eR2 — the orphan sweep with nothing staged
+
+One `FIGHTWORLD sweep path=…\rpgfight folders=0`, no `deleting`, no `orphan`; no `ORB removed … cause=orphan` at enable.
+
+### THE ROWS, SECOND FORM
+
+Every damage sum as the first form's: `sent = ((21 x percent/100) x 100/100) x 1.0 + 0 + 0`, x 1.0, x crit (1 or 2), at
+level 1, score 100, no damage enchant, no class bonus. **In every row: no `cause=orphan` line, no `is currently prevented`
+WARN, and every clean `LINGER work=0 entities=0 radius=48`** (the look beat, the expiry and the backstop all ended with
+the orb). `<X, Y, Z>` is `PROBE self`'s position.
+
+### LB1R2 — THE THROW AND ITS BODY, FIXED AND CHANGED (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `"  active: lapis_crystal II (grants Left-Click: Lapis Crystal (Cooldown: 30.0s \| Mana Cost: 30); a beam into it strikes each foe within 15 for 10.5 damage)"`. `DRIVE reload held=lapis_staff`. **Exactly one `ORBBODY owner=<him> id=<b> type=block_display block=minecraft:lapis_block glowing=false glow=none scale=0.500 teleport_duration=1 persistent=false tick=<t>`**; **NO `ORB removed … cause=orphan` and NO Paper WARN at `<t>`** (the fix); **`ORB rest owner=<him> at=<X+12.000>,<Y+1.620>,<Z> tick=<t+10>`**. Then, 70 ticks after the throw, `ORB removed … cause=selftest`, `STAGE clear_state … orb=removed`; **LB4R2's clean `LINGER work=0 entities=0`**: the look beat (which had run every 10 ticks since the rest), the expiry and the backstop all cancelled, the body removed | the fix; Ben's changes 1, 2; `OrbClaimTest`, `OrbLookTest` | |
+
+### LB4R2 — GONE AFTER ITS LIFE, AND NOTHING LEFT (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| LB1R2's `show` line; `ORBBODY … glowing=false glow=none …`; no orphan line; **`ORB rest … tick=<t>`**, then **exactly one `ORB removed … cause=expired tick=<t + 300>`**, and **it is the row's only `ORB removed` line**; no `cause=backstop` anywhere. **LB2R2's clean: `LINGER work=0 entities=0`** | ruling (b); `OrbLookTest.theLookBeatEndsWithTheOrbOnEveryRemoval` | |
+
+### LB2R2 — A BEAM INTO THE ORB AT LEVEL II: N TAKES 10.5, ONE LINE TO N. THE ONE ASK (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| LB1R2's `show` line; `ORBBODY …`; `ORB rest … at=<X+12.000>,<Y+1.620>,<Z>`; `DRIVE use … yaw=-90.000 pitch=0.000`; **no `lapis_staff/right_click` PLAYERHIT**; **exactly one `PLAYERHIT source=lapis_crystal/crystal target=<N> zombie element=kinetic sent=10.500`** (`21.000` on the beam's crit), sum `(21 x 50/100) x 1.0 x 1.0 + 0 + 0 = 10.5`; **exactly one `ORBSHOT owner=<him> from=<X+12.000>,<Y+1.620>,<Z> to=<X+12.000>,<Y+1.740>,<Z+5.000> visual=lapis_beam`** (N's feet 5 south of the orb, plus its eye 1.74; the line starts at the REST POINT, not at the bobbing block). The beam meets the orb 10 ticks into its rest, the tick of its first beat's pose: **the motion does not move what it meets.** **THE ASK, while that crystal rests (it fired 2 ticks before; it rests until 290 ticks after):** `ASK 1 question="Did a blue beam line run from the floating lapis block to the zombie it hit?" answer="<his words, verbatim>" ticks=<n>`, or the timeout's line after 240. Probe N **`989.500`** (or `979.000`). `ORB removed … cause=selftest`, `orb=removed` | Ben's items 4, 5 and his change 1; `OrbLookTest.theBeamMeetsABobbingOrbExactlyWhereItMetAStillOne` | |
+
+### LB3R2 — LEVELS I AND III: 6.3 AND 14.7 (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| `"  active: lapis_crystal I (… within 15 for 6.3 damage)"`. The first throw: `ORBBODY`, `ORB rest`, **`sent=6.300`** (`(21 x 30/100) x 1.0 x 1.0 + 0 + 0`; `12.600` on a crit) and one `ORBSHOT` to N; `cause=selftest`, `orb=removed`; `REPLY "Slot 0: Lapis Crystal unlocked to III." [green]`; the second throw: `ORBBODY` (a new id), `ORB rest`, **`sent=14.700`** (`(21 x 70/100) x 1.0 x 1.0 + 0 + 0`; `29.400`) and one more `ORBSHOT` to N. No orphan line at either throw. Probe N **`979.000`** (`1000 - 6.3 - 14.7`, no crit; EXECUTED) | Ben's 30/50/70 | |
+
+### LB5 — THE SHOTS' RADIUS OF 15: I INSIDE, B BEYOND, X IN THE BOX BUT NOT THE SPHERE (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| LB1R2's `show` line; `ORBBODY`; `ORB rest … at=<X+12.000>,<Y+1.620>,<Z>`; no `lapis_staff/right_click` PLAYERHIT. **Exactly one `lapis_crystal/crystal` PLAYERHIT, on I, `sent=10.500`** (or `21.000`), sum as LB2R2; **exactly one `ORBSHOT … to=<X+12.000>,<Y+1.740>,<Z-13.000> visual=lapis_beam`**; **nothing on B, and nothing on X.** Probes: **I (reach 19) `989.500`** (or `979.000`); **B (reach 30) `1000.000`**; **X (reach 28) `1000.000`**: **THE FIRST SERVER READING OF THE BOX-TO-SPHERE CUT**: X is inside the box `getNearbyEntities` searches (by 2.7 east-west, 4.7 north-south) and 0.704 outside the 15-block sphere, so the sphere in `orbShots` is the only thing between it and a shot. A shot on X would be the cut failing; a shot on B the box failing as well | Ben's change 3; `OrbLookTest.theShotsReachFifteenAndNoFurther` (the same cut, both ways, in the fake's box search) | |
+
+### UNREAD BY DESIGN, SECOND FORM
+
+- **The bob, the turn, the motes and the lack of glow, as seen:** client-side; the server reads only the settings (the
+  ORBBODY line, the beat's tasks through LINGER). THE ASK covers the line; the rest is for Ben's eye, unasked.
+- **The backstop firing:** as before.
+- **The beat's own effect on the server:** no line prints a pose or a mote; `OrbLookTest` is its witness.
+
+## R0bR2, RUN BEFORE COMMIT
+
+**THE JAR:** `paper/target/rpg-0.1.0-SNAPSHOT.jar`, 2,506,122 bytes, sha256 (of the jar file)
+`00599617cbbde4f59f0eb6736a632405238dc2313d7a9aecf3af997c35e01ade`, written 2026-11-23 23:47:03 by `./mvnw -B clean verify`
+(exit 0; core 2440, storage 99, paper 1923, 0 failures, 1 skipped) on the working tree of `feat/lapis-crystal-look` at
+`747466ba` with this branch's code and this form uncommitted: **the same bytes as this branch's commits**, no source
+edited between that build and them (only this paragraph, a doc the build does not read). It is not the deployed jar.
+
+**THE INSTRUMENT:** the second `powershell` block of this file, extracted (`tr -d '\r' | awk`, 64 lines; 36 `ValueLine` or
+`Has` lines before the controls line, 10 after), run with `powershell -NoProfile -ExecutionPolicy Bypass -File …
+-JarPath <the jar>`, exit 0.
+
+**READING: AS PREDICTED.** Before `'--- controls'`: **36 `PRESENT`, 0 `ABSENT`**. After it: **10 `ABSENT`, 0 `PRESENT`**.
