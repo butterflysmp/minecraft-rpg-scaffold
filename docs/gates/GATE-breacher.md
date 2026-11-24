@@ -340,6 +340,11 @@ the near. The aim pellet's 4th segment (9 to 12 blocks) meets the zombie at 10 a
 |---|---|---|
 | Press 1: **exactly ONE PLAYERHIT, on `n`**, `sent=6.000` (or 12.000); probe at press 1 + 8: **`n` `94.000/100.000`** (88). Press 2: **NO PLAYERHIT**; probe at press 2 + 8: **`f` `100.000/100.000`**. **Control:** press 1 reached 10 with the same flight, so press 2's miss is the reach, not a dead weapon | *The pattern*; `ProjectileFlight.step` (4 segments of 3) | |
 
+> **DATED NOTE, 2026-11-24 (`feat/breacher-reach`; Ben: "I want to increase the range that the cobble travels normally
+> to 18 blocks"): BR4 CANNOT BE RE-RUN AS WRITTEN.** The chunks now fly 6 ticks at 3.0, 18 blocks (was 4 ticks, 12), so
+> BR4's far zombie at 14 is inside the reach and would be struck. **Its readings stand as read**, of the 12-block flight
+> it was predicted on. The 18-block reach is read by `GATE-shatter-caps.md`.
+
 ### BR5 — THE COOLDOWN: refused at 16, fires at 20 (SURVIVAL)
 
 | prediction | stands on | READING |

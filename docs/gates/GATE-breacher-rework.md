@@ -339,6 +339,13 @@ both; TWO would be one of the others. The core witness of the shape itself is `S
 |---|---|---|
 | `MOBSEED … max=200`. **Exactly ONE `PLAYERHIT … sent=40.000`** (or 80.000), from the aim pellet's third segment (6 to 9 blocks, meeting the face at 8.7): traced at press + 3, the write then or at press + 4. Probe at press + 8: **`160.000/200.000`** (120 on a crit). **Two PLAYERHITs (`120.000/200.000`) would mean the triangle is not pointing up** | *The geometry*; `SpreadRotationTest.aRingOfThreeAtNinetyPointsUp` | |
 
+> **DATED NOTE, 2026-11-24 (`feat/breacher-reach`; Ben: "I want to increase the range that the cobble travels normally
+> to 18 blocks"): THE FLIGHT THIS FILE STATES IS NOW 6 TICKS, 18 BLOCKS (was 4 ticks, 12).** No row of this file stages a
+> mob beyond 12 blocks (its farthest is RW5's at 10, inside either reach), so none of its readings rests on the 12-block
+> end, and RW5's "reach" is the spread's geometry (which pellets meet a body at a distance), which the flight's length
+> does not change. Its rows stand as read; where they name "4 ticks (12 blocks)" they describe the build they were read
+> on. The 18-block reach is read by `GATE-shatter-caps.md`.
+
 ### RW5 — THE FULL HIT'S REACH: four at 4 blocks, one at 10 (SURVIVAL)
 
 Inside 6.60: a zombie at **4** (the top pellet 0.136 under the head, the lower pair 0.132 inside, at the front face).

@@ -114,9 +114,9 @@ class BreacherContentTest {
     void theSeatsPlaceholders() {
         WeaponDefinition w = breacher(new ArrayList<>());
         AbilityDefinition a = blast(w);
-        assertEquals(new CastSpec.Projectile(3.0, 0.0, 4, "breacher_trail", "cobblestone", null, null,
+        assertEquals(new CastSpec.Projectile(3.0, 0.0, 6, "breacher_trail", "cobblestone", null, null,
                         new CastSpec.Spread(4, 3.0, 90.0)), a.cast(),
-                "speed 3.0, no gravity, 4 ticks (12 blocks), a cobblestone ITEM body, no homing; 4 at 3 off the aim, point up");
+                "speed 3.0, no gravity, 6 ticks (18 blocks, BEN 2026-11-24; was 4 and 12), a cobblestone ITEM body, no homing; 4 at 3 off the aim, point up");
         assertEquals(List.of(new EffectSpec.Visual("breacher_cast")), a.onCast());
         assertEquals(List.of(new EffectSpec.Visual("breacher_hit"), new EffectSpec.Damage(40, "kinetic"),
                 new EffectSpec.Knockback(0.1)), a.onHit(),
@@ -128,11 +128,12 @@ class BreacherContentTest {
         assertEquals("Breacher", a.displayName(), "no ability name: the header reads the weapon's");
     }
 
-    /** 4 ticks at 3.0 is the seat's "about 12 blocks": a reach, not a range key (ProjectileFlight.step). */
+    /** 6 ticks at 3.0 is Ben's 18 (2026-11-24: "I want to increase the range that the cobble travels normally to 18
+     *  blocks"; was 4 ticks, the seat's "about 12"): a reach, not a range key (ProjectileFlight.step). */
     @Test
-    void theReachIsTwelveBlocks() {
+    void theReachIsEighteenBlocks() {
         CastSpec.Projectile p = (CastSpec.Projectile) blast(breacher(new ArrayList<>())).cast();
-        assertEquals(12.0, p.speed() * p.maxLifetimeTicks(), 1e-9);
+        assertEquals(18.0, p.speed() * p.maxLifetimeTicks(), 1e-9);
     }
 
     @Test

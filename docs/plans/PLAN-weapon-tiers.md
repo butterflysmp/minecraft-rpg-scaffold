@@ -437,6 +437,16 @@ Told the old repo's sound (READ by the seat, CreaperCrusher/Butterfly-SMP at `cf
 **OPEN FOR BEN:** the line break above. **READ for the record, not a question:** the Boltor's empty-quiver press still plays
 the quiver notice's own click (`block.dispenser.fail`), as it always has; it is not the shot sound.
 
+### 1.15 Ben, 2026-11-24, VERBATIM: the Breacher's reach, and Shatter Caps
+
+Relayed by the seat's brief of 2026-11-24 and recorded here on `feat/breacher-reach`:
+
+> "One extra note, I want to increase the range that the cobble travels normally to 18 blocks"
+
+**The Breacher's chunks now fly 18 blocks** (`max_lifetime_ticks: 6` at speed 3.0; was 4, the seat's "about 12" of
+1.10, which stays as Ben's words of that day). The Breacher's weapon-specific enchant, Shatter Caps, is recorded with
+its own words in `PLAN-enchant-columns.md` section 16 (`feat/shatter-caps`).
+
 ---
 
 ## 2. WHAT EXISTS TODAY
