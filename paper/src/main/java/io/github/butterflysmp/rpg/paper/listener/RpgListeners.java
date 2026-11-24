@@ -1262,13 +1262,16 @@ public final class RpgListeners implements Listener {
         // ENGAGE. That failure presents as an unbounded cascade, i.e. as "the limit doesn't work",
         // with nothing pointing back at the order of these three lines.
         int depth = adapters.scorch().depth(id);
+        // MANA BURN (F2, 2026-11-24): the FOURTH capture, for the same reason. The stamp of the scorch it died with
+        // multiplies its Ignite; read after forget() it would always be 0.
+        double stamp = adapters.scorch().stamp(id);
         Location at = mob.getLocation();
         adapters.scorch().forget(id);        // the guard -- see the javadoc above
 
         // depth + 1: this mob was scorched BY a blast at `depth`, so its own ignition is the next
         // link down. A dev application and a player's weapon both store 0, so both detonate at 1.
         Ignite.detonate(new PaperCombatWorld(mob.getWorld(), adapters),
-                new Vec3(at.getX(), at.getY(), at.getZ()), applier, id, depth + 1);
+                new Vec3(at.getX(), at.getY(), at.getZ()), applier, id, depth + 1, stamp);
     }
 
     /**

@@ -254,6 +254,18 @@ public final class Ignite {
      *                  simply carries {@link HitAccrual#terminal()} and propagates nothing.
      */
     public static void detonate(CombatWorld world, Vec3 at, UUID applierId, UUID victimId, int depth) {
+        detonate(world, at, applierId, victimId, depth, 0.0);
+    }
+
+    /**
+     * MANA BURN (F2, the seat's ruling of 2026-11-24 on PR F): as above, and every bystander takes {@link #DAMAGE} times
+     * {@code 1 + stampPercent / 100}, the stamp of the scorch the corpse died with (read on the death frame, beside the
+     * applier and the depth). 6 becomes 6.6 / 7.2 / 7.8 at levels I / II / III. The blast's own hits carry NO stamp (their
+     * accrual is {@code chained} or {@code terminal}), so a scorch an Ignite applies is plain. Players are still skipped.
+     */
+    public static void detonate(CombatWorld world, Vec3 at, UUID applierId, UUID victimId, int depth,
+                                double stampPercent) {
+        double damage = DAMAGE * (1 + stampPercent / 100.0);
         // The whole limit, in one expression. >= rather than > because depth is 1-based: the FOURTH
         // explosion is the terminal one, so depth 4 must already be inert.
         HitAccrual accrual = depth >= MAX_CHAIN_DEPTH
@@ -292,7 +304,7 @@ public final class Ignite {
                 // THE BLAST RECRUITS -- it scorches its survivors -- UNTIL THE LAST LINK, which
                 // passes terminal() and recruits nobody. See the class javadoc: this REVERSED an
                 // earlier ruling, and the bound is what made the reversal safe.
-                c.handle().applyDamage(DAMAGE, applierId,
+                c.handle().applyDamage(damage, applierId,
                         CritState.NORMAL, DefenseRule.APPLIES, "fire", accrual);
             }
         });

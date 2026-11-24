@@ -130,6 +130,11 @@ public final class ScorchStatus extends DotStatus {
         return isActive(id) ? depths.getOrDefault(id, 0) : 0;
     }
 
+    /** MANA BURN (F2): a stamped scorch's settled tick times {@code 1 + stamp / 100}; 1 with no stamp. */
+    @Override protected double tickFactor(UUID id) {
+        return 1 + stamp(id) / 100.0;
+    }
+
     /** The burn ended or was forgotten: its depth and its stamp go with it. */
     @Override protected void onEnded(UUID id) {
         depths.remove(id);
