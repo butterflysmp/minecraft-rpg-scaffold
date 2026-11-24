@@ -173,6 +173,42 @@ class ScenarioLintTest {
         assertEquals(List.of(ScenarioLint.Rule.GROUND), rules(GOOD_ROW));
     }
 
+    // --- the pad (the seat's P9): a gate on the pad measures and summons only inside its interior ------------------
+
+    private static final String PAD_SETUP = """
+            setup:
+              - pad: ""
+              - preflight: "0 -6 32 10"
+            """;
+
+    @Test
+    void aGateOnThePadWithEverythingInsideItsInteriorLintsClean() throws InvalidConfigurationException {
+        assertEquals(List.of(), rules(PAD_SETUP + GOOD_ROW));
+    }
+
+    @Test
+    void aPreflightBoxBeyondThePadsInteriorIsAGroundFinding() throws InvalidConfigurationException {
+        String bad = PAD_SETUP.replace("0 -6 32 10", "0 -6 50 10") + GOOD_ROW;
+        assertEquals(List.of(ScenarioLint.Rule.GROUND), rules(bad));
+    }
+
+    @Test
+    void aSummonBeyondThePadsInteriorIsAGroundFindingEvenInsideAWiderPreflight() throws InvalidConfigurationException {
+        // The preflight box reaches 60 east; the pad's interior ends at 45: the summon at 50 is caught by the pad's rule,
+        // and the box by its own.
+        String bad = PAD_SETUP.replace("0 -6 32 10", "0 -6 60 10") + GOOD_ROW.replace("~3 ~ ~0 {", "~50 ~ ~0 {")
+                .replace("  - probe: a\n", "  - probe: \"a 52\"\n");
+        assertEquals(List.of(ScenarioLint.Rule.GROUND, ScenarioLint.Rule.GROUND), rules(bad));
+    }
+
+    @Test
+    void aGateThatDoesNotOptInIsLintedAsBefore() throws InvalidConfigurationException {
+        // The same far summon with no pad: only the preflight box decides, and 50 is inside 0..60.
+        String noPad = SETUP.replace("0 -6 32 10", "0 -6 60 10") + GOOD_ROW.replace("~3 ~ ~0 {", "~50 ~ ~0 {")
+                .replace("  - probe: a\n", "  - probe: \"a 52\"\n");
+        assertEquals(List.of(), rules(noPad));
+    }
+
     // --- the fifth: a candidate slot the cleared item does not have yet -------------------------------------------
 
     @Test

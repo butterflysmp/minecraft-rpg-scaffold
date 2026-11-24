@@ -279,7 +279,7 @@ final class SelfTestStaging {
             case PROBE -> probeArg(arg).isPresent() ? java.util.Optional.empty()
                     : java.util.Optional.of("probe takes '<tag>' or '<tag> <reach 1-" + PROBE_MAX_REACH + ">', got '"
                             + arg + "'");
-            case CLEAR_INVENTORY, CLEAR_STATE -> arg.isBlank() ? java.util.Optional.empty()
+            case CLEAR_INVENTORY, CLEAR_STATE, PAD -> arg.isBlank() ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes nothing, got '"
                             + arg + "'");
             case PREFLIGHT -> SelfTestPreflight.parse(arg).isPresent() ? java.util.Optional.empty()

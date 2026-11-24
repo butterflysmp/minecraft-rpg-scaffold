@@ -315,6 +315,15 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * {@code PREFLIGHT ok …} or {@code PREFLIGHT fail …} with the counts. The seat's brief B, 2026-11-23.
          */
         PREFLIGHT,
+        /**
+         * {@code ""}, in a gate's {@code setup:}, before its preflight: THE PAD (Ben's ruling A, 2026-11-23, "The test
+         * builds its own ground"). After the snapshot is taken, the pad's chunks are loaded, the pad is built or checked
+         * cell by cell ({@link SelfTestPad}, {@link SelfTestPadShape}), the block under the stand point is confirmed
+         * solid, and only then is he teleported to the stand point, facing east. From then on every row's start clean
+         * returns him THERE, not to where he typed the command; the run's restore still returns him to where he was.
+         * Any failure: no teleport, a plain chat line, the run ends and the snapshot restores. Logs the {@code PAD} line.
+         */
+        PAD,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

@@ -224,8 +224,37 @@ public final class SelfTestService {
     /** From {@code RpgListeners.onQuit}, FIRST: the restore must write while the inventory can still be written. */
     public void onQuit(Player player) {
         if (active != null && active.player().getUniqueId().equals(player.getUniqueId())) {
-            active.end("ABORTED the player left");
+            active.endAtQuit();   // a synchronous return, so he is never saved on the pad (P6)
         }
+    }
+
+    /**
+     * {@code /rpg selftest pad build}: the dev command that builds or repairs the pad by hand (the seat's P4). Behind the
+     * dev marker and the dev world, as the run is; refused while a run is going. The result arrives after the chunks load.
+     */
+    public String padBuild(Player player) {
+        return pad(player, true);
+    }
+
+    /** {@code /rpg selftest pad remove}: every floor and rim cell back to air (P4). */
+    public String padRemove(Player player) {
+        return pad(player, false);
+    }
+
+    private String pad(Player player, boolean build) {
+        if (!devServer) return "Refusing: not a dev server (-D" + SelfTestGuard.DEV_PROPERTY + "=true is set only by dev-server.sh).";
+        org.bukkit.World dev = Bukkit.getWorlds().getFirst();
+        if (active != null) return "Refusing: a selftest is running; the pad is its own while it does.";
+        var future = build ? SelfTestPad.ensure(dev, adapters.scheduler()) : SelfTestPad.remove(dev, adapters.scheduler());
+        future.whenComplete((r, err) -> adapters.scheduler().onEntity(player, () -> {
+            boolean ok = err == null && r.ok();
+            String text = err != null ? "PAD fail " + err : ok ? r.line() : "PAD fail " + r.why()
+                    + (r.line() == null ? "" : " (" + r.line() + ")");
+            log.info(text);
+            player.sendMessage(net.kyori.adventure.text.Component.text(text,
+                    ok ? net.kyori.adventure.text.format.NamedTextColor.GREEN : net.kyori.adventure.text.format.NamedTextColor.RED));
+        }));
+        return (build ? "Building" : "Removing") + " the selftest pad in " + dev.getName() + "; the result follows.";
     }
 
     /**

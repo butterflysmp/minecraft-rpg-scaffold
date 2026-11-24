@@ -25,6 +25,10 @@ public final class SelfTestCommand {
         return Commands.literal("selftest")
                 .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                 .then(Commands.literal("stop").executes(ctx -> reply(ctx, p -> service.stop(p))))
+                // THE PAD BY HAND (the seat's P4, 2026-11-23): build or repair it, or put its floor and rim back to air.
+                .then(Commands.literal("pad")
+                        .then(Commands.literal("build").executes(ctx -> reply(ctx, service::padBuild)))
+                        .then(Commands.literal("remove").executes(ctx -> reply(ctx, service::padRemove))))
                 .then(Commands.argument("gate", StringArgumentType.word())
                         .suggests((ctx, builder) -> {
                             builder.suggest("all");

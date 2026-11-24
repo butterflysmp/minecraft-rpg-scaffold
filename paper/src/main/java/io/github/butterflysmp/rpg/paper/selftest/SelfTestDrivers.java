@@ -155,6 +155,7 @@ final class SelfTestDrivers {
             case CLEAR_INVENTORY -> clearInventory(p);
             case CLEAR_STATE -> clearState(p);
             case PREFLIGHT -> Optional.empty();   // the run measures it and may end there; it never reaches a driver
+            case PAD -> Optional.empty();         // the run builds it and moves him; it never reaches a driver
             case TELL -> {
                 p.sendMessage(net.kyori.adventure.text.Component.text(a,
                         net.kyori.adventure.text.format.NamedTextColor.GOLD));
@@ -536,7 +537,8 @@ final class SelfTestDrivers {
 
     /** RETURN: back to where the run began, so a box relative to the player's block is the row's box again. */
     private Optional<String> returnToStart(Player p) {
-        org.bukkit.Location start = run.snapshot().start();
+        // The run's STAGE point: where it began, or the pad's stand point once a PAD step has moved him (2026-11-23).
+        org.bukkit.Location start = run.stage();
         p.teleportAsync(start);
         run.log("DRIVE return " + String.format(Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ()));
         return Optional.empty();
