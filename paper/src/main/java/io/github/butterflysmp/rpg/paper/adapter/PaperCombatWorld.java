@@ -362,6 +362,22 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * {@code SPLIT}: one log line per projectile split while {@code /rpg mobtrace} is on (the PLAYERHIT switch), so the
+     * selftest can read where an Airburst split. The shape, pinned by {@code SplitLineTest}: {@code SPLIT caster=<uuid>
+     * source=<ability> at=<x>,<y>,<z> bursts=<n> tick=<server tick>}, coordinates to three places.
+     */
+    @Override
+    public void traceSplit(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 at, int bursts) {
+        if (!ctx.mobTrace().getAsBoolean()) return;
+        ctx.log().info(splitLine(casterId, source, at, bursts, org.bukkit.Bukkit.getCurrentTick()));
+    }
+
+    static String splitLine(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 at, int bursts, long tick) {
+        return String.format(java.util.Locale.ROOT, "SPLIT caster=%s source=%s at=%.3f,%.3f,%.3f bursts=%d tick=%d",
+                casterId, source, at.x(), at.y(), at.z(), bursts, tick);
+    }
+
+    /**
      * {@code PLAYERHIT}: one log line per traced hit while {@code /rpg mobtrace} is on, beside
      * {@code MOBHIT} (mob-to-player) on the same switch. The target's type is read here because core
      * has no entity types; the lookup is the {@code Attribution} shape, and a target this thread does

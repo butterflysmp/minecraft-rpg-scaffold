@@ -156,45 +156,67 @@ public final class EnchantLoader {
      * </pre>
      */
     private io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour(ConfigurationSection s, String id) {
-        ConfigurationSection b = s.getConfigurationSection("shockwave");
-        if (b == null) {
-            if (s.contains("shockwave")) {
-                throw new IllegalArgumentException("enchant '" + id + "': shockwave: must be a block of keys");
-            }
-            return null;
+        java.util.List<String> present = new java.util.ArrayList<>();
+        for (String key : BEHAVIOUR_BLOCKS) if (s.contains(key)) present.add(key);
+        if (present.isEmpty()) return null;
+        if (present.size() > 1) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares " + present + "; one behaviour block at most");
         }
+        String name = present.get(0);
+        ConfigurationSection b = s.getConfigurationSection(name);
+        if (b == null) throw new IllegalArgumentException("enchant '" + id + "': " + name + ": must be a block of keys");
         String element = requiredString(b, "element", id);
         if (!elementExists.test(element)) {
-            throw new IllegalArgumentException("enchant '" + id + "' shockwave: element '" + element
+            throw new IllegalArgumentException("enchant '" + id + "' " + name + ": element '" + element
                     + "' is not a loaded element");
         }
         try {
-            return new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shockwave(
-                    requiredInt(b, "hits", id), requiredInt(b, "window_ticks", id), requiredInt(b, "cooldown_ticks", id),
-                    requiredDoubles(b, "damage_by_level", id), requiredDoubles(b, "radius_by_level", id),
-                    requiredString(b, "element", id), b.getString("visual"));
+            return switch (name) {
+                case "shockwave" -> new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shockwave(
+                        requiredInt(b, "hits", id), requiredInt(b, "window_ticks", id), requiredInt(b, "cooldown_ticks", id),
+                        requiredDoubles(b, "damage_by_level", id), requiredDoubles(b, "radius_by_level", id),
+                        element, b.getString("visual"));
+                // airburst: travel_blocks, count, angle_degrees, speed, burst_travel_blocks, damage_by_level, element
+                case "airburst" -> new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst(
+                        requiredDouble(b, "travel_blocks", id), requiredInt(b, "count", id),
+                        requiredDouble(b, "angle_degrees", id), requiredDouble(b, "speed", id),
+                        requiredDouble(b, "burst_travel_blocks", id), requiredDoubles(b, "damage_by_level", id), element);
+                default -> throw new IllegalStateException("unreachable: " + name);
+            };
         } catch (IllegalArgumentException ex) {
             throw ex.getMessage().startsWith("enchant '") ? ex
-                    : new IllegalArgumentException("enchant '" + id + "' shockwave: " + ex.getMessage(), ex);
+                    : new IllegalArgumentException("enchant '" + id + "' " + name + ": " + ex.getMessage(), ex);
         }
     }
 
+    /** Every behaviour block a file may declare, one at most (B1). */
+    private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst");
+
     private static int requiredInt(ConfigurationSection b, String key, String id) {
         if (!b.isInt(key)) {
-            throw new IllegalArgumentException("enchant '" + id + "' shockwave: is missing a whole-number '" + key + "'");
+            throw new IllegalArgumentException("enchant '" + id + "' " + b.getName() + ": is missing a whole-number '"
+                    + key + "'");
         }
         return b.getInt(key);
     }
 
+    private static double requiredDouble(ConfigurationSection b, String key, String id) {
+        if (!(b.get(key) instanceof Number n)) {
+            throw new IllegalArgumentException("enchant '" + id + "' " + b.getName() + ": is missing the number '"
+                    + key + "'");
+        }
+        return n.doubleValue();
+    }
+
     private static java.util.List<Double> requiredDoubles(ConfigurationSection b, String key, String id) {
         if (!b.isList(key)) {
-            throw new IllegalArgumentException("enchant '" + id + "' shockwave: is missing the list '" + key
+            throw new IllegalArgumentException("enchant '" + id + "' " + b.getName() + ": is missing the list '" + key
                     + "' (one value per level)");
         }
         java.util.List<Double> out = new java.util.ArrayList<>();
         for (Object o : b.getList(key)) {
             if (!(o instanceof Number n)) {
-                throw new IllegalArgumentException("enchant '" + id + "' shockwave: '" + key + "' holds '" + o
+                throw new IllegalArgumentException("enchant '" + id + "' " + b.getName() + ": '" + key + "' holds '" + o
                         + "', which is not a number");
             }
             out.add(n.doubleValue());
@@ -205,7 +227,7 @@ public final class EnchantLoader {
     private static String requiredString(ConfigurationSection b, String key, String id) {
         String v = b.getString(key);
         if (v == null || v.isBlank()) {
-            throw new IllegalArgumentException("enchant '" + id + "' shockwave: is missing '" + key + "'");
+            throw new IllegalArgumentException("enchant '" + id + "' " + b.getName() + ": is missing '" + key + "'");
         }
         return v.trim().toLowerCase(java.util.Locale.ROOT);
     }

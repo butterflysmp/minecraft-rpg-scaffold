@@ -132,8 +132,13 @@ class ScorchContentInvariantTest {
      * <p><b>17 -> 18 on 2026-11-22: {@code living_lantern} added</b> (feat/living-lantern), one site: its Lantern's
      * Breath {@code damage}, element fire (Ben: "Fire element"). Its visuals carry no element. The run before this edit
      * reddened with "expected 17 fire damage sites in content, found 18".
+     *
+     * <p><b>18 -> 19 on 2026-11-23: {@code airburst_flames} added</b> (feat/airburst-flames), one site: its {@code airburst:}
+     * block's {@code element: fire}, the bursts' damage (Ben's 25 / 30 / 35, the lantern's element). An enchant file, not a
+     * weapon: the first fire damage site under content/enchants. The run before this edit reddened with "expected 18 fire
+     * damage sites in content, found 19".
      */
-    private static final int KNOWN_FIRE_DAMAGE_SITES = 18;
+    private static final int KNOWN_FIRE_DAMAGE_SITES = 19;
 
     /**
      * An EFFECT-LEVEL `element: fire`, block or inline-map. INDENTED on purpose: a bare

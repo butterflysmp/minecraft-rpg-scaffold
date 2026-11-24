@@ -183,6 +183,13 @@ public interface CombatWorld {
     long currentTick();
 
     /**
+     * A dev trace (2026-11-23, Airburst Flames): a projectile SPLIT at {@code at} into {@code bursts}, by
+     * {@code casterId}'s cast of {@code source}. The adapter logs it as {@code SPLIT} while {@code /rpg mobtrace} is on,
+     * beside PLAYERHIT. It must not throw and must not change anything. Abstract, so the fixture records it.
+     */
+    void traceSplit(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 at, int bursts);
+
+    /**
      * A dev trace: {@code EffectApplier} reports every direct ability or weapon hit it lands on a
      * non-player target, and the adapter logs it as {@code PLAYERHIT} while {@code /rpg mobtrace} is on.
      * See {@link TracedHit} for what is and is not reported, and why its amount is the pre-Defense one.

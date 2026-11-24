@@ -34,6 +34,16 @@ public final class ProjectileFlight {
     @FunctionalInterface
     public interface Impact {
         void at(Combatant target, Vec3 point);
+
+        /**
+         * THE FLIGHT RAN OUT OF LIFETIME HAVING STRUCK NOTHING (2026-11-23, Airburst Flames: "Doesn't split if it hits
+         * something first"): distinct from {@link #at} with a null target, which a BLOCK hit also produces. {@code point} is
+         * the end of the last step and {@code velocity} the step that reached it. The default is what every flight did before
+         * this hook existed: go off at the end, as a miss.
+         */
+        default void expired(Vec3 point, Vec3 velocity) {
+            at(null, point);
+        }
     }
 
     /**
@@ -208,7 +218,7 @@ public final class ProjectileFlight {
             // The fuse ran out mid-air. It still lands -- a projectile that quietly vanishes
             // because it hit nothing would be a bug, not a miss.
             resolve(world, markerId);
-            onImpact.at(null, next);
+            onImpact.expired(next, velocity);   // the default is at(null, next), as before
             return;
         }
 

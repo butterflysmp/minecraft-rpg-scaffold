@@ -121,8 +121,10 @@ class UniqueSlotContentTest {
         gear.addAll(a.all());
         gear.addAll(t.all());
         gear.addAll(x.all());
-        EnchantRegistry real = new EnchantLoader(q, id -> elements.find(id).isPresent(), false).loadAll(new File(c, "enchants"));
-        EnchantRegistry dev = new EnchantLoader(q, id -> elements.find(id).isPresent(), true).loadAll(new File(c, "enchants"));
+        EnchantRegistry real = new EnchantLoader(q, id -> elements.find(id).isPresent(),
+                id -> w.find(id).map(GearItems::gearClassOf), false).loadAll(new File(c, "enchants"));
+        EnchantRegistry dev = new EnchantLoader(q, id -> elements.find(id).isPresent(),
+                id -> w.find(id).map(GearItems::gearClassOf), true).loadAll(new File(c, "enchants"));
         CandidateCascade cascade = new EnchantCandidatesLoader(q).load(new File(c, "enchant_candidates.yml"));
         return new Loaded(gear, real, dev, cascade, w.size(), s.size(), a.size(), t.size(), x.size());
     }
@@ -141,8 +143,8 @@ class UniqueSlotContentTest {
         assertEquals(6, l.accessories());
         assertEquals(60, l.gear().size());
         assertEquals(60, MASTER_POOLS.size(), "the snapshot covers the same 60");
-        assertEquals(12, l.real().size(), "a real server: the eleven and Kinetic Tremors");
-        assertEquals(12, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
+        assertEquals(13, l.real().size(), "a real server: the eleven, Kinetic Tremors and Airburst Flames");
+        assertEquals(13, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
@@ -206,23 +208,24 @@ class UniqueSlotContentTest {
     }
 
     /**
-     * W2 over every shipped gear, at this PR (the columns re-cut, before any weapon-specific enchant ships): the weapon
-     * pool is EMPTY everywhere, so slot 0 rolls empty on all 60. The PRs that ship Lapis Crystal and Airburst Flames
-     * change exactly their own weapon's row.
+     * W2 over every shipped gear: the weapon pool is EMPTY everywhere except the Living Lantern's, which is Airburst
+     * Flames (PR E). The PR that ships Lapis Crystal changes exactly the Lapis Staff's row. (Was "empty everywhere" in PR
+     * A, before any weapon-specific enchant shipped.)
      */
     @Test
-    void theWeaponPoolOfEveryShippedGearIsEmptyUntilAWeaponEnchantShips() {
+    void theWeaponPoolIsAirburstOnTheLanternAndEmptyOnEveryOtherGear() {
         Loaded l = load();
+        assertTrue(l.dev().find("airburst_flames").isPresent(), "CONTROL: the loader knew the weapons and kept it");
         var roster = EnchantRollItems.roster(l.dev().all());
         int checked = 0;
         for (GearDefinition g : l.gear()) {
             var cls = GearItems.gearClassOf(g);
             if (cls == null) continue;
-            assertEquals(List.of(), ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
+            assertEquals(g.id().equals("living_lantern") ? List.of("airburst_flames") : List.of(),
+                    ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }
         assertEquals(60, checked, "the control: every shipped gear was asked");
-        assertTrue(l.dev().all().stream().noneMatch(EnchantDefinition::isWeaponSpecific), "no shipped enchant names a weapon yet");
     }
 
     /**

@@ -208,6 +208,15 @@ public final class EnchantEffectLine {
                 yield w.hits() + " hits on one foe in " + number(w.windowTicks() / 20.0) + "s: a "
                         + number(w.damageAt(level)) + " damage shockwave, " + number(w.radiusAt(level)) + " blocks";
             }
+            // AN AIRBURST (B5): the level's burst damage and the two distances, as authored. WORDING: SEAT PLACEHOLDER
+            // 2026-11-23, OPEN FOR BEN.
+            case AIRBURST -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst a)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                yield "splits after " + number(a.travelBlocks()) + " blocks into " + a.count() + " bursts of "
+                        + number(a.damageAt(level)) + " damage";
+            }
         };
     }
 

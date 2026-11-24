@@ -10,7 +10,7 @@ import java.util.List;
  * <p>A {@code sealed} interface: only the records listed in {@code permits} may implement it, so a {@code switch} over
  * it must answer for every kind (one line for a reader rusty at Java: the compiler checks the list is complete).
  */
-public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave {
+public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst {
 
     /**
      * {@code effect: shockwave}: when the weapon carrying it lands {@code hits} hits on ONE target within the last
@@ -51,6 +51,52 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave {
         /** How many levels it authors. */
         public int levels() {
             return damageByLevel.size();
+        }
+    }
+
+    /**
+     * {@code effect: airburst} (Airburst Flames, 2026-11-23): the weapon's projectile, while it has hit nothing, ENDS
+     * once it has TRAVELLED {@code travelBlocks}, and {@code count} unguided bursts leave that point, fanned
+     * {@code angleDegrees} apart sideways about its direction of travel ({@code SpreadPattern}: the centre one straight
+     * on, the others {@code angleDegrees} either side), each at {@code speed} a tick for a further {@code burstTravelBlocks},
+     * each a primary hit of the level's {@code damageByLevel} in {@code element} IN PLACE of the projectile's own damage.
+     * A projectile that strikes anything before {@code travelBlocks} lands as authored and never splits.
+     */
+    record Airburst(double travelBlocks, int count, double angleDegrees, double speed, double burstTravelBlocks,
+                    List<Double> damageByLevel, String element) implements EnchantBehaviour {
+        public Airburst {
+            if (!(travelBlocks > 0) || Double.isInfinite(travelBlocks)) {
+                throw new IllegalArgumentException("airburst travel_blocks must be above 0, was " + travelBlocks);
+            }
+            if (count < 2) throw new IllegalArgumentException("airburst count must be 2 or more, was " + count);
+            if (!(angleDegrees > 0) || !(angleDegrees < 90)) {
+                throw new IllegalArgumentException("airburst angle_degrees must be in (0, 90), was " + angleDegrees);
+            }
+            if (!(speed > 0) || Double.isInfinite(speed)) {
+                throw new IllegalArgumentException("airburst speed must be above 0, was " + speed);
+            }
+            if (!(burstTravelBlocks > 0) || Double.isInfinite(burstTravelBlocks)) {
+                throw new IllegalArgumentException("airburst burst_travel_blocks must be above 0, was " + burstTravelBlocks);
+            }
+            damageByLevel = positive("damage_by_level", damageByLevel);
+            if (element == null || element.isBlank()) throw new IllegalArgumentException("airburst element is required");
+        }
+
+        public double damageAt(int level) {
+            return damageByLevel.get(clamp(level, damageByLevel.size()) - 1);
+        }
+
+        public int levels() {
+            return damageByLevel.size();
+        }
+
+        /**
+         * THE TICKS A BODY AT {@code speedPerTick} TAKES TO TRAVEL {@code blocks}: rounded UP, so the distance is reached
+         * and never fallen short of. A tiny epsilon absorbs a quotient that floating point leaves a hair above a whole
+         * number. EXECUTED (jshell, 2026-11-23): 14 / 0.35 is exactly 40.0, so Ben's numbers never need it; 2.1 / 0.7 is 3.0000000000000004, whose bare ceil would be 4 (pinned in {@code AirburstTest}). This line said 14 / 0.35 was such a case until that run.
+         */
+        public static int ticksToTravel(double blocks, double speedPerTick) {
+            return Math.max(1, (int) Math.ceil(blocks / speedPerTick - 1e-9));
         }
     }
 

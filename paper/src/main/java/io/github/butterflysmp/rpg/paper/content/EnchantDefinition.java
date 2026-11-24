@@ -194,11 +194,11 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             // (WeaponDefinition), so it is exactly the set QUIVER_SIZE reaches. Same gate, same refusal of universal.
             case RELOAD_TIME -> Gate.RANGER_ONLY;
             // A BEHAVIOUR acts on the hits of the weapon in the MAIN HAND that made them (B2), so a fighting class or universal.
-            case SHOCKWAVE -> Gate.MAIN_HAND_ONLY;
+            case SHOCKWAVE, AIRBURST -> Gate.MAIN_HAND_ONLY;
         };
         boolean curved = switch (effect) {
             case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> true;
-            case DURABILITY, SHOCKWAVE                                                            -> false;
+            case DURABILITY, SHOCKWAVE, AIRBURST                                                            -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
@@ -382,21 +382,28 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
      */
     private static void requireBehaviour(String id, EnchantEffect effect,
                                          int maxLevel, io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour) {
-        boolean wants = effect == EnchantEffect.SHOCKWAVE;
-        if (!wants) {
+        // Which behaviour record each behavioural effect must carry, and its level count. A stat effect answers null.
+        Integer levels = switch (effect) {
+            case SHOCKWAVE -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shockwave s
+                    ? s.levels() : -1;
+            case AIRBURST -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst a
+                    ? a.levels() : -1;
+            case DURABILITY, DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> null;
+        };
+        if (levels == null) {
             if (behaviour != null) {
                 throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
                         + ", which is a stat, and must not declare a behaviour block");
             }
             return;
         }
-        if (!(behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shockwave shockwave)) {
+        if (levels < 0) {
             throw new IllegalArgumentException("enchant '" + id + "' has effect: " + token(effect)
                     + " and so requires its " + token(effect) + ": block");
         }
-        if (shockwave.levels() != maxLevel) {
+        if (levels != maxLevel) {
             throw new IllegalArgumentException("enchant '" + id + "' declares max_level " + maxLevel + " but its "
-                    + token(effect) + ": block has " + shockwave.levels() + " levels; they must match");
+                    + token(effect) + ": block has " + levels + " levels; they must match");
         }
     }
 

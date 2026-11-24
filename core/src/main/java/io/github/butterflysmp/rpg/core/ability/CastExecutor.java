@@ -537,6 +537,19 @@ public final class CastExecutor {
 
     /** One body, down one direction. The spread above is N of these; everything else is one. */
     private void launchOne(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
+        // AIRBURST (2026-11-23): a behaviour of the weapon that made this cast may end the flight at a TRAVEL distance
+        // and split it. Only when that distance is reached inside the authored lifetime; otherwise the shot flies as
+        // authored and never splits (it cannot travel that far).
+        for (io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active : caster.behaviours()) {
+            if (active.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst burst) {
+                int splitTicks = io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst
+                        .ticksToTravel(burst.travelBlocks(), spec.speed());
+                if (splitTicks < spec.maxLifetimeTicks()) {
+                    launchToSplit(ability, caster, aim, spec, active, burst, splitTicks);
+                    return;
+                }
+            }
+        }
         ProjectileFlight.launch(world, caster, aim.origin(), aim.direction().scale(spec.speed()),
                 spec.gravity(), spec.maxLifetimeTicks(),
                 // All three presentation fields, mapped straight across. The exclusion between
@@ -546,6 +559,64 @@ public final class CastExecutor {
                 new ProjectileFlight.Look(spec.trail(), spec.item(), spec.body()),
                 seekOf(spec),
                 (target, point) -> detonate(ability, caster, target, point));
+    }
+
+    /**
+     * THE AIRBURST'S FLIGHT (Ben, 2026-11-23: "It splits into three faster not homing projectiles after 12 blocks of
+     * travel", then 14; "The Air Burst Flames projectile goes the 14 blocks and then those projectiles go an additional 14
+     * blocks"; "Doesn't split if it hits something first"). The shot is the authored one, homing and all, cut to
+     * {@code splitTicks}. A HIT before then lands its authored on_hit and nothing more. Running out of those ticks having
+     * hit nothing is {@link ProjectileFlight.Impact#expired}: the split.
+     */
+    private void launchToSplit(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec,
+                               io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active,
+                               io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst burst, int splitTicks) {
+        ProjectileFlight.launch(world, caster, aim.origin(), aim.direction().scale(spec.speed()),
+                spec.gravity(), splitTicks,
+                new ProjectileFlight.Look(spec.trail(), spec.item(), spec.body()),
+                seekOf(spec),
+                new ProjectileFlight.Impact() {
+                    @Override public void at(Combatant target, Vec3 point) {
+                        detonate(ability, caster, target, point);
+                    }
+
+                    @Override public void expired(Vec3 point, Vec3 velocity) {
+                        split(ability, caster, aim, spec, active, burst, point, velocity);
+                    }
+                });
+    }
+
+    /**
+     * The split: {@code count} bursts from {@code point}, fanned about the shot's direction of travel there
+     * ({@link io.github.butterflysmp.rpg.core.combat.SplitBasis#sidewaysOf} for "sideways"), never homing, each landing
+     * the ability's on_hit with every Damage replaced by the level's amount in the burst's element. They are PRIMARY hits
+     * (the same caster; they count for any behaviour that counts hits), and they never split again: they are launched
+     * here, not through {@link #launchOne}.
+     */
+    private void split(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec,
+                       io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active,
+                       io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst burst, Vec3 point, Vec3 velocity) {
+        double amount = burst.damageAt(active.level());
+        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> onHit = new java.util.ArrayList<>();
+        for (io.github.butterflysmp.rpg.core.ability.effect.EffectSpec effect : ability.onHit()) {
+            onHit.add(effect instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage
+                    ? new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(amount, burst.element())
+                    : effect);
+        }
+        // The burst's damage is the headline now, so a status capped by the payload (scorch) is capped by THIS hit.
+        Caster burstCaster = caster.withPayloadDamage(amount);
+        Vec3 forward = velocity.lengthSquared() == 0 ? aim.direction() : velocity.normalize();
+        Vec3 sideways = io.github.butterflysmp.rpg.core.combat.SplitBasis.sidewaysOf(forward, aim.right());
+        List<Vec3> directions = SpreadPattern.directionsFor(forward, sideways,
+                new CastSpec.Spread(burst.count(), burst.angleDegrees(), 0));
+        int burstTicks = io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst
+                .ticksToTravel(burst.burstTravelBlocks(), burst.speed());
+        world.traceSplit(caster.id(), caster.source(), point, directions.size());
+        for (Vec3 direction : directions) {
+            ProjectileFlight.launch(world, burstCaster, point, direction.scale(burst.speed()), spec.gravity(), burstTicks,
+                    new ProjectileFlight.Look(spec.trail(), spec.item(), spec.body()), null,
+                    (target, at) -> effects.applyAll(onHit, burstCaster, target, at));
+        }
     }
 
     /**

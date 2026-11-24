@@ -155,7 +155,14 @@ public enum EnchantEffect {
      * the file's {@code shockwave:} block, the per-level ones as lists. No {@code value_by_level}: the block owns its
      * numbers. Executed by {@code BehaviourHits} on a primary hit by the weapon carrying it.
      */
-    SHOCKWAVE;
+    SHOCKWAVE,
+
+    /**
+     * A BEHAVIOUR (B1): {@link EnchantBehaviour.Airburst}, its parameters in the file's {@code airburst:} block. It acts on
+     * the FLIGHT of the weapon's projectile ({@code CastExecutor.launchToSplit}), never on a hit. No
+     * {@code value_by_level}.
+     */
+    AIRBURST;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides
