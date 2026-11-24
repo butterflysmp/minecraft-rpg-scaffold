@@ -86,3 +86,62 @@ present: 1  original gone: 0  line delta: 0`, each restored by `cp` and checked 
 
 **UNMUTATED, said so:** the ORDER half of `EnchantLoadOrderTest` (moving a block is not a single-site replace); the
 `Weapon pool:` line's presence is pinned by `EnchantQuantityGateTest`'s source read, not mutated.
+
+## 2. PR B — THE LIVING LANTERN REWORKED (`feat/living-lantern-homing`; content, no enchant)
+
+### Ben's words, verbatim, 2026-11-23
+
+> "Instead of the cone of fire, I want it to shoot a slow moving homing projectile similar to the old repo, only this
+> time 1 shot instead of three." / "1. Damage 45 mana 12 cooldown 0.8s" / "2. 7 blocks a second is fine ... Reach
+> increased to 28 blocks for the normal projectile. ... Homing within 7 is fine."
+
+### As built (`content/weapons/living_lantern.yml`, `right_click`)
+
+`type: projectile`, ONE body: **45 fire (BEN)**, **12 mana (BEN)**, **`cooldown_ticks: 16` (BEN, 0.8 s, on the 4-tick
+grid)**, **speed 0.35 (BEN, 7 / 20)**, **gravity 0**, **`max_lifetime_ticks: 80`**, **homing `search_radius: 7` (BEN)**,
+**`lerp: 0.45` (SEAT PLACEHOLDER, the old repo's `LIVING_LANTERN_HOMING_TURN`, READ by the seat at `cfde822`)**,
+`activation_blocks: 0` (PLACEHOLDER, below). Name "Lantern's Breath" kept; recipe, tier, rarity, class and the cast and
+hit visuals unchanged.
+
+**READ: how the engine caps travel.** By LIFETIME only: `ProjectileFlight.step` ends a flight on a hit, or when its
+elapsed ticks reach `max_lifetime_ticks`, and goes off at that point (`onImpact.at(null, next)`; with no target the
+Damage arm lands nothing). There is no distance cap. Homing keeps the velocity's LENGTH (`steer` rescales the turned
+direction to the old speed), so travel is 0.35 a tick whatever it chases: **28 / 0.35 = 80 ticks; the last step lands at
+80 x 0.35 = 28.0 blocks** (`LivingLanternContentTest.theReachIsTwentyEightBlocksOfTravel`, executed).
+
+**THE CONE STAYS IN THE ENGINE AND NO SHIPPED WEAPON USES IT NOW** (`CastSpec.Cone`, `CastExecutor.beginCone` and their
+tests untouched; `LivingLanternContentTest.noShippedWeaponCastsACone` walks every loaded trigger).
+
+**FIRE'S BURN, EVERY TERM IT ADDS (READ, `fire.yml` `applies_status: scorch`; core `Scorch`):** the hit accrues scorch
+(one stack per 2 damage landed, a yes/no gate); the burn deals `min(5% of the victim's max, cap)` every
+`Scorch.PERIOD_TICKS` 20 for `Scorch.DEFAULT_DURATION_TICKS` 120 (the ability authors no duration); **cap = the hit x
+`Scorch.CAP_FRACTION` 0.5 = 22.5** at score 100 (was 7 under the cone's 14). On a 100-max mob a burn is
+`min(5.0, 22.5) = 5.0`. A scorched mob that dies Ignites (`Ignite.DAMAGE` 6, fire, every non-player within 4, 20 ticks
+later). Nothing here is new; only the cap moved, by the hit's own number.
+
+**THE FLIGHT, EXECUTED** (`core/.../LivingLanternFlightTest`, the real `CastExecutor` and `ProjectileFlight` on the fake
+world, half-width 0.3): a mob 10 out and 3 off the aim line takes exactly ONE hit of 45 (health 100 -> 55); 8 off the line
+it is never sought (100); dead ahead at 27 it is hit, at 29 it is not.
+
+### OPEN FOR BEN (SEAT PLACEHOLDER 2026-11-23)
+
+1. **The description:** `"Looses a slow, seeking flame"` / `"that hunts within 7 blocks."` (was the cone's two lines).
+2. **The trail:** the cone's front visual `lantern_front` (the old FLAME and orange dust), reused; **no body** (no item,
+   no display), so the shot is particles only.
+3. **`activation_blocks: 0`:** it seeks from the muzzle, as the Crystal Shard Staff's does.
+
+### FOR THE SEAT: AN OWED ROW THIS INVALIDATES
+
+**`GATE-breacher-rework.md` LL9R2 (OWED, never run: that gate booted once and no row ran)** predicts the burn's cap on the
+CONE: both zombies inside a 6-block, 60-degree cone, struck on the front's 4th tick, `sent=14.000`, `cap=7.000`. Under PR
+B the same staging fires one homing shot that strikes ONE of them, for 45, cap 22.5. The row's purpose (PR 1 of that
+stack: `DotStatus.apply` keeps the LARGER cap when a weaker Ignite burst lands) still stands; its staging and every
+number do not. **Not edited** (another gate's row); the seat's to re-home or retire.
+
+### Tests and mutations
+
+`LivingLanternContentTest` rewritten for the shot (Ben's numbers, every placeholder, the tooltip, the reach, no cone
+anywhere); `golden-lore.txt`'s three lantern lines; new `core/.../LivingLanternFlightTest` (3 rows). Five mutations,
+each `marker present: 1  original gone: 0  line delta: 0`, each restored and `cmp` byte-identical: MUTSPEED (0.36: 3
+rows red), MUTLIFE (81: 2), MUTSEARCH (8: 2), MUTDMG (44: 3), MUTNOSEEK (`ProjectileFlight.steer` never turns: the
+off-the-line flight row red).

@@ -85,13 +85,28 @@ class LivingLanternContentTest {
         assertEquals(12.0, a.cost().amount(), 0.0, "Ben: 12 mana");
         List<EffectSpec.Damage> damage = a.onHit().stream()
                 .filter(e -> e instanceof EffectSpec.Damage).map(e -> (EffectSpec.Damage) e).toList();
-        assertEquals(List.of(new EffectSpec.Damage(14, "fire")), damage, "Ben: 14, fire, a literal damage");
-        CastSpec.Cone cone = assertInstanceOf(CastSpec.Cone.class, a.cast(), "Ben: an arc in front that travels");
-        assertEquals(60.0, cone.arcDegrees(), 0.0, "Ben: 60 degrees");
+        assertEquals(List.of(new EffectSpec.Damage(45, "fire")), damage, "Ben (2026-11-23): 45, fire, a literal damage");
+        CastSpec.Projectile shot = assertInstanceOf(CastSpec.Projectile.class, a.cast(),
+                "Ben (2026-11-23): a slow moving homing projectile, 1 shot");
+        assertEquals(0.35, shot.speed(), 0.0, "Ben: 7 blocks a second = 7 / 20 a tick");
+        assertEquals(7.0, shot.homing().searchRadius(), 0.0, "Ben: homing within 7");
+        assertEquals(null, shot.spread(), "Ben: 1 shot instead of three");
         assertTrue(warnings.stream().noneMatch(m -> m.contains("living_lantern")), "no loader warning: " + warnings);
     }
 
-    /** Each SEAT PLACEHOLDER 2026-11-22, pinned. */
+    /**
+     * BEN'S 28 BLOCKS OF REACH, AS THE ENGINE CAPS IT: by LIFETIME (ProjectileFlight has no distance cap). Homing keeps the
+     * velocity's length, so travel is speed x ticks whatever it chases: 0.35 x 80 = 28.0. Executed here, not predicted.
+     */
+    @Test
+    void theReachIsTwentyEightBlocksOfTravel() {
+        CastSpec.Projectile shot = (CastSpec.Projectile) breath(lantern(new ArrayList<>())).cast();
+        assertEquals(80, shot.maxLifetimeTicks());
+        assertEquals(0.0, shot.gravity(), 0.0, "no gravity, so no speed is gained or lost falling");
+        assertEquals(28.0, shot.speed() * shot.maxLifetimeTicks(), 1e-9, "Ben: reach 28 blocks");
+    }
+
+    /** Each SEAT PLACEHOLDER, pinned (2026-11-22's kept, 2026-11-23's new). */
     @Test
     void theSeatsPlaceholders() {
         WeaponDefinition w = lantern(new ArrayList<>());
@@ -99,12 +114,29 @@ class LivingLanternContentTest {
         assertEquals(Rarity.COMMON, w.rarity(), "the iron sword's");
         assertEquals(WeaponClass.MAGE, w.weaponClass());
         AbilityDefinition a = breath(w);
-        assertEquals("Lantern's Breath", a.displayName());
-        assertEquals(new CastSpec.Cone(6.0, 60, 6, "lantern_front"), a.cast(),
-                "range 6 blocks, 60 the FULL angle, 6 ticks to the range, the old look as the front");
+        assertEquals("Lantern's Breath", a.displayName(), "kept by the brief");
+        assertEquals(new CastSpec.Projectile(0.35, 0.0, 80, "lantern_front", null, new CastSpec.Homing(0.45, 0, 7), null),
+                a.cast(), "no body, the cone's front reused as the trail, the old repo's 0.45 turn, seeking from the muzzle");
         assertEquals(List.of(new EffectSpec.Visual("lantern_cast")), a.onCast());
-        assertEquals(List.of(new EffectSpec.Visual("lantern_hit"), new EffectSpec.Damage(14, "fire")), a.onHit(),
-                "one strike of the full 14 per body, no falloff, nothing else on the hit");
+        assertEquals(List.of(new EffectSpec.Visual("lantern_hit"), new EffectSpec.Damage(45, "fire")), a.onHit(),
+                "one strike of 45, nothing else on the hit");
+    }
+
+    /**
+     * THE CONE STAYS IN THE ENGINE, AND NO SHIPPED WEAPON USES IT NOW (the brief: "say that no shipped weapon uses it
+     * now"). Over every shipped weapon and trigger, by the loaded cast, never a text grep of `type: cone`.
+     */
+    @Test
+    void noShippedWeaponCastsACone() {
+        WeaponRegistry weapons = new WeaponLoader(collecting(new ArrayList<>())).loadAll(dir("weapons"));
+        int triggers = 0;
+        for (WeaponDefinition w : weapons.all()) {
+            for (var t : w.triggers()) {
+                triggers++;
+                assertTrue(!(t.ability().cast() instanceof CastSpec.Cone), w.id() + " " + t.input() + " casts a cone");
+            }
+        }
+        assertTrue(triggers > 20, "CONTROL: the walk saw the shipped triggers, " + triggers);
     }
 
     @Test
@@ -120,7 +152,7 @@ class LivingLanternContentTest {
 
     /**
      * What a MINTED lantern's tooltip reads (the gate's LL1 predicts this, word for word). The cooldown line formats the
-     * authored 16 as Ben's 0.8 s; the damage is 14 x score / 100.
+     * authored 16 as Ben's 0.8 s; the damage is 45 x score / 100 (14 until the 2026-11-23 rework).
      */
     @Test
     void aMintedLanternsTooltipReads() {
@@ -132,9 +164,9 @@ class LivingLanternContentTest {
                         .map(c -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
                                 .serialize(c)).toList();
         assertEquals(List.of("Fire", "Gear Score: 100", "", "Lantern's Breath  Right-Click",
-                "Breathes a cone of flame", "that rolls 6 blocks ahead.", "Fire Damage: 14",
+                "Looses a slow, seeking flame", "that hunts within 7 blocks.", "Fire Damage: 45",
                 "Cooldown: 0.8s | Mana Cost: 12", "", "Common Magic Weapon"), lore.apply(100));
-        assertEquals("Fire Damage: 21", lore.apply(150).get(6), "the literal scales with the score");
+        assertEquals("Fire Damage: 67.5", lore.apply(150).get(6), "the literal scales with the score");
     }
 
     /** BEN's recipe: eight iron nuggets round one fire charge. */

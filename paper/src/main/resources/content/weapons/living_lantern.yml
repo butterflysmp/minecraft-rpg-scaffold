@@ -33,12 +33,19 @@ rarity: common                             # SEAT PLACEHOLDER 2026-11-22: the ir
 class: mage                                # SEAT PLACEHOLDER 2026-11-22
 material: lantern                          # BEN: "Keep the lantern item"
 
+# THE REWORK, 2026-11-23 (the seat's brief "THREE ENCHANT COLUMNS' WORTH OF WORK", PR B). Ben, verbatim: "Instead of
+# the cone of fire, I want it to shoot a slow moving homing projectile similar to the old repo, only this time 1 shot
+# instead of three." / "1. Damage 45 mana 12 cooldown 0.8s" / "2. 7 blocks a second is fine ... Reach increased to 28
+# blocks for the normal projectile. ... Homing within 7 is fine." THE CONE IS GONE FROM THIS WEAPON: `type: cone` stays
+# in the engine with its tests (CastSpec.Cone, CastExecutor.beginCone), and NO SHIPPED WEAPON USES IT NOW
+# (LivingLanternContentTest.noShippedWeaponCastsACone). The 2026-11-22 numbers above (14, the 60-degree arc, 6 blocks)
+# are the record of the cone; GATE-living-lantern.md's rows are history and are not edited.
 triggers:
   right_click:
-    name: "Lantern's Breath"               # SEAT PLACEHOLDER 2026-11-22
-    description:                           # SEAT PLACEHOLDER 2026-11-22
-      - "Breathes a cone of flame"
-      - "that rolls 6 blocks ahead."
+    name: "Lantern's Breath"               # SEAT PLACEHOLDER 2026-11-22, kept by the brief
+    description:                           # SEAT PLACEHOLDER 2026-11-23: reworded for the homing shot
+      - "Looses a slow, seeking flame"
+      - "that hunts within 7 blocks."
     cooldown_ticks: 16                     # BEN: 0.8 s. On the 4-tick grid; not a basic attack, so no scaling
     cost:
       resource: mana
@@ -47,19 +54,31 @@ triggers:
       - type: visual
         visual_id: lantern_cast            # SEAT PLACEHOLDER 2026-11-22: the old lantern place and allay-with-item
     cast:
-      type: cone
-      range: 6.0                           # SEAT PLACEHOLDER 2026-11-22: Ben's "about 6 blocks", to the body's eye
-      arc_degrees: 60                      # BEN: 60 degrees. SEAT PLACEHOLDER: the FULL angle, 30 either side, up and down too
-      travel_ticks: 6                      # SEAT PLACEHOLDER 2026-11-22: the front reaches 6 blocks in 6 ticks, 1 a tick
-      front: lantern_front                 # SEAT PLACEHOLDER 2026-11-22: the old FLAME and orange dust
-    # Each body in the cone is struck ONCE per cast, for the full 14, no falloff (SEAT PLACEHOLDER 2026-11-22); a body
-    # the eye cannot see past a block is not struck (SEAT PLACEHOLDER 2026-11-22). Both are CastSpec.Cone's behaviour.
+      type: projectile
+      speed: 0.35                          # BEN: "7 blocks a second" = 7 / 20 ticks = 0.35 blocks a tick
+      gravity: 0                           # BEN's brief: no gravity
+      # REACH, BEN'S 28 BLOCKS, IS CAPPED BY LIFETIME: the engine has no distance cap on a projectile (READ,
+      # ProjectileFlight.step: it ends on a hit, or when its elapsed ticks reach max_lifetime_ticks, and goes off there).
+      # Homing turns the velocity but keeps its length (ProjectileFlight.steer rescales to the same speed), so the path is
+      # 0.35 a tick whatever it chases: 28 / 0.35 = 80 ticks. The last step lands at 80 x 0.35 = 28.0 blocks of travel.
+      max_lifetime_ticks: 80
+      trail: lantern_front                 # SEAT PLACEHOLDER 2026-11-23: the cone's front (the old FLAME and orange dust), reused as the trail
+      homing:
+        lerp: 0.45                         # SEAT PLACEHOLDER 2026-11-23: the old repo's LIVING_LANTERN_HOMING_TURN (READ by the seat at cfde822)
+        activation_blocks: 0               # SEAT PLACEHOLDER 2026-11-23: it seeks from the muzzle, as the Crystal Shard Staff's does
+        search_radius: 7                   # BEN: "Homing within 7"
     on_hit:
       - type: visual
         visual_id: lantern_hit             # SEAT PLACEHOLDER 2026-11-22: the old lantern break on hit
-      - type: damage                       # BEN: 14, fire. A literal damage effect, as the other staves
-        amount: 14
+      - type: damage                       # BEN: 45, fire. A literal damage effect, as the other staves
+        amount: 45
         element: fire
+    # FIRE'S BURN, NAMED TERM BY TERM (READ: content/elements/fire.yml `applies_status: scorch`; core Scorch): a fire hit
+    # accrues SCORCH when it lands (one stack per 2 damage dealt, a yes/no gate). The burn deals min(5% of the victim's
+    # MAX health, the cap) every Scorch.PERIOD_TICKS (20), for Scorch.DEFAULT_DURATION_TICKS (120; this ability authors
+    # no duration), and the cap is the hit's damage x Scorch.CAP_FRACTION (0.5): 45 x 0.5 = 22.5 at score 100. On a
+    # 100-max mob that is min(5.0, 22.5) = 5.0 a burn. A scorched mob that dies Ignites (Ignite.DAMAGE 6, fire, to every
+    # non-player within 4, 20 ticks later). None of it is new: the cone's 14 bought the same burn at a cap of 7.
 
 # NO craft_result, as on the other staves: it would claim every vanilla lantern. The recipe claims this weapon:
 # content/recipes/living_lantern.yml. It joins NO loot pool.
