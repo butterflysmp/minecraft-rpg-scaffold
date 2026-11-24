@@ -104,7 +104,7 @@ final class SelfTestRun {
         // FIRST: a player still standing in a pit the last row dug would otherwise be inside the restored blocks for
         // a tick, and suffocation is damage the run's restore does not undo. The start was air when the run began, so
         // it is air again once its blocks are back.
-        Location start = snapshot.start();
+        Location start = stage();
         player.teleportAsync(start).thenRun(() -> service.scheduler().onEntity(player, () -> {
             if (ended) return;
             int blocks = snapshot.restoreRowBlocks();
@@ -159,6 +159,52 @@ final class SelfTestRun {
                 .sorted(java.util.Comparator.comparingDouble(e -> e.getLocation().distanceSquared(player.getLocation())))
                 .map(e -> e.getType().getKey().getKey() + " " + e.getUniqueId())
                 .toList();
+    }
+
+    // --- THE PAD (Ben's ruling A, 2026-11-23; the seat's P5) ---------------------------------------------------------
+
+    /** The pad's stand point once a PAD step has moved him there; null before. Touched only on the player's thread. */
+    private Location stagePoint;
+
+    /** Where every unchained row stages from: the pad's stand point once he is on it, else where the run began. */
+    Location stage() {
+        return stagePoint != null ? stagePoint.clone() : snapshot.start();
+    }
+
+    /**
+     * PAD: build or check the pad (its chunks loaded, then its region), and only on success teleport him to its stand
+     * point, facing east. The snapshot was taken at RUN START, before this, so every end path returns him to where he
+     * typed the command. Any failure: no teleport, one plain chat line, the run ends.
+     */
+    private void pad() {
+        SelfTestPad.ensure(world, service.scheduler()).whenComplete((result, err) -> service.scheduler().onEntity(player, () -> {
+            if (ended) return;
+            SelfTestPad.Result r = err != null ? new SelfTestPad.Result(false, null, err.toString(), null) : result;
+            if (r.line() != null) log(r.line());
+            if (!r.ok()) {
+                padFailed(r.why());
+                return;
+            }
+            Location stand = r.stand();
+            player.teleportAsync(stand).whenComplete((moved, terr) -> service.scheduler().onEntity(player, () -> {
+                if (ended) return;
+                if (terr != null || !Boolean.TRUE.equals(moved)) {
+                    padFailed("the teleport onto it was refused");
+                    return;
+                }
+                stagePoint = stand.clone();
+                log("PAD stood at=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f yaw=%.3f pitch=%.3f",
+                        stand.getX(), stand.getY(), stand.getZ(), stand.getYaw(), stand.getPitch()));
+                advance();
+            }));
+        }));
+    }
+
+    private void padFailed(String why) {
+        log("PAD fail " + why);
+        player.sendMessage(net.kyori.adventure.text.Component.text("The selftest could not set up its platform in the sky ("
+                + why + "), so nothing ran and you were not moved.", net.kyori.adventure.text.format.NamedTextColor.RED));
+        end("ABORTED pad: " + why);
     }
 
     // --- ASK: a question in chat, the next chat line logged verbatim (GATE-dragon-fix.md, C6) ----------------------
@@ -219,6 +265,10 @@ final class SelfTestRun {
                 }
                 if (step.verb() == Scenario.Verb.ASK) {
                     ask(step);   // resumes from answer() or the timeout
+                    return;
+                }
+                if (step.verb() == Scenario.Verb.PAD) {
+                    pad();   // resumes from the teleport's completion, or ends the run
                     return;
                 }
                 if (step.verb() == Scenario.Verb.PREFLIGHT) {
@@ -532,6 +582,17 @@ final class SelfTestRun {
     /** Stop, quit and finish all come here. Idempotent: the second caller finds it ended. */
     void end(String why) {
         end(why, service.scheduler(), false);
+    }
+
+    /**
+     * HIS QUIT MID-RUN (2026-11-23, the pad's P6). The restore's return is a SYNCHRONOUS teleport here, as at a server
+     * stop. READ from the server jar (build 74): {@code CraftEntity#teleportAsync} loads the destination's chunks and
+     * teleports in a callback, and {@code CraftPlayer#teleport0} returns false once his {@code connection} is null. On a
+     * quit his save follows this event, so an async return could land after the save, or never, and leave him saved on
+     * the pad. The scheduler stays the live one: the plugin is not disabling.
+     */
+    void endAtQuit() {
+        end("ABORTED the player left", service.scheduler(), true);
     }
 
     /**

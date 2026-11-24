@@ -99,15 +99,25 @@ final class ScenarioLint {
     static List<Finding> lint(String gate, List<Scenario> scenarios) {
         List<Finding> out = new ArrayList<>();
         Optional<SelfTestPreflight.Box> box = Optional.empty();
+        boolean pad = false;
         for (Scenario s : scenarios) {
             if (!s.row().equals(Scenario.SETUP)) continue;
             for (Scenario.Step st : s.steps()) {
                 if (st.verb() == Scenario.Verb.PREFLIGHT) box = SelfTestPreflight.parse(st.arg());
+                if (st.verb() == Scenario.Verb.PAD) pad = true;
+            }
+        }
+        // THE PAD (the seat's P9, 2026-11-23): a gate that stands on it measures, and summons, only inside its interior.
+        if (pad && box.isPresent()) {
+            SelfTestPreflight.Box b = box.get();
+            if (!SelfTestPadShape.inInterior(b.x1(), b.z1()) || !SelfTestPadShape.inInterior(b.x2(), b.z2())) {
+                out.add(new Finding(gate, Scenario.SETUP, Rule.GROUND, "the preflight's " + b.label()
+                        + " is not inside the pad's interior"));
             }
         }
         boolean anySummon = false;
         for (Scenario s : scenarios) {
-            anySummon |= row(gate, s, box, out);
+            anySummon |= row(gate, s, box, pad, out);
         }
         if (anySummon && box.isEmpty()) {
             out.add(new Finding(gate, Scenario.SETUP, Rule.GROUND, "the gate summons mobs and declares no preflight"));
@@ -116,7 +126,7 @@ final class ScenarioLint {
     }
 
     /** One row's findings, added to {@code out}; true when the row summons anything. */
-    private static boolean row(String gate, Scenario s, Optional<SelfTestPreflight.Box> box, List<Finding> out) {
+    private static boolean row(String gate, Scenario s, Optional<SelfTestPreflight.Box> box, boolean pad, List<Finding> out) {
         String r = s.row();
         boolean cleared = false;
         boolean turned = false;
@@ -165,6 +175,10 @@ final class ScenarioLint {
                     if (box.isPresent() && !inside(box.get(), m)) {
                         out.add(new Finding(gate, r, Rule.GROUND, "summon at " + fmt(m.dx()) + " east " + fmt(m.dz())
                                 + " south, outside the preflight's " + box.get().label()));
+                    }
+                    if (pad && !SelfTestPadShape.inInterior((int) Math.floor(m.dx()), (int) Math.floor(m.dz()))) {
+                        out.add(new Finding(gate, r, Rule.GROUND, "summon at " + fmt(m.dx()) + " east " + fmt(m.dz())
+                                + " south, outside the pad's interior"));
                     }
                 }
             }

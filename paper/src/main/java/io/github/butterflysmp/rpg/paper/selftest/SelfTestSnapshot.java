@@ -96,6 +96,12 @@ final class SelfTestSnapshot {
     private final int heldSlot;
     private final Location location;
     private final Boolean spawnMobs;
+    /**
+     * In the restore set since 2026-11-23 (the pad's P7): READ from the server jar (build 74), {@code PhantomSpawner}
+     * reads {@code GameRules.SPAWN_PHANTOMS} and {@code canSeeSky}, and NOT {@code spawn_mobs}, so a row at night under
+     * open sky could meet a phantom; a setup that turns it off must not leave it off.
+     */
+    private final Boolean spawnPhantoms;
     /** In the restore set since SU8's death_rules (2026-11-10): a row sets both, and an aborted row must not leave them set. */
     private final Boolean keepInventory;
     private final Boolean immediateRespawn;
@@ -144,6 +150,7 @@ final class SelfTestSnapshot {
         this.location = p.getLocation().clone();
         World world = p.getWorld();
         this.spawnMobs = world.getGameRuleValue(GameRules.SPAWN_MOBS);
+        this.spawnPhantoms = world.getGameRuleValue(GameRules.SPAWN_PHANTOMS);
         this.keepInventory = world.getGameRuleValue(GameRules.KEEP_INVENTORY);
         this.immediateRespawn = world.getGameRuleValue(GameRules.IMMEDIATE_RESPAWN);
         this.difficulty = world.getDifficulty();
@@ -277,6 +284,7 @@ final class SelfTestSnapshot {
         World world = location.getWorld();
         scheduler.onGlobal(() -> {
             if (spawnMobs != null) world.setGameRule(GameRules.SPAWN_MOBS, spawnMobs);
+            if (spawnPhantoms != null) world.setGameRule(GameRules.SPAWN_PHANTOMS, spawnPhantoms);
             if (keepInventory != null) world.setGameRule(GameRules.KEEP_INVENTORY, keepInventory);
             if (immediateRespawn != null) world.setGameRule(GameRules.IMMEDIATE_RESPAWN, immediateRespawn);
             world.setTime(time);
@@ -288,6 +296,7 @@ final class SelfTestSnapshot {
                 + " blocks=" + blocks.total() + " mobsRemoved=" + mobs + " orbsRemoved=" + orbs
                 + " keep_inventory=" + keepInventory + " immediate_respawn=" + immediateRespawn
                 + " difficulty=" + difficulty + " health=" + fmtHealth(health)
-                + " vanilla_xp=" + vanillaLevel + "+" + String.format(java.util.Locale.ROOT, "%.3f", vanillaProgress);
+                + " vanilla_xp=" + vanillaLevel + "+" + String.format(java.util.Locale.ROOT, "%.3f", vanillaProgress)
+                + " spawn_phantoms=" + spawnPhantoms;
     }
 }

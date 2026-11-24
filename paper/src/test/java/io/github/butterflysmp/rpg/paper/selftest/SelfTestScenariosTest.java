@@ -571,12 +571,23 @@ class SelfTestScenariosTest {
                 "the control: DH3's chain on DH1 is found, so the lint reads the shipped files: " + byGate.get("deft-hands"));
     }
 
-    /** The enchant-columns gate measures its ground before any row: its setup's FIRST step is its preflight. */
+    /**
+     * The enchant-columns gate stands on the pad and measures it before any row: its setup's FIRST step is the pad and
+     * its SECOND the preflight (Ben's ruling A and the seat's P5, P8, 2026-11-23). No other gate opts in (P9).
+     */
     @Test
-    void theEnchantColumnsSetupPreflightsFirst() {
+    void theEnchantColumnsSetupStandsOnThePadThenPreflights() {
         Scenario setup = shipped().gates().get("enchant-columns").getFirst();
         assertEquals(Scenario.SETUP, setup.row());
-        assertEquals(Scenario.Verb.PREFLIGHT, setup.steps().getFirst().verb(), setup.steps().toString());
+        assertEquals(Scenario.Verb.PAD, setup.steps().get(0).verb(), setup.steps().toString());
+        assertEquals(Scenario.Verb.PREFLIGHT, setup.steps().get(1).verb(), setup.steps().toString());
+        List<String> padGates = new ArrayList<>();
+        for (var gate : shipped().gates().entrySet()) {
+            for (Scenario s : gate.getValue()) {
+                for (Scenario.Step st : s.steps()) if (st.verb() == Scenario.Verb.PAD) padGates.add(gate.getKey() + "#" + s.row());
+            }
+        }
+        assertEquals(List.of("enchant-columns#setup"), padGates, "only enchant-columns opts in, in its setup");
     }
 
     @Test

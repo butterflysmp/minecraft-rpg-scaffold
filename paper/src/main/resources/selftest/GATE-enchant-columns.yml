@@ -17,11 +17,19 @@
 # And the fifth: after `rpg enchant clear` the item has NO slots, and the dev command adds only the next one, so a
 # behaviour is staged in slot 0 (or 0 then 1); EnchantState.effective reads every slot alike. ScenarioLint holds all five,
 # and the ground: the preflight below, first, measures what every summon stands on.
+#
+# THE PAD (Ben's ruling A, 2026-11-23: "The test builds its own ground"): the setup's FIRST step builds or checks the one
+# stone platform 200 east of world spawn, floor at Y 200, inside a barrier rim, and stands him on it facing east; every
+# row stages from there, and the run's restore returns him to where he typed the command. The preflight then checks the
+# pad is whole. `gamerule spawn_phantoms false` (restored by the snapshot): the phantom spawner reads that rule, not
+# spawn_mobs, and the pad is open sky at night.
 setup:
+  - pad: ""
   - preflight: "0 -6 32 10"
   - trace: on
   - cmd: "time set 18000"
   - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
   - close: ""
   - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
   - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
