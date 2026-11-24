@@ -165,14 +165,66 @@ class OrbBlockBodyLoadTest {
         var grant = new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger("lapis_staff", "left_click",
                 new io.github.butterflysmp.rpg.core.ability.AbilityDefinition("lapis_crystal/left_click", "Lapis Crystal",
                         "kinetic", 600, new io.github.butterflysmp.rpg.core.ability.ResourceCost("mana", 30),
-                        parse(ORB + "body: block\nblock:\n  id: lapis_blok\n  scale: 0.5\n  glow: \"#2A5CFF\"\n"),
+                        parse(ORB + "body: block\nblock:\n  id: lapis_blok\n  scale: 0.5\n  beat_ticks: 10\n"
+                                + "  particles: crystal_mote\n"),
                         java.util.List.of()));
         var enchant = new EnchantDefinition("lapis_crystal", "Lapis Crystal", 3,
                 io.github.butterflysmp.rpg.core.enchant.EnchantEffect.GRANT_TRIGGER, null, java.util.List.of(),
                 "heart_of_the_sea", null, null, "lapis_staff", grant);
         assertEquals(java.util.List.of("enchant 'lapis_crystal' grants an orb whose body block 'lapis_blok' is not a block:"
-                        + " its throw will spawn no body"),
-                ContentValidator.validateOrbBodies(java.util.List.of(enchant), id -> id.equals("lapis_block")));
-        assertEquals(java.util.List.of(), ContentValidator.validateOrbBodies(java.util.List.of(enchant), id -> true));
+                        + " its throw will spawn no body",
+                        "enchant 'lapis_crystal' grants an orb whose particles 'crystal_mote' is not a loaded visual: it will"
+                                + " present nothing at rest"),
+                ContentValidator.validateOrbBodies(java.util.List.of(enchant), id -> id.equals("lapis_block"),
+                        id -> id.equals("crystal_motes")));
+        assertEquals(java.util.List.of(), ContentValidator.validateOrbBodies(java.util.List.of(enchant), id -> true, id -> true));
+    }
+
+    /** Ben's changes (2026-11-23): no glow is a body that does not glow; the look keys parse, and refuse no beat by name. */
+    @Test
+    void noGlowAndTheLookKeysParse() throws InvalidConfigurationException {
+        CastSpec.Orb orb = parse(ORB + "body: block\nblock:\n  id: lapis_block\n  scale: 0.5\n  bob_blocks: 0.1\n"
+                + "  bob_period_ticks: 60\n  turn_ticks: 120\n  beat_ticks: 10\n  particles: crystal_motes\n");
+        assertEquals(new CastSpec.OrbBlock("lapis_block", 0.5, null, 0.1, 60, 120, 10, "crystal_motes"), orb.block());
+        assertEquals(-1, orb.block().glowRgb());
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> parse(ORB
+                + "body: block\nblock:\n  id: lapis_block\n  scale: 0.5\n  turn_ticks: 120\n")).getMessage()
+                .contains("need a beat_ticks above 0"));
+        assertEquals("ORBBODY owner=00000000-0000-0000-0000-000000000001 id=00000000-0000-0000-0000-000000000002"
+                        + " type=block_display block=minecraft:lapis_block glowing=false glow=none scale=0.500"
+                        + " teleport_duration=1 persistent=false tick=1",
+                PaperCombatWorld.orbBodyLine(new UUID(0, 1), new UUID(0, 2), "block_display", "minecraft:lapis_block",
+                        false, -1, 0.5f, 1, false, 1));
+    }
+
+    /**
+     * THE POSE THROUGH THE SERVER'S OWN ARITHMETIC: the transformation {@code poseOrbBody} builds, composed as
+     * {@code Transformation.compose} does (READ: {@code new Matrix4f().translation(t).rotate(left).scale(s).rotate(right)}),
+     * puts the block model's centre {@code (1/2, 1/2, 1/2)} at {@code (0, bob, 0)}: over the rest point, at every tick of a
+     * turn. And {@code poseOrbBody} is wired that way, with the interpolation set before the transformation.
+     */
+    @Test
+    void thePoseThroughTheServersComposeKeepsTheCentreOverTheRestPoint() throws IOException {
+        CastSpec.OrbBlock look = new CastSpec.OrbBlock("lapis_block", 0.5, null, 0.1, 60, 120, 10, null);
+        for (long t = 0; t <= 120; t++) {
+            CastSpec.OrbBlock.Pose p = look.pose(t);
+            org.joml.Matrix4f m = new org.joml.Matrix4f()
+                    .translation(new org.joml.Vector3f((float) p.tx(), (float) p.ty(), (float) p.tz()))
+                    .rotate(new org.joml.Quaternionf(new org.joml.AxisAngle4f((float) p.yaw(), 0, 1, 0)))
+                    .scale(new org.joml.Vector3f(0.5f, 0.5f, 0.5f));
+            org.joml.Vector3f centre = m.transformPosition(new org.joml.Vector3f(0.5f, 0.5f, 0.5f));
+            assertEquals(0, centre.x(), 1e-6, "t=" + t);
+            assertEquals(0.1 * Math.sin(2 * Math.PI * t / 60), centre.y(), 1e-6, "t=" + t);
+            assertEquals(0, centre.z(), 1e-6, "t=" + t);
+        }
+        String pose = method(src("adapter/PaperCombatWorld.java"), "public void poseOrbBody(");
+        int delay = pose.indexOf("d.setInterpolationDelay(0);");
+        int duration = pose.indexOf("d.setInterpolationDuration(interpolationTicks);");
+        int set = pose.indexOf("d.setTransformation(new org.bukkit.util.Transformation(");
+        assertTrue(delay > 0 && duration > delay && set > duration, pose);
+        assertTrue(pose.contains("new org.joml.AxisAngle4f((float) pose.yaw(), 0, 1, 0), scale, new org.joml.AxisAngle4f()));"));
+        assertTrue(!pose.contains("teleport"), "the position is not touched");
+        assertTrue(src("weapon/OrbRemovals.java").contains("if (orb.lookTask() >= 0) ctx.work().take(orb.lookTask());"),
+                "every paper removal ends the look beat");
     }
 }

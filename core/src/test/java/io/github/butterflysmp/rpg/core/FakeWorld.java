@@ -286,7 +286,12 @@ public final class FakeWorld implements CombatWorld {
         return handle;
     }
 
+    /** Every handle a cancel named, in order: what a removal ENDED, which a pending count cannot tell from a task that
+     *  stopped itself (the crystal's look beat does both). */
+    public final List<Long> cancelledHandles = new ArrayList<>();
+
     @Override public void cancelScheduled(long handle) {
+        cancelledHandles.add(handle);
         queue.removeIf(s -> s.seq() == handle);
     }
 
@@ -390,6 +395,17 @@ public final class FakeWorld implements CombatWorld {
 
     public void entityAdded(UUID id) {
         if (orbTagged.contains(id) && !orbs.ownsMarker(id)) sweptAtAdd.add(id);
+    }
+
+    /** Every pose handed to {@link #poseOrbBody}: the body, the tick, the pose, the interpolation. */
+    public record OrbPose(UUID body, long tick, io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock.Pose pose,
+                          int interpolationTicks) {}
+    public final List<OrbPose> orbPoses = new ArrayList<>();
+
+    @Override public void poseOrbBody(UUID bodyId, io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock.Pose pose,
+                                      int interpolationTicks) {
+        if (!markerPositions.containsKey(bodyId)) return;
+        orbPoses.add(new OrbPose(bodyId, now, pose, interpolationTicks));
     }
 
     @Override public void claimOrbBody(UUID bodyId) {

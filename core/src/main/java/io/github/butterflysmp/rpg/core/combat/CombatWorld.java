@@ -234,6 +234,13 @@ public interface CombatWorld {
     void claimOrbBody(UUID bodyId);
 
     /**
+     * Set a block body's TRANSFORMATION to {@code pose} (its translation, and its turn about the vertical), interpolated by
+     * the client over {@code interpolationTicks} from now (Ben's changes to the crystal, 2026-11-23). The body's position,
+     * the rest point, does not change. A body that is gone is a no-op.
+     */
+    void poseOrbBody(UUID bodyId, io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock.Pose pose, int interpolationTicks);
+
+    /**
      * {@code ORB} trace lines (D2): {@code event} is {@code rest} (it came to rest at {@code at}) or {@code removed} (with
      * {@code cause}: expired, replaced, quit, death, world_change, stop, orphan). Logged always, not only under mobtrace:
      * one line per throw and per removal, and the boot's after-stop check reads them.

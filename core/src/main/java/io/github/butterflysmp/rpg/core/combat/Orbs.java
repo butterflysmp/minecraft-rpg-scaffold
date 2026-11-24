@@ -35,22 +35,30 @@ public final class Orbs {
      * <p>{@code backstopTask} is the handle of the body's BACKSTOP, or -1 for none (Ben's item 3, the seat's ruling (b),
      * 2026-11-23): scheduled at the throw, it removes the body by its id whatever this store says. Only a block-display
      * body has one (a display has no vanilla despawn; an item marker does). Every proper removal cancels it.
+     *
+     * <p>{@code lookTask} is the handle of the body's current LOOK beat (its bob, turn and particles while it rests), or
+     * -1; each beat schedules the next and records it. Every removal, and the backstop, cancels it.
      */
     public record Orb(UUID owner, UUID markerId, long generation, Vec3 restPoint, double radius, int lifeTicks,
                       long arrivedTick, String weaponId, String enchantId, int level, Shot shot, long expiryTask,
-                      long backstopTask) {
+                      long backstopTask, long lookTask) {
         public boolean resting() {
             return arrivedTick >= 0;
         }
 
         Orb arrived(long tick) {
             return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, tick, weaponId, enchantId, level, shot,
-                    expiryTask, backstopTask);
+                    expiryTask, backstopTask, lookTask);
         }
 
         Orb expiring(long task) {
             return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, arrivedTick, weaponId, enchantId, level,
-                    shot, task, backstopTask);
+                    shot, task, backstopTask, lookTask);
+        }
+
+        Orb looking(long task) {
+            return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, arrivedTick, weaponId, enchantId, level,
+                    shot, expiryTask, backstopTask, task);
         }
     }
 
@@ -73,7 +81,7 @@ public final class Orbs {
     public synchronized PlaceResult place(UUID owner, UUID markerId, Vec3 restPoint, double radius, int lifeTicks,
                                           String weaponId, String enchantId, int level, Shot shot, long backstopTask) {
         Orb placed = new Orb(owner, markerId, nextGeneration++, restPoint, radius, lifeTicks, -1, weaponId, enchantId, level,
-                shot, -1, backstopTask);
+                shot, -1, backstopTask, -1);
         Orb previous = byOwner.put(owner, placed);
         return new PlaceResult(placed, Optional.ofNullable(previous));
     }
@@ -90,6 +98,17 @@ public final class Orbs {
     }
 
     /** Record the expiry {@code task} on the orb of {@code generation}; false (and nothing recorded) for a stale one. */
+    /**
+     * Record the handle of the body's LOOK beat (Ben's changes to the crystal, 2026-11-23: its bob, turn and particles,
+     * one task re-scheduled each beat) on the orb of {@code generation}; false for a stale one. Every removal cancels it.
+     */
+    public synchronized boolean looking(UUID owner, long generation, long task) {
+        Orb orb = byOwner.get(owner);
+        if (orb == null || orb.generation() != generation) return false;
+        byOwner.put(owner, orb.looking(task));
+        return true;
+    }
+
     public synchronized boolean expiring(UUID owner, long generation, long task) {
         Orb orb = byOwner.get(owner);
         if (orb == null || orb.generation() != generation) return false;

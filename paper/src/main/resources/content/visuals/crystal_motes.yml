@@ -1,0 +1,15 @@
+# Lapis Crystal's motes at rest. Id is the filename: crystal_motes. Ben, 2026-11-23: "Add a few particles around the
+# lapis crystal". Presented at the orb's rest point once a beat (lapis_crystal.yml beat_ticks, 10: twice a second) while
+# it rests (CastExecutor.orbBeat). ITS OWN FILE, NOT SHARED (lapis_impact.yml's reason). The colour is lapis_beam's
+# rgb(40, 90, 240), so the motes read as the crystal's. EVERY FIGURE A SEAT PLACEHOLDER 2026-11-23: a few small blue
+# dust motes. Its cost: one DUST step is ONE spawnParticle call with count 3 (READ, PaperCombatWorld), so one particle
+# packet per beat to each player in range (INFERRED: the packet per player is not read).
+
+steps:
+  - type: particle
+    particle: DUST
+    color: [40, 90, 240]
+    size: 0.6     # SEAT PLACEHOLDER 2026-11-23: small
+    count: 3      # SEAT PLACEHOLDER 2026-11-23: a few
+    spread: 0.3   # SEAT PLACEHOLDER 2026-11-23: about the half-block crystal
+    speed: 0.0    # inert for DUST

@@ -304,7 +304,10 @@ class SelfTestScenariosTest {
         // Then GATE-enchant-changes.md (feat/lapis-crystal-block, 2026-11-23, Ben's five changes), RECOUNTED the same way:
         // 44 gates, 403 keys, 44 setups, so 359. The control: 394 + 9 (its setup and AF1-AF4, LB1-LB4) = 403. 351 was this
         // line's value.
-        assertEquals(359, loaded.rows());
+        // Then its SECOND FORM (feat/lapis-crystal-look, 2026-11-23, after the run of 78826389): AF1-AF4 (read) and LB1-LB4
+        // (MISS) left; LB1R2, LB4R2, LB2R2, LB3R2 and LB5 came in. RECOUNTED the same way: 44 gates, 400 keys, 44 setups, so
+        // 356. The control: 403 - 8 + 5 = 400. 359 was this line's value.
+        assertEquals(356, loaded.rows());
     }
 
     /**

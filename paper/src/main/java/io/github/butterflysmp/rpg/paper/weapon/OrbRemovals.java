@@ -71,6 +71,8 @@ public final class OrbRemovals {
         if (orb.expiryTask() >= 0) ctx.work().take(orb.expiryTask());
         // And a block body's backstop (the seat's ruling (b), 2026-11-23): a proper removal leaves it nothing to do.
         if (orb.backstopTask() >= 0) ctx.work().take(orb.backstopTask());
+        // And its look beat (Ben's changes, 2026-11-23): the motion and the particles end with the orb.
+        if (orb.lookTask() >= 0) ctx.work().take(orb.lookTask());
         Entity body = Bukkit.getEntity(orb.markerId());
         if (body != null) body.remove();
         ctx.log().info(PaperCombatWorld.orbLine(orb.owner(), "removed", orb.restPoint(), cause, Bukkit.getCurrentTick()));

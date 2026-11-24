@@ -30,7 +30,7 @@ grant_trigger:
       amount: 30                           # BEN: "Costs 30 mana"
     # D2: THE ORB (CastSpec.Orb, CastExecutor.throwOrb). Thrown along his aim to 12 blocks, stopping 0.5 short of the
     # first solid block (a mob does not stop it); it flies 10 ticks, then rests 300 ticks counted from its arrival; one
-    # per player, a new throw removing the old. Its body is a floating, glowing lapis block (a block display, never saved,
+    # per player, a new throw removing the old. Its body is a floating lapis block (a block display, never saved,
     # moved one step a tick along the same path; until 2026-11-23 a heart_of_the_sea item marker); removed on expiry, his
     # quit, his death, a world change and server stop, swept where it appears if no live orb owns it, and, if all of those
     # were skipped, by its own backstop 100 ticks after its life ends (CastExecutor.ORB_BACKSTOP_MARGIN_TICKS).
@@ -44,14 +44,22 @@ grant_trigger:
       block:
         id: lapis_block                    # BEN: "Lapis block"
         scale: 0.5                         # SEAT PLACEHOLDER 2026-11-23: half a block, centred on the orb's position
-        glow: "#2A5CFF"                    # SEAT PLACEHOLDER 2026-11-23: "a blue glow" (the seat); Ben: "with glowing"
+        # NO glow: BEN, 2026-11-23: "Remove the glow, it is excessive" (was "#2A5CFF").
+        # ITS LOOK AT REST: BEN, 2026-11-23: "Make it float up and down and spin slightly similar to a dropped item" and
+        # "Add a few particles around the lapis crystal". The body's look only: the rest point (what the beam meets, where
+        # the shots start) does not move. In flight it is still (SEAT PLACEHOLDER: at rest only).
+        bob_blocks: 0.1                    # SEAT PLACEHOLDER 2026-11-23: up and down by a tenth of a block
+        bob_period_ticks: 60               # SEAT PLACEHOLDER 2026-11-23: once every 3 s
+        turn_ticks: 120                    # SEAT PLACEHOLDER 2026-11-23: one turn every 6 s
+        beat_ticks: 10                     # SEAT PLACEHOLDER 2026-11-23: the look re-set, and the particles shown, twice a second
+        particles: crystal_motes           # SEAT PLACEHOLDER 2026-11-23: a few small blue dust motes (visuals/crystal_motes.yml)
       # D3: THE CRYSTAL'S SHOTS (CastExecutor.meetsOrb, orbShots). HIS OWN Lapis Beam (a trigger of lapis_staff, the
       # weapon that granted the orb) passing within 0.6 of his resting orb BEFORE it reaches a mob or block stops there,
-      # and the orb strikes every mob within 8 of itself (a true sphere, centre to its feet) that it has a clear line to,
+      # and the orb strikes every mob within 15 (was 8) of itself (a true sphere, centre to its feet) that it has a clear line to,
       # each for the level's percent of the beam's AUTHORED damage read from the beam itself (21 today: never copied
       # here): 6.3 / 10.5 / 14.7 (was 4.2 / 6.3 / 8.4). Secondary damage (B4): source lapis_crystal/crystal, never a hit, never himself, never a
       # player; it carries every term of the beam that set it off. The orb is not used up.
       shot:
-        radius: 8                          # BEN: "all enemies within a 8 block range"
+        radius: 15                         # BEN, 2026-11-23: "Increase the range of the shots from the lapis crystal to 15 blocks." (was 8)
         percent_by_level: [30, 50, 70]     # BEN, 2026-11-23: "Increase the damage of the crystal to 30/50/70%" (was 20/30/40)
         element: kinetic                   # the beam's element (the seat's ruling)

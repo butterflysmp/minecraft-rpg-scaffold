@@ -45,21 +45,70 @@ public sealed interface CastSpec {
      * A BLOCK-DISPLAY ORB BODY (YAML the orb's {@code body: block} with its {@code block:} section; Ben: "a Floating Lapis
      * block with glowing", 2026-11-23). {@code block} is a block id ({@code lapis_block}; the paper loader refuses one that
      * is not a block); {@code scale} its edge in blocks, centred on the body's position; {@code glow} the glow outline's
-     * colour as {@code #RRGGBB}. Scale and colour are SEAT PLACEHOLDERS in the content.
+     * colour as {@code #RRGGBB}, OPTIONAL (null: no glow; Ben, 2026-11-23: "Remove the glow, it is excessive").
+     *
+     * <p>ITS LOOK AT REST (Ben, 2026-11-23: "Make it float up and down and spin slightly similar to a dropped item"; "Add a
+     * few particles around the lapis crystal"). The MOTION IS THE BODY'S LOOK ONLY (the seat's ruling): the orb's rest
+     * point does not move; every {@code beatTicks} while it rests the display's TRANSFORMATION is set to {@link #pose} (a
+     * bob of {@code bobBlocks} over {@code bobPeriodTicks}, one turn per {@code turnTicks}), interpolated over the beat, and
+     * {@code particles} (a visual id, optional) is presented at the rest point. 0 is "none" for each figure; a body with
+     * any of them needs a beat above 0. All of them SEAT PLACEHOLDERS in the content.
      */
-    record OrbBlock(String block, double scale, String glow) {
+    record OrbBlock(String block, double scale, String glow, double bobBlocks, int bobPeriodTicks, int turnTicks,
+                    int beatTicks, String particles) {
         public OrbBlock {
             if (block == null || block.isBlank()) throw new IllegalArgumentException("orb block is required for a block body");
             if (!(scale > 0) || Double.isInfinite(scale)) throw new IllegalArgumentException("orb block scale must be above 0, was " + scale);
-            if (glow == null || !glow.matches("#[0-9a-fA-F]{6}")) {
+            if (glow != null && glow.isBlank()) glow = null;
+            if (glow != null && !glow.matches("#[0-9a-fA-F]{6}")) {
                 throw new IllegalArgumentException("orb block glow must be a colour #RRGGBB, was " + glow);
+            }
+            if (!(bobBlocks >= 0) || Double.isInfinite(bobBlocks)) throw new IllegalArgumentException("orb block bob_blocks must be 0 or more, was " + bobBlocks);
+            if (bobPeriodTicks < 0 || turnTicks < 0 || beatTicks < 0) {
+                throw new IllegalArgumentException("orb block bob_period_ticks, turn_ticks and beat_ticks must be 0 or more");
+            }
+            if (bobBlocks > 0 && bobPeriodTicks == 0) throw new IllegalArgumentException("orb block bob_blocks needs a bob_period_ticks above 0");
+            if (particles != null && particles.isBlank()) particles = null;
+            if ((bobBlocks > 0 || turnTicks > 0 || particles != null) && beatTicks == 0) {
+                throw new IllegalArgumentException("orb block motion or particles need a beat_ticks above 0");
             }
         }
 
-        /** The glow colour as 0xRRGGBB. */
-        public int glowRgb() {
-            return Integer.parseInt(glow.substring(1), 16);
+        /** A still block: no motion, no particles (PR 2's shape). */
+        public OrbBlock(String block, double scale, String glow) {
+            this(block, scale, glow, 0, 0, 0, 0, null);
         }
+
+        /** The glow colour as 0xRRGGBB; -1 for no glow. */
+        public int glowRgb() {
+            return glow == null ? -1 : Integer.parseInt(glow.substring(1), 16);
+        }
+
+        /** Whether the body has a look to keep up at rest: a beat. */
+        public boolean animated() {
+            return beatTicks > 0;
+        }
+
+        /**
+         * The display's transformation {@code t} ticks into its rest: a translation and a turn (radians about the
+         * vertical). The block model spans 0 to 1 from the display's position (its corner), and the display composes
+         * {@code translation . rotate(yaw) . scale} (READ, {@code Transformation.compose}), so the model's centre
+         * {@code (1/2, 1/2, 1/2)} lands at {@code translation + rotY(yaw)(scale/2, scale/2, scale/2)}. The translation is
+         * chosen so that point is {@code (0, bob, 0)}: the block turns about its own centre and bobs straight up and down
+         * over the display's position, the rest point. At {@code t = 0} it is the still centring, {@code -scale/2} each way.
+         */
+        public Pose pose(long t) {
+            double bob = bobPeriodTicks == 0 ? 0 : bobBlocks * Math.sin(2 * Math.PI * t / bobPeriodTicks);
+            double yaw = turnTicks == 0 ? 0 : 2 * Math.PI * (t % turnTicks) / turnTicks;
+            double h = scale / 2;
+            // rotY(yaw) of (h, h, h): x' = h cos + h sin, z' = -h sin + h cos (the JOML rotateY convention).
+            double cx = h * Math.cos(yaw) + h * Math.sin(yaw);
+            double cz = -h * Math.sin(yaw) + h * Math.cos(yaw);
+            return new Pose(-cx, bob - h, -cz, yaw);
+        }
+
+        /** A display transformation: its translation, and its turn in radians about the vertical. */
+        public record Pose(double tx, double ty, double tz, double yaw) {}
     }
 
     /**

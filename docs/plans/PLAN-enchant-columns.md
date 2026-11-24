@@ -673,3 +673,20 @@ carries item 3, the body, which is a new kind of orb body (a block display has n
 **OPEN FOR BEN (SEAT PLACEHOLDERS 2026-11-23):** the bursts' homing values (0.45 / 0 / 7, the lantern's own); and, PR 2's,
 the crystal body's scale (0.5, centred on the rest point) and glow colour (`#2A5CFF`, blue). CC's own figure, not a
 placeholder for Ben: the backstop's margin of 100 ticks.
+
+**2026-11-23, AFTER THE RUN OF `78826389` (the seat's brief): THE FIX, ON `feat/lapis-crystal-block`, AND BEN'S FOUR
+CHANGES TO THE CRYSTAL, ON `feat/lapis-crystal-look` (one PR on top, so the fix reads on its own).** The run's LB rows
+were MISS on one defect, CC's and the seat's: the block body carried the orb tag from inside its spawn, the entity-add
+sweep found it unowned and logged a false `cause=orphan` (Paper refused the removal). Fixed: the body is claimed only
+once the store owns it; the sweep at the add defers a tick and logs only a removal that happened
+(`GATE-enchant-changes.md`, the dated note). **Ben, told to the seat after the run:** "1. Make it float up and down and
+spin slightly similar to a dropped item" / "2. Remove the glow, it is excessive" / "3. Increase the range of the shots
+from the lapis crystal to 15 blocks." / "4. Add a few particles around the lapis crystal". **As built:** the look at rest
+only (a bob of 0.1 over 60 ticks, a turn per 120, re-set and interpolated every 10, the rest point never moving); no glow;
+`shot: radius: 15`; `crystal_motes` presented at the rest point every beat. The gate's second form re-predicts the LB
+rows and adds LB5 (the radius, and the box-to-sphere cut).
+
+**OPEN FOR BEN (SEAT PLACEHOLDERS 2026-11-23), replacing the list above for the crystal:** the bob (0.1 block), its
+period (60 ticks), the turn (one per 120 ticks), the beat (10 ticks), at rest only; the motes (`crystal_motes`: DUST,
+size 0.6, count 3, spread 0.3, twice a second); the body's scale (0.5). The glow is gone (Ben). Still open from before:
+the bursts' homing (0.45 / 0 / 7).

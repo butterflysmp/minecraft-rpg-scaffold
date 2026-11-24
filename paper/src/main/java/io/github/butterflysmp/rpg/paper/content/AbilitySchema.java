@@ -149,8 +149,16 @@ final class AbilitySchema {
      * block:
      *   id: lapis_block
      *   scale: 0.5          # its edge in blocks, centred on the orb's position
-     *   glow: "#2A5CFF"     # the glow outline's colour
+     *   glow: "#2A5CFF"     # OPTIONAL: the glow outline's colour (absent: no glow)
+     *   bob_blocks: 0.1     # OPTIONAL, and the four below: its look at rest (0 or absent: none), on a beat
+     *   bob_period_ticks: 60
+     *   turn_ticks: 120
+     *   beat_ticks: 10
+     *   particles: crystal_motes   # a visual presented at the rest point each beat
      * </pre>
+     *
+     * <p>{@code CastSpec.OrbBlock} refuses a motion or particles with no beat, and a bob with no period, by name; whether
+     * {@code particles} names a loaded visual is the load check's ({@code ContentValidator.validateOrbBodies}).
      */
     static CastSpec.Orb parseOrb(ConfigurationSection s) {
         double range = reqDouble(s, "range");
@@ -167,9 +175,11 @@ final class AbilitySchema {
             case "block" -> {
                 if (s.contains("item")) throw new IllegalArgumentException("orb body: block takes no 'item:'");
                 ConfigurationSection b = s.getConfigurationSection("block");
-                if (b == null) throw new IllegalArgumentException("orb body: block needs a 'block:' section (id, scale, glow)");
+                if (b == null) throw new IllegalArgumentException("orb body: block needs a 'block:' section (id, scale)");
                 yield new CastSpec.Orb(range, flight, life, radius, null, shot,
-                        new CastSpec.OrbBlock(req(b, "id"), reqDouble(b, "scale"), req(b, "glow")));
+                        new CastSpec.OrbBlock(req(b, "id"), reqDouble(b, "scale"), b.getString("glow"),
+                                b.getDouble("bob_blocks", 0), b.getInt("bob_period_ticks", 0), b.getInt("turn_ticks", 0),
+                                b.getInt("beat_ticks", 0), b.getString("particles")));
             }
             default -> throw new IllegalArgumentException("orb body must be 'item' or 'block', was '" + body + "'");
         };
