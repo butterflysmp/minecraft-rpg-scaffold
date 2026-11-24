@@ -702,6 +702,11 @@ So:
   > commits, tests against classes. **If you have to convert to compare them, you have substituted
   > an axis.**
 
+- **A prediction about ticks names its clock (press, cast or hit) and the phase each read is taken in.** Two reads
+  taken in different ticks or phases, such as a press read after a scheduler hop, are not one interval. *(Approved as
+  worded by the seat, 2026-11-24. The instance and the READ of the server's three phases: `PLAN-enchant-columns.md`
+  section 19.)*
+
 - **A MEASUREMENT OUTLIVES ITS FIXTURE, BUT ONLY IF THE RECORD SAYS THE FIXTURE IS GONE.** Deleting
   the thing a reading was taken on does not falsify the reading — it makes the reading
   **unverifiable, and indistinguishable from a stale one.** Restate the reading before removing its
