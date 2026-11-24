@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -79,12 +80,96 @@ class EnchantLoaderTest {
             List<String> ids = entries.map(path -> path.getFileName().toString())
                     .filter(name -> name.endsWith(".yml"))
                     .map(name -> name.substring(0, name.length() - ".yml".length()))
+                    // 2026-11-23: what a REAL server loads. A dev_ file is the dev-only example, loaded only with the
+                    // dev marker; every row here loads as a real server. devIds() is the other half.
+                    .filter(id -> !id.startsWith(EnchantLoader.DEV_PREFIX))
                     .sorted()
                     .toList();
             assertFalse(ids.isEmpty(), "discovered NO shipped enchant files under content/enchants "
                     + "-- a scan that finds nothing is a defect, not an empty roster");
             return ids;
         }
+    }
+
+    /** The dev-only files under content/enchants (2026-11-23): those whose id starts {@code dev_}. */
+    private static List<String> devIds() throws IOException {
+        Path root;
+        try {
+            root = Path.of(EnchantLoaderTest.class.getResource("/content/enchants").toURI());
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
+        try (var entries = Files.list(root)) {
+            return entries.map(path -> path.getFileName().toString())
+                    .filter(name -> name.endsWith(".yml") && name.startsWith(EnchantLoader.DEV_PREFIX))
+                    .map(name -> name.substring(0, name.length() - ".yml".length())).sorted().toList();
+        }
+    }
+
+    private static File shippedEnchantsDir() throws IOException {
+        try {
+            return Path.of(EnchantLoaderTest.class.getResource("/content/enchants").toURI()).toFile();
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
+    }
+
+    // ---- THE UNIQUE SLOT (2026-11-23): element: and the dev-only example -------------------------------------------
+
+    /** The dev-only example is ABSENT on a real server and PRESENT on a dev one; the normal roster is the same on both. */
+    @Test
+    void theDevEnchantIsAbsentWithoutTheDevMarker() throws IOException {
+        assertEquals(List.of("dev_kinetic_example"), devIds(), "the one dev-only file ships");
+        Logger quiet = quietLogger();
+        Set<String> elements = Set.of("fire", "kinetic", "nature", "undead", "void", "water", "wither");
+        EnchantRegistry real = new EnchantLoader(quiet, elements::contains, false).loadAll(shippedEnchantsDir());
+        EnchantRegistry dev = new EnchantLoader(quiet, elements::contains, true).loadAll(shippedEnchantsDir());
+        assertTrue(real.find("dev_kinetic_example").isEmpty(), "a real server never registers it");
+        assertTrue(dev.find("dev_kinetic_example").isPresent(), "the control: a dev server does");
+        assertEquals(shippedIds().size(), real.size());
+        assertEquals(shippedIds().size() + 1, dev.size());
+        EnchantDefinition example = dev.find("dev_kinetic_example").orElseThrow();
+        assertEquals("kinetic", example.element());
+        assertTrue(example.isUnique());
+        assertTrue(example.isUniversal(), "universal class");
+        assertEquals(io.github.butterflysmp.rpg.core.enchant.EnchantEffect.DAMAGE, example.effect(), "an existing effect");
+        // No REAL (non-dev) enchant is unique yet: Ben's come later.
+        assertTrue(real.all().stream().noneMatch(EnchantDefinition::isUnique), "no shipped real enchant declares element:");
+    }
+
+    /** U1: element: names a LOADED element, or the file is refused by name. */
+    @Test
+    void anElementThatIsNotLoadedIsRefusedByName(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve("bogus.yml"), "display_name: \"B\"\nmax_level: 1\neffect: durability\nclass: universal\n"
+                + "element: firre\n");
+        Files.writeString(dir.resolve("good.yml"), "display_name: \"G\"\nmax_level: 1\neffect: durability\nclass: universal\n"
+                + "element: fire\n");
+        List<String> warnings = new java.util.ArrayList<>();
+        Logger log = capturing(warnings);
+        EnchantRegistry r = new EnchantLoader(log, Set.of("fire")::contains, false).loadAll(dir.toFile());
+        assertTrue(r.find("bogus").isEmpty());
+        assertEquals("fire", r.find("good").orElseThrow().element(), "the control: a loaded element is accepted");
+        assertTrue(warnings.stream().anyMatch(w -> w.contains("bogus") && w.contains("element: 'firre'")
+                && w.contains("not a loaded element")), warnings.toString());
+    }
+
+    /** No element key: a NORMAL enchant, as all eleven are. */
+    @Test
+    void noElementKeyIsANormalEnchant() throws IOException {
+        EnchantRegistry r = new EnchantLoader(quietLogger()).loadAll(shippedEnchantsDir());
+        assertEquals(11, r.size(), "the eleven real enchants (recounted: the files minus dev_)");
+        assertTrue(r.all().stream().allMatch(e -> e.element() == null));
+    }
+
+    private static Logger capturing(List<String> into) {
+        Logger log = quietLogger();
+        log.setUseParentHandlers(false);
+        log.addHandler(new java.util.logging.Handler() {
+            @Override public void publish(java.util.logging.LogRecord record) { into.add(record.getMessage()); }
+            @Override public void flush() {}
+            @Override public void close() {}
+        });
+        return log;
     }
 
     private static Path bundledEnchants(Path dir) throws IOException {

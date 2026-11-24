@@ -17,7 +17,7 @@ import java.util.Map;
  * per-player services; this is a value.
  *
  * <p><b>Slot count is deliberately uncapped, and stays so now that the roll has decided it.</b>
- * The roll produces exactly three ({@code EnchantRoll.SLOTS}), but this is the model for whatever
+ * The roll produces exactly four ({@code EnchantRoll.SLOTS}; three until 2026-11-23), but this is the model for whatever
  * an item actually CARRIES -- a hand-edited one, or a blob written by a build whose roll differed
  * -- so a cap here would turn a weird item into an exception thrown from a decode. The bounds live
  * at the reachable surfaces instead: the dev command's argument range, and {@code

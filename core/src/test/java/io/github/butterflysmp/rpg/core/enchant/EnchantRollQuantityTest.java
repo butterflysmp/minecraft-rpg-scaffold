@@ -21,7 +21,7 @@ class EnchantRollQuantityTest {
     private static final List<EnchantRoll.Rollable> ROSTER = List.of(DEFT, QUIVER, POWER, SHARP, UNBREAKING);
 
     private static List<EnchantRoll.Rollable> pool(boolean reload, boolean quiver, GearClass c) {
-        return EnchantRoll.poolFor(new EnchantRoll.Has(reload, quiver), c, ROSTER);
+        return EnchantRoll.normalPoolFor(new EnchantRoll.Has(reload, quiver), c, ROSTER);
     }
 
     @Test
@@ -46,7 +46,7 @@ class EnchantRollQuantityTest {
     @Test
     void everyIsTheClassFilterAlone() {
         assertEquals(List.of(DEFT, QUIVER, POWER, UNBREAKING),
-                EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearClass.RANGER, ROSTER));
+                EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearClass.RANGER, ROSTER));
         assertTrue(EnchantRoll.Has.NOTHING.equals(new EnchantRoll.Has(false, false)));
     }
 

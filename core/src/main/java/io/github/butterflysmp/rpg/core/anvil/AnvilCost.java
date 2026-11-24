@@ -10,8 +10,9 @@ import io.github.butterflysmp.rpg.core.xp.XpCurve;
  *
  * <b>Stated so the next one finds it rather than inventing a second shape.</b> Until now rarity
  * drove exactly two things -- the item name's colour and the tooltip's footer -- and nothing
- * mechanical. {@code EnchantRoll.candidateCount} records the other pending consumer and says
- * rarity-weighting there is <i>"deferred BY CHOICE rather than by impossibility"</i>. When that
+ * mechanical. {@code EnchantRoll.candidateCount} recorded the other pending consumer and said
+ * rarity-weighting there is <i>"deferred BY CHOICE rather than by impossibility"</i> (that method was replaced on
+ * 2026-11-23 by Ben's {@code CandidateCascade}, which is not rarity-weighted either). When that
  * choice is finally made, <b>this table is the precedent it inherits</b>: authored in levels,
  * flat per tier, converted through the curve.
  *

@@ -80,8 +80,10 @@ public final class EnchantRollItems {
         if (gearClass == GearClass.ACCESSORY) return;
         if (EnchantItems.isRolled(item, adapters.keys())) return;
 
-        EnchantState rolled = EnchantRoll.roll(has(definition), gearClass, roster(adapters),
-                () -> ThreadLocalRandom.current().nextDouble());   // its pool is poolFor's, below
+        // THE UNIQUE SLOT (2026-11-23): the gear's element through U5's one accessor, GearDefinition.gearElement();
+        // the count by Ben's cascade, which the registry carries beside the roster. Its pools are the two below.
+        EnchantState rolled = EnchantRoll.roll(definition.gearElement(), has(definition), gearClass, roster(adapters),
+                adapters.enchants().candidates(), () -> ThreadLocalRandom.current().nextDouble());
 
         // *** WRITE AND RE-RENDER IN ONE editMeta, for the reason GearScoreItems.stampOnAcquire
         // states at length: a per-item value that is RENDERED has to be re-rendered wherever it is
@@ -120,22 +122,72 @@ public final class EnchantRollItems {
     }
 
     /**
-     * THE IDS THIS GEAR'S ROLL DRAWS FROM, in roster order: EnchantRoll's pool with this gear's quantities, exactly as
-     * {@link #rollOnAcquire} builds it (an accessory's is empty). Read by {@code /rpg enchant pool}, so a gate reads the
-     * pool the roll uses rather than one random roll of it.
+     * THE IDS SLOTS 1-3 DRAW FROM, in roster order: EnchantRoll's NORMAL pool with this gear's quantities, exactly as
+     * {@link #rollOnAcquire} builds it (an accessory's is empty). Read by {@code /rpg enchant pool}'s {@code Pool:} line, so
+     * a gate reads the pool the roll uses rather than one random roll of it. Named {@code poolFor} until 2026-11-23.
      */
-    public static List<String> poolFor(GearDefinition definition, AdapterContext adapters) {
+    public static List<String> normalPoolFor(GearDefinition definition, AdapterContext adapters) {
         GearClass gearClass = GearItems.gearClassOf(definition);
         if (gearClass == null) return List.of();
-        return EnchantRoll.poolFor(has(definition), gearClass, roster(adapters)).stream()
-                .map(Rollable::enchantId).toList();
+        return ids(EnchantRoll.normalPoolFor(has(definition), gearClass, roster(adapters)));
     }
 
-    /** The roll's roster: each enchant's id, class and quantity requirement (ruling H). Tests build it here too. */
+    /** THE IDS SLOT 0 DRAWS FROM: the UNIQUE pool, by this gear's element (U5), class and quantities. */
+    public static List<String> uniquePoolFor(GearDefinition definition, AdapterContext adapters) {
+        GearClass gearClass = GearItems.gearClassOf(definition);
+        if (gearClass == null) return List.of();
+        return ids(EnchantRoll.uniquePoolFor(definition.gearElement(), has(definition), gearClass, roster(adapters)));
+    }
+
+    private static List<String> ids(List<Rollable> pool) {
+        return pool.stream().map(Rollable::enchantId).toList();
+    }
+
+    /**
+     * THE DEV TALLY ({@code /rpg enchant rollstats <n>}, dev only): {@code n} rolls of this gear by the SAME call
+     * {@link #rollOnAcquire} makes, written nowhere, and each slot's counts of 0..4 candidates beside the cascade's true
+     * odds. A READING, not a pass or fail: the gate records it.
+     */
+    public static List<String> rollStats(GearDefinition definition, AdapterContext adapters, int n) {
+        GearClass gearClass = GearItems.gearClassOf(definition);
+        if (gearClass == null || gearClass == GearClass.ACCESSORY) return List.of("This gear rolls no enchants.");
+        List<EnchantState> rolls = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            rolls.add(EnchantRoll.roll(definition.gearElement(), has(definition), gearClass, roster(adapters),
+                    adapters.enchants().candidates(), () -> ThreadLocalRandom.current().nextDouble()));
+        }
+        return rollStatsLines(definition.id(), definition.gearElement(), n, EnchantRoll.tally(rolls),
+                adapters.enchants().candidates(), uniquePoolFor(definition, adapters).size(),
+                normalPoolFor(definition, adapters).size());
+    }
+
+    /** The lines, pure, so a test pins their exact shape. */
+    static List<String> rollStatsLines(String id, java.util.Optional<String> element, int n, int[][] tally,
+                                       io.github.butterflysmp.rpg.core.enchant.CandidateCascade cascade,
+                                       int uniquePool, int normalPool) {
+        List<String> out = new ArrayList<>();
+        out.add("ROLLSTATS " + id + " element=" + element.orElse("none") + " rolls=" + n + " uniquePool=" + uniquePool
+                + " normalPool=" + normalPool);
+        for (int slot = 0; slot < tally.length; slot++) {
+            StringBuilder b = new StringBuilder("ROLLSTATS slot " + slot + (slot == EnchantRoll.UNIQUE_SLOT ? " (unique):" : ":"));
+            for (int c = 0; c < tally[slot].length; c++) b.append(' ').append(c).append('=').append(tally[slot][c]);
+            out.add(b.toString());
+        }
+        StringBuilder odds = new StringBuilder("ROLLSTATS true odds (before the pool cap):");
+        List<Double> trueOdds = cascade.trueOdds();
+        for (int i = 0; i < trueOdds.size(); i++) {
+            odds.append(' ').append(cascade.tiers().get(i).candidates()).append('=')
+                    .append(String.format(java.util.Locale.ROOT, "%.3f%%", 100.0 * trueOdds.get(i)));
+        }
+        out.add(odds.toString());
+        return out;
+    }
+
+    /** The roll's roster: each enchant's id, class, quantity requirement (ruling H) and element (U1). Tests build it here too. */
     public static List<Rollable> roster(java.util.Collection<EnchantDefinition> enchants) {
         List<Rollable> roster = new ArrayList<>();
         for (EnchantDefinition definition : enchants) {
-            roster.add(new Rollable(definition.id(), definition.gearClass(), definition.requires()));
+            roster.add(new Rollable(definition.id(), definition.gearClass(), definition.requires(), definition.element()));
         }
         return roster;
     }

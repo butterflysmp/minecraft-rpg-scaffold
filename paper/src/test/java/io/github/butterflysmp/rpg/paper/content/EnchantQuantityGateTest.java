@@ -88,14 +88,24 @@ class EnchantQuantityGateTest {
     void thePoolCommandPrintsTheRollsOwnPool() throws IOException {
         String items = Files.readString(Path.of("src/main/java/io/github/butterflysmp/rpg/paper/weapon/EnchantRollItems.java"),
                 StandardCharsets.UTF_8).replace("\r", "");
-        int at = items.indexOf("public static List<String> poolFor(GearDefinition definition, AdapterContext adapters) {");
-        assertTrue(at > 0, "poolFor is not found");
+        // 2026-11-23: poolFor became normalPoolFor (slots 1-3), and uniquePoolFor (slot 0) joined it on the same command.
+        int at = items.indexOf("public static List<String> normalPoolFor(GearDefinition definition, AdapterContext adapters) {");
+        assertTrue(at > 0, "normalPoolFor is not found");
         String body = items.substring(at, items.indexOf("\n    }\n", at));
-        assertTrue(body.contains("EnchantRoll.poolFor(has(definition), gearClass, roster(adapters))"), body);
+        assertTrue(body.contains("EnchantRoll.normalPoolFor(has(definition), gearClass, roster(adapters))"), body);
+        int u = items.indexOf("public static List<String> uniquePoolFor(GearDefinition definition, AdapterContext adapters) {");
+        assertTrue(u > 0, "uniquePoolFor is not found");
+        String ubody = items.substring(u, items.indexOf("\n    }\n", u));
+        assertTrue(ubody.contains("EnchantRoll.uniquePoolFor(definition.gearElement(), has(definition), gearClass, roster(adapters))"),
+                ubody);
         String cmd = Files.readString(Path.of("src/main/java/io/github/butterflysmp/rpg/paper/command/RpgCommand.java"),
                 StandardCharsets.UTF_8).replace("\r", "");
-        assertTrue(cmd.contains("io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.poolFor(gear.gear(), adapters)"));
+        assertTrue(cmd.contains("io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.normalPoolFor(gear.gear(), adapters)"));
+        assertTrue(cmd.contains("io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.uniquePoolFor(gear.gear(), adapters)"));
         assertTrue(cmd.contains(".then(Commands.literal(\"pool\")"));
+        // And rollOnAcquire rolls with the SAME element accessor and the registry's cascade.
+        assertTrue(items.contains("EnchantRoll.roll(definition.gearElement(), has(definition), gearClass, roster(adapters),\n"
+                + "                adapters.enchants().candidates(),"), "rollOnAcquire's roll call");
     }
 
     @Test
@@ -119,8 +129,8 @@ class EnchantQuantityGateTest {
         assertTrue(at > 0, "rollOnAcquire is not found");
         String body = src.substring(at, src.indexOf("\n    }\n", at));
         int guard = body.indexOf("if (EnchantItems.isRolled(item, adapters.keys())) return;");
-        int roll = body.indexOf("EnchantRoll.roll(has(definition), gearClass, roster(adapters),");
+        int roll = body.indexOf("EnchantRoll.roll(definition.gearElement(), has(definition), gearClass, roster(adapters),");   // the element first since 2026-11-23
         assertTrue(guard > 0 && roll > guard, "the already-rolled guard must come first: " + guard + " / " + roll);
-        assertFalse(src.contains("EnchantRoll.roll(EnchantRoll.Has.EVERY"), "production never builds a class-only pool");
+        assertFalse(src.contains("Has.EVERY, gearClass"), "production never builds a class-only pool");
     }
 }

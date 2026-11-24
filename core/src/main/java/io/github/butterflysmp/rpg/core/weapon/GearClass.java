@@ -24,7 +24,7 @@ package io.github.butterflysmp.rpg.core.weapon;
  *
  * <p>{@code null} is not a constant here: it is the {@code universal} gate, meaning no gate at all.
  * Same null-means-no-gate convention {@code EnchantDefinition.isUniversal},
- * {@code EnchantRoll.poolFor} and {@code DamageEnchants.matching} already share.
+ * {@code EnchantRoll.normalPoolFor} / {@code uniquePoolFor} and {@code DamageEnchants.matching} already share.
  */
 public enum GearClass {
     MELEE,
@@ -67,10 +67,10 @@ public enum GearClass {
      * not for a widening of this enum.
      *
      * <p><b>Its roll pool is currently ONE: Unbreaking.</b> No shipped enchant is gated on tools, so
-     * {@code EnchantRoll.poolFor(TOOL, ..)} returns the universal set and nothing else. That is a
-     * content gap, not a defect -- and it is stated here because a pool of one makes
-     * {@code candidateCount}'s {@code 1..min(poolSize, 3)} degenerate, so every slot offers the same
-     * single book. See {@code EnchantRoll}'s own note on which pools are which size.
+     * {@code EnchantRoll.normalPoolFor(TOOL, ..)} returns the universal set and nothing else. That is a
+     * content gap, not a defect -- and it is stated here because a pool of one caps every slot's count at
+     * one (the cascade's count is capped at the pool's size), so every normal slot offers the same single
+     * book. (Said {@code candidateCount}'s {@code 1..min(poolSize, 3)} until 2026-11-23.)
      *
      * <p>Like {@link #SHIELD} and {@link #ARMOR}, {@link #of} can never produce this value -- a tool
      * has no {@link WeaponClass} -- and only a tool presents it directly. A tool held in the main

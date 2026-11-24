@@ -10,8 +10,8 @@ package io.github.butterflysmp.rpg.core.weapon;
  * This is still inert reserved data -- it only colors the item name. Its reserved
  * mechanical meaning is the CANDIDATE axis of an enchant roll: how many candidates a
  * slot offers, and how rich a pool it draws from. NOT slot count -- every weapon gets
- * three, fixed, because three is what the table renders and tiering that would need a
- * layout change to go with it. See {@code EnchantRoll.SLOTS}. The
+ * four (three until 2026-11-23), fixed, because that is what the table renders and tiering that
+ * would need a layout change to go with it. See {@code EnchantRoll.SLOTS}. The
  * tier -> color mapping lives in paper (Adventure's NamedTextColor is not allowed
  * in core), as one exhaustive switch with no default arm, so adding a tier -- if
  * that ever happens -- is a compile error at every mapping site until handled.

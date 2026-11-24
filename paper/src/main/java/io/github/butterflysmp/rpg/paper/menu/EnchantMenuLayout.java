@@ -35,18 +35,31 @@ import java.util.Optional;
  * coordinate spaces, the same numerals legal in both, and nothing in the type system to tell them
  * apart.</b> The remedy is the same -- name the space, once, where the numbers live.
  *
- * <h2>THE LAYOUT, IN 1-BASED PROSE</h2>
+ * <h2>THE LAYOUT, IN 1-BASED PROSE (2026-11-23: Ben's, and one SEAT PLACEHOLDER)</h2>
  *
  * <pre>
- *   row 1   col 5   the hint line              index  4
- *           col 9   the bookshelf readout      index  8
- *   row 2   col 2   the INPUT slot             index 10
- *   rows 2-4  cols 4, 6, 8   the candidates    indices 12 14 16 / 21 23 25 / 30 32 34
- *   row 6   col 5   Close                      index 49
+ *   row 1     col 2   the "Unique" label        index  1   (SEAT PLACEHOLDER 2026-11-23)
+ *             col 5   the INPUT slot            index  4   (Ben: "where the Enchantment table info item was")
+ *             col 8   the bookshelf readout     index  7   (Ben: "move the bookshelf to the left of that")
+ *             col 9   the info item             index  8   (Ben: "the top right corner")
+ *   rows 2-5  col 2   the UNIQUE slot's cands   indices 10 19 28 37   (Ben: "collum 2")
+ *             cols 4, 6, 8   the normal slots   indices 12 21 30 39 / 14 23 32 41 / 16 25 34 43
+ *                                                       (Ben: "where they are today")
+ *   row 6     col 5   Back (from the Nexus)     index 48
+ *             col 6   Close                     index 49
  * </pre>
  *
+ * <p><b>ROWS 2-5 ARE THE SEAT'S PLACEHOLDER, NOT BEN'S</b> (the seat's amendment, 2026-11-23, told to Ben): four
+ * candidates a column do not fit on rows 3-5, and row 6 holds Back and Close, so each column runs down rows 2 to 5.
+ * The block was rows 3-5 from Ben's earlier ruling until then.
+ *
  * <p>A COLUMN is one enchant slot's worth of choices and is read top to bottom; the columns advance
- * by two so they are not adjacent.
+ * by two so they are not adjacent. Slot 0 (the unique slot) is column 2, so the four columns are 2, 4, 6 and 8: ONE
+ * stride from ONE first column, which is why both directions below are still three constants.
+ *
+ * <p>(This block read, until 2026-11-23: the hint at index 4, the bookshelf at 8, the input at 10, three columns at
+ * 4/6/8 on rows 2-4, Close at 49. That diagram was itself already stale: the input had moved to 19 and the block down
+ * a row, as the constants' own javadoc records.)
  */
 public final class EnchantMenuLayout {
 
@@ -111,8 +124,14 @@ public final class EnchantMenuLayout {
      *
      * <p>So: if someone proposes moving the input nearer the player again, the answer is that it
      * costs the Close convergence above, not that nobody thought of it.
+     *
+     * <p><b>4, TOP-CENTRE -- the fourth, and it is BEN'S, 2026-11-23:</b> <i>"The Slot for the item that is being
+     * enchanted should go where the Enchantment table info item was."</i> The info item went to the top right corner
+     * (<i>"Move the Enchantment Table info item to the top right corner"</i>), and the candidate block grew to four
+     * columns of four, filling rows 2-5 from column 2, so 19 is now a unique-slot cell. Close keeps 49, so the reason 10
+     * and 19 were chosen over 49 still holds; what is given up is, again, travel from the hotbar.
      */
-    public static final int INPUT_SLOT = 19;
+    public static final int INPUT_SLOT = 4;
 
     /**
      * Back to the Nexus. <b>Slot 48, beside {@link #CLOSE_SLOT} -- 48/49, like every other
@@ -139,14 +158,28 @@ public final class EnchantMenuLayout {
      */
     public static final int BACK_SLOT = 48;
 
-    /** The bookshelf readout. A labelled placeholder this pass -- see EnchantMenu. */
-    public static final int BOOKSHELF_SLOT = 8;
-
-    /** The hint line, top-centre, where a screen is read from. */
-    public static final int INFO_SLOT = 4;
+    /**
+     * The bookshelf readout: row 1, column 8, LEFT of the info item (Ben, 2026-11-23: <i>"move the bookshelf to the left
+     * of that"</i>). Was 8, the top right corner, which the info item now takes.
+     */
+    public static final int BOOKSHELF_SLOT = 7;
 
     /**
-     * The bound: three enchant slots of three candidates each.
+     * The info item: row 1, column 9, the TOP RIGHT CORNER (Ben, 2026-11-23: <i>"Move the Enchantment Table info item to
+     * the top right corner"</i>). Was 4, top-centre, "where a screen is read from"; the input slot takes 4 now.
+     */
+    public static final int INFO_SLOT = 8;
+
+    /**
+     * The "Unique" label over the unique slot's column: row 1, column 2. <b>SEAT PLACEHOLDER 2026-11-23, OPEN FOR
+     * BEN</b>: Ben asked for the word "Unique" on the first slot (his first message); where it sits is the seat's.
+     */
+    public static final int UNIQUE_LABEL_SLOT = 1;
+
+    /**
+     * The bound: FOUR enchant slots (the unique one and three normal) of FOUR candidates each (2026-11-23, the seat's
+     * rulings V1 and V2: Ben's "3 in addition to the unique enchantment" and "a chance for 4 enchantments in each
+     * instead of 3"). Was three of three.
      *
      * <p>A UI-SIDE bound, exactly as {@code RpgCommand.MAX_DEV_SLOT = 2} is a command-side one.
      * {@link EnchantState} deliberately does not cap slot count -- whether an item gets a fixed 3 or
@@ -155,31 +188,29 @@ public final class EnchantMenuLayout {
      *
      * <p>It is NOT a truncation. See {@link #overflow}.
      */
-    public static final int SLOTS = 3;
-    public static final int CANDIDATES = 3;
+    public static final int SLOTS = 4;
+    public static final int CANDIDATES = 4;
 
     /**
-     * The first row of candidates, 0-BASED -- prose row 3. Row 0 carries the hint and the
-     * bookshelf; row 1 is filler.
+     * The first row of candidates, 0-BASED -- prose row 2. Row 0 carries the label, the input, the bookshelf and the
+     * info item.
      *
-     * <p>The candidates share row 2 with the input slot, which sits to their left at column 1.
-     *
-     * <p><b>It was 1, and Ben ruled the block down one row.</b> The measurable consequence is
-     * that the LOWEST candidate rank now lands in prose row 5 (indices 36-44), which is still
-     * clear of the chrome row at 45-53 -- so {@link #BACK_SLOT} and {@link #CLOSE_SLOT} are
-     * untouched by the shift, and so are {@link #INFO_SLOT} and {@link #BOOKSHELF_SLOT} above it.
+     * <p><b>It was 1, then 2 when Ben ruled the block down one row, and is 1 again on 2026-11-23</b>: four candidates a
+     * column need four rows, and the chrome row (prose 6: Back 48, Close 49) does not move, so the block runs prose rows
+     * 2-5 (the seat's placeholder; see the class javadoc). The lowest rank lands on indices 37-43, still clear of 45-53.
      */
-    private static final int FIRST_CANDIDATE_ROW = 2;
+    private static final int FIRST_CANDIDATE_ROW = 1;
     /**
-     * The leftmost enchant-slot column, 0-BASED -- prose column 4. Columns advance by
-     * {@link #COLUMN_STRIDE} so they are not adjacent.
+     * The leftmost enchant-slot column, 0-BASED -- prose column 2, the UNIQUE slot's (Ben: "The Unique enchantments
+     * should go in collum 2 and the normal ones where they are today"). The normal slots then land on prose columns 4, 6
+     * and 8, where they were. Was 3 (prose column 4) until 2026-11-23.
      */
-    private static final int FIRST_SLOT_COLUMN = 3;
+    private static final int FIRST_SLOT_COLUMN = 1;
     private static final int COLUMN_STRIDE = 2;
 
     /**
-     * The chest index a candidate cell occupies: slot 0 -> {21, 30, 39}, 1 -> {23, 32, 41},
-     * 2 -> {25, 34, 43}.
+     * The chest index a candidate cell occupies: slot 0 (unique) -> {10, 19, 28, 37}, 1 -> {12, 21, 30, 39},
+     * 2 -> {14, 23, 32, 41}, 3 -> {16, 25, 34, 43}.
      */
     public static int rawSlotFor(int slot, int candidate) {
         if (slot < 0 || slot >= SLOTS) {
@@ -211,7 +242,7 @@ public final class EnchantMenuLayout {
      * either.
      *
      * <p><b>That is a claim about today's code, not a guarantee about tomorrow's</b>, which is why
-     * {@code EnchantMenuLayoutTest} round-trips all NINE positions:
+     * {@code EnchantMenuLayoutTest} round-trips all SIXTEEN positions (nine until 2026-11-23):
      * {@code rawSlotFor(cellAt(n)) == n}. A future change that touched one direction and not the
      * other would compile, would move the screen, and would be caught only there -- a click landing
      * on one cell and resolving to another is silent, and the player sees the wrong enchant
@@ -241,7 +272,7 @@ public final class EnchantMenuLayout {
     /**
      * What this item carries that the table CANNOT SHOW, or empty when it all fits.
      *
-     * <p><b>The table refuses an oversized item rather than rendering the first nine cells and
+     * <p><b>The table refuses an oversized item rather than rendering the first sixteen cells and
      * saying nothing.</b> Truncating would be display-only -- the extra slots survive every
      * transition and keep working -- and that is exactly what makes it dangerous: an enchant that is
      * ACTIVE and INVISIBLE. It is the same defect {@code EnchantLore} refuses to create when it

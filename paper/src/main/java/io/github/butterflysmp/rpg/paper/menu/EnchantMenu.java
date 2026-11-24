@@ -401,10 +401,12 @@ public final class EnchantMenu extends Menu {
         PlacedGear gear = resolveGear(placed);
 
         if (gear == null) {
+            // 2026-11-23: the input moved to the top row (Ben's 3), so "below" became false. The new wording is a SEAT
+            // PLACEHOLDER 2026-11-23, OPEN FOR BEN.
             getInventory().setItem(INFO_SLOT, MenuIcons.icon(Material.ENCHANTING_TABLE,
                     MenuIcons.name("Enchanting"),
-                    List.of(MenuIcons.line("Place a weapon, shield, armor piece or tool below", NamedTextColor.GRAY),
-                            MenuIcons.line("to see the enchants it can carry.", NamedTextColor.GRAY),
+                    List.of(MenuIcons.line("Place a weapon, shield, armor piece or tool in the", NamedTextColor.GRAY),
+                            MenuIcons.line("empty slot at the top to see the enchants it can carry.", NamedTextColor.GRAY),
                             MenuIcons.blank(),
                             MenuIcons.line("Unlocks are paid for in XP.", NamedTextColor.DARK_GRAY))));
             return;
@@ -419,6 +421,30 @@ public final class EnchantMenu extends Menu {
                                 NamedTextColor.DARK_GRAY))));
 
         renderCandidates(EnchantItems.read(placed, adapters.keys()), gear.gearClass());
+    }
+
+    /**
+     * THE UNIQUE SLOT'S LABEL AND ITS EMPTY STATE (2026-11-23). Ben asked for the word "Unique" on the first slot; the
+     * item, colour, lore and the empty slot's item are SEAT PLACEHOLDERS 2026-11-23, OPEN FOR BEN.
+     *
+     * <p>The empty item sits in the unique column's FIRST cell. A click there resolves to (slot 0, candidate 0), which
+     * {@link #applyCandidateClick} returns from at its "filler, not a refusal" line before anything is read, priced or
+     * written: the slot has no candidate 0. So it changes nothing and charges nothing, by the same line every empty cell
+     * already took.
+     */
+    private void renderUniqueChrome(EnchantState state) {
+        getInventory().setItem(EnchantMenuLayout.UNIQUE_LABEL_SLOT, MenuIcons.icon(Material.NAME_TAG,
+                MenuIcons.line("Unique", NamedTextColor.LIGHT_PURPLE),
+                List.of(MenuIcons.line("Enchants tied to this item's element.", NamedTextColor.GRAY))));
+        boolean emptyUnique = state.slots().size() > io.github.butterflysmp.rpg.core.enchant.EnchantRoll.UNIQUE_SLOT
+                && state.slots().get(io.github.butterflysmp.rpg.core.enchant.EnchantRoll.UNIQUE_SLOT).candidates().isEmpty();
+        if (emptyUnique) {
+            getInventory().setItem(EnchantMenuLayout.rawSlotFor(io.github.butterflysmp.rpg.core.enchant.EnchantRoll.UNIQUE_SLOT, 0),
+                    MenuIcons.icon(Material.GRAY_DYE,
+                            MenuIcons.line("No unique enchant", NamedTextColor.DARK_GRAY),
+                            List.of(MenuIcons.line("Nothing unique is tied to this item's element yet.",
+                                    NamedTextColor.DARK_GRAY))));
+        }
     }
 
     /**
@@ -462,8 +488,12 @@ public final class EnchantMenu extends Menu {
         return icon;
     }
 
-    /** The three columns. A slot that rolled fewer than three candidates leaves filler behind. */
+    /**
+     * The four columns (three until 2026-11-23). A slot that rolled fewer than four candidates leaves filler behind; an
+     * EMPTY unique slot shows {@link #renderUniqueChrome}'s item instead of filler in its first cell.
+     */
     private void renderCandidates(EnchantState state, GearClass heldClass) {
+        renderUniqueChrome(state);
         for (int slot = 0; slot < EnchantMenuLayout.SLOTS && slot < state.slots().size(); slot++) {
             EnchantSlot enchantSlot = state.slots().get(slot);
             for (int index = 0; index < EnchantMenuLayout.CANDIDATES
@@ -610,7 +640,8 @@ public final class EnchantMenu extends Menu {
     private void applyCandidateClick(int slotIndex, int candidateIndex) {
         ItemStack input = getInventory().getItem(INPUT_SLOT);
         if (input == null || input.getType().isAir()) {
-            say("Put a weapon, shield, armor piece or tool in the slot on the left.", NamedTextColor.GRAY);
+            // "on the left" until 2026-11-23, when the input moved to the top (Ben's 3). SEAT PLACEHOLDER 2026-11-23.
+            say("Put a weapon, shield, armor piece or tool in the slot at the top.", NamedTextColor.GRAY);
             return;
         }
 

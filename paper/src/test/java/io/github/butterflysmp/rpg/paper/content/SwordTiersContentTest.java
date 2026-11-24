@@ -190,7 +190,7 @@ class SwordTiersContentTest {
         WeaponRegistry weapons = shippedWeapons(new ArrayList<>());
         for (String id : List.of("iron_sword", "netherite_sword")) {
             GearClass gearClass = io.github.butterflysmp.rpg.paper.weapon.GearItems.gearClassOf(weapons.find(id).orElseThrow());
-            List<String> pool = EnchantRoll.poolFor(EnchantRoll.Has.EVERY, gearClass, roster).stream().map(EnchantRoll.Rollable::enchantId).sorted().toList();
+            List<String> pool = EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, gearClass, roster).stream().map(EnchantRoll.Rollable::enchantId).sorted().toList();
             assertEquals(List.of("sharpness", "unbreaking"), pool, id);
         }
     }

@@ -100,4 +100,10 @@ public record ShieldDefinition(
     public double passThrough() {
         return Shield.passThrough(blockDr);
     }
+
+    /** U5: this kind declares no element (2026-11-23), so its unique slot rolls nothing. */
+    @Override
+    public Optional<String> gearElement() {
+        return Optional.empty();
+    }
 }

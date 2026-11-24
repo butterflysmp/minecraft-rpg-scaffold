@@ -342,4 +342,10 @@ public record WeaponDefinition(
         }
         return Optional.empty();
     }
+
+    /** U5: a weapon's element is required, so it always has one. */
+    @Override
+    public Optional<String> gearElement() {
+        return Optional.of(element);
+    }
 }

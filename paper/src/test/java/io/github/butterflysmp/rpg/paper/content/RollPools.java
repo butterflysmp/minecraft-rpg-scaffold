@@ -42,11 +42,11 @@ record RollPools(WeaponRegistry weapons, EnchantRegistry enchants, List<EnchantR
     }
 
     List<String> before(WeaponDefinition w) {
-        return ids(EnchantRoll.poolFor(EnchantRoll.Has.EVERY, GearItems.gearClassOf(w), roster));
+        return ids(EnchantRoll.normalPoolFor(EnchantRoll.Has.EVERY, GearItems.gearClassOf(w), roster));
     }
 
     List<String> after(WeaponDefinition w) {
-        return ids(EnchantRoll.poolFor(EnchantRollItems.has(w), GearItems.gearClassOf(w), roster));
+        return ids(EnchantRoll.normalPoolFor(EnchantRollItems.has(w), GearItems.gearClassOf(w), roster));
     }
 
     private static List<String> ids(List<EnchantRoll.Rollable> pool) {

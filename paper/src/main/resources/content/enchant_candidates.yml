@@ -1,0 +1,23 @@
+# HOW MANY CANDIDATES ONE ENCHANT SLOT OFFERS: a cascade, rarest first (the seat's ruling V3, 2026-11-23).
+#
+# BEN'S NUMBERS, verbatim, 2026-11-23: "I want to change the chances of multiple enchants: 1 enchant = 100%; 2 enchants =
+# 70%; 3 enchants = 40%; 4 enchants = 10%. I want this roll to be cascading like we did with the loot tables. (First it
+# rolls a 10% chance, if that misses it rolls the 40%, if that misses it rolls the 70% and so on)"
+#
+# Every slot, unique and normal alike ("I want to allow a chance for 4 enchantments in each instead of 3"), rolls this:
+# a draw against the first tier; on a miss, a draw against the next; the last tier is guaranteed and takes no draw. The
+# count is then capped at the slot's pool, so a pool of two never offers more than two, and an empty pool offers none.
+#
+# THE RULES (EnchantCandidatesLoader refuses the WHOLE file, by name, for any other shape, and every slot then offers
+# ONE candidate until it is fixed): tiers rarest first (most candidates first), each `candidates` 1..4 (what the table
+# shows), each `chance` in [0, 1], the LAST tier 1.0 and no tier above it 1.0. The Loaded line prints each written
+# chance and its TRUE odds: 4 truly 10%, 3 truly 36%, 2 truly 37.8%, 1 truly 16.2%.
+tiers:
+  - candidates: 4
+    chance: 0.10
+  - candidates: 3
+    chance: 0.40
+  - candidates: 2
+    chance: 0.70
+  - candidates: 1
+    chance: 1.0

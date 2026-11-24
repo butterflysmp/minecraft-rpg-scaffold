@@ -271,7 +271,13 @@ public final class RpgPlugin extends JavaPlugin {
         this.visuals = new VisualLoader(getLogger()).loadAll(new File(contentDir, "visuals"));
         this.statuses = new StatusLoader(getLogger()).loadAll(new File(contentDir, "statuses"));
         this.elements = new ElementLoader(getLogger()).loadAll(new File(contentDir, "elements"));
-        this.enchants = new EnchantLoader(getLogger()).loadAll(new File(contentDir, "enchants"));
+        // AFTER the elements: a UNIQUE enchant's element must name a loaded one (the seat's ruling U1, 2026-11-23). A dev_
+        // enchant loads only on a dev server (the dev-only example). Then Ben's candidate cascade (ruling V3), carried
+        // on the registry beside the roster the roll draws from.
+        this.enchants = new EnchantLoader(getLogger(), id -> elements.find(id).isPresent(), devServer)
+                .loadAll(new File(contentDir, "enchants"));
+        this.enchants.setCandidates(new io.github.butterflysmp.rpg.paper.content.EnchantCandidatesLoader(getLogger())
+                .load(new File(contentDir, "enchant_candidates.yml")));
         // KITS WERE REMOVED (PLAN-build-system.md section 3.2): nothing loads content/kits/ now. See the method.
         warnRetiredKitFiles(new File(contentDir, "kits"));
         // AFTER the abilities, because a pool naming an ability nothing defines is REFUSED, not warned
