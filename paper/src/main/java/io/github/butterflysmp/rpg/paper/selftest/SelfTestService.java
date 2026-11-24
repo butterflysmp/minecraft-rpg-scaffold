@@ -71,6 +71,18 @@ public final class SelfTestService {
     private java.util.function.Consumer<org.bukkit.entity.Player> leftClick =
             p -> log("SELFTEST RELOAD UNBOUND -- the left-click handler was never bound; nothing was driven");
 
+    private io.github.butterflysmp.rpg.core.combat.CooldownTracker cooldowns;
+
+    /**
+     * CLEAR_STATE's route (the seat's rule 2, 2026-11-23): the plugin's one {@code CooldownTracker}, the one every press
+     * reads, so a row's clear is the clear his quit does. Bound once by RpgPlugin; a CLEAR_STATE before it SKIPS its row.
+     */
+    public void bindCooldowns(io.github.butterflysmp.rpg.core.combat.CooldownTracker tracker) {
+        this.cooldowns = java.util.Objects.requireNonNull(tracker);
+    }
+
+    io.github.butterflysmp.rpg.core.combat.CooldownTracker cooldowns() { return cooldowns; }
+
     public void bindLeftClick(java.util.function.Consumer<org.bukkit.entity.Player> handler) {
         this.leftClick = java.util.Objects.requireNonNull(handler);
     }

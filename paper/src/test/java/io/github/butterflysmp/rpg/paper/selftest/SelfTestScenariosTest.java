@@ -295,7 +295,11 @@ class SelfTestScenariosTest {
         // retired from unique-enchant-slot, never run) + 19 (setup, EC0-EC17) = 394. 340 was this line's value.
         // Then LC1-LC4 (feat/lapis-crystal-gate, 2026-11-23, the same gate; EC1 renamed EC1R2), RECOUNTED the same way: 43 gates,
         // 398 keys, 43 setups, so 355. The control: 394 + 4 = 398 (a rename adds none). 351 was this line's value.
-        assertEquals(355, loaded.rows());
+        // Then THE INSTRUMENT FIXED (feat/enchant-columns-instrument, 2026-11-23, after the boot of e774d4b8): the 22 rows
+        // that ran there (EC0, EC1R2, EC2-EC17, LC1-LC4) left the scenario and 18 self-contained rows came in (EC3R2-EC16R2,
+        // LC1R2-LC4R2; EC0's counts, EC1R2, EC2 and EC17's counts read as predicted and are not re-run), RECOUNTED the same
+        // way: 43 gates, 394 keys, 43 setups, so 351. The control: 398 - 22 + 18 = 394. 355 was this line's value.
+        assertEquals(351, loaded.rows());
     }
 
     /**
@@ -530,6 +534,49 @@ class SelfTestScenariosTest {
             assertEquals(Scenario.SETUP, setup.row(), gate);
             assertEquals(new Scenario.Step(Scenario.Verb.DIFFICULTY, "normal"), setup.steps().getFirst(), gate);
         }
+    }
+
+    /**
+     * THE SCENARIO LINT OVER EVERY COMMITTED SCENARIO (the seat's brief A, 2026-11-23; {@link ScenarioLint}). REQUIRED
+     * GREEN for {@code GATE-enchant-columns.yml}. Every other gate's findings are REPORTED, one line each, to
+     * {@code paper/target/scenario-lint.txt} and stdout, and not fixed here: those rows ran, and their readings stand on
+     * the scenario as it was.
+     *
+     * <p><b>The control:</b> the lint is not blind over the shipped files. {@code deft-hands}' DH3 chains on DH1 (one of
+     * the three chained rows {@code SelfTestStaging} names), so the SELF_STAGED rule MUST find it there.
+     */
+    @Test
+    void theLintIsGreenForEnchantColumnsAndReportsEveryOtherGate() throws IOException {
+        Map<String, List<ScenarioLint.Finding>> byGate = new java.util.LinkedHashMap<>();
+        for (var gate : shipped().gates().entrySet()) byGate.put(gate.getKey(), ScenarioLint.lint(gate.getKey(), gate.getValue()));
+        StringBuilder report = new StringBuilder();
+        int total = 0;
+        for (var e : byGate.entrySet()) {
+            Map<ScenarioLint.Rule, Long> perRule = new java.util.EnumMap<>(ScenarioLint.Rule.class);
+            for (ScenarioLint.Finding f : e.getValue()) perRule.merge(f.rule(), 1L, Long::sum);
+            report.append("GATE ").append(e.getKey()).append(" findings=").append(e.getValue().size()).append(' ')
+                    .append(perRule).append('\n');
+            for (ScenarioLint.Finding f : e.getValue()) report.append("  ").append(f.line()).append('\n');
+            total += e.getValue().size();
+        }
+        report.append("TOTAL findings=").append(total).append(" gates=").append(byGate.size()).append('\n');
+        Files.createDirectories(Path.of("target"));
+        Files.writeString(Path.of("target", "scenario-lint.txt"), report.toString(), StandardCharsets.UTF_8);
+        System.out.print(report);
+
+        assertEquals(List.of(), byGate.get("enchant-columns").stream().map(ScenarioLint.Finding::line).toList(),
+                "GATE-enchant-columns.yml must lint clean");
+        assertTrue(byGate.get("deft-hands").stream().anyMatch(f -> f.row().equals("DH3")
+                        && f.rule() == ScenarioLint.Rule.SELF_STAGED && f.detail().startsWith("chains on DH1")),
+                "the control: DH3's chain on DH1 is found, so the lint reads the shipped files: " + byGate.get("deft-hands"));
+    }
+
+    /** The enchant-columns gate measures its ground before any row: its setup's FIRST step is its preflight. */
+    @Test
+    void theEnchantColumnsSetupPreflightsFirst() {
+        Scenario setup = shipped().gates().get("enchant-columns").getFirst();
+        assertEquals(Scenario.SETUP, setup.row());
+        assertEquals(Scenario.Verb.PREFLIGHT, setup.steps().getFirst().verb(), setup.steps().toString());
     }
 
     @Test

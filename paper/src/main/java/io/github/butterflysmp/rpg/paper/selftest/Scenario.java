@@ -99,7 +99,11 @@ public record Scenario(String gate, String row, List<Step> steps) {
         CLOSE,
         /** Log the open screen ({@code menu}) or the held item ({@code held}): names, lore, colours as the server built them. */
         DUMP,
-        /** Log every entity within 16 blocks carrying this tag: uuid, type, custom HP, fire ticks, distance. */
+        /**
+         * {@code "<tag>"} or {@code "<tag> <reach>"}: log every entity within the reach (16 when none is written; 1-64)
+         * carrying this tag: uuid, type, custom HP, fire ticks, distance. The reach is the scenario's to state since
+         * 2026-11-23 (the seat's rule 4): EC8's F stood 30 out and a reach of 16 could never read it.
+         */
         PROBE,
         /** Log the inventory slots holding this weapon id. */
         PROBE_INVENTORY,
@@ -286,6 +290,31 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * ({@link SelfTestAwaitFight}; GATE-fight-site.md).
          */
         AWAIT_FIGHT,
+        /**
+         * {@code ""}: EMPTY every storage slot (0-35) but the Nexus item's, so the row's gives land in his hotbar and
+         * the row asks nothing of his inventory (the seat's rule 1, 2026-11-23: nine rows of the boot of e774d4b8
+         * SKIPPED for want of an empty hotbar slot). Armour and the off hand are left alone: they are his gear, and a
+         * damage sum's class bonus and his health read them. The snapshot holds his inventory from RUN START, and the
+         * gate-boundary restore and the run's restore (every exit path, the disable's included) put it back. Logs
+         * {@code STAGE clear_inventory cleared=<n> kept=<nexus slot|none>}.
+         */
+        CLEAR_INVENTORY,
+        /**
+         * {@code ""}: forget his per-player combat state, so a row presses from a CLEARED cooldown and a fresh record
+         * (the seat's rule 2): every cooldown ({@code CooldownTracker#clear}, his quit's own call), his behaviour
+         * enchants' hit streaks ({@code ShockwaveStreaks#forgetPlayer}, his quit's), and his Lapis Crystal orb, if one
+         * stands ({@code OrbRemovals#remove}, cause {@code selftest}, which writes its own {@code ORB removed} line).
+         * Logs {@code STAGE clear_state cooldowns=cleared streaks=forgotten orb=<removed|none>}.
+         */
+        CLEAR_STATE,
+        /**
+         * {@code "<east from> <south from> <east to> <south to>"}, whole blocks from the player's block, in a gate's
+         * {@code setup:}: MEASURE the ground before any row runs ({@link SelfTestPreflight}): air at his feet and head
+         * height, and a SOLID floor (not air, not water or any liquid, not waterlogged, not soft). A bad spot runs NO
+         * row: he is told what is wrong and where, in two lines, the run ends at once and the snapshot restores. Logs
+         * {@code PREFLIGHT ok …} or {@code PREFLIGHT fail …} with the counts. The seat's brief B, 2026-11-23.
+         */
+        PREFLIGHT,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

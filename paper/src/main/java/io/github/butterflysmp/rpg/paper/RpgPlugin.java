@@ -902,6 +902,8 @@ public final class RpgPlugin extends JavaPlugin {
                 .registerListener(swingListener);
         // The selftest's RELOAD drives this same listener's left-click method (SelfTestService.bindLeftClick).
         selfTest.bindLeftClick(swingListener::swing);
+        // And its CLEAR_STATE clears this same tracker, the one every press reads (SelfTestService.bindCooldowns).
+        selfTest.bindCooldowns(cooldowns);
         // Suppress vanilla's own crit particles, so a burst means OUR roll. Pure cancel on the
         // Netty thread -- no hop, no Bukkit. See the class for why a packet is justified here and
         // why it cannot eat our own spawnParticle burst.

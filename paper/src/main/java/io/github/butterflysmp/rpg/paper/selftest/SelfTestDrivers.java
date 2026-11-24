@@ -152,6 +152,9 @@ final class SelfTestDrivers {
                 yield Optional.empty();
             }
             case NOTE -> { run.log("NOTE " + a); yield Optional.empty(); }
+            case CLEAR_INVENTORY -> clearInventory(p);
+            case CLEAR_STATE -> clearState(p);
+            case PREFLIGHT -> Optional.empty();   // the run measures it and may end there; it never reaches a driver
             case TELL -> {
                 p.sendMessage(net.kyori.adventure.text.Component.text(a,
                         net.kyori.adventure.text.format.NamedTextColor.GOLD));
@@ -789,11 +792,80 @@ final class SelfTestDrivers {
         return Optional.empty();
     }
 
-    private Optional<String> probe(Player p, String tag) {
+    /**
+     * CLEAR_INVENTORY (the seat's rule 1, 2026-11-23): every storage slot but the Nexus item's emptied, by
+     * {@link SelfTestStaging#clearPlan}. The snapshot holds the run start's inventory; the gate-boundary restore and the
+     * run's restore put it back. Armour and the off hand are not storage slots and are not touched.
+     */
+    private Optional<String> clearInventory(Player p) {
+        PlayerInventory inv = p.getInventory();
+        boolean[] occupied = new boolean[36];
+        boolean[] nexus = new boolean[36];
+        int kept = -1;
+        for (int i = 0; i < 36; i++) {
+            ItemStack it = inv.getItem(i);
+            occupied[i] = it != null && !it.isEmpty();
+            nexus[i] = occupied[i] && io.github.butterflysmp.rpg.paper.nexus.NexusItems.isNexus(it, keys);
+            if (nexus[i] && kept < 0) kept = i;
+        }
+        int[] plan = SelfTestStaging.clearPlan(occupied, nexus);
+        for (int slot : plan) inv.setItem(slot, null);
+        run.log("STAGE clear_inventory cleared=" + plan.length + " kept=" + (kept < 0 ? "none" : "nexus@" + kept));
+        return Optional.empty();
+    }
+
+    /**
+     * CLEAR_STATE (the seat's rule 2, 2026-11-23): his quit's own three forgettings, so a row presses from a cleared
+     * cooldown and a fresh record, whatever ran before it: every cooldown, his behaviour enchants' streaks, and his orb.
+     */
+    private Optional<String> clearState(Player p) {
+        java.util.UUID id = p.getUniqueId();
+        var cooldowns = run.cooldowns();
+        if (cooldowns == null) return Optional.of("clear_state: the cooldown tracker is not bound");
+        cooldowns.clear(id);
+        var adapters = run.adapters();
+        adapters.behaviourHits().streaks().forgetPlayer(id);
+        boolean orb = adapters.orbs().of(id).isPresent();
+        io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, id, "selftest");
+        run.log("STAGE clear_state cooldowns=cleared streaks=forgotten orb=" + (orb ? "removed" : "none"));
+        return Optional.empty();
+    }
+
+    /**
+     * PREFLIGHT (the seat's brief B, 2026-11-23): each column of the box, from his block, read into a
+     * {@link SelfTestPreflight.Tally}: feet and head height (dy 0, 1) and the floor (dy -1). The run decides what follows.
+     */
+    SelfTestPreflight.Tally preflight(Player p, SelfTestPreflight.Box box) {
+        Block base = p.getLocation().getBlock();
+        SelfTestPreflight.Tally t = new SelfTestPreflight.Tally(box);
+        for (int dx = box.x1(); dx <= box.x2(); dx++) {
+            for (int dz = box.z1(); dz <= box.z2(); dz++) {
+                for (int dy = 0; dy <= 1; dy++) {
+                    Block b = base.getRelative(dx, dy, dz);
+                    t.body(dx, dz, b.getType().isAir(), name(b));
+                }
+                Block f = base.getRelative(dx, -1, dz);
+                boolean wet = f.isLiquid()
+                        || (f.getBlockData() instanceof org.bukkit.block.data.Waterlogged w && w.isWaterlogged());
+                t.floor(dx, dz, SelfTestPreflight.floor(f.getType().isAir(), wet, f.getType().isSolid()), name(f));
+            }
+        }
+        return t;
+    }
+
+    private static String name(Block b) {
+        return b.getType().getKey().getKey();
+    }
+
+    private Optional<String> probe(Player p, String arg) {
+        SelfTestStaging.ProbeArg pa = SelfTestStaging.probeArg(arg).orElseThrow(
+                () -> new IllegalStateException("probe: the loader admitted '" + arg + "'"));
+        String tag = pa.tag();
+        double reach = pa.reach();
         List<Entity> tagged = new ArrayList<>();
-        for (Entity e : p.getNearbyEntities(REACH, REACH, REACH)) if (e.getScoreboardTags().contains(tag)) tagged.add(e);
+        for (Entity e : p.getNearbyEntities(reach, reach, reach)) if (e.getScoreboardTags().contains(tag)) tagged.add(e);
         if (tagged.isEmpty()) {
-            run.log("PROBE tag=" + tag + " none within " + (int) REACH + " blocks");
+            run.log("PROBE tag=" + tag + " none within " + pa.reach() + " blocks");
             return Optional.empty();
         }
         tagged.sort(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(p.getLocation())));
