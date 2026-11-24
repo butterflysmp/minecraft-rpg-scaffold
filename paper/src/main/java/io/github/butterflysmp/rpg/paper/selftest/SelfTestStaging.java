@@ -83,6 +83,41 @@ final class SelfTestStaging {
         return java.util.Optional.of(dest);
     }
 
+    /** The reach a {@code probe:} with no number reads, as every row before 2026-11-23 did. */
+    static final int PROBE_DEFAULT_REACH = 16;
+
+    /** The furthest a {@code probe:} may be told to read: the row-start clean's own 48 is not the limit, 64 is. */
+    static final int PROBE_MAX_REACH = 64;
+
+    /** A probe's tag and the reach it reads within. */
+    record ProbeArg(String tag, int reach) {}
+
+    /**
+     * {@code "<tag>"} or {@code "<tag> <reach>"} (the seat's rule 4, 2026-11-23); empty for anything else, which the
+     * loader refuses by name. A whole number 1 to {@value #PROBE_MAX_REACH}.
+     */
+    static java.util.Optional<ProbeArg> probeArg(String arg) {
+        String[] f = arg.trim().split("\\s+");
+        if (f.length == 0 || f[0].isEmpty() || f.length > 2) return java.util.Optional.empty();
+        if (f.length == 1) return java.util.Optional.of(new ProbeArg(f[0], PROBE_DEFAULT_REACH));
+        if (!f[1].matches("\\d{1,2}")) return java.util.Optional.empty();
+        int reach = Integer.parseInt(f[1]);
+        if (reach < 1 || reach > PROBE_MAX_REACH) return java.util.Optional.empty();
+        return java.util.Optional.of(new ProbeArg(f[0], reach));
+    }
+
+    /**
+     * {@code CLEAR_INVENTORY}'s plan (the seat's rule 1, 2026-11-23): the storage slots (0-35) to empty, ascending. Every
+     * occupied one but the Nexus item's: a row's gives then land in his hotbar, whatever he carried. Pure, so it is a
+     * unit row.
+     */
+    static int[] clearPlan(boolean[] occupied, boolean[] nexus) {
+        int n = 0;
+        int[] out = new int[occupied.length];
+        for (int i = 0; i < occupied.length; i++) if (occupied[i] && !nexus[i]) out[n++] = i;
+        return java.util.Arrays.copyOf(out, n);
+    }
+
     /** The longest the run waits for a killed body to leave; vanilla's death animation is 20 ticks. */
     static final int SETTLE_CAP_TICKS = 40;
 
@@ -241,6 +276,15 @@ final class SelfTestStaging {
             case AWAIT_FIGHT -> SelfTestAwaitFight.parse(arg).isPresent() ? java.util.Optional.empty()
                     : java.util.Optional.of("await_fight takes '<ceiling ticks>', a whole number of at least 1, got '"
                             + arg + "'");
+            case PROBE -> probeArg(arg).isPresent() ? java.util.Optional.empty()
+                    : java.util.Optional.of("probe takes '<tag>' or '<tag> <reach 1-" + PROBE_MAX_REACH + ">', got '"
+                            + arg + "'");
+            case CLEAR_INVENTORY, CLEAR_STATE -> arg.isBlank() ? java.util.Optional.empty()
+                    : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes nothing, got '"
+                            + arg + "'");
+            case PREFLIGHT -> SelfTestPreflight.parse(arg).isPresent() ? java.util.Optional.empty()
+                    : java.util.Optional.of("preflight takes '<east from> <south from> <east to> <south to>', whole"
+                            + " blocks within 64, from <= to, got '" + arg + "'");
             case DETONATE, IGNITE, PROBE_FUSE, THAW, PROBE_MOTION, BEAM, PROBE_AT, SHOT, PROBE_SHOT, AIM_SHAPE, STRIKE_LOOK,
                     SHOOT_ARROW, PROBE_SHIELD, POUNCE, PROBE_PAIR, LIGHT -> SelfTestBlast.oneTag(arg) ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes one tag, got '"

@@ -221,6 +221,23 @@ final class SelfTestRun {
                     ask(step);   // resumes from answer() or the timeout
                     return;
                 }
+                if (step.verb() == Scenario.Verb.PREFLIGHT) {
+                    // THE PREFLIGHT (the seat's brief B): a bad spot runs NO row. He is told what is wrong and where,
+                    // the run ends here and the snapshot restores at once; a pass logs its counts and goes on.
+                    SelfTestPreflight.Tally t = drivers.preflight(player, SelfTestPreflight.parse(step.arg()).orElseThrow(
+                            () -> new IllegalStateException("preflight: the loader admitted '" + step.arg() + "'")));
+                    log(t.logLine());
+                    if (!t.ok()) {
+                        List<String> tell = t.tell();
+                        player.sendMessage(net.kyori.adventure.text.Component.text(tell.get(0),
+                                net.kyori.adventure.text.format.NamedTextColor.RED));
+                        player.sendMessage(net.kyori.adventure.text.Component.text(tell.get(1),
+                                net.kyori.adventure.text.format.NamedTextColor.GOLD));
+                        end("ABORTED preflight: the ground failed, no row ran");
+                        return;
+                    }
+                    continue;
+                }
                 if (step.verb() == Scenario.Verb.STRIKE_AT_AGE) {
                     strikeAtAge(SelfTestStrike.parseAtAge(step.arg()).orElseThrow(
                             () -> new IllegalStateException("strike_at_age: the loader admitted '" + step.arg() + "'")), 0);
@@ -593,4 +610,7 @@ final class SelfTestRun {
     io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence() { return service.fireCadence(); }
     /** RELOAD's route: the shipped left-click handler, bound by RpgPlugin ({@link SelfTestService#bindLeftClick}). */
     java.util.function.Consumer<org.bukkit.entity.Player> leftClick() { return service.leftClick(); }
+    /** CLEAR_STATE's: the one cooldown tracker, bound by RpgPlugin ({@link SelfTestService#bindCooldowns}); null if unbound. */
+    io.github.butterflysmp.rpg.core.combat.CooldownTracker cooldowns() { return service.cooldowns(); }
+    io.github.butterflysmp.rpg.paper.adapter.AdapterContext adapters() { return service.adapters(); }
 }
