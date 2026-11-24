@@ -12,7 +12,28 @@ import java.util.List;
  */
 public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst,
         EnchantBehaviour.Shatter, EnchantBehaviour.FocusedBeam, EnchantBehaviour.GrantTrigger, EnchantBehaviour.CastTune,
-        EnchantBehaviour.HitChain {
+        EnchantBehaviour.HitChain, EnchantBehaviour.ScorchBoost {
+
+    /**
+     * {@code effect: scorch_boost} (Mana Burn; the seat's ruling of 2026-11-24 on PR F). Ben: "Increases Scorch and Ignite
+     * damage by 10/20/30%". A primary hit by a weapon carrying it STAMPS the scorch it applies with {@link #percentFor}
+     * its level ({@code BehaviourHits.scorchStamp}, carried in {@code HitAccrual}); the stamped scorch's TICK and its
+     * Ignite are multiplied by {@code 1 + percent / 100} (F2). The cap is not changed. Per level: the percent.
+     */
+    record ScorchBoost(List<Double> percentByLevel) implements EnchantBehaviour {
+        public ScorchBoost {
+            percentByLevel = positive("percent_by_level", percentByLevel);
+        }
+
+        /** The stamp a hit at {@code level} carries, in percent. */
+        public double percentFor(int level) {
+            return percentByLevel.get(clamp(level, percentByLevel.size()) - 1);
+        }
+
+        public int levels() {
+            return percentByLevel.size();
+        }
+    }
 
     /**
      * {@code effect: hit_chain} (Wildfire, the Living Lantern's; the seat's brief of 2026-11-24, PR E). Ben: "Consecutive

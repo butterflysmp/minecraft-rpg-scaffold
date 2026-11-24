@@ -69,6 +69,25 @@ public final class BehaviourHits {
         return factor;
     }
 
+    /**
+     * MANA BURN'S STAMP (F1, the seat's ruling of 2026-11-24 on PR F): the percent the scorch THIS hit applies is stamped
+     * with. Asked by both damage arms for the {@code HitAccrual} they hand the port. Pure: no state, nothing recorded.
+     * 0 unless the caster {@code countsAsHit} (a status tick and every secondary carry none), the target is not a player
+     * (B4), and the caster carries a {@code ScorchBoost}: its behaviours are the weapon's that made this hit, at the level
+     * it had then (B2). Two would add; one ships.
+     */
+    public static double scorchStamp(Caster caster, Combatant target) {
+        if (!caster.countsAsHit() || caster.behaviours().isEmpty()) return 0;
+        if (target.state().player()) return 0;
+        double percent = 0;
+        for (ActiveBehaviour active : caster.behaviours()) {
+            if (active.behaviour() instanceof EnchantBehaviour.ScorchBoost boost) {
+                percent += boost.percentFor(active.level());
+            }
+        }
+        return percent;
+    }
+
     /** One primary hit by {@code caster} on {@code target}, in {@code world}. */
     public void onHit(CombatWorld world, Caster caster, Combatant target) {
         if (!caster.countsAsHit() || caster.behaviours().isEmpty()) return;
@@ -93,6 +112,8 @@ public final class BehaviourHits {
                 case EnchantBehaviour.CastTune ignored -> { }
                 // A chain multiplies the hit BEFORE it lands (chainFactor, asked by the damage arm), never after it.
                 case EnchantBehaviour.HitChain ignored -> { }
+                // A scorch boost STAMPS the hit before it lands (scorchStamp, asked by the damage arm), never after it.
+                case EnchantBehaviour.ScorchBoost ignored -> { }
             }
         }
     }

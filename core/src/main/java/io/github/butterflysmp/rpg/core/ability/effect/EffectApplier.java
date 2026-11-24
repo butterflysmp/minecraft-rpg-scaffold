@@ -6,6 +6,7 @@ import io.github.butterflysmp.rpg.core.combat.CombatWorld;
 import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
+import io.github.butterflysmp.rpg.core.combat.HitAccrual;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import io.github.butterflysmp.rpg.core.combat.TracedHit;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
@@ -174,8 +175,10 @@ public final class EffectApplier {
                     // WILDFIRE (2026-11-24): the chain's factor, its own term, multiplying the WHOLE dealt amount (after
                     // charge and crit, the flat class and level bonuses included), recorded on the chain. 1.0 for any other hit.
                     amount *= world.hitChainFactor(caster, target);
+                    // MANA BURN (F1, 2026-11-24): the scorch this hit applies carries the stamp; 0 for any other hit.
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),
-                            DefenseRule.APPLIES, d.element());
+                            DefenseRule.APPLIES, d.element(),
+                            HitAccrual.weapon().withScorchStamp(BehaviourHits.scorchStamp(caster, target)));
                     onDirectDamage.accept(amount, d.element());   // inside the gate: a refused hit reports nothing
                     trace(caster, target, amount, d.element());
                     world.primaryHit(caster, target);   // B2-B4: a HIT a behavioural enchant may count; the port decides
@@ -202,7 +205,8 @@ public final class EffectApplier {
                 if (amount > 0 && target.state().alive()) {
                     amount *= world.hitChainFactor(caster, target);   // WILDFIRE, the same term for the stat-reading arm
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),
-                            DefenseRule.APPLIES, wd.element());
+                            DefenseRule.APPLIES, wd.element(),   // MANA BURN's stamp, the same for this arm
+                            HitAccrual.weapon().withScorchStamp(BehaviourHits.scorchStamp(caster, target)));
                     onDirectDamage.accept(amount, wd.element());   // inside the gate: a refused hit reports nothing
                     trace(caster, target, amount, wd.element());
                     world.primaryHit(caster, target);   // the same, for the stat-reading arm

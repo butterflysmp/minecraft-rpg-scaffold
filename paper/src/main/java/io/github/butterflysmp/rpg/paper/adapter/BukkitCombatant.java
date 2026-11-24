@@ -306,7 +306,9 @@ public final class BukkitCombatant {
                                             new EntityTaskTarget(entity, ctx.scheduler(), ctx.log()),
                                             new EntityScorchSink(entity, ctx),
                                             accrued.stacks(), accrued.cap(), sourceId,
-                                            accrued.durationTicks(), element, accrual.depth() + 1);
+                                            accrued.durationTicks(), element, accrual.depth() + 1,
+                                            // MANA BURN (F1, 2026-11-24): the hit's stamp, 0 unless a weapon carrying it made the hit
+                                            accrual.scorchStampPercent());
                                 }
                                 // NO FIRE AND NO DEPTH: wither is not Ignite's (WS2, S2). The look is the
                                 // vanilla potion, whose own damage RpgListeners tokens (Q-W7 a).

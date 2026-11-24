@@ -30,8 +30,29 @@ package io.github.butterflysmp.rpg.core.combat;
  *              caused. <b>Meaningful only when {@code rule} is {@link AccrualRule#ACCRUES}</b> -- an
  *              INERT hit creates no scorch entry and fails the ignite predicate, so its depth is read
  *              by nothing, ever. That is why {@link #terminal()} carries none.
+ * @param scorchStampPercent MANA BURN'S STAMP (F1, the seat's ruling of 2026-11-24 on PR F), in percent: what the scorch
+ *              this hit applies multiplies its tick and its Ignite by, as {@code 1 + percent / 100} (F2). 0 from every
+ *              factory below, so a status tick, an Ignite link and every unenchanted hit carry none; only
+ *              {@link #withScorchStamp}, called by the damage arms for a primary hit by a weapon carrying the enchant
+ *              ({@code BehaviourHits.scorchStamp}), sets one.
  */
-public record HitAccrual(AccrualRule rule, int depth) {
+public record HitAccrual(AccrualRule rule, int depth, double scorchStampPercent) {
+
+    public HitAccrual {
+        if (!(scorchStampPercent >= 0) || Double.isInfinite(scorchStampPercent)) {
+            throw new IllegalArgumentException("a scorch stamp is a percent of 0 or more, was " + scorchStampPercent);
+        }
+    }
+
+    /** The two-fact accrual every factory builds: no stamp. */
+    public HitAccrual(AccrualRule rule, int depth) {
+        this(rule, depth, 0);
+    }
+
+    /** This accrual, stamped with Mana Burn's {@code percent} (F1). */
+    public HitAccrual withScorchStamp(double percent) {
+        return new HitAccrual(rule, depth, percent);
+    }
 
     /** An ordinary hit: a weapon, an ability, a dev command. Accrues, and no blast caused it. */
     public static HitAccrual weapon() {
