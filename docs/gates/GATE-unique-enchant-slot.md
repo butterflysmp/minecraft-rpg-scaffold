@@ -5,6 +5,18 @@ stacked on `feat/selftest-row-case` (#248), on master `383ded19`, before any boo
 ONE run sheet for the three PRs** — and, since 2026-11-23 later the same day, for a FOURTH: `feat/boltor-sound-flint-text`
 (the seat's brief "THE BOLTOR'S SHOT SOUND AND THE FLINT STAFF'S TEXT"), stacked on PR 3, whose rows are BX1 and BX2.
 
+> **SUPERSEDED IN PART, 2026-11-23 (later the same day), BEFORE ANY BOOT: THE COLUMNS WERE RE-CUT** (the seat's brief
+> "THREE ENCHANT COLUMNS' WORTH OF WORK"; Ben: slot 0 weapon-specific, slot 1 unique, slots 2-3 normal), **and the dev
+> example enchant was deleted** (W5). So:
+> - **THIS FILE'S R0 IS SUPERSEDED** by `GATE-enchant-columns.md`'s, which is now the ONE R0 for the whole stack from
+>   #248 up. Its R0b readings below were taken against #250's and #251's jars and stay as the record of those jars.
+> - **US1-US7 ARE RETIRED, NEVER RUN**, and removed from this gate's scenario: each named slot 0 as the unique slot, the
+>   dev example, or three normal slots. Their purposes are read by `GATE-enchant-columns.md` EC1-EC6 (the columns and the
+>   table). The rows below are KEPT as the record of what was predicted.
+> - **R1 (PR 1's lower-case row), the setup, US8, BX1 and BX2 RIDE ALONG UNCHANGED**, run by `GATE-enchant-columns.md`'s
+>   run sheet (its lines 2 and 3), read against the predictions in this file. **The run-length sums below include US1-US7
+>   and are stale:** this gate's run is now setup 42, US8 20, BX1 12, BX2 70 (recount with the command below).
+
 **NO BOOT YET, BY THE SEAT'S BRIEF: the boot waits until Ben's first unique enchants are stacked on top, so one boot reads
 both.** When that branch exists, its gate rows join this sheet, R0 is re-predicted against its head, and only then: the
 seat diffs every PR and this gate from origin, Ben says "ready" in his own words, and CC boots by

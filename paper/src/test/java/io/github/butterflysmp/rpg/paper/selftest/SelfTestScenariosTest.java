@@ -41,9 +41,10 @@ class SelfTestScenariosTest {
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
-                        "vanilla-bows", "boltor-recipe", "unique-enchant-slot"),
+                        "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns"),
                 List.copyOf(loaded.gates().keySet()),
-                "the forty-two gates, in boot order (unique-enchant-slot LAST, the unique enchant slot, 2026-11-23, a NEW gate"
+                "the forty-three gates, in boot order (enchant-columns LAST, the enchant columns re-cut, 2026-11-23, a NEW gate after"
+                        + " unique-enchant-slot; unique-enchant-slot before it, the unique enchant slot, 2026-11-23, a NEW gate"
                         + " after boltor-recipe; boltor-recipe before it, the Boltor's recipe, 2026-11-22, a NEW gate after"
                         + " vanilla-bows; vanilla-bows before it, the vanilla Bow and Crossbow and the quiver in the Nexus"
                         + " slot, 2026-11-22, a NEW gate after breacher-rework;"
@@ -289,7 +290,10 @@ class SelfTestScenariosTest {
         // 338. The control: 371 + 9 (setup, US1-US8) = 380. 330 was this line's value.
         // Then BX1 and BX2 (feat/boltor-sound-flint-text, 2026-11-23, in the same gate), RECOUNTED: 42 gates, 382 keys,
         // 42 setups, so 340. The control: 380 + 2 = 382. 338 was this line's value.
-        assertEquals(340, loaded.rows());
+        // Then GATE-enchant-columns.md (feat/enchant-columns-gate, 2026-11-23), RECOUNTED (cat GATE-*.yml | tr -d CR |
+        // grep -cE '^[A-Za-z0-9_-]+:', and '^setup:'): 43 gates, 394 keys, 43 setups, so 351. The control: 382 - 7 (US1-US7
+        // retired from unique-enchant-slot, never run) + 19 (setup, EC0-EC17) = 394. 340 was this line's value.
+        assertEquals(351, loaded.rows());
     }
 
     /**

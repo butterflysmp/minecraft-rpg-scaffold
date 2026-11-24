@@ -109,3 +109,7 @@ gates:
 # the unique enchant slot, Ben's cascade, the table's layout and the info item at the top right. It carries the ONE R0
 # for all three PRs: docs/gates/GATE-unique-enchant-slot.md.
   - unique-enchant-slot
+# enchant-columns (2026-11-23, feat/enchant-columns-gate on feat/airburst-flames, the stack from #252): the columns
+# re-cut, the Living Lantern's homing shot, Kinetic Tremors and Airburst Flames. It carries the ONE R0 for the whole
+# stack from #248 up: docs/gates/GATE-enchant-columns.md, which supersedes GATE-unique-enchant-slot's R0 and US1-US7.
+  - enchant-columns

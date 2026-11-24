@@ -1,0 +1,321 @@
+# GATE-enchant-columns (docs/gates/GATE-enchant-columns.md): the enchant columns re-cut, the Living Lantern's homing shot,
+# Kinetic Tremors and Airburst Flames (2026-11-23; PRs A, B, C and E of the seat's brief "THREE ENCHANT COLUMNS' WORTH
+# OF WORK"; PR D, Lapis Crystal, was STOPPED and has no row). `/rpg selftest enchant-columns`. SURVIVAL, every row; ALL
+# AUTO; he types nothing. Night (18000) and no natural spawns, both put back by the run's restore; every mob a frozen
+# NoAI zombie staged at vanilla max 200 (so 1000 health, nothing here dies); no fight world.
+#
+# THE STAGING: RPG level 13 first (the enchanting table opens at 10; EC1-EC6 read gear and the table), then level 1 from
+# EC7 on, so the level term of every damage sum is 0. Every row that presses a weapon begins from a cleared cooldown
+# (each press's wait is stated in the gate). Each row clears the item types it gives (his own included; the restore
+# returns them). A `wait:` follows every `rpg enchant` / `rpg give` before the hand changes or a press: those commands
+# act on the player's thread a tick later.
+setup:
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - close: ""
+  - hold: empty
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:enderman,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:witch,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:slime,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg playerxp set @s 13 levels"
+  - wait: 40
+  - probe_self: ""
+
+# EC0: THE SPOT (its counts describe the spot, not pass or fail): the corridor 1..32 east, 6 north to 6 south, at his
+# feet and head AIR; the floor under it no AIR and no WATER.
+EC0:
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - probe_self: ""
+  - probe_blocks: "AIR 1 0 -6 32 1 6"
+  - probe_blocks: "AIR 1 -1 -6 32 -1 6"
+  - probe_blocks: "WATER 1 -1 -6 32 -1 6"
+
+# EC1: THE LAPIS STAFF'S COLUMNS (kinetic mage): slot 0 EMPTY (Lapis Crystal was stopped), slot 1 Kinetic Tremors alone,
+# slots 2-3 its normal pool.
+EC1:
+  - hold: empty
+  - cmd: "clear @s minecraft:breeze_rod"
+  - cmd: "rpg give lapis_staff"
+  - wait: 2
+  - hold: lapis_staff
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant pool"
+  - wait: 2
+
+# EC2: THE LIVING LANTERN'S COLUMNS (fire mage): slot 0 Airburst Flames alone, slot 1 EMPTY (no fire unique enchant).
+EC2:
+  - hold: empty
+  - cmd: "clear @s minecraft:lantern"
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant pool"
+  - wait: 2
+
+# EC3: AN IRON SWORD'S COLUMNS (kinetic melee): slot 0 EMPTY, slot 1 Kinetic Tremors alone.
+EC3:
+  - hold: empty
+  - cmd: "clear @s minecraft:iron_sword"
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - hold: iron_sword
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant pool"
+  - wait: 2
+
+# EC4: A PIECE OF ARMOR'S COLUMNS: slots 0 and 1 EMPTY. `hold` cannot match an armor id, so the held slot is emptied first
+# and the give lands in it; HELDID witnesses that it did.
+EC4:
+  - hold: empty
+  - cmd: "clear @s minecraft:iron_chestplate"
+  - wait: 2
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant pool"
+  - wait: 2
+
+# EC5: THE TABLE ON AN IRON SWORD: nothing at index 1; the weapon column's marker at 10; Tremors at 12.
+EC5:
+  - hold: empty
+  - cmd: "clear @s minecraft:iron_sword"
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - cmd: "enchanting"
+  - wait: 3
+  - shift_click: "bottom iron_sword"
+  - wait: 2
+  - dump: menu
+  - close: ""
+  - wait: 2
+
+# EC6: THE TABLE ON A LIVING LANTERN: nothing at index 1; Airburst Flames at 10; the unique column's marker at 12.
+EC6:
+  - hold: empty
+  - cmd: "clear @s minecraft:lantern"
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - cmd: "enchanting"
+  - wait: 3
+  - shift_click: "bottom living_lantern"
+  - wait: 2
+  - dump: menu
+  - close: ""
+  - wait: 2
+
+# EC7: THE LANTERN'S HOMING SHOT (PR B), level 1 from here. A fresh lantern (every candidate LOCKED, so no behaviour), score
+# 100. L stands 10 east and 3 south of him, off his aim line, inside 7 of the shot's path. One press, never pressed
+# before in this run: its cooldown is clear.
+EC7:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+  - hold: empty
+  - cmd: "clear @s minecraft:lantern"
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~10 ~ ~3 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["l","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 20
+  - probe: l
+  - use: right_click
+  - wait: 60
+  - probe: l
+
+# EC8: BEYOND THE REACH: F stands 30 east on his aim line. 40 ticks after EC7's press (the cooldown is 16).
+EC8:
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~30 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: f
+  - use: right_click
+  - wait: 100
+  - probe: f
+
+# EC9: KINETIC TREMORS AT LEVEL I ON THE LAPIS STAFF: three beams into A, 22 ticks apart (the cooldown is 20). B stands 2
+# from A (inside level I's 3), C 4 from A (outside it). The Lapis Staff has not been pressed in this run.
+EC9:
+  - hold: empty
+  - cmd: "clear @s minecraft:breeze_rod"
+  - cmd: "rpg give lapis_staff"
+  - wait: 2
+  - hold: lapis_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 1 kinetic_tremors"
+  - cmd: "rpg enchant level 1 0 1"
+  - cmd: "rpg enchant active 1 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~3 ~ ~-2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["b","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~3 ~ ~4 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 20
+  - probe: a
+  - probe: b
+  - probe: c
+
+# EC10: TWO HITS, 61 TICKS, ONE HIT: NO SHOCKWAVE. A fresh mob D (a fresh record). Each press at least 22 after the last.
+EC10:
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["d","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 61
+  - use: right_click
+  - wait: 20
+  - probe: d
+
+# EC11: ONE BREACHER SHOT ON ONE MOB: four pellets, exactly one shockwave. Tremors staged on the Breacher at level I.
+EC11:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 1 kinetic_tremors"
+  - cmd: "rpg enchant level 1 0 1"
+  - cmd: "rpg enchant active 1 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~1 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["e","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 20
+  - probe: e
+
+# EC12: HITS SPLIT ACROSS TWO MOBS: G, H, G, 22 ticks apart, on the Lapis Staff (Tremors at I): never three on one.
+EC12:
+  - hold: lapis_staff
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~3 ~ ~-1 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["g","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~3 ~ ~1 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["h","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - aim: g
+  - use: right_click
+  - wait: 22
+  - aim: h
+  - use: right_click
+  - wait: 22
+  - aim: g
+  - use: right_click
+  - wait: 20
+  - probe: g
+  - probe: h
+
+# EC13: KINETIC TREMORS AT LEVEL III: EC9's staging, plus K 6 from A. C (4 from A) is now inside level III's 5; K is not.
+EC13:
+  - hold: lapis_staff
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant level 1 0 3"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~3 ~ ~-2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["b","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~3 ~ ~4 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~3 ~ ~-6 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["k","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 20
+  - probe: a
+  - probe: b
+  - probe: c
+  - probe: k
+
+# EC14: AIRBURST FLAMES AT LEVEL II: M stands 22 east on his aim line (never inside 7 of the shot before it splits). The
+# lantern was last pressed in EC8, long since.
+EC14:
+  - hold: empty
+  - cmd: "clear @s minecraft:lantern"
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 airburst_flames"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~22 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["m","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe_self: ""
+  - use: right_click
+  - wait: 80
+  - probe: m
+
+# EC15: A HIT BEFORE 14 BLOCKS: N stands 6 east. The 45 lands and nothing splits. 80 ticks after EC14's press.
+EC15:
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 20
+  - use: right_click
+  - wait: 40
+  - probe: n
+
+# EC16: LEVEL I AGAINST LEVEL III: P stands 22 east; one press at I, one at III, 82 ticks apart.
+EC16:
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~22 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["p","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 80
+  - cmd: "rpg enchant level 0 0 3"
+  - wait: 2
+  - use: right_click
+  - wait: 80
+  - probe: p
+
+# EC17: NOTHING AN ENCHANT SPAWNS IS LEFT (B6, R0e extended): the run's three enchants spawn no entity at all (READ), so
+# every display and marker count near him is 0 (dropped items are NOT counted: a /kill of a zombie drops its loot) before the run's own mobs go.
+EC17:
+  - probe_entities: "item_display 64"
+  - probe_entities: "block_display 64"
+  - probe_entities: "marker 64"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
