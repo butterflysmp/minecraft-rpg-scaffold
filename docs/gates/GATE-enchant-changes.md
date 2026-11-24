@@ -705,3 +705,100 @@ edited between that build and them (only this paragraph, a doc the build does no
 -JarPath <the jar>`, exit 0.
 
 **READING: AS PREDICTED.** Before `'--- controls'`: **36 `PRESENT`, 0 `ABSENT`**. After it: **10 `ABSENT`, 0 `PRESENT`**.
+
+## THE RUN OF `01ee2d65`, 2026-11-24 (00:01 boot, 00:04:07-00:04:53 run): R0 PASSED; EVERY ROW READ AS PREDICTED; BEN: "yes"
+
+> **DATED NOTE, 2026-11-24, written after the run; no prediction above is edited.** Booted on the seat's approval of
+> `01ee2d65` and Ben's "READY". A marker made at 00:00:53, then the boot command; deployed jar 00:01:20 (2,506,130
+> bytes, sha256 `fb0719b5…dbf5c0513`); `latest.log` first line 00:01:21; this boot's `Done` 00:01:26. R0 read 00:01:43;
+> **Ben joined 00:03:22, after it.** He typed `/rpg mana refill` (00:03:43) and `/rpg selftest enchant-changes`
+> (00:04:07); he did not type `/gamemode survival` (the run's RESTORED line reads `gamemode=SURVIVAL`: he was in
+> survival). `<him>` is his id.
+
+### R0, SECOND FORM, READ
+
+- **R0aR2: AS PREDICTED.** `[00:01:25] … [Rpg] Build: 01ee2d65`. Before the boot command: `git status --porcelain`
+  printed nothing; `HEAD` and `ls-remote` both `01ee2d65f27276bfc677acb50a352d95225f617f`.
+- **R0bR2: AS PREDICTED.** The block extracted from the committed file, `cmp` IDENTICAL to the copy run before the
+  commit, against the deployed jar: **36 `PRESENT`, 0 `ABSENT`**, then **10 `ABSENT`, 0 `PRESENT`**.
+- **R0cR2: AS PREDICTED.** `[Rpg] Loaded 11 abilities, 46 visuals, 5 statuses, 7 elements, 14 enchants, …`;
+  `Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions`; `Custom recipes: 7 registered, 0 replaced, 0 refused,
+  of 7 authored (7 minting gear)`; the candidates line once; the only `[Rpg]` WARN `volley_stone`'s pair; no line naming
+  `lapis_crystal`; no `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Dev-only`, `currently prevented`; no `ORB` line at
+  boot. Deployed: `content/enchants/` 14 `.yml`, 0 `dev_`; `lapis_crystal.yml` line 63 `        radius: 15`, line 54
+  `        beat_ticks: 10`, no `glow:` key (line 47 is the comment saying so); `content/visuals/crystal_motes.yml` present.
+- **R0dR2: AS PREDICTED.** Exactly one `[Rpg] Selftest: dev server, 356 scenarios across 44 gates [melee-cell, …,
+  enchant-columns, enchant-changes]`; `359 scenarios` and `357 scenarios` absent.
+- **R0eR2: AS PREDICTED.** `FIGHTWORLD sweep path=…\rpgfight folders=0`; no `orphan`, no `deleting`.
+
+### THE SETUP AND THE CLEANS, READ
+
+- `PAD world=world stand=104,201,-4 floorY=200 interior=-2..45 east -13..13 south cells=7250 placed=0 repaired=0
+  ok=7250`; `PAD stood at=104.50 201.00 -3.50 yaw=-90.000 pitch=0.000`; **`PREFLIGHT ok box=0..32 east -13..13 south
+  air=1782/1782 floor solid=891/891`** (the wider box: 33 x 27 = 891 columns, two cells each above the floor);
+  `DIFFICULTY found=NORMAL set=NORMAL`; `SELF … at=104.50 201.00 -3.50`. The setup's own clean `return=-114.15 63.00
+  17.50`.
+- **Every clean: `LINGER work=0 entities=0 radius=48` and `LEFTOVER living=0 radius=16`** (setup, LB1R2, LB4R2,
+  LB2R2, LB3R2, LB5), every `return=104.50 201.00 -3.50`; `removed=` 0, 0, 0, 0, 1, 1.
+- **STAGE:** each row's `clear_inventory … kept=nexus@8` and `clear_state … orb=none`; the in-row `clear_state`
+  lines `orb=removed` in LB1R2, LB2R2, LB3R2 (twice), LB5. No `SKIPPED`, `VOID`, `ABORT`. `SELFTEST RUN FINISHED`
+  00:04:53, then `RESTORED … gamemode=SURVIVAL … difficulty=NORMAL … orbsRemoved=0 …`.
+- **Across the whole log, boot to stop: 0 `cause=orphan`, 0 `cause=backstop`, 0 `is currently prevented` WARN, 0
+  `Exception`.** The only non-`[Rpg]` WARNs are Paper's version banner at 00:01:27.
+
+### THE ROWS, IN THREE CLASSES
+
+**MISS: none. DID NOT TEST WHAT IT WAS MEANT TO: none.**
+
+**READ AS PREDICTED (five rows):**
+
+- **LB1R2.** `"  active: lapis_crystal II (… strikes each foe within 15 for 10.5 damage)"`; `DRIVE reload held=lapis_staff`;
+  **`ORBBODY owner=<him> id=addb0963-… type=block_display block=minecraft:lapis_block glowing=false glow=none scale=0.500
+  teleport_duration=1 persistent=false tick=3271`**, **no orphan line and no WARN**; **`ORB rest … at=116.500,202.620,-3.500
+  tick=3281`**; `ORB removed … cause=selftest tick=3340` (69 after the throw), `orb=removed`; **LB4R2's clean
+  `LINGER work=0 entities=0`**.
+- **LB4R2.** `ORBBODY … id=49ef39bb-… glowing=false glow=none … tick=3390`; **`ORB rest … tick=3400`**; **`ORB removed …
+  cause=expired tick=3700`** (3400 + 300, exact), **the row's only `ORB removed` line**; **LB2R2's clean `LINGER
+  work=0 entities=0`**.
+- **LB2R2.** `ORBBODY … id=15ba6b1c-… tick=3769`; `ORB rest … tick=3779`; `use … yaw=-90.000 pitch=0.000`; no
+  `lapis_staff/right_click` PLAYERHIT; **exactly one `ORBSHOT owner=<him> from=116.500,202.620,-3.500
+  to=116.500,202.740,1.500 visual=lapis_beam tick=3790`** (11 ticks into the rest); **exactly one `PLAYERHIT …
+  source=lapis_crystal/crystal target=<N> zombie element=kinetic sent=10.500 crit=false triggerScore=100`**;
+  **`ASK 1 question="Did a blue beam line run from the floating lapis block to the zombie it hit?" answer="yes"
+  ticks=131`** (his chat line, `<BaronVonYeetus> yes`, 00:04:42); probe **N `989.500`**, d 13.000; `ORB removed …
+  cause=selftest tick=3921`, `orb=removed`.
+- **LB3R2.** `"  active: lapis_crystal I (… within 15 for 6.3 damage)"`; `ORBBODY … tick=3971`, `ORB rest … tick=3981`,
+  **`ORBSHOT … to=116.500,202.740,1.500 … tick=3992`**, **`sent=6.300 crit=false`**; `cause=selftest tick=4010`,
+  `orb=removed`; `REPLY "Slot 0: Lapis Crystal unlocked to III." [green]`; `ORBBODY … tick=4013`, `ORB rest … tick=4023`,
+  **`ORBSHOT … tick=4034`**, **`sent=14.700 crit=false`**; probe **N `979.000`**, d 13.000; `cause=selftest tick=4052`.
+- **LB5.** `ORBBODY … tick=4102`; `ORB rest … at=116.500,202.620,-3.500 tick=4112`; no `lapis_staff/right_click`
+  PLAYERHIT; **exactly one `lapis_crystal/crystal` PLAYERHIT, on I, `sent=10.500 crit=false`**; **exactly one `ORBSHOT …
+  to=116.500,202.740,-16.500 visual=lapis_beam tick=4123`**; **nothing on B or X.** Probes: **I `989.500`** (d 17.692
+  from his feet; 13.101 from the orb), **B `1000.000`** (d 28.000; 16.082 from the orb), **X `1000.000`** (d 26.000;
+  15.704 from the orb). **THE FIRST SERVER READING OF THE BOX-TO-SPHERE CUT: X, inside the box the server's query
+  searches and 0.704 outside the sphere, took no shot.**
+
+### BEN'S ANSWER
+
+**"yes"**, verbatim, in the run (`ASK 1 … answer="yes" ticks=131`), to *"Did a blue beam line run from the floating
+lapis block to the zombie it hit?"*.
+
+**Recorded without comment, after the run (00:04:53 to 00:26:18):** `/rpg give lapis_staff`, `living_lantern`,
+`flint_staff`, `breacher`, `crystal_shard_staff`, `dragons_breath`; `/give … cobblestone 64`; `/rpg spawn knell` (several
+times); `/rpg mana refill` (several times); four throws of his own (`ORBBODY … glowing=false glow=none` at ticks 9214,
+9823, 12506, 16789, each `ORB removed … cause=expired` 300 after its rest, none with an orphan line); `/stop` 00:26:18.
+
+### AFTER HIS `/stop`
+
+`rpgfight` 0 entries; the overworld 106 files (106 at the backup); `All dimensions are saved` 00:26:18; no `java`
+process; **no `ORB` line reads `cause=stop`** (no orb was standing: his last expired at tick 17099); **his saved position
+`-104.75 63.00 16.28`** (READ off his player file's `Pos`), not the pad.
+
+### UNREAD, AND WHY
+
+- **The bob, the turn and the motes as seen**, and the absence of glow as seen: client-side, and not asked; Ben's "yes"
+  answers the line from the floating block to the zombie, nothing more.
+- **The beat itself on the server:** no line prints a pose or a mote; its tasks are witnessed only by every `LINGER
+  work=0` (they ended with each orb) and by `OrbLookTest`.
+- **A real orphan removed a tick after it appears:** no row stages one, and the log has none.
+- **The backstop firing:** by design.
