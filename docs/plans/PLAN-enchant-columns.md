@@ -605,3 +605,49 @@ changes to the enchants.** Until then, these are owed and recorded here, and not
    - `breacher#BR9` and `dragon-blink#BS3`, items 2 and 3 above.
 5. **For Ben, from the gate's third form (seat placeholders, still open):** the pad's place (200 east of world spawn, at
    spawn's z; it stands at x 104, floor Y 200, z -4 in the dev world) and that it is plain stone.
+
+## 14. BEN'S FIVE CHANGES TO AIRBURST FLAMES AND LAPIS CRYSTAL (2026-11-23): PR 1 `feat/enchant-changes`, PR 2 `feat/lapis-crystal-block`
+
+**Ben, verbatim, after seeing the run on the pad:** "1. I want the Airburst Flames to seek as well." / "2. I want it to
+split into 3 and 6 blocks instead of 12" (asked, "B. Split after 6 blocks into 3 pieces; pieces keep their 14.": "B") /
+"3. I want to change the visual of the Lapis crystal to a Floating Lapis block with glowing" / "4. Draw a line with
+particles from the crystal to the target with the same particles the right click uses" / "5. Increase the damage of the
+crystal to 30/50/70%".
+
+**THE SPLIT, the seat's ruling on CC's proposal:** PR 1 carries items 1, 2, 4, 5 and the owed item 6; PR 2 (on PR 1)
+carries item 3, the body, which is a new kind of orb body (a block display has no physics and no despawn, READ). ONE gate,
+`GATE-enchant-changes.md`, on the top; ONE boot after PR 2; ONE question for Ben.
+
+**PR 1, AS BUILT:**
+1. **The bursts seek.** `airburst_flames.yml` declares the bursts' OWN `homing:` block (SEAT PLACEHOLDER 2026-11-23: the
+   Living Lantern's 0.45 / 0 / 7), parsed by `EnchantLoader` into `EnchantBehaviour.Airburst.homing` (all three keys
+   required when present; absent, straight, as before). They still fan 12 degrees at the split. **READ
+   (`ProjectileFlight.steer`, `nearestMob`, `PaperCombatWorld.combatantsNear`):** each burst re-chooses, every tick, the
+   nearest live mob it can see within 7; nothing locks a target or keeps two bursts apart, so **two bursts may choose the
+   same mob and both strike it**; a target that dies is not returned by `combatantsNear` (live bodies only), so **the
+   burst turns to the nearest other live mob, or flies straight if none is in range**.
+2. **The split at 6.** EXECUTED (jshell): `ticksToTravel(6, 0.35)` = 18 and `18 x 0.35` = 6.3, so the split is the 18th
+   step, 17 ticks after the press, at 6.3 blocks (17 steps would be 5.95). The bursts' own travel stays 20 ticks
+   (`ticksToTravel(14, 0.7)`). **The lantern's own homing reaches 7, beyond the split's 6: a mob within 7 of the shot's
+   path before the split can now DRAW the shot, which then hits it (the 45) and never splits.** A gate row that wants the
+   split stands no mob within 7 of the first 6.3 blocks of path.
+3. **The drawn line.** `CastExecutor.orbShots` takes the RAY's own `beam` (the ray that met the orb, at the moment it
+   fires; nothing copied into the enchant file) and, for each STRUCK mob, presents it from the orb's rest point to the
+   mob's sight point, with an `ORBSHOT owner=… from=… to=… visual=… tick=…` line under mobtrace. A ray naming no beam
+   draws nothing, and `ContentValidator.validateOrbBeams` warns at load for any weapon granted an orb with a shot whose
+   ray trigger names no beam.
+4. **30/50/70.** `lapis_crystal.yml` `percent_by_level: [30, 50, 70]`. EXECUTED: `21 x 30 / 100` = 6.3, `21 x 50 / 100`
+   = 10.5, `21 x 70 / 100` = 14.7; the table line and the tooltip read `… within 8 for 6.3 damage` / `10.5` / `14.7`
+   (`LapisCrystalContentTest`).
+5. **The LINGER work=1 (item 6), READ and fixed.** It was the expiry `throwOrb` schedules on the orb's arrival, left
+   scheduled by `OrbRemovals.remove`; the row-start clean ended it. It could not act (`Orbs.removeIf` matches only its
+   own generation; `OrbExpiryTest.anExpiryLeftScheduledAfterARemovalCannotAct`). Now the orb carries its expiry's handle
+   (`CombatWorld.scheduleCancellable`, `Orbs.expiring`), a replacement cancels it in core, and `OrbRemovals.discard`
+   (every paper removal) cancels it: a row-start clean after an orb row finds `work=0`. The flight's own tasks (ten
+   driving steps and the arrival, within 10 ticks of a throw) are not cancelled: a removal mid-flight leaves them to run
+   against a gone body and a gone generation, which does nothing.
+6. **The owed dated notes**: `GATE-breacher.md` BR9, `GATE-dragon-blink.md` BS3, and `GATE-enchant-columns.md`'s note
+   that EC14R2-EC16R2 and LC1R2-LC4R2 cannot be re-run as written.
+
+**OPEN FOR BEN (SEAT PLACEHOLDERS 2026-11-23):** the bursts' homing values (0.45 / 0 / 7, the lantern's own); and, PR 2's,
+the crystal body's scale (0.5, centred on the rest point) and glow colour (blue).

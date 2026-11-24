@@ -370,6 +370,12 @@ the near. The aim pellet's 4th segment (9 to 12 blocks) meets the zombie at 10 a
 |---|---|---|
 | The dump: **`"Kinetic Damage: 16"`** and **`"Cooldown: 0.8s \| Mana Cost: 8"`** (PR 1; was 0.7s). Press 1: **exactly ONE PLAYERHIT, on `n`**, `source=crystal_shard_staff/right_click … element=kinetic sent=16.000` (or 32.000), its shard reaching 24.70 on its 9th segment (*The staff's reach*), **press + 9 or + 10**; probe at press 1 + 15: **`n` `84.000/100.000`** (68). Press 2 (30 ticks later; the cooldown is 16): **NO PLAYERHIT**; probe at press 2 + 15: **`f` `100.000/100.000`**. **Control:** press 1 struck at 25, which the old 7-tick shard could not reach | *The staff's reach*; `CrystalShardStaffContentTest` (16, lifetime 10) | |
 
+> **DATED NOTE, 2026-11-23 (the seat's item 6; `ScenarioLint`, rule PROBE_REACH): BR9's PROBES STOOD BEYOND THEIR
+> REACH.** The scenario's `probe: n` (25 out) and `probe: f` (33 out) were read with the probe's then-fixed reach of 16,
+> so any `PROBE` line this row printed could only say `none within 16 blocks`: neither mob's health was readable by that
+> instrument. **The row's readings stand as read**; what rests on its `PLAYERHIT` lines is untouched by this. Since
+> `feat/enchant-columns-instrument` a probe states its reach (`probe: "n 27"`); a re-run of BR9 would.
+
 ### BR10 — THE CRAFT, AND ITS TOOLTIP (SURVIVAL)
 
 | prediction | stands on | READING |

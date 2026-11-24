@@ -197,11 +197,15 @@ public final class EnchantLoader {
                         requiredInt(b, "hits", id), requiredInt(b, "window_ticks", id), requiredInt(b, "cooldown_ticks", id),
                         requiredDoubles(b, "damage_by_level", id), requiredDoubles(b, "radius_by_level", id),
                         element, b.getString("visual"));
-                // airburst: travel_blocks, count, angle_degrees, speed, burst_travel_blocks, damage_by_level, element
+                // airburst: travel_blocks, count, angle_degrees, speed, burst_travel_blocks, damage_by_level, element, and
+                // an OPTIONAL homing block for the bursts (Ben, 2026-11-23: "seek as well"): lerp, activation_blocks,
+                // search_radius, all three required when it is present (as a projectile's, AbilitySchema.parseHoming),
+                // judged by CastSpec.Homing. Absent: straight bursts, as before.
                 case "airburst" -> new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst(
                         requiredDouble(b, "travel_blocks", id), requiredInt(b, "count", id),
                         requiredDouble(b, "angle_degrees", id), requiredDouble(b, "speed", id),
-                        requiredDouble(b, "burst_travel_blocks", id), requiredDoubles(b, "damage_by_level", id), element);
+                        requiredDouble(b, "burst_travel_blocks", id), requiredDoubles(b, "damage_by_level", id), element,
+                        burstHoming(b.getConfigurationSection("homing"), id));
                 default -> throw new IllegalStateException("unreachable: " + name);
             };
         } catch (IllegalArgumentException ex) {
@@ -282,6 +286,13 @@ public final class EnchantLoader {
 
     /** Every behaviour block a file may declare, one at most (B1). */
     private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst", "grant_trigger");
+
+    /** The airburst's bursts' homing block, or null when the file declares none. */
+    private static io.github.butterflysmp.rpg.core.ability.CastSpec.Homing burstHoming(ConfigurationSection h, String id) {
+        if (h == null) return null;
+        return new io.github.butterflysmp.rpg.core.ability.CastSpec.Homing(requiredDouble(h, "lerp", id),
+                requiredDouble(h, "activation_blocks", id), requiredDouble(h, "search_radius", id));
+    }
 
     private static int requiredInt(ConfigurationSection b, String key, String id) {
         if (!b.isInt(key)) {

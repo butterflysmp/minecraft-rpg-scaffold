@@ -239,10 +239,26 @@ public final class PaperCombatWorld implements CombatWorld {
     public void schedule(Vec3 near, int delayTicks, Runnable task) {
         // Registered with its point, so a clean can end it there (step R7b, C2; PendingWork). It runs only if it is
         // still pending when its delay ends.
+        scheduleCancellable(near, delayTicks, task);
+    }
+
+    /**
+     * {@link #schedule}, returning its {@link PendingWork} id as the handle (2026-11-23, the seat's item 6). Cancelling
+     * takes the id out of the pending set, so the task finds itself gone when its delay ends and does not run: the same
+     * mechanism the selftest's row-start clean already uses ({@code cancelNear}).
+     */
+    @Override
+    public long scheduleCancellable(Vec3 near, int delayTicks, Runnable task) {
         long id = ctx.work().add(world.getUID(), near.x(), near.y(), near.z());
         ctx.scheduler().onRegionLater(toLocation(near), () -> {
             if (ctx.work().take(id)) task.run();
         }, delayTicks);
+        return id;
+    }
+
+    @Override
+    public void cancelScheduled(long handle) {
+        ctx.work().take(handle);
     }
 
     /**
@@ -405,6 +421,23 @@ public final class PaperCombatWorld implements CombatWorld {
         String where = String.format(java.util.Locale.ROOT, "%.3f,%.3f,%.3f", at.x(), at.y(), at.z());
         return "ORB " + event + " owner=" + ownerId + " at=" + where
                 + (cause == null || cause.isEmpty() ? "" : " cause=" + cause) + " tick=" + tick;
+    }
+
+    @Override
+    public void traceOrbShot(UUID ownerId, io.github.butterflysmp.rpg.core.Vec3 from, io.github.butterflysmp.rpg.core.Vec3 to,
+                             String visual) {
+        if (!ctx.mobTrace().getAsBoolean()) return;
+        ctx.log().info(orbShotLine(ownerId, from, to, visual, org.bukkit.Bukkit.getCurrentTick()));
+    }
+
+    /**
+     * {@code ORBSHOT owner=<uuid> from=<x>,<y>,<z> to=<x>,<y>,<z> visual=<id> tick=<n>}, three places (pinned by
+     * {@code OrbLineTest}): one per line drawn from an orb to a mob it struck (Ben, 2026-11-23).
+     */
+    public static String orbShotLine(UUID ownerId, io.github.butterflysmp.rpg.core.Vec3 from, io.github.butterflysmp.rpg.core.Vec3 to,
+                              String visual, long tick) {
+        return String.format(java.util.Locale.ROOT, "ORBSHOT owner=%s from=%.3f,%.3f,%.3f to=%.3f,%.3f,%.3f visual=%s tick=%d",
+                ownerId, from.x(), from.y(), from.z(), to.x(), to.y(), to.z(), visual, tick);
     }
 
     static String splitLine(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 at, int bursts, long tick) {

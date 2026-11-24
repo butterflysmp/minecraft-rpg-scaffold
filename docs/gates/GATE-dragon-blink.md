@@ -268,6 +268,12 @@ suppressed` line, and none is a failure (BB4's and BQ1's Phalanxes have AI and d
 |---|---|---|
 | The first arrow: **`SHIELD absorbed … amount=<the short bow's hit>`** and, **in the same tick**, **`SHIELD rider suppressed mob=phalanx id=<uuid> tick=<the same> what=knockback=0.100`**; `MOTION … vx=0.0000 vy=0.0000 vz=0.0000`; `SHIELD … up=false offhand=none`; `PROBE … customHP=240.000/240.000`. The second arrow: no SHIELD line; **`MOTION … vx=<positive>`** (the positive control, as BS2's); `PROBE … customHP=<240 − that hit>/240.000` | `short_bow.yml`'s `on_hit` (`weapon_damage`, then `knockback 0.1`); `MobShielder.suppressRider` | READ 2026-11-17: `SHIELD absorbed … tick=2074 amount=65.000 … element=kinetic amount=65.000` and `SHIELD rider suppressed … tick=2074 what=knockback=0.100`, the same tick; MOTION zero; `up=false offhand=none`; `customHP=240.000/240.000`. The second arrow: no SHIELD line; **`MOTION … vx=0.0170 vy=-0.0985 vz=0.0000`**, the positive control positive (small: BS2's was 0.4000), so **not VOID**; `customHP=175.000/240.000`. **MATCH** |
 
+> **DATED NOTE, 2026-11-23 (the seat's item 6; `ScenarioLint`, rule TURN_THEN_PRESS): BS3 PRESSED IN THE SAME PASS AS ITS
+> TURN, TWICE.** Its scenario's `aim: bs3` is followed at once by `use: right_click`, with no `wait:` between. The aim is
+> a `teleportAsync`, and on `e774d4b8` EC12 showed what that does: each `use` read the facing of the turn BEFORE its aim.
+> **The row's readings stand as read**; whether each press here faced its own aim is not established by them. A re-run
+> would wait 2 ticks after each aim, as `GATE-enchant-columns.md` EC12R2 does.
+
 ### BS4 — /kill ignores it (SURVIVAL)
 
 | prediction | stands on | READING |

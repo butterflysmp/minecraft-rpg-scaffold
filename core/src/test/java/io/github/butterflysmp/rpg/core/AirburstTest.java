@@ -25,8 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class AirburstTest {
 
+    // The mechanism as first built (14 blocks, straight bursts); Ben's 2026-11-23 numbers and the seeking bursts are
+    // AirburstSeekTest's.
     private static final EnchantBehaviour.Airburst BURST = new EnchantBehaviour.Airburst(14, 3, 12, 0.7, 14,
-            List.of(25.0, 30.0, 35.0), "fire");
+            List.of(25.0, 30.0, 35.0), "fire", null);
     private static final Aim EAST = new Aim(Vec3.ZERO, new Vec3(1, 0, 0));
 
     private static AbilityDefinition lantern() {

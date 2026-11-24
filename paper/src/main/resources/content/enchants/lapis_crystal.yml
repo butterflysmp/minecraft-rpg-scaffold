@@ -43,9 +43,9 @@ grant_trigger:
       # weapon that granted the orb) passing within 0.6 of his resting orb BEFORE it reaches a mob or block stops there,
       # and the orb strikes every mob within 8 of itself (a true sphere, centre to its feet) that it has a clear line to,
       # each for the level's percent of the beam's AUTHORED damage read from the beam itself (21 today: never copied
-      # here): 4.2 / 6.3 / 8.4. Secondary damage (B4): source lapis_crystal/crystal, never a hit, never himself, never a
+      # here): 6.3 / 10.5 / 14.7 (was 4.2 / 6.3 / 8.4). Secondary damage (B4): source lapis_crystal/crystal, never a hit, never himself, never a
       # player; it carries every term of the beam that set it off. The orb is not used up.
       shot:
         radius: 8                          # BEN: "all enemies within a 8 block range"
-        percent_by_level: [20, 30, 40]     # BEN: "20/30/40% of the damage of the right click"
+        percent_by_level: [30, 50, 70]     # BEN, 2026-11-23: "Increase the damage of the crystal to 30/50/70%" (was 20/30/40)
         element: kinetic                   # the beam's element (the seat's ruling)

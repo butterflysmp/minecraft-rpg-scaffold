@@ -27,15 +27,25 @@ public final class Orbs {
      * One orb. {@code restPoint} is where it comes to rest; {@code arrivedTick} is -1 while it flies. {@code weaponId},
      * {@code enchantId} and {@code level} name the GRANT that threw it (null and 0 for an orb no grant threw), so D3 can
      * tell his own staff's beam and price the crystal's shots.
+     *
+     * <p>{@code expiryTask} is the handle of the expiry {@code throwOrb} scheduled on arrival ({@code
+     * CombatWorld#scheduleCancellable}), or -1 while it flies (2026-11-23, the seat's item 6): every removal cancels it, so
+     * a removed or replaced orb leaves nothing scheduled.
      */
     public record Orb(UUID owner, UUID markerId, long generation, Vec3 restPoint, double radius, int lifeTicks,
-                      long arrivedTick, String weaponId, String enchantId, int level, Shot shot) {
+                      long arrivedTick, String weaponId, String enchantId, int level, Shot shot, long expiryTask) {
         public boolean resting() {
             return arrivedTick >= 0;
         }
 
         Orb arrived(long tick) {
-            return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, tick, weaponId, enchantId, level, shot);
+            return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, tick, weaponId, enchantId, level, shot,
+                    expiryTask);
+        }
+
+        Orb expiring(long task) {
+            return new Orb(owner, markerId, generation, restPoint, radius, lifeTicks, arrivedTick, weaponId, enchantId, level,
+                    shot, task);
         }
     }
 
@@ -52,7 +62,7 @@ public final class Orbs {
     public synchronized PlaceResult place(UUID owner, UUID markerId, Vec3 restPoint, double radius, int lifeTicks,
                                           String weaponId, String enchantId, int level, Shot shot) {
         Orb placed = new Orb(owner, markerId, nextGeneration++, restPoint, radius, lifeTicks, -1, weaponId, enchantId, level,
-                shot);
+                shot, -1);
         Orb previous = byOwner.put(owner, placed);
         return new PlaceResult(placed, Optional.ofNullable(previous));
     }
@@ -66,6 +76,14 @@ public final class Orbs {
         Orb arrived = orb.arrived(tick);
         byOwner.put(owner, arrived);
         return Optional.of(arrived);
+    }
+
+    /** Record the expiry {@code task} on the orb of {@code generation}; false (and nothing recorded) for a stale one. */
+    public synchronized boolean expiring(UUID owner, long generation, long task) {
+        Orb orb = byOwner.get(owner);
+        if (orb == null || orb.generation() != generation) return false;
+        byOwner.put(owner, orb.expiring(task));
+        return true;
     }
 
     /** Remove {@code owner}'s orb only if it is still {@code generation} (an expiry). */

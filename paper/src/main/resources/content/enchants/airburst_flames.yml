@@ -5,9 +5,9 @@
 # Doesn't split if it hits something first" / "Also side note: The name of the enchantment is Airburst Flames".
 #
 # WHAT IT DOES (core CastExecutor.launchToSplit, while it is the ACTIVE candidate of the lantern's weapon slot at level 1
-# or more): the lantern's shot homes as it always does (living_lantern.yml) until it has TRAVELLED 14 blocks, which at
-# its 0.35 a tick is 40 steps (EnchantBehaviour.Airburst.ticksToTravel, executed). If it has hit nothing -- no mob, no
-# block -- it ends there and three bursts leave that point: never homing, each a further 14 blocks at 0.7 a tick (20
+# or more): the lantern's shot homes as it always does (living_lantern.yml) until it has TRAVELLED 6 blocks (BEN, 2026-11-23; was 14), which at
+# its 0.35 a tick is 18 steps, 6.3 blocks (EnchantBehaviour.Airburst.ticksToTravel, executed). If it has hit nothing -- no mob, no
+# block -- it ends there and three bursts leave that point, each seeking for itself (BEN, 2026-11-23; was never homing), each a further 14 blocks at 0.7 a tick (20
 # steps), each a PRIMARY hit of the level's damage in fire IN PLACE of the 45, with the shot's other on_hit effects (its
 # hit visual) and fire's burn. A shot that hits anything first lands its 45 and never splits. The bursts never split.
 #
@@ -24,10 +24,14 @@ effect: airburst
 class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
 weapon: living_lantern                     # W1: weapon-specific, the Living Lantern's slot 0
 airburst:
-  travel_blocks: 14                        # BEN: "go to 14 blocks"
+  travel_blocks: 6                         # BEN, 2026-11-23: "B" -- "Split after 6 blocks into 3 pieces; pieces keep their 14." (was 14)
   count: 3                                 # BEN: "three ... projectiles"
   angle_degrees: 12                        # SEAT PLACEHOLDER 2026-11-23: the old repo's spread, 12 degrees apart
   speed: 0.7                               # SEAT PLACEHOLDER 2026-11-23: "faster" (BEN) read as double the lantern's 0.35
   burst_travel_blocks: 14                  # BEN: "an additional 14 blocks"
   damage_by_level: [25, 30, 35]            # BEN: "25/30/35 damage each burst"
   element: fire                            # the lantern's element
+  homing:                                  # BEN, 2026-11-23: "I want the Airburst Flames to seek as well." Each burst seeks for itself
+    lerp: 0.45                             # SEAT PLACEHOLDER 2026-11-23: the Living Lantern's own
+    activation_blocks: 0                   # SEAT PLACEHOLDER 2026-11-23: the Living Lantern's own (from the split point)
+    search_radius: 7                       # SEAT PLACEHOLDER 2026-11-23: the Living Lantern's own
