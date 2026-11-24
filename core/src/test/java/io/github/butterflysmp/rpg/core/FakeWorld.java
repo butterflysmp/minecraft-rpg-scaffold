@@ -349,6 +349,30 @@ public final class FakeWorld implements CombatWorld {
         return now;
     }
 
+    /** This world's one orb registry, as paper keeps one per server (D2). */
+    public final io.github.butterflysmp.rpg.core.combat.Orbs orbs = new io.github.butterflysmp.rpg.core.combat.Orbs();
+
+    @Override public io.github.butterflysmp.rpg.core.combat.Orbs orbs() {
+        return orbs;
+    }
+
+    /** Orb bodies spawned, a subset of the markers. */
+    public final List<UUID> orbMarkers = new ArrayList<>();
+
+    @Override public UUID spawnOrbMarker(Vec3 at, String itemId, int expectedLifetimeTicks) {
+        UUID id = spawnMarker(at, itemId, expectedLifetimeTicks);
+        orbMarkers.add(id);
+        return id;
+    }
+
+    /** Every ORB trace line, in order. */
+    public record OrbLine(UUID owner, String event, Vec3 at, String cause, long tick) {}
+    public final List<OrbLine> orbLines = new ArrayList<>();
+
+    @Override public void traceOrb(UUID ownerId, String event, Vec3 at, String cause) {
+        orbLines.add(new OrbLine(ownerId, event, at, cause, now));
+    }
+
     /** Every split the cast path reported, in order. */
     public record Split(UUID casterId, String source, Vec3 at, int bursts, long tick) {}
     public final List<Split> splits = new ArrayList<>();

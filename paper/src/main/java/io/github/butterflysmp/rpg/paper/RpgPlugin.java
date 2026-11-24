@@ -880,6 +880,10 @@ public final class RpgPlugin extends JavaPlugin {
             }
             // Every entity, not only the living: a shot's display that was somehow saved is an orphan too (step R7a).
             for (org.bukkit.entity.Entity e : world.getEntities()) scheduler.onEntity(e, () -> shooter.onAppear(e));
+            // And an orb's body no live orb owns (Lapis Crystal's D2, B6's sweep): at enable, none is live, so any is an orphan.
+            for (org.bukkit.entity.Entity e : world.getEntities()) {
+                scheduler.onEntity(e, () -> io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.sweep(adapters, e));
+            }
         }
 
         // PacketEvents is a SEPARATE PLUGIN on the server, declared in
@@ -1161,6 +1165,8 @@ OLD
         // listeners are gone, so nothing else restores the run. It restores here, synchronously, before the profile
         // flush below, which must carry the lifetime XP and cell the restore writes back.
         if (selfTest != null) selfTest.onDisable();
+        // EVERY ORB, AT STOP (Lapis Crystal's D2, B6): removed before the worlds save, each with its ORB removed cause=stop line.
+        if (adapters != null) io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.removeAll(adapters);
         // THE MIRROR IS NEVER SAVED (2026-11-22): after the selftest's own restore, every online player's Nexus slot goes back
         // to the star before the server writes the inventories.
         if (adapters != null) {

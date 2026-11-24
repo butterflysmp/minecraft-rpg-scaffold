@@ -78,7 +78,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              io.github.butterflysmp.rpg.core.shape.DragMotion dragMotion,
                              DragTrace dragTrace,
                              io.github.butterflysmp.rpg.core.fight.DamageGate gate,
-                             io.github.butterflysmp.rpg.core.ability.effect.BehaviourHits behaviourHits) {
+                             io.github.butterflysmp.rpg.core.ability.effect.BehaviourHits behaviourHits,
+                             io.github.butterflysmp.rpg.core.combat.Orbs orbs) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
@@ -106,7 +107,9 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                 // THE MAGE'S DAMAGE GATE (the dragon fight's step F6): asked at BukkitCombatant's one choke point.
                 new io.github.butterflysmp.rpg.core.fight.DamageGate(),
                 // THE ONE BEHAVIOUR EXECUTOR (the seat's B2-B4, 2026-11-23): its state outlives every cast, so one per server.
-                new io.github.butterflysmp.rpg.core.ability.effect.BehaviourHits());
+                new io.github.butterflysmp.rpg.core.ability.effect.BehaviourHits(),
+                // EVERY STANDING ORB (Lapis Crystal's D2, 2026-11-23): an orb outlives its cast, so one per server.
+                new io.github.butterflysmp.rpg.core.combat.Orbs());
     }
 
     /**

@@ -223,6 +223,12 @@ public final class Keys {
     public final NamespacedKey mobShot;
 
     /**
+     * LAPIS CRYSTAL'S ORB (D2, 2026-11-23): a BYTE on an orb's body. A body carrying it that no live orb owns
+     * ({@code Orbs.ownsMarker}) is an orphan and is removed where it appears, as a Phalanx's shot is.
+     */
+    public final NamespacedKey orb;
+
+    /**
      * F21 (the seat's queue, item 4, 2026-11-19): THE SERVER TICK THE PHALANX'S BLINK COOLDOWN ENDS, a LONG on the live
      * mob, written when a blink lands. A Phalanx loaded again resumes what is left of it ({@code MobShooter}).
      */
@@ -490,6 +496,7 @@ public final class Keys {
         this.mobGrowthFed = new NamespacedKey(plugin, "mob_growth_fed");
         this.beamRoot = new NamespacedKey(plugin, "beam_root");
         this.mobShot = new NamespacedKey(plugin, "mob_shot");
+        this.orb = new NamespacedKey(plugin, "orb");
         this.blinkReadyAt = new NamespacedKey(plugin, "blink_ready_at");
         this.mobShield = new NamespacedKey(plugin, "mob_shield");
         this.mobStationary = new NamespacedKey(plugin, "mob_stationary");

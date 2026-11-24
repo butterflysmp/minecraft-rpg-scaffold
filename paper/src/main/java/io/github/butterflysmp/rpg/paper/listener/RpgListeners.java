@@ -1218,6 +1218,27 @@ public final class RpgListeners implements Listener {
      * when the target dies"). Every player's hits on it go; nothing else is touched. Its own handler, not a line inside
      * the scorch handler below, which returns early for an unscorched mob.
      */
+    /**
+     * THE ORB'S SWEEP (Lapis Crystal's D2, B6): an orb's body that no live orb owns is an orphan, removed where it
+     * appears. Its own handler, so {@code onEntityAdd} still meets a Phalanx's shot first (DragonShotWiringTest).
+     */
+    @EventHandler
+    public void onOrbBodyAppear(EntityAddToWorldEvent event) {
+        io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.sweep(adapters, event.getEntity());
+    }
+
+    /** His orb goes when he dies (Lapis Crystal's D2, B6). Its own handler, beside the death handling below. */
+    @EventHandler
+    public void onOrbOwnerDeath(PlayerDeathEvent event) {
+        io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "death");
+    }
+
+    /** And when he changes world (D2, B6): an orb never outlives his presence in its world. */
+    @EventHandler
+    public void onOrbOwnerChangedWorld(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "world_change");
+    }
+
     @EventHandler
     public void onBehaviourTargetDeath(EntityDeathEvent event) {
         if (event.getEntity() instanceof Player) return;
@@ -2289,6 +2310,8 @@ public final class RpgListeners implements Listener {
         fights.onQuit(event.getPlayer());
         // His behavioural enchants' records go with him (Kinetic Tremors: "forgotten ... on his quit", 2026-11-23).
         adapters.behaviourHits().streaks().forgetPlayer(event.getPlayer().getUniqueId());
+        // And his orb (Lapis Crystal's D2, B6: removed on his quit).
+        io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "quit");
 
         // FIRST, ahead of the clears: a menu holding this player's weapon must give it back while
         // their inventory can still be written. Writes during PlayerQuitEvent persist -- the save

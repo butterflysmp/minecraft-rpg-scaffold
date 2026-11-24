@@ -7,6 +7,23 @@ import java.util.List;
 /** How the ability reaches its target. */
 public sealed interface CastSpec {
     record Self() implements CastSpec {}
+
+    /**
+     * THE THROWN ORB (YAML {@code type: orb}; Lapis Crystal's D2, 2026-11-23). A body thrown along the aim to
+     * {@code range} blocks, stopping short of the first solid block, arriving in {@code flightTicks}, then resting
+     * {@code lifeTicks} counted from arrival. ONE per caster: a new throw removes the standing one. {@code radius} is how
+     * close a beam must pass to be stopped by it (D3). {@code item} is its look (a non-saved item marker).
+     * {@code CastExecutor.throwOrb} flies it; {@code Orbs} holds it.
+     */
+    record Orb(double range, int flightTicks, int lifeTicks, double radius, String item) implements CastSpec {
+        public Orb {
+            if (!(range > 0)) throw new IllegalArgumentException("orb range must be above 0, was " + range);
+            if (flightTicks < 1) throw new IllegalArgumentException("orb flight_ticks must be 1 or more, was " + flightTicks);
+            if (lifeTicks < 1) throw new IllegalArgumentException("orb life_ticks must be 1 or more, was " + lifeTicks);
+            if (!(radius > 0)) throw new IllegalArgumentException("orb radius must be above 0, was " + radius);
+            if (item == null || item.isBlank()) throw new IllegalArgumentException("orb item is required");
+        }
+    }
     record Melee(double reach, double arcDegrees) implements CastSpec {}
     /**
      * VANILLA'S OWN SHOT (YAML {@code type: vanilla}, 2026-11-22): the item's bow or crossbow shot, which vanilla draws,
@@ -654,6 +671,8 @@ public sealed interface CastSpec {
             // A cone in flight when the next is cast is two casts, each with its own struck set: nothing doubles up
             // within one, and two overlapping cones are two presses the cooldown already priced. No floor.
             case Cone ignored -> 0;
+            // A second throw REPLACES the standing orb (one per caster), so nothing in flight can double up. No floor.
+            case Orb ignored -> 0;
         };
     }
 }
