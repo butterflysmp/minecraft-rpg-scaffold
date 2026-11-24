@@ -531,6 +531,11 @@ public final class CastExecutor {
         if (spec.spread() != null) {
             // SHATTER CAPS (2026-11-24): its weapon's spread is replaced by ONE stone, here, below the commit, so the
             // press still bills one round and one cooldown, as the spread does.
+            // THE ability-id CHECK STAYS after the weapon filter (paper BehaviourItems.activeOf, 2026-11-24), because the
+            // two ask different questions: the filter, "is this the weapon's ITEM"; this, "is this the weapon's CAST". They
+            // differ only on a volley's per-shot re-read (the seat's ruling 1: the weapon in hand at each shot), where a
+            // weapon swapped in mid-volley lends its behaviours to a cast another weapon pressed. No shipped volley fires a
+            // spread, so here it is a belt; Focused Beam's identical check is not (knell_beam's volley is a ray).
             for (io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active : caster.behaviours()) {
                 if (active.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shatter caps
                         && ability.id().startsWith(caps.weaponId() + "/")) {

@@ -801,3 +801,47 @@ on another projectile weapon would split that weapon's shot (no roll can produce
 Lapis Crystal's grant each check their own weapon at the cast; Airburst does not. **The fix belongs in one place, where
 behaviours are read from the item, and when it is done `GATE-enchant-changes.md`'s Airburst rows (AF1-AF4) are re-read.**
 Not done in `feat/shatter-caps`, by the seat's ruling: Airburst's path stays as `GATE-enchant-changes` read it.
+
+## 17. PR 1 OF THE SEAT'S BRIEF OF 2026-11-24: THE OWED WEAPON FILTER (`feat/behaviour-weapon-filter`, on #270)
+
+**The carried list's item 1 (section 15), built.** A behaviour whose enchant names a weapon acts ONLY on that weapon,
+enforced ONCE, in `BehaviourItems.activeOf`, which now takes the id of the weapon the state was read from and drops any
+behaviour whose `weapon:` is another (or any weapon at all, for a null id). A behaviour that names no weapon (a unique,
+element enchant: Kinetic Tremors) passes as before.
+
+**WHO READS THROUGH IT (READ, `git grep -n "BehaviourItems\.\|behavioursOf("` at `6a1c4713`):** `PaperCombatWorld
+.behavioursOf` (every cast's read: commit, a basic swing, each volley shot; and `WeaponFire`'s read for a granted
+trigger; and `VanillaShots`' stamp, which goes through it) now passes the held weapon's id; `WeaponItems.applyLore` (the
+tooltip's granted trigger) passes the weapon being rendered. `VanillaShots`' hit-time resolution re-reads only the ids
+the stamp already filtered. There is no other caller. The two-argument form is GONE, so a new caller cannot forget the
+weapon: it does not compile.
+
+**SHATTER CAPS' OWN `startsWith` CHECK IS KEPT, AND WHY (the brief asked).** The filter answers "is this the weapon's
+ITEM"; the check in `CastExecutor.launch` answers "is this the weapon's CAST". They differ only on a volley's per-shot
+re-read (section 7, ruling 1: the weapon in hand at each shot), where a weapon swapped in mid-volley lends its behaviours
+to a cast another weapon pressed. No shipped volley fires a spread, so for Shatter it is a belt; Focused Beam (PR 2)
+needs the same check for real, because `knell_beam`'s right click is a volley of rays. The Lapis Crystal's own checks
+(`GrantedTriggers.granted`'s weapon id, `throwOrb`'s ability id) are kept on the same reasoning and are unchanged.
+
+**Airburst's behaviour on the Living Lantern is untouched** (its path in `CastExecutor` is not edited; `AirburstTest` and
+`AirburstSeekTest` unchanged and green). What changed is only that the dev command's staging on another weapon now
+reaches nothing there.
+
+**Tests:** new `paper/.../weapon/BehaviourWeaponFilterTest` (5, over the SHIPPED enchant and weapon files): Airburst on
+the lantern as before and on the Crystal Shard Staff and the Breacher nothing; Shatter Caps on the Breacher and on the
+Boltor and lantern nothing; Lapis Crystal on the Lapis Staff (and its granted left click, the control) and on the Flint
+Staff nothing; Kinetic Tremors in slot 1 on all 16 kinetic weapons unchanged; a null weapon id passes only Tremors.
+`KineticTremorsContentTest`'s four reads now name a weapon (`boltor`). **What a cast does with no behaviour is core's,
+held by `AirburstTest.withoutTheEnchantTheShotIsTheLanterns` and `ShatterCapsTest.notActiveOrOnAnotherWeaponFourChunksAsToday`:
+the weapon fires as authored.**
+
+**Mutations, each `marker present: 1  original gone: 0  lines changed: 1` against a pristine copy, restored and `cmp`
+byte-identical, `markers left: 0`:** MUTFILTER (the filter passes everything: 4 of the 5 rows red, the Tremors row green,
+as it must be); MUTUNIQUE (only weapon-specific behaviours pass: 2 rows here and `KineticTremorsContentTest
+.onlyAnActiveBehaviouralEnchantBecomesABehaviour` red). MUTUNIQUE's first form reddened by a `NullPointerException`
+(`def.weapon().equals` on a null), not an assertion; it was re-written null-safe and re-run before being counted.
+**UNMUTATED, said so:** the two paper call sites passing the id (server-side; the gate's CSS row on PR 2 is the witness
+that the held weapon's id reaches the filter).
+
+**`GATE-enchant-changes.md`'s AF1-AF4 are not re-run;** the seat's brief instead re-reads ONE Airburst row on the server
+(PR 2's gate, `AFR`), with the Crystal Shard Staff row (`CSS`) beside it.
