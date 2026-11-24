@@ -845,3 +845,81 @@ that the held weapon's id reaches the filter).
 
 **`GATE-enchant-changes.md`'s AF1-AF4 are not re-run;** the seat's brief instead re-reads ONE Airburst row on the server
 (PR 2's gate, `AFR`), with the Crystal Shard Staff row (`CSS`) beside it.
+
+## 18. PR 2: FOCUSED BEAM, THE CURSED EMERALD'S WEAPON-SPECIFIC ENCHANT (`feat/focused-beam`, on PR 1), 2026-11-24
+
+**Ben, verbatim (the seat's brief of 2026-11-24):** "I'd like to scope the next enchantment for the Cursed Emerald: Focused
+Beam. Fires one stronger beam after the wind up." / asked the beam's damage by level, whether it pierces, whether the
+wind-up, mana, cooldown or range change, and whether it fires where he is looking when the wind-up ends: "1. 108/162/216
+2. No piece 3. Everything the same except increase the range to 48 blocks. 4. Yes". The seat reads "No piece" as no
+pierce, and 3 as the beam's range being 48 while the plain volley keeps its 32 (**the 48's scope: SEAT'S READING, OPEN
+FOR BEN**).
+
+**What the seat read at `ee46a493`, confirmed** (`FocusedBeamContentTest.theCursedEmeraldsVolleyIsAsTheSeatReadIt`, off
+the loaded weapon): "Cursed Volley", cooldown 30, mana 40, on_cast `emerald_windup`, a volley of wind-up 20, 6 shots 2
+apart, of a ray of range 32 drawing `emerald_beam`; on_hit a visual and 27 kinetic. Nothing disagreed.
+
+**AS BUILT:**
+1. **A fourth behaviour type, `EnchantBehaviour.FocusedBeam`, not a seam shared with Shatter Caps** (`effect:
+   focused_beam`; block `range`, `damage_by_level`, `element`). Shatter acts where a spread projectile is expanded
+   (`launch`); this acts where a volley fires its first shot (`volley`, then `focusedBeam`). `launch`, `launchOne`,
+   `launchStone`, `shatter`, `launchToSplit` and `split` are not edited.
+2. **The one ray:** at the volley's FIRST shot (the wind-up's end), off that shot's own aim, Caster (a fresh crit, the score
+   read then) and behaviours. The volley's own inner ray, read from the weapon's spec at run time: its beam and tolerance
+   as authored, range 48, pierce OFF. The weapon's on_hit with its damage replaced by 108 / 162 / 216 kinetic, on a derived
+   ability keeping the id `cursed_emerald/right_click`. No further shot is scheduled. One primary hit.
+3. **The weapon check:** acts only on a `cursed_emerald/...` cast. NOT a belt here: `knell_beam`'s right click is a volley
+   of rays, and a Cursed Emerald swapped in during its wind-up lends its behaviours to the shot (ruling 1).
+4. **The trace:** `FOCUSED caster=… source=… from=x,y,z range=… pressed=<t0> tick=<t1>` under mobtrace
+   (`CombatWorld.traceFocusedBeam`, abstract; `FocusedLineTest`). The press's tick is read in `beginVolley` and threaded as
+   a value; nothing decides on it.
+5. **The loader refuses, by name:** a weapon whose right click is not a volley of rays; no `weapon:`; a level list not
+   matching `max_level` (the record's); a non-positive range.
+
+**READ, THE TWO ANSWERS THE BRIEF ASKED FOR:**
+- **The aim:** the plain volley's first shot is scheduled on him `windup_ticks` after the press and reads
+  `world.aimOf(casterId)` then (`ViewAim.of(getEyeLocation())`); the beam is fired from inside that same shot, off that
+  same aim. The same read.
+- **What interrupts a wind-up today:** his QUIT (the entity scheduler's task, retired callback null; and `volley` returns
+  when `combatant` is empty) and his DEATH on the shot's tick (`volley` returns when `!alive`, which is `!isDead()`). No
+  ray leaves after either. **A WEAPON SWAP DOES NOT INTERRUPT IT**: the volley fires, re-reading the held item's
+  behaviours at the shot (ruling 1); swapped away from a Cursed Emerald with Focused Beam, the six bolts fire as
+  authored. That Paper retires entity tasks on removal is INFERRED (the API's contract, not read in the jar); a death and
+  respawn both inside 20 ticks is UNVERIFIED.
+
+**FOR THE SEAT, ONE DISAGREEMENT IN THE BRIEF, BUILT ONE WAY AND FLAGGED:** "the Cursed Emerald that made the cast" (the
+press) against ruling 1, "the weapon in hand at each shot". They differ only on a swap during the wind-up. Built to ruling
+1 (the shot's read), because the volley path already reads that way; freezing it at the press would be the other ruling.
+
+**OPEN FOR BEN (SEAT PLACEHOLDERS 2026-11-24):** the 48's scope (this beam only; the plain volley keeps 32); the beam's look
+(the bolt's `emerald_beam`, unchanged; whether the one beam should look heavier); the icon (`ender_eye`); the line's
+wording ("after the wind-up, fires one beam of 108 damage reaching 48 blocks"); **the Cursed Emerald's own description,
+NOT EDITED, which still reads "Channel, then loose six" / "bolts down your line of sight." with the enchant active.**
+
+**Tests:** `core/.../FocusedBeamTest` (10), `paper/.../FocusedBeamContentTest` (5), `paper/.../adapter/FocusedLineTest`
+(1); `EnchantLoaderTest` (16 enchants; four weapon-specific) and `UniqueSlotContentTest` (16; the Cursed Emerald's weapon
+pool `[focused_beam]`, every other gear's as before) re-pinned. **Mutations, each a single-site edit with `marker present:
+1`, its needle's count down by 1, `lines changed: 1` against a pristine copy, each red, restored and `cmp`
+byte-identical, `markers left: 0`:**
+
+| mutation | the edit | reddened |
+|---|---|---|
+| MUTSIX | the beam fires and the volley carries on (no `return`) | 8 `FocusedBeamTest` rows, the Tremors row among them |
+| MUTWEAPON | the ability-id check removed | `notActiveOrOnAnotherWeaponsVolleySixAsToday` (its only guard) |
+| MUTSHOT | the beam at the second shot, not the first | 7 rows |
+| MUTRANGE | the ray keeps the volley's 32 | the boundary row |
+| MUTPIERCE | pierce on | the two-mob row, and the boundary row (a piercing ray walks the sweep, whose box model reaches 48.1) |
+| MUTDMG | level I's damage at every level | `eachLevelsDamage` |
+| MUTLOCK | every volley's aim locked at the press | `theAimIsReadAtTheWindupsEndNotAtThePress` |
+| MUTPRESS | the traced press tick a constant 0 | the wind-up row (it presses at tick 7 so a zero cannot pass; first written at tick 0, which a zero would have passed, and moved before any mutation ran) |
+| MUTCOST | `AbilityService` charges twice the cost | `manaAndCooldownAreChargedOnce` |
+| MUTLOADER | the not-a-volley-of-rays refusal disabled | the refusal row |
+| MUTLINE | the line shows level I's damage | the line row |
+| MUTCONTENT | `focused_beam.yml` 216 -> 215 | 3 content rows |
+| MUTPOOL | `focused_beam.yml` `weapon: knell_beam` | 2 content rows and `UniqueSlotContentTest`'s pool row (its needle counted 2 before: the file's comment also says `weapon: cursed_emerald`; the edit was anchored to `^weapon:` and changed 1 line) |
+
+**UNMUTATED, said so:** the cooldown half of `manaAndCooldownAreChargedOnce` (no code in this PR touches the cooldown;
+the row pins that the beam adds none); paper's `traceFocusedBeam` gate on mobtrace (server-side; the gate's `FOCUSED` lines
+are its witness).
+
+**The gate:** `GATE-focused-beam.md`, on this branch, carrying the one R0 for #270 and both PRs.

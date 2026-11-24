@@ -119,3 +119,6 @@ gates:
 # shatter-caps (2026-11-24, feat/shatter-caps on feat/breacher-reach): the Breacher's reach of 18 and Shatter Caps,
 # on the pad. docs/gates/GATE-shatter-caps.md carries its R0.
   - shatter-caps
+# focused-beam (2026-11-24, feat/focused-beam on feat/behaviour-weapon-filter): the owed weapon filter and Focused Beam,
+# on the pad. docs/gates/GATE-focused-beam.md carries its R0.
+  - focused-beam
