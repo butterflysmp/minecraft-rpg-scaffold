@@ -561,8 +561,13 @@ public final class FakeWorld implements CombatWorld {
      *  {@link #markers} map cannot: both leave it empty. */
     public final List<UUID> markersEverSpawned = new ArrayList<>();
 
+    /** Every item marker's item, id -> item, KEPT after removal (Shatter Caps, 2026-11-24: a row asks which bodies a press
+     *  made after they have landed, which the live {@link #markers} map cannot). */
+    public final Map<UUID, String> markerItemsEver = new HashMap<>();
+
     @Override public UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks) {
         UUID id = UUID.randomUUID();
+        markerItemsEver.put(id, itemId);
         markers.put(id, itemId);
         markerPositions.put(id, at);
         markerSpawnedAt.put(id, at);

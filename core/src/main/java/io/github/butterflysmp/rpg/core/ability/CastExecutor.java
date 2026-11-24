@@ -529,6 +529,15 @@ public final class CastExecutor {
         // would bill seven rounds for one press. Expanded below commit it bills one, by
         // construction rather than by a second rule that could drift.
         if (spec.spread() != null) {
+            // SHATTER CAPS (2026-11-24): its weapon's spread is replaced by ONE stone, here, below the commit, so the
+            // press still bills one round and one cooldown, as the spread does.
+            for (io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active : caster.behaviours()) {
+                if (active.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shatter caps
+                        && ability.id().startsWith(caps.weaponId() + "/")) {
+                    launchStone(ability, caster, aim, spec, active, caps);
+                    return;
+                }
+            }
             for (Vec3 direction : SpreadPattern.directionsFor(aim.direction(), aim.right(), spec.spread())) {
                 launchOne(ability, caster, aim.pointing(direction), spec);
             }
@@ -844,6 +853,58 @@ public final class CastExecutor {
             ProjectileFlight.launch(world, burstCaster, point, direction.scale(burst.speed()), spec.gravity(), burstTicks,
                     new ProjectileFlight.Look(spec.trail(), spec.item(), spec.body()), seek,
                     (target, at) -> effects.applyAll(onHit, burstCaster, target, at));
+        }
+    }
+
+    /**
+     * SHATTER CAPS' STONE (Ben, 2026-11-24: "it shoots 1 stone that splits into 4 cobble after traveling 5 blocks. The
+     * damage of the Stone is 35/60/85"; "follow with gearscore"). ONE body along the aim at the enchant's speed, its
+     * item, the weapon's trail, no homing, the weapon's gravity, flying {@code caps.splitTicks()}. Its hit is the
+     * weapon's own on_hit with every damage replaced by the level's amount in the enchant's element, through the same
+     * applier as every hit (so the gear score scales it, the knockback and the hit visual ride as authored, and it
+     * counts as one primary hit). A BLOCK on its path ends it as it ends the weapon's chunk: {@code at(null, point)},
+     * the untargeted effects (the hit visual) where it stopped, no damage, no split (READ, {@code ProjectileFlight}).
+     * Running out of its ticks having hit nothing is the split ({@link #shatter}).
+     */
+    private void launchStone(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec,
+                             io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active,
+                             io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shatter caps) {
+        double amount = caps.damageAt(active.level());
+        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> onHit = new java.util.ArrayList<>();
+        for (io.github.butterflysmp.rpg.core.ability.effect.EffectSpec effect : ability.onHit()) {
+            onHit.add(effect instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage
+                    ? new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(amount, caps.element())
+                    : effect);
+        }
+        Caster stoneCaster = caster.withPayloadDamage(amount);
+        ProjectileFlight.launch(world, stoneCaster, aim.origin(), aim.direction().scale(caps.speed()), spec.gravity(),
+                caps.splitTicks(), new ProjectileFlight.Look(spec.trail(), caps.item(), null), null,
+                new ProjectileFlight.Impact() {
+                    @Override public void at(Combatant target, Vec3 point) {
+                        effects.applyAll(onHit, stoneCaster, target, point);
+                    }
+
+                    @Override public void expired(Vec3 point, Vec3 velocity) {
+                        shatter(ability, caster, aim, spec, point, velocity);
+                    }
+                });
+    }
+
+    /**
+     * THE SHATTER: the weapon's OWN cast leaves {@code point} (Ben: "the usual 40", "their full reach", "the same
+     * pattern"). Its spread is the weapon's, READ from {@code spec} now (never copied into the enchant), built about the
+     * stone's direction of travel with THE PRESS'S OWN RIGHT VECTOR ({@code aim.right()}, the shooter's, which the
+     * {@link Aim} carried to here), so the basis is the one the press would have used: rotation 90 still puts the
+     * triangle's point up, and straight up it is as well defined as at a press. Each chunk is the weapon's shot
+     * ({@link #launchOne}): its speed, item, trail, homing, on_hit and full lifetime, as the original caster.
+     */
+    private void shatter(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec, Vec3 point,
+                         Vec3 velocity) {
+        Vec3 forward = velocity.lengthSquared() == 0 ? aim.direction() : velocity.normalize();
+        List<Vec3> directions = SpreadPattern.directionsFor(forward, aim.right(), spec.spread());
+        world.traceSplit(caster.id(), caster.source(), point, directions.size());
+        for (Vec3 direction : directions) {
+            launchOne(ability, caster, new Aim(point, direction, aim.right()), spec);
         }
     }
 

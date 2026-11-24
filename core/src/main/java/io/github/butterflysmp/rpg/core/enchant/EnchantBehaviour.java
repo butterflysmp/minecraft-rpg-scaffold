@@ -11,7 +11,7 @@ import java.util.List;
  * it must answer for every kind (one line for a reader rusty at Java: the compiler checks the list is complete).
  */
 public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst,
-        EnchantBehaviour.GrantTrigger {
+        EnchantBehaviour.Shatter, EnchantBehaviour.GrantTrigger {
 
     /**
      * {@code effect: shockwave}: when the weapon carrying it lands {@code hits} hits on ONE target within the last
@@ -102,6 +102,52 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, Enc
          */
         public static int ticksToTravel(double blocks, double speedPerTick) {
             return Math.max(1, (int) Math.ceil(blocks / speedPerTick - 1e-9));
+        }
+    }
+
+    /**
+     * {@code effect: shatter} (Shatter Caps, the Breacher's; the seat's brief of 2026-11-24). Ben: "Instead of shooting 4
+     * cobble right away, it shoots 1 stone that splits into 4 cobble after traveling 5 blocks. The damage of the Stone is
+     * 35/60/85" / "1. the usual 40 2. their full reach 3. the same pattern." While it is active on the weapon
+     * {@code weaponId}, a press of that weapon's SPREAD projectile launches ONE stone along the aim IN PLACE of the spread:
+     * at {@code speed} a tick, its body {@code item}, the weapon's trail, carrying the weapon's own on_hit with every
+     * damage replaced by the level's {@code damageByLevel} in {@code element} (a primary hit, through the same damage
+     * path as every hit, so the gear score scales it). Once it has TRAVELLED {@code travelBlocks} without a hit it ends
+     * and the weapon's OWN cast leaves that point: its spread, speed, item, on_hit and full lifetime, read from the
+     * weapon at run time ({@code CastExecutor.shatter}). A stone that hits first lands its damage and never splits.
+     *
+     * <p>A SECOND BEHAVIOUR TYPE BESIDE {@link Airburst}, NOT A SHARED SEAM: Airburst cuts the AUTHORED shot short and
+     * launches the ENCHANT's bursts; this replaces the authored shot with the ENCHANT's stone and launches the WEAPON's
+     * shot. A shared seam would have to re-route Airburst's path; a separate type leaves it byte-for-byte as read.
+     * {@code weaponId} is checked at the cast (the ability id is {@code <weapon>/<input>}), as a granted trigger's is: the
+     * dev command can stage any enchant on any weapon, and the stone must not replace another weapon's spread.
+     */
+    record Shatter(String weaponId, double travelBlocks, double speed, String item, List<Double> damageByLevel,
+                   String element) implements EnchantBehaviour {
+        public Shatter {
+            if (weaponId == null || weaponId.isBlank()) throw new IllegalArgumentException("shatter needs its weapon id");
+            if (!(travelBlocks > 0) || Double.isInfinite(travelBlocks)) {
+                throw new IllegalArgumentException("shatter travel_blocks must be above 0, was " + travelBlocks);
+            }
+            if (!(speed > 0) || Double.isInfinite(speed)) {
+                throw new IllegalArgumentException("shatter speed must be above 0, was " + speed);
+            }
+            if (item != null && item.isBlank()) item = null;
+            damageByLevel = positive("damage_by_level", damageByLevel);
+            if (element == null || element.isBlank()) throw new IllegalArgumentException("shatter element is required");
+        }
+
+        public double damageAt(int level) {
+            return damageByLevel.get(clamp(level, damageByLevel.size()) - 1);
+        }
+
+        public int levels() {
+            return damageByLevel.size();
+        }
+
+        /** The ticks the stone takes to travel {@code travelBlocks}: {@link Airburst#ticksToTravel}, the one rule. */
+        public int splitTicks() {
+            return Airburst.ticksToTravel(travelBlocks, speed);
         }
     }
 

@@ -240,6 +240,15 @@ public final class EnchantEffectLine {
                 yield "splits after " + number(a.travelBlocks()) + " blocks into " + a.count() + " bursts of "
                         + number(a.damageAt(level)) + " damage";
             }
+            // SHATTER (B5): the level's stone damage and its distance, as authored (the gear score scales it in play).
+            // WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN.
+            case SHATTER -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shatter s)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                yield "fires one stone of " + number(s.damageAt(level)) + " damage that shatters after "
+                        + number(s.travelBlocks()) + " blocks into the usual chunks";
+            }
         };
     }
 

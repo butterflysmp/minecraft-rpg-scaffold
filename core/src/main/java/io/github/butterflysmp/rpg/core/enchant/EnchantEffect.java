@@ -165,6 +165,13 @@ public enum EnchantEffect {
     AIRBURST,
 
     /**
+     * A BEHAVIOUR (B1): {@link EnchantBehaviour.Shatter}, the file's {@code shatter:} block (Shatter Caps, 2026-11-24).
+     * It acts on the PRESS of its weapon's spread projectile ({@code CastExecutor.launchStone}), never on a hit. No
+     * {@code value_by_level}.
+     */
+    SHATTER,
+
+    /**
      * A BEHAVIOUR (B1): {@link EnchantBehaviour.GrantTrigger}, the file's {@code grant_trigger:} block: a trigger the
      * weapon gains while the enchant is active, its ability in the existing ability grammar. No {@code value_by_level}.
      */
