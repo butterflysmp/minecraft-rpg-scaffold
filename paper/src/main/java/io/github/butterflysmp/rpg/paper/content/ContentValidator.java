@@ -247,6 +247,28 @@ public final class ContentValidator {
         return problems;
     }
 
+    /**
+     * A BLOCK-DISPLAY ORB BODY MUST NAME A BLOCK (Ben's item 3, 2026-11-23, PR 2). {@code AbilitySchema.parseOrb} cannot
+     * ask the material registry, so the check is here, with the predicate seam every material check in this class takes.
+     * A body naming no block is warned: {@code PaperCombatWorld.spawnOrbBlock} spawns no body for it (it says so in an
+     * {@code ORBBODY none} line), and the orb stands, and shoots, unseen. Checked over every enchant's granted ability,
+     * the one place an orb is authored today.
+     *
+     * @param isBlock does this id resolve to a material that is a block
+     */
+    public static List<String> validateOrbBodies(Collection<EnchantDefinition> enchants, Predicate<String> isBlock) {
+        List<String> problems = new ArrayList<>();
+        for (EnchantDefinition enchant : enchants) {
+            if (enchant.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g
+                    && g.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Orb orb
+                    && orb.block() != null && !isBlock.test(orb.block().block())) {
+                problems.add("enchant '" + enchant.id() + "' grants an orb whose body block '" + orb.block().block()
+                        + "' is not a block: its throw will spawn no body");
+            }
+        }
+        return problems;
+    }
+
 
     /**
      * A weapon's {@code ammo} must name an item a player can CARRY (the seat's ruling 1, 2026-11-22). A token that

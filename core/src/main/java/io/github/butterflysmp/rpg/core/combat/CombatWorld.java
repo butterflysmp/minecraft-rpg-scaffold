@@ -204,10 +204,34 @@ public interface CombatWorld {
 
     /**
      * An orb's body: a marker exactly as {@link #spawnMarker} spawns one (never saved, never picked up, gravity off, an
-     * armed despawn after {@code expectedLifetimeTicks}), TAGGED as an orb, so a body no live orb owns is swept where it
-     * appears. Returns its id.
+     * armed despawn after {@code expectedLifetimeTicks}). NOT tagged as an orb: {@link #claimOrbBody} does that once the
+     * store owns it (the seat's fix of #265, 2026-11-23). Returns its id.
      */
     UUID spawnOrbMarker(io.github.butterflysmp.rpg.core.Vec3 at, String itemId, int expectedLifetimeTicks);
+
+    /**
+     * A BLOCK-DISPLAY ORB BODY at {@code at} (Ben's item 3, 2026-11-23): the block {@code look} names, scaled and centred
+     * on its position, glowing in its colour; never saved; TAGGED as a marker (after its add), so {@link #removeMarker}
+     * removes it, and NOT as an orb ({@link #claimOrbBody} does that once the store owns it; the seat's fix of #265,
+     * 2026-11-23). It has no physics: {@link #placeOrbBody} moves it. Prints one
+     * {@code ORBBODY} line read back off the body itself. Returns its id.
+     */
+    UUID spawnOrbBlock(UUID ownerId, io.github.butterflysmp.rpg.core.Vec3 at,
+                       io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock look);
+
+    /**
+     * Put an orb body spawned by {@link #spawnOrbBlock} at {@code at} (a teleport, smoothed by the client over one tick).
+     * A body that is gone is a no-op.
+     */
+    void placeOrbBody(UUID bodyId, io.github.butterflysmp.rpg.core.Vec3 at);
+
+    /**
+     * CLAIM an orb body: tag it as an orb's, so the orphan sweep can find it once no orb owns it (the seat's fix of #265,
+     * 2026-11-23). {@code throwOrb} calls it AFTER {@code Orbs.place} owns the body's id, and neither spawn tags a body
+     * itself: a spawned body is ADDED to the world, and swept there, before the spawn returns (READ), so a body tagged in
+     * the spawn is seen unowned. A body that is gone is a no-op.
+     */
+    void claimOrbBody(UUID bodyId);
 
     /**
      * {@code ORB} trace lines (D2): {@code event} is {@code rest} (it came to rest at {@code at}) or {@code removed} (with

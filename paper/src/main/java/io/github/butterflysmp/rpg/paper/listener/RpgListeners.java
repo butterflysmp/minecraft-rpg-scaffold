@@ -1220,11 +1220,11 @@ public final class RpgListeners implements Listener {
      */
     /**
      * THE ORB'S SWEEP (Lapis Crystal's D2, B6): an orb's body that no live orb owns is an orphan, removed where it
-     * appears. Its own handler, so {@code onEntityAdd} still meets a Phalanx's shot first (DragonShotWiringTest).
+     * appears, ONE TICK LATER (a removal at the add is refused: OrbRemovals.sweepAppeared). Its own handler, so {@code onEntityAdd} still meets a Phalanx's shot first (DragonShotWiringTest).
      */
     @EventHandler
     public void onOrbBodyAppear(EntityAddToWorldEvent event) {
-        io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.sweep(adapters, event.getEntity());
+        io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.sweepAppeared(adapters, event.getEntity());
     }
 
     /** His orb goes when he dies (Lapis Crystal's D2, B6). Its own handler, beside the death handling below. */

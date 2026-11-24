@@ -600,25 +600,46 @@ public final class CastExecutor {
         }
 
         io.github.butterflysmp.rpg.core.combat.Orbs orbs = world.orbs();
-        UUID marker = world.spawnOrbMarker(aim.origin(), orb.item(), orb.flightTicks() + orb.lifeTicks());
+        // THE BODY, ONE OF TWO KINDS (Ben's item 3, 2026-11-23): the item marker D2 shipped, or a block display.
+        boolean blockBody = orb.block() != null;
+        UUID marker = blockBody ? world.spawnOrbBlock(caster.id(), aim.origin(), orb.block())
+                : world.spawnOrbMarker(aim.origin(), orb.item(), orb.flightTicks() + orb.lifeTicks());
+        // THE BACKSTOP (the seat's ruling (b)): a display has no vanilla despawn, so its own removal is scheduled at the
+        // throw, past the orb's whole flight and life, and removes THAT body by id whatever the store says. Every proper
+        // removal cancels it; it acts only when every other removal was skipped.
+        long backstop = !blockBody ? -1 : world.scheduleCancellable(aim.origin(),
+                orb.flightTicks() + orb.lifeTicks() + ORB_BACKSTOP_MARGIN_TICKS, () -> {
+                    world.removeMarker(marker);
+                    world.traceOrb(caster.id(), "removed", rest, "backstop");
+                });
         io.github.butterflysmp.rpg.core.combat.Orbs.PlaceResult placed = orbs.place(caster.id(), marker, rest,
-                orb.radius(), orb.lifeTicks(), weaponId, enchantId, level, shotOf(orb));
+                orb.radius(), orb.lifeTicks(), weaponId, enchantId, level, shotOf(orb), backstop);
+        // THE CLAIM, ONLY NOW THE STORE OWNS IT (the seat's fix of #265, 2026-11-23): on 78826389 the block body carried
+        // the orb tag from inside its spawn, and the sweep at its add found it unowned, every throw.
+        world.claimOrbBody(marker);
         placed.replaced().ifPresent(old -> {
-            // Every removal cancels the old orb's expiry (the seat's item 6): its generation guard already made it
-            // harmless, and now nothing of it stays scheduled either.
-            if (old.expiryTask() >= 0) world.cancelScheduled(old.expiryTask());
+            // Every removal cancels the old orb's expiry (the seat's item 6) and its backstop (ruling (b)): its generation
+            // guard already made the expiry harmless, and now nothing of it stays scheduled either.
+            cancelOrbTasks(old);
             world.removeMarker(old.markerId());
             world.traceOrb(caster.id(), "removed", old.restPoint(), "replaced");
         });
 
         long generation = placed.placed().generation();
-        Vec3 step = rest.subtract(aim.origin()).scale(1.0 / orb.flightTicks());
-        world.driveMarker(marker, step);
+        Vec3 origin = aim.origin();
+        Vec3 step = rest.subtract(origin).scale(1.0 / orb.flightTicks());
+        // THE FLIGHT, ONE PATH FOR BOTH BODIES (the seat's ruling (a)): the item is handed this tick's step as velocity
+        // and vanilla moves it by it; the display, which has no physics, is PLACED where that step ends, so after the
+        // drive at tick t both stand at origin + (t + 1) x step, and both reach the rest point after the drive at tick
+        // flightTicks - 1. The last placement is the rest point itself, not the sum of steps.
+        flightStep(marker, blockBody, origin, step, rest, 0, orb.flightTicks());
         for (int tick = 1; tick < orb.flightTicks(); tick++) {
-            world.schedule(aim.origin(), tick, () -> world.driveMarker(marker, step));
+            int t = tick;
+            world.schedule(origin, tick, () -> flightStep(marker, blockBody, origin, step, rest, t, orb.flightTicks()));
         }
         world.schedule(rest, orb.flightTicks(), () -> {
-            world.driveMarker(marker, Vec3.ZERO);
+            if (blockBody) world.placeOrbBody(marker, rest);
+            else world.driveMarker(marker, Vec3.ZERO);
             orbs.arrive(caster.id(), generation, world.currentTick()).ifPresent(arrived -> {
                 world.traceOrb(caster.id(), "rest", arrived.restPoint(), "");
                 // THE EXPIRY, by handle (the seat's item 6, 2026-11-23): the LINGER work=1 that opened LC2R2-LC4R2 on
@@ -626,6 +647,7 @@ public final class CastExecutor {
                 // its own generation); the orb now carries its handle, and every removal cancels it.
                 long expiry = world.scheduleCancellable(rest, orb.lifeTicks(),
                         () -> orbs.removeIf(caster.id(), generation).ifPresent(gone -> {
+                            if (gone.backstopTask() >= 0) world.cancelScheduled(gone.backstopTask());
                             world.removeMarker(gone.markerId());
                             world.traceOrb(caster.id(), "removed", gone.restPoint(), "expired");
                         }));
@@ -635,6 +657,31 @@ public final class CastExecutor {
     }
 
     /** The orb cast's shot, in {@code Orbs}' own terms; null for an orb with none. */
+    /**
+     * How far past an orb's flight and life its body's BACKSTOP fires (the seat's ruling (b), 2026-11-23): 100 ticks, five
+     * seconds, CC's figure, not a ruled one. Long enough that the proper expiry (at flight + life) always runs first, and it
+     * changes nothing a player sees unless every other removal was skipped.
+     */
+    static final int ORB_BACKSTOP_MARGIN_TICKS = 100;
+
+    /**
+     * Step {@code tick} of an orb's flight (0 at the throw): an item body is handed {@code step} as velocity; a block body
+     * is placed where that step ends, {@code origin + (tick + 1) x step}, or at {@code rest} itself on the last step.
+     */
+    private void flightStep(UUID marker, boolean block, Vec3 origin, Vec3 step, Vec3 rest, int tick, int flightTicks) {
+        if (!block) {
+            world.driveMarker(marker, step);
+            return;
+        }
+        world.placeOrbBody(marker, tick + 1 >= flightTicks ? rest : origin.add(step.scale(tick + 1)));
+    }
+
+    /** Cancel an orb's expiry and its body's backstop, each if it has one: what every proper removal does. */
+    private void cancelOrbTasks(io.github.butterflysmp.rpg.core.combat.Orbs.Orb orb) {
+        if (orb.expiryTask() >= 0) world.cancelScheduled(orb.expiryTask());
+        if (orb.backstopTask() >= 0) world.cancelScheduled(orb.backstopTask());
+    }
+
     private static io.github.butterflysmp.rpg.core.combat.Orbs.Shot shotOf(CastSpec.Orb orb) {
         CastSpec.OrbShot s = orb.shot();
         return s == null ? null

@@ -400,12 +400,101 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     @Override
     public UUID spawnOrbMarker(io.github.butterflysmp.rpg.core.Vec3 at, String itemId, int expectedLifetimeTicks) {
-        UUID id = spawnMarker(at, itemId, expectedLifetimeTicks);
-        org.bukkit.entity.Entity body = world.getEntity(id);
+        // Untagged as an orb: claimOrbBody tags it once the store owns it (the seat's fix of #265, 2026-11-23).
+        return spawnMarker(at, itemId, expectedLifetimeTicks);
+    }
+
+    /**
+     * Tag an orb body {@code Keys.orb}, so {@code OrbRemovals.sweep} can find it once no orb owns it. Called by
+     * {@code throwOrb} AFTER {@code Orbs.place} owns the id (the seat's fix of #265, 2026-11-23), for both body kinds.
+     */
+    @Override
+    public void claimOrbBody(UUID bodyId) {
+        org.bukkit.entity.Entity body = world.getEntity(bodyId);
         if (body != null) {
-            body.getPersistentDataContainer().set(ctx.keys().orb, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+            body.getPersistentDataContainer().set(ctx.keys().orb, PersistentDataType.BYTE, (byte) 1);
         }
-        return id;
+    }
+
+    /**
+     * THE BLOCK-DISPLAY ORB BODY (Ben's item 3, 2026-11-23: "a Floating Lapis block with glowing"; the seat's rulings (a)
+     * to (c), PR 2). Each setting below with what was READ for it, from the pinned jars:
+     *
+     * <ul>
+     *   <li><b>Centred.</b> A display renders its model through {@code com.mojang.math.Transformation.compose}, READ:
+     *       {@code new Matrix4f().translation(t).rotate(left).scale(s).rotate(right)}, so a model point {@code v} lands at
+     *       {@code t + left(s * right(v))}. A block model spans 0 to 1 from the entity's position, its corner; scaled by
+     *       {@code s} it spans 0 to {@code s}, so a translation of {@code -s/2} on each axis centres it on the position.</li>
+     *   <li><b>Glow.</b> {@code setGlowing(true)} draws the outline; {@code setGlowColorOverride} colours it, READ in
+     *       {@code CraftDisplay}: {@code handle.setGlowColorOverride(color.asRGB())}, or -1 for null (the team colour).</li>
+     *   <li><b>Smoothing.</b> {@code setTeleportDuration(1)}: the API's own javadoc, READ, "1 means that the display entity
+     *       will move from current position to the updated one over one tick" (0 to 59 allowed). The flight places it
+     *       once a tick, so each placement is eased over that tick.</li>
+     *   <li><b>Never saved.</b> {@code setPersistent(false)} writes {@code Entity.persist} ({@code CraftEntity}, READ), and
+     *       {@code Entity.saveAsPassenger} returns false when {@code persist} is false unless its fourth argument forces
+     *       it (READ; which callers force it, UNVERIFIED). Its orb tag (set at the claim) is the sweep's, whatever survives.</li>
+     * </ul>
+     *
+     * <p>A block id that names no block (warned at load, {@code ContentValidator.validateOrbBodies}) spawns NOTHING: an
+     * {@code ORBBODY none} line, and a fresh id that every later call finds absent.
+     */
+    @Override
+    public UUID spawnOrbBlock(UUID ownerId, io.github.butterflysmp.rpg.core.Vec3 at,
+                              io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock look) {
+        Material material = orbBlockMaterial(look.block());
+        if (material == null) {
+            ctx.log().warning("ORBBODY none owner=" + ownerId + " block=" + look.block()
+                    + " -- not a block; this orb has no body");
+            return UUID.randomUUID();
+        }
+        float s = (float) look.scale();
+        org.bukkit.entity.BlockDisplay body = world.spawn(toLocation(at), org.bukkit.entity.BlockDisplay.class, d -> {
+            d.setBlock(material.createBlockData());
+            d.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(-s / 2, -s / 2, -s / 2),
+                    new org.joml.AxisAngle4f(), new org.joml.Vector3f(s, s, s), new org.joml.AxisAngle4f()));
+            d.setTeleportDuration(1);
+            d.setGlowing(true);
+            d.setGlowColorOverride(org.bukkit.Color.fromRGB(look.glowRgb()));
+            d.setPersistent(false);
+        });
+        // NO TAG INSIDE THE SPAWN (the seat's fix of #265, 2026-11-23). READ, CraftRegionAccessor.addEntity: the consumer
+        // above runs, THEN the body is added to the world (EntityAddToWorldEvent, where OrbRemovals.sweepAppeared runs), THEN
+        // spawn returns. On 78826389 the orb tag set in the consumer let the sweep see every body unowned. The marker tag
+        // goes on here, after the add; the orb tag only when throwOrb claims the body, after the store owns it.
+        body.getPersistentDataContainer().set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
+        // READ BACK OFF THE BODY, not the spec: the gate reads what was spawned.
+        org.bukkit.Color glow = body.getGlowColorOverride();
+        ctx.log().info(orbBodyLine(ownerId, body.getUniqueId(), body.getType().getKey().getKey(),
+                body.getBlock().getAsString(), body.isGlowing(), glow == null ? -1 : glow.asRGB(),
+                body.getTransformation().getScale().x(), body.getTeleportDuration(), body.isPersistent(),
+                org.bukkit.Bukkit.getCurrentTick()));
+        return body.getUniqueId();
+    }
+
+    /** The material {@code id} names if it is a block, else null: the spawn's resolver, and the load check's. */
+    public static Material orbBlockMaterial(String id) {
+        Material m = Material.matchMaterial(id);
+        return m != null && m.isBlock() && !m.isAir() ? m : null;
+    }
+
+    /**
+     * {@code ORBBODY owner=<uuid> id=<uuid> type=<entity type> block=<block data> glowing=<bool> glow=#RRGGBB scale=<s>
+     * teleport_duration=<n> persistent=<bool> tick=<n>} (pinned by {@code BensEnchantChangesTest}); {@code glow=none}
+     * when no colour is set.
+     */
+    public static String orbBodyLine(UUID ownerId, UUID bodyId, String type, String block, boolean glowing, int glowRgb,
+                                     float scale, int teleportDuration, boolean persistent, long tick) {
+        return String.format(java.util.Locale.ROOT,
+                "ORBBODY owner=%s id=%s type=%s block=%s glowing=%s glow=%s scale=%.3f teleport_duration=%d persistent=%s tick=%d",
+                ownerId, bodyId, type, block, glowing, glowRgb < 0 ? "none" : String.format("#%06X", glowRgb), scale,
+                teleportDuration, persistent, tick);
+    }
+
+    /** Teleport the block body (ruling (a)); gone is a no-op, through {@link #markerOf}, as every marker call is. */
+    @Override
+    public void placeOrbBody(UUID bodyId, io.github.butterflysmp.rpg.core.Vec3 at) {
+        Entity body = markerOf(bodyId);
+        if (body != null) body.teleport(toLocation(at));
     }
 
     @Override

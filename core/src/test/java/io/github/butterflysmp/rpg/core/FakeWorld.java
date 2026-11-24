@@ -373,7 +373,49 @@ public final class FakeWorld implements CombatWorld {
     @Override public UUID spawnOrbMarker(Vec3 at, String itemId, int expectedLifetimeTicks) {
         UUID id = spawnMarker(at, itemId, expectedLifetimeTicks);
         orbMarkers.add(id);
+        entityAdded(id);
         return id;
+    }
+
+    /**
+     * THE ENTITY-ADD MOMENT (the seat's fix of #265, 2026-11-23). On the server a spawned body is ADDED to the world inside
+     * the spawn, before it returns, and the orphan sweep runs there (READ: {@code CraftRegionAccessor.addEntity} runs the
+     * consumer, then {@code addEntityToWorld}, whose {@code onTrackingStart} raises {@code EntityAddToWorldEvent}). This is
+     * the sweep's own test at that moment: a body carrying the orb tag that no orb owns is an orphan.
+     */
+    public final java.util.Set<UUID> orbTagged = new java.util.HashSet<>();
+    public final List<UUID> sweptAtAdd = new ArrayList<>();
+    /** Bodies claimed (tagged) while no orb owned them: what the run of 78826389 did, every throw. */
+    public final List<UUID> claimedUnowned = new ArrayList<>();
+
+    public void entityAdded(UUID id) {
+        if (orbTagged.contains(id) && !orbs.ownsMarker(id)) sweptAtAdd.add(id);
+    }
+
+    @Override public void claimOrbBody(UUID bodyId) {
+        if (!orbs.ownsMarker(bodyId)) claimedUnowned.add(bodyId);
+        orbTagged.add(bodyId);
+    }
+
+    /** Block-display orb bodies spawned (Ben's item 3), id -> the look it was given; also in {@link #orbMarkers}. */
+    public final Map<UUID, io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock> orbBlocks = new HashMap<>();
+
+    @Override public UUID spawnOrbBlock(UUID ownerId, Vec3 at, io.github.butterflysmp.rpg.core.ability.CastSpec.OrbBlock look) {
+        UUID id = spawnMarker(at, "block:" + look.block(), 0);
+        orbMarkers.add(id);
+        orbBlocks.put(id, look);
+        entityAdded(id);
+        return id;
+    }
+
+    /** Every placement handed to {@link #placeOrbBody}, id -> the points in order. */
+    public final Map<UUID, List<Vec3>> orbBodyPlacements = new HashMap<>();
+
+    @Override public void placeOrbBody(UUID bodyId, Vec3 at) {
+        // Absent is a no-op, as in production (a removed display is not found by its id).
+        if (!markerPositions.containsKey(bodyId)) return;
+        orbBodyPlacements.computeIfAbsent(bodyId, k -> new ArrayList<>()).add(at);
+        markerPositions.put(bodyId, at);
     }
 
     /** Every ORB trace line, in order. */

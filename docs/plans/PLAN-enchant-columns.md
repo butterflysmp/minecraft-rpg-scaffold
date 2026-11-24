@@ -649,5 +649,27 @@ carries item 3, the body, which is a new kind of orb body (a block display has n
 6. **The owed dated notes**: `GATE-breacher.md` BR9, `GATE-dragon-blink.md` BS3, and `GATE-enchant-columns.md`'s note
    that EC14R2-EC16R2 and LC1R2-LC4R2 cannot be re-run as written.
 
+**PR 2, AS BUILT (`feat/lapis-crystal-block`, the seat's rulings (a) to (c)):**
+1. **The body kind is the orb's** (`CastSpec.Orb.block`, YAML `body: block` with a `block:` section of `id`, `scale`,
+   `glow`; `body: item`, the default, keeps D2's item marker, and each refuses the other's key). `lapis_crystal.yml`
+   now declares `body: block`, `id: lapis_block`, `scale: 0.5`, `glow: "#2A5CFF"`.
+2. **(a) The flight stays:** the display is PLACED where the item would have been driven, once a tick
+   (`CastExecutor.flightStep`), the last placement the rest point itself; `setTeleportDuration(1)` eases each placement
+   over its tick (the API's javadoc, READ). The rest point, the rest tick and the ORB rest line are unchanged
+   (`OrbBlockBodyTest.theBlockBodyWalksTheItemBodysPathAndRestsAtTheSameTick`).
+3. **(b) The backstop:** scheduled at the throw at flight + life + 100 ticks (`CastExecutor.ORB_BACKSTOP_MARGIN_TICKS`,
+   CC's figure), it removes THAT body by id whatever the store says (`ORB removed … cause=backstop`); expiry,
+   replacement and every paper removal (`OrbRemovals.discard`) cancel it. Only a block body has one (an item marker has
+   vanilla's despawn).
+4. **(c) Centred and blue:** a translation of `-scale/2` on each axis (READ, `Transformation.compose`), the glow by
+   `setGlowing(true)` and `setGlowColorOverride` (READ, `CraftDisplay`). Never saved (`setPersistent(false)`; READ,
+   `saveAsPassenger`). Tagged as an orb AND a marker, so the sweep, `removeMarker` and the row-start clean's LINGER all
+   find it. One `ORBBODY` line per spawn, read back off the body. A block id that names no block is warned at load
+   (`ContentValidator.validateOrbBodies`) and spawns no body.
+5. **READ, for the gate:** a display cannot be picked, hit by a vanilla projectile or collided with; our own rays take a
+   body only through `LiveTargets.resolve` (a live `LivingEntity`), so they cannot meet it (READ, not inferred).
+6. **The gate:** `GATE-enchant-changes.md`, on this branch, carrying the one R0 for both PRs.
+
 **OPEN FOR BEN (SEAT PLACEHOLDERS 2026-11-23):** the bursts' homing values (0.45 / 0 / 7, the lantern's own); and, PR 2's,
-the crystal body's scale (0.5, centred on the rest point) and glow colour (blue).
+the crystal body's scale (0.5, centred on the rest point) and glow colour (`#2A5CFF`, blue). CC's own figure, not a
+placeholder for Ben: the backstop's margin of 100 ticks.
