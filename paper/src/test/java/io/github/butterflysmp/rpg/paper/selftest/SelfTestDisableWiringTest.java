@@ -42,7 +42,7 @@ class SelfTestDisableWiringTest {
         int at = indexOf(run, "void endAtDisable() {", 0);
         assertTrue(at > 0, "SelfTestRun.endAtDisable exists");
         int inline = indexOf(run, "new io.github.butterflysmp.rpg.paper.scheduler.InlineScheduler(", at);
-        int end = indexOf(run, "end(\"ABORTED reason=server-stop\", inline, true);", at);
+        int end = indexOf(run, "end(\"ABORTED reason=server-stop\", inline, true, \"disable\");", at);
         assertTrue(inline > at && end > inline, "it builds an InlineScheduler, then ends with reason=server-stop and the "
                 + "synchronous teleport: " + at + " < " + inline + " < " + end);
 

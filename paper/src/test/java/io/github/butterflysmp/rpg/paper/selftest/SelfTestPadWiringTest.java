@@ -50,7 +50,7 @@ class SelfTestPadWiringTest {
     @Test
     void aQuitMidRunReturnsHimSynchronously() throws IOException {
         assertTrue(src("SelfTestService.java").contains("active.endAtQuit();"), "the quit path calls endAtQuit");
-        assertTrue(src("SelfTestRun.java").contains("end(\"ABORTED the player left\", service.scheduler(), true);"),
+        assertTrue(src("SelfTestRun.java").contains("end(\"ABORTED the player left\", service.scheduler(), true, \"quit\");"),
                 "endAtQuit restores with now=true");
         assertTrue(src("SelfTestSnapshot.java").contains("if (now) p.teleport(location); else p.teleportAsync(location);"),
                 "and now=true is the synchronous teleport");
@@ -87,5 +87,83 @@ class SelfTestPadWiringTest {
         assertTrue(pad.contains("world.getBlockAt(s.x() + dx, s.floorY() + dy, s.z() + dz)"));
         assertTrue(pad.contains("world.getBlockAt(s.x() + c[0], s.floorY() + c[1], s.z() + c[2])"));
         assertTrue(pad.contains("world.getBlockAt(s.x(), s.floorY(), s.z())"));
+    }
+
+    // --- P10, THE PAD HOLDS ITS CHUNKS (the seat's rulings of 2026-11-24) --------------------------------------------
+
+    /**
+     * ALL TWELVE HELD BEFORE A BLOCK IS READ OR WRITTEN: in {@code onLoaded} the work runs only inside the acquire's
+     * callback, after a failed outcome has returned, after the hop to the region, and after the alarm check (a4).
+     */
+    @Test
+    void theWorkRunsOnlyOnceEveryTicketIsHeldAndTheAlarmPassed() throws IOException {
+        String pad = src("SelfTestPad.java");
+        String on = pad.substring(pad.indexOf("private static CompletableFuture<Result> onLoaded("));
+        int acquire = on.indexOf("tickets.acquire(o -> {");
+        int failed = on.indexOf("if (!o.ok()) {");
+        int hop = on.indexOf("scheduler.onRegion(");
+        int alarm = on.indexOf("if (!world.isChunkLoaded(c.x(), c.z())) {");
+        int work = on.indexOf("work.apply(s)");
+        assertTrue(acquire > 0 && failed > acquire && hop > failed && alarm > hop && work > alarm,
+                "acquire, then the failure return, then the hop, then the alarm, then the work");
+        assertTrue(on.indexOf("work.apply(s)", work + 1) < 0, "and the work is applied nowhere else");
+        assertTrue(!on.contains("getChunkAtAsync"), "no load of its own: the tickets' requests are the one source");
+        assertTrue(pad.contains("new SelfTestPadTickets(chunks, SelfTestPadShape.chunks(standOf(world)))"),
+                "the footprint is SelfTestPadShape.chunks, the one source");
+    }
+
+    /** The only ticket take in the plugin is the seam's, and the seam is reached only through SelfTestPadTickets. */
+    @Test
+    void theOnlyTakeIsTheSeamsBehindTheLoadedGuard() throws IOException {
+        int takes = 0;
+        try (var files = Files.walk(Path.of("src/main/java"))) {
+            for (Path f : files.filter(p -> p.toString().endsWith(".java")).toList()) {
+                String s = Files.readString(f, StandardCharsets.UTF_8);
+                for (int i = s.indexOf(".addPluginChunkTicket("); i >= 0; i = s.indexOf(".addPluginChunkTicket(", i + 1)) {
+                    takes++;
+                    assertTrue(f.endsWith("BukkitPadChunks.java"), "a take outside the seam: " + f);
+                }
+            }
+        }
+        assertTrue(takes == 1, "exactly one take in main code, the seam's: " + takes);
+        String t = src("SelfTestPadTickets.java");
+        int guard = t.indexOf("if (!chunks.isLoaded(c.x(), c.z())) {");
+        int take = t.indexOf("if (!chunks.take(c.x(), c.z())) {");
+        assertTrue(guard > 0 && take > guard, "a2: the take comes after the loaded check");
+    }
+
+    /** EVERY EXIT RELEASES: the one private end is the only release, and every exit reaches it with its cause. */
+    @Test
+    void everyExitReachesTheOneReleaseWithItsCause() throws IOException {
+        String run = src("SelfTestRun.java");
+        int releases = 0;
+        for (int i = run.indexOf("padTickets.release()"); i >= 0; i = run.indexOf("padTickets.release()", i + 1)) releases++;
+        assertTrue(releases == 1, "one release site: " + releases);
+        String end = run.substring(run.indexOf("private void end(String why, io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler, boolean now,"));
+        end = end.substring(0, end.indexOf("\n    }\n"));
+        assertTrue(end.contains("if (ended) return;"), "once: the second exit finds it ended");
+        assertTrue(end.contains("SelfTestPadTickets.releasedLine(padTickets.release(), cause)"), "the release is in the funnel");
+        assertTrue(run.contains("end(why, service.scheduler(), false, SelfTestPadTickets.causeOf(why));"),
+                "FINISHED, every abort and stop name their cause by the reason");
+        assertTrue(run.contains("end(\"ABORTED the player left\", service.scheduler(), true, \"quit\");"), "quit");
+        assertTrue(run.contains("end(\"ABORTED reason=server-stop\", inline, true, \"disable\");"), "disable");
+        String svc = src("SelfTestService.java");
+        assertTrue(svc.contains("active.end(\"STOPPED by /rpg selftest stop\");"), "stop reaches end");
+        assertTrue(svc.contains("active.endAtQuit();") && svc.contains("if (active != null) active.endAtDisable();"));
+    }
+
+    /** The pad command takes and releases its own, marks itself busy, and a server stop releases it too. */
+    @Test
+    void thePadCommandHoldsItsOwnTicketsAndTheBusyGuardBothWays() throws IOException {
+        String svc = src("SelfTestService.java");
+        String pad = svc.substring(svc.indexOf("private String pad(Player player, boolean build) {"));
+        assertTrue(pad.contains("String busy = occupancy.refusePad();"), "refused while a run holds the pad");
+        assertTrue(pad.contains("occupancy.padStarted();"));
+        assertTrue(pad.contains("SelfTestPadTickets.releasedLine(tickets.release(), ok ? \"end\" : \"abort\")"));
+        assertTrue(pad.contains("occupancy.padEnded();"));
+        String start = svc.substring(svc.indexOf("public String start(Player player, String gate, String row) {"));
+        assertTrue(start.contains("String busy = occupancy.refuseRun();"), "a run refused while the pad command works");
+        assertTrue(svc.contains("SelfTestPadTickets.releasedLine(padCommandTickets.release(), \"disable\")"));
+        assertTrue(svc.contains("occupancy.runEnded();"), "the run's end frees it");
     }
 }

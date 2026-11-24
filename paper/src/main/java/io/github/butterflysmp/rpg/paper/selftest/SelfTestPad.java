@@ -25,7 +25,20 @@ final class SelfTestPad {
     private SelfTestPad() {}
 
     /** What a build, a check or a removal did: the PAD line on success, the reason otherwise; and where he stands. */
-    record Result(boolean ok, String line, String why, Location stand) {}
+    record Result(boolean ok, String line, String why, Location stand, String ticketsLine) {
+        Result(boolean ok, String line, String why, Location stand) {
+            this(ok, line, why, stand, null);
+        }
+
+        Result withTicketsLine(String held) {
+            return new Result(ok, line, why, stand, held);
+        }
+    }
+
+    /** P10: the pad's tickets for {@code world}, over the footprint {@link SelfTestPadShape#chunks} gives (one source). */
+    static SelfTestPadTickets tickets(World world, SelfTestPadTickets.Chunks chunks) {
+        return new SelfTestPadTickets(chunks, SelfTestPadShape.chunks(standOf(world)));
+    }
 
     static Material material(SelfTestPadShape.Kind k) {
         return switch (k) {
@@ -46,13 +59,13 @@ final class SelfTestPad {
     }
 
     /** Build what is missing and repair what is wrong. Completes on the stand point's region thread. */
-    static CompletableFuture<Result> ensure(World world, Scheduler scheduler) {
-        return onLoaded(world, scheduler, s -> build(world, s));
+    static CompletableFuture<Result> ensure(World world, Scheduler scheduler, SelfTestPadTickets tickets) {
+        return onLoaded(world, scheduler, tickets, s -> build(world, s));
     }
 
     /** The dev command's removal: every FLOOR and RIM cell back to air. The interior's air cells are left as they are. */
-    static CompletableFuture<Result> remove(World world, Scheduler scheduler) {
-        return onLoaded(world, scheduler, s -> {
+    static CompletableFuture<Result> remove(World world, Scheduler scheduler, SelfTestPadTickets tickets) {
+        return onLoaded(world, scheduler, tickets, s -> {
             int removed = 0;
             int already = 0;
             for (int[] c : solidCells()) {
@@ -97,33 +110,34 @@ final class SelfTestPad {
         return new Result(true, line, null, standLocation(world, s));
     }
 
-    private static CompletableFuture<Result> onLoaded(World world, Scheduler scheduler,
+    /**
+     * P10 (the seat's rulings of 2026-11-24): the loads stay async (a1); each chunk's plugin ticket is taken in its load's
+     * completion, on the main thread, on a chunk just reported loaded (a2, a3; {@link SelfTestPadTickets}); ONLY once all
+     * of them are held does anything hop to the stand point's region, and there "did not stay loaded" stays as the alarm
+     * (a4) before a single block is read or written. The caller owns {@code tickets} and releases them at its end
+     * (a run in {@code SelfTestRun.end}, the dev command when it reports), also after a failure here.
+     */
+    private static CompletableFuture<Result> onLoaded(World world, Scheduler scheduler, SelfTestPadTickets tickets,
                                                       java.util.function.Function<SelfTestPadShape.Stand, Result> work) {
         SelfTestPadShape.Stand s = standOf(world);
-        int[] c = SelfTestPadShape.chunks(s);
-        List<CompletableFuture<?>> loads = new ArrayList<>();
-        for (int cx = c[0]; cx <= c[2]; cx++) {
-            for (int cz = c[1]; cz <= c[3]; cz++) loads.add(world.getChunkAtAsync(cx, cz, true));
-        }
         CompletableFuture<Result> out = new CompletableFuture<>();
-        CompletableFuture.allOf(loads.toArray(CompletableFuture[]::new)).whenComplete((v, err) -> {
-            if (err != null) {
-                out.complete(new Result(false, null, "its chunks did not load (" + err + ")", null));
+        tickets.acquire(o -> {
+            if (!o.ok()) {
+                out.complete(new Result(false, null, o.why(), null, o.line()));
                 return;
             }
             scheduler.onRegion(new Location(world, s.x(), s.floorY(), s.z()), () -> {
                 try {
-                    for (int cx = c[0]; cx <= c[2]; cx++) {
-                        for (int cz = c[1]; cz <= c[3]; cz++) {
-                            if (!world.isChunkLoaded(cx, cz)) {
-                                out.complete(new Result(false, null, "chunk " + cx + "," + cz + " did not stay loaded", null));
-                                return;
-                            }
+                    for (SelfTestPadTickets.Chunk c : tickets.footprint()) {
+                        if (!world.isChunkLoaded(c.x(), c.z())) {
+                            out.complete(new Result(false, null, "chunk " + c.x() + "," + c.z()
+                                    + " did not stay loaded held=" + tickets.held(), null, o.line()));
+                            return;
                         }
                     }
-                    out.complete(work.apply(s));
+                    out.complete(work.apply(s).withTicketsLine(o.line()));
                 } catch (RuntimeException e) {
-                    out.complete(new Result(false, null, e.toString(), null));
+                    out.complete(new Result(false, null, e.toString(), null, o.line()));
                 }
             });
         });

@@ -48,6 +48,20 @@ public final class SelfTestService {
     private final io.github.butterflysmp.rpg.paper.health.MobTeleporter teleports;
     private final Spawner spawner;
     private SelfTestRun active;
+
+    /** P10: the plugin whose chunk tickets the pad takes (RpgPlugin's), behind {@link #padChunks}. */
+    private final org.bukkit.plugin.Plugin plugin;
+
+    /** P10(c): who holds the pad, a run or the pad command; never both, never either twice. */
+    private final SelfTestOccupancy occupancy = new SelfTestOccupancy();
+
+    /** The pad command's own tickets while it is in flight, so a server stop releases them too; null otherwise. */
+    private SelfTestPadTickets padCommandTickets;
+
+    /** P10(f): the seam's Bukkit half for {@code world}, with the plugin handle. */
+    SelfTestPadTickets.Chunks padChunks(org.bukkit.World world) {
+        return new BukkitPadChunks(world, plugin);
+    }
     /** F9b: names a fight dragon's attack behind a HURT; bound late, by the plugin, to the fights. None until then. */
     private java.util.function.BiFunction<java.util.UUID, java.util.UUID, String> attackNames = (victim, dealer) -> null;
 
@@ -114,7 +128,9 @@ public final class SelfTestService {
                            io.github.butterflysmp.rpg.paper.health.MobShooter shots,
                            io.github.butterflysmp.rpg.paper.health.MobPouncer pounces,
                            io.github.butterflysmp.rpg.paper.health.PhageFuser fuser,
-                           io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence) {
+                           io.github.butterflysmp.rpg.core.combat.FireCadence fireCadence,
+                           org.bukkit.plugin.Plugin plugin) {
+        this.plugin = java.util.Objects.requireNonNull(plugin, "plugin");
         this.fireCadence = java.util.Objects.requireNonNull(fireCadence, "fireCadence");
         this.fuser = fuser;
         this.pounces = pounces;
@@ -157,7 +173,8 @@ public final class SelfTestService {
                 player.getWorld().equals(Bukkit.getWorlds().getFirst()), Bukkit.getOnlinePlayers().size(),
                 player.getGameMode().name());
         if (refusal.isPresent()) return refusal.get();
-        if (active != null) return "Refusing: a selftest is already running. /rpg selftest stop ends it.";
+        String busy = occupancy.refuseRun();   // a run already, or the pad command in flight (P10(c))
+        if (busy != null) return busy;
 
         List<Scenario> queue = new ArrayList<>();
         if (gate.equals("all")) {
@@ -175,6 +192,7 @@ public final class SelfTestService {
             queue.addAll(queueFor(scenarios, row));
         }
         active = new SelfTestRun(this, player, queue);
+        occupancy.runStarted();
         active.start(gate + (row == null ? "" : " " + row));
         return "Selftest started: " + gate + (row == null ? "" : " " + row)
                 + ". The log carries every reading; this prints none. /rpg selftest stop ends it and restores.";
@@ -219,6 +237,12 @@ public final class SelfTestService {
      */
     public void onDisable() {
         if (active != null) active.endAtDisable();
+        // P10(b): a pad command still in flight at a server stop releases its tickets here, before the server saves.
+        if (padCommandTickets != null) {
+            log.info(SelfTestPadTickets.releasedLine(padCommandTickets.release(), "disable"));
+            padCommandTickets = null;
+            occupancy.padEnded();
+        }
     }
 
     /** From {@code RpgListeners.onQuit}, FIRST: the restore must write while the inventory can still be written. */
@@ -244,16 +268,29 @@ public final class SelfTestService {
     private String pad(Player player, boolean build) {
         if (!devServer) return "Refusing: not a dev server (-D" + SelfTestGuard.DEV_PROPERTY + "=true is set only by dev-server.sh).";
         org.bukkit.World dev = Bukkit.getWorlds().getFirst();
-        if (active != null) return "Refusing: a selftest is running; the pad is its own while it does.";
-        var future = build ? SelfTestPad.ensure(dev, adapters.scheduler()) : SelfTestPad.remove(dev, adapters.scheduler());
-        future.whenComplete((r, err) -> adapters.scheduler().onEntity(player, () -> {
+        String busy = occupancy.refusePad();   // a run holds the pad, or another pad command is in flight (P10(c))
+        if (busy != null) return busy;
+        occupancy.padStarted();
+        // P10(b): the command takes its own tickets for its own duration and releases them when it reports, on the
+        // thread that completed it (the region's), before any hop to him: his leaving cannot strand a ticket.
+        SelfTestPadTickets tickets = SelfTestPad.tickets(dev, padChunks(dev));
+        padCommandTickets = tickets;
+        var future = build ? SelfTestPad.ensure(dev, adapters.scheduler(), tickets)
+                : SelfTestPad.remove(dev, adapters.scheduler(), tickets);
+        future.whenComplete((r, err) -> {
             boolean ok = err == null && r.ok();
             String text = err != null ? "PAD fail " + err : ok ? r.line() : "PAD fail " + r.why()
                     + (r.line() == null ? "" : " (" + r.line() + ")");
+            if (r != null && r.ticketsLine() != null) log.info(r.ticketsLine());
             log.info(text);
-            player.sendMessage(net.kyori.adventure.text.Component.text(text,
-                    ok ? net.kyori.adventure.text.format.NamedTextColor.GREEN : net.kyori.adventure.text.format.NamedTextColor.RED));
-        }));
+            if (padCommandTickets == tickets) {   // not already released by a server stop
+                log.info(SelfTestPadTickets.releasedLine(tickets.release(), ok ? "end" : "abort"));
+                padCommandTickets = null;
+                occupancy.padEnded();
+            }
+            adapters.scheduler().onEntity(player, () -> player.sendMessage(net.kyori.adventure.text.Component.text(text,
+                    ok ? net.kyori.adventure.text.format.NamedTextColor.GREEN : net.kyori.adventure.text.format.NamedTextColor.RED)));
+        });
         return (build ? "Building" : "Removing") + " the selftest pad in " + dev.getName() + "; the result follows.";
     }
 
@@ -306,7 +343,10 @@ public final class SelfTestService {
     }
 
     void ended(SelfTestRun run) {
-        if (active == run) active = null;
+        if (active == run) {
+            active = null;
+            occupancy.runEnded();
+        }
     }
 
     // --- what a run reads ------------------------------------------------------------------------------------------

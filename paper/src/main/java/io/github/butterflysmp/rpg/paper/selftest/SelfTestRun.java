@@ -62,7 +62,15 @@ final class SelfTestRun {
         this.queue = List.copyOf(queue);
         this.world = player.getWorld();
         this.drivers = new SelfTestDrivers(this, service.keys(), service.mobElements());
+        this.padTickets = SelfTestPad.tickets(world, service.padChunks(world));
     }
+
+    /**
+     * P10 (the seat's rulings of 2026-11-24): the pad's chunk tickets, taken at the PAD step and held for the whole run;
+     * released in {@link #end(String, io.github.butterflysmp.rpg.paper.scheduler.Scheduler, boolean, String)}, the one
+     * funnel every exit passes (FINISHED, every abort including the pad's own failure, stop, quit, disable), once.
+     */
+    private final SelfTestPadTickets padTickets;
 
     void start(String what) {
         snapshot = SelfTestSnapshot.take(player, service.profiles(), service.resources(), service.nameplates(),
@@ -177,9 +185,10 @@ final class SelfTestRun {
      * typed the command. Any failure: no teleport, one plain chat line, the run ends.
      */
     private void pad() {
-        SelfTestPad.ensure(world, service.scheduler()).whenComplete((result, err) -> service.scheduler().onEntity(player, () -> {
+        SelfTestPad.ensure(world, service.scheduler(), padTickets).whenComplete((result, err) -> service.scheduler().onEntity(player, () -> {
             if (ended) return;
             SelfTestPad.Result r = err != null ? new SelfTestPad.Result(false, null, err.toString(), null) : result;
+            if (r.ticketsLine() != null) log(r.ticketsLine());   // P10(d): "PAD tickets held=12", once, at the twelfth
             if (r.line() != null) log(r.line());
             if (!r.ok()) {
                 padFailed(r.why());
@@ -581,7 +590,7 @@ final class SelfTestRun {
 
     /** Stop, quit and finish all come here. Idempotent: the second caller finds it ended. */
     void end(String why) {
-        end(why, service.scheduler(), false);
+        end(why, service.scheduler(), false, SelfTestPadTickets.causeOf(why));
     }
 
     /**
@@ -592,7 +601,7 @@ final class SelfTestRun {
      * the pad. The scheduler stays the live one: the plugin is not disabling.
      */
     void endAtQuit() {
-        end("ABORTED the player left", service.scheduler(), true);
+        end("ABORTED the player left", service.scheduler(), true, "quit");
     }
 
     /**
@@ -605,11 +614,12 @@ final class SelfTestRun {
         java.util.List<String> refused = new java.util.ArrayList<>();
         io.github.butterflysmp.rpg.paper.scheduler.InlineScheduler inline =
                 new io.github.butterflysmp.rpg.paper.scheduler.InlineScheduler(refused::add);
-        end("ABORTED reason=server-stop", inline, true);
+        end("ABORTED reason=server-stop", inline, true, "disable");
         for (String what : refused) service.log("SELFTEST RUN NOT-RESTORED at server-stop: a task asked for " + what);
     }
 
-    private void end(String why, io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler, boolean now) {
+    private void end(String why, io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler, boolean now,
+                     String cause) {
         if (ended) return;
         ended = true;
         drainReplies();
@@ -631,6 +641,10 @@ final class SelfTestRun {
         service.log("SELFTEST RUN " + why);
         service.log("SELFTEST RUN " + restored);
         if (fight != null) service.log("SELFTEST RUN fight-fixture " + fight);
+        // P10(b, d): the pad's tickets go LAST, after the restore, on every exit; exactly what was taken, once. On the
+        // disable path the plugin is still enabled here (RpgPlugin.onDisable calls this FIRST), and removing a ticket
+        // does not need the plugin enabled (READ: removePluginChunkTicket checks only for a null plugin).
+        service.log("SELFTEST RUN " + SelfTestPadTickets.releasedLine(padTickets.release(), cause));
         service.ended(this);
     }
 
