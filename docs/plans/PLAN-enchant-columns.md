@@ -378,6 +378,10 @@ working tree: see the gate's last section.
 1. **VOLLEYS (beside B2, section 3): ACCEPTED, ONE RULE FOR BOTH.** A weapon-pressed volley re-reads the held weapon's
    behaviours PER SHOT exactly as it re-reads the gear score per shot (`CastExecutor.volley`). "The weapon stamped on the
    cast" means, for a volley, the weapon in hand at each shot. One rule, not two.
+   > **RULED AGAIN FOR FOCUSED BEAM, 2026-11-24 (the seat's boot approval of `3890aaa8`), in its words:** "the enchant
+   > applies by the weapon in hand at the shot, as built (ruling 1: a volley re-reads per shot). A swap during the
+   > wind-up fires the six plain bolts. The brief's "that made the cast" was loose." (Section 18's flagged disagreement,
+   > closed.)
 2. **WHAT A SHOCKWAVE INHERITS: ACCEPTED AS BUILT, OPEN FOR BEN** (section 10's list, in plain words). Every gate row
    that predicts a shockwave names each inherited term and gives the crit reading as the second allowed one.
 3. **W1's extra refusal** (a `class:` that could never match the named weapon): ACCEPTED.
@@ -923,3 +927,17 @@ the row pins that the beam adds none); paper's `traceFocusedBeam` gate on mobtra
 are its witness).
 
 **The gate:** `GATE-focused-beam.md`, on this branch, carrying the one R0 for #270 and both PRs.
+
+**THE SEAT'S TWO NOTES OF 2026-11-24 (its boot approval of `3890aaa8`), recorded after the run's readings:**
+1. **The swap ruling** is recorded beside B2, in section 7's first ruling, in the seat's words: the enchant applies by
+   the weapon in hand at the shot; a swap during the wind-up fires the six plain bolts.
+2. **OWED: THE AIM ROW.** Ben's "4. Yes" (the beam fires where he looks when the wind-up ends) is UNREAD on a server;
+   `FocusedBeamTest.theAimIsReadAtTheWindupsEndNotAtThePress` holds it. **The row that turns him during the wind-up is
+   added to the next gate that touches the Cursed Emerald** (press facing east, `wait: 10`, a `tp` facing a zombie to the
+   south, `wait: 30`; the south zombie takes the beam, one standing east nothing). Not run in this boot, by the seat's
+   ruling.
+
+**FOR THE SEAT, FROM THE RUN (`GATE-focused-beam.md`, its readings): every `FOCUSED` line read `tick - pressed` = 19, not
+20.** The same `scheduleOn` times the plain volley's wind-up, so it is the volley's behaviour too. The fake world fires
+exactly 20 later, so the unit row's 20 is the fake's. The cause is not read (two INFERRED candidates in the gate).
+Nothing is changed; the seat's to rule whether it is owed a fix, a fake change, or a note.
