@@ -319,3 +319,134 @@ or `Has` lines before the controls line, 9 after), run with `powershell -NoProfi
 **READING: AS PREDICTED.** Before `'--- controls'`: **37 `PRESENT`, 0 `ABSENT`**. After it: **9 `ABSENT`, 0 `PRESENT`**.
 The `Has` lines' positive half is in the 37 (ten `PRESENT` from class files), so the instrument can express a class
 string; their negative half is in the 9 (three `ABSENT`).
+
+## THE RUN OF `78826389`, 2026-11-23 (23:01 boot, 23:02:45-23:03:47 run): R0 PASSED; EVERY ROW RAN; ONE DEFECT, CC'S
+
+> **DATED NOTE, 2026-11-23, written after the run; no prediction above is edited.** Booted on the seat's approval of
+> `78826389` and Ben's "ready". Boot command 23:00:31; deployed jar 23:01:04 (2,501,156 bytes, sha256
+> `7f1a8ef4…e533adfd`); `latest.log` first line 23:01:05; this boot's `Done` 23:01:12. **A first wait for `Done` matched
+> the PREVIOUS boot's log (20:34) before the deploy had happened; it was discarded, and the wait re-run against a marker
+> made after the boot command.** R0 read 23:01:35; **Ben joined 23:02:34, after it.** Lines below are this boot's log;
+> `<him>` is his id.
+
+### R0, READ
+
+- **R0a: AS PREDICTED.** `[23:01:11] … [Rpg] Build: 78826389`. Before the boot command: `git status --porcelain` printed
+  nothing; `HEAD` and `ls-remote` both `788263896883c6a45ff328940fa3e34b21c05c89`.
+- **R0b: AS PREDICTED.** The block extracted from the committed file (`git show HEAD:…`), `cmp` IDENTICAL to the copy run
+  before the commit, run with `powershell -File` against the deployed `run\plugins\rpg-0.1.0-SNAPSHOT.jar`: **37
+  `PRESENT`, 0 `ABSENT`**, then **9 `ABSENT`, 0 `PRESENT`**.
+- **R0c: AS PREDICTED.** `[Rpg] Loaded 11 abilities, 45 visuals, 5 statuses, 7 elements, 14 enchants, …`; the
+  candidates line, `Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions`, `Custom recipes: 7 registered, 0
+  replaced, 0 refused, of 7 authored (7 minting gear)`; the only `[Rpg]` WARN `volley_stone`'s pair; no line naming
+  `lapis_crystal`; no `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Dev-only`; no `ORB`, `ORBBODY` or `ORBSHOT` line.
+  The deployed folder: `content/enchants/` 14 `.yml`, 0 `dev_`, among them `airburst_flames.yml` (line 27 `  travel_blocks:
+  6`) and `lapis_crystal.yml` (line 43 `      body: block`).
+- **R0d: AS PREDICTED.** Exactly one `[Rpg] Selftest: dev server, 359 scenarios across 44 gates [melee-cell, …,
+  enchant-columns, enchant-changes]`; `351 scenarios` and `360 scenarios` absent.
+- **R0e: AS PREDICTED.** `FIGHTWORLD sweep path=…\rpgfight folders=0`; no `orphan`, no `deleting` at enable.
+
+### THE SETUP AND THE CLEANS, READ
+
+- `PAD world=world stand=104,201,-4 floorY=200 interior=-2..45 east -13..13 south cells=7250 placed=0 repaired=0
+  ok=7250` (**the second-build line the seat expected**); `PAD stood at=104.50 201.00 -3.50 yaw=-90.000 pitch=0.000`;
+  `PREFLIGHT ok box=0..32 east -6..10 south air=1122/1122 floor solid=561/561`; `DIFFICULTY found=NORMAL set=NORMAL`;
+  `SELF … at=104.50 201.00 -3.50`. The setup's own clean `return=-98.48 63.00 24.06` (where he typed the command).
+- **Every row's clean: `LINGER work=0 entities=0 radius=48` and `LEFTOVER living=0 radius=16`**, nine of each (setup,
+  AF1-AF4, LB1, LB4, LB2, LB3), every `return=104.50 201.00 -3.50`. `removed=` 0, 0, 0, 1, 1, 1, 0, 0, 3 in that order
+  (each row's own mobs, removed by the next row's clean).
+- **STAGE:** each row's `clear_inventory cleared=… kept=nexus@8` and `clear_state cooldowns=cleared streaks=forgotten
+  orb=none`; the in-row `clear_state` lines `orb=removed` in LB1, LB2, LB3 (twice). No `SKIPPED`, no `VOID`, no `ABORT`.
+  `SELFTEST RUN FINISHED` 23:03:47, then `RESTORED … gamemode=SURVIVAL … difficulty=NORMAL … spawn_phantoms=true …
+  orbsRemoved=0`.
+
+### THE DEFECT: EVERY THROW'S BODY WAS SWEPT AS AN ORPHAN AT SPAWN, AND PAPER REFUSED THE REMOVAL
+
+**Seven throws (four in the run, three of Ben's own after it), seven times on the tick of the `ORBBODY` line:**
+
+```
+[23:03:15] [Server thread/WARN]: Entity BlockDisplay['Block Display'/73, uuid='ff8fc9a3-…', … x=104.50, y=202.62, z=-3.50, …] is currently prevented from being removed from the world since it is processing section status updates
+[23:03:15] … ORB removed owner=00000000-0000-0000-0000-000000000000 at=104.500,202.620,-3.500 cause=orphan tick=2464
+[23:03:15] … ORBBODY owner=<him> id=ff8fc9a3-d935-4e29-9301-52badadb3a2d type=block_display … tick=2464
+```
+
+- **THE CAUSE, READ in CC's own code:** `PaperCombatWorld.spawnOrbBlock` sets the ORB TAG inside `world.spawn`'s
+  consumer, so the body carries it when `EntityAddToWorldEvent` fires, inside the spawn, **before `orbs.place` has
+  recorded its id**. `RpgListeners.onOrbBodyAppear` runs `OrbRemovals.sweep`, which finds a tagged body no orb owns and
+  removes it. The item path (`spawnOrbMarker`) tags only after `spawnMarker` returns, so it never met this.
+  `OrbBlockBodyLoadTest` pinned the tag inside the consumer; FakeWorld has no sweep. **Nothing in either suite could see
+  it.**
+- **WHAT THE SERVER DID, READ from the server jar:** `Entity.setRemoved` asks `EntityLookup.canRemoveEntity`, which is
+  false while the entity `isUpdatingSectionStatus` (its own add); on false it logs that WARN and RETURNS without
+  removing. **So no body was removed at spawn: each `cause=orphan` line reports a removal that did not happen.** The
+  bodies stood; the proper removals took them later (`clear_state`, the expiry), and every following clean read
+  `entities=0`.
+- **The rows' readings below stand on that:** the store, the flight's arrival, the shots and the lines did what was
+  predicted; each throw carries one unpredicted `cause=orphan` line and one Paper WARN.
+
+### THE ROWS, IN THREE CLASSES
+
+**MISS (four rows, one cause, the defect above):**
+
+- **LB1 — MISS on one line.** Everything predicted read as predicted: `"  active: lapis_crystal II (… strikes each foe
+  within 8 for 10.5 damage)"`; `DRIVE reload held=lapis_staff`; **`ORBBODY owner=<him> id=ff8fc9a3-… type=block_display
+  block=minecraft:lapis_block glowing=true glow=#2A5CFF scale=0.500 teleport_duration=1 persistent=false tick=2464`**
+  (the block string as INFERRED); **`ORB rest … at=116.500,202.620,-3.500 tick=2474`** (+10); `ORB removed …
+  cause=selftest tick=2483`, `orb=removed`; LB4's clean `LINGER work=0 entities=0`. **Unpredicted: `ORB removed
+  owner=00000000-… at=104.500,202.620,-3.500 cause=orphan tick=2464`.**
+- **LB4 — MISS: "exactly one `ORB removed … cause=expired`" holds, but the row has TWO `ORB removed` lines.**
+  `ORBBODY … id=8c8657bc-… tick=2533`; `ORB rest … tick=2543`; **`ORB removed … cause=expired tick=2843`** (2543 + 300,
+  exact); no `cause=backstop` in the row or anywhere in the log; LB2's clean **`LINGER work=0 entities=0`**. Unpredicted:
+  `cause=orphan tick=2533`.
+- **LB2 — MISS on one line; its predictions all read.** `ORBBODY … id=5322dab5-… tick=2912`; `ORB rest … tick=2922`;
+  `use … yaw=-90.000 pitch=0.000`; **no `lapis_staff/right_click` PLAYERHIT**; **exactly one `ORBSHOT owner=<him>
+  from=116.500,202.620,-3.500 to=116.500,202.740,1.500 visual=lapis_beam tick=2933`**; **exactly one `PLAYERHIT …
+  source=lapis_crystal/crystal target=<N> zombie element=kinetic sent=10.500 crit=false triggerScore=100`**; no ORBSHOT
+  or hit on F or T; probes **N `989.500`** (d 13.000), **F `1000.000`** (d 15.000), **T `1000.000`** (d 22.000); `ORB
+  removed … cause=selftest tick=2971`, `orb=removed`. Unpredicted: `cause=orphan tick=2912`.
+- **LB3 — MISS on two lines; its predictions all read, the second hit on its crit.** `"  active: lapis_crystal I (…
+  for 6.3 damage)"`; `ORBBODY … tick=3021`, `ORB rest … tick=3031`, **`ORBSHOT … to=116.500,202.740,1.500
+  visual=lapis_beam tick=3042`**, **`sent=6.300 crit=false`**; `cause=selftest tick=3060`, `orb=removed`; `REPLY "Slot 0:
+  Lapis Crystal unlocked to III." [green]`; `ORBBODY … tick=3063`, `ORB rest … tick=3073`, **`ORBSHOT … tick=3084`**,
+  **`sent=29.400 crit=true`** (14.7 x 2, the allowed reading); probe **N `964.300`** (`1000 - 6.3 - 29.4`, the crit's
+  reading); `cause=selftest tick=3102`. Unpredicted: `cause=orphan` at 3021 and at 3063.
+
+**DID NOT TEST WHAT IT WAS MEANT TO: none.**
+
+**READ AS PREDICTED (four rows):**
+
+- **AF1.** `"  active: airburst_flames II (splits after 6 blocks into 3 bursts of 30 damage)"`; `SELF … at=104.50 201.00
+  -3.50`; **exactly one `SPLIT caster=<him> source=living_lantern/right_click at=110.800,202.620,-3.500 bursts=3
+  tick=1943`**; no PLAYERHIT.
+- **AF2.** **`SPLIT … at=110.800,202.620,-3.500 bursts=3 tick=2052`**; **THREE PLAYERHITs on H, `sent=30.000
+  crit=false triggerScore=100`, all three at 23:02:55**: all three bursts steered onto the mob none of their straight lines
+  meets. **Their ticks are NOT READ: a PLAYERHIT line carries no tick**; the wall clock puts them in the same second, 1
+  to 2 s after the split. No `sent=45.000`. Probe H **`880.000`** (`1000 - 90`, and burns of 30 recorded;
+  `fireTicks=73`), d 16.492.
+- **AF3.** `"  active: airburst_flames I (… 25 damage)"`; `SPLIT … tick=2181`, **three `sent=25.000`** (23:03:01);
+  `REPLY "Slot 0: Airburst Flames unlocked to III." [green]`; `SPLIT … tick=2263` (82 later), **three `sent=35.000`**
+  (23:03:06); all six `crit=false`, all on H; ticks NOT READ, as AF2. Probe H **`735.000`** (`1000 - 75 - 105`, and burns
+  of 85 recorded), d 16.492.
+- **AF4.** **One PLAYERHIT on N `sent=45.000 crit=false`**; **no `SPLIT`** in the row; probe N **`932.500`** (45 and a
+  burn of 22.5, recorded), d 3.000.
+
+### BEN'S ANSWER
+
+**NOT STATED.** He typed no chat line between his join (23:02:34) and his `/stop` (23:05:32). Not asked again.
+
+**Recorded without comment, after the run:** `/rpg give lapis_staff` (23:04:24); two throws of his own (`ORBBODY` at
+ticks 4243 and 4848, each with its `cause=orphan` line and WARN, each `ORB removed … cause=expired` 300 after its rest);
+`/rpg spawn knell` four times (23:04:57-58); `/stop` (23:05:32).
+
+### AFTER HIS `/stop`
+
+`rpgfight` 0 entries; the overworld 106 files (106 at the backup); `All dimensions are saved` 23:05:33; no `java`
+process; **no `ORB` line reads `cause=stop`** (no orb was standing; his second throw expired at tick 5158, before the
+stop); **his saved position `-98.56 63.00 34.60`** (READ off his player file's `Pos`), not the pad.
+
+### UNREAD, AND WHY
+
+- **Ben's answer to THE ASK:** not stated, so the look of the body, its glow and the drawn line as seen are unread.
+- **Whether each body moved along the path:** no line reads a display's position during its flight.
+- **The ticks of AF2's and AF3's burst hits:** PLAYERHIT prints none.
+- **The backstop firing:** by design (above). It did not fire anywhere in the log.
