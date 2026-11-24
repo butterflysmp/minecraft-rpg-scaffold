@@ -2,15 +2,23 @@
 
 **Status: NOT RUN.** Written 2026-11-23 on `feat/info-top-right` (PR 3), stacked on `feat/unique-enchant-slot` (#249),
 stacked on `feat/selftest-row-case` (#248), on master `383ded19`, before any boot. **This file carries the ONE R0 and the
-ONE run sheet for the three PRs.**
+ONE run sheet for the three PRs** — and, since 2026-11-23 later the same day, for a FOURTH: `feat/boltor-sound-flint-text`
+(the seat's brief "THE BOLTOR'S SHOT SOUND AND THE FLINT STAFF'S TEXT"), stacked on PR 3, whose rows are BX1 and BX2.
 
 **NO BOOT YET, BY THE SEAT'S BRIEF: the boot waits until Ben's first unique enchants are stacked on top, so one boot reads
 both.** When that branch exists, its gate rows join this sheet, R0 is re-predicted against its head, and only then: the
 seat diffs every PR and this gate from origin, Ben says "ready" in his own words, and CC boots by
 `.claude/rules/booting.md`. **NO MERGE without Ben's own words.**
 
-**Game mode:** SURVIVAL, every row. **Every row is AUTO**: no prompt, no ASK. **No mob is summoned; nothing in the rows
-can hurt him** (*SAFETY*).
+**Game mode:** SURVIVAL, every row. **Every row is AUTO except BX2, which carries the gate's ONE ASK** (one question: the
+Boltor's shot sound, which the server cannot witness). **No mob is summoned; nothing in the rows can hurt him**
+(*SAFETY*).
+
+**Ben's words for PR 4, verbatim (2026-11-23), recorded in `PLAN-weapon-tiers.md` 1.14:** "1. Add a sound to the Boltor's
+shots. Tell me what the old repo uses and give me a recomendation" / told the old repo's sound and the seat's
+recommendation to reuse it: "use the old one" / "2. A change to the lore of the Flint staff. Replace the current
+description with this: "Prehistoric magicians learned you could create fire by slamming mana into flint."" / "3. Change
+the Ability description to: "Hurls a fragment of burning mana""
 
 **Ben's words this gate serves, verbatim (2026-11-23), recorded in `docs/plans/PLAN-unique-enchant-slot.md` §1** (and,
 for PR 1, `PLAN-weapon-tiers.md` 1.13 and the boot of `ac46c838`, where his `vb3r2` started no run):
@@ -53,17 +61,28 @@ slots.** On this dev server the 16 kinetic weapons' slot 0 offers the dev-only e
 - **F. The cascade's figures (EXECUTED, jshell, ±3σ of a binomial at n = 10000):** four p 0.100 → **[910, 1090]**; three
   p 0.360 → **[3457, 3744]**; two p 0.378 → **[3635, 3925]**; one p 0.162 → **[1510, 1730]**; and on a pool of two, where
   three and four cap to two, two p 0.838 → **[8270, 8490]**.
+- **G. PR 4 (READ):** the Boltor's `right_click` now binds `on_cast: boltor_cast`, ONE sound step `item.crossbow.shoot`
+  1.0 / 1.3 (the old repo's `Sound.ITEM_CROSSBOW_SHOOT, 1.0f, 1.3f`; the key READ in the pinned jar's
+  `SoundEvents.class`). `on_cast` plays inside `CastExecutor.commit()`, reached only after `AbilityService` returns
+  Success: a press ON COOLDOWN returns `OnCooldown` first, and an EMPTY or RELOADING quiver returns
+  `Quivers.resolveForShot`'s refusal in `WeaponFire.attempt` before `weaponService.fire`. **So the sound plays only when a
+  shot leaves.** **NO SERVER WITNESS:** `PaperCombatWorld.present` plays a visual's sound with `world.playSound` and logs
+  nothing (the Knell's `BEAM sound` lines are `MobBeamer`'s own), so only an ear reads it. **The empty press is not
+  silent:** `QuiverNotice.empty` plays `block.dispenser.fail` to the holder with its action-bar notice. The ray ignores its
+  caster (`CombatWorld.castRay(from, to, ignoreId)`).
 
 ## SAFETY: THE MOST HITS THE RUN CAN LAND ON HIM, TIMES THE BIGGEST, AGAINST HIS HEALTH
 
 | run | what can hurt him | most hits x biggest hit |
 |---|---|---|
 | `unique-enchant-slot` (either form) | no mob, no cast, no projectile: commands, gives, clears, menu clicks and dumps only | **0 x 0 = 0** |
+| BX2 (PR 4) | ONE Boltor shot, fired STRAIGHT UP (pitch −90) at open sky, no mob summoned; its ray ignores its caster (G). It can strike only a block, or a natural mob overhead, and a hit lands on that mob, never on him; the second press is refused (empty quiver) and fires nothing | **0 x 0 = 0** to him |
 | either | a natural hostile already near him (this gate changes no time and no spawning) | as anywhere he stands; not made by the run |
 
 **What the run clears, and the restore returns (READ, `SelfTestSnapshot`):** at the start of their rows it clears every
-**iron sword**, **stick** (the Flint Staff's material) and **iron chestplate** in his inventory, his own included (worn
-pieces too: `clear` takes armor slots). The restore returns his whole inventory, held slot, game mode, position, Lifetime
+**iron sword**, **stick** (the Flint Staff's material), **iron chestplate** and (BX2) **crossbow**-material item (his own
+Boltors, Breachers and Crossbows included) in his inventory, his own included (worn pieces too: `clear` takes armor
+slots). BX2 also turns him to face straight up; the restore returns his position and facing. The restore returns his whole inventory, held slot, game mode, position, Lifetime
 XP (so his RPG level, set to 13 here), **vanilla level and progress (set to 30 and 0 here)**, time, gamerules, mana and
 health, on finish, quit, stop and server stop.
 
@@ -89,18 +108,21 @@ health, on finish, quit, stop and server stop.
 1. `/gamemode survival`
 2. `/rpg selftest unique-enchant-slot us8` — **ONCE, in lower case, exactly as written: it is PR 1's reading** (the row is
    `US8`). A few seconds: screens open and close by themselves.
-3. `/rpg selftest unique-enchant-slot` — **ONCE.** About 10 seconds, all automatic: the enchanting table, the crafting
-   screen, the anvil, the grindstone and the Level screen open and close by themselves.
+3. `/rpg selftest unique-enchant-slot` — **ONCE.** About 15 seconds, then ONE question: the enchanting table, the
+   crafting screen, the anvil, the grindstone and the Level screen open and close by themselves; then you are turned to
+   face straight up and the Boltor fires once, and is pressed again on an empty quiver two seconds later. **Listen to
+   both presses.** Then answer the question in chat with `yes` or `no`.
 4. `/stop`
 
 Nothing else. If a row stalls or aborts, do not intervene.
 
 **The runs' lengths** (`wait:` summed per row; recount with `tr -d '\r' < <file> | awk '/^[A-Za-z0-9_-]+:/{row=$1}
 /^  - wait:/{w[row]+=$3} END{for (r in w) print r, w[r]}'`): setup 42, US1 6, US2 6, US3 6, US4 12, US5 15, US6 11, US7 15,
-US8 20: **133**, plus about 5 per row start (9: 45), no `kill` step: **the whole run about 178 ticks (9 s)**; **`us8` alone
-about 72 (3.6 s)** (setup 42, US8 20, two row starts).
+US8 20, BX1 12, BX2 70: **215**, plus about 5 per row start (11: 55), no `kill` step: **the whole run about 270 ticks
+(13.5 s) before the question**, and the question waits up to 1200 ticks for his answer; **`us8` alone about 72 (3.6 s)**
+(setup 42, US8 20, two row starts).
 
-## R0 — THE BUILD, FOR ALL THREE PRs. READ IT FIRST. IF ANY R0 FAILS, STOP
+## R0 — THE BUILD, FOR ALL FOUR PRs. READ IT FIRST. IF ANY R0 FAILS, STOP
 
 ### R0a — the build line names the stack top's head
 
@@ -114,7 +136,7 @@ about 72 (3.6 s)** (setup 42, US8 20, two row starts).
 
 | prediction | instrument | READING |
 |---|---|---|
-| **PRESENT, 13:** `content/enchant_candidates.yml` `tiers:`, `  - candidates: 4`, `    chance: 0.10`, `    chance: 0.40`, `    chance: 0.70`, `    chance: 1.0`; `content/enchants/dev_kinetic_example.yml` `element: kinetic`, `class: universal`, `effect: damage`; `selftest/GATE-unique-enchant-slot.yml` `US1:` and `US8:`; `selftest/index.yml` `  - unique-enchant-slot`; `content/enchants/sharpness.yml` `class: melee` (a real enchant, unchanged). **The controls, ABSENT, 6:** `enchant_candidates.yml` `    chance: 0.1` (a prefix of 0.10) and `  - candidates: 5`; `dev_kinetic_example.yml` `element: fire`; `sharpness.yml` `element: kinetic` (no real enchant declares one); `GATE-unique-enchant-slot.yml` `US0:`; `index.yml` `  - unique-enchant-slots` | the scan below, `-JarPath run\plugins\rpg-0.1.0-SNAPSHOT.jar` | |
+| **PRESENT, 13:** `content/enchant_candidates.yml` `tiers:`, `  - candidates: 4`, `    chance: 0.10`, `    chance: 0.40`, `    chance: 0.70`, `    chance: 1.0`; `content/enchants/dev_kinetic_example.yml` `element: kinetic`, `class: universal`, `effect: damage`; `selftest/GATE-unique-enchant-slot.yml` `US1:` and `US8:`; `selftest/index.yml` `  - unique-enchant-slot`; `content/enchants/sharpness.yml` `class: melee` (a real enchant, unchanged). **PR 4, PRESENT, 8 more (21 in all):** `content/visuals/boltor_cast.yml` `    key: item.crossbow.shoot`, `    volume: 1.0`, `    pitch: 1.3`; `content/weapons/boltor.yml` `        visual_id: boltor_cast`; `content/weapons/flint_staff.yml` `  - "Prehistoric magicians learned you could"`, `  - "create fire by slamming mana into flint."`, `      - "Hurls a fragment of burning mana"`; `GATE-unique-enchant-slot.yml` `BX2:`. **The controls, ABSENT, 6:** `enchant_candidates.yml` `    chance: 0.1` (a prefix of 0.10) and `  - candidates: 5`; `dev_kinetic_example.yml` `element: fire`; `sharpness.yml` `element: kinetic` (no real enchant declares one); `GATE-unique-enchant-slot.yml` `US0:`; `index.yml` `  - unique-enchant-slots`. **PR 4's controls, ABSENT, 4 more (10 in all):** `flint_staff.yml` the old flavor line `  - "A shard of flint, lashed and lit."` and the old description `      - "Hurls a mote of burning flint."`, and Ben's line WITH a full stop `      - "Hurls a fragment of burning mana."`; `boltor_cast.yml` `    pitch: 1.0` | the scan below, `-JarPath run\plugins\rpg-0.1.0-SNAPSHOT.jar` | |
 
 ```powershell
 param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
@@ -140,6 +162,17 @@ ValueLine $g 'US1:' 'GATE-unique-enchant-slot.yml'
 ValueLine $g 'US8:' 'GATE-unique-enchant-slot.yml'
 ValueLine $i '  - unique-enchant-slot' 'index.yml'
 ValueLine $s 'class: melee' 'sharpness.yml'
+$bc = Bytes 'content/visuals/boltor_cast.yml'
+$bw = Bytes 'content/weapons/boltor.yml'
+$fs = Bytes 'content/weapons/flint_staff.yml'
+ValueLine $bc '    key: item.crossbow.shoot' 'boltor_cast.yml'
+ValueLine $bc '    volume: 1.0' 'boltor_cast.yml'
+ValueLine $bc '    pitch: 1.3' 'boltor_cast.yml'
+ValueLine $bw '        visual_id: boltor_cast' 'boltor.yml'
+ValueLine $fs '  - "Prehistoric magicians learned you could"' 'flint_staff.yml'
+ValueLine $fs '  - "create fire by slamming mana into flint."' 'flint_staff.yml'
+ValueLine $fs '      - "Hurls a fragment of burning mana"' 'flint_staff.yml'
+ValueLine $g 'BX2:' 'GATE-unique-enchant-slot.yml'
 '--- controls'
 ValueLine $c '    chance: 0.1' 'enchant_candidates.yml CONTROL-PREFIX'
 ValueLine $c '  - candidates: 5' 'enchant_candidates.yml CONTROL-BOUND'
@@ -147,6 +180,10 @@ ValueLine $d 'element: fire' 'dev_kinetic_example.yml CONTROL-WRONG'
 ValueLine $s 'element: kinetic' 'sharpness.yml CONTROL-NORMAL'
 ValueLine $g 'US0:' 'GATE-unique-enchant-slot.yml CONTROL-NONE'
 ValueLine $i '  - unique-enchant-slots' 'index.yml CONTROL-NONE'
+ValueLine $fs '  - "A shard of flint, lashed and lit."' 'flint_staff.yml CONTROL-OLD-FLAVOR'
+ValueLine $fs '      - "Hurls a mote of burning flint."' 'flint_staff.yml CONTROL-OLD-DESCRIPTION'
+ValueLine $fs '      - "Hurls a fragment of burning mana."' 'flint_staff.yml CONTROL-FULL-STOP'
+ValueLine $bc '    pitch: 1.0' 'boltor_cast.yml CONTROL-PITCH'
 $zip.Dispose()
 ```
 
@@ -154,16 +191,16 @@ $zip.Dispose()
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one of each, up to the first `joined the game`: **`[Rpg] Loaded 11 abilities, 43 visuals, 5 statuses, 7 elements, 12 enchants, 3 pools, 6 fragments, 6 aspects, 24 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 7 recipes, 1 ores, 4 vein sizes`** (`GATE-boltor-recipe.md`'s reading on `ac46c838` with **11 -> 12 enchants**: the dev example loads on a dev server; derived); **`[Rpg] Loaded enchant candidates: 4 at 10.00% (truly 10.000%), 3 at 40.00% (truly 36.000%), 2 at 70.00% (truly 37.800%), 1 at 100.00% (truly 16.200%)`** (MEASURED by `EnchantCandidatesLoaderTest` on the shipped file); **NO `Dev-only enchants not loaded`** (a dev server loads it); `Custom recipes: 7 registered, 0 replaced, 0 refused, of 7 authored (7 minting gear)`, `Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions` and `Convert-on-arrival: 9 materials {…}` word for word that boot's; the loot, fight, world-damage and smithing lines word for word that boot's. **No `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Recipe '`; no `[Rpg]` WARN beyond `volley_stone`'s known pair** | `Select-String run\logs\latest.log -Pattern 'Loaded\|Custom recipes\|Mint-on-craft\|Convert-on-arrival\|Dev-only\|Refusing\|Skipping\|SEVERE\|WARN\|Exception\|No fights loaded\|Recipe '''` | |
+| Exactly one of each, up to the first `joined the game`: **`[Rpg] Loaded 11 abilities, 44 visuals, 5 statuses, 7 elements, 12 enchants, 3 pools, 6 fragments, 6 aspects, 24 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 7 recipes, 1 ores, 4 vein sizes`** (`GATE-boltor-recipe.md`'s reading on `ac46c838` with **11 -> 12 enchants**: the dev example loads on a dev server; and **43 -> 44 visuals**: PR 4's `boltor_cast`, `ls content/visuals/*.yml | wc -l` = 44; both derived); **`[Rpg] Loaded enchant candidates: 4 at 10.00% (truly 10.000%), 3 at 40.00% (truly 36.000%), 2 at 70.00% (truly 37.800%), 1 at 100.00% (truly 16.200%)`** (MEASURED by `EnchantCandidatesLoaderTest` on the shipped file); **NO `Dev-only enchants not loaded`** (a dev server loads it); `Custom recipes: 7 registered, 0 replaced, 0 refused, of 7 authored (7 minting gear)`, `Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions` and `Convert-on-arrival: 9 materials {…}` word for word that boot's; the loot, fight, world-damage and smithing lines word for word that boot's. **No `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Recipe '`; no `[Rpg]` WARN beyond `volley_stone`'s known pair** | `Select-String run\logs\latest.log -Pattern 'Loaded\|Custom recipes\|Mint-on-craft\|Convert-on-arrival\|Dev-only\|Refusing\|Skipping\|SEVERE\|WARN\|Exception\|No fights loaded\|Recipe '''` | |
 
 ### R0d — every scenario loaded
 
 | prediction | instrument | READING |
 |---|---|---|
-| Exactly one **`[Rpg] Selftest: dev server, 338 scenarios across 42 gates [melee-cell, …, boltor-recipe, unique-enchant-slot]`**. The control: `330 scenarios across 41 gates` is ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+| Exactly one **`[Rpg] Selftest: dev server, 340 scenarios across 42 gates [melee-cell, …, boltor-recipe, unique-enchant-slot]`**. The controls: `330 scenarios across 41 gates` and `338 scenarios` are ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
 
-**RECOUNTED** (`SelfTestScenariosTest` asserts 338): 42 gates, `^[A-Za-z0-9_-]+:` over the `GATE-*.yml` files **380**,
-`^setup:` **42**, so **338**. Control: 371 + 9 (setup, US1-US8) = 380.
+**RECOUNTED** (`SelfTestScenariosTest` asserts 340): 42 gates, `^[A-Za-z0-9_-]+:` over the `GATE-*.yml` files **382**,
+`^setup:` **42**, so **340**. Control: 371 + 9 (setup, US1-US8) + 2 (BX1, BX2) = 382.
 
 ### R0e — THE ORPHAN SWEEP WITH NOTHING STAGED
 
@@ -243,6 +280,21 @@ exact. US4 is a READING beside the true odds and the ±3σ band (F), not a pass 
 |---|---|---|
 | **Crafting:** `SCREEN CraftingMenu …` with **`SLOT 8 CRAFTING_TABLE name="Crafting" [green] lore=["Lay a recipe in the grid," [gray]; "or click a suggestion." [gray]]`** and **no `SLOT 4`**. **Anvil:** `SCREEN AnvilMenu …` with **`SLOT 8 ANVIL name="Anvil" [green] lore=["Move a gear score onto a better item." [gray]; "Same kind only, and the sacrifice must score higher." [gray]; …]`** and **no `SLOT 4`**. **Grindstone:** `SCREEN GrindstoneMenu …` with **`SLOT 8 GRINDSTONE name="Grindstone" [green] lore=["Place weapons, shields, armor or tools below." [gray]; …]`** and **no `SLOT 4`**. **THE CONTROL, Level (listed for Ben, NOT moved):** `SCREEN LevelMenu …` with **`SLOT 4 EXPERIENCE_BOTTLE name="Level 13" [green] …`** and **no `SLOT 8`** | PR 3 (`InfoTopRightTest`); the table below | |
 
+### BX1 — PR 4: THE FLINT STAFF'S TOOLTIP, BEN'S FLAVOR AND DESCRIPTION (SURVIVAL)
+
+| prediction | stands on | READING |
+|---|---|---|
+| The `clear` and `rpg give` REPLYs (recorded); the score REPLY (recorded). **`HELD flint_staff STICK x1 name="Flint Staff" … lore=["Fire" [red]; "Gear Score: 100" [gray, aqua]; "" []; "Fire Bolt  Right-Click" [gold, yellow]; "Hurls a fragment of burning mana" [gray]; "Fire Damage: 20" [gray, red]; "Cooldown: 1.2s \| Mana Cost: 5" [dark_gray]; "" []; "Prehistoric magicians learned you could" [gray] italic; "create fire by slamming mana into flint." [gray] italic; "" []; "Common Magic Weapon" [white]]`**, every line. **No enchant line** (a fresh roll is all locked). **`"Hurls a fragment of burning mana."` (a full stop), `"Hurls a mote of burning flint."`, `"A shard of flint, lashed and lit."` or `"Cheap enough to lose. Hot enough to matter."` anywhere is a DEFECT** | `golden-lore.txt` `-- flint_staff` (the Gear Score line inserted after the element line at runtime, `WeaponLore.build`); `BoltorSoundFlintTextTest`; score 100 keeps the authored 20 (`GATE-breacher-rework.md` RW1's staging) | |
+
+### BX2 — PR 4: THE BOLTOR'S SHOT SOUND: ONE SHOT, THEN ONE PRESS ON AN EMPTY QUIVER (SURVIVAL; THE GATE'S ONE ASK)
+
+**Begins from a cleared cooldown:** it is the run's first Boltor press, 20 ticks after the turn (the cooldown is 16). The
+second press is 40 ticks after `rpg rounds 0`, past the cooldown, so its refusal is the quiver's, not the cooldown's.
+
+| prediction | stands on | READING |
+|---|---|---|
+| The turn; the first press: **no PLAYERHIT** (nothing to hit straight up; a block or a passing natural mob is recorded, not predicted); the dump: **`"Quiver: 7/8" [gray]`** in the Boltor's lore (one round left the quiver: the shot left). `REPLY "Rounds: 0/8 (…)"` (recorded). The second press: **`REPLY actionbar "Your quiver is empty -- left-click to reload." [gray]` exactly once**, no PLAYERHIT; the dump: **`"Quiver: 0/8" [gray]`**. **THE ASK, one line: the question and his answer verbatim; predicted `yes`** (the first press played `item.crossbow.shoot` at pitch 1.3; the second played no shot, only `QuiverNotice`'s `block.dispenser.fail` click). **AUTO-PARTIAL**: the quiver and refusal lines are the server's; the sound is his ear's alone | G; `boltor_cast.yml`; `QuiverNotice.empty` (READ); `GATE-breacher-rework.md` BR6R2 (the notice's reading) | |
+
 ## PR 3: EVERY SCREEN, READ (our source at `feat/info-top-right`)
 
 Every screen is a 54-slot chest, nine columns. "Row 1, column 9" is index 8.
@@ -273,6 +325,9 @@ Every screen is a 54-slot chest, nine columns. "Row 1, column 9" is index 8.
   `OldThreeSlotItemTest` and `EnchantMenuLayoutTest` read it in the unit loop (V4).
 - **A real server without the dev marker**: the dev example's absence is `EnchantLoaderTest`'s, not this boot's.
 - **An unknown row's refusal** (PR 1): `SelfTestRowMatchTest`; the boot reads only the lower-case match.
+- **The Boltor's sound by any instrument but his ear** (G: the server logs no visual's sound); its volume and pitch as
+  he hears them; and that a press ON COOLDOWN plays nothing (READ in `AbilityService`, not staged here).
+- **The Flint Staff's tooltip as rendered**, including whether a 40-character line looks right beside the others.
 - **`/rpg enchant`'s new slot and candidate bounds (3 and 3)**: no row types a slot or candidate index above 2 except
   US5's `candidate 3 …`, which reads the slot bound; the candidate bound is unread.
 
@@ -284,3 +339,9 @@ of `feat/info-top-right` (on #249's head `7e273b5b`) with all of PR 3, this gate
 above, extracted verbatim from this file and run with `powershell -File`, printed **13 PRESENT and 0 ABSENT** before
 `'--- controls'` and **6 ABSENT, 0 PRESENT** after it, exactly as predicted. The boot's reading is taken again on the
 deployed jar, and R0 is re-predicted when Ben's unique enchants are stacked on top.
+
+**PR 4, the same scan widened (21 and 10), against `paper\target\rpg-0.1.0-SNAPSHOT.jar` (2,384,111 bytes), built by
+`./mvnw -B clean verify` from the working tree of `feat/boltor-sound-flint-text` (on #250's head `1ee718b6`) with all of
+PR 4 and these rows (2026-11-23; the suite in the same build: core 2,348, storage 99, paper 1,833, 0 failures, 1
+skipped):** extracted verbatim and run with `powershell -File`, it printed **21 PRESENT and 0 ABSENT** before
+`'--- controls'` and **10 ABSENT, 0 PRESENT** after it, exactly as predicted.

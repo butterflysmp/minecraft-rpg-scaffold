@@ -186,3 +186,37 @@ US8:
   - dump: menu
   - close: ""
   - wait: 2
+
+# BX1 (2026-11-23, feat/boltor-sound-flint-text): THE FLINT STAFF'S TOOLTIP, Ben's new flavor and ability description.
+# Its score is staged at 100 so the damage line reads its authored 20 (GATE-breacher-rework RW1's staging).
+BX1:
+  - hold: empty
+  - cmd: "clear @s minecraft:stick"
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - wait: 10
+  - dump: held
+
+# BX2 (2026-11-23): THE BOLTOR'S SHOT SOUND. A shot that leaves (straight up, at open sky; its ray ignores its caster),
+# then a press on an EMPTY quiver (/rpg rounds 0), 40 ticks later (past the 16-tick cooldown, so the refusal is the
+# quiver's). The server cannot witness a visual's sound (PaperCombatWorld.present logs none), so Ben's ear reads it: the
+# gate's ONE ASK. The empty press plays the empty-quiver notice's own click (block.dispenser.fail), not a shot.
+BX2:
+  - hold: empty
+  - cmd: "clear @s minecraft:crossbow"
+  - cmd: "rpg give boltor"
+  - wait: 2
+  - hold: boltor
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ 0 -90"
+  - wait: 20
+  - use: right_click
+  - wait: 4
+  - dump: held
+  - cmd: "rpg rounds 0"
+  - wait: 40
+  - use: right_click
+  - wait: 4
+  - dump: held
+  - ask: "1 1200 yesno Two Boltor presses just happened. Did the FIRST play a crossbow shot sound and the SECOND play no shot sound (only the empty-quiver click)?"

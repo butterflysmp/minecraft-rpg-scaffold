@@ -126,12 +126,12 @@
    "Fire" color=#FF5555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Fire Bolt" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "Hurls a mote of burning flint." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Hurls a fragment of burning mana" color=#AAAAAA O=. B=. S=. U=. I=F
    "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["20" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Cooldown: 1.2s | Mana Cost: 5" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
-   "A shard of flint, lashed and lit." color=#AAAAAA O=. B=. S=. U=. I=T
-   "Cheap enough to lose. Hot enough to matter." color=#AAAAAA O=. B=. S=. U=. I=T
+   "Prehistoric magicians learned you could" color=#AAAAAA O=. B=. S=. U=. I=T
+   "create fire by slamming mana into flint." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- golden_sword
