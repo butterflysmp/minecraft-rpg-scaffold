@@ -295,3 +295,86 @@ lines before the controls line, 7 after), run with `powershell -NoProfile -Execu
 jar>`, exit 0.
 
 **READING: AS PREDICTED.** Before `'--- controls'`: **28 `PRESENT`, 0 `ABSENT`**. After it: **7 `ABSENT`, 0 `PRESENT`**.
+
+## THE RUN OF `8ed6e7ca`, 2026-11-24 (01:32 boot, 01:34:02-01:34:34 run): R0 PASSED; EVERY ROW READ AS PREDICTED
+
+> **DATED NOTE, 2026-11-24, written after the run; no prediction above is edited.** Booted on the seat's approval of
+> `8ed6e7ca` and Ben's "ready". **Before the boot, #269's push-triggered CI run (`45338421535`) read FAILURE**: the
+> runner's `wget` could not fetch Maven 3.9.9 from `repo.maven.apache.org` (a network failure, not the code; the
+> pull-request run of the same head passed). It was re-run (`gh run rerun --failed`, safe to repeat) and read SUCCESS at
+> attempt 2; the boot waited for it. A marker made at 01:31:52, then the boot command; deployed jar 01:32:15 (2,514,594
+> bytes, sha256 `981d0bae…77c06c077`); `latest.log` first line 01:32:16; this boot's `Done` 01:32:21. R0 read 01:32:40;
+> **Ben joined 01:33:51, after it**, typed `/gamemode survival` (01:34:00) and `/rpg selftest shatter-caps` (01:34:02).
+
+### R0, READ
+
+- **R0a: AS PREDICTED.** `[01:32:20] … [Rpg] Build: 8ed6e7ca`. Before the boot command: `git status --porcelain` printed
+  nothing; `HEAD` and `ls-remote` both `8ed6e7caf6e1d3e121f1ffdbcf3a678a927b94d4`.
+- **R0b: AS PREDICTED.** The block extracted from the committed file, `cmp` IDENTICAL to the copy run before the commit,
+  against the deployed jar: **28 `PRESENT`, 0 `ABSENT`**, then **7 `ABSENT`, 0 `PRESENT`**.
+- **R0c: AS PREDICTED.** `[Rpg] Loaded 11 abilities, 46 visuals, 5 statuses, 7 elements, 15 enchants, …`;
+  `Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions`; `Custom recipes: 7 registered, 0 replaced, 0 refused,
+  of 7 authored (7 minting gear)`; the candidates line once; the only `[Rpg]` WARN `volley_stone`'s pair; no `Refusing`,
+  `Skipping`, `SEVERE`, `Exception`, `Dev-only`, `currently prevented`. Deployed: `content/enchants/` 15 `.yml`, 0 `dev_`,
+  among them `shatter_caps.yml`; `breacher.yml` line 76 `      max_lifetime_ticks: 6`.
+- **R0d: AS PREDICTED.** Exactly one `[Rpg] Selftest: dev server, 365 scenarios across 45 gates [melee-cell, …,
+  enchant-changes, shatter-caps]`; `356 scenarios` and `366 scenarios` absent.
+- **R0e: AS PREDICTED.** `FIGHTWORLD sweep path=…\rpgfight folders=0`; no `orphan`, no `deleting`.
+
+### THE SETUP AND THE CLEANS, READ
+
+- `PAD world=world stand=104,201,-4 floorY=200 interior=-2..45 east -13..13 south cells=7250 placed=0 repaired=0
+  ok=7250`; `PAD stood at=104.50 201.00 -3.50 yaw=-90.000 pitch=0.000`; `PREFLIGHT ok box=0..32 east -6..10 south
+  air=1122/1122 floor solid=561/561`; `DIFFICULTY found=NORMAL set=NORMAL`; `SELF … at=104.50 201.00 -3.50`. The setup's
+  own clean `return=-104.75 63.00 16.28` (where he typed the command).
+- **Every clean (setup and the nine rows): `LINGER work=0 entities=0 radius=48` and `LEFTOVER living=0 radius=16`**,
+  every row's `return=104.50 201.00 -3.50`; `removed=` 0 at the setup and SR1, 1 at each later row (the previous row's
+  zombie).
+- **STAGE:** each row's `clear_inventory … kept=nexus@8` and `clear_state cooldowns=cleared streaks=forgotten orb=none`.
+  No `SKIPPED`, `VOID`, `ABORT`. `SELFTEST RUN FINISHED` 01:34:34, then `RESTORED … gamemode=SURVIVAL …`.
+- **Across the whole log: 0 `orphan`, 0 `backstop`, 0 `currently prevented`, 0 `Exception`; no `[Rpg]` WARN beyond
+  `volley_stone`'s pair.**
+
+### THE ROWS, IN THREE CLASSES
+
+**MISS: none. DID NOT TEST WHAT IT WAS MEANT TO: none.**
+
+**READ AS PREDICTED (nine rows).** Every probed zombie's distance after its hits equals where it was summoned, so **the
+frozen zombies did not move under the 0.1 knockback** (its distance BEFORE the press was not probed: the summon position
+stands for it).
+
+- **SR1.** No enchant. **Exactly one `PLAYERHIT … source=breacher/right_click … element=kinetic sent=40.000 crit=false`**
+  (the centre chunk; no other chunk landed); no `SPLIT`. Probe F **`960.000`**, d 17.000.
+- **SR2.** **No PLAYERHIT**; no `SPLIT`. Probe F **`1000.000`**, d 19.000.
+- **SC1.** `"  Slot 0: [*shatter_caps I]"`, **`"  active: shatter_caps I (fires one stone of 35 damage that shatters after
+  5 blocks into the usual chunks)"`**; `HELD breacher … Quiver: 2/2 …`; **exactly one PLAYERHIT `sent=35.000
+  crit=false`**, no 40, no `SPLIT`; **`HELD breacher … Quiver: 1/2 …`**; probe N **`965.000`**, d 3.000.
+- **SC3.** `"  active: shatter_caps III (fires one stone of 85 damage …)"`; `Quiver: 2/2` then `Quiver: 1/2`; **exactly one
+  PLAYERHIT `sent=85.000 crit=false`**, no 40, no `SPLIT`; probe N **`915.000`**, d 3.000.
+- **SC2.** **`SPLIT caster=<him> source=breacher/right_click at=109.500,202.620,-3.500 bursts=4 tick=2370`** (exactly
+  5.000 from his eye along the aim); no `sent=35.000`; **FOUR PLAYERHITs on M, each `sent=40.000 crit=false`: all four
+  chunks landed, as the geometry predicted**; probe M **`840.000`**, d 8.000.
+- **SF1.** `SPLIT … at=109.500,202.620,-3.500 bursts=4 tick=2439`; **exactly one PLAYERHIT on F, `sent=80.000 crit=true`**
+  (the centre chunk's 40 doubled on its crit, the allowed second reading); probe F **`920.000`**, d 22.000.
+- **SF2.** `SPLIT … bursts=4 tick=2508`; **no PLAYERHIT**; probe F **`1000.000`**, d 24.000.
+- **ST1.** `"  Slot 0: [*shatter_caps I]"`, `"  Slot 1: [*kinetic_tremors I]"`, both active lines; `SPLIT … bursts=4
+  tick=2577`; **four `sent=40.000` on M (all four chunks landed), and exactly one `source=kinetic_tremors/shockwave … sent=10.000
+  crit=false`, logged after the third chunk's hit and before the fourth's**; probe M **`830.000`** (`1000 - 160 - 10`),
+  d 8.000.
+- **ST2.** **Exactly one PLAYERHIT `sent=35.000`** on N, **no `kinetic_tremors/shockwave`**, no `SPLIT`; probe N
+  **`965.000`**, d 3.000.
+
+**Recorded without comment, after the run:** `/rpg give breacher`; `/give … cobblestone` twice; `/rpg spawn knell` (three
+times, once with `500`); `/rpg spawn armadillo 500`; `/stop` 01:37:10.
+
+### AFTER HIS `/stop`
+
+`rpgfight` 0 entries; the overworld 106 files (106 at the backup); `All dimensions are saved` 01:37:10; no `java`
+process; **his saved position `-106.27 63.00 18.98`** (READ off his player file's `Pos`), not the pad.
+
+### UNREAD, AND WHY
+
+- **The stone's look and the four chunks' pattern as seen:** client-side; this gate has no ASK.
+- **Each zombie's distance BEFORE the press:** not probed; the summon position stands for it, and every distance after
+  equals it.
+- **A stone meeting a block before 5, and the weapon check on another weapon:** by design (above).
