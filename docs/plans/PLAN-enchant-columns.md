@@ -690,3 +690,50 @@ rows and adds LB5 (the radius, and the box-to-sphere cut).
 period (60 ticks), the turn (one per 120 ticks), the beat (10 ticks), at rest only; the motes (`crystal_motes`: DUST,
 size 0.6, count 3, spread 0.3, twice a second); the body's scale (0.5). The glow is gone (Ben). Still open from before:
 the bursts' homing (0.45 / 0 / 7).
+
+## 15. MERGED, 2026-11-24: #263 TO #266. WHAT IS CARRIED, AND EVERYTHING OPEN FOR BEN IN ONE PLACE (NOTES ONLY)
+
+**Merged by `.claude/skills/merge-procedure`, bottom-up, on Ben's "merge it" and the seat's approval of 2026-11-24:**
+#263 as `510790b4`, #264 as `e48df9ad`, #265 as `09cf866b`, #266 as `89253ed4`. Each squash's tree equals its branch's;
+`check-absorbed.sh` read ABSORBED (control PASS) for each; #264, #265 and #266 were rebased `--onto` master with every
+patch id unchanged. **Master's tree `b1e16178…` equals the tree of `ebfd08fc`**, the booted stack's top. Every row of
+`GATE-enchant-changes.md` is READ AS PREDICTED (AF1-AF4 on `78826389`; LB1R2, LB4R2, LB2R2, LB3R2 and LB5 on
+`01ee2d65`); the first-form LB rows stand as MISS on the defect `09cf866b` fixed. Ben's answer to the ask: "yes".
+**The box-to-sphere cut is READ on a server** (LB5's X: inside the server's box, 0.704 outside the 15-block sphere, no
+shot) and comes off the carried list.
+
+### THE CARRIED LIST, AS IT NOW STANDS
+
+1. **The selftest's snapshot lives in memory.** A server crash mid-run leaves his inventory, position and the world's
+   rules as the run left them; the restore runs on every END path the plugin sees (finish, stop, exception, quit, server
+   stop), not on a crash.
+2. **The pad holds no chunk tickets** (the adapter context carries no plugin handle): a chunk that unloads between its
+   load and the build fails the run and touches nothing (section 13's account, unchanged).
+3. **The scenario lint does not yet enforce the staging of the gear score, mana, the enchant state and a cleared
+   cooldown.** It enforces the inventory, the turn-then-wait, probe reach, self-staging and the ground; a row that
+   forgets `rpg gearscore set`, `rpg mana refill`, `rpg enchant clear` or `clear_state` is not caught.
+4. **Unread on a server, by design:** a REAL orphan's removal one tick after it appears (no row stages an orphan; the
+   path is read by `OrbClaimTest`, `OrbBlockBodyLoadTest`'s pins and five mutations), and the BACKSTOP's firing (it acts
+   only when every other removal was skipped; `OrbBlockBodyTest` and `OrbLookTest`).
+
+### OPEN FOR BEN, IN ONE PLACE (every value as the content reads at `89253ed4`)
+
+| what | current value | where |
+|---|---|---|
+| The crystal's bob | 0.1 block over 60 ticks, at rest only | `lapis_crystal.yml` `bob_blocks`, `bob_period_ticks` |
+| The crystal's turn | one turn per 120 ticks | `turn_ticks` |
+| The crystal's beat | 10 ticks (the look re-set and the motes shown twice a second) | `beat_ticks` |
+| The crystal's motes | DUST rgb(40, 90, 240), size 0.6, count 3, spread 0.3, twice a second | `visuals/crystal_motes.yml` |
+| The crystal's size | scale 0.5 block, centred on the rest point | `scale` |
+| The bursts' homing | lerp 0.45, activation 0 blocks, search radius 7 | `airburst_flames.yml` `homing:` |
+| The bursts' spread and speed | 12 degrees apart, 0.7 a tick | `angle_degrees`, `speed` |
+| Kinetic Tremors' damage | 10 / 15 / 20 | `kinetic_tremors.yml` `damage_by_level` |
+| Kinetic Tremors' radius | 3 / 4 / 5 blocks | `radius_by_level` |
+| What a shockwave inherits | amount x the hit's gear score / 100, then the hit's damage enchant, class and level bonus, charge and crit (section 7, ruling 2) | `kinetic_tremors.yml` header |
+| The Living Lantern's homing | lerp 0.45 (activation 0, search 7: Ben's 7) | `living_lantern.yml` `homing:` |
+| The Living Lantern's description | "Looses a slow, seeking flame" / "that hunts within 7 blocks." | `living_lantern.yml` `description:` |
+| The two empty-column markers | weapon: "No weapon enchant" / "Nothing is tied to this weapon yet."; unique: "No unique enchant" / "Nothing unique is tied to this item's element yet." | `EnchantMenuLayout.emptyMarkerFor` |
+| The pad's place | 200 east of world spawn at spawn's z: stand x 104, floor Y 200, z -4 in the dev world; plain stone | `SelfTestPadShape` |
+| The four screens whose info item was left alone | Level (its item at 4 is a readout), Build picker (its item at 4 titles the pick), Vault (no info item; 8 is NEXT), Recipe book (no info item; 8 is an entry) | `PLAN-unique-enchant-slot.md` section 8 |
+
+**No code is owed by this section.** The next stack opens from `89253ed4`.
