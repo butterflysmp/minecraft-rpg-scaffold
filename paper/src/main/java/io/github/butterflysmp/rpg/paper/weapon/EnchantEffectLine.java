@@ -249,6 +249,15 @@ public final class EnchantEffectLine {
                 yield "fires one stone of " + number(s.damageAt(level)) + " damage that shatters after "
                         + number(s.travelBlocks()) + " blocks into the usual chunks";
             }
+            // FOCUSED BEAM (B5): the level's beam damage and its range, as authored (the gear score scales it in play).
+            // WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN.
+            case FOCUSED_BEAM -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.FocusedBeam f)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                yield "after the wind-up, fires one beam of " + number(f.damageAt(level)) + " damage reaching "
+                        + number(f.range()) + " blocks";
+            }
         };
     }
 

@@ -11,7 +11,7 @@ import java.util.List;
  * it must answer for every kind (one line for a reader rusty at Java: the compiler checks the list is complete).
  */
 public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst,
-        EnchantBehaviour.Shatter, EnchantBehaviour.GrantTrigger {
+        EnchantBehaviour.Shatter, EnchantBehaviour.FocusedBeam, EnchantBehaviour.GrantTrigger {
 
     /**
      * {@code effect: shockwave}: when the weapon carrying it lands {@code hits} hits on ONE target within the last
@@ -148,6 +148,44 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, Enc
         /** The ticks the stone takes to travel {@code travelBlocks}: {@link Airburst#ticksToTravel}, the one rule. */
         public int splitTicks() {
             return Airburst.ticksToTravel(travelBlocks, speed);
+        }
+    }
+
+    /**
+     * {@code effect: focused_beam} (Focused Beam, the Cursed Emerald's; the seat's brief of 2026-11-24, PR 2). Ben: "Fires
+     * one stronger beam after the wind up." / "1. 108/162/216 2. No piece 3. Everything the same except increase the range
+     * to 48 blocks. 4. Yes". While it is active on the weapon {@code weaponId}, a press of that weapon's VOLLEY OF RAYS
+     * pays and winds up exactly as the volley does, and then fires ONE ray in place of all its shots: the volley's own
+     * inner ray, read at run time, with its range replaced by {@code range} and never piercing, carrying the weapon's
+     * on_hit with every damage replaced by the level's {@code damageByLevel} in {@code element} (a primary hit, through
+     * the same damage path as every hit, so the gear score scales it), along his aim as it is at the wind-up's end
+     * ({@code CastExecutor.focusedBeam}).
+     *
+     * <p>A FOURTH BEHAVIOUR TYPE, NOT A SEAM SHARED WITH {@link Shatter}: Shatter acts where a SPREAD projectile is
+     * expanded ({@code CastExecutor.launch}); this acts where a VOLLEY fires its first shot ({@code CastExecutor.volley}).
+     * Sharing a "replace what the weapon launches" seam would route Shatter's (and Airburst's, in {@code launchOne})
+     * path through code written for a volley; a separate type leaves both byte-for-byte as their gates read them.
+     * {@code weaponId} is checked at the cast (the ability id is {@code <weapon>/<input>}), as Shatter's is: a volley
+     * re-reads the held weapon's behaviours at each shot (ruling 1), so a Cursed Emerald swapped in during another
+     * weapon's wind-up must not turn that weapon's volley into this beam.
+     */
+    record FocusedBeam(String weaponId, double range, List<Double> damageByLevel, String element)
+            implements EnchantBehaviour {
+        public FocusedBeam {
+            if (weaponId == null || weaponId.isBlank()) throw new IllegalArgumentException("focused_beam needs its weapon id");
+            if (!(range > 0) || Double.isInfinite(range)) {
+                throw new IllegalArgumentException("focused_beam range must be above 0, was " + range);
+            }
+            damageByLevel = positive("damage_by_level", damageByLevel);
+            if (element == null || element.isBlank()) throw new IllegalArgumentException("focused_beam element is required");
+        }
+
+        public double damageAt(int level) {
+            return damageByLevel.get(clamp(level, damageByLevel.size()) - 1);
+        }
+
+        public int levels() {
+            return damageByLevel.size();
         }
     }
 

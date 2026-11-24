@@ -57,6 +57,8 @@ public final class BehaviourHits {
                 case EnchantBehaviour.Airburst ignored -> { }
                 // A shatter acts on the PRESS (CastExecutor.launchStone), never on a hit; its stone and chunks are hits.
                 case EnchantBehaviour.Shatter ignored -> { }
+                // A focused beam acts on the VOLLEY (CastExecutor.focusedBeam), never on a hit; its one ray is a hit.
+                case EnchantBehaviour.FocusedBeam ignored -> { }
                 // A granted trigger acts when its gesture is pressed (GrantedTriggers), never on a hit.
                 case EnchantBehaviour.GrantTrigger ignored -> { }
             }

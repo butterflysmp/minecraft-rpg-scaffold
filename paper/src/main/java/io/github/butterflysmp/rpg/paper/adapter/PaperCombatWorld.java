@@ -555,6 +555,20 @@ public final class PaperCombatWorld implements CombatWorld {
                 ownerId, from.x(), from.y(), from.z(), to.x(), to.y(), to.z(), visual, tick);
     }
 
+    @Override
+    public void traceFocusedBeam(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 from, double range,
+                                 long pressedTick) {
+        if (!ctx.mobTrace().getAsBoolean()) return;
+        ctx.log().info(focusedLine(casterId, source, from, range, pressedTick, org.bukkit.Bukkit.getCurrentTick()));
+    }
+
+    /** {@code FOCUSED} (Focused Beam, 2026-11-24): the press's tick and the beam's, on one line ({@code FocusedLineTest}). */
+    static String focusedLine(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 from, double range,
+                              long pressedTick, long tick) {
+        return String.format(java.util.Locale.ROOT, "FOCUSED caster=%s source=%s from=%.3f,%.3f,%.3f range=%.3f pressed=%d tick=%d",
+                casterId, source, from.x(), from.y(), from.z(), range, pressedTick, tick);
+    }
+
     static String splitLine(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 at, int bursts, long tick) {
         return String.format(java.util.Locale.ROOT, "SPLIT caster=%s source=%s at=%.3f,%.3f,%.3f bursts=%d tick=%d",
                 casterId, source, at.x(), at.y(), at.z(), bursts, tick);

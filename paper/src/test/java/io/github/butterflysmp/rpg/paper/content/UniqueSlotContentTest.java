@@ -143,8 +143,9 @@ class UniqueSlotContentTest {
         assertEquals(6, l.accessories());
         assertEquals(60, l.gear().size());
         assertEquals(60, MASTER_POOLS.size(), "the snapshot covers the same 60");
-        assertEquals(15, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal and (2026-11-24) Shatter Caps");
-        assertEquals(15, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
+        assertEquals(16, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
+                + " Shatter Caps and (2026-11-24) Focused Beam");
+        assertEquals(16, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
@@ -223,7 +224,8 @@ class UniqueSlotContentTest {
             if (cls == null) continue;
             assertEquals(g.id().equals("living_lantern") ? List.of("airburst_flames")
                             : g.id().equals("lapis_staff") ? List.of("lapis_crystal")
-                            : g.id().equals("breacher") ? List.of("shatter_caps") : List.of(),
+                            : g.id().equals("breacher") ? List.of("shatter_caps")
+                            : g.id().equals("cursed_emerald") ? List.of("focused_beam") : List.of(),
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }
