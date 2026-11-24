@@ -1045,3 +1045,22 @@ INFERRED to be the first; not read in the jar.
   core test that counts ticks after a press would move by one, with no change in shipped behaviour. If the seat wants
   the fake honest about the hop, the smaller form is to model ONLY the hop (the cast one tick after the press) and keep
   `scheduleOn` exact, and that is not what the 19 asks for.
+
+## 20. THE SEAT'S BRIEF OF 2026-11-24 ("THE GUARANTEED WEAPON ENCHANT, FOR THE MAGE WEAPONS; MANA BURN; AND THREE SMALL CONTENT CHANGES"): PR A, THE PRESS TICK (`feat/press-tick`, on #274)
+
+**Ruled by the seat at #274's reading: (c), nothing real is short; owed, the trace tells the truth.** Built in the
+carried form, not the rename: `WeaponFire` stamps `Bukkit.getCurrentTick()` on the player's thread BEFORE its `onRegion`
+hop and hands it to `CastExecutor.execute(success, pressTick)` (and `executeFan(…, pressTick)`), which carries it through
+`dispatch` to `beginVolley`. The one-argument forms pass `world.currentTick()`, so every caller with no hop (a stone, a
+dev cast, a vanilla shot, every core test) is unchanged. **On the server a `FOCUSED` line now reads `tick - pressed` = 20
+(press T, beam T + 20; section 19, step 4), not 19.** Nothing decides on the value.
+
+**Tests and mutation:** `FocusedBeamTest.theTracedPressTickIsTheOneStampedAtThePressNotTheCasts` (press 5, cast 7, beam
+27 in the fake; no two equal). MUTPRESSCAST (`execute` passes the cast's tick in place of the press's): marker present 1,
+original gone 0, lines changed 1 against a pristine copy; that row red; restored, `cmp` identical, markers left 0.
+**UNMUTATED, said so:** `WeaponFire`'s stamp (server-side; the next gate's wind-up rows are its witness).
+
+**The other owed items of the seat's approval, here:** the approved `verification.md` line, in a commit of its own; the
+dated note on `GATE-focused-beam.md` (its six misses stand). **Carried as UNREAD, not audited** (the seat's word: only
+when a second timing surprise appears): where a REAL client's right click is handled (INFERRED: the same phase as the
+selftest's press), and whether any paper caller files a delay from the Bukkit heartbeat.
