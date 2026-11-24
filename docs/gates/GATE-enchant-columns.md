@@ -530,6 +530,9 @@ snapshot restores at once. Every summon below stands inside that box (`ScenarioL
 
 ### THE RUN SHEET, SECOND FORM — BEN TYPES THESE THREE LINES
 
+> **SUPERSEDED, 2026-11-23 (Ben's ruling A: the selftest builds its own ground):** the next boot's run sheet is *THE
+> THIRD FORM*'s. This one asked him to find ground; that one asks nothing of his ground or his inventory.
+
 **IN PLAIN WORDS, BEFORE YOU TYPE ANYTHING:** find **solid, flat ground** (grass, dirt, sand or stone: **not water, not
 ice over water**). Face **east** (F3 shows `Facing: east`; the selftest turns you east anyway). The ground must be
 clear for **33 blocks ahead of you, 6 blocks to your left and 10 blocks to your right**: nothing but air at your feet
@@ -822,6 +825,226 @@ enchant; a cleared item has none), class bonus 0, level bonus 0 (level 1, the ro
 `removed … cause=selftest`; LC4R2 one `rest` and one `removed … cause=expired`; **and no other.** After `/stop`: no
 `cause=stop`; at the next enable, no `cause=orphan`.
 
+## THE THIRD FORM, 2026-11-23: THE PAD. THE SELFTEST BUILDS ITS OWN GROUND
+
+> **DATED NOTE, 2026-11-23.** Offered *"A. The test builds its own ground. A one-time flat stone platform high in the
+> sky of your dev world. Each run teleports you onto it and returns you to where you were when it ends. Every future
+> test uses the same pad"* or *"B. You keep finding the ground yourself"*, **Ben answered: "A."** The seat's rulings
+> P1-P9 are built on `feat/selftest-pad`, on #261. **The second form's ROWS are unchanged and keep their names** (none
+> was run); only the setup changed. **What was read as predicted on `e774d4b8` stays read and is not re-run.**
+
+**THE PAD (`SelfTestPadShape`, pure; `SelfTestPad`, the builder).** DEV SERVER ONLY (the `-Drpg.dev=true` marker the
+selftest itself needs; the run is guarded by it, and `/rpg selftest pad build|remove` check it first). ONE pad, in the
+dev world (the server's first world, the overworld): **the stand point is 200 blocks east of world spawn's x, at
+spawn's z; the floor at Y 200, his feet at Y 201** (SEAT PLACEHOLDERS, OPEN FOR BEN: where, and plain stone). The build
+height, READ from the server jar of build 74 (`data/minecraft/dimension_type/overworld.json`: `min_y -64`, `height 384`):
+the top block is Y 319, so the floor and 40 blocks of air above it (to Y 240) are inside it. Its shape, from the stand
+point: an INTERIOR x -2..45 and z -13..13 (48 x 27 = 1296 columns), a STONE floor one block thick under all of it, AIR
+above the floor to 4 high (5184 cells), and a BARRIER RIM one block wide on all four sides, corners included, from floor
+level to 4 above it (154 columns x 5 = 770). **7250 cells, and nothing outside them is ever read or written.**
+
+**AT RUN START, IN THE SETUP, IN THIS ORDER:** the snapshot (taken when the command is typed, as every run's is); then
+`pad`: the pad's chunks loaded asynchronously, every one confirmed still loaded on the pad's region, every cell put right
+(a missing floor or rim cell PLACED; a wrong block anywhere, in the floor, the rim or the air, REPAIRED), the block
+under the stand point confirmed solid, and only then is he teleported to the stand point, facing east. **From then on
+every row's clean returns him to the stand point**; every end of the run returns him to where he typed the command.
+Any failure: no teleport, one red chat line (*"The selftest could not set up its platform in the sky (<why>), so nothing
+ran and you were not moved."*), the run ends, the snapshot restores. Then the PREFLIGHT, as before, on the pad: the
+check that it is whole.
+
+**THE RETURN, READ (P6).** Every end path runs the one restore, and it returns him to his RUN-START position and facing
+(`SelfTestSnapshot.restore`: `teleportAsync(location)`, or `teleport` when `now`): FINISHED, STOPPED, an EXCEPTION
+(`ABORTED in …`), and the server stop (`endAtDisable`, synchronous). **HIS QUIT: READ from the server jar, the old async
+return could not be trusted** (`CraftEntity#teleportAsync` loads the destination's chunks and teleports in a callback;
+`CraftPlayer#teleport0` returns false once his `connection` is null; his save follows the quit event), so he could have
+been saved on the pad, **and the next run would then have taken the pad as its start**. Fixed here: the quit path is
+`endAtQuit()`, whose return is SYNCHRONOUS, as at a server stop. Were he ever saved on the pad all the same, he would
+rejoin on the floor inside the rim, which no interior cell can fall past (tested). **"Left the dev world":** the pad is in
+the dev world, so standing on it does not trip the guard. **His death:** the run's guard aborts on it (`the player
+died`); the restore runs on a dead player, and he respawns where vanilla puts him (his bed or the world spawn), not on
+the pad and not at his start (READ: `SelfTestStaging.invalid`; where he respawns is vanilla's, NOT READ). Nothing on the
+pad can kill him (SAFETY below).
+
+**NOTHING HOSTILE ON IT, READ (P7).** During the run: the setup's kill lines remove every zombie, skeleton, spider,
+creeper, enderman, witch, slime and phantom within 64 of him, which is all of the pad (its farthest cell is 48 from the
+stand point); `gamerule spawn_mobs false` stops natural spawning; **and, ADDED, `gamerule spawn_phantoms false`, because
+READ shows the need**: the server's `PhantomSpawner` reads `GameRules.SPAWN_PHANTOMS` and `canSeeSky`, never
+`spawn_mobs`, and the pad is open sky at the run's night (18000). The snapshot saves and restores `spawn_phantoms` like
+`spawn_mobs` (the RESTORED line names it). Between runs, natural spawning there needs a player near it (vanilla's
+spawner works only near players: INFERRED, NOT READ this session), and nothing spawns on a barrier (INFERRED); a mob of
+a type the kill lines miss (a stray, a husk, a bogged) on the pad at a run's start would be named by the first row's
+`LEFTOVER` line. **No spawn-proofing beyond the phantom rule is added: READ showed no other need.**
+
+**THE LINT (P9):** a scenario that opts into the pad has its preflight box and every summon inside the interior
+(`ScenarioLint`, rule GROUND); one that does not is linted as before. Only `enchant-columns` opts in
+(`SelfTestScenariosTest`).
+
+### THE RUN SHEET, THIRD FORM — BEN TYPES THESE THREE LINES
+
+**IN PLAIN WORDS:** **stand anywhere in the dev world.** When you type line 2, the selftest lifts you onto its own stone
+platform high in the sky, runs, and puts you back exactly where you were when it ends. **You do not need to find any
+ground.** Your inventory is emptied during the run (each row hands you what it needs) and **everything is given back at
+the end**. Do nothing while it runs.
+
+0. **DO NOT LOG IN UNTIL CC HAS TOLD YOU R0 PASSED.**
+1. `/gamemode survival`
+2. `/rpg selftest enchant-columns` — **ONCE.** About 105 seconds: you appear on the platform facing east, zombies appear
+   and stand still, your weapons fire by themselves, and a lapis crystal is thrown and floats, four times.
+3. `/stop`
+
+If anything goes wrong before the run starts, you are told in red in chat and you are not moved; nothing ran.
+
+**This run's length:** the second form's 1959 waited ticks (unchanged; recount as there) and about 5 per row (19: 95),
+**about 2055 ticks (103 s)**, plus the pad's chunk loads and build at the start (NOT MEASURED: a first run builds 2066
+blocks, a later one checks 7250 and writes none).
+
+### SAFETY, THIRD FORM: WHERE EVERY ROW PUTS HIM, AND WHAT COULD REACH HIM
+
+**Where:** every row's clean returns him to the STAND POINT, and every row that fires turns him there to face due east.
+He is never anywhere else on the pad and never off it. **The fall he cannot take:** at floor level and each of the four
+levels above, every interior cell's eight neighbours are interior or rim
+(`SelfTestPadShapeTest.noInteriorCellIsBesideOpenAirAtFloorLevelOrTheFourAbove`, 1296 x 5 x 8 = 51,840 checks); nothing
+in the run moves him off the stand point, and the rim's top is 4 above the floor, beyond a jump. **What could reach him:**
+the second form's table, row for row, **0 x 0 = 0**; the natural hostiles (killed by the setup; spawning off; phantoms
+off) **0**; the void below is behind a floor and a rim. **Sum: 0.**
+
+### R0, FOURTH FORM (2026-11-23): R0aR4, R0bR4, R0cR4, R0dR4. R0e STANDS
+
+#### R0aR4 — the build line names the pad's head, clean
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <sha>`, `<sha>` being `feat/selftest-pad`'s head as `git ls-remote --heads origin feat/selftest-pad` prints it, shortened as `git rev-parse --short HEAD` prints it. **Not `030f30b6`, not `e774d4b8`, not `-dirty`, not `unknown`.** Its precondition: `git status --porcelain` prints nothing and `git rev-parse HEAD` equals the `ls-remote` line | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:' \| Select-Object -First 1` | |
+
+#### R0bR4 — the jar carries the pad
+
+**R0bR3's block with two more `ValueLine` calls (53 PRESENT):** `  - pad: ""` and `  - cmd: "gamerule spawn_phantoms
+false"` in `GATE-enchant-columns.yml`, added after its `probe: "f 32"` line; its controls unchanged (18). Recount as R0bR3's:
+`awk '/^.--- controls.$/{exit} /^ValueLine/' <the block> | wc -l` prints 53, and 18 after the controls line.
+
+```powershell
+param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $JarPath))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+function ValueLine($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + '([ \t]*\r?$|[ \t]+#)')) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+$c = Bytes 'content/enchant_candidates.yml'
+$s = Bytes 'content/enchants/sharpness.yml'
+$t = Bytes 'content/enchants/kinetic_tremors.yml'
+$a = Bytes 'content/enchants/airburst_flames.yml'
+$lc = Bytes 'content/enchants/lapis_crystal.yml'
+$dev = Bytes 'content/enchants/dev_kinetic_example.yml'
+$ll = Bytes 'content/weapons/living_lantern.yml'
+$tw = Bytes 'content/visuals/tremor_wave.yml'
+$bc = Bytes 'content/visuals/boltor_cast.yml'
+$bw = Bytes 'content/weapons/boltor.yml'
+$fs = Bytes 'content/weapons/flint_staff.yml'
+$ug = Bytes 'selftest/GATE-unique-enchant-slot.yml'
+$eg = Bytes 'selftest/GATE-enchant-columns.yml'
+$i = Bytes 'selftest/index.yml'
+ValueLine $c 'tiers:' 'enchant_candidates.yml'
+ValueLine $c '  - candidates: 4' 'enchant_candidates.yml'
+ValueLine $c '    chance: 0.10' 'enchant_candidates.yml'
+ValueLine $c '    chance: 0.40' 'enchant_candidates.yml'
+ValueLine $c '    chance: 0.70' 'enchant_candidates.yml'
+ValueLine $c '    chance: 1.0' 'enchant_candidates.yml'
+ValueLine $bc '    key: item.crossbow.shoot' 'boltor_cast.yml'
+ValueLine $bc '    volume: 1.0' 'boltor_cast.yml'
+ValueLine $bc '    pitch: 1.3' 'boltor_cast.yml'
+ValueLine $bw '        visual_id: boltor_cast' 'boltor.yml'
+ValueLine $fs '  - "Prehistoric magicians learned you could"' 'flint_staff.yml'
+ValueLine $fs '  - "create fire by slamming mana into flint."' 'flint_staff.yml'
+ValueLine $fs '      - "Hurls a fragment of burning mana"' 'flint_staff.yml'
+ValueLine $s 'class: melee' 'sharpness.yml'
+ValueLine $ug 'US8:' 'GATE-unique-enchant-slot.yml'
+ValueLine $ug 'BX2:' 'GATE-unique-enchant-slot.yml'
+ValueLine $i '  - unique-enchant-slot' 'index.yml'
+ValueLine $t 'effect: shockwave' 'kinetic_tremors.yml'
+ValueLine $t 'element: kinetic' 'kinetic_tremors.yml'
+ValueLine $t 'class: universal' 'kinetic_tremors.yml'
+ValueLine $t '  hits: 3' 'kinetic_tremors.yml'
+ValueLine $t '  window_ticks: 60' 'kinetic_tremors.yml'
+ValueLine $t '  cooldown_ticks: 5' 'kinetic_tremors.yml'
+ValueLine $a 'effect: airburst' 'airburst_flames.yml'
+ValueLine $a 'weapon: living_lantern' 'airburst_flames.yml'
+ValueLine $a '  travel_blocks: 14' 'airburst_flames.yml'
+ValueLine $a '  burst_travel_blocks: 14' 'airburst_flames.yml'
+ValueLine $a '  damage_by_level: [25, 30, 35]' 'airburst_flames.yml'
+ValueLine $lc 'effect: grant_trigger' 'lapis_crystal.yml'
+ValueLine $lc 'weapon: lapis_staff' 'lapis_crystal.yml'
+ValueLine $lc '  input: left_click' 'lapis_crystal.yml'
+ValueLine $lc '    cooldown_ticks: 600' 'lapis_crystal.yml'
+ValueLine $lc '      amount: 30' 'lapis_crystal.yml'
+ValueLine $lc '      type: orb' 'lapis_crystal.yml'
+ValueLine $lc '      range: 12' 'lapis_crystal.yml'
+ValueLine $lc '      life_ticks: 300' 'lapis_crystal.yml'
+ValueLine $lc '        percent_by_level: [20, 30, 40]' 'lapis_crystal.yml'
+ValueLine $ll '      type: projectile' 'living_lantern.yml'
+ValueLine $ll '      speed: 0.35' 'living_lantern.yml'
+ValueLine $ll '      max_lifetime_ticks: 80' 'living_lantern.yml'
+ValueLine $ll '        search_radius: 7' 'living_lantern.yml'
+ValueLine $ll '        amount: 45' 'living_lantern.yml'
+ValueLine $tw '    key: entity.generic.explode' 'tremor_wave.yml'
+ValueLine $eg 'EC3R2:' 'GATE-enchant-columns.yml'
+ValueLine $eg 'EC16R2:' 'GATE-enchant-columns.yml'
+ValueLine $eg 'LC1R2:' 'GATE-enchant-columns.yml'
+ValueLine $eg 'LC4R2:' 'GATE-enchant-columns.yml'
+ValueLine $eg '  - preflight: "0 -6 32 10"' 'GATE-enchant-columns.yml'
+ValueLine $eg '  - clear_state: ""' 'GATE-enchant-columns.yml'
+ValueLine $eg '  - probe: "f 32"' 'GATE-enchant-columns.yml'
+ValueLine $eg '  - pad: ""' 'GATE-enchant-columns.yml'
+ValueLine $eg '  - cmd: "gamerule spawn_phantoms false"' 'GATE-enchant-columns.yml'
+ValueLine $i '  - enchant-columns' 'index.yml'
+if ($dev -eq $null) { "ABSENT-ENTRY content/enchants/dev_kinetic_example.yml" } else { "PRESENT-ENTRY content/enchants/dev_kinetic_example.yml" }
+'--- controls'
+ValueLine $c '    chance: 0.1' 'enchant_candidates.yml CONTROL-PREFIX'
+ValueLine $ll '      type: cone' 'living_lantern.yml CONTROL-THE-CONE'
+ValueLine $ll '        amount: 14' 'living_lantern.yml CONTROL-THE-OLD-14'
+ValueLine $ug 'US1:' 'GATE-unique-enchant-slot.yml CONTROL-RETIRED'
+ValueLine $t '  hits: 30' 'kinetic_tremors.yml CONTROL-PREFIX'
+ValueLine $s 'element: kinetic' 'sharpness.yml CONTROL-NORMAL'
+ValueLine $eg 'EC18:' 'GATE-enchant-columns.yml CONTROL-NONE'
+ValueLine $i '  - enchant-column' 'index.yml CONTROL-PREFIX'
+ValueLine $a 'weapon: lapis_staff' 'airburst_flames.yml CONTROL-WRONG-WEAPON'
+ValueLine $eg 'EC1:' 'GATE-enchant-columns.yml CONTROL-RENAMED'
+ValueLine $lc '      type: projectile' 'lapis_crystal.yml CONTROL-D1-STUB'
+ValueLine $lc '    cooldown_ticks: 60' 'lapis_crystal.yml CONTROL-PREFIX'
+ValueLine $lc '      range: 1' 'lapis_crystal.yml CONTROL-PREFIX'
+ValueLine $eg 'EC0:' 'GATE-enchant-columns.yml CONTROL-LEFT'
+ValueLine $eg 'EC1R2:' 'GATE-enchant-columns.yml CONTROL-LEFT'
+ValueLine $eg 'LC1:' 'GATE-enchant-columns.yml CONTROL-LEFT'
+ValueLine $eg 'LC4:' 'GATE-enchant-columns.yml CONTROL-LEFT'
+ValueLine $eg 'EC17:' 'GATE-enchant-columns.yml CONTROL-LEFT'
+$zip.Dispose()
+```
+
+**The prediction, line for line:** before `'--- controls'`, **53 `PRESENT`, 0 `ABSENT`, and one `ABSENT-ENTRY`**; after it,
+**18 `ABSENT`, 0 `PRESENT`**. Run before the commit: see *R0bR4, RUN BEFORE COMMIT* at the end.
+
+#### R0cR4 — every Loaded line, and nothing refused
+
+R0cR3's prediction unchanged (no content file moved), and **no `Refusing selftest/…` line**: `pad` is admitted by the
+loader, or the setup would be refused whole and R0dR4 would still read 351 but the run would have no setup.
+
+#### R0dR4 — every scenario loaded
+
+| prediction | instrument | READING |
+|---|---|---|
+| Exactly one **`[Rpg] Selftest: dev server, 351 scenarios across 43 gates [melee-cell, …, unique-enchant-slot, enchant-columns]`** (the pad adds a setup step, not a row). The controls: `355 scenarios` and `350 scenarios` ABSENT | `Select-String run\logs\latest.log -Pattern 'Selftest:'` | |
+
+### THE SETUP'S LINES, PREDICTED EXACTLY, FOR A FIRST RUN AND A SECOND
+
+`<sx>` and `<sz>` are world spawn's block x + 200 and its block z (logged, not predicted). The world is the dev world,
+`world` (the boot log's `ServerLevel[world]`).
+
+| run | prediction | READING |
+|---|---|---|
+| the FIRST run on a world with no pad | **`PAD world=world stand=<sx>,201,<sz> floorY=200 interior=-2..45 east -13..13 south cells=7250 placed=2066 repaired=0 ok=5184`** (1296 floor + 770 rim placed into air; the 5184 air cells already air: INFERRED for open sky at Y 200-204, and a reading if a peak or a tree reaches it, which would show as `repaired`), then **`PAD stood at=<sx>.50 201.00 <sz>.50 yaw=-90.000 pitch=0.000`**, then **`PREFLIGHT ok box=0..32 east -6..10 south air=1122/1122 floor solid=561/561`**; every row's `CLEAN … return=<sx>.50 201.00 <sz>.50` | |
+| a SECOND run (the pad left standing) | **`PAD world=world stand=<sx>,201,<sz> … cells=7250 placed=0 repaired=0 ok=7250`**, the same `PAD stood` line and the same `PREFLIGHT ok` line | |
+
+**After the run:** the RESTORED line ends `… spawn_phantoms=<his world's value at RUN START>`, and he stands where he
+typed the command (his eyes: the RESTORED line names no position, so where the restore put him is NOT AUTO-READ).
+
 ## THE ROWS
 
 **Common to every row:** the stats bar's `REPLY actionbar "❤ …"` lines are EXPECTED and NOT COUNTED; each `clear`, `rpg
@@ -1076,3 +1299,14 @@ lines, 51 `ValueLine` before the controls line and 18 after, counted before the 
 -File`: **51 `PRESENT`, 0 `ABSENT`, 1 `ABSENT-ENTRY`**, then **18 `ABSENT`, 0 `PRESENT`**, as predicted. R0dR3's 351 is
 `SelfTestScenariosTest`'s assertion in that same build (green), and so is `ScenarioLint`'s zero for this gate. That jar's
 stamp is `unknown` (a plain `mvnw`); the boot rebuilds it with the head, and reads every R0 again on the deployed jar.
+
+## R0bR4, RUN BEFORE COMMIT
+
+**Against `paper\target\rpg-0.1.0-SNAPSHOT.jar` (2,491,092 bytes, 2026-11-23 20:05, sha256 `10C2CC6E…08F56754B`), built by
+`./mvnw -B clean verify` from the working tree of `feat/selftest-pad` (on #261's head `030f30b6`) with the pad, its
+tests and this gate's third form (the suite in the same build: core 2,411, storage 99, paper 1,908, 0 failures, 1
+skipped):** R0bR4's block, extracted verbatim (93 lines; 53 `ValueLine` before the controls line and 18 after, counted
+before the scan ran; `diff` against R0bR3's block: exactly the two added lines) and run with `powershell -File`: **53
+`PRESENT`, 0 `ABSENT`, 1 `ABSENT-ENTRY`**, then **18 `ABSENT`, 0 `PRESENT`**, as predicted. `ScenarioLint`: 0 findings for
+this gate in the same build; R0dR4's 351, the same build's assertion. The stamp is `unknown`; the boot reads every R0
+again on the deployed jar.
