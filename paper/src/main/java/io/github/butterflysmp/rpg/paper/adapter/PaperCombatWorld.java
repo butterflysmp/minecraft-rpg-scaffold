@@ -324,7 +324,7 @@ public final class PaperCombatWorld implements CombatWorld {
      *
      * <p>A READ on the owning thread, like {@link #aimOf} above.
      *
-     * <h2>THE {@code volley_stone} EXCLUSION IS WIRED, AND IT IS WIRED INSIDE {@code heldScore}</h2>
+     * <h2>THE {@code volley_stone} (deleted 2026-11) EXCLUSION IS WIRED, AND IT IS WIRED INSIDE {@code heldScore}</h2>
      *
      * <p>{@code heldScore} resolves the held weapon's DEFINITION from the registry and returns
      * {@link GearScore#BASELINE} for one that declares itself unscored, <b>before</b> it reads the
@@ -336,7 +336,7 @@ public final class PaperCombatWorld implements CombatWorld {
      *
      * <p><b>This javadoc recorded the gap while it was open, and that entry is discharged rather than
      * deleted:</b> between the port landing and the registry reaching {@code AdapterContext}, a
-     * {@code volley_stone}'s payloads DID scale like every other trigger weapon. It was tracked in
+     * {@code volley_stone} (deleted 2026-11)'s payloads DID scale like every other trigger weapon. It was tracked in
      * {@code GATE-gearscore.md} under <i>SLICE 12b</i> because a comment cannot fail and this method
      * read as finished throughout.
      */

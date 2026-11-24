@@ -248,13 +248,13 @@ public final class GearScore {
      * <h2>TWO INDEPENDENT REFUSALS, AND ASKING ONLY ONE OF THEM IS THE DEFECT</h2>
      *
      * <p>{@link #scoreable} is the KIND-level rule: a pickaxe is not gear, whatever its content file
-     * says. {@code declaredUnscored} is the INSTANCE-level exception: {@code volley_stone} is a dev
+     * says. {@code declaredUnscored} is the INSTANCE-level exception: {@code volley_stone} (deleted 2026-11) is a dev
      * fixture and carries no score although its class is a fighting one. <b>They are different
      * questions with different authors, and every caller must ask BOTH.</b>
      *
      * <p><b>THE FAILURE THIS EXISTS TO PREVENT IS A SILENT COLLAPSE FROM TWO REFUSALS TO ONE.</b> The
      * READ path and the STAMP path refuse independently today. If the stamp keeps asking
-     * {@code scoreable(kind)} alone, a freshly minted {@code volley_stone} still gets a score written
+     * {@code scoreable(kind)} alone, a freshly minted {@code volley_stone} (deleted 2026-11) still gets a score written
      * into its PDC and only the read refuses -- so the exclusion still LOOKS to work, the average is
      * still correct, and the stamp half is gone with nothing red. The number in the PDC is the only
      * witness, and no unit test can construct an {@code ItemStack} to see it.

@@ -233,7 +233,9 @@ class CursedEmeraldContentTest {
     /**
      * <b>THE MIRROR OF RAKE'S EXPECTED WARNING.</b>
      *
-     * <p>{@code VolleyFixtureTest} pins that {@code volley_stone} produces EXACTLY ONE boot warning,
+     * <p>(2026-11-24: the stone was deleted, PR B; its file is now the test-only {@code volley_fixture}, and
+     * {@code VolleyFixtureTest} also pins that the shipped weapons produce NO warning at all.)
+     * {@code VolleyFixtureTest} pins that {@code volley_stone} produces EXACTLY ONE boot warning,
      * because its Rake trigger authors {@code cooldown_ticks: 0} deliberately and that warning is
      * gate row V5's only witness. This row is the opposite claim about a SHIPPED weapon:
      * <b>content players can craft must produce NO warning at all.</b> A warning nobody is meant to

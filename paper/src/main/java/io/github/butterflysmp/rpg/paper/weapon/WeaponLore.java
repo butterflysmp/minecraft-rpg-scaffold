@@ -97,7 +97,7 @@ public final class WeaponLore {
         //
         // IT CANNOT BE `orAbsent` ALONE, AND THAT IS THE WHOLE POINT. Slice 12 shipped "absent key
         // means 100", so orAbsent collapses "declared unscored" with "carries no stamp" -- and the
-        // exclusion lives on exactly that difference. A volley_stone minted since slice 12 carries
+        // exclusion lives on exactly that difference. A volley_stone (deleted 2026-11) minted since slice 12 carries
         // a REAL score in its PDC; scaledDamage(4, 400) is 16, and the stone deals 4.
         //
         // Same door the stamp and the average ask (GearScore.carriesScore), so a weapon cannot come

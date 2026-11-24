@@ -1094,24 +1094,49 @@ class WeaponLoaderTest {
      */
     @Test
     void theUnscoredDeclarationReachesTheDefinitionAndOnlyVolleyStoneCarriesIt() throws IOException {
-        for (String id : new String[] {"volley_stone", "boltor"}) {
-            try (var in = getClass().getResourceAsStream("/content/weapons/" + id + ".yml")) {
-                assertNotNull(in, "bundled " + id + " is missing from the classpath");
-                Files.write(dir.resolve(id + ".yml"), in.readAllBytes());
+        // 2026-11-24 (PR B): the Volley Stone was DELETED. The declaration and its mechanism stay; the TRUE half now reads
+        // the TEST-ONLY fixture (the stone's file, moved), and NO SHIPPED ITEM IS UNSCORED NOW (the row below).
+        for (String path : new String[] {"/fixtures/weapons/volley_fixture.yml", "/content/weapons/boltor.yml"}) {
+            try (var in = getClass().getResourceAsStream(path)) {
+                assertNotNull(in, path + " is missing from the classpath");
+                Files.write(dir.resolve(path.substring(path.lastIndexOf('/') + 1)), in.readAllBytes());
             }
         }
+        assertNull(getClass().getResource("/content/weapons/volley_fixture.yml"), "the fixture does not ship");
+        assertNull(getClass().getResource("/content/weapons/volley_stone.yml"), "and the stone is gone");
 
         WeaponRegistry registry = load();
         assertTrue(warnings.isEmpty(), warningText());
         assertEquals(2, registry.size(), "both fixtures loaded -- a scan of one proves nothing");
 
-        assertTrue(registry.find("volley_stone").orElseThrow().unscored(),
+        assertTrue(registry.find("volley_fixture").orElseThrow().unscored(),
                 "VOLLEY_STONE MUST DECLARE ITSELF UNSCORED. If this reads false the declaration was"
                         + " dropped between the YAML and the record, and the exclusion is inert --"
                         + " the stone re-enters the top two and raises every drop the player takes.");
         assertFalse(registry.find("boltor").orElseThrow().unscored(),
                 "AND ABSENT MUST MEAN SCORED. If this reads true the default inverted and every"
                         + " weapon in the game silently stopped carrying a score.");
+    }
+
+    /**
+     * <b>NO SHIPPED ITEM IS UNSCORED NOW (2026-11-24, PR B).</b> The stone was the only declarer. Every shipped weapon
+     * file is loaded and none carries the flag; the control is the row above, where the same loader reads {@code true}
+     * from the fixture, so a loader that dropped the flag cannot pass both.
+     */
+    @Test
+    void noShippedWeaponDeclaresItselfUnscored() throws IOException {
+        int copied = 0;
+        try (var files = Files.list(Path.of("src/main/resources/content/weapons"))) {
+            for (Path f : files.toList()) {
+                Files.copy(f, dir.resolve(f.getFileName()));
+                copied++;
+            }
+        }
+        WeaponRegistry registry = load();
+        assertTrue(copied >= 7, "the walk copied only " + copied + " files -- blind");
+        assertEquals(copied, registry.size(), "every shipped weapon loaded: " + warningText());
+        assertEquals(List.of(), registry.all().stream().filter(WeaponDefinition::unscored).map(WeaponDefinition::id).toList(),
+                "a shipped weapon declares itself unscored");
     }
 
     // --- THE AMMUNITION KEY (the seat's ruling 1, 2026-11-22, the Breacher's brief) ------------------------------------

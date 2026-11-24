@@ -195,7 +195,7 @@ final class AbilitySchema {
      * repeatable. The opposite shape -- naming the refusals -- admits every kind nobody has thought
      * of yet, which is how a schema grows behaviour nobody chose.
      *
-     * <p>{@code projectile} is admitted on day one and exercised by {@code volley_stone}, not merely
+     * <p>{@code projectile} is admitted on day one and exercised by {@code volley_stone} (deleted 2026-11), not merely
      * asserted: a burst-fire projectile weapon is the second thing this grammar is for, and a
      * wrapper that only knew rays would have to be widened the first time anyone wanted one.
      *
@@ -256,7 +256,7 @@ final class AbilitySchema {
      *
      * <p><b>ABSENT MEANS NULL, AND THAT IS WHAT MAKES THIS NOT A CHANGE TO ANY SHIPPED WEAPON.</b>
      * {@code hunters_bow} (deleted 2026-11), {@code ember_staff} (deleted 2026-11), {@code flint_staff}, {@code emberblade} (deleted 2026-11) and
-     * {@code volley_stone}'s inner projectile all author no such block, get null, and behave
+     * {@code volley_stone} (deleted 2026-11)'s inner projectile all author no such block, get null, and behave
      * byte-identically to before this line existed. Slice F built the core shape and the flight's
      * homing branch; <b>until now nothing could put a number into it from a file</b>, so
      * {@code CastSpec.Homing} existed and was unreachable from content.

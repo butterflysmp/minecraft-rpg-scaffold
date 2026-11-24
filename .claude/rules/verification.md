@@ -1694,6 +1694,10 @@ candidate for the same treatment. Measured against `CLAUDE.md` at `c5ee6a0`:
   > a warning older than the branch until the seat ruled. **Copy the clause; do not re-derive it.** When `volley_stone`
   > is fixed or deleted, the clause goes in the same commit.
   >
+  > **2026-11-24: `volley_stone` IS DELETED (`feat/volley-stone-deleted`, the seat's PR B), and the clause goes with it.
+  > From that branch on, R0c predicts NO `[Rpg]` WARN AT ALL, and a gate that still carves out the pair is wrong.** The
+  > paragraph above is kept as the record for the gates written before it.
+  >
   > > ### *** AND THE SAME INSTRUMENT FAILURE ARRIVES WITHOUT A JAR: A CHARACTER CLASS THE TOOL DOES NOT READ AS ONE ***
   > >
   > > **The jar case is easy to believe because the input is obviously binary.** The general form is

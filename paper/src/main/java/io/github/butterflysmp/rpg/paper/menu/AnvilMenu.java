@@ -678,7 +678,7 @@ public final class AnvilMenu extends Menu {
      *
      * {@code GearScore.carriesScore} composes TWO independent refusals: {@code scoreable(kind)} is
      * the kind-level rule (a pickaxe is not gear, whatever its content file says), and
-     * {@code declaredUnscored} is the instance-level exception ({@code volley_stone} is a dev
+     * {@code declaredUnscored} is the instance-level exception ({@code volley_stone} (deleted 2026-11) is a dev
      * fixture whose class is a fighting one). <b>That class's javadoc names the failure exactly: a
      * silent collapse from two refusals to one.</b> Here it would let a declared-unscored item into
      * a transfer and hand its score away.

@@ -216,23 +216,6 @@
    "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
--- volley_stone
-   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Scatter" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "Three shards, half a second apart." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["4 x 3" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "Cooldown: 2.0s" color=#555555 O=. B=. S=. U=. I=F
-   "" color=- O=. B=. S=. U=. I=F
-   "Rake" color=#FFAA00 O=. B=. S=. U=. I=F ["  Left-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
-   "Eight beams, one tick apart." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Deliberately too many." color=#AAAAAA O=. B=. S=. U=. I=F
-   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["4 x 8" color=#FF5555 O=. B=. S=. U=. I=F ]
-   "" color=- O=. B=. S=. U=. I=F
-   "An instrument, not a weapon." color=#AAAAAA O=. B=. S=. U=. I=T
-   "It measures how many of a thing you can see at once." color=#AAAAAA O=. B=. S=. U=. I=T
-   "" color=- O=. B=. S=. U=. I=F
-   "Exotic Magic Weapon" color=#55FFFF O=. B=. S=. U=. I=F
 -- withered_shortbow
    "Wither" color=#555555 O=. B=. S=. U=. I=F
    "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
@@ -630,4 +613,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 103 renderings ===
+=== 102 renderings ===

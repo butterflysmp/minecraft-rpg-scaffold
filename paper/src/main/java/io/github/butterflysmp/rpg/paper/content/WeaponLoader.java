@@ -321,7 +321,7 @@ public final class WeaponLoader {
         int quiverSize = s.getInt("quiver_size", WeaponDefinition.NO_QUIVER);
         int reloadTicks = s.getInt("reload_ticks", 0);
         // DOES THIS WEAPON CARRY A GEAR SCORE AT ALL? Absent -> false -> it does, which is what every
-        // shipped weapon wants and is why this needed no migration. Only volley_stone declares it: a
+        // shipped weapon wants and is why this needed no migration. Only volley_stone (deleted 2026-11) declares it: a
         // dev fixture whose class is a fighting one, so the KIND-level rule cannot refuse it and a
         // per-definition declaration is the only thing that can. GearScore.carriesScore composes the
         // two; nothing may ask the kind-level question alone.

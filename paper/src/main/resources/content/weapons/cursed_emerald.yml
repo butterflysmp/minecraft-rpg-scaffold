@@ -112,7 +112,7 @@ triggers:
     #    uncooled weapon and getting a cooled one. That gap is known, is OLDER AND LARGER than
     #    volleys (WeaponLoreLines already approximates for attack-speed-scaled basic attacks), and
     #    is unruled. Do not make this weapon a new instance of it.
-    # 2. AUTHORING BELOW THE FLOOR EMITS A BOOT WARNING, BY DESIGN. volley_stone authors 0
+    # 2. AUTHORING BELOW THE FLOOR EMITS A BOOT WARNING, BY DESIGN. the Volley Stone (deleted 2026-11) authors 0
     #    deliberately, because it is a TEST INSTRUMENT and that warning is its witness. SHIPPED
     #    CONTENT MUST NOT CARRY A PERMANENT EXPECTED WARNING -- a warning nobody is meant to act on
     #    is how a console stops being read.
@@ -245,7 +245,7 @@ triggers:
 #     not ported: gate row CE4 decides whether it needs a remedy at all.
 
 # Q3 IS NARROWED HERE, NOT ANSWERED, AND THE DISTINCTION MATTERS. GATE-volley.md V7 swapped weapons
-# mid-burst and saw the damage unchanged -- but THAT RESULT WAS FORCED BY THE FIXTURE: volley_stone
+# mid-burst and saw the damage unchanged -- but THAT RESULT WAS FORCED BY THE FIXTURE: the Volley Stone (deleted 2026-11)
 # authors a fixed `amount`, captured in the walker's closure, so no swap could have moved it.
 #
 # THIS WEAPON IS THE SAME SHAPE -- `amount: 27` is authored above -- so a mid-burst swap will not

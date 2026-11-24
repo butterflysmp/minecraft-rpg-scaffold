@@ -7,7 +7,7 @@
 # color more dark green color to resemble nature." A shared visual cannot carry two colours, so the
 # ruling forks the file.
 #
-# It is also volley_beam's standing rule: a shared visual is a coupling invisible at BOTH ends, which
+# It is also the deleted Volley Stone beam's standing rule: a shared visual is a coupling invisible at BOTH ends, which
 # is the trap ember_burst sprang on the Flint Staff. Tuning this must not move the Boltor.
 #
 # ================== THE COLOUR IS PROVISIONAL, BY RULING, AND THIS SAYS WHAT DISCHARGES IT ==================
@@ -34,7 +34,7 @@
 # The check matters more here than it did there, because one of them is already green:
 #
 #   lapis_beam    [ 40,  90, 240]   saturated deep blue
-#   volley_beam   [230,  60, 230]   magenta
+#   the deleted Volley Stone beam   [230,  60, 230]   magenta
 #   emerald_beam  [ 40, 220,  90]   GREEN -- bright, and the one this has to separate from
 #   boltor_beam   [200, 215, 235]   pale steel
 #   THIS          [ 45, 120,  55]   forest green -- dark

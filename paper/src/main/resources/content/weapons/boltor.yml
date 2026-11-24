@@ -318,7 +318,7 @@ triggers:
     cast:
       type: ray
       # 96 -- RULED, and the longest range in this project by half again. The authored set is
-      # 23, 26, 30, 32, 64, and only volley_stone's 64 exceeds the 32-block client particle cap at
+      # 23, 26, 30, 32, 64, and only the Volley Stone's (deleted 2026-11) 64 exceeds the 32-block client particle cap at
       # all, as a deliberate grammar-limit fixture.
       #
       # THIS DOES NOT CONTRADICT THE cursed_emerald RULING, AND THE DISTINCTION IS THE WHOLE POINT.

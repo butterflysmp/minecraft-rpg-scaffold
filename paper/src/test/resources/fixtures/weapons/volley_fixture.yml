@@ -1,3 +1,10 @@
+# TEST-ONLY FIXTURE, NEVER SHIPPED (2026-11-24, the seat's ruling on PR B; Ben: "Delete the volley stone in this
+# pass"). This was content/weapons/volley_stone.yml, moved here WORD FOR WORD below this header except its id, its
+# display name and its two visual ids, so that what only the stone exercised stays tested: the `unscored: true`
+# declaration (WeaponLoaderTest), a volley of PROJECTILES (Scatter) and a volley of rays at the scheduler's floor with
+# an authored 0 cooldown (Rake; VolleyFixtureTest). NO SHIPPED ITEM IS UNSCORED NOW, AND NO SHIPPED WEAPON FIRES A
+# VOLLEY OF PROJECTILES. Every "Volley Stone" and "gate row" below is the record of the shipped stone (deleted 2026-11).
+#
 # The Volley Stone -- a FIXTURE for CastSpec.Volley, not a weapon. It exists so the volley
 # mechanism has something to gate against, and it is owned by the mechanism rather than by any
 # content slice.
@@ -20,8 +27,8 @@
 # wanting 3 shots at 5 ticks would find out at boot. The two triggers below share no number with
 # each other and none with the Cursed Emerald.
 
-id: volley_stone
-display_name: "Volley Stone"
+id: volley_fixture
+display_name: "Volley Fixture"
 element: kinetic          # neutral: declares no applies_status, so nothing accrues and no glyph
                           # competes with the damage numbers a gate row has to count
 
@@ -87,7 +94,7 @@ triggers:
     # a boot that warns about this trigger is a defect in the floor rather than in this file.
     cooldown_ticks: 40
     on_cast:
-      - { type: visual, visual_id: volley_cast }
+      - { type: visual, visual_id: volley_fixture_cast }
     cast:
       type: volley
       windup_ticks: 10
@@ -130,7 +137,7 @@ triggers:
     # the floor existed or not. If you change it, change V5 in the same edit.
     cooldown_ticks: 0
     on_cast:
-      - { type: visual, visual_id: volley_cast }
+      - { type: visual, visual_id: volley_fixture_cast }
     cast:
       type: volley
       windup_ticks: 20
@@ -139,7 +146,7 @@ triggers:
       of:
         type: ray
         range: 64
-        beam: volley_beam
+        beam: volley_fixture_beam
     on_hit:
       - { type: damage, amount: 4, element: kinetic }
 

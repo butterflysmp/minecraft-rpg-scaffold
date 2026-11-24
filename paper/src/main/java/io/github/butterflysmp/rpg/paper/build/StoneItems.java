@@ -20,7 +20,7 @@ import java.util.Optional;
  * The Ability Stone item (PLAN-build-system.md section 2.5): mint, identify, and render its lore.
  *
  * <p><b>IDENTITY IS {@code Keys.buildStone}, NEVER THE MATERIAL.</b> The stone is an {@code ECHO_SHARD}
- * (ruling 12) -- the material of the three universal accessories and of {@code volley_stone} too
+ * (ruling 12) -- the material of the three universal accessories and of {@code volley_stone} (deleted 2026-11) too
  * (section 2.5.2). {@link #isStone} reads only the PDC key, exactly as {@code NexusItems.isNexus} does.
  *
  * <p>It carries NO {@code weapon_id}, so {@code WeaponFire}, the durability code and every gear scanner

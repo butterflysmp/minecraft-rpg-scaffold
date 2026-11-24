@@ -1,7 +1,7 @@
 # The Boltor's beam: the line itself, drawn down each chunk-column segment as the ray walks it.
 # Id is the filename: boltor_beam.
 #
-# ITS OWN FILE, NOT lapis_beam -- volley_beam's rule, and the Boltor has a second reason on top of
+# ITS OWN FILE, NOT lapis_beam -- the deleted Volley Stone beam's rule, and the Boltor has a second reason on top of
 # it. A shared visual is a coupling invisible at BOTH ends (the trap ember_burst sprang on the Flint
 # Staff), and quiver_stone (deleted 2026-11) currently borrows lapis_beam precisely because it is a fixture that will
 # one day be deleted. THE SECOND REASON IS THE ONE THAT MATTERS HERE: this is the longest beam in
@@ -9,7 +9,7 @@
 # Staff, which has a settled appearance nobody is asking about.
 #
 # THE COLOUR IS OWNED BY NOTHING ELSE, checked against the three shipped beams: lapis_beam is
-# [40, 90, 240] (saturated deep blue), volley_beam [230, 60, 230] (magenta), emerald_beam
+# [40, 90, 240] (saturated deep blue), the deleted Volley Stone beam [230, 60, 230] (magenta), emerald_beam
 # [40, 220, 90] (green). This is a pale steel white with a blue cast -- far lighter and far less
 # saturated than lapis, so the Ranger's bolt is not read as the Mage's staff at a glance. It also
 # suits the element: the Boltor is KINETIC, and kinetic is the one element deliberately carrying no

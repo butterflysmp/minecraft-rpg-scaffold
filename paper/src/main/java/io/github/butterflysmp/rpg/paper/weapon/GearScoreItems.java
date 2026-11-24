@@ -181,7 +181,7 @@ public final class GearScoreItems {
         // or the grindstone). That shipped in slice 12 and survived 12b.
         //
         // IT ALSO MADE A GATE ROW UNFALSIFIABLE. GATE-gearscore.md R12(i) predicted that a fresh
-        // volley_stone shows no score line, to witness the unscored exclusion -- and NO fresh weapon
+        // volley_stone (deleted 2026-11) shows no score line, to witness the unscored exclusion -- and NO fresh weapon
         // of any kind showed one, so the row passed on a build with no exclusion at all. Its reading
         // is withdrawn; see that file's ONE READING WITHDRAWN section.
         //
@@ -370,7 +370,7 @@ public final class GearScoreItems {
         // *** THE DOOR IS BEFORE THE READ, NOT A FILTER AFTER IT, AND THAT IS FORCED. ***
         // GearScore.orAbsent resolves an absent stamp to ABSENT (100), so by the time this method has
         // an int it has COLLAPSED "declared unscored" with "carries no stamp" -- and the exclusion
-        // lives on exactly that difference. A volley_stone minted since slice 12 carries a real score
+        // lives on exactly that difference. A volley_stone (deleted 2026-11) minted since slice 12 carries a real score
         // in its PDC; filtering the returned value could not tell it from an ordinary scored weapon.
         if (declaredUnscored(held, keys, weapons)) return GearScore.BASELINE;
         return GearScore.orAbsent(read(held, keys));
