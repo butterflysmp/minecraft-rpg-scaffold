@@ -1,0 +1,248 @@
+# GATE-shatter-caps (docs/gates/GATE-shatter-caps.md): the Breacher's reach of 18 (PR 1, feat/breacher-reach) and Shatter
+# Caps, its weapon-specific enchant (PR 2, feat/shatter-caps), 2026-11-24. `/rpg selftest shatter-caps`. SURVIVAL, every
+# row; ALL AUTO, no ASK. On the pad (Ben's ruling A): the setup's FIRST step stands him on it facing east, the SECOND
+# measures the ground every summon stands on. Night (18000), no natural spawns, no phantoms, difficulty normal, each put
+# back by the run's restore. Every mob a frozen NoAI zombie at vanilla max 200 (so 1000 health; nothing here dies), one
+# per row, on his aim line, so no mob shadows another. Every row self-contained under ScenarioLint's rules: it empties
+# his storage, gives a fresh Breacher (a full quiver of 2), sets his level, its score, its enchant state, mana, a
+# cleared cooldown and a fresh record, turns him east and waits before the press, and probes only its own mob, in reach.
+setup:
+  - pad: ""
+  - preflight: "0 -6 32 10"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:enderman,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:witch,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:slime,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 2
+  - probe_self: ""
+
+# SR1: THE REACH, NO ENCHANT: a zombie 17 out takes the centre chunk (the only one at that distance).
+SR1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~17 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 20
+  - probe: "f 19"
+
+# SR2: THE REACH, NO ENCHANT: a zombie 19 out takes none (its front face 0.7 past the 18-block end).
+SR2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~19 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 20
+  - probe: "f 21"
+
+# SC1: SHATTER CAPS I, A HIT BEFORE 5: a zombie 3 out takes the stone's 35; no SPLIT; the quiver 2 then 1.
+SC1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - dump: held
+  - use: right_click
+  - wait: 20
+  - dump: held
+  - probe: n
+
+# SC3: SHATTER CAPS III, THE SAME PLACING: the stone's 85.
+SC3:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - dump: held
+  - use: right_click
+  - wait: 20
+  - dump: held
+  - probe: n
+
+# SC2: THE SPLIT: a zombie 8 out; the stone splits at exactly 5.000 from his eye; all four chunks reach it.
+SC2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~8 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["m","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 20
+  - probe: m
+
+# SF1: THE FAR REACH: a zombie 22 out (5 + 17) takes the centre chunk after the split.
+SF1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~22 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 20
+  - probe: "f 24"
+
+# SF2: THE FAR REACH: a zombie 24 out takes none (its front face 0.7 past 5 + 18).
+SF2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~24 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 20
+  - probe: "f 26"
+
+# ST1: WITH KINETIC TREMORS I IN SLOT 1: the split's four chunks on one zombie 8 out fire exactly one shockwave.
+ST1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg enchant candidate 1 kinetic_tremors"
+  - cmd: "rpg enchant level 1 0 1"
+  - cmd: "rpg enchant active 1 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~8 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["m","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 20
+  - probe: m
+
+# ST2: WITH KINETIC TREMORS I IN SLOT 1: the stone alone on a zombie 3 out fires none.
+ST2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg enchant candidate 1 kinetic_tremors"
+  - cmd: "rpg enchant level 1 0 1"
+  - cmd: "rpg enchant active 1 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - use: right_click
+  - wait: 20
+  - probe: n

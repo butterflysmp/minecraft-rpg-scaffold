@@ -41,9 +41,10 @@ class SelfTestScenariosTest {
                         "fight-dragon", "fight-rules", "fight-end", "fight-down", "fight-revive", "fight-template",
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
-                        "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes"),
+                        "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes", "shatter-caps"),
                 List.copyOf(loaded.gates().keySet()),
-                "the forty-four gates, in boot order (enchant-changes LAST, Ben's five changes to Airburst Flames and Lapis"
+                "the forty-five gates, in boot order (shatter-caps LAST, the Breacher's reach and Shatter Caps, 2026-11-24, a NEW gate"
+                        + " after enchant-changes; enchant-changes before it, Ben's five changes to Airburst Flames and Lapis"
                         + " Crystal, 2026-11-23, a NEW gate after enchant-columns; enchant-columns before it, the enchant columns"
                         + " re-cut, 2026-11-23, a NEW gate after"
                         + " unique-enchant-slot; unique-enchant-slot before it, the unique enchant slot, 2026-11-23, a NEW gate"
@@ -307,7 +308,10 @@ class SelfTestScenariosTest {
         // Then its SECOND FORM (feat/lapis-crystal-look, 2026-11-23, after the run of 78826389): AF1-AF4 (read) and LB1-LB4
         // (MISS) left; LB1R2, LB4R2, LB2R2, LB3R2 and LB5 came in. RECOUNTED the same way: 44 gates, 400 keys, 44 setups, so
         // 356. The control: 403 - 8 + 5 = 400. 359 was this line's value.
-        assertEquals(356, loaded.rows());
+        // Then GATE-shatter-caps.md (feat/shatter-caps, 2026-11-24), RECOUNTED the same way: 45 gates, 410 keys, 45 setups,
+        // so 365. The control: 400 + 10 (its setup and SR1, SR2, SC1, SC3, SC2, SF1, SF2, ST1, ST2) = 410. 356 was this
+        // line's value.
+        assertEquals(365, loaded.rows());
     }
 
     /**
@@ -576,6 +580,8 @@ class SelfTestScenariosTest {
                 "GATE-enchant-columns.yml must lint clean");
         assertEquals(List.of(), byGate.get("enchant-changes").stream().map(ScenarioLint.Finding::line).toList(),
                 "GATE-enchant-changes.yml must lint clean (2026-11-23, written under the same rules)");
+        assertEquals(List.of(), byGate.get("shatter-caps").stream().map(ScenarioLint.Finding::line).toList(),
+                "GATE-shatter-caps.yml must lint clean (2026-11-24, written under the same rules)");
         assertTrue(byGate.get("deft-hands").stream().anyMatch(f -> f.row().equals("DH3")
                         && f.rule() == ScenarioLint.Rule.SELF_STAGED && f.detail().startsWith("chains on DH1")),
                 "the control: DH3's chain on DH1 is found, so the lint reads the shipped files: " + byGate.get("deft-hands"));
@@ -597,8 +603,8 @@ class SelfTestScenariosTest {
                 for (Scenario.Step st : s.steps()) if (st.verb() == Scenario.Verb.PAD) padGates.add(gate.getKey() + "#" + s.row());
             }
         }
-        assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup"), padGates,
-                "only enchant-columns and (2026-11-23) enchant-changes opt in, each in its setup");
+        assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup"), padGates,
+                "only enchant-columns, (2026-11-23) enchant-changes and (2026-11-24) shatter-caps opt in, each in its setup");
         Scenario changes = shipped().gates().get("enchant-changes").getFirst();
         assertEquals(Scenario.Verb.PAD, changes.steps().get(0).verb(), changes.steps().toString());
         assertEquals(Scenario.Verb.PREFLIGHT, changes.steps().get(1).verb(), changes.steps().toString());

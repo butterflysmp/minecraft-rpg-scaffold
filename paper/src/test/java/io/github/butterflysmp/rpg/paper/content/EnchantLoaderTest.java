@@ -292,10 +292,10 @@ class EnchantLoaderTest {
     @Test
     void noElementKeyIsANormalEnchant() throws IOException {
         EnchantRegistry r = shippedElementsLoader().loadAll(shippedEnchantsDir());
-        assertEquals(14, r.size(), "the fourteen shipped enchants (recounted: ls content/enchants/*.yml | wc -l)");
+        assertEquals(15, r.size(), "the fifteen shipped enchants (recounted: ls content/enchants/*.yml | wc -l; was 14 before shatter_caps)");
         assertEquals(11, r.all().stream().filter(e -> e.element() == null && e.weapon() == null).count(), "eleven are normal");
-        assertEquals(List.of("airburst_flames", "lapis_crystal"), r.all().stream().filter(EnchantDefinition::isWeaponSpecific)
-                .map(EnchantDefinition::id).sorted().toList(), "the two weapon-specific enchants");
+        assertEquals(List.of("airburst_flames", "lapis_crystal", "shatter_caps"), r.all().stream().filter(EnchantDefinition::isWeaponSpecific)
+                .map(EnchantDefinition::id).sorted().toList(), "the three weapon-specific enchants");
         assertEquals("living_lantern", r.find("airburst_flames").orElseThrow().weapon());
     }
 

@@ -55,6 +55,8 @@ public final class BehaviourHits {
                 }
                 // An airburst acts on the FLIGHT (CastExecutor.launchToSplit), never on a hit.
                 case EnchantBehaviour.Airburst ignored -> { }
+                // A shatter acts on the PRESS (CastExecutor.launchStone), never on a hit; its stone and chunks are hits.
+                case EnchantBehaviour.Shatter ignored -> { }
                 // A granted trigger acts when its gesture is pressed (GrantedTriggers), never on a hit.
                 case EnchantBehaviour.GrantTrigger ignored -> { }
             }

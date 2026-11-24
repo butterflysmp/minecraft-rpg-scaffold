@@ -206,6 +206,12 @@ public final class EnchantLoader {
                         requiredDouble(b, "angle_degrees", id), requiredDouble(b, "speed", id),
                         requiredDouble(b, "burst_travel_blocks", id), requiredDoubles(b, "damage_by_level", id), element,
                         burstHoming(b.getConfigurationSection("homing"), id));
+                // shatter (Shatter Caps, 2026-11-24): travel_blocks, speed, item (optional: the stone's look),
+                // damage_by_level, element. Its weapon is the enchant's own weapon:, whose right click must be a
+                // projectile WITH a spread (the stone replaces the spread, and the split relaunches it).
+                case "shatter" -> new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shatter(
+                        shatterWeapon(id, weapon), requiredDouble(b, "travel_blocks", id), requiredDouble(b, "speed", id),
+                        b.getString("item"), requiredDoubles(b, "damage_by_level", id), element);
                 default -> throw new IllegalStateException("unreachable: " + name);
             };
         } catch (IllegalArgumentException ex) {
@@ -285,7 +291,32 @@ public final class EnchantLoader {
     static final java.util.List<String> GRANTABLE_INPUTS = java.util.List.of("left_click", "right_click");
 
     /** Every behaviour block a file may declare, one at most (B1). */
-    private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst", "grant_trigger");
+    private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst", "shatter",
+            "grant_trigger");
+
+    /**
+     * SHATTER'S WEAPON, refused by name (the seat's brief of 2026-11-24): the enchant must be weapon-specific, its weapon
+     * one this loader can see, and that weapon's right click a projectile WITH a spread: the stone replaces the spread,
+     * and the split relaunches the weapon's own cast, so a weapon without one has nothing to shatter into.
+     */
+    private String shatterWeapon(String id, String weaponId) {
+        if (weaponId == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' shatter: replaces one weapon's spread, so the enchant"
+                    + " must declare weapon: <id>");
+        }
+        io.github.butterflysmp.rpg.core.weapon.WeaponDefinition weapon = weaponDefinition.apply(weaponId).orElseThrow(() ->
+                new IllegalArgumentException("enchant '" + id + "' shatter: weapon '" + weaponId
+                        + "' is not a weapon this loader can see, so its shot cannot be checked"));
+        boolean spreadShot = weapon.trigger("right_click")
+                .map(t -> t.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Projectile p
+                        && p.spread() != null)
+                .orElse(false);
+        if (!spreadShot) {
+            throw new IllegalArgumentException("enchant '" + id + "' shatter: weapon '" + weaponId + "''s right click is"
+                    + " not a projectile with a spread, so there is nothing to shatter into");
+        }
+        return weaponId;
+    }
 
     /** The airburst's bursts' homing block, or null when the file declares none. */
     private static io.github.butterflysmp.rpg.core.ability.CastSpec.Homing burstHoming(ConfigurationSection h, String id) {

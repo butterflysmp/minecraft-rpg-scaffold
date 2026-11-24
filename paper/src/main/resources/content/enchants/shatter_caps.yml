@@ -1,0 +1,34 @@
+# SHATTER CAPS -- the Breacher's WEAPON-SPECIFIC enchant (the seat's brief of 2026-11-24, PR 2 on feat/breacher-reach).
+# Ben, verbatim: "Let's do a new enchantment for the Breacher. Shatter Caps. Instead of shooting 4 cobble right away, it
+# shoots 1 stone that splits into 4 cobble after traveling 5 blocks. The damage of the Stone is 35/60/85" / asked what the
+# four chunks do, how far they fly and whether they keep the pattern: "1. the usual 40 2. their full reach 3. the same
+# pattern." / "Another note, I want the damage of the shatter caps stone to follow with gearscore, just like the lapis
+# crystal and airburst flames".
+#
+# WHAT IT DOES (core CastExecutor.launchStone and shatter, while it is the ACTIVE candidate of the Breacher's weapon slot
+# at level 1 or more): a press launches ONE stone along his aim IN PLACE of the four chunks, costing the one round and the
+# cooldown a press costs today (the spread is replaced below the commit), playing the Breacher's own cast. The stone flies
+# at 2.5 a tick, its body a stone item, the Breacher's trail, carrying the Breacher's own on_hit with its damage replaced
+# by the level's 35 / 60 / 85 kinetic (a primary hit: the gear score scales it, the knockback and the hit visual ride as
+# the Breacher authored them, and it counts once for Kinetic Tremors). Once it has TRAVELLED 5 blocks without a hit
+# (2.5 a tick: its 2nd step, exactly 5.0, EXECUTED) it ends and the Breacher's OWN cast leaves that point: its spread
+# (4, 3 degrees, rotation 90, about the stone's direction with the press's basis: the triangle's point up), its speed,
+# its cobblestone, its 40 and its full 6-tick reach (18 blocks), all read from breacher.yml at run time, never copied
+# here. A stone that hits a mob first lands its damage and never splits; one that meets a block first ends there as a
+# chunk does (the hit visual where it stopped, no damage, no split).
+#
+# NAME THE QUANTITY: it reads the Breacher's SPREAD (4 / 3 / 90, authored, present) and replaces its damage on the stone;
+# the eligibility half is `weapon: breacher`, the one weapon whose shot it was designed for (W1). The loader refuses it,
+# by name, on a weapon whose right click is not a projectile with a spread.
+display_name: "Shatter Caps"               # BEN: "Shatter Caps"
+icon: cobblestone                          # SEAT PLACEHOLDER 2026-11-24 (B7)
+max_level: 3                               # BEN: three damages, so three levels
+effect: shatter
+class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
+weapon: breacher                           # W1: weapon-specific, the Breacher's slot 0
+shatter:
+  travel_blocks: 5                         # BEN: "splits into 4 cobble after traveling 5 blocks"
+  speed: 2.5                               # SEAT PLACEHOLDER 2026-11-24: so the split is the 2nd step at exactly 5.0
+  item: stone                              # SEAT PLACEHOLDER 2026-11-24: its look (BEN: "1 stone")
+  damage_by_level: [35, 60, 85]            # BEN: "The damage of the Stone is 35/60/85"
+  element: kinetic                         # the Breacher's element

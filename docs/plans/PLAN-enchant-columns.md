@@ -737,3 +737,54 @@ shot) and comes off the carried list.
 | The four screens whose info item was left alone | Level (its item at 4 is a readout), Build picker (its item at 4 titles the pick), Vault (no info item; 8 is NEXT), Recipe book (no info item; 8 is an entry) | `PLAN-unique-enchant-slot.md` section 8 |
 
 **No code is owed by this section.** The next stack opens from `89253ed4`.
+
+## 16. SHATTER CAPS (THE BREACHER'S WEAPON-SPECIFIC ENCHANT) AND THE BREACHER'S REACH, 2026-11-24
+
+**Ben, verbatim (the seat's brief of 2026-11-24):** "Let's do a new enchantment for the Breacher. Shatter Caps. Instead of
+shooting 4 cobble right away, it shoots 1 stone that splits into 4 cobble after traveling 5 blocks. The damage of the
+Stone is 35/60/85" / asked what the four chunks do after the split, how far they fly (A: the rest of the normal reach, B:
+a full reach more), and whether they keep today's pattern: "1. the usual 40 2. their full reach 3. the same pattern." /
+"One extra note, I want to increase the range that the cobble travels normally to 18 blocks" / "Another note, I want the
+damage of the shatter caps stone to follow with gearscore, just like the lapis crystal and airburst flames".
+
+**PR 1, `feat/breacher-reach` (#268):** `breacher.yml` `max_lifetime_ticks` 4 -> 6 (6 x 3.0 = 18 blocks); dated notes on
+`GATE-breacher.md` (BR4 cannot be re-run as written) and `GATE-breacher-rework.md` (no row stages a mob beyond 12; its
+stated flight is now 6 ticks); `PLAN-weapon-tiers.md` 1.15.
+
+**PR 2, `feat/shatter-caps`, AS BUILT:**
+1. **A second behaviour type, `EnchantBehaviour.Shatter`, beside `Airburst`, not a shared seam** (`effect: shatter`, the
+   file's `shatter:` block: `travel_blocks`, `speed`, `item`, `damage_by_level`, `element`). Airburst cuts the authored
+   shot short and launches the enchant's bursts; Shatter replaces the authored spread with the enchant's stone and
+   launches the weapon's own cast at the split. Airburst's path is untouched (its tests unchanged and green).
+2. **The stone** (`CastExecutor.launchStone`), taken where the spread is expanded, below the commit: one round and one
+   cooldown a press, as the spread. One body at 2.5 a tick (SEAT PLACEHOLDER), item stone (SEAT PLACEHOLDER), the
+   Breacher's trail, carrying the Breacher's own on_hit with its damage replaced by 35 / 60 / 85 kinetic (BEN), through
+   the same applier as every hit: the gear score scales it (BEN), the knockback and the hit visual ride as authored, and it
+   is one primary hit for Kinetic Tremors.
+3. **The split** (`CastExecutor.shatter`): `ticksToTravel(5, 2.5)` = 2, so the 2nd step, exactly 5.0 (EXECUTED). The
+   Breacher's OWN cast leaves that point: its spread, read from `breacher.yml` at run time, built about the stone's
+   direction with the press's own right vector (so rotation 90 keeps the point up, straight up included), each chunk the
+   weapon's shot with its speed, item, 40 and full 6-tick reach (BEN: "the usual 40", "their full reach", "the same
+   pattern").
+4. **A hit before 5** lands the level's damage and never splits; **a block before 5** ends the stone as it ends a chunk
+   (the hit visual where it stopped, no damage, no split; READ).
+5. **The weapon check:** `Shatter` carries `weapon: breacher` and acts only on a cast whose ability is `breacher/...`, as
+   the Lapis Crystal's grant does (the dev command can stage any enchant on any weapon). **Found, not fixed: `Airburst`
+   has no such check** (Airburst Flames staged on another projectile weapon by the dev command would split its shot; no
+   roll can produce that). A candidate for a later PR, which would change Airburst's path and need its own gate.
+6. **The loader refuses, by name:** a weapon whose right click is not a projectile with a spread; no `weapon:`; a level
+   list not matching `max_level`; a non-positive distance or speed. The line (B5): "fires one stone of 35 damage that
+   shatters after 5 blocks into the usual chunks" (wording SEAT PLACEHOLDER).
+7. **The gate:** `GATE-shatter-caps.md`, on this branch, carrying the one R0 for #267 and both PRs.
+
+**OPEN FOR BEN (SEAT PLACEHOLDERS 2026-11-24):** the stone's speed (2.5 a tick, so the split is exactly the 2nd step) and
+its look (`stone`); the enchant's icon (`cobblestone`); its line's wording; **the Breacher's own description, NOT EDITED,
+which still reads "Four chunks of cobblestone," / "a tight triangle 6 degrees wide." with the enchant active.**
+
+**OWED, RECORDED 2026-11-24 (the seat's ruling on the finding of section 16, item 5): A BEHAVIOUR THAT NAMES A WEAPON ACTS
+ONLY ON THAT WEAPON, ENFORCED ONCE WHERE BEHAVIOURS ARE READ FROM THE ITEM.** Today `BehaviourItems.activeOf` hands every
+behaviour on the held item's enchant state to the cast with no weapon filter, so Airburst Flames staged by the dev command
+on another projectile weapon would split that weapon's shot (no roll can produce that state: W1). Shatter Caps and the
+Lapis Crystal's grant each check their own weapon at the cast; Airburst does not. **The fix belongs in one place, where
+behaviours are read from the item, and when it is done `GATE-enchant-changes.md`'s Airburst rows (AF1-AF4) are re-read.**
+Not done in `feat/shatter-caps`, by the seat's ruling: Airburst's path stays as `GATE-enchant-changes` read it.
