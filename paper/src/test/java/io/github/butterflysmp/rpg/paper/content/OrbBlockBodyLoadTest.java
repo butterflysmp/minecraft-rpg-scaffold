@@ -97,11 +97,25 @@ class OrbBlockBodyLoadTest {
                 "d.setTeleportDuration(1);",
                 "d.setGlowing(true);",
                 "d.setGlowColorOverride(org.bukkit.Color.fromRGB(look.glowRgb()));",
-                "d.setPersistent(false);",
-                "d.getPersistentDataContainer().set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);",
-                "d.getPersistentDataContainer().set(ctx.keys().orb, PersistentDataType.BYTE, (byte) 1);"}) {
+                "d.setPersistent(false);"}) {
             assertTrue(spawn.contains(want), "spawnOrbBlock: " + want);
         }
+        // CORRECTED 2026-11-23 (the seat's fix of #265): this test pinned BOTH tags INSIDE the spawn's consumer, the
+        // fault the run of 78826389 found. The consumer runs before the body is added to the world, where the orphan
+        // sweep runs (READ), so it now carries NO tag; the marker tag goes on after the spawn returns, the orb tag only
+        // at claimOrbBody, after the store owns the body.
+        String consumer = spawn.substring(spawn.indexOf("org.bukkit.entity.BlockDisplay.class, d -> {"), spawn.indexOf("        });"));
+        assertTrue(!consumer.contains("ctx.keys().orb") && !consumer.contains("ctx.keys().markerEntity"),
+                "no tag inside the spawn's consumer: " + consumer);
+        assertTrue(spawn.indexOf("body.getPersistentDataContainer().set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);")
+                > spawn.indexOf("        });"), "the marker tag after the spawn returns");
+        assertTrue(!spawn.contains("ctx.keys().orb"), "spawnOrbBlock never tags the orb");
+        String world = src("adapter/PaperCombatWorld.java");
+        assertTrue(!method(world, "public UUID spawnOrbMarker(").contains("ctx.keys().orb"), "nor does spawnOrbMarker");
+        assertTrue(method(world, "public void claimOrbBody(").contains(
+                "body.getPersistentDataContainer().set(ctx.keys().orb, PersistentDataType.BYTE, (byte) 1);"),
+                "the one orb-tag write is the claim");
+        assertEquals(1, world.split("ctx\\.keys\\(\\)\\.orb,", -1).length - 1, "and it is the only one in the file");
         String place = method(src("adapter/PaperCombatWorld.java"), "public void placeOrbBody(");
         assertTrue(place.contains("Entity body = markerOf(bodyId);") && place.contains("body.teleport(toLocation(at));"));
     }
@@ -122,6 +136,28 @@ class OrbBlockBodyLoadTest {
                 "discard cancels the backstop");
         String world = src("adapter/PaperCombatWorld.java");
         assertTrue(method(world, "public void removeMarker(").contains("Entity marker = markerOf(markerId);"));
+    }
+
+    /**
+     * THE SWEEP SAYS WHAT OCCURRED (the seat's fix of #265, 2026-11-23). At the add a removal is refused (READ), so the
+     * sweep where a body appears defers to the body's own scheduler a tick later; and the {@code removed … cause=orphan}
+     * line is written only when the body is gone ({@code !isValid()}). On 78826389 seven such lines reported removals
+     * Paper had refused.
+     */
+    @Test
+    void theSweepWaitsATickAtTheAddAndLogsOnlyARemovalThatHappened() throws IOException {
+        String removals = src("weapon/OrbRemovals.java");
+        String appeared = removals.substring(removals.indexOf("public static void sweepAppeared("),
+                removals.indexOf("private static boolean orphan("));
+        assertTrue(appeared.contains("if (!orphan(ctx, entity)) return;")
+                && appeared.contains("ctx.scheduler().onEntityLater(entity, () -> sweep(ctx, entity), 1);")
+                && !appeared.contains("entity.remove()"), "no removal at the add; the sweep a tick later: " + appeared);
+        String sweep = removals.substring(removals.indexOf("public static void sweep("),
+                removals.indexOf("public static void sweepAppeared("));
+        int remove = sweep.indexOf("entity.remove();");
+        int check = sweep.indexOf("if (!entity.isValid()) {");
+        int line = sweep.indexOf("\"orphan\"");
+        assertTrue(remove > 0 && check > remove && line > check, "the line only inside the check after the removal: " + sweep);
     }
 
     @Test

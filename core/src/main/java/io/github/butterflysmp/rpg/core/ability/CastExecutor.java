@@ -614,6 +614,9 @@ public final class CastExecutor {
                 });
         io.github.butterflysmp.rpg.core.combat.Orbs.PlaceResult placed = orbs.place(caster.id(), marker, rest,
                 orb.radius(), orb.lifeTicks(), weaponId, enchantId, level, shotOf(orb), backstop);
+        // THE CLAIM, ONLY NOW THE STORE OWNS IT (the seat's fix of #265, 2026-11-23): on 78826389 the block body carried
+        // the orb tag from inside its spawn, and the sweep at its add found it unowned, every throw.
+        world.claimOrbBody(marker);
         placed.replaced().ifPresent(old -> {
             // Every removal cancels the old orb's expiry (the seat's item 6) and its backstop (ruling (b)): its generation
             // guard already made the expiry harmless, and now nothing of it stays scheduled either.

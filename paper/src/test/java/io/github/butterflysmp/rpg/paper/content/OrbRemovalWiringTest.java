@@ -40,7 +40,7 @@ class OrbRemovalWiringTest {
         assertTrue(body(l, "public void onOrbOwnerChangedWorld(org.bukkit.event.player.PlayerChangedWorldEvent event) {")
                 .contains("OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), \"world_change\");"), "world change");
         assertTrue(body(l, "public void onOrbBodyAppear(EntityAddToWorldEvent event) {")
-                .contains("OrbRemovals.sweep(adapters, event.getEntity());"), "the sweep where a body appears");
+                .contains("OrbRemovals.sweepAppeared(adapters, event.getEntity());"), "the sweep where a body appears, a tick later");
     }
 
     @Test

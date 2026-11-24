@@ -450,3 +450,21 @@ stop); **his saved position `-98.56 63.00 34.60`** (READ off his player file's `
 - **Whether each body moved along the path:** no line reads a display's position during its flight.
 - **The ticks of AF2's and AF3's burst hits:** PLAYERHIT prints none.
 - **The backstop firing:** by design (above). It did not fire anywhere in the log.
+
+> **DATED NOTE, 2026-11-23, after the run: THE FIX OF THE DEFECT ABOVE, ON THIS BRANCH (the seat's ruling).** The seat
+> accepted the readings and the account, and recorded that **the miss is also the seat's**: at D2 it checked that the
+> item body is tagged AFTER its spawn returns, so the entity-add sweep cannot see it unowned, and it read
+> `spawnOrbBlock`'s tag inside the spawn call without making the same check. **The order, READ from the server jar:**
+> `CraftRegionAccessor.addEntity` runs the spawn's consumer, then `addEntityToWorld`; inside it
+> `EntityLookup.entityStatusChange` sets the entity's `updatingSectionStatus`, calls `onTrackingStart` (which raises
+> `EntityAddToWorldEvent`, where the sweep ran), and clears it; then the spawn returns; then `throwOrb` calls
+> `Orbs.place`. **The fix:** neither spawn tags a body as an orb's; `throwOrb` CLAIMS it (`CombatWorld.claimOrbBody`)
+> after `Orbs.place` owns its id; the display's marker tag goes on after the spawn returns (no sweep keys on it: the
+> marker tag is read by `removeMarker` and by the selftest's row-start clean, never at the add). **And the sweep's line
+> now says what occurred:** a removal at the add is always refused (READ: `Entity.setRemoved` asks
+> `canRemoveEntity`, false while `updatingSectionStatus` is set, warns and returns), so the sweep where a body appears
+> runs a tick later on the body's own scheduler (`OrbRemovals.sweepAppeared`), and `removed … cause=orphan` is written
+> only when the body is gone (`!isValid()`; `CraftEntity.isValid` is `isAlive() && valid`, `Entity.isAlive` is
+> `!isRemoved()`, READ). Tests: `OrbClaimTest` (the fake now runs the sweep's own test at the add, both kinds, with a
+> control), `OrbBlockBodyLoadTest` (the pin that held the fault is corrected; the sweep's deferral and its honest line).
+> Five mutations, each killed. The LB rows are re-predicted on the branch above this one.

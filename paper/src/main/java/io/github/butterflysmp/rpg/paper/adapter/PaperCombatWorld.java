@@ -400,12 +400,20 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     @Override
     public UUID spawnOrbMarker(io.github.butterflysmp.rpg.core.Vec3 at, String itemId, int expectedLifetimeTicks) {
-        UUID id = spawnMarker(at, itemId, expectedLifetimeTicks);
-        org.bukkit.entity.Entity body = world.getEntity(id);
+        // Untagged as an orb: claimOrbBody tags it once the store owns it (the seat's fix of #265, 2026-11-23).
+        return spawnMarker(at, itemId, expectedLifetimeTicks);
+    }
+
+    /**
+     * Tag an orb body {@code Keys.orb}, so {@code OrbRemovals.sweep} can find it once no orb owns it. Called by
+     * {@code throwOrb} AFTER {@code Orbs.place} owns the id (the seat's fix of #265, 2026-11-23), for both body kinds.
+     */
+    @Override
+    public void claimOrbBody(UUID bodyId) {
+        org.bukkit.entity.Entity body = world.getEntity(bodyId);
         if (body != null) {
-            body.getPersistentDataContainer().set(ctx.keys().orb, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
+            body.getPersistentDataContainer().set(ctx.keys().orb, PersistentDataType.BYTE, (byte) 1);
         }
-        return id;
     }
 
     /**
@@ -424,7 +432,7 @@ public final class PaperCombatWorld implements CombatWorld {
      *       once a tick, so each placement is eased over that tick.</li>
      *   <li><b>Never saved.</b> {@code setPersistent(false)} writes {@code Entity.persist} ({@code CraftEntity}, READ), and
      *       {@code Entity.saveAsPassenger} returns false when {@code persist} is false unless its fourth argument forces
-     *       it (READ; which callers force it, UNVERIFIED). Its tags below are the sweep's, whatever survives.</li>
+     *       it (READ; which callers force it, UNVERIFIED). Its orb tag (set at the claim) is the sweep's, whatever survives.</li>
      * </ul>
      *
      * <p>A block id that names no block (warned at load, {@code ContentValidator.validateOrbBodies}) spawns NOTHING: an
@@ -448,9 +456,12 @@ public final class PaperCombatWorld implements CombatWorld {
             d.setGlowing(true);
             d.setGlowColorOverride(org.bukkit.Color.fromRGB(look.glowRgb()));
             d.setPersistent(false);
-            d.getPersistentDataContainer().set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
-            d.getPersistentDataContainer().set(ctx.keys().orb, PersistentDataType.BYTE, (byte) 1);
         });
+        // NO TAG INSIDE THE SPAWN (the seat's fix of #265, 2026-11-23). READ, CraftRegionAccessor.addEntity: the consumer
+        // above runs, THEN the body is added to the world (EntityAddToWorldEvent, where OrbRemovals.sweepAppeared runs), THEN
+        // spawn returns. On 78826389 the orb tag set in the consumer let the sweep see every body unowned. The marker tag
+        // goes on here, after the add; the orb tag only when throwOrb claims the body, after the store owns it.
+        body.getPersistentDataContainer().set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
         // READ BACK OFF THE BODY, not the spec: the gate reads what was spawned.
         org.bukkit.Color glow = body.getGlowColorOverride();
         ctx.log().info(orbBodyLine(ownerId, body.getUniqueId(), body.getType().getKey().getKey(),
