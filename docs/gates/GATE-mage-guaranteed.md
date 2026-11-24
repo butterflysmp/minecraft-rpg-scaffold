@@ -17,6 +17,15 @@ from origin.** The booter's checklist is `.claude/rules/booting.md`.
 > sentence above this note that says PR B or PR F is STOPPED, or that R0c keeps the carve-out, is the record of the
 > first draft. **One typed command** now (the run sheet). The whole run: see *HOW LONG THE RUN IS*.
 
+> **DATED NOTE, 2026-11-24, `feat/mage-guaranteed-gate-3` (the seat's P10 orders): RE-PREDICTED FOR THE NEXT BOOT, NOT
+> RUN.** The boot at `9a6dfacd` (readings at the end of this file) passed R1 and every run aborted at the pad: the pad held
+> no chunk tickets. **#285 `feat/pad-tickets` (P10) makes it hold them, and this branch is the stack top.** The next
+> boot reads **R2a to R2e** (below R1), predicted against a jar built from this branch; **R0 and R1 stay as the record and
+> are not read again.** **New row PT1, first in the run**, reads the tickets. **No MG or MB prediction is edited**: they
+> were not read, so they stand as written. The carried state's two wordings are corrected by dated notes there. **One
+> typed command still**, and **he may stand anywhere when he types it, 200 blocks from the pad included: that distance
+> is now the test.**
+
 `/rpg selftest mage-guaranteed`. **SURVIVAL, every row. ALL AUTO, no ASK:** every reading is a server line (CMD, REPLY,
 PLAYERHIT, DOTTICK, VOLLEYSHOT, ORB, PROBE, SLOT, MENU); no row's prediction is something only a client can show.
 
@@ -89,6 +98,13 @@ facing, no move).
    normal and the restore puts it back.
 5. The tree clean and pushed: `git status --porcelain` empty; `git rev-parse HEAD` equals `git ls-remote --heads origin
    feat/mage-guaranteed-gate`.
+
+> **DATED NOTES, 2026-11-24 (`feat/mage-guaranteed-gate-3`; the two wordings the boot at `9a6dfacd` found):**
+> - **Step 2:** `run\world_nether` and `run\world_the_end` do not exist on this server: every dimension lives inside
+>   `run\world\dimensions\…` (`minecraft\overworld`, `minecraft\the_nether`, `minecraft\the_end`, `rpgfight`). **Back up
+>   `run\world` (which holds them all) and `run\plugins\Rpg`**, each with its file counts, as the boots before it did.
+> - **Step 5:** the branch is now **`feat/mage-guaranteed-gate-3`**: `git rev-parse HEAD` equals `git ls-remote --heads
+>   origin feat/mage-guaranteed-gate-3`.
 
 ## THE RUN SHEET — BEN TYPES THESE THREE LINES
 
@@ -210,10 +226,74 @@ scenarios` and `397 scenarios` ABSENT.
 
 As R0e: one `FIGHTWORLD sweep path=…\rpgfight folders=0`, no `deleting`, no `orphan`.
 
+## R2 — THE BUILD OF THE STACK WITH P10 (2026-11-24). THE NEXT BOOT READS THESE. IF ANY R2 FAILS, STOP
+
+**The stack top is `feat/mage-guaranteed-gate-3`**, on #285 `feat/pad-tickets` (P10), on #284. The jar carries
+everything R1 named, plus P10 and PT1.
+
+### R2a — the build line names the new stack top's head, clean
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <sha>`, `<sha>` being `feat/mage-guaranteed-gate-3`'s head as `git ls-remote --heads origin feat/mage-guaranteed-gate-3` prints it, shortened. **Not `-dirty`, not `unknown`.** | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:'` on THIS boot's log | |
+
+### R2b — the jar carries R1b's evidence, P10 and PT1
+
+The scan is `docs/gates/GATE-mage-guaranteed-r2b.ps1`, committed beside this file: **R1b's 34 lines, unchanged, plus
+seven in the first section and two controls.** **The prediction, line for line:** before `'--- absent'`, **29 `PRESENT`,
+0 `ABSENT`**; between `'--- absent'` and `'--- controls'`, **7 `ABSENT`, 0 `PRESENT`**; after `'--- controls'`, **7
+`ABSENT`, 0 `PRESENT`**. Counted from the script: `Select-String -Path <script> -Pattern '^(ValueLine|Has|Entry|Sweep) '`
+gives 43 (29 + 7 + 7).
+
+- **P10's evidence:** `SelfTestPadTickets.class` carries `PAD tickets held=`, `PAD tickets released=` and ` did not stay
+  loaded held=`; `BukkitPadChunks.class` carries `addPluginChunkTicket` and `removePluginChunkTicket`;
+  `SelfTestOccupancy.class` carries the pad command's refusal; the scenario carries `PT1:`.
+- **Its controls:** `SelfTestPad.class` no longer names `getChunkAtAsync` (CONTROL-OLD: the old load loop is gone; the
+  tickets' requests are the loads), and no class carries the literal `PAD tickets held=12` (CONTROL-LITERAL: the 12 is
+  counted, never written).
+
+### R2c — every Loaded line, and no `[Rpg]` WARN
+
+**As R1c, word for word:** `Loaded 11 abilities, 44 visuals, 5 statuses, 7 elements, 23 enchants, …, 23 weapons, …`; the
+loot line; **0** `WARN]: [Rpg]` lines, with the control `INFO]: [Rpg] Loaded` read 1 or more; none of `Refusing`,
+`Skipping`, `SEVERE`, `Exception`, `Dev-only`, `currently prevented`. (P10 adds no content.) **A ticket at chunk 6..9 is
+far inside `warnUnsafeChunk`'s ±1875625 (READ): no Paper warning from the take.**
+
+### R2d — every scenario loaded
+
+Exactly one **`[Rpg] Selftest: dev server, 397 scenarios across 47 gates [melee-cell, …, focused-beam, mage-guaranteed]`**
+(recount: 47 files, 444 keys, 47 setups; `SelfTestScenariosTest`, whose control is 443 + 1 = 444). The controls: `396
+scenarios` and `398 scenarios` ABSENT.
+
+### R2e — the orphan sweep with nothing staged
+
+As R0e: one `FIGHTWORLD sweep path=…\rpgfight folders=0`, no `deleting`, no `orphan`.
+
 ## THE ROWS
 
 Each row's lines are those between `SELFTEST mage-guaranteed <row> START` and its `DONE`. Every row starts from cleared
 cooldowns (`clear_state`); no row presses an ability another row pressed within its cooldown.
+
+### PT1 — THE PAD HOLDS ITS CHUNKS (P10, 2026-11-24): FIRST IN THE RUN, AUTO
+
+**Nothing is asked of his ground, position or inventory: he may type the command anywhere, 200 blocks from the pad
+included.** That distance is what this row tests: on 2026-11-24, from about x -100 (the pad's chunks some 200 blocks
+east), every run aborted at the pad.
+
+**The footprint, by arithmetic** (the stand `104,201,-4`, from world spawn -96, -4; `SelfTestPadShape`: interior x -2..45
+and z -13..13 from the stand, the rim one block outside): x from 104 - 3 = **101** to 104 + 46 = **150**, chunks
+floor(101/16) = **6** to floor(150/16) = **9**, four; z from -4 - 14 = **-18** to -4 + 14 = **10**, chunks floor(-18/16) =
+**-2** to floor(10/16) = **0**, three; **4 x 3 = 12 chunks** (`SelfTestPadTicketsTest`, from the one source,
+`SelfTestPadShape.chunks`).
+
+**ITS WITNESS LIES PARTLY OUTSIDE ITS START AND DONE, BY DESIGN** (the take is the setup's PAD step, and the release is the
+run's end): the setup's lines, this row's own, and the run's last block.
+
+| where | prediction |
+|---|---|
+| the setup | **`SELFTEST mage-guaranteed setup PAD tickets held=12`**, once, **before** `setup PAD world=world stand=104,201,-4 floorY=200 … cells=7250 …` and `setup PAD stood at=104.50 201.00 -3.50 yaw=-90.000 pitch=0.000`. **No `PAD fail`.** |
+| PT1 | `SELF customHP=… at=104.50 201.00 -3.50 onGround=true fall=0.000`: he stands on the pad's stand point |
+| the run's end | `SELFTEST RUN FINISHED`, `SELFTEST RUN RESTORED …`, then **`SELFTEST RUN PAD tickets released=12 cause=end`**, the last line the run's end writes (the `SELFTEST RUN HEALTH …` line still follows it later, as on every run: it is written two reconcile passes after the restore). **No other `PAD tickets released` line in the run.** |
 
 ### MG1 — THE POOLS: A FRESH ROLL OF EACH WEAPON, AND 500 ROLLS
 
@@ -513,3 +593,17 @@ about x -100, z 12, some 200 blocks away. **The same pad, from about the same st
 and `scheduler/` lists only `SelfTestDrivers.java`, `clear_state`'s chain line). **That the chunks unloaded in the gap,
 UNVERIFIED; why today and not before, UNKNOWN.** One reading this boot did not take: whether the pad passes when he stands
 at or near it before `/rpg selftest`.
+
+## R2b, RUN BEFORE COMMIT (P10, 2026-11-24)
+
+Run 2026-11-24, after 18:22, against `paper\target\rpg-0.1.0-SNAPSHOT.jar` (18:22:04) built by `./mvnw clean package`
+(BUILD SUCCESS; core 2496 (1 skipped), storage 99, paper 1985, 0 failures) from the working tree of
+`feat/mage-guaranteed-gate-3` on `feat/pad-tickets` `db373e2f`, this file, the scenario, `SelfTestScenariosTest` and the
+R2b script uncommitted (so the jar is no commit: the boot's R2 re-reads the deployed one): `powershell -File
+docs\gates\GATE-mage-guaranteed-r2b.ps1 -JarPath paper\target\rpg-0.1.0-SNAPSHOT.jar` printed **29 `PRESENT`, 0
+`ABSENT`**; then **7 `ABSENT`, 0 `PRESENT`**; then **7 `ABSENT`, 0 `PRESENT`**. **As predicted.** The sweep read **1438**
+entries; `volley_stone`, `volley_beam`, `volley_cast` each in **0**; `boltor` in **20**.
+
+The lint's positive control, before the commit: `probe: m` added to PT1 (no mob summoned there) printed `LINT
+mage-guaranteed#PT1 SELF_STAGED probe m: no mob of that tag was summoned in the row` and reddened the clean-lint row;
+restored, `cmp` identical.
