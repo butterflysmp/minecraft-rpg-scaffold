@@ -36,10 +36,15 @@ EC0:
   - probe_blocks: "AIR 1 0 -6 32 1 6"
   - probe_blocks: "AIR 1 -1 -6 32 -1 6"
   - probe_blocks: "WATER 1 -1 -6 32 -1 6"
+  # EC0R2 (2026-11-23, the seat's fix): the ground LC1's F stands on, 7..10 SOUTH (his right as he faces east), measured
+  # too; added, the three lines above unchanged.
+  - probe_blocks: "AIR 1 0 7 32 1 10"
+  - probe_blocks: "AIR 1 -1 7 32 -1 10"
+  - probe_blocks: "WATER 1 -1 7 32 -1 10"
 
-# EC1: THE LAPIS STAFF'S COLUMNS (kinetic mage): slot 0 EMPTY (Lapis Crystal was stopped), slot 1 Kinetic Tremors alone,
-# slots 2-3 its normal pool.
-EC1:
+# EC1R2 (was EC1, 2026-11-23: Lapis Crystal is built, D1-D3): THE LAPIS STAFF'S COLUMNS, ROLLED (the proof of W2: a fresh
+# roll, never the dev command): slot 0 Lapis Crystal alone, slot 1 Kinetic Tremors alone, slots 2-3 its normal pool.
+EC1R2:
   - hold: empty
   - cmd: "clear @s minecraft:breeze_rod"
   - cmd: "rpg give lapis_staff"
@@ -312,8 +317,75 @@ EC16:
   - wait: 80
   - probe: p
 
-# EC17: NOTHING AN ENCHANT SPAWNS IS LEFT (B6, R0e extended): the run's three enchants spawn no entity at all (READ), so
-# every display and marker count near him is 0 (dropped items are NOT counted: a /kill of a zombie drops its loot) before the run's own mobs go.
+# LC1: LAPIS CRYSTAL'S THROW (D1, D2): the granted LEFT CLICK, driven by `reload`, which is the shipped left-click handler
+# (WeaponSwingListener.swing; a Lapis Staff has no quiver, so it goes straight to the trigger). A fresh staff, Lapis
+# Crystal staged active at II in slot 0 and Kinetic Tremors active at I in slot 1 (staged by the dev command: these rows
+# test BEHAVIOUR, not the roll; EC1R2 is the roll's proof). Mana read either side of the press with no wait between
+# (one tick); a second press 20 ticks later meets the 600-tick cooldown, silently (WeaponSwingListener ignores an
+# OnCooldown), so it spends nothing and throws nothing. N 5 south of the orb's spot, F 9 south, T the beam's own target
+# 22 east on his aim line, 10 beyond the orb. The staff has never been pressed in this run.
+LC1:
+  - hold: empty
+  - cmd: "clear @s minecraft:breeze_rod"
+  - cmd: "rpg give lapis_staff"
+  - wait: 2
+  - hold: lapis_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 lapis_crystal"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg enchant candidate 1 kinetic_tremors"
+  - cmd: "rpg enchant level 1 0 1"
+  - cmd: "rpg enchant active 1 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~12 ~ ~5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["n","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~12 ~ ~9 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["f","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~22 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe_self: ""
+  - probe_mana: ""
+  - reload: ""
+  - probe_mana: ""
+  - wait: 20
+  - reload: ""
+  - probe_mana: ""
+  - wait: 20
+
+# LC2: A BEAM INTO THE ORB (D3): his Lapis Beam, straight east through the orb's centre, stops there; the orb strikes N
+# (within 8, a clear line) and neither F (beyond 8) nor T (beyond 8, behind the orb). The beam's first press of the run.
+LC2:
+  - use: right_click
+  - wait: 10
+  - probe: n
+  - probe: f
+  - probe: t
+
+# LC3: A SECOND AND A THIRD BEAM FIRE IT AGAIN (it is not used up), 22 ticks apart (the cooldown is 20); with Kinetic
+# Tremors active, three crystal shots on N inside 60 ticks fire NO shockwave (they are never hits).
+LC3:
+  - wait: 22
+  - use: right_click
+  - wait: 22
+  - use: right_click
+  - wait: 10
+  - probe: n
+
+# LC4: GONE AFTER 300 TICKS FROM ARRIVAL: 300 more ticks are certainly past it; then a beam passes to T.
+LC4:
+  - wait: 300
+  - use: right_click
+  - wait: 10
+  - probe: t
+
+# EC17: NOTHING AN ENCHANT SPAWNS IS LEFT (B6, R0e extended): no display or marker entity near him, and NO ORB STANDS
+# (LC4 saw it expire); its body was an item marker, removed with the `ORB removed … cause=expired` line. Dropped items are
+# NOT counted: a /kill of a zombie drops its loot.
 EC17:
   - probe_entities: "item_display 64"
   - probe_entities: "block_display 64"

@@ -562,3 +562,16 @@ owner's orb: the other-player row), MUTORBRESTING (the in-flight row), MUTORBWEA
 MUTORBSPHERE (the box row; it was GREEN before that row existed, the fixture searching a sphere already, and the row was
 added for it), MUTORBSECONDARY (the shots counted as hits: the Tremors row), MUTORBINTERCEPT (never meets: 5 rows),
 MUTORBLINE (the percent shown: the line row), MUTORBLEVELS (the level count unchecked: the refusal row).
+
+## 12. THE GATE FOR D (`feat/lapis-crystal-gate`, on D3)
+
+`GATE-enchant-columns.md` gains, on this branch: **EC1R2** (the Lapis Staff's rolled columns with Lapis Crystal in slot
+0; EC1 superseded, never run, with a dated note); **LC1-LC4** (the throw's 30 mana and its own silent cooldown, the
+orb's resting point 12 out from the `ORB rest` line, a beam into it striking N for 6.3 and neither F beyond 8 nor T
+behind it, a second and third beam firing again with Kinetic Tremors active and no shockwave, gone 300 ticks after
+arriving with `cause=expired` and then the beam passing to T); **EC17 extended** (no orb left at the run's end; no
+`cause=stop` after `/stop`); **R0bR2, R0cR2, R0dR2** (the scan widened to D's lines, 14 enchants, 355 scenarios across
+43 gates); the seat's ruling 2 named once for every shockwave and crystal row (the gate's D2); the seat's ruling 4
+beside the column rows; SAFETY for LC1-LC4 (0); and the run sheet's plain-words paragraph on the open ground (a strip 33
+east by 13 wide, air at feet and head) and the three selftest lines Ben types. R0bR2 was run before this commit against a
+jar built from this tree: see the gate's last section.
