@@ -216,6 +216,13 @@ public interface CombatWorld {
      */
     void traceVolleyShot(UUID casterId, String source, int shotIndex, long pressedTick);
 
+    /**
+     * WILDFIRE (2026-11-24): the factor a primary hit about to land is multiplied by, recorded on its chain. Asked by the
+     * damage arms inside their gate, before {@code applyDamage}. The server's one {@code BehaviourHits} answers
+     * ({@code chainFactor}); abstract, so the fixture answers too.
+     */
+    double hitChainFactor(Caster caster, Combatant target);
+
     /** The server's one {@link Orbs} (Lapis Crystal's D2, 2026-11-23): every standing orb, one per player. */
     Orbs orbs();
 

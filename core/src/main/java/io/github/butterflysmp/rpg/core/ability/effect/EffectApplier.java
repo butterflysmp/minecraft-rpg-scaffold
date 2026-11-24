@@ -171,6 +171,9 @@ public final class EffectApplier {
                                 caster.enchantDamagePercent(), caster.classDamageBonus() + caster.weaponLevelDamage()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
+                    // WILDFIRE (2026-11-24): the chain's factor, its own term, multiplying the WHOLE dealt amount (after
+                    // charge and crit, the flat class and level bonuses included), recorded on the chain. 1.0 for any other hit.
+                    amount *= world.hitChainFactor(caster, target);
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),
                             DefenseRule.APPLIES, d.element());
                     onDirectDamage.accept(amount, d.element());   // inside the gate: a refused hit reports nothing
@@ -197,6 +200,7 @@ public final class EffectApplier {
                                 caster.classDamageBonus() + caster.weaponLevelDamage()),
                         caster.chargeScale(), caster.critMultiplier());
                 if (amount > 0 && target.state().alive()) {
+                    amount *= world.hitChainFactor(caster, target);   // WILDFIRE, the same term for the stat-reading arm
                     target.handle().applyDamage(amount, caster.id(), CritState.of(caster.critMultiplier()),
                             DefenseRule.APPLIES, wd.element());
                     onDirectDamage.accept(amount, wd.element());   // inside the gate: a refused hit reports nothing

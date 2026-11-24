@@ -41,6 +41,34 @@ public final class BehaviourHits {
         return streaks;
     }
 
+    private final io.github.butterflysmp.rpg.core.enchant.HitChains chains = new io.github.butterflysmp.rpg.core.enchant.HitChains();
+
+    public io.github.butterflysmp.rpg.core.enchant.HitChains chains() {
+        return chains;
+    }
+
+    /**
+     * WILDFIRE (the seat's brief of 2026-11-24, PR E): the factor THIS primary hit's damage is multiplied by, recording the
+     * hit on its chain. Asked by both damage arms INSIDE their gate (a hit that lands), BEFORE {@code applyDamage}, so the
+     * number dealt, traced and reported is the multiplied one. 1.0, and nothing recorded, unless: the caster
+     * {@code countsAsHit} (a damage-over-time tick and every secondary damage never extend a chain and are never multiplied),
+     * the target is not a player, and the caster carries a {@code HitChain} whose weapon made THIS cast (its source is
+     * {@code <weapon>/...}). Two chains would multiply; one ships.
+     */
+    public double chainFactor(CombatWorld world, Caster caster, Combatant target) {
+        if (!caster.countsAsHit() || caster.behaviours().isEmpty()) return 1.0;
+        if (target.state().player()) return 1.0;
+        double factor = 1.0;
+        for (ActiveBehaviour active : caster.behaviours()) {
+            if (active.behaviour() instanceof EnchantBehaviour.HitChain chain
+                    && caster.source() != null && caster.source().startsWith(chain.weaponId() + "/")) {
+                factor *= chains.hit(caster.id(), active.enchantId(), target.id(), world.currentTick(), chain,
+                        active.level());
+            }
+        }
+        return factor;
+    }
+
     /** One primary hit by {@code caster} on {@code target}, in {@code world}. */
     public void onHit(CombatWorld world, Caster caster, Combatant target) {
         if (!caster.countsAsHit() || caster.behaviours().isEmpty()) return;
@@ -63,6 +91,8 @@ public final class BehaviourHits {
                 case EnchantBehaviour.GrantTrigger ignored -> { }
                 // A cast tune changes the weapon's OWN cast before it fires (CastTunes, at the commit), never a hit.
                 case EnchantBehaviour.CastTune ignored -> { }
+                // A chain multiplies the hit BEFORE it lands (chainFactor, asked by the damage arm), never after it.
+                case EnchantBehaviour.HitChain ignored -> { }
             }
         }
     }

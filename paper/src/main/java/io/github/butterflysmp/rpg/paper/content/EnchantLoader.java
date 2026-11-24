@@ -220,6 +220,26 @@ public final class EnchantLoader {
         if (b == null) throw new IllegalArgumentException("enchant '" + id + "': " + name + ": must be a block of keys");
         if (name.equals("grant_trigger")) return grantTrigger(b, id, weapon);
         if (name.equals("cast_tune")) return castTune(b, id, weapon);
+        // hit_chain (Wildfire, 2026-11-24): window_ticks, cap_percent, step_percent_by_level; its weapon is the enchant's
+        // own weapon:, which must be one this loader can see. No element: the chain multiplies the weapon's own hit.
+        if (name.equals("hit_chain")) {
+            if (weapon == null) {
+                throw new IllegalArgumentException("enchant '" + id + "' hit_chain: chains one weapon's hits, so the"
+                        + " enchant must declare weapon: <id>");
+            }
+            if (weaponDefinition.apply(weapon).isEmpty()) {
+                throw new IllegalArgumentException("enchant '" + id + "' hit_chain: weapon '" + weapon
+                        + "' is not a weapon this loader can see");
+            }
+            try {
+                return new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.HitChain(weapon,
+                        requiredInt(b, "window_ticks", id), requiredDouble(b, "cap_percent", id),
+                        requiredDoubles(b, "step_percent_by_level", id));
+            } catch (IllegalArgumentException ex) {
+                throw ex.getMessage().startsWith("enchant '") ? ex
+                        : new IllegalArgumentException("enchant '" + id + "' hit_chain: " + ex.getMessage(), ex);
+            }
+        }
         String element = requiredString(b, "element", id);
         if (!elementExists.test(element)) {
             throw new IllegalArgumentException("enchant '" + id + "' " + name + ": element '" + element
@@ -400,7 +420,7 @@ public final class EnchantLoader {
 
     /** Every behaviour block a file may declare, one at most (B1). */
     private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst", "shatter",
-            "focused_beam", "grant_trigger", "cast_tune");
+            "focused_beam", "grant_trigger", "cast_tune", "hit_chain");
 
     /**
      * FOCUSED BEAM'S WEAPON, refused by name (the seat's brief of 2026-11-24): the enchant must be weapon-specific, its

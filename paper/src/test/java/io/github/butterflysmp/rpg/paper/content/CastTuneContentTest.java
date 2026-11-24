@@ -162,6 +162,7 @@ class CastTuneContentTest {
                 "lapis_staff", List.of("polished_scepter", "lapis_crystal"),
                 "cursed_emerald", List.of("echo_beam", "focused_beam"),
                 "knell_beam", List.of("early_toll"),
+                "living_lantern", List.of("wildfire", "airburst_flames"),
                 "blaze_kings_staff", List.of(),
                 "breacher", List.of("shatter_caps"));
         var weapons = weapons();

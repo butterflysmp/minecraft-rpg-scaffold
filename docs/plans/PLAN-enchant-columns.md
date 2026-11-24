@@ -1272,3 +1272,120 @@ lines changed 1 against a pristine copy, each red, restored `cmp` identical, mar
 
 **UNMUTATED, said so:** paper's `traceVolleyShot` gate on mobtrace (server-side; the gate's `VOLLEYSHOT` lines are its
 witness); `executeFan`'s tuning (no fanned weapon has a tune; it is the same two calls as `execute`).
+
+## 24. PR E, WILDFIRE (`feat/wildfire`, on PR D)
+
+**As built.** `EnchantBehaviour.HitChain(weaponId, windowTicks, capPercent, stepPercentByLevel)`, `effect: hit_chain`;
+the pure store `core HitChains` beside `ShockwaveStreaks`, held by the server's one `BehaviourHits` (`chains()`); the hook
+`BehaviourHits.chainFactor`, asked through the new abstract `CombatWorld.hitChainFactor` by BOTH damage arms of
+`EffectApplier`, INSIDE their gate (a hit that lands) and BEFORE `applyDamage`, so the number dealt, traced (PLAYERHIT
+`sent=`) and reported is the multiplied one.
+
+- **The chain:** per player, enchant and MOB (Ben: "Same Target"). A hit extends it when it lands within 60 ticks of the
+  PREVIOUS hit on that mob (Ben: "B"); otherwise it starts again at this hit. **The boundary: exactly 60 after starts
+  again** (SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN; the same side Kinetic Tremors' window takes). Nothing else resets it.
+- **The factor of the n-th hit:** `1 + min(0.60, step x (n - 1))`, step 0.05 / 0.10 / 0.15 by level; the first hit has
+  none. **EXECUTED (jshell, 2026-11-24), level III on the Lantern's 45:** 45, 51.74999999999999, 58.5, 65.25, 72.0, 72.0
+  (PLAYERHIT prints `%.3f`: 51.750).
+- **Which hits:** only a caster that `countsAsHit` (so a scorch tick, Ignite, a shockwave, a crystal's shot and every
+  secondary damage never extend a chain and are never multiplied: READ, scorch and Ignite never pass through
+  `EffectApplier` at all, and `asSecondary` / `asNotAHit` clear `countsAsHit`), on a target that is not a player, whose
+  caster's source is the chain's weapon's (`living_lantern/...`).
+- **Forgotten** on the mob's death (`RpgListeners.onBehaviourTargetDeath`), on his quit (`onQuit`), and a chain 60 ticks
+  idle on his next hit (the prune).
+- **Its term in the sum:** `sent = hitBase x chargeScale x critMultiplier x WILDFIRE`, with `hitBase = (amount x score /
+  100) x enchantMultiplier + classDamageBonus + weaponLevelDamage`. **Against the other percent terms:** the damage
+  enchant's percent (Attunement) multiplies the SCALED BASE only, before the flat bonuses; Wildfire multiplies the WHOLE
+  dealt amount, the flat class and level bonuses included, like the crit.
+- **What it does to scorch's cap (READ, `BukkitCombatant.applyDamage`):** the cap basis is the dealt amount divided by the
+  crit (`declaredMagnitude = amount / crit.multiplier()`), so it INCLUDES Wildfire's factor: at x1.60 the Lantern's burn cap
+  is 0.5 x 72 = 36 against 22.5. A tick is `min(5% of max, cap)`, so on a mob whose 5% is below 22.5 (any mob of 450 max
+  health or less) nothing a player sees moves.
+- **Airburst Flames shares slot 0** (pinned: `WildfireContentTest.itSharesSlotZeroWithAirburstFlames`), so its bursts
+  never meet a chain; the roll offers Wildfire FIRST with Airburst beside it (`CastTuneContentTest.slotZeroOverManyRolls`).
+
+**A FINDING, FIXED IN THIS PR:** MUTCHAINWIN (`<` to `<=` on the extend test) stayed GREEN. The 60-tick boundary was held
+at TWO sites, the idle prune (which runs first) and the extend test, and each masked a mutation of the other. The extend
+test is gone: the prune is the one site (`HitChains.hit`'s comment says why), and MUTCHAINWIN2 on it reddens.
+
+```yaml
+# wildfire.yml, comments stripped
+display_name: "Wildfire"
+icon: blaze_powder
+max_level: 3
+effect: hit_chain
+class: universal
+weapon: living_lantern
+guaranteed: true
+hit_chain:
+  window_ticks: 60
+  cap_percent: 60
+  step_percent_by_level: [5, 10, 15]
+```
+
+**OPEN FOR BEN (SEAT PLACEHOLDERS 2026-11-24):** the boundary (exactly 60 starts again); the icon (`blaze_powder`); the line
+`+15% per hit on one foe within 3s of the last (max +60%)` (level III's).
+
+**Tests:** `core/.../enchant/HitChainsTest` (6), `core/.../WildfireTest` (5), `paper/.../WildfireContentTest` (4); the
+roster re-pinned to 22 (`EnchantLoaderTest`, `UniqueSlotContentTest`), the Lantern in `CastTuneContentTest`'s many-rolls
+row. **Mutations, each marker present 1, original gone 0, lines changed 1, red, restored `cmp` identical, markers left 0:**
+MUTCHAINWIN2 (the prune's `>=` to `>`: 2 rows), MUTCHAINCAP (no cap: 2), MUTCHAINFIRST (`n` for `n - 1`: 8), MUTCHAINTARGET
+(keyed by player: 3), MUTCHAINSEC (`countsAsHit` ignored: the secondary row), MUTCHAINWEAPON (the weapon check removed: the
+other-weapon row), MUTWILDHOOK (the Damage arm multiplies by 1.0: 3 rows), MUTWILDCAP (`cap_percent: 61`: 2), MUTWILDLINE
+(the window shown /10: the line row). MUTCHAINSEC's first run used a two-line needle that cannot match across CRLF: 0
+occurrences, ABORTED by the harness before any edit, then re-run on one line. **UNMUTATED, said so:** the two forgets in
+`RpgListeners` (listeners; their logic is `HitChainsTest`'s); the WeaponDamage arm's hook (no shipped chain weapon reads
+it; its line is the Damage arm's).
+
+## 25. PR F, MANA BURN: STOPPED (no branch), WITH THE READ AND A PROPOSED SPLIT
+
+### READ: HOW SCORCH AND IGNITE ARE BUILT (at `c1ebabab`)
+
+- **`scorch.yml`** declares only `kind: scorch`; the numbers are core `Scorch`'s: a tick every `PERIOD_TICKS` 20 for
+  `DEFAULT_DURATION_TICKS` 120 (six ticks), each `min(RATE_PER_SECOND 0.05 x victim max, cap)`; a hit buys stacks
+  (`stacksFor`: one per 2 landed), read ONLY as a yes/no gate.
+- **Where a scorch is applied:** INSIDE the damage port's handle, not in `EffectApplier`. `BukkitCombatant.applyDamage`
+  drains the store, then `ElementAccrual.forHit` decides accrual from the hit's element (fire's `applies_status: scorch`)
+  and `ctx.scorch().apply(id, …, stacks, cap, sourceId, duration, element, depth)`. **The cap is `CAP_FRACTION` 0.5 x the
+  hit's DECLARED magnitude** (`amount / crit`, so the charge, the gear score, the flat bonuses and now Wildfire are in it;
+  the crit is not).
+- **Two appliers (`DotStatus.apply`'s refresh arm):** the window refreshes; `cap = max(old, new)` (the seat's 2026-11-22
+  ruling); `applierId` (the credit) and the element = the NEWEST. A refresh never burns.
+- **Ignite:** on a scorched mob's death, `RpgListeners.onEntityDeath` reads the scorch's applier and depth, forgets the
+  scorch, and calls `Ignite.detonate(at, applier, victim, depth + 1)`: 20 ticks later, `DAMAGE` 6.0 fire, `DefenseRule.APPLIES`,
+  to every combatant `combatantsNear(at, RADIUS 4.0)` except the corpse and **EXCEPT EVERY PLAYER** (`c.state().player()`
+  is skipped). Credited to the scorch's applier (whose it is: the newest). Chains to depth 4. A second clause in
+  `BukkitCombatant` ignites an UNSCORCHED mob killed by a fire hit, credited to the hit's dealer.
+- **Ignite and a player: it cannot damage one, at any range** (the player skip, READ). On the server `combatantsNear` is a
+  BOX of half-width 4 (corners at 4 x sqrt(3) = 6.93), not a sphere; the skip makes the box irrelevant for him.
+
+### WHY IT STOPS (the brief's rule: "a step bigger than it reads: STOP on THAT PR with a split proposed")
+
+The seat's ruling stamps the bonus "when a hit from the weapon carrying the active enchant applies" the scorch. **The
+scorch is applied inside `BukkitCombatant.applyDamage`, where the caster's behaviours never arrive**: the port carries the
+amount, the dealer's id, the crit, the defence rule, the element and a `HitAccrual` (rule and depth). So the stamp needs a
+value carried THROUGH THE DAMAGE PORT (and `FakeWorld`'s handle), then `DotStatus.Active`, `ScorchStatus.apply`, the death
+listener's read and `Ignite.detonate`'s signature: an engine change across five classes beyond Mana Burn's own hook, on
+the path every fire hit and every Ignite takes.
+
+### PROPOSED SPLIT (each its own PR, on E or D; F does not depend on E)
+
+- **F1, the stamp carried:** `HitAccrual` (the per-hit descriptor the port already carries) gains `burnBonusPercent`;
+  `EffectApplier`'s Damage arm sets it from an active `mana_burn` behaviour on the caster (a primary hit by the weapon
+  carrying it); `BukkitCombatant` passes it to `scorch().apply`; `DotStatus.Active` keeps it. Unit-tested in core on the
+  fake's handle (which records the accrual it was handed).
+- **F2, the tick and Ignite:** the tick deals `min(5% of max, cap) x (1 + bonus/100)` (**the TICK, not the cap: PROPOSED**,
+  because a tick is `min(5% of max, cap)` and the 5% is the smaller on every mob of 450 max health or less under the
+  Lantern's 45 (cap 22.5), 200 or less under the Flint Staff's 20 (cap 10), 300 or less under Blaze King's Staff's 30
+  (cap 15), each at score 100, so a raised cap shows a player NOTHING there; a raised tick shows 5.0 -> 6.5 at
+  level III on a 100-health mob); `RpgListeners` reads the stamp
+  with the applier and depth before the forget, and `Ignite.detonate` deals `6 x (1 + bonus/100)` = 7.8 at III. The
+  unscorched-kill clause has no scorch, so no stamp: unchanged. **Two appliers (PROPOSED, the seat's to rule):** the stamp
+  follows the CREDIT (newest wins), because it is the newest applier's enchant that owns the burn and its Ignite; the cap
+  stays the larger. So a plain hit refreshing a Mana Burn scorch drops the stamp to 0, and a Mana Burn hit on a plain
+  scorch stamps it.
+- **F3, the content:** `mana_burn.yml`, unique (`element: fire`, `class: mage`, NOT guaranteed), three levels 10 / 20 / 30
+  (BEN), eligible on the Flint Staff, the Living Lantern and Blaze King's Staff (every fire mage weapon: READ, `grep -l
+  '^element: fire'` over the weapons with `class: mage`), and on no other gear (the unique pool's element + class filters).
+
+**Nothing built.** The gate on top therefore carries no Mana Burn row.

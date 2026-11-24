@@ -1243,6 +1243,8 @@ public final class RpgListeners implements Listener {
     public void onBehaviourTargetDeath(EntityDeathEvent event) {
         if (event.getEntity() instanceof Player) return;
         adapters.behaviourHits().streaks().forgetTarget(event.getEntity().getUniqueId());
+        // Wildfire's chains on it go too (2026-11-24: "forgotten on the target's death").
+        adapters.behaviourHits().chains().forgetTarget(event.getEntity().getUniqueId());
     }
 
     @EventHandler
@@ -2310,6 +2312,8 @@ public final class RpgListeners implements Listener {
         fights.onQuit(event.getPlayer());
         // His behavioural enchants' records go with him (Kinetic Tremors: "forgotten ... on his quit", 2026-11-23).
         adapters.behaviourHits().streaks().forgetPlayer(event.getPlayer().getUniqueId());
+        // And his Wildfire chains (2026-11-24: "forgotten on ... his quit").
+        adapters.behaviourHits().chains().forgetPlayer(event.getPlayer().getUniqueId());
         // And his orb (Lapis Crystal's D2, B6: removed on his quit).
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "quit");
 

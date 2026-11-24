@@ -189,7 +189,14 @@ public enum EnchantEffect {
      * a number of the weapon's OWN right click moved per level ({@code CastTunes}, at the commit and each volley shot),
      * never a hit. No {@code value_by_level} at the top level: the block owns its numbers.
      */
-    CAST_TUNE;
+    CAST_TUNE,
+
+    /**
+     * A BEHAVIOUR (B1): {@link EnchantBehaviour.HitChain}, the file's {@code hit_chain:} block (Wildfire, 2026-11-24): the
+     * weapon's own consecutive hits on one mob deal more, to a cap ({@code BehaviourHits.chainFactor}, asked by the damage
+     * arms). No {@code value_by_level} at the top level.
+     */
+    HIT_CHAIN;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides
