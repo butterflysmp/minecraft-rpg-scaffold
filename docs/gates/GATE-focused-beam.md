@@ -339,3 +339,130 @@ Bypass -File … -JarPath <the jar>`, exit 0.
 **THE OLD-FORM CONTROL WAS SHOWN ABLE TO FIRE:** the same needle against `run\plugins\rpg-0.1.0-SNAPSHOT.jar` (the
 `GATE-shatter-caps` boot's jar, written 2026-11-24 01:32:15, before PR 1) reads the old two-argument descriptor **True**
 and the new one **False**. So its ABSENT above is PR 1's removal, not a needle that cannot match.
+
+## THE RUN OF `3890aaa8`, 2026-11-24 (14:07 boot, 14:09:11-14:10:12 run): R0 PASSED; SIX ROWS MISS ON ONE SHARED CLAUSE
+
+> **DATED NOTE, 2026-11-24, written after the run; no prediction above is edited.** Booted on the seat's approval of
+> `3890aaa8` (#270, #271, #272) and Ben's "ready". Before the boot: `git status --porcelain` printed nothing; `HEAD` and
+> `git ls-remote --heads origin feat/focused-beam` both `3890aaa87c9c7d2c089e5b0ad3c628dd649d26df`; master `ee46a493…`,
+> #270 `6a1c4713…`, #271 `5590e000…` unchanged; push and pull-request CI SUCCESS on all three PR heads, matched by SHA.
+> Carried state: no `java` process; backup `..\rpg-run-backups\2026-11-24-pre-focused-beam` (Rpg 170 / 170 files, world
+> 193 / 193, `diff -rq` 0 lines each; the overworld 106 files); config `12:  dev-pack-on-join: true`; `rpgfight` 0
+> entries. "Booting now" was its own message, before the boot command. A marker made at 14:06:53, then the boot command;
+> deployed jar 14:07:17; `latest.log` first line 14:07:18; this boot's `Done` 14:07:23. R0 read 14:07:44; "R0 passed"
+> was its own message; **Ben joined 14:09:01, after it**, typed `/gamemode survival` (14:09:07) and `/rpg selftest
+> focused-beam` (14:09:11), and `/stop` (14:10:45). Nothing else was typed.
+
+### R0, READ
+
+- **R0a: AS PREDICTED.** `[14:07:22] … [Rpg] Build: 3890aaa8`.
+- **R0b: AS PREDICTED.** The block extracted from the committed file, `cmp` IDENTICAL to the copy run before the commit,
+  against the deployed jar: **29 `PRESENT`, 0 `ABSENT`**, then **7 `ABSENT`, 0 `PRESENT`**.
+- **R0c: AS PREDICTED.** `[Rpg] Loaded 11 abilities, 46 visuals, 5 statuses, 7 elements, 16 enchants, …`;
+  `Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions`; `Custom recipes: 7 registered, 0 replaced, 0 refused,
+  of 7 authored (7 minting gear)`; the candidates line once; the only `[Rpg]` WARN `volley_stone`'s pair; no `Refusing`,
+  `Skipping`, `SEVERE`, `Exception`, `Dev-only`, `currently prevented`. Deployed: `content/enchants/` 16 `.yml`, 0 `dev_`,
+  among them `focused_beam.yml`; `cursed_emerald.yml` line 182 `        range: 32`.
+- **R0d: AS PREDICTED.** Exactly one `[Rpg] Selftest: dev server, 375 scenarios across 46 gates [melee-cell, …,
+  shatter-caps, focused-beam]`; `365 scenarios` and `376 scenarios` absent.
+- **R0e: AS PREDICTED.** `FIGHTWORLD sweep path=…\rpgfight folders=0`; no `orphan`, no `deleting`.
+
+### THE SETUP AND THE CLEANS, READ
+
+- `PAD world=world stand=104,201,-4 floorY=200 interior=-2..45 east -13..13 south cells=7250 placed=0 repaired=0
+  ok=7250`; `PAD stood at=104.50 201.00 -3.50 yaw=-90.000 pitch=0.000`; **`PREFLIGHT ok box=0..42 east -6..10 south
+  air=1462/1462 floor solid=731/731`** (as predicted); `DIFFICULTY found=NORMAL set=NORMAL`; `SELF customHP=122.000/350.000
+  at=104.50 201.00 -3.50`. The setup's own clean `return=-106.27 63.00 18.98` (where he typed the command).
+- **Every clean (setup and the ten rows): `LINGER work=0 entities=0 radius=48` and `LEFTOVER living=0 radius=16`**,
+  every row's `return=104.50 201.00 -3.50`; `removed=` 0 at the setup and FB0, 2 at FBR (FBP's two zombies), 1 at every
+  other row.
+- **STAGE:** every row's `clear_inventory … kept=nexus@8` (`cleared=4` at FB0, `cleared=1` after) and `clear_state
+  cooldowns=cleared streaks=forgotten orb=none`. No `SKIPPED`, `VOID`, `ABORT`. `SELFTEST RUN FINISHED` 14:10:12, then
+  `RESTORED xp=712819 cell=ranger/fire gamemode=SURVIVAL held=1 mana=100.0 … spawn_mobs=false time=1000 … difficulty=NORMAL
+  health=120.000 … spawn_phantoms=true …` and `HEALTH saved=120.000 customHP=120.000/350.000 wrote=120.000`.
+- **Across the run (log lines 95-743): 16 `PLAYERHIT` (6 + 1 + 1 + 1 + 1 + 1 + 1 + 3 + 1, as the rows below), 6
+  `FOCUSED`, exactly 1 `SPLIT` (AFR; none in CSS), 0 `kinetic_tremors/shockwave`, 0 `orphan`, 0 `backstop`, 0
+  `Exception`, 0 `currently prevented`; no `[Rpg]` WARN beyond `volley_stone`'s pair.**
+- **Recorded without comment:** `MOBSEED … drowned gs=111 source=stored max=111` at 14:09:13 (FB0), and twenty `MOBREMOVE`
+  lines at 14:09:22 (during FB1), none of them a selftest mob's id.
+
+### EVERY `FOCUSED` LINE, WITH `tick - pressed`
+
+| row | `pressed` | `tick` | `tick - pressed` | predicted |
+|---|---|---|---|---|
+| FB1 | 2340 | 2359 | **19** | 20 |
+| FB2 | 2469 | 2488 | **19** | 20 |
+| FB3 | 2598 | 2617 | **19** | 20 |
+| FBP | 2727 | 2746 | **19** | 20 |
+| FBR | 2856 | 2875 | **19** | 20 |
+| FBT | 3094 | 3113 | **19** | 20 |
+
+Every one reads `from=104.500,202.620,-3.500 range=48.000`, as predicted.
+
+### THE ROWS, IN THREE CLASSES
+
+**MISS (six rows, ONE shared clause): FB1, FB2, FB3, FBP, FBR, FBT.** Each read **`tick - pressed` = 19** against the
+predicted 20 (the rows' header: "`tick` minus `pressed` = 20 (the brief's reading: at least 20 …)"). **Every other clause
+of each of the six read as predicted** (below). **The cause is NOT READ.** Two INFERRED candidates, neither checked
+in the server jar: (a) Paper's entity scheduler counts its delay down on the entity's own tick, and the press (the
+selftest's `use`, a synthetic `PlayerInteractEvent`) runs before his entity tick in the same server tick, so the first
+count is spent on the press's own tick; (b) `Bukkit.getCurrentTick()` is read in two different phases of a tick. **The
+plain volley's wind-up is scheduled by the same `scheduleOn`, so it is the same 19 on this clock** (FB0 carries no
+`FOCUSED` line to show it). **The fake world fires `scheduleOn(…, 20, …)` exactly 20 later** (`FakeWorld.scheduleOn`,
+READ), so `FocusedBeamTest.theRayLeavesAtTheWindupsEndAndNotBefore`'s 20 is the fake's, not the server's: a one-tick
+divergence between the fake and the server, recorded, not fixed. The hit itself is INFERRED one tick after the `FOCUSED`
+tick (the chunk walk), so at `pressed + 20`, but no line prints it: **the brief's "at least 20 apart" for the HIT is
+UNREAD.**
+
+- **FB1.** `"  Slot 0: [*focused_beam I]"`, **`"  active: focused_beam I (after the wind-up, fires one beam of 108 damage
+  reaching 48 blocks)"`**; **`MANA current=100.000`, `MANA current=60.000`**, then `MANA current=64.000` after 80 ticks
+  (never 20 or below); one `FOCUSED … pressed=2340 tick=2359`; **exactly one PLAYERHIT `source=cursed_emerald/right_click
+  … element=kinetic sent=216.000 crit=true`** (the allowed second reading of 108), logged after the `FOCUSED` line; no
+  27; nothing more in the row. Probe M **`784.000`** (the crit's allowed reading), d 10.000.
+- **FB2.** `"  active: focused_beam II (… 162 damage reaching 48 blocks)"`; MANA 100.000, 60.000, 64.000; `FOCUSED …
+  pressed=2469 tick=2488`; **exactly one PLAYERHIT `sent=162.000 crit=false`**; no 27. Probe M **`838.000`**, d 10.000.
+- **FB3.** `"  active: focused_beam III (… 216 damage reaching 48 blocks)"`; MANA 100.000, 60.000, 64.000; `FOCUSED …
+  pressed=2598 tick=2617`; **exactly one PLAYERHIT `sent=432.000 crit=true`** (the allowed second reading of 216); no 27.
+  Probe M **`568.000`** (the crit's allowed reading), d 10.000.
+- **FBP.** `FOCUSED … pressed=2727 tick=2746`; **exactly one PLAYERHIT, on N, `sent=108.000 crit=false`; none on F.**
+  Probe N **`892.000`**, d 10.000; probe F **`1000.000`**, d 14.000.
+- **FBR.** `FOCUSED … range=48.000 pressed=2856 tick=2875`; **exactly one PLAYERHIT on F `sent=108.000 crit=false`.**
+  Probe F **`892.000`**, d 40.000.
+- **FBT.** `"  Slot 0: [*focused_beam I]"`, `"  Slot 1: [*kinetic_tremors I]"`, both active lines; `FOCUSED …
+  pressed=3094 tick=3113`; **exactly one PLAYERHIT `sent=108.000 crit=false`; no `kinetic_tremors/shockwave`.** Probe M
+  **`892.000`**, d 10.000.
+
+**DID NOT TEST WHAT IT WAS MEANT TO: none.**
+
+**READ AS PREDICTED (four rows): FB0, FBR0, AFR, CSS.**
+
+- **FB0.** `REPLY "This weapon carries no enchant data."`; **`MANA current=100.000`, then `MANA current=60.000`**, then
+  `MANA current=63.000` after 60 ticks (never 20 or below); **exactly SIX PLAYERHITs `source=cursed_emerald/right_click …
+  element=kinetic sent=27.000 crit=false`**; **no `FOCUSED` line.** Probe M **`838.000`**, d 10.000.
+- **FBR0.** No enchant data; **no `FOCUSED` line; no PLAYERHIT.** Probe F **`1000.000`**, d 40.000.
+- **AFR.** `"  Slot 0: [*airburst_flames II]"`, `"  active: airburst_flames II (splits after 6 blocks into 3 bursts of 30
+  damage)"`; **exactly one `SPLIT caster=<him> source=living_lantern/right_click at=110.800,202.620,-3.500 bursts=3
+  tick=3240`**; **THREE PLAYERHITs on H `element=fire sent=30.000 crit=false`** (the reading: three, as AF2 read); no
+  `sent=45.000`; two `DOTTICK … status=scorch … sent=15.000 cap=15.000` (recorded). Probe H **`880.000`** (`1000 - 90 -
+  30` of burns, recorded; `fireTicks=73`), d 16.492. **The same figures `GATE-enchant-changes.md` AF2 read: the filter
+  left Airburst on its own weapon as it was.**
+- **CSS.** `"Crystal Shard Staff -- 1 slot(s)"`, `"  Slot 0: [*airburst_flames II]"` and its active line; **NO `SPLIT` line
+  in the row; exactly one PLAYERHIT `source=crystal_shard_staff/right_click … element=kinetic sent=16.000 crit=false`; no
+  `sent=30.000`, no `element=fire`.** Probe M **`984.000`**, d 10.000. **The weapon filter, read on the server.**
+
+### AFTER HIS `/stop`
+
+`rpgfight` 0 entries; the overworld 106 files (106 at the backup); `All dimensions are saved` 14:10:46; no `java`
+process; **his saved position `-103.38 63.00 20.12`** (READ off his player file's `Pos` with a scratchpad NBT reader,
+controlled on the backup's file, which reads `-106.27 63.00 18.98`, the setup's `return=`), not the pad.
+
+### UNREAD, AND WHY
+
+- **The cause of the 19** (above): two INFERRED candidates, neither read in the server jar.
+- **The hit's own tick:** PLAYERHIT carries none; INFERRED one tick after the `FOCUSED` line.
+- **The 48-block end itself:** by design (the pad ends 45 out); `FocusedBeamTest` holds it.
+- **The aim read at the wind-up's end (Ben's "4. Yes"): UNREAD ON A SERVER.** Held by
+  `FocusedBeamTest.theAimIsReadAtTheWindupsEndNotAtThePress` and MUTLOCK. **By the seat's ruling of 2026-11-24 the row that
+  turns him during the wind-up is added to the next gate that touches the Cursed Emerald.**
+- **A weapon swap, a death or a quit during the wind-up:** READ in the code (above); no row staged one.
+- **The beam's look and the wind-up as heard:** client-side; this gate has no ASK.
