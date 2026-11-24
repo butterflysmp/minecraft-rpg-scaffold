@@ -66,12 +66,12 @@ class EnchantRollTest {
     }
 
     private static EnchantState roll(GearClass c, List<Rollable> roster, DoubleSupplier d) {
-        return EnchantRoll.roll(Optional.empty(), EnchantRoll.Has.EVERY, c, roster, BENS, d);
+        return EnchantRoll.roll("test_gear", Optional.empty(), EnchantRoll.Has.EVERY, c, roster, BENS, d);
     }
 
     /** Slots 1..3: the normal ones. */
     private static List<EnchantSlot> normal(EnchantState state) {
-        return state.slots().subList(1, state.slots().size());
+        return state.slots().subList(2, state.slots().size());
     }
 
     private static int distinctCount(List<String> ids) {
@@ -88,11 +88,12 @@ class EnchantRollTest {
 
     @Test
     void everyRolledPieceGetsExactlyFourSlots() {
-        // V1: the unique slot and three normal ones. A fifth would be refused by EnchantMenuLayout.overflow.
+        // W2: the weapon slot, the unique slot and two normal ones (V1 was the unique slot and three normal). A fifth would be refused by EnchantMenuLayout.overflow.
         assertEquals(4, roll(GearClass.MELEE, ROSTER, always(0.0)).slots().size());
         assertEquals(4, roll(GearClass.MAGE, ROSTER, always(0.99)).slots().size());
         assertEquals(4, EnchantRoll.SLOTS);
-        assertEquals(0, EnchantRoll.UNIQUE_SLOT);
+        assertEquals(0, EnchantRoll.WEAPON_SLOT);
+        assertEquals(1, EnchantRoll.UNIQUE_SLOT, "the unique slot moved to column 4 (W2, 2026-11-23)");
         // Mutation: SLOTS 4 -> 3, or the loop bound -> reddens.
     }
 
@@ -147,7 +148,7 @@ class EnchantRollTest {
 
     @Test
     void aShieldIsNeverOfferedAWeaponEnchantAndNoWeaponIsEverOfferedBulwark() {
-        for (String id : idsIn(roll(GearClass.SHIELD, ROSTER, always(0.0)).slots().get(1))) {
+        for (String id : idsIn(roll(GearClass.SHIELD, ROSTER, always(0.0)).slots().get(2))) {
             assertTrue(id.equals("bulwark") || id.equals("thorns") || id.equals("unbreaking"),
                     "a shield was offered '" + id + "'");
         }
@@ -243,11 +244,11 @@ class EnchantRollTest {
 
     @Test
     void aRolledStateSurvivesTheWireGrammar() {
-        // Slot 0 empty, slots 1-3 filled: the empty slot round-trips as ":-1".
+        // Slots 0 and 1 empty (armor: no weapon pool, no element), slots 2-3 filled: an empty slot round-trips as ":-1".
         EnchantState rolled = roll(GearClass.ARMOR, ROSTER, always(0.0));
         EnchantState decoded = EnchantCodec.decode(EnchantCodec.encode(rolled));
         assertEquals(rolled, decoded);
-        assertTrue(EnchantCodec.encode(rolled).startsWith("v1;:-1;"), EnchantCodec.encode(rolled));
+        assertTrue(EnchantCodec.encode(rolled).startsWith("v1;:-1;:-1;"), EnchantCodec.encode(rolled));
     }
 
     @Test

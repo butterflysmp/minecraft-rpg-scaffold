@@ -40,8 +40,24 @@ public final class EnchantLoader {
      * @param dev           {@code SelfTestGuard.DEV_PROPERTY}, the one dev-server marker the loot's dev sources also read
      */
     public EnchantLoader(Logger log, java.util.function.Predicate<String> elementExists, boolean dev) {
+        this(log, elementExists, id -> java.util.Optional.empty(), dev);
+    }
+
+    /**
+     * W1 (2026-11-23): the class of a LOADED WEAPON by id, empty for an id that is not one. An enchant's {@code weapon:}
+     * that does not name a loaded weapon is refused, and so is one whose {@code class:} could never match that weapon's.
+     */
+    private final java.util.function.Function<String, java.util.Optional<GearClass>> weaponClass;
+
+    /**
+     * @param weaponClass a loaded weapon's class by id, empty when the id is not a loaded weapon (weapons load first, in
+     *                    {@code RpgPlugin}, since the columns were re-cut)
+     */
+    public EnchantLoader(Logger log, java.util.function.Predicate<String> elementExists,
+                         java.util.function.Function<String, java.util.Optional<GearClass>> weaponClass, boolean dev) {
         this.log = log;
         this.elementExists = elementExists;
+        this.weaponClass = weaponClass;
         this.dev = dev;
     }
 
@@ -100,9 +116,13 @@ public final class EnchantLoader {
     }
 
     private EnchantDefinition parse(String id, ConfigurationSection s) {
+        GearClass gearClass = gearClass(s.getString("class"), id);
+        String element = element(s.getString("element"), id);
+        String weapon = weapon(s.getString("weapon"), id, gearClass);
+        // Both element: and weapon: is refused by the RECORD (EnchantDefinition), by name: one place owns that rule.
         return new EnchantDefinition(id, s.getString("display_name", id), s.getInt("max_level", 1),
                 effect(s.getString("effect"), id),
-                gearClass(s.getString("class"), id),
+                gearClass,
                 // getIntegerList returns an EMPTY list for an absent key, never null. A durability
                 // enchant therefore lands on the empty list the record requires of it, and a damage
                 // enchant with the key forgotten is refused by the record rather than here -- one
@@ -114,7 +134,29 @@ public final class EnchantLoader {
                 // Bukkit registry that this loader deliberately cannot.
                 s.getString("icon", EnchantDefinition.DEFAULT_ICON),
                 requires(s.getString("requires"), id),
-                element(s.getString("element"), id));
+                element, weapon);
+    }
+
+    /**
+     * W1: absent is not weapon-specific; present makes the enchant WEAPON-SPECIFIC to that one weapon, and must name a
+     * LOADED WEAPON (not a shield, armour piece, tool or accessory: only a weapon has a weapon slot worth filling). Refused
+     * by name otherwise, and refused when the enchant's {@code class:} names a class other than that weapon's, because
+     * such an enchant could never roll (the weapon pool applies the class filter, as the unique pool does).
+     */
+    private String weapon(String raw, String id, GearClass gearClass) {
+        if (raw == null) return null;
+        String weapon = raw.trim().toLowerCase(java.util.Locale.ROOT);
+        java.util.Optional<GearClass> cls = weapon.isEmpty() ? java.util.Optional.empty() : weaponClass.apply(weapon);
+        if (cls.isEmpty()) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares weapon: '" + raw
+                    + "', which is not a loaded weapon");
+        }
+        if (gearClass != null && gearClass != cls.get()) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares weapon: " + weapon + " (class "
+                    + cls.get().name().toLowerCase(java.util.Locale.ROOT) + ") and class: "
+                    + gearClass.name().toLowerCase(java.util.Locale.ROOT) + "; it could never roll");
+        }
+        return weapon;
     }
 
     /**

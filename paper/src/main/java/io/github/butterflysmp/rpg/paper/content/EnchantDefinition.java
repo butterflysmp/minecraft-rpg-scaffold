@@ -72,7 +72,18 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 EnchantEffect effect, GearClass gearClass,
                                 List<Integer> valueByLevel, String icon,
                                 io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires,
-                                String element) {
+                                String element, String weapon) {
+
+    /**
+     * A UNIQUE (an {@code element}) or NORMAL enchant, never weapon-specific: every enchant shipped before the columns
+     * were re-cut (the seat's W1, 2026-11-23), which added {@code weapon}: non-null makes the enchant WEAPON-SPECIFIC to
+     * the one weapon of that id.
+     */
+    public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect, GearClass gearClass,
+                             List<Integer> valueByLevel, String icon,
+                             io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires, String element) {
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, icon, requires, element, null);
+    }
 
     /**
      * A NORMAL enchant (no {@code element:}) with a quantity requirement: every enchant shipped before 2026-11-23. The
@@ -113,6 +124,13 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         // refused, by name, an element that names no loaded element).
         if (element != null && element.isBlank()) {
             throw new IllegalArgumentException("enchant '" + id + "' declares a blank element; leave it out for a normal enchant");
+        }
+        if (weapon != null && weapon.isBlank()) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares a blank weapon; leave it out unless it belongs to one weapon");
+        }
+        if (element != null && weapon != null) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares both element: " + element + " and weapon: "
+                    + weapon + "; a weapon-specific enchant belongs to one weapon and is never also unique");
         }
         if (displayName == null || displayName.isBlank()) {
             throw new IllegalArgumentException("enchant '" + id + "' requires display_name");
@@ -373,5 +391,10 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
     /** True when this enchant is UNIQUE (U1): it rolls only in slot 0, only on gear of its {@code element}. */
     public boolean isUnique() {
         return element != null;
+    }
+
+    /** True when this enchant is WEAPON-SPECIFIC (W1): it rolls only in slot 0, only on the weapon {@code weapon} names. */
+    public boolean isWeaponSpecific() {
+        return weapon != null;
     }
 }

@@ -153,6 +153,58 @@ class EnchantLoaderTest {
                 && w.contains("not a loaded element")), warnings.toString());
     }
 
+    /**
+     * W1 (2026-11-23): weapon: names a LOADED WEAPON, or the file is refused by name; declaring both weapon: and element:
+     * is refused by name; and a class: that could never match the named weapon is refused by name. Each bad file beside a
+     * good one, so the rows can fail.
+     */
+    @Test
+    void aWeaponSpecificEnchantIsRefusedByNameUnlessItNamesALoadedWeaponAloneAndAMatchingClass(@TempDir Path dir)
+            throws IOException {
+        String head = "display_name: \"X\"\nmax_level: 1\neffect: durability\n";
+        Files.writeString(dir.resolve("good.yml"), head + "class: universal\nweapon: lapis_staff\n");
+        Files.writeString(dir.resolve("good_classed.yml"), head.replace("durability", "damage")
+                + "class: mage\nweapon: lapis_staff\nvalue_by_level: [5]\n");
+        Files.writeString(dir.resolve("unloaded.yml"), head + "class: universal\nweapon: lapis_stafff\n");
+        Files.writeString(dir.resolve("a_shield.yml"), head + "class: universal\nweapon: shield\n");
+        Files.writeString(dir.resolve("both.yml"), head + "class: universal\nweapon: lapis_staff\nelement: kinetic\n");
+        Files.writeString(dir.resolve("wrong_class.yml"), head.replace("durability", "damage")
+                + "class: melee\nweapon: lapis_staff\nvalue_by_level: [5]\n");
+        List<String> warnings = new java.util.ArrayList<>();
+        Logger log = capturing(warnings);
+        java.util.function.Function<String, java.util.Optional<io.github.butterflysmp.rpg.core.weapon.GearClass>> weapons =
+                id -> id.equals("lapis_staff") ? java.util.Optional.of(io.github.butterflysmp.rpg.core.weapon.GearClass.MAGE)
+                        : java.util.Optional.empty();
+        EnchantRegistry r = new EnchantLoader(log, Set.of("kinetic")::contains, weapons, false).loadAll(dir.toFile());
+
+        assertEquals("lapis_staff", r.find("good").orElseThrow().weapon(), "the control: a loaded weapon is accepted");
+        assertTrue(r.find("good").orElseThrow().isWeaponSpecific());
+        assertEquals("lapis_staff", r.find("good_classed").orElseThrow().weapon(), "the control: its own class is accepted");
+        assertTrue(r.find("unloaded").isEmpty());
+        assertTrue(r.find("a_shield").isEmpty(), "a shield is gear but not a weapon");
+        assertTrue(r.find("both").isEmpty());
+        assertTrue(r.find("wrong_class").isEmpty());
+        assertTrue(warnings.stream().anyMatch(w -> w.contains("unloaded") && w.contains("weapon: 'lapis_stafff'")
+                && w.contains("not a loaded weapon")), warnings.toString());
+        assertTrue(warnings.stream().anyMatch(w -> w.contains("a_shield") && w.contains("weapon: 'shield'")
+                && w.contains("not a loaded weapon")), warnings.toString());
+        assertTrue(warnings.stream().anyMatch(w -> w.contains("'both' declares both element: kinetic and weapon: lapis_staff")),
+                warnings.toString());
+        assertTrue(warnings.stream().anyMatch(w -> w.contains("'wrong_class' declares weapon: lapis_staff (class mage) and"
+                + " class: melee; it could never roll")), warnings.toString());
+    }
+
+    /** The 3-argument loader knows no weapon, so ANY weapon: is refused (every test that loads the normal roster). */
+    @Test
+    void theLoaderWithNoWeaponsRefusesEveryWeaponKey(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve("w.yml"), "display_name: \"W\"\nmax_level: 1\neffect: durability\nclass: universal\n"
+                + "weapon: lapis_staff\n");
+        Files.writeString(dir.resolve("n.yml"), "display_name: \"N\"\nmax_level: 1\neffect: durability\nclass: universal\n");
+        EnchantRegistry r = new EnchantLoader(quietLogger(), Set.of()::contains, false).loadAll(dir.toFile());
+        assertTrue(r.find("w").isEmpty());
+        assertTrue(r.find("n").isPresent(), "the control");
+    }
+
     /** No element key: a NORMAL enchant, as all eleven are. */
     @Test
     void noElementKeyIsANormalEnchant() throws IOException {

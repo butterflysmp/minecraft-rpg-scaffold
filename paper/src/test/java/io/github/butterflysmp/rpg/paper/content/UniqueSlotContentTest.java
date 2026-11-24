@@ -23,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * THE UNIQUE SLOT OVER EVERY SHIPPED GEAR DEFINITION (the seat's brief and amendment, 2026-11-23), with the dev-only
+ * THE UNIQUE SLOT, AND SINCE THE COLUMNS WERE RE-CUT THE WEAPON SLOT (W1-W4), OVER EVERY SHIPPED GEAR DEFINITION (the
+ * seat's briefs of 2026-11-23), with the dev-only
  * example LOADED (as on a dev server), so the unique pool is not empty everywhere and the rows can fail.
  *
  * <p>Recounted with a control: 24 weapons, 1 shield, 24 armour pieces, 5 tools, 6 accessories (60); 11 real enchants
@@ -34,7 +35,7 @@ class UniqueSlotContentTest {
     /**
      * EVERY SHIPPED GEAR'S POOL AT MASTER {@code 383ded19}, before this PR: captured by running
      * {@code EnchantRoll.poolFor(EnchantRollItems.has(g), GearItems.gearClassOf(g), roster)} over the same five loaders in
-     * a worktree of that commit (2026-11-23), sorted by id. The NORMAL pool (slots 1-3) on this branch must equal it for
+     * a worktree of that commit (2026-11-23), sorted by id. The NORMAL pool (slots 2-3 since the re-cut; 1-3 before) must equal it for
      * every one of the 60, with the dev unique enchant loaded.
      */
     private static final List<String> MASTER_POOLS = List.of(
@@ -145,7 +146,7 @@ class UniqueSlotContentTest {
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
-    /** Slots 1-3's pool, for every shipped gear, is master's pool exactly: the unique mechanism took nothing from it. */
+    /** Slots 2-3's pool (W4), for every shipped gear, is master's pool exactly: neither new mechanism took anything from it. */
     @Test
     void theNormalPoolOfEveryShippedGearIsUnchangedFromMaster() {
         Loaded l = load();
@@ -204,34 +205,59 @@ class UniqueSlotContentTest {
     }
 
     /**
-     * 200 seeded rolls of every shipped gear through Ben's real cascade file: four slots; slot 0 only from the unique pool,
-     * slots 1-3 only from the normal pool; at most four candidates a slot.
+     * W2 over every shipped gear, at this PR (the columns re-cut, before any weapon-specific enchant ships): the weapon
+     * pool is EMPTY everywhere, so slot 0 rolls empty on all 60. The PRs that ship Lapis Crystal and Airburst Flames
+     * change exactly their own weapon's row.
      */
     @Test
-    void overEveryShippedGearSlotZeroIsUniqueOnlyAndTheOthersNormalOnly() {
+    void theWeaponPoolOfEveryShippedGearIsEmptyUntilAWeaponEnchantShips() {
+        Loaded l = load();
+        var roster = EnchantRollItems.roster(l.dev().all());
+        int checked = 0;
+        for (GearDefinition g : l.gear()) {
+            var cls = GearItems.gearClassOf(g);
+            if (cls == null) continue;
+            assertEquals(List.of(), ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
+            checked++;
+        }
+        assertEquals(60, checked, "the control: every shipped gear was asked");
+        assertTrue(l.dev().all().stream().noneMatch(EnchantDefinition::isWeaponSpecific), "no shipped enchant names a weapon yet");
+    }
+
+    /**
+     * 200 seeded rolls of every shipped gear through Ben's real cascade file: four slots; slot 0 only from the weapon pool,
+     * slot 1 only from the unique pool, slots 2-3 only from the normal pool (W2); at most four candidates a slot.
+     */
+    @Test
+    void overEveryShippedGearEachSlotHoldsOnlyItsOwnKind() {
         Loaded l = load();
         var roster = EnchantRollItems.roster(l.dev().all());
         Random random = new Random(383L);
-        int slotZeroFilled = 0, normalFilled = 0;
+        int uniqueFilled = 0, normalFilled = 0;
         for (GearDefinition g : l.gear()) {
             var cls = GearItems.gearClassOf(g);
             if (cls == null) continue;
             List<String> unique = ids(EnchantRoll.uniquePoolFor(g.gearElement(), EnchantRollItems.has(g), cls, roster));
+            List<String> weapon = ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster));
             List<String> normal = ids(EnchantRoll.normalPoolFor(EnchantRollItems.has(g), cls, roster));
             for (int i = 0; i < 200; i++) {
-                EnchantState s = EnchantRoll.roll(g.gearElement(), EnchantRollItems.has(g), cls, roster, l.cascade(),
+                EnchantState s = EnchantRoll.roll(g.id(), g.gearElement(), EnchantRollItems.has(g), cls, roster, l.cascade(),
                         random::nextDouble);
                 assertEquals(4, s.slots().size(), g.id());
                 for (int slot = 0; slot < 4; slot++) {
                     assertTrue(s.slots().get(slot).candidates().size() <= 4);
                     for (EnchantCandidate cand : s.slots().get(slot).candidates()) {
-                        List<String> allowed = slot == 0 ? unique : normal;
+                        List<String> allowed = switch (EnchantRoll.kindOf(slot)) {
+                            case WEAPON -> weapon;
+                            case UNIQUE -> unique;
+                            case NORMAL -> normal;
+                        };
                         assertTrue(allowed.contains(cand.enchantId()), g.id() + " slot " + slot + ": " + cand.enchantId());
-                        if (slot == 0) slotZeroFilled++; else normalFilled++;
+                        if (slot == EnchantRoll.UNIQUE_SLOT) uniqueFilled++; else normalFilled++;
                     }
                 }
             }
         }
-        assertTrue(slotZeroFilled > 0 && normalFilled > 0, "the control: both kinds of slot were filled");
+        assertTrue(uniqueFilled > 0 && normalFilled > 0, "the control: both kinds of slot were filled");
     }
 }

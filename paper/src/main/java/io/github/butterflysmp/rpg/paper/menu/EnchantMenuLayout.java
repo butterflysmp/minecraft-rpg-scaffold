@@ -170,11 +170,27 @@ public final class EnchantMenuLayout {
      */
     public static final int INFO_SLOT = 8;
 
+    // THE "Unique" LABEL AT INDEX 1 WAS REMOVED, 2026-11-23 (the seat's W3; Ben: "We can remove the placeholder
+    // names/labels above the columns."). Nothing replaces it: index 1 is filler. The constant went with it, so no caller
+    // can still paint there.
+
+    /** What an empty weapon or unique slot shows in its column's first cell: a name and one lore line. */
+    public record EmptyMarker(String name, String lore) {}
+
     /**
-     * The "Unique" label over the unique slot's column: row 1, column 2. <b>SEAT PLACEHOLDER 2026-11-23, OPEN FOR
-     * BEN</b>: Ben asked for the word "Unique" on the first slot (his first message); where it sits is the seat's.
+     * THE TWO EMPTY-SLOT MARKERS (the seat's W3, 2026-11-23): the two columns that can be empty, each with its own words.
+     * A normal slot never shows one (it has the normal pool, which no shipped gear has empty). <b>BOTH WORDINGS ARE SEAT
+     * PLACEHOLDERS 2026-11-23, OPEN FOR BEN</b> (he was told the marker stays unless he says otherwise): the unique one is
+     * #249's, unchanged; the weapon one is new.
      */
-    public static final int UNIQUE_LABEL_SLOT = 1;
+    public static Optional<EmptyMarker> emptyMarkerFor(int slot) {
+        return switch (io.github.butterflysmp.rpg.core.enchant.EnchantRoll.kindOf(slot)) {
+            case WEAPON -> Optional.of(new EmptyMarker("No weapon enchant", "Nothing is tied to this weapon yet."));
+            case UNIQUE -> Optional.of(new EmptyMarker("No unique enchant",
+                    "Nothing unique is tied to this item's element yet."));
+            case NORMAL -> Optional.empty();
+        };
+    }
 
     /**
      * The bound: FOUR enchant slots (the unique one and three normal) of FOUR candidates each (2026-11-23, the seat's
