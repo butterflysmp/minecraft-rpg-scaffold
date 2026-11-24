@@ -465,3 +465,51 @@ printed `LINT mage-guaranteed#MB4a PROBE_REACH probe b: 6 out, reach 6 (one bloc
 row; restored, `cmp` identical. **The lint also caught a real defect in the first draft of MB3, MB4a and MB5** (`ENCHANT_ORDER`:
 a slot-1 candidate after `rpg enchant clear`, when only slot 0 can be added); fixed by staging `large_sparks` at level 0 in
 slot 0 first, as the other slot-1 rows of this repo do.
+
+## THE BOOT, 2026-11-24 (READINGS): R1 PASSED; THE RUN NEVER REACHED A ROW, IT ABORTED AT THE PAD FIVE TIMES
+
+**Status: BOOTED ONCE at `9a6dfacd` (the seat's approval; Ben's "ready"); R1 READ AS PREDICTED; EVERY ROW, MG1 TO MB5, DID NOT
+TEST WHAT IT WAS MEANT TO (NOT RUN).** No prediction above is edited.
+
+**The checklist (`booting.md`), as ticked in the boot's report:** the twelve heads equal to the seat's list by
+`git ls-remote`, CI `success` on every head (#284 included) matched by `headSha`; on `feat/mage-guaranteed-gate-2`, `git
+status --porcelain` empty, HEAD `9a6dfacdf1dd…` equal to `ls-remote`; no `java` process; a fresh backup in a new folder,
+`rpg-run-backups\2026-11-24-pre-mage-guaranteed` (`world` 193 / 193 files, `Rpg` 171 / 171); config line 12
+`  dev-pack-on-join: true`; no `run\rpgfight`; the world's saved difficulty `normal` (read from `level.dat`); "BOOTING NOW"
+in its own message, and the boot command only after Ben's next word. **Two disagreements with this file's CARRIED STATE,
+both wording:** step 2 names `run\world_nether` and `run\world_the_end`, which do not exist (every dimension lives in
+`run\world\dimensions\…`; the last backup, `2026-11-24-pre-shatter-caps`, held `world` and `Rpg`, and so does this one);
+step 5 names `feat/mage-guaranteed-gate` where R1 names `-gate-2` (the head checked).
+
+**The boot:** `./scripts/dev-server.sh --refresh-content`; a marker made at 17:56:28, after the command; the deployed jar
+at 17:56:49; `latest.log`'s first line 17:56:50; **`Done (5.524s)` at 17:56:55**, this boot's.
+
+| row | prediction | READING |
+|---|---|---|
+| R1a | `[Rpg] Build: 9a6dfacd`, not dirty | **AS PREDICTED.** `[17:56:54] … [Rpg] Build: 9a6dfacd` |
+| R1b | 22 / 0, then 7 ABSENT / 0, then 5 ABSENT / 0, on the DEPLOYED jar | **AS PREDICTED** on `run\plugins\rpg-0.1.0-SNAPSHOT.jar`: 22 PRESENT 0 ABSENT; 7 ABSENT 0 PRESENT; 5 ABSENT 0 PRESENT. `volley_stone`, `volley_beam`, `volley_cast` each in **0 of 1432** entries; the control `boltor` in **20** |
+| R1c | 44 visuals, 23 enchants, 23 weapons; the loot line word for word; **0 `[Rpg]` WARN**, with its control; no Refusing / Skipping / SEVERE / Exception | **AS PREDICTED.** `Loaded 11 abilities, 44 visuals, 5 statuses, 7 elements, 23 enchants, 3 pools, 6 fragments, 6 aspects, 23 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 7 recipes, 1 ores, 4 vein sizes`; the loot line as predicted; `WARN]: [Rpg]` **0**, the control `INFO]: [Rpg] Loaded` **6**; none of the words. **Not predicted, not ours:** six `[Paper Async Task Handler Thread - 1/WARN]` lines, Paper's notice that 26.1.2 is "4 release(s) behind the latest stable release (26.3)" |
+| R1d | `396 scenarios across 47 gates [… mage-guaranteed]`; 390 and 397 absent | **AS PREDICTED** |
+| R1e | `FIGHTWORLD sweep … folders=0`, no deleting, no orphan | **AS PREDICTED.** `FIGHTWORLD sweep path=…\run\world\dimensions\rpgfight folders=0` |
+
+**R1 was read at 17:57:12 and "R1 passed" sent in its own message; Ben's first `joined the game` is 17:57:25, after it.**
+
+**THE RUN: FIVE STARTS, FIVE ABORTS, NO ROW.** `/gamemode survival` at 17:57:34; `/rpg selftest mage-guaranteed` at 17:57:35,
+17:57:43, 17:57:48, 17:57:59 and 17:58:34, each `SELFTEST RUN START mage-guaranteed rows=21 selftest=9a6dfacd`, then in the
+setup `PAD fail chunk 6,-2 did not stay loaded` (three times) or `chunk 7,-2` (twice), `SELFTEST RUN ABORTED pad: …` and
+`SELFTEST RUN RESTORED …` (his state put back each time: `xp=712824`, `difficulty=NORMAL`, `gamemode=SURVIVAL`). **No
+`SELFTEST mage-guaranteed <row> START` line exists for any row**, so MG1, MG2R, MG3 to MG11 and MB1 to MB5 are **DID NOT
+TEST WHAT THEY WERE MEANT TO: NOT RUN.** Between the fourth and fifth he ran `/rpg selftest breacher` (17:58:14, a
+different gate; its setup has no pad step and it ran rows BR1 to BR6 until his `/rpg selftest stop` at 17:58:32): **not
+this gate's, and not read.** `/stop` at 17:58:44; `Stopping server`, `Saving worlds`, `All dimensions are saved` at
+17:58:45; no `java` process after.
+
+**WHAT IS KNOWN ABOUT THE ABORT (not repaired, the seat's instruction).** READ, `SelfTestPad.onLoaded`: it loads the pad's
+chunks with `getChunkAtAsync(cx, cz, true)`, then, on the pad's region thread, requires `world.isChunkLoaded` of every one;
+nothing holds a ticket between the two. The pad's stand is `104,201,-4` (`interior=-2..45 east -13..13 south`), his start
+about x -100, z 12, some 200 blocks away. **The same pad, from about the same start, passed on five earlier boots**
+(`GATE-focused-beam`, `shatter-caps`, `enchant-changes` twice, `enchant-columns`: `PAD … ok=7250`, `stood at=104.50 201.00
+-3.50`), and **this stack does not touch the pad or the scheduler** (`git diff --stat c1ebabab..9a6dfacd` over `selftest/`
+and `scheduler/` lists only `SelfTestDrivers.java`, `clear_state`'s chain line). **That the chunks unloaded in the gap,
+UNVERIFIED; why today and not before, UNKNOWN.** One reading this boot did not take: whether the pad passes when he stands
+at or near it before `/rpg selftest`.
