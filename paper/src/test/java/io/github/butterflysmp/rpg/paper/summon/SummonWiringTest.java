@@ -190,7 +190,7 @@ class SummonWiringTest {
         List<String> goalFile = code(Path.of("summon", "SummonGoal.java"));
         assertTrue(at(goalFile, "return NamespacedKey.fromString(ctx.keys().summonOwner.getNamespace() + \":summon_guard\");", 0) > 0);
         List<String> p = code(Path.of("RpgPlugin.java"));
-        assertTrue(at(p, "selfTestDamage, fightHits, mobDeath, summonFeeds));", 0) > 0, "the feed is in the store's composite");
+        assertTrue(at(p, "selfTestDamage, fightHits, mobDeath, summonFeeds,", 0) > 0, "the feed is in the store's composite");   // 2026-11-25: the armor wear listener follows it
         assertTrue(at(code(Path.of("listener", "RpgListeners.java")), "summons.feeds().forget(event.getPlayer().getUniqueId());", 0) > 0,
                 "forgotten on his quit");
     }

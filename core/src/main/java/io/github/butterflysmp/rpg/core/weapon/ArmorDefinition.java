@@ -39,6 +39,8 @@ import java.util.Optional;
  *       enchant-COMPATIBLE (it carries the container) but not enchant-ROLLED, precisely the line
  *       {@link ShieldDefinition} drew in its own first slice.
  *   <li><b>No triggers.</b> Wearing armor is not an ability.
+ *   <li><b>No durability figure, still.</b> (2026-11-25, D1': armor now wears and breaks by the weapons' own path,
+ *       ArmorDurability, the maximum read at runtime from the material, so nothing is authored here.) Slice 1's words:
  *   <li><b>No durability figure.</b> Armor wear stays vanilla's in this slice; weapons and shields
  *       own theirs, armor does not.
  * </ul>

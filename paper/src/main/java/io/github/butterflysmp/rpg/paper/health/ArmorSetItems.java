@@ -22,9 +22,8 @@ import java.util.Optional;
  * scan uses ({@link ArmorDefenseSource#resolve}: the tag, then the material), so a minted piece and an untagged one of
  * the same material count identically (A3).
  *
- * <p><b>No piece is ever broken here yet</b>: armor has no broken state until D1-D3 are ruled (PLAN-armor-sets.md 4;
- * under vanilla wear a piece is destroyed at its maximum, not floored). The decision already ignores the flag, as Ben
- * ruled, so the day a broken state exists only this read changes.
+ * <p><b>The broken flag is the real read since D3' (2026-11-25)</b>: {@code ArmorDurability.isBroken}, the weapons'
+ * predicate. The decision ignores it, as Ben ruled: a broken piece still counts toward the set.
  *
  * <p>Reads the live entity, so it runs on the thread that owns the player: the reconcile loop's entity task, and the
  * cast and command paths, which already run there.
@@ -40,7 +39,8 @@ public final class ArmorSetItems {
         for (ArmorSlot slot : ArmorSlot.values()) {
             ItemStack item = equipment.getItem(EquipmentSlot.valueOf(slot.name()));
             worn.put(slot, new ArmorSetDecision.Worn(ArmorDefenseSource.resolve(armor, ArmorItems.armorId(item, keys),
-                    DefenseModifierItems.tokenOf(item), slot), false));
+                    DefenseModifierItems.tokenOf(item), slot),
+                    io.github.butterflysmp.rpg.paper.weapon.ArmorDurability.isBroken(item)));   // D3': the real read; it still counts
         }
         return ArmorSetDecision.active(worn);
     }

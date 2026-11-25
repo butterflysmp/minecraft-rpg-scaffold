@@ -43,10 +43,23 @@ import java.util.UUID;
  *                       {@code amount} for every change nothing mitigated (HEAL, MAX_CHANGE, a bypassed hit). Added
  *                       in dragon-mobs step R3 for the selftest's damage line (GATE-dragon-fix.md D5): the store is
  *                       the one place both numbers exist, and recomputing the curve elsewhere would be a second site.
+ * @param throughDefense true for a DAMAGE that went THROUGH the target's Defense ({@code DefenseRule.APPLIES}), false for
+ *                       a bypassed hit and for every HEAL and MAX_CHANGE. Added 2026-11-25 (PLAN-armor-sets.md, D2'):
+ *                       a worn armor piece wears on exactly the hits Defense prices, and the store is the one place
+ *                       that knows which rule a hit used.
  */
 public record HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
                            UUID dealer, boolean dealerIsPlayer, double newCurrent, double max,
-                           boolean reachedZero, boolean wasCrit, String element, double beforeDefense) {
+                           boolean reachedZero, boolean wasCrit, String element, double beforeDefense,
+                           boolean throughDefense) {
+
+    /** Not through Defense: every construction before 2026-11-25 (HEAL, MAX_CHANGE, a bypassed hit, the tests). */
+    public HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
+                        UUID dealer, boolean dealerIsPlayer, double newCurrent, double max,
+                        boolean reachedZero, boolean wasCrit, String element, double beforeDefense) {
+        this(target, targetIsPlayer, kind, amount, dealer, dealerIsPlayer, newCurrent, max, reachedZero, wasCrit,
+                element, beforeDefense, false);
+    }
 
     /** The form before step R3: nothing mitigated, so before equals the amount. Every older site reads unchanged. */
     public HealthChange(UUID target, boolean targetIsPlayer, Kind kind, double amount,
