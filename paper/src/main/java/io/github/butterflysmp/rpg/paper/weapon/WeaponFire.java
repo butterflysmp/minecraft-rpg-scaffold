@@ -254,6 +254,11 @@ public final class WeaponFire {
                 // Safe to touch the player's inventory from inside the hop: the region is the one
                 // owning `eye`, which is the player's own, and the listener only ever runs
                 // synchronously within execute(). Both halves of that are load-bearing.
+                //
+                // THE PRESS'S TICK, STAMPED HERE, BEFORE THE HOP (PLAN-enchant-columns.md section 19, READ from the pinned
+                // jar): onRegion is the global scheduler's runDelayed(1), so the cast below runs on the NEXT tick. Carried
+                // as a value to the volley's trace only; nothing decides on it.
+                long pressTick = org.bukkit.Bukkit.getCurrentTick();
                 adapters.scheduler().onRegion(eye, () -> {
                     CastExecutor executor = new CastExecutor(
                             new PaperCombatWorld(player.getWorld(), adapters),
@@ -262,8 +267,8 @@ public final class WeaponFire {
                     // effects and the durability use ONCE and dispatches per offset -- five
                     // execute() calls would bill the bow five times and play the release sound five
                     // times, and no test outside CastExecutorFanTest would have noticed.
-                    if (yawOffsets == null) executor.execute(toRun);
-                    else executor.executeFan(toRun, yawOffsets);
+                    if (yawOffsets == null) executor.execute(toRun, pressTick);
+                    else executor.executeFan(toRun, yawOffsets, pressTick);
                 });
             }
         });

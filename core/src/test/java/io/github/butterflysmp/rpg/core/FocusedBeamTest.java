@@ -127,6 +127,25 @@ class FocusedBeamTest {
         assertEquals(List.of(108.0), sent(s, m), "the mob 10 out struck on that tick (one column, inline)");
     }
 
+    /**
+     * THE PRESS TICK IS THE PRESS'S, CARRIED (PLAN-enchant-columns.md section 19; the seat's ruling (c), 2026-11-24). On
+     * the server the cast runs one tick after the press, past {@code WeaponFire}'s region hop, so the trace must carry the
+     * tick stamped BEFORE the hop. Here the press is stamped at tick 5 and the cast run at tick 7: the trace reads 5, not
+     * the cast's 7, and the beam still leaves 20 after the CAST in the fake (no phases), at 27. No two of 5, 7, 27 equal.
+     */
+    @Test
+    void theTracedPressTickIsTheOneStampedAtThePressNotTheCasts() {
+        var m = mob(10);
+        Stage s = stage(1, m);
+        s.world().advanceTicks(7);
+        new CastExecutor(s.world()).execute(new AbilityService.CastResult.Success(volley("cursed_emerald"),
+                s.him().snapshot(), eyeAim(s), true), 5);
+        s.world().advanceTicks(20);
+        assertEquals(1, s.world().focusedBeams.size());
+        assertEquals(5, s.world().focusedBeams.getFirst().pressedTick(), "the press's own tick, stamped before the hop");
+        assertEquals(27, s.world().focusedBeams.getFirst().tick(), "20 after the cast, in the fake");
+    }
+
     /** Ben's 48, both ways at the boundary; and the plain volley's 32 stands (the gate's control). */
     @Test
     void itsRangeIsFortyEightAtTheBoundaryBothWays() {

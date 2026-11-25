@@ -466,3 +466,14 @@ controlled on the backup's file, which reads `-106.27 63.00 18.98`, the setup's 
   turns him during the wind-up is added to the next gate that touches the Cursed Emerald.**
 - **A weapon swap, a death or a quit during the wind-up:** READ in the code (above); no row staged one.
 - **The beam's look and the wind-up as heard:** client-side; this gate has no ASK.
+
+> **DATED NOTE, 2026-11-24 (`feat/press-tick`, the seat's merge approval of #270-#272, owed item 2): THE 19 IS
+> EXPLAINED, AND THE SIX MISSES STAND AS RECORDED.** `PLAN-enchant-columns.md` section 19 READ it from the pinned jar
+> and our source: the selftest's press runs on tick T in the player's entity phase; `WeaponFire`'s `onRegion` hop is the
+> global scheduler's `runDelayed(1)`, so the cast (and `beginVolley`'s read of `pressed`) ran at **T + 1**; the
+> wind-up's `scheduleOn(…, 20)`, filed from the global phase, ran at **T + 20**. **So `pressed` was the CAST's tick, and
+> press to beam was 20.** The predictions were taken from the fake world's clock (press = cast) and are not edited. On
+> `feat/press-tick` the press's tick is stamped in `WeaponFire` before the hop and carried in, so a `FOCUSED` line now
+> reads `tick - pressed` = 20. **The next gate that touches a wind-up predicts by the server's clock and names the
+> tick each read is taken on** (`verification.md`, the line added on the same branch). The two candidates under
+> *UNREAD, AND WHY* above are superseded by that READ.
