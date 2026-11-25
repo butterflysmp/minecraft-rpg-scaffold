@@ -78,6 +78,8 @@ final class SelfTestRun {
         long rows = queue.stream().filter(s -> !s.row().equals(Scenario.SETUP)).count();
         service.log("SELFTEST RUN START " + what + " rows=" + rows + " selftest=" + service.build()
                 + " player=" + player.getUniqueId() + (snapshot.profileLoaded() ? "" : " PROFILE-NOT-LOADED"));
+        // W1 (the seat, 2026-11-25): what he WEARS at capture, so the RESTORED line can be read against it.
+        service.log("SELFTEST RUN CAPTURED " + snapshot.capturedFields());
         // One tick later, so the command's own "Selftest started" reply goes out before the reader exists.
         service.scheduler().onEntityLater(player, () -> {
             if (ended) return;
@@ -116,9 +118,10 @@ final class SelfTestRun {
         player.teleportAsync(start).thenRun(() -> service.scheduler().onEntity(player, () -> {
             if (ended) return;
             int blocks = snapshot.restoreRowBlocks();
-            if (gateBoundary) snapshot.restoreInventory(player);
+            String worn = gateBoundary ? snapshot.restoreInventory(player) : null;   // W1: his five slots, read back
             int removed = snapshot.removeTagged(player, service.scheduler());
             log("CLEAN blocks=" + blocks + " removed=" + removed + " inventory=" + (gateBoundary ? "restored" : "kept")
+                    + (worn == null ? "" : " " + worn)
                     + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ()));
             log(SelfTestStaging.lingerLine(SelfTestStaging.LINGER_RADIUS, endWork(start), endLingering(start)));
             // A ROW STARTS CLEAN OR SAYS SO (GATE-dragon-fix.md, C3). The removals above run on each mob's own
