@@ -831,7 +831,10 @@ final class SelfTestDrivers {
         adapters.behaviourHits().chains().forgetPlayer(id);
         boolean orb = adapters.orbs().of(id).isPresent();
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, id, "selftest");
-        run.log("STAGE clear_state cooldowns=cleared streaks=forgotten chains=forgotten orb=" + (orb ? "removed" : "none"));
+        int summoned = io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, id,
+                io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);   // 3b, D7: clear_state
+        run.log("STAGE clear_state cooldowns=cleared streaks=forgotten chains=forgotten orb=" + (orb ? "removed" : "none")
+                + " summons=" + summoned);
         return Optional.empty();
     }
 

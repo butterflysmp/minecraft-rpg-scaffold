@@ -458,6 +458,7 @@ public final class RpgListeners implements Listener {
     private final io.github.butterflysmp.rpg.paper.health.PhageFuser fuser;
     /** The dev fight fixture (GATE-fight-ring.md): a mob a player kills while it runs is fed to its ring. */
     private final io.github.butterflysmp.rpg.paper.fight.FightFixtures fights;
+    private final io.github.butterflysmp.rpg.paper.summon.SummonService summons;
 
     public RpgListeners(CooldownTracker cooldowns, FireCadence fireCadence,
                         ResourcePool resources, ProfileService profiles,
@@ -475,8 +476,10 @@ public final class RpgListeners implements Listener {
                         io.github.butterflysmp.rpg.paper.health.MobShooter shots,
                         io.github.butterflysmp.rpg.paper.health.MobPouncer pounces,
                         io.github.butterflysmp.rpg.paper.health.PhageFuser fuser,
-                        io.github.butterflysmp.rpg.paper.fight.FightFixtures fights) {
+                        io.github.butterflysmp.rpg.paper.fight.FightFixtures fights,
+                        io.github.butterflysmp.rpg.paper.summon.SummonService summons) {
         this.fights = fights;
+        this.summons = summons;   // 3b: a summon cast is decided before it is charged; its lifecycle hooks
         this.fuser = fuser;
         this.pounces = pounces;
         this.shots = shots;
@@ -1239,6 +1242,93 @@ public final class RpgListeners implements Listener {
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "world_change");
     }
 
+    // ============================================================== THE SUMMON'S LIFECYCLE (3b, D7; the seat's Q4)
+
+    /** A tagged summon body the store does not own is an orphan, removed ONE TICK after it appears (as an orb's). */
+    @EventHandler
+    public void onSummonBodyAppear(EntityAddToWorldEvent event) {
+        io.github.butterflysmp.rpg.paper.summon.SummonRemovals.sweepAppeared(adapters, event.getEntity());
+    }
+
+    /** His summons go when he dies. */
+    @EventHandler
+    public void onSummonOwnerDeath(PlayerDeathEvent event) {
+        io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(),
+                io.github.butterflysmp.rpg.core.summon.SummonRemoval.OWNER_DEATH);
+    }
+
+    /** And when he changes world: a summon never outlives his presence in its world. */
+    @EventHandler
+    public void onSummonOwnerChangedWorld(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(),
+                io.github.butterflysmp.rpg.core.summon.SummonRemoval.WORLD_CHANGE);
+    }
+
+    /** Its body died (its customHP reached 0, or anything else that kills an entity): the store lets it go. */
+    @EventHandler
+    public void onSummonBodyDeath(org.bukkit.event.entity.EntityDeathEvent event) {
+        io.github.butterflysmp.rpg.paper.summon.SummonRemovals.remove(adapters, event.getEntity().getUniqueId(),
+                io.github.butterflysmp.rpg.core.summon.SummonRemoval.DEATH);
+    }
+
+    /** D1: untamed and ownerless, so every interaction is refused: feeding, a bone, a dye, a name tag, sitting. */
+    @EventHandler(ignoreCancelled = true)
+    public void onSummonInteract(org.bukkit.event.player.PlayerInteractEntityEvent event) {
+        if (isSummon(event.getRightClicked())) event.setCancelled(true);
+    }
+
+    /** D1: a lead does not take it. */
+    @EventHandler(ignoreCancelled = true)
+    public void onSummonLeash(org.bukkit.event.entity.PlayerLeashEntityEvent event) {
+        if (isSummon(event.getEntity())) event.setCancelled(true);
+    }
+
+    /** D1: it is never tamed, whatever tries. */
+    @EventHandler(ignoreCancelled = true)
+    public void onSummonTame(org.bukkit.event.entity.EntityTameEvent event) {
+        if (isSummon(event.getEntity())) event.setCancelled(true);
+    }
+
+    private boolean isSummon(org.bukkit.entity.Entity e) {
+        return io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(e, adapters.keys())
+                == io.github.butterflysmp.rpg.core.mob.MobHostility.Side.SUMMON;
+    }
+
+    /**
+     * Q4 (the seat's ruling, SEAT PLACEHOLDER, OPEN FOR BEN): A SUMMON TAKES NO WORLD CAUSE. First of every damage
+     * handler (LOWEST), so nothing below meets a summon's world damage. {@code SummonWorldDamage.decide}: VOID removes it
+     * ({@code cause=void}), KILL removes it ({@code cause=killed}), every other cause is cancelled, and a MOB's hit (READ
+     * before this: a vanilla mob's melee on a non-player was priced NOWHERE and would have reached its vanilla health)
+     * is priced as on a player ({@code MobDamagePricing}) and applied to its customHP with the attacker side given
+     * EXPLICITLY as MOB (Q1), the vanilla event cancelled.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onSummonDamaged(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof LivingEntity body) || !isSummon(body)) return;
+        Optional<MobDamagePricing.Resolved> mob = mobSourceOf(event);
+        switch (io.github.butterflysmp.rpg.paper.summon.SummonWorldDamage.decide(event.getCause(), mob.isPresent())) {
+            case REMOVE_VOID -> {
+                event.setCancelled(true);
+                io.github.butterflysmp.rpg.paper.summon.SummonRemovals.remove(adapters, body.getUniqueId(),
+                        io.github.butterflysmp.rpg.core.summon.SummonRemoval.VOID);
+            }
+            case REMOVE_KILLED -> {
+                event.setCancelled(true);
+                io.github.butterflysmp.rpg.paper.summon.SummonRemovals.remove(adapters, body.getUniqueId(),
+                        io.github.butterflysmp.rpg.core.summon.SummonRemoval.KILLED);
+            }
+            case REFUSED -> event.setCancelled(true);
+            case MOB_HIT -> {
+                event.setCancelled(true);
+                double priced = MobDamagePricing.price(event.getDamage(), mob.get());
+                BukkitCombatant.of(body, adapters).handle().applyDamageAs(
+                        io.github.butterflysmp.rpg.core.mob.MobHostility.Side.MOB, priced, attributableId(event, body),
+                        io.github.butterflysmp.rpg.core.combat.CritState.NORMAL,
+                        io.github.butterflysmp.rpg.core.combat.DefenseRule.APPLIES, null, HitAccrual.weapon());
+            }
+        }
+    }
+
     @EventHandler
     public void onBehaviourTargetDeath(EntityDeathEvent event) {
         if (event.getEntity() instanceof Player) return;
@@ -1423,7 +1513,7 @@ public final class RpgListeners implements Listener {
         }
 
         java.util.Optional<CastResult> attempted = WeaponFire.attempt(event.getPlayer(), "right_click", weapons,
-                weaponService, adapters, cooldowns, fireCadence);
+                weaponService, adapters, cooldowns, fireCadence, summons);
         // F9b fix D: in a fight world every right-click is logged with its result (or no-weapon), and a cast that lands
         // no hit within 40 ticks says so, so "my cursed emerald isn't working" can be read next time. Reads only.
         fights.noteCast(event.getPlayer(), "right_click", attempted.orElse(null));
@@ -1438,6 +1528,12 @@ public final class RpgListeners implements Listener {
                     // is never reached. A broken weapon must always say so -- doing nothing without
                     // an explanation reads as a bug -- so it bypasses the silence and relies on
                     // BrokenNotice's throttle to keep held input from spamming chat.
+                    // A REFUSED SUMMON (3b, D6) says so once, before the silence below, for Broken's reason: no mana, no cooldown.
+                    if (result instanceof CastResult.SummonRefused refused) {
+                        event.getPlayer().sendMessage(net.kyori.adventure.text.Component.text(refused.notice(),
+                                net.kyori.adventure.text.format.NamedTextColor.RED));
+                        return;
+                    }
                     if (result instanceof CastResult.Broken) {
                         BrokenNotice.notify(event.getPlayer(), cooldowns);
                         return;
@@ -1492,6 +1588,7 @@ public final class RpgListeners implements Listener {
                         // Likewise -- both are handled before firesABasicAttack returns.
                         case CastResult.Empty ignored -> { }
                         case CastResult.Reloading ignored -> { }
+                        case CastResult.SummonRefused ignored -> { }   // answered above
                     }
                 });
 
@@ -2348,6 +2445,9 @@ public final class RpgListeners implements Listener {
         adapters.behaviourHits().chains().forgetPlayer(event.getPlayer().getUniqueId());
         // And his orb (Lapis Crystal's D2, B6: removed on his quit).
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "quit");
+        // And his summons (3b, D7: removed on his quit).
+        io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(),
+                io.github.butterflysmp.rpg.core.summon.SummonRemoval.QUIT);
 
         // FIRST, ahead of the clears: a menu holding this player's weapon must give it back while
         // their inventory can still be written. Writes during PlayerQuitEvent persist -- the save

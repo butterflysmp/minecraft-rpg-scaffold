@@ -236,6 +236,9 @@ public final class RpgPlugin extends JavaPlugin {
     private ExecutorService storageIo;
     private PlayerRepository repository;
     private ProfileService profiles;
+    /** The Summoner slice (3b): content/summons, and the service that casts, owns and removes their bodies. */
+    private io.github.butterflysmp.rpg.core.summon.SummonRegistry summonDefs = new io.github.butterflysmp.rpg.core.summon.SummonRegistry();
+    private io.github.butterflysmp.rpg.paper.summon.SummonService summons;
     private VaultRepository vaultRepository;
     private VaultService vaults;
     private PopupEntityIds fakeEntityIds;
@@ -271,6 +274,10 @@ public final class RpgPlugin extends JavaPlugin {
         this.visuals = new VisualLoader(getLogger()).loadAll(new File(contentDir, "visuals"));
         this.statuses = new StatusLoader(getLogger()).loadAll(new File(contentDir, "statuses"));
         this.elements = new ElementLoader(getLogger()).loadAll(new File(contentDir, "elements"));
+        // 3a/3b: content/summons (none ships before PR 5); an entity that is not a Mob is refused, by type, never by name.
+        this.summonDefs = new io.github.butterflysmp.rpg.paper.content.SummonLoader(getLogger(), RpgPlugin::isSummonableEntity)
+                .loadAll(new File(contentDir, "summons"));
+        getLogger().info("Loaded " + summonDefs.size() + " summon(s)");
         // KITS WERE REMOVED (PLAN-build-system.md section 3.2): nothing loads content/kits/ now. See the method.
         warnRetiredKitFiles(new File(contentDir, "kits"));
         // AFTER the abilities, because a pool naming an ability nothing defines is REFUSED, not warned
@@ -849,10 +856,20 @@ public final class RpgPlugin extends JavaPlugin {
         selfTest.bindFightRunning(fightFixtures::running);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
+        this.summons = new io.github.butterflysmp.rpg.paper.summon.SummonService(adapters, () -> summonDefs, profiles);
+        // D7's BACKSTOP and D1(a)'s goal guard, every SummonBackstop.PERIOD_TICKS (20), self-rescheduling on the global
+        // scheduler while the plugin is enabled. FOLIA DEBT: it reads bodies by id off their regions; correct on Paper today.
+        Runnable[] summonBackstop = new Runnable[1];
+        summonBackstop[0] = () -> {
+            if (!isEnabled()) return;
+            summons.backstopTick();
+            scheduler.onGlobalLater(summonBackstop[0], io.github.butterflysmp.rpg.core.summon.SummonBackstop.PERIOD_TICKS);
+        };
+        scheduler.onGlobalLater(summonBackstop[0], io.github.butterflysmp.rpg.core.summon.SummonBackstop.PERIOD_TICKS);
         RpgListeners listeners = new RpgListeners(cooldowns, fireCadence, resources, profiles, weapons, shields, armor, tools, weaponService, adapters,
                 healthSystem, nameplates, statsBar, healthRegen,
                 this, recipes, vaults, stoneCaster, mining, selfTest, mobElements, beams, shooter, pouncer, fuser,
-                fightFixtures);
+                fightFixtures, summons);
         // Ben's void ruling (PLAN-world-damage.md): one VoidHits shared by the handler that marks and the HURT line that
         // takes, so a selftest row's void tick reads cause=void.
         io.github.butterflysmp.rpg.paper.health.VoidHits voidHits = new io.github.butterflysmp.rpg.paper.health.VoidHits();
@@ -883,6 +900,8 @@ public final class RpgPlugin extends JavaPlugin {
             // And an orb's body no live orb owns (Lapis Crystal's D2, B6's sweep): at enable, none is live, so any is an orphan.
             for (org.bukkit.entity.Entity e : world.getEntities()) {
                 scheduler.onEntity(e, () -> io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.sweep(adapters, e));
+                // And a summon body no live summon owns (3b, D7): at enable none is live, so any tagged body is an orphan.
+                scheduler.onEntity(e, () -> io.github.butterflysmp.rpg.paper.summon.SummonRemovals.sweep(adapters, e));
             }
         }
 
@@ -897,7 +916,7 @@ public final class RpgPlugin extends JavaPlugin {
         PacketEvents.getAPI().getEventManager()
                 .registerListener(new ExampleTelegraphListener(scheduler));
         WeaponSwingListener swingListener =
-                new WeaponSwingListener(adapters, weapons, weaponService, cooldowns, fireCadence);
+                new WeaponSwingListener(adapters, weapons, weaponService, cooldowns, fireCadence, summons);
         PacketEvents.getAPI().getEventManager()
                 .registerListener(swingListener);
         // The selftest's RELOAD drives this same listener's left-click method (SelfTestService.bindLeftClick).
@@ -1166,6 +1185,18 @@ OLD
         }
     }
 
+    /**
+     * The summon loader's entity check in production (3a/3b): the key names a registered entity type whose class is a
+     * {@code Mob}, since a summon's body has its goals removed and needs them to exist. By TYPE, never by name: no Java
+     * names a wolf.
+     */
+    static boolean isSummonableEntity(String key) {
+        org.bukkit.NamespacedKey k = org.bukkit.NamespacedKey.fromString(key);
+        org.bukkit.entity.EntityType type = k == null ? null : org.bukkit.Registry.ENTITY_TYPE.get(k);
+        return type != null && type.getEntityClass() != null
+                && org.bukkit.entity.Mob.class.isAssignableFrom(type.getEntityClass());
+    }
+
     @Override
     public void onDisable() {
         // THE SELFTEST, FIRST (GATE-dragon-knell-4.md): a /stop during a run. The server saves players and chunks right
@@ -1175,6 +1206,7 @@ OLD
         if (selfTest != null) selfTest.onDisable();
         // EVERY ORB, AT STOP (Lapis Crystal's D2, B6): removed before the worlds save, each with its ORB removed cause=stop line.
         if (adapters != null) io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.removeAll(adapters);
+        if (adapters != null) io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAll(adapters);   // 3b, D7: stop
         // THE MIRROR IS NEVER SAVED (2026-11-22): after the selftest's own restore, every online player's Nexus slot goes back
         // to the star before the server writes the inventories.
         if (adapters != null) {

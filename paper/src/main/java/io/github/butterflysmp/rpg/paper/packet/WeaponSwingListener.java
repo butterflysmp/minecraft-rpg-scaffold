@@ -45,16 +45,19 @@ public final class WeaponSwingListener extends PacketListenerBase {
     private final WeaponService weaponService;
     private final CooldownTracker cooldowns;
     private final FireCadence fireCadence;
+    private final io.github.butterflysmp.rpg.paper.summon.SummonService summons;
 
     public WeaponSwingListener(AdapterContext adapters, WeaponRegistry weapons,
                                WeaponService weaponService, CooldownTracker cooldowns,
-                               FireCadence fireCadence) {
+                               FireCadence fireCadence,
+                               io.github.butterflysmp.rpg.paper.summon.SummonService summons) {
         super(adapters.scheduler(), PacketListenerPriority.NORMAL);
         this.adapters = adapters;
         this.weapons = weapons;
         this.weaponService = weaponService;
         this.cooldowns = cooldowns;
         this.fireCadence = fireCadence;
+        this.summons = summons;   // 3b: a summon cast is decided before it is charged
     }
 
     @Override
@@ -120,7 +123,7 @@ public final class WeaponSwingListener extends PacketListenerBase {
         }
 
         WeaponFire.attempt(player, "left_click", weapons, weaponService, adapters, cooldowns,
-                        fireCadence)
+                        fireCadence, summons)
                 .ifPresent(result -> {
                     // THE COMPILER DID NOT HELP HERE, AND THE JAVADOC ABOVE PREDICTED THAT EXACTLY.
                     // Adding Empty and Reloading to the sealed CastResult broke the two exhaustive
@@ -134,6 +137,8 @@ public final class WeaponSwingListener extends PacketListenerBase {
                     // widening the set of outcomes that vanish on left-click.
                     switch (result) {
                         case CastResult.Broken ignored -> BrokenNotice.notify(player, cooldowns);
+                        case CastResult.SummonRefused refused -> player.sendMessage(net.kyori.adventure.text.Component.text(
+                                refused.notice(), net.kyori.adventure.text.format.NamedTextColor.RED));   // 3b, D6
                         case CastResult.Empty ignored -> QuiverNotice.empty(player, cooldowns);
                         case CastResult.Reloading reloading ->
                                 QuiverNotice.reloading(player, cooldowns, reloading.ticksRemaining());

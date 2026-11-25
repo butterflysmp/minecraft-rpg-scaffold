@@ -70,8 +70,9 @@ public final class WeaponFire {
                                                WeaponService weaponService,
                                                AdapterContext adapters,
                                                CooldownTracker cooldowns,
-                                               FireCadence cadence) {
-        return attempt(player, input, weapons, weaponService, adapters, cooldowns, cadence, null);
+                                               FireCadence cadence,
+                                               io.github.butterflysmp.rpg.paper.summon.SummonService summons) {
+        return attempt(player, input, weapons, weaponService, adapters, cooldowns, cadence, null, summons);
     }
 
     /**
@@ -109,7 +110,7 @@ public final class WeaponFire {
                                                   AdapterContext adapters,
                                                   CooldownTracker cooldowns,
                                                   FireCadence cadence) {
-        return attempt(player, input, weapons, weaponService, adapters, cooldowns, cadence, yawOffsets);
+        return attempt(player, input, weapons, weaponService, adapters, cooldowns, cadence, yawOffsets, null);
     }
 
     private static Optional<CastResult> attempt(Player player, String input,
@@ -118,7 +119,8 @@ public final class WeaponFire {
                                                AdapterContext adapters,
                                                CooldownTracker cooldowns,
                                                FireCadence cadence,
-                                               double[] yawOffsets) {
+                                               double[] yawOffsets,
+                                               io.github.butterflysmp.rpg.paper.summon.SummonService summons) {
         Optional<WeaponDefinition> held = WeaponItems.heldWeaponId(player, adapters.keys())
                 .flatMap(weapons::find);
         if (held.isEmpty()) return Optional.empty();
@@ -213,6 +215,17 @@ public final class WeaponFire {
         // and reading the store after the hop would be the cross-thread read this split prevents.
         CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats(), adapters.keys());
 
+        // A SUMMON CAST (3b, D6) is decided by the summon service BEFORE it is charged: weaponService.fire is the charge
+        // (mana and cooldown), and it is called only when SummonCap allows. The engine never runs one.
+        if (binding.get().ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Summon summonCast) {
+            if (summons == null) {
+                adapters.warnOnce("Weapon '" + weapon.id() + "' casts a summon through a path with no summon service");
+                return Optional.of(new CastResult.SummonRefused("That summon cannot be cast this way."));
+            }
+            int score = GearScoreItems.heldScore(player, adapters.keys(), adapters.weapons());   // D3: read at the cast
+            return Optional.of(summons.cast(player, weapon, summonCast, score,
+                    () -> weaponService.fire(caster, binding.get(), aim)));
+        }
         Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim));
         result.ifPresent(r -> {
             if (r instanceof CastResult.Success success) {
