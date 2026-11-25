@@ -41,7 +41,8 @@ class ArmorSetBonusTest {
     void tokensAreTheLowerCaseNamesAndAnUnknownOneIsNull() {
         assertEquals(ArmorSetBonus.Type.HEALTH_REGEN, ArmorSetBonus.Type.fromToken("health_regen"));
         assertEquals(ArmorSetBonus.Type.MAX_SUMMONS, ArmorSetBonus.Type.fromToken("MAX_SUMMONS"));
-        assertNull(ArmorSetBonus.Type.fromToken("quiver_size_percent"), "STOPPED (B3): not a type, so refused");
+        assertEquals(ArmorSetBonus.Type.QUIVER_SIZE_PERCENT, ArmorSetBonus.Type.fromToken("quiver_size_percent"),
+                "Q3, 2026-11-25: a type (it was STOPPED, refused as unknown, before the quiver stat had a percent term)");
         assertNull(ArmorSetBonus.Type.fromToken("regen"));
         assertNull(ArmorSetBonus.Type.fromToken(null));
     }

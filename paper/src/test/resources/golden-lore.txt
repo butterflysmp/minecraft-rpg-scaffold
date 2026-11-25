@@ -281,11 +281,17 @@
 -- chainmail_boots
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["4" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+50% Quiver Size" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Ten thousand rings, and every one of them someone's afternoon." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
 -- chainmail_chestplate
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+50% Quiver Size" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Ten thousand rings, and every one of them someone's afternoon." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -293,11 +299,17 @@
 -- chainmail_helmet
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["5" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+50% Quiver Size" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Ten thousand rings, and every one of them someone's afternoon." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
 -- chainmail_leggings
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+50% Quiver Size" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Ten thousand rings, and every one of them someone's afternoon." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F

@@ -13,6 +13,9 @@ import java.util.Locale;
  * {@link #HEALTH_REGEN_AUTHORED_SECONDS}, once. Every other type is authored in the engine's own unit: mana regen per
  * second (Ben: "this is every second"), max health and defense in points, max summons in summons.
  *
+ * <p><b>CORRECTED 2026-11-25 (the seat's Q1 to Q3): {@code quiver_size_percent} IS A TYPE.</b> The quiver stat gained
+ * a second, percent term, so the STOP below ended. The paragraph is kept as the record:
+ *
  * <p><b>{@code quiver_size_percent} IS NOT A TYPE, AND THAT IS A STOP, NOT AN OMISSION</b> (PLAN-armor-sets.md 3.3): the
  * quiver's per-player stat is additive only, so a percent has no per-player modifier path, which the seat's B3 names as
  * a STOP for that stat alone. Absent from the enum, an authored {@code quiver_size_percent} is refused as unknown, so no
@@ -24,7 +27,9 @@ public record ArmorSetBonus(Type type, double value) {
     public static final double HEALTH_REGEN_AUTHORED_SECONDS = 5.0;
 
     public enum Type {
-        HEALTH_REGEN, MANA_REGEN, MAX_SUMMONS, MAX_HEALTH, DEFENSE;
+        HEALTH_REGEN, MANA_REGEN, MAX_SUMMONS, MAX_HEALTH, DEFENSE,
+        /** Q3 (2026-11-25): a percent of the held weapon's quiver (50 = +50%), its own term of the quiver stat (Q1). */
+        QUIVER_SIZE_PERCENT;
 
         /** The YAML token: {@code health_regen}. */
         public String token() {

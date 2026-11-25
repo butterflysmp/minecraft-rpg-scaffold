@@ -93,6 +93,8 @@ public final class ArmorLoreLines {
             case MAX_SUMMONS -> value + " Max Summons";
             case MAX_HEALTH -> value + " Max Health";
             case DEFENSE -> value + " Defense";
+            // Q3: the PERCENT, since the resolved number depends on the weapon held. Wording a SEAT PLACEHOLDER.
+            case QUIVER_SIZE_PERCENT -> "+" + trimNumber(bonus.value()) + "% Quiver Size";
         };
     }
 

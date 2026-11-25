@@ -413,6 +413,9 @@ public final class PlayerHealthSystem implements HealthListener {
             stats.reconcileQuiverSizeModifiers(id, ExpandedQuiverModifierItems.mergedSources(
                     QuiverSizeModifierItems.desiredModifiers(player, keys),
                     ExpandedQuiverModifierItems.desiredModifiers(player, keys, enchants)));
+            // Q1 (2026-11-25): the quiver's PERCENT term, its own stat and its own ONE reconcile; the armor set (chainmail) is
+            // its only source. Combined with the additive term in QuiverSize.resolve, never here.
+            stats.reconcileQuiverSizePercentModifiers(id, fromSet.quiverPercent());
 
             // RELOAD TIME: ticks added to the held weapon's authored reload. Silent and void, same
             // as the line above, and for one extra reason of its own -- a running reload's deadline

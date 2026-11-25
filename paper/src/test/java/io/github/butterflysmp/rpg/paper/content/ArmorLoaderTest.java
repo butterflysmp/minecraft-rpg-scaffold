@@ -319,6 +319,7 @@ class ArmorLoaderTest {
         ben.put("iron", new ArmorSetBonus(ArmorSetBonus.Type.MAX_HEALTH, 100));
         ben.put("diamond", new ArmorSetBonus(ArmorSetBonus.Type.DEFENSE, 20));
         ben.put("netherite", new ArmorSetBonus(ArmorSetBonus.Type.DEFENSE, 40));
+        ben.put("chainmail", new ArmorSetBonus(ArmorSetBonus.Type.QUIVER_SIZE_PERCENT, 50));   // Q3, 2026-11-25
         int checked = 0;
         for (ArmorDefinition piece : registry.all()) {
             String tier = piece.id().substring(0, piece.id().indexOf('_'));
@@ -328,8 +329,9 @@ class ArmorLoaderTest {
             checked++;
         }
         assertEquals(28, checked, "the control: every shipped piece was read");
-        assertTrue(registry.find("chainmail_helmet").orElseThrow().setBonus().isEmpty(),
-                "chainmail's +50% quiver is STOPPED (B3), so it authors no bonus");
+        assertEquals(List.of(new ArmorSetBonus(ArmorSetBonus.Type.QUIVER_SIZE_PERCENT, 50)),
+                registry.find("chainmail_helmet").orElseThrow().setBonus(),
+                "chainmail's +50% quiver (Q3, 2026-11-25; STOPPED before it)");
         // Mutation: give the loader's set the FILENAME of another tier -> every row reddens.
     }
 
@@ -349,7 +351,6 @@ class ArmorLoaderTest {
     @Test
     void aBadSetBonusRefusesTheWholeTier() throws IOException {
         String[] bad = {
-                "set_bonus:\n  - type: quiver_size_percent\n    value: 50\n",   // STOPPED: not a type
                 "set_bonus:\n  - type: regen\n    value: 2\n",                   // unknown
                 "set_bonus:\n  - type: defense\n    value: 0\n",                 // zero
                 "set_bonus:\n  - type: defense\n",                               // no value

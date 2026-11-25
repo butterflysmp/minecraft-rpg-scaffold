@@ -21,16 +21,18 @@ import java.util.Optional;
  * <p>{@code max_summons} is not a {@code Stat}: it is the {@code MaxSummons} gear-grants term, read at the cast (B6), so
  * it is carried as a number for that read rather than as a source map.
  */
-public record ArmorSetContributions(Map<AccessoryStat, Map<String, Double>> byStat, int maxSummons) {
+public record ArmorSetContributions(Map<AccessoryStat, Map<String, Double>> byStat, int maxSummons,
+                                    Map<String, Double> quiverPercent) {
 
     public static final String SOURCE_PREFIX = "armorset:";
 
-    public static final ArmorSetContributions NONE = new ArmorSetContributions(Map.of(), 0);
+    public static final ArmorSetContributions NONE = new ArmorSetContributions(Map.of(), 0, Map.of());
 
     public ArmorSetContributions {
         Map<AccessoryStat, Map<String, Double>> copy = new EnumMap<>(AccessoryStat.class);
         byStat.forEach((stat, sources) -> copy.put(stat, Map.copyOf(sources)));
         byStat = Collections.unmodifiableMap(copy);
+        quiverPercent = Map.copyOf(quiverPercent);
     }
 
     public static String sourceKey(String setId) {
@@ -42,14 +44,20 @@ public record ArmorSetContributions(Map<AccessoryStat, Map<String, Double>> bySt
         String key = sourceKey(active.get().id());
         Map<AccessoryStat, Map<String, Double>> byStat = new EnumMap<>(AccessoryStat.class);
         int summons = 0;
+        Map<String, Double> quiverPercent = new java.util.HashMap<>();
         for (ArmorSetBonus bonus : active.get().bonuses()) {
             AccessoryStat stat = switch (bonus.type()) {
                 case HEALTH_REGEN -> AccessoryStat.HEALTH_REGEN;
                 case MANA_REGEN -> AccessoryStat.MANA_REGEN;
                 case MAX_HEALTH -> AccessoryStat.MAX_HEALTH;
                 case DEFENSE -> AccessoryStat.DEFENSE;
-                case MAX_SUMMONS -> null;
+                case MAX_SUMMONS, QUIVER_SIZE_PERCENT -> null;
             };
+            if (bonus.type() == ArmorSetBonus.Type.QUIVER_SIZE_PERCENT) {
+                // Q1: the quiver's own percent term, under the same one key, merged nowhere else.
+                quiverPercent.merge(key, bonus.engineValue(), Double::sum);
+                continue;
+            }
             if (stat == null) {
                 summons += (int) bonus.engineValue();
                 continue;
@@ -59,7 +67,7 @@ public record ArmorSetContributions(Map<AccessoryStat, Map<String, Double>> bySt
             byStat.computeIfAbsent(stat, s -> new java.util.HashMap<>())
                     .merge(key, AccessoryContributions.sourceValue(stat, bonus.engineValue()), Double::sum);
         }
-        return new ArmorSetContributions(byStat, summons);
+        return new ArmorSetContributions(byStat, summons, quiverPercent);
     }
 
     public Map<String, Double> sources(AccessoryStat stat) {

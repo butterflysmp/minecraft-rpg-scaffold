@@ -661,6 +661,19 @@ public final class CombatantStats {
         ModifierReconciler.reconcile(state.quiverSizeTarget(), desired);
     }
 
+    /** Q1 (2026-11-25): converge the quiver's PERCENT modifiers. Silent and void, as the additive term's. */
+    public void reconcileQuiverSizePercentModifiers(UUID id, Map<String, Double> desired) {
+        HealthState state = states.get(id);
+        if (state == null) return;
+        ModifierReconciler.reconcile(state.quiverSizePercentTarget(), desired);
+    }
+
+    /** Q1: the resolved percent term; 0.0 for an untracked wielder, as the additive one. */
+    public double quiverSizePercentValue(UUID id) {
+        HealthState state = states.get(id);
+        return state == null ? 0.0 : state.quiverSizePercentValue();
+    }
+
     /**
      * The resolved RELOAD-TIME BONUS this combatant's gear grants, in whole ticks, or {@code 0.0} if
      * untracked.

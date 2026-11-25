@@ -434,11 +434,11 @@ public final class EnchantMenu extends Menu {
      * "filler, not a refusal" line before anything is read, priced or written: the slot has no candidate 0. So it changes
      * nothing and charges nothing, by the same line every empty cell already took.
      */
-    private void renderEmptyMarkers(EnchantState state) {
+    private void renderEmptyMarkers(EnchantState state, GearClass heldClass) {
         for (int slot = 0; slot < EnchantMenuLayout.SLOTS && slot < state.slots().size(); slot++) {
             if (!state.slots().get(slot).candidates().isEmpty()) continue;
             int at = slot;
-            EnchantMenuLayout.emptyMarkerFor(slot).ifPresent(marker ->
+            EnchantMenuLayout.emptyMarkerFor(slot, heldClass).ifPresent(marker ->
                     getInventory().setItem(EnchantMenuLayout.rawSlotFor(at, 0), MenuIcons.icon(Material.GRAY_DYE,
                             MenuIcons.line(marker.name(), NamedTextColor.DARK_GRAY),
                             List.of(MenuIcons.line(marker.lore(), NamedTextColor.DARK_GRAY)))));
@@ -491,7 +491,7 @@ public final class EnchantMenu extends Menu {
      * EMPTY weapon or unique slot shows {@link #renderEmptyMarkers}'s item instead of filler in its first cell.
      */
     private void renderCandidates(EnchantState state, GearClass heldClass) {
-        renderEmptyMarkers(state);
+        renderEmptyMarkers(state, heldClass);
         for (int slot = 0; slot < EnchantMenuLayout.SLOTS && slot < state.slots().size(); slot++) {
             EnchantSlot enchantSlot = state.slots().get(slot);
             for (int index = 0; index < EnchantMenuLayout.CANDIDATES

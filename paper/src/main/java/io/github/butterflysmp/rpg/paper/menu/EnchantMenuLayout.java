@@ -184,8 +184,23 @@ public final class EnchantMenuLayout {
      * #249's, unchanged; the weapon one is new.
      */
     public static Optional<EmptyMarker> emptyMarkerFor(int slot) {
+        return emptyMarkerFor(slot, null);
+    }
+
+    /**
+     * THE ONE PLACE the empty-column wording is chosen, BY THE GEAR'S KIND (the seat, 2026-11-25). Slot 0 on ARMOR is
+     * piece-specific (E1), so it reads "No piece enchant" (SEAT PLACEHOLDER 2026-11-25, OPEN FOR BEN, with its lore
+     * line); every other kind keeps the weapon's words exactly (the golden files and {@code EnchantMenuLayoutTest} prove
+     * it). The unique column's words are the same for every kind.
+     *
+     * @param gearClass the placed gear's class, or null for none (the weapon's words)
+     */
+    public static Optional<EmptyMarker> emptyMarkerFor(int slot, io.github.butterflysmp.rpg.core.weapon.GearClass gearClass) {
+        boolean armor = gearClass == io.github.butterflysmp.rpg.core.weapon.GearClass.ARMOR;
         return switch (io.github.butterflysmp.rpg.core.enchant.EnchantRoll.kindOf(slot)) {
-            case WEAPON -> Optional.of(new EmptyMarker("No weapon enchant", "Nothing is tied to this weapon yet."));
+            case WEAPON -> Optional.of(armor
+                    ? new EmptyMarker("No piece enchant", "Nothing is tied to this armor slot yet.")
+                    : new EmptyMarker("No weapon enchant", "Nothing is tied to this weapon yet."));
             case UNIQUE -> Optional.of(new EmptyMarker("No unique enchant",
                     "Nothing unique is tied to this item's element yet."));
             case NORMAL -> Optional.empty();

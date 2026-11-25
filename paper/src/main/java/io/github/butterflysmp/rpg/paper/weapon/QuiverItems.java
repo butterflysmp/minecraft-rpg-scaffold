@@ -238,7 +238,8 @@ public final class QuiverItems {
     private static int resolveCapacity(WeaponDefinition weapon, AdapterContext adapters,
                                        UUID wielder) {
         return QuiverSize.resolve(weapon.quiverSize(),
-                adapters.stats().quiverSizeBonusValue(wielder));
+                adapters.stats().quiverSizeBonusValue(wielder),
+                adapters.stats().quiverSizePercentValue(wielder));   // Q5: the percent term too
     }
 
     /**

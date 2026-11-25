@@ -191,6 +191,15 @@ public final class HealthState {
     private final Stat quiverSizeBonus = new Stat(0.0);
 
     /**
+     * Q1 (the seat, 2026-11-25): the quiver's SECOND term, a PERCENT (50 = +50%), beside the additive one above and
+     * reconciled by the same mechanism in the same loop. CC'S CALL: its own Stat and its own target, not a second
+     * field of the additive one, so neither reconcile can wipe the other's sources (ModifierReconciler removes every
+     * source absent from the map it is handed). Base 0.0. Combined with the additive term in ONE place,
+     * {@code QuiverSize.resolve}; silent and void, as the additive term is, for the same reason.
+     */
+    private final Stat quiverSizePercent = new Stat(0.0);
+
+    /**
      * The RELOAD-TIME bonus this combatant's gear grants, in WHOLE TICKS. Base 0.0 -- the entire
      * value is gear-contributed, like {@link #quiverSizeBonus} beside it.
      *
@@ -619,6 +628,11 @@ public final class HealthState {
         return quiverSizeBonus.value();
     }
 
+    /** Q1: the summed percent modifiers on the quiver (50 = +50%). */
+    public double quiverSizePercentValue() {
+        return quiverSizePercent.value();
+    }
+
     /** Set (or replace) the quiver-size modifier from {@code source}; true if the value changed. */
     public boolean setQuiverSizeModifier(String source, double amount) {
         return quiverSizeBonus.putModifier(source, amount);
@@ -955,6 +969,17 @@ public final class HealthState {
      * was reorganised to make unrepresentable. {@code CombatantStats.reconcileQuiverSizeModifiers}
      * returns void and is silent, like {@link #healthRegenTarget}'s.
      */
+    /** Q1: the percent term's own target, the additive one's shape. */
+    ModifierTarget quiverSizePercentTarget() {
+        return new ModifierTarget() {
+            @Override public Set<String> sources() { return quiverSizePercent.sources(); }
+            @Override public boolean setModifier(String source, double amount) {
+                return quiverSizePercent.putModifier(source, amount);
+            }
+            @Override public boolean clearModifier(String source) { return quiverSizePercent.removeModifier(source); }
+        };
+    }
+
     ModifierTarget quiverSizeTarget() {
         return new ModifierTarget() {
             @Override public Set<String> sources() { return quiverSizeBonus.sources(); }

@@ -75,6 +75,16 @@ class ArmorSetContributionsTest {
     }
 
     @Test
+    void chainmailsQuiverPercentIsItsOwnTermUnderTheSetsOneKey() {
+        var c = ArmorSetContributions.of(set("chainmail", ArmorSetBonus.Type.QUIVER_SIZE_PERCENT, 50));
+        assertEquals(Map.of("armorset:chainmail", 50.0), c.quiverPercent());
+        assertTrue(c.byStat().isEmpty(), "no other stat moves");
+        assertEquals(List.of(), c.summonGrants());
+        assertEquals(Map.of(), ArmorSetContributions.NONE.quiverPercent(), "off: absent, so the reconciler drops it");
+        // Mutation: route the percent into the additive quiver map -> this map is empty -> reddens.
+    }
+
+    @Test
     void noSetContributesNothingAnywhere() {
         assertTrue(ArmorSetContributions.NONE.byStat().isEmpty());
         assertEquals(List.of(), ArmorSetContributions.NONE.summonGrants());

@@ -153,6 +153,8 @@ class ArmorLoreLinesTest {
         assertEquals("+100 Max Health",
                 ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.MAX_HEALTH, 100)));
         assertEquals("+40 Defense", ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.DEFENSE, 40)));
+        assertEquals("+50% Quiver Size",   // Q3: the PERCENT, since the resolved number depends on the weapon
+                ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.QUIVER_SIZE_PERCENT, 50)));
         // Mutation: print the ENGINE value (0.4 for leather's regen) -> "+0.4 ..." -> reddens.
         assertEquals("Set Bonus (4 pieces):", ArmorLoreLines.SET_BONUS_HEADER);
     }
