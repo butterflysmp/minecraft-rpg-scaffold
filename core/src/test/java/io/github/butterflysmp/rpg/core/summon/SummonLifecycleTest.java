@@ -73,6 +73,23 @@ class SummonLifecycleTest {
         assertEquals(20, SummonBackstop.PERIOD_TICKS, "the seat's 20 ticks");
     }
 
+    /** O3: foreign goals are counted by KEY; ours never count, whatever their number. */
+    @Test
+    void foreignGoalsAreCountedByKeyNotByNumber() {
+        assertEquals(0, SummonBackstop.foreignGoals(List.of(), "rpg"));
+        assertEquals(0, SummonBackstop.foreignGoals(List.of("rpg", "rpg"), "rpg"), "two of ours: none foreign");
+        assertEquals(2, SummonBackstop.foreignGoals(List.of("rpg", "minecraft", "minecraft"), "rpg"));
+        assertEquals(1, SummonBackstop.foreignGoals(List.of("minecraft"), "rpg"));
+    }
+
+    /** O2: a body already gone has no position. */
+    @Test
+    void aGoneBodyIsLoggedAtUnknown() {
+        SummonStore.Summon s = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 150);
+        assertEquals("SUMMON removed owner=" + HIM + " weapon=whistle body=" + B1 + " at=unknown cause=death",
+                SummonTrace.removed(s, null, SummonRemoval.DEATH));
+    }
+
     @Test
     void theTraceLinesCarryOwnerWeaponBodyAndPosition() {
         SummonStore.Summon s = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 150);

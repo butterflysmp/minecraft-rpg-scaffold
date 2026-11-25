@@ -156,7 +156,8 @@ public final class SummonService {
     private void judge(SummonStore.Summon s, Mob mob) {
         Player owner = Bukkit.getPlayer(s.owner());
         boolean here = owner != null && owner.isOnline() && owner.getWorld().equals(mob.getWorld());
-        int foreign = Bukkit.getMobGoals().getAllGoals(mob).size();   // 3b: ours is none, so every goal is foreign
+        int foreign = SummonBackstop.foreignGoals(Bukkit.getMobGoals().getAllGoals(mob).stream()   // O3: by key
+                .map(g -> g.getKey().getNamespacedKey().getNamespace()).toList(), ctx.keys().summonOwner.getNamespace());
         switch (SummonBackstop.decide(store().owns(s.body()), here, foreign)) {
             case REMOVE -> SummonRemovals.remove(ctx, s.body(), SummonRemoval.BACKSTOP);
             case RESTRIP -> {

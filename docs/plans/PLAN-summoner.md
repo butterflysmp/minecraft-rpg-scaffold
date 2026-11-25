@@ -327,3 +327,32 @@ on its member bound), `SummonLoaderTest` (E1). `VaultWiringSignatureTest`'s quit
 lines", which the quit handler's three new lines broke while the call stayed inside). **Mutations, all red:** MUTELEMENT,
 MUTEXPLICIT, MUTASNULL, MUTVOID, MUTMOBHIT, MUTEND (the bound's control), MUTCHARGEGATE, MUTPERSIST, MUTRESTRIP,
 MUTOWNERHERE, MUTREPLACEBACK, MUTQ4FIRST.
+
+## 6. BEN'S RULING ON THE SKELETONS, AND PR 4 (2026-11-24)
+
+**BEN'S RULING, 2026-11-24: A.** The Wolf stays; skeletons flee it as vanilla does. Offered and not taken: **B**
+(skeletons stand and fight a summon) and **C** (another body). With A, a fleeing skeleton that passes the chase limit is
+dropped and may be taken again when it qualifies again; no skeleton is special-cased.
+
+### The owed reads, O1-O4 (before any gate row)
+
+- **O1, CAN A SUMMON DIE: YES, AS BUILT.** READ, the chain: our store's damage (`BukkitCombatant.applyNow` writes only
+  `ctx.stats().damage`; it calls no vanilla `damage()` and no `setHealth`) -> `HealthChange.reachedZero` ->
+  `MobDeathSystem.shouldKill` (`reachedZero && !targetIsPlayer`; a summon is bootstrapped as a non-player) ->
+  `mob.setHealth(0)` -> `CraftLivingEntity.setHealth` (javap: `handle.setHealth` then `LivingEntity.die(generic)`) ->
+  `die` -> `dropAllDeathLoot` -> `CraftEventFactory.callEntityDeathEvent`. **No EntityDamageEvent on the chain**, so Q4's
+  refusals never see it. **ONE FIX:** the death event is CANCELLABLE (a revive); the summon's death hook was NORMAL and
+  would have let the store go for a death another plugin cancelled, leaving a tagged orphan only an enable sweep could
+  find. It is now `MONITOR, ignoreCancelled = true`. Left to the boot: the death itself and its `SUMMON removed
+  cause=death` line.
+- **O2:** a body already gone is logged `at=unknown`, never `0.00 0.00 0.00`.
+- **O3:** the backstop counts foreign goals BY KEY (`SummonBackstop.foreignGoals`: each goal's key namespace against
+  ours), so PR 4's own goals never read as foreign.
+- **O4, READ:** the only throttled refusal notices are `BrokenNotice` and `QuiverNotice`: the player's `CooldownTracker`
+  under a reserved key, 40 ticks. **The cooldown and no-mana notices are NOT throttled** (they send on every press), so
+  the seat's premise that they are was not what the code does. The refused summon uses THAT mechanism (`SummonNotice`,
+  key `__summon_refused_notice`, 40 ticks: SEAT PLACEHOLDER), no second one.
+
+**Tests:** `SummonLifecycleTest` +2 (O2, O3), `SummonWiringTest` +2 (O1's chain as far as a test reaches, O4).
+**Mutations, all red:** MUTFOREIGN, MUTUNKNOWN, MUTDEATHMON (first run overreached to five handlers sharing the annotation;
+redone scoped to the death hook's line, one line changed), MUTTHROTTLE.
