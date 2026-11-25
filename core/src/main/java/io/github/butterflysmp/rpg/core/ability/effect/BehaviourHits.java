@@ -7,6 +7,7 @@ import io.github.butterflysmp.rpg.core.combat.Combatant;
 import io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour;
 import io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour;
 import io.github.butterflysmp.rpg.core.enchant.ShockwaveStreaks;
+import io.github.butterflysmp.rpg.core.mob.MobHostility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +58,7 @@ public final class BehaviourHits {
      */
     public double chainFactor(CombatWorld world, Caster caster, Combatant target) {
         if (!caster.countsAsHit() || caster.behaviours().isEmpty()) return 1.0;
-        if (target.state().player()) return 1.0;
+        if (!MobHostility.countsAsAMobHit(target.state().side())) return 1.0;
         double factor = 1.0;
         for (ActiveBehaviour active : caster.behaviours()) {
             if (active.behaviour() instanceof EnchantBehaviour.HitChain chain
@@ -78,7 +79,7 @@ public final class BehaviourHits {
      */
     public static double scorchStamp(Caster caster, Combatant target) {
         if (!caster.countsAsHit() || caster.behaviours().isEmpty()) return 0;
-        if (target.state().player()) return 0;
+        if (!MobHostility.countsAsAMobHit(target.state().side())) return 0;
         double percent = 0;
         for (ActiveBehaviour active : caster.behaviours()) {
             if (active.behaviour() instanceof EnchantBehaviour.ScorchBoost boost) {
@@ -91,7 +92,7 @@ public final class BehaviourHits {
     /** One primary hit by {@code caster} on {@code target}, in {@code world}. */
     public void onHit(CombatWorld world, Caster caster, Combatant target) {
         if (!caster.countsAsHit() || caster.behaviours().isEmpty()) return;
-        if (target.state().player()) return;   // only what his abilities may hurt counts, and that is mobs
+        if (!MobHostility.countsAsAMobHit(target.state().side())) return;   // only a hit on a mob counts, as before
         long now = world.currentTick();
         for (ActiveBehaviour active : caster.behaviours()) {
             switch (active.behaviour()) {
@@ -131,7 +132,7 @@ public final class BehaviourHits {
         List<Combatant> struck = new ArrayList<>();
         for (Combatant c : world.combatantsNear(origin, radius)) {
             if (c.id().equals(self)) continue;          // never himself
-            if (c.state().player()) continue;           // never a player
+            if (!MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, c.state().side(), false, MobHostility.PvpPath.SHOCKWAVE)) continue;
             if (!c.state().alive()) continue;
             // THE RADIUS IS A SPHERE, CENTRE TO CENTRE (feet to the struck mob's feet). READ: the server's combatantsNear
             // is World#getNearbyEntities(center, r, r, r), a BOX whose corners reach r x sqrt(3); without this a level-1

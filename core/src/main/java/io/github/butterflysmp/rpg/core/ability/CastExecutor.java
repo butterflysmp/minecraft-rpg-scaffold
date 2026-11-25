@@ -16,6 +16,7 @@ import io.github.butterflysmp.rpg.core.combat.ProjectileFlight;
 import io.github.butterflysmp.rpg.core.combat.RayHit;
 import io.github.butterflysmp.rpg.core.combat.RaySweep;
 import io.github.butterflysmp.rpg.core.mob.BeamLine;
+import io.github.butterflysmp.rpg.core.mob.MobHostility;
 import io.github.butterflysmp.rpg.core.combat.SpreadPattern;
 import io.github.butterflysmp.rpg.core.combat.SweptLine;
 
@@ -380,6 +381,7 @@ public final class CastExecutor {
         for (ConeShell.Reached reached : ConeShell.reached(aim, cone.arcDegrees(), inner, outer, candidates,
                 caster.id(), struck)) {
             Combatant body = reached.combatant();
+            if (!MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, body.state().side(), false, MobHostility.PvpPath.CONE)) continue;
             if (!world.lineOfSightClear(aim.origin(), body.state().sightPoint())) continue;
             struckNow.add(body.id());
             detonate(ability, caster, body, body.state().position());
@@ -506,7 +508,7 @@ public final class CastExecutor {
         var candidates = world.combatantsNear(midpoint, reach / 2 + DASH_HIT_RADIUS);
 
         List<Combatant> hits = SweptLine.enemiesAlong(
-                origin, drive, reach, DASH_HIT_RADIUS, candidates, caster.id());
+                origin, drive, reach, DASH_HIT_RADIUS, candidates, caster.id(), io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER);
 
         // Origin is the caster's PRE-dash snapshot feet, so the embers launch from where you
         // stood, not from where the impulse is carrying you.
@@ -818,7 +820,7 @@ public final class CastExecutor {
         List<Combatant> struck = new java.util.ArrayList<>();
         for (Combatant c : world.combatantsNear(centre, shot.radius())) {
             if (c.id().equals(caster.id())) continue;                     // never himself
-            if (c.state().player()) continue;                             // never a player
+            if (!MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, c.state().side(), false, MobHostility.PvpPath.CRYSTAL_SHOT)) continue;
             if (!c.state().alive()) continue;
             if (c.state().position().distanceSquared(centre) > shot.radius() * shot.radius()) continue;   // the sphere
             if (!world.lineOfSightClear(centre, c.state().sightPoint())) continue;                        // a clear line
@@ -1157,7 +1159,12 @@ public final class CastExecutor {
             return;
         }
         if (hit.isPresent()) {
-            detonate(ability, caster, hit.get().combatant(), hit.get().point());
+            // THE ONE TABLE (2a): a body the caster may not hit by a ray (a summon) takes nothing; the ray still ends on it
+            // (castRay's first body is the port's choice) and lands untargeted at the point.
+            Combatant body = hit.get().combatant();
+            boolean admitted = body == null
+                    || MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, body.state().side(), false, MobHostility.PvpPath.RAY);
+            detonate(ability, caster, admitted ? body : null, hit.get().point());
             return;
         }
 
@@ -1206,6 +1213,8 @@ public final class CastExecutor {
             for (RaySweep.Struck s : RaySweep.struck(line, ray.tolerance(), sweep.bodies())) {
                 UUID id = s.combatant().id();
                 if (struckNow.contains(id)) continue;
+                if (!MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, s.combatant().state().side(), false,
+                        MobHostility.PvpPath.RAY)) continue;
                 if (!s.exact() && !world.lineOfSightClear(s.point(), s.combatant().state().sightPoint())) continue;
                 struckNow.add(id);
                 detonate(ability, caster, s.combatant(), s.point());
@@ -1261,6 +1270,7 @@ public final class CastExecutor {
 
         for (Combatant candidate : world.combatantsNear(aim.origin(), melee.reach())) {
             if (candidate.id().equals(casterId)) continue;
+            if (!MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, candidate.state().side(), false, MobHostility.PvpPath.SWING)) continue;
 
             // The angle test is Aim.withinArc, shared with the cone cast (2026-11-22): the swing tests the FEET.
             if (!aim.withinArc(candidate.state().position(), melee.arcDegrees())) continue;

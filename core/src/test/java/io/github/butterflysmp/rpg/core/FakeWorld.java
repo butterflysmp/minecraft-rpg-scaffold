@@ -680,6 +680,16 @@ public final class FakeWorld implements CombatWorld {
         /** A player is spared mob-only effects; a mob is not. Defaults to mob. */
         public boolean player = false;
 
+        /** A FAKE SUMMON (the Summoner slice, 2a; tests only): its snapshot's side is SUMMON. Wins over player. */
+        public boolean summon = false;
+
+        /** The side this dummy's snapshot carries. */
+        public io.github.butterflysmp.rpg.core.mob.MobHostility.Side side() {
+            return summon ? io.github.butterflysmp.rpg.core.mob.MobHostility.Side.SUMMON
+                    : player ? io.github.butterflysmp.rpg.core.mob.MobHostility.Side.PLAYER
+                    : io.github.butterflysmp.rpg.core.mob.MobHostility.Side.MOB;
+        }
+
         /**
          * The attack-speed multiplier this dummy's snapshot carries. Defaults to neutral, so every
          * existing test's cadence is unchanged; a cooldown-scaling test sets it.
@@ -866,7 +876,7 @@ public final class FakeWorld implements CombatWorld {
         public Vec3 position() { return pos; }
 
         public CombatantSnapshot snapshot() {
-            return new CombatantSnapshot(id, pos, eyeHeight, health > 0, player, attackSpeed, attackDamage,
+            return new CombatantSnapshot(id, pos, eyeHeight, health > 0, side(), attackSpeed, attackDamage,
                     classDamageBonus, enchantDamagePercent, critMultiplier, levelDamageBonus);
         }
 

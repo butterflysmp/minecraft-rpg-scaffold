@@ -112,3 +112,52 @@ and `restore` writes it back (`setMaxSummonsBase`, null restoring absence) and n
 (the snapshot needs a live Player), bounded by the constructor and by `restore`'s own return, not by a line count. The
 behaviour of a `null` write (back to 1) is `ProfileServiceTest`'s, from PR 1. **Mutations, all red:** `MUTCAPNULL`,
 `MUTNOWRITE`, `MUTNOLINE`. #289's head is not rewritten.
+
+### 2.1 THE TABLE, BUILT (the seat's P1-P4, 2026-11-24)
+
+`core/mob/MobHostility` is the ONE home: `harms(attacker, victim, victimExempt, path)`. PLAYER -> PLAYER reads the enum
+`PvpPath` (TODAY'S BEHAVIOUR, UNRULED, OPEN FOR BEN (PvP); Ben's answer is a change to that enum alone); every other
+cell is plain. `hostileTo` is the MOB row; `refusedSummonCell` (the paper guard's question) reads `harms` and is true
+only for PLAYER -> SUMMON, SUMMON -> PLAYER and SUMMON -> SUMMON.
+
+| attacker \ victim | PLAYER | MOB | SUMMON |
+|---|---|---|---|
+| PLAYER | PER PATH, AS TODAY (`PvpPath`) | yes | no |
+| MOB | yes, unless creative/spectator | no | yes |
+| SUMMON | no | yes | no |
+
+`PvpPath`, every value READ by a test: SWING, RAY, PROJECTILE, CONE, BURST, AREA, IMPLOSION (for what its `affects:`
+admits), STATUS_TICK **land**; DASH_LINE, TRAVEL_END_BURST, SHOCKWAVE, CRYSTAL_SHOT, IGNITE_SPLASH, HOMING_PICK
+**spared**. The SOURCE rows of section 2 and the status tick were each READ by a new characterisation row before the
+refactor (`PvpTodayCharacterisationTest`, 9 rows) and **every one read as the table said**; nothing was corrected.
+STATUS_TICK's core half is READ (a player's direct hit puts its status on a player); its tick half is side-blind by
+construction (`DotStatus.apply` and `ScorchStatus.apply` receive only the holder's UUID).
+
+**TWO DECISIONS OF MINE, FOR THE SEAT:**
+1. **`ENGINE_ATTACKER = PLAYER`, a constant, not a side read off the caster.** READ: the engine's only drivers are a
+   player's casts (`StoneCaster`, `RpgCommand`, `VanillaShots`, `WeaponFire` x2) and Ignite's applier is a player's id.
+   The first build read the caster's own side and turned **90 rows red**, one cause: core fixtures cast from a default
+   (mob) dummy, so MOB -> MOB refused their hits. The engine never asked the attacker before, so a constant keeps every
+   behaviour; it becomes a caster field the day a summon casts through the engine.
+2. **The enchant accounting is NOT the table.** `BehaviourHits.chainFactor`, `.scorchStamp`, `.onHit` and
+   `EffectApplier.trace` asked "is the victim a player"; they now ask `countsAsAMobHit` (victim is a MOB). Routing them
+   through `harms` would make a ray's PvP hit start counting for his enchants, which changes PvP.
+
+**Where a summon is refused on a DIRECT pick:** the plain ray and the projectile still END on it (their first body is
+the port's `castRay`) and land UNTARGETED at the point; the swept ray, the cone and the swing pass over it. Whether the
+port's `castRay` should skip a summon is 2b's question (the port filter), not answered here.
+
+**Sites converted** (file:line at this commit): `CastExecutor` 384 CONE, 823 CRYSTAL_SHOT, 1166 RAY, 1217 RAY (swept),
+1273 SWING; `BehaviourHits` 61, 82, 95 (accounting), 135 SHOCKWAVE; `EffectApplier` 243 BURST, 282 IMPLOSION, 340
+(accounting), 353 (the burst and area filter), 398 TRAVEL_END_BURST, 407 AREA; `Ignite` 301 IGNITE_SPLASH;
+`ProjectileFlight` 216 PROJECTILE, 425 HOMING_PICK; `SweptLine` 45 DASH_LINE. **No `state().player()` filter remains in
+core main** (`grep -rn "state()\.player()" core/src/main` is empty). The snapshot carries `Side side` (its five builders:
+`BukkitCombatant` as `instanceof Player` until 2b's classifier, `ShotStamp` copies it, `FakeWorld` and `ShotStampTest`).
+
+**Proof (H7):** `SummonSidesCoreTest` (11): each path run twice on one staging, the victim a mob (the control, hit) then
+a fake summon (spared): swing, ray, swept ray, projectile, cone, burst, area, travel-end burst, dash line, Ignite,
+implosion (both settings). Beside their own player rows: `BehaviourHitsTest.theShockwaveSparesASummonStandingInIt`,
+`OrbBeamTest.theCrystalShotSparesASummon`, `ProjectileHomingTest.aBoltNeverChasesASummonEvenWhenTheSummonIsNearer`.
+`MobHostilityTableTest` (5): every cell. **Mutations, all red:** MUTPVP, MUTSUMCELL, MUTMOBSUM, MUTCONE, MUTSWING,
+MUTNEARBY, MUTIMPLODE, MUTPROJ, MUTIGNITE, MUTSHOCK. (The first run of MUTCONE, MUTSWING, MUTIMPLODE and MUTSHOCK did
+not compile: the capture swallowed the `if`'s paren. Re-run correctly, each red.)

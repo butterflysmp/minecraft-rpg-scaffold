@@ -61,7 +61,7 @@ class SweptLineTest {
         // A generous candidate sphere, exactly as CastExecutor's Dash arm gathers them.
         var candidates = world.combatantsNear(new Vec3(5, 0, 0), 50);
         return Set.copyOf(SweptLine.enemiesAlong(Vec3.ZERO, ALONG_X, DISTANCE, RADIUS,
-                candidates, caster.id()));
+                candidates, caster.id(), io.github.butterflysmp.rpg.core.mob.MobHostility.Side.PLAYER));
     }
 
     private static boolean has(Set<Combatant> hits, FakeWorld.Dummy who) {

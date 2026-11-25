@@ -85,7 +85,7 @@ import java.util.UUID;
  * ({@code weaponLevelDamage}), not here.
  */
 public record CombatantSnapshot(UUID id, Vec3 position, double eyeHeight, boolean alive,
-                                boolean player, double attackSpeed, double attackDamage,
+                                io.github.butterflysmp.rpg.core.mob.MobHostility.Side side, double attackSpeed, double attackDamage,
                                 double classDamageBonus, double enchantDamagePercent,
                                 double critMultiplier, double levelDamageBonus) {
 
@@ -113,5 +113,10 @@ public record CombatantSnapshot(UUID id, Vec3 position, double eyeHeight, boolea
      */
     public Vec3 sightPoint() {
         return position.add(new Vec3(0, eyeHeight, 0));
+    }
+
+    /** Is this combatant a PLAYER? Derived from its side (the Summoner slice's 2a: the boolean became a side). */
+    public boolean player() {
+        return side == io.github.butterflysmp.rpg.core.mob.MobHostility.Side.PLAYER;
     }
 }

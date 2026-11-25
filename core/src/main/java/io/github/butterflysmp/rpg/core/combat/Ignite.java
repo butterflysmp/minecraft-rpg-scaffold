@@ -293,7 +293,12 @@ public final class Ignite {
                 // observation and never a claim here. GATE-ignite.md's I1 records whether a number
                 // ever appears over the corpse.
                 if (c.id().equals(victimId)) continue;
-                if (c.state().player()) continue;
+                // THE ONE TABLE (2a). The attacker is the applier, and READ: both callers (BukkitCombatant's
+                // killing-blow clause and RpgListeners' scorched death) pass the id the scorch stored, which is a
+                // player's (a weapon) or the dev command's, never a mob's: the engine's attacker.
+                if (!io.github.butterflysmp.rpg.core.mob.MobHostility.harms(
+                        io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, c.state().side(), false,
+                        io.github.butterflysmp.rpg.core.mob.MobHostility.PvpPath.IGNITE_SPLASH)) continue;
                 // DefenseRule.APPLIES, deliberately, and NOT the burn's BYPASSED. The burn's
                 // exemption exists because it is a percent-of-max effect on a clock -- armour
                 // blunting it would mean armour reducing a fraction of your own health. A blast is

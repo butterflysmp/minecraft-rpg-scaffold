@@ -73,6 +73,18 @@ class OrbBeamTest {
         return s.world().traced.stream().filter(h -> source.equals(h.source())).toList();
     }
 
+    /** 2a, the one table: the crystal's shot never strikes a SUMMON (PLAYER -> SUMMON no); N is the control. */
+    @Test
+    void theCrystalShotSparesASummon() {
+        Stage s = stage();
+        s.p().player = false;
+        s.p().summon = true;   // P's slot, inside 8 with a clear line, as a fake summon
+        orb(s, s.him().id(), "lapis_staff", 2, true);
+        fire(s, BEAM);
+        assertEquals(100.0 - 6.3, s.n().health, 1e-9, "the control: the shot fired and struck N");
+        assertEquals(100.0, s.p().health, 1e-9, "never a summon");
+    }
+
     @Test
     void aBeamIntoTheOrbStrikesEachMobWithinEightWithAClearLineAndNothingElse() {
         Stage s = stage();

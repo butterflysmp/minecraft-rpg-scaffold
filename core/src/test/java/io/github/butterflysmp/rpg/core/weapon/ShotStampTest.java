@@ -68,7 +68,7 @@ class ShotStampTest {
     @Test
     void itAppliesItsDamageTermsToTheLiveShooter() {
         UUID id = UUID.randomUUID();
-        CombatantSnapshot live = new CombatantSnapshot(id, new Vec3(1, 2, 3), 1.62, true, true,
+        CombatantSnapshot live = new CombatantSnapshot(id, new Vec3(1, 2, 3), 1.62, true, io.github.butterflysmp.rpg.core.mob.MobHostility.Side.PLAYER,
                 1.6, 99.0, 0.5, 0.25, 1.5, 7.0);   // what he holds AT THE HIT: a sword, say
         CombatantSnapshot cast = stamp().applyTo(live);
         assertEquals(id, cast.id());
@@ -83,7 +83,7 @@ class ShotStampTest {
 
     @Test
     void itTakesItsTermsFromASnapshotAtTheShot() {
-        CombatantSnapshot atShot = new CombatantSnapshot(UUID.randomUUID(), Vec3.ZERO, 1.62, true, true,
+        CombatantSnapshot atShot = new CombatantSnapshot(UUID.randomUUID(), Vec3.ZERO, 1.62, true, io.github.butterflysmp.rpg.core.mob.MobHostility.Side.PLAYER,
                 0.0, 14.0, 3.0, 12.5, 2.0, 49.0);
         assertEquals(stamp(), ShotStamp.of("bow", 0.75, atShot, 250, stamp().behaviourEnchants()));
         assertEquals(java.util.List.of(), ShotStamp.of("bow", 0.75, atShot, 250).behaviourEnchants(),
