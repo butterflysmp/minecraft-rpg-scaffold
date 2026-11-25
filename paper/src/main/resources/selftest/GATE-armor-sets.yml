@@ -701,6 +701,226 @@ AS15:
   - wait: 2
   - dump: held
 
+# AS17, CHAINMAIL'S QUIVER (Q2-Q4): the sheet's Quiver line, the Breacher 2 -> 3 and Dragon's Breath 5 -> 8 with the
+# set, 2 and 5 with one piece swapped; then Q4: Dragon's Breath packed to 8 with the set, the piece swapped, one press.
+AS17:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 10
+  - cmd: "rpg give breacher"
+  - cmd: "rpg give dragons_breath"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg stats"
+  - hold: empty
+  - cmd: "rpg give chainmail_helmet"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.head from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give chainmail_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give chainmail_leggings"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.legs from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give chainmail_boots"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.feet from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - hold: breacher
+  - wait: 2
+  - cmd: "rpg stats"
+  - hold: dragons_breath
+  - wait: 2
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s armor.head with minecraft:iron_helmet"
+  - wait: 10
+  - hold: breacher
+  - wait: 2
+  - cmd: "rpg stats"
+  - hold: dragons_breath
+  - wait: 2
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s armor.head with minecraft:chainmail_helmet"
+  - wait: 10
+  - cmd: "clear @s minecraft:arrow"
+  - cmd: "give @s minecraft:arrow 16"
+  - wait: 2
+  - dump: held
+  - use: ""
+  - wait: 3
+  - dump: held
+  - reload: ""
+  - wait: 50
+  - dump: held
+  - cmd: "item replace entity @s armor.head with minecraft:iron_helmet"
+  - wait: 10
+  - cmd: "rpg stats"
+  - dump: held
+  - use: ""
+  - wait: 3
+  - dump: held
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+
+# AS18, WEAR (D2'): a minted iron set, each piece read before and after. One rpg damage 1 (our pricing through Defense):
+# each piece +1. Then a scripted mob hit priced near zero, as SM3AR: each piece +1 again, NOT +2 (vanilla's own armor
+# damage on that hit is suppressed).
+AS18:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 10
+  - cmd: "rpg stats"
+  - hold: empty
+  - cmd: "rpg give iron_helmet"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.head from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_leggings"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.legs from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_boots"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.feet from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - probe_armor: ""
+  - cmd: "rpg damage 1"
+  - wait: 5
+  - probe_armor: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "summon minecraft:zombie ~3 ~ ~ {NoAI:1b,Tags:[\"selftest\",\"s18\"],attributes:[{id:\"minecraft:attack_damage\",base:0.002}]}"
+  - wait: 2
+  - cmd: "damage @s 0.2 minecraft:mob_attack by @e[tag=s18,limit=1]"
+  - wait: 5
+  - probe_armor: ""
+  - cmd: "kill @e[tag=s18]"
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+
+# AS19, A PIECE BREAKS (D3'): an iron set with the chestplate staged one wear from broken (damage 238 of 240). One hit
+# breaks it: the notice; its 16 Defense gone; the set's +100 Max Health stays. A second hit: no further wear on it.
+AS19:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - hold: empty
+  - cmd: "rpg give iron_helmet"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.head from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg durability set 238"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_leggings"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.legs from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_boots"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.feet from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - probe_armor: ""
+  - cmd: "rpg damage 1"
+  - wait: 10
+  - probe_armor: ""
+  - cmd: "rpg stats"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg damage 1"
+  - wait: 5
+  - probe_armor: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+
 # AS16, THE ONE ASK, LAST: a full iron set worn, then the question.
 AS16:
   - clear_inventory: ""

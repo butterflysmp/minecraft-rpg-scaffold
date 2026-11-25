@@ -97,6 +97,20 @@ final class SelfTestDrivers {
                         + " offhand=" + itemId(inv.getItemInOffHand()));
                 yield Optional.empty();
             }
+            case PROBE_ARMOR -> {
+                // The worn pieces' own damage, read by the weapons' helpers (D1'), so a wear row reads the items, not a story.
+                for (org.bukkit.inventory.EquipmentSlot s : new org.bukkit.inventory.EquipmentSlot[] {
+                        org.bukkit.inventory.EquipmentSlot.HEAD, org.bukkit.inventory.EquipmentSlot.CHEST,
+                        org.bukkit.inventory.EquipmentSlot.LEGS, org.bukkit.inventory.EquipmentSlot.FEET}) {
+                    org.bukkit.inventory.ItemStack piece = p.getInventory().getItem(s);
+                    java.util.OptionalInt max = io.github.butterflysmp.rpg.paper.weapon.WeaponDurability.maxOf(piece);
+                    run.log("ARMOR slot=" + s.name() + " item=" + itemId(piece)
+                            + " damage=" + io.github.butterflysmp.rpg.paper.weapon.WeaponDurability.damageOf(piece)
+                            + " max=" + (max.isPresent() ? max.getAsInt() : 0)
+                            + " broken=" + io.github.butterflysmp.rpg.paper.weapon.WeaponDurability.isBroken(piece));
+                }
+                yield Optional.empty();
+            }
             case RELOAD -> {
                 run.log("DRIVE reload held=" + itemId(p.getInventory().getItemInMainHand()));
                 run.leftClick().accept(p);

@@ -1,6 +1,7 @@
 # GATE — ARMOR SETS: AUTHORED DEFENSE, COPPER, THE SET BONUSES, THE FOUR COLUMNS ON ARMOR
 
-**Status: NOT RUN.** Branch `feat/armor-sets-gate`, on #303 `feat/armor-sets-3` (the stack #300 → #301 → #302 → #303).
+**Status: NOT RUN.** Branch `feat/armor-sets-gate`, on #306 `feat/armor-sets-5` (the stack #300 → #301 → #302 → #303 → #305 → #306; extended
+in place 2026-11-25 for the seat's re-rulings, before any approval or boot).
 Written 2026-11-25; every prediction committed before any boot. **No boot without Ben's own "ready" and the seat's
 approval of code and gate from origin** (`.claude/rules/booting.md`, ticked line by line). **GAME MODE: SURVIVAL, every
 row.**
@@ -14,7 +15,7 @@ row.**
 **Summoner FIRST, so #300's owed rows are read:** SM1R, SM3AR, SM3DR, SM4R, SM14R, SM16R (predicted in
 `GATE-summoner.md` on #300), and **SM7R** (P-1's re-prediction, added on this branch to `GATE-summoner.md`; the scenario's
 SM7 key renamed). Every other summoner row is a regression read against its own prediction there. Armor-sets' rows are
-AUTO except **AS16, the one ASK, last**. On the pad, facing east; nothing is asked of his ground, position or inventory.
+AUTO except **AS16, the one ASK, last** (the scenario lists AS17 to AS19 before it, so the ask still ends the run). On the pad, facing east; nothing is asked of his ground, position or inventory.
 **Lint: green** (`SelfTestScenariosTest`, `ScenarioLint`).
 
 The plan is `docs/plans/PLAN-armor-sets.md`. **What this gate does NOT stage, and why, is under *NOT STAGEABLE*.**
@@ -82,24 +83,34 @@ So his accessories, fragments or anything else he carries cannot move a reading.
 - **The armor key** is `rpg:armor_id`. READ: `Keys` builds it as `new NamespacedKey(plugin, "armor_id")` and the plugin
   is named `Rpg`. That the namespace is lowercased is INFERRED. AS14's give writes it under `PublicBukkitValues` in the
   item's `custom_data` (INFERRED, Paper's PDC storage).
+- **`probe_armor` added (CC'S CALL, an instrument only, 2026-11-25):** one `ARMOR slot=… item=… damage=… max=… broken=…`
+  line per worn slot, read through the weapons' own helpers (`WeaponDurability.damageOf`, `maxOf`, `isBroken`). It writes
+  nothing.
 - **`shift_click` widened (CC'S CALL, this branch):** the driver now matches an `armor_id` as well as a `weapon_id`, so
   AS13 can place a helmet in the table. `SelfTestWeaponIdsTest` accepts an armor id there.
 
 ## SAFETY: THE MOST THE RUN CAN DEAL HIM — A SUM, BEFORE THE ROWS (S-1 TO S-3)
 
-**The cap: 20.000 over the whole `summoner+armor-sets` run.** No mob acts on him in armor-sets. AS4's wolf is ours, and
-SUMMON → PLAYER is a refused cell (READ). No hostile is spawned in any armor-sets row.
+**The cap: 20.000 over the whole `summoner+armor-sets` run.** No mob ACTS on him in armor-sets: AS4's wolf is ours, and
+SUMMON → PLAYER is a refused cell (READ). The one hostile, AS18's `s18`, is a FROZEN (NoAI) zombie whose only hit is a
+scripted one, staged exactly as SM3AR (its attack 0.002), and it is killed in its row (and by any abort's restore, READ
+`GATE-summoner.md` X8).
 
 | row | source | every term, EXECUTED | most dealt |
 |---|---|---|---|
 | summoner, all of it | `GATE-summoner.md`'s sum (SM3AR's 0.002 × 5.0 × 100/100) | executed there | **0.010** |
 | AS9 | ONE `/rpg damage 10`, dealer himself | `applyDefense(10, D)`, D his staged Defense. At 112 it is 4.716981132075472. **At the worst bound, his Defense absent, `applyDefense(10, 0)` = 10.0** | **10.000** |
+| AS18 | ONE `/rpg damage 1`, dealer himself | `applyDefense(1, 48)` = 0.6756756756756757; worst bound `applyDefense(1, 0)` = 1.0 | **1.000** |
+| AS18 | ONE scripted `damage @s 0.2 mob_attack by s18`, priced from `s18`'s seeded attack (READ, R1) | `MobScaling.attackDamage(0.002, false, true, 100)` = 0.01, through `applyDefense(0.01, 48)` = 0.006756756756756757. S-3: the pad's worst score is 100 (READ, `GATE-summoner.md`): 0.01 | **0.010** |
+| AS19 | TWO `/rpg damage 1`, dealer himself | `applyDefense(1, 48)` = 0.6756756756756757, then `applyDefense(1, 32)` = 0.7575757575757576; worst bound 1.0 each | **2.000** |
 | every other armor-sets row | nothing touches his health | — | **0** |
 
-**Sum, at every term's worst: 10.010 ≤ 20.000.**
-- **S-3:** the dealer is himself, so no mob score is a term.
-- **S-2:** AS9 heals him full before and after the one hit.
-- **S-1:** both of AS9's figures are executed.
+**Sum, at every term's worst: 0.010 + 10.000 + 1.000 + 0.010 + 2.000 = 13.020 ≤ 20.000.**
+- **S-3:** AS9's and AS19's dealer is himself, so no mob score is a term; AS18's mob term is at the pad's worst score.
+- **S-2:** each wounding row heals him full before and after each hit.
+- **S-1:** every figure above is executed (jshell, against `core/target/classes`).
+- **Wear is not a SAFETY term:** it moves his items, never his health. Every hit above also wears his worn pieces by 1
+  (D2'), and the run's restore puts his own inventory back, armour included.
 
 ## CARRIED STATE (CC, IN THIS ORDER) — A CHECKLIST, EACH LINE TICKED IN THE REPORT
 
@@ -115,9 +126,9 @@ questions, waits for `SELFTEST armor-sets END`, then `/stop`.
 
 ## HOW LONG THE RUN IS
 
-- **Armor-sets' waits sum to 918 ticks (45.9 s)**
+- **Armor-sets' waits sum to 1183 ticks (59.15 s)**
   (`tr -d '\r' < GATE-armor-sets.yml | awk '/^  - wait: /{s+=$3} END {print s}'`), plus AS16's ask (up to 1200 ticks,
-  60 s, or until he answers). 687 steps (`grep -c '^  - '`); steps that are not waits share their pass's tick (READ,
+  60 s, or until he answers). 894 steps (`grep -c '^  - '`); steps that are not waits share their pass's tick (READ,
   `advance`).
 - **Summoner's waits: 1473 ticks (73.65 s)** (its own gate), plus SM17's ask.
 - **About 3 to 5 minutes in all (ESTIMATE:** the row-boundary clean and settle, and the two asks' answer times, are not
@@ -134,11 +145,11 @@ prints it, shortened. **Not `-dirty`, not `unknown`.** Instrument: `Select-Strin
 ### R0b — the jar carries the stack and this gate
 
 `docs/gates/GATE-armor-sets-r0b.ps1`. **Prediction, line for line:**
-- before `'--- absent'`: **30 `PRESENT`, 0 `ABSENT`**;
+- before `'--- absent'`: **38 `PRESENT`, 0 `ABSENT`**;
 - between `'--- absent'` and `'--- controls'`: **4 `ABSENT`, 0 `PRESENT`**;
 - after `'--- controls'`: **4 `ABSENT`, 0 `PRESENT`**.
 
-Counted from the script: 19 `ValueLine` + 7 `Entry` + 4 `Has` = 30, then 4 and 4. **It was run before commit on a jar
+Counted from the script, by section: 22 `ValueLine` + 10 `Entry` + 6 `Has` = 38, then 4 and 4. **It was run before commit on a jar
 built from this tree; see the PR body.**
 
 ### R0c — every Loaded line, and no `[Rpg]` WARN
@@ -155,8 +166,9 @@ built from this tree; see the PR body.**
 
 ### R0d — every scenario loaded
 
-Exactly one **`[Rpg] Selftest: dev server, 436 scenarios across 49 gates [melee-cell, …, summoner, armor-sets]`**.
-Recount: 49 files, 485 keys, 49 setups; control 467 + 18 = 485. Controls: `419 scenarios` and `435 scenarios` ABSENT.
+Exactly one **`[Rpg] Selftest: dev server, 439 scenarios across 49 gates [melee-cell, …, summoner, armor-sets]`**.
+Recount: 49 files, 488 keys, 49 setups; control 467 + 21 = 488. Controls: `419 scenarios`, `436 scenarios` and `438 scenarios`
+ABSENT.
 
 ### R0e — the orphan sweep with nothing staged
 
@@ -181,7 +193,7 @@ the row's score:
 |---|---|---|---|---|
 | leather | 5 / 8 / 7 / 4 | `""`, `Set Bonus (4 pieces):`, `+2 Health Regen per 5s` | `Better than nothing, and it knows it.` | Common |
 | golden | 5 / 8 / 7 / 4 | `""`, `Set Bonus (4 pieces):`, `+2 Mana Regen per second` | `It buys goodwill from things that cannot spend it.` | Common |
-| chainmail | 5 / 8 / 7 / 4 | **none** | `Ten thousand rings, and every one of them someone's afternoon.` | Common |
+| chainmail | 5 / 8 / 7 / 4 | `""`, `Set Bonus (4 pieces):`, `+50% Quiver Size` | `Ten thousand rings, and every one of them someone's afternoon.` | Common |
 | copper | 5 / 8 / 7 / 4 | `""`, `Set Bonus (4 pieces):`, `+1 Max Summons` | `It greens where it is not worn.` | Common |
 | iron | 10 / 16 / 14 / 8 | `""`, `Set Bonus (4 pieces):`, `+100 Max Health` | `Honest plate. It has no opinion about who wears it.` | Common |
 | diamond | 15 / 24 / 21 / 12 | `""`, `Set Bonus (4 pieces):`, `+20 Defense` | `Cut from a single lattice, and cold to the touch.` | Uncommon |
@@ -218,10 +230,11 @@ These hold if nothing he carries grants them; the summoner boot read `defense=0.
   Health Regen and Max Health equal B.
 - **Head swapped (untagged iron helmet):** `Defense <B.D + 29>` and `Mana Regen <B.MR>`.
 
-### AS3 — CHAINMAIL: NO BONUS, BECAUSE ITS BONUS IS STOPPED
+### AS3 — CHAINMAIL: ITS BONUS IS THE QUIVER, SO NO SHEET STAT MOVES BUT DEFENSE
 
-The four chainmail blocks, with **no set lines**. Full set: `Defense <B.D + 24>`; Health Regen, Mana Regen and Max
-Health all equal B. **This is the control row: a set with no bonus moves nothing but Defense.**
+The four chainmail blocks, now WITH their set lines (`+50% Quiver Size`, Q3). Full set: `Defense <B.D + 24>`; Health
+Regen, Mana Regen and Max Health all equal B. No quiver weapon is held here, so the sheet has no `Quiver` line. The
+quiver itself is AS17's.
 
 ### AS4 — COPPER: THE SECOND SUMMON SLOT
 
@@ -301,12 +314,12 @@ Two minted (head, chest) and two untagged (legs, feet): **`Defense <B.D + 112>`*
 1. The level REPLY.
 2. `DRIVE shift-click … bottom slot=<n> iron_helmet x1`.
 3. The menu dump:
-   - **`SLOT 10 GRAY_DYE name="No weapon enchant"`** with `lore=["Nothing is tied to this weapon yet."]`;
+   - **`SLOT 10 GRAY_DYE name="No piece enchant"`** with `lore=["Nothing is tied to this armor slot yet."]` (the marker by the
+     gear's kind, 2026-11-25, SEAT PLACEHOLDER; `"No weapon enchant"` here is the FAIL);
    - **`SLOT 12 GRAY_DYE name="No unique enchant"`** with `lore=["Nothing unique is tied to this item's element
      yet."]`;
    - the normal columns at 14 and 16, from the four.
-   - The marker wording is the weapon's, as E2 ruled. That a helmet's slot-0 marker says "weapon" is **OPEN FOR BEN
-     (O8)**.
+   - Armor's marker comes from `EnchantMenuLayout.emptyMarkerFor(slot, gearClass)`; every weapon keeps its words.
 
 ### AS14 — A PRE-CHANGE PIECE, REFRESHED (F1)
 
@@ -328,6 +341,65 @@ Five copper ingots and the Recipe Book (crafting unlocks at level 3; AS13 left h
    Helmet"]`.
 4. The stamped score is read from its own line. The Defense line must equal `5 × score/100`.
 
+### AS17 — CHAINMAIL'S QUIVER: 2 → 3, 5 → 8, BACK, AND Q4
+
+Facing east, nothing on the pad. Both weapons are given BEFORE the set, so each mints full at its authored size. The
+`Quiver` line is the sheet's live `QuiverSize.resolve` for the held weapon (READ, `StatsSheetProjection`).
+1. **Bare, Breacher held:** `Quiver 2`.
+2. The four chainmail pieces worn.
+3. **With the set:** Breacher **`Quiver 3`**, Dragon's Breath **`Quiver 8`**. EXECUTED: `QuiverSize.resolve(2, 0, 50)`
+   = 3 and `resolve(5, 0, 50)` = 8.
+4. **The head swapped for an untagged iron helmet:** Breacher **`Quiver 2`**, Dragon's Breath **`Quiver 5`**
+   (`resolve(2, 0, 0)` = 2, `resolve(5, 0, 0)` = 5).
+5. **The head back** (an untagged chainmail helmet completes the set, A3). Then **Q4**, on Dragon's Breath, read from
+   its own lore line `Quiver: <loaded>/<capacity>` (`WeaponLoreLines`, rewritten only by `QuiverItems.setLoaded`, READ):
+   - before any press: **`Quiver: 5/5`**;
+   - one press (one round, as the Breacher's gate read for its spread): **`Quiver: 4/8`**, the capacity re-resolved at
+     the write;
+   - the reload (`DRIVE reload`, 40 ticks, the wait 50): **`Quiver: 8/8`**;
+   - **the head swapped:** the sheet reads **`Quiver 5`**, and the lore still reads **`Quiver: 8/8`**. Nothing is
+     written on removal: Q4, as Expanded Quiver;
+   - **one press:** **`Quiver: 5/5`**, 7 clamped to the new 5 at the write (`Quiver.clamp`). **`Quiver: 7/8` or `7/5`
+     is the FAIL.**
+6. His own arrows skip him (READ, `GATE-summoner.md`): no HURT line in the row.
+
+### AS18 — WEAR: ONE PER HIT, ONCE (D2')
+
+A minted iron set at score 100; `probe_armor` lines `ARMOR slot=<s> item=<id> damage=<d> max=<m> broken=<b>`. The
+maxima, READ at runtime from the material: helmet 165, chestplate 240, leggings 225, boots 195 (`ArmorMaterials` IRON
+15 × `ArmorType` 11 / 16 / 15 / 13, READ).
+1. **Fresh:** four lines, each `damage=0 broken=false`, with those maxima.
+2. **`rpg damage 1`:** `HURT before=1.000 after=0.676 defense=48.000 dealer=self` at B.D = 0 (EXECUTED
+   0.6756756756756757). Then **every piece `damage=1`**.
+3. **The scripted mob hit by the frozen `s18`, staged as SM3AR:**
+   - `HURT before=0.010 after=0.007 defense=48.000 dealer=<s18> dealerType=zombie` (EXECUTED: 0.01, then
+     0.006756756756756757).
+   - Then **every piece `damage=2`**.
+   - **`damage=3` on any piece is the FAIL:** vanilla's own armor damage on that hit was not suppressed. READ: vanilla
+     wears 1 for any hit, `(int) max(1, damage / 4)`.
+   - **`damage=1` is a FAIL too:** the mob's hit did not wear.
+4. No piece is broken.
+
+### AS19 — A PIECE BREAKS; THE SET STAYS (D3')
+
+An iron set at score 100, the chestplate staged `rpg durability set 238` while held. Its REPLY is recorded; READ, the
+command is scoped to our armor since D1'.
+1. **Before:**
+   - `ARMOR slot=CHEST … damage=238 max=240 broken=false`, the others `damage=0`;
+   - `rpg stats`: `Defense <B.D + 48>`, `Max Health <B.MH + 100>`.
+2. **One `rpg damage 1`** (`HURT before=1.000 after=0.676 defense=48.000`):
+   - **REPLY `"A piece of your armor is broken -- it no longer protects you. Repair it."`**
+     (`ArmorBrokenNotice.MESSAGE`, SEAT PLACEHOLDER);
+   - **`ARMOR slot=CHEST … damage=239 max=240 broken=true`** (broken at max − 1, the weapons' predicate), the others
+     `damage=1`;
+   - `rpg stats`: **`Defense <B.D + 32>`** (its 16 gone) and **`Max Health <B.MH + 100>`**, still, because the broken
+     piece still counts toward the set (Ben).
+3. **A second `rpg damage 1`** (`HURT before=1.000 after=0.758 defense=32.000`, EXECUTED 0.7575757575757576):
+   - **`CHEST … damage=239`**: no further wear;
+   - the others `damage=2`;
+   - the chestplate is never removed.
+4. **`Defense <B.D + 48>` after the break, or `Max Health <B.MH>`, is the FAIL.**
+
 ### AS16 — THE ONE ASK, LAST
 
 A full iron set is worn, then the question: *"Hover a piece of your iron armour: is the Set Bonus clear, and does the
@@ -338,13 +410,16 @@ A full iron set is worn, then the question: *"Hover a piece of your iron armour:
 
 ## NOT STAGEABLE (AND WHY)
 
-- **Chainmail's quiver on the Breacher (2 → 3) and Dragon's Breath (5 → 8): NOT STAGED.** The bonus is STOPPED
-  (`PLAN-armor-sets.md` 3.3: no per-player path for a percent). AS3 reads that nothing moves.
-- **Wear: a piece losing 1 per priced hit, breaking at 0, then giving no Defense while its set stays: NOT STAGED.**
-  D1-D3 are STOPPED (`PLAN-armor-sets.md` 4): armor has no broken state, and vanilla still wears it.
+- **Both entries that stood here are now STAGED** (the seat's re-rulings, 2026-11-25): chainmail's quiver is AS17, and
+  wear and breaking are AS18 and AS19.
+- **Unbreaking on armor is not staged on the pad:** a rolled piece's enchants are locked until the table activates them,
+  so only `ArmorWearTest` reads it (III at rolls 0.24 and 0.25).
 - **What only the boot can show:**
   - the client's tooltip render and the stats screen;
   - that `item replace … from` keeps the tag (AS6 witnesses it);
   - that AS14's give tags the item;
   - the recipe click (AS15);
   - the summon cast against a live cap (AS4).
+  - vanilla's armor wear on a real mob hit and its suppression (AS18 step 3);
+  - the broken notice's sound;
+  - the magazine's clamp at a real press (AS17).

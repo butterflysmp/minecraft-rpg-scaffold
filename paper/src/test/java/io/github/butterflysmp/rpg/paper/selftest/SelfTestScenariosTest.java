@@ -334,7 +334,9 @@ class SelfTestScenariosTest {
         // control: 444 + 23 (its setup and SM1, SM2, SM3A-SM3D, SM4-SM7, SM8A-SM8C, SM9-SM17) = 467. 410 was this line's value.
         // Then GATE-armor-sets.md (feat/armor-sets-gate, 2026-11-25), RECOUNTED: 49 gates, 485 keys, 49 setups, so 436. The
         // control: 467 + 18 (its setup and AS0-AS16) = 485; SM7 became SM7R, a rename, no count. 419 was this line's value.
-        assertEquals(436, loaded.rows());
+        // Then AS17-AS19 (the seat's re-rulings, 2026-11-25), RECOUNTED: 49 gates, 488 keys, 49 setups, so 439. Control:
+        // 485 + 3 = 488. 436 was this line's value.
+        assertEquals(439, loaded.rows());
     }
 
     /**
