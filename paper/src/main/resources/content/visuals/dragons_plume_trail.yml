@@ -70,7 +70,7 @@
 #
 # colour [60, 20, 90] IS OWNED BY NOTHING ELSE, checked against all seven DUST steps in
 # content/visuals/: lapis [40, 90, 240], emerald [40, 220, 90] (x2), volley [230, 60, 230], boltor
-# [200, 215, 235], locust [45, 120, 55]. The nearest neighbour in hue is volley_beam's magenta and it
+# [200, 215, 235], locust [45, 120, 55]. The nearest neighbour in hue is the deleted Volley Stone beam's magenta and it
 # is not close in brightness: channel sums 170 against 520. This reads as VOID -- the weapon's
 # element -- rather than as a Mage's beam.
 #

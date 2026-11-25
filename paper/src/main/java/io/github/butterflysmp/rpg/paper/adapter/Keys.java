@@ -305,7 +305,7 @@ public final class Keys {
      * declares a quiver but whose item carries no count is a DEFECT that warns -- never a zero that
      * is accepted.
      *
-     * <p>The argument is not new here. {@code volley_stone.yml} solved the same problem for
+     * <p>The argument is not new here. {@code volley_stone.yml} (deleted 2026-11) solved the same problem for
      * {@code attack_damage: 0}, authored rather than omitted: <i>"the absence would resolve to
      * exactly the value the omission meant -- which is the trap: it works, it is invisible, and it
      * hides a decision."</i>
@@ -451,7 +451,7 @@ public final class Keys {
     /**
      * Marks an item as THE Ability Stone (PLAN-build-system.md section 2.5), exactly as {@link #nexus}
      * marks the star: the key is the identity, NEVER the material. The stone is an {@code ECHO_SHARD}, the
-     * same material as the three universal accessories and the dev weapon {@code volley_stone}, so a
+     * same material as the three universal accessories and the dev weapon {@code volley_stone} (deleted 2026-11), so a
      * material test would make a Ward Charm cast (section 2.5.2).
      *
      * <p>Named for the ITEM's system, not {@code ability_*}: the deleted {@code ability_stone} weapon and the

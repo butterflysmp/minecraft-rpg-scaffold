@@ -1,3 +1,6 @@
+# TEST-ONLY FIXTURE, NEVER SHIPPED (2026-11-24): moved from content/visuals/ with the Volley Stone (deleted 2026-11), word
+# for word below this header. Loaded only by VolleyFixtureTest, from this directory.
+#
 # The Volley Stone's beam -- the line each of Rake's eight rays draws down itself. Id is the
 # filename: volley_beam.
 #

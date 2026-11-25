@@ -95,7 +95,6 @@ class UniqueSlotContentTest {
             "shield=bulwark,thorns,unbreaking",
             "short_bow=deft_hands,expanded_quiver,power,unbreaking",
             "stone_sword=sharpness,unbreaking",
-            "volley_stone=attunement,unbreaking",
             "ward_charm=",
             "withered_shortbow=deft_hands,expanded_quiver,power,unbreaking",
             "wooden_sword=sharpness,unbreaking"
@@ -136,13 +135,13 @@ class UniqueSlotContentTest {
     @Test
     void theShippedSetIsRecountedWithAControl() {
         Loaded l = load();
-        assertEquals(24, l.weapons());
+        assertEquals(23, l.weapons(), "2026-11-24: volley_stone deleted (PR B); recount: ls content/weapons | wc -l = 23");
         assertEquals(1, l.shields());
         assertEquals(24, l.armor());
         assertEquals(5, l.tools());
         assertEquals(6, l.accessories());
-        assertEquals(60, l.gear().size());
-        assertEquals(60, MASTER_POOLS.size(), "the snapshot covers the same 60");
+        assertEquals(59, l.gear().size());
+        assertEquals(59, MASTER_POOLS.size(), "the snapshot covers the same 59");
         assertEquals(22, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes and Wildfire");
         assertEquals(22, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
@@ -177,10 +176,10 @@ class UniqueSlotContentTest {
                 assertEquals(Optional.empty(), g.gearElement(), g.id() + " declares no element");
             }
         }
-        assertEquals(24, withElement);
+        assertEquals(23, withElement); // 2026-11-24: volley_stone deleted (PR B); ls content/weapons | wc -l = 23
     }
 
-    /** The unique pool: Kinetic Tremors on every KINETIC weapon (16 of them, all three classes), nothing anywhere else. */
+    /** The unique pool: Kinetic Tremors on every KINETIC weapon (15 of them since 2026-11-24, all three classes), nothing anywhere else. */
     @Test
     void theUniquePoolIsKineticTremorsOnEveryKineticWeaponAndEmptyElsewhere() {
         Loaded l = load();
@@ -197,7 +196,7 @@ class UniqueSlotContentTest {
                 assertEquals(List.of(), pool, g.id());
             }
         }
-        assertEquals(16, kinetic, "the kinetic weapons: grep -l '^element: kinetic' content/weapons/*.yml | wc -l");
+        assertEquals(15, kinetic, "the kinetic weapons: grep -l '^element: kinetic' content/weapons/*.yml | wc -l");
         // And on a REAL server the same: Tremors is real content, not a dev fixture.
         var realRoster = EnchantRollItems.roster(l.real().all());
         for (GearDefinition g : l.gear()) {
@@ -232,7 +231,7 @@ class UniqueSlotContentTest {
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }
-        assertEquals(60, checked, "the control: every shipped gear was asked");
+        assertEquals(59, checked, "the control: every shipped gear was asked");
     }
 
     /**

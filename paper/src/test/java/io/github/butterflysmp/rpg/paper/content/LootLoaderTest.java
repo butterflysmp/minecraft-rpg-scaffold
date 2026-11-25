@@ -212,7 +212,11 @@ class LootLoaderTest {
                 + " epic 8.00% (truly 7.682%), rare 12.00% (truly 10.602%), uncommon 20.00% (truly 15.549%),"
                 + " common 40.00% (truly 24.879%), nothing truly 37.318%; 1 sources [dev_example_not_a_drop]", lines.get(0));
         assertTrue(!ex.pools().containsKey(Rarity.EPIC) || ex.pools().get(Rarity.EPIC).isEmpty(), "no epic pool, so the skip shows (2026-11-21: knell_beam is epic, but joins no pool)");
-        for (Rarity r : List.of(Rarity.EXOTIC, Rarity.LEGENDARY, Rarity.RARE, Rarity.UNCOMMON, Rarity.COMMON)) {
+        // 2026-11-24 (PR B): the Volley Stone, the only exotic, was deleted and its pool with it. NO EXOTIC POOL now, so an
+        // exotic that lands is skipped like an epic; the Loaded line above is unchanged (it prints the tiers, not pools).
+        assertTrue(!ex.pools().containsKey(Rarity.EXOTIC) || ex.pools().get(Rarity.EXOTIC).isEmpty(), "no exotic pool");
+        assertTrue(ex.pools().values().stream().noneMatch(p -> p.contains("volley_stone")), "no deleted dev weapon: volley_stone");
+        for (Rarity r : List.of(Rarity.LEGENDARY, Rarity.RARE, Rarity.UNCOMMON, Rarity.COMMON)) {
             assertTrue(!ex.pools().getOrDefault(r, List.of()).isEmpty(), "a pool for " + r);
         }
         // The four dev weapons, deleted 2026-11-21 (emberblade was in the rare pool until then).

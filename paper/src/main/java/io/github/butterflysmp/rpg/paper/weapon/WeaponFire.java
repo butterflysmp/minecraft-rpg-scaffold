@@ -226,7 +226,7 @@ public final class WeaponFire {
                 // HERE rather than on CastExecutor's use listener, and the reason is a measurement
                 // rather than a preference: that listener fires for BASIC ATTACKS only
                 // (DamagePayload.isBasicAttack), so a quiver weapon whose shot is a plain `damage`
-                // effect -- which quiver_stone's (deleted 2026-11) is, exactly as volley_stone's is -- would fire
+                // effect -- which quiver_stone's (deleted 2026-11) is, exactly as volley_stone (deleted 2026-11)'s is -- would fire
                 // forever without ever spending a round. Durability can ride that seam because
                 // "what costs a use" is genuinely the basic-attack question; "what costs a round"
                 // is not.

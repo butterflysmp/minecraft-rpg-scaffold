@@ -1,6 +1,11 @@
 # GATE — THE DEV ROLL COMMAND (PLAN-loot.md, THE WIRING ORDER'S FIRST STEP; THE SEAT'S QUEUE, ITEM 6), AND THE STACK'S ONE BOOT
 
 **Seat approval 2026-11-20: code and gate diffed at a342e77f, booted at 5c2dee2c, readings at ecab8229. Merge on Ben's words.** **Status: READ, 2026-11-20, at `5c2dee2c`; every row on the sheet; TB1-TB6 carried** (was: NOT RUN). Written 2026-11-19 on `feat/loot-cascade`, before any boot of it. **This file carries the ONE R0 and
+
+> **DATED NOTE, 2026-11-24 (`feat/volley-stone-deleted`, the seat's PR B):** the Volley Stone was deleted with the dev
+> source's exotic pool, so `GATE-loot-roll.yml` LR2 now probes `dragons_plume` where it probed `volley_stone`, and an
+> exotic that lands on the dev source is skipped as an epic is. Every reading below was taken on the old pools and stands
+> as the record of them.
 the ONE run sheet for the whole stack** (the seat's part 2, 2026-11-19): `feat/fight-template` (#218) on master
 `cf3547e3`, and this branch (#219) rebased onto it. #219's hold is lifted: it rides the stack and merges after #218. The
 boot is on this branch's head. **NO BOOT until the seat has diffed the stack and this gate from origin and Ben says

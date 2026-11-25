@@ -22,7 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * <b>THE VOLLEY FIXTURE ACTUALLY LOADS, AND ITS BOOT WARNINGS ARE THE ONES IT INTENDS.</b>
  *
- * <p>{@code volley_stone.yml} is the only thing in the tree that exercises {@code CastSpec.Volley}
+ * <p><b>2026-11-24 (PR B): the Volley Stone was DELETED; its file is now the TEST-ONLY fixture
+ * {@code fixtures/weapons/volley_fixture.yml}, which ships nowhere.</b> Everything below about "the stone" and
+ * "boot" is the record of the shipped stone; the rows now read the fixture.
+ *
+ * <p>{@code volley_stone.yml} was the only thing in the tree that exercises {@code CastSpec.Volley}
  * end to end through the REAL loaders, so a typo in it would otherwise surface as a named, skipped
  * file at boot -- fail-soft by design, and therefore silent to every other test. The suite would
  * stay green with the fixture entirely absent, which is exactly the shape this project has been
@@ -79,21 +83,41 @@ class VolleyFixtureTest {
 
     private static TriggerBinding trigger(WeaponDefinition weapon, String input) {
         return weapon.trigger(input).orElseThrow(
-                () -> new AssertionError("volley_stone has no '" + input + "' trigger"));
+                () -> new AssertionError("volley_fixture has no '" + input + "' trigger"));
     }
 
+    /** The TEST-ONLY fixture directory (2026-11-24, PR B): never on the main classpath, never in the jar. */
+    private static Path fixtureRoot() {
+        try {
+            var url = VolleyFixtureTest.class.getResource("/fixtures");
+            assertNotNull(url, "the test fixtures are missing from the test classpath entirely");
+            return Path.of(url.toURI());
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static VisualRegistry fixtureVisuals() {
+        return new VisualLoader(quiet()).loadAll(new File(fixtureRoot().resolve("visuals").toString()));
+    }
+
+    /**
+     * <b>THE STONE WAS DELETED 2026-11-24 (PR B; Ben: "Delete the volley stone in this pass").</b> Its file moved, word
+     * for word below a header, to {@code fixtures/weapons/volley_fixture.yml}, with its id, display name and two visual
+     * ids renamed, so every row below reads the SAME triggers it read before. The mechanism is unchanged; only where
+     * the file lives is.
+     */
     private static WeaponDefinition volleyStone() {
-        var weapons = shippedWeapons();
-        // THE POSITIVE CONTROL, and it comes first. Everything below is a lookup in a registry
-        // built by walking a directory; a walk that found nothing returns an empty registry, and
-        // "volley_stone is absent" would then be reported identically whether the fixture is
-        // broken or the walk is blind.
-        assertTrue(weapons.all().size() >= 7,
-                "the weapon walk found only " + weapons.all().size() + " files -- it is blind, and a "
-                        + "blind walk reports a missing fixture exactly like a broken one");
-        return weapons.find("volley_stone").orElseThrow(
-                () -> new AssertionError("volley_stone.yml did not load. The loaders are fail-soft, "
-                        + "so a typo in it is a named, skipped file at boot and silent everywhere "
+        var weapons = new WeaponLoader(quiet()).loadAll(new File(fixtureRoot().resolve("weapons").toString()));
+        // THE POSITIVE CONTROL, and it comes first: a blind walk reports a missing fixture exactly like a broken one.
+        assertEquals(1, weapons.all().size(),
+                "the fixture walk found " + weapons.all().size() + " weapon files, not the one fixture");
+        assertTrue(shippedWeapons().all().size() >= 7, "and the shipped walk is not blind either");
+        assertTrue(shippedWeapons().find("volley_fixture").isEmpty() && shippedWeapons().find("volley_stone").isEmpty(),
+                "NEITHER the fixture nor the deleted stone ships");
+        return weapons.find("volley_fixture").orElseThrow(
+                () -> new AssertionError("volley_fixture.yml did not load. The loaders are fail-soft, "
+                        + "so a typo in it is a named, skipped file and silent everywhere "
                         + "else -- this row is the only thing that can see it"));
     }
 
@@ -116,7 +140,54 @@ class VolleyFixtureTest {
                         + "to measure the grammar's limit, not a weapon's comfortable tuning");
         var ray = assertInstanceOf(CastSpec.Ray.class, rake.of());
         assertEquals(64, ray.range(), 1e-9);
-        assertEquals("volley_beam", ray.beam());
+        assertEquals("volley_fixture_beam", ray.beam());
+    }
+
+    /**
+     * <b>NO SHIPPED WEAPON FIRES A VOLLEY OF PROJECTILES NOW (2026-11-24, PR B).</b> The stone's Scatter was the only one;
+     * the engine path stays, exercised by the fixture above. The control: the same sweep over the fixture finds one.
+     */
+    @Test
+    void noShippedWeaponFiresAVolleyOfProjectilesAndTheFixtureDoes() {
+        List<String> shipped = new java.util.ArrayList<>();
+        int triggers = 0;
+        for (WeaponDefinition w : shippedWeapons().all()) {
+            for (String input : List.of("right_click", "left_click")) {
+                var t = w.trigger(input);
+                if (t.isEmpty()) continue;
+                triggers++;
+                if (t.get().ability().cast() instanceof CastSpec.Volley v && v.of() instanceof CastSpec.Projectile) {
+                    shipped.add(w.id() + " " + input);
+                }
+            }
+        }
+        assertTrue(triggers >= 10, "the sweep saw only " + triggers + " triggers -- blind");
+        assertEquals(List.of(), shipped, "a shipped weapon fires a volley of projectiles");
+        assertInstanceOf(CastSpec.Projectile.class,
+                ((CastSpec.Volley) trigger(volleyStone(), "right_click").ability().cast()).of(),
+                "the control: the fixture's Scatter does, so the sweep's arm can match");
+    }
+
+    /**
+     * <b>THE SHIPPED WEAPONS PRODUCE NO CONTENT WARNING AT ALL NOW (2026-11-24, PR B).</b> Until the stone went, every boot
+     * printed its Rake warning ("the known pair"); R0c now predicts no {@code [Rpg]} WARN at all, and this is the build
+     * half of that prediction, for the weapon arm. The control: the same validator over the shipped weapons PLUS the
+     * fixture reports exactly one, Rake's.
+     */
+    @Test
+    void theShippedWeaponsValidateWithNoWarningAndTheFixtureAddsExactlyOne() {
+        var visuals = shippedVisuals();
+        var shipped = List.copyOf(shippedWeapons().all());
+        assertTrue(shipped.size() >= 7, "blind walk");
+        var none = new ContentValidator(visuals, shippedStatuses(), shippedElements(), key -> true, key -> true)
+                .validateWeapons(shipped);
+        assertEquals(List.of(), none, "a shipped weapon warns at boot");
+        var withFixture = new java.util.ArrayList<>(shipped);
+        withFixture.add(volleyStone());
+        fixtureVisuals().all().forEach(visuals::register);   // the fixture's own two, so it warns for its floor only
+        var one = new ContentValidator(visuals, shippedStatuses(), shippedElements(),
+                key -> true, key -> true).validateWeapons(withFixture);
+        assertEquals(1, one.size(), "the control: the fixture's Rake floor, exactly: " + one);
     }
 
     @Test
@@ -169,12 +240,16 @@ class VolleyFixtureTest {
 
     @Test
     void everyVISUALTheFixtureNamesActuallyExists() {
-        var visuals = shippedVisuals();
-        assertTrue(visuals.all().size() >= 14,
-                "the visual walk found only " + visuals.all().size() + " files -- blind again");
+        var visuals = fixtureVisuals();
+        assertEquals(2, visuals.all().size(),
+                "the fixture visual walk found " + visuals.all().size() + " files, not the fixture's two");
 
-        assertTrue(visuals.find("volley_beam").isPresent(), "volley_beam.yml did not load");
-        assertTrue(visuals.find("volley_cast").isPresent(), "volley_cast.yml did not load");
+        assertTrue(visuals.find("volley_fixture_beam").isPresent(), "volley_fixture_beam.yml did not load");
+        assertTrue(visuals.find("volley_fixture_cast").isPresent(), "volley_fixture_cast.yml did not load");
+        // 2026-11-24 (PR B): both moved out of content/visuals with the stone; neither ships under either name.
+        for (String id : List.of("volley_beam", "volley_cast", "volley_fixture_beam", "volley_fixture_cast")) {
+            assertTrue(shippedVisuals().find(id).isEmpty(), id + " ships");
+        }
         // ContentValidator names a dangling beam at boot, but an UNREFERENCED visual is SILENT: the
         // validator walks references outward and has no orphan check. So a fixture whose visuals
         // failed to parse would warn for the beam and say nothing at all about the cast sound.
@@ -192,7 +267,7 @@ class VolleyFixtureTest {
      */
     @Test
     void theFixtureProducesEXACTLYONEBootWarningAndItIsRakesFloor() {
-        var problems = new ContentValidator(shippedVisuals(), shippedStatuses(), shippedElements(),
+        var problems = new ContentValidator(fixtureVisuals(), shippedStatuses(), shippedElements(),
                 key -> true, key -> true)
                 .validateWeapons(List.of(volleyStone()));
 

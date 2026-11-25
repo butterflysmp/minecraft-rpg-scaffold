@@ -30,7 +30,7 @@ import java.util.UUID;
  * that silently never fires, on an item that looks completely ordinary.
  *
  * <p>The argument is not new, and it was already won once in this repository for a different field.
- * {@code volley_stone.yml} authors {@code attack_damage: 0} explicitly rather than omitting it,
+ * {@code volley_stone.yml} (deleted 2026-11) authors {@code attack_damage: 0} explicitly rather than omitting it,
  * because <i>"the absence would resolve to exactly the value the omission meant -- which is the trap:
  * it works, it is invisible, and it hides a decision."</i> A quiver count has that shape with a
  * player-visible consequence attached.

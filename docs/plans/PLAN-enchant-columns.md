@@ -1399,3 +1399,59 @@ re-pinned (47 gates; 390 scenarios recounted from the files, 437 keys less 47 se
 violation as its control). **`clear_state` now also forgets Wildfire's chains** (`SelfTestDrivers`; server-side, UNMUTATED:
 MG10 is its first reader). R0b was run before the commit against a jar built from this tree: see the gate's last section.
 Rows for PR B and PR F: none (STOPPED).
+
+## 27. PR B, RULED AND BUILT: THE VOLLEY STONE DELETED (`feat/volley-stone-deleted`, on #279)
+
+**The seat's ruling, 2026-11-24** (Ben: *"Dev weapon slated for deletion"*, *"Delete the volley stone in this pass"*):
+section 21's READ accepted; the stone goes, and what only it exercised stays, tested by fixtures. **Built so, on the
+gate branch, so the stack keeps its order** (#273, #274, A, C, D, E, the gate, then B, F1, F2, F3 and the gate's
+extension).
+
+**THE FIXTURES, AND WHAT EACH STANDS IN FOR.** The stone's file MOVED (git `R`, word for word below a dated header) to
+`paper/src/test/resources/fixtures/weapons/volley_fixture.yml`; only its `id` (`volley_fixture`), its `display_name`
+and its two visual ids changed. Its two visuals moved the same way to `fixtures/visuals/volley_fixture_beam.yml` and
+`volley_fixture_cast.yml` (they had no other user). **No mechanism changed: no main-code line except comments.**
+
+| what only the stone exercised | now exercised by | the row |
+|---|---|---|
+| the `unscored: true` declaration reaching the definition | the fixture's `unscored: true` (TRUE half) against `boltor.yml` (FALSE half) | `WeaponLoaderTest.theUnscoredDeclaration…` |
+| a volley whose inner cast is a PROJECTILE (Scatter) | the fixture's `right_click` | `VolleyFixtureTest.theFixtureLoadsAndItsTwoTriggersAreVOLLEYS` |
+| a ray volley at the scheduler's floor, authored cooldown 0, and its one expected warning | the fixture's `left_click` (Rake) | `VolleyFixtureTest.theFixtureProducesEXACTLYONEBootWarning…` |
+
+**NO SHIPPED ITEM IS UNSCORED NOW** (`WeaponLoaderTest.noShippedWeaponDeclaresItselfUnscored`, all 23 weapon files).
+**NO SHIPPED WEAPON FIRES A VOLLEY OF PROJECTILES NOW** (`VolleyFixtureTest.noShippedWeaponFiresAVolleyOfProjectiles…`,
+with the fixture as its control); the engine's projectile-volley path stays. **The shipped weapons produce NO content
+warning** (`VolleyFixtureTest.theShippedWeaponsValidateWithNoWarning…`; control: the fixture adds exactly Rake's).
+
+**THE LOOT.** The dev source's exotic pool (`exotic: [volley_stone]`) is removed (dev only); **the EXOTIC rarity
+stays** in the default table, and an exotic that lands on the dev source is now skipped as an epic is. **The Loaded
+line is unchanged**, because it prints the tiers and the source names, not the pools: `LootLoaderTest` asserts this
+line verbatim and is green both on `b68ad67b` and on this branch:
+`Loaded loot 'cascade': default exotic 1.00% (truly 1.000%), legendary 3.00% (truly 2.970%), epic 8.00% (truly
+7.682%), rare 12.00% (truly 10.602%), uncommon 20.00% (truly 15.549%), common 40.00% (truly 24.879%), nothing truly
+37.318%; 1 sources [dev_example_not_a_drop]`. `GATE-loot-roll.yml`'s two LR2 probes moved from the stone to
+`dragons_plume` (a dated note in the scenario and the gate).
+
+**THE SHIPPED INVARIANTS, RECOUNTED, EACH WITH ITS COMMAND** (the suite reddened on each first, which is the control):
+weapons **24 → 23** (`ls paper/src/main/resources/content/weapons | wc -l`; `BootCountLinesTest`,
+`UniqueSlotContentTest`); kinetic weapons **16 → 15** (`grep -l '^element: kinetic' …/weapons/*.yml | wc -l`; still all
+three classes: mage 3, melee 7, ranger 5); shipped gear **60 → 59** (23 + 1 + 24 + 5 + 6); `Mint-on-craft: … of 53 gear
+definitions` (was 54); visuals **46 → 44** (`ls …/visuals | wc -l` is 44).
+
+**THE NAME LEAVES THE JAR.** The 17 main-code mentions are all comments and all now marked `(deleted 2026-11)` (`git
+grep -h -i volley_stone -- '*/src/main/java/*'`: 17 lines, 17 comments by `grep -cE '^[[:space:]]*(\*|//|/\*)'`, 17
+marked); comments do not reach a class file. The six shipped YAML comments that named `volley_stone` or `volley_beam`
+are reworded to "the Volley Stone (deleted 2026-11)", so `git grep -E 'volley_stone|volley_beam|volley_cast' --
+'paper/src/main/resources/*'` returns **0** lines. Tests in `core` that use `volley_stone` as an arbitrary string id
+(`CascadeLootTest`, `LootTallyTest`, `WeaponLoreLinesTest`, `GearScoreTest`) and `WeaponLoreTest`'s in-code fixture keep
+it: none loads content and none ships.
+
+**R0c's carve-out is gone** (`verification.md`'s clause carries a dated note in this commit, as it said it must): from
+this branch on, **R0c predicts no `[Rpg]` WARN at all.**
+
+**Mutations** (marker, lines changed against a pristine copy, restored `cmp`-identical, markers left 0):
+`MUTUNSCORED` (`unscored: true` added to `short_bow.yml`) reddens `noShippedWeaponDeclaresItselfUnscored`;
+`MUTWARNFLOOR` (`cursed_emerald` cooldown 30 → 0) reddens `theShippedWeaponsValidateWithNoWarning…`; `MUTEXOTIC`
+(`exotic: [volley_stone]` put back) reddens `theShippedDevExample…` by an error (the whole file refused);
+`MUTSTONEBACK` (the fixture copied into `content/weapons`) reddens eight rows, the projectile and unscored sweeps
+among them.

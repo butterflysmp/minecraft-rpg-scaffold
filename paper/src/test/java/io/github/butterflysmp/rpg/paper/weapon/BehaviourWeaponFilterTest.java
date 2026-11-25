@@ -117,8 +117,8 @@ class BehaviourWeaponFilterTest {
             assertEquals(List.of("kinetic_tremors"), ids(BehaviourItems.activeOf(s, weapon.id(), r::find)), weapon.id());
             checked++;
         }
-        // 16: `grep -l '^element: kinetic' paper/src/main/resources/content/weapons/*.yml | wc -l`, 2026-11-24 at 6a1c4713.
-        assertEquals(16, checked, "CONTROL: every kinetic weapon was walked");
+        // 15: `grep -l '^element: kinetic' paper/src/main/resources/content/weapons/*.yml | wc -l`, recounted 2026-11-24 after volley_stone was deleted (PR B; 16 at 6a1c4713).
+        assertEquals(15, checked, "CONTROL: every kinetic weapon was walked");
     }
 
     /** No minted weapon in hand (a null id): a weapon-specific behaviour reaches nothing; a unique one is not judged here. */

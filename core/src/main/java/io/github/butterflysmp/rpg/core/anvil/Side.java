@@ -54,7 +54,7 @@ public sealed interface Side {
      * <p>Three unrelated causes arrive as this one state, and that is correct rather than lossy --
      * <b>the player's next action is identical for all three</b>: a tool (the kind-level rule), an
      * item that is none of ours (no id tag), and an instance whose definition declares it unscored
-     * ({@code volley_stone}). {@code GearScore.carriesScore} is the one door that composes the first
+     * ({@code volley_stone} (deleted 2026-11)). {@code GearScore.carriesScore} is the one door that composes the first
      * and third; the second is the lookup returning nothing.
      */
     record Unscoreable() implements Side {}
