@@ -28,17 +28,17 @@ class SelfTestMaxSummonsRestoreTest {
         List<String> code = codeLines();
         int ctor = indexOf(code, "private SelfTestSnapshot(Player p,", 0);
         int take = indexOf(code, "static SelfTestSnapshot take(", ctor);
-        int captured = indexOf(code, "this.maxSummonsBase = profile == null ? null : profile.maxSummonsOrNull();", ctor);
+        int captured = indexOf(code, "this.maxSummonsBase = SelfTestSummonsBase.capture(profile);", ctor);
         assertTrue(ctor > 0 && captured > ctor && captured < take,
                 "captured in the constructor, the BOXED value (null = never set), not the read: " + ctor + " " + captured);
 
         int restore = indexOf(code, "String restore(Player p, ProfileService profiles,", 0);
-        int write = indexOf(code, "boolean summons = profileLoaded() && profiles.setMaxSummonsBase(id, maxSummonsBase);",
+        int write = indexOf(code, "boolean summons = maxSummonsBase.writes() && profiles.setMaxSummonsBase(id, maxSummonsBase.base());",
                 restore);
         int ret = indexOf(code, "return \"RESTORED xp=", restore);
         assertTrue(restore > 0 && write > restore && ret > write, "written back inside restore, before its line: "
                 + restore + " < " + write + " < " + ret);
-        assertTrue(indexOf(code, "+ \" max_summons_base=\" + (summons ? String.valueOf(maxSummonsBase) : \"NOT-RESTORED\")",
+        assertTrue(indexOf(code, "+ \" max_summons_base=\" + (summons ? String.valueOf(maxSummonsBase.base()) : \"NOT-RESTORED\")",
                 ret) > ret, "and the RESTORED line names it, so a log shows it came back");
         assertEquals(1, code.stream().filter(l -> l.contains("setMaxSummonsBase(")).count(),
                 "one write, the restore's");

@@ -125,8 +125,8 @@ final class SelfTestSnapshot {
     private final float vanillaProgress;
     private final String classId;
     private final String elementId;
-    /** C1: the profile's STORED max_summons base, boxed: null is "never set" and is restored as null. */
-    private final Integer maxSummonsBase;
+    /** C1: the STORED max_summons base with its own captured flag (SelfTestSummonsBase): not captured is never written. */
+    private final SelfTestSummonsBase maxSummonsBase;
     /**
      * First-saved state per block, in save order; restored in reverse so an overlap ends at the oldest. Drained at
      * every unchained row start ({@link #restoreRowBlocks}), not only at the end of the run: run 2 of the
@@ -144,7 +144,7 @@ final class SelfTestSnapshot {
         this.lifetimeXp = profile == null ? -1 : profile.lifetimeXp();
         this.classId = profile == null ? null : profile.archetypeId();
         this.elementId = profile == null ? null : profile.elementId();
-        this.maxSummonsBase = profile == null ? null : profile.maxSummonsOrNull();
+        this.maxSummonsBase = SelfTestSummonsBase.capture(profile);
         this.gameMode = p.getGameMode();
         ItemStack[] raw = p.getInventory().getContents();
         this.contents = new ItemStack[raw.length];
@@ -280,7 +280,7 @@ final class SelfTestSnapshot {
         p.setLevel(vanillaLevel);
         p.setExp(vanillaProgress);
         boolean cell = classId == null || profiles.setCell(id, classId, elementId);
-        boolean summons = profileLoaded() && profiles.setMaxSummonsBase(id, maxSummonsBase);
+        boolean summons = maxSummonsBase.writes() && profiles.setMaxSummonsBase(id, maxSummonsBase.base());
         resources.setCurrent(id, ResourceCost.DEFAULT_RESOURCE, mana);
         // No setter for the trace: toggle until it reads what it read before (at most once).
         if (nameplates.tracing() != trace) nameplates.toggleTrace();
@@ -302,6 +302,6 @@ final class SelfTestSnapshot {
                 + " difficulty=" + difficulty + " health=" + fmtHealth(health)
                 + " vanilla_xp=" + vanillaLevel + "+" + String.format(java.util.Locale.ROOT, "%.3f", vanillaProgress)
                 + " spawn_phantoms=" + spawnPhantoms
-                + " max_summons_base=" + (summons ? String.valueOf(maxSummonsBase) : "NOT-RESTORED");
+                + " max_summons_base=" + (summons ? String.valueOf(maxSummonsBase.base()) : "NOT-RESTORED");
     }
 }
