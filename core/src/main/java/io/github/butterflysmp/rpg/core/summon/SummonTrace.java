@@ -16,9 +16,11 @@ public final class SummonTrace {
 
     private SummonTrace() {}
 
+    /** O2 (the seat, 2026-11-24): a body that is already gone has no position: {@code at=unknown}, never 0 0 0. */
     private static String where(SummonStore.Summon s, Vec3 at) {
-        return String.format(Locale.ROOT, "owner=%s weapon=%s body=%s at=%.2f %.2f %.2f", s.owner(), s.weaponId(),
-                s.body(), at.x(), at.y(), at.z());
+        String head = "owner=" + s.owner() + " weapon=" + s.weaponId() + " body=" + s.body();
+        return at == null ? head + " at=unknown"
+                : head + String.format(Locale.ROOT, " at=%.2f %.2f %.2f", at.x(), at.y(), at.z());
     }
 
     public static String spawn(SummonStore.Summon s, Vec3 at) {

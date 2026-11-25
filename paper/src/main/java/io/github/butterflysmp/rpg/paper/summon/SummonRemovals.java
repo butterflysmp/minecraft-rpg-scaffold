@@ -45,7 +45,7 @@ public final class SummonRemovals {
     /** A record the store has ALREADY let go of (a replace hands the old one back). */
     static void discard(AdapterContext ctx, SummonStore.Summon s, SummonRemoval cause) {
         Entity body = Bukkit.getEntity(s.body());
-        Vec3 at = body == null ? new Vec3(0, 0, 0) : vec(body.getLocation());
+        Vec3 at = body == null ? null : vec(body.getLocation());   // O2: gone means at=unknown
         ctx.stats().clear(s.body());
         if (body != null && body.isValid()) body.remove();
         ctx.log().info(SummonTrace.removed(s, at, cause));

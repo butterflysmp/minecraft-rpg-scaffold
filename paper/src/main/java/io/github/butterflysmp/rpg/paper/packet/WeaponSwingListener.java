@@ -137,8 +137,8 @@ public final class WeaponSwingListener extends PacketListenerBase {
                     // widening the set of outcomes that vanish on left-click.
                     switch (result) {
                         case CastResult.Broken ignored -> BrokenNotice.notify(player, cooldowns);
-                        case CastResult.SummonRefused refused -> player.sendMessage(net.kyori.adventure.text.Component.text(
-                                refused.notice(), net.kyori.adventure.text.format.NamedTextColor.RED));   // 3b, D6
+                        case CastResult.SummonRefused refused ->
+                                io.github.butterflysmp.rpg.paper.summon.SummonNotice.notify(player, cooldowns, refused.notice());   // O4
                         case CastResult.Empty ignored -> QuiverNotice.empty(player, cooldowns);
                         case CastResult.Reloading reloading ->
                                 QuiverNotice.reloading(player, cooldowns, reloading.ticksRemaining());

@@ -1265,7 +1265,8 @@ public final class RpgListeners implements Listener {
     }
 
     /** Its body died (its customHP reached 0, or anything else that kills an entity): the store lets it go. */
-    @EventHandler
+    // O1 (READ): a death a plugin CANCELS revives the body, so the store lets it go only for a death that stands.
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSummonBodyDeath(org.bukkit.event.entity.EntityDeathEvent event) {
         io.github.butterflysmp.rpg.paper.summon.SummonRemovals.remove(adapters, event.getEntity().getUniqueId(),
                 io.github.butterflysmp.rpg.core.summon.SummonRemoval.DEATH);
@@ -1530,8 +1531,7 @@ public final class RpgListeners implements Listener {
                     // BrokenNotice's throttle to keep held input from spamming chat.
                     // A REFUSED SUMMON (3b, D6) says so once, before the silence below, for Broken's reason: no mana, no cooldown.
                     if (result instanceof CastResult.SummonRefused refused) {
-                        event.getPlayer().sendMessage(net.kyori.adventure.text.Component.text(refused.notice(),
-                                net.kyori.adventure.text.format.NamedTextColor.RED));
+                        io.github.butterflysmp.rpg.paper.summon.SummonNotice.notify(event.getPlayer(), cooldowns, refused.notice());   // O4
                         return;
                     }
                     if (result instanceof CastResult.Broken) {

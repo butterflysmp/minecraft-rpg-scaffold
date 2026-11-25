@@ -126,6 +126,37 @@ class SummonWiringTest {
         assertTrue(at(p, "SummonRemovals.removeAll(adapters);", disable) > disable, "stop");
     }
 
+    /**
+     * O1, AS FAR AS A TEST REACHES: its customHP is bootstrapped as a NON-player, so MobDeathSystem.shouldKill
+     * (reachedZero && !targetIsPlayer) kills it by setHealth(0), which (READ) raises EntityDeathEvent and no damage event;
+     * the hook lets the store go only for a death that stands (MONITOR, ignoreCancelled). What is left: the boot.
+     */
+    @Test
+    void aSummonCanDieAndOnlyAStandingDeathRemovesIt() throws IOException {
+        List<String> s = code(Path.of("summon", "SummonService.java"));
+        assertTrue(at(s, "ctx.stats().bootstrapIfAbsent(mob.getUniqueId(), placed[0].health(), 0.0, false);", 0) > 0,
+                "bootstrapped as a non-player");
+        List<String> d = code(Path.of("health", "MobDeathSystem.java"));
+        assertTrue(at(d, "return change.reachedZero() && !change.targetIsPlayer();", 0) > 0, "shouldKill");
+        assertTrue(at(d, "mob.setHealth(0);", 0) > 0, "the kill");
+        List<String> l = code(Path.of("listener", "RpgListeners.java"));
+        int hook = at(l, "public void onSummonBodyDeath(", 0);
+        assertTrue(l.get(hook - 1).contains("@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)"),
+                "only a death that stands");
+    }
+
+    /** O4: both weapon listeners show a refusal through the ONE throttle (the cooldown tracker's reserved key). */
+    @Test
+    void aRefusedSummonsNoticeIsThrottledByTheExistingMechanism() throws IOException {
+        assertTrue(at(code(Path.of("listener", "RpgListeners.java")),
+                "SummonNotice.notify(event.getPlayer(), cooldowns, refused.notice());", 0) > 0);
+        assertTrue(at(code(Path.of("packet", "WeaponSwingListener.java")),
+                "SummonNotice.notify(player, cooldowns, refused.notice());", 0) > 0);
+        List<String> n = code(Path.of("summon", "SummonNotice.java"));
+        int ready = at(n, "if (!cooldowns.isReady(player.getUniqueId(), KEY)) return;", 0);
+        assertTrue(ready > 0 && at(n, "cooldowns.trigger(player.getUniqueId(), KEY, THROTTLE_TICKS);", ready) > ready);
+    }
+
     /** The seat: "no Java names a wolf except what D1 must switch off, each behind a check of the entity's type". */
     @Test
     void noSummonCodeNamesAWolf() throws IOException {
