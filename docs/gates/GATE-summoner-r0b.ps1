@@ -1,0 +1,66 @@
+# GATE-summoner R0b (2026-11-25, feat/summoner-gate, REWORKED for the seat's X1-X11): the stack #289-#298 and this gate.
+# Prediction: before '--- absent', 31 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 4 ABSENT and 0
+# PRESENT; after '--- controls', 4 ABSENT and 0 PRESENT.
+# Run: powershell -File <this> [-JarPath <jar>]
+param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $JarPath))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+function ValueLine($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + '([ \t]*\r?$|[ \t]+#)')) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+function Has($text, $s, $label) { if ($text -ne $null -and $text.Contains($s)) { "PRESENT $label '$s'" } else { "ABSENT  $label '$s'" } }
+function Entry($name) { if ($zip.GetEntry($name) -ne $null) { "PRESENT entry '$name'" } else { "ABSENT  entry '$name'" } }
+$bw = Bytes 'content/weapons/bone_whistle.yml'
+$sw = Bytes 'content/summons/bone_whistle_wolf.yml'
+$rc = Bytes 'content/recipes/bone_whistle.yml'
+$g = Bytes 'selftest/GATE-summoner.yml'
+$ix = Bytes 'selftest/index.yml'
+$sv = Bytes 'io/github/butterflysmp/rpg/paper/summon/SummonService.class'
+$gl = Bytes 'io/github/butterflysmp/rpg/paper/summon/SummonGoal.class'
+$rl = Bytes 'io/github/butterflysmp/rpg/paper/listener/RpgListeners.class'
+$dr = Bytes 'io/github/butterflysmp/rpg/paper/selftest/SelfTestDrivers.class'
+$tr = Bytes 'io/github/butterflysmp/rpg/core/summon/SummonTrace.class'
+$cw = Bytes 'io/github/butterflysmp/rpg/paper/adapter/PaperCombatWorld.class'
+$wl = Bytes 'io/github/butterflysmp/rpg/paper/content/WeaponLoader.class'
+$ln = Bytes 'io/github/butterflysmp/rpg/paper/selftest/ScenarioLint.class'
+ValueLine $bw 'class: summoner' 'bone_whistle.yml'
+ValueLine $bw 'material: bone' 'bone_whistle.yml'
+ValueLine $bw 'element: nature' 'bone_whistle.yml'
+ValueLine $bw '    cooldown_ticks: 200' 'bone_whistle.yml'
+ValueLine $bw '      amount: 40' 'bone_whistle.yml'
+ValueLine $bw '      type: direct_summon' 'bone_whistle.yml'
+ValueLine $bw '      reach: 32' 'bone_whistle.yml'
+ValueLine $sw 'entity: wolf' 'bone_whistle_wolf.yml'
+ValueLine $sw 'health: 100' 'bone_whistle_wolf.yml'
+ValueLine $sw 'damage: 20' 'bone_whistle_wolf.yml'
+ValueLine $sw 'guard_radius: 8' 'bone_whistle_wolf.yml'
+ValueLine $sw 'trigger_radius: 30' 'bone_whistle_wolf.yml'
+ValueLine $rc 'mints: bone_whistle' 'bone_whistle recipe'
+ValueLine $g 'SM1:' 'GATE-summoner.yml'
+ValueLine $g 'SM11:' 'GATE-summoner.yml'
+ValueLine $g 'SM8A:' 'GATE-summoner.yml'
+ValueLine $g 'SM17:' 'GATE-summoner.yml'
+ValueLine $g '  - ask: "1 1200 words Did you see your wolf run to the zombie and attack it? (yes / no / not sure)"' 'GATE-summoner.yml'
+ValueLine $g '  - difficulty: easy' 'GATE-summoner.yml'
+ValueLine $ix '  - summoner' 'index.yml'
+Has $sv 'SUMMON refused owner=' 'SummonService.class'
+Has $gl 'summon_guard' 'SummonGoal.class'
+Has $rl 'onSummonerWeaponEntityInteract' 'RpgListeners.class'
+Has $dr 'SUMMONPROBE weapon=' 'SelfTestDrivers.class'
+Has $dr 'DRIVE mob_target ' 'SelfTestDrivers.class'
+Has $tr 'SUMMON target ' 'SummonTrace.class'
+Has $tr ' level=0 element=%s tick=%d' 'SummonTrace.class (X2)'
+Has $cw 'SIDES pass attacker=' 'PaperCombatWorld.class (X4)'
+Has $wl 'which no file in content/summons defines' 'WeaponLoader.class (X10)'
+Has $ln 'SUMMON_UNSTAGED' 'ScenarioLint.class (X1)'
+Entry 'io/github/butterflysmp/rpg/core/summon/SummonFeeds.class'
+'--- absent'
+ValueLine $sw 'element: nature' 'bone_whistle_wolf.yml (E1: the hit is in the weapon''s element)'
+Has $bw 'tier:' 'bone_whistle.yml (no tier key exists)'
+ValueLine $g '  - difficulty: normal' 'GATE-summoner.yml'
+ValueLine $g 'SM8:' 'GATE-summoner.yml (X1: split into SM8A-SM8C)'
+'--- controls'
+ValueLine $sw 'health: 1000' 'CONTROL-PREFIX (health: 100 is present)'
+ValueLine $sw 'damage: 2' 'CONTROL-PREFIX (damage: 20 is present)'
+Has $bw 'bone_whistle_CONTROL' 'CONTROL-HAS'
+Entry 'content/weapons/bone_whistle_CONTROL.yml'
+$zip.Dispose()

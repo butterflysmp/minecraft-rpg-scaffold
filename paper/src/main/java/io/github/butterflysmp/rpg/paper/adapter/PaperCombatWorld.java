@@ -141,8 +141,16 @@ public final class PaperCombatWorld implements CombatWorld {
                 // Q3: and PASSES THROUGH a body the one table refuses to this attacker (a summon, to a player).
                 LiveTargets.except(ignoreId).and(e -> {
                     org.bukkit.entity.LivingEntity body = LiveTargets.resolve(e);
-                    return body == null || !io.github.butterflysmp.rpg.core.mob.MobHostility.refusedSummonCell(attacker,
-                            CombatSides.of(body, ctx.keys()));
+                    if (body == null || !io.github.butterflysmp.rpg.core.mob.MobHostility.refusedSummonCell(attacker,
+                            CombatSides.of(body, ctx.keys()))) return true;
+                    // X4 (the seat, 2026-11-25): ONE line when the table lets the ray through a body ON its line. READ,
+                    // CraftWorld.rayTraceEntities: this predicate runs inside getNearbyEntities(sweptBox, ...) BEFORE
+                    // each body's own box test, so the same test (box expanded by RAY_SIZE, rayTrace) gates the line.
+                    if (ctx.mobTrace().getAsBoolean() && e.getBoundingBox().expand(RAY_SIZE)
+                            .rayTrace(toLocation(from).toVector(), direction, distance) != null) {
+                        ctx.log().info(sidesPassLine(attacker, body.getUniqueId()));
+                    }
+                    return false;
                 }));
 
         if (result == null) return Optional.empty();
@@ -156,6 +164,11 @@ public final class PaperCombatWorld implements CombatWorld {
             return Optional.of(RayHit.ofCombatant(point, BukkitCombatant.of(living, ctx)));
         }
         return Optional.of(RayHit.ofBlock(point));
+    }
+
+    /** X4: the trace line for a body the sides table let a ray pass through, on the ray's line. Pinned by its test. */
+    static String sidesPassLine(io.github.butterflysmp.rpg.core.mob.MobHostility.Side attacker, UUID body) {
+        return "SIDES pass attacker=" + attacker + " body=" + body;
     }
 
     /**

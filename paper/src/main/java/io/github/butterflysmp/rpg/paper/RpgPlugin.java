@@ -306,7 +306,8 @@ public final class RpgPlugin extends JavaPlugin {
         this.aspects = aspectLoader.checkAgainstPools(parsedAspects, pools, abilities::find,
                 id -> statuses.find(id).map(def -> def instanceof io.github.butterflysmp.rpg.paper.content.StatusDefinition.Immobilize
                         || def instanceof io.github.butterflysmp.rpg.paper.content.StatusDefinition.Soaked).orElse(false));
-        this.weapons = new WeaponLoader(getLogger()).loadAll(new File(contentDir, "weapons"));
+        this.weapons = new WeaponLoader(getLogger(), id -> summonDefs.find(id).isPresent())   // X10: summons load first
+                .loadAll(new File(contentDir, "weapons"));
         // AFTER the elements: a UNIQUE enchant's element must name a loaded one (the seat's ruling U1, 2026-11-23). AND,
         // since the columns were re-cut (W1, 2026-11-23), AFTER THE WEAPONS: a WEAPON-SPECIFIC enchant's weapon must name
         // a loaded weapon, and its class must be able to match it. Nothing between the elements and here reads the

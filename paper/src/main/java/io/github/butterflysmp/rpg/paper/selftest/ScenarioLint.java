@@ -47,7 +47,12 @@ final class ScenarioLint {
          */
         MOB_ACT_UNSTAGED,
         /** 4d: a {@code probe_summon} names its reach (a number), so a moving summon's line does not depend on where it stands. */
-        PROBE_SUMMON_REACH
+        PROBE_SUMMON_REACH,
+        /**
+         * X1 (the seat, 2026-11-25): EVERY ROW IS SELF-STAGED. A row that reads a summon ({@link #usesSummon}) with no cast of
+         * its own earlier in the row (a {@code use} after a {@code clear_state}) reads one an earlier row left.
+         */
+        SUMMON_UNSTAGED
     }
 
     /**
@@ -67,6 +72,18 @@ final class ScenarioLint {
         if (!c.startsWith("summon ")) return false;
         boolean frozen = c.replace(" ", "").contains("noai:1b") || c.replace(" ", "").contains("noai:true");
         return !frozen && !c.contains("attack_damage");
+    }
+
+    /**
+     * X1: the entity selectors that name a shipped summon, one per summon entity (`SummonLintSelectorsTest` pins it equal to
+     * the shipped summons' entities). CC'S CALL: a fixed list, so the lint stays pure (the alternative: pass the registry).
+     */
+    static final java.util.Set<String> SUMMON_SELECTORS = java.util.Set.of("type=minecraft:wolf");
+
+    /** X1: does this step read a summon: a {@code probe_summon}, or a command whose selector names a summon's entity. */
+    static boolean usesSummon(Scenario.Verb v, String a) {
+        if (v == Scenario.Verb.PROBE_SUMMON) return true;
+        return v == Scenario.Verb.CMD && SUMMON_SELECTORS.stream().anyMatch(a::contains);
     }
 
     static boolean isPositiveNumber(String a) {
@@ -199,6 +216,8 @@ final class ScenarioLint {
         boolean turnPending = false;
         boolean summoned = false;
         boolean pressed = false;
+        boolean clearedState = false;   // X1: clear_state seen in this row
+        boolean castOwn = false;        // X1: a use after that clear_state: the row's own summon
         int enchantSlots = -1;   // unknown until a clear, then the slots the dev command has built
         String heldReadPending = null;   // L1: the last scheduled held-item command not yet followed by a wait
         Map<String, double[]> mobs = new HashMap<>();
@@ -222,6 +241,13 @@ final class ScenarioLint {
                 out.add(new Finding(gate, r, Rule.SELF_STAGED, "chains on " + a + ": it reads what that row left"));
             }
             if (v == Scenario.Verb.CLEAR_INVENTORY) cleared = true;
+            // X1 (the seat, 2026-11-25): a summon the row reads is one the row cast itself, after clearing any it carried.
+            if (v == Scenario.Verb.CLEAR_STATE) clearedState = true;
+            if (v == Scenario.Verb.USE && clearedState) castOwn = true;
+            if (!castOwn && usesSummon(v, a)) {
+                out.add(new Finding(gate, r, Rule.SUMMON_UNSTAGED, describe(v, a)
+                        + ": reads a summon with no cast of its own earlier in the row (clear_state, then use)"));
+            }
             if (v == Scenario.Verb.HOLD && a.equals("empty") && !cleared) {
                 out.add(new Finding(gate, r, Rule.HOTBAR, "hold: empty before clear_inventory"));
             }

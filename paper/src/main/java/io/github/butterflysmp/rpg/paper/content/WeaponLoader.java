@@ -37,9 +37,16 @@ import java.util.logging.Logger;
 public final class WeaponLoader {
 
     private final Logger log;
+    /** X10: does this id name a loaded summon? The plugin passes the summon registry; the one-argument form accepts all. */
+    private final java.util.function.Predicate<String> isLoadedSummon;
 
     public WeaponLoader(Logger log) {
+        this(log, id -> true);
+    }
+
+    public WeaponLoader(Logger log, java.util.function.Predicate<String> isLoadedSummon) {
         this.log = log;
+        this.isLoadedSummon = isLoadedSummon;
     }
 
     public WeaponRegistry loadAll(File weaponsDir) {
@@ -52,7 +59,7 @@ public final class WeaponLoader {
         for (File f : files) {
             try {
                 YamlConfiguration yaml = YamlConfiguration.loadConfiguration(f);
-                registry.register(parse(idOf(f), yaml));
+                registry.register(requireLoadedSummons(parse(idOf(f), yaml), isLoadedSummon));
             } catch (RuntimeException ex) {
                 skipped++;
                 log.warning("Skipping malformed weapon '" + f.getName() + "': " + ex.getMessage());
@@ -63,6 +70,21 @@ public final class WeaponLoader {
                     + "but that weapon is not loaded.");
         }
         return registry;
+    }
+
+    /**
+     * X10 (the seat, 2026-11-25): A WEAPON WHOSE SUMMON CAST NAMES NO LOADED SUMMON IS REFUSED AT LOAD, not at the first
+     * press. Thrown, so loadAll skips the file by name ("Skipping malformed weapon '<file>': ...").
+     */
+    static WeaponDefinition requireLoadedSummons(WeaponDefinition weapon, java.util.function.Predicate<String> isLoadedSummon) {
+        for (TriggerBinding binding : weapon.triggers()) {
+            if (binding.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Summon s
+                    && !isLoadedSummon.test(s.summonId())) {
+                throw new IllegalArgumentException("weapon '" + weapon.id() + "' names summon '" + s.summonId()
+                        + "', which no file in content/summons defines");
+            }
+        }
+        return weapon;
     }
 
     /** The id is the filename: iron_sword.yml -> iron_sword. */

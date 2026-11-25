@@ -195,6 +195,40 @@ class SummonWiringTest {
                 "forgotten on his quit");
     }
 
+    /**
+     * X4(a): the ray's filter logs SIDES pass only for a refused body ON the line (the same box test vanilla runs next,
+     * READ: CraftWorld.rayTraceEntities filters before testing boxes), only under trace, and still lets the ray through.
+     */
+    @Test
+    void theRayLogsTheBodyItPassesThrough() throws IOException {
+        List<String> l = code(Path.of("adapter", "PaperCombatWorld.java"));
+        int m = at(l, "public Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId,", 0);
+        int refused = at(l, "CombatSides.of(body, ctx.keys()))) return true;", m);
+        int gate = at(l, "if (ctx.mobTrace().getAsBoolean() && e.getBoundingBox().expand(RAY_SIZE)", refused);
+        int box = at(l, ".rayTrace(toLocation(from).toVector(), direction, distance) != null) {", gate);
+        int log = at(l, "ctx.log().info(sidesPassLine(attacker, body.getUniqueId()));", box);
+        int pass = at(l, "return false;", log);
+        int stop = end(l, m);
+        assertTrue(m > 0 && refused > m && gate > refused && box == gate + 1 && log == box + 1 && pass > log && pass < stop,
+                "refused -> trace and on-the-line -> one line -> passed through, in castRay");
+    }
+
+    /** X8: no summon outlives a run: end() removes his summons, cause CLEAR, after the restore, on every exit. */
+    @Test
+    void theRunsEndRemovesHisSummons() throws IOException {
+        List<String> l = code(Path.of("selftest", "SelfTestRun.java"));
+        int m = at(l, "private void end(String why, io.github.butterflysmp.rpg.paper.scheduler.Scheduler scheduler, boolean now,", 0);
+        int restore = at(l, "String restored = snapshot.restore(", m);
+        int remove = at(l, "restored += \" summons=\" + io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(service.adapters(),", restore);
+        int cause = at(l, "player.getUniqueId(), io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);", remove);
+        int ended = at(l, "service.ended(this);", cause);
+        assertTrue(m > 0 && restore > m && remove > restore && cause == remove + 1 && ended > cause && ended < end(l, m),
+                "end(): restore, then every summon of his removed (CLEAR), before ended");
+        // CONTROL: every exit reaches that end (END, ABORTED, quit, server-stop all call it).
+        assertTrue(at(l, "end(\"ABORTED the player left\", service.scheduler(), true, \"quit\");", 0) > 0
+                && at(l, "end(\"ABORTED reason=server-stop\", inline, true, \"disable\");", 0) > 0);
+    }
+
     /** PR 5: a minted SUMMONER weapon is never used on an entity by vanilla (READ: a bone tames a wild wolf). */
     @Test
     void aSummonerWeaponTamesNothing() throws IOException {

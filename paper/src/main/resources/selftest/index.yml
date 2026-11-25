@@ -125,3 +125,6 @@ gates:
 # mage-guaranteed (2026-11-24, feat/mage-guaranteed-gate on feat/wildfire): the press tick, the content changes, the
 # guaranteed candidate and its five cast tunes, and Wildfire, on the pad. docs/gates/GATE-mage-guaranteed.md carries its R0.
   - mage-guaranteed
+# summoner (2026-11-25, feat/summoner-gate on feat/summoner-5): the Bone Whistle and its wolf, on the pad, typed after the
+# mage gate as /rpg selftest mage-guaranteed+summoner. docs/gates/GATE-summoner.md carries its R rows and SAFETY.
+  - summoner

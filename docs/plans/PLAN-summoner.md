@@ -480,3 +480,76 @@ flavor; "Common Summoner Weapon". Ability names, descriptions and flavor: SEAT P
 definitions 53 -> 54, recipes 7 -> 8, shipped summons 0 -> 1, the master pool snapshot +1 (`bone_whistle=unbreaking`, the
 summoner's universal pool), gear asked 59 -> 60; the golden lore regenerated with its diff predicted first: one 15-line
 block and the footer (102 -> 103 renderings), +16 / -1, read. **Mutation:** MUTTAME, red.
+
+## 8. THE GATE (`feat/summoner-gate`, on #298)
+
+`docs/gates/GATE-summoner.md`, `selftest/GATE-summoner.yml` (setup, SM1, SM2, SM3A, SM3B, SM3C, SM4-SM11), its R0b scan
+`docs/gates/GATE-summoner-r0b.ps1`. Typed as `/rpg selftest mage-guaranteed+summoner`. SAFETY: 5.000 bound on him
+(one scripted 0.2 at gs <= 500). Lint green and pinned clean. Rows recounted: 410 across 48 gates.
+
+**CC'S CALLS (each with its alternative):**
+- **Difficulty EASY for this gate** (alternative: NORMAL, as the mage gate; EASY only lowers the bound, and the
+  restore puts the world's own difficulty back).
+- **Mob hits staged by the vanilla `damage <e> <n> minecraft:mob_attack by <frozen zombie>` command** (SM3A, SM7, SM9),
+  so no mob acts on him (alternative: a live zombie with a small attack set on him; its hit count is a range).
+- **SM4's "merely hit" uses an iron sword** (alternative: the whistle; its left click stands down and deals nothing,
+  so it hits nothing at all).
+- **SM6 puts the wolf on the ray's line by a same-tick `tp ^ ^-0.6 ^3`** (alternative: a ground-level target; a wolf
+  is shorter than the eye-to-body line, so it would not be between them).
+
+**OWED, NOT WRITTEN:** the seat's sides rows for a shockwave, a crystal shot and a burst (only the ray is written);
+the load-time ContentValidator check that a weapon's summon cast names a loaded summon (the cast refuses at runtime with
+a warnOnce, READ).
+
+## 9. THE GATE REWORKED (the seat's X1-X11, 2026-11-25, on `feat/summoner-gate`)
+
+The gate was not approved: rows were chained, nothing read the wolf attacking or following, SM6 could pass without
+testing, and the owed sides rows were missing. All fixed on the gate branch; the rows are now setup, SM1, SM2,
+SM3A-SM3D, SM4-SM7, SM8A-SM8C, SM9-SM17 (419 scenarios across 48 gates).
+
+**CODE ON THIS BRANCH (each with a test and a mutation, all red):**
+- **X1, the lint:** `SUMMON_UNSTAGED` (a row reading a summon with no `use` after a `clear_state` earlier in it);
+  `SUMMON_SELECTORS` pinned to the shipped summons' entities. MUTLINTCAST; and a planted unstaged SM13 in the real gate
+  reddened `SelfTestScenariosTest` with two findings.
+- **X2:** the SUMMON hit line ends ` tick=<n>` (the server tick at the goal's tick), so the cadence is readable.
+- **X4(a):** `castRay`'s filter logs `SIDES pass attacker=<side> body=<uuid>` under trace, only for a refused body ON the
+  line (READ: `CraftWorld.rayTraceEntities` filters before the box test). MUTSIDESPASS, MUTSIDESBOX.
+- **X8:** the run's `end()` removes all his summons (cause `clear`) after the restore; the restore already removed every
+  `selftest`-tagged mob on every exit. MUTENDSUMMONS.
+- **X10:** `WeaponLoader.requireLoadedSummons` refuses at load a weapon whose summon cast names no loaded summon.
+  MUTSUMMONREFUSE (first run did not apply: a brace in the replacement; re-run with `#` delimiters, red).
+
+**CC'S CALLS (each with its alternative):**
+- **The lint's "own cast" is a `use` after a `clear_state`** (alternative: a `use` while holding a summoner weapon, which
+  the pure lint cannot know without the registry).
+- **The selectors are a fixed list held to the shipped summons by a test** (alternative: pass the registry into the lint).
+- **The run's end removes summons with cause `clear`** (alternative: a twelfth cause, END, in the core's enum).
+- **The hit line carries the tick** (alternative: a separate trace line per hit with the tick only).
+- **SM2 stays on the pad:** he steps to (-2, -6) and the wolf goes to (45, 10), 49.65 apart (alternative, the seat's:
+  stand + 50, past the barrier rim at x 46 and over the void).
+- **SM6 and SM16 stand the wolf on one saved stone block** so its box crosses a line at his eye height (alternative:
+  a same-tick tp into the air, which falls, and whose order against the ray is INFERRED).
+- **SM3D drives `attack` then `reload` in one tick** (the two packets of a real entity click).
+- **The "burst or area" row is Airburst Flames' bursts** (the shipped area alternative, Sunder's burst, needs his class
+  cell and a saved loadout the restore does not undo).
+
+**NOT STAGEABLE YET (X7):** the cap with another weapon's summon; covered by `SummonCap`'s table.
+
+## 10. Z1 TO Z3 (the seat, 2026-11-25, on the reworked gate at `7c767c6c`)
+
+**Z1 WITHDRAWN (the seat: "I WAS WRONG").** The seat said SM2's and SM13's moves carried into later rows. READ,
+`SelfTestRun`: every unchained row first teleports him to `stage()`, which `pad()` sets to the stand, and logs
+`return=`. The seat had not read the row start. No stand step, no new lint rule: SELF_STAGED's "no row may chain" is
+the guard.
+
+**Z2 WITHDRAWN (the seat: "I WAS WRONG").** "Every other gate uses slot 1" came from a truncated search.
+`GATE-enchant-columns.yml` stages `candidate 0 kinetic_tremors` at lines 155, 187, 215, 240 and 276, and EC9R2 read the
+shockwave firing from slot 0. SM14 stays as staged. The command is unchanged, and no slot lint is added.
+
+**Z3 ACCEPTED:** the setup's preflight is `-2 -6 45 10` (was `0 -6 42 10`); the coordinate table in `GATE-summoner.md`
+records that every coordinate lies inside it. The ask's `words` mode, and the line Ben sees, are accepted.
+
+**CARRIED (build nothing):** `rpg enchant candidate` accepts an enchant into a slot the roll would never put it in (a
+unique in slot 0; READ, `EnchantState.addCandidate` and the command's CANDIDATE arm check no slot rule). A
+content-decidable lint rule would flag `GATE-enchant-columns.yml` 155, 187, 215, 240 and 276, and `GATE-summoner.yml` 502.
+Decide later whether dev staging should be held to the roll's rules.
