@@ -64,6 +64,8 @@ public record Scenario(String gate, String row, List<Step> steps) {
         HOLD_ONLY,
         /** Log the held slot and the held item's weapon id, {@code HELDID slot=<n> item=<id>}: cheap, for a long wait's ends. */
         PROBE_HELD,
+        /** GATE-armor-sets (2026-11-25): log each worn slot, {@code ARMOR slot=<HEAD|CHEST|LEGS|FEET> item=<id> damage=<d> max=<m> broken=<b>}. */
+        PROBE_ARMOR,
         /**
          * One LEFT-CLICK as the shipped left-click handler takes it: {@code WeaponSwingListener.swing}, the same method the
          * {@code ANIMATION} packet hops to, on the player's own thread. So a quiver weapon RELOADS (or refuses, with its

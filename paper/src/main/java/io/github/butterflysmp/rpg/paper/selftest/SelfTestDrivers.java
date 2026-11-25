@@ -97,6 +97,20 @@ final class SelfTestDrivers {
                         + " offhand=" + itemId(inv.getItemInOffHand()));
                 yield Optional.empty();
             }
+            case PROBE_ARMOR -> {
+                // The worn pieces' own damage, read by the weapons' helpers (D1'), so a wear row reads the items, not a story.
+                for (org.bukkit.inventory.EquipmentSlot s : new org.bukkit.inventory.EquipmentSlot[] {
+                        org.bukkit.inventory.EquipmentSlot.HEAD, org.bukkit.inventory.EquipmentSlot.CHEST,
+                        org.bukkit.inventory.EquipmentSlot.LEGS, org.bukkit.inventory.EquipmentSlot.FEET}) {
+                    org.bukkit.inventory.ItemStack piece = p.getInventory().getItem(s);
+                    java.util.OptionalInt max = io.github.butterflysmp.rpg.paper.weapon.WeaponDurability.maxOf(piece);
+                    run.log("ARMOR slot=" + s.name() + " item=" + itemId(piece)
+                            + " damage=" + io.github.butterflysmp.rpg.paper.weapon.WeaponDurability.damageOf(piece)
+                            + " max=" + (max.isPresent() ? max.getAsInt() : 0)
+                            + " broken=" + io.github.butterflysmp.rpg.paper.weapon.WeaponDurability.isBroken(piece));
+                }
+                yield Optional.empty();
+            }
             case RELOAD -> {
                 run.log("DRIVE reload held=" + itemId(p.getInventory().getItemInMainHand()));
                 run.leftClick().accept(p);
@@ -795,7 +809,7 @@ final class SelfTestDrivers {
     private Optional<String> shiftClick(Player p, String arg) {
         String[] f = arg.split("\\s+");
         if (f.length != 2 || !(f[0].equals("top") || f[0].equals("bottom"))) {
-            return Optional.of("SHIFT_CLICK wants '<top|bottom> <weapon id>', got '" + arg + "'");
+            return Optional.of("SHIFT_CLICK wants '<top|bottom> <weapon or armor id>', got '" + arg + "'");
         }
         InventoryView view = p.getOpenInventory();
         Inventory top = view.getTopInventory();
@@ -805,7 +819,9 @@ final class SelfTestDrivers {
         int to = inTop ? top.getSize() : view.countSlots();
         for (int raw = from; raw < to; raw++) {
             ItemStack item = view.getItem(raw);
-            if (item == null || item.isEmpty() || WeaponItems.weaponId(item, keys).filter(f[1]::equals).isEmpty()) continue;
+            if (item == null || item.isEmpty() || WeaponItems.weaponId(item, keys)   // armor too: GATE-armor-sets AS13, 2026-11-25
+                    .or(() -> io.github.butterflysmp.rpg.paper.weapon.ArmorItems.armorId(item, keys))
+                    .filter(f[1]::equals).isEmpty()) continue;
             run.log("DRIVE shift-click InventoryClickEvent SHIFT_LEFT MOVE_TO_OTHER_INVENTORY " + f[0] + " slot=" + raw
                     + " " + f[1] + " x" + item.getAmount());
             Bukkit.getPluginManager().callEvent(new InventoryClickEvent(view, view.getSlotType(raw), raw,

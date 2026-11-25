@@ -152,7 +152,9 @@ class SelfTestWeaponIdsTest {
                 seen.add(s.gate() + "#" + s.row() + " " + n);
                 boolean give = n.startsWith("give ");
                 String bare = give ? n.substring("give ".length()) : n;
-                boolean ok = weapons.contains(bare) || (give && otherGear.contains(bare));
+                // A SHIFT_CLICK may name armor too since 2026-11-25 (the driver matches armor_id, GATE-armor-sets AS13).
+                boolean shift = step.verb() == Scenario.Verb.SHIFT_CLICK;
+                boolean ok = weapons.contains(bare) || ((give || shift) && otherGear.contains(bare));
                 if (!ok) bad.add(s.gate() + "#" + s.row() + " " + step.verb() + " " + bare);
             }
         }
