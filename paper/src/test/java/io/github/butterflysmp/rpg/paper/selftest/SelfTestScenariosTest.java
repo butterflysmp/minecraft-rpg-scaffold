@@ -324,7 +324,9 @@ class SelfTestScenariosTest {
         // Then its extension (feat/mage-guaranteed-gate-2, 2026-11-24), RECOUNTED the same way: 47 gates, 443 keys, 47
         // setups, so 396. The control: 437 - 1 (MG2, replaced) + 7 (MG2R, MB1, MB2, MB3, MB4a, MB4b, MB5) = 443. 390 was
         // this line's value.
-        assertEquals(396, loaded.rows());
+        // Then PT1 (feat/mage-guaranteed-gate-3, P10, 2026-11-24), RECOUNTED the same way: 47 gates, 444 keys, 47 setups,
+        // so 397. The control: 443 + 1 (PT1) = 444. 396 was this line's value.
+        assertEquals(397, loaded.rows());
     }
 
     /**

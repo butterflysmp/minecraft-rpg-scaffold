@@ -31,6 +31,13 @@ setup:
   - wait: 2
   - probe_self: ""
 
+# PT1 (P10, 2026-11-24, feat/mage-guaranteed-gate-3): THE PAD HOLDS ITS CHUNKS. FIRST in the run. Its witness is the setup's
+# "PAD tickets held=12" line (the take is the setup's PAD step), this row's SELF line on the stand point, and the run's
+# "PAD tickets released=12 cause=end" line after RESTORED. He may stand anywhere when he types the command, 200 blocks
+# from the pad included: that distance is the test. Nothing staged, nothing pressed, no mob.
+PT1:
+  - probe_self: ""
+
 # MG1: THE POOLS. A FRESH roll of each weapon (rpg give rolls on acquire): its slot 0 shown, then 500 rolls tallied. No mob.
 MG1:
   - cmd: "rpg playerxp set @s 1 levels"
