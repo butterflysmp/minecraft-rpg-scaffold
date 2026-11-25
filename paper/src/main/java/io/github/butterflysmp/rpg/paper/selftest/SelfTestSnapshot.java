@@ -93,6 +93,8 @@ final class SelfTestSnapshot {
     private final long lifetimeXp;
     private final GameMode gameMode;
     private final ItemStack[] contents;
+    /** W1 (the seat, 2026-11-25): his four armour slots and his off-hand, captured BY NAME and restored explicitly. */
+    private final SelfTestWornSlots<ItemStack> worn;
     private final int heldSlot;
     private final Location location;
     private final Boolean spawnMobs;
@@ -149,6 +151,7 @@ final class SelfTestSnapshot {
         ItemStack[] raw = p.getInventory().getContents();
         this.contents = new ItemStack[raw.length];
         for (int i = 0; i < raw.length; i++) contents[i] = raw[i] == null ? null : raw[i].clone();
+        this.worn = SelfTestWornSlots.capture(wornPort(p), ItemStack::clone, SelfTestSnapshot::emptyItem);
         this.heldSlot = p.getInventory().getHeldItemSlot();
         this.location = p.getLocation().clone();
         World world = p.getWorld();
@@ -231,11 +234,58 @@ final class SelfTestSnapshot {
     }
 
     /** The inventory and held slot the run began with, put back at every gate boundary (DH1's full hotbar). */
-    void restoreInventory(Player p) {
+    String restoreInventory(Player p) {
         ItemStack[] copy = new ItemStack[contents.length];
         for (int i = 0; i < contents.length; i++) copy[i] = contents[i] == null ? null : contents[i].clone();
         p.getInventory().setContents(copy);
         p.getInventory().setHeldItemSlot(heldSlot);
+        return restoreWorn(p);   // W1: the five slots by name, then read back
+    }
+
+    /** W1: the CAPTURED line's fields, {@code armour=<n> offhand=<0|1>}. */
+    String capturedFields() {
+        return worn.fields();
+    }
+
+    /**
+     * W1: write his four armour slots and off-hand back BY NAME (a copy, or empty where the capture was empty), read each
+     * back, and return {@code armour=<n> offhand=<0|1>}, with {@code NOT-RESTORED=<slots>} when any slot does not read
+     * back as captured (ItemStack's own equality, see {@link SelfTestWornSlots}).
+     */
+    private String restoreWorn(Player p) {
+        java.util.List<SelfTestWornSlots.Slot> differ = worn.restore(wornPort(p), ItemStack::clone,
+                SelfTestSnapshot::emptyItem, java.util.Objects::equals);
+        String not = SelfTestWornSlots.notRestored(differ);
+        return worn.fields() + (not.isEmpty() ? "" : " " + not);
+    }
+
+    private static boolean emptyItem(ItemStack item) {
+        return item == null || item.isEmpty();
+    }
+
+    /** His five slots through the Bukkit inventory's own named accessors (getHelmet ... getItemInOffHand). */
+    private static SelfTestWornSlots.Port<ItemStack> wornPort(Player p) {
+        org.bukkit.inventory.PlayerInventory inv = p.getInventory();
+        return new SelfTestWornSlots.Port<>() {
+            @Override public ItemStack get(SelfTestWornSlots.Slot s) {
+                return switch (s) {
+                    case HEAD -> inv.getHelmet();
+                    case CHEST -> inv.getChestplate();
+                    case LEGS -> inv.getLeggings();
+                    case FEET -> inv.getBoots();
+                    case OFF_HAND -> inv.getItemInOffHand();
+                };
+            }
+            @Override public void set(SelfTestWornSlots.Slot s, ItemStack item) {
+                switch (s) {
+                    case HEAD -> inv.setHelmet(item);
+                    case CHEST -> inv.setChestplate(item);
+                    case LEGS -> inv.setLeggings(item);
+                    case FEET -> inv.setBoots(item);
+                    case OFF_HAND -> inv.setItemInOffHand(item);
+                }
+            }
+        };
     }
 
     /** Removes, without a death animation, every entity the instrument tagged near the player. Returns how many. */
@@ -272,6 +322,7 @@ final class SelfTestSnapshot {
 
         p.getInventory().setContents(contents);
         p.getInventory().setHeldItemSlot(heldSlot);
+        String wornLine = restoreWorn(p);   // W1: the five slots by name, then read back
         p.setGameMode(gameMode);
         if (now) p.teleport(location); else p.teleportAsync(location);
 
@@ -302,6 +353,7 @@ final class SelfTestSnapshot {
                 + " difficulty=" + difficulty + " health=" + fmtHealth(health)
                 + " vanilla_xp=" + vanillaLevel + "+" + String.format(java.util.Locale.ROOT, "%.3f", vanillaProgress)
                 + " spawn_phantoms=" + spawnPhantoms
-                + " max_summons_base=" + (summons ? String.valueOf(maxSummonsBase.base()) : "NOT-RESTORED");
+                + " max_summons_base=" + (summons ? String.valueOf(maxSummonsBase.base()) : "NOT-RESTORED")
+                + " " + wornLine;
     }
 }
