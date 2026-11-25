@@ -1,0 +1,258 @@
+# GATE-summoner (docs/gates/GATE-summoner.md): the Summoner slice, the Bone Whistle and its wolf. Typed as ONE run after
+# the mage gate: `/rpg selftest mage-guaranteed+summoner`. SURVIVAL, every row; ALL AUTO, no ASK.
+# On the pad, facing east; the preflight measures east 0..42 and z -6..10. Night, no natural spawns, difficulty EASY (CC'S
+# CALL, for the SAFETY sum), his health staged full; each put back by the run's restore. SAFETY (the gate file, before the
+# rows): the whole run may deal him at most 20.000, and this gate's bound is 5.000: ONE scripted hit (SM3A, a vanilla
+# 0.2 by a frozen zombie, x5 x gs/100 at most gs 500). Every other mob is frozen (NoAI) or has attack 0; no mob here is
+# ever set on him except SM3B's attack-0 zombie. Every row self-contained: it empties his hands, gives its own weapon,
+# turns him and waits a tick before any press.
+setup:
+  - pad: ""
+  - preflight: "0 -6 42 10"
+  - difficulty: easy
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# SM1, THE CAST: 40 mana, the wolf at score 100 (100 health), the cooldown refusing a press 2 ticks later, then the
+# replace at score 200 (200 health) once the 200 ticks have run.
+SM1:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg maxsummons reset"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - probe_mana: ""
+  - use: ""
+  - wait: 5
+  - probe_mana: ""
+  - probe_summon: "8"
+  - use: ""
+  - wait: 2
+  - cmd: "rpg gearscore set 200"
+  - wait: 200
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+
+# SM2, TELEPORT BACK: the wolf put 50 east of him (beyond 48) is back beside him within the wait.
+SM2:
+  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~50 ~ ~"
+  - wait: 5
+  - probe_summon: "8"
+
+# SM3A, A MOB THAT DAMAGED HIM: a frozen zombie deals him ONE scripted vanilla 0.2 (mob_attack); the wolf takes it,
+# why=damaged. This is the gate's only damage to him (SAFETY).
+SM3A:
+  - cmd: "summon minecraft:zombie ~3 ~ ~ {NoAI:1b,Tags:[\"selftest\",\"s3a\"]}"
+  - wait: 2
+  - probe: "s3a"
+  - probe_self: ""
+  - cmd: "damage @s 0.2 minecraft:mob_attack by @e[tag=s3a,limit=1]"
+  - wait: 3
+  - probe_self: ""
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s3a]"
+  - wait: 2
+
+# SM3B, A MOB TARGETING HIM within 30 (live, attack 0): the wolf takes it, why=targeting.
+SM3B:
+  - cmd: "summon minecraft:zombie ~12 ~ ~ {Tags:[\"selftest\",\"s3b\"],attributes:[{id:\"minecraft:attack_damage\",base:0.0}]}"
+  - wait: 2
+  - mob_target: "s3b"
+  - wait: 3
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s3b]"
+  - wait: 2
+
+# SM3C, A DIRECTED MOB (frozen): his left click aimed at it with the whistle; why=directed.
+SM3C:
+  - clear_inventory: ""
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "summon minecraft:zombie ~6 ~ ~ {NoAI:1b,Tags:[\"selftest\",\"s3c\"]}"
+  - wait: 2
+  - aim: "s3c"
+  - wait: 2
+  - reload: ""
+  - wait: 3
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s3c]"
+  - wait: 2
+
+# SM4, A MOB HE MERELY HIT (frozen): his iron sword lands on it; the wolf leaves it alone (target=none).
+SM4:
+  - clear_inventory: ""
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - hold: iron_sword
+  - cmd: "summon minecraft:zombie ~2 ~ ~ {NoAI:1b,Tags:[\"selftest\",\"s4\"]}"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 25
+  - probe: "s4"
+  - attack: "s4"
+  - wait: 10
+  - probe: "s4"
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s4]"
+  - wait: 2
+
+# SM5, THE CHASE LIMIT: a directed frozen zombie put 40 east of him (beyond 32) is dropped, dropped=limit.
+SM5:
+  - clear_inventory: ""
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "summon minecraft:zombie ~6 ~ ~ {NoAI:1b,Tags:[\"selftest\",\"s5\"]}"
+  - wait: 2
+  - aim: "s5"
+  - wait: 2
+  - reload: ""
+  - wait: 3
+  - cmd: "tp @e[tag=s5] ~40 ~ ~"
+  - wait: 3
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s5]"
+  - wait: 2
+
+# SM6, SIDES, HIS RAY: the Boltor aimed at a frozen zombie 6 east, the wolf put on the line 3 east (raised 0.5 so the
+# eye-to-body line crosses its box) in the tick of the press: the zombie hit in full, the wolf untouched.
+SM6:
+  - clear_inventory: ""
+  - cmd: "rpg give boltor"
+  - wait: 2
+  - hold: boltor
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant show"
+  - cmd: "summon minecraft:zombie ~6 ~ ~ {NoAI:1b,Tags:[\"selftest\",\"s6\"]}"
+  - wait: 2
+  - aim: "s6"
+  - wait: 4
+  - probe: "s6"
+  - probe_summon: "8"
+  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ^ ^-0.6 ^3"
+  - use: ""
+  - wait: 3
+  - probe_summon: "8"
+  - probe: "s6"
+  - cmd: "kill @e[tag=s6]"
+  - wait: 2
+
+# SM7, A MOB'S HIT ON THE WOLF: a frozen zombie's scripted vanilla 2 (mob_attack) on the wolf, priced x5 x gs/100, lands.
+SM7:
+  - cmd: "summon minecraft:zombie ~4 ~ ~3 {NoAI:1b,Tags:[\"selftest\",\"s7\"]}"
+  - wait: 2
+  - probe: "s7"
+  - probe_summon: "8"
+  - cmd: "damage @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] 2 minecraft:mob_attack by @e[tag=s7,limit=1]"
+  - wait: 3
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s7]"
+  - wait: 2
+
+# SM8, WORLD DAMAGE REFUSED (fire, fall, drowning); the void REMOVES it; a fresh wolf, and /kill REMOVES it (Q4).
+SM8:
+  - cmd: "damage @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] 5 minecraft:in_fire"
+  - cmd: "damage @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] 5 minecraft:fall"
+  - cmd: "damage @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] 5 minecraft:drown"
+  - wait: 2
+  - probe_summon: "8"
+  - cmd: "damage @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] 5 minecraft:out_of_world"
+  - wait: 2
+  - probe_summon: "8"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - cmd: "kill @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest]"
+  - wait: 2
+  - probe_summon: "8"
+
+# SM9, ITS DEATH (O1) AND A FRESH CAST: a frozen zombie's scripted vanilla 1000000 on the wolf kills it through its
+# custom health (the store's shouldKill, then the death event); a new cast is a new wolf at full health.
+SM9:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - cmd: "summon minecraft:zombie ~4 ~ ~3 {NoAI:1b,Tags:[\"selftest\",\"s9\"]}"
+  - wait: 2
+  - cmd: "damage @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] 1000000 minecraft:mob_attack by @e[tag=s9,limit=1]"
+  - wait: 5
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s9]"
+  - clear_state: ""
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+
+# SM10, THE CAP: max_summons 0 refuses the cast; no mana spent; one notice. Then reset.
+SM10:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg maxsummons 0"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - probe_mana: ""
+  - use: ""
+  - wait: 3
+  - probe_mana: ""
+  - probe_summon: "8"
+  - cmd: "rpg maxsummons reset"
+
+# SM11, CLEAR_STATE LEAVES NO SUMMON, AND NOTHING IS LEFT: a cast, then clear_state; the store empty for him.
+SM11:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - clear_state: ""
+  - wait: 3
+  - probe_summon: "8"
+  - clear_inventory: ""

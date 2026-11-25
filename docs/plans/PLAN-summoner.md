@@ -480,3 +480,23 @@ flavor; "Common Summoner Weapon". Ability names, descriptions and flavor: SEAT P
 definitions 53 -> 54, recipes 7 -> 8, shipped summons 0 -> 1, the master pool snapshot +1 (`bone_whistle=unbreaking`, the
 summoner's universal pool), gear asked 59 -> 60; the golden lore regenerated with its diff predicted first: one 15-line
 block and the footer (102 -> 103 renderings), +16 / -1, read. **Mutation:** MUTTAME, red.
+
+## 8. THE GATE (`feat/summoner-gate`, on #298)
+
+`docs/gates/GATE-summoner.md`, `selftest/GATE-summoner.yml` (setup, SM1, SM2, SM3A, SM3B, SM3C, SM4-SM11), its R0b scan
+`docs/gates/GATE-summoner-r0b.ps1`. Typed as `/rpg selftest mage-guaranteed+summoner`. SAFETY: 5.000 bound on him
+(one scripted 0.2 at gs <= 500). Lint green and pinned clean. Rows recounted: 410 across 48 gates.
+
+**CC'S CALLS (each with its alternative):**
+- **Difficulty EASY for this gate** (alternative: NORMAL, as the mage gate; EASY only lowers the bound, and the
+  restore puts the world's own difficulty back).
+- **Mob hits staged by the vanilla `damage <e> <n> minecraft:mob_attack by <frozen zombie>` command** (SM3A, SM7, SM9),
+  so no mob acts on him (alternative: a live zombie with a small attack set on him; its hit count is a range).
+- **SM4's "merely hit" uses an iron sword** (alternative: the whistle; its left click stands down and deals nothing,
+  so it hits nothing at all).
+- **SM6 puts the wolf on the ray's line by a same-tick `tp ^ ^-0.6 ^3`** (alternative: a ground-level target; a wolf
+  is shorter than the eye-to-body line, so it would not be between them).
+
+**OWED, NOT WRITTEN:** the seat's sides rows for a shockwave, a crystal shot and a burst (only the ray is written);
+the load-time ContentValidator check that a weapon's summon cast names a loaded summon (the cast refuses at runtime with
+a warnOnce, READ).

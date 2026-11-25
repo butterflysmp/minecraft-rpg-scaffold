@@ -42,9 +42,10 @@ class SelfTestScenariosTest {
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
                         "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes", "shatter-caps",
-                        "focused-beam", "mage-guaranteed"),
+                        "focused-beam", "mage-guaranteed", "summoner"),
                 List.copyOf(loaded.gates().keySet()),
-                "the forty-seven gates, in boot order (mage-guaranteed LAST, the seat's brief of 2026-11-24, a NEW gate after focused-beam;"
+                "the forty-eight gates, in boot order (summoner LAST, 2026-11-25, a NEW gate after mage-guaranteed;"
+                        + " mage-guaranteed before it, the seat's brief of 2026-11-24, a NEW gate after focused-beam;"
                         + " focused-beam before it, the weapon filter and Focused Beam, 2026-11-24, a NEW gate"
                         + " after shatter-caps; shatter-caps before it, the Breacher's reach and Shatter Caps, 2026-11-24, a NEW gate"
                         + " after enchant-changes; enchant-changes before it, Ben's five changes to Airburst Flames and Lapis"
@@ -326,7 +327,9 @@ class SelfTestScenariosTest {
         // this line's value.
         // Then PT1 (feat/mage-guaranteed-gate-3, P10, 2026-11-24), RECOUNTED the same way: 47 gates, 444 keys, 47 setups,
         // so 397. The control: 443 + 1 (PT1) = 444. 396 was this line's value.
-        assertEquals(397, loaded.rows());
+        // Then GATE-summoner.md (feat/summoner-gate, 2026-11-25), RECOUNTED the same way: 48 gates, 458 keys, 48 setups,
+        // so 410. The control: 444 + 14 (its setup and SM1, SM2, SM3A, SM3B, SM3C, SM4-SM11) = 458. 397 was this line's value.
+        assertEquals(410, loaded.rows());
     }
 
     /**
@@ -601,6 +604,8 @@ class SelfTestScenariosTest {
                 "GATE-focused-beam.yml must lint clean (2026-11-24, written under the same rules)");
         assertEquals(List.of(), byGate.get("mage-guaranteed").stream().map(ScenarioLint.Finding::line).toList(),
                 "GATE-mage-guaranteed.yml must lint clean (2026-11-24, written under the same rules)");
+        assertEquals(List.of(), byGate.get("summoner").stream().map(ScenarioLint.Finding::line).toList(),
+                "GATE-summoner.yml must lint clean (2026-11-25, written under the same rules)");
         // L3 (the seat's ruling, 2026-11-24): HELD_READ_THEN_CHANGE over every gate, pinned EXACTLY. Old rows of other gates
         // are not edited; these four are owed dated notes (PLAN-enchant-columns section 33). STA4 is the one that cost a
         // reading: its iron half was recorded UNREAD when both shows answered for the netherite sword. The other three
@@ -639,7 +644,7 @@ class SelfTestScenariosTest {
             }
         }
         assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup", "focused-beam#setup",
-                        "mage-guaranteed#setup"),
+                        "mage-guaranteed#setup", "summoner#setup"),
                 padGates, "only enchant-columns, (2026-11-23) enchant-changes, (2026-11-24) shatter-caps and (2026-11-24)"
                         + " focused-beam and (2026-11-24) mage-guaranteed opt in, each in its setup");
         Scenario changes = shipped().gates().get("enchant-changes").getFirst();
