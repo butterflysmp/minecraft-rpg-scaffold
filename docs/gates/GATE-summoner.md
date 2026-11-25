@@ -352,3 +352,66 @@ weapon id). No second weapon is invented for this gate.
 
 replace (SM1), void (SM8B), killed (SM8C), death (SM9), clear (SM11, and every row's opening `clear_state`, and the
 run's end, X8). **Not stageable here:** owner-death, quit, world, stop, orphan, backstop (unit tests only).
+
+## READINGS — THE BOOT OF `f48f78e9`, 2026-11-25 (written after the run; no prediction above is edited)
+
+**The boot:** marker 01:33:16; `./scripts/dev-server.sh --refresh-content`; deployed jar 01:33:44; `latest.log` first line
+01:33:45; `Done (6.440s)` 01:33:51. **R0 read 01:34:13, before any login. Ben joined 01:49:25.** `SELFTEST RUN START
+mage-guaranteed+summoner rows=44 selftest=f48f78e9` 01:49:32; `SELFTEST summoner setup START` 01:52:00; `SELFTEST RUN
+FINISHED` 01:53:39; his `/stop` 01:55:53. No abort. The world's saved difficulty before the boot: `normal` (`level.dat`,
+`difficulty_settings`). Backup: `rpg-run-backups\2026-11-25-pre-summoner` (world 193 files, Rpg 175).
+
+| row | class | the lines |
+|---|---|---|
+| R0a | READ AS PREDICTED | `[Rpg] Build: f48f78e9` |
+| R0b | READ AS PREDICTED | on the DEPLOYED jar: 31 PRESENT / 0 ABSENT; 4 ABSENT; 4 controls ABSENT |
+| R0c | READ AS PREDICTED | `Loaded 11 abilities, 44 visuals, 5 statuses, 7 elements, 23 enchants, …, 24 weapons, …`; `Loaded 1 summon(s)`; `Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions`; 0 `WARN]: [Rpg]` (control: 7 `INFO]: [Rpg] Loaded`); none of Refusing, Skipping, SEVERE, Exception, Dev-only, currently prevented |
+| R0d | READ AS PREDICTED | one `Selftest: dev server, 419 scenarios across 48 gates [… mage-guaranteed, summoner]`; 418, 420, 410 absent |
+| R0e | READ AS PREDICTED | `FIGHTWORLD sweep path=…\run\world\dimensions\rpgfight folders=0`; no deleting, no orphan |
+| setup | READ AS PREDICTED | `PREFLIGHT ok box=-2..45 east -6..10 south air=1632/1632 floor solid=816/816`; `DIFFICULTY found=NORMAL set=EASY`; the stand `104.50 201.00 -3.50` |
+| SM1 | **MISS** (one clause) | mana `100.000` → `60.000` in the press's tick; the wolf `score=100 health=100.000 damage=20.000`; press 2: `REPLY "On cooldown for 9.8s"`, no spawn. **The replace logged `SUMMON spawn … score=200 health=200.000 damage=40.000` BEFORE `SUMMON removed … cause=replace`; the prediction said removed, then spawn.** Press 2's "mana unchanged in that tick" **DID NOT TEST**: the row has no read before press 2 in that tick; it read `60.250`, 5 ticks of regen on `60.000`, so nothing was spent |
+| SM2 | READ AS PREDICTED | `SELF … at=102.50 201.00 -9.50`; **`SUMMON teleport … from=149.50 201.00 6.50`** (X+45, Z+10 exactly); probe `within=8.0:true` |
+| SM3A | **MISS** | `SUMMON target … why=damaged` as predicted; **his `HURT before=15.000 after=15.000 defense=0.000 dealer=<s3a> dealerType=zombie`, against the predicted 1.000.** See SAFETY |
+| SM3B | READ AS PREDICTED | `DRIVE mob_target …`; `SUMMON target … why=targeting`; no HURT line |
+| SM3C | READ AS PREDICTED | `DRIVE reload held=bone_whistle`; `SUMMON target … why=directed`; probe `directed=<s3c>` |
+| SM3D | **DID NOT TEST WHAT IT WAS MEANT TO** | **`DRIVE attack … attack_damage=0.000`, then `DRIVE attack NO_DAMAGE_EVENT`: the attack raised no event, so the stand-down was never exercised.** `SUMMON target … why=directed`; no PLAYERHIT. `probe s3d` read `100.000` then **`80.000`: the wolf's own `SUMMON hit … tick=22245`**, which the prediction (before = after) did not allow for |
+| SM4 | **MISS** | his sword landed (`PLAYERHIT source=iron_sword/left_click … sent=23.000`); **then `SUMMON target … target=<s4> why=targeting` and `SUMMON hit … tick=22315`**; `probe s4` `57.000`. The prediction was "left alone, target=none" |
+| SM5 | READ AS PREDICTED | `why=directed`, then `target=none why=none dropped=limit` |
+| SM6 | READ AS PREDICTED | the wolf on the block `at=107.50 202.00 -3.50`; **exactly one `SIDES pass attacker=PLAYER body=57ce27d1-0c8b-4fe6-941e-4dade1cf9d2c` (the wolf's body)**; `PLAYERHIT source=boltor/right_click … sent=19.000 crit=false`; `probe s6` `100.000` → `81.000`; the wolf `100.000/100.000` both probes. (Unpredicted, after: `SUMMON target … target=<s6> why=targeting`) |
+| SM7 | READ AS PREDICTED | the wolf `100.000` → **`90.000`**. (Unpredicted: the after-probe shows `target=<s7>`, with no `SUMMON target` line) |
+| SM8A | READ AS PREDICTED | fire, fall, drown: `100.000/100.000` after |
+| SM8B | READ AS PREDICTED | `SUMMON removed … cause=void`; `SUMMONPROBE none … store=0` |
+| SM8C | READ AS PREDICTED | `SUMMON removed … cause=killed`; `none … store=0` |
+| SM9 | READ AS PREDICTED | `SUMMON removed … cause=death`; `none`; then a fresh `100.000/100.000` |
+| SM10 | READ AS PREDICTED | `SUMMON refused … verdict=REFUSED_FULL max=0`; `REPLY "You cannot summon more (max 0)."`; mana `100.000` and `100.000` in the press's tick; `none … store=0` |
+| SM11 | READ AS PREDICTED | `SUMMON removed … cause=clear`; `STAGE clear_state … summons=1`; `none … store=0` |
+| SM12 | READ AS PREDICTED | `why=directed`; at score 100 six hits `authored=20.000 score=100 sent=20.000 crit=none class=0 level=0 element=nature`, **ticks 22683, 22703, 22723, 22743, 22763, 22783** (each 20 apart); `probe s12a` `1000.000` → **`880.000`** (= 1000 − 6 × 20). At score 200, six hits `score=200 sent=40.000`, **ticks 22859, 22879, 22899, 22919, 22939, 22959**; `probe s12b` → **`760.000`** (= 1000 − 6 × 40) |
+| SM13 | READ AS PREDICTED | `SELF … at=116.50 201.00 -3.50`; after 160 ticks `within=8.0:true target=none` (`dist_him=7.65`); 0 `SUMMON teleport` lines |
+| SM14 | **MISS** (the probe) | `"  Slot 0: [*kinetic_tremors I]"`; the wolf `at=107.50 201.00 -5.50` (2.00 from `s14`), later `-4.34` (0.84), inside the 3; beams `sent=42.000 crit=true`, `42.000 crit=true`, `21.000`; **exactly one `kinetic_tremors/shockwave … sent=10.000`**, none on the wolf; the wolf `100.000/100.000`. **But `SUMMON target … target=<s14> why=targeting` after the first beam, and four `SUMMON hit` (ticks 23244, 23264, 23284, 23304): `probe s14` `805.000` = 1000 − 42 − 42 − 21 − 10 − 80**, against 927 less the named crits |
+| SM15 | READ AS PREDICTED | `ORB rest at=116.500,202.620,-3.500`; the wolf `at=110.50 201.00 0.50` (7.39 from the rest); `ORBSHOT … to=116.500,202.740,-8.500`; **exactly one `lapis_crystal/crystal … sent=10.500`**; `probe s15` `989.500`; the wolf `100.000/100.000`. (Unpredicted, after: `why=targeting` on `s15`) |
+| SM16 | **DID NOT TEST WHAT IT WAS MEANT TO** | the wolf on the block `at=111.50 202.00 -3.50`; **`SPLIT … at=110.724,201.911,-3.500`** (predicted `<X+6.000>,<Y+1.620>` = 110.500, 202.620); **no `SIDES pass` line, no burst PLAYERHIT, `probe s16` `1000.000`**. INFERRED: the bolt homed down towards `s16` before the split, so the bursts flew at about +0.91, below the stone block's top (+1.00) at x 111, and ended in it |
+| SM17 | READ AS PREDICTED | `why=directed`; six hits ticks 23636 … 23736, 20 apart; **Ben's answer, verbatim: `ASK 1 question="Did you see your wolf run to the zombie and attack it? (yes / no / not sure)" answer="yes" ticks=91`** |
+
+**HIS SAFETY: MISS.** One HURT line on him in the whole run: SM3A's `HURT before=15.000 after=15.000 defense=0.000`. **Sum
+15.000: above the gate's bound of 5.000, under the cap of 20.000.** INFERRED cause, not read: a mob's melee on a player is
+priced from the mob's attack attribute (a zombie's 3.0 × 5.0 × 100/100 = 15), not from the scripted 0.2. If so, the
+SAFETY table's SM3A term was the wrong quantity: at the score cap 500 the same hit is 75, above 20.000.
+
+**THE RESTORED LINE, WHOLE:** `SELFTEST RUN RESTORED xp=712824 cell=ranger/fire gamemode=SURVIVAL held=2 mana=100.0
+trace=false spawn_mobs=false time=1000 blocks=2 mobsRemoved=0 orbsRemoved=0 keep_inventory=false immediate_respawn=false
+difficulty=NORMAL health=112.000 vanilla_xp=150+0.694 spawn_phantoms=true max_summons_base=null summons=1 drag_tick=false`;
+then `PAD tickets released=12 cause=end`; `HEALTH saved=112.000 customHP=112.000/350.000 wrote=112.000`. **`summons=1` is
+SM17's wolf, removed by X8's end-of-run removal**; `max_summons_base=null` is the default restored (no stored base).
+
+**WHAT NO ROW PREDICTED:**
+1. **A mob he hits starts targeting him, so the wolf takes it** (`why=targeting`: SM4, SM6, SM14, SM15). This conflicts
+   with the ruling that the wolf leaves alone a mob he merely hit. The mechanism is not read.
+2. **The whistle's attack is `0.000`, so a real entity click raises no damage event** (SM3D). The stand-down may never be
+   reached by the whistle (INFERRED).
+3. `SUMMONPROBE`'s `target=` reads the body's vanilla target: SM7 shows `target=<s7>` with no `SUMMON target` line.
+4. Every cast seeds the wolf as `MOBSEED … wolf gs=- source=passive max=<its health>` at the stand (`stand_d=0.00`, once
+   `0.02`).
+5. **After the run, Ben used the whistle near spawn against Knells:** `BEAM telegraph mob=knell … target=wolf …`; hits
+   20 apart; three `cause=replace` removals; `cause=stop` at his `/stop`.
+6. Six Paper WARN lines after Done: *"you are 4 release(s) behind the latest stable release (26.3)"* (no `[Rpg]` WARN).
+7. No `SUMMON goals restored` line in the run.

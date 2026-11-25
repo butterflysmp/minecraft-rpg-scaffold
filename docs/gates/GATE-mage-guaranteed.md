@@ -768,3 +768,37 @@ As MB5 (ticks 13.000 under the stamp, the plain hit, then 10.000), the kill, the
 `994.000/1000.000`**: a plain Ignite, no `DOTTICK` on `b` before it; then `sent=3.000 cap=3.000`.
 
 **Safety, unchanged:** the same mobs at the same distances; Ignite skips players; the sum on him is 0.
+
+## READINGS — THE BOOT OF `f48f78e9`, 2026-11-25, TYPED AS `/rpg selftest mage-guaranteed+summoner` (no prediction above is edited)
+
+The build, R0 and the run's times are in `GATE-summoner.md`'s readings for the same boot (R0 read 01:34:13; Ben joined
+01:49:25; `SELFTEST RUN START mage-guaranteed+summoner rows=44` 01:49:32; FINISHED 01:53:39). The six owed rows are NEW
+readings; every other row is a regression read against its own prediction above.
+
+| row | class | the lines |
+|---|---|---|
+| setup | READ AS PREDICTED | `PAD … stand=104,201,-4 … ok=7250`; `PAD stood at=104.50 201.00 -3.50 yaw=-90.000 pitch=0.000`; `DIFFICULTY found=NORMAL set=NORMAL` |
+| PT1 | READ AS PREDICTED | `SELFTEST mage-guaranteed setup PAD tickets held=12` (once in the run); `SELF customHP=114.000/350.000 at=104.50 201.00 -3.50`; **`SELFTEST RUN PAD tickets released=12 cause=end` once, after summoner** |
+| **MG1R** (new) | READ AS PREDICTED | eight `-- 4 slot(s)` lines, one per weapon, in order; every slot 0 and slot 1 as tabled; `flint_staff … weaponPool=1 uniquePool=1`, `1=500`; `knell_beam … uniquePool=0`, slot 1 `0=500`; `blaze_kings_staff … weaponPool=0`, slot 0 `0=500`; `breacher` once |
+| **MG2R2** (new) | READ AS PREDICTED | `Set 10 level(s) for BaronVonYeetus (now level 10, 0/2150 into it, 12940 lifetime).`; no `Enchanting unlocks` line; the wallet `30 experience levels` / `0 experience points`; Polished Scepter `Locked. Click to unlock at I -- 352 XP.`; after its click `26` / `46`; after the Lapis Crystal click `26` / `46` |
+| MG3 | READ AS PREDICTED | `sent=32.000`; one `DOTTICK sent=16.000 cap=16.000`; `probe m` `952.000` (= 968 − 16) |
+| MG4 | READ AS PREDICTED | `sent=22.000`; `probe m` `978.000` |
+| MG5 | READ AS PREDICTED | `sent=21.000` at 36 east; `probe m` `979.000` |
+| MG5C | READ AS PREDICTED | no PLAYERHIT; `probe m` `1000.000` |
+| MG6 | READ AS PREDICTED | three hits `54.000 crit=true`, `27.000`, `27.000`; `probe m` `892.000` |
+| MG7a | READ AS PREDICTED | four (one `54.000 crit=true`); `865.000` |
+| MG7b | READ AS PREDICTED | five; `865.000` |
+| MG7c | READ AS PREDICTED | six (one crit); `811.000` |
+| MG8 | READ AS PREDICTED | three on `s` (`54.000 crit=true`, `27.000`, `54.000 crit=true`), none on `e`; `probe e` `1000.000` |
+| MG9a | READ AS PREDICTED | `VOLLEYSHOT … pressed=19913 tick=19929` (16); `sent=63.000` |
+| MG9b | READ AS PREDICTED | `pressed=20022 tick=20046` (24); `sent=63.000` |
+| MG10 | READ AS PREDICTED | on `m`: `45.000`, `51.750`, `58.500` (after `n`'s `45.000`), `65.250`, `72.000`, `72.000`, then `45.000` after the gap; every DOTTICK `sent=` equals its `cap`; probes alive (`1296.875`, `1820.000`) |
+| MG11 | READ AS PREDICTED (the named lines) | `Prehistoric magicians learned you could`, `create fire by flinging mana into flint.`, `Channel, then loose three`, `Kinetic Damage: 27 x 3`. **The whole-block comparison against `golden-lore.txt` was not made** |
+| **MB1R** (new) | READ AS PREDICTED | Flint Staff, Living Lantern, Blaze King's Staff `Slot 1: [mana_burn locked]`, slot 1 `1=500`; Dragon's Breath `Slot 1: []`, `0=500`; four `-- 4 slot(s)` lines |
+| MB2 | READ AS PREDICTED (the crit reading) | `sent=40.000 crit=true`; six `DOTTICK sent=5.000 cap=10.000`; `probe m` `30.000` |
+| MB3 | READ AS PREDICTED | `sent=20.000`; six `DOTTICK sent=6.500 cap=10.000`; `probe m` `41.000` |
+| **MB4aR** (new) | READ AS PREDICTED | `v` `sent=40.000 crit=true` (the allowed crit reading); `DOTTICK sent=13.000 cap=10.000` twice; `SETTLED dying=0 ticks=20 first=1`; **`probe b` `992.200/1000.000`, no DOTTICK on `b` before it**; then `sent=3.900 cap=3.900` |
+| **MB4bR** (new) | READ AS PREDICTED | `DOTTICK sent=10.000 cap=10.000`; **`probe b` `994.000`**, none before; then `sent=3.000 cap=3.000` |
+| **MB5R** (new) | READ AS PREDICTED | `13.000` under the stamp, the plain hit (`40.000 crit=true`), then `10.000`; **`probe b` `994.000`**; then `sent=3.000 cap=3.000` |
+
+**His health in these rows:** no HURT line on him in any mage row.
