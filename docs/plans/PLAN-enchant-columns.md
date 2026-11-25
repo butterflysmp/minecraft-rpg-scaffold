@@ -1496,3 +1496,33 @@ that reaches it is a damage-over-time tick's caster (`asNotAHit`, which keeps th
 first `MUTSTAMPARM` did not apply** (a `$` anchor on a CRLF file; the marker grep read 0) and was re-run on `(\r?)\n`.
 **Not mutated:** `onEnded`'s `stamps.remove`, which no behaviour can see (`stamp` reads 0 off an inactive burn and the
 next application overwrites); it keeps the map from growing.
+
+## 29. PR F2, THE STAMPED TICK AND THE STAMPED IGNITE (`feat/mana-burn-damage`, on F1)
+
+**The seat's ruling, 2026-11-24, taking section 25's first counter-proposal further:** "the percent multiplies WHAT A
+SCORCH TICK DEALS, after the tick is settled as min(5% of max health, cap), so the increase shows on every mob (5.0
+becomes 5.5 / 6.0 / 6.5 on a 100-health mob); and it multiplies Ignite's damage (6 becomes 6.6 / 7.2 / 7.8). The cap
+itself is not changed."
+
+**Built:**
+
+- paper `DotStatus.burnOnce`: `damagePerTick(max, cap) x tickFactor(id)`. `tickFactor` is 1 in `DotStatus` (withering
+  has no stamp) and `1 + stamp / 100` in `ScorchStatus`. **The cap is not touched**, and the `DOTTICK` line's `sent=` is
+  the multiplied tick while its `cap=` is the unchanged cap (`DOTTICK <id> <type> status=scorch applier=<id>
+  sent=%.3f cap=%.3f tick=%d`). So on a 100-health mob under a cap of 10, `sent=6.500 cap=10.000` at level III.
+- core `Ignite.detonate(…, stampPercent)`: every bystander takes `DAMAGE x (1 + stamp / 100)`; the five-argument form is
+  stamp 0 (the unscorched-kill clause in `BukkitCombatant` still calls it: a mob killed by a fire hit before any scorch
+  has no stamp to carry). **The blast's own hits carry no stamp** (`chained` / `terminal`), and **players are still
+  skipped** (`Ignite.detonate`'s `c.state().player()` continue, READ, and pinned by
+  `ManaBurnIgniteTest.aStampedBlastStillSparesAPlayer`).
+- paper `RpgListeners.onEntityDeath`: **the fourth capture on the death frame**, the stamp read beside the applier and
+  the depth, BEFORE the forget, and handed to `detonate` (a read after the forget returns 0). Pinned by order in the source.
+
+**Every figure EXECUTED in jshell, 2026-11-24**, as `x * (1 + p / 100.0)`: tick 5.0 at p = 10, 20, 30 is **5.5, 6.0,
+6.5**; tick 10.0 (the cap binding) at 30 is **13.0**; tick 20.0 at 30 is 26.0; Ignite 6.0 at 10, 20, 30 is
+**6.6000000000000005, 7.199999999999999, 7.800000000000001** (`%.3f`: 6.600, 7.200, 7.800).
+
+**Mutations** (marker 1, lines changed 1, restored `cmp`-identical, markers left 0): `MUTIGNITESTAMP` (the blast ignores
+the stamp), `MUTIGNITECAP` (`/ 10`), `MUTTICKFACTOR` (the tick ignores the factor), `MUTTICKCAP` (the factor moved onto
+the CAP: reddens the 100-health rows, where a raised cap cannot show, which is the seat's reason for the ruling),
+`MUTSCORCHFACTOR` (`ScorchStatus` answers 1), `MUTDEATHSTAMP` (the listener hands Ignite 0). All red.

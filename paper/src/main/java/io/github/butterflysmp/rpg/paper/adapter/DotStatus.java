@@ -301,8 +301,17 @@ public class DotStatus {
      * <i>unexpressible</i> rather than merely tested against, which is the stronger guarantee -- the
      * count would have to be re-added first, and its re-add trigger requires naming a consumer.
      */
+    /**
+     * What a SETTLED tick ({@code min(rate x max, cap)}) is multiplied by for {@code id}: 1 here. {@link ScorchStatus}
+     * answers Mana Burn's {@code 1 + stamp / 100} (F2, the seat's ruling of 2026-11-24: the TICK, after it is settled;
+     * the cap itself is not changed). Withering has no stamp.
+     */
+    protected double tickFactor(UUID id) {
+        return 1.0;
+    }
+
     private void burnOnce(UUID id, Active a, ScorchSink sink) {
-        double amount = rates.damagePerTick(sink.victimMaxHealth(), a.cap);
+        double amount = rates.damagePerTick(sink.victimMaxHealth(), a.cap) * tickFactor(id);
         // DOTTICK BEFORE THE DAMAGE, so the tick that kills still has its line, ahead of the death it
         // causes (WS3-P reads "the killing tick names withering"). One line per tick, for every
         // instance of this store -- scorch and wither alike, which is the S3 ruling.
