@@ -259,7 +259,7 @@ public final class MobBeamer {
                 .orElse(null);
     }
 
-    private static boolean eligible(Mob mob, LivingEntity l, MobBeam beam, Vec3 eye) {
+    private boolean eligible(Mob mob, LivingEntity l, MobBeam beam, Vec3 eye) {
         if (l.equals(mob) || !LiveTargets.isLive(l) || !l.getWorld().equals(mob.getWorld())) return false;
         if (!MobHostility.hostileTo(side(l), exempt(l))) return false;
         return beam.inRange(eye, beam.aimPoint(vec(l.getLocation()), l.getHeight()));
@@ -381,15 +381,15 @@ public final class MobBeamer {
         return valid ? stored : MobScaling.GS_BASELINE;
     }
 
-    private static MobBeam.Candidate candidate(LivingEntity l) {
+    private MobBeam.Candidate candidate(LivingEntity l) {
         var b = l.getBoundingBox();
         return new MobBeam.Candidate(l.getUniqueId(), side(l), exempt(l), l.getWorld().getName(),
                 new BeamBox(new Vec3(b.getMinX(), b.getMinY(), b.getMinZ()),
                         new Vec3(b.getMaxX(), b.getMaxY(), b.getMaxZ())));
     }
 
-    private static MobHostility.Side side(LivingEntity l) {
-        return l instanceof Player ? MobHostility.Side.PLAYER : MobHostility.Side.MOB;
+    private MobHostility.Side side(LivingEntity l) {   // 2b: the one classifier
+        return io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(l, adapters.keys());
     }
 
     private static boolean exempt(LivingEntity l) {

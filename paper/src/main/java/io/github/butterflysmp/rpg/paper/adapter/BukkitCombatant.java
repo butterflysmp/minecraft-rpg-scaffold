@@ -45,7 +45,7 @@ public final class BukkitCombatant {
 
     /** State to read plus a handle to act on. MUST be called on the thread owning {@code entity}. */
     public static Combatant of(LivingEntity entity, AdapterContext ctx) {
-        return new Combatant(snapshot(entity, ctx.stats()), new Handle(entity, ctx));
+        return new Combatant(snapshot(entity, ctx.stats(), ctx.keys()), new Handle(entity, ctx));
     }
 
     /**
@@ -79,7 +79,7 @@ public final class BukkitCombatant {
      * be shared, and both callers would still be correct in isolation. Transform them at the STAT if
      * they must be transformed, so both sides move together.
      */
-    public static CombatantSnapshot snapshot(LivingEntity entity, CombatantStats stats) {
+    public static CombatantSnapshot snapshot(LivingEntity entity, CombatantStats stats, Keys keys) {
         Regions.requireOwned(entity);
         var location = entity.getLocation();
         // ONE draw, held in a local. It is read once, by the multiplier below. This was two draws
@@ -100,8 +100,7 @@ public final class BukkitCombatant {
                 // so it is right for a chicken and an enderman without core knowing either exists.
                 entity.getEyeHeight(),
                 !entity.isDead(),
-                entity instanceof Player ? io.github.butterflysmp.rpg.core.mob.MobHostility.Side.PLAYER
-                        : io.github.butterflysmp.rpg.core.mob.MobHostility.Side.MOB,   // 2a: as before; 2b's classifier replaces it
+                CombatSides.of(entity, keys),   // 2b: the one classifier
                 stats.attackSpeedValue(entity.getUniqueId()),
                 // Frozen for the SAME reason, one pass later: a WeaponDamage payload delivered by a
                 // projectile resolves on the target's region, so it cannot read this store at impact.
@@ -219,8 +218,25 @@ public final class BukkitCombatant {
          * The damage itself, on the entity's own thread (F9b fix B: split out of {@link #applyDamage} so that
          * {@link #applyDamageIf} can ask its condition and apply in the SAME task, with no tick between).
          */
+        /**
+         * THE SIDES GUARD (the Summoner slice, 2b; the seat's H3 and P4): refuses ONLY the three summon cells that are
+         * a "no" in the one table (PLAYER -> SUMMON, SUMMON -> PLAYER, SUMMON -> SUMMON), read through
+         * {@link CombatSides#refused}. Every cell without a summon passes untouched, so no player-to-player damage that
+         * happens today is switched off. On this entity's own thread; logs one line per refusal.
+         */
+        private boolean refusedBySides(UUID sourceId, String what) {
+            io.github.butterflysmp.rpg.core.mob.MobHostility.Side source = CombatSides.ofSource(sourceId, ctx.keys());
+            io.github.butterflysmp.rpg.core.mob.MobHostility.Side victim = CombatSides.of(entity, ctx.keys());
+            if (!CombatSides.refused(source, victim)) return false;
+            ctx.log().info("SIDES refused " + source + "->" + victim + " " + what + " source=" + sourceId
+                    + " victim=" + entity.getUniqueId());
+            return true;
+        }
+
         private void applyNow(double amount, UUID sourceId, CritState crit, DefenseRule defense, String element,
                               HitAccrual accrual) {
+                // THE SIDES GUARD (2b), before anything else: a refused summon cell reaches nothing below.
+                if (refusedBySides(sourceId, "damage")) return;
                 // THE PHALANX'S SHOT (dragon-mobs step R7a, the seat's ruling 2): ANY damage that reaches a shot
                 // destroys it, whatever the amount, and nothing below runs for it: no store, no status, no accrual,
                 // no Ignite, no aggro, no flash. FIRST, so no later line can be reached by a shot.
@@ -507,6 +523,7 @@ public final class BukkitCombatant {
                 // STATUSES NEVER ATTACH TO A SHOT (step R7a, the seat's ruling 2): a hit that would apply one destroys
                 // it instead. Wither, Ignite's scorch, Freeze, Rooted, Soaked: every status lands here or in
                 // applyDamage's accrual, and both ask first.
+                if (refusedBySides(applierId, "status=" + statusId)) return;   // 2b: the same guard, for a status
                 if (ctx.shots().strike(entity, "ability status=" + statusId)) return;
                 if (ctx.shields().suppressRider(entity, "status=" + statusId)) return;   // step R7b
                 switch (def) {

@@ -265,6 +265,13 @@ public final class Keys {
     public final NamespacedKey nameplateOptOut;
 
     /**
+     * THE SUMMON TAG (the Summoner slice, 2b): a body carrying it (STRING, its owner's UUID) is on the SUMMON side's
+     * ({@code CombatSides}). Declared in 2b; NOTHING sets it on a live entity before PR 3, and then only after the
+     * summon store owns the body (D7).
+     */
+    public final NamespacedKey summonOwner;
+
+    /**
      * An item's whole custom-enchant state (a STRING): every slot, every candidate, every unlocked
      * level and every active choice, in one versioned blob. Grammar lives in {@code EnchantCodec}.
      * Per ITEM, never per player -- the enchant is on the weapon, not on whoever holds it.
@@ -507,6 +514,7 @@ public final class Keys {
         this.mountRidden = new NamespacedKey(plugin, "mount_ridden");
         this.pounceRoot = new NamespacedKey(plugin, "pounce_root");
         this.nameplateOptOut = new NamespacedKey(plugin, "nameplate_opt_out");
+        this.summonOwner = new NamespacedKey(plugin, "summon_owner");
         this.enchantData = new NamespacedKey(plugin, "enchant_data");
         this.enchantRolled = new NamespacedKey(plugin, "enchant_rolled");
         this.quiverLoaded = new NamespacedKey(plugin, "quiver_loaded");

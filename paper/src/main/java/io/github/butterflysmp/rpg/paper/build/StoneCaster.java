@@ -155,7 +155,7 @@ public final class StoneCaster {
         // cooldown and mana are spent before any hop, then run the effects on the region that owns the aim.
         Location eye = player.getEyeLocation();
         Aim aim = ViewAim.of(eye);
-        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats());
+        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats(), adapters.keys());
         if (followUp.isPresent()) {
             switch (abilityService.castUnchecked(caster, followUp.get(), aim)) {
                 case CastResult.Success success -> run(player, eye, success);

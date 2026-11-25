@@ -194,7 +194,7 @@ public final class VanillaShots {
 
     /** The stamp (ruling 10): the weapon, the force, and his terms and score snapshotted NOW, as a cast does. */
     private void stamp(Player player, WeaponDefinition weapon, double force, Entity projectile) {
-        CombatantSnapshot atShot = BukkitCombatant.snapshot(player, adapters.stats());
+        CombatantSnapshot atShot = BukkitCombatant.snapshot(player, adapters.stats(), adapters.keys());
         PaperCombatWorld at = new PaperCombatWorld(player.getWorld(), adapters);
         int score = at.triggerScoreOf(player.getUniqueId());
         // B2 (2026-11-23): the bow's behavioural enchants at the RELEASE, as id and level, stamped beside the score.
@@ -250,7 +250,7 @@ public final class VanillaShots {
                     + "' hit, and no loaded weapon binds that shot; it dealt only the token");
             return;
         }
-        CombatantSnapshot caster = hit.stamp().applyTo(BukkitCombatant.snapshot(hit.shooter(), adapters.stats()));
+        CombatantSnapshot caster = hit.stamp().applyTo(BukkitCombatant.snapshot(hit.shooter(), adapters.stats(), adapters.keys()));
         new CastExecutor(new PaperCombatWorld(hit.victim().getWorld(), adapters), () -> { })
                 .landVanillaShot(trigger.get(), caster, hit.stamp().triggerScore(), behavioursOf(hit.stamp()),
                         BukkitCombatant.of(hit.victim(), adapters), VanillaShot.chargeScale(hit.stamp().force()));
