@@ -26,9 +26,9 @@ setup:
   - wait: 40
   - probe_self: ""
 
-# SM1, THE CAST: mana read in the press's own tick (no regen term); the wolf at score 100; a second press 5 ticks later
-# refused BY THE COOLDOWN (200) with no mana spent; then, 200 ticks on, the replace at score 200.
-SM1:
+# SM1R (re-predicts SM1, 2026-11-25): the cast; the refused press read against a mana probe IN ITS OWN TICK (before
+# and after); the replace in its real order (the new body's spawn, then the old one's removed cause=replace).
+SM1R:
   - clear_inventory: ""
   - clear_state: ""
   - cmd: "rpg maxsummons reset"
@@ -44,6 +44,7 @@ SM1:
   - probe_mana: ""
   - wait: 5
   - probe_summon: "8"
+  - probe_mana: ""
   - use: ""
   - probe_mana: ""
   - wait: 2
@@ -76,9 +77,10 @@ SM2:
   - wait: 5
   - probe_summon: "8"
 
-# SM3A, A MOB THAT DAMAGED HIM: a frozen zombie deals him ONE scripted vanilla 0.2 (mob_attack); the wolf takes it,
-# why=damaged. The gate's only damage to him (SAFETY).
-SM3A:
+# SM3AR (re-predicts SM3A, 2026-11-25): A MOB THAT DAMAGED HIM, WITHOUT WOUNDING HIM. READ (R1): a mob's melee on a
+# player is priced from its seeded ATTACK stat, not the event's amount; so the frozen zombie's attack_damage is staged
+# at 0.002, which seeds 0.010 at the pad's only rolled score, 100 (EXECUTED, S-1). why=damaged.
+SM3AR:
   - clear_inventory: ""
   - clear_state: ""
   - cmd: "rpg give bone_whistle"
@@ -91,7 +93,7 @@ SM3A:
   - use: ""
   - wait: 5
   - probe_summon: "8"
-  - cmd: "summon minecraft:zombie ~3 ~ ~ {NoAI:1b,Tags:[\"selftest\",\"s3a\"]}"
+  - cmd: "summon minecraft:zombie ~3 ~ ~ {NoAI:1b,Tags:[\"selftest\",\"s3a\"],attributes:[{id:\"minecraft:attack_damage\",base:0.002}]}"
   - wait: 2
   - probe: "s3a"
   - cmd: "damage @s 0.2 minecraft:mob_attack by @e[tag=s3a,limit=1]"
@@ -146,10 +148,10 @@ SM3C:
   - cmd: "kill @e[tag=s3c]"
   - wait: 2
 
-# SM3D, A DIRECT AT MELEE RANGE (frozen, 2 east): a real entity left click is BOTH halves a client sends, in one tick:
-# the attack (Player#attack, which the stand-down cancels) and the arm swing (reload, which directs). why=directed; no
-# PLAYERHIT; the zombie's health unchanged.
-SM3D:
+# SM3DR (re-predicts SM3D, 2026-11-25, per R4): A DIRECT AT MELEE RANGE. The whistle's attack is 0, so the attack half
+# raises no damage event at all (READ, Player.attack) and the stand-down is not reached; the swing half directs. The
+# zombie is probed in the SAME tick as the click, before the wolf can reach it.
+SM3DR:
   - clear_inventory: ""
   - clear_state: ""
   - cmd: "rpg give bone_whistle"
@@ -169,15 +171,17 @@ SM3D:
   - probe: "s3d"
   - attack: "s3d"
   - reload: ""
-  - wait: 3
   - probe: "s3d"
+  - wait: 3
   - probe_summon: "8"
   - cmd: "kill @e[tag=s3d]"
   - wait: 2
 
-# SM4, A MOB HE MERELY HIT (frozen, 2 east): after his own cast, an iron sword, charged; the hit lands on it; the wolf
-# leaves it alone (target=none).
-SM4:
+# SM4R (re-predicts SM4, 2026-11-25; the seat's default withdrawn, Ben's rule stands): TWO HALVES. (a) A mob he hits
+# then targets him (READ, R2: aggro-on-hit sets every damaged mob's target to its attacker), so the wolf takes it,
+# why=targeting. (b) A mob he hits 35 east (his Boltor's ray) also targets him, but stands beyond trigger_radius 30:
+# left alone. No mob he damages can avoid targeting him (R2), so (b) is the nearest stageable "cannot be taken".
+SM4R:
   - clear_inventory: ""
   - clear_state: ""
   - cmd: "rpg give bone_whistle"
@@ -203,6 +207,23 @@ SM4:
   - probe: "s4"
   - probe_summon: "8"
   - cmd: "kill @e[tag=s4]"
+  - wait: 2
+  - clear_inventory: ""
+  - cmd: "rpg give boltor"
+  - wait: 2
+  - hold: boltor
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "summon minecraft:zombie ~35 ~ ~ {NoAI:1b,Tags:[\"selftest\",\"s4b\"]}"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 4
+  - probe: "s4b 40"
+  - use: ""
+  - wait: 10
+  - probe: "s4b 40"
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s4b]"
   - wait: 2
 
 # SM5, THE CHASE LIMIT: directed at a frozen zombie 6 east, which is then put 40 east of him (beyond 32): dropped=limit.
@@ -476,9 +497,9 @@ SM13:
   - wait: 160
   - probe_summon: "8"
 
-# SM14, SIDES, A SHOCKWAVE: Kinetic Tremors I on the Lapis Staff (radius 3); three beams into A 3 east; his wolf put 2
-# from A (at 3 east, 2 north). One shockwave, on A alone; the wolf inside the radius and untouched.
-SM14:
+# SM14R (re-predicts SM14, 2026-11-25): staged as SM14. The wolf takes A once his first beam lands (R2: aggro-on-hit),
+# so the probe's sum names the wolf's hits too, each from its own SUMMON hit line.
+SM14R:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
@@ -561,10 +582,10 @@ SM15:
   - cmd: "kill @e[tag=s15]"
   - clear_state: ""
 
-# SM16, SIDES, A BURST: Airburst Flames II on the Living Lantern (the bolt splits 6 out into three bursts of 30); his
-# wolf stood ON a stone block 7 east (box +1.00 to +1.85, the bursts fly at +1.62); a frozen zombie 10 east. The bursts
-# pass through the wolf (SIDES pass) and strike the zombie; the wolf untouched.
-SM16:
+# SM16R (re-predicts SM16, 2026-11-25): no block. READ: homing steers at the target's FEET, so the bolt dove from his eye
+# and split at about +0.91 (the boot's SPLIT at=110.724,201.911) and the bursts keep descending towards the zombie's
+# feet 10 east; at x 7 they are near +0.7. His wolf stands ON THE FLOOR at x 7 (box +0.00 to +0.85): they cross it.
+SM16R:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
@@ -578,9 +599,7 @@ SM16:
   - use: ""
   - wait: 5
   - probe_summon: "8"
-  - save_blocks: "7 0 0 7 0 0"
-  - cmd: "setblock ~7 ~ ~ minecraft:stone"
-  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~7 ~1 ~"
+  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~7 ~ ~"
   - clear_inventory: ""
   - cmd: "rpg give living_lantern"
   - wait: 2

@@ -55,6 +55,44 @@ class SummonLifecycleTest {
         assertFalse(store.owns(B3));
     }
 
+    /**
+     * R3 (the seat, 2026-11-25): the guard's CURRENT target is published by body, so the probe reads ours and not the
+     * body's vanilla target; it goes with the body on every way out, the replace included (which also used to leave the
+     * replaced body's DIRECTED order behind).
+     */
+    @Test
+    void theGuardsCurrentTargetIsPublishedAndGoesWithTheBody() {
+        SummonStore store = new SummonStore();
+        UUID mob = new UUID(9, 9);
+        store.place(SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 100, "nature"));
+        assertEquals(Optional.empty(), store.current(B1), "nothing chosen yet");
+        store.setCurrent(B1, Optional.of(mob));
+        assertEquals(Optional.of(mob), store.current(B1));
+        store.setCurrent(B1, Optional.empty());
+        assertEquals(Optional.empty(), store.current(B1), "a drop clears it");
+        store.setCurrent(B2, Optional.of(mob));
+        assertEquals(Optional.empty(), store.current(B2), "only an owned body publishes one");
+
+        store.setCurrent(B1, Optional.of(mob));
+        store.direct(B1, mob);
+        UUID b4 = new UUID(1, 4);
+        store.place(SummonStore.Summon.cast(HIM, "whistle", b4, WOLF, 100, "nature"));   // the replace
+        assertEquals(Optional.empty(), store.current(B1), "the replaced body's current goes");
+        assertEquals(Optional.empty(), store.directed(B1), "and its directed order too");
+
+        store.setCurrent(b4, Optional.of(mob));
+        store.remove(b4);
+        assertEquals(Optional.empty(), store.current(b4), "remove");
+        store.place(SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 100, "nature"));
+        store.setCurrent(B1, Optional.of(mob));
+        store.removeAllOf(HIM);
+        assertEquals(Optional.empty(), store.current(B1), "removeAllOf");
+        store.place(SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 100, "nature"));
+        store.setCurrent(B1, Optional.of(mob));
+        store.removeAll();
+        assertEquals(Optional.empty(), store.current(B1), "removeAll");
+    }
+
     @Test
     void eachRemovalCauseIsOneValueWithItsLogToken() {
         assertEquals(List.of("death", "owner-death", "quit", "world", "replace", "stop", "clear", "orphan", "backstop",

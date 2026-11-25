@@ -536,7 +536,8 @@ final class SelfTestDrivers {
             LivingEntity target = body instanceof org.bukkit.entity.Mob m ? m.getTarget() : null;
             run.log("SUMMONPROBE weapon=" + s.weaponId() + " body=" + s.body() + " alive=" + alive + " health=" + health
                     + " at=" + at + String.format(java.util.Locale.ROOT, " dist_him=%.2f within=%.1f:%b", d, reach, d >= 0 && d <= reach)
-                    + " target=" + (target == null ? "none" : target.getUniqueId())
+                    + " target=" + adapters.summons().current(s.body()).map(java.util.UUID::toString).orElse("none")   // R3: OUR guard's
+                    + " vanilla_target=" + (target == null ? "none" : target.getUniqueId())   // the body's own, kept
                     + " directed=" + adapters.summons().directed(s.body()).map(java.util.UUID::toString).orElse("none"));
         }
         if (n == 0) run.log("SUMMONPROBE none owner=" + p.getUniqueId() + " store=" + adapters.summons().all().size());

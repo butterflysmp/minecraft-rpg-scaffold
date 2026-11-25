@@ -109,6 +109,7 @@ public final class SummonGoal implements Goal<Mob> {
             ctx.log().info(SummonTrace.target(summon, vec(body), d.target(), d.why(), d.dropped()));
         }
         current = d.target();
+        ctx.summons().setCurrent(body.getUniqueId(), current);   // R3: the probe reads OUR target
         Entity target = current.map(Bukkit::getEntity).orElse(null);
         if (target instanceof LivingEntity victim) {
             body.getPathfinder().moveTo(victim, SPEED);
