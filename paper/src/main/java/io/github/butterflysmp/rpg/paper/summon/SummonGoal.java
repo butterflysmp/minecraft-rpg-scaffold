@@ -118,7 +118,7 @@ public final class SummonGoal implements Goal<Mob> {
                 BukkitCombatant.of(victim, ctx).handle().applyDamageAs(MobHostility.Side.SUMMON, summon.damage(),
                         summon.owner(), CritState.NORMAL, DefenseRule.APPLIES, summon.element(), HitAccrual.weapon());
                 ctx.log().info(SummonTrace.hit(summon, vec(body), victim.getUniqueId(), summon.authoredDamage(),
-                        summon.element()));
+                        summon.element(), now));   // X2: the tick the hit landed on
             }
         } else if (SummonGuard.needsReturn(def, him, at)) {
             body.getPathfinder().moveTo(owner, SPEED);

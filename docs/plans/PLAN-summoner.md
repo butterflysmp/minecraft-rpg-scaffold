@@ -500,3 +500,37 @@ block and the footer (102 -> 103 renderings), +16 / -1, read. **Mutation:** MUTT
 **OWED, NOT WRITTEN:** the seat's sides rows for a shockwave, a crystal shot and a burst (only the ray is written);
 the load-time ContentValidator check that a weapon's summon cast names a loaded summon (the cast refuses at runtime with
 a warnOnce, READ).
+
+## 9. THE GATE REWORKED (the seat's X1-X11, 2026-11-25, on `feat/summoner-gate`)
+
+The gate was not approved: rows were chained, nothing read the wolf attacking or following, SM6 could pass without
+testing, and the owed sides rows were missing. All fixed on the gate branch; the rows are now setup, SM1, SM2,
+SM3A-SM3D, SM4-SM7, SM8A-SM8C, SM9-SM17 (419 scenarios across 48 gates).
+
+**CODE ON THIS BRANCH (each with a test and a mutation, all red):**
+- **X1, the lint:** `SUMMON_UNSTAGED` (a row reading a summon with no `use` after a `clear_state` earlier in it);
+  `SUMMON_SELECTORS` pinned to the shipped summons' entities. MUTLINTCAST; and a planted unstaged SM13 in the real gate
+  reddened `SelfTestScenariosTest` with two findings.
+- **X2:** the SUMMON hit line ends ` tick=<n>` (the server tick at the goal's tick), so the cadence is readable.
+- **X4(a):** `castRay`'s filter logs `SIDES pass attacker=<side> body=<uuid>` under trace, only for a refused body ON the
+  line (READ: `CraftWorld.rayTraceEntities` filters before the box test). MUTSIDESPASS, MUTSIDESBOX.
+- **X8:** the run's `end()` removes all his summons (cause `clear`) after the restore; the restore already removed every
+  `selftest`-tagged mob on every exit. MUTENDSUMMONS.
+- **X10:** `WeaponLoader.requireLoadedSummons` refuses at load a weapon whose summon cast names no loaded summon.
+  MUTSUMMONREFUSE (first run did not apply: a brace in the replacement; re-run with `#` delimiters, red).
+
+**CC'S CALLS (each with its alternative):**
+- **The lint's "own cast" is a `use` after a `clear_state`** (alternative: a `use` while holding a summoner weapon, which
+  the pure lint cannot know without the registry).
+- **The selectors are a fixed list held to the shipped summons by a test** (alternative: pass the registry into the lint).
+- **The run's end removes summons with cause `clear`** (alternative: a twelfth cause, END, in the core's enum).
+- **The hit line carries the tick** (alternative: a separate trace line per hit with the tick only).
+- **SM2 stays on the pad:** he steps to (-2, -6) and the wolf goes to (45, 10), 49.65 apart (alternative, the seat's:
+  stand + 50, past the barrier rim at x 46 and over the void).
+- **SM6 and SM16 stand the wolf on one saved stone block** so its box crosses a line at his eye height (alternative:
+  a same-tick tp into the air, which falls, and whose order against the ray is INFERRED).
+- **SM3D drives `attack` then `reload` in one tick** (the two packets of a real entity click).
+- **The "burst or area" row is Airburst Flames' bursts** (the shipped area alternative, Sunder's burst, needs his class
+  cell and a saved loadout the restore does not undo).
+
+**NOT STAGEABLE YET (X7):** the cap with another weapon's summon; covered by `SummonCap`'s table.

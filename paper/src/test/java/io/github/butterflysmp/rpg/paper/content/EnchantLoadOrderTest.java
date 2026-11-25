@@ -22,7 +22,7 @@ class EnchantLoadOrderTest {
     void theWeaponsLoadBeforeTheEnchantsAndTheLoaderAsksTheWeaponRegistry() throws IOException {
         String src = Files.readString(Path.of("src/main/java/io/github/butterflysmp/rpg/paper/RpgPlugin.java"),
                 StandardCharsets.UTF_8).replace("\r", "");
-        int weapons = src.indexOf("this.weapons = new WeaponLoader(getLogger())");
+        int weapons = src.indexOf("this.weapons = new WeaponLoader(getLogger(), id -> summonDefs.find(id).isPresent())");   // X10
         int enchants = src.indexOf("this.enchants = EnchantLoader.withWeapons(getLogger()");
         assertTrue(weapons > 0, "the weapon load is not found");
         assertTrue(enchants > 0, "the enchant load is not found");

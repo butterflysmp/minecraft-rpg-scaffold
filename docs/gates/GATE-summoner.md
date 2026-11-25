@@ -1,8 +1,9 @@
 # GATE — THE SUMMONER: THE BONE WHISTLE AND ITS WOLF
 
-**Branch `feat/summoner-gate`, on #298 `feat/summoner-5` (the stack #289 → #298).** NOT BOOTED. Written 2026-11-25,
-predictions committed before any boot. **No boot without Ben's own "ready" and the seat's approval of code and gate
-from origin** (`.claude/rules/booting.md`, ticked line by line).
+**Status: NOT RUN.** Branch `feat/summoner-gate`, on #298 `feat/summoner-5` (the stack #289 → #298). Written
+2026-11-25, **reworked the same day for the seat's X1–X11**; every prediction committed before any boot. **No boot
+without Ben's own "ready" and the seat's approval of code and gate from origin** (`.claude/rules/booting.md`, ticked
+line by line). **GAME MODE: SURVIVAL, every row.**
 
 **The scenario is `paper/src/main/resources/selftest/GATE-summoner.yml`, typed after the mage gate as ONE command:**
 
@@ -12,68 +13,104 @@ from origin** (`.claude/rules/booting.md`, ticked line by line).
 
 Mage-guaranteed's NEW readings in that run: **MG1R, MG2R2, MB1R, MB4aR, MB4bR, MB5R** (predicted in
 `GATE-mage-guaranteed.md`); every other mage row is a **regression read** against its own prediction there.
-Summoner's rows: **ALL AUTO, no ASK.** SURVIVAL, on the pad, facing east, every row self-staged: nothing is asked of
-Ben's ground, position or inventory. Lint: green (`SelfTestScenariosTest` pins `GATE-summoner.yml` lint-clean).
+Summoner's rows are AUTO except **SM17, the one ASK, last**. On the pad, facing east; nothing is asked of Ben's ground,
+position or inventory. **Lint: green, and pinned clean** (`SelfTestScenariosTest`), including the new
+`SUMMON_UNSTAGED`.
+
+## X1 — EVERY ROW IS SELF-STAGED
+
+Every row that reads a wolf opens the same way: `clear_inventory`, `clear_state` (cooldowns cleared, any summon of his
+removed with cause `clear`), the whistle given and held, the score set, his turn east and a wait, mana refilled, **ITS
+OWN cast**, and a `probe_summon` before it acts. It ends by killing its mobs. A row that needs a second item (SM4's
+sword, SM6's Boltor, SM14 and SM15's Lapis Staff, SM16's Living Lantern) switches to it **after** its own cast:
+`clear_inventory` does not remove a summon (no removal cause names a weapon leaving the hand; READ, `SummonRemoval`'s
+eleven). **The lint enforces it:** `SUMMON_UNSTAGED` flags a row that reads a summon (a `probe_summon`, or a command
+whose selector names a shipped summon's entity) with no `use` after a `clear_state` earlier in the row. Its planted
+control is `ScenarioLintTest.aRowReadsOnlyASummonItCastItself`, and `SummonLintSelectorsTest` holds the selector set
+equal to the shipped summons' entities.
 
 ## WHAT WAS READ OR EXECUTED, EACH MARKED
 
-- **Difficulty scaling of a mob's hit on a PLAYER — READ, javap, `Player.hurtServer` (26.1.2 mojang-mapped):** when
-  `DamageSource.scalesWithDifficulty()`, PEACEFUL returns false (no damage), EASY gives `min(a / 2 + 1, a)`, HARD gives
-  `a * 3 / 2`, NORMAL is unchanged; then `Avatar.hurtServer` (super) runs, so the event our pricing reads carries the
-  scaled amount. **The scaling is in `Player`, so a hit on the wolf is NOT scaled.**
-- **Pricing — READ, `MobDamagePricing.price` → `MobScaling.attackDamage`:** `VANILLA_FACTOR (5.0) × gsFactor × base`
-  for a vanilla mob; `MobGearScore` bounds a stored score to 1..500 (READ, `MIN`, `CAP`).
-- **His health — READ:** `/rpg heal 1000000` (`healSelf`: `stats.heal(id, amount, id, true)`) fills his custom HP to
-  max. **The snapshot captures his custom health at run start** (`SelfTestSnapshot`, `stats.current(id)`) and the
-  restore writes it back (`healthToRestore`, logged `HEALTH saved=…`). It also restores the world's difficulty
-  (`world.setDifficulty(difficulty)`) and the stored `max_summons` base (`SelfTestSummonsBase`, C1).
-- **`difficulty: easy` parses — READ:** `SelfTestStaging`, `Difficulty.valueOf(arg.trim().toUpperCase…)`.
-- **`clear_state` — READ, `SelfTestDrivers.clearState`:** clears cooldowns and removes all his summons with cause
-  `CLEAR`, logged `STAGE clear_state … summons=<n>`.
-- **`/rpg mobdamage` cannot kill the wolf — READ:** it calls `applyDamage(amount, player)`, whose source is PLAYER, and
-  `refusedBySides` refuses PLAYER → SUMMON. So SM9 kills it by a mob's priced hit (the vanilla `damage … by` command).
-- **A missing summon at cast time — READ, `SummonService.cast`:** `warnOnce` and `SummonRefused("That summon is not
-  loaded.")`. **The load-time check (a weapon naming an unloaded summon refused by `ContentValidator`) is NOT built:
-  OWED.**
-- **INFERRED, the boot decides:** that the vanilla `damage <e> <n> minecraft:mob_attack by <zombie>` command reaches our
-  mob-hit pricing as a melee hit by that zombie (SM3A, SM7, SM9); that a `tp` of the wolf and a `use` in the same tick
-  put the wolf on the ray's line before the ray is cast (SM6).
+- **Difficulty scaling of a mob's hit on a PLAYER — READ, javap, `Player.hurtServer`:** when `scalesWithDifficulty()`,
+  PEACEFUL returns false, EASY gives `min(a / 2 + 1, a)`, HARD `a × 3 / 2`, NORMAL unchanged; then `Avatar.hurtServer`.
+  The scaling is in `Player`, so **a hit on the wolf is never scaled**.
+- **Pricing — READ, `MobDamagePricing.price` → `MobScaling.attackDamage`:** `5.0 × gs/100 × base` for a vanilla hostile;
+  a stored score is bounded 1..500 (`MobGearScore`).
+- **A mob's defence — READ by grep:** the defence stat's only writer is `PlayerHealthSystem` (a player's equipment). A
+  zombie's resolves to its base 0.0, and `Defense.applyDefense(x, 0)` returns x. **The defence term on every hit on a
+  zombie or the wolf here is ×1.**
+- **His health — READ:** `/rpg heal 1000000` fills his custom HP; the snapshot captures it at run start and the restore
+  writes it back (`HEALTH saved=…`); the restore also puts back the world's difficulty and the `max_summons` base.
+- **Steps share a tick until a wait — READ, `SelfTestRun.advance`:** non-wait steps run in one pass. So a `probe_mana`
+  right after a `use` reads the mana in the press's own tick: **no regeneration term** (X11).
+- **`aim` faces eye to eye — READ, `SelfTestDrivers.aim`.** **A `cmd` runs as him (`performCommand`), so `~` and `^`
+  are anchored at his FEET** (vanilla's default anchor for an executing entity; INFERRED, not javap'd). **So the old
+  SM6's `^ ^-0.6 ^3` put the wolf 0.6 into the floor: X4(b) was right, and the row is restaged on a block.**
+- **The ray's filter — READ, javap, `CraftWorld.rayTraceEntities`:** the predicate runs inside
+  `getNearbyEntities(sweptBox, filter)`, BEFORE each body's own `BoundingBox.rayTrace`. So the new `SIDES pass` line
+  applies that same box test itself and is logged **only for a body on the line**.
+- **Area effects skip a summon BEFORE damage — READ:** the shockwave (`BehaviourHits.shockwave`), the crystal shot
+  (`CastExecutor`'s orb shot) and homing's pick (`ProjectileFlight.nearestMob`) each drop a body the table refuses
+  (`MobHostility.harms(ENGINE_ATTACKER, side, …)`) before applying anything. **So no SIDES line is logged for the
+  wolf there; the witness that it was inside is its position against the effect's centre and radius.**
+- **A real entity left click is two packets — READ, `WeaponSwingListener`:** the ANIMATION packet reaches `onSwing`
+  (the direct), and the attack packet reaches `Player.attack` (the stand-down). SM3D drives both in one tick.
+- **The wolf's speed — READ, javap, `Wolf.createAttributes`:** `MOVEMENT_SPEED` 0.3. `Pathfinder.moveTo(…, 1.0)` walks
+  it at its own speed (multiplier 1.0, INFERRED from the API's contract). The waits below are sized for a floor of
+  **0.1 block a tick** (2 blocks a second), well under a wolf's walk (INFERRED; the boot decides).
+- **The cooldown notice — EXECUTED:** `"On cooldown for %.1fs".formatted(195 / 20.0)` prints **`On cooldown for
+  9.8s`** (jshell, the JDK's own formatter); sent by `sendMessage`, so it is a REPLY line (READ, `RpgListeners`).
+- **The pad — READ, `SelfTestPadShape`:** interior x −2..45, z −13..13 from the stand, floor at dy 0, a barrier rim at
+  x 46. Held chunks: `floorDiv(stand + X1 − 1, 16)` to `floorDiv(stand + X2 + 1, 16)` east-west.
+- **X8, the run's end — READ, `SelfTestRun.end` and `SelfTestSnapshot.restore`:** every exit (END, every ABORTED, quit,
+  server-stop) goes through `end()`, and its restore removes **every `selftest`-tagged mob within 48** (on server-stop
+  through an inline scheduler). **So SM3B's live zombie cannot outlive an abort.** **But a summon is not tagged**, and
+  nothing removed it at a run's end: only quit and server-stop removed his summons, through the summon service.
+  **Added:** `end()` now removes all his summons, cause `clear`, after the restore, logged `summons=<n>` on the
+  RESTORED line (`SummonWiringTest.theRunsEndRemovesHisSummons`, mutation MUTENDSUMMONS red).
+- **X10 — BUILT:** a weapon whose summon cast names no loaded summon is refused at load, the file named
+  (`WeaponLoader.requireLoadedSummons`; summons load before weapons, READ, `RpgPlugin`).
+  `WeaponSummonRefusalTest` (2 rows, the shipped whistle loaded and refused), mutation MUTSUMMONREFUSE red.
+- **INFERRED, the boot decides:** that `damage <e> <n> minecraft:mob_attack by <zombie>` reaches our pricing as that
+  zombie's melee (SM3A, SM7, SM9); that a vanilla `summon`ed zombie on the pad stores score 100 (the enchant-columns
+  readings: max health 200 read as custom `1000.000`, i.e. × 5.0 × 100/100).
 
 ## SAFETY: THE MOST THE RUN CAN DEAL HIM — A SUM, BEFORE THE ROWS
 
-**The cap: 20.000 over the whole `mage-guaranteed+summoner` run.**
+**The cap: 20.000 over the whole `mage-guaranteed+summoner` run.** No row lets a mob with attack above 0 act.
 
-| source | staged attack | speed / AI | distance | lifetime | most hits × biggest hit |
+| source | staged attack | AI | distance | lifetime | most hits × biggest hit |
 |---|---|---|---|---|---|
-| mage-guaranteed, every mob | — | frozen NoAI zombies (its own SAFETY section, READ) | 6+ east | per row | **0** |
-| SM3A `s3a` | none acting: one scripted `damage @s 0.2 minecraft:mob_attack by s3a` | NoAI | 3 east | 7 ticks | **1 × (0.2 EASY-scaled: min(0.2/2+1, 0.2) = 0.2) × 5.0 × (gs ≤ 500)/100 = 5.000** |
-| SM3B `s3b` | `attack_damage` base **0.0** | live, set on him (`mob_target`) | 12 east | 5 ticks, then killed | **0** (vanilla 0 → EASY `min(1, 0)` = 0 → `price` returns 0 for a non-positive amount, READ) |
-| SM3C, SM4, SM5, SM6, SM7, SM9 zombies | — | NoAI | 2–6 east | their row | **0** |
-| the wolf | — | ours; SUMMON → PLAYER is a refused cell | beside him | the run | **0** |
-| his own Boltor ray (SM6) | — | the ray skips the caster | — | one shot | **0** |
+| mage-guaranteed, every mob | — | frozen NoAI (its own SAFETY, READ) | 6+ east | per row | **0** |
+| SM3A `s3a` | none acting: one scripted `damage @s 0.2 mob_attack by s3a` | NoAI | 3 east | 7 ticks | **1 × 0.2 (EASY: min(1.1, 0.2)) × 5.0 × (gs ≤ 500)/100 = 5.000** |
+| SM3B `s3b` | `attack_damage` **0.0** | live, set on him | 12 east | 5 ticks, then killed; any abort removes it (X8) | **0** (0 → EASY 0 → `price` 0 for a non-positive amount) |
+| every other zombie (SM3C, SM3D, SM4–SM7, SM9, SM12, SM14–SM17) | — | NoAI | 2–12 east | its row | **0** |
+| the wolf | — | ours; SUMMON → PLAYER is a refused cell | beside him | its row | **0** |
+| his own ray, beams, bursts, shockwave, crystal shot | — | each skips the caster (READ: the shockwave's and the shot's `never himself`; the ray's `except(ignoreId)`) | — | — | **0** |
 
-**Sum: 5.000 ≤ 20.000**, with every term at its worst (the zombie's score at the cap of 500; his armour and the
-EASY scaling counted as nothing). His health is staged full in the setup, so even the bound leaves him far above 0.
+**Sum: 5.000 ≤ 20.000**, every term at its worst (the zombie's score at the cap; his armour and EASY counted as
+nothing). His health is staged full in the setup.
 
 ## CARRIED STATE (CC, IN THIS ORDER) — A CHECKLIST, EACH LINE TICKED IN THE REPORT
 
-1. No `java` process; the stack heads equal origin (`git ls-remote --heads origin feat/summoner-gate`).
+1. No `java` process; the heads equal origin (`git ls-remote --heads origin feat/summoner-gate`).
 2. `git status --porcelain` empty; `git rev-parse HEAD` equals the remote head.
-3. The world's saved difficulty is read and reported (memory: it can differ from `server.properties`); the setup sets
-   EASY and the restore puts it back.
+3. The world's saved difficulty read and reported; the setup sets EASY and the restore puts it back.
 4. `booting.md`, every step.
 
 ## THE RUN SHEET — BEN TYPES ONE LINE
 
-He is told **R0 passed**, logs in, stands anywhere, types `/rpg selftest mage-guaranteed+summoner`, waits for
-`SELFTEST summoner END`, then `/stop` (the after-run step).
+He is told **R0 passed**, logs in, stands anywhere, types `/rpg selftest mage-guaranteed+summoner`, answers SM17's
+question, waits for `SELFTEST summoner END`, then `/stop`.
 
 ## HOW LONG THE RUN IS
 
-**Summoner's waits sum to 434 ticks (21.70 s)** (`awk '/^  - wait: /{s+=$3}'` over the scenario); 150 other steps at
-≥ 1 tick each (206 steps less 56 waits, `grep -c`). **About 30 to 40 seconds (an ESTIMATE: per-step cost not
-measured).** Mage-guaranteed's waits are 2690 ticks; so the whole run is **about 3 to 3.5 minutes (ESTIMATE)**. The
-run's `START` and `END` lines give the real figure.
+**Summoner's waits sum to 1473 ticks (73.65 s)**
+(`tr -d '\r' < GATE-summoner.yml | awk '/^  - wait: /{s+=$3} END {print s}'`), plus SM17's ask (up to 1200 ticks, 60
+s, or until he answers). Steps that are not waits share their pass's tick (READ, `advance`), so they add nothing beyond
+the waits (536 steps: `grep -c '^  - '`). **About 1.5 to 2.5 minutes for summoner (ESTIMATE: the row-boundary clean and
+settle, and the ask's answer time, are not measured).** With mage-guaranteed's 2690 ticks of waits: **about 4 to 5.5 minutes in all (ESTIMATE).** The run's `START` and
+`END` lines give the real figure.
 
 ## R0 — THE BUILD. READ IT FIRST. IF ANY R0 FAILS, STOP
 
@@ -85,27 +122,26 @@ prints it, shortened. **Not `-dirty`, not `unknown`.** Instrument: `Select-Strin
 
 ### R0b — the jar carries the summoner stack and this gate
 
-The scan is `docs/gates/GATE-summoner-r0b.ps1`, committed beside this file. **Prediction, line for line:** before
-`'--- absent'`, **24 `PRESENT`, 0 `ABSENT`**; between `'--- absent'` and `'--- controls'`, **3 `ABSENT`, 0 `PRESENT`**;
-after `'--- controls'`, **4 `ABSENT`, 0 `PRESENT`**. The controls: two PREFIX controls (`health: 1000`, `damage: 2`
-absent while `health: 100` and `damage: 20` are present, so a line is matched whole), a `Has` and an `Entry` of a name
-no file carries. **Run before commit on a locally packaged jar: see the PR body.**
+`docs/gates/GATE-summoner-r0b.ps1`. **Prediction, line for line:** before `'--- absent'`, **31 `PRESENT`, 0 `ABSENT`**;
+between `'--- absent'` and `'--- controls'`, **4 `ABSENT`, 0 `PRESENT`**; after `'--- controls'`, **4 `ABSENT`, 0
+`PRESENT`** (counted from the script: 39 `ValueLine`/`Has`/`Entry` lines = 31 + 4 + 4). The rework added X1's lint
+rule, X2's `tick=`, X4's `SIDES pass`, X10's refusal, `SM8A:`, `SM17:` and the ask line; and `SM8:` ABSENT (split).
+**Run before commit on a jar built from this tree: see the PR body.**
 
 ### R0c — every Loaded line, and no `[Rpg]` WARN
 
-- `[Rpg] Loaded 11 abilities, 44 visuals, 5 statuses, 7 elements, 23 enchants, …, 24 weapons, …`: **weapons 23 → 24**
-  (the Bone Whistle); every other count as R2c of `GATE-mage-guaranteed.md`. Recounted by `ls` at this branch:
-  abilities 11, visuals 44, statuses 5, elements 7, enchants 23, weapons 24.
-- **`[Rpg] Loaded 1 summon(s)`** (`RpgPlugin`, `"Loaded " + summonDefs.size() + " summon(s)"`; `ls content/summons` = 1).
-- `Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions` (`BootCountLinesTest`).
+- `[Rpg] Loaded 11 abilities, 44 visuals, 5 statuses, 7 elements, 23 enchants, …, 24 weapons, …` (`ls` at this branch:
+  11, 44, 5, 7, 23, 24); **`[Rpg] Loaded 1 summon(s)`**; `Mint-on-craft: 38 indexed, 38 claiming, of 54 gear
+  definitions`.
+- **No `Skipping malformed weapon 'bone_whistle.yml'`** (X10: its wolf loads first).
 - **0** `WARN]: [Rpg]` lines (control: `INFO]: [Rpg] Loaded` 1 or more); none of `Refusing`, `Skipping`, `SEVERE`,
   `Exception`, `Dev-only`, `currently prevented`.
 
 ### R0d — every scenario loaded
 
-Exactly one **`[Rpg] Selftest: dev server, 410 scenarios across 48 gates [melee-cell, …, mage-guaranteed, summoner]`**
-(recount: 48 files, 458 keys, 48 setups; `SelfTestScenariosTest`, control 444 + 14 = 458). Controls: `409 scenarios`
-and `411 scenarios` ABSENT.
+Exactly one **`[Rpg] Selftest: dev server, 419 scenarios across 48 gates [melee-cell, …, mage-guaranteed, summoner]`**
+(recount: 48 files, 467 keys, 48 setups; control 444 + 23 = 467). Controls: `418 scenarios`, `420 scenarios` and
+`410 scenarios` ABSENT.
 
 ### R0e — the orphan sweep with nothing staged
 
@@ -113,90 +149,180 @@ One `FIGHTWORLD sweep path=…\rpgfight folders=0`, no `deleting`, no `orphan`.
 
 ## THE ROWS
 
-Each row's lines are those between `SELFTEST summoner <row> START` and its `DONE`. **Clock: the server tick; every
-"within N ticks" counts from the step that acts.** Wolf figures: `health = 100 × score/100`, `damage = 20 × score/100`
-(Ben: "stats scale with gearscore"). Every wolf probe is `probe_summon "8"`:
-`SUMMONPROBE weapon=bone_whistle body=<uuid> alive=true health=<cur>/<max> at=… dist_him=<d> within=8:<bool> target=…
-directed=…`, or `SUMMONPROBE none owner=<him> store=<n>`.
+Each row's lines are those between `SELFTEST summoner <row> START` and its `DONE`. **Clock: the server tick
+(`Bukkit.getCurrentTick`).** Wolf figures: `health = 100 × score/100`, `damage = 20 × score/100`. Every wolf probe is
+`probe_summon "8"`: `SUMMONPROBE weapon=bone_whistle body=<b> alive=true health=<cur>/<max> at=<x y z> dist_him=<d>
+within=8:<bool> target=… directed=…`, or `SUMMONPROBE none owner=<him> store=<n>`. **The cast each row opens with**
+reads `SUMMON spawn … summon=bone_whistle_wolf score=100 health=100.000 damage=20.000` and a probe `health=100.000/100.000
+… within=8:true target=none` (not repeated below). `<X Y Z>` is his stand (feet, block centre) after the row's turn.
 
-### SM1 — THE CAST, THE COOLDOWN, THE REPLACE
+### SM1 — THE CAST, THE COOLDOWN'S REFUSAL, THE REPLACE
 
-- Press 1 (score 100): `SUMMON spawn … summon=bone_whistle_wolf score=100 health=100.000 damage=20.000`; mana falls by
-  **40** (probe_mana before and after; the 5-tick regen is the only other term, UNVERIFIED rate, so the read is
-  `before − after` in **[40 − regen(5 ticks), 40]**); `SUMMONPROBE … health=100.000/100.000 … within=8:true`.
-- Press 2, 7 ticks later: **refused by the cooldown (200)**: no `SUMMON spawn`, no mana spent.
+- Press 1: mana `before` then `after` in the same tick: **`after = before − 40` exactly** (no regen term: X11).
+- Press 2, 5 ticks after press 1 (the clock: press 1's tick, both presses in the step pass after a wait): **refused by
+  the cooldown**: **`REPLY "On cooldown for 9.8s"`** (200 − 5 = 195 ticks; the format executed); no `SUMMON spawn`; mana
+  **unchanged** in that tick.
 - Press 3 at score 200, ≥ 207 ticks after press 1: **`SUMMON removed … cause=replace`, then `SUMMON spawn … score=200
   health=200.000 damage=40.000`**; probe `health=200.000/200.000`.
 
-### SM2 — TELEPORT BACK
+### SM2 — TELEPORT BACK, ON THE PAD
 
-The wolf is put 50 east of him (beyond `teleport_back` 48). **`SUMMON teleport … from=<his x + 50> …`** within the
-5-tick wait; probe `within=8:true`. The line does not depend on where the wolf walked: the `from=` x is his x + 50.
+He steps to `(X−2, Z−6)` (`SELF … at=<X−2> <Y> <Z−6>`); the wolf is put at `(X+45, Z+10)`, **49.65** from him
+(√(47² + 16²)), both on the interior's floor. **`SUMMON teleport … from=<X+45> <Y> <Z+10>`** (each within 0.5: at most
+one tick's walk before the goal's first tick sees > 48), then a probe `within=8:true`. **CC'S CALL:** inside the pad;
+the alternative (the seat's) is X + 50, which is past the barrier rim at x 46 and over the void, where `fall` is
+refused by Q4. It is in a held chunk only if `(stand + 46) mod 16 ≤ 11`: true on the stand x 104 that the 2026-11-23
+reading recorded, so it depends on where spawn is.
 
 ### SM3A — A MOB THAT DAMAGED HIM: why=damaged
 
-One scripted 0.2 (`mob_attack` by the frozen `s3a`). His custom HP falls by **0.2 × 5.0 × gs(s3a)/100** (gs read
-from `probe s3a`; EASY leaves 0.2 unchanged) — every term named: base 0.2, difficulty ×1 (0.2 < 2), vanilla factor 5.0,
-`s3a`'s score, his armour (DefenseRule as for any mob hit, read from the hit line). Then **`SUMMON target … target=<s3a>
+One scripted `0.2` by the frozen `s3a`. **His `HURT before=1.000`**: 0.2 × EASY ×1 (0.2 < 2) × 5.0 × gs(`s3a`) 100/100
+(INFERRED score); `after` = before through his defence, as the line says. Then **`SUMMON target … target=<s3a>
 why=damaged`**; probe `target=<s3a>`.
 
 ### SM3B — A MOB TARGETING HIM WITHIN 30: why=targeting
 
-`DRIVE mob_target <s3b> tag=s3b`, then **`SUMMON target … target=<s3b> why=targeting`** within 3 ticks; probe
-`target=<s3b>`. His health unchanged (attack 0).
+`DRIVE mob_target <s3b> tag=s3b`, then within 3 ticks **`SUMMON target … target=<s3b> why=targeting`**; probe
+`target=<s3b>`. **No HURT line** (attack 0; it is 12 east and killed 3 ticks later).
 
-### SM3C — A DIRECTED MOB: why=directed
+### SM3C — A DIRECTED MOB, BY THE SWING: why=directed
 
-`DRIVE reload held=bone_whistle` (the left click), then **`SUMMON target … target=<s3c> why=directed`**; probe
-`directed=<s3c> target=<s3c>`.
+`DRIVE reload held=bone_whistle`, then **`SUMMON target … target=<s3c> why=directed`**; probe `directed=<s3c>
+target=<s3c>`.
+
+### SM3D — A DIRECT AT MELEE RANGE: why=directed, AND THE STAND-DOWN
+
+`s3d` 2 east. In ONE tick: `DRIVE attack Player#attack target=<s3d> … attack_damage=<a>` (`a` > 0, so the event is
+raised) and `DRIVE reload held=bone_whistle`. **NO PLAYERHIT** (the stand-down cancels the attack); **`probe s3d`
+before = after** (`100.000`: a vanilla zombie's 20 × 5.0 × 100/100); **`SUMMON target … target=<s3d> why=directed`**.
 
 ### SM4 — A MOB HE MERELY HIT IS LEFT ALONE
 
-His iron sword (charged by a 25-tick wait) hits the frozen `s4`: `DRIVE attack Player#attack target=<s4> …`; `probe s4`
-falls by the hit line's `sent=`. **The wolf does NOT take it:** no `SUMMON target … target=<s4>`; probe
-`target=none`.
+After his own cast, the iron sword (charged by 25 ticks) hits `s4`: `DRIVE attack Player#attack target=<s4>`;
+`probe s4` falls by the hit's `sent=`. **No `SUMMON target … target=<s4>`**; probe `target=none`.
 
 ### SM5 — THE CHASE LIMIT
 
-Directed at `s5` (as SM3C), then `s5` put 40 east of him (beyond `chase_limit` 32): **`SUMMON target … target=none …
-dropped=limit`** within 3 ticks; probe `target=none directed=none`.
+Directed at `s5` (as SM3C), then `s5` put 40 east of him: within 3 ticks **`SUMMON target … target=none why=none
+dropped=limit`**; probe `target=none directed=none`.
 
-### SM6 — SIDES: HIS RAY, THE WOLF ON THE LINE
+### SM6 — SIDES: HIS RAY THROUGH HIS WOLF
 
-The Boltor at score 100, aimed at the frozen `s6` 6 east, the wolf put 3 ahead on the eye line in the tick of the
-press. **The wolf: health unchanged (`200.000/200.000`, the SM1 wolf), and no hit line naming it. `s6`: its health falls
-by the shot's `sent=`**, whose terms are: attack 19 × score 100/100, the enchants `rpg enchant show` prints in the row,
-level bonus 0 (level 1), no charge, crit as the line says. **The prediction is the equality `probe s6` loss = `sent=`,
-and the wolf's 0.** (INFERRED: the same-tick tp; if the wolf is not on the line the row is VOID, not passed.)
-**Owed:** the seat's shockwave, crystal shot and burst rows are NOT written (see the PR body).
+**The geometry (X4(b)):** a stone block at `(X+3, Y, Z)` (saved first; the row-end restore puts the floor back), the
+wolf on it (feet at Y+1.00, box to Y+1.85, ±0.3 in z); `s6` at `(X+6, Y, Z)`, eye at Y+1.74; his eye at Y+1.62,
+aimed eye to eye: **the ray crosses x = X+3 at Y+1.68 and z = Z, inside the wolf's box**, and over the block (top at
+Y+1.00). Probe before the press: `at=<X+3> <Y+1> <Z>`.
+**The press: exactly ONE `SIDES pass attacker=PLAYER body=<the wolf's body>`** (X4(a); **absent: the row DID NOT
+TEST**). **`PLAYERHIT source=boltor/right_click target=<s6> … sent=19.000`** (`38.000 crit=true` on a crit): 19 × 100/100
+× enchant 1.0 (`rpg enchant clear`; `show` prints no slot active) + class 0 + level 0 (level 1), × charge 1.0, × crit.
+**`probe s6`: `100.000` → `81.000`** (or `62.000`). **The wolf: `100.000/100.000` before and after**; no hit line names
+it.
 
 ### SM7 — A MOB'S PRICED HIT ON THE WOLF LANDS
 
-A scripted 2 (`mob_attack` by the frozen `s7`). **The wolf's health falls by 2 × 5.0 × gs(s7)/100** (no difficulty
-term: not a player; gs from `probe s7`; INFERRED: no defense term on a summon victim — the hit line decides).
+A scripted `2` by the frozen `s7`. **The wolf: `100.000` → `90.000`**: 2 × 5.0 × gs(`s7`) 100/100 (INFERRED score), no
+difficulty term (not a player), defence ×1.
 
-### SM8 — WORLD DAMAGE REFUSED; THE VOID AND /kill REMOVE
+### SM8A — WORLD DAMAGE REFUSED
 
-`in_fire`, `fall`, `drown` 5 each: **health unchanged.** `out_of_world` 5: **`SUMMON removed … cause=void`**, probe
-`none`. A fresh cast (score 100): `SUMMON spawn … health=100.000`. `/kill`: **`SUMMON removed … cause=killed`**, probe
-`none`.
+`in_fire`, `fall`, `drown`, 5 each: **probe `health=100.000/100.000`** after; no `SUMMON removed`.
+
+### SM8B — THE VOID REMOVES IT
+
+`out_of_world` 5: **`SUMMON removed … cause=void`**; probe `SUMMONPROBE none … store=0`.
+
+### SM8C — /kill REMOVES IT
+
+**`SUMMON removed … cause=killed`**; probe `none … store=0`.
 
 ### SM9 — ITS DEATH (O1), THEN A FRESH CAST
 
-A fresh wolf (score 100), then a scripted 1000000 by the frozen `s9` (≥ 5 × 1000000 × 1/100 ≫ 100):
-**`SUMMON removed … cause=death`**, probe `none`. Then `clear_state` and a new cast: **`SUMMON spawn … score=100
-health=100.000 damage=20.000`**, probe `health=100.000/100.000`.
+A scripted 1000000 by the frozen `s9` (≥ 1000000 × 5.0 × 1/100 ≫ 100): **`SUMMON removed … cause=death`**, probe
+`none`. Then `clear_state` and a new cast: **`SUMMON spawn … score=100 health=100.000 damage=20.000`**, probe
+`health=100.000/100.000`.
 
 ### SM10 — THE CAP AT max_summons 0
 
-**`SUMMON refused owner=<him> weapon=bone_whistle verdict=REFUSED_FULL max=0`**; the notice **"You cannot summon more
-(max 0)."** once; mana **unchanged** (before = after); probe `none`. `rpg maxsummons reset` after.
+**`SUMMON refused owner=<him> weapon=bone_whistle verdict=REFUSED_FULL max=0`**; **`REPLY "You cannot summon more (max
+0)."`** once; mana **before = after** in the press's tick; probe `none`.
 
-### SM11 — CLEAR_STATE LEAVES NO SUMMON; NOTHING LEFT
+### SM11 — CLEAR_STATE LEAVES NO SUMMON
 
-A cast, then `clear_state`: **`STAGE clear_state … summons=1`** and **`SUMMON removed … cause=clear`**; probe
-**`SUMMONPROBE none owner=<him> store=0`**. After the run: the restore's `max_summons` line puts the base back; no
-`selftest`-tagged body and no wolf within 64 (R0e's sweep is re-read after the run: no orphan).
+After his own cast: `STAGE clear_state … summons=1` and **`SUMMON removed … cause=clear`**; probe **`SUMMONPROBE none
+owner=<him> store=0`**.
 
-**Removal causes the pad stages: replace (SM1), void and killed (SM8), death (SM9), clear (SM11).** Not stageable here:
-owner-death, quit, world, stop, orphan, backstop (unit tests only).
+### SM12 — THE WOLF ATTACKS (X2)
+
+`s12a`: NoAI, max health 200, **`probe s12a` `customHP=1000.000`** before. Directed (`DRIVE reload`), then **`SUMMON
+target … target=<s12a> why=directed`**. **THE WALK IS NOT PREDICTED AS A NUMBER.** The wait is 140 ticks: the wolf
+starts at most 8 from him and walks to within 2.0 of a zombie 6 east, at most about 12 blocks, which takes 120 ticks at
+the 0.1-a-tick floor. So at least 20 ticks are left for hits; at its real walk, far more. **Predicted: at least THREE
+`SUMMON hit … victim=<s12a> authored=20.000 score=100 sent=20.000 crit=none class=0 level=0 element=nature tick=<t>`**,
+every term: authored 20, score 100 (× 1.0), crit none, class 0, level 0, defence ×1 (READ). **The cadence: consecutive
+hit lines' `tick=` differ by exactly 20.** The clock is the first hit line's `tick`. The phase: the goal's `tick()`,
+in the server tick's entity phase, and all the hits come from one body's goal. **`probe s12a` after: `1000 − 20 × N`**,
+N being the number of hit lines in the row before that probe.
+**Then at score 200** (`clear_state`, a fresh wolf `score=200 health=200.000 damage=40.000`, a fresh `s12b` at
+`1000.000`): the same, with **`authored=20.000 score=200 sent=40.000`**, at least three lines 20 ticks apart, and
+**`probe s12b` = `1000 − 40 × N`**.
+
+> **The minimum of three is a FLOOR, not a count.** If the 0.1-a-tick floor is wrong, the row reads fewer than three and
+> says so; the per-line terms, the 20-tick spacing and the `1000 − 20 N` identity do not depend on N.
+
+### SM13 — IT FOLLOWS (X3)
+
+He steps 12 east, to `(X+12, Z)`, inside the interior (`SELF … at=<X+12> <Y> <Z>`). After 160 ticks (12 blocks at the
+0.1-a-tick floor need 120): **probe `within=8:true target=none`**, and **no `SUMMON teleport` line** in the row (12 <
+48).
+
+### SM14 — SIDES: A SHOCKWAVE WITH THE WOLF INSIDE (X5)
+
+Kinetic Tremors I on the Lapis Staff, after his own cast (`show`: `"  active: kinetic_tremors I (3 hits on one foe in
+3s: a 10 damage shockwave, 3 blocks)"`). `s14` at `(X+3, Z)`, max 200; the wolf put at `(X+3, Z−2)`. **The witness that
+it is inside:** probe `at=<X+3> <Y> <Z−2>` before and after: **2.00 from `s14`'s feet, against the radius 3**. Three
+beams 22 ticks apart: **three `PLAYERHIT source=lapis_staff/right_click target=<s14> … element=kinetic sent=21.000`**
+(`42.000` on its own crit): 21 × 100/100 × 1.0 + 0 + 0. After the third, **exactly ONE
+`kinetic_tremors/shockwave` PLAYERHIT, on `s14`, `sent=10.000`** (`20.000` if the third beam crit): 10 × 100/100 × 1.0
++ 0 + 0. **None on the wolf** (READ: the shockwave drops a refused body before applying). **`probe s14`:
+`1000 − 63 − 10 = 927.000`** (less more on crits, each named). **The wolf `100.000/100.000`.**
+
+### SM15 — SIDES: A CRYSTAL SHOT WITH THE WOLF INSIDE (X5)
+
+Lapis Crystal II, after his own cast. The orb thrown 12 east: `ORB rest … at=<X+12.000>,<Y+1.620>,<Z>`. `s15` at
+`(X+12, Z−5)`, max 200, 5.26 from the rest. The wolf put at `(X+6, Z+4)`: probe `at=<X+6> <Y> <Z+4>`, **7.39 from the rest
+(√(36 + 16 + 1.62²)) against the shots' 15.** It is 7.2 from him, inside its guard 8, so it stays. One beam east into
+the orb: **no `lapis_staff/right_click` PLAYERHIT**; **exactly one `lapis_crystal/crystal` PLAYERHIT, on `s15`,
+`sent=10.500`** (`21.000` if the beam crit): beam 21 × 100/100 × 1.0 × 50% (level II) + 0 + 0; **exactly one `ORBSHOT …
+to=<s15's sight point>`**; **none on the wolf** (READ: the shot drops a refused body). **`probe s15`: `989.500`** (or
+`979.000`). **The wolf `100.000/100.000`.**
+
+### SM16 — SIDES: A BURST THROUGH THE WOLF (X5)
+
+Airburst Flames II on the Living Lantern, after his own cast (`show`: `"  active: airburst_flames II (splits after 6
+blocks into 3 bursts of 30 damage)"`: EC14R2's read format with today's `travel_blocks: 6`, INFERRED). A stone block at `(X+7, Y, Z)` (saved first), the wolf on it: probe `at=<X+7>
+<Y+1> <Z>`, 7.07 from him (stays). `s16` at `(X+10, Z)`, max 200. **`SPLIT caster=<him> source=living_lantern/right_click
+at=<X+6.000>,<Y+1.620>,<Z> bursts=3`**. The bursts fly at Y+1.62 (the centre one straight; the side ones at ±12°,
+±0.21 in z at x = X+7). **The wolf's box at x X+7 spans Y+1.00..1.85 and z ±0.3, so the centre burst crosses it.**
+**Witness: at least ONE `SIDES pass attacker=PLAYER body=<the wolf>`** (one per projectile segment that crosses it; the
+side bursts may add more). **Then `k` PLAYERHITs `source=living_lantern/right_click target=<s16> element=fire
+sent=30.000`** (`60.000` on a crit), 1 ≤ k ≤ 3: the centre burst for certain, and each side burst if its homing (search
+7) brings it in. Each is 30 × 100/100 × 1.0 + 0 + 0. **No `sent=45.000`** (the bolt split at 6 and never reached 10).
+**`probe s16` = `1000 − 30 k` less each DOTTICK burn on it**, each read from its line. **The wolf `100.000/100.000`.**
+**No SIDES pass line: the row DID NOT TEST.**
+
+### SM17 — THE ONE ASK, LAST (X9)
+
+His own wolf, directed at `s17` (NoAI, max 200) 6 east: `SUMMON target … why=directed`, then hit lines as SM12 during the
+question. **The ask:** *"Did you see your wolf run to the zombie and attack it? (yes / no / not sure)"*, one answer, up
+to 1200 ticks. **Predicted: yes.** This is Ben's half: whether it WORKS and is CLEAR, seen.
+
+## NOT STAGEABLE YET (X7)
+
+**The cap with ANOTHER weapon's summon** (a second summon weapon held while one wolf lives) cannot be staged: one
+summon weapon ships. It is covered by `SummonCap`'s table in core (NEW, REPLACE, REFUSED_FULL, REFUSED_UNKNOWN, by
+weapon id). No second weapon is invented for this gate.
+
+## REMOVAL CAUSES THE PAD STAGES
+
+replace (SM1), void (SM8B), killed (SM8C), death (SM9), clear (SM11, and every row's opening `clear_state`, and the
+run's end, X8). **Not stageable here:** owner-death, quit, world, stop, orphan, backstop (unit tests only).

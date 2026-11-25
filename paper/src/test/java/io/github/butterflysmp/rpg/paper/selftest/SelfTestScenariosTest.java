@@ -329,7 +329,9 @@ class SelfTestScenariosTest {
         // so 397. The control: 443 + 1 (PT1) = 444. 396 was this line's value.
         // Then GATE-summoner.md (feat/summoner-gate, 2026-11-25), RECOUNTED the same way: 48 gates, 458 keys, 48 setups,
         // so 410. The control: 444 + 14 (its setup and SM1, SM2, SM3A, SM3B, SM3C, SM4-SM11) = 458. 397 was this line's value.
-        assertEquals(410, loaded.rows());
+        // Then its rework (the seat's X1-X11, 2026-11-25), RECOUNTED the same way: 48 gates, 467 keys, 48 setups, so 419. The
+        // control: 444 + 23 (its setup and SM1, SM2, SM3A-SM3D, SM4-SM7, SM8A-SM8C, SM9-SM17) = 467. 410 was this line's value.
+        assertEquals(419, loaded.rows());
     }
 
     /**

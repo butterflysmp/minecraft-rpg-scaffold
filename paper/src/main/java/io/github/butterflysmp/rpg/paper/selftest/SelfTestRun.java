@@ -633,6 +633,11 @@ final class SelfTestRun {
         restoreRowRules(scheduler);   // a row that ended mid-way; the snapshot below puts the RUN START values back too
         String restored = snapshot.restore(player, service.profiles(), service.resources(), service.nameplates(),
                 scheduler, now);
+        // X8 (the seat, 2026-11-25): NO SUMMON OUTLIVES A RUN. The restore above removes selftest-TAGGED mobs only, and a
+        // summon is not tagged; so on every exit (END, ABORTED, quit, server-stop) his summons go here, cause CLEAR
+        // (CC'S CALL: the clear_state cause; the alternative is a new END cause in the core's eleven). discard runs inline.
+        restored += " summons=" + io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(service.adapters(),
+                player.getUniqueId(), io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);
         // THE MIRROR (2026-11-22): the restore may have put back a mirror from RUN START; drawn again from what he holds
         // now, so no restore leaves arrows where his star should be. The quit and disable paths then put the star back.
         io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, service.adapters().keys());

@@ -36,9 +36,9 @@ public final class SummonTrace {
                 + dropped.map(d -> " dropped=" + d.name().toLowerCase(Locale.ROOT)).orElse("");
     }
 
-    public static String hit(SummonStore.Summon s, Vec3 at, UUID victim, double authored, String element) {
+    public static String hit(SummonStore.Summon s, Vec3 at, UUID victim, double authored, String element, long tick) {
         return String.format(Locale.ROOT, "SUMMON hit %s victim=%s authored=%.3f score=%d sent=%.3f crit=none class=0"
-                + " level=0 element=%s", where(s, at), victim, authored, s.score(), s.damage(), element);
+                + " level=0 element=%s tick=%d", where(s, at), victim, authored, s.score(), s.damage(), element, tick);   // X2: the server tick
     }
 
     public static String teleport(SummonStore.Summon s, Vec3 to, Vec3 from) {

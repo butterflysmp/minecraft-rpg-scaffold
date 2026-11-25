@@ -242,6 +242,52 @@ class ScenarioLintTest {
             """;
 
     /**
+     * X1 (the seat, 2026-11-25): a row reading a summon it did not cast. PLANTED: a probe_summon, and a selector naming
+     * the wolf, each in a row with no cast; the CONTROL is the same rows with clear_state then use first (no finding).
+     */
+    @Test
+    void aRowReadsOnlyASummonItCastItself() throws InvalidConfigurationException {
+        String probeOnly = SETUP + """
+                R1:
+                  - probe_summon: "8"
+                """;
+        String selectorOnly = SETUP + """
+                R1:
+                  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~3 ~ ~"
+                """;
+        String castWithoutClear = SETUP + """
+                R1:
+                  - clear_inventory: ""
+                  - cmd: "rpg give bone_whistle"
+                  - wait: 2
+                  - hold: bone_whistle
+                  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+                  - wait: 2
+                  - use: ""
+                  - probe_summon: "8"
+                """;
+        String own = SETUP + """
+                R1:
+                  - clear_inventory: ""
+                  - clear_state: ""
+                  - cmd: "rpg give bone_whistle"
+                  - wait: 2
+                  - hold: bone_whistle
+                  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+                  - wait: 2
+                  - use: ""
+                  - wait: 5
+                  - probe_summon: "8"
+                  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~3 ~ ~"
+                """;
+        assertTrue(rules(probeOnly).contains(ScenarioLint.Rule.SUMMON_UNSTAGED), "a probe with no cast");
+        assertTrue(rules(selectorOnly).contains(ScenarioLint.Rule.SUMMON_UNSTAGED), "a wolf selector with no cast");
+        assertTrue(rules(castWithoutClear).contains(ScenarioLint.Rule.SUMMON_UNSTAGED),
+                "a cast with no clear_state first may have hit the cooldown and read a carried wolf");
+        assertFalse(rules(own).contains(ScenarioLint.Rule.SUMMON_UNSTAGED), "CONTROL: its own cast");
+    }
+
+    /**
      * 4d: the two Summoner rules, each CAUSED (no shipped scenario summons a mob with its AI on, so only these rows
      * exercise MOB_ACT_UNSTAGED; READ: 0 such summons across the shipped scenarios at this commit).
      */

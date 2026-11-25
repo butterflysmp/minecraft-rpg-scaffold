@@ -139,8 +139,8 @@ class CombatSidesTest {
         List<String> c = code(Path.of("adapter", "PaperCombatWorld.java"));
         int ray = at(c, "public Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId,", 0);
         int trace = at(c, "RayTraceResult result = world.rayTrace(", ray);
-        int skip = at(c, "return body == null || !io.github.butterflysmp.rpg.core.mob.MobHostility.refusedSummonCell(attacker,", ray);
-        int sides = at(c, "CombatSides.of(body, ctx.keys()));", skip);
+        int skip = at(c, "if (body == null || !io.github.butterflysmp.rpg.core.mob.MobHostility.refusedSummonCell(attacker,", ray);   // X4: the filter now also logs
+        int sides = at(c, "CombatSides.of(body, ctx.keys()))) return true;", skip);
         int next = at(c, "if (result == null) return Optional.empty();", ray);
         assertTrue(ray > 0 && trace > ray && skip > trace && sides == skip + 1 && next > sides,
                 "inside castRay's own trace filter, by the classifier: " + ray + " " + trace + " " + skip + " " + next);

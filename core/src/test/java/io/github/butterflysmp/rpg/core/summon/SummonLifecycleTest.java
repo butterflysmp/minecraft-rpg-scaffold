@@ -102,8 +102,8 @@ class SummonLifecycleTest {
         assertEquals("SUMMON target " + where + " target=none why=none dropped=limit", SummonTrace.target(s, at,
                 java.util.Optional.empty(), SummonGuard.Why.NONE, java.util.Optional.of(SummonGuard.Dropped.LIMIT)));
         assertEquals("SUMMON hit " + where + " victim=" + B3
-                        + " authored=20.000 score=150 sent=30.000 crit=none class=0 level=0 element=nature",
-                SummonTrace.hit(s, at, B3, WOLF.damage(), "nature"));
+                        + " authored=20.000 score=150 sent=30.000 crit=none class=0 level=0 element=nature tick=4321",
+                SummonTrace.hit(s, at, B3, WOLF.damage(), "nature", 4321L));   // X2: the tick the cadence is read on
         assertEquals("SUMMON teleport " + where + " from=9.00 64.00 0.00", SummonTrace.teleport(s, at, new Vec3(9, 64, 0)));
         assertEquals("SUMMON removed " + where + " cause=owner-death", SummonTrace.removed(s, at, SummonRemoval.OWNER_DEATH));
         assertEquals("SUMMON goals restored " + where + " foreign=2", SummonTrace.goalsRestored(s, at, 2));
