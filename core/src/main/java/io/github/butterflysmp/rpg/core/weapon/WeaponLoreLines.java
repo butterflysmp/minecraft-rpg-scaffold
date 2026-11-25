@@ -345,6 +345,7 @@ public final class WeaponLoreLines {
             // cone delivers its on_hit once to each body, never N times to one.
             case CastSpec.Cone ignored -> 1;
             case CastSpec.Orb ignored -> 1;
+            case CastSpec.Summon ignored -> 1;   // one summon per press (its on_hit is the summon's own hits, PR 4)
         };
     }
 

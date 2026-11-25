@@ -1,0 +1,14 @@
+# TEST-ONLY SUMMON FIXTURE (the seat's 3a, 2026-11-24). Never shipped: it lives under src/test/resources, and no
+# content/summons/ exists in main until the Bone Whistle (PR 5). Its numbers are the brief's, so a test reads the same
+# shapes the shipped summon will carry; it is not the Bone Whistle's file and must not be copied as one.
+entity: wolf
+name: "{owner}'s Wolf"        # SEAT PLACEHOLDER (the old repo's form)
+element: nature               # BEN: "Nature damage"
+health: 100                   # BEN
+damage: 20                    # BEN
+guard_radius: 8               # BEN: "in an 8 block radius"
+trigger_radius: 30            # BEN: "targets the caster within 30 blocks"
+chase_limit: 32               # SEAT PLACEHOLDER, from the caster, at or above the trigger radius
+teleport_back: 48             # SEAT PLACEHOLDER (the old repo's)
+attack_cadence_ticks: 20      # SEAT PLACEHOLDER
+damaged_window_ticks: 100     # SEAT PLACEHOLDER: how long a mob that damaged him stays a reason to attack it

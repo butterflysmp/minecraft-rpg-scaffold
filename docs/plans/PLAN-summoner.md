@@ -186,3 +186,46 @@ stubs entities: a tagged wolf is SUMMON, an untagged wolf MOB, a tagged player P
 wiring of the damage port, the status port, the three listeners and targeting, each bounded by its own method; and no
 side copy left. **What it cannot do:** fire a listener; that needs a server. **Mutations, all red:** MUTCLASSIFY,
 MUTPLAYERFIRST, MUTGUARD, MUTMELEE, MUTTARGET.
+
+## 3. PR 3a (`feat/summoner-3a`, on #291): THE DEFINITION, THE CAST TYPE AND THE CAP
+
+**The summon file, `content/summons/<id>.yml`** (`SummonLoader`, the only class that knows it; `core/summon/
+SummonDefinition` validates). Keys: `entity`, `name` (`{owner}` is his name), `element`, `health`, `damage`, and D4's six
+numbers, **every one required, no default**: `guard_radius` (8, BEN), `trigger_radius` (30, BEN), `chase_limit` (32,
+SEAT PLACEHOLDER, from the caster), `teleport_back` (48, SEAT PLACEHOLDER), `attack_cadence_ticks` (20, SEAT
+PLACEHOLDER), `damaged_window_ticks` (100, SEAT PLACEHOLDER: how long a mob that damaged him stays a reason). **Refused,
+the file named and skipped:** an unknown entity or element; health or damage not above 0; a missing D4 number; a
+fractional tick count; a `chase_limit` below the `trigger_radius` (the seat's D4: it would make Ben's 30 false); a
+`teleport_back` not beyond the `guard_radius`. **No summon ships:** `content/summons/` does not exist in main. The
+TEST-ONLY fixture is `paper/src/test/resources/fixtures/summons/test_wolf.yml` (the brief's numbers).
+
+**One question for the seat, not decided:** D2 put `element` in the summon file; D3 says the hit is "in the weapon's
+element". The file carries it, as D2 accepted; whether the hit reads the summon's or the weapon's (and whether a
+mismatch is refused) is PR 4's, when the hit is built.
+
+**The cast type `summon`** (`type: summon`, `summon: <id>`; `CastSpec.Summon`). The ENGINE NEVER RUNS ONE: the summon
+service decides the cap before the cast is charged (D6), so `CastExecutor`'s arm throws, naming it a wiring defect. It
+is not repeatable (a volley of summons is refused). Sites the sealed type reached: `AbilitySchema` (parse, repeatable),
+`CastSpec.minimumCooldownTicks` (0: a recast replaces), `CastExecutor` (dispatch, repeat), `WeaponLoreLines` (one
+payload per press), `ContentValidator` (names no visual; the summon id is resolved when 3b wires the registry into the
+boot).
+
+**The cap, `core/summon/SummonCap.decide(weaponId, liveWeaponIds, maxSummons)`** (D6, counted by weapon id):
+
+| live (weapon ids) | max_summons | verdict |
+|---|---|---|
+| none | 1 | NEW |
+| this one | 1 | REPLACE (full cost) |
+| another | 1 | REFUSED_FULL |
+| another | 2 | NEW |
+| another + this one | 2 | REPLACE |
+| another + this one | 1 | REFUSED_FULL (lowered below what lives: others 1 + 1 > 1) |
+| none, or this one | 0 | REFUSED_FULL |
+| any | empty (loading) | REFUSED_UNKNOWN |
+
+`Verdict.charges()` is true only for NEW and REPLACE: a refusal costs no mana and starts no cooldown. The one notice and
+the wiring before the charge are 3b's.
+
+**Tests:** `SummonCapTest` (2), `SummonLoaderTest` (3: the fixture, no shipped summon, every refusal caused and named),
+`SummonCastSchemaTest` (3), `SummonCastEngineTest` (2). **Mutations, all red:** MUTOFFBYONE, MUTOWNCOUNTED, MUTCHARGES,
+MUTEMPTY, MUTREQUIRED, MUTCHASE.
