@@ -198,7 +198,7 @@ class SelfTestStagingTest {
                 "a death_rules row puts its rules back when it ends");
         // Since KNELL 4 every end (stop, quit, finish and the server stop) shares one private end, which takes the
         // scheduler it restores through; the public one hands it the plugin's.
-        assertTrue(between(run, "void end(String why) {", "}").contains("end(why, service.scheduler(), false);"),
+        assertTrue(between(run, "void end(String why) {", "}").contains("end(why, service.scheduler(), false, SelfTestPadTickets.causeOf(why));"),
                 "the public end is the shared end with the plugin's scheduler");
         assertTrue(between(run, "private void end(String why, ", "service.ended(this)").contains("restoreRowRules(scheduler);"),
                 "and when the run ends mid-row");

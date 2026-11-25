@@ -602,6 +602,9 @@ changes to the enchants.** Until then, these are owed and recorded here, and not
      inventory (the pre-boot backup is the recovery; Ben has been told).
    - The pad holds no chunk tickets (the adapter context carries no plugin handle): a chunk that unloads between its load
      and the build fails the run and touches nothing.
+     **CLOSED 2026-11-24 by P10 (`feat/pad-tickets`, section 32).** It cost the boot of 2026-11-24 (every run aborted at
+     the pad). The seat, verbatim: *"Mine. The missing chunk tickets were on my carried list and I approved boots on top
+     of it."*
    - `ScenarioLint` does not yet enforce score, mana, enchant and cooldown staging (its SELF_STAGED rule reads facing,
      the held weapon and the mobs only).
    - The box-to-sphere cut (`BehaviourHits` and the orb's 8) is UNREAD on a server: no mob in either gate stands inside a
@@ -743,6 +746,7 @@ shot) and comes off the carried list.
    stop), not on a crash.
 5. **The pad holds no chunk tickets** (the adapter context carries no plugin handle): a chunk that unloads between its
    load and the build fails the run and touches nothing (section 13's account, unchanged).
+   **CLOSED 2026-11-24 by P10 (`feat/pad-tickets`, section 32);** the seat recorded the fault as its own (section 32).
 6. **The scenario lint does not yet enforce the staging of the gear score, mana, the enchant state and a cleared
    cooldown.** It enforces the inventory, the turn-then-wait, probe reach, self-staging and the ground; a row that
    forgets `rpg gearscore set`, `rpg mana refill`, `rpg enchant clear` or `clear_state` is not caught.
@@ -1588,3 +1592,83 @@ the table reads vanilla levels, say what "rpg playerxp" was doing in the row and
 - **The run sheet is one typed command** (`/rpg mobtrace on` dropped: the setup's `trace: on` flips the same switch,
   READ). **The waits sum to 2713 ticks (135.65 s); about 2.5 to 3 minutes in all (est.).**
 - `SelfTestScenariosTest`: 396 scenarios (443 keys less 47 setups; the control 437 - 1 + 7).
+
+## 32. P10, THE PAD HOLDS ITS CHUNKS (`feat/pad-tickets`, on #284)
+
+**Why.** The boot of 2026-11-24 at `9a6dfacd` passed R1, and every `/rpg selftest mage-guaranteed` aborted at the pad:
+`PAD fail chunk 6,-2 (or 7,-2) did not stay loaded` (`GATE-mage-guaranteed.md`, *THE BOOT, 2026-11-24 (READINGS)*). The
+pad held no chunk tickets: an item on the seat's carried list (above, now CLOSED). **The seat, verbatim: "Mine. The
+missing chunk tickets were on my carried list and I approved boots on top of it."**
+
+**The seat's rulings (2026-11-24):** P10, then P10(a) REPLACED by a1-a4 after the first read (taking a ticket FIRST is a
+blocking load). a1: the loads stay async. a2: each chunk's ticket is taken on the thread that may take it, at the first
+moment that chunk is known loaded, before any other pad work; never a take on an unloaded chunk. a3: READ which thread
+completes `getChunkAtAsync`'s future; if the owning tick thread, take in the completion. a4: "did not stay loaded" stays
+as the alarm after all are held. (b)-(f) as proposed: release in `SelfTestRun.end`, the busy guard both ways, the log
+lines, the read list, the pure class.
+
+### THE READS (javap on `paper-api-26.1.2.build.74-stable.jar` and `run/versions/26.1.2/paper-26.1.2.jar`)
+
+- **READ:** `World#addPluginChunkTicket(int, int, Plugin)` / `removePluginChunkTicket(int, int, Plugin)`, both `boolean`.
+- **READ:** `CraftWorld.addPluginChunkTicket` requires a non-null, ENABLED plugin, adds the ticket
+  (`TicketStorage.addPluginRegionTicket`) and, when added, calls `getChunkAt(x, z)` = `ServerLevel.getChunk(x, z, FULL,
+  true)` → `ServerChunkCache.getChunkFallback` → `syncLoad` on a tick thread. **A take on an unloaded chunk is a
+  blocking load.** On a loaded chunk it is a lookup.
+- **READ:** the ticket is `PLUGIN_TICKET` at `FORCED_TICKET_LEVEL` keyed by the plugin: ONE per chunk and plugin, not
+  counted. A second add returns false.
+- **READ:** `removePluginChunkTicket` checks only that the plugin is not null, and returns `removeTicketAtLevel`'s
+  boolean, which is **false (and does nothing) when no such ticket is held**: a double release is harmless. It is also
+  prevented here (the flag in `SelfTestPadTickets.release`).
+- **READ (a3):** `getChunkAtAsync`'s future is completed by the load's consumer (the API's default wraps
+  `getChunkAtAsync(x, z, gen, urgent, Consumer)` with `ret::complete`). FULL loads go through
+  `ChunkTaskScheduler.scheduleTickingState`, which runs the consumer either at once (already FULL, on the owning tick
+  thread, else it reschedules itself via `scheduleChunkTask`) or from `NewChunkHolder.completeFullStatusConsumers`, which
+  queues it with `scheduleChunkTask`. `scheduleChunkTask` queues onto `ChunkTaskScheduler.mainThreadExecutor`, drained by
+  `executeMainThreadTask` from `ServerChunkCache$MainThreadExecutor.pollTask`, whose running thread is the server's
+  `mainThread`. **So the completion runs on the server's main thread, which owns every chunk on Paper.**
+- **READ, and it is the mechanism of 2026-11-24's abort:** the load's consumer wrapper
+  (`ChunkTaskScheduler.lambda$scheduleTickingState$1`) calls the consumer, THEN removes the load's own temporary
+  `CHUNK_LOAD` ticket. With nothing else holding the chunk (he was 200 blocks away), it may unload before the old code's
+  hop to the region and its check. **Why it did on that boot and not on the five before: UNKNOWN.**
+- **READ:** `warnUnsafeChunk` warns only beyond chunk coordinate ±1875625: no warning here.
+- **INFERRED:** the pad's callers (the run's PAD step, the dev command) start on the main thread; a callback attached
+  after its future completed runs on the attaching thread, so there too.
+
+**a3's branch built: THE FIRST (take in the completion)**, because the completion's thread is READ as the main thread.
+a2's guard is kept: the take is attempted only when `isChunkLoaded` reports the chunk loaded immediately before it; a
+chunk found unloaded is requested again, **at most 3 requests in all (SEAT'S MECHANISM NUMBER)**, then the acquire fails
+with `chunk <x>,<z> did not stay loaded held=<n> attempts=3`. Proposal A (take first) was NOT built.
+
+### WHAT WAS BUILT
+
+- `SelfTestPadTickets` (pure): the footprint from `SelfTestPadShape.chunks` (the one source the requests use), the take
+  on a chunk just reported loaded, the 3-request cap, one outcome, a release of exactly what was taken, ONCE (one flag),
+  nothing taken after a failure or a release, and a second acquire of a run that already holds all twelve takes nothing
+  (a run of several gates reaches the pad again; a ticket is not counted). `causeOf` and `releasedLine`.
+- `BukkitPadChunks`: the seam's Bukkit half, with `RpgPlugin`'s handle (now `SelfTestService`'s last constructor
+  argument).
+- `SelfTestPad.onLoaded`: acquire, then (only once all are held) the hop to the region, the alarm (a4) with `held=<n>`,
+  then the work. The old `getChunkAtAsync` loop is gone: the tickets' requests are the loads.
+- `SelfTestRun`: the tickets per run; `PAD tickets held=12` logged once, at the twelfth take, before the PAD line;
+  `SELFTEST RUN PAD tickets released=<n> cause=<end|abort|stop|quit|disable>` in `end(...)`, the one funnel, after the
+  RESTORED line (the later `SELFTEST RUN HEALTH` line still follows it, as before).
+- `SelfTestOccupancy` and `SelfTestService`: no run while the pad command is in flight, no pad command while a run is
+  active, neither twice; the pad command releases its own when it reports (`cause=end` or `abort`), and a server stop
+  releases an in-flight command's (`cause=disable`).
+
+**The footprint, by arithmetic** (stand `104,201,-4` from world spawn `-96, -4`): x from 104 - 3 = 101 to 104 + 46 = 150,
+chunks floor(101/16) = 6 to floor(150/16) = 9 (4); z from -4 - 14 = -18 to -4 + 14 = 10, chunks floor(-18/16) = -2 to
+floor(10/16) = 0 (3); **12 chunks.**
+
+**Tests:** `SelfTestPadTicketsTest` (11), `SelfTestOccupancyTest` (2), `SelfTestPadWiringTest` +4 (the work only after all
+held and the alarm; the only take is the seam's, behind the loaded check; every exit reaches the one release with its
+cause; the pad command's own tickets and the busy guard).
+
+**Mutations** (marker, lines changed against a pristine copy, restored `cmp`-identical): `MUTTAKEUNLOADED`,
+`MUTMAXREQ` (3 → 4), `MUTRELEASEONCE`, `MUTNOTAKEAFTER`, `MUTFOOTPRINT`, `MUTRUNRELEASE`, `MUTALARM`, `MUTCAUSE`,
+`MUTPADRELEASE`, `MUTBUSYRUN1`, `MUTBUSYPAD1`: all red. **Three instrument failures on the way, each caught:**
+`MUTTAKEUNLOADED`'s first edit aborted at parse time (a brace in the replacement; marker 0); a first `MUTBUSYRUN` hit both
+guards (marker 2, lines changed 2), so it was re-run by line number as two mutations; and `MUTFOOTPRINT`'s first run
+printed no red through a filter that dropped its lines (re-run unfiltered: 7 failures). **And a design change from a
+mutation's logic before any was run:** "release once" was decided by the flag and by clearing the held set, each masking
+a mutation of the other; the clear was removed.
