@@ -27,11 +27,13 @@ public final class SweptLine {
     /**
      * @param direction need not be unit length; it is normalised here.
      * @param excludeId the caster, never a target of their own dash.
-     * @return the mob combatants the intended line passes through, order unspecified.
+     * @param attacker  the dasher's side, for the one table ({@code MobHostility}, path DASH_LINE)
+     * @return the combatants the table admits that the intended line passes through, order unspecified.
      */
     public static List<Combatant> enemiesAlong(Vec3 origin, Vec3 direction, double distance,
                                                double radius, Iterable<Combatant> candidates,
-                                               UUID excludeId) {
+                                               UUID excludeId,
+                                               io.github.butterflysmp.rpg.core.mob.MobHostility.Side attacker) {
         Vec3 unit = direction.normalize();
         double radiusSquared = radius * radius;
 
@@ -39,7 +41,8 @@ public final class SweptLine {
         for (Combatant candidate : candidates) {
             CombatantSnapshot state = candidate.state();
             if (candidate.id().equals(excludeId)) continue;   // never the caster
-            if (state.player()) continue;                     // mob-only: players are not hit
+            if (!io.github.butterflysmp.rpg.core.mob.MobHostility.harms(attacker, state.side(), false,
+                    io.github.butterflysmp.rpg.core.mob.MobHostility.PvpPath.DASH_LINE)) continue;   // the one table
 
             Vec3 toCandidate = state.position().subtract(origin);
             double projected = toCandidate.dot(unit);         // distance along the line

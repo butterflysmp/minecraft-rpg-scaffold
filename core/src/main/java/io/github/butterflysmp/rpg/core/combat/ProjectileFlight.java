@@ -209,7 +209,12 @@ public final class ProjectileFlight {
         Optional<RayHit> hit = world.castRay(position, next, caster.id());
         if (hit.isPresent()) {
             resolve(world, markerId);
-            onImpact.at(hit.get().combatant(), hit.get().point());
+            // THE ONE TABLE (2a): a body the caster may not hit (a summon) takes nothing; the shot still ends on it
+            // (castRay's first body is the port's choice) and lands untargeted at the point.
+            Combatant body = hit.get().combatant();
+            boolean admitted = body == null || io.github.butterflysmp.rpg.core.mob.MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER,
+                    body.state().side(), false, io.github.butterflysmp.rpg.core.mob.MobHostility.PvpPath.PROJECTILE);
+            onImpact.at(admitted ? body : null, hit.get().point());
             return;
         }
 
@@ -416,7 +421,8 @@ public final class ProjectileFlight {
         double bestDistanceSquared = Double.POSITIVE_INFINITY;
         for (Combatant candidate : world.combatantsNear(from, radius)) {
             if (candidate.id().equals(caster.id())) continue;
-            if (candidate.state().player()) continue;            // R2, and it gates what follows
+            if (!io.github.butterflysmp.rpg.core.mob.MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, candidate.state().side(), false,
+                    io.github.butterflysmp.rpg.core.mob.MobHostility.PvpPath.HOMING_PICK)) continue;   // R2: the one table
             double distanceSquared = candidate.state().position().distanceSquared(from);
             if (distanceSquared >= bestDistanceSquared) continue;
             // FROM THE BOLT. Never from the caster -- see above. And BEFORE the assignment, so the

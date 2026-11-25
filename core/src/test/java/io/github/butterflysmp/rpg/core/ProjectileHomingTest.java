@@ -222,6 +222,21 @@ class ProjectileHomingTest {
                         + " z=" + finalZ);
     }
 
+    /** 2a, the one table: a bolt never chases a SUMMON either (PLAYER -> SUMMON no), the player row's staging with a fake summon. */
+    @Test
+    void aBoltNeverChasesASummonEvenWhenTheSummonIsNearer() {
+        var world = new FakeWorld();
+        var summon = mobAt(new Vec3(25, 0, -3));   // NEARER, and first in the list
+        summon.summon = true;
+        world.entities.add(summon);
+        world.entities.add(mobAt(new Vec3(30, 0, 9)));
+
+        List<Vec3> path = flyAndRecord(world, new FakeWorld.Dummy(Vec3.ZERO), HOMING);
+
+        double finalZ = path.get(path.size() - 1).z();
+        assertTrue(finalZ > 0, "the bolt must turn toward the MOB at +z, not the nearer summon; it ended at z=" + finalZ);
+    }
+
     // ============================================================================ MUT-RETARGET
 
     /**

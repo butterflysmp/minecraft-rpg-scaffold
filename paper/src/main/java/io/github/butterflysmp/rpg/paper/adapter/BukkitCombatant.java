@@ -100,7 +100,8 @@ public final class BukkitCombatant {
                 // so it is right for a chicken and an enderman without core knowing either exists.
                 entity.getEyeHeight(),
                 !entity.isDead(),
-                entity instanceof Player,
+                entity instanceof Player ? io.github.butterflysmp.rpg.core.mob.MobHostility.Side.PLAYER
+                        : io.github.butterflysmp.rpg.core.mob.MobHostility.Side.MOB,   // 2a: as before; 2b's classifier replaces it
                 stats.attackSpeedValue(entity.getUniqueId()),
                 // Frozen for the SAME reason, one pass later: a WeaponDamage payload delivered by a
                 // projectile resolves on the target's region, so it cannot read this store at impact.

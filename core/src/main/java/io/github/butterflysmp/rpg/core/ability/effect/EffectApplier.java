@@ -10,6 +10,7 @@ import io.github.butterflysmp.rpg.core.combat.HitAccrual;
 import io.github.butterflysmp.rpg.core.combat.HitDamage;
 import io.github.butterflysmp.rpg.core.combat.TracedHit;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
+import io.github.butterflysmp.rpg.core.mob.MobHostility;
 import java.util.List;
 
 import java.util.UUID;
@@ -239,7 +240,7 @@ public final class EffectApplier {
 
             // Inline, on this very frame. Scheduling it -- even at delay 0 -- would put
             // the splash a tick behind the visual, because Paper clamps 0 up to 1.
-            case EffectSpec.Burst b -> applyToNearby(b.effects(), caster, origin, b.radius());
+            case EffectSpec.Burst b -> applyToNearby(b.effects(), caster, origin, b.radius(), MobHostility.PvpPath.BURST);
 
             // A field, not a blast. Its first pulse lands one interval in; anything that
             // should happen at the moment of impact belongs in a Burst.
@@ -272,8 +273,13 @@ public final class EffectApplier {
         if (im.visual() != null) world.present(origin, im.visual(), reach);
         for (Combatant c : world.combatantsNear(origin, reach)) {
             if (c.id().equals(caster.id())) continue;
-            boolean player = c.state().player();
-            if (im.affects() == EffectSpec.Affects.MOBS ? player : !player) continue;
+            // affects: is the CONTENT's choice of victims, applied first: MOBS admits mobs; PLAYERS admits the player
+            // side, players and the summons a mob's attack treats as players. Then the one table (2a).
+            MobHostility.Side side = c.state().side();
+            if (im.affects() == EffectSpec.Affects.MOBS ? side != MobHostility.Side.MOB : side == MobHostility.Side.MOB) {
+                continue;
+            }
+            if (!MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, side, false, MobHostility.PvpPath.IMPLOSION)) continue;
             if (!im.shape().inReach(origin, c.state().position())) continue;   // the port may hand back a cube
             if (im.damage() != null) {
                 double share = im.shape().share(Math.sqrt(origin.distanceSquared(c.state().position())));
@@ -331,7 +337,7 @@ public final class EffectApplier {
      * target is skipped here rather than in the adapter, so the unit tests can see the rule.
      */
     private void trace(Caster caster, Combatant target, double sent, String element) {
-        if (target.state().player()) return;
+        if (!MobHostility.countsAsAMobHit(target.state().side())) return;
         world.traceHit(new TracedHit(caster.id(), caster.source(), target.state().id(), element, sent,
                 caster.crit(), caster.triggerScore()));
     }
@@ -342,8 +348,9 @@ public final class EffectApplier {
      * simply stops matching -- no need to resolve the UUID back to a Combatant.
      */
     private void applyToNearby(List<EffectSpec.Targeted> effects, Caster caster,
-                               Vec3 origin, double radius) {
-        applyToEach(effects, caster, world.combatantsNear(origin, radius), origin);
+                               Vec3 origin, double radius, MobHostility.PvpPath path) {
+        applyToEach(effects, caster, world.combatantsNear(origin, radius).stream()
+                .filter(c -> MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, c.state().side(), false, path)).toList(), origin);
     }
 
     /**
@@ -388,7 +395,7 @@ public final class EffectApplier {
                                    Vec3 origin, double radius) {
         for (Combatant c : world.combatantsNear(origin, radius)) {
             if (c.id().equals(caster.id())) continue;
-            if (c.state().player()) continue;
+            if (!MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, c.state().side(), false, MobHostility.PvpPath.TRAVEL_END_BURST)) continue;
             for (EffectSpec.Targeted t : effects) {
                 applyTargeted(t, caster, c, origin);
             }
@@ -397,7 +404,7 @@ public final class EffectApplier {
 
     private void tickArea(EffectSpec.Area area, Caster caster, Vec3 origin, int elapsed) {
         // A LINGERING AREA'S TICK IS DAMAGE OVER TIME, NOT A HIT (the seat's rule for Kinetic Tremors, 2026-11-23).
-        applyToNearby(area.effects(), caster.asNotAHit(), origin, area.radius());
+        applyToNearby(area.effects(), caster.asNotAHit(), origin, area.radius(), MobHostility.PvpPath.AREA);
 
         int next = elapsed + area.tickInterval();
         if (next <= area.durationTicks()) {

@@ -82,6 +82,20 @@ class BehaviourHitsTest {
         assertEquals(s.target().position(), s.world().presentedAt.get(0));
     }
 
+    /** 2a, the one table: the shockwave never strikes a SUMMON (PLAYER -> SUMMON no); the near mob is the control. */
+    @Test
+    void theShockwaveSparesASummonStandingInIt() {
+        Stage s = stage(2);
+        s.player().player = false;
+        s.player().summon = true;   // the stage's player slot, 1 from the struck mob, as a fake summon
+        for (int i = 0; i < 3; i++) {
+            cast(s.world(), s.him(), strike(), true);
+            s.world().advanceTicks(1);
+        }
+        assertEquals(85.0, s.near().health, 1e-9, "the control: the wave fired and struck the near mob");
+        assertEquals(100.0, s.player().health, 1e-9, "never a summon");
+    }
+
     /** Level 1's 3 blocks and 10 against level 3's 5 blocks and 20: the far mob (4.5) is inside only level 3's. */
     @Test
     void levelOneAgainstLevelThreeRadiusAndDamage() {

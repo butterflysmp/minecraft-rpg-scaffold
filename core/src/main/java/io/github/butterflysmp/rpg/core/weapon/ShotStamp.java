@@ -73,7 +73,7 @@ public record ShotStamp(String weaponId, double force, double attackDamage, doub
 
     /** The caster at the hit: the LIVE shooter (who and where he is) carrying the STAMPED damage terms. */
     public CombatantSnapshot applyTo(CombatantSnapshot live) {
-        return new CombatantSnapshot(live.id(), live.position(), live.eyeHeight(), live.alive(), live.player(),
+        return new CombatantSnapshot(live.id(), live.position(), live.eyeHeight(), live.alive(), live.side(),
                 live.attackSpeed(), attackDamage, classDamageBonus, enchantDamagePercent, critMultiplier,
                 levelDamageBonus);
     }
