@@ -17,7 +17,7 @@ import java.util.UUID;
  * beyond {@code chaseLimit} FROM HIM, and never unless {@code harms(SUMMON, side)}: never a player, never a summon. "He hit
  * it" is no input at all, so a mob he merely hit is left alone (the seat's default).
  *
- * <p><b>DROPPED</b> (logged {@code dropped=<reason>}): the held target is dead, gone, or beyond the chase limit from him. A
+ * <p><b>DROPPED</b> (logged {@code dropped=<reason>}): the directed order, or the current target, is dead, gone, or beyond the chase limit from him (F1). A
  * dropped mob may be taken again when it qualifies again; nothing remembers the drop (Ben's A: a fleeing skeleton).
  * <b>TELEPORT:</b> beyond {@code teleportBack} of him. <b>IDLE:</b> beyond {@code guardRadius} of him it walks back.
  */
@@ -33,24 +33,57 @@ public final class SummonGuard {
 
     public enum Dropped { DEAD, GONE, LIMIT }
 
-    /** What the guard does this tick. {@code dropped} names why the HELD target (directed or current) was let go. */
-    public record Decision(Optional<UUID> target, Why why, Optional<Dropped> dropped, boolean teleport) {}
+    /**
+     * What the guard does this tick. {@code why} is the TIER THAT CHOSE THIS TICK'S TARGET, never the history (F3).
+     * {@code dropped} names why a target it held was let go THIS tick: the directed order (then {@code clearDirected})
+     * or, failing that, the current target. {@code clearDirected}: the caller forgets the left-click order.
+     */
+    public record Decision(Optional<UUID> target, Why why, Optional<Dropped> dropped, boolean clearDirected,
+                           boolean teleport) {}
 
-    public static Decision decide(SummonDefinition def, Vec3 him, Vec3 summonAt, Optional<UUID> held,
-                                  List<Candidate> candidates, long now) {
+    /**
+     * F1-F4 (the seat, 2026-11-24). {@code directed} is set ONLY by the left click and kept until it is dead, gone or
+     * beyond the chase limit from him; {@code current} is what it attacked last tick, used only to keep a target within
+     * its tier and to report its drop. The priority is RE-DECIDED EVERY TICK: directed, then damaged, then targeting; a
+     * higher tier pre-empts the current target; within the same tier the current target is KEPT while it still qualifies
+     * (no flip-flop between two equal mobs as distances wobble); only then does "nearest to him" choose.
+     */
+    public static Decision decide(SummonDefinition def, Vec3 him, Vec3 summonAt, Optional<UUID> directed,
+                                  Optional<UUID> current, List<Candidate> candidates, long now) {
         boolean teleport = distance(summonAt, him) > def.teleportBack();
-        Optional<Dropped> dropped = held.flatMap(id -> dropReason(def, him, id, candidates));
-        Optional<Candidate> directed = held.isPresent() && dropped.isEmpty()
-                ? candidates.stream().filter(c -> c.id().equals(held.get()) && eligible(def, him, c)).findFirst()
-                : Optional.empty();
-        if (directed.isPresent()) return new Decision(Optional.of(directed.get().id()), Why.DIRECTED, dropped, teleport);
-        Optional<Candidate> damaged = nearest(him, candidates.stream().filter(c -> eligible(def, him, c)
-                && c.damagedHimAt().isPresent() && now - c.damagedHimAt().getAsLong() <= def.damagedWindowTicks()).toList());
-        if (damaged.isPresent()) return new Decision(Optional.of(damaged.get().id()), Why.DAMAGED, dropped, teleport);
-        Optional<Candidate> targeting = nearest(him, candidates.stream().filter(c -> eligible(def, him, c)
-                && c.targetsHim() && distance(c.position(), him) <= def.triggerRadius()).toList());
-        if (targeting.isPresent()) return new Decision(Optional.of(targeting.get().id()), Why.TARGETING, dropped, teleport);
-        return new Decision(Optional.empty(), Why.NONE, dropped, teleport);
+        Optional<Dropped> directedDrop = directed.flatMap(id -> dropReason(def, him, id, candidates));
+        boolean clearDirected = directedDrop.isPresent();
+        if (directed.isPresent() && !clearDirected) {
+            Optional<Candidate> d = candidates.stream()
+                    .filter(c -> c.id().equals(directed.get()) && eligible(def, him, c)).findFirst();
+            if (d.isPresent()) return new Decision(Optional.of(d.get().id()), Why.DIRECTED, Optional.empty(), false, teleport);
+        }
+        List<Candidate> damaged = candidates.stream().filter(c -> eligible(def, him, c) && c.damagedHimAt().isPresent()
+                && now - c.damagedHimAt().getAsLong() <= def.damagedWindowTicks()).toList();
+        List<Candidate> targeting = candidates.stream().filter(c -> eligible(def, him, c) && c.targetsHim()
+                && distance(c.position(), him) <= def.triggerRadius()).toList();
+        Optional<Candidate> chosen = keepOrNearest(him, current, damaged);
+        Why why = Why.DAMAGED;
+        if (chosen.isEmpty()) {
+            chosen = keepOrNearest(him, current, targeting);
+            why = Why.TARGETING;
+        }
+        if (chosen.isEmpty()) why = Why.NONE;
+        Optional<UUID> target = chosen.map(Candidate::id);
+        // The drop of the CURRENT target, reported by the tick that loses it (the caller then carries the new target as
+        // current, so the next tick has nothing to report: "once, not every tick").
+        Optional<Dropped> currentDrop = current.filter(id -> !target.equals(Optional.of(id)) && !directed.equals(Optional.of(id)))
+                .flatMap(id -> dropReason(def, him, id, candidates));
+        return new Decision(target, why, directedDrop.or(() -> currentDrop), clearDirected, teleport);
+    }
+
+    /** F2: within one tier, the current target if it still qualifies for THAT tier; else the one nearest to him. */
+    private static Optional<Candidate> keepOrNearest(Vec3 him, Optional<UUID> current, List<Candidate> tier) {
+        if (current.isPresent()) {
+            Optional<Candidate> kept = tier.stream().filter(c -> c.id().equals(current.get())).findFirst();
+            if (kept.isPresent()) return kept;
+        }
+        return nearest(him, tier);
     }
 
     /** Beyond the guard radius of him, with no target: walk back toward him. */

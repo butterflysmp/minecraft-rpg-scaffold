@@ -34,7 +34,11 @@ class SummonGuardTest {
     }
 
     private static Decision decide(Vec3 summonAt, Optional<UUID> directed, List<Candidate> candidates) {
-        return SummonGuard.decide(WOLF, HIM, summonAt, directed, candidates, NOW);
+        return SummonGuard.decide(WOLF, HIM, summonAt, directed, Optional.empty(), candidates, NOW);
+    }
+
+    private static Decision decide(Optional<UUID> directed, Optional<UUID> current, List<Candidate> candidates) {
+        return SummonGuard.decide(WOLF, HIM, Vec3.ZERO, directed, current, candidates, NOW);
     }
 
     @Test
@@ -43,13 +47,13 @@ class SummonGuardTest {
         Candidate targeting = mob(B, 10, OptionalLong.empty(), true);  // nearer, targets him
         Candidate directed = mob(C, 25, OptionalLong.empty(), false);
         List<Candidate> all = List.of(damaged, targeting, directed);
-        assertEquals(new Decision(Optional.of(C), Why.DIRECTED, Optional.empty(), false),
+        assertEquals(new Decision(Optional.of(C), Why.DIRECTED, Optional.empty(), false, false),
                 decide(new Vec3(2, 0, 0), Optional.of(C), all), "directed first");
-        assertEquals(new Decision(Optional.of(A), Why.DAMAGED, Optional.empty(), false),
+        assertEquals(new Decision(Optional.of(A), Why.DAMAGED, Optional.empty(), false, false),
                 decide(new Vec3(2, 0, 0), Optional.empty(), all), "then a mob that damaged him, though farther");
-        assertEquals(new Decision(Optional.of(B), Why.TARGETING, Optional.empty(), false),
+        assertEquals(new Decision(Optional.of(B), Why.TARGETING, Optional.empty(), false, false),
                 decide(new Vec3(2, 0, 0), Optional.empty(), List.of(targeting, directed)), "then one targeting him");
-        assertEquals(new Decision(Optional.empty(), Why.NONE, Optional.empty(), false),
+        assertEquals(new Decision(Optional.empty(), Why.NONE, Optional.empty(), false, false),
                 decide(new Vec3(2, 0, 0), Optional.empty(), List.of(directed)), "a mob that did neither: left alone");
     }
 
@@ -89,6 +93,49 @@ class SummonGuardTest {
                 "a directed target no longer among the candidates");
         assertTrue(decide(new Vec3(48.01, 0, 0), Optional.empty(), List.of()).teleport(), "beyond 48 of him: teleport");
         assertFalse(decide(new Vec3(48, 0, 0), Optional.empty(), List.of()).teleport(), "at 48: not yet");
+    }
+
+    /**
+     * F1-F4 (the seat, 2026-11-24): DIRECTED and CURRENT are separate inputs; the tier is re-decided every tick; a higher
+     * tier pre-empts the current target; within its tier the current target is KEPT while it still qualifies; Why is the
+     * tier that chose THIS tick's target; a lost current target's drop is reported by the tick that loses it.
+     */
+    @Test
+    void theTierTable() {
+        Candidate targeting = mob(B, 10, OptionalLong.empty(), true);
+        Candidate damagedNear = mob(A, 6, OptionalLong.of(990), false);
+        Candidate damagedFar = mob(D, 20, OptionalLong.of(990), false);
+        // A current TARGETING target is not "directed" next tick: a mob that DAMAGES him pre-empts it.
+        Decision d1 = decide(Optional.empty(), Optional.of(B), List.of(targeting, damagedFar));
+        assertEquals(Optional.of(D), d1.target(), "current TARGETING, a DAMAGED mob appears: switches");
+        assertEquals(Why.DAMAGED, d1.why(), "why=damaged, the tier that chose it");
+        assertEquals(Why.TARGETING, decide(Optional.empty(), Optional.of(B), List.of(targeting)).why(),
+                "kept, and still called TARGETING, never DIRECTED: he never clicked");
+        // Within its tier the current target is KEPT while it still qualifies.
+        assertEquals(Optional.of(D), decide(Optional.empty(), Optional.of(D), List.of(damagedFar, damagedNear)).target(),
+                "current DAMAGED, a NEARER DAMAGED mob appears: stays");
+        // Its window expires while another still qualifies: nearest-to-him chooses again.
+        Candidate expired = mob(D, 20, OptionalLong.of(NOW - 101), false);
+        assertEquals(Optional.of(A), decide(Optional.empty(), Optional.of(D), List.of(expired, damagedNear)).target(),
+                "current DAMAGED whose window expires: switches to the one still qualifying");
+        // Directed set while attacking another: switches, why=directed.
+        Decision d4 = decide(Optional.of(C), Optional.of(A), List.of(damagedNear, mob(C, 25, OptionalLong.empty(), false)));
+        assertEquals(Optional.of(C), d4.target());
+        assertEquals(Why.DIRECTED, d4.why());
+        // Directed dies: cleared, dropped=dead, and the next tier chooses THE SAME TICK.
+        Candidate deadC = new Candidate(C, Side.MOB, new Vec3(25, 0, 0), false, OptionalLong.empty(), false);
+        Decision d5 = decide(Optional.of(C), Optional.of(C), List.of(deadC, damagedNear));
+        assertTrue(d5.clearDirected(), "the directed order is cleared");
+        assertEquals(Optional.of(SummonGuard.Dropped.DEAD), d5.dropped());
+        assertEquals(Optional.of(A), d5.target(), "falls to the next tier the same tick");
+        assertEquals(Why.DAMAGED, d5.why());
+        // A current non-directed target lost: dropped reported by the tick that loses it; the next tick, with the new
+        // target current, reports nothing (the caller carries the new current: "once, not every tick").
+        Decision lost = decide(Optional.empty(), Optional.of(B), List.of(damagedNear));
+        assertEquals(Optional.of(SummonGuard.Dropped.GONE), lost.dropped());
+        assertFalse(lost.clearDirected(), "a current target is not a directed order");
+        assertEquals(Optional.empty(), decide(Optional.empty(), lost.target(), List.of(damagedNear)).dropped(),
+                "the next tick: nothing to report");
     }
 
     @Test
