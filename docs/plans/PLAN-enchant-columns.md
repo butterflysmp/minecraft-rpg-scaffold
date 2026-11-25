@@ -712,19 +712,41 @@ shot) and comes off the carried list.
 > this list** (section 16's finding, the seat's ruling recorded at its end), and the items below it are renumbered by
 > one; their text is unchanged.
 
-1. **OWED: A BEHAVIOUR THAT NAMES A WEAPON ACTS ONLY ON THAT WEAPON, ENFORCED ONCE WHERE BEHAVIOURS ARE READ FROM THE
+> **UPDATED AGAIN 2026-11-24, after the merge of #270 to #272 (`c1ebabab`), by the seat's merge approval of that date:
+> the one-tick question now heads this list, the owed aim row sits beside it, and the weapon filter (the old first item)
+> is DONE (#271) and is kept below, marked, its text unchanged.** Every item is renumbered by two; the only words removed
+> are the ordinals.
+
+1. **OWED, ITS OWN PR, BEFORE ANY CODE IS RULED: THE SERVER AND THE FAKE WORLD DISAGREE BY ONE TICK ABOUT "N TICKS
+   LATER".** `GATE-focused-beam.md`'s run of `3890aaa8` read every `FOCUSED` line's `tick - pressed` as **19**, where a
+   task scheduled 20 ticks on (`CombatWorld.scheduleOn`) was predicted at 20 and the fake world runs it at exactly 20.
+   The seat's ruling: not a defect of Focused Beam (the beam leaves on the volley's own first shot, by the volley's own
+   scheduler call). **READ, do not infer** (javap on the pinned jar, and our scheduler adapter) exactly why a task
+   scheduled for 20 ticks ran at press + 19: which call, which tick each of the two reads is taken on, and whether every
+   `scheduleOn` / `schedule` delay in the game runs one short of its authored ticks or only this path. **Then PROPOSE, do
+   not build**, which of three is right: (a) the adapter adds the tick so content means what it says; (b) the fake is
+   corrected to the server's clock and content stays; (c) the trace's two reads are taken at different phases and nothing
+   real is short. Say what each would change for shipped weapons and for gates already read. The seat rules before any
+   code.
+2. **OWED, BESIDE IT: THE AIM ROW.** Ben's "4. Yes" (Focused Beam fires where he looks when the wind-up ends) is UNREAD
+   on a server; `FocusedBeamTest.theAimIsReadAtTheWindupsEndNotAtThePress` and MUTLOCK hold it. The row that turns him
+   during the wind-up (press facing east, `wait: 10`, a `tp` facing a zombie to the south, `wait: 30`; the south zombie
+   takes the beam, one standing east nothing) goes into **the next gate that touches the Cursed Emerald** (section 18).
+3. **DONE 2026-11-24 (#271, squashed as `35060659`; read on the server as `GATE-focused-beam.md` CSS, with AFR
+   re-reading Airburst on its own weapon in place of AF1-AF4, by the seat's brief).**
+   **OWED: A BEHAVIOUR THAT NAMES A WEAPON ACTS ONLY ON THAT WEAPON, ENFORCED ONCE WHERE BEHAVIOURS ARE READ FROM THE
    ITEM.** `BehaviourItems.activeOf` has no weapon filter, so Airburst Flames staged by the dev command on another
    projectile weapon would split it (no roll can produce that). Shatter Caps and the Lapis Crystal's grant check their own
    weapon at the cast; Airburst does not. When it is done, `GATE-enchant-changes.md`'s AF1-AF4 are re-read.
-2. **The selftest's snapshot lives in memory.** A server crash mid-run leaves his inventory, position and the world's
+4. **The selftest's snapshot lives in memory.** A server crash mid-run leaves his inventory, position and the world's
    rules as the run left them; the restore runs on every END path the plugin sees (finish, stop, exception, quit, server
    stop), not on a crash.
-3. **The pad holds no chunk tickets** (the adapter context carries no plugin handle): a chunk that unloads between its
+5. **The pad holds no chunk tickets** (the adapter context carries no plugin handle): a chunk that unloads between its
    load and the build fails the run and touches nothing (section 13's account, unchanged).
-4. **The scenario lint does not yet enforce the staging of the gear score, mana, the enchant state and a cleared
+6. **The scenario lint does not yet enforce the staging of the gear score, mana, the enchant state and a cleared
    cooldown.** It enforces the inventory, the turn-then-wait, probe reach, self-staging and the ground; a row that
    forgets `rpg gearscore set`, `rpg mana refill`, `rpg enchant clear` or `clear_state` is not caught.
-5. **Unread on a server, by design:** a REAL orphan's removal one tick after it appears (no row stages an orphan; the
+7. **Unread on a server, by design:** a REAL orphan's removal one tick after it appears (no row stages an orphan; the
    path is read by `OrbClaimTest`, `OrbBlockBodyLoadTest`'s pins and five mutations), and the BACKSTOP's firing (it acts
    only when every other removal was skipped; `OrbBlockBodyTest` and `OrbLookTest`).
 
@@ -752,8 +774,17 @@ shot) and comes off the carried list.
 | Shatter Caps' icon | `cobblestone` | `shatter_caps.yml` `icon` |
 | Shatter Caps' line | "fires one stone of 35 damage that shatters after 5 blocks into the usual chunks" (35 / 60 / 85 by level) | `EnchantEffectLine`, the `SHATTER` arm |
 | The Breacher's own description with Shatter Caps active | NOT EDITED: still "Four chunks of cobblestone," / "a tight triangle 6 degrees wide." | `breacher.yml` `description:` |
+| Focused Beam's 48: its scope (added 2026-11-24) | THE SEAT'S READING of Ben's "increase the range to 48 blocks": this beam only; the plain Cursed Volley keeps its 32 | `focused_beam.yml` `range` |
+| Focused Beam's look | the bolt's own `emerald_beam`, unchanged, drawn to what it struck or to 48: whether the one beam should look heavier | `cursed_emerald.yml` `beam` (read at run time) |
+| Focused Beam's icon | `ender_eye` | `focused_beam.yml` `icon` |
+| Focused Beam's line | "after the wind-up, fires one beam of 108 damage reaching 48 blocks" (108 / 162 / 216 by level) | `EnchantEffectLine`, the `FOCUSED_BEAM` arm |
+| The Cursed Emerald's own description with Focused Beam active | NOT EDITED: still "Channel, then loose six" / "bolts down your line of sight." | `cursed_emerald.yml` `description:` |
 
 **No code is owed by this section.** The next stack opens from `89253ed4`.
+
+> **DATED NOTE, 2026-11-24, after the merge of #270 to #272 (master `c1ebabab`):** the line above is the record of
+> section 15 as it was written. Since then #267 to #272 have merged; the next stack opens from `c1ebabab`, and the
+> carried list's first item owes a READ and a proposal, not code, before the seat rules.
 
 ## 16. SHATTER CAPS (THE BREACHER'S WEAPON-SPECIFIC ENCHANT) AND THE BREACHER'S REACH, 2026-11-24
 
