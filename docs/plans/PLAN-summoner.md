@@ -534,3 +534,22 @@ SM3A-SM3D, SM4-SM7, SM8A-SM8C, SM9-SM17 (419 scenarios across 48 gates).
   cell and a saved loadout the restore does not undo).
 
 **NOT STAGEABLE YET (X7):** the cap with another weapon's summon; covered by `SummonCap`'s table.
+
+## 10. Z1 TO Z3 (the seat, 2026-11-25, on the reworked gate at `7c767c6c`)
+
+**Z1 WITHDRAWN (the seat: "I WAS WRONG").** The seat said SM2's and SM13's moves carried into later rows. READ,
+`SelfTestRun`: every unchained row first teleports him to `stage()`, which `pad()` sets to the stand, and logs
+`return=`. The seat had not read the row start. No stand step, no new lint rule: SELF_STAGED's "no row may chain" is
+the guard.
+
+**Z2 WITHDRAWN (the seat: "I WAS WRONG").** "Every other gate uses slot 1" came from a truncated search.
+`GATE-enchant-columns.yml` stages `candidate 0 kinetic_tremors` at lines 155, 187, 215, 240 and 276, and EC9R2 read the
+shockwave firing from slot 0. SM14 stays as staged. The command is unchanged, and no slot lint is added.
+
+**Z3 ACCEPTED:** the setup's preflight is `-2 -6 45 10` (was `0 -6 42 10`); the coordinate table in `GATE-summoner.md`
+records that every coordinate lies inside it. The ask's `words` mode, and the line Ben sees, are accepted.
+
+**CARRIED (build nothing):** `rpg enchant candidate` accepts an enchant into a slot the roll would never put it in (a
+unique in slot 0; READ, `EnchantState.addCandidate` and the command's CANDIDATE arm check no slot rule). A
+content-decidable lint rule would flag `GATE-enchant-columns.yml` 155, 187, 215, 240 and 276, and `GATE-summoner.yml` 502.
+Decide later whether dev staging should be held to the roll's rules.

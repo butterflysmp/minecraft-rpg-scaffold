@@ -1,6 +1,6 @@
 # GATE-summoner (docs/gates/GATE-summoner.md): the Summoner slice, the Bone Whistle and its wolf. Typed as ONE run after
 # the mage gate: `/rpg selftest mage-guaranteed+summoner`. SURVIVAL, every row. ALL AUTO except SM17, the one ASK, last.
-# On the pad, facing east; the preflight measures east 0..42 and z -6..10 (the pad's interior is x -2..45, z -13..13).
+# On the pad, facing east; the preflight measures east -2..45 and z -6..10 (Z3) (the pad's interior is x -2..45, z -13..13).
 # Night, no natural spawns, difficulty EASY (CC'S CALL), his health staged full; each put back by the run's restore.
 # SAFETY (the gate file, before the rows): at most 5.000 dealt to him, all of it SM3A's one scripted 0.2. Every other
 # mob is frozen (NoAI) or has attack 0 (SM3B, the only one set on him).
@@ -9,7 +9,7 @@
 # row that needs a second item switches to it AFTER its own cast. The lint's SUMMON_UNSTAGED holds every row to that.
 setup:
   - pad: ""
-  - preflight: "0 -6 42 10"
+  - preflight: "-2 -6 45 10"
   - difficulty: easy
   - trace: on
   - cmd: "time set 18000"

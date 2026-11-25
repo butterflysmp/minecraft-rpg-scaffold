@@ -316,6 +316,32 @@ His own wolf, directed at `s17` (NoAI, max 200) 6 east: `SUMMON target … why=d
 question. **The ask:** *"Did you see your wolf run to the zombie and attack it? (yes / no / not sure)"*, one answer, up
 to 1200 ticks. **Predicted: yes.** This is Ben's half: whether it WORKS and is CLEAR, seen.
 
+## EVERY COORDINATE LIES INSIDE THE PREFLIGHTED BOX (Z3, the seat's ruling of 2026-11-25)
+
+**The setup preflights `-2 -6 45 10`** (it was `0 -6 42 10`, which SM2's x −2 and x 45 fell outside). READ,
+`SelfTestPreflight`: the box is in whole blocks from his own block, each bound −64..64, and at every column his feet and
+head must be AIR and the floor SOLID. READ, `SelfTestPadShape`: the pad's interior is x −2..45, z −13..13, floored, so
+the box is measurable. **Every row starts on the stand** (READ, `SelfTestRun`: the row-start CLEAN teleports him to
+`stage()`, the stand, logging `return=`). Stand-relative, x east, z south; the wolf spawns at his own feet (READ,
+`SummonService.spawn`):
+
+| row | him | mobs and blocks | wolf put at |
+|---|---|---|---|
+| every cast | (0,0) | — | spawns at (0,0) |
+| SM2 | (−2,−6) | — | (45,10) |
+| SM3A / SM3B / SM3C / SM3D | (0,0) | zombie (3,0) / (12,0) / (6,0) / (2,0) | — |
+| SM4 | (0,0) | zombie (2,0) | — |
+| SM5 | (0,0) | zombie (6,0), then (40,0) | — |
+| SM6 | (0,0) | block (3,0), zombie (6,0) | on the block, (3,0) +1 |
+| SM7, SM9 | (0,0) | zombie (4,3) | — |
+| SM12, SM17 | (0,0) | zombies (6,0) | — |
+| SM13 | (12,0) | — | follows him |
+| SM14 | (0,0) | zombie (3,0) | (3,−2) |
+| SM15 | (0,0) | zombie (12,−5); orb rest (12,0) | (6,4) |
+| SM16 | (0,0) | block (7,0), zombie (10,0) | on the block, (7,0) +1 |
+
+**Every x lies in −2..45 and every z in −6..10.** SM2's separation stays 49.65 (√(47² + 16²)), beyond teleport_back's 48.
+
 ## NOT STAGEABLE YET (X7)
 
 **The cap with ANOTHER weapon's summon** (a second summon weapon held while one wolf lives) cannot be staged: one
