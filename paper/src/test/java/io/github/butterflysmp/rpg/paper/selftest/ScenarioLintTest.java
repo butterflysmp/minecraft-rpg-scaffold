@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -219,6 +220,64 @@ class ScenarioLintTest {
         String fixed = SETUP + GOOD_ROW.replace("  - cmd: \"rpg enchant candidate 0 kinetic_tremors\"\n",
                 "  - cmd: \"rpg enchant candidate 0 lapis_crystal\"\n  - cmd: \"rpg enchant candidate 1 kinetic_tremors\"\n");
         assertEquals(List.of(), rules(fixed));
+    }
+
+    // --- L1 (the seat's ruling, 2026-11-24): a scheduled held-item read, then a wait, then a change ---------------
+
+    /** MG1 as committed: enchant show and rollstats, then clear_inventory and a give, with no wait between. */
+    private static final String READ_THEN_CHANGE = """
+            R1:
+              - clear_inventory: ""
+              - cmd: "rpg give flint_staff"
+              - wait: 2
+              - hold: flint_staff
+              - cmd: "rpg enchant show"
+              - cmd: "rpg enchant rollstats 500"
+              - clear_inventory: ""
+              - cmd: "rpg give lapis_staff"
+              - wait: 2
+              - hold: lapis_staff
+              - cmd: "rpg enchant show"
+              - wait: 2
+            """;
+
+    @Test
+    void aScheduledHeldReadFollowedByAnInventoryChangeWithNoWaitIsAFinding() throws InvalidConfigurationException {
+        List<ScenarioLint.Finding> f = ScenarioLint.lint("g", parse("g", READ_THEN_CHANGE));
+        assertEquals(List.of(ScenarioLint.Rule.HELD_READ_THEN_CHANGE), f.stream().map(ScenarioLint.Finding::rule).toList());
+        assertEquals("LINT g#R1 HELD_READ_THEN_CHANGE clear_inventory after 'rpg enchant rollstats 500' with no wait:"
+                + " the read runs a tick later (scheduler.onEntity) and would see the changed hand", f.get(0).line());
+        // The fix: a wait after the read, before the change.
+        String fixed = READ_THEN_CHANGE.replace("  - cmd: \"rpg enchant rollstats 500\"\n  - clear_inventory: \"\"\n",
+                "  - cmd: \"rpg enchant rollstats 500\"\n  - wait: 2\n  - clear_inventory: \"\"\n");
+        assertEquals(List.of(), rules(fixed));
+    }
+
+    /** Every reader and every changer, each by itself after the other: the one set, read from one place. */
+    @Test
+    void everyReaderAndEveryChangerIsSeen() throws InvalidConfigurationException {
+        List<String> readers = List.of("rpg enchant show", "rpg enchant clear", "rpg durability damage 3", "rpg refresh");
+        List<String> changers = List.of("  - hold: lapis_staff\n", "  - hold_only: lapis_staff\n",
+                "  - clear_inventory: \"\"\n", "  - drop: \"\"\n", "  - click: \"Lapis\"\n",
+                "  - click_material: \"STONE\"\n", "  - shift_click: \"bottom lapis_staff\"\n",
+                "  - cmd: \"rpg give boltor\"\n", "  - cmd: \"give @s minecraft:stone\"\n",
+                "  - cmd: \"clear @s minecraft:stone\"\n", "  - cmd: \"item replace entity @s weapon.mainhand with minecraft:air\"\n",
+                "  - cmd: \"rpg gearscore set 100\"\n");
+        for (String reader : readers) {
+            assertTrue(ScenarioLint.readsHeldLater(reader), reader);
+            for (String changer : changers) {
+                String yaml = "R1:\n  - clear_inventory: \"\"\n  - cmd: \"" + reader + "\"\n" + changer + "  - wait: 2\n";
+                assertEquals(List.of(ScenarioLint.Rule.HELD_READ_THEN_CHANGE), rules(yaml), reader + " then " + changer);
+            }
+        }
+        // Not readers: synchronous commands, and commands that touch no held item.
+        for (String c : List.of("rpg gearscore set 100", "rpg give boltor", "rpg mana refill", "rpg playerxp set @s 1 levels")) {
+            assertFalse(ScenarioLint.readsHeldLater(c), c);
+        }
+        // Not changers: a second scheduled command queues behind the first (first in, first out), and a probe reads.
+        String queued = "R1:\n  - clear_inventory: \"\"\n  - cmd: \"rpg enchant clear\"\n  - cmd: \"rpg enchant candidate 0 x\"\n"
+                + "  - cmd: \"rpg refresh\"\n  - dump: held\n  - wait: 2\n";
+        assertEquals(List.of(), rules(queued));
     }
 
     // --- the parsers the rules stand on ----------------------------------------------------------------------------

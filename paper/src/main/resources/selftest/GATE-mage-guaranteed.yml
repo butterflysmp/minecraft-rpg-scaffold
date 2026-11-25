@@ -39,7 +39,9 @@ PT1:
   - probe_self: ""
 
 # MG1: THE POOLS. A FRESH roll of each weapon (rpg give rolls on acquire): its slot 0 shown, then 500 rolls tallied. No mob.
-MG1:
+# MG1R (2026-11-24, the seat's L1): MG1 with a wait after every held-item read before the next change of
+# hand. MG1's steps leave the scenario; the gate keeps MG1 as the record.
+MG1R:
   - cmd: "rpg playerxp set @s 1 levels"
   - clear_inventory: ""
   - clear_state: ""
@@ -48,42 +50,49 @@ MG1:
   - hold: flint_staff
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give crystal_shard_staff"
   - wait: 2
   - hold: crystal_shard_staff
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give lapis_staff"
   - wait: 2
   - hold: lapis_staff
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give living_lantern"
   - wait: 2
   - hold: living_lantern
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give cursed_emerald"
   - wait: 2
   - hold: cursed_emerald
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give knell_beam"
   - wait: 2
   - hold: knell_beam
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give blaze_kings_staff"
   - wait: 2
   - hold: blaze_kings_staff
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give breacher"
   - wait: 2
@@ -100,9 +109,13 @@ MG1:
 # experienceLevel, points is floor(experienceProgress x getXpNeededForNextLevel())).
 # MG2R: THE FIX, THROUGH THE TABLE, ON A STAGED WALLET. Wallet 1395 (level 30, 0 into it); the unlock costs 352; 1043
 # after it (level 26, 46 into it: progress 0.5 of 92); the activate costs nothing.
-MG2R:
+# MG2R2 (2026-11-24): MG2R with his RPG level staged at 10 before /enchanting (the station's gate, READ:
+# PlayerLevel.effectiveLevel(profile.lifetimeXp()) >= 10; the run's snapshot restores it). MG2R leaves the scenario.
+MG2R2:
   - clear_inventory: ""
   - clear_state: ""
+  - cmd: "rpg playerxp set @s 10 levels"
+  - wait: 2
   - cmd: "rpg give lapis_staff"
   - wait: 2
   - hold: lapis_staff
@@ -488,7 +501,9 @@ MG11:
 # mobs and waiting 30 ticks, so an Ignite of a scorched mob killed there lands on nobody before the next row's summons.
 
 # MB1: THE POOLS. A FRESH roll of each fire weapon: slot 1 (the unique pool) shown, then 500 rolls tallied. No mob.
-MB1:
+# MB1R (2026-11-24, the seat's L1): MB1 with a wait after every held-item read before the next change of
+# hand. MB1's steps leave the scenario; the gate keeps MB1 as the record.
+MB1R:
   - clear_inventory: ""
   - clear_state: ""
   - cmd: "rpg give flint_staff"
@@ -496,18 +511,21 @@ MB1:
   - hold: flint_staff
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give living_lantern"
   - wait: 2
   - hold: living_lantern
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give blaze_kings_staff"
   - wait: 2
   - hold: blaze_kings_staff
   - cmd: "rpg enchant show"
   - cmd: "rpg enchant rollstats 500"
+  - wait: 2
   - clear_inventory: ""
   - cmd: "rpg give dragons_breath"
   - wait: 2
@@ -575,7 +593,9 @@ MB3:
 # MB4a: ONE IGNITE WITH THE STAMP. v (1000 health) 6 east takes a Mana Burn III bolt and is scorched; 50 ticks on it is
 # killed by command (the death listener's domain), so it dies scorched WITH the stamp; 20 ticks later its Ignite reaches b
 # (1000 health), 2 blocks south of v: 6 x (1 + 30/100) = 7.8. b is probed 25 ticks after the kill, before its own burn ticks.
-MB4a:
+# MB4aR (2026-11-24): MB4a with b probed about the kill + 30: the run's settle (20 ticks, READ) then 10, so after
+# the Ignite (kill + 20) and before b's first burn (kill + 40). MB4a leaves the scenario.
+MB4aR:
   - cmd: "rpg playerxp set @s 1 levels"
   - wait: 40
   - clear_inventory: ""
@@ -602,14 +622,16 @@ MB4a:
   - wait: 50
   - probe: v
   - cmd: "kill @e[tag=v]"
-  - wait: 25
+  - wait: 10
   - probe: b
   - wait: 40
   - cmd: "kill @e[tag=selftest,distance=..64]"
   - wait: 30
 
 # MB4b: THE SAME IGNITE WITHOUT THE STAMP: no enchant, so b takes Ignite's 6.
-MB4b:
+# MB4bR (2026-11-24): MB4b with b probed about the kill + 30: the run's settle (20 ticks, READ) then 10, so after
+# the Ignite (kill + 20) and before b's first burn (kill + 40). MB4b leaves the scenario.
+MB4bR:
   - cmd: "rpg playerxp set @s 1 levels"
   - wait: 40
   - clear_inventory: ""
@@ -632,7 +654,7 @@ MB4b:
   - wait: 50
   - probe: v
   - cmd: "kill @e[tag=v]"
-  - wait: 25
+  - wait: 10
   - probe: b
   - wait: 40
   - cmd: "kill @e[tag=selftest,distance=..64]"
@@ -640,7 +662,9 @@ MB4b:
 
 # MB5: AN UNENCHANTED HIT CLEARS THE STAMP. v takes a Mana Burn III bolt (its ticks 13); the enchant is cleared and a plain
 # bolt refreshes the scorch (its ticks 10: the stamp follows the newest applier); then v is killed and its Ignite gives b 6.
-MB5:
+# MB5R (2026-11-24): MB5 with b probed about the kill + 30: the run's settle (20 ticks, READ) then 10, so after
+# the Ignite (kill + 20) and before b's first burn (kill + 40). MB5 leaves the scenario.
+MB5R:
   - cmd: "rpg playerxp set @s 1 levels"
   - wait: 40
   - clear_inventory: ""
@@ -674,7 +698,7 @@ MB5:
   - wait: 50
   - probe: v
   - cmd: "kill @e[tag=v]"
-  - wait: 25
+  - wait: 10
   - probe: b
   - wait: 40
   - cmd: "kill @e[tag=selftest,distance=..64]"
