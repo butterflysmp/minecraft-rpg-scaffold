@@ -1,6 +1,6 @@
 # PLAN — THE SUMMONER CLASS, FIRST SLICE: THE BONE WHISTLE AND ITS WOLF
 
-**Status: PR 1 and PR 2 BUILT, NOT BOOTED.** The seat's brief of 2026-11-24 (Ben's words, verbatim, are in it and in
+**Status: PR 1 BUILT (#289); PR 2a STOPPED at H2 with C1 and today's PvP pinned (section 2). NOT BOOTED.** The seat's brief of 2026-11-24 (Ben's words, verbatim, are in it and in
 section 0). The design for PR 3 onward (D1-D10) is PROPOSED in the report to the seat and is NOT built until ruled.
 
 ## 0. BEN'S WORDS AND THE SEAT'S DEFAULTS (2026-11-24)
@@ -65,3 +65,50 @@ effective value. **The override persists across a restart**, so a gate that sets
 `SummonerLabelTest` (1), `MobSeedLineTest` (2), `GearScoreTest` (+1 line). **Mutations, all red:** `MUTDEFAULT`,
 `MUTSUM`, `MUTFLOOR`, `MUTCARRY` (one `with` drops the base), `MUTABSENT`, `MUTUNKNOWN` (unknown reads 1), `MUTSCORE`,
 `MUTLABEL`, `MUTSEED`.
+
+## 2. PR 2a (`feat/summoner-sides-core-a`, on #289): STOPPED AT THE SEAT'S H2, WITH C1 AND TODAY'S PvP PINNED
+
+**The seat's ruling of 2026-11-24 (via Ben):** the split is 2a core, 2b paper; H1 one table, attacker side x victim side x
+arm (DIRECT: a ray's, projectile's or melee primary hit; INDIRECT: area, splash, chain, status tick, homing pick, any
+secondary); H2 PLAYER -> PLAYER unchanged, filled with what the code does TODAY per arm, pinned BEFORE the refactor, and
+**"If today's behaviour differs between two paths of the same arm, STOP and list them; do not average them."**
+
+**IT DIFFERS, so the refactor is not built.** PLAYER -> PLAYER today, path by path (a player's ability, another player
+as the victim). READ = a characterisation row in `PvpTodayCharacterisationTest` (or the existing pin named); SOURCE = read
+in the code, not run:
+
+| arm | path | today | how known |
+|---|---|---|---|
+| DIRECT | the swing (`CastSpec.Melee`, `CastExecutor` nearest-in-arc) | **LANDS** | READ |
+| DIRECT | the ray (`castRay`'s first body) | **LANDS** | READ (and `PlayerHitTraceTest.aPlayerTargetIsNotTraced`) |
+| DIRECT | the projectile (`ProjectileFlight.step`'s `castRay`) | **LANDS** | SOURCE (the same `castRay` filter) |
+| ? | the cone (`ConeShell.reached`, every body in arc and range) | **LANDS** | READ. Which arm a cone is, the seat's to say |
+| ? | the dash's line (`SweptLine.enemiesAlong`, "mob-only: players are not hit") | **SPARED** | READ. Which arm a dash is, the seat's to say |
+| INDIRECT | a burst (`EffectApplier.applyToNearby`) | **LANDS** | READ |
+| INDIRECT | an area (`applyArea` -> `applyToNearby`, as not-a-hit) | **LANDS** | SOURCE (the same method) |
+| INDIRECT | a travel-end burst (`applyToNearbyMobs`) | **SPARED** | SOURCE |
+| INDIRECT | the shockwave (`BehaviourHits`, "never a player") | **SPARED** | READ (`BehaviourHitsTest`) |
+| INDIRECT | the Lapis Crystal's shot (`CastExecutor`, "never a player") | **SPARED** | READ (`OrbBeamTest`) |
+| INDIRECT | Ignite's splash (`Ignite`) | **SPARED** | SOURCE |
+| INDIRECT | the homing pick (`ProjectileFlight.nearestMob`, "R2") | **SPARED** | SOURCE |
+| INDIRECT | an implosion (`EffectApplier.implode`) | **BY ITS `affects:`** (mobs: spared; players: lands) | SOURCE |
+| INDIRECT | a status tick (scorch on a player hit directly) | **UNVERIFIED** | not read |
+
+**So the INDIRECT arm is not one behaviour today** (a burst and an area land on a player; a travel-end burst, the
+shockwave, the crystal shot, Ignite and the homing pick spare him), and if the dash is DIRECT, nor is that arm. **H2's
+table cannot be filled per arm without averaging.** Paper hands players to core on every pick (`LiveTargets.resolve`
+admits a `Player`; `combatantsNear`, `castRay` and `sweepRay` all use it), so every LANDS above is INFERRED to reach a
+server. **"Ability PvP works today on the direct arm" stays INFERRED, not READ on a server (H8).**
+
+**What the five rows assert is what IS.** Each LANDS row would read `damageCalls 0` under a player filter; the dash row
+carries a mob as its positive control. They are to stay green before and after the refactor, however the seat rules.
+
+### C1 — THE SELFTEST SNAPSHOT RESTORES max_summons (in this PR)
+
+`SelfTestSnapshot` captures the profile's STORED base, boxed (`maxSummonsOrNull`, null = never set), at the run's start,
+and `restore` writes it back (`setMaxSummonsBase`, null restoring absence) and names it on the RESTORED line
+(`max_summons_base=<v>|NOT-RESTORED`). Every end (END, abort, stop, quit, disable) reaches that one `restore` through
+`SelfTestRun.end` (`SelfTestDisableWiringTest` pins disable). **Test:** `SelfTestMaxSummonsRestoreTest`, a source scan
+(the snapshot needs a live Player), bounded by the constructor and by `restore`'s own return, not by a line count. The
+behaviour of a `null` write (back to 1) is `ProfileServiceTest`'s, from PR 1. **Mutations, all red:** `MUTCAPNULL`,
+`MUTNOWRITE`, `MUTNOLINE`. #289's head is not rewritten.
