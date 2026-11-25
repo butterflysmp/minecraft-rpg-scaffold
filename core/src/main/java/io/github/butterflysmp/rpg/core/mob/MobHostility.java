@@ -19,6 +19,16 @@ package io.github.butterflysmp.rpg.core.mob;
  * <p>Ben: the Phage's blast hurts "Only players and Summons" (G). So MOB -> SUMMON reads the same as MOB -> PLAYER, by
  * the same row {@link #hostileTo} reads; a creative or spectator player is exempt, as in vanilla. The SUMMON cells ignore
  * the path (P4). (An {@code enum} is a fixed set of named values.)
+ *
+ * <p><b>THE RECORD FROM BEFORE THE SUMMONER SLICE, kept as written:</b> WHO A MOB IS HOSTILE TO: the ONE named predicate
+ * (PLAN-dragon-mobs.md section 4.2 N3; the seat's ruling 24). Ben: the Phage's blast hurts "Only players and Summons"
+ * (G), and every new mob capability takes a COMBATANT as its victim or target, never specifically a player (seat ruling
+ * 3). Today the engine has one side marker, the {@code player} boolean on {@code HealthState} and
+ * {@code CombatantSnapshot} (section 7 F-E), so today the answer is exactly "a player". A Summoner widens it HERE, by
+ * adding a {@link Side}, and every capability that asks this predicate follows without a rewrite. A creative or
+ * spectator player is not a mob's target, as in vanilla, whose swell already skips them
+ * ({@code EntitySelector.NO_CREATIVE_OR_SPECTATOR}, section 7 F-C). <i>(2026-11-24: the snapshot's boolean is now a
+ * {@code Side}; {@code HealthState} keeps its boolean, which is about stats, not sides.)</i>
  */
 public final class MobHostility {
 
