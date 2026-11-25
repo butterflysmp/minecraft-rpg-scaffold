@@ -196,7 +196,14 @@ public final class BukkitCombatant {
         @Override public void applyDamage(double amount, UUID sourceId, CritState crit,
                                           DefenseRule defense, String element,
                                           HitAccrual accrual) {
-            ctx.scheduler().onEntity(entity, () -> applyNow(amount, sourceId, crit, defense, element, accrual));
+            ctx.scheduler().onEntity(entity, () -> applyNow(null, amount, sourceId, crit, defense, element, accrual));
+        }
+
+        /** Q1: the attacker's side given explicitly (a summon's hit: SUMMON), the credit to {@code creditId} (its owner). */
+        @Override public void applyDamageAs(io.github.butterflysmp.rpg.core.mob.MobHostility.Side attacker, double amount,
+                                            UUID creditId, CritState crit, DefenseRule defense, String element,
+                                            HitAccrual accrual) {
+            ctx.scheduler().onEntity(entity, () -> applyNow(attacker, amount, creditId, crit, defense, element, accrual));
         }
 
         /**
@@ -210,7 +217,7 @@ public final class BukkitCombatant {
                     refused.run();
                     return;
                 }
-                applyNow(amount, sourceId, crit, defense, null, HitAccrual.weapon());
+                applyNow(null, amount, sourceId, crit, defense, null, HitAccrual.weapon());
             });
         }
 
@@ -224,8 +231,8 @@ public final class BukkitCombatant {
          * {@link CombatSides#refused}. Every cell without a summon passes untouched, so no player-to-player damage that
          * happens today is switched off. On this entity's own thread; logs one line per refusal.
          */
-        private boolean refusedBySides(UUID sourceId, String what) {
-            io.github.butterflysmp.rpg.core.mob.MobHostility.Side source = CombatSides.ofSource(sourceId, ctx.keys());
+        private boolean refusedBySides(UUID sourceId, io.github.butterflysmp.rpg.core.mob.MobHostility.Side explicit, String what) {
+            io.github.butterflysmp.rpg.core.mob.MobHostility.Side source = CombatSides.attackerOf(explicit, () -> CombatSides.ofSource(sourceId, ctx.keys()));   // Q1
             io.github.butterflysmp.rpg.core.mob.MobHostility.Side victim = CombatSides.of(entity, ctx.keys());
             if (!CombatSides.refused(source, victim)) return false;
             ctx.log().info("SIDES refused " + source + "->" + victim + " " + what + " source=" + sourceId
@@ -233,10 +240,11 @@ public final class BukkitCombatant {
             return true;
         }
 
-        private void applyNow(double amount, UUID sourceId, CritState crit, DefenseRule defense, String element,
+        private void applyNow(io.github.butterflysmp.rpg.core.mob.MobHostility.Side attackerSide, double amount, UUID sourceId,
+                              CritState crit, DefenseRule defense, String element,
                               HitAccrual accrual) {
                 // THE SIDES GUARD (2b), before anything else: a refused summon cell reaches nothing below.
-                if (refusedBySides(sourceId, "damage")) return;
+                if (refusedBySides(sourceId, attackerSide, "damage")) return;
                 // THE PHALANX'S SHOT (dragon-mobs step R7a, the seat's ruling 2): ANY damage that reaches a shot
                 // destroys it, whatever the amount, and nothing below runs for it: no store, no status, no accrual,
                 // no Ignite, no aggro, no flash. FIRST, so no later line can be reached by a shot.
@@ -523,7 +531,7 @@ public final class BukkitCombatant {
                 // STATUSES NEVER ATTACH TO A SHOT (step R7a, the seat's ruling 2): a hit that would apply one destroys
                 // it instead. Wither, Ignite's scorch, Freeze, Rooted, Soaked: every status lands here or in
                 // applyDamage's accrual, and both ask first.
-                if (refusedBySides(applierId, "status=" + statusId)) return;   // 2b: the same guard, for a status
+                if (refusedBySides(applierId, null, "status=" + statusId)) return;   // 2b: the same guard, for a status
                 if (ctx.shots().strike(entity, "ability status=" + statusId)) return;
                 if (ctx.shields().suppressRider(entity, "status=" + statusId)) return;   // step R7b
                 switch (def) {

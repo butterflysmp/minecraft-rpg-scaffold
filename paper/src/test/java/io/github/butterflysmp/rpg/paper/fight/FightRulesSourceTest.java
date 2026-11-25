@@ -135,7 +135,7 @@ class FightRulesSourceTest {
         String a = body(code("adapter/BukkitCombatant.java"), "@Override public void applyDamageIf(");
         int defer = a.indexOf("ctx.scheduler().onEntity(entity, () -> {");
         int ask = a.indexOf("if (!applies.getAsBoolean()) {");
-        int apply = a.indexOf("applyNow(amount, sourceId, crit, defense, null, HitAccrual.weapon());");
+        int apply = a.indexOf("applyNow(null, amount, sourceId, crit, defense, null, HitAccrual.weapon());");
         assertTrue(defer > 0 && ask > defer && apply > ask, "the question and the damage in one task: " + a);
     }
 

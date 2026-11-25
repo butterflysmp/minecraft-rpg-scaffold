@@ -59,6 +59,35 @@ class CombatSidesTest {
         assertFalse(CombatSides.refused(Side.SUMMON, Side.MOB));
     }
 
+    /**
+     * Q1 (the seat, 2026-11-24): a summon's hit names its side EXPLICITLY; its credit id is its owner's, a player's. The
+     * guard reads the explicit side first: aimed at a player or a summon it is refused although the id is a player's;
+     * aimed at a mob it lands. Classified from the id alone it would have been PLAYER -> PLAYER and let through.
+     */
+    @Test
+    void aSummonsHitIsJudgedByItsExplicitSideNotItsOwnersId() {
+        Side owner = Side.PLAYER;   // what the credit id classifies as
+        Side source = CombatSides.attackerOf(Side.SUMMON, () -> owner);
+        assertEquals(Side.SUMMON, source, "the explicit side wins");
+        assertTrue(CombatSides.refused(source, Side.PLAYER), "aimed at a player: refused");
+        assertTrue(CombatSides.refused(source, Side.SUMMON), "aimed at another summon: refused");
+        assertFalse(CombatSides.refused(source, Side.MOB), "aimed at a mob: lands");
+        assertFalse(CombatSides.refused(CombatSides.attackerOf(null, () -> owner), Side.PLAYER),
+                "the control: by the id alone it reads PLAYER -> PLAYER, which the guard never refuses");
+        assertEquals(Side.MOB, CombatSides.attackerOf(null, () -> Side.MOB), "no explicit side: the id decides");
+    }
+
+    /** Q1's wiring: applyDamageAs carries its side into applyNow and the credit id through unchanged. */
+    @Test
+    void applyDamageAsCarriesTheSideToTheGuardAndTheCreditOnward() throws IOException {
+        List<String> c = code(Path.of("adapter", "BukkitCombatant.java"));
+        int as = at(c, "@Override public void applyDamageAs(", 0);
+        assertTrue(as > 0 && at(c, "applyNow(attacker, amount, creditId, crit, defense, element, accrual)", as) > as);
+        int guard = at(c, "private boolean refusedBySides(UUID sourceId,", 0);
+        assertTrue(at(c, "Side source = CombatSides.attackerOf(explicit, () -> CombatSides.ofSource(sourceId, ctx.keys()));",
+                guard) > guard, "the guard reads the explicit side first");
+    }
+
     private static final Path MAIN = Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg", "paper");
 
     private static List<String> code(Path file) throws IOException {
@@ -76,11 +105,11 @@ class CombatSidesTest {
     void theDamageAndStatusPortsAskTheGuardFirst() throws IOException {
         List<String> c = code(Path.of("adapter", "BukkitCombatant.java"));
         int now = at(c, "private void applyNow(", 0);
-        int guard = at(c, "if (refusedBySides(sourceId, \"damage\")) return;", now);
+        int guard = at(c, "if (refusedBySides(sourceId, attackerSide, \"damage\")) return;", now);
         int shot = at(c, "if (ctx.shots().strike(entity, String.format(", now);
         assertTrue(now > 0 && guard > now && shot > guard, "applyNow: the guard, then the shot: " + now + " " + guard + " " + shot);
         int status = at(c, "public void applyStatus(String statusId, int durationTicks, int amplifier,", 0);
-        int sGuard = at(c, "if (refusedBySides(applierId, \"status=\" + statusId)) return;", status);
+        int sGuard = at(c, "if (refusedBySides(applierId, null, \"status=\" + statusId)) return;", status);
         int sShot = at(c, "if (ctx.shots().strike(entity, \"ability status=\" + statusId)) return;", status);
         assertTrue(status > 0 && sGuard > status && sShot > sGuard, "applyStatus: the guard, then the shot");
         assertTrue(at(c, "if (!CombatSides.refused(source, victim)) return false;", 0) > 0, "read off the one table");

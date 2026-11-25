@@ -151,6 +151,21 @@ public interface CombatantHandle {
                      String element, HitAccrual accrual);
 
     /**
+     * Q1 (the seat, 2026-11-24): a hit whose ATTACKER SIDE is given EXPLICITLY, separate from the id that gets the CREDIT.
+     * A summon's hit passes {@code SUMMON} with its owner's id as {@code creditId}, so the sides guard refuses it on a
+     * player or a summon although the credit id is a player's, and on a mob it lands credited to the owner. A guard that
+     * is given a side reads it FIRST and classifies by the source id only when none is given.
+     *
+     * <p>This default has no guard to give the side to and applies the hit as {@link #applyDamage} would; the Paper
+     * handle, which guards, overrides it.
+     */
+    default void applyDamageAs(io.github.butterflysmp.rpg.core.mob.MobHostility.Side attacker, double amount,
+                               UUID creditId, CritState crit, DefenseRule defense, String element,
+                               HitAccrual accrual) {
+        applyDamage(amount, creditId, crit, defense, element, accrual);
+    }
+
+    /**
      * Raise the target's health by {@code amount}, capped at its max by the implementation.
      *
      * <p><b>No {@code sourceId}, unlike {@link #applyDamage}</b>, so an implementation has nobody to
