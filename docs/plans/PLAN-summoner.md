@@ -356,3 +356,37 @@ dropped and may be taken again when it qualifies again; no skeleton is special-c
 **Tests:** `SummonLifecycleTest` +2 (O2, O3), `SummonWiringTest` +2 (O1's chain as far as a test reaches, O4).
 **Mutations, all red:** MUTFOREIGN, MUTUNKNOWN, MUTDEATHMON (first run overreached to five handlers sharing the annotation;
 redone scoped to the death hook's line, one line changed), MUTTHROTTLE.
+
+### 6.1 THE GUARD, DECIDED PURELY (`core/summon/SummonGuard`), AND WHERE PR 4 STOPS
+
+`SummonGuard.decide(def, him, summonAt, held, candidates, now)` returns the target, its `Why` (DIRECTED, DAMAGED,
+TARGETING or NONE), the held target's `Dropped` reason (DEAD, GONE, LIMIT) and whether to teleport. `needsReturn` says
+when an idle summon walks back. Tables (`SummonGuardTest`, 5):
+
+| case | result |
+|---|---|
+| directed C (25), damaged A (20, 50 ticks ago), targeting B (10) | C, DIRECTED |
+| damaged A and targeting B | A, DAMAGED (though farther) |
+| targeting B alone | B, TARGETING |
+| a mob that did neither (he only hit it) | none |
+| damaged exactly 100 ticks ago / 101 | taken / forgotten |
+| targeting him at 30 / at 30.01 | taken / not a trigger |
+| two targeting him, the summon nearer the farther one | the one NEAREST TO HIM |
+| a PLAYER or a SUMMON, directed, damaging and targeting | never |
+| held target at 33 from him | dropped LIMIT |
+| held target dead / not among candidates | dropped DEAD / GONE |
+| summon at 48.01 / 48 from him | teleport / not |
+| idle at 8.01 / 8 | walks back / stays |
+
+**Mutations, all red:** MUTPRIO, MUTWINDOW, MUTTRIGGER, MUTNEAREST, MUTSIDE, MUTLIMIT, MUTTELE, MUTRETURN.
+
+**STOPPED HERE, BY THE SEAT'S RULE ("any PR is bigger than it reads ... STOP there with the earlier work pushed").** What
+PR 4 still needs, each a review on its own, proposed as the split:
+- **4b, the server goal:** a Paper `Goal` (keyed in our namespace, O3) that runs the decision each tick, paths with the
+  mob's pathfinder, applies OUR hit by `applyDamageAs(SUMMON, ...)` every `attack_cadence_ticks` in reach, the swing and
+  sound as visuals, the trace lines; and the feed for "damaged him" and "targets him" from the events that exist,
+  with a mob's projectile counted as that mob's. Every server call READ by javap first.
+- **4c, the left click:** the `direct_summon` cast type (core `CastSpec`, schema, its sealed arms), fired through the one
+  left-click path, the first MOB on our ray; the READ of how a client's left click on an entity versus air reaches it.
+- **4d, the selftest steps and lint rules** D8 needs, with their grammar.
+Then PR 5 (the Bone Whistle content and the two bone READs) and the gate, with its SAFETY sum and R rows.
