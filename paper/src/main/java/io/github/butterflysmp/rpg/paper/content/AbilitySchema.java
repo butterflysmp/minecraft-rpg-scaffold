@@ -66,6 +66,8 @@ final class AbilitySchema {
             // VANILLA'S OWN SHOT (2026-11-22): no keys; vanilla draws, loads and shoots. Legal only under a weapon's shot
             // trigger (WeaponDefinition refuses it elsewhere). Its on_hit lands where vanilla's arrow lands.
             case "vanilla"    -> new CastSpec.Vanilla();
+            // THE SUMMON CAST (3a): names a content/summons file; run by the summon service, never by the engine.
+            case "summon"     -> new CastSpec.Summon(s.getString("summon"));
             // `beam` is OPTIONAL and absent means null -- a ray that draws nothing between the
             // muzzle and the impact, which is what solar_lance is and what every ray was before
             // this line. Mirrors `trail` on projectile below, and is validated the same way:
@@ -243,6 +245,7 @@ final class AbilitySchema {
             case CastSpec.Volley ignored -> throw notRepeatable("volley",
                     "each shot would start its own burst and the count would multiply every interval");
             case CastSpec.Orb ignored -> throw notRepeatable("orb", "one orb per caster: a repeated throw replaces itself");
+            case CastSpec.Summon ignored -> throw notRepeatable("summon", "one summon per weapon: a repeated cast replaces itself");
             case CastSpec.Cone ignored -> throw notRepeatable("cone",
                     "a cone already travels over ticks from a line captured at the click; repeating it is a volley of"
                             + " fronts nobody has ruled");

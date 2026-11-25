@@ -152,6 +152,20 @@ public sealed interface CastSpec {
      * anywhere else.
      */
     record Vanilla() implements CastSpec {}
+
+    /**
+     * THE SUMMON CAST (the Summoner slice, 3a; D2 and D6): {@code type: summon} with {@code summon: <id>}, naming a file in
+     * {@code content/summons/}. <b>The engine never executes one.</b> A summon cast is decided by the summon service
+     * BEFORE the cast is charged, because a refusal at the cap (D6) costs no mana and starts no cooldown; the engine's
+     * arm for it throws, so a summon cast that reaches the engine is a wiring defect, named.
+     */
+    record Summon(String summonId) implements CastSpec {
+        public Summon {
+            if (summonId == null || summonId.isBlank()) {
+                throw new IllegalArgumentException("a summon cast must name its summon ('summon: <id>')");
+            }
+        }
+    }
     /**
      * A straight line to the first thing in the way. {@code beam} is a visual id drawn ALONG each
      * chunk-column segment as the ray walks it, or null for a bare ray that draws nothing between
@@ -793,6 +807,8 @@ public sealed interface CastSpec {
             case Cone ignored -> 0;
             // A second throw REPLACES the standing orb (one per caster), so nothing in flight can double up. No floor.
             case Orb ignored -> 0;
+            // A recast REPLACES its summon (D6: one per weapon), so nothing in flight can double up. No floor.
+            case Summon ignored -> 0;
         };
     }
 }

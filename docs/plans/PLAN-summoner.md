@@ -186,3 +186,105 @@ stubs entities: a tagged wolf is SUMMON, an untagged wolf MOB, a tagged player P
 wiring of the damage port, the status port, the three listeners and targeting, each bounded by its own method; and no
 side copy left. **What it cannot do:** fire a listener; that needs a server. **Mutations, all red:** MUTCLASSIFY,
 MUTPLAYERFIRST, MUTGUARD, MUTMELEE, MUTTARGET.
+
+## 3. PR 3a (`feat/summoner-3a`, on #291): THE DEFINITION, THE CAST TYPE AND THE CAP
+
+**The summon file, `content/summons/<id>.yml`** (`SummonLoader`, the only class that knows it; `core/summon/
+SummonDefinition` validates). Keys: `entity`, `name` (`{owner}` is his name), `element`, `health`, `damage`, and D4's six
+numbers, **every one required, no default**: `guard_radius` (8, BEN), `trigger_radius` (30, BEN), `chase_limit` (32,
+SEAT PLACEHOLDER, from the caster), `teleport_back` (48, SEAT PLACEHOLDER), `attack_cadence_ticks` (20, SEAT
+PLACEHOLDER), `damaged_window_ticks` (100, SEAT PLACEHOLDER: how long a mob that damaged him stays a reason). **Refused,
+the file named and skipped:** an unknown entity or element; health or damage not above 0; a missing D4 number; a
+fractional tick count; a `chase_limit` below the `trigger_radius` (the seat's D4: it would make Ben's 30 false); a
+`teleport_back` not beyond the `guard_radius`. **No summon ships:** `content/summons/` does not exist in main. The
+TEST-ONLY fixture is `paper/src/test/resources/fixtures/summons/test_wolf.yml` (the brief's numbers).
+
+**One question for the seat, not decided:** D2 put `element` in the summon file; D3 says the hit is "in the weapon's
+element". The file carries it, as D2 accepted; whether the hit reads the summon's or the weapon's (and whether a
+mismatch is refused) is PR 4's, when the hit is built.
+
+**The cast type `summon`** (`type: summon`, `summon: <id>`; `CastSpec.Summon`). The ENGINE NEVER RUNS ONE: the summon
+service decides the cap before the cast is charged (D6), so `CastExecutor`'s arm throws, naming it a wiring defect. It
+is not repeatable (a volley of summons is refused). Sites the sealed type reached: `AbilitySchema` (parse, repeatable),
+`CastSpec.minimumCooldownTicks` (0: a recast replaces), `CastExecutor` (dispatch, repeat), `WeaponLoreLines` (one
+payload per press), `ContentValidator` (names no visual; the summon id is resolved when 3b wires the registry into the
+boot).
+
+**The cap, `core/summon/SummonCap.decide(weaponId, liveWeaponIds, maxSummons)`** (D6, counted by weapon id):
+
+| live (weapon ids) | max_summons | verdict |
+|---|---|---|
+| none | 1 | NEW |
+| this one | 1 | REPLACE (full cost) |
+| another | 1 | REFUSED_FULL |
+| another | 2 | NEW |
+| another + this one | 2 | REPLACE |
+| another + this one | 1 | REFUSED_FULL (lowered below what lives: others 1 + 1 > 1) |
+| none, or this one | 0 | REFUSED_FULL |
+| any | empty (loading) | REFUSED_UNKNOWN |
+
+`Verdict.charges()` is true only for NEW and REPLACE: a refusal costs no mana and starts no cooldown. The one notice and
+the wiring before the charge are 3b's.
+
+**Tests:** `SummonCapTest` (2), `SummonLoaderTest` (3: the fixture, no shipped summon, every refusal caused and named),
+`SummonCastSchemaTest` (3), `SummonCastEngineTest` (2). **Mutations, all red:** MUTOFFBYONE, MUTOWNCOUNTED, MUTCHARGES,
+MUTEMPTY, MUTREQUIRED, MUTCHASE.
+
+## 4. PR 3b: STOPPED BEFORE THE BODY, ON A D1 READ (2026-11-24)
+
+The seat: "BEFORE 3b's body code, the owed D1 READS, each marked ... If any READ contradicts D1 as ruled, STOP on 3b
+with 3a pushed." All five were read from `run/versions/26.1.2/paper-26.1.2.jar` (mojang-mapped) with javap. **One bears
+on whether a Wolf is the body at all, so 3b is stopped before any body code; nothing of 3b is built.**
+
+**(a) Nothing re-adds goals: READ.** In the whole chain (`Wolf`, `TamableAnimal`, `Animal`, `AgeableMob`,
+`PathfinderMob`, `Mob`), `GoalSelector.addGoal` is called only in `Wolf.registerGoals`, and `registerGoals` only from
+`Mob`'s constructor. `setTame`, `applyTamingSideEffects` and `tame` add none. A body never saved is never reloaded, so
+the constructor never runs again for it. (Paper's own server code re-adding vanilla goals: not read; UNVERIFIED.)
+
+**(b) Never saved, as the orbs' proof: READ.** `Entity.persist` (set by `setPersistent(false)`); `Entity.saveAsPassenger(out,
+a, b, force)` returns false when `persist` is false unless `force`; the one-argument `saveAsPassenger(out)` passes
+`(true, false, false)`, force false. Which other callers force it: UNVERIFIED, as for orbs; D7's tag and sweep is the
+backstop.
+
+**(c) What a goal-less untamed wolf still does each tick: READ.** `Wolf.tick`: the wet SHAKE (sound, particles, a client
+event) and the head tilt while "interested" (set only by `BegGoal`, removed). `Wolf.aiStep`: starts the shake, and calls
+`NeutralMob.updatePersistentAnger`, which reads `getTarget()` and can call `startPersistentAngerTimer` and
+`setPersistentAngerTarget` (the branch conditions not decoded: INFERRED). **So once PR 4 gives it a target, anger can
+start with no goal; with no target goal its effect is the angry LOOK.** Proposal: harmless; or clear it each tick
+(`stopBeingAngry`) if Ben does not want the angry face. The tail's health look reads only when tamed (it is not).
+
+**(d) Which vanilla mobs react to a Wolf BY TYPE: READ** (every class under `net/minecraft/world/entity`, 1125 of
+1125 extracted; the control found the 10 wolf-package classes; each hit read with javap):
+
+| mob | what it does | changes a guard decision? |
+|---|---|---|
+| **AbstractSkeleton** (skeleton, stray, bogged, wither skeleton) | `AvoidEntityGoal<Wolf>`: FLEES it | **YES.** A skeleton targeting him within 30 is a trigger; it runs from the summon, so the chase stretches and past 32 (from him) is dropped. The guard mostly cannot catch archers. |
+| **Llama** (and trader llama) | `LlamaAttackWolfGoal`: ATTACKS it | No decision, but it is hurt by them (MOB -> SUMMON yes) and an attacker of the summon is not a D4 trigger, so it does not fight back unless directed |
+| **Rabbit** | flees it; the killer variant (`setVariant`) TARGETS it | the same as the llama, for a killer rabbit |
+| **Fox** | `AvoidEntityGoal<Wolf>`: flees it | No (not hostile) |
+
+**(e) Attributes: READ.** `Wolf.createAttributes`: movement speed 0.3, max_health 8, attack_damage 4; taming would set
+max_health 40 (cancelled). Proposal: its health is our customHP like any mob's; vanilla max_health left at 8 (the store
+is authoritative); attack_damage set to 0, since our goal applies our damage directly (D3) and a vanilla swing must
+deal nothing even if one fired.
+
+**THE QUESTION FOR THE SEAT AND BEN:** keep the Wolf (skeletons flee it, llamas and killer rabbits hunt it) and accept
+or answer it (cancel the skeleton's avoid by removing nothing of theirs; we cannot without editing every skeleton's
+goals), or choose another body that no vanilla mob reacts to by type. The look is Ben's; the mechanism is the seat's.
+
+**Q1, PROPOSED (not built):** `CombatantHandle.applyDamage` gains an explicit attacker side (an overload); the summon's
+hit passes `SUMMON` with the owner's id as the credit; `refusedBySides` reads the explicit side when given and classifies
+by source id only when not. Test and mutation as ruled.
+
+**Q4, PROPOSED (not decided), with today's READ:** `VanillaDamagePolicy.forCause` REROUTES a tracked mob's FALL, LAVA,
+FIRE, FIRE_TICK, HOT_FLOOR, CAMPFIRE, CONTACT, DROWNING, SUFFOCATION, FREEZE and the rest into its customHP, and PASSES
+KILL and VOID. Proposal: the summon takes NONE of fall, fire, lava, drowning, suffocation (it follows him and teleports
+back; he cannot shield it from terrain), and VOID removes it with the cause `void`. Ben's call on feel.
+
+**D7's lifecycle, as designed (not built):** removal causes and their homes: its death (`EntityDeathEvent`), his death
+(`PlayerDeathEvent`), his quit (`PlayerQuitEvent`), his world change (`PlayerChangedWorldEvent`), a replace (the cast),
+server stop (`onDisable`), the selftest's clear_state, the orphan sweep at enable and at entity-add (`OrbRemovals`'
+pattern, tag after the store owns the body, sweep one tick later), and a backstop (proposed period 20 ticks) removing a
+body the store does not own or whose owner is not online in its world. Trace lines proposed: `SUMMON spawn`, `SUMMON
+target`, `SUMMON hit`, `SUMMON teleport`, `SUMMON removed cause=<death|owner-death|quit|world|replace|stop|clear|orphan|
+backstop|void>`.
