@@ -17,7 +17,6 @@ import java.util.logging.Logger;
  * <pre>
  *   entity: wolf                  # a living entity type, by its key
  *   name: "{owner}'s Wolf"        # what floats over it; {owner} is his name
- *   element: nature               # a known element
  *   health: 100                   # authored; x gear score / 100 at the cast
  *   damage: 20                    # authored; x gear score / 100 at the cast
  *   guard_radius: 8               # BEN
@@ -28,8 +27,8 @@ import java.util.logging.Logger;
  *   damaged_window_ticks: 100     # SEAT PLACEHOLDER
  * </pre>
  *
- * <p>REFUSED, the file named and skipped: an unknown entity or element, a non-positive health or damage, and a missing D4
- * number (every one of the six is required: no default is invented). The entity and element checks are injected so a
+ * <p>REFUSED, the file named and skipped: an unknown entity, an `element:` key (E1: the hit is the WEAPON's element), a non-positive health or damage, and a missing D4
+ * number (every one of the six is required: no default is invented). The entity check is injected so a
  * test can run without a server's registries.
  */
 public final class SummonLoader {
@@ -40,12 +39,10 @@ public final class SummonLoader {
 
     private final Logger log;
     private final Predicate<String> knownEntity;
-    private final Predicate<String> knownElement;
 
-    public SummonLoader(Logger log, Predicate<String> knownEntity, Predicate<String> knownElement) {
+    public SummonLoader(Logger log, Predicate<String> knownEntity) {
         this.log = log;
         this.knownEntity = knownEntity;
-        this.knownElement = knownElement;
     }
 
     /** Every summon in the directory. A directory that does not exist is no summons (none ship in 3a). */
@@ -81,11 +78,10 @@ public final class SummonLoader {
         if (entity == null || !knownEntity.test(entity)) {
             throw new IllegalArgumentException("unknown entity '" + entity + "'");
         }
-        String element = s.getString("element");
-        if (element == null || !knownElement.test(element)) {
-            throw new IllegalArgumentException("unknown element '" + element + "'");
+        if (s.contains("element")) {
+            throw new IllegalArgumentException("declares an element; a summon hits in its WEAPON's element (E1)");
         }
-        return new SummonDefinition(id, entity, s.getString("name", id), element, s.getDouble("health"),
+        return new SummonDefinition(id, entity, s.getString("name", id), s.getDouble("health"),
                 s.getDouble("damage"), s.getDouble("guard_radius"), s.getDouble("trigger_radius"),
                 s.getDouble("chase_limit"), s.getDouble("teleport_back"), s.getInt("attack_cadence_ticks"),
                 s.getInt("damaged_window_ticks"));

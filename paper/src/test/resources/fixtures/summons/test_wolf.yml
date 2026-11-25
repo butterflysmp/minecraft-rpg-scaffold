@@ -3,7 +3,6 @@
 # shapes the shipped summon will carry; it is not the Bone Whistle's file and must not be copied as one.
 entity: wolf
 name: "{owner}'s Wolf"        # SEAT PLACEHOLDER (the old repo's form)
-element: nature               # BEN: "Nature damage"
 health: 100                   # BEN
 damage: 20                    # BEN
 guard_radius: 8               # BEN: "in an 8 block radius"

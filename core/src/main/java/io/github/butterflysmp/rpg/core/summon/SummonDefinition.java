@@ -4,6 +4,9 @@ package io.github.butterflysmp.rpg.core.summon;
  * ONE SUMMON, AS DECLARED IN {@code content/summons/<id>.yml} (D2, the seat's 3a, 2026-11-24). No summon id or weapon id
  * is named in Java; a weapon names its summon by a {@code type: summon} cast.
  *
+ * <p><b>NO ELEMENT HERE (the seat's E1, 2026-11-24):</b> a summon's hit is in the WEAPON's element (D3), so the file
+ * does not carry one and the loader refuses the key, so nobody authors it twice.
+ *
  * <p>The numbers, and whose they are: {@code health} and {@code damage} are the AUTHORED values, scaled by the weapon's
  * gear score at the cast (D3). {@code guardRadius} 8 and {@code triggerRadius} 30 are BEN's (D4). {@code chaseLimit}
  * (32, measured from the CASTER), {@code teleportBack} (48), {@code attackCadenceTicks} (20) and
@@ -13,7 +16,7 @@ package io.github.butterflysmp.rpg.core.summon;
  * <p>(A {@code record} is a small immutable class: Java writes its constructor and getters from the list. The block
  * after the header is the "compact constructor", which runs first and refuses a bad value.)
  */
-public record SummonDefinition(String id, String entity, String name, String element, double health, double damage,
+public record SummonDefinition(String id, String entity, String name, double health, double damage,
                                double guardRadius, double triggerRadius, double chaseLimit, double teleportBack,
                                int attackCadenceTicks, int damagedWindowTicks) {
 

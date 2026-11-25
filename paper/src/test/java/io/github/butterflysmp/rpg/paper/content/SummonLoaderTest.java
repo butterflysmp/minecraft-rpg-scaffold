@@ -34,7 +34,7 @@ class SummonLoaderTest {
             @Override public void flush() {}
             @Override public void close() {}
         });
-        return new SummonLoader(log, Set.of("wolf", "zombie")::contains, Set.of("nature", "fire")::contains);
+        return new SummonLoader(log, Set.of("wolf", "zombie")::contains);
     }
 
     private static final Path FIXTURE = Path.of("src", "test", "resources", "fixtures", "summons", "test_wolf.yml");
@@ -45,7 +45,7 @@ class SummonLoaderTest {
         SummonRegistry r = loader().loadAll(dir.toFile());
         assertEquals(List.of(), warnings);
         SummonDefinition w = r.find("test_wolf").orElseThrow();
-        assertEquals(new SummonDefinition("test_wolf", "wolf", "{owner}'s Wolf", "nature", 100, 20, 8, 30, 32, 48, 20, 100), w);
+        assertEquals(new SummonDefinition("test_wolf", "wolf", "{owner}'s Wolf", 100, 20, 8, 30, 32, 48, 20, 100), w);
     }
 
     @Test
@@ -78,7 +78,7 @@ class SummonLoaderTest {
     @Test
     void eachRefusalIsCausedAndNamed() throws IOException {
         refuses(fixtureWith("entity", "dragonish"), "unknown entity 'dragonish'");
-        refuses(fixtureWith("element", "plasma"), "unknown element 'plasma'");
+        refuses(fixtureWith("entity", "wolf") + "element: nature\n", "declares an element");   // E1
         refuses(fixtureWith("health", "0"), "health must be more than 0");
         refuses(fixtureWith("damage", "-5"), "damage must be more than 0");
         for (String key : SummonLoader.REQUIRED) {
