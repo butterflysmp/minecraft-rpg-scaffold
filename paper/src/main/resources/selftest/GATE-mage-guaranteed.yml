@@ -6,6 +6,9 @@
 # NoAI zombie, at vanilla max 200 (1000 health) or 400 (2000 health) as the row says; nothing here dies. Every row
 # self-contained: it empties his storage, gives a fresh weapon, sets his level to 1 (the level bonus 0; the table row 30),
 # its score 100, its enchant state, mana, a cleared cooldown and a fresh record, turns him and waits before the press, and
+# EXTENDED 2026-11-24 (feat/mage-guaranteed-gate-2): PR B (the Volley Stone deleted) and Mana Burn (F1 to F3) are built;
+# MG2 is REPLACED by MG2R (the seat's gate fix: the vanilla wallet staged by the vanilla command), and MB1 to MB5 read
+# Mana Burn. PR B's rows are R1b and R1c in the gate file (the jar and the boot log).
 # probes only its own mobs, in reach.
 setup:
   - pad: ""
@@ -82,13 +85,15 @@ MG1:
   - cmd: "rpg enchant rollstats 500"
   - wait: 2
 
-# MG2: THE FIX, THROUGH THE TABLE. The Lapis Staff's slot 0 staged as a roll makes it (Polished Scepter first, locked; Lapis
-# Crystal beside it, bought at I and active). A left click throws (ORB rest). Then the table: Polished Scepter clicked
-# (UNLOCK: 352 XP, active); the left click throws nothing. Then Lapis Crystal clicked (ACTIVATE: no XP); it throws again.
-# clear_state between the throws clears the crystal's own 600-tick cooldown and removes the orb (cause=selftest).
-MG2:
-  - cmd: "rpg playerxp set @s 30 levels"
-  - wait: 40
+# MG2 WAS REPLACED BY MG2R, 2026-11-24 (the seat's gate fix): MG2 set "rpg playerxp set @s 30 levels", which writes the RPG
+# profile's lifetime XP and NOT the vanilla bar the table charges (READ: EnchantMenu's wallet is XpCurve.totalPoints(
+# getLevel(), getExp()); RpgCommand.playerXp writes ProfileService.setLifetimeXp and nothing else), so it leaned on his
+# own vanilla wallet. MG2R stages that wallet by the vanilla command that sets it (the run's snapshot restores it, READ:
+# SelfTestSnapshot writes back setLevel and setExp) and reads it with "xp query" (READ by javap: levels is
+# experienceLevel, points is floor(experienceProgress x getXpNeededForNextLevel())).
+# MG2R: THE FIX, THROUGH THE TABLE, ON A STAGED WALLET. Wallet 1395 (level 30, 0 into it); the unlock costs 352; 1043
+# after it (level 26, 46 into it: progress 0.5 of 92); the activate costs nothing.
+MG2R:
   - clear_inventory: ""
   - clear_state: ""
   - cmd: "rpg give lapis_staff"
@@ -105,8 +110,12 @@ MG2:
   - cmd: "rpg enchant show"
   - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
   - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "xp set @s 30 levels"
+  - cmd: "xp set @s 0 points"
+  - wait: 2
+  - cmd: "xp query @s levels"
+  - cmd: "xp query @s points"
   - wait: 20
-  - probe_self: ""
   - reload: ""
   - wait: 20
   - clear_state: ""
@@ -120,9 +129,10 @@ MG2:
   - dump: menu
   - close: ""
   - wait: 2
+  - cmd: "xp query @s levels"
+  - cmd: "xp query @s points"
   - hold: lapis_staff
   - cmd: "rpg enchant show"
-  - probe_self: ""
   - cmd: "rpg mana refill"
   - reload: ""
   - wait: 20
@@ -136,9 +146,10 @@ MG2:
   - dump: menu
   - close: ""
   - wait: 2
+  - cmd: "xp query @s levels"
+  - cmd: "xp query @s points"
   - hold: lapis_staff
   - cmd: "rpg enchant show"
-  - probe_self: ""
   - cmd: "rpg mana refill"
   - reload: ""
   - wait: 20
@@ -463,3 +474,201 @@ MG11:
   - cmd: "rpg enchant clear"
   - wait: 2
   - dump: held
+
+# ---- MANA BURN (F1 to F3) AND THE GATE FIX, ADDED 2026-11-24 ON feat/mage-guaranteed-gate-2 ----
+# Every mob that can die scorched stands 6 east of him or further: Ignite's box is a half-width of 4 round the corpse, so he
+# is outside it on the x axis, and Ignite skips every player anyway (READ, Ignite.detonate). Every row ends by killing its
+# mobs and waiting 30 ticks, so an Ignite of a scorched mob killed there lands on nobody before the next row's summons.
+
+# MB1: THE POOLS. A FRESH roll of each fire weapon: slot 1 (the unique pool) shown, then 500 rolls tallied. No mob.
+MB1:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant rollstats 500"
+  - clear_inventory: ""
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant rollstats 500"
+  - clear_inventory: ""
+  - cmd: "rpg give blaze_kings_staff"
+  - wait: 2
+  - hold: blaze_kings_staff
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant rollstats 500"
+  - clear_inventory: ""
+  - cmd: "rpg give dragons_breath"
+  - wait: 2
+  - hold: dragons_breath
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant rollstats 500"
+  - wait: 2
+
+# MB2: THE SCORCH TICK WITHOUT THE ENCHANT. One Flint Staff bolt at m, a default zombie (vanilla max 20: 100 health), 6 out.
+# sent = (20 x 100/100) x 1.0 + 0 + 0 = 20, x 1.0 x 1.0; each tick min(5% of 100, 0.5 x 20) x 1.0 = min(5, 10) = 5.
+MB2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["m","selftest"]}'
+  - wait: 40
+  - probe: m
+  - use: right_click
+  - wait: 160
+  - probe: m
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 30
+
+# MB3: THE SCORCH TICK WITH MANA BURN III. The same, slot 1 Mana Burn at III, active: each tick min(5, 10) x (1 + 30/100)
+# = 6.5 (EXECUTED); the cap stays 10.
+MB3:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant candidate 1 mana_burn"
+  - cmd: "rpg enchant level 1 0 3"
+  - cmd: "rpg enchant active 1 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["m","selftest"]}'
+  - wait: 40
+  - probe: m
+  - use: right_click
+  - wait: 160
+  - probe: m
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 30
+
+# MB4a: ONE IGNITE WITH THE STAMP. v (1000 health) 6 east takes a Mana Burn III bolt and is scorched; 50 ticks on it is
+# killed by command (the death listener's domain), so it dies scorched WITH the stamp; 20 ticks later its Ignite reaches b
+# (1000 health), 2 blocks south of v: 6 x (1 + 30/100) = 7.8. b is probed 25 ticks after the kill, before its own burn ticks.
+MB4a:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant candidate 1 mana_burn"
+  - cmd: "rpg enchant level 1 0 3"
+  - cmd: "rpg enchant active 1 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["v","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6 ~ ~2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["b","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: b
+  - use: right_click
+  - wait: 50
+  - probe: v
+  - cmd: "kill @e[tag=v]"
+  - wait: 25
+  - probe: b
+  - wait: 40
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 30
+
+# MB4b: THE SAME IGNITE WITHOUT THE STAMP: no enchant, so b takes Ignite's 6.
+MB4b:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["v","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6 ~ ~2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["b","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: b
+  - use: right_click
+  - wait: 50
+  - probe: v
+  - cmd: "kill @e[tag=v]"
+  - wait: 25
+  - probe: b
+  - wait: 40
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 30
+
+# MB5: AN UNENCHANTED HIT CLEARS THE STAMP. v takes a Mana Burn III bolt (its ticks 13); the enchant is cleared and a plain
+# bolt refreshes the scorch (its ticks 10: the stamp follows the newest applier); then v is killed and its Ignite gives b 6.
+MB5:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant candidate 1 mana_burn"
+  - cmd: "rpg enchant level 1 0 3"
+  - cmd: "rpg enchant active 1 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["v","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6 ~ ~2 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["b","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: b
+  - use: right_click
+  - wait: 50
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - clear_state: ""
+  - cmd: "rpg mana refill"
+  - use: right_click
+  - wait: 50
+  - probe: v
+  - cmd: "kill @e[tag=v]"
+  - wait: 25
+  - probe: b
+  - wait: 40
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 30

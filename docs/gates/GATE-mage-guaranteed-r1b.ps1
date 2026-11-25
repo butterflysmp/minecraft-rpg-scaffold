@@ -1,0 +1,63 @@
+# GATE-mage-guaranteed R1b (the extension, 2026-11-24): the deployed jar carries PR B, F1, F2, F3 and the extension, and NO
+# entry of it names volley_stone. Prediction: before '--- absent', 22 PRESENT and 0 ABSENT; between '--- absent' and
+# '--- controls', 7 ABSENT and 0 PRESENT; after '--- controls', 5 ABSENT and 0 PRESENT.
+# Run: powershell -File <this> [-JarPath <jar>]
+param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $JarPath))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+function ValueLine($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + '([ \t]*\r?$|[ \t]+#)')) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+function Has($text, $s, $label) { if ($text -ne $null -and $text.Contains($s)) { "PRESENT $label '$s'" } else { "ABSENT  $label '$s'" } }
+function Entry($name) { if ($zip.GetEntry($name) -ne $null) { "PRESENT entry '$name'" } else { "ABSENT  entry '$name'" } }
+# THE WHOLE-JAR SWEEP: every entry's bytes (class constant pools and resources alike) searched for the token.
+function Sweep($token) { $n = 0; foreach ($e in $zip.Entries) { if ($e.Length -eq 0) { continue }; $t = Bytes $e.FullName; if ($t -ne $null -and $t.Contains($token)) { $n++ } }; if ($n -gt 0) { "PRESENT sweep '$token' in $n entries" } else { "ABSENT  sweep '$token' in 0 of $($zip.Entries.Count) entries" } }
+$mb = Bytes 'content/enchants/mana_burn.yml'
+$lc = Bytes 'content/loot/cascade.yml'
+$lr = Bytes 'selftest/GATE-loot-roll.yml'
+$g = Bytes 'selftest/GATE-mage-guaranteed.yml'
+$ha = Bytes 'io/github/butterflysmp/rpg/core/combat/HitAccrual.class'
+$bh = Bytes 'io/github/butterflysmp/rpg/core/ability/effect/BehaviourHits.class'
+$ig = Bytes 'io/github/butterflysmp/rpg/core/combat/Ignite.class'
+$ss = Bytes 'io/github/butterflysmp/rpg/paper/adapter/ScorchStatus.class'
+$ds = Bytes 'io/github/butterflysmp/rpg/paper/adapter/DotStatus.class'
+$rl = Bytes 'io/github/butterflysmp/rpg/paper/listener/RpgListeners.class'
+$el = Bytes 'io/github/butterflysmp/rpg/paper/content/EnchantLoader.class'
+$ef = Bytes 'io/github/butterflysmp/rpg/paper/weapon/EnchantEffectLine.class'
+$detonate = '(Lio/github/butterflysmp/rpg/core/combat/CombatWorld;Lio/github/butterflysmp/rpg/core/Vec3;Ljava/util/UUID;Ljava/util/UUID;ID)V'
+ValueLine $mb 'effect: scorch_boost' 'mana_burn.yml'
+ValueLine $mb 'class: mage' 'mana_burn.yml'
+ValueLine $mb 'element: fire' 'mana_burn.yml'
+ValueLine $mb '  percent_by_level: [10, 20, 30]' 'mana_burn.yml'
+ValueLine $lc '      legendary: [blaze_kings_staff, dragons_breath, dragons_plume]' 'cascade.yml'
+ValueLine $lr '  - probe_inventory: "dragons_plume"' 'GATE-loot-roll.yml'
+ValueLine $g 'MG2R:' 'GATE-mage-guaranteed.yml'
+ValueLine $g 'MB1:' 'GATE-mage-guaranteed.yml'
+ValueLine $g 'MB4a:' 'GATE-mage-guaranteed.yml'
+ValueLine $g 'MB5:' 'GATE-mage-guaranteed.yml'
+ValueLine $g '  - cmd: "xp set @s 30 levels"' 'GATE-mage-guaranteed.yml'
+Has $ha 'scorchStampPercent' 'HitAccrual.class'
+Has $bh 'scorchStamp' 'BehaviourHits.class'
+Has $ss 'stamps' 'ScorchStatus.class'
+Has $ss 'tickFactor' 'ScorchStatus.class'
+Has $ds 'tickFactor' 'DotStatus.class'
+Has $ig $detonate 'Ignite.class'
+Has $rl $detonate 'RpgListeners.class'
+Has $el 'scorch_boost' 'EnchantLoader.class'
+Has $ef 'Scorch and Ignite damage' 'EnchantEffectLine.class'
+Entry 'content/enchants/mana_burn.yml'
+Sweep 'boltor'
+'--- absent'
+Entry 'content/weapons/volley_stone.yml'
+Entry 'content/visuals/volley_beam.yml'
+Entry 'content/visuals/volley_cast.yml'
+Sweep 'volley_stone'
+Sweep 'volley_beam'
+Sweep 'volley_cast'
+ValueLine $g 'MG2:' 'GATE-mage-guaranteed.yml'
+'--- controls'
+ValueLine $lc '      exotic: [volley_stone]' 'cascade.yml CONTROL-OLD'
+ValueLine $lr '  - probe_inventory: "volley_stone"' 'GATE-loot-roll.yml CONTROL-OLD'
+ValueLine $mb '  percent_by_level: [10, 20, 3' 'mana_burn.yml CONTROL-PREFIX'
+ValueLine $g 'MB6:' 'GATE-mage-guaranteed.yml CONTROL-NONE'
+Has $ig '(Lio/github/butterflysmp/rpg/core/combat/CombatWorld;Lio/github/butterflysmp/rpg/core/Vec3;Ljava/util/UUID;Ljava/util/UUID;DI)V' 'Ignite.class CONTROL-SWAPPED'
+$zip.Dispose()

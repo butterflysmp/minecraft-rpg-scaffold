@@ -7,6 +7,16 @@
 `volley_stone` carve-out. **No boot until Ben says "ready" in his own words and the seat approves the code and this gate
 from origin.** The booter's checklist is `.claude/rules/booting.md`.
 
+> **DATED NOTE, 2026-11-24, `feat/mage-guaranteed-gate-2` (the seat's rulings of the same day): EXTENDED, STILL NOT RUN.**
+> PR B and PR F were RULED and are BUILT on this gate's branch: #280 `feat/volley-stone-deleted` (PR B), #281
+> `feat/mana-burn-stamp` (F1), #282 `feat/mana-burn-damage` (F2), #283 `feat/mana-burn-content` (F3), and this extension
+> on top. **The stack top is now `feat/mage-guaranteed-gate-2`, so the boot reads R1a to R1e (below R0), predicted
+> against a jar built from it; R0a to R0e stay as written and are NOT read** (their jar is not the stack top). **MG2 is
+> REPLACED by MG2R** (the seat's gate fix; MG2's steps are gone from the scenario). **New rows MB1 to MB5** read Mana
+> Burn. PR B's rows are **R1b's jar sweep** (no `volley_stone` in the jar) and **R1c's WARN count** (none). Every
+> sentence above this note that says PR B or PR F is STOPPED, or that R0c keeps the carve-out, is the record of the
+> first draft. **One typed command** now (the run sheet). The whole run: see *HOW LONG THE RUN IS*.
+
 `/rpg selftest mage-guaranteed`. **SURVIVAL, every row. ALL AUTO, no ASK:** every reading is a server line (CMD, REPLY,
 PLAYERHIT, DOTTICK, VOLLEYSHOT, ORB, PROBE, SLOT, MENU); no row's prediction is something only a client can show.
 
@@ -34,6 +44,15 @@ Verbatim, all of them, in `PLAN-enchant-columns.md` section 20 (*Ben's words of 
   (`EnchantMenu` reads `XpCurve.totalPoints(getLevel(), getExp())`). MG2 reads the wallet before and after with
   `probe_self`, so the row is read either way; its 352 is the price, not the wallet.
 
+  > **DATED NOTE, 2026-11-24 (the seat's gate fix): READ, AND IT DOES NOT; AND THE SENTENCE ABOVE WAS WRONG TWICE.**
+  > `rpg playerxp` (`RpgCommand.playerXp`) writes the RPG profile's lifetime XP (`ProfileService.setLifetimeXp`) and
+  > nothing else; nothing in `paper/src/main/java` mirrors it onto the vanilla bar (`setLevel`/`setExp` are written only by
+  > the anvil, the table, the grindstone and the selftest snapshot, READ by `git grep`). **The table charges the vanilla
+  > bar** (`EnchantMenu`: `XpCurve.totalPoints(viewer.getLevel(), viewer.getExp())`, written back by `setLevel`/`setExp`).
+  > So in MG2 `rpg playerxp set @s 30 levels` did nothing for the wallet: it set his RPG level to 30, which MG2 reads
+  > nowhere. **And `probe_self` prints no wallet at all** (`SELF customHP=… at=… onGround=… fall=…`, READ
+  > `SelfTestDrivers.probeSelf`), so "MG2 reads the wallet … with `probe_self`" was false. **MG2R replaces it.**
+
 ## THE DAMAGE SUMS (`verification.md`, *A DAMAGE PREDICTION NAMES EVERY TERM*)
 
 `sent = (((amount + TUNE) x score / 100) x enchantMultiplier + classDamageBonus + weaponLevelDamage) x chargeScale x
@@ -49,6 +68,17 @@ Every mob is a frozen NoAI zombie: it attacks nothing. His own shots strike mobs
 skip the caster; a Knell beam pierces mobs, never him). Ignite skips every player (READ). Scorch burns only what his hits
 scorched. **Sum on him: 0.** He stands on the pad's stand point for every row; MG8 and MG10 turn him in place (`tp` with a
 facing, no move).
+
+> **DATED NOTE, 2026-11-24 (the extension): THE MANA BURN ROWS, AND THE SUM ON HIM IS STILL 0.** Every mob that can
+> die scorched there (`m` in MB2 and MB3, which are predicted to live; `v` in MB4a, MB4b and MB5, killed by command; `b`,
+> which an Ignite scorches; and every mob killed by a row's closing `kill`) stands **6 east of him or further** (`b` at 6
+> east, 2 south). **Ignite cannot hurt a player at any distance: READ, `Ignite.detonate`, whose loop over
+> `world.combatantsNear(at, RADIUS)` does `if (c.state().player()) continue;` before `applyDamage`**, a check F2 leaves
+> untouched (pinned, `ManaBurnIgniteTest.aStampedBlastStillSparesAPlayer`). And independently of that skip, he is outside
+> every blast: `combatantsNear` is a box of half-width 4 round the corpse (READ, plan section 25), and he is 6 out on the x
+> axis. A Flint Staff bolt strikes mobs only; scorch burns only what his hits scorched. **Sum on him: 0.** Each MB row ends
+> by killing its mobs and waiting 30 ticks, so an Ignite from a scorched mob killed there (20 ticks after the kill) lands
+> before the next row summons anything.
 
 ## CARRIED STATE (CC, IN THIS ORDER) — A CHECKLIST, EACH LINE TICKED IN THE REPORT, NOT REMEMBERED
 
@@ -70,6 +100,24 @@ facing, no move).
 
 He logs in only after he is told R0 PASSED; he stands anywhere (the setup moves him to the pad); he types the first two,
 waits for `SELFTEST mage-guaranteed END`, then `/stop`.
+
+> **DATED NOTE, 2026-11-24 (the extension; the seat: "keep it to one typed command"): ONE TYPED COMMAND.** `/rpg
+> mobtrace on` is dropped: the scenario's own `trace: on` (setup) flips the same switch (READ, `SelfTestDrivers.trace`:
+> `if (!run.nameplates().tracing()) run.nameplates().toggleTrace()`, the switch PLAYERHIT and DOTTICK are logged under).
+> He is told **R1** passed (not R0), then types
+>
+> ```
+> /rpg selftest mage-guaranteed
+> ```
+>
+> waits for `SELFTEST mage-guaranteed END`, and types `/stop` (the after-run step, not part of the run).
+
+## HOW LONG THE RUN IS
+
+**The waits alone sum to 2713 ticks, 135.65 seconds** (`awk '/^  - wait: /{s+=$3} END {print s}'` over the scenario, at
+this branch). Every other step costs at least one tick and there are 452 of them (582 steps less 130 waits: `grep -c` of `^  - ` and of `^  - wait: ` over the scenario), and
+twelve of them tally 500 rolls each; **so about 2.5 to 3 minutes in all (an ESTIMATE: the per-step cost is not
+measured).** The run's own `SELFTEST mage-guaranteed START` and `END` lines give the real figure.
 
 ## R0 — THE BUILD. READ IT FIRST. IF ANY R0 FAILS, STOP
 
@@ -106,6 +154,62 @@ ABSENT.
 
 One `FIGHTWORLD sweep path=…\rpgfight folders=0`, no `deleting`, no `orphan`.
 
+## R1 — THE BUILD OF THE EXTENDED STACK (2026-11-24). THE BOOT READS THESE, NOT R0. IF ANY R1 FAILS, STOP
+
+**The stack top is `feat/mage-guaranteed-gate-2`.** The jar carries PR A, C, D, E, the first gate commit, PR B (#280), F1
+(#281), F2 (#282), F3 (#283) and this extension. The carried state's step 5 reads `feat/mage-guaranteed-gate-2`.
+
+### R1a — the build line names the new stack top's head, clean
+
+| prediction | instrument | READING |
+|---|---|---|
+| `[Rpg] Build: <sha>`, `<sha>` being `feat/mage-guaranteed-gate-2`'s head as `git ls-remote --heads origin feat/mage-guaranteed-gate-2` prints it, shortened. **Not `-dirty`, not `unknown`.** | `Select-String -Path run\logs\latest.log -Pattern '\[Rpg\] Build:'` on THIS boot's log | |
+
+### R1b — the jar carries B, F1 to F3 and the extension, AND NO ENTRY NAMES `volley_stone` (PR B's jar row)
+
+The scan is `docs/gates/GATE-mage-guaranteed-r1b.ps1`, committed beside this file. **The prediction, line for line:**
+before `'--- absent'`, **22 `PRESENT`, 0 `ABSENT`**; between `'--- absent'` and `'--- controls'`, **7 `ABSENT`, 0
+`PRESENT`**; after `'--- controls'`, **5 `ABSENT`, 0 `PRESENT`**. Counted from the script: `Select-String -Path <script>
+-Pattern '^(ValueLine|Has|Entry|Sweep) '` gives 34 (22 + 7 + 5).
+
+- **PR B's row, "no `volley_stone` in the jar":** `Sweep 'volley_stone'` reads EVERY entry of the jar (each class's
+  constant pool and each resource) and prints `ABSENT sweep 'volley_stone' in 0 of <n> entries`; the same for
+  `volley_beam` and `volley_cast`; and the three files' entries are absent. **Its positive control is `Sweep 'boltor'`,
+  in the first section: the same function over the same jar must print `PRESENT … in <k> entries`**, so a sweep that reads
+  nothing cannot pass as absence. (Comments do not reach a class file; the shipped YAML comments that named the stone
+  were reworded on #280.)
+- The F2 rows read `Ignite.detonate`'s new descriptor, `(…UUID;UUID;ID)V` (an int depth, then the double stamp), in
+  `Ignite.class` and at its call site in `RpgListeners.class`; the control is the swapped `DI`, absent.
+
+### R1c — every Loaded line, and NO `[Rpg]` WARN AT ALL (PR B's WARN row)
+
+- `[Rpg] Loaded 11 abilities, 44 visuals, 5 statuses, 7 elements, 23 enchants, …, 23 weapons, …`: against `c1ebabab`,
+  **visuals 46 → 44** (the stone's two moved to test fixtures), **enchants 16 → 23** (the five cast tunes, `wildfire`,
+  `mana_burn`), **weapons 24 → 23** (the stone); every other count as on `c1ebabab`. Recounted by `ls` over
+  `paper/src/main/resources/content/{visuals,enchants,weapons}` at this branch: 44, 23, 23.
+- `[Rpg] Loaded loot 'cascade': default exotic 1.00% (truly 1.000%), legendary 3.00% (truly 2.970%), epic 8.00% (truly
+  7.682%), rare 12.00% (truly 10.602%), uncommon 20.00% (truly 15.549%), common 40.00% (truly 24.879%), nothing truly
+  37.318%; 1 sources [dev_example_not_a_drop]`, **word for word as before PR B** (`LootLoaderTest` asserts it verbatim,
+  green on `b68ad67b` and on #280: the line prints the tiers and source names, not the pools).
+- **THE WARN COUNT: 0.** `(Select-String -Path run\logs\latest.log -Pattern 'WARN\]: \[Rpg\]').Count` reads **0**, up to
+  the first `joined the game` and in the whole log. **Its positive control:** `(Select-String -Path run\logs\latest.log
+  -Pattern 'INFO\]: \[Rpg\] Loaded').Count` reads 1 or more on the same log, so the pattern's shape matches this log's
+  lines. **Why 0 and not "beyond the known pair":** the pair was the stone's (`verification.md`'s R0c clause carries its
+  dated note on #280); the last boot (`GATE-focused-beam.md` R0c, AS PREDICTED) printed only that pair; and the shipped
+  weapons now validate with no warning (`VolleyFixtureTest.theShippedWeaponsValidateWithNoWarning…`). **A warning from
+  another loader would be new, and R1c stops the boot on it.**
+- No `Refusing`, `Skipping`, `SEVERE`, `Exception`, `Dev-only`, `currently prevented`.
+
+### R1d — every scenario loaded
+
+Exactly one **`[Rpg] Selftest: dev server, 396 scenarios across 47 gates [melee-cell, …, focused-beam, mage-guaranteed]`**
+(recount: 47 files, 443 keys, 47 setups; `SelfTestScenariosTest`, whose control is 437 - 1 + 7 = 443). The controls: `390
+scenarios` and `397 scenarios` ABSENT.
+
+### R1e — the orphan sweep with nothing staged
+
+As R0e: one `FIGHTWORLD sweep path=…\rpgfight folders=0`, no `deleting`, no `orphan`.
+
 ## THE ROWS
 
 Each row's lines are those between `SELFTEST mage-guaranteed <row> START` and its `DONE`. Every row starts from cleared
@@ -137,6 +241,36 @@ not predicted here (unchanged code).
 | the table, `click: "Polished Scepter"` | a REPLY naming Polished Scepter now active at I and a spend of **352** XP; the MENU dump after it shows slot 0's active line on Polished Scepter; `probe_self`'s wallet **352 points** below its reading before the table |
 | `reload` | **no `ORB rest` line** in the row between this `reload` and the next `clear_state`: the granted left click is gone (Lapis Crystal inactive) |
 | the table, `click: "Lapis Crystal"` | a REPLY `Lapis Crystal is now active.`; **no spend**: `probe_self`'s wallet equal to its reading after the first click |
+| `reload` | one `ORB rest` line again |
+
+> **DATED NOTE, 2026-11-24 (the seat's gate fix): MG2 IS REPLACED BY MG2R AND ITS STEPS ARE GONE FROM THE SCENARIO.** It
+> leaned on his own wallet: `rpg playerxp set @s 30 levels` writes his RPG lifetime XP, not the vanilla bar the table
+> charges (READ, *WHAT WAS READ*), and its `probe_self` reads printed no wallet. Not read; kept as the record.
+
+### MG2R — THE FIX, THROUGH THE TABLE, ON A STAGED WALLET (the Lapis Staff)
+
+**READ:** the table's wallet is the VANILLA bar (`EnchantMenu`: `XpCurve.totalPoints(viewer.getLevel(), viewer.getExp())`,
+and the spend written back by `setLevel` / `setExp`). **Staged by the vanilla command that sets exactly that:** `xp set @s 30
+levels` (`setExperienceLevels`) then `xp set @s 0 points` (`setExperiencePoints`; READ by javap, `ExperienceCommand$Type`).
+**Read by `xp query`** (READ by javap: `levels` is `experienceLevel`; `points` is `Mth.floor(experienceProgress x
+getXpNeededForNextLevel())`, the points INTO the level), whose REPLY is the vanilla `commands.experience.query.*` text, as
+`GATE-dragon-shot.md` SH9 read it (`… experience points` / `… experience levels`). **The run's snapshot restores his bar**
+(READ, `SelfTestSnapshot`: `setLevel(vanillaLevel)`, `setExp(vanillaProgress)`, captured at the run's start). **No `rpg
+playerxp` in the row: it did nothing there.** EXECUTED (jshell on `core/target/classes`, 2026-11-24):
+`XpCurve.totalPoints(30, 0f)` = **1395**; 1395 - 352 = **1043**; `levelFor(1043)` = **26**, `progressFor(1043)` = **0.5**,
+of 92 (`5 x 26 - 38`) to the next, so `xp query … points` reads floor(0.5 x 92) = **46**; `totalPoints(26, 0.5f)` = 1043
+back.
+
+| step | prediction |
+|---|---|
+| staged | `rpg enchant show`: slot 0 `polished_scepter` (0), `lapis_crystal` (I, ACTIVE) |
+| the wallet, before | REPLY **`… has 30 experience levels`** and **`… has 0 experience points`**: **1395 points** (`totalPoints(30, 0)`) |
+| `reload` | one `ORB rest owner=<him> …` line (the crystal thrown) |
+| the table, `click: "Polished Scepter"` | a REPLY naming Polished Scepter now active at I, and a spend of **352** XP; the MENU dump after it shows slot 0's active line on Polished Scepter |
+| the wallet, after the unlock | REPLY **`… has 26 experience levels`** and **`… has 46 experience points`**: **1043 points** = 1395 - 352 |
+| `reload` | **no `ORB rest` line** in the row between this `reload` and the next `clear_state`: the granted left click is gone |
+| the table, `click: "Lapis Crystal"` | a REPLY `Lapis Crystal is now active.`; no spend |
+| the wallet, after the activate | REPLY **`… has 26 experience levels`** and **`… has 46 experience points`**: unchanged, 1043 |
 | `reload` | one `ORB rest` line again |
 
 ### MG3 — LARGE SPARKS III, ONE FLINT STAFF BOLT
@@ -224,7 +358,79 @@ The Flint Staff's lines as `golden-lore.txt`'s `flint_staff` block on this branc
 magicians learned you could`** / **`create fire by flinging mana into flint.`**; the Cursed Emerald's as its block, with
 **`Channel, then loose three`** and **`Kinetic Damage: 27 x 3`**. No enchant line (each fresh, enchant state cleared).
 
+## THE MANA BURN ROWS (the extension, 2026-11-24)
+
+**The sums, every term** (`verification.md`, *A DAMAGE PREDICTION NAMES EVERY TERM*). A Flint Staff bolt:
+`sent = ((20 + TUNE) x score/100) x enchantMultiplier + classDamageBonus + weaponLevelDamage) x chargeScale x
+critMultiplier x WILDFIRE` = **((20 + 0) x 100/100) x 1.0 + 0 + 0, x 1.0 x 1.0 x 1.0 = 20.000** (40.000 the second allowed
+reading, a crit). TUNE 0: slot 0 holds `large_sparks` at **level 0** where staged (the lint requires slot 0 before slot
+1; a level-0 candidate acts on nothing, B2); WILDFIRE 1.0 (not the Lantern). **A scorch tick:** `min(5% x max, cap) x (1 +
+STAMP/100)`, the cap `0.5 x` the hit without its crit = **10** (a crit does not move it), STAMP **30** at Mana Burn III and
+**0** without; the cap itself is NOT multiplied (the seat's ruling). **An Ignite:** `6 x (1 + STAMP/100)` on every mob in
+its box but the corpse; its own scorch on a bystander has cap `0.5 x` that and NO stamp. EXECUTED (jshell, 2026-11-24):
+`5.0 x 1.3` = **6.5**; `10.0 x 1.3` = **13.0**; `6.0 x 1.3` = **7.800000000000001** (`%.3f` 7.800); its half
+**3.9000000000000004** (3.900); `1000 - 7.800000000000001` = **992.2** (992.200). **Health readings** (`PROBE … customHP=`)
+assume no defence on a frozen zombie, as MG3 does (INFERRED, unread); **the DOTTICK and PLAYERHIT lines are the rows'
+readings, and they are written before any defence.** A default zombie (vanilla max 20) is **100** health and one at vanilla
+max 200 is **1000**: the ratio `GATE-breacher-rework.md` LL9R2 read (its S, a default zombie, "100 health", READ there).
+
+### MB1 — THE POOLS: SLOT 1 OF EACH FIRE WEAPON, AND 500 ROLLS
+
+| weapon | `rpg enchant show`, slot 1 | `rollstats 500`, slot 1 |
+|---|---|---|
+| flint_staff | `mana_burn`, level 0, not active | 1 candidate in all 500 |
+| living_lantern | `mana_burn` | 1 in all 500 |
+| blaze_kings_staff | `mana_burn` | 1 in all 500 |
+| dragons_breath | **empty** (fire, but RANGER: the class filter's control) | 0 in all 500 |
+
+**Why exact:** each fire mage weapon's unique pool is `[mana_burn]` alone (`ManaBurnContentTest`,
+`UniqueSlotContentTest`), and the cascade's last tier always lands 1 of a pool of 1 (`CandidateCascade.count`, READ). Slot
+0 as MG1 reads it (the guaranteed `large_sparks`; the Lantern's `wildfire` and `airburst_flames`; Blaze King's Staff
+empty).
+
+### MB2 — A SCORCH TICK WITHOUT THE ENCHANT, ON A 100-HEALTH MOB
+
+`m`, a default zombie, 6 east. `probe m` before: **`customHP=100.000/100.000`**. One `PLAYERHIT … source=flint_staff/right_click
+… sent=20.000` (40.000 a crit). Then **six `DOTTICK … status=scorch applier=<him> sent=5.000 cap=10.000`** on `m`: each
+`min(5% x 100, 10) x (1 + 0/100) = min(5, 10) x 1.0 = 5.000`. `probe m` after: **50.000/100.000** = 100 - 20 - 6 x 5 (30.000
+a crit). `m` lives (no Ignite).
+
+### MB3 — THE SAME TICK WITH MANA BURN III
+
+The same staging, slot 1 `mana_burn` at III, active. `probe m` before 100.000/100.000. One `PLAYERHIT … sent=20.000` (the
+stamp does not touch the hit). Then **six `DOTTICK … sent=6.500 cap=10.000`**: `min(5, 10) x (1 + 30/100) = 5 x 1.3 =
+6.500`; **the cap reads 10.000, unchanged.** `probe m` after: **41.000/100.000** = 100 - 20 - 6 x 6.5 (21.000 a crit). `m`
+lives.
+
+### MB4a — ONE IGNITE FROM A MOB THAT DIES SCORCHED WITH THE STAMP
+
+`v` (1000 health) 6 east, `b` (1000 health) **6 east and 2 south: 2 blocks from `v`, inside the Ignite's box (half-width 4)**,
+and off the bolt's line. Mana Burn III. `probe b` before **1000.000/1000.000**. One `PLAYERHIT` on `v`, `sent=20.000`;
+every `DOTTICK` on `v` before the kill reads **`sent=13.000 cap=10.000`** (5% of 1000 is 50, so the cap of 10 binds, and
+the stamp multiplies the SETTLED tick: `min(50, 10) x 1.3 = 13.000`). `probe v` just before the kill: alive, `fireTicks` above 0. `v` is killed by command 50 ticks after the press
+(the death listener's domain: it dies SCORCHED). 25 ticks after the kill, **`probe b` reads `992.200/1000.000`** = 1000 -
+6 x (1 + 30/100) = 1000 - 7.8. **Then `b`'s own burn, from the blast: every `DOTTICK` on `b` reads `sent=3.900 cap=3.900`**
+(cap `0.5 x 7.8`; its stamp 0, so `min(50, 3.9) x 1.0`). No PLAYERHIT for the blast (an Ignite is not an ability hit).
+
+### MB4b — THE SAME IGNITE WITHOUT THE STAMP
+
+No enchant. One `PLAYERHIT` on `v`, `sent=20.000`; every `DOTTICK` on `v` reads **`sent=10.000 cap=10.000`**. **`probe b`
+after: `994.000/1000.000`** = 1000 - 6 x 1.0. `b`'s burn: **`sent=3.000 cap=3.000`**. **Against MB4a: 6 against 7.8**, and
+3.000 against 3.900.
+
+### MB5 — AN UNENCHANTED HIT CLEARS THE STAMP
+
+As MB4a's staging, Mana Burn III. First `PLAYERHIT` on `v`, `sent=20.000`; its `DOTTICK` lines **`sent=13.000
+cap=10.000`**. Then `rpg enchant clear` (the `rpg enchant show` after it shows no active enchant), `clear_state` (his
+cooldown), and a second, plain bolt: a second `PLAYERHIT` on `v`, `sent=20.000`. **Every `DOTTICK` on `v` after that second
+PLAYERHIT reads `sent=10.000 cap=10.000`**: the plain hit refreshed the scorch and the stamp followed the newest applier to
+0 (the seat's ruling; `ScorchStampStatusTest.anUnenchantedRefreshClearsTheStamp…`); the cap stays the larger, 10 = 10.
+`v` killed; **`probe b` 25 ticks later reads `994.000/1000.000`**: the Ignite is plain, 6.
+
 ## UNREAD BY DESIGN
+
+> **DATED NOTE, 2026-11-24 (the extension):** PR B and PR F are BUILT and read here (R1b, R1c, MB1 to MB5). The first
+> bullet below is the record of the first draft.
 
 - **PR B and PR F:** STOPPED, no row. **No "no `volley_stone` anywhere" row**; R0c keeps its carve-out.
 - **The weapon tooltips with a tune active** are NOT changed (OPEN FOR BEN, plan section 23): no row reads them.
@@ -243,3 +449,67 @@ The lint's positive control, before the commit: MG5's probe reach set to 16 for 
 mage-guaranteed#MG5 PROBE_REACH probe m: 36 out, reach 16 (one block of margin)` and reddened the clean-lint row; restored,
 `cmp` identical. (A first run printed nothing: the gate was not yet in `selftest/index.yml`, so nothing loaded it. Found
 by the gate-list pin staying green, and fixed before the control was re-run.)
+
+## R1b, RUN BEFORE COMMIT (the extension, 2026-11-24)
+
+Run 2026-11-24, 17:30, against `paper\target\rpg-0.1.0-SNAPSHOT.jar` built by `./mvnw clean package` (BUILD SUCCESS; core
+2496 (1 skipped), storage 99, paper 1968, 0 failures) from the working tree of `feat/mage-guaranteed-gate-2` on
+`feat/mana-burn-content` `87bd9019`, this file, the scenario, `SelfTestScenariosTest` and the R1b script uncommitted (so
+the jar is no commit: the boot's R1 re-reads the deployed one): `powershell -File docs\gates\GATE-mage-guaranteed-r1b.ps1
+-JarPath paper\target\rpg-0.1.0-SNAPSHOT.jar` printed **22 `PRESENT`, 0 `ABSENT`** before `--- absent`; **7 `ABSENT`, 0
+`PRESENT`** between it and `--- controls`; **5 `ABSENT`, 0 `PRESENT`** after. **As predicted.** The sweep read **1432**
+entries; `volley_stone`, `volley_beam` and `volley_cast` were each in **0**; its positive control, `boltor`, in **20**.
+
+The lint's positive control, before the commit: MB4a's first `probe: b` set to `"b 6"` (a reach of 6 for a mob 6 out)
+printed `LINT mage-guaranteed#MB4a PROBE_REACH probe b: 6 out, reach 6 (one block of margin)` and reddened the clean-lint
+row; restored, `cmp` identical. **The lint also caught a real defect in the first draft of MB3, MB4a and MB5** (`ENCHANT_ORDER`:
+a slot-1 candidate after `rpg enchant clear`, when only slot 0 can be added); fixed by staging `large_sparks` at level 0 in
+slot 0 first, as the other slot-1 rows of this repo do.
+
+## THE BOOT, 2026-11-24 (READINGS): R1 PASSED; THE RUN NEVER REACHED A ROW, IT ABORTED AT THE PAD FIVE TIMES
+
+**Status: BOOTED ONCE at `9a6dfacd` (the seat's approval; Ben's "ready"); R1 READ AS PREDICTED; EVERY ROW, MG1 TO MB5, DID NOT
+TEST WHAT IT WAS MEANT TO (NOT RUN).** No prediction above is edited.
+
+**The checklist (`booting.md`), as ticked in the boot's report:** the twelve heads equal to the seat's list by
+`git ls-remote`, CI `success` on every head (#284 included) matched by `headSha`; on `feat/mage-guaranteed-gate-2`, `git
+status --porcelain` empty, HEAD `9a6dfacdf1dd…` equal to `ls-remote`; no `java` process; a fresh backup in a new folder,
+`rpg-run-backups\2026-11-24-pre-mage-guaranteed` (`world` 193 / 193 files, `Rpg` 171 / 171); config line 12
+`  dev-pack-on-join: true`; no `run\rpgfight`; the world's saved difficulty `normal` (read from `level.dat`); "BOOTING NOW"
+in its own message, and the boot command only after Ben's next word. **Two disagreements with this file's CARRIED STATE,
+both wording:** step 2 names `run\world_nether` and `run\world_the_end`, which do not exist (every dimension lives in
+`run\world\dimensions\…`; the last backup, `2026-11-24-pre-shatter-caps`, held `world` and `Rpg`, and so does this one);
+step 5 names `feat/mage-guaranteed-gate` where R1 names `-gate-2` (the head checked).
+
+**The boot:** `./scripts/dev-server.sh --refresh-content`; a marker made at 17:56:28, after the command; the deployed jar
+at 17:56:49; `latest.log`'s first line 17:56:50; **`Done (5.524s)` at 17:56:55**, this boot's.
+
+| row | prediction | READING |
+|---|---|---|
+| R1a | `[Rpg] Build: 9a6dfacd`, not dirty | **AS PREDICTED.** `[17:56:54] … [Rpg] Build: 9a6dfacd` |
+| R1b | 22 / 0, then 7 ABSENT / 0, then 5 ABSENT / 0, on the DEPLOYED jar | **AS PREDICTED** on `run\plugins\rpg-0.1.0-SNAPSHOT.jar`: 22 PRESENT 0 ABSENT; 7 ABSENT 0 PRESENT; 5 ABSENT 0 PRESENT. `volley_stone`, `volley_beam`, `volley_cast` each in **0 of 1432** entries; the control `boltor` in **20** |
+| R1c | 44 visuals, 23 enchants, 23 weapons; the loot line word for word; **0 `[Rpg]` WARN**, with its control; no Refusing / Skipping / SEVERE / Exception | **AS PREDICTED.** `Loaded 11 abilities, 44 visuals, 5 statuses, 7 elements, 23 enchants, 3 pools, 6 fragments, 6 aspects, 23 weapons, 1 shields, 24 armor, 5 tools, 6 accessories, 7 mobs, 1 mob elements, 7 recipes, 1 ores, 4 vein sizes`; the loot line as predicted; `WARN]: [Rpg]` **0**, the control `INFO]: [Rpg] Loaded` **6**; none of the words. **Not predicted, not ours:** six `[Paper Async Task Handler Thread - 1/WARN]` lines, Paper's notice that 26.1.2 is "4 release(s) behind the latest stable release (26.3)" |
+| R1d | `396 scenarios across 47 gates [… mage-guaranteed]`; 390 and 397 absent | **AS PREDICTED** |
+| R1e | `FIGHTWORLD sweep … folders=0`, no deleting, no orphan | **AS PREDICTED.** `FIGHTWORLD sweep path=…\run\world\dimensions\rpgfight folders=0` |
+
+**R1 was read at 17:57:12 and "R1 passed" sent in its own message; Ben's first `joined the game` is 17:57:25, after it.**
+
+**THE RUN: FIVE STARTS, FIVE ABORTS, NO ROW.** `/gamemode survival` at 17:57:34; `/rpg selftest mage-guaranteed` at 17:57:35,
+17:57:43, 17:57:48, 17:57:59 and 17:58:34, each `SELFTEST RUN START mage-guaranteed rows=21 selftest=9a6dfacd`, then in the
+setup `PAD fail chunk 6,-2 did not stay loaded` (three times) or `chunk 7,-2` (twice), `SELFTEST RUN ABORTED pad: …` and
+`SELFTEST RUN RESTORED …` (his state put back each time: `xp=712824`, `difficulty=NORMAL`, `gamemode=SURVIVAL`). **No
+`SELFTEST mage-guaranteed <row> START` line exists for any row**, so MG1, MG2R, MG3 to MG11 and MB1 to MB5 are **DID NOT
+TEST WHAT THEY WERE MEANT TO: NOT RUN.** Between the fourth and fifth he ran `/rpg selftest breacher` (17:58:14, a
+different gate; its setup has no pad step and it ran rows BR1 to BR6 until his `/rpg selftest stop` at 17:58:32): **not
+this gate's, and not read.** `/stop` at 17:58:44; `Stopping server`, `Saving worlds`, `All dimensions are saved` at
+17:58:45; no `java` process after.
+
+**WHAT IS KNOWN ABOUT THE ABORT (not repaired, the seat's instruction).** READ, `SelfTestPad.onLoaded`: it loads the pad's
+chunks with `getChunkAtAsync(cx, cz, true)`, then, on the pad's region thread, requires `world.isChunkLoaded` of every one;
+nothing holds a ticket between the two. The pad's stand is `104,201,-4` (`interior=-2..45 east -13..13 south`), his start
+about x -100, z 12, some 200 blocks away. **The same pad, from about the same start, passed on five earlier boots**
+(`GATE-focused-beam`, `shatter-caps`, `enchant-changes` twice, `enchant-columns`: `PAD … ok=7250`, `stood at=104.50 201.00
+-3.50`), and **this stack does not touch the pad or the scheduler** (`git diff --stat c1ebabab..9a6dfacd` over `selftest/`
+and `scheduler/` lists only `SelfTestDrivers.java`, `clear_state`'s chain line). **That the chunks unloaded in the gap,
+UNVERIFIED; why today and not before, UNKNOWN.** One reading this boot did not take: whether the pad passes when he stands
+at or near it before `/rpg selftest`.
