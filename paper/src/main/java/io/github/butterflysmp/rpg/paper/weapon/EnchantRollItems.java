@@ -82,7 +82,7 @@ public final class EnchantRollItems {
 
         // THE UNIQUE SLOT (2026-11-23): the gear's element through U5's one accessor, GearDefinition.gearElement();
         // the count by Ben's cascade, which the registry carries beside the roster. Its pools are the two below.
-        EnchantState rolled = EnchantRoll.roll(definition.id(), definition.gearElement(), has(definition), gearClass, roster(adapters),
+        EnchantState rolled = EnchantRoll.roll(slotZeroKey(definition), definition.gearElement(), has(definition), gearClass, roster(adapters),
                 adapters.enchants().candidates(), () -> ThreadLocalRandom.current().nextDouble());
 
         // *** WRITE AND RE-RENDER IN ONE editMeta, for the reason GearScoreItems.stampOnAcquire
@@ -146,7 +146,7 @@ public final class EnchantRollItems {
     public static List<String> weaponPoolFor(GearDefinition definition, AdapterContext adapters) {
         GearClass gearClass = GearItems.gearClassOf(definition);
         if (gearClass == null) return List.of();
-        return ids(EnchantRoll.weaponPoolFor(definition.id(), has(definition), gearClass, roster(adapters)));
+        return ids(EnchantRoll.weaponPoolFor(slotZeroKey(definition), has(definition), gearClass, roster(adapters)));
     }
 
     private static List<String> ids(List<Rollable> pool) {
@@ -163,7 +163,7 @@ public final class EnchantRollItems {
         if (gearClass == null || gearClass == GearClass.ACCESSORY) return List.of("This gear rolls no enchants.");
         List<EnchantState> rolls = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
-            rolls.add(EnchantRoll.roll(definition.id(), definition.gearElement(), has(definition), gearClass, roster(adapters),
+            rolls.add(EnchantRoll.roll(slotZeroKey(definition), definition.gearElement(), has(definition), gearClass, roster(adapters),
                     adapters.enchants().candidates(), () -> ThreadLocalRandom.current().nextDouble()));
         }
         return rollStatsLines(definition.id(), definition.gearElement(), n, EnchantRoll.tally(rolls),
@@ -202,12 +202,23 @@ public final class EnchantRollItems {
         };
     }
 
+    /**
+     * THE SLOT-0 KEY a gear rolls by (E1, the seat, 2026-11-25): a weapon by its own id (W1), an ARMOR piece by its
+     * armor slot's pool ({@link EnchantRoll#armorSlotPool}), so every helmet shares one slot-0 pool. The ONE place
+     * the roll, the dev pool line and the tally take it from, so the three cannot disagree.
+     */
+    public static String slotZeroKey(GearDefinition definition) {
+        return definition instanceof io.github.butterflysmp.rpg.core.weapon.ArmorDefinition armor
+                ? EnchantRoll.armorSlotPool(armor.slot()) : definition.id();
+    }
+
     /** The roll's roster: each enchant's id, class, quantity requirement (ruling H) and element (U1). Tests build it here too. */
     public static List<Rollable> roster(java.util.Collection<EnchantDefinition> enchants) {
         List<Rollable> roster = new ArrayList<>();
         for (EnchantDefinition definition : enchants) {
             roster.add(new Rollable(definition.id(), definition.gearClass(), definition.requires(), definition.element(),
-                    definition.weapon(), definition.guaranteed()));
+                    definition.armorSlot() != null ? EnchantRoll.armorSlotPool(definition.armorSlot()) : definition.weapon(),
+                    definition.guaranteed()));
         }
         return roster;
     }

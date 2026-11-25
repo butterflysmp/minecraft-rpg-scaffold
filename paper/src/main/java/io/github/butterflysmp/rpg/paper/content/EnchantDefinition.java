@@ -74,7 +74,22 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires,
                                 String element, String weapon,
                                 io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour,
-                                boolean guaranteed) {
+                                boolean guaranteed,
+                                io.github.butterflysmp.rpg.core.weapon.ArmorSlot armorSlot) {
+
+    /**
+     * Not piece-specific: every enchant before 2026-11-25. {@code armorSlot} (the seat's E1, YAML {@code armor_slot:
+     * head|chest|legs|feet}): it is offered in slot 0 of EVERY armor piece of that slot (Ben: "Helmet boots chestplate and
+     * leggings all different"), and nowhere else.
+     */
+    public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect, GearClass gearClass,
+                             List<Integer> valueByLevel, String icon,
+                             io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires, String element,
+                             String weapon, io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour,
+                             boolean guaranteed) {
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, icon, requires, element, weapon, behaviour,
+                guaranteed, null);
+    }
 
     /**
      * Not guaranteed: every enchant before 2026-11-24. {@code guaranteed} (the seat's G1, YAML {@code guaranteed: true}):
@@ -153,6 +168,22 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         if (element != null && weapon != null) {
             throw new IllegalArgumentException("enchant '" + id + "' declares both element: " + element + " and weapon: "
                     + weapon + "; a weapon-specific enchant belongs to one weapon and is never also unique");
+        }
+        // E1 (the seat, 2026-11-25): armor_slot: places an enchant in slot 0 of that slot's armor pieces. Refused with
+        // weapon: (slot 0 has one owner) and on any class but armor (only armor has an armor slot). CC'S CALL: refused
+        // with element: too, by the same rule weapon: follows (a piece-specific enchant is never also unique).
+        if (armorSlot != null && weapon != null) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares both armor_slot: " + armorSlot.name()
+                    .toLowerCase(java.util.Locale.ROOT) + " and weapon: " + weapon + "; slot 0 belongs to one or the other");
+        }
+        if (armorSlot != null && element != null) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares both armor_slot: and element: " + element
+                    + "; a piece-specific enchant is never also unique");
+        }
+        if (armorSlot != null && gearClass != GearClass.ARMOR) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares armor_slot: but class: "
+                    + (gearClass == null ? "universal" : gearClass.name().toLowerCase(java.util.Locale.ROOT))
+                    + "; only class: armor has an armor slot");
         }
         if (displayName == null || displayName.isBlank()) {
             throw new IllegalArgumentException("enchant '" + id + "' requires display_name");

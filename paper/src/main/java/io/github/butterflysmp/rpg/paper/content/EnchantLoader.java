@@ -173,7 +173,8 @@ public final class EnchantLoader {
                 // Bukkit registry that this loader deliberately cannot.
                 s.getString("icon", EnchantDefinition.DEFAULT_ICON),
                 requires(s.getString("requires"), id),
-                element, weapon, behaviour(s, id, weapon), guaranteed(s, id));
+                element, weapon, behaviour(s, id, weapon), guaranteed(s, id),
+                armorSlot(s.getString("armor_slot"), id));
     }
 
     /**
@@ -534,6 +535,21 @@ public final class EnchantLoader {
      * by name otherwise, and refused when the enchant's {@code class:} names a class other than that weapon's, because
      * such an enchant could never roll (the weapon pool applies the class filter, as the unique pool does).
      */
+    /**
+     * E1 (the seat, 2026-11-25): {@code armor_slot: head|chest|legs|feet}, or absent. A MECHANICAL key: an unknown slot
+     * is refused by name rather than read as absent, so a typo never ships a piece-specific enchant that rolls nowhere.
+     * The record refuses it with weapon:, with element:, and on any class but armor.
+     */
+    private io.github.butterflysmp.rpg.core.weapon.ArmorSlot armorSlot(String raw, String id) {
+        if (raw == null) return null;
+        io.github.butterflysmp.rpg.core.weapon.ArmorSlot slot = io.github.butterflysmp.rpg.core.weapon.ArmorSlot.fromName(raw.trim());
+        if (slot == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares armor_slot: '" + raw
+                    + "'; expected head, chest, legs or feet");
+        }
+        return slot;
+    }
+
     private String weapon(String raw, String id, GearClass gearClass) {
         if (raw == null) return null;
         String weapon = raw.trim().toLowerCase(java.util.Locale.ROOT);
