@@ -20,7 +20,8 @@ class WeaponClassTest {
     void fromNameNullOnUnknown() {
         assertNull(WeaponClass.fromName("bogus"));
         assertNull(WeaponClass.fromName(null));
-        // SUMMONER is not a member yet -- a content file naming it is a skip, not a silent accept.
-        assertNull(WeaponClass.fromName("summoner"));
+        // SUMMONER is a member since the Summoner slice (2026-11-24); a misspelling is still a skip.
+        assertEquals(WeaponClass.SUMMONER, WeaponClass.fromName("summoner"));
+        assertNull(WeaponClass.fromName("summoners"));
     }
 }

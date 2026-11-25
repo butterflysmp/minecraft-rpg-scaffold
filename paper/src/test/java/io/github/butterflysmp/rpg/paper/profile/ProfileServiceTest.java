@@ -61,6 +61,28 @@ class ProfileServiceTest {
         player = UUID.randomUUID();
     }
 
+    /**
+     * max_summons (the Summoner slice, PR 1, 2026-11-24): the read is the base plus gear grants (none yet), 1 for a fresh
+     * profile; the dev override is written through and read back; reset clears it; a profile still loading has NO reading
+     * (empty), and the override is refused, so the cast that reads it (a later PR) cannot mistake loading for a cap.
+     */
+    @Test
+    void maxSummonsReadsOneOverridesAndHasNoReadingWhileLoading() {
+        repo.pendingLoad = new CompletableFuture<>();
+        service.onJoin(player);
+        assertEquals(java.util.OptionalInt.empty(), service.maxSummons(player), "loading: no reading");
+        assertFalse(service.setMaxSummonsBase(player, 0), "loading: the override is refused");
+        repo.pendingLoad.complete(Optional.empty());
+
+        assertEquals(java.util.OptionalInt.of(1), service.maxSummons(player), "a fresh profile: Ben's 1");
+        assertTrue(service.setMaxSummonsBase(player, 0));
+        assertEquals(java.util.OptionalInt.of(0), service.maxSummons(player));
+        assertEquals(0, repo.saved.get(player).maxSummonsBase(), "written through to the repository");
+        assertTrue(service.setMaxSummonsBase(player, null));
+        assertEquals(java.util.OptionalInt.of(1), service.maxSummons(player), "reset: the default again");
+        assertEquals(java.util.OptionalInt.empty(), service.maxSummons(UUID.randomUUID()), "untracked: no reading");
+    }
+
     @Test
     void joinWithNoStoredProfileCreatesAFreshOne() {
         service.onJoin(player);

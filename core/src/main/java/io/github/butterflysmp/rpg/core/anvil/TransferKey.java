@@ -39,6 +39,7 @@ public enum TransferKey {
     MELEE("melee weapons"),
     RANGER("ranged weapons"),
     MAGE("magic weapons"),
+    SUMMONER("summoner weapons"),   // 2026-11-24, the Summoner slice: a weapon class, so its own key
 
     /** A shield. It has no {@code WeaponClass} and never will, so it presents itself directly. */
     SHIELD("shields"),
@@ -123,6 +124,7 @@ public enum TransferKey {
             case MELEE -> MELEE;
             case RANGER -> RANGER;
             case MAGE -> MAGE;
+            case SUMMONER -> SUMMONER;
             case SHIELD -> SHIELD;
             case ARMOR -> ofArmor(slot);
             case TOOL -> throw new IllegalArgumentException(

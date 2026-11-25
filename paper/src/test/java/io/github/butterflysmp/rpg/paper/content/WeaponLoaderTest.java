@@ -237,13 +237,13 @@ class WeaponLoaderTest {
         // Mutation: default the loader's missing class to MELEE -> the classless weapon loads -> reddens.
     }
 
-    /** An unknown class value skips-and-names, exactly like a bad rarity (and like SUMMONER before it lands). */
+    /** An unknown class value skips-and-names, exactly like a bad rarity. (Its fixture was class: summoner until SUMMONER landed, 2026-11-24.) */
     @Test
     void unknownClassIsSkippedNotCrashed() throws IOException {
         write("aaa_summon.yml", """
                 id: summon
                 element: kinetic
-                class: summoner
+                class: summoners
                 triggers:
                   left_click:
                     cast:
@@ -259,7 +259,7 @@ class WeaponLoaderTest {
 
         assertEquals(1, registry.size());
         assertTrue(warningText().contains("aaa_summon.yml"), warningText());
-        assertTrue(warningText().contains("summoner"), warningText());
+        assertTrue(warningText().contains("summoners"), warningText());
     }
 
     /** A trigger's authored name and description carry into the ability for the tooltip. */

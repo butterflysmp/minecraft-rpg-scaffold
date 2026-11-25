@@ -80,7 +80,7 @@ class AccessorySlotsTest {
 
     @Test
     void theClassTokenIsThePoolSpelling() {
-        assertEquals(List.of("melee", "ranger", "mage"), Arrays.stream(
+        assertEquals(List.of("melee", "ranger", "mage", "summoner"), Arrays.stream(
                 io.github.butterflysmp.rpg.core.weapon.WeaponClass.values())
                 .map(AccessorySlots::classToken).toList());
         assertEquals("none", AccessorySlots.NO_CLASS);

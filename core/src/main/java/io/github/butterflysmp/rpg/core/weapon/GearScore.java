@@ -233,7 +233,7 @@ public final class GearScore {
     static boolean scoreable(GearClass kind) {
         if (kind == null) return false;
         return switch (kind) {
-            case MELEE, RANGER, MAGE -> true;
+            case MELEE, RANGER, MAGE, SUMMONER -> true;   // SUMMONER: Ben, "stats scale with gearscore" (2026-11-24)
             case SHIELD -> true;
             case ARMOR -> true;
             case TOOL -> false;

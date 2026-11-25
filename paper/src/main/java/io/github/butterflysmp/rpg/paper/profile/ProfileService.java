@@ -427,6 +427,31 @@ public final class ProfileService {
         return update(playerId, current -> current.withStoneSlot(slot), "Ability Stone slot change");
     }
 
+    /**
+     * THE READ OF max_summons (the Summoner slice, PR 1, 2026-11-24): the profile's base (absent = 1, Ben's default) plus
+     * every active gear grant, through {@code MaxSummons.effective}. <b>No gear grants it in this slice</b>, so the grants
+     * are empty here; the first piece that grants it adds its read at this one place.
+     *
+     * <p><b>UNKNOWN IS EMPTY, NOT A NUMBER</b> (loading, unreadable or untracked). The opposite of {@link #starEnabled}'s
+     * lean, and for the opposite reason: reading unknown as 1 would let a cast through on a profile that may hold 0, and
+     * reading it as 0 would print the cap's refusal for a reason that is not the cap. The cast (a later PR) says which.
+     */
+    public java.util.OptionalInt maxSummons(UUID playerId) {
+        return profile(playerId)
+                .map(p -> java.util.OptionalInt.of(io.github.butterflysmp.rpg.core.summon.MaxSummons.effective(
+                        p.maxSummonsOrNull(), java.util.List.of())))
+                .orElse(java.util.OptionalInt.empty());
+    }
+
+    /**
+     * The dev override of max_summons's base ({@code /rpg maxsummons}): a value, or {@code null} to clear it back to
+     * the default. {@link #setStarEnabled}'s contract: refused (false) while the profile is loading, unreadable or
+     * untracked; otherwise written through.
+     */
+    public boolean setMaxSummonsBase(UUID playerId, Integer baseOrNull) {
+        return update(playerId, current -> current.withMaxSummonsBase(baseOrNull), "max_summons override");
+    }
+
     /** Is this player's Ability Stone switched on? Unknown reads as ON, {@link #starEnabled}'s rule and reason. */
     public boolean stoneEnabled(UUID playerId) {
         return profile(playerId).map(PlayerProfile::stoneEnabled).orElse(true);

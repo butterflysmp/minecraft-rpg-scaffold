@@ -1305,3 +1305,5 @@ of `52579e8a` (`GATE-vanilla-bows.md` and `GATE-breacher-rework.md`, READINGS). 
    gate's log was not read for it). Not fixed here.
    Four `give` steps after such a command (SSA1, VX1, VX5R2) cannot land in his hand: it holds a sword or a crossbow.
    VB3 itself is re-staged as VB3R2.
+   **2026-11-24: STA4 CLOSED AS EXPLAINED, STILL UNREAD** (the seat's ruling S3): the cause is `HELD_READ_THEN_CHANGE`
+   (#287); the dated note is at the foot of `GATE-sword-tiers.md`.

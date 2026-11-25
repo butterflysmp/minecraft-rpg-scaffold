@@ -167,6 +167,7 @@ class GearScoreTest {
         assertTrue(GearScore.scoreable(GearClass.MELEE));
         assertTrue(GearScore.scoreable(GearClass.RANGER));
         assertTrue(GearScore.scoreable(GearClass.MAGE));
+        assertTrue(GearScore.scoreable(GearClass.SUMMONER), "Ben, 2026-11-24: summon weapons scale with gear score");
         assertTrue(GearScore.scoreable(GearClass.SHIELD));
         assertTrue(GearScore.scoreable(GearClass.ARMOR));
 
