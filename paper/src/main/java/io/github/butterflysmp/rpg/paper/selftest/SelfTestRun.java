@@ -316,6 +316,12 @@ final class SelfTestRun {
                 drainReplies();
                 if (skip.isPresent()) {
                     log("SKIPPED " + skip.get());
+                    // G4 (the seat's ruling, 2026-11-24): a SETUP that fails ends the WHOLE run, the state after it is
+                    // unknown; a row's skip moves on, as before.
+                    if (SelfTestGateList.skipEndsRun(current())) {
+                        end(SelfTestGateList.setupAbort(current().gate(), skip.get()));
+                        return;
+                    }
                     restoreRowRules();
                     previousRow = "";
                     nextScenario();

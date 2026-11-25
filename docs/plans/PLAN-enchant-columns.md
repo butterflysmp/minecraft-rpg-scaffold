@@ -1716,3 +1716,27 @@ one-rule alternative: a selftest step that removes every non-player living entit
 64 of the pad (the pad is at y 200, so ground mobs are about 140 blocks below and out of a 64 radius), and it changes every
 gate's setup at once. **Nothing was built**, because none of it is unambiguous: the mobs' position was never read. The
 cheap first step is to log a position on MOBSEED.
+
+## 34. ONE COMMAND, SEVERAL GATES (`feat/selftest-multigate`, on #287)
+
+**The seat's ruling of 2026-11-24, G1-G7** (option 1; copied rows refused as two homes for the same steps):
+`/rpg selftest <gate>+<gate>[+...]` runs the gates in the order typed as ONE run (one snapshot, one restore, one set of pad
+tickets held throughout and released once). Each gate runs its own setup, then its rows; log lines keep their gate's name.
+A gate named twice, an unknown gate, an empty part between two `+`, or `all` in a combination is refused before anything
+starts, with the reason; so is a row given with a list (no `gate:row` syntax, G5). **G7, my call: its own small PR on #287**,
+so the first Summoner PR stays readable; S1-S3 still ride that PR.
+
+- **READ:** the gate argument is a Brigadier `word()`; `StringReader.isAllowedInUnquotedString` (brigadier 1.3.10, javap)
+  admits `0-9 A-Z a-z _ - . +`, so `+` reaches the service and a comma would not. `all` already built one run of every
+  gate's setup and rows; a list builds the same shape from the gates named. The pad's second acquire takes nothing (P10).
+- **G4, a behaviour change for every run, single gates and `all` too:** a step that SKIPS in a setup now ends the whole run
+  (`ABORTED setup of <gate>: <why>`, the restore, the tickets released `cause=abort`); a row's skip moves on as before.
+  **No past run is affected:** 404 archived logs carry 170 `setup START` lines and **no** `setup SKIPPED` line (the same
+  pattern's control is the 170).
+- **The boot that reads the owed rows types `/rpg selftest mage-guaranteed+<the Summoner gate>`**, mage-guaranteed FIRST
+  (the seat's order: the owed rows are read even if the new work aborts). Its already-read rows are a REGRESSION read,
+  classed against their existing predictions; MG1R, MG2R2, MB1R, MB4aR, MB4bR and MB5R are the NEW readings (G5).
+
+**Tests:** `SelfTestGateListTest` (9): the order typed, one gate is not a list, duplicate, unknown, empty part, `all`, a row
+with a list, the source wiring, and G4. **Mutations, all red:** `MUTORDER` (the gates sorted), `MUTDUP`, `MUTUNKNOWN`,
+`MUTSETUPEND` (a setup skip moves on), `MUTONCE` (a second pad acquire re-takes: `SelfTestPadTicketsTest`).
