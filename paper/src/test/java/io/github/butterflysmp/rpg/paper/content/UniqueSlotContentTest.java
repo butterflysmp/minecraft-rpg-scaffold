@@ -41,6 +41,7 @@ class UniqueSlotContentTest {
     private static final List<String> MASTER_POOLS = List.of(
             "blaze_kings_staff=attunement,unbreaking",
             "boltor=deft_hands,expanded_quiver,power,unbreaking",
+            "bone_whistle=unbreaking",   // 2026-11-25 (PR 5): a summoner weapon's pool is the universal one
             "bow=deft_hands,expanded_quiver,power,unbreaking",
             "brawlers_gauntlet=",
             "breacher=deft_hands,expanded_quiver,power,unbreaking",
@@ -135,13 +136,13 @@ class UniqueSlotContentTest {
     @Test
     void theShippedSetIsRecountedWithAControl() {
         Loaded l = load();
-        assertEquals(23, l.weapons(), "2026-11-24: volley_stone deleted (PR B); recount: ls content/weapons | wc -l = 23");
+        assertEquals(24, l.weapons(), "2026-11-25: + bone_whistle (PR 5); recount: ls content/weapons | wc -l = 24");
         assertEquals(1, l.shields());
         assertEquals(24, l.armor());
         assertEquals(5, l.tools());
         assertEquals(6, l.accessories());
-        assertEquals(59, l.gear().size());
-        assertEquals(59, MASTER_POOLS.size(), "the snapshot covers the same 59");
+        assertEquals(60, l.gear().size());   // 2026-11-25: + bone_whistle
+        assertEquals(60, MASTER_POOLS.size(), "the snapshot covers the same 60");
         assertEquals(23, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
         assertEquals(23, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
@@ -176,7 +177,7 @@ class UniqueSlotContentTest {
                 assertEquals(Optional.empty(), g.gearElement(), g.id() + " declares no element");
             }
         }
-        assertEquals(23, withElement); // 2026-11-24: volley_stone deleted (PR B); ls content/weapons | wc -l = 23
+        assertEquals(24, withElement); // 2026-11-25: + bone_whistle (PR 5); ls content/weapons | wc -l = 24
     }
 
     private static final List<String> FIRE_MAGE = List.of("blaze_kings_staff", "flint_staff", "living_lantern");
@@ -239,7 +240,7 @@ class UniqueSlotContentTest {
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }
-        assertEquals(59, checked, "the control: every shipped gear was asked");
+        assertEquals(60, checked, "the control: every shipped gear was asked");
     }
 
     /**

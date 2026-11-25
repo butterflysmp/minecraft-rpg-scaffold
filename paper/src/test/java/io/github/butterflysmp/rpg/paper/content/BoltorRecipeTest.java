@@ -159,8 +159,9 @@ class BoltorRecipeTest {
     @Test
     void sevenRecipesShipAndAllAreIndexed() {
         File[] files = content("recipes").listFiles((d, n) -> n.endsWith(".yml"));
-        assertEquals(7, files == null ? -1 : files.length, "CONTROL: the files on disk");
-        assertEquals(7, recipes().size(), "every file loads");
-        assertEquals(7, index(new ArrayList<>()).recipesIndexed(), "every recipe is indexed against a weapon");
+        // 2026-11-25: 7 -> 8, the Bone Whistle's recipe (PR 5); recount: ls content/recipes/*.yml | wc -l = 8.
+        assertEquals(8, files == null ? -1 : files.length, "CONTROL: the files on disk");
+        assertEquals(8, recipes().size(), "every file loads");
+        assertEquals(8, index(new ArrayList<>()).recipesIndexed(), "every recipe is indexed against a weapon");
     }
 }

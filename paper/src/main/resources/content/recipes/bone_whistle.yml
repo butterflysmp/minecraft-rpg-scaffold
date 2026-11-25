@@ -1,0 +1,9 @@
+# THE BONE WHISTLE'S RECIPE (Ben, 2026-11-24: the old repo's, "Keep"): bone, bone, stick in one column.
+mints: bone_whistle
+shape:
+  - "B"
+  - "B"
+  - "S"
+ingredients:
+  B: bone
+  S: stick

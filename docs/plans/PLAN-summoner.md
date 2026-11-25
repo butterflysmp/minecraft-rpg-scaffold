@@ -456,3 +456,27 @@ what a mob is targeting is `probe_target: "<tag>"`; a vanilla mob with its AI an
 **Lint:** `MOB_ACT_UNSTAGED`: a `cmd: summon` with no `NoAI:1b` must carry `attack_damage` (READ: 0 such summons in the
 shipped scenarios at this commit, so only `ScenarioLintTest` causes it). `PROBE_SUMMON_REACH`: `probe_summon` names a
 positive number. **Mutations, all red:** MUTFROZEN, MUTATTACK.
+
+## 7. PR 5, THE BONE WHISTLE (`feat/summoner-5`, on #297)
+
+`content/weapons/bone_whistle.yml`: `bone_whistle`, "Bone Whistle", class summoner, common, element nature, material
+bone; right click `type: summon` (`bone_whistle_wolf`), 40 mana, `cooldown_ticks` 200; left click `type: direct_summon`,
+reach 32. `content/summons/bone_whistle_wolf.yml`: wolf, "{owner}'s Wolf", 100 / 20, 8 / 30 (BEN), 32 / 48 / 20 / 100
+(SEAT PLACEHOLDERS). `content/recipes/bone_whistle.yml`: "B","B","S", bone and stick. **"Wood tier" is a convention, not
+a key** (READ: no weapon declares a tier; common rarity and a basic recipe). The tooltip, from the golden file: Nature;
+"Call the Wolf", Right-Click, "Summons a wolf: 100 health, 20 damage / (x gear score / 100). Recast to replace it.",
+"Cooldown: 10.0s | Mana Cost: 40"; "Sic", Left-Click, "Sends your wolf at the mob you point at / (up to 32 blocks)."; the
+flavor; "Common Summoner Weapon". Ability names, descriptions and flavor: SEAT PLACEHOLDERS (numbers real, B5).
+
+**THE TWO BONE READS:**
+- **As a crafting ingredient:** READ, our code: `onPrepareCraft` -> `CraftMatrixScreen.verdict` blanks the result of any
+  vanilla matrix holding an item of ours; `onCrafterCraft` covers the Crafter block. So a minted bone makes no bone meal.
+- **Clicked on a vanilla wolf:** READ, javap: `Wolf.mobInteract` reads `Items.BONE` and calls `tryToTame` (which
+  consumes the item). STOPPED by a new hook, `onSummonerWeaponEntityInteract`: any entity click with a minted SUMMONER
+  weapon in that hand is cancelled. CC'S CALL: scoped to summoner-class weapons (alternative: every minted weapon whose
+  material vanilla uses on an entity).
+
+**Invariants recounted, each with its command:** weapons 23 -> 24 (`ls content/weapons/*.yml | wc -l`), gear
+definitions 53 -> 54, recipes 7 -> 8, shipped summons 0 -> 1, the master pool snapshot +1 (`bone_whistle=unbreaking`, the
+summoner's universal pool), gear asked 59 -> 60; the golden lore regenerated with its diff predicted first: one 15-line
+block and the footer (102 -> 103 renderings), +16 / -1, read. **Mutation:** MUTTAME, red.

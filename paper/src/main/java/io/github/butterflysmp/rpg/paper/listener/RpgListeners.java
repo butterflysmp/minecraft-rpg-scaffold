@@ -1278,6 +1278,22 @@ public final class RpgListeners implements Listener {
         if (isSummon(event.getRightClicked())) event.setCancelled(true);
     }
 
+    /**
+     * PR 5, THE BONE ON A VANILLA WOLF (READ: {@code Wolf.mobInteract} reads {@code Items.BONE} and calls
+     * {@code tryToTame}, which consumes the item). A minted SUMMONER weapon in the hand that clicked is never used on an
+     * entity by vanilla: the Bone Whistle tames nothing and is not eaten. CC'S CALL: scoped to summoner-class weapons;
+     * the alternative is every minted weapon whose material vanilla uses on an entity.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onSummonerWeaponEntityInteract(org.bukkit.event.player.PlayerInteractEntityEvent event) {
+        org.bukkit.inventory.ItemStack held = event.getPlayer().getInventory().getItem(event.getHand());
+        boolean summonerWeapon = io.github.butterflysmp.rpg.paper.weapon.WeaponItems.weaponId(held, adapters.keys())
+                .flatMap(weapons::find)
+                .map(w -> w.weaponClass() == io.github.butterflysmp.rpg.core.weapon.WeaponClass.SUMMONER)
+                .orElse(false);
+        if (summonerWeapon) event.setCancelled(true);
+    }
+
     /** D1: a lead does not take it. */
     @EventHandler(ignoreCancelled = true)
     public void onSummonLeash(org.bukkit.event.entity.PlayerLeashEntityEvent event) {

@@ -22,6 +22,21 @@
    "of being a person holding a crossbow." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Ranged Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- bone_whistle
+   "Nature" color=#55FF55 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Call the Wolf" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Summons a wolf: 100 health, 20 damage" color=#AAAAAA O=. B=. S=. U=. I=F
+   "(x gear score / 100). Recast to replace it." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Cooldown: 10.0s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Sic" color=#FFAA00 O=. B=. S=. U=. I=F ["  Left-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Sends your wolf at the mob you point at" color=#AAAAAA O=. B=. S=. U=. I=F
+   "(up to 32 blocks)." color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Old bone, older loyalty." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Summoner Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- bow
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
@@ -613,4 +628,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 102 renderings ===
+=== 103 renderings ===
