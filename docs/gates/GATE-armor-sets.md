@@ -537,3 +537,46 @@ raises the level, and no row after it resets it.**
 - **PAD:** tickets `held=12`, `released=12 cause=end`. **MOBSEED beyond the pad:** one, a drowned at `stand_d=237.75`, the
   world mob the summoner boot recorded. **WARN after Done:** only that Paper notice (6 lines); no `[Rpg]` WARN, no
   ERROR.
+
+## THE FOLLOW-UP, 2026-11-25 (`feat/armor-sets-owed`, on master `ca482930`): TWO DATED NOTES, AND AS15R — Status: NOT RUN
+
+Written after the readings above. No prediction or reading above is edited.
+
+**NOTE, 2026-11-25 (the seat's merge approval), in its own words:**
+- *"THE LEVEL SEAM IS MY MISS: I read AS13 to AS19 and did not catch that AS13 changes his level and no later row stages
+  it."*
+- *"'ArmorConsistency's coverage line' in my boot approval's step 5 was MINE and wrong: the gate predicts none."*
+
+**THE LEVEL SEAM IS NOW A LINT RULE.**
+- `ScenarioLint` `LEVEL_UNSTAGED`: once a row sets a level other than the setup's, every later row that is not chained
+  stages its own.
+- Over every shipped gate it flags AS14, AS15, AS17, AS18 and AS19 here, and `mage-guaranteed`'s MB1R. They are pinned
+  exactly in `SelfTestScenariosTest`; no old row is edited.
+- AS16 is not flagged: AS15R, ahead of it, stages level 1 again. **So AS16 will run at the setup's level 1 from this
+  commit, where it ran at 13 on `732c4e02`.** Its ask reads a set bonus and Max Health, not a level, so this changes its
+  staging and not its question.
+
+### AS15R — COPPER CRAFTED MINTS, READ BY WHAT AN ARMOR MINT LEAVES
+
+**READ, `InventoryCraft.commitCraft`:**
+- The `CRAFT minted` line is logged only `if (definition instanceof WeaponDefinition)`, so **an armor craft logs no
+  line.**
+- A claimed result is minted, rolled and score-stamped. An unclaimed vanilla result is returned as the server made it,
+  with no lore.
+- `probe_held`'s `item=` is the weapon id or the MATERIAL, so it reads `copper_helmet` either way and cannot tell a mint
+  from vanilla. **The held item's lore is the witness.**
+
+**The staging:** its own level 1 and a wait of 40, `clear_inventory`, then `hold: empty` (slot 0, the first empty). The 5
+ingots are given into the held slot. The craft debits them first, then gives the helmet (READ: `debit` before
+`MenuSafety.give`). INFERRED: the helmet lands in slot 0, the held slot.
+
+**Predicted:**
+- The menu has `SLOT 0 COPPER_HELMET name="Copper Helmet"`, and the click is on slot 0.
+- **No `CRAFT minted` line** (READ, above).
+- `HELDID slot=0 item=copper_helmet`.
+- **`HELD copper_helmet … lore=["Gear Score: 100"; "Defense: 5"; ""; "Set Bonus (4 pieces):"; "+1 Max Summons"; "";
+  "It greens where it is not worn."; ""; "Common Helmet"]`**, which is AS15's reading. A held copper helmet with **no
+  lore** means the craft was not claimed, and is a MISS.
+- If the helmet lands in another slot, `HELDID` names what is held instead. That is a staging MISS, not a mint MISS.
+
+**SAFETY:** none. No damage.

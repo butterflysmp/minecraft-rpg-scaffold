@@ -921,6 +921,26 @@ AS19:
   - cmd: "item replace entity @s armor.feet with minecraft:air"
   - wait: 10
 
+# AS15R (re-predicts AS15, 2026-11-25, the follow-up on master): the same craft, read by what an ARMOR mint leaves. READ,
+# InventoryCraft.commitCraft: the CRAFT minted line is logged only for a WeaponDefinition, so armor logs no line; the held
+# item's lore is the witness (an unclaimed vanilla result is returned untouched, with no lore). Its own level (the seam).
+AS15R:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - clear_inventory: ""
+  - hold: empty
+  - cmd: "give @s minecraft:copper_ingot 5"
+  - wait: 2
+  - cmd: "recipes"
+  - wait: 3
+  - dump: menu
+  - click: "Copper Helmet"
+  - wait: 3
+  - close: ""
+  - wait: 2
+  - probe_held: ""
+  - dump: held
+
 # AS16, THE ONE ASK, LAST: a full iron set worn, then the question.
 AS16:
   - clear_inventory: ""

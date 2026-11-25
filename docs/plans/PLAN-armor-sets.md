@@ -535,3 +535,4 @@ the TOOLTIP does, and gets it. The set lines (PR 2) reach existing items the sam
 | O9 | armor wear: 1 per hit through Defense (D2'); the broken notice's wording | as built; "A piece of your armor is broken -- it no longer protects you. Repair it." |
 | O10 | armor's empty slot-0 marker: "No piece enchant" / "Nothing is tied to this armor slot yet." | as built |
 | O11 | the chainmail tooltip line "+50% Quiver Size" | as built |
+| O12 | Paper is 4 releases behind the latest stable (26.3), the boot of 2026-11-25 (`PLAN-armor-sets-owed.md` section 3). Upgrade step 0: PacketEvents first | carried for Ben to schedule; nothing built |
