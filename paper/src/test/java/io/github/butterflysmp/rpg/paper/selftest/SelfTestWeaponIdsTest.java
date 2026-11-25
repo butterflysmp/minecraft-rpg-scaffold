@@ -110,11 +110,11 @@ class SelfTestWeaponIdsTest {
         return ids;
     }
 
-    /** The control for the widening: 24 armor pieces and 5 tools, and iron_chestplate among them. */
+    /** The control for the widening: 28 armor pieces (2026-11-25: + copper) and 5 tools, and iron_chestplate among them. */
     @org.junit.jupiter.api.Test
     void armorAndToolIdsLoad() {
         Set<String> ids = armorAndToolIds();
-        org.junit.jupiter.api.Assertions.assertEquals(29, ids.size(), ids.toString());
+        org.junit.jupiter.api.Assertions.assertEquals(33, ids.size(), ids.toString());
         org.junit.jupiter.api.Assertions.assertTrue(ids.contains("iron_chestplate"));
         org.junit.jupiter.api.Assertions.assertTrue(ids.contains("iron_pickaxe"));
     }

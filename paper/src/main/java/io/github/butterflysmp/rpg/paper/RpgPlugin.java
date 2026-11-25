@@ -418,14 +418,13 @@ public final class RpgPlugin extends JavaPlugin {
         // And again on content/armor, which this slice adds. Newest directory, same reasoning as
         // shields: an existing run/ data folder predates it entirely, and saveResource never
         // overwrites, so the only thing that puts the six tier files on disk is the jar
-        // enumeration finding them. Twenty-four is the expected count -- six tiers, four slots --
-        // and a number below that means a tier file was skipped, which its own warning will have
-        // said out loud.
+        // enumeration finding them. Twenty-eight is the expected count -- seven tiers (copper joined
+        // 2026-11-25, C1), four slots -- and a number below that means a tier file was skipped, which
+        // its own warning will have said out loud.
         if (armor.size() == 0) {
-            getLogger().warning("No armor loaded from content/armor -- /rpg give can mint no armor. "
-                    + "Note this does NOT disable the Defense stat: a plain vanilla chestplate still "
-                    + "sources its full Defense, because that is read from vanilla and not from a "
-                    + "tag. Expected 24 pieces from six tier files.");
+            getLogger().warning("No armor loaded from content/armor -- /rpg give can mint no armor, "
+                    + "every worn piece falls back to vanilla's armor points instead of its authored "
+                    + "Defense (A1), and no armor set exists. Expected 28 pieces from seven tier files.");
         }
 
         // ONE ID, THREE REGISTRIES. /rpg give resolves weapons, then shields, then armor, so a
@@ -509,10 +508,10 @@ public final class RpgPlugin extends JavaPlugin {
                     + " none, and the Equipment screen has nothing to equip. Expected 6.");
         }
 
-        // The tooltip number against vanilla's. This is the ONLY moment the two live in the same
-        // JVM: content/armor authors the defense a piece DISPLAYS, vanilla owns the defense it
-        // DELIVERS, and nothing makes them agree. A mismatch is invisible from every vantage point
-        // in-game -- see ArmorConsistency's own javadoc -- so it has to be shouted about here.
+        // A2 (2026-11-25): the armor content COVERS the server's armor -- every armor material (bar the turtle
+        // helmet, C2) has one piece, and every piece names armor for its slot. Until A1 this compared the
+        // authored defense with vanilla's; the authored number is now the Defense, so that comparison ended.
+        // This is the only moment the content and the item registry live in the same JVM.
         ArmorConsistency.check(armor, getLogger());
 
         // A visual_id that resolves to nothing should be found now, by name, not by
@@ -630,7 +629,7 @@ public final class RpgPlugin extends JavaPlugin {
         // Custom health: the store is the source of truth; TWO displays ride its HealthChange seam,
         // fanned out by a composite listener -- the player heart bar and the per-viewer mob nameplate.
         // Two-step bind breaks the cycle (the store needs a listener, each display needs the store).
-        this.healthSystem = new PlayerHealthSystem(scheduler, keys, weapons, enchants, getLogger());
+        this.healthSystem = new PlayerHealthSystem(scheduler, keys, weapons, enchants, armor, getLogger());
         this.nameplates = new MobNameplateManager(scheduler, new PacketNameplateSender(), keys, mobs, getLogger());
         // Third display: the per-dealer damage-number popup. Pure seam consumer -- reads amount/dealer
         // off the event, so no bind(stats) and no mob-lifecycle hooks (unlike the nameplate).

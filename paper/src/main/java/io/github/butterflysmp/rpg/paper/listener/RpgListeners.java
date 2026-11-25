@@ -1337,7 +1337,13 @@ public final class RpgListeners implements Listener {
             case REFUSED -> event.setCancelled(true);
             case MOB_HIT -> {
                 event.setCancelled(true);
-                double priced = MobDamagePricing.price(event.getDamage(), mob.get());
+                // P-1 (ruled 2026-11-25): a mob's MELEE is priced from its seeded attack stat, as on a player
+                // (onMobMeleeAttack); every other mob cause keeps the event's amount priced (M16).
+                Entity meleeDealer = event.getDamageSource() == null ? null : event.getDamageSource().getCausingEntity();
+                double priced = io.github.butterflysmp.rpg.core.summon.SummonHitPrice.of(
+                        event.getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                        meleeDealer == null ? 0.0 : adapters.stats().attackValue(meleeDealer.getUniqueId()),
+                        event.getDamage(), mob.get());
                 BukkitCombatant.of(body, adapters).handle().applyDamageAs(
                         io.github.butterflysmp.rpg.core.mob.MobHostility.Side.MOB, priced, attributableId(event, body),
                         io.github.butterflysmp.rpg.core.combat.CritState.NORMAL,
@@ -2848,11 +2854,10 @@ public final class RpgListeners implements Listener {
             event.setCancelled(true);
             return;
         }
-        // 4c, D5: a summon weapon's left click is an ORDER, and "the swing deals no damage of its own": stand down.
-        if (WeaponFire.leftClickDirects(attacker, weapons, adapters)) {
-            event.setCancelled(true);
-            return;
-        }
+        // P-2 (ruled 2026-11-25): the 4c stand-down for a summon weapon's left click is REMOVED. It was unreachable
+        // (PLAN-summoner 11, R4: the whistle's attack value reads 0.000, so vanilla raises no damage event), and the
+        // one combination that could reach it -- a direct_summon left click with an attack_damage -- is refused at
+        // load by WeaponDefinition.
 
         event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames, no double
         floorSoTokenCannotKill(victim);

@@ -1,124 +1,85 @@
 package io.github.butterflysmp.rpg.paper.content;
 
-import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
+import io.github.butterflysmp.rpg.core.weapon.ArmorCoverage;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
 import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
 import io.github.butterflysmp.rpg.paper.health.DefenseModifierItems;
 import org.bukkit.Material;
 import org.bukkit.inventory.EquipmentSlot;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * Checks, at boot, that every armor piece's AUTHORED defense equals the vanilla armor points its
- * material actually grants -- and says so, loudly, when it does not.
+ * Checks, at boot, that the armor content COVERS the server's armor: every armor material the server has (minus the
+ * excluded) has exactly one content piece, and every piece names a material the server has as armor for its slot.
  *
- * <h2>Why this has to exist</h2>
+ * <h2>REWRITTEN 2026-11-25 (the seat's A2), because its old job ended</h2>
  *
- * A minted piece has its Defense described in two independent places:
- *
- * <ul>
- *   <li>the {@code defense:} key in {@code content/armor/&lt;tier&gt;.yml}, which is what the
- *       TOOLTIP prints; and
- *   <li>{@code ItemType.getDefaultAttributeModifiers(slot)}, vanilla's own armor points, which is
- *       what {@code DefenseModifierItems} feeds into the STAT, the mitigation and the armor bar.
- * </ul>
- *
- * Minting never writes the first onto the item, so nothing makes them agree. They agree today only
- * because someone typed matching numbers.
- *
- * <p><b>A mismatch is invisible from every single vantage point.</b> The tooltip reads
- * "Defense: 9" and looks right. The action bar reads 8 and looks right. The armor bar fills to the
- * DR of 8 and looks right. The damage taken matches 8 and looks right. Nothing throws, nothing
- * logs, no test can see it -- core cannot reach an {@code ItemType} registry and paper has no live
- * server in the unit loop. The ONLY moment the two numbers are in the same JVM is boot, which is
- * why the check lives here rather than in a test.
- *
- * <p>This is also the seam Slice 2 breaks on purpose. Protection (+3/6/9 Defense) makes a piece's
- * real Defense diverge from its material's vanilla points by design, at which point
- * {@code DefenseModifierItems.desiredModifiers} can no longer serve as both the stat source and the
- * {@code nativeArmor} the bar cancels -- they are one map today. When that lands, this check needs
- * to compare against the piece's BASE rather than its effective value, or it will start shouting
- * about every enchanted piece.
+ * Until then this compared each piece's authored {@code defense:} with vanilla's armor points for the material, since
+ * the authored number was DISPLAY-ONLY and the stat read vanilla. A1 made the authored number the source, so those two
+ * now differ for every piece on purpose (Ben's 5/8/7/4 ladder is no material's), and the comparison would shout about
+ * all of them. What can still go wrong is coverage, decided purely in {@link ArmorCoverage}; this class reads the
+ * server's side of it from the item registry, which is the only thing core cannot.
  *
  * <h2>Zero is a defect, not a quiet pass</h2>
  *
- * A verifier that verifies nothing reads exactly like one that verified everything. This warns when
- * it is handed an empty registry, the same discipline the loaders' zero-checks follow and the
- * failure mode CLAUDE.md records twice.
- *
- * <h2>It reads the SAME method the stat does</h2>
- *
- * {@link DefenseModifierItems#vanillaArmorPoints} is called directly rather than repeated here. It
- * WAS repeated, for exactly one slice: the armor slice promised to leave {@code DefenseModifierItems}
- * byte-identical so its additive claim could be verified by diff instead of argument, and recorded
- * the duplication as a debt the gear extraction would pay. This is that payment.
- *
- * One copy matters more here than in most places. A check that read the number a DIFFERENT way
- * would be verifying content against a value the stat does not use -- and would then report a clean
- * run while every armor tooltip lied, which is the precise failure it exists to catch.
+ * A verifier that verifies nothing reads exactly like one that verified everything. It still warns when handed an
+ * empty registry -- the same discipline the loaders' zero-checks follow.
  */
 public final class ArmorConsistency {
 
     private ArmorConsistency() {}
 
     /**
-     * Compare every loaded piece against vanilla and warn per mismatch. Returns the number of
-     * mismatches found, so the caller can decide whether to say anything about a clean run.
+     * C2 (Ben, 2026-11-25: "No turtle helmet"): the one server armor item with no content piece, by name. Without this
+     * the check would report it as uncovered on every boot.
      */
+    static final Set<String> EXCLUDED = Set.of("turtle_helmet");
+
+    /** The live check: the server's armor read from its item registry. Returns the number of problems. */
     public static int check(ArmorRegistry armor, Logger log) {
-        if (armor.size() == 0) {
-            log.warning("ArmorConsistency checked ZERO armor pieces. That is not a pass -- it means "
-                    + "content/armor loaded nothing, and every armor tooltip a player sees will be "
-                    + "unverified against vanilla's own numbers.");
-            return 0;
-        }
+        if (armor.size() == 0) return warnEmpty(log);
+        return check(armor, serverArmor(), log);
+    }
 
-        int mismatches = 0;
-        for (ArmorDefinition piece : armor.all()) {
-            Material material = Material.matchMaterial(piece.material());
-            if (material == null) {
-                // Not a consistency failure -- ArmorItems.materialOf will fall back and mint
-                // something wearable -- but the authored defense then describes an item that does
-                // not exist, so it cannot be checked and must not be reported as checked.
-                log.warning("Armor '" + piece.id() + "' names material '" + piece.material()
-                        + "', which does not resolve. Its defense cannot be checked against vanilla, "
-                        + "and it will mint as a leather fallback.");
-                mismatches++;
-                continue;
-            }
-
-            double vanilla = vanillaArmorPoints(material, piece.slot());
-            if (vanilla != piece.defense()) {
-                mismatches++;
-                log.warning("Armor '" + piece.id() + "' authors defense " + piece.defense()
-                        + " but vanilla grants " + vanilla + " armor points in the "
-                        + piece.slot() + " slot. THE TOOLTIP WILL LIE: the stat, the mitigation and "
-                        + "the armor bar all use vanilla's " + vanilla + ", and only the lore line "
-                        + "uses " + piece.defense() + ". Fix the content file to match vanilla.");
-            }
+    /** The decision with the server's side supplied, so a test can stage it. */
+    static int check(ArmorRegistry armor, Map<String, ArmorSlot> serverArmor, Logger log) {
+        if (armor.size() == 0) return warnEmpty(log);
+        List<String> problems = ArmorCoverage.problems(serverArmor, armor.all(), EXCLUDED);
+        for (String problem : problems) log.warning("ArmorConsistency: " + problem);
+        if (!problems.isEmpty()) {
+            log.warning(problems.size() + " armor coverage problem(s). The server is still running.");
         }
+        return problems.size();
+    }
 
-        if (mismatches > 0) {
-            log.warning(mismatches + " armor piece(s) disagree with vanilla's armor points. The "
-                    + "server is still running; those pieces display a number they do not deliver.");
-        }
-        return mismatches;
+    private static int warnEmpty(Logger log) {
+        log.warning("ArmorConsistency checked ZERO armor pieces. That is not a pass -- it means content/armor loaded "
+                + "nothing, so every worn piece falls back to vanilla's armor points instead of its authored Defense, "
+                + "and no armor set exists.");
+        return 0;
     }
 
     /**
-     * The armor points {@code material} inherently grants in {@code slot}.
-     *
-     * <p>Mirrors {@code DefenseModifierItems.armorOf} exactly, including its {@code ADD_NUMBER}
-     * filter: every vanilla armor modifier is flat, and a scaling one summed as though it were flat
-     * would be silently wrong in the same direction in both places, which would make this check
-     * agree with a wrong stat.
-     *
-     * <p>{@code EquipmentSlot.valueOf(slot.name())} is what makes {@code ArmorSlot}'s constant names
-     * a wire format rather than a naming preference -- see {@code ArmorSlotTest}.
+     * Every armor item the server has, keyed by its content token, with the slot it is worn in: an item whose vanilla
+     * defaults grant armor in one of the four armor slots. Read through the SAME method the scan's native half uses.
+     * Legacy constants are skipped; the BODY slot (horse and wolf armor) is not one of the four.
      */
-    private static double vanillaArmorPoints(Material material, ArmorSlot slot) {
-        return DefenseModifierItems.vanillaArmorPoints(
-                material.asItemType(), EquipmentSlot.valueOf(slot.name()));
+    static Map<String, ArmorSlot> serverArmor() {
+        Map<String, ArmorSlot> found = new LinkedHashMap<>();
+        for (Material material : Material.values()) {
+            if (material.isLegacy() || !material.isItem()) continue;
+            for (ArmorSlot slot : ArmorSlot.values()) {
+                if (DefenseModifierItems.vanillaArmorPoints(material.asItemType(), EquipmentSlot.valueOf(slot.name())) > 0) {
+                    found.put(material.name().toLowerCase(Locale.ROOT), slot);
+                }
+            }
+        }
+        return found;
     }
 }

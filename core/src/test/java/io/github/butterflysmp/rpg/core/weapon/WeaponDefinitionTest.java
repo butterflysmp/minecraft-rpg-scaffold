@@ -165,4 +165,16 @@ class WeaponDefinitionTest {
         // Mutation: clamp or rescale sweep in the compact constructor -> the authored number is not
         // the number that fires, and the yml stops being the source of truth -> reddens.
     }
+
+    // --- P-2 (PLAN-summoner 11, R4, ruled 2026-11-25): a left click that ORDERS a summon deals no hit ---
+
+    @Test
+    void aLeftClickThatDirectsASummonMayNotAlsoAuthorAnAttackDamage() {
+        var thrown = assertThrows(IllegalArgumentException.class,
+                () -> weapon(8.0, 1.6, new CastSpec.DirectSummon(32), new EffectSpec.WeaponDamage("kinetic")));
+        assertTrue(thrown.getMessage().contains("direct_summon"), thrown.getMessage());
+        // The shipped shape (the Bone Whistle): no attack_damage, so the vanilla attack never fires.
+        assertDoesNotThrow(() -> weapon(0.0, 0.0, new CastSpec.DirectSummon(32), new EffectSpec.WeaponDamage("kinetic")));
+        // Mutation: drop the refusal -> the weapon constructs, and its left click would both order AND hit -> reddens.
+    }
 }

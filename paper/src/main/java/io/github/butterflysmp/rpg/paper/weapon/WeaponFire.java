@@ -113,17 +113,6 @@ public final class WeaponFire {
         return attempt(player, input, weapons, weaponService, adapters, cooldowns, cadence, yawOffsets, null);
     }
 
-    /**
-     * D5: "the swing deals no damage of its own". True when the held weapon's left_click is a {@code direct_summon}, so the
-     * melee path stands down for it (a left click ON a mob is also vanilla's melee event).
-     */
-    public static boolean leftClickDirects(Player player, WeaponRegistry weapons, AdapterContext adapters) {
-        return WeaponItems.heldWeaponId(player, adapters.keys()).flatMap(weapons::find)
-                .flatMap(w -> w.trigger("left_click"))
-                .map(b -> b.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.DirectSummon)
-                .orElse(false);
-    }
-
     private static Optional<CastResult> attempt(Player player, String input,
                                                WeaponRegistry weapons,
                                                WeaponService weaponService,

@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * seat's briefs of 2026-11-23), with the dev-only
  * example LOADED (as on a dev server), so the unique pool is not empty everywhere and the rows can fail.
  *
- * <p>Recounted with a control: 24 weapons, 1 shield, 24 armour pieces, 5 tools, 6 accessories (60); 11 real enchants
+ * <p>Recounted with a control: 24 weapons, 1 shield, 28 armour pieces (2026-11-25: + copper), 5 tools, 6 accessories (64); 11 real enchants
  * and the dev one.
  */
 class UniqueSlotContentTest {
@@ -36,7 +36,7 @@ class UniqueSlotContentTest {
      * EVERY SHIPPED GEAR'S POOL AT MASTER {@code 383ded19}, before this PR: captured by running
      * {@code EnchantRoll.poolFor(EnchantRollItems.has(g), GearItems.gearClassOf(g), roster)} over the same five loaders in
      * a worktree of that commit (2026-11-23), sorted by id. The NORMAL pool (slots 2-3 since the re-cut; 1-3 before) must equal it for
-     * every one of the 60, with the dev unique enchant loaded.
+     * every one of the 64, with the dev unique enchant loaded.
      */
     private static final List<String> MASTER_POOLS = List.of(
             "blaze_kings_staff=attunement,unbreaking",
@@ -48,7 +48,7 @@ class UniqueSlotContentTest {
             "chainmail_boots=growth,mana_bank,protection,unbreaking",
             "chainmail_chestplate=growth,mana_bank,protection,unbreaking",
             "chainmail_helmet=growth,mana_bank,protection,unbreaking",
-            "chainmail_leggings=growth,mana_bank,protection,unbreaking",
+            "chainmail_leggings=growth,mana_bank,protection,unbreaking", "copper_boots=growth,mana_bank,protection,unbreaking", "copper_chestplate=growth,mana_bank,protection,unbreaking", "copper_helmet=growth,mana_bank,protection,unbreaking", "copper_leggings=growth,mana_bank,protection,unbreaking",
             "copper_sword=sharpness,unbreaking",
             "crossbow=power,unbreaking",
             "crystal_shard_staff=attunement,unbreaking",
@@ -138,11 +138,11 @@ class UniqueSlotContentTest {
         Loaded l = load();
         assertEquals(24, l.weapons(), "2026-11-25: + bone_whistle (PR 5); recount: ls content/weapons | wc -l = 24");
         assertEquals(1, l.shields());
-        assertEquals(24, l.armor());
+        assertEquals(28, l.armor());   // 2026-11-25: + copper (C1); grep -h "^    material:" content/armor/*.yml | wc -l = 28
         assertEquals(5, l.tools());
         assertEquals(6, l.accessories());
-        assertEquals(60, l.gear().size());   // 2026-11-25: + bone_whistle
-        assertEquals(60, MASTER_POOLS.size(), "the snapshot covers the same 60");
+        assertEquals(64, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1)
+        assertEquals(64, MASTER_POOLS.size(), "the snapshot covers the same 64");
         assertEquals(23, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
         assertEquals(23, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
@@ -240,7 +240,7 @@ class UniqueSlotContentTest {
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }
-        assertEquals(60, checked, "the control: every shipped gear was asked");
+        assertEquals(64, checked, "the control: every shipped gear was asked");   // 2026-11-25: + copper
     }
 
     /**

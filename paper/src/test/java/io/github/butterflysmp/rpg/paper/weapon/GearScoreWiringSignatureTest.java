@@ -115,8 +115,9 @@ class GearScoreWiringSignatureTest {
     @Test
     void armourDefenseIsSCALEDPerPiece() throws IOException {
         List<String> lines = read(DEFENSE, 150);
-        assertTrue(indexOf(lines, "GearScore.scaledDefense(vanilla,") > 0,
-                "each piece's material points must be scaled by that piece's own score");
+        assertTrue(indexOf(lines, "double scaled = GearScore.scaledDefense(authored,") > 0
+                        && indexOf(lines, "double authored = ArmorDefenseSource.authored(armor, ArmorItems.armorId(piece, keys),") > 0,
+                "each piece's AUTHORED defense (A1, 2026-11-25; it was the material's points) must be scaled by that piece's own score");
     }
 
     /**
@@ -157,7 +158,7 @@ class GearScoreWiringSignatureTest {
         List<String> lines = read(DEFENSE, 150);
 
         int native_ = indexOf(lines, "nativeArmor += vanilla;");
-        int scaled = indexOf(lines, "double scaled = GearScore.scaledDefense(vanilla,");
+        int scaled = indexOf(lines, "double scaled = GearScore.scaledDefense(authored,");   // A1, 2026-11-25: was (vanilla,
         assertTrue(native_ > 0, "the native sum must still accumulate the raw vanilla points");
         assertTrue(scaled > 0, "and the scaled figure must be computed separately");
         assertTrue(native_ < scaled,
@@ -167,6 +168,7 @@ class GearScoreWiringSignatureTest {
 
         for (String line : lines) {
             if (isComment(line)) continue;
+            assertTrue(!line.contains("nativeArmor += authored"), "A1: the native sum is vanilla's, never the authored Defense");
             assertTrue(!line.contains("nativeArmor += scaled"),
                     "nativeArmor must never accumulate the scaled figure. Found: " + line.trim());
         }

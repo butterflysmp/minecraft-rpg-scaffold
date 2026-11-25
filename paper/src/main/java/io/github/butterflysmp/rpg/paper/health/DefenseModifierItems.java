@@ -4,6 +4,10 @@ import com.google.common.collect.Multimap;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
 import io.github.butterflysmp.rpg.core.enchant.Protection;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
+import io.github.butterflysmp.rpg.core.weapon.ArmorDefenseSource;
+import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
+import io.github.butterflysmp.rpg.paper.weapon.ArmorItems;
 import io.github.butterflysmp.rpg.paper.adapter.Keys;
 import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import io.github.butterflysmp.rpg.paper.weapon.EnchantItems;
@@ -57,6 +61,11 @@ import java.util.Map;
  * so reconciling twice -- once per source -- would have the two calls annihilate each other. One
  * entry meaning "what this slot contributes to Defense" avoids both without inventing a compound key.
  *
+ * <p><b>CORRECTED 2026-11-25 (the seat's A1): the DEFENSE no longer comes from vanilla.</b> Each slot's Defense is
+ * the {@code defense:} authored in its content file ({@code ArmorDefenseSource}, one lookup by tag then material),
+ * because Ben's ladder (5/8/7/4 and up) is no vanilla material's. What follows is kept as the account of the
+ * NATIVE half, which still reads vanilla, for exactly the reasons given:
+ *
  * <p>The armor values come from VANILLA ITSELF, via
  * {@link ItemType#getDefaultAttributeModifiers(EquipmentSlot)}, never from a hardcoded
  * {@code Material -> armor} table. A table would be the banned in-Java-content pattern, it would
@@ -107,7 +116,7 @@ public final class DefenseModifierItems {
      * an enchant of ours writes nothing onto the vanilla armor attribute. A Protection III diamond
      * chestplate contributes 17 to the stat and 8 to the native sum.
      */
-    public static Worn scan(Player player, Keys keys, EnchantRegistry enchants) {
+    public static Worn scan(Player player, Keys keys, EnchantRegistry enchants, ArmorRegistry armor) {
         Map<String, Double> defense = new HashMap<>();
         double nativeArmor = 0.0;
 
@@ -135,13 +144,22 @@ public final class DefenseModifierItems {
             // the same failure arriving the first time, through Protection rather than through this.
             nativeArmor += vanilla;
 
-            // THE PIECE'S OWN SCORE SCALES THE MATERIAL'S POINTS, AND NOTHING ELSE ON THIS LINE.
+            // THE PIECE'S OWN SCORE SCALES ITS AUTHORED DEFENSE, AND NOTHING ELSE ON THIS LINE. (It said "the
+            // material's points" until 2026-11-25, when A1 below moved the source off vanilla.)
             //
             // Per PIECE, not per player: a 340 chestplate over a 100 helmet contributes its own
             // multiple, so the four slots are four independent readings. The weapon side is the same
             // ruling seen from the other end -- WeaponAttackItems scales the authored attack_damage by
             // the score of the stack in hand.
-            double scaled = GearScore.scaledDefense(vanilla,
+            //
+            // A1 (the seat, 2026-11-25): THE AUTHORED NUMBER IS THE SOURCE. One lookup by the tag, then the
+            // material (A3), so an untagged mob drop reads what a minted piece of its material reads, at the
+            // base score (it carries none). CC'S CALL: a material no content piece covers (the turtle helmet,
+            // C2) keeps vanilla's points rather than dropping to 0, so nothing Ben sees on it changes; the
+            // alternative is 0. See PLAN-armor-sets.md.
+            double authored = ArmorDefenseSource.authored(armor, ArmorItems.armorId(piece, keys),
+                    tokenOf(piece), ArmorSlot.valueOf(slot.name())).orElse(vanilla);
+            double scaled = GearScore.scaledDefense(authored,
                     GearScore.orAbsent(GearScoreItems.read(piece, keys)));
 
             // Plus whatever this piece's own Protection grants. ONE decode per slot, the hoist
@@ -161,6 +179,12 @@ public final class DefenseModifierItems {
             if (contributed > 0) defense.put(slot.name(), contributed);
         }
         return new Worn(defense, nativeArmor);
+    }
+
+    /** The item's material as a content token (diamond_helmet), or null for an empty slot. */
+    static String tokenOf(ItemStack item) {
+        if (item == null || item.getType().isAir()) return null;
+        return item.getType().name().toLowerCase(java.util.Locale.ROOT);
     }
 
     /** The armor points this item inherently grants in {@code slot}, or 0 if it grants none. */

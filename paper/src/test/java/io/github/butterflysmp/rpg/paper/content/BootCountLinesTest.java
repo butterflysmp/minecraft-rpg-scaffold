@@ -76,7 +76,7 @@ class BootCountLinesTest {
     @Test
     void mintOnCraftIsMeasured() {
         Boot boot = boot();
-        assertEquals("Mint-on-craft: 38 indexed, 38 claiming, of 54 gear definitions",
+        assertEquals("Mint-on-craft: 42 indexed, 42 claiming, of 58 gear definitions",
                 BootLines.mintOnCraft(boot.crafts(), boot.allGear().size()));
     }
 

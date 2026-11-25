@@ -32,7 +32,12 @@ import java.util.Optional;
  *
  * <h2>What minting does NOT do, and why that is the whole point of this slice</h2>
  *
- * It does not give the piece its Defense. It never did and it must not start.
+ * <p><b>CORRECTED 2026-11-25 (A1):</b> the piece's Defense is now its AUTHORED {@code defense:}, read by
+ * {@code DefenseModifierItems.scan} through {@code ArmorDefenseSource} by tag and then by material -- still not
+ * written onto the stack, so an untagged piece of the same material reads the same number (A3). The account below
+ * is slice 1's, kept as written:
+ *
+ * <p>It does not give the piece its Defense. It never did and it must not start.
  * {@code DefenseModifierItems.armorOf} sources Defense from
  * {@code ItemType.getDefaultAttributeModifiers(slot)} -- VANILLA's own armor points for the
  * material -- and that read is blind to anything on the stack. Since a minted piece's authored
@@ -79,6 +84,9 @@ public final class ArmorItems {
      * mint time, and the STAT comes from vanilla independently. Baking it would create a third place
      * for the truth about a diamond helmet to live, and the two that already exist are one too many
      * -- which is why {@code ArmorConsistency} checks them against each other at boot.
+     *
+     * <p>(2026-11-25, A1: the stat now reads the same loaded definition the tooltip does, so there is ONE place,
+     * the content file; still not baked, for the reason above. ArmorConsistency checks coverage now, A2.)
      */
     public static ItemStack mint(ArmorDefinition armor, AdapterContext adapters) {
         Keys keys = adapters.keys();

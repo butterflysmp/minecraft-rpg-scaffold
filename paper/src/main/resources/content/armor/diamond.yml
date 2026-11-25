@@ -21,41 +21,38 @@ flavor:
 
 pieces:
   # ---------------------------------------------------------------------------------------------
-  # defense: IS DISPLAY-ONLY. READ THIS BEFORE EDITING IT.
+  # defense: IS THE PIECE'S DEFENSE. (Rewritten 2026-11-25, the seat's A1.)
   #
-  # This number does NOT give the piece its Defense. It is printed on the tooltip and nothing else.
-  # The Defense a worn piece actually contributes comes from VANILLA -- DefenseModifierItems reads
-  # ItemType.getDefaultAttributeModifiers(slot) and sums the ARMOR modifiers -- and that read cannot
-  # see this file, or the minted item, or anything we write.
+  # This number is what a worn piece contributes to the Defense stat, scaled by the piece's own gear
+  # score (GearScore.scaledDefense: x score/100). DefenseModifierItems reads it through
+  # ArmorDefenseSource, by the piece's tag and then by its MATERIAL, so an untagged diamond helmet off
+  # a mob reads this same 15 at the base score (A3). Editing it buffs or nerfs the piece.
   #
-  # So editing this number does not buff the piece. It changes the LABEL, the item starts advertising
-  # a number it does not deliver, and ArmorConsistency shouts about it in the boot log. It is a
-  # MIRROR of vanilla's value, never a lever on it. The lever does not exist yet; Protection, in
-  # Slice 2, is the first thing that will move a piece's real Defense.
+  # Vanilla's armor points (3/8/6/3 for diamond) are still read, but only as the native armor the
+  # armor bar cancels (ArmorBarOverride). They are no longer the Defense, and ArmorConsistency no
+  # longer compares the two: it checks that every server armor material has one piece here (A2).
   #
-  # It is authored here anyway, rather than read from vanilla at mint time, so the numbers a player
-  # reads live in content where this project keeps its numbers.
-  #
-  # These four are independently pinned by DefenseTest, which asserts the equip ladder
-  # 3 -> 11 -> 17 -> 20 for a diamond set: 3 + 8 + 6 + 3 == 20, a full vanilla armor bar.
+  # Until 2026-11-25 this block said the number was DISPLAY-ONLY, a mirror of vanilla's. Ben's ladder
+  # (5/8/7/4, 10/16/14/8, 15/24/21/12) is no material's, which is what retired that. The numbers are
+  # BEN's, 2026-11-25: helmet / chestplate / leggings / boots, in that order.
   # ---------------------------------------------------------------------------------------------
   head:
     material: diamond_helmet
     craft_result: diamond_helmet
     display_name: "Diamond Helmet"
-    defense: 3
+    defense: 15  # BEN 2026-11-25 (was vanilla's 3)
   chest:
     material: diamond_chestplate
     craft_result: diamond_chestplate
     display_name: "Diamond Chestplate"
-    defense: 8
+    defense: 24  # BEN 2026-11-25 (was vanilla's 8)
   legs:
     material: diamond_leggings
     craft_result: diamond_leggings
     display_name: "Diamond Leggings"
-    defense: 6
+    defense: 21  # BEN 2026-11-25 (was vanilla's 6)
   feet:
     material: diamond_boots
     craft_result: diamond_boots
     display_name: "Diamond Boots"
-    defense: 3
+    defense: 12  # BEN 2026-11-25 (was vanilla's 3)

@@ -61,6 +61,9 @@ loads empty, every other signal still reads healthy (Defense keeps working — i
 vanilla, not from a tag), and a silent "0 mismatches" would be the strongest-looking evidence that
 nothing is wrong.
 
+> **2026-11-25, `PLAN-armor-sets.md` (the seat's A1 and A2): no longer true.** The authored `defense:` IS the
+> Defense now, and `ArmorConsistency` checks coverage instead. The paragraph below is the record of this slice.
+
 **`defense:` is DISPLAY-ONLY in this slice**, and every content file says so at length. Editing it
 changes the label, not the mitigation, and trips `ArmorConsistency`. It is a mirror of vanilla's
 value, never a lever on it.
