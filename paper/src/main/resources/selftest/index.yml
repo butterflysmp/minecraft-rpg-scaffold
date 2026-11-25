@@ -128,3 +128,6 @@ gates:
 # summoner (2026-11-25, feat/summoner-gate on feat/summoner-5): the Bone Whistle and its wolf, on the pad, typed after the
 # mage gate as /rpg selftest mage-guaranteed+summoner. docs/gates/GATE-summoner.md carries its R rows and SAFETY.
   - summoner
+# armor-sets (2026-11-25, feat/armor-sets-gate on feat/armor-sets-3): authored Defense, copper, the set bonuses, the four
+# columns on armor, typed after the summoner gate as /rpg selftest summoner+armor-sets. docs/gates/GATE-armor-sets.md.
+  - armor-sets

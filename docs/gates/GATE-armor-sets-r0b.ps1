@@ -1,0 +1,68 @@
+# GATE-armor-sets R0b (2026-11-25, feat/armor-sets-gate on feat/armor-sets-3): the stack #301-#303 and this gate.
+# Prediction: before '--- absent', 30 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 4 ABSENT and 0
+# PRESENT; after '--- controls', 4 ABSENT and 0 PRESENT.
+# Run: powershell -File <this> [-JarPath <jar>]
+param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path $JarPath))
+function Bytes($name) { $e = $zip.GetEntry($name); if ($e -eq $null) { return $null }; $s = $e.Open(); $m = New-Object IO.MemoryStream; $s.CopyTo($m); $s.Close(); [Text.Encoding]::GetEncoding(28591).GetString($m.ToArray()) }
+function ValueLine($text, $l, $label) { if ($text -ne $null -and $text -match ("(?m)^" + [regex]::Escape($l) + '([ \t]*\r?$|[ \t]+#)')) { "PRESENT $label '$l'" } else { "ABSENT  $label '$l'" } }
+function Has($text, $s, $label) { if ($text -ne $null -and $text.Contains($s)) { "PRESENT $label '$s'" } else { "ABSENT  $label '$s'" } }
+function Entry($name) { if ($zip.GetEntry($name) -ne $null) { "PRESENT entry '$name'" } else { "ABSENT  entry '$name'" } }
+$cu = Bytes 'content/armor/copper.yml'
+$le = Bytes 'content/armor/leather.yml'
+$go = Bytes 'content/armor/golden.yml'
+$ch = Bytes 'content/armor/chainmail.yml'
+$ir = Bytes 'content/armor/iron.yml'
+$di = Bytes 'content/armor/diamond.yml'
+$ne = Bytes 'content/armor/netherite.yml'
+$g = Bytes 'selftest/GATE-armor-sets.yml'
+$gs = Bytes 'selftest/GATE-summoner.yml'
+$ix = Bytes 'selftest/index.yml'
+$ll = Bytes 'io/github/butterflysmp/rpg/core/weapon/ArmorLoreLines.class'
+$el = Bytes 'io/github/butterflysmp/rpg/paper/content/EnchantLoader.class'
+$ac = Bytes 'io/github/butterflysmp/rpg/paper/content/ArmorConsistency.class'
+$rl = Bytes 'io/github/butterflysmp/rpg/paper/listener/RpgListeners.class'
+$wf = Bytes 'io/github/butterflysmp/rpg/paper/weapon/WeaponFire.class'
+$dr = Bytes 'io/github/butterflysmp/rpg/paper/selftest/SelfTestDrivers.class'
+ValueLine $cu 'rarity: common' 'copper.yml'
+ValueLine $cu '    material: copper_helmet' 'copper.yml'
+ValueLine $cu '    defense: 5' 'copper.yml'
+ValueLine $cu '  - type: max_summons' 'copper.yml'
+ValueLine $le '    defense: 8' 'leather.yml'
+ValueLine $le '  - type: health_regen' 'leather.yml'
+ValueLine $go '  - type: mana_regen' 'golden.yml'
+ValueLine $ch '    defense: 7' 'chainmail.yml'
+ValueLine $ir '    defense: 16' 'iron.yml'
+ValueLine $ir '    value: 100' 'iron.yml'
+ValueLine $di '    defense: 24' 'diamond.yml'
+ValueLine $di '    value: 20' 'diamond.yml'
+ValueLine $ne '    defense: 21' 'netherite.yml'
+ValueLine $ne '    value: 40' 'netherite.yml'
+ValueLine $g 'AS0:' 'GATE-armor-sets.yml'
+ValueLine $g 'AS9:' 'GATE-armor-sets.yml'
+ValueLine $g 'AS16:' 'GATE-armor-sets.yml'
+ValueLine $gs 'SM7R:' 'GATE-summoner.yml'
+ValueLine $ix '  - armor-sets' 'index.yml'
+Entry 'io/github/butterflysmp/rpg/core/weapon/ArmorDefenseSource.class'
+Entry 'io/github/butterflysmp/rpg/core/weapon/ArmorCoverage.class'
+Entry 'io/github/butterflysmp/rpg/core/weapon/ArmorSetBonus.class'
+Entry 'io/github/butterflysmp/rpg/core/weapon/ArmorSetDecision.class'
+Entry 'io/github/butterflysmp/rpg/core/weapon/ArmorSetContributions.class'
+Entry 'io/github/butterflysmp/rpg/core/summon/SummonHitPrice.class'
+Entry 'io/github/butterflysmp/rpg/paper/health/ArmorSetItems.class'
+Has $ll 'Set Bonus (4 pieces):' 'ArmorLoreLines.class'
+Has $el 'armor_slot' 'EnchantLoader.class'
+Has $ac 'turtle_helmet' 'ArmorConsistency.class'
+Has $dr 'weapon or armor id' 'SelfTestDrivers.class'
+'--- absent'
+ValueLine $gs 'SM7:' 'GATE-summoner.yml'
+ValueLine $ch 'set_bonus:' 'chainmail.yml'
+Has $rl 'leftClickDirects' 'RpgListeners.class'
+Has $wf 'leftClickDirects' 'WeaponFire.class'
+'--- controls'
+ValueLine $g 'AS17:' 'GATE-armor-sets.yml'
+ValueLine $cu '    defense: 6' 'copper.yml'
+ValueLine $ch '  - type: quiver_size_percent' 'chainmail.yml'
+Entry 'content/armor/turtle.yml'
+$zip.Dispose()

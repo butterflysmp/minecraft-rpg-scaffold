@@ -795,7 +795,7 @@ final class SelfTestDrivers {
     private Optional<String> shiftClick(Player p, String arg) {
         String[] f = arg.split("\\s+");
         if (f.length != 2 || !(f[0].equals("top") || f[0].equals("bottom"))) {
-            return Optional.of("SHIFT_CLICK wants '<top|bottom> <weapon id>', got '" + arg + "'");
+            return Optional.of("SHIFT_CLICK wants '<top|bottom> <weapon or armor id>', got '" + arg + "'");
         }
         InventoryView view = p.getOpenInventory();
         Inventory top = view.getTopInventory();
@@ -805,7 +805,9 @@ final class SelfTestDrivers {
         int to = inTop ? top.getSize() : view.countSlots();
         for (int raw = from; raw < to; raw++) {
             ItemStack item = view.getItem(raw);
-            if (item == null || item.isEmpty() || WeaponItems.weaponId(item, keys).filter(f[1]::equals).isEmpty()) continue;
+            if (item == null || item.isEmpty() || WeaponItems.weaponId(item, keys)   // armor too: GATE-armor-sets AS13, 2026-11-25
+                    .or(() -> io.github.butterflysmp.rpg.paper.weapon.ArmorItems.armorId(item, keys))
+                    .filter(f[1]::equals).isEmpty()) continue;
             run.log("DRIVE shift-click InventoryClickEvent SHIFT_LEFT MOVE_TO_OTHER_INVENTORY " + f[0] + " slot=" + raw
                     + " " + f[1] + " x" + item.getAmount());
             Bukkit.getPluginManager().callEvent(new InventoryClickEvent(view, view.getSlotType(raw), raw,

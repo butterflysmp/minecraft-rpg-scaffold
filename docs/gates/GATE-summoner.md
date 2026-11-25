@@ -498,6 +498,21 @@ PLAYERHIT.
   - **No `SUMMON target … target=<s4b>`; the probe reads `target=none`.** `s4b` targets him, but stands beyond `trigger_radius` 30. The guard's TARGETING tier also stops at `chase_limit` 32 from him.
   - **A mob he damages that cannot target him does not exist** (R2), so this is the nearest stageable form, CC'S CALL.
 
+### SM7R — A MOB'S MELEE ON THE WOLF, PRICED AS ON A PLAYER (P-1)
+
+Added 2026-11-25 on `feat/armor-sets-gate`, the top of the armor-sets stack, which carries P-1 (`PLAN-armor-sets.md`
+section 2). SM7's steps are unchanged; its key is renamed SM7R.
+- **P-1, READ:** `RpgListeners.onSummonDamaged` now asks `SummonHitPrice.of`. On `ENTITY_ATTACK` that is the dealer's
+  SEEDED attack, the stat `onMobMeleeAttack` prices a player's hit from; on any other cause it is the event's amount,
+  priced.
+- **INFERRED, as SM7 was:** the scripted `damage <wolf> 2 minecraft:mob_attack by s7` reaches the handler as
+  `ENTITY_ATTACK`, with `s7` as the causing entity. SM3A's boot read that cause for the same command on him.
+- **EXECUTED:** `MobScaling.attackDamage(3.0, false, true, 100)` = **15.0**. That is `s7`'s seed: a zombie's vanilla
+  3.0 at the pad's score of 100, READ (S-3: the pad's worst score is 100).
+- **The wolf: `100.000` → `85.000`.** Its defence is ×1 (READ, as SM7). The scripted 2 is not a term. SM7 read
+  `90.000` on the old pricing, and that figure is now the FAIL reading.
+- **His SAFETY is unchanged:** this hit lands on the wolf, never on him.
+
 ### SM14R — THE SHOCKWAVE, WITH THE WOLF'S HITS IN THE SUM
 
 Staged as SM14.

@@ -292,8 +292,9 @@ SM6:
   - cmd: "kill @e[tag=s6]"
   - wait: 2
 
-# SM7, A MOB'S HIT ON THE WOLF: a frozen zombie's scripted vanilla 2 (mob_attack) on the wolf, priced, lands.
-SM7:
+# SM7R (re-predicts SM7 for P-1, 2026-11-25): a frozen zombie's scripted 2 (mob_attack) on the wolf, now priced from its
+# SEEDED attack as on a player (SummonHitPrice), not from the event's 2.
+SM7R:
   - clear_inventory: ""
   - clear_state: ""
   - cmd: "rpg give bone_whistle"
