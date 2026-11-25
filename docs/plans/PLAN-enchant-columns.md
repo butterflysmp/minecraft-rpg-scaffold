@@ -972,3 +972,76 @@ are its witness).
 20.** The same `scheduleOn` times the plain volley's wind-up, so it is the volley's behaviour too. The fake world fires
 exactly 20 later, so the unit row's 20 is the fake's. The cause is not read (two INFERRED candidates in the gate).
 Nothing is changed; the seat's to rule whether it is owed a fix, a fake change, or a note.
+
+## 19. THE ONE TICK, READ (the seat's merge approval of 2026-11-24: "READ, do not infer ... Then PROPOSE, do not build")
+
+**The instrument:** `javap -c -p` (JDK 26.0.1) on `run/versions/26.1.2/paper-26.1.2.jar`, whose manifest reads
+`Implementation-Version: 26.1.2-74-e4e17fc`, `Build-Number: 74`: the build `pom.xml` pins (`26.1.2.build.74-stable`)
+and the boot log named (`Paper version 26.1.2-74-ver/26.1.2@e4e17fc`). And our own source at `c1ebabab`.
+
+### READ, STEP BY STEP
+
+1. **The entity scheduler (`io.papermc.paper.threadedregions.EntityScheduler`).** `schedule(run, retired, delay)` files
+   the task under the key `tickCount + max(1, delay)`. `executeTick()` FIRST does `tickCount = tickCount + 1`, THEN
+   removes and runs the tasks filed under the new `tickCount`. So a delay `d` runs on the `d`-th `executeTick` after it
+   was filed.
+2. **The global scheduler (`FoliaGlobalRegionScheduler`).** `execute(plugin, r)` is `run(plugin, …)`, which is
+   `runDelayed(plugin, …, 1)`; `scheduleInternal` files under `tickCount + delay`; `tick()` FIRST increments
+   `tickCount`, THEN runs what is filed under it. **The region scheduler is `FallbackRegionScheduler`**
+   (`CraftServer.regionizedScheduler`), whose `execute`, `run`, `runDelayed` and `runAtFixedRate` each hand straight to
+   `getGlobalRegionScheduler()`.
+3. **The order inside one server tick (`MinecraftServer`).** `runServer` does `currentTick = currentTick + 1` before the
+   tick; `tickChildren` then runs, in this order: `CraftScheduler.mainThreadHeartbeat()` (Bukkit tasks),
+   `FoliaGlobalRegionScheduler.tick()` (the global and every region task), then `executeTick()` for every entity
+   scheduler. `Bukkit.getCurrentTick()` is `MinecraftServer.currentTick` throughout the tick.
+4. **Our path, from the press to the beam (our source):**
+   - The selftest's `use` step runs inside the PLAYER's entity scheduler (`SelfTestRun`: a `wait: n` resumes by
+     `onEntityLater(player, this::advance, n)`), on tick **T**, after T's global tick.
+   - `WeaponFire.attempt` charges the cost and the cooldown there, then hops the cast: `adapters.scheduler().onRegion(eye,
+     …)` = `getRegionScheduler().execute(…)` = the global `runDelayed(…, 1)`, filed under global `g + 1`, where T's
+     global tick has already made it `g`. **So the cast (`CastExecutor.execute`, `commit`, `beginVolley`) runs at
+     T + 1**, in that tick's global phase, BEFORE T + 1's entity phase.
+   - `beginVolley` reads `pressed = Bukkit.getCurrentTick()` = **T + 1**, and files the first shot by
+     `scheduleOn(player, 20)` = `onEntityLater` = the player's `runDelayed(…, 20)`, under `e + 20`, where `e` is the
+     player's `tickCount` from T (T + 1's `executeTick` has not run yet).
+   - T + 1's `executeTick` makes it `e + 1`; the task runs when it reaches `e + 20`: **tick T + 20**. The `FOCUSED` line
+     reads `tick` = T + 20.
+   - **So `tick - pressed` = (T + 20) - (T + 1) = 19, exactly as read six times. From the press (T) to the beam, 20.**
+5. **Which delays run one short, and of what:** an ENTITY-scheduler delay `d` (`scheduleOn`) filed from the GLOBAL or
+   region phase (or the Bukkit heartbeat) of a tick runs `d - 1` ticks after it was filed, because that tick's
+   `executeTick` still counts. Filed from inside the entity phase, it runs `d` later. A GLOBAL/region delay `d`
+   (`schedule`, `scheduleCancellable` = `onRegionLater` = global `runDelayed`) filed from the global phase or after it
+   runs `d` later; filed from the heartbeat, `d - 1` (nothing of ours files from the heartbeat that I found; NOT
+   audited across all of paper/). **In `CastExecutor`, which runs in the global phase after the hop, exactly two calls
+   are entity-scheduled at the cast: the volley's wind-up (`beginVolley`) and the Knell Beam's warning flashes (`warn`).
+   Both land one tick short OF THE CAST and exactly on time FROM THE PRESS**, because the hop already cost one. Every
+   other cast-time delay (`schedule`, `scheduleCancellable`: the ray's and sweep's segments, the cone, the orb's flight,
+   rest, life, beat and backstop) lands exactly `d` after the cast, which is `d + 1` after the press. Delays filed later
+   from inside the entity phase (a volley's `interval_ticks`, the selftest's `wait:`) are exact.
+6. **The fake world** (`FakeWorld.scheduleOn`, `schedule`): files `now + d` and runs it at exactly `now + d`, with no
+   phases and no hop (`CastExecutor.execute` is called directly). So in the fake, press = cast and press -> beam = 20, as
+   on the server; cast -> beam is 20 in the fake and 19 on the server, and `FOCUSED`'s `pressed` was the CAST.
+
+**NOT READ, said so:** where a REAL client's right click is handled. If its packet is processed between ticks or in the
+entity phase (after that tick's global tick), it is the selftest's case: press T, cast T + 1, beam T + 20. If it were
+processed before that tick's global tick, the cast would run the same tick and the beam would be 19 after the press.
+INFERRED to be the first; not read in the jar.
+
+### THE PROPOSAL (do not build; the seat rules)
+
+- **(c) IS RIGHT IN SUBSTANCE: NOTHING REAL IS SHORT FROM THE PRESS.** The wind-up is 20 ticks from the press, as Ben's
+  "Everything the same" and the content's `windup_ticks: 20` say. What read 19 is the trace: its `pressed` is taken at
+  the cast, one tick after the press, because of `WeaponFire`'s region hop. The two reads are not "different phases of
+  one tick" as candidate (c) was worded in the gate; they are ticks T + 1 and T + 20, each read correctly.
+  **Change for shipped weapons: none. Change for gates already read: none**; `GATE-focused-beam.md`'s six misses stand as
+  a prediction taken from the fake's clock (press = cast). **The one change worth making, as a small PR the seat may
+  rule:** stamp the press tick at the press (`WeaponFire.attempt`, before the hop) and carry it to the trace, so a
+  `FOCUSED` line reads `tick - pressed` = 20; or rename the field `cast=`. Either is trace-only.
+- **(a), the adapter adds a tick: WRONG.** It would make every entity-scheduled cast-time delay land one tick LATE from
+  the press: the Cursed Emerald's wind-up 21, the Knell Beam's 24 becomes 25 and its warning flashes shift. It would
+  also make delays filed from the entity phase (a volley's interval, the selftest's waits) one tick long.
+- **(b), the fake corrected to the server's clock: NOT NOW.** Correct in principle, but it means modelling the hop and the
+  three phases (a cast one tick after its press; an entity delay filed in the global phase landing one short). Every
+  core test that counts ticks after a press would move by one, with no change in shipped behaviour. If the seat wants
+  the fake honest about the hop, the smaller form is to model ONLY the hop (the cast one tick after the press) and keep
+  `scheduleOn` exact, and that is not what the 19 asks for.
