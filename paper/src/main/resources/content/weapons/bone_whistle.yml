@@ -1,0 +1,34 @@
+# THE BONE WHISTLE (the Summoner slice, PR 5; Ben, 2026-11-24). The first summoner weapon.
+# BEN: "Common, wood tier, Nature damage"; "100 health, 20 damage, 40 mana, 10s cooldown. Yes stats scale with
+# gearscore"; the old repo's recipe and look: "1. Keep 2. Keep" (bone, bone, stick in one column; the item a bone).
+# "Wood tier" is a convention here, not a key: common rarity and a basic recipe (no weapon declares a tier).
+# SEAT PLACEHOLDERS, OPEN FOR BEN: the flavor, both ability names and descriptions (their numbers are real, B5).
+id: bone_whistle
+display_name: "Bone Whistle"
+element: nature
+rarity: common
+class: summoner
+material: bone
+flavor:
+  - "Old bone, older loyalty."                      # SEAT PLACEHOLDER
+triggers:
+  right_click:
+    name: "Call the Wolf"                           # SEAT PLACEHOLDER
+    description:                                    # SEAT PLACEHOLDER wording; the numbers are the summon file's
+      - "Summons a wolf: 100 health, 20 damage"
+      - "(x gear score / 100). Recast to replace it."
+    cooldown_ticks: 200                             # BEN: "10s cooldown"
+    cost:
+      resource: mana
+      amount: 40                                    # BEN
+    cast:
+      type: summon
+      summon: bone_whistle_wolf
+  left_click:
+    name: "Sic"                                     # SEAT PLACEHOLDER
+    description:                                    # SEAT PLACEHOLDER
+      - "Sends your wolf at the mob you point at"
+      - "(up to 32 blocks)."
+    cast:
+      type: direct_summon
+      reach: 32                                     # SEAT PLACEHOLDER (D5)

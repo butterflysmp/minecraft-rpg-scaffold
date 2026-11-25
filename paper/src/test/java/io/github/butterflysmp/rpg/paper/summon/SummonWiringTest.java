@@ -195,6 +195,16 @@ class SummonWiringTest {
                 "forgotten on his quit");
     }
 
+    /** PR 5: a minted SUMMONER weapon is never used on an entity by vanilla (READ: a bone tames a wild wolf). */
+    @Test
+    void aSummonerWeaponTamesNothing() throws IOException {
+        List<String> l = code(Path.of("listener", "RpgListeners.java"));
+        int m = at(l, "public void onSummonerWeaponEntityInteract(", 0);
+        int cls = at(l, ".map(w -> w.weaponClass() == io.github.butterflysmp.rpg.core.weapon.WeaponClass.SUMMONER)", m);
+        int cancel = at(l, "if (summonerWeapon) event.setCancelled(true);", cls);
+        assertTrue(m > 0 && cls > m && cancel > cls && cancel < end(l, m), "a summoner weapon's entity click is cancelled");
+    }
+
     /** The seat: "no Java names a wolf except what D1 must switch off, each behind a check of the entity's type". */
     @Test
     void noSummonCodeNamesAWolf() throws IOException {

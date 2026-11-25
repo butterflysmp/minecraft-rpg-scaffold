@@ -49,9 +49,13 @@ class SummonLoaderTest {
     }
 
     @Test
-    void noShippedSummonExistsIn3a() {
-        assertTrue(Files.notExists(Path.of("src", "main", "resources", "content", "summons")),
-                "no summon ships until the Bone Whistle (PR 5)");
+    void exactlyTheBoneWhistlesWolfShips() {
+        // 3a said "no summon ships"; PR 5 (2026-11-25) ships one. Recount: ls content/summons/*.yml | wc -l = 1.
+        SummonRegistry shipped = loader().loadAll(Path.of("src", "main", "resources", "content", "summons").toFile());
+        assertEquals(List.of(), warnings, "the shipped file loads clean");
+        assertEquals(1, shipped.size());
+        assertEquals(new SummonDefinition("bone_whistle_wolf", "wolf", "{owner}'s Wolf", 100, 20, 8, 30, 32, 48, 20, 100),
+                shipped.find("bone_whistle_wolf").orElseThrow(), "Ben's 100 and 20, 8 and 30; the seat's placeholders");
         assertEquals(0, loader().loadAll(dir.resolve("absent").toFile()).size(), "a missing directory is no summons");
     }
 
