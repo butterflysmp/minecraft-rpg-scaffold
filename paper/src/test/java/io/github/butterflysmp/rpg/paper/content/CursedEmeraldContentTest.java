@@ -211,7 +211,7 @@ class CursedEmeraldContentTest {
     void theRayRangeIs32AndTheFileSaysWHY() throws IOException {
         var volley = assertInstanceOf(CastSpec.Volley.class, trigger(cursedEmerald()).ability().cast());
         assertEquals(20, volley.windupTicks());
-        assertEquals(6, volley.shots());
+        assertEquals(3, volley.shots()); // Ben, 2026-11-24: "decrease the normal volley count to 3"
         assertEquals(2, volley.intervalTicks());
 
         var ray = assertInstanceOf(CastSpec.Ray.class, volley.of());
@@ -251,14 +251,14 @@ class CursedEmeraldContentTest {
 
         assertTrue(problems.isEmpty(),
                 "a SHIPPED weapon must boot clean. Authoring cooldown_ticks below the derived floor "
-                        + "(windup 20 + (shots 6 - 1) x interval 2 = 30) emits a Content: warning by "
+                        + "(windup 20 + (shots 3 - 1) x interval 2 = 24, since 2026-11-24) emits a Content: warning by "
                         + "design: " + problems);
 
         var ability = trigger(cursedEmerald()).ability();
         int floor = CastSpec.minimumCooldownTicks(ability.cast());
-        assertEquals(30, floor, "the derived floor, from the three numbers the cast owns");
+        assertEquals(24, floor, "the derived floor, from the three numbers the cast owns: 20 + (3 - 1) x 2 (Ben's 3 shots, 2026-11-24)");
         assertEquals(30, ability.cooldownTicks(),
-                "AUTHORED EQUAL TO THE FLOOR, and redundant as a guard on purpose -- "
+                "AUTHORED 30, ABOVE THE FLOOR SINCE 2026-11-24 (it was equal to it at 6 shots), and redundant as a guard -- "
                         + "max(authored, derived) enforces it either way. It is authored so the "
                         + "TOOLTIP renders 'Cooldown: 1.5s' (it renders the AUTHORED value, so 0 "
                         + "would print no cooldown line on a weapon guarded for 30 ticks), and so "

@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * FOCUSED BEAM THROUGH THE REAL CAST PATH (the seat's brief of 2026-11-24, PR 2). Ben: "Fires one stronger beam after the
  * wind up." / "1. 108/162/216 2. No piece 3. Everything the same except increase the range to 48 blocks. 4. Yes". The
  * Cursed Emerald's right click copied from {@code cursed_emerald.yml}: cooldown 30, mana 40, on_cast emerald_windup, a
- * volley of wind-up 20, 6 shots 2 apart, of a ray of range 32 drawing emerald_beam; on_hit emerald_impact and 27 kinetic.
+ * volley of wind-up 20, 3 shots 2 apart (6 until Ben's 3, 2026-11-24), of a ray of range 32 drawing emerald_beam; on_hit emerald_impact and 27 kinetic.
  *
  * <p>THE FAKE'S RAY (READ, {@code FakeWorld.castRay}): a body is met when its POSITION lies within {@code hitRadius} of
  * the segment, in a chunk column the segment walks. So every mob here stands at his EYE height (1.62) on z = 8, inside
@@ -41,7 +41,7 @@ class FocusedBeamTest {
 
     private static AbilityDefinition volley(String weapon) {
         return new AbilityDefinition(weapon + "/right_click", "Cursed Volley", "kinetic", 30, new ResourceCost("mana", 40),
-                new CastSpec.Volley(20, 6, 2, new CastSpec.Ray(32, "emerald_beam")),
+                new CastSpec.Volley(20, 3, 2, new CastSpec.Ray(32, "emerald_beam")),
                 List.of(new EffectSpec.Visual("emerald_impact"), new EffectSpec.Damage(27, "kinetic")),
                 List.of(), List.of(new EffectSpec.Visual("emerald_windup")));
     }
@@ -84,7 +84,7 @@ class FocusedBeamTest {
         Stage s = stage(1, m);
         press(s, volley("cursed_emerald"));
         s.world().advanceTicks(40);
-        assertEquals(List.of(108.0), sent(s, m), "ONE hit of level I's 108, in place of six of 27");
+        assertEquals(List.of(108.0), sent(s, m), "ONE hit of level I's 108, in place of three of 27");
         assertEquals(1, s.world().focusedBeams.size(), "one Focused Beam traced");
         assertEquals(0, s.world().pendingTasks(), "no further shot left scheduled");
     }
@@ -95,14 +95,14 @@ class FocusedBeamTest {
         Stage off = stage(0, m);
         press(off, volley("cursed_emerald"));
         off.world().advanceTicks(40);
-        assertEquals(List.of(27.0, 27.0, 27.0, 27.0, 27.0, 27.0), sent(off, m), "not active: the six bolts of 27");
+        assertEquals(List.of(27.0, 27.0, 27.0), sent(off, m), "not active: the three bolts of 27 (Ben's 3, 2026-11-24)");
         assertTrue(off.world().focusedBeams.isEmpty());
 
         var o = mob(10);
         Stage other = stage(1, o);
         press(other, volley("knell_beam"));
         other.world().advanceTicks(40);
-        assertEquals(List.of(27.0, 27.0, 27.0, 27.0, 27.0, 27.0), sent(other, o),
+        assertEquals(List.of(27.0, 27.0, 27.0), sent(other, o),
                 "a volley another weapon pressed carries the Cursed Emerald's state (a swap mid-wind-up can) and fires as authored");
         assertTrue(other.world().focusedBeams.isEmpty());
     }
@@ -167,7 +167,7 @@ class FocusedBeamTest {
         Stage plain = stage(0, forty);
         press(plain, volley("cursed_emerald"));
         plain.world().advanceTicks(40);
-        assertEquals(List.of(), sent(plain, forty), "the plain volley's 32 stands: 40 out takes nothing from six bolts");
+        assertEquals(List.of(), sent(plain, forty), "the plain volley's 32 stands: 40 out takes nothing from three bolts");
     }
 
     /** Ben: "No piece" (no pierce): the near mob takes the beam, the one behind it nothing. */
@@ -255,7 +255,7 @@ class FocusedBeamTest {
         press(plain, volley("cursed_emerald"));
         plain.world().advanceTicks(80);
         assertTrue(plain.world().traced.stream().anyMatch(h -> "kinetic_tremors/shockwave".equals(h.source())),
-                "the control: the plain six bolts DO fire one (so the fixture can see a shockwave)");
+                "the control: the plain three bolts DO fire one (so the fixture can see a shockwave)");
     }
 
     @Test

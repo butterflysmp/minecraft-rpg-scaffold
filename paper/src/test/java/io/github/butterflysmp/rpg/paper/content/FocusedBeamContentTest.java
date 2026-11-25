@@ -90,7 +90,7 @@ class FocusedBeamContentTest {
         assertEquals("emerald_windup", ability.onCast().getFirst().visualId());
         CastSpec.Volley v = assertInstanceOf(CastSpec.Volley.class, ability.cast());
         assertEquals(20, v.windupTicks());
-        assertEquals(6, v.shots());
+        assertEquals(3, v.shots()); // Ben, 2026-11-24: "decrease the normal volley count to 3"
         assertEquals(2, v.intervalTicks());
         CastSpec.Ray ray = assertInstanceOf(CastSpec.Ray.class, v.of());
         assertEquals(32.0, ray.range());
@@ -98,8 +98,8 @@ class FocusedBeamContentTest {
         assertEquals(false, ray.pierce());
         assertEquals(2, ability.onHit().size());
         assertEquals(new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(27, "kinetic"), ability.onHit().get(1));
-        assertEquals(List.of("Channel, then loose six", "bolts down your line of sight."), ability.description(),
-                "the weapon's own description is NOT edited (OPEN FOR BEN)");
+        assertEquals(List.of("Channel, then loose three", "bolts down your line of sight."), ability.description(),
+                "only six became three, 2026-11-24 (the wording OPEN FOR BEN)");
     }
 
     /** B5: the level's real numbers. */
