@@ -17,6 +17,7 @@ public final class WeaponClassLabel {
             case MELEE  -> "Melee";
             case RANGER -> "Ranged";
             case MAGE   -> "Magic";
+            case SUMMONER -> "Summoner";   // 2026-11-24: "Common Summoner Weapon"
         };
     }
 }

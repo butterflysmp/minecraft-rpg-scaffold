@@ -87,8 +87,45 @@ public record PlayerProfile(
          * next login to read. See {@link #fightReturn()}.
          */
         @com.google.gson.annotations.SerializedName("fightReturn")
-        FightReturn fightReturnOrNull
+        FightReturn fightReturnOrNull,
+        /**
+         * The player's BASE max_summons (the Summoner slice, 2026-11-24), or {@code null} for Ben's default of 1. Boxed for
+         * {@code starEnabledOrNull}'s reason: absence is the steady state, and only the accessor interprets it. Written only
+         * by the dev command, the selftest's override. Gear grants are not stored: they are summed at the read
+         * ({@code MaxSummons.effective}).
+         */
+        @com.google.gson.annotations.SerializedName("maxSummons")
+        Integer maxSummonsOrNull
 ) {
+    /**
+     * The shape before max_summons: every field up to the fight's return, with no stored base.
+     *
+     * <p><b>NO SCHEMA BUMP, for {@code fightReturn}'s reason:</b> absent reads as {@code null}, which the accessor reads
+     * as 1, the correct value for every profile written before the stat existed, so no migration has anything to fix. A
+     * newer file read by an older build loses only a dev override, and Gson ignores the unknown key.
+     */
+    public PlayerProfile(int schemaVersion, UUID playerId, String archetypeId, String elementId, int level,
+                         long experience, List<String> unlockedAbilities, long lastSeenEpochMillis,
+                         int nexusSlot, long lifetimeXp, Boolean starEnabledOrNull, boolean vaultMigrated,
+                         Integer stoneSlotOrNull, Boolean stoneEnabledOrNull, FightReturn fightReturnOrNull) {
+        this(schemaVersion, playerId, archetypeId, elementId, level, experience, unlockedAbilities,
+                lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated, stoneSlotOrNull,
+                stoneEnabledOrNull, fightReturnOrNull, null);
+    }
+
+    /** The stored base of max_summons. ABSENT READS AS 1 (Ben's default). Not the effective cap: gear is summed later. */
+    public int maxSummonsBase() {
+        return maxSummonsOrNull == null ? io.github.butterflysmp.rpg.core.summon.MaxSummons.DEFAULT : maxSummonsOrNull;
+    }
+
+    /** Set (a value) or clear ({@code null}, back to the default) the stored base: the dev command's override. */
+    public PlayerProfile withMaxSummonsBase(Integer baseOrNull) {
+        if (baseOrNull != null && baseOrNull < 0) throw new IllegalArgumentException("a base below 0: " + baseOrNull);
+        return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
+                unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull, baseOrNull);
+    }
+
     /**
      * The v5 shape before the fight's return: every field up to {@code stoneEnabled}, with no return pending.
      *
@@ -116,14 +153,14 @@ public record PlayerProfile(
         if (back == null) throw new IllegalArgumentException("a return to set is never null; use withoutFightReturn");
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull, back);
+                stoneSlotOrNull, stoneEnabledOrNull, back, maxSummonsOrNull);
     }
 
     /** He has been returned: no return pending. */
     public PlayerProfile withoutFightReturn() {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull, null);
+                stoneSlotOrNull, stoneEnabledOrNull, null, maxSummonsOrNull);
     }
     /**
      * Bump when the on-disk shape changes, and add a ProfileMigrations step.
@@ -323,14 +360,14 @@ public record PlayerProfile(
     public PlayerProfile withStoneEnabled(boolean enabled) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, enabled, fightReturnOrNull);
+                stoneSlotOrNull, enabled, fightReturnOrNull, maxSummonsOrNull);
     }
 
     /** Move the Ability Stone. Unvalidated here, for {@link #withNexusSlot}'s reason: {@code LockedSlots} bounds it. */
     public PlayerProfile withStoneSlot(int slot) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                slot, stoneEnabledOrNull, fightReturnOrNull);
+                slot, stoneEnabledOrNull, fightReturnOrNull, maxSummonsOrNull);
     }
 
     public static PlayerProfile fresh(UUID id) {
@@ -351,19 +388,19 @@ public record PlayerProfile(
     public PlayerProfile withStarEnabled(boolean enabled) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, enabled, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull, maxSummonsOrNull);
     }
 
     public PlayerProfile withSchemaVersion(int version) {
         return new PlayerProfile(version, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull, maxSummonsOrNull);
     }
 
     public PlayerProfile withLastSeen(long epochMillis) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, epochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull, maxSummonsOrNull);
     }
 
     /**
@@ -378,7 +415,7 @@ public record PlayerProfile(
     public PlayerProfile withNexusSlot(int slot) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, slot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull, maxSummonsOrNull);
     }
 
     /**
@@ -395,7 +432,7 @@ public record PlayerProfile(
     public PlayerProfile withLifetimeXp(long xp) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, xp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull, maxSummonsOrNull);
     }
 
     /**
@@ -416,7 +453,7 @@ public record PlayerProfile(
     public PlayerProfile withVaultMigrated(boolean migrated) {
         return new PlayerProfile(schemaVersion, playerId, archetypeId, elementId, level, experience,
                 unlockedAbilities, lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull,
-                migrated, stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
+                migrated, stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull, maxSummonsOrNull);
     }
 
     /**
@@ -432,6 +469,6 @@ public record PlayerProfile(
     public PlayerProfile withCell(String classId, String elementId) {
         return new PlayerProfile(schemaVersion, playerId, classId, elementId, level, experience,
                 List.of(), lastSeenEpochMillis, nexusSlot, lifetimeXp, starEnabledOrNull, vaultMigrated,
-                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull);
+                stoneSlotOrNull, stoneEnabledOrNull, fightReturnOrNull, maxSummonsOrNull);
     }
 }

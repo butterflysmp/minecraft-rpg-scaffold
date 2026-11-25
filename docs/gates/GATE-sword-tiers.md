@@ -139,3 +139,11 @@ No selftest handle drives a crafting table (the verbs are READ: no craft verb ex
 > deleted that day, to show them untouched by the ladder; its subject is gone, and its owed re-staging (a full hotbar
 > skipped it twice) is dissolved with it. **Every prediction and reading above stays as written.** NOT RE-READ on a
 > server.
+
+> **2026-11-24, STA4's UNREAD IRON HALF: THE CAUSE IS NAMED, AND THE HALF STAYS UNREAD** (the seat's ruling S3, in
+> `feat/summoner-class`). The lint rule `HELD_READ_THEN_CHANGE` (#287, `PLAN-enchant-columns.md` section 33, L1-L3) finds
+> this row: its first `rpg enchant show` reads his main hand inside `scheduler().onEntity`, a tick later (READ,
+> `RpgCommand`), and the same pass gives and holds the netherite sword first, so both replies answered for the netherite
+> sword. **That is why both came back as "Netherite Sword".** It closes the carried item (`PLAN-weapon-tiers.md`, the
+> carried list's item 5, the deferred command sharing a pass with a hand change) as **EXPLAINED**. **The iron sword's
+> offer is still UNREAD**; nothing here re-reads it, and every prediction and reading above stays as written.

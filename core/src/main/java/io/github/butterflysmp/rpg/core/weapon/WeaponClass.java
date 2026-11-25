@@ -11,7 +11,7 @@ package io.github.butterflysmp.rpg.core.weapon;
  * rather than the payload's shape -- which is what lets the bonus reach a weapon whose damage is an
  * authored literal rather than a stat read.
  *
- * SUMMONER is deliberately absent until it has mechanics: the class -> label mapping in paper is an
+ * (2026-11-24: SUMMONER IS ADDED, the Summoner slice; the note below is the record.) SUMMONER was deliberately absent until it had mechanics: the class -> label mapping in paper is an
  * exhaustive switch with no default arm, so adding a tier is a compile error at every mapping site
  * until handled -- the standing discipline. The tier -> label mapping lives in paper for the same
  * reason {@link Rarity}'s colour does: it is a presentation choice, not core's business.
@@ -19,7 +19,9 @@ package io.github.butterflysmp.rpg.core.weapon;
 public enum WeaponClass {
     MELEE,
     RANGER,
-    MAGE;
+    MAGE,
+    /** THE SUMMONER (Ben, 2026-11-24: "Mostly commander"; the seat's first Summoner slice). Its mechanics are the summon cast. */
+    SUMMONER;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the caller decides

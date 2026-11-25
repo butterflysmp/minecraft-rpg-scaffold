@@ -76,7 +76,7 @@ class TransferKeyTest {
         // silently merges two classes of gear. Java gives distinctness for enum constants, so this
         // row is really about the SIZE: eight kinds are named, and nobody has quietly dropped one.
         Set<TransferKey> all = new HashSet<>(Set.of(TransferKey.values()));
-        assertEquals(8, all.size(), "three fighting classes, a shield, and four armour slots");
+        assertEquals(9, all.size(), "four weapon classes (SUMMONER since 2026-11-24), a shield, and four armour slots");
 
         // AND NO ARMOUR KEY EQUALS A WEAPON KEY. Stated because the failure it guards against is a
         // reordering or a rename that makes two constants alias in some future refactor.
@@ -108,7 +108,7 @@ class TransferKeyTest {
         }
         assertEquals(TransferKey.values().length, plurals.size(),
                 "two keys sharing a noun would render one refusal for two different rules");
-        assertEquals(8, checked, "the sweep has to have actually run");
+        assertEquals(9, checked, "the sweep has to have actually run");
     }
 
     // --- the three throwing arms, each FED ITS BAD INPUT ON PURPOSE -----------------------------
@@ -184,7 +184,7 @@ class TransferKeyTest {
             checked++;
         }
         assertEquals(GearClass.values().length, checked, "the sweep has to have actually run");
-        assertEquals(7, checked, "seven gear classes today -- ACCESSORY landed here AND at a "
+        assertEquals(8, checked, "eight gear classes today -- SUMMONER (2026-11-24) landed here AND at a "
                 + "compile error in TransferKey.of, which is the guard that matters");
     }
 }

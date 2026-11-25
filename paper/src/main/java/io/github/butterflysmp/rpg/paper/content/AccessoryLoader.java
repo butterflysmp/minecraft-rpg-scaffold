@@ -122,7 +122,7 @@ public final class AccessoryLoader {
             accessoryClass = weaponClass(classToken);
             if (accessoryClass == null) {
                 throw new IllegalArgumentException("accessory '" + id + "' has unknown class '"
-                        + classToken + "'; expected melee, ranger or mage");
+                        + classToken + "'; expected one of " + Arrays.stream(WeaponClass.values()).map(c -> c.name().toLowerCase(java.util.Locale.ROOT)).toList());
             }
         }
 

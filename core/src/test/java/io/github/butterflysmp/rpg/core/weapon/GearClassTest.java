@@ -67,7 +67,7 @@ class GearClassTest {
     void fromNameIsNullOnAMissSoTheLoaderDecidesWhatABadTokenMeans() {
         assertNull(GearClass.fromName("bogus"));
         assertNull(GearClass.fromName(null));
-        assertNull(GearClass.fromName("summoner"), "not a class until it has mechanics");
+        assertEquals(GearClass.SUMMONER, GearClass.fromName("summoner"), "a class since the Summoner slice, 2026-11-24");
         // "ranged" is the tooltip LABEL, never the token -- the exact typo the weapon schema records.
         assertNull(GearClass.fromName("ranged"), "the token is 'ranger'; 'Ranged' is only the label");
         // `universal` is NOT a constant here. The loader tests that token before it gets this far,
@@ -99,7 +99,8 @@ class GearClassTest {
         //
         // ACCESSORY made it seven, and its checklist is PLAN-accessories.md §3.4 -- the compiler-
         // forced arms and the hand-written chains are listed there separately for this reason.
-        assertEquals(7, GearClass.values().length);
+        // SUMMONER made it eight (2026-11-24): the sites, compiler-forced and hand-written, are in PLAN-summoner.md section 1.
+        assertEquals(8, GearClass.values().length);
     }
 
     @Test

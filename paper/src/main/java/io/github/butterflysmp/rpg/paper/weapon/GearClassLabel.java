@@ -28,6 +28,7 @@ public final class GearClassLabel {
             case MELEE  -> "Melee";
             case RANGER -> "Ranged";
             case MAGE   -> "Magic";
+            case SUMMONER -> "Summoner";   // 2026-11-24: "Common Summoner Weapon"
             case SHIELD -> "Shield";
             case ARMOR  -> "Armor";
             case TOOL   -> "Tool";
@@ -50,7 +51,7 @@ public final class GearClassLabel {
      */
     public static String describeEnchant(GearClass gearClass) {
         return switch (gearClass) {
-            case MELEE, RANGER, MAGE, SHIELD, TOOL -> "a " + of(gearClass) + " enchant";
+            case MELEE, RANGER, MAGE, SUMMONER, SHIELD, TOOL -> "a " + of(gearClass) + " enchant";
             // "an Accessory enchant" -- a phrase no shipped enchant can produce, because
             // EnchantLoader refuses `class: accessory` (ruling A4). The arm exists so the switch
             // stays exhaustive, and it is spelled right so it is never the defect if reached.
@@ -74,7 +75,7 @@ public final class GearClassLabel {
      */
     public static String describe(GearClass gearClass) {
         return switch (gearClass) {
-            case MELEE, RANGER, MAGE -> "a " + of(gearClass) + " weapon";
+            case MELEE, RANGER, MAGE, SUMMONER -> "a " + of(gearClass) + " weapon";
             case SHIELD              -> "a shield";
             // "a piece of armor", not "an Armor armor": the inert sentence reads "... on a piece of
             // armor", and armor is the one gear kind whose label is not also its noun.

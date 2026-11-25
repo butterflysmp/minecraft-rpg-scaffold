@@ -30,6 +30,7 @@ public enum GearClass {
     MELEE,
     RANGER,
     MAGE,
+    SUMMONER,
 
     /**
      * A shield. Has no {@link WeaponClass} and never will -- it does not fight, it blocks -- which
@@ -135,6 +136,7 @@ public enum GearClass {
             case MELEE  -> MELEE;
             case RANGER -> RANGER;
             case MAGE   -> MAGE;
+            case SUMMONER -> SUMMONER;
         };
     }
 }

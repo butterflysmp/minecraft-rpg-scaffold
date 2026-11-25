@@ -265,14 +265,29 @@ public final class MobNameplateManager implements HealthListener {
      * the initial nameplate -- UNLESS it opts out, in which case the stats are still seeded and only the
      * display is skipped.
      */
+    /**
+     * The MOBSEED line. S1 (the seat's ruling of 2026-11-24) appends where the mob stands ({@code at=x y z}) and its
+     * straight-line distance from the selftest pad's stand point ({@code stand_d=}), so a boot shows where seeded mobs
+     * stand before any setup sweep is decided. The prefix up to {@code max=} is unchanged.
+     */
+    static String seedLine(java.util.UUID id, String type, String gs, String source, long max,
+                           double x, double y, double z, double standX, double standY, double standZ) {
+        double d = Math.sqrt((x - standX) * (x - standX) + (y - standY) * (y - standY) + (z - standZ) * (z - standZ));
+        return "MOBSEED " + id + " " + type + " gs=" + gs + " source=" + source + " max=" + max
+                + String.format(java.util.Locale.ROOT, " at=%.2f %.2f %.2f stand_d=%.2f", x, y, z, d);
+    }
+
     public void onMobAppear(LivingEntity mob) {
         Seeded seeded = seed(mob);                  // opt-out-AGNOSTIC: combat stats always seed
         if (seeded == null) return;                 // player / armor stand: no plate, no stats
         HealthState state = seeded.state();
         if (trace) {
-            log.info("MOBSEED " + mob.getUniqueId() + " " + mob.getType().key().value()
-                    + " gs=" + (seeded.gearScore().isPresent() ? seeded.gearScore().getAsInt() : "-")
-                    + " source=" + seeded.source() + " max=" + Math.round(state.max()));
+            org.bukkit.Location at = mob.getLocation();
+            org.bukkit.Location stand = io.github.butterflysmp.rpg.paper.selftest.SelfTestStandPoint.of(mob.getWorld());
+            log.info(seedLine(mob.getUniqueId(), mob.getType().key().value(),
+                    seeded.gearScore().isPresent() ? String.valueOf(seeded.gearScore().getAsInt()) : "-",
+                    String.valueOf(seeded.source()), Math.round(state.max()),
+                    at.getX(), at.getY(), at.getZ(), stand.getX(), stand.getY(), stand.getZ()));
         }
         // The opt-out flag suppresses only the NAMEPLATE display -- the stats above are already seeded.
         if (mob.getPersistentDataContainer().has(keys.nameplateOptOut, PersistentDataType.BYTE)) return;
