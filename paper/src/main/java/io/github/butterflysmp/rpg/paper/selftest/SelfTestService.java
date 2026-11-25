@@ -177,7 +177,14 @@ public final class SelfTestService {
         if (busy != null) return busy;
 
         List<Scenario> queue = new ArrayList<>();
-        if (gate.equals("all")) {
+        if (SelfTestGateList.isList(gate)) {
+            // ONE COMMAND, SEVERAL GATES (the seat's G1-G6, 2026-11-24): refused before anything starts, else one run.
+            String noRow = row == null ? null : SelfTestGateList.rowRefusal(gate);
+            if (noRow != null) return noRow;
+            SelfTestGateList.Parsed parsed = SelfTestGateList.parse(gate, loaded.gates().keySet());
+            if (parsed.refusal() != null) return parsed.refusal();
+            queue.addAll(SelfTestGateList.queue(parsed.gates(), loaded.gates()));
+        } else if (gate.equals("all")) {
             loaded.gates().values().forEach(queue::addAll);
         } else {
             List<Scenario> scenarios = loaded.gates().get(gate);
