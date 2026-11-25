@@ -1,0 +1,27 @@
+# WILDFIRE -- the Living Lantern's GUARANTEED weapon enchant (the seat's brief of 2026-11-24, PR E; G1 and G2).
+# Ben, verbatim: "Living Lantern - Hot Potato - Consecutive hits increase damage by +5/10/15% each hit (+60% cap)" / asked
+# Hot Potato's rules: "2. Same Target, 3s rolling just like Kinetic Tremors, no" / asked whether the streak counts only the
+# hits of the last 3 seconds (A) or is a chain kept alive while each hit lands within 3 seconds of the one before, climbing
+# to the cap (B): "B, also side note, change the name of Hot Potato to Wildfire"
+#
+# WHAT IT DOES (core HitChains, asked by the damage arm through BehaviourHits.chainFactor, while it is the ACTIVE candidate
+# of the Living Lantern's weapon slot at level 1 or more): per player and MOB, a chain. A primary hit by the Lantern's own
+# shot extends it when it lands within 60 ticks of the previous hit on that mob (exactly 60 starts again: SEAT PLACEHOLDER,
+# OPEN FOR BEN); otherwise the chain starts again at this hit. The n-th hit deals its damage x (1 + min(60%, step x
+# (n - 1))), step 5 / 10 / 15 % by level: the FIRST hit has no bonus (told to Ben). Its own term, multiplying the whole
+# dealt amount after charge and crit. Scorch ticks, Ignite and every secondary damage never extend a chain and are never
+# multiplied. Forgotten on the mob's death, 60 idle ticks and his quit.
+#
+# IT SHARES SLOT 0 WITH AIRBURST FLAMES, so only one acts at a time: the bursts never meet a chain.
+# GUARANTEED (G1): every freshly rolled Living Lantern offers it in slot 0, FIRST, with Airburst Flames beside it.
+display_name: "Wildfire"                   # BEN: "change the name of Hot Potato to Wildfire"
+icon: blaze_powder                         # SEAT PLACEHOLDER 2026-11-24
+max_level: 3                               # BEN: three steps
+effect: hit_chain
+class: universal
+weapon: living_lantern                     # W1
+guaranteed: true                           # G1
+hit_chain:
+  window_ticks: 60                         # BEN: "3s" (from the previous hit: "B")
+  cap_percent: 60                          # BEN: "+60% cap"
+  step_percent_by_level: [5, 10, 15]       # BEN: "+5/10/15% each hit"

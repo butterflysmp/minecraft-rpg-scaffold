@@ -11,7 +11,37 @@ import java.util.List;
  * it must answer for every kind (one line for a reader rusty at Java: the compiler checks the list is complete).
  */
 public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst,
-        EnchantBehaviour.Shatter, EnchantBehaviour.FocusedBeam, EnchantBehaviour.GrantTrigger, EnchantBehaviour.CastTune {
+        EnchantBehaviour.Shatter, EnchantBehaviour.FocusedBeam, EnchantBehaviour.GrantTrigger, EnchantBehaviour.CastTune,
+        EnchantBehaviour.HitChain {
+
+    /**
+     * {@code effect: hit_chain} (Wildfire, the Living Lantern's; the seat's brief of 2026-11-24, PR E). Ben: "Consecutive
+     * hits increase damage by +5/10/15% each hit (+60% cap)" / "Same Target, 3s rolling just like Kinetic Tremors, no" /
+     * "B". A primary hit by the weapon {@code weaponId}'s own cast on a mob extends that mob's chain when it lands within
+     * {@code windowTicks} of the previous one ({@link HitChains}); the n-th hit of a chain deals its damage times
+     * {@link #factorFor} = {@code 1 + min(capPercent, stepPercent x (n - 1)) / 100}. Per level: the step.
+     */
+    record HitChain(String weaponId, int windowTicks, double capPercent, List<Double> stepPercentByLevel)
+            implements EnchantBehaviour {
+        public HitChain {
+            if (weaponId == null || weaponId.isBlank()) throw new IllegalArgumentException("hit_chain needs its weapon id");
+            if (windowTicks < 1) throw new IllegalArgumentException("hit_chain window_ticks must be 1 or more, was " + windowTicks);
+            if (!(capPercent > 0) || Double.isInfinite(capPercent)) {
+                throw new IllegalArgumentException("hit_chain cap_percent must be above 0, was " + capPercent);
+            }
+            stepPercentByLevel = positive("step_percent_by_level", stepPercentByLevel);
+        }
+
+        /** The factor of the {@code n}-th hit of a chain (1-based) at {@code level}. */
+        public double factorFor(int level, int n) {
+            double step = stepPercentByLevel.get(clamp(level, stepPercentByLevel.size()) - 1) / 100.0;
+            return 1 + Math.min(capPercent / 100.0, step * (n - 1));
+        }
+
+        public int levels() {
+            return stepPercentByLevel.size();
+        }
+    }
 
     /**
      * {@code effect: cast_tune} (the seat's G4, 2026-11-24; Ben: "This will just be the normal attack of the weapon and will

@@ -356,6 +356,10 @@ public final class FakeWorld implements CombatWorld {
     public record PrimaryHit(io.github.butterflysmp.rpg.core.combat.Caster caster, UUID targetId) {}
     public final List<PrimaryHit> primaryHits = new ArrayList<>();
 
+    @Override public double hitChainFactor(io.github.butterflysmp.rpg.core.combat.Caster caster, Combatant target) {
+        return behaviourHits.chainFactor(this, caster, target);
+    }
+
     @Override public void primaryHit(io.github.butterflysmp.rpg.core.combat.Caster caster, Combatant target) {
         primaryHits.add(new PrimaryHit(caster, target.id()));
         behaviourHits.onHit(this, caster, target);

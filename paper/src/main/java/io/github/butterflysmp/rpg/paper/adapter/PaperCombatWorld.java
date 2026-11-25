@@ -365,6 +365,13 @@ public final class PaperCombatWorld implements CombatWorld {
                 held.get(), ctx.enchants()::find);
     }
 
+    /** Wildfire (2026-11-24): the server's one {@code BehaviourHits} answers the chain's factor, on the target's thread. */
+    @Override
+    public double hitChainFactor(io.github.butterflysmp.rpg.core.combat.Caster caster,
+                                 io.github.butterflysmp.rpg.core.combat.Combatant target) {
+        return ctx.behaviourHits().chainFactor(this, caster, target);
+    }
+
     /** B2-B4: every primary hit goes to the server's one {@code BehaviourHits}, on the target's thread. */
     @Override
     public void primaryHit(io.github.butterflysmp.rpg.core.combat.Caster caster,

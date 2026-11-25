@@ -264,6 +264,16 @@ public final class EnchantEffectLine {
                     case WINDUP -> "-" + number(v / 20.0) + "s wind-up";
                 };
             }
+            // WILDFIRE (B5): the level's step, the cap and the window, as authored. WORDING: SEAT PLACEHOLDER 2026-11-24,
+            // OPEN FOR BEN.
+            case HIT_CHAIN -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.HitChain h)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                yield "+" + number(h.stepPercentByLevel().get(Math.max(1, Math.min(level, h.levels())) - 1))
+                        + "% per hit on one foe within " + number(h.windowTicks() / 20.0) + "s of the last (max +"
+                        + number(h.capPercent()) + "%)";
+            }
             // FOCUSED BEAM (B5): the level's beam damage and its range, as authored (the gear score scales it in play).
             // WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN.
             case FOCUSED_BEAM -> {
