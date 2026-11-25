@@ -1455,3 +1455,44 @@ this branch on, **R0c predicts no `[Rpg]` WARN at all.**
 (`exotic: [volley_stone]` put back) reddens `theShippedDevExample…` by an error (the whole file refused);
 `MUTSTONEBACK` (the fixture copied into `content/weapons`) reddens eight rows, the projectile and unscored sweeps
 among them.
+
+## 28. PR F1, MANA BURN'S STAMP CARRIED (`feat/mana-burn-stamp`, on PR B)
+
+**The seat's ruling, 2026-11-24:** Mana Burn in section 25's three PRs. "The stamp is taken from the weapon that made the
+hit, at the level it had then (B2); a scorch applied by a status tick, a secondary or an unenchanted hit carries none."
+"When scorches meet, the cap stays the larger and the stamp follows the credit, the newest applier's (so an unenchanted
+hit on a stamped scorch clears the stamp: say so in the plan and pin it)." **Said so: an unenchanted hit on a stamped
+scorch CLEARS the stamp**, pinned by `ScorchStampStatusTest.anUnenchantedRefreshClearsTheStamp…` (and the dev command's
+nine-argument apply clears it too).
+
+**Built, and nothing yet reads the stamp** (F2 does):
+
+- core `EnchantBehaviour.ScorchBoost(percentByLevel)`, `effect: scorch_boost` (its loader block is F3's).
+- core `HitAccrual` gains a third fact, `scorchStampPercent` (0 or more), 0 from every factory (`weapon`, `inert` (a
+  status tick), `chained` (an Ignite link), `terminal`); `withScorchStamp(p)` sets it.
+- core `BehaviourHits.scorchStamp(caster, target)`, pure: the sum of the caster's `ScorchBoost` percents at their levels,
+  0 unless the caster `countsAsHit` (a damage-over-time tick and every secondary carry none), the target is not a player
+  (B4), and it carries one. Its behaviours ARE the weapon's that made the hit, frozen at the cast (B2), so no weapon
+  check is needed (unlike Wildfire's, whose enchant names its weapon).
+- core `EffectApplier`'s two damage arms (`damage` and `weapon_damage`) hand the port `HitAccrual.weapon()
+  .withScorchStamp(scorchStamp(caster, target))` where they handed the five-argument form (which defaults to
+  `HitAccrual.weapon()`): nothing else in the accrual changes.
+- paper `BukkitCombatant`, the accrual-driven scorch: passes `accrual.scorchStampPercent()` on. **The other scorch site
+  (the dev `apply` command) passes none.** Ignite's blast hits are `chained`/`terminal`, so a scorch an Ignite applies
+  carries none.
+- paper `ScorchStatus`: the stamp per victim, **NEWEST WINS, decided in ONE place** (the ten-argument `apply`; the
+  nine-argument one delegates with 0); it ends with the burn. `DotStatus` (shared with withering) is untouched: the stamp
+  is scorch-only, as `depth` is.
+
+**The first draft decided the stamp in two places**, the nine-argument `apply` clearing it and the ten-argument one
+writing it, and **MUTSTAMPNEWEST (newest-wins to largest-wins) stayed GREEN**, each site masking the other: Wildfire's
+window shape again. Restructured to one site; it then reddened two rows.
+
+**Mutations** (marker 1, lines changed 1, restored `cmp`-identical, markers left 0): `MUTSTAMPARM` and `MUTSTAMPWD` (each
+arm hands the unstamped accrual), `MUTSTAMPHIT` (the `countsAsHit` check dropped), `MUTSTAMPPLAYER`, `MUTSTAMPNEWEST`,
+`MUTSTAMPNINE` (the nine-argument form stamps 30), `MUTSTAMPPORT` (the port passes 0). **`MUTSTAMPHIT` stayed green on
+the first rows**: the secondary row could not reach the check, because `asSecondary` also clears the behaviours. The row
+that reaches it is a damage-over-time tick's caster (`asNotAHit`, which keeps them), added; it then reddened. **The
+first `MUTSTAMPARM` did not apply** (a `$` anchor on a CRLF file; the marker grep read 0) and was re-run on `(\r?)\n`.
+**Not mutated:** `onEnded`'s `stamps.remove`, which no behaviour can see (`stamp` reads 0 off an inactive burn and the
+next application overwrites); it keeps the map from growing.

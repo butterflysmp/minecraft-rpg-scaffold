@@ -810,6 +810,9 @@ public final class FakeWorld implements CombatWorld {
          */
         public AccrualRule lastDamageAccrual;
 
+        /** MANA BURN (F1, 2026-11-24): the scorch stamp, in percent, the last applyDamage's {@code HitAccrual} carried. */
+        public double lastDamageStamp;
+
         /** The last velocity a dash impulse set on this dummy, or null if never dashed. */
         public Vec3 lastImpulse;
 
@@ -896,6 +899,7 @@ public final class FakeWorld implements CombatWorld {
             lastDamageElement = element;
             lastDamageAccrual = accrual.rule();
             lastDamageDepth = accrual.depth();
+            lastDamageStamp = accrual.scorchStampPercent();
             damageCalls++;
         }
         @Override public void applyHeal(double a) { health += a; }

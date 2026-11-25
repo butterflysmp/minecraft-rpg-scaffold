@@ -46,8 +46,21 @@ public final class ScorchStatus extends DotStatus {
     public void apply(UUID id, RepeatingTaskTarget target, ScorchSink sink,
                       int stacks, double cap, UUID applierId, int durationTicks,
                       String element, int depth) {
+        // MANA BURN (F1): an application with no stamp is the newest applier's too, so it carries 0 and clears one.
+        apply(id, target, sink, stacks, cap, applierId, durationTicks, element, depth, 0.0);
+    }
+
+    /**
+     * As the nine-argument {@code apply}, and the applied (or refreshed) scorch takes {@code stampPercent}, the stamp the
+     * hit's {@code HitAccrual} carried (MANA BURN, F1). A hit that buys no stacks applies nothing and changes no stamp.
+     * THE ONE PLACE A STAMP IS DECIDED: newest wins, here and nowhere else.
+     */
+    public void apply(UUID id, RepeatingTaskTarget target, ScorchSink sink,
+                      int stacks, double cap, UUID applierId, int durationTicks,
+                      String element, int depth, double stampPercent) {
         boolean wasScorched = isScorched(id);
         if (!apply(id, target, sink, stacks, cap, applierId, durationTicks, element)) return;
+        stamps.put(id, stampPercent);
         if (!wasScorched) {
             depths.put(id, depth);
             return;
@@ -79,6 +92,18 @@ public final class ScorchStatus extends DotStatus {
     }
 
     /**
+     * MANA BURN'S STAMP per scorched victim (F1, the seat's ruling of 2026-11-24 on PR F), in percent. NEWEST WINS, like
+     * the credit and unlike {@code depth}: the seat accepted that the stamp follows the credit, so an unenchanted hit on
+     * a stamped scorch clears it, and a Mana Burn hit on a plain one stamps it. The cap stays the larger ({@code DotStatus}).
+     */
+    private final Map<UUID, Double> stamps = new ConcurrentHashMap<>();
+
+    /** The stamp, in percent, of {@code id}'s scorch: 0 when it is not scorched or its newest applier carried none. */
+    public double stamp(UUID id) {
+        return isActive(id) ? stamps.getOrDefault(id, 0.0) : 0.0;
+    }
+
+    /**
      * True while {@code id} is scorched -- the question Ignite asks, and the one
      * {@code RpgListeners.onEnvironmentalDamage} asks to suppress the {@code FIRE_TICK} this status
      * caused: the burn stays visible, the damage comes from our clock. Without that gate a scorched
@@ -105,8 +130,9 @@ public final class ScorchStatus extends DotStatus {
         return isActive(id) ? depths.getOrDefault(id, 0) : 0;
     }
 
-    /** The burn ended or was forgotten: its depth goes with it. */
+    /** The burn ended or was forgotten: its depth and its stamp go with it. */
     @Override protected void onEnded(UUID id) {
         depths.remove(id);
+        stamps.remove(id);
     }
 }
