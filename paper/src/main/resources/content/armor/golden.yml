@@ -11,6 +11,12 @@ rarity: common
 flavor:
   - "It buys goodwill from things that cannot spend it."
 
+# THE SET BONUS (B1): all four of this file's pieces worn. FLAT (Ben: "No it's flat").
+# mana_regen is per second (Ben: "this is every second").
+set_bonus:
+  - type: mana_regen
+    value: 2                      # BEN 2026-11-25
+
 pieces:
   head:
     material: golden_helmet

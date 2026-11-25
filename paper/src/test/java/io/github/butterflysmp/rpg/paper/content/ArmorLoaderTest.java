@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ArmorSetBonus;
 import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import org.junit.jupiter.api.Test;
@@ -304,5 +305,70 @@ class ArmorLoaderTest {
         assertEquals(Rarity.COMMON, helmet.rarity());
         assertEquals(List.of(), helmet.flavor());
         // Mutation: make display_name required -> a minimal tier stops loading -> reddens.
+    }
+
+    // --- B1 (2026-11-25): the set and its set_bonus: list ---------------------------------------
+
+    @Test
+    void everyShippedSetCarriesBensBonusOnAllFourPieces() {
+        ArmorRegistry registry = new ArmorLoader(LOG).loadAll(new File("src/main/resources/content/armor"));
+        java.util.Map<String, ArmorSetBonus> ben = new java.util.LinkedHashMap<>();
+        ben.put("leather", new ArmorSetBonus(ArmorSetBonus.Type.HEALTH_REGEN, 2));
+        ben.put("golden", new ArmorSetBonus(ArmorSetBonus.Type.MANA_REGEN, 2));
+        ben.put("copper", new ArmorSetBonus(ArmorSetBonus.Type.MAX_SUMMONS, 1));
+        ben.put("iron", new ArmorSetBonus(ArmorSetBonus.Type.MAX_HEALTH, 100));
+        ben.put("diamond", new ArmorSetBonus(ArmorSetBonus.Type.DEFENSE, 20));
+        ben.put("netherite", new ArmorSetBonus(ArmorSetBonus.Type.DEFENSE, 40));
+        int checked = 0;
+        for (ArmorDefinition piece : registry.all()) {
+            String tier = piece.id().substring(0, piece.id().indexOf('_'));
+            assertEquals(java.util.Optional.of(tier), piece.set(), piece.id() + ": its set is its tier file");
+            ArmorSetBonus expected = ben.get(tier);
+            assertEquals(expected == null ? List.of() : List.of(expected), piece.setBonus(), piece.id());
+            checked++;
+        }
+        assertEquals(28, checked, "the control: every shipped piece was read");
+        assertTrue(registry.find("chainmail_helmet").orElseThrow().setBonus().isEmpty(),
+                "chainmail's +50% quiver is STOPPED (B3), so it authors no bonus");
+        // Mutation: give the loader's set the FILENAME of another tier -> every row reddens.
+    }
+
+    private static String withBonus(String bonusYaml) {
+        return "rarity: common\nflavor:\n  - \"a line\"\n" + bonusYaml + "pieces:\n" + fourSlots("t");
+    }
+
+    @Test
+    void aSetBonusParsesItsTypeAndValue() throws IOException {
+        ArmorRegistry r = load("t.yml", withBonus("set_bonus:\n  - type: max_health\n    value: 100\n"
+                + "  - type: defense\n    value: 20\n"));
+        assertEquals(4, r.size());
+        assertEquals(List.of(new ArmorSetBonus(ArmorSetBonus.Type.MAX_HEALTH, 100),
+                new ArmorSetBonus(ArmorSetBonus.Type.DEFENSE, 20)), r.find("t_boots").orElseThrow().setBonus());
+    }
+
+    @Test
+    void aBadSetBonusRefusesTheWholeTier() throws IOException {
+        String[] bad = {
+                "set_bonus:\n  - type: quiver_size_percent\n    value: 50\n",   // STOPPED: not a type
+                "set_bonus:\n  - type: regen\n    value: 2\n",                   // unknown
+                "set_bonus:\n  - type: defense\n    value: 0\n",                 // zero
+                "set_bonus:\n  - type: defense\n",                               // no value
+                "set_bonus:\n  - type: defense\n    value: lots\n",              // not a number
+                "set_bonus: defense\n",                                          // not a list
+                "set_bonus:\n  - defense\n",                                     // an entry that is not a map
+                "set_bonus:\n  - type: max_summons\n    value: 1.5\n",           // a fractional summon
+        };
+        for (String yaml : bad) {
+            assertEquals(0, load("t.yml", withBonus(yaml)).size(), "refused whole: " + yaml.replace('\n', '|'));
+        }
+        // POSITIVE CONTROL: the same file with a good entry loads its four pieces.
+        assertEquals(4, load("t.yml", withBonus("set_bonus:\n  - type: defense\n    value: 20\n")).size());
+    }
+
+    @Test
+    void aTierWithNoSetBonusIsStillASetWithNone() throws IOException {
+        ArmorRegistry r = load("plain.yml", tier("common", fourSlots("p")));
+        assertEquals(java.util.Optional.of("plain"), r.find("p_helmet").orElseThrow().set());
+        assertTrue(r.find("p_helmet").orElseThrow().setBonus().isEmpty());
     }
 }

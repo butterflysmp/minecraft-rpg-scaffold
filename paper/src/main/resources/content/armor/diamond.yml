@@ -19,6 +19,12 @@ rarity: uncommon
 flavor:
   - "Cut from a single lattice, and cold to the touch."
 
+# THE SET BONUS (B1): all four of this file's pieces worn. FLAT (Ben: "No it's flat").
+# Added to the Defense stat after the pieces' scaled Defense; never to the native armor the bar cancels.
+set_bonus:
+  - type: defense
+    value: 20                      # BEN 2026-11-25
+
 pieces:
   # ---------------------------------------------------------------------------------------------
   # defense: IS THE PIECE'S DEFENSE. (Rewritten 2026-11-25, the seat's A1.)

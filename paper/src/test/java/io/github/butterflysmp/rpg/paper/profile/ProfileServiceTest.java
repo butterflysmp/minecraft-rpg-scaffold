@@ -70,17 +70,19 @@ class ProfileServiceTest {
     void maxSummonsReadsOneOverridesAndHasNoReadingWhileLoading() {
         repo.pendingLoad = new CompletableFuture<>();
         service.onJoin(player);
-        assertEquals(java.util.OptionalInt.empty(), service.maxSummons(player), "loading: no reading");
+        assertEquals(java.util.OptionalInt.empty(), service.maxSummons(player, java.util.List.of()), "loading: no reading");
         assertFalse(service.setMaxSummonsBase(player, 0), "loading: the override is refused");
         repo.pendingLoad.complete(Optional.empty());
 
-        assertEquals(java.util.OptionalInt.of(1), service.maxSummons(player), "a fresh profile: Ben's 1");
+        assertEquals(java.util.OptionalInt.of(1), service.maxSummons(player, java.util.List.of()), "a fresh profile: Ben's 1");
         assertTrue(service.setMaxSummonsBase(player, 0));
-        assertEquals(java.util.OptionalInt.of(0), service.maxSummons(player));
+        assertEquals(java.util.OptionalInt.of(0), service.maxSummons(player, java.util.List.of()));
         assertEquals(0, repo.saved.get(player).maxSummonsBase(), "written through to the repository");
         assertTrue(service.setMaxSummonsBase(player, null));
-        assertEquals(java.util.OptionalInt.of(1), service.maxSummons(player), "reset: the default again");
-        assertEquals(java.util.OptionalInt.empty(), service.maxSummons(UUID.randomUUID()), "untracked: no reading");
+        assertEquals(java.util.OptionalInt.of(1), service.maxSummons(player, java.util.List.of()), "reset: the default again");
+        // B6 (2026-11-25): the copper set's grant is the gear term, summed here: 1 + 1.
+        assertEquals(java.util.OptionalInt.of(2), service.maxSummons(player, java.util.List.of(1)), "the copper set: 2");
+        assertEquals(java.util.OptionalInt.empty(), service.maxSummons(UUID.randomUUID(), java.util.List.of(1)), "untracked: no reading");
     }
 
     @Test

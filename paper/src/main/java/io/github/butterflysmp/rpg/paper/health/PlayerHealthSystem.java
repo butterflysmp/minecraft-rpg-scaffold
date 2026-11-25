@@ -284,12 +284,16 @@ public final class PlayerHealthSystem implements HealthListener {
             // fragments' map at each stat it grants -- FragmentWiringSignatureTest pins accessories and
             // fragments adjacent on one line -- and never a reconcile call of its own, for the reason above.
             LevelBonus fromLevel = levelBonus(id);
+            // THE ARMOR SET, a fifth source (B3, PLAN-armor-sets.md 3): the active set's bonuses, merged into the FIRST (gear)
+            // argument of each stat's ONE reconcile through a named merge -- never a second reconcile, never an inline putAll. Off
+            // is absence: the set's one key ("armorset:<tier>") is missing from the next pass and the reconciler drops it.
+            io.github.butterflysmp.rpg.core.weapon.ArmorSetContributions fromSet = ArmorSetItems.contributions(player, keys, armor);
             // Its weapon damage is the exception, and has its own stat: no AccessoryStat reaches weapon hits
             // only. Inert until a Caster is marked a weapon hit (seat ruling L1).
             stats.reconcileLevelDamageModifiers(id, fromLevel.weaponDamageSources());
             Map<String, Double> desiredMax = new HashMap<>(HealthModifierItems.desiredModifiers(player, keys));
             desiredMax.putAll(GrowthModifierItems.desiredModifiers(player, keys, enchants));
-            stats.reconcileMaxModifiers(id, AccessoryContributions.merged(desiredMax,
+            stats.reconcileMaxModifiers(id, AccessoryContributions.merged(AccessoryContributions.merged(desiredMax, fromSet.sources(AccessoryStat.MAX_HEALTH)),
                     fromAccessories.sources(AccessoryStat.MAX_HEALTH), fromFragments.sources(AccessoryStat.MAX_HEALTH),
                     fromLevel.sources(AccessoryStat.MAX_HEALTH)));
             Map<String, Double> desiredAttack = WeaponAttackItems.desiredAttackModifiers(player, keys, weapons);
@@ -351,7 +355,7 @@ public final class PlayerHealthSystem implements HealthListener {
             ManaTransition.reconcile(stats, resources, id, ResourceCost.DEFAULT_RESOURCE,
                     AccessoryContributions.merged(ManaBankModifierItems.desiredModifiers(player, keys, enchants),
                             fromAccessories.sources(AccessoryStat.MAX_MANA), fromFragments.sources(AccessoryStat.MAX_MANA)),
-                    AccessoryContributions.merged(ManaRegenModifierItems.desiredModifiers(player, keys),
+                    AccessoryContributions.merged(AccessoryContributions.merged(ManaRegenModifierItems.desiredModifiers(player, keys), fromSet.sources(AccessoryStat.MANA_REGEN)),
                             fromAccessories.sources(AccessoryStat.MANA_REGEN), fromFragments.sources(AccessoryStat.MANA_REGEN)));
 
             // The TENTH, and the quietest: the passive regeneration RATE, in HP per second. No
@@ -364,7 +368,7 @@ public final class PlayerHealthSystem implements HealthListener {
             // (amount + elapsed * rate, evaluated on read), so changing its rate re-prices ticks
             // that already passed. Eager versus lazy is the axis; having a current is not.
             stats.reconcileHealthRegenModifiers(id, AccessoryContributions.merged(
-                    HealthRegenModifierItems.desiredModifiers(player, keys),
+                    AccessoryContributions.merged(HealthRegenModifierItems.desiredModifiers(player, keys), fromSet.sources(AccessoryStat.HEALTH_REGEN)),
                     fromAccessories.sources(AccessoryStat.HEALTH_REGEN), fromFragments.sources(AccessoryStat.HEALTH_REGEN),
                     fromLevel.sources(AccessoryStat.HEALTH_REGEN)));
 
@@ -428,7 +432,7 @@ public final class PlayerHealthSystem implements HealthListener {
             DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants, armor);
             // Accessory defense merged BEFORE the reconcile, so the bar override below draws a value that
             // already includes it.
-            stats.reconcileDefenseModifiers(id, AccessoryContributions.merged(worn.defense(),
+            stats.reconcileDefenseModifiers(id, AccessoryContributions.merged(AccessoryContributions.merged(worn.defense(), fromSet.sources(AccessoryStat.DEFENSE)),
                     fromAccessories.sources(AccessoryStat.DEFENSE), fromFragments.sources(AccessoryStat.DEFENSE),
                     fromLevel.sources(AccessoryStat.DEFENSE)));
             ArmorBarOverride.apply(player, keys, stats.defenseValue(id), worn.nativeArmor());

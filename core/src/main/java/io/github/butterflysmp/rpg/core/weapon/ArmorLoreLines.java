@@ -74,6 +74,28 @@ public final class ArmorLoreLines {
         return "+" + trimNumber(points);
     }
 
+    /**
+     * B8 (the seat, 2026-11-25): the header over a piece's set bonus. The same on all four pieces, and STATIC: a
+     * tooltip does not know what else is worn. Wording SEAT PLACEHOLDER 2026-11-25, OPEN FOR BEN.
+     */
+    public static final String SET_BONUS_HEADER = "Set Bonus (4 pieces):";
+
+    /**
+     * B8: one line per set bonus entry, in the AUTHORED unit with real numbers ({@code "+2 Health Regen per 5s"}), so
+     * the line reads in the unit Ben gave it. Wording SEAT PLACEHOLDER 2026-11-25, OPEN FOR BEN. An exhaustive switch:
+     * a new type is a compile error here, not a blank line.
+     */
+    public static String setBonusLine(ArmorSetBonus bonus) {
+        String value = bonusValue(bonus.value());
+        return switch (bonus.type()) {
+            case HEALTH_REGEN -> value + " Health Regen per 5s";
+            case MANA_REGEN -> value + " Mana Regen per second";
+            case MAX_SUMMONS -> value + " Max Summons";
+            case MAX_HEALTH -> value + " Max Health";
+            case DEFENSE -> value + " Defense";
+        };
+    }
+
     /** The value half: {@code 8 -> "8"}. Coloured, where {@link #DEFENSE_LABEL} is not. */
     public static String defenseValue(double defense) {
         return trimNumber(defense);

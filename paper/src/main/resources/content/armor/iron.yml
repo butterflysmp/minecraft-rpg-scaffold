@@ -10,6 +10,12 @@ rarity: common
 flavor:
   - "Honest plate. It has no opinion about who wears it."
 
+# THE SET BONUS (B1): all four of this file's pieces worn. FLAT (Ben: "No it's flat").
+# Max health: gaining it is headroom, losing it clamps (HealthState).
+set_bonus:
+  - type: max_health
+    value: 100                      # BEN 2026-11-25
+
 pieces:
   head:
     material: iron_helmet
