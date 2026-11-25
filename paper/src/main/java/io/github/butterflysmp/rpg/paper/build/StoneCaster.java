@@ -192,6 +192,7 @@ public final class StoneCaster {
             case CastResult.Broken ignored -> { }
             case CastResult.Empty ignored -> { }
             case CastResult.Reloading ignored -> { }
+            case CastResult.SummonRefused ignored -> { }   // the Stone casts no summon (a summon cast is a weapon's trigger)
         }
     }
 

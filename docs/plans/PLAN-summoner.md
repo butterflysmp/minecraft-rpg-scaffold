@@ -288,3 +288,42 @@ pattern, tag after the store owns the body, sweep one tick later), and a backsto
 body the store does not own or whose owner is not online in its world. Trace lines proposed: `SUMMON spawn`, `SUMMON
 target`, `SUMMON hit`, `SUMMON teleport`, `SUMMON removed cause=<death|owner-death|quit|world|replace|stop|clear|orphan|
 backstop|void>`.
+
+## 5. PR 3b (`feat/summoner-3b`, on #292): THE BODY, THE CAST, THE LIFECYCLE, Q1, Q4 (2026-11-24)
+
+The seat: the Wolf stays for 3b; nothing assumes Ben's A/B/C. **No Java in the summon code names a wolf**
+(`SummonWiringTest` asserts it); the entity comes from the YAML and is checked BY TYPE (`RpgPlugin.isSummonableEntity`:
+a registered type whose class is a `Mob`). A 3b summon STANDS WHERE IT WAS SPAWNED AND DOES NOTHING.
+
+**E1:** no `element` in the summon file; the loader refuses the key. **Q1:** `CombatantHandle.applyDamageAs(attacker,
+amount, creditId, ...)`; the guard reads the explicit side first (`CombatSides.attackerOf`). **Q4:**
+`SummonWorldDamage.decide` (VOID removes, KILL removes, a mob-sourced hit lands, every other cause refused), applied by
+`RpgListeners.onSummonDamaged` at LOWEST: a mob's hit is priced (`MobDamagePricing`) and applied with side MOB; the
+vanilla event is cancelled. READ before Q4: a vanilla mob's melee on a NON-player was priced nowhere.
+
+**The cast (D6):** `WeaponFire.attempt` hands a `type: summon` cast to `SummonService.cast` before
+`weaponService.fire` (the charge); `SummonCap` decides; a refusal returns `CastResult.SummonRefused(notice)` (a new
+variant; the right-click and left-click listeners show it, `/rpg cast` and the Stone cannot produce it). **The scaling
+(D3):** the held weapon's score (`GearScoreItems.heldScore`) read at the cast; health and damage = authored x
+clamp(score) / 100 (READ: `GearScore` clamps to its band, MIN 100; the summon keeps the score it was scaled at).
+
+**The body (D1), every call:** `World.spawn(Location, Class, Consumer)` with, inside the pre-add consumer,
+`setPersistent(false)` (D1(b) READ), `MobGoals.removeAllGoals` (D1(a) READ), `Tameable.setTamed(false)` and
+`setOwner(null)`, `ATTACK_DAMAGE` base 0 (D1(e)), the name from the YAML, `SummonStore.place` and
+`CombatantStats.bootstrapIfAbsent(scaled health)` (the store owns it before the add); the tag `summon_owner` set AFTER the
+add. Interactions, leashing and taming of a summon are cancelled. **D1(c) anger, READ in full** (`NeutralMob.
+updatePersistentAnger`): it sets or clears the anger target and timer and never sets a target or deals a hit; so in a
+goal-less summon anger is the LOOK only (OPEN FOR BEN), and in 3b, with no target, it never starts.
+
+**The lifecycle (D7):** removal cause and its wiring: DEATH, OWNER_DEATH, WORLD_CHANGE, VOID, KILLED (`RpgListeners`),
+QUIT (`RpgListeners.onQuit`), CLEAR (`SelfTestDrivers` clear_state), STOP (`RpgPlugin.onDisable` via
+`SummonRemovals.removeAll`), ORPHAN (`SummonRemovals.sweep`, at enable and one tick after an add), REPLACE
+(`SummonService.spawn`), BACKSTOP (`SummonService.backstopTick`, every 20 ticks, self-rescheduled on the global
+scheduler; also restrips a body whose goals came back and logs `SUMMON goals restored`). **FOLIA DEBT:** the backstop and
+`CombatSides.ofSource` read bodies by id off their regions.
+
+**Tests:** `SummonLifecycleTest` (5), `SummonWorldDamageTest`, `CombatSidesTest` (+2), `SummonWiringTest` (6, with a control
+on its member bound), `SummonLoaderTest` (E1). `VaultWiringSignatureTest`'s quit bound is now structural (it was "within 40
+lines", which the quit handler's three new lines broke while the call stayed inside). **Mutations, all red:** MUTELEMENT,
+MUTEXPLICIT, MUTASNULL, MUTVOID, MUTMOBHIT, MUTEND (the bound's control), MUTCHARGEGATE, MUTPERSIST, MUTRESTRIP,
+MUTOWNERHERE, MUTREPLACEBACK, MUTQ4FIRST.

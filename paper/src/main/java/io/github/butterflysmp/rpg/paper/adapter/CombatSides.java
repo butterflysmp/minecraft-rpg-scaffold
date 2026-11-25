@@ -47,6 +47,15 @@ public final class CombatSides {
         return e == null ? MobHostility.Side.MOB : of(e, keys);
     }
 
+    /**
+     * Q1 (the seat, 2026-11-24): the ATTACKER's side for the guard. An explicit side, when the hit gave one (a summon's
+     * hit: SUMMON), is read FIRST; only when none was given is the side classified from the source id, which for a
+     * summon's hit is its owner's, a player's, and would let a summon hit a player through.
+     */
+    static MobHostility.Side attackerOf(MobHostility.Side explicit, java.util.function.Supplier<MobHostility.Side> byId) {
+        return explicit != null ? explicit : byId.get();
+    }
+
     /** The guard's question, read off the one table: is this one of the three summon cells that is a "no"? */
     public static boolean refused(MobHostility.Side attacker, MobHostility.Side victim) {
         return MobHostility.refusedSummonCell(attacker, victim);

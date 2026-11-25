@@ -76,9 +76,15 @@ class VaultWiringSignatureTest {
         assertTrue(declaration > 0, "the quit handler must exist: " + QUIT_DECLARATION);
 
         int call = indexOfLineContaining(lines, "vaults.onQuit(");
-        assertTrue(call > declaration && call < declaration + 40,
+        // BOUNDED BY STRUCTURE, NOT BY A LINE COUNT (verification.md, the proximity-bound rule): this said "within 40
+        // lines" until 2026-11-24, when the Summoner slice's three lines in the quit handler moved the call past it with
+        // the call still inside. The claim is "inside the handler", so the bound is the next member's annotation.
+        int nextMember = declaration + 1;
+        while (nextMember < lines.size() && !lines.get(nextMember).trim().startsWith("@EventHandler")) nextMember++;
+        assertTrue(call > declaration && call < nextMember,
                 "the cached vault must be dropped on quit, inside the quit handler, or every player"
-                        + " who has ever logged in stays in the map until a restart");
+                        + " who has ever logged in stays in the map until a restart: " + declaration + " < " + call
+                        + " < " + nextMember);
     }
 
     /**

@@ -79,7 +79,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              DragTrace dragTrace,
                              io.github.butterflysmp.rpg.core.fight.DamageGate gate,
                              io.github.butterflysmp.rpg.core.ability.effect.BehaviourHits behaviourHits,
-                             io.github.butterflysmp.rpg.core.combat.Orbs orbs) {
+                             io.github.butterflysmp.rpg.core.combat.Orbs orbs,
+                             io.github.butterflysmp.rpg.core.summon.SummonStore summons) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
@@ -109,7 +110,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                 // THE ONE BEHAVIOUR EXECUTOR (the seat's B2-B4, 2026-11-23): its state outlives every cast, so one per server.
                 new io.github.butterflysmp.rpg.core.ability.effect.BehaviourHits(),
                 // EVERY STANDING ORB (Lapis Crystal's D2, 2026-11-23): an orb outlives its cast, so one per server.
-                new io.github.butterflysmp.rpg.core.combat.Orbs());
+                new io.github.butterflysmp.rpg.core.combat.Orbs(),
+                new io.github.butterflysmp.rpg.core.summon.SummonStore());   // 3b: who owns which summon body
     }
 
     /**

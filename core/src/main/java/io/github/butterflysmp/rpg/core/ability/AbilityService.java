@@ -107,6 +107,13 @@ public final class AbilityService {
         record Broken() implements CastResult {}
 
         /**
+         * A SUMMON CAST REFUSED BEFORE IT WAS CHARGED (the Summoner slice, 3b; D6): the cap is full, or his
+         * max_summons has no reading. No mana spent, no cooldown started; {@code notice} is the one line he is shown
+         * (SEAT PLACEHOLDER wording). Produced only by the summon service, never by {@link #fireTrigger}.
+         */
+        record SummonRefused(String notice) implements CastResult {}
+
+        /**
          * The weapon binds this trigger and works, but its quiver is EMPTY -- reload it.
          *
          * <p>A separate arm rather than a reuse of {@link Broken}, and the difference is not

@@ -2505,6 +2505,11 @@ public final class RpgCommand {
                 // Unreachable, same reason as Empty above.
                 return 0;
             }
+            case AbilityService.CastResult.SummonRefused ignored -> {
+                // Unreachable, Broken's reason again: a summon cast is a WEAPON's trigger, decided in WeaponFire.attempt
+                // before it is charged (3b); /rpg cast goes through AbilityService.cast, which never mints this.
+                return 0;
+            }
         }
     }
 
