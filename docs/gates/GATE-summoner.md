@@ -545,3 +545,47 @@ Staged as SM14.
 line the golden file never renders:** `Gear Score: 100`, after the element line (`grep -c "Gear Score"` on
 `golden-lore.txt` = 0). This differs from the literal prediction by that one line, which is a property of the golden
 render (the unminted definition), not a defect.
+
+## READINGS — THE BOOT OF `732c4e02` (the armor-sets stack top), 2026-11-25 (written after the run; no prediction above is edited)
+
+Typed as `/rpg selftest summoner+armor-sets`. The boot, R0, his login (16:37:39, after R0) and his SAFETY are in
+`GATE-armor-sets.md`'s READINGS. `SELFTEST summoner setup START` 16:37:45; `SM17 DONE` 16:39:26; every row ran and none
+was skipped. **NEW** readings: SM1R, SM3AR, SM3DR, SM4R, SM7R, SM14R, SM16R. Every other row is a regression read
+against its own prediction above.
+
+| row | | class | the lines |
+|---|---|---|---|
+| SM1R | NEW | READ AS PREDICTED | `MANA current=100.000` → `60.000` in the press's tick, `SUMMON spawn … score=100 health=100.000 damage=20.000`; press 2: `MANA current=60.250` before and after, **`REPLY "On cooldown for 9.8s"`**, no spawn; at 200: **`SUMMON spawn … score=200 health=200.000 damage=40.000` then `SUMMON removed … cause=replace`**, probe `200.000/200.000` |
+| SM2 | regression | READ AS PREDICTED | `SELF … at=102.50 201.00 -9.50`; **`SUMMON teleport … from=149.50 201.00 6.50`**; probe `within=8.0:true` |
+| SM3AR | NEW | READ AS PREDICTED | **`HURT before=0.010 after=0.010 defense=0.000 dealer=<s3a> dealerType=zombie`**; **`SUMMON target … target=<s3a> why=damaged`** |
+| SM3B | regression | READ AS PREDICTED | `DRIVE mob_target <s3b> tag=s3b`; `SUMMON target … why=targeting`; probe `target=<s3b>`; no HURT |
+| SM3C | regression | READ AS PREDICTED | `DRIVE reload held=bone_whistle`; `SUMMON target … why=directed`; probe `directed=<s3c> target=<s3c>` |
+| SM3DR | NEW | READ AS PREDICTED | in one tick: `DRIVE attack … attack_damage=0.000`, **`DRIVE attack NO_DAMAGE_EVENT`**, `DRIVE reload held=bone_whistle`, `probe s3d 100.000`, **`SUMMON target … why=directed`**; no PLAYERHIT |
+| SM4R | NEW | READ AS PREDICTED | (a) `PLAYERHIT source=iron_sword/left_click … sent=23.000 crit=false`; `SUMMON target … why=targeting`; one `SUMMON hit … sent=20.000`; **`probe s4 57.000`** (100 − 23 − 20 × 1). (b) `PLAYERHIT source=boltor/right_click … sent=19.000`; **`probe s4b 81.000`**; no target on `s4b`; probe `target=none` |
+| SM5 | regression | READ AS PREDICTED | `why=directed`, then **`dropped=limit`**; probe `target=none directed=none` |
+| SM6 | regression | READ AS PREDICTED | probe `at=107.50 202.00 -3.50`; **exactly one `SIDES pass attacker=PLAYER body=<the wolf>`** (its own body id); `PLAYERHIT source=boltor/right_click … sent=19.000`; **`probe s6 81.000`**; the wolf `100.000/100.000` |
+| SM7R | NEW | READ AS PREDICTED | the wolf **`100.000` → `85.000`** (P-1: `s7`'s seeded 15.0; not SM7's old 90) |
+| SM8A | regression | READ AS PREDICTED | probe `100.000/100.000` after; no `SUMMON removed` but the row-start clear |
+| SM8B | regression | READ AS PREDICTED | **`SUMMON removed … cause=void`**; `SUMMONPROBE none … store=0` |
+| SM8C | regression | READ AS PREDICTED | **`SUMMON removed … cause=killed`**; `none … store=0` |
+| SM9 | regression | **MISS** | the wolf read **`85.000/100.000`** after the scripted 1000000, **no `cause=death`**, no `none` probe; then the fresh cast `SUMMON spawn … score=100 health=100.000 damage=20.000`, probe `100.000/100.000` (as predicted). See the note |
+| SM10 | regression | READ AS PREDICTED | `MANA 100.000` before and after; **`SUMMON refused … verdict=REFUSED_FULL max=0`**; `"You cannot summon more (max 0)."` once; probe `none` |
+| SM11 | regression | READ AS PREDICTED | `STAGE clear_state … summons=1`; **`SUMMON removed … cause=clear`**; `SUMMONPROBE none … store=0` |
+| SM12 | regression | READ AS PREDICTED | `probe s12a 1000.000`; `why=directed`; six `SUMMON hit … authored=20.000 score=100 sent=20.000 …` at ticks 11744 … 11844 (each 20 apart); **`probe s12a 880.000`** (1000 − 20 × 6); at score 200: six `sent=40.000` at 11918 … 12018; **`probe s12b 760.000`** (1000 − 40 × 6) |
+| SM13 | regression | READ AS PREDICTED | `SELF … at=116.50 201.00 -3.50`; after the wait, probe `within=8.0:true target=none`; no `SUMMON teleport` |
+| SM14R | NEW | READ AS PREDICTED | three `lapis_staff/right_click … sent=21.000 crit=false`, one `kinetic_tremors/shockwave … sent=10.000`, none on the wolf; `why=targeting`; four `SUMMON hit … sent=20.000` before the probe (ticks 12304, 12324, 12344, 12364); **`probe s14 847.000`** = 1000 − 63 − 10 − 80; the wolf 0.84 from `s14`, `100.000/100.000` |
+| SM15 | regression | READ AS PREDICTED | `ORB rest at=116.500,202.620,-3.500`; the wolf `at=110.50 201.00 0.50`; one `ORBSHOT … to=116.500,202.740,-8.500`; **exactly one `lapis_crystal/crystal` PLAYERHIT `sent=10.500`**, no `lapis_staff/right_click` hit; **`probe s15 989.500`**; the wolf `100.000/100.000` |
+| SM16R | NEW | **MISS** (the probe's sum; the SIDES half read as predicted) | **`SPLIT … at=110.724,201.911,-3.500 bursts=3`**; **six `SIDES pass attacker=PLAYER body=<the wolf>`** (its own body id); three `living_lantern/right_click … sent=30.000`, no 45; one `DOTTICK … sent=15.000`; the wolf `100.000/100.000`. **`probe s16 855.000`**, against the formula's 1000 − 30 × 3 − 15 = **895**. See the note |
+| SM17 | regression | READ AS PREDICTED | `why=directed`, six `SUMMON hit … sent=20.000` 20 ticks apart. **His answer, verbatim: `yes\`** (`answer="yes\"`) |
+
+**NOTE, 2026-11-25 — SM9 is P-1's regression, and it was missed in this stack.** SM9 kills its wolf with a scripted
+`damage <wolf> 1000000 minecraft:mob_attack by s9`. P-1 (armor-sets PR 1, `SummonHitPrice`) prices a mob's MELEE on a
+summon from the dealer's SEEDED attack, so the 1000000 is not a term. The hit landed as the zombie's 15.0 (EXECUTED in
+SM7R's note: `MobScaling.attackDamage(3.0, false, true, 100)` = 15.0), and the wolf lived at 85. SM7R was re-predicted
+for P-1, and SM9, which uses the same command, was not. **The code did what P-1 rules; SM9's staging no longer reaches
+the death.** A re-prediction is SM9R: a non-melee mob cause, or a dealer with an attack that kills.
+
+**NOTE, 2026-11-25 — SM16R's probe sum left out the wolf.** SM16R's formula was 1000 − 30k less each DOTTICK. The wolf
+targeted `s16` (`why=targeting`) and hit it twice (`SUMMON hit … victim=<s16> … sent=20.000`, ticks 12604 and 12624)
+before the probe. 1000 − 90 − 15 − 40 = **855**, the reading. SM14R's formula carried that term and SM16R's did not. The
+row's purpose, the SIDES pass on the wolf with no block, read as predicted.

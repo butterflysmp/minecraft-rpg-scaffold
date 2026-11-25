@@ -446,3 +446,94 @@ A full iron set is worn, then the question: *"Hover a piece of your iron armour:
   - vanilla's armor wear on a real mob hit and its suppression (AS18 step 3);
   - the broken notice's sound;
   - the magazine's clamp at a real press (AS17).
+
+## READINGS — THE BOOT OF `732c4e02`, 2026-11-25 (written after the run; no prediction above is edited)
+
+**The boot:**
+- marker 16:28:12; `./scripts/dev-server.sh --refresh-content`; deployed jar 16:28:38; `latest.log` first line 16:28:39;
+  `Done (6.389s)` 16:28:45.
+- R0 read before any login: R0a `[Rpg] Build: 732c4e02`; R0b on the DEPLOYED jar 41 PRESENT / 0, 4 ABSENT / 0, 5
+  controls ABSENT / 0; R0c `… 24 weapons, 1 shields, 28 armor …`, `Mint-on-craft: 42 indexed, 42 claiming, of 58 gear
+  definitions`, 0 `[Rpg]` WARN (control: 7 `INFO [Rpg] Loaded`), no ArmorConsistency line; R0d `439 scenarios across 49
+  gates […, summoner, armor-sets]`; R0e `FIGHTWORLD sweep … folders=0`.
+- **Ben joined 16:37:39**, after R0. `SELFTEST RUN START summoner+armor-sets rows=42 selftest=732c4e02` 16:37:45;
+  `SELFTEST armor-sets setup START` 16:39:26; `SELFTEST RUN FINISHED` 16:40:45; his `/stop` 16:40:47. No abort.
+- **Backup:** `rpg-run-backups\2026-11-25-pre-armor-sets` (world 193 files, Rpg 178), his
+  `world\players\data\b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5.dat` 4,999 bytes. The world's saved difficulty before the
+  boot: `normal`.
+
+**W1, HIS PROPERTY, FIRST:**
+- `SELFTEST RUN CAPTURED armour=0 offhand=0`
+- the one gate-boundary line, `SELFTEST armor-sets setup CLEAN … inventory=restored armour=0 offhand=0 …`
+- `SELFTEST RUN RESTORED xp=712824 cell=ranger/fire gamemode=SURVIVAL held=3 mana=100.0 trace=false spawn_mobs=false
+  time=1000 blocks=1 mobsRemoved=0 orbsRemoved=0 keep_inventory=false immediate_respawn=false difficulty=NORMAL
+  health=160.000 vanilla_xp=150+0.694 spawn_phantoms=true max_summons_base=null armour=0 offhand=0 summons=0
+  drag_tick=false`
+
+Restored equals captured. He wore nothing in the five slots, and 0 `NOT-RESTORED` lines are in the run.
+
+**THE BASELINE.** AS0 read `B` = Max Health 100, Health Regen 1.00/5s, Mana Regen 5.00/5s, Defense 0. **AS13 raised
+his level to 13, and nothing put it back, so AS14 to AS19 ran at level 13:** their own bare sheets read Max Health 160,
+Defense 2. Every delta prediction holds against that row's own bare read.
+
+| row | class | the lines |
+|---|---|---|
+| AS0 | READ AS PREDICTED | `Max Health 100`, `Health Regen 1.00/5s`, `Mana Regen 5.00/5s`, `Defense 0`; `max_summons: 1`; `SELF customHP=100.000/100.000` |
+| AS1 | READ AS PREDICTED | four leather blocks as the table (`Defense: 5/8/7/4`, `+2 Health Regen per 5s`); full set `Defense 24`, **`Health Regen 3.00/5s`**; head swapped `Defense 29`, `Health Regen 1.00/5s` |
+| AS2 | READ AS PREDICTED | four golden blocks (`+2 Mana Regen per second`); full set `Defense 24`, **`Mana Regen 15.00/5s`**; swapped `Defense 29`, `Mana Regen 5.00/5s` |
+| AS3 | READ AS PREDICTED | four chainmail blocks with `+50% Quiver Size`; `Defense 24`; Health Regen, Mana Regen, Max Health equal B |
+| AS4 | READ AS PREDICTED | `max_summons: 0 (base set to 0)`; `SUMMON refused … verdict=REFUSED_FULL max=0`, `"You cannot summon more (max 0)."`, `SUMMONPROBE none … store=0`; four copper blocks; `Defense 24`; `max_summons: 1`; `SUMMON spawn … score=100`; head swapped `max_summons: 0`, probe still `alive=true`; after 200 ticks `REFUSED_FULL max=0`, probe `alive=true`; cleared `cause=clear` |
+| AS5 | READ AS PREDICTED | `SELF 100.000/100.000`; four iron blocks; **`SELF 100.000/200.000`** (headroom, c = B.MH exactly); healed `200.000/200.000`; head swapped **`SELF 100.000/100.000`**, `Max Health 100`, `Defense 43` |
+| AS6 | READ AS PREDICTED | blocks `Gear Score: 200`, `Defense: 20/32/28/16`; **`Defense 96`**, **`Max Health 200`** |
+| AS7 | READ AS PREDICTED | four diamond blocks (`+20 Defense` on each); **`Defense 92`**; swapped **`Defense 67`** |
+| AS8 | READ AS PREDICTED | four netherite blocks (`+40 Defense` on each); **`Defense 112`**; swapped **`Defense 67`** |
+| AS9 | READ AS PREDICTED | `Defense 112`; **`HURT before=10.000 after=4.717 defense=112.000 dealer=self dealerType=self`**; `"Custom HP: 95/100"` |
+| AS10 | READ AS PREDICTED | four untagged diamond pieces: **`Defense 92`** |
+| AS11 | READ AS PREDICTED | two minted, two untagged netherite: **`Defense 112`** |
+| AS12 | READ AS PREDICTED | `HELDID slot=0 item=iron_helmet`; `"Iron Helmet -- 4 slot(s)"`, `Slot 0: []`, `Slot 1: []`, slots 2 and 3 from the four; `Pool: growth, mana_bank, protection, unbreaking`, `Unique pool: `, `Weapon pool: ` |
+| AS13 | READ AS PREDICTED | the level REPLY (13); `DRIVE shift-click … bottom slot=81 iron_helmet x1`; **`SLOT 10 GRAY_DYE name="No piece enchant"` `lore=["Nothing is tied to this armor slot yet."]`**; `SLOT 12 GRAY_DYE name="No unique enchant"`; `SLOT 14 ANVIL "Unbreaking"`, `SLOT 16 GOLDEN_APPLE "Growth"` |
+| AS14 | READ AS PREDICTED | before `HELD iron_helmet … lore=["Defense: 2"]`; `"Refreshed 1 item(s) from current content."`; after `lore=["Defense: 10"; ""; "Set Bonus (4 pieces):"; "+100 Max Health"; ""; "Honest plate. …"; ""; "Common Helmet"]`, no Gear Score line |
+| AS15 | **MISS** (one predicted line absent; the mint read as predicted) | the menu `SLOT 0 COPPER_HELMET name="Copper Helmet"`, the click on slot 0; held `HELD copper_helmet … lore=["Gear Score: 100"; "Defense: 5"; ""; "Set Bonus (4 pieces):"; "+1 Max Summons"; ""; "It greens where it is not worn."; ""; "Common Helmet"]`. **No `CRAFT minted` line**: see the note below |
+| AS17 | READ AS PREDICTED | bare Breacher `Quiver 2`; with the set Breacher **`Quiver 3`**, Dragon's Breath **`Quiver 8`**; head swapped **`Quiver 2`** and **`Quiver 5`**; Q4: `"Quiver: 5/5"`, press, **`"Quiver: 4/8"`**, reload (`RELOAD … authored=40 resolved=40`), **`"Quiver: 8/8"`**, head swapped: sheet `Quiver 5`, lore still **`"Quiver: 8/8"`**, press, **`"Quiver: 5/5"`**; no HURT |
+| AS18 | READ AS PREDICTED (see the level note) | bare `Max Health 160`, `Defense 2`; fresh `ARMOR … damage=0` with max 165/240/225/195, `broken=false`; set `Max Health 260`, `Defense 50`; `rpg damage 1`: **`HURT before=1.000 after=0.667 defense=50.000 dealer=self`**, every piece **`damage=1`**; the scripted mob hit: `MOBSEED … zombie gs=100 … stand_d=3.00`, **`HURT before=0.010 after=0.007 defense=50.000 dealer=<s18> dealerType=zombie`**, every piece **`damage=2`** (not 3: vanilla's wear suppressed) |
+| AS19 | READ AS PREDICTED (see the level note) | `"2/240 uses left (damage 238)"`; `CHEST … damage=238 … broken=false`, others 0; `rpg damage 1`: `HURT before=1.000 after=0.667 defense=50.000`; **`"A piece of your armor is broken -- it no longer protects you. Repair it."`**; **`CHEST … damage=239 max=240 broken=true`**, others `damage=1`; **`Max Health 260`** (the set stays); second `rpg damage 1`: **`HURT before=1.000 after=0.746 defense=34.000`**, **`Defense 34`** (B.D 2 + 32), **`CHEST … damage=239`** (no further wear), others `damage=2` |
+| AS16 | READ AS PREDICTED | `ASK 1 question="Hover a piece of your iron armour: is the Set Bonus clear, and does the +100 Max Health show on your stats? (yes / no / not sure)" answer="yes"`. **His answer, verbatim: `yes`** |
+
+**NOTE, 2026-11-25 — AS15's `CRAFT minted` line.** READ, `InventoryCraft.commitCraft`: the witness line is logged
+`if (definition instanceof WeaponDefinition)`, so a minted ARMOR piece never emits it. The prediction named a line armor
+cannot produce. The prediction was the defect, not the code. The craft minted, as the held tooltip (`Gear Score: 100`,
+`Defense: 5`, the set lines) shows. A re-prediction is AS15R, and its witness would be the held item, or an
+`INVENTORY` probe.
+
+**NOTE, 2026-11-25 — AS18 and AS19 at level 13.** Their HURT literals were written "at B.D = 0". AS13 left him at level
+13, whose level bonus is Defense 2 (`LevelBonus`: level / 5), and each row's own bare sheet read `Defense 2`. EXECUTED at
+the staged Defense:
+- `Defense.applyDefense(1, 50)` = 0.6666666666666666, which prints `0.667`;
+- `applyDefense(0.01, 50)` = 0.006666666666666667, `0.007`;
+- `applyDefense(1, 34)` = 0.746268656716418, `0.746`.
+
+Those are the three readings. Every delta (B.D + 48, B.D + 32, B.MH + 100) held. **The seam is the scenario's: AS13
+raises the level, and no row after it resets it.**
+
+**HIS SAFETY — every HURT line on him in the whole run:**
+
+| row | line | executed prediction |
+|---|---|---|
+| SM3AR | `HURT before=0.010 after=0.010 defense=0.000 dealer=<s3a> dealerType=zombie` | 0.010 |
+| AS9 | `HURT before=10.000 after=4.717 defense=112.000 dealer=self` | 4.716981132075472 |
+| AS18 | `HURT before=1.000 after=0.667 defense=50.000 dealer=self` | 0.6666666666666666 at D 50 |
+| AS18 | `HURT before=0.010 after=0.007 defense=50.000 dealer=<s18> dealerType=zombie` | 0.006666666666666667 |
+| AS19 | `HURT before=1.000 after=0.667 defense=50.000 dealer=self` | 0.6666666666666666 |
+| AS19 | `HURT before=1.000 after=0.746 defense=34.000 dealer=self` | 0.746268656716418 |
+
+**Sum of `after=`: 6.814**, against the worst-bound sum 13.020 and the cap 20.000.
+
+**What no row predicted:**
+- the level seam above;
+- REPLY lines are drained a step late, so a command's REPLY can carry a later timestamp than the line after it (AS4's
+  `max_summons: 0`, AS17's Quiver replies), with order preserved;
+- the Paper notice after Done, that this server is 4 releases behind the latest stable (26.3; the upgrade procedure's
+  step 0).
+- **PAD:** tickets `held=12`, `released=12 cause=end`. **MOBSEED beyond the pad:** one, a drowned at `stand_d=237.75`, the
+  world mob the summoner boot recorded. **WARN after Done:** only that Paper notice (6 lines); no `[Rpg]` WARN, no
+  ERROR.
