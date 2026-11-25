@@ -2027,3 +2027,35 @@ first, so BR6's first press read `On cooldown for 0.5s`, its second and third fi
 row existed to read (a THIRD press on an empty magazine) was never reached. **The gate missed it, and the seat read
 both rows without seeing it** (the seat's own words in the ruling). Nothing in either row was wrong on its own; the
 fault was in the seam between them, which is where a row-by-row read does not look.
+
+### SAFETY: EVERY TERM OF A SUM THAT PRICES DAMAGE TO BEN IS EXECUTED, NOT DERIVED
+
+**This is the account. The pointer is `CLAUDE.md`'s VERIFICATION index.** The seat's standing rule of 2026-11-25, after
+the Summoner boot of `f48f78e9`; written in `feat/summoner-owed`.
+
+- **S-1. Every term of a SAFETY sum that prices damage to Ben is EXECUTED, not derived.** Run the pricing function in a
+  test or jshell with the exact inputs the row stages, and quote the output. The inputs:
+  - the dealer's type;
+  - its attack attribute;
+  - the event's amount;
+  - the difficulty;
+  - the score.
+
+  **A term nobody executed is UNVERIFIED, and counts at its worst READ bound.**
+- **S-2. No row deals Ben scripted or mob damage unless S-1's execution exists for it.** Prefer rows that read a TARGET or
+  a LINE over rows that wound him.
+- **S-3. The sum is re-stated at the dealer's WORST score the pad can seed, READ, not at 100.**
+
+**THE INSTANCE, AND WHOSE IT WAS.** `GATE-summoner.md`'s SAFETY sum bounded SM3A at 5.000:
+- **What it priced:** a scripted `damage @s 0.2 minecraft:mob_attack by <zombie>`, as 0.2 × EASY × 5.0 × the score.
+- **What the boot read:** `HURT before=15.000`.
+- **Why (READ afterwards):** `RpgListeners.onMobMeleeAttack` prices a mob's `ENTITY_ATTACK` on a player from the dealer's
+  seeded ATTACK stat. `event.getDamage()` is tokened, so neither the 0.2 nor the difficulty is a term.
+- **EXECUTED:** `MobScaling.attackDamage(3.0, false, true, 100)` = 15.0; at 500, 75.0, above the 20.000 cap.
+- **Whose fault:** **the seat's own words, "MINE":** it wrote *"SAFETY's sum redone and accepted"* having redone the
+  arithmetic on a quantity nobody had READ. The author wrote the sum; the reviewer redid it; **neither executed it**,
+  and that is the gap S-1 closes.
+
+**WHY EXECUTING IS THE REMEDY, NOT CARE.** A derived term is a model of the pricing, and a model can price the wrong
+QUANTITY with perfect arithmetic. Two parties redoing it check the arithmetic, never the quantity. **Running the real
+function with the row's real inputs is the only check that reads the quantity.**

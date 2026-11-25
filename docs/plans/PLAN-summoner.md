@@ -553,3 +553,85 @@ records that every coordinate lies inside it. The ask's `words` mode, and the li
 unique in slot 0; READ, `EnchantState.addCandidate` and the command's CANDIDATE arm check no slot rule). A
 content-decidable lint rule would flag `GATE-enchant-columns.yml` 155, 187, 215, 240 and 276, and `GATE-summoner.yml` 502.
 Decide later whether dev staging should be held to the roll's rules.
+
+## 11. AFTER THE BOOT AND THE MERGE (2026-11-25, `feat/summoner-owed`, on master `d86403f4`): THE OWED READS AND ROWS
+
+**THE MERGE.** #287 to #299 were squashed bottom-up on Ben's words *"good to merge"*. Master is `d86403f4`, whose tree
+`b4fb56233fbee30c6ef9bb735e216cb010f0f8d9` equals the booted stack's readings head `dd5b10ff`'s.
+
+**WHOSE FAULT, IN THE SEAT'S WORDS:**
+- **SAFETY is "MINE":** the seat wrote *"SAFETY's sum redone and accepted"*, having redone the arithmetic on a quantity
+  nobody had READ.
+- **SM4's premise was the seat's default** and contradicts Ben's rule once a hit mob turns on him. The behaviour is
+  correct as built, and the default is withdrawn.
+- The new standing rules **S-1 to S-3** are in `.claude/rules/verification.md` under *SAFETY: EVERY TERM OF A SUM THAT
+  PRICES DAMAGE TO BEN IS EXECUTED, NOT DERIVED*.
+
+**R1 — HOW A MOB'S MELEE ON A PLAYER IS PRICED.** Line numbers at `d86403f4`.
+- **READ,** `RpgListeners.java` line 2952, in `onMobMeleeAttack` (line 2900, HIGH, `ENTITY_ATTACK` only, a player
+  victim): the blow is **`adapters.stats().attackValue(attacker)`, the attacker's seeded ATTACK stat**. `event.getDamage()`
+  is set to a token and never priced.
+- **READ,** `MobNameplateManager.java` line 191: the stat is seeded as `MobScaling.attackDamage(attackDamageOf(mob), custom,
+  hostile, score)`, from the `attack_damage` attribute.
+- **Where difficulty enters: NOWHERE in the price.** The vanilla amount it would scale is tokened. READ, the same method.
+- **Why SM3A read 15.000:** EXECUTED, `MobScaling.attackDamage(3.0, false, true, 100)` = 15.0; a zombie's vanilla
+  attack is 3.0. The scripted 0.2 is not a term.
+- **The summon path disagrees.** READ, `RpgListeners.java` line 1340, `onSummonDamaged`: `MobDamagePricing.price(
+  event.getDamage(), …)` prices the EVENT's amount. EXECUTED: `price(2.0)` at 100 = 10.0, SM7's reading.
+  - **By design? INFERRED: no.** The player path's javadoc says *"the vanilla bridge is retired"*. The summon path was
+    written later from M16's flat event pricing.
+  - For a real zombie melee on the wolf both give 15 (event 3.0, attribute 3.0). They differ whenever the event's
+    amount is not the attribute: a scripted amount, Strength, an armed mob, a crit.
+  - **PROPOSAL, NOT BUILT:** price the summon path's `ENTITY_ATTACK` from `attackValue(attacker)` as the player path
+    does, and keep `price(event.getDamage())` for non-melee causes (arrows, blasts), as M16 already prices those for
+    players.
+
+**R2 — WHY A MOB HE HITS TARGETS HIM, A NoAI ZOMBIE INCLUDED.**
+- **READ,** `BukkitCombatant.java` line 402 (`applyNow`, "Aggro-on-hit"): after our damage lands on any `Mob` with a
+  living source, `mob.setTarget(attacker)`. There is no NoAI check. A wolf's hit is applied with his id as the source, so
+  it also points the victim at HIM.
+- **So every mob he damages, by any path through `applyNow`, targets him,** and the guard's TARGETING tier takes it if it
+  is within `trigger_radius` 30 of him. The only exclusion is a self-attributed hit.
+- **Consequence for SM4R:** "a mob he hits that cannot target him" does not exist. SM4R(b) stages the nearest form, a
+  mob that targets him beyond 30. CC'S CALL.
+
+**R3 — THE WOLF'S VANILLA TARGET.**
+- **READ:** SM7's priced hit lands through `applyDamageAs(MOB, …, <s7>)`, so the same aggro-on-hit line points the WOLF
+  at `s7`.
+- **Does anything act on it?**
+  - **READ, 3b:** the body's vanilla goals are all stripped, and the backstop strips any that return.
+  - `SummonGoal` reads only the guard's `current`.
+  - **INFERRED:** no vanilla goal acts on it, and the cancelled vanilla hurt starts no anger.
+- **Does `onSidesTarget` see it?** **READ,** `RpgListeners.java` line 1771: it sees target events, but refuses only
+  PLAYER↔SUMMON and SUMMON↔SUMMON, so SUMMON→MOB passes. **INFERRED:** `Mob.setTarget` raises the target event.
+- **FIXED HERE:** the goal publishes the guard's current target (`SummonStore.setCurrent`). `SUMMONPROBE` now prints
+  **`target=<ours>`** and keeps **`vanilla_target=<the body's>`** as a second field.
+- **Found while building it:** the store's replace (`place`) left the replaced body's DIRECTED order behind. Both maps
+  are now cleared there (`SummonLifecycleTest.theGuardsCurrentTargetIsPublishedAndGoesWithTheBody`).
+
+**R4 — A REAL LEFT CLICK ON A MOB AT ARM'S LENGTH WITH THE WHISTLE.**
+- **READ, `WeaponSwingListener`:** the client sends the ANIMATION packet, and `onSwing` → `WeaponFire` → the direct.
+  This is the path SM3D's `reload` drove (`why=directed`).
+- **READ, javap, `Player.attack`, offsets 151–160:** the client also sends the attack packet, reaching `Player.attack`,
+  which hurts only `if (attack value > 0 || enchant bonus > 0)`. **The boot read the whistle's attack value as `0.000`**
+  (SM3D's DRIVE line). So **no damage event is raised, and `onPlayerMeleeAttack`'s stand-down (line 2852) is unreachable
+  with the whistle.**
+- **INFERRED:** the minted item's attribute modifier is what zeroes the attack.
+- **PROPOSAL, NOT BUILT:**
+  - **remove the stand-down.** It is reachable only by a future weapon that both directs on left click and authors an
+    `attack_damage`;
+  - **or keep it, and refuse that combination at load.** With no such weapon it is a guard no shipped content reaches.
+
+**THE ROWS:** SM1R, SM3AR, SM3DR, SM4R, SM14R and SM16R are re-predicted in `GATE-summoner.md` and REPLACE their keys in the
+scenario (still 419 across 48). MG11's whole block was read from the boot's log: equal to the golden file except the
+`Gear Score: 100` line, which the golden file never renders.
+
+**CARRIED:**
+- **The candidate slot.** `rpg enchant candidate` accepts an enchant into a slot the roll would never put it in (a unique
+  in slot 0). A content-decidable lint rule would flag `GATE-enchant-columns.yml` lines 155, 187, 215, 240 and 276, and
+  `GATE-summoner.yml`'s Kinetic Tremors staging. Decide later.
+- **S1's sweep question: CLOSED with data.**
+  - The two MOBSEEDs far from the stand in the run were a bee at **207.98** and a drowned at **237.75**: world mobs seeded
+    in the chunks where Ben logged in.
+  - No pad sweep would have reached them, and none is needed for them. **Nothing seen says otherwise.**
+- **R1's and R4's proposals** wait for a ruling.

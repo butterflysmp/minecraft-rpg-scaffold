@@ -162,6 +162,7 @@ so it is greppable** — and none of them is reproduced here, because two accoun
 | **A ROW THAT READS A MOB'S HEALTH IN DAYLIGHT NEEDS NIGHT, A HELMET, OR A CONTROL** | a gate row reads a mob's health under open sky (a NoAI zombie burns at noon) |
 | **A DAMAGE PREDICTION NAMES EVERY TERM OF THE SUM** | a gate row predicts a player's hit (`sent=`): score, enchant, class bonus, LEVEL bonus, charge, crit |
 | **A ROW BEGINS FROM A CLEARED COOLDOWN, OR SAYS WHY NOT** | a gate row presses a weapon: the cooldown is per player and ability, and carries across rows |
+| **SAFETY: EVERY TERM OF A SUM THAT PRICES DAMAGE TO BEN IS EXECUTED, NOT DERIVED** | a row deals Ben damage, or a SAFETY sum is written: execute each term (S-1), wound him only with that execution (S-2), at the pad's worst score (S-3) |
 
 **BOOTING A GATE: `.claude/rules/booting.md`, a checklist ticked line by line in the boot's report.** "Booting now"
 goes in its own message BEFORE the boot command, and "R0 passed" in its own message BEFORE Ben logs in.

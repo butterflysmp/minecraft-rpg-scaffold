@@ -40,11 +40,18 @@ public final class SummonStore {
     /** D5: a summon's DIRECTED target (set only by the left click), by body; gone with the body. */
     private final Map<UUID, UUID> directed = new HashMap<>();
 
+    /** R3: the guard's CURRENT target, by body, published by the goal each tick; gone with the body. */
+    private final Map<UUID, UUID> current = new HashMap<>();
+
     /** Own a body. If his summon of this weapon lived, it is no longer owned, and is handed back for removal. */
     public synchronized Optional<Summon> place(Summon s) {
         Map<String, UUID> his = byOwner.computeIfAbsent(s.owner(), k -> new LinkedHashMap<>());
         UUID replaced = his.put(s.weaponId(), s.body());
         byBody.put(s.body(), s);
+        if (replaced != null) {   // R3: the replaced body's order and current target go with it
+            directed.remove(replaced);
+            current.remove(replaced);
+        }
         return replaced == null ? Optional.empty() : Optional.ofNullable(byBody.remove(replaced));
     }
 
@@ -66,6 +73,7 @@ public final class SummonStore {
     public synchronized Optional<Summon> remove(UUID body) {
         Summon s = byBody.remove(body);
         directed.remove(body);
+        current.remove(body);   // R3
         if (s == null) return Optional.empty();
         Map<String, UUID> his = byOwner.get(s.owner());
         if (his != null) {
@@ -82,6 +90,7 @@ public final class SummonStore {
         if (his != null) for (UUID body : his.values()) {
             Summon s = byBody.remove(body);
             directed.remove(body);
+            current.remove(body);   // R3
             if (s != null) out.add(s);
         }
         return out;
@@ -92,6 +101,7 @@ public final class SummonStore {
         List<Summon> out = new ArrayList<>(byBody.values());
         byBody.clear();
         directed.clear();
+        current.clear();   // R3
         byOwner.clear();
         return out;
     }
@@ -105,6 +115,15 @@ public final class SummonStore {
 
     public synchronized Optional<UUID> directed(UUID body) {
         return Optional.ofNullable(directed.get(body));
+    }
+
+    /** R3: the goal publishes the target the guard chose this tick (empty when none). Only an owned body keeps one. */
+    public synchronized void setCurrent(UUID body, Optional<UUID> target) {
+        if (target.isPresent() && byBody.containsKey(body)) current.put(body, target.get()); else current.remove(body);
+    }
+
+    public synchronized Optional<UUID> current(UUID body) {
+        return Optional.ofNullable(current.get(body));
     }
 
     /** F1: the order is cleared when its target is dead, gone or beyond the chase limit from him. */

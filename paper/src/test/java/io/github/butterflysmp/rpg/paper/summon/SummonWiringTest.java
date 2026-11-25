@@ -213,6 +213,23 @@ class SummonWiringTest {
                 "refused -> trace and on-the-line -> one line -> passed through, in castRay");
     }
 
+    /**
+     * R3 (the seat, 2026-11-25): the goal publishes the guard's current target into the store each tick, and the probe
+     * prints OURS as target= and the body's vanilla target as vanilla_target= (SM7 read the vanilla one as ours).
+     */
+    @Test
+    void theProbeReadsOurTargetAndKeepsTheVanillaOne() throws IOException {
+        List<String> g = code(Path.of("summon", "SummonGoal.java"));
+        int set = at(g, "current = d.target();", 0);
+        int pub = at(g, "ctx.summons().setCurrent(body.getUniqueId(), current);", set);
+        assertTrue(set > 0 && pub == set + 1, "published in the tick it is decided");
+        List<String> d = code(Path.of("selftest", "SelfTestDrivers.java"));
+        int probe = at(d, "private Optional<String> probeSummon(Player p, String arg) {", 0);
+        int ours = at(d, "+ \" target=\" + adapters.summons().current(s.body()).map(java.util.UUID::toString).orElse(\"none\")", probe);
+        int vanilla = at(d, "+ \" vanilla_target=\" + (target == null ? \"none\" : target.getUniqueId())", ours);
+        assertTrue(probe > 0 && ours > probe && vanilla == ours + 1 && vanilla < end(d, probe), "ours, then the vanilla one");
+    }
+
     /** X8: no summon outlives a run: end() removes his summons, cause CLEAR, after the restore, on every exit. */
     @Test
     void theRunsEndRemovesHisSummons() throws IOException {

@@ -415,3 +415,118 @@ SM17's wolf, removed by X8's end-of-run removal**; `max_summons_base=null` is th
    20 apart; three `cause=replace` removals; `cause=stop` at his `/stop`.
 6. Six Paper WARN lines after Done: *"you are 4 release(s) behind the latest stable release (26.3)"* (no `[Rpg]` WARN).
 7. No `SUMMON goals restored` line in the run.
+
+## DATED NOTE, 2026-11-25, AFTER THE BOOT AND THE MERGE — WHOSE FAULT, IN THE SEAT'S WORDS
+
+- **SAFETY: "MINE."** The seat wrote *"SAFETY's sum redone and accepted"*, having redone the arithmetic on a quantity
+  nobody had READ. The 5.000 bound priced SM3A's hit from the scripted 0.2. The server prices a mob's melee on a player
+  from the mob's seeded ATTACK stat (R1, below), so the hit was 15.000.
+- **SM4's premise** (*"a mob he merely hit is left alone"*) was the seat's default. It contradicts BEN'S rule (*"attacks any
+  mob that ... targets the caster within 30 blocks"*) the moment a hit mob turns on him. **The behaviour is correct as
+  built; the seat's default is withdrawn.** Ben has been told the wolf joins his fights and asked to say if he does not
+  want that.
+
+## RE-PREDICTED ROWS (2026-11-25, `feat/summoner-owed`, on master `d86403f4`): NOT RUN
+
+Each re-predicts the row of its old name; the old rows above stay as the record, with their readings. **In the
+scenario each REPLACES its old key** (the count stays 419 across 48: recount 48 files, 467 keys, 48 setups). Waits:
+**1493 ticks** (`awk '/^  - wait: /{s+=$3}'`; +20 for SM4R's second half).
+
+### S-1, EXECUTED (jshell on `core/target/classes`, 2026-11-25), and the SAFETY sum restated
+
+- **The pricing function:**
+  - **READ,** `RpgListeners.onMobMeleeAttack`: a mob's `ENTITY_ATTACK` on a player lands **`adapters.stats().attackValue(attacker)`**, the attacker's seeded ATTACK stat. `event.getDamage()` is tokened, so vanilla's difficulty scaling never reaches the price.
+  - **READ,** `MobNameplateManager.seed`: that stat is `MobScaling.attackDamage(<the attack_damage attribute>, custom, hostile, score)`.
+- **The pad's worst score, READ (S-3):** `MobNameplateManager` wires `GearScoreSource.BLANKET` = `DimensionGearScore.of`, and the overworld is **100 at every distance**. A pad zombie with no stored score always rolls 100. A stored score (up to the cap of 500) comes only from `rpg spawn … <gs>`, which no row here uses.
+- **EXECUTED:**
+  - `MobScaling.attackDamage(3.0, false, true, 100)` = **15.0**. This is SM3A's reading, a zombie's vanilla 3.0.
+  - `MobScaling.attackDamage(3.0, false, true, 500)` = **75.0**.
+  - `MobScaling.attackDamage(0.002, false, true, 100)` = **0.01**, and the same at 500 = **0.05**.
+  - `MobScaling.attackDamage(0.0, false, true, 100)` = **0.0**.
+  - `Defense.applyDefense(0.010, 0)` = **0.01**.
+  - The summon path (SM7): `price(2.0)` at 100 = **10.0**, as read.
+- **The sum for this scenario, at the pad's worst score (100):**
+
+  | row | term | value |
+  |---|---|---|
+  | SM3AR | 0.002 × 5.0 × 100/100 | **0.010** |
+  | SM3B | 0.0 | **0** |
+  | every other mob | frozen (NoAI) | **0** |
+  | the wolf | refused cell | **0** |
+  | his own effects | skip the caster | **0** |
+  | **sum** | | **0.010 ≤ 20.000** |
+
+  At a stored score of 500, which no row uses, SM3AR would be 0.050.
+
+### SM1R — THE CAST, THE REFUSED PRESS IN ITS OWN TICK, THE REPLACE IN ITS REAL ORDER
+
+- **Press 1:** mana `100.000` → `60.000` in its own tick; `SUMMON spawn … score=100 health=100.000 damage=20.000`.
+- **Press 2, five ticks later** (clock: press 1's tick):
+  - mana read **before** and **after** it in the same pass (READ, `advance`: no tick between). **The two figures are EQUAL.**
+  - **`REPLY "On cooldown for 9.8s"`** (195 ticks; the format executed).
+  - No `SUMMON spawn`.
+- **Press 3, at score 200, the real order (read 2026-11-25):**
+  - **`SUMMON spawn … score=200 health=200.000 damage=40.000` FIRST**,
+  - **then `SUMMON removed … <the old body> cause=replace`**;
+  - the probe reads `200.000/200.000`.
+
+### SM3AR — A MOB THAT DAMAGED HIM, WITHOUT WOUNDING HIM
+
+The frozen `s3a` is staged with `attack_damage` 0.002. One scripted `damage @s 0.2 minecraft:mob_attack by s3a` (cause
+`ENTITY_ATTACK`, as SM3A read).
+- **His `HURT before=0.010 after=0.010 defense=0.000`.** Every term: attack 0.002 × vanilla factor 5.0 × the pad's score 100/100, defence 0 at level 1 with cleared hands (SM3A read `defense=0.000`), EXECUTED as above. The scripted 0.2 and EASY are not terms (READ, R1).
+- **`SUMMON target … target=<s3a> why=damaged`**: SummonFeeds records any amount above 0, and 0.010 is above 0.
+
+### SM3DR — A DIRECT AT MELEE RANGE (R4)
+
+In one tick: `DRIVE attack … attack_damage=0.000`, **`DRIVE attack NO_DAMAGE_EVENT`** (READ, javap, `Player.attack`: no hit
+unless the attack value or the enchant bonus is above 0), and `DRIVE reload held=bone_whistle`. Then, still in that
+tick, **`probe s3d` `100.000`** (before the wolf can reach it), and **`SUMMON target … target=<s3d> why=directed`**. No
+PLAYERHIT.
+- **The stand-down in `onPlayerMeleeAttack` is not reached with the whistle, by vanilla, and no row can reach it** (R4).
+
+### SM4R — (a) A MOB HE HITS IS TAKEN; (b) ONE BEYOND 30 IS LEFT ALONE
+
+- **(a) The sword hit:**
+  - `PLAYERHIT source=iron_sword/left_click … sent=23.000` (`46.000` on a crit): attack 23 × score 100/100 × 1.0 + class 0 + level 0, × charge 1.000 (25 ticks), × crit.
+  - Then **`SUMMON target … target=<s4> why=targeting`** (READ, R2: aggro-on-hit sets `s4`'s target to him).
+  - Then at least one `SUMMON hit … victim=<s4> sent=20.000` within the 10 ticks (the wolf is 2 from it; the first hit needs no cadence wait).
+  - **`probe s4` = `100 − 23 − 20 × N`**, N being the hit lines on `s4` before the probe.
+- **(b) The Boltor's ray, straight east, onto `s4b` 35 east:**
+  - `PLAYERHIT source=boltor/right_click target=<s4b> … sent=19.000`, the sum as SM6's.
+  - **`probe s4b 40` `100.000` → `81.000`**.
+  - **No `SUMMON target … target=<s4b>`; the probe reads `target=none`.** `s4b` targets him, but stands beyond `trigger_radius` 30. The guard's TARGETING tier also stops at `chase_limit` 32 from him.
+  - **A mob he damages that cannot target him does not exist** (R2), so this is the nearest stageable form, CC'S CALL.
+
+### SM14R — THE SHOCKWAVE, WITH THE WOLF'S HITS IN THE SUM
+
+Staged as SM14.
+- **The shockwave:** three `lapis_staff/right_click` on `s14`, each `21.000` (`42.000` on a crit), and exactly one `kinetic_tremors/shockwave … sent=10.000` (`20.000` if the third beam crit). None on the wolf.
+- **The wolf:** after the first beam, **`SUMMON target … target=<s14> why=targeting`**, then `SUMMON hit … sent=20.000` lines 20 ticks apart.
+- **`probe s14` = `1000 − (b1 + b2 + b3) − s − 20 × N`**, each `b` and `s` read from its own line, and N from the wolf's hit lines on `s14` before the probe. On the boot: 42 + 42 + 21, 10, N = 4, so 805, which this formula gives.
+- **The wolf is inside the radius 3** at every probe (2.00, then within 1 of `s14` as it fights), and reads `100.000/100.000`.
+
+### SM16R — THE BURSTS THROUGH THE WOLF, WITH NO BLOCK
+
+**The geometry, written out:**
+- **The bolt's path.** READ, `ProjectileFlight`: homing turns towards `target.state().position()`, the FEET. The Lantern's bolt therefore dives from his eye (+1.62) towards `s16`'s feet 10 east. It splits after 6 blocks of travel; the boot read `SPLIT at=110.724,201.911`, which is x +6.22, y +0.91.
+- **The bursts' path.** They home on the same feet from there. Straight from (+6.22, +0.91) to (+10, +0), they are at about **+0.72** at x +7 (the homing lerp turns them towards that line).
+- **The wolf on the floor at x +7, z 0** spans **+0.00 to +0.85**, ±0.3 in z, with `RAY_SIZE` 0.0 (READ). So the centre burst crosses it. It is 7.0 from him, inside its guard 8, so it stays.
+- **The bolt itself splits at x +6.22,** short of the wolf's box (x +6.7 to +7.3).
+
+**Predicted:**
+- `SPLIT … at=<about X+6.22>,<about Y+0.91>,<Z> bursts=3`.
+- **At least one `SIDES pass attacker=PLAYER body=<the wolf>`.**
+- `k` PLAYERHITs `source=living_lantern/right_click target=<s16> element=fire sent=30.000` (`60.000` on a crit), 1 ≤ k ≤ 3.
+- No `sent=45.000`.
+- **`probe s16` = `1000 − 30 k`**, less each DOTTICK burn read from its line.
+- The wolf `100.000/100.000`.
+
+**No SIDES pass line: the row DID NOT TEST.** (INFERRED: the split point repeats, because the bolt's path before x +6.22 never met the old block.)
+
+### MG11, THE WHOLE BLOCK, FROM THIS BOOT'S LOG (2026-11-25)
+
+**Equal to `golden-lore.txt`'s `flint_staff` and `cursed_emerald` blocks line for line, in text and order, except one
+line the golden file never renders:** `Gear Score: 100`, after the element line (`grep -c "Gear Score"` on
+`golden-lore.txt` = 0). This differs from the literal prediction by that one line, which is a property of the golden
+render (the unminted definition), not a defect.
