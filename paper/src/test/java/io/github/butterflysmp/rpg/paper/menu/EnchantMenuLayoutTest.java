@@ -211,4 +211,22 @@ class EnchantMenuLayoutTest {
         }
         return s;
     }
+
+    /**
+     * THE MARKER BY THE GEAR'S KIND (the seat, 2026-11-25): an ARMOR piece's empty slot 0 is piece-specific (E1), so it
+     * reads "No piece enchant" (SEAT PLACEHOLDER); every other kind keeps the weapon's words exactly, and the unique
+     * column's words are the same for every kind.
+     */
+    @Test
+    void armorsEmptySlotZeroReadsPieceAndEveryOtherKindKeepsTheWeaponsWords() {
+        assertEquals(Optional.of(new EnchantMenuLayout.EmptyMarker("No piece enchant", "Nothing is tied to this armor slot yet.")),
+                EnchantMenuLayout.emptyMarkerFor(0, io.github.butterflysmp.rpg.core.weapon.GearClass.ARMOR));
+        for (io.github.butterflysmp.rpg.core.weapon.GearClass kind : io.github.butterflysmp.rpg.core.weapon.GearClass.values()) {
+            if (kind == io.github.butterflysmp.rpg.core.weapon.GearClass.ARMOR) continue;
+            assertEquals(EnchantMenuLayout.emptyMarkerFor(0), EnchantMenuLayout.emptyMarkerFor(0, kind), kind.name());
+        }
+        assertEquals(EnchantMenuLayout.emptyMarkerFor(1),
+                EnchantMenuLayout.emptyMarkerFor(1, io.github.butterflysmp.rpg.core.weapon.GearClass.ARMOR), "unique: same words");
+        // Mutation: drop the armor arm -> "No weapon enchant" on a helmet -> reddens.
+    }
 }

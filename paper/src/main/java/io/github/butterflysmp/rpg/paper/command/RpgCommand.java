@@ -1328,7 +1328,8 @@ public final class RpgCommand {
                 .map(weapon -> String.format("%d -> %d rounds once packed",
                         weapon.quiverSize(),
                         QuiverSize.resolve(weapon.quiverSize(),
-                                adapters.stats().quiverSizeBonusValue(player.getUniqueId()) + amount)))
+                                adapters.stats().quiverSizeBonusValue(player.getUniqueId()) + amount,
+                                adapters.stats().quiverSizePercentValue(player.getUniqueId()))))   // Q5
                 .orElse("no quiver weapon held -- hold one and fire to see it");
 
         player.sendMessage(Component.text(

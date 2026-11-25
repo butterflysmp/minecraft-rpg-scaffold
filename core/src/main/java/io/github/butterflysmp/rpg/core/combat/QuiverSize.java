@@ -164,7 +164,30 @@ public final class QuiverSize {
      * @param bonusStatValue   {@code HealthState}'s summed modifiers, in arrows
      */
     public static int resolve(int authoredCapacity, double bonusStatValue) {
-        return Math.max(MIN_CAPACITY, authoredCapacity + arrows(bonusStatValue));
+        return resolve(authoredCapacity, bonusStatValue, NO_PERCENT);
+    }
+
+    /** No percent: the additive-only resolve every caller had before 2026-11-25. */
+    public static final double NO_PERCENT = 0.0;
+
+    /**
+     * Q2 (the seat, 2026-11-25): THE ONE PLACE the quiver's two terms combine.
+     * {@code roundHalfUp((authored + flat) x (1 + percent/100))}, floored at {@link #MIN_CAPACITY}.
+     *
+     * <p>BEN: ".5s round up", HALF-UP (x.5 goes up, x.4 goes down), not a ceiling. Percent AFTER flat: SEAT
+     * PLACEHOLDER 2026-11-25, OPEN FOR BEN. The flat term is {@link #arrows} (floored), exactly as before.
+     *
+     * <p>EXACT AT EVERY HALF: an integer times {@code (100 + p)} over {@code 100.0} that lands on x.5 is a value IEEE-754
+     * holds exactly, and the division is correctly rounded, so no half is nudged below its point. At percent 0 it is
+     * the identity on the flat term ({@code n x 100 / 100.0 == n} exactly), so every additive-only result is unchanged
+     * ({@code QuiverSizeTest} runs untouched).
+     *
+     * @param percentStatValue {@code HealthState}'s summed PERCENT modifiers (50 = +50%)
+     */
+    public static int resolve(int authoredCapacity, double bonusStatValue, double percentStatValue) {
+        int flat = authoredCapacity + arrows(bonusStatValue);
+        double scaled = flat * (100.0 + percentStatValue) / 100.0;
+        return Math.max(MIN_CAPACITY, (int) Math.floor(scaled + 0.5));
     }
 
     /**

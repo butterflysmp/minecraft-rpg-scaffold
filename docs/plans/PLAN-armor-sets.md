@@ -233,6 +233,45 @@ READ, `PlayerHealthSystem.startReconcileLoop`:
   percentages. Second, READ: loaded arrows are clamped at the next write (`QuiverItems.setLoaded`), not on removal, as
   Expanded Quiver's removal behaves.
 
+### 3.3b Q1 TO Q5, RULED AND BUILT (`feat/armor-sets-5`, 2026-11-25): the STOP above is lifted
+
+- **Q1:** the quiver stat gains a second, PERCENT term. **CC'S CALL:** its own `Stat` and its own target
+  (`HealthState.quiverSizePercent`, `quiverSizePercentTarget`; `CombatantStats.reconcileQuiverSizePercentModifiers` and
+  `quiverSizePercentValue`), not a second field of the additive one. The reason: `ModifierReconciler` removes every
+  source absent from the map it is handed, so one target fed twice would wipe itself. It is reconciled once per pass in
+  the same loop, right after the additive term, from `fromSet.quiverPercent()`, the set's one key. No other stat
+  changes.
+- **Q2:** `QuiverSize.resolve(authored, flat, percent)` is the ONE place the terms combine:
+  `max(1, floor((authored + arrows(flat)) × (100 + p) / 100.0 + 0.5))`. That is HALF-UP (Ben: ".5s round up"), and
+  percent after flat is a SEAT PLACEHOLDER.
+  - **EXECUTED:** the seat's pins, each one: 2→3, 5→8, 8→12, 2+3→8, 3→5, 1→2.
+  - Half-up is not ceiling: 3 at 10% → 3, 7 at 30% → 9, 8 at 30% → 10, 5 at 30% → 7.
+  - At percent 0, the grid 1..64 × −70..30 equals the additive resolve, and `QuiverSizeTest` runs untouched (8 rows,
+    green).
+  - Exact at every half, because an integer over 100.0 that lands on x.5 is an exactly representable double.
+- **Q3:** the `quiver_size_percent` type; `chainmail.yml` carries `- type: quiver_size_percent / value: 50` (BEN). The
+  tooltip line is `+50% Quiver Size` (a placeholder), the percent, because the resolved number depends on the weapon.
+  Golden predicted `12 / 0` (chainmail's 4 pieces × 3 lines) and measured `12 / 0`.
+- **Q4, READ:** Expanded Quiver's removal is clamped at the item's next write: `QuiverItems.setLoaded`, at the next
+  shot or reload, calls `Quiver.clamp(count, resolveCapacity(...))`, and the reconcile itself never touches a loaded
+  magazine (the `PlayerHealthSystem` note: *"capacity is as of the wielder's last shot or reload"*). The set's removal
+  does exactly that, because `resolveCapacity` now includes the percent. Rounds already loaded stay until the next shot
+  or reload, then clamp.
+- **Q5:** all three main callers pass the percent: `QuiverItems.resolveCapacity`, `StatsSheetProjection`, and the dev
+  `quiver_size_boost` reply in `RpgCommand`. None could not. `QuiverPercentWiringTest` finds the three and requires the
+  percent at each; the two-argument form survives only for the untouched test.
+- **The empty-slot marker, by gear kind, in ONE place:** `EnchantMenuLayout.emptyMarkerFor(slot, gearClass)`. Armor's
+  slot 0 reads `No piece enchant` / `Nothing is tied to this armor slot yet.` (SEAT PLACEHOLDER, OPEN FOR BEN). Every
+  other kind keeps the weapon's words; the golden moved only chainmail's lines, and `EnchantMenuLayoutTest`'s existing
+  rows are unchanged.
+- **Mutations, all RED:**
+  - MUTQCEIL (ceiling for half-up);
+  - MUTQAFTER (the percent before the flat bonus);
+  - MUTQ3ROUTE (the percent dropped from its map);
+  - MUTQ1LOOP (no percent reconcile);
+  - MUTQ5 (a caller passing 0);
+  - MUTMARK (no armor arm).
+
 ### 3.4 B4 — flat
 
 No bonus reads a gear score. Diamond's +20 and netherite's +40 are their own source on the Defense stat, summed after
@@ -478,6 +517,8 @@ the TOOLTIP does, and gets it. The set lines (PR 2) reach existing items the sam
 | CC5 | max summons' grant is read by the callers, which hold the player, and passed into `ProfileService.maxSummons` | the profile service reading equipment |
 | CC6 | `armor_slot:` is refused with `element:` as well as with `weapon:` | allowed |
 | CC7 | an armor piece's slot 0 rolls by its armor slot's pool key, riding the weapon pool's key | a separate armor-slot pool function |
+| CC8 | D2': a hit that offered 0 wears nothing | it wears 1 |
+| CC9 | Q1: the percent is its own Stat and target | a second field of the additive target |
 
 ## 7. OPEN FOR BEN
 
@@ -486,8 +527,11 @@ the TOOLTIP does, and gets it. The set lines (PR 2) reach existing items the sam
 | O1 | copper's flavor line | *"It greens where it is not worn."* |
 | O2 | A3: an untagged piece reads the same Defense and completes a set (the seat's call) | as built |
 | O3 | the turtle helmet keeps vanilla's 2 Defense (CC1) | as built |
-| O4 | D1-D3: authored or read maxima (section 4) | STOPPED |
+| O4 | D1'-D5' built (section 4a): the maxima are READ at runtime, as the seat re-ruled; when it wears (D2') is a placeholder | as built |
 | O5 | the set tooltip: header, line wording, colours, placement (B8) | `Set Bonus (4 pieces):`, gold; one gray line per entry |
-| O6 | chainmail's +50% quiver: STOPPED (3.3); and "round up" as half-up vs ceiling at other percents | unbuilt |
-| O7 | the order of B5's percent after the flat bonus (the seat's placeholder) | unbuilt |
+| O6 | chainmail's +50% quiver: built (3.3b), half-up as Ben said | as built |
+| O7 | the percent applied after the flat bonus (the seat's placeholder) | as built |
 | O8 | the slot-0 empty marker on an armor piece reads "No weapon enchant / Nothing is tied to this weapon yet." (the seat's E2: the same markers a weapon shows) | as built |
+| O9 | armor wear: 1 per hit through Defense (D2'); the broken notice's wording | as built; "A piece of your armor is broken -- it no longer protects you. Repair it." |
+| O10 | armor's empty slot-0 marker: "No piece enchant" / "Nothing is tied to this armor slot yet." | as built |
+| O11 | the chainmail tooltip line "+50% Quiver Size" | as built |

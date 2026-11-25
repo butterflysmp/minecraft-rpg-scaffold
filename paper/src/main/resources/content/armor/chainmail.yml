@@ -7,10 +7,13 @@ rarity: common
 flavor:
   - "Ten thousand rings, and every one of them someone's afternoon."
 
-# THE SET BONUS: Ben ruled "+50% quiver size" (".5s round up"). STOPPED, not authored (PLAN-armor-sets.md 3.3):
-# the quiver's per-player stat is additive only, so a percent has no per-player path, which the seat's B3 names a
-# STOP. ArmorLoader refuses quiver_size_percent as an unknown type, so no tooltip can advertise it. The four
-# pieces are still a set (one tier file), with no bonus.
+# THE SET BONUS (B1): all four of this file's pieces worn. Not scaled by gear score (B4, Ben: "No it's flat").
+# A PERCENT of the held weapon's quiver, half-up (Ben: ".5s round up"), applied after its flat bonuses (SEAT PLACEHOLDER):
+# the Breacher's 2 becomes 3, Dragon's Breath's 5 becomes 8. (It was STOPPED until 2026-11-25, the quiver stat being
+# additive only; the seat's Q1 gave it a percent term.)
+set_bonus:
+  - type: quiver_size_percent
+    value: 50                      # BEN 2026-11-25
 
 pieces:
   head:

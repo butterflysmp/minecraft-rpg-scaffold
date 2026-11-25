@@ -141,7 +141,7 @@ public final class StatsSheetProjection {
                 .flatMap(weapons::find)
                 .filter(WeaponDefinition::hasQuiver)
                 .ifPresent(weapon -> values.quiver(
-                        QuiverSize.resolve(weapon.quiverSize(), stats.quiverSizeBonusValue(id)),
+                        QuiverSize.resolve(weapon.quiverSize(), stats.quiverSizeBonusValue(id), stats.quiverSizePercentValue(id)),
                         ReloadTime.resolve(weapon.reloadTicks(), stats.reloadTimeBonusValue(id))));
 
         return Optional.of(values.build());
