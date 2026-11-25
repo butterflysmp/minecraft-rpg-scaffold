@@ -26,6 +26,12 @@ from origin.** The booter's checklist is `.claude/rules/booting.md`.
 > typed command still**, and **he may stand anywhere when he types it, 200 blocks from the pad included: that distance
 > is now the test.**
 
+> **DATED NOTE, 2026-11-24, `feat/owed-rows` (on master `e675500c`, after the stack merged): THE OWED ROWS, NOT RUN.**
+> MG1, MG2R, MB1, MB4a, MB4b and MB5 leave the scenario and are replaced by MG1R, MG2R2, MB1R, MB4aR, MB4bR and MB5R (see
+> *THE OWED ROWS* at the end); their readings above stand as the record. The lint gains `HELD_READ_THEN_CHANGE` (the seat's
+> L1, after its own first ruling put the wait in the wrong place). This gate's R-rows for the next jar belong to whichever
+> gate boots the next stack.
+
 `/rpg selftest mage-guaranteed`. **SURVIVAL, every row. ALL AUTO, no ASK:** every reading is a server line (CMD, REPLY,
 PLAYERHIT, DOTTICK, VOLLEYSHOT, ORB, PROBE, SLOT, MENU); no row's prediction is something only a client can show.
 
@@ -677,3 +683,88 @@ No `HURT` and no `MOBHIT` line after his login: **the sum on him was 0.**
 `hold` (the Flint Staff read in neither); MG2R needs his RPG level at 10 or more staged in the row before `/enchanting`;
 MB4a, MB4b and MB5's bystander probes need the kill's 20-tick settle in their timing. Each is a re-prediction under its
 old name with the next suffix, in a later branch.
+
+## THE OWED ROWS (2026-11-24, `feat/owed-rows`, on master `e675500c`): NOT RUN
+
+**The seat's ruling of 2026-11-24, after the merge.** L1: a command that reads or writes the held item through a
+scheduled task is followed by a `wait:` before the next step that changes the held item or the inventory. L2: the lint
+enforces it by one rule (`HELD_READ_THEN_CHANGE`). L3: run over every gate; old rows of other gates are not edited.
+**The seat's own words on the first ruling, recorded beside it:** *"I WAS WRONG. My step 6 put the wait after the hold.
+You READ that every rpg enchant operation runs inside scheduler().onEntity(player, ...) and reads the held item when that
+task runs, so the wait belongs AFTER the read."*
+
+**The six old rows (MG1, MG2R, MB1, MB4a, MB4b, MB5) leave the scenario and stay above as the record of the boot at
+`5d72bec7`; their readings are not edited.** The rows below replace them, under their names with the next suffix. **The
+R-rows for the jar that carries this are written by whichever gate boots the next stack, not here.** Every other row,
+setup and sum above stands.
+
+**READ for these rows:**
+
+- **The held-item commands that run later (L2):** `RpgCommand`'s `enchant` (every op), `durability` and `refresh` each
+  hop through `adapters.scheduler().onEntity(player, …)` and read the hand (or, for `refresh`, the inventory) in the task.
+  No other command class hops. So `rpg enchant …`, `rpg durability …`, `rpg refresh`.
+- **The steps that change the hand or the inventory at once:** `hold`, `hold_only`, `clear_inventory`, `drop`, `click`,
+  `click_material`, `shift_click`; the commands `rpg give`, `give`, `clear`, `item`, and `rpg gearscore` (it writes the
+  held item synchronously; it does not hop).
+- **The station gate (MG2R2):** `NexusScreens.refusal` reads `PlayerLevel.effectiveLevel(profile.lifetimeXp())` and opens
+  when `level >= station.unlockLevel()`; Enchanting's is **10** (`NexusStationGate.Station.ENCHANTING(10, …)`). `rpg
+  playerxp set @s 10 levels` writes that lifetime XP (`ProfileService.setLifetimeXp`); **the run's snapshot restores it at
+  the run's end** (`SelfTestSnapshot`: `profiles.setLifetimeXp(id, lifetimeXp)`), and every later row sets its own level.
+- **The kill's settle (MB4aR, MB4bR, MB5R):** after a command, `SelfTestRun.settle` polls once a tick until no dying body
+  is near him (capped at `SelfTestStaging.SETTLE_CAP_TICKS`); the boot logged `SETTLED dying=0 ticks=20` after each `kill
+  @e[tag=v]` (a death animation). **The clock is the kill command's tick, K:** `v` dies at K; its Ignite lands at K + 20
+  (`Ignite.DELAY_TICKS`, from the death); the settle ends at about K + 20; `b`'s scorch from the blast ticks first at
+  K + 40 (one 20-tick period). **`wait: 10` after the settle puts the probe at about K + 30: ten ticks after the blast,
+  ten before `b`'s first burn**, so the probe cannot fall on either side.
+
+### MG1R — THE POOLS, EACH SHOW AND ROLLSTATS WAITED FOR
+
+MG1 with `wait: 2` after each `rollstats 500`, before the next `clear_inventory`. **Each weapon's `rpg enchant show` names
+that weapon, once, in order**, the Flint Staff included:
+
+| weapon | slot 0 | slot 1 | `ROLLSTATS … weaponPool= uniquePool=`; slot 0 |
+|---|---|---|---|
+| flint_staff | `[large_sparks locked]` | `[mana_burn locked]` | `element=fire … weaponPool=1 uniquePool=1`; `1=500` |
+| crystal_shard_staff | `[sharp_crystals locked]` | `[kinetic_tremors locked]` | `weaponPool=1`; `1=500` |
+| lapis_staff | `[polished_scepter locked, lapis_crystal locked]` | `[kinetic_tremors locked]` | `weaponPool=2`; `2=500` |
+| living_lantern | `[wildfire locked, airburst_flames locked]` | `[mana_burn locked]` | `weaponPool=2`; `2=500` |
+| cursed_emerald | `[echo_beam locked, focused_beam locked]` | `[kinetic_tremors locked]` | `weaponPool=2`; `2=500` |
+| knell_beam | `[early_toll locked]` | `[]` | `weaponPool=1 uniquePool=0`; `1=500` |
+| blaze_kings_staff | `[]` | `[mana_burn locked]` | `weaponPool=0 uniquePool=1`; `0=500` |
+| breacher | `[shatter_caps locked]` | `[kinetic_tremors locked]` | `weaponPool=1`; `1=500` |
+
+Exactly **eight** `-- 4 slot(s)` lines (one per weapon; the Breacher's not twice). Slots 2 and 3 not predicted.
+
+### MG2R2 — THE FIX, THROUGH THE TABLE, ON A STAGED WALLET, AT LEVEL 10
+
+MG2R with `rpg playerxp set @s 10 levels` (and a wait) before anything. Its REPLY: `Set 10 level(s) for … (now level
+10, …)`. **Then `/enchanting` opens** (no `Enchanting unlocks at level 10` line), and every prediction of MG2R's table
+stands as written above, unchanged: the wallet **30 levels / 0 points = 1395**; the click on Polished Scepter UNLOCKS it
+at I for **352**; the wallet **26 levels / 46 points = 1043**; the click on Lapis Crystal ACTIVATES it with no spend, the
+wallet still 26 / 46; the ORB lines as MG2R says. (The price does not depend on the RPG level: `EnchantCost.xpPoints(1,
+0)` = 352, EXECUTED.)
+
+### MB1R — THE FIRE WEAPONS' SLOT 1, EACH SHOW WAITED FOR
+
+MB1 with `wait: 2` after each `rollstats 500`. In order, once each: **Flint Staff** `Slot 1: [mana_burn locked]`, slot 1
+`1=500`; **Living Lantern** `[mana_burn locked]`, `1=500`; **Blaze King's Staff** `[mana_burn locked]`, `1=500`;
+**Dragon's Breath** `Slot 1: []`, `0=500`. Four `-- 4 slot(s)` lines.
+
+### MB4aR — ONE IGNITE WITH THE STAMP, PROBED BETWEEN THE BLAST AND THE BURN
+
+MB4a's staging and every line before the kill as MB4a predicts (`v`: `sent=20.000`, `DOTTICK sent=13.000 cap=10.000`).
+After `kill @e[tag=v]`: `SETTLED dying=0 ticks=20` (about K + 20), then `wait: 10`; **`probe b` reads
+`992.200/1000.000`** = 1000 - 6 x (1 + 30/100) (EXECUTED: 1000 - 7.800000000000001 = 992.2), **with no `DOTTICK` on `b`
+before it**; `b`'s first `DOTTICK … sent=3.900 cap=3.900` after it.
+
+### MB4bR — THE SAME IGNITE WITHOUT THE STAMP
+
+As MB4aR with no enchant: `DOTTICK sent=10.000 cap=10.000` on `v`; **`probe b` `994.000/1000.000`** = 1000 - 6, no `DOTTICK`
+on `b` before it; then `sent=3.000 cap=3.000`. **Against MB4aR: 6 against 7.8.**
+
+### MB5R — AN UNENCHANTED HIT CLEARS THE STAMP
+
+As MB5 (ticks 13.000 under the stamp, the plain hit, then 10.000), the kill, the settle, `wait: 10`; **`probe b`
+`994.000/1000.000`**: a plain Ignite, no `DOTTICK` on `b` before it; then `sent=3.000 cap=3.000`.
+
+**Safety, unchanged:** the same mobs at the same distances; Ignite skips players; the sum on him is 0.

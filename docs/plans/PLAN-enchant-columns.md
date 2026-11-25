@@ -1672,3 +1672,47 @@ guards (marker 2, lines changed 2), so it was re-run by line number as two mutat
 printed no red through a filter that dropped its lines (re-run unfiltered: 7 failures). **And a design change from a
 mutation's logic before any was run:** "release once" was decided by the flag and by clearing the held set, each masking
 a mutation of the other; the clear was removed.
+
+## 33. THE OWED ROWS AND THE HELD-READ LINT (`feat/owed-rows`, on master `e675500c`)
+
+**The stack #273-#286 is MERGED** (master `e675500c`, its tree `84a4484c…` equal to the booted-and-read `73de8afd`'s).
+This PR carries what that boot owed, by the seat's rulings of 2026-11-24.
+
+**THE WAIT, RULED L1-L4, AND THE SEAT'S ERROR BESIDE IT.** The seat's first order put the wait "after every hold before
+enchant show / rollstats". READ, `RpgCommand`: every `rpg enchant` op runs inside `adapters.scheduler().onEntity(player,
+…)` and reads `getItemInMainHand()` when that task runs, a tick later; MG1's `clear_inventory` and next `give` in the same
+pass changed the hand first, so each show answered for the next weapon. **The wait belongs AFTER the read.** The seat,
+verbatim: *"I WAS WRONG. My step 6 put the wait after the hold."* L1: a held-item command that runs later is followed by a
+wait before the next change of hand or inventory. L2: one lint rule, `HELD_READ_THEN_CHANGE`; its readers are the three
+commands that hop (`rpg enchant`, `rpg durability`, `rpg refresh`; READ, the only three `onEntity` hops in `RpgCommand`,
+and no other command class hops), its changers `hold`, `hold_only`, `clear_inventory`, `drop`, `click`, `click_material`,
+`shift_click`, `rpg give`, `give`, `clear`, `item`, `rpg gearscore`. L4: the lint had no wait-after-hold rule to keep (READ).
+
+**L3, EVERY GATE (47), OWED DATED NOTES, NO OLD ROW EDITED:**
+
+| gate#row | the read, then the change | could it have made a past reading wrong? |
+|---|---|---|
+| `sword-tiers#STA4` | `rpg enchant show` on the iron sword, then `rpg give netherite_sword` and `hold: netherite_sword` | **YES, and it did, but it was recorded as unread:** both shows came back as "Netherite Sword", and STA4's iron half was recorded **UNREAD** (`GATE-sword-tiers.md`). This is that cause, unnamed then |
+| `sword-smithing#SSA1` | `rpg durability set 100`, `rpg enchant show`, then `give @s …smithing_template 1` | No: the give is a different item into an empty slot; the held sword is the same when the task runs (INFERRED, vanilla's give fills the first empty slot) |
+| `vanilla-bows#VX1` | `rpg durability set 0`, then `give @s minecraft:arrow 4` | No: the same reason; the write met the held crossbow |
+| `vanilla-bows#VX5R2` | `rpg durability set 999`, then `give @s minecraft:arrow 2` | No: the same |
+
+`SelfTestScenariosTest` pins those four EXACTLY, so the set cannot grow or shrink unnoticed. **Rows that open a Nexus
+station without staging the RPG level:** `/enchanting` only MG2R (now MG2R2; `nexus-polish#CM2` stages level 1 on purpose to
+read the refusal; `enchant-columns#EC5R2`, `#EC6R2` stage 13). Adjacent, not ruled: `unique-enchant-slot#US8` opens `anvil`
+and `grindstone` with no level staged.
+
+**THE TICKETS, READ (the owed javap read, accepted by the seat): A PLUGIN TICKET IS NEVER SAVED.** `TicketStorage.packTickets`
+(the save) keeps only tickets whose `type.persist()` is true; `persist()` is `flags & 1`; `TicketType.FORCED` is registered
+with flags 15, `PLUGIN_TICKET` with **6** (bit 0 clear). So a restart or a crash leaves no stale ticket of ours, the next
+take returns true, and no fix is needed.
+
+**THE SETUP SWEEP (the bee and the drowned of the boot at `5d72bec7`): PROPOSED, NOT BUILT.** Today the setup kills a LIST
+of hostile types tagged `!selftest` within 64. Two non-selftest mobs were seeded during that run (`MOBSEED … bee …
+source=passive`, `MOBSEED … drowned gs=111 source=stored`), and neither touched him (no HURT, no MOBHIT). **Where they stood
+is UNVERIFIED** (a MOBSEED line carries no position), so whether any kill selector would have reached them is unknown. The
+one-rule alternative: a selftest step that removes every non-player living entity within 64 of the stand that is not tagged
+`selftest`, and is not named, tamed or leashed. **Its cost:** it removes Ben's own animals and villagers if any stand within
+64 of the pad (the pad is at y 200, so ground mobs are about 140 blocks below and out of a 64 radius), and it changes every
+gate's setup at once. **Nothing was built**, because none of it is unambiguous: the mobs' position was never read. The
+cheap first step is to log a position on MOBSEED.

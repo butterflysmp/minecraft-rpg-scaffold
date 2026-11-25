@@ -601,6 +601,22 @@ class SelfTestScenariosTest {
                 "GATE-focused-beam.yml must lint clean (2026-11-24, written under the same rules)");
         assertEquals(List.of(), byGate.get("mage-guaranteed").stream().map(ScenarioLint.Finding::line).toList(),
                 "GATE-mage-guaranteed.yml must lint clean (2026-11-24, written under the same rules)");
+        // L3 (the seat's ruling, 2026-11-24): HELD_READ_THEN_CHANGE over every gate, pinned EXACTLY. Old rows of other gates
+        // are not edited; these four are owed dated notes (PLAN-enchant-columns section 33). STA4 is the one that cost a
+        // reading: its iron half was recorded UNREAD when both shows answered for the netherite sword. The other three
+        // give a DIFFERENT item, which fills an empty slot, so the late durability write or show still met the held weapon.
+        assertEquals(List.of(
+                        "LINT sword-tiers#STA4 HELD_READ_THEN_CHANGE 'rpg give netherite_sword' after 'rpg enchant show' with no wait:"
+                                + " the read runs a tick later (scheduler.onEntity) and would see the changed hand",
+                        "LINT sword-smithing#SSA1 HELD_READ_THEN_CHANGE 'give @s minecraft:netherite_upgrade_smithing_template 1'"
+                                + " after 'rpg enchant show' with no wait: the read runs a tick later (scheduler.onEntity) and would see the changed hand",
+                        "LINT vanilla-bows#VX1 HELD_READ_THEN_CHANGE 'give @s minecraft:arrow 4' after 'rpg durability set 0' with no wait:"
+                                + " the read runs a tick later (scheduler.onEntity) and would see the changed hand",
+                        "LINT vanilla-bows#VX5R2 HELD_READ_THEN_CHANGE 'give @s minecraft:arrow 2' after 'rpg durability set 999' with no"
+                                + " wait: the read runs a tick later (scheduler.onEntity) and would see the changed hand"),
+                byGate.values().stream().flatMap(List::stream)
+                        .filter(f -> f.rule() == ScenarioLint.Rule.HELD_READ_THEN_CHANGE).map(ScenarioLint.Finding::line).toList(),
+                "every HELD_READ_THEN_CHANGE in the shipped scenarios, and no more");
         assertTrue(byGate.get("deft-hands").stream().anyMatch(f -> f.row().equals("DH3")
                         && f.rule() == ScenarioLint.Rule.SELF_STAGED && f.detail().startsWith("chains on DH1")),
                 "the control: DH3's chain on DH1 is found, so the lint reads the shipped files: " + byGate.get("deft-hands"));

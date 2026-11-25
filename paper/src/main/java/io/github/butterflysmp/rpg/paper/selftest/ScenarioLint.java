@@ -34,7 +34,45 @@ final class ScenarioLint {
         /** A summon outside the ground the gate's preflight measures, or summons in a gate that declares no preflight. */
         GROUND,
         /** {@code rpg enchant candidate <s>} for a slot the cleared item does not have yet ({@code EnchantState.addCandidate}). */
-        ENCHANT_ORDER
+        ENCHANT_ORDER,
+        /**
+         * L1 (the seat's ruling, 2026-11-24): a command that reads or writes the held item through a scheduled task
+         * ({@link #readsHeldLater}) followed, with no {@code wait:} between, by a step that changes the held item or the
+         * inventory ({@link #changesHeld}). The task runs a tick later and sees the changed hand: MG1's Flint Staff.
+         */
+        HELD_READ_THEN_CHANGE
+    }
+
+    /**
+     * L2: THE ONE LIST OF HELD-ITEM COMMANDS THAT RUN LATER. READ, {@code RpgCommand}: exactly three of its handlers hop
+     * through {@code adapters.scheduler().onEntity(player, …)} and touch the hand or the inventory there: {@code enchant}
+     * (every op: show, pool, rollstats, clear, candidate, level, active, …; each reads {@code getItemInMainHand()} in the
+     * task), {@code durability} (damage, repair, set; the same), and {@code refresh} ({@code GearRefresher.refresh} over
+     * his inventory). No other command class hops (READ by grep over {@code paper/.../command/}).
+     */
+    static boolean readsHeldLater(String cmd) {
+        String c = cmd.trim();
+        return c.startsWith("rpg enchant ") || c.equals("rpg enchant") || c.startsWith("rpg durability ")
+                || c.equals("rpg durability") || c.equals("rpg refresh") || c.startsWith("rpg refresh ");
+    }
+
+    /**
+     * L1's other half: the steps that change the held item or the inventory AT ONCE, in the pass they run in (READ,
+     * {@code SelfTestDrivers}): {@code hold} and {@code hold_only} (the slot), {@code clear_inventory}, {@code drop}
+     * ({@code Player#dropItem}), {@code click}, {@code click_material} and {@code shift_click} (a menu moves items); and the
+     * commands {@code rpg give}, vanilla {@code give}, {@code clear} and {@code item}, and {@code rpg gearscore} (it writes
+     * the held item at once: READ, it does not hop). A scheduled command is NOT a changer: it queues behind the read.
+     */
+    static boolean changesHeld(Scenario.Verb v, String arg) {
+        return switch (v) {
+            case HOLD, HOLD_ONLY, CLEAR_INVENTORY, DROP, CLICK, CLICK_MATERIAL, SHIFT_CLICK -> true;
+            case CMD -> {
+                String c = arg.trim();
+                yield c.startsWith("rpg give ") || c.startsWith("give ") || c.startsWith("clear ") || c.equals("clear")
+                        || c.startsWith("item ") || c.startsWith("rpg gearscore ");
+            }
+            default -> false;
+        };
     }
 
     record Finding(String gate, String row, Rule rule, String detail) {
@@ -135,10 +173,18 @@ final class ScenarioLint {
         boolean summoned = false;
         boolean pressed = false;
         int enchantSlots = -1;   // unknown until a clear, then the slots the dev command has built
+        String heldReadPending = null;   // L1: the last scheduled held-item command not yet followed by a wait
         Map<String, double[]> mobs = new HashMap<>();
         for (Scenario.Step st : s.steps()) {
             String a = st.arg().trim();
             Scenario.Verb v = st.verb();
+            if (heldReadPending != null && changesHeld(v, a)) {
+                out.add(new Finding(gate, r, Rule.HELD_READ_THEN_CHANGE, describe(v, a) + " after '" + heldReadPending
+                        + "' with no wait: the read runs a tick later (scheduler.onEntity) and would see the changed hand"));
+                heldReadPending = null;   // one finding per read
+            }
+            if (v == Scenario.Verb.WAIT && Long.parseLong(a) >= 1) heldReadPending = null;
+            if (v == Scenario.Verb.CMD && readsHeldLater(a)) heldReadPending = a;
             if (v == Scenario.Verb.AFTER) {
                 out.add(new Finding(gate, r, Rule.SELF_STAGED, "chains on " + a + ": it reads what that row left"));
             }
@@ -225,6 +271,11 @@ final class ScenarioLint {
             }
         }
         return summoned;
+    }
+
+    /** A step as the finding names it: the verb, and for a command its text. */
+    private static String describe(Scenario.Verb v, String a) {
+        return v == Scenario.Verb.CMD ? "'" + a + "'" : v.name().toLowerCase(Locale.ROOT);
     }
 
     private static boolean inside(SelfTestPreflight.Box b, Summon m) {
