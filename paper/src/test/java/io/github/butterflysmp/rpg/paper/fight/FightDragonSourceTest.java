@@ -129,7 +129,7 @@ class FightDragonSourceTest {
     @Test
     void theLandedHitLineComesFromTheStoresSeamBeforeTheDeath() throws IOException {
         String plugin = code("RpgPlugin.java");
-        int tap = plugin.indexOf("selfTestDamage, fightHits, mobDeath));");
+        int tap = plugin.indexOf("selfTestDamage, fightHits, mobDeath, summonFeeds));");   // the summon feed (4b) appended after
         assertTrue(tap > 0, "the tap is in the composite, before mobDeath");
         assertTrue(plugin.contains("fightHits.bind(fightFixtures::onHealthChange);"), "and bound to the fights");
         String h = body(instance(), "public void onHealthChange(");

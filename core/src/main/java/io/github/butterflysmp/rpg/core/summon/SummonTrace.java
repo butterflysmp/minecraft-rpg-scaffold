@@ -28,8 +28,12 @@ public final class SummonTrace {
                 s.summonId(), s.score(), s.health(), s.damage());
     }
 
-    public static String target(SummonStore.Summon s, Vec3 at, UUID target) {
-        return "SUMMON target " + where(s, at) + " target=" + target;
+    /** A change of target: the new one (or none), the TIER that chose it (F3), and why the old one was dropped. */
+    public static String target(SummonStore.Summon s, Vec3 at, java.util.Optional<UUID> target, SummonGuard.Why why,
+                                java.util.Optional<SummonGuard.Dropped> dropped) {
+        return "SUMMON target " + where(s, at) + " target=" + target.map(UUID::toString).orElse("none")
+                + " why=" + why.name().toLowerCase(Locale.ROOT)
+                + dropped.map(d -> " dropped=" + d.name().toLowerCase(Locale.ROOT)).orElse("");
     }
 
     public static String hit(SummonStore.Summon s, Vec3 at, UUID victim, double authored, String element) {

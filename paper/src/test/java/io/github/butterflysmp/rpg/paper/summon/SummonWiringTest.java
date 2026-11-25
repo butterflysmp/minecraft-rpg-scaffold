@@ -157,6 +157,44 @@ class SummonWiringTest {
         assertTrue(ready > 0 && at(n, "cooldowns.trigger(player.getUniqueId(), KEY, THROTTLE_TICKS);", ready) > ready);
     }
 
+    /**
+     * 4b, THE GOAL'S HIT (D3, Q1): our damage by applyDamageAs with the side SUMMON given explicitly, the owner credited,
+     * no crit (NORMAL), defence applying, the weapon's element; the swing a visual; never the engine's primaryHit (B4).
+     */
+    @Test
+    void theGoalsHitIsOursWithEveryTermFixed() throws IOException {
+        List<String> g = code(Path.of("summon", "SummonGoal.java"));
+        int tick = at(g, "@Override public void tick() {", 0);
+        int swing = at(g, "body.swingMainHand();", tick);
+        int hit = at(g, "BukkitCombatant.of(victim, ctx).handle().applyDamageAs(MobHostility.Side.SUMMON, summon.damage(),", swing);
+        int terms = at(g, "summon.owner(), CritState.NORMAL, DefenseRule.APPLIES, summon.element(), HitAccrual.weapon());", hit);
+        int trace = at(g, "ctx.log().info(SummonTrace.hit(summon, vec(body), victim.getUniqueId(), summon.authoredDamage(),", terms);
+        assertTrue(tick > 0 && swing > tick && hit > swing && terms == hit + 1 && trace > terms && trace < end(g, tick),
+                "swing, then OUR hit with every term, then its line, inside tick()");
+        assertTrue(g.stream().noneMatch(l -> l.contains("primaryHit(")), "never an engine hit an enchant could count");
+        assertTrue(at(g, "if (d.clearDirected()) ctx.summons().clearDirected(body.getUniqueId());", tick) > tick, "F1");
+    }
+
+    /** 4b: its goal is added once the store owns it and it is tagged, keyed in OUR namespace; a restrip spares it (O3). */
+    @Test
+    void theGoalIsOursAndTheRestripSparesIt() throws IOException {
+        List<String> s = code(Path.of("summon", "SummonService.java"));
+        int tag = at(s, "body.getPersistentDataContainer().set(ctx.keys().summonOwner,", 0);
+        int goal = at(s, "Bukkit.getMobGoals().addGoal(body, 0, new SummonGoal(ctx, feeds, placed[0], def, body));", tag);
+        assertTrue(tag > 0 && goal > tag, "after the tag");
+        int judge = at(s, "private void judge(", 0);
+        int strip = at(s, "if (!g.getKey().getNamespacedKey().getNamespace().equals(ctx.keys().summonOwner.getNamespace())) {", judge);
+        assertTrue(strip > judge && at(s, "Bukkit.getMobGoals().removeGoal(mob, g);", strip) == strip + 1,
+                "only a goal NOT in our namespace is removed");
+        assertEquals(0, s.stream().filter(l -> l.contains("removeAllGoals(mob)") && !l.contains("Bukkit.getMobGoals().removeAllGoals(mob);")).count());
+        List<String> goalFile = code(Path.of("summon", "SummonGoal.java"));
+        assertTrue(at(goalFile, "return NamespacedKey.fromString(ctx.keys().summonOwner.getNamespace() + \":summon_guard\");", 0) > 0);
+        List<String> p = code(Path.of("RpgPlugin.java"));
+        assertTrue(at(p, "selfTestDamage, fightHits, mobDeath, summonFeeds));", 0) > 0, "the feed is in the store's composite");
+        assertTrue(at(code(Path.of("listener", "RpgListeners.java")), "summons.feeds().forget(event.getPlayer().getUniqueId());", 0) > 0,
+                "forgotten on his quit");
+    }
+
     /** The seat: "no Java names a wolf except what D1 must switch off, each behind a check of the entity's type". */
     @Test
     void noSummonCodeNamesAWolf() throws IOException {

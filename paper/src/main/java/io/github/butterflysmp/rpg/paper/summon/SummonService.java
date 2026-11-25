@@ -59,11 +59,19 @@ public final class SummonService {
     private final AdapterContext ctx;
     private final Supplier<SummonRegistry> registry;
     private final ProfileService profiles;
+    private final io.github.butterflysmp.rpg.core.summon.SummonFeeds feeds;
 
-    public SummonService(AdapterContext ctx, Supplier<SummonRegistry> registry, ProfileService profiles) {
+    public SummonService(AdapterContext ctx, Supplier<SummonRegistry> registry, ProfileService profiles,
+                         io.github.butterflysmp.rpg.core.summon.SummonFeeds feeds) {
         this.ctx = ctx;
         this.registry = registry;
         this.profiles = profiles;
+        this.feeds = feeds;
+    }
+
+    /** The "damaged him" feed (4b), for the quit hook to forget him. */
+    public io.github.butterflysmp.rpg.core.summon.SummonFeeds feeds() {
+        return feeds;
     }
 
     public SummonStore store() {
@@ -91,7 +99,7 @@ public final class SummonService {
             return new CastResult.SummonRefused(notice(verdict, max));
         }
         CastResult charged = charge.get();
-        if (charged instanceof CastResult.Success) spawn(player, weapon.id(), def.get(), score);
+        if (charged instanceof CastResult.Success) spawn(player, weapon.id(), def.get(), score, weapon.element());
         return charged;
     }
 
@@ -107,7 +115,7 @@ public final class SummonService {
      * <br> {@code ATTACK_DAMAGE} base 0: D1(e), no vanilla hit may deal anything; its health stays vanilla's (8 for a
      * wolf, READ) because its HP is our customHP, {@code bootstrapIfAbsent} with the scaled health before it is added.
      */
-    private void spawn(Player owner, String weaponId, SummonDefinition def, int score) {
+    private void spawn(Player owner, String weaponId, SummonDefinition def, int score, String element) {
         EntityType type = Registry.ENTITY_TYPE.get(NamespacedKey.minecraft(def.entity()));
         if (type == null || type.getEntityClass() == null || !Mob.class.isAssignableFrom(type.getEntityClass())) {
             ctx.warnOnce("Summon '" + def.id() + "' names '" + def.entity() + "', which is not a mob; nothing spawned");
@@ -128,7 +136,7 @@ public final class SummonService {
             if (attack != null) attack.setBaseValue(0.0);
             mob.customName(Component.text(def.name().replace("{owner}", owner.getName())));
             mob.setCustomNameVisible(true);
-            placed[0] = SummonStore.Summon.cast(owner.getUniqueId(), weaponId, mob.getUniqueId(), def, score);
+            placed[0] = SummonStore.Summon.cast(owner.getUniqueId(), weaponId, mob.getUniqueId(), def, score, element);
             replaced[0] = store().place(placed[0]);   // THE STORE OWNS IT before it is added to the world
             ctx.stats().bootstrapIfAbsent(mob.getUniqueId(), placed[0].health(), 0.0, false);
         });
@@ -136,6 +144,8 @@ public final class SummonService {
         body.getPersistentDataContainer().set(ctx.keys().summonOwner, PersistentDataType.STRING,
                 owner.getUniqueId().toString());
         ctx.log().info(SummonTrace.spawn(placed[0], vec(body.getLocation())));
+        // 4b: ITS ONE GOAL, keyed in our namespace (O3), added once the store owns it and it is tagged.
+        Bukkit.getMobGoals().addGoal(body, 0, new SummonGoal(ctx, feeds, placed[0], def, body));
         replaced[0].ifPresent(old -> SummonRemovals.discard(ctx, old, SummonRemoval.REPLACE));
     }
 
@@ -161,7 +171,12 @@ public final class SummonService {
         switch (SummonBackstop.decide(store().owns(s.body()), here, foreign)) {
             case REMOVE -> SummonRemovals.remove(ctx, s.body(), SummonRemoval.BACKSTOP);
             case RESTRIP -> {
-                Bukkit.getMobGoals().removeAllGoals(mob);
+                // O3: strip only what is NOT ours, by key; our goal stays.
+                for (var g : java.util.List.copyOf(Bukkit.getMobGoals().getAllGoals(mob))) {
+                    if (!g.getKey().getNamespacedKey().getNamespace().equals(ctx.keys().summonOwner.getNamespace())) {
+                        Bukkit.getMobGoals().removeGoal(mob, g);
+                    }
+                }
                 ctx.log().info(SummonTrace.goalsRestored(s, vec(mob.getLocation()), foreign));
             }
             case KEEP -> { }

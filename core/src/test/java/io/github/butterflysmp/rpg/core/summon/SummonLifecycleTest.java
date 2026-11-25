@@ -23,15 +23,15 @@ class SummonLifecycleTest {
 
     @Test
     void scalingIsAuthoredTimesScoreOverHundredFixedAtTheCast() {
-        SummonStore.Summon s = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 150);
+        SummonStore.Summon s = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 150, "nature");
         assertEquals(150.0, s.health(), 1e-9, "100 x 150 / 100");
         assertEquals(30.0, s.damage(), 1e-9, "20 x 150 / 100");
         assertEquals(150, s.score(), "the score it was cast at, kept");
-        SummonStore.Summon high = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 250);
+        SummonStore.Summon high = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 250, "nature");
         assertEquals(250.0, high.health(), 1e-9);
         assertEquals(50.0, high.damage(), 1e-9);
         // READ, GearScore: the score is clamped to its legal band (MIN 100) before it scales; the summon keeps the one used.
-        SummonStore.Summon low = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 75);
+        SummonStore.Summon low = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 75, "nature");
         assertEquals(100.0, low.health(), 1e-9, "75 is below the band: 100 x 100 / 100");
         assertEquals(100, low.score(), "the score it was scaled at, not the one asked");
     }
@@ -39,13 +39,13 @@ class SummonLifecycleTest {
     @Test
     void theStoreCountsByWeaponAndAReplaceHandsBackTheOldBody() {
         SummonStore store = new SummonStore();
-        assertEquals(Optional.empty(), store.place(SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 100)));
-        assertEquals(Optional.empty(), store.place(SummonStore.Summon.cast(HIM, "horn", B2, WOLF, 100)));
-        assertEquals(Optional.empty(), store.place(SummonStore.Summon.cast(OTHER, "whistle", B3, WOLF, 100)));
+        assertEquals(Optional.empty(), store.place(SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 100, "nature")));
+        assertEquals(Optional.empty(), store.place(SummonStore.Summon.cast(HIM, "horn", B2, WOLF, 100, "nature")));
+        assertEquals(Optional.empty(), store.place(SummonStore.Summon.cast(OTHER, "whistle", B3, WOLF, 100, "nature")));
         assertEquals(Set.of("whistle", "horn"), store.liveWeapons(HIM), "his, by weapon id");
         assertTrue(store.owns(B1) && store.owns(B2) && store.owns(B3));
         UUID b4 = new UUID(1, 4);
-        assertEquals(B1, store.place(SummonStore.Summon.cast(HIM, "whistle", b4, WOLF, 100)).orElseThrow().body(),
+        assertEquals(B1, store.place(SummonStore.Summon.cast(HIM, "whistle", b4, WOLF, 100, "nature")).orElseThrow().body(),
                 "a recast of the same weapon hands back the body it replaces");
         assertFalse(store.owns(B1));
         assertEquals(Optional.of(HIM), store.remove(b4).map(SummonStore.Summon::owner));
@@ -85,19 +85,22 @@ class SummonLifecycleTest {
     /** O2: a body already gone has no position. */
     @Test
     void aGoneBodyIsLoggedAtUnknown() {
-        SummonStore.Summon s = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 150);
+        SummonStore.Summon s = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 150, "nature");
         assertEquals("SUMMON removed owner=" + HIM + " weapon=whistle body=" + B1 + " at=unknown cause=death",
                 SummonTrace.removed(s, null, SummonRemoval.DEATH));
     }
 
     @Test
     void theTraceLinesCarryOwnerWeaponBodyAndPosition() {
-        SummonStore.Summon s = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 150);
+        SummonStore.Summon s = SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 150, "nature");
         Vec3 at = new Vec3(1.5, 64, -2.25);
         String where = "owner=" + HIM + " weapon=whistle body=" + B1 + " at=1.50 64.00 -2.25";
         assertEquals("SUMMON spawn " + where + " summon=test_wolf score=150 health=150.000 damage=30.000",
                 SummonTrace.spawn(s, at));
-        assertEquals("SUMMON target " + where + " target=" + B2, SummonTrace.target(s, at, B2));
+        assertEquals("SUMMON target " + where + " target=" + B2 + " why=damaged",
+                SummonTrace.target(s, at, java.util.Optional.of(B2), SummonGuard.Why.DAMAGED, java.util.Optional.empty()));
+        assertEquals("SUMMON target " + where + " target=none why=none dropped=limit", SummonTrace.target(s, at,
+                java.util.Optional.empty(), SummonGuard.Why.NONE, java.util.Optional.of(SummonGuard.Dropped.LIMIT)));
         assertEquals("SUMMON hit " + where + " victim=" + B3
                         + " authored=20.000 score=150 sent=30.000 crit=none class=0 level=0 element=nature",
                 SummonTrace.hit(s, at, B3, WOLF.damage(), "nature"));
