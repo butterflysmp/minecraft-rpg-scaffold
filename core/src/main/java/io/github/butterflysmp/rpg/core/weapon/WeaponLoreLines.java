@@ -346,6 +346,7 @@ public final class WeaponLoreLines {
             case CastSpec.Cone ignored -> 1;
             case CastSpec.Orb ignored -> 1;
             case CastSpec.Summon ignored -> 1;   // one summon per press (its on_hit is the summon's own hits, PR 4)
+            case CastSpec.DirectSummon ignored -> 1;   // one order per press
         };
     }
 

@@ -166,6 +166,20 @@ public sealed interface CastSpec {
             }
         }
     }
+
+    /**
+     * THE LEFT CLICK'S ORDER (the Summoner slice, 4c; D5 as ruled): {@code type: direct_summon} with {@code reach: <blocks>}
+     * (required; placeholder 32 in content). The first MOB on the caster's ray, within reach, becomes the DIRECTED target of
+     * HIS summon of this weapon; air, a player, or nothing of his alive: nothing, silently. Like {@link Summon}, the engine
+     * never runs one: the summon service picks before the cast is charged.
+     */
+    record DirectSummon(double reach) implements CastSpec {
+        public DirectSummon {
+            if (!(reach > 0 && Double.isFinite(reach))) {
+                throw new IllegalArgumentException("a direct_summon's reach must be more than 0 blocks, was " + reach);
+            }
+        }
+    }
     /**
      * A straight line to the first thing in the way. {@code beam} is a visual id drawn ALONG each
      * chunk-column segment as the ray walks it, or null for a bare ray that draws nothing between
@@ -809,6 +823,7 @@ public sealed interface CastSpec {
             case Orb ignored -> 0;
             // A recast REPLACES its summon (D6: one per weapon), so nothing in flight can double up. No floor.
             case Summon ignored -> 0;
+            case DirectSummon ignored -> 0;   // an order, never in flight
         };
     }
 }
