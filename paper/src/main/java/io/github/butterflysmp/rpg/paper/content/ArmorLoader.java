@@ -36,10 +36,9 @@ import java.util.logging.Logger;
  * rather than as a defect. The refusals live in {@link ArmorDefinition}'s constructor, so the schema
  * knows how to READ a file and the model knows what is legal.
  *
- * <p><b>The {@code defense} value this reads is DISPLAY-ONLY.</b> It feeds the tooltip line and
- * nothing else; the Defense a worn piece actually contributes is read off vanilla by
- * {@code DefenseModifierItems}. {@code ArmorConsistency} is what checks the two agree, and it runs
- * at boot precisely because nothing in this file can.
+ * <p><b>CORRECTED 2026-11-25 (A1): the {@code defense} value this reads IS the piece's Defense</b>, through
+ * {@code ArmorDefenseSource} in the scan. It said "DISPLAY-ONLY" until then, when the stat read vanilla and
+ * {@code ArmorConsistency} checked the two agreed; that check is now coverage (A2).
  */
 public final class ArmorLoader {
 
@@ -150,8 +149,9 @@ public final class ArmorLoader {
 
         // Defaults to 0, the way the weapon loader's attack_damage and the shield loader's block_dr
         // do: an absent stat is a stat of zero and the tooltip says so, rather than the loader
-        // inventing a number the file never asked for. ArmorConsistency will then report the
-        // mismatch against vanilla loudly at boot, which is the better place to catch it.
+        // inventing a number the file never asked for. (Until 2026-11-25 ArmorConsistency then reported the
+        // mismatch against vanilla; under A1 the authored number IS the Defense, so a missing key is a piece
+        // worth 0, and the tooltip's "Defense: 0" is the only signal.)
         double defense = s.getDouble("defense", 0.0);
 
         // THE CLAIM IS READ FROM THIS SLOT'S SECTION, never from the tier file's top level.

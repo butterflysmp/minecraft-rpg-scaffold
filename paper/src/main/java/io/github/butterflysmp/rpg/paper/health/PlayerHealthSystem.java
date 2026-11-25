@@ -55,6 +55,8 @@ public final class PlayerHealthSystem implements HealthListener {
     private final Keys keys;
     private final WeaponRegistry weapons;
     private final EnchantRegistry enchants;
+    /** A1: the armor content, the source of each worn piece's Defense (and, from the sets PR, of the set). */
+    private final io.github.butterflysmp.rpg.core.weapon.ArmorRegistry armor;
     private final HeartBarRenderer renderer = new HeartBarRenderer();
     private CombatantStats stats;
     private ResourcePool resources;
@@ -63,11 +65,14 @@ public final class PlayerHealthSystem implements HealthListener {
     private Stones stones;
 
     public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons,
-                              EnchantRegistry enchants, java.util.logging.Logger log) {
+                              EnchantRegistry enchants,
+                              io.github.butterflysmp.rpg.core.weapon.ArmorRegistry armor,
+                              java.util.logging.Logger log) {
         this.scheduler = scheduler;
         this.keys = keys;
         this.weapons = weapons;
         this.enchants = enchants;
+        this.armor = armor;
         this.log = log;
     }
 
@@ -420,7 +425,7 @@ public final class PlayerHealthSystem implements HealthListener {
                     ReloadTimeModifierItems.desiredModifiers(player, keys),
                     DeftHandsModifierItems.desiredModifiers(player, keys, weapons, enchants)));
 
-            DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants);
+            DefenseModifierItems.Worn worn = DefenseModifierItems.scan(player, keys, enchants, armor);
             // Accessory defense merged BEFORE the reconcile, so the bar override below draws a value that
             // already includes it.
             stats.reconcileDefenseModifiers(id, AccessoryContributions.merged(worn.defense(),

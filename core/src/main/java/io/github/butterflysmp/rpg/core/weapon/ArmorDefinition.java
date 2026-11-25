@@ -15,6 +15,10 @@ import java.util.Optional;
  * <p>Its own record for the same hard reason the shield needed one: {@code WeaponDefinition}'s
  * constructor REJECTS an empty trigger list and REQUIRES a {@link WeaponClass}. Armor has neither.
  *
+ * <p><b>CORRECTED 2026-11-25 (the seat's A1): {@code defense} IS NOW THE SOURCE OF THE PIECE'S DEFENSE.</b> The scan
+ * reads it through {@link ArmorDefenseSource} (scaled by the piece's score), and vanilla's points are read only as the
+ * native armor the bar cancels. The paragraph below is kept as the record of slice 1, when it was not:
+ *
  * <p><b>{@code defense} IS DISPLAY-ONLY IN THIS SLICE, AND THAT IS THE MOST IMPORTANT THING ON THIS
  * RECORD.</b> The Defense a worn piece actually contributes is read off VANILLA, by
  * {@code DefenseModifierItems.armorOf}, out of {@code ItemType.getDefaultAttributeModifiers} -- not
@@ -70,13 +74,13 @@ public record ArmorDefinition(
         // comparison against NaN is false, so `defense < 0` would wave NaN straight through and mint
         // a piece whose tooltip reads "Defense: NaN".
         //
-        // The upper bound is deliberately absent. Vanilla's own armor points are the only thing this
-        // is ever meant to mirror, and inventing a ceiling here would encode a guess about a number
-        // Minecraft owns. ArmorConsistency is what catches a wrong value, and it catches a wrong
-        // SMALL one too, which no range check can.
+        // The upper bound is deliberately absent: the number is Ben's (A1, 2026-11-25: it IS the piece's
+        // Defense now, not a mirror of vanilla's), and a ceiling here would be a guess about a balance
+        // decision. Until 2026-11-25 this comment said vanilla owned the number and ArmorConsistency
+        // caught a wrong one; neither is true any more.
         if (!(defense >= 0)) {
             throw new IllegalArgumentException("armor '" + id + "' has defense " + defense
-                    + "; it must be zero or more (it mirrors the piece's vanilla armor points)");
+                    + "; it must be zero or more");
         }
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
         craftResult = CraftResultToken.normalise(craftResult, "armor", id);

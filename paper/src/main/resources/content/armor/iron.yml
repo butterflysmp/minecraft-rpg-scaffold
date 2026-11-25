@@ -1,6 +1,6 @@
 # Iron armor -- the middle of the starter band.
 #
-# See diamond.yml for the file shape and for why 'defense:' is DISPLAY-ONLY.
+# See diamond.yml for the file shape and for what 'defense:' is: the piece's Defense (A1, 2026-11-25).
 
 # Common. The four starter tiers (leather, chainmail, iron, golden) all sit here: they are what a
 # player has before they have anything, and a rarity tier that everything starts with is not a
@@ -15,19 +15,19 @@ pieces:
     material: iron_helmet
     craft_result: iron_helmet
     display_name: "Iron Helmet"
-    defense: 2
+    defense: 10  # BEN 2026-11-25 (was vanilla's 2)
   chest:
     material: iron_chestplate
     craft_result: iron_chestplate
     display_name: "Iron Chestplate"
-    defense: 6
+    defense: 16  # BEN 2026-11-25 (was vanilla's 6)
   legs:
     material: iron_leggings
     craft_result: iron_leggings
     display_name: "Iron Leggings"
-    defense: 5
+    defense: 14  # BEN 2026-11-25 (was vanilla's 5)
   feet:
     material: iron_boots
     craft_result: iron_boots
     display_name: "Iron Boots"
-    defense: 2
+    defense: 8  # BEN 2026-11-25 (was vanilla's 2)

@@ -15,7 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The half of {@link ArmorConsistency} a unit test can reach: the ZERO case.
+ * <b>2026-11-25 (A2):</b> the check is now COVERAGE, decided in core ({@code ArmorCoverageTest}); this file also
+ * pins the paper half with the server's armor STAGED. The account below is kept as written for slice 1, when the
+ * check compared authored Defense with vanilla's.
+ *
+ * <p>The half of {@link ArmorConsistency} a unit test can reach: the ZERO case.
  *
  * <p>The mismatch check itself needs a live {@code ItemType} registry and therefore a running
  * server, so it is boot-witnessed -- the boot gate's row 1 is "zero mismatches reported". What CAN
@@ -71,17 +75,42 @@ class ArmorConsistencyTest {
     }
 
     @Test
-    void theZeroWarningDoesNotClaimTheDefenseStatIsBroken() {
-        // Precision in the message matters here, because the obvious reading is wrong. An empty
-        // content/armor does NOT disable Defense: a plain vanilla chestplate still contributes its
-        // full points, because DefenseModifierItems sources them from vanilla and never looks for
-        // one of our tags. Someone debugging an empty roster must not go hunting in the stat path.
+    void theZeroWarningSaysWhatAnEmptyRosterCosts() {
+        // REWRITTEN 2026-11-25 (A1). This row used to pin that the warning named the TOOLTIPS, because
+        // Defense was then sourced from vanilla and an empty roster cost nothing else. Under A1 an empty
+        // roster costs the authored Defense itself: every worn piece falls back to vanilla's points (the
+        // scan's CC'S CALL) and no set can exist. The warning must say THAT, or someone debugging a
+        // full-diamond player reading 20 instead of 72 goes hunting in the stat path.
         Capture capture = new Capture();
         ArmorConsistency.check(new ArmorRegistry(), quietLogger(capture));
         String warning = capture.warnings().get(0);
-        assertTrue(warning.contains("tooltip") || warning.contains("unverified"),
-                "the warning must point at the tooltips it could not verify, got: " + warning);
-        // Mutation: reword the warning to claim armor grants no defense -> reddens, and would send
-        // the next reader into the wrong subsystem.
+        assertTrue(warning.contains("vanilla's armor points") && warning.contains("authored Defense"),
+                "the warning must name the fallback, got: " + warning);
+        // Mutation: reword the warning back to the tooltip story -> reddens.
+    }
+
+    @Test
+    void aStagedServerArmorThatTheContentDoesNotCoverIsWarnedPerProblem() {
+        // The live server's half needs an item registry; the decision with that half STAGED does not.
+        ArmorRegistry content = new ArmorRegistry();
+        content.register(new io.github.butterflysmp.rpg.core.weapon.ArmorDefinition("copper_helmet", "Copper Helmet",
+                io.github.butterflysmp.rpg.core.weapon.Rarity.COMMON, "copper_helmet",
+                io.github.butterflysmp.rpg.core.weapon.ArmorSlot.HEAD, 5, List.of()));
+        java.util.Map<String, io.github.butterflysmp.rpg.core.weapon.ArmorSlot> server = new java.util.LinkedHashMap<>();
+        server.put("copper_helmet", io.github.butterflysmp.rpg.core.weapon.ArmorSlot.HEAD);
+        server.put("copper_boots", io.github.butterflysmp.rpg.core.weapon.ArmorSlot.FEET);
+        server.put("turtle_helmet", io.github.butterflysmp.rpg.core.weapon.ArmorSlot.HEAD);
+
+        Capture capture = new Capture();
+        assertEquals(1, ArmorConsistency.check(content, server, quietLogger(capture)),
+                "copper_boots uncovered; the turtle helmet excluded by name (C2)");
+        assertTrue(capture.warnings().stream().anyMatch(m -> m.contains("copper_boots")), capture.warnings().toString());
+        assertTrue(capture.warnings().stream().noneMatch(m -> m.contains("turtle_helmet")), capture.warnings().toString());
+        // POSITIVE CONTROL: cover the boots and the same staging reports nothing.
+        content.register(new io.github.butterflysmp.rpg.core.weapon.ArmorDefinition("copper_boots", "Copper Boots",
+                io.github.butterflysmp.rpg.core.weapon.Rarity.COMMON, "copper_boots",
+                io.github.butterflysmp.rpg.core.weapon.ArmorSlot.FEET, 4, List.of()));
+        assertEquals(0, ArmorConsistency.check(content, server, quietLogger(new Capture())));
+        // Mutation: empty EXCLUDED -> 2 problems, the turtle helmet named -> reddens.
     }
 }

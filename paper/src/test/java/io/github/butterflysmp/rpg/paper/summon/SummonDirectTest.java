@@ -62,8 +62,9 @@ class SummonDirectTest {
         assertTrue(directIntercept > 0 && engine > directIntercept, "handed over before the engine");
         List<String> l = code(Path.of("listener", "RpgListeners.java"));
         int melee = at(l, "public void onPlayerMeleeAttack(", 0);
-        int stand = at(l, "if (WeaponFire.leftClickDirects(attacker, weapons, adapters)) {", melee);
-        assertTrue(stand > melee && at(l, "event.setCancelled(true);", stand) == stand + 1
-                && stand < at(l, "event.setDamage(TOKEN_DAMAGE);", melee), "the melee path stands down before any damage");
+        // P-2 (2026-11-25): the stand-down is REMOVED; the combination that could reach it is refused at load
+        // (WeaponDefinitionTest.aLeftClickThatDirectsASummonMayNotAlsoAuthorAnAttackDamage).
+        assertTrue(melee > 0, "the melee handler is still found, so the absence below is not a missed file");
+        assertEquals(-1, at(l, "leftClickDirects", 0), "no stand-down remains on the melee path");
     }
 }

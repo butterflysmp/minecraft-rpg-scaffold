@@ -1,0 +1,38 @@
+# Copper armor -- brought in 2026-11-25 (Ben: "Bring copper armor in").
+#
+# See diamond.yml for the file shape and for what 'defense:' is: the piece's Defense (A1, 2026-11-25).
+#
+# READ from the pinned jars (C1): the four item types exist in paper-api 26.1.2.build.74-stable
+# (Material.COPPER_HELMET / _CHESTPLATE / _LEGGINGS / _BOOTS, ItemType typed ArmorMeta), and the
+# server jar ships their vanilla shaped recipes (data/minecraft/recipe/copper_<piece>.json, each from
+# minecraft:copper_ingot in the usual helmet/chestplate/leggings/boots patterns). craft_result is what
+# turns that vanilla craft into a mint, exactly as the other six tiers do.
+#
+# The display names are VANILLA's own item names, as every other tier keeps them (slice 1: deriving or
+# inventing names would rename vanilla items).
+rarity: common                      # BEN 2026-11-25
+
+flavor:
+  - "It greens where it is not worn."   # SEAT PLACEHOLDER 2026-11-25, OPEN FOR BEN
+
+pieces:
+  head:
+    material: copper_helmet
+    craft_result: copper_helmet
+    display_name: "Copper Helmet"
+    defense: 5  # BEN 2026-11-25
+  chest:
+    material: copper_chestplate
+    craft_result: copper_chestplate
+    display_name: "Copper Chestplate"
+    defense: 8  # BEN 2026-11-25
+  legs:
+    material: copper_leggings
+    craft_result: copper_leggings
+    display_name: "Copper Leggings"
+    defense: 7  # BEN 2026-11-25
+  feet:
+    material: copper_boots
+    craft_result: copper_boots
+    display_name: "Copper Boots"
+    defense: 4  # BEN 2026-11-25

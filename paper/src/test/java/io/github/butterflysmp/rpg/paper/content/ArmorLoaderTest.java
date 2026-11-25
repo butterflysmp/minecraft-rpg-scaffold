@@ -43,9 +43,9 @@ class ArmorLoaderTest {
 
     private static final Logger LOG = Logger.getLogger(ArmorLoaderTest.class.getName());
 
-    /** The six tiers this slice ships. Used only to assert the DISCOVERED set matches. */
+    /** The seven tiers that ship (copper joined 2026-11-25, C1). Used only to assert the DISCOVERED set matches. */
     private static final List<String> SHIPPED_TIERS =
-            List.of("chainmail", "diamond", "golden", "iron", "leather", "netherite");
+            List.of("chainmail", "copper", "diamond", "golden", "iron", "leather", "netherite");
 
     @TempDir
     Path dir;
@@ -135,18 +135,33 @@ class ArmorLoaderTest {
     }
 
     @Test
-    void theShippedDiamondSetSumsToAFullVanillaArmorBar() {
-        // 3 + 8 + 6 + 3 == 20, the ladder DefenseTest independently pins as 3 -> 11 -> 17 -> 20.
-        // Two files now have to agree about diamond, and this is what makes them.
+    void everyShippedPieceAuthorsBensDefense() {
+        // REPLACED 2026-11-25 (A1). This row pinned diamond's authored sum to vanilla's 20, because the authored number
+        // was then a MIRROR of vanilla's armor points. Under A1 it IS the Defense, and Ben ruled the ladder: helmet /
+        // chestplate / leggings / boots, verbatim in PLAN-armor-sets.md. Every piece of every set is pinned, so a typo in
+        // one slot of one file cannot hide behind a correct sum (8+7 and 7+8 agree; the per-slot rows do not).
         ArmorRegistry registry = new ArmorLoader(LOG).loadAll(new File("src/main/resources/content/armor"));
-        double sum = 0;
-        for (String id : List.of("diamond_helmet", "diamond_chestplate", "diamond_leggings", "diamond_boots")) {
-            sum += registry.find(id)
-                    .orElseThrow(() -> new AssertionError(id + " did not load"))
-                    .defense();
+        java.util.Map<String, double[]> ben = new java.util.LinkedHashMap<>();
+        ben.put("leather", new double[] {5, 8, 7, 4});
+        ben.put("golden", new double[] {5, 8, 7, 4});
+        ben.put("chainmail", new double[] {5, 8, 7, 4});
+        ben.put("copper", new double[] {5, 8, 7, 4});
+        ben.put("iron", new double[] {10, 16, 14, 8});
+        ben.put("diamond", new double[] {15, 24, 21, 12});
+        ben.put("netherite", new double[] {15, 24, 21, 12});
+        String[] pieces = {"helmet", "chestplate", "leggings", "boots"};
+        int checked = 0;
+        for (var tier : ben.entrySet()) {
+            for (int i = 0; i < 4; i++) {
+                String id = tier.getKey() + "_" + pieces[i];
+                assertEquals(tier.getValue()[i], registry.find(id)
+                        .orElseThrow(() -> new AssertionError(id + " did not load")).defense(), 1e-9, id);
+                checked++;
+            }
         }
-        assertEquals(20.0, sum, 1e-9, "a full diamond set is a full 20-point vanilla armor bar");
-        // Mutation: change any diamond defense value in the content file -> reddens.
+        assertEquals(28, checked, "the control: seven sets of four were each read");
+        assertEquals(28, registry.size(), "and no piece ships outside Ben's table");
+        // Mutation: swap leather's 8 and 7 in the content file -> reddens on the chestplate row.
     }
 
     @Test

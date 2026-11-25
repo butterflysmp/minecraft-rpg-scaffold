@@ -133,6 +133,15 @@ public record WeaponDefinition(
                     + "' declares a quiver, which binds left_click to the reload, so it may not also"
                     + " declare a left_click trigger");
         }
+        // P-2 (PLAN-summoner 11, R4; ruled 2026-11-25). A left click that ORDERS a summon is not a hit, and the
+        // swing deals no damage of its own (D5). The minted item's attack is what keeps vanilla's attack from
+        // firing at all (READ, javap, Player.attack: it hurts only if the attack value is above zero), so a
+        // weapon that directs on left click AND authors an attack_damage is the one combination that would hit
+        // as well as order. Refused here, which is why the melee path's stand-down was removed.
+        if (attackDamage > 0 && leftClickDirectsSummon(triggers)) {
+            throw new IllegalArgumentException("weapon '" + id + "' binds left_click to a direct_summon, which"
+                    + " orders a summon and deals no hit of its own, so it may not also declare attack_damage");
+        }
         validateShot(id, material, triggers);
         // THE AMMUNITION: absent (null) is the arrow, as every shipped file had it. Normalised like a material token
         // (lower case, "minecraft:" dropped). An item to load with and NOTHING to load it into is the reload_ticks
@@ -287,6 +296,17 @@ public record WeaponDefinition(
     /** The {@code shot} trigger's ability, when this weapon is one vanilla draws or loads and shoots. */
     public Optional<AbilityDefinition> vanillaShotTrigger() {
         return trigger(SHOT_TRIGGER).map(TriggerBinding::ability);
+    }
+
+    /** P-2: is this weapon's left_click a {@code direct_summon}? */
+    private static boolean leftClickDirectsSummon(List<TriggerBinding> triggers) {
+        for (TriggerBinding binding : triggers) {
+            if (binding.input().equals("left_click")
+                    && binding.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.DirectSummon) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean bindsInput(List<TriggerBinding> triggers, String input) {
