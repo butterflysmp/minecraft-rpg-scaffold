@@ -40,7 +40,14 @@ final class ScenarioLint {
          * ({@link #readsHeldLater}) followed, with no {@code wait:} between, by a step that changes the held item or the
          * inventory ({@link #changesHeld}). The task runs a tick later and sees the changed hand: MG1's Flint Staff.
          */
-        HELD_READ_THEN_CHANGE
+        HELD_READ_THEN_CHANGE,
+        /**
+         * 4d (the seat, 2026-11-24): a row that lets a mob ACT names its staged attack. A {@code cmd: summon} with no
+         * {@code NoAI:1b} must carry {@code attack_damage} in its NBT, so what it can deal him is written, not hoped for.
+         */
+        MOB_ACT_UNSTAGED,
+        /** 4d: a {@code probe_summon} names its reach (a number), so a moving summon's line does not depend on where it stands. */
+        PROBE_SUMMON_REACH
     }
 
     /**
@@ -51,6 +58,26 @@ final class ScenarioLint {
      * his inventory). No other command class hops (READ by grep over {@code paper/.../command/}).
      */
     static boolean readsHeldLater(String cmd) {
+        return readsHeldLaterImpl(cmd);
+    }
+
+    /** MOB_ACT_UNSTAGED: a vanilla {@code summon} that leaves the mob its AI and names no attack_damage. */
+    static boolean mobActsUnstaged(String cmd) {
+        String c = cmd.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!c.startsWith("summon ")) return false;
+        boolean frozen = c.replace(" ", "").contains("noai:1b") || c.replace(" ", "").contains("noai:true");
+        return !frozen && !c.contains("attack_damage");
+    }
+
+    static boolean isPositiveNumber(String a) {
+        try {
+            return Double.parseDouble(a.trim()) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean readsHeldLaterImpl(String cmd) {
         String c = cmd.trim();
         return c.startsWith("rpg enchant ") || c.equals("rpg enchant") || c.startsWith("rpg durability ")
                 || c.equals("rpg durability") || c.equals("rpg refresh") || c.startsWith("rpg refresh ");
@@ -185,6 +212,12 @@ final class ScenarioLint {
             }
             if (v == Scenario.Verb.WAIT && Long.parseLong(a) >= 1) heldReadPending = null;
             if (v == Scenario.Verb.CMD && readsHeldLater(a)) heldReadPending = a;
+            if (v == Scenario.Verb.CMD && mobActsUnstaged(a)) {
+                out.add(new Finding(gate, r, Rule.MOB_ACT_UNSTAGED, "'" + a + "' lets a mob act with no staged attack_damage"));
+            }
+            if (v == Scenario.Verb.PROBE_SUMMON && !isPositiveNumber(a)) {
+                out.add(new Finding(gate, r, Rule.PROBE_SUMMON_REACH, "probe_summon '" + a + "' names no reach"));
+            }
             if (v == Scenario.Verb.AFTER) {
                 out.add(new Finding(gate, r, Rule.SELF_STAGED, "chains on " + a + ": it reads what that row left"));
             }

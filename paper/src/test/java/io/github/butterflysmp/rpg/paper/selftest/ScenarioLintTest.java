@@ -241,6 +241,22 @@ class ScenarioLintTest {
               - wait: 2
             """;
 
+    /**
+     * 4d: the two Summoner rules, each CAUSED (no shipped scenario summons a mob with its AI on, so only these rows
+     * exercise MOB_ACT_UNSTAGED; READ: 0 such summons across the shipped scenarios at this commit).
+     */
+    @Test
+    void aMobLeftItsAiNamesItsAttackAndASummonProbeNamesItsReach() {
+        assertTrue(ScenarioLint.mobActsUnstaged("summon zombie ~ ~ ~ {Tags:[\"selftest\",\"s1\"]}"), "AI on, no attack");
+        assertFalse(ScenarioLint.mobActsUnstaged(
+                "summon zombie ~ ~ ~ {Tags:[\"s1\"],attributes:[{id:\"minecraft:attack_damage\",base:0.0}]}"), "staged");
+        assertFalse(ScenarioLint.mobActsUnstaged("summon zombie ~ ~ ~ {NoAI:1b,Tags:[\"s1\"]}"), "frozen: it cannot act");
+        assertFalse(ScenarioLint.mobActsUnstaged("rpg summon foo"), "not a vanilla summon");
+        assertTrue(ScenarioLint.isPositiveNumber("8"));
+        assertFalse(ScenarioLint.isPositiveNumber(""), "probe_summon with no reach");
+        assertFalse(ScenarioLint.isPositiveNumber("0"));
+    }
+
     @Test
     void aScheduledHeldReadFollowedByAnInventoryChangeWithNoWaitIsAFinding() throws InvalidConfigurationException {
         List<ScenarioLint.Finding> f = ScenarioLint.lint("g", parse("g", READ_THEN_CHANGE));
