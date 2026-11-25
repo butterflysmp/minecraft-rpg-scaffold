@@ -161,3 +161,28 @@ implosion (both settings). Beside their own player rows: `BehaviourHitsTest.theS
 `MobHostilityTableTest` (5): every cell. **Mutations, all red:** MUTPVP, MUTSUMCELL, MUTMOBSUM, MUTCONE, MUTSWING,
 MUTNEARBY, MUTIMPLODE, MUTPROJ, MUTIGNITE, MUTSHOCK. (The first run of MUTCONE, MUTSWING, MUTIMPLODE and MUTSHOCK did
 not compile: the capture swallowed the `if`'s paren. Re-run correctly, each red.)
+
+### 2.2 2b, THE PAPER SIDE (`feat/summoner-sides-paper`, on #290)
+
+- **The one classifier, `adapter/CombatSides`:** a player is PLAYER; a body carrying the summon tag is SUMMON; anything
+  else is MOB. It replaced all **seven** `instanceof Player ? PLAYER : MOB` copies (`MobBeamer`, `MobBlaster` x2,
+  `MobPouncer`, `MobShooter`, `MobTeleporter`, `PhageFuser`) and `BukkitCombatant`'s snapshot builder, which now takes
+  `Keys` (its seven callers pass `adapters.keys()`). `MobBeamer.eligible` and `.candidate`, and the three `side(l)`
+  helpers, are instance methods now (they read the key). A test fails if any `instanceof Player ? ... Side.` returns.
+- **The tag key, `Keys.summonOwner`** (`summon_owner`, STRING: the owner's UUID). **Nothing sets it before PR 3.**
+- **The guard, `BukkitCombatant.Handle.refusedBySides`:** FIRST in `applyNow` and in `applyStatus`'s task, before the
+  Phalanx shot's check. It refuses only `MobHostility.refusedSummonCell` (PLAYER -> SUMMON, SUMMON -> PLAYER,
+  SUMMON -> SUMMON) and logs `SIDES refused <source>-><victim> <what> source=<id> victim=<id>`. The source's side comes
+  from its id (`CombatSides.ofSource`: an online player, else the entity found by id). **FOLIA DEBT, named:**
+  `Bukkit.getEntity` reads another entity off its region; it is correct on Paper today.
+- **The three vanilla listeners** (`onPlayerMeleeAttack`, `onPlayerSweepAttack`, `onVanillaShotHit`) call
+  `refusedForPlayer` before any damage is written; a refusal CANCELS the event, so neither vanilla's damage nor ours
+  lands. Player -> player is untouched (the swing already returns for a player victim; the sweep already cancels one).
+- **Targeting, `onSidesTarget` (`EntityTargetLivingEntityEvent`):** a targeting the table refuses is cancelled; today
+  that is only a summon targeting a player or a summon. A mob may target a summon (H5).
+
+**Proof (H7):** `CombatSidesTest` (5): the classifier on FAKE TAGGED BODIES (reflection proxies, as `LiveTargetsTest`
+stubs entities: a tagged wolf is SUMMON, an untagged wolf MOB, a tagged player PLAYER); the guard's decision; the source
+wiring of the damage port, the status port, the three listeners and targeting, each bounded by its own method; and no
+side copy left. **What it cannot do:** fire a listener; that needs a server. **Mutations, all red:** MUTCLASSIFY,
+MUTPLAYERFIRST, MUTGUARD, MUTMELEE, MUTTARGET.

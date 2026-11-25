@@ -211,7 +211,7 @@ public final class WeaponFire {
         // Snapshot on the player's own thread, before the region hop below. This is also where the
         // caster's attack speed is frozen -- the swing's cadence is decided from it a moment later,
         // and reading the store after the hop would be the cross-thread read this split prevents.
-        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats());
+        CombatantSnapshot caster = BukkitCombatant.snapshot(player, adapters.stats(), adapters.keys());
 
         Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim));
         result.ifPresent(r -> {
@@ -328,7 +328,7 @@ public final class WeaponFire {
                 .flatMap(WeaponDefinition::vanillaMeleeTrigger);
         if (trigger.isEmpty()) return Optional.empty();
 
-        CombatantSnapshot caster = BukkitCombatant.snapshot(attacker, adapters.stats());
+        CombatantSnapshot caster = BukkitCombatant.snapshot(attacker, adapters.stats(), adapters.keys());
         Combatant target = BukkitCombatant.of(victim, adapters);
 
         // A one-slot sink rather than a running total: FIRST-WINS, per the javadoc above. It holds

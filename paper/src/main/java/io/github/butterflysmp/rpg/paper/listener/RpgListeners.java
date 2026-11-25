@@ -1635,9 +1635,38 @@ public final class RpgListeners implements Listener {
      * lands through the same sum and PLAYERHIT line. {@link #onEnvironmentalDamage} returns early on exactly these
      * ({@code VanillaShots.stamped} is the one predicate both ask).
      */
+    /**
+     * 2b, THE SIDES GUARD FOR A PLAYER'S VANILLA HIT (his swing, its sweep, his vanilla shot): when the one table refuses
+     * PLAYER -> this victim (a summon), the event is cancelled, so neither vanilla's damage nor ours lands, and the caller
+     * stops. Read through {@code CombatSides.refused}; false for every victim without a summon cell.
+     */
+    private boolean refusedForPlayer(LivingEntity victim, org.bukkit.event.Cancellable event) {
+        var side = io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(victim, adapters.keys());
+        if (!io.github.butterflysmp.rpg.paper.adapter.CombatSides.refused(
+                io.github.butterflysmp.rpg.core.mob.MobHostility.Side.PLAYER, side)) {
+            return false;
+        }
+        event.setCancelled(true);
+        return true;
+    }
+
+    /**
+     * 2b, THE SIDES GUARD ON TARGETING (H4, H5): a targeting the one table refuses is cancelled. Today that is only a
+     * summon targeting a player or a summon; a mob may target a summon (H5). A summon's own choice of target is PR 3's.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onSidesTarget(org.bukkit.event.entity.EntityTargetLivingEntityEvent event) {
+        if (event.getTarget() == null) return;
+        var keys = adapters.keys();
+        var targeter = io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(event.getEntity(), keys);
+        var target = io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(event.getTarget(), keys);
+        if (io.github.butterflysmp.rpg.paper.adapter.CombatSides.refused(targeter, target)) event.setCancelled(true);
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onVanillaShotHit(EntityDamageByEntityEvent event) {
         vanillaShots.stamped(event).ifPresent(hit -> {
+            if (refusedForPlayer(hit.victim(), event)) return;            // 2b: never a summon (the one table)
             event.setDamage(TOKEN_DAMAGE);
             floorSoTokenCannotKill(hit.victim());
             vanillaShots.land(hit);
@@ -2594,6 +2623,7 @@ public final class RpgListeners implements Listener {
             event.setCancelled(true);
             return;
         }
+        if (refusedForPlayer(swept, event)) return;                      // 2b: never a summon (the one table)
 
         // What this weapon declares, and what the swing actually dealt. Either being absent means
         // this stays exactly the cancel it was before sweep was owned.
@@ -2691,6 +2721,7 @@ public final class RpgListeners implements Listener {
         if (!(event.getDamager() instanceof Player attacker)) return;    // player-initiated
         if (!(event.getEntity() instanceof LivingEntity victim)) return;
         if (victim instanceof Player) return;                            // player->mob only
+        if (refusedForPlayer(victim, event)) return;                     // 2b: never a summon (the one table)
         if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return;
 
         // A BROKEN weapon is inert, and cancelling is what makes it look inert: no damage, and no

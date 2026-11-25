@@ -120,7 +120,7 @@ public final class MobTeleporter implements MobBeamer.Listener {
     private void decideAndMove(Mob mob, String mobId, LivingEntity target, MobTeleport t, MobBeam beam) {
         boolean exempt = target instanceof Player pl
                 && (pl.getGameMode() == GameMode.CREATIVE || pl.getGameMode() == GameMode.SPECTATOR);
-        MobHostility.Side side = target instanceof Player ? MobHostility.Side.PLAYER : MobHostility.Side.MOB;
+        MobHostility.Side side = io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(target, adapters.keys());
         Optional<BeamTeleport.Skip> skip = BeamTeleport.skip(true, LiveTargets.isLive(target),
                 target.getWorld().equals(mob.getWorld()), side, exempt);
         if (skip.isPresent()) {

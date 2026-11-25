@@ -124,7 +124,7 @@ public final class MobBlaster {
             boolean exempt = living instanceof Player p
                     && (p.getGameMode() == GameMode.CREATIVE || p.getGameMode() == GameMode.SPECTATOR);
             bystanders.add(new MobBlast.Bystander(living.getUniqueId(),
-                    living instanceof Player ? MobHostility.Side.PLAYER : MobHostility.Side.MOB, exempt,
+                    io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(living, adapters.keys()), exempt,
                     living.getWorld().getName(), vec(living.getLocation())));
             bodies.put(living.getUniqueId(), living);
         }
@@ -170,7 +170,7 @@ public final class MobBlaster {
         // never one of its own victims.
         if (shape.drags()) {
             ImplosionDrags.start(adapters, world, vec(at), shape, l -> !l.getUniqueId().equals(phageId)
-                    && MobHostility.hostileTo(l instanceof Player ? MobHostility.Side.PLAYER : MobHostility.Side.MOB,
+                    && MobHostility.hostileTo(io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(l, adapters.keys()),
                     ImplosionFooting.exempt(l)), "phage", phageId);
         }
 

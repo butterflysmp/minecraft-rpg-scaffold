@@ -236,7 +236,7 @@ public final class PhageFuser {
         boolean sight = false;
         LivingEntity target = c.hasAI() ? c.getTarget() : null;
         if (target != null && LiveTargets.isLive(target) && target.getWorld().equals(c.getWorld())
-                && MobHostility.hostileTo(target instanceof Player ? MobHostility.Side.PLAYER : MobHostility.Side.MOB,
+                && MobHostility.hostileTo(io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(target, adapters.keys()),
                         ImplosionFooting.exempt(target))) {
             distance = OptionalDouble.of(c.getLocation().distance(target.getLocation()));
             sight = c.hasLineOfSight(target);

@@ -206,11 +206,11 @@ public final class ProjectileFlight {
 
         Vec3 next = position.add(velocity);
 
-        Optional<RayHit> hit = world.castRay(position, next, caster.id());
+        Optional<RayHit> hit = world.castRay(position, next, caster.id(), io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER);
         if (hit.isPresent()) {
             resolve(world, markerId);
-            // THE ONE TABLE (2a): a body the caster may not hit (a summon) takes nothing; the shot still ends on it
-            // (castRay's first body is the port's choice) and lands untargeted at the point.
+            // THE ONE TABLE: a summon never reaches here (Q3: castRay passes through it). What this reads is
+            // PvpPath.PROJECTILE, for PLAYER -> PLAYER: if Ben rules it spared, the shot ends on him, untargeted.
             Combatant body = hit.get().combatant();
             boolean admitted = body == null || io.github.butterflysmp.rpg.core.mob.MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER,
                     body.state().side(), false, io.github.butterflysmp.rpg.core.mob.MobHostility.PvpPath.PROJECTILE);

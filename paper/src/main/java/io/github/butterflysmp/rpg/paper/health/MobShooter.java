@@ -850,8 +850,8 @@ public final class MobShooter implements ShotSink {
         return valid ? stored : MobScaling.GS_BASELINE;
     }
 
-    private static MobHostility.Side side(LivingEntity l) {
-        return l instanceof Player ? MobHostility.Side.PLAYER : MobHostility.Side.MOB;
+    private MobHostility.Side side(LivingEntity l) {   // 2b: the one classifier
+        return io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(l, adapters.keys());
     }
 
     private static boolean exempt(LivingEntity l) {
