@@ -1,6 +1,6 @@
 # GATE — ARMOR SETS: AUTHORED DEFENSE, COPPER, THE SET BONUSES, THE FOUR COLUMNS ON ARMOR
 
-**Status: NOT RUN.** Branch `feat/armor-sets-gate`, on #306 `feat/armor-sets-5` (the stack #300 → #301 → #302 → #303 → #305 → #306; extended
+**Status: NOT RUN.** Branch `feat/armor-sets-gate`, on #307 `feat/armor-sets-w1` (the stack #300 → #301 → #302 → #303 → #305 → #306 → #307; extended
 in place 2026-11-25 for the seat's re-rulings, before any approval or boot).
 Written 2026-11-25; every prediction committed before any boot. **No boot without Ben's own "ready" and the seat's
 approval of code and gate from origin** (`.claude/rules/booting.md`, ticked line by line). **GAME MODE: SURVIVAL, every
@@ -77,9 +77,16 @@ So his accessories, fragments or anything else he carries cannot move a reading.
     `"You cannot summon more (max <n>)."`;
   - a refusal costs no mana and starts no cooldown.
   - `rpg maxsummons` replies `max_summons: <n>`.
-- **The run's restore** puts back his inventory (armour included: `PlayerInventory.getContents`, READ in the paper-api
-  javadoc, *"Returns all ItemStacks from the inventory"*), his health, the world's difficulty and the `max_summons`
-  base (READ, `GATE-summoner.md`).
+- **The run's restore** puts back his inventory, his health, the world's difficulty and the `max_summons` base (READ,
+  `GATE-summoner.md`). **HIS ARMOUR AND OFF-HAND, W1 (the seat, 2026-11-25), are now captured and restored BY NAME and
+  READ BACK** (`SelfTestWornSlots`, #307), at every gate boundary and in the final restore (the one funnel for END,
+  every abort, stop, quit and disable). They no longer rest on a javadoc sentence.
+  - READ, javap on the pinned server jar: `CraftInventoryPlayer` inherits `getContents` and `setContents` from
+    `CraftInventory`.
+  - NMS `Inventory.getContents` is 43 entries: storage 0–35, feet 36, legs 37, chest 38, head 39, off-hand 40, body
+    41, saddle 42 (`EQUIPMENT_SLOT_MAPPING`, `EquipmentSlot.getIndex(36)` = 36 + index, FEET 0 … HEAD 3).
+  - `setContents` writes every index `0..getSize()`.
+  - So the array copy already carried the five, and the explicit path does not depend on it.
 - **The armor key** is `rpg:armor_id`. READ: `Keys` builds it as `new NamespacedKey(plugin, "armor_id")` and the plugin
   is named `Rpg`. That the namespace is lowercased is INFERRED. AS14's give writes it under `PublicBukkitValues` in the
   item's `custom_data` (INFERRED, Paper's PDC storage).
@@ -111,6 +118,10 @@ scripted one, staged exactly as SM3AR (its attack 0.002), and it is killed in it
 - **S-1:** every figure above is executed (jshell, against `core/target/classes`).
 - **Wear is not a SAFETY term:** it moves his items, never his health. Every hit above also wears his worn pieces by 1
   (D2'), and the run's restore puts his own inventory back, armour included.
+- **A JVM killed mid-run** reaches no restore. His worn armour is then in the pre-boot backup that `booting.md`'s
+  carried state takes. READ: this 26.1 server keeps player data at `world/players/data/<uuid>.dat` (not `playerdata/`),
+  and the summoner boot's backup `rpg-run-backups\2026-11-25-pre-summoner\world\players\data\` holds his
+  `b6ae27e9-….dat`. That the vanilla `.dat` holds the armour slots is INFERRED.
 
 ## CARRIED STATE (CC, IN THIS ORDER) — A CHECKLIST, EACH LINE TICKED IN THE REPORT
 
@@ -123,6 +134,15 @@ scripted one, staged exactly as SM3AR (its attack 0.002), and it is killed in it
 
 He is told **R0 passed**, logs in, stands anywhere, types `/rpg selftest summoner+armor-sets`, answers SM17's and AS16's
 questions, waits for `SELFTEST armor-sets END`, then `/stop`.
+
+**W1, HIS OWN ARMOUR, READ AT THE RUN'S EDGES:**
+- **At the start:** the line `SELFTEST RUN CAPTURED armour=<n of 4> offhand=<0|1>` follows `RUN START`. Its two
+  figures are what he wears at capture, recorded as read (AS0's preamble).
+- **At every gate boundary and at the end:** the boundary's `CLEAN … inventory=restored` line and the
+  `SELFTEST RUN RESTORED …` line end with **`armour=<the captured n> offhand=<the captured n>`** and **no
+  `NOT-RESTORED=`**.
+- **Any `NOT-RESTORED=<slot>` is a FAIL that names the slot:** the restore wrote it and read back something other than
+  what was captured (ItemStack's own equality). Stop and read his inventory before anything else.
 
 ## HOW LONG THE RUN IS
 
@@ -145,11 +165,11 @@ prints it, shortened. **Not `-dirty`, not `unknown`.** Instrument: `Select-Strin
 ### R0b — the jar carries the stack and this gate
 
 `docs/gates/GATE-armor-sets-r0b.ps1`. **Prediction, line for line:**
-- before `'--- absent'`: **38 `PRESENT`, 0 `ABSENT`**;
+- before `'--- absent'`: **41 `PRESENT`, 0 `ABSENT`**;
 - between `'--- absent'` and `'--- controls'`: **4 `ABSENT`, 0 `PRESENT`**;
-- after `'--- controls'`: **4 `ABSENT`, 0 `PRESENT`**.
+- after `'--- controls'`: **5 `ABSENT`, 0 `PRESENT`**.
 
-Counted from the script, by section: 22 `ValueLine` + 10 `Entry` + 6 `Has` = 38, then 4 and 4. **It was run before commit on a jar
+Counted from the script, by section: 22 `ValueLine` + 11 `Entry` + 8 `Has` = 41, then 4 and 5 (W1 added `SelfTestWornSlots`, the CAPTURED and NOT-RESTORED literals, and the control `armour=5`). **It was run before commit on a jar
 built from this tree; see the PR body.**
 
 ### R0c — every Loaded line, and no `[Rpg]` WARN
@@ -205,6 +225,9 @@ display name (leather's are `Leather Cap`, `Leather Tunic`, `Leather Pants`, `Le
 on a diamond helmet, or no set lines on an iron piece, is a FAIL reading.
 
 ### AS0 — THE BASELINE
+
+**Preamble (W1):** what he wears at capture is the run's `SELFTEST RUN CAPTURED armour=<n> offhand=<0|1>` line,
+recorded here as read. AS0 itself clears his armour slots; the restore puts them back.
 
 Bare, at level 1, `rpg stats`:
 - `Max Health 100`;

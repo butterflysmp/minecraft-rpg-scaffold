@@ -1,6 +1,6 @@
-# GATE-armor-sets R0b (2026-11-25, feat/armor-sets-gate on feat/armor-sets-5): the stack #301-#303, #305, #306 and this gate.
-# Prediction: before '--- absent', 38 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 4 ABSENT and 0
-# PRESENT; after '--- controls', 4 ABSENT and 0 PRESENT.
+# GATE-armor-sets R0b (2026-11-25, feat/armor-sets-gate on feat/armor-sets-w1): the stack #301-#303, #305-#307 and this gate.
+# Prediction: before '--- absent', 41 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 4 ABSENT and 0
+# PRESENT; after '--- controls', 5 ABSENT and 0 PRESENT.
 # Run: powershell -File <this> [-JarPath <jar>]
 param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -25,6 +25,8 @@ $ac = Bytes 'io/github/butterflysmp/rpg/paper/content/ArmorConsistency.class'
 $rl = Bytes 'io/github/butterflysmp/rpg/paper/listener/RpgListeners.class'
 $wf = Bytes 'io/github/butterflysmp/rpg/paper/weapon/WeaponFire.class'
 $dr = Bytes 'io/github/butterflysmp/rpg/paper/selftest/SelfTestDrivers.class'
+$sr = Bytes 'io/github/butterflysmp/rpg/paper/selftest/SelfTestRun.class'
+$ws = Bytes 'io/github/butterflysmp/rpg/paper/selftest/SelfTestWornSlots.class'
 ValueLine $cu 'rarity: common' 'copper.yml'
 ValueLine $cu '    material: copper_helmet' 'copper.yml'
 ValueLine $cu '    defense: 5' 'copper.yml'
@@ -63,6 +65,9 @@ Has $ac 'turtle_helmet' 'ArmorConsistency.class'
 Has $dr 'weapon or armor id' 'SelfTestDrivers.class'
 Has $ll '% Quiver Size' 'ArmorLoreLines.class'
 Has $dr 'ARMOR slot=' 'SelfTestDrivers.class'
+Entry 'io/github/butterflysmp/rpg/paper/selftest/SelfTestWornSlots.class'
+Has $sr 'SELFTEST RUN CAPTURED ' 'SelfTestRun.class'
+Has $ws 'NOT-RESTORED=' 'SelfTestWornSlots.class'
 '--- absent'
 ValueLine $gs 'SM7:' 'GATE-summoner.yml'
 Has $ch 'ArmorLoader refuses quiver_size_percent' 'chainmail.yml'
@@ -73,4 +78,5 @@ ValueLine $g 'AS20:' 'GATE-armor-sets.yml'
 ValueLine $cu '    defense: 6' 'copper.yml'
 ValueLine $cu '  - type: quiver_size_percent' 'copper.yml'
 Entry 'content/armor/turtle.yml'
+Has $ws 'armour=5' 'SelfTestWornSlots.class'
 $zip.Dispose()
