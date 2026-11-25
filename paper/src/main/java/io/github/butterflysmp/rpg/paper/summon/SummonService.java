@@ -104,6 +104,40 @@ public final class SummonService {
     }
 
     /**
+     * THE LEFT CLICK'S ORDER (4c; D5 as ruled). The first body on his ray within {@code reach} (passing THROUGH summons, as
+     * his shots do, Q3; stopping at a player or a block) becomes the DIRECTED target of HIS summon of this weapon when it is
+     * a MOB ({@link #directable}). Nothing of his alive, air, or a player: EMPTY, which the left-click path renders as
+     * nothing at all. Only a picked mob charges the cast, so it costs only what the YAML authors.
+     */
+    public Optional<CastResult> direct(Player player, WeaponDefinition weapon, CastSpec.DirectSummon spec,
+                                       Supplier<CastResult> charge) {
+        Optional<UUID> body = store().bodyOf(player.getUniqueId(), weapon.id());
+        if (body.isEmpty()) return Optional.empty();
+        org.bukkit.Location eye = player.getEyeLocation();
+        org.bukkit.util.RayTraceResult hit = player.getWorld().rayTrace(eye, eye.getDirection(), spec.reach(),
+                org.bukkit.FluidCollisionMode.NEVER, true, 0.0, e -> {
+                    org.bukkit.entity.LivingEntity b = io.github.butterflysmp.rpg.paper.adapter.LiveTargets.resolve(e);
+                    return b != null && !b.equals(player) && !io.github.butterflysmp.rpg.paper.adapter.CombatSides.refused(
+                            io.github.butterflysmp.rpg.core.mob.MobHostility.Side.PLAYER,
+                            io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(b, ctx.keys()));
+                });
+        org.bukkit.entity.LivingEntity target = hit == null ? null
+                : io.github.butterflysmp.rpg.paper.adapter.LiveTargets.resolve(hit.getHitEntity());
+        if (target == null || !directable(io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(target, ctx.keys()))) {
+            return Optional.empty();
+        }
+        CastResult charged = charge.get();
+        if (charged instanceof CastResult.Success) store().direct(body.get(), target.getUniqueId());
+        return Optional.of(charged);
+    }
+
+    /** D5: only a body the summon may harm can be ordered: a MOB, by the one table (never a player, never a summon). */
+    static boolean directable(io.github.butterflysmp.rpg.core.mob.MobHostility.Side side) {
+        return io.github.butterflysmp.rpg.core.mob.MobHostility.harms(
+                io.github.butterflysmp.rpg.core.mob.MobHostility.Side.SUMMON, side, false, null);
+    }
+
+    /**
      * THE BODY'S SET-UP (D1). Each call, and what stands behind it: <br>
      * {@code World.spawn(Location, Class, Consumer)}: the consumer runs on the new entity BEFORE it is added (paper-api,
      * READ by its signature; "before it is added" is its javadoc's, INFERRED) <br>

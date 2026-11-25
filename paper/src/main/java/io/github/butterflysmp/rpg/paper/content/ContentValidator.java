@@ -778,6 +778,7 @@ public final class ContentValidator {
             // Names no visual. Its summon id is resolved against the summon registry when 3b wires one into the boot; until
             // then no shipped content names a summon (none ships before PR 5).
             case CastSpec.Summon ignored -> { }
+            case CastSpec.DirectSummon ignored -> { }   // names no visual
             // A cone's front (2026-11-22, the Living Lantern): the id must name a visual, and that visual may hold no
             // sound. The ray beam's rule, with its own reason: the ray arm's message names chunk-column segments, which
             // is not why a front may not carry a sound.

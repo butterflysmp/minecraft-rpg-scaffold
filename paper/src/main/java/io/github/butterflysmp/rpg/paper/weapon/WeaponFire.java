@@ -113,6 +113,17 @@ public final class WeaponFire {
         return attempt(player, input, weapons, weaponService, adapters, cooldowns, cadence, yawOffsets, null);
     }
 
+    /**
+     * D5: "the swing deals no damage of its own". True when the held weapon's left_click is a {@code direct_summon}, so the
+     * melee path stands down for it (a left click ON a mob is also vanilla's melee event).
+     */
+    public static boolean leftClickDirects(Player player, WeaponRegistry weapons, AdapterContext adapters) {
+        return WeaponItems.heldWeaponId(player, adapters.keys()).flatMap(weapons::find)
+                .flatMap(w -> w.trigger("left_click"))
+                .map(b -> b.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.DirectSummon)
+                .orElse(false);
+    }
+
     private static Optional<CastResult> attempt(Player player, String input,
                                                WeaponRegistry weapons,
                                                WeaponService weaponService,
@@ -225,6 +236,11 @@ public final class WeaponFire {
             int score = GearScoreItems.heldScore(player, adapters.keys(), adapters.weapons());   // D3: read at the cast
             return Optional.of(summons.cast(player, weapon, summonCast, score,
                     () -> weaponService.fire(caster, binding.get(), aim)));
+        }
+        // THE LEFT CLICK'S ORDER (4c, D5): picked BEFORE it is charged; nothing picked is nothing at all (empty).
+        if (binding.get().ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.DirectSummon direct) {
+            if (summons == null) return Optional.empty();
+            return summons.direct(player, weapon, direct, () -> weaponService.fire(caster, binding.get(), aim));
         }
         Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim));
         result.ifPresent(r -> {

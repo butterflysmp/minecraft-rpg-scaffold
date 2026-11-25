@@ -327,6 +327,8 @@ public final class CastExecutor {
 
             // A SUMMON CAST NEVER REACHES THE ENGINE (3a): the summon service decides the cap BEFORE the cast is charged
             // (D6: a refusal costs no mana and no cooldown). One arriving here is a wiring defect, named.
+            case CastSpec.DirectSummon d -> throw new IllegalStateException("a direct_summon reached the engine; it is run by"
+                    + " the summon service, before the cast is charged");
             case CastSpec.Summon s -> throw new IllegalStateException("summon cast '" + s.summonId()
                     + "' reached the engine; it is run by the summon service, before the cast is charged");
         }
@@ -1497,6 +1499,7 @@ public final class CastExecutor {
             case CastSpec.Cone ignored -> throw new IllegalStateException(notRepeatable("cone"));
             case CastSpec.Orb ignored -> throw new IllegalStateException(notRepeatable("orb"));
             case CastSpec.Summon ignored -> throw new IllegalStateException(notRepeatable("summon"));
+            case CastSpec.DirectSummon ignored -> throw new IllegalStateException(notRepeatable("direct_summon"));
         }
     }
 

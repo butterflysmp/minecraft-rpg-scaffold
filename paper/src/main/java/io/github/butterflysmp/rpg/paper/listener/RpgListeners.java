@@ -2832,6 +2832,11 @@ public final class RpgListeners implements Listener {
             event.setCancelled(true);
             return;
         }
+        // 4c, D5: a summon weapon's left click is an ORDER, and "the swing deals no damage of its own": stand down.
+        if (WeaponFire.leftClickDirects(attacker, weapons, adapters)) {
+            event.setCancelled(true);
+            return;
+        }
 
         event.setDamage(TOKEN_DAMAGE);                                   // flash + i-frames, no double
         floorSoTokenCannotKill(victim);

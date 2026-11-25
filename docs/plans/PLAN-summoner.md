@@ -420,3 +420,23 @@ outside our namespace (removing all and re-adding ours). The goal's types are MO
 **Tests:** `SummonFeedsTest` (3; one row added when MUTFEEDTARGET first SURVIVED: the target check had no row of its own),
 `SummonWiringTest` +2. **Mutations, all red:** MUTHITSIDE, MUTCREDIT, MUTCRIT, MUTRESTRIPALL, MUTFEEDPLAYERDEALER,
 MUTFEEDTARGET.
+
+### 6.3 4c, THE LEFT CLICK (`feat/summoner-4c`)
+
+**READ (our code), how a click reaches the one left-click path:** `WeaponSwingListener` fires the held weapon's
+`left_click` on the client's main-hand ARM-SWING packet (`PacketType.Play.Client.ANIMATION`), hopped to the player's
+thread, then `WeaponFire.attempt`. **INFERRED (client behaviour, not readable from the server jar):** a vanilla client
+sends that swing on a left click on AIR and on an ENTITY (with the attack). A click ON a mob is also vanilla's melee
+event, so `onPlayerMeleeAttack` STANDS DOWN for a weapon whose `left_click` is a `direct_summon` (cancelled: no damage,
+no flash), D5's "the swing deals no damage of its own".
+
+**`type: direct_summon` (`CastSpec.DirectSummon(reach)`, reach REQUIRED):** `WeaponFire` hands it to
+`SummonService.direct` BEFORE the charge. Nothing of his alive for this weapon, air, or a first body that is not a MOB
+(`directable`: `harms(SUMMON, side)`): EMPTY, which the left-click path renders as nothing. A picked mob charges the
+cast (so it costs only what the YAML authors) and, on success, becomes that summon's DIRECTED target
+(`SummonStore.direct`); the goal logs `SUMMON target ... why=directed` the next tick.
+
+**CC'S CALLS (4c):** the pick's ray passes THROUGH summons (as his shots do, Q3) and STOPS at a player (alternative: pass
+through players too, to the first mob); nothing picked returns empty rather than a new silent `CastResult`
+(alternative: a variant). **Tests:** `SummonDirectTest` (3). **Mutations, all red:** MUTDIRECTABLE, MUTCHARGEFIRST,
+MUTSTANDDOWN, MUTREACHDEFAULT.
