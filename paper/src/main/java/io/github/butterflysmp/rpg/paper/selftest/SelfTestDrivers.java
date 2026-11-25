@@ -166,6 +166,8 @@ final class SelfTestDrivers {
             case ASK -> Optional.empty();   // the run puts the question and waits; it never reaches a driver
             case DIFFICULTY -> difficulty(p, a);
             case PROBE_TARGET -> probeTarget(p, a);
+            case PROBE_SUMMON -> probeSummon(p, a);
+            case MOB_TARGET -> mobTarget(p, a);
             case RETURN -> returnToStart(p);
             // Through the fuser's one detonation path (the void implosion's Part C): the prime it raises is marked as
             // ours, so the backstop does not refuse it.
@@ -515,6 +517,50 @@ final class SelfTestDrivers {
     }
 
     /** PROBE_TARGET: what each tagged mob's AI is after. {@code self} is the run's player. */
+    /** PROBE_SUMMON (4d): one line per summon of his the store owns; the row's reach is printed, never judged. */
+    private Optional<String> probeSummon(Player p, String arg) {
+        double reach = Double.parseDouble(arg.trim());
+        var adapters = run.adapters();
+        int n = 0;
+        for (var s : adapters.summons().all()) {
+            if (!s.owner().equals(p.getUniqueId())) continue;
+            n++;
+            Entity body = org.bukkit.Bukkit.getEntity(s.body());
+            boolean alive = body instanceof LivingEntity l && !l.isDead() && l.isValid();
+            String health = adapters.stats().tracks(s.body())
+                    ? String.format(java.util.Locale.ROOT, "%.3f/%.3f", adapters.stats().current(s.body()), adapters.stats().max(s.body()))
+                    : "untracked";
+            String at = body == null ? "unknown" : String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f",
+                    body.getLocation().getX(), body.getLocation().getY(), body.getLocation().getZ());
+            double d = body == null || !body.getWorld().equals(p.getWorld()) ? -1 : body.getLocation().distance(p.getLocation());
+            LivingEntity target = body instanceof org.bukkit.entity.Mob m ? m.getTarget() : null;
+            run.log("SUMMONPROBE weapon=" + s.weaponId() + " body=" + s.body() + " alive=" + alive + " health=" + health
+                    + " at=" + at + String.format(java.util.Locale.ROOT, " dist_him=%.2f within=%.1f:%b", d, reach, d >= 0 && d <= reach)
+                    + " target=" + (target == null ? "none" : target.getUniqueId())
+                    + " directed=" + adapters.summons().directed(s.body()).map(java.util.UUID::toString).orElse("none"));
+        }
+        if (n == 0) run.log("SUMMONPROBE none owner=" + p.getUniqueId() + " store=" + adapters.summons().all().size());
+        return Optional.empty();
+    }
+
+    /** MOB_TARGET (4d): the nearest living mob with this tag targets him now. */
+    private Optional<String> mobTarget(Player p, String tag) {
+        Entity best = null;
+        for (Entity e : p.getNearbyEntities(REACH, REACH, REACH)) {
+            if (!(e instanceof org.bukkit.entity.Mob) || !e.getScoreboardTags().contains(tag) || e.isDead()) continue;
+            if (best == null || e.getLocation().distanceSquared(p.getLocation()) < best.getLocation().distanceSquared(p.getLocation())) {
+                best = e;
+            }
+        }
+        if (best == null) {
+            run.log("DRIVE mob_target tag=" + tag + " none within " + (int) REACH + " blocks");
+            return Optional.of("no mob tagged " + tag + " within " + (int) REACH + " blocks");
+        }
+        ((org.bukkit.entity.Mob) best).setTarget(p);
+        run.log("DRIVE mob_target " + best.getUniqueId() + " tag=" + tag);
+        return Optional.empty();
+    }
+
     private Optional<String> probeTarget(Player p, String tag) {
         List<Entity> tagged = new ArrayList<>();
         for (Entity e : p.getNearbyEntities(REACH, REACH, REACH)) if (e.getScoreboardTags().contains(tag)) tagged.add(e);

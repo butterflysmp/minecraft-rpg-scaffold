@@ -440,3 +440,19 @@ cast (so it costs only what the YAML authors) and, on success, becomes that summ
 through players too, to the first mob); nothing picked returns empty rather than a new silent `CastResult`
 (alternative: a variant). **Tests:** `SummonDirectTest` (3). **Mutations, all red:** MUTDIRECTABLE, MUTCHARGEFIRST,
 MUTSTANDDOWN, MUTREACHDEFAULT.
+
+### 6.4 4d, THE SELFTEST STEPS AND LINT RULES (`feat/summoner-4d`)
+
+**What D8 needs, and what already existed (READ in `Scenario.Verb`):** a left click aimed at a tagged mob is
+`aim: "<tag>"` then `reload: ""` (RELOAD drives `WeaponSwingListener.swing`, the method the arm-swing packet hops to);
+what a mob is targeting is `probe_target: "<tag>"`; a vanilla mob with its AI and a staged attack is `cmd: "summon <type>
+~ ~ ~ {Tags:[...],attributes:[{id:\"minecraft:attack_damage\",base:<n>}]}"`. **New:**
+- `probe_summon: "<reach>"`: one line per summon of his, `SUMMONPROBE weapon=<w> body=<u> alive=<b> health=<cur>/<max>
+  at=x y z dist_him=<d> within=<reach>:<b> target=<u|none> directed=<u|none>`; `SUMMONPROBE none owner=<u> store=<n>` when
+  he has none. Never judges.
+- `mob_target: "<tag>"`: the nearest living mob with that tag within 16 targets him (`Mob#setTarget`); `DRIVE mob_target
+  <uuid> tag=<tag>`, or a skip naming the tag.
+
+**Lint:** `MOB_ACT_UNSTAGED`: a `cmd: summon` with no `NoAI:1b` must carry `attack_damage` (READ: 0 such summons in the
+shipped scenarios at this commit, so only `ScenarioLintTest` causes it). `PROBE_SUMMON_REACH`: `probe_summon` names a
+positive number. **Mutations, all red:** MUTFROZEN, MUTATTACK.

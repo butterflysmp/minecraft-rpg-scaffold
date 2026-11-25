@@ -188,6 +188,19 @@ public record Scenario(String gate, String row, List<Step> steps) {
         /** Log, for each entity carrying this tag within 16 blocks, what its AI is targeting: {@code self}, none, or a type and uuid. */
         PROBE_TARGET,
         /**
+         * {@code "<reach>"} (the Summoner slice, 4d): for each summon of HIS the store owns, one line
+         * {@code SUMMONPROBE weapon=<w> body=<u> alive=<b> health=<cur>/<max> at=x y z dist_him=<d> within=<reach>:<b>
+         * target=<u|none> directed=<u|none>}. The reach is the row's own radius for a MOVING summon, so the line reads
+         * the same wherever it happens to stand inside it (the lint requires a number). It never judges.
+         */
+        PROBE_SUMMON,
+        /**
+         * {@code "<tag>"} (4d): the nearest living mob carrying this tag within 16 blocks TARGETS HIM now
+         * ({@code Mob#setTarget}), so "a mob targeting him" is staged, not hoped for. Its attack is staged by its own NBT
+         * (the lint's MOB_ACT_UNSTAGED). Logged {@code DRIVE mob_target <uuid>}.
+         */
+        MOB_TARGET,
+        /**
          * Teleport the player back to where the run began (the row-start clean's spot), so a box probed relative to
          * the player's block is the box it was before he was pushed. Wait 2 ticks after it: the teleport is async.
          */
