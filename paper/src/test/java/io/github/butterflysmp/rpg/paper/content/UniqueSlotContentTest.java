@@ -142,9 +142,9 @@ class UniqueSlotContentTest {
         assertEquals(6, l.accessories());
         assertEquals(59, l.gear().size());
         assertEquals(59, MASTER_POOLS.size(), "the snapshot covers the same 59");
-        assertEquals(22, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
-                + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes and Wildfire");
-        assertEquals(22, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
+        assertEquals(23, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
+                + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
+        assertEquals(23, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
@@ -179,12 +179,15 @@ class UniqueSlotContentTest {
         assertEquals(23, withElement); // 2026-11-24: volley_stone deleted (PR B); ls content/weapons | wc -l = 23
     }
 
-    /** The unique pool: Kinetic Tremors on every KINETIC weapon (15 of them since 2026-11-24, all three classes), nothing anywhere else. */
+    private static final List<String> FIRE_MAGE = List.of("blaze_kings_staff", "flint_staff", "living_lantern");
+
+    /** The unique pool: Kinetic Tremors on every KINETIC weapon (15 of them since 2026-11-24, all three classes), and (F3, 2026-11-24) Mana Burn on the three fire MAGE weapons; nothing anywhere else. */
     @Test
     void theUniquePoolIsKineticTremorsOnEveryKineticWeaponAndEmptyElsewhere() {
         Loaded l = load();
         var roster = EnchantRollItems.roster(l.dev().all());
         int kinetic = 0;
+        int fireMage = 0;   // MANA BURN (F3, 2026-11-24): element fire AND class mage, the three fire mage weapons
         for (GearDefinition g : l.gear()) {
             var cls = GearItems.gearClassOf(g);
             List<String> pool = cls == null ? List.of()
@@ -192,17 +195,22 @@ class UniqueSlotContentTest {
             if (g.gearElement().equals(Optional.of("kinetic"))) {
                 assertEquals(List.of("kinetic_tremors"), pool, g.id());
                 kinetic++;
+            } else if (FIRE_MAGE.contains(g.id())) {
+                assertEquals(List.of("mana_burn"), pool, g.id());
+                fireMage++;
             } else {
                 assertEquals(List.of(), pool, g.id());
             }
         }
         assertEquals(15, kinetic, "the kinetic weapons: grep -l '^element: kinetic' content/weapons/*.yml | wc -l");
+        assertEquals(3, fireMage, "blaze_kings_staff, flint_staff, living_lantern; dragons_breath is fire but ranger");
         // And on a REAL server the same: Tremors is real content, not a dev fixture.
         var realRoster = EnchantRollItems.roster(l.real().all());
         for (GearDefinition g : l.gear()) {
             var cls = GearItems.gearClassOf(g);
             if (cls == null) continue;
-            assertEquals(g.gearElement().equals(Optional.of("kinetic")) ? List.of("kinetic_tremors") : List.of(),
+            assertEquals(g.gearElement().equals(Optional.of("kinetic")) ? List.of("kinetic_tremors")
+                            : FIRE_MAGE.contains(g.id()) ? List.of("mana_burn") : List.of(),
                     ids(EnchantRoll.uniquePoolFor(g.gearElement(), EnchantRollItems.has(g), cls, realRoster)), g.id());
         }
     }

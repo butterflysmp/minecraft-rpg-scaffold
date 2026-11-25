@@ -220,6 +220,17 @@ public final class EnchantLoader {
         if (b == null) throw new IllegalArgumentException("enchant '" + id + "': " + name + ": must be a block of keys");
         if (name.equals("grant_trigger")) return grantTrigger(b, id, weapon);
         if (name.equals("cast_tune")) return castTune(b, id, weapon);
+        // scorch_boost (Mana Burn, 2026-11-24): percent_by_level, one per level, each above 0. No weapon: the stamp is
+        // the hit's, whatever weapon carrying it made it; eligibility is the file's element and class.
+        if (name.equals("scorch_boost")) {
+            try {
+                return new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.ScorchBoost(
+                        requiredDoubles(b, "percent_by_level", id));
+            } catch (IllegalArgumentException ex) {
+                throw ex.getMessage().startsWith("enchant '") ? ex
+                        : new IllegalArgumentException("enchant '" + id + "' scorch_boost: " + ex.getMessage(), ex);
+            }
+        }
         // hit_chain (Wildfire, 2026-11-24): window_ticks, cap_percent, step_percent_by_level; its weapon is the enchant's
         // own weapon:, which must be one this loader can see. No element: the chain multiplies the weapon's own hit.
         if (name.equals("hit_chain")) {
@@ -420,7 +431,7 @@ public final class EnchantLoader {
 
     /** Every behaviour block a file may declare, one at most (B1). */
     private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst", "shatter",
-            "focused_beam", "grant_trigger", "cast_tune", "hit_chain");
+            "focused_beam", "grant_trigger", "cast_tune", "hit_chain", "scorch_boost");
 
     /**
      * FOCUSED BEAM'S WEAPON, refused by name (the seat's brief of 2026-11-24): the enchant must be weapon-specific, its

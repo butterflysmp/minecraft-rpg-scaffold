@@ -1,0 +1,23 @@
+# MANA BURN -- a UNIQUE (slot 1) enchant of the fire mage weapons (the seat's brief of 2026-11-24, PR F; ruled the same
+# day: F1, F2, F3 as PLAN-enchant-columns.md section 25 proposed). Ben, verbatim: "Increases Scorch and Ignite damage by
+# 10/20/30%"; on Blaze King's Staff: "Yes, BKS can take it too".
+#
+# WHAT IT DOES: a primary hit by the weapon carrying it, at the level it has then (B2), STAMPS the scorch that hit applies
+# (core BehaviourHits.scorchStamp, carried in HitAccrual). The stamped scorch's TICK, settled as min(5% of max health,
+# cap), is multiplied by 1 + percent / 100, so it shows on every mob (5.0 becomes 5.5 / 6.0 / 6.5 on a 100-health mob),
+# and the Ignite of a mob that dies with it deals 6 x (1 + percent / 100) = 6.6 / 7.2 / 7.8. THE CAP IS NOT CHANGED (the
+# seat's ruling). When scorches meet, the cap stays the larger and THE STAMP FOLLOWS THE CREDIT, the newest applier's, so
+# an unenchanted hit on a stamped scorch clears it. A scorch applied by a status tick, a secondary or an unenchanted hit
+# carries none, and an Ignite's own blast never stamps what it scorches. Ignite cannot hurt a player.
+#
+# ELIGIBLE: element fire AND class mage, so the unique pool of the Flint Staff, the Living Lantern and Blaze King's Staff
+# (every fire mage weapon), and of no other gear: Dragon's Breath is fire but ranger. NOT guaranteed, no weapon: it rolls
+# in slot 1 like Kinetic Tremors.
+display_name: "Mana Burn"                  # BEN
+icon: fire_charge                          # SEAT PLACEHOLDER 2026-11-24
+max_level: 3                               # BEN: three values
+effect: scorch_boost
+class: mage                                # BEN (the brief): "class mage"
+element: fire                              # makes it UNIQUE (slot 1); with the class, the three fire mage weapons
+scorch_boost:
+  percent_by_level: [10, 20, 30]           # BEN: "by 10/20/30%"

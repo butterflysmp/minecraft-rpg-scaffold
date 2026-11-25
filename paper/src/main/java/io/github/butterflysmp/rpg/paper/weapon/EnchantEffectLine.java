@@ -264,6 +264,13 @@ public final class EnchantEffectLine {
                     case WINDUP -> "-" + number(v / 20.0) + "s wind-up";
                 };
             }
+            // MANA BURN (F3): the level's percent, as authored. WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN.
+            case SCORCH_BOOST -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.ScorchBoost b)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                yield "+" + number(b.percentFor(level)) + "% Scorch and Ignite damage";
+            }
             // WILDFIRE (B5): the level's step, the cap and the window, as authored. WORDING: SEAT PLACEHOLDER 2026-11-24,
             // OPEN FOR BEN.
             case HIT_CHAIN -> {
