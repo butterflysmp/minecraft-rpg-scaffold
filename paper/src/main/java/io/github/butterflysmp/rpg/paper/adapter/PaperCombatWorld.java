@@ -127,7 +127,8 @@ public final class PaperCombatWorld implements CombatWorld {
      * through a wall to reach someone standing behind it.
      */
     @Override
-    public Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId) {
+    public Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId,
+                                    io.github.butterflysmp.rpg.core.mob.MobHostility.Side attacker) {
         Vec3 along = to.subtract(from);
         double distance = along.length();
         if (distance <= 0) return Optional.empty();
@@ -137,7 +138,12 @@ public final class PaperCombatWorld implements CombatWorld {
                 toLocation(from), direction, distance,
                 FluidCollisionMode.NEVER, /* ignorePassableBlocks */ true, RAY_SIZE,
                 // Live bodies only: a corpse on the line of fire ended the flight and dealt nothing (LiveTargets).
-                LiveTargets.except(ignoreId));
+                // Q3: and PASSES THROUGH a body the one table refuses to this attacker (a summon, to a player).
+                LiveTargets.except(ignoreId).and(e -> {
+                    org.bukkit.entity.LivingEntity body = LiveTargets.resolve(e);
+                    return body == null || !io.github.butterflysmp.rpg.core.mob.MobHostility.refusedSummonCell(attacker,
+                            CombatSides.of(body, ctx.keys()));
+                }));
 
         if (result == null) return Optional.empty();
 

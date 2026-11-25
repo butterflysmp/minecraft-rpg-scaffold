@@ -1054,7 +1054,7 @@ public final class CastExecutor {
                          Vec3 beamStart, List<Vec3> endpoints, int index) {
         Vec3 to = endpoints.get(index);
 
-        Optional<RayHit> hit = world.castRay(from, to, caster.id());
+        Optional<RayHit> hit = world.castRay(from, to, caster.id(), MobHostility.ENGINE_ATTACKER);
         // LAPIS CRYSTAL'S SEAM (D3, 2026-11-23): his own staff's beam that passes his resting orb BEFORE it reaches what it
         // struck stops AT the orb, and the orb fires (orbShots) instead of the beam detonating. See meetsOrb.
         Optional<io.github.butterflysmp.rpg.core.combat.Orbs.Orb> orb = meetsOrb(ability, caster);
@@ -1159,8 +1159,8 @@ public final class CastExecutor {
             return;
         }
         if (hit.isPresent()) {
-            // THE ONE TABLE (2a): a body the caster may not hit by a ray (a summon) takes nothing; the ray still ends on it
-            // (castRay's first body is the port's choice) and lands untargeted at the point.
+            // THE ONE TABLE: a summon never reaches here (Q3: castRay passes through it). What this reads is PvpPath.RAY,
+            // PLAYER -> PLAYER: if Ben ever rules the ray spared, the ray still ends on him and lands untargeted.
             Combatant body = hit.get().combatant();
             boolean admitted = body == null
                     || MobHostility.harms(io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, body.state().side(), false, MobHostility.PvpPath.RAY);

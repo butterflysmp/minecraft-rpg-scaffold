@@ -47,7 +47,10 @@ public interface CombatWorld {
      * Like combatantsNear, this reads the world and is only legal on the thread
      * that owns the region containing the segment.
      */
-    Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId);
+    Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId, io.github.butterflysmp.rpg.core.mob.MobHostility.Side attacker);
+    // Q3 (the seat, 2026-11-24): THE PICK PASSES THROUGH a body exactly when MobHostility.refusedSummonCell(attacker,
+    // body) is true, so a PLAYER's ray and projectile pass through any player's summon, and the swing, cone, swept ray,
+    // ray and projectile agree. The skip lives HERE, in the one place a ray picks, in every implementation.
 
     /**
      * Every live body near the segment from {@code from} to {@code to} (any whose box, grown by {@code reach}, could

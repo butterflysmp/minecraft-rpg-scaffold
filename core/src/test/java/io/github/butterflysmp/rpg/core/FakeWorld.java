@@ -156,7 +156,8 @@ public final class FakeWorld implements CombatWorld {
      * same shape of lie as the old scheduler discarding delayTicks, and the reason a
      * one-second bug once shipped past a green suite.
      */
-    @Override public Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId) {
+    @Override public Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId,
+                                              io.github.butterflysmp.rpg.core.mob.MobHostility.Side attacker) {
         castRayFrom.add(from);
         Vec3 along = to.subtract(from);
         double length = along.length();
@@ -170,6 +171,8 @@ public final class FakeWorld implements CombatWorld {
 
         for (Dummy candidate : entities) {
             if (candidate.id().equals(ignoreId)) continue;
+            // Q3, as the server's castRay does: the pick passes through a body the table refuses (a summon, to a player).
+            if (io.github.butterflysmp.rpg.core.mob.MobHostility.refusedSummonCell(attacker, candidate.side())) continue;
             if (!visibleColumns.contains(columnKey(candidate.position()))) continue;
 
             Vec3 toCandidate = candidate.position().subtract(from);

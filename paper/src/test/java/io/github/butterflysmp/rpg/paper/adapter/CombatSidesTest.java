@@ -104,6 +104,19 @@ class CombatSidesTest {
                 "targeting");
     }
 
+    /** Q3: the server's castRay, the one place a ray or projectile picks, passes through what the table refuses. */
+    @Test
+    void theServersCastRayPassesThroughARefusedBody() throws IOException {
+        List<String> c = code(Path.of("adapter", "PaperCombatWorld.java"));
+        int ray = at(c, "public Optional<RayHit> castRay(Vec3 from, Vec3 to, UUID ignoreId,", 0);
+        int trace = at(c, "RayTraceResult result = world.rayTrace(", ray);
+        int skip = at(c, "return body == null || !io.github.butterflysmp.rpg.core.mob.MobHostility.refusedSummonCell(attacker,", ray);
+        int sides = at(c, "CombatSides.of(body, ctx.keys()));", skip);
+        int next = at(c, "if (result == null) return Optional.empty();", ray);
+        assertTrue(ray > 0 && trace > ray && skip > trace && sides == skip + 1 && next > sides,
+                "inside castRay's own trace filter, by the classifier: " + ray + " " + trace + " " + skip + " " + next);
+    }
+
     /** H1: no second copy. Every former `instanceof Player ? PLAYER : MOB` in paper main is gone. */
     @Test
     void noSideIsComputedOutsideTheClassifier() throws IOException {
