@@ -207,7 +207,7 @@ public final class EnchantRollItems {
         List<Rollable> roster = new ArrayList<>();
         for (EnchantDefinition definition : enchants) {
             roster.add(new Rollable(definition.id(), definition.gearClass(), definition.requires(), definition.element(),
-                    definition.weapon()));
+                    definition.weapon(), definition.guaranteed()));
         }
         return roster;
     }

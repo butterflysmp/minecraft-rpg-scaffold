@@ -1,0 +1,23 @@
+# LARGE SPARKS -- the Flint Staff's GUARANTEED weapon enchant (the seat's brief of 2026-11-24, PR D; rulings G1 to G5).
+# Ben, verbatim: "There is a fundamental flaw with the weapon enchantments that we need to fix. If you pick it, it cannot be
+# unpicked if there's only one. ... What we're going to do is add one that comes with every weapon guaranteed. This will
+# just be the normal attack of the weapon and will slightly increase the stats." / "Flint Staff - Large Sparks - Increases
+# the damage by +4/8/12" / "Yes they cost XP, no they don't come with these"
+#
+# WHAT IT DOES (core CastTunes, while it is the ACTIVE candidate of the Flint Staff's weapon slot at level 1 or more): the
+# staff's own Fire Bolt, with +4 / +8 / +12 ADDED to its authored 20 before every other term (G5), so the hit is
+# ((20 + 12) x score / 100) x enchant multiplier + class bonus + level bonus, x charge x crit. Everything else about the bolt
+# (mana, cooldown, flight, the scorch it applies) is flint_staff.yml's; scorch's cap is half the TUNED hit.
+#
+# GUARANTEED (G1): every freshly rolled Flint Staff offers it in slot 0, first, locked at level 0; bought and activated in
+# the table like any candidate (G2). Items already rolled are not touched (G3).
+display_name: "Large Sparks"               # BEN
+icon: flint                                # SEAT PLACEHOLDER 2026-11-24
+max_level: 3                               # BEN: three values
+effect: cast_tune
+class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
+weapon: flint_staff                        # W1: the Flint Staff's slot 0
+guaranteed: true                           # G1
+cast_tune:
+  quantity: damage                         # added to the authored amount (G5)
+  value_by_level: [4, 8, 12]               # BEN: "+4/8/12"

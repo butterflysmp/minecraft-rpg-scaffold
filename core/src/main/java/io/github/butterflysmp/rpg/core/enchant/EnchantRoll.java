@@ -101,7 +101,13 @@ public final class EnchantRoll {
      * {@code weapon} is null except on a WEAPON-SPECIFIC enchant, where it is the one weapon id it belongs to (W1); an
      * enchant may not be both, here as in the loader.
      */
-    public record Rollable(String enchantId, GearClass gearClass, Requires requires, String element, String weapon) {
+    public record Rollable(String enchantId, GearClass gearClass, Requires requires, String element, String weapon,
+                           boolean guaranteed) {
+        /**
+         * {@code guaranteed} (the seat's G1, 2026-11-24; Ben: "add one that comes with every weapon guaranteed"): slot 0 of
+         * its weapon ALWAYS offers it, listed first, and the cascade rolls only the rest ({@link #roll}). Only a
+         * WEAPON-SPECIFIC enchant may be guaranteed: one that names no weapon has no slot to be guaranteed in.
+         */
         public Rollable {
             if (enchantId == null || enchantId.isBlank()) {
                 throw new IllegalArgumentException("a rollable enchant needs an id");
@@ -117,6 +123,15 @@ public final class EnchantRoll {
                 throw new IllegalArgumentException("enchant '" + enchantId + "' is both unique (element " + element
                         + ") and weapon-specific (weapon " + weapon + "); it may be one or neither");
             }
+            if (guaranteed && weapon == null) {
+                throw new IllegalArgumentException("enchant '" + enchantId + "' is guaranteed but names no weapon; only a"
+                        + " weapon-specific enchant may be guaranteed (G1)");
+            }
+        }
+
+        /** Not guaranteed: every enchant before 2026-11-24 (G1). */
+        public Rollable(String enchantId, GearClass gearClass, Requires requires, String element, String weapon) {
+            this(enchantId, gearClass, requires, element, weapon, false);
         }
 
         /** A UNIQUE enchant (an element) or a NORMAL one (null), never weapon-specific. */
@@ -138,6 +153,13 @@ public final class EnchantRoll {
         public static Rollable forWeapon(String enchantId, GearClass gearClass, Requires requires, String weaponId) {
             if (weaponId == null) throw new IllegalArgumentException("enchant '" + enchantId + "': a weapon id is required");
             return new Rollable(enchantId, gearClass, requires, null, weaponId);
+        }
+
+        /** A WEAPON-SPECIFIC enchant belonging to {@code weaponId}, {@code guaranteed} or not (G1). */
+        public static Rollable forWeapon(String enchantId, GearClass gearClass, Requires requires, String weaponId,
+                                         boolean guaranteed) {
+            if (weaponId == null) throw new IllegalArgumentException("enchant '" + enchantId + "': a weapon id is required");
+            return new Rollable(enchantId, gearClass, requires, null, weaponId, guaranteed);
         }
 
         public boolean isUnique() {
@@ -316,9 +338,19 @@ public final class EnchantRoll {
         if (cascade == null) throw new IllegalArgumentException("the candidate cascade is required");
         List<EnchantSlot> slots = new ArrayList<>(SLOTS);
         for (int slot = 0; slot < SLOTS; slot++) {
-            List<Rollable> remaining = new ArrayList<>(poolForSlot(slot, gearId, element, held, heldClass, roster));
-            int count = cascade.count(remaining.size(), draws);
-            List<EnchantCandidate> candidates = new ArrayList<>(count);
+            // THE GUARANTEED CANDIDATES (G1, 2026-11-24) come first, in roster order, and take no draw; the cascade then
+            // counts the REST of the pool, capped at the room they leave. Only a weapon-specific enchant can be
+            // guaranteed (Rollable refuses the rest), so only slot 0's pool ever holds one.
+            List<EnchantCandidate> candidates = new ArrayList<>(MAX_CANDIDATES);
+            List<Rollable> remaining = new ArrayList<>();
+            for (Rollable r : poolForSlot(slot, gearId, element, held, heldClass, roster)) {
+                if (r.guaranteed()) {
+                    if (candidates.size() < MAX_CANDIDATES) candidates.add(new EnchantCandidate(r.enchantId(), 0));
+                } else {
+                    remaining.add(r);
+                }
+            }
+            int count = cascade.count(Math.min(remaining.size(), MAX_CANDIDATES - candidates.size()), draws);
             for (int i = 0; i < count; i++) {
                 Rollable picked = pick(remaining, draws.getAsDouble());
                 if (picked == null) break;

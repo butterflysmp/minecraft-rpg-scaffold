@@ -249,6 +249,21 @@ public final class EnchantEffectLine {
                 yield "fires one stone of " + number(s.damageAt(level)) + " damage that shatters after "
                         + number(s.travelBlocks()) + " blocks into the usual chunks";
             }
+            // A CAST TUNE (G4, B5): the level's REAL number, in the quantity's own unit. Damage is the authored addition,
+            // which the gear score scales in play with the base it is added to (G5). A wind-up cut is shown in seconds,
+            // Ben's unit ("0.1/0.2/0.4"). WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN.
+            case CAST_TUNE -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.CastTune t)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                double v = t.valueAt(level);
+                yield switch (t.quantity()) {
+                    case DAMAGE -> "+" + number(v) + " damage";
+                    case RANGE -> "+" + number(v) + " blocks of range";
+                    case SHOTS -> "volleys of " + number(v) + " shots";
+                    case WINDUP -> "-" + number(v / 20.0) + "s wind-up";
+                };
+            }
             // FOCUSED BEAM (B5): the level's beam damage and its range, as authored (the gear score scales it in play).
             // WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN.
             case FOCUSED_BEAM -> {

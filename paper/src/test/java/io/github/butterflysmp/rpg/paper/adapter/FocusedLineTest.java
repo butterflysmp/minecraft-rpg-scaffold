@@ -20,4 +20,12 @@ class FocusedLineTest {
                 PaperCombatWorld.focusedLine(new UUID(0, 1), "cursed_emerald/right_click", new Vec3(104.5, 202.62, -3.5),
                         48, 1214, 1234));
     }
+
+    /** {@code VOLLEYSHOT} (Early Toll, 2026-11-24): the shot's index, the press's tick and the shot's, word for word. */
+    @Test
+    void theVolleyShotLineNamesTheShotThePressAndTheTick() {
+        assertEquals("VOLLEYSHOT caster=00000000-0000-0000-0000-000000000001 source=knell_beam/right_click shot=0"
+                        + " pressed=1214 tick=1230",
+                PaperCombatWorld.volleyShotLine(new UUID(0, 1), "knell_beam/right_click", 0, 1214, 1230));
+    }
 }

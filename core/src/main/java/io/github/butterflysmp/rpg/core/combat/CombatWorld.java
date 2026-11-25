@@ -208,6 +208,14 @@ public interface CombatWorld {
     void traceFocusedBeam(UUID casterId, String source, io.github.butterflysmp.rpg.core.Vec3 from, double range,
                           long pressedTick);
 
+    /**
+     * A dev trace (2026-11-24, Early Toll): {@code casterId}'s volley of {@code source}, PRESSED at {@code pressedTick},
+     * fires its shot {@code shotIndex} (0 is the first, the wind-up's end) on this tick. Logged as {@code VOLLEYSHOT} while
+     * {@code /rpg mobtrace} is on: the shot's tick beside the press's, which PLAYERHIT does not carry. It must not throw and
+     * must not change anything. Abstract, so the fixture records it.
+     */
+    void traceVolleyShot(UUID casterId, String source, int shotIndex, long pressedTick);
+
     /** The server's one {@link Orbs} (Lapis Crystal's D2, 2026-11-23): every standing orb, one per player. */
     Orbs orbs();
 

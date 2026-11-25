@@ -1,0 +1,21 @@
+# POLISHED SCEPTER -- the Lapis Staff's GUARANTEED weapon enchant (the seat's brief of 2026-11-24, PR D; G1 to G5).
+# Ben, verbatim: "Lapis Staff - Polished Scepter - Increases range by 4/8/12 blocks"
+#
+# WHAT IT DOES (core CastTunes): the staff's own Lapis Beam, its ray's authored 26 lengthened by 4 / 8 / 12 blocks (30 / 34 /
+# 38). Damage, mana and cooldown are lapis_staff.yml's.
+#
+# IT SHARES SLOT 0 WITH LAPIS CRYSTAL, so only one of the two acts at a time: activating this one in the table makes the
+# crystal's left click go away (that swap, through the table, is the fix Ben asked for). An orb thrown BEFORE the swap still
+# rests out its life; a beam into it (now the longer beam) fires the crystal's shots at the beam's authored damage, which
+# this enchant does not change.
+# GUARANTEED (G1): every freshly rolled Lapis Staff offers it in slot 0, FIRST, with Lapis Crystal beside it.
+display_name: "Polished Scepter"           # BEN
+icon: lapis_lazuli                         # SEAT PLACEHOLDER 2026-11-24
+max_level: 3                               # BEN: three values
+effect: cast_tune
+class: universal
+weapon: lapis_staff                        # W1
+guaranteed: true                           # G1
+cast_tune:
+  quantity: range                          # added to the ray's range, in blocks
+  value_by_level: [4, 8, 12]               # BEN: "4/8/12 blocks"

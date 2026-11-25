@@ -143,9 +143,9 @@ class UniqueSlotContentTest {
         assertEquals(6, l.accessories());
         assertEquals(60, l.gear().size());
         assertEquals(60, MASTER_POOLS.size(), "the snapshot covers the same 60");
-        assertEquals(16, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
-                + " Shatter Caps and (2026-11-24) Focused Beam");
-        assertEquals(16, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
+        assertEquals(21, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
+                + " Shatter Caps, (2026-11-24) Focused Beam and (2026-11-24) the five guaranteed cast tunes");
+        assertEquals(21, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
@@ -223,9 +223,12 @@ class UniqueSlotContentTest {
             var cls = GearItems.gearClassOf(g);
             if (cls == null) continue;
             assertEquals(g.id().equals("living_lantern") ? List.of("airburst_flames")
-                            : g.id().equals("lapis_staff") ? List.of("lapis_crystal")
+                            : g.id().equals("lapis_staff") ? List.of("lapis_crystal", "polished_scepter")
                             : g.id().equals("breacher") ? List.of("shatter_caps")
-                            : g.id().equals("cursed_emerald") ? List.of("focused_beam") : List.of(),
+                            : g.id().equals("cursed_emerald") ? List.of("echo_beam", "focused_beam")
+                            : g.id().equals("flint_staff") ? List.of("large_sparks")
+                            : g.id().equals("crystal_shard_staff") ? List.of("sharp_crystals")
+                            : g.id().equals("knell_beam") ? List.of("early_toll") : List.of(),
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }

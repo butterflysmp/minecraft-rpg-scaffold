@@ -73,7 +73,20 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 List<Integer> valueByLevel, String icon,
                                 io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires,
                                 String element, String weapon,
-                                io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour) {
+                                io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour,
+                                boolean guaranteed) {
+
+    /**
+     * Not guaranteed: every enchant before 2026-11-24. {@code guaranteed} (the seat's G1, YAML {@code guaranteed: true}):
+     * slot 0 of its weapon always offers it, listed first ({@code EnchantRoll.roll}); only a weapon-specific enchant may
+     * be.
+     */
+    public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect, GearClass gearClass,
+                             List<Integer> valueByLevel, String icon,
+                             io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires, String element,
+                             String weapon, io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour) {
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, icon, requires, element, weapon, behaviour, false);
+    }
 
     /**
      * A UNIQUE (an {@code element}) or NORMAL enchant, never weapon-specific: every enchant shipped before the columns
@@ -194,11 +207,11 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             // (WeaponDefinition), so it is exactly the set QUIVER_SIZE reaches. Same gate, same refusal of universal.
             case RELOAD_TIME -> Gate.RANGER_ONLY;
             // A BEHAVIOUR acts on the hits of the weapon in the MAIN HAND that made them (B2), so a fighting class or universal.
-            case SHOCKWAVE, AIRBURST, SHATTER, FOCUSED_BEAM, GRANT_TRIGGER -> Gate.MAIN_HAND_ONLY;
+            case SHOCKWAVE, AIRBURST, SHATTER, FOCUSED_BEAM, GRANT_TRIGGER, CAST_TUNE -> Gate.MAIN_HAND_ONLY;
         };
         boolean curved = switch (effect) {
             case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> true;
-            case DURABILITY, SHOCKWAVE, AIRBURST, SHATTER, FOCUSED_BEAM, GRANT_TRIGGER                                                -> false;
+            case DURABILITY, SHOCKWAVE, AIRBURST, SHATTER, FOCUSED_BEAM, GRANT_TRIGGER, CAST_TUNE                                                -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
@@ -210,6 +223,18 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         }
         requireGate(id, effect, gearClass, gate);
         requireBehaviour(id, effect, maxLevel, behaviour);
+        // G1 (2026-11-24): only a weapon-specific enchant may be guaranteed; one that names no weapon has no slot 0 to be
+        // guaranteed in, and would otherwise read as guaranteed while rolling as any other.
+        if (guaranteed && weapon == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' declares guaranteed: true but no weapon:; only a"
+                    + " weapon-specific enchant may be guaranteed");
+        }
+        // G4: a cast tune moves ONE weapon's cast, so the enchant must name it, and the tune must name the same one.
+        if (behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.CastTune tune
+                && !tune.weaponId().equals(weapon)) {
+            throw new IllegalArgumentException("enchant '" + id + "' tunes '" + tune.weaponId()
+                    + "' but declares weapon: " + weapon);
+        }
         // D1 (2026-11-23): a trigger is granted to ONE weapon, so the enchant must name it (weapon:), and the grant must
         // name the same one.
         if (behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger grant) {
@@ -406,6 +431,8 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                     ? f.levels() : -1;
             // A granted trigger has no per-level list of its own: any max_level fits it. It must be WEAPON-SPECIFIC (it is granted
             // to ONE weapon), refused by name below.
+            case CAST_TUNE -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.CastTune t
+                    ? t.levels() : -1;
             case GRANT_TRIGGER -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g
                     ? (g.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Orb o && o.shot() != null
                             ? o.shot().percentByLevel().size() : maxLevel)   // D3: an orb's shot has one percent per level
