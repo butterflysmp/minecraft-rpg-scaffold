@@ -105,7 +105,7 @@ class EnchantQuantityGateTest {
         assertTrue(cmd.contains("io.github.butterflysmp.rpg.paper.weapon.EnchantRollItems.weaponPoolFor(gear.gear(), adapters)"));
         assertTrue(cmd.contains(".then(Commands.literal(\"pool\")"));
         // And rollOnAcquire rolls with the SAME id and element accessors and the registry's cascade.
-        assertTrue(items.contains("EnchantRoll.roll(definition.id(), definition.gearElement(), has(definition), gearClass, roster(adapters),\n"
+        assertTrue(items.contains("EnchantRoll.roll(slotZeroKey(definition), definition.gearElement(), has(definition), gearClass, roster(adapters),\n"
                 + "                adapters.enchants().candidates(),"), "rollOnAcquire's roll call");
     }
 
@@ -130,7 +130,7 @@ class EnchantQuantityGateTest {
         assertTrue(at > 0, "rollOnAcquire is not found");
         String body = src.substring(at, src.indexOf("\n    }\n", at));
         int guard = body.indexOf("if (EnchantItems.isRolled(item, adapters.keys())) return;");
-        int roll = body.indexOf("EnchantRoll.roll(definition.id(), definition.gearElement(), has(definition), gearClass, roster(adapters),");   // the id, then the element, since 2026-11-23
+        int roll = body.indexOf("EnchantRoll.roll(slotZeroKey(definition), definition.gearElement(), has(definition), gearClass, roster(adapters),");   // the slot-0 key (E1, 2026-11-25; the id before), then the element, since 2026-11-23
         assertTrue(guard > 0 && roll > guard, "the already-rolled guard must come first: " + guard + " / " + roll);
         assertFalse(src.contains("Has.EVERY, gearClass"), "production never builds a class-only pool");
     }

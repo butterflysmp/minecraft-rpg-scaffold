@@ -297,6 +297,49 @@ the marker back to 0 after restoring.
 | MUTB1LOAD: every piece's set is `x` | RED, 2 rows |
 | MUTB1UNKNOWN: an unknown type is skipped | RED on `quiver_size_percent` |
 
+## 3b. PR 3 — the four columns on armor (E1-E3)
+
+### READ: what armor already did under SLOTS = 4 (E2's question)
+
+- **Slot 0** was rolled by the piece's own id (`EnchantRollItems.rollOnAcquire` passed `definition.id()`). No
+  `weapon:` can name an armor id: `EnchantLoader.weapon` accepts only loaded weapons. So slot 0 was always EMPTY.
+- **Slot 1** was rolled by `ArmorDefinition.gearElement()`, which is `Optional.empty()`, so it was always EMPTY.
+- **Slots 2 and 3** drew from `growth, mana_bank, protection, unbreaking` (`UniqueSlotContentTest.MASTER_POOLS`).
+- **Both empty columns** already showed the weapon's empty-column markers (`EnchantMenuLayout.emptyMarkerFor`, keyed on
+  the SLOT, not the gear).
+- **So armor already rolled and displayed this way.** Only two things are new: slot 0's KEY, and the `armor_slot:`
+  declaration.
+
+### What was built
+
+- **`EnchantRoll.armorSlotPool(slot)`** (`armor_slot:head`, and so on) is the slot-0 pool key an armor piece rolls by.
+  Every helmet shares one pool, and the four slots have four (Ben: *"Helmet boots chestplate and leggings all
+  different"*). It rides the weapon pool's own key, so slot 0 has ONE mechanism. The colon keeps it disjoint from any
+  weapon id, which is a file name.
+- **`EnchantRollItems.slotZeroKey`** is the ONE place the roll, the dev `pool` line and the tally take that key from.
+- **`armor_slot: head|chest|legs|feet`** is parsed by `EnchantLoader`, which refuses an unknown slot by name.
+  `EnchantDefinition` refuses it:
+  - with `weapon:`;
+  - on any class but `armor`;
+  - **CC'S CALL:** with `element:` too, by the rule `weapon:` already follows.
+  The roster maps such an enchant to its slot's pool.
+- **No such enchant ships.** Both new columns start empty (E2). Protection, Growth, Mana Bank and Unbreaking stay normal.
+- **E3, pinned in `ArmorPoolsTest`:** every shipped armor piece's slot 0 key is its slot's pool; slot 0 is empty;
+  slot 1 is empty; normal is the four (28 checked).
+- **An authored `armor_slot: head` enchant** lands in slot 0 of the head pool only, and in no normal slot.
+- **The `armor_slot` + `weapon` arm is UNREACHABLE from content:** `weapon:`'s own class check refuses first. Its only
+  exercise is a record-level row, and the arm's test says so.
+
+### Mutations, PR 3
+
+| mutation | result |
+|---|---|
+| MUTE1POOL: one key for every slot | RED, 2 rows |
+| MUTE1ROSTER: the roster ignores `armor_slot` | RED |
+| MUTE1KEY: armor rolls slot 0 by its own id | RED |
+| MUTE1CLASS: `armor_slot` allowed on any class | RED |
+| MUTE1WEAPON: `armor_slot` allowed with `weapon` | RED (the record row) |
+
 ## 4. STOPPED: D1-D3, OUR DURABILITY ON ARMOR — TWO RULINGS CONFLICT, AND ONE FACT DOES NOT HOLD
 
 **READ, how weapons and shields own wear today** (`WeaponDurability`, `ShieldDurability`, core `Durability`):
@@ -358,6 +401,8 @@ the TOOLTIP does, and gets it. The set lines (PR 2) reach existing items the sam
 | CC3 | the set lives on each piece (`ArmorDefinition.set` and `setBonus`), so the tooltip reads it with no registry | a separate set registry the tooltip would have to reach |
 | CC4 | a tier with no `set_bonus:` is still a set, with no bonus | no set at all |
 | CC5 | max summons' grant is read by the callers, which hold the player, and passed into `ProfileService.maxSummons` | the profile service reading equipment |
+| CC6 | `armor_slot:` is refused with `element:` as well as with `weapon:` | allowed |
+| CC7 | an armor piece's slot 0 rolls by its armor slot's pool key, riding the weapon pool's key | a separate armor-slot pool function |
 
 ## 7. OPEN FOR BEN
 
@@ -370,3 +415,4 @@ the TOOLTIP does, and gets it. The set lines (PR 2) reach existing items the sam
 | O5 | the set tooltip: header, line wording, colours, placement (B8) | `Set Bonus (4 pieces):`, gold; one gray line per entry |
 | O6 | chainmail's +50% quiver: STOPPED (3.3); and "round up" as half-up vs ceiling at other percents | unbuilt |
 | O7 | the order of B5's percent after the flat bonus (the seat's placeholder) | unbuilt |
+| O8 | the slot-0 empty marker on an armor piece reads "No weapon enchant / Nothing is tied to this weapon yet." (the seat's E2: the same markers a weapon shows) | as built |

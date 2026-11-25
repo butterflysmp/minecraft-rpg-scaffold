@@ -285,6 +285,18 @@ public final class EnchantRoll {
         return pool;
     }
 
+    /**
+     * E1 (the seat, 2026-11-25): the SLOT-0 POOL KEY every armor piece of {@code slot} rolls by, and that an
+     * {@code armor_slot:} enchant belongs to. Ben: "Helmet boots chestplate and leggings all different", so every helmet
+     * shares one slot-0 pool and every chestplate another. It rides the weapon pool's own key ({@link Rollable#weapon},
+     * matched against the gear id {@link #roll} is given), so slot 0 has ONE mechanism: a weapon rolls it by its id, an
+     * armor piece by this. The colon keeps it disjoint from every weapon id, which is a content file name.
+     */
+    public static String armorSlotPool(io.github.butterflysmp.rpg.core.weapon.ArmorSlot slot) {
+        if (slot == null) throw new IllegalArgumentException("an armor slot is required");
+        return "armor_slot:" + slot.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
     private static void requireGearId(String gearId) {
         if (gearId == null || gearId.isBlank()) {
             throw new IllegalArgumentException("the gear's id is required: the weapon slot is drawn by it (W4)");
