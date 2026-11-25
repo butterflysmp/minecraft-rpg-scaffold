@@ -1864,10 +1864,13 @@ public final class RpgCommand {
                 player.sendMessage(Component.text(AccessoryRefusals.DURABILITY, NamedTextColor.RED));
                 return;
             }
+            // D1' (2026-11-25): our ARMOR too (the armor_id tag), so a piece is worn, broken and repaired by the same
+            // dev commands a weapon is.
             if (WeaponItems.weaponId(held, adapters.keys()).isEmpty()
-                    && ShieldItems.shieldId(held, adapters.keys()).isEmpty()) {
+                    && ShieldItems.shieldId(held, adapters.keys()).isEmpty()
+                    && ArmorItems.armorId(held, adapters.keys()).isEmpty()) {
                 player.sendMessage(Component.text(
-                        "Hold one of our weapons or shields.", NamedTextColor.RED));
+                        "Hold one of our weapons, shields or armor pieces.", NamedTextColor.RED));
                 return;
             }
 

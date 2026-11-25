@@ -340,7 +340,76 @@ the marker back to 0 after restoring.
 | MUTE1CLASS: `armor_slot` allowed on any class | RED |
 | MUTE1WEAPON: `armor_slot` allowed with `weapon` | RED (the record row) |
 
-## 4. STOPPED: D1-D3, OUR DURABILITY ON ARMOR — TWO RULINGS CONFLICT, AND ONE FACT DOES NOT HOLD
+## 4a. D1' TO D5', RE-RULED AND BUILT (`feat/armor-sets-4`, 2026-11-25)
+
+**THE SEAT'S RECORD, IN ITS WORDS:** *"the seat ruled D1 ("mirror weapons, no third implementation") and D2 ("author the
+maximum in content") without reading that weapons read their maximum at runtime and keep no record; and listed a percent
+quiver bonus without reading that the stat is additive only."* The re-rulings D1' to D5' replace D1 to D3 and F1's last
+sentence. **"Authored maximum" is WITHDRAWN, and so is "a piece with no durability record gets a full one":** there is no
+record, and an existing piece keeps the damage its item already carries.
+
+- **D1', ONE PATH:** `paper/weapon/ArmorDurability` uses the weapons' helpers:
+  - `WeaponDurability.maxOf` (the maximum, read at runtime from the material);
+  - `damageOf` and `set` (the item's own damage, written by OUR call);
+  - `isBroken`.
+  The arithmetic is core's `Durability` and `Unbreaking`, through `core/weapon/ArmorWear`. Nothing about durability is
+  authored in armor content. `/rpg durability` and `/rpg repair` now take our tagged armor as they take a weapon. The
+  notice is `ArmorBrokenNotice`, the shield's mirrored; **its wording is a SEAT PLACEHOLDER.**
+- **D2', WHEN IT WEARS (SEAT PLACEHOLDER, OPEN FOR BEN):** each worn, unbroken piece of ours takes 1 per hit on him that
+  went THROUGH Defense and offered more than 0 (CC'S CALL: a 0 hit is not a hit).
+  - **The one trigger** is the store's seam: `HealthChange` gained `throughDefense` (`defense != BYPASSED`, set in
+    `CombatantStats.damage`), and `paper/health/ArmorWearListener` in the store's composite hops to his thread.
+  - **The causes, READ by grep of `DefenseRule`:** every damage path is `APPLIES` except the void tick (`VoidShare`,
+    the only rule `world_damage.yml` routes), the scorch burn (`EntityScorchSink`) and the fight's true damage
+    (`FightInstance`, two sites), which are `BYPASSED`. So the wearing hits are:
+    - mob melee (`onMobMeleeAttack`);
+    - mob abilities and every player or mob hit through `BukkitCombatant` (default `APPLIES`);
+    - every `VanillaDamagePolicy` REROUTE cause (fall, lava, fire, poison, wither, magic, explosions, projectiles,
+      drowning, …);
+    - the dev `/rpg damage`, which READS as the 4-argument `CombatantStats.damage` and so defaults to `APPLIES`.
+      **So the dev damage command wears armor, and the gate stages wear with it.**
+  - **VANILLA'S OWN ARMOR DAMAGE, READ (javap, the pinned server jar):** `LivingEntity.doHurtEquipment` wears every worn
+    piece `(int) max(1, damage / 4)` through `ItemStack.hurtAndBreak`. So even a tokened 0.01 hit would wear 1.
+    `hurtAndBreak` → `processDurabilityChange` raises `PlayerItemDamageEvent` for a player, and returns with no damage
+    when it is cancelled.
+  - **The weapon path's prevention, READ:** the shield cancels that event for its tag (`onShieldItemDamage`), and a
+    shot weapon through `VanillaShots`.
+  - **The one new piece:** `RpgListeners.onArmorItemDamage` cancels it for OUR armor, scoped by the one lookup (tag,
+    then material), so an untagged piece of a content material is ours too (A3). A turtle helmet is left to vanilla.
+    **So a piece wears once per hit.**
+  - Unbreaking is exactly the weapon's (`Unbreaking.consumes` of the piece's active level).
+- **D3', BROKEN, READ:** `Durability.isBroken`, damage at **max − 1** (`MIN_USES = 1`), the weapons' predicate through
+  `WeaponDurability.isBroken`. A broken piece:
+  - stays worn;
+  - contributes no Defense (its Protection included): `DefenseModifierItems.scan` skips it AFTER the native sum, which
+    still counts it, since it is still worn and still on the attribute;
+  - has no Growth and no Mana Bank: their scanners skip it, so the reconciler removes the source exactly as
+    unequipping does, clamp included;
+  - takes no further wear;
+  - **STILL COUNTS TOWARD THE SET**: `ArmorSetItems` passes the real flag, and the decision ignores it, as Ben ruled;
+  - shows broken as a weapon does: vanilla's durability bar, the notice on breaking.
+- **D4', NEVER DELETED, READ:** the weapon path never lets vanilla reach its break, because the vanilla event is
+  cancelled and our wear clamps at max − 1 (`Durability.wear` → `clamp`). Armor does the same: the event is cancelled
+  for our pieces, and `ArmorWear.wearOne` is `Durability.wear`.
+- **D5', tests:**
+  - `ArmorWearTest`, core: one wear exactly; a broken piece takes none; one from broken breaks and stops at max − 1;
+    Unbreaking III at 0.24 and 0.25; through-Defense, bypassed and heal on the real store; a mob, and a 0 hit; a
+    broken Growth piece clamps as removal does.
+  - `ArmorDurabilityWiringTest`, paper source:
+    - one trigger in the whole tree;
+    - vanilla's event cancelled;
+    - the broken skip in the scan (after the native sum), in Growth and in Mana Bank;
+    - the real flag into the set;
+    - the weapons' predicate.
+  - The set's "broken still counts" row is `ArmorSetDecisionTest` (#302).
+  - **Mutations, all RED, each marker checked present, the original gone, and the marker 0 after restoring:**
+    MUTD2THRU, MUTD2WEARS, MUTD3BROKEN, MUTD1BY2, MUTUNBREAK (core); MUTD4CANCEL, MUTD3SCAN, MUTD3GROWTH, MUTD3SET
+    (paper).
+- **Two existing needles moved, not weakened:** `FightDragonSourceTest` and `SummonWiringTest` anchored on the
+  composite's closing `summonFeeds));`. The wear listener now follows it, so both anchor on `mobDeath, summonFeeds,`,
+  the same order they assert.
+
+## 4. (SUPERSEDED BY 4a) STOPPED: D1-D3, OUR DURABILITY ON ARMOR — TWO RULINGS CONFLICT, AND ONE FACT DOES NOT HOLD
 
 **READ, how weapons and shields own wear today** (`WeaponDurability`, `ShieldDurability`, core `Durability`):
 - **The maximum is READ AT RUNTIME, from the material:** `WeaponDurability.maxOf(item)` is
@@ -384,6 +453,12 @@ under vanilla wear a piece is destroyed at its maximum rather than floored, so n
 The gate's wear rows wait with it.
 
 ## 5. F1 — REFRESH (READ; nothing to build)
+
+> **2026-11-25, after D1':** F1's last sentence is WITHDRAWN (no durability record exists). What the refresher does for
+> armor, READ: `GearRefresher` → `ArmorItems.remint` rebuilds the lore from content. That is the new Defense line and
+> the set lines (#302's `ArmorLore.build`). It carries the tag, the enchants, the score, and the item's own damage
+> (`carryWear`, clamped to max − 1). So a refreshed piece keeps the wear it had, and a broken one stays broken.
+> **Shields: closed, not listed:** there is no separate gap; they are already in the same `GearRefresher`.
 
 `GearRefresher.refresh` runs first in `RpgListeners.onJoin` and on `/rpg refresh`, walks the player's inventory contents
 (the armor slots included), and remints every tagged item through `GearItems.remint`, whose armor arm is

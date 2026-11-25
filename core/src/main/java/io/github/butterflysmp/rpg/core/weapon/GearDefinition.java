@@ -22,7 +22,8 @@ import java.util.Optional;
  *       FRACTION where the other two are absolute. There is no honest {@code statValue()}.
  *   <li><b>Not a class.</b> {@link WeaponClass} is required on a weapon, absent on a shield, and
  *       absent on armor. {@link GearClass} is the enchant-gating axis and armor has no constant yet.
- *   <li><b>Not durability.</b> Weapons and shields own their wear; armor's is vanilla's.
+ *   <li><b>Not durability.</b> Weapons and shields own their wear; armor's is vanilla's. (2026-11-25, D1': armor now
+ *       wears by the weapons' own path too, its maximum still read from the material, so durability is still not here.)
  *   <li><b>Not a lore builder.</b> Each needs different inputs -- a weapon needs the element
  *       registry, a shield needs its Bulwark percent, armor needs nothing -- and they return
  *       Adventure Components, which cannot exist in {@code core} at all.

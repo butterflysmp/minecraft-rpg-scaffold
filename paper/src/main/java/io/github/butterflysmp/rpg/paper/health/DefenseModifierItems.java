@@ -144,6 +144,10 @@ public final class DefenseModifierItems {
             // the same failure arriving the first time, through Protection rather than through this.
             nativeArmor += vanilla;
 
+            // D3' (2026-11-25): A BROKEN PIECE CONTRIBUTES NO DEFENSE, its Protection included. It still holds its vanilla
+            // armor on the attribute (it is still worn), which is why the native sum above has already counted it.
+            if (io.github.butterflysmp.rpg.paper.weapon.ArmorDurability.isBroken(piece)) continue;
+
             // THE PIECE'S OWN SCORE SCALES ITS AUTHORED DEFENSE, AND NOTHING ELSE ON THIS LINE. (It said "the
             // material's points" until 2026-11-25, when A1 below moved the source off vanilla.)
             //

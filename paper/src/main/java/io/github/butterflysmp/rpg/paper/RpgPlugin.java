@@ -644,7 +644,9 @@ public final class RpgPlugin extends JavaPlugin {
         // change, so it can never revive what mobDeath is about to kill.
         this.summonFeeds = new io.github.butterflysmp.rpg.core.summon.SummonFeeds(org.bukkit.Bukkit::getCurrentTick);   // 4b
         this.stats = new CombatantStats(new CompositeHealthListener(
-                healthSystem, nameplates, popups, new MobVanillaMirror(), selfTestDamage, fightHits, mobDeath, summonFeeds));
+                healthSystem, nameplates, popups, new MobVanillaMirror(), selfTestDamage, fightHits, mobDeath, summonFeeds,
+                // D2' (PLAN-armor-sets.md, 2026-11-25): armor wears on every hit Defense prices; the tracker is read late.
+                new io.github.butterflysmp.rpg.paper.health.ArmorWearListener(scheduler, keys, armor, () -> cooldowns)));
         this.healthSystem.bind(stats);
         this.nameplates.bind(stats);
 

@@ -3505,6 +3505,27 @@ public final class RpgListeners implements Listener {
     }
 
     /**
+     * D2' and D4' (the seat, 2026-11-25): VANILLA'S ARMOR DAMAGE IS SUPPRESSED, so a piece wears once per hit (ours,
+     * {@code ArmorWearListener}) and is never deleted.
+     *
+     * <p>READ, javap on the pinned server jar: {@code LivingEntity.doHurtEquipment} gives every worn piece
+     * {@code (int) max(1, damage / 4)} through {@code ItemStack.hurtAndBreak}, so even a TOKENED 0.01 hit would wear 1.
+     * {@code hurtAndBreak} calls {@code processDurabilityChange}, which raises this event for a player and returns
+     * with no damage when it is cancelled. Vanilla's break, which deletes the item at its maximum, is in the same call,
+     * so it is never reached either.
+     *
+     * <p>The one new piece beside the shield's handler: the scope is our armor by the ONE lookup (tag, then material,
+     * A3), so an untagged piece of a content material is suppressed too and wears only by our call. A turtle helmet is
+     * left to vanilla. Cancels ALL vanilla wear on those items, as the shield's handler does, for the same reason.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onArmorItemDamage(PlayerItemDamageEvent event) {
+        if (io.github.butterflysmp.rpg.paper.weapon.ArmorDurability.isOurArmor(event.getItem(), adapters.keys(), armor)) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
      * VANILLA HEALS DO NOT MOVE A TRACKED PLAYER'S BAR WITHOUT MOVING THE TRUTH.
      *
      * <p>We own passive regeneration now ({@link HealthRegenSystem}), so vanilla's own must go. But

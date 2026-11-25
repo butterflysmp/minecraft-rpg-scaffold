@@ -56,6 +56,9 @@ public final class ManaBankModifierItems {
         if (equipment == null) return desired;
 
         for (EquipmentSlot slot : DefenseModifierItems.ARMOR_SLOTS) {
+            // D3' (2026-11-25): a broken piece's enchants are off; its source is absent, so the reconciler removes it
+            // exactly as it does when the piece comes off (HealthState's clamp included).
+            if (io.github.butterflysmp.rpg.paper.weapon.ArmorDurability.isBroken(equipment.getItem(slot))) continue;
             double bonus = EnchantValues.totalFor(
                     EnchantItems.read(equipment.getItem(slot), keys), enchants,
                     EnchantEffect.MAX_MANA);
