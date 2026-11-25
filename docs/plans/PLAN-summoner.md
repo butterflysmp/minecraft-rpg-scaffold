@@ -390,3 +390,33 @@ PR 4 still needs, each a review on its own, proposed as the split:
   left-click path, the first MOB on our ray; the READ of how a client's left click on an entity versus air reaches it.
 - **4d, the selftest steps and lint rules** D8 needs, with their grammar.
 Then PR 5 (the Bone Whistle content and the two bone READs) and the gate, with its SAFETY sum and R rows.
+
+### 6.2 F1-F4 (on #294) AND 4b, THE GOAL ON THE SERVER (`feat/summoner-4b`)
+
+**F1-F4 (the seat's defect):** `SummonGuard.decide(def, him, summonAt, directed, current, candidates, now)`: directed
+(set only by the left click; cleared and reported dropped when dead, gone or beyond the chase limit) and current (last
+tick's) are separate; the tier is re-decided every tick; a higher tier pre-empts; within a tier the current target is
+kept while it qualifies; `why` is this tick's tier. Rows in `SummonGuardTest.theTierTable`; mutations MUTKEEP,
+MUTPREEMPT, MUTHISTORY, MUTSAMETICK, MUTCURDROP.
+
+**4b, the goal (`paper/summon/SummonGoal`)**, one per body, keyed `<our namespace>:summon_guard` (O3), added after the
+tag. Each tick on the body's thread: candidates near HIM within the chase limit (plus the directed and current ones by
+id), `SummonGuard.decide`, then: clear the order if told; teleport to him (`SUMMON teleport`); a change of target or a
+drop logged (`SUMMON target ... why=<tier> [dropped=<reason>]`); path to the target and, within reach, every
+`attack_cadence_ticks`, swing (visual) and OUR hit: `applyDamageAs(SUMMON, damage, owner, NORMAL, APPLIES, weapon
+element, weapon accrual)`, logged `SUMMON hit` with every term; idle, walk back beyond the guard radius. Server calls
+READ in paper-api: `Goal`, `GoalKey.of`, `GoalType`, `Mob.getPathfinder().moveTo(Entity, double)`, `stopPathfinding`,
+`LivingEntity.swingMainHand`, `Mob.getTarget`.
+
+**"Damaged him"** is `core/summon/SummonFeeds`, a listener in the store's composite: a non-player dealer damaging a
+player for more than nothing, at the tick; forgotten on his quit. READ: `RpgListeners.attributableId` names the CAUSING
+entity, so a mob's projectile is that mob's damage. **"Targets him"** is read live: `Mob.getTarget()` is him.
+
+**CC'S CALLS (4b), each with its alternative:** pathing speed 1.0 (a YAML number); reach 2.0 blocks centre to centre
+(vanilla's attack bounding box); the feed keeps entries 1200 ticks (the window alone); the goal does not call
+`setTarget` (calling it would raise `EntityTargetEvent` and start vanilla anger, the look); the restrip removes only goals
+outside our namespace (removing all and re-adding ours). The goal's types are MOVE and LOOK.
+
+**Tests:** `SummonFeedsTest` (3; one row added when MUTFEEDTARGET first SURVIVED: the target check had no row of its own),
+`SummonWiringTest` +2. **Mutations, all red:** MUTHITSIDE, MUTCREDIT, MUTCRIT, MUTRESTRIPALL, MUTFEEDPLAYERDEALER,
+MUTFEEDTARGET.

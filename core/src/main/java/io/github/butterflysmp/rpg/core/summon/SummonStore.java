@@ -26,17 +26,19 @@ public final class SummonStore {
      * fixed for the summon's life ({@link GearScore#scaledDamage}, the same formula a weapon's damage uses).
      */
     public record Summon(UUID owner, String weaponId, UUID body, String summonId, int score, double health,
-                         double damage, double authoredDamage) {
+                         double damage, double authoredDamage, String element) {   // element: the WEAPON's (E1)
 
-        public static Summon cast(UUID owner, String weaponId, UUID body, SummonDefinition def, int score) {
+        public static Summon cast(UUID owner, String weaponId, UUID body, SummonDefinition def, int score, String element) {
             int used = GearScore.clamp(score);   // READ: scaledDamage clamps the score (MIN 100); keep the one used
             return new Summon(owner, weaponId, body, def.id(), used, GearScore.scaledDamage(def.health(), used),
-                    GearScore.scaledDamage(def.damage(), used), def.damage());
+                    GearScore.scaledDamage(def.damage(), used), def.damage(), element);
         }
     }
 
     private final Map<UUID, Summon> byBody = new LinkedHashMap<>();
     private final Map<UUID, Map<String, UUID>> byOwner = new HashMap<>();
+    /** D5: a summon's DIRECTED target (set only by the left click), by body; gone with the body. */
+    private final Map<UUID, UUID> directed = new HashMap<>();
 
     /** Own a body. If his summon of this weapon lived, it is no longer owned, and is handed back for removal. */
     public synchronized Optional<Summon> place(Summon s) {
@@ -63,6 +65,7 @@ public final class SummonStore {
     /** Stop owning one body. */
     public synchronized Optional<Summon> remove(UUID body) {
         Summon s = byBody.remove(body);
+        directed.remove(body);
         if (s == null) return Optional.empty();
         Map<String, UUID> his = byOwner.get(s.owner());
         if (his != null) {
@@ -78,6 +81,7 @@ public final class SummonStore {
         List<Summon> out = new ArrayList<>();
         if (his != null) for (UUID body : his.values()) {
             Summon s = byBody.remove(body);
+            directed.remove(body);
             if (s != null) out.add(s);
         }
         return out;
@@ -87,8 +91,31 @@ public final class SummonStore {
     public synchronized List<Summon> removeAll() {
         List<Summon> out = new ArrayList<>(byBody.values());
         byBody.clear();
+        directed.clear();
         byOwner.clear();
         return out;
+    }
+
+    /** D5: the left click's order for this body's summon. Only an owned body takes one. */
+    public synchronized boolean direct(UUID body, UUID target) {
+        if (!byBody.containsKey(body)) return false;
+        directed.put(body, target);
+        return true;
+    }
+
+    public synchronized Optional<UUID> directed(UUID body) {
+        return Optional.ofNullable(directed.get(body));
+    }
+
+    /** F1: the order is cleared when its target is dead, gone or beyond the chase limit from him. */
+    public synchronized void clearDirected(UUID body) {
+        directed.remove(body);
+    }
+
+    /** The owned body of HIS summon of this weapon, if it lives: the left click directs that one (D5). */
+    public synchronized Optional<UUID> bodyOf(UUID owner, String weaponId) {
+        Map<String, UUID> his = byOwner.get(owner);
+        return his == null ? Optional.empty() : Optional.ofNullable(his.get(weaponId));
     }
 
     public synchronized List<Summon> all() {

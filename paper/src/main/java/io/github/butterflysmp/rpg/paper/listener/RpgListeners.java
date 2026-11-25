@@ -2448,6 +2448,7 @@ public final class RpgListeners implements Listener {
         // And his summons (3b, D7: removed on his quit).
         io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(),
                 io.github.butterflysmp.rpg.core.summon.SummonRemoval.QUIT);
+                summons.feeds().forget(event.getPlayer().getUniqueId());   // 4b: nothing of his is kept
 
         // FIRST, ahead of the clears: a menu holding this player's weapon must give it back while
         // their inventory can still be written. Writes during PlayerQuitEvent persist -- the save

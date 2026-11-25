@@ -239,6 +239,8 @@ public final class RpgPlugin extends JavaPlugin {
     /** The Summoner slice (3b): content/summons, and the service that casts, owns and removes their bodies. */
     private io.github.butterflysmp.rpg.core.summon.SummonRegistry summonDefs = new io.github.butterflysmp.rpg.core.summon.SummonRegistry();
     private io.github.butterflysmp.rpg.paper.summon.SummonService summons;
+    /** 4b: "a mob that damaged him", fed from the store's health changes. */
+    private io.github.butterflysmp.rpg.core.summon.SummonFeeds summonFeeds;
     private VaultRepository vaultRepository;
     private VaultService vaults;
     private PopupEntityIds fakeEntityIds;
@@ -640,8 +642,9 @@ public final class RpgPlugin extends JavaPlugin {
         // F20: a tracked mob's vanilla health mirrors the store after EVERY write (PLAN-mob-scaling.md §7).
         // Before mobDeath, though order does not matter for correctness: the mirror skips the killing
         // change, so it can never revive what mobDeath is about to kill.
+        this.summonFeeds = new io.github.butterflysmp.rpg.core.summon.SummonFeeds(org.bukkit.Bukkit::getCurrentTick);   // 4b
         this.stats = new CombatantStats(new CompositeHealthListener(
-                healthSystem, nameplates, popups, new MobVanillaMirror(), selfTestDamage, fightHits, mobDeath));
+                healthSystem, nameplates, popups, new MobVanillaMirror(), selfTestDamage, fightHits, mobDeath, summonFeeds));
         this.healthSystem.bind(stats);
         this.nameplates.bind(stats);
 
@@ -856,7 +859,8 @@ public final class RpgPlugin extends JavaPlugin {
         selfTest.bindFightRunning(fightFixtures::running);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
-        this.summons = new io.github.butterflysmp.rpg.paper.summon.SummonService(adapters, () -> summonDefs, profiles);
+        this.summons = new io.github.butterflysmp.rpg.paper.summon.SummonService(adapters, () -> summonDefs, profiles,
+                summonFeeds);
         // D7's BACKSTOP and D1(a)'s goal guard, every SummonBackstop.PERIOD_TICKS (20), self-rescheduling on the global
         // scheduler while the plugin is enabled. FOLIA DEBT: it reads bodies by id off their regions; correct on Paper today.
         Runnable[] summonBackstop = new Runnable[1];
