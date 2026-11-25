@@ -18,6 +18,12 @@ rarity: common
 flavor:
   - "Better than nothing, and it knows it."
 
+# THE SET BONUS (B1): all four of this file's pieces worn. FLAT (Ben: "No it's flat").
+# health_regen is in Ben's per-5-seconds unit ("+2 regen, this is to the every 5s number"): 1 per 5 s becomes 3.
+set_bonus:
+  - type: health_regen
+    value: 2                      # BEN 2026-11-25
+
 pieces:
   head:
     material: leather_helmet

@@ -93,4 +93,32 @@ class AccessorySourceKeysTest {
         }
         assertEquals("accessory:", AccessoryContributions.SOURCE_PREFIX);
     }
+
+    /**
+     * B3 (2026-11-25): the armor set's key ("armorset:<tier>") merges into the same desired maps as every source above,
+     * so it is disjoint from all of them, the accessories', the fragments' and the level's included. Walked over every
+     * SHIPPED tier file, since the tier name is the key's suffix.
+     */
+    @Test
+    void everyArmorSetKeyIsDisjointFromEveryOtherSource() {
+        List<String> others = new ArrayList<>(otherScannersKeysAndPrefixes());
+        for (int slot = 0; slot < AccessorySlots.COUNT; slot++) others.add(AccessoryContributions.sourceKey(slot));
+        for (int slot = 0; slot < io.github.butterflysmp.rpg.core.build.FragmentSlots.COUNT; slot++) {
+            others.add(io.github.butterflysmp.rpg.core.build.FragmentSlots.sourceKey(slot));
+        }
+        others.add(io.github.butterflysmp.rpg.core.progression.LevelBonus.SOURCE);
+        File[] tiers = new File("src/main/resources/content/armor").listFiles((d, n) -> n.endsWith(".yml"));
+        assertTrue(tiers != null && tiers.length == 7, "control: the seven shipped tiers are found");
+        assertTrue(others.contains("level") && others.contains("accessory:0") && others.contains("CHEST"),
+                "control: the level, accessory and slot keys are in the list");
+        for (File f : Objects.requireNonNull(tiers)) {
+            String key = io.github.butterflysmp.rpg.core.weapon.ArmorSetContributions.sourceKey(f.getName().replace(".yml", ""));
+            for (String other : others) {
+                assertFalse(key.equals(other) || key.startsWith(other) || other.startsWith(key)
+                                || other.startsWith(io.github.butterflysmp.rpg.core.weapon.ArmorSetContributions.SOURCE_PREFIX),
+                        "armor set key '" + key + "' collides with '" + other + "'");
+            }
+        }
+        // Mutation: set ArmorSetContributions.SOURCE_PREFIX to "growth:" -> reddens.
+    }
 }

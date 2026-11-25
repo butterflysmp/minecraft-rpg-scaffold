@@ -859,7 +859,7 @@ public final class RpgPlugin extends JavaPlugin {
         selfTest.bindFightRunning(fightFixtures::running);
         getLogger().info(selfTest.enableLine());
         selfTest.refusals().forEach(getLogger()::warning);
-        this.summons = new io.github.butterflysmp.rpg.paper.summon.SummonService(adapters, () -> summonDefs, profiles,
+        this.summons = new io.github.butterflysmp.rpg.paper.summon.SummonService(adapters, () -> summonDefs, profiles, armor,
                 summonFeeds);
         // D7's BACKSTOP and D1(a)'s goal guard, every SummonBackstop.PERIOD_TICKS (20), self-rescheduling on the global
         // scheduler while the plugin is enabled. FOLIA DEBT: it reads bodies by id off their regions; correct on Paper today.

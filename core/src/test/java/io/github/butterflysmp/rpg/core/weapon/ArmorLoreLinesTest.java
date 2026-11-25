@@ -141,4 +141,19 @@ class ArmorLoreLinesTest {
         // Mutation: return "Cap" for HEAD to match leather -> every non-leather helmet footers
         // wrongly -> reddens.
     }
+
+    @Test
+    void everySetBonusLineCarriesBensRealNumberInHisUnit() {
+        // B8: real numbers, the authored unit. The five types, each line pinned whole.
+        assertEquals("+2 Health Regen per 5s",
+                ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.HEALTH_REGEN, 2)));
+        assertEquals("+2 Mana Regen per second",
+                ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.MANA_REGEN, 2)));
+        assertEquals("+1 Max Summons", ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.MAX_SUMMONS, 1)));
+        assertEquals("+100 Max Health",
+                ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.MAX_HEALTH, 100)));
+        assertEquals("+40 Defense", ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.DEFENSE, 40)));
+        // Mutation: print the ENGINE value (0.4 for leather's regen) -> "+0.4 ..." -> reddens.
+        assertEquals("Set Bonus (4 pieces):", ArmorLoreLines.SET_BONUS_HEADER);
+    }
 }

@@ -16,6 +16,12 @@ rarity: uncommon
 flavor:
   - "Salvaged from something that did not survive the fall."
 
+# THE SET BONUS (B1): all four of this file's pieces worn. FLAT (Ben: "No it's flat").
+# Added to the Defense stat after the pieces' scaled Defense; never to the native armor the bar cancels.
+set_bonus:
+  - type: defense
+    value: 40                      # BEN 2026-11-25
+
 pieces:
   head:
     material: netherite_helmet

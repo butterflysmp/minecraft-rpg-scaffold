@@ -695,11 +695,11 @@ public final class RpgCommand {
                 // row stages 0), or reset the base to Ben's default. The reply is the effective value the cast reads.
                 .then(Commands.literal("maxsummons")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
-                        .executes(ctx -> maxSummons(ctx, profiles, null, false))
+                        .executes(ctx -> maxSummons(ctx, profiles, adapters, armor, null, false))
                         .then(Commands.literal("reset")
-                                .executes(ctx -> maxSummons(ctx, profiles, null, true)))
+                                .executes(ctx -> maxSummons(ctx, profiles, adapters, armor, null, true)))
                         .then(Commands.argument("base", IntegerArgumentType.integer(0, 64))
-                                .executes(ctx -> maxSummons(ctx, profiles,
+                                .executes(ctx -> maxSummons(ctx, profiles, adapters, armor,
                                         IntegerArgumentType.getInteger(ctx, "base"), true))))
                 // Damage/heal the LOOKED-AT mob's custom health, through the same observable store path
                 // the nameplate hooks -- so the mob nameplate's HP-change update is witnessable this
@@ -1075,7 +1075,8 @@ public final class RpgCommand {
      * it. Every form replies with the effective value ({@code ProfileService.maxSummons}), so the selftest reads what the
      * cast will read. Refused while the profile is loading.
      */
-    private static int maxSummons(CommandContext<CommandSourceStack> ctx, ProfileService profiles, Integer base,
+    private static int maxSummons(CommandContext<CommandSourceStack> ctx, ProfileService profiles, AdapterContext adapters,
+                                  ArmorRegistry armor, Integer base,
                                   boolean write) {
         if (!(ctx.getSource().getExecutor() instanceof Player player)) {
             ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
@@ -1086,7 +1087,8 @@ public final class RpgCommand {
                     NamedTextColor.RED));
             return 0;
         }
-        java.util.OptionalInt now = profiles.maxSummons(player.getUniqueId());
+        java.util.OptionalInt now = profiles.maxSummons(player.getUniqueId(),   // B6: with the worn set's grant
+                io.github.butterflysmp.rpg.paper.health.ArmorSetItems.contributions(player, adapters.keys(), armor).summonGrants());
         if (now.isEmpty()) {
             player.sendMessage(Component.text("max_summons: your profile is still loading.", NamedTextColor.RED));
             return 0;

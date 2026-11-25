@@ -2,6 +2,7 @@ package io.github.butterflysmp.rpg.paper.content;
 
 import io.github.butterflysmp.rpg.core.weapon.ArmorDefinition;
 import io.github.butterflysmp.rpg.core.weapon.ArmorRegistry;
+import io.github.butterflysmp.rpg.core.weapon.ArmorSetBonus;
 import io.github.butterflysmp.rpg.core.weapon.ArmorSlot;
 import io.github.butterflysmp.rpg.core.weapon.Rarity;
 import org.bukkit.configuration.ConfigurationSection;
@@ -109,6 +110,10 @@ public final class ArmorLoader {
         }
         List<String> flavor = s.getStringList("flavor");
 
+        // B1 (2026-11-25): THE SET is the four pieces of this file, and set_bonus: its typed list. Refused whole, like
+        // any other bad key, so a typo'd type never loads as a set that silently grants nothing.
+        List<ArmorSetBonus> setBonus = setBonus(tier, s);
+
         ConfigurationSection pieces = s.getConfigurationSection(PIECES);
         if (pieces == null) {
             throw new IllegalArgumentException("armor tier '" + tier + "' has no '" + PIECES
@@ -127,13 +132,55 @@ public final class ArmorLoader {
                 throw new IllegalArgumentException("armor tier '" + tier + "' is missing its '"
                         + key + "' piece");
             }
-            parsed.add(parsePiece(tier, slot, piece, rarity, flavor));
+            parsed.add(parsePiece(tier, slot, piece, rarity, flavor, setBonus));
         }
+        // "A set with fewer than four pieces" (B1) cannot load: the slot walk above refuses the tier at the first
+        // missing slot, so every set that reaches the registry has exactly one piece per slot.
         return parsed;
     }
 
+    /** The key of a tier's set bonus list. */
+    static final String SET_BONUS = "set_bonus";
+
+    /**
+     * B1: {@code set_bonus:} as a list of {@code {type: <token>, value: <number>}}. Absent is no bonus. Refused: a
+     * non-list, an entry that is not a map, an unknown type, a missing or non-numeric value; and (by
+     * {@link ArmorSetBonus}) a non-finite or zero value.
+     */
+    static List<ArmorSetBonus> setBonus(String tier, ConfigurationSection s) {
+        if (!s.contains(SET_BONUS)) return List.of();
+        if (!s.isList(SET_BONUS)) {
+            throw new IllegalArgumentException("armor tier '" + tier + "' has a '" + SET_BONUS
+                    + ":' that is not a list; write one '- type: ..., value: ...' entry per bonus");
+        }
+        List<ArmorSetBonus> bonuses = new java.util.ArrayList<>();
+        for (Object entry : s.getList(SET_BONUS)) {
+            if (!(entry instanceof java.util.Map<?, ?> map)) {
+                throw new IllegalArgumentException("armor tier '" + tier + "' has a set_bonus entry that is not"
+                        + " 'type: ..., value: ...': " + entry);
+            }
+            Object typeToken = map.get("type");
+            ArmorSetBonus.Type type = ArmorSetBonus.Type.fromToken(typeToken == null ? null : typeToken.toString());
+            if (type == null) {
+                throw new IllegalArgumentException("armor tier '" + tier + "' has a set_bonus of unknown type '"
+                        + typeToken + "'; expected one of " + java.util.Arrays.stream(ArmorSetBonus.Type.values())
+                        .map(ArmorSetBonus.Type::token).toList());
+            }
+            if (!(map.get("value") instanceof Number value)) {
+                throw new IllegalArgumentException("armor tier '" + tier + "' has a set_bonus " + type.token()
+                        + " whose value is missing or not a number: " + map.get("value"));
+            }
+            try {
+                bonuses.add(new ArmorSetBonus(type, value.doubleValue()));
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("armor tier '" + tier + "': " + ex.getMessage());
+            }
+        }
+        return bonuses;
+    }
+
     private ArmorDefinition parsePiece(String tier, ArmorSlot slot, ConfigurationSection s,
-                                       Rarity rarity, List<String> flavor) {
+                                       Rarity rarity, List<String> flavor, List<ArmorSetBonus> setBonus) {
         // The material is REQUIRED and has no default, unlike every other loader's material key.
         // It cannot have one: it is also the id, so a default would give two tiers the same id and
         // the second would be refused by the registry as a duplicate -- a confusing way to report a
@@ -166,7 +213,7 @@ public final class ArmorLoader {
         Optional<String> craftResult = Optional.ofNullable(s.getString("craft_result"));
 
         return new ArmorDefinition(material, displayName, rarity, material, slot, defense, flavor,
-                craftResult);
+                craftResult, Optional.of(tier), setBonus);
     }
 
     /** Unknown rarity throws, which the caller turns into a named, skipped file. */

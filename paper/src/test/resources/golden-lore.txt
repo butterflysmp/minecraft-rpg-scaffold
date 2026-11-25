@@ -305,11 +305,17 @@
 -- copper_boots
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["4" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+1 Max Summons" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "It greens where it is not worn." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
 -- copper_chestplate
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+1 Max Summons" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "It greens where it is not worn." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -317,11 +323,17 @@
 -- copper_helmet
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["5" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+1 Max Summons" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "It greens where it is not worn." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
 -- copper_leggings
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+1 Max Summons" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "It greens where it is not worn." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -329,11 +341,17 @@
 -- diamond_boots
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["12" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+20 Defense" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Cut from a single lattice, and cold to the touch." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Boots" color=#55FF55 O=. B=. S=. U=. I=F
 -- diamond_chestplate
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["24" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+20 Defense" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Cut from a single lattice, and cold to the touch." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -341,11 +359,17 @@
 -- diamond_helmet
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["15" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+20 Defense" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Cut from a single lattice, and cold to the touch." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Helmet" color=#55FF55 O=. B=. S=. U=. I=F
 -- diamond_leggings
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["21" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+20 Defense" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Cut from a single lattice, and cold to the touch." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -353,11 +377,17 @@
 -- golden_boots
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["4" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+2 Mana Regen per second" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
 -- golden_chestplate
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+2 Mana Regen per second" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -365,11 +395,17 @@
 -- golden_helmet
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["5" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+2 Mana Regen per second" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
 -- golden_leggings
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+2 Mana Regen per second" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "It buys goodwill from things that cannot spend it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -377,11 +413,17 @@
 -- iron_boots
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+100 Max Health" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Honest plate. It has no opinion about who wears it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
 -- iron_chestplate
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["16" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+100 Max Health" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Honest plate. It has no opinion about who wears it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -389,11 +431,17 @@
 -- iron_helmet
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["10" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+100 Max Health" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Honest plate. It has no opinion about who wears it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
 -- iron_leggings
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["14" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+100 Max Health" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Honest plate. It has no opinion about who wears it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -401,11 +449,17 @@
 -- leather_boots
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["4" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+2 Health Regen per 5s" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Boots" color=#FFFFFF O=. B=. S=. U=. I=F
 -- leather_chestplate
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["8" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+2 Health Regen per 5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -413,11 +467,17 @@
 -- leather_helmet
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["5" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+2 Health Regen per 5s" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Helmet" color=#FFFFFF O=. B=. S=. U=. I=F
 -- leather_leggings
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+2 Health Regen per 5s" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Better than nothing, and it knows it." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -425,11 +485,17 @@
 -- netherite_boots
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["12" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+40 Defense" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Salvaged from something that did not survive the fall." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Boots" color=#55FF55 O=. B=. S=. U=. I=F
 -- netherite_chestplate
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["24" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+40 Defense" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Salvaged from something that did not survive the fall." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
@@ -437,11 +503,17 @@
 -- netherite_helmet
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["15" color=#55FF55 O=. B=. S=. U=. I=F ]
    "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+40 Defense" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
    "Salvaged from something that did not survive the fall." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Helmet" color=#55FF55 O=. B=. S=. U=. I=F
 -- netherite_leggings
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["21" color=#55FF55 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Set Bonus (4 pieces):" color=#FFAA00 O=. B=. S=. U=. I=F
+   "+40 Defense" color=#AAAAAA O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
    "Salvaged from something that did not survive the fall." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F

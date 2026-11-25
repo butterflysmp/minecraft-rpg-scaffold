@@ -167,7 +167,135 @@ restored by `cp` and the marker re-grepped as 0.
 
 ## 3. PR 2 — the set (B1-B8)
 
-To be filled in PR 2.
+### 3.1 B1 — the set and its `set_bonus:` list
+
+- **A set is the four pieces of one tier file.** `ArmorDefinition` gains `set` (the tier name, from the filename) and
+  `setBonus` (the tier's list), carried on all four pieces. No set id or stat name in Java beyond the type enum.
+- `core/weapon/ArmorSetBonus(type, value)`, types `health_regen`, `mana_regen`, `max_summons`, `max_health`, `defense`.
+  It refuses a non-finite or zero value, and a fractional `max_summons`.
+- `ArmorLoader.setBonus` refuses each of these, and the tier is refused whole: a non-list, a non-map entry, an unknown
+  type (listing the five), and a missing or non-numeric value. A set with fewer than four pieces cannot load: the slot
+  walk refuses the tier at the first missing slot.
+- **THE UNIT, in one place:** the YAML holds `health_regen` in Ben's per-5-seconds unit. `ArmorSetBonus.engineValue`
+  divides it by 5. Everything else is authored in the engine's unit. The tooltip prints the authored value.
+
+### 3.2 B2 — the decision (pure, `core/weapon/ArmorSetDecision`)
+
+Active exactly when all four slots resolve, through the one lookup (`ArmorDefenseSource.resolve`: tag, then material),
+to pieces of one set, each in its own slot. The `broken` flag is carried and deliberately not read. Tested as the seat's
+table in `ArmorSetDecisionTest`:
+
+- four of one set;
+- three plus one other;
+- three plus an empty slot;
+- four with one broken;
+- four all broken;
+- minted and untagged mixed;
+- plus a piece with no set, a helmet in the feet slot, and a missing slot.
+
+**The paper side passes "not broken" for every slot** until D1-D3 are ruled. There is no armor broken state yet
+(section 4).
+
+### 3.3 B3 — each bonus on its existing path; and the STOP on quiver percent
+
+READ, `PlayerHealthSystem.startReconcileLoop`:
+- **The loop:** `RepeatingTask` every `RECONCILE_PERIOD_TICKS = 5` on the player's entity target. `onJoin` and
+  `onRespawn` each re-register the player and start it. While he is dead the target is inactive.
+- **Equip, unequip, a break and a drop** all reach the stats on the next pass, by ABSENCE. There is no event: the
+  set's one key, `armorset:<tier>`, is missing from the desired map and the reconciler drops it. **Join and death**
+  re-register at base and rebuild within one period.
+- **The merges:** the set's contributions (`ArmorSetItems.contributions`, read ONCE per pass) go into the FIRST argument
+  of each stat's ONE reconcile, through `AccessoryContributions.merged`. Never a second reconcile, never an inline
+  `putAll` (the measured hollow guard). `ArmorSetWiringSignatureTest` pins all four. `AccessorySourceKeysTest` pins the
+  key disjoint from every other source, for every shipped tier.
+
+| stat | path | the set's value in the engine |
+|---|---|---|
+| health regen | `reconcileHealthRegenModifiers`, through `HealthRegen.contribution` | leather +0.4 HP/s |
+| mana regen | `ManaTransition.reconcile`'s regen map (it pins the lazy pool), through `ManaRegen.contribution` | golden +2 mana/s |
+| max health | `reconcileMaxModifiers` (`HealthState`'s headroom and clamp) | iron +100 |
+| defense | `reconcileDefenseModifiers`; never `nativeArmor` | diamond +20, netherite +40 |
+| max summons | not a `Stat`: `MaxSummons.effective`'s gear term, read at each cast and by `/rpg maxsummons` (B6) | copper +1 |
+| quiver size % | **STOPPED** | — |
+
+**STOPPED: `quiver_size_percent` (chainmail's +50%), on the seat's own B3 clause.** READ:
+- `HealthState.quiverSizeBonus` is a `Stat`, and `Stat` is additive only: `value()` is the base plus the modifiers'
+  sum, and no modifier has a mode.
+- So a percent has no per-player modifier path. B5's "one place, `QuiverSize.resolve`" is the arithmetic; the
+  per-player SOURCE the percent would need does not exist.
+- Building one means a new multiplicative path on a shared stat, or a percent `Stat` on `HealthState`. Either is
+  shared stat code no ruling covers.
+- **What is pushed instead:** chainmail ships no `set_bonus`. Its file says why. `quiver_size_percent` is not a type,
+  so the loader refuses it and no tooltip can advertise it. **The `2 → 3, 5 → 8, 8 → 12, 2+3 → 8` examples are
+  unbuilt.**
+- **Two things for whoever rules it.** First, Ben said *".5s round up"*. Read as round-half-up, every value at 50% is a
+  whole number or a half, so that reading and "ceiling" agree on the whole 50% grid and differ only at other
+  percentages. Second, READ: loaded arrows are clamped at the next write (`QuiverItems.setLoaded`), not on removal, as
+  Expanded Quiver's removal behaves.
+
+### 3.4 B4 — flat
+
+No bonus reads a gear score. Diamond's +20 and netherite's +40 are their own source on the Defense stat, summed after
+the pieces' scaled Defense: 72 + 20 = 92, 72 + 40 = 112 at score 100.
+
+### 3.5 B6 — max summons
+
+`ProfileService.maxSummons(id, gearGrants)`. Both callers pass `ArmorSetItems.contributions(...).summonGrants()`:
+- `SummonService.cast`, before `SummonCap.decide`;
+- `/rpg maxsummons`, which is where the number is shown. It is not on the stats sheet.
+
+Taking the set off removes nothing; the next cast obeys the cap. `ArmorSetContributionsTest`: with two weapons' summons
+live and the cap back at 1, a recast of either is `REFUSED_FULL`, and so is a third weapon's first cast.
+
+### 3.6 B7 — max health, and the rates (READ)
+
+- **Max health:** iron's +100 is headroom on gain and a clamp on loss, on the real store
+  (`ArmorSetContributionsTest`: 100/100 → 100/200; healed to 200/200; set off → 100/100).
+- **Health regen:** base `HealthRegen.BASE_PER_SECOND = 0.2` (1 per 5 s). With leather it is 0.6/s (3 per 5 s), shown
+  as `3.00/5s` (`StatsSheetLines.perFiveSeconds`). Saturated, x5 (`SATURATED_MULTIPLIER`), 3.0/s.
+- **Mana regen:** base `RpgPlugin.MANA_PER_TICK = 100 / (100 x 20)` = 1 mana/s, shown as `5.00/5s`. With golden it is
+  3 mana/s, shown as `15.00/5s`.
+
+### 3.7 B8 — the tooltip and the sheet
+
+- Every piece of a set with a bonus shows: a blank line, `Set Bonus (4 pieces):` in gold, then one gray line per entry
+  in Ben's unit (`+2 Health Regen per 5s`, `+2 Mana Regen per second`, `+1 Max Summons`, `+100 Max Health`,
+  `+20 Defense`). It is static, and identical on all four pieces. **Wording, colours and placement: SEAT PLACEHOLDER
+  2026-11-25, OPEN FOR BEN.**
+- Golden predicted `72 / 0` (24 pieces x 3 lines; chainmail adds none), measured `72 / 0`.
+- **The stats sheet** (`/rpg stats` and the Nexus head) needs no change. It reads the converged stats, so the active
+  set's contribution shows in Max Health, Health Regen, Mana Regen and Defense. Max summons shows in the
+  `/rpg maxsummons` reply.
+
+### 3.8 The seven files' set_bonus blocks, as committed
+
+| file | block |
+|---|---|
+| leather | `- type: health_regen / value: 2` |
+| golden | `- type: mana_regen / value: 2` |
+| chainmail | none (STOPPED, 3.3) |
+| copper | `- type: max_summons / value: 1` |
+| iron | `- type: max_health / value: 100` |
+| diamond | `- type: defense / value: 20` |
+| netherite | `- type: defense / value: 40` |
+
+### 3.9 Mutations, PR 2
+
+Each mutation was checked three ways: the marker present and the original gone; the delta against a pristine copy;
+the marker back to 0 after restoring.
+
+| mutation | result |
+|---|---|
+| MUTB1DIV: health regen not divided by 5 | RED |
+| MUTB2SAME: two sets not compared | RED |
+| MUTB2EMPTY: an empty slot skipped | RED, 2 rows |
+| MUTB2BROKEN: a broken piece refused | RED, 2 rows |
+| MUTB8: the tooltip prints the engine value | RED |
+| MUTB3PREFIX: the key prefix is `growth:` | RED |
+| MUTB3WIRE: Defense loses the set merge | RED |
+| MUTB6: the cast passes no grant | RED. The first run did not compile (the needle left a package prefix); it was re-run |
+| MUTB1LOAD: every piece's set is `x` | RED, 2 rows |
+| MUTB1UNKNOWN: an unknown type is skipped | RED on `quiver_size_percent` |
 
 ## 4. STOPPED: D1-D3, OUR DURABILITY ON ARMOR — TWO RULINGS CONFLICT, AND ONE FACT DOES NOT HOLD
 
@@ -227,6 +355,9 @@ the TOOLTIP does, and gets it. The set lines (PR 2) reach existing items the sam
 |---|---|---|
 | CC1 | an armor material no content piece covers keeps vanilla's points as its Defense | 0 |
 | CC2 | P-1's melee test is the event's cause `ENTITY_ATTACK`, the dealer the damage source's causing entity | the direct entity |
+| CC3 | the set lives on each piece (`ArmorDefinition.set` and `setBonus`), so the tooltip reads it with no registry | a separate set registry the tooltip would have to reach |
+| CC4 | a tier with no `set_bonus:` is still a set, with no bonus | no set at all |
+| CC5 | max summons' grant is read by the callers, which hold the player, and passed into `ProfileService.maxSummons` | the profile service reading equipment |
 
 ## 7. OPEN FOR BEN
 
@@ -236,3 +367,6 @@ the TOOLTIP does, and gets it. The set lines (PR 2) reach existing items the sam
 | O2 | A3: an untagged piece reads the same Defense and completes a set (the seat's call) | as built |
 | O3 | the turtle helmet keeps vanilla's 2 Defense (CC1) | as built |
 | O4 | D1-D3: authored or read maxima (section 4) | STOPPED |
+| O5 | the set tooltip: header, line wording, colours, placement (B8) | `Set Bonus (4 pieces):`, gold; one gray line per entry |
+| O6 | chainmail's +50% quiver: STOPPED (3.3); and "round up" as half-up vs ceiling at other percents | unbuilt |
+| O7 | the order of B5's percent after the flat bonus (the seat's placeholder) | unbuilt |

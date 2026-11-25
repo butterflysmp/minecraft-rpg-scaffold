@@ -51,7 +51,9 @@ public record ArmorDefinition(
         ArmorSlot slot,
         double defense,
         List<String> flavor,
-        Optional<String> craftResult
+        Optional<String> craftResult,
+        Optional<String> set,
+        List<ArmorSetBonus> setBonus
 ) implements GearDefinition {
 
     public ArmorDefinition {
@@ -84,6 +86,19 @@ public record ArmorDefinition(
         }
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
         craftResult = CraftResultToken.normalise(craftResult, "armor", id);
+        // B1 (2026-11-25): the SET is the tier this piece was authored in, and its bonus is that tier's set_bonus:
+        // list, carried on all four pieces so the tooltip (B8) reads it off the definition. No set means no bonus.
+        set = set == null ? Optional.empty() : set.filter(s -> !s.isBlank());
+        setBonus = setBonus == null ? List.of() : List.copyOf(setBonus);
+        if (set.isEmpty() && !setBonus.isEmpty()) {
+            throw new IllegalArgumentException("armor '" + id + "' declares a set bonus but belongs to no set");
+        }
+    }
+
+    /** The shape without a set (every caller before B1), so existing callers and tests keep compiling. */
+    public ArmorDefinition(String id, String displayName, Rarity rarity, String material, ArmorSlot slot,
+                           double defense, List<String> flavor, Optional<String> craftResult) {
+        this(id, displayName, rarity, material, slot, defense, flavor, craftResult, Optional.empty(), List.of());
     }
 
     /**

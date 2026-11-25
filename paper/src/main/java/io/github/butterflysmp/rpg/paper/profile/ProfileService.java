@@ -436,10 +436,13 @@ public final class ProfileService {
      * lean, and for the opposite reason: reading unknown as 1 would let a cast through on a profile that may hold 0, and
      * reading it as 0 would print the cap's refusal for a reason that is not the cap. The cast (a later PR) says which.
      */
-    public java.util.OptionalInt maxSummons(UUID playerId) {
+    public java.util.OptionalInt maxSummons(UUID playerId, java.util.List<Integer> gearGrants) {
+        // B6 (PLAN-armor-sets.md, 2026-11-25): the first gear that grants it is the copper set, and its read is the
+        // CALLER's (the cast and /rpg maxsummons, each with the player in hand): ArmorSetItems.contributions(...)
+        // .summonGrants(). This one place still does the sum.
         return profile(playerId)
                 .map(p -> java.util.OptionalInt.of(io.github.butterflysmp.rpg.core.summon.MaxSummons.effective(
-                        p.maxSummonsOrNull(), java.util.List.of())))
+                        p.maxSummonsOrNull(), gearGrants)))
                 .orElse(java.util.OptionalInt.empty());
     }
 

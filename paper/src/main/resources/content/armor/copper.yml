@@ -15,6 +15,12 @@ rarity: common                      # BEN 2026-11-25
 flavor:
   - "It greens where it is not worn."   # SEAT PLACEHOLDER 2026-11-25, OPEN FOR BEN
 
+# THE SET BONUS (B1): all four of this file's pieces worn. FLAT (Ben: "No it's flat").
+# Raises the max summons cap by one (MaxSummons's gear term), read at each cast.
+set_bonus:
+  - type: max_summons
+    value: 1                      # BEN 2026-11-25
+
 pieces:
   head:
     material: copper_helmet

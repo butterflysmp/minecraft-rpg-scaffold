@@ -151,6 +151,18 @@ public final class ArmorLore {
             GearLore.appendFlatBonus(lore, bonus.points(), bonus.label(), bonus.color());
         }
 
+        // B8 (2026-11-25): THE SET BONUS, the same on all four pieces of a set and STATIC (a tooltip does not know what
+        // else is worn). A blank, the header, one line per entry with Ben's real number in his unit. Placement, wording
+        // and colours are SEAT PLACEHOLDERS 2026-11-25, OPEN FOR BEN. A piece with no set bonus adds nothing at all, so
+        // a set without one (chainmail, STOPPED) renders exactly as before.
+        if (!armor.setBonus().isEmpty()) {
+            lore.add(GearLore.blank());
+            lore.add(GearLore.plain(ArmorLoreLines.SET_BONUS_HEADER, NamedTextColor.GOLD));
+            for (var entry : armor.setBonus()) {
+                lore.add(GearLore.plain(ArmorLoreLines.setBonusLine(entry), NamedTextColor.GRAY));
+            }
+        }
+
         GearLore.appendFlavor(lore, armor);
 
         // Rarity footer at the very bottom, coloured by tier: "Uncommon Helmet".

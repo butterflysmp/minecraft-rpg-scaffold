@@ -60,12 +60,16 @@ public final class SummonService {
     private final Supplier<SummonRegistry> registry;
     private final ProfileService profiles;
     private final io.github.butterflysmp.rpg.core.summon.SummonFeeds feeds;
+    /** B6: the armor content, so a cast reads the worn set's max_summons grant. */
+    private final io.github.butterflysmp.rpg.core.weapon.ArmorRegistry armor;
 
     public SummonService(AdapterContext ctx, Supplier<SummonRegistry> registry, ProfileService profiles,
+                         io.github.butterflysmp.rpg.core.weapon.ArmorRegistry armor,
                          io.github.butterflysmp.rpg.core.summon.SummonFeeds feeds) {
         this.ctx = ctx;
         this.registry = registry;
         this.profiles = profiles;
+        this.armor = armor;
         this.feeds = feeds;
     }
 
@@ -91,7 +95,10 @@ public final class SummonService {
             ctx.warnOnce("Summon '" + spec.summonId() + "' named by weapon '" + weapon.id() + "' is not loaded");
             return new CastResult.SummonRefused("That summon is not loaded.");
         }
-        java.util.OptionalInt max = profiles.maxSummons(player.getUniqueId());
+        // B6 (2026-11-25): the worn set's max_summons is MaxSummons's gear-grants term, read here at every cast from what
+        // he wears NOW. Taking the set off removes nothing: the next cast simply obeys the lower cap (SummonCap).
+        java.util.OptionalInt max = profiles.maxSummons(player.getUniqueId(),
+                io.github.butterflysmp.rpg.paper.health.ArmorSetItems.contributions(player, ctx.keys(), armor).summonGrants());
         SummonCap.Verdict verdict = SummonCap.decide(weapon.id(), store().liveWeapons(player.getUniqueId()), max);
         if (!verdict.charges()) {
             ctx.log().info("SUMMON refused owner=" + player.getUniqueId() + " weapon=" + weapon.id() + " verdict="

@@ -7,6 +7,11 @@ rarity: common
 flavor:
   - "Ten thousand rings, and every one of them someone's afternoon."
 
+# THE SET BONUS: Ben ruled "+50% quiver size" (".5s round up"). STOPPED, not authored (PLAN-armor-sets.md 3.3):
+# the quiver's per-player stat is additive only, so a percent has no per-player path, which the seat's B3 names a
+# STOP. ArmorLoader refuses quiver_size_percent as an unknown type, so no tooltip can advertise it. The four
+# pieces are still a set (one tier file), with no bonus.
+
 pieces:
   head:
     material: chainmail_helmet
