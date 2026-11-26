@@ -67,7 +67,7 @@ class ArmorPoolsTest {
     void everyShippedArmorPieceHasTwoEmptyColumnsAndTheFourNormals() {
         List<String> warnings = new ArrayList<>();
         EnchantRegistry r = enchants(Path.of("src", "main", "resources", "content", "enchants").toFile(), warnings);
-        assertEquals(23, r.all().size(), "CONTROL: the 23 shipped enchants loaded: " + warnings);
+        assertEquals(24, r.all().size(), "CONTROL: the 24 shipped enchants loaded (2026-11-25: + sharpened_glass, 23 at 9a6ed020): " + warnings);
         var roster = EnchantRollItems.roster(r.all());
         var armor = new ArmorLoader(quiet(new ArrayList<>())).loadAll(new File("src/main/resources/content/armor"));
         int checked = 0;

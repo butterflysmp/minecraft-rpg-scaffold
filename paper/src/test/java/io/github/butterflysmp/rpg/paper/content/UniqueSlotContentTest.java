@@ -144,9 +144,9 @@ class UniqueSlotContentTest {
         assertEquals(6, l.accessories());
         assertEquals(65, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle
         assertEquals(65, MASTER_POOLS.size(), "the snapshot covers the same 65");
-        assertEquals(23, l.real().size(), "a real server: the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
+        assertEquals(24, l.real().size(), "a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
-        assertEquals(23, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5)");
+        assertEquals(24, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
@@ -237,7 +237,8 @@ class UniqueSlotContentTest {
                             : g.id().equals("cursed_emerald") ? List.of("echo_beam", "focused_beam")
                             : g.id().equals("flint_staff") ? List.of("large_sparks")
                             : g.id().equals("crystal_shard_staff") ? List.of("sharp_crystals")
-                            : g.id().equals("knell_beam") ? List.of("early_toll") : List.of(),
+                            : g.id().equals("knell_beam") ? List.of("early_toll")
+                            : g.id().equals("broken_bottle") ? List.of("sharpened_glass") : List.of(),   // 2026-11-25, K10
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }

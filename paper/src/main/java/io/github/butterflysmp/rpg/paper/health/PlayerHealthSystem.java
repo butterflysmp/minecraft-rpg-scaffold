@@ -330,7 +330,8 @@ public final class PlayerHealthSystem implements HealthListener {
             stats.reconcileCritChanceModifiers(id, AccessoryContributions.merged(AccessoryContributions.merged(
                     CritModifierItems.desiredChanceModifiers(player, keys),
                     io.github.butterflysmp.rpg.core.weapon.HeldWeaponCrit.sources(
-                            WeaponItems.heldWeaponId(player, keys).flatMap(weapons::find))),
+                            WeaponItems.heldWeaponId(player, keys).flatMap(weapons::find)),
+                    CritChanceEnchantItems.desiredModifiers(player, keys, enchants)),   // K9: its own key, so the two add
                     fromAccessories.sources(AccessoryStat.CRIT_CHANCE), fromFragments.sources(AccessoryStat.CRIT_CHANCE),
                     fromLevel.sources(AccessoryStat.CRIT_CHANCE)));
             stats.reconcileCritDamageModifiers(id, AccessoryContributions.merged(
