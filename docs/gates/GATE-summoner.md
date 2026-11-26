@@ -598,6 +598,9 @@ named for them. Both sit before SM17, the ask, which stays last. Both stage leve
 
 ### SM9R — THE DEATH, STAGED UNDER P-1
 
+> **READ on `37292713`, 2026-11-26, by reference from `GATE-broken-bottle.md`:** SM9R and SM16R2 READ AS PREDICTED. The
+> lines are in that file's READINGS, not repeated here.
+
 **READ, what can kill a summon now:**
 - `RpgListeners.onSummonDamaged`: a mob-sourced hit is `MOB_HIT`, and its price is `SummonHitPrice.of(melee, seeded,
   amount, source)`.

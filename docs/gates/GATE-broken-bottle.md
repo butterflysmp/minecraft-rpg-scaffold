@@ -285,6 +285,142 @@ The plan's list: reach and arc, no flavor, the tooltip's crit wording, the encha
 - the attribute's printed value;
 - that the three references run their rows as their own gates would.
 
-## READINGS
+## READINGS — THE BOOT OF `37292713`, 2026-11-26
 
-None. Not booted.
+Booted once, on Ben's "ready" and the seat's approval of `3729271358bb` (and its ruling (a) on CC's stop). Every row was
+read from `run/logs/latest.log` of that boot, after his login. A copy of the log is kept outside the tree.
+
+### DATED NOTE, 2026-11-26 — THE SEAT'S ERROR, IN ITS WORDS
+
+> My approval's reading list named "SAFETY, CARRIED STATE, THE RUN SHEET" in GATE-broken-bottle.md. I had read the
+> scenario's rows and the code, and NOT the gate document's headings. The file has no CARRIED STATE and no RUN SHEET
+> section.
+
+CC stopped before the boot command; the seat ruled (a): its approval's item 4 is this boot's carried state, and "WHAT BEN
+TYPES" is the run sheet.
+
+### CARRIED STATE (DATED NOTE, 2026-11-26), AS IT WAS ACTUALLY RUN
+
+1. **Heads:** `git ls-remote` read #308 `9c01d43f0107`, #309 `9a6ed020ab06`, #310 `da2d53bc94bc`, #311 `3729271358bb`,
+   master `ca48293090ab`. CI green on all four (`build` twice each). `git status --porcelain` printed nothing, and
+   `HEAD` = `3729271358bbf2f90196682958bb7424df38678f`.
+2. **No JVM:** `Get-CimInstance Win32_Process -Filter "Name='java.exe'"` counted 0.
+3. **The backup** went to a NEW folder, `C:\Users\Neb91\IdeaProjects\rpg-run-backups\2026-11-26-pre-broken-bottle`
+   (absent before):
+   - `run\world`: 193 files, copy 193;
+   - `run\plugins\Rpg`: 179 files, copy 179;
+   - `world\players\data\b6ae27e9-6ca4-4bb5-a1fb-73cbadbabdd5.dat`: 4,990 bytes, copy 4,990 (its `.dat_old` 4,992).
+4. **The world's saved difficulty:** `normal`, a string tag `difficulty` read from the decompressed `level.dat`.
+5. **Config line 12:** `  dev-pack-on-join: true`. No `run\rpgfight`.
+6. **"Booting now"** was sent **in the same turn as the boot command, not in its own message before it.** That is
+   `booting.md` step 4 missed, **CC's omission.** Ben did not log in before R0 (below).
+7. `./scripts/dev-server.sh --refresh-content`.
+8. **The marker**, a file written in the boot command's own call:
+   - marker mtime 00:28:26;
+   - deployed jar 00:29:00;
+   - `latest.log`'s first line `[00:29:01]`;
+   - `Done (7.627s)` at `[00:29:08]`.
+
+   **A first wait matched the PREVIOUS boot's log**: its jar was 16:28 and its log 16:40, both on 2026-11-25. That
+   wait's condition (a log newer than the jar) was too weak. It was not used; the second wait required the jar to be
+   newer than the marker.
+
+### DATED NOTE, 2026-11-26 — K6 (THE SEAT'S RULING (b), LEAVE IT): CARRIED, OPEN FOR BEN
+
+Unbreaking stays in the Broken Bottle's pool, as it does on every undamageable weapon. No `requires: durability` gate in
+this slice. The undamageable weapons:
+- **READ** (no durability call in `Items`): `blaze_kings_staff` (blaze rod), `bone_whistle` (bone),
+  `crystal_shard_staff` (amethyst shard), `cursed_emerald` (emerald), `flint_staff` (stick);
+- **not read:** `knell_beam` (echo shard), `lapis_staff` (breeze rod), `living_lantern` (lantern).
+
+The plan's carried list takes the same entry in the next PR (this commit is docs/gates only).
+
+### R0, BEFORE ANY LOGIN (read 00:29 to 00:31; Ben joined 00:47:55)
+
+| row | read | class |
+|---|---|---|
+| R0a | `[Rpg] Build: 37292713` | READ AS PREDICTED |
+| R0b, the DEPLOYED jar (00:29:00) | 30 PRESENT / 0 ABSENT; 4 ABSENT / 0 PRESENT; 3 controls ABSENT / 0 PRESENT | READ AS PREDICTED |
+| R0c | `Loaded … 24 enchants … 25 weapons, 1 shields, 28 armor …`; `Mint-on-craft: 42 indexed, 42 claiming, of 59 gear definitions`; 0 `WARN]: [Rpg]` (control: 7 `INFO]: [Rpg] Loaded`); 0 Refusing, Skipping, SEVERE or Exception; the loot line identical to `2026-11-25-2.log.gz`'s, by `diff` | READ AS PREDICTED |
+| R0d | `451 scenarios across 50 gates […, armor-sets, broken-bottle]`; `442 scenarios` and `49 gates` absent | READ AS PREDICTED |
+| R0e | `FIGHTWORLD sweep …\rpgfight folders=0`; no deleting, no orphan | READ AS PREDICTED |
+
+### THE RUN
+
+- `SELFTEST RUN START broken-bottle+summoner.SM9R.SM16R2+armor-sets.AS15R rows=12 selftest=37292713` at 00:48:04;
+  `SELFTEST RUN FINISHED` at 00:49:17; his `/stop` at 00:49:50. No abort; the command was not refused.
+- **Queued:** 12 rows plus 3 setups = 15 scenarios, the 15 `theBottlesOneCommandQueuesItsGateAndTheThreeOwedRows`
+  pins. Each setup's START and DONE were read.
+- `SELFTEST broken-bottle setup PAD tickets held=12`; `SELFTEST RUN PAD tickets released=12 cause=end`.
+- **His property:**
+  - `SELFTEST RUN CAPTURED armour=0 offhand=0`;
+  - `SELFTEST RUN RESTORED xp=712824 cell=ranger/fire gamemode=SURVIVAL held=0 mana=100.0 trace=false
+    spawn_mobs=false time=1000 blocks=75 mobsRemoved=0 orbsRemoved=0 keep_inventory=false immediate_respawn=false
+    difficulty=NORMAL health=118.000 vanilla_xp=150+0.694 spawn_phantoms=true max_summons_base=null armour=0 offhand=0
+    summons=1 drag_tick=false`.
+  - `armour=0 offhand=0` equals the capture.
+  - **`blocks=75` is BB8's saved region exactly** (`1 -1 -2` to `5 1 2`: 5 x 3 x 5 = 75). No other row saved blocks.
+  - That no water or glass is left is **INFERRED from that count**, not seen: no world read was taken after the
+    restore.
+
+### THE ROWS
+
+| row | read | class |
+|---|---|---|
+| BB0 | `  Crit Chance  15%` (B₀); no Accessories block, so the class term N = 0 | READ AS PREDICTED |
+| BB1 | `HELDID slot=0 item=broken_bottle`; `Broken Bottle -- 4 slot(s)`, `  Slot 0: [sharpened_glass locked]`, `  Slot 1: [kinetic_tremors locked]`; `HELD broken_bottle GLASS_BOTTLE x1 name="Broken Bottle" [white] … lore=["Kinetic"; "Gear Score: 100"; ""; "Melee Damage: 18"; "Attack Speed: 2.0"; "Crit Chance: +10%"; ""; "Common Melee Weapon"]`. No tier line | READ AS PREDICTED |
+| BB2, crit | `15%` (sword), `25%` (bottle), `15%` (sword), `15%` (bottle in the off hand), `25%` (bottle at score 200; its `⚔ Damage 36.00`) | READ AS PREDICTED |
+| BB2, attribute | `The value of attribute Attack Speed for entity BaronVonYeetus is 1` (sword), `… is 2` (bottle). Predicted `is 1.6` and `is 2.0` | **MISS** (see the note) |
+| BB3 | score 100: `t` `1000.000/1000.000` twice, then `sent=18.000 crit=false triggerScore=100`, then `982.000/1000.000`. Score 200: `1000.000/1000.000` twice, then `sent=72.000 crit=true triggerScore=200` (the allowed crit reading), then `928.000/1000.000` | READ AS PREDICTED |
+| BB4 | `15%`; at III `  Slot 0: [*sharpened_glass III]`, `  active: sharpened_glass III (+15% Crit Chance)`, `  Crit Chance  40%`; at I `  Slot 0: [*sharpened_glass I]`, `  active: sharpened_glass I (+5% Crit Chance)`, `  Crit Chance  30%` | READ AS PREDICTED |
+| BB5 | `ROLLSTATS broken_bottle element=kinetic rolls=500 weaponPool=1 uniquePool=1 normalPool=2`, slot 0 `1=500`, slot 1 `1=500`; `ROLLSTATS iron_sword element=kinetic rolls=500 weaponPool=0 uniquePool=1 normalPool=2`, slot 0 `0=500`, slot 1 `1=500`; the shows `Slot 0: [sharpened_glass locked]` / `Slot 0: []`, each `Slot 1: [kinetic_tremors locked]` | READ AS PREDICTED |
+| BB6 | the bottle: `sent=36.000 crit=true`; `u` `1000.000/1000.000` three times. The control: `iron_sword … sent=46.000 crit=true`; `u` `1000.000` twice, then `977.000`. It fell by 23.000, half of the 46.000 `t` took | READ AS PREDICTED (the control fell, so the row is not VOID) |
+| BB7 | the bottle: `glass_bottle has no durability -- it can never break.`, `USE result useItemInHand=DENY useInteractedBlock=DENY`, `HELDID … item=broken_bottle`. A plain bottle: `USE result useItemInHand=DEFAULT useInteractedBlock=DENY`, `ITEMS material=glass_bottle count=1 gear=0 slots=[0:1]`. The iron sword: `250/250 uses left (damage 0)`, `USE result useItemInHand=DEFAULT useInteractedBlock=DENY` | READ AS PREDICTED; the ITEMS line's form, see the note |
+| BB8 | before: `ITEMS material=glass_bottle count=2 gear=1 slots=[0:1, 2:1]`, `ITEMS material=potion count=0`. **Ben, verbatim: `answer="YES"`** (after 543 ticks). After: `ITEMS material=glass_bottle count=1 gear=1 slots=[0:1]`, `ITEMS material=potion count=1 gear=0 slots=[2:1]`, `HELDID slot=0 item=broken_bottle` | READ AS PREDICTED (the control filled) |
+
+**THE THREE OWED ROWS, NEW READINGS.** Each is held against its own gate's prediction.
+
+| row | read | class |
+|---|---|---|
+| SM9R | `SUMMON spawn … score=100 health=100.000 damage=20.000`, probe `100.000/100.000`; after the scripted hit, `SUMMON removed … cause=death`, then `SUMMONPROBE none … store=0`; the fresh cast `SUMMON spawn … health=100.000 damage=20.000`, probe `100.000/100.000`. No HURT line | READ AS PREDICTED |
+| SM16R2 | `SPLIT … bursts=3`; 6 `SIDES pass attacker=PLAYER body=05d18311-…` (the wolf); k = 3 `living_lantern/right_click … sent=30.000`; d = 1 `DOTTICK … sent=15.000`; w = 2 `SUMMON hit … sent=20.000` before the probe; no `sent=45.000`. `probe s16r2` `855.000/1000.000` = 1000 − 90 − 15 − 40. The wolf `100.000/100.000` | READ AS PREDICTED |
+| AS15R | `CMD /recipes` replied `Crafting unlocks at level 3. You are level 1. A crafting table in the world still works.`, then `SCREEN none (open view type CRAFTING)` and **`SKIPPED no menu is open to click name^="Copper Helmet"`** | **DID NOT TEST WHAT IT WAS MEANT TO** |
+
+### NOTES ON THE MISSES (dated 2026-11-26; no prediction is edited)
+
+- **BB2, the attribute.**
+  - READ, javap on `AttributeCommand.getAttributeValue`: the reply's argument is `Double.valueOf(value)`, unrounded.
+    Only the command's RETURN value is `(int)(value x scale)`.
+  - So the `1` and `2` come from somewhere between the server's `Double` and this log line. Where exactly is
+    UNVERIFIED.
+  - The swords' witness, the tooltip's `Attack Speed: 2.0` (BB1), read as predicted. The reply tells the two weapons
+    apart (2 against 1), but it cannot show 1.6.
+  - **A re-prediction is BB2R**, with an instrument that prints the double, such as a scale argument:
+    `attribute … get 10` would read `20` and `16`. INFERRED, not built.
+- **AS15R, a staging defect in #308's re-prediction (CC's).**
+  - AS15R stages its own level 1, the fix for the level seam. At level 1 the `/recipes` menu is locked (unlocked at
+    level 3), so the craft never opened.
+  - AS15, which ran at level 13 on `732c4e02`, was not locked.
+  - **The re-prediction is AS15R2:** its own level at 3 or above, then the same craft. Not built here.
+- **BB7, the ITEMS line's form.** The prediction said "with **no** `gear=`". The instrument always prints `gear=<n>`, and
+  it read `gear=0`, which is what was meant. The form was mis-predicted; the substance read as predicted.
+
+### HIS SAFETY
+
+**0 HURT lines in the whole log** (`grep -c 'HURT '` = 0). The prediction was none.
+
+### WHAT NO ROW PREDICTED
+
+- **SM9R:** after `SUMMON removed … cause=death`, a red REPLY `Target is invulnerable to the given damage type`. By P-R1
+  it answers the `damage <wolf> … by s9r` command.
+  - READ: `DamageCommand` throws `ERROR_INVULNERABLE` when `hurtServer` returns false.
+  - INFERRED: our summon pricing took the hit through the store and the vanilla event did not land.
+  - The wolf died as predicted.
+- **SM16R2's wolf outlived its row:**
+  - `SELFTEST armor-sets AS15R LEFTOVER living=1 radius=16 [wolf 05d18311-…]`;
+  - armor-sets' setup `kill @e[tag=selftest,…]` replied `No entity was found` twice (the summon carries no `selftest`
+    tag);
+  - it was removed at the run's end (`SUMMON removed … cause=clear`, and `summons=1` on RESTORED).
+  - A reference that follows a summoner row inherits its live summon. No reading here depended on it.
+- **WARNs after `Done`:** only Paper's "4 release(s) behind the latest stable release (26.3)" block (carried as O12). No
+  ERROR, no SEVERE, no Exception.

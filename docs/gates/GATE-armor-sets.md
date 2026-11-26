@@ -558,6 +558,10 @@ Written after the readings above. No prediction or reading above is edited.
 
 ### AS15R — COPPER CRAFTED MINTS, READ BY WHAT AN ARMOR MINT LEAVES
 
+> **RUN on `37292713`, 2026-11-26, by reference from `GATE-broken-bottle.md`: DID NOT TEST WHAT IT WAS MEANT TO.** Its own
+> level 1 locks `/recipes` (`Crafting unlocks at level 3`), so the row SKIPPED at the click. AS15R2 is owed. The lines are
+> in that file's READINGS.
+
 **READ, `InventoryCraft.commitCraft`:**
 - The `CRAFT minted` line is logged only `if (definition instanceof WeaponDefinition)`, so **an armor craft logs no
   line.**
