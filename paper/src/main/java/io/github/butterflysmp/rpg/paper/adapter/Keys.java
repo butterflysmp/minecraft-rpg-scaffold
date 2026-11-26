@@ -229,6 +229,12 @@ public final class Keys {
     public final NamespacedKey orb;
 
     /**
+     * A FUSED CHUNK'S BODY (the seat's F2, 2026-11-26, the Blast Fungus): a BYTE. A body carrying it that no live chunk
+     * owns ({@code FusedChunks.ownsMarker}) is an orphan, swept where it appears ({@code FusedRemovals}).
+     */
+    public final NamespacedKey fused;
+
+    /**
      * F21 (the seat's queue, item 4, 2026-11-19): THE SERVER TICK THE PHALANX'S BLINK COOLDOWN ENDS, a LONG on the live
      * mob, written when a blink lands. A Phalanx loaded again resumes what is left of it ({@code MobShooter}).
      */
@@ -504,6 +510,7 @@ public final class Keys {
         this.beamRoot = new NamespacedKey(plugin, "beam_root");
         this.mobShot = new NamespacedKey(plugin, "mob_shot");
         this.orb = new NamespacedKey(plugin, "orb");
+        this.fused = new NamespacedKey(plugin, "fused_chunk");
         this.blinkReadyAt = new NamespacedKey(plugin, "blink_ready_at");
         this.mobShield = new NamespacedKey(plugin, "mob_shield");
         this.mobStationary = new NamespacedKey(plugin, "mob_stationary");

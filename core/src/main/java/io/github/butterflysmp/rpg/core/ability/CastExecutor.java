@@ -606,6 +606,15 @@ public final class CastExecutor {
 
     /** One body, down one direction. The spread above is N of these; everything else is one. */
     private void launchOne(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
+        // A FUSED CHUNK (the seat's F1 to F3, 2026-11-26, the Blast Fungus): it rests on a block, goes off on its fuse or
+        // on a mob it touches in flight, and its on_hit is a detonation where it is (FusedPayload, EffectApplier). Each
+        // body of a spread is its own chunk with its own fuse (F5). The press already paid once, in commit (F6).
+        if (spec.fused()) {
+            ProjectileFlight.launchFused(world, caster, aim.origin(), aim.direction().scale(spec.speed()), spec.gravity(),
+                    spec.fuseTicks(), new ProjectileFlight.Look(spec.trail(), spec.item(), null),
+                    (point, cause) -> effects.detonateFused(ability.onHit(), caster, point));
+            return;
+        }
         // AIRBURST (2026-11-23): a behaviour of the weapon that made this cast may end the flight at a TRAVEL distance
         // and split it. Only when that distance is reached inside the authored lifetime; otherwise the shot flies as
         // authored and never splits (it cannot travel that far).

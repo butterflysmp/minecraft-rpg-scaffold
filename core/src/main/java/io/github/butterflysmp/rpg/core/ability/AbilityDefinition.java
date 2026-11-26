@@ -33,6 +33,7 @@ public record AbilityDefinition(
         // leave it empty). Absent -> empty, never null.
         description = description == null ? List.of() : List.copyOf(description);
         onCast = onCast == null ? List.of() : List.copyOf(onCast);
+        FusedPayload.check(id, cast, onHit);
     }
 
     /**

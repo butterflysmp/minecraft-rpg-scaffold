@@ -906,6 +906,8 @@ public final class RpgPlugin extends JavaPlugin {
             // And an orb's body no live orb owns (Lapis Crystal's D2, B6's sweep): at enable, none is live, so any is an orphan.
             for (org.bukkit.entity.Entity e : world.getEntities()) {
                 scheduler.onEntity(e, () -> io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.sweep(adapters, e));
+                // And a fused chunk's body no live chunk owns (the seat's F2, 2026-11-26): at enable none is live.
+                scheduler.onEntity(e, () -> io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.sweep(adapters, e));
                 // And a summon body no live summon owns (3b, D7): at enable none is live, so any tagged body is an orphan.
                 scheduler.onEntity(e, () -> io.github.butterflysmp.rpg.paper.summon.SummonRemovals.sweep(adapters, e));
             }
@@ -1212,6 +1214,7 @@ OLD
         if (selfTest != null) selfTest.onDisable();
         // EVERY ORB, AT STOP (Lapis Crystal's D2, B6): removed before the worlds save, each with its ORB removed cause=stop line.
         if (adapters != null) io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.removeAll(adapters);
+        if (adapters != null) io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAll(adapters);   // F2: every fused chunk at stop, cause=stop
         if (adapters != null) io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAll(adapters);   // 3b, D7: stop
         // THE MIRROR IS NEVER SAVED (2026-11-22): after the selftest's own restore, every online player's Nexus slot goes back
         // to the star before the server writes the inventories.

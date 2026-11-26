@@ -1228,18 +1228,21 @@ public final class RpgListeners implements Listener {
     @EventHandler
     public void onOrbBodyAppear(EntityAddToWorldEvent event) {
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.sweepAppeared(adapters, event.getEntity());
+        io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.sweepAppeared(adapters, event.getEntity());   // F2: and a fused chunk's orphan body
     }
 
     /** His orb goes when he dies (Lapis Crystal's D2, B6). Its own handler, beside the death handling below. */
     @EventHandler
     public void onOrbOwnerDeath(PlayerDeathEvent event) {
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "death");
+        io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(), "death");   // F2
     }
 
     /** And when he changes world (D2, B6): an orb never outlives his presence in its world. */
     @EventHandler
     public void onOrbOwnerChangedWorld(org.bukkit.event.player.PlayerChangedWorldEvent event) {
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "world_change");
+        io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(), "world_change");   // F2
     }
 
     // ============================================================== THE SUMMON'S LIFECYCLE (3b, D7; the seat's Q4)
@@ -2511,6 +2514,8 @@ public final class RpgListeners implements Listener {
         adapters.behaviourHits().chains().forgetPlayer(event.getPlayer().getUniqueId());
         // And his orb (Lapis Crystal's D2, B6: removed on his quit).
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "quit");
+        // And his fused chunks (the seat's F2, 2026-11-26: removed on his quit; none goes off after he leaves).
+        io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(), "quit");
         // And his summons (3b, D7: removed on his quit).
         io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(),
                 io.github.butterflysmp.rpg.core.summon.SummonRemoval.QUIT);

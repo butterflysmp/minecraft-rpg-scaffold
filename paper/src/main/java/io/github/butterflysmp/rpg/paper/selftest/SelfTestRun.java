@@ -125,7 +125,9 @@ final class SelfTestRun {
             // selftest tag, so removeTagged never takes one. Cause CLEAR, as clear_state's; each logs its SUMMON removed line.
             int summons = io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(service.adapters(),
                     player.getUniqueId(), io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);
-            log("CLEAN blocks=" + blocks + " " + SelfTestStaging.readBackField(rowBlocks.readBack(), blocks) + " removed=" + removed + " summons=" + summons + " inventory=" + (gateBoundary ? "restored" : "kept")
+            // AND HIS FUSED CHUNKS (the seat's F2, 2026-11-26): a chunk left from the last row never goes off in this one.
+            int fused = io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(service.adapters(), player.getUniqueId(), "selftest");
+            log("CLEAN blocks=" + blocks + " " + SelfTestStaging.readBackField(rowBlocks.readBack(), blocks) + " removed=" + removed + " summons=" + summons + " fused=" + fused + " inventory=" + (gateBoundary ? "restored" : "kept")
                     + (worn == null ? "" : " " + worn)
                     + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ()));
             log(SelfTestStaging.lingerLine(SelfTestStaging.LINGER_RADIUS, endWork(start), endLingering(start)));
@@ -658,6 +660,7 @@ final class SelfTestRun {
         // (CC'S CALL: the clear_state cause; the alternative is a new END cause in the core's eleven). discard runs inline.
         restored += " summons=" + io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(service.adapters(),
                 player.getUniqueId(), io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);
+        restored += " fused=" + io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(service.adapters(), player.getUniqueId(), "selftest");   // F2: no chunk outlives a run
         // THE MIRROR (2026-11-22): the restore may have put back a mirror from RUN START; drawn again from what he holds
         // now, so no restore leaves arrows where his star should be. The quit and disable paths then put the star back.
         io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, service.adapters().keys());

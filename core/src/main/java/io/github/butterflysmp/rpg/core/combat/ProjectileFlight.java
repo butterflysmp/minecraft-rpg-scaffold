@@ -435,6 +435,109 @@ public final class ProjectileFlight {
         return best;
     }
 
+    /** Where a fused chunk went off, and why ({@code fuse} or {@code touch}). */
+    @FunctionalInterface
+    public interface Detonation {
+        void at(Vec3 point, String cause);
+    }
+
+    /**
+     * THROW A FUSED CHUNK (the seat's F1 and F2, 2026-11-26, the Blast Fungus). Its decisions are {@link FuseRules}'
+     * table, asked once a step; its life is {@link FusedChunks}', which is the only way it goes off: the step takes it out
+     * of the store first, so a chunk removed meanwhile (his quit, the selftest's clear) never goes off, and one that has
+     * gone off is never removed again.
+     *
+     * <p><b>WHAT CHANGED FROM AN ORDINARY FLIGHT (READ, {@link #step}):</b> an ordinary flight that meets a block resolves
+     * there and removes its body. A fused one comes to REST at the point it met the block: the body is driven by the
+     * remaining displacement on that tick (the witnessed mechanism, a velocity, never a reposition: see {@link #resolve})
+     * and then driven by a ZERO step every resting tick, so it stays where the flight put it; the platform's own gravity
+     * is already off on a marker ({@code spawnMarker}). It goes off at the FLIGHT'S point, never the body's: a body pushed
+     * by water, a piston or an explosion moves the look only, as for every flight ({@code castRay} owns resolution).
+     *
+     * <p>{@code velocity} is the first step (direction x speed); {@code gravity} is taken off the vertical each flying
+     * tick. The body is an ITEM ({@code look.item()}) or none ({@code CastSpec.Projectile} refuses a {@code body:}), and
+     * its armed despawn is the fuse ({@code spawnMarker}'s expected lifetime): the backstop.
+     *
+     * @return the chunk's id in the store
+     */
+    public static long launchFused(CombatWorld world, Caster caster, Vec3 origin, Vec3 velocity, double gravity,
+                                   int fuseTicks, Look look, Detonation onDetonate) {
+        if (fuseTicks < 1) throw new IllegalArgumentException("a fuse is 1 tick or more, was " + fuseTicks);
+        UUID markerId = look.item() == null ? null : world.spawnMarker(origin, look.item(), fuseTicks);
+        long id = world.fusedChunks().add(caster.id(), markerId, origin);
+        if (markerId != null) world.claimFusedBody(markerId);   // AFTER the store owns it (the orb's order)
+        world.traceFused(caster.id(), id, "throw", origin, null);
+        stepFused(world, caster, id, markerId, origin, velocity, gravity, fuseTicks, 0, FuseRules.Phase.FLYING, look,
+                onDetonate);
+        return id;
+    }
+
+    private static void stepFused(CombatWorld world, Caster caster, long id, UUID markerId, Vec3 position, Vec3 velocity,
+                                  double gravity, int fuseTicks, int elapsed, FuseRules.Phase phase, Look look,
+                                  Detonation onDetonate) {
+        // A REMOVAL TOOK IT (quit, death, world change, stop, the selftest's clear): it never goes off, and the removal
+        // already discarded the body. Nothing more is scheduled.
+        if (!world.fusedChunks().live(id)) return;
+        if (phase == FuseRules.Phase.FLYING && look.trail() != null && elapsed > 0) world.present(position, look.trail());
+
+        FuseRules.Touch touch = FuseRules.Touch.NOTHING;
+        Vec3 met = null;
+        if (FuseRules.traces(phase, elapsed, fuseTicks)) {
+            Optional<RayHit> hit = world.castRay(position, position.add(velocity), caster.id(),
+                    io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER);
+            if (hit.isPresent()) {
+                Combatant body = hit.get().combatant();
+                if (body == null) {
+                    touch = FuseRules.Touch.BLOCK;
+                    met = hit.get().point();
+                } else if (io.github.butterflysmp.rpg.core.mob.MobHostility.harms(
+                        io.github.butterflysmp.rpg.core.mob.MobHostility.ENGINE_ATTACKER, body.state().side(), false,
+                        io.github.butterflysmp.rpg.core.mob.MobHostility.PvpPath.FUSED_BURST)) {
+                    touch = FuseRules.Touch.MOB;
+                    met = hit.get().point();
+                }
+                // A body the table spares (another player) is no touch: the chunk flies on through it (FuseRules).
+            }
+        }
+
+        switch (FuseRules.decide(phase, elapsed, fuseTicks, touch)) {
+            case DETONATE_FUSE -> detonateFused(world, id, markerId, position, "fuse", onDetonate);
+            case DETONATE_TOUCH -> detonateFused(world, id, markerId, met, "touch", onDetonate);
+            case REST -> {
+                // The body sits at this step's start; one drive by the remaining displacement carries it to the rest point.
+                if (markerId != null) world.driveMarker(markerId, met.subtract(position));
+                world.fusedChunks().moved(id, met, true);
+                world.traceFused(caster.id(), id, "rest", met, null);
+                Vec3 rest = met;
+                world.schedule(rest, 1, () -> stepFused(world, caster, id, markerId, rest, Vec3.ZERO, gravity, fuseTicks,
+                        elapsed + 1, FuseRules.Phase.RESTING, look, onDetonate));
+            }
+            case STAY -> {
+                if (markerId != null) world.driveMarker(markerId, Vec3.ZERO);   // held still: no drift between ticks
+                world.schedule(position, 1, () -> stepFused(world, caster, id, markerId, position, Vec3.ZERO, gravity,
+                        fuseTicks, elapsed + 1, FuseRules.Phase.RESTING, look, onDetonate));
+            }
+            case FLY_ON -> {
+                Vec3 next = position.add(velocity);
+                if (markerId != null) world.driveMarker(markerId, velocity);
+                world.fusedChunks().moved(id, next, false);
+                Vec3 nextVelocity = velocity.add(new Vec3(0, -gravity, 0));
+                world.schedule(next, 1, () -> stepFused(world, caster, id, markerId, next, nextVelocity, gravity,
+                        fuseTicks, elapsed + 1, FuseRules.Phase.FLYING, look, onDetonate));
+            }
+        }
+    }
+
+    /** EXACTLY ONCE: only the caller that takes the chunk out of the store sets it off. */
+    private static void detonateFused(CombatWorld world, long id, UUID markerId, Vec3 at, String cause,
+                                      Detonation onDetonate) {
+        Optional<FusedChunks.Chunk> taken = world.fusedChunks().take(id);
+        if (taken.isEmpty()) return;
+        resolve(world, markerId);
+        world.traceFused(taken.get().owner(), id, "detonate", at, cause);
+        onDetonate.at(at, cause);
+    }
+
     /**
      * Retire the body when the bolt resolves.
      *
