@@ -64,10 +64,13 @@ class AccessoryDefinitionTest {
                 }
             }
         }
-        assertEquals(3, loaded, "melee-gauntlet, ranger-quiver, mage-scroll");
+        assertEquals(4, loaded, "melee-gauntlet, ranger-quiver, mage-scroll, mage-tome (H2: two types may name one class)");
         assertEquals(WeaponClass.MELEE, AccessoryType.GAUNTLET.weaponClass());
         assertEquals(WeaponClass.RANGER, AccessoryType.QUIVER.weaponClass());
         assertEquals(WeaponClass.MAGE, AccessoryType.SCROLL.weaponClass());
+        assertEquals(WeaponClass.MAGE, AccessoryType.TOME.weaponClass());
+        assertEquals(4, AccessoryType.values().length, "the one table: four types");
+        // Mutation: TOME(WeaponClass.MELEE) -> the TOME line and the loaded count redden.
     }
 
     /**
@@ -77,11 +80,13 @@ class AccessoryDefinitionTest {
     @Test
     void onlyTheInertMaterialsLoad_andArrowIsRefused() {
         Map<AccessoryStat, Double> m = Map.of(AccessoryStat.DEFENSE, 3.0);
+        // "book" since the Healing Tome (H12): a librarian BUYS books (READ, 26.1.2 trade table), and that is closed by
+        // a merchant guard on our item, not by the material; see MATERIALS' note.
         for (String material : List.of("echo_shard", "netherite_scrap", "shulker_shell", "prismarine_crystals",
-                "ECHO_SHARD")) {
+                "book", "ECHO_SHARD")) {
             build(material, AccessorySlotKind.UNIVERSAL, null, null, m);
         }
-        for (String refused : List.of("arrow", "paper", "leather", "rabbit_hide", "iron_helmet",
+        for (String refused : List.of("arrow", "paper", "writable_book", "enchanted_book", "leather", "rabbit_hide", "iron_helmet",
                 "carved_pumpkin", "bread", "stone")) {
             assertTrue(refusal(() -> build(refused, AccessorySlotKind.UNIVERSAL, null, null, m))
                     .contains("must be one of"), refused);
@@ -109,6 +114,22 @@ class AccessoryDefinitionTest {
         withNull.put(AccessoryStat.DEFENSE, null);
         assertTrue(refusal(() -> build("echo_shard", AccessorySlotKind.UNIVERSAL, null, null, withNull))
                 .contains("finite, non-zero"));
+    }
+
+    /** H1: an accessory with a behaviour and no modifiers LOADS; with neither it is still refused. */
+    @Test
+    void noModifiersLoadsOnlyWithABehaviour() {
+        AccessoryBehaviour pulse = new AccessoryBehaviour.HealingPulse("Radiant Pulse", 1.0, 80, 8.0,
+                AccessoryBehaviour.Targets.PLAYERS, null, 0, null, null);
+        AccessoryDefinition tome = new AccessoryDefinition("t", "T", Rarity.RARE, "book", AccessorySlotKind.CLASS,
+                WeaponClass.MAGE, AccessoryType.TOME, Map.of(), List.of(), pulse);
+        assertTrue(tome.modifiers().isEmpty());
+        assertEquals(pulse, tome.behaviour());
+        assertTrue(refusal(() -> new AccessoryDefinition("t", "T", Rarity.RARE, "book", AccessorySlotKind.CLASS,
+                WeaponClass.MAGE, AccessoryType.TOME, Map.of(), List.of(), null)).contains("no modifiers"));
+        // The nine-argument form (every shipped modifier accessory) carries no behaviour.
+        assertEquals(null, AccessoryFixtures.wardCharm().behaviour());
+        // Mutation: drop the "&& behaviour == null" from the empty-modifiers refusal -> the tome line reddens.
     }
 
     @Test

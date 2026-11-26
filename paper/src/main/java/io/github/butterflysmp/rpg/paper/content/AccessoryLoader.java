@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.content;
 
+import io.github.butterflysmp.rpg.core.accessory.AccessoryBehaviour;
 import io.github.butterflysmp.rpg.core.accessory.AccessoryNegatives;
 import io.github.butterflysmp.rpg.core.accessory.AccessorySlotKind;
 import io.github.butterflysmp.rpg.core.accessory.AccessoryStat;
@@ -132,7 +133,7 @@ public final class AccessoryLoader {
             type = AccessoryType.fromName(typeToken);
             if (type == null) {
                 throw new IllegalArgumentException("accessory '" + id + "' has unknown type '"
-                        + typeToken + "'; expected gauntlet, quiver or scroll");
+                        + typeToken + "'; expected one of " + Arrays.stream(AccessoryType.values()).map(AccessoryType::token).toList());
             }
         }
 
@@ -165,7 +166,73 @@ public final class AccessoryLoader {
         }
 
         return new AccessoryDefinition(id, displayName, rarity, s.getString("material"), slot,
-                accessoryClass, type, modifiers, s.getStringList("flavor"));
+                accessoryClass, type, modifiers, s.getStringList("flavor"), parseBehaviour(id, s));
+    }
+
+    /**
+     * The optional {@code behaviour:} block (the seat's H1, 2026-11-26): ONE behaviour, its type and parameters. Absent is
+     * null. A malformed block refuses the file by name, as a bad modifier does.
+     *
+     * <pre>
+     * behaviour:
+     *   type: healing_pulse
+     *   name: "Radiant Pulse"
+     *   heal_per_level: 1
+     *   interval_ticks: 80
+     *   radius: 8
+     *   targets: players
+     *   particle: happy_villager    # optional feedback, each may be omitted
+     *   particle_count: 6
+     *   heart_particle: heart
+     *   sound: block.amethyst_block.chime
+     * </pre>
+     */
+    static AccessoryBehaviour parseBehaviour(String id, ConfigurationSection s) {
+        ConfigurationSection b = s.getConfigurationSection("behaviour");
+        if (b == null) return null;
+        String typeToken = b.getString("type");
+        if (!"healing_pulse".equalsIgnoreCase(typeToken == null ? "" : typeToken.trim())) {
+            throw new IllegalArgumentException("accessory '" + id + "' has unknown behaviour type '" + typeToken
+                    + "'; expected healing_pulse");
+        }
+        String targetsToken = b.getString("targets");
+        AccessoryBehaviour.Targets targets = AccessoryBehaviour.Targets.fromName(targetsToken);
+        if (targets == null) {
+            throw new IllegalArgumentException("accessory '" + id + "' healing_pulse has targets '" + targetsToken
+                    + "'; expected players");
+        }
+        String particle = b.getString("particle");
+        String heart = b.getString("heart_particle");
+        for (String p : new String[] {particle, heart}) {
+            if (p != null && !p.isBlank() && !isParticle(p)) {
+                throw new IllegalArgumentException("accessory '" + id + "' healing_pulse has unknown particle '" + p + "'");
+            }
+        }
+        try {
+            return new AccessoryBehaviour.HealingPulse(b.getString("name"),
+                    number(id, b, "heal_per_level"), (int) number(id, b, "interval_ticks"), number(id, b, "radius"),
+                    targets, particle, b.getInt("particle_count", 0), heart, b.getString("sound"));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("accessory '" + id + "': " + ex.getMessage());
+        }
+    }
+
+    private static double number(String id, ConfigurationSection b, String key) {
+        if (!b.isDouble(key) && !b.isInt(key)) {
+            throw new IllegalArgumentException("accessory '" + id + "' healing_pulse " + key + " is not a number: "
+                    + b.get(key));
+        }
+        return b.getDouble(key);
+    }
+
+    /** A Bukkit particle by its name, as {@code MobLoader} resolves one. */
+    private static boolean isParticle(String name) {
+        try {
+            org.bukkit.Particle.valueOf(name.trim().toUpperCase(java.util.Locale.ROOT));
+            return true;
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     private static WeaponClass weaponClass(String token) {

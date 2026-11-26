@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
+import io.github.butterflysmp.rpg.core.accessory.AccessoryBehaviour;
 import io.github.butterflysmp.rpg.core.accessory.AccessorySlotKind;
 import io.github.butterflysmp.rpg.core.accessory.AccessoryStat;
 import io.github.butterflysmp.rpg.core.accessory.AccessoryType;
@@ -51,15 +52,32 @@ public record AccessoryDefinition(
         WeaponClass accessoryClass,
         AccessoryType type,
         Map<AccessoryStat, Double> modifiers,
-        List<String> flavor
+        List<String> flavor,
+        AccessoryBehaviour behaviour
 ) implements GearDefinition {
 
     /**
      * The only base materials an accessory may mint onto -- see the class note for what makes each
      * inert. A new material joins here with its reason in {@code PLAN-accessories.md} §3.7's table.
+     *
+     * <p><b>{@code book} is the one that is NOT inert by itself</b> (the Healing Tome, Ben's material, 2026-11-26). READ in
+     * the 26.1.2 server jar: a level-2 librarian BUYS books ({@code villager_trade/librarian/2/book_emerald.json}) and four
+     * librarian trades take one as a second cost; the {@code bookshelf_books} tag lets a chiseled bookshelf take one; the
+     * {@code lectern_books} tag does NOT (written and writable books only); recipes use one (book and quill, bookshelf,
+     * enchanting table); and the enchanting table, anvil and grindstone would take one. Each is closed FOR A MINTED
+     * ACCESSORY ONLY, never for a plain book: the merchant and chiseled-bookshelf guards in {@code RpgListeners}
+     * ({@code onAccessoryTrade}, {@code onAccessoryShelved}), the crafting guards' {@code isGear} (which knows
+     * {@code accessory_id}), and the three hijacked stations' A4 refusals. {@code PLAN-healing-tome.md} H12 has the table.
      */
     public static final Set<String> MATERIALS =
-            Set.of("echo_shard", "netherite_scrap", "shulker_shell", "prismarine_crystals");
+            Set.of("echo_shard", "netherite_scrap", "shulker_shell", "prismarine_crystals", "book");
+
+    /** Every shipped accessory before the Healing Tome: modifiers only, no behaviour. */
+    public AccessoryDefinition(String id, String displayName, Rarity rarity, String material, AccessorySlotKind slot,
+                               WeaponClass accessoryClass, AccessoryType type, Map<AccessoryStat, Double> modifiers,
+                               List<String> flavor) {
+        this(id, displayName, rarity, material, slot, accessoryClass, type, modifiers, flavor, null);
+    }
 
     public AccessoryDefinition {
         if (id == null || id.isBlank()) {
@@ -93,7 +111,7 @@ public record AccessoryDefinition(
                 if (accessoryClass == null || type == null) {
                     throw new IllegalArgumentException("accessory '" + id + "' is slot: class and"
                             + " must name both a class (melee, ranger, mage) and a type"
-                            + " (gauntlet, quiver, scroll)");
+                            + " (gauntlet, quiver, scroll, tome)");
                 }
                 if (type.weaponClass() != accessoryClass) {
                     throw new IllegalArgumentException("accessory '" + id + "' is type: "
@@ -103,7 +121,9 @@ public record AccessoryDefinition(
                 }
             }
         }
-        if (modifiers == null || modifiers.isEmpty()) {
+        if (modifiers == null) modifiers = Map.of();
+        // H1 (the seat, 2026-11-26): no modifiers is allowed ONLY beside a behaviour, which is then what the tooltip shows.
+        if (modifiers.isEmpty() && behaviour == null) {
             throw new IllegalArgumentException("accessory '" + id + "' has no modifiers -- an"
                     + " accessory that changes nothing has nothing to show on its tooltip");
         }
@@ -120,7 +140,7 @@ public record AccessoryDefinition(
                         + " only a class accessory may carry it");
             }
         }
-        modifiers = Collections.unmodifiableMap(new EnumMap<>(modifiers));
+        modifiers = modifiers.isEmpty() ? Map.of() : Collections.unmodifiableMap(new EnumMap<>(modifiers));
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
     }
 

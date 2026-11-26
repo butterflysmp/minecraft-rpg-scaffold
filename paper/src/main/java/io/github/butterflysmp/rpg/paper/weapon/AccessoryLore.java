@@ -26,6 +26,15 @@ public final class AccessoryLore {
         List<Component> lore = new ArrayList<>();
         String classLabel = classLabel(accessory);
 
+        // H11: a behaviour's lines go where the modifier lines are, above them: its name in gold (a weapon ability's name
+        // colour), then what it does in gray. The text is AccessoryLoreLines.behaviour, every number from the YAML.
+        if (accessory.behaviour() != null) {
+            List<String> lines = AccessoryLoreLines.behaviour(accessory.behaviour());
+            for (int i = 0; i < lines.size(); i++) {
+                lore.add(GearLore.plain(lines.get(i), i == 0 ? NamedTextColor.GOLD : NamedTextColor.GRAY));
+            }
+        }
+
         List<Map.Entry<AccessoryStat, Double>> ordered = new ArrayList<>(accessory.modifiers().entrySet());
         // Bonuses first, drawbacks last -- the same order AccessoryLoreLines.modifiers gives.
         ordered.sort((a, b) -> Boolean.compare(

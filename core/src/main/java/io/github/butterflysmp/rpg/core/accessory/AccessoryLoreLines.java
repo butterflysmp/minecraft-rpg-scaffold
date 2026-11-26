@@ -90,7 +90,25 @@ public final class AccessoryLoreLines {
     public static String sheetLine(String plainName, AccessoryDefinition accessory, boolean active,
                                    String classLabel) {
         if (!active) return plainName + ": inactive (requires " + className(accessory) + ")";
-        return plainName + ": " + String.join(", ", modifiers(accessory, classLabel));
+        List<String> parts = new ArrayList<>();
+        if (accessory.behaviour() != null) parts.add(accessory.behaviour().name());   // H11: "Healing Tome: Radiant Pulse"
+        parts.addAll(modifiers(accessory, classLabel));
+        return plainName + ": " + String.join(", ", parts);
+    }
+
+    /**
+     * A behaviour's tooltip lines (the seat's H11; SEAT PLACEHOLDER 2026-11-26 wording), every number read from the
+     * behaviour itself so none is typed twice: its name, then what it does.
+     * {@code Radiant Pulse} / {@code Every 4s, heals hurt players within 8 blocks} / {@code for 1 health per your level}.
+     */
+    public static List<String> behaviour(AccessoryBehaviour behaviour) {
+        return switch (behaviour) {
+            case AccessoryBehaviour.HealingPulse p -> List.of(
+                    p.name(),
+                    "Every " + plain(BigDecimal.valueOf(p.intervalTicks()).divide(BigDecimal.valueOf(20))) + "s, heals hurt "
+                            + p.targets().token() + " within " + plain(BigDecimal.valueOf(p.radius())) + " blocks",
+                    "for " + plain(BigDecimal.valueOf(p.healPerLevel())) + " health per your level");
+        };
     }
 
     /** The heading of the stats-sheet block. */

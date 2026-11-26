@@ -1,0 +1,39 @@
+# The MAGE class accessory with a behaviour -- worn only in slot 0, only by a profile whose class is mage.
+#
+# BEN, 2026-11-26: "I want it to be a mage specific class accessory. Keeping the Radiant pulse ability but it's active at
+# all times." / "Heals 1 health per the players level that has it equipped. A level 50 player would heal 50. Pulse every
+# 4 seconds. 8 block radius" / "No mana cost" / "It heals you and any players near you" / "Only heals when someone is
+# hurt" / "No, it's only the healing pulse" / "Rare Book" / "Loot only". Mending Touch is gone.
+#
+# CARRIED, in Ben's words (H7): "This will change when we add a party system to heal only players and their Summons
+# within your party." Until then: players only, never a mob or a summon.
+#
+# LOOT ONLY (H14): no source is built. Until the loot pass it is obtainable only by /rpg give healing_tome.
+#
+# NO MODIFIERS, on purpose (H1): an accessory may carry no modifiers only because it carries a behaviour.
+
+display_name: "Healing Tome"
+rarity: rare
+
+# book: Ben's material. NOT inert by itself -- a librarian buys books and a chiseled bookshelf takes them. Each route is
+# closed for a minted accessory only; see AccessoryDefinition.MATERIALS and PLAN-healing-tome.md H12.
+material: book
+
+slot: class
+class: mage
+type: tome
+
+behaviour:
+  type: healing_pulse
+  # SEAT PLACEHOLDER 2026-11-26: the old game's ability name.
+  name: "Radiant Pulse"
+  heal_per_level: 1          # Ben: "1 health per the players level"
+  interval_ticks: 80         # Ben: "every 4 seconds" (20 ticks a second)
+  radius: 8                  # Ben: "8 block radius", feet to feet
+  targets: players           # Ben: "you and any players near you"
+  # H9, SEAT PLACEHOLDER 2026-11-26 (the old game's feedback): on each player actually healed, a few happy-villager
+  # particles, one heart, and a soft sound to that player. Nothing when nobody is healed.
+  particle: happy_villager
+  particle_count: 6
+  heart_particle: heart
+  sound: block.amethyst_block.chime

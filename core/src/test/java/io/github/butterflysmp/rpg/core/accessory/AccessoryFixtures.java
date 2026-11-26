@@ -40,6 +40,17 @@ final class AccessoryFixtures {
                 AccessoryStat.CRIT_CHANCE, -0.03));
     }
 
+    /** The Healing Tome as shipped (healing_tome.yml): no modifiers, one Radiant Pulse. */
+    static AccessoryBehaviour.HealingPulse radiantPulse() {
+        return new AccessoryBehaviour.HealingPulse("Radiant Pulse", 1.0, 80, 8.0, AccessoryBehaviour.Targets.PLAYERS,
+                "happy_villager", 6, "heart", "block.amethyst_block.chime");
+    }
+
+    static AccessoryDefinition healingTome() {
+        return new AccessoryDefinition("healing_tome", "Healing Tome", Rarity.RARE, "book", AccessorySlotKind.CLASS,
+                WeaponClass.MAGE, AccessoryType.TOME, Map.of(), List.of(), radiantPulse());
+    }
+
     static WeaponClass ranger() {
         return WeaponClass.RANGER;
     }
