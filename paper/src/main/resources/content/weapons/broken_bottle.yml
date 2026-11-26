@@ -1,0 +1,44 @@
+# THE BROKEN BOTTLE (the seat's brief of 2026-11-25; docs/plans/PLAN-broken-bottle.md). Ben, verbatim: "I would like to
+# pull an old melee weapon from the old repo. The broken bottle." / "1. 18 Damage, 2.0 Speed. +10% Crit Chance 2. Yes it's
+# damage scales with gear score. Not it's crit chance 3. No sweep 4. Common Kinetic, outside of the tiers 5. Only lootable
+# from Shipwrecks and Sunken Treasure 6. Sharpened Glass - +5/10/15% Crit Chance". Ben's numbers REPLACE the old game's
+# (BROKEN_BOTTLE at CreaperCrusher/Butterfly-SMP cfde822: damage 20, +30% crit).
+#
+# WHAT EACH KEY DOES HERE:
+#   attack_damage 18      BEN. Scaled by the gear score exactly as a sword's is (K1): 18 x score / 100.
+#   attack_speed 2.0      BEN. The wielder's attack-speed attribute while it is held (AttackSpeedAttributeOverride).
+#   crit_chance 0.10      BEN ("+10% Crit Chance"). FLAT (BEN: "Not it's crit chance"): one source, "weapon:MAIN_HAND",
+#                         in the ONE crit-chance reconcile, present exactly while this is the weapon in the main hand (K2).
+#   NO sweep key          BEN ("No sweep"). Absent is 0, and the sweep rider cancels a sweep from a weapon whose share is 0
+#                         (K4, READ: RpgListeners.onPlayerSweepAttack). Pinned by BrokenBottleContentTest.
+#   NO craft_result       BEN ("outside of the tiers"): no vanilla craft mints it, and no recipe file names it (K5).
+#   material glass_bottle the old game's item. A custom look is not in this slice. The glass bottle has NO durability (K6,
+#                         READ: Items registers it with a bare Item.Properties()), so it never wears or breaks.
+#                         Filling it, at a water source, a cauldron, a beehive or with dragon's breath, is blocked for
+#                         this item only (K7, MintedBottleUse).
+#
+# OBTAINED: ONLY BY /rpg give until the world-loot pass (K8, BEN: "We will do loot from the world in a separate pass").
+# It is in NO loot source and NO dev source. Ben: "Only lootable from Shipwrecks and Sunken Treasure" (Sunken Treasure is
+# BOTH buried treasure and underwater ruin chests); chances: "Leave it for now". Carried in PLAN-broken-bottle.md.
+#
+# Reach 3.0 and arc 120 are the swords' (SEAT PLACEHOLDER 2026-11-25). No flavor: Ben has given none (SEAT PLACEHOLDER
+# 2026-11-25, open for Ben); a weapon loads cleanly without it.
+
+id: broken_bottle
+display_name: "Broken Bottle"
+element: kinetic
+rarity: common
+class: melee
+material: glass_bottle
+attack_damage: 18
+attack_speed: 2.0
+crit_chance: 0.10
+triggers:
+  left_click:
+    cast:
+      type: melee
+      reach: 3.0          # SEAT PLACEHOLDER 2026-11-25: the swords'
+      arc_degrees: 120    # SEAT PLACEHOLDER 2026-11-25: the swords'
+    on_hit:
+      - type: weapon_damage
+        element: kinetic

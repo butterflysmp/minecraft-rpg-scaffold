@@ -58,6 +58,14 @@
    "and whatever was lying around." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Ranged Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- broken_bottle
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["18" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["2.0" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Crit Chance: " color=#AAAAAA O=. B=. S=. U=. I=F ["+10%" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- copper_sword
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -736,4 +744,4 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 107 renderings ===
+=== 108 renderings ===

@@ -2240,6 +2240,50 @@ public final class RpgListeners implements Listener {
      * {@code craftItemResult} fires this event by contract -- and it passes, because the matrix was
      * already screened and holds nothing of ours.
      */
+    /**
+     * K7 (2026-11-25): a right click with a MINTED glass bottle (the Broken Bottle) never fills it. The item's own use is
+     * denied (a water source, a dragon's breath cloud), and so is the block's, on the three blocks that take a bottle (a
+     * water cauldron, a beehive, a bee nest), so a chest still opens with it in hand. Either hand: a minted bottle in the
+     * off hand would be destroyed the same way. A plain glass bottle is untouched. The READs are on {@code MintedBottleUse}.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onMintedBottleUse(PlayerInteractEvent event) {
+        Action action = event.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+        if (!mintedBottle(event.getItem())) return;
+        event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+        Block clicked = event.getClickedBlock();
+        if (action == Action.RIGHT_CLICK_BLOCK && clicked != null
+                && io.github.butterflysmp.rpg.paper.weapon.MintedBottleUse.denyBlock(clicked.getType().getKey().getKey())) {
+            event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
+        }
+    }
+
+    /** K7: a dispenser never fills a minted bottle (READ: {@code DispenseItemBehavior$10} fires this event first). */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onMintedBottleDispense(org.bukkit.event.block.BlockDispenseEvent event) {
+        if (mintedBottle(event.getItem())) event.setCancelled(true);
+    }
+
+    /**
+     * K7: a minted item is never a brewing ingredient. A glass bottle may SIT in a potion slot (READ:
+     * {@code BrewingStandMenu$PotionSlot.mayPlaceItem}); a brew with any minted item in the stand is cancelled, so it can
+     * never be turned into a potion, whatever mix a later version or plugin adds. FAILS CLOSED: the other slots wait too.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onMintedGearBrew(org.bukkit.event.inventory.BrewEvent event) {
+        boolean gear = switch (CraftMatrixScreen.verdict(event.getContents().getContents(), adapters.keys())) {
+            case CONTAINS_GEAR -> true;
+            case VANILLA_ELIGIBLE -> false;
+        };
+        if (gear) event.setCancelled(true);
+    }
+
+    private boolean mintedBottle(org.bukkit.inventory.ItemStack item) {
+        return item != null && io.github.butterflysmp.rpg.paper.weapon.MintedBottleUse.isMintedBottle(
+                WeaponItems.weaponId(item, adapters.keys()).isPresent(), item.getType().getKey().getKey());
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPrepareCraft(PrepareItemCraftEvent event) {
         boolean refuse = switch (CraftMatrixScreen.verdict(

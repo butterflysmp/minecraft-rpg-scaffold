@@ -37,7 +37,8 @@ public record WeaponDefinition(
         List<String> flavor,
         Optional<String> craftResult,
         boolean unscored,
-        String ammo
+        String ammo,
+        double critChance
 ) implements GearDefinition {
     /** The item a weapon renders as when its content does not say otherwise: a sword. */
     public static final String DEFAULT_MATERIAL = "iron_sword";
@@ -62,6 +63,12 @@ public record WeaponDefinition(
 
     /** The trigger a vanilla-driven bow or crossbow binds its hit to (see {@link #validateShot}). No input names it. */
     public static final String SHOT_TRIGGER = "shot";
+
+    /**
+     * A weapon that grants no crit chance while held: every weapon but the Broken Bottle (K2, the seat's brief of
+     * 2026-11-25). The same 0-is-absent convention {@code sweep} and {@code quiver_size} use on this record.
+     */
+    public static final double NO_CRIT = 0.0;
 
     public WeaponDefinition {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("weapon id required");
@@ -155,10 +162,29 @@ public record WeaponDefinition(
                     + "' but no quiver_size, so nothing ever loads it");
         }
         ammo = ammoToken == null ? DEFAULT_AMMO : ammoToken;
+        // K2: the held weapon's FLAT crit chance, a probability like an accessory's crit_chance (keen_charm.yml: 0.05).
+        // 0 is absent. Outside [0, 1] is a content bug, refused by name: no roll can mean a chance above 1, and a
+        // negative one would subtract from every other source of the stat. Written as !(in range) so NaN is refused too.
+        if (!(critChance >= 0.0 && critChance <= 1.0)) {
+            throw new IllegalArgumentException("weapon '" + id + "' crit_chance must be in [0, 1], got: " + critChance);
+        }
         triggers = List.copyOf(triggers);
         // Optional authored prose for the tooltip -- absent is empty, never null.
         flavor = flavor == null ? List.of() : List.copyOf(flavor);
         craftResult = CraftResultToken.normalise(craftResult, "weapon", id);
+    }
+
+    /**
+     * The shape WITHOUT {@code crit_chance} (K2, 2026-11-25): every caller written before a weapon could grant crit
+     * chance, which grants none. The loader is the one caller that passes one.
+     */
+    public WeaponDefinition(String id, String displayName, String element, Rarity rarity,
+                            WeaponClass weaponClass, String material, double attackDamage,
+                            double attackSpeed, double sweep, int quiverSize, int reloadTicks,
+                            List<TriggerBinding> triggers, List<String> flavor,
+                            Optional<String> craftResult, boolean unscored, String ammo) {
+        this(id, displayName, element, rarity, weaponClass, material, attackDamage, attackSpeed,
+                sweep, quiverSize, reloadTicks, triggers, flavor, craftResult, unscored, ammo, NO_CRIT);
     }
 
     /**
