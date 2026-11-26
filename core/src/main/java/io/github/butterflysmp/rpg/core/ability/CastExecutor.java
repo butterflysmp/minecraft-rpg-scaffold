@@ -588,12 +588,13 @@ public final class CastExecutor {
             // differ only on a volley's per-shot re-read (the seat's ruling 1: the weapon in hand at each shot), where a
             // weapon swapped in mid-volley lends its behaviours to a cast another weapon pressed. No shipped volley fires a
             // spread, so here it is a belt; Focused Beam's identical check is not (knell_beam's volley is a ray).
-            for (io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active : caster.behaviours()) {
-                if (active.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shatter caps
-                        && ability.id().startsWith(caps.weaponId() + "/")) {
-                    launchStone(ability, caster, aim, spec, active, caps);
-                    return;
-                }
+            // TRUE TOOLTIPS (2026-11-26, T1): the choice is BehaviourCasts.shatter, the same function the tooltip asks.
+            Optional<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> stone =
+                    BehaviourCasts.shatter(ability.id(), spec, caster.behaviours());
+            if (stone.isPresent()) {
+                launchStone(ability, caster, aim, spec, stone.get(),
+                        (io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shatter) stone.get().behaviour());
+                return;
             }
             for (Vec3 direction : SpreadPattern.directionsFor(aim.direction(), aim.right(), spec.spread())) {
                 launchOne(ability, caster, aim.pointing(direction), spec);
@@ -608,15 +609,16 @@ public final class CastExecutor {
         // AIRBURST (2026-11-23): a behaviour of the weapon that made this cast may end the flight at a TRAVEL distance
         // and split it. Only when that distance is reached inside the authored lifetime; otherwise the shot flies as
         // authored and never splits (it cannot travel that far).
-        for (io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active : caster.behaviours()) {
-            if (active.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst burst) {
-                int splitTicks = io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst
-                        .ticksToTravel(burst.travelBlocks(), spec.speed());
-                if (splitTicks < spec.maxLifetimeTicks()) {
-                    launchToSplit(ability, caster, aim, spec, active, burst, splitTicks);
-                    return;
-                }
-            }
+        // TRUE TOOLTIPS (2026-11-26, T1): BehaviourCasts.airburst decides, for the press and for the tooltip alike.
+        Optional<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> splitting =
+                BehaviourCasts.airburst(spec, caster.behaviours());
+        if (splitting.isPresent()) {
+            io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst burst =
+                    (io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst) splitting.get().behaviour();
+            launchToSplit(ability, caster, aim, spec, splitting.get(), burst,
+                    io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst
+                            .ticksToTravel(burst.travelBlocks(), spec.speed()));
+            return;
         }
         ProjectileFlight.launch(world, caster, aim.origin(), aim.direction().scale(spec.speed()),
                 spec.gravity(), spec.maxLifetimeTicks(),
@@ -815,14 +817,12 @@ public final class CastExecutor {
      */
     private void orbShots(AbilityDefinition beam, String beamVisual, Caster caster,
                           io.github.butterflysmp.rpg.core.combat.Orbs.Orb orb) {
-        Optional<Double> beamAmount = beam.onHit().stream()
-                .filter(e -> e instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage)
-                .map(e -> ((io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage) e).amount())
-                .findFirst();
         io.github.butterflysmp.rpg.core.combat.Orbs.Shot shot = orb.shot();
-        if (beamAmount.isEmpty()) return;
-        double percent = shot.percentByLevel().get(Math.max(1, Math.min(orb.level(), shot.percentByLevel().size())) - 1);
-        double amount = beamAmount.get() * percent / 100.0;
+        // TRUE TOOLTIPS (2026-11-26, T1): the shot's amount is BehaviourCasts.orbShotAmount, the one the tooltip prints.
+        java.util.OptionalDouble shotAmount = BehaviourCasts.orbShotAmount(beam.onHit(),
+                new CastSpec.OrbShot(shot.radius(), shot.percentByLevel(), shot.element(), shot.visual()), orb.level());
+        if (shotAmount.isEmpty()) return;
+        double amount = shotAmount.getAsDouble();
         Vec3 centre = orb.restPoint();
         List<Combatant> struck = new java.util.ArrayList<>();
         for (Combatant c : world.combatantsNear(centre, shot.radius())) {
@@ -886,12 +886,8 @@ public final class CastExecutor {
                        io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active,
                        io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Airburst burst, Vec3 point, Vec3 velocity) {
         double amount = burst.damageAt(active.level());
-        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> onHit = new java.util.ArrayList<>();
-        for (io.github.butterflysmp.rpg.core.ability.effect.EffectSpec effect : ability.onHit()) {
-            onHit.add(effect instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage
-                    ? new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(amount, burst.element())
-                    : effect);
-        }
+        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> onHit =
+                BehaviourCasts.replaceDamage(ability.onHit(), amount, burst.element());
         // The burst's damage is the headline now, so a status capped by the payload (scorch) is capped by THIS hit.
         Caster burstCaster = caster.withPayloadDamage(amount);
         Vec3 forward = velocity.lengthSquared() == 0 ? aim.direction() : velocity.normalize();
@@ -927,12 +923,8 @@ public final class CastExecutor {
                              io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active,
                              io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.Shatter caps) {
         double amount = caps.damageAt(active.level());
-        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> onHit = new java.util.ArrayList<>();
-        for (io.github.butterflysmp.rpg.core.ability.effect.EffectSpec effect : ability.onHit()) {
-            onHit.add(effect instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage
-                    ? new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(amount, caps.element())
-                    : effect);
-        }
+        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> onHit =
+                BehaviourCasts.replaceDamage(ability.onHit(), amount, caps.element());
         Caster stoneCaster = caster.withPayloadDamage(amount);
         ProjectileFlight.launch(world, stoneCaster, aim.origin(), aim.direction().scale(caps.speed()), spec.gravity(),
                 caps.splitTicks(), new ProjectileFlight.Look(spec.trail(), caps.item(), null), null,
@@ -1427,12 +1419,14 @@ public final class CastExecutor {
         // javadoc) fires ONE ray in place of every shot, and no further shot is scheduled. The behaviours, the aim and
         // the Caster are the ones this shot just read, so the beam is aimed and priced exactly as the first bolt would be.
         if (shotIndex == 0 && shotSpec.of() instanceof CastSpec.Ray ray) {
-            for (io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active : source.behaviours()) {
-                if (active.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.FocusedBeam beam
-                        && ability.id().startsWith(beam.weaponId() + "/")) {
-                    focusedBeam(shot, source, live, ray, active, beam, pressTick);
-                    return;
-                }
+            // TRUE TOOLTIPS (2026-11-26, T1): BehaviourCasts.focusedBeam decides, for the press and for the tooltip alike.
+            Optional<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> focused =
+                    BehaviourCasts.focusedBeam(ability.id(), ray, source.behaviours());
+            if (focused.isPresent()) {
+                focusedBeam(shot, source, live, ray, focused.get(),
+                        (io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.FocusedBeam) focused.get().behaviour(),
+                        pressTick);
+                return;
             }
         }
 
@@ -1456,12 +1450,8 @@ public final class CastExecutor {
                              io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active,
                              io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.FocusedBeam beam, long pressTick) {
         double amount = beam.damageAt(active.level());
-        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> onHit = new java.util.ArrayList<>();
-        for (io.github.butterflysmp.rpg.core.ability.effect.EffectSpec effect : ability.onHit()) {
-            onHit.add(effect instanceof io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage
-                    ? new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(amount, beam.element())
-                    : effect);
-        }
+        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> onHit =
+                BehaviourCasts.replaceDamage(ability.onHit(), amount, beam.element());
         AbilityDefinition focused = new AbilityDefinition(ability.id(), ability.displayName(), ability.element(),
                 ability.cooldownTicks(), ability.cost(), ability.cast(), onHit, ability.description(), ability.onCast());
         world.traceFocusedBeam(source.id(), ability.id(), aim.origin(), beam.range(), pressTick);
