@@ -334,6 +334,21 @@ public final class WeaponLoreLines {
         return shots > 1 ? OptionalInt.of(shots) : OptionalInt.empty();
     }
 
+    /** The raw payload count of one press, always at least 1: what {@code {shots}} in a description reads (D1). */
+    public static int shotCount(CastSpec cast) {
+        return payloadsOf(cast);
+    }
+
+    /**
+     * A damage figure as a tooltip prints it (true tooltips, 2026-11-26): the true number, rounded to two decimals so
+     * floating-point noise never reaches the screen, with a trailing ".0" dropped. {@code 19.549999999999997 -> "19.55"},
+     * {@code 33.25 -> "33.25"}, {@code 32.0 -> "32"}. CC'S CALL, OPEN FOR BEN: the rounding (the alternative, printing the
+     * double whole as {@code trimNumber} does, shows the noise once an enchant percent multiplies a figure).
+     */
+    public static String damageNumber(double n) {
+        return GearLoreLines.trimNumber(Math.round(n * 100.0) / 100.0);
+    }
+
     /**
      * The raw count, always at least 1, so the volley arm can multiply without special-casing.
      *

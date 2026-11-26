@@ -23,6 +23,9 @@ max_level: 3                               # BEN: three damages, so three levels
 effect: focused_beam
 class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
 weapon: cursed_emerald                     # W1: weapon-specific, the Cursed Emerald's slot 0
+ability_description:                       # T7 (2026-11-26): replaces the Cursed Volley's prose while active. SEAT PLACEHOLDER 2026-11-26, OPEN FOR BEN
+  - "Channel, then loose one focused"
+  - "beam down your line of sight."
 focused_beam:
   range: 48                                # BEN: "increase the range to 48 blocks" (its scope, this beam only: SEAT'S READING, OPEN FOR BEN)
   damage_by_level: [108, 162, 216]         # BEN: "1. 108/162/216"

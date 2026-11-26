@@ -206,6 +206,28 @@ class GoldenLoreTest {
             items++;
         }
 
+        // T14 (true tooltips, 2026-11-26): every weapon with every enchant its pools admit, ACTIVE at its top level, where
+        // the tooltip MOVES: so each fold and each rewritten ability block is pinned as text. Generated from content, as
+        // T13's walk; an enchant that moves nothing (C, or conditional) renders nothing here, and T13 pins that.
+        out.append("\n=== ENCHANTED WEAPONS (top level, score absent) ===\n");
+        TrueTooltipsConsistencyTest.Content content = TrueTooltipsConsistencyTest.load();
+        for (WeaponDefinition w : content.weapons()) {
+            List<Component> bare = WeaponLore.build(w, content.elements(), java.util.OptionalInt.empty(),
+                    java.util.OptionalInt.empty(), java.util.OptionalInt.empty(),
+                    io.github.butterflysmp.rpg.core.weapon.ItemEnchantTerms.NONE);
+            for (String e : TrueTooltipsConsistencyTest.poolsOf(w, content)) {
+                int top = content.enchants().find(e).orElseThrow().maxLevel();
+                var state = TrueTooltipsConsistencyTest.activeAt(e, top);
+                List<Component> lore = WeaponLore.build(w, content.elements(), java.util.OptionalInt.empty(),
+                        java.util.OptionalInt.empty(), java.util.OptionalInt.empty(),
+                        ItemEnchantTermsReader.of(state, w, content.enchants()));
+                if (lore.equals(bare)) continue;
+                out.append("-- ").append(w.id()).append(" + ").append(e).append(' ').append(top).append('\n');
+                appendLore(out, lore);
+                items++;
+            }
+        }
+
         assertTrue(items > 60, "the dump covered only " + items + " renderings, which is too few to"
                 + " be the whole shipped roster -- a shrunken golden passes vacuously");
         out.append("\n=== ").append(items).append(" renderings ===\n");

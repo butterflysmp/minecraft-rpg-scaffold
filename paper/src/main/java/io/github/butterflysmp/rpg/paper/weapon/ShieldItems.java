@@ -83,15 +83,23 @@ public final class ShieldItems {
         applyLore(meta, shield, adapters);
     }
 
+    /**
+     * TRUE TOOLTIPS (2026-11-26, T11/T13): the shield's stat block off a decoded state, with no meta: what
+     * {@link #applyLore} renders, extracted unchanged for the consistency test. Damage Reduction with its own Bulwark.
+     */
+    public static List<Component> statLore(ShieldDefinition shield, EnchantState state,
+                                           io.github.butterflysmp.rpg.paper.content.EnchantRegistry enchants,
+                                           java.util.OptionalInt score) {
+        return ShieldLore.build(shield, EnchantValues.totalFor(state, enchants, EnchantEffect.BLOCK_DR), score);
+    }
+
     private static void applyLore(ItemMeta meta, ShieldDefinition shield, AdapterContext adapters) {
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         // The tooltip shows the EFFECTIVE block, composed from the same state the enchant block
         // below is rendered from -- so the "Block: 65%" line and the "Bulwark III" line beneath it
         // can never disagree, and neither can disagree with the rider, which composes through the
         // same Bulwark.effectiveDr.
-        List<Component> base = ShieldLore.build(shield,
-                EnchantValues.totalFor(state, adapters.enchants(), EnchantEffect.BLOCK_DR),
-                GearScoreItems.readMeta(meta, adapters.keys()));
+        List<Component> base = statLore(shield, state, adapters.enchants(), GearScoreItems.readMeta(meta, adapters.keys()));
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
         meta.setEnchantmentGlintOverride(!state.effective().isEmpty());
     }

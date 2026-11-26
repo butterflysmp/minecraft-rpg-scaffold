@@ -256,13 +256,14 @@ public final class WeaponItems {
         EnchantState state = EnchantItems.read(meta, adapters.keys());
         // D1 (2026-11-23, B5): a trigger an ACTIVE enchant grants this weapon shows as any ability does, and only while
         // active. The same resolver the firing path asks (GrantedTriggers), over the same behaviour reading.
-        List<io.github.butterflysmp.rpg.core.weapon.TriggerBinding> granted =
-                io.github.butterflysmp.rpg.core.weapon.GrantedTriggers.granted(weapon,
-                        BehaviourItems.activeOf(state, weapon.id(), adapters.enchants()::find));
+        // TRUE TOOLTIPS (2026-11-26, T1): the stack's own ACTIVE enchant terms, read by the engine's resolvers
+        // (ItemEnchantTermsReader), so every stat and ability line is the effective item's. The granted triggers come
+        // from the same terms (GrantedTriggers.granted, inside WeaponLore).
         List<Component> base = WeaponLore.build(weapon, adapters.elements(),
                 QuiverItems.loadedInMeta(meta, adapters.keys()),
                 QuiverItems.capacityInMeta(meta, adapters.keys()),
-                GearScoreItems.readMeta(meta, adapters.keys()), granted);
+                GearScoreItems.readMeta(meta, adapters.keys()),
+                ItemEnchantTermsReader.of(state, weapon, adapters.enchants()));
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
 
         // THE GLINT. Our enchants live in the PDC, not in the item's vanilla enchantment list, so

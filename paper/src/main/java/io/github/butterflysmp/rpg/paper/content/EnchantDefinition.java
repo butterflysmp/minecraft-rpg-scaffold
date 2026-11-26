@@ -75,7 +75,22 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                                 String element, String weapon,
                                 io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour,
                                 boolean guaranteed,
-                                io.github.butterflysmp.rpg.core.weapon.ArmorSlot armorSlot) {
+                                io.github.butterflysmp.rpg.core.weapon.ArmorSlot armorSlot,
+                                List<String> abilityDescription) {
+
+    /**
+     * No authored ability prose: every enchant before 2026-11-26. {@code abilityDescription} (true tooltips, the seat's T7,
+     * YAML {@code ability_description:}): the description a BEHAVIOUR enchant shows in place of the ability it changes, on
+     * the weapon's own tooltip, while active. Empty keeps the ability's own words. It may carry the D1 tokens.
+     */
+    public EnchantDefinition(String id, String displayName, int maxLevel, EnchantEffect effect, GearClass gearClass,
+                             List<Integer> valueByLevel, String icon,
+                             io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires requires, String element,
+                             String weapon, io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour behaviour,
+                             boolean guaranteed, io.github.butterflysmp.rpg.core.weapon.ArmorSlot armorSlot) {
+        this(id, displayName, maxLevel, effect, gearClass, valueByLevel, icon, requires, element, weapon, behaviour,
+                guaranteed, armorSlot, List.of());
+    }
 
     /**
      * Not piece-specific: every enchant before 2026-11-25. {@code armorSlot} (the seat's E1, YAML {@code armor_slot:
@@ -155,6 +170,12 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
     public EnchantDefinition {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("enchant id required");
+        }
+        abilityDescription = abilityDescription == null ? List.of() : List.copyOf(abilityDescription);
+        // T7: prose for the ability a behaviour changes. A stat enchant changes no ability, so it may not carry any.
+        if (!abilityDescription.isEmpty() && behaviour == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' has an ability_description: but no behaviour; only a"
+                    + " behaviour enchant rewrites an ability's lines");
         }
         if (requires == null) requires = io.github.butterflysmp.rpg.core.enchant.EnchantRoll.Requires.NONE;
         // U1: absent is NORMAL. A blank one is a typo, refused rather than read as normal (the loader has already

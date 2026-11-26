@@ -392,13 +392,22 @@ public final class WeaponLoader {
                         + "it must be a YAML list (one '- ' item per line). Ignoring it.");
             }
             List<String> description = t.getStringList("description");
+            io.github.butterflysmp.rpg.core.ability.CastSpec cast =
+                    AbilitySchema.parseCast(t.getConfigurationSection("cast"));
+            // D1 (true tooltips, 2026-11-26): a {token} the tooltip cannot fill from THIS cast is refused by name, and the
+            // whole file with it, rather than printed to a player as a literal brace.
+            try {
+                io.github.butterflysmp.rpg.core.weapon.DescriptionTokens.validate(description, cast);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("weapon '" + id + "' trigger '" + input + "': " + e.getMessage());
+            }
             AbilityDefinition ability = new AbilityDefinition(
                     id + "/" + input,
                     abilityName,
                     element,
                     t.getInt("cooldown_ticks", 0),
                     AbilitySchema.parseCost(t.getConfigurationSection("cost")),
-                    AbilitySchema.parseCast(t.getConfigurationSection("cast")),
+                    cast,
                     AbilitySchema.parseEffects(t.getMapList("on_hit")),
                     description,
                     // What is heard/seen the instant the trigger is pressed, as against on_hit's

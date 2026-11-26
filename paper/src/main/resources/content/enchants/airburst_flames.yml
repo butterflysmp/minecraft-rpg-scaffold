@@ -23,6 +23,9 @@ max_level: 3                               # BEN: three damages, so three levels
 effect: airburst
 class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
 weapon: living_lantern                     # W1: weapon-specific, the Living Lantern's slot 0
+ability_description:                       # T7 (2026-11-26): replaces the Lantern's Breath prose while active. SEAT PLACEHOLDER 2026-11-26, OPEN FOR BEN
+  - "A seeking flame that splits"          # "three" is this enchant's own count, which no enchant changes: authored, not a token
+  - "into three after 6 blocks."
 airburst:
   travel_blocks: 6                         # BEN, 2026-11-23: "B" -- "Split after 6 blocks into 3 pieces; pieces keep their 14." (was 14)
   count: 3                                 # BEN: "three ... projectiles"

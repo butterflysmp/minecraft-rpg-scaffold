@@ -174,7 +174,29 @@ public final class EnchantLoader {
                 s.getString("icon", EnchantDefinition.DEFAULT_ICON),
                 requires(s.getString("requires"), id),
                 element, weapon, behaviour(s, id, weapon), guaranteed(s, id),
-                armorSlot(s.getString("armor_slot"), id));
+                armorSlot(s.getString("armor_slot"), id), abilityDescription(s, id));
+    }
+
+    /**
+     * T7 (true tooltips, 2026-11-26): {@code ability_description:}, the prose a behaviour enchant shows in place of the
+     * ability it changes. A YAML list; a scalar is refused by name rather than read as nothing. Its D1 tokens are checked
+     * by NAME here: whether the changed ability's cast has the quantity is checked where both are loaded
+     * ({@code TrueTooltipsContentTest}), because this loader cannot see the weapon's cast.
+     */
+    private static java.util.List<String> abilityDescription(ConfigurationSection s, String id) {
+        if (s.isString("ability_description")) {
+            throw new IllegalArgumentException("enchant '" + id + "' ability_description: must be a YAML list (one '- '"
+                    + " item per line), not a single string");
+        }
+        java.util.List<String> lines = s.getStringList("ability_description");
+        try {
+            io.github.butterflysmp.rpg.core.weapon.DescriptionTokens.validate(lines,
+                    new io.github.butterflysmp.rpg.core.ability.CastSpec.Volley(1, 2, 1,
+                            new io.github.butterflysmp.rpg.core.ability.CastSpec.Ray(1)));   // a cast with a count: names only
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("enchant '" + id + "' ability_description: " + e.getMessage());
+        }
+        return lines;
     }
 
     /**
@@ -355,6 +377,11 @@ public final class EnchantLoader {
                 && !elementExists.test(orb.shot().element())) {
             throw new IllegalArgumentException("enchant '" + id + "' grant_trigger: the orb's shot element '"
                     + orb.shot().element() + "' is not a loaded element");
+        }
+        try {   // D1: the granted ability's own description, against its own cast
+            io.github.butterflysmp.rpg.core.weapon.DescriptionTokens.validate(ability.description(), ability.cast());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("enchant '" + id + "' grant_trigger: ability description: " + e.getMessage());
         }
         return new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger(weaponId, input, ability);
     }
