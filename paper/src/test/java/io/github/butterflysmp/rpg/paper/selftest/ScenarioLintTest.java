@@ -372,6 +372,57 @@ class ScenarioLintTest {
      * THE LEVEL SEAM (the seat, 2026-11-25): AS13 set level 13, and AS14-AS19 ran at it with no step of their own. Each case
      * is CAUSED here, and the row that should be clean is beside the row that should not.
      */
+    /**
+     * LEVEL_GATED_MENU (the seat's follow-up, 2026-11-26, after AS15R SKIPPED at a locked /recipes): a command that opens a
+     * level-gated screen runs at a staged level at least the screen's own, read from NexusScreens (recipes and craft 3, anvil
+     * 7, enchanting 10, grindstone 13, vault 20). The level is the last `rpg playerxp set @s <n> levels` BEFORE the step, in
+     * the row or carried from earlier rows, as the run carries it. CAUSED, with the clean rows beside the flagged ones.
+     * Mutations: the rule dropped from lint(); the order check (a level set AFTER the open) dropped.
+     */
+    @Test
+    void aRowThatOpensALevelGatedScreenStagesThatLevelFirst() throws InvalidConfigurationException {
+        String yaml = """
+                setup:
+                  - cmd: "rpg playerxp set @s 1 levels"
+                A:
+                  - cmd: "recipes"
+                B:
+                  - cmd: "rpg playerxp set @s 3 levels"
+                  - cmd: "recipes"
+                C:
+                  - cmd: "enchanting"
+                D:
+                  - cmd: "rpg playerxp set @s 10 levels"
+                  - cmd: "enchanting"
+                  - cmd: "grindstone"
+                E:
+                  - cmd: "rpg playerxp set @s 1 levels"
+                F:
+                  - cmd: "recipes"
+                  - cmd: "rpg playerxp set @s 3 levels"
+                G:
+                  - cmd: "level"
+                  - cmd: "rpg stats"
+                """;
+        List<String> f = ScenarioLint.lint("g", parse("g", yaml)).stream()
+                .filter(x -> x.rule() == ScenarioLint.Rule.LEVEL_GATED_MENU).map(ScenarioLint.Finding::line).toList();
+        assertEquals(List.of(
+                        "LINT g#A LEVEL_GATED_MENU 'recipes' needs level 3, and the staged level is 1",
+                        "LINT g#C LEVEL_GATED_MENU 'enchanting' needs level 10, and the staged level is 3",
+                        "LINT g#D LEVEL_GATED_MENU 'grindstone' needs level 13, and the staged level is 10",
+                        "LINT g#F LEVEL_GATED_MENU 'recipes' needs level 3, and the staged level is 1"),
+                f, "B and D's enchanting stage first; F sets 3 only AFTER it opened; G's commands are ungated");
+        String none = """
+                setup:
+                  - wait: 1
+                A:
+                  - cmd: "/enchanting"
+                """;
+        assertEquals(List.of("LINT g#A LEVEL_GATED_MENU 'enchanting' needs level 10, and no level is staged"),
+                ScenarioLint.lint("g", parse("g", none)).stream().filter(x -> x.rule() == ScenarioLint.Rule.LEVEL_GATED_MENU)
+                        .map(ScenarioLint.Finding::line).toList(), "with no level staged anywhere, and a leading slash");
+    }
+
     @Test
     void aRowAfterALevelChangeStagesItsOwnLevel() throws InvalidConfigurationException {
         String yaml = """

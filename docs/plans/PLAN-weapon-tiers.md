@@ -1296,6 +1296,14 @@ of `52579e8a` (`GATE-vanilla-bows.md` and `GATE-breacher-rework.md`, READINGS). 
    rows lose the pickaxe from his hand when his held slot at run start is the star's. Fixed when that gate next runs.
 4. **Unbreaking rolls on weapons with no durability** (the staves; 6.4's carried note): the same defect as ruling H
    fixed, and ruling H's mechanism (`requires: durability`) is where it goes when it is ruled.
+   - **AND THE BROKEN BOTTLE (2026-11-26, the seat's K6 ruled (b), "leave it"; `PLAN-broken-bottle.md` K6).** A
+     `glass_bottle` has no durability, and its pool offers Unbreaking (`sharpness`, `unbreaking`). No `requires:
+     durability` gate in that slice.
+   - The undamageable weapons:
+     - READ (no durability call in `Items`): `blaze_kings_staff` (blaze rod), `bone_whistle` (bone),
+       `crystal_shard_staff` (amethyst shard), `cursed_emerald` (emerald), `flint_staff` (stick);
+     - not read: `knell_beam` (echo shard), `lapis_staff` (breeze rod), `living_lantern` (lantern).
+   - **OPEN FOR BEN.**
 5. **A deferred command in the same pass as a later hand change** (READ after VB3's miss): `rpg durability`, `rpg
    repair` and every `rpg enchant` op read his main hand inside `scheduler().onEntity`, and a scenario pass runs every
    step synchronously until a `wait:`, ask, await or kill. A scan of every committed `GATE-*.yml` on `d7c6d659` for such

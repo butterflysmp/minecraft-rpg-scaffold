@@ -124,6 +124,13 @@ public record Scenario(String gate, String row, List<Step> steps) {
          */
         PROBE_SELF,
         /**
+         * {@code <attribute key>} ({@code attack_speed}): the player's attribute AS THE SERVER HOLDS IT, value and base, to three
+         * decimals: {@code ATTRIBUTE <key> value=<v> base=<b>}. Added 2026-11-26 (BB2R): vanilla's {@code attribute … get}
+         * reply reaches our log through PacketEvents, which decodes a numeric argument as an int (READ), so 1.6 read as 1.
+         * An unknown key SKIPS the row by name.
+         */
+        PROBE_ATTRIBUTE,
+        /**
          * Log the PLAYER'S mana, {@code MANA current=<c> max=<m>}, from the pool every cast spends from. Added
          * 2026-11-21 (the seat's brief, PR 1): a cast's price is READ from two of these, not inferred from source.
          */

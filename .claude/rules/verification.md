@@ -1941,6 +1941,40 @@ section 2):
   before `DONE` (`SelfTestRowEndDrainTest`), so a reply to a row's last step is logged under that row. That narrows the
   window and cannot close it: the send is on another thread.
 
+**A REPLY'S NUMBERS ARE CUT TO INTEGERS BY THE READER** (2026-11-26, `GATE-broken-bottle.md` BB2):
+- READ, javap: PacketEvents 2.13.0 `AdventureNBTSerializer.deserializeTranslationArgumentList` decodes a translatable's
+  numeric argument with `NBTNumber.getAsInt()`. So a vanilla reply that carries a decimal, such as
+  `attribute … get`'s value, logs as an integer: 1.6 read `is 1`. The server sent the `Double` whole.
+- **Never predict a fraction in a vanilla reply's argument.** Read the quantity on the server instead
+  (`probe_attribute` for an attribute).
+
+**A SCRIPTED MOB HIT ON A SUMMON REPLIES `Target is invulnerable to the given damage type`, AND THAT IS EXPECTED**
+(2026-11-26, SM9R on `37292713`):
+- READ: `RpgListeners.onSummonDamaged` CANCELS the vanilla event on a `MOB_HIT` and prices the hit on the custom store
+  (`applyDamageAs`).
+- READ: `DamageCommand.damage` throws `ERROR_INVULNERABLE` whenever `hurtServer` returns false.
+- INFERRED (CraftBukkit's convention): a cancelled damage event makes `hurtServer` return false.
+- **So the red reply follows a hit that DID land on the store.** Read the hit by the summon's lines (`SUMMON removed …
+  cause=death`, `SUMMONPROBE`), never by the command's reply.
+
+**A LEVEL-GATED SCREEN IS A STAGING HAZARD** (2026-11-26, after AS15R SKIPPED at a locked `/recipes`). READ,
+`NexusStationGate.Station` through `NexusScreens.Screen.unlockLevel()`:
+
+| command | station | level |
+|---|---|---|
+| `/craft`, `/recipes` | Crafting | 3 |
+| `/anvil` | Anvil | 7 |
+| `/enchanting` | Enchanting | 10 |
+| `/grindstone` | Grindstone | 13 |
+| `/vault` | Vault (`VaultPageGate.HUB_SHORTCUT_LEVEL`) | 20 |
+
+- Vault pages 2 to 7 unlock at 25, 30, 35, 40, 45, 50 (`VaultPageGate`). That is a click inside the vault, not a
+  command.
+- The same stations clicked in the Nexus hub are gated alike.
+- **`ScenarioLint` rule `LEVEL_GATED_MENU`:** a row that opens one of these COMMANDS runs at a staged level (`rpg playerxp
+  set @s <n> levels`, before the step, in the row or carried) at least the screen's. A hub click is not linted: name
+  that when a row clicks a station.
+
 ### PREDICT DAMAGE AGAINST THE HURT LINE, NEVER AGAINST A HEALTH FIGURE THAT REGENERATION CAN MOVE
 
 **This is the account. The pointer is `CLAUDE.md`'s VERIFICATION index.** Owed by the seat's ruling of 2026-11-17, at

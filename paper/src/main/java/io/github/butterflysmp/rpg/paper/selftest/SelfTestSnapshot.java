@@ -221,11 +221,19 @@ final class SelfTestSnapshot {
         blocks.save(state.getLocation(), state);
     }
 
-    /** Puts back the blocks the last chain of rows saved, newest first. Returns how many. */
-    int restoreRowBlocks() {
+    /** Puts back the blocks the last chain of rows saved, newest first, and READS THEM BACK (2026-11-26). */
+    RowRestore restoreRowBlocks() {
         List<BlockState> newestFirst = blocks.drainNewestFirst();
         for (BlockState state : newestFirst) state.update(true, false);
-        return newestFirst.size();
+        return new RowRestore(newestFirst.size(), SelfTestStaging.readBack(newestFirst, SelfTestSnapshot::holdsAgain));
+    }
+
+    /** How many blocks a restore put back, and how many of them the world holds again when read straight after. */
+    record RowRestore(int restored, int readBack) {}
+
+    /** Does the world hold this saved state again? Its block's data equals the state's. */
+    private static boolean holdsAgain(BlockState saved) {
+        return saved.getBlock().getBlockData().equals(saved.getBlockData());
     }
 
     /** Where the player stood when the run began: every unchained row is staged from here again. */
@@ -318,7 +326,10 @@ final class SelfTestSnapshot {
             scheduler.onEntity(e, e::remove);
             if (orb) orbs++; else mobs++;
         }
-        for (BlockState state : blocks.drainNewestFirst()) state.update(true, false);   // the last chain's
+        List<BlockState> lastChain = blocks.drainNewestFirst();   // the last chain's, read back (2026-11-26)
+        for (BlockState state : lastChain) state.update(true, false);
+        String blocksBack = SelfTestStaging.readBackField(SelfTestStaging.readBack(lastChain, SelfTestSnapshot::holdsAgain),
+                lastChain.size());
 
         p.getInventory().setContents(contents);
         p.getInventory().setHeldItemSlot(heldSlot);
@@ -348,7 +359,7 @@ final class SelfTestSnapshot {
         return "RESTORED xp=" + (xp ? lifetimeXp : "NOT-RESTORED") + " cell=" + (cell ? classId + "/" + elementId : "NOT-RESTORED")
                 + " gamemode=" + gameMode + " held=" + heldSlot + " mana=" + String.format("%.1f", mana)
                 + " trace=" + nameplates.tracing() + " spawn_mobs=" + spawnMobs + " time=" + time
-                + " blocks=" + blocks.total() + " mobsRemoved=" + mobs + " orbsRemoved=" + orbs
+                + " blocks=" + blocks.total() + " " + blocksBack + " mobsRemoved=" + mobs + " orbsRemoved=" + orbs
                 + " keep_inventory=" + keepInventory + " immediate_respawn=" + immediateRespawn
                 + " difficulty=" + difficulty + " health=" + fmtHealth(health)
                 + " vanilla_xp=" + vanillaLevel + "+" + String.format(java.util.Locale.ROOT, "%.3f", vanillaProgress)

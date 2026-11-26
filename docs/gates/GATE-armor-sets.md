@@ -423,6 +423,40 @@ command is scoped to our armor since D1'.
    - the chestplate is never removed.
 4. **`Defense <B.D + 48>` after the break, or `Max Health <B.MH>`, is the FAIL.**
 
+### AS15R2 — AS15R AT THE RECIPE SCREEN'S OWN LEVEL (2026-11-26, feat/bottle-owed)
+
+**Why it exists:** AS15R SKIPPED on the boot of `37292713`. Its own level 1 locked the screen: `/recipes` replied
+`Crafting unlocks at level 3. You are level 1.` This row has now missed twice on staging. So every gate it passes is
+traced against the code below, step by step, before commit.
+
+**THE TRACE:**
+
+| step | the gate it passes, READ | what it reads or leaves |
+|---|---|---|
+| `rpg playerxp set @s 3 levels`, then `wait: 40` | `XpGrant`: set N levels writes `PlayerLevel.totalForLevel(N)`. EXECUTED: `effectiveLevel(totalForLevel(3))` = 3 (`As15r2StagingTest`). The 40 is the stats reconcile (`GATE-level.md` WD1) | REPLY `Set 3 level(s) for <name> (now level 3, …)` |
+| `clear_inventory`, `clear_state`, four armour slots set to air, `wait: 10` | `clear_inventory` leaves armour alone (READ in its javadoc), so the four `item replace` steps empty it | storage and armour bare; the Nexus star kept |
+| `hold: empty`, then `give @s minecraft:copper_ingot 5`, `wait: 2` | the give lands in the held empty slot (READ: EC4R2's staging, read as predicted) | 5 ingots in slot 0 |
+| `recipes`, `wait: 3` | `ScreenCommands` asks `NexusScreens.refusal`: `effectiveLevel(lifetimeXp)` 3 against `Station.CRAFTING` 3, and `unlocked` is `level >= unlockLevel`, so it OPENS. The control: level 1 is refused (AS15R's reading; `As15r2StagingTest`) | `RecipeBrowserMenu` open, listing what is craftable NOW (`CraftCount.Craftable`): 5 copper ingots afford a copper helmet |
+| `dump: menu` | — | `SLOT <i> COPPER_HELMET name="Copper Helmet"` (AS15R's prediction) |
+| `click: "Copper Helmet"`, `wait: 3` | `SelfTestDrivers.click`: the open view's top holder must be one of our `Menu`s, which is the very check AS15R failed (`no menu is open to click …`). It clicks the first slot whose name starts `Copper Helmet`. The browser re-resolves the recipe and re-verifies the inventory, then `InventoryCraft.commitCraft` debits, mints and gives | no `CRAFT minted` line (READ: armor logs none) |
+| `close`, `wait: 2`, `probe_held` | the helmet lands in slot 0, the held slot (INFERRED: debit first, then `MenuSafety.give`) | `HELDID slot=0 item=copper_helmet` |
+| `dump: held` | `GearScoreItems.stampOnAcquire` ROLLS the score from his six slots' average: 0, bare, and every draw floors to 100 (EXECUTED: `As15r2StagingTest`; one piece at 200 still floors, four do not, hence the cleared armour) | the lore below |
+| hand to air, `rpg playerxp set @s 1 levels`, `wait: 40` | `LEVEL_UNSTAGED` takes a row's LAST set: `1 levels`, the setup's, so AS16 starts where it expects | REPLY `Set 1 level(s) …` |
+
+**Predicted:**
+- **No `SKIPPED` line.**
+- `SLOT … COPPER_HELMET name="Copper Helmet"`.
+- No `CRAFT minted` line.
+- `HELDID slot=0 item=copper_helmet`.
+- **`HELD copper_helmet … lore=["Gear Score: 100"; "Defense: 5"; ""; "Set Bonus (4 pieces):"; "+1 Max Summons"; "";
+  "It greens where it is not worn."; ""; "Common Helmet"]`.** This is AS15's reading at `732c4e02`; that boot reached
+  the screen at level 13.
+- **A held copper helmet with no lore** means the craft was not claimed, and is a MISS.
+
+**Lint:** clean on every rule, pinned (`SelfTestScenariosTest`). `LEVEL_GATED_MENU` flags AS15R and not this row.
+
+**SAFETY:** none. No damage.
+
 ### AS16 — THE ONE ASK, LAST
 
 A full iron set is worn, then the question: *"Hover a piece of your iron armour: is the Set Bonus clear, and does the

@@ -32,7 +32,8 @@ class SelfTestScenariosTest {
 
     /**
      * GATE-broken-bottle's ONE command, against the SHIPPED gates: it parses with no refusal, and queues the bottle's setup
-     * and nine rows, then summoner's setup, SM9R and SM16R2, then armor-sets' setup and AS15R. Fifteen, and nothing else.
+     * and its rows, then summoner's setup, SM9R and SM16R2, then armor-sets' setup and AS15R. Fifteen on the boot of
+     * 37292713; sixteen since BB2R (2026-11-26), which the whole gate now carries.
      */
     @Test
     void theBottlesOneCommandQueuesItsGateAndTheThreeOwedRows() {
@@ -40,7 +41,7 @@ class SelfTestScenariosTest {
         var parsed = SelfTestGateList.parse("broken-bottle+summoner.SM9R.SM16R2+armor-sets.AS15R", gates);
         assertEquals(null, parsed.refusal());
         List<String> queued = SelfTestGateList.queue(parsed, gates).stream().map(s -> s.gate() + "#" + s.row()).toList();
-        assertEquals(List.of("broken-bottle#setup", "broken-bottle#BB0", "broken-bottle#BB1", "broken-bottle#BB2",
+        assertEquals(List.of("broken-bottle#setup", "broken-bottle#BB0", "broken-bottle#BB1", "broken-bottle#BB2", "broken-bottle#BB2R",
                 "broken-bottle#BB3", "broken-bottle#BB4", "broken-bottle#BB5", "broken-bottle#BB6", "broken-bottle#BB7",
                 "broken-bottle#BB8", "summoner#setup", "summoner#SM9R", "summoner#SM16R2", "armor-sets#setup",
                 "armor-sets#AS15R"), queued);
@@ -356,7 +357,9 @@ class SelfTestScenariosTest {
         // grep -cE '^[A-Za-z0-9_-]+:'), 49 setups, so 442. Control: 488 + 3 = 491. 439 was this line's value.
         // Then GATE-broken-bottle.md (feat/broken-bottle-gate, 2026-11-25), RECOUNTED: 50 gates, 501 keys, 50 setups, so
         // 451. Control: 491 + 10 (its setup and BB0-BB8) = 501. 442 was this line's value.
-        assertEquals(451, loaded.rows());
+        // Then AS15R2 and BB2R (feat/bottle-owed, 2026-11-26), RECOUNTED: 50 gates, 503 keys, 50 setups, so 453. Control:
+        // 501 + 2 = 503. 451 was this line's value.
+        assertEquals(453, loaded.rows());
     }
 
     /**
@@ -666,8 +669,22 @@ class SelfTestScenariosTest {
                 byGate.values().stream().flatMap(List::stream)
                         .filter(f -> f.rule() == ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::line).toList(),
                 "every LEVEL_UNSTAGED in the shipped scenarios, and no more");
+        // A LEVEL-GATED MENU (the seat, 2026-11-26): LEVEL_GATED_MENU over every gate, pinned EXACTLY; no old row edited.
+        // nexus-polish#CM2 opens every gated screen at level 1 ON PURPOSE (it reads the six refusals). AS15R is the boot
+        // of 37292713's skip, re-predicted as AS15R2.
+        String gated = "LINT nexus-polish#CM2 LEVEL_GATED_MENU '";
+        assertEquals(List.of(gated + "craft' needs level 3, and the staged level is 1",
+                        gated + "recipes' needs level 3, and the staged level is 1",
+                        gated + "anvil' needs level 7, and the staged level is 1",
+                        gated + "enchanting' needs level 10, and the staged level is 1",
+                        gated + "grindstone' needs level 13, and the staged level is 1",
+                        gated + "vault' needs level 20, and the staged level is 1",
+                        "LINT armor-sets#AS15R LEVEL_GATED_MENU 'recipes' needs level 3, and the staged level is 1"),
+                byGate.values().stream().flatMap(List::stream)
+                        .filter(f -> f.rule() == ScenarioLint.Rule.LEVEL_GATED_MENU).map(ScenarioLint.Finding::line).toList(),
+                "every LEVEL_GATED_MENU in the shipped scenarios, and no more");
         // The three rows written under the rule lint clean on EVERY rule.
-        for (String[] r : new String[][] {{"armor-sets", "AS15R"}, {"summoner", "SM9R"}, {"summoner", "SM16R2"}}) {
+        for (String[] r : new String[][] {{"armor-sets", "AS15R2"}, {"summoner", "SM9R"}, {"summoner", "SM16R2"}}) {
             assertEquals(List.of(), byGate.get(r[0]).stream().filter(f -> f.row().equals(r[1]))
                     .map(ScenarioLint.Finding::line).toList(), r[1] + " must lint clean");
             assertTrue(shipped().gates().get(r[0]).stream().anyMatch(s -> s.row().equals(r[1])),

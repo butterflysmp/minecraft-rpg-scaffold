@@ -168,7 +168,23 @@ own baseline and predicts each row as that baseline plus an exact offset.
   treasure chests AND underwater ruin chests (Ben: *"Both actually"*). The chances: *"Leave it for now"*. **Until that
   pass it is obtainable only by `/rpg give`.**
 - **A custom look** for the item (the brief: not in this slice). It renders as a plain glass bottle.
-- **K6's Unbreaking question**, above: OPEN.
+- **K6's Unbreaking question**, above: **RULED (b), "leave it" (the seat, 2026-11-26).** Unbreaking stays in the bottle's
+  pool. It is carried beside "Unbreaking rolls on weapons with no durability" in `PLAN-weapon-tiers.md`'s carried list,
+  with the READ list of the five undamageable weapons and the three not read. OPEN FOR BEN.
+
+## THE FOLLOW-UP ON MASTER (2026-11-26, `feat/bottle-owed`, no boot)
+
+The seat's merge approval named six items, after the boot of `37292713`:
+
+| item | what was done |
+|---|---|
+| **BB2R** | READ: PacketEvents 2.13.0 decodes a translation's numeric argument with `getAsInt()`, so `attribute … get` loses its decimals in OUR reader, not on the server. A new verb, `probe_attribute`, reads `AttributeInstance.getValue()` and `getBaseValue()` on the server, to three decimals. BB2R predicts `value=1.600` and `value=2.000` |
+| **AS15R2** | the craft at level 3, the recipe screen's own, with his armour cleared. Traced step by step in `GATE-armor-sets.md`; its level and its score EXECUTED (`As15r2StagingTest`) |
+| **LEVEL_GATED_MENU** | a lint rule: a command opening a level-gated screen runs at a staged level at least the screen's (read from `NexusScreens.Screen.unlockLevel`). It flags 7 findings over the 50 gates, pinned; no old row edited |
+| **the leftover summon** | the row-start CLEAN removes his summons (cause clear) and logs `summons=<n>` on every unchained row |
+| **SM9R's reply** | READ and recorded as expected, in `verification.md` |
+| **the gate-document check** | `GateDocumentSectionsTest`: a CARRIED STATE heading and a WHAT BEN TYPES / RUN SHEET heading, a planted control, 15 of the 50 gate documents pinned as lacking one; none edited |
+| **K6 carried; the read-back** | K6 above. Every saved-block restore reads its blocks back: `blocksBack=<matched>/<restored>` on the CLEAN and RESTORED lines |
 
 ## CC'S CALLS
 

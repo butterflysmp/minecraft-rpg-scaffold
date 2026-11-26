@@ -117,10 +117,15 @@ final class SelfTestRun {
         Location start = stage();
         player.teleportAsync(start).thenRun(() -> service.scheduler().onEntity(player, () -> {
             if (ended) return;
-            int blocks = snapshot.restoreRowBlocks();
+            SelfTestSnapshot.RowRestore rowBlocks = snapshot.restoreRowBlocks();
+            int blocks = rowBlocks.restored();
             String worn = gateBoundary ? snapshot.restoreInventory(player) : null;   // W1: his five slots, read back
             int removed = snapshot.removeTagged(player, service.scheduler());
-            log("CLEAN blocks=" + blocks + " removed=" + removed + " inventory=" + (gateBoundary ? "restored" : "kept")
+            // HIS SUMMONS GO TOO (2026-11-26, after SM16R2's wolf lived into the next gate's first row): a summon carries no
+            // selftest tag, so removeTagged never takes one. Cause CLEAR, as clear_state's; each logs its SUMMON removed line.
+            int summons = io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(service.adapters(),
+                    player.getUniqueId(), io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);
+            log("CLEAN blocks=" + blocks + " " + SelfTestStaging.readBackField(rowBlocks.readBack(), blocks) + " removed=" + removed + " summons=" + summons + " inventory=" + (gateBoundary ? "restored" : "kept")
                     + (worn == null ? "" : " " + worn)
                     + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ()));
             log(SelfTestStaging.lingerLine(SelfTestStaging.LINGER_RADIUS, endWork(start), endLingering(start)));
