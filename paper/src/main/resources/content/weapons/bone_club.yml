@@ -1,0 +1,41 @@
+# THE BONE CLUB (the seat's brief of 2026-11-26; docs/plans/PLAN-bone-club.md). Ben, verbatim: "Let's bring the Bone Club
+# in." / "1. 44 damage, 0.8s 2. Drumming beat, every consecutive hit adds 3/4/5 critical chance. Same conditions 3. No
+# doubled hit anymore 4. No doubled hit anymore 5. Yes guaranteed enchant 6. Melee, Kinetic, common, outside the tiers
+# 7. Yes 8. No sweep" / "1. Yes it is 2. No there is no bonus ceiling, landing a crit doesn't reset it". Ben's numbers
+# REPLACE the old game's (BONE_CLUB at CreaperCrusher/Butterfly-SMP cfde822: base damage 70 on the old scale, every 4th
+# counted hit doubled: that part is GONE).
+#
+# WHAT EACH KEY DOES HERE (built exactly as the Broken Bottle was, M1):
+#   attack_damage 44      BEN. Scaled by the gear score exactly as a sword's is: 44 x score / 100.
+#   attack_speed 0.8      BEN ("0.8s": attack speed 0.8). The wielder's attack-speed attribute while it is held.
+#   NO crit_chance        the bare club has no crit bonus (BEN: Drumming Beat IS the guaranteed enchant, the club plain).
+#   NO sweep key          BEN ("No sweep"). Absent is 0, and the sweep rider cancels a sweep from a weapon whose share is 0.
+#   NO craft_result       BEN ("outside the tiers"): no vanilla craft mints it, and no recipe file names it.
+#   material bone         the old game's item. The bone has NO durability (READ: Items registers it with
+#                         registerItem(String), bare properties, no .durability()), so it never wears or breaks. What a
+#                         bone does in vanilla is blocked for this item only (M2, MintedBoneUse): a wolf is not tamed by
+#                         it and does not eat it; crafting it to bone meal was already refused for any minted gear.
+#
+# OBTAINED: ONLY BY /rpg give until the world-loot pass (M11). Ben: skeleton drops, carried (the old game's 1 in 80 is the
+# reference, not a ruling). It is in NO loot source and NO dev source. Carried in PLAN-broken-bottle.md's loot list.
+#
+# Reach 3.0 and arc 120 are the swords' (SEAT PLACEHOLDER 2026-11-26). No flavor: Ben has given none (SEAT PLACEHOLDER
+# 2026-11-26, open for Ben); a weapon loads cleanly without it.
+
+id: bone_club
+display_name: "Bone Club"
+element: kinetic
+rarity: common
+class: melee
+material: bone
+attack_damage: 44
+attack_speed: 0.8
+triggers:
+  left_click:
+    cast:
+      type: melee
+      reach: 3.0          # SEAT PLACEHOLDER 2026-11-26: the swords'
+      arc_degrees: 120    # SEAT PLACEHOLDER 2026-11-26: the swords'
+    on_hit:
+      - type: weapon_damage
+        element: kinetic

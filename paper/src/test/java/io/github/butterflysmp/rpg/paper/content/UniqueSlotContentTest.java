@@ -42,6 +42,7 @@ class UniqueSlotContentTest {
             "blast_fungus=attunement,unbreaking",   // 2026-11-26: + blast_fungus, a nature mage weapon (attunement, unbreaking)
             "blaze_kings_staff=attunement,unbreaking",
             "boltor=deft_hands,expanded_quiver,power,unbreaking",
+            "bone_club=sharpness,unbreaking",   // 2026-11-26: NEW gear, not a change; a melee weapon's pool, as the bottle's (M10)
             "bone_whistle=unbreaking",   // 2026-11-25 (PR 5): a summoner weapon's pool is the universal one
             "bow=deft_hands,expanded_quiver,power,unbreaking",
             "brawlers_gauntlet=",
@@ -138,13 +139,13 @@ class UniqueSlotContentTest {
     @Test
     void theShippedSetIsRecountedWithAControl() {
         Loaded l = load();
-        assertEquals(26, l.weapons(), "2026-11-25: + bone_whistle (PR 5); + broken_bottle; 2026-11-26: + blast_fungus; recount: ls content/weapons | wc -l = 26, 25 at fcfbefbb");
+        assertEquals(27, l.weapons(), "2026-11-25: + bone_whistle (PR 5); + broken_bottle; 2026-11-26: + blast_fungus; + bone_club; recount: ls content/weapons | wc -l = 27, 26 at 305e1361");
         assertEquals(1, l.shields());
         assertEquals(28, l.armor());   // 2026-11-25: + copper (C1); grep -h "^    material:" content/armor/*.yml | wc -l = 28
         assertEquals(5, l.tools());
         assertEquals(6, l.accessories());
-        assertEquals(66, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle; 2026-11-26: + blast_fungus
-        assertEquals(66, MASTER_POOLS.size(), "the snapshot covers the same 66");
+        assertEquals(67, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle; 2026-11-26: + blast_fungus; + bone_club
+        assertEquals(67, MASTER_POOLS.size(), "the snapshot covers the same 67");
         assertEquals(26, l.real().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, 26 (ls content/enchants/*.yml | wc -l; 24 at fcfbefbb); a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
         assertEquals(26, l.dev().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, 26 (ls content/enchants/*.yml | wc -l; 24 at fcfbefbb); a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
@@ -179,12 +180,12 @@ class UniqueSlotContentTest {
                 assertEquals(Optional.empty(), g.gearElement(), g.id() + " declares no element");
             }
         }
-        assertEquals(26, withElement); // 2026-11-25: + bone_whistle (PR 5); + broken_bottle; 2026-11-26: + blast_fungus; ls content/weapons | wc -l = 26
+        assertEquals(27, withElement); // 2026-11-25: + bone_whistle (PR 5); + broken_bottle; 2026-11-26: + blast_fungus; + bone_club; ls content/weapons | wc -l = 27
     }
 
     private static final List<String> FIRE_MAGE = List.of("blaze_kings_staff", "flint_staff", "living_lantern");
 
-    /** The unique pool: Kinetic Tremors on every KINETIC weapon (16 of them since 2026-11-25 and the Broken Bottle, all three classes), and (F3, 2026-11-24) Mana Burn on the three fire MAGE weapons; nothing anywhere else. */
+    /** The unique pool: Kinetic Tremors on every KINETIC weapon (17 of them since 2026-11-26 and the Bone Club, all three classes), and (F3, 2026-11-24) Mana Burn on the three fire MAGE weapons; nothing anywhere else. */
     @Test
     void theUniquePoolIsKineticTremorsOnEveryKineticWeaponAndEmptyElsewhere() {
         Loaded l = load();
@@ -205,7 +206,7 @@ class UniqueSlotContentTest {
                 assertEquals(List.of(), pool, g.id());
             }
         }
-        assertEquals(16, kinetic, "the kinetic weapons (2026-11-25: + broken_bottle, 15 at 9c01d43f): grep -l '^element: kinetic' content/weapons/*.yml | wc -l");
+        assertEquals(17, kinetic, "the kinetic weapons (2026-11-25: + broken_bottle, 15 at 9c01d43f; 2026-11-26: + bone_club, 16 at 305e1361): grep -l '^element: kinetic' content/weapons/*.yml | wc -l");
         assertEquals(3, fireMage, "blaze_kings_staff, flint_staff, living_lantern; dragons_breath is fire but ranger");
         // And on a REAL server the same: Tremors is real content, not a dev fixture.
         var realRoster = EnchantRollItems.roster(l.real().all());
@@ -244,7 +245,7 @@ class UniqueSlotContentTest {
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }
-        assertEquals(66, checked, "the control: every shipped gear was asked");   // 2026-11-25: + copper; + broken_bottle; 2026-11-26: + blast_fungus
+        assertEquals(67, checked, "the control: every shipped gear was asked");   // 2026-11-25: + copper; + broken_bottle; 2026-11-26: + blast_fungus; + bone_club
     }
 
     /**

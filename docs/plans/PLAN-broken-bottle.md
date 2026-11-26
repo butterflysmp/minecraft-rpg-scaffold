@@ -170,6 +170,10 @@ own baseline and predicts each row as that baseline plus an exact offset.
 - **AND THE BLAST FUNGUS, FOR THE SAME PASS (2026-11-26, `PLAN-blast-fungus.md` F12).** Ben: *"Loot only, bastion chests,
   and pigging barters."* (piglin bartering). No chances given. Built nothing; in no source; obtainable only by
   `/rpg give` until the world-loot pass.
+- **AND THE BONE CLUB, FOR THE SAME PASS (2026-11-26, `PLAN-bone-club.md` M11).** Ben: skeleton drops, *"Yes"* to
+  carrying it. **A MOB DROP**, a new kind of source beside the chests and the barter. The old game's rate is the reference,
+  not a ruling: 1 in 80, a `Skeleton` killed by a player (RE-READ at `cfde8222`, `MobLootListener.onSkeletonDeath`).
+  Built nothing; in no source; obtainable only by `/rpg give` until the world-loot pass.
 - **A custom look** for the item (the brief: not in this slice). It renders as a plain glass bottle.
 - **K6's Unbreaking question**, above: **RULED (b), "leave it" (the seat, 2026-11-26).** Unbreaking stays in the bottle's
   pool. It is carried beside "Unbreaking rolls on weapons with no durability" in `PLAN-weapon-tiers.md`'s carried list,
