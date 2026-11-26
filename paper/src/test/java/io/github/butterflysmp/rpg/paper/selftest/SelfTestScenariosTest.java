@@ -336,7 +336,9 @@ class SelfTestScenariosTest {
         // control: 467 + 18 (its setup and AS0-AS16) = 485; SM7 became SM7R, a rename, no count. 419 was this line's value.
         // Then AS17-AS19 (the seat's re-rulings, 2026-11-25), RECOUNTED: 49 gates, 488 keys, 49 setups, so 439. Control:
         // 485 + 3 = 488. 436 was this line's value.
-        assertEquals(439, loaded.rows());
+        // Then AS15R, SM9R and SM16R2 (feat/armor-sets-owed, 2026-11-25), RECOUNTED: 49 gates, 491 keys (cat GATE-*.yml |
+        // grep -cE '^[A-Za-z0-9_-]+:'), 49 setups, so 442. Control: 488 + 3 = 491. 439 was this line's value.
+        assertEquals(442, loaded.rows());
     }
 
     /**
@@ -601,17 +603,17 @@ class SelfTestScenariosTest {
         Files.writeString(Path.of("target", "scenario-lint.txt"), report.toString(), StandardCharsets.UTF_8);
         System.out.print(report);
 
-        assertEquals(List.of(), byGate.get("enchant-columns").stream().map(ScenarioLint.Finding::line).toList(),
+        assertEquals(List.of(), byGate.get("enchant-columns").stream().filter(f -> f.rule() != ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::line).toList(),
                 "GATE-enchant-columns.yml must lint clean");
-        assertEquals(List.of(), byGate.get("enchant-changes").stream().map(ScenarioLint.Finding::line).toList(),
+        assertEquals(List.of(), byGate.get("enchant-changes").stream().filter(f -> f.rule() != ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::line).toList(),
                 "GATE-enchant-changes.yml must lint clean (2026-11-23, written under the same rules)");
-        assertEquals(List.of(), byGate.get("shatter-caps").stream().map(ScenarioLint.Finding::line).toList(),
+        assertEquals(List.of(), byGate.get("shatter-caps").stream().filter(f -> f.rule() != ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::line).toList(),
                 "GATE-shatter-caps.yml must lint clean (2026-11-24, written under the same rules)");
-        assertEquals(List.of(), byGate.get("focused-beam").stream().map(ScenarioLint.Finding::line).toList(),
+        assertEquals(List.of(), byGate.get("focused-beam").stream().filter(f -> f.rule() != ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::line).toList(),
                 "GATE-focused-beam.yml must lint clean (2026-11-24, written under the same rules)");
-        assertEquals(List.of(), byGate.get("mage-guaranteed").stream().map(ScenarioLint.Finding::line).toList(),
+        assertEquals(List.of(), byGate.get("mage-guaranteed").stream().filter(f -> f.rule() != ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::line).toList(),
                 "GATE-mage-guaranteed.yml must lint clean (2026-11-24, written under the same rules)");
-        assertEquals(List.of(), byGate.get("summoner").stream().map(ScenarioLint.Finding::line).toList(),
+        assertEquals(List.of(), byGate.get("summoner").stream().filter(f -> f.rule() != ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::line).toList(),
                 "GATE-summoner.yml must lint clean (2026-11-25, written under the same rules)");
         // L3 (the seat's ruling, 2026-11-24): HELD_READ_THEN_CHANGE over every gate, pinned EXACTLY. Old rows of other gates
         // are not edited; these four are owed dated notes (PLAN-enchant-columns section 33). STA4 is the one that cost a
@@ -629,6 +631,25 @@ class SelfTestScenariosTest {
                 byGate.values().stream().flatMap(List::stream)
                         .filter(f -> f.rule() == ScenarioLint.Rule.HELD_READ_THEN_CHANGE).map(ScenarioLint.Finding::line).toList(),
                 "every HELD_READ_THEN_CHANGE in the shipped scenarios, and no more");
+        // THE LEVEL SEAM (the seat, 2026-11-25): LEVEL_UNSTAGED over every gate, pinned EXACTLY. Old rows are not edited;
+        // these are REPORTED (PLAN-armor-sets-owed.md). armor-sets' five are the seam the boot of 732c4e02 ran into, and
+        // they are the rule's control on the shipped files. AS16 is not here: AS15R, ahead of it, stages level 1 again.
+        String seam = "LEVEL_UNSTAGED starts at level '13 levels', left by AS13, not the setup's '1 levels', and stages none of its own";
+        assertEquals(List.of(
+                        "LINT mage-guaranteed#MB1R LEVEL_UNSTAGED starts at level '1 levels', left by MG11, not the setup's"
+                                + " 'null', and stages none of its own",
+                        "LINT armor-sets#AS14 " + seam, "LINT armor-sets#AS15 " + seam, "LINT armor-sets#AS17 " + seam,
+                        "LINT armor-sets#AS18 " + seam, "LINT armor-sets#AS19 " + seam),
+                byGate.values().stream().flatMap(List::stream)
+                        .filter(f -> f.rule() == ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::line).toList(),
+                "every LEVEL_UNSTAGED in the shipped scenarios, and no more");
+        // The three rows written under the rule lint clean on EVERY rule.
+        for (String[] r : new String[][] {{"armor-sets", "AS15R"}, {"summoner", "SM9R"}, {"summoner", "SM16R2"}}) {
+            assertEquals(List.of(), byGate.get(r[0]).stream().filter(f -> f.row().equals(r[1]))
+                    .map(ScenarioLint.Finding::line).toList(), r[1] + " must lint clean");
+            assertTrue(shipped().gates().get(r[0]).stream().anyMatch(s -> s.row().equals(r[1])),
+                    "the control: " + r[1] + " is loaded, so its empty list is not a missing row");
+        }
         assertTrue(byGate.get("deft-hands").stream().anyMatch(f -> f.row().equals("DH3")
                         && f.rule() == ScenarioLint.Rule.SELF_STAGED && f.detail().startsWith("chains on DH1")),
                 "the control: DH3's chain on DH1 is found, so the lint reads the shipped files: " + byGate.get("deft-hands"));

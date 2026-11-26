@@ -589,3 +589,69 @@ the death.** A re-prediction is SM9R: a non-melee mob cause, or a dealer with an
 targeted `s16` (`why=targeting`) and hit it twice (`SUMMON hit … victim=<s16> … sent=20.000`, ticks 12604 and 12624)
 before the probe. 1000 − 90 − 15 − 40 = **855**, the reading. SM14R's formula carried that term and SM16R's did not. The
 row's purpose, the SIDES pass on the wolf with no block, read as predicted.
+
+## THE FOLLOW-UP ROWS, 2026-11-25 (`feat/armor-sets-owed`, on master `ca482930`) — Status: NOT RUN
+
+Written after the readings above and before any boot of them. SM9 and SM16R stay as they were read; these are new rows
+named for them. Both sit before SM17, the ask, which stays last. Both stage level 1 themselves (the level seam,
+`ScenarioLint` `LEVEL_UNSTAGED`), and both lint clean on every rule (`SelfTestScenariosTest`).
+
+### SM9R — THE DEATH, STAGED UNDER P-1
+
+**READ, what can kill a summon now:**
+- `RpgListeners.onSummonDamaged`: a mob-sourced hit is `MOB_HIT`, and its price is `SummonHitPrice.of(melee, seeded,
+  amount, source)`.
+- For `ENTITY_ATTACK` that price is the dealer's seeded attack, and the event's amount is not a term. That is why SM9's
+  1000000 read as 15.
+- The seed is `MobNameplateManager`'s: `MobScaling.attackDamage(attackDamageOf(mob), custom, hostile, score)`, where
+  `attackDamageOf` is the base `ATTACK_DAMAGE` plus the main hand's ADD modifiers (`MeleeSeed`).
+- The pad's score is 100 (S-3, READ in the SAFETY section above).
+
+**So the staging:** `s9r` is a NoAI zombie summoned with `attack_damage` base **40.0**, and the scripted hit is
+`damage <wolf> 1 minecraft:mob_attack by s9r`. The 1 is deliberately not the price, so a reading of 1 would show that
+P-1 had been bypassed. P-1 is not weakened.
+
+**EXECUTED (S-1, jshell over `core/target/classes`, 2026-11-25):**
+- `MobScaling.attackDamage(40.0, false, true, 100)` = **200.0**
+- the same at the cap score 500 = 1000.0 (no row seeds above 100)
+- SM7R's dealer, `attackDamage(3.0, false, true, 100)` = 15.0, the control, equal to SM7R's reading
+
+**Predicted:**
+1. The cast: `SUMMON spawn … score=100 health=100.000 damage=20.000`, probe `100.000/100.000`.
+2. After the hit: **`SUMMON removed … cause=death`**, then `SUMMONPROBE none … store=0`. The seeded 200 against its 100
+   with Defense 0 (SM7R read 100 → 85, nothing taken off the 15).
+3. The fresh cast after `clear_state`: `SUMMON spawn … score=100 health=100.000 damage=20.000`, probe
+   `100.000/100.000`.
+
+- **If the wolf reads `99.000`:** the 1 was priced, so P-1 did not apply, a MISS against P-1.
+- **If it reads `85.000`:** the seed ignored the authored base. That is a MISS of this READ.
+- **INFERRED:** a vanilla `summon`ed zombie can spawn holding an item, and a held weapon only ADDS to the seed. That can
+  only raise the price above 200, never stop the death.
+
+**SAFETY:** none. `s9r` is NoAI and the only scripted damage is on the wolf. No HURT line on him is predicted, and any
+HURT line is a MISS.
+
+### SM16R2 — SM16R'S SUM, WITH THE WOLF'S HITS NAMED
+
+SM16R's staging is unchanged except the tag (`s16r2`). Its prediction is SM16R's, with the term it left out.
+
+**READ, why the wolf bites `s16`:**
+- SM16R's reading showed `SUMMON target … why=targeting` on `s16`, then `SUMMON hit … victim=<s16> … sent=20.000` twice
+  (ticks 12604 and 12624).
+- The wolf joins on what he hits.
+- How many bites land before the probe is a matter of timing, so it is READ off the row's own lines, not predicted as a
+  number.
+
+**Predicted:**
+- `SPLIT … bursts=3`.
+- At least one `SIDES pass attacker=PLAYER body=<the wolf>`.
+- `k` PLAYERHITs `living_lantern/right_click … target=<s16r2> … sent=30.000` (60.000 on a crit), with 1 ≤ k ≤ 3.
+- No `sent=45.000`.
+- `d` DOTTICKs on `s16r2`.
+- `w` `SUMMON hit … victim=<s16r2> … sent=20.000` lines before the probe.
+- **`probe s16r2` = `1000 − 30 k − 15 d − 20 w`**, every term counted from its own lines in the row's bracket. For
+  SM16R's reading (k 3, d 1, w 2) that is 855.0; EXECUTED: w 0, 1, 2, 3 give 895.0, 875.0, 855.0, 835.0.
+- The wolf `100.000/100.000`.
+
+**No SIDES pass line means the row DID NOT TEST**, as for SM16R.
+**SAFETY:** none, as for SM16R; the zombie is NoAI.

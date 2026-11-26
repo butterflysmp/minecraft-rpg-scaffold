@@ -624,6 +624,78 @@ SM16R:
   - cmd: "kill @e[tag=s16]"
   - wait: 2
 
+# SM9R (re-predicts SM9, 2026-11-25, the follow-up on master): THE DEATH, staged under P-1. READ: SummonHitPrice prices a
+# mob's MELEE on a summon at the dealer's SEEDED attack, so SM9's scripted 1000000 was never a term. The seed is
+# MobNameplateManager's: MobScaling.attackDamage of the zombie's base ATTACK_DAMAGE (plus its main hand's ADD modifiers),
+# at the pad's score 100. So the zombie is summoned with a base of 40, and its one scripted melee is priced at its seed.
+# NoAI: it never acts on him, and the row deals him nothing.
+SM9R:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - cmd: 'summon minecraft:zombie ~4 ~ ~3 {NoAI:1b,Tags:["selftest","s9r"],attributes:[{id:"minecraft:attack_damage",base:40.0}]}'
+  - wait: 2
+  - cmd: "damage @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] 1 minecraft:mob_attack by @e[tag=s9r,limit=1]"
+  - wait: 5
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s9r]"
+  - clear_state: ""
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+
+# SM16R2 (re-predicts SM16R, 2026-11-25, the follow-up on master): SM16R's staging unchanged, its probe sum with the wolf's
+# hits NAMED. The wolf joins on s16 (why=targeting) and bites it every 20 ticks; its count before the probe is read off
+# the row's own SUMMON hit lines, not predicted as a number (SM16R read two).
+SM16R2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~7 ~ ~"
+  - clear_inventory: ""
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg mana refill"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 airburst_flames"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["s16r2","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe_self: ""
+  - probe_summon: "8"
+  - use: right_click
+  - wait: 60
+  - probe: "s16r2"
+  - probe_summon: "8"
+  - cmd: "kill @e[tag=s16r2]"
+  - wait: 2
+
 # SM17, THE ONE ASK, LAST: his own wolf directed at a frozen zombie 6 east, then the question while it works.
 SM17:
   - clear_inventory: ""

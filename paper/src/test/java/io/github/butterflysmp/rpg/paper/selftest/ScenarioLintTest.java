@@ -367,4 +367,51 @@ class ScenarioLintTest {
         var f = new ScenarioLint.Finding("enchant-columns", "EC8", ScenarioLint.Rule.PROBE_REACH, "probe f: 30 out, reach 16");
         assertEquals("LINT enchant-columns#EC8 PROBE_REACH probe f: 30 out, reach 16", f.line());
     }
+
+    /**
+     * THE LEVEL SEAM (the seat, 2026-11-25): AS13 set level 13, and AS14-AS19 ran at it with no step of their own. Each case
+     * is CAUSED here, and the row that should be clean is beside the row that should not.
+     */
+    @Test
+    void aRowAfterALevelChangeStagesItsOwnLevel() throws InvalidConfigurationException {
+        String yaml = """
+                setup:
+                  - cmd: "rpg playerxp set @s 1 levels"
+                A:
+                  - wait: 1
+                B:
+                  - cmd: "rpg playerxp set @s 13 levels"
+                  - wait: 40
+                C:
+                  - wait: 1
+                D:
+                  - after: C
+                  - wait: 1
+                E:
+                  - wait: 2
+                  - cmd: "rpg playerxp set @s 1 levels"
+                F:
+                  - wait: 1
+                """;
+        List<ScenarioLint.Finding> f = ScenarioLint.lint("g", parse("g", yaml)).stream()
+                .filter(x -> x.rule() == ScenarioLint.Rule.LEVEL_UNSTAGED).toList();
+        assertEquals(List.of("LINT g#C LEVEL_UNSTAGED starts at level '13 levels', left by B, not the setup's '1 levels',"
+                        + " and stages none of its own"),
+                f.stream().map(ScenarioLint.Finding::line).toList(),
+                "A runs at the setup's level; B sets its own; C is the seam; D is chained (SELF_STAGED names it); E sets its"
+                        + " own (anywhere in the row); F is back at the setup's level");
+        // A setup that stages no level: a row that sets one makes every later row stage its own too.
+        String none = """
+                setup:
+                  - wait: 1
+                A:
+                  - cmd: "rpg playerxp set @s 1 levels"
+                B:
+                  - wait: 1
+                """;
+        assertEquals(List.of("B"), ScenarioLint.lint("g", parse("g", none)).stream()
+                .filter(x -> x.rule() == ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::row).toList());
+        assertEquals(java.util.Optional.of("13 levels"), ScenarioLint.levelSet(parse("g", yaml).get(2)), "the CONTROL: B's");
+        // Mutation: drop levelSeam's call from lint() -> both lists empty -> reddens.
+    }
 }

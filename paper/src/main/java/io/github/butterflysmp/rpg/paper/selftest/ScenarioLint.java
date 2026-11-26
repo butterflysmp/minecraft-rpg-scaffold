@@ -52,7 +52,55 @@ final class ScenarioLint {
          * X1 (the seat, 2026-11-25): EVERY ROW IS SELF-STAGED. A row that reads a summon ({@link #usesSummon}) with no cast of
          * its own earlier in the row (a {@code use} after a {@code clear_state}) reads one an earlier row left.
          */
-        SUMMON_UNSTAGED
+        SUMMON_UNSTAGED,
+        /**
+         * THE LEVEL SEAM (the seat, 2026-11-25, after the boot of {@code 732c4e02}): his RPG level is carried from row to
+         * row, and nothing at a row start resets it. Once a row sets a level ({@code rpg playerxp set @s ...}) other than
+         * the setup's, every later row that is not chained stages its own. AS13 set 13 and AS14-AS19 ran at it.
+         */
+        LEVEL_UNSTAGED
+    }
+
+    /** The level a step stages: the text after {@code rpg playerxp set @s}, such as {@code 13 levels}. */
+    private static final Pattern LEVEL = Pattern.compile("^rpg playerxp set @s\\s+(.+)$");
+
+    /** The level this row leaves him at: its LAST {@code rpg playerxp set @s}, or empty when it sets none. */
+    static Optional<String> levelSet(Scenario s) {
+        String last = null;
+        for (Scenario.Step st : s.steps()) {
+            if (st.verb() != Scenario.Verb.CMD) continue;
+            Matcher m = LEVEL.matcher(st.arg().trim());
+            if (m.matches()) last = m.group(1).trim();
+        }
+        return Optional.ofNullable(last);
+    }
+
+    /**
+     * LEVEL_UNSTAGED over one gate, in file order. The baseline is the setup's level (none when the setup sets none, which
+     * is then his own level as the run found it). A row starting at a carried level that differs from the baseline, and
+     * setting none of its own, is a finding. A chained row ({@code after:}) is not: it reads what the row before it left,
+     * on purpose, and SELF_STAGED already names it. CC'S CALL: the row's set may sit anywhere in the row (AS13 sets first).
+     */
+    private static void levelSeam(String gate, List<Scenario> scenarios, List<Finding> out) {
+        String baseline = null;
+        String carried = null;
+        String from = Scenario.SETUP;
+        for (Scenario s : scenarios) {
+            Optional<String> set = levelSet(s);
+            if (s.row().equals(Scenario.SETUP)) {
+                baseline = set.orElse(null);
+                carried = baseline;
+                continue;
+            }
+            if (!java.util.Objects.equals(carried, baseline) && set.isEmpty() && !SelfTestStaging.chained(s)) {
+                out.add(new Finding(gate, s.row(), Rule.LEVEL_UNSTAGED, "starts at level '" + carried + "', left by "
+                        + from + ", not the setup's '" + baseline + "', and stages none of its own"));
+            }
+            if (set.isPresent()) {
+                carried = set.get();
+                from = s.row();
+            }
+        }
     }
 
     /**
@@ -204,6 +252,7 @@ final class ScenarioLint {
         if (anySummon && box.isEmpty()) {
             out.add(new Finding(gate, Scenario.SETUP, Rule.GROUND, "the gate summons mobs and declares no preflight"));
         }
+        levelSeam(gate, scenarios, out);
         return List.copyOf(out);
     }
 
