@@ -188,6 +188,13 @@ public final class WeaponLore {
                     lore.add(GearLore.plain("Attack Speed: ", NamedTextColor.GRAY)
                             .append(GearLore.plain(speed, NamedTextColor.RED)));
                 }
+                // K2 (2026-11-25): the crit chance this weapon grants while held, FLAT (never scaled by the score), under
+                // its speed. SEAT PLACEHOLDER 2026-11-25 wording, open for Ben. No line for a weapon that grants none.
+                String crit = WeaponLoreLines.critChanceLabel(weapon.critChance());
+                if (!crit.isBlank()) {
+                    lore.add(GearLore.plain("Crit Chance: ", NamedTextColor.GRAY)
+                            .append(GearLore.plain(crit, NamedTextColor.RED)));
+                }
                 continue;
             }
             if (isBasicAttack) continue;

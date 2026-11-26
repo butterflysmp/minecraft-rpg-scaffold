@@ -159,7 +159,7 @@ public final class WeaponLoader {
     static final java.util.Set<String> KNOWN_KEYS = java.util.Set.of(
             "id", "display_name", "element", "rarity", "class", "material",
             "attack_damage", "attack_speed", "sweep", "quiver_size", "reload_ticks",
-            "flavor", "triggers", "craft_result", "unscored", "ammo");
+            "flavor", "triggers", "craft_result", "unscored", "ammo", "crit_chance");
 
     /**
      * Every key a single {@code triggers:} entry may author -- a SEPARATE namespace from
@@ -421,9 +421,14 @@ public final class WeaponLoader {
         // carry is ContentValidator.validateAmmo's, at boot, as every material check in this tree is.
         String ammo = s.getString("ammo");
 
+        // K2 (2026-11-25, the Broken Bottle): a FLAT crit chance the weapon grants while it is the one in hand, a probability
+        // like an accessory's (0.10 is +10%). Absent -> 0 -> none, so no shipped file changes. WeaponDefinition refuses one
+        // outside [0, 1]. Accepted on any weapon; only the bottle authors one.
+        double critChance = s.getDouble("crit_chance", WeaponDefinition.NO_CRIT);
+
         return new WeaponDefinition(id, displayName, element, rarity, weaponClass, material,
                 attackDamage, attackSpeed, sweep, quiverSize, reloadTicks, bindings, flavor,
-                craftResult, unscored, ammo);
+                craftResult, unscored, ammo, critChance);
     }
 
     private static Rarity rarity(String raw) {

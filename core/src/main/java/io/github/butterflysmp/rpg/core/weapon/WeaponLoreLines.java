@@ -211,6 +211,16 @@ public final class WeaponLoreLines {
     }
 
     /**
+     * K2 (2026-11-25): the crit chance a weapon grants while held, as the stat block prints it ("+10%"), or "" for a weapon
+     * that grants none, and the caller drops the line. A whole percent, rounded as the stats sheet rounds the stat
+     * ({@code StatsSheetLines.critChance}). The wording around it is a SEAT PLACEHOLDER of 2026-11-25, open for Ben.
+     */
+    public static String critChanceLabel(double critChance) {
+        if (critChance <= WeaponDefinition.NO_CRIT) return "";
+        return "+" + Math.round(critChance * 100) + "%";
+    }
+
+    /**
      * How many payloads ONE PRESS of this cast delivers, or empty when there is no multiplier worth
      * printing.
      *

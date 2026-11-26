@@ -23,6 +23,7 @@ import io.github.butterflysmp.rpg.paper.content.EnchantRegistry;
 import io.github.butterflysmp.rpg.paper.weapon.ClassDamageModifierItems;
 import io.github.butterflysmp.rpg.paper.weapon.DamageEnchantItems;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponAttackItems;
+import io.github.butterflysmp.rpg.paper.weapon.WeaponItems;
 import io.github.butterflysmp.rpg.storage.PlayerProfile;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -323,8 +324,13 @@ public final class PlayerHealthSystem implements HealthListener {
             // absent from the next scan and its source is dropped. They converge INDEPENDENTLY --
             // one item can raise how often you crit without touching how hard, which is the whole
             // reason crit is two stats rather than one.
-            stats.reconcileCritChanceModifiers(id, AccessoryContributions.merged(
+            // K2 (2026-11-25): the HELD WEAPON is one more source of the same stat, merged into the FIRST (gear) argument of
+            // this ONE reconcile, as the armor set's bonuses are, never a call of its own (the rule above). Its key,
+            // "weapon:MAIN_HAND", is absent the pass after it leaves the main hand.
+            stats.reconcileCritChanceModifiers(id, AccessoryContributions.merged(AccessoryContributions.merged(
                     CritModifierItems.desiredChanceModifiers(player, keys),
+                    io.github.butterflysmp.rpg.core.weapon.HeldWeaponCrit.sources(
+                            WeaponItems.heldWeaponId(player, keys).flatMap(weapons::find))),
                     fromAccessories.sources(AccessoryStat.CRIT_CHANCE), fromFragments.sources(AccessoryStat.CRIT_CHANCE),
                     fromLevel.sources(AccessoryStat.CRIT_CHANCE)));
             stats.reconcileCritDamageModifiers(id, AccessoryContributions.merged(
