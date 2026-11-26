@@ -343,14 +343,39 @@ public final class WeaponFire {
     public record Landed(double amount, String element) {}
 
     public static Optional<Landed> landVanillaMelee(Player attacker, LivingEntity victim,
-                                        double chargeScale, WeaponRegistry weapons,
+                                        double charge, WeaponRegistry weapons,
                                         AdapterContext adapters, CooldownTracker cooldowns) {
-        Optional<AbilityDefinition> trigger = WeaponItems.heldWeaponId(attacker, adapters.keys())
+        Optional<String> heldId = WeaponItems.heldWeaponId(attacker, adapters.keys());
+        Optional<AbilityDefinition> trigger = heldId
                 .flatMap(weapons::find)
                 .flatMap(WeaponDefinition::vanillaMeleeTrigger);
         if (trigger.isEmpty()) return Optional.empty();
+        double chargeScale = io.github.butterflysmp.rpg.core.combat.AttackCharge.scale(charge);
 
-        CombatantSnapshot caster = BukkitCombatant.snapshot(attacker, adapters.stats(), adapters.keys());
+        // DRUMMING BEAT (the Bone Club's M4 to M8, 2026-11-26): decided HERE, before the snapshot, because the snapshot is
+        // the one place a melee hit's crit is rolled (M6). "Full charge" is the charge term's own reading: the
+        // pre-attack getAttackCooldown(), which clamps at 1.0, equal to AttackCharge.FULL_CHARGE (exactly 1.0). Only a hit
+        // on a MOB (B4's MobHostility.countsAsAMobHit) is asked; any other victim neither counts nor resets. A hit with a
+        // weapon no Drumming Beat names means the club has left his hand: the streak is forgotten (M5c).
+        java.util.UUID id = attacker.getUniqueId();
+        var drums = adapters.behaviourHits().drums();
+        boolean club = DrummingBeatHits.drums(heldId.get(), adapters.enchants());
+        if (!club) drums.forget(id);
+        boolean onMob = io.github.butterflysmp.rpg.core.mob.MobHostility.countsAsAMobHit(
+                io.github.butterflysmp.rpg.paper.adapter.CombatSides.of(victim, adapters.keys()));
+        boolean charged = charge >= io.github.butterflysmp.rpg.core.combat.AttackCharge.FULL_CHARGE;
+        Optional<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> beat = club && onMob
+                ? DrummingBeatHits.active(attacker, heldId.get(), adapters) : Optional.empty();
+        var beatBehaviour = beat.map(b -> (io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.DrummingBeat) b.behaviour())
+                .orElse(null);
+        int level = beat.map(io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour::level).orElse(0);
+        io.github.butterflysmp.rpg.core.enchant.DrumBeats.Decision drum = club && onMob
+                ? io.github.butterflysmp.rpg.core.enchant.DrumBeats.decide(drums.of(id), org.bukkit.Bukkit.getCurrentTick(),
+                        charged, beatBehaviour, level)
+                : null;
+        double critBonus = drum == null ? 0.0 : drum.bonus();
+
+        CombatantSnapshot caster = BukkitCombatant.snapshot(attacker, adapters.stats(), adapters.keys(), critBonus);
         Combatant target = BukkitCombatant.of(victim, adapters);
 
         // A one-slot sink rather than a running total: FIRST-WINS, per the javadoc above. It holds
@@ -363,6 +388,18 @@ public final class WeaponFire {
                 () -> WeaponDurability.applyWearOnUse(attacker, adapters.keys(), cooldowns),
                 (amount, element) -> { if (landed[0] == null) landed[0] = new Landed(amount, element); })
                 .landBasicMelee(trigger.get(), caster, target, chargeScale);
+        // The streak moves only on a hit that LANDED (M4); a swing that dealt nothing neither counts nor resets.
+        if (drum != null && landed[0] != null) {
+            drums.put(id, drum.after());
+            DrummingBeatHits.feedback(attacker, drum, beatBehaviour, adapters);
+            // M8: the line, while trace is on. The chance is the resolved stat plus the bonus, unclamped: the same two
+            // reads the snapshot summed, on this thread, in this tick.
+            if (adapters.mobTrace().getAsBoolean()) {
+                double step = beatBehaviour == null ? 0.0 : beatBehaviour.stepPercentFor(level);
+                adapters.log().info(io.github.butterflysmp.rpg.core.enchant.DrumBeats.line(drum, step,
+                        adapters.stats().critChanceValue(id) + critBonus, charged));
+            }
+        }
         return Optional.ofNullable(landed[0]);
     }
 

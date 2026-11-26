@@ -127,9 +127,15 @@ final class SelfTestRun {
                     player.getUniqueId(), io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);
             // AND HIS FUSED CHUNKS (the seat's F2, 2026-11-26): a chunk left from the last row never goes off in this one.
             int fused = io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(service.adapters(), player.getUniqueId(), "selftest");
+            // AND HIS DRUMMING BEAT STREAK (the Bone Club's M5, 2026-11-26): no row inherits the last row's n. Logged as the
+            // n that was forgotten.
+            var drumStreaks = service.adapters().behaviourHits().drums();
+            int drum = drumStreaks.of(player.getUniqueId()).n();
+            drumStreaks.forget(player.getUniqueId());
             log("CLEAN blocks=" + blocks + " " + SelfTestStaging.readBackField(rowBlocks.readBack(), blocks) + " removed=" + removed + " summons=" + summons + " fused=" + fused + " inventory=" + (gateBoundary ? "restored" : "kept")
                     + (worn == null ? "" : " " + worn)
-                    + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ()));
+                    + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ())
+                    + " drum=" + drum);
             log(SelfTestStaging.lingerLine(SelfTestStaging.LINGER_RADIUS, endWork(start), endLingering(start)));
             // A ROW STARTS CLEAN OR SAYS SO (GATE-dragon-fix.md, C3). The removals above run on each mob's own
             // scheduler, a tick later, so the count waits for them; then every live body still in the row's radius

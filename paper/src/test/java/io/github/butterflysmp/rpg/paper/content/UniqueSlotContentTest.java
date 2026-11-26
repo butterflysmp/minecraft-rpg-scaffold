@@ -146,9 +146,9 @@ class UniqueSlotContentTest {
         assertEquals(6, l.accessories());
         assertEquals(67, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle; 2026-11-26: + blast_fungus; + bone_club
         assertEquals(67, MASTER_POOLS.size(), "the snapshot covers the same 67");
-        assertEquals(26, l.real().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, 26 (ls content/enchants/*.yml | wc -l; 24 at fcfbefbb); a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
+        assertEquals(27, l.real().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
-        assertEquals(26, l.dev().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, 26 (ls content/enchants/*.yml | wc -l; 24 at fcfbefbb); a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
+        assertEquals(27, l.dev().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
@@ -241,7 +241,8 @@ class UniqueSlotContentTest {
                             : g.id().equals("crystal_shard_staff") ? List.of("sharp_crystals")
                             : g.id().equals("knell_beam") ? List.of("early_toll")
                             : g.id().equals("broken_bottle") ? List.of("sharpened_glass")
-                            : g.id().equals("blast_fungus") ? List.of("cluster_bombs", "fast_and_fungal") : List.of(),   // 2026-11-25, K10; 2026-11-26, F7
+                            : g.id().equals("blast_fungus") ? List.of("cluster_bombs", "fast_and_fungal")
+                            : g.id().equals("bone_club") ? List.of("drumming_beat") : List.of(),   // 2026-11-25, K10; 2026-11-26, F7; 2026-11-26, M10
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }

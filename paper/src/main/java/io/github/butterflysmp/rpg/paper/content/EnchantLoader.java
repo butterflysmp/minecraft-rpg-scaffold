@@ -274,6 +274,27 @@ public final class EnchantLoader {
                         : new IllegalArgumentException("enchant '" + id + "' hit_chain: " + ex.getMessage(), ex);
             }
         }
+        // drumming_beat (the Bone Club's, 2026-11-26, M3): gap_ticks, step_percent_by_level, and the two sounds (M7, optional
+        // Minecraft sound keys); its weapon is the enchant's own weapon:, which must be one this loader can see. No element:
+        // it changes the weapon's own hit's crit chance.
+        if (name.equals("drumming_beat")) {
+            if (weapon == null) {
+                throw new IllegalArgumentException("enchant '" + id + "' drumming_beat: counts one weapon's hits, so the"
+                        + " enchant must declare weapon: <id>");
+            }
+            if (weaponDefinition.apply(weapon).isEmpty()) {
+                throw new IllegalArgumentException("enchant '" + id + "' drumming_beat: weapon '" + weapon
+                        + "' is not a weapon this loader can see");
+            }
+            try {
+                return new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.DrummingBeat(weapon,
+                        requiredInt(b, "gap_ticks", id), requiredDoubles(b, "step_percent_by_level", id),
+                        b.getString("beat_sound"), b.getString("reset_sound"));
+            } catch (IllegalArgumentException ex) {
+                throw ex.getMessage().startsWith("enchant '") ? ex
+                        : new IllegalArgumentException("enchant '" + id + "' drumming_beat: " + ex.getMessage(), ex);
+            }
+        }
         String element = requiredString(b, "element", id);
         if (!elementExists.test(element)) {
             throw new IllegalArgumentException("enchant '" + id + "' " + name + ": element '" + element
@@ -469,7 +490,7 @@ public final class EnchantLoader {
 
     /** Every behaviour block a file may declare, one at most (B1). */
     private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst", "shatter",
-            "focused_beam", "grant_trigger", "cast_tune", "hit_chain", "scorch_boost", "cluster_bombs");
+            "focused_beam", "grant_trigger", "cast_tune", "hit_chain", "scorch_boost", "cluster_bombs", "drumming_beat");
 
     /**
      * FOCUSED BEAM'S WEAPON, refused by name (the seat's brief of 2026-11-24): the enchant must be weapon-specific, its

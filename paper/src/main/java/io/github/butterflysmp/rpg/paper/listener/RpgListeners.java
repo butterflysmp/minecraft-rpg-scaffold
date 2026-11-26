@@ -68,7 +68,6 @@ import io.github.butterflysmp.rpg.paper.health.MobHealPolicy;
 import io.github.butterflysmp.rpg.paper.health.VanillaHealPolicy;
 import io.github.butterflysmp.rpg.paper.profile.ProfileService;
 import io.github.butterflysmp.rpg.paper.vault.VaultService;
-import io.github.butterflysmp.rpg.core.combat.AttackCharge;
 import io.github.butterflysmp.rpg.paper.weapon.MeleeHits;
 import io.github.butterflysmp.rpg.paper.weapon.PlumeDraw;
 import io.github.butterflysmp.rpg.paper.weapon.WeaponFire;
@@ -1302,6 +1301,56 @@ public final class RpgListeners implements Listener {
                 weapon.isPresent(), held.getType().getKey().getKey(), summonerWeapon)) {
             event.setCancelled(true);
         }
+    }
+
+    // --- DRUMMING BEAT'S RESETS THAT ARE NOT HITS (the Bone Club's M5c and its lifecycle exits, 2026-11-26). Each forgets
+    // his streak, whatever he held: a streak exists only while the club that made it stays in his main hand, and asking
+    // which item moved would be a second reading of the hand. At MONITOR, ignoring cancelled events: only a change that
+    // happened resets. A hit with any weapon no Drumming Beat names forgets it too (WeaponFire.landVanillaMelee), which
+    // covers a hand changed by a plugin or a command, which raises none of these. His quit is in onQuit.
+    // CC'S CALL: ANY inventory click or drag by him resets (a click can replace the held item in many ways: a slot click,
+    // a hotbar number, a shift-click, a collect); the alternative reads each click for whether it touched the held slot.
+
+    /** M5c: a slot change. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDrumSlotChange(PlayerItemHeldEvent event) {
+        adapters.behaviourHits().drums().forget(event.getPlayer().getUniqueId());
+    }
+
+    /** M5c: a swap of hands (the F key). */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDrumSwapHands(org.bukkit.event.player.PlayerSwapHandItemsEvent event) {
+        adapters.behaviourHits().drums().forget(event.getPlayer().getUniqueId());
+    }
+
+    /** M5c: a drop (the Q key, or a drop from a screen). */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDrumDrop(org.bukkit.event.player.PlayerDropItemEvent event) {
+        adapters.behaviourHits().drums().forget(event.getPlayer().getUniqueId());
+    }
+
+    /** M5c: the held item replaced through a screen (CC'S CALL above: any click). */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDrumInventoryClick(org.bukkit.event.inventory.InventoryClickEvent event) {
+        adapters.behaviourHits().drums().forget(event.getWhoClicked().getUniqueId());
+    }
+
+    /** M5c: the same, by a drag. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onDrumInventoryDrag(org.bukkit.event.inventory.InventoryDragEvent event) {
+        adapters.behaviourHits().drums().forget(event.getWhoClicked().getUniqueId());
+    }
+
+    /** M5: his death. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onDrumDeath(org.bukkit.event.entity.PlayerDeathEvent event) {
+        adapters.behaviourHits().drums().forget(event.getPlayer().getUniqueId());
+    }
+
+    /** M5: a change of world. */
+    @EventHandler
+    public void onDrumWorldChange(org.bukkit.event.player.PlayerChangedWorldEvent event) {
+        adapters.behaviourHits().drums().forget(event.getPlayer().getUniqueId());
     }
 
     /** D1: a lead does not take it. */
@@ -2565,6 +2614,8 @@ public final class RpgListeners implements Listener {
         adapters.behaviourHits().streaks().forgetPlayer(event.getPlayer().getUniqueId());
         // And his Wildfire chains (2026-11-24: "forgotten on ... his quit").
         adapters.behaviourHits().chains().forgetPlayer(event.getPlayer().getUniqueId());
+        // And his Drumming Beat streak (the Bone Club's M5, 2026-11-26).
+        adapters.behaviourHits().drums().forget(event.getPlayer().getUniqueId());
         // And his orb (Lapis Crystal's D2, B6: removed on his quit).
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "quit");
         // And his fused chunks (the seat's F2, 2026-11-26: removed on his quit; none goes off after he leaves).
@@ -2973,7 +3024,7 @@ public final class RpgListeners implements Listener {
         // STASH WHAT IT DEALT, for the sweep rider. The number is observed through EffectApplier's
         // damage seam, not recomputed, so sweep cannot drift from the hit it is a fraction of; and it
         // is absent whenever nothing was dealt, which is what makes sweep fail closed.
-        WeaponFire.landVanillaMelee(attacker, victim, AttackCharge.scale(swing.get().charge()),
+        WeaponFire.landVanillaMelee(attacker, victim, swing.get().charge(),
                 weapons, adapters, cooldowns)
                 .ifPresent(hit -> meleeHits.recordPrimaryHit(
                         attacker.getUniqueId(), hit.amount(), hit.element()));

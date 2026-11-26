@@ -80,6 +80,17 @@ public final class BukkitCombatant {
      * they must be transformed, so both sides move together.
      */
     public static CombatantSnapshot snapshot(LivingEntity entity, CombatantStats stats, Keys keys) {
+        return snapshot(entity, stats, keys, 0.0);
+    }
+
+    /**
+     * THE SAME SNAPSHOT, WITH A TERM ADDED TO THE CRIT CHANCE FOR THIS ONE CAST (the Bone Club's M6, 2026-11-26: Drumming
+     * Beat's streak bonus, {@code DrumBeats.Decision.bonus}). It is added to the resolved {@code critChanceValue} right
+     * before the one roll below, and never written to the stat (which the 5-tick reconcile owns, and which would lag the
+     * streak). {@code Crit.multiplier} clamps the sum at the roll, so a bonus taking it past 1 always crits (no ceiling).
+     * 0.0 is the identity: every other caller is the three-argument form.
+     */
+    public static CombatantSnapshot snapshot(LivingEntity entity, CombatantStats stats, Keys keys, double critBonus) {
         Regions.requireOwned(entity);
         var location = entity.getLocation();
         // ONE draw, held in a local. It is read once, by the multiplier below. This was two draws
@@ -89,7 +100,7 @@ public final class BukkitCombatant {
         // because the three values are read together and naming them beats three store lookups
         // buried in an argument list.
         double critRoll = ThreadLocalRandom.current().nextDouble();
-        double critChance = stats.critChanceValue(entity.getUniqueId());
+        double critChance = stats.critChanceValue(entity.getUniqueId()) + critBonus;
         double critDamage = stats.critDamageValue(entity.getUniqueId());
         return new CombatantSnapshot(
                 entity.getUniqueId(),

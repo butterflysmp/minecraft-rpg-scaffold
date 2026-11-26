@@ -259,13 +259,13 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             // (WeaponDefinition), so it is exactly the set QUIVER_SIZE reaches. Same gate, same refusal of universal.
             case RELOAD_TIME -> Gate.RANGER_ONLY;
             // A BEHAVIOUR acts on the hits of the weapon in the MAIN HAND that made them (B2), so a fighting class or universal.
-            case SHOCKWAVE, AIRBURST, SHATTER, CLUSTER_BOMBS, FOCUSED_BEAM, GRANT_TRIGGER, CAST_TUNE, HIT_CHAIN, SCORCH_BOOST -> Gate.MAIN_HAND_ONLY;
+            case SHOCKWAVE, AIRBURST, SHATTER, CLUSTER_BOMBS, FOCUSED_BEAM, GRANT_TRIGGER, CAST_TUNE, HIT_CHAIN, SCORCH_BOOST, DRUMMING_BEAT -> Gate.MAIN_HAND_ONLY;
             // K9 (2026-11-25): read off the MAIN HAND, as DAMAGE is, and every fighting class's hit rolls crit.
             case CRIT_CHANCE -> Gate.MAIN_HAND_ONLY;
         };
         boolean curved = switch (effect) {
             case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME, CRIT_CHANCE -> true;
-            case DURABILITY, SHOCKWAVE, AIRBURST, SHATTER, CLUSTER_BOMBS, FOCUSED_BEAM, GRANT_TRIGGER, CAST_TUNE, HIT_CHAIN, SCORCH_BOOST                                  -> false;
+            case DURABILITY, SHOCKWAVE, AIRBURST, SHATTER, CLUSTER_BOMBS, FOCUSED_BEAM, GRANT_TRIGGER, CAST_TUNE, HIT_CHAIN, SCORCH_BOOST, DRUMMING_BEAT                                  -> false;
         };
 
         // The two rules are shared rather than copied per arm: three effects now hold the same curve
@@ -293,6 +293,12 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
         if (behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.HitChain chain
                 && !chain.weaponId().equals(weapon)) {
             throw new IllegalArgumentException("enchant '" + id + "' chains '" + chain.weaponId()
+                    + "' but declares weapon: " + weapon);
+        }
+        // Drumming Beat (2026-11-26): a streak is ONE weapon's hits, so the same rule.
+        if (behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.DrummingBeat beat
+                && !beat.weaponId().equals(weapon)) {
+            throw new IllegalArgumentException("enchant '" + id + "' drums '" + beat.weaponId()
                     + "' but declares weapon: " + weapon);
         }
         // D1 (2026-11-23): a trigger is granted to ONE weapon, so the enchant must name it (weapon:), and the grant must
@@ -497,6 +503,8 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                     ? b.levels() : -1;
             case HIT_CHAIN -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.HitChain h
                     ? h.levels() : -1;
+            case DRUMMING_BEAT -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.DrummingBeat d
+                    ? d.levels() : -1;
             case CAST_TUNE -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.CastTune t
                     ? t.levels() : -1;
             case GRANT_TRIGGER -> behaviour instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.GrantTrigger g

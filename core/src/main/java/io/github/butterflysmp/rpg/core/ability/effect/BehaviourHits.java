@@ -48,6 +48,13 @@ public final class BehaviourHits {
         return chains;
     }
 
+    private final io.github.butterflysmp.rpg.core.enchant.DrumStreaks drums = new io.github.butterflysmp.rpg.core.enchant.DrumStreaks();
+
+    /** Drumming Beat's streaks, one per player (the Bone Club's M4, 2026-11-26). */
+    public io.github.butterflysmp.rpg.core.enchant.DrumStreaks drums() {
+        return drums;
+    }
+
     /**
      * WILDFIRE (the seat's brief of 2026-11-24, PR E): the factor THIS primary hit's damage is multiplied by, recording the
      * hit on its chain. Asked by both damage arms INSIDE their gate (a hit that lands), BEFORE {@code applyDamage}, so the
@@ -113,6 +120,9 @@ public final class BehaviourHits {
                 case EnchantBehaviour.CastTune ignored -> { }
                 // A chain multiplies the hit BEFORE it lands (chainFactor, asked by the damage arm), never after it.
                 case EnchantBehaviour.HitChain ignored -> { }
+                // Drumming Beat acts at the CRIT ROLL of a melee hit (DrumBeats, asked by WeaponFire.landVanillaMelee
+                // before the snapshot), never after a hit lands.
+                case EnchantBehaviour.DrummingBeat ignored -> { }
                 // A scorch boost STAMPS the hit before it lands (scorchStamp, asked by the damage arm), never after it.
                 case EnchantBehaviour.ScorchBoost ignored -> { }
                 // Cluster Bombs acts on the PRESS (CastExecutor.launchCluster), never on a hit; its blasts are hits.
