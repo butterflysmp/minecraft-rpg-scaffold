@@ -1,0 +1,40 @@
+# CLUSTER BOMBS -- the Blast Fungus's WEAPON-SPECIFIC enchant, NOT guaranteed (the seat's brief of 2026-11-26, F9, F10).
+# Ben, verbatim: "6. Cluster Bombs, throws 1 big blast fungus that splits into 3 dealing 55/80/105" / "1. No its not
+# guaranteed" / "2. Yes, the damage numbers in the description is the damage, the 3 that split from it deal the normal 55
+# damage" / "1. Split out in a triangle shape 2. Yes it rises Side note, make the blast size of the big bomb 5 blocks".
+#
+# WHAT IT DOES (core CastExecutor.launchCluster, while it is the ACTIVE candidate of the Blast Fungus's slot 0 at level 1
+# or more): a press throws ONE big chunk straight down his aim IN PLACE of the three, paying the press's one mana cost and
+# cooldown (F6), on the Blast Fungus's own flight (its speed, gravity, fuse 40 and trail, read from blast_fungus.yml at run
+# time, never copied here) and the same fuse rules: it rests where it lands, goes off on its fuse or at once on touching a
+# mob. When it goes off it lands the level's 55 / 80 / 105 nature in a burst of radius 5, scaled by the gear score as
+# Shatter Caps' stone and Airburst's bursts are (the same Damage arm). At that moment three ORDINARY chunks split out from
+# that point on a horizontal triangle, one point along his throw's heading (core ClusterSplit), each thrown up and out to
+# land 2.5 blocks from the centre on level ground, each with its own fuse of 20 ticks from the split, each going off as the
+# Blast Fungus's own chunk: its 55 (Ben: "the normal 55", "Yes it rises": the item's score and its own damage enchants, as
+# the press froze them), its radius 3, its visual.
+#
+# ONLY ONE OF THE TWO SLOT-0 CANDIDATES IS ACTIVE AT A TIME (as on every weapon with two, e.g. the Living Lantern's Wildfire
+# and Airburst Flames): with Cluster Bombs active, Fast and Fungal's cooldown cut is not; that is the trade-off.
+#
+# NAME THE QUANTITY: it reads the Blast Fungus's FUSED projectile (fuse 40, speed 0.7, gravity 0.04, authored, present) and
+# replaces its throw; the eligibility half is `weapon: blast_fungus` (W1). The loader refuses it, by name, on a weapon whose
+# right click is not a fused projectile.
+display_name: "Cluster Bombs"              # BEN
+icon: red_mushroom_block                   # SEAT PLACEHOLDER 2026-11-26 (B7)
+max_level: 3                               # BEN: three damages, so three levels
+effect: cluster_bombs
+class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
+weapon: blast_fungus                       # W1: weapon-specific, the Blast Fungus's slot 0. NOT guaranteed (BEN: "No")
+ability_description:                       # T7/F10: replaces the Fungal Barrage prose while active. SEAT PLACEHOLDER 2026-11-26, OPEN FOR BEN
+  - "Lobs one great spore chunk that"      # "three" is this enchant's own split count, which no enchant changes: authored, not a token
+  - "bursts, then splits into three more."
+cluster_bombs:
+  damage_by_level: [55, 80, 105]           # BEN: "dealing 55/80/105" -- the BIG chunk's blast
+  element: nature                          # the Blast Fungus's element
+  radius: 5                                # BEN: "make the blast size of the big bomb 5 blocks"
+  item: red_mushroom_block                 # SEAT PLACEHOLDER 2026-11-26: the big chunk's body. No scale: an item body has none (CC'S CALL)
+  split_count: 3                           # BEN: "splits into 3", "in a triangle shape"
+  split_distance: 2.5                      # SEAT PLACEHOLDER 2026-11-26: each comes to rest about 2.5 blocks out (on level ground)
+  split_fuse_ticks: 20                     # SEAT PLACEHOLDER 2026-11-26: 1 s from the split
+  split_lift: 0.25                         # SEAT PLACEHOLDER 2026-11-26 (CC'S CALL): the upward part of each split throw, a tick

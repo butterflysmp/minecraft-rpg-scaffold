@@ -105,6 +105,6 @@ class TrueTooltipsContentTest {
             CastSpec cast = w.find(e.weapon()).orElseThrow().trigger("right_click").orElseThrow().ability().cast();
             DescriptionTokens.validate(e.abilityDescription(), cast);   // throws by name if it cannot be filled
         }
-        assertEquals(List.of("airburst_flames", "focused_beam", "shatter_caps"), withProse.stream().sorted().toList());
+        assertEquals(List.of("airburst_flames", "cluster_bombs", "focused_beam", "shatter_caps"), withProse.stream().sorted().toList());
     }
 }

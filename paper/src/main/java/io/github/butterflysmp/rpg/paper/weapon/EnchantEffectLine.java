@@ -249,6 +249,15 @@ public final class EnchantEffectLine {
                 yield "fires one stone of " + number(s.damageAt(level)) + " damage that shatters after "
                         + number(s.travelBlocks()) + " blocks into the usual chunks";
             }
+            // CLUSTER BOMBS (B5, F9): the level's big blast and its radius, as authored (the gear score scales it in play).
+            // WORDING: SEAT PLACEHOLDER 2026-11-26, OPEN FOR BEN.
+            case CLUSTER_BOMBS -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.ClusterBombs c)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                yield "throws one big chunk of " + number(c.damageAt(level)) + " damage in " + number(c.radius())
+                        + " blocks that splits into " + c.splitCount() + " of the usual";
+            }
             // A CAST TUNE (G4, B5): the level's REAL number, in the quantity's own unit. Damage is the authored addition,
             // which the gear score scales in play with the base it is added to (G5). A wind-up cut is shown in seconds,
             // Ben's unit ("0.1/0.2/0.4"). WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN.

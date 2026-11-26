@@ -172,6 +172,13 @@ public enum EnchantEffect {
     SHATTER,
 
     /**
+     * A BEHAVIOUR (B1): {@link EnchantBehaviour.ClusterBombs}, the file's {@code cluster_bombs:} block (Cluster Bombs,
+     * F9, 2026-11-26). It acts on the PRESS of its weapon's fused projectile ({@code CastExecutor.launchCluster}), never on
+     * a hit; its blasts are hits. No {@code value_by_level}.
+     */
+    CLUSTER_BOMBS,
+
+    /**
      * A BEHAVIOUR (B1): {@link EnchantBehaviour.FocusedBeam}, the file's {@code focused_beam:} block (Focused Beam,
      * 2026-11-24). It acts on its weapon's VOLLEY at the first shot ({@code CastExecutor.focusedBeam}), never on a hit; its
      * one ray is a hit. No {@code value_by_level}.

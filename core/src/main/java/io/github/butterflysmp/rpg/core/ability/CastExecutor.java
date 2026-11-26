@@ -580,6 +580,15 @@ public final class CastExecutor {
         // spends one quiver round PER OFFSET (`yawOffsets.length`), so a spread expanded there
         // would bill seven rounds for one press. Expanded below commit it bills one, by
         // construction rather than by a second rule that could drift.
+        // CLUSTER BOMBS (F9, 2026-11-26): its weapon's fused throw is replaced by ONE big chunk, here, below the commit, so
+        // the press still pays once (F6). BehaviourCasts.clusterBombs is the same function the tooltip asks (T1).
+        Optional<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> cluster =
+                BehaviourCasts.clusterBombs(ability.id(), spec, caster.behaviours());
+        if (cluster.isPresent()) {
+            launchCluster(ability, caster, aim, spec, cluster.get(),
+                    (io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.ClusterBombs) cluster.get().behaviour());
+            return;
+        }
         if (spec.spread() != null) {
             // SHATTER CAPS (2026-11-24): its weapon's spread is replaced by ONE stone, here, below the commit, so the
             // press still bills one round and one cooldown, as the spread does.
@@ -638,6 +647,53 @@ public final class CastExecutor {
                 new ProjectileFlight.Look(spec.trail(), spec.item(), spec.body()),
                 seekOf(spec),
                 (target, point) -> detonate(ability, caster, target, point));
+    }
+
+    /**
+     * CLUSTER BOMBS' BIG CHUNK (F9, 2026-11-26; Ben: "throws 1 big blast fungus that splits into 3 dealing 55/80/105",
+     * "make the blast size of the big bomb 5 blocks"). ONE fused chunk down the aim on the WEAPON's own flight (its speed,
+     * gravity, fuse and trail) and the same fuse rules; its body is the enchant's item, or the weapon's. When it goes off
+     * (at rest on its fuse, in the air on its fuse, or on a mob it touches) it lands the level's damage in a burst of the
+     * enchant's radius (the gear score scales it: the same Damage arm, the same frozen caster), and at the same moment its
+     * ordinary chunks split out from that point ({@link #splitCluster}).
+     */
+    private void launchCluster(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec,
+                               io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour active,
+                               io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.ClusterBombs bombs) {
+        double amount = bombs.damageAt(active.level());
+        List<io.github.butterflysmp.rpg.core.ability.effect.EffectSpec> bigOnHit =
+                BehaviourCasts.clusterBig(ability.onHit(), amount, bombs.element(), bombs.radius());
+        Caster bigCaster = caster.withPayloadDamage(amount);
+        String item = bombs.item() != null ? bombs.item() : spec.item();
+        Vec3 heading = io.github.butterflysmp.rpg.core.combat.ClusterSplit.heading(aim.direction(), aim.right());
+        ProjectileFlight.launchFused(world, bigCaster, aim.origin(), aim.direction().scale(spec.speed()), spec.gravity(),
+                spec.fuseTicks(), new ProjectileFlight.Look(spec.trail(), item, null),
+                (point, cause) -> {
+                    effects.detonateFused(bigOnHit, bigCaster, point);
+                    splitCluster(ability, caster, spec, bombs, heading, point);
+                });
+    }
+
+    /**
+     * THE SPLIT (F9; Ben: "Split out in a triangle shape", "the 3 that split from it deal the normal 55 damage", "Yes it
+     * rises"): {@code splitCount} ORDINARY chunks leave {@code point} on the triangle {@code ClusterSplit} gives, each its own
+     * fused flight with the enchant's split fuse from THIS moment, each going off as the weapon's own chunk: the weapon's
+     * on_hit, priced by the press's frozen caster (the item's score and its damage enchants at the press, as every hit of
+     * a press is; CC'S CALL, the alternative re-reads the item at the split, off the caster's thread). A split chunk born
+     * inside a block meets that block on its first step and RESTS at the centre (READ: {@code VoxelShape.clip} returns a
+     * hit at the trace's first sample when it is inside the shape), then goes off on its fuse.
+     */
+    private void splitCluster(AbilityDefinition ability, Caster caster, CastSpec.Projectile spec,
+                              io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.ClusterBombs bombs, Vec3 heading,
+                              Vec3 point) {
+        List<Vec3> throws_ = io.github.butterflysmp.rpg.core.combat.ClusterSplit.velocities(heading, bombs.splitCount(),
+                bombs.splitDistance(), bombs.splitLift(), spec.gravity());
+        world.traceSplit(caster.id(), caster.source(), point, throws_.size());
+        for (Vec3 velocity : throws_) {
+            ProjectileFlight.launchFused(world, caster, point, velocity, spec.gravity(), bombs.splitFuseTicks(),
+                    new ProjectileFlight.Look(spec.trail(), spec.item(), null),
+                    (at, cause) -> effects.detonateFused(ability.onHit(), caster, at));
+        }
     }
 
     /**

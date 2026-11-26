@@ -102,6 +102,16 @@ public final class BehaviourBlocks {
                 rows.add(new DamageRow(shot.getAsDouble(), orb.shot().element(), OptionalInt.empty()));
                 yield Optional.of(List.copyOf(rows));
             }
+            // CLUSTER BOMBS (F10, 2026-11-26): the big chunk at the level's damage, then the weapon's own chunks, as many as
+            // split (its own count, never the weapon's spread). Both through the same resolvers the press uses.
+            case EnchantBehaviour.ClusterBombs bombs -> {
+                if (!(ability.cast() instanceof CastSpec.Projectile p)
+                        || BehaviourCasts.clusterBombs(ability.id(), p, one).isEmpty()) yield Optional.empty();
+                yield Optional.of(rows(
+                        row(BehaviourCasts.clusterBig(ability.onHit(), bombs.damageAt(active.level()), bombs.element(),
+                                bombs.radius()), attack, OptionalInt.empty()),
+                        row(ability.onHit(), attack, OptionalInt.of(bombs.splitCount()))));
+            }
             // A CAST TUNE changes the cast itself (CastTunes.tune, before this is asked): no block of its own.
             case EnchantBehaviour.CastTune ignored -> Optional.empty();
             // CONDITIONAL (T8): each acts only when hits land or on a target's state, so no line moves.

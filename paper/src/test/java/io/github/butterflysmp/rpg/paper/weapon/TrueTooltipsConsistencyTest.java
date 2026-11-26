@@ -78,7 +78,7 @@ class TrueTooltipsConsistencyTest {
     private static final Logger LOG = Logger.getLogger(TrueTooltipsConsistencyTest.class.getName());
     private static final int[] SCORES = {100, 250};
     /** PINNED: the count of cases this walk generates over shipped content. Recount, never adjust: see the plan. */
-    static final int EXPECTED_CASES = 1278;   // weapons 588, armor 672, shields 18 (564 unmoved): 2026-11-26 + fast_and_fungal (3 levels x 2 scores, all moved: the cooldown); + blast_fungus (attunement 3 + unbreaking 3, x 2 scores = 12; unbreaking 6 unmoved); 1260 at fcfbefbb
+    static final int EXPECTED_CASES = 1284;   // weapons 594, armor 672, shields 18 (564 unmoved): 2026-11-26 + cluster_bombs (3 levels x 2 scores, all moved); + fast_and_fungal (3 levels x 2 scores, all moved: the cooldown); + blast_fungus (attunement 3 + unbreaking 3, x 2 scores = 12; unbreaking 6 unmoved); 1260 at fcfbefbb
     private static final Pattern DAMAGE = Pattern.compile("^.* Damage: ([0-9.]+)( x ([0-9]+))?$");
     private static final Pattern CRIT = Pattern.compile("^Crit Chance: \\+([0-9]+)%$");
 
@@ -160,6 +160,13 @@ class TrueTooltipsConsistencyTest {
             if (a.cast() instanceof CastSpec.Volley v && BehaviourCasts.focusedBeam(a.id(), v.of(), beh).isPresent()) {
                 var active = BehaviourCasts.focusedBeam(a.id(), v.of(), beh).get();
                 hits.add(new Hit(item.applyAsDouble(((EnchantBehaviour.FocusedBeam) active.behaviour()).damageAt(active.level())), 1));
+            } else if (a.cast() instanceof CastSpec.Projectile p && BehaviourCasts.clusterBombs(a.id(), p, beh).isPresent()) {
+                // CLUSTER BOMBS (F9, 2026-11-26): CastExecutor.launchCluster sets off ONE big chunk at the level's damage, then
+                // splitCluster sets off splitCount of the weapon's own chunks, each its own literal.
+                var active = BehaviourCasts.clusterBombs(a.id(), p, beh).get();
+                var bombs = (EnchantBehaviour.ClusterBombs) active.behaviour();
+                hits.add(new Hit(item.applyAsDouble(bombs.damageAt(active.level())), 1));
+                literal.ifPresent(d -> hits.add(new Hit(item.applyAsDouble(d), bombs.splitCount())));
             } else if (a.cast() instanceof CastSpec.Projectile p && BehaviourCasts.shatter(a.id(), p, beh).isPresent()) {
                 var active = BehaviourCasts.shatter(a.id(), p, beh).get();
                 hits.add(new Hit(item.applyAsDouble(((EnchantBehaviour.Shatter) active.behaviour()).damageAt(active.level())), 1));
