@@ -744,4 +744,346 @@ armor.slotNoun(CHEST) = Chestplate
 armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
-=== 108 renderings ===
+=== ENCHANTED WEAPONS (top level, score absent) ===
+-- blaze_kings_staff + attunement 3
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Fireball" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Throws a burning charge." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["34.5" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.4s | Mana Cost: 8" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "The Blaze King kept it lit." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It has not gone out since." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Magic Weapon" color=#FFAA00 O=. B=. S=. U=. I=F
+-- boltor + power 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["21.85" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Eight bolts, then three seconds" color=#AAAAAA O=. B=. S=. U=. I=T
+   "of being a person holding a crossbow." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Ranged Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- bow + power 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["16.1" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Ranged Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- breacher + power 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/2" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Breacher" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Four chunks of cobblestone," color=#AAAAAA O=. B=. S=. U=. I=F
+   "a tight triangle 6 degrees wide." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["46 x 4" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.0s" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Iron, gunpowder, string," color=#AAAAAA O=. B=. S=. U=. I=T
+   "and whatever was lying around." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Ranged Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- breacher + shatter_caps 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/2" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Breacher" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "One stone that shatters into" color=#AAAAAA O=. B=. S=. U=. I=F
+   "four chunks after 5 blocks." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["85" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["40 x 4" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.0s" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Iron, gunpowder, string," color=#AAAAAA O=. B=. S=. U=. I=T
+   "and whatever was lying around." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Ranged Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- broken_bottle + sharpened_glass 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["18" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["2.0" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Crit Chance: " color=#AAAAAA O=. B=. S=. U=. I=F ["+25%" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- broken_bottle + sharpness 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["20.7" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["2.0" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Crit Chance: " color=#AAAAAA O=. B=. S=. U=. I=F ["+10%" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- copper_sword + sharpness 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["19.55" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- crossbow + power 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["42.55" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Ranged Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- crystal_shard_staff + attunement 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Crystal Shard" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Fires a homing crystal shard" color=#AAAAAA O=. B=. S=. U=. I=F
+   "at the nearest enemy." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["18.4" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.8s | Mana Cost: 8" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- crystal_shard_staff + sharp_crystals 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Crystal Shard" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Fires a homing crystal shard" color=#AAAAAA O=. B=. S=. U=. I=F
+   "at the nearest enemy." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["25" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.8s | Mana Cost: 8" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- cursed_emerald + attunement 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Cursed Volley" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Channel, then loose three" color=#AAAAAA O=. B=. S=. U=. I=F
+   "bolts down your line of sight." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["31.05 x 3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.5s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Nine facets, and every one of them looking back." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It asks for a moment before it answers." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- cursed_emerald + echo_beam 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Cursed Volley" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Channel, then loose six" color=#AAAAAA O=. B=. S=. U=. I=F
+   "bolts down your line of sight." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["27 x 6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.5s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Nine facets, and every one of them looking back." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It asks for a moment before it answers." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- cursed_emerald + focused_beam 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Cursed Volley" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Channel, then loose one focused" color=#AAAAAA O=. B=. S=. U=. I=F
+   "beam down your line of sight." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["216" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.5s | Mana Cost: 40" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Nine facets, and every one of them looking back." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It asks for a moment before it answers." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- diamond_sword + sharpness 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["31.05" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Melee Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- dragons_breath + power 3
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "Quiver: --/5" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Dragon's Breath" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "A hexagon of arrows, loosed at once." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Close range is the whole weapon." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["10.35 x 7" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.6s" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "It does not pick a target." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It picks a direction." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Ranged Weapon" color=#FFAA00 O=. B=. S=. U=. I=F
+-- dragons_plume + power 3
+   "Void" color=#AA00AA O=. B=. S=. U=. I=F
+   "Quiver: --/25" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["39.1" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Dragon's Plume" color=#FFAA00 O=. B=. S=. U=. I=F ["  Tap1" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Void Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["10.35" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.4s" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Dragon's Plume" color=#FFAA00 O=. B=. S=. U=. I=F ["  Tap2" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Void Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["19.55" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.4s" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Dragon's Plume" color=#FFAA00 O=. B=. S=. U=. I=F ["  Tap3" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Void Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["29.9" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.4s" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Patience is the only string it answers to;" color=#AAAAAA O=. B=. S=. U=. I=T
+   "what it cannot see, it lets pass." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Legendary Ranged Weapon" color=#FFAA00 O=. B=. S=. U=. I=F
+-- flint_staff + attunement 3
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Fire Bolt" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Hurls a fragment of burning mana" color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["23" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.2s | Mana Cost: 5" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Prehistoric magicians learned you could" color=#AAAAAA O=. B=. S=. U=. I=T
+   "create fire by flinging mana into flint." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- flint_staff + large_sparks 3
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Fire Bolt" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Hurls a fragment of burning mana" color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["32" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.2s | Mana Cost: 5" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Prehistoric magicians learned you could" color=#AAAAAA O=. B=. S=. U=. I=T
+   "create fire by flinging mana into flint." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- golden_sword + sharpness 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["23" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- iron_sword + sharpness 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["26.45" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- knell_beam + attunement 3
+   "Void" color=#AA00AA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Knell's Toll" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Locks a line where you look," color=#AAAAAA O=. B=. S=. U=. I=F
+   "then tolls a beam down it 1.2s later." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Void Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["72.45" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 2.4s | Mana Cost: 13" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Epic Magic Weapon" color=#AA00AA O=. B=. S=. U=. I=F
+-- lapis_staff + attunement 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Lapis Beam" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Right-click to fire a blue beam." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["24.15" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.0s | Mana Cost: 10" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Cut lapis, bound in breeze-iron." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It does not travel. It arrives." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- lapis_staff + lapis_crystal 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Lapis Beam" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Right-click to fire a blue beam." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["21" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 1.0s | Mana Cost: 10" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Lapis Crystal" color=#FFAA00 O=. B=. S=. U=. I=F ["  Left-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Throws a lapis crystal" color=#AAAAAA O=. B=. S=. U=. I=F
+   "that floats where it lands." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Kinetic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["14.7" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 30.0s | Mana Cost: 30" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Cut lapis, bound in breeze-iron." color=#AAAAAA O=. B=. S=. U=. I=T
+   "It does not travel. It arrives." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- living_lantern + airburst_flames 3
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Lantern's Breath" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "A seeking flame that splits" color=#AAAAAA O=. B=. S=. U=. I=F
+   "into three after 6 blocks." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["45" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["35 x 3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.8s | Mana Cost: 12" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- living_lantern + attunement 3
+   "Fire" color=#FF5555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Lantern's Breath" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Looses a slow, seeking flame" color=#AAAAAA O=. B=. S=. U=. I=F
+   "that hunts within 7 blocks." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Fire Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["51.75" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 0.8s | Mana Cost: 12" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- locust + power 3
+   "Nature" color=#55FF55 O=. B=. S=. U=. I=F
+   "Quiver: --/12" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["29.9" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.7" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "A swarm keeps no count" color=#AAAAAA O=. B=. S=. U=. I=T
+   "and asks nothing of the season." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Ranged Weapon" color=#5555FF O=. B=. S=. U=. I=F
+-- netherite_sword + sharpness 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["35.65" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Melee Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- short_bow + power 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["18.4" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.7" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Short to draw." color=#AAAAAA O=. B=. S=. U=. I=T
+   "Shorter to answer." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Ranged Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- stone_sword + sharpness 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["16.1" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+-- withered_shortbow + power 3
+   "Wither" color=#555555 O=. B=. S=. U=. I=F
+   "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Ranged Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["18.4" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Ranged Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- wooden_sword + sharpness 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["12.65" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["1.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
+
+=== 140 renderings ===

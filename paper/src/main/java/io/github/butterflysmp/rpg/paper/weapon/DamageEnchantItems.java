@@ -4,6 +4,7 @@ import io.github.butterflysmp.rpg.core.enchant.ActiveEnchant;
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants;
 import io.github.butterflysmp.rpg.core.enchant.DamageEnchants.Grant;
 import io.github.butterflysmp.rpg.core.enchant.EnchantEffect;
+import io.github.butterflysmp.rpg.core.enchant.EnchantState;
 import io.github.butterflysmp.rpg.core.weapon.GearClass;
 import io.github.butterflysmp.rpg.core.weapon.WeaponDefinition;
 import io.github.butterflysmp.rpg.core.weapon.WeaponRegistry;
@@ -77,7 +78,18 @@ public final class DamageEnchantItems {
                 .orElse(null);
         if (heldClass == null) return new HashMap<>();
 
-        return DamageEnchants.matching(heldClass, damageGrantsOn(held, keys, enchants));
+        return DamageEnchants.matching(heldClass, damageGrantsOn(EnchantItems.read(held, keys), enchants));
+    }
+
+    /**
+     * TRUE TOOLTIPS (2026-11-26, T1): the summed percent this item's own damage enchants grant a weapon of
+     * {@code weaponClass}: the SAME grants and the SAME class gate {@link #desiredModifiers} hands the stat reconcile, off
+     * an already-decoded state, so the tooltip's percent is the stat's. Pure over plain values, so a test can hold it.
+     */
+    public static double percentOn(EnchantState state, WeaponDefinition weapon, EnchantRegistry enchants) {
+        if (state == null || weapon == null || enchants == null) return 0.0;
+        return DamageEnchants.matching(GearClass.of(weapon.weaponClass()), damageGrantsOn(state, enchants))
+                .values().stream().mapToDouble(Double::doubleValue).sum();
     }
 
     /**
@@ -91,10 +103,9 @@ public final class DamageEnchantItems {
      * absent from the map means the reconciler holds no source for it at all, which is what keeps
      * Unbreaking from appearing as a dead modifier on every enchanted weapon.
      */
-    private static Map<String, Grant> damageGrantsOn(ItemStack item, Keys keys,
-                                                     EnchantRegistry enchants) {
+    private static Map<String, Grant> damageGrantsOn(EnchantState state, EnchantRegistry enchants) {
         Map<String, Grant> grants = new HashMap<>();
-        for (ActiveEnchant active : EnchantItems.read(item, keys).effective()) {
+        for (ActiveEnchant active : state.effective()) {
             EnchantDefinition definition = enchants.find(active.enchantId()).orElse(null);
             // A dangling id has no class and no curve, so it cannot grant a percent. It still
             // RENDERS on the tooltip -- EnchantLore's deliberate fail-soft -- so the mismatch is

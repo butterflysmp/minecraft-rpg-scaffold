@@ -1245,6 +1245,9 @@ rests out its life; a beam into it fires the crystal's shots at the same authore
    `volleys of 6 shots`; `-0.4s wind-up` (each level's own number).
 3. **The weapons' own tooltips are NOT edited with a tune active:** the Flint Staff still reads its authored 20 (the
    enchant's line says +12), the Cursed Emerald "27 x 3".
+   **OVERTURNED BY BEN, 2026-11-26** (*"I'm over turning a ruling I made weeks ago ... I'd like to change this so the
+   stats reflect exactly what you're getting"*): the Flint Staff with Large Sparks III reads `Fire Damage: 32`, the
+   Cursed Emerald with Echo Beam III `27 x 6`. Kept as the record. The account is `PLAN-true-tooltips.md`.
 4. Which of the two weapon-specific candidates should LEAD the slot: built with the guaranteed one first (the brief's).
 
 ### Tests and mutations

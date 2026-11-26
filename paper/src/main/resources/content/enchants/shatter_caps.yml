@@ -26,6 +26,9 @@ max_level: 3                               # BEN: three damages, so three levels
 effect: shatter
 class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
 weapon: breacher                           # W1: weapon-specific, the Breacher's slot 0
+ability_description:                       # T7 (2026-11-26): replaces the Breacher's prose while active. SEAT PLACEHOLDER 2026-11-26, OPEN FOR BEN
+  - "One stone that shatters into"         # {shots_word} is the Breacher's own spread count, filled from its cast (D4)
+  - "{shots_word} chunks after 5 blocks."
 shatter:
   travel_blocks: 5                         # BEN: "splits into 4 cobble after traveling 5 blocks"
   speed: 2.5                               # SEAT PLACEHOLDER 2026-11-24: so the split is the 2nd step at exactly 5.0

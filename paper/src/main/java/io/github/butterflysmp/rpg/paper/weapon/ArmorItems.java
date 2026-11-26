@@ -150,16 +150,7 @@ public final class ArmorItems {
         // through the same Protection.effectiveDefense.
         // Protection composes INTO the Defense line; Growth adds a line of its own. One entry per
         // flat-stat enchant, so Slice 2b's Mana Bank is a second element here and nothing else.
-        List<ArmorLore.StatBonus> bonuses = new ArrayList<>();
-        addBonus(bonuses, state, adapters, EnchantEffect.MAX_HEALTH,
-                ArmorLoreLines.MAX_HEALTH_LABEL, StatsBarText.HEALTH_COLOR);
-        addBonus(bonuses, state, adapters, EnchantEffect.MAX_MANA,
-                ArmorLoreLines.MAX_MANA_LABEL, StatsBarText.MANA_COLOR);
-
-        List<Component> base = ArmorLore.build(armor,
-                EnchantValues.totalFor(state, adapters.enchants(), EnchantEffect.DEFENSE),
-                bonuses,
-                GearScoreItems.readMeta(meta, adapters.keys()));
+        List<Component> base = statLore(armor, state, adapters.enchants(), GearScoreItems.readMeta(meta, adapters.keys()));
         meta.lore(EnchantLore.applied(base, EnchantLore.lines(state, adapters.enchants())));
         meta.setEnchantmentGlintOverride(!state.effective().isEmpty());
     }
@@ -171,10 +162,26 @@ public final class ArmorItems {
      * without a code change -- the rule { EnchantValues} already follows and the reason there
      * is no { Growth.ID}.
      */
+    /**
+     * TRUE TOOLTIPS (2026-11-26, T11/T13): the piece's stat block off a decoded state, with no meta: what
+     * {@link #applyLore} renders, extracted unchanged so the consistency test can drive it. Shipped behaviour and wording
+     * stand (the seat): Defense with its own Protection, "Health: +N" for Growth, "Mana: +N" for Mana Bank.
+     */
+    public static List<Component> statLore(ArmorDefinition armor, EnchantState state,
+                                           io.github.butterflysmp.rpg.paper.content.EnchantRegistry enchants,
+                                           java.util.OptionalInt score) {
+        List<ArmorLore.StatBonus> bonuses = new ArrayList<>();
+        addBonus(bonuses, state, enchants, EnchantEffect.MAX_HEALTH,
+                ArmorLoreLines.MAX_HEALTH_LABEL, StatsBarText.HEALTH_COLOR);
+        addBonus(bonuses, state, enchants, EnchantEffect.MAX_MANA,
+                ArmorLoreLines.MAX_MANA_LABEL, StatsBarText.MANA_COLOR);
+        return ArmorLore.build(armor, EnchantValues.totalFor(state, enchants, EnchantEffect.DEFENSE), bonuses, score);
+    }
+
     private static void addBonus(List<ArmorLore.StatBonus> into, EnchantState state,
-                                 AdapterContext adapters, EnchantEffect effect,
+                                 io.github.butterflysmp.rpg.paper.content.EnchantRegistry enchants, EnchantEffect effect,
                                  String label, net.kyori.adventure.text.format.NamedTextColor color) {
-        double points = EnchantValues.totalFor(state, adapters.enchants(), effect);
+        double points = EnchantValues.totalFor(state, enchants, effect);
         if (points > 0) into.add(new ArmorLore.StatBonus(points, label, color));
     }
 

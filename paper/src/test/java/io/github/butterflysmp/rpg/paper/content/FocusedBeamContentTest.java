@@ -98,7 +98,10 @@ class FocusedBeamContentTest {
         assertEquals(false, ray.pierce());
         assertEquals(2, ability.onHit().size());
         assertEquals(new io.github.butterflysmp.rpg.core.ability.effect.EffectSpec.Damage(27, "kinetic"), ability.onHit().get(1));
-        assertEquals(List.of("Channel, then loose three", "bolts down your line of sight."), ability.description(),
+        // 2026-11-26 (true tooltips, D2): "three" is now the token {shots_word}, so this reads the FILLED sentence, the one
+        // a player sees, rather than the authored source.
+        assertEquals(List.of("Channel, then loose three", "bolts down your line of sight."),
+                io.github.butterflysmp.rpg.core.weapon.DescriptionTokens.fill(ability.description(), ability.cast()),
                 "only six became three, 2026-11-24 (the wording OPEN FOR BEN)");
     }
 

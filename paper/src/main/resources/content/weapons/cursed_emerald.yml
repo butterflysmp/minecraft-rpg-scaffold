@@ -94,8 +94,10 @@ triggers:
     name: "Cursed Volley"
     # 2026-11-24: "six" became "three" with the volley (BEN: shots 3); every other word unchanged. The wording is a SEAT
     # PLACEHOLDER 2026-11-24, OPEN FOR BEN.
+    # 2026-11-26 (true tooltips, the seat's D2): "three" is the D1 token {shots_word}, filled from the EFFECTIVE cast, so
+    # it reads "three" bare and "six" under Echo Beam III. Every other word is Ben's sentence, unchanged.
     description:
-      - "Channel, then loose three"
+      - "Channel, then loose {shots_word}"
       - "bolts down your line of sight."
 
     # AUTHORED 30, AND IT IS EXACTLY THE DERIVED FLOOR: windup 20 + (shots 6 - 1) x interval 2.

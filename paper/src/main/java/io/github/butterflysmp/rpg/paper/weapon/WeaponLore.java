@@ -1,6 +1,11 @@
 package io.github.butterflysmp.rpg.paper.weapon;
 
 import io.github.butterflysmp.rpg.core.ability.AbilityDefinition;
+import io.github.butterflysmp.rpg.core.ability.CastTunes;
+import io.github.butterflysmp.rpg.core.weapon.BehaviourBlocks;
+import io.github.butterflysmp.rpg.core.weapon.DescriptionTokens;
+import io.github.butterflysmp.rpg.core.weapon.GrantedTriggers;
+import io.github.butterflysmp.rpg.core.weapon.ItemEnchantTerms;
 import io.github.butterflysmp.rpg.core.weapon.GearLoreLines;
 import io.github.butterflysmp.rpg.core.weapon.GearScore;
 import io.github.butterflysmp.rpg.core.weapon.TriggerBinding;
@@ -88,7 +93,30 @@ public final class WeaponLore {
     public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements,
                                         OptionalInt loaded, OptionalInt stampedCapacity,
                                         OptionalInt score, List<TriggerBinding> granted) {
+        return build(weapon, elements, loaded, stampedCapacity, score, ItemEnchantTerms.NONE, granted);
+    }
+
+    /**
+     * THE TOOLTIP OF THE EFFECTIVE ITEM (true tooltips, the seat's T1, 2026-11-26; Ben: "the stats reflect exactly what
+     * you're getting"): the definition, this stack's score, and this stack's ACTIVE enchants ({@code terms}). Every number
+     * comes from the resolver the engine uses for it: the cast from {@code CastTunes.tune}, a behaviour's lines from
+     * {@code BehaviourBlocks} (over {@code BehaviourCasts}), a damage figure through {@link ItemEnchantTerms#itemDamage}
+     * ({@code HitDamage.hitBase} with no player term), crit through {@link ItemEnchantTerms#critChance}. The granted
+     * triggers are the terms' own ({@code GrantedTriggers.granted}). {@code ItemEnchantTerms.NONE} is the pre-slice
+     * rendering exactly, which is why {@code golden-lore.txt}'s definitions-only section does not move.
+     */
+    public static List<Component> build(WeaponDefinition weapon, ElementRegistry elements,
+                                        OptionalInt loaded, OptionalInt stampedCapacity,
+                                        OptionalInt score, ItemEnchantTerms terms) {
+        return build(weapon, elements, loaded, stampedCapacity, score, terms, List.of());
+    }
+
+    private static List<Component> build(WeaponDefinition weapon, ElementRegistry elements,
+                                         OptionalInt loaded, OptionalInt stampedCapacity,
+                                         OptionalInt score, ItemEnchantTerms terms, List<TriggerBinding> extraGranted) {
         List<Component> lore = new ArrayList<>();
+        List<TriggerBinding> granted = new ArrayList<>(GrantedTriggers.granted(weapon, terms.behaviours()));
+        granted.addAll(extraGranted);
 
         // *** THE COMPOSED DOOR, ASKED ONCE AND USED THREE TIMES: the score line, the class-damage
         // number and the element-damage number. *** A weapon that declares itself unscored must
@@ -158,8 +186,12 @@ public final class WeaponLore {
         boolean statBlockPlaced = false;
         List<TriggerBinding> triggers = new ArrayList<>(weapon.triggers());
         triggers.addAll(granted);
+        // T1: the weapon's own abilities AS A PRESS FIRES THEM, every active cast tune applied (CastTunes.tune, the one
+        // seam CastExecutor calls at commit). A granted orb reads its beam from these.
+        List<AbilityDefinition> ownTuned = new ArrayList<>();
+        for (TriggerBinding own : weapon.triggers()) ownTuned.add(CastTunes.tune(own.ability(), terms.behaviours()));
         for (TriggerBinding binding : triggers) {
-            AbilityDefinition ability = binding.ability();
+            AbilityDefinition ability = CastTunes.tune(binding.ability(), terms.behaviours());
             var damage = WeaponLoreLines.triggerDamage(ability.onHit(), weapon.attackDamage());
             boolean isBasicAttack = DamagePayload.isBasicAttack(ability.onHit());
 
@@ -173,7 +205,7 @@ public final class WeaponLore {
                 statBlockPlaced = true;
                 lore.add(GearLore.blank());
                 lore.add(GearLore.plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
-                        .append(GearLore.plain(number(shown(damage.get().amount(), scored, score)),
+                        .append(GearLore.plain(damageNumber(damage.get().amount(), scored, score, terms),
                                 NamedTextColor.RED)));
 
                 // Which number paces THIS basic attack? A vanilla-driven melee hit is paced by the
@@ -190,7 +222,8 @@ public final class WeaponLore {
                 }
                 // K2 (2026-11-25): the crit chance this weapon grants while held, FLAT (never scaled by the score), under
                 // its speed. SEAT PLACEHOLDER 2026-11-25 wording, open for Ben. No line for a weapon that grants none.
-                String crit = WeaponLoreLines.critChanceLabel(weapon.critChance());
+                // TRUE TOOLTIPS (T5): plus this item's own crit enchants (Sharpened Glass), as the stat sums them.
+                String crit = WeaponLoreLines.critChanceLabel(terms.critChance(weapon));
                 if (!crit.isBlank()) {
                     lore.add(GearLore.plain("Crit Chance: ", NamedTextColor.GRAY)
                             .append(GearLore.plain(crit, NamedTextColor.RED)));
@@ -207,13 +240,25 @@ public final class WeaponLore {
             lore.add(GearLore.plain(ability.displayName(), NamedTextColor.GOLD)
                     .append(GearLore.plain("  " + WeaponLoreLines.inputLabel(binding.input()), NamedTextColor.YELLOW)));
 
-            for (String line : ability.description()) {
+            // T7: a behaviour enchant that changes this ability rewrites its prose and its damage lines, from the same
+            // resolvers the press uses; none, and the ability renders as authored (its cast already tuned above).
+            var rewrite = BehaviourBlocks.rewrite(weapon, ability, terms, ownTuned);
+            List<String> prose = rewrite.map(BehaviourBlocks.Block::description).orElse(ability.description());
+            // D1: tokens filled from the EFFECTIVE cast, so "loose {shots_word}" reads "six" under Echo Beam III.
+            for (String line : DescriptionTokens.fill(prose, ability.cast())) {
                 lore.add(GearLore.plain(line, NamedTextColor.GRAY));
             }
 
+            if (rewrite.isPresent()) {
+                for (BehaviourBlocks.DamageRow row : rewrite.get().rows()) {
+                    String count = row.count().isPresent() ? " x " + row.count().getAsInt() : "";
+                    lore.add(GearLore.plain(elementName(row.element(), elements) + " Damage: ", NamedTextColor.GRAY)
+                            .append(GearLore.plain(damageNumber(row.authored(), scored, score, terms) + count,
+                                    NamedTextColor.RED)));
+                }
+            } else if (damage.isPresent()) {
             // Element-typed, NOT class-typed: this payload reads no stat, so no "+N Melee Damage"
             // modifier can reach it and claiming otherwise would be a lie the tooltip tells.
-            if (damage.isPresent()) {
                 DamagePayload.TriggerDamage d = damage.get();
                 // "x N" ONLY WHEN ONE PRESS DELIVERS N PAYLOADS SEQUENTIALLY. The criterion, its
                 // interruption caveat and the reason a fan is excluded all live in
@@ -225,7 +270,7 @@ public final class WeaponLore {
                 OptionalInt shots = WeaponLoreLines.deliveredShots(ability.cast());
                 String shotsLabel = shots.isPresent() ? " x " + shots.getAsInt() : "";
                 lore.add(GearLore.plain(elementName(d.element(), elements) + " Damage: ", NamedTextColor.GRAY)
-                        .append(GearLore.plain(number(shown(d.amount(), scored, score)) + shotsLabel,
+                        .append(GearLore.plain(damageNumber(d.amount(), scored, score, terms) + shotsLabel,
                                 NamedTextColor.RED)));
             }
 
@@ -316,6 +361,16 @@ public final class WeaponLore {
      */
     private static double shown(double authored, boolean scored, OptionalInt score) {
         return scored ? GearScore.scaledDamage(authored, GearScore.orAbsent(score)) : authored;
+    }
+
+    /**
+     * TRUE TOOLTIPS (T1, T4): the figure a damage line prints, the ITEM'S TERM of the hit: {@link #shown} (the authored or
+     * tuned amount, scaled by this stack's score), then this item's own damage enchants ({@code HitDamage.hitBase} with no
+     * player bonus). "Just the true number" (Ben): one figure, the line's own format and colour, rounded only to two
+     * decimals ({@code WeaponLoreLines.damageNumber}).
+     */
+    private static String damageNumber(double authored, boolean scored, OptionalInt score, ItemEnchantTerms terms) {
+        return WeaponLoreLines.damageNumber(terms.itemDamage(shown(authored, scored, score)));
     }
 
     /**
