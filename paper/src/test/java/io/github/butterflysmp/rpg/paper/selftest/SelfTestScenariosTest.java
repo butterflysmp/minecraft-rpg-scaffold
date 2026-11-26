@@ -59,9 +59,10 @@ class SelfTestScenariosTest {
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
                         "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes", "shatter-caps",
-                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle"),
+                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle", "true-tooltips"),
                 List.copyOf(loaded.gates().keySet()),
-                "the fifty gates, in boot order (broken-bottle LAST, 2026-11-25, a NEW gate after armor-sets; armor-sets before it, 2026-11-25, a NEW gate after summoner; summoner before it,"
+                "the fifty-one gates, in boot order (true-tooltips LAST, 2026-11-26, a NEW gate after broken-bottle; "
+                        + "broken-bottle before it, 2026-11-25, a NEW gate after armor-sets; armor-sets before it, 2026-11-25, a NEW gate after summoner; summoner before it,"
                         + " 2026-11-25, a NEW gate after mage-guaranteed;"
                         + " mage-guaranteed before it, the seat's brief of 2026-11-24, a NEW gate after focused-beam;"
                         + " focused-beam before it, the weapon filter and Focused Beam, 2026-11-24, a NEW gate"
@@ -359,7 +360,9 @@ class SelfTestScenariosTest {
         // 451. Control: 491 + 10 (its setup and BB0-BB8) = 501. 442 was this line's value.
         // Then AS15R2 and BB2R (feat/bottle-owed, 2026-11-26), RECOUNTED: 50 gates, 503 keys, 50 setups, so 453. Control:
         // 501 + 2 = 503. 451 was this line's value.
-        assertEquals(453, loaded.rows());
+        // Then GATE-true-tooltips.md (feat/true-tooltips-gate, 2026-11-26), RECOUNTED: 51 gates, 524 keys, 51 setups, so
+        // 473. Control: 503 + 21 (its setup and TT0-TT19) = 524. 453 was this line's value.
+        assertEquals(473, loaded.rows());
     }
 
     /**
@@ -712,7 +715,8 @@ class SelfTestScenariosTest {
             }
         }
         assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup", "focused-beam#setup",
-                        "mage-guaranteed#setup", "summoner#setup", "armor-sets#setup", "broken-bottle#setup"),
+                        "mage-guaranteed#setup", "summoner#setup", "armor-sets#setup", "broken-bottle#setup",
+                        "true-tooltips#setup"),
                 padGates, "only enchant-columns, (2026-11-23) enchant-changes, (2026-11-24) shatter-caps and (2026-11-24)"
                         + " focused-beam and (2026-11-24) mage-guaranteed opt in, each in its setup");
         Scenario changes = shipped().gates().get("enchant-changes").getFirst();
