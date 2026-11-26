@@ -1,6 +1,6 @@
 # GATE — TRUE TOOLTIPS (2026-11-26), WITH #312'S TWO OWED ROWS BY REFERENCE
 
-**Status: NOT RUN.** The plan is `docs/plans/PLAN-true-tooltips.md`. The scenario is
+**Status: RUN 2026-11-26 on `88f1d4eb` (twice); readings at the end, under READINGS.** The plan is `docs/plans/PLAN-true-tooltips.md`. The scenario is
 `paper/src/main/resources/selftest/GATE-true-tooltips.yml`. The stack, bottom up: #312 `feat/bottle-owed`, then
 `feat/true-tooltips-resolvers`, `feat/true-tooltips` and this gate, `feat/true-tooltips-gate`. **Every prediction below
 was written before any boot, and is frozen from the seat's approval.** No boot without Ben's own "ready" and the seat's
@@ -293,3 +293,134 @@ piece's lines). This gate adds none.
 - That the PLAYERHIT figures equal the lines on the real hit path (TT9 to TT12), and the sheet's Defense the tooltip's
   (TT13).
 - That the client renders the rewritten lines legibly (TT19, his answer).
+
+## READINGS — THE BOOT OF `88f1d4eb`, 2026-11-26
+
+**No prediction above was edited.** Corrections are dated notes below.
+
+### DATED NOTE, 2026-11-26 — THE SEAT'S ERROR, IN ITS WORDS
+
+> *"Step 5 of my approval said R0b reads "17 PRESENT, then 4 ABSENT, then 2 controls ABSENT". I wrote the last clause
+> from habit and did not check it against the gate."*
+
+CC stopped before the boot; the seat ruled that the frozen gate governs (controls **2 PRESENT / 0 ABSENT**). Nothing in
+the gate changed, and Ben's "ready" stood.
+
+### CARRIED STATE, AS IT WAS ACTUALLY RUN
+
+1. The seat's approval of `88f1d4eb8ce8` (with its ruling on the stop); Ben's "ready".
+2. **Heads:** `git ls-remote` read master `5248b45c5bdf`, #312 `91a8de1c2036`, #313 `dbac1ff65e5f`, #314 `dbe1831aaebe`,
+   #315 `88f1d4eb8ce8`. CI `build` success twice on each. `git status --porcelain` printed nothing; `HEAD` =
+   `88f1d4eb8ce8938e70210b272dd7a562230f3bf0`.
+3. **No JVM:** `java.exe` count 0.
+4. **The backup**, to a NEW folder `C:\Users\Neb91\IdeaProjects\rpg-run-backups\2026-11-26-pre-true-tooltips` (absent
+   before): `run\world` 193 files, copy 193; `run\plugins\Rpg` 181 files, copy 181; his player `.dat` 4,984 bytes, copy
+   4,984 (`.dat_old` 5,013).
+5. **The world's saved difficulty:** `normal`, read from the decompressed `level.dat`.
+6. **Config line 12:** `  dev-pack-on-join: true`. No `run\rpgfight`.
+7. **"BOOTING NOW" was sent in its own message, before the boot command**, which went in the next turn after Ben's "ok".
+8. **The marker** was written in the boot command's own call: marker 13:10:19; deployed jar 13:10:49; `latest.log`'s
+   first line `[13:10:50]`; `Done (7.023s)` at `[13:10:56]`.
+9. **"R0 PASSED" was sent in its own message** after R0 was read (13:10:56 to 13:11:13). **Ben joined at 13:11:25**, after
+   R0. After his `/stop` (13:18:27): no `java` process left.
+
+### R0, BEFORE ANY LOGIN — ALL AS PREDICTED
+
+- **R0a:** `[Rpg] Build: 88f1d4eb`.
+- **R0b**, the DEPLOYED jar (13:10:49): **17 PRESENT / 0 ABSENT; 4 ABSENT / 0 PRESENT; controls 2 PRESENT / 0 ABSENT.**
+- **R0c:** `Loaded 11 abilities, 44 visuals, 5 statuses, 7 elements, 24 enchants, 3 pools, 6 fragments, 6 aspects, 25
+  weapons, 1 shields, 28 armor, 5 tools, 6 accessories, 7 mobs, …`; `Mint-on-craft: 42 indexed, 42 claiming, of 59 gear
+  definitions`; **0** `WARN]: [Rpg]` (control: `INFO]: [Rpg] Loaded` 7); `Refusing` 0, `Skipping` 0, `SEVERE` 0,
+  `Exception` 0, so the four edited content files loaded.
+- **R0d:** `473 scenarios across 51 gates […, broken-bottle, true-tooltips]`; `453 scenarios` 0, ` 50 gates` 0.
+- **R0e:** `FIGHTWORLD sweep path=…\rpgfight folders=0`; no `deleting`, no `orphan`.
+
+### THE RUN — TWICE, AND WHY THE FIRST IS THE READING OF RECORD
+
+- **Run 1:** his command at 13:11:42; `RUN START … rows=22 selftest=88f1d4eb`; `RUN CAPTURED armour=0 offhand=0`;
+  `PAD tickets held=12`; the pad `ok=7250`, stood at `104.50 201.00 -3.50 yaw=-90.000`. It ran to the end:
+  `RUN RESTORED xp=712834 cell=ranger/fire gamemode=SURVIVAL held=4 mana=100.0 trace=false spawn_mobs=false time=1000
+  blocks=0 blocksBack=0/0 mobsRemoved=0 orbsRemoved=0 keep_inventory=false immediate_respawn=false difficulty=NORMAL
+  health=134.000 vanilla_xp=143+0.500 spawn_phantoms=true max_summons_base=null armour=0 offhand=0 summons=0
+  drag_tick=false`, then `PAD tickets released=12 cause=end` at 13:13:39. **RESTORED equals CAPTURED:** `armour=0`,
+  `offhand=0`, `blocksBack=0/0`.
+- **TT19 in run 1 read `answer=NOT STATED after 1200 ticks`**: the 60 s window closed before he answered.
+- **Run 2:** he typed the same command again at 13:15:11 (not after an abort: run 1 had ended). It ran to the end, and its
+  RESTORED line is word for word run 1's except `health=314.000`, again `armour=0 offhand=0 blocksBack=0/0`, `PAD
+  tickets released=12 cause=end` at 13:16:57. **Every dump, every hit count and every sheet reading of run 2 is identical
+  to run 1's** once the crit outcomes are set aside (extracted and `diff`ed). **Run 1 is the reading of record for TT0
+  to TT18, BB2R and AS15R2; TT19's answer is run 2's**, given on a second run nobody asked for.
+- 0 `SKIPPED`, 0 `ABORT`; 50 `DONE` (25 per run: three setups and 22 rows).
+- **The runner behaved as #311's did** (the seat asked): the row clean, the stage lines, the P-R2 drain and the pad
+  tickets all as before; nothing new or missing.
+
+### THE ROWS (run 1; lore lines quoted as plain text, `|` between lines)
+
+| row | reading | class |
+|---|---|---|
+| TT0 | `Fire Damage:` **20 / 32 / 24 / 20**; block `Large Sparks III`, `Large Sparks I`, none, none; every other line as bare | READ AS PREDICTED |
+| TT1 | `Kinetic Damage:` **16 / 25 / 19 / 16**; `Sharp Crystals III`, `I` | READ AS PREDICTED |
+| TT2 | `Melee Damage:` **23 / 26.45 / 24.15 / 23**; `Attack Speed: 1.6` throughout | READ AS PREDICTED |
+| TT3 | `loose three` `27 x 3` / `loose six` `27 x 6` / `loose four` `27 x 4` / `loose three` `27 x 3` | READ AS PREDICTED |
+| TT4 | `Crit Chance:` **+10% / +25% / +15% / +10%**; `Melee Damage: 18`, `Attack Speed: 2.0` throughout | READ AS PREDICTED |
+| TT5 | `Defense:` **16 / 25 / 19 / 16**, after `Gear Score: 100`; set block unchanged | READ AS PREDICTED |
+| TT6 | no Health / **`Health: +30`** / **`Health: +10`** / no Health; `Defense: 10` throughout | READ AS PREDICTED |
+| TT7 | no Mana / **`Mana: +30`** / **`Mana: +10`** / no Mana | READ AS PREDICTED |
+| TT8 | the four blocks, below | READ AS PREDICTED |
+| TT9 | `Fire Damage: 32`; ONE `PLAYERHIT source=flint_staff/right_click sent=64.000 crit=true` (the allowed second outcome, 32 x 2); PROBE `t` 1000.000 → 904.000 | READ AS PREDICTED |
+| TT10 | `Melee Damage: 26.45`; ONE `PLAYERHIT source=iron_sword/left_click sent=26.450 crit=false`; PROBE `t` 1000.000 → 973.550 | READ AS PREDICTED |
+| TT11 | `27 x 6`, `loose six`; **exactly six** `PLAYERHIT source=cursed_emerald/right_click`: `27.000`, `27.000`, `27.000`, `54.000 crit=true`, `27.000`, `27.000` (VOLLEYSHOT shot=0 to 5); PROBE `m` 1000.000 → 811.000 | READ AS PREDICTED |
+| TT12 | `Kinetic Damage: 162`, no `x N`; **exactly one** `PLAYERHIT … sent=162.000 crit=false`; VOLLEYSHOT shot=0 only; the trace `FOCUSED … range=48.000` (see the note on the token); PROBE `m` 1000.000 → 838.000 | READ AS PREDICTED (the trace's token, see below) |
+| TT13 | sheet `⛨ Defense` **0 → 16 → 25**: D1 − D0 = **16**, D2 − D0 = **25**; the dumps `Defense: 16`, `Defense: 25` | READ AS PREDICTED |
+| TT14 | each pair identical but for one enchant line and a blank on top: `Polished Scepter III` (`Kinetic Damage: 21`), `Early Toll III` (`Void Damage: 63`, still `then tolls a beam down it 1.2s later.`), `Deft Hands III` (`Ranged Damage: 19`, `Attack Speed: 1.3`, `Quiver: 8/8`) | READ AS PREDICTED |
+| TT15 | `Wildfire III` added; `Fire Damage: 45` and the prose unchanged | READ AS PREDICTED |
+| TT16 | `Gear Score: 100` `Fire Damage: 32` → `Gear Score: 200` `Fire Damage: 64`; `26.45` → `52.9` | READ AS PREDICTED |
+| TT17 | the table's input `SLOT` lore equals the held dump line for line (`Large Sparks III | | Fire | Gear Score: 100 | … | Fire Damage: 32 | …`) | READ AS PREDICTED |
+| TT18 | `32` → (clear) `20`, no block → (put back, `rpg refresh`) `32`, `Large Sparks III` | READ AS PREDICTED |
+| TT19 | run 1: `answer=NOT STATED after 1200 ticks`. Run 2, VERBATIM: **"yes but, I want the damage type in the tool tip to match the class not the element. Ie Ranged Damage, Magic Damage, Melee Damage etc"** | run 1 NOT STATED; run 2 **yes**, with a request (below) |
+| BB2R | `ATTRIBUTE attack_speed value=1.600 base=4.000`, then `value=2.000 base=4.000` | READ AS PREDICTED |
+| AS15R2 | every step of its trace: `Set 3 level(s) … (now level 3 …)`; the four armour slots to air; 5 copper ingots; `/recipes` opened (no refusal) with `SLOT 0 COPPER_HELMET name="Copper Helmet"`; the click; no `CRAFT minted` line; `HELDID slot=0 item=copper_helmet`; `HELD copper_helmet … lore=Gear Score: 100 | Defense: 5 | | Set Bonus (4 pieces): | +1 Max Summons | | It greens where it is not worn. | | Common Helmet`; `Set 1 level(s)`. No `SKIPPED` | READ AS PREDICTED |
+
+**TT8, the four blocks whole (run 1):**
+- `Focused Beam II | | Kinetic | Gear Score: 100 | | Cursed Volley  Right-Click | Channel, then loose one focused | beam
+  down your line of sight. | Kinetic Damage: 162 | Cooldown: 1.5s | Mana Cost: 40 | | Nine facets, … | It asks for a
+  moment … | | Uncommon Magic Weapon`
+- `Shatter Caps III | | Kinetic | Gear Score: 100 | Quiver: 2/2 | | Breacher  Right-Click | One stone that shatters into |
+  four chunks after 5 blocks. | Kinetic Damage: 85 | Kinetic Damage: 40 x 4 | Cooldown: 1.0s | | Iron, gunpowder,
+  string, | and whatever was lying around. | | Common Ranged Weapon`
+- `Airburst Flames III | | Fire | Gear Score: 100 | | Lantern's Breath  Right-Click | A seeking flame that splits | into
+  three after 6 blocks. | Fire Damage: 45 | Fire Damage: 35 x 3 | Cooldown: 0.8s | Mana Cost: 12 | | Common Magic Weapon`
+- `Lapis Crystal III | | Kinetic | Gear Score: 100 | | Lapis Beam  Right-Click | Right-click to fire a blue beam. |
+  Kinetic Damage: 21 | Cooldown: 1.0s | Mana Cost: 10 | | Lapis Crystal  Left-Click | Throws a lapis crystal | that floats
+  where it lands. | Kinetic Damage: 14.7 | Cooldown: 30.0s | Mana Cost: 30 | | …`
+
+**Run 2's crits** (all allowed second outcomes): TT11 two of six at `54.000`; TT12 `324.000 crit=true`.
+
+### DATED NOTE, 2026-11-26 — TT12'S TRACE TOKEN (CC's wording, not a miss of the beam)
+
+TT12 predicted "a `FOCUSEDBEAM` trace line (range 48)". The line printed is
+`FOCUSED caster=… source=cursed_emerald/right_click from=104.500,202.620,-3.500 range=48.000 pressed=1514 tick=1534`:
+the token is `FOCUSED` (READ, `PaperCombatWorld.traceFocusedBeam` → `focusedLine`). The trace, its source and its range
+read as predicted; **CC named the wrong token**. The beam itself (one hit at 162) read as predicted.
+
+### HIS SAFETY
+
+**No `HURT` line on him in either run (0 in the log). Predicted NONE.** Every mob was a NoAI zombie (MOBSEED lines);
+nothing named him as a target.
+
+### WHAT NO ROW PREDICTED
+
+1. **He ran the command twice.** Run 1's TT19 window (1200 ticks) closed before he answered; he started run 2, which
+   repeated every row identically, and answered there. The window is the gate's `ask: "1 1200 …"`. OPEN for the seat:
+   whether a hover question needs more than 60 s.
+2. **His TT19 answer carries a new request, for Ben and the seat to rule:** *"I want the damage type in the tool tip to
+   match the class not the element. Ie Ranged Damage, Magic Damage, Melee Damage etc"*. Today an ability's damage line
+   is labelled by its ELEMENT (`Fire Damage`, `Kinetic Damage`), and only a basic attack's by its CLASS (`Melee Damage`,
+   `Ranged Damage`), by the design recorded in `WeaponLore`'s javadoc. Nothing is built for it.
+3. **Crits in a volley are drawn per shot**: TT11 read one crit among six in run 1 and two in run 2. The gate allowed a
+   crit on each line, so it is not a miss.
+4. After run 2 he gave himself a Cursed Emerald and ran `/rpg spawn knell` three times and `/rpg mana refill` three
+   times (13:17:07 to 13:18:11), then `/stop`. Not readings.
+5. **Every WARN after Done is Paper's own update notice:** *"You are running the latest build for your Minecraft version
+   (26.1.2) However, you are 4 release(s) behind the latest stable release (26.3)!"* No other WARN or ERROR. (The upgrade
+   procedure's Step 0 is the owner's; PacketEvents goes first.)
