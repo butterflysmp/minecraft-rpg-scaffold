@@ -159,7 +159,7 @@ class KnellBeamContentTest {
                 .map(c -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(c))
                 .toList();
         assertEquals(List.of("Void", "Gear Score: 100", "", "Knell's Toll  Right-Click",
-                "Locks a line where you look,", "then tolls a beam down it 1.2s later.", "Void Damage: 63",
+                "Locks a line where you look,", "then tolls a beam down it 1.2s later.", "Magic Damage: 63",
                 "Cooldown: 2.4s | Mana Cost: 13", "", "Epic Magic Weapon"), lore);
     }
 }

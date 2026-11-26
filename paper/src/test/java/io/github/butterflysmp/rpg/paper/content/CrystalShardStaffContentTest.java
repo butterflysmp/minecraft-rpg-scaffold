@@ -148,9 +148,9 @@ class CrystalShardStaffContentTest {
                         .map(c -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
                                 .serialize(c)).toList();
         assertEquals(List.of("Kinetic", "Gear Score: 100", "", "Crystal Shard  Right-Click",
-                "Fires a homing crystal shard", "at the nearest enemy.", "Kinetic Damage: 16",
+                "Fires a homing crystal shard", "at the nearest enemy.", "Magic Damage: 16",
                 "Cooldown: 0.8s | Mana Cost: 8", "", "Common Magic Weapon"), lore.apply(100));
-        assertEquals("Kinetic Damage: 24", lore.apply(150).get(6), "the literal scales with the score");
+        assertEquals("Magic Damage: 24", lore.apply(150).get(6), "the literal scales with the score");
     }
 
     /** Ben: "Keep the item and recipe". The old repo's shape: A over C over S (RecipeRegistry, cfde822). */

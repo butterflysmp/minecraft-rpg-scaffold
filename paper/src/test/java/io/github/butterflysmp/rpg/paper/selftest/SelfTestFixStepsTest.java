@@ -73,7 +73,7 @@ class SelfTestFixStepsTest {
                 SelfTestAsk.answered(a, "yeah, crawling", 37));
         assertEquals("ASK 1 question=\"Is the big Phage very slow?\" answer=NOT STATED after 1200 ticks",
                 SelfTestAsk.notStated(a));
-        assertEquals("Selftest question 1: Is the big Phage very slow? Answer yes or no in chat.",
+        assertEquals("Selftest question 1: Is the big Phage very slow? Answer yes or no in chat. You have 60 seconds.",
                 SelfTestAsk.prompt(a));
     }
 
@@ -82,10 +82,10 @@ class SelfTestFixStepsTest {
     void theScenarioNamesWhichPromptAQuestionGets() {
         SelfTestAsk.Ask open = SelfTestAsk.parse("3 2400 words The wall now: what would you change?").orElseThrow();
         assertEquals("The wall now: what would you change?", open.question(), "the mode word is not part of it");
-        assertEquals("Selftest question 3: The wall now: what would you change? Answer in your own words in chat.",
+        assertEquals("Selftest question 3: The wall now: what would you change? Answer in your own words in chat. You have 120 seconds.",
                 SelfTestAsk.prompt(open));
         SelfTestAsk.Ask yesNo = SelfTestAsk.parse("4 2400 yesno Is 3.8 right?").orElseThrow();
-        assertEquals("Selftest question 4: Is 3.8 right? Answer yes or no in chat.", SelfTestAsk.prompt(yesNo));
+        assertEquals("Selftest question 4: Is 3.8 right? Answer yes or no in chat. You have 120 seconds.", SelfTestAsk.prompt(yesNo));
         assertEquals("ASK 3 question=\"The wall now: what would you change?\" answer=\"taller\" ticks=9",
                 SelfTestAsk.answered(open, "taller", 9), "the answer line carries the question alone");
         assertTrue(SelfTestAsk.parse("5 2400 words").isEmpty(), "a mode word with no question is refused");

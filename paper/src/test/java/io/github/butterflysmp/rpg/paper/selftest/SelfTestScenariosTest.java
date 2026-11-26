@@ -362,7 +362,9 @@ class SelfTestScenariosTest {
         // 501 + 2 = 503. 451 was this line's value.
         // Then GATE-true-tooltips.md (feat/true-tooltips-gate, 2026-11-26), RECOUNTED: 51 gates, 524 keys, 51 setups, so
         // 473. Control: 503 + 21 (its setup and TT0-TT19) = 524. 453 was this line's value.
-        assertEquals(473, loaded.rows());
+        // Then TT20-TT27, the class labels (feat/class-damage-labels, 2026-11-26), RECOUNTED: 51 gates, 532 keys, 51
+        // setups, so 481. Control: 524 + 8 = 532. 473 was this line's value.
+        assertEquals(481, loaded.rows());
     }
 
     /**
@@ -642,8 +644,11 @@ class SelfTestScenariosTest {
         // GATE-broken-bottle (2026-11-25): clean on EVERY rule, LEVEL_UNSTAGED included (no row moves his level), with the
         // control that it loaded at all.
         assertTrue(byGate.containsKey("broken-bottle"), "control: the bottle's gate was linted");
-        assertEquals(List.of(), byGate.get("broken-bottle").stream().map(ScenarioLint.Finding::line).toList(),
-                "GATE-broken-bottle.yml must lint clean on every rule");
+        // ASK_WINDOW_SHORT (2026-11-26) is the one rule written after it: BB8's 1200-tick ask is the record and is pinned,
+        // with the two others, in AskWindowLintTest.
+        assertEquals(List.of(), byGate.get("broken-bottle").stream()
+                        .filter(f -> f.rule() != ScenarioLint.Rule.ASK_WINDOW_SHORT).map(ScenarioLint.Finding::line).toList(),
+                "GATE-broken-bottle.yml must lint clean on every rule written before it");
         // L3 (the seat's ruling, 2026-11-24): HELD_READ_THEN_CHANGE over every gate, pinned EXACTLY. Old rows of other gates
         // are not edited; these four are owed dated notes (PLAN-enchant-columns section 33). STA4 is the one that cost a
         // reading: its iron half was recorded UNREAD when both shows answered for the netherite sword. The other three
