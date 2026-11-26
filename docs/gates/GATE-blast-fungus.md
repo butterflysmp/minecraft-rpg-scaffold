@@ -6,6 +6,12 @@
 gate, `feat/blast-fungus-gate`. **Every prediction below was written before any boot, and is frozen from the seat's
 approval.** No boot without Ben's own "ready" and the seat's approval of the code AND this gate from origin.
 
+> **SUPERSEDED FOR THE BOOT, 2026-11-26 (the seat's Bone Club brief: "no boot of this stack alone").** This gate's branch
+> was MOVED UP onto `feat/drumming-beat` and now also carries `GATE-bone-club.md`. **Ben types that gate's ONE command**,
+> `/rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27`, and **its R0 supersedes
+> the R0 below** (kept as the record). Every row below runs unchanged; each row-start CLEAN line now ends ` drum=0`
+> (Drumming Beat's streak, forgotten). The command below is the record of this gate alone.
+
 ## WHAT BEN TYPES — ONE COMMAND
 
 ```

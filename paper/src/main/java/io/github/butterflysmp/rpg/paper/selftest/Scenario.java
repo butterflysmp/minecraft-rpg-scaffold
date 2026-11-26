@@ -49,6 +49,22 @@ public record Scenario(String gate, String row, List<Step> steps) {
         USE,
         /** A synthetic {@code PlayerArmSwingEvent(HAND)}: the stone's Left. */
         SWING,
+        /**
+         * {@code HumanEntity#resetCooldown} alone (GATE-bone-club, 2026-11-26): the attack-strength reset a real click's arm
+         * swing does on the server ({@code ServerPlayer.swing} → {@code resetAttackStrengthTicker}), which {@code ATTACK}'s
+         * {@code Player#attack} does NOT do (READ, the pinned jar: {@code Player.attack} never calls it). So a row that
+         * means a real click's charge follows each {@code attack} with this, and its next hit's charge is the time since.
+         * Logs {@code DRIVE reset_charge cooldown=<before>-><after>}.
+         */
+        RESET_CHARGE,
+        /**
+         * {@code <tag>}: a synthetic {@code PlayerInteractAtEntityEvent(HAND)} on the nearest entity carrying the tag, into
+         * every listener (GATE-bone-club M2, 2026-11-26). It is the event a real right click on an entity raises (READ:
+         * {@code ServerGamePacketListenerImpl.handleInteract}), but nothing vanilla follows it: no {@code interactOn}, so no
+         * {@code mobInteract}. It reads the SERVER'S VERDICT only, as {@link #USE} does:
+         * {@code INTERACT result cancelled=<b> tamed=<b|-> held=<item> amount=<n>}, read after every listener ran.
+         */
+        INTERACT_ENTITY,
         /** {@code HumanEntity#dropItem(false)}: the Q key's own {@code ServerPlayer.drop}. */
         DROP,
         /** Select a hotbar slot holding this ({@code stone}, {@code empty} or a weapon id), firing {@code PlayerItemHeldEvent}. */
