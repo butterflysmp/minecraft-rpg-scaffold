@@ -33,16 +33,16 @@ class SelfTestGateListTest {
 
     @Test
     void aPlusListIsSeveralGatesInTheOrderTyped() {
-        var p = SelfTestGateList.parse("mage-guaranteed+summoner", gates().keySet());
+        var p = SelfTestGateList.parse("mage-guaranteed+summoner", gates());
         assertNull(p.refusal());
         assertEquals(List.of("mage-guaranteed", "summoner"), p.gates());
-        var q = SelfTestGateList.queue(p.gates(), gates());
+        var q = SelfTestGateList.queue(p, gates());
         assertEquals(List.of("mage-guaranteed#setup", "mage-guaranteed#PT1", "mage-guaranteed#MG1R", "summoner#setup",
                         "summoner#SU1"),
                 q.stream().map(s -> s.gate() + "#" + s.row()).toList(), "each gate's setup, then its rows, in the order typed");
-        var reversed = SelfTestGateList.parse("summoner+mage-guaranteed", gates().keySet());
+        var reversed = SelfTestGateList.parse("summoner+mage-guaranteed", gates());
         assertEquals(List.of("summoner", "mage-guaranteed"), reversed.gates(), "the order typed, not the file order");
-        assertEquals("summoner#setup", SelfTestGateList.queue(reversed.gates(), gates()).getFirst().gate() + "#setup");
+        assertEquals("summoner#setup", SelfTestGateList.queue(reversed, gates()).getFirst().gate() + "#setup");
     }
 
     @Test
@@ -54,14 +54,14 @@ class SelfTestGateListTest {
 
     @Test
     void aGateNamedTwiceIsRefused() {
-        var p = SelfTestGateList.parse("summoner+mage-guaranteed+summoner", gates().keySet());
+        var p = SelfTestGateList.parse("summoner+mage-guaranteed+summoner", gates());
         assertEquals("Refusing: gate 'summoner' is named twice in 'summoner+mage-guaranteed+summoner'.", p.refusal());
         assertEquals(List.of(), p.gates());
     }
 
     @Test
     void anUnknownGateIsRefusedNamingTheGatesThereAre() {
-        var p = SelfTestGateList.parse("mage-guaranteed+nope", gates().keySet());
+        var p = SelfTestGateList.parse("mage-guaranteed+nope", gates());
         assertEquals("Refusing: no selftest gate 'nope' in 'mage-guaranteed+nope'. Gates: [alpha, mage-guaranteed, summoner]",
                 p.refusal());
     }
@@ -69,14 +69,14 @@ class SelfTestGateListTest {
     @Test
     void anEmptyPartIsRefused() {
         for (String typed : List.of("mage-guaranteed++summoner", "+summoner", "mage-guaranteed+")) {
-            var p = SelfTestGateList.parse(typed, gates().keySet());
+            var p = SelfTestGateList.parse(typed, gates());
             assertEquals("Refusing: an empty gate name between two + in '" + typed + "'.", p.refusal(), typed);
         }
     }
 
     @Test
     void allIsNotCombinable() {
-        var p = SelfTestGateList.parse("all+summoner", gates().keySet());
+        var p = SelfTestGateList.parse("all+summoner", gates());
         assertEquals("Refusing: 'all' cannot be combined with other gates ('all+summoner').", p.refusal());
     }
 
@@ -98,7 +98,7 @@ class SelfTestGateListTest {
         String start = svc.substring(svc.indexOf("public String start(Player player, String gate, String row) {"));
         int list = start.indexOf("if (SelfTestGateList.isList(gate)) {");
         int refused = start.indexOf("if (parsed.refusal() != null) return parsed.refusal();");
-        int queued = start.indexOf("queue.addAll(SelfTestGateList.queue(parsed.gates(), loaded.gates()));");
+        int queued = start.indexOf("queue.addAll(SelfTestGateList.queue(parsed, loaded.gates()));");
         int all = start.indexOf("} else if (gate.equals(\"all\")) {");
         int run = start.indexOf("active = new SelfTestRun(this, player, queue);");
         assertTrue(list > 0 && refused > list && queued > refused && all > queued && run > all, "the order of the branch");
@@ -109,6 +109,62 @@ class SelfTestGateListTest {
         int abort = r.indexOf("end(SelfTestGateList.setupAbort(current().gate(), skip.get()));", ends);
         int next = r.indexOf("nextScenario();", skipped);
         assertTrue(skipped > 0 && ends > skipped && abort > ends && next > abort, "a setup's skip ends before moving on");
+    }
+
+    // --- NAMED ROWS OF OTHER GATES, BY REFERENCE (the seat's brief of 2026-11-25, the Broken Bottle) -----------------
+
+    /**
+     * {@code gate.ROW[.ROW]} in a + list queues that gate's setup, then only the rows named, in the GATE's order (CC'S CALL),
+     * spelled as the gate spells them. A whole gate beside it is unchanged. Mutation: the rows filter dropped (the whole gate
+     * runs), or the setup dropped from a reference.
+     */
+    @Test
+    void aReferenceRunsItsGatesSetupAndOnlyTheRowsNamed() {
+        var p = SelfTestGateList.parse("summoner+alpha.a2.A1+mage-guaranteed.MG1R", gates());
+        assertNull(p.refusal(), p.refusal());
+        assertEquals(List.of("summoner", "alpha", "mage-guaranteed"), p.gates());
+        assertEquals(List.of("summoner#setup", "summoner#SU1", "alpha#setup", "alpha#A1", "alpha#A2",
+                        "mage-guaranteed#setup", "mage-guaranteed#MG1R"),
+                SelfTestGateList.queue(p, gates()).stream().map(s -> s.gate() + "#" + s.row()).toList());
+    }
+
+    /** Each refused BEFORE anything starts, by name. Mutation: any one refusal dropped. */
+    @Test
+    void aBadReferenceIsRefusedByName() {
+        assertEquals("Refusing: no row 'Z9' in selftest gate 'alpha' ('summoner+alpha.Z9').",
+                SelfTestGateList.parse("summoner+alpha.Z9", gates()).refusal());
+        assertEquals("Refusing: an empty row name after 'alpha' in 'summoner+alpha.'.",
+                SelfTestGateList.parse("summoner+alpha.", gates()).refusal());
+        assertEquals("Refusing: an empty row name after 'alpha' in 'summoner+alpha..A1'.",
+                SelfTestGateList.parse("summoner+alpha..A1", gates()).refusal());
+        assertEquals("Refusing: row 'A1' of 'alpha' is named twice in 'summoner+alpha.A1.a1'.",
+                SelfTestGateList.parse("summoner+alpha.A1.a1", gates()).refusal());
+        assertEquals("Refusing: 'setup' runs with every row of 'alpha'; name a row ('summoner+alpha.setup').",
+                SelfTestGateList.parse("summoner+alpha.setup", gates()).refusal());
+        assertEquals("Refusing: gate 'alpha' is named twice in 'alpha+alpha.A1'.",
+                SelfTestGateList.parse("alpha+alpha.A1", gates()).refusal(), "whole and by reference is still twice");
+        assertTrue(SelfTestGateList.parse("summoner+nope.A1", gates()).refusal().startsWith("Refusing: no selftest gate 'nope'"));
+    }
+
+    /**
+     * A CHAINED row (its first step is {@code after:}) is SKIPPED unless its chain ran just before it, so naming it alone
+     * would only ever skip. Refused by name. Mutation: the check dropped.
+     */
+    @Test
+    void aChainedRowCannotBeNamedAlone() {
+        Map<String, List<Scenario>> m = new LinkedHashMap<>(gates());
+        m.put("chain", List.of(sc("chain", Scenario.SETUP), sc("chain", "C1"),
+                new Scenario("chain", "C2", List.of(new Scenario.Step(Scenario.Verb.AFTER, "C1")))));
+        assertEquals("Refusing: row 'C2' of 'chain' runs only after its chain ('after: C1'); name its gate whole ('alpha+chain.C2').",
+                SelfTestGateList.parse("alpha+chain.C2", m).refusal());
+        assertNull(SelfTestGateList.parse("alpha+chain.C1", m).refusal(), "the head of a chain is not itself chained");
+    }
+
+    /** A reference is a + list item, so one reference alone still needs a +; the dot is what Brigadier's word() allows. */
+    @Test
+    void aReferenceIsAListItem() {
+        assertTrue(SelfTestGateList.isList("a+b.C1"));
+        assertFalse(SelfTestGateList.isList("alpha.A1"), "no +: the one-gate path, which takes its row as a second word");
     }
 
     /** G4: a step that SKIPS ends the whole run when it is a setup's; a row's skip moves on, as today. */

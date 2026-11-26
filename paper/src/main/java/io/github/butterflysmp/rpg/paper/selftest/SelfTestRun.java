@@ -342,8 +342,8 @@ final class SelfTestRun {
             end("ABORTED in " + s.source() + ": " + e);
             return;
         }
-        // Two ticks for the last step's replies to come back through the reader, then DONE.
-        service.scheduler().onEntityLater(player, this::rowDone, 2);
+        // Two ticks for the last step's replies to come back through the reader, then a drain, one more tick, a drain, DONE.
+        service.scheduler().onEntityLater(player, this::rowDone, SelfTestStaging.ROW_END_TICKS);
     }
 
     /**
@@ -579,7 +579,19 @@ final class SelfTestRun {
         }));
     }
 
+    /**
+     * P-R2 (the seat's ruling on #308, 2026-11-25): the row ends with a DRAIN, ONE TICK, and a second DRAIN before DONE.
+     * Paper sends a reply from the channel's event loop after the command returns, so a reply to the row's last step can
+     * reach the reader after the first drain; the tick and the second drain log it under THIS row, never the next one's.
+     * It narrows the window; it cannot close it (the send is on another thread). Its one caller waits {@link SelfTestStaging#ROW_END_TICKS} first.
+     */
     private void rowDone() {
+        if (ended) return;
+        drainReplies();
+        service.scheduler().onEntityLater(player, this::rowDoneDrained, SelfTestStaging.ROW_END_REDRAIN_TICKS);
+    }
+
+    private void rowDoneDrained() {
         if (ended) return;
         drainReplies();
         restoreRowRules();

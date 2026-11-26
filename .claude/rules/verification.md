@@ -1929,6 +1929,18 @@ is `**PASS**`. A reader sees which instrument read the row without opening the l
 **Each of those is a thing a real click does and the instrument does not**, so a row that depends on one is not
 witnessed by the instrument, however clean its lines.
 
+**P-R1, WHICH COMMAND A REPLY ANSWERS** (the seat's ruling on #308, 2026-11-25; measured in `PLAN-armor-sets-owed.md`
+section 2):
+- **Within a row, a REPLY belongs to the earliest unanswered command whose text it answers.** It never belongs to "the
+  CMD above it".
+- **Replies keep their order:** there is one reader queue, first in, first out, from one channel.
+- **Why:** Paper sends a reply from the channel's event loop after the command returns, so a reply can be logged after
+  a LATER step's `CMD` line. On the boot of `732c4e02`, AS4's `rpg stats` reply printed partly under
+  `CMD /rpg give bone_whistle`.
+- **The row-end half is P-R2,** built in `feat/broken-bottle-gate`: a row ends with a drain, one tick and a second drain
+  before `DONE` (`SelfTestRowEndDrainTest`), so a reply to a row's last step is logged under that row. That narrows the
+  window and cannot close it: the send is on another thread.
+
 ### PREDICT DAMAGE AGAINST THE HURT LINE, NEVER AGAINST A HEALTH FIGURE THAT REGENERATION CAN MOVE
 
 **This is the account. The pointer is `CLAUDE.md`'s VERIFICATION index.** Owed by the seat's ruling of 2026-11-17, at

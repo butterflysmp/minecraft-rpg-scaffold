@@ -1,0 +1,258 @@
+# GATE-broken-bottle (docs/gates/GATE-broken-bottle.md): the Broken Bottle, its held crit, Sharpened Glass, no sweep, no fill.
+# Typed as ONE command with #308's three owed rows, by reference:
+#   /rpg selftest broken-bottle+summoner.SM9R.SM16R2+armor-sets.AS15R
+# SURVIVAL. On the pad, facing east, at NIGHT (18000), difficulty normal. ALL AUTO except BB8, the one ASK, last.
+# Nothing is asked of his ground, position or inventory: every row clears his storage and his state, heals him, and gives
+# itself what it holds; every stat reading is a DELTA against the row's OWN baseline `rpg stats` (his accessories and
+# fragments are not stageable, so they cannot move a reading). His level is set once, in the setup, to 1, and no row
+# changes it. SAFETY (the gate file): NO row deals him damage, and every mob is a NoAI zombie that never acts on him.
+setup:
+  - pad: ""
+  - preflight: "-2 -6 45 10"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# BB0, THE BASELINE: an iron sword in hand at score 100, level 1, the sheet.
+BB0:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - hold: iron_sword
+  - cmd: "rpg gearscore set 100"
+  - wait: 10
+  - cmd: "rpg stats"
+
+# BB1, THE TOOLTIP: a fresh bottle's slot 0 shown, its enchants cleared, its score 100, the held lore dumped.
+BB1:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: broken_bottle
+  - probe_held: ""
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - dump: held
+
+# BB2, THE HELD CRIT AND THE ATTACK SPEED: sword (baseline), bottle, sword again, the bottle in the OFF hand, the bottle at
+# score 200. Each change of hand waits 10 ticks for the reconcile before the sheet and the attribute are read.
+BB2:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give iron_sword"
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: broken_bottle
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - hold: iron_sword
+  - cmd: "rpg gearscore set 100"
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "attribute @s minecraft:attack_speed get"
+  - hold: broken_bottle
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "attribute @s minecraft:attack_speed get"
+  - hold: iron_sword
+  - wait: 10
+  - cmd: "rpg stats"
+  - hold: broken_bottle
+  - cmd: "item replace entity @s weapon.offhand from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: iron_sword
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s weapon.mainhand from entity @s weapon.offhand"
+  - cmd: "item replace entity @s weapon.offhand with minecraft:air"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 200"
+  - wait: 10
+  - cmd: "rpg stats"
+
+# BB3, ONE HIT AT 100 AND ONE AT 200: a fresh frozen zombie (max_health 200) at ~2 each time, a full charge (40 ticks), two
+# PROBEs before the hit (the control that nothing else moves it), one after. PLAYERHIT carries the sent figure.
+BB3:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: broken_bottle
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: t
+  - wait: 5
+  - probe: t
+  - attack: t
+  - wait: 5
+  - probe: t
+  - cmd: "kill @e[tag=t]"
+  - cmd: "rpg gearscore set 200"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: t
+  - wait: 5
+  - probe: t
+  - attack: t
+  - wait: 5
+  - probe: t
+  - cmd: "kill @e[tag=t]"
+
+# BB4, SHARPENED GLASS ON THE SHEET: the baseline with a sword, then the bottle with Sharpened Glass active at III, then I.
+BB4:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give iron_sword"
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: iron_sword
+  - wait: 10
+  - cmd: "rpg stats"
+  - hold: broken_bottle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 sharpened_glass"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 10
+  - cmd: "rpg enchant show"
+  - cmd: "rpg stats"
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 10
+  - cmd: "rpg enchant show"
+  - cmd: "rpg stats"
+
+# BB5, THE POOLS OVER 500 ROLLS: the bottle, then an iron sword (the control), each show and rollstats waited for.
+BB5:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: broken_bottle
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant rollstats 500"
+  - wait: 2
+  - clear_inventory: ""
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - hold: iron_sword
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant rollstats 500"
+  - wait: 2
+
+# BB6, NO SWEEP: two frozen zombies side by side at ~2 (t) and ~2 ~1 (u); the bottle hits t; u's custom HP read before and
+# after. Then the same staging with an iron sword, the control: u loses the sweep's share.
+BB6:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give iron_sword"
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: broken_bottle
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~2 ~ ~1 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["u","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: u
+  - wait: 5
+  - probe: u
+  - attack: t
+  - wait: 5
+  - probe: u
+  - cmd: "kill @e[tag=t]"
+  - cmd: "kill @e[tag=u]"
+  - hold: iron_sword
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~2 ~ ~1 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["u","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: u
+  - wait: 5
+  - probe: u
+  - attack: t
+  - wait: 5
+  - probe: u
+  - cmd: "kill @e[tag=t]"
+  - cmd: "kill @e[tag=u]"
+
+# BB7, DURABILITY AND THE SERVER'S VERDICT ON A RIGHT CLICK: the bottle (no durability; its use DENIED), a plain glass
+# bottle (untouched), an iron sword (the control: it has durability, and its use is not denied).
+BB7:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: broken_bottle
+  - cmd: "rpg durability damage 1"
+  - use: ""
+  - wait: 2
+  - probe_held: ""
+  - clear_inventory: ""
+  - hold: empty
+  - cmd: "give @s minecraft:glass_bottle 1"
+  - wait: 2
+  - use: ""
+  - wait: 2
+  - probe_items: glass_bottle
+  - clear_inventory: ""
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - hold: iron_sword
+  - cmd: "rpg durability set 0"
+  - use: ""
+  - wait: 2
+
+# BB8, THE ONE ASK, LAST: a water source in a glass ring at ~3 (saved blocks, put back by the restore); the Broken Bottle
+# in his hand, a plain glass bottle beside it. He right-clicks the water with each and answers. Then his storage is read.
+BB8:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "1 -1 -2 5 1 2"
+  - cmd: "fill ~2 ~ ~-1 ~4 ~ ~1 minecraft:glass"
+  - cmd: "setblock ~3 ~ ~ minecraft:water"
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: broken_bottle
+  - cmd: "give @s minecraft:glass_bottle 1"
+  - wait: 2
+  - probe_items: glass_bottle
+  - probe_items: potion
+  - ask: "1 1200 words Right-click the water in the glass ring with the Broken Bottle, then with the plain glass bottle. Did the Broken Bottle stay a Broken Bottle while the plain one filled, and is its tooltip clear? (yes / no / not sure)"
+  - wait: 2
+  - probe_items: glass_bottle
+  - probe_items: potion
+  - probe_held: ""

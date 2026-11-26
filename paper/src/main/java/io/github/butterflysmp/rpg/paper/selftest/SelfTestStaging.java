@@ -118,6 +118,12 @@ final class SelfTestStaging {
         return java.util.Arrays.copyOf(out, n);
     }
 
+    /** The ticks after a row's last step before its first drain (unchanged since before P-R2). */
+    static final int ROW_END_TICKS = 2;
+
+    /** P-R2 (2026-11-25): the ONE tick between a row's first drain and its second, after which DONE is logged. */
+    static final int ROW_END_REDRAIN_TICKS = 1;
+
     /** The longest the run waits for a killed body to leave; vanilla's death animation is 20 ticks. */
     static final int SETTLE_CAP_TICKS = 40;
 

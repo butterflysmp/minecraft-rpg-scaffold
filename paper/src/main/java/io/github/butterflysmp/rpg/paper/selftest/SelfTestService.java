@@ -181,9 +181,10 @@ public final class SelfTestService {
             // ONE COMMAND, SEVERAL GATES (the seat's G1-G6, 2026-11-24): refused before anything starts, else one run.
             String noRow = row == null ? null : SelfTestGateList.rowRefusal(gate);
             if (noRow != null) return noRow;
-            SelfTestGateList.Parsed parsed = SelfTestGateList.parse(gate, loaded.gates().keySet());
+            // A list item may name ROWS of its gate by reference, gate.ROW[.ROW] (the seat's brief of 2026-11-25).
+            SelfTestGateList.Parsed parsed = SelfTestGateList.parse(gate, loaded.gates());
             if (parsed.refusal() != null) return parsed.refusal();
-            queue.addAll(SelfTestGateList.queue(parsed.gates(), loaded.gates()));
+            queue.addAll(SelfTestGateList.queue(parsed, loaded.gates()));
         } else if (gate.equals("all")) {
             loaded.gates().values().forEach(queue::addAll);
         } else {

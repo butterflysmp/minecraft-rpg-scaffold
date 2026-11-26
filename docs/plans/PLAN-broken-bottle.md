@@ -147,7 +147,19 @@ own baseline and predicts each row as that baseline plus an exact offset.
 
 ## THE GATE (PR 3)
 
-In `feat/broken-bottle-gate`. Its section is added there.
+`docs/gates/GATE-broken-bottle.md` holds the rows, R0 and SAFETY. What the PR adds to the selftest code:
+
+- **Named rows of other gates, by reference.** `SelfTestGateList` reads `<gate>.<ROW>[.<ROW>]` as an item of the `+` list:
+  that gate's setup, then only the rows named, in the gate's order. Ben types
+  **`/rpg selftest broken-bottle+summoner.SM9R.SM16R2+armor-sets.AS15R`**.
+  - Refused by name: an unknown or empty row, `setup`, a row twice, a gate twice, a chained row.
+  - A dot, because the argument is Brigadier's `word()` (READ: no colon or comma).
+  - **It revises the seat's G5 of 2026-11-24 ("no gate:row syntax")**, as this brief asks.
+- **P-R1** is in `verification.md`'s AUTO-reading account.
+- **P-R2.** READ first: the row end already waited 2 ticks and drained once before `DONE`. #308's *"nothing prevents it"*
+  overstated the gap. Built: one more tick and a second drain (`SelfTestRowEndDrainTest`).
+- **One driver line.** `USE result useItemInHand=<r> useInteractedBlock=<r>` follows the `use:` driver's dispatch. It
+  is the server's verdict, K7's AUTO witness.
 
 ## CARRIED (not built in this slice)
 
