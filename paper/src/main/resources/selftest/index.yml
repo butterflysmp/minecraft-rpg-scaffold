@@ -135,3 +135,6 @@ gates:
 # true-tooltips (2026-11-26, feat/true-tooltips-gate on feat/true-tooltips): a weapon's stat and ability lines are its own
 # active enchants', typed as /rpg selftest true-tooltips+broken-bottle.BB2R+armor-sets.AS15R2. docs/gates/GATE-true-tooltips.md.
   - true-tooltips
+# blast-fungus (2026-11-26, feat/blast-fungus-gate on feat/cluster-bombs): the Blast Fungus, Fast and Fungal and Cluster
+# Bombs, typed as /rpg selftest blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27. docs/gates/GATE-blast-fungus.md.
+  - blast-fungus
