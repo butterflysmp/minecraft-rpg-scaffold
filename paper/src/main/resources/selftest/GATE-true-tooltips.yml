@@ -1,0 +1,560 @@
+# GATE-true-tooltips (docs/gates/GATE-true-tooltips.md): a weapon's stat and ability lines are its own active enchants'.
+# Typed as ONE command with #312's two owed rows, by reference:
+#   /rpg selftest true-tooltips+broken-bottle.BB2R+armor-sets.AS15R2
+# SURVIVAL. On the pad, facing east, at NIGHT (18000), difficulty normal. ALL AUTO except TT19, the one ASK, last.
+# Nothing is asked of his ground, position or inventory: every row clears his storage, his state and his four armour
+# slots, gives itself what it holds, and stages its own score (100 unless the row says) and enchants (`rpg enchant clear`
+# first, then candidate / level / active on the HELD item). His level is set to 1 in the setup; only TT17 changes it (to
+# 13, for the table) and it puts it back. SAFETY (the gate file): NO row deals him damage; every mob is a NoAI zombie.
+setup:
+  - pad: ""
+  - preflight: "-2 -6 45 10"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+  - cmd: "rpg stats"
+
+# TT0, LARGE SPARKS ON THE FLINT STAFF: bare, III, I, deactivated. Also the redraw at the activate, level and deactivate
+# write sites (each change is a remint, read by the dump after it).
+TT0:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant deactivate 0"
+  - wait: 2
+  - dump: held
+
+# TT1, SHARP CRYSTALS ON THE CRYSTAL SHARD STAFF: bare, III, I, deactivated.
+TT1:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give crystal_shard_staff"
+  - wait: 2
+  - hold: crystal_shard_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 sharp_crystals"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant deactivate 0"
+  - wait: 2
+  - dump: held
+
+# TT2, SHARPNESS (A DAMAGE PERCENT) ON AN IRON SWORD: bare, III, I, deactivated. Staged in slot 0 (the engine reads
+# effective(), never the slot index; a roll puts Sharpness in a normal slot).
+TT2:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - hold: iron_sword
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 sharpness"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant deactivate 0"
+  - wait: 2
+  - dump: held
+
+# TT3, ECHO BEAM ON THE CURSED EMERALD: the x N AND the description's word, bare, III, I, deactivated.
+TT3:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give cursed_emerald"
+  - wait: 2
+  - hold: cursed_emerald
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 echo_beam"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant deactivate 0"
+  - wait: 2
+  - dump: held
+
+# TT4, SHARPENED GLASS ON THE BROKEN BOTTLE: the crit line, bare, III, I, deactivated.
+TT4:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: broken_bottle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 sharpened_glass"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant deactivate 0"
+  - wait: 2
+  - dump: held
+
+# TT5, PROTECTION ON AN IRON CHESTPLATE (held): Defense bare, III, I, deactivated.
+TT5:
+  - clear_inventory: ""
+  - clear_state: ""
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 protection"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant deactivate 0"
+  - wait: 2
+  - dump: held
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+
+# TT6, GROWTH ON AN IRON HELMET (held): no Health line bare; III; I; deactivated.
+TT6:
+  - clear_inventory: ""
+  - clear_state: ""
+  - hold: empty
+  - cmd: "rpg give iron_helmet"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 growth"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant deactivate 0"
+  - wait: 2
+  - dump: held
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+
+# TT7, MANA BANK ON AN IRON HELMET (held): no Mana line bare; III; I; deactivated.
+TT7:
+  - clear_inventory: ""
+  - clear_state: ""
+  - hold: empty
+  - cmd: "rpg give iron_helmet"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 mana_bank"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant level 0 0 1"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant deactivate 0"
+  - wait: 2
+  - dump: held
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+
+# TT8, THE FOUR BEHAVIOUR BLOCKS, QUOTED WHOLE: Focused Beam II, Shatter Caps III, Airburst Flames III, Lapis Crystal III.
+TT8:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give cursed_emerald"
+  - cmd: "rpg give breacher"
+  - cmd: "rpg give living_lantern"
+  - cmd: "rpg give lapis_staff"
+  - wait: 2
+  - hold: cursed_emerald
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 focused_beam"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 airburst_flames"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - hold: lapis_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 lapis_crystal"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+
+# TT9, TRUTH: LARGE SPARKS III, the line's 32 against PLAYERHIT's sent. A frozen zombie t at ~6, facing east, his mana full.
+TT9:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: t
+  - use: right_click
+  - wait: 60
+  - probe: t
+  - cmd: "kill @e[tag=t]"
+
+# TT10, TRUTH: SHARPNESS III ON AN IRON SWORD, the line's 26.45 against PLAYERHIT's sent. t at ~2, a full charge (40).
+TT10:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - hold: iron_sword
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 sharpness"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~2 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: t
+  - attack: t
+  - wait: 5
+  - probe: t
+  - cmd: "kill @e[tag=t]"
+
+# TT11, TRUTH: ECHO BEAM III, the line's "x 6" against the shots counted. m at ~10 in his line, mana full.
+TT11:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give cursed_emerald"
+  - wait: 2
+  - hold: cursed_emerald
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 echo_beam"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["m","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: m
+  - use: right_click
+  - wait: 80
+  - probe: m
+  - cmd: "kill @e[tag=m]"
+
+# TT12, TRUTH: FOCUSED BEAM II, the line's 162 and no "x N" against ONE beam. The same placing; TT11's press was 80+ ticks ago.
+TT12:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give cursed_emerald"
+  - wait: 2
+  - hold: cursed_emerald
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 focused_beam"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~10 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["m","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: m
+  - use: right_click
+  - wait: 80
+  - probe: m
+  - cmd: "kill @e[tag=m]"
+
+# TT13, TRUTH: PROTECTION III, the tooltip's Defense against the sheet's. Bare sheet; the chestplate worn plain; off,
+# Protection III put on it in hand, worn again. Each wear waits 10 for the reconcile.
+TT13:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s weapon.mainhand from entity @s armor.chest"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - wait: 2
+  - cmd: "rpg enchant candidate 0 protection"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+
+# TT14, C WITNESSED: Polished Scepter III on the Lapis Staff, Early Toll III on the Knell Beam, Deft Hands III on the
+# Boltor. Each tooltip's stat and ability lines are the bare ones; only the enchant line is added.
+TT14:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give lapis_staff"
+  - cmd: "rpg give knell_beam"
+  - cmd: "rpg give boltor"
+  - wait: 2
+  - hold: lapis_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 polished_scepter"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - hold: knell_beam
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 early_toll"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - hold: boltor
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 deft_hands"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+
+# TT15, A CONDITIONAL ENCHANT: WILDFIRE III on the Living Lantern. The stat line does not move.
+TT15:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give living_lantern"
+  - wait: 2
+  - hold: living_lantern
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 wildfire"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+
+# TT16, A GEAR SCORE CHANGE WITH AN ENCHANT ACTIVE: Large Sparks III at 100 then 200; Sharpness III at 100 then 200.
+TT16:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg gearscore set 200"
+  - wait: 2
+  - dump: held
+  - hold: iron_sword
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 sharpness"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg gearscore set 200"
+  - wait: 2
+  - dump: held
+
+# TT17, THE ENCHANT TABLE SHOWS THE SAME LORE: Large Sparks III on the staff, /enchanting at level 13 (the table opens at 10),
+# the staff shifted into the input, the screen dumped. Then his level back to 1.
+TT17:
+  - cmd: "rpg playerxp set @s 13 levels"
+  - wait: 40
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "enchanting"
+  - wait: 3
+  - shift_click: "bottom flint_staff"
+  - wait: 2
+  - dump: menu
+  - close: ""
+  - wait: 2
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+
+# TT18, THE REDRAW AT THE OTHER WRITE SITES THE PAD REACHES: clear, then the refresher (the join's own GearRefresher).
+TT18:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "rpg refresh"
+  - wait: 2
+  - dump: held
+
+# TT19, THE ONE ASK, LAST: the Cursed Emerald with Echo Beam III and the Breacher with Shatter Caps III, both in his bar.
+TT19:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give cursed_emerald"
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - hold: cursed_emerald
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 echo_beam"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - ask: "1 1200 words Hover the Cursed Emerald and the Breacher in your bar. Do the numbers read as what each weapon now does (the Emerald six bolts of 27, the Breacher a stone then four chunks), and is each tooltip clear? (yes / no / not sure)"
