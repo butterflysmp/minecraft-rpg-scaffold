@@ -264,6 +264,9 @@ public final class EnchantEffectLine {
                     case WINDUP -> "-" + number(v / 20.0) + "s wind-up";
                 };
             }
+            // SHARPENED GLASS (K9, 2026-11-25): the level's REAL number (B5), FLAT. WORDING: SEAT PLACEHOLDER 2026-11-25, OPEN FOR
+            // BEN.
+            case CRIT_CHANCE -> "+" + number(EnchantCurve.valueAt(definition.valueByLevel(), level)) + "% Crit Chance";
             // MANA BURN (F3): the level's percent, as authored. WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN.
             case SCORCH_BOOST -> {
                 if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.ScorchBoost b)) {

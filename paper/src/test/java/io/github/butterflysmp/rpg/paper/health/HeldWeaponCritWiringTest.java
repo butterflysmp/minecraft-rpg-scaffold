@@ -37,10 +37,25 @@ class HeldWeaponCritWiringTest {
         assertTrue(c.get(call + 1).contains("CritModifierItems.desiredChanceModifiers(player, keys),"), c.get(call + 1));
         assertTrue(c.get(call + 2).contains("io.github.butterflysmp.rpg.core.weapon.HeldWeaponCrit.sources("),
                 "the held weapon is merged into the gear argument: " + c.get(call + 2));
-        assertTrue(c.get(call + 3).contains("WeaponItems.heldWeaponId(player, keys).flatMap(weapons::find))),"),
-                "read off the MAIN HAND's weapon id, and the inner merge closes there: " + c.get(call + 3));
-        assertTrue(c.get(call + 4).contains("fromAccessories.sources(AccessoryStat.CRIT_CHANCE)"),
-                "the accessories follow, in the same outer call: " + c.get(call + 4));
+        assertTrue(c.get(call + 3).contains("WeaponItems.heldWeaponId(player, keys).flatMap(weapons::find)),"),
+                "read off the MAIN HAND's weapon id: " + c.get(call + 3));
+        assertTrue(c.get(call + 4).contains("CritChanceEnchantItems.desiredModifiers(player, keys, enchants)),"),
+                "K9: the enchant's own source, in the same gear merge, which closes there: " + c.get(call + 4));
+        assertTrue(c.get(call + 5).contains("fromAccessories.sources(AccessoryStat.CRIT_CHANCE)"),
+                "the accessories follow, in the same outer call: " + c.get(call + 5));
+        assertEquals(1, c.stream().filter(l -> l.contains("CritChanceEnchantItems.desiredModifiers(")).count(), "and nowhere else");
         assertEquals(1, c.stream().filter(l -> l.contains("HeldWeaponCrit.sources(")).count(), "and nowhere else");
+    }
+
+    /** K9: the enchant's scanner reads the MAIN HAND's EFFECTIVE crit_chance enchants. Mutation: another hand or effect. */
+    @Test
+    void theEnchantScannerReadsTheMainHandsCritChanceEnchants() throws IOException {
+        List<String> s = Files.readAllLines(Path.of("src", "main", "java", "io", "github", "butterflysmp", "rpg", "paper",
+                "health", "CritChanceEnchantItems.java"), StandardCharsets.UTF_8);
+        assertTrue(s.size() > 20, "control: the scanner was read, " + s.size());
+        assertEquals(1, s.stream().filter(l -> l.contains("ItemStack held = player.getInventory().getItemInMainHand();")).count());
+        assertEquals(1, s.stream().filter(l -> l.contains(
+                "EnchantValues.totalFor(EnchantItems.read(held, keys), enchants, EnchantEffect.CRIT_CHANCE);")).count());
+        assertEquals(0, s.stream().filter(l -> l.contains("getItemInOffHand") || l.contains("getArmorContents")).count());
     }
 }

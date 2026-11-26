@@ -105,7 +105,45 @@ registers; `LootLoader` refuses a pooled id that does not ship, the opposite dir
 
 ## K9 TO K11 — THE ENCHANT (PR 2)
 
-In `feat/sharpened-glass`. Its section is added there.
+**K9, an enchant effect that adds to crit chance. READ: none existed.** The effects were DURABILITY, DAMAGE, BLOCK_DR,
+REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME and the eight behaviours, and none named crit. **Built:
+ONE effect type, `crit_chance`**, in the manner of Mana Bank:
+- core `CritChanceEnchant` (`boosts`, `contribution` = percent / 100, FLAT);
+- `EnchantEffect.CRIT_CHANCE`: a stat with a curve, no behaviour block, gate MAIN_HAND_ONLY (a fighting class or
+  universal), in every exhaustive switch;
+- paper `CritChanceEnchantItems`: the main hand's EFFECTIVE `crit_chance` enchants (`EnchantValues.totalFor`) as ONE
+  source, `critenchant:MAIN_HAND`, merged into the same gear argument as K2's `weapon:MAIN_HAND`.
+
+The keys differ, so the two ADD: **15% base + 10% + 15% = 40% at level III, 30% at level I**. That is EXECUTED through
+`StatsSheetLines.critChance` in `CritChanceEnchantTest`, not derived. Active exactly while it is active on the weapon in
+hand: a locked or inactive candidate is not effective, and the loop re-reads the main hand every pass. The line (B5)
+carries the real number: `+5% Crit Chance`, `+10% Crit Chance`, `+15% Crit Chance` (wording a SEAT PLACEHOLDER).
+
+**K10, guaranteed, as G1 to G5.** `sharpened_glass.yml`: `weapon: broken_bottle`, `guaranteed: true`, `class: universal`
+(the convention of every weapon-specific enchant), `value_by_level: [5, 10, 15]`. It is offered first in slot 0 of the
+bottle only, locked at 0, bought for XP like any candidate, not pre-applied (`SharpenedGlassContentTest`, 500 rolls each
+of the bottle and an iron sword).
+
+| pool | the Broken Bottle | an iron sword (the control) |
+|---|---|---|
+| slot 0, weapon | `sharpened_glass` | none |
+| slot 1, unique | `kinetic_tremors` (READ: the only `element: kinetic` enchant; `class: universal`) | `kinetic_tremors` |
+| normal | `sharpness`, `unbreaking` (Unbreaking: see K6, OPEN) | `sharpness`, `unbreaking` |
+
+**K11, where the sheet shows it. READ:** `/rpg stats` (`StatsSheet`), the line `line(null, CRIT_CHANCE_LABEL,
+StatsSheetLines.critChance(v.critChance()), CRIT_COLOR)`: a two-space indent, the label padded to 13, then a whole
+percent. The Nexus stats head shows the same lines. Quoted:
+
+| crit chance | the line |
+|---|---|
+| 15 (base, an iron sword in hand) | `  Crit Chance  15%` |
+| 25 (the bottle) | `  Crit Chance  25%` |
+| 30 (the bottle, Sharpened Glass I) | `  Crit Chance  30%` |
+| 40 (the bottle, Sharpened Glass III) | `  Crit Chance  40%` |
+
+Those figures assume nothing else grants crit. Accessories and fragments do (`keen_charm` +5%; the level gives +0 crit
+and +0 weapon damage at level 1, EXECUTED in `CritChanceEnchantTest.levelOneAddsNoCritAndNoWeaponDamage`). No selftest verb clears accessories or fragments, so the gate reads its
+own baseline and predicts each row as that baseline plus an exact offset.
 
 ## THE GATE (PR 3)
 

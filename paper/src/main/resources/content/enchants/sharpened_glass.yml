@@ -1,0 +1,18 @@
+# SHARPENED GLASS -- the Broken Bottle's GUARANTEED weapon enchant (the seat's brief of 2026-11-25; PLAN-broken-bottle.md).
+# Ben, verbatim: "6. Sharpened Glass - +5/10/15% Crit Chance".
+#
+# WHAT IT DOES (`effect: crit_chance`, core CritChanceEnchant, K9): while it is the ACTIVE candidate of the bottle's weapon
+# slot at level 1 or more and the bottle is in the MAIN HAND, +5 / +10 / +15 percent points of CRIT CHANCE, FLAT (the gear
+# score is never a term). Its source ("critenchant:MAIN_HAND") is distinct from the bottle's own +10% ("weapon:MAIN_HAND"),
+# so the two ADD: 15% base + 10% + 15% = 40% at level III (CritChanceEnchantTest, EXECUTED).
+#
+# GUARANTEED (G1 to G5): every freshly rolled Broken Bottle offers it in slot 0, FIRST, locked at level 0; bought and
+# activated in the table like any candidate (G2), at the same XP. Not pre-applied. Items already rolled are not touched.
+display_name: "Sharpened Glass"            # BEN
+icon: glass_pane                           # SEAT PLACEHOLDER 2026-11-25
+max_level: 3                               # BEN: three values
+effect: crit_chance                        # K9: the one new effect type
+class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
+weapon: broken_bottle                      # W1: the Broken Bottle's slot 0
+guaranteed: true                           # G1
+value_by_level: [5, 10, 15]                # BEN: "+5/10/15% Crit Chance", percent points

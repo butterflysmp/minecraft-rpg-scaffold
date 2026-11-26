@@ -203,7 +203,15 @@ public enum EnchantEffect {
      * by the weapon carrying it stamps the scorch it applies, whose tick and Ignite are multiplied (F1, F2). No
      * {@code value_by_level} at the top level.
      */
-    SCORCH_BOOST;
+    SCORCH_BOOST,
+
+    /**
+     * Percent points of CRIT CHANCE while the weapon carrying it is in the MAIN HAND (K9, Sharpened Glass, 2026-11-25).
+     * The mechanism is {@link CritChanceEnchant}. A stat, like {@link #MAX_MANA}: a {@code value_by_level}, no behaviour
+     * block. Read off the main hand, like {@link #DAMAGE}, and every fighting class's hits roll crit, so the gate is
+     * MAIN_HAND_ONLY. Its source is its own key, so it ADDS to the held weapon's own crit chance (K2).
+     */
+    CRIT_CHANCE;
 
     /**
      * Case-insensitive lookup for the content loader. Returns null on a miss so the CALLER decides

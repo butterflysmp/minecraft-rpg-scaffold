@@ -239,9 +239,11 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             case RELOAD_TIME -> Gate.RANGER_ONLY;
             // A BEHAVIOUR acts on the hits of the weapon in the MAIN HAND that made them (B2), so a fighting class or universal.
             case SHOCKWAVE, AIRBURST, SHATTER, FOCUSED_BEAM, GRANT_TRIGGER, CAST_TUNE, HIT_CHAIN, SCORCH_BOOST -> Gate.MAIN_HAND_ONLY;
+            // K9 (2026-11-25): read off the MAIN HAND, as DAMAGE is, and every fighting class's hit rolls crit.
+            case CRIT_CHANCE -> Gate.MAIN_HAND_ONLY;
         };
         boolean curved = switch (effect) {
-            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> true;
+            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME, CRIT_CHANCE -> true;
             case DURABILITY, SHOCKWAVE, AIRBURST, SHATTER, FOCUSED_BEAM, GRANT_TRIGGER, CAST_TUNE, HIT_CHAIN, SCORCH_BOOST                                  -> false;
         };
 
@@ -478,7 +480,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                     ? (g.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Orb o && o.shot() != null
                             ? o.shot().percentByLevel().size() : maxLevel)   // D3: an orb's shot has one percent per level
                     : -1;
-            case DURABILITY, DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME -> null;
+            case DURABILITY, DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME, CRIT_CHANCE -> null;
         };
         if (levels == null) {
             if (behaviour != null) {
