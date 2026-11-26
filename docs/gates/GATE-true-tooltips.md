@@ -460,10 +460,15 @@ message before he logs in.
 ### R0 (NEXT BOOT)
 
 - **R0a:** `[Rpg] Build: <head>`, this branch's head as `git ls-remote` prints it, not dirty.
-- **R0b:** `docs/gates/GATE-true-tooltips-labels-r0b.ps1` on the DEPLOYED jar: before `'--- absent'` **6 PRESENT / 0
-  ABSENT**; between `'--- absent'` and `'--- controls'` **2 ABSENT / 0 PRESENT**; after `'--- controls'` **1 PRESENT / 0
-  ABSENT**. Run before commit on a jar built from this tree (the PR body quotes it).
-- **R0c:** as the boot of `88f1d4eb` (24 enchants, 25 weapons, 0 `[Rpg]` WARN, no Skipping): this branch adds no content.
+- **R0b:** `docs/gates/GATE-true-tooltips-labels-r0b.ps1` on the DEPLOYED jar: before `'--- absent'` **8 PRESENT / 0
+  ABSENT** (the label, the ask rule, the rows, and the two lines of the Flint Staff's new flavor); between `'--- absent'`
+  and `'--- controls'` **3 ABSENT / 0 PRESENT** (the removed helper, TT27 at the short window, and the old flavor entry
+  `  - "create fire by flinging mana into flint."`, which survives only in the file's comments, so the needle is
+  anchored to the list entry); after `'--- controls'` **2 PRESENT / 0 ABSENT** (a class string, and the description's
+  `      - "Hurls a fragment of burning mana"` entry: the anchored needle finds an entry that is there). Run before
+  commit on a jar built from this tree (the PR body quotes it).
+- **R0c:** as the boot of `88f1d4eb` (24 enchants, 25 weapons, 0 `[Rpg]` WARN, no Skipping): no content file is added
+  or removed; `flint_staff.yml`'s flavor changes, and loads with no WARN.
 - **R0d:** `[Rpg] Selftest: dev server, 481 scenarios across 51 gates`. Recount: 51 files, 532 keys, 51 setups. Control:
   524 + 8 = 532. `473 scenarios` ABSENT.
 - **R0e:** `FIGHTWORLD sweep … folders=0`.
@@ -472,7 +477,12 @@ message before he logs in.
 
 ### TT20 — THE FLINT STAFF, LARGE SPARKS III
 
-`Large Sparks III | | Fire | Gear Score: 100 | | Fire Bolt  Right-Click | Hurls a fragment of burning mana | **Magic Damage: 32** | Cooldown: 1.2s | Mana Cost: 5 | | …flavour… | | Common Magic Weapon`
+`Large Sparks III | | Fire | Gear Score: 100 | | Fire Bolt  Right-Click | Hurls a fragment of burning mana | **Magic Damage: 32** | Cooldown: 1.2s | Mana Cost: 5 | | **Early magicians learned you could | create fire by striking flint with mana.** | | Common Magic Weapon`
+
+(Amended 2026-11-26, before any boot of these rows, by the seat's brief: Ben's new Flint Staff flavor, verbatim *"Early
+magicians learned you could create fire by striking flint with mana."*, the break after "learned you could" a SEAT
+PLACEHOLDER. It replaces "Prehistoric magicians learned you could / create fire by flinging mana into flint.", which TT0
+to TT18 above read and keep as the record.)
 
 ### TT21 — THE CURSED EMERALD, BARE THEN FOCUSED BEAM II
 

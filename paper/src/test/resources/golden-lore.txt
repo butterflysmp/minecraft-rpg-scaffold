@@ -153,8 +153,8 @@
    "Magic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["20" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Cooldown: 1.2s | Mana Cost: 5" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
-   "Prehistoric magicians learned you could" color=#AAAAAA O=. B=. S=. U=. I=T
-   "create fire by flinging mana into flint." color=#AAAAAA O=. B=. S=. U=. I=T
+   "Early magicians learned you could" color=#AAAAAA O=. B=. S=. U=. I=T
+   "create fire by striking flint with mana." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- golden_sword
@@ -943,8 +943,8 @@ armor.slotNoun(FEET) = Boots
    "Magic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["23" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Cooldown: 1.2s | Mana Cost: 5" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
-   "Prehistoric magicians learned you could" color=#AAAAAA O=. B=. S=. U=. I=T
-   "create fire by flinging mana into flint." color=#AAAAAA O=. B=. S=. U=. I=T
+   "Early magicians learned you could" color=#AAAAAA O=. B=. S=. U=. I=T
+   "create fire by striking flint with mana." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- flint_staff + large_sparks 3
@@ -955,8 +955,8 @@ armor.slotNoun(FEET) = Boots
    "Magic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["32" color=#FF5555 O=. B=. S=. U=. I=F ]
    "Cooldown: 1.2s | Mana Cost: 5" color=#555555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
-   "Prehistoric magicians learned you could" color=#AAAAAA O=. B=. S=. U=. I=T
-   "create fire by flinging mana into flint." color=#AAAAAA O=. B=. S=. U=. I=T
+   "Early magicians learned you could" color=#AAAAAA O=. B=. S=. U=. I=T
+   "create fire by striking flint with mana." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Common Magic Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- golden_sword + sharpness 3

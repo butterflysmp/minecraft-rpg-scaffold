@@ -63,9 +63,14 @@ material: stick
 # BEN, 2026-11-24, verbatim: "In the lore of the Flint staff, change the word "Slamming" to "Flinging"". The one word, in
 # his case ("slamming" is lowercase mid-sentence, so "flinging"); the sentence now reads "Prehistoric magicians learned
 # you could create fire by flinging mana into flint." and the line break stays where it was (40 characters, unchanged).
+#
+# BEN, 2026-11-26, verbatim: "Before I send this to CC, i have one small change to the lore of the flint staff." and, asked
+# whether "create firing" was meant as "create fire": "good catch, it should read "Early magicians learned you could
+# create fire by striking flint with mana."" Every word and the full stop are his. THE BREAK IS A SEAT PLACEHOLDER
+# 2026-11-26, OPEN FOR BEN: after "learned you could", as before (33 and 40 characters).
 flavor:
-  - "Prehistoric magicians learned you could"
-  - "create fire by flinging mana into flint."
+  - "Early magicians learned you could"
+  - "create fire by striking flint with mana."
 
 triggers:
   right_click:

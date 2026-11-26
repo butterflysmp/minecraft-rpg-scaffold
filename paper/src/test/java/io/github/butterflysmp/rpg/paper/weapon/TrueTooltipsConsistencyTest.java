@@ -390,8 +390,8 @@ class TrueTooltipsConsistencyTest {
                     ItemEnchantTermsReader.of(state, w, c.enchants())));
         };
         assertEquals(List.of("Fire", "", "Fire Bolt  Right-Click", "Hurls a fragment of burning mana", "Magic Damage: 32",
-                "Cooldown: 1.2s | Mana Cost: 5", "", "Prehistoric magicians learned you could",
-                "create fire by flinging mana into flint.", "", "Common Magic Weapon"),
+                "Cooldown: 1.2s | Mana Cost: 5", "", "Early magicians learned you could",
+                "create fire by striking flint with mana.", "", "Common Magic Weapon"),
                 weapon.apply("flint_staff", activeAt("large_sparks", 3)));
         assertEquals(List.of("Kinetic", "", "Cursed Volley  Right-Click", "Channel, then loose six",
                 "bolts down your line of sight.", "Magic Damage: 27 x 6", "Cooldown: 1.5s | Mana Cost: 40", "",
