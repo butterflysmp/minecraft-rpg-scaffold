@@ -133,9 +133,13 @@ public final class WeaponFire {
         // what keeps the broken gate from widening the set of inputs this weapon consumes.
         // THE WEAPON'S OWN TRIGGER, OR ONE AN ACTIVE ENCHANT GRANTS IT (Lapis Crystal's D1, 2026-11-23). One resolver
         // (GrantedTriggers) for this path and the tooltip; the held weapon's behaviours are read as every cast reads them.
-        Optional<TriggerBinding> binding = io.github.butterflysmp.rpg.core.weapon.GrantedTriggers.resolve(weapon, input,
+        // F7 (2026-11-26): read ONCE, here, at the press, and handed both to the trigger's resolver and to the stamp, so a
+        // cooldown tune is the one on the weapon in hand at the press that starts the cooldown (B2).
+        java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> pressBehaviours =
                 new io.github.butterflysmp.rpg.paper.adapter.PaperCombatWorld(player.getWorld(), adapters)
-                        .behavioursOf(player.getUniqueId()));
+                        .behavioursOf(player.getUniqueId());
+        Optional<TriggerBinding> binding = io.github.butterflysmp.rpg.core.weapon.GrantedTriggers.resolve(weapon, input,
+                pressBehaviours);
         if (binding.isEmpty()) return Optional.empty();
 
         // Q7's INPUT COUNTER. The click arrived and this weapon binds it -- BEFORE the broken gate,
@@ -224,14 +228,14 @@ public final class WeaponFire {
             }
             int score = GearScoreItems.heldScore(player, adapters.keys(), adapters.weapons());   // D3: read at the cast
             return Optional.of(summons.cast(player, weapon, summonCast, score,
-                    () -> weaponService.fire(caster, binding.get(), aim)));
+                    () -> weaponService.fire(caster, binding.get(), aim, pressBehaviours)));
         }
         // THE LEFT CLICK'S ORDER (4c, D5): picked BEFORE it is charged; nothing picked is nothing at all (empty).
         if (binding.get().ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.DirectSummon direct) {
             if (summons == null) return Optional.empty();
-            return summons.direct(player, weapon, direct, () -> weaponService.fire(caster, binding.get(), aim));
+            return summons.direct(player, weapon, direct, () -> weaponService.fire(caster, binding.get(), aim, pressBehaviours));
         }
-        Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim));
+        Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim, pressBehaviours));
         result.ifPresent(r -> {
             if (r instanceof CastResult.Success success) {
                 // Q7's FIRE COUNTER, the other half of the pair. Reached only on a real Success --

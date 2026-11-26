@@ -207,6 +207,40 @@ Enchants, weapon-specific and guaranteed counts move in the next two PRs (sectio
 staff's; slot 0 (weapon) empty until Fast and Fungal and Cluster Bombs ship; slot 1 (unique) a nature mage weapon's,
 which no shipped unique enchant admits (the unique pool is Kinetic Tremors, kinetic, and Mana Burn, fire mage).
 
+## 11. F7 AND F8 — FAST AND FUNGAL, THE COOLDOWN TUNE (`feat/fast-and-fungal`)
+
+- **The quantity:** `EnchantBehaviour.CastTune.Quantity.COOLDOWN`, whole ticks of 1 or more, SUBTRACTED from the cast's
+  `cooldown_ticks`. **ONE PLACE:** the `COOLDOWN` arm of `CastTunes.apply`. The press's stamp reads it through
+  `AbilityService.stampedCooldownTicks` (extracted from `resolve`, which now calls it: one function, not two copies), and
+  the tooltip reads it through `CastTunes.tune` in `WeaponLore` (its Cooldown line is `ability.cooldownTicks()` of the
+  tuned cast). A cut that leaves 0 or less throws, naming the ability; the loader builds every level at load
+  (`EnchantLoader.castTune`, READ), so such an enchant is refused, by name (`FastAndFungalContentTest`, through the real
+  loader, with a 1-tick control). A cooldown tune needs a cast with a cooldown.
+- **At the press, by the weapon in hand (B2):** `WeaponFire.attempt` reads the held weapon's active behaviours ONCE
+  (`pressBehaviours`, the list it already read for the granted triggers) and hands it to every charge
+  (`WeaponService.fire(…, pressBehaviours)` → `AbilityService.fireTrigger(…, behaviours)`). The Success carries the
+  UNTUNED cast; the executor tunes it at the commit as before. A cooldown already running keeps its stamped length.
+- **The floor is unchanged:** `CastSpec.minimumCooldownTicks` is still asked of the UNTUNED cast (a volley's wind-up or
+  shot tune moves no floor today; no ruling covers that change). READ: no shipped weapon's floor exceeds its cooldown
+  (T13's new cooldown check reports no mismatch on any shipped weapon).
+- **Fast and Fungal** (`content/enchants/fast_and_fungal.yml`): `weapon: blast_fungus`, `guaranteed: true`, `cast_tune`
+  `quantity: cooldown`, `value_by_level: [20, 40, 60]` (Ben's 1 / 2 / 3 s). 140 → 120 / 100 / 80, all on the 4-tick grid.
+  G1: over 500 seeded rolls it is the first candidate in slot 0 of every fresh Blast Fungus, at level 0 (locked), and in
+  no other weapon's pool.
+- **F8, the tooltip:** the Cooldown line shows the TRUE cooldown: `7.0s` bare, `6.0s` / `5.0s` / `4.0s` (golden: the
+  Fast and Fungal III rendering reads `Cooldown: 4.0s | Mana Cost: 30`). **T13 now checks every ability block's Cooldown
+  line against `AbilityService.stampedCooldownTicks`** (the stamp's own function, never the renderer), and counts a case
+  as "the engine moves nothing" only when the stamped cooldowns are unchanged too (its first run counted Fast and Fungal
+  as moving nothing). Fast and Fungal's own enchant line stays name and numeral (`EnchantLore`, untouched). The enchant
+  table's effect line reads `-1s cooldown` / `-2s` / `-3s` (SEAT PLACEHOLDER wording, in Ben's unit).
+
+**Recounts (this PR):** enchants 24 → 25 (`ls paper/src/main/resources/content/enchants/*.yml | wc -l`);
+weapon-specific 11 → 12 (`grep -lE '^weapon:' …/enchants/*.yml | wc -l`); guaranteed 7 → 8
+(`grep -lE '^guaranteed: true' …`). **Corrected while building:** this plan's first draft (and the brief's report notes)
+gave 13 and 8 at the base; that read 18 grep LINES (`weapon:` and `guaranteed:` together) as file counts. The file
+counts are 11 and 7 at `fcfbefbb`. T13 1272 → 1278 (Fast and Fungal 3 levels x 2 scores; none unmoved, 564). Golden
+predicted +14 / -1 (`-- blast_fungus + fast_and_fungal 3`, 12 lines, the tail), **read 14 1**, `=== 143 renderings ===`.
+
 ## OPEN FOR BEN (SEAT PLACEHOLDER 2026-11-26 unless dated otherwise)
 
 1. The fan: one down the aim, two at 25 degrees (the old game's), in the view plane.
@@ -222,3 +256,4 @@ which no shipped unique enchant admits (the unique pool is Kinetic Tremors, kine
 9. CC'S CALLS (sections 2, 3, 4, 6, 7, 8): another player in the path is no touch; a chunk rests against a wall; visuals
    and bursts only; the spread, not the yaw fan; no drag; the zombie horse's temptation.
 10. The world loot (section 9).
+ 11. Fast and Fungal's icon (`red_mushroom`) and its effect-line wording (`-1s cooldown`).

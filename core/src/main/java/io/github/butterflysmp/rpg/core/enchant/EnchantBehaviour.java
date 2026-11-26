@@ -77,6 +77,8 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, Enc
      *   <li>{@link Quantity#RANGE}: ADDED to a ray's range (a volley's inner ray's too), in blocks.</li>
      *   <li>{@link Quantity#SHOTS}: a volley's shot count, SET to the value (Ben: "Increases volley count to 4/5/6").</li>
      *   <li>{@link Quantity#WINDUP}: SUBTRACTED from a volley's wind-up, in whole ticks.</li>
+     *   <li>{@link Quantity#COOLDOWN}: SUBTRACTED from the cast's cooldown, in whole ticks (Fast and Fungal, F7,
+     *       2026-11-26). A cut that would leave the cooldown at 0 or below throws where {@code CastTunes} builds it.</li>
      * </ul>
      *
      * <p>The record refuses what it can see: a blank weapon, no levels, a damage or range addition not above 0, a shot count
@@ -87,7 +89,7 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, Enc
     record CastTune(String weaponId, Quantity quantity, List<Double> valueByLevel) implements EnchantBehaviour {
 
         /** Which quantity of the weapon's right click it moves. */
-        public enum Quantity { DAMAGE, RANGE, SHOTS, WINDUP }
+        public enum Quantity { DAMAGE, RANGE, SHOTS, WINDUP, COOLDOWN }
 
         public CastTune {
             if (weaponId == null || weaponId.isBlank()) throw new IllegalArgumentException("cast_tune needs its weapon id");
@@ -100,7 +102,7 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, Enc
                 boolean whole = v != null && v == Math.rint(v);
                 boolean ok = switch (quantity) {
                     case DAMAGE, RANGE -> v != null && v > 0 && Double.isFinite(v);
-                    case SHOTS, WINDUP -> whole && v >= 1 && v <= 10_000;
+                    case SHOTS, WINDUP, COOLDOWN -> whole && v >= 1 && v <= 10_000;
                 };
                 if (!ok) {
                     throw new IllegalArgumentException("cast_tune " + quantity.name().toLowerCase(java.util.Locale.ROOT)
@@ -108,6 +110,7 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, Enc
                                 case DAMAGE, RANGE -> "it must be above 0";
                                 case SHOTS -> "a shot count is a whole number of 1 or more";
                                 case WINDUP -> "a wind-up cut is a whole number of ticks, 1 or more";
+                                case COOLDOWN -> "a cooldown cut is a whole number of ticks, 1 or more";
                             });
                 }
             }
