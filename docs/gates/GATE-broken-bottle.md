@@ -44,8 +44,10 @@ nothing.
      The command fails, and nothing is damaged.
   4. An abort's restore removes it: READ, `SelfTestSnapshot.restore` removes every nearby entity tagged `selftest`, and
      the zombie carries `selftest`.
-- **SM16R2 (by reference): 0.000 to him.** Its mobs are its wolf and a NoAI zombie `s16`; the row damages no player (its
-  steps, `GATE-summoner.yml`).
+- **SM16R2 (by reference): 0.000 to him.** READ, its steps in `GATE-summoner.yml`:
+  - its mobs are his own Bone Whistle wolf and one zombie, `NoAI:1b`, tagged `s16r2`;
+  - it runs no `damage` command at all;
+  - its last step kills the zombie (`kill @e[tag=s16r2]`).
 - **AS15R (by reference): 0.000.** A craft and a dump.
 - **THE SUM: 0.000 + 0.000 + 0.000 + 0.000 = 0.000**, at or under 20.000. No term prices damage to him, so S-1 has
   nothing to execute. S-3: no dealer acts on him at any score the pad seeds.
