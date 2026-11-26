@@ -151,6 +151,30 @@ Each change of hand waits 10 ticks before its read.
   (`GATE-sword-convert.md`). BB1 reads the bottle's `Attack Speed: 2.0` the same way. The attribute reply is the value
   the server actually paces his swing with.
 
+### BB2R — BB2'S ATTRIBUTE CLAUSE, READ ON THE SERVER (2026-11-26, feat/bottle-owed; NOT BOOTED)
+
+**Why it exists:** BB2's attribute clause read `is 1` and `is 2` on the boot of `37292713`.
+- READ, javap, `AttributeCommand.getAttributeValue`: the reply's argument is `Double.valueOf(value)`, unrounded.
+- READ, javap, PacketEvents 2.13.0 `AdventureNBTSerializer.deserializeTranslationArgumentList`: a numeric argument is
+  decoded with `NBTNumber.getAsInt()` before `TranslationArgument.numeric`.
+- **So our instrument (`ReplyReader`, through PacketEvents) drops the decimals, not the server.** No vanilla reply can
+  witness 1.6 through it.
+
+**The witness that keeps them:** a new verb, `probe_attribute: attack_speed`. It logs
+`ATTRIBUTE <key> value=<v> base=<b>` from the server's own `AttributeInstance.getValue()` and `getBaseValue()`, to three
+decimals (`SelfTestAttributeProbeTest`).
+
+**Staging:** BB2's first two hands. An iron sword, then the bottle, each at score 100, with a 10-tick wait after each
+change of hand.
+
+**Predicted:**
+- the iron sword: `ATTRIBUTE attack_speed value=1.600 base=4.000`;
+- the bottle: `ATTRIBUTE attack_speed value=2.000 base=4.000`.
+
+EXECUTED: `VANILLA_BASE + AttackSpeedAttribute.modifier(1.6, 1.0)` = 1.6 and with 2.0 it is 2.0
+(`BrokenBottleGateArithmeticTest`). The base 4.000 is `AttackSpeedAttribute.VANILLA_BASE`; that the player's base IS that
+4.0 is INFERRED, and the line reads it.
+
 ### BB3 — ONE HIT AT 100 AND ONE AT 200, EVERY TERM NAMED
 
 Staging: a fresh NoAI zombie `t` at `~2`, `max_health` 200, at night. Enchants cleared. The two PROBEs before the hit are
@@ -362,6 +386,14 @@ The plan's carried list takes the same entry in the next PR (this commit is docs
   - **`blocks=75` is BB8's saved region exactly** (`1 -1 -2` to `5 1 2`: 5 x 3 x 5 = 75). No other row saved blocks.
   - That no water or glass is left is **INFERRED from that count**, not seen: no world read was taken after the
     restore.
+
+> **DATED NOTE, 2026-11-26 (feat/bottle-owed): WHEN BB8'S BLOCKS WENT BACK.**
+> - `RESTORED blocks=` prints `blocks.total()`, the number SAVED over the whole run, not what the run's end restored.
+>   READ: `SelfTestSnapshot.restore`.
+> - BB8's 75 went back at the NEXT row's start: `SELFTEST summoner setup CLEAN blocks=75 … inventory=restored` at
+>   00:49:00.
+> - The count above is right; "the restore" there meant that CLEAN, not the run's end.
+> - Neither restore read its blocks back. Both do now: `blocksBack=<matched>/<restored>`.
 
 ### THE ROWS
 

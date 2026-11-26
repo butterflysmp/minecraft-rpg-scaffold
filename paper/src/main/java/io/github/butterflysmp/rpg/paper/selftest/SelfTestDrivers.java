@@ -142,6 +142,7 @@ final class SelfTestDrivers {
             case PROBE_ENTITIES -> probeEntities(p, a);
             case PROBE_POSITIONS -> probePositions(p, a);
             case PROBE_SELF -> probeSelf(p);
+            case PROBE_ATTRIBUTE -> probeAttribute(p, a);
             case PROBE_MANA -> {
                 var pool = run.resources();
                 run.log(manaLine(pool.current(p.getUniqueId(), ResourceCost.DEFAULT_RESOURCE),
@@ -1065,6 +1066,22 @@ final class SelfTestDrivers {
         }
         run.log("ENTITIES " + type + " count=" + count + " radius=" + f[1] + " dying=" + dying);
         return Optional.empty();
+    }
+
+    /** BB2R: the attribute the server holds, as a double (see {@link Scenario.Verb#PROBE_ATTRIBUTE}). */
+    private Optional<String> probeAttribute(Player p, String arg) {
+        String key = arg == null ? "" : arg.trim().toLowerCase(Locale.ROOT);
+        Attribute attribute = org.bukkit.Registry.ATTRIBUTE.get(org.bukkit.NamespacedKey.minecraft(key));
+        if (attribute == null) return Optional.of("PROBE_ATTRIBUTE: no attribute '" + key + "'");
+        org.bukkit.attribute.AttributeInstance instance = p.getAttribute(attribute);
+        if (instance == null) return Optional.of("PROBE_ATTRIBUTE: the player has no '" + key + "'");
+        run.log(attributeLine(key, instance.getValue(), instance.getBaseValue()));
+        return Optional.empty();
+    }
+
+    /** {@code ATTRIBUTE <key> value=<v> base=<b>}, three decimals, Locale.ROOT. Pure, pinned. */
+    static String attributeLine(String key, double value, double base) {
+        return String.format(Locale.ROOT, "ATTRIBUTE %s value=%.3f base=%.3f", key, value, base);
     }
 
     private Optional<String> probeSelf(Player p) {

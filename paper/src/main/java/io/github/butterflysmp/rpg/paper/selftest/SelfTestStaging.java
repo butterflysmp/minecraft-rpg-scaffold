@@ -124,6 +124,22 @@ final class SelfTestStaging {
     /** P-R2 (2026-11-25): the ONE tick between a row's first drain and its second, after which DONE is logged. */
     static final int ROW_END_REDRAIN_TICKS = 1;
 
+    /**
+     * THE SAVED-BLOCKS READ-BACK (2026-11-26): after a restore, how many of the restored states the world now holds again,
+     * by {@code matches} (paper: the block's data equals the saved state's). Logged against the count restored, so a gate that
+     * places blocks PROVES they went back; GATE-broken-bottle BB8's "no water or glass left" could only infer it.
+     */
+    static <T> int readBack(java.util.List<T> restored, java.util.function.Predicate<T> matches) {
+        int n = 0;
+        for (T t : restored) if (matches.test(t)) n++;
+        return n;
+    }
+
+    /** {@code blocksBack=<matched>/<restored>}, the read-back's field on the CLEAN and RESTORED lines. */
+    static String readBackField(int matched, int restored) {
+        return "blocksBack=" + matched + "/" + restored;
+    }
+
     /** The longest the run waits for a killed body to leave; vanilla's death animation is 20 ticks. */
     static final int SETTLE_CAP_TICKS = 40;
 

@@ -58,7 +58,13 @@ final class ScenarioLint {
          * row, and nothing at a row start resets it. Once a row sets a level ({@code rpg playerxp set @s ...}) other than
          * the setup's, every later row that is not chained stages its own. AS13 set 13 and AS14-AS19 ran at it.
          */
-        LEVEL_UNSTAGED
+        LEVEL_UNSTAGED,
+        /**
+         * A LEVEL-GATED MENU IS A STAGING HAZARD (the seat, 2026-11-26, after AS15R SKIPPED at a locked {@code /recipes}): a
+         * command that opens a level-gated screen ({@code NexusScreens.Screen#unlockLevel}) runs at a staged level at least
+         * that screen's, set BEFORE it, in the row or carried. Only commands are read; a station clicked in the hub is not.
+         */
+        LEVEL_GATED_MENU
     }
 
     /** The level a step stages: the text after {@code rpg playerxp set @s}, such as {@code 13 levels}. */
@@ -99,6 +105,41 @@ final class ScenarioLint {
             if (set.isPresent()) {
                 carried = set.get();
                 from = s.row();
+            }
+        }
+    }
+
+    /**
+     * LEVEL_GATED_MENU over one gate, in file order and step order, carrying the staged level across rows as the run does.
+     * The level is the number of the last {@code rpg playerxp set @s <n> levels} before the step; any other form is
+     * unknown, and so is "never set".
+     */
+    private static void levelGatedMenu(String gate, List<Scenario> scenarios, List<Finding> out) {
+        Integer level = null;
+        for (Scenario s : scenarios) {
+            for (Scenario.Step st : s.steps()) {
+                if (st.verb() != Scenario.Verb.CMD) continue;
+                String c = st.arg().trim();
+                Matcher m = LEVEL.matcher(c);
+                if (m.matches()) {
+                    Matcher n = Pattern.compile("^(\\d+)\\s+levels?$").matcher(m.group(1).trim());
+                    level = n.matches() ? Integer.valueOf(n.group(1)) : null;
+                    continue;
+                }
+                String first = (c.startsWith("/") ? c.substring(1) : c).split("\\s+", 2)[0].toLowerCase(java.util.Locale.ROOT);
+                for (io.github.butterflysmp.rpg.paper.menu.NexusScreens.Screen screen
+                        : io.github.butterflysmp.rpg.paper.menu.NexusScreens.Screen.values()) {
+                    // NexusScreens.Screen.unlockLevel(): the station's level, or 1 for an ungated screen, which any level meets.
+                    int needs = screen.unlockLevel();
+                    if (!screen.command().equals(first) || needs <= 1) continue;
+                    if (level == null) {
+                        out.add(new Finding(gate, s.row(), Rule.LEVEL_GATED_MENU, "'" + first + "' needs level " + needs
+                                + ", and no level is staged"));
+                    } else if (level < needs) {
+                        out.add(new Finding(gate, s.row(), Rule.LEVEL_GATED_MENU, "'" + first + "' needs level " + needs
+                                + ", and the staged level is " + level));
+                    }
+                }
             }
         }
     }
@@ -253,6 +294,7 @@ final class ScenarioLint {
             out.add(new Finding(gate, Scenario.SETUP, Rule.GROUND, "the gate summons mobs and declares no preflight"));
         }
         levelSeam(gate, scenarios, out);
+        levelGatedMenu(gate, scenarios, out);
         return List.copyOf(out);
     }
 

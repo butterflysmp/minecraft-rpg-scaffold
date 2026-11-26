@@ -91,6 +91,26 @@ BB2:
   - wait: 10
   - cmd: "rpg stats"
 
+# BB2R (re-predicts BB2's attribute clause, 2026-11-26): the same two hands, the attribute read ON THE SERVER as a double by
+# probe_attribute. The vanilla reply cannot carry it: PacketEvents decodes its numeric argument as an int (READ).
+BB2R:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give iron_sword"
+  - cmd: "rpg give broken_bottle"
+  - wait: 2
+  - hold: broken_bottle
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - hold: iron_sword
+  - cmd: "rpg gearscore set 100"
+  - wait: 10
+  - probe_attribute: attack_speed
+  - hold: broken_bottle
+  - wait: 10
+  - probe_attribute: attack_speed
+
 # BB3, ONE HIT AT 100 AND ONE AT 200: a fresh frozen zombie (max_health 200) at ~2 each time, a full charge (40 ticks), two
 # PROBEs before the hit (the control that nothing else moves it), one after. PLAYERHIT carries the sent figure.
 BB3:

@@ -941,6 +941,36 @@ AS15R:
   - probe_held: ""
   - dump: held
 
+# AS15R2 (re-predicts AS15R, 2026-11-26, after the boot of 37292713 SKIPPED it at a locked /recipes): the same craft at LEVEL
+# 3, the recipe screen's own level (READ: NexusStationGate.Station.CRAFTING 3; the refusal read "Crafting unlocks at level 3").
+# His four armour slots are cleared too, so the crafted piece's rolled score is 100 on every draw (EXECUTED: As15r2StagingTest).
+# It ends back at the setup's level 1, so the next row starts where LEVEL_UNSTAGED expects. The trace is in the gate.
+AS15R2:
+  - cmd: "rpg playerxp set @s 3 levels"
+  - wait: 40
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+  - hold: empty
+  - cmd: "give @s minecraft:copper_ingot 5"
+  - wait: 2
+  - cmd: "recipes"
+  - wait: 3
+  - dump: menu
+  - click: "Copper Helmet"
+  - wait: 3
+  - close: ""
+  - wait: 2
+  - probe_held: ""
+  - dump: held
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+
 # AS16, THE ONE ASK, LAST: a full iron set worn, then the question.
 AS16:
   - clear_inventory: ""
