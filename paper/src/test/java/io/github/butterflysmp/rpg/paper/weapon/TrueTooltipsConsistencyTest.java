@@ -78,7 +78,7 @@ class TrueTooltipsConsistencyTest {
     private static final Logger LOG = Logger.getLogger(TrueTooltipsConsistencyTest.class.getName());
     private static final int[] SCORES = {100, 250};
     /** PINNED: the count of cases this walk generates over shipped content. Recount, never adjust: see the plan. */
-    static final int EXPECTED_CASES = 1260;   // weapons 570, armor 672, shields 18 (558 unmoved), at 91a8de1c + this slice
+    static final int EXPECTED_CASES = 1272;   // weapons 582, armor 672, shields 18 (564 unmoved): 2026-11-26 + blast_fungus (attunement 3 + unbreaking 3, x 2 scores = 12; unbreaking 6 unmoved); 1260 at fcfbefbb
     private static final Pattern DAMAGE = Pattern.compile("^.* Damage: ([0-9.]+)( x ([0-9]+))?$");
     private static final Pattern CRIT = Pattern.compile("^Crit Chance: \\+([0-9]+)%$");
 
@@ -194,8 +194,19 @@ class TrueTooltipsConsistencyTest {
         return own + (CritChanceEnchant.boosts(pts) ? CritChanceEnchant.contribution(pts) : 0.0);
     }
 
+    /**
+     * The literal the Damage arm prices on a hit. A top-level damage; or, for a FUSED chunk's detonation (the Blast Fungus,
+     * 2026-11-26), a burst's damage: READ, {@code EffectApplier.detonateFused} hands a burst's effects to the same
+     * per-target loop and the same Damage arm, once per body in its radius.
+     */
     private static Optional<Double> firstLiteral(List<EffectSpec> onHit) {
-        return onHit.stream().filter(e -> e instanceof EffectSpec.Damage).map(e -> ((EffectSpec.Damage) e).amount()).findFirst();
+        for (EffectSpec e : onHit) {
+            if (e instanceof EffectSpec.Damage d) return Optional.of(d.amount());
+            if (e instanceof EffectSpec.Burst b) {
+                for (EffectSpec n : b.effects()) if (n instanceof EffectSpec.Damage d) return Optional.of(d.amount());
+            }
+        }
+        return Optional.empty();
     }
 
     /** The payloads one press delivers, as the executor fires them: a volley's shots times its inner cast's own. */

@@ -1,0 +1,81 @@
+# THE BLAST FUNGUS (the seat's brief of 2026-11-26, via Ben; docs/plans/PLAN-blast-fungus.md).
+# Ben, verbatim: "Let's bring another new weapon from the old repo, blast fungus" / "1. 55x3 damage, 4s cooldown, 3 block
+# blast radius, 30 mana 2. Keep 3. Mage, Uncommon, Nature, outside the tiers 4. Correct 5. Loot only, bastion chests, and
+# pigging barters. 6. Cluster Bombs, ... 7. Red mushroom" / then: "increase the cooldown to 7s and the guaranteed enchant
+# is Fast and Fungal, reduces cooldown by 1/2/3s". The LAST cooldown he gave, 7 s, is the weapon's.
+#
+# Ben's numbers REPLACE the old game's (BLAST_FUNGUS at CreaperCrusher/Butterfly-SMP cfde822, as the seat read it: 35
+# damage at the lowest score, 35 mana, 8 s; three NETHER_WART_BLOCK items at 0.7 along the look and +/-25 degrees of yaw,
+# each going off 40 ticks after the throw, or at once within 0.7 of a living entity). NOTHING HERE IS TAKEN FROM A
+# DELETED DEV WEAPON; nothing cites one.
+#
+# BEN'S: class mage, rarity uncommon, element nature, a red mushroom, 55 a blast x 3, radius 3, 30 mana, 140 ticks (7 s,
+# on the 4-tick grid), and "Keep" the old fuse: 40 ticks from the throw, a chunk RESTS where it lands, and goes off at once
+# on touching a mob in flight (fuse_ticks: core FuseRules, the seat's F1). Mobs only ("Correct"): the burst is
+# PvpPath.FUSED_BURST, spared for players (F4); the caster never, a summon never.
+#
+# OUTSIDE THE TIERS (BEN), as the Broken Bottle (PLAN-broken-bottle.md K5): NO craft_result, NO recipe file. OBTAINED ONLY
+# BY /rpg give until the world-loot pass (BEN: "Loot only, bastion chests, and pigging barters"; F12): in NO loot source.
+#
+# A RED MUSHROOM HAS NO DURABILITY (READ: Items registers it with registerBlock(Block), a bare Item.Properties()), so it
+# never wears; Unbreaking can roll on it and grants nothing, as on the other staves (carried, PLAN-broken-bottle.md K6).
+# A RED MUSHROOM PLACES, POTS, COMPOSTS AND FEEDS A ZOMBIE HORSE, AND THIS ONE DOES NONE OF IT (F11, MintedMushroomUse).
+#
+# NAME THE QUANTITY, for every enchant that can roll here (a nature mage weapon's pools, READ in PLAN-blast-fungus.md):
+#   Attunement (effect damage, 5/10/15%, mage): moves each blast's hitBase, 55 x score/100 (EffectApplier's Damage arm,
+#     inside the burst). Non-zero and continuous; every Blast Fungus has it.
+#   Fast and Fungal (cast_tune cooldown, -20/40/60 ticks): moves this cast's 140. Non-zero, on the grid (120/100/80).
+#   Cluster Bombs (behaviour): replaces the throw; its numbers are its own (cluster_bombs.yml).
+#   Unbreaking: the eligibility half FAILS (no durability), as on the flint, crystal, knell and lantern staves. Carried.
+
+# The id is kept off its own line's comment: SelfTestWeaponIdsTest reads a bare `id:` line.
+id: blast_fungus
+display_name: "Blast Fungus"               # the old game's name (Ben: "blast fungus")
+element: nature                            # BEN. Nature accrues nothing: nature.yml declares no applies_status (READ)
+rarity: uncommon                           # BEN
+class: mage                                # BEN
+material: red_mushroom                     # BEN: "Red mushroom"
+
+flavor:                                    # SEAT PLACEHOLDER 2026-11-26
+  - "It grew in the crimson dark,"
+  - "and it does not like being picked."
+
+triggers:
+  right_click:
+    name: "Fungal Barrage"                 # SEAT PLACEHOLDER 2026-11-26: the old game's ability name
+    description:                           # SEAT PLACEHOLDER 2026-11-26. {shots_word} is the spread's count ("three")
+      - "Lobs {shots_word} spore chunks that burst"
+      - "after 2 seconds, or on touching a mob."
+    cooldown_ticks: 140                    # BEN: "increase the cooldown to 7s". On the 4-tick grid (140 = 35 x 4)
+    cost:
+      resource: mana
+      amount: 30                           # BEN
+    on_cast:
+      - type: visual
+        visual_id: fungus_cast             # SEAT PLACEHOLDER 2026-11-26
+    cast:
+      type: projectile
+      speed: 0.7                           # SEAT PLACEHOLDER 2026-11-26: the old game's 0.7 (as the seat read it)
+      # SEAT PLACEHOLDER 2026-11-26: 0.04 a tick, vanilla's ITEM gravity (READ: ItemEntity.getDefaultGravity returns
+      # 0.04d). CC'S CALL: the flight subtracts it each tick with NO drag term, where a vanilla item also keeps 0.98 of its
+      # motion a tick (not read); the arc is therefore a little longer than the old game's thrown item.
+      gravity: 0.04
+      fuse_ticks: 40                       # BEN: "Keep" -- 2 s from the THROW (a press throws one tick later, READ: WeaponFire)
+      item: nether_wart_block              # SEAT PLACEHOLDER 2026-11-26: the old game's body
+      trail: fungus_trail                  # SEAT PLACEHOLDER 2026-11-26: crimson spores and smoke
+      # THREE CHUNKS (BEN "x3"): the flight's own spread (SpreadPattern, READ): one down the aim and a ring of two at the
+      # shooter's right and left, 25 degrees off the aim (SEAT PLACEHOLDER 2026-11-26: the old game's +/-25 of yaw). At level
+      # pitch the ring IS +/-25 of yaw; pitched, it is +/-25 in the view plane (the old game rotated about world up). CC'S CALL.
+      spread:
+        count: 3
+        angle_degrees: 25
+        rotation_degrees: 0
+    on_hit:                                # A DETONATION where the chunk is (F3; FusedPayload: visuals and bursts only)
+      - type: visual
+        visual_id: fungus_blast            # SEAT PLACEHOLDER 2026-11-26: no block is broken or set alight (READ: F3)
+      - type: burst
+        radius: 3                          # BEN: "3 block blast radius"
+        effects:
+          - type: damage
+            amount: 55                     # BEN: "55x3 damage", scaled by the gear score, as every literal
+            element: nature                # BEN

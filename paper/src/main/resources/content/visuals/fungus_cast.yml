@@ -1,0 +1,11 @@
+# The Blast Fungus's throw (2026-11-26). SEAT PLACEHOLDER: a witch's throw over a fungus being picked. Both sounds READ in
+# the pinned paper-api (Sound.ENTITY_WITCH_THROW, Sound.BLOCK_FUNGUS_BREAK). on_cast fires ONCE per press, not per chunk.
+steps:
+  - type: sound
+    key: entity.witch.throw
+    volume: 0.8
+    pitch: 0.9
+  - type: sound
+    key: block.fungus.break
+    volume: 0.6
+    pitch: 1.0

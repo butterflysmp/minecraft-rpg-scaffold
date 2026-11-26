@@ -1,0 +1,14 @@
+# The Blast Fungus's chunk trail (2026-11-26). SEAT PLACEHOLDER: crimson spores and a wisp of smoke, the old game's look
+# as the seat read it. Three trails at once, so one of each a tick. Particles READ in the pinned paper-api
+# (Particle.CRIMSON_SPORE, Particle.SMOKE). Drawn only while a chunk FLIES (a resting chunk draws none).
+steps:
+  - type: particle
+    particle: CRIMSON_SPORE
+    count: 1
+    spread: 0.05
+    speed: 0.0
+  - type: particle
+    particle: SMOKE
+    count: 1
+    spread: 0.02
+    speed: 0.01

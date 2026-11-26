@@ -1,0 +1,19 @@
+# The Blast Fungus's detonation (2026-11-26). SEAT PLACEHOLDER: a spore cloud, a small explosion flash and the explode
+# sound. A PARTICLE and a SOUND only: nothing here breaks or lights a block (F3). Up to three at once, so the sound is not
+# at full volume. Particles and sound READ in the pinned paper-api (Particle.CRIMSON_SPORE, Particle.EXPLOSION,
+# Sound.ENTITY_GENERIC_EXPLODE).
+steps:
+  - type: particle
+    particle: CRIMSON_SPORE
+    count: 30
+    spread: 1.2
+    speed: 0.05
+  - type: particle
+    particle: EXPLOSION
+    count: 1
+    spread: 0.0
+    speed: 0.0
+  - type: sound
+    key: entity.generic.explode
+    volume: 0.7
+    pitch: 1.3
