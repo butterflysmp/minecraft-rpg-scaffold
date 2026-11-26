@@ -10,7 +10,7 @@
 # SAFETY (the gate file): NO row deals him damage; every blast is spared for players (PvpPath.FUSED_BURST), EXECUTED.
 setup:
   - pad: ""
-  - preflight: "0 -8 32 10"
+  - preflight: "-2 -8 32 10"
   - difficulty: normal
   - trace: on
   - cmd: "time set 18000"

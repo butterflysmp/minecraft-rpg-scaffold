@@ -108,6 +108,33 @@ Each row's lines are those between `SELFTEST blast-fungus <row> START` and its `
 - **A PLAYERHIT** here reads `source=blast_fungus/right_click … element=nature sent=<s> crit=<b> triggerScore=<score>`.
 - **Every row begins from a cleared cooldown:** each row's `clear_state` clears every cooldown before its first press.
 
+### EVERY COORDINATE LIES INSIDE THE PREFLIGHTED BOX (the seat's fix, 2026-11-26)
+
+**The setup preflights `-2 -8 32 10`** (it was `0 -8 32 10`, which BF6's wolf at block x −1 fell outside). READ,
+`SelfTestPreflight`: the box is in whole blocks from his own block, along the world's axes (x east, z south), each bound
+−64..64; at every column his feet and head height must be AIR and the floor SOLID. READ, `SelfTestPadShape` (as
+`GATE-summoner.md`): the pad's interior is x −2..45, z −13..13, floored, so the box is measurable. **Every row starts on
+the stand** (the row-start CLEAN teleports him to `stage()`), and each row's `execute align xz positioned ~0.5 ~ ~0.5`
+centres him in that same block, so F is the stand block's centre. **A position F+(dx, dz) lies in block
+(⌊0.5 + dx⌋, ⌊0.5 + dz⌋)** from his. Heights are not in the box (it is columns); every position here is on or above the
+pad's floor. Rest points are the EXECUTED ones (`BlastFungusGateArithmeticTest`).
+
+| row | him | mobs (F+) → block | blocks | rest and detonation points (F+) → block | wolf |
+|---|---|---|---|---|---|
+| BF1, BF2, BF8 | (0,0) | — | — | — | — |
+| BF3 | (0,0) | ba (7.5, 0) → (8, 0); bo (6, 5.5) → (6, 6); bn (6, −6.5) → (6, −6) | — | (6.650, 0) → (7, 0); (6.027, ±2.810) → (6, 3), (6, −3) | — |
+| BF4 | (0,0) | bp (4, 0) → (4, 0) | — | touch (3.700, 0) → (4, 0); sides as BF3 | — |
+| BF5 | (0,0), looking down | — | — | (0, 0) → (0, 0); (0, ±0.721) → (0, 1), (0, −1) | — |
+| BF6 | (0,0), looking down | bs (1.5, 0) → (2, 0) | — | as BF5 | (−1, 0) → **(−1, 0)** |
+| BF7, FF1, FF2, FF3 | (0,0) | — | — | as BF3 (no mob) | — |
+| CB1, CB2, CB3 | (0,0) | c4 (6.65, 4.5) → (7, 5); c5 (6.65, −5.5) → (7, −5); cs (10.15, 0) → (10, 0) | — | big (6.650, 0) → (7, 0); splits (9.150, 0) → (9, 0), (5.400, ±2.165) → (5, 2), (5, −2) | — |
+| CB4 | (0,0) | cs (10.15, 0) → (10, 0) | — | as CB1 | — |
+| BF9 | (0,0) | — | flower pot (2, 0) → (2, 0) | his own clicks: the chunks rest at the pot | — |
+
+**Every block x lies in −1..10 and every z in −6..6, inside x −2..32, z −8..10.** The only coordinate the old box missed
+was BF6's wolf (block x −1); no other was outside. The chunks' paths run between his eye and these points, inside the
+same columns.
+
 ### BF1 — THE TOOLTIP, BARE, AND A FRESH SLOT 0
 
 1. `HELDID slot=<n> item=blast_fungus`.
