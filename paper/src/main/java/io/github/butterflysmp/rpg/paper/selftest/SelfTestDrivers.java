@@ -667,7 +667,16 @@ final class SelfTestDrivers {
         // event is synchronous, and WeaponFire.attempt records inside it, so the mark covers exactly this press.
         // GATE-knell-beam.md HF1R2's cleared sample mixed presses like this one with Ben's own.
         run.fireCadence().excluding(p.getUniqueId(), () -> Bukkit.getPluginManager().callEvent(event));
+        // WHAT EVERY LISTENER LEFT OF THE PRESS (GATE-broken-bottle.md, 2026-11-25): an AUTO reading of the server's
+        // verdict, never of what vanilla then does (this event is synthetic; no packet follows it). READ, the pinned API:
+        // the event starts at useItemInHand=DEFAULT and, with no block, useInteractedBlock=DENY.
+        run.log(useResultLine(event.useItemInHand().name(), event.useInteractedBlock().name()));
         return Optional.empty();
+    }
+
+    /** The USE driver's second line: {@code USE result useItemInHand=<r> useInteractedBlock=<r>}. Pure, pinned. */
+    static String useResultLine(String useItemInHand, String useInteractedBlock) {
+        return "USE result useItemInHand=" + useItemInHand + " useInteractedBlock=" + useInteractedBlock;
     }
 
     private Optional<String> swing(Player p) {

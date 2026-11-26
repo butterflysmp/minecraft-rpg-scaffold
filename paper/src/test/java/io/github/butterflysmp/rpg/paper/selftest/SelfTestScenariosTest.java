@@ -30,6 +30,22 @@ class SelfTestScenariosTest {
         return ScenarioLoader.load(path -> SelfTestScenariosTest.class.getClassLoader().getResourceAsStream(path));
     }
 
+    /**
+     * GATE-broken-bottle's ONE command, against the SHIPPED gates: it parses with no refusal, and queues the bottle's setup
+     * and nine rows, then summoner's setup, SM9R and SM16R2, then armor-sets' setup and AS15R. Fifteen, and nothing else.
+     */
+    @Test
+    void theBottlesOneCommandQueuesItsGateAndTheThreeOwedRows() {
+        var gates = shipped().gates();
+        var parsed = SelfTestGateList.parse("broken-bottle+summoner.SM9R.SM16R2+armor-sets.AS15R", gates);
+        assertEquals(null, parsed.refusal());
+        List<String> queued = SelfTestGateList.queue(parsed, gates).stream().map(s -> s.gate() + "#" + s.row()).toList();
+        assertEquals(List.of("broken-bottle#setup", "broken-bottle#BB0", "broken-bottle#BB1", "broken-bottle#BB2",
+                "broken-bottle#BB3", "broken-bottle#BB4", "broken-bottle#BB5", "broken-bottle#BB6", "broken-bottle#BB7",
+                "broken-bottle#BB8", "summoner#setup", "summoner#SM9R", "summoner#SM16R2", "armor-sets#setup",
+                "armor-sets#AS15R"), queued);
+    }
+
     @Test
     void everyShippedScenarioLoadsWithNoRefusal() {
         ScenarioLoader.Loaded loaded = shipped();
@@ -42,9 +58,9 @@ class SelfTestScenariosTest {
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
                         "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes", "shatter-caps",
-                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets"),
+                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle"),
                 List.copyOf(loaded.gates().keySet()),
-                "the forty-nine gates, in boot order (armor-sets LAST, 2026-11-25, a NEW gate after summoner; summoner before it,"
+                "the fifty gates, in boot order (broken-bottle LAST, 2026-11-25, a NEW gate after armor-sets; armor-sets before it, 2026-11-25, a NEW gate after summoner; summoner before it,"
                         + " 2026-11-25, a NEW gate after mage-guaranteed;"
                         + " mage-guaranteed before it, the seat's brief of 2026-11-24, a NEW gate after focused-beam;"
                         + " focused-beam before it, the weapon filter and Focused Beam, 2026-11-24, a NEW gate"
@@ -338,7 +354,9 @@ class SelfTestScenariosTest {
         // 485 + 3 = 488. 436 was this line's value.
         // Then AS15R, SM9R and SM16R2 (feat/armor-sets-owed, 2026-11-25), RECOUNTED: 49 gates, 491 keys (cat GATE-*.yml |
         // grep -cE '^[A-Za-z0-9_-]+:'), 49 setups, so 442. Control: 488 + 3 = 491. 439 was this line's value.
-        assertEquals(442, loaded.rows());
+        // Then GATE-broken-bottle.md (feat/broken-bottle-gate, 2026-11-25), RECOUNTED: 50 gates, 501 keys, 50 setups, so
+        // 451. Control: 491 + 10 (its setup and BB0-BB8) = 501. 442 was this line's value.
+        assertEquals(451, loaded.rows());
     }
 
     /**
@@ -615,6 +633,11 @@ class SelfTestScenariosTest {
                 "GATE-mage-guaranteed.yml must lint clean (2026-11-24, written under the same rules)");
         assertEquals(List.of(), byGate.get("summoner").stream().filter(f -> f.rule() != ScenarioLint.Rule.LEVEL_UNSTAGED).map(ScenarioLint.Finding::line).toList(),
                 "GATE-summoner.yml must lint clean (2026-11-25, written under the same rules)");
+        // GATE-broken-bottle (2026-11-25): clean on EVERY rule, LEVEL_UNSTAGED included (no row moves his level), with the
+        // control that it loaded at all.
+        assertTrue(byGate.containsKey("broken-bottle"), "control: the bottle's gate was linted");
+        assertEquals(List.of(), byGate.get("broken-bottle").stream().map(ScenarioLint.Finding::line).toList(),
+                "GATE-broken-bottle.yml must lint clean on every rule");
         // L3 (the seat's ruling, 2026-11-24): HELD_READ_THEN_CHANGE over every gate, pinned EXACTLY. Old rows of other gates
         // are not edited; these four are owed dated notes (PLAN-enchant-columns section 33). STA4 is the one that cost a
         // reading: its iron half was recorded UNREAD when both shows answered for the netherite sword. The other three
@@ -672,7 +695,7 @@ class SelfTestScenariosTest {
             }
         }
         assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup", "focused-beam#setup",
-                        "mage-guaranteed#setup", "summoner#setup", "armor-sets#setup"),
+                        "mage-guaranteed#setup", "summoner#setup", "armor-sets#setup", "broken-bottle#setup"),
                 padGates, "only enchant-columns, (2026-11-23) enchant-changes, (2026-11-24) shatter-caps and (2026-11-24)"
                         + " focused-beam and (2026-11-24) mage-guaranteed opt in, each in its setup");
         Scenario changes = shipped().gates().get("enchant-changes").getFirst();
