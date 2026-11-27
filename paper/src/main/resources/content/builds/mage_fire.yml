@@ -8,8 +8,11 @@ class: mage
 element: fire
 display_name: "<gold>Fire Mage</gold>"
 
+# SMOLDER (Ben, 2026-11-27) replaced ultimate_placeholder_mage, which is deleted (the seat's Z8 as A3 left it). A SAVED
+# loadout that names the deleted id reads its ultimate as an EMPTY slot (LoadoutResolution, "a visible hole") until
+# the player picks Smolder; one with nothing saved gets Smolder by the default below.
 ultimates:
-  - ultimate_placeholder_mage
+  - smolder
 actives:
   - ember_step
   - solar_grenade
@@ -29,5 +32,5 @@ aspects:
   - lingering_sun
 
 default:
-  ultimate: ultimate_placeholder_mage
+  ultimate: smolder
   actives: [ember_step, solar_grenade]    # left, right

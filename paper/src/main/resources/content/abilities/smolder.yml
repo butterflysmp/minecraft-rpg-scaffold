@@ -1,0 +1,54 @@
+# SMOLDER, THE FIRE MAGE'S ULTIMATE (Ben, 2026-11-27: "a rework of the old repo's Blaze Kings Staff secondary
+# ability"; the seat's Smolder brief Z1 to Z11 and its rulings A1 to A6, the same day). Replaces
+# ultimate_placeholder_mage, which is deleted (mage_fire.yml names this as its ultimate and its default).
+#
+# BEN'S NUMBERS, VERBATIM: "1. 160 Damage Per pulse. 2. 12 Block Radius 3. Mana Cost is 80, Cooldown is 300 Seconds
+# 4. Each Pulse originates from the caster ... 8. Instead of one burst, it's a burst of 4 pulses every 3 seconds."
+# And when: "The moment you cast and then 3 6 and 9" -- ticks 0, 60, 120 and 180 from the cast.
+#
+# THE LOOK, BEN'S: "a ring of particles to come from the casters feet and expand outward to the edge of the radius. This
+# ring does NOT move with the caster. The origin of new pulses DOES. I'd like each pulse to take about 1.5 seconds to
+# reach the edge." -- travel_ticks 30. The damage travels WITH the ring (the seat's Z2, SEAT PLACEHOLDER 2026-11-27,
+# OPEN FOR BEN; the alternative is every body in range struck at the pulse's tick, the ring for show): a body is struck
+# once per pulse, on the tick the ring first reaches its horizontal distance from that pulse's fixed origin.
+#
+# SCORCH (Ben: "7. Yes it applies scorch"; the seat's A1): MET BY THE ELEMENT, with no status step here. Each pulse's
+# 160 is FIRE damage, and fire damage applies Scorch by the element (content/elements/fire.yml applies_status scorch;
+# ElementAccrual), as on every fire ability: the burn's cap is half the hit as declared (Scorch.CAP_FRACTION 0.5, so 80
+# for an uncrit 160, and a crit does not raise it: the cap is taken with the crit divided out), its window
+# Scorch.DEFAULT_DURATION_TICKS 120 (six seconds), restarted by each hit. DO NOT add `type: status, status_id: scorch`:
+# that is a second route, capped at the UNHALVED 160, and the two would apply together.
+#
+# WHO IT HITS (Ben: "Every hostile. No Summons and No players for now just like the summoner weapon"): the sides table,
+# MobHostility.PvpPath.PULSE (spared), and PLAYER -> SUMMON's "no". Never the caster.
+#
+# cooldown_ticks is a multiple of 4 (PLAN-build-system.md 2.4.1). 6000 ticks = 300 s.
+
+id: smolder
+display_name: "<gold>Smolder</gold>"
+element: fire
+cooldown_ticks: 6000
+
+# THE BUILD MENU'S PROSE (Z9): SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN. Every number in it is this file's own, and
+# SmolderContentTest holds each sentence to the number it states.
+description:
+  - "Four pulses, 3s apart, burst from your feet."
+  - "Each deals 160 fire damage within 12 blocks and scorches."
+
+cost:
+  resource: mana
+  amount: 80
+
+cast:
+  type: pulses
+  count: 4
+  interval_ticks: 60
+  radius: 12.0
+  travel_ticks: 30
+  ring: smolder_ring      # drawn round the ring each tick of its travel (no sound: ContentValidator)
+  pulse: smolder_pulse    # once at each pulse's origin, on its tick
+
+on_hit:
+  - type: damage
+    amount: 160
+    element: fire

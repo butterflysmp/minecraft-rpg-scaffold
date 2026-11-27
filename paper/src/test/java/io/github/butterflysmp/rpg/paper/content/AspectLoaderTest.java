@@ -230,8 +230,8 @@ class AspectLoaderTest {
                 new Loadout("ultimate_placeholder_ranger", "recall", "solar_lance"), List.of(),
                 List.of("searing_lance", "updraft")));
         pools.register(new PoolDefinition(new CellKey("mage", "fire"), "Fire Mage",
-                List.of("ultimate_placeholder_mage"), List.of("ember_step", "solar_grenade", "solar_lance"),
-                new Loadout("ultimate_placeholder_mage", "ember_step", "solar_grenade"), List.of(),
+                List.of("smolder"), List.of("ember_step", "solar_grenade", "solar_lance"),
+                new Loadout("smolder", "ember_step", "solar_grenade"), List.of(),
                 List.of("cinder_wake", "lingering_sun")));
         pools.register(new PoolDefinition(new CellKey("melee", "fire"), "Fire Melee",
                 List.of("ultimate_placeholder_melee"),

@@ -84,7 +84,8 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              io.github.butterflysmp.rpg.core.combat.FusedChunks fused,
                              io.github.butterflysmp.rpg.core.accessory.BlinkedPlayers blinked,
                              TargetGuard.Late targetGuard,
-                             AttackSink.Late attacks) {
+                             AttackSink.Late attacks,
+                             io.github.butterflysmp.rpg.core.combat.PulseRuns pulseRuns) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
@@ -123,7 +124,10 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                 // WHO A MOB MAY NOT TARGET (K7): bound to the blink's wiring at enable; until then nobody is hidden.
                 new TargetGuard.Late(),
                 // HIS ATTACK (K5): the fire and the melee seams tell it; bound to the blink at enable.
-                new AttackSink.Late());
+                new AttackSink.Late(),
+                // EVERY CASTER'S PULSES STILL TO FIRE (Smolder, the seat's Z5, 2026-11-27): a run outlives its cast, so one
+                // per server, on the orb's pattern.
+                new io.github.butterflysmp.rpg.core.combat.PulseRuns());
     }
 
     /**

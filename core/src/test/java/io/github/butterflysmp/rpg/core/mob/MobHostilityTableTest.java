@@ -41,7 +41,9 @@ class MobHostilityTableTest {
                 Map.entry(PvpPath.IGNITE_SPLASH, false), Map.entry(PvpPath.HOMING_PICK, false),
                 Map.entry(PvpPath.IMPLOSION, true), Map.entry(PvpPath.STATUS_TICK, true),
                 // F4 (the seat, 2026-11-26, the Blast Fungus; Ben: "Correct", mobs only): SPARED, as TRAVEL_END_BURST.
-                Map.entry(PvpPath.FUSED_BURST, false));
+                Map.entry(PvpPath.FUSED_BURST, false),
+                // Z4 (the seat, 2026-11-27, Smolder; Ben: "No players for now"): SPARED.
+                Map.entry(PvpPath.PULSE, false));
         assertEquals(PvpPath.values().length, today.size(), "every path has a pinned verdict");
         for (PvpPath p : PvpPath.values()) {
             assertEquals(today.get(p), harms(Side.PLAYER, Side.PLAYER, false, p), p.name());

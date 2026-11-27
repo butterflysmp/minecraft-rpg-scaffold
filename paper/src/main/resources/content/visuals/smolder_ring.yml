@@ -1,0 +1,10 @@
+# SMOLDER'S RING (Ben, 2026-11-27: "a ring of particles to come from the casters feet and expand outward to the edge of
+# the radius"): drawn at every point round the ring (core.combat.PulseFront.ringPoints, about 0.75 blocks apart) on every
+# tick of its 30-tick travel. EVERY STEP IS A SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN: one flame per point, still.
+# NO SOUND STEP: ContentValidator refuses one in a ring, which plays at every point on every tick.
+steps:
+  - type: particle
+    particle: FLAME
+    count: 1
+    spread: 0.0
+    speed: 0.0

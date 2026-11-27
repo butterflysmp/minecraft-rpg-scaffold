@@ -172,7 +172,29 @@ public final class Stones {
         Optional<LoadoutResolution.Saved> saved = builds.build(playerId)
                 .flatMap(build -> build.loadout(p.archetypeId(), p.elementId()))
                 .map(Stones::saved);
+        // "LOGGED ONCE" (PLAN-build-system.md's storage rule; the seat's A3, 2026-11-27): each saved id the pool no longer
+        // offers is named once per server run, per player, cell, slot and id. READ 2026-11-27: the plan promised this line
+        // and no code wrote it; it is CC'S CALL to add it here, where every reader of the loadout passes. The slot still
+        // reads EMPTY and the id stays in the file.
+        for (LoadoutResolution.Unoffered u : LoadoutResolution.unoffered(pool.get(), saved)) {
+            String key = playerId + " " + p.archetypeId() + "/" + p.elementId() + " " + u.slot() + " " + u.id();
+            if (loggedUnoffered.add(key) && builds.log() != null) {
+                builds.log().info(unofferedLine(playerId, p.archetypeId(), p.elementId(), u));
+            }
+        }
         return Optional.of(LoadoutResolution.resolve(pool.get(), saved));
+    }
+
+    /** Every unoffered saved id already logged this run (A3). */
+    private final java.util.Set<String> loggedUnoffered = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * {@code BUILD unoffered player=<uuid> cell=<class>/<element> slot=<SLOT> id=<id> reads=empty kept=file}, pinned by
+     * {@code StonesUnofferedLineTest}.
+     */
+    static String unofferedLine(UUID playerId, String archetype, String element, LoadoutResolution.Unoffered u) {
+        return "BUILD unoffered player=" + playerId + " cell=" + archetype + "/" + element + " slot=" + u.slot()
+                + " id=" + u.id() + " reads=empty kept=file";
     }
 
     /** The build store failed for this player this session: the stone is casting the pool default. */

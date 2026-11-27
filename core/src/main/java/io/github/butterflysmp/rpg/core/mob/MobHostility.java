@@ -84,6 +84,12 @@ public final class MobHostility {
         /** A FUSED projectile's detonation (the seat's F4, 2026-11-26, the Blast Fungus): SPARED, as TRAVEL_END_BURST. */
         FUSED_BURST(false),
         /**
+         * A PULSE's ring ({@code CastSpec.Pulses}; Smolder, the Fire Mage's ultimate, the seat's Z4, 2026-11-27): SPARED.
+         * Ben, verbatim: "Every hostile. No Summons and No players for now just like the summoner weapon. We'll expand on
+         * this during the PVP pass."
+         */
+        PULSE(false),
+        /**
          * An implosion. Its {@code affects:} setting is the CONTENT's choice of victims and is applied at its site before
          * this table is asked; for what that setting admits, a player's implosion lands on a player, as today.
          */

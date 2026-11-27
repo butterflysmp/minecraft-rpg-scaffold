@@ -148,6 +148,11 @@ final class AbilitySchema {
                     reqInt(s, "travel_ticks"), s.getString("front"));
             // THE THROWN ORB (Lapis Crystal's D2, 2026-11-23): every key required, CastSpec.Orb refuses a bad value by name.
             case "orb"        -> parseOrb(s);
+            // PULSES FROM THE CASTER (Smolder, the seat's Z1, 2026-11-27). The four numbers are REQUIRED (a default would
+            // be a number nobody ruled); `ring` (drawn round the ring each tick) and `pulse` (once at each origin) are
+            // OPTIONAL visual ids, resolved by ContentValidator. CastSpec.Pulses judges the values, by name.
+            case "pulses"     -> new CastSpec.Pulses(reqInt(s, "count"), reqInt(s, "interval_ticks"),
+                    reqDouble(s, "radius"), reqInt(s, "travel_ticks"), s.getString("ring"), s.getString("pulse"));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
         };
     }
@@ -262,6 +267,8 @@ final class AbilitySchema {
             case CastSpec.Cone ignored -> throw notRepeatable("cone",
                     "a cone already travels over ticks from a line captured at the click; repeating it is a volley of"
                             + " fronts nobody has ruled");
+            case CastSpec.Pulses ignored -> throw notRepeatable("pulses",
+                    "pulses already repeat on their own clock; a volley of them is a run of runs nobody has ruled");
         }
         return inner;
     }

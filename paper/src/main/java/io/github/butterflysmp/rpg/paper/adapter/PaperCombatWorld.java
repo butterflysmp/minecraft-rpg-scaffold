@@ -297,6 +297,42 @@ public final class PaperCombatWorld implements CombatWorld {
     }
 
     /**
+     * {@link #scheduleOn}, registered in {@link PendingWork} at {@code lastKnown} (Smolder's next pulse, the seat's Z6,
+     * 2026-11-27): it runs on the entity's own scheduler, and only if its link is still pending when the delay ends, so
+     * {@link #cancelScheduled}, a removal's {@code work().take} and the pad clean's {@code cancelIn} all end it. Nothing is
+     * registered when the entity is not in this world ({@code -1}). A link whose entity goes (a quit) never runs; its
+     * entry is taken by the removal path ({@code PulseRemovals}) or the next pad clean.
+     */
+    @Override
+    public long scheduleOnCancellable(UUID combatantId, io.github.butterflysmp.rpg.core.Vec3 lastKnown, int delayTicks,
+                                      Runnable task) {
+        Entity entity = world.getEntity(combatantId);
+        if (entity == null) return -1;
+        long id = ctx.work().add(world.getUID(), lastKnown.x(), lastKnown.y(), lastKnown.z());
+        ctx.scheduler().onEntityLater(entity, () -> {
+            if (ctx.work().take(id)) task.run();
+        }, delayTicks);
+        return id;
+    }
+
+    @Override
+    public io.github.butterflysmp.rpg.core.combat.PulseRuns pulseRuns() {
+        return ctx.pulseRuns();
+    }
+
+    /** A pulse line (Z10), while {@code /rpg mobtrace} is on: the target's entity type (or {@code gone}) and the tick. */
+    @Override
+    public void tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine line) {
+        if (!ctx.mobTrace().getAsBoolean()) return;
+        String type = "none";
+        if (line.target() != null) {
+            Entity target = world.getEntity(line.target());
+            type = target == null ? "gone" : target.getType().getKey().getKey();
+        }
+        ctx.log().info(line.format(type, org.bukkit.Bukkit.getCurrentTick()));
+    }
+
+    /**
      * AN ABILITY'S IMPLOSION THAT DRAGS (2026-11-18): {@link ImplosionDrags}, the runner the Phage's blast uses, on the
      * origin's region. The use's predicate, as {@code BukkitCombatant#applyPull} applies it to a single pull: never the
      * caster, never a shot's carrier, never a creative or spectator player; {@code MOBS} every other non-player,

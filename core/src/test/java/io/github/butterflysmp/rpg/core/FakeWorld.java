@@ -331,6 +331,47 @@ public final class FakeWorld implements CombatWorld {
         }));
     }
 
+    /** Every point {@link #scheduleOnCancellable} registered a link at, by handle: what a pad clean would find it by. */
+    public final Map<Long, Vec3> cancellableOnPoints = new HashMap<>();
+
+    /**
+     * {@link #scheduleOn} with a handle (Z6): -1 when the dummy is not here, as production returns; otherwise the task is
+     * queued under its sequence number, so {@link #cancelScheduled} takes it out, and dropped at fire time if the dummy
+     * has gone, as {@code scheduleOn}'s is.
+     */
+    @Override public long scheduleOnCancellable(UUID combatantId, Vec3 lastKnown, int delayTicks, Runnable task) {
+        if (delayTicks < 1) {
+            throw new IllegalArgumentException("scheduleOnCancellable requires delayTicks >= 1, got " + delayTicks);
+        }
+        if (combatant(combatantId).isEmpty()) return -1;
+        long handle = seq;
+        queue.add(new Scheduled(now + delayTicks, seq++, () -> {
+            if (combatant(combatantId).isEmpty()) return;
+            task.run();
+        }));
+        cancellableOnPoints.put(handle, lastKnown);
+        return handle;
+    }
+
+    /** This world's one pulse-run registry, as paper keeps one per server (Z5). */
+    public final io.github.butterflysmp.rpg.core.combat.PulseRuns pulseRuns = new io.github.butterflysmp.rpg.core.combat.PulseRuns();
+
+    @Override public io.github.butterflysmp.rpg.core.combat.PulseRuns pulseRuns() {
+        return pulseRuns;
+    }
+
+    /** Every pulse line, with the tick it was written on (the adapter's two additions, faked: type "dummy"). */
+    public record TracedPulse(io.github.butterflysmp.rpg.core.combat.PulseLine line, long tick) {
+        public String text() {
+            return line.format("dummy", tick);
+        }
+    }
+    public final List<TracedPulse> pulseLines = new ArrayList<>();
+
+    @Override public void tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine line) {
+        pulseLines.add(new TracedPulse(line, now));
+    }
+
     @Override public Optional<Aim> aimOf(UUID combatantId) {
         return entities.stream()
                 .filter(d -> d.id().equals(combatantId))
