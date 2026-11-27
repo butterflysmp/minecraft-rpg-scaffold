@@ -36,7 +36,8 @@ class UniqueSlotContentTest {
      * EVERY SHIPPED GEAR'S POOL AT MASTER {@code 383ded19}, before this PR: captured by running
      * {@code EnchantRoll.poolFor(EnchantRollItems.has(g), GearItems.gearClassOf(g), roster)} over the same five loaders in
      * a worktree of that commit (2026-11-23), sorted by id. The NORMAL pool (slots 2-3 since the re-cut; 1-3 before) must equal it for
-     * every one of the 65, with the dev unique enchant loaded.
+     * every one of the 65, with the dev unique enchant loaded. 2026-11-27: every armor row gains mana_battery (Mana Battery,
+     * the seat's B6): armor's normal pool is five.
      */
     private static final List<String> MASTER_POOLS = List.of(
             "blast_fungus=attunement,unbreaking",   // 2026-11-26: + blast_fungus, a nature mage weapon (attunement, unbreaking)
@@ -49,52 +50,52 @@ class UniqueSlotContentTest {
             "brawlers_gauntlet=",
             "breacher=deft_hands,expanded_quiver,power,unbreaking",
             "broken_bottle=sharpness,unbreaking",   // 2026-11-25: NEW gear, not a change; a melee weapon's pool (K10)
-            "chainmail_boots=growth,mana_bank,protection,unbreaking",
-            "chainmail_chestplate=growth,mana_bank,protection,unbreaking",
-            "chainmail_helmet=growth,mana_bank,protection,unbreaking",
-            "chainmail_leggings=growth,mana_bank,protection,unbreaking", "copper_boots=growth,mana_bank,protection,unbreaking", "copper_chestplate=growth,mana_bank,protection,unbreaking", "copper_helmet=growth,mana_bank,protection,unbreaking", "copper_leggings=growth,mana_bank,protection,unbreaking",
+            "chainmail_boots=growth,mana_bank,mana_battery,protection,unbreaking",
+            "chainmail_chestplate=growth,mana_bank,mana_battery,protection,unbreaking",
+            "chainmail_helmet=growth,mana_bank,mana_battery,protection,unbreaking",
+            "chainmail_leggings=growth,mana_bank,mana_battery,protection,unbreaking", "copper_boots=growth,mana_bank,mana_battery,protection,unbreaking", "copper_chestplate=growth,mana_bank,mana_battery,protection,unbreaking", "copper_helmet=growth,mana_bank,mana_battery,protection,unbreaking", "copper_leggings=growth,mana_bank,mana_battery,protection,unbreaking",
             "copper_sword=sharpness,unbreaking",
             "crossbow=power,unbreaking",
             "crystal_shard_staff=attunement,unbreaking",
             "cursed_emerald=attunement,unbreaking",
-            "diamond_boots=growth,mana_bank,protection,unbreaking",
-            "diamond_chestplate=growth,mana_bank,protection,unbreaking",
-            "diamond_helmet=growth,mana_bank,protection,unbreaking",
-            "diamond_leggings=growth,mana_bank,protection,unbreaking",
+            "diamond_boots=growth,mana_bank,mana_battery,protection,unbreaking",
+            "diamond_chestplate=growth,mana_bank,mana_battery,protection,unbreaking",
+            "diamond_helmet=growth,mana_bank,mana_battery,protection,unbreaking",
+            "diamond_leggings=growth,mana_bank,mana_battery,protection,unbreaking",
             "diamond_sword=sharpness,unbreaking",
             "dragons_breath=deft_hands,expanded_quiver,power,unbreaking",
             "dragons_plume=deft_hands,expanded_quiver,power,unbreaking",
             "fletchers_quiver=",
             "flint_staff=attunement,unbreaking",
-            "golden_boots=growth,mana_bank,protection,unbreaking",
-            "golden_chestplate=growth,mana_bank,protection,unbreaking",
-            "golden_helmet=growth,mana_bank,protection,unbreaking",
-            "golden_leggings=growth,mana_bank,protection,unbreaking",
+            "golden_boots=growth,mana_bank,mana_battery,protection,unbreaking",
+            "golden_chestplate=growth,mana_bank,mana_battery,protection,unbreaking",
+            "golden_helmet=growth,mana_bank,mana_battery,protection,unbreaking",
+            "golden_leggings=growth,mana_bank,mana_battery,protection,unbreaking",
             "golden_sword=sharpness,unbreaking",
             "healing_tome=",   // 2026-11-26: the Healing Tome, an accessory: an empty pool (A4)
             "iron_axe=unbreaking",
-            "iron_boots=growth,mana_bank,protection,unbreaking",
-            "iron_chestplate=growth,mana_bank,protection,unbreaking",
-            "iron_helmet=growth,mana_bank,protection,unbreaking",
+            "iron_boots=growth,mana_bank,mana_battery,protection,unbreaking",
+            "iron_chestplate=growth,mana_bank,mana_battery,protection,unbreaking",
+            "iron_helmet=growth,mana_bank,mana_battery,protection,unbreaking",
             "iron_hoe=unbreaking",
-            "iron_leggings=growth,mana_bank,protection,unbreaking",
+            "iron_leggings=growth,mana_bank,mana_battery,protection,unbreaking",
             "iron_pickaxe=unbreaking",
             "iron_shovel=unbreaking",
             "iron_sword=sharpness,unbreaking",
             "keen_charm=",
             "knell_beam=attunement,unbreaking",
             "lapis_staff=attunement,unbreaking",
-            "leather_boots=growth,mana_bank,protection,unbreaking",
-            "leather_chestplate=growth,mana_bank,protection,unbreaking",
-            "leather_helmet=growth,mana_bank,protection,unbreaking",
-            "leather_leggings=growth,mana_bank,protection,unbreaking",
+            "leather_boots=growth,mana_bank,mana_battery,protection,unbreaking",
+            "leather_chestplate=growth,mana_bank,mana_battery,protection,unbreaking",
+            "leather_helmet=growth,mana_bank,mana_battery,protection,unbreaking",
+            "leather_leggings=growth,mana_bank,mana_battery,protection,unbreaking",
             "living_lantern=attunement,unbreaking",
             "locust=deft_hands,expanded_quiver,power,unbreaking",
             "mending_charm=",
-            "netherite_boots=growth,mana_bank,protection,unbreaking",
-            "netherite_chestplate=growth,mana_bank,protection,unbreaking",
-            "netherite_helmet=growth,mana_bank,protection,unbreaking",
-            "netherite_leggings=growth,mana_bank,protection,unbreaking",
+            "netherite_boots=growth,mana_bank,mana_battery,protection,unbreaking",
+            "netherite_chestplate=growth,mana_bank,mana_battery,protection,unbreaking",
+            "netherite_helmet=growth,mana_bank,mana_battery,protection,unbreaking",
+            "netherite_leggings=growth,mana_bank,mana_battery,protection,unbreaking",
             "netherite_sword=sharpness,unbreaking",
             "sages_scroll=",
             "shears=unbreaking",
@@ -148,9 +149,9 @@ class UniqueSlotContentTest {
         assertEquals(8, l.accessories());   // 2026-11-26: + healing_tome; + blink_tome
         assertEquals(69, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle; 2026-11-26: + blast_fungus; + bone_club; + healing_tome; + blink_tome
         assertEquals(69, MASTER_POOLS.size(), "the snapshot covers the same 69");
-        assertEquals(27, l.real().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
+        assertEquals(28, l.real().size(), "2026-11-27: + mana_battery, 28 (ls content/enchants/*.yml | wc -l); 2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
-        assertEquals(27, l.dev().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
+        assertEquals(28, l.dev().size(), "2026-11-27: + mana_battery, 28 (ls content/enchants/*.yml | wc -l); 2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 

@@ -44,7 +44,13 @@ class ArmorSetWiringSignatureTest {
 
         int max = at(c, "stats.reconcileMaxModifiers(id, AccessoryContributions.merged(AccessoryContributions.merged(desiredMax, fromSet.sources(AccessoryStat.MAX_HEALTH)),");
         int def = at(c, "stats.reconcileDefenseModifiers(id, AccessoryContributions.merged(AccessoryContributions.merged(worn.defense(), fromSet.sources(AccessoryStat.DEFENSE)),");
-        int mana = at(c, "AccessoryContributions.merged(AccessoryContributions.merged(ManaRegenModifierItems.desiredModifiers(player, keys), fromSet.sources(AccessoryStat.MANA_REGEN)),");
+        // 2026-11-27 (Mana Battery, the seat's B3): the worn pieces' MANA_REGEN joins the TEMP fixture in the same FIRST
+        // argument, before the set's, so the regen merge spans two lines: the opening, then Mana Battery and the set.
+        int mana = at(c, "ManaBatteryModifierItems.desiredModifiers(player, keys, enchants), fromSet.sources(AccessoryStat.MANA_REGEN)),");
+        assertTrue(mana > 0 && c.get(mana - 1).trim().equals(
+                        "AccessoryContributions.merged(AccessoryContributions.merged(ManaRegenModifierItems.desiredModifiers(player, keys),"),
+                "Mana Battery is merged beside the fixture, inside the one regen merge: " + (mana > 0 ? c.get(mana - 1) : "absent"));
+        assertEquals(1, count(c, "ManaBatteryModifierItems.desiredModifiers("), "read once a pass, and never reconciled alone");
         int regen = at(c, "AccessoryContributions.merged(HealthRegenModifierItems.desiredModifiers(player, keys), fromSet.sources(AccessoryStat.HEALTH_REGEN)),");
         assertTrue(max > 0 && def > 0 && mana > 0 && regen > 0,
                 "each bonus merges into its own stat's ONE reconcile: max=" + max + " def=" + def + " mana=" + mana

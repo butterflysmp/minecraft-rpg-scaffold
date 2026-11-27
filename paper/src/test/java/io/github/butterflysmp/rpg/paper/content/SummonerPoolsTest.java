@@ -44,7 +44,7 @@ class SummonerPoolsTest {
         List<String> warnings = new ArrayList<>();
         EnchantRegistry r = EnchantLoader.withWeapons(quiet(warnings), ELEMENTS::contains, weapons::find, false)
                 .loadAll(new File(Path.of("src", "main", "resources", "content", "enchants").toString()));
-        assertEquals(27, r.all().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); CONTROL: the 24 shipped enchants loaded (2026-11-25: + sharpened_glass, 23 at 9a6ed020): " + warnings);
+        assertEquals(28, r.all().size(), "2026-11-27: + mana_battery, 28 (ls content/enchants/*.yml | wc -l); 2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); CONTROL: the 24 shipped enchants loaded (2026-11-25: + sharpened_glass, 23 at 9a6ed020): " + warnings);
         return EnchantRollItems.roster(r.all());
     }
 

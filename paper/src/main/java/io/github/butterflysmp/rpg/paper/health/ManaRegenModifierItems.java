@@ -23,7 +23,9 @@ import java.util.Map;
  * reason: no content grants mana regen yet, so without a source "gear can modify the rate" would be
  * provable only by unit test and the boot gate would have no row that fails when the reconcile
  * surface is unwired. It comes out when a real mana-regen enchant lands. See NEXT.md, with the other
- * {@code _TEMP} fixtures owing removal.
+ * {@code _TEMP} fixtures owing removal. <b>2026-11-27: that enchant HAS landed (Mana Battery,
+ * {@link ManaBatteryModifierItems}), so this fixture is now owed removal</b>, in the content pass that removes the
+ * other {@code _TEMP} fixtures (CC'S CALL, PLAN-mana-battery.md): its two maps are merged into one reconcile meanwhile.
  *
  * <p>The amount is a BONUS in mana per SECOND, not a resolved rate: the pool's resolver adds
  * {@code ManaRegen.perTick(bonus)} to the per-tick base. {@link #DEFAULT_BOOST} of 1.0/s DOUBLES the

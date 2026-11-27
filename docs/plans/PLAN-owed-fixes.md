@@ -172,6 +172,30 @@ boots without reading what the first CLEAN reaches before the pad step."*
   `PendingWorkTest.cancellingInABoxEndsTheTasksInsideItAndNoOthers`. A mutation per rule.
 - **P7:** `GATE-held-target.md` re-predicts every setup's CLEAN, LINGER and ITEMS lines.
 
+## DATED NOTE, 2026-11-27 — THE SEAT'S V7, OWED FROM THE BOOT OF `ffacaa76` (GATE-held-target READINGS)
+
+The product read as predicted (the seat's V1); the five MISSes were the gate's, ruled owed and not blocking (V2 to V5,
+V7). Recorded here from the seat's brief of 2026-11-27 (via Ben), and built in `feat/owed-v7`, stacked on
+`feat/mana-battery`. The ruled form, in the brief's words:
+
+> (a) EVERY PAD GATE'S SETUP CLEARS HIS ACCESSORY SLOTS, in its pad step's completion after he stands on the pad (the
+> run's snapshot already puts them back, H15); the CLEAN or pad line says what it cleared. The lint's SELF_STAGED covers
+> it. A row that wants an accessory equips it itself, as the tome gates do.
+> (b) A BLINKING ROW WITH A SUMMON PRESENT aligns him in the tick before the trigger is staged, AND BlinkPadLandingTest
+> proves the landings for every start point within 0.5 of the row's stand point (the box of drift), not one exact point;
+> the gate predicts safe= as the set's bounds where it can vary.
+> (c) S5 waits until a SUMMON hit is read before its kill (a wait long enough, stated with why) and ends with a clear, so
+> RESTORED reads summons=0.
+> (d) THE SUMMON target LINE GAINS tick=, pinned by test, so "within N ticks" is readable.
+> (e) THE 42 GATES WITH NO PAD STEP REFUSE TO RUN. THE FORM (the seat's ruling): when any gate named in a selftest
+> command has no pad step as its setup's first step, NOTHING of the command runs, no snapshot is taken, and one chat
+> line says so: SEAT PLACEHOLDER wording "Selftest: '<gate>' predates the pad and would run on your ground. Refused." No
+> override word. The gates stay loaded and counted (R0d's numbers do not move). PadFirstLintTest's known list stays the
+> record of which they are. READ whether any of the 42 legitimately runs somewhere that is not his ground (a fight world
+> of its own): if so, do NOT exempt it; name it in the report and the seat will rule.
+
+Each item's as-built account (file, test, mutation) is added under *V7 AS BUILT*, below, by the branch that builds it.
+
 ## CC'S CALLS
 
 1. R2's lint rule covers any equipped accessory, not the Blink by id (no content table in the lint).

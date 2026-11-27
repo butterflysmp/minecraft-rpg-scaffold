@@ -393,7 +393,10 @@ public final class PlayerHealthSystem implements HealthListener {
             ManaTransition.reconcile(stats, resources, id, ResourceCost.DEFAULT_RESOURCE,
                     AccessoryContributions.merged(ManaBankModifierItems.desiredModifiers(player, keys, enchants),
                             fromAccessories.sources(AccessoryStat.MAX_MANA), fromFragments.sources(AccessoryStat.MAX_MANA)),
-                    AccessoryContributions.merged(AccessoryContributions.merged(ManaRegenModifierItems.desiredModifiers(player, keys), fromSet.sources(AccessoryStat.MANA_REGEN)),
+                    // MANA BATTERY (the seat's B3, 2026-11-27): the worn pieces' MANA_REGEN, merged into the FIRST (gear)
+                    // argument beside the TEMP fixture through the named merge, so it reaches this ONE regen reconcile.
+                    AccessoryContributions.merged(AccessoryContributions.merged(ManaRegenModifierItems.desiredModifiers(player, keys),
+                            ManaBatteryModifierItems.desiredModifiers(player, keys, enchants), fromSet.sources(AccessoryStat.MANA_REGEN)),
                             fromAccessories.sources(AccessoryStat.MANA_REGEN), fromFragments.sources(AccessoryStat.MANA_REGEN)));
 
             // The TENTH, and the quietest: the passive regeneration RATE, in HP per second. No

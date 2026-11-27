@@ -241,12 +241,14 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             // Both read off the BLOCKING STACK, which only a shield can be.
             case BLOCK_DR,
                  REFLECT    -> Gate.SHIELD_ONLY;
-            // Both are read off the WORN PIECES by the armor scan, which only looks at the four
-            // armor slots. Neither is universal: a universal armor-stat enchant would enter every
-            // weapon's roll pool and sell an XP unlock that does nothing.
+            // All four are read off the WORN PIECES by the armor scans, which only look at the four
+            // armor slots. None is universal: a universal armor-stat enchant would enter every
+            // weapon's roll pool and sell an XP unlock that does nothing. MANA_REGEN (Mana Battery,
+            // 2026-11-27, the seat's B2) joined for exactly that reason.
             case DEFENSE,
                  MAX_HEALTH,
-                 MAX_MANA   -> Gate.ARMOR_ONLY;
+                 MAX_MANA,
+                 MANA_REGEN   -> Gate.ARMOR_ONLY;
             case DURABILITY -> Gate.UNIVERSAL_ONLY;
             // A MAGAZINE is the thing this effect modifies, and only ranger weapons author one.
             // NOT MAIN_HAND_ONLY, though it is read off the main hand exactly as DAMAGE is: that
@@ -264,7 +266,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
             case CRIT_CHANCE -> Gate.MAIN_HAND_ONLY;
         };
         boolean curved = switch (effect) {
-            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME, CRIT_CHANCE -> true;
+            case DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, MANA_REGEN, QUIVER_SIZE, RELOAD_TIME, CRIT_CHANCE -> true;
             case DURABILITY, SHOCKWAVE, AIRBURST, SHATTER, CLUSTER_BOMBS, FOCUSED_BEAM, GRANT_TRIGGER, CAST_TUNE, HIT_CHAIN, SCORCH_BOOST, DRUMMING_BEAT                                  -> false;
         };
 
@@ -511,7 +513,7 @@ public record EnchantDefinition(String id, String displayName, int maxLevel,
                     ? (g.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Orb o && o.shot() != null
                             ? o.shot().percentByLevel().size() : maxLevel)   // D3: an orb's shot has one percent per level
                     : -1;
-            case DURABILITY, DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, QUIVER_SIZE, RELOAD_TIME, CRIT_CHANCE -> null;
+            case DURABILITY, DAMAGE, BLOCK_DR, REFLECT, DEFENSE, MAX_HEALTH, MAX_MANA, MANA_REGEN, QUIVER_SIZE, RELOAD_TIME, CRIT_CHANCE -> null;
         };
         if (levels == null) {
             if (behaviour != null) {

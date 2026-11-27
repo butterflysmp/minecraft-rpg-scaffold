@@ -1,0 +1,36 @@
+# The fourth ARMOR stat enchant: Mana Battery (Ben, 2026-11-27).
+#
+# BEN, VERBATIM, IN ORDER:
+#   "Let's do a new armor enchant, Mana Battery. Increases mana regen by 1/2/3 per 5 seconds"
+#   "per second not 5 seconds, normal slot"   (answered against a description of the sheet that was wrong: the sheet
+#                                              shows mana regen per FIVE seconds, not per second)
+#   "B"                                        (shown both, in the sheet's own unit: B is his first wording, the tooltip
+#                                              and the sheet reading the same number)
+# So the numbers below are mana per FIVE SECONDS, the unit he reads on the stats sheet.
+#
+# `effect: mana_regen` names core/combat/ManaRegen.java: the mana-regen STAT, which is per SECOND. Every enchant with
+# this effect is authored per five seconds; ManaRegen.perSecondFromPerFiveSeconds is the one conversion, applied by the
+# scan before the value becomes a modifier. (The golden set's mana_regen and the accessories' stay per second.)
+#
+# WHAT THE NUMBERS DO. Per worn piece, summed across the four slots and added to every other mana-regen source. On the
+# stats sheet's Mana Regen line (EXECUTED, ManaBatteryRefillTest):
+#
+#   bare                    5.00/5s
+#   one piece at III        5.00/5s -> 8.00/5s
+#   all four pieces at III  5.00/5s -> 17.00/5s
+#
+# The gear score does NOT move these numbers: an enchant's value is its level's entry here and nothing else, at any
+# score.
+#
+# WHY NO armor_slot: Ben's "normal slot". Without one it rolls in armor's NORMAL slots (2 and 3) of every piece, beside
+# Protection, Growth, Mana Bank and Unbreaking.
+#
+# `class: universal` WOULD BE THE DANGEROUS TYPO, and the loader refuses it: the scan only ever looks at the four armor
+# slots, so a universal Mana Battery would roll on every weapon and grant nothing there.
+display_name: "Mana Battery"
+# SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN. Cosmetic, and it defaults to enchanted_book when absent.
+icon: redstone_block
+max_level: 3
+effect: mana_regen
+class: armor
+value_by_level: [1, 2, 3]

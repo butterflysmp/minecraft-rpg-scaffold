@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * what this PR changes is only slot 0's KEY (the armor slot's pool, so a piece-specific enchant has somewhere to be) and
  * the {@code armor_slot:} declaration; E2's "both start empty" holds because none ships.
  *
- * <p>E3, pinned for every shipped armor piece: slot 0 none, slot 1 none, normal the four.
+ * <p>E3, pinned for every shipped armor piece: slot 0 none, slot 1 none, normal the four (five since 2026-11-27: + mana_battery).
  */
 class ArmorPoolsTest {
 
@@ -64,10 +64,10 @@ class ArmorPoolsTest {
     }
 
     @Test
-    void everyShippedArmorPieceHasTwoEmptyColumnsAndTheFourNormals() {
+    void everyShippedArmorPieceHasTwoEmptyColumnsAndTheFiveNormals() {
         List<String> warnings = new ArrayList<>();
         EnchantRegistry r = enchants(Path.of("src", "main", "resources", "content", "enchants").toFile(), warnings);
-        assertEquals(27, r.all().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); CONTROL: the 24 shipped enchants loaded (2026-11-25: + sharpened_glass, 23 at 9a6ed020): " + warnings);
+        assertEquals(28, r.all().size(), "2026-11-27: + mana_battery, 28 (ls content/enchants/*.yml | wc -l); 2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); CONTROL: the 24 shipped enchants loaded (2026-11-25: + sharpened_glass, 23 at 9a6ed020): " + warnings);
         var roster = EnchantRollItems.roster(r.all());
         var armor = new ArmorLoader(quiet(new ArrayList<>())).loadAll(new File("src/main/resources/content/armor"));
         int checked = 0;
@@ -78,7 +78,7 @@ class ArmorPoolsTest {
                     piece.id() + ": slot 0, piece-specific: none ships (E2)");
             assertEquals(List.of(), ids(EnchantRoll.uniquePoolFor(piece.gearElement(), EnchantRoll.Has.NOTHING,
                     GearClass.ARMOR, roster)), piece.id() + ": slot 1, element-specific: armor has no element (E2)");
-            assertEquals(List.of("growth", "mana_bank", "protection", "unbreaking"),
+            assertEquals(List.of("growth", "mana_bank", "mana_battery", "protection", "unbreaking"),
                     ids(EnchantRoll.normalPoolFor(EnchantRoll.Has.NOTHING, GearClass.ARMOR, roster)), piece.id());
             checked++;
         }

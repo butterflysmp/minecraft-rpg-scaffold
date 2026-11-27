@@ -78,7 +78,7 @@ class TrueTooltipsConsistencyTest {
     private static final Logger LOG = Logger.getLogger(TrueTooltipsConsistencyTest.class.getName());
     private static final int[] SCORES = {100, 250};
     /** PINNED: the count of cases this walk generates over shipped content. Recount, never adjust: see the plan. */
-    static final int EXPECTED_CASES = 1308;   // weapons 618, armor 672, shields 18 (582 unmoved): 2026-11-26 + drumming_beat (3 levels x 2 scores = 6, all unmoved: conditional, T8; 1302 at 921c953c);+ bone_club (sharpness 3 + unbreaking 3 + kinetic_tremors 3, x 2 scores = 18; unbreaking and kinetic_tremors 12 unmoved; 1284 at 305e1361); + cluster_bombs (3 levels x 2 scores, all moved); + fast_and_fungal (3 levels x 2 scores, all moved: the cooldown); + blast_fungus (attunement 3 + unbreaking 3, x 2 scores = 12; unbreaking 6 unmoved); 1260 at fcfbefbb
+    static final int EXPECTED_CASES = 1476;   // weapons 618, armor 840, shields 18 (582 unmoved), read off this run's T13 line: 2026-11-27 + mana_battery (28 armor pieces x 3 levels x 2 scores = 168, all moved; 1308 at 07f03c6b); 2026-11-26 + drumming_beat (3 levels x 2 scores = 6, all unmoved: conditional, T8; 1302 at 921c953c);+ bone_club (sharpness 3 + unbreaking 3 + kinetic_tremors 3, x 2 scores = 18; unbreaking and kinetic_tremors 12 unmoved; 1284 at 305e1361); + cluster_bombs (3 levels x 2 scores, all moved); + fast_and_fungal (3 levels x 2 scores, all moved: the cooldown); + blast_fungus (attunement 3 + unbreaking 3, x 2 scores = 12; unbreaking 6 unmoved); 1260 at fcfbefbb
     private static final Pattern DAMAGE = Pattern.compile("^.* Damage: ([0-9.]+)( x ([0-9]+))?$");
     private static final Pattern CRIT = Pattern.compile("^Crit Chance: \\+([0-9]+)%$");
 
@@ -376,8 +376,17 @@ class TrueTooltipsConsistencyTest {
                         double mana = EnchantValues.totalFor(state, c.enchants(), EnchantEffect.MAX_MANA);
                         expectBonus(mismatches, label, lore, ArmorLoreLines.MAX_MANA_LABEL,
                                 ManaBank.boosts(mana) ? ManaBank.contribution(mana) : 0);
+                        // Mana Battery (2026-11-27): the regen line, against the scan's own gate, conversion and contribution.
+                        // C4: the line shows the number the SHEET moves by, per five seconds: the engine's per-second
+                        // modifier over the sheet's own window.
+                        double regen = EnchantValues.totalFor(state, c.enchants(), EnchantEffect.MANA_REGEN);
+                        expectBonus(mismatches, label, lore, ArmorLoreLines.MANA_REGEN_LABEL,
+                                io.github.butterflysmp.rpg.core.combat.ManaRegen.boosts(regen)
+                                        ? io.github.butterflysmp.rpg.core.combat.ManaRegen.contribution(
+                                                io.github.butterflysmp.rpg.core.combat.ManaRegen.perSecondFromPerFiveSeconds(regen))
+                                                * io.github.butterflysmp.rpg.core.combat.StatsSheetLines.RATE_WINDOW_SECONDS : 0);
                         boolean moves = EnchantValues.totalFor(state, c.enchants(), EnchantEffect.DEFENSE) > 0
-                                || health > 0 || mana > 0;
+                                || health > 0 || mana > 0 || regen > 0;
                         if (!moves) {
                             unmoved++;
                             if (!lore.equals(bare)) mismatches.add(label + ": the engine moves nothing, the tooltip moved " + lore);
