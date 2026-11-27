@@ -108,6 +108,15 @@ public final class AccessoryLoreLines {
                     "Every " + plain(BigDecimal.valueOf(p.intervalTicks()).divide(BigDecimal.valueOf(20))) + "s, heals hurt "
                             + p.targets().token() + " within " + plain(BigDecimal.valueOf(p.radius())) + " blocks",
                     "for " + plain(BigDecimal.valueOf(p.healPerLevel())) + " health per your level");
+            // K13 (SEAT PLACEHOLDER 2026-11-26, the brief's wording): the radius, the invisibility and the cooldown from
+            // the YAML. The range and the clear radius are not printed (the wording names neither).
+            case AccessoryBehaviour.Blink b -> List.of(
+                    b.name(),
+                    "When a hostile mob targeting you comes within " + plain(BigDecimal.valueOf(b.triggerRadius()))
+                            + " blocks,",
+                    "you teleport to safety and turn invisible for " + seconds(b.invisibilityTicks()) + "s.",
+                    "Attacking ends the invisibility.",
+                    "Cooldown: " + seconds(b.cooldownTicks()) + "s");
         };
     }
 
@@ -151,5 +160,10 @@ public final class AccessoryLoreLines {
 
     private static String plain(BigDecimal value) {
         return value.stripTrailingZeros().toPlainString();
+    }
+
+    /** Ticks as seconds at 20 a second, exactly ("8", "60", "2.5"). */
+    private static String seconds(int ticks) {
+        return plain(BigDecimal.valueOf(ticks).divide(BigDecimal.valueOf(20)));
     }
 }

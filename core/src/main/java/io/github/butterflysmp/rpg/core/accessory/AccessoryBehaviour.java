@@ -11,7 +11,7 @@ import java.util.Locale;
  * <p>A {@code sealed} interface: only the records listed in {@code permits} may implement it, so a {@code switch} over
  * it must answer for every kind (one line for a reader rusty at Java: the compiler checks the list is complete).
  */
-public sealed interface AccessoryBehaviour permits AccessoryBehaviour.HealingPulse {
+public sealed interface AccessoryBehaviour permits AccessoryBehaviour.HealingPulse, AccessoryBehaviour.Blink {
 
     /** The name a player reads on the tooltip and the stats sheet ("Radiant Pulse"). */
     String name();
@@ -66,6 +66,46 @@ public sealed interface AccessoryBehaviour permits AccessoryBehaviour.HealingPul
                 throw new IllegalArgumentException("healing_pulse particle_count must be 1 or more with a particle, was "
                         + particleCount);
             }
+        }
+    }
+
+    /**
+     * {@code type: blink} (the Blink Tome's Blink; Ben, 2026-11-26: "when an enemy gets to close, teleports you to somewhere
+     * safe nearby with 8 seconds of invisibility, losing all aggression. Attacking cancels the invisibility"; "Any mob within
+     * 5 blocks radius", "Any hostile mob that's targeting you", "Somewhere within 16 blocks that is safe (no mobs within 5
+     * blocks)", "60s cooldown"). While the accessory CONTRIBUTES, a hostile mob targeting the wearer within
+     * {@code triggerRadius} blocks (feet to feet) teleports him to a safe spot within {@code range} blocks with no hostile
+     * mob within {@code clearRadius} of it ({@link Blinks}), hides him for {@code invisibilityTicks} and starts
+     * {@code cooldownTicks}. No mana (SEAT PLACEHOLDER 2026-11-26: Ben did not say).
+     *
+     * <p>{@code particle}, {@code particleCount} and {@code sound} are the feedback where he leaves and where he arrives
+     * (K11, SEAT PLACEHOLDER 2026-11-26). Each may be null for none.
+     */
+    record Blink(String name, double triggerRadius, double range, double clearRadius, int invisibilityTicks,
+                 int cooldownTicks, String particle, int particleCount, String sound) implements AccessoryBehaviour {
+        public Blink {
+            if (name == null || name.isBlank()) throw new IllegalArgumentException("blink needs a name");
+            positive("trigger_radius", triggerRadius);
+            positive("range", range);
+            if (!(clearRadius >= 0) || Double.isInfinite(clearRadius)) {
+                throw new IllegalArgumentException("blink clear_radius must be 0 or more, was " + clearRadius);
+            }
+            if (invisibilityTicks < 1) {
+                throw new IllegalArgumentException("blink invisibility_ticks must be 1 or more, was " + invisibilityTicks);
+            }
+            if (cooldownTicks < 0) {
+                throw new IllegalArgumentException("blink cooldown_ticks must be 0 or more, was " + cooldownTicks);
+            }
+            if (particle != null && particle.isBlank()) particle = null;
+            if (sound != null && sound.isBlank()) sound = null;
+            if (particle != null && particleCount < 1) {
+                throw new IllegalArgumentException("blink particle_count must be 1 or more with a particle, was "
+                        + particleCount);
+            }
+        }
+
+        private static void positive(String key, double v) {
+            if (!(v > 0) || Double.isInfinite(v)) throw new IllegalArgumentException("blink " + key + " must be above 0, was " + v);
         }
     }
 }

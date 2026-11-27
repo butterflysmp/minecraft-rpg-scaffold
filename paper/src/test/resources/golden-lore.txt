@@ -560,6 +560,15 @@
    "Uncommon Leggings" color=#55FF55 O=. B=. S=. U=. I=F
 
 === ACCESSORIES ===
+-- blink_tome
+   "Blink" color=#FFAA00 O=. B=. S=. U=. I=F
+   "When a hostile mob targeting you comes within 5 blocks," color=#AAAAAA O=. B=. S=. U=. I=F
+   "you teleport to safety and turn invisible for 8s." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Attacking ends the invisibility." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Cooldown: 60s" color=#AAAAAA O=. B=. S=. U=. I=F
+   "Mage class accessory" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Accessory" color=#5555FF O=. B=. S=. U=. I=F
 -- brawlers_gauntlet
    "+25% Crit Damage" color=#55FF55 O=. B=. S=. U=. I=F
    "+3 Melee Damage" color=#55FF55 O=. B=. S=. U=. I=F
@@ -1210,4 +1219,4 @@ armor.slotNoun(FEET) = Boots
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 
-=== 153 renderings ===
+=== 154 renderings ===
