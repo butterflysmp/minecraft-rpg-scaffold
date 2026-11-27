@@ -79,7 +79,8 @@ class ArmorDurabilityWiringTest {
         int put = at(d, "if (contributed > 0) defense.put(slot.name(), contributed);");
         assertTrue(nat > 0 && skip > nat && put > skip,
                 "the native sum still counts it (it is worn), then a broken piece contributes no Defense");
-        for (String scanner : List.of("GrowthModifierItems.java", "ManaBankModifierItems.java")) {
+        // 2026-11-27: + Mana Battery (the seat's B2: a broken piece gives nothing).
+        for (String scanner : List.of("GrowthModifierItems.java", "ManaBankModifierItems.java", "ManaBatteryModifierItems.java")) {
             List<String> g = code(Path.of("health", scanner));
             int loop = at(g, "for (EquipmentSlot slot : DefenseModifierItems.ARMOR_SLOTS) {");
             assertTrue(loop > 0 && g.get(loop + 1).contains(

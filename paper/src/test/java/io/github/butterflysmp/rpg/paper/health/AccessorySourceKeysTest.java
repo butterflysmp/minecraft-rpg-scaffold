@@ -34,6 +34,7 @@ class AccessorySourceKeysTest {
         List<String> keys = new ArrayList<>(List.of(
                 GrowthModifierItems.SOURCE_PREFIX,
                 ManaBankModifierItems.SOURCE_PREFIX,
+                ManaBatteryModifierItems.SOURCE_PREFIX,   // 2026-11-27
                 ManaRegenModifierItems.SOURCE_PREFIX,
                 HealthRegenModifierItems.SOURCE_PREFIX,
                 QuiverSizeModifierItems.SOURCE_PREFIX,

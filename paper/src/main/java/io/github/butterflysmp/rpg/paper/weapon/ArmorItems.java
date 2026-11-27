@@ -175,6 +175,9 @@ public final class ArmorItems {
                 ArmorLoreLines.MAX_HEALTH_LABEL, StatsBarText.HEALTH_COLOR);
         addBonus(bonuses, state, enchants, EnchantEffect.MAX_MANA,
                 ArmorLoreLines.MAX_MANA_LABEL, StatsBarText.MANA_COLOR);
+        // Mana Battery (the seat's B5, 2026-11-27): one line as Mana Bank's, by the same helper, keyed on the effect.
+        addBonus(bonuses, state, enchants, EnchantEffect.MANA_REGEN,
+                ArmorLoreLines.MANA_REGEN_LABEL, StatsBarText.MANA_COLOR);
         return ArmorLore.build(armor, EnchantValues.totalFor(state, enchants, EnchantEffect.DEFENSE), bonuses, score);
     }
 

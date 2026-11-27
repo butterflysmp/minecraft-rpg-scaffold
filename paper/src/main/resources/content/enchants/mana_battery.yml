@@ -1,0 +1,31 @@
+# The fourth ARMOR stat enchant: Mana Battery (Ben, 2026-11-27).
+#
+# Ben, verbatim: "Let's do a new armor enchant, Mana Battery. Increases mana regen by 1/2/3 per 5 seconds", then, asked
+# which: "per second not 5 seconds, normal slot". So the numbers below are mana per SECOND.
+#
+# `effect: mana_regen` names core/combat/ManaRegen.java, which already existed: the mana-regen STAT (per second, base
+# 0.0) that the golden set's +2 and the accessories already feed. The curve is here; the loader REFUSES this effect on
+# anything but armor, as it does Protection, Growth and Mana Bank.
+#
+# WHAT THE NUMBERS DO. Flat mana per second, per worn piece, summed across the four slots and added to every other
+# mana-regen source by the reconcile loop. The base refill is 1 per second (a 100 bar in 100 seconds), so:
+#
+#   one piece at III        1/s -> 4/s    (a bare bar refills in 25 seconds)
+#   all four pieces at III  1/s -> 13/s   (about 7.7 seconds)
+#
+# READ THIS BEFORE RETUNING IT. The STAT is per second, but the stats sheet SHOWS it per five seconds (a III piece reads
+# +15.00/5s there) while this tooltip line reads +3. The gear score does NOT scale these numbers: an enchant's value is
+# its level's entry here and nothing else, at any score.
+#
+# WHY NO armor_slot: Ben's "normal slot". Without one it rolls in armor's NORMAL slots (2 and 3) of every piece, beside
+# Protection, Growth, Mana Bank and Unbreaking.
+#
+# `class: universal` WOULD BE THE DANGEROUS TYPO, and the loader refuses it: the scan only ever looks at the four armor
+# slots, so a universal Mana Battery would roll on every weapon and grant nothing there.
+display_name: "Mana Battery"
+# SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN. Cosmetic, and it defaults to enchanted_book when absent.
+icon: redstone_block
+max_level: 3
+effect: mana_regen
+class: armor
+value_by_level: [1, 2, 3]

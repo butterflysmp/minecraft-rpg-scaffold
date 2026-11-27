@@ -59,6 +59,14 @@ public final class ArmorLoreLines {
     public static final String MAX_MANA_LABEL = "Mana";
 
     /**
+     * The stat a Mana Battery enchant raises (2026-11-27), as the leading label of a bonus line: {@code "Mana Regen: +3"},
+     * in mana per SECOND. The fourth in the column, by the same helper. "Mana Regen" is the stats sheet's word for the
+     * stat. SEAT PLACEHOLDER 2026-11-27 wording, OPEN FOR BEN (no unit is shown; the sheet shows the stat per five
+     * seconds).
+     */
+    public static final String MANA_REGEN_LABEL = "Mana Regen";
+
+    /**
      * The value half of a flat BONUS line: {@code 30 -> "+30"}.
      *
      * <p><b>The {@code +} is what distinguishes a bonus from a total</b>, now that both are written

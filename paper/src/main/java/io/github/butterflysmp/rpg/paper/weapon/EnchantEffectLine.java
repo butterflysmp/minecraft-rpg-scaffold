@@ -178,6 +178,17 @@ public final class EnchantEffectLine {
                 double points = EnchantCurve.valueAt(definition.valueByLevel(), level);
                 yield String.format("+%.0f Max Mana", points);
             }
+            case MANA_REGEN -> {
+                if (definition.gearClass() != heldClass) {
+                    yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())
+                            + " on " + GearClassLabel.describe(heldClass);
+                }
+                // Mana Battery (2026-11-27): mana per SECOND added to the regeneration rate. "Mana Regen" is the word
+                // the stats sheet and the golden set's line use for the same stat. SEAT PLACEHOLDER 2026-11-27 wording,
+                // OPEN FOR BEN: it does not name the unit (per second; the sheet shows the stat per five seconds).
+                double perSecond = EnchantCurve.valueAt(definition.valueByLevel(), level);
+                yield String.format("+%.0f Mana Regen", perSecond);
+            }
             case QUIVER_SIZE -> {
                 if (definition.gearClass() != heldClass) {
                     yield "inert: " + GearClassLabel.describeEnchant(definition.gearClass())

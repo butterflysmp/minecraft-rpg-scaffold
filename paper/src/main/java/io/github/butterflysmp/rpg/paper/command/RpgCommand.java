@@ -214,7 +214,13 @@ public final class RpgCommand {
                 .then(Commands.literal("mana")
                         .requires(source -> source.getSender().hasPermission(Permissions.DEV))
                         .then(Commands.literal("refill")
-                                .executes(ctx -> manaRefill(ctx, resources))))
+                                .executes(ctx -> manaRefill(ctx, resources)))
+                        // GATE-mana-battery MB3 (CC'S CALL, 2026-11-27): stage his mana at a figure, so a refill is read
+                        // from a known start. ResourcePool.setCurrent, the reconcile pin's own call: it stamps this tick.
+                        .then(Commands.literal("set")
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(0))
+                                        .executes(ctx -> manaSet(ctx, resources,
+                                                IntegerArgumentType.getInteger(ctx, "amount"))))))
                 .then(Commands.literal("give")
                         .requires(source -> source.getSender().hasPermission(Permissions.GIVE))
                         // ONE argument for both gear types rather than `give weapon|shield <id>`.
@@ -1162,6 +1168,23 @@ public final class RpgCommand {
                 "Mana refilled to "
                         + Math.round(resources.max(player.getUniqueId(), ResourceCost.DEFAULT_RESOURCE))
                         + ".", NamedTextColor.GREEN));
+        return 1;
+    }
+
+    /**
+     * {@code /rpg mana set <amount>} (dev): his mana set to {@code amount}, clamped to his ceiling, stamped at this tick so
+     * the refill from here is read from a known start (GATE-mana-battery MB3). Runs on the command's own thread, the
+     * player's, at once: it does not hop, so a probe in the same pass reads it.
+     */
+    private static int manaSet(CommandContext<CommandSourceStack> ctx, ResourcePool resources, int amount) {
+        if (!(ctx.getSource().getExecutor() instanceof Player player)) {
+            ctx.getSource().getSender().sendMessage(Component.text("Players only.", NamedTextColor.RED));
+            return 0;
+        }
+        resources.setCurrent(player.getUniqueId(), ResourceCost.DEFAULT_RESOURCE, amount);
+        player.sendMessage(Component.text("Mana set to "
+                + Math.round(resources.current(player.getUniqueId(), ResourceCost.DEFAULT_RESOURCE)) + ".",
+                NamedTextColor.GREEN));
         return 1;
     }
 
