@@ -31,12 +31,14 @@ public final class SummonTrace {
     /**
      * A change of target: the target now held (or none), the TIER it is held at, why one was dropped, and G7's reason
      * ({@code acquired:<tier>}, {@code switched:<from>-><to>}, {@code kept}, {@code dropped:<reason>}; the seat, 2026-11-26).
+     * And the server tick it was decided on (the seat's V7 (d), 2026-11-27): GATE-held-target's "within N ticks" of a
+     * DRIVE or a BLINK line was not readable, because this line carried none. Last, so every older field reads as before.
      */
-    public static String target(SummonStore.Summon s, Vec3 at, SummonGuard.Decision d) {
+    public static String target(SummonStore.Summon s, Vec3 at, SummonGuard.Decision d, long tick) {
         return "SUMMON target " + where(s, at) + " target=" + d.target().map(UUID::toString).orElse("none")
                 + " why=" + d.why().name().toLowerCase(Locale.ROOT)
                 + d.dropped().map(x -> " dropped=" + x.name().toLowerCase(Locale.ROOT)).orElse("")
-                + " reason=" + d.reason();
+                + " reason=" + d.reason() + " tick=" + tick;
     }
 
     public static String hit(SummonStore.Summon s, Vec3 at, UUID victim, double authored, String element, long tick) {

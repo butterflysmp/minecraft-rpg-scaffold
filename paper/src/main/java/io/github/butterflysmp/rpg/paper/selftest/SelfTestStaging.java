@@ -277,6 +277,19 @@ final class SelfTestStaging {
         return "ITEMS cleared=" + types.size() + " pad " + itemTypes(types);
     }
 
+    /**
+     * THE SEAT'S V7 (a), 2026-11-27: the pad step's accessory clear, beside ITEMS. {@code before} is each of his four slots as
+     * it stood when he reached the pad, its accessory id (the snapshot's own naming, so this line and CAPTURED read alike)
+     * or null when empty: {@code ACCESSORIES cleared=1 pad [healing_tome,-,-,-]}. The run's restore puts them back (H15).
+     */
+    static String accessoriesClearedLine(List<String> before) {
+        long cleared = before.stream().filter(java.util.Objects::nonNull).count();
+        return "ACCESSORIES cleared=" + cleared + " pad " + SelfTestAccessorySlots.summary(before, name -> name);
+    }
+
+    /** V7 (a): his store is not loaded or unusable, so nothing was read or written; the restore says the same (H15). */
+    static final String ACCESSORIES_NOT_LOADED = "ACCESSORIES cleared=0 pad not-loaded";
+
     /** PROBE_INVISIBILITY's line (the Blink Tome's gate). {@code ticks} is the remaining duration, -1 infinite, 0 none. */
     static String invisibilityLine(boolean present, int ticks, int amplifier, boolean particles, boolean blinked) {
         return "INVIS present=" + present + " ticks=" + ticks + " amp=" + amplifier + " particles=" + particles

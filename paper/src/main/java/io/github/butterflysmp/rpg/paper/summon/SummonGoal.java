@@ -106,7 +106,7 @@ public final class SummonGoal implements Goal<Mob> {
             ctx.log().info(SummonTrace.teleport(summon, vec(body), at));
         }
         if (d.change() != SummonGuard.Change.NONE || d.dropped().isPresent()) {   // G7: once, with its reason
-            ctx.log().info(SummonTrace.target(summon, vec(body), d));
+            ctx.log().info(SummonTrace.target(summon, vec(body), d, now));   // V7 (d): the tick it was decided on
         }
         current = d.held();
         ctx.summons().setCurrent(body.getUniqueId(), current);   // R3: the probe reads OUR target

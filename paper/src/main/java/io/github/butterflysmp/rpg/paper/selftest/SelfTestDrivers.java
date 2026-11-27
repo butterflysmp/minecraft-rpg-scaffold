@@ -290,6 +290,31 @@ final class SelfTestDrivers {
      * The cache is set by the call itself, so the reconcile pass after it reads the new slot; the disk write settles on the
      * storage queue and its result is logged when it does.
      */
+    /**
+     * THE SEAT'S V7 (a), 2026-11-27: EVERY PAD GATE'S SETUP CLEARS HIS ACCESSORY SLOTS, in the pad step's own completion once
+     * he stands on the pad ({@code SelfTestRun.pad}), through the same store write {@code accessory: clear} makes. Returns
+     * the line saying what it cleared. The run's snapshot captured them at the run's start and puts them back at its end
+     * (H15). A row that wants an accessory equips it itself.
+     */
+    String clearAccessoriesOnPad(Player p) {
+        java.util.UUID id = p.getUniqueId();
+        io.github.butterflysmp.rpg.paper.accessory.AccessoryService service = run.adapters().accessories().service();
+        Optional<io.github.butterflysmp.rpg.storage.PlayerAccessories> stored = service.accessories(id);
+        if (stored.isEmpty()) return SelfTestStaging.ACCESSORIES_NOT_LOADED;
+        List<String> before = new java.util.ArrayList<>();
+        for (int s = 0; s < io.github.butterflysmp.rpg.core.accessory.AccessorySlots.COUNT; s++) {
+            Optional<String> text = stored.get().item(s);
+            if (text.isEmpty()) {
+                before.add(null);
+                continue;
+            }
+            before.add(SelfTestSnapshot.accessoryName(text.get(), run.adapters()));
+            final int slot = s;
+            service.write(id, slot, null, ok -> run.log("PAD accessory settled slot=" + slot + " ok=" + ok));
+        }
+        return SelfTestStaging.accessoriesClearedLine(before);
+    }
+
     private Optional<String> stageAccessory(Player p, String a) {
         java.util.UUID id = p.getUniqueId();
         io.github.butterflysmp.rpg.paper.accessory.AccessoryService service = run.adapters().accessories().service();

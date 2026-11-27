@@ -138,6 +138,41 @@ class BlinkPadLandingTest {
                 && SelfTestPadShape.inInterior(BOX[2], BOX[3]), "his stand and the box's corners");
     }
 
+    /**
+     * THE BOX OF DRIFT (the seat's V7 (b), 2026-11-27). On the boot of {@code ffacaa76} his wolf, spawned at his feet, pushed
+     * him 0.185 west before GATE-held-target S3's blink (`from=124.315`, `dist=3.185`, `safe=507`), so the enumeration from
+     * one exact point did not cover the landing he made. Here every start within 0.5 of the stand point, on each axis, on a
+     * 0.05 grid (21 x 21 = 441 starts, the box's corners and edges included), lands only on the pad's floor inside the box,
+     * and the gate predicts {@code safe=} as the bounds below.
+     */
+    @Test
+    void everyStartWithinHalfABlockOfTheStand_landsInsideTheBox_andSafeHasTheseBounds() {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        int starts = 0;
+        for (int i = -10; i <= 10; i++) {
+            for (int k = -10; k <= 10; k++) {
+                Vec3 from = new Vec3(FROM.x() + i * 0.05, FROM.y(), FROM.z() + k * 0.05);
+                Blinks.Search s = Blinks.search(BLINK, from, WORST, hostiles(TRIGGER));
+                everySpotIsInsideTheInteriorAndTheBox(s.safe(), "from " + from);
+                for (Blinks.Spot spot : s.safe()) for (Vec3 h : hostiles(TRIGGER)) assertTrue(spot.feet().distanceSquared(h) > 25);
+                min = Math.min(min, s.safe().size());
+                max = Math.max(max, s.safe().size());
+                starts++;
+            }
+        }
+        System.out.println("BLINK DRIFT BOX: " + starts + " starts, safe in [" + min + ", " + max + "]");
+        assertEquals(441, starts, "the control: the whole grid was walked");
+        assertEquals(EXPECTED_DRIFT_SAFE_MIN, min);
+        assertEquals(EXPECTED_DRIFT_SAFE_MAX, max);
+        // THE CONTROL THAT THE MODEL REPRODUCES THE BOOT: from 0.185 west of the stand, the decision offers 507, as read.
+        assertEquals(507, Blinks.search(BLINK, new Vec3(FROM.x() - 0.185, FROM.y(), FROM.z()), WORST, hostiles(TRIGGER))
+                .safe().size(), "S3's reading on the boot of ffacaa76: safe=507 from 124.315");
+    }
+
+    static final int EXPECTED_DRIFT_SAFE_MIN = 495;   // EXECUTED by the drift test, then pinned
+    static final int EXPECTED_DRIFT_SAFE_MAX = 508;   // EXECUTED by the drift test, then pinned
+
     static final int EXPECTED_SAFE_TRIGGER = 508;   // EXECUTED by this test
     static final int EXPECTED_SAFE_FAR = 479;   // EXECUTED by this test
 }

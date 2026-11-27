@@ -199,6 +199,10 @@ public final class SelfTestService {
             }
             queue.addAll(queueFor(scenarios, row));
         }
+        // THE SEAT'S V7 (e), 2026-11-27: a gate that predates the pad would run on his ground. Refused HERE, before the run
+        // is built: nothing of the command runs and no snapshot is taken (the snapshot is the run's start()).
+        String unpadded = SelfTestGateList.padRefusal(queue);
+        if (unpadded != null) return unpadded;
         active = new SelfTestRun(this, player, queue);
         occupancy.runStarted();
         active.start(gate + (row == null ? "" : " " + row));

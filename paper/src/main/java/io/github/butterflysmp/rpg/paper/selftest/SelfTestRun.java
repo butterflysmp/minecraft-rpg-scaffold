@@ -269,6 +269,9 @@ final class SelfTestRun {
                 // R4, F1, P4 (the seat, 2026-11-27): THE ITEM CLEAR IS THE PAD STEP'S OWN, once he stands on it: every gate's
                 // setup, the command's first included, starts with a clean pad; a scenario with no pad step clears no item.
                 log(SelfTestStaging.itemsClearedLine(clearDroppedItems(padStand().orElseThrow())));
+                // V7 (a) (the seat, 2026-11-27): and HIS ACCESSORY SLOTS, once he stands on the pad; every pad gate's setup,
+                // the command's first included. The run's snapshot puts them back (H15).
+                log(drivers.clearAccessoriesOnPad(player));
                 advance();
             }));
         }));

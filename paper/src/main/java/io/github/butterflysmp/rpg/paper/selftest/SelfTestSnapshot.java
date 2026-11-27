@@ -303,7 +303,7 @@ final class SelfTestSnapshot {
     }
 
     /** A stored slot's accessory id, or {@code unreadable} when its text does not decode to one of ours. */
-    private static String accessoryName(String stored, io.github.butterflysmp.rpg.paper.adapter.AdapterContext adapters) {
+    static String accessoryName(String stored, io.github.butterflysmp.rpg.paper.adapter.AdapterContext adapters) {
         return io.github.butterflysmp.rpg.paper.vault.VaultCodec.decode(stored)
                 .flatMap(item -> io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.accessoryId(item, adapters.keys()))
                 .orElse("unreadable");

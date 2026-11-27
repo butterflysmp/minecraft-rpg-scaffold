@@ -126,6 +126,10 @@ S3:
   - use: ""
   - wait: 5
   - probe_summon: "8"
+  # V7 (b), 2026-11-27: his wolf, spawned at his feet, pushed him 0.185 west before the blink (the boot of ffacaa76).
+  # Aligned again in the tick before the trigger is staged; BlinkPadLandingTest covers any start within 0.5 of here.
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 1
   - mob_target: bt
   - wait: 10
   - probe_summon: "8"
@@ -198,10 +202,15 @@ S5:
   - cmd: 'summon zombie ~14 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["h5","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
   - wait: 2
   - mob_target: h5
-  - wait: 60
+  # V7 (c), 2026-11-27: the kill waits until a SUMMON hit has landed. Read on the boot of ffacaa76: the wolf stood 2.0
+  # from h5 at +60 (12 blocks walked), and the wolf's hits come 20 ticks apart (S1: 2937, 2957, ...). INFERRED from
+  # those two READs: a hit has landed by about +80; +120 leaves 40 ticks of margin for a slower walk.
+  - wait: 120
   - probe_summon: "24"
   - cmd: "kill @e[tag=h5]"
   - wait: 2
   - probe_summon: "24"
   - wait: 100
   - probe_summon: "24"
+  # V7 (c): and it ends with a clear, so his wolf is gone before the run's RESTORED (summons=0).
+  - clear_state: ""

@@ -138,21 +138,21 @@ class SummonLifecycleTest {
         assertEquals("SUMMON spawn " + where + " summon=test_wolf score=150 health=150.000 damage=30.000",
                 SummonTrace.spawn(s, at));
         // G7 (the seat, 2026-11-26): the line names the target, the tier it is HELD at, a drop, and the reason it changed.
-        assertEquals("SUMMON target " + where + " target=" + B2 + " why=damaged reason=acquired:damaged",
+        assertEquals("SUMMON target " + where + " target=" + B2 + " why=damaged reason=acquired:damaged tick=4100",
                 SummonTrace.target(s, at, new SummonGuard.Decision(java.util.Optional.of(new SummonGuard.Held(B2,
                         SummonGuard.Why.DAMAGED, false)), SummonGuard.Change.ACQUIRED, java.util.Optional.empty(),
-                        java.util.Optional.empty(), false, false)));
-        assertEquals("SUMMON target " + where + " target=none why=none dropped=range reason=dropped:range",
+                        java.util.Optional.empty(), false, false), 4100L));
+        assertEquals("SUMMON target " + where + " target=none why=none dropped=range reason=dropped:range tick=4101",
                 SummonTrace.target(s, at, new SummonGuard.Decision(java.util.Optional.empty(), SummonGuard.Change.DROPPED,
-                        java.util.Optional.empty(), java.util.Optional.of(SummonGuard.Dropped.RANGE), false, false)));
-        assertEquals("SUMMON target " + where + " target=" + B2 + " why=targeting reason=kept",
+                        java.util.Optional.empty(), java.util.Optional.of(SummonGuard.Dropped.RANGE), false, false), 4101L));
+        assertEquals("SUMMON target " + where + " target=" + B2 + " why=targeting reason=kept tick=4102",
                 SummonTrace.target(s, at, new SummonGuard.Decision(java.util.Optional.of(new SummonGuard.Held(B2,
                         SummonGuard.Why.TARGETING, true)), SummonGuard.Change.KEPT, java.util.Optional.empty(),
-                        java.util.Optional.empty(), false, false)));
-        assertEquals("SUMMON target " + where + " target=" + B2 + " why=directed reason=switched:targeting->directed",
+                        java.util.Optional.empty(), false, false), 4102L));
+        assertEquals("SUMMON target " + where + " target=" + B2 + " why=directed reason=switched:targeting->directed tick=4103",
                 SummonTrace.target(s, at, new SummonGuard.Decision(java.util.Optional.of(new SummonGuard.Held(B2,
                         SummonGuard.Why.DIRECTED, false)), SummonGuard.Change.SWITCHED,
-                        java.util.Optional.of(SummonGuard.Why.TARGETING), java.util.Optional.empty(), false, false)));
+                        java.util.Optional.of(SummonGuard.Why.TARGETING), java.util.Optional.empty(), false, false), 4103L));
         assertEquals("SUMMON hit " + where + " victim=" + B3
                         + " authored=20.000 score=150 sent=30.000 crit=none class=0 level=0 element=nature tick=4321",
                 SummonTrace.hit(s, at, B3, WOLF.damage(), "nature", 4321L));   // X2: the tick the cadence is read on
