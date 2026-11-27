@@ -106,4 +106,17 @@ class CooldownTrackerTest {
         assertDoesNotThrow(() -> cooldowns.clear(UUID.randomUUID()));
         assertEquals(0, cooldowns.trackedPlayers());
     }
+
+    /** The Blink Tome's K9: the selftest's row-start clean resets ONE cooldown (the blink's) and leaves his others. */
+    @Test
+    void resetClearsOneAbility_andLeavesTheOthers() {
+        var cooldowns = new CooldownTracker(() -> 0L);
+        UUID him = UUID.randomUUID();
+        cooldowns.trigger(him, "accessory:blink", 1200);
+        cooldowns.trigger(him, "boltor/right_click", 16);
+        cooldowns.reset(him, "accessory:blink");
+        assertEquals(0, cooldowns.ticksRemaining(him, "accessory:blink"));
+        assertEquals(16, cooldowns.ticksRemaining(him, "boltor/right_click"), "his other cooldowns are untouched");
+        assertDoesNotThrow(() -> cooldowns.reset(UUID.randomUUID(), "accessory:blink"), "an unknown player is safe");
+    }
 }

@@ -95,11 +95,11 @@ class DrummingBeatWiringTest {
         List<String> d = code("selftest/SelfTestDrivers.java");
         int clear = at(d, "private Optional<String> clearState(Player p) {", 0);
         assertTrue(at(d, "adapters.behaviourHits().drums().forget(id);", clear) > clear, "clear_state");
-        assertTrue(at(d, "+ \" summons=\" + summoned + \" fused=\" + fused + \" drum=\" + drum);", clear) > clear, "and says the n");
+        assertTrue(at(d, "+ \" summons=\" + summoned + \" fused=\" + fused + \" drum=\" + drum + \" blink=\" + (blink ? \"ended\" : \"none\"));", clear) > clear, "and says the n");
         List<String> r = code("selftest/SelfTestRun.java");
         int forget = at(r, "drumStreaks.forget(player.getUniqueId());", 0);
         int clean = at(r, "log(\"CLEAN blocks=", forget);
-        assertTrue(forget > 0 && clean > forget && at(r, "+ \" drum=\" + drum);", clean) > clean, "the row-start CLEAN");
+        assertTrue(forget > 0 && clean > forget && at(r, "+ \" drum=\" + drum + \" blink=\" + (blink ? \"ended\" : \"none\"));", clean) > clean, "the row-start CLEAN");
     }
 
     /** M8: the trace line is logged only while trace is on, with the chance the snapshot rolled. */

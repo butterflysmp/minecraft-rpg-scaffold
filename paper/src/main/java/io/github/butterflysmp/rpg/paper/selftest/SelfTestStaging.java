@@ -259,6 +259,12 @@ final class SelfTestStaging {
         return !player && (projectile || cloud || marker);
     }
 
+    /** PROBE_INVISIBILITY's line (the Blink Tome's gate). {@code ticks} is the remaining duration, -1 infinite, 0 none. */
+    static String invisibilityLine(boolean present, int ticks, int amplifier, boolean particles, boolean blinked) {
+        return "INVIS present=" + present + " ticks=" + ticks + " amp=" + amplifier + " particles=" + particles
+                + " blinked=" + blinked;
+    }
+
     /** One line after the clean's linger pass, beside LEFTOVER. A row predicts {@code LINGER work=0 entities=0 radius=48}. */
     static String lingerLine(int radius, int work, List<String> ended) {
         return "LINGER work=" + work + " entities=" + ended.size() + " radius=" + radius
@@ -317,7 +323,7 @@ final class SelfTestStaging {
                     : java.util.Optional.of("accessory takes 'equip <0-3>' or 'clear', got '" + arg + "'");
             case SATURATION -> saturationArg(arg) ? java.util.Optional.empty()
                     : java.util.Optional.of("saturation takes a number from 0 to 20, got '" + arg + "'");
-            case CLEAR_INVENTORY, CLEAR_STATE, PAD, PROBE_REGEN -> arg.isBlank() ? java.util.Optional.empty()
+            case CLEAR_INVENTORY, CLEAR_STATE, PAD, PROBE_REGEN, PROBE_INVISIBILITY -> arg.isBlank() ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes nothing, got '"
                             + arg + "'");
             case PREFLIGHT -> SelfTestPreflight.parse(arg).isPresent() ? java.util.Optional.empty()

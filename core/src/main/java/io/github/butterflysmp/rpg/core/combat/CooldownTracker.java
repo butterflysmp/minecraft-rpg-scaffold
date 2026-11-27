@@ -46,6 +46,12 @@ public final class CooldownTracker {
                 .put(abilityId, currentTick.getAsLong() + cooldownTicks);
     }
 
+    /** Drop ONE cooldown for this player, leaving the rest (the selftest's row-start clean, for the blink). Safe for anyone. */
+    public void reset(UUID caster, String abilityId) {
+        Map<String, Long> forCaster = readyAt.get(caster);
+        if (forCaster != null) forCaster.remove(abilityId);
+    }
+
     /** Drop every cooldown for this player. O(1). Safe for an unknown player. */
     public void clear(UUID caster) {
         readyAt.remove(caster);
