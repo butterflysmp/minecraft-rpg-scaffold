@@ -427,6 +427,9 @@ nothing named him as a target.
 
 ## THE CLASS LABELS — NEW ROWS TT20 TO TT27 FOR THE NEXT BOOT (2026-11-26, `feat/class-damage-labels`). NOT RUN
 
+> **RUN 2026-11-26 on `1f447197`** (dated note; nothing below is edited), inside `GATE-blink-tome.md`'s one command. The
+> readings of TT20 to TT27 are there, under READINGS: every row READ AS PREDICTED, TT27 answered "yes".
+
 **Status: NOT RUN.** Ben's ruling at TT19 (run 2), verbatim: *"yes but, I want the damage type in the tool tip to match
 the class not the element. Ie Ranged Damage, Magic Damage, Melee Damage etc"*. The account is `PLAN-true-tooltips.md`,
 section 14. **TT0 to TT19 above are the record and are not edited**; their element labels (`Fire Damage: 32`) are what

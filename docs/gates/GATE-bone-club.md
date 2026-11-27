@@ -1,6 +1,6 @@
 # GATE — THE BONE CLUB AND DRUMMING BEAT (2026-11-26), WITH THE BLAST FUNGUS GATE AND TT20 TO TT27 BY REFERENCE
 
-**Status: NOT RUN.** The plan is `docs/plans/PLAN-bone-club.md`. The scenario is
+**Status: RUN 2026-11-26 on `1f447197`, inside `GATE-blink-tome.md`'s one command; readings there, under READINGS.** The plan is `docs/plans/PLAN-bone-club.md`. The scenario is
 `paper/src/main/resources/selftest/GATE-bone-club.yml`. The stack, bottom up: #316 `feat/class-damage-labels`, #317
 `feat/fused-projectile`, #318 `feat/blast-fungus`, #319 `feat/fast-and-fungal`, #320 `feat/cluster-bombs`,
 `feat/bone-club`, `feat/drumming-beat`, and the ONE gate branch at the top, `feat/blast-fungus-gate` (#321), MOVED UP onto

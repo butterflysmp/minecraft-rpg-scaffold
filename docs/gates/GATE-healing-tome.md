@@ -1,6 +1,6 @@
 # GATE — THE HEALING TOME AND ITS RADIANT PULSE (2026-11-26), WITH THE BONE CLUB GATE, THE BLAST FUNGUS GATE AND TT20 TO TT27
 
-**Status: NOT RUN.** The plan is `docs/plans/PLAN-healing-tome.md`. The scenario is
+**Status: RUN 2026-11-26 on `1f447197`, inside `GATE-blink-tome.md`'s one command; readings there, under READINGS.** The plan is `docs/plans/PLAN-healing-tome.md`. The scenario is
 `paper/src/main/resources/selftest/GATE-healing-tome.yml`. The stack, bottom up: #316 `feat/class-damage-labels`, #317
 `feat/fused-projectile`, #318 `feat/blast-fungus`, #319 `feat/fast-and-fungal`, #320 `feat/cluster-bombs`, #322
 `feat/bone-club`, #323 `feat/drumming-beat`, then `feat/healing-tome`, `feat/tome-pulse`, `feat/tome-selftest`, and the ONE
