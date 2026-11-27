@@ -223,6 +223,21 @@ final class SelfTestDrivers {
                         e.getPersistentDataContainer().has(keys.mobShield),
                         off == null || off.getType().isAir() ? null : off.getType().getKey().getKey()));
             });
+            case CLASS -> stageClass(p, a);
+            case ACCESSORY -> stageAccessory(p, a);
+            case SATURATION -> {
+                float before = p.getSaturation();
+                p.setSaturation(Float.parseFloat(a.trim()));   // the loader refused anything but a number in 0..20
+                run.log(String.format(Locale.ROOT, "STAGE saturation found=%.1f set=%.1f", before, p.getSaturation()));
+                yield Optional.empty();
+            }
+            case PROBE_REGEN -> {
+                java.util.UUID id = p.getUniqueId();
+                if (!run.stats().tracks(id)) yield Optional.of("he is not tracked by the health store");
+                run.log(String.format(Locale.ROOT, "REGEN rate=%.3f saturation=%.1f customHP=%.3f/%.3f",
+                        run.stats().healthRegenValue(id), p.getSaturation(), run.stats().current(id), run.stats().max(id)));
+                yield Optional.empty();
+            }
             case POUNCE -> pounce(p, a);
             case PROBE_PAIR -> {
                 List<LivingEntity> found = taggedWithin48(p, a);
@@ -231,6 +246,75 @@ final class SelfTestDrivers {
                 yield Optional.empty();
             }
         };
+    }
+
+    /**
+     * CLASS (H15, the Healing Tome's gate): his profile class through the Build screen's own write -- the element kept
+     * where the new class has a pool for it, else cleared ({@code BuildRules.elementAfterClassPick}), then
+     * {@code ProfileService.setCell}, then the stone's lore -- so a class accessory's gate (ruling A1) reads what a real
+     * pick writes. Nothing is granted.
+     */
+    private Optional<String> stageClass(Player p, String a) {
+        java.util.UUID id = p.getUniqueId();
+        Optional<io.github.butterflysmp.rpg.storage.PlayerProfile> profile = run.profiles().profile(id);
+        if (profile.isEmpty()) return Optional.of("his profile is not loaded");
+        String classId = a.trim();
+        String found = profile.get().archetypeId();
+        String element = io.github.butterflysmp.rpg.core.build.BuildRules.elementAfterClassPick(
+                run.adapters().stones().pools().all(), classId, profile.get().elementId(),
+                io.github.butterflysmp.rpg.storage.PlayerProfile.NONE);
+        boolean ok = run.profiles().setCell(id, classId, element);
+        run.adapters().stones().refreshLore(p, run.profiles().profile(id));
+        run.log("STAGE class found=" + found + " set=" + classId + " element=" + element + " ok=" + ok);
+        return ok ? Optional.empty() : Optional.of("the class write was refused (profile unavailable)");
+    }
+
+    /**
+     * ACCESSORY (H15): {@code equip <slot>} from his main hand, or {@code clear}, through {@code AccessoryService.write},
+     * the store write the Equipment screen makes. The verdict is {@code AccessorySlots.canEquip}'s, as the screen asks it.
+     * The cache is set by the call itself, so the reconcile pass after it reads the new slot; the disk write settles on the
+     * storage queue and its result is logged when it does.
+     */
+    private Optional<String> stageAccessory(Player p, String a) {
+        java.util.UUID id = p.getUniqueId();
+        io.github.butterflysmp.rpg.paper.accessory.AccessoryService service = run.adapters().accessories().service();
+        Optional<io.github.butterflysmp.rpg.storage.PlayerAccessories> stored = service.accessories(id);
+        if (stored.isEmpty()) return Optional.of("his accessory store is not loaded or unusable");
+        String[] parts = a.trim().split("\\s+");
+        if (parts[0].equals("clear")) {
+            int cleared = 0;
+            for (int s = 0; s < io.github.butterflysmp.rpg.core.accessory.AccessorySlots.COUNT; s++) {
+                if (stored.get().item(s).isEmpty()) continue;
+                final int slot = s;
+                service.write(id, slot, null, ok -> run.log("STAGE accessory settled slot=" + slot + " ok=" + ok));
+                cleared++;
+            }
+            run.log("STAGE accessory clear cleared=" + cleared);
+            return Optional.empty();
+        }
+        int slot = Integer.parseInt(parts[1]);   // the loader refused anything but "equip <0-3>"
+        org.bukkit.inventory.ItemStack hand = p.getInventory().getItemInMainHand();
+        Optional<String> accessoryId = io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.accessoryId(hand, keys);
+        if (accessoryId.isEmpty()) return Optional.of("his main hand holds no accessory");
+        Optional<io.github.butterflysmp.rpg.core.weapon.AccessoryDefinition> def =
+                run.adapters().accessories().registry().find(accessoryId.get());
+        if (def.isEmpty()) return Optional.of("no accessory '" + accessoryId.get() + "' is loaded");
+        if (stored.get().item(slot).isPresent()) return Optional.of("slot " + slot + " is occupied; clear it first");
+        String profileClass = run.profiles().profile(id).map(io.github.butterflysmp.rpg.storage.PlayerProfile::archetypeId)
+                .orElse(null);
+        io.github.butterflysmp.rpg.core.accessory.AccessorySlots.Verdict verdict =
+                io.github.butterflysmp.rpg.core.accessory.AccessorySlots.canEquip(slot, def.get(), profileClass);
+        if (verdict != io.github.butterflysmp.rpg.core.accessory.AccessorySlots.Verdict.OK) {
+            run.log("STAGE accessory equip slot=" + slot + " id=" + accessoryId.get() + " REFUSED " + verdict);
+            return Optional.empty();
+        }
+        String text = io.github.butterflysmp.rpg.paper.vault.VaultCodec.encode(hand);
+        if (!service.write(id, slot, text, ok -> run.log("STAGE accessory settled slot=" + slot + " ok=" + ok))) {
+            return Optional.of("the store refused the write");
+        }
+        p.getInventory().setItemInMainHand(null);
+        run.log("STAGE accessory equip slot=" + slot + " id=" + accessoryId.get() + " tick=" + org.bukkit.Bukkit.getCurrentTick());
+        return Optional.empty();
     }
 
     /**
@@ -709,7 +793,9 @@ final class SelfTestDrivers {
         Predicate<ItemStack> match = switch (what) {
             case "empty" -> item -> item == null || item.isEmpty();
             case "stone" -> item -> item != null && StoneItems.isStone(item, keys);
-            default -> item -> item != null && WeaponItems.weaponId(item, keys).filter(what::equals).isPresent();
+            // An accessory by its id too (the Healing Tome's gate, 2026-11-26): an accessory carries no weapon id.
+            default -> item -> item != null && (WeaponItems.weaponId(item, keys).filter(what::equals).isPresent()
+                    || io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.accessoryId(item, keys).filter(what::equals).isPresent());
         };
         int slot = -1;
         for (int i = 0; i < 9 && slot < 0; i++) if (match.test(inv.getItem(i))) slot = i;
@@ -1256,6 +1342,8 @@ final class SelfTestDrivers {
     private String itemId(ItemStack item) {
         if (item == null || item.isEmpty()) return "empty";
         if (StoneItems.isStone(item, keys)) return "stone";
+        Optional<String> accessory = io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.accessoryId(item, keys);
+        if (accessory.isPresent()) return accessory.get();   // the Healing Tome's gate: HELD healing_tome BOOK x1
         return WeaponItems.weaponId(item, keys).orElse(item.getType().getKey().getKey());
     }
 

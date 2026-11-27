@@ -274,6 +274,16 @@ final class SelfTestStaging {
         }
     }
 
+    /** The SATURATION step's argument: a number in vanilla's range, 0 to 20. */
+    static boolean saturationArg(String arg) {
+        try {
+            float f = Float.parseFloat(arg.trim());
+            return f >= 0 && f <= 20;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     /** Why a step's argument is refused at load, or empty. Only the verbs with a grammar of their own are checked. */
     static java.util.Optional<String> refusal(Scenario.Verb verb, String arg) {
         return switch (verb) {
@@ -301,7 +311,13 @@ final class SelfTestStaging {
             case PROBE -> probeArg(arg).isPresent() ? java.util.Optional.empty()
                     : java.util.Optional.of("probe takes '<tag>' or '<tag> <reach 1-" + PROBE_MAX_REACH + ">', got '"
                             + arg + "'");
-            case CLEAR_INVENTORY, CLEAR_STATE, PAD -> arg.isBlank() ? java.util.Optional.empty()
+            case CLASS -> java.util.List.of("melee", "ranger", "mage", "none").contains(arg.trim()) ? java.util.Optional.empty()
+                    : java.util.Optional.of("class takes melee, ranger, mage or none, got '" + arg + "'");
+            case ACCESSORY -> arg.trim().matches("clear|equip [0-3]") ? java.util.Optional.empty()
+                    : java.util.Optional.of("accessory takes 'equip <0-3>' or 'clear', got '" + arg + "'");
+            case SATURATION -> saturationArg(arg) ? java.util.Optional.empty()
+                    : java.util.Optional.of("saturation takes a number from 0 to 20, got '" + arg + "'");
+            case CLEAR_INVENTORY, CLEAR_STATE, PAD, PROBE_REGEN -> arg.isBlank() ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes nothing, got '"
                             + arg + "'");
             case PREFLIGHT -> SelfTestPreflight.parse(arg).isPresent() ? java.util.Optional.empty()

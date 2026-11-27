@@ -22,8 +22,12 @@ public final class SelfTestDamageTap implements HealthListener {
 
     @Override
     public void onChange(HealthChange change) {
-        if (change.kind() != HealthChange.Kind.DAMAGE || !change.targetIsPlayer()) return;
+        if (!change.targetIsPlayer()) return;
         SelfTestService s = service;
-        if (s != null) s.onPlayerHurt(change);
+        if (s == null) return;
+        if (change.kind() == HealthChange.Kind.DAMAGE) s.onPlayerHurt(change);
+        // AND EVERY HEAL TO HIM (the Healing Tome's gate, 2026-11-26): his regeneration's and the pulse's alike, so a health
+        // reading names every term between two readings. A HEALED line; never judged.
+        if (change.kind() == HealthChange.Kind.HEAL) s.onPlayerHealed(change);
     }
 }
