@@ -64,6 +64,7 @@ public final class PlayerHealthSystem implements HealthListener {
     private Accessories accessories;
     private ProfileService profiles;
     private Stones stones;
+    private volatile io.github.butterflysmp.rpg.paper.accessory.TomePulses tomePulses;
 
     public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons,
                               EnchantRegistry enchants,
@@ -115,6 +116,19 @@ public final class PlayerHealthSystem implements HealthListener {
      * item like any other and contributes nothing (the item carries no stat key; see
      * {@code AccessoryItems}). A null profile class and "none" both mean no class.
      */
+    /**
+     * The same reading, for the Healing Pulse's pulse-time re-check ({@code TomePulses}): one function, so the pulse and
+     * the stats can never disagree about whether an accessory contributes.
+     */
+    public AccessoryContributions accessoryContributionsFor(UUID id) {
+        return accessoryContributions(id);
+    }
+
+    /** The Healing Pulse's clocks, bound after the accessories (the fifth late bind, for the other four's reason). */
+    public void bindTomePulses(io.github.butterflysmp.rpg.paper.accessory.TomePulses tomePulses) {
+        this.tomePulses = tomePulses;
+    }
+
     private AccessoryContributions accessoryContributions(UUID id) {
         if (accessories == null || profiles == null) return AccessoryContributions.NONE;
         String profileClass = profiles.profile(id).map(PlayerProfile::archetypeId).orElse(null);
@@ -216,6 +230,7 @@ public final class PlayerHealthSystem implements HealthListener {
     /** Drop the player's health state on logout, so no modifier or entry leaks across sessions. */
     public void onQuit(UUID id) {
         stats.clear(id);
+        if (tomePulses != null) tomePulses.onQuit(id);   // H4: his pulse clock stops on quit
     }
 
     /**
@@ -279,6 +294,9 @@ public final class PlayerHealthSystem implements HealthListener {
             // source. AccessoryContributions.merged is a named two-argument merge for the reason the
             // quiver-size note below records: an inline putAll here was once deleted and nothing reddened.
             AccessoryContributions fromAccessories = accessoryContributions(id);
+            // THE HEALING PULSE (the seat's H3): its clock starts and stops on THIS reading's active behaviours, never a
+            // second reading of the slot. Null until bound, which is the same "nothing active" an unloaded store gives.
+            if (tomePulses != null) tomePulses.reconcile(player, fromAccessories.behaviours());
             FragmentContributions fromFragments = fragmentContributions(id);
             // THE LEVEL, a fourth source (PLAN-level-bonuses.md): Ben's bonuses as a pure function of the
             // EFFECTIVE level, re-derived from lifetime XP every pass, so nothing is stored. Merged AFTER the

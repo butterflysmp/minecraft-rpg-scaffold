@@ -29,6 +29,12 @@ public final class AccessoryRefusals {
     /** {@code /rpg durability}. */
     public static final String DURABILITY = "Accessories do not wear out.";
 
+    /** A villager trade that would take one (H12, the Healing Tome's book). SEAT PLACEHOLDER 2026-11-26, OPEN FOR BEN. */
+    public static final String TRADE = "Accessories cannot be traded.";
+
+    /** A chiseled bookshelf (H12, the Healing Tome's book). SEAT PLACEHOLDER 2026-11-26, OPEN FOR BEN. */
+    public static final String SHELF = "Accessories cannot be shelved.";
+
     /** An enchant file whose {@code class:} names accessories -- a boot-log line, so it names the rule. */
     public static final String ENCHANT_CLASS = "class: accessory is refused -- accessories take no part"
             + " in enchanting (ruling A4)";

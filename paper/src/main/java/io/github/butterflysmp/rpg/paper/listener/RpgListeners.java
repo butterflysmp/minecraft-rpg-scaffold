@@ -2389,6 +2389,55 @@ public final class RpgListeners implements Listener {
                 WeaponItems.weaponId(item, adapters.keys()).isPresent(), item.getType().getKey().getKey());
     }
 
+    /**
+     * H12 (the Healing Tome's book): A VILLAGER NEVER BUYS ONE OF OUR ACCESSORIES. READ, the server jar:
+     * {@code MerchantResultSlot.onTake} fires this event BEFORE {@code MerchantOffer.take(slot 0, slot 1)}, and a cancel
+     * zeroes the result, resends the menu and returns, so the cost slots are never taken. {@code PlayerTradeEvent}
+     * declares no handler list of its own (READ, javap), so this hears villager and wandering-trader trades alike. A plain
+     * book still trades. See {@code AccessoryVanillaUses}.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onAccessoryTrade(io.papermc.paper.event.player.PlayerPurchaseEvent event) {
+        if (!(event.getPlayer().getOpenInventory().getTopInventory() instanceof org.bukkit.inventory.MerchantInventory m)) {
+            return;
+        }
+        if (!io.github.butterflysmp.rpg.paper.accessory.AccessoryVanillaUses.refusesTrade(
+                io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.isAccessory(m.getItem(0), adapters.keys()),
+                io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.isAccessory(m.getItem(1), adapters.keys()))) {
+            return;
+        }
+        event.setCancelled(true);
+        event.getPlayer().sendMessage(Component.text(
+                io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals.TRADE, NamedTextColor.RED));
+    }
+
+    /**
+     * H12: A PLAYER NEVER PUTS ONE OF OUR ACCESSORIES INTO A CHISELED BOOKSHELF. READ: {@code bookshelf_books} lists
+     * {@code minecraft:book}. Cancelling the right-click stops the block's use; a plain book still shelves.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onAccessoryShelved(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) return;
+        if (!io.github.butterflysmp.rpg.paper.accessory.AccessoryVanillaUses.refusesShelf(
+                event.getClickedBlock().getType() == org.bukkit.Material.CHISELED_BOOKSHELF,
+                io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.isAccessory(event.getItem(), adapters.keys()))) {
+            return;
+        }
+        event.setCancelled(true);
+        event.getPlayer().sendMessage(Component.text(
+                io.github.butterflysmp.rpg.core.accessory.AccessoryRefusals.SHELF, NamedTextColor.RED));
+    }
+
+    /** H12: nor does a hopper (or a hopper minecart) move one into a chiseled bookshelf. A plain book still moves. */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onAccessoryHoppered(org.bukkit.event.inventory.InventoryMoveItemEvent event) {
+        if (io.github.butterflysmp.rpg.paper.accessory.AccessoryVanillaUses.refusesShelf(
+                event.getDestination().getType() == org.bukkit.event.inventory.InventoryType.CHISELED_BOOKSHELF,
+                io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.isAccessory(event.getItem(), adapters.keys()))) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPrepareCraft(PrepareItemCraftEvent event) {
         boolean refuse = switch (CraftMatrixScreen.verdict(
