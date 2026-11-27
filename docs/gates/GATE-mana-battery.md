@@ -295,6 +295,12 @@ out of the slot himself in the menu (an unequip writes the file and logs nothing
 His profile reads `archetypeId: "mage"`, `elementId: "fire"`, as before. The world's saved difficulty: `normal` before
 and after.
 
+> **DATED NOTE, 2026-11-27, AFTER THE READINGS (the seat's W3): BEN, VERBATIM: *"Yes I took the healing tome off before
+> /stop. Merge it."*** His words are the witness that the slot was emptied by his own unequip through the menu, which is
+> what the readings show it doing. The seat's ruling: no repair; his files are as he left them. Owed to the next stack
+> (W4): `probe_mana`'s line gains `tick=`, and a menu equip or unequip writes one log line (who, slot, item), so the next
+> such question is answered by the log.
+
 ### The boot (`.claude/rules/booting.md`, each step as ticked)
 
 1. The seat's approval of `486a0161`; Ben's own "ready".
