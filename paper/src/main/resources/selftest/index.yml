@@ -142,3 +142,7 @@ gates:
 # minted-bone guard, typed as /rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27.
 # docs/gates/GATE-bone-club.md.
   - bone-club
+# healing-tome (2026-11-26, feat/blast-fungus-gate moved onto feat/tome-selftest): the Healing Tome and its Radiant Pulse,
+# typed LAST as /rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27+healing-tome.
+# docs/gates/GATE-healing-tome.md.
+  - healing-tome

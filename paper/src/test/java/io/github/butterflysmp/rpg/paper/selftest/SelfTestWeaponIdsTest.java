@@ -97,6 +97,16 @@ class SelfTestWeaponIdsTest {
         return ids;
     }
 
+    /** Every shipped accessory's id: its file name. */
+    static Set<String> accessoryIds() {
+        Set<String> ids = new TreeSet<>();
+        for (Path p : yaml("accessories")) {
+            String name = p.getFileName().toString();
+            ids.add(name.substring(0, name.length() - ".yml".length()));
+        }
+        return ids;
+    }
+
     /** Every shipped armor piece's and tool's id, by the loaders the server uses. */
     static Set<String> armorAndToolIds() {
         java.util.logging.Logger quiet = java.util.logging.Logger.getLogger("SelfTestWeaponIdsTest-" + System.nanoTime());
@@ -154,7 +164,10 @@ class SelfTestWeaponIdsTest {
                 String bare = give ? n.substring("give ".length()) : n;
                 // A SHIFT_CLICK may name armor too since 2026-11-25 (the driver matches armor_id, GATE-armor-sets AS13).
                 boolean shift = step.verb() == Scenario.Verb.SHIFT_CLICK;
+                // A HOLD may name an accessory since 2026-11-26 (the driver matches accessory_id, GATE-healing-tome).
+                boolean holdAccessory = step.verb() == Scenario.Verb.HOLD && accessoryIds().contains(bare);
                 boolean ok = weapons.contains(bare) || ((give || shift) && otherGear.contains(bare));
+                ok = ok || holdAccessory;
                 if (!ok) bad.add(s.gate() + "#" + s.row() + " " + step.verb() + " " + bare);
             }
         }

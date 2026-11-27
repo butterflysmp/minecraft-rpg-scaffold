@@ -1,0 +1,273 @@
+# GATE-healing-tome (docs/gates/GATE-healing-tome.md): the Healing Tome and its Radiant Pulse, 2026-11-26. Typed as ONE
+# command for the whole stack, LAST:
+#   /rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27+healing-tome
+# SURVIVAL. On the pad, at night (18000), difficulty normal, no natural spawns, each put back by the run's restore. ALL
+# AUTO: this gate asks NOTHING. EVERY ROW STAGES, ITSELF: his level, an empty inventory and state, NO ARMOUR AND NO OFF
+# HAND (item replace ... with air: his own come back at the gate boundary and the run's end, W1), EMPTY ACCESSORY SLOTS
+# (accessory: clear: his own come back at the run's end, H15), his class (mage unless the row says), saturation 0 (so his
+# regeneration is the unsaturated tier, 0.2/s at these levels), 40 ticks for the reconcile, then full health, then a
+# REGEN reading. No mob is summoned. SAFETY (the gate file): four rows wound him through /rpg damage, 7 + 8 + 2 + 2 =
+# 19.000 in all, each EXECUTED in HealingTomeGateArithmeticTest; each ends by healing him fully.
+setup:
+  - pad: ""
+  - preflight: "-2 -2 4 2"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# HT1: THE TOOLTIP, WHOLE, AND A4'S REFUSALS BY TEXT. Level 2, a mage, the tome held (not equipped).
+HT1:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "item replace entity @s weapon.offhand with minecraft:air"
+  - accessory: "clear"
+  - class: "mage"
+  - saturation: "0"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+  - cmd: "rpg give healing_tome"
+  - wait: 2
+  - hold: healing_tome
+  - probe_held: ""
+  - dump: held
+  - cmd: "rpg enchant show"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "rpg durability damage 1"
+  - wait: 2
+
+# HT2: THE PULSE. Level 2; equipped at E; wounded by 7 (more than 2L = 4) at E + 6; pulses at T0 + 80 and T0 + 160.
+HT2:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "item replace entity @s weapon.offhand with minecraft:air"
+  - accessory: "clear"
+  - class: "mage"
+  - saturation: "0"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+  - cmd: "rpg give healing_tome"
+  - wait: 2
+  - hold: healing_tome
+  - accessory: "equip 0"
+  - wait: 6
+  - cmd: "rpg damage 7"
+  - wait: 170
+  - probe_regen: ""
+  - accessory: "clear"
+  - wait: 6
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+
+# HT3: THE LEVEL. HT2 at level 3, wounded by 8: each pulse heals 3.
+HT3:
+  - cmd: "rpg playerxp set @s 3 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "item replace entity @s weapon.offhand with minecraft:air"
+  - accessory: "clear"
+  - class: "mage"
+  - saturation: "0"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+  - cmd: "rpg give healing_tome"
+  - wait: 2
+  - hold: healing_tome
+  - accessory: "equip 0"
+  - wait: 6
+  - cmd: "rpg damage 8"
+  - wait: 170
+  - probe_regen: ""
+  - accessory: "clear"
+  - wait: 6
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+
+# HT4: THE CAP. Level 3, wounded by 2 (less than L): the first pulse heals what is missing, to exactly max.
+HT4:
+  - cmd: "rpg playerxp set @s 3 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "item replace entity @s weapon.offhand with minecraft:air"
+  - accessory: "clear"
+  - class: "mage"
+  - saturation: "0"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+  - cmd: "rpg give healing_tome"
+  - wait: 2
+  - hold: healing_tome
+  - accessory: "equip 0"
+  - wait: 6
+  - cmd: "rpg damage 2"
+  - wait: 170
+  - probe_regen: ""
+  - accessory: "clear"
+  - wait: 6
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+
+# HT5: NOT HURT. Level 2, full health, equipped: two pulses, each healing nobody, with no feedback.
+HT5:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "item replace entity @s weapon.offhand with minecraft:air"
+  - accessory: "clear"
+  - class: "mage"
+  - saturation: "0"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+  - cmd: "rpg give healing_tome"
+  - wait: 2
+  - hold: healing_tome
+  - accessory: "equip 0"
+  - wait: 170
+  - probe_regen: ""
+  - accessory: "clear"
+  - wait: 6
+
+# HT6: INACTIVE, AND LIVE AGAIN. Equipped as a mage, made a ranger in the SAME tick (no pass sees him a mage wearing it),
+# wounded by 2: no pulse line across 170 ticks; the sheet says inactive. Back to mage at M: the sheet says Radiant Pulse
+# and one pulse comes at T0 + 80 (the control).
+HT6:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "item replace entity @s weapon.offhand with minecraft:air"
+  - accessory: "clear"
+  - class: "mage"
+  - saturation: "0"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+  - cmd: "rpg give healing_tome"
+  - wait: 2
+  - hold: healing_tome
+  - accessory: "equip 0"
+  - class: "ranger"
+  - cmd: "rpg damage 2"
+  - wait: 6
+  - cmd: "rpg stats"
+  - wait: 164
+  - probe_regen: ""
+  - class: "mage"
+  - wait: 6
+  - cmd: "rpg stats"
+  - wait: 84
+  - accessory: "clear"
+  - wait: 6
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+
+# HT7: UNEQUIP STOPS IT, RE-EQUIP RESTARTS THE COUNT. Full health. Equipped at E1, one pulse, cleared at E1 + 100;
+# re-equipped at E2 = E1 + 132; its first pulse is 80 after ITS anchor, and the old clock's next (T0 + 160) never comes.
+HT7:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "item replace entity @s weapon.offhand with minecraft:air"
+  - accessory: "clear"
+  - class: "mage"
+  - saturation: "0"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+  - cmd: "rpg give healing_tome"
+  - wait: 2
+  - hold: healing_tome
+  - accessory: "equip 0"
+  - wait: 100
+  - accessory: "clear"
+  - wait: 30
+  - cmd: "rpg give healing_tome"
+  - wait: 2
+  - hold: healing_tome
+  - accessory: "equip 0"
+  - wait: 100
+  - accessory: "clear"
+  - wait: 6
+
+# HT8: CARRIED, NOT EQUIPPED. A mage holding the tome in his hand: no clock, no pulse, across 170 ticks.
+HT8:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "item replace entity @s weapon.offhand with minecraft:air"
+  - accessory: "clear"
+  - class: "mage"
+  - saturation: "0"
+  - wait: 40
+  - cmd: "rpg heal 1000000"
+  - wait: 2
+  - probe_regen: ""
+  - cmd: "rpg give healing_tome"
+  - wait: 2
+  - hold: healing_tome
+  - probe_held: ""
+  - wait: 170
+  - probe_regen: ""
