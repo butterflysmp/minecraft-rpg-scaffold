@@ -1,0 +1,207 @@
+# GATE-held-target (docs/gates/GATE-held-target.md): A SUMMON HOLDS ITS TARGET (G1 to G8), 2026-11-26, typed LAST in the
+# one command that also re-reads the owed rows (R2 to R6) by gate.ROW reference:
+#   /rpg selftest bone-club.DB6+blast-fungus.BF3.BF6.BF8+healing-tome.HT1+blink-tome.BT1.BT3.BT4.BT5.BT6+held-target
+# SURVIVAL. On the pad, at night (18000), difficulty normal, no natural spawns, each put back by the run's restore. ALL
+# AUTO: this gate asks NOTHING. EVERY ROW STAGES ITSELF: level 2, an empty inventory and state, empty accessory slots, a
+# mage, max summons reset to the default 1, the Bone Whistle's wolf summoned at his feet by the row's own cast. Every
+# zombie is NoAI (it holds a target and never acts). SAFETY 0.000: no row wounds him, and his wolf cannot (SUMMON ->
+# PLAYER is refused, MobHostility's table).
+#
+# THE PAD IS 48 LONG, SO 72 CANNOT BE STAGED: the give-up boundary is SummonGuardTest's table, NOT READ here, owed.
+setup:
+  - pad: ""
+  - preflight: "0 -13 44 13"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# S1, KEPT PAST 32: a zombie 40 east of the stand; he steps 30 east, his wolf takes it at the TARGETING tier (it targets
+# him from 10) and fights it beside him; then HE steps back 30 west, so it is 40 from him while the wolf stays at its side.
+# D4 dropped it at 32 (dropped=limit, the boot of GATE-summoner's SM5); now it is kept, the targeting reason lapsing (kept).
+S1:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~40 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["h1","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: "tp @s ~30 ~ ~"
+  - cmd: "rpg maxsummons reset"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - probe: "h1 48"
+  - mob_target: h1
+  - wait: 40
+  - probe_summon: "16"
+  - cmd: "tp @s ~-30 ~ ~"
+  - wait: 3
+  - probe_self: ""
+  - probe_summon: "48"
+  - wait: 60
+  - probe_summon: "48"
+  - wait: 60
+  - probe_summon: "48"
+  - probe: "h1 48"
+
+# S2, KEPT WHEN THE REASON LAPSES: a zombie 4 east targets him; his wolf takes it at the TARGETING tier; then the
+# zombie's target is cleared (mob_target "h2 clear", through the seam). D4 dropped it (target=none why=none); now kept.
+S2:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: "rpg maxsummons reset"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - cmd: 'summon zombie ~4 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["h2","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 2
+  - mob_target: h2
+  - wait: 3
+  - probe_summon: "8"
+  - mob_target: "h2 clear"
+  - wait: 3
+  - probe_target: h2
+  - probe_summon: "8"
+  - wait: 40
+  - probe_summon: "8"
+  - probe: "h2 8"
+
+# S3, THE BLINK DOES NOT CALL IT OFF: the Blink Tome's stand (BT2's: four NoAI blockers, the trigger 3 east of where he
+# stands, him 20 east), his wolf already holding the trigger at the TARGETING tier; then the tome equipped: he blinks,
+# the trigger forgets him (forgot=1); the wolf still holds it and is not teleported to him. Then the tome comes OFF and
+# settles (R2) before anything clears a cooldown, so no second blink.
+S3:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg maxsummons reset"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - mob_target: bt
+  - wait: 10
+  - probe_summon: "8"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 16
+  - probe_self: ""
+  - probe_summon: "24"
+  - probe_invisibility: ""
+  - wait: 20
+  - probe_summon: "24"
+  - accessory: "clear"
+  - wait: 6
+  - clear_state: ""
+
+# S4, A DIRECTED ORDER SWITCHES: his wolf holds a4 (4 east) at the TARGETING tier; his left click (aim, then the swing)
+# directs it onto b4 (6 east, 3 south): switched, held at the DIRECTED tier.
+S4:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: "rpg maxsummons reset"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - cmd: 'summon zombie ~4 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["a4","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6 ~ ~3 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["b4","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 2
+  - mob_target: a4
+  - wait: 3
+  - probe_summon: "8"
+  - aim: "b4"
+  - wait: 2
+  - reload: ""
+  - wait: 3
+  - probe_summon: "8"
+
+# S5, IDLE, IT COMES BACK: his wolf holds h5 (14 east) and fights it; the row kills h5; with nothing held the wolf walks
+# back toward him, as it always did (the control that G4 did not break the follow).
+S5:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: "rpg maxsummons reset"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - probe_summon: "8"
+  - cmd: 'summon zombie ~14 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["h5","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 2
+  - mob_target: h5
+  - wait: 60
+  - probe_summon: "24"
+  - cmd: "kill @e[tag=h5]"
+  - wait: 2
+  - probe_summon: "24"
+  - wait: 100
+  - probe_summon: "24"
