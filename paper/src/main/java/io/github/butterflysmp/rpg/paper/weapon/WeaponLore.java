@@ -20,7 +20,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.util.ArrayList;
 import java.util.OptionalInt;
@@ -39,15 +38,21 @@ import java.util.Locale;
  * javadoc. <b>It said "STATIC content ... mint-time only and cannot drift" until 2026-09-21</b>, and
  * that was surrendered on purpose rather than falsified by accident.
  * Layout top to bottom: element, the basic-attack STAT BLOCK, one ABILITY BLOCK per remaining
- * trigger (name+input, authored description, element-typed damage, cadence), the weapon-level
+ * trigger (name+input, authored description, class-labelled damage, cadence), the weapon-level
  * flavour, and the "<Rarity> <Class> Weapon" footer.
  *
  * A basic attack is a stat, not an ability, so it renders as two stat lines rather than a section
  * with a name and prose. The split is by {@link DamagePayload.DamageSource} -- an effect that
  * READS the attack-damage stat is a basic attack; one carrying its own literal is an ability --
- * never by the input name. That is also why the two damage lines are labelled differently: the
- * class label ("Melee Damage") goes only on the stat-reading line a "+N Melee Damage" modifier
- * could actually reach, and ability payloads are labelled by their element ("Fire Damage").
+ * never by the input name.
+ *
+ * <p><b>EVERY DAMAGE LINE IS LABELLED BY THE WEAPON'S CLASS ({@link WeaponClassLabel#damageLabel}): OVERTURNED BY BEN,
+ * 2026-11-26</b> (TT19: <i>"I want the damage type in the tool tip to match the class not the element. Ie Ranged
+ * Damage, Magic Damage, Melee Damage etc"</i>). The superseded rule, kept as the record: <i>"the class label ("Melee
+ * Damage") goes only on the stat-reading line a "+N Melee Damage" modifier could actually reach, and ability payloads are
+ * labelled by their element ("Fire Damage")."</i> Its reason (a class label promised a modifier that cannot reach a
+ * literal payload) was overruled on what the label is FOR, not refuted. No shipped ability's damage element differs
+ * from its weapon's element (READ 2026-11-26), so the element line at the top still names every hit's element.
  *
  * Two colour axes, owned by two different places on purpose: the ELEMENT line wears the element's
  * own colour from its content file (open axis -> content owns it), and the footer wears the rarity
@@ -204,7 +209,7 @@ public final class WeaponLore {
             if (isBasicAttack && !statBlockPlaced && damage.isPresent()) {
                 statBlockPlaced = true;
                 lore.add(GearLore.blank());
-                lore.add(GearLore.plain(WeaponClassLabel.of(weapon.weaponClass()) + " Damage: ", NamedTextColor.GRAY)
+                lore.add(GearLore.plain(WeaponClassLabel.damageLabel(weapon.weaponClass()), NamedTextColor.GRAY)
                         .append(GearLore.plain(damageNumber(damage.get().amount(), scored, score, terms),
                                 NamedTextColor.RED)));
 
@@ -252,13 +257,12 @@ public final class WeaponLore {
             if (rewrite.isPresent()) {
                 for (BehaviourBlocks.DamageRow row : rewrite.get().rows()) {
                     String count = row.count().isPresent() ? " x " + row.count().getAsInt() : "";
-                    lore.add(GearLore.plain(elementName(row.element(), elements) + " Damage: ", NamedTextColor.GRAY)
+                    lore.add(GearLore.plain(WeaponClassLabel.damageLabel(weapon.weaponClass()), NamedTextColor.GRAY)
                             .append(GearLore.plain(damageNumber(row.authored(), scored, score, terms) + count,
                                     NamedTextColor.RED)));
                 }
             } else if (damage.isPresent()) {
-            // Element-typed, NOT class-typed: this payload reads no stat, so no "+N Melee Damage"
-            // modifier can reach it and claiming otherwise would be a lie the tooltip tells.
+                // CLASS-labelled since 2026-11-26 (Ben), as every damage line: WeaponClassLabel.damageLabel.
                 DamagePayload.TriggerDamage d = damage.get();
                 // "x N" ONLY WHEN ONE PRESS DELIVERS N PAYLOADS SEQUENTIALLY. The criterion, its
                 // interruption caveat and the reason a fan is excluded all live in
@@ -269,7 +273,7 @@ public final class WeaponLore {
                 // and a player comparing two weapons needs the per-hit number to compare AT ALL.
                 OptionalInt shots = WeaponLoreLines.deliveredShots(ability.cast());
                 String shotsLabel = shots.isPresent() ? " x " + shots.getAsInt() : "";
-                lore.add(GearLore.plain(elementName(d.element(), elements) + " Damage: ", NamedTextColor.GRAY)
+                lore.add(GearLore.plain(WeaponClassLabel.damageLabel(weapon.weaponClass()), NamedTextColor.GRAY)
                         .append(GearLore.plain(damageNumber(d.amount(), scored, score, terms) + shotsLabel,
                                 NamedTextColor.RED)));
             }
@@ -310,20 +314,6 @@ public final class WeaponLore {
         return MiniMessage.miniMessage().deserialize(element.displayName())
                 // Lore renders italic by default; every other line here opts out, so this must too.
                 .decoration(TextDecoration.ITALIC, false);
-    }
-
-    /**
-     * An element's name as PLAIN words for use inside a longer line ("Fire Damage: 12"), taken from
-     * the same content {@code display_name} {@link #elementLine} renders -- so a two-word or
-     * oddly-cased element reads the way its content authored it, not the way its id happens to be
-     * spelled. The colour is stripped here on purpose: this is a fragment of a gray label line, and
-     * the element already wears its own colour on its own line at the top.
-     */
-    private static String elementName(String elementId, ElementRegistry elements) {
-        return elements.find(elementId)
-                .map(e -> PlainTextComponentSerializer.plainText()
-                        .serialize(MiniMessage.miniMessage().deserialize(e.displayName())))
-                .orElseGet(() -> GearLore.titleCase(elementId));
     }
 
     /** A stat number with the trailing ".0" dropped: 8.0 -> "8", 7.5 -> "7.5". */

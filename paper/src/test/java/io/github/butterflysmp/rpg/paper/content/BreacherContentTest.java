@@ -162,10 +162,10 @@ class BreacherContentTest {
                         .map(c -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
                                 .serialize(c)).toList();
         assertEquals(List.of("Kinetic", "Gear Score: 100", "Quiver: 2/2", "", "Breacher  Right-Click",
-                "Four chunks of cobblestone,", "a tight triangle 6 degrees wide.", "Kinetic Damage: 40 x 4",
+                "Four chunks of cobblestone,", "a tight triangle 6 degrees wide.", "Ranged Damage: 40 x 4",
                 "Cooldown: 1.0s", "", "Iron, gunpowder, string,", "and whatever was lying around.", "",
                 "Common Ranged Weapon"), lore.apply(100));
-        assertEquals("Kinetic Damage: 60 x 4", lore.apply(150).get(7), "the literal scales with the score");
+        assertEquals("Ranged Damage: 60 x 4", lore.apply(150).get(7), "the literal scales with the score");
     }
 
     /** BEN's recipe: S G I over S G I, the third row empty. A 3x2 shape; it mints the Breacher. */

@@ -558,3 +558,141 @@ TT19:
   - wait: 2
   - dump: held
   - ask: "1 1200 words Hover the Cursed Emerald and the Breacher in your bar. Do the numbers read as what each weapon now does (the Emerald six bolts of 27, the Breacher a stone then four chunks), and is each tooltip clear? (yes / no / not sure)"
+
+# ===== THE CLASS LABELS (Ben's ruling at TT19, 2026-11-26). NEW ROWS UNDER NEW NAMES; TT0-TT19 above are the record. =====
+# Typed as: /rpg selftest true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27
+
+# TT20, THE FLINT STAFF WITH LARGE SPARKS III: its ability line reads "Magic Damage: 32".
+TT20:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+
+# TT21, THE CURSED EMERALD BARE, THEN WITH FOCUSED BEAM II: "Magic Damage: 27 x 3", then "Magic Damage: 162".
+TT21:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give cursed_emerald"
+  - wait: 2
+  - hold: cursed_emerald
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant candidate 0 focused_beam"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+
+# TT22, THE BREACHER WITH SHATTER CAPS III: both behaviour rows read "Ranged Damage:".
+TT22:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+
+# TT23, THE LAPIS STAFF WITH LAPIS CRYSTAL III: the beam and the granted crystal's shot both read "Magic Damage:".
+TT23:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give lapis_staff"
+  - wait: 2
+  - hold: lapis_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 lapis_crystal"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+
+# TT24, AN IRON SWORD, BARE: unchanged, "Melee Damage: 23".
+TT24:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give iron_sword"
+  - wait: 2
+  - hold: iron_sword
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+
+# TT25, A SHORT BOW, BARE: unchanged, "Ranged Damage: 16".
+TT25:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give short_bow"
+  - wait: 2
+  - hold: short_bow
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - dump: held
+
+# TT26, TRUTH, AS TT9: the Flint Staff's "Magic Damage: 32" against PLAYERHIT's sent. t at ~6, facing east, mana full.
+TT26:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg mana refill"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["t","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: t
+  - use: right_click
+  - wait: 60
+  - probe: t
+  - cmd: "kill @e[tag=t]"
+
+# TT27, THE ONE ASK, LAST, WITH THE LONGER WINDOW (3600 ticks: ASK_WINDOW_SHORT): the Flint Staff and the Breacher in his bar.
+TT27:
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give flint_staff"
+  - cmd: "rpg give breacher"
+  - wait: 2
+  - hold: breacher
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 shatter_caps"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 large_sparks"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - ask: "1 3600 words Hover the Flint Staff and the Breacher in your bar. Do their damage lines now say Magic Damage and Ranged Damage (the weapon's class), and is each tooltip clear? (yes / no / not sure)"

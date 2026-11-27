@@ -164,9 +164,9 @@ class LivingLanternContentTest {
                         .map(c -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
                                 .serialize(c)).toList();
         assertEquals(List.of("Fire", "Gear Score: 100", "", "Lantern's Breath  Right-Click",
-                "Looses a slow, seeking flame", "that hunts within 7 blocks.", "Fire Damage: 45",
+                "Looses a slow, seeking flame", "that hunts within 7 blocks.", "Magic Damage: 45",
                 "Cooldown: 0.8s | Mana Cost: 12", "", "Common Magic Weapon"), lore.apply(100));
-        assertEquals("Fire Damage: 67.5", lore.apply(150).get(6), "the literal scales with the score");
+        assertEquals("Magic Damage: 67.5", lore.apply(150).get(6), "the literal scales with the score");
     }
 
     /** BEN's recipe: eight iron nuggets round one fire charge. */

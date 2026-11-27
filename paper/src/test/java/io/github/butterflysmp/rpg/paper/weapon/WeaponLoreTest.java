@@ -178,25 +178,26 @@ class WeaponLoreTest {
     }
 
     /**
-     * The label collision this pass resolves. The stat line and the fireball are both damage, but
-     * only the stat line reads the ATTACK_DAMAGE stat -- so only it may wear the CLASS label. The
-     * fireball is a literal and wears its ELEMENT, or the tooltip promises a "+N Melee Damage"
-     * modifier relationship that cannot exist.
+     * OVERTURNED BY BEN, 2026-11-26 (TT19: "I want the damage type in the tool tip to match the class not the element").
+     * This row used to assert the opposite: the fireball, a literal, wore its ELEMENT ("Fire Damage: 12") and the class
+     * label was the stat line's alone. Now EVERY damage line wears the weapon's CLASS, through
+     * {@code WeaponClassLabel.damageLabel}; the element stays on its own line at the top.
      */
     @Test
-    void anAbilityPayloadIsLabelledByItsElementNotTheWeaponsClass() {
+    void anAbilityPayloadIsLabelledByTheWeaponsClassNotItsElement() {
         List<String> lines = textLines(WeaponLore.build(swordWithFireball(), elementsWithFire()));
 
-        assertTrue(lines.contains("Fire Damage: 12"), () -> "expected an element-typed line in " + lines);
-        assertFalse(lines.contains("Melee Damage: 12"),
-                () -> "a literal payload reads no stat, so it must not wear the class label; got " + lines);
+        assertTrue(lines.contains("Melee Damage: 12"), () -> "expected a class-labelled ability line in " + lines);
+        assertFalse(lines.contains("Fire Damage: 12"),
+                () -> "the element label on an ability line was overturned on 2026-11-26; got " + lines);
+        assertEquals("Fire", lines.get(0), "the element line at the top is unchanged");
         // The ability block itself is otherwise untouched.
         assertTrue(lines.contains("Fireball  Right-Click"), () -> lines.toString());
         assertTrue(lines.contains("Hurl a bursting ember."), () -> lines.toString());
         assertTrue(lines.contains("Cooldown: 3.0s | Mana Cost: 40"), () -> lines.toString());
-        // ...and the basic attack still owns the class label, exactly once.
-        assertEquals(1, lines.stream().filter(l -> l.startsWith("Melee Damage: ")).count(),
-                () -> "exactly one class-labelled damage line: " + lines);
+        // ...and the basic attack's stat line wears it too: TWICE in all (this said "exactly once" until 2026-11-26).
+        assertEquals(2, lines.stream().filter(l -> l.startsWith("Melee Damage: ")).count(),
+                () -> "the stat line and the fireball are both class-labelled: " + lines);
         assertTrue(lines.contains("Melee Damage: 7"), () -> lines.toString());
     }
 
@@ -228,13 +229,14 @@ class WeaponLoreTest {
     void aWeaponWithNoBasicAttackRendersNoStatBlock() {
         List<String> lines = textLines(WeaponLore.build(bowWithNoBasicAttack(), elementsWithFire()));
 
-        assertFalse(lines.stream().anyMatch(l -> l.startsWith("Ranged Damage:")),
-                () -> "no weapon_damage trigger means no stat block at all; got " + lines);
+        // No stat block: no Attack Speed line, and the only damage line is INSIDE the ability block (after its header).
+        // Since 2026-11-26 both would wear the class label, so the label alone no longer tells them apart.
         assertFalse(lines.stream().anyMatch(l -> l.startsWith("Attack Speed:")),
                 () -> "no basic attack means no attack speed; got " + lines);
-        // Its shot is an ability block, element-typed like any other literal payload.
-        assertTrue(lines.contains("Quick Shot  Right-Click"), () -> lines.toString());
-        assertTrue(lines.contains("Fire Damage: 6"), () -> lines.toString());
+        assertEquals(1, lines.stream().filter(l -> l.startsWith("Ranged Damage:")).count(), () -> lines.toString());
+        assertTrue(lines.indexOf("Ranged Damage: 6") > lines.indexOf("Quick Shot  Right-Click")
+                        && lines.indexOf("Quick Shot  Right-Click") >= 0,
+                () -> "no weapon_damage trigger means no stat block at all; got " + lines);
     }
 
     @Test
@@ -330,15 +332,14 @@ class WeaponLoreTest {
                                 + "; got " + lines);
             }
 
-            // A class label appears at most once, and only on a weapon that HAS a basic attack.
-            long classLabelled = lines.stream().filter(l -> l.startsWith(ownLabel)).count();
+            // EVERY damage line wears the weapon's own class label (Ben, 2026-11-26): no element label survives. (This
+            // asserted "a class label appears at most once, and only on a weapon that HAS a basic attack" until then.)
             boolean hasBasicAttack = weapon.triggers().stream().anyMatch(t ->
                     DamagePayload.of(t.ability().onHit(), weapon.attackDamage())
                             .map(d -> d.source() == DamagePayload.DamageSource.WEAPON_STAT)
                             .orElse(false));
-            assertEquals(hasBasicAttack ? 1 : 0, classLabelled,
-                    () -> weapon.id() + " should have " + (hasBasicAttack ? "exactly one" : "no")
-                            + " class-labelled damage line; got " + lines);
+            assertTrue(lines.stream().filter(l -> l.contains(" Damage: ")).allMatch(l -> l.startsWith(ownLabel)),
+                    () -> weapon.id() + ": every damage line must be labelled " + ownLabel + "; got " + lines);
             assertEquals(hasBasicAttack,
                     lines.stream().anyMatch(l -> l.startsWith("Attack Speed: ")),
                     () -> weapon.id() + ": attack speed must appear iff it has a basic attack; got " + lines);
@@ -566,9 +567,9 @@ class WeaponLoreTest {
                 OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(175)));
 
         // 12 authored x 175/100 = 21. Three distinct numbers: 12, 175, 21.
-        assertTrue(lines.contains("Fire Damage: 21"),
+        assertTrue(lines.contains("Melee Damage: 21"),
                 () -> "the ability block reads the literal amount, scaled; got " + lines);
-        assertFalse(lines.contains("Fire Damage: 12"),
+        assertFalse(lines.contains("Melee Damage: 12"),
                 () -> "12 is the authored literal; got " + lines);
     }
 
@@ -590,7 +591,7 @@ class WeaponLoreTest {
                 OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(400)));
 
         // 4 authored, score 400, and 16 is the number a missing door produces. All three distinct.
-        assertTrue(lines.contains("Kinetic Damage: 4 x 3"),
+        assertTrue(lines.contains("Ranged Damage: 4 x 3"),
                 () -> "an unscored weapon shows what it deals: the AUTHORED 4; got " + lines);
         assertFalse(lines.stream().anyMatch(l -> l.contains("16")),
                 () -> "16 is scaledDamage(4, 400) -- the door did not fire; got " + lines);
@@ -605,7 +606,7 @@ class WeaponLoreTest {
                 OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(250)));
 
         // 4 authored x 250/100 = 10, three shots. Four distinct numbers: 4, 250, 10, 3.
-        assertTrue(lines.contains("Kinetic Damage: 10 x 3"),
+        assertTrue(lines.contains("Ranged Damage: 10 x 3"),
                 () -> "per-shot figure scaled, count beside it -- never multiplied together; got " + lines);
         assertFalse(lines.stream().anyMatch(l -> l.contains("30")),
                 () -> "30 would be the volley total, which is true of no single hit; got " + lines);
@@ -633,7 +634,7 @@ class WeaponLoreTest {
         List<String> lines = textLines(WeaponLore.build(scoredSpread(), elementsWithFire(),
                 OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(200)));
 
-        assertTrue(lines.contains("Kinetic Damage: 18 x 7"),
+        assertTrue(lines.contains("Ranged Damage: 18 x 7"),
                 () -> "9 authored x 200/100 = 18, seven bodies beside it; got " + lines);
         assertFalse(lines.stream().anyMatch(l -> l.contains("126")),
                 () -> "126 is the full-hit total, true of no single arrow; got " + lines);
@@ -651,7 +652,7 @@ class WeaponLoreTest {
         List<String> lines = textLines(WeaponLore.build(scoredPlainBolt(), elementsWithFire(),
                 OptionalInt.empty(), OptionalInt.empty(), OptionalInt.of(200)));
 
-        assertTrue(lines.contains("Kinetic Damage: 18"),
+        assertTrue(lines.contains("Ranged Damage: 18"),
                 () -> "the same scaled figure, with no count beside it; got " + lines);
         assertFalse(lines.stream().anyMatch(l -> l.contains(" x ")),
                 () -> "a projectile with no spread block promises no multiplier; got " + lines);

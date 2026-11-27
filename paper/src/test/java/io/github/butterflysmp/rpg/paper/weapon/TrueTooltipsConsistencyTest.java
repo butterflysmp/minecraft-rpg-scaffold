@@ -218,6 +218,23 @@ class TrueTooltipsConsistencyTest {
     // ================================================================== the comparator
 
     /** Every disagreement between a weapon tooltip and the engine, or none. Its own control is {@link #theComparatorSeesAPlantedMismatch}. */
+    /**
+     * Ben's class labels (2026-11-26): every damage line's label is the weapon's CLASS word, from the weapon's class (the
+     * label function's input), never its element. Its control is in {@link #theComparatorSeesAPlantedMismatch}.
+     */
+    static List<String> labelMismatches(String label, List<String> lore, WeaponDefinition w) {
+        // FROM THE CLASS, NEVER FROM THE LABEL FUNCTION: a first draft read WeaponClassLabel.damageLabel here, and a
+        // mutation of that function (every line "Melee") left this walk GREEN, because the expectation moved with it.
+        String want = switch (w.weaponClass()) {
+            case MELEE -> "Melee Damage: ";
+            case RANGER -> "Ranged Damage: ";
+            case MAGE -> "Magic Damage: ";
+            case SUMMONER -> "Summoner Damage: ";
+        };
+        return lore.stream().filter(l -> DAMAGE.matcher(l).matches() && !l.startsWith(want))
+                .map(l -> label + ": the line \"" + l + "\" is not labelled \"" + want + "\"").toList();
+    }
+
     static List<String> weaponMismatches(String label, List<String> lore, List<Hit> hits, double crit,
                                          boolean hasStatBlock) {
         List<String> out = new ArrayList<>();
@@ -261,6 +278,7 @@ class TrueTooltipsConsistencyTest {
                 List<Hit> bareHits = engineDamage(w, EnchantState.empty(), score, c.enchants());
                 double bareCrit = engineCrit(w, EnchantState.empty(), c.enchants());
                 mismatches.addAll(weaponMismatches(w.id() + " bare @" + score, bare, bareHits, bareCrit, statBlock));
+                mismatches.addAll(labelMismatches(w.id() + " bare @" + score, bare, w));
                 for (String e : poolsOf(w, c)) {
                     EnchantDefinition def = c.enchants().find(e).orElseThrow();
                     for (int level = 1; level <= def.maxLevel(); level++) {
@@ -271,6 +289,7 @@ class TrueTooltipsConsistencyTest {
                         double crit = engineCrit(w, state, c.enchants());
                         String label = w.id() + " + " + e + " " + level + " @" + score;
                         mismatches.addAll(weaponMismatches(label, lore, hits, crit, statBlock));
+                        mismatches.addAll(labelMismatches(label, lore, w));
                         boolean granted = !GrantedTriggers.granted(w, BehaviourItems.activeOf(state, w.id(), c.enchants()::find)).isEmpty();
                         if (hits.equals(bareHits) && crit == bareCrit && !granted) {
                             unmoved++;
@@ -370,16 +389,16 @@ class TrueTooltipsConsistencyTest {
             return plain(WeaponLore.build(w, c.elements(), OptionalInt.empty(), OptionalInt.empty(), OptionalInt.empty(),
                     ItemEnchantTermsReader.of(state, w, c.enchants())));
         };
-        assertEquals(List.of("Fire", "", "Fire Bolt  Right-Click", "Hurls a fragment of burning mana", "Fire Damage: 32",
-                "Cooldown: 1.2s | Mana Cost: 5", "", "Prehistoric magicians learned you could",
-                "create fire by flinging mana into flint.", "", "Common Magic Weapon"),
+        assertEquals(List.of("Fire", "", "Fire Bolt  Right-Click", "Hurls a fragment of burning mana", "Magic Damage: 32",
+                "Cooldown: 1.2s | Mana Cost: 5", "", "Early magicians learned you could",
+                "create fire by striking flint with mana.", "", "Common Magic Weapon"),
                 weapon.apply("flint_staff", activeAt("large_sparks", 3)));
         assertEquals(List.of("Kinetic", "", "Cursed Volley  Right-Click", "Channel, then loose six",
-                "bolts down your line of sight.", "Kinetic Damage: 27 x 6", "Cooldown: 1.5s | Mana Cost: 40", "",
+                "bolts down your line of sight.", "Magic Damage: 27 x 6", "Cooldown: 1.5s | Mana Cost: 40", "",
                 "Nine facets, and every one of them looking back.", "It asks for a moment before it answers.", "",
                 "Uncommon Magic Weapon"), weapon.apply("cursed_emerald", activeAt("echo_beam", 3)));
         assertEquals(List.of("Kinetic", "", "Cursed Volley  Right-Click", "Channel, then loose one focused",
-                "beam down your line of sight.", "Kinetic Damage: 162", "Cooldown: 1.5s | Mana Cost: 40", "",
+                "beam down your line of sight.", "Magic Damage: 162", "Cooldown: 1.5s | Mana Cost: 40", "",
                 "Nine facets, and every one of them looking back.", "It asks for a moment before it answers.", "",
                 "Uncommon Magic Weapon"), weapon.apply("cursed_emerald", activeAt("focused_beam", 2)));
         assertEquals(List.of("Kinetic", "", "Melee Damage: 18", "Attack Speed: 2.0", "Crit Chance: +25%", "",
@@ -406,6 +425,9 @@ class TrueTooltipsConsistencyTest {
         List<String> bare = plain(WeaponLore.build(flint, c.elements(), OptionalInt.empty(), OptionalInt.empty(),
                 OptionalInt.of(100), ItemEnchantTerms0.none()));
         assertEquals(1, weaponMismatches("stale", bare, truth, 0, false).size(), "the pre-slice tooltip is a mismatch");
+        assertEquals(List.of(), labelMismatches("truth", lore, flint), "the control's labels agree");
+        List<String> elementLabelled = lore.stream().map(l -> l.replace("Magic Damage: ", "Fire Damage: ")).toList();
+        assertEquals(1, labelMismatches("planted", elementLabelled, flint).size(), "an element label must be seen");
     }
 
     /** A name for the unenchanted terms that reads as what it is in the control above. */

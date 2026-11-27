@@ -424,3 +424,99 @@ nothing named him as a target.
 5. **Every WARN after Done is Paper's own update notice:** *"You are running the latest build for your Minecraft version
    (26.1.2) However, you are 4 release(s) behind the latest stable release (26.3)!"* No other WARN or ERROR. (The upgrade
    procedure's Step 0 is the owner's; PacketEvents goes first.)
+
+## THE CLASS LABELS — NEW ROWS TT20 TO TT27 FOR THE NEXT BOOT (2026-11-26, `feat/class-damage-labels`). NOT RUN
+
+**Status: NOT RUN.** Ben's ruling at TT19 (run 2), verbatim: *"yes but, I want the damage type in the tool tip to match
+the class not the element. Ie Ranged Damage, Magic Damage, Melee Damage etc"*. The account is `PLAN-true-tooltips.md`,
+section 14. **TT0 to TT19 above are the record and are not edited**; their element labels (`Fire Damage: 32`) are what
+that boot read. **Every prediction below is written before the boot and frozen from the seat's approval.**
+
+### WHAT BEN TYPES — ONE COMMAND (NEXT BOOT)
+
+```
+/rpg selftest true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27
+```
+
+This gate's setup, then only TT20 to TT27. **He answers ONE question, TT27's, last.** It waits **3600 ticks** and its
+prompt ends **`You have 180 seconds.`** (`SelfTestAsk.prompt`).
+
+**How long it runs (an ESTIMATE from the waits):** about 200 ticks of waits plus the steps, under half a minute, then
+his answer.
+
+### SAFETY — 0.000
+
+No row deals him anything. TT26's one mob is a NoAI zombie that never acts; no damage command names him. **The sum:
+0.000.** S-1 has nothing to execute.
+
+### CARRIED STATE (NEXT BOOT)
+
+The booting checklist (`.claude/rules/booting.md`) in its order, as for the boot of `88f1d4eb` above: the seat's approval
+and Ben's "ready"; the heads and a clean tree; no JVM; a NEW dated backup with counts and his player file's size; the
+world's saved difficulty; config line 12 `dev-pack-on-join: true`; no `run\rpgfight`; "BOOTING NOW" in its own message
+before the boot command; `Done` matched to a marker made in the boot command's call; R0 read; "R0 PASSED" in its own
+message before he logs in.
+
+### R0 (NEXT BOOT)
+
+- **R0a:** `[Rpg] Build: <head>`, this branch's head as `git ls-remote` prints it, not dirty.
+- **R0b:** `docs/gates/GATE-true-tooltips-labels-r0b.ps1` on the DEPLOYED jar: before `'--- absent'` **8 PRESENT / 0
+  ABSENT** (the label, the ask rule, the rows, and the two lines of the Flint Staff's new flavor); between `'--- absent'`
+  and `'--- controls'` **3 ABSENT / 0 PRESENT** (the removed helper, TT27 at the short window, and the old flavor entry
+  `  - "create fire by flinging mana into flint."`, which survives only in the file's comments, so the needle is
+  anchored to the list entry); after `'--- controls'` **2 PRESENT / 0 ABSENT** (a class string, and the description's
+  `      - "Hurls a fragment of burning mana"` entry: the anchored needle finds an entry that is there). Run before
+  commit on a jar built from this tree (the PR body quotes it).
+- **R0c:** as the boot of `88f1d4eb` (24 enchants, 25 weapons, 0 `[Rpg]` WARN, no Skipping): no content file is added
+  or removed; `flint_staff.yml`'s flavor changes, and loads with no WARN.
+- **R0d:** `[Rpg] Selftest: dev server, 481 scenarios across 51 gates`. Recount: 51 files, 532 keys, 51 setups. Control:
+  524 + 8 = 532. `473 scenarios` ABSENT.
+- **R0e:** `FIGHTWORLD sweep … folders=0`.
+
+### THE ROWS (`dump: held`'s lore, plain, `|` between lines)
+
+### TT20 — THE FLINT STAFF, LARGE SPARKS III
+
+`Large Sparks III | | Fire | Gear Score: 100 | | Fire Bolt  Right-Click | Hurls a fragment of burning mana | **Magic Damage: 32** | Cooldown: 1.2s | Mana Cost: 5 | | **Early magicians learned you could | create fire by striking flint with mana.** | | Common Magic Weapon`
+
+(Amended 2026-11-26, before any boot of these rows, by the seat's brief: Ben's new Flint Staff flavor, verbatim *"Early
+magicians learned you could create fire by striking flint with mana."*, the break after "learned you could" a SEAT
+PLACEHOLDER. It replaces "Prehistoric magicians learned you could / create fire by flinging mana into flint.", which TT0
+to TT18 above read and keep as the record.)
+
+### TT21 — THE CURSED EMERALD, BARE THEN FOCUSED BEAM II
+
+bare: `Kinetic | Gear Score: 100 | | Cursed Volley  Right-Click | Channel, then loose three | bolts down your line of sight. | **Magic Damage: 27 x 3** | Cooldown: 1.5s | Mana Cost: 40 | …`; then `Focused Beam II | | … | Channel, then loose one focused | beam down your line of sight. | **Magic Damage: 162** | …`
+
+### TT22 — THE BREACHER, SHATTER CAPS III
+
+`Shatter Caps III | | Kinetic | Gear Score: 100 | Quiver: <n>/<c> | | Breacher  Right-Click | One stone that shatters into | four chunks after 5 blocks. | **Ranged Damage: 85** | **Ranged Damage: 40 x 4** | Cooldown: 1.0s | …` (the quiver line is the stamp, not predicted)
+
+### TT23 — THE LAPIS STAFF, LAPIS CRYSTAL III
+
+`Lapis Crystal III | | Kinetic | Gear Score: 100 | | Lapis Beam  Right-Click | Right-click to fire a blue beam. | **Magic Damage: 21** | Cooldown: 1.0s | Mana Cost: 10 | | Lapis Crystal  Left-Click | Throws a lapis crystal | that floats where it lands. | **Magic Damage: 14.7** | Cooldown: 30.0s | Mana Cost: 30 | …`
+
+### TT24 — AN IRON SWORD, BARE (UNCHANGED)
+
+unchanged: `Kinetic | Gear Score: 100 | | **Melee Damage: 23** | Attack Speed: 1.6 | | Common Melee Weapon`
+
+### TT25 — A SHORT BOW, BARE (UNCHANGED)
+
+unchanged: `Kinetic | Gear Score: 100 | Quiver: <n>/<c> | | **Ranged Damage: 16** | Attack Speed: 1.7 | | Short to draw. | Shorter to answer. | | Common Ranged Weapon`
+
+### TT26 — TRUTH, AS TT9
+
+the dump as TT20 (`Magic Damage: 32`); ONE `PLAYERHIT source=flint_staff/right_click … sent=32.000 crit=false` or `sent=64.000 crit=true` (EXECUTED, `TrueTooltipsGateArithmeticTest`: level 1 adds 0); PROBE `t` `customHP=1000.000/1000.000` before, below it after. The staff's first press of the run
+
+### TT27 — THE ONE ASK, LAST, AT 3600 TICKS
+
+the dump as TT20; then the ASK, 3600 ticks. Predicted: **yes**
+
+
+**No element-labelled damage line** (`Fire Damage`, `Kinetic Damage`, `Void Damage`) in any dump of TT20 to TT27, and
+the element line at the top unchanged. Each figure is also one of T13's cases, whose label check reads the weapon's
+class from its own table.
+
+### WHAT ONLY THE BOOT CAN SHOW
+
+That the deployed jar renders the class labels on a held item, and that the client shows them legibly (TT27).

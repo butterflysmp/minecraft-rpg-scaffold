@@ -60,8 +60,20 @@ public final class SelfTestAsk {
     }
 
     /** What the player sees: the question and the tail its mode names. */
+    /**
+     * The window an ask that has him DO something first (hover, click, right-click, look) must allow: 3600 ticks, three
+     * minutes. SEAT'S MECHANISM NUMBER, 2026-11-26, after TT19 timed out at 1200 on the boot of 88f1d4eb. Enforced on
+     * scenarios by {@code ScenarioLint.Rule.ASK_WINDOW_SHORT}.
+     */
+    public static final int DO_FIRST_TICKS = 3600;
+
+    /**
+     * The question as he reads it, ending with how long he has (the seat, 2026-11-26: "The prompt tells him how long he
+     * has"), in whole seconds at 20 ticks a second: 1200 ticks is "You have 60 seconds.".
+     */
     public static String prompt(Ask a) {
-        return "Selftest question " + a.number() + ": " + a.question() + a.prompt().tail;
+        return "Selftest question " + a.number() + ": " + a.question() + a.prompt().tail
+                + " You have " + (a.timeoutTicks() / 20) + " seconds.";
     }
 
     /** The log line for an answer, as typed. {@code ticks} is how long the question waited. */

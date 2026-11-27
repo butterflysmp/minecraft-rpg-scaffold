@@ -60,16 +60,16 @@ class TrueTooltipsGateArithmeticTest {
     void theTooltipFiguresTheRowsPredict() {
         TrueTooltipsConsistencyTest.Content c = TrueTooltipsConsistencyTest.load();
         // Every weapon line at the row's staged level and score, from the shipped renderer.
-        assertEquals("Fire Damage: 32", line(c, "flint_staff", "large_sparks", 3, 100, "Fire Damage"));
-        assertEquals("Fire Damage: 24", line(c, "flint_staff", "large_sparks", 1, 100, "Fire Damage"));
-        assertEquals("Fire Damage: 64", line(c, "flint_staff", "large_sparks", 3, 200, "Fire Damage"));
-        assertEquals("Kinetic Damage: 25", line(c, "crystal_shard_staff", "sharp_crystals", 3, 100, "Kinetic Damage"));
-        assertEquals("Kinetic Damage: 19", line(c, "crystal_shard_staff", "sharp_crystals", 1, 100, "Kinetic Damage"));
+        assertEquals("Magic Damage: 32", line(c, "flint_staff", "large_sparks", 3, 100, "Magic Damage"));
+        assertEquals("Magic Damage: 24", line(c, "flint_staff", "large_sparks", 1, 100, "Magic Damage"));
+        assertEquals("Magic Damage: 64", line(c, "flint_staff", "large_sparks", 3, 200, "Magic Damage"));
+        assertEquals("Magic Damage: 25", line(c, "crystal_shard_staff", "sharp_crystals", 3, 100, "Magic Damage"));
+        assertEquals("Magic Damage: 19", line(c, "crystal_shard_staff", "sharp_crystals", 1, 100, "Magic Damage"));
         assertEquals("Melee Damage: 26.45", line(c, "iron_sword", "sharpness", 3, 100, "Melee Damage"));
         assertEquals("Melee Damage: 24.15", line(c, "iron_sword", "sharpness", 1, 100, "Melee Damage"));
         assertEquals("Melee Damage: 52.9", line(c, "iron_sword", "sharpness", 3, 200, "Melee Damage"));
-        assertEquals("Kinetic Damage: 27 x 6", line(c, "cursed_emerald", "echo_beam", 3, 100, "Kinetic Damage"));
-        assertEquals("Kinetic Damage: 27 x 4", line(c, "cursed_emerald", "echo_beam", 1, 100, "Kinetic Damage"));
+        assertEquals("Magic Damage: 27 x 6", line(c, "cursed_emerald", "echo_beam", 3, 100, "Magic Damage"));
+        assertEquals("Magic Damage: 27 x 4", line(c, "cursed_emerald", "echo_beam", 1, 100, "Magic Damage"));
         assertEquals("Crit Chance: +25%", line(c, "broken_bottle", "sharpened_glass", 3, 100, "Crit Chance"));
         assertEquals("Crit Chance: +15%", line(c, "broken_bottle", "sharpened_glass", 1, 100, "Crit Chance"));
         // The armor figures, by the reconcile's own functions.

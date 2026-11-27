@@ -20,4 +20,16 @@ public final class WeaponClassLabel {
             case SUMMONER -> "Summoner";   // 2026-11-24: "Common Summoner Weapon"
         };
     }
+
+    /**
+     * THE ONE LABEL OF EVERY DAMAGE LINE ON A WEAPON TOOLTIP: {@code "Magic Damage: "}, by the weapon's class (Ben,
+     * 2026-11-26, TT19: "I want the damage type in the tool tip to match the class not the element. Ie Ranged Damage,
+     * Magic Damage, Melee Damage etc"). The basic attack's stat line, every ability's damage line, every behaviour-block
+     * row and every granted trigger's line ask this, and nothing else. It replaced the ELEMENT label on ability lines
+     * ("Fire Damage: "); the element line at the top of the tooltip is unchanged. No shipped summoner weapon renders a
+     * damage line (READ, 2026-11-26: the Bone Whistle's two blocks carry none), so "Summoner Damage: " is unreached.
+     */
+    public static String damageLabel(WeaponClass weaponClass) {
+        return of(weaponClass) + " Damage: ";
+    }
 }

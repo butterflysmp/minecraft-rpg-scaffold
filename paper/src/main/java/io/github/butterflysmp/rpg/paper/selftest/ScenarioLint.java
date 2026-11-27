@@ -64,7 +64,30 @@ final class ScenarioLint {
          * command that opens a level-gated screen ({@code NexusScreens.Screen#unlockLevel}) runs at a staged level at least
          * that screen's, set BEFORE it, in the row or carried. Only commands are read; a station clicked in the hub is not.
          */
-        LEVEL_GATED_MENU
+        LEVEL_GATED_MENU,
+        /**
+         * AN ASK THAT NEEDS HIM TO DO SOMETHING FIRST GETS THE LONGER WINDOW (the seat, 2026-11-26, after TT19 read
+         * {@code NOT STATED after 1200 ticks} on the boot of 88f1d4eb and Ben ran the whole gate again to answer it): an
+         * {@code ask:} whose question tells him to hover, click, right-click or look waits at least
+         * {@link SelfTestAsk#DO_FIRST_TICKS}. The window is the ask's own second number; this reads it.
+         */
+        ASK_WINDOW_SHORT
+    }
+
+    /**
+     * The instruction verbs that mean he must DO something before he can answer (the seat's list, 2026-11-26), IN THE
+     * IMPERATIVE POSITION: opening the question or a sentence of it. CC'S CALL: the bare word matched seven asks over the
+     * 51 gates and three were prose, not instructions ("Does the copy look like", "as wide as they looked", "the
+     * empty-quiver click"); the alternative, the bare word, flags those too.
+     */
+    private static final Pattern DO_FIRST = Pattern.compile("(?i)(^|[.!?:]\\s+)(hover|right-click|click|look)\\b");
+
+    /** Is this ask a do-something-first question whose window is under {@link SelfTestAsk#DO_FIRST_TICKS}? */
+    static boolean askWindowShort(String arg) {
+        return SelfTestAsk.parse(arg)
+                .filter(ask -> DO_FIRST.matcher(ask.question()).find())
+                .filter(ask -> ask.timeoutTicks() < SelfTestAsk.DO_FIRST_TICKS)
+                .isPresent();
     }
 
     /** The level a step stages: the text after {@code rpg playerxp set @s}, such as {@code 13 levels}. */
@@ -330,6 +353,10 @@ final class ScenarioLint {
             }
             if (v == Scenario.Verb.AFTER) {
                 out.add(new Finding(gate, r, Rule.SELF_STAGED, "chains on " + a + ": it reads what that row left"));
+            }
+            if (v == Scenario.Verb.ASK && askWindowShort(a)) {
+                out.add(new Finding(gate, r, Rule.ASK_WINDOW_SHORT, "an ask that has him act first waits "
+                        + SelfTestAsk.parse(a).orElseThrow().timeoutTicks() + " ticks, under " + SelfTestAsk.DO_FIRST_TICKS));
             }
             if (v == Scenario.Verb.CLEAR_INVENTORY) cleared = true;
             // X1 (the seat, 2026-11-25): a summon the row reads is one the row cast itself, after clearing any it carried.

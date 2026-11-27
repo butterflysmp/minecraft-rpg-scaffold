@@ -28,7 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class BoltorSoundFlintTextTest {
 
-    private static final String BENS_FLAVOR = "Prehistoric magicians learned you could create fire by flinging mana into flint."; // Ben, 2026-11-24: "slamming" became "flinging"
+    // Ben, 2026-11-26: "it should read "Early magicians learned you could create fire by striking flint with mana."" Was
+    // "Prehistoric magicians learned you could create fire by flinging mana into flint." (2026-11-24, "slamming" became
+    // "flinging"; 2026-11-23, the sentence with "slamming").
+    private static final String BENS_FLAVOR = "Early magicians learned you could create fire by striking flint with mana.";
     private static final String BENS_DESCRIPTION = "Hurls a fragment of burning mana";
 
     private static Logger quiet() {
@@ -74,8 +77,8 @@ class BoltorSoundFlintTextTest {
     void theFlintStaffsFlavorIsBensSentence() {
         WeaponDefinition staff = weapons().find("flint_staff").orElseThrow();
         assertEquals(BENS_FLAVOR, String.join(" ", staff.flavor()));
-        assertEquals(List.of("Prehistoric magicians learned you could", "create fire by flinging mana into flint."),
-                staff.flavor(), "the seat's break (SEAT PLACEHOLDER 2026-11-23)");
+        assertEquals(List.of("Early magicians learned you could", "create fire by striking flint with mana."),
+                staff.flavor(), "the seat's break (SEAT PLACEHOLDER 2026-11-26, as 2026-11-23's)");
     }
 
     /** The ability description IS Ben's line, with NO trailing full stop; the name and the numbers stay. */

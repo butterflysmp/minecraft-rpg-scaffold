@@ -280,3 +280,84 @@ eighth row); the line delta is their instrument.
 7. CC'S CALLS 1 to 3 (section 12): the rounding, the two unlabelled damage lines, the crystal's shot line.
 8. A broken armor piece's tooltip still shows its Defense, Health and Mana, which the engine does not grant while broken
    (today's behaviour, kept by T11).
+
+## 14. THE CLASS LABELS — BEN'S RULING OF 2026-11-26 (the follow-up after #312 to #315 merged as `cd13fa87`)
+
+**Ben, verbatim, his answer to TT19 on the boot of `88f1d4eb`:** *"yes but, I want the damage type in the tool tip to
+match the class not the element. Ie Ranged Damage, Magic Damage, Melee Damage etc"*. **The seat's reading** (told to
+Ben): EVERY damage line on a weapon tooltip is labelled by the weapon's CLASS through the one function that already
+labelled the basic attack's line, replacing the element on ability lines, behaviour-block rows and granted lines alike;
+the element line at the top is unchanged; numbers, colours, order, the `x N` and the crit line unchanged.
+
+- **OVERTURNED 2026-11-26:** the element labelling recorded in `WeaponLore`'s class javadoc (*"the class label ("Melee
+  Damage") goes only on the stat-reading line a "+N Melee Damage" modifier could actually reach, and ability payloads
+  are labelled by their element ("Fire Damage")."*). The javadoc now records the overturn and keeps the old rule as the
+  record.
+- **The one labelling function:** `WeaponClassLabel.damageLabel(WeaponClass)`: `"Magic Damage: "`. `WeaponLore` asks it
+  at all three sites (the stat line, an ability's line, a behaviour row; a granted trigger's line is an ability line).
+  The element-name helper it replaced (`elementName`) is deleted. `EnchantEffectLine` and the enchant lines are untouched.
+- **A SUMMONER weapon (READ):** the Bone Whistle's two blocks ("Call the Wolf", "Sic") carry no damage line, and no
+  damage enchant is in a summoner pool (T13's walk), so no shipped line takes `"Summoner Damage: "`. Not a stop.
+- **An ability whose damage element differs from its weapon's (READ, every nested `element:` of the 25 weapon files, 27
+  lines, against each file's top `element:`; and the four behaviour enchants' elements):** **none ship.** So the class
+  label loses the player nothing today: the element line at the top names every hit's element. OPEN FOR BEN only if one
+  is ever authored: such a line would show its class and the top line the weapon's element, and the hit's own element
+  would be on no line.
+- **T13** checks every damage line's label against the weapon's class **from the test's own table**. **A first draft read
+  the label function itself, and the mutation MUTLABEL (every line "Melee") left the 1260-case walk GREEN**, because the
+  expectation moved with the function; only the planted control and the examples went red. Redone from the class: the
+  same mutation reds the walk (542 lines), the control and the examples. The planted control adds an element-labelled
+  line, which must be seen.
+- **The golden, predicted before regenerating:** every element-labelled damage line changes and nothing else does:
+  `Fire Damage:` 11 + `Kinetic Damage:` 15 + `Void Damage:` 8 = **34 modified, +34 / -34**, renderings still **140**.
+  **Read: `34 34`**, `=== 140 renderings ===`, and 0 element-labelled damage lines left.
+- **Tests moved** because they pinned the overturned rule: `WeaponLoreTest` (the ability-label row rewritten to the new
+  rule under a new name; the no-stat-block row now tells the blocks apart by position, since both would wear the class;
+  the every-shipped-weapon row asserts every damage line wears its class; five literal expectations relabelled),
+  `BreacherContentTest`, `CrystalShardStaffContentTest`, `KnellBeamContentTest`, `LivingLanternContentTest`, the
+  examples and the gate arithmetic. **One scripted relabel overreached** (it also rewrote the new row's
+  `assertFalse("Fire Damage: 12")` to "Melee"): caught by the line delta (7 against 6 meant), restored by hand.
+
+### THE ASK WINDOW (the seat's ruling, 2026-11-26)
+
+- **`ScenarioLint.Rule.ASK_WINDOW_SHORT`:** an `ask:` whose question has him hover, click, right-click or look waits at
+  least **`SelfTestAsk.DO_FIRST_TICKS` = 3600** (SEAT'S MECHANISM NUMBER). The window is the ask's own second number.
+- **The prompt tells him how long he has:** `… Answer in your own words in chat. You have 180 seconds.` (ticks / 20).
+- **CC'S CALL: the instruction verb is read in the IMPERATIVE POSITION** (opening the question or a sentence of it). The
+  bare word flagged seven asks over the 51 gates and three were prose: `fight-revive#RVB1` twice ("Does the copy look
+  like", "what… looks wrong"), `living-lantern#LL9` ("as wide as they looked"), `unique-enchant-slot#BX2` ("the
+  empty-quiver click"). Those three shapes are planted as controls that must NOT be flagged. The alternative, the bare
+  word, flags them.
+- **What it flags over the 51 gates (58 asks), pinned exactly in `AskWindowLintTest`:** `armor-sets#AS16`,
+  `broken-bottle#BB8`, `true-tooltips#TT19`, each 1200 ticks. All three are the record of a boot already run; none is
+  edited. TT27, the new ask, waits 3600 and is not flagged.
+
+### MUTATIONS (each marker 1, lines changed 1 against a pristine copy, red, restored cmp-identical, markers left 0)
+
+| mutation | the edit | reddened |
+|---|---|---|
+| MUTLABEL | `damageLabel` labels every line `Melee` | T13's walk (542 lines), its control, the examples (after T13 was redone from the class; see above) |
+| MUTASK | the window compared against 1200, not 3600 | `AskWindowLintTest`: the planted control and the pin |
+| MUTPOS | the bare verb, not the imperative position | `AskWindowLintTest`: the false-presence control and the pin (it flags RVB1 x2, LL9, BX2 again) |
+
+**MUTPOS's first attempt MUTATED NOTHING and read green:** a `perl` substitution over a line full of backslashes left the
+pattern as it was and added only the marker (`marker 1`, original NOT gone). Discarded; the line was replaced whole from
+a file written with the file tool, and the second attempt is the reading above.
+
+### NEW GATE ROWS (`GATE-true-tooltips.md`, TT20 to TT27, NOT RUN)
+
+The class label on a Flint Staff, a Cursed Emerald bare and with Focused Beam, a Breacher with Shatter Caps, a Lapis
+Staff's granted crystal shot, an iron sword and a short bow (both unchanged); one truth row as TT9; one ASK at 3600.
+
+### CARRIED, OPEN FOR BEN (build nothing)
+
+1. Two-decimal damage (`26.45`).
+2. **The same-label pair on Shatter Caps and Airburst Flames**: now `Ranged Damage: 85` / `Ranged Damage: 40 x 4` and
+   `Magic Damage: 45` / `Magic Damage: 35 x 3`. With the element labels both lines already shared one label
+   (`Kinetic`, `Fire`), so the class label makes it no worse, and the prose above says "a stone, then four chunks".
+   **PROPOSED, not built:** a short authored suffix per behaviour row, from the enchant's YAML, e.g. `Ranged Damage: 85
+   (stone)` / `Ranged Damage: 40 x 4 (chunks)` and `Magic Damage: 45 (flame)` / `Magic Damage: 35 x 3 (bursts)`.
+3. A broken armor piece's tooltip still shows its stats.
+4. Range, wind-up and reload: "Leave them alone for now".
+5. The Knell Beam's "1.2s later" under Early Toll.
+6. Should an ability's element ever differ from its weapon's, the line will not say which element the hit is (above).
