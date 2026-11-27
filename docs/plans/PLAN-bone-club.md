@@ -153,6 +153,10 @@ step 5 at III):
   `getAttackCooldown()` clamps at 1.0 (`ChargeRule`, PLAN-mining F1). **Full is `charge >= AttackCharge.FULL_CHARGE`,
   i.e. exactly 1.0** (1.0f widens to exactly 1.0). `landVanillaMelee` now takes the RAW charge and computes the same
   scale inside, so one reading feeds both the damage term and the streak.
+  > **DATED CORRECTION, 2026-11-26 (the seat's R3), A POINTER: `Player#attack` DOES reset the attack charge** (READ, javap, the
+  > pinned server jar: `Player.attack` calls `onAttack`, and Paper's `Player.onAttack` calls `resetOnlyAttackStrengthTicker`
+  > unless `PlayerAttackEntityCooldownResetEvent` is cancelled). The gate's READ that it never does was false, and the
+  > charge stashed here is unaffected. The account is `GATE-bone-club.md`, the dated correction under THE CHARGE.
 - **The gap** (M5b): from the last COUNTED hit's server tick (`Bukkit.getCurrentTick()`) to this hit's; `> 100` resets,
   `100` continues. **A gap reset restarts the streak AT this hit** (rolled at 0, counted as 1): CC'S CALL, as the old
   game did (it zeroed the counter, then counted the hit). The alternative counts nothing on that hit.

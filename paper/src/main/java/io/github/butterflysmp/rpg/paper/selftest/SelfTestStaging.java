@@ -259,6 +259,28 @@ final class SelfTestStaging {
         return !player && (projectile || cloud || marker);
     }
 
+    /**
+     * R4 (the seat, 2026-11-26): a DROPPED item, which a gate's setup clears: an Item entity that is not one of ours. A
+     * marker body ({@code marker_entity}) is the linger pass's; a fused chunk's body ({@code fused}) is the fused store's.
+     */
+    static boolean droppedItem(boolean item, boolean marker, boolean fused) {
+        return item && !marker && !fused;
+    }
+
+    /** R4: item types counted, sorted by name: {@code [bone x1, rotten_flesh x3]}, the same whatever the scan order. */
+    static String itemTypes(List<String> types) {
+        java.util.TreeMap<String, Integer> counts = new java.util.TreeMap<>();
+        for (String t : types) counts.merge(t, 1, Integer::sum);
+        List<String> out = new java.util.ArrayList<>();
+        counts.forEach((t, n) -> out.add(t + " x" + n));
+        return "[" + String.join(", ", out) + "]";
+    }
+
+    /** R4: the setup's line after its CLEAN, naming what it cleared. A gate predicts {@code ITEMS cleared=0 radius=48 []}. */
+    static String itemsClearedLine(int radius, List<String> types) {
+        return "ITEMS cleared=" + types.size() + " radius=" + radius + " " + itemTypes(types);
+    }
+
     /** PROBE_INVISIBILITY's line (the Blink Tome's gate). {@code ticks} is the remaining duration, -1 infinite, 0 none. */
     static String invisibilityLine(boolean present, int ticks, int amplifier, boolean particles, boolean blinked) {
         return "INVIS present=" + present + " ticks=" + ticks + " amp=" + amplifier + " particles=" + particles

@@ -144,6 +144,9 @@ final class SelfTestRun {
                     + (worn == null ? "" : " " + worn)
                     + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ())
                     + " drum=" + drum + " blink=" + (blink ? "ended" : "none"));
+            // R4 (the seat, 2026-11-26): A GATE'S SETUP CLEARS DROPPED ITEMS AND NAMES THEM. The boot of 1f447197 read four
+            // strays on the pad in BF3 and BF8, left by the gate before it. Setups only: a row's own drops are its reading.
+            if (s.row().equals(Scenario.SETUP)) log(SelfTestStaging.itemsClearedLine(SelfTestStaging.LINGER_RADIUS, clearDroppedItems(start)));
             log(SelfTestStaging.lingerLine(SelfTestStaging.LINGER_RADIUS, endWork(start), endLingering(start)));
             // A ROW STARTS CLEAN OR SAYS SO (GATE-dragon-fix.md, C3). The removals above run on each mob's own
             // scheduler, a tick later, so the count waits for them; then every live body still in the row's radius
@@ -177,6 +180,22 @@ final class SelfTestRun {
                     service.scheduler().onEntity(e, e::remove);
                 });
         return ended;
+    }
+
+    /** R4: remove every dropped item round the start (never one of ours); each one's type, for the ITEMS line. */
+    private List<String> clearDroppedItems(Location start) {
+        int r = SelfTestStaging.LINGER_RADIUS;
+        List<String> types = new java.util.ArrayList<>();
+        start.getWorld().getNearbyEntities(start, r, r, r).stream()
+                .filter(e -> e.getLocation().distanceSquared(start) <= (double) r * r)
+                .filter(e -> SelfTestStaging.droppedItem(e instanceof org.bukkit.entity.Item,
+                        e.getPersistentDataContainer().has(service.keys().markerEntity),
+                        e.getPersistentDataContainer().has(service.keys().fused)))
+                .forEach(e -> {
+                    types.add(((org.bukkit.entity.Item) e).getItemStack().getType().getKey().getKey());
+                    service.scheduler().onEntity(e, e::remove);
+                });
+        return types;
     }
 
     /** Every live body in the row's radius that is not the player or scenery: "type uuid", nearest first. */

@@ -51,10 +51,18 @@ public record Scenario(String gate, String row, List<Step> steps) {
         SWING,
         /**
          * {@code HumanEntity#resetCooldown} alone (GATE-bone-club, 2026-11-26): the attack-strength reset a real click's arm
-         * swing does on the server ({@code ServerPlayer.swing} → {@code resetAttackStrengthTicker}), which {@code ATTACK}'s
-         * {@code Player#attack} does NOT do (READ, the pinned jar: {@code Player.attack} never calls it). So a row that
-         * means a real click's charge follows each {@code attack} with this, and its next hit's charge is the time since.
-         * Logs {@code DRIVE reset_charge cooldown=<before>-><after>}.
+         * swing does on the server ({@code ServerPlayer.swing} → {@code resetAttackStrengthTicker}). Logs
+         * {@code DRIVE reset_charge cooldown=<before>-><after>}.
+         *
+         * <p><b>A DOCUMENTED NO-OP AFTER AN {@code attack} (CORRECTED 2026-11-26, the seat's R3).</b> This said that
+         * {@code ATTACK}'s {@code Player#attack} does not reset the ticker. FALSE: the boot of {@code 1f447197} read every
+         * {@code reset_charge} line as {@code 0.0200->0.0200}, and READ (javap, the pinned 26.1.2 build 74 server jar):
+         * {@code Player.attack} offset 124 calls {@code onAttack(target)}, and Paper's {@code Player.onAttack} fires
+         * {@code PlayerAttackEntityCooldownResetEvent} and, unless it is cancelled, calls
+         * {@code resetOnlyAttackStrengthTicker()} ({@code attackStrengthTicker = 0}). The first READ searched
+         * {@code attack}'s own body for {@code resetAttackStrengthTicker} and missed a reset one call down under another
+         * (Paper's) name. KEPT (CC'S CALL, accepted): the rows that use it read its {@code before->after} as the witness
+         * that the hit itself reset the charge, and the next hit's {@code charge=} is still the time since that hit.
          */
         RESET_CHARGE,
         /**
