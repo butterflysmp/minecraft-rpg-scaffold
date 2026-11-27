@@ -28,12 +28,15 @@ public final class SummonTrace {
                 s.summonId(), s.score(), s.health(), s.damage());
     }
 
-    /** A change of target: the new one (or none), the TIER that chose it (F3), and why the old one was dropped. */
-    public static String target(SummonStore.Summon s, Vec3 at, java.util.Optional<UUID> target, SummonGuard.Why why,
-                                java.util.Optional<SummonGuard.Dropped> dropped) {
-        return "SUMMON target " + where(s, at) + " target=" + target.map(UUID::toString).orElse("none")
-                + " why=" + why.name().toLowerCase(Locale.ROOT)
-                + dropped.map(d -> " dropped=" + d.name().toLowerCase(Locale.ROOT)).orElse("");
+    /**
+     * A change of target: the target now held (or none), the TIER it is held at, why one was dropped, and G7's reason
+     * ({@code acquired:<tier>}, {@code switched:<from>-><to>}, {@code kept}, {@code dropped:<reason>}; the seat, 2026-11-26).
+     */
+    public static String target(SummonStore.Summon s, Vec3 at, SummonGuard.Decision d) {
+        return "SUMMON target " + where(s, at) + " target=" + d.target().map(UUID::toString).orElse("none")
+                + " why=" + d.why().name().toLowerCase(Locale.ROOT)
+                + d.dropped().map(x -> " dropped=" + x.name().toLowerCase(Locale.ROOT)).orElse("")
+                + " reason=" + d.reason();
     }
 
     public static String hit(SummonStore.Summon s, Vec3 at, UUID victim, double authored, String element, long tick) {

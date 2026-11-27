@@ -186,7 +186,8 @@ class BlinkTomesWiringTest {
         assertTrue(seen >= 2, "control: the scan sees the seam's call and the forget's (" + seen + ")");
         assertEquals(List.of(), outside, "a target set outside MobTargets would bypass the blink's refusal");
         assertTrue(source("adapter/BukkitCombatant.java").contains("MobTargets.set(mob, attacker, ctx.targetGuard());"));
-        assertTrue(source("selftest/SelfTestDrivers.java").contains("MobTargets.set((org.bukkit.entity.Mob) best, p,"));
+        assertTrue(source("selftest/SelfTestDrivers.java").contains("MobTargets.set((org.bukkit.entity.Mob) best, clear ? null : p,"),
+                "the driver's set, and its clear form (G-S2, 2026-11-26), both through the seam");
     }
 
     @Test

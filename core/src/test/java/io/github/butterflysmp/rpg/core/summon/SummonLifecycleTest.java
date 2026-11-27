@@ -64,31 +64,33 @@ class SummonLifecycleTest {
     void theGuardsCurrentTargetIsPublishedAndGoesWithTheBody() {
         SummonStore store = new SummonStore();
         UUID mob = new UUID(9, 9);
+        SummonGuard.Held held = new SummonGuard.Held(mob, SummonGuard.Why.TARGETING, false);   // G7: published with its tier
         store.place(SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 100, "nature"));
         assertEquals(Optional.empty(), store.current(B1), "nothing chosen yet");
-        store.setCurrent(B1, Optional.of(mob));
+        store.setCurrent(B1, Optional.of(held));
         assertEquals(Optional.of(mob), store.current(B1));
+        assertEquals(Optional.of(SummonGuard.Why.TARGETING), store.currentTier(B1), "and the tier it is held at");
         store.setCurrent(B1, Optional.empty());
         assertEquals(Optional.empty(), store.current(B1), "a drop clears it");
-        store.setCurrent(B2, Optional.of(mob));
+        store.setCurrent(B2, Optional.of(held));
         assertEquals(Optional.empty(), store.current(B2), "only an owned body publishes one");
 
-        store.setCurrent(B1, Optional.of(mob));
+        store.setCurrent(B1, Optional.of(held));
         store.direct(B1, mob);
         UUID b4 = new UUID(1, 4);
         store.place(SummonStore.Summon.cast(HIM, "whistle", b4, WOLF, 100, "nature"));   // the replace
         assertEquals(Optional.empty(), store.current(B1), "the replaced body's current goes");
         assertEquals(Optional.empty(), store.directed(B1), "and its directed order too");
 
-        store.setCurrent(b4, Optional.of(mob));
+        store.setCurrent(b4, Optional.of(held));
         store.remove(b4);
         assertEquals(Optional.empty(), store.current(b4), "remove");
         store.place(SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 100, "nature"));
-        store.setCurrent(B1, Optional.of(mob));
+        store.setCurrent(B1, Optional.of(held));
         store.removeAllOf(HIM);
         assertEquals(Optional.empty(), store.current(B1), "removeAllOf");
         store.place(SummonStore.Summon.cast(HIM, "whistle", B1, WOLF, 100, "nature"));
-        store.setCurrent(B1, Optional.of(mob));
+        store.setCurrent(B1, Optional.of(held));
         store.removeAll();
         assertEquals(Optional.empty(), store.current(B1), "removeAll");
     }
@@ -135,10 +137,22 @@ class SummonLifecycleTest {
         String where = "owner=" + HIM + " weapon=whistle body=" + B1 + " at=1.50 64.00 -2.25";
         assertEquals("SUMMON spawn " + where + " summon=test_wolf score=150 health=150.000 damage=30.000",
                 SummonTrace.spawn(s, at));
-        assertEquals("SUMMON target " + where + " target=" + B2 + " why=damaged",
-                SummonTrace.target(s, at, java.util.Optional.of(B2), SummonGuard.Why.DAMAGED, java.util.Optional.empty()));
-        assertEquals("SUMMON target " + where + " target=none why=none dropped=limit", SummonTrace.target(s, at,
-                java.util.Optional.empty(), SummonGuard.Why.NONE, java.util.Optional.of(SummonGuard.Dropped.LIMIT)));
+        // G7 (the seat, 2026-11-26): the line names the target, the tier it is HELD at, a drop, and the reason it changed.
+        assertEquals("SUMMON target " + where + " target=" + B2 + " why=damaged reason=acquired:damaged",
+                SummonTrace.target(s, at, new SummonGuard.Decision(java.util.Optional.of(new SummonGuard.Held(B2,
+                        SummonGuard.Why.DAMAGED, false)), SummonGuard.Change.ACQUIRED, java.util.Optional.empty(),
+                        java.util.Optional.empty(), false, false)));
+        assertEquals("SUMMON target " + where + " target=none why=none dropped=range reason=dropped:range",
+                SummonTrace.target(s, at, new SummonGuard.Decision(java.util.Optional.empty(), SummonGuard.Change.DROPPED,
+                        java.util.Optional.empty(), java.util.Optional.of(SummonGuard.Dropped.RANGE), false, false)));
+        assertEquals("SUMMON target " + where + " target=" + B2 + " why=targeting reason=kept",
+                SummonTrace.target(s, at, new SummonGuard.Decision(java.util.Optional.of(new SummonGuard.Held(B2,
+                        SummonGuard.Why.TARGETING, true)), SummonGuard.Change.KEPT, java.util.Optional.empty(),
+                        java.util.Optional.empty(), false, false)));
+        assertEquals("SUMMON target " + where + " target=" + B2 + " why=directed reason=switched:targeting->directed",
+                SummonTrace.target(s, at, new SummonGuard.Decision(java.util.Optional.of(new SummonGuard.Held(B2,
+                        SummonGuard.Why.DIRECTED, false)), SummonGuard.Change.SWITCHED,
+                        java.util.Optional.of(SummonGuard.Why.TARGETING), java.util.Optional.empty(), false, false)));
         assertEquals("SUMMON hit " + where + " victim=" + B3
                         + " authored=20.000 score=150 sent=30.000 crit=none class=0 level=0 element=nature tick=4321",
                 SummonTrace.hit(s, at, B3, WOLF.damage(), "nature", 4321L));   // X2: the tick the cadence is read on

@@ -36,8 +36,9 @@ class SelfTestBlinkStagingTest {
     @Test
     void mobTargetGoesThroughTheSeam_andPrintsItsTick() throws IOException {
         String d = source("SelfTestDrivers.java");
-        assertTrue(d.contains("run.log(\"DRIVE mob_target \" + best.getUniqueId() + \" tag=\" + tag + (set ? \"\" : \" refused\")"
-                + " + \" tick=\" + Bukkit.getCurrentTick());"));
+        // G-S2 (2026-11-26): the line also says clear for the clear form; refused and tick= are as before.
+        assertTrue(d.contains("run.log(\"DRIVE mob_target \" + best.getUniqueId() + \" tag=\" + tag + (clear ? \" clear\" : set ? \"\" : \" refused\")"));
+        assertTrue(d.contains("+ \" tick=\" + Bukkit.getCurrentTick());"));
     }
 
     /** K9: clear_state, the row-start CLEAN and the run's end each end the blink and say whether one was live. */

@@ -21,7 +21,7 @@ import java.util.logging.Logger;
  *   damage: 20                    # authored; x gear score / 100 at the cast
  *   guard_radius: 8               # BEN
  *   trigger_radius: 30            # BEN
- *   chase_limit: 32               # SEAT PLACEHOLDER, from the caster
+ *   give_up_range: 72             # BEN, 2026-11-26: from the owner to the target
  *   teleport_back: 48             # SEAT PLACEHOLDER
  *   attack_cadence_ticks: 20      # SEAT PLACEHOLDER
  *   damaged_window_ticks: 100     # SEAT PLACEHOLDER
@@ -34,7 +34,7 @@ import java.util.logging.Logger;
 public final class SummonLoader {
 
     /** The D4 numbers a file must declare. */
-    static final List<String> REQUIRED = List.of("health", "damage", "guard_radius", "trigger_radius", "chase_limit",
+    static final List<String> REQUIRED = List.of("health", "damage", "guard_radius", "trigger_radius", "give_up_range",
             "teleport_back", "attack_cadence_ticks", "damaged_window_ticks");
 
     private final Logger log;
@@ -83,7 +83,7 @@ public final class SummonLoader {
         }
         return new SummonDefinition(id, entity, s.getString("name", id), s.getDouble("health"),
                 s.getDouble("damage"), s.getDouble("guard_radius"), s.getDouble("trigger_radius"),
-                s.getDouble("chase_limit"), s.getDouble("teleport_back"), s.getInt("attack_cadence_ticks"),
+                s.getDouble("give_up_range"), s.getDouble("teleport_back"), s.getInt("attack_cadence_ticks"),
                 s.getInt("damaged_window_ticks"));
     }
 }
