@@ -115,6 +115,8 @@ public final class BehaviourHits {
                 case EnchantBehaviour.HitChain ignored -> { }
                 // A scorch boost STAMPS the hit before it lands (scorchStamp, asked by the damage arm), never after it.
                 case EnchantBehaviour.ScorchBoost ignored -> { }
+                // Cluster Bombs acts on the PRESS (CastExecutor.launchCluster), never on a hit; its blasts are hits.
+                case EnchantBehaviour.ClusterBombs ignored -> { }
             }
         }
     }

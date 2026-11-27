@@ -76,6 +76,44 @@ public final class BehaviourCasts {
     }
 
     /**
+     * Cluster Bombs (F9, 2026-11-26): the active behaviour that replaces a FUSED projectile's throw with one big chunk, on
+     * its weapon's cast ({@code <weapon>/...}, as Shatter's: a volley never fires a fused projectile, FusedPayload refuses
+     * one, so here the check is a belt).
+     */
+    public static Optional<ActiveBehaviour> clusterBombs(String abilityId, CastSpec.Projectile spec,
+                                                         List<ActiveBehaviour> behaviours) {
+        if (!spec.fused() || behaviours == null) return Optional.empty();
+        for (ActiveBehaviour active : behaviours) {
+            if (active.behaviour() instanceof EnchantBehaviour.ClusterBombs bombs
+                    && abilityId.startsWith(bombs.weaponId() + "/")) {
+                return Optional.of(active);
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The BIG chunk's detonation (F9): the weapon's own on_hit with every burst's radius replaced by {@code radius} and
+     * every damage inside it replaced by {@code amount} in {@code element}; every other effect (the blast visual) kept as
+     * authored. What the executor sets off and what the tooltip's first Cluster Bombs row reads.
+     */
+    public static List<EffectSpec> clusterBig(List<EffectSpec> onHit, double amount, String element, double radius) {
+        List<EffectSpec> out = new ArrayList<>(onHit.size());
+        for (EffectSpec effect : onHit) {
+            if (effect instanceof EffectSpec.Burst b) {
+                List<EffectSpec.Targeted> inner = new ArrayList<>(b.effects().size());
+                for (EffectSpec.Targeted t : b.effects()) {
+                    inner.add(t instanceof EffectSpec.Damage ? new EffectSpec.Damage(amount, element) : t);
+                }
+                out.add(new EffectSpec.Burst(radius, inner));
+            } else {
+                out.add(effect);
+            }
+        }
+        return out;
+    }
+
+    /**
      * The Lapis Crystal's shot BEFORE its hit terms: the beam's FIRST literal Damage amount x the level's percent / 100, or
      * empty when the beam carries no literal damage (then no shot fires). The Damage arm then prices it as any amount.
      */

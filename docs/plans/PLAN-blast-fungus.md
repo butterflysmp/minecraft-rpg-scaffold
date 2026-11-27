@@ -241,6 +241,67 @@ gave 13 and 8 at the base; that read 18 grep LINES (`weapon:` and `guaranteed:` 
 counts are 11 and 7 at `fcfbefbb`. T13 1272 → 1278 (Fast and Fungal 3 levels x 2 scores; none unmoved, 564). Golden
 predicted +14 / -1 (`-- blast_fungus + fast_and_fungal 3`, 12 lines, the tail), **read 14 1**, `=== 143 renderings ===`.
 
+## 12. F9 AND F10 — CLUSTER BOMBS (`feat/cluster-bombs`)
+
+- **A new sealed behaviour type**, `EnchantBehaviour.ClusterBombs` (`effect: cluster_bombs`, block `cluster_bombs:`):
+  `damage_by_level [55, 80, 105]` (BEN), `element nature`, `radius 5` (BEN), `item red_mushroom_block`, `split_count 3`
+  (BEN), `split_distance 2.5`, `split_fuse_ticks 20`, `split_lift 0.25`. `weapon: blast_fungus`, NOT guaranteed (BEN). The
+  loader refuses it, by name, on a weapon whose right click is not a fused projectile (`clusterWeapon`, with a control).
+- **The press (`CastExecutor.launchCluster`):** chosen by `BehaviourCasts.clusterBombs` (the tooltip asks the same), at
+  the top of `launch`, below the commit, so the press pays once (F6). ONE big chunk straight down the aim on the WEAPON's
+  own flight (speed, gravity, fuse 40, trail, read at run time) and the same fuse rules (F1, F2); its body the enchant's
+  item. **It goes off** through `detonateFused` with `BehaviourCasts.clusterBig`: the weapon's own on_hit, each burst's
+  radius 5 and its damage the level's figure, priced by the same Damage arm (the gear score scales it, as Shatter Caps'
+  stone and Airburst's bursts).
+- **The split (`splitCluster`), at the same moment:** `core.combat.ClusterSplit`. The heading is the press's aim, made
+  horizontal (straight up or down: forward from his right). The three directions are 0, 120 and 240 degrees about world
+  up from it, the first ON the heading. Each chunk is thrown `direction x s + (0, 0.25, 0)` under the weapon's gravity,
+  `s` found by stepping the flight's own arc so that on level ground it comes back to its start height 2.5 out (EXECUTED:
+  `ClusterBombsTest` reads each rest point within 1e-9 of the predicted triangle point). Each has its own fuse of 20 from
+  the split and goes off as the weapon's own chunk (its on_hit: 55, radius 3).
+  - **CC'S CALL, the price of a split chunk:** the press's frozen caster (the item's score and its damage enchants AT THE
+    PRESS), as every hit a press makes is priced. Ben's "Yes it rises" holds: at score 200 the big and the small both
+    double (`theScoreScalesTheBigAndTheSmall`: 160 and 110 at level II). The alternative, re-reading the item at the
+    split, reads the player's inventory off his thread.
+  - **CC'S CALL, the throw:** an arc that lands 2.5 out, so a player sees three chunks thrown; the alternative places them
+    at rest at once. On uneven ground each rests where its arc meets a block.
+  - **A split born inside a block (READ):** `VoxelShape.clip` returns a hit AT the trace's first sample
+    (`from + 0.001 x step`) when that point is inside the shape. So its first step meets the block, the fuse table says
+    REST, and it rests at the centre and goes off on its fuse (`aSplitBornInsideABlockRestsAtTheCentre`). No new code.
+  - **CC'S CALL, no scale:** an item body has none; the big chunk is told apart by its item (`red_mushroom_block`).
+- **F10, the tooltip:** `BehaviourBlocks`' one exhaustive switch gains the case: a `Magic Damage: <big>` row (no count)
+  and a `Magic Damage: <normal> x <split count>` row, both from the same resolvers; the prose is the enchant's authored
+  `ability_description:`, which states "three" as Airburst's states its own count (no enchant changes it, so no token).
+  T13's engine side gains the branch (`launchCluster`, then `splitCluster`'s chunks).
+  **The tooltip at Cluster Bombs II (golden's form at III):**
+
+  ```
+  Nature
+
+  Fungal Barrage  Right-Click
+  Lobs one great spore chunk that
+  bursts, then splits into three more.
+  Magic Damage: 80
+  Magic Damage: 55 x 3
+  Cooldown: 7.0s | Mana Cost: 30
+  ...
+  ```
+- **ONLY ONE IS ACTIVE (the trade-off):** Fast and Fungal and Cluster Bombs are both slot-0 candidates; a slot has one
+  active candidate (`EnchantSlot.activeIndex`), so with Cluster Bombs active the cooldown is the bare 7.0 s, as on every
+  weapon with two (the Living Lantern's Wildfire and Airburst Flames; the Lapis Staff's two). **The pools (READ,
+  `CandidateCascade.count`):** a pool of one left after the guaranteed candidate always yields 1, so EVERY fresh Blast
+  Fungus offers slot 0 exactly `[fast_and_fungal, cluster_bombs]`, in that order (500 of 500 seeded rolls,
+  `ClusterBombsContentTest`).
+- **FOUND BY A MUTATION, FIXED IN THE TEST:** MUTCBROWS (the split row's count read from the weapon's spread) stayed GREEN
+  on the first run: shipped, the split count and the spread count are both 3, so no row could tell them apart (the
+  verification rule: two equal quantities cannot detect a transposition). The row test now stages a split of 4 against a
+  spread of 3, and the mutation reddens it. **T13 is blind on this axis for the same reason**, at shipped values; the
+  core row is its guard.
+
+**Recounts:** enchants 25 → 26; weapon-specific 12 → 13; guaranteed 8 (unchanged). T13 1278 → 1284 (3 levels x 2,
+none unmoved, 564). Golden predicted +15 / -1 (`-- blast_fungus + cluster_bombs 3`, 13 lines, the tail), **read 15 1**,
+`=== 144 renderings ===`.
+
 ## OPEN FOR BEN (SEAT PLACEHOLDER 2026-11-26 unless dated otherwise)
 
 1. The fan: one down the aim, two at 25 degrees (the old game's), in the view plane.
@@ -257,3 +318,6 @@ predicted +14 / -1 (`-- blast_fungus + fast_and_fungal 3`, 12 lines, the tail), 
    and bursts only; the spread, not the yaw fan; no drag; the zombie horse's temptation.
 10. The world loot (section 9).
  11. Fast and Fungal's icon (`red_mushroom`) and its effect-line wording (`-1s cooldown`).
+ 12. Cluster Bombs: the 2.5 blocks, the 20-tick split fuse, the triangle's orientation (one point along the heading), the
+     split throw's lift (0.25), the big chunk's body (`red_mushroom_block`, no scale), its prose and effect-line wording,
+     its icon, and its sounds (it uses the weapon's own `fungus_blast`).

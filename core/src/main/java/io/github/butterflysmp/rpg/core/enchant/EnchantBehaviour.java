@@ -12,7 +12,7 @@ import java.util.List;
  */
 public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst,
         EnchantBehaviour.Shatter, EnchantBehaviour.FocusedBeam, EnchantBehaviour.GrantTrigger, EnchantBehaviour.CastTune,
-        EnchantBehaviour.HitChain, EnchantBehaviour.ScorchBoost {
+        EnchantBehaviour.HitChain, EnchantBehaviour.ScorchBoost, EnchantBehaviour.ClusterBombs {
 
     /**
      * {@code effect: scorch_boost} (Mana Burn; the seat's ruling of 2026-11-24 on PR F). Ben: "Increases Scorch and Ignite
@@ -317,6 +317,52 @@ public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, Enc
             if (weaponId == null || weaponId.isBlank()) throw new IllegalArgumentException("grant_trigger needs its weapon");
             if (input == null || input.isBlank()) throw new IllegalArgumentException("grant_trigger input is required");
             if (ability == null) throw new IllegalArgumentException("grant_trigger ability is required");
+        }
+    }
+
+    /**
+     * CLUSTER BOMBS (the seat's F9 and F10, 2026-11-26, the Blast Fungus; Ben: "throws 1 big blast fungus that splits into 3
+     * dealing 55/80/105" / "the 3 that split from it deal the normal 55 damage" / "Split out in a triangle shape" / "make
+     * the blast size of the big bomb 5 blocks"). While ACTIVE, the weapon's fused spread is replaced, below the commit, by
+     * ONE big chunk straight down the aim, on the WEAPON's own flight (its speed, gravity, fuse and trail, read at run
+     * time) and the same fuse rules (F1, F2). When it goes off it lands {@code damageByLevel} in {@code element} in a burst
+     * of {@code radius} (the weapon's own on_hit with its burst rewritten, {@code BehaviourCasts.clusterBig}), and at the
+     * same moment {@code splitCount} ORDINARY chunks leave that point on a horizontal triangle, one point along the throw's
+     * heading, each thrown with {@code splitLift} up and the outward speed that brings it to rest {@code splitDistance}
+     * out on level ground ({@code core.combat.ClusterSplit}), each with its own fuse of {@code splitFuseTicks} from the
+     * split, each going off as the weapon's own chunk (its on_hit, its 55, its radius 3).
+     *
+     * <p>{@code item} is the big chunk's body (null: the weapon's own item).
+     */
+    record ClusterBombs(String weaponId, List<Double> damageByLevel, String element, double radius, String item,
+                        int splitCount, double splitDistance, int splitFuseTicks, double splitLift)
+            implements EnchantBehaviour {
+        public ClusterBombs {
+            if (weaponId == null || weaponId.isBlank()) throw new IllegalArgumentException("cluster_bombs needs its weapon id");
+            damageByLevel = positive("damage_by_level", damageByLevel);
+            if (element == null || element.isBlank()) throw new IllegalArgumentException("cluster_bombs element is required");
+            if (!(radius > 0) || Double.isInfinite(radius)) {
+                throw new IllegalArgumentException("cluster_bombs radius must be above 0, was " + radius);
+            }
+            if (item != null && item.isBlank()) item = null;
+            if (splitCount < 1) throw new IllegalArgumentException("cluster_bombs split_count must be 1 or more, was " + splitCount);
+            if (!(splitDistance > 0) || Double.isInfinite(splitDistance)) {
+                throw new IllegalArgumentException("cluster_bombs split_distance must be above 0, was " + splitDistance);
+            }
+            if (splitFuseTicks < 1) {
+                throw new IllegalArgumentException("cluster_bombs split_fuse_ticks must be 1 or more, was " + splitFuseTicks);
+            }
+            if (!(splitLift > 0) || Double.isInfinite(splitLift)) {
+                throw new IllegalArgumentException("cluster_bombs split_lift must be above 0, was " + splitLift);
+            }
+        }
+
+        public double damageAt(int level) {
+            return damageByLevel.get(clamp(level, damageByLevel.size()) - 1);
+        }
+
+        public int levels() {
+            return damageByLevel.size();
         }
     }
 

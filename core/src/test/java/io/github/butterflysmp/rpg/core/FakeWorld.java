@@ -90,6 +90,13 @@ public final class FakeWorld implements CombatWorld {
      */
     public double wallX = Double.POSITIVE_INFINITY;
 
+    /**
+     * A FLOOR at this y (Cluster Bombs, 2026-11-26): a segment heading DOWN meets it where it crosses the plane, as a block's
+     * top face. Negative infinity is no floor. Only a downward segment meets it, so a body resting ON it and thrown up
+     * and out is not stopped at its start.
+     */
+    public double floorY = Double.NEGATIVE_INFINITY;
+
     /** The snapshot is taken HERE, when the entity is found -- as the real adapter does. */
     private static Combatant pair(Dummy dummy) {
         return new Combatant(dummy.snapshot(), dummy);
@@ -237,6 +244,10 @@ public final class FakeWorld implements CombatWorld {
         if (Double.isFinite(wallX) && direction.x() != 0) {
             double toPlane = (wallX - from.x()) / direction.x();
             if (toPlane >= 0) wallAt = Math.min(wallAt, toPlane);
+        }
+        if (Double.isFinite(floorY) && direction.y() < 0) {
+            double toFloor = (floorY - from.y()) / direction.y();
+            if (toFloor >= 0) wallAt = Math.min(wallAt, toFloor);
         }
         return wallAt;
     }

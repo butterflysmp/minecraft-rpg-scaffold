@@ -306,6 +306,14 @@ public final class EnchantLoader {
                 case "focused_beam" -> new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.FocusedBeam(
                         focusedBeamWeapon(id, weapon), requiredDouble(b, "range", id),
                         requiredDoubles(b, "damage_by_level", id), element);
+                // cluster_bombs (Cluster Bombs, F9, 2026-11-26): damage_by_level, element, radius, item (optional: the big
+                // chunk's look), split_count, split_distance, split_fuse_ticks, split_lift. Its weapon is the enchant's own
+                // weapon:, whose right click must be a FUSED projectile (the big chunk is thrown on its flight and fuse).
+                case "cluster_bombs" -> new io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.ClusterBombs(
+                        clusterWeapon(id, weapon), requiredDoubles(b, "damage_by_level", id), element,
+                        requiredDouble(b, "radius", id), b.getString("item"), requiredInt(b, "split_count", id),
+                        requiredDouble(b, "split_distance", id), requiredInt(b, "split_fuse_ticks", id),
+                        requiredDouble(b, "split_lift", id));
                 default -> throw new IllegalStateException("unreachable: " + name);
             };
         } catch (IllegalArgumentException ex) {
@@ -461,7 +469,7 @@ public final class EnchantLoader {
 
     /** Every behaviour block a file may declare, one at most (B1). */
     private static final java.util.List<String> BEHAVIOUR_BLOCKS = java.util.List.of("shockwave", "airburst", "shatter",
-            "focused_beam", "grant_trigger", "cast_tune", "hit_chain", "scorch_boost");
+            "focused_beam", "grant_trigger", "cast_tune", "hit_chain", "scorch_boost", "cluster_bombs");
 
     /**
      * FOCUSED BEAM'S WEAPON, refused by name (the seat's brief of 2026-11-24): the enchant must be weapon-specific, its
@@ -507,6 +515,30 @@ public final class EnchantLoader {
         if (!spreadShot) {
             throw new IllegalArgumentException("enchant '" + id + "' shatter: weapon '" + weaponId + "''s right click is"
                     + " not a projectile with a spread, so there is nothing to shatter into");
+        }
+        return weaponId;
+    }
+
+    /**
+     * CLUSTER BOMBS' WEAPON, refused by name (F9, 2026-11-26): weapon-specific, a weapon this loader can see, and that
+     * weapon's right click a FUSED projectile: the big chunk flies and goes off on its flight and fuse, and its split
+     * relaunches the weapon's own chunk, so a weapon without one has nothing to cluster.
+     */
+    private String clusterWeapon(String id, String weaponId) {
+        if (weaponId == null) {
+            throw new IllegalArgumentException("enchant '" + id + "' cluster_bombs: replaces one weapon's throw, so the"
+                    + " enchant must declare weapon: <id>");
+        }
+        io.github.butterflysmp.rpg.core.weapon.WeaponDefinition weapon = weaponDefinition.apply(weaponId).orElseThrow(() ->
+                new IllegalArgumentException("enchant '" + id + "' cluster_bombs: weapon '" + weaponId
+                        + "' is not a weapon this loader can see, so its throw cannot be checked"));
+        boolean fused = weapon.trigger("right_click")
+                .map(t -> t.ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Projectile p
+                        && p.fused())
+                .orElse(false);
+        if (!fused) {
+            throw new IllegalArgumentException("enchant '" + id + "' cluster_bombs: weapon '" + weaponId + "''s right"
+                    + " click is not a fused projectile, so there is nothing to cluster");
         }
         return weaponId;
     }
