@@ -304,7 +304,7 @@ class BlinksTest {
                 new Row("a stronger one meanwhile: left alone", none, 40, Optional.of(fx(100, 1)), Blinks.EndAction.NOTHING, Optional.empty()),
                 new Row("milk took it off: nothing to remove, nothing given back", shorter, 40, Optional.empty(),
                         Blinks.EndAction.NOTHING, Optional.empty()))) {
-            Blinks.InvisibilityAtEnd e = Blinks.invisibilityAtEnd(BLINK, r.start(), r.elapsed(), r.now());
+            Blinks.InvisibilityAtEnd e = Blinks.invisibilityAtEnd(BLINK.invisibilityTicks(), r.start(), r.elapsed(), r.now());
             assertEquals(r.action(), e.action(), r.why());
             assertEquals(r.restore(), e.restore(), r.why());
         }

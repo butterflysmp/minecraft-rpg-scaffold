@@ -81,7 +81,10 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                              io.github.butterflysmp.rpg.core.ability.effect.BehaviourHits behaviourHits,
                              io.github.butterflysmp.rpg.core.combat.Orbs orbs,
                              io.github.butterflysmp.rpg.core.summon.SummonStore summons,
-                             io.github.butterflysmp.rpg.core.combat.FusedChunks fused) {
+                             io.github.butterflysmp.rpg.core.combat.FusedChunks fused,
+                             io.github.butterflysmp.rpg.core.accessory.BlinkedPlayers blinked,
+                             TargetGuard.Late targetGuard,
+                             AttackSink.Late attacks) {
 
     public AdapterContext(Scheduler scheduler, Keys keys, VisualRegistry visuals,
                           StatusRegistry statuses, ElementRegistry elements,
@@ -114,7 +117,13 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
                 new io.github.butterflysmp.rpg.core.combat.Orbs(),
                 new io.github.butterflysmp.rpg.core.summon.SummonStore(),   // 3b: who owns which summon body
                 // EVERY LIVE FUSED CHUNK (the seat's F2, 2026-11-26): a chunk outlives its cast by its fuse, so one per server.
-                new io.github.butterflysmp.rpg.core.combat.FusedChunks());
+                new io.github.butterflysmp.rpg.core.combat.FusedChunks(),
+                // EVERY BLINKED PLAYER (the Blink Tome's K4, 2026-11-26): the engine's own state, read on any mob's thread.
+                new io.github.butterflysmp.rpg.core.accessory.BlinkedPlayers(),
+                // WHO A MOB MAY NOT TARGET (K7): bound to the blink's wiring at enable; until then nobody is hidden.
+                new TargetGuard.Late(),
+                // HIS ATTACK (K5): the fire and the melee seams tell it; bound to the blink at enable.
+                new AttackSink.Late());
     }
 
     /**

@@ -1841,6 +1841,19 @@ public final class RpgListeners implements Listener {
         if (io.github.butterflysmp.rpg.paper.adapter.CombatSides.refused(targeter, target)) event.setCancelled(true);
     }
 
+    /**
+     * THE BLINK'S K7 AT VANILLA'S TARGET EVENT (2026-11-26): while he is blinked no mob may take him. READ: every goal
+     * that targets through {@code Mob.setTarget(target, reason)} with a reason raises this event, and so does a brain's
+     * {@code StartAttacking}. Our own {@code setTarget} calls raise none (a null reason) and are refused at
+     * {@code MobTargets.set} instead. HIGHEST, so a later listener cannot hand him back; not ignoreCancelled, so a refusal
+     * is logged even when another listener already cancelled. A null target (forgetting) is never refused.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onHiddenTarget(org.bukkit.event.entity.EntityTargetLivingEntityEvent event) {
+        if (event.getTarget() == null) return;
+        if (adapters.targetGuard().refuses(event.getEntity(), event.getTarget())) event.setCancelled(true);
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onVanillaShotHit(EntityDamageByEntityEvent event) {
         vanillaShots.stamped(event).ifPresent(hit -> {
@@ -2673,6 +2686,9 @@ public final class RpgListeners implements Listener {
         io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(),
                 io.github.butterflysmp.rpg.core.summon.SummonRemoval.QUIT);
                 summons.feeds().forget(event.getPlayer().getUniqueId());   // 4b: nothing of his is kept
+        // His blink (the Blink Tome's K4): a blinked state ends on his quit, taking off only what it applied, while he is
+        // still valid; and his check clock stops.
+        healthSystem.blinkTomes().ifPresent(b -> b.onQuit(event.getPlayer()));
 
         // FIRST, ahead of the clears: a menu holding this player's weapon must give it back while
         // their inventory can still be written. Writes during PlayerQuitEvent persist -- the save
@@ -2725,6 +2741,8 @@ public final class RpgListeners implements Listener {
     public void onPlayerDeath(PlayerDeathEvent event) {
         // A death inside an arena fight: it is CANCELLED and he goes DOWN (step F9d). His combat state is reset here
         // as a respawn would reset it, because no respawn follows.
+        // His blink ends on his death (the Blink Tome's K4), a fight's cancelled death (DOWN) included.
+        healthSystem.blinkTomes().ifPresent(b -> b.onDeath(event.getPlayer()));
         if (fights.onPlayerDeath(event)) onDowned(event.getPlayer());
         // FIRST: return anything a menu is holding while the inventory still exists. The drops list
         // is already populated by the time this event fires, so a returned weapon cannot leak into
@@ -3056,6 +3074,9 @@ public final class RpgListeners implements Listener {
             event.setCancelled(true);
             return;
         }
+        // THE BLINK'S K5 (2026-11-26): his melee hit LANDED on an entity (a vanilla ENTITY_ATTACK, not cancelled, not a
+        // summon's or a broken weapon's), whatever he holds. A swing that hits nothing raises no event and ends nothing.
+        adapters.attacks().attacked(attacker, io.github.butterflysmp.rpg.core.accessory.Blinks.EndReason.MELEE);
         // P-2 (ruled 2026-11-25): the 4c stand-down for a summon weapon's left click is REMOVED. It was unreachable
         // (PLAN-summoner 11, R4: the whistle's attack value reads 0.000, so vanilla raises no damage event), and the
         // one combination that could reach it -- a direct_summon left click with an attack_damage -- is refused at

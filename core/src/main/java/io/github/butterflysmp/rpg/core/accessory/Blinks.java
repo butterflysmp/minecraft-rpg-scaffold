@@ -239,15 +239,17 @@ public final class Blinks {
     public record InvisibilityAtEnd(EndAction action, Optional<Effect> restore) {}
 
     /**
-     * At the end, {@code elapsed} ticks after the blink, with {@code now} his invisibility at that moment. Remove it only
-     * if it is still OURS (amplifier 0, not infinite, no longer than ours had left); then give back what remains of his
-     * shorter one. Anything else (a longer or stronger one given meanwhile, milk having taken it off) is left alone.
+     * At the end, {@code elapsed} ticks after a blink whose own effect was {@code invisibilityTicks} long (the state's
+     * span, so a tome taken off mid-blink is still ended correctly), with {@code now} his invisibility at that moment.
+     * Remove it only if it is still OURS (amplifier 0, not infinite, no longer than ours had left); then give back what
+     * remains of his shorter one. Anything else (a longer or stronger one given meanwhile, milk having taken it off) is
+     * left alone.
      */
-    public static InvisibilityAtEnd invisibilityAtEnd(AccessoryBehaviour.Blink blink, InvisibilityAtBlink start, int elapsed,
+    public static InvisibilityAtEnd invisibilityAtEnd(int invisibilityTicks, InvisibilityAtBlink start, int elapsed,
                                                       Optional<Effect> now) {
         if (!start.apply() || now.isEmpty()) return new InvisibilityAtEnd(EndAction.NOTHING, Optional.empty());
         Effect e = now.get();
-        int oursLeft = Math.max(0, blink.invisibilityTicks() - elapsed);
+        int oursLeft = Math.max(0, invisibilityTicks - elapsed);
         boolean isOurs = !e.infinite() && e.amplifier() == 0 && e.durationTicks() <= oursLeft;
         if (!isOurs) return new InvisibilityAtEnd(EndAction.NOTHING, Optional.empty());
         if (start.prior().isPresent()) {

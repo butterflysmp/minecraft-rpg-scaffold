@@ -779,6 +779,15 @@ public final class RpgPlugin extends JavaPlugin {
         this.healthSystem.bindTomePulses(new io.github.butterflysmp.rpg.paper.accessory.TomePulses(scheduler, stats, profiles,
                 adapters.keys(), getLogger(), adapters.mobTrace(), Bukkit::getCurrentTick,
                 healthSystem::accessoryContributionsFor));
+        // THE BLINK (the Blink Tome, 2026-11-26): one check clock per wearer, started and stopped by the same reading; its
+        // state is the engine's (adapters.blinked()), and it is the guard every target choice asks and the sink every attack
+        // tells. Traced under /rpg mobtrace. The random source is the server's own, unseeded.
+        io.github.butterflysmp.rpg.paper.accessory.BlinkTomes blinkTomes = new io.github.butterflysmp.rpg.paper.accessory.BlinkTomes(
+                scheduler, adapters.keys(), adapters.blinked(), cooldowns, getLogger(), adapters.mobTrace(),
+                Bukkit::getCurrentTick, healthSystem::accessoryContributionsFor, new java.util.SplittableRandom());
+        this.healthSystem.bindBlinkTomes(blinkTomes);
+        adapters.targetGuard().bind(blinkTomes);
+        adapters.attacks().bind(blinkTomes);
 
         // The vault rides the SAME storageIo, and that is the design rather than reuse for its own
         // sake. One serialised queue means a player's profile write and their vault write cannot

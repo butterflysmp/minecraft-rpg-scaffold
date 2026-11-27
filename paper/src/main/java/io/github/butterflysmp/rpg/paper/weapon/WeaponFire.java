@@ -243,6 +243,13 @@ public final class WeaponFire {
                 // gates took. A single number could not say WHICH gate, which is why there are two.
                 cadence.record(player.getUniqueId(), input, FireCadence.Kind.FIRE, weapon.id());
 
+                // THE BLINK'S K5 (2026-11-26; Ben: "Casting a spell does, a summon whistle does not"): a trigger that
+                // FIRED, past its cooldown and mana gates, on any weapon whose class is not SUMMONER, ends a blinked
+                // state. Here and only here: a summon cast and a direct order returned above, before this branch.
+                if (weapon.weaponClass() != io.github.butterflysmp.rpg.core.weapon.WeaponClass.SUMMONER) {
+                    adapters.attacks().attacked(player, io.github.butterflysmp.rpg.core.accessory.Blinks.EndReason.CAST);
+                }
+
                 // SPEND THE ROUND, on the caster's own thread and only on a Success.
                 //
                 // HERE rather than on CastExecutor's use listener, and the reason is a measurement

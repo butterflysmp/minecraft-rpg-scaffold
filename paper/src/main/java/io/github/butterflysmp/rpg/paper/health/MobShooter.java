@@ -353,18 +353,26 @@ public final class MobShooter implements ShotSink {
      * the acquire range, or the re-acquire range from a landed blink until the next shot (MobShot#chooseRange, step R8). */
     private LivingEntity choose(Mob mob, MobShot shot, Vec3 eye, boolean blinked) {
         LivingEntity vanilla = mob.getTarget();
-        if (vanilla != null && eligible(mob, vanilla) && shot.inChooseRange(eye, vec(vanilla.getEyeLocation()), blinked)) {
+        if (vanilla != null && chooseable(mob, vanilla) && shot.inChooseRange(eye, vec(vanilla.getEyeLocation()), blinked)) {
             return vanilla;
         }
         double r = shot.chooseRange(blinked);
         List<LivingEntity> found = new ArrayList<>();
         for (Entity e : mob.getWorld().getNearbyEntities(mob.getEyeLocation(), r, r, r)) {
-            if (e instanceof LivingEntity l && eligible(mob, l) && shot.inChooseRange(eye, vec(l.getEyeLocation()), blinked)) {
+            if (e instanceof LivingEntity l && chooseable(mob, l) && shot.inChooseRange(eye, vec(l.getEyeLocation()), blinked)) {
                 found.add(l);
             }
         }
         return found.stream().min(Comparator.comparingDouble(l -> eye.distanceSquared(vec(l.getEyeLocation()))))
                 .orElse(null);
+    }
+
+    /**
+     * A NEW victim (a choice, a re-acquire): eligible and not hidden (the Blink Tome's K7). A shot already flying at a
+     * player who then blinks keeps him ({@link #eligible}, the in-flight check): damage on its way still reaches him.
+     */
+    private boolean chooseable(Entity from, LivingEntity l) {
+        return eligible(from, l) && !adapters.targetGuard().hides(l);
     }
 
     private boolean eligible(Entity from, LivingEntity l) {
@@ -613,7 +621,7 @@ public final class MobShooter implements ShotSink {
         LivingEntity best = null;
         double bestD = Double.POSITIVE_INFINITY;
         for (Entity e : world.getNearbyEntities(loc(world, at), r, r, r)) {
-            if (!(e instanceof LivingEntity l) || !eligible(o.mob, l)) continue;
+            if (!(e instanceof LivingEntity l) || !chooseable(o.mob, l)) continue;
             Vec3 eye = vec(l.getEyeLocation());
             if (!o.shot.inReacquireRange(at, eye)) continue;
             double d = at.distanceSquared(eye);
