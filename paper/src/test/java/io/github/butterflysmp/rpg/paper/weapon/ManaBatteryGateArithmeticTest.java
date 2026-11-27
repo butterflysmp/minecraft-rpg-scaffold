@@ -57,15 +57,15 @@ class ManaBatteryGateArithmeticTest {
         assertEquals(EXPECTED_MB1, out);
     }
 
-    /** EXECUTED by this test (2026-11-27), then pinned; GATE-mana-battery.md MB1 quotes these. */
+    /** EXECUTED by this test (2026-11-27), then pinned; GATE-mana-battery.md MB1 quoted the pre-U1 form ("Mana Regen: +3"); GATE-regen-tooltips.md re-predicts these. */
     static final List<String> EXPECTED_MB1 = List.of(
-            "iron_helmet [Mana Battery III, , Gear Score: 100, Defense: 10, Mana Regen: +3, , Set Bonus (4 pieces):,"
+            "iron_helmet [Mana Battery III, , Gear Score: 100, Defense: 10, Mana Regen: +3/5s, , Set Bonus (4 pieces):,"
                     + " +100 Max Health, , Honest plate. It has no opinion about who wears it., , Common Helmet]",
-            "iron_chestplate [Mana Battery III, , Gear Score: 100, Defense: 16, Mana Regen: +3, , Set Bonus (4 pieces):,"
+            "iron_chestplate [Mana Battery III, , Gear Score: 100, Defense: 16, Mana Regen: +3/5s, , Set Bonus (4 pieces):,"
                     + " +100 Max Health, , Honest plate. It has no opinion about who wears it., , Common Chestplate]",
-            "iron_leggings [Mana Battery III, , Gear Score: 100, Defense: 14, Mana Regen: +3, , Set Bonus (4 pieces):,"
+            "iron_leggings [Mana Battery III, , Gear Score: 100, Defense: 14, Mana Regen: +3/5s, , Set Bonus (4 pieces):,"
                     + " +100 Max Health, , Honest plate. It has no opinion about who wears it., , Common Leggings]",
-            "iron_boots [Mana Battery III, , Gear Score: 100, Defense: 8, Mana Regen: +3, , Set Bonus (4 pieces):,"
+            "iron_boots [Mana Battery III, , Gear Score: 100, Defense: 8, Mana Regen: +3/5s, , Set Bonus (4 pieces):,"
                     + " +100 Max Health, , Honest plate. It has no opinion about who wears it., , Common Boots]");
 
     /** MB1: each tier's count over 500 rolls of one slot: the cascade's true odds, mean ± 3σ, rounded inward. */

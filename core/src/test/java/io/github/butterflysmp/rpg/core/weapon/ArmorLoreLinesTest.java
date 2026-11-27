@@ -144,18 +144,24 @@ class ArmorLoreLinesTest {
 
     @Test
     void everySetBonusLineCarriesBensRealNumberInHisUnit() {
-        // B8: real numbers, the authored unit. The five types, each line pinned whole.
-        assertEquals("+2 Health Regen per 5s",
+        // B8: real numbers. The five types, each line pinned whole. U1 (the seat, 2026-11-27): the two REGEN lines are
+        // in the stats sheet's unit, per five seconds with its suffix, whatever unit they were authored in. Ben, of the
+        // golden set: "The golden set should also". Its strength is unchanged (2 per second), so it reads 10.
+        assertEquals("+2 Health Regen/5s",
                 ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.HEALTH_REGEN, 2)));
-        assertEquals("+2 Mana Regen per second",
+        assertEquals("+10 Mana Regen/5s",
                 ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.MANA_REGEN, 2)));
+        assertEquals("+0.50 Health Regen/5s",
+                ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.HEALTH_REGEN, 0.5)),
+                "a non-whole authored regen prints the sheet's two decimals");
         assertEquals("+1 Max Summons", ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.MAX_SUMMONS, 1)));
         assertEquals("+100 Max Health",
                 ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.MAX_HEALTH, 100)));
         assertEquals("+40 Defense", ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.DEFENSE, 40)));
         assertEquals("+50% Quiver Size",   // Q3: the PERCENT, since the resolved number depends on the weapon
                 ArmorLoreLines.setBonusLine(new ArmorSetBonus(ArmorSetBonus.Type.QUIVER_SIZE_PERCENT, 50)));
-        // Mutation: print the ENGINE value (0.4 for leather's regen) -> "+0.4 ..." -> reddens.
+        // Mutation: print the ENGINE value unconverted (0.4 for leather's regen) -> "+0.4 ..." -> reddens.
+        // Mutation: print the AUTHORED value for mana regen (the old line) -> "+2 Mana Regen/5s" -> reddens.
         assertEquals("Set Bonus (4 pieces):", ArmorLoreLines.SET_BONUS_HEADER);
     }
 }

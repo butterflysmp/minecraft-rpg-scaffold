@@ -42,7 +42,7 @@ AS0:
   - cmd: "rpg maxsummons"
   - probe_self: ""
 
-# AS1, LEATHER: four tooltips; the full set's Defense; +2 Health Regen per 5s; one piece swapped, the bonus off.
+# AS1, LEATHER: four tooltips; the full set's Defense; +2 Health Regen per 5s; one piece swapped, the bonus off. (Since 2026-11-27 the line reads "+2 Health Regen/5s": GATE-regen-tooltips.md.)
 AS1:
   - clear_inventory: ""
   - clear_state: ""
@@ -100,7 +100,7 @@ AS1:
   - cmd: "item replace entity @s armor.feet with minecraft:air"
   - wait: 10
 
-# AS2, GOLDEN: four tooltips; Defense; +2 Mana Regen per second; one piece swapped, the bonus off.
+# AS2, GOLDEN: four tooltips; Defense; +2 Mana Regen per second; one piece swapped, the bonus off. (Since 2026-11-27 the line reads "+10 Mana Regen/5s": GATE-regen-tooltips.md.)
 AS2:
   - clear_inventory: ""
   - clear_state: ""

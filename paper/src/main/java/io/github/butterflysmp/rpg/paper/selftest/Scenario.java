@@ -155,7 +155,7 @@ public record Scenario(String gate, String row, List<Step> steps) {
          */
         PROBE_ATTRIBUTE,
         /**
-         * Log the PLAYER'S mana, {@code MANA current=<c> max=<m>}, from the pool every cast spends from. Added
+         * Log the PLAYER'S mana, {@code MANA current=<c> max=<m> tick=<t>} (tick= since W4, 2026-11-27), from the pool every cast spends from. Added
          * 2026-11-21 (the seat's brief, PR 1): a cast's price is READ from two of these, not inferred from source.
          */
         PROBE_MANA,

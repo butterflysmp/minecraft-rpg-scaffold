@@ -1,5 +1,10 @@
 package io.github.butterflysmp.rpg.core.weapon;
 
+import io.github.butterflysmp.rpg.core.accessory.AccessoryContributions;
+import io.github.butterflysmp.rpg.core.accessory.AccessoryStat;
+import io.github.butterflysmp.rpg.core.combat.ManaRegen;
+import io.github.butterflysmp.rpg.core.combat.StatsSheetLines;
+
 /**
  * The plain-text half of the armor tooltip: pure String/number formatters over the content model.
  * No Adventure, no Bukkit -- lives in core so it runs in the 2-second test loop, and the paper
@@ -62,7 +67,8 @@ public final class ArmorLoreLines {
      * The stat a Mana Battery enchant raises (2026-11-27), as the leading label of a bonus line: {@code "Mana Regen: +3"},
      * in mana per FIVE SECONDS: the authored number, which is the number the sheet's Mana Regen line moves by (C4,
      * 2026-11-27). The fourth in the column, by the same helper. "Mana Regen" is the stats sheet's word for the stat.
-     * SEAT PLACEHOLDER 2026-11-27 wording; whether to show "/5s" is OPEN FOR BEN.
+     * <b>The value carries the sheet's suffix: "Mana Regen: +3/5s"</b> (Ben, 2026-11-27: "Yes the mana battery's tooltip
+     * should read /5"; {@link #manaBatteryValue}). Wording otherwise SEAT PLACEHOLDER 2026-11-27.
      */
     public static final String MANA_REGEN_LABEL = "Mana Regen";
 
@@ -89,21 +95,45 @@ public final class ArmorLoreLines {
     public static final String SET_BONUS_HEADER = "Set Bonus (4 pieces):";
 
     /**
-     * B8: one line per set bonus entry, in the AUTHORED unit with real numbers ({@code "+2 Health Regen per 5s"}), so
-     * the line reads in the unit Ben gave it. Wording SEAT PLACEHOLDER 2026-11-25, OPEN FOR BEN. An exhaustive switch:
-     * a new type is a compile error here, not a blank line.
+     * B8: one line per set bonus entry, with real numbers. Wording SEAT PLACEHOLDER 2026-11-25, OPEN FOR BEN. An
+     * exhaustive switch: a new type is a compile error here, not a blank line.
+     *
+     * <p><b>THE TWO REGEN LINES ARE IN THE STATS SHEET'S UNIT</b> (the seat's U1, 2026-11-27; Ben: "The golden set should
+     * also"): the ENGINE's per-second value through the sheet's own formatter, so the number is what the sheet's line
+     * moves by and the suffix is the sheet's. Leather's authored 2 per five seconds reads {@code "+2 Health Regen/5s"};
+     * golden's authored 2 per SECOND (its strength, unchanged) reads {@code "+10 Mana Regen/5s"}. The other types stay
+     * in their authored unit, which is the engine's.
      */
     public static String setBonusLine(ArmorSetBonus bonus) {
         String value = bonusValue(bonus.value());
         return switch (bonus.type()) {
-            case HEALTH_REGEN -> value + " Health Regen per 5s";
-            case MANA_REGEN -> value + " Mana Regen per second";
+            case HEALTH_REGEN -> regenLine(bonus.engineValue(), AccessoryStat.HEALTH_REGEN);
+            case MANA_REGEN -> regenLine(bonus.engineValue(), AccessoryStat.MANA_REGEN);
             case MAX_SUMMONS -> value + " Max Summons";
             case MAX_HEALTH -> value + " Max Health";
             case DEFENSE -> value + " Defense";
             // Q3: the PERCENT, since the resolved number depends on the weapon held. Wording a SEAT PLACEHOLDER.
             case QUIVER_SIZE_PERCENT -> "+" + trimNumber(bonus.value()) + "% Quiver Size";
         };
+    }
+
+    /**
+     * A set's regen line: the engine's per-second value, through the same seam the reconcile uses
+     * ({@code AccessoryContributions.sourceValue}, which {@code ArmorSetContributions} calls), in the sheet's unit.
+     */
+    private static String regenLine(double engineValue, AccessoryStat stat) {
+        return "+" + StatsSheetLines.perFiveSecondsAmount(AccessoryContributions.sourceValue(stat, engineValue))
+                + " " + stat.label() + StatsSheetLines.RATE_SUFFIX;
+    }
+
+    /**
+     * Mana Battery's stat-block value (the seat's U1, 2026-11-27; Ben: "Yes the mana battery's tooltip should read /5"):
+     * the authored per-five-seconds total through the scan's own conversion and contribution
+     * ({@code ManaBatteryModifierItems}), back out through the sheet's formatter: {@code 3 -> "+3/5s"}.
+     */
+    public static String manaBatteryValue(double authoredPerFiveSeconds) {
+        return "+" + StatsSheetLines.perFiveSecondsBonus(
+                ManaRegen.contribution(ManaRegen.perSecondFromPerFiveSeconds(authoredPerFiveSeconds)));
     }
 
     /** The value half: {@code 8 -> "8"}. Coloured, where {@link #DEFENSE_LABEL} is not. */

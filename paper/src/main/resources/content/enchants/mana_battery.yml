@@ -28,7 +28,7 @@
 # `class: universal` WOULD BE THE DANGEROUS TYPO, and the loader refuses it: the scan only ever looks at the four armor
 # slots, so a universal Mana Battery would roll on every weapon and grant nothing there.
 display_name: "Mana Battery"
-# SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN. Cosmetic, and it defaults to enchanted_book when absent.
+# BEN, 2026-11-27: "3. Fine". Cosmetic, and it defaults to enchanted_book when absent.
 icon: redstone_block
 max_level: 3
 effect: mana_regen

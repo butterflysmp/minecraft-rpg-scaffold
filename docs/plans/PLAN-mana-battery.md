@@ -132,3 +132,66 @@ piece's score multiplies its AUTHORED Defense and **never an enchant's points**.
 3. **The TEMP fixture stays** (`ManaRegenModifierItems`'s javadoc says it comes out "when a real mana-regen enchant
    lands"). Removing it changes `/rpg manaregen` and older gates; it belongs to the content pass that removes the other
    `_TEMP` fixtures. Its javadoc now says the enchant has landed and the fixture is owed removal.
+
+## DATED NOTE, 2026-11-27 — REGEN TOOLTIPS IN THE SHEET'S UNIT (the seat's U1 to U7), AFTER THE MERGE OF #333 TO #335
+
+**Ben, verbatim, 2026-11-27**, answering the seat's three questions ((1) should Mana Battery's tooltip say "/5s"; (2)
+the golden set's tooltip says "+2" but moves the sheet by 10: leave it, or bring it into the sheet's unit; (3) the
+icon, a redstone block for now): *"1. Yes the mana battery's tooltip should read /5 2. The golden set should also 3.
+Fine"*. **The seat's reading, told to Ben, who may correct it:** the suffix is the sheet's own `/5s`; the golden set's
+TOOLTIP is shown per five seconds and its STRENGTH is unchanged (his earlier "+2 mana regen (this is every second)"
+stands), so it reads 10; the icon stays `redstone_block`, no longer a placeholder.
+
+**The rulings, in short (the seat's):** U1, every regen number a player reads on a tooltip is in the sheet's unit, per
+five seconds, with the sheet's suffix, from the sheet's own conversion and formatter (`StatsSheetLines`), never a
+second literal. U2, every such line listed with its before and after. U3, no strength changes, pinned. U4, wording
+(below). U5, T13 asserts each regen line equals the sheet's own delta for its source, and the golden is predicted
+before it is regenerated. U6, the icon's comment. U7, W4 (in `PLAN-owed-fixes.md`).
+
+### THE FORMATTER (U1, U4)
+
+`StatsSheetLines.perFiveSecondsAmount(perSecond)`: the same `x RATE_WINDOW_SECONDS` and two decimals as the sheet's
+`perFiveSeconds`, then **whole when it is whole to the cent** (`2.0 -> "10"`, `0.6 - 0.4 -> "1"`), else **the sheet's
+two decimals** (`0.1 -> "0.50"`). `perFiveSecondsBonus` adds `RATE_SUFFIX`, which is built from the window
+(`"/" + RATE_WINDOW_SECONDS + "s"`). Every line takes the ENGINE's per-second value, through the engine's own seam, so
+the number shown is the amount the sheet moves by.
+
+### U2 — EVERY LINE THAT SHOWS A REGEN FIGURE (READ on `16713667`), BEFORE AND AFTER
+
+| line | before | after | authored unit | sheet moves by |
+|---|---|---|---|---|
+| Mana Battery stat block (`ArmorItems.statLore`) | `Mana Regen: +3` | `Mana Regen: +3/5s` | per 5 s | `3.00/5s` per III piece |
+| Mana Battery effect suffix (`EnchantEffectLine`: item hover, enchant menu, `/rpg enchant show`) | `(+3 Mana Regen)` | `(+3 Mana Regen/5s)` | per 5 s | `3.00/5s` |
+| Golden set bonus (`ArmorLoreLines.setBonusLine`) | `+2 Mana Regen per second` | `+10 Mana Regen/5s` | per SECOND | `10.00/5s` |
+| Leather set bonus | `+2 Health Regen per 5s` | `+2 Health Regen/5s` | per 5 s | `2.00/5s` |
+| Accessories (`AccessoryLoreLines`: item, Build menu, fragment sheet): `mending_charm` 0.1/s | `+0.50/5s Health Regen` | unchanged | per second | `0.50/5s` |
+| `fletchers_quiver` -0.04/s | `-0.20/5s Health Regen` | unchanged | per second | `-0.20/5s` |
+| `fragment_mending` 0.05/s | `+0.25/5s Health Regen` | unchanged | per second | `0.25/5s` |
+| Level menu (`LevelBonusLines`), per level-up at 10, 15, ... 50 | `+1 Health Regen per 5s` | `+1 Health Regen/5s` | per 5 s (Ben's steps) | `1.00/5s` |
+| Level menu, totals at 50 | `+9 Health Regen per 5s` | `+9 Health Regen/5s` | | `9.00/5s` |
+| `/rpg stats` and the Nexus stats head | `5.00/5s` | unchanged (it IS the sheet) | | |
+
+The accessory lines were already in the sheet's unit; they now go through the tooltip form, which prints a whole amount
+whole (`+1/5s`) and is byte-identical for every shipped accessory (all three are non-whole). **Read and not changed,
+because no player reads them as a tooltip or menu:** the dev commands `/rpg healthregen` and `/rpg manaregen` (chat,
+per second, TEMP fixtures).
+
+### U3 — STRENGTHS, PINNED (`RegenTooltipsSheetUnitTest`)
+
+Golden `mana_regen 2` -> engine **2.0 per second**; leather `health_regen 2` -> engine **0.4 per second**
+(`ArmorSetBonus.HEALTH_REGEN_AUTHORED_SECONDS` now reads the sheet's window, the same 5); Mana Battery `[1, 2, 3]` ->
+the scan's modifier **0.2, 0.4, 0.6 per second**. Each figure EXECUTED and pinned. The accessories are NOT pinned
+there: no accessory engine path was touched, and their two golden lines are byte-identical. **Mutation M7 (leather's
+window set to 1, a strength change) left T13 green, correctly: T13 checks the tooltip AGAINST the engine and both
+moved. The strength is held by this test (and the goldens), not by T13.**
+
+### U5 — T13 AND THE GOLDEN, PREDICTED BEFORE REGENERATING
+
+T13's Mana Battery arm now expects `Mana Regen: +` + `perFiveSecondsBonus(the scan's per-second modifier)`; a new arm
+reads every set-bonus regen line against `AccessoryContributions.sourceValue(stat, engineValue)`, the reconcile's own
+value, and fails if it finds none. Its case count does not move (1476).
+
+**`golden-lore.txt`, PREDICTED before regenerating: `8 insertions / 8 deletions`**, eight modified lines and nothing
+else: the four golden pieces' `+2 Mana Regen per second` -> `+10 Mana Regen/5s`, and the four leather pieces' `+2
+Health Regen per 5s` -> `+2 Health Regen/5s`. No count footer moves (no rendering is added). The two accessory lines
+(`-0.20/5s`, `+0.50/5s`) do not move. The golden holds no Mana Battery rendering and no Level menu line.

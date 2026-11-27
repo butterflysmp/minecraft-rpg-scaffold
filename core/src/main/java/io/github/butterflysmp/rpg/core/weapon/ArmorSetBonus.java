@@ -23,8 +23,13 @@ import java.util.Locale;
  */
 public record ArmorSetBonus(Type type, double value) {
 
-    /** Ben's unit for health regen: "the every 5s number". */
-    public static final double HEALTH_REGEN_AUTHORED_SECONDS = 5.0;
+    /**
+     * Ben's unit for health regen: "the every 5s number". The stats sheet's own window
+     * ({@code StatsSheetLines.RATE_WINDOW_SECONDS}, 5), not a second literal 5 (the seat's U1, 2026-11-27): the same
+     * value, so the engine is untouched ({@code RegenTooltipsSheetUnitTest} pins leather's 0.4 per second).
+     */
+    public static final double HEALTH_REGEN_AUTHORED_SECONDS =
+            io.github.butterflysmp.rpg.core.combat.StatsSheetLines.RATE_WINDOW_SECONDS;
 
     public enum Type {
         HEALTH_REGEN, MANA_REGEN, MAX_SUMMONS, MAX_HEALTH, DEFENSE,

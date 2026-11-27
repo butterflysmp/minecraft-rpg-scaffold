@@ -321,6 +321,7 @@ class TrueTooltipsConsistencyTest {
         Content c = load();
         List<String> mismatches = new ArrayList<>();
         int cases = 0, weaponCases = 0, armorCases = 0, shieldCases = 0, unmoved = 0;
+        int setRegenLines = 0;   // U5: set-bonus regen lines checked; zero is a defect (a discovery that found nothing)
 
         for (WeaponDefinition w : c.weapons()) {
             boolean statBlock = w.triggers().stream().anyMatch(t -> DamagePayload.isBasicAttack(t.ability().onHit()));
@@ -379,12 +380,30 @@ class TrueTooltipsConsistencyTest {
                         // Mana Battery (2026-11-27): the regen line, against the scan's own gate, conversion and contribution.
                         // C4: the line shows the number the SHEET moves by, per five seconds: the engine's per-second
                         // modifier over the sheet's own window.
+                        // U5 (2026-11-27): the line IS the sheet's own delta for this source (the scan's per-second
+                        // modifier), formatted by the sheet's formatter, with the sheet's suffix.
                         double regen = EnchantValues.totalFor(state, c.enchants(), EnchantEffect.MANA_REGEN);
-                        expectBonus(mismatches, label, lore, ArmorLoreLines.MANA_REGEN_LABEL,
-                                io.github.butterflysmp.rpg.core.combat.ManaRegen.boosts(regen)
-                                        ? io.github.butterflysmp.rpg.core.combat.ManaRegen.contribution(
-                                                io.github.butterflysmp.rpg.core.combat.ManaRegen.perSecondFromPerFiveSeconds(regen))
-                                                * io.github.butterflysmp.rpg.core.combat.StatsSheetLines.RATE_WINDOW_SECONDS : 0);
+                        double regenPerSecond = io.github.butterflysmp.rpg.core.combat.ManaRegen.boosts(regen)
+                                ? io.github.butterflysmp.rpg.core.combat.ManaRegen.contribution(
+                                        io.github.butterflysmp.rpg.core.combat.ManaRegen.perSecondFromPerFiveSeconds(regen))
+                                : 0;
+                        expectShown(mismatches, label, lore, ArmorLoreLines.MANA_REGEN_LABEL, regenPerSecond,
+                                "+" + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSecondsBonus(regenPerSecond));
+                        // U5: and each set-bonus regen line, against the reconcile's own value for it.
+                        for (io.github.butterflysmp.rpg.core.weapon.ArmorSetBonus b : a.setBonus()) {
+                            io.github.butterflysmp.rpg.core.accessory.AccessoryStat stat = switch (b.type()) {
+                                case HEALTH_REGEN -> io.github.butterflysmp.rpg.core.accessory.AccessoryStat.HEALTH_REGEN;
+                                case MANA_REGEN -> io.github.butterflysmp.rpg.core.accessory.AccessoryStat.MANA_REGEN;
+                                default -> null;
+                            };
+                            if (stat == null) continue;
+                            double perSecond = io.github.butterflysmp.rpg.core.accessory.AccessoryContributions
+                                    .sourceValue(stat, b.engineValue());
+                            expectLine(mismatches, label, lore, "+"
+                                    + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.perFiveSecondsAmount(perSecond)
+                                    + " " + stat.label() + io.github.butterflysmp.rpg.core.combat.StatsSheetLines.RATE_SUFFIX);
+                            setRegenLines++;
+                        }
                         boolean moves = EnchantValues.totalFor(state, c.enchants(), EnchantEffect.DEFENSE) > 0
                                 || health > 0 || mana > 0 || regen > 0;
                         if (!moves) {
@@ -423,13 +442,27 @@ class TrueTooltipsConsistencyTest {
 
         System.out.println("TRUE TOOLTIPS T13: " + cases + " cases (weapons " + weaponCases + ", armor " + armorCases
                 + ", shields " + shieldCases + "), " + unmoved + " where the engine moves nothing");
+        System.out.println("TRUE TOOLTIPS T13: " + setRegenLines + " set-bonus regen lines read against the reconcile");
         mismatches.forEach(m -> System.out.println("T13 MISMATCH " + m));
+        org.junit.jupiter.api.Assertions.assertTrue(setRegenLines > 0, "U5 found no set-bonus regen line to check");
         assertEquals(List.of(), mismatches, mismatches.size() + " tooltip lines disagree with the engine");
         assertEquals(EXPECTED_CASES, cases, "the generated count moved: recount it from this run's line and re-pin it");
     }
 
     private static void expectLine(List<String> out, String label, List<String> lore, String expected) {
         if (!lore.contains(expected)) out.add(label + ": expected the line \"" + expected + "\" in " + lore);
+    }
+
+    /** {@link #expectBonus} for a line whose value is not a bare {@code +N}: Mana Battery's {@code "+3/5s"}. */
+    private static void expectShown(List<String> out, String label, List<String> lore, String stat, double points,
+                                    String shown) {
+        List<String> found = lore.stream().filter(l -> l.startsWith(stat + ": ")).toList();
+        if (points <= 0) {
+            if (!found.isEmpty()) out.add(label + ": no " + stat + " granted, the tooltip shows " + found);
+            return;
+        }
+        String want = stat + ": " + shown;
+        if (!found.equals(List.of(want))) out.add(label + ": expected \"" + want + "\", the tooltip shows " + found);
     }
 
     private static void expectBonus(List<String> out, String label, List<String> lore, String stat, double points) {

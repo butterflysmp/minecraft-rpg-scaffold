@@ -131,7 +131,7 @@ class ManaBatteryTest {
     }
 
     /**
-     * B5: the stat block gains ONE line under Defense, "Mana Regen: +N", as Mana Bank's "Mana: +N"; bare, none. Wording a
+     * B5: the stat block gains ONE line under Defense, "Mana Regen: +N/5s" (U1, 2026-11-27), as Mana Bank's "Mana: +N"; bare, none. Wording a
      * SEAT PLACEHOLDER 2026-11-27. And the colour is the mana colour, as Mana Bank's.
      */
     @Test
@@ -144,7 +144,7 @@ class ManaBatteryTest {
             List<String> with = lore(helmet, TrueTooltipsConsistencyTest.activeAt("mana_battery", level), r, 100);
             List<String> expected = new ArrayList<>(bare);
             int defense = bare.indexOf(bare.stream().filter(l -> l.startsWith("Defense: ")).findFirst().orElseThrow());
-            expected.add(defense + 1, "Mana Regen: +" + level);
+            expected.add(defense + 1, "Mana Regen: +" + level + "/5s");
             assertEquals(expected, with, "level " + level + ": bare plus one line under Defense");
         }
         List<Component> rich = ArmorItems.statLore(helmet, TrueTooltipsConsistencyTest.activeAt("mana_battery", 3), r,
@@ -163,19 +163,19 @@ class ManaBatteryTest {
         for (int score : new int[] {100, 200}) {
             List<String> battery = lore(helmet, TrueTooltipsConsistencyTest.activeAt("mana_battery", 3), r, score);
             List<String> bank = lore(helmet, TrueTooltipsConsistencyTest.activeAt("mana_bank", 3), r, score);
-            assertTrue(battery.contains("Mana Regen: +3"), score + ": " + battery);
+            assertTrue(battery.contains("Mana Regen: +3/5s"), score + ": " + battery);
             assertTrue(bank.contains("Mana: +30"), score + ": " + bank);
         }
         // And the scan's sum has no score input at all: EnchantValues.totalFor(state, registry, effect).
     }
 
-    /** B5: the effect suffix (the enchant table, /rpg enchant show), SEAT PLACEHOLDER wording; inert off armor. */
+    /** B5: the effect suffix (the enchant table, /rpg enchant show), "(+N Mana Regen/5s)" since U1, 2026-11-27; inert off armor. */
     @Test
     void theEffectSuffix_readsPlusNManaRegen() {
         EnchantDefinition d = shipped().find("mana_battery").orElseThrow();
-        assertEquals(" (+1 Mana Regen)", EnchantEffectLine.of(d, 1, GearClass.ARMOR));
-        assertEquals(" (+2 Mana Regen)", EnchantEffectLine.of(d, 2, GearClass.ARMOR));
-        assertEquals(" (+3 Mana Regen)", EnchantEffectLine.of(d, 3, GearClass.ARMOR));
+        assertEquals(" (+1 Mana Regen/5s)", EnchantEffectLine.of(d, 1, GearClass.ARMOR));
+        assertEquals(" (+2 Mana Regen/5s)", EnchantEffectLine.of(d, 2, GearClass.ARMOR));
+        assertEquals(" (+3 Mana Regen/5s)", EnchantEffectLine.of(d, 3, GearClass.ARMOR));
         assertTrue(EnchantEffectLine.of(d, 3, GearClass.MAGE).contains("inert"), "the control: off armor it says inert");
     }
 
