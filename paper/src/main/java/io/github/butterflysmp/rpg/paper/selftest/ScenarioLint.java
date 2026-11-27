@@ -71,7 +71,14 @@ final class ScenarioLint {
          * {@code ask:} whose question tells him to hover, click, right-click or look waits at least
          * {@link SelfTestAsk#DO_FIRST_TICKS}. The window is the ask's own second number; this reads it.
          */
-        ASK_WINDOW_SHORT
+        ASK_WINDOW_SHORT,
+        /**
+         * THE HEALING TOME'S GATE (H15, 2026-11-26): a row that EQUIPS an accessory stages, before the equip and in the row
+         * itself, all three things the pulse and the class gate read: his class ({@code class:}), his slots
+         * ({@code accessory: clear}) and his level ({@code rpg playerxp set @s <n> levels}). Nothing is carried from a row
+         * before, so a row reorder cannot change what a pulse heals.
+         */
+        ACCESSORY_UNSTAGED
     }
 
     /**
@@ -318,7 +325,34 @@ final class ScenarioLint {
         }
         levelSeam(gate, scenarios, out);
         levelGatedMenu(gate, scenarios, out);
+        accessoryStaged(gate, scenarios, out);
         return List.copyOf(out);
+    }
+
+    /** ACCESSORY_UNSTAGED over one gate: every equip is preceded, in its own row, by class, clear and a level. */
+    static void accessoryStaged(String gate, List<Scenario> scenarios, List<Finding> out) {
+        for (Scenario s : scenarios) {
+            if (s.row().equals(Scenario.SETUP)) continue;
+            boolean classSet = false;
+            boolean cleared = false;
+            boolean level = false;
+            for (Scenario.Step st : s.steps()) {
+                String a = st.arg().trim();
+                if (st.verb() == Scenario.Verb.CLASS) classSet = true;
+                if (st.verb() == Scenario.Verb.ACCESSORY && a.equals("clear")) cleared = true;
+                if (st.verb() == Scenario.Verb.CMD && LEVEL.matcher(a).matches()) level = true;
+                if (st.verb() == Scenario.Verb.ACCESSORY && a.startsWith("equip")) {
+                    List<String> missing = new ArrayList<>();
+                    if (!classSet) missing.add("class");
+                    if (!cleared) missing.add("accessory: clear");
+                    if (!level) missing.add("a level (rpg playerxp set @s <n> levels)");
+                    if (!missing.isEmpty()) {
+                        out.add(new Finding(gate, s.row(), Rule.ACCESSORY_UNSTAGED, "'" + a + "' before the row stages "
+                                + String.join(", ", missing)));
+                    }
+                }
+            }
+        }
     }
 
     /** One row's findings, added to {@code out}; true when the row summons anything. */

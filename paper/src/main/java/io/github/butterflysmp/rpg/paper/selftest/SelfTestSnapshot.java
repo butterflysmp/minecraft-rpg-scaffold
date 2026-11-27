@@ -127,6 +127,12 @@ final class SelfTestSnapshot {
     private final float vanillaProgress;
     private final String classId;
     private final String elementId;
+    /** H15 (the seat, 2026-11-26): his four accessory slots, exactly; and the store they are read from and written to. */
+    private final SelfTestAccessorySlots<io.github.butterflysmp.rpg.storage.PlayerAccessories> accessorySlots;
+    private final SelfTestAccessorySlots.Port<io.github.butterflysmp.rpg.storage.PlayerAccessories> accessoryPort;
+    private final java.util.function.Function<String, String> accessoryName;
+    /** His saturation at run start: the {@code saturation} verb stages it (his regeneration's tier), so it is put back. */
+    private final float saturation;
     /** C1: the STORED max_summons base with its own captured flag (SelfTestSummonsBase): not captured is never written. */
     private final SelfTestSummonsBase maxSummonsBase;
     /**
@@ -137,7 +143,11 @@ final class SelfTestSnapshot {
     private final SelfTestStaging.RowBlocks<Location, BlockState> blocks = new SelfTestStaging.RowBlocks<>();
 
     private SelfTestSnapshot(Player p, ProfileService profiles, ResourcePool resources, MobNameplateManager nameplates,
-                             CombatantStats stats) {
+                             CombatantStats stats, io.github.butterflysmp.rpg.paper.adapter.AdapterContext adapters) {
+        this.accessoryPort = accessoryPort(p.getUniqueId(), adapters);
+        this.accessoryName = stored -> accessoryName(stored, adapters);
+        this.accessorySlots = SelfTestAccessorySlots.capture(accessoryPort);
+        this.saturation = p.getSaturation();
         this.id = p.getUniqueId();
         this.health = stats.tracks(id) ? stats.current(id) : Double.NaN;
         this.vanillaLevel = p.getLevel();
@@ -166,8 +176,8 @@ final class SelfTestSnapshot {
     }
 
     static SelfTestSnapshot take(Player p, ProfileService profiles, ResourcePool resources, MobNameplateManager nameplates,
-                                 CombatantStats stats) {
-        return new SelfTestSnapshot(p, profiles, resources, nameplates, stats);
+                                 CombatantStats stats, io.github.butterflysmp.rpg.paper.adapter.AdapterContext adapters) {
+        return new SelfTestSnapshot(p, profiles, resources, nameplates, stats, adapters);
     }
 
     /**
@@ -252,7 +262,7 @@ final class SelfTestSnapshot {
 
     /** W1: the CAPTURED line's fields, {@code armour=<n> offhand=<0|1>}. */
     String capturedFields() {
-        return worn.fields();
+        return worn.fields() + " class=" + classId + " accessories=" + accessorySlots.fields(accessoryPort, accessoryName);
     }
 
     /**
@@ -265,6 +275,36 @@ final class SelfTestSnapshot {
                 SelfTestSnapshot::emptyItem, java.util.Objects::equals);
         String not = SelfTestWornSlots.notRestored(differ);
         return worn.fields() + (not.isEmpty() ? "" : " " + not);
+    }
+
+    /**
+     * H15: his accessory store through the service's own functions ({@code accessories} to read, {@code replace} to put a
+     * whole record back), never the file. The write's completion is not awaited: the cache it reads back is set by the
+     * call itself, and the save rides the storage queue that the plugin's disable drains last (READ, {@code onDisable}).
+     */
+    private static SelfTestAccessorySlots.Port<io.github.butterflysmp.rpg.storage.PlayerAccessories> accessoryPort(
+            UUID id, io.github.butterflysmp.rpg.paper.adapter.AdapterContext adapters) {
+        io.github.butterflysmp.rpg.paper.accessory.AccessoryService service = adapters.accessories().service();
+        return new SelfTestAccessorySlots.Port<>() {
+            @Override public java.util.Optional<io.github.butterflysmp.rpg.storage.PlayerAccessories> read() {
+                return service.accessories(id);
+            }
+            @Override public boolean write(io.github.butterflysmp.rpg.storage.PlayerAccessories record) {
+                return service.replace(id, record, ok -> { });
+            }
+            @Override public List<String> slots(io.github.butterflysmp.rpg.storage.PlayerAccessories record) {
+                List<String> out = SelfTestAccessorySlots.emptySlots(io.github.butterflysmp.rpg.core.accessory.AccessorySlots.COUNT);
+                for (int s = 0; s < out.size(); s++) out.set(s, record.item(s).orElse(null));
+                return out;
+            }
+        };
+    }
+
+    /** A stored slot's accessory id, or {@code unreadable} when its text does not decode to one of ours. */
+    private static String accessoryName(String stored, io.github.butterflysmp.rpg.paper.adapter.AdapterContext adapters) {
+        return io.github.butterflysmp.rpg.paper.vault.VaultCodec.decode(stored)
+                .flatMap(item -> io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.accessoryId(item, adapters.keys()))
+                .orElse("unreadable");
     }
 
     private static boolean emptyItem(ItemStack item) {
@@ -343,6 +383,11 @@ final class SelfTestSnapshot {
         p.setExp(vanillaProgress);
         boolean cell = classId == null || profiles.setCell(id, classId, elementId);
         boolean summons = maxSummonsBase.writes() && profiles.setMaxSummonsBase(id, maxSummonsBase.base());
+        // H15: his accessory slots, whole, through the service; then READ BACK. After the cell, so his class is his own again.
+        java.util.Optional<String> accessoriesNot = accessorySlots.restore(accessoryPort);
+        String accessoriesLine = " accessories=" + accessorySlots.fields(accessoryPort, accessoryName)
+                + accessoriesNot.map(why -> " NOT-RESTORED=" + why).orElse("");
+        p.setSaturation(saturation);
         resources.setCurrent(id, ResourceCost.DEFAULT_RESOURCE, mana);
         // No setter for the trace: toggle until it reads what it read before (at most once).
         if (nameplates.tracing() != trace) nameplates.toggleTrace();
@@ -365,6 +410,8 @@ final class SelfTestSnapshot {
                 + " vanilla_xp=" + vanillaLevel + "+" + String.format(java.util.Locale.ROOT, "%.3f", vanillaProgress)
                 + " spawn_phantoms=" + spawnPhantoms
                 + " max_summons_base=" + (summons ? String.valueOf(maxSummonsBase.base()) : "NOT-RESTORED")
+                + " saturation=" + String.format(java.util.Locale.ROOT, "%.1f", saturation)
+                + accessoriesLine
                 + " " + wornLine;
     }
 }

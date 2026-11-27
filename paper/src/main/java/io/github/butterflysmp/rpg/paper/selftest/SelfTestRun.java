@@ -74,11 +74,12 @@ final class SelfTestRun {
 
     void start(String what) {
         snapshot = SelfTestSnapshot.take(player, service.profiles(), service.resources(), service.nameplates(),
-                service.stats());
+                service.stats(), service.adapters());
         long rows = queue.stream().filter(s -> !s.row().equals(Scenario.SETUP)).count();
         service.log("SELFTEST RUN START " + what + " rows=" + rows + " selftest=" + service.build()
                 + " player=" + player.getUniqueId() + (snapshot.profileLoaded() ? "" : " PROFILE-NOT-LOADED"));
-        // W1 (the seat, 2026-11-25): what he WEARS at capture, so the RESTORED line can be read against it.
+        // W1 (the seat, 2026-11-25): what he WEARS at capture, so the RESTORED line can be read against it. H15 (2026-11-26):
+        // and his class and his four accessory slots, exactly.
         service.log("SELFTEST RUN CAPTURED " + snapshot.capturedFields());
         // One tick later, so the command's own "Selftest started" reply goes out before the reader exists.
         service.scheduler().onEntityLater(player, () -> {
@@ -521,6 +522,22 @@ final class SelfTestRun {
      * inside the hit. The dealer's type is looked up NOW: a dealer already removed (a Phage that blew) reads
      * {@code gone}, and the hit's own uuid is still printed.
      */
+    /**
+     * Every heal the store makes to HIM during a row (the Healing Tome's gate, 2026-11-26), at the heal:
+     * {@code HEALED amount=<a> after=<c>/<m> dealer=<self|uuid>}. His passive regeneration and the pulse both heal through
+     * {@code CombatantStats.heal}, so with this line a health reading names every term between two readings. The amount is
+     * what the call asked; the store caps at max, which {@code after} shows.
+     */
+    void healed(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
+        if (ended || scenarioIndex < 0 || !change.target().equals(player.getUniqueId())) return;
+        log(healedLine(change.amount(), change.newCurrent(), change.max(), change.dealer() == null ? "none"
+                : change.dealer().equals(player.getUniqueId()) ? "self" : change.dealer().toString()));
+    }
+
+    static String healedLine(double amount, double after, double max, String dealer) {
+        return String.format(java.util.Locale.ROOT, "HEALED amount=%.3f after=%.3f/%.3f dealer=%s", amount, after, max, dealer);
+    }
+
     void hurt(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
         if (ended || scenarioIndex < 0 || !change.target().equals(player.getUniqueId())) return;
         String dealer;

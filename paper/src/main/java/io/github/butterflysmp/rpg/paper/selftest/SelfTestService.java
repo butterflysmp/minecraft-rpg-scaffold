@@ -350,6 +350,11 @@ public final class SelfTestService {
         if (run != null) run.hurt(change);
     }
 
+    void onPlayerHealed(io.github.butterflysmp.rpg.core.combat.stat.HealthChange change) {
+        SelfTestRun run = active;
+        if (run != null) run.healed(change);
+    }
+
     void ended(SelfTestRun run) {
         if (active == run) {
             active = null;

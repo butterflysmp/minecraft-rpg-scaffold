@@ -346,6 +346,34 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * Any failure: no teleport, a plain chat line, the run ends and the snapshot restores. Logs the {@code PAD} line.
          */
         PAD,
+        /**
+         * {@code "<class token>"} ({@code melee}, {@code ranger}, {@code mage} or {@code none}): set his PROFILE class
+         * through the Build screen's own write ({@code BuildRules.elementAfterClassPick}, then
+         * {@code ProfileService.setCell}, then the stone's lore), the class a class accessory is gated on (ruling A1). The
+         * run's restore puts his cell back. Logs {@code STAGE class found=<c> set=<c> element=<e> ok=<bool>}. H15, the
+         * Healing Tome's gate.
+         */
+        CLASS,
+        /**
+         * {@code "equip <slot 0-3>"}: put the accessory in his main hand into that slot through {@code AccessoryService.write}
+         * (the Equipment screen's own store write), after {@code AccessorySlots.canEquip}'s verdict; the hand is emptied. A
+         * refused verdict, an occupied slot, or a hand that is not an accessory is logged and changes nothing.
+         * {@code "clear"}: empty every occupied slot through the same write. The run's restore puts his four slots back
+         * exactly (H15). Logs {@code STAGE accessory ...}.
+         */
+        ACCESSORY,
+        /**
+         * {@code "<saturation>"}: set his saturation, which picks his health regeneration's tier
+         * ({@code HealthRegenSystem}: saturated x5). The run's restore puts it back. Logs
+         * {@code STAGE saturation found=<f> set=<f>}.
+         */
+        SATURATION,
+        /**
+         * {@code ""}: his health regeneration as the store holds it: {@code REGEN rate=<per second> saturation=<s>
+         * customHP=<c>/<m>}. With the HEALED lines (every heal the store makes to him, logged at the heal), a health
+         * reading names every term between two readings.
+         */
+        PROBE_REGEN,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

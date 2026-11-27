@@ -115,6 +115,30 @@ public final class AccessoryService {
         return true;
     }
 
+    /**
+     * Put a whole CAPTURED record back, all four slots at once, and write it through (the selftest's H15 restore: his
+     * accessories as they were at run start, unreadable items included, byte for byte). The same cache-then-save as
+     * {@link #write}, and refused alike when the store is not loaded or unusable.
+     *
+     * @return false when nothing was changed or written
+     */
+    public boolean replace(UUID playerId, PlayerAccessories captured, Consumer<Boolean> onSettled) {
+        if (!captured.playerId().equals(playerId)) {
+            throw new IllegalArgumentException("a captured record for " + captured.playerId() + " is not " + playerId + "'s");
+        }
+        if (accessories(playerId).isEmpty()) return false;
+        loaded.put(playerId, CompletableFuture.completedFuture(captured));
+        repository.save(captured).whenComplete((ignored, error) -> {
+            if (error != null) {
+                poison(playerId, error);
+                log.log(Level.SEVERE, "Accessories restore FAILED for " + playerId + ". The store is poisoned for the"
+                        + " session; the file keeps its last good contents.", error);
+            }
+            onSettled.accept(error == null);
+        });
+        return true;
+    }
+
     private void poison(UUID playerId, Throwable cause) {
         loaded.put(playerId, CompletableFuture.failedFuture(new IllegalStateException(
                 "accessories write failed for " + playerId + "; poisoned for the session", cause)));
