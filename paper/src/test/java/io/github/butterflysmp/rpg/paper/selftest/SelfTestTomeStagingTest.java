@@ -132,7 +132,7 @@ class SelfTestTomeStagingTest {
         assertTrue(cell > 0 && slots > cell, "his slots go back AFTER his class, so the class gate reads his own class");
         assertTrue(restore.contains("+ accessoriesLine"), "and their fields are on the RESTORED line");
         assertTrue(restore.contains("p.setSaturation(saturation);"));
-        String port = between(s, "private static SelfTestAccessorySlots.Port<", "private static String accessoryName(");
+        String port = between(s, "private static SelfTestAccessorySlots.Port<", "static String accessoryName(");   // package-visible since V7 (a), 2026-11-27
         assertTrue(port.contains("return service.accessories(id);"), "read through the service");
         assertTrue(port.contains("return service.replace(id, record, ok -> { });"), "written through the service");
         assertTrue(code("SelfTestRun.java").contains("service.stats(), service.adapters());"), "the run hands it the store");

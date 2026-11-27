@@ -196,6 +196,48 @@ V7). Recorded here from the seat's brief of 2026-11-27 (via Ben), and built in `
 
 Each item's as-built account (file, test, mutation) is added under *V7 AS BUILT*, below, by the branch that builds it.
 
+## V7 AS BUILT (`feat/owed-v7`, 2026-11-27)
+
+- **(a) THE PAD STEP CLEARS HIS ACCESSORY SLOTS.** `SelfTestRun.pad()`'s completion, after `stagePoint` is set and the
+  ITEMS line, before the setup goes on: `SelfTestDrivers.clearAccessoriesOnPad`, which writes each occupied slot empty
+  through the store as `accessory: clear` does, and logs **`ACCESSORIES cleared=<n> pad [<id>|-, …]`** (each slot as it
+  stood when he reached the pad, named as the CAPTURED line names it: `SelfTestSnapshot.accessoryName`), then one `PAD
+  accessory settled slot=<s> ok=<b>` per write. Store not loaded: `ACCESSORIES cleared=0 pad not-loaded`, nothing written.
+  The run's snapshot puts them back (H15). **The lint:** `SELF_STAGED` gains an arm: an `accessory: equip` before the row
+  holds an item of its own is a finding ("a row that wants an accessory gives, holds and equips it itself"). Every
+  shipped row already does (the suite's lint rows stayed green). Tests: `OwedV7Test` (the line, its place in `pad()`, the
+  lint arm with its control).
+- **(b) S3 ALIGNS HIM IN THE TICK BEFORE THE TRIGGER IS STAGED.** `GATE-held-target.yml` S3: the align, `wait: 1`, then
+  `mob_target: bt`, after his wolf is cast (`OwedV7Test`). **CC'S CALL:** "the trigger is staged" read as the
+  `mob_target` that makes `bt` target him; the alternative is the tome's equip, 10 ticks later. **The only row it
+  applies to:** S3 (BT6 casts its wolf AFTER its blink, so no summon is present when it blinks; READ by a scan of every
+  row naming both the tome and a whistle). **The proof:** `BlinkPadLandingTest` walks every start within 0.5 of the stand
+  on each axis (a 0.05 grid, 441 starts): every landing is on the pad's floor inside the box, more than 5 from every mob,
+  and **`safe=` lies in [495, 508]** (EXECUTED). Its control: from 0.185 west it returns **507**, the boot's own reading.
+- **(c) S5 WAITS FOR A HIT, AND ENDS WITH A CLEAR.** `wait: 120` after the order (READ on `ffacaa76`: the wolf 2.0 from
+  `h5` at +60; its hits 20 apart. INFERRED: a hit by about +80; 40 ticks of margin), then the probe and the kill; the row
+  ends `clear_state`, so the RESTORED line reads `summons=0` (`OwedV7Test`).
+- **(d) `SUMMON target … reason=<r> tick=<t>`,** the server tick `SummonGoal` decided on (its `now`, the tick it hands
+  `SummonGuard.decide`); last on the line, so every older field reads as before. `SummonLifecycleTest` (four distinct
+  ticks), `SummonHoldsTargetWiringTest` (the call passes `now`).
+- **(e) THE 42 REFUSE.** `SelfTestService.start`: once the queue is filled (one gate, a row, a list, or `all`) and
+  before the run is built, `SelfTestGateList.padRefusal(queue)` names the FIRST gate in run order whose setup does not
+  begin with `pad:` (the lint's own predicate, `ScenarioLint.beginsWithPad`, so the two cannot disagree), and the command
+  returns **`Selftest: '<gate>' predates the pad and would run on your ground. Refused.`** (SEAT PLACEHOLDER), one chat
+  line. No run, so no snapshot (it is the run's `start()`). No override word. The gates stay loaded and counted (R0d does
+  not move); `PadFirstLintTest.KNOWN` stays their record. **CC'S CALL:** one line naming the first; the alternative
+  names every one. Tests: `SelfTestPadRefusalTest` (the refused set IS `KNOWN`, 42; a list refused whole, naming the
+  first; a row of one; `all`; a late pad step; no setup; the wiring before `new SelfTestRun`).
+- **(e)'s READ, WHETHER ANY OF THE 42 RUNS OFF HIS GROUND (not exempted; named for the seat):** SEVEN run part of each
+  row in the fight's OWN world: **fight-arena, fight-down, fight-dragon, fight-end, fight-revive, fight-rules,
+  fight-template** each `rpg fight enter` partway through every row. But each one's SETUP (difficulty, time, gamerules)
+  and each row's start, up to the enter, run where he typed the command: his ground. **fight-site** runs `rpg fight start`
+  at a site in his own world. The other 34 run on his ground throughout.
+- **Mutations, one per rule, each reddening its row (marker 1 and 0, restored byte-identical):** the pad clear deleted;
+  the lint arm disabled; S3's align removed; `Blinks.VERTICAL_REACH` 2 -> 3 (the drift box reddens with the old rows);
+  S5's wait back to 60; S5's clear removed; ` tick=` removed; `0L` passed for `now`; the refusal never returned; the
+  wiring removed; the predicate loosened to "a pad step anywhere".
+
 ## CC'S CALLS
 
 1. R2's lint rule covers any equipped accessory, not the Blink by id (no content table in the lint).

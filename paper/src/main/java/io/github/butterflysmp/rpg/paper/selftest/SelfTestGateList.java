@@ -115,6 +115,33 @@ final class SelfTestGateList {
         return List.copyOf(out);
     }
 
+    /**
+     * THE SEAT'S V7 (e), 2026-11-27: the one chat line a command is refused with when it names a gate that predates the pad.
+     * SEAT PLACEHOLDER 2026-11-27 wording, OPEN FOR BEN.
+     */
+    static String padRefusalLine(String gate) {
+        return "Selftest: '" + gate + "' predates the pad and would run on your ground. Refused.";
+    }
+
+    /**
+     * V7 (e): when ANY gate in the queue (a whole gate, a row of one, a list, or {@code all}) has no pad step as its setup's
+     * first step, the refusal naming the FIRST such gate in the order the run would reach it (CC'S CALL: one line, the
+     * first; the alternative names every one), else null. The caller refuses before anything is built, so nothing of the
+     * command runs and no snapshot is taken. No override word. A gate with no setup at all has no pad step: refused.
+     * The gates stay loaded and counted; this only refuses to RUN them.
+     */
+    static String padRefusal(List<Scenario> queue) {
+        Map<String, Boolean> padded = new LinkedHashMap<>();
+        for (Scenario s : queue) {
+            padded.putIfAbsent(s.gate(), false);
+            if (s.row().equals(Scenario.SETUP) && ScenarioLint.beginsWithPad(s)) padded.put(s.gate(), true);
+        }
+        for (Map.Entry<String, Boolean> e : padded.entrySet()) {
+            if (!e.getValue()) return padRefusalLine(e.getKey());
+        }
+        return null;
+    }
+
     /** A row is given as a second word only with one gate; in a list it is given by reference. Null for one gate. */
     static String rowRefusal(String typed) {
         return isList(typed) ? "Refusing: a row needs one gate, not '" + typed + "'." : null;

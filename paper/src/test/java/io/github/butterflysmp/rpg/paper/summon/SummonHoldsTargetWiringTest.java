@@ -38,7 +38,9 @@ class SummonHoldsTargetWiringTest {
     void theTargetLineIsWrittenOnceAChange_withItsReason() throws IOException {
         String g = read("summon/SummonGoal.java");
         assertTrue(g.contains("if (d.change() != SummonGuard.Change.NONE || d.dropped().isPresent()) {"));
-        assertTrue(g.contains("ctx.log().info(SummonTrace.target(summon, vec(body), d));"));
+        // V7 (d), 2026-11-27: with the tick it was decided on, the same `now` the decision was handed (pinned above).
+        assertTrue(g.contains("ctx.log().info(SummonTrace.target(summon, vec(body), d, now));"));
+        assertTrue(g.contains("long now = Bukkit.getCurrentTick();"), "now is the server tick");
         assertEquals(1, g.split("SummonTrace\\.target\\(", -1).length - 1, "one target line");
     }
 

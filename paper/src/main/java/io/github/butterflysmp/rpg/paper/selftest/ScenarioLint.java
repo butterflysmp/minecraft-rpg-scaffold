@@ -353,11 +353,19 @@ final class ScenarioLint {
         return List.copyOf(out);
     }
 
+    /**
+     * A setup that BEGINS with {@code pad:}. The one predicate both PAD_FIRST and the run's refusal ask (the seat's V7 (e),
+     * {@link SelfTestGateList#padRefusal}), so the lint and the refusal cannot disagree about which gates predate the pad.
+     */
+    static boolean beginsWithPad(Scenario setup) {
+        return !setup.steps().isEmpty() && setup.steps().getFirst().verb() == Scenario.Verb.PAD;
+    }
+
     /** PAD_FIRST over one gate: its setup's FIRST step is {@code pad:}. */
     static void padFirst(String gate, List<Scenario> scenarios, List<Finding> out) {
         for (Scenario s : scenarios) {
             if (!s.row().equals(Scenario.SETUP)) continue;
-            if (s.steps().isEmpty() || s.steps().getFirst().verb() != Scenario.Verb.PAD) {
+            if (!beginsWithPad(s)) {
                 out.add(new Finding(gate, s.row(), Rule.PAD_FIRST, "the setup does not begin with pad: what runs before a pad"
                         + " step runs on his own ground"));
             }
@@ -480,6 +488,12 @@ final class ScenarioLint {
                 out.add(new Finding(gate, r, Rule.HOTBAR, "'" + a + "' before clear_inventory"));
             }
             if ((v == Scenario.Verb.HOLD || v == Scenario.Verb.HOLD_ONLY) && !a.equals("empty")) held = true;
+            // V7 (a) (the seat, 2026-11-27): every pad gate's pad step clears his accessory slots, so a row that wants an
+            // accessory EQUIPS IT ITSELF, from an item it holds in the row (the equip takes the main hand), never one carried.
+            if (v == Scenario.Verb.ACCESSORY && a.startsWith("equip") && !held) {
+                out.add(new Finding(gate, r, Rule.SELF_STAGED, "'accessory: " + a + "' before the row holds an item of its"
+                        + " own: a row that wants an accessory gives, holds and equips it itself"));
+            }
             if (v == Scenario.Verb.WAIT && Long.parseLong(a) >= 1) turnPending = false;
             if (turns(st)) {
                 turned = true;
