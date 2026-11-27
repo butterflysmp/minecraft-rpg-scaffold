@@ -153,6 +153,8 @@ class DragonsBreathContentTest {
                 if (weapon.id().equals("dragons_breath")) continue;
                 // The Breacher (feat/breacher, 2026-11-22) is the second spread; BreacherContentTest pins its 7 at 12.5.
                 if (weapon.id().equals("breacher")) continue;
+                // The Blast Fungus (2026-11-26) is the third: three fused chunks, 25 degrees (BlastFungusContentTest pins it).
+                if (weapon.id().equals("blast_fungus")) continue;
                 if (binding.ability().cast() instanceof CastSpec.Projectile projectile) {
                     assertNull(projectile.spread(),
                             weapon.id() + "/" + binding.input() + " grew a spread block");

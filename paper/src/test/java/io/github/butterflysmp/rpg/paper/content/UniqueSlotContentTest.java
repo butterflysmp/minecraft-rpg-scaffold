@@ -39,6 +39,7 @@ class UniqueSlotContentTest {
      * every one of the 65, with the dev unique enchant loaded.
      */
     private static final List<String> MASTER_POOLS = List.of(
+            "blast_fungus=attunement,unbreaking",   // 2026-11-26: + blast_fungus, a nature mage weapon (attunement, unbreaking)
             "blaze_kings_staff=attunement,unbreaking",
             "boltor=deft_hands,expanded_quiver,power,unbreaking",
             "bone_whistle=unbreaking",   // 2026-11-25 (PR 5): a summoner weapon's pool is the universal one
@@ -137,13 +138,13 @@ class UniqueSlotContentTest {
     @Test
     void theShippedSetIsRecountedWithAControl() {
         Loaded l = load();
-        assertEquals(25, l.weapons(), "2026-11-25: + bone_whistle (PR 5); + broken_bottle; recount: ls content/weapons | wc -l = 25, 24 at 9c01d43f");
+        assertEquals(26, l.weapons(), "2026-11-25: + bone_whistle (PR 5); + broken_bottle; 2026-11-26: + blast_fungus; recount: ls content/weapons | wc -l = 26, 25 at fcfbefbb");
         assertEquals(1, l.shields());
         assertEquals(28, l.armor());   // 2026-11-25: + copper (C1); grep -h "^    material:" content/armor/*.yml | wc -l = 28
         assertEquals(5, l.tools());
         assertEquals(6, l.accessories());
-        assertEquals(65, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle
-        assertEquals(65, MASTER_POOLS.size(), "the snapshot covers the same 65");
+        assertEquals(66, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle; 2026-11-26: + blast_fungus
+        assertEquals(66, MASTER_POOLS.size(), "the snapshot covers the same 66");
         assertEquals(24, l.real().size(), "a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
         assertEquals(24, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
@@ -178,7 +179,7 @@ class UniqueSlotContentTest {
                 assertEquals(Optional.empty(), g.gearElement(), g.id() + " declares no element");
             }
         }
-        assertEquals(25, withElement); // 2026-11-25: + bone_whistle (PR 5); + broken_bottle; ls content/weapons | wc -l = 25
+        assertEquals(26, withElement); // 2026-11-25: + bone_whistle (PR 5); + broken_bottle; 2026-11-26: + blast_fungus; ls content/weapons | wc -l = 26
     }
 
     private static final List<String> FIRE_MAGE = List.of("blaze_kings_staff", "flint_staff", "living_lantern");
@@ -242,7 +243,7 @@ class UniqueSlotContentTest {
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }
-        assertEquals(65, checked, "the control: every shipped gear was asked");   // 2026-11-25: + copper; + broken_bottle
+        assertEquals(66, checked, "the control: every shipped gear was asked");   // 2026-11-25: + copper; + broken_bottle; 2026-11-26: + blast_fungus
     }
 
     /**

@@ -167,6 +167,9 @@ own baseline and predicts each row as that baseline plus an exact offset.
   The Broken Bottle is *"Only lootable from Shipwrecks and Sunken Treasure"*. Sunken Treasure means BOTH buried
   treasure chests AND underwater ruin chests (Ben: *"Both actually"*). The chances: *"Leave it for now"*. **Until that
   pass it is obtainable only by `/rpg give`.**
+- **AND THE BLAST FUNGUS, FOR THE SAME PASS (2026-11-26, `PLAN-blast-fungus.md` F12).** Ben: *"Loot only, bastion chests,
+  and pigging barters."* (piglin bartering). No chances given. Built nothing; in no source; obtainable only by
+  `/rpg give` until the world-loot pass.
 - **A custom look** for the item (the brief: not in this slice). It renders as a plain glass bottle.
 - **K6's Unbreaking question**, above: **RULED (b), "leave it" (the seat, 2026-11-26).** Unbreaking stays in the bottle's
   pool. It is carried beside "Unbreaking rolls on weapons with no durability" in `PLAN-weapon-tiers.md`'s carried list,

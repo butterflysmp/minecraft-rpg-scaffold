@@ -69,14 +69,14 @@ class BootCountLinesTest {
     @Test
     void theContentIsFound() {
         Boot boot = boot();
-        assertEquals(25, boot.allGear().stream().filter(g -> g instanceof io.github.butterflysmp.rpg.core.weapon.WeaponDefinition)
-                .count(), "R0c's Loaded line: 25 weapons (2026-11-25: + bone_whistle, PR 5; + broken_bottle, the bottle PR; ls content/weapons/*.yml | wc -l = 25, 24 at 9c01d43f)");
+        assertEquals(26, boot.allGear().stream().filter(g -> g instanceof io.github.butterflysmp.rpg.core.weapon.WeaponDefinition)
+                .count(), "R0c's Loaded line: 26 weapons (2026-11-25: + bone_whistle, PR 5; + broken_bottle, the bottle PR; 2026-11-26: + blast_fungus; ls content/weapons/*.yml | wc -l = 26, 25 at fcfbefbb)");
     }
 
     @Test
     void mintOnCraftIsMeasured() {
         Boot boot = boot();
-        assertEquals("Mint-on-craft: 42 indexed, 42 claiming, of 59 gear definitions",
+        assertEquals("Mint-on-craft: 42 indexed, 42 claiming, of 60 gear definitions",
                 BootLines.mintOnCraft(boot.crafts(), boot.allGear().size()));
     }
 

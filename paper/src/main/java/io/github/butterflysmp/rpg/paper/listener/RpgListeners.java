@@ -2282,6 +2282,52 @@ public final class RpgListeners implements Listener {
         if (gear) event.setCancelled(true);
     }
 
+    /**
+     * F11 (2026-11-26, the Blast Fungus): a right click with a MINTED red mushroom, in either hand, never places, pots or
+     * composts it. The main hand's cast already cancels the whole interaction ({@link #onRightClick}); this covers the OFF
+     * hand, which {@code onRightClick} leaves to vanilla. A plain red mushroom is untouched. READs on
+     * {@code MintedMushroomUse}.
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onMintedMushroomUse(PlayerInteractEvent event) {
+        Action action = event.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
+        if (!mintedMushroom(event.getItem())) return;
+        event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+        Block clicked = event.getClickedBlock();
+        if (action == Action.RIGHT_CLICK_BLOCK && clicked != null
+                && io.github.butterflysmp.rpg.paper.weapon.MintedMushroomUse.denyBlock(clicked.getType().getKey().getKey())) {
+            event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
+        }
+    }
+
+    /** F11: a zombie horse never eats a minted red mushroom (READ: tag {@code zombie_horse_food}), whichever hand holds it. */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onMintedMushroomFeed(org.bukkit.event.player.PlayerInteractEntityEvent event) {
+        // Only the zombie horse takes one (READ: the only item tag holding red_mushroom is zombie_horse_food), so only there:
+        // every other entity interaction with it in hand is left as it is.
+        if (event.getRightClicked() instanceof org.bukkit.entity.ZombieHorse
+                && mintedMushroom(event.getPlayer().getInventory().getItem(event.getHand()))) {
+            event.setCancelled(true);
+        }
+    }
+
+    /** F11: a hopper never composts a minted red mushroom ({@code CompostItemEvent} cannot be cancelled, READ). */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onMintedMushroomMove(org.bukkit.event.inventory.InventoryMoveItemEvent event) {
+        org.bukkit.Location at = event.getDestination().getLocation();
+        if (at == null) return;
+        if (io.github.butterflysmp.rpg.paper.weapon.MintedMushroomUse.refuseMoveInto(mintedMushroom(event.getItem()),
+                at.getBlock().getType().getKey().getKey())) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean mintedMushroom(org.bukkit.inventory.ItemStack item) {
+        return item != null && io.github.butterflysmp.rpg.paper.weapon.MintedMushroomUse.isMintedMushroom(
+                WeaponItems.weaponId(item, adapters.keys()).isPresent(), item.getType().getKey().getKey());
+    }
+
     private boolean mintedBottle(org.bukkit.inventory.ItemStack item) {
         return item != null && io.github.butterflysmp.rpg.paper.weapon.MintedBottleUse.isMintedBottle(
                 WeaponItems.weaponId(item, adapters.keys()).isPresent(), item.getType().getKey().getKey());

@@ -1,4 +1,17 @@
 === WEAPONS ===
+-- blast_fungus
+   "Nature" color=#55FF55 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Fungal Barrage" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Lobs three spore chunks that burst" color=#AAAAAA O=. B=. S=. U=. I=F
+   "after 2 seconds, or on touching a mob." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Magic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["55 x 3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 7.0s | Mana Cost: 30" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "It grew in the crimson dark," color=#AAAAAA O=. B=. S=. U=. I=T
+   "and it does not like being picked." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
 -- blaze_kings_staff
    "Fire" color=#FF5555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -745,6 +758,19 @@ armor.slotNoun(LEGS) = Leggings
 armor.slotNoun(FEET) = Boots
 
 === ENCHANTED WEAPONS (top level, score absent) ===
+-- blast_fungus + attunement 3
+   "Nature" color=#55FF55 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Fungal Barrage" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Lobs three spore chunks that burst" color=#AAAAAA O=. B=. S=. U=. I=F
+   "after 2 seconds, or on touching a mob." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Magic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["63.25 x 3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 7.0s | Mana Cost: 30" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "It grew in the crimson dark," color=#AAAAAA O=. B=. S=. U=. I=T
+   "and it does not like being picked." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
 -- blaze_kings_staff + attunement 3
    "Fire" color=#FF5555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -1086,4 +1112,4 @@ armor.slotNoun(FEET) = Boots
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 
-=== 140 renderings ===
+=== 142 renderings ===
