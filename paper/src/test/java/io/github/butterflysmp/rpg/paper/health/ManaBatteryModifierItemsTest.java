@@ -52,8 +52,11 @@ class ManaBatteryModifierItemsTest {
         assertTrue(c.stream().anyMatch(l -> l.contains("EnchantEffect.MANA_REGEN);")), "bound by effect");
         assertTrue(c.stream().anyMatch(l -> l.contains("if (ManaRegen.boosts(bonus)) {")),
                 "absent, not zeroed: no source written for no bonus (a source every pass would pin the pool every pass)");
-        assertTrue(c.stream().anyMatch(l -> l.contains("desired.put(SOURCE_PREFIX + slot.name(), ManaRegen.contribution(bonus));")),
-                "the one seam a mana-regen bonus becomes a modifier");
+        // C2 (2026-11-27): authored per FIVE SECONDS, converted by ManaRegen's one conversion BEFORE the one seam a
+        // mana-regen bonus becomes a modifier. Mutation: the conversion skipped -> reddens.
+        assertTrue(c.stream().anyMatch(l -> l.contains(
+                        "desired.put(SOURCE_PREFIX + slot.name(), ManaRegen.contribution(ManaRegen.perSecondFromPerFiveSeconds(bonus)));")),
+                "the one conversion, then the one seam");
         assertEquals(List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET),
                 List.of(DefenseModifierItems.ARMOR_SLOTS), "the control: ARMOR_SLOTS is the four worn slots, no hand");
     }

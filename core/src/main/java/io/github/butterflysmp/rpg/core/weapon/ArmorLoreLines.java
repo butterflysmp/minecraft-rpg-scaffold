@@ -60,9 +60,9 @@ public final class ArmorLoreLines {
 
     /**
      * The stat a Mana Battery enchant raises (2026-11-27), as the leading label of a bonus line: {@code "Mana Regen: +3"},
-     * in mana per SECOND. The fourth in the column, by the same helper. "Mana Regen" is the stats sheet's word for the
-     * stat. SEAT PLACEHOLDER 2026-11-27 wording, OPEN FOR BEN (no unit is shown; the sheet shows the stat per five
-     * seconds).
+     * in mana per FIVE SECONDS: the authored number, which is the number the sheet's Mana Regen line moves by (C4,
+     * 2026-11-27). The fourth in the column, by the same helper. "Mana Regen" is the stats sheet's word for the stat.
+     * SEAT PLACEHOLDER 2026-11-27 wording; whether to show "/5s" is OPEN FOR BEN.
      */
     public static final String MANA_REGEN_LABEL = "Mana Regen";
 

@@ -376,11 +376,15 @@ class TrueTooltipsConsistencyTest {
                         double mana = EnchantValues.totalFor(state, c.enchants(), EnchantEffect.MAX_MANA);
                         expectBonus(mismatches, label, lore, ArmorLoreLines.MAX_MANA_LABEL,
                                 ManaBank.boosts(mana) ? ManaBank.contribution(mana) : 0);
-                        // Mana Battery (2026-11-27): the regen line, against the scan's own gate and contribution.
+                        // Mana Battery (2026-11-27): the regen line, against the scan's own gate, conversion and contribution.
+                        // C4: the line shows the number the SHEET moves by, per five seconds: the engine's per-second
+                        // modifier over the sheet's own window.
                         double regen = EnchantValues.totalFor(state, c.enchants(), EnchantEffect.MANA_REGEN);
                         expectBonus(mismatches, label, lore, ArmorLoreLines.MANA_REGEN_LABEL,
                                 io.github.butterflysmp.rpg.core.combat.ManaRegen.boosts(regen)
-                                        ? io.github.butterflysmp.rpg.core.combat.ManaRegen.contribution(regen) : 0);
+                                        ? io.github.butterflysmp.rpg.core.combat.ManaRegen.contribution(
+                                                io.github.butterflysmp.rpg.core.combat.ManaRegen.perSecondFromPerFiveSeconds(regen))
+                                                * io.github.butterflysmp.rpg.core.combat.StatsSheetLines.RATE_WINDOW_SECONDS : 0);
                         boolean moves = EnchantValues.totalFor(state, c.enchants(), EnchantEffect.DEFENSE) > 0
                                 || health > 0 || mana > 0 || regen > 0;
                         if (!moves) {

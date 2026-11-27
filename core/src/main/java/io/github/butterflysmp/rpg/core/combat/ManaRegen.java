@@ -65,6 +65,20 @@ public final class ManaRegen {
         return bonusPerSecond;
     }
 
+    /**
+     * A rate authored per FIVE SECONDS, the unit the stats sheet prints ({@link StatsSheetLines#perFiveSeconds}), as the
+     * per-second rate the STAT stores: the sheet's own conversion, inverted, over the sheet's own window
+     * ({@link StatsSheetLines#RATE_WINDOW_SECONDS}), so the two cannot drift apart.
+     *
+     * <p>Every enchant with {@code effect: mana_regen} is authored in this unit (the seat's C3, 2026-11-27; Ben chose "B":
+     * Mana Battery's 1 / 2 / 3 are the numbers the sheet moves by). The golden set's {@code mana_regen} and the
+     * accessories' stay per SECOND, as they are, and never pass through here. The result is a per-SECOND bonus, so it then
+     * composes in TICKS through {@link #perTick} exactly as every other source does (this class's javadoc).
+     */
+    public static double perSecondFromPerFiveSeconds(double perFiveSeconds) {
+        return perFiveSeconds / StatsSheetLines.RATE_WINDOW_SECONDS;
+    }
+
     /** A per-second rate as the per-tick rate {@link ResourcePool} counts in. */
     public static double perTick(double perSecond) {
         return perSecond / TICKS_PER_SECOND;

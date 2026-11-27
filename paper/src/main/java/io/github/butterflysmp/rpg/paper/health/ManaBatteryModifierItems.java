@@ -50,7 +50,9 @@ public final class ManaBatteryModifierItems {
             // ManaRegen.boosts is strictly > 0: an absent enchant writes NO source, because a source written every pass
             // would pin the pool every pass and stop mana regenerating at all (ManaTransition's freeze guard).
             if (ManaRegen.boosts(bonus)) {
-                desired.put(SOURCE_PREFIX + slot.name(), ManaRegen.contribution(bonus));
+                // C2 (the seat, 2026-11-27): the enchant's value is authored per FIVE SECONDS (Ben's "B"); the stat is
+                // per second. The one conversion is ManaRegen's, before the one seam a bonus becomes a modifier.
+                desired.put(SOURCE_PREFIX + slot.name(), ManaRegen.contribution(ManaRegen.perSecondFromPerFiveSeconds(bonus)));
             }
         }
         return desired;

@@ -107,10 +107,14 @@ public enum EnchantEffect {
     MAX_MANA,
 
     /**
-     * Mana per SECOND added to the mana REGENERATION of whoever wears the piece it sits on: Mana Battery (Ben,
-     * 2026-11-27: "1/2/3", "per second not 5 seconds, normal slot"). The mechanism is
+     * Mana per FIVE SECONDS added to the mana REGENERATION of whoever wears the piece it sits on: Mana Battery (Ben,
+     * 2026-11-27: "1/2/3 per 5 seconds", then "B", the sheet's own unit). The mechanism is
      * {@link io.github.butterflysmp.rpg.core.combat.ManaRegen} ({@code boosts}, {@code contribution}), which already
      * existed: like {@link #QUIVER_SIZE}, an existing mechanism gaining its first enchant.
+     *
+     * <p><b>THE UNIT IS THE EFFECT'S (the seat's C3):</b> every enchant with this effect is authored per five seconds, and
+     * {@code ManaRegen.perSecondFromPerFiveSeconds} is the one conversion to the per-second stat. The golden set's and the
+     * accessories' mana regen stay per second and never pass through it.
      *
      * <p>Read off the WORN pieces exactly as {@link #MAX_MANA} is, summed per piece, and it enters the mana-regen stat
      * beside the golden set's bonus and the accessories' through ONE reconcile ({@code ManaTransition}), so a rate

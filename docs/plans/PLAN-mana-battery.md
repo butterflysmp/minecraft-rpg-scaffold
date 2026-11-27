@@ -11,9 +11,53 @@ The seat asked: per 5 seconds or per second; how it reads; which slot. Ben:
 
 > "per second not 5 seconds, normal slot"
 
-So: **+1 / +2 / +3 mana per SECOND** at I / II / III, in a NORMAL slot of any armor piece.
+So, as first built: **+1 / +2 / +3 mana per SECOND** at I / II / III, in a NORMAL slot of any armor piece.
+**SUPERSEDED the same day: Ben chose "B", per FIVE SECONDS. See the section below.**
+
+## DATED NOTE, 2026-11-27 — BEN CHOSE "B": PER FIVE SECONDS (the seat's C1 to C6)
+
+The seat owned its error: the brief's B5 described the sheet as per second; it shows per five seconds (READ below).
+Ben was then shown both readings in the sheet's own unit (A as built: the sheet +5 / +10 / +15 per 5s; B his first
+wording: the sheet +1 / +2 / +3 per 5s, the tooltip and the sheet reading the same number), and answered, verbatim:
+**"B"**. The seat's rulings, as built:
+
+- **C1:** `mana_battery.yml` keeps `value_by_level: [1, 2, 3]`, now mana per FIVE SECONDS (BEN). Its comment carries
+  his three statements in order, what the numbers do, and that the gear score does not move them.
+- **C2: THE CONVERSION HAS ONE HOME.** `ManaRegen.perSecondFromPerFiveSeconds(v) = v / StatsSheetLines
+  .RATE_WINDOW_SECONDS`, the sheet's own conversion inverted over the sheet's own window; `ManaBatteryModifierItems`
+  calls it before `ManaRegen.contribution`. No literal 5 or 0.2 anywhere else. The result is per second and composes in
+  ticks through `perTick`, as every source does. **The chain, EXECUTED (`ManaBatteryRefillTest.theChain_authoredToTheSheet`),
+  authored -> stat per second -> pool per tick -> the sheet's printed figure:**
+
+  | worn | stat /s | per tick | sheet raw | printed |
+  |---|---|---|---|---|
+  | nothing | 0.0 | 0.05 | 5.0 | `5.00/5s` |
+  | I | 0.2 | 0.060000000000000005 | 6.000000000000001 | `6.00/5s` |
+  | II | 0.4 | 0.07 | 7.000000000000001 | `7.00/5s` |
+  | III | 0.6 | 0.08 | 8.0 | `8.00/5s` |
+  | III + II | 1.0 | 0.1 | 10.0 | `10.00/5s` |
+  | III x 4 | 2.4 | 0.16999999999999998 | 16.999999999999996 | `17.00/5s` |
+  | III + II + the golden set's 2/s | 3.0 | 0.2 | 20.0 | `20.00/5s` |
+
+  **Every printed figure is exactly +1.00 / +2.00 / +3.00 per level and the sums exact; none is off by a rounding
+  step** (three raw values sit one ULP off, which two decimals never show).
+- **C3: THE UNIT IS THE EFFECT'S.** Every enchant with `effect: mana_regen` is authored per five seconds
+  (`EnchantEffect.MANA_REGEN`'s javadoc, the conversion's). The golden set's `mana_regen` and the accessories' stay per
+  SECOND, unchanged (BEN: "this is every second"). **OPEN FOR BEN: the golden set's tooltip says `+2 Mana Regen per
+  second` while the sheet moves by 10 (`5.00/5s` -> `15.00/5s`).**
+- **C4:** the tooltip reads the authored number, now the number the sheet moves by: `Mana Regen: +3` and `(+3 Mana
+  Regen)`, as built. Wording SEAT PLACEHOLDER; **whether to show "/5s" is OPEN FOR BEN.**
+- **C5:** `GATE-mana-battery.md` re-predicted in place (never approved). MB3, EXECUTED through the pool's own functions
+  (`mb3_theRefillOverAHundredTicks`): 10 + 100 x (0.05 + `ManaRegen.perTick(0.6)` = 0.03) = **18.000**; the control 15.000.
+- **C6:** T13's armor expectation is now the engine's per-second modifier over the sheet's window (the number the line
+  shows); its count does not move (1476). The golden renderings do not move (predicted: no armor piece in
+  `golden-lore.txt` carries an enchant; read: the file is unmodified after the suite). One new mutation: the conversion
+  skipped.
 
 ## A READ THAT DISAGREES WITH THE BRIEF'S WORDING (reported, not a stop: no ruling's content moves)
+
+> **RESOLVED 2026-11-27: Ben chose "B" (the dated note above).** Kept as the record of what was built first; the
+> `+15.00/5s` below is the "A" reading and no longer what ships.
 
 B5 says *"The stats sheet's Mana Regen line shows the total per second, as today."* **READ: it shows it per FIVE
 seconds.** `StatsSheet` renders the line with `StatsSheetLines.perFiveSeconds(v.manaRegenPerSecond())`, `RATE_WINDOW_SECONDS
@@ -47,7 +91,7 @@ piece's score multiplies its AUTHORED Defense and **never an enchant's points**.
 | | score 100 | score 200 |
 |---|---|---|
 | Mana Bank III | **+30** max mana | **+30** max mana |
-| Mana Battery I / II / III | **+1 / +2 / +3** mana/s | **+1 / +2 / +3** mana/s |
+| Mana Battery I / II / III | **+1 / +2 / +3** mana per 5 s (C1; was "/s") | **+1 / +2 / +3** mana per 5 s |
 
 **The number does not move with score**, so it is not listed OPEN FOR BEN on that ground. Pinned by
 `ManaBatteryTest.theValueDoesNotMoveWithTheScore` (the piece's score written at 100 and 200, the scan's sum read).

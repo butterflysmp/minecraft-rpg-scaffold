@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * MANA BATTERY (the seat's B1 to B6, 2026-11-27; Ben: "1/2/3", "per second not 5 seconds, normal slot"). The shipped file
+ * MANA BATTERY (the seat's B1 to B6, 2026-11-27; Ben: "1/2/3 per 5 seconds", then "B"). The shipped file
  * as loaded, the gate that holds MANA_REGEN to armor, what a piece grants, its tooltip line, and armor's five normals.
  */
 class ManaBatteryTest {
@@ -82,7 +82,7 @@ class ManaBatteryTest {
         assertEquals(3, d.maxLevel());
         assertEquals(EnchantEffect.MANA_REGEN, d.effect());
         assertEquals(GearClass.ARMOR, d.gearClass());
-        assertEquals(List.of(1, 2, 3), d.valueByLevel(), "Ben's numbers, in mana per SECOND");
+        assertEquals(List.of(1, 2, 3), d.valueByLevel(), "Ben's numbers, in mana per FIVE SECONDS");
         assertEquals("redstone_block", d.icon(), "SEAT PLACEHOLDER 2026-11-27");
         assertEquals(null, d.armorSlot(), "no armor_slot: a NORMAL slot of every piece");
         assertFalse(d.isUnique());
