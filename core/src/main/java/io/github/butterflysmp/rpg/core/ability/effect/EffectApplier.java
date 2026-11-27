@@ -347,6 +347,26 @@ public final class EffectApplier {
      * grenade, and once the caster is gone it is no longer near anything, so the check
      * simply stops matching -- no need to resolve the UUID back to a Combatant.
      */
+    /**
+     * A FUSED CHUNK GOES OFF AT {@code at} (the seat's F3 and F4, 2026-11-26, the Blast Fungus). Its on_hit is a detonation
+     * ({@code FusedPayload} refuses anything else at load): each visual plays at {@code at}; each burst lands, through
+     * the same per-target loop and the same Damage arm as every burst (so a mob's defences apply, the kill is the
+     * caster's, the gear score scales it, and each damage counts as one primary hit, as a burst's does), on every body
+     * in its radius that the sides table admits on {@link MobHostility.PvpPath#FUSED_BURST}: mobs; never the caster
+     * (excluded by id in {@link #applyToEach}, and a PLAYER besides), never another player (FUSED_BURST is spared), never a
+     * summon (the table's SUMMON cell). Nothing here breaks or lights a block: no port this calls writes one.
+     */
+    public void detonateFused(List<EffectSpec> onHit, Caster caster, Vec3 at) {
+        for (EffectSpec spec : onHit) {
+            switch (spec) {
+                case EffectSpec.Visual v -> world.present(at, v.visualId());
+                case EffectSpec.Burst b -> applyToNearby(b.effects(), caster, at, b.radius(), MobHostility.PvpPath.FUSED_BURST);
+                default -> throw new IllegalStateException("a fused detonation carries visuals and bursts only (FusedPayload),"
+                        + " got " + spec.getClass().getSimpleName());
+            }
+        }
+    }
+
     private void applyToNearby(List<EffectSpec.Targeted> effects, Caster caster,
                                Vec3 origin, double radius, MobHostility.PvpPath path) {
         applyToEach(effects, caster, world.combatantsNear(origin, radius).stream()

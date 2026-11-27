@@ -27,7 +27,7 @@ class SelfTestRowCleanSummonsTest {
         int tagged = r.indexOf("int removed = snapshot.removeTagged(player, service.scheduler());", chained);
         int summons = r.indexOf("int summons = io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(service.adapters(),", chained);
         int clear = r.indexOf("player.getUniqueId(), io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);", summons);
-        int line = r.indexOf("+ \" removed=\" + removed + \" summons=\" + summons + \" inventory=\"", chained);
+        int line = r.indexOf("+ \" removed=\" + removed + \" summons=\" + summons + \" fused=\" + fused + \" inventory=\"", chained);
         assertTrue(chained > 0 && tagged > chained, "the CLEAN follows the chained-row exemption: " + chained + " " + tagged);
         assertTrue(summons > tagged && clear > summons && line > clear,
                 "removed with cause CLEAR, after the tagged mobs, before the CLEAN line, which carries the count");

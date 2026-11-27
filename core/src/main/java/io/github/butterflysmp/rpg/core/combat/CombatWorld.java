@@ -229,6 +229,22 @@ public interface CombatWorld {
     /** The server's one {@link Orbs} (Lapis Crystal's D2, 2026-11-23): every standing orb, one per player. */
     Orbs orbs();
 
+    /** The server's one {@link FusedChunks} (the seat's F2, 2026-11-26, the Blast Fungus): every live fused chunk. */
+    FusedChunks fusedChunks();
+
+    /**
+     * Tag a fused chunk's body (an item marker from {@link #spawnMarker}) as a fused chunk's, so a sweep can find it once
+     * no live chunk owns it. Called AFTER {@link FusedChunks#add} owns its id (the orb's order: the seat's fix of #265).
+     */
+    void claimFusedBody(UUID bodyId);
+
+    /**
+     * The {@code FUSED} trace: {@code FUSED <event> owner=<uuid> id=<n> at=<x>,<y>,<z> [cause=<cause>] tick=<n>}, for
+     * {@code throw}, {@code rest}, {@code detonate} (cause {@code fuse} or {@code touch}) and {@code removed}. Always on:
+     * one line per event, as the orb's.
+     */
+    void traceFused(UUID ownerId, long chunkId, String event, io.github.butterflysmp.rpg.core.Vec3 at, String cause);
+
     /**
      * An orb's body: a marker exactly as {@link #spawnMarker} spawns one (never saved, never picked up, gravity off, an
      * armed despawn after {@code expectedLifetimeTicks}). NOT tagged as an orb: {@link #claimOrbBody} does that once the

@@ -81,6 +81,8 @@ public final class MobHostility {
         IGNITE_SPLASH(false),
         /** A homing projectile's choice of whom to chase. */
         HOMING_PICK(false),
+        /** A FUSED projectile's detonation (the seat's F4, 2026-11-26, the Blast Fungus): SPARED, as TRAVEL_END_BURST. */
+        FUSED_BURST(false),
         /**
          * An implosion. Its {@code affects:} setting is the CONTENT's choice of victims and is applied at its site before
          * this table is asked; for what that setting admits, a player's implosion lands on a player, as today.

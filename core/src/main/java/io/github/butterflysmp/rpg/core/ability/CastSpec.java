@@ -260,7 +260,7 @@ public sealed interface CastSpec {
      * other, so neither defaults from the other.
      */
     record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
-                      Homing homing, String body, Spread spread) implements CastSpec {
+                      Homing homing, String body, Spread spread, int fuseTicks) implements CastSpec {
 
         /**
          * <b>{@code item} AND {@code body} ARE MUTUALLY EXCLUSIVE, AND IT IS ENFORCED HERE RATHER
@@ -287,6 +287,31 @@ public sealed interface CastSpec {
                         "a projectile cast declares ONE body: 'item: " + item + "' and 'body: "
                                 + body + "' are mutually exclusive");
             }
+            // A FUSED PROJECTILE (the seat's F1, 2026-11-26, the Blast Fungus): fuse_ticks above 0 makes the flight rest on
+            // a block instead of ending there, end when the fuse runs out (counted from the THROW), and end at once on
+            // touching a mob in flight (core FuseRules). 0 is every projectile before it: unchanged.
+            if (fuseTicks < 0) throw new IllegalArgumentException("fuse_ticks must be 0 (none) or more, was " + fuseTicks);
+            if (fuseTicks > 0 && homing != null) {
+                throw new IllegalArgumentException("a fused projectile cannot also home: a chunk that rests has nothing to"
+                        + " chase with, and no ruling covers a seeking fuse");
+            }
+            if (fuseTicks > 0 && body != null) {
+                throw new IllegalArgumentException("a fused projectile's body is an ITEM ('item:'), not 'body: " + body
+                        + "': only an item body is held still at rest (CombatWorld.driveMarker with a zero step)");
+            }
+        }
+
+        /** Whether this projectile carries a fuse (F1): it rests on a block and goes off on its fuse or on a mob. */
+        public boolean fused() {
+            return fuseTicks > 0;
+        }
+
+        /**
+         * Every projectile before the fuse (2026-11-26): no fuse. THE NEW FIELD WENT ON THE END, the ladder's rule.
+         */
+        public Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
+                          Homing homing, String body, Spread spread) {
+            this(speed, gravity, maxLifetimeTicks, trail, item, homing, body, spread, 0);
         }
 
         /**

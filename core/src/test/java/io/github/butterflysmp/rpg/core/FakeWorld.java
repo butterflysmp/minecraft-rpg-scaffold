@@ -380,6 +380,29 @@ public final class FakeWorld implements CombatWorld {
     }
 
     /** Orb bodies spawned, a subset of the markers. */
+    /** The fused-chunk store (F2, 2026-11-26), one per world as on the server. */
+    public final io.github.butterflysmp.rpg.core.combat.FusedChunks fused = new io.github.butterflysmp.rpg.core.combat.FusedChunks();
+
+    @Override public io.github.butterflysmp.rpg.core.combat.FusedChunks fusedChunks() {
+        return fused;
+    }
+
+    /** Bodies tagged as a fused chunk's, and whether the store owned each at the claim (it must). */
+    public final java.util.Set<UUID> fusedTagged = new java.util.HashSet<>();
+    public final List<UUID> fusedClaimedUnowned = new ArrayList<>();
+
+    @Override public void claimFusedBody(UUID bodyId) {
+        if (!fused.ownsMarker(bodyId)) fusedClaimedUnowned.add(bodyId);
+        fusedTagged.add(bodyId);
+    }
+
+    public record FusedLine(UUID owner, long id, String event, Vec3 at, String cause, long tick) {}
+    public final List<FusedLine> fusedLines = new ArrayList<>();
+
+    @Override public void traceFused(UUID ownerId, long chunkId, String event, Vec3 at, String cause) {
+        fusedLines.add(new FusedLine(ownerId, chunkId, event, at, cause, now));
+    }
+
     public final List<UUID> orbMarkers = new ArrayList<>();
 
     @Override public UUID spawnOrbMarker(Vec3 at, String itemId, int expectedLifetimeTicks) {

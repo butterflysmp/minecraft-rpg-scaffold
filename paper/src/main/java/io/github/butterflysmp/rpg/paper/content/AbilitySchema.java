@@ -107,12 +107,22 @@ final class AbilitySchema {
             // different standard from `item`, which is NOT checked here (the adapter warns once and
             // falls back to BLAZE_POWDER), and the difference is deliberate: `item` names a Material
             // out of a huge open set, `body` names one of ours out of a set we wrote.
-            case "projectile" -> new CastSpec.Projectile(
-                    s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
-                    s.getInt("max_lifetime_ticks", 100), s.getString("trail"), s.getString("item"),
-                    parseHoming(s.getConfigurationSection("homing")),
-                    parseBody(s.getString("body")),
-                    parseSpread(s.getConfigurationSection("spread")));
+            // `fuse_ticks` (the seat's F1, 2026-11-26, the Blast Fungus) is OPTIONAL and absent means 0, no fuse: every
+            // projectile before it. A fused projectile's life IS its fuse, so `max_lifetime_ticks` beside it is refused by
+            // name rather than silently ignored (a number nobody could see doing nothing).
+            case "projectile" -> {
+                int fuse = s.getInt("fuse_ticks", 0);
+                if (fuse > 0 && s.contains("max_lifetime_ticks")) {
+                    throw new IllegalArgumentException("a fused projectile (fuse_ticks " + fuse + ") lives until its fuse;"
+                            + " remove max_lifetime_ticks");
+                }
+                yield new CastSpec.Projectile(
+                        s.getDouble("speed", 1.0), s.getDouble("gravity", 0.03),
+                        s.getInt("max_lifetime_ticks", 100), s.getString("trail"), s.getString("item"),
+                        parseHoming(s.getConfigurationSection("homing")),
+                        parseBody(s.getString("body")),
+                        parseSpread(s.getConfigurationSection("spread")), fuse);
+            }
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
                     parseDashDirection(s.getString("direction", "movement_else_forward")),

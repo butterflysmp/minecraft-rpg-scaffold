@@ -558,6 +558,40 @@ public final class PaperCombatWorld implements CombatWorld {
      * {@code ORB rest owner=<uuid> at=<x>,<y>,<z> tick=<n>} or {@code ORB removed owner=<uuid> at=<x>,<y>,<z>
      * cause=<cause> tick=<n>}, three places (pinned by {@code OrbLineTest}).
      */
+    @Override
+    public io.github.butterflysmp.rpg.core.combat.FusedChunks fusedChunks() {
+        return ctx.fused();
+    }
+
+    /**
+     * Tag a fused chunk's body {@code Keys.fused}, AFTER the store owns its id (the orb's order, the seat's fix of #265),
+     * so {@code FusedRemovals.sweep} can find it once no live chunk owns it. The body is an ordinary item marker
+     * ({@link #spawnMarker}: never saved, no pickup, no merge, gravity off, the hopper refused by its marker tag, the
+     * despawn armed at the fuse).
+     */
+    @Override
+    public void claimFusedBody(UUID bodyId) {
+        org.bukkit.entity.Entity body = world.getEntity(bodyId);
+        if (body != null) body.getPersistentDataContainer().set(ctx.keys().fused, PersistentDataType.BYTE, (byte) 1);
+    }
+
+    @Override
+    public void traceFused(UUID ownerId, long chunkId, String event, io.github.butterflysmp.rpg.core.Vec3 at, String cause) {
+        ctx.log().info(fusedLine(ownerId, chunkId, event, at, cause, org.bukkit.Bukkit.getCurrentTick()));
+    }
+
+    /**
+     * {@code FUSED <event> owner=<uuid> id=<n> at=<x>,<y>,<z> [cause=<cause>] tick=<n>}, three places, for {@code throw},
+     * {@code rest}, {@code detonate} (cause {@code fuse} or {@code touch}) and {@code removed} (pinned by
+     * {@code FusedLineTest}).
+     */
+    public static String fusedLine(UUID ownerId, long chunkId, String event, io.github.butterflysmp.rpg.core.Vec3 at,
+                                   String cause, long tick) {
+        String where = String.format(java.util.Locale.ROOT, "%.3f,%.3f,%.3f", at.x(), at.y(), at.z());
+        return "FUSED " + event + " owner=" + ownerId + " id=" + chunkId + " at=" + where
+                + (cause == null || cause.isEmpty() ? "" : " cause=" + cause) + " tick=" + tick;
+    }
+
     public static String orbLine(UUID ownerId, String event, io.github.butterflysmp.rpg.core.Vec3 at, String cause, long tick) {
         String where = String.format(java.util.Locale.ROOT, "%.3f,%.3f,%.3f", at.x(), at.y(), at.z());
         return "ORB " + event + " owner=" + ownerId + " at=" + where
