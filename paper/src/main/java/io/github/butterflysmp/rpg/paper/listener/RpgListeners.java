@@ -1282,19 +1282,26 @@ public final class RpgListeners implements Listener {
     }
 
     /**
-     * PR 5, THE BONE ON A VANILLA WOLF (READ: {@code Wolf.mobInteract} reads {@code Items.BONE} and calls
-     * {@code tryToTame}, which consumes the item). A minted SUMMONER weapon in the hand that clicked is never used on an
-     * entity by vanilla: the Bone Whistle tames nothing and is not eaten. CC'S CALL: scoped to summoner-class weapons;
-     * the alternative is every minted weapon whose material vanilla uses on an entity.
+     * THE ONE ENTITY GUARD FOR A MINTED BONE (the Bone Club's M2, 2026-11-26; it REPLACES PR 5's
+     * {@code onSummonerWeaponEntityInteract}). READ: {@code Wolf.mobInteract} reads {@code Items.BONE} and calls
+     * {@code tryToTame} after {@code consume(1)}; a real right click on an entity raises {@code PlayerInteractAtEntityEvent}
+     * (which shares this event's handler list) and {@code handleInteract} returns before {@code interactOn} when it is
+     * cancelled. So a minted bone in the hand that clicked, the Bone Club's or the Bone Whistle's, tames nothing and is not
+     * eaten; a plain bone is untouched. The decision is {@code MintedBoneUse.refuseEntityUse}, which also keeps PR 5's
+     * clause for any minted SUMMONER weapon (CC'S CALL; the alternative is the bone clause alone, which covers every
+     * summoner weapon shipped today, the whistle being the only one).
      */
     @EventHandler(ignoreCancelled = true)
-    public void onSummonerWeaponEntityInteract(org.bukkit.event.player.PlayerInteractEntityEvent event) {
+    public void onMintedItemEntityInteract(org.bukkit.event.player.PlayerInteractEntityEvent event) {
         org.bukkit.inventory.ItemStack held = event.getPlayer().getInventory().getItem(event.getHand());
-        boolean summonerWeapon = io.github.butterflysmp.rpg.paper.weapon.WeaponItems.weaponId(held, adapters.keys())
-                .flatMap(weapons::find)
+        var weapon = io.github.butterflysmp.rpg.paper.weapon.WeaponItems.weaponId(held, adapters.keys());
+        boolean summonerWeapon = weapon.flatMap(weapons::find)
                 .map(w -> w.weaponClass() == io.github.butterflysmp.rpg.core.weapon.WeaponClass.SUMMONER)
                 .orElse(false);
-        if (summonerWeapon) event.setCancelled(true);
+        if (held != null && io.github.butterflysmp.rpg.paper.weapon.MintedBoneUse.refuseEntityUse(
+                weapon.isPresent(), held.getType().getKey().getKey(), summonerWeapon)) {
+            event.setCancelled(true);
+        }
     }
 
     /** D1: a lead does not take it. */

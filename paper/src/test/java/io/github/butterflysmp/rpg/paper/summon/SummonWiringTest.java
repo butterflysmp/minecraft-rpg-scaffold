@@ -246,14 +246,21 @@ class SummonWiringTest {
                 && at(l, "end(\"ABORTED reason=server-stop\", inline, true, \"disable\");", 0) > 0);
     }
 
-    /** PR 5: a minted SUMMONER weapon is never used on an entity by vanilla (READ: a bone tames a wild wolf). */
+    /**
+     * PR 5, now the ONE guard of the Bone Club's M2 (2026-11-26): a minted SUMMONER weapon, and any minted bone, is never
+     * used on an entity by vanilla (READ: a bone tames a wild wolf). The decision's table is MintedBoneUseTest.
+     */
     @Test
     void aSummonerWeaponTamesNothing() throws IOException {
         List<String> l = code(Path.of("listener", "RpgListeners.java"));
-        int m = at(l, "public void onSummonerWeaponEntityInteract(", 0);
+        int m = at(l, "public void onMintedItemEntityInteract(", 0);
         int cls = at(l, ".map(w -> w.weaponClass() == io.github.butterflysmp.rpg.core.weapon.WeaponClass.SUMMONER)", m);
-        int cancel = at(l, "if (summonerWeapon) event.setCancelled(true);", cls);
-        assertTrue(m > 0 && cls > m && cancel > cls && cancel < end(l, m), "a summoner weapon's entity click is cancelled");
+        int ask = at(l, "if (held != null && io.github.butterflysmp.rpg.paper.weapon.MintedBoneUse.refuseEntityUse(", cls);
+        int args = at(l, "weapon.isPresent(), held.getType().getKey().getKey(), summonerWeapon)) {", ask);
+        int cancel = at(l, "event.setCancelled(true);", args);
+        assertTrue(m > 0 && cls > m && ask > cls && args == ask + 1 && cancel == args + 1 && cancel < end(l, m),
+                "a summoner weapon's, or a minted bone's, entity click is cancelled");
+        assertEquals(-1, at(l, "public void onSummonerWeaponEntityInteract(", 0), "the old guard is gone: ONE guard");
     }
 
     /** The seat: "no Java names a wolf except what D1 must switch off, each behind a check of the entity's type". */

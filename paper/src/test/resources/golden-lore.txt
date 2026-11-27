@@ -35,6 +35,13 @@
    "of being a person holding a crossbow." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Ranged Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- bone_club
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["44" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["0.8" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- bone_whistle
    "Nature" color=#55FF55 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -821,6 +828,13 @@ armor.slotNoun(FEET) = Boots
    "of being a person holding a crossbow." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Ranged Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- bone_club + sharpness 3
+   "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Melee Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["50.6" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Attack Speed: " color=#AAAAAA O=. B=. S=. U=. I=F ["0.8" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "" color=- O=. B=. S=. U=. I=F
+   "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 -- bow + power 3
    "Kinetic" color=#FFFFFF O=. B=. S=. U=. I=F
    "Quiver: --/8" color=#AAAAAA O=. B=. S=. U=. I=F
@@ -1139,4 +1153,4 @@ armor.slotNoun(FEET) = Boots
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 
-=== 144 renderings ===
+=== 146 renderings ===
