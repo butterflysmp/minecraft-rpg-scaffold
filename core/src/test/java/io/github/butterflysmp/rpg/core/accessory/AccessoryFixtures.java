@@ -51,6 +51,17 @@ final class AccessoryFixtures {
                 WeaponClass.MAGE, AccessoryType.TOME, Map.of(), List.of(), radiantPulse());
     }
 
+    /** The Blink Tome's Blink as shipped (blink_tome.yml). */
+    static AccessoryBehaviour.Blink blink() {
+        return new AccessoryBehaviour.Blink("Blink", 5.0, 16.0, 5.0, 160, 1200, "poof", 12,
+                "entity.enderman.teleport");
+    }
+
+    static AccessoryDefinition blinkTome() {
+        return new AccessoryDefinition("blink_tome", "Blink Tome", Rarity.RARE, "book", AccessorySlotKind.CLASS,
+                WeaponClass.MAGE, AccessoryType.TOME, Map.of(), List.of(), blink());
+    }
+
     static WeaponClass ranger() {
         return WeaponClass.RANGER;
     }

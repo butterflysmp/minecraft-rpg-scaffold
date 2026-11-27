@@ -70,14 +70,14 @@ class AccessoryLoaderTest {
     // --- the shipped roster -------------------------------------------------------------------
 
     @Test
-    void theShippedRosterLoads_allSeven_withTheRuledNumbers() {
+    void theShippedRosterLoads_allEight_withTheRuledNumbers() {
         File shipped = new File("src/main/resources/content/accessories");
         assertTrue(shipped.isDirectory(), "expected " + shipped.getAbsolutePath());
         AccessoryRegistry registry = new AccessoryLoader(capturing(), MANA).loadAll(shipped, id -> false);
 
-        // ZERO IS A DEFECT; and SEVEN is the ruled roster (Q2's six, and the Healing Tome, Ben 2026-11-26), so a skipped
+        // ZERO IS A DEFECT; and EIGHT is the ruled roster (Q2 six, the Healing Tome and the Blink Tome, Ben 2026-11-26), so a skipped
         // file is a short count. The six load UNCHANGED (H1): each is pinned below exactly as before, and none has a behaviour.
-        assertEquals(7, registry.size(), "the ruled roster is seven; warnings: " + warnings);
+        assertEquals(8, registry.size(), "the ruled roster is eight; warnings: " + warnings);
         assertTrue(warnings.isEmpty(), "no shipped file may warn: " + warnings);
 
         assertUniversal(registry, "ward_charm", "Ward Charm", Map.of(AccessoryStat.DEFENSE, 3.0));
@@ -110,6 +110,19 @@ class AccessoryLoaderTest {
         assertEquals(List.of(), tome.flavor());
         assertEquals(new AccessoryBehaviour.HealingPulse("Radiant Pulse", 1.0, 80, 8.0, AccessoryBehaviour.Targets.PLAYERS,
                 "happy_villager", 6, "heart", "block.amethyst_block.chime"), tome.behaviour());
+
+        // THE BLINK TOME, every field Ben ruled (2026-11-26) and the seat's placeholders (the feedback), from the shipped file.
+        AccessoryDefinition blink = registry.find("blink_tome").orElseThrow(() -> new AssertionError("the blink tome did not load"));
+        assertEquals("Blink Tome", blink.displayName());
+        assertEquals(Rarity.RARE, blink.rarity());
+        assertEquals("book", blink.material());
+        assertEquals(AccessorySlotKind.CLASS, blink.slot());
+        assertEquals(WeaponClass.MAGE, blink.accessoryClass());
+        assertEquals(AccessoryType.TOME, blink.type());
+        assertEquals(Map.of(), blink.modifiers(), "Ben: no other stats");
+        assertEquals(List.of(), blink.flavor());
+        assertEquals(new AccessoryBehaviour.Blink("Blink", 5.0, 16.0, 5.0, 160, 1200, "poof", 12, "entity.enderman.teleport"),
+                blink.behaviour());
         // Mutation: change any ruled number in a shipped file -> reddens.
     }
 
@@ -196,6 +209,26 @@ class AccessoryLoaderTest {
         assertTrue(load("t10", TOME + PULSE + "modifiers:\n  max_mana: 5\n").find("t10").isPresent(),
                 "warnings: " + warnings);
         // Mutation: make parseBehaviour return null -> t1 reddens ("no modifiers").
+    }
+
+    private static final String BLINK = "behaviour:\n  type: blink\n  name: \"B\"\n  trigger_radius: 5\n  range: 16\n"
+            + "  clear_radius: 5\n  invisibility_ticks: 160\n  cooldown_ticks: 1200\n";
+
+    /** K1: a blink block loads; each malformed field refuses the file by name. */
+    @Test
+    void aBlinkBlockLoads_andItsRefusalsAreNamed() throws IOException {
+        AccessoryRegistry ok = load("b1", TOME + BLINK);
+        assertEquals(new AccessoryBehaviour.Blink("B", 5, 16, 5, 160, 1200, null, 0, null),
+                ok.find("b1").orElseThrow(() -> new AssertionError("warnings: " + warnings)).behaviour());
+        assertRefused(load("b2", TOME + BLINK.replace("  range: 16\n", "")), "b2", "range");
+        assertRefused(load("b3", TOME + BLINK.replace("trigger_radius: 5", "trigger_radius: 0")), "b3", "trigger_radius");
+        assertRefused(load("b4", TOME + BLINK.replace("invisibility_ticks: 160", "invisibility_ticks: 160.5")), "b4",
+                "whole number");
+        assertRefused(load("b5", TOME + BLINK.replace("cooldown_ticks: 1200", "cooldown_ticks: -1")), "b5", "cooldown_ticks");
+        assertRefused(load("b6", TOME + BLINK + "  particle: not_a_particle\n  particle_count: 3\n"), "b6", "particle");
+        assertRefused(load("b7", TOME + BLINK.replace("clear_radius: 5", "clear_radius: near")), "b7", "not a number");
+        assertRefused(load("b8", TOME + BLINK.replace("type: blink", "type: teleport")), "b8", "healing_pulse or blink");
+        // Mutation: make parseBehaviour ignore "blink" -> b1 reddens.
     }
 
     /** An id another gear kind holds is REFUSED -- the other four kinds only warn. */

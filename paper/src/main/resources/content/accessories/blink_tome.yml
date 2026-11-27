@@ -1,0 +1,41 @@
+# The SECOND mage class accessory with a behaviour -- worn only in slot 0, only by a profile whose class is mage.
+#
+# BEN, 2026-11-26: "Let's do the Blink tome. Same situation with the healing tome. Reworking it to a mage class accessory.
+# It's ability: Blink, when an enemy gets to close, teleports you to somewhere safe nearby with 8 seconds of invisibility,
+# losing all aggression. Attacking cancels the invisibility" / "1. Any mob within 5 blocks radius 2. Any hostile mob that's
+# targeting you. Other players don't count until we do a pvp pass. 3. Somewhere within 16 blocks that is safe (no mobs
+# within 5 blocks) 4. 60s cooldown 5. Casting a spell does, a summon whistle does not 6. That is correct. Bosses are NOT
+# exempt [...] 8. Yes" (rare book, no other stats, no scaling, loot only).
+#
+# NOT STATED BY BEN, so SEAT PLACEHOLDER 2026-11-26: no mana cost; taking damage does NOT end the invisibility; a passive
+# animal does not block a landing spot; no line of sight is needed; the feedback below.
+#
+# LOOT ONLY (K15): no source is built. Until the loot pass it is obtainable only by /rpg give blink_tome. (The old game's
+# BLINK_TOME sat in end city treasure at 0.06: a reference, not a ruling.)
+#
+# NO MODIFIERS, on purpose (Ben: no other stats): an accessory may carry no modifiers only because it carries a behaviour.
+
+display_name: "Blink Tome"
+rarity: rare
+
+# book: Ben's material. Not inert by itself (a librarian buys books, a chiseled bookshelf takes them); each route is closed
+# for a minted accessory by its accessory_id, as for the Healing Tome (PLAN-healing-tome.md H12, K14).
+material: book
+
+slot: class
+class: mage
+type: tome
+
+behaviour:
+  type: blink
+  name: "Blink"                # Ben's name for the ability
+  trigger_radius: 5            # Ben: "Any mob within 5 blocks radius", feet to feet
+  range: 16                    # Ben: "Somewhere within 16 blocks", feet to feet
+  clear_radius: 5              # Ben: "no mobs within 5 blocks" of the landing
+  invisibility_ticks: 160      # Ben: "8 seconds of invisibility" (20 ticks a second)
+  cooldown_ticks: 1200         # Ben: "60s cooldown"
+  # K11, SEAT PLACEHOLDER 2026-11-26: a small puff of particles and the enderman's teleport sound where he leaves and
+  # where he arrives. Nothing is shown for the cooldown.
+  particle: poof
+  particle_count: 12
+  sound: entity.enderman.teleport

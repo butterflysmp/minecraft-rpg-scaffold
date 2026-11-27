@@ -191,9 +191,11 @@ public final class AccessoryLoader {
         ConfigurationSection b = s.getConfigurationSection("behaviour");
         if (b == null) return null;
         String typeToken = b.getString("type");
-        if (!"healing_pulse".equalsIgnoreCase(typeToken == null ? "" : typeToken.trim())) {
+        String type = typeToken == null ? "" : typeToken.trim().toLowerCase(java.util.Locale.ROOT);
+        if (type.equals("blink")) return parseBlink(id, b);
+        if (!"healing_pulse".equals(type)) {
             throw new IllegalArgumentException("accessory '" + id + "' has unknown behaviour type '" + typeToken
-                    + "'; expected healing_pulse");
+                    + "'; expected healing_pulse or blink");
         }
         String targetsToken = b.getString("targets");
         AccessoryBehaviour.Targets targets = AccessoryBehaviour.Targets.fromName(targetsToken);
@@ -217,9 +219,55 @@ public final class AccessoryLoader {
         }
     }
 
+    /**
+     * {@code type: blink} (the Blink Tome, the seat's K1, 2026-11-26). Every number required; the feedback optional.
+     *
+     * <pre>
+     * behaviour:
+     *   type: blink
+     *   name: "Blink"
+     *   trigger_radius: 5
+     *   range: 16
+     *   clear_radius: 5
+     *   invisibility_ticks: 160
+     *   cooldown_ticks: 1200
+     *   particle: poof              # optional feedback at both ends
+     *   particle_count: 12
+     *   sound: entity.enderman.teleport
+     * </pre>
+     */
+    static AccessoryBehaviour parseBlink(String id, ConfigurationSection b) {
+        String particle = b.getString("particle");
+        if (particle != null && !particle.isBlank() && !isParticle(particle)) {
+            throw new IllegalArgumentException("accessory '" + id + "' blink has unknown particle '" + particle + "'");
+        }
+        try {
+            return new AccessoryBehaviour.Blink(b.getString("name"), number(id, b, "blink", "trigger_radius"),
+                    number(id, b, "blink", "range"), number(id, b, "blink", "clear_radius"),
+                    wholeTicks(id, b, "invisibility_ticks"), wholeTicks(id, b, "cooldown_ticks"),
+                    particle, b.getInt("particle_count", 0), b.getString("sound"));
+        } catch (IllegalArgumentException ex) {
+            if (ex.getMessage() != null && ex.getMessage().startsWith("accessory '")) throw ex;
+            throw new IllegalArgumentException("accessory '" + id + "': " + ex.getMessage());
+        }
+    }
+
+    /** A tick count must be a whole number: 160.5 ticks is a typo, not a duration. */
+    private static int wholeTicks(String id, ConfigurationSection b, String key) {
+        if (!b.isInt(key)) {
+            throw new IllegalArgumentException("accessory '" + id + "' blink " + key + " is not a whole number of ticks: "
+                    + b.get(key));
+        }
+        return b.getInt(key);
+    }
+
     private static double number(String id, ConfigurationSection b, String key) {
+        return number(id, b, "healing_pulse", key);
+    }
+
+    private static double number(String id, ConfigurationSection b, String type, String key) {
         if (!b.isDouble(key) && !b.isInt(key)) {
-            throw new IllegalArgumentException("accessory '" + id + "' healing_pulse " + key + " is not a number: "
+            throw new IllegalArgumentException("accessory '" + id + "' " + type + " " + key + " is not a number: "
                     + b.get(key));
         }
         return b.getDouble(key);

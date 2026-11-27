@@ -128,4 +128,34 @@ class AccessoryLoreLinesTest {
         assertEquals("Mage class accessory", AccessoryLoreLines.slotLine(tome));
         assertEquals(List.of(), AccessoryLoreLines.modifiers(tome, "Magic"), "it carries no modifier line");
     }
+
+    /**
+     * K13 (SEAT PLACEHOLDER 2026-11-26 wording): the Blink's lines, every number from the YAML. Predicted whole, from the
+     * brief's quoted wording, before the code was written.
+     */
+    @Test
+    void theBlinksLines_fromItsOwnNumbers() {
+        assertEquals(List.of("Blink",
+                        "When a hostile mob targeting you comes within 5 blocks,",
+                        "you teleport to safety and turn invisible for 8s.",
+                        "Attacking ends the invisibility.",
+                        "Cooldown: 60s"),
+                AccessoryLoreLines.behaviour(AccessoryFixtures.blink()));
+        AccessoryBehaviour.Blink other = new AccessoryBehaviour.Blink("Shift", 3.5, 12, 4, 50, 90, null, 0, null);
+        assertEquals(List.of("Shift",
+                        "When a hostile mob targeting you comes within 3.5 blocks,",
+                        "you teleport to safety and turn invisible for 2.5s.",
+                        "Attacking ends the invisibility.",
+                        "Cooldown: 4.5s"),
+                AccessoryLoreLines.behaviour(other), "every number is read from the behaviour");
+    }
+
+    /** K13: the sheet line names the Blink when active. */
+    @Test
+    void theBlinkTomesSheetLine() {
+        AccessoryDefinition tome = AccessoryFixtures.blinkTome();
+        assertEquals("Blink Tome: Blink", AccessoryLoreLines.sheetLine("Blink Tome", tome, true, "Magic"));
+        assertEquals("Blink Tome: inactive (requires Mage)", AccessoryLoreLines.sheetLine("Blink Tome", tome, false, "Magic"));
+        assertEquals("Mage class accessory", AccessoryLoreLines.slotLine(tome));
+    }
 }
