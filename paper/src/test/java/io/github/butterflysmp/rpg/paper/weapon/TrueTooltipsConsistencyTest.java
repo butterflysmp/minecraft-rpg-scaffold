@@ -78,7 +78,7 @@ class TrueTooltipsConsistencyTest {
     private static final Logger LOG = Logger.getLogger(TrueTooltipsConsistencyTest.class.getName());
     private static final int[] SCORES = {100, 250};
     /** PINNED: the count of cases this walk generates over shipped content. Recount, never adjust: see the plan. */
-    static final int EXPECTED_CASES = 1302;   // weapons 612, armor 672, shields 18 (576 unmoved): 2026-11-26 + bone_club (sharpness 3 + unbreaking 3 + kinetic_tremors 3, x 2 scores = 18; unbreaking and kinetic_tremors 12 unmoved; 1284 at 305e1361); + cluster_bombs (3 levels x 2 scores, all moved); + fast_and_fungal (3 levels x 2 scores, all moved: the cooldown); + blast_fungus (attunement 3 + unbreaking 3, x 2 scores = 12; unbreaking 6 unmoved); 1260 at fcfbefbb
+    static final int EXPECTED_CASES = 1308;   // weapons 618, armor 672, shields 18 (582 unmoved): 2026-11-26 + drumming_beat (3 levels x 2 scores = 6, all unmoved: conditional, T8; 1302 at 921c953c);+ bone_club (sharpness 3 + unbreaking 3 + kinetic_tremors 3, x 2 scores = 18; unbreaking and kinetic_tremors 12 unmoved; 1284 at 305e1361); + cluster_bombs (3 levels x 2 scores, all moved); + fast_and_fungal (3 levels x 2 scores, all moved: the cooldown); + blast_fungus (attunement 3 + unbreaking 3, x 2 scores = 12; unbreaking 6 unmoved); 1260 at fcfbefbb
     private static final Pattern DAMAGE = Pattern.compile("^.* Damage: ([0-9.]+)( x ([0-9]+))?$");
     private static final Pattern CRIT = Pattern.compile("^Crit Chance: \\+([0-9]+)%$");
 

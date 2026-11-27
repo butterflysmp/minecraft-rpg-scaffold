@@ -292,10 +292,10 @@ class EnchantLoaderTest {
     @Test
     void noElementKeyIsANormalEnchant() throws IOException {
         EnchantRegistry r = shippedElementsLoader().loadAll(shippedEnchantsDir());
-        assertEquals(26, r.size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, 26 (ls content/enchants/*.yml | wc -l; 24 at fcfbefbb); the twenty-four shipped enchants (recounted: ls content/enchants/*.yml | wc -l; 23 before sharpened_glass, 2026-11-25; 22 before mana_burn, 21 before wildfire, 16 before the five cast tunes, 2026-11-24)");
+        assertEquals(27, r.size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); the twenty-four shipped enchants (recounted: ls content/enchants/*.yml | wc -l; 23 before sharpened_glass, 2026-11-25; 22 before mana_burn, 21 before wildfire, 16 before the five cast tunes, 2026-11-24)");
         assertEquals(11, r.all().stream().filter(e -> e.element() == null && e.weapon() == null).count(), "eleven are normal");
-        assertEquals(List.of("airburst_flames", "cluster_bombs", "early_toll", "echo_beam", "fast_and_fungal", "focused_beam", "lapis_crystal", "large_sparks", "polished_scepter", "sharp_crystals", "sharpened_glass", "shatter_caps", "wildfire"), r.all().stream().filter(EnchantDefinition::isWeaponSpecific)
-                .map(EnchantDefinition::id).sorted().toList(), "the thirteen weapon-specific enchants (eight of them guaranteed; 2026-11-25: + sharpened_glass; 2026-11-26: + fast_and_fungal, + cluster_bombs (not guaranteed); grep -lE '^weapon:' content/enchants/*.yml | wc -l)");
+        assertEquals(List.of("airburst_flames", "cluster_bombs", "drumming_beat", "early_toll", "echo_beam", "fast_and_fungal", "focused_beam", "lapis_crystal", "large_sparks", "polished_scepter", "sharp_crystals", "sharpened_glass", "shatter_caps", "wildfire"), r.all().stream().filter(EnchantDefinition::isWeaponSpecific)
+                .map(EnchantDefinition::id).sorted().toList(), "the fourteen weapon-specific enchants (nine of them guaranteed; 2026-11-26: + drumming_beat (guaranteed), 13 / 8 at 921c953c; 2026-11-25: + sharpened_glass; 2026-11-26: + fast_and_fungal, + cluster_bombs (not guaranteed); grep -lE '^weapon:' content/enchants/*.yml | wc -l)");
         assertEquals("living_lantern", r.find("airburst_flames").orElseThrow().weapon());
     }
 

@@ -295,6 +295,14 @@ public final class EnchantEffectLine {
                         + "% per hit on one foe within " + number(h.windowTicks() / 20.0) + "s of the last (max +"
                         + number(h.capPercent()) + "%)";
             }
+            // DRUMMING BEAT (M9, 2026-11-26): the level's REAL step, in points, per consecutive hit (B5). CONDITIONAL (T8): the
+            // club's stat lines never move for it. WORDING: SEAT PLACEHOLDER 2026-11-26, OPEN FOR BEN.
+            case DRUMMING_BEAT -> {
+                if (!(definition.behaviour() instanceof io.github.butterflysmp.rpg.core.enchant.EnchantBehaviour.DrummingBeat d)) {
+                    yield "unknown enchant -- grants nothing";
+                }
+                yield "+" + number(d.stepPercentFor(level)) + "% Crit Chance per consecutive hit";
+            }
             // FOCUSED BEAM (B5): the level's beam damage and its range, as authored (the gear score scales it in play).
             // WORDING: SEAT PLACEHOLDER 2026-11-24, OPEN FOR BEN.
             case FOCUSED_BEAM -> {

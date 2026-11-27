@@ -1,0 +1,34 @@
+# DRUMMING BEAT -- the Bone Club's GUARANTEED weapon enchant (the seat's brief of 2026-11-26; PLAN-bone-club.md M3 to M10).
+# Ben, verbatim: "2. Drumming beat, every consecutive hit adds 3/4/5 critical chance. Same conditions" / "5. Yes guaranteed
+# enchant" / "1. Yes it is [the guaranteed enchant, the bare club plain] 2. No there is no bonus ceiling, landing a crit
+# doesn't reset it". The old game's doubled hit is GONE (Ben: "No doubled hit anymore").
+#
+# WHAT IT DOES (core DrumBeats, asked at the one melee crit roll, WeaponFire.landVanillaMelee): while it is the ACTIVE
+# candidate of the Bone Club's weapon slot at level 1 or more and the club is in the MAIN HAND, the player keeps a STREAK n
+# of consecutive FULLY CHARGED primary melee hits that land on a mob (any mob: "same conditions", as the old game). The hit
+# made at streak n is rolled with crit chance = (his resolved crit chance) + step x n, step 3 / 4 / 5 percent points by
+# level; then n becomes n + 1. The first hit of a streak has no bonus. NO CEILING: at or above 100% it always crits (the
+# chance is clamped only at the roll). A CRIT neither resets nor changes n.
+#
+# THE RESETS ("Same conditions", the old game's three, widened by the seat's M5c), each sets n to 0:
+#   a hit below full charge (it is rolled with no bonus and does not count);
+#   a hit more than gap_ticks after the last counted one (that hit starts a new streak, as its first);
+#   the club leaving the main hand: a slot change, a swap of hands, a drop, an inventory click, or Drumming Beat ceasing
+#   to be active; and his quit, death and change of world.
+# NOT resets: a swing that hits nothing, a crit, a different target, a hit by a summon or any secondary damage.
+#
+# The bonus is NOT written into the crit-chance stat (it would lag the streak by the reconcile), so /rpg stats shows his
+# standing chance, never the streak (M6; SEAT PLACEHOLDER, OPEN FOR BEN).
+# GUARANTEED (G1 to G5): every freshly rolled Bone Club offers it in slot 0, FIRST; bought for XP; not pre-applied.
+display_name: "Drumming Beat"              # BEN
+icon: note_block                           # SEAT PLACEHOLDER 2026-11-26
+max_level: 3                               # BEN: three values
+effect: drumming_beat
+class: universal                           # the convention of every weapon-specific enchant
+weapon: bone_club                          # W1: the Bone Club's slot 0
+guaranteed: true                           # G1 (BEN: "Yes guaranteed enchant")
+drumming_beat:
+  gap_ticks: 100                           # BEN: "Same conditions" (the old game's 5 s); exactly 100 continues the streak
+  step_percent_by_level: [3, 4, 5]         # BEN: "adds 3/4/5 critical chance", percent points per consecutive hit
+  beat_sound: block.note_block.basedrum    # M7, SEAT PLACEHOLDER 2026-11-26: the old game's drum, pitch rising with n
+  reset_sound: block.bone_block.break      # M7, SEAT PLACEHOLDER 2026-11-26: the old game's reset, on an uncharged hit

@@ -116,6 +116,7 @@ public final class BehaviourBlocks {
             case EnchantBehaviour.CastTune ignored -> Optional.empty();
             // CONDITIONAL (T8): each acts only when hits land or on a target's state, so no line moves.
             case EnchantBehaviour.HitChain ignored -> Optional.empty();     // Wildfire: a chain of hits on one target
+            case EnchantBehaviour.DrummingBeat ignored -> Optional.empty(); // Drumming Beat: a streak of charged hits (M9)
             case EnchantBehaviour.Shockwave ignored -> Optional.empty();    // Kinetic Tremors: three hits in a window
             case EnchantBehaviour.ScorchBoost ignored -> Optional.empty();  // Mana Burn: a scorch the hit applies
         };

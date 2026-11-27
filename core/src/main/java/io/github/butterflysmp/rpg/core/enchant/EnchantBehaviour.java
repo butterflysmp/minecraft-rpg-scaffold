@@ -12,7 +12,37 @@ import java.util.List;
  */
 public sealed interface EnchantBehaviour permits EnchantBehaviour.Shockwave, EnchantBehaviour.Airburst,
         EnchantBehaviour.Shatter, EnchantBehaviour.FocusedBeam, EnchantBehaviour.GrantTrigger, EnchantBehaviour.CastTune,
-        EnchantBehaviour.HitChain, EnchantBehaviour.ScorchBoost, EnchantBehaviour.ClusterBombs {
+        EnchantBehaviour.HitChain, EnchantBehaviour.ScorchBoost, EnchantBehaviour.ClusterBombs,
+        EnchantBehaviour.DrummingBeat {
+
+    /**
+     * {@code effect: drumming_beat} (Drumming Beat, the Bone Club's; the seat's M3 to M8, 2026-11-26). Ben: "every
+     * consecutive hit adds 3/4/5 critical chance. Same conditions" / "No there is no bonus ceiling, landing a crit doesn't
+     * reset it". A per-player STREAK of consecutive fully charged primary melee hits on mobs by the weapon {@code weaponId}
+     * while this is active on it; the hit made at streak n is rolled with crit chance + {@code stepPercent x n} points
+     * ({@link DrumBeats#decide}, asked at the one melee crit roll). It resets on a hit below full charge, on a hit more than
+     * {@code gapTicks} after the last counted one, and on the weapon leaving the main hand. Per level: the step, in percent
+     * points. {@code beatSound} and {@code resetSound} are Minecraft sound keys (M7, SEAT PLACEHOLDER), null for none.
+     */
+    record DrummingBeat(String weaponId, int gapTicks, List<Double> stepPercentByLevel, String beatSound,
+                        String resetSound) implements EnchantBehaviour {
+        public DrummingBeat {
+            if (weaponId == null || weaponId.isBlank()) throw new IllegalArgumentException("drumming_beat needs its weapon id");
+            if (gapTicks < 1) throw new IllegalArgumentException("drumming_beat gap_ticks must be 1 or more, was " + gapTicks);
+            stepPercentByLevel = positive("step_percent_by_level", stepPercentByLevel);
+            if (beatSound != null && beatSound.isBlank()) beatSound = null;
+            if (resetSound != null && resetSound.isBlank()) resetSound = null;
+        }
+
+        /** The step at {@code level} (1-based, clamped into the authored levels), in percent points. */
+        public double stepPercentFor(int level) {
+            return stepPercentByLevel.get(clamp(level, stepPercentByLevel.size()) - 1);
+        }
+
+        public int levels() {
+            return stepPercentByLevel.size();
+        }
+    }
 
     /**
      * {@code effect: scorch_boost} (Mana Burn; the seat's ruling of 2026-11-24 on PR F). Ben: "Increases Scorch and Ignite

@@ -213,6 +213,13 @@ public enum EnchantEffect {
     SCORCH_BOOST,
 
     /**
+     * A BEHAVIOUR (B1): {@link EnchantBehaviour.DrummingBeat}, the file's {@code drumming_beat:} block (the Bone Club's,
+     * 2026-11-26): consecutive fully charged melee hits add crit chance to the next, at the roll ({@link DrumBeats}). No
+     * {@code value_by_level} at the top level.
+     */
+    DRUMMING_BEAT,
+
+    /**
      * Percent points of CRIT CHANCE while the weapon carrying it is in the MAIN HAND (K9, Sharpened Glass, 2026-11-25).
      * The mechanism is {@link CritChanceEnchant}. A stat, like {@link #MAX_MANA}: a {@code value_by_level}, no behaviour
      * block. Read off the main hand, like {@link #DAMAGE}, and every fighting class's hits roll crit, so the gate is
