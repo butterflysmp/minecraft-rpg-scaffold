@@ -20,7 +20,14 @@ import java.util.Locale;
 public enum AccessoryType {
     GAUNTLET(WeaponClass.MELEE),
     QUIVER(WeaponClass.RANGER),
-    SCROLL(WeaponClass.MAGE);
+    SCROLL(WeaponClass.MAGE),
+    /**
+     * The Healing Tome's type (the seat's H2, 2026-11-26). READ: this word is never shown to a player -- it is read only
+     * by {@code AccessoryLoader} (a content token, and its own refusal message) and by {@code AccessoryDefinition}'s
+     * class-pairing check. So a second MAGE type is a content token and a pairing, nothing more: two types may name one
+     * class, and the one table still refuses a class/type mismatch ({@code AccessoryDefinitionTest}).
+     */
+    TOME(WeaponClass.MAGE);
 
     private final WeaponClass weaponClass;
 

@@ -70,6 +70,7 @@ class UniqueSlotContentTest {
             "golden_helmet=growth,mana_bank,protection,unbreaking",
             "golden_leggings=growth,mana_bank,protection,unbreaking",
             "golden_sword=sharpness,unbreaking",
+            "healing_tome=",   // 2026-11-26: the Healing Tome, an accessory: an empty pool (A4)
             "iron_axe=unbreaking",
             "iron_boots=growth,mana_bank,protection,unbreaking",
             "iron_chestplate=growth,mana_bank,protection,unbreaking",
@@ -143,9 +144,9 @@ class UniqueSlotContentTest {
         assertEquals(1, l.shields());
         assertEquals(28, l.armor());   // 2026-11-25: + copper (C1); grep -h "^    material:" content/armor/*.yml | wc -l = 28
         assertEquals(5, l.tools());
-        assertEquals(6, l.accessories());
-        assertEquals(67, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle; 2026-11-26: + blast_fungus; + bone_club
-        assertEquals(67, MASTER_POOLS.size(), "the snapshot covers the same 67");
+        assertEquals(7, l.accessories());   // 2026-11-26: + healing_tome
+        assertEquals(68, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle; 2026-11-26: + blast_fungus; + bone_club; + healing_tome
+        assertEquals(68, MASTER_POOLS.size(), "the snapshot covers the same 68");
         assertEquals(27, l.real().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
         assertEquals(27, l.dev().size(), "2026-11-26: + fast_and_fungal, + cluster_bombs, + drumming_beat, 27 (ls content/enchants/*.yml | wc -l; 26 at 921c953c, 24 at fcfbefbb); a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
@@ -246,7 +247,7 @@ class UniqueSlotContentTest {
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }
-        assertEquals(67, checked, "the control: every shipped gear was asked");   // 2026-11-25: + copper; + broken_bottle; 2026-11-26: + blast_fungus; + bone_club
+        assertEquals(68, checked, "the control: every shipped gear was asked");   // 2026-11-25: + copper; + broken_bottle; 2026-11-26: + blast_fungus; + bone_club; + healing_tome
     }
 
     /**

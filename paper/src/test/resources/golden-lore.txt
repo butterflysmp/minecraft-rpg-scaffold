@@ -559,6 +559,63 @@
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Leggings" color=#55FF55 O=. B=. S=. U=. I=F
 
+=== ACCESSORIES ===
+-- brawlers_gauntlet
+   "+25% Crit Damage" color=#55FF55 O=. B=. S=. U=. I=F
+   "+3 Melee Damage" color=#55FF55 O=. B=. S=. U=. I=F
+   "-10 Max Mana" color=#FF5555 O=. B=. S=. U=. I=F
+   "Melee class accessory" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Heavy on the hand, heavier on the mind." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Accessory" color=#5555FF O=. B=. S=. U=. I=F
+-- fletchers_quiver
+   "+5% Crit Chance" color=#55FF55 O=. B=. S=. U=. I=F
+   "+3 Ranged Damage" color=#55FF55 O=. B=. S=. U=. I=F
+   "-0.20/5s Health Regen" color=#FF5555 O=. B=. S=. U=. I=F
+   "Ranger class accessory" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Fletched for the draw, not the march." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Accessory" color=#5555FF O=. B=. S=. U=. I=F
+-- healing_tome
+   "Radiant Pulse" color=#FFAA00 O=. B=. S=. U=. I=F
+   "Every 4s, heals hurt players within 8 blocks" color=#AAAAAA O=. B=. S=. U=. I=F
+   "for 1 health per your level" color=#AAAAAA O=. B=. S=. U=. I=F
+   "Mage class accessory" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Accessory" color=#5555FF O=. B=. S=. U=. I=F
+-- keen_charm
+   "+5% Crit Chance" color=#55FF55 O=. B=. S=. U=. I=F
+   "Universal accessory" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "It finds the gap for you." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Accessory" color=#55FF55 O=. B=. S=. U=. I=F
+-- mending_charm
+   "+0.50/5s Health Regen" color=#55FF55 O=. B=. S=. U=. I=F
+   "Universal accessory" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Slow, and never stops." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Accessory" color=#55FF55 O=. B=. S=. U=. I=F
+-- sages_scroll
+   "+20 Max Mana" color=#55FF55 O=. B=. S=. U=. I=F
+   "+3 Magic Damage" color=#55FF55 O=. B=. S=. U=. I=F
+   "-3% Crit Chance" color=#FF5555 O=. B=. S=. U=. I=F
+   "Mage class accessory" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "The margins are full of someone else's corrections." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Rare Accessory" color=#5555FF O=. B=. S=. U=. I=F
+-- ward_charm
+   "+3 Defense" color=#55FF55 O=. B=. S=. U=. I=F
+   "Universal accessory" color=#AAAAAA O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "A little of the blow goes elsewhere." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Accessory" color=#55FF55 O=. B=. S=. U=. I=F
+
 === RARITY x SLOT FOOTERS ===
 -- COMMON/HEAD
    "Defense: " color=#AAAAAA O=. B=. S=. U=. I=F ["7" color=#55FF55 O=. B=. S=. U=. I=F ]
@@ -1153,4 +1210,4 @@ armor.slotNoun(FEET) = Boots
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 
-=== 146 renderings ===
+=== 153 renderings ===

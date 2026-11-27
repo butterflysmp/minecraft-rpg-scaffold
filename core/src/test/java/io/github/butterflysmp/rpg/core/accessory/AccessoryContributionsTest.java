@@ -52,6 +52,33 @@ class AccessoryContributionsTest {
         // Mutation: drop the contributes() check in AccessoryContributions.of -> reddens.
     }
 
+    /**
+     * H3 (the seat, 2026-11-26): a behaviour is ACTIVE exactly when its accessory CONTRIBUTES, by the same rule and the
+     * same call the stats use -- in its own kind of slot, and for a class accessory only while the profile class is its
+     * class. Inert on a class change, live again on changing back; never from the wrong kind of slot.
+     */
+    @Test
+    void aBehaviourIsActiveExactlyWhenItsAccessoryContributes() {
+        AccessoryDefinition tome = AccessoryFixtures.healingTome();
+        AccessoryContributions mage = AccessoryContributions.of(slots(tome, ward, null, null), "mage");
+        assertEquals(List.of(new AccessoryContributions.ActiveBehaviour(0, "healing_tome",
+                AccessoryFixtures.radiantPulse())), mage.behaviours());
+        assertTrue(mage.byStat().values().stream().noneMatch(m -> m.containsKey("accessory:0")),
+                "the tome grants no stat");
+        for (String profile : Arrays.asList("ranger", "melee", "none", null, "Mage")) {
+            assertTrue(AccessoryContributions.of(slots(tome, ward, null, null), profile).behaviours().isEmpty(),
+                    "inert for " + profile);
+        }
+        assertEquals(1, AccessoryContributions.of(slots(tome, null, null, null), "mage").behaviours().size(),
+                "and live again on changing back");
+        assertTrue(AccessoryContributions.of(slots(null, tome, null, null), "mage").behaviours().isEmpty(),
+                "a class item in a universal slot is not honoured");
+        assertTrue(AccessoryContributions.of(slots(quiver, ward, null, null), "ranger").behaviours().isEmpty(),
+                "a modifier-only accessory has no behaviour");
+        assertTrue(AccessoryContributions.NONE.behaviours().isEmpty());
+        // Mutation: add the behaviour before the contributes() check in AccessoryContributions.of -> reddens.
+    }
+
     @Test
     void anItemInTheWrongKindOfSlotIsNotHonoured() {
         AccessoryContributions c = AccessoryContributions.of(slots(ward, quiver, null, null), "ranger");

@@ -1,5 +1,6 @@
 package io.github.butterflysmp.rpg.paper.content;
 
+import io.github.butterflysmp.rpg.core.accessory.AccessoryBehaviour;
 import io.github.butterflysmp.rpg.core.accessory.AccessorySlotKind;
 import io.github.butterflysmp.rpg.core.accessory.AccessoryStat;
 import io.github.butterflysmp.rpg.core.accessory.AccessoryType;
@@ -69,13 +70,14 @@ class AccessoryLoaderTest {
     // --- the shipped roster -------------------------------------------------------------------
 
     @Test
-    void theShippedRosterLoads_allSix_withTheRuledNumbers() {
+    void theShippedRosterLoads_allSeven_withTheRuledNumbers() {
         File shipped = new File("src/main/resources/content/accessories");
         assertTrue(shipped.isDirectory(), "expected " + shipped.getAbsolutePath());
         AccessoryRegistry registry = new AccessoryLoader(capturing(), MANA).loadAll(shipped, id -> false);
 
-        // ZERO IS A DEFECT; and SIX is the ruled roster (Q2), so a skipped file is a short count.
-        assertEquals(6, registry.size(), "the ruled roster is six; warnings: " + warnings);
+        // ZERO IS A DEFECT; and SEVEN is the ruled roster (Q2's six, and the Healing Tome, Ben 2026-11-26), so a skipped
+        // file is a short count. The six load UNCHANGED (H1): each is pinned below exactly as before, and none has a behaviour.
+        assertEquals(7, registry.size(), "the ruled roster is seven; warnings: " + warnings);
         assertTrue(warnings.isEmpty(), "no shipped file may warn: " + warnings);
 
         assertUniversal(registry, "ward_charm", "Ward Charm", Map.of(AccessoryStat.DEFENSE, 3.0));
@@ -91,6 +93,23 @@ class AccessoryLoaderTest {
         assertClassItem(registry, "sages_scroll", "Sage's Scroll", WeaponClass.MAGE,
                 AccessoryType.SCROLL, "prismarine_crystals", Map.of(AccessoryStat.CLASS_DAMAGE, 3.0,
                         AccessoryStat.MAX_MANA, 20.0, AccessoryStat.CRIT_CHANCE, -0.03));
+        for (String id : List.of("ward_charm", "keen_charm", "mending_charm", "brawlers_gauntlet", "fletchers_quiver",
+                "sages_scroll")) {
+            assertEquals(null, registry.find(id).orElseThrow().behaviour(), id + " carries no behaviour");
+        }
+
+        // THE HEALING TOME, every field Ben ruled (2026-11-26) and the seat's placeholders, from the shipped file.
+        AccessoryDefinition tome = registry.find("healing_tome").orElseThrow(() -> new AssertionError("the tome did not load"));
+        assertEquals("Healing Tome", tome.displayName());
+        assertEquals(Rarity.RARE, tome.rarity());
+        assertEquals("book", tome.material());
+        assertEquals(AccessorySlotKind.CLASS, tome.slot());
+        assertEquals(WeaponClass.MAGE, tome.accessoryClass());
+        assertEquals(AccessoryType.TOME, tome.type());
+        assertEquals(Map.of(), tome.modifiers(), "Ben: it's only the healing pulse");
+        assertEquals(List.of(), tome.flavor());
+        assertEquals(new AccessoryBehaviour.HealingPulse("Radiant Pulse", 1.0, 80, 8.0, AccessoryBehaviour.Targets.PLAYERS,
+                "happy_villager", 6, "heart", "block.amethyst_block.chime"), tome.behaviour());
         // Mutation: change any ruled number in a shipped file -> reddens.
     }
 
@@ -156,6 +175,27 @@ class AccessoryLoaderTest {
                 "classy", "slot: universal");
         assertRefused(load("noslot", "display_name: \"N\"\nmaterial: echo_shard\nmodifiers:\n  defense: 1\n"),
                 "noslot", "expected universal or class");
+    }
+
+    private static final String TOME = "display_name: \"T\"\nrarity: rare\nmaterial: book\nslot: class\nclass: mage\ntype: tome\n";
+    private static final String PULSE = "behaviour:\n  type: healing_pulse\n  name: \"P\"\n  heal_per_level: 1\n"
+            + "  interval_ticks: 80\n  radius: 8\n  targets: players\n";
+
+    /** H1: a behaviour and no modifiers loads; neither is refused; a malformed behaviour refuses the file by name. */
+    @Test
+    void aBehaviourBlockLoads_andItsRefusalsAreNamed() throws IOException {
+        assertTrue(load("t1", TOME + PULSE).find("t1").isPresent(), "warnings: " + warnings);
+        assertRefused(load("t2", TOME), "t2", "no modifiers");
+        assertRefused(load("t3", TOME + PULSE.replace("healing_pulse", "fireworks")), "t3", "unknown behaviour type");
+        assertRefused(load("t4", TOME + PULSE.replace("  radius: 8\n", "")), "t4", "radius");
+        assertRefused(load("t5", TOME + PULSE.replace("players", "mobs")), "t5", "targets");
+        assertRefused(load("t6", TOME + PULSE.replace("interval_ticks: 80", "interval_ticks: 0")), "t6", "interval_ticks");
+        assertRefused(load("t7", TOME + PULSE + "  particle: not_a_particle\n  particle_count: 3\n"), "t7", "particle");
+        assertRefused(load("t8", TOME + PULSE.replace("heal_per_level: 1", "heal_per_level: lots")), "t8", "not a number");
+        // A behaviour beside modifiers loads too: the two are independent.
+        assertTrue(load("t10", TOME + PULSE + "modifiers:\n  max_mana: 5\n").find("t10").isPresent(),
+                "warnings: " + warnings);
+        // Mutation: make parseBehaviour return null -> t1 reddens ("no modifiers").
     }
 
     /** An id another gear kind holds is REFUSED -- the other four kinds only warn. */

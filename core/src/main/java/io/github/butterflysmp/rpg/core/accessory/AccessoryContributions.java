@@ -38,7 +38,20 @@ import java.util.Map;
  * impossible by the disjointness test instead.
  */
 public record AccessoryContributions(Map<AccessoryStat, Map<String, Double>> byStat,
-                                     Map<String, ClassGrant> classGrants) {
+                                     Map<String, ClassGrant> classGrants,
+                                     List<ActiveBehaviour> behaviours) {
+
+    /**
+     * A behaviour that is ACTIVE this pass (the seat's H3): its accessory is in {@code slot} and contributes by the same
+     * rule as every stat here. Read by {@code TomePulses} from the reconcile pass's one reading, never a second reading
+     * of the slot.
+     */
+    public record ActiveBehaviour(int slot, String accessoryId, AccessoryBehaviour behaviour) {}
+
+    /** Every caller before behaviours existed: no behaviour active. */
+    public AccessoryContributions(Map<AccessoryStat, Map<String, Double>> byStat, Map<String, ClassGrant> classGrants) {
+        this(byStat, classGrants, List.of());
+    }
 
     /** The prefix every accessory source key carries. */
     public static final String SOURCE_PREFIX = "accessory:";
@@ -52,6 +65,7 @@ public record AccessoryContributions(Map<AccessoryStat, Map<String, Double>> byS
         byStat.forEach((stat, sources) -> copy.put(stat, Map.copyOf(sources)));
         byStat = Collections.unmodifiableMap(copy);
         classGrants = Map.copyOf(classGrants);
+        behaviours = List.copyOf(behaviours);
     }
 
     /** The source key for one accessory slot. */
@@ -78,11 +92,15 @@ public record AccessoryContributions(Map<AccessoryStat, Map<String, Double>> byS
         }
         Map<AccessoryStat, Map<String, Double>> byStat = new EnumMap<>(AccessoryStat.class);
         Map<String, ClassGrant> grants = new HashMap<>();
+        List<ActiveBehaviour> behaviours = new java.util.ArrayList<>();
         for (int slot = 0; slot < AccessorySlots.COUNT; slot++) {
             AccessoryDefinition accessory = slots.get(slot);
             if (accessory == null) continue;
             if (accessory.slot() != AccessorySlots.kindOf(slot)) continue;
             if (!AccessorySlots.contributes(accessory, profileClass)) continue;
+            if (accessory.behaviour() != null) {
+                behaviours.add(new ActiveBehaviour(slot, accessory.id(), accessory.behaviour()));
+            }
             String key = sourceKey(slot);
             for (Map.Entry<AccessoryStat, Double> modifier : accessory.modifiers().entrySet()) {
                 if (modifier.getKey() == AccessoryStat.CLASS_DAMAGE) {
@@ -93,7 +111,7 @@ public record AccessoryContributions(Map<AccessoryStat, Map<String, Double>> byS
                 }
             }
         }
-        return new AccessoryContributions(byStat, grants);
+        return new AccessoryContributions(byStat, grants, behaviours);
     }
 
     /**

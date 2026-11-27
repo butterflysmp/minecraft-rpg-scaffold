@@ -169,6 +169,20 @@ class GoldenLoreTest {
             items++;
         }
 
+        // THE ACCESSORIES (added with the Healing Tome, 2026-11-26, H11): every shipped accessory's tooltip. The tome's
+        // rendering was predicted before this section was first generated; the other six were RECORDED, not predicted.
+        List<io.github.butterflysmp.rpg.core.weapon.AccessoryDefinition> accessories = new ArrayList<>(
+                new io.github.butterflysmp.rpg.paper.content.AccessoryLoader(LOG, 100.0)
+                        .loadAll(new File("src/main/resources/content/accessories"), id -> false).all());
+        assertFalse(accessories.isEmpty(), "no shipped accessories discovered");
+        accessories.sort((a, b) -> a.id().compareTo(b.id()));
+        out.append("\n=== ACCESSORIES ===\n");
+        for (io.github.butterflysmp.rpg.core.weapon.AccessoryDefinition a : accessories) {
+            out.append("-- ").append(a.id()).append('\n');
+            appendLore(out, AccessoryLore.build(a));
+            items++;
+        }
+
         // Every rarity through every footer, so a tier nobody ships is still pinned.
         out.append("\n=== RARITY x SLOT FOOTERS ===\n");
         for (Rarity rarity : Rarity.values()) {

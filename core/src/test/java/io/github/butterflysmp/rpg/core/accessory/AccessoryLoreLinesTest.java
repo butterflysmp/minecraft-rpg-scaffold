@@ -104,4 +104,28 @@ class AccessoryLoreLinesTest {
         assertEquals(List.of("+2 Max Health", "+1 Defense"), AccessoryLoreLines.modifiers(a, "x"),
                 "stable across loads: a YAML map's order is the file's, the tooltip's is the enum's");
     }
+
+    /**
+     * H11 (SEAT PLACEHOLDER 2026-11-26 wording): the behaviour's lines, from the YAML's own numbers -- no number typed
+     * twice. Predicted whole before the code was written.
+     */
+    @Test
+    void theRadiantPulsesLines_fromItsOwnNumbers() {
+        assertEquals(List.of("Radiant Pulse", "Every 4s, heals hurt players within 8 blocks", "for 1 health per your level"),
+                AccessoryLoreLines.behaviour(AccessoryFixtures.radiantPulse()));
+        AccessoryBehaviour.HealingPulse other = new AccessoryBehaviour.HealingPulse("Glow", 0.5, 30, 6.5,
+                AccessoryBehaviour.Targets.PLAYERS, null, 0, null, null);
+        assertEquals(List.of("Glow", "Every 1.5s, heals hurt players within 6.5 blocks", "for 0.5 health per your level"),
+                AccessoryLoreLines.behaviour(other), "every number is read from the behaviour");
+    }
+
+    /** H11: the sheet line names the behaviour when active, and keeps the existing inactive wording. */
+    @Test
+    void theTomesSheetLine() {
+        AccessoryDefinition tome = AccessoryFixtures.healingTome();
+        assertEquals("Healing Tome: Radiant Pulse", AccessoryLoreLines.sheetLine("Healing Tome", tome, true, "Magic"));
+        assertEquals("Healing Tome: inactive (requires Mage)", AccessoryLoreLines.sheetLine("Healing Tome", tome, false, "Magic"));
+        assertEquals("Mage class accessory", AccessoryLoreLines.slotLine(tome));
+        assertEquals(List.of(), AccessoryLoreLines.modifiers(tome, "Magic"), "it carries no modifier line");
+    }
 }
