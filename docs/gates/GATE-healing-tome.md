@@ -8,6 +8,15 @@ gate branch at the top, `feat/blast-fungus-gate` (#321), MOVED UP onto `feat/tom
 `git range-diff` `=`), carrying this gate as well. **Every prediction below was written before any boot, and is frozen
 from the seat's approval.** No boot without Ben's own "ready" and the seat's approval of the code AND this gate from origin.
 
+> **SUPERSEDED FOR THE BOOT, 2026-11-26 (the seat's Blink Tome brief).** This gate's branch was MOVED UP again, onto
+> `feat/blink-selftest` (its four commits unchanged, `git range-diff` `=`), and now also carries `GATE-blink-tome.md`.
+> **Ben types that gate's ONE command**,
+> `/rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27+healing-tome+blink-tome`, in
+> which this gate runs unchanged, after both asks and before the Blink Tome's; **`GATE-blink-tome.md`'s R0 governs, and
+> the R0 below is kept as the record.** Each row-start CLEAN line and each `STAGE clear_state` line now ends
+> ` blink=none`; the RESTORED line gains ` blink=none` before ` drag_tick=` (and see `GATE-blink-tome.md`'s dated note on
+> H15's wording, which is read by its fields). The command below is the record of this gate's own stack.
+
 ## WHAT BEN TYPES — ONE COMMAND FOR THE WHOLE STACK
 
 ```

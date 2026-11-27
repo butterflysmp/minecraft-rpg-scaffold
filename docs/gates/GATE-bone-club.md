@@ -8,6 +8,14 @@
 **Every prediction below was written before any boot, and is frozen from the seat's approval.** No boot without Ben's own
 "ready" and the seat's approval of the code AND this gate from origin.
 
+> **SUPERSEDED FOR THE BOOT, 2026-11-26 (the seat's Blink Tome brief: the stack carries the Healing Tome and the Blink
+> Tome too).** This gate's branch was MOVED UP twice, onto `feat/tome-selftest` and then onto `feat/blink-selftest`, and
+> now also carries `GATE-healing-tome.md` and `GATE-blink-tome.md`. **Ben types that last gate's ONE command**,
+> `/rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27+healing-tome+blink-tome`,
+> and **`GATE-blink-tome.md`'s R0 governs; the R0 below is kept as the record.** Every row below runs unchanged and first;
+> each row-start CLEAN line now ends ` drum=<n> blink=none` and each `STAGE clear_state` line ` drum=<n> blink=none` (no
+> blink is live in these rows). The command below is the record of this gate's own stack.
+
 ## WHAT BEN TYPES — ONE COMMAND FOR THE WHOLE STACK
 
 ```

@@ -146,3 +146,7 @@ gates:
 # typed LAST as /rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27+healing-tome.
 # docs/gates/GATE-healing-tome.md.
   - healing-tome
+# blink-tome (2026-11-26, feat/blast-fungus-gate moved onto feat/blink-selftest): the Blink Tome and its Blink, typed LAST
+# as /rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27+healing-tome+blink-tome.
+# docs/gates/GATE-blink-tome.md.
+  - blink-tome
