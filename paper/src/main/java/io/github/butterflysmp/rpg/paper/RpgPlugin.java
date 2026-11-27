@@ -774,6 +774,11 @@ public final class RpgPlugin extends JavaPlugin {
         this.healthSystem.bindAccessories(accessories, profiles);
         // And the current cell's fragments (slice 4), read through the same Stones the stone casts from.
         this.healthSystem.bindFragments(adapters.stones());
+        // THE HEALING PULSE (the Healing Tome, 2026-11-26): one clock per wearer, started and stopped by the reconcile pass's
+        // own accessory reading, and re-checked at each pulse through the same function. Traced under /rpg mobtrace.
+        this.healthSystem.bindTomePulses(new io.github.butterflysmp.rpg.paper.accessory.TomePulses(scheduler, stats, profiles,
+                adapters.keys(), getLogger(), adapters.mobTrace(), Bukkit::getCurrentTick,
+                healthSystem::accessoryContributionsFor));
 
         // The vault rides the SAME storageIo, and that is the design rather than reuse for its own
         // sake. One serialised queue means a player's profile write and their vault write cannot
