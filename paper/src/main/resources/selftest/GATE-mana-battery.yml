@@ -1,0 +1,356 @@
+# GATE-mana-battery (docs/gates/GATE-mana-battery.md): MANA BATTERY (B1 to B6) and the owed V7 rows, 2026-11-27, typed
+# LAST in the one command that re-reads GATE-held-target's S3 and S5 by reference:
+#   /rpg selftest held-target.S3.S5+mana-battery
+# SURVIVAL. On the pad, at night (18000), difficulty normal. ALL AUTO: this gate asks NOTHING. EVERY ROW STAGES ITSELF:
+# level 1, an empty inventory and state, empty accessory slots, a mage, his four armour slots emptied and then filled
+# only with the row's own pieces, his mana set by the row. No mob is summoned. SAFETY 0.000: no row deals him damage.
+# A minted piece is worn as GATE-armor-sets does: an empty hand, /rpg give (it lands in the hand), the enchant put on it in
+# the hand, then `item replace entity @s armor.<slot> from entity @s weapon.mainhand` and the hand emptied. Each wear
+# waits 10 (two reconcile passes of 5) before the sheet is read.
+setup:
+  - pad: ""
+  - preflight: "0 -2 2 2"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+  - cmd: "rpg stats"
+
+# AC1, V7 (a): the pad step emptied his accessory slots, so the row's own clear finds nothing to clear. The pad step's
+# ACCESSORIES line (this gate's setup, and held-target's) and the run's RESTORED line are this row's other readings.
+AC1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - class: "mage"
+  - accessory: "clear"
+  - wait: 6
+
+# MB1, THE TOOLTIP AND THE POOL: Mana Battery III on each iron piece in hand, the lore whole, the enchant show, the pools,
+# and 500 rolls of the piece (written nowhere).
+MB1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 10
+  - hold: empty
+  - cmd: "rpg give iron_helmet"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant pool"
+  - cmd: "rpg enchant rollstats 500"
+  - wait: 2
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant pool"
+  - cmd: "rpg enchant rollstats 500"
+  - wait: 2
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_leggings"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant pool"
+  - cmd: "rpg enchant rollstats 500"
+  - wait: 2
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_boots"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - dump: held
+  - cmd: "rpg enchant pool"
+  - cmd: "rpg enchant rollstats 500"
+  - wait: 2
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+
+# MB2, THE SHEET: bare (the row's own baseline), then one iron chestplate with Mana Battery III worn.
+MB2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - probe_armor: ""
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - wait: 10
+
+# MB3, THE REAL REFILL: the piece worn, his mana set to 10, read at once and 100 ticks later; then the piece off (the
+# control), set to 10 again, read at once and 100 ticks later.
+MB3:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "rpg mana set 10"
+  - probe_mana: ""
+  - wait: 100
+  - probe_mana: ""
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "rpg mana set 10"
+  - probe_mana: ""
+  - wait: 100
+  - probe_mana: ""
+
+# MB4, LEVELS I AND II: the chestplate worn at I, then taken back to the hand, set to II, and worn again.
+MB4:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s weapon.mainhand from entity @s armor.chest"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - wait: 2
+  - cmd: "rpg enchant level 0 0 2"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - wait: 10
+
+# MB5, STACKING: an iron chestplate at III and iron leggings at II; then a golden full set carrying the same two (the set's
+# +2 joins them); then the golden boots swapped for iron (the set off: its control).
+MB5:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give iron_leggings"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "item replace entity @s armor.legs from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - probe_armor: ""
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - wait: 10
+  - hold: empty
+  - cmd: "rpg give golden_helmet"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.head from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give golden_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give golden_leggings"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 2
+  - cmd: "item replace entity @s armor.legs from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - hold: empty
+  - cmd: "rpg give golden_boots"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "item replace entity @s armor.feet from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - probe_armor: ""
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s armor.feet with minecraft:iron_boots"
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+
+# MB6, CARRIED, NOT WORN; BROKEN: the piece at III held in his hand only (no armour worn); then broken in the hand and
+# worn; then repaired in the hand and worn again (the control).
+MB6:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - wait: 10
+  - hold: empty
+  - cmd: "rpg give iron_chestplate"
+  - wait: 2
+  - probe_held: ""
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 mana_battery"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - wait: 10
+  - cmd: "rpg stats"
+  - cmd: "rpg durability set 100000"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - probe_armor: ""
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s weapon.mainhand from entity @s armor.chest"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - wait: 2
+  - cmd: "rpg durability set 0"
+  - wait: 2
+  - cmd: "item replace entity @s armor.chest from entity @s weapon.mainhand"
+  - cmd: "item replace entity @s weapon.mainhand with minecraft:air"
+  - wait: 10
+  - probe_armor: ""
+  - cmd: "rpg stats"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - wait: 10

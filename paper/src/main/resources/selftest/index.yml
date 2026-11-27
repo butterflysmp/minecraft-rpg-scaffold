@@ -154,3 +154,6 @@ gates:
 # as /rpg selftest bone-club.DB6+blast-fungus.BF3.BF6.BF8+healing-tome.HT1+blink-tome.BT1.BT3.BT4.BT5.BT6+held-target.
 # docs/gates/GATE-held-target.md.
   - held-target
+# mana-battery (2026-11-27, feat/mana-battery-gate on feat/owed-v7 on feat/mana-battery): Mana Battery (B1-B6) and the owed
+# V7 rows, typed LAST as /rpg selftest held-target.S3.S5+mana-battery. docs/gates/GATE-mana-battery.md.
+  - mana-battery
