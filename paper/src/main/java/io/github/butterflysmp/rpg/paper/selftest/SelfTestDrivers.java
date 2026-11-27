@@ -793,7 +793,9 @@ final class SelfTestDrivers {
         Predicate<ItemStack> match = switch (what) {
             case "empty" -> item -> item == null || item.isEmpty();
             case "stone" -> item -> item != null && StoneItems.isStone(item, keys);
-            default -> item -> item != null && WeaponItems.weaponId(item, keys).filter(what::equals).isPresent();
+            // An accessory by its id too (the Healing Tome's gate, 2026-11-26): an accessory carries no weapon id.
+            default -> item -> item != null && (WeaponItems.weaponId(item, keys).filter(what::equals).isPresent()
+                    || io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.accessoryId(item, keys).filter(what::equals).isPresent());
         };
         int slot = -1;
         for (int i = 0; i < 9 && slot < 0; i++) if (match.test(inv.getItem(i))) slot = i;
@@ -1340,6 +1342,8 @@ final class SelfTestDrivers {
     private String itemId(ItemStack item) {
         if (item == null || item.isEmpty()) return "empty";
         if (StoneItems.isStone(item, keys)) return "stone";
+        Optional<String> accessory = io.github.butterflysmp.rpg.paper.weapon.AccessoryItems.accessoryId(item, keys);
+        if (accessory.isPresent()) return accessory.get();   // the Healing Tome's gate: HELD healing_tome BOOK x1
         return WeaponItems.weaponId(item, keys).orElse(item.getType().getKey().getKey());
     }
 

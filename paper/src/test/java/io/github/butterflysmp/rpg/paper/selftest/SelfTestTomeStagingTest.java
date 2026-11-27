@@ -152,5 +152,10 @@ class SelfTestTomeStagingTest {
         assertTrue(acc.contains("service.write(id, slot, null,"));
         assertTrue(acc.contains("return Optional.of(\"slot \" + slot + \" is occupied; clear it first\");"),
                 "an equip never overwrites a stored item");
+        // hold: and the HELD line know an accessory by its id (an accessory carries no weapon id).
+        assertTrue(between(d, "private Optional<String> hold(Player p, String what) {", "int slot = -1;")
+                .contains("AccessoryItems.accessoryId(item, keys).filter(what::equals).isPresent()"));
+        assertTrue(between(d, "private String itemId(ItemStack item) {", "\n    }\n")
+                .contains("if (accessory.isPresent()) return accessory.get();"));
     }
 }
