@@ -147,7 +147,7 @@ class BlinksTest {
         for (int dx = -16; dx <= 16; dx++) for (int dz = -16; dz <= 16; dz++) if (dx * dx + dz * dz <= 256) columns++;
         assertEquals(797, columns, "the disc of radius 16 holds 797 integer columns (EXECUTED by the loop above; pi x 256 is 804)");
         assertEquals(797, s.columns());
-        assertEquals(797 * 7, s.tried(), "seven heights a column: his feet's block and three up and three down");
+        assertEquals(797 * 5, s.tried(), "five heights a column: his feet's block and two up and two down");
         // On flat ground the only safe height is y 65, and a spot is kept only if its feet are within 16 of his.
         int expected = 0;
         for (int dx = -16; dx <= 16; dx++) for (int dz = -16; dz <= 16; dz++) {
@@ -217,31 +217,32 @@ class BlinksTest {
         for (Spot sp : safe) assertTrue(sp.feet().distanceSquared(trigger) > 25, sp.toString());
     }
 
-    /** A ledge three up and a pit three down are reached; four is not. */
+    /** A ledge two up and a pit two down are reached; three is not (CC'S CALL, 2: see Blinks.VERTICAL_REACH). */
     @Test
-    void theVerticalReach_isThree() {
+    void theVerticalReach_isTwo() {
+        assertEquals(2, Blinks.VERTICAL_REACH);
         Flat g = new Flat();
-        // A pillar of stone at (6, 65..67, 0): its top is a floor at y 67, standing at y 68 (three up).
-        for (int y = 65; y <= 67; y++) {
+        // A pillar of stone at (6, 65..66, 0): its top is a floor at y 66, standing at y 67 (two up).
+        for (int y = 65; y <= 66; y++) {
             g.bodies.put(Flat.k(6, y, 0), Body.SOLID);
             g.floors.put(Flat.k(6, y, 0), Floor.SAFE);
         }
-        assertTrue(has(Blinks.search(BLINK, HERE, g, List.of()).safe(), 6, 68, 0), "three up");
-        g.bodies.put(Flat.k(6, 68, 0), Body.SOLID);
-        g.floors.put(Flat.k(6, 68, 0), Floor.SAFE);
-        assertFalse(has(Blinks.search(BLINK, HERE, g, List.of()).safe(), 6, 69, 0), "four up");
-        // A pit at (8, ..., 0): floor at y 61, standing at y 62 (three down).
+        assertTrue(has(Blinks.search(BLINK, HERE, g, List.of()).safe(), 6, 67, 0), "two up");
+        g.bodies.put(Flat.k(6, 67, 0), Body.SOLID);
+        g.floors.put(Flat.k(6, 67, 0), Floor.SAFE);
+        assertFalse(has(Blinks.search(BLINK, HERE, g, List.of()).safe(), 6, 68, 0), "three up");
+        // A pit at (8, ..., 0): floor at y 62, standing at y 63 (two down).
         Flat p = new Flat();
         p.floors.put(Flat.k(8, 64, 0), Floor.NOT_SOLID);
-        for (int y = 62; y <= 64; y++) p.bodies.put(Flat.k(8, y, 0), Body.CLEAR);
-        p.floors.put(Flat.k(8, 61, 0), Floor.SAFE);
-        assertTrue(has(Blinks.search(BLINK, HERE, p, List.of()).safe(), 8, 62, 0), "three down");
+        for (int y = 63; y <= 64; y++) p.bodies.put(Flat.k(8, y, 0), Body.CLEAR);
+        p.floors.put(Flat.k(8, 62, 0), Floor.SAFE);
+        assertTrue(has(Blinks.search(BLINK, HERE, p, List.of()).safe(), 8, 63, 0), "two down");
         Flat q = new Flat();
         q.floors.put(Flat.k(8, 64, 0), Floor.NOT_SOLID);
-        for (int y = 61; y <= 64; y++) q.bodies.put(Flat.k(8, y, 0), Body.CLEAR);
-        q.floors.put(Flat.k(8, 61, 0), Floor.NOT_SOLID);
-        q.floors.put(Flat.k(8, 60, 0), Floor.SAFE);
-        assertFalse(has(Blinks.search(BLINK, HERE, q, List.of()).safe(), 8, 61, 0), "four down");
+        for (int y = 62; y <= 64; y++) q.bodies.put(Flat.k(8, y, 0), Body.CLEAR);
+        q.floors.put(Flat.k(8, 62, 0), Floor.NOT_SOLID);
+        q.floors.put(Flat.k(8, 61, 0), Floor.SAFE);
+        assertFalse(has(Blinks.search(BLINK, HERE, q, List.of()).safe(), 8, 62, 0), "three down");
     }
 
     /** The choice is uniform over the safe spots by the random source passed in: a seed fixes it, every spot is reachable. */

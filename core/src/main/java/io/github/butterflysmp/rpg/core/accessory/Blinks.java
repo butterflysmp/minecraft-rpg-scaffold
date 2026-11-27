@@ -24,8 +24,8 @@ import java.util.random.RandomGenerator;
  *
  * <h2>K3, the destination: a bounded search</h2>
  *
- * Every integer column (dx, dz) with dx² + dz² ≤ ceil(range)² round his BLOCK, and in each the seven heights from three
- * below his feet's block to three above ({@link #VERTICAL_REACH}, CC'S CALL): 797 columns and 5,579 spots at range 16 (EXECUTED, BlinksTest). A
+ * Every integer column (dx, dz) with dx² + dz² ≤ ceil(range)² round his BLOCK, and in each the five heights from two
+ * below his feet's block to two above ({@link #VERTICAL_REACH}, CC'S CALL): 797 columns and 3,985 spots at range 16 (EXECUTED, BlinksTest). A
  * spot is SAFE when its chunk is loaded (an unloaded chunk is never read, so never loaded), its column is inside the world
  * border, the block under it is a SAFE floor, its two body blocks are CLEAR, its feet (the block's centre, on the floor)
  * are within {@code range} of his feet, and no hostile mob's feet are within {@code clear_radius} of its feet (inclusive).
@@ -40,8 +40,13 @@ public final class Blinks {
 
     private Blinks() {}
 
-    /** K3 (CC'S CALL): how many whole blocks above and below his feet's block a landing may stand. */
-    public static final int VERTICAL_REACH = 3;
+    /**
+     * K3 (CC'S CALL): how many whole blocks above and below his feet's block a landing may stand. TWO, not the Knell's
+     * three: at three a landing three below his feet has its head two below his feet, so standing on a one-block floor
+     * (a bridge, the selftest's sky pad) he can be sent UNDER it onto whatever lies beneath, unseen; at two that spot's head
+     * is the floor he stands on, so it is never clear. The alternative, three, reaches one more step of a hillside.
+     */
+    public static final int VERTICAL_REACH = 2;
 
     /** K2 (CC'S CALL): the trigger check's period, in server ticks. The brief's bound is 10. */
     public static final int CHECK_PERIOD_TICKS = 5;
