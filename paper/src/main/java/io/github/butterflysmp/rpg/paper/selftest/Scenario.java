@@ -374,6 +374,12 @@ public record Scenario(String gate, String row, List<Step> steps) {
          * reading names every term between two readings.
          */
         PROBE_REGEN,
+        /**
+         * {@code ""} (the Blink Tome's gate, 2026-11-26): his invisibility as the server holds it, and the engine's blinked
+         * state: {@code INVIS present=<b> ticks=<remaining|-1 infinite|0 none> amp=<a> particles=<b> blinked=<b>}. The
+         * server's reading, never the client's: what he LOOKS like is not read here.
+         */
+        PROBE_INVISIBILITY,
         /** A line for the reader. Changes nothing. */
         NOTE
     }

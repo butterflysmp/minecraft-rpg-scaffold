@@ -238,6 +238,13 @@ final class SelfTestDrivers {
                         run.stats().healthRegenValue(id), p.getSaturation(), run.stats().current(id), run.stats().max(id)));
                 yield Optional.empty();
             }
+            case PROBE_INVISIBILITY -> {
+                org.bukkit.potion.PotionEffect e = p.getPotionEffect(org.bukkit.potion.PotionEffectType.INVISIBILITY);
+                run.log(SelfTestStaging.invisibilityLine(e != null,
+                        e == null ? 0 : (e.isInfinite() ? -1 : e.getDuration()), e == null ? 0 : e.getAmplifier(),
+                        e != null && e.hasParticles(), run.adapters().blinked().isBlinked(p.getUniqueId())));
+                yield Optional.empty();
+            }
             case POUNCE -> pounce(p, a);
             case PROBE_PAIR -> {
                 List<LivingEntity> found = taggedWithin48(p, a);
@@ -660,7 +667,7 @@ final class SelfTestDrivers {
         // writes its own BLINK REFUSED-TARGET line. The DRIVE line says which happened.
         boolean set = io.github.butterflysmp.rpg.paper.adapter.MobTargets.set((org.bukkit.entity.Mob) best, p,
                 run.adapters().targetGuard());
-        run.log("DRIVE mob_target " + best.getUniqueId() + " tag=" + tag + (set ? "" : " refused"));
+        run.log("DRIVE mob_target " + best.getUniqueId() + " tag=" + tag + (set ? "" : " refused") + " tick=" + Bukkit.getCurrentTick());
         return Optional.empty();
     }
 
@@ -999,8 +1006,12 @@ final class SelfTestDrivers {
         int fused = io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(adapters, id, "selftest");   // F2: his fused chunks, never to go off
         int summoned = io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, id,
                 io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);   // 3b, D7: clear_state
+        // THE BLINK (the Blink Tome's K9, 2026-11-26): its cooldown went with every other above; its state ends now, taking
+        // off only the invisibility it applied (BLINK END reason=cleared), through the same sink an attack tells.
+        boolean blink = adapters.blinked().isBlinked(id);
+        adapters.attacks().attacked(p, io.github.butterflysmp.rpg.core.accessory.Blinks.EndReason.CLEARED);
         run.log("STAGE clear_state cooldowns=cleared streaks=forgotten chains=forgotten orb=" + (orb ? "removed" : "none")
-                + " summons=" + summoned + " fused=" + fused + " drum=" + drum);
+                + " summons=" + summoned + " fused=" + fused + " drum=" + drum + " blink=" + (blink ? "ended" : "none"));
         return Optional.empty();
     }
 

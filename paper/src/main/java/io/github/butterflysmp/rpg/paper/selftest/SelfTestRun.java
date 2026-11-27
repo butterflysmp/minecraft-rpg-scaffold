@@ -133,10 +133,17 @@ final class SelfTestRun {
             var drumStreaks = service.adapters().behaviourHits().drums();
             int drum = drumStreaks.of(player.getUniqueId()).n();
             drumStreaks.forget(player.getUniqueId());
+            // AND HIS BLINK (the Blink Tome's K9, 2026-11-26): its state ends (BLINK END reason=cleared, taking off only the
+            // invisibility it applied) and its cooldown, ONE key, is reset; his other cooldowns are clear_state's to clear.
+            boolean blink = service.adapters().blinked().isBlinked(player.getUniqueId());
+            service.adapters().attacks().attacked(player, io.github.butterflysmp.rpg.core.accessory.Blinks.EndReason.CLEARED);
+            if (cooldowns() != null) {
+                cooldowns().reset(player.getUniqueId(), io.github.butterflysmp.rpg.paper.accessory.BlinkTomes.COOLDOWN_KEY);
+            }
             log("CLEAN blocks=" + blocks + " " + SelfTestStaging.readBackField(rowBlocks.readBack(), blocks) + " removed=" + removed + " summons=" + summons + " fused=" + fused + " inventory=" + (gateBoundary ? "restored" : "kept")
                     + (worn == null ? "" : " " + worn)
                     + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ())
-                    + " drum=" + drum);
+                    + " drum=" + drum + " blink=" + (blink ? "ended" : "none"));
             log(SelfTestStaging.lingerLine(SelfTestStaging.LINGER_RADIUS, endWork(start), endLingering(start)));
             // A ROW STARTS CLEAN OR SAYS SO (GATE-dragon-fix.md, C3). The removals above run on each mob's own
             // scheduler, a tick later, so the count waits for them; then every live body still in the row's radius
@@ -684,6 +691,15 @@ final class SelfTestRun {
         restored += " summons=" + io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(service.adapters(),
                 player.getUniqueId(), io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);
         restored += " fused=" + io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(service.adapters(), player.getUniqueId(), "selftest");   // F2: no chunk outlives a run
+        // NO BLINK OUTLIVES A RUN (the Blink Tome's K9): on every exit his blinked state ends, taking off only what it
+        // applied, and the blink's cooldown key is reset (the run started him with whatever he had; a run's blink is the
+        // run's).
+        boolean blinkLive = service.adapters().blinked().isBlinked(player.getUniqueId());
+        service.adapters().attacks().attacked(player, io.github.butterflysmp.rpg.core.accessory.Blinks.EndReason.CLEARED);
+        if (cooldowns() != null) {
+            cooldowns().reset(player.getUniqueId(), io.github.butterflysmp.rpg.paper.accessory.BlinkTomes.COOLDOWN_KEY);
+        }
+        restored += " blink=" + (blinkLive ? "ended" : "none");
         // THE MIRROR (2026-11-22): the restore may have put back a mirror from RUN START; drawn again from what he holds
         // now, so no restore leaves arrows where his star should be. The quit and disable paths then put the star back.
         io.github.butterflysmp.rpg.paper.nexus.NexusMirror.redraw(player, service.adapters().keys());

@@ -53,8 +53,8 @@ class BlinkTomesWiringTest {
                         + " from=200.500 201.000 0.500 to=210.500 201.000 -4.500 safe=412 forgot=1",
                 BlinkTomes.blinkLine("Ben", 1000, "zombie " + z, 3.0, new Vec3(200.5, 201, 0.5), new Vec3(210.5, 201, -4.5),
                         412, 1));
-        assertEquals("BLINK NONE-SAFE wearer=Ben tick=1000 trigger=zombie " + z + " searched=5579",
-                BlinkTomes.noneSafeLine("Ben", 1000, "zombie " + z, 5579));
+        assertEquals("BLINK NONE-SAFE wearer=Ben tick=1000 trigger=zombie " + z + " searched=3985",
+                BlinkTomes.noneSafeLine("Ben", 1000, "zombie " + z, 3985));
         assertEquals("BLINK REFUSED-TARGET mob=zombie " + z + " tick=1005", BlinkTomes.refusedLine("zombie", z, 1005));
         for (Blinks.EndReason r : Blinks.EndReason.values()) {
             assertEquals("BLINK END wearer=Ben tick=1160 reason=" + r.name().toLowerCase(), BlinkTomes.endLine("Ben", 1160, r));
