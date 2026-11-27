@@ -41,8 +41,10 @@ final class SelfTestSnapshot {
     static final String MOB_TAG = "selftest";
 
     /** What the restore removes: a tagged mob, or an experience orb. Never a player. Pure, so it is a unit row. */
-    static boolean removedOnRestore(boolean isPlayer, boolean tagged, boolean experienceOrb) {
-        return !isPlayer && (tagged || experienceOrb);
+    static boolean removedOnRestore(boolean isPlayer, boolean tagged, boolean experienceOrb, boolean orbOnPad) {
+        // P3 (the seat, 2026-11-27): an XP orb only when a pad step has placed him AND it lies in the pad's region; a run
+        // that ends before its pad step removes no orb of his ground. A tagged mob is tag-bound, as before.
+        return !isPlayer && (tagged || (experienceOrb && orbOnPad));
     }
 
     /**
@@ -356,13 +358,14 @@ final class SelfTestSnapshot {
      * {@code teleportAsync} would complete after the world save it must precede.
      */
     String restore(Player p, ProfileService profiles, ResourcePool resources, MobNameplateManager nameplates,
-                   Scheduler scheduler, boolean now) {
+                   Scheduler scheduler, boolean now, SelfTestPadShape.Stand pad) {
         p.closeInventory();
         int mobs = 0;
         int orbs = 0;
         for (Entity e : p.getNearbyEntities(48, 48, 48)) {
             boolean orb = e instanceof ExperienceOrb;
-            if (!removedOnRestore(e instanceof Player, e.getScoreboardTags().contains(MOB_TAG), orb)) continue;
+            boolean orbOnPad = orb && pad != null && SelfTestPadShape.inRegion(pad, e.getLocation().getX(), e.getLocation().getY(), e.getLocation().getZ());
+            if (!removedOnRestore(e instanceof Player, e.getScoreboardTags().contains(MOB_TAG), orb, orbOnPad)) continue;
             scheduler.onEntity(e, e::remove);
             if (orb) orbs++; else mobs++;
         }

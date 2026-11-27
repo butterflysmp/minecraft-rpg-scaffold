@@ -79,6 +79,8 @@ only the instrument's, nothing in the game changes and the read shape is predict
 - **Each gate's SETUP** row-start CLEAN removes every dropped item within 48 of the stand (an Item entity that is neither a
   marker nor a fused body: `SelfTestStaging.droppedItem`) and logs, after its CLEAN line, **`ITEMS cleared=<n> radius=48
   [<material> x<k>, …]`**. A row's own drops are its reading: rows do not clear.
+  **SUPERSEDED, 2026-11-27 (D1):** that form cleared round wherever he stood before the pad step; the clear now runs
+  only on the pad, bounded to its region, in the pad step's own completion: see D1 AND THE F5 RULINGS, P4.
 - **The strays of the boot of 1f447197 are not identified**, and cannot be from that log (no line named a type). INFERRED:
   the drops of the zombies the Bone Club rows killed with `/kill @e[tag=t]` near block (2, 0); the one near F+(10.59, 0,
   −0.07) has no candidate. The new setup line names whatever the gate before left.
@@ -105,7 +107,7 @@ only the instrument's, nothing in the game changes and the read shape is predict
 - **Guard, Ben's rule as a test:** `MintedNamesAreNotSlantedTest` walks every shipped gear and accessory definition through
   `WeaponItems.displayName` and requires an explicit `italic: false`; it reads the five mint sites; and it reproduces BT1's
   read shape from the READ wrapper.
-- **What only Ben's eyes settle, MARKED FOR HIS ANSWER:** *(Ben's answer on what he sees in the game goes here.)*
+- **What only Ben's eyes settle, MARKED FOR HIS ANSWER:** **BEN, VERBATIM, 2026-11-26: "1. No item names should not look slanted".** The READ above says a player sees them upright: no change.
 
 ## R6 — BF6 ALIGNS HIM RIGHT BEFORE THE PRESS
 
@@ -113,6 +115,62 @@ BF6 aligned him, then waited 40 ticks beside its wolf and zombie before the pres
 read `104.529`). The row now runs `execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 90`, `wait: 2`, then the
 press (the TURN_THEN_PRESS lint needs a wait; 2 is the shortest it takes). The short gate predicts every rest point
 against the throw's own `at=` (`OwedRowShapesTest` pins the shape).
+
+## D1 AND THE F5 RULINGS, P1 TO P7 (the seat, 2026-11-27)
+
+**D1, the defect the seat found in this PR, confirmed:** R4's first form cleared dropped items at a gate's SETUP CLEAN
+round `stage()`, which is the pad's stand only once a PAD step has run, and "where the run began" before it. The FIRST
+gate's setup CLEAN runs before its pad step, so it would have cleared items within 48 of wherever Ben typed the command.
+The boot of `1f447197`'s first CLEAN read `return=-102.41 63.00 7.19`, his own ground. **CC's F5 read then found two
+more acts of that CLEAN reaching his ground before the pad step, both since the pad existed:** the linger pass
+(`endLingering`: every vanilla projectile, area-effect cloud and marker of ours within 48 of him, a thrown trident or an
+arrow in a wall included) and `endWork` (every pending core-work chain within 48 of him, anyone's). And the run-end
+restore removed every XP orb within 48 of wherever he was. **The seat's miss, in its words:** *"endLingering and endWork
+have run on Ben's own ground in the first CLEAN of every run since the pad existed, and I approved every one of those
+boots without reading what the first CLEAN reaches before the pad step."*
+
+- **P1, BEFORE A PAD STEP HAS PLACED HIM, A RUN TOUCHES NOTHING IN THE WORLD.** `SelfTestRun`'s row-start CLEAN reads
+  `padStand()` (empty while `stagePoint` is null); the linger pass (`endWork`, `endLingering`) runs only with it, and the
+  line says which: the CLEAN line ends **` world=<pad|skipped>`**, and with no pad the linger line is **`LINGER skipped`**
+  (CC'S CALL: one line saying it was skipped, rather than no line; a frozen gate's CLEAN predictions are read by their
+  named fields). The item clear is not the CLEAN's at all (P4). What still runs is HIS OWN: the block restore (empty
+  before any row), the inventory restore at a gate boundary, his summons and fused chunks removed, the drum, blink and
+  cooldown resets. **A KNOWN COST TO HIM, SAID SO:** a run starts without his summons and his fused chunks (cause CLEAR,
+  as today); they are not put back at the run's end.
+- **P2, ON THE PAD, EVERY WORLD-TOUCHING CLEANUP IS BOUNDED TO THE PAD'S OWN REGION** (`SelfTestPadShape.inRegion`,
+  `bounds`): in blocks from the stand's column, x −3..46 and z −14..14 (the interior x −2..45, z −13..13, and its rim),
+  and dy −1..16 from the floor (**CC'S CALL: headroom 16**, above every arc the pad's rows throw; the alternative, the
+  rim's own 4, a lobbed arc can clear). The linger pass and the item clear scan that box (`padEntities`: the box, then
+  each body tested against the region); `endWork` cancels the chains whose point is in it (`PendingWork.cancelIn`; the
+  sphere `cancelNear` keeps its test and has no caller now). **`removeTagged` is left a 48 sphere round him:** it is
+  tag-bound (only bodies carrying `selftest`), so it can touch nothing of his, and bounding it to the box would leave a
+  tagged mob knocked over the rim alive (a leak).
+- **WHAT OF A ROW CAN LEAVE THE BOX:** an ability projectile above the rim's height (dy 5 and up) flies on past x 46 or z
+  ±14: no on-pad row aims one there (shots go at eye height, 1.62, and stop at the barrier rim), but if one did, its chain
+  point leaves the box, so the next CLEAN does not cancel it; it ends at its own max lifetime, and its marker is
+  non-persistent with its despawn armed (`spawnMarker`), so it is never saved. **A bounded leak, not widened to a
+  sphere** (the seat's P2). His fused chunks are his own and are removed wherever they are (P1). A tagged mob outside the
+  box is still `removeTagged`'s.
+- **P3, THE RUN-END RESTORE** removes an XP orb only when a pad step has placed him AND the orb is in the pad's region
+  (`SelfTestSnapshot.removedOnRestore`'s fourth argument; `SelfTestRun.end` hands it `padStand().orElse(null)`). **READ,
+  everything else `restore()` does to the world:** a tagged mob within 48 is removed (tag-bound, kept); the last chain's
+  saved blocks are put back (none before a row ran); he is teleported to his start; spawn_mobs, spawn_phantoms,
+  keep_inventory, immediate_respawn, the time and the difficulty are set to the values captured at run start (before a
+  pad step none was changed, so each write puts back what is there). Nothing else of his ground is touched.
+- **P4, THE FIRST GATE'S ITEMS ARE STILL CLEARED, ON THE PAD.** The item clear runs in `pad()`'s own completion, after
+  `stagePoint` is set and the `PAD stood` line, before the setup goes on: **`ITEMS cleared=<n> pad [<type> x<k>, …]`**.
+  Every gate with a pad step (each begins with it) starts with a clean pad, the command's first included; a scenario with
+  no pad step clears no item (F3).
+- **P5, THE GATES WITH NO PAD STEP: NOTHING ABOUT THEM CHANGES HERE.** By P1 their CLEAN now touches nothing in the world.
+  The lint rule **`PAD_FIRST`** (a gate's setup begins with `pad:`) reports them as KNOWN by name
+  (`PadFirstLintTest.KNOWN`, the count pinned), so no new gate can ship without it. **THE COUNT IS 42, NOT 40:** CC's F5
+  report said 40 and the seat's ruling repeated it; READ over the shipped files, 55 gates, 13 with a pad step (each its
+  setup's first), 42 with none anywhere.
+- **P6, tests and mutations:** `SelfTestPadRegionTest` (the region's every bound, a point within 48 but outside the box,
+  the lines, the restore's orb rule), `SelfTestWorldUntouchedBeforePadTest` (no world call before a stand point; the box
+  on the pad; the item clear in the pad step's completion; the restore handed the pad or nothing), `PadFirstLintTest`,
+  `PendingWorkTest.cancellingInABoxEndsTheTasksInsideItAndNoOthers`. A mutation per rule.
+- **P7:** `GATE-held-target.md` re-predicts every setup's CLEAN, LINGER and ITEMS lines.
 
 ## CC'S CALLS
 
@@ -126,4 +184,12 @@ against the throw's own `at=` (`OwedRowShapesTest` pins the shape).
 ## OWED, CARRIED
 
 - The strays' identity (R4): unidentifiable from the old log; the next setup line names any.
-- Ben's answer on what he sees (R5), marked above.
+- Ben's answer on what he sees (R5): given, above.
+- **THE 42 GATES WITH NO PAD STEP (P5): predate ruling A; run on his ground; to be refused or moved to the pad in a later
+  PR the seat will rule.** boltor-recipe, breacher, breacher-rework, crystal-shard-staff, deft-hands, drag-additive,
+  dragon-beam, dragon-blast, dragon-blink, dragon-bodies, dragon-growth, dragon-shot, dragon-skreel, dragon-split,
+  dragon-teleport, fight-arena, fight-down, fight-dragon, fight-end, fight-revive, fight-rules, fight-site, fight-template,
+  knell-beam, legacy-a, legacy-b, level, living-lantern, loot-roll, melee-cell, mining-auto, nexus-back, nexus-polish,
+  remove-dev-weapons, sunder, sword-convert, sword-smithing, sword-tiers, unique-enchant-slot, vanilla-bows, wither-status,
+  withered-shortbow. Ben is asked not to type them meanwhile.
+- **His summons and fused chunks** are removed at a run's first CLEAN and not put back (P1's known cost).

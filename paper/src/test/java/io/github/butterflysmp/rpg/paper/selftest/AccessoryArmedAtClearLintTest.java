@@ -33,6 +33,7 @@ class AccessoryArmedAtClearLintTest {
 
     private static final String SETUP = """
             setup:
+              - pad: ""
               - preflight: "0 -13 36 13"
             """;
 

@@ -14,22 +14,22 @@ class SelfTestRestoreTargetsTest {
 
     @Test
     void aTaggedMobIsRemoved() {
-        assertTrue(SelfTestSnapshot.removedOnRestore(false, true, false));
+        assertTrue(SelfTestSnapshot.removedOnRestore(false, true, false, false));
     }
 
     @Test
     void anExperienceOrbIsRemovedThoughNothingTagsIt() {
-        assertTrue(SelfTestSnapshot.removedOnRestore(false, false, true));
+        assertTrue(SelfTestSnapshot.removedOnRestore(false, false, true, true));
     }
 
     @Test
     void anUntaggedEntityThatIsNotAnOrbIsLeftAlone() {
-        assertFalse(SelfTestSnapshot.removedOnRestore(false, false, false));
+        assertFalse(SelfTestSnapshot.removedOnRestore(false, false, false, false));
     }
 
     @Test
     void aPlayerIsNeverRemovedEvenIfTagged() {
-        assertFalse(SelfTestSnapshot.removedOnRestore(true, true, false));
-        assertFalse(SelfTestSnapshot.removedOnRestore(true, false, false));
+        assertFalse(SelfTestSnapshot.removedOnRestore(true, true, false, false));
+        assertFalse(SelfTestSnapshot.removedOnRestore(true, false, false, false));
     }
 }

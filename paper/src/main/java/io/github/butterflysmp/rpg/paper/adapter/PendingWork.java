@@ -37,6 +37,21 @@ public final class PendingWork {
     }
 
     /** End every pending link in {@code world} within {@code radius} BLOCKS of the point, inclusive. Returns how many. */
+    /**
+     * P2 (the seat, 2026-11-27): end every chain whose point is inside a box, {minX, minY, minZ, maxX, maxY, maxZ}, the max
+     * exclusive, in that world. The selftest's row-start clean uses the pad's region, so no chain outside it is touched.
+     */
+    public int cancelIn(UUID world, double[] b) {
+        int n = 0;
+        for (var e : live.entrySet()) {
+            Pending p = e.getValue();
+            if (!p.world().equals(world)) continue;
+            boolean in = p.x() >= b[0] && p.x() < b[3] && p.y() >= b[1] && p.y() < b[4] && p.z() >= b[2] && p.z() < b[5];
+            if (in && live.remove(e.getKey(), p)) n++;
+        }
+        return n;
+    }
+
     public int cancelNear(UUID world, double x, double y, double z, double radius) {
         int n = 0;
         double r2 = radius * radius;

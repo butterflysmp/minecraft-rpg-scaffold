@@ -88,7 +88,13 @@ final class ScenarioLint {
          * holds no content table to tell a Blink from another); the alternative keys on the Blink's ids. A row that stages
          * no {@code mob_target} is not a finding: nothing can trigger.
          */
-        ACCESSORY_ARMED_AT_CLEAR
+        ACCESSORY_ARMED_AT_CLEAR,
+        /**
+         * THE SEAT'S P5 (2026-11-27, after CC's F5 stop): a gate's SETUP BEGINS WITH {@code pad:}. Before a pad step a
+         * run touches nothing in the world (P1), so a step ahead of it, or a gate with none, runs on Ben's own ground. The
+         * gates that predate ruling A are reported as KNOWN ({@code PadFirstLintTest}, by name); no new gate may add one.
+         */
+        PAD_FIRST
     }
 
     /**
@@ -343,7 +349,19 @@ final class ScenarioLint {
         levelGatedMenu(gate, scenarios, out);
         accessoryStaged(gate, scenarios, out);
         accessoryArmedAtClear(gate, scenarios, out);
+        padFirst(gate, scenarios, out);
         return List.copyOf(out);
+    }
+
+    /** PAD_FIRST over one gate: its setup's FIRST step is {@code pad:}. */
+    static void padFirst(String gate, List<Scenario> scenarios, List<Finding> out) {
+        for (Scenario s : scenarios) {
+            if (!s.row().equals(Scenario.SETUP)) continue;
+            if (s.steps().isEmpty() || s.steps().getFirst().verb() != Scenario.Verb.PAD) {
+                out.add(new Finding(gate, s.row(), Rule.PAD_FIRST, "the setup does not begin with pad: what runs before a pad"
+                        + " step runs on his own ground"));
+            }
+        }
     }
 
     /** ACCESSORY_ARMED_AT_CLEAR over one gate: no {@code clear_state}, and no row end, while armed and targeted. */

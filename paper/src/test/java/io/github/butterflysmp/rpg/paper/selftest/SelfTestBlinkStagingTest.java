@@ -51,7 +51,7 @@ class SelfTestBlinkStagingTest {
                 "the CLEAN and the run's end");
         assertEquals(2, count(r, "cooldowns().reset(player.getUniqueId(), io.github.butterflysmp.rpg.paper.accessory.BlinkTomes.COOLDOWN_KEY);"),
                 "each resets the blink's cooldown key, and only it");
-        assertTrue(r.contains("+ \" drum=\" + drum + \" blink=\" + (blink ? \"ended\" : \"none\"));"), "the CLEAN line's field");
+        assertTrue(r.contains("+ \" drum=\" + drum + \" blink=\" + (blink ? \"ended\" : \"none\")"), "the CLEAN line's field (then world=, P1)");
         assertTrue(r.contains("restored += \" blink=\" + (blinkLive ? \"ended\" : \"none\");"), "the RESTORED line's field");
     }
 

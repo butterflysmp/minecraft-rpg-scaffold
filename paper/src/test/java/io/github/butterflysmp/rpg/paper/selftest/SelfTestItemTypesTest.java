@@ -39,22 +39,22 @@ class SelfTestItemTypesTest {
 
     @Test
     void theSetupsClearLine() {
-        assertEquals("ITEMS cleared=0 radius=48 []", SelfTestStaging.itemsClearedLine(48, List.of()));
-        assertEquals("ITEMS cleared=4 radius=48 [nether_wart_block x1, rotten_flesh x3]",
-                SelfTestStaging.itemsClearedLine(48,
-                        List.of("rotten_flesh", "nether_wart_block", "rotten_flesh", "rotten_flesh")));
+        // F2 (2026-11-27): the line names its bound, the pad.
+        assertEquals("ITEMS cleared=0 pad []", SelfTestStaging.itemsClearedLine(List.of()));
+        assertEquals("ITEMS cleared=4 pad [nether_wart_block x1, rotten_flesh x3]",
+                SelfTestStaging.itemsClearedLine(List.of("rotten_flesh", "nether_wart_block", "rotten_flesh", "rotten_flesh")));
     }
 
-    /** Mutation: the clear moved off the setup, left out of the CLEAN, or its line dropped. */
+    /**
+     * The scan itself (where it runs is {@code SelfTestWorldUntouchedBeforePadTest}: the pad step's completion, F1).
+     * Mutation: a marker or a fused body cleared, or the removal off its own thread.
+     */
     @Test
-    void theSetupsCleanClearsDroppedItemsAndSaysWhich() throws IOException {
+    void theClearTakesOnlyDroppedItems_onTheirOwnThread() throws IOException {
         String r = Files.readString(Path.of("src/main/java/io/github/butterflysmp/rpg/paper/selftest/SelfTestRun.java"))
                 .replace("\r", "");
         assertTrue(r.length() > 20_000, "control: SelfTestRun was read");
-        int clean = r.indexOf("log(\"CLEAN blocks=");
-        int guard = r.indexOf("if (s.row().equals(Scenario.SETUP)) log(SelfTestStaging.itemsClearedLine(", clean);
-        assertTrue(clean > 0 && guard > clean, "the setup's clear is logged after its CLEAN line: " + clean + " " + guard);
-        int scan = r.indexOf("private List<String> clearDroppedItems(Location start)");
+        int scan = r.indexOf("private List<String> clearDroppedItems(SelfTestPadShape.Stand pad)");
         assertTrue(scan > 0, "one scan, by name");
         String body = r.substring(scan, r.indexOf("\n    }\n", scan));
         assertTrue(body.contains("SelfTestStaging.droppedItem(e instanceof org.bukkit.entity.Item"), "the pure test decides");
