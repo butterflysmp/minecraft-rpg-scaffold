@@ -1,0 +1,364 @@
+# GATE-blink-tome (docs/gates/GATE-blink-tome.md): the Blink Tome and its Blink, 2026-11-26. Typed as ONE command for the
+# whole stack, LAST:
+#   /rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27+healing-tome+blink-tome
+# SURVIVAL. On the pad, at night (18000), difficulty normal, no natural spawns, each put back by the run's restore. ALL
+# AUTO: this gate asks NOTHING. EVERY ROW STAGES, ITSELF: his level (2), an empty inventory and state, EMPTY ACCESSORY
+# SLOTS (accessory: clear; his own come back at the run's end, H15), his class (mage unless the row says), 40 ticks for
+# the reconcile. SAFETY 0.000: no row wounds him, and every mob is NoAI (it holds a target and never acts).
+#
+# THE STAND AND THE BLOCKERS (BlinkPadLandingTest): a row that may blink summons, AT THE PAD'S STAND and before he moves,
+# four NoAI blocker zombies at (17, 13), (23, 13), (17, -13), (23, -13) and its trigger three east of where he will stand,
+# then moves him 20 east (tp @s ~20 ~ ~). From (20, 0) every spot the Blink can choose is on the pad's interior floor
+# inside the preflight's box, whatever lies outside the pad. A zombie summoned AFTER a blink is summoned at his feet
+# (~0 ~ ~0), wherever he landed: always in the interior and the box.
+setup:
+  - pad: ""
+  - preflight: "0 -13 36 13"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# BT1: THE TOOLTIP, WHOLE, AND A4'S REFUSALS BY TEXT. A mage at level 2, the tome given and held (NOT equipped).
+BT1:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - probe_held: ""
+  - dump: held
+  - cmd: "rpg enchant show"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - cmd: "rpg durability damage 1"
+  - wait: 2
+
+# BT2: THE BLINK. A mage wearing it; one NoAI zombie three east of him staged as targeting him. The BLINK line within the
+# check's period of the mob_target; he stands where to= says; the zombie forgot him; he is invisible; the sheet line.
+BT2:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 10
+  - probe_self: ""
+  - probe_target: bt
+  - mob_target: bt
+  - wait: 8
+  - probe_self: ""
+  - probe_target: bt
+  - probe_invisibility: ""
+  - cmd: "rpg stats"
+  - wait: 2
+  - clear_state: ""
+  - probe_invisibility: ""
+
+# BT3: HIDDEN, THEN THE EXPIRY. A blink; a zombie at his feet is refused him while blinked; 160 ticks after the blink the
+# state ends (expired), the invisibility is gone, and the same mob_target then lands. No second blink: the cooldown.
+BT3:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 10
+  - mob_target: bt
+  - wait: 8
+  - cmd: 'summon zombie ~0 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bh","selftest"]}'
+  - mob_target: bh
+  - probe_target: bh
+  - probe_invisibility: ""
+  - wait: 160
+  - probe_invisibility: ""
+  - mob_target: bh
+  - wait: 2
+  - probe_target: bh
+  - wait: 20
+  - clear_state: ""
+
+# BT4: A SPELL CANCELS. During the state, the Flint Staff's right click fires (a mage weapon): BLINK END reason=cast in
+# that press's own call, between its DRIVE use line and its USE result line.
+BT4:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 10
+  - mob_target: bt
+  - wait: 8
+  - probe_invisibility: ""
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 2
+  - cmd: "rpg mana refill"
+  - use: right_click
+  - probe_invisibility: ""
+  - wait: 10
+  - clear_state: ""
+
+# BT5: A MELEE HIT CANCELS. During the state, his hit lands on a zombie at his feet: BLINK END reason=melee in that
+# attack's own call, after its DRIVE attack line.
+BT5:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 10
+  - mob_target: bt
+  - wait: 8
+  - cmd: 'summon zombie ~0 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bm","selftest"]}'
+  - cmd: "rpg give wooden_sword"
+  - wait: 2
+  - hold: wooden_sword
+  - aim: bm
+  - wait: 2
+  - probe_invisibility: ""
+  - attack: bm
+  - probe_invisibility: ""
+  - wait: 10
+  - clear_state: ""
+
+# BT6: THE WHISTLE DOES NOT. During the state, the Bone Whistle's right click summons: no BLINK END in that press; the
+# state runs to its expiry. His summon is removed by the row's own clear_state.
+BT6:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg maxsummons reset"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 10
+  - mob_target: bt
+  - wait: 8
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 2
+  - cmd: "rpg mana refill"
+  - use: right_click
+  - wait: 5
+  - probe_summon: "8"
+  - probe_invisibility: ""
+  - wait: 160
+  - probe_invisibility: ""
+  - clear_state: ""
+
+# BT7: THE COOLDOWN. The first blink is the row's control. After it expires (well inside the 1200 ticks), a second zombie
+# at his feet staged as targeting him produces no BLINK line; re-equipping the tome produces none either.
+BT7:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 10
+  - mob_target: bt
+  - wait: 168
+  - cmd: 'summon zombie ~0 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bk2","selftest"]}'
+  - mob_target: bk2
+  - wait: 30
+  - probe_target: bk2
+  - accessory: "clear"
+  - wait: 6
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 30
+  - probe_target: bk2
+  - clear_state: ""
+
+# BT8: NOT TARGETING. A NoAI zombie three east of him that does not target him: no BLINK line across 30 ticks of a running
+# clock. The row's control: mob_target it, and the BLINK line follows within the period.
+BT8:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 40
+  - probe_target: bt
+  - mob_target: bt
+  - wait: 8
+  - clear_state: ""
+
+# BT9: FARTHER THAN 5. A NoAI zombie six east of him staged as targeting him: no BLINK line across 30 ticks. The row's
+# control: a second zombie three east is targeted, and the BLINK line follows (both forgot him: forgot=2).
+BT9:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~26 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bf6","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - wait: 10
+  - mob_target: bf6
+  - wait: 30
+  - probe_target: bf6
+  - mob_target: bt
+  - wait: 8
+  - clear_state: ""
+
+# BT10: INACTIVE, AND LIVE AGAIN. Equipped as a mage and switched to ranger in the same tick, with a zombie three east
+# targeting him: no BLINK START and no BLINK line across 30 ticks, and the sheet says inactive. The control in the row:
+# back to mage, the clock starts and the BLINK line follows its first check.
+BT10:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - accessory: "equip 0"
+  - class: "ranger"
+  - mob_target: bt
+  - wait: 30
+  - cmd: "rpg stats"
+  - wait: 2
+  - class: "mage"
+  - wait: 12
+  - clear_state: ""
+
+# BT11: CARRIED, NOT EQUIPPED. A mage holding the tome in his hand, his slots empty, a zombie three east targeting him: no
+# BLINK START and no BLINK line across 30 ticks. Control: BT2 (the same staging with the tome equipped blinked).
+BT11:
+  - cmd: "rpg playerxp set @s 2 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - accessory: "clear"
+  - class: "mage"
+  - wait: 40
+  - cmd: 'summon zombie ~17 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~17 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~-13 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bkb","selftest"]}'
+  - cmd: 'summon zombie ~23 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Silent:1b,Tags:["bt","selftest"]}'
+  - cmd: "tp @s ~20 ~ ~"
+  - cmd: "rpg give blink_tome"
+  - wait: 2
+  - hold: blink_tome
+  - probe_held: ""
+  - mob_target: bt
+  - wait: 30
+  - clear_state: ""

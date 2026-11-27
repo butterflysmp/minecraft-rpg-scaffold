@@ -1,0 +1,438 @@
+# GATE-blast-fungus (docs/gates/GATE-blast-fungus.md): the Blast Fungus, Fast and Fungal and Cluster Bombs, 2026-11-26.
+# Typed as ONE command with true-tooltips' TT20 to TT27 by reference:
+#   /rpg selftest blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27
+# SURVIVAL. On the pad (the setup's FIRST step stands him on it facing east), at NIGHT (18000), difficulty normal, no
+# natural spawns, each put back by the run's restore. ALL AUTO except BF9, this gate's one ASK, last of it. Every row
+# empties his storage and state, gives itself what it holds, sets his level (1), its score (100 unless the row says),
+# its enchant state, mana and a cleared cooldown, turns him (block-centred, east, or straight down where the row says)
+# and waits before the press. Every mob is a frozen NoAI zombie at max_health 200 (so 1000 custom health), placed at the
+# coordinates BlastFungusGateArithmeticTest executes; the one summon (BF6's wolf) is frozen with NoAI too.
+# SAFETY (the gate file): NO row deals him damage; every blast is spared for players (PvpPath.FUSED_BURST), EXECUTED.
+setup:
+  - pad: ""
+  - preflight: "-2 -8 32 10"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:enderman,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:witch,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:phantom,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# BF1: THE TOOLTIP, BARE, AND A FRESH ROLL'S SLOT 0.
+BF1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - probe_held: ""
+  - cmd: "rpg enchant show"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg gearscore set 100"
+  - wait: 2
+  - dump: held
+
+# BF2: THE POOLS, 500 ROLLS BY THE ROLL'S OWN CALL.
+BF2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg enchant rollstats 500"
+
+# BF3: THE THROW. Three zombies: ba inside all three blasts, bo inside one, bn inside none. Mana before and after the
+# press, in its tick. The bodies sampled three times while they rest; the zombies read after the fuse.
+BF3:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~7.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["ba","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6 ~ ~5.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["bo","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6 ~ ~-6.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["bn","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: "ba 12"
+  - probe: "bo 12"
+  - probe: "bn 12"
+  - cmd: "rpg mana refill"
+  - probe_mana: ""
+  - use: right_click
+  - probe_mana: ""
+  - wait: 15
+  - probe_positions: "item 12"
+  - wait: 10
+  - probe_positions: "item 12"
+  - wait: 10
+  - probe_positions: "item 12"
+  - wait: 10
+  - probe: "ba 12"
+  - probe: "bo 12"
+  - probe: "bn 12"
+  - probe_positions: "item 12"
+
+# BF4: THE EARLY DETONATION: a zombie at 4 in the centre chunk's path.
+BF4:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~4 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["bp","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: "bp 12"
+  - use: right_click
+  - wait: 10
+  - probe: "bp 12"
+  - wait: 35
+  - probe: "bp 12"
+
+# BF5: HE STANDS INSIDE HIS OWN BLASTS: straight down, all three rest at his feet. Healed to full first.
+BF5:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 90"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 40
+  - probe_self: ""
+  - use: right_click
+  - wait: 45
+  - probe_self: ""
+
+# BF6: A SUMMON INSIDE THE BLASTS: his Bone Whistle's wolf, frozen 1 west of him; a zombie 1.5 east; straight down.
+BF6:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - cmd: "data merge entity @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] {NoAI:1b}"
+  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~-1 ~ ~"
+  - clear_inventory: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg mana refill"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~1.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["bs","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 90"
+  - wait: 40
+  - probe_summon: "8"
+  - probe: "bs 8"
+  - use: right_click
+  - wait: 45
+  - probe_summon: "8"
+  - probe: "bs 8"
+
+# BF7: THE COOLDOWN: a press, a press 136 later (refused), a press 140 after the first (accepted).
+BF7:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 10
+  - use: right_click
+  - wait: 136
+  - use: right_click
+  - wait: 4
+  - use: right_click
+  - wait: 45
+
+# FF1 to FF3: FAST AND FUNGAL I, II, III: the Cooldown line, then the press, refused at cooldown - 4, accepted at it.
+FF1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 fast_and_fungal"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 10
+  - use: right_click
+  - wait: 116
+  - use: right_click
+  - wait: 4
+  - use: right_click
+  - wait: 45
+
+FF2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 fast_and_fungal"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 10
+  - use: right_click
+  - wait: 96
+  - use: right_click
+  - wait: 4
+  - use: right_click
+  - wait: 45
+
+FF3:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 fast_and_fungal"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - wait: 10
+  - use: right_click
+  - wait: 76
+  - use: right_click
+  - wait: 4
+  - use: right_click
+  - wait: 45
+
+# CB1 to CB3: CLUSTER BOMBS I, II, III: the block, one big chunk, c4 (4.5 out) and c5 (5.5 out) read between the big blast
+# and the splits; cs (1.0 past the heading's split point) read after the splits.
+CB1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 cluster_bombs"
+  - cmd: "rpg enchant level 0 0 1"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6.65 ~ ~4.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c4","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6.65 ~ ~-5.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c5","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~10.15 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["cs","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: "c4 16"
+  - probe: "c5 16"
+  - probe: "cs 16"
+  - use: right_click
+  - wait: 45
+  - probe: "c4 16"
+  - probe: "c5 16"
+  - probe: "cs 16"
+  - wait: 20
+  - probe: "c4 16"
+  - probe: "c5 16"
+  - probe: "cs 16"
+
+CB2:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 cluster_bombs"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6.65 ~ ~4.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c4","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6.65 ~ ~-5.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c5","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~10.15 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["cs","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: "c4 16"
+  - probe: "c5 16"
+  - probe: "cs 16"
+  - use: right_click
+  - wait: 45
+  - probe: "c4 16"
+  - probe: "c5 16"
+  - probe: "cs 16"
+  - wait: 20
+  - probe: "c4 16"
+  - probe: "c5 16"
+  - probe: "cs 16"
+
+CB3:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 cluster_bombs"
+  - cmd: "rpg enchant level 0 0 3"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - cmd: "rpg enchant show"
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6.65 ~ ~4.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c4","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6.65 ~ ~-5.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c5","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~10.15 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["cs","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: "c4 16"
+  - probe: "c5 16"
+  - probe: "cs 16"
+  - use: right_click
+  - wait: 45
+  - probe: "c4 16"
+  - probe: "c5 16"
+  - probe: "cs 16"
+  - wait: 20
+  - probe: "c4 16"
+  - probe: "c5 16"
+  - probe: "cs 16"
+
+# CB4: CLUSTER BOMBS II AT SCORE 200: the big and the small both double (160, 110), read on cs.
+CB4:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "rpg give blast_fungus"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg gearscore set 200"
+  - cmd: "rpg enchant clear"
+  - cmd: "rpg enchant candidate 0 cluster_bombs"
+  - cmd: "rpg enchant level 0 0 2"
+  - cmd: "rpg enchant active 0 0"
+  - cmd: "rpg mana refill"
+  - wait: 2
+  - dump: held
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~10.15 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["cs","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - wait: 40
+  - probe: "cs 16"
+  - use: right_click
+  - wait: 45
+  - probe: "cs 16"
+  - wait: 20
+  - probe: "cs 16"
+
+# BF8: NOTHING LEFT: after every detonation, no item body near him; his clear_state removes no chunk.
+BF8:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - wait: 30
+  - probe_entities: "item 32"
+  - clear_state: ""
+
+# BF9, THE ONE ASK OF THIS GATE, LAST OF IT: F11 on a flower pot 2 east of him, in both hands, with a plain red mushroom
+# as his control. The pot is a saved block, put back at the next row's start and by the run's restore.
+BF9:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - save_blocks: "2 0 0 2 0 0"
+  - cmd: "setblock ~2 ~ ~ minecraft:flower_pot"
+  - cmd: "rpg give blast_fungus"
+  - cmd: "give @s minecraft:red_mushroom 1"
+  - wait: 2
+  - hold: blast_fungus
+  - cmd: "rpg mana refill"
+  - probe_blocks: "POTTED_RED_MUSHROOM 2 0 0 2 0 0"
+  - probe_blocks: "FLOWER_POT 2 0 0 2 0 0"
+  - probe_inventory: blast_fungus
+  - ask: "1 3600 Right-click the flower pot 2 blocks east of you three times: first holding the Blast Fungus; then press F to put the Blast Fungus in your off hand and right-click the pot with your main hand empty; then holding the plain red mushroom. Did only the third click put a mushroom in the pot, and do you still have the Blast Fungus?"
+  - probe_blocks: "POTTED_RED_MUSHROOM 2 0 0 2 0 0"
+  - probe_blocks: "FLOWER_POT 2 0 0 2 0 0"
+  - probe_inventory: blast_fungus

@@ -88,6 +88,14 @@ final class SelfTestDrivers {
             case AIM -> aim(p, a);
             case USE -> use(p);
             case SWING -> swing(p);
+            case INTERACT_ENTITY -> interactEntity(p, a);
+            case RESET_CHARGE -> {
+                // The server half of a real click's arm swing (Scenario.Verb.RESET_CHARGE): Player#attack never resets it.
+                float before = p.getAttackCooldown();
+                p.resetCooldown();
+                run.log(resetChargeLine(before, p.getAttackCooldown()));
+                yield Optional.empty();
+            }
             case DROP -> drop(p);
             case HOLD -> hold(p, a);
             case HOLD_ONLY -> holdOnly(p, a);
@@ -767,6 +775,33 @@ final class SelfTestDrivers {
         // the event starts at useItemInHand=DEFAULT and, with no block, useInteractedBlock=DENY.
         run.log(useResultLine(event.useItemInHand().name(), event.useInteractedBlock().name()));
         return Optional.empty();
+    }
+
+    /** INTERACT_ENTITY (Scenario.Verb): the server's verdict on a right click on the tagged entity. Nothing vanilla follows. */
+    private Optional<String> interactEntity(Player p, String tag) {
+        Optional<Entity> target = nearestTagged(p, tag);
+        if (target.isEmpty()) return Optional.of("no entity tagged '" + tag + "' within " + (int) REACH + " blocks");
+        Entity e = target.get();
+        ItemStack held = p.getInventory().getItemInMainHand();
+        run.log("DRIVE interact_entity PlayerInteractAtEntityEvent HAND item=" + itemId(held) + " target=" + e.getUniqueId()
+                + " " + e.getType().getKey().getKey());
+        var event = new org.bukkit.event.player.PlayerInteractAtEntityEvent(p, e, new org.bukkit.util.Vector(0, 0.5, 0),
+                EquipmentSlot.HAND);
+        Bukkit.getPluginManager().callEvent(event);
+        ItemStack after = p.getInventory().getItemInMainHand();
+        String tamed = e instanceof org.bukkit.entity.Tameable t ? String.valueOf(t.isTamed()) : "-";
+        run.log(interactResultLine(event.isCancelled(), tamed, itemId(after), after.isEmpty() ? 0 : after.getAmount()));
+        return Optional.empty();
+    }
+
+    /** The INTERACT_ENTITY driver's line. Pure, pinned. */
+    static String interactResultLine(boolean cancelled, String tamed, String held, int amount) {
+        return "INTERACT result cancelled=" + cancelled + " tamed=" + tamed + " held=" + held + " amount=" + amount;
+    }
+
+    /** The RESET_CHARGE driver's line: {@code DRIVE reset_charge cooldown=<before>-><after>}, four decimals. Pure, pinned. */
+    static String resetChargeLine(float before, float after) {
+        return String.format(Locale.ROOT, "DRIVE reset_charge HumanEntity#resetCooldown cooldown=%.4f->%.4f", before, after);
     }
 
     /** The USE driver's second line: {@code USE result useItemInHand=<r> useInteractedBlock=<r>}. Pure, pinned. */

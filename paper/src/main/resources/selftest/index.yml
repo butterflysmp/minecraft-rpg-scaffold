@@ -135,3 +135,18 @@ gates:
 # true-tooltips (2026-11-26, feat/true-tooltips-gate on feat/true-tooltips): a weapon's stat and ability lines are its own
 # active enchants', typed as /rpg selftest true-tooltips+broken-bottle.BB2R+armor-sets.AS15R2. docs/gates/GATE-true-tooltips.md.
   - true-tooltips
+# blast-fungus (2026-11-26, feat/blast-fungus-gate on feat/cluster-bombs): the Blast Fungus, Fast and Fungal and Cluster
+# Bombs, typed as /rpg selftest blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27. docs/gates/GATE-blast-fungus.md.
+  - blast-fungus
+# bone-club (2026-11-26, feat/blast-fungus-gate moved onto feat/drumming-beat): the Bone Club, Drumming Beat and the one
+# minted-bone guard, typed as /rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27.
+# docs/gates/GATE-bone-club.md.
+  - bone-club
+# healing-tome (2026-11-26, feat/blast-fungus-gate moved onto feat/tome-selftest): the Healing Tome and its Radiant Pulse,
+# typed LAST as /rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27+healing-tome.
+# docs/gates/GATE-healing-tome.md.
+  - healing-tome
+# blink-tome (2026-11-26, feat/blast-fungus-gate moved onto feat/blink-selftest): the Blink Tome and its Blink, typed LAST
+# as /rpg selftest bone-club+blast-fungus+true-tooltips.TT20.TT21.TT22.TT23.TT24.TT25.TT26.TT27+healing-tome+blink-tome.
+# docs/gates/GATE-blink-tome.md.
+  - blink-tome

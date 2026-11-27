@@ -59,9 +59,9 @@ class SelfTestScenariosTest {
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
                         "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes", "shatter-caps",
-                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle", "true-tooltips"),
+                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle", "true-tooltips", "blast-fungus", "bone-club", "healing-tome", "blink-tome"),
                 List.copyOf(loaded.gates().keySet()),
-                "the fifty-one gates, in boot order (true-tooltips LAST, 2026-11-26, a NEW gate after broken-bottle; "
+                "the fifty-five gates, in boot order (blink-tome LAST, 2026-11-26, a NEW gate after healing-tome; healing-tome before it, 2026-11-26, a NEW gate after bone-club; bone-club before it, 2026-11-26, a NEW gate after blast-fungus; blast-fungus before it, 2026-11-26, a NEW gate after true-tooltips; true-tooltips before it, 2026-11-26, a NEW gate after broken-bottle; "
                         + "broken-bottle before it, 2026-11-25, a NEW gate after armor-sets; armor-sets before it, 2026-11-25, a NEW gate after summoner; summoner before it,"
                         + " 2026-11-25, a NEW gate after mage-guaranteed;"
                         + " mage-guaranteed before it, the seat's brief of 2026-11-24, a NEW gate after focused-beam;"
@@ -364,7 +364,15 @@ class SelfTestScenariosTest {
         // 473. Control: 503 + 21 (its setup and TT0-TT19) = 524. 453 was this line's value.
         // Then TT20-TT27, the class labels (feat/class-damage-labels, 2026-11-26), RECOUNTED: 51 gates, 532 keys, 51
         // setups, so 481. Control: 524 + 8 = 532. 473 was this line's value.
-        assertEquals(481, loaded.rows());
+        // Then GATE-blast-fungus.md (feat/blast-fungus-gate, 2026-11-26), RECOUNTED: 52 gates, 549 keys, 52 setups, so
+        // 497. Control: 532 + 17 (its setup, BF1-BF9, FF1-FF3, CB1-CB4) = 549. 481 was this line's value.
+        // Then GATE-bone-club.md (moved onto feat/drumming-beat, 2026-11-26), RECOUNTED: 53 gates, 564 keys, 53 setups, so
+        // 511. Control: 549 + 15 (its setup, BC1-BC6, DB1-DB8) = 564. 497 was this line's value.
+        // Then GATE-healing-tome.md (feat/blast-fungus-gate moved onto feat/tome-selftest, 2026-11-26), RECOUNTED: 54 gates, 573
+        // keys, 54 setups, so 519. Control: 564 + 9 (its setup and HT1-HT8) = 573. 511 was this line's value.
+        // Then GATE-blink-tome.md (feat/blast-fungus-gate moved onto feat/blink-selftest, 2026-11-26), RECOUNTED: 55 gates, 585
+        // keys, 55 setups, so 530. Control: 573 + 12 (its setup and BT1-BT11) = 585. 519 was this line's value.
+        assertEquals(530, loaded.rows());
     }
 
     /**
@@ -721,7 +729,7 @@ class SelfTestScenariosTest {
         }
         assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup", "focused-beam#setup",
                         "mage-guaranteed#setup", "summoner#setup", "armor-sets#setup", "broken-bottle#setup",
-                        "true-tooltips#setup"),
+                        "true-tooltips#setup", "blast-fungus#setup", "bone-club#setup", "healing-tome#setup", "blink-tome#setup"),
                 padGates, "only enchant-columns, (2026-11-23) enchant-changes, (2026-11-24) shatter-caps and (2026-11-24)"
                         + " focused-beam and (2026-11-24) mage-guaranteed opt in, each in its setup");
         Scenario changes = shipped().gates().get("enchant-changes").getFirst();
