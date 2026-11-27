@@ -68,6 +68,18 @@ public final class CastTunes {
                     ? with(a, new CastSpec.Volley(v.windupTicks() - (int) value, v.shots(), v.intervalTicks(), v.of(),
                             v.lockedAim(), v.warning()), a.onHit())
                     : a;
+            // FAST AND FUNGAL (F7, 2026-11-26): the cast's cooldown, cut by whole ticks. THE ONE PLACE: the press's stamp
+            // (AbilityService.stampedCooldownTicks) and the tooltip's Cooldown line (WeaponLore, through tune) both read the
+            // cooldownTicks this returns. A cut that leaves 0 or less throws, by name; the loader builds every level at load.
+            case COOLDOWN -> {
+                int left = a.cooldownTicks() - (int) value;
+                if (left < 1) {
+                    throw new IllegalArgumentException("a cooldown cut of " + (int) value + " ticks leaves '" + a.id()
+                            + "' at " + left + " (from " + a.cooldownTicks() + "); a cooldown stays 1 tick or more");
+                }
+                yield new AbilityDefinition(a.id(), a.displayName(), a.element(), left, a.cost(), a.cast(), a.onHit(),
+                        a.description(), a.onCast());
+            }
         };
     }
 

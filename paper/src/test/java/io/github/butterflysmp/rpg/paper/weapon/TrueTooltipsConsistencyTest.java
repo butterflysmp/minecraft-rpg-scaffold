@@ -78,7 +78,7 @@ class TrueTooltipsConsistencyTest {
     private static final Logger LOG = Logger.getLogger(TrueTooltipsConsistencyTest.class.getName());
     private static final int[] SCORES = {100, 250};
     /** PINNED: the count of cases this walk generates over shipped content. Recount, never adjust: see the plan. */
-    static final int EXPECTED_CASES = 1272;   // weapons 582, armor 672, shields 18 (564 unmoved): 2026-11-26 + blast_fungus (attunement 3 + unbreaking 3, x 2 scores = 12; unbreaking 6 unmoved); 1260 at fcfbefbb
+    static final int EXPECTED_CASES = 1278;   // weapons 588, armor 672, shields 18 (564 unmoved): 2026-11-26 + fast_and_fungal (3 levels x 2 scores, all moved: the cooldown); + blast_fungus (attunement 3 + unbreaking 3, x 2 scores = 12; unbreaking 6 unmoved); 1260 at fcfbefbb
     private static final Pattern DAMAGE = Pattern.compile("^.* Damage: ([0-9.]+)( x ([0-9]+))?$");
     private static final Pattern CRIT = Pattern.compile("^Crit Chance: \\+([0-9]+)%$");
 
@@ -199,6 +199,40 @@ class TrueTooltipsConsistencyTest {
      * 2026-11-26), a burst's damage: READ, {@code EffectApplier.detonateFused} hands a burst's effects to the same
      * per-target loop and the same Damage arm, once per body in its radius.
      */
+    /**
+     * F8 (2026-11-26, Fast and Fungal): EVERY ability block's Cooldown line equals the ticks the press STAMPS, read from
+     * the stamp's own function ({@code AbilityService.stampedCooldownTicks}, with this stack's active behaviours, at a
+     * neutral attack speed), never from the renderer. A basic attack has no Cooldown line (its stat block), so it is
+     * skipped; a free trigger with no cooldown prints none, and none is asked for.
+     */
+    /** Every trigger's stamped cooldown under {@code state}, the stamp's own function: what a cooldown tune moves. */
+    static List<Integer> stamped(WeaponDefinition w, EnchantState state, EnchantRegistry enchants) {
+        List<ActiveBehaviour> beh = BehaviourItems.activeOf(state, w.id(), enchants::find);
+        List<Integer> out = new ArrayList<>();
+        for (TriggerBinding t : w.triggers()) {
+            out.add(io.github.butterflysmp.rpg.core.ability.AbilityService.stampedCooldownTicks(t.ability(), beh, 1.0));
+        }
+        return out;
+    }
+
+    static List<String> cooldownMismatches(String label, List<String> lore, WeaponDefinition w, EnchantState state,
+                                           EnchantRegistry enchants) {
+        List<ActiveBehaviour> beh = BehaviourItems.activeOf(state, w.id(), enchants::find);
+        List<TriggerBinding> triggers = new ArrayList<>(w.triggers());
+        triggers.addAll(GrantedTriggers.granted(w, beh));
+        List<String> out = new ArrayList<>();
+        for (TriggerBinding t : triggers) {
+            if (DamagePayload.isBasicAttack(t.ability().onHit())) continue;
+            int stamped = io.github.butterflysmp.rpg.core.ability.AbilityService.stampedCooldownTicks(t.ability(), beh, 1.0);
+            if (stamped <= 0) continue;
+            String want = "Cooldown: " + String.format(java.util.Locale.ROOT, "%.1fs", stamped / 20.0);
+            if (lore.stream().noneMatch(l -> l.equals(want) || l.startsWith(want + " |"))) {
+                out.add(label + ": " + t.ability().id() + " stamps " + stamped + " ticks, no line reads '" + want + "' " + lore);
+            }
+        }
+        return out;
+    }
+
     private static Optional<Double> firstLiteral(List<EffectSpec> onHit) {
         for (EffectSpec e : onHit) {
             if (e instanceof EffectSpec.Damage d) return Optional.of(d.amount());
@@ -290,6 +324,7 @@ class TrueTooltipsConsistencyTest {
                 double bareCrit = engineCrit(w, EnchantState.empty(), c.enchants());
                 mismatches.addAll(weaponMismatches(w.id() + " bare @" + score, bare, bareHits, bareCrit, statBlock));
                 mismatches.addAll(labelMismatches(w.id() + " bare @" + score, bare, w));
+                mismatches.addAll(cooldownMismatches(w.id() + " bare @" + score, bare, w, EnchantState.empty(), c.enchants()));
                 for (String e : poolsOf(w, c)) {
                     EnchantDefinition def = c.enchants().find(e).orElseThrow();
                     for (int level = 1; level <= def.maxLevel(); level++) {
@@ -301,8 +336,11 @@ class TrueTooltipsConsistencyTest {
                         String label = w.id() + " + " + e + " " + level + " @" + score;
                         mismatches.addAll(weaponMismatches(label, lore, hits, crit, statBlock));
                         mismatches.addAll(labelMismatches(label, lore, w));
+                        mismatches.addAll(cooldownMismatches(label, lore, w, state, c.enchants()));
                         boolean granted = !GrantedTriggers.granted(w, BehaviourItems.activeOf(state, w.id(), c.enchants()::find)).isEmpty();
-                        if (hits.equals(bareHits) && crit == bareCrit && !granted) {
+                        // F8 (2026-11-26): and the cooldowns the press stamps, or a cooldown tune would read as moving nothing.
+                        if (hits.equals(bareHits) && crit == bareCrit && !granted
+                                && stamped(w, state, c.enchants()).equals(stamped(w, EnchantState.empty(), c.enchants()))) {
                             unmoved++;
                             if (!lore.equals(bare)) mismatches.add(label + ": the engine moves nothing, the tooltip moved " + lore);
                         }

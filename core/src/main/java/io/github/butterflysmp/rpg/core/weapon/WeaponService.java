@@ -47,6 +47,15 @@ public final class WeaponService {
         return abilities.fireTrigger(caster, binding.ability(), aim);
     }
 
+    /**
+     * {@link #fire(CombatantSnapshot, TriggerBinding, Aim)} with the ACTIVE behaviours of the weapon in hand at the press
+     * (B2): a cooldown tune (Fast and Fungal, F7, 2026-11-26) sets the length this press stamps.
+     */
+    public CastResult fire(CombatantSnapshot caster, TriggerBinding binding, Aim aim,
+                           java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behaviours) {
+        return abilities.fireTrigger(caster, binding.ability(), aim, behaviours);
+    }
+
     public Optional<CastResult> fire(CombatantSnapshot caster, WeaponDefinition weapon,
                                      String input, Aim aim) {
         return weapon.trigger(input)

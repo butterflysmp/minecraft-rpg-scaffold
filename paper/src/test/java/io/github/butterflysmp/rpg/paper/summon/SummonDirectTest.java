@@ -58,7 +58,7 @@ class SummonDirectTest {
                 "nothing of his, then the pick through summons, then not-a-mob, THEN the charge, then the order");
         List<String> w = code(Path.of("weapon", "WeaponFire.java"));
         int directIntercept = at(w, "if (binding.get().ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.DirectSummon direct) {", 0);
-        int engine = at(w, "Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim));", directIntercept);
+        int engine = at(w, "Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim, pressBehaviours));", directIntercept);
         assertTrue(directIntercept > 0 && engine > directIntercept, "handed over before the engine");
         List<String> l = code(Path.of("listener", "RpgListeners.java"));
         int melee = at(l, "public void onPlayerMeleeAttack(", 0);

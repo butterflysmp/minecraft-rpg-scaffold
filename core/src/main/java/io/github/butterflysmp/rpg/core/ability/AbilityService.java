@@ -169,7 +169,7 @@ public final class AbilityService {
         // moved it after them is what AbilityServiceTest's order-pinning test guards.
         if (!castable.contains(abilityId)) return new CastResult.Locked(abilityId);
 
-        return resolve(caster, derive.apply(def), aim, false);
+        return resolve(caster, derive.apply(def), aim, false, java.util.List.of());
     }
 
     /**
@@ -183,7 +183,17 @@ public final class AbilityService {
      * triggers cooldown independently and do not share a timer with any ability.
      */
     public CastResult fireTrigger(CombatantSnapshot caster, AbilityDefinition trigger, Aim aim) {
-        return resolve(caster, trigger, aim, true);
+        return fireTrigger(caster, trigger, aim, java.util.List.of());
+    }
+
+    /**
+     * {@link #fireTrigger(CombatantSnapshot, AbilityDefinition, Aim)} with the ACTIVE behaviours of the weapon in hand AT
+     * THE PRESS (B2), so a cooldown tune (Fast and Fungal, F7, 2026-11-26) sets the length this press stamps. The cast
+     * the Success carries is the UNTUNED one: {@code CastExecutor} tunes it again at the commit, as it always has.
+     */
+    public CastResult fireTrigger(CombatantSnapshot caster, AbilityDefinition trigger, Aim aim,
+                                  java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behaviours) {
+        return resolve(caster, trigger, aim, true, behaviours);
     }
 
     /**
@@ -207,7 +217,8 @@ public final class AbilityService {
      * cooldown trigger -> Success, all before returning. One code path, so the
      * order-pinning mutation test guards both callers.
      */
-    private CastResult resolve(CombatantSnapshot caster, AbilityDefinition def, Aim aim, boolean weaponTrigger) {
+    private CastResult resolve(CombatantSnapshot caster, AbilityDefinition def, Aim aim, boolean weaponTrigger,
+                               java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behaviours) {
         String id = def.id();
         if (!cooldowns.isReady(caster.id(), id)) {
             return new CastResult.OnCooldown(cooldowns.ticksRemaining(caster.id(), id));
@@ -235,9 +246,9 @@ public final class AbilityService {
         // read whatever was already stored, so gaining or losing attack speed mid-cooldown does not
         // retroactively lengthen or shorten a timer already running. Deliberate: the swing you have
         // already committed to keeps the cadence it was committed at.
-        int cooldownTicks = DamagePayload.isBasicAttack(def.onHit())
-                ? AttackSpeed.effectiveCooldownTicks(def.cooldownTicks(), caster.attackSpeed())
-                : def.cooldownTicks();
+        //
+        // F7 (2026-11-26): the cooldown is the TUNED one (Fast and Fungal), and the whole computation, the floor below
+        // included, is stampedCooldownTicks: ONE function, which the tooltip's consistency test also calls.
 
         // AND THE CAST SHAPE MAY RAISE A FLOOR UNDER THAT, WHICH IS THE IN-FLIGHT GUARD. A volley
         // runs for windup + (shots - 1) * interval ticks; letting it be re-pressed before then
@@ -248,12 +259,34 @@ public final class AbilityService {
         // stylistic: a volley whose on_hit carried weapon_damage would be scaled by the caster's
         // attack speed, and a fast enough caster would be scaled BELOW the floor. max() applied
         // afterwards is what makes an under-length cooldown unrepresentable rather than unlikely.
-        cooldownTicks = Math.max(cooldownTicks, CastSpec.minimumCooldownTicks(def.cast()));
+        int cooldownTicks = stampedCooldownTicks(def, behaviours, caster.attackSpeed());
 
         // Consumed here, at call time -- not when the effects finally run. If it
         // were consumed at execution time, a player could spam-cast during the
         // hop onto the region thread.
         cooldowns.trigger(caster.id(), id, cooldownTicks);
         return new CastResult.Success(def, caster, aim, weaponTrigger);
+    }
+
+    /**
+     * THE LENGTH A PRESS STAMPS, as {@link #resolve} computes it, for a caller that must agree with the stamp without
+     * firing (the tooltip's consistency test, T13): the cast's cooldown with its active cooldown tunes applied
+     * ({@link CastTunes}, the one place), scaled by attack speed for a basic attack, then raised to the cast shape's floor.
+     * The floor is the UNTUNED cast's, exactly as it was before F7 (a wind-up or shot tune does not move it; no ruling
+     * covers that change).
+     */
+    public static int stampedCooldownTicks(AbilityDefinition def,
+                                           java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behaviours,
+                                           double attackSpeed) {
+        int ticks = DamagePayload.isBasicAttack(def.onHit())
+                ? AttackSpeed.effectiveCooldownTicks(tunedCooldown(def, behaviours), attackSpeed)
+                : tunedCooldown(def, behaviours);
+        return Math.max(ticks, CastSpec.minimumCooldownTicks(def.cast()));
+    }
+
+    /** F7: the cooldown after every active cooldown tune ({@link CastTunes#tune}, the one arm). */
+    private static int tunedCooldown(AbilityDefinition def,
+                                     java.util.List<io.github.butterflysmp.rpg.core.enchant.ActiveBehaviour> behaviours) {
+        return CastTunes.tune(def, behaviours).cooldownTicks();
     }
 }

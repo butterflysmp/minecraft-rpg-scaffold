@@ -424,7 +424,7 @@ public final class EnchantLoader {
                     raw.toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException("enchant '" + id + "' cast_tune: quantity '" + raw
-                    + "' must be one of damage, range, shots, windup");
+                    + "' must be one of damage, range, shots, windup, cooldown");
         }
         io.github.butterflysmp.rpg.core.ability.CastSpec spec = cast.cast();
         boolean has = switch (quantity) {
@@ -434,6 +434,8 @@ public final class EnchantLoader {
                     || (spec instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Volley v
                         && v.of() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Ray);
             case SHOTS, WINDUP -> spec instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Volley;
+            // F7 (2026-11-26): a cooldown tune needs a cooldown to cut; never to 0, refused below where every level is built.
+            case COOLDOWN -> cast.cooldownTicks() > 0;
         };
         if (!has) {
             throw new IllegalArgumentException("enchant '" + id + "' cast_tune: weapon '" + weaponId + "''s right click has"

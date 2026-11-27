@@ -262,6 +262,8 @@ public final class EnchantEffectLine {
                     case RANGE -> "+" + number(v) + " blocks of range";
                     case SHOTS -> "volleys of " + number(v) + " shots";
                     case WINDUP -> "-" + number(v / 20.0) + "s wind-up";
+                    // FAST AND FUNGAL (F7, 2026-11-26): in Ben's unit, seconds ("1/2/3s"). WORDING: SEAT PLACEHOLDER 2026-11-26.
+                    case COOLDOWN -> "-" + number(v / 20.0) + "s cooldown";
                 };
             }
             // SHARPENED GLASS (K9, 2026-11-25): the level's REAL number (B5), FLAT. WORDING: SEAT PLACEHOLDER 2026-11-25, OPEN FOR

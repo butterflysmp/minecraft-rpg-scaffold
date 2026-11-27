@@ -145,9 +145,9 @@ class UniqueSlotContentTest {
         assertEquals(6, l.accessories());
         assertEquals(66, l.gear().size());   // 2026-11-25: + bone_whistle; + the four copper pieces (C1); + broken_bottle; 2026-11-26: + blast_fungus
         assertEquals(66, MASTER_POOLS.size(), "the snapshot covers the same 66");
-        assertEquals(24, l.real().size(), "a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
+        assertEquals(25, l.real().size(), "2026-11-26: + fast_and_fungal, 25 (ls content/enchants/*.yml | wc -l; 24 at fcfbefbb); a real server (2026-11-25: + Sharpened Glass, 23 at 9a6ed020): the eleven, Kinetic Tremors, Airburst Flames, Lapis Crystal, (2026-11-24)"
                 + " Shatter Caps, (2026-11-24) Focused Beam (2026-11-24) the five guaranteed cast tunes, Wildfire and (F3) Mana Burn");
-        assertEquals(24, l.dev().size(), "a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
+        assertEquals(25, l.dev().size(), "2026-11-26: + fast_and_fungal, 25 (ls content/enchants/*.yml | wc -l; 24 at fcfbefbb); a dev server: the same, since the dev example was deleted (W5); 2026-11-25: + sharpened_glass");
         assertNotSame(CandidateCascade.ONE, l.cascade(), "Ben's file loaded, not the fallback");
     }
 
@@ -239,7 +239,8 @@ class UniqueSlotContentTest {
                             : g.id().equals("flint_staff") ? List.of("large_sparks")
                             : g.id().equals("crystal_shard_staff") ? List.of("sharp_crystals")
                             : g.id().equals("knell_beam") ? List.of("early_toll")
-                            : g.id().equals("broken_bottle") ? List.of("sharpened_glass") : List.of(),   // 2026-11-25, K10
+                            : g.id().equals("broken_bottle") ? List.of("sharpened_glass")
+                            : g.id().equals("blast_fungus") ? List.of("fast_and_fungal") : List.of(),   // 2026-11-25, K10; 2026-11-26, F7
                     ids(EnchantRoll.weaponPoolFor(g.id(), EnchantRollItems.has(g), cls, roster)), g.id());
             checked++;
         }

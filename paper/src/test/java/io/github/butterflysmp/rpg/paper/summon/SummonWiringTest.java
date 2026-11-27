@@ -92,7 +92,7 @@ class SummonWiringTest {
         List<String> c = code(Path.of("weapon", "WeaponFire.java"));
         int intercept = at(c, "if (binding.get().ability().cast() instanceof io.github.butterflysmp.rpg.core.ability.CastSpec.Summon summonCast) {", 0);
         int handed = at(c, "return Optional.of(summons.cast(player, weapon, summonCast, score,", intercept);
-        int engine = at(c, "Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim));", handed);
+        int engine = at(c, "Optional<CastResult> result = Optional.of(weaponService.fire(caster, binding.get(), aim, pressBehaviours));", handed);
         assertTrue(intercept > 0 && handed > intercept && engine > handed, "handed over before the engine's charge");
     }
 

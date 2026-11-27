@@ -1,0 +1,23 @@
+# FAST AND FUNGAL -- the Blast Fungus's GUARANTEED weapon enchant (the seat's brief of 2026-11-26, F7; G1 to G5).
+# Ben, verbatim: "the guaranteed enchant is Fast and Fungal, reduces cooldown by 1/2/3s"
+#
+# BEN'S UNIT IS SECONDS; THE FILE'S IS TICKS: 1 s x 20 = 20, 2 s = 40, 3 s = 60. The Blast Fungus's 140 becomes 120 / 100 /
+# 80 (6.0 / 5.0 / 4.0 s), every level on the 4-tick grid. SUBTRACTED from the authored cooldown in ONE place
+# (CastTunes, the COOLDOWN arm), which both the press's stamp (AbilityService.stampedCooldownTicks) and the tooltip's
+# Cooldown line read (T1). Applied at the press that starts the cooldown, by the weapon in hand at that press (B2): a
+# cooldown already running keeps the length it was stamped with. The loader builds every level at load and refuses one
+# that would bring a cooldown to 0 or below, by name.
+#
+# NAME THE QUANTITY: the right click's cooldown_ticks, 140, authored, non-zero, on the grid at every level. The eligibility
+# half is `weapon: blast_fungus` (W1). GUARANTEED (G1): every freshly rolled Blast Fungus offers it first in slot 0, locked
+# at level 0; bought for XP and activated in the table (G2), never pre-applied; items already rolled are untouched (G3).
+display_name: "Fast and Fungal"            # BEN
+icon: red_mushroom                         # SEAT PLACEHOLDER 2026-11-26 (B7)
+max_level: 3                               # BEN: three values
+effect: cast_tune
+class: universal                           # the loader holds a weapon-specific enchant to its weapon's class or universal
+weapon: blast_fungus                       # W1: the Blast Fungus's slot 0
+guaranteed: true                           # G1
+cast_tune:
+  quantity: cooldown                       # SUBTRACTED from the right click's cooldown_ticks
+  value_by_level: [20, 40, 60]             # BEN: 1 / 2 / 3 s, x 20 ticks a second

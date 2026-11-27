@@ -771,6 +771,19 @@ armor.slotNoun(FEET) = Boots
    "and it does not like being picked." color=#AAAAAA O=. B=. S=. U=. I=T
    "" color=- O=. B=. S=. U=. I=F
    "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
+-- blast_fungus + fast_and_fungal 3
+   "Nature" color=#55FF55 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "Fungal Barrage" color=#FFAA00 O=. B=. S=. U=. I=F ["  Right-Click" color=#FFFF55 O=. B=. S=. U=. I=F ]
+   "Lobs three spore chunks that burst" color=#AAAAAA O=. B=. S=. U=. I=F
+   "after 2 seconds, or on touching a mob." color=#AAAAAA O=. B=. S=. U=. I=F
+   "Magic Damage: " color=#AAAAAA O=. B=. S=. U=. I=F ["55 x 3" color=#FF5555 O=. B=. S=. U=. I=F ]
+   "Cooldown: 4.0s | Mana Cost: 30" color=#555555 O=. B=. S=. U=. I=F
+   "" color=- O=. B=. S=. U=. I=F
+   "It grew in the crimson dark," color=#AAAAAA O=. B=. S=. U=. I=T
+   "and it does not like being picked." color=#AAAAAA O=. B=. S=. U=. I=T
+   "" color=- O=. B=. S=. U=. I=F
+   "Uncommon Magic Weapon" color=#55FF55 O=. B=. S=. U=. I=F
 -- blaze_kings_staff + attunement 3
    "Fire" color=#FF5555 O=. B=. S=. U=. I=F
    "" color=- O=. B=. S=. U=. I=F
@@ -1112,4 +1125,4 @@ armor.slotNoun(FEET) = Boots
    "" color=- O=. B=. S=. U=. I=F
    "Common Melee Weapon" color=#FFFFFF O=. B=. S=. U=. I=F
 
-=== 142 renderings ===
+=== 143 renderings ===
