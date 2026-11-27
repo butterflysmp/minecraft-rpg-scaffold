@@ -67,13 +67,13 @@ seat's ruling of 2026-11-26), ending `… summons=0 fused=0 blink=none drag_tick
 - **R0a:** `[Rpg] Build: <sha>`, `feat/held-target-gate`'s head as `git ls-remote --heads origin feat/held-target-gate`
   prints it, shortened. Not `-dirty`, not `unknown`.
 - **R0b:** FIVE scripts on the DEPLOYED jar.
-  - `docs/gates/GATE-held-target-r0b.ps1`: before `'--- absent'` **20 `PRESENT`, 0 `ABSENT`** (4 `Entry`, 13 `Has`, 3
-    `ValueLine`); between `'--- absent'` and `'--- controls'` **3 `ABSENT`, 0 `PRESENT`** (no `chase_limit: 32`, no
+  - `docs/gates/GATE-held-target-r0b.ps1`: before `'--- absent'` **22 `PRESENT`, 0 `ABSENT`** (4 `Entry`, 15 `Has`, 3
+    `ValueLine`; P1's `LINGER skipped` and P5's `PAD_FIRST` added 2026-11-27 before any approval); between `'--- absent'` and `'--- controls'` **3 `ABSENT`, 0 `PRESENT`** (no `chase_limit: 32`, no
     `LIMIT`, no `chase_limit` key in the loader); after `'--- controls'` **2 `PRESENT`, 0 `ABSENT`**.
   - `GATE-blink-tome-r0b.ps1` **27 / 0, 4 / 0, 2 / 0**; `GATE-healing-tome-r0b.ps1` **25 / 0, 4 / 0, 2 / 0**;
     `GATE-bone-club-r0b.ps1` **21 / 0, 5 / 0, 2 / 0**; `GATE-blast-fungus-r0b.ps1` **18 / 0, 4 / 0, 2 / 0**, unchanged.
-  - **Run before commit on a jar built from this tree (`paper/target/rpg-0.1.0-SNAPSHOT.jar`, 2026-11-27 00:00): all five
-    as predicted.**
+  - **Run before commit on a jar built from this tree (`paper/target/rpg-0.1.0-SNAPSHOT.jar`, 2026-11-27 00:44, after P1 to P7): all
+    five as predicted.**
 - **R0c:** `[Rpg] Loaded 1 summon(s)`; `Loaded … 27 enchants, … 27 weapons, 1 shields, 28 armor, 5 tools, 8 accessories,
   …` and `Mint-on-craft: 42 indexed, 42 claiming, of 61 gear definitions`, unchanged (no content file added or removed;
   `bone_whistle_wolf.yml` loads under its new key). **0** `WARN]: [Rpg]` (control: `INFO]: [Rpg] Loaded` reads 1 or
@@ -83,16 +83,36 @@ seat's ruling of 2026-11-26), ending `… summons=0 fused=0 blink=none drag_tick
   so 535. Control: 585 + 6 (its setup and S1 to S5) = 591. Controls: `530 scenarios` ABSENT, `55 gates` ABSENT.
 - **R0e:** one `FIGHTWORLD sweep path=…\rpgfight folders=0`, no `deleting`, no `orphan`; no `FUSED removed … cause=orphan`.
 
-## THE SETUPS' NEW LINE (R4)
+## THE SETUPS AND THE WORLD (R4, D1, P1 TO P4), RE-PREDICTED 2026-11-27 BEFORE ANY APPROVAL
 
-After each referenced gate's setup CLEAN line, and this gate's: **`ITEMS cleared=<n> radius=48 [<type> x<k>, …]`**.
+> **DATED NOTE, 2026-11-27 (the seat's ruling, recorded as it asked):** in this gate, the moved predictions of the rows it
+> re-reads are written HERE under their gate.ROW names, and the frozen gates are untouched. **That form stands in, for
+> this gate, for the next-suffix rule** (a re-read row as a new suffixed row in its own gate).
 
-- **The first (bone-club's): a READING, not a prediction:** whatever lies within 48 of the stand, named by type.
-- **blast-fungus's, after DB6:** DB6 ends with `kill @e[tag=t]`, and a zombie's death can drop items: `ITEMS cleared=<k>`
-  with each type named (INFERRED `rotten_flesh`; k ≥ 0; a reading). **This is R4's identification of a stray:** the kind
-  of item the Bone Club rows' kills leave, named by the line, where the boot of `1f447197` could only count them.
-- **healing-tome's, blink-tome's and this gate's:** `ITEMS cleared=0 radius=48 []` (no row before them kills a mob: BF3,
+**Until a PAD step has placed him, the run touches nothing in the world (P1).** The command's first scenario is
+bone-club's setup; its row-start CLEAN runs where he typed the command:
+
+- **bone-club's setup CLEAN:** `CLEAN … return=<where he typed> drum=0 blink=none world=skipped`, then **`LINGER
+  skipped`**, then `LEFTOVER living=<n> radius=16 […]` (read-only: it names what lives near him and removes nothing).
+  **No ITEMS line at this CLEAN.** His own state still resets (his summons and fused chunks removed, as before: P1's known
+  cost to him).
+- **Then its pad step:** `PAD world=… stand=… ok=7250`, `PAD stood at=<stand> …`, and at once **`ITEMS cleared=<n> pad
+  [<type> x<k>, …]`** (P4): the pad's own region only (x −3..46, z −14..14 from the stand's column, dy −1..16), a
+  READING, not a prediction: whatever lies on the pad, named by type, any survivor of an earlier boot included.
+
+**Every later CLEAN of the command runs with the stand point set**, on the pad: each ends **`… world=pad`**, and its linger
+line is **`LINGER work=0 entities=0 pad`** (P2: the pad's region, never a 48-block sphere). Each later gate's pad step
+writes its ITEMS line after its `PAD stood` line:
+
+- **blast-fungus's, after DB6:** DB6 ends with `kill @e[tag=t]`, and a zombie's death can drop items: `ITEMS cleared=<k>
+  pad [<type> x<k>, …]`, each type named (INFERRED `rotten_flesh`; k ≥ 0; a reading). **This is R4's identification of a
+  stray:** the kind of item the Bone Club rows' kills leave, named by the line, where the boot of `1f447197` could only
+  count them.
+- **healing-tome's, blink-tome's and this gate's:** **`ITEMS cleared=0 pad []`** (no row before them kills a mob: BF3,
   BF6 and BF8 remove their zombies through the CLEAN, which drops nothing; HT1 and the BT rows the same).
+
+**At the run's end (P3):** `RESTORED … orbsRemoved=<n>` counts only orbs inside the pad's region (he is on the pad when it
+runs); `mobsRemoved=` is the tag-bound sweep, as before.
 
 ## THE REFERENCED ROWS, WITH WHAT R2 TO R6 MOVED
 
@@ -244,7 +264,7 @@ The referenced rows' coordinates are their own gates' tables, inside their own p
 - A held target in another world; an owner who dies mid-fight (the summon is removed, as before): not staged.
 - **A 40-block chase:** S1 makes the distance by moving HIM (CC'S CALL below); whether a wolf paths 40 blocks to a target
   is not read (READ: its follow range is the vanilla 16, which caps one path search).
-- What a player sees of a name (R5): Ben's answer, `PLAN-owed-fixes.md`, the marked place.
+- What a player sees of a name (R5): Ben answered, verbatim, 2026-11-26, "1. No item names should not look slanted"; the READ says they are upright, so nothing is read by this gate.
 
 ## CC'S CALLS IN THIS GATE
 

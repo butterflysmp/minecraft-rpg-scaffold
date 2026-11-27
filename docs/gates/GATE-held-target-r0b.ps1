@@ -1,6 +1,6 @@
 # GATE-held-target R0b (2026-11-26, feat/held-target-gate on feat/summon-holds-target on feat/owed-fixes): the deployed jar
 # carries the owed fixes (R2 to R6), the summon that holds its target (G1 to G8) and this gate.
-# Prediction: before '--- absent', 20 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 3 ABSENT and 0 PRESENT;
+# Prediction: before '--- absent', 22 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 3 ABSENT and 0 PRESENT;
 # after '--- controls', 2 PRESENT and 0 ABSENT.
 # Run: powershell -File <this> [-JarPath <jar>]
 param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
@@ -37,6 +37,8 @@ Has $drv ' clear' 'SelfTestDrivers.class (S2: mob_target clear)'
 Has $drv ' types=' 'SelfTestDrivers.class (R4: probe_entities)'
 Has $stg 'ITEMS cleared=' 'SelfTestStaging.class (R4: the setup clear)'
 Has $rule 'ACCESSORY_ARMED_AT_CLEAR' 'ScenarioLint$Rule.class (R2)'
+Has $rule 'PAD_FIRST' 'ScenarioLint$Rule.class (P5)'
+Has $stg 'LINGER skipped' 'SelfTestStaging.class (P1: nothing in the world before a pad step)'
 Has $bt '# R2 (2026-11-26)' 'GATE-blink-tome.yml (R2: the tome off before the last clear)'
 Has $bf '# R6 (2026-11-26)' 'GATE-blast-fungus.yml (R6: BF6 aligned before its press)'
 ValueLine $wolf 'give_up_range: 72' 'bone_whistle_wolf.yml (BEN: 72)'
