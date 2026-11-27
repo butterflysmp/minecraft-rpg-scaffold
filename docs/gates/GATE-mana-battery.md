@@ -1,6 +1,6 @@
 # GATE — MANA BATTERY (B1 TO B6), WITH THE OWED V7 ROWS RE-READ BY REFERENCE (2026-11-27)
 
-**Status: NOT RUN.** The plans are `docs/plans/PLAN-mana-battery.md` (B1 to B6) and `docs/plans/PLAN-owed-fixes.md` (V7,
+**Status: RUN 2026-11-27 on `486a0161`, the one command; readings at the end, under READINGS.** The plans are `docs/plans/PLAN-mana-battery.md` (B1 to B6) and `docs/plans/PLAN-owed-fixes.md` (V7,
 its dated note and *V7 AS BUILT*). The scenario is `paper/src/main/resources/selftest/GATE-mana-battery.yml`. The stack,
 bottom up: master `07f03c6b`, `feat/mana-battery`, `feat/owed-v7`, then this ONE gate branch, `feat/mana-battery-gate`,
 last and separate so it can move up. **Every prediction below was written before any boot, and is frozen from the seat's
@@ -281,3 +281,116 @@ On `paper/target/rpg-0.1.0-SNAPSHOT.jar` built from this tree (2026-11-27 15:42,
 2 `PRESENT` / 0, as predicted** (the first run, 15:14, before "B", read 21 / 0, 3 / 0, 2 / 0 against its own 21) (the SummonTrace needle matched the target line's recipe, `reason=`,
 char 1, ` tick=`). **`GATE-held-target-r0b.ps1`: 24 `PRESENT` and 3 `ABSENT` in all, which is its 22 + 2 and 3,
 unchanged.** This is a reading of a jar on this machine, not of the deployed one: R0b proper is the deployed jar's.
+
+## READINGS — THE BOOT OF `486a0161`, 2026-11-27 (written after the run; nothing above this heading was edited)
+
+**HIS ACCESSORY FILE DID NOT COME BACK AS IT WAS, AND NOTHING WAS LOST: THE SEAT RULES THE REPAIR; NOTHING WAS TOUCHED.**
+Before the boot: `accessories\b6ae27e9-….json` **582 bytes**, sha256 `C8BC8B808928D550…`, slot 0 = the Healing Tome. After
+`/stop`: **95 bytes, `"entries": []`, written at 15:53:00**. The run's RESTORED (15:52:44) read `accessories=[healing_tome,-,-,-]`
+back, as predicted; the file was rewritten **16 s later**, 5 s before `/stop`, with **no log line of any kind between
+`RUN HEALTH` (15:52:45) and `/stop` (15:53:05)** except the session-host line. **His player file, saved at `/stop`, now
+holds the Healing Tome in his inventory** (decompressed `.dat`: `healing_tome` 0 before -> 1 after, `Healing Tome` 0 -> 1;
+the pre-boot copy is in the backup). So the tome moved from the slot to his inventory after the run. INFERRED: he took it
+out of the slot himself in the menu (an unequip writes the file and logs nothing). UNVERIFIED: any automatic ejection.
+His profile reads `archetypeId: "mage"`, `elementId: "fire"`, as before. The world's saved difficulty: `normal` before
+and after.
+
+### The boot (`.claude/rules/booting.md`, each step as ticked)
+
+1. The seat's approval of `486a0161`; Ben's own "ready".
+2. `git ls-remote --heads origin`: master `07f03c6b`, `feat/mana-battery` `871f5c52`, `feat/owed-v7` `4b171bbb`,
+   `feat/mana-battery-gate` `486a0161`; `git status --porcelain` empty; `HEAD` = `486a0161`.
+3. `java.exe` count 0.
+4. Backup `rpg-run-backups\2026-11-27-pre-mana-battery`: `world` 193 / 193 files, `Rpg` 191 / 191; his `.dat` 5739 bytes;
+   accessory file 582 bytes (`C8BC8B80…`, slot 0 one item); `archetypeId: "mage"`, `elementId: "fire"`.
+5. `level.dat` difficulty `normal`. 6. Config line 12 `dev-pack-on-join: true`; no `run\rpgfight`.
+7. "BOOTING NOW", its own message, before the boot command. 8. `dev-server.sh --refresh-content`; marker 15:50:04, jar
+   15:50:35, log's first line 15:50:36, `Done (6.778s)` 15:50:42.
+9. R0 read 15:50:59, "R0 PASSED" its own message; **his `joined the game` 15:51:45**, after it. After `/stop` (15:53:05):
+   `java.exe` 0.
+
+### R0 — READ AS PREDICTED
+
+`[Rpg] Build: 486a0161`. R0b on the deployed jar: `GATE-mana-battery-r0b.ps1` 22 / 0, 3 / 0, 2 / 0;
+`GATE-held-target-r0b.ps1` 22 / 0, 3 / 0, 2 / 0. `Loaded 1 summon(s)`; `… 28 enchants, … 27 weapons, 1 shields, 28 armor,
+5 tools, 8 accessories, …`; `Mint-on-craft: 42 indexed, 42 claiming, of 61 gear definitions`; 0 `WARN]: [Rpg]`, 7 `INFO]:
+[Rpg] Loaded`, 0 `Refusing`, `Skipping`, `SEVERE`, `Exception`; `27 enchants` absent. One `Selftest: dev server, 542
+scenarios across 57 gates [melee-cell, …, held-target, mana-battery]`; `535 scenarios`, `56 gates` absent.
+`FIGHTWORLD sweep … folders=0`; no `deleting`, no `orphan`.
+
+### HIS GROUND, THE PAD STEPS, CAPTURED AND RESTORED — READ AS PREDICTED
+
+- The run 15:51:51 to 15:52:44, `FINISHED`. **0 `HURT` lines in the log: SAFETY held.**
+- `CAPTURED armour=0 offhand=0 class=mage accessories=[healing_tome,-,-,-]`.
+- held-target's setup CLEAN: `… inventory=kept return=-104.47 63.00 15.21 drum=0 blink=none world=skipped`, then `LINGER
+  skipped` (his ground: nothing touched before the pad). Its pad step: `PAD … ok=7250`, `PAD stood at=104.50 201.00 -3.50
+  …`, `ITEMS cleared=0 pad []`, **`ACCESSORIES cleared=1 pad [healing_tome,-,-,-]`** (= CAPTURED's), **`PAD accessory settled
+  slot=0 ok=true`**.
+- This gate's pad step: `ITEMS cleared=0 pad []` (S5's kill dropped nothing on the pad), **`ACCESSORIES cleared=0 pad
+  [-,-,-,-]`**, no settled line. Every later CLEAN `world=pad`, `LINGER work=0 entities=0 pad`.
+- `RESTORED xp=712600 cell=mage/fire gamemode=SURVIVAL held=3 mana=100.0 trace=false spawn_mobs=false time=1000 blocks=0
+  blocksBack=0/0 mobsRemoved=0 orbsRemoved=0 keep_inventory=false immediate_respawn=false difficulty=NORMAL health=162.000
+  vanilla_xp=118+0.916 spawn_phantoms=true max_summons_base=null saturation=0.0 accessories=[healing_tome,-,-,-] armour=0
+  offhand=0 summons=0 fused=0 blink=none drag_tick=false`: **accessories equal CAPTURED's, `summons=0` (V7 (c))**, his
+  armour back (`armour=0` as captured); `RUN HEALTH saved=162.000 … wrote=162.000`.
+
+### held-target.S3 — READ AS PREDICTED, ONE FIELD A MISS (THE GATE'S)
+
+Stand column (104, −4). The align `Teleported … to 124.500000, 201.000000, -3.500000`, then `DRIVE mob_target … tag=bt
+tick=1495` (M). **`SUMMON target … target=<bt> why=targeting reason=acquired:targeting tick=1495`** (M, in [M, M + 2]).
+Hit 1501. `STAGE accessory equip slot=0 id=blink_tome tick=1507` (E); `BLINK START … tick=1508` (T0 ∈ [E, E + 5]);
+**`BLINK wearer=BaronVonYeetus tick=1513 trigger=zombie <bt> dist=3.180 from=124.320 201.000 -3.500 to=115.500 201.000
+-15.500 safe=507 forgot=1`**: fx − sx = 20.320 ∈ [20, 21], fz − sz = 0.500 ∈ [0, 1] (drift 0.180 west of the align, inside
+the box), dist ∈ [2.500, 3.536], **safe=507 ∈ [495, 508]**, to= a block centre at (11.5, −11.5), inside the box. **`SUMMON
+target … reason=kept tick=1515`, exactly once: k − B = 2** (inside [B, B + 6]; GATE-held-target's "within 2 ticks of B"
+now READ: 2). `SELF … at=115.50 201.00 -15.50` = to=. Hits 1521, 1541; `BLINK REFUSED-TARGET … tick=1522` once; no `SUMMON
+teleport`. R2's tail: `BLINK STOP … tick=1543 reason=ended`, `SUMMON removed … cause=clear`, `BLINK END … tick=1549
+reason=cleared`, `STAGE clear_state … summons=1 … blink=ended`. One `BLINK wearer=` line.
+- **MISS, the gate's: `INVIS present=true ticks=150`, against the copied `ticks=152`.** The figure is 160 − (probe − B), the
+  probe at E + 16 = 1523, B = 1513: 150. The last boot's 152 had B = E + 8; this one B = E + 6 (T0 at E + 1, not E + 3). A
+  prediction carried as a constant over a quantity that moves with the check clock's phase; the product read consistent
+  with its own B.
+
+### held-target.S5 — READ AS PREDICTED
+
+`DRIVE mob_target … tag=h5 tick=1610` (M); `SUMMON target … acquired:targeting tick=1610`. **`SUMMON hit … victim=<h5>
+authored=20.000 score=100 sent=20.000 …` at 1670, 1690, 1710** (20 apart, all before M + 120 = 1730: V7 (c)). Probe at M +
+120: `target=<h5> tier=targeting dist_him=13.33`. **`SUMMON target … dropped=dead reason=dropped:dead tick=1730`** (M + 120).
+Probes after: `target=none tier=none`, `dist_him` 9.42, then 7.60 (less); no `SUMMON teleport`. **`SUMMON removed … cause=clear`,
+`STAGE clear_state … summons=1`** (V7 (c)).
+
+### AC1 — READ AS PREDICTED
+
+`STAGE accessory clear cleared=0`.
+
+### MB1 — READ AS PREDICTED
+
+Each piece `HELDID slot=0 item=<piece>`. The four lores, whole, equal to the executed ones: `["Mana Battery III"; "";
+"Gear Score: 100"; "Defense: 10|16|14|8"; "Mana Regen: +3" [gray, blue]; ""; "Set Bonus (4 pieces):"; "+100 Max Health";
+""; "Honest plate. …"; ""; "Common Helmet|Chestplate|Leggings|Boots"]` (the name's `[white] italic` is R5's wrapper shape,
+the instrument's). `"Iron Helmet -- 1 slot(s)"`, `"  Slot 0: [*mana_battery III]"`, `"  active: mana_battery III (+3 Mana
+Regen)"`. Each piece: `Pool: growth, mana_bank, mana_battery, protection, unbreaking`, `Unique pool: `, `Weapon pool: `;
+`normalPool=5`; slots 0 and 1 `0=500`; the true-odds line as predicted. Slots 2 and 3 (1 / 2 / 3 / 4 candidates), every
+count in its band and each summing to 500: helmet 96/179/183/42 and 80/178/193/49; chestplate 80/184/184/52 and
+65/188/201/46; leggings 79/201/174/46 and 91/183/174/52; boots 75/195/183/47 and 89/195/158/58.
+
+### MB2 TO MB6 — READ AS PREDICTED
+
+- **The baseline (the setup's sheet): `Mana Regen 5.00/5s`, so B = 0.**
+- **MB2:** bare `5.00/5s`; `ARMOR slot=CHEST item=iron_chestplate damage=0 max=240 broken=false`; **`8.00/5s`**.
+- **MB3:** worn `8.00/5s`; `Mana set to 10.`; **`MANA current=10.000 max=100.000`**, then **`MANA current=18.000
+  max=100.000`**; off `5.00/5s`; **`10.000`**, then **`15.000`**. The MANA line carries no tick field: the interval is the
+  scenario's `wait: 100`, and both pairs read 5 s apart on the log's clock (15:52:23 -> 15:52:28, 15:52:28 -> 15:52:33).
+- **MB4:** I `6.00/5s`, II `7.00/5s`.
+- **MB5:** iron III + II `10.00/5s`; golden full set (four golden ARMOR lines) **`20.00/5s`**; golden boots swapped
+  `10.00/5s`.
+- **MB6:** in hand `5.00/5s`; `1/240 uses left (damage 239) -- BROKEN`, `ARMOR … damage=239 max=240 broken=true` (max − 1),
+  `5.00/5s`; `240/240 uses left (damage 0)`, `ARMOR … damage=0 … broken=false`, **`8.00/5s`**.
+
+### WHAT IT FOUND
+
+1. **The product read as predicted on every row:** Mana Battery's tooltip, pool, sheet and refill, the pad step's
+   accessory clear and its restore, S3's alignment and drift box, S5's hit before the kill, `tick=` on the target line.
+2. **One MISS, the gate's:** S3's INVIS ticks, a constant copied over a phase-dependent quantity.
+3. **His accessory slot after the run:** the Healing Tome is in his inventory, not slot 0; written to his file 16 s after
+   RESTORED, with nothing logged. For the seat to rule, and Ben to say whether he moved it.
