@@ -59,7 +59,7 @@ public final class SummonGoal implements Goal<Mob> {
     private final SummonDefinition def;
     private final Mob body;
     private final GoalKey<Mob> key;
-    private Optional<UUID> current = Optional.empty();
+    private Optional<SummonGuard.Held> current = Optional.empty();   // G1, G2: the held target and its tier
     private long lastAttackTick = Long.MIN_VALUE / 2;
 
     SummonGoal(AdapterContext ctx, SummonFeeds feeds, SummonStore.Summon summon, SummonDefinition def, Mob body) {
@@ -105,12 +105,12 @@ public final class SummonGoal implements Goal<Mob> {
             body.teleport(owner.getLocation());
             ctx.log().info(SummonTrace.teleport(summon, vec(body), at));
         }
-        if (!d.target().equals(current) || d.dropped().isPresent()) {
-            ctx.log().info(SummonTrace.target(summon, vec(body), d.target(), d.why(), d.dropped()));
+        if (d.change() != SummonGuard.Change.NONE || d.dropped().isPresent()) {   // G7: once, with its reason
+            ctx.log().info(SummonTrace.target(summon, vec(body), d));
         }
-        current = d.target();
+        current = d.held();
         ctx.summons().setCurrent(body.getUniqueId(), current);   // R3: the probe reads OUR target
-        Entity target = current.map(Bukkit::getEntity).orElse(null);
+        Entity target = current.map(SummonGuard.Held::id).map(Bukkit::getEntity).orElse(null);
         if (target instanceof LivingEntity victim) {
             body.getPathfinder().moveTo(victim, SPEED);
             if (body.getLocation().distance(victim.getLocation()) <= REACH && now - lastAttackTick >= def.attackCadenceTicks()) {
@@ -128,16 +128,21 @@ public final class SummonGoal implements Goal<Mob> {
         }
     }
 
-    /** The bodies near HIM within the chase limit, read on this thread; the directed and current ones by id too. */
+    /**
+     * The bodies near HIM within the give-up range, read on this thread; the directed and held ones by id too (a held one
+     * beyond the range is found by id and dropped for range). G1: a body in ANOTHER WORLD is left out, so the guard reads
+     * it as gone (CC'S CALL: reported as {@code dropped:gone}).
+     */
     private List<SummonGuard.Candidate> candidates(Player owner, Optional<UUID> directed) {
         List<SummonGuard.Candidate> out = new ArrayList<>();
         java.util.Set<UUID> seen = new java.util.HashSet<>();
-        double r = def.chaseLimit();
+        double r = def.giveUpRange();
         List<Entity> near = new ArrayList<>(owner.getNearbyEntities(r, r, r));
         directed.map(Bukkit::getEntity).ifPresent(near::add);
-        current.map(Bukkit::getEntity).ifPresent(near::add);
+        current.map(SummonGuard.Held::id).map(Bukkit::getEntity).ifPresent(near::add);
         for (Entity e : near) {
             if (!(e instanceof LivingEntity l) || l.equals(body) || l.equals(owner) || !seen.add(l.getUniqueId())) continue;
+            if (!l.getWorld().equals(owner.getWorld())) continue;   // G1: another world is gone
             out.add(new SummonGuard.Candidate(l.getUniqueId(), CombatSides.of(l, ctx.keys()), vec(l), LiveTargets.isLive(l),
                     feeds.damagedAt(owner.getUniqueId(), l.getUniqueId()),
                     l instanceof Mob m && owner.equals(m.getTarget())));

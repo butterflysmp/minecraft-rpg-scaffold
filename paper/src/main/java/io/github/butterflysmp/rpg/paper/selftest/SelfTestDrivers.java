@@ -651,6 +651,7 @@ final class SelfTestDrivers {
             run.log("SUMMONPROBE weapon=" + s.weaponId() + " body=" + s.body() + " alive=" + alive + " health=" + health
                     + " at=" + at + String.format(java.util.Locale.ROOT, " dist_him=%.2f within=%.1f:%b", d, reach, d >= 0 && d <= reach)
                     + " target=" + adapters.summons().current(s.body()).map(java.util.UUID::toString).orElse("none")   // R3: OUR guard's
+                    + " tier=" + adapters.summons().currentTier(s.body()).map(w -> w.name().toLowerCase(java.util.Locale.ROOT)).orElse("none")   // G7: the tier it holds it at
                     + " vanilla_target=" + (target == null ? "none" : target.getUniqueId())   // the body's own, kept
                     + " directed=" + adapters.summons().directed(s.body()).map(java.util.UUID::toString).orElse("none"));
         }
@@ -659,7 +660,13 @@ final class SelfTestDrivers {
     }
 
     /** MOB_TARGET (4d): the nearest living mob with this tag targets him now. */
-    private Optional<String> mobTarget(Player p, String tag) {
+    private Optional<String> mobTarget(Player p, String arg) {
+        // G-S2 (the summon fix's gate, 2026-11-26): "<tag> clear" makes the mob target NOBODY, through the same seam (a
+        // null target is never refused), so "the reason lapses" is staged, not hoped for.
+        String[] f = arg.trim().split("\\s+");
+        String tag = f[0];
+        boolean clear = f.length == 2 && f[1].equals("clear");
+        if (f.length > 2 || (f.length == 2 && !clear)) return Optional.of("MOB_TARGET wants '<tag>' or '<tag> clear', got '" + arg + "'");
         Entity best = null;
         for (Entity e : p.getNearbyEntities(REACH, REACH, REACH)) {
             if (!(e instanceof org.bukkit.entity.Mob) || !e.getScoreboardTags().contains(tag) || e.isDead()) continue;
@@ -673,9 +680,10 @@ final class SelfTestDrivers {
         }
         // Through the engine's one targeting seam (the Blink Tome's K7): refused while he is blinked, and the refusal
         // writes its own BLINK REFUSED-TARGET line. The DRIVE line says which happened.
-        boolean set = io.github.butterflysmp.rpg.paper.adapter.MobTargets.set((org.bukkit.entity.Mob) best, p,
+        boolean set = io.github.butterflysmp.rpg.paper.adapter.MobTargets.set((org.bukkit.entity.Mob) best, clear ? null : p,
                 run.adapters().targetGuard());
-        run.log("DRIVE mob_target " + best.getUniqueId() + " tag=" + tag + (set ? "" : " refused") + " tick=" + Bukkit.getCurrentTick());
+        run.log("DRIVE mob_target " + best.getUniqueId() + " tag=" + tag + (clear ? " clear" : set ? "" : " refused")
+                + " tick=" + Bukkit.getCurrentTick());
         return Optional.empty();
     }
 

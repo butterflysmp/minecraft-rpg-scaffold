@@ -7,7 +7,8 @@ health: 100                     # BEN
 damage: 20                      # BEN
 guard_radius: 8                 # BEN
 trigger_radius: 30              # BEN
-chase_limit: 32                 # SEAT PLACEHOLDER, from the caster
+give_up_range: 72               # BEN, 2026-11-26: "should give up if it's target if it's target is outside of a 72 block range";
+                                # from the OWNER to the target (the seat's reading of the question as put; OPEN FOR BEN)
 teleport_back: 48               # SEAT PLACEHOLDER (the old repo's)
 attack_cadence_ticks: 20        # SEAT PLACEHOLDER
 damaged_window_ticks: 100       # SEAT PLACEHOLDER

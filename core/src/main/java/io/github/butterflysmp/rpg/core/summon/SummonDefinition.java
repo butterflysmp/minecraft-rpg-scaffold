@@ -8,8 +8,9 @@ package io.github.butterflysmp.rpg.core.summon;
  * does not carry one and the loader refuses the key, so nobody authors it twice.
  *
  * <p>The numbers, and whose they are: {@code health} and {@code damage} are the AUTHORED values, scaled by the weapon's
- * gear score at the cast (D3). {@code guardRadius} 8 and {@code triggerRadius} 30 are BEN's (D4). {@code chaseLimit}
- * (32, measured from the CASTER), {@code teleportBack} (48), {@code attackCadenceTicks} (20) and
+ * gear score at the cast (D3). {@code guardRadius} 8 and {@code triggerRadius} 30 are BEN's (D4); {@code giveUpRange} 72 is
+ * BEN's (2026-11-26, the seat's G3: measured from the OWNER to the target; it replaced the 32 the file called
+ * {@code chase_limit}). {@code teleportBack} (48), {@code attackCadenceTicks} (20) and
  * {@code damagedWindowTicks} (how long "a mob that damaged him" stays a reason to attack it) are SEAT PLACEHOLDERS, OPEN
  * FOR BEN; each is required in the file, with no default, so none is invented here.
  *
@@ -17,7 +18,7 @@ package io.github.butterflysmp.rpg.core.summon;
  * after the header is the "compact constructor", which runs first and refuses a bad value.)
  */
 public record SummonDefinition(String id, String entity, String name, double health, double damage,
-                               double guardRadius, double triggerRadius, double chaseLimit, double teleportBack,
+                               double guardRadius, double triggerRadius, double giveUpRange, double teleportBack,
                                int attackCadenceTicks, int damagedWindowTicks) {
 
     public SummonDefinition {
@@ -31,13 +32,13 @@ public record SummonDefinition(String id, String entity, String name, double hea
         }
         positive(id, "guard_radius", guardRadius);
         positive(id, "trigger_radius", triggerRadius);
-        positive(id, "chase_limit", chaseLimit);
+        positive(id, "give_up_range", giveUpRange);
         positive(id, "teleport_back", teleportBack);
         positive(id, "attack_cadence_ticks", attackCadenceTicks);
         positive(id, "damaged_window_ticks", damagedWindowTicks);
-        // The seat's D4: a chase limit below the trigger radius would make Ben's "targets the caster within 30" false.
-        if (chaseLimit < triggerRadius) {
-            throw new IllegalArgumentException("summon '" + id + "' chase_limit " + chaseLimit
+        // The seat's D4: a give-up range below the trigger radius would make Ben's "targets the caster within 30" false.
+        if (giveUpRange < triggerRadius) {
+            throw new IllegalArgumentException("summon '" + id + "' give_up_range " + giveUpRange
                     + " is below its trigger_radius " + triggerRadius + ": it could never reach a mob it must attack");
         }
         if (teleportBack <= guardRadius) {

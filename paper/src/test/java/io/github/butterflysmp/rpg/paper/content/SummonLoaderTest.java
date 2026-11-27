@@ -54,8 +54,8 @@ class SummonLoaderTest {
         SummonRegistry shipped = loader().loadAll(Path.of("src", "main", "resources", "content", "summons").toFile());
         assertEquals(List.of(), warnings, "the shipped file loads clean");
         assertEquals(1, shipped.size());
-        assertEquals(new SummonDefinition("bone_whistle_wolf", "wolf", "{owner}'s Wolf", 100, 20, 8, 30, 32, 48, 20, 100),
-                shipped.find("bone_whistle_wolf").orElseThrow(), "Ben's 100 and 20, 8 and 30; the seat's placeholders");
+        assertEquals(new SummonDefinition("bone_whistle_wolf", "wolf", "{owner}'s Wolf", 100, 20, 8, 30, 72, 48, 20, 100),
+                shipped.find("bone_whistle_wolf").orElseThrow(), "Ben's 100 and 20, 8 and 30, and 72 (G3); the seat's placeholders");
         assertEquals(0, loader().loadAll(dir.resolve("absent").toFile()).size(), "a missing directory is no summons");
     }
 
@@ -89,7 +89,7 @@ class SummonLoaderTest {
             refuses(fixtureWith(key, null), "'" + key + "' is missing");
         }
         refuses(fixtureWith("attack_cadence_ticks", "20.5"), "must be a whole number of ticks");
-        refuses(fixtureWith("chase_limit", "16"), "is below its trigger_radius");
+        refuses(fixtureWith("give_up_range", "16"), "is below its trigger_radius");
         refuses(fixtureWith("teleport_back", "8"), "must be beyond its guard_radius");
     }
 }

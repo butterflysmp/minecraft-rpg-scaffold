@@ -40,8 +40,8 @@ public final class SummonStore {
     /** D5: a summon's DIRECTED target (set only by the left click), by body; gone with the body. */
     private final Map<UUID, UUID> directed = new HashMap<>();
 
-    /** R3: the guard's CURRENT target, by body, published by the goal each tick; gone with the body. */
-    private final Map<UUID, UUID> current = new HashMap<>();
+    /** R3: the guard's HELD target and its tier (G7, 2026-11-26), by body, published by the goal each tick; gone with the body. */
+    private final Map<UUID, SummonGuard.Held> current = new HashMap<>();
 
     /** Own a body. If his summon of this weapon lived, it is no longer owned, and is handed back for removal. */
     public synchronized Optional<Summon> place(Summon s) {
@@ -118,12 +118,17 @@ public final class SummonStore {
     }
 
     /** R3: the goal publishes the target the guard chose this tick (empty when none). Only an owned body keeps one. */
-    public synchronized void setCurrent(UUID body, Optional<UUID> target) {
-        if (target.isPresent() && byBody.containsKey(body)) current.put(body, target.get()); else current.remove(body);
+    public synchronized void setCurrent(UUID body, Optional<SummonGuard.Held> held) {
+        if (held.isPresent() && byBody.containsKey(body)) current.put(body, held.get()); else current.remove(body);
     }
 
     public synchronized Optional<UUID> current(UUID body) {
-        return Optional.ofNullable(current.get(body));
+        return Optional.ofNullable(current.get(body)).map(SummonGuard.Held::id);
+    }
+
+    /** G7: the tier the held target is held at, for the probe; empty when nothing is held. */
+    public synchronized Optional<SummonGuard.Why> currentTier(UUID body) {
+        return Optional.ofNullable(current.get(body)).map(SummonGuard.Held::tier);
     }
 
     /** F1: the order is cleared when its target is dead, gone or beyond the chase limit from him. */
