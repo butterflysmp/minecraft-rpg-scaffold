@@ -1,6 +1,6 @@
 # GATE-mana-battery R0b (2026-11-27, feat/mana-battery-gate on feat/owed-v7 on feat/mana-battery): the deployed jar
 # carries Mana Battery (B1 to B6), the owed V7 (a) to (e) and this gate.
-# Prediction: before '--- absent', 21 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 3 ABSENT and 0 PRESENT;
+# Prediction: before '--- absent', 22 PRESENT and 0 ABSENT; between '--- absent' and '--- controls', 3 ABSENT and 0 PRESENT;
 # after '--- controls', 2 PRESENT and 0 ABSENT.
 # Run: powershell -File <this> [-JarPath <jar>]
 param([string]$JarPath = 'run\plugins\rpg-0.1.0-SNAPSHOT.jar')
@@ -28,12 +28,13 @@ Entry 'selftest/GATE-mana-battery.yml'
 Entry 'io/github/butterflysmp/rpg/paper/health/ManaBatteryModifierItems.class'
 ValueLine $mb 'effect: mana_regen' 'mana_battery.yml (B2)'
 ValueLine $mb 'class: armor' 'mana_battery.yml (B1)'
-ValueLine $mb 'value_by_level: [1, 2, 3]' 'mana_battery.yml (BEN: 1/2/3 per second)'
+ValueLine $mb 'value_by_level: [1, 2, 3]' 'mana_battery.yml (BEN: 1/2/3 per five seconds, "B")'
 ValueLine $mb 'icon: redstone_block' 'mana_battery.yml (SEAT PLACEHOLDER)'
 Has $eff 'MANA_REGEN' 'EnchantEffect.class (B2)'
 Has $ai 'Mana Regen' 'ArmorItems.class (B5: the stat-block label, inlined; ArmorLoreLines already says Mana Regen per second)'
 Has $line ' Mana Regen' 'EnchantEffectLine.class (B5: the suffix)'
 Has $scan 'manabattery:' 'ManaBatteryModifierItems.class (B3: its own source key)'
+Has $scan 'perSecondFromPerFiveSeconds' 'ManaBatteryModifierItems.class (C2: the one conversion, called by the scan)'
 Has $cmd 'Mana set to ' 'RpgCommand.class (rpg mana set, CC''S CALL)'
 Has $stg 'ACCESSORIES cleared=' 'SelfTestStaging.class (V7 a)'
 Has $gl 'predates the pad and would run on your ground. Refused.' 'SelfTestGateList.class (V7 e)'

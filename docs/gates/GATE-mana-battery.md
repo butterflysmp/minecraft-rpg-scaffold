@@ -65,8 +65,8 @@ now ending **`… summons=0 fused=0 blink=none drag_tick=false`** (V7 (c): S5 en
 
 - **R0a:** `[Rpg] Build: <sha>`, `feat/mana-battery-gate`'s head as `git ls-remote --heads origin feat/mana-battery-gate`
   prints it, shortened. Not `-dirty`, not `unknown`.
-- **R0b:** `docs/gates/GATE-mana-battery-r0b.ps1` on the DEPLOYED jar: before `'--- absent'` **21 `PRESENT`, 0 `ABSENT`**
-  (3 `Entry`, 7 `ValueLine`, 11 `Has`); between `'--- absent'` and `'--- controls'` **3 `ABSENT`, 0 `PRESENT`**; after
+- **R0b:** `docs/gates/GATE-mana-battery-r0b.ps1` on the DEPLOYED jar: before `'--- absent'` **22 `PRESENT`, 0 `ABSENT`**
+  (3 `Entry`, 7 `ValueLine`, 12 `Has`; C6 added `perSecondFromPerFiveSeconds` on the scan's class); between `'--- absent'` and `'--- controls'` **3 `ABSENT`, 0 `PRESENT`**; after
   `'--- controls'` **2 `PRESENT`, 0 `ABSENT`**. `GATE-held-target-r0b.ps1` **22 / 0, 3 / 0, 2 / 0**, unchanged.
   Each Has needle was checked ABSENT in master's sources before it was written (one, `'Mana Regen'` in
   `ArmorLoreLines`, was not, and moved to `ArmorItems`; SummonTrace's is the target line's concatenation recipe, because
@@ -148,12 +148,16 @@ Every line S3 predicts there, with these moved or added:
 
 Every row: level 1, `clear_inventory`, `clear_state`, `accessory: clear`, `class: mage`, and his four armour slots
 emptied before it puts on its own (MB1 wears nothing). **Every sheet figure is the `Mana Regen` line of a `rpg stats`
-reply,** read 10 ticks after the wear (two reconcile passes). Each is EXECUTED in `ManaBatteryRefillTest
-.theSheetsManaRegenLine_forEachRowsBonus`:
+reply,** read 10 ticks after the wear (two reconcile passes).
 
-| bonus per second | 0 | 1 | 2 | 3 | 5 | 7 |
+> **RE-PREDICTED IN PLACE, 2026-11-27, BEFORE ANY APPROVAL (the seat's C5): Ben chose "B".** Mana Battery's values are
+> mana per FIVE SECONDS, the sheet's own unit, so each level moves the sheet by its own number. Every figure below is
+> EXECUTED through the whole chain (authored per 5 s -> `ManaRegen.perSecondFromPerFiveSeconds` -> the stat per second
+> -> the pool per tick -> `StatsSheetLines.perFiveSeconds`) in `ManaBatteryRefillTest.theChain_authoredToTheSheet`:
+
+| worn | nothing | I | II | III | III + II | III + II + the golden set's 2/s |
 |---|---|---|---|---|---|---|
-| `Mana Regen` | `5.00/5s` | `10.00/5s` | `15.00/5s` | `20.00/5s` | `30.00/5s` | `40.00/5s` |
+| `Mana Regen` | `5.00/5s` | `6.00/5s` | `7.00/5s` | `8.00/5s` | `10.00/5s` | `20.00/5s` |
 
 ### AC1 — V7 (a): THE PAD STEP EMPTIED HIS SLOTS
 
@@ -192,43 +196,46 @@ pool: `**, **`Weapon pool: `** (four normals at `07f03c6b`, without `mana_batter
 
 - Bare: **`Mana Regen 5.00/5s`** (the row's own baseline).
 - The iron chestplate with Mana Battery III worn: `ARMOR slot=CHEST item=iron_chestplate damage=0 max=<m>
-  broken=false`; **`Mana Regen 20.00/5s`** = baseline + 15.00 (3/s × 5). B4: the number does not move with score.
+  broken=false`; **`Mana Regen 8.00/5s`** = baseline + 3.00, the number on the tooltip. B4: it does not move with
+  score.
 
 ### MB3 — THE REAL REFILL, WITH ITS CONTROL
 
 The terms (EXECUTED through the pool's own functions, `ManaBatteryRefillTest.mb3_theRefillOverAHundredTicks`):
 
 ```
-gain over 100 ticks = 100 × (MANA_PER_TICK + ManaRegen.perTick(bonus))
-MANA_PER_TICK = 100.0 / (100 × 20) = 0.05          ManaRegen.perTick(3.0) = 0.15
-with the piece (bonus 3):   10 + 100 × (0.05 + 0.15) = 30.000
-the control (bonus 0):      10 + 100 × 0.05          = 15.000
+gain over 100 ticks = 100 × (MANA_PER_TICK + ManaRegen.perTick(bonus per second))
+bonus per second    = ManaRegen.perSecondFromPerFiveSeconds(3) = 0.6
+MANA_PER_TICK = 100.0 / (100 × 20) = 0.05          ManaRegen.perTick(0.6) = 0.03
+with the piece (III):       10 + 100 × (0.05 + 0.03) = 18.000     (EXECUTED: 18.0 exactly)
+the control (none):         10 + 100 × 0.05          = 15.000     (EXECUTED: 15.0 exactly)
 ```
 
 **The clock:** the server tick. `rpg mana set 10` and the first `probe_mana` run in the same pass of the run's advance,
 on his entity scheduler (same tick: the command does not hop, READ); the second `probe_mana` runs 100 ticks later, by
 `wait: 100`, in the same phase.
 
-- Worn: `Mana Regen 20.00/5s`; `Mana set to 10.` (green); **`MANA current=10.000 max=100.000`**; 100 ticks later **`MANA
-  current=30.000 max=100.000`**.
+- Worn: `Mana Regen 8.00/5s`; `Mana set to 10.` (green); **`MANA current=10.000 max=100.000`**; 100 ticks later **`MANA
+  current=18.000 max=100.000`**.
 - Off (the control): `Mana Regen 5.00/5s`; **`MANA current=10.000 max=100.000`**; 100 ticks later **`MANA current=15.000
   max=100.000`**.
-- **The piece adds exactly 15.000 over 100 ticks** (100 × 0.15). `max=` is his ceiling: 100.000 unless something of his
+- **The piece adds exactly 3.000 over 100 ticks** (100 × 0.03: 3 mana per 5 seconds over 5 seconds). `max=` is his ceiling: 100.000 unless something of his
   raises max mana (then the row reads it; the currents do not move, all being below 100).
 
 ### MB4 — LEVELS I AND II
 
-- At I: **`Mana Regen 10.00/5s`** (+1/s). Taken to the hand, set to II, worn again: **`Mana Regen 15.00/5s`** (+2/s).
+- At I: **`Mana Regen 6.00/5s`** (+1 per 5 s). Taken to the hand, set to II, worn again: **`Mana Regen 7.00/5s`** (+2
+  per 5 s).
 
 ### MB5 — STACKING, AND THE GOLDEN SET
 
 - Iron chestplate at III and iron leggings at II: `ARMOR` lines CHEST and LEGS, `broken=false`; **`Mana Regen
-  30.00/5s`** (3 + 2 = 5/s).
-- A golden full set, its chestplate at III and its leggings at II: four `ARMOR` lines, golden; **`Mana Regen 40.00/5s`**
-  (5 + the set's 2 = 7/s; the set's +2 READ on the boot of the armor sets, `GATE-armor-sets.md` AS2: `15.00/5s` from
-  `5.00/5s`).
-- The golden boots swapped for untagged iron boots (the set off: its control): **`Mana Regen 30.00/5s`** (5/s: the set's
-  2 gone, the two enchants still worn). Equal to this row's first reading by construction: both are the two enchants
+  10.00/5s`** (3 + 2 per 5 s).
+- A golden full set, its chestplate at III and its leggings at II: four `ARMOR` lines, golden; **`Mana Regen 20.00/5s`**
+  (the enchants' 5 per 5 s + the set's 2 per SECOND, i.e. 10 per 5 s; the set's +2/s READ on the boot of the armor sets,
+  `GATE-armor-sets.md` AS2: `15.00/5s` from `5.00/5s`; its unit unchanged, C3).
+- The golden boots swapped for untagged iron boots (the set off: its control): **`Mana Regen 10.00/5s`** (the set's
+  gone, the two enchants still worn). Equal to this row's first reading by construction: both are the two enchants
   alone.
 
 ### MB6 — CARRIED, NOT WORN; BROKEN; REPAIRED
@@ -237,25 +244,24 @@ on his entity scheduler (same tick: the command does not hop, READ); the second 
 - `rpg durability set 100000` in the hand, then worn: **`ARMOR slot=CHEST item=iron_chestplate damage=<m − 1> max=<m>
   broken=true`** (`Durability.clamp` holds damage at max − MIN_USES, MIN_USES = 1, READ; `isBroken` is `damage ≥ max −
   1`); **`Mana Regen 5.00/5s`** (a broken piece adds nothing).
-- Back to the hand, `rpg durability set 0`, worn again: **`ARMOR … damage=0 … broken=false`**; **`Mana Regen 20.00/5s`**
-  (the control: the same piece, unbroken, adds 3/s).
+- Back to the hand, `rpg durability set 0`, worn again: **`ARMOR … damage=0 … broken=false`**; **`Mana Regen 8.00/5s`**
+  (the control: the same piece, unbroken, adds 3 per 5 s).
 
 ## CC'S CALLS (the gate's)
 
 1. **The enchant is put on the piece by the dev commands in column 0**, as TT7 put Mana Bank on; the roll placement (normal
    slots 2 and 3) is MB1's pool and rollstats readings, and `ArmorPoolsTest`/`ManaBatteryTest`. The alternative stages
    columns 0 and 1 first so it can sit in column 2.
-2. **The sheet is read in its own unit, `/5s`.** The brief's "+3.000" is per second; the sheet shows ×5 (READ).
+2. **The sheet is read in its own unit, `/5s`,** which is now also Mana Battery's authored unit (Ben's "B").
 3. **MB5's golden set uses untagged iron boots as the control**, the swap GATE-armor-sets AS2 used.
 
 ## OPEN FOR BEN (every placeholder in this stack)
 
 1. The icon, `redstone_block` (SEAT PLACEHOLDER 2026-11-27).
-2. The stat-block line's wording, **`Mana Regen: +3`** (no unit shown).
-3. The enchant effect suffix, **`(+3 Mana Regen)`** (no unit shown).
-4. **The sheet shows Mana Battery III as `+15.00/5s` while its tooltip says `+3`** (the sheet's unit is per five seconds,
-   READ; the seat's brief described it as per second). His "per second not 5 seconds" was answered against that
-   description.
+2. The stat-block line's wording, **`Mana Regen: +3`**; whether to show `/5s` (C4).
+3. The enchant effect suffix, **`(+3 Mana Regen)`**; whether to show `/5s` (C4).
+4. **RESOLVED 2026-11-27: Ben chose "B"** (the tooltip and the sheet now read the same number). **Still open (C3): the
+   golden set's tooltip says `+2 Mana Regen per second` while the sheet moves by 10** (`5.00/5s` -> `15.00/5s`).
 5. The refusal line, **`Selftest: '<gate>' predates the pad and would run on your ground. Refused.`** (SEAT PLACEHOLDER).
 6. The pad step's line, `ACCESSORIES cleared=<n> pad […]`: a log line, not chat (nothing for Ben to see; listed for
    completeness).
@@ -270,8 +276,8 @@ on his entity scheduler (same tick: the command does not hop, READ); the second 
 
 ## R0b, RUN BEFORE COMMIT
 
-On `paper/target/rpg-0.1.0-SNAPSHOT.jar` built from this tree (2026-11-27 15:14, `./mvnw -o -q package -DskipTests`,
-after the scenario, the index and every code change): **`GATE-mana-battery-r0b.ps1`: 21 `PRESENT` / 0 `ABSENT`, then 3
-`ABSENT` / 0, then 2 `PRESENT` / 0, as predicted** (the SummonTrace needle matched the target line's recipe, `reason=`,
+On `paper/target/rpg-0.1.0-SNAPSHOT.jar` built from this tree (2026-11-27 15:42, after Ben's "B" and the rebase,
+`./mvnw -o -q package -DskipTests`): **`GATE-mana-battery-r0b.ps1`: 22 `PRESENT` / 0 `ABSENT`, then 3 `ABSENT` / 0, then
+2 `PRESENT` / 0, as predicted** (the first run, 15:14, before "B", read 21 / 0, 3 / 0, 2 / 0 against its own 21) (the SummonTrace needle matched the target line's recipe, `reason=`,
 char 1, ` tick=`). **`GATE-held-target-r0b.ps1`: 24 `PRESENT` and 3 `ABSENT` in all, which is its 22 + 2 and 3,
 unchanged.** This is a reading of a jar on this machine, not of the deployed one: R0b proper is the deployed jar's.
