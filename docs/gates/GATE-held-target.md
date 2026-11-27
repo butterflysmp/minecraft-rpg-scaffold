@@ -1,6 +1,6 @@
 # GATE — A SUMMON HOLDS ITS TARGET (G1 TO G8), WITH THE OWED ROWS R2 TO R6 RE-READ BY REFERENCE (2026-11-26)
 
-**Status: NOT RUN.** The plans are `docs/plans/PLAN-summon-holds-target.md` (G1 to G8) and `docs/plans/PLAN-owed-fixes.md`
+**Status: RUN 2026-11-27 on `ffacaa76`, the one command; readings at the end, under READINGS.** The plans are `docs/plans/PLAN-summon-holds-target.md` (G1 to G8) and `docs/plans/PLAN-owed-fixes.md`
 (R2 to R6, with R1 to R7 as its dated note). The scenario is `paper/src/main/resources/selftest/GATE-held-target.yml`. The
 stack, bottom up: master `6c9b1ff4`, #330 `feat/owed-fixes`, #331 `feat/summon-holds-target`, then this ONE gate branch,
 `feat/held-target-gate`, last and separate so it can move up. **Every prediction below was written before any boot, and
@@ -286,3 +286,194 @@ that only targets him. `PLAN-owed-fixes.md`: his answer on what he sees of a nam
 That the server's goal carries the held target tick to tick as the table does (every `reason=`); that a blink's forget,
 a cleared target and a 40-block distance each leave the wolf on its target; that the directed order switches it; that the
 idle walk back still runs; that the setups name what they clear; and that the owed rows read as R2 to R6 predict.
+
+## READINGS — THE BOOT OF `ffacaa76`, 2026-11-27 (THE ONE COMMAND)
+
+**No prediction above was edited.** Every tick and figure below is quoted from this boot's `latest.log`, copied whole
+before any later boot. Rows are classed READ AS PREDICTED, MISS, or DID NOT TEST WHAT IT WAS MEANT TO. Lines are read
+by their named fields (the seat's ruling of 2026-11-26). A tick marked DERIVED is computed from the scenario's `wait:`
+steps and a printed tick, not printed itself.
+
+### THE BOOT, AND HIS LOGIN
+
+- Heads at the boot: master `6c9b1ff4a6fa`, `feat/owed-fixes` `86c3e0e15d82`, `feat/summon-holds-target`
+  `85e1690f5c69`, `feat/held-target-gate` `ffacaa7645c6`, as the seat diffed; CI `success` on the three heads; tree
+  clean, `HEAD` = the origin head. No JVM before the boot.
+- Backup: `rpg-run-backups\2026-11-27-pre-held-target` (a NEW folder; an interrupted attempt earlier the same day left no
+  folder, no JVM and no server): `run\world` 193 files / 193 copied, `run\plugins\Rpg` 191 / 191, his player `.dat`
+  5754 bytes / 5754. **His accessory file before the boot: 582 bytes, sha256 `C8BC8B808928D550…`, one entry, slot 0 =
+  `healing_tome`; his profile `archetypeId: "mage"`, `elementId: "fire"`.** Saved difficulty `normal`. Config line 12
+  `dev-pack-on-join: true`; no `run\rpgfight`.
+- Marker 14:07:03; jar deployed 14:07:32; `latest.log` opens 14:07:33; `Done (5.742s)` 14:07:38.
+- **R0, read at 14:07:57, all as predicted:** R0a `[Rpg] Build: ffacaa76`. R0b, the five scripts on the deployed jar:
+  held-target 22/0, 3/0, 2/0; blink-tome 27/0, 4/0, 2/0; healing-tome 25/0, 4/0, 2/0; bone-club 21/0, 5/0, 2/0;
+  blast-fungus 18/0, 4/0, 2/0 (each script's line count = its tallies + its two section markers). R0c `Loaded 1
+  summon(s)`, `… 27 enchants, … 27 weapons, 1 shields, 28 armor, 5 tools, 8 accessories, …`, `Mint-on-craft: 42
+  indexed, 42 claiming, of 61 gear definitions`; 0 `WARN]: [Rpg]` (control `INFO]: [Rpg] Loaded` = 7); 0 each of
+  Refusing, Skipping, SEVERE, Exception. R0d exactly one `Selftest: dev server, 535 scenarios across 56 gates`, ending
+  `…, healing-tome, blink-tome, held-target]`; `530 scenarios` 0, `55 gates` 0. R0e one `FIGHTWORLD sweep … folders=0`;
+  0 `deleting`, 0 `orphan`.
+- **"R0 PASSED" was sent before he logged in. His first `joined the game`: 14:08:14** (after R0's 14:07:57). He typed
+  `/gamemode survival` (14:08:44), the one command (14:08:48), and `/stop` (14:10:46). Clean stop; 0 `java.exe` after.
+- **SAFETY: 0 `HURT` lines in the whole log.**
+
+### HIS GROUND AND HIS BUILD (P1 TO P4, H15)
+
+- **The first CLEAN, whole:** `SELFTEST bone-club setup CLEAN blocks=0 blocksBack=0/0 removed=0 summons=0 fused=0
+  inventory=kept return=-104.47 63.00 15.21 drum=0 blink=none world=skipped`, then **`SELFTEST bone-club setup LINGER
+  skipped`**, then `LEFTOVER living=0 radius=16`. **No ITEMS line and no removal of any kind preceded the first pad
+  step:** removed=0, summons=0, fused=0, no `SUMMON removed` or `FUSED removed` line before `PAD stood`.
+- **Every ITEMS line:** bone-club `ITEMS cleared=0 pad []`; **blast-fungus `ITEMS cleared=1 pad [rotten_flesh x1]`**
+  (R4's stray named: what DB6's `kill @e[tag=t]` left, as INFERRED); healing-tome `cleared=0 pad []`; blink-tome
+  `cleared=0 pad []`; held-target `cleared=0 pad []`. All as predicted.
+- Every later CLEAN ends `world=pad` with `LINGER work=0 entities=0 pad`, as predicted. Every `SUMMON removed` line is
+  on the pad (x 103.50 to 143.67, z −3.50 to 0.50, stand column 104, −4): nothing was removed off the pad.
+- **CAPTURED, whole:** `SELFTEST RUN CAPTURED armour=0 offhand=0 class=mage accessories=[healing_tome,-,-,-]`.
+- **RESTORED, whole:** `SELFTEST RUN RESTORED xp=712600 cell=mage/fire gamemode=SURVIVAL held=3 mana=100.0 trace=false
+  spawn_mobs=false time=1000 blocks=0 blocksBack=0/0 mobsRemoved=0 orbsRemoved=0 keep_inventory=false
+  immediate_respawn=false difficulty=NORMAL health=350.000 vanilla_xp=118+0.916 spawn_phantoms=true
+  max_summons_base=null saturation=0.0 accessories=[healing_tome,-,-,-] armour=0 offhand=0 summons=1 fused=0 blink=none
+  drag_tick=false`.
+- **His files after `/stop`:** the accessory file is **byte-identical** to the pre-boot reading (582 bytes, sha256
+  `C8BC8B808928D550…`, slot 0 = `healing_tome`); the profile reads `archetypeId: "mage"`, `elementId: "fire"`.
+  Difficulty after: `normal`.
+- **H15: MISS on one field, `summons=1` against the predicted `summons=0`.** READ (`SelfTestRun`, the run's end): the
+  field counts his summons the run-end removes. The one removed is S5's own wolf (`SUMMON removed … body=7c1e9ad8… at=111.81
+  201.00 -3.50 cause=clear`, spawned in S5; S5 ends with no `clear_state`). The cause is the prediction; nothing of his
+  was lost (his first CLEAN read `summons=0`). Every other H15 field as predicted.
+- **NOTED, NOT A PREDICTION:** `lifetimeXp` reads 712599 in the pre-boot profile and 712600 after. RESTORED writes back
+  the value captured at the run's start (`SelfTestSnapshot`: `xp=` is the captured `lifetimeXp`), so it was already 712600
+  when he typed the command; the +1 came in the 34 s between his login and the command. No log line names it.
+- **NOTED, NOT A PREDICTION:** his own equipped Healing Tome pulsed from the run's start
+  (`TOMEPULSE wearer=BaronVonYeetus level=1 … candidates=1 healed=0` at ticks 1441 to 1921, every 80) until HT1's
+  `accessory clear` stopped it (`TOMEPULSE STOP … tick=1976 reason=inactive`). It healed nothing. The rows before HT1 do
+  not clear accessories.
+- NOTED: blast-fungus's setup CLEAN reads `drum=1` (after DB6); no prediction names it.
+- NOTED: 18 `MOBREMOVE` lines at DB6's `/kill @e[tag=t]`, whose reply is `Killed Zombie` (one). `MOBREMOVE` logs any
+  mob leaving the store, death or chunk unload (`MobNameplateManager.onMobRemove`); INFERRED: his home chunks unloading
+  once he was moved to the pad.
+
+### bone-club.DB6 — READ AS PREDICTED
+
+Charges `1.000`, `1.000`, `0.620`, `1.000`. `STREAK n=0 step=5 chance=0.150 charged=true result=counted`, `n=1 … 0.200
+… counted`, **`n=2 step=5 chance=0.150 charged=false result=reset:uncharged`** with `sent=22.331 crit=false`, `n=0 …
+0.150 … counted`. **All four `DRIVE reset_charge HumanEntity#resetCooldown cooldown=0.0200->0.0200`** (R3). Row-start
+CLEAN `drum=0`.
+
+### blast-fungus.BF3 — READ AS PREDICTED
+
+Three samples, each `POSITIONS ITEM n=3 at=[6.65 0.00 0.00 nether_wart_block fused marker; 6.03 0.00 2.81
+nether_wart_block fused marker; 6.03 0.00 -2.81 nether_wart_block fused marker] radius=12`; the fourth `POSITIONS ITEM
+n=0 at=[] radius=12`. `ba` 835.000, `bo` 945.000, `bn` 1000.000.
+
+### blast-fungus.BF6 — READ AS PREDICTED
+
+Throw `at=104.500,202.620,-3.500 tick=1837`; rests at tick 1839 (T + 2): `104.500,201.000,-3.500`,
+`104.500,201.000,-2.779`, `104.500,201.000,-4.221` (z ± 0.721); three `detonate … cause=fuse tick=1877` (T + 40) at
+the same points. The wolf `health=100.000/100.000` before and after; no PLAYERHIT names it. `bs` **670.000** (the crit
+branch: three `sent=110.000 crit=true`).
+
+### blast-fungus.BF8 — READ AS PREDICTED
+
+`ENTITIES ITEM count=0 radius=32 dying=0 types=[]`; `STAGE clear_state … fused=0`.
+
+### healing-tome.HT1 — MISS (item 4); THE HELD LINE READ AS PREDICTED
+
+`HELD healing_tome BOOK x1 name="Healing Tome" [white, blue] italic lore=["Radiant Pulse" [gold]; "Every 4s, heals hurt
+players within 8 blocks" [gray]; "for 1 health per your level" [gray]; "Mage class accessory" [gray]; "" []; "Rare
+Accessory" [blue]]`, as predicted; the three REPLYs as predicted. **MISS: HT1's item 4, "No `TOMEPULSE` line in the
+row", read one: `TOMEPULSE STOP wearer=BaronVonYeetus tick=1976 reason=inactive`**, his OWN tome (CAPTURED
+`accessories=[healing_tome,…]`) stopped by the row's `accessory clear` (`cleared=1`). The cause is the prediction: the
+checklist recorded that he wears a tome, and HT1's prediction was not moved for it. The row's tome was carried, never
+equipped, and logged no pulse of its own.
+
+### blink-tome.BT1 — READ AS PREDICTED
+
+`HELD blink_tome BOOK x1 name="Blink Tome" [white, blue] italic lore=["Blink" [gold]; "When a hostile mob targeting you
+comes within 5 blocks," [gray]; "you teleport to safety and turn invisible for 8s." [gray]; "Attacking ends the
+invisibility." [gray]; "Cooldown: 60s" [gray]; "Mage class accessory" [gray]; "" []; "Rare Accessory" [blue]]`; the
+three REPLYs; no `BLINK` line in the row.
+
+### blink-tome.BT3, BT4, BT5, BT6 — READ AS PREDICTED
+
+Stand column (104, −4); `from=124.500 201.000 -3.500` in all four.
+
+| row | E | T0 | M | B | to= (x − sx, z − sz) | END | R2 STOP | clear (DERIVED) |
+|---|---|---|---|---|---|---|---|---|
+| BT3 | 2171 | 2176 | 2181 | 2181 | 133.5, −4.5 (29.5, −0.5) | 2341 `expired` (B + 160) | 2371 `ended` | 2371 |
+| BT4 | 2425 | 2426 | 2435 | 2436 | 122.5, 4.5 (18.5, 8.5) | 2447 `cast`, between DRIVE use and USE result | 2461 `ended` | 2457 |
+| BT5 | 2511 | 2516 | 2521 | 2521 | 109.5, −8.5 (5.5, −4.5) | 2533 `melee`, after DRIVE attack | 2546 `ended` | 2543 |
+| BT6 | 2597 | 2601 | 2607 | 2611 | 117.5, 0.5 (13.5, 4.5) | 2771 `expired` (B + 160), whistle, no earlier END | 2786 `ended` | in (2781, 2786] |
+
+Each blink `dist=3.000 … safe=508 forgot=1`; T0 ∈ [E, E + 5]; B ∈ [M, M + 5]; every to= a block centre, inside
+[4.5, 36.5] × [−12.5, 13.5], within 16 of from= (9.055, 8.246, 15.811, 8.062; EXECUTED, awk). BT3: `REFUSED-TARGET … tick=2189` once,
+`INVIS present=true ticks=152` (160 − 8), `TARGET tag=bh … target=self` after the expiry. **R2's tail: each STOP within 5
+of its clear (BT4's and BT5's clear ticks DERIVED from the waits; BT6's bounded by the 5-tick grid T0 + 5k, on which its
+STOP lies); each row's last `STAGE clear_state … blink=none`; exactly ONE `BLINK wearer=` line in each row.** The next
+row-start CLEANs (BT4, BT5, BT6, held-target setup) each `drum=0 blink=none`.
+
+### S1 — MISS (the SELF position); THE HOLD READ AS PREDICTED
+
+`PROBE h1 … customHP=1000.000/1000.000 … d=10.000`. `DRIVE mob_target … tag=h1 tick=2897`; the next line **`SUMMON target
+… target=<h1> why=targeting reason=acquired:targeting`** (the line carries no tick: "within a tick" is not readable from
+it; it precedes everything else logged after the DRIVE). `SUMMONPROBE … target=<h1> tier=targeting` (`dist_him=8.22`,
+the wolf at 142.54, 1.96 from h1).
+- **MISS: the step back read `Teleported BaronVonYeetus to 104.315491, 201.000000, -3.500000` and `SELF … at=104.32
+  201.00 -3.50`, against the predicted `<stand x+0.50>` = 104.50.** He stood at 134.315, not 134.500, when the `tp @s
+  ~-30` ran: 0.185 west of the aligned point. No row step moved him; INFERRED: the wolf, spawned at his feet and walking
+  east, pushed him (S3 read the same 0.185, below). h1 was 40.185 from him (PROBE `d=40.185`), still beyond 30.
+- **`SUMMON target … target=<h1> why=targeting reason=kept`, exactly once,** before the hit at tick 2937, which is the tp's
+  tick (M + 40, DERIVED): within 3 ticks. **No `dropped=` line; no `SUMMON teleport` line** (0 in the whole log).
+- Hits: ticks 2937, 2957, 2977, 2997, 3017, 3037, 3057 (each `sent=20.000 crit=none class=0 level=0 element=nature`,
+  20 apart); h1 after each, DERIVED 1000 − 20 n: 980, 960, 940, 920, 900, 880, 860. The first landed at M + 40, the
+  edge of the INFERRED "inside the 40 ticks", not inside it.
+- The three probes after: `target=<h1> tier=targeting`, `dist_him` 38.82, 39.35, 39.35 (in [37, 41]).
+- **`PROBE h1 … customHP=860.000/1000.000`** = 1000 − 20 × 7.
+
+### S2 — READ AS PREDICTED
+
+`mob_target … tag=h2 tick=3121`; `SUMMON target … target=<h2> why=targeting reason=acquired:targeting`; `SUMMONPROBE
+… tier=targeting`. `DRIVE mob_target … tag=h2 clear tick=3124`; **`SUMMON target … target=<h2> why=targeting
+reason=kept`, once**, before `TARGET tag=h2 … type=zombie target=none dead=false` (C + 3); both later probes `target=<h2>
+tier=targeting`. Hits 3132, 3152 (h2 980, 960, DERIVED); **`PROBE h2 … customHP=960.000/1000.000`**.
+
+### S3 — MISS (from=, dist=, safe=); THE HOLD THROUGH THE BLINK READ AS PREDICTED
+
+Blockers at (121.5, 9.5), (127.5, 9.5), (121.5, −16.5), (127.5, −16.5); `bt` at (127.5, −3.5); him aligned at 124.50.
+`mob_target … tag=bt tick=3226`; `acquired:targeting`; `SUMMONPROBE … tier=targeting`. A wolf hit on `bt` at 3232.
+`equip` E = 3238; **`BLINK START … tick=3241`** (T0 ∈ [E, E + 5]); **`BLINK wearer=BaronVonYeetus tick=3246 trigger=zombie
+<bt> dist=3.185 from=124.315 201.000 -3.500 to=119.500 201.000 -6.500 safe=507 forgot=1`**, B = T0 + 5.
+- **MISS: `from=124.315` (predicted 124.500), `dist=3.185` (3.000), `safe=507` (508).** He had moved 0.185 west of the
+  aligned point between the align and the blink, the same 0.185 as S1; INFERRED the same cause, the wolf spawned at
+  his feet walking east. BT2's enumerated 508 landings assume from= at the block centre, so `BlinkPadLandingTest` does
+  not cover this landing. **Checked by hand instead:** to= (119.5, −6.5) is a block centre; x − sx 15.5, z − sz −2.5,
+  inside the box; 5.673 from from= (within 16); from `bt` 8.544 and from the blockers, in the order above, 16.125,
+  17.889, 10.198, 12.806 (more than 5 from every mob; EXECUTED, awk).
+- **`SUMMON target … target=<bt> why=targeting reason=kept`, exactly once**, after the BLINK line and before the hit at
+  3252: within [B, B + 6]. **"Within 2 ticks of B" is not readable** (the line carries no tick).
+- `SELF … at=119.50 201.00 -6.50` = to=. Probes `target=<bt> tier=targeting`, at= 127.01 and 127.07 (within 2 of `bt`'s
+  127.5), `dist_him` 8.09 and 8.14 (the wolf to his landing). **No `SUMMON teleport` line.** `INVIS present=true
+  ticks=152 … blinked=true`.
+- **`BLINK REFUSED-TARGET mob=zombie <bt> tick=3253`, once**, after the wolf's hit at 3252 (B + 6). Hits on `bt`: 3232,
+  3252, 3272 (`bt` max 100: DERIVED 80, 60, 40; not probed).
+- R2's tail: `BLINK STOP … tick=3276 reason=ended`, then `BLINK END … tick=3280 reason=cleared`, then `STAGE clear_state
+  … summons=1 fused=0 drum=0 blink=ended`. **Exactly one `BLINK wearer=` line in the row.** S4's CLEAN `blink=none`.
+
+### S4 — READ AS PREDICTED
+
+`mob_target … tag=a4 tick=3341`; `acquired:targeting`; `SUMMONPROBE … target=<a4> tier=targeting`. `aim` b4
+(`d=6.708`), `DRIVE reload held=bone_whistle`; **`SUMMON target … target=<b4> why=directed
+reason=switched:targeting->directed`**, before the probe at reload + 3; **`SUMMONPROBE … target=<b4> tier=directed …
+directed=<b4>`**.
+
+### S5 — MISS (no hit); THE DROP AND THE WALK BACK READ AS PREDICTED
+
+`mob_target … tag=h5 tick=3410`; `acquired:targeting`; `SUMMONPROBE … target=<h5> tier=targeting`, `dist_him=12.18`
+(in [12, 15]), the wolf at 116.50, 2.0 from h5's 118.50.
+- **MISS: no `SUMMON hit … victim=<h5>` line in the row**, against the predicted "its SUMMON hit lines". The kill came 60
+  ticks after the order (the scenario's `wait: 60`), as the wolf arrived; S1's first hit was struck from 1.96. INFERRED:
+  60 ticks did not cover a 12-block walk and a strike.
+- After `kill @e[tag=h5]`: **`SUMMON target … target=none why=none dropped=dead reason=dropped:dead`** (the only
+  `dropped=` line in the log), before the probe 2 ticks later: `SUMMONPROBE … target=none tier=none`, `dist_him=8.51`.
+- 100 ticks later **`SUMMONPROBE … target=none tier=none`, `dist_him=7.49`**, less than 8.51; **no `SUMMON teleport`
+  line.**
