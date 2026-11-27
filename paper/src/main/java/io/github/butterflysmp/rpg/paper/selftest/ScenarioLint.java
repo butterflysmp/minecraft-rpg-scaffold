@@ -78,8 +78,30 @@ final class ScenarioLint {
          * ({@code accessory: clear}) and his level ({@code rpg playerxp set @s <n> levels}). Nothing is carried from a row
          * before, so a row reorder cannot change what a pulse heals.
          */
-        ACCESSORY_UNSTAGED
+        ACCESSORY_UNSTAGED,
+        /**
+         * THE SEAT'S R2 (2026-11-26, the readings of the boot of {@code 1f447197}): a row that has EQUIPPED an accessory
+         * and staged a {@code mob_target} takes the accessory off ({@code accessory: clear}, then {@code wait:} at least
+         * {@link #ACCESSORY_SETTLE_TICKS} in all) before any {@code clear_state} and before the row ends. BT3 and BT5 ended
+         * with {@code clear_state} while the Blink Tome was on and a NoAI zombie still targeted him: the cleared cooldown let
+         * him blink again from a spot no enumeration covered. CC'S CALL: the rule covers ANY equipped accessory (the lint
+         * holds no content table to tell a Blink from another); the alternative keys on the Blink's ids. A row that stages
+         * no {@code mob_target} is not a finding: nothing can trigger.
+         */
+        ACCESSORY_ARMED_AT_CLEAR,
+        /**
+         * THE SEAT'S P5 (2026-11-27, after CC's F5 stop): a gate's SETUP BEGINS WITH {@code pad:}. Before a pad step a
+         * run touches nothing in the world (P1), so a step ahead of it, or a gate with none, runs on Ben's own ground. The
+         * gates that predate ruling A are reported as KNOWN ({@code PadFirstLintTest}, by name); no new gate may add one.
+         */
+        PAD_FIRST
     }
+
+    /**
+     * R2: the ticks after an {@code accessory: clear} before the accessory counts as off: one more than the reconcile pass's
+     * period (READ, {@code PlayerHealthSystem.RECONCILE_PERIOD_TICKS} = 5), so the pass that stops its clock has run.
+     */
+    static final long ACCESSORY_SETTLE_TICKS = 6;
 
     /**
      * The instruction verbs that mean he must DO something before he can answer (the seat's list, 2026-11-26), IN THE
@@ -326,7 +348,58 @@ final class ScenarioLint {
         levelSeam(gate, scenarios, out);
         levelGatedMenu(gate, scenarios, out);
         accessoryStaged(gate, scenarios, out);
+        accessoryArmedAtClear(gate, scenarios, out);
+        padFirst(gate, scenarios, out);
         return List.copyOf(out);
+    }
+
+    /** PAD_FIRST over one gate: its setup's FIRST step is {@code pad:}. */
+    static void padFirst(String gate, List<Scenario> scenarios, List<Finding> out) {
+        for (Scenario s : scenarios) {
+            if (!s.row().equals(Scenario.SETUP)) continue;
+            if (s.steps().isEmpty() || s.steps().getFirst().verb() != Scenario.Verb.PAD) {
+                out.add(new Finding(gate, s.row(), Rule.PAD_FIRST, "the setup does not begin with pad: what runs before a pad"
+                        + " step runs on his own ground"));
+            }
+        }
+    }
+
+    /** ACCESSORY_ARMED_AT_CLEAR over one gate: no {@code clear_state}, and no row end, while armed and targeted. */
+    static void accessoryArmedAtClear(String gate, List<Scenario> scenarios, List<Finding> out) {
+        for (Scenario s : scenarios) {
+            if (s.row().equals(Scenario.SETUP)) continue;
+            boolean armed = false;
+            boolean targeted = false;
+            long settling = -1;   // ticks waited since the last accessory: clear while armed; -1 when none is pending
+            boolean reported = false;   // one finding per row: the first place it is armed and targeted
+            for (Scenario.Step st : s.steps()) {
+                String a = st.arg().trim();
+                if (st.verb() == Scenario.Verb.MOB_TARGET) targeted = true;
+                if (st.verb() == Scenario.Verb.ACCESSORY && a.startsWith("equip")) {
+                    armed = true;
+                    settling = -1;
+                }
+                if (st.verb() == Scenario.Verb.ACCESSORY && a.equals("clear") && armed) settling = 0;
+                if (st.verb() == Scenario.Verb.WAIT && settling >= 0) {
+                    settling += Long.parseLong(a);
+                    if (settling >= ACCESSORY_SETTLE_TICKS) {
+                        armed = false;
+                        settling = -1;
+                    }
+                }
+                if (st.verb() == Scenario.Verb.CLEAR_STATE && armed && targeted && !reported) {
+                    reported = true;
+                    out.add(new Finding(gate, s.row(), Rule.ACCESSORY_ARMED_AT_CLEAR, "'clear_state' with an accessory "
+                            + "equipped and a mob staged targeting him: take it off first (accessory: clear, then wait: "
+                            + ACCESSORY_SETTLE_TICKS + ")"));
+                }
+            }
+            if (armed && targeted && !reported) {
+                out.add(new Finding(gate, s.row(), Rule.ACCESSORY_ARMED_AT_CLEAR, "the row ends with an accessory equipped "
+                        + "and a mob staged targeting him: take it off first (accessory: clear, then wait: "
+                        + ACCESSORY_SETTLE_TICKS + ")"));
+            }
+        }
     }
 
     /** ACCESSORY_UNSTAGED over one gate: every equip is preceded, in its own row, by class, clear and a level. */

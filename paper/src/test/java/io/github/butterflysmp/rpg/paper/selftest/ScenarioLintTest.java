@@ -41,6 +41,7 @@ class ScenarioLintTest {
     /** A row that stages everything the lint asks for, on ground its preflight measures. The base every fixture edits. */
     private static final String SETUP = """
             setup:
+              - pad: ""
               - preflight: "0 -6 32 10"
             """;
 
@@ -204,10 +205,11 @@ class ScenarioLintTest {
 
     @Test
     void aGateThatDoesNotOptInIsLintedAsBefore() throws InvalidConfigurationException {
-        // The same far summon with no pad: only the preflight box decides, and 50 is inside 0..60.
-        String noPad = SETUP.replace("0 -6 32 10", "0 -6 60 10") + GOOD_ROW.replace("~3 ~ ~0 {", "~50 ~ ~0 {")
+        // The same far summon with no pad: only the preflight box decides, and 50 is inside 0..60. Since P5 (the seat,
+        // 2026-11-27) a setup with no pad step is itself a PAD_FIRST finding, and that is the only one.
+        String noPad = "setup:\n  - preflight: \"0 -6 60 10\"\n" + GOOD_ROW.replace("~3 ~ ~0 {", "~50 ~ ~0 {")
                 .replace("  - probe: a\n", "  - probe: \"a 52\"\n");
-        assertEquals(List.of(), rules(noPad));
+        assertEquals(List.of(ScenarioLint.Rule.PAD_FIRST), rules(noPad));
     }
 
     // --- the fifth: a candidate slot the cleared item does not have yet -------------------------------------------
@@ -383,6 +385,7 @@ class ScenarioLintTest {
     void aRowThatOpensALevelGatedScreenStagesThatLevelFirst() throws InvalidConfigurationException {
         String yaml = """
                 setup:
+                  - pad: ""
                   - cmd: "rpg playerxp set @s 1 levels"
                 A:
                   - cmd: "recipes"
@@ -414,6 +417,7 @@ class ScenarioLintTest {
                 f, "B and D's enchanting stage first; F sets 3 only AFTER it opened; G's commands are ungated");
         String none = """
                 setup:
+                  - pad: ""
                   - wait: 1
                 A:
                   - cmd: "/enchanting"
@@ -427,6 +431,7 @@ class ScenarioLintTest {
     void aRowAfterALevelChangeStagesItsOwnLevel() throws InvalidConfigurationException {
         String yaml = """
                 setup:
+                  - pad: ""
                   - cmd: "rpg playerxp set @s 1 levels"
                 A:
                   - wait: 1
@@ -454,6 +459,7 @@ class ScenarioLintTest {
         // A setup that stages no level: a row that sets one makes every later row stage its own too.
         String none = """
                 setup:
+                  - pad: ""
                   - wait: 1
                 A:
                   - cmd: "rpg playerxp set @s 1 levels"

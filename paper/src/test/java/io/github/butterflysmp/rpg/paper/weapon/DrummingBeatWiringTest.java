@@ -99,7 +99,7 @@ class DrummingBeatWiringTest {
         List<String> r = code("selftest/SelfTestRun.java");
         int forget = at(r, "drumStreaks.forget(player.getUniqueId());", 0);
         int clean = at(r, "log(\"CLEAN blocks=", forget);
-        assertTrue(forget > 0 && clean > forget && at(r, "+ \" drum=\" + drum + \" blink=\" + (blink ? \"ended\" : \"none\"));", clean) > clean, "the row-start CLEAN");
+        assertTrue(forget > 0 && clean > forget && at(r, "+ \" drum=\" + drum + \" blink=\" + (blink ? \"ended\" : \"none\")", clean) > clean, "the row-start CLEAN");
     }
 
     /** M8: the trace line is logged only while trace is on, with the chance the snapshot rolled. */

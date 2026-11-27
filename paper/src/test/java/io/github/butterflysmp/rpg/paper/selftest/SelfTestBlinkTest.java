@@ -60,8 +60,9 @@ class SelfTestBlinkTest {
 
     @Test
     void theCleanSaysWhatItEnded() {
-        assertEquals("LINGER work=3 entities=2 radius=48 [arrow 1, item 2]",
-                SelfTestStaging.lingerLine(48, 3, java.util.List.of("arrow 1", "item 2")));
-        assertEquals("LINGER work=0 entities=0 radius=48", SelfTestStaging.lingerLine(48, 0, java.util.List.of()));
+        // P2 (2026-11-27): the bound is the pad's region, not a radius.
+        assertEquals("LINGER work=3 entities=2 pad [arrow 1, item 2]",
+                SelfTestStaging.lingerLine(3, java.util.List.of("arrow 1", "item 2")));
+        assertEquals("LINGER work=0 entities=0 pad", SelfTestStaging.lingerLine(0, java.util.List.of()));
     }
 }

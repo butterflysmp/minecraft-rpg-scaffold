@@ -40,6 +40,23 @@ class PendingWorkTest {
         assertTrue(w.take(otherWorld), "another world is never touched");
     }
 
+    /** P2 (2026-11-27): the pad's box. Mutation: the max made inclusive, or a bound or the world test dropped. */
+    @Test
+    void cancellingInABoxEndsTheTasksInsideItAndNoOthers() {
+        PendingWork w = new PendingWork();
+        long min = w.add(W, 0, 64, 0);
+        long inside = w.add(W, 5, 70, 5);
+        long atMax = w.add(W, 10, 64, 5);
+        long outside = w.add(W, -0.01, 64, 0);
+        long otherWorld = w.add(OTHER, 5, 70, 5);
+        assertEquals(2, w.cancelIn(W, new double[] {0, 64, 0, 10, 80, 10}));
+        assertFalse(w.take(min), "the min is inclusive");
+        assertFalse(w.take(inside));
+        assertTrue(w.take(atMax), "the max is exclusive (a block's far edge)");
+        assertTrue(w.take(outside), "a point outside the box, however near, is never touched");
+        assertTrue(w.take(otherWorld), "another world is never touched");
+    }
+
     @Test
     void aChainStopsBecauseItsNextLinkIsAddedAfterAndItsCurrentLinkIsGone() {
         PendingWork w = new PendingWork();

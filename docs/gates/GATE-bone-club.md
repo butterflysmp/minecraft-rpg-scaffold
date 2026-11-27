@@ -113,6 +113,23 @@ hit, **`charge=0.620`** on DB6's third (EXECUTED: `(15 + 0.5) / 25`; the `+ 0.5`
 `getAttackCooldown`). `DRIVE reset_charge HumanEntity#resetCooldown cooldown=1.0000->0.0200` after a full hit (`0.0200`
 INFERRED the same way; DB6's third reads `0.6200->0.0200`).
 
+> **DATED CORRECTION, 2026-11-26 (the seat's R3; the boot of `1f447197`): THE READ ABOVE THAT `Player.attack` NEVER
+> RESETS THE TICKER IS FALSE.** The paragraph is kept as written (the gate is frozen); this note corrects it.
+> - **What the boot read:** every `DRIVE reset_charge` line `cooldown=0.0200->0.0200` (the iron sword's `0.0400->0.0400`),
+>   never the predicted `1.0000->0.0200`: the charge was already reset when the driver ran.
+> - **READ, javap, the pinned server jar** (`run/versions/26.1.2/paper-26.1.2.jar`, MANIFEST `26.1.2.build.74-stable`):
+>   `Player.attack` offset 124 calls `onAttack(target)`; Paper's `Player.onAttack` builds
+>   `PlayerAttackEntityCooldownResetEvent`, calls it, and unless it is cancelled calls `resetOnlyAttackStrengthTicker()`,
+>   whose body is `attackStrengthTicker = 0`. Our own `RpgListeners` had recorded the reset as a 2026-08-28 measurement
+>   (`onPrePlayerAttack`'s javadoc).
+> - **How the READ went wrong:** it searched `Player.attack`'s own body for the name `resetAttackStrengthTicker` and
+>   found none. The reset is one call down, in `onAttack`, under a different and Paper-only name
+>   (`resetOnlyAttackStrengthTicker`). A name search of one method is an absence in the wrong scope.
+> - **What it moves: nothing read.** Every hit's `charge=` is stashed before the attack, and every one read as predicted
+>   (`1.000`, and DB6's third `0.620`): a reset at the hit and a reset by the driver one step later give the same next
+>   charge. `reset_charge` is KEPT as a documented no-op (CC'S CALL, accepted by the seat): its line is the witness that
+>   the hit reset the charge.
+
 **THE SUM, every term (a bare hit's; the rows stage each):**
 `sent = ((44 x score/100) x enchantMultiplier + classDamageBonus + weaponLevelDamage) x chargeScale x critMultiplier`
 = `((44 x 100/100) x 1.0 + 0 + 0) x 1.0 x (1 or 2)` = **44.000, or 88.000 on a crit**:

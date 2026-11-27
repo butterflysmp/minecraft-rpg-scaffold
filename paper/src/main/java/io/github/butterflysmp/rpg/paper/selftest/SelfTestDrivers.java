@@ -1198,12 +1198,15 @@ final class SelfTestDrivers {
         // one. So a dying body is LEFT OUT of the count, by the settle step's own test, and the line says how many were.
         long count = 0;
         long dying = 0;
+        List<String> types = new ArrayList<>();   // R4 (2026-11-26): an item's type, so a stray is told from a chunk
         for (Entity e : p.getNearbyEntities(r, r, r)) {
             if (e.getType() != type) continue;
             if (SelfTestStaging.dying(e instanceof LivingEntity, e instanceof LivingEntity l && l.isDead())) dying++;
             else count++;
+            if (e instanceof org.bukkit.entity.Item) types.add(itemType(e).trim());
         }
-        run.log("ENTITIES " + type + " count=" + count + " radius=" + f[1] + " dying=" + dying);
+        run.log("ENTITIES " + type + " count=" + count + " radius=" + f[1] + " dying=" + dying
+                + (type == EntityType.ITEM ? " types=" + SelfTestStaging.itemTypes(types) : ""));
         return Optional.empty();
     }
 
@@ -1246,10 +1249,22 @@ final class SelfTestDrivers {
             if (e.getType() != type) continue;
             Location l = e.getLocation();
             at.add(String.format(Locale.ROOT, "%.2f %.2f %.2f",
-                    l.getX() - feet.getX(), l.getY() - feet.getY(), l.getZ() - feet.getZ()));
+                    l.getX() - feet.getX(), l.getY() - feet.getY(), l.getZ() - feet.getZ()) + itemType(e));
         }
         run.log("POSITIONS " + type + " n=" + at.size() + " at=[" + String.join("; ", at) + "] radius=" + f[1]);
         return Optional.empty();
+    }
+
+    /**
+     * R4 (2026-11-26): " <material>" for an Item entity, then " fused" for a fused chunk's body and " marker" for a marker
+     * of ours; "" for anything that is not an item. The type is the item's own ({@code getItemStack().getType()}).
+     */
+    private String itemType(Entity e) {
+        if (!(e instanceof org.bukkit.entity.Item item)) return "";
+        var pdc = e.getPersistentDataContainer();
+        return " " + item.getItemStack().getType().getKey().getKey()
+                + (pdc.has(run.adapters().keys().fused) ? " fused" : "")
+                + (pdc.has(run.adapters().keys().markerEntity) ? " marker" : "");
     }
 
     private Optional<String> saveBlocks(Player p, String arg) {

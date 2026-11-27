@@ -140,11 +140,18 @@ final class SelfTestRun {
             if (cooldowns() != null) {
                 cooldowns().reset(player.getUniqueId(), io.github.butterflysmp.rpg.paper.accessory.BlinkTomes.COOLDOWN_KEY);
             }
+            // P1 (the seat, 2026-11-27, after CC's F5 stop): BEFORE A PAD STEP HAS PLACED HIM, A RUN TOUCHES NOTHING IN THE
+            // WORLD. Everything above is HIS OWN state (his blocks put back, his inventory, his summons and fused chunks, his
+            // drum, blink and cooldown) and runs either way; the linger pass below reaches the world, so it runs only on the
+            // pad, bounded to its region (P2). The item clear (R4) is the pad step's own: see pad().
+            java.util.Optional<SelfTestPadShape.Stand> pad = padStand();
             log("CLEAN blocks=" + blocks + " " + SelfTestStaging.readBackField(rowBlocks.readBack(), blocks) + " removed=" + removed + " summons=" + summons + " fused=" + fused + " inventory=" + (gateBoundary ? "restored" : "kept")
                     + (worn == null ? "" : " " + worn)
                     + " return=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f", start.getX(), start.getY(), start.getZ())
-                    + " drum=" + drum + " blink=" + (blink ? "ended" : "none"));
-            log(SelfTestStaging.lingerLine(SelfTestStaging.LINGER_RADIUS, endWork(start), endLingering(start)));
+                    + " drum=" + drum + " blink=" + (blink ? "ended" : "none")
+                    + " world=" + (pad.isPresent() ? "pad" : "skipped"));
+            if (pad.isPresent()) log(SelfTestStaging.lingerLine(endWork(pad.get()), endLingering(pad.get())));
+            else log(SelfTestStaging.LINGER_SKIPPED);
             // A ROW STARTS CLEAN OR SAYS SO (GATE-dragon-fix.md, C3). The removals above run on each mob's own
             // scheduler, a tick later, so the count waits for them; then every live body still in the row's radius
             // is named. The 2026-11-15 boot's rows staged beside mobs earlier rows had leaked, and no line said so.
@@ -156,27 +163,58 @@ final class SelfTestRun {
         }));
     }
 
-    /** C2 (step R7b), FIRST: end every point-scheduled chain round the start, so none re-spawns what the next pass removes. */
-    private int endWork(Location start) {
-        return service.work().cancelNear(start.getWorld().getUID(), start.getX(), start.getY(), start.getZ(),
-                SelfTestStaging.LINGER_RADIUS);
+    /**
+     * P1, P2: the pad's stand, once a PAD step has placed him; empty before (then the run touches nothing in the world).
+     * The stand point is his feet's block centre on the pad, so the floor is one below it.
+     */
+    private java.util.Optional<SelfTestPadShape.Stand> padStand() {
+        if (stagePoint == null) return java.util.Optional.empty();
+        return java.util.Optional.of(new SelfTestPadShape.Stand(stagePoint.getBlockX(), stagePoint.getBlockY() - 1,
+                stagePoint.getBlockZ()));
     }
 
-    /** C2 (step R7b), THEN: remove each projectile, cloud and marker of ours round the start; "type uuid", nearest first. */
-    private List<String> endLingering(Location start) {
-        int r = SelfTestStaging.LINGER_RADIUS;
+    /** P2: every body inside the pad's region (its shell and headroom), never a sphere round a point. */
+    private List<org.bukkit.entity.Entity> padEntities(SelfTestPadShape.Stand pad) {
+        double[] b = SelfTestPadShape.bounds(pad);
+        org.bukkit.util.BoundingBox box = new org.bukkit.util.BoundingBox(b[0], b[1], b[2], b[3], b[4], b[5]);
+        return stagePoint.getWorld().getNearbyEntities(box).stream()
+                .filter(e -> SelfTestPadShape.inRegion(pad, e.getLocation().getX(), e.getLocation().getY(), e.getLocation().getZ()))
+                .toList();
+    }
+
+    /** C2 (step R7b), FIRST: end every point-scheduled chain in the pad's region, so none re-spawns what the next pass removes. */
+    private int endWork(SelfTestPadShape.Stand pad) {
+        return service.work().cancelIn(stagePoint.getWorld().getUID(), SelfTestPadShape.bounds(pad));
+    }
+
+    /** C2 (step R7b), THEN: remove each projectile, cloud and marker of ours in the pad's region; "type uuid", by type. */
+    private List<String> endLingering(SelfTestPadShape.Stand pad) {
         List<String> ended = new java.util.ArrayList<>();
-        start.getWorld().getNearbyEntities(start, r, r, r).stream()
-                .filter(e -> e.getLocation().distanceSquared(start) <= (double) r * r)
+        padEntities(pad).stream()
                 .filter(e -> SelfTestStaging.lingering(e instanceof org.bukkit.entity.Projectile,
                         e instanceof org.bukkit.entity.AreaEffectCloud,
                         e.getPersistentDataContainer().has(service.keys().markerEntity), e instanceof Player))
-                .sorted(java.util.Comparator.comparingDouble(e -> e.getLocation().distanceSquared(start)))
+                .sorted(java.util.Comparator.comparing((org.bukkit.entity.Entity e) -> e.getType().getKey().getKey())
+                        .thenComparing(e -> e.getUniqueId().toString()))
                 .forEach(e -> {
                     ended.add(e.getType().getKey().getKey() + " " + e.getUniqueId());
                     service.scheduler().onEntity(e, e::remove);
                 });
         return ended;
+    }
+
+    /** R4, BOUNDED (F2): remove every dropped item in the pad's region (never one of ours); each one's type, for ITEMS. */
+    private List<String> clearDroppedItems(SelfTestPadShape.Stand pad) {
+        List<String> types = new java.util.ArrayList<>();
+        padEntities(pad).stream()
+                .filter(e -> SelfTestStaging.droppedItem(e instanceof org.bukkit.entity.Item,
+                        e.getPersistentDataContainer().has(service.keys().markerEntity),
+                        e.getPersistentDataContainer().has(service.keys().fused)))
+                .forEach(e -> {
+                    types.add(((org.bukkit.entity.Item) e).getItemStack().getType().getKey().getKey());
+                    service.scheduler().onEntity(e, e::remove);
+                });
+        return types;
     }
 
     /** Every live body in the row's radius that is not the player or scenery: "type uuid", nearest first. */
@@ -228,6 +266,9 @@ final class SelfTestRun {
                 stagePoint = stand.clone();
                 log("PAD stood at=" + String.format(java.util.Locale.ROOT, "%.2f %.2f %.2f yaw=%.3f pitch=%.3f",
                         stand.getX(), stand.getY(), stand.getZ(), stand.getYaw(), stand.getPitch()));
+                // R4, F1, P4 (the seat, 2026-11-27): THE ITEM CLEAR IS THE PAD STEP'S OWN, once he stands on it: every gate's
+                // setup, the command's first included, starts with a clean pad; a scenario with no pad step clears no item.
+                log(SelfTestStaging.itemsClearedLine(clearDroppedItems(padStand().orElseThrow())));
                 advance();
             }));
         }));
@@ -684,7 +725,7 @@ final class SelfTestRun {
         if (reader != null) PacketEvents.getAPI().getEventManager().unregisterListener(reader);
         restoreRowRules(scheduler);   // a row that ended mid-way; the snapshot below puts the RUN START values back too
         String restored = snapshot.restore(player, service.profiles(), service.resources(), service.nameplates(),
-                scheduler, now);
+                scheduler, now, padStand().orElse(null));   // P3: the pad, or nothing before a pad step
         // X8 (the seat, 2026-11-25): NO SUMMON OUTLIVES A RUN. The restore above removes selftest-TAGGED mobs only, and a
         // summon is not tagged; so on every exit (END, ABORTED, quit, server-stop) his summons go here, cause CLEAR
         // (CC'S CALL: the clear_state cause; the alternative is a new END cause in the core's eleven). discard runs inline.

@@ -80,6 +80,8 @@ BT2:
   - probe_invisibility: ""
   - cmd: "rpg stats"
   - wait: 2
+  - accessory: "clear"   # R2 (2026-11-26): the tome off and settled BEFORE the cooldowns clear
+  - wait: 6
   - clear_state: ""
   - probe_invisibility: ""
 
@@ -115,6 +117,8 @@ BT3:
   - wait: 2
   - probe_target: bh
   - wait: 20
+  - accessory: "clear"   # R2 (2026-11-26): the tome off and settled BEFORE the cooldowns clear
+  - wait: 6
   - clear_state: ""
 
 # BT4: A SPELL CANCELS. During the state, the Flint Staff's right click fires (a mage weapon): BLINK END reason=cast in
@@ -149,6 +153,8 @@ BT4:
   - use: right_click
   - probe_invisibility: ""
   - wait: 10
+  - accessory: "clear"   # R2 (2026-11-26): the tome off and settled BEFORE the cooldowns clear
+  - wait: 6
   - clear_state: ""
 
 # BT5: A MELEE HIT CANCELS. During the state, his hit lands on a zombie at his feet: BLINK END reason=melee in that
@@ -183,6 +189,8 @@ BT5:
   - attack: bm
   - probe_invisibility: ""
   - wait: 10
+  - accessory: "clear"   # R2 (2026-11-26): the tome off and settled BEFORE the cooldowns clear
+  - wait: 6
   - clear_state: ""
 
 # BT6: THE WHISTLE DOES NOT. During the state, the Bone Whistle's right click summons: no BLINK END in that press; the
@@ -220,6 +228,8 @@ BT6:
   - probe_invisibility: ""
   - wait: 160
   - probe_invisibility: ""
+  - accessory: "clear"   # R2 (2026-11-26): the tome off and settled BEFORE the cooldowns clear
+  - wait: 6
   - clear_state: ""
 
 # BT7: THE COOLDOWN. The first blink is the row's control. After it expires (well inside the 1200 ticks), a second zombie
@@ -256,6 +266,8 @@ BT7:
   - accessory: "equip 0"
   - wait: 30
   - probe_target: bk2
+  - accessory: "clear"   # R2 (2026-11-26): the tome off and settled BEFORE the cooldowns clear
+  - wait: 6
   - clear_state: ""
 
 # BT8: NOT TARGETING. A NoAI zombie three east of him that does not target him: no BLINK line across 30 ticks of a running
@@ -281,6 +293,8 @@ BT8:
   - probe_target: bt
   - mob_target: bt
   - wait: 8
+  - accessory: "clear"   # R2 (2026-11-26): the tome off and settled BEFORE the cooldowns clear
+  - wait: 6
   - clear_state: ""
 
 # BT9: FARTHER THAN 5. A NoAI zombie six east of him staged as targeting him: no BLINK line across 30 ticks. The row's
@@ -309,6 +323,8 @@ BT9:
   - probe_target: bf6
   - mob_target: bt
   - wait: 8
+  - accessory: "clear"   # R2 (2026-11-26): the tome off and settled BEFORE the cooldowns clear
+  - wait: 6
   - clear_state: ""
 
 # BT10: INACTIVE, AND LIVE AGAIN. Equipped as a mage and switched to ranger in the same tick, with a zombie three east
@@ -338,6 +354,8 @@ BT10:
   - wait: 2
   - class: "mage"
   - wait: 12
+  - accessory: "clear"   # R2 (2026-11-26): the tome off and settled BEFORE the cooldowns clear
+  - wait: 6
   - clear_state: ""
 
 # BT11: CARRIED, NOT EQUIPPED. A mage holding the tome in his hand, his slots empty, a zombie three east targeting him: no

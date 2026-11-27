@@ -241,13 +241,6 @@ final class SelfTestStaging {
     }
 
     /**
-     * C2, CLOSED HERE (dragon-mobs step R7b): the radius the row-start clean ends what can OUTLIVE a row in. 48, the
-     * reach of every shot and probe step. The boot of 3dc0e184 read SH7R2's shot destroyed by SH4R2's grenade field (an
-     * ability area field, age 9), because the clean removed tagged MOBS and nothing else.
-     */
-    static final int LINGER_RADIUS = 48;
-
-    /**
      * WHAT CAN OUTLIVE A ROW, besides its mobs (measured from the code, step R7b): a point-scheduled chain of core work
      * (an area field's pulses, a projectile's flight, a ray's steps, an ember's tracking, an Ignite fuse:
      * {@code PendingWork}), and the ENTITIES those chains move: a vanilla or ability projectile (an arrow, a fireball
@@ -259,17 +252,49 @@ final class SelfTestStaging {
         return !player && (projectile || cloud || marker);
     }
 
+    /**
+     * R4 (the seat, 2026-11-26): a DROPPED item, which a gate's setup clears: an Item entity that is not one of ours. A
+     * marker body ({@code marker_entity}) is the linger pass's; a fused chunk's body ({@code fused}) is the fused store's.
+     */
+    static boolean droppedItem(boolean item, boolean marker, boolean fused) {
+        return item && !marker && !fused;
+    }
+
+    /** R4: item types counted, sorted by name: {@code [bone x1, rotten_flesh x3]}, the same whatever the scan order. */
+    static String itemTypes(List<String> types) {
+        java.util.TreeMap<String, Integer> counts = new java.util.TreeMap<>();
+        for (String t : types) counts.merge(t, 1, Integer::sum);
+        List<String> out = new java.util.ArrayList<>();
+        counts.forEach((t, n) -> out.add(t + " x" + n));
+        return "[" + String.join(", ", out) + "]";
+    }
+
+    /**
+     * R4, BOUNDED (the seat's F2, 2026-11-27): the line a successful PAD step writes once he stands on it, naming what
+     * it cleared from the pad's own region. A gate predicts {@code ITEMS cleared=0 pad []}.
+     */
+    static String itemsClearedLine(List<String> types) {
+        return "ITEMS cleared=" + types.size() + " pad " + itemTypes(types);
+    }
+
     /** PROBE_INVISIBILITY's line (the Blink Tome's gate). {@code ticks} is the remaining duration, -1 infinite, 0 none. */
     static String invisibilityLine(boolean present, int ticks, int amplifier, boolean particles, boolean blinked) {
         return "INVIS present=" + present + " ticks=" + ticks + " amp=" + amplifier + " particles=" + particles
                 + " blinked=" + blinked;
     }
 
-    /** One line after the clean's linger pass, beside LEFTOVER. A row predicts {@code LINGER work=0 entities=0 radius=48}. */
-    static String lingerLine(int radius, int work, List<String> ended) {
-        return "LINGER work=" + work + " entities=" + ended.size() + " radius=" + radius
+    /**
+     * One line after the clean's linger pass, beside LEFTOVER, its bound the pad's region (P2, 2026-11-27; C2 of
+     * dragon-mobs R7b measured it as a 48-block sphere round the stand until then). A row predicts
+     * {@code LINGER work=0 entities=0 pad}.
+     */
+    static String lingerLine(int work, List<String> ended) {
+        return "LINGER work=" + work + " entities=" + ended.size() + " pad"
                 + (ended.isEmpty() ? "" : " [" + String.join(", ", ended) + "]");
     }
+
+    /** P1 (the seat, 2026-11-27): the linger pass's line when no pad step has placed him: nothing in the world is touched. */
+    static final String LINGER_SKIPPED = "LINGER skipped";
 
     /** The DIFFICULTY step's argument; empty for anything but the four (the loader refuses it by name). */
     static java.util.Optional<org.bukkit.Difficulty> difficulty(String arg) {

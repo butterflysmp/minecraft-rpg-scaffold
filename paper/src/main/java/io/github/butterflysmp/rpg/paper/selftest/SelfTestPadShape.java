@@ -49,6 +49,31 @@ final class SelfTestPadShape {
         return dx >= X1 && dx <= X2 && dz >= Z1 && dz <= Z2;
     }
 
+    /**
+     * THE PAD'S OWN REGION (the seat's P2 and F2, 2026-11-27): what the run's world-touching cleanups may reach once he is
+     * on the pad, and nothing beyond it. In blocks from the stand's column: the SHELL (the interior and its one-block rim,
+     * x {@code X1 - 1}..{@code X2 + 1}, z {@code Z1 - 1}..{@code Z2 + 1}) and, in height, {@link #REGION_BELOW} to
+     * {@link #HEADROOM} from the floor's level. CC'S CALL: the headroom is 16, above every arc the pad's rows throw; the
+     * alternative is the rim's own height, 4, which a lobbed chunk's arc can clear.
+     */
+    static final int REGION_BELOW = -1;
+    static final int HEADROOM = 16;
+
+    static boolean inRegion(int dx, int dy, int dz) {
+        return dx >= X1 - 1 && dx <= X2 + 1 && dz >= Z1 - 1 && dz <= Z2 + 1 && dy >= REGION_BELOW && dy <= HEADROOM;
+    }
+
+    /** A world point's block, against the stand's: inside the pad's region? */
+    static boolean inRegion(Stand s, double x, double y, double z) {
+        return inRegion((int) Math.floor(x) - s.x(), (int) Math.floor(y) - s.floorY(), (int) Math.floor(z) - s.z());
+    }
+
+    /** The region as world bounds for a scan: {minX, minY, minZ, maxX, maxY, maxZ}, the max EXCLUSIVE (block edges). */
+    static double[] bounds(Stand s) {
+        return new double[] {s.x() + X1 - 1, s.floorY() + REGION_BELOW, s.z() + Z1 - 1,
+                s.x() + X2 + 2, s.floorY() + HEADROOM + 1, s.z() + Z2 + 2};
+    }
+
     /** The cell's kind, or null when it is not a pad cell. */
     static Kind kindAt(int dx, int dy, int dz) {
         if (dy < 0 || dy > RIM_HEIGHT) return null;
