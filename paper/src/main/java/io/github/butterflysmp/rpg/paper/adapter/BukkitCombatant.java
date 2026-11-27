@@ -410,7 +410,9 @@ public final class BukkitCombatant {
                 // entity, which is why the guard was not needed until now.
                 if (entity instanceof Mob mob && source instanceof LivingEntity attacker
                         && !entity.equals(attacker)) {
-                    mob.setTarget(attacker);
+                    // Through the engine's one targeting seam (the Blink Tome's K7): a blinked attacker is hidden, so a
+                    // hit credited to him (his summon's, his burning ground's) does not turn the mob back onto him.
+                    MobTargets.set(mob, attacker, ctx.targetGuard());
                 }
 
                 // Manual red hurt flash for the ability path (no vanilla event fired). The i-frame

@@ -261,6 +261,7 @@ public final class MobBeamer {
 
     private boolean eligible(Mob mob, LivingEntity l, MobBeam beam, Vec3 eye) {
         if (l.equals(mob) || !LiveTargets.isLive(l) || !l.getWorld().equals(mob.getWorld())) return false;
+        if (adapters.targetGuard().hides(l)) return false;   // a blinked player is hidden from a new beam (Blink Tome K7)
         if (!MobHostility.hostileTo(side(l), exempt(l))) return false;
         return beam.inRange(eye, beam.aimPoint(vec(l.getLocation()), l.getHeight()));
     }

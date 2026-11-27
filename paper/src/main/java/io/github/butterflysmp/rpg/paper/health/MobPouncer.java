@@ -368,6 +368,7 @@ public final class MobPouncer {
         double bestD = Double.POSITIVE_INFINITY;
         for (Entity e : p.mount.getWorld().getNearbyEntities(p.mount.getLocation(), r, r, r)) {
             if (!(e instanceof LivingEntity l) || l.equals(p.mount) || l.equals(p.rider) || !LiveTargets.isLive(l)) continue;
+            if (adapters.targetGuard().hides(l)) continue;   // a blinked player is hidden from a new pounce (K7)
             if (!MobHostility.hostileTo(side(l), exempt(l))) continue;
             double d2 = feet.distanceSquared(vec(l.getLocation()));
             if (d2 > r * r || d2 >= bestD) continue;

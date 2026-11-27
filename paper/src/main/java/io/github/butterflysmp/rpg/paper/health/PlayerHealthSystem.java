@@ -65,6 +65,7 @@ public final class PlayerHealthSystem implements HealthListener {
     private ProfileService profiles;
     private Stones stones;
     private volatile io.github.butterflysmp.rpg.paper.accessory.TomePulses tomePulses;
+    private volatile io.github.butterflysmp.rpg.paper.accessory.BlinkTomes blinkTomes;
 
     public PlayerHealthSystem(Scheduler scheduler, Keys keys, WeaponRegistry weapons,
                               EnchantRegistry enchants,
@@ -127,6 +128,16 @@ public final class PlayerHealthSystem implements HealthListener {
     /** The Healing Pulse's clocks, bound after the accessories (the fifth late bind, for the other four's reason). */
     public void bindTomePulses(io.github.butterflysmp.rpg.paper.accessory.TomePulses tomePulses) {
         this.tomePulses = tomePulses;
+    }
+
+    /** The Blink's check clocks (the Blink Tome, 2026-11-26), bound after the accessories, the pulse's reason. */
+    public void bindBlinkTomes(io.github.butterflysmp.rpg.paper.accessory.BlinkTomes blinkTomes) {
+        this.blinkTomes = blinkTomes;
+    }
+
+    /** The Blink's wiring, for its quit and death hooks and the selftest's clear. Empty until bound. */
+    public java.util.Optional<io.github.butterflysmp.rpg.paper.accessory.BlinkTomes> blinkTomes() {
+        return java.util.Optional.ofNullable(blinkTomes);
     }
 
     private AccessoryContributions accessoryContributions(UUID id) {
@@ -297,6 +308,8 @@ public final class PlayerHealthSystem implements HealthListener {
             // THE HEALING PULSE (the seat's H3): its clock starts and stops on THIS reading's active behaviours, never a
             // second reading of the slot. Null until bound, which is the same "nothing active" an unloaded store gives.
             if (tomePulses != null) tomePulses.reconcile(player, fromAccessories.behaviours());
+            // THE BLINK (K1): its check clock starts and stops on the SAME reading, never a second reading of the slot.
+            if (blinkTomes != null) blinkTomes.reconcile(player, fromAccessories.behaviours());
             FragmentContributions fromFragments = fragmentContributions(id);
             // THE LEVEL, a fourth source (PLAN-level-bonuses.md): Ben's bonuses as a pure function of the
             // EFFECTIVE level, re-derived from lifetime XP every pass, so nothing is stored. Merged AFTER the

@@ -656,8 +656,11 @@ final class SelfTestDrivers {
             run.log("DRIVE mob_target tag=" + tag + " none within " + (int) REACH + " blocks");
             return Optional.of("no mob tagged " + tag + " within " + (int) REACH + " blocks");
         }
-        ((org.bukkit.entity.Mob) best).setTarget(p);
-        run.log("DRIVE mob_target " + best.getUniqueId() + " tag=" + tag);
+        // Through the engine's one targeting seam (the Blink Tome's K7): refused while he is blinked, and the refusal
+        // writes its own BLINK REFUSED-TARGET line. The DRIVE line says which happened.
+        boolean set = io.github.butterflysmp.rpg.paper.adapter.MobTargets.set((org.bukkit.entity.Mob) best, p,
+                run.adapters().targetGuard());
+        run.log("DRIVE mob_target " + best.getUniqueId() + " tag=" + tag + (set ? "" : " refused"));
         return Optional.empty();
     }
 
