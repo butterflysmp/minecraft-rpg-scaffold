@@ -284,3 +284,28 @@ its clock and the phase each read is taken in).
   which is what the reconcile reads.
 - **Not covered, and not asked:** an equip or unequip by `/rpg selftest`'s `accessory:` step (it has its own `STAGE
   accessory …` line with `tick=`) or by any command; only the menu.
+
+## DATED NOTE, 2026-11-27 — THE SEAT'S X6, OWED FROM THE BOOT OF `01be9d3b` (GATE-smolder AND GATE-solar-flare READINGS)
+
+Ruled at the merge of #336 to #341 (master `88858c40`), and restated in the seat's brief of the same day ("BEN'S CHANGES
+TO BOTH ULTIMATES … AND THE OWED ITEMS X6", via Ben), PART 3. Recorded here as this stack's first commit; each item's
+as-built account is added under *X6 AS BUILT*, below, by the branch that builds it. The ruled form, in the brief's words:
+
+> (a) THE CLOCK ACCOUNT: by javap and one instrumented read, which clock each trace line prints, where a cast sits in the
+> tick, why a pulse scheduled from the cast landed at C+59 while pulses scheduled from a pulse landed on 60, and why the
+> first burn is hit+20; correct PLAN-smolder.md's clock section by a dated note saying how the earlier READ went wrong.
+> Then make the intervals EXACT on one named clock (pulse 2 at C+30 now, shot 2 at C+10) if that is a scheduling
+> off-by-one of ours; if it is the server's phase and cannot be made exact without a hack, say so and predict what will
+> be read. Report which.
+> (b) HIS VIEW IS SET BEFORE EVERY ACT THAT READS IT: one tick before every cast, use and look-reading command in a pad
+> gate, a step sets his yaw and pitch (or aims at a tag); for Solar Flare, before EACH of the three shots; the DRIVE line
+> (or the shot line) prints the yaw and pitch fired on; a lint rule refuses a cast or a look-reading command with no
+> view-setting step in the two ticks before it. Each ask row's tell line asks him to keep his mouse still.
+> (c) THE RE-READ ROWS, re-predicted from executed figures on the corrected clock: WA6's clause 1 (the scorched dry body
+> killed by a non-fire hit ignites), SM5, SM6's and SF7's mana with the regen term named.
+> (d) STILL OWED, not built here unless small: rain (a weather field in the snapshot), the splash bottle, his death ending
+> pulses and shots. Say which you did.
+
+**Why (the readings):** every casting row read pulse 2 at C+59 and every burn at hit+20 (`GATE-smolder.md`, READINGS);
+SF4's shots met the floor at Ben's own pitch and WA6's `rpg mobdamage` replied "Look at a mob." (no view was set); SM6's
+mana read `20.100`, not `20.000` (regeneration, unnamed in the prediction).
