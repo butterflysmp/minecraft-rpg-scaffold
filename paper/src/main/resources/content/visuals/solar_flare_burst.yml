@@ -18,29 +18,40 @@
 # - white firework sparks thrown outward (FIREWORK, the firework's own spark, no data).
 # - the large firework blast and its twinkle (entity.firework_rocket.large_blast and .twinkle, both READ in SoundEvents on
 #   the pinned server jar).
+#
+# SEEN AND HEARD FROM 32 BLOCKS (the seat's Q1, 2026-11-28; every particle step long_distance, both sounds at volume 3.0).
+# READ by javap: without force the server sends a particle only within 32.0 of his block's centre (ServerLevel
+# .sendParticles) and his client drops one beyond 32 from the camera (ClientLevel.doAddParticle); a range burst's centre is
+# 32.0 out at his eye's height, about 32.02 from his block centre, so none of it was sent. long_distance is spawnParticle's
+# force: sent to 512, and drawn by the client whatever the distance or his particle setting. A sound reaches 16 x volume
+# (the server's send, SoundEvent.getRange; the client's hearing, max(volume, 1) x 16, sounds.json setting no attenuation for
+# these): 2.0 and 1.5 reached 32 and 24, short of 32.04; 3.0 reaches 48. How LOUD a volume above 1 plays was not READ.
 steps:
   - type: particle
     particle: TRAIL
+    long_distance: true
     count: 90
     color: [255, 120, 0]
     duration_ticks: 10
     burst_radius: 6.0
   - type: particle
     particle: TRAIL
+    long_distance: true
     count: 60
     color: [255, 220, 40]
     duration_ticks: 10
     burst_radius: 4.5
   - type: particle
     particle: FIREWORK
+    long_distance: true
     count: 40
     spread: 0.2
     speed: 0.3
   - type: sound
     key: entity.firework_rocket.large_blast
-    volume: 2.0
+    volume: 3.0
     pitch: 1.0
   - type: sound
     key: entity.firework_rocket.twinkle
-    volume: 1.5
+    volume: 3.0
     pitch: 1.0

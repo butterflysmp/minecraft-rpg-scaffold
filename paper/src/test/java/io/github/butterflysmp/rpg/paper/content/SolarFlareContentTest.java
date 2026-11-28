@@ -119,6 +119,38 @@ class SolarFlareContentTest {
                 "particles and sounds only");
     }
 
+    /**
+     * THE SEAT'S Q1 (2026-11-28): A BURST 32 BLOCKS AWAY IS SENT, DRAWN AND HEARD. Every particle step of the burst and of
+     * the trail is {@code long_distance} (READ: without force the server sends within 32.0 of his block centre and the
+     * client drops beyond 32; the range burst's centre is about 32.02 from his block centre). Every sound of the burst has
+     * a volume whose reach, 16 x volume (READ: the server's {@code SoundEvent.getRange} and the client's {@code max(volume,
+     * 1) x attenuation 16}, sounds.json setting none for these), covers the farthest he can be from a burst, 32 + 1.62
+     * of height, with margin: at least 3.0 (48 blocks).
+     */
+    @Test
+    void theBurstAndTheTrailAreSentDrawnAndHeardFromThirtyTwoBlocks() throws IOException {
+        Files.createDirectories(dir.resolve("q1"));
+        for (String id : List.of("solar_flare_burst", "solar_flare_trail")) {
+            try (var in = getClass().getResourceAsStream("/content/visuals/" + id + ".yml")) {
+                assertNotNull(in);
+                Files.write(dir.resolve("q1/" + id + ".yml"), in.readAllBytes());
+            }
+        }
+        Logger log = Logger.getAnonymousLogger();
+        log.setUseParentHandlers(false);
+        var visuals = new VisualLoader(log).loadAll(dir.resolve("q1").toFile());
+        for (String id : List.of("solar_flare_burst", "solar_flare_trail")) {
+            var steps = visuals.find(id).orElseThrow(() -> new AssertionError(id)).steps();
+            var particles = steps.stream().filter(VisualSpec.Particles.class::isInstance).map(VisualSpec.Particles.class::cast).toList();
+            assertFalse(particles.isEmpty(), id);
+            assertTrue(particles.stream().allMatch(VisualSpec.Particles::longDistance), id + ": every particle step long-distance");
+        }
+        var sounds = visuals.find("solar_flare_burst").orElseThrow().steps().stream().filter(VisualSpec.Sound.class::isInstance)
+                .map(VisualSpec.Sound.class::cast).toList();
+        assertEquals(2, sounds.size());
+        for (var s : sounds) assertTrue(16 * s.volume() >= 48, s.key() + " reaches " + 16 * s.volume());
+    }
+
     /** F12: the menu's prose rebuilt from the parsed definition: the count, the burst's radius, the damage. */
     @Test
     void theDescriptionStatesTheFilesOwnNumbers() throws IOException {

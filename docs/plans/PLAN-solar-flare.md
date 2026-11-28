@@ -290,6 +290,43 @@ each on its own burst's tick (`threeBurstsInOnePlace…`: 5.9 struck at 4, 14, 2
   so the ball grows to its radius and is gone. `burst_radius` is refused on any other particle, at 0, and beside a
   `spread` (a burst places every particle itself).
 
+### THE SEAT'S Q1 (2026-11-28, before the boot): CAN BEN SEE AND HEAR A BURST 32 BLOCKS AWAY? HE COULD NOT. FIXED
+
+**READ by javap, the pinned 26.1.2 server and Ben's 26.1.2 client:**
+
+- **What `present` sends:** `world.spawnParticle(particle, loc, count, dx, dy, dz, extra, data)`, the overload that calls
+  the next with `force = false` (`iconst_0`); `CraftWorld` hands `force` to `ServerLevel.sendParticlesSource` as its
+  `overrideLimiter` and passes `alwaysShow = false` (a constant).
+- **Who the server sends it to:** `ServerLevel.sendParticles(player, force, x, y, z, packet)` sends only when
+  `player.blockPosition().closerToCenterThan(pos, force ? 512.0 : 32.0)`: strictly within 32.0 of his BLOCK'S CENTRE,
+  without force.
+- **What the client draws:** `ClientLevel.addParticle` takes the packet's flag OR the type's own (`ParticleTypes`:
+  `trail` and `firework` register with `false`); `doAddParticle` draws an override particle at once, with no distance or
+  setting check; any other is dropped when the camera is more than 32 away (`distanceToSqr > 1024`), dropped on
+  MINIMAL particles, and one in three dropped on DECREASED (`calculateParticleLevel`).
+- **The sounds:** `CraftWorld.playSound(loc, String, …)` makes a variable-range event and broadcasts it to players within
+  **16 x volume** of the source (16 at volume 1 or less; `SoundEvent.getRange`); the client hears to
+  `max(volume, 1) x attenuation_distance` (`SoundEngine`), and sounds.json (Ben's asset index 30) gives no
+  `attenuation_distance` for `entity.firework_rocket.large_blast` or `.twinkle`, so the default **16**
+  (`SoundEventRegistrationSerializer`).
+- **So, for a range burst centred 32.0 out at his eye's height:** his block's centre is 1.12 lower, about 32.02 from the
+  burst: **NONE of its particles was sent** (every TRAIL of the balls and every spark spawns at the centre), and the
+  client would have dropped them past 32 anyway. The large blast (2.0, reach 32) and the twinkle (1.5, reach 24), 32.04
+  from his feet: **neither sent, neither heard.** The trail at the end of a flight is under the same 32.
+
+**THE FIX, AS THE SEAT RULED IT, declared in content:** a particle step's `long_distance: true` (`VisualSpec.Particles
+.longDistance`, the record's new tail; absent is false; anything not a boolean refused by name), which
+`PaperCombatWorld.particles` passes as `spawnParticle`'s `force` in BOTH its sends (the burst's per-target loop and the
+plain step). Set on every particle step of `solar_flare_burst`, `solar_flare_trail`, `smolder_spiral` and `smolder_pulse`.
+The burst's two sounds at **volume 3.0: a reach of 48** (the farthest he is from a burst on the pad is 32.04). **How LOUD
+a volume above 1 plays was not READ**; only its reach was.
+
+Tests: `VisualLoaderTest` (+2: the flag, absent, refused; the presenter's two sends, read off the source),
+`SolarFlareContentTest.theBurstAndTheTrailAreSentDrawnAndHeardFromThirtyTwoBlocks`, `SmolderContentTest` (+1 line).
+Mutations, each reddening its row: MUTFORCE (the plain send passes `false`), MUTLONGPARSE (the flag read as false),
+MUTFIREWORKNEAR (the spark step's flag false), MUTTWINKLE (the twinkle back to 1.5). **One call was VOID:** a malformed
+probe sent by mistake into a truncating pipe; its file was checked byte-identical to the pristine copy after, markers 0.
+
 ### N5, N6, N7
 
 - **N5** was done on `feat/smolder-spiral` (the files were shared): Solar Flare names only its own files; its ring was

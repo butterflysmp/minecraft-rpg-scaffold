@@ -123,7 +123,9 @@ public final class VisualLoader {
                         // Inert unless this visual is presented ALONG a segment.
                         numOr(m, type, "samples_per_block", VisualSpec.DEFAULT_SAMPLES_PER_BLOCK),
                         // TRAIL's colour and server-set lifetime (M3, 2026-11-28), or null for every other particle.
-                        trail(m, type, p));
+                        trail(m, type, p),
+                        // LONG DISTANCE (the seat's Q1, 2026-11-28): OPTIONAL, absent is false; a boolean or a named refusal.
+                        longDistance(m, type));
             }
             case "sound" -> {
                 String key = str(m, type, "key");
@@ -275,6 +277,14 @@ public final class VisualLoader {
                     + " a burst places every particle itself, so the spread would do nothing; remove it");
         }
         return new VisualSpec.Particles.Trail(color, duration, burst);
+    }
+
+    /** {@code long_distance}: absent is false; {@code true} or {@code false}; anything else refused by name (Q1). */
+    private static boolean longDistance(Map<?, ?> m, String type) {
+        Object raw = m.get("long_distance");
+        if (raw == null) return false;
+        if (raw instanceof Boolean b) return b;
+        throw new IllegalArgumentException("Visual step '" + type + "' field 'long_distance' must be true or false, got: " + raw);
     }
 
     /** A required {@code color: [r, g, b]}, each 0 to 255: DUST's, and TRAIL's (the same checks, one place). */

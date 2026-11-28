@@ -12,6 +12,7 @@
 steps:
   - type: particle
     particle: TRAIL
+    long_distance: true
     count: 12
     spread: 0.3
     speed: 0.0

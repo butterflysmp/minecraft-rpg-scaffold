@@ -47,7 +47,21 @@ public sealed interface VisualSpec permits VisualSpec.Particles, VisualSpec.Soun
      * choice for a new numeric field, would silently restyle every one of them. Do not "tidy" it.
      */
     record Particles(Particle particle, int count, double spread, double speed,
-                     Particle.DustOptions dust, double samplesPerBlock, Trail trail) implements VisualSpec {
+                     Particle.DustOptions dust, double samplesPerBlock, Trail trail, boolean longDistance)
+            implements VisualSpec {
+
+        /**
+         * LONG DISTANCE (the seat's Q1, 2026-11-28): passed as {@code spawnParticle}'s {@code force}. READ, javap on the
+         * pinned server: {@code ServerLevel.sendParticles} sends to a player only when his block's centre is closer than 32.0
+         * to the particle (512.0 with force), and force becomes the packet's {@code overrideLimiter}; READ, Ben's client:
+         * {@code ClientLevel.doAddParticle} draws an override particle with no distance or setting check, and drops any
+         * other beyond 32 from the camera (all on MINIMAL particles, one in three on DECREASED). A Solar Flare burst 32 out
+         * is otherwise never sent. False for every step that does not declare it.
+         */
+        public Particles(Particle particle, int count, double spread, double speed, Particle.DustOptions dust,
+                         double samplesPerBlock, Trail trail) {
+            this(particle, count, spread, speed, dust, samplesPerBlock, trail, false);
+        }
 
         /**
          * A TRAIL particle's data (Smolder's spiral, M3, 2026-11-28): its colour and how many ticks it lives, which the
@@ -66,7 +80,7 @@ public sealed interface VisualSpec permits VisualSpec.Particles, VisualSpec.Soun
         /** Every particle step before TRAIL (2026-11-28): no trail data. THE NEW FIELD WENT ON THE END. */
         public Particles(Particle particle, int count, double spread, double speed,
                          Particle.DustOptions dust, double samplesPerBlock) {
-            this(particle, count, spread, speed, dust, samplesPerBlock, null);
+            this(particle, count, spread, speed, dust, samplesPerBlock, null, false);
         }
 
         /** The data object {@code spawnParticle} takes for this step drawn AT {@code at}: the trail's, the dust's, or none. */

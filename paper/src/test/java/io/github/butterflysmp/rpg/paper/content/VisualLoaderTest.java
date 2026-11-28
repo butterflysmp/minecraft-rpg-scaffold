@@ -322,6 +322,34 @@ class VisualLoaderTest {
     }
 
     /**
+     * LONG DISTANCE (the seat's Q1, 2026-11-28): {@code long_distance: true} on a particle step arrives as the flag the
+     * presenter passes as {@code spawnParticle}'s {@code force}; absent is false (every step before it); a value that is
+     * not a boolean is a named, skipped file. READ (javap): without force the server sends a particle only within 32.0 of
+     * a player's block centre and the client drops it beyond 32 from the camera; with force the send reaches 512 and the
+     * packet's overrideLimiter has the client draw it whatever the distance or his particle setting.
+     */
+    @Test
+    void longDistanceArrivesAsTheForceFlag_absentIsFalse_andANonBooleanIsRefused() throws IOException {
+        write("far.yml", "steps:\n  - type: particle\n    particle: FIREWORK\n    long_distance: true\n");
+        write("near.yml", "steps:\n  - type: particle\n    particle: FIREWORK\n");
+        write("aaa_bad.yml", "steps:\n  - type: particle\n    particle: FIREWORK\n    long_distance: yes please\n");
+        VisualRegistry registry = load();
+        assertTrue(((VisualSpec.Particles) registry.find("far").orElseThrow().steps().get(0)).longDistance());
+        assertFalse(((VisualSpec.Particles) registry.find("near").orElseThrow().steps().get(0)).longDistance());
+        assertTrue(registry.find("aaa_bad").isEmpty());
+        assertTrue(warningText().contains("aaa_bad.yml") && warningText().contains("long_distance"), warningText());
+    }
+
+    /** The presenter passes the flag as force in BOTH of its particle sends (the burst loop and the plain step). */
+    @Test
+    void thePresenterPassesTheFlagAsForceInBothSends() throws IOException {
+        String src = java.nio.file.Files.readString(java.nio.file.Path.of(
+                "src/main/java/io/github/butterflysmp/rpg/paper/adapter/PaperCombatWorld.java"));
+        assertTrue(src.contains("new org.bukkit.Particle.Trail(target, p.trail().color(), p.trail().durationTicks()), p.longDistance());"));
+        assertTrue(src.contains("p.spread(), p.spread(), p.spread(), p.speed(), p.dataAt(at), p.longDistance());"));
+    }
+
+    /**
      * TRAIL's refusals, each a named, skipped file (M3): no {@code duration_ticks}; a {@code size} (TRAIL has none);
      * a duration of 0; {@code duration_ticks} on FLAME, whose lifetime the server cannot set; and TRAIL in a
      * {@code spiral} step, which supplies no trail data. The control file beside each loads.
