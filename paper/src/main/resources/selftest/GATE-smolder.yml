@@ -1,0 +1,362 @@
+# GATE-smolder (docs/gates/GATE-smolder.md): SMOLDER (#337) and WATER PUTS OUT SCORCH (#338), 2026-11-27. Typed as ONE
+# command, LAST after the regen-tooltip rows (#336) by reference:
+#   /rpg selftest armor-sets.AS1.AS2+mana-battery.MB1+smolder
+# SURVIVAL. On the pad (the setup's FIRST step stands him on it facing east), at NIGHT (18000), difficulty normal, no
+# natural spawns, each put back by the run's restore. ALL AUTO except SM7, the gate's ONE ASK, its last row. SM1 picks
+# Mage, Fire and Smolder on Q through the Build screen (the pick is SAVED: CARRIED STATE); every later row is SKIPPED
+# unless his cell reads mage fire. Every row clears his state (and so every cooldown) and his storage, sets level 1, and
+# stages what it holds: the stone by `stone:` (nothing else mints it but a join), the Flint Staff at score 100. A Smolder
+# row casts from the STONE IN HAND: no score stamp, so 100 (GearScore.ABSENT), no enchant, no class damage, no level term.
+# Every mob is a frozen NoAI zombie (max_health 600 = 3000 custom, 200 = 1000, 2 = 10), placed at the coordinates
+# SmolderGateArithmeticTest executes; his wolf is frozen with NoAI. SAFETY 0.000: the pulse and Ignite spare players
+# (PULSE, IGNITE_SPLASH), EXECUTED there; no row damages him.
+setup:
+  - pad: ""
+  - preflight: "-2 -12 20 12"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# SM1: THE BUILD SCREEN AS HIS SAVED BUILD READS (A3: a saved Q naming the deleted placeholder reads EMPTY, with one
+# BUILD unoffered line), then Mage, Fire and Smolder picked: the picker's lore, then the cell's.
+SM1:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "build"
+  - wait: 3
+  - dump: menu
+  - click: "Class"
+  - wait: 3
+  - click: "Mage"
+  - wait: 3
+  - click: "Element"
+  - wait: 3
+  - click: "Fire"
+  - wait: 3
+  - dump: menu
+  - click: "Q: "
+  - wait: 3
+  - dump: menu
+  - click: "Smolder"
+  - wait: 3
+  - dump: menu
+  - close: ""
+  - wait: 2
+  - stone: ""
+  - hold: stone
+  - dump: held
+
+# SM2: THE FOUR PULSES. a3, a6, a11 inside, a12 outside, his wolf at 4 south. Cast at C (the drop's tick).
+SM2:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - use: ""
+  - wait: 5
+  - cmd: "data merge entity @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] {NoAI:1b}"
+  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~0 ~ ~4"
+  - clear_inventory: ""
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a3","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a6","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~11.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a11","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~12.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a12","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "a3 16"
+  - probe: "a6 16"
+  - probe: "a11 16"
+  - probe: "a12 16"
+  - probe_summon: "8"
+  - cmd: "rpg mana refill"
+  - probe_mana: ""
+  - drop: selected
+  - probe_mana: ""
+  - wait: 340
+  - probe: "a3 16"
+  - probe: "a6 16"
+  - probe: "a11 16"
+  - probe: "a12 16"
+  - probe_summon: "8"
+
+# SM3: SCORCH FROM THE ELEMENT. b6 alone: scorched after its first hit (the flame), fifteen burns of 80, the end health.
+SM3:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["b6","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "b6 16"
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 17
+  - probe: "b6 16"
+  - wait: 323
+  - probe: "b6 16"
+
+# SM4: THE ORIGIN MOVES, THE RING DOES NOT. c11 at 11 north (pulse 1 only), c19 at 19 east (pulses 2 to 4 only); he is
+# moved 8 east at C+40, between pulse 1 (C) and pulse 2 (C+60).
+SM4:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~0 ~ ~-11 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c11","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~19 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c19","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "c11 24"
+  - probe: "c19 24"
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 40
+  - cmd: "tp @s ~8 ~ ~"
+  - probe_self: ""
+  - wait: 300
+  - probe: "c11 24"
+  - probe: "c19 24"
+
+# SM5: CANCEL. d6 at 6 east; clear_state at C+90, after pulse 2's hit (C+75) and before pulse 3 (C+120).
+SM5:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["d6","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "d6 16"
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 90
+  - clear_state: ""
+  - wait: 150
+  - probe: "d6 16"
+
+# SM6: THE COOLDOWN AND THE COST. A cast; a second press 2 ticks later (refused: the cooldown); clear_state; his mana set
+# to 79; a press (refused: the mana). No mob.
+SM6:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - wait: 20
+  - cmd: "rpg mana refill"
+  - probe_mana: ""
+  - drop: selected
+  - wait: 2
+  - drop: selected
+  - probe_mana: ""
+  - wait: 20
+  - clear_state: ""
+  - wait: 2
+  - cmd: "rpg mana set 79"
+  - probe_mana: ""
+  - drop: selected
+  - probe_mana: ""
+  - wait: 20
+
+# WA1: WATER (A) AT THE APPLICATION. w1 in a water cell at 5 east, 3 north (a glass ring holds the water); w2, the dry
+# control, at 5 east, 3 south. One Flint Staff bolt each.
+WA1:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - save_blocks: "4 0 -4 6 0 -2"
+  - cmd: "fill ~4 ~ ~-4 ~6 ~ ~-2 minecraft:glass"
+  - cmd: "setblock ~5 ~ ~-3 minecraft:water"
+  - probe_blocks: "WATER 5 0 -3 5 0 -3"
+  - cmd: 'summon zombie ~5 ~ ~-3 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["w1","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~5 ~ ~3 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["w2","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 40
+  - probe: "w1 12"
+  - probe: "w2 12"
+  - cmd: "rpg mana refill"
+  - aim: "w1"
+  - wait: 1
+  - use: right_click
+  - wait: 30
+  - aim: "w2"
+  - wait: 1
+  - use: right_click
+  - wait: 10
+  - probe: "w1 12"
+  - probe: "w2 12"
+  - wait: 130
+  - probe: "w1 12"
+  - probe: "w2 12"
+
+# WA2: WATER (A), DOUSED AFTER. v scorched dry at 5 east, 3 south; moved into the water cell at P+30, after its first
+# burn (its hit + 19) and before its second (its hit + 39).
+WA2:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - save_blocks: "4 0 -4 6 0 -2"
+  - cmd: "fill ~4 ~ ~-4 ~6 ~ ~-2 minecraft:glass"
+  - cmd: "setblock ~5 ~ ~-3 minecraft:water"
+  - cmd: 'summon zombie ~5 ~ ~3 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["v","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 40
+  - probe: "v 12"
+  - cmd: "rpg mana refill"
+  - aim: "v"
+  - wait: 1
+  - use: right_click
+  - wait: 30
+  - probe: "v 12"
+  - cmd: "tp @e[tag=v,limit=1] ~5 ~ ~-3"
+  - wait: 5
+  - probe: "v 12"
+  - wait: 130
+  - probe: "v 12"
+
+# WA3: SMOLDER AND WATER. u in the water cell at 6 east, 3 north: four hits of 160, no Scorch.
+WA3:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - save_blocks: "5 0 -4 7 0 -2"
+  - cmd: "fill ~5 ~ ~-4 ~7 ~ ~-2 minecraft:glass"
+  - cmd: "setblock ~6 ~ ~-3 minecraft:water"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~6 ~ ~-3 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["u","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "u 12"
+  - cmd: "rpg mana refill"
+  - drop: selected
+  - wait: 230
+  - probe: "u 12"
+
+# WA6: IGNITE AND WATER. Three bodies, each with a witness 1.5 to 2.5 blocks off: k1 dry and scorched, then killed by a
+# non-fire hit (clause 1: ignites); k2 in a water cell, killed by one bolt (clause 2, wet: IGNITE refused); k3 dry,
+# killed by one bolt with no time to scorch (clause 2: ignites).
+WA6:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - save_blocks: "5 0 -1 7 0 1"
+  - cmd: "fill ~5 ~ ~-1 ~7 ~ ~1 minecraft:glass"
+  - cmd: "setblock ~6 ~ ~0 minecraft:water"
+  - cmd: 'summon zombie ~6 ~ ~-8 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["k1","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~7.5 ~ ~-8 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["k1w","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["k2","selftest"],attributes:[{id:"minecraft:max_health",base:2.0}],Health:2.0f}'
+  - cmd: 'summon zombie ~6 ~ ~2.5 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["k2w","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~6 ~ ~8 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["k3","selftest"],attributes:[{id:"minecraft:max_health",base:2.0}],Health:2.0f}'
+  - cmd: 'summon zombie ~7.5 ~ ~8 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["k3w","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 40
+  - probe: "k1 16"
+  - probe: "k1w 16"
+  - probe: "k2 16"
+  - probe: "k2w 16"
+  - probe: "k3 16"
+  - probe: "k3w 16"
+  - cmd: "rpg mana refill"
+  - aim: "k1"
+  - wait: 1
+  - use: right_click
+  - wait: 30
+  - aim: "k2"
+  - wait: 1
+  - use: right_click
+  - wait: 30
+  - probe: "k2 16"
+  - probe: "k2w 16"
+  - aim: "k1"
+  - cmd: "rpg mobdamage 2000"
+  - wait: 30
+  - probe: "k1 16"
+  - probe: "k1w 16"
+  - aim: "k3"
+  - wait: 1
+  - use: right_click
+  - wait: 38
+  - probe: "k3 16"
+  - probe: "k3w 16"
+  - probe: "k2w 16"
+
+# SM7 (THE ASK): a cast, his move 8 east at C+40, and the question once the fourth ring has gone out.
+SM7:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - wait: 20
+  - cmd: "rpg mana refill"
+  - tell: "Smolder is cast now from your feet. Stand still; you will be moved 8 blocks east after the first ring. Watch each ring."
+  - drop: selected
+  - wait: 40
+  - cmd: "tp @s ~8 ~ ~"
+  - wait: 180
+  - ask: "1 3600 Did each ring of fire spread out from your feet to about 12 blocks, and did the first ring stay where it started when you were moved? (yes / no / not sure)"

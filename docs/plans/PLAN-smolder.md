@@ -155,8 +155,11 @@ written now, once per server run per player, cell, slot and id, from `Stones.equ
 A standalone ability's `description:` was not read before (`AbilityLoader` passed `List.of()`); it is now, as a YAML list
 (a bare string refused by name). SEAT PLACEHOLDER text, every number the file's own (`SmolderContentTest` rebuilds each
 sentence from the parsed definition): "Four pulses, 3s apart, burst from your feet." / "Each deals 160 fire damage within
-12 blocks and scorches." **READ: the build menu shows the cooldown ("Cooldown: 300s") and NOT the mana cost**
-(`BuildMenu.abilityLore`); unchanged.
+12 blocks and scorches." **READ, CORRECTED ON `feat/smolder-gate` (2026-11-27): two surfaces, and they differ.** The
+PICKER (`BuildPickerMenu`, through `BuildMenu.abilityLore`) shows the description and `Cooldown: 300s`, NOT the mana
+cost. The Build screen's loadout CELL (`BuildMenu.loadoutIcon`, through `numberLines` and `AspectLore.lines`) shows the
+description and `Damage: 160`, `Cost: 80`, `Cooldown: 300.0 s`. The first READ named the picker alone and was reported
+as "the build menu"; GATE-smolder's SM1 reads both. Unchanged.
 
 ### 3.9 The trace lines (Z10), while `/rpg mobtrace` is on
 
@@ -361,3 +364,35 @@ scratchpad copy is the measurement.
 
 **Only the boot can show:** the douse on a real body in water and in rain, the splash event's set on a real throw, and
 the death reading on a real death frame.
+
+## 7. The gate branch (`feat/smolder-gate`): `docs/gates/GATE-smolder.md`
+
+- **One command**, the regen-tooltip rows first and the one ask last: `/rpg selftest
+  armor-sets.AS1.AS2+mana-battery.MB1+smolder`. Rows SM1 to SM7, WA1 to WA3 and WA6; WA4 (rain) and WA5 (splash) owed
+  to the unit table, with the reasons in the gate.
+- **CC'S CALL, a new selftest verb `stone:`**: `clear_inventory` empties the Ability Stone and nothing but a join or a
+  respawn mints it again (READ: `RpgListeners.convergeStone` is called from those two only), so a row converges it by the
+  join's own call (`NexusSlots.converge` with `Stones.lockedItem`). Logs `STAGE stone slot= found= held=`.
+- **THE CLOCK, READ by javap** (the gate's section of that name): the ring's hits run on the global region scheduler
+  before every entity scheduler in a tick, and a burn booked from that phase first lands 19 ticks later. So four hits
+  60 apart burn fifteen times, never colliding with a hit. Executed through the real store (`SmolderGateArithmeticTest`).
+- **Correction to section 3.8, found while writing SM1:** the Build screen's cell DOES show the mana (`Cost: 80`); only
+  the picker does not. Section 3.8 now says so.
+- **Tests:** `SmolderGateArithmeticTest` (13: every figure the gate quotes, and the SAFETY `harms` calls),
+  `SmolderGateCommandTest` (5: the queue, the lint, the one ask last at 3600, 18 frozen tagged summons, the stone verb).
+  The recount guards moved with the gate: `SelfTestScenariosTest` 542 to 553 and its two gate lists,
+  `GateDocumentSectionsTest` 57 to 58. The lint caught six turn-then-press steps on the first draft (a 1-tick wait added).
+- **Mutations:**
+
+| mutation | the change | red |
+|---|---|---|
+| MUTSTONEARG | `stone:` dropped from the takes-nothing verbs | `SmolderGateCommandTest.theStoneVerbTakesNothing...` |
+| MUTPHASE2 | each later hit modelled one tick EARLY (hit before burn) | the 15-, 12- and 9-burn rows |
+| MUTNOAI2 | one witness summoned with `NoAI:0b` | `everyMobThisGateSummonsIsFrozenAndTagged` and the lint |
+| MUTASK | the ask's timeout 1200 | `itLintsClean_asksOnceLast...` |
+
+**MUTPHASE (`+ 1` to `+ 0`) stayed GREEN, and it is an EQUIVALENT mutation, not a gap:** the fake clock already runs a
+due burn before a same-tick application, so both mappings model the burn-first order the READ gives. MUTPHASE2 is the
+order that would change the figures, and it reddens. **MUTNOAI (the first attempt) was a broken edit:** it appended
+`NoAI:0b` and left the original `NoAI:1b` in the same compound, so `contains("NoAI:1b")` still held. Re-run as
+MUTNOAI2 by replacing the flag.

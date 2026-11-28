@@ -361,7 +361,7 @@ final class SelfTestStaging {
                     : java.util.Optional.of("accessory takes 'equip <0-3>' or 'clear', got '" + arg + "'");
             case SATURATION -> saturationArg(arg) ? java.util.Optional.empty()
                     : java.util.Optional.of("saturation takes a number from 0 to 20, got '" + arg + "'");
-            case CLEAR_INVENTORY, CLEAR_STATE, PAD, PROBE_REGEN, PROBE_INVISIBILITY -> arg.isBlank() ? java.util.Optional.empty()
+            case CLEAR_INVENTORY, CLEAR_STATE, PAD, PROBE_REGEN, PROBE_INVISIBILITY, STONE -> arg.isBlank() ? java.util.Optional.empty()
                     : java.util.Optional.of(verb.name().toLowerCase(java.util.Locale.ROOT) + " takes nothing, got '"
                             + arg + "'");
             case PREFLIGHT -> SelfTestPreflight.parse(arg).isPresent() ? java.util.Optional.empty()

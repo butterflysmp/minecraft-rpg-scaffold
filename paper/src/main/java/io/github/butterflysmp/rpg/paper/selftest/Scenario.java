@@ -393,6 +393,14 @@ public record Scenario(String gate, String row, List<Step> steps) {
          */
         SATURATION,
         /**
+         * {@code ""}: put the Ability Stone in his hotbar by the join's own call ({@code NexusSlots.converge} with
+         * {@code Stones.lockedItem}, at his stone slot), so a row that emptied his storage with {@code clear_inventory}
+         * can still cast from the stone (GATE-smolder, 2026-11-27: nothing else mints it but a join or a respawn). A
+         * stone already there is kept. The run's restore puts his own inventory back. Logs
+         * {@code STAGE stone slot=<n> found=<0|1> held=<0|1>}.
+         */
+        STONE,
+        /**
          * {@code ""}: his health regeneration as the store holds it: {@code REGEN rate=<per second> saturation=<s>
          * customHP=<c>/<m>}. With the HEALED lines (every heal the store makes to him, logged at the heal), a health
          * reading names every term between two readings.

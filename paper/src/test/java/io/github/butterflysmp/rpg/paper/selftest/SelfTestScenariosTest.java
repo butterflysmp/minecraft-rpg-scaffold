@@ -59,9 +59,9 @@ class SelfTestScenariosTest {
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
                         "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes", "shatter-caps",
-                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle", "true-tooltips", "blast-fungus", "bone-club", "healing-tome", "blink-tome", "held-target", "mana-battery"),
+                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle", "true-tooltips", "blast-fungus", "bone-club", "healing-tome", "blink-tome", "held-target", "mana-battery", "smolder"),
                 List.copyOf(loaded.gates().keySet()),
-                "the fifty-seven gates, in boot order (mana-battery LAST, 2026-11-27, a NEW gate after held-target; held-target before it, 2026-11-26, a NEW gate after blink-tome; blink-tome before it, 2026-11-26, a NEW gate after healing-tome; healing-tome before it, 2026-11-26, a NEW gate after bone-club; bone-club before it, 2026-11-26, a NEW gate after blast-fungus; blast-fungus before it, 2026-11-26, a NEW gate after true-tooltips; true-tooltips before it, 2026-11-26, a NEW gate after broken-bottle; "
+                "the fifty-eight gates, in boot order (smolder LAST, 2026-11-27, a NEW gate after mana-battery; mana-battery before it, 2026-11-27, a NEW gate after held-target; held-target before it, 2026-11-26, a NEW gate after blink-tome; blink-tome before it, 2026-11-26, a NEW gate after healing-tome; healing-tome before it, 2026-11-26, a NEW gate after bone-club; bone-club before it, 2026-11-26, a NEW gate after blast-fungus; blast-fungus before it, 2026-11-26, a NEW gate after true-tooltips; true-tooltips before it, 2026-11-26, a NEW gate after broken-bottle; "
                         + "broken-bottle before it, 2026-11-25, a NEW gate after armor-sets; armor-sets before it, 2026-11-25, a NEW gate after summoner; summoner before it,"
                         + " 2026-11-25, a NEW gate after mage-guaranteed;"
                         + " mage-guaranteed before it, the seat's brief of 2026-11-24, a NEW gate after focused-beam;"
@@ -376,7 +376,9 @@ class SelfTestScenariosTest {
         // Control: 585 + 6 (its setup and S1-S5) = 591. 530 was this line's value.
         // Then GATE-mana-battery.md (feat/mana-battery-gate, 2026-11-27), RECOUNTED: 57 gates, 599 keys, 57 setups, so 542.
         // Control: 591 + 8 (its setup, AC1 and MB1-MB6) = 599. 535 was this line's value.
-        assertEquals(542, loaded.rows());
+        // Then GATE-smolder.md (feat/smolder-gate, 2026-11-27), RECOUNTED: 58 gates, 611 keys, 58 setups, so 553.
+        // Control: 599 + 12 (its setup, SM1-SM7, WA1-WA3 and WA6) = 611. 542 was this line's value.
+        assertEquals(553, loaded.rows());
     }
 
     /**
@@ -733,7 +735,7 @@ class SelfTestScenariosTest {
         }
         assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup", "focused-beam#setup",
                         "mage-guaranteed#setup", "summoner#setup", "armor-sets#setup", "broken-bottle#setup",
-                        "true-tooltips#setup", "blast-fungus#setup", "bone-club#setup", "healing-tome#setup", "blink-tome#setup", "held-target#setup", "mana-battery#setup"),
+                        "true-tooltips#setup", "blast-fungus#setup", "bone-club#setup", "healing-tome#setup", "blink-tome#setup", "held-target#setup", "mana-battery#setup", "smolder#setup"),
                 padGates, "only enchant-columns, (2026-11-23) enchant-changes, (2026-11-24) shatter-caps and (2026-11-24)"
                         + " focused-beam and (2026-11-24) mage-guaranteed opt in, each in its setup");
         Scenario changes = shipped().gates().get("enchant-changes").getFirst();
