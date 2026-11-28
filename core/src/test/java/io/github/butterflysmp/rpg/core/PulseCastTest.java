@@ -381,6 +381,31 @@ class PulseCastTest {
         assertEquals(expected, world.presented.stream().filter("ring"::equals).count());
     }
 
+    /**
+     * M2: THE SPIRAL IS DRAWN WITH THE FRONT, AND THE HIT IS STILL THE WHOLE CIRCLE. A cast with spiral arms (3, one
+     * turn) and no ring presents the arm visual at exactly the points {@code PulseFront.spiralPoints} gives for each
+     * tick's stretch, 0 to 15, and no ring point; and a body at 6 blocks DUE NORTH, where no arm is drawn when the front
+     * reaches it, is struck on tick 8 all the same. Forces red: the spiral drawn at a radius not the front's, or a hit
+     * that waits for an arm.
+     */
+    @Test
+    void theSpiralIsDrawnWithTheFrontAndTheHitIsStillTheWholeCircle() {
+        var world = new FakeWorld();
+        var him = caster(world);
+        var north = body(world, 0, -6);
+        var spec = new CastSpec.Pulses(1, 30, 12.0, 15, null, "boom", new CastSpec.Pulses.SpiralArms(3, 1.0, "arm"));
+        cast(world, him, ability(spec));
+        world.advanceTicks(40);
+        int expected = 0;
+        for (int t = 0; t <= 15; t++) {
+            expected += PulseFront.spiralPoints(Vec3.ZERO, PulseFront.radiusAt(t - 1, 12, 15),
+                    PulseFront.radiusAt(t, 12, 15), 3, 1.0, 12).size();
+        }
+        assertEquals(expected, world.presented.stream().filter("arm"::equals).count());
+        assertEquals(0, world.presented.stream().filter("ring"::equals).count());
+        assertEquals(List.of("n=1 tick=8"), hitsOn(world, north));
+    }
+
     /** No bundled content reaches these; each is caused. */
     @Test
     void aShapeThatCannotFireIsRefusedByName() {

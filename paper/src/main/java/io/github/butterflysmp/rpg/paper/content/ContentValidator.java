@@ -801,6 +801,19 @@ public final class ContentValidator {
                                 + " pulse visual instead");
                     }
                 }
+                // THE SPIRAL (M2, 2026-11-28): drawn at every point of every arm on every tick of the travel, so the
+                // ring's rule, for the ring's reason.
+                if (pulses.spiral() != null) {
+                    String id = pulses.spiral().visual();
+                    VisualDefinition spiral = visuals.find(id).orElse(null);
+                    if (spiral == null) {
+                        problems.add(ownerLabel + " names pulses spiral visual '" + id + "', which no visual defines");
+                    } else if (spiral.steps().stream().anyMatch(s -> s instanceof VisualSpec.Sound)) {
+                        problems.add(ownerLabel + " names pulses spiral visual '" + id + "', which contains a sound"
+                                + " step. A spiral is drawn at every point of every arm on every tick of its travel, so the"
+                                + " sound would play that many times a tick. Put the sound in the pulse visual instead");
+                    }
+                }
                 if (pulses.pulse() != null && visuals.find(pulses.pulse()).isEmpty()) {
                     problems.add(ownerLabel + " names pulses pulse visual '" + pulses.pulse()
                             + "', which no visual defines");

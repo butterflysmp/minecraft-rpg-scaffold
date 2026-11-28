@@ -517,6 +517,16 @@ public final class CastExecutor {
                 world.present(point, spec.ring());
             }
         }
+        // THE SPIRAL (M2): its arms drawn over the stretch the front swept this tick, at the SAME radius function the hit
+        // compares below, from this pulse's fixed origin. A drawing only: the hit is the whole circle.
+        if (spec.spiral() != null) {
+            var arms = spec.spiral();
+            double from = io.github.butterflysmp.rpg.core.combat.PulseFront.radiusAt(t - 1, spec.radius(), spec.travelTicks());
+            for (Vec3 point : io.github.butterflysmp.rpg.core.combat.PulseFront.spiralPoints(origin, from, r,
+                    arms.arms(), arms.turns(), spec.radius())) {
+                world.present(point, arms.visual());
+            }
+        }
 
         record Reached(Combatant body, double dist) {}
         java.util.List<Reached> reached = new java.util.ArrayList<>();

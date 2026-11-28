@@ -268,7 +268,9 @@ class SmolderGateArithmeticTest {
         AbilityDefinition def = new AbilityLoader(log).loadAll(dir.toFile()).find("smolder").orElseThrow();
         assertEquals(List.of(new AspectLore.Line("Damage", "160", null), new AspectLore.Line("Cost", "80", null),
                 new AspectLore.Line("Cooldown", "300.0 s", null)), AspectLore.lines(def, def));
-        assertEquals(List.of("Four pulses, 3s apart, burst from your feet.",
+        // The frozen gate predicted (and read) "Four pulses, 3s apart, ..."; Ben retuned the interval on 2026-11-28 (M1, N7),
+        // so this row now holds the shipped prose. The cell's number lines above are unchanged.
+        assertEquals(List.of("Four pulses, 1.5s apart, burst from your feet.",
                 "Each deals 160 fire damage within 12 blocks and scorches."), def.description());
     }
 }

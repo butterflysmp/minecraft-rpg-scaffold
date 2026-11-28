@@ -1,0 +1,13 @@
+# SOLAR FLARE'S RING: drawn at every point round its burst's ring (core.combat.PulseFront.ringPoints, about 0.75 blocks
+# apart) on every tick of its travel. NO SOUND STEP: ContentValidator refuses one in a ring.
+#
+# HISTORY: this file WAS smolder_ring.yml, shared by both ultimates (the seat's F10, 2026-11-27: Ben, "the same particles
+# that the smolder pulses do"). The seat's N5 (2026-11-28) gave each ultimate its own files: Smolder now draws a spiral and
+# no ring, so this ring was Solar Flare's alone and was renamed for it, its look unchanged (one still flame per point,
+# SEAT PLACEHOLDER). smolder_ring.yml is retired (VisualLoader.RETIRED_FILES).
+steps:
+  - type: particle
+    particle: FLAME
+    count: 1
+    spread: 0.0
+    speed: 0.0

@@ -1,0 +1,14 @@
+# SOLAR FLARE'S BURST: presented ONCE where each fireball bursts. SEAT PLACEHOLDER, OPEN FOR BEN.
+#
+# HISTORY: this is the look smolder_pulse.yml had when both ultimates shared it (the seat's F10, 2026-11-27), copied here
+# unchanged when the seat's N5 (2026-11-28) gave each ultimate its own files: a burst of flame and a blaze's shot.
+steps:
+  - type: particle
+    particle: FLAME
+    count: 20
+    spread: 0.4
+    speed: 0.02
+  - type: sound
+    key: entity.blaze.shoot
+    volume: 1.0
+    pitch: 0.8

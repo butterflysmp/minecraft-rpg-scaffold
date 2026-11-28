@@ -77,7 +77,9 @@ public final class VisualLoader {
      * arc_surge, deleted by ruling 20. {@code rekindle_cast.yml}: ruling 24 (2026-09-27) -- RENAMED
      * {@code recall_cast.yml} with its ability.
      */
-    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml", "rekindle_cast.yml");
+    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml", "rekindle_cast.yml",
+            // the seat's N5 (2026-11-28): RENAMED solar_flare_ring.yml, its one remaining user's own file
+            "smolder_ring.yml");
 
     /** The id is the filename: solar_detonation.yml -> solar_detonation. */
     private static String idOf(File f) {
@@ -117,7 +119,9 @@ public final class VisualLoader {
                         dust(m, type, p),
                         // 4.0, NOT 0.0 -- zero would be a beam that draws nothing, silently.
                         // Inert unless this visual is presented ALONG a segment.
-                        numOr(m, type, "samples_per_block", VisualSpec.DEFAULT_SAMPLES_PER_BLOCK));
+                        numOr(m, type, "samples_per_block", VisualSpec.DEFAULT_SAMPLES_PER_BLOCK),
+                        // TRAIL's colour and server-set lifetime (M3, 2026-11-28), or null for every other particle.
+                        trail(m, type, p));
             }
             case "sound" -> {
                 String key = str(m, type, "key");
@@ -129,6 +133,12 @@ public final class VisualLoader {
                 // The void implosion's swirl (2026-11-17). The geometry is core's and refuses a bad shape by name;
                 // the particle passes the same data-object gate a `particle` step does (DUST takes color and size).
                 Particle p = particle(str(m, type, "particle"));
+                // A swirl draws with the dust's data only (PaperCombatWorld.spiral passes sp.dust()), so a TRAIL here
+                // would reach spawnParticle with no data and throw on its first cast: refused by name at load.
+                if (p.getDataType() == Particle.Trail.class) {
+                    throw new IllegalArgumentException("Visual step 'spiral' cannot draw particle '" + p.name()
+                            + "': a swirl supplies no trail data. Use it in a 'particle' step");
+                }
                 yield new VisualSpec.Spiral(
                         new io.github.butterflysmp.rpg.core.shape.Spiral(
                                 (int) num(m, type, "duration_ticks"),
@@ -170,7 +180,11 @@ public final class VisualLoader {
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException("Unknown particle: " + raw);
         }
-        if (p.getDataType() != Void.class && p.getDataType() != Particle.DustOptions.class) {
+        // TRAIL (Smolder's spiral, M3, 2026-11-28) is the SECOND data type opened, by data type as DUST was: its data
+        // (a colour and a duration) is now expressible, `trail(...)` below. Which particles carry Trail was not
+        // enumerated here; the gate admits whatever does, and each needs the same two keys.
+        if (p.getDataType() != Void.class && p.getDataType() != Particle.DustOptions.class
+                && p.getDataType() != Particle.Trail.class) {
             throw new IllegalArgumentException("Particle '" + raw + "' requires a data object ("
                     + p.getDataType().getSimpleName() + "); the visual schema cannot supply one yet");
         }
@@ -193,6 +207,7 @@ public final class VisualLoader {
      */
     private static Particle.DustOptions dust(Map<?, ?> m, String type, Particle p) {
         boolean takesDust = p.getDataType() == Particle.DustOptions.class;
+        if (p.getDataType() == Particle.Trail.class) return null;   // its colour is trail(...)'s to read
         boolean authored = m.get("color") != null || m.get("size") != null;
 
         if (!takesDust) {
@@ -204,6 +219,48 @@ public final class VisualLoader {
             return null;
         }
 
+        Color color = color(m, type, p);
+        double size = numOr(m, type, "size", 1.0);
+        if (size <= 0) {
+            throw new IllegalArgumentException("Visual step '" + type + "' field 'size' must be "
+                    + "greater than 0, got: " + size);
+        }
+        return new Particle.DustOptions(color, (float) size);
+    }
+
+    /**
+     * A TRAIL step's data (M3, 2026-11-28): {@code color} as [r, g, b] and {@code duration_ticks}, how many ticks the
+     * client keeps each particle (READ: the client sets the particle's lifetime to it), both REQUIRED, {@code size}
+     * refused (TRAIL has none). Null for every other particle, and {@code duration_ticks} on one of them is an ERROR,
+     * for {@link #dust}'s reason: a key the code would silently drop is indistinguishable from one that works.
+     */
+    private static VisualSpec.Particles.Trail trail(Map<?, ?> m, String type, Particle p) {
+        if (p.getDataType() != Particle.Trail.class) {
+            if (m.get("duration_ticks") != null) {
+                throw new IllegalArgumentException("Visual step '" + type + "' sets 'duration_ticks' on particle '"
+                        + p.name() + "', whose lifetime the server cannot set; remove it or use TRAIL");
+            }
+            return null;
+        }
+        if (m.get("size") != null) {
+            throw new IllegalArgumentException("Visual step '" + type + "' sets 'size' on particle '" + p.name()
+                    + "', which has none; remove it");
+        }
+        Color color = color(m, type, p);
+        if (m.get("duration_ticks") == null) {
+            throw new IllegalArgumentException("Visual step '" + type + "' uses particle '" + p.name()
+                    + "', which requires 'duration_ticks', how many ticks each particle lives");
+        }
+        int duration = (int) num(m, type, "duration_ticks");
+        if (duration < 1) {
+            throw new IllegalArgumentException("Visual step '" + type + "' field 'duration_ticks' must be 1 or more, got: "
+                    + duration);
+        }
+        return new VisualSpec.Particles.Trail(color, duration);
+    }
+
+    /** A required {@code color: [r, g, b]}, each 0 to 255: DUST's, and TRAIL's (the same checks, one place). */
+    private static Color color(Map<?, ?> m, String type, Particle p) {
         Object raw = m.get("color");
         if (raw == null) {
             throw new IllegalArgumentException("Visual step '" + type + "' uses particle '"
@@ -226,13 +283,7 @@ public final class VisualLoader {
                         + i + " must be between 0 and 255, got: " + rgb[i]);
             }
         }
-
-        double size = numOr(m, type, "size", 1.0);
-        if (size <= 0) {
-            throw new IllegalArgumentException("Visual step '" + type + "' field 'size' must be "
-                    + "greater than 0, got: " + size);
-        }
-        return new Particle.DustOptions(Color.fromRGB(rgb[0], rgb[1], rgb[2]), (float) size);
+        return Color.fromRGB(rgb[0], rgb[1], rgb[2]);
     }
 
     /**

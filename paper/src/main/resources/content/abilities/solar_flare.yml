@@ -22,17 +22,16 @@
 # the step's segment. Fluids and passable blocks (grass, flowers) do not stop it; the caster never; a summon never (the
 # sides table passes it). EVERY other living body does, a passive animal or another player included: OPEN FOR BEN.
 #
-# THE EXPLOSION (F3, F4, F5): ONE pulse front where the shot stopped -- Smolder's own ring, radius 6, at Smolder's speed
+# THE EXPLOSION (F3, F4, F5): ONE pulse front where the shot stopped -- Smolder's own ring code, radius 6, at the speed Smolder's ring had until 2026-11-28
 # (12 blocks in 30 ticks, so 6 in 15: travel_ticks 15, SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN). Each body is struck
 # once by each ring, on the tick the ring reaches its horizontal distance from that ring's fixed origin; three rings, so
 # a body inside two or three takes 250 from each. The origin: on a MOB, the struck mob's own position (its feet), so its
 # ring strikes it at distance 0 and nothing else from that shot does (a direct hit adds nothing); on a BLOCK, the point
 # the trace met it; at the END OF RANGE, the end of the last step.
 #
-# THE LOOK (F9, F10): each fireball is a fire charge drawn at scale 2.5 (a display entity, SEAT PLACEHOLDER), with a
-# flame trail (SEAT PLACEHOLDER) and a launch sound (solar_flare_cast, SEAT PLACEHOLDER). THE RING AND THE BURST ARE
-# SMOLDER'S OWN FILES (Ben: "the same particles that the smolder pulses do", "The same expanding ring"): smolder_ring and
-# smolder_pulse, so a change to Smolder's look moves both.
+# THE LOOK (F9): each fireball is a fire charge drawn at scale 2.5 (a display entity, SEAT PLACEHOLDER), with a flame
+# trail (SEAT PLACEHOLDER) and a launch sound (solar_flare_cast, SEAT PLACEHOLDER). THE RING AND THE BURST ARE THIS
+# ULTIMATE'S OWN FILES (the seat's N5, 2026-11-28, replacing F10's shared files): solar_flare_ring and solar_flare_burst.
 #
 # SCORCH: by the element, as Smolder's (no status step here): each ring's 250 is FIRE damage, so its burn's cap is half
 # the hit as declared, 125 for an uncrit 250 (a crit does not raise it), window 120, restarted by each hit. Ignite and
@@ -75,9 +74,9 @@ cast:
     angle_degrees: 30
   burst:
     radius: 6.0
-    travel_ticks: 15              # Smolder's speed, 12 in 30 (F4, SEAT PLACEHOLDER)
-    ring: smolder_ring            # Smolder's own ring (F10)
-    pulse: smolder_pulse          # Smolder's own burst and sound (F10)
+    travel_ticks: 15              # Smolder's old speed, 12 in 30 (F4, SEAT PLACEHOLDER)
+    ring: solar_flare_ring        # its own (N5)
+    pulse: solar_flare_burst      # its own burst and sound (N5)
 
 on_hit:
   - type: damage
