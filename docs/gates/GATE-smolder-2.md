@@ -1,6 +1,6 @@
 # GATE — SMOLDER AS BEN CHANGED IT (M1 TO M4) AND THE SEAT'S X6, FIRST IN THE ONE COMMAND (2026-11-28)
 
-**Status: NOT RUN.** The plans are `docs/plans/PLAN-smolder.md` section 8 (M1 to M4), `PLAN-owed-fixes.md` (X6) and
+**Status: RUN 2026-11-28 on `4f26ca31`; see READINGS (every row READ AS PREDICTED; awaiting the seat).** The plans are `docs/plans/PLAN-smolder.md` section 8 (M1 to M4), `PLAN-owed-fixes.md` (X6) and
 `PLAN-solar-flare.md` section 6 (N1 to N7). The scenario is `paper/src/main/resources/selftest/GATE-smolder-2.yml`. The
 stack, bottom up: master `88858c40`, #342 `feat/x6-clock`, #343 `feat/smolder-spiral`, #344 `feat/solar-flare-volley`,
 then the ONE gate branch, `feat/ultimates-2-gate`, last, carrying this gate and `GATE-solar-flare-2.md`. **Every
@@ -298,3 +298,57 @@ deployed jar's.
 > two needles for the long-distance fix (`feat/solar-flare-volley` `78e29fa8`). On a jar built from the rebased tree
 > (2026-11-28 00:58): **23 `PRESENT` / 0 `ABSENT`, then 4 `ABSENT` / 0 `PRESENT`, then 2 `PRESENT` / 0 `ABSENT`, as
 > predicted.** No row's line moves: no line prints whether a particle was forced or how far a sound reaches.
+
+## READINGS — THE BOOT OF `4f26ca31`, 2026-11-28 (written after the run; no prediction above is edited)
+
+**The boot, ticked (`.claude/rules/booting.md`).** (1) The seat's approval of `4f26ca31`; Ben's fresh "ready" after the
+heads moved. (2) `git ls-remote`: master `88858c40`, `bd3efbea`, `7175a07c`, `78e29fa8`, `4f26ca31`, equal to the seat's;
+CI `success` on each head's `headSha`; `git status --porcelain` empty, HEAD `4f26ca31` = origin. (3) 0 `java.exe`.
+(4) Backup `rpg-run-backups\2026-11-28-pre-ultimates-2`: `world` 192 / 192 (`session.lock` left out), `plugins\Rpg`
+196 / 196; his player file `players\data\<uuid>.dat` 5801 bytes; build file 775 bytes `ECE78D65…`; accessory file 95
+bytes `FF48C3A3…`; profile `mage` / `fire`. (5) `level.dat` difficulty `normal`. (6) Config line 12 `dev-pack-on-join:
+true`; no `run\rpgfight`. (7) "BOOTING NOW" sent in its own message; Ben replied before the command. (8) Marker
+01:08:00; the log's first line `01:08:30`, after the deployed jar's mtime `01:08:29.74`; `Done (5.646s)` at `01:08:35`.
+(9) **R0 as predicted on every line**, read at 01:08:51 before any join: R0a `Build: 4f26ca31`; R0b on the deployed jar
+**23 / 0, 4 / 0, 2 / 0**; R0c `11 abilities, 52 visuals, … 8 accessories`, `42 indexed, 42 claiming, of 61`, 0 `[Rpg]`
+WARN with 7 `Loaded`, no Refusing / Skipping / SEVERE / Exception, `51 visuals` absent; R0d one `580 scenarios across
+61 gates [… solar-flare, smolder-2, solar-flare-2]`, `562 scenarios` and `59 gates` absent; R0e `folders=0`, no
+deleting, no orphan. "R0 PASSED" sent in its own message; **his join `01:09:02`**, after R0. `/gamemode survival`
+01:09:08, the command 01:09:12 (`rows=18`), `/stop` 01:12:46. Clean stop; 0 `java.exe` after.
+
+**HIS GROUND AND HIS BUILD: everything came back.** The first CLEAN `world=skipped` (`return=-104.47 63.00 15.21`, his own
+ground, touched by nothing), `LINGER skipped`. ITEMS `cleared=0 pad []`, then `cleared=1 pad [rotten_flesh x1]` (a pad
+drop). ACCESSORIES `cleared=0 pad [-,-,-,-]` both. `CAPTURED … builds=[ranger/fire:Q=ultimate_placeholder_ranger,…;
+melee/fire:…]` and `RESTORED … builds=` the same string, byte for byte; no `NOT-RESTORED`; `BUILDS restore write settled
+ok=true`. After /stop: build file 775 bytes, hash equal; accessory file 95, hash equal; profile `mage` / `fire`,
+differing from the backup only in `lastSeenEpochMillis`; `level.dat` `normal`. His health was captured and written back
+at 120.000 (`HEALTH saved=120.000 … wrote=120.000`, his own before the run).
+
+**SAFETY: NO `HURT` LINE IN THE WHOLE RUN.** Every front hit (40, on 13 bodies) names a body a row staged; none names him,
+his wolf, a12 or z61.
+
+**THE CLOCK (X6 (a)): EXACT, EVERY ROW.** Where a row reads its press (a MANA line after the drop), C = P + 1: SM2R 876 /
+877, SM6R 1914 / 1915, SF2R 2933 / 2934, SF7R 3922 / 3923. **Every Smolder pulse landed on C, C+30, C+60, C+90** (SM2R
+877, 907, 937, 967; SM3R 1154, 1184, 1214, 1244; SM4R 1431, 1461, 1491, 1521; SM7R 2127, 2157, 2187, 2217; SM5R and SM6R
+to their cancels). **Every Solar Flare shot on C, C+10, C+20** (SF2R 2934 / 2944 / 2954; SF10 3141 / 3151 / 3161; SF3R,
+SF4R, SF6R, SF7R, SF9R and SF11 the same; SF8R 3995 / 4005, then its cancel). Every body's first burn is its first hit +
+20, and the burn counts are those of the READ order, shared ticks included (SF2R 2969, SF3R 3271).
+
+**THE VIEW (X6 (b)).** Every `DRIVE drop` read `yaw=-90.000 pitch=0.000`, and both whistle presses the same; WA6R's bolt
+and its `DRIVE look` read `yaw=-143.130 pitch=-0.688`, the aim's. Every shot line's `dir=` equals the view set one tick
+before it: `-90.000 0.000` everywhere, and SF10's `-80.000 0.000` and `-100.000 0.000`. **No shot flew off its set view.**
+
+| row | reading | class |
+|---|---|---|
+| SM1R | Case **(i)**: `Q: Smolder`, `Ultimate -- the default`, both lines; no `BUILD unoffered` for mage/fire. Picker: `Four pulses, 1.5s apart, burst from your feet.`, `Each deals 160 fire damage within 12 blocks and scorches.`, `Cooldown: 300s`, `Current`. Cell after: `Ultimate`, both lines, `Damage: 160`, `Cost: 80`, `Cooldown: 300.0 s`, `""`, `Click to change.` `STAGE stone … found=0 held=1`; HELD the stone with `Q: Smolder`. | READ AS PREDICTED |
+| SM2R | Before: four `3000.000/3000.000 fireTicks=0`; wolf `100.000/100.000`. Whistle `yaw=-90.000 pitch=0.000`. Mana `100.000` (875) → `20.000` (876). C = 877; pulses C, +30, +60, +90 from `114.500 201.000 -3.500`. Hits a3 +4 `3.000`, a6 +8 `6.000`, a11 +15 `11.500` every pulse: 12, `sent=160.000`, `crit=false` ×12. Ten burns each, `80.000`: a3 901–1081, a6 905–1085, a11 912–1092. After: a3, a6, a11 **`1560.000`**, a12 `3000.000`, wolf `100.000`. | READ AS PREDICTED |
+| SM3R | C = 1154; **the cast critted**: hits C+8, +38, +68, +98 `sent=320.000`, `crit=true` ×4. At C+9: **`2680.000 fireTicks=119`**. Ten burns 1182–1362 (C+28 to C+208), `80.000`. End **`920.000`**. | READ AS PREDICTED (the crit branch) |
+| SM4R | C = 1431. Pulse 1 from 114.5; `SELF … at=122.50` after the move; pulses 2 to 4 (1461, 1491, 1521) from 122.5. c11 one hit, C+14 `11.000`; c19 C+44, +74, +104 `11.000`. Burns: c11 six 1465–1565, c19 nine 1495–1655. End c11 **`2360.000`** (`d=13.601`), c19 **`1800.000`**. | READ AS PREDICTED |
+| SM5R | C = 1718. Hits C+8, C+38. **`SMOLDER cancelled remaining=2 cause=selftest tick=1762`** (C+44). No n=3, no n=4. Seven burns 1746–1866. End **`2120.000`**. | READ AS PREDICTED |
+| SM6R | Mana `100.000` (1913); the press at 1914 → `20.000`; cast 1915. The press at 1916: **`MANA current=20.100`**, `REPLY actionbar "Smolder -- ready in 299.9s"`, no second cast. **`SMOLDER cancelled remaining=3 … tick=1936`** (P+22). At 1939: `79.000`, the press refused, **`"Smolder -- needs 80 mana, you have 79"`**, `79.000`. | READ AS PREDICTED |
+| WA6R | k1, k1w `1000.000`. The bolt on the aim (`yaw=-143.130 pitch=-0.688`), `crit=false`; k1's burns `10.000` at 2035, 2055; before the kill **`960.000 fireTicks=67`**. `DRIVE look yaw=-143.130 pitch=-0.688`, **no "Look at a mob."**; k1 then `none within 16 blocks` (died, removed); no `IGNITE refused`. **k1w `994.000`** 30 ticks after. | READ AS PREDICTED (clause 1 read at last) |
+| SM7R | C = 2127; pulses C, +30, +60, +90; pulse 1 from G, pulses 2 to 4 from G + 8. **Ben (01:10:56): "yes, but there isn't enough particles now. Can we try 9 spirals."** | READ AS PREDICTED on what he saw; his note is a change request for the seat |
+
+**Ben's answers, verbatim:** SM7R "yes, but there isn't enough particles now. Can we try 9 spirals." SF9R "yes, but I
+don't like the firework sound. Make the particles orange too and it will be perfect". Each "yes" is the reading; what he
+adds is for the seat to rule. SF9R's row is in `GATE-solar-flare-2.md`'s READINGS.

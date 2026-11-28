@@ -1,6 +1,6 @@
 # GATE — SOLAR FLARE AS BEN CHANGED IT (N1 TO N7), LAST IN THE ONE COMMAND (2026-11-28)
 
-**Status: NOT RUN.** The plan is `docs/plans/PLAN-solar-flare.md` section 6. The scenario is
+**Status: RUN 2026-11-28 on `4f26ca31`; see READINGS (every row READ AS PREDICTED; awaiting the seat).** The plan is `docs/plans/PLAN-solar-flare.md` section 6. The scenario is
 `paper/src/main/resources/selftest/GATE-solar-flare-2.yml`. The stack and the gate branch are `GATE-smolder-2.md`'s.
 **Every prediction below was written before any boot, and is frozen from the seat's approval.** `GATE-solar-flare.md`
 is frozen and not edited; its rows that changed are re-predicted here under their old names with the next suffix (R),
@@ -159,3 +159,21 @@ three shots** (N1), x 2.0. So every hit of one cast reads **`sent=250.000`**, or
 ## OPEN FOR BEN, AND WHAT ONLY THE BOOT CAN SHOW
 
 `GATE-smolder-2.md`'s lists, which cover both gates.
+
+## READINGS — THE BOOT OF `4f26ca31`, 2026-11-28 (written after the run; no prediction above is edited)
+
+The boot, R0, his ground and his build, SAFETY (no `HURT` line), the clock and the view are `GATE-smolder-2.md`'s
+READINGS (the command's). H read as `109.50 201.00 -3.50`; his eye 1.62 above (`202.620`).
+
+| row | reading | class |
+|---|---|---|
+| SF1R | Case **(ii)**: `Q: (empty)` and one `BUILD unoffered … cell=ranger/fire slot=ULTIMATE id=ultimate_placeholder_ranger reads=empty kept=file`. Picker: `Fire three great fireballs, one after another.`, `Each bursts within 6 blocks for 250 fire damage and scorches.`, `Cooldown: 210s`, `Click to choose.` (no `Current`: not his pick). Cell after: `Q: Solar Flare`, `Ultimate`, both lines, `Damage: 250`, `Cost: 80`, `Cooldown: 210.0 s`, `""`, `Click to change.` `STAGE stone … found=0 held=1`. | READ AS PREDICTED |
+| SF2R | z59, z61 `3000.000`. Mana `100.000` (2932) → `20.000` (2933); C = 2934. Shots `-90.000 0.000` at 2934, 2944, 2954. Displays **1** (P+3), **2** (P+22), **0** (the end). Bursts `cause=range origin=141.500 202.620 -3.500` at 2949, 2959, 2969 (C+15, +25, +35): ONE origin, H + 32. **z59 `dist=5.900` on each burst's own tick**, `sent=500.000`, `crit=true` ×3; seven burns 2969–3089, `125.000`; end **`625.000`**. **z61: no hit, `3000.000`.** | READ AS PREDICTED (the crit branch) |
+| SF10 | C = 3141. Shots `-90.000 0.000` (3141), **`-80.000 0.000` (3151)**, **`-100.000 0.000` (3161)**. Bursts `cause=range` at 3156 `141.500 202.620 -3.500`, 3166 **`141.014 202.620 2.057`**, 3176 **`141.014 202.620 -9.057`** = H + (32, 0), H + (31.514, 5.557), H + (31.514, −5.557). | READ AS PREDICTED |
+| SF3R | C = 3248. `burst cause=mob origin=117.500 201.000 -3.500` (s8's feet, H + 8) at 3251, 3261, 3271 (C+3, +13, +23). s8 `dist=0.000` and s13 `dist=5.000` at each, `sent=250.000`. Seven burns each, 3271–3391. End s8 **`1375.000`**, s13 **`1375.000`**. | READ AS PREDICTED |
+| SF4R | `BLOCKS STONE count=1`. C = 3475. `burst cause=block origin=115.000 202.620 -3.500` (H + 5.5) at 3477, 3487, 3497 (C+2, +12, +22). b `dist=2.121` at each; seven burns 3497–3617; end **`1375.000`**. **The block stop, read for the first time.** | READ AS PREDICTED |
+| SF6R | Whistle `yaw=-90.000 pitch=0.000`; the wolf at `139.50 201.00 -5.50` (H + (30, −2)). C = 3716; range bursts at 3731, 3741, 3751. w `dist=2.828` ×3; end **`1375.000`**. **No line names the wolf**; its `SUMMONPROBE` `100.000/100.000` before and after; `SELF 100.000/100.000` before and after. | READ AS PREDICTED |
+| SF7R | Mana `100.000` (3921); the press at 3922 → `20.000`; C = 3923. The press at 3924: **`MANA current=20.100`**, `"Solar Flare -- ready in 209.9s"`. Shots 3923, 3933, 3943; burst 1 at 3938. **`SOLAR_FLARE cancelled remaining=2 cause=selftest tick=3944`** (P+22). At 3947: `79.000`, the press refused, **`"Solar Flare -- needs 80 mana, you have 79"`**, `79.000`. | READ AS PREDICTED |
+| SF8R | C = 3995; shots 3995, 4005. Displays **2**, then **`SOLAR_FLARE cancelled remaining=3 cause=selftest tick=4006`** (P+12), then displays **0**. No `shot n=3`, no burst line. | READ AS PREDICTED |
+| SF11 | `BLOCKS STONE count=1` at H + 2. `SELF 100.000/100.000` before. C = 4087. `burst cause=block origin=111.000 202.620 -3.500` (H + 1.5) at 4087, 4097, 4107 (C, +10, +20). e `dist=2.121`, `sent=500.000`, `crit=true` ×3; seven burns 4107–4227; end **`625.000`**. **His `SELF 100.000/100.000` after; NO `HURT` line.** | READ AS PREDICTED (the crit branch); the SAFETY read holds |
+| SF9R | C = 4294; shots 4294, 4304, 4314; range bursts 4309, 4319, 4329. **Ben (01:12:43): "yes, but I don't like the firework sound. Make the particles orange too and it will be perfect"** | READ AS PREDICTED on what he saw and heard (the burst at 32 was seen and heard: Q1's fix); his note is a change request for the seat |
