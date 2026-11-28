@@ -376,6 +376,22 @@ the death reading on a real death frame.
 - **THE CLOCK, READ by javap** (the gate's section of that name): the ring's hits run on the global region scheduler
   before every entity scheduler in a tick, and a burn booked from that phase first lands 19 ticks later. So four hits
   60 apart burn fifteen times, never colliding with a hit. Executed through the real store (`SmolderGateArithmeticTest`).
+
+  > **DATED CORRECTION, 2026-11-27 (the seat's X6 (a), after the boot of `01be9d3b`): THE BULLET ABOVE IS WRONG IN TWO
+  > PLACES, AND THE READ IT CITES IS RIGHT.** The boot read pulse 2 at **C+59** on every row (pulses 3 and 4 on C+120
+  > and C+180) and every first burn at **hit + 20**, not + 19; at SM2's 6239 a hit and a burn landed on one tick, the
+  > hit logged first. **The phase order and the two scheduler rules quoted above were READ correctly and still hold**
+  > (re-read by javap, `PLAN-owed-fixes.md` *X6 AS BUILT* (a)). **What went wrong is which booking each rule was applied
+  > to:** the bullet said a burn is "booked in a hit's tick" (from the global phase, so one short), without reading that
+  > the hit's damage first hops onto the mob (`BukkitCombatant`'s `onEntity`, which runs later in the same tick's ENTITY
+  > phase) and books the burn from there (exact: 20); and it took pulse 2 as exact, without reading that
+  > `StoneCaster.run` hands the cast to `onRegion` (the GLOBAL phase), from which pulse 2 was booked (one short: 59).
+  > **A READ of the scheduler without a READ of the call path into it.** Also: every trace line prints ONE clock,
+  > `Bukkit.getCurrentTick()`; the selftest's `tick=` reading one less than the cast line is the press (P) against the
+  > cast one tick later (C = P + 1, the `onRegion` hop), not two clocks. **From `feat/x6-clock` on, every pulse lands
+  > exactly on C + interval x (n - 1)** (`CastExecutor.bookOnCaster`, the settle hop). The frozen gate's predictions are
+  > not edited; its successor re-predicts.
+
 - **Correction to section 3.8, found while writing SM1:** the Build screen's cell DOES show the mana (`Cost: 80`); only
   the picker does not. Section 3.8 now says so.
 - **Tests:** `SmolderGateArithmeticTest` (13: every figure the gate quotes, and the SAFETY `harms` calls),

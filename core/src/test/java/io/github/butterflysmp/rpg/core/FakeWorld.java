@@ -65,11 +65,42 @@ public final class FakeWorld implements CombatWorld {
      *  assertions on that map stay untouched while a fuse can read a marker's live position. */
     public final Map<UUID, Vec3> markerPositions = new HashMap<>();
 
-    private record Scheduled(long dueTick, long seq, Runnable task) {}
+    private record Scheduled(long dueTick, boolean entity, long seq, Runnable task) {
+        Scheduled(long dueTick, long seq, Runnable task) {
+            this(dueTick, false, seq, task);
+        }
+    }
 
-    /** Ordered by due time, then insertion, so a tie runs in the order it was queued. */
+    /**
+     * Ordered by due time, then PHASE (the global region scheduler's tasks before every entity scheduler's, as
+     * {@code MinecraftServer.tickChildren} runs them: READ, X6 (a)), then insertion, so a tie runs in the order it was
+     * queued. With {@link #serverPhases} off every task is global-phase and the order is due time then insertion, as
+     * it always was.
+     */
     private final PriorityQueue<Scheduled> queue = new PriorityQueue<>(
-            Comparator.comparingLong(Scheduled::dueTick).thenComparingLong(Scheduled::seq));
+            Comparator.comparingLong(Scheduled::dueTick)
+                    .thenComparing(Scheduled::entity)
+                    .thenComparingLong(Scheduled::seq));
+
+    /**
+     * THE SERVER'S TWO PHASES, MODELLED (X6 (a), 2026-11-27; opt-in, off for every test written before it). READ by
+     * javap on the pinned 26.1.2 server: {@code MinecraftServer.tickChildren} runs {@code FoliaGlobalRegionScheduler.tick}
+     * (where a region task, and so every cast {@code StoneCaster.run} hands to {@code onRegion}, runs) BEFORE every
+     * {@code EntityScheduler.executeTick}; {@code EntityScheduler.schedule} keys a task at {@code tickCount + max(1,
+     * delay)}, and {@code executeTick} increments {@code tickCount} BEFORE it looks. So an entity task booked from
+     * the GLOBAL phase of tick T, before that entity's own {@code executeTick} has run in T, runs at {@code T + delay -
+     * 1} (a delay of 1 runs later in T itself); booked from the ENTITY phase it runs at {@code T + delay}. A global task
+     * runs at {@code T + delay} from either phase (its counter has already moved in T). On, this fake does the same.
+     */
+    public boolean serverPhases = false;
+
+    /** Whether the task now running is an entity-scheduler task (the ENTITY phase). Test code itself is the global phase. */
+    private boolean inEntityPhase = false;
+
+    /** The tick an entity task booked now with {@code delay} comes due: one short from the global phase, with phases on. */
+    private long entityDue(int delay) {
+        return serverPhases && !inEntityPhase ? now + delay - 1 : now + delay;
+    }
 
     private long now = 0L;
     private long seq = 0L;
@@ -343,7 +374,7 @@ public final class FakeWorld implements CombatWorld {
                     "scheduleOn requires delayTicks >= 1, got " + delayTicks
                             + "; to act on the current frame, act inline");
         }
-        queue.add(new Scheduled(now + delayTicks, seq++, () -> {
+        queue.add(new Scheduled(entityDue(delayTicks), serverPhases, seq++, () -> {
             if (combatant(combatantId).isEmpty()) return;   // the entity went; the task does not run
             task.run();
         }));
@@ -363,7 +394,7 @@ public final class FakeWorld implements CombatWorld {
         }
         if (combatant(combatantId).isEmpty()) return -1;
         long handle = seq;
-        queue.add(new Scheduled(now + delayTicks, seq++, () -> {
+        queue.add(new Scheduled(entityDue(delayTicks), serverPhases, seq++, () -> {
             if (combatant(combatantId).isEmpty()) return;
             task.run();
         }));
@@ -763,7 +794,13 @@ public final class FakeWorld implements CombatWorld {
             }
             Scheduled next = queue.poll();
             now = next.dueTick(); // never moves backward; the queue pops in due order
-            next.task().run();
+            boolean outer = inEntityPhase;
+            inEntityPhase = next.entity();
+            try {
+                next.task().run();
+            } finally {
+                inEntityPhase = outer;
+            }
         }
         now = target;
     }

@@ -210,6 +210,69 @@ class PulseCastTest {
                 .filter(p -> p.line().event() == PulseLine.Event.PULSE).map(FakeWorld.TracedPulse::tick).toList());
     }
 
+    // ===================================================================== X6 (a): exact on the server's own phases
+
+    /**
+     * THE CONTROL: THE FAKE'S PHASES REPRODUCE THE BOOT OF {@code 01be9d3b}. With {@link FakeWorld#serverPhases} on, an
+     * entity delay of 60 booked from the GLOBAL phase (test code, where a cast runs) lands 59 ticks later, as pulse 2 did
+     * on every row (6111 to 6170); the same delay booked from the ENTITY phase lands 60 later, as pulses 3 and 4 did.
+     * Without this row the exact-tick row below could pass on a fake that never models the phase at all.
+     */
+    @Test
+    void theFakesPhasesReproduceTheBootsCPlus59AndAnEntityPhaseBookingIsExact() {
+        var world = new FakeWorld();
+        world.serverPhases = true;
+        var him = caster(world);
+        world.advanceTicks(7);
+        long[] fromGlobal = {-1};
+        long[] fromEntity = {-1};
+        world.scheduleOnCancellable(him.id(), Vec3.ZERO, 60, () -> fromGlobal[0] = world.now());
+        world.scheduleOnCancellable(him.id(), Vec3.ZERO, 1, () -> {
+            long booked = world.now();
+            world.scheduleOnCancellable(him.id(), Vec3.ZERO, 60, () -> fromEntity[0] = world.now() - booked);
+        });
+        world.advanceTicks(200);
+        assertEquals(66L, fromGlobal[0], "booked from the global phase at 7: one short, 66");
+        assertEquals(60L, fromEntity[0], "booked from the entity phase: exactly 60 later");
+    }
+
+    /**
+     * EXACT ON THE SERVER'S PHASES (X6 (a)): the cast at 7 runs in the GLOBAL phase, and every pulse still lands on
+     * {@code 7 + 60 (n - 1)}: 7, 67, 127, 187. Forces red: booking the next pulse straight from the cast's phase (the
+     * build the boot of {@code 01be9d3b} read, pulse 2 at 66).
+     */
+    @Test
+    void onTheServersPhasesEveryPulseLandsOnTheCastTickPlusWholeIntervals() {
+        var world = new FakeWorld();
+        world.serverPhases = true;
+        var him = caster(world);
+        var z = body(world, 3, 0);
+        world.advanceTicks(7);
+        cast(world, him, ability(SMOLDER));
+        world.advanceTicks(400);
+        assertEquals(List.of(7L, 67L, 127L, 187L), world.pulseLines.stream()
+                .filter(p -> p.line().event() == PulseLine.Event.PULSE).map(FakeWorld.TracedPulse::tick).toList());
+        assertEquals(List.of("n=1 tick=15", "n=2 tick=75", "n=3 tick=135", "n=4 tick=195"), hitsOn(world, z));
+    }
+
+    /**
+     * THE SETTLE HOP IS A PENDING LINK OF THE RUN: ended on the cast's own tick, before the hop has run, the run hands
+     * back that link's handle, it is cancelled, and no second pulse follows. Forces red: the hop's handle not held by
+     * the run (the removal path would cancel nothing and pulse 2 would fire).
+     */
+    @Test
+    void aRunEndedBeforeItsSettleHopRunsFiresNothingMore() {
+        var world = new FakeWorld();
+        world.serverPhases = true;
+        var him = caster(world);
+        cast(world, him, ability(SMOLDER));
+        var ended = world.pulseRuns.end(him.id()).orElseThrow();
+        world.cancelScheduled(ended.pendingHandle());
+        assertEquals(3, ended.remaining());
+        world.advanceTicks(400);
+        assertEquals(1, lines(world, PulseLine.Event.PULSE).size());
+    }
+
     /** A body that walks in BEHIND the ring is not struck by that pulse: the ring reached its distance earlier. */
     @Test
     void aBodyThatEntersBehindTheRingIsNotStruckByThatPulse() {
