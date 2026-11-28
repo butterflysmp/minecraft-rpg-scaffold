@@ -91,8 +91,10 @@ class ScorchStampStatusTest {
         String needle = "accrued.durationTicks(), element, accrual.depth() + 1,";
         int at = src.indexOf(needle);
         assertTrue(at > 0, "the accrual-driven scorch apply was not found");
-        String after = src.substring(at + needle.length(), src.indexOf(";", at));
-        assertTrue(after.trim().endsWith("accrual.scorchStampPercent())"), "the stamp is not handed on: " + after);
+        // The apply is the CONDITION of the flame's `if` since water puts out Scorch (A4, 2026-11-27: a refused
+        // application sets no flame), so the call ends at the `{` that opens the flame, not at a `;`.
+        String after = src.substring(at + needle.length(), src.indexOf("{", at));
+        assertTrue(after.trim().endsWith("accrual.scorchStampPercent()))"), "the stamp is not handed on: " + after);
     }
 
     /** The burn ended or was forgotten: the stamp goes with it, so a later plain scorch carries none. */

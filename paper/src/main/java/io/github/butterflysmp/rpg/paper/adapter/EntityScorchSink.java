@@ -4,8 +4,12 @@ import io.github.butterflysmp.rpg.core.combat.HitAccrual;
 import io.github.butterflysmp.rpg.core.combat.CritState;
 import io.github.butterflysmp.rpg.core.combat.DefenseRule;
 
+import io.github.butterflysmp.rpg.core.combat.Douse;
+
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -79,5 +83,31 @@ public final class EntityScorchSink implements ScorchSink {
         BukkitCombatant.of(entity, ctx).handle()
                 .applyDamage(amount, applierId, CritState.NORMAL, DefenseRule.BYPASSED,
                         element, HitAccrual.inert());
+    }
+
+    @Override public Optional<Douse.Cause> wet() {
+        return wetness(entity);
+    }
+
+    @Override public void clearFlame() {
+        entity.setFireTicks(Math.min(0, entity.getFireTicks()));
+    }
+
+    /**
+     * THE ADAPTER'S ONE READING OF "WET" (the seat's Y2 and E1): the server's own two answers, read on the body's
+     * thread, through the one pure decision. Used by the application and the burn tick (through {@link #wet}) and by
+     * both of Ignite's clauses at a death, so all three seams read the same thing.
+     *
+     * <p>READ by javap, the pinned 26.1.2 server: {@code CraftEntity.isInWater} is {@code Entity.isInWater}, which
+     * returns the field {@code wasTouchingWater}, set each tick by {@code Entity.updateFluidInteraction} from
+     * {@code EntityFluidInteraction.update}, which walks the fluid box's blocks' {@code getFluidState()} for the WATER
+     * tag. So it covers water source and flowing, a waterlogged block and a bubble column (whose
+     * {@code getFluidState} is a water source), and NOT a water cauldron: neither cauldron class overrides
+     * {@code getFluidState}, so it is {@code BlockBehaviour}'s {@code Fluids.EMPTY} (E4). {@code isInRain} is
+     * {@code Entity.isInRain}: raining at the block or the top of the box, which asks the sky, the rain heightmap and
+     * the biome's precipitation.
+     */
+    public static Optional<Douse.Cause> wetness(Entity entity) {
+        return Douse.wet(entity.isInWater(), entity.isInRain());
     }
 }
