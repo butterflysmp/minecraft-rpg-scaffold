@@ -132,7 +132,7 @@ class PoolLoaderTest {
         PoolDefinition pool = registry.find("mage", "fire").orElseThrow();
         assertEquals("ember_step", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_1));
         assertEquals("solar_grenade", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_2));
-        assertEquals("ultimate_placeholder_mage", pool.defaultLoadout().idFor(LoadoutSlot.ULTIMATE));
+        assertEquals("smolder", pool.defaultLoadout().idFor(LoadoutSlot.ULTIMATE));
     }
 
     /**
@@ -378,11 +378,11 @@ class PoolLoaderTest {
         write("mage_fire.yml", """
                 class: mage
                 element: fire
-                ultimates: [ultimate_placeholder_mage]
+                ultimates: [smolder]
                 actives: [ember_step, solar_grenade]
                 fragments: [fragment_vigor, fragment_ember_cache]
                 default:
-                  ultimate: ultimate_placeholder_mage
+                  ultimate: smolder
                   actives: [ember_step, solar_grenade]
                 """);
         assertEquals(0, load(BUNDLED_ABILITY).size());
@@ -414,10 +414,10 @@ class PoolLoaderTest {
         write("mage_fire.yml", """
                 class: mage
                 element: fire
-                ultimates: [ultimate_placeholder_mage]
+                ultimates: [smolder]
                 actives: [ember_step, solar_grenade]
                 default:
-                  ultimate: ultimate_placeholder_mage
+                  ultimate: smolder
                   actives: [ember_step, solar_lance]
                 """);
         assertEquals(0, load(BUNDLED_ABILITY).size());
@@ -444,10 +444,10 @@ class PoolLoaderTest {
         write("mage_fire.yml", """
                 class: mage
                 element: fire
-                ultimates: [ultimate_placeholder_mage]
+                ultimates: [smolder]
                 actives: [ember_step, solar_grenade]
                 default:
-                  ultimate: ultimate_placeholder_mage
+                  ultimate: smolder
                   actives: [ember_step]
                 """);
         assertEquals(0, load(BUNDLED_ABILITY).size());

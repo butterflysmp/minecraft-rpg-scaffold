@@ -1072,6 +1072,8 @@ final class SelfTestDrivers {
         boolean orb = adapters.orbs().of(id).isPresent();
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, id, "selftest");
         int fused = io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(adapters, id, "selftest");   // F2: his fused chunks, never to go off
+        // SMOLDER'S PENDING PULSES (the seat's Z5, 2026-11-27): ended, each with its <LABEL> cancelled ... cause=selftest line.
+        io.github.butterflysmp.rpg.paper.weapon.PulseRemovals.end(adapters, id, "selftest");
         int summoned = io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, id,
                 io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);   // 3b, D7: clear_state
         // THE BLINK (the Blink Tome's K9, 2026-11-26): its cooldown went with every other above; its state ends now, taking

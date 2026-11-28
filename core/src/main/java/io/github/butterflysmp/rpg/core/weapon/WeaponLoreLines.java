@@ -369,6 +369,7 @@ public final class WeaponLoreLines {
             // One payload per body it reaches, like a burst: the tooltip's "x N" counts deliveries from one press, and a
             // cone delivers its on_hit once to each body, never N times to one.
             case CastSpec.Cone ignored -> 1;
+            case CastSpec.Pulses pulses -> pulses.count();   // each pulse delivers its on_hit to each body once
             case CastSpec.Orb ignored -> 1;
             case CastSpec.Summon ignored -> 1;   // one summon per press (its on_hit is the summon's own hits, PR 4)
             case CastSpec.DirectSummon ignored -> 1;   // one order per press

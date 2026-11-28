@@ -39,6 +39,11 @@ public final class BuildService {
         this.log = log;
     }
 
+    /** The build store's logger (the A3 line: an unoffered saved id, logged once by {@code Stones}). */
+    public Logger log() {
+        return log;
+    }
+
     /**
      * Start loading this player's build. The returned future completes (normally or not) when the load
      * settles, so a caller can re-render the stone's lore once the saved loadout is known.

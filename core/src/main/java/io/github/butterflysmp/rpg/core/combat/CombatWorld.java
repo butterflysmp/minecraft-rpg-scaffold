@@ -122,6 +122,27 @@ public interface CombatWorld {
     void scheduleOn(UUID combatantId, int delayTicks, Runnable task);
 
     /**
+     * {@link #scheduleOn}, CANCELLABLE, and registered with a POINT so a clean can end it there (Smolder, the seat's Z6,
+     * 2026-11-27; CC'S CALL). The task runs on the thread that owns the COMBATANT, which is what lets it read where he
+     * stands; the point ({@code lastKnown}, where he was when this was asked) is what the selftest's pad clean finds it by,
+     * as {@link #scheduleCancellable} is found. Returns the handle {@link #cancelScheduled} takes, or {@code -1} when the
+     * combatant is not here (nothing is scheduled). The same rules: {@code delayTicks >= 1}; a combatant gone when the
+     * delay ends does not run it.
+     *
+     * <p>Abstract, so an implementor that has not answered does not compile.
+     */
+    long scheduleOnCancellable(UUID combatantId, Vec3 lastKnown, int delayTicks, Runnable task);
+
+    /** The server's one {@link PulseRuns} (Smolder, Z5): every caster's pulses still to fire. */
+    PulseRuns pulseRuns();
+
+    /**
+     * A pulse trace line (Z10), written while trace is on. The adapter adds the target's type and the tick
+     * ({@link PulseLine#format}).
+     */
+    void tracePulse(PulseLine line);
+
+    /**
      * Where this combatant's eye is and which way it is LOOKING, right now. Empty if it is not here.
      *
      * <p>A READ, like {@link #combatantsNear} and {@link #castRay}: only legal on the thread that

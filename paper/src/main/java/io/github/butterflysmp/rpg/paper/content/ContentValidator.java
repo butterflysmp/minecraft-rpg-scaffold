@@ -782,6 +782,27 @@ public final class ContentValidator {
             // A cone's front (2026-11-22, the Living Lantern): the id must name a visual, and that visual may hold no
             // sound. The ray beam's rule, with its own reason: the ray arm's message names chunk-column segments, which
             // is not why a front may not carry a sound.
+            // PULSES (Smolder, Z7, 2026-11-27): the ring's id names a visual with no sound (drawn at every point of the ring
+            // on every tick, the cone front's reason), and the pulse's id names a visual (presented once per pulse, so a
+            // sound belongs there).
+            case CastSpec.Pulses pulses -> {
+                if (pulses.ring() != null) {
+                    VisualDefinition ring = visuals.find(pulses.ring()).orElse(null);
+                    if (ring == null) {
+                        problems.add(ownerLabel + " names pulses ring visual '" + pulses.ring()
+                                + "', which no visual defines");
+                    } else if (ring.steps().stream().anyMatch(s -> s instanceof VisualSpec.Sound)) {
+                        problems.add(ownerLabel + " names pulses ring visual '" + pulses.ring()
+                                + "', which contains a sound step. A ring is drawn at every point round it on every tick"
+                                + " of its travel, so the sound would play that many times a tick. Put the sound in the"
+                                + " pulse visual instead");
+                    }
+                }
+                if (pulses.pulse() != null && visuals.find(pulses.pulse()).isEmpty()) {
+                    problems.add(ownerLabel + " names pulses pulse visual '" + pulses.pulse()
+                            + "', which no visual defines");
+                }
+            }
             case CastSpec.Cone cone -> {
                 if (cone.front() == null) return;
                 VisualDefinition front = visuals.find(cone.front()).orElse(null);

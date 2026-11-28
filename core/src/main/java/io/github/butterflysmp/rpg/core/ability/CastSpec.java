@@ -799,6 +799,52 @@ public sealed interface CastSpec {
     }
 
     /**
+     * PULSES FROM THE CASTER (YAML {@code type: pulses}; Smolder, the Fire Mage's ultimate, the seat's Z1, 2026-11-27).
+     * {@code count} pulses, the first on the cast's own tick and each next one {@code intervalTicks} after the last. Each
+     * pulse ORIGINATES at the caster's feet ON ITS OWN TICK, and that origin is then FIXED for the pulse's life: a ring
+     * leaves it and grows to {@code radius} blocks over {@code travelTicks} ticks, striking each body once, on the tick
+     * the ring first reaches it ({@code core.combat.PulseFront}, the one rule). Each strike takes the ability's
+     * {@code on_hit}, at the body's feet.
+     *
+     * <ul>
+     *   <li>{@code ring}: a visual id drawn round the ring each tick of its travel (OPTIONAL; ContentValidator refuses a
+     *       sound step in it, as in a cone's front, because it plays at every point on every tick).</li>
+     *   <li>{@code pulse}: a visual id presented ONCE at each pulse's origin, on its tick (OPTIONAL; a sound belongs
+     *       here).</li>
+     * </ul>
+     *
+     * <p><b>A MEMBER AND NOT A VOLLEY, because nothing here is aimed.</b> A volley re-casts an AIMED cast (a ray or a
+     * projectile) and a cone holds a line captured at the click; a pulse reads no aim at all, only where the caster
+     * STANDS when it fires. The nearest thing is a cone's travelling front, whose struck-set rule this reuses.
+     *
+     * <p>No bundled content reaches the refusals below; {@code CastSpecPulsesTest} causes each.
+     */
+    record Pulses(int count, int intervalTicks, double radius, int travelTicks, String ring, String pulse)
+            implements CastSpec {
+        public Pulses {
+            if (count < 1) throw new IllegalArgumentException("pulses count must be 1 or more, was " + count);
+            // The scheduler cannot defer by less than a tick (Volley's own reason): 0 would quietly become 1.
+            if (intervalTicks < 1) {
+                throw new IllegalArgumentException("pulses interval_ticks must be 1 or more, was " + intervalTicks);
+            }
+            if (!(radius > 0 && Double.isFinite(radius))) {
+                throw new IllegalArgumentException("pulses radius must be more than 0 blocks, was " + radius);
+            }
+            if (travelTicks < 1) {
+                throw new IllegalArgumentException("pulses travel_ticks must be 1 or more, was " + travelTicks
+                        + ": the ring takes at least one tick to reach its edge");
+            }
+            if (ring != null && ring.isBlank()) ring = null;
+            if (pulse != null && pulse.isBlank()) pulse = null;
+        }
+
+        /** The tick of the LAST ring's end, counted from the cast frame: the last pulse plus its travel. */
+        public int minimumCooldownTicks() {
+            return (count - 1) * intervalTicks + travelTicks;
+        }
+    }
+
+    /**
      * The shortest cooldown this cast shape may be given, whatever its file authored.
      *
      * <p><b>THIS EXISTS BECAUSE A DERIVATION THAT LIVES IN A PLAN DOCUMENT IS NOT A MECHANISM.</b>
@@ -835,6 +881,8 @@ public sealed interface CastSpec {
     static int minimumCooldownTicks(CastSpec cast) {
         return switch (cast) {
             case Volley volley -> volley.minimumCooldownTicks();
+            // Two runs of one caster's pulses must not overlap: the floor is the last ring's end.
+            case Pulses pulses -> pulses.minimumCooldownTicks();
             case Self ignored -> 0;
             case Melee ignored -> 0;
             case Vanilla ignored -> 0;   // never cast by us; vanilla's draw and load are the cadence

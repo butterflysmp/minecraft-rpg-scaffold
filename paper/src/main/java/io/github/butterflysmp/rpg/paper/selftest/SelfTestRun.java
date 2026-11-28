@@ -128,6 +128,8 @@ final class SelfTestRun {
                     player.getUniqueId(), io.github.butterflysmp.rpg.core.summon.SummonRemoval.CLEAR);
             // AND HIS FUSED CHUNKS (the seat's F2, 2026-11-26): a chunk left from the last row never goes off in this one.
             int fused = io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(service.adapters(), player.getUniqueId(), "selftest");
+            // AND HIS PENDING PULSES (Smolder, the seat's Z5, 2026-11-27): no row inherits the last row's run; its cancelled line says so.
+            io.github.butterflysmp.rpg.paper.weapon.PulseRemovals.end(service.adapters(), player.getUniqueId(), "selftest");
             // AND HIS DRUMMING BEAT STREAK (the Bone Club's M5, 2026-11-26): no row inherits the last row's n. Logged as the
             // n that was forgotten.
             var drumStreaks = service.adapters().behaviourHits().drums();

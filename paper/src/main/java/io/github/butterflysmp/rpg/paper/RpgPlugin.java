@@ -1229,6 +1229,7 @@ OLD
         // EVERY ORB, AT STOP (Lapis Crystal's D2, B6): removed before the worlds save, each with its ORB removed cause=stop line.
         if (adapters != null) io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.removeAll(adapters);
         if (adapters != null) io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAll(adapters);   // F2: every fused chunk at stop, cause=stop
+        if (adapters != null) io.github.butterflysmp.rpg.paper.weapon.PulseRemovals.endAll(adapters);   // Smolder, Z5: every pending pulse at stop
         if (adapters != null) io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAll(adapters);   // 3b, D7: stop
         // THE MIRROR IS NEVER SAVED (2026-11-22): after the selftest's own restore, every online player's Nexus slot goes back
         // to the star before the server writes the inventories.

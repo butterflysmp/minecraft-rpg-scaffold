@@ -57,6 +57,41 @@ class LoadoutResolutionTest {
         assertEquals(Optional.of("act_b"), e.idFor(LoadoutSlot.ACTIVE_2));
     }
 
+    /**
+     * THE SEAT'S A3 (2026-11-27), ON THE SHIPPED FIRE MAGE POOL'S SHAPE: Smolder replaced {@code ultimate_placeholder_mage}.
+     * A loadout SAVED naming the deleted id resolves to an EMPTY Q (never Smolder, never the default slot by slot), its
+     * Actives as saved, and {@link LoadoutResolution#unoffered} names exactly that one slot, which is what is logged once.
+     * A player with NOTHING saved gets Smolder by the default, and nothing is unoffered.
+     */
+    @Test
+    void aSavedLoadoutNamingTheDeletedPlaceholderReadsAnEmptyUltimateAndNamesItOnce() {
+        PoolDefinition fireMage = new PoolDefinition(new CellKey("mage", "fire"), "Fire Mage",
+                List.of("smolder"), List.of("ember_step", "solar_grenade", "solar_lance"),
+                new Loadout("smolder", "ember_step", "solar_grenade"));
+        Optional<Saved> saved = Optional.of(new Saved("ultimate_placeholder_mage", "solar_lance", "ember_step"));
+
+        Equipped e = LoadoutResolution.resolve(fireMage, saved);
+        assertEquals(Optional.empty(), e.idFor(LoadoutSlot.ULTIMATE));
+        assertEquals(Optional.of("solar_lance"), e.idFor(LoadoutSlot.ACTIVE_1));
+        assertEquals(Optional.of("ember_step"), e.idFor(LoadoutSlot.ACTIVE_2));
+        assertEquals(List.of(new LoadoutResolution.Unoffered(LoadoutSlot.ULTIMATE, "ultimate_placeholder_mage")),
+                LoadoutResolution.unoffered(fireMage, saved));
+
+        Equipped fresh = LoadoutResolution.resolve(fireMage, Optional.empty());
+        assertEquals(Optional.of("smolder"), fresh.idFor(LoadoutSlot.ULTIMATE));
+        assertEquals(List.of(), LoadoutResolution.unoffered(fireMage, Optional.empty()));
+    }
+
+    /** Unoffered names every slot read empty for want of an offer, in slot order, and NOT a slot saved empty. */
+    @Test
+    void unofferedNamesEachDroppedIdButNotASlotSavedEmpty() {
+        assertEquals(List.of(new LoadoutResolution.Unoffered(LoadoutSlot.ULTIMATE, "act_a"),
+                        new LoadoutResolution.Unoffered(LoadoutSlot.ACTIVE_1, "ult_a")),
+                LoadoutResolution.unoffered(POOL, Optional.of(new Saved("act_a", "ult_a", null))));
+        assertEquals(List.of(new LoadoutResolution.Unoffered(LoadoutSlot.ACTIVE_2, "gone")),
+                LoadoutResolution.unoffered(POOL, Optional.of(new Saved(null, "act_b", "gone"))));
+    }
+
     @Test
     void savedEmptySlotsStayEmpty() {
         Equipped e = LoadoutResolution.resolve(POOL, Optional.of(new Saved(null, null, "act_b")));

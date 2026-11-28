@@ -1235,6 +1235,7 @@ public final class RpgListeners implements Listener {
     public void onOrbOwnerDeath(PlayerDeathEvent event) {
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "death");
         io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(), "death");   // F2
+        io.github.butterflysmp.rpg.paper.weapon.PulseRemovals.end(adapters, event.getPlayer().getUniqueId(), "death");   // Smolder, Z5: his pending pulses
     }
 
     /** And when he changes world (D2, B6): an orb never outlives his presence in its world. */
@@ -1242,6 +1243,7 @@ public final class RpgListeners implements Listener {
     public void onOrbOwnerChangedWorld(org.bukkit.event.player.PlayerChangedWorldEvent event) {
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "world_change");
         io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(), "world_change");   // F2
+        io.github.butterflysmp.rpg.paper.weapon.PulseRemovals.end(adapters, event.getPlayer().getUniqueId(), "world_change");   // Smolder, Z5: his pending pulses
     }
 
     // ============================================================== THE SUMMON'S LIFECYCLE (3b, D7; the seat's Q4)
@@ -2682,6 +2684,7 @@ public final class RpgListeners implements Listener {
         io.github.butterflysmp.rpg.paper.weapon.OrbRemovals.remove(adapters, event.getPlayer().getUniqueId(), "quit");
         // And his fused chunks (the seat's F2, 2026-11-26: removed on his quit; none goes off after he leaves).
         io.github.butterflysmp.rpg.paper.weapon.FusedRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(), "quit");
+        io.github.butterflysmp.rpg.paper.weapon.PulseRemovals.end(adapters, event.getPlayer().getUniqueId(), "quit");   // Smolder, Z5: his pending pulses
         // And his summons (3b, D7: removed on his quit).
         io.github.butterflysmp.rpg.paper.summon.SummonRemovals.removeAllOf(adapters, event.getPlayer().getUniqueId(),
                 io.github.butterflysmp.rpg.core.summon.SummonRemoval.QUIT);

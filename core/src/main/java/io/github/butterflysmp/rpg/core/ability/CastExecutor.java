@@ -52,6 +52,9 @@ public final class CastExecutor {
      */
     private final Runnable onBasicAttackUse;
 
+    /** The direct-damage listener this executor's applier reports to; a pulse's hit reports to it too (Z10's sent=). */
+    private final DirectDamage onDirectDamage;
+
     public CastExecutor(CombatWorld world) {
         this(world, () -> {});
     }
@@ -88,6 +91,7 @@ public final class CastExecutor {
         this.world = world;
         this.effects = new EffectApplier(world, onDirectDamage);
         this.onBasicAttackUse = onBasicAttackUse;
+        this.onDirectDamage = onDirectDamage;
     }
 
     /** A cast whose press is THIS tick: every caller with no hop between the press and the cast (a test, a dev cast). */
@@ -323,6 +327,9 @@ public final class CastExecutor {
 
             case CastSpec.Cone cone -> beginCone(ability, source, aim, cone);
 
+            // PULSES (Smolder, Z1): read no aim at all, only where the caster stands, at the cast and at each pulse.
+            case CastSpec.Pulses pulses -> beginPulses(ability, source, caster, pulses);
+
             case CastSpec.Orb orb -> throwOrb(ability, source, aim, orb);
 
             // A SUMMON CAST NEVER REACHES THE ENGINE (3a): the summon service decides the cap BEFORE the cast is charged
@@ -397,6 +404,118 @@ public final class CastExecutor {
         if (n == 0 || tick >= n) return;
         Set<UUID> carried = Set.copyOf(struckNow);
         world.schedule(aim.origin(), 1, () -> conePass(ability, caster, aim, cone, tick + 1, carried));
+    }
+
+    /**
+     * START PULSES (Smolder, the seat's Z1 to Z7 and A5, 2026-11-27). The cast's line is written, a run is started in the
+     * server's one {@link io.github.butterflysmp.rpg.core.combat.PulseRuns} (a run still pending for this caster is
+     * replaced and its line written, cause {@code replaced}), and pulse 1 fires INLINE, on the cast's own tick, at the
+     * caster's feet as the cast's snapshot read them.
+     *
+     * <p><b>THE CASTER IS FROZEN AT THE CAST</b> (CC'S CALL; the alternative is a volley's re-read before each pulse): one
+     * {@code Caster} for all four pulses, so a crit rolled at the cast crits every hit of the run, and the held weapon's
+     * score, his enchant percent and his class bonus are the cast's. An area field carries its caster the same way.
+     */
+    private void beginPulses(AbilityDefinition ability, Caster caster, CombatantSnapshot snapshot, CastSpec.Pulses spec) {
+        String label = ability.id().toUpperCase(java.util.Locale.ROOT);
+        world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.cast(label, caster.id()));
+        var started = world.pulseRuns().start(caster.id(), label, spec.count());
+        started.replaced().ifPresent(old -> {
+            if (old.pendingHandle() >= 0) world.cancelScheduled(old.pendingHandle());
+            world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.cancelled(
+                    old.run().label(), caster.id(), old.remaining(), "replaced"));
+        });
+        firePulse(ability, caster, spec, started.run(), world.currentTick(), 1, snapshot.position());
+    }
+
+    /**
+     * PULSE {@code n} FIRES at {@code origin}, the caster's feet on this tick, which is FIXED for this pulse's life (Z1).
+     * Its line, its visual at the origin, its ring's tick 0 inline; then the NEXT pulse is scheduled ON THE CASTER
+     * ({@link CombatWorld#scheduleOnCancellable}), so it runs on his thread and reads where he stands then, and its handle
+     * is held by the run so his death, quit or world change ends it (Z5).
+     *
+     * <p><b>THREADING, AND WHY IT IS REGION-SAFE.</b> Pulse 1 runs on the cast's region (the caster's eye, a block and a
+     * half above the feet it reads). Each later pulse runs on the caster's OWN thread, the only thread that may read his
+     * position. Each ring tick after tick 0 is {@code world.schedule} at the pulse's fixed ORIGIN, so it runs on the region
+     * owning that point, and each link of every chain is a {@code PendingWork} link registered at its point, so the
+     * selftest's pad clean ends any of them there. The one Folia debt is the cone's, recorded on
+     * {@link #conePass}: a ring's query reaches {@code radius} blocks from its origin and may read a neighbouring region's
+     * chunks. Paper runs one thread, so it does not bite there.
+     */
+    private void firePulse(AbilityDefinition ability, Caster caster, CastSpec.Pulses spec,
+                           io.github.butterflysmp.rpg.core.combat.PulseRuns.Run run, long castTick, int n, Vec3 origin) {
+        // NO "is this run still current" CHECK HERE, and that is deliberate: every way a run ends (PulseRemovals, a
+        // replacing cast) takes its pending link out first, so a link that runs belongs to a live run. A check here
+        // could never fire. PulseRuns.fired ignores a stale run besides.
+        var runs = world.pulseRuns();
+        runs.fired(run, n);
+        world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.pulse(run.label(), caster.id(), n, origin));
+        if (spec.pulse() != null) world.present(origin, spec.pulse());
+        ringPass(ability, caster, spec, run.label(), n, origin, 0, Set.of());
+        if (n >= spec.count()) return;
+        // WHEN (Z1): the next pulse is due at castTick + n x interval (PulseFront.pulseTick), counted from THIS tick, so a
+        // pulse that ran a tick late does not push the rest late with it. Never less than the scheduler's one tick.
+        int delay = (int) Math.max(1,
+                io.github.butterflysmp.rpg.core.combat.PulseFront.pulseTick(castTick, n + 1, spec.intervalTicks())
+                        - world.currentTick());
+        long handle = world.scheduleOnCancellable(caster.id(), origin, delay, () ->
+                world.combatant(caster.id()).ifPresent(c ->
+                        firePulse(ability, caster, spec, run, castTick, n + 1, c.state().position())));
+        if (handle >= 0) runs.pending(run, handle);
+    }
+
+    /**
+     * ONE TICK OF A PULSE'S RING (Z2, Z7). Draws the ring at {@link io.github.butterflysmp.rpg.core.combat.PulseFront#radiusAt},
+     * then strikes, nearest first, every body the ring reaches ON THIS TICK by the one rule
+     * ({@link io.github.butterflysmp.rpg.core.combat.PulseFront#reachTick} equal to {@code t}), that this pulse has not
+     * struck, and that the sides table admits on {@link MobHostility.PvpPath#PULSE}.
+     *
+     * <p><b>"IN RANGE" IS THE BURST'S OWN MEASURE AND THE RING'S</b> (A5): the candidates are
+     * {@code world.combatantsNear(origin, radius)}, the query a burst lands on (in production a BOX of half-extent
+     * {@code radius} about the origin, {@code World#getNearbyEntities(center, r, r, r)}, so the vertical reach is the
+     * box's), AND the body's HORIZONTAL distance from the fixed origin is within the radius; the strike is TIMED by that
+     * horizontal distance. A body that walks in behind the ring is not struck: the ring reached its distance on an
+     * earlier tick. NO LINE OF SIGHT is asked (CC'S CALL: a burst asks none; the alternative is the cone's eye trace).
+     *
+     * <p>Never the caster (his id); never a player ({@code PULSE} is spared); never a summon (PLAYER -> SUMMON is a "no").
+     */
+    private void ringPass(AbilityDefinition ability, Caster caster, CastSpec.Pulses spec, String label, int n,
+                          Vec3 origin, int t, Set<UUID> struck) {
+        double r = io.github.butterflysmp.rpg.core.combat.PulseFront.radiusAt(t, spec.radius(), spec.travelTicks());
+        if (spec.ring() != null) {
+            for (Vec3 point : io.github.butterflysmp.rpg.core.combat.PulseFront.ringPoints(origin, r)) {
+                world.present(point, spec.ring());
+            }
+        }
+
+        record Reached(Combatant body, double dist) {}
+        java.util.List<Reached> reached = new java.util.ArrayList<>();
+        for (Combatant c : world.combatantsNear(origin, spec.radius())) {
+            if (c.id().equals(caster.id()) || struck.contains(c.id())) continue;
+            double d = io.github.butterflysmp.rpg.core.combat.PulseFront.horizontal(origin, c.state().position());
+            if (io.github.butterflysmp.rpg.core.combat.PulseFront.reachTick(d, spec.radius(), spec.travelTicks()) != t) continue;
+            if (!MobHostility.harms(MobHostility.ENGINE_ATTACKER, c.state().side(), false, MobHostility.PvpPath.PULSE)) continue;
+            reached.add(new Reached(c, d));
+        }
+        reached.sort(java.util.Comparator.comparingDouble(Reached::dist));
+
+        Set<UUID> struckNow = new HashSet<>(struck);
+        for (Reached hit : reached) {
+            struckNow.add(hit.body().id());
+            // The hit's own applier, reporting the amount it deals to this executor's listener AND to the line's sent=:
+            // the one place the number is built (EffectApplier), never recomputed here.
+            double[] sent = {0.0};
+            new EffectApplier(world, (amount, element) -> {
+                sent[0] += amount;
+                onDirectDamage.accept(amount, element);
+            }).applyAll(ability.onHit(), caster, hit.body(), hit.body().state().position());
+            world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.hit(label, caster.id(), n,
+                    hit.body().id(), hit.dist(), sent[0]));
+        }
+
+        if (t >= spec.travelTicks()) return;
+        Set<UUID> carried = Set.copyOf(struckNow);
+        world.schedule(origin, 1, () -> ringPass(ability, caster, spec, label, n, origin, t + 1, carried));
     }
 
     /**
@@ -1552,6 +1671,7 @@ public final class CastExecutor {
             case CastSpec.Dash ignored -> throw new IllegalStateException(notRepeatable("dash"));
             case CastSpec.Volley ignored -> throw new IllegalStateException(notRepeatable("volley"));
             case CastSpec.Cone ignored -> throw new IllegalStateException(notRepeatable("cone"));
+            case CastSpec.Pulses ignored -> throw new IllegalStateException(notRepeatable("pulses"));
             case CastSpec.Orb ignored -> throw new IllegalStateException(notRepeatable("orb"));
             case CastSpec.Summon ignored -> throw new IllegalStateException(notRepeatable("summon"));
             case CastSpec.DirectSummon ignored -> throw new IllegalStateException(notRepeatable("direct_summon"));

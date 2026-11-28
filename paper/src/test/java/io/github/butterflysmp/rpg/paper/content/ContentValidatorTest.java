@@ -542,6 +542,42 @@ class ContentValidatorTest {
                 "a sound is only a problem in a BEAM, not in the visual itself");
     }
 
+    private static AbilityRegistry pulsesNaming(String ring, String pulse) {
+        var registry = new AbilityRegistry();
+        registry.register(new AbilityDefinition("smolder", "Smolder", "fire",
+                6000, new ResourceCost("mana", 80), new CastSpec.Pulses(4, 60, 12, 30, ring, pulse), List.of()));
+        return registry;
+    }
+
+    /**
+     * PULSES (Smolder, Z7, 2026-11-27): the ring is checked as a cone's front is (a dangling id named; a sound in it named
+     * with its reason), the pulse visual only for existing (a sound belongs there). Mutation: an empty {@code Pulses} arm
+     * in checkCast -> the first three halves redden.
+     */
+    @Test
+    void aPulsesRingIsCheckedAsAFrontIsAndItsPulseVisualMustExist() {
+        var dangling = validator(visualsWith("smolder_pulse"), statusesWith()).validate(pulsesNaming("smolder_ring", "smolder_pulse"));
+        assertEquals(1, dangling.size(), dangling.toString());
+        assertTrue(dangling.get(0).contains("pulses ring visual 'smolder_ring'"), dangling.toString());
+
+        var danglingPulse = validator(visualsWith("smolder_ring"), statusesWith()).validate(pulsesNaming("smolder_ring", "smolder_pulse"));
+        assertEquals(1, danglingPulse.size(), danglingPulse.toString());
+        assertTrue(danglingPulse.get(0).contains("pulses pulse visual 'smolder_pulse'"), danglingPulse.toString());
+
+        var withSound = visualWithSteps("smolder_ring", anyDust(),
+                new VisualSpec.Sound("block.fire.ambient", NamespacedKey.fromString("block.fire.ambient"), 1.0f, 1.0f));
+        var sound = validator(withSound, statusesWith()).validate(pulsesNaming("smolder_ring", null));
+        assertEquals(1, sound.size(), sound.toString());
+        assertTrue(sound.get(0).contains("sound step") && sound.get(0).contains("every tick of its travel"), sound.toString());
+
+        var soundInPulse = visualWithSteps("smolder_pulse", anyDust(),
+                new VisualSpec.Sound("entity.blaze.shoot", NamespacedKey.fromString("entity.blaze.shoot"), 1.0f, 0.8f));
+        assertTrue(validator(soundInPulse, statusesWith()).validate(pulsesNaming(null, "smolder_pulse")).isEmpty(),
+                "CONTROL: a sound in the PULSE visual is fine");
+        assertTrue(validator(visualsWith(), statusesWith()).validate(pulsesNaming(null, null)).isEmpty(),
+                "neither is required");
+    }
+
     private static AbilityRegistry coneNaming(String front) {
         var registry = new AbilityRegistry();
         registry.register(new AbilityDefinition("breath", "Breath", "fire",

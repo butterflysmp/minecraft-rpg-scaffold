@@ -1,20 +1,41 @@
 # What "scorch" means: a stacking burn on a clock we own.
 #
 #   damage   min(5% of the victim's MAX health, THE CAP) every 20 ticks
-#   cap      the damage of whatever applied the stacks -- so a stronger fire
-#            weapon buys a stronger burn, and a 5000 HP boss is not melted by
-#            percent-max-health running away (5% of 5000 is 250/sec, uncapped)
+#            (Scorch.RATE_PER_SECOND 0.05, Scorch.PERIOD_TICKS 20). The first
+#            burn is one period after the first application.
+#   applied  BY THE ELEMENT. Fire damage applies scorch because
+#            content/elements/fire.yml declares applies_status: scorch
+#            (ElementAccrual), so a fire ability authors its damage and nothing
+#            else. No shipped content authors `type: status, status_id: scorch`.
+#   cap      HALF the hit as declared: (the hit's amount, its crit divided
+#            out) x Scorch.CAP_FRACTION 0.5. A crit does not raise it. So a
+#            stronger fire weapon buys a stronger burn, and a 5000 HP boss is
+#            not melted by percent-max-health running away (5% of 5000 is
+#            250/sec, uncapped). Smolder's 160 caps its burn at 80.
+#   window   Scorch.DEFAULT_DURATION_TICKS 120 for scorch applied by the
+#            element: the hit does not choose it. Each new application resets
+#            the window to its full length, keeps the 20-tick phase (the burn
+#            task is not restarted) and keeps the LARGER of the two caps.
 #   stacks   1 per 2 damage dealt, and read ONLY as a yes/no gate: a hit that
 #            buys none applies nothing. Stacks do NOT scale the damage and are
 #            NOT accumulated -- the count has no consumer. Ignite triggers on
 #            "died while scorched", binary, so it never reads one either.
 #   credit   the MOST RECENT applier. Kills count as theirs.
-#   armour   does NOT reduce the burn. It DOES slow stack accrual, because
-#            stacks come from damage actually landed. Armour delays scorch
-#            rather than blunting it.
+#   armour   does NOT reduce the burn (it is dealt with its defence bypassed).
+#            It DOES slow stack accrual, because stacks come from damage
+#            actually landed. Armour delays scorch rather than blunting it.
 #
-# The ability that applies it still decides for how long. The id of this status
-# is its filename: scorch.
+# A SECOND ROUTE, NOT TO BE COMBINED WITH THE FIRST: an authored
+# `type: status, status_id: scorch` step (BukkitCombatant.applyStatus) takes
+# its duration from its own duration_ticks and its cap from the payload's
+# UNHALVED headline damage. On a fire hit both routes would apply, with caps a
+# factor of two apart. Author the damage only (the seat's A1, 2026-11-27).
+#
+# Every number above is pinned to the code by ScorchYmlCommentTest. The id of
+# this status is its filename: scorch.
+#
+# THE PARAGRAPH BELOW IS THE RECORD OF THE STATUS-STEP ERA (before the content
+# pass stripped every explicit scorch). It describes the second route above.
 #
 # WAS `kind: fire` UNTIL THIS SLICE, AND THE EIGHT AUTHORED duration_ticks IN
 # content/ KEPT THEIR VALUES WHILE CHANGING THEIR MEANING. `duration_ticks: 80`

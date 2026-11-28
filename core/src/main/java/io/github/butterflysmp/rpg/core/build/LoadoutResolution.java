@@ -46,6 +46,31 @@ public final class LoadoutResolution {
         return new Equipped(ultimate, active1, active2, false);
     }
 
+    /** A saved slot whose id the pool no longer offers in that role: it reads EMPTY, and is logged once. */
+    public record Unoffered(LoadoutSlot slot, String id) {}
+
+    /**
+     * THE SAVED IDS {@link #resolve} READ AS EMPTY because the pool no longer offers them in their role (an id the content
+     * removed, or moved), in slot order: what the "logged once" of PLAN-build-system.md's storage rule names. A slot SAVED
+     * empty is not here (it was chosen empty). Empty when nothing was saved. (The seat's A3, 2026-11-27: Smolder replaced
+     * {@code ultimate_placeholder_mage}, so a Fire Mage who saved a build names an id no pool offers.)
+     */
+    public static List<Unoffered> unoffered(PoolDefinition pool, Optional<Saved> saved) {
+        if (saved.isEmpty()) return List.of();
+        Saved s = saved.get();
+        List<Unoffered> out = new ArrayList<>();
+        if (s.ultimate() != null && offers(pool.ultimates(), s.ultimate()) == null) {
+            out.add(new Unoffered(LoadoutSlot.ULTIMATE, s.ultimate()));
+        }
+        if (s.active1() != null && offers(pool.actives(), s.active1()) == null) {
+            out.add(new Unoffered(LoadoutSlot.ACTIVE_1, s.active1()));
+        }
+        if (s.active2() != null && offers(pool.actives(), s.active2()) == null) {
+            out.add(new Unoffered(LoadoutSlot.ACTIVE_2, s.active2()));
+        }
+        return Collections.unmodifiableList(out);
+    }
+
     /**
      * The id if the pool offers it in this role, else null. NULL-SAFE ON PURPOSE: the pool's lists are
      * {@code List.copyOf} copies, whose {@code contains(null)} THROWS rather than answering false -- found

@@ -83,7 +83,9 @@ public final class AbilityLoader {
      * <p>{@code arc_surge.yml}: ruling 20 (2026-09-26), PLAN-build-system.md. {@code rekindle.yml}: ruling 24
      * (2026-09-27) -- RENAMED {@code recall.yml}; a stale copy would register an ability no pool offers.
      */
-    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml", "rekindle.yml");
+    static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml", "rekindle.yml",
+            // The seat's Z8 (as A3 left it), 2026-11-27: Smolder replaced the Fire Mage's placeholder ultimate.
+            "ultimate_placeholder_mage.yml");
 
     /**
      * {@code archetype:} -- RETIRED in the build system's slice 2 (PLAN-build-system.md section 2.2). It was
@@ -92,6 +94,14 @@ public final class AbilityLoader {
      * ignored with the one warning above, never refused.
      */
     static final String RETIRED_ARCHETYPE_KEY = "archetype";
+
+    static List<String> description(ConfigurationSection s) {
+        if (s.isString("description")) {
+            throw new IllegalArgumentException("ability '" + s.getString("id") + "' description: must be a YAML list"
+                    + " (one '- ' line each), not a single string");
+        }
+        return s.getStringList("description");
+    }
 
     private AbilityDefinition parse(ConfigurationSection s) {
         return new AbilityDefinition(
@@ -102,7 +112,11 @@ public final class AbilityLoader {
                 AbilitySchema.parseCost(s.getConfigurationSection("cost")),
                 AbilitySchema.parseCast(s.getConfigurationSection("cast")),
                 AbilitySchema.parseEffects(s.getMapList("on_hit")),
-                List.of(),   // a standalone ability carries no authored tooltip prose
+                // THE BUILD MENU'S PROSE (Smolder's Z9, 2026-11-27): a YAML list of lines, shown above the cooldown in the
+                // build menu (BuildMenu.abilityLore). Until Smolder, a standalone ability carried none and this was
+                // List.of(); a file without the key still gets exactly that. A bare string is refused by name, as an
+                // enchant's ability_description is: getStringList would read it as an empty list, silently.
+                description(s),
                 AbilitySchema.parseCastVisuals(s.getMapList("on_cast"))
         );
     }

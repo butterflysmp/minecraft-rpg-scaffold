@@ -137,6 +137,11 @@ class ScorchContentInvariantTest {
      * block's {@code element: fire}, the bursts' damage (Ben's 25 / 30 / 35, the lantern's element). An enchant file, not a
      * weapon: the first fire damage site under content/enchants. The run before this edit reddened with "expected 18 fire
      * damage sites in content, found 19".
+     *
+     * <p><b>19 -> 19 on 2026-11-27, Smolder (feat/smolder): -1 +1, a count that did not move while two sites did.</b>
+     * Minus one: {@code ultimate_placeholder_mage} deleted (its burst's {@code damage}). Plus one: {@code smolder}'s
+     * {@code damage 160 element: fire}, its only effect (the seat's A1: Scorch by the element, no status step). The full
+     * reactor run on the branch read green at 19; the unchanged total is not evidence that nothing changed.
      */
     private static final int KNOWN_FIRE_DAMAGE_SITES = 19;
 
