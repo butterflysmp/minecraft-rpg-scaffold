@@ -1,6 +1,6 @@
 # GATE — SMOLDER (Z1 TO Z11) AND WATER PUTS OUT SCORCH (Y1 TO Y7, E1 TO E4), WITH THE REGEN-TOOLTIP ROWS (2026-11-27)
 
-**Status: NOT RUN.** The plan is `docs/plans/PLAN-smolder.md` (Part 1 section 3, Part 2 section 6). The scenario is
+**Status: RUN 2026-11-27 on `01be9d3b`; see READINGS (misses recorded, awaiting the seat).** The plan is `docs/plans/PLAN-smolder.md` (Part 1 section 3, Part 2 section 6). The scenario is
 `paper/src/main/resources/selftest/GATE-smolder.yml`. The stack, bottom up: master `16713667`, #336
 `feat/regen-tooltips-sheet-unit`, #337 `feat/smolder`, #338 `feat/water-douses-scorch`, then this ONE gate branch,
 `feat/smolder-gate`, last. **Every prediction below was written before any boot, and is frozen from the seat's
@@ -331,3 +331,34 @@ predicted.** The first run read the A1 needle `status_id` PRESENT: smolder.yml's
 it is not authored (a false presence, prose matched as the key). It was re-anchored to the list syntax `- type: status`,
 and a control with the same form (`- type: damage`, PRESENT) was added. This is a reading of a jar on this machine, not
 of the deployed one: R0b proper is the deployed jar's.
+
+## READINGS — THE BOOT OF `01be9d3b`, 2026-11-27 (written after the run; no prediction above is edited)
+
+The boot, R0, his ground and his build are `GATE-solar-flare.md`'s READINGS (the command's). **No `HURT` line; no
+SMOLDER hit names a body a row did not stage** (26 hits: a3, a6, a11 four each, b6 four, c11 one, c19 three, d6 two, u
+four; none names a12 or his wolf). **Every Smolder hit `sent=160.000 crit=false triggerScore=100`, no cast crit** (SM6
+and SM7 hit nothing, so their crit is unseen).
+
+**THE TWO CLOCK FINDINGS, ACROSS ROWS (for the seat; not diagnosed).**
+1. **Pulse 2 fires at C+59, never C+60**, in every casting row (`pulse n=2 tick=` 6170, 6556, 6942, 7328, 8118, 8553
+   against casts 6111, 6497, 6883, 7269, 8059, 8494). Pulses 3 and 4 land on C+120 and C+180. So every pulse-2 hit is
+   one tick early.
+2. **The first burn lands at hit + 20, not hit + 19** (SM2 a3 `hit … tick=6119`, `DOTTICK … tick=6139`), so every
+   burn window is one tick late. THE CLOCK's "a later hit comes one tick AFTER a burn, never with one" is contradicted:
+   SM2 hit n=3 on a3 and a DOTTICK both at 6239; SM3 the same at 6632 and 6692; SM5 hit n=2 at 7343, a burn at 7344.
+3. The selftest's own `tick=` reads one less than the SMOLDER line for the same press (SM2 `MANA … 20.000 tick=6110`,
+   `SMOLDER cast tick=6111`; SM6 7534 / 7535). The rows below take the cast line as C.
+
+| row | reading | class |
+|---|---|---|
+| SM1 | Second dump: case **(i)**, `Q: Smolder`, `Ultimate -- the default`; no `BUILD unoffered` for mage/fire. Picker: the two lines and `Cooldown: 300s`, plus an unpredicted `"Current" [green]` line. The cell after: `Q: Smolder`, `Ultimate`, both lines, `Damage: 160`, `Cost: 80`, `Cooldown: 300.0 s`, blank, `Click to change.` `STAGE stone … found=0 held=1`, HELD the stone. | READ AS PREDICTED (one extra picker line, unpredicted) |
+| SM2 | Before: four at `3000.000/3000.000 fireTicks=0`, wolf `100.000/100.000`. Mana `100.000` → `20.000`. C = 6111; pulses C+0, **C+59**, C+120, C+180, all from `114.500 201.000 -3.500`. Hits at pulse + 8 / 15 / 29 (dist 3.000, 6.000, 11.500) every pulse; 12 hits; none on a12 or the wolf. Burns 15 × 80 each: a3 **C+28..C+308**, a6 **C+35..C+315**, a11 **C+49..C+329** (each +1). After: a3, a6, a11 `1160.000/3000.000 fireTicks=0`; a12 `3000.000`; wolf `100.000/100.000`. | **MISS** on ticks only (pulse 2 −1, burns +1); every health as predicted |
+| SM3 | C = 6497. Hits C+15, **C+74**, C+135, C+195. After the first: `2840.000 fireTicks=119`. Burns 15 × 80, **C+35..C+315**. End `1160.000/3000.000 fireTicks=0`. | **MISS** on ticks only |
+| SM4 | C = 6883. Pulse 1 from G (114.5), pulses 2–4 from G+8 (122.5). c11 one hit, C+28, `dist=11.000`. c19 **C+87**, C+148, C+208, `dist=11.000`. c11 burns 6 × 80 **C+48..C+148**; c19 12 × 80 C+107..C+327. End c11 `2360.000`, c19 `1560.000`. | **MISS** on ticks only; healths as predicted |
+| SM5 | C = 7269. Hits C+15, **C+74**. `SMOLDER cancelled … remaining=2 cause=selftest tick=7358` = **C+89**. No n3, n4. **8 burns, not 9** (C+35..C+175): hit 2 landed one tick BEFORE a burn (7343, 7344), so the window ended at 7444. End **`2040.000/3000.000`** (predicted 1960.000; executed 3000 − 2 × 160 − 8 × 80 = 2040). | **MISS** (a health, from the clock) |
+| SM6 | Mana `100.000`; cast 7535. Second press: `REPLY actionbar "Smolder -- ready in 299.9s"`, no second cast, **mana `20.100`** (predicted 20.000). Cancel `remaining=3 … tick=7556` = **C+21**. `mana set 79`: `79.000`; `"Smolder -- needs 80 mana, you have 79"`; `79.000`; no cast. | **MISS** (mana 20.100; cancel tick −1); both refusals exact |
+| WA1 | Water placed. w1, w2 `1000.000 fireTicks=0`. w1: PLAYERHIT `sent=20.000`; `SCORCH refused … cause=water tick=7631`; no DOTTICK; `980.000 fireTicks=0` at both probes. w2: `sent=20.000`; six burns `sent=10.000` 7682..7782; `fireTicks=114`; end `920.000 fireTicks=0`. The hit-relative burn ticks are NOT FOUND (PLAYERHIT carries no tick). | READ AS PREDICTED on every field the log carries |
+| WA2 | v `1000.000`. Bolt `sent=20.000`, first DOTTICK 7871. P+30 `970.000 fireTicks=94`; P+35 `fireTicks=0`. `SCORCH doused … cause=water tick=7891`, no DOTTICK after. P+165 `970.000 fireTicks=0`. Douse − first burn = 20, as the gate's 39 − 19; the hit tick itself NOT FOUND. | READ AS PREDICTED |
+| WA3 | C = 8059. Hits C+17, **C+76**, C+137, C+197, `dist=6.708 sent=160.000`. `SCORCH refused … cause=water` at 8076, 8135, 8196, 8256; no DOTTICK. End `2360.000 fireTicks=0`. | **MISS** on one tick (hit 2 −1); every refusal and health as predicted |
+| WA6 | k2: `IGNITE refused … cause=water tick=8373`, no SCORCH; k2w `1000.000` at both probes. k3: no IGNITE line; k3w **`994.000`**. **k1: `aim` then `CMD /rpg mobdamage 2000` replied `"Look at a mob." [red]`; k1 `920.000 fireTicks=36 dead=false`; k1w `1000.000`** (predicted 994.000). k2 and k3 `dead=true` NOT FOUND: their probes read `none within 16 blocks` (MOBREMOVE for each). | **DID NOT TEST WHAT IT WAS MEANT TO** (clause 1: k1 never died, so its blast never happened); clauses 2 and 3 as predicted |
+| SM7 | C = 8494. Pulses C+0, **C+59**, C+120, C+180; pulse 1 from G, pulses 2–4 from G+8. **Ben: "yes"** to the frozen wording (22:40:35). | READ AS PREDICTED on what he saw; pulse 2's tick −1 as every row |

@@ -1,6 +1,6 @@
 # GATE — SOLAR FLARE (F1 TO F14), LAST IN THE STACK'S ONE COMMAND (2026-11-27)
 
-**Status: NOT RUN.** The plan is `docs/plans/PLAN-solar-flare.md`. The scenario is
+**Status: RUN 2026-11-27 on `01be9d3b`; see READINGS (misses recorded, awaiting the seat).** The plan is `docs/plans/PLAN-solar-flare.md`. The scenario is
 `paper/src/main/resources/selftest/GATE-solar-flare.yml`. The stack, bottom up: master `16713667`, #336
 `feat/regen-tooltips-sheet-unit`, #337 `feat/smolder`, #338 `feat/water-douses-scorch`, #340 `feat/solar-flare`, then
 the ONE gate branch, `feat/smolder-gate` (#339), last, carrying this gate and `GATE-smolder.md`. **Every prediction below
@@ -261,3 +261,50 @@ before D2, read 13 / 0, 2 / 0, 2 / 0 against its own 13.) A reading of a jar on 
 
 Each a one-site splice (MUTFLARECELL's needle occurs 8 times; marker 1, delta 1 against the scratchpad copy), restored by
 `cp` with 0 markers left.
+
+## READINGS — THE BOOT OF `01be9d3b`, 2026-11-27 (written after the run; no prediction above is edited)
+
+**The boot.** Seat's approval at `01be9d3bb8cd`; Ben's "ready". The seven heads equal the seat's by `git ls-remote`, CI
+`success` on each `headSha`. `git status` empty, HEAD = origin. 0 `java.exe`. Backup
+`rpg-run-backups\2026-11-27-pre-smolder-solar-flare`: `world` 192 / 192 (`session.lock` left out), `plugins\Rpg` 192 /
+192; his `.dat` 5838 bytes, build file 775 (`ECE78D65…`), accessory file 95 (`FF48C3A3…`), profile `mage` / `fire`.
+`level.dat` `difficulty normal`, before and after. Config line 12 `dev-pack-on-join: true`; no `run\rpgfight`. "Booting
+now" sent in its own message; `--refresh-content`; the log's first line `22:33:07`, after the jar's mtime `22:33:06.95`;
+`Done (6.139s)` at `22:33:13`. **R0 as predicted on every line** (R0a `Build: 01be9d3b`; R0b 21/0, 3/0, 3/0 and 15/0,
+2/0, 2/0 on the deployed jar; R0c `11 abilities, 51 visuals … 27 weapons … 8 accessories`, `42 indexed, 42 claiming, of
+61`, 0 WARN with 7 `Loaded`, no Refusing/Skipping/SEVERE/Exception; R0d one `562 scenarios across 59 gates`, controls
+absent; R0e `folders=0`). "R0 passed" sent in its own message before he joined; **his join `22:37:52`**, R0 read before
+it (0 `joined the game` lines at the read). `/gamemode survival` 22:37:58, the command 22:37:59, `/stop` 22:42:02. Clean
+stop; 0 `java.exe` after.
+
+**His ground and his build: everything came back.** The first CLEAN `world=skipped`; every ITEMS line `cleared=0` except
+this gate's setup `cleared=2 pad [rotten_flesh x2]` (pad drops); every ACCESSORIES `[-,-,-,-]`. `CAPTURED … armour=0
+offhand=0 class=mage accessories=[-,-,-,-] builds=[ranger/fire:Q=ultimate_placeholder_ranger,L=recall,R=solar_lance,
+asp=updraft|-,frag=fragment_ember_cache|-|-|-;melee/fire:Q=ultimate_placeholder_melee,L=sunder,R=active_placeholder_melee,
+asp=-|-,frag=-|-|-|-]`; `RESTORED … builds=` the same string, byte for byte; no `NOT-RESTORED`; one `BUILDS restore write
+settled ok=true`. After /stop: build file 775 bytes, hash equal; accessory file 95, hash equal; profile `mage` / `fire`,
+differing from the backup only in `lastSeenEpochMillis`. He wore no armour (`armour=0`). **No `HURT` line in the whole
+run.** No SOLAR_FLARE hit names a body a row did not stage.
+
+**THE ONE INSTRUMENT FINDING, ACROSS ROWS (for the seat):** the burns land **20** ticks after a hit, not 19. Every
+Solar Flare hit's first `DOTTICK` is hit + 20 (SF2 8999 → 9019; SF3 9188 → 9208, 9201 → 9221; SF6 10032 → 10052), and
+Smolder's are the same (see `GATE-smolder.md`'s readings). Separately, the selftest's own `tick=` (MANA lines) reads
+one less than the SOLAR_FLARE line for the same step (SF2 `MANA … tick=8973`, `cast tick=8974`). Not diagnosed.
+
+**HIS AIM WAS NOT HELD.** The cast fires along his live look. The stand step sets yaw -90 pitch 0; in SF4 his look had
+moved to pitch 27.7 to 32.5 and yaw -95.3 for the centre shot, in SF5's second cast to pitch 3.1 to 3.6, in SF6 to
+0.4 to 0.5. Every other cast read the predicted -120 / -90 / -60 at pitch 0.
+
+| row | reading | class |
+|---|---|---|
+| SF1 | First dump: Mage/Fire, `Q: Smolder`. After Ranger and Fire: case **(ii)**, `Q: (empty)` and one `BUILD unoffered … cell=ranger/fire slot=ULTIMATE id=ultimate_placeholder_ranger reads=empty kept=file`. Picker: the three lines exact. The cell after: `Q: Solar Flare`, `Ultimate`, the two lines, `Damage: 250`, `Cost: 80`, `Cooldown: 210.0 s`, `""`, `Click to change.`. `STAGE stone … found=0 held=1`; HELD the stone with `Q: Solar Flare`. | READ AS PREDICTED |
+| SF2 | z4, z7 `3000.000/3000.000 fireTicks=0`. Mana `100.000` then `20.000`. C = 8974: three shots `-120 / -90 / -60`, pitch `±0.000`. Displays **3**, then **0**. Bursts all `cause=range` at **8989 = C+15**, origins (127.490, 202.620, -11.000), (129.500, 202.620, -3.500), (127.490, 202.620, 4.000) = G + the table. z4: `hit n=2 dist=4.000 tick=8999` = C+25, `sent=250.000 crit=false`, PLAYERHIT `source=solar_flare element=fire … triggerScore=100`; six burns of 125 at **9019** … 9119 (**C+45**, predicted C+44); at the end `2000.000`. z7 no hit, `3000.000`. | **MISS by one tick** on the first burn (C+45 against C+44); every other field as predicted |
+| SF3 | C = 9180. `burst n=2 cause=mob origin=122.500 201.000 -3.500 tick=9188` = G+(8,0,0), C+8. s8 `hit n=2 dist=0.000 tick=9188`, one hit only. s13 `hit n=2 dist=5.000 tick=9201` = C+21. Shots 1 and 3 `cause=range` at 9195 = C+15, reaching neither. End: s8 `2000.000`, s13 `2000.000`. crit=false. | READ AS PREDICTED |
+| SF4 | The stone placed (`BLOCKS STONE count=1`). **His look was pitch ~30 down**: shots `-129.651 27.737`, `-95.255 32.507`, `-60.859 27.737`. All three burst `cause=block` at **9389 = C+3** on the FLOOR (y 201.000) at x 116.9 to 117.2, short of the stone at x 120. b took **three** hits (`n=1 dist=4.651`, `n=2 4.645` at 9401, `n=3 5.251` at 9403), six burns, end **`1500.000`** (predicted `2000.000`). | **DID NOT TEST WHAT IT WAS MEANT TO**: the stone stopped nothing |
+| SF5 | First cast C = 9592: `hit n=3 dist=3.643 tick=9617` = C+25, `hit n=2 dist=4.123 tick=9618` = C+26, six burns, end **`1750.000`**. Wall placed (5). Second cast C' = 9792 with his look at pitch ~3.5 (`-89.099 3.566`): `burst n=2 cause=block origin=117.000 202.464 -3.461 tick=9794` (C'+2), `n=1 … -4.894 tick=9795`, `n=3 … -2.001 tick=9795` (C'+3). u: **`hit n=2 dist=2.000 tick=9800` = C'+8** (predicted C'+7), `hit n=1 dist=2.438 tick=9802` = C'+10, `hit n=3 dist=2.499 tick=9802` = C'+10: all three. Six burns; end **`1500.000`**. He was not struck. | **MISS by one tick** on u's centre hit (C'+8 against C'+7), on a knife edge the aim moved: the prediction's 6 t / 15 ≥ 2.000 holds exactly at t = 5, and the drifted origin put u about 0.039 off its axis (from the printed origin, executed: 2.000380, printed 2.000). Ticks, causes and healths otherwise as predicted; origins and two distances moved by the aim |
+| SF6 | His wolf summoned, NoAI, at G+(14,0,-2), `SUMMONPROBE … health=100.000/100.000` before and after. w `hit n=2 dist=2.272 tick=10032` = C+21 (predicted dist 2.236; aim `-90.150 0.488`); burns at **10052, 10072** (C+41, C+61; predicted C+40, C+60); at the probe **`2500.000`**, `fireTicks=72`. No line names the wolf. `SELF customHP=100.000/100.000` before and after. No HURT. | READ AS PREDICTED on every field the row decides (wolf untouched, w struck, 2500); the burn ticks carry the one-tick finding |
+| SF7 | Mana `100.000`; cast C = 10107. The second press: `REPLY actionbar "Solar Flare -- ready in 209.9s"`; no second cast; **mana `20.100`** (predicted `20.000`). No cancelled line. `rpg mana set 79`: `79.000`; the press: `REPLY actionbar "Solar Flare -- needs 80 mana, you have 79"`; `79.000`; no cast. | **MISS** on one field: mana `20.100` against `20.000` (the probe is one tick after the cast and regeneration had added 0.1); both refusals exact |
+| SF8 | C = 10177, three shots. Displays **3**. `SOLAR_FLARE cancelled caster=<him> remaining=3 cause=selftest tick=10181` = **C+4** (predicted C+5). Displays **0**. No burst, no hit. | **MISS by one tick** on the cancelled line (C+4 against C+5), the same offset as the MANA/cast counters above; the row's substance (3 → cancelled → 0, no burst) as predicted |
+| SF9 | C = 10241, three shots `-120 / -90 / -60`, three bursts `cause=range` at 10256 = C+15 at the three table origins. The question asked (wording as frozen). **Ben: "yes"** (22:41:59). | READ AS PREDICTED |
+
+**Crits:** none. Every SOLAR_FLARE hit and PLAYERHIT reads `sent=250.000 crit=false` (nine casts, SF8's never hit).
