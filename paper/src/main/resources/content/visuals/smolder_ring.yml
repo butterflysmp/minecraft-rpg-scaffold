@@ -2,6 +2,8 @@
 # the radius"): drawn at every point round the ring (core.combat.PulseFront.ringPoints, about 0.75 blocks apart) on every
 # tick of its 30-tick travel. EVERY STEP IS A SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN: one flame per point, still.
 # NO SOUND STEP: ContentValidator refuses one in a ring, which plays at every point on every tick.
+# SHARED (the seat's F10, 2026-11-27): Solar Flare's burst names this file too (Ben: "the same particles that the smolder
+# pulses do", "The same expanding ring"), so a change here moves BOTH ultimates. solar_flare.yml says the same.
 steps:
   - type: particle
     particle: FLAME

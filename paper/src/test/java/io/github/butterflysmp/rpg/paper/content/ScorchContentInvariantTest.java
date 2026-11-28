@@ -142,6 +142,11 @@ class ScorchContentInvariantTest {
      * Minus one: {@code ultimate_placeholder_mage} deleted (its burst's {@code damage}). Plus one: {@code smolder}'s
      * {@code damage 160 element: fire}, its only effect (the seat's A1: Scorch by the element, no status step). The full
      * reactor run on the branch read green at 19; the unchanged total is not evidence that nothing changed.
+     *
+     * <p><b>19 -> 19 on 2026-11-27, Solar Flare (feat/solar-flare): -1 +1, again.</b> Minus one:
+     * {@code ultimate_placeholder_ranger} deleted (its {@code damage 30 element: fire}). Plus one: {@code solar_flare}'s
+     * {@code damage 250 element: fire}, its only effect, which its three rings land (F6: no status step). The full reactor
+     * run on the branch read green at 19.
      */
     private static final int KNOWN_FIRE_DAMAGE_SITES = 19;
 

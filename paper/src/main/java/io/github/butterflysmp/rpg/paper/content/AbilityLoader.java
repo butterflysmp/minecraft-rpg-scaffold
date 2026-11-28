@@ -85,7 +85,9 @@ public final class AbilityLoader {
      */
     static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml", "rekindle.yml",
             // The seat's Z8 (as A3 left it), 2026-11-27: Smolder replaced the Fire Mage's placeholder ultimate.
-            "ultimate_placeholder_mage.yml");
+            "ultimate_placeholder_mage.yml",
+            // The seat's F11, 2026-11-27: Solar Flare replaced the Fire Ranger's placeholder ultimate.
+            "ultimate_placeholder_ranger.yml");
 
     /**
      * {@code archetype:} -- RETIRED in the build system's slice 2 (PLAN-build-system.md section 2.2). It was

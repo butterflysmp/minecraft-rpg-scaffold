@@ -260,7 +260,8 @@ public sealed interface CastSpec {
      * other, so neither defaults from the other.
      */
     record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
-                      Homing homing, String body, Spread spread, int fuseTicks) implements CastSpec {
+                      Homing homing, String body, Spread spread, int fuseTicks, Pulses burst,
+                      double bodyScale) implements CastSpec {
 
         /**
          * <b>{@code item} AND {@code body} ARE MUTUALLY EXCLUSIVE, AND IT IS ENFORCED HERE RATHER
@@ -299,11 +300,41 @@ public sealed interface CastSpec {
                 throw new IllegalArgumentException("a fused projectile's body is an ITEM ('item:'), not 'body: " + body
                         + "': only an item body is held still at rest (CombatWorld.driveMarker with a zero step)");
             }
+            // THE BURST (Solar Flare, the seat's F3, 2026-11-27): where the shot stops (a mob, a block, or the end of its
+            // range) ONE pulse front goes out from that point -- Smolder's own record, its own ring, its own struck set --
+            // and the ability's on_hit is what that ring lands, in place of a hit where the shot stopped. One front: a
+            // burst of several pulses has no ruling. A fused chunk already goes off its own way (F1 of the Blast Fungus).
+            if (burst != null && burst.count() != 1) {
+                throw new IllegalArgumentException("a projectile's burst is ONE pulse front (count 1), was count "
+                        + burst.count() + ": no ruling covers a shot that bursts more than once");
+            }
+            if (burst != null && fuseTicks > 0) {
+                throw new IllegalArgumentException("a fused projectile cannot also burst: its chunk goes off on its fuse"
+                        + " (FusedPayload), and no ruling combines the two");
+            }
+            // THE SCALED BODY (Solar Flare, F9): an ITEM body drawn at this scale (a display entity, CombatWorld
+            // .spawnDisplayMarker). 0 is none: the dropped item every item body was before. Only an item can be scaled.
+            if (!(bodyScale >= 0) || Double.isInfinite(bodyScale)) {
+                throw new IllegalArgumentException("body_scale must be 0 (none) or a finite positive scale, was " + bodyScale);
+            }
+            if (bodyScale > 0 && item == null) {
+                throw new IllegalArgumentException("body_scale " + bodyScale + " scales an ITEM body, and this projectile"
+                        + " declares no 'item:'" + (body == null ? "" : " (it declares 'body: " + body + "')"));
+            }
         }
 
         /** Whether this projectile carries a fuse (F1): it rests on a block and goes off on its fuse or on a mob. */
         public boolean fused() {
             return fuseTicks > 0;
+        }
+
+        /**
+         * Every projectile before the burst and the scaled body (2026-11-27): neither. THE NEW FIELDS WENT ON THE END,
+         * the ladder's rule.
+         */
+        public Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
+                          Homing homing, String body, Spread spread, int fuseTicks) {
+            this(speed, gravity, maxLifetimeTicks, trail, item, homing, body, spread, fuseTicks, null, 0.0);
         }
 
         /**

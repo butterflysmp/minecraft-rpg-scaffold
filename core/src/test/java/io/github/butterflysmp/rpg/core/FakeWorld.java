@@ -109,6 +109,15 @@ public final class FakeWorld implements CombatWorld {
      */
     public boolean boxSearch = false;
 
+    /**
+     * When true, {@link #castRay} reports a BODY hit at the point the segment first meets the body's
+     * {@link #hitRadius} (its surface), as the server's trace does ({@code RayTraceResult.getHitPosition}), not at the
+     * body's own position. Off by default, which every row written before it assumes. Solar Flare (F3) turns it on: its
+     * burst on a mob is the STRUCK BODY's position, and only a fixture whose hit point is NOT that position can tell the
+     * two apart (measured: with it off, a burst at the hit point passed every row).
+     */
+    public boolean surfaceHits = false;
+
     @Override public Collection<Combatant> combatantsNear(Vec3 center, double radius) {
         double r2 = radius * radius;
         return entities.stream()
@@ -201,6 +210,15 @@ public final class FakeWorld implements CombatWorld {
             return Optional.of(RayHit.ofBlock(from.add(direction.scale(wallAt))));
         }
         if (nearest == null) return Optional.empty();
+        if (surfaceHits) {
+            // Where the segment first comes within hitRadius of the body's centre: a point ON its surface, as the
+            // server's box trace reports, never the body's own position.
+            Vec3 toBody = nearest.position().subtract(from);
+            double ahead = toBody.dot(direction);
+            double perp2 = toBody.lengthSquared() - ahead * ahead;
+            double enter = Math.max(0, ahead - Math.sqrt(Math.max(0, hitRadius * hitRadius - perp2)));
+            return Optional.of(RayHit.ofCombatant(from.add(direction.scale(enter)), pair(nearest)));
+        }
         return Optional.of(RayHit.ofCombatant(nearest.position(), pair(nearest)));
     }
 
@@ -670,6 +688,15 @@ public final class FakeWorld implements CombatWorld {
         markerPositions.put(id, at);
         markerSpawnedAt.put(id, at);
         markersEverSpawned.add(id);
+        return id;
+    }
+
+    /** Every scaled body ever spawned (Solar Flare, F9), id -> its scale, KEPT after removal. */
+    public final Map<UUID, Double> displayScalesEver = new HashMap<>();
+
+    @Override public UUID spawnDisplayMarker(Vec3 at, String itemId, double scale, int expectedLifetimeTicks) {
+        UUID id = spawnMarker(at, itemId, expectedLifetimeTicks);
+        displayScalesEver.put(id, scale);
         return id;
     }
 

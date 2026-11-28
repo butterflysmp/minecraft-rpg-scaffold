@@ -72,6 +72,18 @@ public final class PulseRuns {
     }
 
     /** The handle of {@code run}'s next pulse's pending link. */
+    /**
+     * ONE MORE OF THE RUN HAS LANDED, IN ANY ORDER (Solar Flare, the seat's F8, 2026-11-27): a fan's three fireballs burst
+     * when each stops, not in their numbering, so this COUNTS where {@link #fired} takes the pulse's number. The last one
+     * removes the run, as the last pulse does; a stale run is ignored. Its remaining is then what has not yet burst.
+     */
+    public synchronized void landed(Run run) {
+        Live l = live.get(run.caster());
+        if (l == null || l.run.generation() != run.generation()) return;
+        l.fired++;
+        if (l.fired >= run.count()) live.remove(run.caster());
+    }
+
     public synchronized void pending(Run run, long handle) {
         Live l = live.get(run.caster());
         if (l != null && l.run.generation() == run.generation()) l.pending = handle;

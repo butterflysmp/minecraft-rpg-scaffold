@@ -738,6 +738,9 @@ public final class ContentValidator {
                     problems.add(ownerLabel + " names trail visual '" + projectile.trail()
                             + "', which no visual defines");
                 }
+                // A BURST (Solar Flare, F3) is a pulse front, so its ring and pulse take the pulses arm's checks, through
+                // that arm rather than a second copy of it.
+                if (projectile.burst() != null) checkCast(projectile.burst(), ownerLabel + " burst", problems);
                 // `item` IS DELIBERATELY NOT VALIDATED, and its absence here is a decision rather
                 // than the arm being half-written. It names a MATERIAL, not a visual, and the
                 // Flint Staff slice established the rule: adding material validation for a

@@ -1,0 +1,85 @@
+# SOLAR FLARE, THE FIRE RANGER'S ULTIMATE (Ben, 2026-11-27; the seat's Solar Flare brief F1 to F14, the same day).
+# Replaces ultimate_placeholder_ranger, which is deleted (ranger_fire.yml names this as its ultimate and its default).
+#
+# BEN'S WORDS, VERBATIM: "It fires 3 giant fireballs in an arc that travel straight for about 15 blocks. Each fireball
+# deals 250 damage and explodes in a 6 block range either when it hits something or at the end of its range". Then:
+# "1. Correct, 30 degrees 2. That is the explosion damage, the whole area takes that damage. 3. Yes it takes all the
+# damage. ... 5. .8 seconds 6. Yes 7. Yes 8. Yes, with one change: when the fireballs explode, I want them to use the
+# same particles that the smolder pulses do." And: "1. 80 mana and 3.5 minutes 2. The same expanding ring. Can we do the
+# damage is dealt when when the ring gets to the target".
+#
+# THE FAN (F1): the engine's own spread. count 3 at angle_degrees 30 is one shot down the aim and two in a ring 30
+# degrees off it, at the shooter's right and left in his view plane (SpreadPattern: phi 0 and 180): -30, 0, +30. The
+# shots are numbered LEFT TO RIGHT, n=1 at -30 (CC'S CALL).
+#
+# THE FLIGHT (F1): straight (gravity 0.0), 15 blocks in 16 ticks: speed 15/16 = 0.9375 a tick and max_lifetime_ticks 16.
+# READ, ProjectileFlight.step: the step at elapsed e traces from launch + e x speed to launch + (e + 1) x speed on the
+# cast's tick + e (the first inline on the cast's frame), and the flight ends at elapsed 15 having reached
+# launch + 16 x 0.9375 = 15.0 blocks, on the cast's tick + 15: the sixteenth tick, counting the cast's. The launch point
+# is his eye (the aim's origin).
+#
+# WHAT STOPS IT (F2): the projectile's own trace (PaperCombatWorld.castRay, READ): the first live body or solid block on
+# the step's segment. Fluids and passable blocks (grass, flowers) do not stop it; the caster never; a summon never (the
+# sides table passes it). EVERY other living body does, a passive animal or another player included: OPEN FOR BEN.
+#
+# THE EXPLOSION (F3, F4, F5): ONE pulse front where the shot stopped -- Smolder's own ring, radius 6, at Smolder's speed
+# (12 blocks in 30 ticks, so 6 in 15: travel_ticks 15, SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN). Each body is struck
+# once by each ring, on the tick the ring reaches its horizontal distance from that ring's fixed origin; three rings, so
+# a body inside two or three takes 250 from each. The origin: on a MOB, the struck mob's own position (its feet), so its
+# ring strikes it at distance 0 and nothing else from that shot does (a direct hit adds nothing); on a BLOCK, the point
+# the trace met it; at the END OF RANGE, the end of the last step.
+#
+# THE LOOK (F9, F10): each fireball is a fire charge drawn at scale 2.5 (a display entity, SEAT PLACEHOLDER), with a
+# flame trail (SEAT PLACEHOLDER) and a launch sound (solar_flare_cast, SEAT PLACEHOLDER). THE RING AND THE BURST ARE
+# SMOLDER'S OWN FILES (Ben: "the same particles that the smolder pulses do", "The same expanding ring"): smolder_ring and
+# smolder_pulse, so a change to Smolder's look moves both.
+#
+# SCORCH: by the element, as Smolder's (no status step here): each ring's 250 is FIRE damage, so its burn's cap is half
+# the hit as declared, 125 for an uncrit 250 (a crit does not raise it), window 120, restarted by each hit. Ignite and
+# the water rule apply as to every fire hit.
+#
+# WHO IT HITS (Ben: "7. Yes", hostile mobs only, no players, no summons, as Smolder): the sides table,
+# MobHostility.PvpPath.PULSE (spared), and PLAYER -> SUMMON's "no". Never the caster.
+#
+# cooldown_ticks is a multiple of 4 (PLAN-build-system.md 2.4.1). 4200 ticks = 3.5 minutes.
+
+id: solar_flare
+display_name: "<gold>Solar Flare</gold>"
+element: fire
+cooldown_ticks: 4200
+
+# THE BUILD MENU'S PROSE (F12): SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN. Every number in it is this file's own, and
+# SolarFlareContentTest holds each sentence to the number it states.
+description:
+  - "Fire three great fireballs in a fan."
+  - "Each bursts within 6 blocks for 250 fire damage and scorches."
+
+cost:
+  resource: mana
+  amount: 80
+
+on_cast:
+  - type: visual
+    visual_id: solar_flare_cast   # the launch sound, at his eye (SEAT PLACEHOLDER)
+
+cast:
+  type: projectile
+  speed: 0.9375
+  gravity: 0.0
+  max_lifetime_ticks: 16
+  trail: solar_flare_trail        # SEAT PLACEHOLDER
+  item: fire_charge               # SEAT PLACEHOLDER
+  body_scale: 2.5                 # SEAT PLACEHOLDER
+  spread:
+    count: 3
+    angle_degrees: 30
+  burst:
+    radius: 6.0
+    travel_ticks: 15              # Smolder's speed, 12 in 30 (F4, SEAT PLACEHOLDER)
+    ring: smolder_ring            # Smolder's own ring (F10)
+    pulse: smolder_pulse          # Smolder's own burst and sound (F10)
+
+on_hit:
+  - type: damage
+    amount: 250
+    element: fire

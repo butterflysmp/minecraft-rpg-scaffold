@@ -681,6 +681,12 @@ public final class CastExecutor {
      * over, so the freeze is explicit at the boundary where the per-tick region hop happens.
      */
     private void launch(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
+        // A SHOT THAT BURSTS (Solar Flare, the seat's F1 to F8, 2026-11-27): first, because no weapon behaviour reshapes
+        // it (a stone cast carries none) and its run, its numbering and its lines are its own.
+        if (spec.burst() != null) {
+            launchBursting(ability, caster, aim, spec);
+            return;
+        }
         // ONE ROLL, N DELIVERIES -- AND THE ROLL IS NOT MADE HERE, WHICH IS THE POINT.
         //
         // Every body below shares the single `caster` this method was handed. That Caster was
@@ -730,6 +736,77 @@ public final class CastExecutor {
             return;
         }
         launchOne(ability, caster, aim, spec);
+    }
+
+    /**
+     * FIRE A FAN THAT BURSTS (Solar Flare, F1 to F8, F13). Every body flies the engine's own flight
+     * ({@link io.github.butterflysmp.rpg.core.combat.ProjectileFlight}: its segment trace, its collision, its lifetime),
+     * down the spread's own directions ({@link io.github.butterflysmp.rpg.core.combat.SpreadPattern}: a count of 3 at 30
+     * degrees is the aim and the aim turned 30 degrees to each side, in his view plane). Where each stops, ONE pulse front
+     * goes out ({@link #burstAt}), Smolder's own ring.
+     *
+     * <p><b>NUMBERED LEFT TO RIGHT</b> (CC'S CALL; the alternative is the spread's own order, the aim first): n is the
+     * rank of the direction's component along his RIGHT, so a fan of three is n=1 at -30, n=2 on the aim, n=3 at +30.
+     * Ties keep the spread's order (a stable sort).
+     *
+     * <p>One run per caster in {@link io.github.butterflysmp.rpg.core.combat.PulseRuns}, counting the shots still to
+     * burst; its removal path (death, quit, world change, stop, clear_state, the row-start clean) ends it, and each
+     * flight asks at every step whether its run is still current, so a shot in flight ends there with its body. A ring
+     * already expanding finishes (Smolder's CC'S CALL). The caster is FROZEN at the cast: one Caster, one crit, for every
+     * shot and every ring.
+     */
+    private void launchBursting(AbilityDefinition ability, Caster caster, Aim aim, CastSpec.Projectile spec) {
+        String label = ability.id().toUpperCase(java.util.Locale.ROOT);
+        java.util.List<Vec3> directions = new java.util.ArrayList<>(spec.spread() == null
+                ? java.util.List.of(aim.direction())
+                : SpreadPattern.directionsFor(aim.direction(), aim.right(), spec.spread()));
+        Vec3 right = aim.right();
+        directions.sort(java.util.Comparator.comparingDouble(d -> d.normalize().dot(right)));
+
+        world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.cast(label, caster.id()));
+        var runs = world.pulseRuns();
+        var started = runs.start(caster.id(), label, directions.size());
+        started.replaced().ifPresent(old -> {
+            if (old.pendingHandle() >= 0) world.cancelScheduled(old.pendingHandle());
+            world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.cancelled(
+                    old.run().label(), caster.id(), old.remaining(), "replaced"));
+        });
+        var run = started.run();
+        var look = new io.github.butterflysmp.rpg.core.combat.ProjectileFlight.Look(
+                spec.trail(), spec.item(), spec.body(), spec.bodyScale());
+        for (int i = 0; i < directions.size(); i++) {
+            int n = i + 1;
+            Vec3 direction = directions.get(i).normalize();
+            world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.shot(label, caster.id(), n, direction));
+            io.github.butterflysmp.rpg.core.combat.ProjectileFlight.launch(world, caster, aim.origin(),
+                    direction.scale(spec.speed()), spec.gravity(), spec.maxLifetimeTicks(), look, seekOf(spec),
+                    () -> runs.isCurrent(run),
+                    new io.github.butterflysmp.rpg.core.combat.ProjectileFlight.Impact() {
+                        // F3's origins: on a MOB, the struck body's own position (its feet), so the ring reaches it at
+                        // distance 0 and on the burst's tick (F5: the direct hit adds nothing); on a BLOCK, the point
+                        // the trace met it; at the END OF RANGE, the end of the last step.
+                        @Override public void at(Combatant target, Vec3 point) {
+                            burstAt(ability, caster, spec.burst(), run, n, target != null ? "mob" : "block",
+                                    target != null ? target.state().position() : point);
+                        }
+
+                        @Override public void expired(Vec3 point, Vec3 velocity) {
+                            burstAt(ability, caster, spec.burst(), run, n, "range", point);
+                        }
+                    });
+        }
+    }
+
+    /**
+     * SHOT {@code n} BURSTS at {@code origin}: its line, its visual, and ONE pulse front's tick 0 inline -- {@link #ringPass},
+     * Smolder's own, with its own struck set (F5: three shots, three rings; a body inside two or three takes each).
+     */
+    private void burstAt(AbilityDefinition ability, Caster caster, CastSpec.Pulses spec,
+                         io.github.butterflysmp.rpg.core.combat.PulseRuns.Run run, int n, String cause, Vec3 origin) {
+        world.pulseRuns().landed(run);
+        world.tracePulse(io.github.butterflysmp.rpg.core.combat.PulseLine.burst(run.label(), caster.id(), n, cause, origin));
+        if (spec.pulse() != null) world.present(origin, spec.pulse());
+        ringPass(ability, caster, spec, run.label(), n, origin, 0, Set.of());
     }
 
     /** One body, down one direction. The spread above is N of these; everything else is one. */

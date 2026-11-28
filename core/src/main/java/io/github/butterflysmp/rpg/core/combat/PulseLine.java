@@ -19,12 +19,44 @@ import java.util.UUID;
  * SMOLDER hit n=&lt;n&gt; target=&lt;type uuid&gt; dist=&lt;horizontal&gt; tick=&lt;t&gt; sent=&lt;amount&gt; caster=&lt;uuid&gt;
  * SMOLDER cancelled caster=&lt;uuid&gt; remaining=&lt;n&gt; cause=&lt;cause&gt; tick=&lt;t&gt;
  * </pre>
+ *
+ * <p>A projectile that BURSTS (Solar Flare, the seat's F13, 2026-11-27) writes the same cast, hit and cancelled lines,
+ * and two of its own in place of the pulse line, {@code caster=} added as above:
+ *
+ * <pre>
+ * SOLAR_FLARE shot n=&lt;1..count&gt; dir=&lt;yaw pitch&gt; tick=&lt;t&gt; caster=&lt;uuid&gt;
+ * SOLAR_FLARE burst n=&lt;n&gt; cause=&lt;mob|block|range&gt; origin=&lt;x y z&gt; tick=&lt;t&gt; caster=&lt;uuid&gt;
+ * </pre>
+ *
+ * <p>A shot's {@code dir} is in the server's own convention (yaw 0 is south, -90 east, yaw growing to the RIGHT;
+ * pitch positive DOWN), from the direction vector the line carries in {@code origin}'s place: the one place a
+ * direction is turned into degrees, so a gate reads the fan as the player sees it.
  */
 public record PulseLine(String label, Event event, UUID caster, int n, Vec3 origin, UUID target, double dist,
                         double sent, int remaining, String cause) {
 
     /** Which line. */
-    public enum Event { CAST, PULSE, HIT, CANCELLED }
+    public enum Event { CAST, PULSE, HIT, CANCELLED, SHOT, BURST }
+
+    /** A shot of a bursting fan: {@code direction} rides in {@code origin}'s place, read only by {@link #format}. */
+    public static PulseLine shot(String label, UUID caster, int n, Vec3 direction) {
+        return new PulseLine(label, Event.SHOT, caster, n, direction, null, 0, 0, 0, null);
+    }
+
+    /** Where shot {@code n} burst, and why it stopped there: {@code mob}, {@code block} or {@code range}. */
+    public static PulseLine burst(String label, UUID caster, int n, String cause, Vec3 origin) {
+        return new PulseLine(label, Event.BURST, caster, n, origin, null, 0, 0, 0, cause);
+    }
+
+    /** The server's yaw of a direction, in degrees: 0 south, -90 east, 90 west (SelfTestAim's convention). */
+    public static double yawOf(Vec3 d) {
+        return Math.toDegrees(Math.atan2(-d.x(), d.z()));
+    }
+
+    /** The server's pitch of a direction, in degrees, positive DOWN. */
+    public static double pitchOf(Vec3 d) {
+        return -Math.toDegrees(Math.atan2(d.y(), Math.sqrt(d.x() * d.x() + d.z() * d.z())));
+    }
 
     public static PulseLine cast(String label, UUID caster) {
         return new PulseLine(label, Event.CAST, caster, 0, null, null, 0, 0, 0, null);
@@ -52,6 +84,10 @@ public record PulseLine(String label, Event event, UUID caster, int n, Vec3 orig
                     label, n, targetType, target, dist, tick, sent, caster);
             case CANCELLED -> label + " cancelled caster=" + caster + " remaining=" + remaining + " cause=" + cause
                     + " tick=" + tick;
+            case SHOT -> String.format(Locale.ROOT, "%s shot n=%d dir=%.3f %.3f tick=%d caster=%s",
+                    label, n, yawOf(origin), pitchOf(origin), tick, caster);
+            case BURST -> String.format(Locale.ROOT, "%s burst n=%d cause=%s origin=%.3f %.3f %.3f tick=%d caster=%s",
+                    label, n, cause, origin.x(), origin.y(), origin.z(), tick, caster);
         };
     }
 }

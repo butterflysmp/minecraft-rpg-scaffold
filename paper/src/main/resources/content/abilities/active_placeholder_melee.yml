@@ -1,7 +1,7 @@
 # PLACEHOLDER -- Ben designs. The Fire Melee cell's Active (PLAN-melee-class.md section 7, slice M1).
 #
 # THIS IS NOT A DESIGN AND ITS NUMBERS ARE NOT A PROPOSAL. Nothing may be derived from it -- the rule
-# ultimate_placeholder_ranger.yml gives every placeholder: parity with a placeholder is parity with nothing.
+# ultimate_placeholder_ranger.yml (deleted 2026-11) gave every placeholder: parity with a placeholder is parity with nothing.
 #
 # The shape is the one thing chosen on purpose: a MELEE ARC, because it is the only way CastSpec.Melee
 # is cast from a stone by anyone (void_slash is in no pool, section 6.1). So this file is also the

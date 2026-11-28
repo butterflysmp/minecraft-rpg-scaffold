@@ -578,6 +578,20 @@ class ContentValidatorTest {
                 "neither is required");
     }
 
+    /** F3: a projectile's burst is a pulse front, so the pulses arm checks its ring and pulse (through that arm). */
+    @Test
+    void aProjectilesBurstIsCheckedAsAPulseFront() {
+        var registry = new AbilityRegistry();
+        registry.register(new AbilityDefinition("flare", "Flare", "fire", 16, new ResourceCost("mana", 80),
+                new CastSpec.Projectile(0.9375, 0.0, 16, null, "fire_charge", null, null, null, 0,
+                        new CastSpec.Pulses(1, 1, 6.0, 15, "smolder_ring", "smolder_pulse"), 2.5), List.of()));
+        var dangling = validator(visualsWith("smolder_pulse"), statusesWith()).validate(registry);
+        assertEquals(1, dangling.size(), dangling.toString());
+        assertTrue(dangling.get(0).contains("burst names pulses ring visual 'smolder_ring'"), dangling.toString());
+        assertTrue(validator(visualsWith("smolder_ring", "smolder_pulse"), statusesWith()).validate(registry).isEmpty(),
+                "CONTROL: both visuals defined");
+    }
+
     private static AbilityRegistry coneNaming(String front) {
         var registry = new AbilityRegistry();
         registry.register(new AbilityDefinition("breath", "Breath", "fire",

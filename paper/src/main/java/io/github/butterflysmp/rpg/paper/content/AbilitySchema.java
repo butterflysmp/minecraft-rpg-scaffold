@@ -121,7 +121,13 @@ final class AbilitySchema {
                         s.getInt("max_lifetime_ticks", 100), s.getString("trail"), s.getString("item"),
                         parseHoming(s.getConfigurationSection("homing")),
                         parseBody(s.getString("body")),
-                        parseSpread(s.getConfigurationSection("spread")), fuse);
+                        parseSpread(s.getConfigurationSection("spread")), fuse,
+                        // THE BURST (Solar Flare, the seat's F3, 2026-11-27): OPTIONAL, absent is null (every projectile
+                        // before it). Present, its radius and travel_ticks are REQUIRED and its ring and pulse visuals
+                        // optional, as a pulses cast's; it is ONE front, so it has no count or interval to author.
+                        parseBurst(s.getConfigurationSection("burst")),
+                        // THE SCALED BODY (F9): OPTIONAL, absent is 0 (the dropped item every item body was before).
+                        s.getDouble("body_scale", 0.0));
             }
             case "dash"       -> new CastSpec.Dash(
                     s.getDouble("distance", 12), s.getDouble("speed", 1.6), s.getDouble("lift", 0.4),
@@ -155,6 +161,23 @@ final class AbilitySchema {
                     reqDouble(s, "radius"), reqInt(s, "travel_ticks"), s.getString("ring"), s.getString("pulse"));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
         };
+    }
+
+    /**
+     * A projectile's {@code burst:} block, or null (Solar Flare, F3): ONE pulse front where the shot stops, as a
+     * {@link CastSpec.Pulses} of count 1 (its interval is never used and is 1). {@code radius} and {@code travel_ticks}
+     * are required, {@code ring} and {@code pulse} optional; a {@code count} or {@code interval_ticks} key is refused by
+     * name, because a burst is one front and an authored number nobody could see doing nothing is the worse file.
+     */
+    static CastSpec.Pulses parseBurst(org.bukkit.configuration.ConfigurationSection s) {
+        if (s == null) return null;
+        for (String refused : java.util.List.of("count", "interval_ticks")) {
+            if (s.contains(refused)) {
+                throw new IllegalArgumentException("a projectile's burst is ONE pulse front: remove '" + refused + "'");
+            }
+        }
+        return new CastSpec.Pulses(1, 1, reqDouble(s, "radius"), reqInt(s, "travel_ticks"), s.getString("ring"),
+                s.getString("pulse"));
     }
 
     /**
