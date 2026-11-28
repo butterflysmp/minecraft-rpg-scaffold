@@ -100,6 +100,28 @@ public final class BuildService {
         return true;
     }
 
+    /**
+     * PUT BACK HIS WHOLE BUILD (the seat's D2, 2026-11-27): the selftest's snapshot captured {@code whole} before any row
+     * ran and writes it back at the run's end or abort, through the same write {@link #save} makes
+     * ({@code repository.save} of the whole record), so a cell a row picked into that he had no loadout for before is
+     * REMOVED, not left as a default, and every stored id comes back exactly as it was, an unreadable or unoffered one
+     * included. False, writing nothing, when his build is not loaded or the store is poisoned (as {@link #save}). A write
+     * that fails poisons the session as a save's does; {@code onSettled} hears the result.
+     */
+    public boolean restore(UUID playerId, PlayerBuild whole, Consumer<Boolean> onSettled) {
+        if (build(playerId).isEmpty()) return false;
+        loaded.put(playerId, CompletableFuture.completedFuture(whole));
+        repository.save(whole).whenComplete((ignored, error) -> {
+            if (error != null) {
+                poison(playerId, error);
+                log.log(Level.SEVERE, "Build RESTORE write FAILED for " + playerId + ". The build is poisoned for the"
+                        + " session; the file keeps its last good contents.", error);
+            }
+            onSettled.accept(error == null);
+        });
+        return true;
+    }
+
     private void poison(UUID playerId, Throwable cause) {
         loaded.put(playerId, CompletableFuture.failedFuture(new IllegalStateException(
                 "build write failed for " + playerId + "; poisoned for the session", cause)));

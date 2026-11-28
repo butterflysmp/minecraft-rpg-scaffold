@@ -133,6 +133,9 @@ final class SelfTestSnapshot {
     private final SelfTestAccessorySlots<io.github.butterflysmp.rpg.storage.PlayerAccessories> accessorySlots;
     private final SelfTestAccessorySlots.Port<io.github.butterflysmp.rpg.storage.PlayerAccessories> accessoryPort;
     private final java.util.function.Function<String, String> accessoryName;
+    /** D2 (the seat, 2026-11-27): his stored builds, exactly; and the service they are read from and written through. */
+    private final SelfTestBuilds builds;
+    private final SelfTestBuilds.Port buildPort;
     /** His saturation at run start: the {@code saturation} verb stages it (his regeneration's tier), so it is put back. */
     private final float saturation;
     /** C1: the STORED max_summons base with its own captured flag (SelfTestSummonsBase): not captured is never written. */
@@ -149,6 +152,9 @@ final class SelfTestSnapshot {
         this.accessoryPort = accessoryPort(p.getUniqueId(), adapters);
         this.accessoryName = stored -> accessoryName(stored, adapters);
         this.accessorySlots = SelfTestAccessorySlots.capture(accessoryPort);
+        // D2 (the seat, 2026-11-27): his stored builds, whole, before any row can pick into one.
+        this.buildPort = buildPort(p.getUniqueId(), adapters);
+        this.builds = SelfTestBuilds.capture(buildPort);
         this.saturation = p.getSaturation();
         this.id = p.getUniqueId();
         this.health = stats.tracks(id) ? stats.current(id) : Double.NaN;
@@ -264,7 +270,8 @@ final class SelfTestSnapshot {
 
     /** W1: the CAPTURED line's fields, {@code armour=<n> offhand=<0|1>}. */
     String capturedFields() {
-        return worn.fields() + " class=" + classId + " accessories=" + accessorySlots.fields(accessoryPort, accessoryName);
+        return worn.fields() + " class=" + classId + " accessories=" + accessorySlots.fields(accessoryPort, accessoryName)
+                + " builds=" + builds.fields();
     }
 
     /**
@@ -298,6 +305,24 @@ final class SelfTestSnapshot {
                 List<String> out = SelfTestAccessorySlots.emptySlots(io.github.butterflysmp.rpg.core.accessory.AccessorySlots.COUNT);
                 for (int s = 0; s < out.size(); s++) out.set(s, record.item(s).orElse(null));
                 return out;
+            }
+        };
+    }
+
+    /**
+     * D2: his build store through the service's own functions ({@code build} to read, {@code restore} to write the whole
+     * record, the write a save makes). The disk write settles on the storage queue; its result is logged when it does,
+     * as the accessory write's is.
+     */
+    private static SelfTestBuilds.Port buildPort(java.util.UUID id, io.github.butterflysmp.rpg.paper.adapter.AdapterContext adapters) {
+        io.github.butterflysmp.rpg.paper.build.BuildService service = adapters.stones().builds();
+        return new SelfTestBuilds.Port() {
+            @Override public java.util.Optional<io.github.butterflysmp.rpg.storage.PlayerBuild> read() {
+                return service.build(id);
+            }
+            @Override public boolean write(io.github.butterflysmp.rpg.storage.PlayerBuild whole) {
+                return service.restore(id, whole, ok -> service.log().info("BUILDS restore write settled ok=" + ok
+                        + " player=" + id));
             }
         };
     }
@@ -390,6 +415,9 @@ final class SelfTestSnapshot {
         java.util.Optional<String> accessoriesNot = accessorySlots.restore(accessoryPort);
         String accessoriesLine = " accessories=" + accessorySlots.fields(accessoryPort, accessoryName)
                 + accessoriesNot.map(why -> " NOT-RESTORED=" + why).orElse("");
+        // D2: his stored builds, whole, through the build service's write; then READ BACK. A pick a row saved is undone.
+        java.util.Optional<String> buildsNot = builds.restore(buildPort);
+        accessoriesLine += " builds=" + builds.fields() + buildsNot.map(why -> " NOT-RESTORED=" + why).orElse("");
         p.setSaturation(saturation);
         resources.setCurrent(id, ResourceCost.DEFAULT_RESOURCE, mana);
         // No setter for the trace: toggle until it reads what it read before (at most once).
