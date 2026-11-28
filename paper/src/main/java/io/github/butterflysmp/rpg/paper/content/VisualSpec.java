@@ -47,7 +47,28 @@ public sealed interface VisualSpec permits VisualSpec.Particles, VisualSpec.Soun
      * choice for a new numeric field, would silently restyle every one of them. Do not "tidy" it.
      */
     record Particles(Particle particle, int count, double spread, double speed,
-                     Particle.DustOptions dust, double samplesPerBlock) implements VisualSpec {}
+                     Particle.DustOptions dust, double samplesPerBlock, Trail trail) implements VisualSpec {
+
+        /**
+         * A TRAIL particle's data (Smolder's spiral, M3, 2026-11-28): its colour and how many ticks it lives, which the
+         * SERVER sets. READ, Ben's unobfuscated 26.1.2 client: {@code TrailParticle$Provider.createParticle} passes the
+         * option's {@code duration()} to {@code TrailParticle.setLifetime}, so it is gone after exactly that many ticks.
+         * The particle eases toward a target over its life; the presenter makes the target the very point it is drawn
+         * at, so it stays where it is drawn. Null for every particle that is not TRAIL.
+         */
+        public record Trail(org.bukkit.Color color, int durationTicks) {}
+
+        /** Every particle step before TRAIL (2026-11-28): no trail data. THE NEW FIELD WENT ON THE END. */
+        public Particles(Particle particle, int count, double spread, double speed,
+                         Particle.DustOptions dust, double samplesPerBlock) {
+            this(particle, count, spread, speed, dust, samplesPerBlock, null);
+        }
+
+        /** The data object {@code spawnParticle} takes for this step drawn AT {@code at}: the trail's, the dust's, or none. */
+        public Object dataAt(org.bukkit.Location at) {
+            return trail != null ? new Particle.Trail(at, trail.color(), trail.durationTicks()) : dust;
+        }
+    }
 
     /**
      * How many times a beam is drawn per BLOCK of the segment it runs down. cfde822's value.

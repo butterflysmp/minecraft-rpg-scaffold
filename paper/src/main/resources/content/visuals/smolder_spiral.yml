@@ -1,0 +1,21 @@
+# SMOLDER'S SPIRAL (Ben, 2026-11-28, relayed by the seat, M2 and M3: "a triple spiral originating from the player's feet",
+# "I also want the particles to disappear faster"): drawn at every point of every arm, each tick of the front's travel
+# (core.combat.PulseFront.spiralPoints, points about 0.4 blocks apart along the arm). EVERY STEP IS A SEAT PLACEHOLDER
+# 2026-11-28, OPEN FOR BEN: one orange TRAIL particle per point, still.
+#
+# WHY TRAIL (M3, READ on Ben's unobfuscated 26.1.2 client jar): it is the particle whose lifetime the SERVER sets.
+# TrailParticle$Provider.createParticle passes the option's duration() to TrailParticle.setLifetime, so each particle is
+# gone after exactly duration_ticks. FLAME, the old ring's, lives (int)(8 / (r x 0.8 + 0.2)) + 4 ticks (RisingParticle),
+# 12 to 44: up to 2.2 seconds, which is the slow fade Ben saw. DUST lives max(1, (int)(8 / (r x 0.8 + 0.2)) x size): up
+# to 20 ticks even at size 0.5. A TRAIL eases toward a target over its life; the presenter targets the very point it is
+# drawn at, so it stays put.
+#
+# NO SOUND STEP: ContentValidator refuses one in a spiral, which plays at every point on every tick.
+steps:
+  - type: particle
+    particle: TRAIL
+    count: 1
+    spread: 0.0
+    speed: 0.0
+    color: [255, 120, 0]
+    duration_ticks: 8

@@ -7,6 +7,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * THE PULSE'S PURE DECISIONS AS TABLES (Smolder, the seat's Z1, Z2, Z7, 2026-11-27): when each pulse fires, how far the
@@ -70,6 +71,92 @@ class PulseFrontTest {
     @Test
     void theDistanceIsHorizontalFeetToFeet() {
         assertEquals(5.0, PulseFront.horizontal(new Vec3(0, 64, 0), new Vec3(3, 70, 4)), 1e-12);
+    }
+
+    /**
+     * M1 (Ben, 2026-11-28 via the seat: "double the speed the circle goes out"): SMOLDER'S NEW TRAVEL, 15 ticks for the
+     * same 12 blocks, 0.8 a tick. The seat's distances, executed: 0 -> 0, 3 -> 4, 6 -> 8, 11.5 -> 15, 12 -> 15, 12.5 ->
+     * never. Neighbours that pin the rounding: 3.2 (exactly tick 4's radius) -> 4, 3.21 -> 5, 11.2 (tick 14's) -> 14.
+     */
+    @Test
+    void smoldersNewTravelOfFifteenTicksReachesEachDistanceOnTheExecutedTick() {
+        double[][] table = {
+                {0.0, 0}, {3.0, 4}, {3.2, 4}, {3.21, 5}, {6.0, 8}, {11.2, 14}, {11.5, 15}, {12.0, 15}, {12.5, -1},
+        };
+        for (double[] row : table) {
+            assertEquals((int) row[1], PulseFront.reachTick(row[0], RADIUS, 15), "distance " + row[0]);
+        }
+    }
+
+    // ================================================================= M2: the spiral, a drawing of the same front
+
+    /**
+     * EVERY SPIRAL POINT LIES ON AN ARM AT THE FRONT'S OWN RADIUS (M2): for every tick of the travel, each point drawn
+     * between the previous tick's radius and this tick's is at angle {@code a0 + 2 pi x turns x (r / radius) + k x 120
+     * degrees} for some arm k, 0.1 above the origin, and its distance from the origin is in {@code (radiusAt(t - 1),
+     * radiusAt(t)]}. The tick's outermost point per arm is AT {@code radiusAt(t)}, the radius the hit rule compares.
+     */
+    @Test
+    void everySpiralPointLiesOnAnArmBetweenTheFrontsLastRadiusAndItsNewOne() {
+        Vec3 origin = new Vec3(10, 64, -5);
+        for (int t = 1; t <= 15; t++) {
+            double from = PulseFront.radiusAt(t - 1, RADIUS, 15);
+            double to = PulseFront.radiusAt(t, RADIUS, 15);
+            List<Vec3> points = PulseFront.spiralPoints(origin, from, to, 3, 1.0, RADIUS);
+            double[] outermost = new double[3];
+            for (Vec3 p : points) {
+                double r = PulseFront.horizontal(origin, p);
+                assertTrue(r > from - 1e-9 && r <= to + 1e-9, "tick " + t + ": r " + r + " outside (" + from + ", " + to + "]");
+                assertEquals(64.1, p.y(), 1e-12);
+                double drawn = Math.atan2(p.z() - origin.z(), p.x() - origin.x());
+                int arm = -1;
+                for (int k = 0; k < 3; k++) {
+                    double expected = PulseFront.spiralAngle(k, 3, 1.0, r, RADIUS);
+                    if (Math.abs(Math.IEEEremainder(drawn - expected, 2 * Math.PI)) < 1e-9) arm = k;
+                }
+                assertTrue(arm >= 0, "tick " + t + ": a point at r " + r + " lies on no arm");
+                outermost[arm] = Math.max(outermost[arm], r);
+            }
+            for (int k = 0; k < 3; k++) assertEquals(to, outermost[k], 1e-9, "tick " + t + " arm " + k + "'s tip");
+        }
+    }
+
+    /**
+     * THE FORMULA ITSELF, AT FOUR POINTS (a0 = 0, due east; the angle grows from +x toward +z, which is CLOCKWISE seen
+     * from above in Minecraft's axes, x east and z south): arm 0 at r 0 is 0; at r 6 (half the radius, one turn in all)
+     * half a turn, pi; arm 1 is 120 degrees on; at the edge one whole turn.
+     */
+    @Test
+    void theArmAngleIsAZeroPlusTurnsTimesTheFractionOfTheRadiusPlusTheArmsShare() {
+        assertEquals(0.0, PulseFront.spiralAngle(0, 3, 1.0, 0.0, RADIUS), 1e-12);
+        assertEquals(Math.PI, PulseFront.spiralAngle(0, 3, 1.0, 6.0, RADIUS), 1e-12);
+        assertEquals(Math.PI + 2 * Math.PI / 3, PulseFront.spiralAngle(1, 3, 1.0, 6.0, RADIUS), 1e-12);
+        assertEquals(2 * Math.PI, PulseFront.spiralAngle(0, 3, 1.0, 12.0, RADIUS), 1e-12);
+    }
+
+    /**
+     * SPACED SO AN ARM READS AS A LINE (M2, CC'S CALL 0.4 blocks along the arm): no two consecutive points of one arm,
+     * across the WHOLE travel, are more than {@link PulseFront#SPIRAL_SPACING_BLOCKS} plus 5% apart in a straight line;
+     * and tick 0 draws the one centre point.
+     */
+    @Test
+    void consecutivePointsOfOneArmAreNoFurtherApartThanTheSpacing() {
+        Vec3 origin = Vec3.ZERO;
+        assertEquals(List.of(new Vec3(0, 0.1, 0)), PulseFront.spiralPoints(origin, 0.0, 0.0, 3, 1.0, RADIUS));
+        for (int k = 0; k < 3; k++) {
+            Vec3 last = new Vec3(0, 0.1, 0);
+            for (int t = 1; t <= 15; t++) {
+                List<Vec3> points = PulseFront.spiralPoints(origin, PulseFront.radiusAt(t - 1, RADIUS, 15),
+                        PulseFront.radiusAt(t, RADIUS, 15), 3, 1.0, RADIUS);
+                int perArm = points.size() / 3;
+                for (int i = 0; i < perArm; i++) {
+                    Vec3 p = points.get(k * perArm + i);
+                    assertTrue(p.subtract(last).length() <= PulseFront.SPIRAL_SPACING_BLOCKS * 1.05,
+                            "arm " + k + " tick " + t + ": a gap of " + p.subtract(last).length());
+                    last = p;
+                }
+            }
+        }
     }
 
     /** The drawn ring: one centre point at radius 0; at 12 blocks 101 points, every one 12 from the centre, 0.1 up. */

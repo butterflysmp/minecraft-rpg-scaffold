@@ -4,13 +4,23 @@
 #
 # BEN'S NUMBERS, VERBATIM: "1. 160 Damage Per pulse. 2. 12 Block Radius 3. Mana Cost is 80, Cooldown is 300 Seconds
 # 4. Each Pulse originates from the caster ... 8. Instead of one burst, it's a burst of 4 pulses every 3 seconds."
-# And when: "The moment you cast and then 3 6 and 9" -- ticks 0, 60, 120 and 180 from the cast.
 #
-# THE LOOK, BEN'S: "a ring of particles to come from the casters feet and expand outward to the edge of the radius. This
-# ring does NOT move with the caster. The origin of new pulses DOES. I'd like each pulse to take about 1.5 seconds to
-# reach the edge." -- travel_ticks 30. The damage travels WITH the ring (the seat's Z2, SEAT PLACEHOLDER 2026-11-27,
-# OPEN FOR BEN; the alternative is every body in range struck at the pulse's tick, the ring for show): a body is struck
-# once per pulse, on the tick the ring first reaches its horizontal distance from that pulse's fixed origin.
+# RETUNED, BEN, 2026-11-28 (relayed by the seat, M1): "the mage ultimate is too slow, I want to double the speed the
+# circle goes out as well as reduce the pulse times to every 1.5 seconds." So interval_ticks 30 (pulses at the cast and
+# 1.5, 3 and 4.5 seconds: ticks 0, 30, 60 and 90 from the cast, exact on the server's tick since X6 (a)) and travel_ticks
+# 15 (the 12 blocks in 0.75 seconds, 0.8 a tick; it was 30). count, radius, damage, mana and cooldown are unchanged.
+#
+# THE LOOK, BEN'S, 2026-11-28 (M2, M3): "a triple spiral originating from the player's feet", "One full turn to start",
+# "I also want the particles to disappear faster". So `spiral:` below: three arms, each winding one whole turn between
+# his feet and the edge, drawn tick by tick AT THE FRONT'S OWN RADIUS (core.combat.PulseFront.spiralPoints, the radius
+# function the hit compares), from the pulse's FIXED origin. Arm 0 starts due east and the arms wind clockwise seen from
+# above (CC'S CALL, SEAT PLACEHOLDER 2026-11-28). The full ring is no longer drawn. The particles are TRAIL, which the
+# server times: each lives 8 ticks (smolder_spiral.yml, SEAT PLACEHOLDER).
+#
+# THE HIT IS STILL THE WHOLE CIRCLE, NOT THE ARMS (M2, OPEN FOR BEN): a body is struck once per pulse, on the tick the
+# front's radius first reaches its horizontal distance from that pulse's fixed origin, wherever the arms are. Before
+# Ben's change this was "the damage travels WITH the ring" (the seat's Z2, OPEN FOR BEN); the spiral is drawn with the
+# same front, so the damage still arrives with the arms' tips, at every angle.
 #
 # SCORCH (Ben: "7. Yes it applies scorch"; the seat's A1): MET BY THE ELEMENT, with no status step here. Each pulse's
 # 160 is FIRE damage, and fire damage applies Scorch by the element (content/elements/fire.yml applies_status scorch;
@@ -29,10 +39,10 @@ display_name: "<gold>Smolder</gold>"
 element: fire
 cooldown_ticks: 6000
 
-# THE BUILD MENU'S PROSE (Z9): SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN. Every number in it is this file's own, and
+# THE BUILD MENU'S PROSE (Z9, N7): SEAT PLACEHOLDER 2026-11-28, OPEN FOR BEN. Every number in it is this file's own, and
 # SmolderContentTest holds each sentence to the number it states.
 description:
-  - "Four pulses, 3s apart, burst from your feet."
+  - "Four pulses, 1.5s apart, burst from your feet."
   - "Each deals 160 fire damage within 12 blocks and scorches."
 
 cost:
@@ -42,11 +52,14 @@ cost:
 cast:
   type: pulses
   count: 4
-  interval_ticks: 60
+  interval_ticks: 30
   radius: 12.0
-  travel_ticks: 30
-  ring: smolder_ring      # drawn round the ring each tick of its travel (no sound: ContentValidator)
-  pulse: smolder_pulse    # once at each pulse's origin, on its tick
+  travel_ticks: 15
+  pulse: smolder_pulse      # once at each pulse's origin, on its tick (the sound is here)
+  spiral:
+    arms: 3
+    turns: 1.0
+    visual: smolder_spiral  # drawn at every point of every arm, each tick of the travel (no sound: ContentValidator)
 
 on_hit:
   - type: damage

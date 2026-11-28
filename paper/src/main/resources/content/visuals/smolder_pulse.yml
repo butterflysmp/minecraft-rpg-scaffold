@@ -1,14 +1,22 @@
 # SMOLDER'S PULSE: presented ONCE at each pulse's origin (his feet on that pulse's tick), four times a cast. EVERY STEP IS
-# A SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN: a burst of flame at his feet and a blaze's shot (the seat's "a blaze sound
-# at each pulse"; entity.blaze.shoot is already shipped by solar_detonation, so it is not new to the loader's checks).
-# SHARED (the seat's F10, 2026-11-27): Solar Flare's burst names this file too (Ben: "the same particles that the smolder
-# pulses do", "The same expanding ring"), so a change here moves BOTH ultimates. solar_flare.yml says the same.
+# A SEAT PLACEHOLDER, OPEN FOR BEN: a puff at his feet and a blaze's shot (the seat's "a blaze sound at each pulse";
+# entity.blaze.shoot is already shipped by solar_detonation, so it is not new to the loader's checks).
+#
+# CHANGED 2026-11-28 (M3, Ben: "I also want the particles to disappear faster"): this WAS the long-lived one, 20 FLAME at
+# spread 0.4, and FLAME lives 12 to 44 ticks (READ, the client's RisingParticle). Now 12 orange TRAIL particles that the
+# server times at 8 ticks (smolder_spiral.yml says why TRAIL). A TRAIL eases to its target, the point it was presented at,
+# so a puff spread 0.3 about his feet draws IN to them over 0.4 seconds as the arms go out (CC'S CALL, SEAT PLACEHOLDER;
+# the alternative is one still particle).
+#
+# THIS FILE IS SMOLDER'S ALONE FROM 2026-11-28 (the seat's N5): Solar Flare no longer names it.
 steps:
   - type: particle
-    particle: FLAME
-    count: 20
-    spread: 0.4
-    speed: 0.02
+    particle: TRAIL
+    count: 12
+    spread: 0.3
+    speed: 0.0
+    color: [255, 120, 0]
+    duration_ticks: 8
   - type: sound
     key: entity.blaze.shoot
     volume: 1.0

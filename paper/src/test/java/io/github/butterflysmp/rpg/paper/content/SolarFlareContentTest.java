@@ -70,7 +70,7 @@ class SolarFlareContentTest {
         assertEquals(80, def.cost().amount());
         var p = assertInstanceOf(CastSpec.Projectile.class, def.cast());
         assertEquals(new CastSpec.Projectile(0.9375, 0.0, 16, "solar_flare_trail", "fire_charge", null, null,
-                new CastSpec.Spread(3, 30), 0, new CastSpec.Pulses(1, 1, 6.0, 15, "smolder_ring", "smolder_pulse"), 2.5), p);
+                new CastSpec.Spread(3, 30), 0, new CastSpec.Pulses(1, 1, 6.0, 15, "solar_flare_ring", "solar_flare_burst"), 2.5), p);
         assertEquals(List.of(new EffectSpec.Damage(250, "fire")), def.onHit(), "A1's rule: the damage only");
     }
 
@@ -113,19 +113,29 @@ class SolarFlareContentTest {
                         + " fire damage and scorches."), def.description());
     }
 
-    /** F10: the ring and the burst are SMOLDER's files, by name, and both files say they are shared. */
+    /**
+     * N5 (the seat, 2026-11-28; it REPLACES F10's shared-files test): EACH ULTIMATE HAS ITS OWN VISUAL FILES. Every visual
+     * id Solar Flare names (its cast, trail, ring, burst) is one Smolder does not name, and the reverse; and no shipped
+     * visual still says it is shared ("names this file too", F10's note). Forces red: either YAML naming the other's file
+     * again.
+     */
     @Test
-    void theRingAndTheBurstAreSmoldersOwnFiles() throws IOException {
-        var burst = ((CastSpec.Projectile) flare().cast()).burst();
+    void eachUltimateNamesOnlyItsOwnVisualFiles() throws IOException {
+        var flare = (CastSpec.Projectile) flare().cast();
         AbilityDefinition smolder = loadBundled("smolder.yml").find("smolder").orElseThrow();
         var pulses = (CastSpec.Pulses) smolder.cast();
-        assertEquals(pulses.ring(), burst.ring());
-        assertEquals(pulses.pulse(), burst.pulse());
-        assertEquals(pulses.radius() / pulses.travelTicks(), burst.radius() / burst.travelTicks(), 0.0,
-                "F4: Smolder's speed, 12 in 30 = 6 in 15");
-        for (String v : List.of("smolder_ring", "smolder_pulse")) {
-            String text = Files.readString(Path.of("src/main/resources/content/visuals/" + v + ".yml"), StandardCharsets.UTF_8);
-            assertTrue(text.contains("Solar Flare's burst names this file too"), v);
+        java.util.Set<String> flareIds = new java.util.HashSet<>(java.util.Arrays.asList(
+                flare.trail(), flare.burst().ring(), flare.burst().pulse(), "solar_flare_cast"));
+        flareIds.remove(null);
+        java.util.Set<String> smolderIds = new java.util.HashSet<>(java.util.Arrays.asList(
+                pulses.ring(), pulses.pulse(), pulses.spiral() == null ? null : pulses.spiral().visual()));
+        smolderIds.remove(null);
+        assertFalse(smolderIds.isEmpty() || flareIds.size() < 3, "CONTROL: both name visuals " + flareIds + smolderIds);
+        for (String id : flareIds) assertFalse(smolderIds.contains(id), id + " is named by both");
+        try (var files = Files.list(Path.of("src/main/resources/content/visuals"))) {
+            for (Path p : files.toList()) {
+                assertFalse(Files.readString(p, StandardCharsets.UTF_8).contains("names this file too"), p.toString());
+            }
         }
     }
 

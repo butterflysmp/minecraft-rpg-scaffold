@@ -1564,6 +1564,6 @@ public final class PaperCombatWorld implements CombatWorld {
      */
     private void particles(VisualSpec.Particles p, Location at) {
         world.spawnParticle(p.particle(), at, p.count(),
-                p.spread(), p.spread(), p.spread(), p.speed(), p.dust());
+                p.spread(), p.spread(), p.spread(), p.speed(), p.dataAt(at));   // a TRAIL targets its own point (M3)
     }
 }

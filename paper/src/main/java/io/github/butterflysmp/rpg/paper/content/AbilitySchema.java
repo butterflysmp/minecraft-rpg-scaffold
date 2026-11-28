@@ -157,8 +157,11 @@ final class AbilitySchema {
             // PULSES FROM THE CASTER (Smolder, the seat's Z1, 2026-11-27). The four numbers are REQUIRED (a default would
             // be a number nobody ruled); `ring` (drawn round the ring each tick) and `pulse` (once at each origin) are
             // OPTIONAL visual ids, resolved by ContentValidator. CastSpec.Pulses judges the values, by name.
+            // `spiral:` (Smolder, M2, 2026-11-28) is OPTIONAL: arms, turns and the visual drawn at each point, all three
+            // required inside it.
             case "pulses"     -> new CastSpec.Pulses(reqInt(s, "count"), reqInt(s, "interval_ticks"),
-                    reqDouble(s, "radius"), reqInt(s, "travel_ticks"), s.getString("ring"), s.getString("pulse"));
+                    reqDouble(s, "radius"), reqInt(s, "travel_ticks"), s.getString("ring"), s.getString("pulse"),
+                    parseSpiralArms(s.getConfigurationSection("spiral")));
             default -> throw new IllegalArgumentException("Unknown cast type: " + type);
         };
     }
@@ -169,6 +172,15 @@ final class AbilitySchema {
      * are required, {@code ring} and {@code pulse} optional; a {@code count} or {@code interval_ticks} key is refused by
      * name, because a burst is one front and an authored number nobody could see doing nothing is the worse file.
      */
+    /** A pulses cast's {@code spiral:} block (M2), or null: {@code arms}, {@code turns} and {@code visual}, each required. */
+    static CastSpec.Pulses.SpiralArms parseSpiralArms(org.bukkit.configuration.ConfigurationSection s) {
+        if (s == null) return null;
+        if (!s.isString("visual")) {
+            throw new IllegalArgumentException("a pulses spiral needs 'visual:', the visual drawn at each of its points");
+        }
+        return new CastSpec.Pulses.SpiralArms(reqInt(s, "arms"), reqDouble(s, "turns"), s.getString("visual"));
+    }
+
     static CastSpec.Pulses parseBurst(org.bukkit.configuration.ConfigurationSection s) {
         if (s == null) return null;
         for (String refused : java.util.List.of("count", "interval_ticks")) {

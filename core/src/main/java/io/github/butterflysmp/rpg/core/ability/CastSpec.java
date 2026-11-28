@@ -850,8 +850,35 @@ public sealed interface CastSpec {
      *
      * <p>No bundled content reaches the refusals below; {@code CastSpecPulsesTest} causes each.
      */
-    record Pulses(int count, int intervalTicks, double radius, int travelTicks, String ring, String pulse)
+    record Pulses(int count, int intervalTicks, double radius, int travelTicks, String ring, String pulse,
+                  SpiralArms spiral)
             implements CastSpec {
+
+        /**
+         * SPIRAL ARMS DRAWN WITH THE FRONT (Smolder, Ben 2026-11-28 via the seat's M2: "a triple spiral originating from
+         * the player's feet", "One full turn to start"): {@code arms} arms, each winding {@code turns} whole turns
+         * between the origin and the radius, drawn tick by tick at the front's own radius
+         * ({@code core.combat.PulseFront.spiralPoints}), the {@code visual} presented at every point. A DRAWING ONLY: the
+         * hit still lands on the whole circle when the front's radius reaches a body. ContentValidator refuses a sound
+         * in the visual, as in a ring.
+         */
+        public record SpiralArms(int arms, double turns, String visual) {
+            public SpiralArms {
+                if (arms < 1) throw new IllegalArgumentException("a pulses spiral needs 1 or more arms, was " + arms);
+                if (!(turns >= 0 && Double.isFinite(turns))) {
+                    throw new IllegalArgumentException("a pulses spiral's turns must be 0 or more, was " + turns);
+                }
+                if (visual == null || visual.isBlank()) {
+                    throw new IllegalArgumentException("a pulses spiral needs a 'visual:' to draw at its points");
+                }
+            }
+        }
+
+        /** Every pulses cast before the spiral (2026-11-28): none. THE NEW FIELD WENT ON THE END, the ladder's rule. */
+        public Pulses(int count, int intervalTicks, double radius, int travelTicks, String ring, String pulse) {
+            this(count, intervalTicks, radius, travelTicks, ring, pulse, null);
+        }
+
         public Pulses {
             if (count < 1) throw new IllegalArgumentException("pulses count must be 1 or more, was " + count);
             // The scheduler cannot defer by less than a tick (Volley's own reason): 0 would quietly become 1.

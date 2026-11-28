@@ -365,6 +365,134 @@ scratchpad copy is the measurement.
 **Only the boot can show:** the douse on a real body in water and in rain, the splash event's set on a real throw, and
 the death reading on a real death frame.
 
+## 8. Ben's changes, 2026-11-28 (the seat's M1 to M4), on `feat/smolder-spiral`
+
+**Ben, verbatim, after the boot of `01be9d3b` (relayed by the seat):** *"1. First, the mage ultimate is too slow, I want
+to double the speed the circle goes out as well as reduce the pulse times to every 1.5 seconds. 2. The mage particles are
+weird too, I would like to see a triple spiral originating from the player's feet. I also want the particles to disappear
+faster."* Asked how tightly the spirals wind: *"1. One full turn to start"*.
+
+### M1, the timing: two YAML numbers
+
+`interval_ticks` 60 → **30** (pulses at C, C+30, C+60, C+90: exact on the server's tick since X6 (a), `feat/x6-clock`),
+`travel_ticks` 30 → **15** (12 blocks in 0.75 s, 0.8 a tick). count 4, radius 12, damage 160, mana 80, cooldown 6000
+unchanged. The front's rule, the struck set and "in range" are untouched (no code moved for M1).
+`CastSpec.minimumCooldownTicks` is now 3 x 30 + 15 = 105 (binds nothing at 6000).
+
+**THE REACH TABLE, EXECUTED** (`PulseFrontTest.smoldersNewTravelOfFifteenTicksReachesEachDistanceOnTheExecutedTick`):
+
+| horizontal distance | 0 | 3.0 | 3.2 | 3.21 | 6.0 | 11.2 | 11.5 | 12.0 | 12.5 |
+|---|---|---|---|---|---|---|---|---|---|
+| reach tick after its pulse | 0 | 4 | 4 | 5 | 8 | 14 | 15 | 15 | never |
+
+### M2, the spiral: a drawing of the same front
+
+- **Declared in YAML** (`cast.spiral`: `arms 3`, `turns 1.0`, `visual smolder_spiral`): `CastSpec.Pulses.SpiralArms`,
+  the record's new tail field (the ladder's rule; every older constructor passes none).
+- **THE FORMULA** (`PulseFront.spiralAngle`): at front radius r, arm k (0, 1, 2) is at angle
+  **a0 + 2 pi x turns x (r / radius) + k x 2 pi / 3**, about the pulse's FIXED origin, 0.1 above its feet. So every arm
+  winds one whole turn between his feet and the 12-block edge.
+- **ONE RADIUS FUNCTION:** each tick t, `CastExecutor.ringPass` draws each arm over the stretch the front swept that tick,
+  radii in (radiusAt(t − 1), radiusAt(t)] (`PulseFront.spiralPoints`), so the arms' tips are AT the radius the hit rule
+  compares (`PulseFrontTest.everySpiralPointLiesOnAnArm…`: every point on an arm, every tip at `radiusAt(t)`).
+- **THE SPACING (CC'S CALL):** 0.4 blocks ALONG the arm (`SPIRAL_SPACING_BLOCKS`; the alternative, the ring's 0.75). A
+  stretch is cut into n equal radius steps, n = ceil(stretch length along the arm / 0.4), the length taken at the
+  stretch's outer end, where the arm is steepest; so no two consecutive points of an arm are more than 0.4 apart
+  (`consecutivePointsOfOneArmAreNoFurtherApartThanTheSpacing`, 5% tolerance for the slope's variation inside a
+  stretch). EXECUTED, points per tick, t = 0..15: 1, 9, 9, 12, 12, 15, 18, 21, 21, 24, 27, 30, 33, 36, 36, 39: **343 a
+  pulse** (the old ring drew 1580 over its 31 ticks).
+- **a0 AND THE DIRECTION (CC'S CALL, SEAT PLACEHOLDER 2026-11-28):** a0 = 0, due east (+x); the angle grows toward +z
+  (south), so the arms wind **clockwise seen from above**. The alternatives: any start, and the other hand.
+- **THE FULL RING IS NO LONGER DRAWN** (smolder.yml names no `ring:`). **The hit still lands on the WHOLE circle** when
+  the front's radius reaches a body (`PulseCastTest.theSpiralIsDrawnWithTheFrontAndTheHitIsStillTheWholeCircle`: a body
+  due north, where no arm is when the front reaches it, is struck on tick 8). smolder.yml says so. **OPEN FOR BEN: the
+  spiral shows three arms while the damage is a full circle.**
+- `ContentValidator` refuses a dangling or sounding spiral visual, the ring's rule for the ring's reason.
+
+### M3, "disappear faster": TRAIL, whose lifetime the server sets (READ, Ben's unobfuscated 26.1.2 client jar)
+
+| candidate | its client lifetime, READ | server can set it? |
+|---|---|---|
+| FLAME (the old ring, the old pulse) | `RisingParticle`: `(int)(8 / (r x 0.8 + 0.2)) + 4` with r in [0, 1): **12 to 44 ticks** | no |
+| DUST | `DustParticleBase`: `max(1, (int)(8 / (r x 0.8 + 0.2)) x scale)`: **8s to 40s ticks** (size 0.5: 4 to 20) | only through its size |
+| CRIT | `CritParticle`: `(int)(6 / (r x 0.8 + 0.6))`: 4 to 10 ticks | no (and white, not fire) |
+| **TRAIL** | `TrailParticle$Provider.createParticle` calls `setLifetime(option.duration())`: **exactly `duration` ticks** | **yes** |
+
+**Chosen: TRAIL, 8 ticks (0.4 s), orange `[255, 120, 0]`, one per point, still** (`smolder_spiral.yml`; SEAT
+PLACEHOLDER). A TRAIL eases toward a target over its life; `VisualSpec.Particles.dataAt` makes the target the very point
+it is drawn at, so it stays put. The visual schema gained TRAIL's data: `color` and `duration_ticks`, both required,
+`size` refused, `duration_ticks` refused on every other particle, TRAIL refused in a `spiral` swirl step (it supplies no
+trail data); `VisualLoaderTest`'s guard over every data-taking particle went red the moment the gate opened, and the
+TRAIL arm was handed over to two new rows, as DUST's was.
+
+**`smolder_pulse` WAS the long-lived one** (20 FLAME, spread 0.4: 12 to 44 ticks). Now 12 orange TRAIL, spread 0.3, 8
+ticks: a puff about his feet that draws IN to them over 0.4 s (CC'S CALL, SEAT PLACEHOLDER; the alternative, one still
+particle), and the blaze's shot unchanged.
+
+### N5, done here because the files were shared
+
+Smolder no longer draws a ring, so `smolder_ring.yml` was Solar Flare's alone: renamed `solar_flare_ring.yml` (look
+unchanged) and `smolder_ring.yml` retired (`VisualLoader.RETIRED_FILES`). Solar Flare's burst names
+`solar_flare_burst.yml`, the look `smolder_pulse` had (copied unchanged). F10's shared-files note is gone from both
+YAMLs and every visual, and `SolarFlareContentTest.theRingAndTheBurstAreSmoldersOwnFiles` is replaced by
+`eachUltimateNamesOnlyItsOwnVisualFiles`. So nothing Solar Flare draws moves in this branch.
+
+### M4, Scorch: the burn count, re-executed through the real store
+
+On the server's order as READ (`ScorchBurnsReadOrder`; `PLAN-owed-fixes.md` X6 AS BUILT (a)): the first burn exactly 20
+after a body's first hit, then every 20; on a tick with both a later hit and a burn, the burn runs BEFORE the hit's
+refresh (both on the mob's entity scheduler, its due list run in insertion order). **The model's control is the last
+boot's own readings** (`SmolderRetunedBurnsTest.theModelReproducesTheBootsTwoReadings`: SM2's 15 burns for hits at +0,
++59, +120, +180, and SM5's EIGHT for +0, +59). **A first model, the hit's refresh first, gave 14 for SM2 and went RED
+against that control; the READ of the due list settled it.**
+
+| one body's hits (from its first) | burns, from its first hit | total at 80 each |
+|---|---|---|
+| +0, +30, +60, +90 (all four pulses) | **ten**, +20 to +200 | 800 |
+| +0 | six, +20 to +120 | 480 |
+| +0, +30 | seven, +20 to +140 | 560 |
+| +0, +30, +60 | nine, +20 to +180 | 720 |
+
+(Four hits 60 apart burned fifteen times.) The cap is unchanged: (sent / crit) x 0.5 = 80, window 120, restarted by
+each hit; each burn min(5% of max, 80).
+
+### N7's description (SEAT PLACEHOLDER 2026-11-28)
+
+"Four pulses, 1.5s apart, burst from your feet." / "Each deals 160 fire damage within 12 blocks and scorches."
+`SmolderContentTest` rebuilds the first from the parsed interval (30 / 20 = `1.5`, trailing zeros stripped).
+`SmolderGateArithmeticTest.sm1_…` (the frozen gate's executed figures) now holds the shipped prose, with a note; its
+number lines are unchanged.
+
+### Tests and mutations (M1 to M4, N5)
+
+New: `PulseFrontTest` (+4), `PulseCastTest` (+1), `ContentValidatorTest.aPulsesSpiralVisualIsCheckedAsTheRingIs`,
+`VisualLoaderTest` (+2), `SmolderContentTest` (+1, two rows changed), `SolarFlareContentTest` (one replaced, one
+changed), `SmolderRetunedBurnsTest` (2) on `ScorchBurnsReadOrder`. Each mutation a literal splice (marker 1, original
+0, delta 1 against a scratchpad copy), restored byte-identical (`cmp`), markers left 0:
+
+| mutation | the change | red |
+|---|---|---|
+| MUTSPIRALTIP | a stretch's last point at 0.9 of the front's radius | `everySpiralPointLiesOnAnArm…`, `consecutivePoints…` |
+| MUTSPIRALANGLE | the `r / radius` term dropped from the angle | `theArmAngleIs…` only (the arm row checks against `spiralAngle` itself, so the formula row is that function's sole guard) |
+| MUTSPACING | n without the arm's slope | `consecutivePoints…` |
+| MUTSPIRALDRAW | `ringPass` never draws the spiral | `theSpiralIsDrawnWithTheFront…` |
+| MUTSPIRALVALID | the validator's spiral arm skipped | `aPulsesSpiralVisualIsCheckedAsTheRingIs` |
+| MUTTRAILGATE | TRAIL out of the data-type gate | both TRAIL rows, `theSpiralAndThePulseDraw…` |
+| MUTTRAILTARGET | the trail's target one block up | `trailArrives…AndTargetsItsOwnPoint` |
+| MUTSCHEMASPIRAL | `spiral:` not parsed | `smolderLoadsWithBensNumbers` |
+| MUTN5B | Solar Flare names `smolder_pulse` again | `eachUltimateNamesOnlyItsOwnVisualFiles`, `solarFlareLoads…` |
+
+**MUTN5 (the first attempt) is VOID:** the tool's `/* … */` marker landed inside the YAML value, so the id read
+`smolder_pulse /* MUT_N5 */` and only the numbers row could see it. Re-run as MUTN5B with the marker in a YAML comment.
+
+### OPEN FOR BEN (Smolder, 2026-11-28)
+
+- The spiral shows three arms; the damage is a full circle.
+- a0 (due east) and the hand (clockwise from above); the spiral's particle (orange TRAIL, 8 ticks, 0.4 apart); the pulse
+  puff drawing in to his feet; the description.
+
+**Only the boot can show:** the spiral as drawn (a line, not dots; the 0.4 s fade), the puff, the timing on a real server.
+
 ## 7. The gate branch (`feat/smolder-gate`): `docs/gates/GATE-smolder.md`
 
 - **One command**, the regen-tooltip rows first and the one ask last: `/rpg selftest

@@ -206,6 +206,10 @@ class VisualLoaderTest {
         List<Particle> rejected = Arrays.stream(Particle.values())
                 .filter(p -> p.getDataType() != Void.class)
                 .filter(p -> p.getDataType() != Particle.DustOptions.class)
+                // TRAIL'S DATA BECAME EXPRESSIBLE 2026-11-28 (M3): handed over to
+                // trailArrivesWithItsColourAndItsServerSetLifetimeAndTargetsItsOwnPoint and trailsRefusalsAreNamedSkippedFiles,
+                // the same explicit swap DUST's was. This guard SAW it: it went red the moment the gate opened.
+                .filter(p -> p.getDataType() != Particle.Trail.class)
                 .toList();
 
         assertFalse(rejected.isEmpty(), "discovered NO data-taking particles besides DUST -- a scan "
@@ -254,6 +258,68 @@ class VisualLoaderTest {
         assertEquals(Color.fromRGB(40, 90, 240), particles.dust().getColor(), "the authored blue");
         assertEquals(1.2f, particles.dust().getSize(), 1e-6, "and the authored size");
         assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * TRAIL (M3, 2026-11-28): a particle whose lifetime the SERVER sets arrives carrying its colour and its
+     * {@code duration_ticks}, no dust; and the data handed to {@code spawnParticle} for a point is a {@code
+     * Particle.Trail} TARGETING THAT SAME POINT, so the particle stays where it is drawn.
+     *
+     * <p>Mutations: the Trail arm out of the data-type gate -> the file is skipped and orElseThrow reddens; the target
+     * taken from anywhere but the drawn point -> the target assertion reddens.
+     */
+    @Test
+    void trailArrivesWithItsColourAndItsServerSetLifetimeAndTargetsItsOwnPoint() throws IOException {
+        write("spiral.yml", """
+                steps:
+                  - type: particle
+                    particle: TRAIL
+                    count: 1
+                    spread: 0.0
+                    speed: 0.0
+                    color: [255, 120, 0]
+                    duration_ticks: 8
+                """);
+        var particles = (VisualSpec.Particles) load().find("spiral").orElseThrow().steps().get(0);
+        assertEquals(org.bukkit.Particle.TRAIL, particles.particle());
+        assertEquals(null, particles.dust());
+        assertEquals(Color.fromRGB(255, 120, 0), particles.trail().color());
+        assertEquals(8, particles.trail().durationTicks());
+        var at = new org.bukkit.Location(null, 3.5, 64.1, -2.25);
+        var data = (org.bukkit.Particle.Trail) particles.dataAt(at);
+        assertEquals(at, data.getTarget());
+        assertEquals(8, data.getDuration());
+        assertEquals(Color.fromRGB(255, 120, 0), data.getColor());
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
+     * TRAIL's refusals, each a named, skipped file (M3): no {@code duration_ticks}; a {@code size} (TRAIL has none);
+     * a duration of 0; {@code duration_ticks} on FLAME, whose lifetime the server cannot set; and TRAIL in a
+     * {@code spiral} step, which supplies no trail data. The control file beside each loads.
+     */
+    @Test
+    void trailsRefusalsAreNamedSkippedFiles() throws IOException {
+        String[][] cases = {
+                {"aaa_t1.yml", "steps:\n  - type: particle\n    particle: TRAIL\n    color: [255, 120, 0]\n",
+                        "requires 'duration_ticks'"},
+                {"aaa_t2.yml", "steps:\n  - type: particle\n    particle: TRAIL\n    color: [255, 120, 0]\n"
+                        + "    duration_ticks: 8\n    size: 1.0\n", "sets 'size'"},
+                {"aaa_t3.yml", "steps:\n  - type: particle\n    particle: TRAIL\n    color: [255, 120, 0]\n"
+                        + "    duration_ticks: 0\n", "must be 1 or more"},
+                {"aaa_t4.yml", "steps:\n  - type: particle\n    particle: FLAME\n    duration_ticks: 8\n",
+                        "whose lifetime the server cannot set"},
+                {"aaa_t5.yml", "steps:\n  - type: spiral\n    particle: TRAIL\n    color: [255, 120, 0]\n"
+                        + "    duration_ticks: 8\n    arms: 3\n    turns: 1\n    points_per_tick: 4\n", "supplies no trail data"},
+        };
+        for (String[] c : cases) {
+            warnings.clear();
+            for (var f : java.nio.file.Files.list(dir).toList()) java.nio.file.Files.delete(f);
+            write(c[0], c[1]);
+            write("solar_detonation.yml", VALID);
+            assertEquals(1, load().size(), c[0]);
+            assertTrue(warningText().contains(c[0]) && warningText().contains(c[2]), c[0] + ": " + warningText());
+        }
     }
 
     /**

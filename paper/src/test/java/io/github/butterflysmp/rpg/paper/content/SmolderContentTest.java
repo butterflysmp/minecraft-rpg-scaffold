@@ -60,7 +60,8 @@ class SmolderContentTest {
         assertEquals("mana", def.cost().resourceId());
         assertEquals(80, def.cost().amount());
         var pulses = assertInstanceOf(CastSpec.Pulses.class, def.cast());
-        assertEquals(new CastSpec.Pulses(4, 60, 12.0, 30, "smolder_ring", "smolder_pulse"), pulses);
+        assertEquals(new CastSpec.Pulses(4, 30, 12.0, 15, null, "smolder_pulse",
+                new CastSpec.Pulses.SpiralArms(3, 1.0, "smolder_spiral")), pulses, "M1, M2: 1.5 s apart, 0.75 s to the edge, three arms of one turn, no ring");
         assertEquals(List.of(new EffectSpec.Damage(160, "fire")), def.onHit());
     }
 
@@ -88,11 +89,43 @@ class SmolderContentTest {
         var p = (CastSpec.Pulses) def.cast();
         var d = (EffectSpec.Damage) def.onHit().get(0);
         String[] words = {"Zero", "One", "Two", "Three", "Four", "Five", "Six"};
-        String first = words[p.count()] + " pulses, " + (p.intervalTicks() / 20) + "s apart, burst from your feet.";
+        String seconds = java.math.BigDecimal.valueOf(p.intervalTicks()).divide(java.math.BigDecimal.valueOf(20))
+                .stripTrailingZeros().toPlainString();
+        String first = words[p.count()] + " pulses, " + seconds + "s apart, burst from your feet.";
         String second = "Each deals " + Math.round(d.amount()) + " fire damage within " + Math.round(p.radius())
                 + " blocks and scorches.";
         assertEquals(List.of(first, second), def.description());
-        assertEquals(0, p.intervalTicks() % 20, "the interval is a whole number of seconds, as the prose says");
+        assertEquals("1.5", seconds, "N7: the seat's wording, 1.5s");
+    }
+
+    /**
+     * M3 ("I also want the particles to disappear faster"): every PARTICLE step of the spiral's visual and the pulse's
+     * is TRAIL, whose lifetime the server sets (READ: the client's {@code TrailParticle$Provider} hands the duration to
+     * {@code setLifetime}), and each lives at most 10 ticks: gone within half a second of being drawn. The old FLAME
+     * lived 12 to 44 ticks (READ: {@code RisingParticle}'s {@code (int)(8 / (r x 0.8 + 0.2)) + 4}). Parsed by the loader
+     * we run, from the bundled files.
+     */
+    @Test
+    void theSpiralAndThePulseDrawOnlyServerTimedParticlesThatDieWithinHalfASecond() throws IOException {
+        for (String id : List.of("smolder_spiral", "smolder_pulse")) {
+            try (var in = getClass().getResourceAsStream("/content/visuals/" + id + ".yml")) {
+                assertNotNull(in, "bundled visual missing: " + id);
+                Files.write(dir.resolve(id + ".yml"), in.readAllBytes());
+            }
+        }
+        Logger log = Logger.getAnonymousLogger();
+        log.setUseParentHandlers(false);
+        VisualRegistry visuals = new VisualLoader(log).loadAll(dir.toFile());
+        for (String id : List.of("smolder_spiral", "smolder_pulse")) {
+            var steps = visuals.find(id).orElseThrow(() -> new AssertionError(id + " did not load")).steps();
+            var particles = steps.stream().filter(VisualSpec.Particles.class::isInstance)
+                    .map(VisualSpec.Particles.class::cast).toList();
+            assertFalse(particles.isEmpty(), id + " draws something");
+            for (var p : particles) {
+                assertEquals(org.bukkit.Particle.TRAIL, p.particle(), id);
+                assertTrue(p.trail().durationTicks() <= 10, id + " lives " + p.trail().durationTicks() + " ticks");
+            }
+        }
     }
 
     /** The deleted placeholder is retired: a stale copy in a data folder is skipped, never registered. */

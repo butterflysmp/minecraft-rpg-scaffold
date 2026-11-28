@@ -578,6 +578,32 @@ class ContentValidatorTest {
                 "neither is required");
     }
 
+    /**
+     * M2 (2026-11-28): A PULSES SPIRAL'S VISUAL is checked as the ring's is: a dangling id is named, a sound in it is
+     * named (drawn at every point of every arm on every tick), and a sound-free one is no problem. Caused, not asserted
+     * present: no bundled content names a dangling or sounding spiral.
+     */
+    @Test
+    void aPulsesSpiralVisualIsCheckedAsTheRingIs() {
+        var registry = new AbilityRegistry();
+        registry.register(new AbilityDefinition("smolder", "Smolder", "fire", 6000, new ResourceCost("mana", 80),
+                new CastSpec.Pulses(4, 30, 12, 15, null, null, new CastSpec.Pulses.SpiralArms(3, 1.0, "smolder_spiral")),
+                List.of()));
+        var dangling = validator(visualsWith("something_else"), statusesWith()).validate(registry);
+        assertEquals(1, dangling.size(), dangling.toString());
+        assertTrue(dangling.get(0).contains("pulses spiral visual 'smolder_spiral', which no visual defines"),
+                dangling.toString());
+
+        var withSound = visualWithSteps("smolder_spiral", anyDust(),
+                new VisualSpec.Sound("block.fire.ambient", NamespacedKey.fromString("block.fire.ambient"), 1.0f, 1.0f));
+        var sound = validator(withSound, statusesWith()).validate(registry);
+        assertEquals(1, sound.size(), sound.toString());
+        assertTrue(sound.get(0).contains("spiral visual") && sound.get(0).contains("sound step"), sound.toString());
+
+        assertTrue(validator(visualsWith("smolder_spiral"), statusesWith()).validate(registry).isEmpty(),
+                "CONTROL: a defined, sound-free spiral visual");
+    }
+
     /** F3: a projectile's burst is a pulse front, so the pulses arm checks its ring and pulse (through that arm). */
     @Test
     void aProjectilesBurstIsCheckedAsAPulseFront() {

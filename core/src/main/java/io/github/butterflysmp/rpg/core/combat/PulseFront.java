@@ -36,6 +36,54 @@ public final class PulseFront {
     /** How far above the origin's feet the ring is drawn: at ground level, clear of the block's top face. */
     public static final double RING_LIFT_BLOCKS = 0.1;
 
+    /**
+     * How far apart a spiral arm's drawn points stand, ALONG THE ARM, in blocks (M2, CC'S CALL 2026-11-28; the
+     * alternative was the ring's 0.75). A LOOK NUMBER: close enough that an arm reads as a line, not dots.
+     */
+    public static final double SPIRAL_SPACING_BLOCKS = 0.4;
+
+    /**
+     * Where arm 0 starts, in degrees from due east (+x), and the angle grows toward +z (south): CLOCKWISE seen from
+     * above (M2, CC'S CALL and SEAT PLACEHOLDER 2026-11-28; the alternatives are any start and the other hand).
+     */
+    public static final double SPIRAL_START_DEGREES = 0.0;
+
+    /**
+     * THE ARM'S ANGLE AT FRONT RADIUS {@code r} (M2): {@code a0 + 2 pi x turns x (r / radius) + k x 2 pi / arms}, in
+     * radians, {@code a0} = {@link #SPIRAL_START_DEGREES}. So at the edge every arm has wound {@code turns} whole turns.
+     */
+    public static double spiralAngle(int arm, int arms, double turns, double r, double radius) {
+        return Math.toRadians(SPIRAL_START_DEGREES) + 2 * Math.PI * turns * (r / radius) + 2 * Math.PI * arm / arms;
+    }
+
+    /**
+     * THE SPIRAL'S POINTS FOR ONE TICK OF THE FRONT (M2): along every arm, the stretch the front swept this tick, from
+     * radius {@code from} (exclusive; the last tick's {@link #radiusAt}) to {@code to} (inclusive; this tick's), so tick
+     * by tick the arms are drawn out with the front and its tip is always AT the radius the hit rule compares. Grouped by
+     * arm (arm 0's points, then arm 1's, ...), each arm outward. With {@code to} 0 (the front's tick 0) it is the one
+     * centre point. Lifted {@link #RING_LIFT_BLOCKS}, as the ring is.
+     *
+     * <p>Each arm's stretch is cut into {@code n} equal radius steps, {@code n} the stretch's length along the arm (the
+     * arc of {@code r(theta)}, its slope {@code sqrt(1 + (r x dtheta/dr)^2)} taken at the stretch's outer end, where it
+     * is steepest) over {@link #SPIRAL_SPACING_BLOCKS}, rounded up: so no two consecutive points are further apart than
+     * the spacing.
+     */
+    public static List<Vec3> spiralPoints(Vec3 origin, double from, double to, int arms, double turns, double radius) {
+        double y = origin.y() + RING_LIFT_BLOCKS;
+        if (!(to > 0)) return List.of(new Vec3(origin.x(), y, origin.z()));
+        double slope = Math.sqrt(1 + Math.pow(to * 2 * Math.PI * turns / radius, 2));
+        int n = Math.max(1, (int) Math.ceil((to - from) * slope / SPIRAL_SPACING_BLOCKS));
+        List<Vec3> out = new ArrayList<>(arms * n);
+        for (int k = 0; k < arms; k++) {
+            for (int i = 1; i <= n; i++) {
+                double r = i == n ? to : from + (to - from) * i / n;
+                double a = spiralAngle(k, arms, turns, r, radius);
+                out.add(new Vec3(origin.x() + r * Math.cos(a), y, origin.z() + r * Math.sin(a)));
+            }
+        }
+        return out;
+    }
+
     /** The tick pulse {@code n} (1-based) fires on: {@code castTick + (n - 1) x interval}. */
     public static long pulseTick(long castTick, int n, int intervalTicks) {
         if (n < 1) throw new IllegalArgumentException("pulses are numbered from 1, was " + n);
