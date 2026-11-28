@@ -100,7 +100,60 @@ final class ScenarioLint {
          * run touches nothing in the world (P1), so a step ahead of it, or a gate with none, runs on Ben's own ground. The
          * gates that predate ruling A are reported as KNOWN ({@code PadFirstLintTest}, by name); no new gate may add one.
          */
-        PAD_FIRST
+        PAD_FIRST,
+        /**
+         * THE SEAT'S X6 (b) (2026-11-28, after SF4's shots met the floor at Ben's own pitch and WA6's {@code rpg mobdamage}
+         * replied "Look at a mob."): HIS VIEW IS SET BEFORE EVERY ACT THAT READS IT. A step that reads his look
+         * ({@link #readsLook}: a press, the stone's {@code drop}, or a look-reading command) has a view-setting step
+         * ({@link #turns}: a {@code tp} with a rotation, an {@code aim}) no more than {@link #VIEW_WINDOW_TICKS} ticks
+         * before it in the row. Applied to every gate but the ones it found when it was written
+         * ({@link #VIEW_RULE_PREDATES}, frozen readings), so no new gate can ship without it.
+         */
+        VIEW_UNSET
+    }
+
+    /** X6 (b): a view-setting step at most this many ticks before an act that reads his look (the seat's "two ticks"). */
+    static final long VIEW_WINDOW_TICKS = 2;
+
+    /**
+     * X6 (b): THE GATES VIEW_UNSET FOUND WHEN IT WAS WRITTEN (2026-11-28), by name; their rows are frozen readings and are not
+     * re-staged. Edited by NOBODY but a ruling. Pinned, with its count, by {@code ViewUnsetLintTest}.
+     */
+    static final java.util.Set<String> VIEW_RULE_PREDATES = java.util.Set.of("armor-sets", "blast-fungus", "bone-club",
+            "breacher", "breacher-rework", "broken-bottle", "crystal-shard-staff", "drag-additive", "dragon-blink", "dragon-shot",
+            "enchant-changes", "enchant-columns", "fight-site", "focused-beam", "held-target", "knell-beam", "legacy-b", "level",
+            "living-lantern", "mage-guaranteed", "melee-cell", "mining-auto", "shatter-caps", "smolder", "solar-flare",
+            "summoner", "sunder", "sword-convert", "sword-tiers", "true-tooltips", "unique-enchant-slot", "vanilla-bows");
+
+    /** The commands that read where he looks (READ, {@code RpgCommand}: each ray-traces his eye or takes his aim). */
+    private static final Pattern LOOK_COMMAND = Pattern.compile("^rpg (mobdamage|mobheal|mobinfo|apply|cast)\\b");
+
+    /** X6 (b): a step that reads his look: a press, the stone's Q ({@code drop}), or a look-reading command. */
+    static boolean readsLook(Scenario.Step step) {
+        return presses(step.verb()) || step.verb() == Scenario.Verb.DROP
+                || (step.verb() == Scenario.Verb.CMD && LOOK_COMMAND.matcher(step.arg().trim()).find());
+    }
+
+    /** VIEW_UNSET over one gate (X6 (b)): every look-reading step has a view set in the row at most two ticks before it. */
+    static void viewSet(String gate, List<Scenario> scenarios, List<Finding> out) {
+        if (VIEW_RULE_PREDATES.contains(gate)) return;
+        viewSetIgnoringPredates(gate, scenarios, out);
+    }
+
+    /** The rule itself, for any gate (the predating list's own test runs it on the named gates). */
+    static void viewSetIgnoringPredates(String gate, List<Scenario> scenarios, List<Finding> out) {
+        for (Scenario s : scenarios) {
+            long since = -1;   // ticks waited since the last view-setting step in this row; -1 before any
+            for (Scenario.Step st : s.steps()) {
+                if (turns(st)) since = 0;
+                if (st.verb() == Scenario.Verb.WAIT && since >= 0) since += Long.parseLong(st.arg().trim());
+                if (readsLook(st) && (since < 0 || since > VIEW_WINDOW_TICKS)) {
+                    out.add(new Finding(gate, s.row(), Rule.VIEW_UNSET, describe(st.verb(), st.arg().trim())
+                            + (since < 0 ? " with no view set before it in the row" : " " + since + " ticks after the view was set,"
+                            + " over " + VIEW_WINDOW_TICKS) + ": set his yaw and pitch (a tp with a rotation, or aim) one tick before"));
+                }
+            }
+        }
     }
 
     /**
@@ -356,6 +409,7 @@ final class ScenarioLint {
         accessoryStaged(gate, scenarios, out);
         accessoryArmedAtClear(gate, scenarios, out);
         padFirst(gate, scenarios, out);
+        viewSet(gate, scenarios, out);
         return List.copyOf(out);
     }
 

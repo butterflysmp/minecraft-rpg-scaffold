@@ -164,3 +164,9 @@ gates:
 # solar-flare (2026-11-27, feat/smolder-gate moved onto feat/solar-flare): Solar Flare (F1-F14), typed LAST as
 # /rpg selftest armor-sets.AS1.AS2+mana-battery.MB1+smolder+solar-flare. docs/gates/GATE-solar-flare.md.
   - solar-flare
+# smolder-2 (2026-11-28, feat/ultimates-2-gate on feat/solar-flare-volley): Smolder as Ben changed it (M1-M4) and the
+# seat's X6 (b), (c); typed FIRST as /rpg selftest smolder-2+solar-flare-2. docs/gates/GATE-smolder-2.md.
+  - smolder-2
+# solar-flare-2 (2026-11-28, the same branch): Solar Flare as Ben changed it (N1-N7), typed LAST in the same command.
+# docs/gates/GATE-solar-flare-2.md.
+  - solar-flare-2
