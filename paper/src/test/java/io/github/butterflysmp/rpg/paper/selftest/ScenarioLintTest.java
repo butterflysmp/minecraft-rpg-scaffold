@@ -57,6 +57,8 @@ class ScenarioLintTest {
               - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
               - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,Tags:["a","selftest"]}'
               - wait: 40
+              - cmd: "tp @s ~ ~ ~ -90 0"
+              - wait: 1
               - use: right_click
               - wait: 20
               - probe: a
@@ -103,8 +105,11 @@ class ScenarioLintTest {
     @Test
     void aPressWithNoTurnInTheRowIsASelfStagedFinding() throws InvalidConfigurationException {
         // EC8 at e774d4b8: no turn of its own, so it fired at yaw 128.291, his own facing.
-        String bad = SETUP + GOOD_ROW.replace("  - cmd: \"execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0\"\n", "");
-        assertEquals(List.of(ScenarioLint.Rule.SELF_STAGED), rules(bad));
+        // Both of the good row's turns removed (the stand and, since X6 (b), the view step), so the row turns him nowhere:
+        // it is SELF_STAGED's finding, and VIEW_UNSET's too (its press has no view set before it).
+        String bad = SETUP + GOOD_ROW.replace("  - cmd: \"execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0\"\n", "")
+                .replace("  - cmd: \"tp @s ~ ~ ~ -90 0\"\n  - wait: 1\n", "");
+        assertEquals(List.of(ScenarioLint.Rule.SELF_STAGED, ScenarioLint.Rule.VIEW_UNSET), rules(bad));
     }
 
     @Test
@@ -331,7 +336,10 @@ class ScenarioLintTest {
             assertTrue(ScenarioLint.readsHeldLater(reader), reader);
             for (String changer : changers) {
                 String yaml = "R1:\n  - clear_inventory: \"\"\n  - cmd: \"" + reader + "\"\n" + changer + "  - wait: 2\n";
-                assertEquals(List.of(ScenarioLint.Rule.HELD_READ_THEN_CHANGE), rules(yaml), reader + " then " + changer);
+                // `drop:` is here as a CHANGER of the held item; it also reads his look (X6 (b)), which is VIEW_UNSET's to
+                // judge (ViewUnsetLintTest), not this row's.
+                assertEquals(List.of(ScenarioLint.Rule.HELD_READ_THEN_CHANGE), rules(yaml).stream()
+                        .filter(r -> r != ScenarioLint.Rule.VIEW_UNSET).toList(), reader + " then " + changer);
             }
         }
         // Not readers: synchronous commands, and commands that touch no held item.

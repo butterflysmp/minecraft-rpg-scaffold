@@ -59,9 +59,9 @@ class SelfTestScenariosTest {
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
                         "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes", "shatter-caps",
-                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle", "true-tooltips", "blast-fungus", "bone-club", "healing-tome", "blink-tome", "held-target", "mana-battery", "smolder", "solar-flare"),
+                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle", "true-tooltips", "blast-fungus", "bone-club", "healing-tome", "blink-tome", "held-target", "mana-battery", "smolder", "solar-flare", "smolder-2", "solar-flare-2"),
                 List.copyOf(loaded.gates().keySet()),
-                "the fifty-nine gates, in boot order (solar-flare LAST, 2026-11-27, a NEW gate after smolder; smolder before it, 2026-11-27, a NEW gate after mana-battery; mana-battery before it, 2026-11-27, a NEW gate after held-target; held-target before it, 2026-11-26, a NEW gate after blink-tome; blink-tome before it, 2026-11-26, a NEW gate after healing-tome; healing-tome before it, 2026-11-26, a NEW gate after bone-club; bone-club before it, 2026-11-26, a NEW gate after blast-fungus; blast-fungus before it, 2026-11-26, a NEW gate after true-tooltips; true-tooltips before it, 2026-11-26, a NEW gate after broken-bottle; "
+                "the sixty-one gates, in boot order (solar-flare-2 LAST, 2026-11-28, a NEW gate after smolder-2; smolder-2 before it, 2026-11-28, a NEW gate after solar-flare; solar-flare before it, 2026-11-27, a NEW gate after smolder; smolder before it, 2026-11-27, a NEW gate after mana-battery; mana-battery before it, 2026-11-27, a NEW gate after held-target; held-target before it, 2026-11-26, a NEW gate after blink-tome; blink-tome before it, 2026-11-26, a NEW gate after healing-tome; healing-tome before it, 2026-11-26, a NEW gate after bone-club; bone-club before it, 2026-11-26, a NEW gate after blast-fungus; blast-fungus before it, 2026-11-26, a NEW gate after true-tooltips; true-tooltips before it, 2026-11-26, a NEW gate after broken-bottle; "
                         + "broken-bottle before it, 2026-11-25, a NEW gate after armor-sets; armor-sets before it, 2026-11-25, a NEW gate after summoner; summoner before it,"
                         + " 2026-11-25, a NEW gate after mage-guaranteed;"
                         + " mage-guaranteed before it, the seat's brief of 2026-11-24, a NEW gate after focused-beam;"
@@ -380,7 +380,10 @@ class SelfTestScenariosTest {
         // Control: 599 + 12 (its setup, SM1-SM7, WA1-WA3 and WA6) = 611. 542 was this line's value.
         // Then GATE-solar-flare.md (feat/smolder-gate on feat/solar-flare, 2026-11-27), RECOUNTED: 59 gates, 621 keys, 59
         // setups, so 562. Control: 611 + 10 (its setup and SF1-SF9) = 621. 553 was this line's value.
-        assertEquals(562, loaded.rows());
+        // Then GATE-smolder-2.md and GATE-solar-flare-2.md (feat/ultimates-2-gate, 2026-11-28), RECOUNTED: 61 gates, 641 keys,
+        // 61 setups, so 580. Control: 621 + 9 (smolder-2's setup and eight rows) + 11 (solar-flare-2's setup and ten) = 641.
+        // 562 was this line's value.
+        assertEquals(580, loaded.rows());
     }
 
     /**
@@ -737,7 +740,7 @@ class SelfTestScenariosTest {
         }
         assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup", "focused-beam#setup",
                         "mage-guaranteed#setup", "summoner#setup", "armor-sets#setup", "broken-bottle#setup",
-                        "true-tooltips#setup", "blast-fungus#setup", "bone-club#setup", "healing-tome#setup", "blink-tome#setup", "held-target#setup", "mana-battery#setup", "smolder#setup", "solar-flare#setup"),
+                        "true-tooltips#setup", "blast-fungus#setup", "bone-club#setup", "healing-tome#setup", "blink-tome#setup", "held-target#setup", "mana-battery#setup", "smolder#setup", "solar-flare#setup", "smolder-2#setup", "solar-flare-2#setup"),
                 padGates, "only enchant-columns, (2026-11-23) enchant-changes, (2026-11-24) shatter-caps and (2026-11-24)"
                         + " focused-beam and (2026-11-24) mage-guaranteed opt in, each in its setup");
         Scenario changes = shipped().gates().get("enchant-changes").getFirst();

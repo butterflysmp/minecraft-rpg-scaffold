@@ -1,0 +1,268 @@
+# GATE-smolder-2 (docs/gates/GATE-smolder-2.md): SMOLDER AS BEN CHANGED IT (M1 to M4) and the seat's X6, 2026-11-28.
+# Typed as ONE command with GATE-solar-flare-2, this gate FIRST:
+#   /rpg selftest smolder-2+solar-flare-2
+# SURVIVAL. On the pad (the setup's FIRST step stands him on it facing east), at NIGHT (18000), difficulty normal, no
+# natural spawns, each put back by the run's restore. ALL AUTO except SM7R, this gate's ONE ASK, its last row. SM1R picks
+# Mage, Fire and Smolder on Q through the Build screen (the run puts his stored builds back: D2); every later row is
+# SKIPPED unless his cell reads mage fire. Every row clears his state and storage, sets level 1, and stages what it holds:
+# the stone by `stone:`, the Flint Staff at score 100. A Smolder row casts from the STONE IN HAND: score 100 (ABSENT), no
+# enchant, no class damage, no level term. EVERY ACT THAT READS HIS VIEW (a drop, a use, a look-reading command) has a
+# view-setting step (a tp with a rotation, or aim) ONE TICK before it (X6 (b), the VIEW_UNSET lint). Every mob is a frozen
+# NoAI zombie (max_health 600 = 3000 custom, 200 = 1000), placed at the coordinates UltimatesTwoGateArithmeticTest
+# executes; his wolf is frozen with NoAI. SAFETY 0.000: the pulse and Ignite spare players (PULSE, IGNITE_SPLASH),
+# EXECUTED there; no row damages him.
+setup:
+  - pad: ""
+  - preflight: "-2 -12 30 12"
+  - difficulty: normal
+  - trace: on
+  - cmd: "time set 18000"
+  - cmd: "gamerule spawn_mobs false"
+  - cmd: "gamerule spawn_phantoms false"
+  - close: ""
+  - cmd: "kill @e[type=minecraft:zombie,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:skeleton,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:spider,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[type=minecraft:creeper,distance=..64,tag=!selftest]"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "item replace entity @s armor.head with minecraft:air"
+  - cmd: "item replace entity @s armor.chest with minecraft:air"
+  - cmd: "item replace entity @s armor.legs with minecraft:air"
+  - cmd: "item replace entity @s armor.feet with minecraft:air"
+  - cmd: "rpg heal 1000000"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - wait: 40
+  - probe_self: ""
+
+# SM1R: THE BUILD SCREEN, Mage, Fire and Smolder picked: the picker's lore (N7's new first line), then the cell's.
+SM1R:
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "build"
+  - wait: 3
+  - dump: menu
+  - click: "Class"
+  - wait: 3
+  - click: "Mage"
+  - wait: 3
+  - click: "Element"
+  - wait: 3
+  - click: "Fire"
+  - wait: 3
+  - dump: menu
+  - click: "Q: "
+  - wait: 3
+  - dump: menu
+  - click: "Smolder"
+  - wait: 3
+  - dump: menu
+  - close: ""
+  - wait: 2
+  - stone: ""
+  - hold: stone
+  - dump: held
+
+# SM2R: THE FOUR PULSES, 30 APART (M1). a3, a6, a11 inside, a12 outside, his wolf at 4 south. P = the drop.
+SM2R:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: "rpg give bone_whistle"
+  - wait: 2
+  - hold: bone_whistle
+  - cmd: "rpg gearscore set 100"
+  - wait: 6
+  - cmd: "rpg mana refill"
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - use: ""
+  - wait: 5
+  - cmd: "data merge entity @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] {NoAI:1b}"
+  - cmd: "tp @e[type=minecraft:wolf,distance=..12,limit=1,sort=nearest] ~0 ~ ~4"
+  - clear_inventory: ""
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~3 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a3","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a6","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~11.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a11","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~12.5 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["a12","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "a3 16"
+  - probe: "a6 16"
+  - probe: "a11 16"
+  - probe: "a12 16"
+  - probe_summon: "8"
+  - cmd: "rpg mana refill"
+  - probe_mana: ""
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - drop: selected
+  - probe_mana: ""
+  - wait: 230
+  - probe: "a3 16"
+  - probe: "a6 16"
+  - probe: "a11 16"
+  - probe: "a12 16"
+  - probe_summon: "8"
+
+# SM3R: SCORCH FROM THE ELEMENT. b6 alone: lit after its first hit, ten burns of 80, the end health.
+SM3R:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["b6","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "b6 16"
+  - cmd: "rpg mana refill"
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - drop: selected
+  - wait: 10
+  - probe: "b6 16"
+  - wait: 220
+  - probe: "b6 16"
+
+# SM4R: THE ORIGIN MOVES, THE FRONT DOES NOT. c11 at 11 north (pulse 1 only), c19 at 19 east (pulses 2 to 4 only); he is
+# moved 8 east at P+19 (C+18), after pulse 1's front has reached its edge (C+15) and before pulse 2 (C+30).
+SM4R:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~0 ~ ~-11 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c11","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - cmd: 'summon zombie ~19 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["c19","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "c11 24"
+  - probe: "c19 24"
+  - cmd: "rpg mana refill"
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - drop: selected
+  - wait: 19
+  - cmd: "tp @s ~8 ~ ~"
+  - probe_self: ""
+  - wait: 221
+  - probe: "c11 24"
+  - probe: "c19 24"
+
+# SM5R: CANCEL. d6 at 6 east; clear_state at P+45 (C+44), after pulse 2's hit (C+38) and before pulse 3 (C+60).
+SM5R:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - cmd: 'summon zombie ~6 ~ ~0 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["d6","selftest"],attributes:[{id:"minecraft:max_health",base:600.0}],Health:600.0f}'
+  - wait: 40
+  - probe: "d6 16"
+  - cmd: "rpg mana refill"
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - drop: selected
+  - wait: 45
+  - clear_state: ""
+  - wait: 125
+  - probe: "d6 16"
+
+# SM6R: THE COOLDOWN AND THE COST, THE REGEN TERM NAMED (X6 (c)). A cast; a second press 2 ticks later (refused: the
+# cooldown; his mana 20 + 2 x 0.05); clear_state; his mana set to 79 in the press's own tick; a press (refused: the mana).
+SM6R:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - wait: 20
+  - cmd: "rpg mana refill"
+  - probe_mana: ""
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - drop: selected
+  - probe_mana: ""
+  - wait: 1
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - drop: selected
+  - probe_mana: ""
+  - wait: 20
+  - clear_state: ""
+  - wait: 2
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - cmd: "rpg mana set 79"
+  - probe_mana: ""
+  - drop: selected
+  - probe_mana: ""
+  - wait: 20
+
+# WA6R: IGNITE CLAUSE 1 (X6 (c), re-read: WA6's k1 never died, "Look at a mob."): k1, dry and scorched by a Flint Staff
+# bolt, killed by a NON-fire hit (rpg mobdamage 2000) with his view set on it one tick before; its blast reaches k1w.
+WA6R:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~0.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - cmd: 'summon zombie ~6 ~ ~-8 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["k1","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: 'summon zombie ~7.5 ~ ~-8 {NoAI:1b,PersistenceRequired:1b,IsBaby:0b,Tags:["k1w","selftest"],attributes:[{id:"minecraft:max_health",base:200.0}],Health:200.0f}'
+  - cmd: "rpg give flint_staff"
+  - wait: 2
+  - hold: flint_staff
+  - cmd: "rpg gearscore set 100"
+  - cmd: "rpg enchant clear"
+  - wait: 40
+  - probe: "k1 16"
+  - probe: "k1w 16"
+  - cmd: "rpg mana refill"
+  - aim: "k1"
+  - wait: 1
+  - use: right_click
+  - wait: 60
+  - probe: "k1 16"
+  - aim: "k1"
+  - wait: 1
+  - cmd: "rpg mobdamage 2000"
+  - wait: 30
+  - probe: "k1 16"
+  - probe: "k1w 16"
+
+# SM7R (THE ASK): a cast, his move 8 east at P+19, and the question once the fourth pulse's spirals have faded.
+SM7R:
+  - expect_cell: "mage fire"
+  - cmd: "rpg playerxp set @s 1 levels"
+  - clear_inventory: ""
+  - clear_state: ""
+  - cmd: "execute align xz positioned ~10.5 ~ ~0.5 run tp @s ~ ~ ~ -90 0"
+  - cmd: "kill @e[tag=selftest,distance=..64]"
+  - stone: ""
+  - hold: stone
+  - wait: 20
+  - cmd: "rpg mana refill"
+  - tell: "Smolder is cast in a moment from your feet. Keep your mouse still and stand still; you will be moved 8 blocks east after the first pulse. Watch the fire spread out."
+  - cmd: "tp @s ~ ~ ~ -90 0"
+  - wait: 1
+  - drop: selected
+  - wait: 19
+  - cmd: "tp @s ~8 ~ ~"
+  - wait: 111
+  - ask: "1 3600 Did three spiral arms of fire wind out from your feet to about 12 blocks, and did they fade quickly? (yes / no / not sure)"

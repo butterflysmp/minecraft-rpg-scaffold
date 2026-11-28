@@ -375,3 +375,59 @@ byte-identical (`cmp`), markers left 0:
 | MUTSETTLE | the next pulse booked straight from the caller's phase | `onTheServersPhases…` |
 | MUTSETTLEHANDLE | the settle hop's handle not held by the run | `aRunEndedBeforeItsSettleHop…` |
 | MUTWAITHANDLE | the waiting link's handle not held by the run | `aSecondCastReplaces…`, `endingTheRunBetweenPulsesTwoAndThree…` |
+
+### (b) HIS VIEW IS SET BEFORE EVERY ACT THAT READS IT (`feat/ultimates-2-gate`)
+
+- **The lint, `ScenarioLint.Rule.VIEW_UNSET`:** a step that reads his look (`readsLook`: a press, the stone's `drop`, or
+  a look-reading command, `rpg mobdamage|mobheal|mobinfo|apply|cast`, READ in `RpgCommand`: each ray-traces his eye or
+  takes his aim) has a view-setting step (`turns`: a `tp` with a rotation, an `aim`) at most `VIEW_WINDOW_TICKS` = 2
+  ticks before it in the row (the seat's "two ticks").
+- **WHERE IT APPLIES (CC'S CALL):** every gate but the 32 it found when written, named in
+  `ScenarioLint.VIEW_RULE_PREDATES` (frozen readings, not re-staged), pinned with its count by
+  `ViewUnsetLintTest.theRuleFlagsExactlyTheGatesNamedAsPredatingIt`, which runs the rule on each named gate as if it were
+  new and requires it to break the rule, and every other shipped gate to pass it. **The 32, READ by that scan:**
+  armor-sets, blast-fungus, bone-club, breacher, breacher-rework, broken-bottle, crystal-shard-staff, drag-additive,
+  dragon-blink, dragon-shot, enchant-changes, enchant-columns, fight-site, focused-beam, held-target, knell-beam,
+  legacy-b, level, living-lantern, mage-guaranteed, melee-cell, mining-auto, shatter-caps, smolder, solar-flare,
+  summoner, sunder, sword-convert, sword-tiers, true-tooltips, unique-enchant-slot, vanilla-bows. The alternative
+  (re-staging all 32) edits gates that have been read. **The seat asked for "a pad gate"; the rule covers every gate not
+  named**, the 42 without a pad step included (none of them may run anyway, V7 (e)).
+- **For Solar Flare, before EACH of the three shots:** shots 2 and 3 are not steps, so the lint cannot see them;
+  `UltimatesTwoGateCommandTest.everySolarFlareCastHasItsViewSetOneTickBeforeShotsTwoAndThree` requires a view step at
+  exactly P + 10 and P + 20 after every Solar Flare drop (the shots leave at P + 11 and P + 21), unless the row ends the
+  run first (SF8R).
+- **The lines:** the stone's `DRIVE drop` line now ends `yaw=<y> pitch=<p>` (the use line already did), and a
+  look-reading command is preceded by **`DRIVE look yaw=<y> pitch=<p>`** (`SelfTestDrivers.dropLine`,
+  `lookCommandLine`, pinned by `ViewLinesTest`). A Solar Flare shot line prints its own `dir=<yaw pitch>`.
+- **Each ask row's tell line asks him to keep his mouse still** (asserted for both new gates).
+- **`ScenarioLintTest`'s base row** (`GOOD_ROW`, "the base every fixture edits") gained a view step one tick before its
+  press, so every fixture built from it is a good row under the new rule; one fixture that removes the turns now expects
+  both SELF_STAGED and VIEW_UNSET, and the held-read loop, where `drop:` is an inventory CHANGER, filters VIEW_UNSET (its
+  own test judges it).
+- **Mutations:** MUTVIEWRULE (the finding never added: `ViewUnsetLintTest` 2 rows, `ScenarioLintTest` 1); MUTVIEWWINDOW
+  (2 → 100: `ViewUnsetLintTest` 2 rows); MUTDROPLINE (the yaw and pitch dropped: `ViewLinesTest`); MUTGATEVIEW20
+  (SF3R's P + 20 view step removed: the three-view row); MUTGATEDROPVIEW (SM3R's view before its drop removed: the gate's
+  lint, `VIEW_UNSET drop 41 ticks after the view was set`). Each marker 1, delta 1 against a scratchpad copy, restored
+  byte-identical, markers left 0.
+
+### (c) THE RE-READ ROWS (`GATE-smolder-2.md`, `GATE-solar-flare-2.md`)
+
+- **WA6R** (clause 1): `aim k1`, one tick, `rpg mobdamage 2000` (the last boot's `aim` and command ran in one pass, the
+  aim an async teleport, and the command read "Look at a mob."). k1 dies; its blast reaches k1w: **994.000** (executed).
+- **SM5R:** hits at C+8 and C+38, the cancel at P+45 (`remaining=2`), seven burns (executed on the READ order), end
+  **2120.000**.
+- **SM6R, SF7R: the regen term named.** READ, `RpgPlugin`: `MANA_PER_TICK = MAX_MANA / (MANA_REFILL_SECONDS x 20)` = 100 /
+  (100 x 20) = **0.05 a tick**, lazily integrated from the spend (`ResourcePool`). The refused press at P + 2 reads
+  **20.100** (EXECUTED through the real `ResourcePool`, `UltimatesTwoGateArithmeticTest`), the last boot's reading
+  exactly; the mana set to 79 and the press are in ONE pass, so 79.000 carries no regen term.
+- SF4 (the block, never read) is re-predicted as SF4R with his view held.
+
+### (d) NOT BUILT HERE, AND WHY
+
+- **Rain:** a weather field in the run's snapshot is a capture-and-restore of the world's weather, its own change to
+  `SelfTestSnapshot` and its restore; not small. Held by `DouseTest`, `ScorchDouseTest`.
+- **The splash bottle:** no verb throws one, and the thrown potion's component on 26.1.2 and an ownerless potion reaching
+  `onHitAsWater` were not READ. Held by `ScorchDouseTest.aSplashDouses…`, `DouseWiringTest`.
+- **His death ending the pulses and the shots:** a death is not staged on the pad (SAFETY). Held by
+  `PulseRemovalWiringTest` (death, quit, world change on the one removal path) and, for the salvo, `SolarFlareCastTest`'s
+  two cancel rows, which exercise that same path (`PulseRuns.end`, the pending link cancelled).

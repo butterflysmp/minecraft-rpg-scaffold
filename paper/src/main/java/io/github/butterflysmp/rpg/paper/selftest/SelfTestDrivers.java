@@ -770,6 +770,10 @@ final class SelfTestDrivers {
 
     private Optional<String> command(Player p, String text) {
         run.log("CMD /" + text);
+        // X6 (b): a command that reads where he looks (ScenarioLint.readsLook) names the view it reads, as the press lines do.
+        if (ScenarioLint.readsLook(new Scenario.Step(Scenario.Verb.CMD, text))) {
+            run.log(lookCommandLine(p.getLocation().getYaw(), p.getLocation().getPitch()));
+        }
         boolean handled = p.performCommand(text);
         if (!handled) run.log("CMD-UNHANDLED /" + text);   // a fact the dispatcher returned, not a judgement
         return Optional.empty();
@@ -875,11 +879,25 @@ final class SelfTestDrivers {
         return Optional.empty();
     }
 
+    /**
+     * THE DROP DRIVER'S LINE (X6 (b), 2026-11-28: the yaw and pitch the cast reads, as the use line has carried them):
+     * {@code DRIVE drop HumanEntity#dropItem(false) item=<i> returned=<b> heldAfter=<i> yaw=<y> pitch=<p>}. Pure, pinned.
+     */
+    static String dropLine(String before, boolean dropped, String after, float yaw, float pitch) {
+        return "DRIVE drop HumanEntity#dropItem(false) item=" + before + " returned=" + dropped + " heldAfter=" + after
+                + " yaw=" + fmt(yaw) + " pitch=" + fmt(pitch);
+    }
+
+    /** X6 (b): the line before a look-reading command, {@code DRIVE look yaw=<y> pitch=<p>}. Pure, pinned. */
+    static String lookCommandLine(float yaw, float pitch) {
+        return "DRIVE look yaw=" + fmt(yaw) + " pitch=" + fmt(pitch);
+    }
+
     private Optional<String> drop(Player p) {
         String before = itemId(p.getInventory().getItemInMainHand());
         boolean dropped = p.dropItem(false);
-        run.log("DRIVE drop HumanEntity#dropItem(false) item=" + before + " returned=" + dropped
-                + " heldAfter=" + itemId(p.getInventory().getItemInMainHand()));
+        run.log(dropLine(before, dropped, itemId(p.getInventory().getItemInMainHand()), p.getLocation().getYaw(),
+                p.getLocation().getPitch()));
         return Optional.empty();
     }
 
