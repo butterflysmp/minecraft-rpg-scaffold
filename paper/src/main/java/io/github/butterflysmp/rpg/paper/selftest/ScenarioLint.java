@@ -51,6 +51,12 @@ final class ScenarioLint {
         /**
          * X1 (the seat, 2026-11-25): EVERY ROW IS SELF-STAGED. A row that reads a summon ({@link #usesSummon}) with no cast of
          * its own earlier in the row (a {@code use} after a {@code clear_state}) reads one an earlier row left.
+         *
+         * <p>WHAT THE RUN PUTS BACK, so a row may change it: his inventory, his five worn slots, his xp and level, his class
+         * and element, his accessory slots (H15), his max-summons base, his saturation, his mana, the blocks a row saved,
+         * and (the seat's D2, 2026-11-27) HIS STORED BUILDS, whole ({@code SelfTestBuilds}). <b>So a row that CLICKS A PICK
+         * in the Build screen (SM1, SF1) is allowed, and flagged by nothing here, BECAUSE the snapshot restores his builds
+         * at the run's end and on an abort</b>; without that restore it would write into his own build and be refused.
          */
         SUMMON_UNSTAGED,
         /**
