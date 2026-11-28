@@ -1360,9 +1360,45 @@ public final class PaperCombatWorld implements CombatWorld {
                 .has(ctx.keys().markerEntity, PersistentDataType.BYTE) ? entity : null;
     }
 
+    /**
+     * THE SCALED ITEM BODY (Solar Flare, the seat's F9, 2026-11-27): an {@code ItemDisplay} carrying the item at the
+     * scale, made as the Lapis orb's {@code BlockDisplay} is ({@link #spawnOrbBlock}, READ there): scaled by its
+     * transformation (an item display is drawn about its position, so no translation), eased over one tick by
+     * {@code setTeleportDuration(1)}, never saved ({@code setPersistent(false)}), and tagged {@code markerEntity} AFTER the
+     * add, so {@link #markerOf} finds it and the selftest's clean counts and removes a leaked one. A display has no
+     * physics: it is PLACED each step ({@link #driveMarker}), and it cannot be picked up, burned or despawned, so the
+     * flight's own end (or its run's) is the only thing that removes it. Its expected lifetime is not needed for that.
+     * An unknown item falls back as {@link #configureMarker}'s does.
+     */
+    @Override
+    public UUID spawnDisplayMarker(Vec3 at, String itemId, double scale, int expectedLifetimeTicks) {
+        Material material = Material.matchMaterial(itemId);
+        if (material == null || !material.isItem()) {
+            ctx.warnOnce("Unknown marker material '" + itemId + "'; using BLAZE_POWDER");
+            material = Material.BLAZE_POWDER;
+        }
+        ItemStack stack = new ItemStack(material);
+        float s = (float) scale;
+        org.bukkit.entity.ItemDisplay body = world.spawn(toLocation(at), org.bukkit.entity.ItemDisplay.class, d -> {
+            d.setItemStack(stack);
+            d.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(),
+                    new org.joml.AxisAngle4f(), new org.joml.Vector3f(s, s, s), new org.joml.AxisAngle4f()));
+            d.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+            d.setTeleportDuration(1);
+            d.setPersistent(false);
+        });
+        body.getPersistentDataContainer().set(ctx.keys().markerEntity, PersistentDataType.BYTE, (byte) 1);
+        return body.getUniqueId();
+    }
+
     @Override
     public void driveMarker(UUID markerId, Vec3 stepVelocity) {
         Entity marker = markerOf(markerId);
+        // A DISPLAY IS PLACED, NOT PUSHED (F9): it has no mover, so it is put where the step ends, eased over the tick.
+        if (marker instanceof org.bukkit.entity.Display display) {
+            display.teleport(display.getLocation().add(stepVelocity.x(), stepVelocity.y(), stepVelocity.z()));
+            return;
+        }
         if (marker != null) {
             // A FIREBALL'S OWN TICK PUSHES AND DRAGS BEFORE IT MOVES, so it is handed the velocity
             // that its applyInertia turns back into this step (FireballDrive; Q-B3 COMPENSATE). An

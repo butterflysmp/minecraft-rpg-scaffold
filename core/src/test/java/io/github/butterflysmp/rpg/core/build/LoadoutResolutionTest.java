@@ -82,6 +82,28 @@ class LoadoutResolutionTest {
         assertEquals(List.of(), LoadoutResolution.unoffered(fireMage, Optional.empty()));
     }
 
+    /**
+     * THE SEAT'S F11 (2026-11-27), A3's rule ON THE SHIPPED FIRE RANGER POOL'S SHAPE: Solar Flare replaced
+     * {@code ultimate_placeholder_ranger}. A loadout saved naming the deleted id resolves to an EMPTY Q, its Actives as
+     * saved, and that one slot is unoffered (logged once); nothing saved gets Solar Flare by the default.
+     */
+    @Test
+    void aSavedLoadoutNamingTheDeletedRangerPlaceholderReadsAnEmptyUltimate() {
+        PoolDefinition fireRanger = new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
+                List.of("solar_flare"), List.of("solar_lance", "recall"),
+                new Loadout("solar_flare", "recall", "solar_lance"));
+        Optional<Saved> saved = Optional.of(new Saved("ultimate_placeholder_ranger", "solar_lance", "recall"));
+
+        Equipped e = LoadoutResolution.resolve(fireRanger, saved);
+        assertEquals(Optional.empty(), e.idFor(LoadoutSlot.ULTIMATE));
+        assertEquals(Optional.of("solar_lance"), e.idFor(LoadoutSlot.ACTIVE_1));
+        assertEquals(Optional.of("recall"), e.idFor(LoadoutSlot.ACTIVE_2));
+        assertEquals(List.of(new LoadoutResolution.Unoffered(LoadoutSlot.ULTIMATE, "ultimate_placeholder_ranger")),
+                LoadoutResolution.unoffered(fireRanger, saved));
+        assertEquals(Optional.of("solar_flare"), LoadoutResolution.resolve(fireRanger, Optional.empty())
+                .idFor(LoadoutSlot.ULTIMATE));
+    }
+
     /** Unoffered names every slot read empty for want of an offer, in slot order, and NOT a slot saved empty. */
     @Test
     void unofferedNamesEachDroppedIdButNotASlotSavedEmpty() {

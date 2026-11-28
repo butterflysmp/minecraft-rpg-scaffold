@@ -1,6 +1,8 @@
 # SMOLDER'S PULSE: presented ONCE at each pulse's origin (his feet on that pulse's tick), four times a cast. EVERY STEP IS
 # A SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN: a burst of flame at his feet and a blaze's shot (the seat's "a blaze sound
 # at each pulse"; entity.blaze.shoot is already shipped by solar_detonation, so it is not new to the loader's checks).
+# SHARED (the seat's F10, 2026-11-27): Solar Flare's burst names this file too (Ben: "the same particles that the smolder
+# pulses do", "The same expanding ring"), so a change here moves BOTH ultimates. solar_flare.yml says the same.
 steps:
   - type: particle
     particle: FLAME

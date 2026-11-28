@@ -417,6 +417,16 @@ public interface CombatWorld {
     UUID spawnMarker(Vec3 at, String itemId, int expectedLifetimeTicks);
 
     /**
+     * A SCALED ITEM BODY (Solar Flare, the seat's F9, 2026-11-27): the item {@code itemId} drawn at {@code scale} at
+     * {@code at}, as {@link #spawnMarker}'s body is, and driven, read and removed by the same {@link #driveMarker},
+     * {@link #markerLocation} and {@link #removeMarker}. In production a display entity: it cannot be picked up, is
+     * never saved, and carries the marker tag a clean finds. Abstract, so no world can compile without answering.
+     *
+     * <p>Only legal on the thread owning {@code at}'s region, like every other world write.
+     */
+    UUID spawnDisplayMarker(Vec3 at, String itemId, double scale, int expectedLifetimeTicks);
+
+    /**
      * Plant a BOLT BODY of kind {@code body} -- an arrow or a fireball -- at {@code at}, already
      * moving at {@code velocity}, and return its id.
      * The sibling of {@link #spawnMarker}, and everything that method's contract says about

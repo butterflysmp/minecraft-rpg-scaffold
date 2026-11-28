@@ -117,7 +117,7 @@ class PoolLoaderTest {
         PoolDefinition pool = registry.find("ranger", "fire").orElseThrow();
         assertEquals("recall", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_1));
         assertEquals("solar_lance", pool.defaultLoadout().idFor(LoadoutSlot.ACTIVE_2));
-        assertEquals("ultimate_placeholder_ranger", pool.defaultLoadout().idFor(LoadoutSlot.ULTIMATE));
+        assertEquals("solar_flare", pool.defaultLoadout().idFor(LoadoutSlot.ULTIMATE));
         assertEquals(List.of("solar_lance", "recall"), pool.actives(), "the cell's own, then the class-wide recall");
         assertTrue(pool.fragments().contains("fragment_ember_cache"));
     }
@@ -187,11 +187,11 @@ class PoolLoaderTest {
         write("ranger_fire.yml", """
                 class: ranger
                 element: fire
-                ultimates: [ultimate_placeholder_ranger]
+                ultimates: [solar_flare]
                 actives: [recall, solar_lance]
                 fragments: [fragment_vigor, fragment_nowhere]
                 default:
-                  ultimate: ultimate_placeholder_ranger
+                  ultimate: solar_flare
                   actives: [recall, solar_lance]
                 """);
 
@@ -230,11 +230,11 @@ class PoolLoaderTest {
         write("ranger_fire.yml", """
                 class: ranger
                 element: fire
-                ultimates: [ultimate_placeholder_ranger]
+                ultimates: [solar_flare]
                 actives: [recall, solar_lance]
                 aspects: [searing_lance, cinder_wake]
                 default:
-                  ultimate: ultimate_placeholder_ranger
+                  ultimate: solar_flare
                   actives: [recall, solar_lance]
                 """);
         PoolRegistry registry = load(BUNDLED_ABILITY);
@@ -249,11 +249,11 @@ class PoolLoaderTest {
         write("ranger_fire.yml", """
                 class: ranger
                 element: fire
-                ultimates: [ultimate_placeholder_ranger]
+                ultimates: [solar_flare]
                 actives: [recall, solar_lance]
                 aspects: [aspect_nowhere]
                 default:
-                  ultimate: ultimate_placeholder_ranger
+                  ultimate: solar_flare
                   actives: [recall, solar_lance]
                 """);
         assertEquals(0, load(BUNDLED_ABILITY).size());
@@ -318,10 +318,10 @@ class PoolLoaderTest {
         write("ranger_fire.yml", """
                 class: ranger
                 element: fire
-                ultimates: [ultimate_placeholder_ranger]
+                ultimates: [solar_flare]
                 actives: [recall, solar_lance]
                 default:
-                  ultimate: ultimate_placeholder_ranger
+                  ultimate: solar_flare
                   actives: [recall, solar_lance]
                 """);
         assertEquals(0, load(BUNDLED_ABILITY).size());

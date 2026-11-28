@@ -65,8 +65,8 @@ class AspectLoaderTest {
     private static PoolRegistry rangerListing(String... aspects) {
         PoolRegistry pools = new PoolRegistry();
         pools.register(new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
-                List.of("ultimate_placeholder_ranger"), List.of("recall", "solar_lance"),
-                new Loadout("ultimate_placeholder_ranger", "recall", "solar_lance"), List.of(), List.of(aspects)));
+                List.of("solar_flare"), List.of("recall", "solar_lance"),
+                new Loadout("solar_flare", "recall", "solar_lance"), List.of(), List.of(aspects)));
         return pools;
     }
 
@@ -188,8 +188,8 @@ class AspectLoaderTest {
         write("updraft.yml", UPDRAFT);
         PoolRegistry pools = new PoolRegistry();
         pools.register(new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
-                List.of("ultimate_placeholder_ranger"), List.of("recall", "solar_lance", "recall_updraft"),
-                new Loadout("ultimate_placeholder_ranger", "recall", "solar_lance"), List.of(), List.of("updraft")));
+                List.of("solar_flare"), List.of("recall", "solar_lance", "recall_updraft"),
+                new Loadout("solar_flare", "recall", "solar_lance"), List.of(), List.of("updraft")));
         assertEquals(0, checked(new AspectLoader(log).loadAll(dir.toFile()), pools).size());
         assertTrue(warningText().contains("recall_updraft") && warningText().contains("NO pool"), warningText());
     }
@@ -226,8 +226,8 @@ class AspectLoaderTest {
         AspectRegistry parsed = new AspectLoader(log).loadAll(shipped);
         PoolRegistry pools = new PoolRegistry();
         pools.register(new PoolDefinition(new CellKey("ranger", "fire"), "Fire Ranger",
-                List.of("ultimate_placeholder_ranger"), List.of("recall", "solar_lance"),
-                new Loadout("ultimate_placeholder_ranger", "recall", "solar_lance"), List.of(),
+                List.of("solar_flare"), List.of("recall", "solar_lance"),
+                new Loadout("solar_flare", "recall", "solar_lance"), List.of(),
                 List.of("searing_lance", "updraft")));
         pools.register(new PoolDefinition(new CellKey("mage", "fire"), "Fire Mage",
                 List.of("smolder"), List.of("ember_step", "solar_grenade", "solar_lance"),

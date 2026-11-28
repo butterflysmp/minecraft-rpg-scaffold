@@ -1,0 +1,8 @@
+# SOLAR FLARE'S LAUNCH (the seat's F9, 2026-11-27): once at his eye, the instant the cast is committed. SEAT PLACEHOLDER
+# 2026-11-27, OPEN FOR BEN: the fire charge's own use sound (item.firecharge.use, already shipped and verified in
+# SoundEvents.class on the pinned 26.1.2 server jar by another visual), a little low.
+steps:
+  - type: sound
+    key: item.firecharge.use
+    volume: 1.0
+    pitch: 0.7

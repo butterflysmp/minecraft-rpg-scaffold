@@ -16,8 +16,11 @@ class: ranger
 element: fire
 display_name: "<gold>Fire Ranger</gold>"
 
+# SOLAR FLARE (Ben, 2026-11-27) replaced ultimate_placeholder_ranger, which is deleted (the seat's F11, with A3's rule).
+# A SAVED loadout that names the deleted id reads its ultimate as an EMPTY slot (LoadoutResolution, "a visible hole")
+# until the player picks Solar Flare; one with nothing saved gets Solar Flare by the default below.
 ultimates:
-  - ultimate_placeholder_ranger
+  - solar_flare
 actives:
   - solar_lance                     # + recall, class-wide (ranger.yml)
 # PLACEHOLDER -- Ben designs. Slice 4's fragments (PLAN-build-system.md section 2.3): the same five
@@ -38,5 +41,5 @@ aspects:
   - updraft
 
 default:
-  ultimate: ultimate_placeholder_ranger
+  ultimate: solar_flare
   actives: [recall, solar_lance]      # left, right

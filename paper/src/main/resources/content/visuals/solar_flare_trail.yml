@@ -1,0 +1,13 @@
+# SOLAR FLARE'S TRAIL (Ben, 2026-11-27: "Yes" to a large fire charge with a flame trail): drawn once a tick where each
+# fireball is, after its launch frame. EVERY STEP IS A SEAT PLACEHOLDER 2026-11-27, OPEN FOR BEN.
+steps:
+  - type: particle
+    particle: FLAME
+    count: 4
+    spread: 0.3
+    speed: 0.0
+  - type: particle
+    particle: SMOKE
+    count: 1
+    spread: 0.2
+    speed: 0.0

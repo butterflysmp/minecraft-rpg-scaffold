@@ -54,7 +54,12 @@ public final class ProjectileFlight {
      * <p>They are independent on purpose. A trail with no body is what the Flint Staff shipped as
      * one slice earlier; a body with no trail is a silent thrown rock.
      */
-    public record Look(String trail, String item, String body) {
+    public record Look(String trail, String item, String body, double scale) {
+
+        /** Every look before the scaled body (Solar Flare, F9, 2026-11-27): unscaled. The tail is dropped, as below. */
+        public Look(String trail, String item, String body) {
+            this(trail, item, body, 0.0);
+        }
 
         /**
          * <b>{@code item} AND {@code body} ARE TWO KINDS OF THE SAME SLOT AND CANNOT BOTH BE SET.</b>
@@ -127,6 +132,18 @@ public final class ProjectileFlight {
     public static void launch(CombatWorld world, Caster caster, Vec3 origin, Vec3 velocity,
                               double gravity, int maxLifetimeTicks, Look look, Seek seek,
                               Impact onImpact) {
+        launch(world, caster, origin, velocity, gravity, maxLifetimeTicks, look, seek, () -> true, onImpact);
+    }
+
+    /**
+     * As above, and {@code live} is asked at the top of every step (Solar Flare, the seat's F8, 2026-11-27): false ends
+     * the flight THERE, its body removed and no impact, so a run its caster's death, quit, world change, the server's
+     * stop or a clean has ended takes its shots in flight with it (at most one tick later). Every other flight passes
+     * {@code () -> true} and is unchanged.
+     */
+    public static void launch(CombatWorld world, Caster caster, Vec3 origin, Vec3 velocity,
+                              double gravity, int maxLifetimeTicks, Look look, Seek seek,
+                              java.util.function.BooleanSupplier live, Impact onImpact) {
         // THE BODY IS SPAWNED ON THE LAUNCH FRAME, AT THE AIM ORIGIN -- which for a weapon is the
         // caster's eye, the very position step() below REFUSES to draw the trail at.
         //
@@ -166,13 +183,17 @@ public final class ProjectileFlight {
             // its first frame and snaps into line a tick later. See CombatWorld.spawnBoltMarker.
             // The body id goes through as authored; the adapter knows an arrow from a fireball.
             markerId = world.spawnBoltMarker(origin, velocity, maxLifetimeTicks, look.body());
+        } else if (look.item() != null && look.scale() > 0) {
+            // THE SCALED BODY (F9): a display entity carrying the item at the look's scale, placed each tick by the
+            // same driveMarker (the adapter eases a display there; it moves an item by velocity).
+            markerId = world.spawnDisplayMarker(origin, look.item(), look.scale(), maxLifetimeTicks);
         } else if (look.item() != null) {
             markerId = world.spawnMarker(origin, look.item(), maxLifetimeTicks);
         } else {
             markerId = null;
         }
         step(world, caster, origin, origin, velocity, gravity, maxLifetimeTicks, 0, look, seek,
-                markerId, onImpact);
+                markerId, live, onImpact);
     }
 
     /**
@@ -182,7 +203,13 @@ public final class ProjectileFlight {
      */
     private static void step(CombatWorld world, Caster caster, Vec3 spawn, Vec3 position,
                              Vec3 velocity, double gravity, int maxLifetimeTicks, int elapsed,
-                             Look look, Seek seek, UUID markerId, Impact onImpact) {
+                             Look look, Seek seek, UUID markerId, java.util.function.BooleanSupplier live,
+                             Impact onImpact) {
+        // ENDED FROM OUTSIDE (F8): no trail, no trace, no impact; the body goes. See the six-argument launch's javadoc.
+        if (!live.getAsBoolean()) {
+            resolve(world, markerId);
+            return;
+        }
         // NOT on the launch frame. On elapsed == 0 the position IS the aim's origin, which for a
         // weapon is the caster's EYE -- so drawing here puts the first puff of flame inside the
         // shooter's own camera. The old repo never did: its tracker was runTaskTimer(plugin, 1L,
@@ -282,7 +309,7 @@ public final class ProjectileFlight {
                 velocity.add(new Vec3(0, -gravity, 0)), seek);
         world.schedule(next, 1, () ->
                 step(world, caster, spawn, next, nextVelocity, gravity, maxLifetimeTicks, nextElapsed,
-                        look, seek, markerId, onImpact));
+                        look, seek, markerId, live, onImpact));
     }
 
     /**
