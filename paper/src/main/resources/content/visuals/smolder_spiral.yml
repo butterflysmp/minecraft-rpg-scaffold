@@ -10,6 +10,9 @@
 # to 20 ticks even at size 0.5. A TRAIL eases toward a target over its life; the presenter targets the very point it is
 # drawn at, so it stays put.
 #
+# NINE ARMS FROM 2026-11-28 (Ben: "Can we try 9 spirals"; the seat's V1, smolder.yml): this file is unchanged by it, and
+# draws 1027 points a pulse (three arms drew 343), one packet each to every player within 512 blocks (long_distance).
+#
 # NO SOUND STEP: ContentValidator refuses one in a spiral, which plays at every point on every tick.
 steps:
   - type: particle

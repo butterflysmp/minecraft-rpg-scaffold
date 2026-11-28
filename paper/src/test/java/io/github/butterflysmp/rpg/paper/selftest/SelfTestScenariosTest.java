@@ -59,9 +59,9 @@ class SelfTestScenariosTest {
                         "loot-roll", "sword-tiers", "sword-smithing",
                         "sword-convert", "remove-dev-weapons", "crystal-shard-staff", "knell-beam", "living-lantern", "breacher", "breacher-rework",
                         "vanilla-bows", "boltor-recipe", "unique-enchant-slot", "enchant-columns", "enchant-changes", "shatter-caps",
-                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle", "true-tooltips", "blast-fungus", "bone-club", "healing-tome", "blink-tome", "held-target", "mana-battery", "smolder", "solar-flare", "smolder-2", "solar-flare-2"),
+                        "focused-beam", "mage-guaranteed", "summoner", "armor-sets", "broken-bottle", "true-tooltips", "blast-fungus", "bone-club", "healing-tome", "blink-tome", "held-target", "mana-battery", "smolder", "solar-flare", "smolder-2", "solar-flare-2", "smolder-3", "solar-flare-3"),
                 List.copyOf(loaded.gates().keySet()),
-                "the sixty-one gates, in boot order (solar-flare-2 LAST, 2026-11-28, a NEW gate after smolder-2; smolder-2 before it, 2026-11-28, a NEW gate after solar-flare; solar-flare before it, 2026-11-27, a NEW gate after smolder; smolder before it, 2026-11-27, a NEW gate after mana-battery; mana-battery before it, 2026-11-27, a NEW gate after held-target; held-target before it, 2026-11-26, a NEW gate after blink-tome; blink-tome before it, 2026-11-26, a NEW gate after healing-tome; healing-tome before it, 2026-11-26, a NEW gate after bone-club; bone-club before it, 2026-11-26, a NEW gate after blast-fungus; blast-fungus before it, 2026-11-26, a NEW gate after true-tooltips; true-tooltips before it, 2026-11-26, a NEW gate after broken-bottle; "
+                "the sixty-three gates, in boot order (solar-flare-3 LAST, 2026-11-28, a NEW gate after smolder-3; smolder-3 before it, 2026-11-28, a NEW gate after solar-flare-2; solar-flare-2 before it, 2026-11-28, a NEW gate after smolder-2; smolder-2 before it, 2026-11-28, a NEW gate after solar-flare; solar-flare before it, 2026-11-27, a NEW gate after smolder; smolder before it, 2026-11-27, a NEW gate after mana-battery; mana-battery before it, 2026-11-27, a NEW gate after held-target; held-target before it, 2026-11-26, a NEW gate after blink-tome; blink-tome before it, 2026-11-26, a NEW gate after healing-tome; healing-tome before it, 2026-11-26, a NEW gate after bone-club; bone-club before it, 2026-11-26, a NEW gate after blast-fungus; blast-fungus before it, 2026-11-26, a NEW gate after true-tooltips; true-tooltips before it, 2026-11-26, a NEW gate after broken-bottle; "
                         + "broken-bottle before it, 2026-11-25, a NEW gate after armor-sets; armor-sets before it, 2026-11-25, a NEW gate after summoner; summoner before it,"
                         + " 2026-11-25, a NEW gate after mage-guaranteed;"
                         + " mage-guaranteed before it, the seat's brief of 2026-11-24, a NEW gate after focused-beam;"
@@ -383,7 +383,10 @@ class SelfTestScenariosTest {
         // Then GATE-smolder-2.md and GATE-solar-flare-2.md (feat/ultimates-2-gate, 2026-11-28), RECOUNTED: 61 gates, 641 keys,
         // 61 setups, so 580. Control: 621 + 9 (smolder-2's setup and eight rows) + 11 (solar-flare-2's setup and ten) = 641.
         // 562 was this line's value.
-        assertEquals(580, loaded.rows());
+        // Then GATE-smolder-3.md and GATE-solar-flare-3.md (feat/ultimates-3, 2026-11-28), RECOUNTED: 63 gates, 645 keys
+        // (cat GATE-*.yml | grep -cE '^[A-Za-z0-9_-]+:'), 63 setups, so 582. Control: 641 + 2 (smolder-3's setup and SM8) + 2
+        // (solar-flare-3's setup and SF12) = 645. 580 was this line's value.
+        assertEquals(582, loaded.rows());
     }
 
     /**
@@ -455,7 +458,10 @@ class SelfTestScenariosTest {
         for (var gate : shipped().gates().entrySet()) {
             Path md = Path.of("..", "docs", "gates", "GATE-" + docOf(gate.getKey()) + ".md");
             Set<String> headings = ScenarioLoader.headings(Files.readString(md, StandardCharsets.UTF_8));
-            assertTrue(headings.size() >= 7, md + " read as " + headings + " -- the heading pattern found too few rows");
+            // The pattern's control: at least 7 headings, or every row of a gate that has fewer (the -3 gates, 2026-11-28,
+            // ONE row each by the seat's brief). A blind pattern still reads 0 and fails here.
+            long rows = gate.getValue().stream().filter(s -> !s.row().equals(Scenario.SETUP)).count();
+            assertTrue(headings.size() >= Math.min(7, rows), md + " read as " + headings + " -- the heading pattern found too few rows");
             assertEquals(List.of(), ScenarioLoader.unpaired(gate.getValue(), headings), md.toString());
         }
     }
@@ -740,7 +746,7 @@ class SelfTestScenariosTest {
         }
         assertEquals(List.of("enchant-columns#setup", "enchant-changes#setup", "shatter-caps#setup", "focused-beam#setup",
                         "mage-guaranteed#setup", "summoner#setup", "armor-sets#setup", "broken-bottle#setup",
-                        "true-tooltips#setup", "blast-fungus#setup", "bone-club#setup", "healing-tome#setup", "blink-tome#setup", "held-target#setup", "mana-battery#setup", "smolder#setup", "solar-flare#setup", "smolder-2#setup", "solar-flare-2#setup"),
+                        "true-tooltips#setup", "blast-fungus#setup", "bone-club#setup", "healing-tome#setup", "blink-tome#setup", "held-target#setup", "mana-battery#setup", "smolder#setup", "solar-flare#setup", "smolder-2#setup", "solar-flare-2#setup", "smolder-3#setup", "solar-flare-3#setup"),
                 padGates, "only enchant-columns, (2026-11-23) enchant-changes, (2026-11-24) shatter-caps and (2026-11-24)"
                         + " focused-beam and (2026-11-24) mage-guaranteed opt in, each in its setup");
         Scenario changes = shipped().gates().get("enchant-changes").getFirst();

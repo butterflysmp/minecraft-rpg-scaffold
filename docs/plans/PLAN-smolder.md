@@ -540,3 +540,34 @@ due burn before a same-tick application, so both mappings model the burn-first o
 order that would change the figures, and it reddens. **MUTNOAI (the first attempt) was a broken edit:** it appended
 `NoAI:0b` and left the original `NoAI:1b` in the same compound, so `contains("NoAI:1b")` still held. Re-run as
 MUTNOAI2 by replacing the flag.
+
+## 9. Ben's change after the boot of `4f26ca31` (the seat's V1, 2026-11-28), on `feat/ultimates-3`
+
+**Ben, verbatim, at SM7R** (asked "Did three spiral arms of fire wind out from your feet to about 12 blocks, and did they
+fade quickly?"): *"yes, but there isn't enough particles now. Can we try 9 spirals."*
+
+- **V1: `arms` 3 → 9, and only that number.** `turns` 1.0, the spacing (0.4 along the arm), a0 (due east), the hand
+  (clockwise from above), the particle and its 8 ticks, the front, the hits and the pulse's puff are untouched: no code
+  moved (`PulseFront.spiralAngle` already divides by the arm count; the arms are now 40 degrees apart). Pinned by
+  `SmolderContentTest.smolderLoadsWithBensNumbers` (the whole `Pulses` record, so any other field moving reddens it).
+- **THE POINT COUNTS, EXECUTED** (`SmolderContentTest.nineArmsDrawThreeTimesTheThreeArmPointsEveryTick`, from the shipped
+  file through the calls `CastExecutor.ringPass` makes): per tick after the pulse, t = 0..15: **1, 27, 27, 36, 36, 45,
+  54, 63, 63, 72, 81, 90, 99, 108, 108, 117: 1027 a pulse** (343 at three arms, section 8's figure, recomputed as the
+  control), **4108 a cast**; every tick after the centre exactly three times three arms' (the points per arm depend on
+  the spacing and the slope, not the arm count: `PulseFrontTest.atNineArmsEveryPointLiesOnOneOfNineArms…`). **At most
+  738 alive at once** (each lives 8 ticks: the largest sum over 8 consecutive ticks).
+- **THE COST THE COUNT RAISES, NAMED (the seat: "say so, do not thin the arms"):** every point is one `spawnParticle`
+  (READ, `PaperCombatWorld.particles`), forced (`long_distance`), so **one packet per point to every player within 512
+  blocks** (Q1's READ): 1027 a pulse, 117 in the busiest tick, three times what three arms sent, and drawn on each
+  client whatever his particle setting. **Nothing is dropped on the client by count:** READ on Ben's 26.1.2 client,
+  `ParticleGroup` keeps its particles in an `EvictingQueue` of **16384**, and 738 (+ the pulse's 12) is far under it. No
+  further READ was taken; the arms are not thinned.
+- **V6:** the description names no count of arms ("Four pulses, 1.5s apart, burst from your feet." / "Each deals 160
+  fire damage within 12 blocks and scorches."): unchanged, and `theDescriptionStatesTheFilesOwnNumbers` holds it word
+  for word, unedited and green.
+- **The gate:** `GATE-smolder-3.md` (one row, SM8: SM1R's pick, then SM7R's staging; one ask, SEAT PLACEHOLDER wording
+  "Did nine spiral arms of fire wind out from your feet, and are there enough particles now?").
+
+**Mutations** are recorded with Solar Flare's in `PLAN-solar-flare.md` section 7.
+
+**OPEN FOR BEN:** whether nine is enough (SM8's question); SM8's wording.

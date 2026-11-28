@@ -61,8 +61,49 @@ class SmolderContentTest {
         assertEquals(80, def.cost().amount());
         var pulses = assertInstanceOf(CastSpec.Pulses.class, def.cast());
         assertEquals(new CastSpec.Pulses(4, 30, 12.0, 15, null, "smolder_pulse",
-                new CastSpec.Pulses.SpiralArms(3, 1.0, "smolder_spiral")), pulses, "M1, M2: 1.5 s apart, 0.75 s to the edge, three arms of one turn, no ring");
+                new CastSpec.Pulses.SpiralArms(9, 1.0, "smolder_spiral")), pulses,
+                "M1, M2: 1.5 s apart, 0.75 s to the edge, arms of one turn, no ring; V1 (Ben, 2026-11-28: \"Can we try 9"
+                        + " spirals\"): NINE arms, and only that number moved");
         assertEquals(List.of(new EffectSpec.Damage(160, "fire")), def.onHit());
+    }
+
+    /**
+     * V1 (the seat, 2026-11-28): THE POINT COUNT AT NINE ARMS, EXECUTED, from the shipped file through the very calls
+     * {@code CastExecutor.ringPass} makes each tick t of the travel ({@code PulseFront.spiralPoints} over
+     * {@code (radiusAt(t - 1), radiusAt(t)]}). The points per arm per tick depend on the spacing and the arm's slope, not
+     * on the number of arms, so every tick after the centre point draws exactly three times what three arms drew, and the
+     * three-arm figures are the last plan's own (PLAN-smolder.md section 8, M2: 343 a pulse), recomputed here as the
+     * control. The spiral's particle lives {@code duration_ticks} (8, READ: TRAIL's lifetime is the server's), so the
+     * most alive at once is the largest sum over 8 consecutive ticks.
+     */
+    @Test
+    void nineArmsDrawThreeTimesTheThreeArmPointsEveryTick() throws IOException {
+        AbilityDefinition def = loadBundled("smolder.yml").find("smolder").orElseThrow();
+        var p = (CastSpec.Pulses) def.cast();
+        var origin = io.github.butterflysmp.rpg.core.Vec3.ZERO;
+        List<Integer> nine = new ArrayList<>(), three = new ArrayList<>();
+        for (int t = 0; t <= p.travelTicks(); t++) {
+            double from = io.github.butterflysmp.rpg.core.combat.PulseFront.radiusAt(t - 1, p.radius(), p.travelTicks());
+            double to = io.github.butterflysmp.rpg.core.combat.PulseFront.radiusAt(t, p.radius(), p.travelTicks());
+            nine.add(io.github.butterflysmp.rpg.core.combat.PulseFront.spiralPoints(origin, from, to, p.spiral().arms(),
+                    p.spiral().turns(), p.radius()).size());
+            three.add(io.github.butterflysmp.rpg.core.combat.PulseFront.spiralPoints(origin, from, to, 3,
+                    p.spiral().turns(), p.radius()).size());
+        }
+        assertEquals(List.of(1, 9, 9, 12, 12, 15, 18, 21, 21, 24, 27, 30, 33, 36, 36, 39), three,
+                "CONTROL: the three-arm figures PLAN-smolder.md section 8 executed");
+        assertEquals(343, three.stream().mapToInt(Integer::intValue).sum());
+        assertEquals(List.of(1, 27, 27, 36, 36, 45, 54, 63, 63, 72, 81, 90, 99, 108, 108, 117), nine);
+        assertEquals(1027, nine.stream().mapToInt(Integer::intValue).sum(), "points a pulse at nine arms");
+        assertEquals(4 * 1027, p.count() * nine.stream().mapToInt(Integer::intValue).sum(), "points a cast (four pulses)");
+        for (int t = 1; t < nine.size(); t++) assertEquals(3 * three.get(t), nine.get(t), "tick " + t);
+        int alive = 0;
+        for (int t = 0; t < nine.size(); t++) {
+            int sum = 0;
+            for (int u = Math.max(0, t - 7); u <= t; u++) sum += nine.get(u);
+            alive = Math.max(alive, sum);
+        }
+        assertEquals(738, alive, "the most spiral particles alive at once, each living 8 ticks");
     }
 
     /**

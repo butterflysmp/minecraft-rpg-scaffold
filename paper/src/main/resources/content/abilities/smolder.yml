@@ -11,11 +11,17 @@
 # 15 (the 12 blocks in 0.75 seconds, 0.8 a tick; it was 30). count, radius, damage, mana and cooldown are unchanged.
 #
 # THE LOOK, BEN'S, 2026-11-28 (M2, M3): "a triple spiral originating from the player's feet", "One full turn to start",
-# "I also want the particles to disappear faster". So `spiral:` below: three arms, each winding one whole turn between
-# his feet and the edge, drawn tick by tick AT THE FRONT'S OWN RADIUS (core.combat.PulseFront.spiralPoints, the radius
+# "I also want the particles to disappear faster". So `spiral:` below: three arms (NINE since Ben's next word, below),
+# each winding one whole turn between his feet and the edge, drawn tick by tick AT THE FRONT'S OWN RADIUS (core.combat.PulseFront.spiralPoints, the radius
 # function the hit compares), from the pulse's FIXED origin. Arm 0 starts due east and the arms wind clockwise seen from
 # above (CC'S CALL, SEAT PLACEHOLDER 2026-11-28). The full ring is no longer drawn. The particles are TRAIL, which the
 # server times: each lives 8 ticks (smolder_spiral.yml, SEAT PLACEHOLDER).
+#
+# NINE ARMS, BEN, 2026-11-28 (after the boot of 4f26ca31, SM7R: "yes, but there isn't enough particles now. Can we try 9
+# spirals."; the seat's V1): `arms` 3 -> 9, and ONLY that number moved. Each arm is still one whole turn, its points 0.4
+# apart along it, arm 0 due east, winding clockwise from above, the same particle for 8 ticks; the front, the hits and
+# the pulse's puff are untouched. The arms are 40 degrees apart. EXECUTED (SmolderContentTest): 1027 points a pulse
+# (three arms drew 343), 117 in the busiest tick, at most 738 alive at once.
 #
 # THE HIT IS STILL THE WHOLE CIRCLE, NOT THE ARMS (M2, OPEN FOR BEN): a body is struck once per pulse, on the tick the
 # front's radius first reaches its horizontal distance from that pulse's fixed origin, wherever the arms are. Before
@@ -57,7 +63,7 @@ cast:
   travel_ticks: 15
   pulse: smolder_pulse      # once at each pulse's origin, on its tick (the sound is here)
   spiral:
-    arms: 3
+    arms: 9                 # Ben, 2026-11-28: "Can we try 9 spirals" (was 3)
     turns: 1.0
     visual: smolder_spiral  # drawn at every point of every arm, each tick of the travel (no sound: ContentValidator)
 
