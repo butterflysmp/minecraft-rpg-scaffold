@@ -261,7 +261,39 @@ public sealed interface CastSpec {
      */
     record Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
                       Homing homing, String body, Spread spread, int fuseTicks, Pulses burst,
-                      double bodyScale) implements CastSpec {
+                      double bodyScale, Salvo salvo) implements CastSpec {
+
+        /**
+         * SHOTS ONE AFTER ANOTHER (Solar Flare, Ben 2026-11-28 via the seat's N1: "I want 3 fireballs one after another",
+         * ".5 seconds" apart, each following his aim "yes" at the moment it leaves): {@code count} shots, the first on the
+         * cast's tick and each next {@code intervalTicks} after it on the server's tick, each down the aim read ON HIS OWN
+         * THREAD on its own tick (the first: the cast's aim). One cost, one cooldown and one crit for all of them: the
+         * caster is frozen at the cast, as every burst shot's is.
+         *
+         * <p><b>NOT A VOLLEY, READ (CC'S CALL, the seat's N1 said use the volley if it carries a per-shot aim read).</b>
+         * {@code CastExecutor.volley} does re-read the aim per shot, but it also rebuilds the WHOLE {@code Caster} per
+         * shot (a fresh crit roll, the gear score and behaviours re-read: "a burst the player steers"), and its shots
+         * are booked with {@code scheduleOn}, a link no run holds, so no removal path can end the ones still to come. N1
+         * rules one crit at the cast and every pending shot ended by the pulses' removal path. So a salvo rides the
+         * pulses' own scheduling ({@code CastExecutor.bookOnCaster}) inside the burst's run, and is allowed ONLY with a
+         * {@code burst} (that run is where the removal path finds it), and never with a {@code spread} (no ruling
+         * combines a fan with a salvo).
+         */
+        public record Salvo(int count, int intervalTicks) {
+            public Salvo {
+                if (count < 1) throw new IllegalArgumentException("a salvo's count must be 1 or more, was " + count);
+                // The scheduler cannot defer by less than a tick (the volley's own reason).
+                if (intervalTicks < 1) {
+                    throw new IllegalArgumentException("a salvo's interval_ticks must be 1 or more, was " + intervalTicks);
+                }
+            }
+        }
+
+        /** Every projectile before the salvo (2026-11-28): none. THE NEW FIELD WENT ON THE END, the ladder's rule. */
+        public Projectile(double speed, double gravity, int maxLifetimeTicks, String trail, String item,
+                          Homing homing, String body, Spread spread, int fuseTicks, Pulses burst, double bodyScale) {
+            this(speed, gravity, maxLifetimeTicks, trail, item, homing, body, spread, fuseTicks, burst, bodyScale, null);
+        }
 
         /**
          * <b>{@code item} AND {@code body} ARE MUTUALLY EXCLUSIVE, AND IT IS ENFORCED HERE RATHER
@@ -316,6 +348,14 @@ public sealed interface CastSpec {
             // .spawnDisplayMarker). 0 is none: the dropped item every item body was before. Only an item can be scaled.
             if (!(bodyScale >= 0) || Double.isInfinite(bodyScale)) {
                 throw new IllegalArgumentException("body_scale must be 0 (none) or a finite positive scale, was " + bodyScale);
+            }
+            if (salvo != null && burst == null) {
+                throw new IllegalArgumentException("a salvo needs a 'burst:': its pending shots live in the burst's run,"
+                        + " which is how a death, a quit or a clear ends them (N1)");
+            }
+            if (salvo != null && spread != null) {
+                throw new IllegalArgumentException("a salvo cannot also spread: no ruling combines a fan with shots one"
+                        + " after another");
             }
             if (bodyScale > 0 && item == null) {
                 throw new IllegalArgumentException("body_scale " + bodyScale + " scales an ITEM body, and this projectile"
@@ -888,9 +928,10 @@ public sealed interface CastSpec {
             if (!(radius > 0 && Double.isFinite(radius))) {
                 throw new IllegalArgumentException("pulses radius must be more than 0 blocks, was " + radius);
             }
-            if (travelTicks < 1) {
-                throw new IllegalArgumentException("pulses travel_ticks must be 1 or more, was " + travelTicks
-                        + ": the ring takes at least one tick to reach its edge");
+            // 0 IS INSTANT (Solar Flare's burst, the seat's N3, 2026-11-28): every body within the radius is struck on the
+            // pulse's own tick (PulseFront.radiusAt is the whole radius from tick 0). Refused below 0.
+            if (travelTicks < 0) {
+                throw new IllegalArgumentException("pulses travel_ticks must be 0 (instant) or more, was " + travelTicks);
             }
             if (ring != null && ring.isBlank()) ring = null;
             if (pulse != null && pulse.isBlank()) pulse = null;

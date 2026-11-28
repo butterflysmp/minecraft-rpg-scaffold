@@ -1,14 +1,46 @@
-# SOLAR FLARE'S BURST: presented ONCE where each fireball bursts. SEAT PLACEHOLDER, OPEN FOR BEN.
+# SOLAR FLARE'S BURST: presented ONCE where each fireball bursts. Ben, 2026-11-28: "I want to change the particles to a
+# firework-style explosion", then: "I don't want a firework, I want a fireball that explodes like a firework".
 #
-# HISTORY: this is the look smolder_pulse.yml had when both ultimates shared it (the seat's F10, 2026-11-27), copied here
-# unchanged when the seat's N5 (2026-11-28) gave each ultimate its own files: a burst of flame and a blaze's shot.
+# ROUTE B (the seat's N4): BUILT FROM PARTICLES AND SOUNDS, NO FIREWORK ENTITY. READ (javap, the pinned 26.1.2 server,
+# FireworkRocketEntity.dealExplosionDamage): a real firework's explosion, when it carries any star, hurts EVERY living
+# body within 5 blocks with a clear line, players included, for (5 + 2 x stars) x sqrt((5 - d) / 5), through hurtServer
+# with a fireworks damage source; with no star it hurts nothing and draws no coloured burst. Route A (the real effect, its
+# damage cancelled) needs its worst case EXECUTED through the real functions at a row's state (S-1), and that path runs
+# through vanilla's hurtServer and our own damage routing, which only a live server runs. So Route A's zero could not be
+# proven for every body: Route B, as the seat ruled for that case.
+#
+# WHAT IT DRAWS (every number a SEAT PLACEHOLDER 2026-11-28, OPEN FOR BEN; "orange and yellow, a large ball, a firework
+# blast sound"):
+# - an ORANGE ball and a YELLOW one: TRAIL particles thrown from the burst point to points spread evenly over a sphere
+#   (burst_radius; core.shape.SphereDirections). READ, the client's TrailParticle.tick: each moves 1 / (lifetime - age) of
+#   the way to its target every tick, so it flies out in a straight line at a steady speed, reaches the sphere on its last
+#   tick, and is gone: the orange ball grows to 6 blocks (the burst's own reach) in 10 ticks, the yellow to 4.5 inside it.
+# - white firework sparks thrown outward (FIREWORK, the firework's own spark, no data).
+# - the large firework blast and its twinkle (entity.firework_rocket.large_blast and .twinkle, both READ in SoundEvents on
+#   the pinned server jar).
 steps:
   - type: particle
-    particle: FLAME
-    count: 20
-    spread: 0.4
-    speed: 0.02
+    particle: TRAIL
+    count: 90
+    color: [255, 120, 0]
+    duration_ticks: 10
+    burst_radius: 6.0
+  - type: particle
+    particle: TRAIL
+    count: 60
+    color: [255, 220, 40]
+    duration_ticks: 10
+    burst_radius: 4.5
+  - type: particle
+    particle: FIREWORK
+    count: 40
+    spread: 0.2
+    speed: 0.3
   - type: sound
-    key: entity.blaze.shoot
-    volume: 1.0
-    pitch: 0.8
+    key: entity.firework_rocket.large_blast
+    volume: 2.0
+    pitch: 1.0
+  - type: sound
+    key: entity.firework_rocket.twinkle
+    volume: 1.5
+    pitch: 1.0

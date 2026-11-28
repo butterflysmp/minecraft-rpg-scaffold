@@ -90,9 +90,15 @@ public final class PulseFront {
         return castTick + (long) (n - 1) * intervalTicks;
     }
 
-    /** The ring's radius {@code t} ticks after its pulse: {@code radius x t / travel}, and {@code radius} from {@code travel} on. */
+    /**
+     * The ring's radius {@code t} ticks after its pulse: {@code radius x t / travel}, and {@code radius} from {@code travel}
+     * on. A travel of 0 is INSTANT (the seat's N3, 2026-11-28, Solar Flare's burst): the whole radius from tick 0, so
+     * {@link #reachTick} gives 0 for every distance up to the radius. Before the pulse ({@code t < 0}) it is 0.
+     */
     public static double radiusAt(int t, double radius, int travelTicks) {
-        if (t <= 0) return 0.0;
+        if (t < 0) return 0.0;
+        if (travelTicks <= 0) return radius;
+        if (t == 0) return 0.0;
         if (t >= travelTicks) return radius;
         return radius * t / travelTicks;
     }

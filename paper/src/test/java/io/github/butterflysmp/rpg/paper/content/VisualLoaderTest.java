@@ -294,6 +294,34 @@ class VisualLoaderTest {
     }
 
     /**
+     * A TRAIL BURST (N4, Route B, 2026-11-28): {@code burst_radius 6} on 60 particles aims each at its own point of a
+     * 6-block sphere about the drawn point, every one 6.0 out and no two the same; a still TRAIL has no burst targets.
+     * Mutation: the radius ignored -> the distance assertion reddens.
+     */
+    @Test
+    void aTrailBurstAimsEachParticleAtItsOwnPointOfTheSphere() throws IOException {
+        write("burst.yml", """
+                steps:
+                  - type: particle
+                    particle: TRAIL
+                    count: 60
+                    color: [255, 120, 0]
+                    duration_ticks: 10
+                    burst_radius: 6.0
+                """);
+        var particles = (VisualSpec.Particles) load().find("burst").orElseThrow().steps().get(0);
+        var at = new org.bukkit.Location(null, 10.0, 64.0, -3.0);
+        var targets = particles.burstTargets(at);
+        assertEquals(60, targets.size());
+        assertEquals(60, new java.util.HashSet<>(targets).size(), "no two the same");
+        for (var t : targets) assertEquals(6.0, t.toVector().distance(at.toVector()), 1e-9);   // Location.distance refuses a null world
+        assertEquals(10, particles.trail().durationTicks());
+        assertTrue(new VisualSpec.Particles(org.bukkit.Particle.TRAIL, 1, 0, 0, null, 4.0,
+                new VisualSpec.Particles.Trail(Color.fromRGB(1, 2, 3), 8)).burstTargets(at).isEmpty(), "a still trail");
+        assertTrue(warnings.isEmpty(), warningText());
+    }
+
+    /**
      * TRAIL's refusals, each a named, skipped file (M3): no {@code duration_ticks}; a {@code size} (TRAIL has none);
      * a duration of 0; {@code duration_ticks} on FLAME, whose lifetime the server cannot set; and TRAIL in a
      * {@code spiral} step, which supplies no trail data. The control file beside each loads.
@@ -311,6 +339,12 @@ class VisualLoaderTest {
                         "whose lifetime the server cannot set"},
                 {"aaa_t5.yml", "steps:\n  - type: spiral\n    particle: TRAIL\n    color: [255, 120, 0]\n"
                         + "    duration_ticks: 8\n    arms: 3\n    turns: 1\n    points_per_tick: 4\n", "supplies no trail data"},
+                // N4's burst (2026-11-28): on a particle that cannot be aimed; at 0; beside a spread it would silently drop.
+                {"aaa_t6.yml", "steps:\n  - type: particle\n    particle: FLAME\n    burst_radius: 6.0\n", "cannot be aimed"},
+                {"aaa_t7.yml", "steps:\n  - type: particle\n    particle: TRAIL\n    color: [255, 120, 0]\n"
+                        + "    duration_ticks: 10\n    burst_radius: 0\n", "must be more than 0"},
+                {"aaa_t8.yml", "steps:\n  - type: particle\n    particle: TRAIL\n    color: [255, 120, 0]\n"
+                        + "    duration_ticks: 10\n    burst_radius: 6.0\n    spread: 0.4\n", "sets both 'burst_radius' and a 'spread'"},
         };
         for (String[] c : cases) {
             warnings.clear();

@@ -3,6 +3,10 @@
 **Status: BUILT on `feat/solar-flare` (not booted, not merged),** stacked on `feat/water-douses-scorch` (#338). Its gate is
 `GATE-solar-flare.md` on the ONE gate branch, `feat/smolder-gate`, moved to sit on this branch, last.
 
+> **2026-11-28: MERGED (#340, `cb354faf`), booted (`01be9d3b`), and CHANGED BY BEN: section 6 is the account of the
+> change (N1 to N7), built on `feat/solar-flare-volley`. Sections 1 to 5 are kept as the record of the shape before it;
+> where section 6 says otherwise, section 6 holds (the fan, the 15 blocks, the travelling ring, F10's shared files).**
+
 Sources: Ben's words of 2026-11-27 (relayed; quoted below) and the seat's Solar Flare brief of the same day (F1 to F14,
 the gate). This file is the account; the brief is not committed.
 
@@ -201,3 +205,139 @@ boot reads the body (SF9's question) and the entity probe reads none left (SF8).
 
 **Only the boot can show:** the fireballs as drawn (the display's size, centring and easing), the trail, the launch
 sound, the ring at each burst, and the flight on a real server's clock.
+
+## 6. Ben's changes, 2026-11-28 (the seat's N1 to N7), on `feat/solar-flare-volley`
+
+**Ben, verbatim (relayed by the seat):** *"3. The Ranger Ultimate, instead of a fan of three fireballs, I want 3
+fireballs one after another. 4. Increase the Fireball speed they're too slow, Increase the range to 32 blocks. 5. I want
+to change the particles to a firework-style explosion."* Then: *"2. .5 seconds 3. 0.8 seconds for the 32 blocks 4. yes
+5. Instant, I'd like to mention I don't want a firework, I want a fireball that explodes like a firework"*. NOT STATED:
+the burst's colours and shape; whether 250 changes (it STANDS); whether passive animals are spared (NOTHING changes).
+
+### N1, one after another: a SALVO, not the volley (READ, CC'S CALL)
+
+- **READ, `CastExecutor.volley`:** it does re-read the aim per shot (`world.aimOf` on the caster's thread), but it ALSO
+  rebuilds the whole `Caster` per shot (`Caster.of(self.state())`: a fresh crit roll, the gear score and behaviours
+  re-read), and books each next shot with `scheduleOn`, a link no run holds, so no removal path can end the shots still
+  to come. N1 rules one crit at the cast and every pending shot ended by the pulses' removal path. **So the volley's
+  mechanism carries a per-shot aim read and also two things N1 forbids: the pulses' own scheduling is used (N1's "else").**
+- **`CastSpec.Projectile.Salvo(count, intervalTicks)`**, the record's new tail field; YAML `salvo: {count: 3,
+  interval_ticks: 10}`. Refused without a `burst:` (the shots live in the burst's run, which is how a removal finds them)
+  and beside a `spread:` (no ruling combines a fan with a salvo).
+- **`CastExecutor.salvoShot`:** shot 1 on the cast's tick down the cast's aim; each next shot booked for
+  `C + interval x n` through `bookOnCaster` (X6 (a): exact on the server's tick), a pending link of the run; on its tick
+  it reads `world.aimOf` ON HIS OWN THREAD (his eye and look at that tick: Ben's "yes") and fires. Launch ticks **C, C+10,
+  C+20** (`SolarFlareCastTest.threeShotsTenTicksApart…`, on the server's phases). **CC'S CALL:** shot 1 uses the cast's
+  aim, read at the press P = C − 1 (the alternative: a hop to read it at C, which would move shot 1 off the cast's tick).
+- **Once:** mana and the cooldown at the cast (`AbilityService`; `manaAndTheCooldownAreTakenOnceAtTheCast`); the crit
+  rolled once at the cast and frozen for all three (`theCritRolledAtTheCastHoldsForEveryShot`: crit 2.0 at the cast, 1.0
+  after, every burst strikes for 200). Shots numbered 1 to 3 in launch order.
+- **The run** counts the three shots; `landed` counts bursts; **remaining = shots not yet burst** (an in-flight shot
+  included). Ended between shots: the pending link is cancelled (shot 3 never launches), the in-flight flights stop at
+  their next step (their `live` check), no burst, no body left (`endingTheRunBetweenShots…`, remaining 3 at tick 12;
+  `endedAfterTheFirstBurstTwoRemain`, 2 at tick 17).
+
+### N2, the flight: speed 2.0, gravity 0, lifetime 16
+
+READ, `ProjectileFlight.step` (unchanged): the step at elapsed e traces `launch + 2e` to `launch + 2(e + 1)` on the launch
+tick + e, the first inline; after the step at e = 15 the flight ends at **launch + 32.0** (16 x 2.0, exact), on the launch
+tick + 15, from the eye point it left.
+
+| tick (L = that shot's launch: C, C+10, C+20) | the shot's segment, blocks from its eye |
+|---|---|
+| L | 0 to 2 |
+| L + e | 2e to 2(e + 1) |
+| L + 15 | 30 to 32.0, then it bursts at 32.0 (`cause=range`) |
+
+**SWEPT, READ by javap (`CraftWorld`, the pinned 26.1.2 server):** `castRay` calls `World#rayTrace(from, dir, step
+length, NEVER, true, 0.0, filter)`; `rayTrace` runs `rayTraceBlocks` over the whole length (a `ClipContext` from the start
+to start + dir x length, `ServerLevel.clip`: a walk of every block the segment crosses), shortens the entity trace to
+the block hit, then `rayTraceEntities`, which takes the bodies in the swept box (`BoundingBox.of(start, end)
+.expandDirectional(…).expand(raySize)`) and tests each one's box with `BoundingBox.rayTrace(start, dir, length)`, the
+nearest winning. **So a 2-block step cannot pass through a thin wall or a body between two step ends**, pinned in the
+fake by `aTwoBlockStepIsSweptSoAThinWallOrABodyBetweenStepEndsStopsTheShot` (a wall at 3 stops it on tick 1 at 3.0; a
+body at 5 on tick 2, the burst at the body). F2's collision rule is otherwise unchanged.
+
+### N3, the burst is instant: `travel_ticks: 0`
+
+**READ BEFORE THE CHANGE, AND IT CONTRADICTED THE BRIEF:** 0 was REFUSED (`CastSpec.Pulses`: "travel_ticks must be 1
+or more … the ring takes at least one tick"), and `PulseFront.radiusAt(0, r, 0)` returned 0, so even accepted, only a
+body at distance 0 would have been struck. **Built anyway (the ruling, instant within 6, is unambiguous), and reported
+first:** `Pulses` accepts 0 (below 0 refused); `radiusAt` is the whole radius from tick 0 when the travel is 0, so
+`reachTick` is 0 for every distance up to the radius and −1 beyond (`PulseFrontTest.aTravelOfZero…`: 5.9 and 6.0 at 0,
+6.1 never); `ringPass` ends after tick 0. One struck set per burst: three bursts in one place give a body 250 from each,
+each on its own burst's tick (`threeBurstsInOnePlace…`: 5.9 struck at 4, 14, 24; 6.1 never).
+
+### N4, "a fireball that explodes like a firework": ROUTE B
+
+- **The body stays the fireball** (F9, as built).
+- **READ, what a real firework does** (`FireworkRocketEntity.dealExplosionDamage`, the pinned server): with any star in
+  its explosions list it hurts its rider and every `LivingEntity` in its box inflated by 5 with `distanceToSqr` at most
+  25 and a clear `clip` to the body, for **(5 + 2 x stars) x sqrt((5 − d) / 5)**, through `hurtServer` with
+  `damageSources().fireworks(rocket, owner)`: **players included**. With no star it hurts nothing, and the client draws
+  no coloured burst.
+- **Why not Route A:** its zero rests on cancelling that damage for every body at our seam, and SAFETY S-1 asks the
+  worst case if the cancel failed EXECUTED through the real functions at the row's state. That path is vanilla's
+  `hurtServer` and our own routing of a fireworks hit, which only a live server runs; it cannot be executed here. **So
+  Route A's zero cannot be proven for every body: Route B, as the brief rules for that case.** No firework entity exists.
+- **Route B as built** (`solar_flare_burst.yml`, every number a SEAT PLACEHOLDER): an ORANGE ball (90 TRAIL, `[255, 120,
+  0]`) thrown out to the burst's own 6 blocks and a YELLOW one (60 TRAIL, `[255, 220, 40]`) to 4.5, both in 10 ticks; 40
+  white FIREWORK sparks (spread 0.2, speed 0.3); `entity.firework_rocket.large_blast` (volume 2.0) and `.twinkle` (1.5),
+  both keys READ in `SoundEvents` on the pinned jar. **The ball, READ, the client's `TrailParticle.tick`:** each tick a
+  TRAIL moves `1 / (lifetime − age)` of the way to its target, so it flies a straight line at a steady speed and reaches
+  its target on its last tick, then is removed (`age++ >= lifetime`). A TRAIL step's new `burst_radius` aims each of its
+  `count` particles at one point of a sphere of that radius (`core.shape.SphereDirections.fibonacci`, an even lattice),
+  so the ball grows to its radius and is gone. `burst_radius` is refused on any other particle, at 0, and beside a
+  `spread` (a burst places every particle itself).
+
+### N5, N6, N7
+
+- **N5** was done on `feat/smolder-spiral` (the files were shared): Solar Flare names only its own files; its ring was
+  `solar_flare_ring.yml` until this branch, and is now deleted and retired (the burst is instant and draws no ring).
+- **N6:** the trace lines are unchanged in form; each shot line carries its own tick: C, C+10, C+20 on the one clock
+  (`Bukkit.getCurrentTick()`, X6 (a)).
+- **N7** (SEAT PLACEHOLDER 2026-11-28): "Fire three great fireballs, one after another." / "Each bursts within 6 blocks
+  for 250 fire damage and scorches." (`SolarFlareContentTest` rebuilds both from the file.)
+
+### CC'S CALLS (N1 to N7)
+
+1. A salvo (the pulses' scheduling in the burst's run), not the volley: the volley re-rolls the crit per shot and its
+   shots are no run's to end (READ above).
+2. Shot 1 down the cast's aim (read at the press, one tick before it leaves); the alternative, a hop to read it at C.
+3. The firework's look: two TRAIL balls (orange to 6, yellow to 4.5, 10 ticks), white sparks, the large blast and the
+   twinkle.
+4. `burst_radius` on a TRAIL step as the burst's look (the alternative, a new visual step type).
+5. The ring visual deleted and retired rather than kept unused.
+
+### Tests and mutations (N1 to N7)
+
+`SolarFlareCastTest` rewritten for the new shape (11 rows, on the server's phases), `PulseFrontTest` (+1, N3),
+`PulseCastTest` (the refusal row: −1 refused, 0 accepted), `SphereDirectionsTest` (1), `VisualLoaderTest` (+1 row, +3
+refusals), `SolarFlareContentTest` (the fan row and the 15-block row replaced by the salvo and burst rows).
+
+**The salvo's code was written before its rows**, so its mutations were run as a probe of rows written after it; each
+reddened (marker 1, original 0, delta 1, restored byte-identical, markers left 0):
+
+| mutation | the change | red |
+|---|---|---|
+| MUTSALVOTICK | each next shot due one tick early | four `SolarFlareCastTest` rows |
+| MUTLOCKEDAIM | each later shot down the cast's aim | `eachShotLeavesDownHisAim…` |
+| MUTCRITPERSHOT | a fresh `Caster` (and crit) per later shot | `theCritRolledAtTheCast…` |
+| MUTSALVORUN | the run counts one shot, not three | six `SolarFlareCastTest` rows |
+| MUTINSTANT | an instant front's radius 0 | `aTravelOfZero…`, `threeBurstsInOnePlace…`, `theCritRolled…` |
+| MUTBURSTTARGET | the burst's targets at radius 1 | `aTrailBurstAimsEach…` |
+| MUTSALVOSCHEMA | `salvo:` not parsed | three `SolarFlareContentTest` rows |
+| MUTBURSTSPREAD | a burst beside a spread accepted | `trailsRefusalsAreNamedSkippedFiles` |
+
+**Removed, not mutated:** a line that set the run's pending handle to −1 when a later shot fired; cancelling a link that
+already ran does nothing, so no row could see it.
+
+**Not unit-witnessed:** the presenter's burst loop in `PaperCombatWorld.particles` (a real world); the boot reads it.
+
+### OPEN FOR BEN (N1 to N7)
+
+- The firework's look (orange and yellow balls, white sparks, the sound), the description, the ask's wording.
+- 250 per burst with three bursts in one place (750 is the normal case at a wall or a mob): he was told and did not say.
+- Passive animals in the bursts and in the flight path (unchanged; asked twice, not answered).
+
+**Only the boot can show:** the three fireballs leaving one after another, the firework as drawn, the sound.

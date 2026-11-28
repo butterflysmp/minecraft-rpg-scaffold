@@ -413,7 +413,8 @@ class PulseCastTest {
         assertThrows(IllegalArgumentException.class, () -> new CastSpec.Pulses(4, 0, 12, 30, null, null));
         assertThrows(IllegalArgumentException.class, () -> new CastSpec.Pulses(4, 60, 0, 30, null, null));
         assertThrows(IllegalArgumentException.class, () -> new CastSpec.Pulses(4, 60, Double.NaN, 30, null, null));
-        assertThrows(IllegalArgumentException.class, () -> new CastSpec.Pulses(4, 60, 12, 0, null, null));
+        assertThrows(IllegalArgumentException.class, () -> new CastSpec.Pulses(4, 60, 12, -1, null, null));
+        assertEquals(0, new CastSpec.Pulses(1, 1, 6, 0, null, null).travelTicks(), "N3: 0 is instant, accepted");
         assertEquals(null, new CastSpec.Pulses(4, 60, 12, 30, " ", "").ring());
         assertFalse(SMOLDER.ring() == null);
     }

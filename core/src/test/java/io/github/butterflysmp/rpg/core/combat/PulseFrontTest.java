@@ -88,6 +88,21 @@ class PulseFrontTest {
         }
     }
 
+    /**
+     * N3 (the seat, 2026-11-28): A TRAVEL OF 0 IS INSTANT. Every distance up to the radius reaches on tick 0 (5.9 and 6.0
+     * included), one hair past it never; the radius is whole from tick 0, and 0 before it. READ BEFORE THIS ROW: 0 was
+     * REFUSED by {@code CastSpec.Pulses} ("travel_ticks must be 1 or more"), and {@code radiusAt(0, r, 0)} was 0, so
+     * only a body at distance 0 would have been struck; both changed here.
+     */
+    @Test
+    void aTravelOfZeroStrikesEveryDistanceUpToTheRadiusOnTickZero() {
+        double[][] table = {{0.0, 0}, {3.0, 0}, {5.9, 0}, {6.0, 0}, {6.1, -1}};
+        for (double[] row : table) assertEquals((int) row[1], PulseFront.reachTick(row[0], 6.0, 0), "distance " + row[0]);
+        assertEquals(6.0, PulseFront.radiusAt(0, 6.0, 0));
+        assertEquals(6.0, PulseFront.radiusAt(5, 6.0, 0));
+        assertEquals(0.0, PulseFront.radiusAt(-1, 6.0, 0));
+    }
+
     // ================================================================= M2: the spiral, a drawing of the same front
 
     /**

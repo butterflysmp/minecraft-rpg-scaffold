@@ -79,7 +79,9 @@ public final class VisualLoader {
      */
     static final java.util.Set<String> RETIRED_FILES = java.util.Set.of("arc_surge.yml", "rekindle_cast.yml",
             // the seat's N5 (2026-11-28): RENAMED solar_flare_ring.yml, its one remaining user's own file
-            "smolder_ring.yml");
+            "smolder_ring.yml",
+            // the seat's N3, N4 (2026-11-28): Solar Flare's burst is instant and draws a firework, no ring
+            "solar_flare_ring.yml");
 
     /** The id is the filename: solar_detonation.yml -> solar_detonation. */
     private static String idOf(File f) {
@@ -240,6 +242,10 @@ public final class VisualLoader {
                 throw new IllegalArgumentException("Visual step '" + type + "' sets 'duration_ticks' on particle '"
                         + p.name() + "', whose lifetime the server cannot set; remove it or use TRAIL");
             }
+            if (m.get("burst_radius") != null) {
+                throw new IllegalArgumentException("Visual step '" + type + "' sets 'burst_radius' on particle '"
+                        + p.name() + "', which cannot be aimed; remove it or use TRAIL");
+            }
             return null;
         }
         if (m.get("size") != null) {
@@ -256,7 +262,19 @@ public final class VisualLoader {
             throw new IllegalArgumentException("Visual step '" + type + "' field 'duration_ticks' must be 1 or more, got: "
                     + duration);
         }
-        return new VisualSpec.Particles.Trail(color, duration);
+        // A BURST (N4, Route B, 2026-11-28): OPTIONAL; above 0, each particle is thrown to a point of a sphere of this
+        // radius (VisualSpec.Particles.burstTargets). It places every particle itself, so a spread beside it would be
+        // silently dropped: refused.
+        double burst = numOr(m, type, "burst_radius", 0.0);
+        if (m.get("burst_radius") != null && !(burst > 0 && Double.isFinite(burst))) {
+            throw new IllegalArgumentException("Visual step '" + type + "' field 'burst_radius' must be more than 0, got: "
+                    + burst);
+        }
+        if (burst > 0 && numOr(m, type, "spread", 0.0) != 0.0) {
+            throw new IllegalArgumentException("Visual step '" + type + "' sets both 'burst_radius' and a 'spread':"
+                    + " a burst places every particle itself, so the spread would do nothing; remove it");
+        }
+        return new VisualSpec.Particles.Trail(color, duration, burst);
     }
 
     /** A required {@code color: [r, g, b]}, each 0 to 255: DUST's, and TRAIL's (the same checks, one place). */
