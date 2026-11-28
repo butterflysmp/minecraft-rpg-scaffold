@@ -338,7 +338,12 @@ line is this hop, not a second clock.
 - **The first burn at hit + 20:** the ring's hit is a global-phase task; `BukkitCombatant`'s damage hops `onEntity` (a
   delay of 1 from the global phase: later in the SAME tick, the entity phase), accrues Scorch there and starts the
   `RepeatingTask`, whose first `scheduleTick(20)` is booked from the entity phase: exactly 20.
-- **A hit and a burn on one tick: the hit first** (the global phase before the entity phase).
+- **A later hit and a burn on one tick: the hit's LINE first, its Scorch REFRESH after the burn.** The line is written in
+  the global phase; the refresh runs in the mob's entity phase, AFTER the burn already due there: `EntityScheduler`'s
+  due list is an `ArrayList` (`lambda$schedule$0`) run in insertion order (`executeTick` offsets 121 to 161), and the
+  burn was booked 20 ticks before the refresh. (CORRECTED 2026-11-28 on this branch before any push: this bullet first
+  read "the hit first", from the log order alone; a model built on it gave SM2 14 burns where the boot read 15, and the
+  due list's READ settled it. `ScorchBurnsReadOrder`, `feat/smolder-spiral`, reproduces both SM2's 15 and SM5's 8.)
 
 **THE INSTRUMENTED READ** is the boot of `01be9d3b`'s own log (`run/logs/latest.log`, `[Rpg] Build: 01be9d3b`): SM2's
 `MANA … 20.000 tick=6110` then `SMOLDER cast … tick=6111` (P, then C = P + 1); pulses at 6111, 6170, 6231, 6291 (C,
@@ -357,7 +362,7 @@ waits. **Its one cost:** a due tick under two ticks ahead of an entity-phase cal
 is under 10. Solar Flare's shots use the same booking (`feat/solar-flare-volley`).
 
 **WHAT THE NEXT BOOT WILL READ (on the one clock):** pulse n at **C + interval x (n − 1)** exactly; a ring hit at its
-pulse's tick + the reach tick; the first burn at **hit + 20**, then every 20; a hit before a burn on a shared tick.
+pulse's tick + the reach tick; the first burn at **hit + 20**, then every 20; on a shared tick the hit's line before the `DOTTICK`, and the burn counted against the window BEFORE the hit's refresh.
 
 **Tests and mutations (core: `./mvnw -pl core test`, Tests run 2766, Failures 0, Errors 0, Skipped 1, on this commit's tree):** three `PulseCastTest` rows (the
 control above; `onTheServersPhasesEveryPulseLandsOnTheCastTickPlusWholeIntervals`, which read `[7, 66, 127, 187]` RED
