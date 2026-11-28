@@ -97,7 +97,7 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
         this(scheduler, keys, visuals, statuses, elements, enchants, log, ConcurrentHashMap.newKeySet(),
                 new ImmobilizeStatus(), new SoakedStatus(), new ImmobilizeStatus(),
                 new ScorchStatus(statusIdOf(statuses, StatusDefinition.Scorch.class, "scorch"),
-                        dotTrace(log, mobTrace)),
+                        dotTrace(log, mobTrace), douseTrace(log, mobTrace)),
                 // THE SECOND INSTANCE OF THE ONE STORE, AND IT MUST BE A SEPARATE ONE (WS1, WS2): Ignite
                 // reads scorch() only, so handing this slot the scorch instance would make every withered
                 // death explode. DotStatusTest.aWitherApplicationNeverScorches holds it.
@@ -138,6 +138,17 @@ public record AdapterContext(Scheduler scheduler, Keys keys,
     static DotTrace dotTrace(Logger log, BooleanSupplier mobTrace) {
         return tick -> {
             if (mobTrace.getAsBoolean()) log.info(tick.line(Bukkit.getCurrentTick()));
+        };
+    }
+
+    /**
+     * The {@code SCORCH doused / refused} and {@code IGNITE refused} trace (the seat's Y7 and E1, 2026-11-27): one log
+     * line each while {@code /rpg mobtrace} is on, the switch read rather than copied, the tick the server's, as
+     * {@link #dotTrace}.
+     */
+    static DouseTrace douseTrace(Logger log, BooleanSupplier mobTrace) {
+        return line -> {
+            if (mobTrace.getAsBoolean()) log.info(line.format(Bukkit.getCurrentTick()));
         };
     }
 

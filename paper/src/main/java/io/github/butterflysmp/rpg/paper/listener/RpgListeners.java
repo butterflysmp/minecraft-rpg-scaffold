@@ -1442,10 +1442,46 @@ public final class RpgListeners implements Listener {
         Location at = mob.getLocation();
         adapters.scorch().forget(id);        // the guard -- see the javadoc above
 
+        // A WET BODY DOES NOT IGNITE (the seat's E1, 2026-11-27): clause 1 asks the same wet reading as the
+        // application, the burn tick and clause 2 (BukkitCombatant's killing blow). A burn tick that found it wet has
+        // already ended the Scorch, so this holds the case where the death and the wet state fall in one tick before
+        // a burn tick doused it. Read AFTER forget: forget is the once-ness guard and must run whatever is decided.
+        java.util.Optional<io.github.butterflysmp.rpg.core.combat.Douse.Cause> wet =
+                io.github.butterflysmp.rpg.paper.adapter.EntityScorchSink.wetness(mob);
+        if (io.github.butterflysmp.rpg.core.combat.Douse.atDeath(true, false, wet)
+                == io.github.butterflysmp.rpg.core.combat.Douse.Ignition.REFUSED) {
+            adapters.scorch().igniteRefused(id, mob.getType().key().value(), wet.get());
+            return;
+        }
+
         // depth + 1: this mob was scorched BY a blast at `depth`, so its own ignition is the next
         // link down. A dev application and a player's weapon both store 0, so both detonate at 1.
         Ignite.detonate(new PaperCombatWorld(mob.getWorld(), adapters),
                 new Vec3(at.getX(), at.getY(), at.getZ()), applier, id, depth + 1, stamp);
+    }
+
+    /**
+     * WATER PUTS OUT SCORCH, BY A SPLASH WATER BOTTLE (Ben's D; the seat's Y1 and E2, 2026-11-27). The set is the
+     * server's own: {@code WaterBottleSplashEvent.getToExtinguish()}, which is the set vanilla puts out. READ by javap,
+     * the pinned 26.1.2 server: {@code AbstractThrownPotion.onHitAsWater} takes the living bodies in the bottle's box
+     * inflated (4, 2, 4), keeps those within {@code distanceToSqr < 16} that are {@code isOnFire() && isAlive()}, and
+     * {@code CraftEventFactory.callWaterBottleSplashEvent} hands them to this event before extinguishing them.
+     * {@code isOnFire} is {@code !fireImmune() && remainingFireTicks > 0} (READ), so a scorched fire-immune body is not
+     * in the set (CC'S CALL: the server's set, exactly, as Y1 asks).
+     *
+     * <p>A moment, not a state (E2): the Scorch ends, its flame is cleared, and nothing is left, so a later fire kill
+     * of a splashed body is clause 2's as a DRY body. On the body's own thread: inline when this region owns it, else
+     * one hop.
+     */
+    @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.MONITOR)
+    public void onWaterBottleSplash(io.papermc.paper.event.entity.WaterBottleSplashEvent event) {
+        for (LivingEntity body : event.getToExtinguish()) {
+            Runnable douse = () -> adapters.scorch().douse(body.getUniqueId(),
+                    new io.github.butterflysmp.rpg.paper.adapter.EntityScorchSink(body, adapters),
+                    io.github.butterflysmp.rpg.core.combat.Douse.Cause.SPLASH);
+            if (Bukkit.isOwnedByCurrentRegion(body)) douse.run();
+            else adapters.scheduler().onEntity(body, douse);
+        }
     }
 
     /**

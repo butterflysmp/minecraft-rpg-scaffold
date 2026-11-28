@@ -1,7 +1,7 @@
 # PLAN: Smolder, the Fire Mage's ultimate, and water puts out Scorch
 
-**Status: PART 1 BUILT on `feat/smolder` (not booted, not merged). PART 2 is `feat/water-douses-scorch`. The gate is
-`feat/smolder-gate`, last in the stack.** Stacked on `feat/regen-tooltips-sheet-unit` (#336, `d696b50d`), from master
+**Status: PART 1 BUILT on `feat/smolder` (not booted, not merged). PART 2 BUILT on `feat/water-douses-scorch`
+(section 6; not booted, not merged). The gate is `feat/smolder-gate`, last in the stack.** Stacked on `feat/regen-tooltips-sheet-unit` (#336, `d696b50d`), from master
 `16713667`.
 
 Sources: Ben's words of 2026-11-27 (relayed; quoted below), the seat's Smolder brief of 2026-11-27 (Z1 to Z11, Y1 to Y7,
@@ -25,13 +25,14 @@ briefs are not committed.
 
 NOT STATED by Ben: whether a wet mob is immune to new Scorch (Y3, a SEAT PLACEHOLDER).
 
-## 2. The three STOPs and their rulings
+## 2. The STOPs and their rulings
 
 | STOP | READ | ruling |
 |---|---|---|
 | 1 | A fire hit applies Scorch BY THE ELEMENT (`ElementAccrual.forHit`): cap = `(amount / crit) x Scorch.CAP_FRACTION 0.5`, window `Scorch.DEFAULT_DURATION_TICKS 120`. An authored `status: scorch` caps at the UNHALVED `payloadDamage` (`BukkitCombatant.applyStatus`). The brief had cap 160 and `duration_ticks 80`. | **A1**: the damage only, Scorch by the element (cap 80 uncrit, 120 ticks, restarted by each hit). **A2**: `scorch.yml`'s comment corrected. |
 | 2 | `LoadoutResolution`: an id the pool no longer offers reads EMPTY, never the default slot by slot ("a visible hole"; `savedEmptySlotsStayEmpty`). Z8 wanted the default. | **A3**: Z8's fallback withdrawn; the existing rule stands. |
 | 3 | Scorch's FLAME rides vanilla `fireTicks` (`setFireTicks` at accrual and in `applyStatus`); only its damage is our own clock. | **A4**: a douse clears the flame too (Part 2). |
+| 4 (Part 2) | Y4 said an unscorched body "does not ignite, by the existing rule". `BukkitCombatant`'s Ignite SECOND clause detonates any body a FIRE hit kills, scorched or not: `!wasScorched && dealt > 0 && newCurrent <= 0 && accruesScorch(...)`. | **E1**: a wet body does not ignite by either clause (Y4's "add no second gate" withdrawn). **E2**: a splash is a moment, not a state. **E3**: an armed detonation is not cancelled. **E4**: a cauldron does not douse. **E5**: K5 stays. **E6**: Part 1 accepted on the report. **E7**: the gate. |
 
 ## 3. Part 1: Smolder (the seat's Z1 to Z11 as A1 to A6 left them)
 
@@ -117,7 +118,8 @@ table). The caster by his id. Hostile = the MOB side.
   (`attacks().attacked(player, EndReason.CAST)`, on a weapon trigger's Success). `StoneCaster`, which casts every
   ability on the Ability Stone (Q included), does NOT. **CC'S CALL: Smolder joins every other stone cast and does not end
   the blink**, so no stone ability changes behaviour without a ruling. The alternative (any stone cast ends the blink)
-  changes Ember Step, Solar Grenade and the rest as well; OPEN FOR THE SEAT.
+  changes Ember Step, Solar Grenade and the rest as well. **RULED, the seat's E5 (2026-11-27): it stays as it is,
+  and Smolder is added to `PLAN-blink-tome.md`'s OPEN FOR BEN line 8 ("whether an Ability Stone cast should end it").**
 
 ### 3.5 The scheduler (Z6), and why it is region-safe
 
@@ -209,7 +211,153 @@ did not compile. A compile error is not a mutation; it was re-run as MUTWIRE2.
 ## 5. Owed and open
 
 - **OPEN FOR BEN:** Z2 (the damage travels with the ring; alternative: all struck at the pulse's tick), the ring's and
-  the pulse's look (particle, sound), the description wording, the empty ultimate on a saved build (A3).
-- **OPEN FOR THE SEAT:** K5 (above).
+  the pulse's look (particle, sound), the description wording, the empty ultimate on a saved build (A3). Part 2's are in
+  section 6.9.
+- **K5:** ruled by the seat's E5 (section 3.4).
 - **Only the boot can show:** the ring as drawn (its spacing, height and speed as Ben sees them), the pulse sound, a
   pulse on a real entity scheduler arriving on its tick, his death ending the run on a real server.
+
+## 6. Part 2: water puts out Scorch (the seat's Y1 to Y7 as E1 to E4 left them)
+
+Built on `feat/water-douses-scorch`, from `feat/smolder` (`619058dc`). A rule of the STATUS: it holds for every fire
+weapon and ability, because every Scorch reaches the one store (`ScorchStatus`) and every Ignite one of its two clauses.
+
+### 6.1 What counts as wet (Y1), READ by javap on the pinned 26.1.2 server
+
+The adapter's one reading is `EntityScorchSink.wetness(entity)` = `Douse.wet(entity.isInWater(), entity.isInRain())`.
+
+- **(A) In water: `isInWater()`.** READ: `CraftEntity.isInWater` is `Entity.isInWater`, which returns the field
+  `wasTouchingWater`, set each tick by `Entity.updateFluidInteraction` from `EntityFluidInteraction.update`, which walks
+  the blocks of the fluid box and asks each one's `getFluidState()` for the WATER tag and its height. So it covers:
+  - water source and flowing water;
+  - a **waterlogged** block (its `getFluidState` is water when `WATERLOGGED`, READ on `SlabBlock`);
+  - a **bubble column** (`BubbleColumnBlock.getFluidState` = `Fluids.WATER.getSource(false)`, READ);
+  - partly submerged: the height is compared against the box, so any overlap counts (INFERRED from the walk; the
+    comparison's operands were not read one by one).
+  - **NOT a water cauldron (E4, READ):** neither `LayeredCauldronBlock` nor `AbstractCauldronBlock` declares
+    `getFluidState`, nor does `Block`, so it is `BlockBehaviour.getFluidState` = `Fluids.EMPTY.defaultFluidState()`.
+    **Vanilla's own flame IS put out there** (`LayeredCauldronBlock`'s `entityInside` extinguishes and lowers the
+    level, READ earlier this day) **while our burn continues: OPEN FOR BEN.**
+- **(B) In the rain: `isInRain()`.** READ: `CraftEntity.isInRain` is `Entity.isInRain` = `Level.isRainingAt(block
+  position) || isRainingAt(the top of the box)`; `isRainingAt` = the level is raining AND `canSeeSky(pos)` AND the
+  position is at or above the `MOTION_BLOCKING` heightmap AND the biome's precipitation there is RAIN. So no rain under
+  a roof, in a desert, or in snow.
+- **(D) A splash water bottle:** `WaterBottleSplashEvent.getToExtinguish()`, the server's own set. READ:
+  `AbstractThrownPotion.onHitAsWater` takes the living bodies in the bottle's box inflated (4, 2, 4), keeps those with
+  `distanceToSqr < 16` that are `isOnFire() && isAlive()`, and `CraftEventFactory.callWaterBottleSplashEvent` hands
+  them to the event. `isOnFire` = `!fireImmune() && remainingFireTicks > 0` (READ), so a scorched FIRE-IMMUNE body is
+  not in the set.
+- **(C) Soaked is NOT a douser** (Ben: *"we'll come back to C when we do our Water Element pass"*). Carried.
+
+### 6.2 When it is checked (Y2, Y3, E1): one decision, three seams
+
+| seam | where | wet means |
+|---|---|---|
+| an APPLICATION (Y3) | `ScorchStatus.apply` (the 8-argument one every route reaches) | no Scorch, no flame, `SCORCH refused` |
+| a BURN TICK (Y2), before its damage | `DotStatus`'s tick asks `dousedBeforeBurn`; only `ScorchStatus` answers | the tick deals none, the burn ends, the flame is cleared, `SCORCH doused` |
+| a DEATH (E1) | clause 1: `RpgListeners.onEntityDeath`; clause 2: `BukkitCombatant`'s killing blow | no detonation, `IGNITE refused` |
+| a SPLASH (D, E2) | `RpgListeners.onWaterBottleSplash` | the live Scorch ends at once, the flame is cleared, `SCORCH doused cause=splash` |
+
+**E1's decision table** (`Douse.atDeath(scorched, fireKill, wet)`, pinned whole by `DouseTest`):
+
+| scorched at death | killing blow fire | wet | result |
+|---|---|---|---|
+| no | no | either | NONE (no line) |
+| no | yes | dry | CLAUSE_2 detonates |
+| no | yes | water or rain | REFUSED |
+| yes | either | dry | CLAUSE_1 detonates |
+| yes | either | water or rain | REFUSED |
+
+Clause 1 asks it AFTER `forget` (the once-ness guard must run whatever is decided). Clause 2 is asked only of an
+unscorched body (`wasScorched` keeps the two from both firing), so one death writes at most one `IGNITE refused`.
+
+**What the death reads (INFERRED):** `isInWater` on the death frame is `wasTouchingWater` from the body's last base
+tick; the death and that tick are the same server tick, or the body would have been doused or refused first.
+
+### 6.3 The flame (A4): before and after
+
+- **Before this branch, READ:** vanilla put the FLAME out in water (`WaterFluid.entityInside` →
+  `InsideBlockEffectType.EXTINGUISH` → `Entity.clearFire`, from `Entity.checkInsideBlocks`) and in the rain
+  (`Entity.applyEffectsFromBlocks`: `if (isInRain()) clearFire()`), and the BURN went on for its whole window: up to six
+  more ticks of min(5% max, the cap), on a body with no visible fire.
+- **After:** the burn ends at its next burn tick (at most 20 ticks later), dealing nothing that tick, and the flame is
+  cleared by our call too (`clearFlame` = `setFireTicks(min(0, current))`, vanilla's `clearFire` exactly). A refused
+  application sets no flame: both `setFireTicks` sites in `BukkitCombatant` now follow a TRUE `apply`.
+- **Can the code tell Scorch's flame from another fire? No:** fire ticks are one number on the body. So it clears them
+  only where vanilla clears them anyway (a wet body), or on the set vanilla extinguishes (a splash).
+
+### 6.4 Who (Y5), and what is not touched (Y6)
+
+- **Y5, READ:** no mob scorches a player today (every mob damage path passes element `null`). A player can be scorched
+  by another player's fire hit on a landing PvP path (RAY, PROJECTILE, CONE, BURST, AREA, IMPLOSION) and by `/rpg
+  apply`; the rule holds for him as for a mob (`EntityScorchSink` reads any entity). The death listener skips players,
+  as before.
+- **Y6:** changed: `ScorchStatus` (the refusal, the douse, the trace), `DotStatus` (one protected hook answering false,
+  so Wither is unchanged: `ScorchDouseTest.witherIsNotPutOutByWaterBecauseTheRuleIsScorchsAlone`), `ScorchSink` (two
+  abstract methods), the two flame sites and the two Ignite sites. No damage path changed: the HIT's own damage lands
+  before any of this is asked. Vanilla fire (`kind: fire`) is untouched. A burning FIELD on the ground (the grenade's)
+  is not removed by water; each of its applications on a wet body is refused.
+
+### 6.5 The lines (Y7, E1), while `/rpg mobtrace` is on, pinned by `DouseTest`
+
+```
+SCORCH doused target=<type uuid> cause=<water|rain|splash> tick=<t>
+SCORCH refused target=<type uuid> cause=<water|rain> tick=<t>
+IGNITE refused target=<type uuid> cause=<water|rain> tick=<t>
+```
+
+### 6.6 CC'S CALLS
+
+1. **Water names itself when both hold** (`cause=water`); the alternative changes only the word on the line.
+2. **A body already scorched and now wet is REFUSED at a new application**, and its live burn is doused at its next
+   burn tick (the alternative, dousing it at the application, would add a fourth seam Y2 does not name).
+3. **The splash set is the server's `getToExtinguish()` exactly**, as Y1 asks, so a scorched fire-immune body is not
+   splashed out. The alternative: every living body within the bottle's 4 blocks.
+4. **The splash douse runs inline when this region owns the body, else one entity hop.**
+5. **An application that buys no stacks is not a refusal** and writes nothing.
+
+### 6.7 E2 and E3
+
+- **E2:** a body splashed and then killed by a fire hit is DRY for clause 2, and ignites. **OPEN FOR BEN.**
+- **E3:** a detonation already armed on a dead body (Ignite's 20-tick fuse) is not cancelled by water. **SEAT
+  PLACEHOLDER, OPEN FOR BEN.**
+
+### 6.8 Tests and mutations (Part 2)
+
+New: `DouseTest` (3, core), `ScorchDouseTest` (7), `DouseWiringTest` (5), one row in `ScorchYmlCommentTest`.
+`ScorchStampStatusTest.thePortHandsTheHitsStampToTheScorchItApplies` moved its anchor (the apply is now the `if`'s
+condition, ending at `{` instead of `;`); still anchored at both ends.
+
+Each mutation: a literal splice (`mut.sh`: marker present, original gone, line delta against a scratchpad copy), run
+against its named test, restored by `cp` (markers left 0).
+
+| mutation | the change | red |
+|---|---|---|
+| MUTWETORDER | rain before water | `DouseTest.theWetDecision...` |
+| MUTDEATH | wet ignored at death | `DouseTest.eOnesTable...` |
+| MUTTICK | the burn tick never asks | `ScorchDouseTest.aBurnTickOnAWetBody...` |
+| MUTREFUSE | the application never refuses | `ScorchDouseTest.aWetBodyGainsNoScorch...` |
+| MUTFLAME | the tick's flame clear deleted | `ScorchDouseTest.aBurnTickOnAWetBody...` |
+| MUTSPLASHFORGET | the splash does not end the burn | `ScorchDouseTest.aSplashDouses...` |
+| MUTWITHER2 | wither's hook douses too | `ScorchDouseTest.witherIsNotPutOut...` |
+| MUTCLAUSE2 | clause 2 reads dry | `DouseWiringTest.clauseTwo...` |
+| MUTCLAUSE1 | clause 1 reads dry | `DouseWiringTest.clauseOne...` |
+| MUTSPLASH | `getAffectedEntities` for the set | `DouseWiringTest.aSplashDouses...` |
+| MUTAPPLIED | the status arm's flame unconditional | `DouseWiringTest.bothScorchFlameSites...` |
+| MUTTRACE | production's store gets no douse trace | `DouseWiringTest.productionsStore...` |
+
+**MUTWITHER (the first attempt) is VOID:** its two-line needle was LF against a CRLF file and matched nothing (original
+before 0, marker 0). Re-run on one line as MUTWITHER2. **MUTWITHER2's replacement contains its original**, so its
+"original gone" figure is uninterpretable (the eighth row of the mutation-lies table); its line delta of 1 against the
+scratchpad copy is the measurement.
+
+### 6.9 OPEN FOR BEN (Part 2)
+
+- Y3: a wet body gains no new Scorch (SEAT PLACEHOLDER).
+- E2: a splashed body killed by fire still ignites (a splash is a moment).
+- E3: an armed detonation is not cancelled by water (SEAT PLACEHOLDER).
+- E4: a water cauldron puts out the flame (vanilla) but not the burn.
+- K5 (the seat's E5): whether an Ability Stone cast, Smolder included, should end the Blink Tome's invisibility.
+
+**Only the boot can show:** the douse on a real body in water and in rain, the splash event's set on a real throw, and
+the death reading on a real death frame.

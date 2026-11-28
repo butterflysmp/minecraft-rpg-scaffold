@@ -1,5 +1,8 @@
 package io.github.butterflysmp.rpg.paper.adapter;
 
+import io.github.butterflysmp.rpg.core.combat.Douse;
+
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -42,4 +45,19 @@ public interface ScorchSink {
      * three armour channels and why only this one is bypassed.
      */
     void deal(double amount, UUID applierId, String element);
+
+    /**
+     * WATER PUTS OUT SCORCH (the seat's Y2, 2026-11-27): is the victim wet NOW, by the server's own two readings,
+     * {@code isInWater()} and {@code isInRain()}, through {@link Douse#wet}. Read on the victim's own thread, at each
+     * application and before each burn. Abstract rather than {@code default}, so a fixture cannot compile without
+     * saying whether its body is wet.
+     */
+    Optional<Douse.Cause> wet();
+
+    /**
+     * A DOUSE CLEARS THE FLAME TOO (the seat's A4): put out the vanilla fire ticks Scorch set, as vanilla's own
+     * {@code Entity.clearFire} does ({@code setRemainingFireTicks(min(0, current))}, READ by javap). Abstract for the
+     * same reason as {@link #wet}.
+     */
+    void clearFlame();
 }

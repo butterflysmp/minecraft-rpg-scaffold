@@ -24,6 +24,11 @@
 #   armour   does NOT reduce the burn (it is dealt with its defence bypassed).
 #            It DOES slow stack accrual, because stacks come from damage
 #            actually landed. Armour delays scorch rather than blunting it.
+#   water    puts it out (Ben, 2026-11-27). A body in water or out in the rain
+#            (the server's own isInWater and isInRain) gains no scorch and no
+#            flame; a live burn on one ends at its next burn tick, dealing
+#            nothing; a splash water bottle ends it at once. A wet body does not
+#            ignite. Douse and ScorchStatus are the account.
 #
 # A SECOND ROUTE, NOT TO BE COMBINED WITH THE FIRST: an authored
 # `type: status, status_id: scorch` step (BukkitCombatant.applyStatus) takes

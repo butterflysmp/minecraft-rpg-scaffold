@@ -336,15 +336,19 @@ public final class BukkitCombatant {
                                     // applyStatus's Scorch arm and RpgListeners' FIRE_TICK suppression,
                                     // which reads isScorched to token the vanilla burn away. All three
                                     // have to move together.
-                                    entity.setFireTicks(
-                                            Math.max(entity.getFireTicks(), accrued.durationTicks()));
-                                    ctx.scorch().apply(entity.getUniqueId(),
+                                    //
+                                    // THE FLAME FOLLOWS THE APPLICATION (the seat's A4 and Y3, 2026-11-27): a wet
+                                    // body's application is refused inside apply, and a refusal sets no flame.
+                                    if (ctx.scorch().apply(entity.getUniqueId(),
                                             new EntityTaskTarget(entity, ctx.scheduler(), ctx.log()),
                                             new EntityScorchSink(entity, ctx),
                                             accrued.stacks(), accrued.cap(), sourceId,
                                             accrued.durationTicks(), element, accrual.depth() + 1,
                                             // MANA BURN (F1, 2026-11-24): the hit's stamp, 0 unless a weapon carrying it made the hit
-                                            accrual.scorchStampPercent());
+                                            accrual.scorchStampPercent())) {
+                                        entity.setFireTicks(
+                                                Math.max(entity.getFireTicks(), accrued.durationTicks()));
+                                    }
                                 }
                                 // NO FIRE AND NO DEPTH: wither is not Ignite's (WS2, S2). The look is the
                                 // vanilla potion, whose own damage RpgListeners tokens (Q-W7 a).
@@ -389,10 +393,21 @@ public final class BukkitCombatant {
                     // there is no competing candidate -- and in this case THE KILLING BLOW IS THE
                     // FIRE. Crediting sourceId is that same rule reaching its only answer, not a
                     // second rule sitting beside it.
-                    Location at = entity.getLocation();
-                    Ignite.detonate(new PaperCombatWorld(entity.getWorld(), ctx),
-                            new Vec3(at.getX(), at.getY(), at.getZ()), sourceId,
-                            entity.getUniqueId(), accrual.depth() + 1);
+                    //
+                    // A WET BODY DOES NOT IGNITE (the seat's E1, 2026-11-27, Ben: "Water should be able to put out
+                    // every fire ability that scorches and ignites"): the same wet reading the application and the
+                    // burn tick use, through E1's one table. Clause 1's twin is RpgListeners.onEntityDeath.
+                    java.util.Optional<io.github.butterflysmp.rpg.core.combat.Douse.Cause> wet =
+                            EntityScorchSink.wetness(entity);
+                    if (io.github.butterflysmp.rpg.core.combat.Douse.atDeath(false, true, wet)
+                            == io.github.butterflysmp.rpg.core.combat.Douse.Ignition.REFUSED) {
+                        ctx.scorch().igniteRefused(entity.getUniqueId(), entity.getType().key().value(), wet.get());
+                    } else {
+                        Location at = entity.getLocation();
+                        Ignite.detonate(new PaperCombatWorld(entity.getWorld(), ctx),
+                                new Vec3(at.getX(), at.getY(), at.getZ()), sourceId,
+                                entity.getUniqueId(), accrual.depth() + 1);
+                    }
                 }
 
                 // Aggro-on-hit: the target turns on its attacker -- vanilla's expected default.
@@ -565,7 +580,6 @@ public final class BukkitCombatant {
                     // are named: this line and the suppression gate. Delete either and the burn
                     // either doubles or goes invisible.
                     case StatusDefinition.Scorch ignored -> {
-                        entity.setFireTicks(Math.max(entity.getFireTicks(), durationTicks));
 
                         // Non-positive means the payload declared no damage, so there is no BASIS for
                         // a cap. Fall back to a conservative constant, LOUDLY -- never to the 5%
@@ -587,7 +601,9 @@ public final class BukkitCombatant {
                         // factor of two on the same weapon, with nothing watching: the invariant
                         // that used to compare them was retired when the content pass removed its
                         // second authoring route. Halve here too, or do not author one.
-                        ctx.scorch().apply(entity.getUniqueId(),
+                        // THE FLAME FOLLOWS THE APPLICATION (A4, Y3), as the accrual arm: a wet body is refused
+                        // inside apply and gets no flame. The flame used to be set first, before the cap.
+                        boolean applied = ctx.scorch().apply(entity.getUniqueId(),
                                 new EntityTaskTarget(entity, ctx.scheduler(), ctx.log()),
                                 new EntityScorchSink(entity, ctx),
                                 1, cap, applierId, durationTicks,
@@ -599,6 +615,7 @@ public final class BukkitCombatant {
                                 // way ignites at depth 1 -- identical to a player weapon kill, which
                                 // is the same 0 arriving through HitAccrual.weapon().
                                 0);
+                        if (applied) entity.setFireTicks(Math.max(entity.getFireTicks(), durationTicks));
                     }
 
                     // Wither (WITHER-STATUS): the explicit route, which only the dev apply command

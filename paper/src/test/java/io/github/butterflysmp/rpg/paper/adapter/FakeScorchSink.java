@@ -52,6 +52,16 @@ final class FakeScorchSink implements ScorchSink {
         burns.add(new Burn(amount, applierId, clock.now(), element));
     }
 
+    /** What the body reads as at the next ask: dry unless a row stages it wet. */
+    java.util.Optional<io.github.butterflysmp.rpg.core.combat.Douse.Cause> wet = java.util.Optional.empty();
+
+    /** How many times the flame was cleared. */
+    int flameClears = 0;
+
+    @Override public java.util.Optional<io.github.butterflysmp.rpg.core.combat.Douse.Cause> wet() { return wet; }
+
+    @Override public void clearFlame() { flameClears++; }
+
     int count() { return burns.size(); }
 
     double totalDealt() { return burns.stream().mapToDouble(Burn::amount).sum(); }

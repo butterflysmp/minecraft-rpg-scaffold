@@ -260,6 +260,11 @@ public class DotStatus {
             // Decrement-first existed only because the inline burn had already consumed tick one;
             // keeping it after deleting that burn silently drops the LAST period (a 120-tick scorch
             // would burn five times and fall silent for its sixth second). The two move together.
+            //
+            // WATER PUTS OUT SCORCH (Y2): asked BEFORE the damage, so a doused tick deals none, and false stops the
+            // task through RepeatingTask's normal path (onStop removes the entry and runs onEnded). Scorch's alone:
+            // the default answers false, so wither never asks.
+            if (dousedBeforeBurn(id, sink)) return false;
             burnOnce(id, na, sink);
             na.remaining -= rates.periodTicks();
             return na.remaining > 0;
@@ -290,6 +295,14 @@ public class DotStatus {
      * twice for one ending (a forget that cancels a running task), so it must be idempotent.
      */
     protected void onEnded(UUID id) {}
+
+    /**
+     * Asked at each burn tick before its damage: true ends the burn there, dealing nothing (Y2). False here, so only a
+     * store that overrides it (Scorch) is ever put out; Wither is unchanged (Y6: no other status).
+     */
+    protected boolean dousedBeforeBurn(UUID id, ScorchSink sink) {
+        return false;
+    }
 
     /**
      * One tick of burn: {@code min(5% of the victim's max, the cap)}, credited to the applier.

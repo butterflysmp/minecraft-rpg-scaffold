@@ -293,7 +293,9 @@ the time.
 6. The feedback: a small puff (`poof` x12) and the enderman's teleport sound at both ends; nothing for the cooldown.
 7. What stays visible while invisible (K6): armour, held items, a head item, stuck arrows, an elytra, a shoulder parrot;
    his name is hidden.
-8. Whether an Ability Stone's cast should end it ("Casting a spell does").
+8. Whether an Ability Stone's cast should end it ("Casting a spell does"), **Smolder included** (the Fire Mage's
+   ultimate on Q; the seat's E5, 2026-11-27: no stone cast ends it today, Smolder's neither, and nothing changes until
+   Ben rules; `PLAN-smolder.md` section 3.4, K5).
 
 ## OWED, CARRIED
 

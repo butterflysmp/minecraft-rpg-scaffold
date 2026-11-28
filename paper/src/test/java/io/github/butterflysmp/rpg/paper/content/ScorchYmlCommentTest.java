@@ -49,4 +49,14 @@ class ScorchYmlCommentTest {
         assertTrue(!c.contains("the damage of whatever applied the stacks"), "the cap is HALF the hit");
         assertTrue(!c.contains("The ability that applies it still decides for how long"), "the element's window is 120");
     }
+
+    /** Water puts out Scorch (Y1 to Y3, E1), stated in the file a content author reads, naming its classes. */
+    @Test
+    void theWaterLineNamesTheServersTwoReadingsAndTheAccount() throws IOException {
+        String c = comment();
+        assertTrue(c.contains("(the server's own isInWater and isInRain)"), "the two readings");
+        assertTrue(c.contains("a splash water bottle ends it at once"), "the splash");
+        assertTrue(c.contains("A wet body does not"), "E1");
+        assertTrue(c.contains("Douse and ScorchStatus are the account"), "the account");
+    }
 }
